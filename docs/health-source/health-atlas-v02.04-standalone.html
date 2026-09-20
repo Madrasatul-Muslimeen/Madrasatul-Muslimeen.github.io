@@ -1,0 +1,2936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Health Atlas — v02.04</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#161B22;
+    --ink-2:#1F2733;
+    --panel:#232C3A;
+    --paper:#EDE6D6;
+    --paper-dim:#B9B2A0;
+    --gold:#C9A24B;
+    --gold-dim:#8C7539;
+    --line:#3A4356;
+    --cardio:#B5484B;
+    --resp:#4C8C7C;
+    --digest:#C9A24B;
+    --nervous:#6E5AA6;
+    --renal:#3E7CA6;
+    --musculo:#8C8370;
+    --endocrine:#A65C85;
+    --integument:#7A9E5E;
+    --sensory:#C97B3E;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--ink);color:var(--paper);font-family:'Inter',sans-serif;}
+  h1,h2,h3,.serif{font-family:'Source Serif 4',serif;}
+  header{
+    padding:28px 32px 18px;border-bottom:1px solid var(--line);
+    display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end;justify-content:space-between;
+  }
+  .brand h1{margin:0;font-size:28px;font-weight:600;letter-spacing:.2px;color:var(--paper);}
+  .brand p{margin:4px 0 0;color:var(--paper-dim);font-size:13.5px;max-width:540px;line-height:1.5;}
+  .brand .version{color:var(--gold);font-size:12.5px;}
+  .header-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  input[type=text], select, textarea{
+    background:var(--panel);border:1px solid var(--line);color:var(--paper);
+    border-radius:6px;padding:9px 11px;font-family:'Inter',sans-serif;font-size:14px;
+  }
+  input[type=text]:focus, select:focus, textarea:focus{outline:1px solid var(--gold);border-color:var(--gold);}
+  button{
+    background:var(--panel);border:1px solid var(--line);color:var(--paper);
+    border-radius:6px;padding:9px 14px;font-size:13.5px;cursor:pointer;font-family:'Inter',sans-serif;
+  }
+  button:hover{border-color:var(--gold);}
+  button.primary{background:var(--gold-dim);border-color:var(--gold);color:#100D02;font-weight:600;}
+  button.primary:hover{background:var(--gold);}
+  button.danger{border-color:#7A3B3B;color:#E8B9B9;}
+  button.danger:hover{background:#3a2323;}
+  button.ghost{background:transparent;}
+  nav{display:flex;gap:2px;padding:0 32px;border-bottom:1px solid var(--line);flex-wrap:wrap;}
+  nav button.tab{
+    background:none;border:none;border-bottom:2px solid transparent;border-radius:0;
+    padding:14px 16px;color:var(--paper-dim);font-size:14px;
+  }
+  nav button.tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+  main{padding:26px 32px 60px;max-width:1320px;margin:0 auto;}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px;justify-content:space-between;}
+  .toolbar .search{flex:1;min-width:220px;max-width:420px;}
+  .toolbar .search input{width:100%;}
+  .notice{font-size:12.5px;color:var(--paper-dim);border:1px dashed var(--line);border-radius:8px;padding:10px 14px;margin-bottom:16px;line-height:1.5;}
+  .grid-two{display:grid;grid-template-columns:1.15fr .85fr;gap:26px;align-items:start;}
+  @media (max-width:920px){.grid-two{grid-template-columns:1fr;}}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{
+    text-align:left;color:var(--paper-dim);font-weight:500;font-size:12px;
+    padding:8px 10px;border-bottom:1px solid var(--line);
+  }
+  td{padding:10px;border-bottom:1px solid #2b3444;vertical-align:top;}
+  tr.row{cursor:pointer;}
+  tr.row:hover td{background:#1c2431;}
+  .swatch{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:7px;}
+  .pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11.5px;border:1px solid var(--line);color:var(--paper-dim);margin:0 6px 4px 0;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;}
+  .card h2{margin:0 0 4px;font-size:21px;}
+  .card .meta{color:var(--paper-dim);font-size:12.5px;margin-bottom:14px;}
+  .section-label{font-size:11.5px;text-transform:none;color:var(--gold);letter-spacing:.3px;margin:16px 0 6px;font-weight:600;}
+  .section-label:first-of-type{margin-top:0;}
+  ul.plain{margin:0;padding-left:18px;font-size:13.5px;line-height:1.6;color:#DCD5C4;}
+  .refs-inline{font-size:12px;color:var(--paper-dim);margin-top:2px;}
+  .refs-inline a{color:var(--gold);text-decoration:none;}
+  .detail-actions{display:flex;gap:8px;margin-top:18px;}
+  .empty-state{color:var(--paper-dim);font-size:14px;padding:30px 10px;text-align:center;border:1px dashed var(--line);border-radius:10px;}
+  .wheel-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:center;font-size:12.5px;color:var(--paper-dim);margin-top:4px;}
+  .legend-group{margin-bottom:10px;}
+  .legend-group h4{margin:0 0 6px;font-size:12.5px;color:var(--gold);font-weight:600;}
+  .legend-organ{padding:4px 0;cursor:pointer;font-size:13px;color:#DCD5C4;}
+  .legend-organ:hover{color:var(--gold);}
+  svg .wedge{cursor:pointer;stroke:var(--ink);stroke-width:1.5;transition:opacity .15s;}
+  svg .wedge:hover{opacity:.8;}
+  .modal-bg{position:fixed;inset:0;background:rgba(10,12,16,.7);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px;max-width:560px;width:100%;max-height:88vh;overflow:auto;}
+  .modal h3{margin:0 0 16px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12.5px;color:var(--paper-dim);margin-bottom:5px;}
+  .field input,.field select,.field textarea{width:100%;}
+  .field textarea{min-height:64px;resize:vertical;font-family:'Inter',sans-serif;}
+  .field .hint{font-size:11px;color:#7d7663;margin-top:3px;}
+  .refs-check{display:flex;flex-wrap:wrap;gap:10px;}
+  .refs-check label{display:flex;gap:5px;align-items:center;font-size:12.5px;color:#DCD5C4;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;}
+  .age-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+  .foods-layout{display:grid;grid-template-columns:220px 1fr;gap:24px;align-items:start;}
+  @media (max-width:760px){.foods-layout{grid-template-columns:1fr;}}
+  .master-nav{display:flex;flex-direction:column;gap:2px;}
+  .master-item{padding:9px 11px;border-radius:6px;cursor:pointer;font-size:13.5px;color:#DCD5C4;display:flex;justify-content:space-between;gap:8px;}
+  .master-item:hover{background:var(--panel);}
+  .master-item.active{background:var(--gold-dim);color:#100D02;font-weight:600;}
+  .master-item .count{color:inherit;opacity:.7;font-size:11.5px;}
+  .food-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;}
+  .food-card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:13px;cursor:pointer;}
+  .food-card:hover{border-color:var(--gold);}
+  .food-card .food-card-name{font-family:'Source Serif 4',serif;font-size:15px;margin-bottom:6px;}
+  .food-card .food-card-serving{font-size:12px;color:var(--paper-dim);margin-top:4px;}
+  .manage-cats-list{display:flex;flex-direction:column;gap:14px;}
+  .manage-cats-row{border:1px solid var(--line);border-radius:8px;padding:12px;}
+  .manage-cats-row input[type=text]{margin-bottom:8px;}
+  .cat-checks{display:flex;flex-wrap:wrap;gap:8px;}
+  .cat-checks label{display:flex;gap:5px;align-items:center;font-size:12.5px;color:#DCD5C4;background:var(--ink-2);padding:4px 8px;border-radius:5px;}
+  .bs-layout{display:grid;grid-template-columns:1.3fr 1fr;gap:24px;align-items:start;}
+  @media (max-width:980px){.bs-layout{grid-template-columns:1fr;}}
+  .bs-section{border:1px solid var(--line);border-radius:10px;margin-bottom:14px;overflow:hidden;}
+  .bs-section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;background:var(--panel);cursor:pointer;}
+  .bs-section-head:hover{background:#28324420;}
+  .bs-section-title{display:flex;align-items:center;gap:10px;font-family:'Source Serif 4',serif;font-size:16px;}
+  .bs-chevron{transition:transform .15s;color:var(--paper-dim);font-size:12px;}
+  .bs-section.collapsed .bs-chevron{transform:rotate(-90deg);}
+  .bs-section-actions{display:flex;gap:6px;}
+  .bs-section-actions button{padding:4px 9px;font-size:12px;}
+  .bs-section-body{padding:6px 16px 16px;}
+  .bs-section.collapsed .bs-section-body{display:none;}
+  .bs-subhead{font-size:11.5px;color:var(--gold);letter-spacing:.3px;margin:12px 0 6px;font-weight:600;}
+  .bs-subhead:first-child{margin-top:4px;}
+  .bs-row{display:grid;grid-template-columns:1fr 1.4fr 1.4fr auto;gap:10px;padding:8px 4px;border-bottom:1px solid #2b3444;align-items:start;font-size:13px;cursor:pointer;}
+  .bs-row:hover{background:#1c2431;}
+  .bs-row .bs-name{display:flex;align-items:center;gap:6px;}
+  .bs-row-empty{color:var(--paper-dim);font-size:12.5px;padding:8px 4px;}
+  .bs-add-item{font-size:12px;margin-top:8px;}
+  .diagram-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:16px;}
+  .diagram-card svg{width:100%;height:auto;max-height:280px;}
+  .diagram-caption{font-size:12.5px;color:var(--paper-dim);margin-top:8px;}
+  .part-highlight{stroke:var(--gold) !important;stroke-width:4;filter:drop-shadow(0 0 5px var(--gold));}
+
+  main.full-bleed{max-width:none;padding-left:20px;padding-right:20px;}
+  .bs-layout-3col{display:flex;align-items:stretch;gap:0;}
+  @media (max-width:1180px){.bs-layout-3col{flex-direction:column;}
+    .bs-layout-3col .bs-col{width:auto !important;}
+    .bs-layout-3col .bs-divider{display:none;}}
+  .bs-col{min-width:0;flex:0 0 auto;padding:0 8px;}
+  .bs-col-wheel{flex:1 1 auto;min-width:280px;}
+  .bs-divider{flex:0 0 auto;width:10px;cursor:col-resize;position:relative;}
+  .bs-divider::after{content:'';position:absolute;left:4px;top:10%;bottom:10%;width:2px;background:var(--line);}
+  .bs-divider:hover::after{background:var(--gold);}
+  .bs-num{color:var(--gold);font-size:13px;font-weight:600;min-width:18px;}
+  .bs-section-actions button{padding:4px 8px;}
+  .bs-section-actions button:disabled{opacity:.3;cursor:default;}
+  .bs-section-actions button:disabled:hover{border-color:var(--line);}
+  .role-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:2px;vertical-align:middle;}
+  .role-dot.role-main{background:var(--gold);}
+  .role-dot.role-supportive{background:transparent;border:1.5px solid var(--paper-dim);}
+  .bs-subhead{display:flex;align-items:center;gap:6px;}
+  .bs-row-active{background:#1c2431;}
+  .wheel-panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;
+    min-height:420px;height:100%;}
+  .wheel-panel .wheel-wrap{display:flex;justify-content:center;overflow:auto;}
+  .wheel-svg-box{resize:both;overflow:hidden;width:420px;height:420px;min-width:240px;min-height:240px;max-width:900px;max-height:900px;position:relative;border:1px dashed var(--line);border-radius:8px;}
+  .wheel-svg-box svg{width:100%;height:100%;display:block;}
+  .wheel-svg-hint{position:absolute;bottom:2px;right:6px;font-size:9px;color:var(--paper-dim);pointer-events:none;}
+  .wheel-panel .legend{margin-top:18px;justify-content:flex-start;gap:20px;}
+  .legend-organ-active{color:var(--gold);font-weight:600;}
+  .wedge-active{stroke:var(--gold);stroke-width:3;}
+  .wedge-supportive{stroke-dasharray:3 3;}
+  .wheel-back{text-align:center;font-size:12.5px;color:var(--gold);cursor:pointer;margin-bottom:10px;}
+  .wheel-back:hover{text-decoration:underline;}
+  footer{padding:22px 32px 40px;color:var(--paper-dim);font-size:12px;border-top:1px solid var(--line);margin-top:20px;}
+  #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--gold-dim);color:#100D02;padding:10px 18px;border-radius:8px;font-size:13.5px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99;}
+  #toast.show{opacity:1;}
+  .refnote{font-size:12.5px;color:var(--paper-dim);line-height:1.6;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>Health Atlas</h1>
+    <p>A living, editable map of the body's organs, the diseases that affect them, the food and activity that sustain or protect them, and what wears them down — built to grow with more questions over time.</p>
+    <div class="version">v02.04 — 18 Sep 2026</div>
+  </div>
+  <div class="header-actions">
+    <button id="btnExport">Export data (.json)</button>
+    <button id="btnImportTrigger">Import data (.json)</button>
+    <input type="file" id="fileImport" accept="application/json" style="display:none">
+    <button id="btnReset" class="ghost">Reset to defaults</button>
+  </div>
+</header>
+
+<nav>
+  <button class="tab active" data-tab="bodysystems">Body Systems</button>
+  <button class="tab" data-tab="foods">Foods</button>
+  <button class="tab" data-tab="diseases">Diseases</button>
+  <button class="tab" data-tab="lifestyle">Lifestyle</button>
+  <button class="tab" data-tab="ages">Age Groups</button>
+  <button class="tab" data-tab="refs">References</button>
+</nav>
+
+<main id="main"></main>
+
+<footer>
+  Health Atlas v02.04 · demo dataset for review — functions, nutrition figures, and disease information reflect general public-health guidance (see References tab). This is educational content, not a diagnosis or a personal treatment plan — for any symptom or condition, please consult a qualified healthcare professional. Every field is editable: use Export to save your changes as a .json file, and Import to bring them back next session.
+</footer>
+
+<div id="toast"></div>
+
+<script>
+/* ---------- Reference catalogue ---------- */
+const REFERENCES = {
+  r1:{name:'MedlinePlus (U.S. National Library of Medicine, NIH)', url:'https://medlineplus.gov'},
+  r2:{name:'Mayo Clinic', url:'https://www.mayoclinic.org'},
+  r3:{name:'Cleveland Clinic', url:'https://my.clevelandclinic.org'},
+  r4:{name:'Harvard T.H. Chan School of Public Health — The Nutrition Source', url:'https://www.hsph.harvard.edu/nutritionsource/'},
+  r5:{name:'USDA FoodData Central', url:'https://fdc.nal.usda.gov'},
+  r6:{name:'National Institute on Aging (NIH)', url:'https://www.nia.nih.gov'},
+  r7:{name:'World Health Organization', url:'https://www.who.int'},
+  r8:{name:'NIH Office of Dietary Supplements', url:'https://ods.od.nih.gov'}
+};
+
+const sysById = id => (DATA.systems || []).find(s=>s.id===id) || {name:id, color:'#888'};
+const SYSTEM_PALETTE = ['#B5484B','#4C8C7C','#C9A24B','#6E5AA6','#3E7CA6','#8C8370','#A65C85','#7A9E5E','#C97B3E','#9E7B54','#5C7A9E','#7B5C9E'];
+
+const CATEGORIES = ['Air','Water','Fat','Grains','Nuts','Beans/Lentils','Veg','Fruits','Spices','Herb','Meat','Fish'];
+
+/* ---------- Default dataset ---------- */
+function defaultData(){ return {
+systems:[
+ {id:'cardio', name:'Cardiovascular', color:'#B5484B'},
+ {id:'resp', name:'Respiratory', color:'#4C8C7C'},
+ {id:'digest', name:'Digestive', color:'#C9A24B'},
+ {id:'nervous', name:'Nervous', color:'#6E5AA6'},
+ {id:'renal', name:'Renal & Urinary', color:'#3E7CA6'},
+ {id:'musculo', name:'Musculoskeletal', color:'#8C8370'},
+ {id:'endocrine', name:'Endocrine', color:'#A65C85'},
+ {id:'integument', name:'Integumentary', color:'#7A9E5E'},
+ {id:'sensory', name:'Sensory', color:'#C97B3E'}
+],
+
+organs:[
+ {
+  "id": "heart",
+  "name": "Heart",
+  "system": "cardio",
+  "functions": [
+   "Pumps blood through the body (roughly 100,000 beats/day)",
+   "Delivers oxygen and nutrients to tissues",
+   "Removes carbon dioxide and metabolic waste",
+   "Helps maintain blood pressure"
+  ],
+  "nutritionNeeds": [
+   "Omega-3 (EPA/DHA): at least 250mg/day",
+   "Potassium: about 3,400mg/day (men), 2,600mg/day (women)",
+   "Magnesium: about 400mg/day",
+   "Soluble fibre: part of 25–30g/day total fibre",
+   "Sodium: keep under 2,300mg/day"
+  ],
+  "foodSources": [
+   "Fatty fish: 2 servings (~150g) per week",
+   "Leafy greens: 1 cup/day",
+   "Almonds: 30g/day",
+   "Oats: 40g/day",
+   "Olive oil: 2 tbsp/day"
+  ],
+  "activity": [
+   "150 min/week moderate aerobic activity, or 75 min vigorous",
+   "Resistance training 2x/week",
+   "Avoiding prolonged sitting"
+  ],
+  "deterioration": [
+   "Chronic high sodium intake",
+   "Trans fats and excess saturated fat",
+   "Smoking",
+   "Sedentary lifestyle",
+   "Chronic stress",
+   "Uncontrolled hypertension or diabetes"
+  ],
+  "refs": [
+   "r1",
+   "r2",
+   "r4",
+   "r8"
+  ],
+  "role": "main",
+  "partType": "Organ",
+  "connections": [
+   "Lungs",
+   "Kidneys",
+   "Brain",
+   "Liver",
+   "Skeletal Muscles",
+   "Kidneys (fluid & electrolyte balance)",
+   "Thyroid (metabolic rate)",
+   "Adrenal Glands (stress hormones)",
+   "Lungs (oxygenation)"
+  ]
+ },
+ {
+  "id": "lungs",
+  "name": "Lungs",
+  "system": "resp",
+  "functions": [
+   "Gas exchange — oxygen in, carbon dioxide out",
+   "Helps regulate blood pH via CO2 removal",
+   "Filters small clots from venous blood"
+  ],
+  "nutritionNeeds": [
+   "Vitamin C: 75–90mg/day",
+   "Vitamin E: 15mg/day",
+   "Vitamin A: 700–900mcg/day",
+   "Water: 2–3L/day"
+  ],
+  "foodSources": [
+   "Citrus fruit: 1 serving/day",
+   "Bell peppers: ½ cup/day",
+   "Carrots: 1 medium/day",
+   "Sunflower seeds: 30g/day"
+  ],
+  "activity": [
+   "Aerobic exercise to build lung capacity",
+   "Diaphragmatic / deep-breathing practice",
+   "Avoiding smoke and pollutant exposure"
+  ],
+  "deterioration": [
+   "Smoking or vaping",
+   "Air pollution exposure",
+   "Chronic shallow breathing / poor posture",
+   "Untreated respiratory infections"
+  ],
+  "refs": [
+   "r1",
+   "r2",
+   "r4",
+   "r7"
+  ],
+  "role": "main",
+  "partType": "Organ",
+  "connections": [
+   "Heart",
+   "Brain",
+   "All tissues (oxygen delivery)",
+   "Heart (pulmonary circulation)",
+   "Diaphragm & chest muscles",
+   "Air quality"
+  ]
+ },
+ {
+  "id": "liver",
+  "name": "Liver",
+  "system": "digest",
+  "functions": [
+   "Detoxifies blood",
+   "Produces bile for fat digestion",
+   "Stores glycogen and vitamins",
+   "Synthesises proteins including clotting factors",
+   "Metabolises medications and alcohol"
+  ],
+  "nutritionNeeds": [
+   "Protein: about 0.8g/kg body weight/day",
+   "B vitamins: B6, B9 (folate), B12",
+   "Choline: 425–550mg/day",
+   "Antioxidants: Vitamin E and C"
+  ],
+  "foodSources": [
+   "Eggs: 1/day",
+   "Leafy greens: 1 cup/day",
+   "Legumes: 1 cup/day",
+   "Whole grains: 2–3 servings/day",
+   "Garlic: 1–2 cloves/day"
+  ],
+  "activity": [
+   "Regular moderate exercise to reduce fatty-liver risk",
+   "Maintaining a healthy body weight"
+  ],
+  "deterioration": [
+   "Excess alcohol intake",
+   "High intake of added sugar / processed food",
+   "Obesity",
+   "Certain medications",
+   "Viral hepatitis",
+   "Toxin exposure"
+  ],
+  "refs": [
+   "r1",
+   "r2",
+   "r3",
+   "r4"
+  ],
+  "role": "main",
+  "partType": "Organ",
+  "connections": [
+   "Digestive system",
+   "Blood (clotting factors)",
+   "Brain (ammonia clearance)",
+   "Pancreas",
+   "Gallbladder",
+   "Small Intestine (absorption)",
+   "Kidneys"
+  ]
+ },
+ {
+  "id": "stomach",
+  "name": "Stomach",
+  "system": "digest",
+  "functions": [
+   "Stores food temporarily",
+   "Secretes acid and pepsin to begin protein digestion",
+   "Churns food into chyme",
+   "Regulates release into the small intestine"
+  ],
+  "nutritionNeeds": [
+   "Protein for enzyme production",
+   "Zinc: 8–11mg/day",
+   "Vitamin B12 (needs intrinsic factor made here)",
+   "Adequate fluids"
+  ],
+  "foodSources": [
+   "Lean meat: 1 serving/day",
+   "Fish: 2–3 servings/week",
+   "Legumes: 1 cup/day",
+   "Pumpkin seeds: 30g/day"
+  ],
+  "activity": [
+   "Regular meal timing",
+   "Staying upright after meals",
+   "Stress management (stress alters acid secretion)"
+  ],
+  "deterioration": [
+   "Excess alcohol",
+   "Frequent NSAID use",
+   "H. pylori infection",
+   "Chronic stress",
+   "Smoking"
+  ],
+  "refs": [
+   "r1",
+   "r2",
+   "r3"
+  ],
+  "role": "main",
+  "partType": "Organ",
+  "connections": [
+   "Small Intestine",
+   "Pancreas (signals enzyme release)",
+   "Liver",
+   "Nervous system (vagus nerve / stress)",
+   "Oesophagus",
+   "Overall diet composition"
+  ]
+ },
+ {
+  "id": "small-intestine",
+  "name": "Small Intestine",
+  "system": "digest",
+  "functions": [
+   "Main site of nutrient digestion and absorption",
+   "Uses enzymes from the pancreas and bile from the liver"
+  ],
+  "nutritionNeeds": [
+   "Fibre: 25–38g/day supports motility",
+   "Adequate hydration",
+   "Absorption depends on B12, folate, iron intake"
+  ],
+  "foodSources": [
+   "Whole grains: 2–3 servings/day",
+   "Fruit: 2 servings/day",
+   "Vegetables: 2–3 servings/day",
+   "Fermented foods (yoghurt): 1 serving/day"
+  ],
+  "activity": [
+   "Regular physical activity supports motility",
+   "Adequate hydration"
+  ],
+  "deterioration": [
+   "Low-fibre diet",
+   "Chronic inflammation (e.g. Crohn's disease)",
+   "Gluten sensitivity in susceptible people",
+   "Antibiotic overuse disrupting the microbiome"
+  ],
+  "refs": [
+   "r1",
+   "r2",
+   "r4"
+  ],
+  "role": "main",
+  "partType": "Organ",
+  "connections": [
+   "Whole body (nutrient supply)",
+   "Liver",
+   "Gut immune tissue",
+   "Stomach",
+   "Pancreas",
+   "Gut microbiome"
+  ]
+ },
+ {
+  "id": "large-intestine",
+  "name": "Large Intestine",
+  "system": "digest",
+  "functions": [
+   "Absorbs water and electrolytes",
+   "Hosts the microbiome that ferments fibre",
+   "Forms and stores stool"
+  ],
+  "nutritionNeeds": [
+   "Fibre: 25–38g/day, soluble and insoluble",
+   "Water: 2–3L/day",
+   "Prebiotic-rich foods"
+  ],
+  "foodSources": [
+   "Beans/lentils: 1 cup/day",
+   "Whole grains: 2–3 servings/day",
+   "Bananas: 1/day",
+   "Onions & garlic: regularly"
+  ],
+  "activity": [
+   "Regular movement supports motility",
+   "Adequate hydration"
+  ],
+  "deterioration": [
+   "Low-fibre diet",
+   "Dehydration",
+   "Chronic laxative overuse",
+   "Sedentary lifestyle"
+  ],
+  "refs": [
+   "r1",
+   "r2",
+   "r4"
+  ],
+  "role": "main",
+  "partType": "Organ",
+  "connections": [
+   "Immune system (microbiome)",
+   "Metabolic health",
+   "Small Intestine",
+   "Gut microbiome",
+   "Diet",
+   "Stress"
+  ]
+ },
+ {
+  "id": "pancreas",
+  "name": "Pancreas",
+  "system": "digest",
+  "functions": [
+   "Produces digestive enzymes (lipase, amylase, protease)",
+   "Produces insulin and glucagon to regulate blood glucose"
+  ],
+  "nutritionNeeds": [
+   "Balanced carbohydrate intake",
+   "Chromium and Magnesium",
+   "Adequate protein",
+   "Limited refined sugar"
+  ],
+  "foodSources": [
+   "Whole grains: 2–3 servings/day",
+   "Legumes: 1 cup/day",
+   "Leafy greens: 1 cup/day",
+   "Berries: 1 cup/day"
+  ],
+  "activity": [
+   "Regular aerobic activity improves insulin sensitivity",
+   "Weight management"
+  ],
+  "deterioration": [
+   "Chronic excess alcohol",
+   "High sugar / refined-carb diet",
+   "Obesity",
+   "Smoking",
+   "Gallstones blocking the pancreatic duct"
+  ],
+  "refs": [
+   "r1",
+   "r2",
+   "r6",
+   "r8"
+  ],
+  "role": "main",
+  "partType": "Organ",
+  "connections": [
+   "Small Intestine (digestion)",
+   "Liver",
+   "Blood-glucose regulation (whole body)",
+   "Gallbladder",
+   "Diet",
+   "Adrenal glands (stress hormones raise glucose)"
+  ]
+ },
+ {
+  "id": "kidneys",
+  "name": "Kidneys",
+  "system": "renal",
+  "functions": [
+   "Filter blood, removing waste and excess fluid as urine",
+   "Regulate electrolyte balance",
+   "Help regulate blood pressure (via renin)",
+   "Activate vitamin D",
+   "Stimulate red blood cell production (erythropoietin)"
+  ],
+  "nutritionNeeds": [
+   "Water: 2–3L/day",
+   "Moderate, not excessive, protein and sodium",
+   "Balanced potassium and phosphorus",
+   "Vitamin D"
+  ],
+  "foodSources": [
+   "Water: throughout the day",
+   "Berries: 1 cup/day",
+   "Cauliflower: 1 cup/day",
+   "Fish: 2–3 servings/week",
+   "Olive oil: 2 tbsp/day"
+  ],
+  "activity": [
+   "Regular moderate exercise",
+   "Staying well hydrated",
+   "Blood pressure management"
+  ],
+  "deterioration": [
+   "Chronic dehydration",
+   "Excess sodium intake",
+   "Uncontrolled diabetes or hypertension",
+   "Frequent NSAID use",
+   "Very high protein intake in susceptible people"
+  ],
+  "refs": [
+   "r1",
+   "r2",
+   "r3",
+   "r8"
+  ],
+  "role": "main",
+  "partType": "Organ",
+  "connections": [
+   "Blood pressure regulation",
+   "Bone health (vitamin D activation)",
+   "Blood (red cell production)",
+   "Heart (blood flow)",
+   "Adrenal glands",
+   "Liver",
+   "Diet & hydration"
+  ]
+ },
+ {
+  "id": "bladder",
+  "name": "Bladder",
+  "system": "renal",
+  "functions": [
+   "Stores urine produced by the kidneys",
+   "Contracts to expel urine"
+  ],
+  "nutritionNeeds": [
+   "Adequate hydration",
+   "Limiting bladder irritants (excess caffeine, alcohol)"
+  ],
+  "foodSources": [
+   "Water: throughout the day",
+   "Pears: 1/day",
+   "Bananas: 1/day",
+   "Whole grains: 2 servings/day"
+  ],
+  "activity": [
+   "Pelvic floor exercises",
+   "Regular voiding habits",
+   "Steady hydration"
+  ],
+  "deterioration": [
+   "Chronic dehydration or overhydration",
+   "Habitually delaying urination",
+   "Recurrent infections",
+   "Bladder irritants in sensitive people"
+  ],
+  "refs": [
+   "r1",
+   "r2"
+  ],
+  "role": "main",
+  "partType": "Organ",
+  "connections": [
+   "Renal system (waste elimination)",
+   "Kidneys",
+   "Nervous system (bladder control)",
+   "Diet"
+  ]
+ },
+ {
+  "id": "brain",
+  "name": "Brain",
+  "system": "nervous",
+  "functions": [
+   "Controls cognition, memory and emotion",
+   "Coordinates voluntary movement",
+   "Regulates autonomic functions (breathing, heart rate)",
+   "Processes sensory input"
+  ],
+  "nutritionNeeds": [
+   "Omega-3 DHA: 250–500mg/day",
+   "B vitamins: B6, B9, B12",
+   "Antioxidants",
+   "Steady glucose supply",
+   "Adequate hydration"
+  ],
+  "foodSources": [
+   "Fatty fish: 2 servings/week",
+   "Walnuts: 30g/day",
+   "Berries: 1 cup/day",
+   "Leafy greens: 1 cup/day",
+   "Eggs: 1/day"
+  ],
+  "activity": [
+   "Regular aerobic exercise",
+   "7–9 hours of sleep/night",
+   "Cognitively stimulating activity",
+   "Social engagement"
+  ],
+  "deterioration": [
+   "Chronic sleep deprivation",
+   "Chronic stress",
+   "Excess alcohol",
+   "Diet high in saturated fat/sugar",
+   "Sedentary lifestyle",
+   "Untreated cardiovascular risk factors"
+  ],
+  "refs": [
+   "r1",
+   "r2",
+   "r4",
+   "r6"
+  ],
+  "role": "main",
+  "partType": "Organ",
+  "connections": [
+   "Entire nervous system",
+   "Coordination of other organs",
+   "Heart (blood flow & oxygen)",
+   "Gut microbiome (gut–brain axis)",
+   "Endocrine glands"
+  ]
+ },
+ {
+  "id": "spinal-cord",
+  "name": "Spinal Cord",
+  "system": "nervous",
+  "functions": [
+   "Relays signals between brain and body",
+   "Coordinates reflexes",
+   "Protected within the vertebral column"
+  ],
+  "nutritionNeeds": [
+   "Vitamin B12 (myelin maintenance)",
+   "Vitamin D",
+   "Calcium (vertebral support)",
+   "Omega-3s"
+  ],
+  "foodSources": [
+   "Fish: 2–3 servings/week",
+   "Dairy or fortified alternatives: 2–3 servings/day",
+   "Leafy greens: 1 cup/day",
+   "Eggs: 1/day"
+  ],
+  "activity": [
+   "Posture-supportive exercise",
+   "Core strengthening",
+   "Avoiding prolonged poor posture"
+  ],
+  "deterioration": [
+   "Vitamin B12 deficiency (demyelination)",
+   "Spinal injury",
+   "Prolonged poor posture / sitting",
+   "Obesity (disc stress)"
+  ],
+  "refs": [
+   "r1",
+   "r2",
+   "r8"
+  ],
+  "role": "main",
+  "partType": "Organ",
+  "connections": [
+   "Peripheral nervous system",
+   "Reflexive movement",
+   "Brain",
+   "Bones / spine",
+   "Muscles"
+  ]
+ },
+ {
+  "id": "bones",
+  "name": "Bones",
+  "system": "musculo",
+  "functions": [
+   "Structural support",
+   "Protects internal organs",
+   "Stores calcium and phosphorus",
+   "Produces blood cells (bone marrow)"
+  ],
+  "nutritionNeeds": [
+   "Calcium: 1,000–1,200mg/day",
+   "Vitamin D: 600–800 IU/day",
+   "Vitamin K",
+   "Magnesium",
+   "Protein"
+  ],
+  "foodSources": [
+   "Dairy or fortified alternatives: 2–3 servings/day",
+   "Leafy greens: 1 cup/day",
+   "Sardines (with bones): 2 servings/week",
+   "Nuts: 30g/day",
+   "Legumes: 1 cup/day"
+  ],
+  "activity": [
+   "Weight-bearing exercise",
+   "Resistance training",
+   "Sensible sunlight exposure for vitamin D"
+  ],
+  "deterioration": [
+   "Sedentary lifestyle",
+   "Calcium/vitamin D deficiency",
+   "Very high caffeine or soda intake",
+   "Smoking",
+   "Prolonged corticosteroid use"
+  ],
+  "refs": [
+   "r1",
+   "r2",
+   "r6"
+  ],
+  "role": "main",
+  "partType": "Organ",
+  "connections": [
+   "Muscles (attachment/leverage)",
+   "Blood production",
+   "Organ protection",
+   "Endocrine glands (parathyroid, thyroid)",
+   "Diet",
+   "Kidneys (vitamin D activation)"
+  ]
+ },
+ {
+  "id": "skeletal-muscles",
+  "name": "Skeletal Muscles",
+  "system": "musculo",
+  "functions": [
+   "Enable voluntary movement and posture",
+   "Generate heat",
+   "Support glucose metabolism"
+  ],
+  "nutritionNeeds": [
+   "Protein: 1.2–2.0g/kg/day for active adults",
+   "Leucine-rich foods",
+   "Water",
+   "Iron",
+   "B vitamins"
+  ],
+  "foodSources": [
+   "Lean meat: 1 serving/day",
+   "Fish: 2–3 servings/week",
+   "Eggs: 1/day",
+   "Legumes: 1 cup/day",
+   "Dairy or fortified alternatives: 2 servings/day"
+  ],
+  "activity": [
+   "Resistance/strength training 2–3x/week",
+   "Regular movement",
+   "Adequate protein at each meal"
+  ],
+  "deterioration": [
+   "Sedentary lifestyle (age-related muscle loss)",
+   "Inadequate protein intake",
+   "Ageing without resistance exercise",
+   "Chronic illness or inflammation"
+  ],
+  "refs": [
+   "r1",
+   "r2",
+   "r4"
+  ],
+  "role": "main",
+  "partType": "Organ",
+  "connections": [
+   "Skeleton (movement)",
+   "Metabolism (glucose disposal)",
+   "Circulation (muscle pump)",
+   "Nervous system (motor control)",
+   "Hormones (testosterone, growth hormone)",
+   "Diet"
+  ]
+ },
+ {
+  "id": "thyroid",
+  "name": "Thyroid",
+  "system": "endocrine",
+  "functions": [
+   "Produces hormones (T3/T4) that regulate metabolism, growth and energy use"
+  ],
+  "nutritionNeeds": [
+   "Iodine: 150mcg/day (adults)",
+   "Selenium: 55mcg/day",
+   "Zinc",
+   "Tyrosine (from dietary protein)"
+  ],
+  "foodSources": [
+   "Iodised salt: in moderation",
+   "Fish/seafood: 2–3 servings/week",
+   "Eggs: 1/day",
+   "Brazil nuts: 1–2/day",
+   "Dairy or fortified alternatives: 2 servings/day"
+  ],
+  "activity": [
+   "Regular movement supports metabolic health",
+   "Stress management"
+  ],
+  "deterioration": [
+   "Iodine deficiency or excess",
+   "Autoimmune conditions",
+   "Chronic stress",
+   "Very high raw cruciferous-vegetable intake without adequate iodine"
+  ],
+  "refs": [
+   "r1",
+   "r2",
+   "r8"
+  ],
+  "role": "main",
+  "partType": "Organ",
+  "connections": [
+   "Metabolic rate regulation (whole body)",
+   "Heart rate",
+   "Growth and development",
+   "Pituitary gland",
+   "Diet (iodine/selenium)",
+   "Stress / adrenal glands"
+  ]
+ },
+ {
+  "id": "adrenal-glands",
+  "name": "Adrenal Glands",
+  "system": "endocrine",
+  "functions": [
+   "Produce cortisol (stress response)",
+   "Produce adrenaline",
+   "Produce aldosterone (sodium & fluid balance)"
+  ],
+  "nutritionNeeds": [
+   "Vitamin C",
+   "B vitamins: B5, B6",
+   "Magnesium",
+   "Balanced sodium/potassium intake"
+  ],
+  "foodSources": [
+   "Citrus fruit: 1 serving/day",
+   "Leafy greens: 1 cup/day",
+   "Nuts/seeds: 30g/day",
+   "Whole grains: 2 servings/day"
+  ],
+  "activity": [
+   "Stress-reduction practices",
+   "Adequate sleep",
+   "Avoiding chronic overtraining"
+  ],
+  "deterioration": [
+   "Chronic stress",
+   "Sleep deprivation",
+   "Excessive caffeine",
+   "Chronic illness"
+  ],
+  "refs": [
+   "r1",
+   "r2",
+   "r8"
+  ],
+  "role": "main",
+  "partType": "Organ",
+  "connections": [
+   "Stress response (whole body)",
+   "Blood pressure / fluid balance (with kidneys)",
+   "Metabolism",
+   "Pituitary gland (ACTH)",
+   "Kidneys",
+   "Nervous system (stress signals)"
+  ]
+ },
+ {
+  "id": "skin",
+  "name": "Skin",
+  "system": "integument",
+  "functions": [
+   "Protective barrier against pathogens and UV",
+   "Regulates temperature via sweating",
+   "Synthesises vitamin D from sunlight",
+   "Sensory organ for touch"
+  ],
+  "nutritionNeeds": [
+   "Vitamin C (collagen synthesis)",
+   "Vitamin E",
+   "Zinc",
+   "Protein",
+   "Omega-3s",
+   "Water"
+  ],
+  "foodSources": [
+   "Citrus fruit: 1 serving/day",
+   "Nuts/seeds: 30g/day",
+   "Fish: 2–3 servings/week",
+   "Water: throughout the day",
+   "Berries: 1 cup/day"
+  ],
+  "activity": [
+   "Sensible, protected sun exposure",
+   "Adequate hydration",
+   "Basic skin hygiene"
+  ],
+  "deterioration": [
+   "Chronic sun overexposure",
+   "Smoking",
+   "Dehydration",
+   "Poor diet",
+   "Chronic stress"
+  ],
+  "refs": [
+   "r1",
+   "r2",
+   "r4"
+  ],
+  "role": "main",
+  "partType": "Organ",
+  "connections": [
+   "Immune defence (barrier)",
+   "Temperature regulation",
+   "Vitamin D synthesis (supports bones)",
+   "Diet & hydration",
+   "Hormones",
+   "Environment (sun, pollution)"
+  ]
+ },
+ {
+  "id": "eyes",
+  "name": "Eyes",
+  "system": "sensory",
+  "functions": [
+   "Capture light and convert it to neural signals for the brain to interpret as vision"
+  ],
+  "nutritionNeeds": [
+   "Vitamin A: 700–900mcg/day",
+   "Lutein & zeaxanthin",
+   "Omega-3 DHA",
+   "Vitamin C and E",
+   "Zinc"
+  ],
+  "foodSources": [
+   "Carrots: 1 medium/day",
+   "Leafy greens: 1 cup/day",
+   "Fatty fish: 2 servings/week",
+   "Eggs: 1/day",
+   "Citrus fruit: 1 serving/day"
+  ],
+  "activity": [
+   "Regular screen breaks (20-20-20 rule)",
+   "Protective eyewear in strong sun/UV",
+   "Regular eye exams"
+  ],
+  "deterioration": [
+   "Excess UV exposure without protection",
+   "Smoking",
+   "Prolonged uncorrected screen strain",
+   "Poorly controlled diabetes (retinopathy)",
+   "Poor diet"
+  ],
+  "refs": [
+   "r1",
+   "r2",
+   "r4"
+  ],
+  "role": "main",
+  "partType": "Organ",
+  "connections": [
+   "Brain (visual processing)",
+   "Balance and coordination",
+   "Brain",
+   "Blood vessels (retinal circulation)",
+   "Diet"
+  ]
+ },
+ {
+  "id": "aorta",
+  "name": "Aorta",
+  "system": "cardio",
+  "role": "supportive",
+  "partType": "Artery",
+  "functions": [
+   "The body's largest artery — carries oxygen-rich blood from the heart to the rest of the body"
+  ],
+  "connections": [
+   "Heart",
+   "Kidneys",
+   "Brain"
+  ],
+  "refs": [
+   "r1",
+   "r2"
+  ]
+ },
+ {
+  "id": "vena-cava",
+  "name": "Vena Cava (Superior & Inferior)",
+  "system": "cardio",
+  "role": "supportive",
+  "partType": "Vein",
+  "functions": [
+   "The two largest veins — return oxygen-poor blood from the upper and lower body back to the heart"
+  ],
+  "connections": [
+   "Heart",
+   "Liver",
+   "Kidneys"
+  ],
+  "refs": [
+   "r1",
+   "r2"
+  ]
+ },
+ {
+  "id": "coronary-arteries",
+  "name": "Coronary Arteries",
+  "system": "cardio",
+  "role": "supportive",
+  "partType": "Artery",
+  "functions": [
+   "Supply oxygen-rich blood to the heart muscle itself"
+  ],
+  "connections": [
+   "Heart"
+  ],
+  "refs": [
+   "r1",
+   "r2"
+  ]
+ },
+ {
+  "id": "carotid-arteries",
+  "name": "Carotid Arteries",
+  "system": "cardio",
+  "role": "supportive",
+  "partType": "Artery",
+  "functions": [
+   "Main arteries supplying blood to the brain, neck and face"
+  ],
+  "connections": [
+   "Heart",
+   "Brain"
+  ],
+  "refs": [
+   "r1",
+   "r2"
+  ]
+ },
+ {
+  "id": "trachea",
+  "name": "Trachea (Windpipe)",
+  "system": "resp",
+  "role": "supportive",
+  "partType": "Tissue",
+  "functions": [
+   "Airway connecting the throat to the bronchi, carrying air to and from the lungs"
+  ],
+  "connections": [
+   "Lungs"
+  ],
+  "refs": [
+   "r1",
+   "r2"
+  ]
+ },
+ {
+  "id": "bronchi",
+  "name": "Bronchi",
+  "system": "resp",
+  "role": "supportive",
+  "partType": "Tissue",
+  "functions": [
+   "Branching airways carrying air from the trachea into each lung"
+  ],
+  "connections": [
+   "Lungs",
+   "Trachea (Windpipe)"
+  ],
+  "refs": [
+   "r1",
+   "r2"
+  ]
+ },
+ {
+  "id": "diaphragm",
+  "name": "Diaphragm",
+  "system": "resp",
+  "role": "supportive",
+  "partType": "Tissue",
+  "functions": [
+   "Main muscle of breathing — contracts to draw air into the lungs"
+  ],
+  "connections": [
+   "Lungs",
+   "Heart"
+  ],
+  "refs": [
+   "r1",
+   "r2"
+  ]
+ },
+ {
+  "id": "esophagus",
+  "name": "Oesophagus",
+  "system": "digest",
+  "role": "supportive",
+  "partType": "Tissue",
+  "functions": [
+   "Muscular tube carrying swallowed food from the throat to the stomach"
+  ],
+  "connections": [
+   "Stomach"
+  ],
+  "refs": [
+   "r1",
+   "r2"
+  ]
+ },
+ {
+  "id": "gallbladder",
+  "name": "Gallbladder",
+  "system": "digest",
+  "role": "supportive",
+  "partType": "Organ",
+  "functions": [
+   "Stores and concentrates bile made by the liver, releasing it to help digest fat"
+  ],
+  "connections": [
+   "Liver",
+   "Small Intestine"
+  ],
+  "refs": [
+   "r1",
+   "r2"
+  ]
+ },
+ {
+  "id": "salivary-glands",
+  "name": "Salivary Glands",
+  "system": "digest",
+  "role": "supportive",
+  "partType": "Gland",
+  "functions": [
+   "Produce saliva to begin starch digestion and ease swallowing"
+  ],
+  "connections": [
+   "Stomach"
+  ],
+  "refs": [
+   "r1"
+  ]
+ },
+ {
+  "id": "vagus-nerve",
+  "name": "Vagus Nerve",
+  "system": "nervous",
+  "role": "supportive",
+  "partType": "Nerve",
+  "functions": [
+   "Major nerve linking the brain to the heart, lungs and digestive tract; central to the rest-and-digest response"
+  ],
+  "connections": [
+   "Brain",
+   "Heart",
+   "Stomach",
+   "Lungs"
+  ],
+  "refs": [
+   "r1",
+   "r2"
+  ]
+ },
+ {
+  "id": "sciatic-nerve",
+  "name": "Sciatic Nerve",
+  "system": "nervous",
+  "role": "supportive",
+  "partType": "Nerve",
+  "functions": [
+   "The body's longest nerve, running from the lower spine down each leg"
+  ],
+  "connections": [
+   "Spinal Cord",
+   "Skeletal Muscles"
+  ],
+  "refs": [
+   "r1",
+   "r2"
+  ]
+ },
+ {
+  "id": "peripheral-nerves",
+  "name": "Peripheral Nerves",
+  "system": "nervous",
+  "role": "supportive",
+  "partType": "Nerve",
+  "functions": [
+   "Network of nerves carrying signals between the spinal cord and the rest of the body"
+  ],
+  "connections": [
+   "Spinal Cord",
+   "Skeletal Muscles",
+   "Skin"
+  ],
+  "refs": [
+   "r1"
+  ]
+ },
+ {
+  "id": "ureters",
+  "name": "Ureters",
+  "system": "renal",
+  "role": "supportive",
+  "partType": "Duct",
+  "functions": [
+   "Thin tubes carrying urine from each kidney down to the bladder"
+  ],
+  "connections": [
+   "Kidneys",
+   "Bladder"
+  ],
+  "refs": [
+   "r1",
+   "r2"
+  ]
+ },
+ {
+  "id": "urethra",
+  "name": "Urethra",
+  "system": "renal",
+  "role": "supportive",
+  "partType": "Duct",
+  "functions": [
+   "Tube carrying urine from the bladder out of the body"
+  ],
+  "connections": [
+   "Bladder"
+  ],
+  "refs": [
+   "r1",
+   "r2"
+  ]
+ },
+ {
+  "id": "renal-vessels",
+  "name": "Renal Blood Vessels",
+  "system": "renal",
+  "role": "supportive",
+  "partType": "Artery",
+  "functions": [
+   "The renal artery and vein carry blood to and from each kidney for filtering"
+  ],
+  "connections": [
+   "Kidneys",
+   "Heart"
+  ],
+  "refs": [
+   "r1",
+   "r2"
+  ]
+ },
+ {
+  "id": "vertebral-column",
+  "name": "Vertebral Column (Spine)",
+  "system": "musculo",
+  "role": "supportive",
+  "partType": "Tissue",
+  "functions": [
+   "Chain of vertebrae protecting the spinal cord and supporting the trunk"
+  ],
+  "connections": [
+   "Spinal Cord",
+   "Bones"
+  ],
+  "refs": [
+   "r1",
+   "r2"
+  ]
+ },
+ {
+  "id": "ribcage",
+  "name": "Ribcage",
+  "system": "musculo",
+  "role": "supportive",
+  "partType": "Tissue",
+  "functions": [
+   "Bony cage protecting the heart and lungs and assisting breathing"
+  ],
+  "connections": [
+   "Heart",
+   "Lungs",
+   "Bones"
+  ],
+  "refs": [
+   "r1",
+   "r2"
+  ]
+ },
+ {
+  "id": "joints-cartilage",
+  "name": "Joints & Cartilage",
+  "system": "musculo",
+  "role": "supportive",
+  "partType": "Tissue",
+  "functions": [
+   "Cushion and connect bones, allowing smooth, low-friction movement"
+  ],
+  "connections": [
+   "Bones",
+   "Skeletal Muscles"
+  ],
+  "refs": [
+   "r1",
+   "r2"
+  ]
+ },
+ {
+  "id": "tendons-ligaments",
+  "name": "Tendons & Ligaments",
+  "system": "musculo",
+  "role": "supportive",
+  "partType": "Tissue",
+  "functions": [
+   "Tendons attach muscle to bone; ligaments attach bone to bone, stabilising joints"
+  ],
+  "connections": [
+   "Bones",
+   "Skeletal Muscles"
+  ],
+  "refs": [
+   "r1",
+   "r2"
+  ]
+ },
+ {
+  "id": "pituitary-gland",
+  "name": "Pituitary Gland",
+  "system": "endocrine",
+  "role": "supportive",
+  "partType": "Gland",
+  "functions": [
+   "The body's \"master gland\" — signals the thyroid, adrenal glands and other glands to release their hormones"
+  ],
+  "connections": [
+   "Thyroid",
+   "Adrenal Glands",
+   "Brain"
+  ],
+  "refs": [
+   "r1",
+   "r2"
+  ]
+ },
+ {
+  "id": "parathyroid-glands",
+  "name": "Parathyroid Glands",
+  "system": "endocrine",
+  "role": "supportive",
+  "partType": "Gland",
+  "functions": [
+   "Four small glands beside the thyroid that regulate blood calcium levels"
+  ],
+  "connections": [
+   "Thyroid",
+   "Bones"
+  ],
+  "refs": [
+   "r1",
+   "r2"
+  ]
+ },
+ {
+  "id": "pineal-gland",
+  "name": "Pineal Gland",
+  "system": "endocrine",
+  "role": "supportive",
+  "partType": "Gland",
+  "functions": [
+   "Small brain gland that produces melatonin, regulating the sleep–wake cycle"
+  ],
+  "connections": [
+   "Brain"
+  ],
+  "refs": [
+   "r1"
+  ]
+ },
+ {
+  "id": "sweat-glands",
+  "name": "Sweat Glands",
+  "system": "integument",
+  "role": "supportive",
+  "partType": "Gland",
+  "functions": [
+   "Release sweat to cool the body via evaporation"
+  ],
+  "connections": [
+   "Skin"
+  ],
+  "refs": [
+   "r1",
+   "r2"
+  ]
+ },
+ {
+  "id": "sebaceous-glands",
+  "name": "Sebaceous Glands",
+  "system": "integument",
+  "role": "supportive",
+  "partType": "Gland",
+  "functions": [
+   "Produce oil (sebum) that lubricates and waterproofs the skin and hair"
+  ],
+  "connections": [
+   "Skin"
+  ],
+  "refs": [
+   "r1",
+   "r2"
+  ]
+ },
+ {
+  "id": "hair-nails",
+  "name": "Hair & Nails",
+  "system": "integument",
+  "role": "supportive",
+  "partType": "Tissue",
+  "functions": [
+   "Protective keratin structures growing from the skin"
+  ],
+  "connections": [
+   "Skin"
+  ],
+  "refs": [
+   "r1"
+  ]
+ },
+ {
+  "id": "ears",
+  "name": "Ears",
+  "system": "sensory",
+  "role": "supportive",
+  "partType": "Organ",
+  "functions": [
+   "Capture sound waves and maintain balance"
+  ],
+  "connections": [
+   "Brain"
+  ],
+  "refs": [
+   "r1",
+   "r2"
+  ]
+ },
+ {
+  "id": "optic-nerve",
+  "name": "Optic Nerve",
+  "system": "sensory",
+  "role": "supportive",
+  "partType": "Nerve",
+  "functions": [
+   "Carries visual signals from each eye to the brain"
+  ],
+  "connections": [
+   "Eyes",
+   "Brain"
+  ],
+  "refs": [
+   "r1",
+   "r2"
+  ]
+ },
+ {
+  "id": "olfactory-system",
+  "name": "Olfactory System (Nose)",
+  "system": "sensory",
+  "role": "supportive",
+  "partType": "Organ",
+  "functions": [
+   "Detects smell and contributes strongly to taste perception"
+  ],
+  "connections": [
+   "Brain"
+  ],
+  "refs": [
+   "r1"
+  ]
+ }
+],
+
+foods:[
+ {id:'air-outdoor',name:'Fresh Outdoor Air',category:'Air',servingQty:'Continuous',nutrition:["Oxygen: ~21% of atmosphere, used in every cell's energy production"],organs:['Lungs: continuous','Heart: continuous','Brain: continuous'],refs:['r1','r7']},
+ {id:'air-quality',name:'Clean, Well-Ventilated Air',category:'Air',servingQty:'Continuous',nutrition:['Low particulate matter (PM2.5) reduces airway irritation'],organs:['Lungs: continuous exposure benefit','Skin: reduced pollutant load'],refs:['r7']},
+
+ {id:'water-plain',name:'Plain Water',category:'Water',servingQty:'~2.7L/day (women), ~3.7L/day (men), incl. food moisture',nutrition:['Hydration','Trace minerals vary by source'],organs:['Kidneys: continuous','Brain: continuous','Skin: continuous','Large Intestine: continuous'],refs:['r1','r5']},
+ {id:'water-mineral',name:'Mineral Water',category:'Water',servingQty:'1–2 cups/day, as part of total fluids',nutrition:['Calcium, Magnesium and other trace minerals (source-dependent)'],organs:['Bones: supportive','Heart: supportive'],refs:['r1','r5']},
+
+ {id:'olive-oil',name:'Olive Oil',category:'Fat',servingQty:'2 tbsp/day',nutrition:['Monounsaturated fat','Vitamin E','Polyphenols'],organs:['Heart: 2 tbsp/day','Brain: supportive'],refs:['r4','r5']},
+ {id:'avocado',name:'Avocado',category:'Fat',servingQty:'½ fruit/day',nutrition:['Monounsaturated fat','Potassium','Fibre'],organs:['Heart: supportive','Large Intestine: supportive'],refs:['r4','r5']},
+ {id:'ghee-butter',name:'Butter / Ghee (moderate use)',category:'Fat',servingQty:'1 tsp/day',nutrition:['Saturated fat','Vitamin A','Vitamin K2'],organs:['Skin: supports fat-soluble vitamin absorption'],refs:['r4','r5']},
+
+ {id:'oats',name:'Oats',category:'Grains',servingQty:'40g/day',nutrition:['Beta-glucan soluble fibre','Manganese','B vitamins'],organs:['Heart: 40g/day','Pancreas: supportive','Large Intestine: supportive'],refs:['r4','r5']},
+ {id:'brown-rice',name:'Brown Rice',category:'Grains',servingQty:'1 cup cooked/day',nutrition:['Complex carbohydrate','Magnesium','Fibre'],organs:['Skeletal Muscles: glycogen supply','Large Intestine: supportive'],refs:['r5']},
+ {id:'whole-wheat',name:'Whole Wheat',category:'Grains',servingQty:'2–3 servings/day',nutrition:['Fibre','B vitamins','Iron'],organs:['Large Intestine: 2–3 servings/day','Skeletal Muscles: supportive'],refs:['r4','r5']},
+
+ {id:'almonds',name:'Almonds',category:'Nuts',servingQty:'30g (~23 nuts)/day',nutrition:['Vitamin E','Magnesium','Healthy fats'],organs:['Heart: 30g/day','Skin: supportive','Brain: supportive'],refs:['r4','r5']},
+ {id:'walnuts',name:'Walnuts',category:'Nuts',servingQty:'30g/day',nutrition:['Omega-3 (ALA)','Antioxidants'],organs:['Brain: 30g/day','Heart: supportive'],refs:['r4','r5']},
+ {id:'brazil-nuts',name:'Brazil Nuts',category:'Nuts',servingQty:'1–2 nuts/day',nutrition:['Selenium (very high concentration)'],organs:['Thyroid: 1–2 nuts/day — more is not better here, selenium can reach toxic levels'],refs:['r5','r8']},
+
+ {id:'lentils',name:'Lentils',category:'Beans/Lentils',servingQty:'1 cup cooked/day',nutrition:['Plant protein','Iron','Folate','Fibre'],organs:['Liver: supportive','Skeletal Muscles: supportive','Large Intestine: 1 cup/day'],refs:['r4','r5']},
+ {id:'chickpeas',name:'Chickpeas',category:'Beans/Lentils',servingQty:'1 cup cooked/day',nutrition:['Protein','Fibre','Manganese'],organs:['Small Intestine: supportive','Pancreas: supportive'],refs:['r4','r5']},
+ {id:'black-beans',name:'Black Beans',category:'Beans/Lentils',servingQty:'1 cup cooked/day',nutrition:['Protein','Fibre','Magnesium','Antioxidants'],organs:['Heart: supportive','Large Intestine: supportive'],refs:['r4','r5']},
+
+ {id:'spinach',name:'Spinach',category:'Veg',servingQty:'1 cup raw/day',nutrition:['Iron','Folate','Vitamin K','Lutein'],organs:['Liver: supportive','Eyes: 1 cup/day','Bones: supportive'],refs:['r4','r5']},
+ {id:'broccoli',name:'Broccoli',category:'Veg',servingQty:'1 cup/day',nutrition:['Vitamin C','Vitamin K','Sulforaphane'],organs:['Liver: supports detox enzymes'],refs:['r4','r5']},
+ {id:'carrots',name:'Carrots',category:'Veg',servingQty:'1 medium/day',nutrition:['Beta-carotene (Vitamin A)'],organs:['Eyes: 1 medium/day','Skin: supportive'],refs:['r4','r5']},
+ {id:'cauliflower',name:'Cauliflower',category:'Veg',servingQty:'1 cup/day',nutrition:['Vitamin C','Fibre','Low potassium'],organs:['Kidneys: kidney-friendly option'],refs:['r4','r5']},
+
+ {id:'berries',name:'Berries (e.g. blueberries)',category:'Fruits',servingQty:'1 cup/day',nutrition:['Antioxidants (anthocyanins)','Vitamin C','Fibre'],organs:['Brain: 1 cup/day','Heart: supportive','Kidneys: supportive'],refs:['r4','r5']},
+ {id:'citrus',name:'Citrus (e.g. oranges)',category:'Fruits',servingQty:'1 fruit/day',nutrition:['Vitamin C','Folate','Potassium'],organs:['Skin: 1 fruit/day','Adrenal Glands: supportive'],refs:['r4','r5']},
+ {id:'bananas',name:'Bananas',category:'Fruits',servingQty:'1/day',nutrition:['Potassium','Vitamin B6','Fibre'],organs:['Heart: 1/day','Skeletal Muscles: supportive','Bladder: supportive'],refs:['r4','r5']},
+ {id:'apples',name:'Apples',category:'Fruits',servingQty:'1/day',nutrition:['Pectin fibre','Vitamin C'],organs:['Large Intestine: 1/day','Heart: supportive'],refs:['r4','r5']},
+
+ {id:'turmeric',name:'Turmeric',category:'Spices',servingQty:'~1 tsp/day (with black pepper for absorption)',nutrition:['Curcumin (anti-inflammatory compound)'],organs:['Liver: supportive','Skeletal Muscles: supportive'],refs:['r4']},
+ {id:'cinnamon',name:'Cinnamon',category:'Spices',servingQty:'½–1 tsp/day',nutrition:['Antioxidants','May support glucose regulation'],organs:['Pancreas: supportive'],refs:['r4']},
+ {id:'black-pepper',name:'Black Pepper',category:'Spices',servingQty:'To taste',nutrition:['Piperine — enhances absorption of some nutrients'],organs:['Small Intestine: supportive'],refs:['r4']},
+
+ {id:'garlic',name:'Garlic',category:'Herb',servingQty:'1–2 cloves/day',nutrition:['Allicin','Sulfur compounds'],organs:['Heart: 1–2 cloves/day','Liver: supportive'],refs:['r4','r5']},
+ {id:'ginger',name:'Ginger',category:'Herb',servingQty:'1 tsp fresh/day',nutrition:['Gingerol (anti-inflammatory, digestive aid)'],organs:['Stomach: 1 tsp/day'],refs:['r4']},
+ {id:'parsley',name:'Parsley',category:'Herb',servingQty:'2 tbsp/day',nutrition:['Vitamin K','Vitamin C','Folate'],organs:['Bones: supportive'],refs:['r5']},
+
+ {id:'lean-meat',name:'Lean Beef / Chicken',category:'Meat',servingQty:'85–140g/serving, most days',nutrition:['Complete protein','Heme iron','Zinc','Vitamin B12'],organs:['Skeletal Muscles: 85–140g/serving','Liver: supportive'],refs:['r4','r5']},
+ {id:'eggs',name:'Eggs',category:'Meat',servingQty:'1/day',nutrition:['Complete protein','Choline','Vitamin B12','Lutein'],organs:['Liver: 1/day','Brain: supportive','Eyes: supportive'],refs:['r4','r5']},
+
+ {id:'salmon',name:'Salmon (fatty fish)',category:'Fish',servingQty:'2 servings (~150g each)/week',nutrition:['Omega-3 (EPA/DHA)','Vitamin D','Protein'],organs:['Heart: 2 servings/week','Brain: supportive','Bones: supportive','Eyes: supportive'],refs:['r4','r5','r8']},
+ {id:'sardines',name:'Sardines',category:'Fish',servingQty:'2 servings/week',nutrition:['Omega-3','Calcium (with edible bones)','Vitamin D'],organs:['Bones: 2 servings/week','Heart: supportive'],refs:['r4','r5']}
+],
+
+diseases:[
+ {id:'cad',name:'Coronary Artery Disease',
+  cause:['Long-term plaque buildup (atherosclerosis) in the coronary arteries','High LDL cholesterol','High blood pressure','Smoking','Diabetes or insulin resistance','Family history'],
+  symptoms:['Chest pain or pressure (angina), often with exertion','Shortness of breath','Fatigue','Pain radiating to the arm, jaw or back'],
+  organAffected:['Heart'],
+  remedies:['Diagnosis and ongoing monitoring by a cardiologist','Medication as prescribed by a physician (e.g. statins, antiplatelet or blood-pressure therapy)','Procedures such as angioplasty or bypass surgery in advanced cases'],
+  homeRemedies:['Heart-healthy diet low in sodium and saturated fat','Regular moderate aerobic activity once cleared by a doctor','Smoking cessation','Stress reduction practices'],
+  naturalRemedies:['Garlic and omega-3-rich foods are commonly discussed as heart-supportive; check with a doctor before adding supplements alongside heart medication'],
+  refs:['r1','r2']},
+
+ {id:'hypertension',name:'Hypertension (High Blood Pressure)',
+  cause:['Excess dietary sodium','Obesity','Sedentary lifestyle','Chronic stress','Family history','Ageing arteries'],
+  symptoms:['Often no symptoms ("silent" condition)','Occasionally headache, dizziness or nosebleeds at very high readings'],
+  organAffected:['Heart','Kidneys'],
+  remedies:['Regular blood pressure monitoring','Medication as prescribed by a physician when lifestyle change is not enough'],
+  homeRemedies:['Reducing sodium intake','Regular aerobic activity','Maintaining a healthy weight','Limiting alcohol'],
+  naturalRemedies:['Potassium-rich foods (bananas, leafy greens) are commonly discussed as supportive of healthy blood pressure'],
+  refs:['r1','r2','r4']},
+
+ {id:'asthma',name:'Asthma',
+  cause:['Airway inflammation triggered by allergens, exercise, cold air or irritants','Genetic predisposition'],
+  symptoms:['Wheezing','Shortness of breath','Chest tightness','Coughing, often at night'],
+  organAffected:['Lungs'],
+  remedies:['Diagnosis and a written action plan from a doctor','Prescribed inhaled medication used as directed'],
+  homeRemedies:['Identifying and avoiding personal triggers','Using a humidifier in dry conditions','Breathing exercises'],
+  naturalRemedies:['Staying well hydrated and avoiding smoke exposure are commonly recommended supportive measures'],
+  refs:['r1','r2']},
+
+ {id:'copd',name:'COPD (Chronic Obstructive Pulmonary Disease)',
+  cause:['Long-term smoking (most common cause)','Prolonged exposure to air pollutants or occupational dust/fumes'],
+  symptoms:['Chronic cough','Increasing breathlessness','Wheezing','Frequent respiratory infections'],
+  organAffected:['Lungs'],
+  remedies:['Diagnosis and staging by a doctor','Prescribed bronchodilators or other medication','Pulmonary rehabilitation programmes'],
+  homeRemedies:['Smoking cessation — the single most effective step','Avoiding pollutant exposure','Gentle regular activity within tolerance'],
+  naturalRemedies:['Breathing techniques such as pursed-lip breathing are commonly taught alongside medical care'],
+  refs:['r1','r2','r7']},
+
+ {id:'nafld',name:'Non-Alcoholic Fatty Liver Disease',
+  cause:['Obesity and excess visceral fat','High intake of refined sugar and processed food','Insulin resistance','Sedentary lifestyle'],
+  symptoms:['Often no symptoms early on','Fatigue','Mild discomfort under the right ribs in later stages'],
+  organAffected:['Liver'],
+  remedies:['Diagnosis via blood tests or imaging by a doctor','Monitoring of liver enzymes over time'],
+  homeRemedies:['Gradual weight loss','Reducing added sugar and refined carbohydrates','Regular physical activity'],
+  naturalRemedies:['Coffee (in moderation) and a Mediterranean-style diet are commonly discussed in liver-health research'],
+  refs:['r1','r2','r3']},
+
+ {id:'gastritis',name:'Gastritis',
+  cause:['H. pylori infection','Frequent NSAID use','Excess alcohol','Chronic stress'],
+  symptoms:['Upper abdominal pain or burning','Nausea','Bloating','Loss of appetite'],
+  organAffected:['Stomach'],
+  remedies:['Testing for H. pylori and treatment as prescribed by a doctor if present','Reviewing NSAID or alcohol use with a physician'],
+  homeRemedies:['Smaller, more frequent meals','Avoiding personal trigger foods (very spicy, fatty, or acidic, in sensitive individuals)','Limiting alcohol'],
+  naturalRemedies:['Ginger tea is commonly used to ease mild nausea'],
+  refs:['r1','r2','r3']},
+
+ {id:'ibs',name:'Irritable Bowel Syndrome',
+  cause:['Not fully understood — linked to gut-brain signalling, food sensitivities, past gut infection, stress'],
+  symptoms:['Abdominal pain linked to bowel habit changes','Bloating','Diarrhoea, constipation, or an alternating pattern'],
+  organAffected:['Small Intestine','Large Intestine'],
+  remedies:['Diagnosis by exclusion with a doctor','Dietary guidance such as a low-FODMAP trial under professional supervision'],
+  homeRemedies:['Regular meal timing','Identifying personal trigger foods','Stress management'],
+  naturalRemedies:['Peppermint tea or oil is commonly discussed for symptom relief'],
+  refs:['r1','r2','r4']},
+
+ {id:'type2-diabetes',name:'Type 2 Diabetes',
+  cause:['Insulin resistance developing over time','Excess body weight, especially visceral fat','Sedentary lifestyle','Family history'],
+  symptoms:['Increased thirst and urination','Fatigue','Blurred vision','Slow-healing wounds'],
+  organAffected:['Pancreas'],
+  remedies:['Diagnosis and ongoing management by a doctor','Blood glucose monitoring','Medication as prescribed when needed'],
+  homeRemedies:['Regular physical activity','Consistent, balanced carbohydrate intake','Gradual weight management'],
+  naturalRemedies:['Cinnamon and high-fibre meals are commonly discussed as supportive of steadier blood sugar, alongside — not instead of — medical care'],
+  refs:['r1','r2','r6']},
+
+ {id:'ckd',name:'Chronic Kidney Disease',
+  cause:['Long-standing uncontrolled diabetes or hypertension (most common causes)','Chronic dehydration','Long-term NSAID overuse'],
+  symptoms:['Often silent in early stages','Swelling in legs or ankles','Fatigue','Changes in urination'],
+  organAffected:['Kidneys'],
+  remedies:['Regular kidney function monitoring by a doctor','Blood pressure and blood sugar control','Specialist (nephrology) care as the condition progresses'],
+  homeRemedies:['Staying appropriately hydrated','Moderating sodium and protein per medical advice','Avoiding unnecessary NSAIDs'],
+  naturalRemedies:['Many "natural" supplements are hard on the kidneys — always check with a doctor before using any supplement alongside kidney disease'],
+  refs:['r1','r2','r8']},
+
+ {id:'uti',name:'Urinary Tract Infection',
+  cause:['Bacteria entering the urinary tract, most often E. coli'],
+  symptoms:['Burning with urination','Frequent urge to urinate','Cloudy or strong-smelling urine','Lower abdominal discomfort'],
+  organAffected:['Bladder'],
+  remedies:['Diagnosis via urine test and antibiotics as prescribed by a doctor'],
+  homeRemedies:['Increasing water intake','Urinating regularly, not delaying','Good hygiene practices'],
+  naturalRemedies:['Cranberry products are commonly discussed for prevention, though evidence is mixed — they do not replace antibiotics for an active infection'],
+  refs:['r1','r2']},
+
+ {id:'migraine',name:'Migraine',
+  cause:['Not fully understood — involves nerve and blood-vessel changes in the brain','Triggers include stress, certain foods, hormonal shifts, poor sleep'],
+  symptoms:['Throbbing headache, often one-sided','Nausea','Sensitivity to light and sound','Sometimes preceded by visual aura'],
+  organAffected:['Brain'],
+  remedies:['Diagnosis and a management plan from a doctor','Prescribed medication for acute attacks or prevention when frequent'],
+  homeRemedies:['Regular sleep schedule','Identifying and avoiding personal triggers','Staying hydrated'],
+  naturalRemedies:['Magnesium-rich foods and consistent caffeine intake (avoiding sudden changes) are commonly discussed as supportive'],
+  refs:['r1','r2']},
+
+ {id:'sciatica',name:'Sciatica',
+  cause:['Compression or irritation of the sciatic nerve, often from a herniated disc or spinal narrowing'],
+  symptoms:['Pain radiating from the lower back through the hip and down one leg','Numbness or tingling','Weakness in the affected leg'],
+  organAffected:['Spinal Cord'],
+  remedies:['Diagnosis and imaging if needed from a doctor','Physical therapy','Medication or, rarely, surgery for severe or persistent cases'],
+  homeRemedies:['Gentle stretching and movement as tolerated','Good posture and supportive seating','Alternating heat and cold'],
+  naturalRemedies:['Gentle yoga stretches are commonly used alongside medical guidance'],
+  refs:['r1','r2']},
+
+ {id:'osteoporosis',name:'Osteoporosis',
+  cause:['Age-related bone density loss','Low calcium/vitamin D intake over many years','Hormonal changes (e.g. after menopause)','Sedentary lifestyle'],
+  symptoms:['Often silent until a fracture occurs','Loss of height over time','Stooped posture'],
+  organAffected:['Bones'],
+  remedies:['Bone density screening (DEXA scan) as advised by a doctor','Medication when prescribed for higher-risk cases'],
+  homeRemedies:['Weight-bearing and resistance exercise','Adequate calcium and vitamin D intake','Fall-prevention measures at home'],
+  naturalRemedies:['Sensible sun exposure supports natural vitamin D production'],
+  refs:['r1','r2','r6']},
+
+ {id:'sarcopenia',name:'Sarcopenia',
+  cause:['Age-related muscle loss, accelerated by inactivity and inadequate protein intake'],
+  symptoms:['Progressive muscle weakness','Slower walking speed','Difficulty rising from a chair'],
+  organAffected:['Skeletal Muscles'],
+  remedies:['Assessment by a doctor or physiotherapist'],
+  homeRemedies:['Resistance/strength training, even at low intensity, most weeks','Adequate protein spread across meals'],
+  naturalRemedies:['No single herbal remedy is well-established; consistent activity and protein intake are the best-supported approaches'],
+  refs:['r1','r2','r4']},
+
+ {id:'hypothyroidism',name:'Hypothyroidism',
+  cause:["Autoimmune thyroiditis (Hashimoto's) — the most common cause",'Iodine deficiency or excess','Certain medications'],
+  symptoms:['Fatigue','Weight gain','Cold intolerance','Dry skin','Low mood'],
+  organAffected:['Thyroid'],
+  remedies:['Blood testing and diagnosis by a doctor','Thyroid hormone replacement as prescribed, with regular monitoring'],
+  homeRemedies:['Consistent, adequate iodine intake without excess','Regular follow-up testing as advised'],
+  naturalRemedies:['Thyroid hormone medication should never be replaced with supplements — check any supplement with a doctor first'],
+  refs:['r1','r2','r8']},
+
+ {id:'eczema',name:'Eczema (Atopic Dermatitis)',
+  cause:['Skin barrier dysfunction combined with an overactive immune response','Genetic and environmental factors','Triggers include irritants, allergens, dry weather, stress'],
+  symptoms:['Itchy, dry, inflamed patches of skin','Redness','Cracking or weeping during flare-ups'],
+  organAffected:['Skin'],
+  remedies:['Diagnosis and a treatment plan from a doctor or dermatologist','Prescribed topical treatment for flare-ups when needed'],
+  homeRemedies:['Regular moisturising','Avoiding known triggers and harsh soaps','Lukewarm rather than hot showers'],
+  naturalRemedies:['Oatmeal baths are commonly used to soothe irritated skin'],
+  refs:['r1','r2','r3']},
+
+ {id:'cataracts',name:'Cataracts',
+  cause:["Age-related clouding of the eye's lens",'Prolonged UV exposure','Smoking','Diabetes'],
+  symptoms:['Blurry or clouded vision','Increased glare sensitivity, especially at night','Fading or yellowing of colours'],
+  organAffected:['Eyes'],
+  remedies:['Regular eye exams for diagnosis and monitoring','Surgical lens replacement when vision is significantly affected — highly effective and common'],
+  homeRemedies:['UV-protective sunglasses outdoors','Managing underlying diabetes well'],
+  naturalRemedies:['Antioxidant-rich foods (leafy greens, citrus) are commonly discussed as supportive of eye health generally'],
+  refs:['r1','r2','r4']}
+],
+
+lifestyles:[
+ {id:'physical-activity',name:'Regular Physical Activity',
+  activities:['150 min/week moderate aerobic activity, or 75 min vigorous','Strength/resistance training 2x/week','Daily movement breaks if desk-based'],
+  food:['Balanced meals with adequate protein to support recovery','Sufficient hydration around exercise'],
+  avoid:['Prolonged sitting for many hours without breaks','Overtraining without adequate rest'],
+  refs:['r1','r4']},
+
+ {id:'balanced-nutrition',name:'Balanced Nutrition',
+  activities:['Planning meals around vegetables, whole grains and varied protein sources','Cooking at home most days'],
+  food:['A variety of vegetables and fruit daily','Whole grains over refined grains','Healthy fats (olive oil, nuts, fish)','Adequate fibre (25–38g/day)'],
+  avoid:['Excess added sugar','Excess sodium','Highly processed food as a regular staple'],
+  refs:['r4','r5']},
+
+ {id:'sleep',name:'Quality Sleep',
+  activities:['Consistent sleep and wake times, even on weekends','A wind-down routine before bed','7–9 hours nightly for most adults'],
+  food:['Lighter evening meals','Limiting caffeine in the afternoon and evening'],
+  avoid:['Screens immediately before bed','Large meals or alcohol close to bedtime','Irregular sleep schedules'],
+  refs:['r1','r6']},
+
+ {id:'stress-management',name:'Stress Management',
+  activities:['Regular relaxation practice (breathing exercises, meditation, prayer or reflection)','Time in nature','Maintaining adequate social support'],
+  food:['Regular, balanced meals rather than skipping under stress','Limiting excess caffeine'],
+  avoid:['Chronic overwork without recovery time','Using alcohol or excess food as the main coping strategy'],
+  refs:['r1','r6']},
+
+ {id:'hydration',name:'Hydration',
+  activities:['Drinking water steadily through the day rather than all at once','Increasing intake with heat, activity or illness'],
+  food:['Water as the primary beverage','Water-rich foods (fruit, vegetables, soups)'],
+  avoid:['Relying on sugary drinks for hydration','Excess caffeine or alcohol, which increase fluid loss'],
+  refs:['r1','r5']},
+
+ {id:'tobacco-alcohol',name:'Avoiding Tobacco & Limiting Alcohol',
+  activities:['Seeking support to quit smoking or vaping where relevant','Setting personal limits on alcohol intake'],
+  food:['Not applicable — this habit is about substance avoidance rather than food'],
+  avoid:['Smoking or vaping','Excess alcohol intake'],
+  refs:['r1','r7']},
+
+ {id:'screenings',name:'Preventive Health Screenings',
+  activities:['Routine blood pressure and blood sugar checks','Age-appropriate screenings (cholesterol, bone density, cancer screening etc.) as advised by a doctor'],
+  food:['Not applicable — this habit is about routine check-ups'],
+  avoid:['Ignoring persistent symptoms','Skipping recommended check-ups for years at a time'],
+  refs:['r1','r2']},
+
+ {id:'social-wellbeing',name:'Social Connection & Mental Wellbeing',
+  activities:['Maintaining regular contact with family and friends','Participating in community or faith activities','Seeking support (professional or personal) when struggling'],
+  food:['Shared meals as a way to connect'],
+  avoid:['Prolonged isolation','Ignoring ongoing low mood or anxiety without seeking support'],
+  refs:['r1','r6']},
+
+ {id:'sun-smart',name:'Sun-Smart Habits',
+  activities:['Sensible, protected sun exposure for vitamin D','Wearing sunglasses and sunscreen during prolonged exposure'],
+  food:['Vitamin D-supporting foods (fatty fish, fortified foods), especially with limited sun'],
+  avoid:['Prolonged unprotected sun exposure','Complete sun avoidance without another vitamin D source'],
+  refs:['r1','r2']},
+
+ {id:'posture-ergonomics',name:'Posture & Ergonomics',
+  activities:['Setting up a supportive desk and chair height','Regular movement breaks every 30–60 minutes','Core and back-strengthening exercise'],
+  food:['Adequate calcium and vitamin D for bone and spine support'],
+  avoid:['Long unbroken periods of sitting or screen use','Slouched or unsupported posture for extended periods'],
+  refs:['r1','r2']}
+],
+
+masterCategories:[
+ {id:'protein',name:'Protein',subs:['Meat','Fish','Beans/Lentils','Nuts']},
+ {id:'carb',name:'Carb',subs:['Grains']},
+ {id:'fat',name:'Fat',subs:['Fat']},
+ {id:'veg',name:'Veg',subs:['Veg']},
+ {id:'fruit',name:'Fruit',subs:['Fruits']},
+ {id:'water',name:'Water',subs:['Water']},
+ {id:'air',name:'Air',subs:['Air']},
+ {id:'herbs-spices',name:'Herbs & Spices',subs:['Spices','Herb']}
+],
+
+ages:[
+ {id:'infant',name:'Infant',range:'0–2 years',notes:['Breast milk or formula is the primary source of nutrition for the first 6 months','Higher proportion of calories from fat than any other life stage','Solid foods and iron-rich foods typically introduced around 6 months','Small, frequent feeds; rapid growth drives high nutrient needs per kg body weight']},
+ {id:'child',name:'Child',range:'3–12 years',notes:['Steady growth requires reliable calcium, iron and protein intake','Establishing food habits and variety matters as much as any single nutrient','Portion sizes scale with age, not adult-sized servings']},
+ {id:'adolescent',name:'Adolescent',range:'13–18 years',notes:['Growth-spurt years raise calorie, calcium and iron needs','Iron needs rise further for menstruating teens','Peak bone-building window — calcium and vitamin D matter most here']},
+ {id:'adult',name:'Adult',range:'19–50 years',notes:['Focus shifts to maintenance: balanced macronutrients and fibre for heart and digestive health','Activity level is the main driver of energy needs','Good window to build habits that protect later decades']},
+ {id:'midlife',name:'Midlife Adult',range:'51–65 years',notes:['Bone density needs closer attention — calcium and vitamin D intake matters more','Metabolic rate typically slows, so portion and sodium/fat awareness increases','Heart-health nutrition (fibre, potassium, limiting sodium) becomes more protective']},
+ {id:'older-adult',name:'Older Adult',range:'65+ years',notes:['Protein needs rise per kg body weight to help offset age-related muscle loss','Vitamin B12 absorption typically declines, raising the value of B12-rich or fortified foods','Thirst sensation weakens, so hydration needs conscious attention','Smaller, more nutrient-dense meals are often more realistic than large meals']}
+]
+};}
+
+/* ---------- State ---------- */
+let DATA = defaultData();
+let ACTIVE_TAB = 'bodysystems';
+let uidCounter = 1000;
+const newId = prefix => prefix + '-' + (uidCounter++);
+
+/* ---------- Helpers ---------- */
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._h);
+  toast._h = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function linesToArr(text){ return text.split('\n').map(l=>l.trim()).filter(Boolean); }
+
+/* ---------- Schemas (drive detail view, edit form, and table columns) ---------- */
+const ENTITY_STORE = {organ:'organs', food:'foods', disease:'diseases', lifestyle:'lifestyles', age:'ages'};
+function storeOf(type){ return DATA[ENTITY_STORE[type]]; }
+
+const SCHEMAS = {
+  organ:{
+    label:'Body Part',
+    fields:[
+      {key:'name',label:'Name',type:'text'},
+      {key:'system',label:'Body System',type:'select',options:()=>DATA.systems.map(s=>({value:s.id,label:s.name})),
+        detailRender:item=>`<div class="meta"><span class="swatch" style="background:${sysById(item.system).color}"></span>${esc(sysById(item.system).name)} system</div>`},
+      {key:'role',label:'Role',type:'select',options:()=>[{value:'main',label:'Main Organ'},{value:'supportive',label:'Supportive / Associated'}]},
+      {key:'partType',label:'Type',type:'select',options:()=>['Organ','Vein','Artery','Nerve','Tissue','Gland','Duct'].map(t=>({value:t,label:t}))},
+      {key:'functions',label:'Functions',type:'list'},
+      {key:'nutritionNeeds',label:'Nutritional Needs (nutrient: amount/day)',type:'list'},
+      {key:'foodSources',label:'Food Sources (food: suggested qty)',type:'list'},
+      {key:'activity',label:'Activity Requirements',type:'list'},
+      {key:'deterioration',label:'Deterioration Factors',type:'list'},
+      {key:'connections',label:'Connected Organs / Veins / Tissues',type:'list'},
+      {key:'refs',label:'References',type:'refs'}
+    ]
+  },
+  food:{
+    label:'Food',
+    fields:[
+      {key:'name',label:'Name',type:'text'},
+      {key:'category',label:'Intake Category',type:'select',options:()=>CATEGORIES.map(c=>({value:c,label:c})),
+        detailRender:item=>`<div class="meta"><span class="pill">${esc(item.category)}</span> ${esc(item.servingQty||'')}</div>`},
+      {key:'servingQty',label:'Typical Serving / Daily Qty',type:'text', skipDetail:true},
+      {key:'nutrition',label:'Key Nutrition (nutrient: amount)',type:'list'},
+      {key:'organs',label:'Organs Supported (organ: daily qty)',type:'list'},
+      {key:'refs',label:'References',type:'refs'}
+    ],
+    columns:[
+      {label:'Name', cell:item=>esc(item.name)},
+      {label:'Category', cell:item=>`<span class="pill">${esc(item.category)}</span>`},
+      {label:'Typical serving', cell:item=>esc(item.servingQty||'')}
+    ]
+  },
+  disease:{
+    label:'Disease',
+    fields:[
+      {key:'name',label:'Name',type:'text'},
+      {key:'organAffected',label:'Organ(s) Affected',type:'list'},
+      {key:'cause',label:'Cause',type:'list'},
+      {key:'symptoms',label:'Symptoms',type:'list'},
+      {key:'remedies',label:'Remedies (medical / conventional care)',type:'list'},
+      {key:'homeRemedies',label:'Home Remedies',type:'list'},
+      {key:'naturalRemedies',label:'Natural Remedies',type:'list'},
+      {key:'refs',label:'References',type:'refs'}
+    ],
+    columns:[
+      {label:'Name', cell:item=>esc(item.name)},
+      {label:'Organ(s) affected', cell:item=>(item.organAffected||[]).map(o=>`<span class="pill">${esc(o)}</span>`).join('')},
+      {label:'Primary symptom', cell:item=>esc((item.symptoms||[])[0]||'')}
+    ]
+  },
+  lifestyle:{
+    label:'Lifestyle Habit',
+    fields:[
+      {key:'name',label:'Name',type:'text'},
+      {key:'activities',label:'Activities',type:'list'},
+      {key:'food',label:'Food',type:'list'},
+      {key:'avoid',label:'What to Avoid',type:'list'},
+      {key:'refs',label:'References',type:'refs'}
+    ],
+    columns:[
+      {label:'Name', cell:item=>esc(item.name)},
+      {label:'Key activity', cell:item=>esc((item.activities||[])[0]||'')},
+      {label:'Avoid', cell:item=>esc((item.avoid||[])[0]||'')}
+    ]
+  },
+  age:{
+    label:'Age Group',
+    fields:[
+      {key:'name',label:'Name',type:'text'},
+      {key:'range',label:'Age Range',type:'text'},
+      {key:'notes',label:'Consumption Considerations',type:'list'}
+    ]
+  }
+};
+
+/* ---------- Tabs ---------- */
+const TAB_TYPE = {diseases:'disease', lifestyle:'lifestyle'};
+
+document.querySelectorAll('nav .tab').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('nav .tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    ACTIVE_TAB = btn.dataset.tab;
+    render();
+  });
+});
+
+/* ---------- Render dispatch ---------- */
+function render(){
+  const main = document.getElementById('main');
+  main.classList.toggle('full-bleed', ACTIVE_TAB==='bodysystems');
+  if(ACTIVE_TAB==='bodysystems') main.innerHTML = renderBodySystemsTab();
+  else if(ACTIVE_TAB==='foods') main.innerHTML = renderFoodsTab();
+  else if(TAB_TYPE[ACTIVE_TAB]) main.innerHTML = renderListTab(TAB_TYPE[ACTIVE_TAB]);
+  else if(ACTIVE_TAB==='ages') main.innerHTML = renderAgesTab();
+  else if(ACTIVE_TAB==='refs') main.innerHTML = renderRefsTab();
+  wireTabEvents();
+}
+
+/* ---------- Wheel tab ---------- */
+function polar(cx,cy,r,deg){ const rad=(deg-90)*Math.PI/180; return {x:cx+r*Math.cos(rad), y:cy+r*Math.sin(rad)}; }
+function wedgePath(cx,cy,rOuter,rInner,a0,a1){
+  const p0=polar(cx,cy,rOuter,a0), p1=polar(cx,cy,rOuter,a1);
+  const p2=polar(cx,cy,rInner,a1), p3=polar(cx,cy,rInner,a0);
+  const large = (a1-a0) > 180 ? 1 : 0;
+  return `M ${p0.x} ${p0.y} A ${rOuter} ${rOuter} 0 ${large} 1 ${p1.x} ${p1.y} L ${p2.x} ${p2.y} A ${rInner} ${rInner} 0 ${large} 0 ${p3.x} ${p3.y} Z`;
+}
+function wedgeLabel(cx,cy,rMid,angleDeg,text,fontSize){
+  const flip = angleDeg > 180;
+  const rot = flip ? angleDeg + 90 : angleDeg - 90;
+  const pt = polar(cx,cy,rMid,angleDeg);
+  return `<text x="${pt.x}" y="${pt.y}" transform="rotate(${rot} ${pt.x} ${pt.y})" text-anchor="middle" dominant-baseline="middle" font-size="${fontSize}" fill="#EDE6D6" stroke="#161B22" stroke-width="3" paint-order="stroke" font-family="Inter, sans-serif">${esc(text)}</text>`;
+}
+
+let WHEEL_LEVEL = 'systems';
+let WHEEL_ACTIVE_SYSTEM = null;
+let WHEEL_ACTIVE_FIELD = null;
+let DETAIL_MODE = 'full';
+let COL_WIDTHS = {s1: 340, s3: 360};
+let WHEEL_SIZE = 420;
+let WHEEL_RESIZE_OBSERVER = null;
+
+const WHEEL_FIELD_DEFS = [
+  {key:'functions', label:'Functions'},
+  {key:'nutritionNeeds', label:'Nutrition'},
+  {key:'foodSources', label:'Food Sources'},
+  {key:'activity', label:'Activity'},
+  {key:'deterioration', label:'Deterioration'},
+  {key:'connections', label:'Connections'},
+  {key:'refs', label:'References'}
+];
+
+function renderWheelWidget(){
+  let wedges = '', legend = '', centerTop, centerBottom, backLink = '';
+
+  if(WHEEL_LEVEL === 'systems'){
+    const systems = DATA.systems;
+    const n = systems.length || 1;
+    const step = 360/n;
+    systems.forEach((s,i)=>{
+      const a0 = i*step, a1 = (i+1)*step - 1.2, mid = (a0+a1)/2;
+      wedges += `<path class="wedge" d="${wedgePath(210,210,185,75,a0,a1)}" fill="${s.color}" data-system-wedge="${s.id}"><title>${esc(s.name)}</title></path>`;
+      wedges += wedgeLabel(210,210,130,mid,s.name,11);
+    });
+    centerTop = 'Body'; centerBottom = 'Systems';
+    systems.forEach(s=>{
+      legend += `<div class="legend-organ" data-system-wedge="${s.id}"><span class="swatch" style="background:${s.color}"></span>${esc(s.name)}</div>`;
+    });
+  } else if(WHEEL_LEVEL === 'items'){
+    const sys = sysById(WHEEL_ACTIVE_SYSTEM);
+    const items = DATA.organs.filter(o=>o.system===WHEEL_ACTIVE_SYSTEM);
+    const n = items.length || 1;
+    const step = 360/n;
+    items.forEach((o,i)=>{
+      const a0 = i*step, a1 = (i+1)*step - 1.2, mid = (a0+a1)/2;
+      const isSel = BODY_SELECTED===o.id;
+      const isMain = o.role==='main';
+      wedges += `<path class="wedge${isSel?' wedge-active':''}${isMain?'':' wedge-supportive'}" d="${wedgePath(210,210,185,75,a0,a1)}" fill="${sys.color}" opacity="${isMain?1:0.5}" data-id="${o.id}"><title>${esc(o.name)} (${isMain?'Main':'Supportive'})</title></path>`;
+      wedges += wedgeLabel(210,210,130,mid,o.name,10);
+    });
+    centerTop = '← Back'; centerBottom = esc(sys.name);
+    backLink = `<div class="wheel-back" data-back-to-systems>← All Body Systems</div>`;
+    items.forEach(o=>{
+      legend += `<div class="legend-organ${BODY_SELECTED===o.id?' legend-organ-active':''}" data-id="${o.id}"><span class="role-dot ${o.role==='main'?'role-main':'role-supportive'}"></span>${esc(o.name)}</div>`;
+    });
+  } else {
+    const item = DATA.organs.find(o=>o.id===BODY_SELECTED);
+    const fieldDefs = WHEEL_FIELD_DEFS.filter(f=> item && Array.isArray(item[f.key]) && item[f.key].length>0);
+    const n = fieldDefs.length || 1;
+    const step = 360/n;
+    fieldDefs.forEach((f,i)=>{
+      const a0 = i*step, a1 = (i+1)*step - 1.2, mid = (a0+a1)/2;
+      const isActive = WHEEL_ACTIVE_FIELD===f.key;
+      wedges += `<path class="wedge${isActive?' wedge-active':''}" d="${wedgePath(210,210,185,75,a0,a1)}" fill="${sysById(item?item.system:null).color}" data-field="${f.key}"><title>${esc(f.label)}</title></path>`;
+      wedges += wedgeLabel(210,210,130,mid,f.label,10);
+    });
+    centerTop = '← Back'; centerBottom = item ? esc(item.name) : '';
+    backLink = `<div class="wheel-back" data-back-to-items>← Back to ${item?esc(sysById(item.system).name):'system'}</div>`;
+    fieldDefs.forEach(f=>{
+      legend += `<div class="legend-organ${WHEEL_ACTIVE_FIELD===f.key?' legend-organ-active':''}" data-field="${f.key}">${esc(f.label)}</div>`;
+    });
+  }
+
+  const backAttr = WHEEL_LEVEL==='items' ? 'data-back-to-systems' : WHEEL_LEVEL==='fields' ? 'data-back-to-items' : '';
+  const centerCursor = backAttr ? 'style="cursor:pointer;"' : '';
+  const svg = `<svg viewBox="0 0 420 420" id="wheelSvg">
+    ${wedges}
+    <circle cx="210" cy="210" r="74" fill="var(--panel)" stroke="var(--line)" ${backAttr} ${centerCursor}/>
+    <text x="210" y="205" text-anchor="middle" fill="var(--gold)" font-family="Source Serif 4, serif" font-size="${WHEEL_LEVEL==='systems'?16:13}" ${backAttr} ${centerCursor}>${centerTop}</text>
+    <text x="210" y="224" text-anchor="middle" fill="var(--gold)" font-family="Source Serif 4, serif" font-size="${WHEEL_LEVEL==='systems'?16:13}" ${backAttr} ${centerCursor}>${centerBottom}</text>
+  </svg>`;
+
+  return `
+  <div class="wheel-panel" id="wheelPanel">
+    ${backLink}
+    <div class="wheel-wrap">
+      <div class="wheel-svg-box" id="wheelSvgBox" style="width:${WHEEL_SIZE}px;height:${WHEEL_SIZE}px;">${svg}<span class="wheel-svg-hint">↘ drag to resize</span></div>
+    </div>
+    <div class="legend">${legend}</div>
+  </div>`;
+}
+
+
+/* ---------- Body Systems tab: collapsible sections, Main/Supportive split, diagrams ---------- */
+let OPEN_SECTIONS = {};
+let BODY_SELECTED = null;
+
+const SYSTEM_DIAGRAMS = {
+  renal: {
+    viewBox:'0 0 300 340',
+    svg: `
+      <g id="kidney-shape">
+        <path d="M100,40 C70,40 55,65 55,95 C55,115 65,120 65,140 C65,165 85,180 105,175 C125,170 130,150 125,130 C120,110 130,95 125,75 C120,50 115,40 100,40 Z" fill="#3E7CA6" opacity="0.85"/>
+        <path d="M200,40 C230,40 245,65 245,95 C245,115 235,120 235,140 C235,165 215,180 195,175 C175,170 170,150 175,130 C180,110 170,95 175,75 C180,50 185,40 200,40 Z" fill="#3E7CA6" opacity="0.85"/>
+      </g>
+      <g id="renal-vessels" stroke="#B5484B" stroke-width="3" fill="none">
+        <path d="M55,105 L28,95 M55,115 L28,125"/>
+        <path d="M245,105 L272,95 M245,115 L272,125"/>
+      </g>
+      <g id="ureter-line" stroke="#B9B2A0" stroke-width="4" fill="none">
+        <path d="M90,175 C95,210 130,230 150,245"/>
+        <path d="M210,175 C205,210 170,230 150,245"/>
+      </g>
+      <ellipse id="bladder-shape" cx="150" cy="278" rx="42" ry="34" fill="#3E7CA6" opacity="0.85"/>
+      <line id="urethra-line" x1="150" y1="312" x2="150" y2="332" stroke="#B9B2A0" stroke-width="5"/>
+      <text x="60" y="30" font-size="11" fill="#B9B2A0">Kidneys</text>
+      <text x="8" y="90" font-size="10" fill="#B9B2A0">Renal vessels</text>
+      <text x="110" y="218" font-size="11" fill="#B9B2A0">Ureters</text>
+      <text x="120" y="282" font-size="11" fill="#EDE6D6">Bladder</text>
+      <text x="158" y="325" font-size="10" fill="#B9B2A0">Urethra</text>
+    `,
+    partMap:{'Kidneys':'kidney-shape','Bladder':'bladder-shape','Ureters':'ureter-line','Urethra':'urethra-line','Renal Blood Vessels':'renal-vessels'}
+  },
+  sensory: {
+    viewBox:'0 0 340 260',
+    svg: `
+      <g id="eye-main">
+        <path d="M40,120 C70,90 150,90 180,120 C150,150 70,150 40,120 Z" fill="#C97B3E" opacity="0.25" stroke="#C97B3E" stroke-width="2"/>
+        <circle cx="110" cy="120" r="22" fill="#C97B3E"/>
+        <circle cx="110" cy="120" r="9" fill="#161B22"/>
+      </g>
+      <path id="optic-nerve" d="M180,120 C210,120 220,110 240,100" stroke="#6E5AA6" stroke-width="4" fill="none"/>
+      <circle cx="252" cy="94" r="16" fill="#6E5AA6" opacity="0.5"/>
+      <text x="252" y="98" text-anchor="middle" font-size="9" fill="#EDE6D6">Brain</text>
+      <path id="ear-shape" d="M45,190 C22,178 20,212 42,224 C58,232 64,212 58,200 C53,191 50,192 45,190 Z" fill="#C97B3E" opacity="0.6"/>
+      <path id="nose-shape" d="M150,188 C145,204 140,215 148,226 C156,232 168,232 176,226 C184,215 179,204 174,188" stroke="#C97B3E" stroke-width="3" fill="none"/>
+      <text x="60" y="95" font-size="11" fill="#B9B2A0">Eye</text>
+      <text x="20" y="240" font-size="10" fill="#B9B2A0">Ear</text>
+      <text x="145" y="245" font-size="10" fill="#B9B2A0">Nose</text>
+    `,
+    partMap:{'Eyes':'eye-main','Ears':'ear-shape','Optic Nerve':'optic-nerve','Olfactory System (Nose)':'nose-shape'}
+  },
+  integument: {
+    viewBox:'0 0 320 220',
+    svg: `
+      <g id="skin-layer-all">
+        <rect x="20" y="20" width="280" height="35" fill="#7A9E5E" opacity="0.85"/>
+        <rect x="20" y="55" width="280" height="70" fill="#7A9E5E" opacity="0.5"/>
+        <rect x="20" y="125" width="280" height="60" fill="#7A9E5E" opacity="0.25"/>
+      </g>
+      <text x="28" y="42" font-size="10" fill="#161B22">Epidermis</text>
+      <text x="28" y="95" font-size="10" fill="#EDE6D6">Dermis</text>
+      <text x="28" y="160" font-size="10" fill="#EDE6D6">Hypodermis</text>
+      <path id="hair-follicle" d="M170,10 L164,55 C158,72 158,100 170,112" stroke="#EDE6D6" stroke-width="3" fill="none"/>
+      <ellipse id="sebaceous-gland" cx="184" cy="68" rx="10" ry="7" fill="#C9A24B"/>
+      <path id="sweat-gland" d="M230,130 C236,140 224,145 230,155 C236,165 224,170 230,182" stroke="#EDE6D6" stroke-width="3" fill="none"/>
+      <text x="180" y="30" font-size="9" fill="#161B22">Hair follicle</text>
+      <text x="196" y="64" font-size="9" fill="#EDE6D6">Sebaceous gland</text>
+      <text x="238" y="148" font-size="9" fill="#EDE6D6">Sweat gland</text>
+    `,
+    partMap:{'Skin':'skin-layer-all','Hair & Nails':'hair-follicle','Sebaceous Glands':'sebaceous-gland','Sweat Glands':'sweat-gland'}
+  }
+};
+
+function renderDiagramPanel(item){
+  const diagram = SYSTEM_DIAGRAMS[item.system];
+  const sysName = esc(sysById(item.system).name);
+  if(!diagram){
+    return `<div class="diagram-card">
+      <div class="empty-state" style="border:none;padding:18px 4px;">Diagram for the ${sysName} system is still in progress — text connections below are accurate meanwhile.</div>
+    </div>`;
+  }
+  return `<div class="diagram-card">
+    <svg id="diagramHost" viewBox="${diagram.viewBox}" xmlns="http://www.w3.org/2000/svg">${diagram.svg}</svg>
+    <div class="diagram-caption">${sysName} — showing <strong>${esc(item.name)}</strong></div>
+  </div>`;
+}
+
+function renderBodySystemsTab(){
+  const term = SEARCH_TERM.organ;
+  const searching = !!term;
+
+  function roleDot(role){
+    return `<span class="role-dot ${role==='main'?'role-main':'role-supportive'}" title="${role==='main'?'Main organ':'Supportive / associated'}"></span>`;
+  }
+  function rowHtml(o, color){
+    return `<div class="bs-row${BODY_SELECTED===o.id?' bs-row-active':''}" data-id="${o.id}">
+      <div class="bs-name">${roleDot(o.role)}<span class="swatch" style="background:${color}"></span>${esc(o.name)}<span class="pill">${esc(o.partType||'Organ')}</span></div>
+      <div>${esc((o.functions||[])[0]||'')}</div>
+      <div>${(o.connections||[]).slice(0,4).map(c=>`<span class="pill">${esc(c)}</span>`).join('')}</div>
+      <div></div>
+    </div>`;
+  }
+
+  const sysCount = DATA.systems.length;
+  const sectionsHtml = DATA.systems.map((sys, idx)=>{
+    const items = DATA.organs.filter(o=>o.system===sys.id).filter(o=>matches(o, term));
+    const mainItems = items.filter(o=>o.role==='main');
+    const suppItems = items.filter(o=>o.role!=='main');
+    const collapsed = !searching && !OPEN_SECTIONS[sys.id];
+    return `<div class="bs-section ${collapsed?'collapsed':''}" data-system="${sys.id}">
+      <div class="bs-section-head">
+        <div class="bs-section-title" data-toggle="${sys.id}"><span class="bs-chevron">▾</span><span class="bs-num">${idx+1}.</span><span class="swatch" style="background:${sys.color}"></span>${esc(sys.name)}<span class="pill">${items.length}</span></div>
+        <div class="bs-section-actions">
+          <button data-move-up="${sys.id}" title="Move up" ${idx===0?'disabled':''}>↑</button>
+          <button data-move-down="${sys.id}" title="Move down" ${idx===sysCount-1?'disabled':''}>↓</button>
+          <button data-rename-system="${sys.id}">Rename</button>
+          <button class="danger" data-delete-system="${sys.id}">Delete</button>
+        </div>
+      </div>
+      <div class="bs-section-body">
+        <div class="bs-subhead">${roleDot('main')} Main Organs</div>
+        ${mainItems.length ? mainItems.map(o=>rowHtml(o, sys.color)).join('') : `<div class="bs-row-empty">None yet.</div>`}
+        <button class="ghost bs-add-item" data-add-item="${sys.id}" data-role="main">+ Add main organ</button>
+        <div class="bs-subhead">${roleDot('supportive')} Supportive / Associated</div>
+        ${suppItems.length ? suppItems.map(o=>rowHtml(o, sys.color)).join('') : `<div class="bs-row-empty">None yet.</div>`}
+        <button class="ghost bs-add-item" data-add-item="${sys.id}" data-role="supportive">+ Add supportive structure</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  const selectedItem = BODY_SELECTED ? DATA.organs.find(o=>o.id===BODY_SELECTED) : null;
+  let detailPane;
+  if(!selectedItem){
+    detailPane = `<div class="empty-state">Select a body part from the list or the wheel to see its full profile and, where available, a diagram of its body system.</div>`;
+  } else if(DETAIL_MODE==='staged' && WHEEL_LEVEL==='fields'){
+    detailPane = renderDiagramPanel(selectedItem) + renderStagedHeadings(selectedItem);
+  } else {
+    detailPane = renderDiagramPanel(selectedItem) + renderDetail('organ', selectedItem);
+  }
+
+  return `
+  <div class="toolbar">
+    <div class="search"><input type="text" id="searchBox" placeholder="Search body parts…" value="${esc(term)}"></div>
+    <button class="primary" id="btnAddSystem">+ Add Body System</button>
+  </div>
+  <div class="bs-layout-3col">
+    <div class="bs-col" id="bsColSections" style="width:${COL_WIDTHS.s1}px;">${sectionsHtml}</div>
+    <div class="bs-divider" data-divider="s1" title="Drag to resize"></div>
+    <div class="bs-col bs-col-wheel" id="bsColWheel">${renderWheelWidget()}</div>
+    <div class="bs-divider" data-divider="s3" title="Drag to resize"></div>
+    <div class="bs-col" id="bsColDetail" style="width:${COL_WIDTHS.s3}px;">${detailPane}</div>
+  </div>`;
+}
+
+function openAddSystemModal(){
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal">
+    <h3>Add Body System</h3>
+    <div class="field"><label>Name</label><input type="text" id="newSysName" placeholder="e.g. Immune System"></div>
+    <div class="modal-actions">
+      <button type="button" id="cancelSys" class="ghost">Cancel</button>
+      <button type="button" id="saveSys" class="primary">Add</button>
+    </div>
+  </div>`;
+  document.body.appendChild(bg);
+  bg.addEventListener('click', e=>{ if(e.target===bg) bg.remove(); });
+  bg.querySelector('#cancelSys').addEventListener('click', ()=> bg.remove());
+  bg.querySelector('#saveSys').addEventListener('click', ()=>{
+    const name = bg.querySelector('#newSysName').value.trim();
+    if(!name) return;
+    const color = SYSTEM_PALETTE[DATA.systems.length % SYSTEM_PALETTE.length];
+    DATA.systems.push({id:newId('sys'), name, color});
+    bg.remove();
+    toast('Body System added');
+    render();
+  });
+}
+
+function openRenameSystemModal(sysId){
+  const sys = DATA.systems.find(s=>s.id===sysId);
+  if(!sys) return;
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal">
+    <h3>Rename Body System</h3>
+    <div class="field"><label>Name</label><input type="text" id="renameSysName" value="${esc(sys.name)}"></div>
+    <div class="modal-actions">
+      <button type="button" id="cancelRename" class="ghost">Cancel</button>
+      <button type="button" id="saveRename" class="primary">Save</button>
+    </div>
+  </div>`;
+  document.body.appendChild(bg);
+  bg.addEventListener('click', e=>{ if(e.target===bg) bg.remove(); });
+  bg.querySelector('#cancelRename').addEventListener('click', ()=> bg.remove());
+  bg.querySelector('#saveRename').addEventListener('click', ()=>{
+    const name = bg.querySelector('#renameSysName').value.trim();
+    if(name) sys.name = name;
+    bg.remove();
+    toast('Renamed');
+    render();
+  });
+}
+
+function deleteSystem(sysId){
+  if(DATA.systems.length<=1){ alert('At least one Body System must remain.'); return; }
+  if(!confirm('Delete this Body System? Its body parts will move into the first remaining system.')) return;
+  const fallback = DATA.systems.find(s=>s.id!==sysId);
+  DATA.organs.forEach(o=>{ if(o.system===sysId) o.system = fallback.id; });
+  DATA.systems = DATA.systems.filter(s=>s.id!==sysId);
+  toast('Body System deleted');
+  render();
+}
+
+function moveSystem(sysId, dir){
+  const idx = DATA.systems.findIndex(s=>s.id===sysId);
+  const target = idx + dir;
+  if(idx<0 || target<0 || target>=DATA.systems.length) return;
+  const tmp = DATA.systems[idx];
+  DATA.systems[idx] = DATA.systems[target];
+  DATA.systems[target] = tmp;
+  render();
+}
+
+function startColumnDrag(e, whichCol){
+  e.preventDefault();
+  const startX = e.clientX;
+  const startWidth = COL_WIDTHS[whichCol];
+  const el = document.getElementById(whichCol==='s1' ? 'bsColSections' : 'bsColDetail');
+  function onMove(ev){
+    const deltaX = ev.clientX - startX;
+    let newWidth = whichCol==='s1' ? startWidth + deltaX : startWidth - deltaX;
+    newWidth = Math.max(240, Math.min(640, newWidth));
+    COL_WIDTHS[whichCol] = newWidth;
+    if(el) el.style.width = newWidth + 'px';
+  }
+  function onUp(){
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+  }
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+
+/* ---------- Generic list tabs (organs / diseases / lifestyle) ---------- */
+let SEARCH_TERM = {organ:'', food:'', disease:'', lifestyle:''};
+let SELECTED = {disease:null, lifestyle:null};
+
+function matches(item, term){
+  if(!term) return true;
+  term = term.toLowerCase();
+  return JSON.stringify(item).toLowerCase().includes(term);
+}
+const TAB_NOTICE = {
+  disease:'General education only — not a diagnosis or a personal treatment plan. For any symptom or condition, please consult a qualified healthcare professional.'
+};
+function renderListTab(type){
+  const schema = SCHEMAS[type];
+  const items = storeOf(type).filter(it=>matches(it,SEARCH_TERM[type]));
+  const sel = SELECTED[type] ? storeOf(type).find(it=>it.id===SELECTED[type]) : null;
+
+  let rows = '';
+  items.forEach(it=>{
+    rows += `<tr class="row" data-id="${it.id}">${schema.columns.map(c=>`<td>${c.cell(it)}</td>`).join('')}</tr>`;
+  });
+  if(!rows) rows = `<tr><td colspan="${schema.columns.length}"><div class="empty-state">No matches. Try a different search, or add a new ${schema.label.toLowerCase()}.</div></td></tr>`;
+
+  return `
+  ${TAB_NOTICE[type] ? `<div class="notice">${esc(TAB_NOTICE[type])}</div>` : ''}
+  <div class="toolbar">
+    <div class="search"><input type="text" id="searchBox" placeholder="Search ${schema.label.toLowerCase()}s…" value="${esc(SEARCH_TERM[type])}"></div>
+    <button class="primary" id="btnAdd">+ Add ${schema.label}</button>
+  </div>
+  <div class="grid-two">
+    <div class="card" style="padding:0;overflow:hidden;">
+      <table>
+        <thead><tr>${schema.columns.map(c=>`<th>${esc(c.label)}</th>`).join('')}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <div>${sel ? renderDetail(type, sel) : `<div class="empty-state">Select a row to view its full profile.</div>`}</div>
+  </div>`;
+}
+
+function refsHtml(refIds){
+  if(!refIds || !refIds.length) return '';
+  return `<div class="refs-inline">Sources: ${refIds.map(r=>REFERENCES[r]?`<a href="${REFERENCES[r].url}" target="_blank" rel="noopener">${esc(REFERENCES[r].name)}</a>`:'').join(' · ')}</div>`;
+}
+function listBlock(label, arr){
+  if(!arr || !arr.length) return '';
+  return `<div class="section-label">${esc(label)}</div><ul class="plain">${arr.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`;
+}
+function renderDetail(type, item){
+  if(!item) return `<div class="empty-state">Not found.</div>`;
+  const schema = SCHEMAS[type];
+  let body = '';
+  schema.fields.forEach(f=>{
+    if(f.key==='name' || f.skipDetail) return;
+    if(f.detailRender){ body += f.detailRender(item); return; }
+    if(f.type==='list') body += listBlock(f.label, item[f.key]);
+    else if(f.type==='refs') body += refsHtml(item[f.key]);
+    else if(f.type==='text' && item[f.key]) body += `<div class="meta">${esc(item[f.key])}</div>`;
+  });
+  return `<div class="card">
+    <h2>${esc(item.name)}</h2>
+    ${body}
+    <div class="detail-actions">
+      <button data-act="edit" data-type="${type}" data-id="${item.id}">Edit</button>
+      <button class="danger" data-act="delete" data-type="${type}" data-id="${item.id}">Delete</button>
+    </div>
+  </div>`;
+}
+
+function renderStagedHeadings(item){
+  const fieldDefs = WHEEL_FIELD_DEFS.filter(f=> Array.isArray(item[f.key]) && item[f.key].length>0);
+  const schemaFieldLabel = key => (SCHEMAS.organ.fields.find(f=>f.key===key) || {}).label || key;
+
+  if(!WHEEL_ACTIVE_FIELD){
+    return `<div class="card">
+      <h2>${esc(item.name)}</h2>
+      <div class="meta"><span class="swatch" style="background:${sysById(item.system).color}"></span>${esc(sysById(item.system).name)} system</div>
+      <div class="section-label">Select a heading on the wheel</div>
+      <ul class="plain staged-headings">
+        ${fieldDefs.map(f=>`<li>${esc(schemaFieldLabel(f.key))}</li>`).join('')}
+      </ul>
+      <div class="detail-actions">
+        <button data-act="edit" data-type="organ" data-id="${item.id}">Edit</button>
+        <button class="danger" data-act="delete" data-type="organ" data-id="${item.id}">Delete</button>
+      </div>
+    </div>`;
+  }
+
+  const label = schemaFieldLabel(WHEEL_ACTIVE_FIELD);
+  const content = WHEEL_ACTIVE_FIELD==='refs' ? refsHtml(item.refs) : listBlock(label, item[WHEEL_ACTIVE_FIELD]);
+  return `<div class="card">
+    <h2>${esc(item.name)}</h2>
+    <div class="meta"><span class="swatch" style="background:${sysById(item.system).color}"></span>${esc(sysById(item.system).name)} system</div>
+    ${content}
+    <div class="detail-actions">
+      <button data-act="edit" data-type="organ" data-id="${item.id}">Edit</button>
+      <button class="danger" data-act="delete" data-type="organ" data-id="${item.id}">Delete</button>
+    </div>
+  </div>`;
+}
+
+/* ---------- Foods tab: master categories (left) + food cards (right), detail opens in a modal ---------- */
+let SELECTED_MASTER = null;
+
+function unassignedCategories(){
+  const assigned = new Set();
+  DATA.masterCategories.forEach(m=>m.subs.forEach(s=>assigned.add(s)));
+  return CATEGORIES.filter(c=>!assigned.has(c));
+}
+function masterList(){
+  const list = DATA.masterCategories.slice();
+  const un = unassignedCategories();
+  if(un.length) list.push({id:'__other__', name:'Other', subs:un, virtual:true});
+  return list;
+}
+function renderFoodsTab(){
+  const masters = masterList();
+  if(!SELECTED_MASTER || !masters.find(m=>m.id===SELECTED_MASTER)){
+    SELECTED_MASTER = masters.length ? masters[0].id : null;
+  }
+  const activeMaster = masters.find(m=>m.id===SELECTED_MASTER);
+  const foodsInMaster = (activeMaster ? DATA.foods.filter(f=>activeMaster.subs.includes(f.category)) : [])
+    .filter(f=>matches(f, SEARCH_TERM.food));
+
+  const nav = masters.map(m=>{
+    const count = DATA.foods.filter(f=>m.subs.includes(f.category)).length;
+    return `<div class="master-item ${m.id===SELECTED_MASTER?'active':''}" data-master="${m.id}">
+      <span>${esc(m.name)}</span><span class="count">${count}</span>
+    </div>`;
+  }).join('');
+
+  const cards = foodsInMaster.map(f=>`
+    <div class="food-card" data-id="${f.id}">
+      <div class="food-card-name">${esc(f.name)}</div>
+      <span class="pill">${esc(f.category)}</span>
+      <div class="food-card-serving">${esc(f.servingQty||'')}</div>
+    </div>`).join('') || `<div class="empty-state">No foods here yet. Add one, or pick a different category.</div>`;
+
+  return `
+  <div class="foods-layout">
+    <div>
+      <div class="master-nav">${nav}</div>
+      <button class="ghost" id="btnManageCats" style="width:100%;margin-top:12px;">Manage categories</button>
+    </div>
+    <div>
+      <div class="toolbar">
+        <div class="search"><input type="text" id="searchBox" placeholder="Search foods…" value="${esc(SEARCH_TERM.food)}"></div>
+        <button class="primary" id="btnAdd">+ Add Food</button>
+      </div>
+      <div class="food-card-grid">${cards}</div>
+    </div>
+  </div>`;
+}
+
+function openDetailModal(type, item){
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal">${renderDetail(type, item)}</div>`;
+  document.body.appendChild(bg);
+  bg.addEventListener('click', e=>{ if(e.target===bg) bg.remove(); });
+  bg.querySelector('[data-act="edit"]').addEventListener('click', ()=>{
+    bg.remove();
+    openForm(type, item);
+  });
+  bg.querySelector('[data-act="delete"]').addEventListener('click', ()=>{
+    if(!confirm('Delete this entry? This cannot be undone within this session.')) return;
+    const arr = storeOf(type);
+    const idx = arr.findIndex(x=>x.id===item.id);
+    if(idx>-1) arr.splice(idx,1);
+    bg.remove();
+    toast('Deleted');
+    render();
+  });
+}
+
+function openManageCategoriesModal(){
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  const rowsHtml = DATA.masterCategories.map((m,i)=>`
+    <div class="manage-cats-row" data-idx="${i}">
+      <input type="text" data-cat-name value="${esc(m.name)}">
+      <div class="cat-checks">
+        ${CATEGORIES.map(c=>`<label><input type="checkbox" data-cat-sub value="${esc(c)}" ${m.subs.includes(c)?'checked':''}> ${esc(c)}</label>`).join('')}
+      </div>
+      <div style="margin-top:8px;"><button type="button" class="danger" data-remove-row>Remove category</button></div>
+    </div>`).join('');
+
+  bg.innerHTML = `<div class="modal">
+    <h3>Manage food categories</h3>
+    <p class="refnote">Group the 12 intake categories under broader master categories shown on the Foods tab. Any intake category left unchecked everywhere will appear under "Other" automatically.</p>
+    <div class="manage-cats-list" id="catRows">${rowsHtml}</div>
+    <div class="modal-actions" style="justify-content:space-between;">
+      <button type="button" id="addCatRow" class="ghost">+ Add master category</button>
+      <div style="display:flex;gap:10px;">
+        <button type="button" id="cancelCats" class="ghost">Cancel</button>
+        <button type="button" id="saveCats" class="primary">Save categories</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(bg);
+  bg.addEventListener('click', e=>{ if(e.target===bg) bg.remove(); });
+  bg.querySelector('#cancelCats').addEventListener('click', ()=> bg.remove());
+
+  function wireRemoveButtons(){
+    bg.querySelectorAll('[data-remove-row]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        btn.closest('.manage-cats-row').remove();
+      });
+    });
+  }
+  wireRemoveButtons();
+
+  bg.querySelector('#addCatRow').addEventListener('click', ()=>{
+    const div = document.createElement('div');
+    div.className = 'manage-cats-row';
+    div.innerHTML = `
+      <input type="text" data-cat-name value="New Category">
+      <div class="cat-checks">
+        ${CATEGORIES.map(c=>`<label><input type="checkbox" data-cat-sub value="${esc(c)}"> ${esc(c)}</label>`).join('')}
+      </div>
+      <div style="margin-top:8px;"><button type="button" class="danger" data-remove-row>Remove category</button></div>`;
+    bg.querySelector('#catRows').appendChild(div);
+    wireRemoveButtons();
+  });
+
+  bg.querySelector('#saveCats').addEventListener('click', ()=>{
+    const rows = Array.from(bg.querySelectorAll('.manage-cats-row'));
+    const updated = rows.map((row,i)=>{
+      const name = row.querySelector('[data-cat-name]').value.trim() || ('Category ' + (i+1));
+      const subs = Array.from(row.querySelectorAll('[data-cat-sub]')).filter(c=>c.checked).map(c=>c.value);
+      const existingId = DATA.masterCategories[i] ? DATA.masterCategories[i].id : null;
+      return {id: existingId || newId('cat'), name, subs};
+    });
+    DATA.masterCategories = updated;
+    bg.remove();
+    toast('Categories updated');
+    render();
+  });
+}
+
+/* ---------- Age groups tab (card layout — small, fixed list) ---------- */
+function renderAgesTab(){
+  let cards = DATA.ages.map(a=>`
+    <div class="card">
+      <h2 style="font-size:18px;">${esc(a.name)}</h2>
+      <div class="meta">${esc(a.range)}</div>
+      ${listBlock('Consumption considerations', a.notes)}
+      <div class="detail-actions">
+        <button data-act="edit" data-type="age" data-id="${a.id}">Edit</button>
+        <button class="danger" data-act="delete" data-type="age" data-id="${a.id}">Delete</button>
+      </div>
+    </div>`).join('');
+  return `
+  <div class="toolbar">
+    <div></div>
+    <button class="primary" id="btnAdd">+ Add Age Group</button>
+  </div>
+  <div class="age-cards">${cards}</div>`;
+}
+
+/* ---------- References tab ---------- */
+function renderRefsTab(){
+  const rows = Object.entries(REFERENCES).map(([id,r])=>`
+    <tr><td style="width:40px;color:var(--paper-dim)">${id}</td>
+        <td>${esc(r.name)}</td>
+        <td><a class="refnote" href="${r.url}" target="_blank" rel="noopener">${esc(r.url)}</a></td></tr>`).join('');
+  return `
+  <div class="card">
+    <h2 style="font-size:19px;">Reference catalogue</h2>
+    <p class="refnote">Every organ, food, disease and lifestyle entry cites the general authoritative bodies whose published guidance backs its content. As the atlas grows, these can be tightened to specific articles or studies per fact.</p>
+    <table style="margin-top:10px;"><tbody>${rows}</tbody></table>
+  </div>`;
+}
+
+/* ---------- Wire per-render events ---------- */
+function activeType(){ return ACTIVE_TAB==='foods' ? 'food' : ACTIVE_TAB==='bodysystems' ? 'organ' : TAB_TYPE[ACTIVE_TAB]; }
+
+function wireTabEvents(){
+  const main = document.getElementById('main');
+
+  main.querySelectorAll('.wedge[data-id]').forEach(w=>{
+    w.addEventListener('click', ()=>{
+      BODY_SELECTED = w.dataset.id;
+      DETAIL_MODE = 'staged';
+      WHEEL_LEVEL = 'fields';
+      WHEEL_ACTIVE_FIELD = null;
+      render();
+    });
+  });
+  main.querySelectorAll('.legend-organ[data-id]').forEach(w=>{
+    w.addEventListener('click', ()=>{
+      BODY_SELECTED = w.dataset.id;
+      DETAIL_MODE = 'staged';
+      WHEEL_LEVEL = 'fields';
+      WHEEL_ACTIVE_FIELD = null;
+      render();
+    });
+  });
+  main.querySelectorAll('[data-field]').forEach(w=>{
+    w.addEventListener('click', ()=>{
+      WHEEL_ACTIVE_FIELD = w.dataset.field;
+      render();
+    });
+  });
+  main.querySelectorAll('[data-system-wedge]').forEach(w=>{
+    w.addEventListener('click', ()=>{
+      WHEEL_LEVEL = 'items';
+      WHEEL_ACTIVE_SYSTEM = w.dataset.systemWedge;
+      OPEN_SECTIONS[WHEEL_ACTIVE_SYSTEM] = true;
+      render();
+    });
+  });
+  main.querySelectorAll('[data-back-to-systems]').forEach(w=>{
+    w.addEventListener('click', ()=>{
+      WHEEL_LEVEL = 'systems';
+      WHEEL_ACTIVE_SYSTEM = null;
+      render();
+    });
+  });
+  main.querySelectorAll('[data-back-to-items]').forEach(w=>{
+    w.addEventListener('click', ()=>{
+      WHEEL_LEVEL = 'items';
+      WHEEL_ACTIVE_FIELD = null;
+      render();
+    });
+  });
+  main.querySelectorAll('[data-divider]').forEach(d=>{
+    d.addEventListener('mousedown', e=>{ startColumnDrag(e, d.dataset.divider); });
+  });
+  if(ACTIVE_TAB==='bodysystems'){
+    const box = main.querySelector('#wheelSvgBox');
+    if(box && typeof ResizeObserver !== 'undefined'){
+      if(WHEEL_RESIZE_OBSERVER) WHEEL_RESIZE_OBSERVER.disconnect();
+      WHEEL_RESIZE_OBSERVER = new ResizeObserver(entries=>{
+        for(const entry of entries){
+          const w = Math.round(entry.contentRect.width);
+          if(w && Math.abs(w - WHEEL_SIZE) > 2){
+            WHEEL_SIZE = w;
+            box.style.height = w + 'px';
+          }
+        }
+      });
+      WHEEL_RESIZE_OBSERVER.observe(box);
+    }
+  }
+
+  const searchBox = main.querySelector('#searchBox');
+  if(searchBox){
+    searchBox.addEventListener('input', e=>{
+      const type = activeType();
+      SEARCH_TERM[type] = e.target.value;
+      render();
+      const sb = document.getElementById('searchBox');
+      if(sb){ sb.focus(); sb.setSelectionRange(sb.value.length, sb.value.length); }
+    });
+  }
+  main.querySelectorAll('tr.row').forEach(r=>{
+    r.addEventListener('click', ()=>{
+      const type = TAB_TYPE[ACTIVE_TAB];
+      if(!type) return;
+      SELECTED[type] = r.dataset.id;
+      render();
+    });
+  });
+  main.querySelectorAll('.master-item').forEach(m=>{
+    m.addEventListener('click', ()=>{ SELECTED_MASTER = m.dataset.master; render(); });
+  });
+  main.querySelectorAll('.food-card').forEach(c=>{
+    c.addEventListener('click', ()=>{
+      const item = DATA.foods.find(f=>f.id===c.dataset.id);
+      if(item) openDetailModal('food', item);
+    });
+  });
+  const btnManageCats = main.querySelector('#btnManageCats');
+  if(btnManageCats) btnManageCats.addEventListener('click', openManageCategoriesModal);
+
+  /* Body Systems tab: section toggle, section CRUD, item rows, add-item */
+  main.querySelectorAll('[data-toggle]').forEach(t=>{
+    t.addEventListener('click', ()=>{
+      const id = t.dataset.toggle;
+      OPEN_SECTIONS[id] = !OPEN_SECTIONS[id];
+      render();
+    });
+  });
+  main.querySelectorAll('[data-rename-system]').forEach(b=>{
+    b.addEventListener('click', e=>{ e.stopPropagation(); openRenameSystemModal(b.dataset.renameSystem); });
+  });
+  main.querySelectorAll('[data-delete-system]').forEach(b=>{
+    b.addEventListener('click', e=>{ e.stopPropagation(); deleteSystem(b.dataset.deleteSystem); });
+  });
+  main.querySelectorAll('[data-move-up]').forEach(b=>{
+    b.addEventListener('click', e=>{ e.stopPropagation(); moveSystem(b.dataset.moveUp, -1); });
+  });
+  main.querySelectorAll('[data-move-down]').forEach(b=>{
+    b.addEventListener('click', e=>{ e.stopPropagation(); moveSystem(b.dataset.moveDown, 1); });
+  });
+  main.querySelectorAll('[data-add-item]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      openForm('organ', null, {system:b.dataset.addItem, role:b.dataset.role, partType: b.dataset.role==='main' ? 'Organ' : 'Tissue'});
+    });
+  });
+  main.querySelectorAll('.bs-row').forEach(r=>{
+    r.addEventListener('click', ()=>{ BODY_SELECTED = r.dataset.id; DETAIL_MODE = 'full'; render(); });
+  });
+  const btnAddSystem = main.querySelector('#btnAddSystem');
+  if(btnAddSystem) btnAddSystem.addEventListener('click', openAddSystemModal);
+
+  if(ACTIVE_TAB==='bodysystems' && BODY_SELECTED){
+    const selectedItem = DATA.organs.find(o=>o.id===BODY_SELECTED);
+    const svgHost = main.querySelector('#diagramHost');
+    if(svgHost && selectedItem){
+      const diagram = SYSTEM_DIAGRAMS[selectedItem.system];
+      const partId = diagram && diagram.partMap[selectedItem.name];
+      if(partId){
+        const el = svgHost.querySelector('#'+partId);
+        if(el) el.classList.add('part-highlight');
+      }
+    }
+  }
+
+  const btnAdd = main.querySelector('#btnAdd');
+  if(btnAdd){
+    btnAdd.addEventListener('click', ()=>{
+      const type = activeType() || 'age';
+      openForm(type, null);
+    });
+  }
+  main.querySelectorAll('[data-act="edit"]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const type=b.dataset.type, id=b.dataset.id;
+      const item = storeOf(type).find(x=>x.id===id);
+      openForm(type, item);
+    });
+  });
+  main.querySelectorAll('[data-act="delete"]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const type=b.dataset.type, id=b.dataset.id;
+      if(!confirm('Delete this entry? This cannot be undone within this session.')) return;
+      const arr = storeOf(type);
+      const idx = arr.findIndex(x=>x.id===id);
+      if(idx>-1) arr.splice(idx,1);
+      if(SELECTED[type]===id) SELECTED[type]=null;
+      if(BODY_SELECTED===id){ BODY_SELECTED=null; WHEEL_ACTIVE_FIELD=null; if(WHEEL_LEVEL==='fields') WHEEL_LEVEL='items'; }
+      toast('Deleted');
+      render();
+    });
+  });
+}
+
+/* ---------- Add / Edit modal (schema-driven) ---------- */
+function openForm(type, item, defaults){
+  const schema = SCHEMAS[type];
+  const isEdit = !!item;
+  const data = item ? JSON.parse(JSON.stringify(item)) : (defaults || {});
+
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  let fieldsHtml = '';
+  schema.fields.forEach(f=>{
+    const val = data[f.key];
+    if(f.type==='text'){
+      fieldsHtml += `<div class="field"><label>${esc(f.label)}</label><input type="text" data-key="${f.key}" value="${esc(val||'')}"></div>`;
+    } else if(f.type==='select'){
+      const opts = f.options();
+      fieldsHtml += `<div class="field"><label>${esc(f.label)}</label><select data-key="${f.key}">
+        ${opts.map(o=>`<option value="${esc(o.value)}" ${val===o.value?'selected':''}>${esc(o.label)}</option>`).join('')}
+      </select></div>`;
+    } else if(f.type==='list'){
+      fieldsHtml += `<div class="field"><label>${esc(f.label)}</label><textarea data-key="${f.key}">${esc((val||[]).join('\n'))}</textarea><div class="hint">One per line.</div></div>`;
+    } else if(f.type==='refs'){
+      fieldsHtml += `<div class="field"><label>${esc(f.label)}</label><div class="refs-check">
+        ${Object.entries(REFERENCES).map(([id,r])=>`<label><input type="checkbox" data-refkey="${id}" ${((val||[]).includes(id))?'checked':''}> ${esc(r.name)}</label>`).join('')}
+      </div></div>`;
+    }
+  });
+
+  bg.innerHTML = `<div class="modal">
+    <h3>${isEdit?'Edit':'Add'} ${schema.label}</h3>
+    <form id="entityForm">${fieldsHtml}
+      <div class="modal-actions">
+        <button type="button" id="cancelForm" class="ghost">Cancel</button>
+        <button type="submit" class="primary">${isEdit?'Save changes':'Add ' + schema.label}</button>
+      </div>
+    </form>
+  </div>`;
+  document.body.appendChild(bg);
+
+  bg.querySelector('#cancelForm').addEventListener('click', ()=> bg.remove());
+  bg.addEventListener('click', e=>{ if(e.target===bg) bg.remove(); });
+
+  bg.querySelector('#entityForm').addEventListener('submit', e=>{
+    e.preventDefault();
+    const out = isEdit ? item : {id:newId(type)};
+    schema.fields.forEach(f=>{
+      if(f.type==='list'){
+        const ta = bg.querySelector(`textarea[data-key="${f.key}"]`);
+        out[f.key] = linesToArr(ta.value);
+      } else if(f.type==='refs'){
+        const checked = Array.from(bg.querySelectorAll('[data-refkey]')).filter(c=>c.checked).map(c=>c.dataset.refkey);
+        out[f.key] = checked;
+      } else {
+        const el = bg.querySelector(`[data-key="${f.key}"]`);
+        out[f.key] = el.value;
+      }
+    });
+    if(!isEdit) storeOf(type).push(out);
+    bg.remove();
+    toast(isEdit ? 'Saved changes' : schema.label + ' added');
+    if(SELECTED.hasOwnProperty(type)) SELECTED[type] = out.id;
+    if(type==='organ'){ BODY_SELECTED = out.id; DETAIL_MODE = 'full'; }
+    render();
+  });
+}
+
+/* ---------- Export / Import / Reset ---------- */
+document.getElementById('btnExport').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify(DATA,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url; a.download = `health-atlas-data-${stamp}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  toast('Data exported');
+});
+document.getElementById('btnImportTrigger').addEventListener('click', ()=> document.getElementById('fileImport').click());
+document.getElementById('fileImport').addEventListener('change', e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = evt=>{
+    try{
+      const parsed = JSON.parse(evt.target.result);
+      if(!parsed.organs || !parsed.foods || !parsed.ages) throw new Error('bad shape');
+      if(!parsed.diseases) parsed.diseases = [];
+      if(!parsed.lifestyles) parsed.lifestyles = [];
+      if(!parsed.masterCategories) parsed.masterCategories = defaultData().masterCategories;
+      if(!parsed.systems) parsed.systems = defaultData().systems;
+      DATA = parsed;
+      SELECTED = {disease:null, lifestyle:null};
+      BODY_SELECTED = null;
+      WHEEL_LEVEL = 'systems';
+      WHEEL_ACTIVE_SYSTEM = null;
+      WHEEL_ACTIVE_FIELD = null;
+      DETAIL_MODE = 'full';
+      toast('Data imported');
+      render();
+    }catch(err){
+      alert("That file doesn't look like a Health Atlas export. Please choose a valid exported .json file.");
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+document.getElementById('btnReset').addEventListener('click', ()=>{
+  if(!confirm('Reset all data back to the original demo dataset? Unsaved edits will be lost unless already exported.')) return;
+  DATA = defaultData();
+  SELECTED = {disease:null, lifestyle:null};
+  BODY_SELECTED = null;
+  WHEEL_LEVEL = 'systems';
+  WHEEL_ACTIVE_SYSTEM = null;
+  WHEEL_ACTIVE_FIELD = null;
+  DETAIL_MODE = 'full';
+  toast('Reset to defaults');
+  render();
+});
+
+/* ---------- Init ---------- */
+render();
+</script>
+</body>
+</html>
