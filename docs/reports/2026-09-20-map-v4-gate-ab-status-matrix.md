@@ -68,8 +68,23 @@ Arabic Progress; Study→Approach Activity; Note Foundation; Mapping My
 Journey; Dawah; Share/Media"*), cross-checked against every place that
 numbering already appears in committed repository evidence — the ADRs, the
 2026-09-12/13 reports, and the ledger. Phase 1 is not named in the comment
-and appears nowhere in the repository as an explicit MAP v4 label; §3 records
-it as **unattested** rather than guessed.
+and appears nowhere in the repository as an explicit MAP v4 label; §3
+originally recorded it as **unattested** rather than guessed.
+
+> **Corrected 2026-09-20, under Master Architect Gate B audit authority (issue
+> #113, comment 5752673823).** The Master Architect's own audit of this
+> report states MAP v4's Phase 1 directly: **"Phase 1 = Safe Structural
+> Preparation (navigation, Study boundary, dependency map, modular extraction
+> strategy)."** §3's Phase 1 row is corrected below to that exact definition.
+> **This is a governing-authority statement, not a repository search** — the
+> distinction this report itself draws in §1 above (a repository grep is not
+> a substitute for the governing document) still holds, and is exactly why
+> the correction is attributed to the Master Architect's own audit rather
+> than re-derived from `app/` or `docs/` a fourth time. Implementation
+> evidence for Phase 1, where any exists in this repository, is marked
+> **separately** in the corrected row rather than folded into the
+> definition itself — the same reason the original row kept "unattested"
+> apart from ADR-001's partial resemblance.
 
 ## 2. The real finding: two distinct phase-numbering schemes coexist, and one recent PR conflated them
 
@@ -125,7 +140,7 @@ this branch and PRs #104/#110/#112 are all based on).
 
 | MAP v4 Phase | Repository label(s) | Status | Key evidence | Gaps / dependencies |
 |---|---|---|---|---|
-| **1 — (unattested)** | No explicit MAP v4 Phase 1 label found anywhere in the repository. | **UNATTESTED** — not guessed here. | ADR-001 (`existing-app-evolution.md`) is the closest thing to a "Phase 1"-shaped foundational decision (the app evolves from v08.02 rather than being rebuilt), but it is never labelled Phase 1 in any committed text. | Needs the actual MAP v4 text, or explicit Master Architect confirmation of what Phase 1 is, before this row can be filled honestly. |
+| **1 — Safe Structural Preparation** | Stated by the Master Architect (Gate B audit, issue #113 comment 5752673823): *"Phase 1 = Safe Structural Preparation (navigation, Study boundary, dependency map, modular extraction strategy)."* Not found as a repository-committed label — this definition comes from governing authority, not from a grep, per the correction above. | **DEFINED**, on Master Architect authority. **Repository-side implementation status is NOT independently assessed by this report** — see the separated evidence column, which is this session's own tentative cross-reference, not a completeness claim. | *Implementation evidence, kept separate from the definition on purpose:* `app/js/nav.js` (navigation) is a live, shell-wide module; the multiple `*-boundary.mjs` suites (`study-note-boundary.mjs`, `journey-map-boundary.mjs`, `study-activity-evidence-boundary.mjs`) enforce a Study module's reachability/dependency edges mechanically (each carries its own reachability walker with a positive control) — plausibly "Study boundary" and "dependency map" in substance, though none is labelled Phase 1 anywhere; the whole repository's own stated identity (`CLAUDE.md`: *"being rebuilt from a single-file HTML app… into a Firebase/Firestore application"*) is the "modular extraction strategy" at the scale of the whole project, not one artefact. ADR-001 remains the closest single foundational-decision document. | This row still needs the actual MAP v4 text, or a further Master Architect statement, before its *repository-side completeness* (not just its definition) can be assessed rather than cross-referenced. |
 | **2 — Word Identity/Card** | 2026-09-12 report §5/§8 ("Phase 2… closed"); ADR-002, ADR-007. | **CLOSED on its own executable criteria (2026-09-12), and extended since.** | `docs/reports/2026-09-12-reconciliation-and-phase2.md` §5 (10/10 acceptance criteria ✅, 92 rendered checks); `app/js/quran-word-card.js`; PR #112 (open, draft) adds a further Basic-tab lemma-occurrence toggle on top of the closed baseline. | None blocking. PR #112 is an unmerged, no-version-allocated enhancement on top of an already-closed phase — not a reopening of it. |
 | **3 — Arabic Progress** | 2026-09-12 report §8 ("Next: Phase 3"); CLAUDE.md "MAP Phase 3" entries, v08.14–v08.19. | **BUILT, owner-verified per CLAUDE.md; Rules candidate undeployed.** | `app/js/quran-word-progress.js`, `quranWordProgress`/`quranWordApprovals` collections; `tests/firestore/word-progress-v1.proposed.rules` (42 emulator assertions). | `firestore.rules` byte-for-byte unchanged — the two collections have no live server-side rule. Blocked on **E1**. Basic Arabic / Arabic in Depth claim units are refused by design pending a DDR-class decision on their claim unit. |
 | **4 — Study→Approach Activity** | CLAUDE.md "MAP Phase 4" P4-A…P4-E, v08.24–v08.31; ADR-008 (+ two amendments). | **Built and wired for D1/D2/D4 (v08.30); D3 wired documentation-only (19 Sep); gated shut by design (v08.31).** | `app/js/study-activity-evidence.js`, `app/js/study-event-wiring.js`, `app/js/study-evidence-readiness.js` (`ready: false` literal). | `firestore.rules` contains the word "evidence" zero times — every write is denied. Blocked on **E1**. The held `claude/phase4-wiring` branch (`7e2931f`) is superseded-by-rederivation and stays untouched per standing instruction; its `08.26` stamp is historical only. |
