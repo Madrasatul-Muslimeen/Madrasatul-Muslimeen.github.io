@@ -18,7 +18,8 @@ import { STATUSES, statusLabel } from "./unit-keys.js";
 import {
   listCollections, booksOf, chaptersOf, occurrencesIn, editionHasChapterLevel,
   occurrenceById, sourcePathOf, externalReferencesFor, resolveText,
-  availableLanguages, searchCorpus, topicIndex, exploreAggregate, CONTENT_LANGUAGES, SOURCE_LANGUAGE,
+  availableLanguages, searchCorpus, topicIndex, exploreAggregate, translationCoverage,
+  CONTENT_LANGUAGES, SOURCE_LANGUAGE,
 } from "./hadith-corpus.js";
 import { SYNTHETIC_NOTICE, TAXONOMY_REVISION } from "./hadith-fixture-data.js";
 import { PANEL_TITLE, verifiedRegisterEntries, commentaryForOccurrence, renderPermission, NEVER_DO } from "./hadith-commentary.js";
@@ -479,6 +480,24 @@ function renderExplore(body) {
       card.appendChild(el("p", "hadith-unreviewed", t("These mappings have not been reviewed by a scholar.")));
     }
     body.appendChild(card);
+  }
+
+  body.appendChild(el("h3", "", t("Translation coverage")));
+  const cov = translationCoverage();
+  const covMeta = el("div", "hadith-topic-meta");
+  covMeta.dataset.hadithCoverageTotal = String(cov.totals.occurrences);
+  covMeta.appendChild(el("p", "",
+    t("How many synthetic narrations carry an English or a Bangla version, alongside the Arabic source. This describes the fixture only -- it is not a measure of a real corpus.")));
+  covMeta.appendChild(el("p", "hadith-topic-counts", t("Overall: {en} of {n} have English, {bn} of {n} have Bangla.",
+    { en: cov.totals.withEnglish, bn: cov.totals.withBangla, n: cov.totals.occurrences })));
+  body.appendChild(covMeta);
+  for (const ed of cov.perEdition) {
+    const row = el("div", "hadith-card");
+    row.dataset.hadithCoverageEdition = ed.editionId;
+    row.appendChild(el("p", "hadith-row-name", ed.editionId));
+    row.appendChild(el("p", "", t("{en} of {n} have English, {bn} of {n} have Bangla.",
+      { en: ed.withEnglish, bn: ed.withBangla, n: ed.occurrences })));
+    body.appendChild(row);
   }
 }
 
