@@ -85,3 +85,48 @@ have been staged before a translation and product-fit pass.
   `app/health-study.html` topic-module screen (the Phase 7/12 "Health" study
   module already in the shared nav). The two are unrelated and this tranche
   does not touch that file.
+
+## Claim-provenance tranche (`js/health-atlas-claims.js`, additive)
+
+Every organ function statement now renders one evidence-status badge —
+`general-reference-only` or `cited-evidence`, a closed two-value vocabulary.
+All 82 statements across all 46 organs are currently `general-reference-only`
+(0 `cited-evidence`), because none was found to carry an embedded citation
+when the whole dataset was scanned programmatically. See
+`docs/reports/2026-09-20-health-claim-provenance-tranche1.md`.
+
+## Tranche 3 (`js/health-atlas-more-*.js`, `health-atlas-more.html`)
+
+A second bounded, read-only browser, built on top of the foundation and
+claim-provenance tranches: **Foods** (grouped by category), **Conditions**
+(cause + symptoms + affected organs) and **Age Groups** (name + range).
+
+**What it deliberately does NOT show, and why:**
+
+- `food.nutrition` and `food.servingQty` — nutrient-dose-shaped
+  (`"~2.7L/day"`, `"Adequate fibre 25-38g/day"`).
+- `disease.remedies`, `disease.homeRemedies`, `disease.naturalRemedies` —
+  treatment/remedy content.
+- `ageGroup.notes` — nutrition-guidance prose keyed to age
+  (`"Iron needs rise further for menstruating teens"`).
+- **`HEALTH_ATLAS_LIFESTYLES` is not read at all.** Unlike the fields above,
+  there is no clean structural/organizational subset of that dataset — its
+  three substantive fields (`.activities`, `.food`, `.avoid`) are themselves
+  lifestyle recommendations end to end (`"150 min/week moderate aerobic
+  activity"`, `"avoid screens immediately before bed"`). The whole export is
+  deferred rather than partially shown.
+
+**A real defect this tranche's own browser walk found before shipping**:
+`food.organs` looks purely qualitative on most entries (`"Lungs:
+continuous"`) but six of the 34 foods embed a dose recommendation in the
+same field (`"Heart: 40g/day"`, `"Large Intestine: 1 cup/day"`) — found by
+opening every rendered food in a real browser, not by reading the field's
+shape. `organNamesFor()` in `health-atlas-more-selectors.js` strips to the
+organ name only; `tools/health-atlas-verify/view-boundary-more.mjs` and its
+mutation-proof companion both assert the view calls it rather than reading
+`food.organs` directly. Full account in the tranche's own dated report.
+
+Guarded by `tools/health-atlas-verify/more-selectors.mjs`,
+`view-boundary-more.mjs` and `view-boundary-more-mutations.mjs`, following
+the same "read the module's own source text" pattern as tranche 1's
+`view-boundary.mjs`.
