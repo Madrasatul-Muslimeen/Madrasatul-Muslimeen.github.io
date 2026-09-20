@@ -106,27 +106,39 @@ reads in English until the Bangla catalogue is extended"*) — now shown as a
 real rendered page rather than inferred from `i18n.js`'s fallback behaviour,
 and confirming nothing else on the page regressed.
 
-## 5. The three Bangla strings, reconfirmed against the running page
+## 5. The four Bangla strings, reconfirmed against the running page
 
-PR #103's report §7 already lists the exact three `bn.js` keys needed. Reading
-them against the live English render in the screenshot confirms all three are
-verbatim, with no fourth string introduced since:
+**Correction, 2026-09-20 (MMSA task bridge, issue #114):** this section
+originally said "the three Bangla strings" and claimed the per-edition line
+"is already covered by the same catalogue key" as the overall line "since
+`t()` keys on the English literal." That claim was checked against `t()`'s
+own source (`app/js/i18n.js:61`, `table[key]` where `key` is the literal
+string `t()` was called with) rather than against the rendered page — and it
+is wrong: the overall line's call is `t("Overall: {en} of {n} have English,
+{bn} of {n} have Bangla.", …)` and the per-edition call is `t("{en} of {n}
+have English, {bn} of {n} have Bangla.", …)` — two different literals,
+because one carries the `"Overall: "` prefix and the other does not. A
+lookup keyed on the literal cannot make one entry answer for both. The 14/14
+Playwright run in §3 already exercised both lines independently and both
+rendered correctly in English (a Bangla `bn.js` entry for either one was
+never at issue in that run, since neither existed yet) — so nothing in the
+14/14 result was wrong, only this section's count of how many catalogue
+entries the gap it confirmed will need. Corrected below to four:
 
 1. `"Translation coverage"` (the `<h3>`)
 2. `"How many synthetic narrations carry an English or a Bangla version,
    alongside the Arabic source. This describes the fixture only -- it is not a
    measure of a real corpus."` (the caveat paragraph)
-3. `"Overall: {en} of {n} have English, {bn} of {n} have Bangla."` (the overall
-   line; the per-edition rows reuse the same template without the `"Overall:
-   "` prefix — `"{en} of {n} have English, {bn} of {n} have Bangla."` is
-   already covered by the same catalogue key once added, since `t()` keys on
-   the English literal and this template's own placeholder text is identical
-   between the two call sites)
+3. `"Overall: {en} of {n} have English, {bn} of {n} have Bangla."` (the one
+   overall line only)
+4. `"{en} of {n} have English, {bn} of {n} have Bangla."` (one per edition —
+   a **distinct** literal from #3, not a reuse of it)
 
 `bn.js` remains untouched by this round — it is on this bridge's protected-path
 table, exactly as PR #103 already flagged. This verification changes nothing
 about that; it only proves, from the rendered page rather than from reading
-`i18n.js`, that the gap is real and is exactly these three strings.
+`i18n.js`, that the gap is real — and, per this correction, that closing it
+needs four catalogue entries rather than three.
 
 ## 6. What this deliberately does not do
 
