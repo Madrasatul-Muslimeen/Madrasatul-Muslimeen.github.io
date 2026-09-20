@@ -227,9 +227,16 @@ just in source; and the `synthetic-beta-ar-v1` row's numbers match both
 functions' own documented fixture gap in both languages.
 
 Full-page screenshots (390x844) were captured for both languages and
-attached as evidence to this task's pull request rather than checked into
-the repository, per this project's own convention that a screenshot is
-evidence for a round, not a permanent asset. Read side by side: the rest of
+inspected directly in this session (per this project's own standing lesson
+that a screenshot must be looked at, not just measured), rather than checked
+into the repository. **Correction**: this report's own body originally said
+these were "attached as evidence" to the pull request; the tools available
+to this session have no mechanism to upload a binary image to a GitHub pull
+request or comment, so they were not attached anywhere and exist only inside
+this session's own working environment, which does not persist. What
+follows is that direct visual inspection, described rather than shown; the
+Playwright assertions above are reproducible evidence, the description below
+is not. Read side by side: the rest of
 each Bangla page is genuinely translated (headings, tab labels, the language
 picker itself), and the two new sections are the only English text on an
 otherwise-Bangla page — the exact, precise shape of the seven-key gap
