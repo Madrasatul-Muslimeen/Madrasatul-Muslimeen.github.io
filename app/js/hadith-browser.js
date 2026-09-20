@@ -18,7 +18,7 @@ import { STATUSES, statusLabel } from "./unit-keys.js";
 import {
   listCollections, booksOf, chaptersOf, occurrencesIn, editionHasChapterLevel,
   occurrenceById, sourcePathOf, externalReferencesFor, resolveText,
-  availableLanguages, searchCorpus, topicIndex, exploreAggregate, CONTENT_LANGUAGES, SOURCE_LANGUAGE,
+  availableLanguages, searchCorpus, listTopics, topicIndex, exploreAggregate, CONTENT_LANGUAGES, SOURCE_LANGUAGE,
 } from "./hadith-corpus.js";
 import { SYNTHETIC_NOTICE, TAXONOMY_REVISION } from "./hadith-fixture-data.js";
 import { PANEL_TITLE, verifiedRegisterEntries, commentaryForOccurrence, renderPermission, NEVER_DO } from "./hadith-commentary.js";
@@ -44,7 +44,7 @@ export function mountHadithBrowser(root, { mount = "standalone" } = {}) {
   const state = {
     view: "collections",
     contentLang: getAppLang() === "bn" ? "bn" : "en",
-    editionId: null, bookId: null, chapterId: null, query: "",
+    editionId: null, bookId: null, chapterId: null, query: "", topicId: null,
     mount,
   };
 
@@ -338,8 +338,36 @@ function renderCardCommentary(occurrence) {
 
 function renderTopic(body, state, render) {
   const uiLang = getAppLang();
-  const idx = topicIndex("synthetic-topic-salah");
+
+  // No topic chosen yet -- list every topic, the same shape as the
+  // Collections tab's own edition list, rather than opening straight into a
+  // single hardcoded one. `listTopics()` already drives Explore's own
+  // per-topic cards; this is the first place it also drives NAVIGATION.
+  if (!state.topicId) {
+    body.appendChild(el("h2", null, t("Topics")));
+    const list = el("div", "hadith-list");
+    for (const tp of listTopics()) {
+      const row = el("button", "hadith-row");
+      row.dataset.hadithTopicRow = tp.topicId;
+      row.appendChild(el("span", "hadith-row-name", langText(tp.label, uiLang)));
+      row.appendChild(el("span", "hadith-row-meta", `${tp.topicId} · ${t("Synthetic")}`));
+      row.addEventListener("click", () => { state.topicId = tp.topicId; render(); });
+      list.appendChild(row);
+    }
+    body.appendChild(list);
+    return;
+  }
+
+  const idx = topicIndex(state.topicId);
   if (!idx) { body.appendChild(el("p", "hadith-note", t("Nothing here yet."))); return; }
+
+  const crumbs = el("nav", "hadith-crumbs");
+  const back = el("button", "hadith-crumb", t("Topics"));
+  back.dataset.hadithTopicBack = "true";
+  back.addEventListener("click", () => { state.topicId = null; render(); });
+  crumbs.appendChild(back);
+  crumbs.appendChild(el("span", "hadith-crumb-current", langText(idx.topic.label, uiLang)));
+  body.appendChild(crumbs);
 
   body.appendChild(el("h2", null, langText(idx.topic.label, uiLang)));
 

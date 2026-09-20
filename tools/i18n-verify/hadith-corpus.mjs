@@ -8,7 +8,7 @@ import process from "node:process";
 import {
   listCollections, booksOf, chaptersOf, occurrencesIn, editionHasChapterLevel,
   occurrenceById, sourcePathOf, externalReferencesFor, resolveText, availableLanguages,
-  searchCorpus, topicIndex, exploreAggregate, CONTENT_LANGUAGES, SOURCE_LANGUAGE,
+  searchCorpus, listTopics, topicIndex, exploreAggregate, CONTENT_LANGUAGES, SOURCE_LANGUAGE,
 } from "../../app/js/hadith-corpus.js";
 import {
   OCCURRENCES, SYNTHETIC_NOTICE, TAXONOMY_REVISION,
@@ -403,6 +403,49 @@ check("EXPLORE -- the aggregate reaches no progress store of any kind", () => {
   for (const forbidden of ["records", "activity", "chunkKey", "trackableId", "approach_", "claimStatus", "demoTrack"]) {
     assert.ok(!body.includes(forbidden), `exploreAggregate reaches ${forbidden}`);
   }
+});
+
+// ---------------------------------------------------------------------------
+// TOPIC NAVIGATION -- listTopics() must offer more than one topic to be worth
+// navigating between, and each must independently resolve. This is the fixture
+// half of the Topics-tab navigation gap; the browser half is proven by the
+// focused Playwright script referenced in this round's dated report.
+// ---------------------------------------------------------------------------
+
+check("NAVIGATION -- listTopics() offers more than one topic, or there is nothing to navigate", () => {
+  assert.ok(listTopics().length >= 2,
+    "a topic PICKER proves nothing with exactly one topic -- add a second synthetic topic to the fixture");
+});
+
+check("NAVIGATION -- every topic listTopics() offers resolves independently through topicIndex()", () => {
+  for (const tp of listTopics()) {
+    const idx = topicIndex(tp.topicId);
+    assert.ok(idx, `topicIndex("${tp.topicId}") returned null -- listTopics() offers an id that does not resolve`);
+    assert.equal(idx.topic.topicId, tp.topicId);
+  }
+});
+
+check("NAVIGATION -- the two topics are genuinely distinct in what they reach, not a copy-paste pair", () => {
+  const salah = topicIndex("synthetic-topic-salah");
+  const wudu = topicIndex("synthetic-topic-wudu");
+  assert.ok(wudu, "the new synthetic-topic-wudu fixture topic must resolve");
+  assert.notEqual(salah.distinctOccurrences, wudu.distinctOccurrences,
+    "if the two topics reach the same count, a picker showing only totals could not prove it switched topics");
+  // Every occurrence syn-map-0004 reaches belongs to the SAME book/chapter as
+  // syn-map-0002's target (`synthetic-alpha-b2`), which topicIndex() would
+  // still list correctly even from a shared ancestor -- the assertion that
+  // matters is that the NEW topic's own mapping id is the one that put it there.
+  const wuduMapping = TOPIC_MAPPINGS.find((m) => m.topicId === "synthetic-topic-wudu");
+  assert.equal(wuduMapping.topicMappingId, "syn-map-0004");
+  assert.ok(wudu.collections.every((g) => g.entries.every((e) => e.viaMappingId === "syn-map-0004")),
+    "every row the new topic lists must be reached through its OWN mapping, not inherited from Salah's");
+});
+
+check("NAVIGATION -- the second topic's own mapping id and topic id both carry the enforced synthetic prefix", () => {
+  const m = TOPIC_MAPPINGS.find((x) => x.topicId === "synthetic-topic-wudu");
+  assert.ok(m.topicMappingId.startsWith("syn-map-"));
+  assert.ok(m.topicId.startsWith("synthetic-"));
+  assert.equal(m.reviewStatus, "unreviewed", "a synthetic mapping must never present as scholar-reviewed");
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);
