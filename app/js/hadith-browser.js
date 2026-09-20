@@ -18,7 +18,8 @@ import { STATUSES, statusLabel } from "./unit-keys.js";
 import {
   listCollections, booksOf, chaptersOf, occurrencesIn, editionHasChapterLevel,
   occurrenceById, sourcePathOf, externalReferencesFor, resolveText,
-  availableLanguages, searchCorpus, topicIndex, exploreAggregate, CONTENT_LANGUAGES, SOURCE_LANGUAGE,
+  availableLanguages, searchCorpus, topicIndex, exploreAggregate, topicCoverage,
+  CONTENT_LANGUAGES, SOURCE_LANGUAGE,
 } from "./hadith-corpus.js";
 import { SYNTHETIC_NOTICE, TAXONOMY_REVISION } from "./hadith-fixture-data.js";
 import { PANEL_TITLE, verifiedRegisterEntries, commentaryForOccurrence, renderPermission, NEVER_DO } from "./hadith-commentary.js";
@@ -480,6 +481,37 @@ function renderExplore(body) {
     }
     body.appendChild(card);
   }
+
+  renderTopicCoverage(body);
+}
+
+/**
+ * TOPIC COVERAGE -- a different question from the per-topic cards above: of
+ * every narration in the corpus, how many are reached by ANY topic mapping
+ * at all, and how many are not mapped to a topic yet. Additive only -- every
+ * existing Explore row above this is untouched.
+ */
+function renderTopicCoverage(body) {
+  const cov = topicCoverage();
+
+  body.appendChild(el("h3", "", t("Topic coverage")));
+  const wrap = el("div", "hadith-topic-coverage");
+  wrap.dataset.hadithTopicCoverage = "true";
+  wrap.appendChild(el("p", "",
+    t("Of the {total} narrations in the corpus, {covered} are reachable through at least one topic mapping and {uncovered} are not mapped to any topic yet. This is distinct from the per-topic counts above, which count within one topic only.",
+      { total: cov.totals.occurrences, covered: cov.totals.covered, uncovered: cov.totals.uncovered })));
+
+  for (const ed of cov.editions) {
+    const row = el("p", "hadith-topic-coverage-edition");
+    row.dataset.hadithCoverageEdition = ed.editionId;
+    row.appendChild(document.createTextNode(`${ed.editionId} — `));
+    row.appendChild(document.createTextNode(
+      t("{covered} of {total} narrations in this edition are mapped to at least one topic; {uncovered} are not.",
+        { covered: ed.covered, total: ed.occurrences, uncovered: ed.uncovered })));
+    wrap.appendChild(row);
+  }
+
+  body.appendChild(wrap);
 }
 
 // ---------------------------------------------------------------------------
