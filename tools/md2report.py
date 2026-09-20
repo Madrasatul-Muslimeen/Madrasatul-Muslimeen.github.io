@@ -36,7 +36,7 @@ while i < len(lines):
         out.append("<ul>" + "".join(f"<li>{inline(x)}</li>" for x in items) + "</ul>"); continue
     if not l.strip(): i += 1; continue
     para = []
-    while i < len(lines) and lines[i].strip() and not lines[i].startswith(("|", "#", "- ", "---")) and not re.match(r'^\d+\.\s', lines[i]):
+    while i < len(lines) and lines[i].strip() and not lines[i].startswith(("|", "- ", "---")) and not re.match(r'^#{1,6}\s', lines[i]) and not re.match(r'^\d+\.\s', lines[i]):
         para.append(lines[i]); i += 1
     out.append("<p>" + inline(" ".join(para)) + "</p>")
 CSS = """<style>
