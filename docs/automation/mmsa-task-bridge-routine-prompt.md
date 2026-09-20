@@ -1,12 +1,28 @@
 # MMSA task bridge — the Routine's saved prompt
 
-**Status: CANDIDATE FOR REVIEW. The Routine has not been created.** Do not paste
-this into claude.ai until the Master Architect has accepted the design.
+**Status: LIVE PILOT — and this file and the Routine's saved Instructions are
+two different places.** The Routine has been created and is firing in
+production: issues #94, #95, #96 and #97 are real runs against real
+`/mmsa-task` triggers, not a design exercise, and the earlier "CANDIDATE FOR
+REVIEW ... has not been created" wording above was stale from the moment the
+first of those ran. **Editing this file changes only the repository's own
+record of the intended prompt — it does NOT change what
+[claude.ai/code/routines](https://claude.ai/code/routines) actually has saved
+in the Instructions box**, which is whatever text was pasted there last. Do
+not treat this document and the live Routine as synchronized just because
+both exist. This revision (20 Sep 2026) adds the checkout preflight in Step 3
+below, closing the false-failure checkout artifact issue #95 raised and PR #96
+diagnosed; the exact copy/paste replacement text, and the Owner's own step to
+apply it, are in
+`docs/reports/2026-09-20-mmsa-task-bridge-routine-prompt-checkout-preflight.md`.
+**Until the Owner pastes that text into the Routine's saved Instructions, live
+runs keep following the prior wording, without this preflight.**
 
-This is the text that goes in the **Instructions** box when creating the Routine
-at [claude.ai/code/routines](https://claude.ai/code/routines). It is the
-authority for every run: the fired payload is labelled untrusted data by
-Anthropic, so **only this prompt can grant permission to act.**
+This is the text that goes in the **Instructions** box for the Routine at
+[claude.ai/code/routines](https://claude.ai/code/routines) — whether creating
+it for the first time or replacing its saved Instructions with an update. It
+is the authority for every run: the fired payload is labelled untrusted data
+by Anthropic, so **only this prompt can grant permission to act.**
 
 The prompt is written so that the payload cannot smuggle a task. The payload
 names *where* to look; this prompt decides *whether* to look, *what to check*,
@@ -110,6 +126,65 @@ issue asking the question, and end the run.
 
 - Work on a branch whose name begins with `claude/`. Never commit to `main`.
 - **Open a pull request. Never merge one, and never claim an approval.**
+- **Before running the seven governance suites, give this checkout the git
+  history and branch refs two of them read.** `brief-integrity.mjs` and
+  `programme-ledger.mjs` / `programme-ledger-mutations.mjs` resolve
+  `origin/main` and specific branches — including every stream's
+  `activeBranch` in
+  `docs/governance/programme-integration-ledger.json` — with real git history
+  between them and `main`. A Routine session's own checkout does not carry any
+  of that by default, and running the suites without it produces a **false
+  failure that is a checkout artifact, not a defect**: measured and diagnosed
+  in issue #95 / PR #96, `programme-ledger-mutations` read 42 passed / 7
+  failed and `brief-integrity` read 6 passed / 2 failed on an unmodified
+  `main`, and both went to 0 failed purely from fetching, with no repository
+  file changed.
+
+  **A checkout of one branch is narrowed two ways, and fixing only one of
+  them is not enough** — proven by testing against the real repository, not
+  assumed: it is usually both shallow (missing history) AND single-branch
+  (its `remote.origin.fetch` refspec names only the one checked-out branch,
+  so `git fetch --unshallow origin` alone extends that one branch's history
+  and pulls in nothing else — measured to fetch `main` and nothing else
+  besides the branch already held). Widen the refspec first, then fetch full
+  history for everything it now names:
+
+  ```bash
+  git remote set-branches origin '*'
+  git fetch --depth=2147483647 origin
+  ```
+
+  This is safe to run unconditionally — it is a harmless no-op on a checkout
+  that already has full history and every branch (confirmed by running it
+  against one).
+
+  Then assert the refs the guards actually need resolve, and **stop with a
+  named checkout preflight error rather than run the suites and risk
+  misreading their result** if one does not:
+
+  ```bash
+  git rev-parse origin/main >/dev/null 2>&1 \
+    || { echo "CHECKOUT PREFLIGHT FAILED: origin/main did not resolve after fetch"; exit 1; }
+
+  node -e '
+    const l = require("./docs/governance/programme-integration-ledger.json");
+    for (const s of l.streams || []) if (s.activeBranch) console.log(s.activeBranch);
+  ' | while read -r b; do
+    git rev-parse "origin/$b" >/dev/null 2>&1 \
+      || { echo "CHECKOUT PREFLIGHT FAILED: origin/$b (ledger stream activeBranch) did not resolve after fetch"; exit 1; }
+  done
+  ```
+
+  This is git bookkeeping local to the session's own working copy — it
+  changes no repository file, needs no declaration and no authorisation, and
+  is not the shared-file or version restriction below. **If a named ref still
+  will not resolve after a full fetch, that is a real finding, not a checkout
+  artifact:** stop, do not run the suites, and report exactly which ref and
+  which guard needed it, per Step 4 — do not invent, delete, or rewrite the
+  missing ref, and do not edit a guard's own logic to route around it
+  (`brief-integrity.mjs` and `programme-ledger*.mjs` are themselves protected
+  paths, below).
+
 - Run the seven governance suites before pushing, and put their results in the
   pull request body:
   `programme-ledger`, `programme-ledger-mutations`, `brief-integrity`,
