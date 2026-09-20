@@ -8,7 +8,8 @@ import process from "node:process";
 import {
   listCollections, booksOf, chaptersOf, occurrencesIn, editionHasChapterLevel,
   occurrenceById, sourcePathOf, externalReferencesFor, resolveText, availableLanguages,
-  searchCorpus, topicIndex, exploreAggregate, topicCoverage, CONTENT_LANGUAGES, SOURCE_LANGUAGE,
+  searchCorpus, topicIndex, exploreAggregate, translationCoverage, topicCoverage,
+  CONTENT_LANGUAGES, SOURCE_LANGUAGE,
 } from "../../app/js/hadith-corpus.js";
 import {
   OCCURRENCES, SYNTHETIC_NOTICE, TAXONOMY_REVISION,
@@ -397,12 +398,113 @@ check("EXPLORE -- a repeat is counted as its own narration, never merged", () =>
   assert.equal(summed, a.totals.occurrences);
 });
 
+/**
+ * A named export's own body, bounded at the NEXT top-level `export`, never to
+ * end of file. `exploreAggregate`'s own guard once sliced to EOF, which was
+ * silently correct only because it happened to be the last export in the
+ * file -- adding `translationCoverage` after it pulled that function's own
+ * doc comment (which names `trackableId` on purpose, to say it is absent)
+ * into the slice, and the guard failed a check it had no business seeing.
+ * Positive control: this must find a body that is shorter than the whole
+ * remaining file whenever a later export exists.
+ */
+function exportedFunctionBody(code, name) {
+  const start = code.indexOf(`export function ${name}`);
+  assert.ok(start >= 0, `export function ${name} not found`);
+  const next = code.indexOf("\nexport function", start + 1);
+  return next === -1 ? code.slice(start) : code.slice(start, next);
+}
+
 check("EXPLORE -- the aggregate reaches no progress store of any kind", () => {
-  const src = fs.readFileSync(path.join(appJs, "hadith-corpus.js"), "utf8");
-  const body = src.slice(src.indexOf("export function exploreAggregate"));
+  // codeOf() strips comments -- both this function's own doc comment and the
+  // NEXT export's leading doc comment name several of these words on purpose,
+  // to say they are absent, and a raw-text slice would trip on either one.
+  const full = codeOf("hadith-corpus.js");
+  const body = exportedFunctionBody(full, "exploreAggregate");
+  assert.ok(body.length < full.length, "the slice reached end of file -- it is not bounded to this function");
   for (const forbidden of ["records", "activity", "chunkKey", "trackableId", "approach_", "claimStatus", "demoTrack"]) {
     assert.ok(!body.includes(forbidden), `exploreAggregate reaches ${forbidden}`);
   }
+});
+
+// ---------------------------------------------------------------------------
+// Translation coverage -- MEASURED against the fixture, not guessed
+// ---------------------------------------------------------------------------
+
+check("COVERAGE -- English is present on every occurrence in this fixture, and the totals prove it", () => {
+  const cov = translationCoverage();
+  assert.equal(cov.totals.occurrences, OCCURRENCES.length);
+  // The fixture's own gap (syn-occ-0008) is Bangla-only, per hadith-fixture-data.js's
+  // own comment -- if that ever stops being the only gap, this figure must move
+  // with it rather than staying a stale literal.
+  const missingBangla = OCCURRENCES.filter((o) => !availableLanguages(o).includes("bn")).length;
+  const missingEnglish = OCCURRENCES.filter((o) => !availableLanguages(o).includes("en")).length;
+  assert.equal(cov.totals.withEnglish, OCCURRENCES.length - missingEnglish);
+  assert.equal(cov.totals.withBangla, OCCURRENCES.length - missingBangla);
+  assert.equal(missingBangla, 1, "the fixture's own documented gap (syn-occ-0008) must be exactly one occurrence");
+});
+
+check("COVERAGE -- per-edition figures sum to the totals, and every edition is present", () => {
+  const cov = translationCoverage();
+  assert.equal(cov.perEdition.length, EDITIONS.length);
+  assert.equal(cov.perEdition.reduce((n, e) => n + e.occurrences, 0), cov.totals.occurrences);
+  assert.equal(cov.perEdition.reduce((n, e) => n + e.withEnglish, 0), cov.totals.withEnglish);
+  assert.equal(cov.perEdition.reduce((n, e) => n + e.withBangla, 0), cov.totals.withBangla);
+  const beta = cov.perEdition.find((e) => e.editionId === "synthetic-beta-ar-v1");
+  assert.ok(beta, "synthetic-beta-ar-v1 is missing from the coverage");
+  assert.equal(beta.occurrences, 2);
+  assert.equal(beta.withEnglish, 2, "both of Beta's occurrences have English");
+  assert.equal(beta.withBangla, 1, "syn-occ-0008's own documented gap must show up on ITS edition, not just overall");
+});
+
+check("COVERAGE -- a Bangla gap can never be reported as covered", () => {
+  const cov = translationCoverage();
+  const beta = cov.perEdition.find((e) => e.editionId === "synthetic-beta-ar-v1");
+  assert.ok(beta.withBangla < beta.occurrences, "the fixture's own gap must show up as less than full coverage");
+});
+
+check("COVERAGE -- reaches no persistence, claim or progress path", () => {
+  const src = fs.readFileSync(path.join(appJs, "hadith-corpus.js"), "utf8");
+  // Reads the CODE only (codeOf strips comments) -- the function's own doc
+  // comment names several of these words on purpose, to say they are absent.
+  const body = exportedFunctionBody(codeOf("hadith-corpus.js"), "translationCoverage");
+  for (const forbidden of ["records", "activity", "chunkKey", "trackableId", "approach_", "claimStatus", "demoTrack"]) {
+    assert.ok(!body.includes(forbidden), `translationCoverage reaches ${forbidden}`);
+  }
+});
+
+check("COVERAGE -- the Explore renderer reads it, never re-derives it from scratch", () => {
+  const src = codeOf("hadith-browser.js");
+  assert.ok(/translationCoverage/.test(src), "hadith-browser.js does not call translationCoverage() at all");
+  assert.ok(/import\s*\{[^}]*\btranslationCoverage\b[^}]*\}\s*from\s*["']\.\/hadith-corpus\.js["']/.test(src),
+    "translationCoverage must be IMPORTED from hadith-corpus.js, not redefined locally");
+});
+
+// ---------------------------------------------------------------------------
+// Integration merge (issue #114, 20 Sep 2026): translationCoverage() (PR #103)
+// and topicCoverage() (PR #118) were built independently and each named its
+// own per-edition dataset attribute `hadithCoverageEdition` -- a real
+// collision, since both attach it to a row keyed by the SAME editionId for
+// a DIFFERENT fact. A selector on the shared name would match two
+// differently-shaped elements per edition once both features render. Split
+// into `hadithTranslationCoverageEdition` and `hadithTopicCoverageEdition`
+// at merge; this guards the split rather than assuming it stuck.
+// ---------------------------------------------------------------------------
+
+check("INTEGRATION -- translation- and topic-coverage per-edition rows no longer share one dataset attribute", () => {
+  const src = codeOf("hadith-browser.js");
+  assert.ok(/hadithTranslationCoverageEdition/.test(src),
+    "renderTranslationCoverage() must set its own, unambiguous per-edition attribute");
+  assert.ok(/hadithTopicCoverageEdition/.test(src),
+    "renderTopicCoverage() must set its own, unambiguous per-edition attribute");
+  assert.ok(!/dataset\.hadithCoverageEdition\b/.test(src),
+    "the old shared attribute name must not still be assigned anywhere -- it is ambiguous between the two features");
+});
+
+check("INTEGRATION -- both coverage sections render in Explore, neither shadowing the other", () => {
+  const src = codeOf("hadith-browser.js");
+  assert.ok(/renderTranslationCoverage\(body\)/.test(src), "renderExplore must still call renderTranslationCoverage(body)");
+  assert.ok(/renderTopicCoverage\(body\)/.test(src), "renderExplore must still call renderTopicCoverage(body)");
 });
 
 // ---------------------------------------------------------------------------

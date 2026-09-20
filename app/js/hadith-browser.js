@@ -18,7 +18,8 @@ import { STATUSES, statusLabel } from "./unit-keys.js";
 import {
   listCollections, booksOf, chaptersOf, occurrencesIn, editionHasChapterLevel,
   occurrenceById, sourcePathOf, externalReferencesFor, resolveText,
-  availableLanguages, searchCorpus, topicIndex, exploreAggregate, topicCoverage,
+  availableLanguages, searchCorpus, topicIndex, exploreAggregate,
+  translationCoverage, topicCoverage,
   CONTENT_LANGUAGES, SOURCE_LANGUAGE,
 } from "./hadith-corpus.js";
 import { SYNTHETIC_NOTICE, TAXONOMY_REVISION } from "./hadith-fixture-data.js";
@@ -482,7 +483,43 @@ function renderExplore(body) {
     body.appendChild(card);
   }
 
+  renderTranslationCoverage(body);
   renderTopicCoverage(body);
+}
+
+/**
+ * TRANSLATION COVERAGE -- per edition and overall, how many synthetic
+ * narrations carry an English or a Bangla version alongside the Arabic
+ * source. Additive only -- every existing Explore row above this is
+ * untouched. Extracted into its own function (integration merge of PR #103
+ * and PR #118, 20 Sep 2026) to match `renderTopicCoverage()`'s own shape --
+ * the two were built independently and originally differed in structure
+ * only, not in what either shows.
+ */
+function renderTranslationCoverage(body) {
+  body.appendChild(el("h3", "", t("Translation coverage")));
+  const cov = translationCoverage();
+  const covMeta = el("div", "hadith-topic-meta");
+  covMeta.dataset.hadithCoverageTotal = String(cov.totals.occurrences);
+  covMeta.appendChild(el("p", "",
+    t("How many synthetic narrations carry an English or a Bangla version, alongside the Arabic source. This describes the fixture only -- it is not a measure of a real corpus.")));
+  covMeta.appendChild(el("p", "hadith-topic-counts", t("Overall: {en} of {n} have English, {bn} of {n} have Bangla.",
+    { en: cov.totals.withEnglish, bn: cov.totals.withBangla, n: cov.totals.occurrences })));
+  body.appendChild(covMeta);
+  for (const ed of cov.perEdition) {
+    const row = el("div", "hadith-card");
+    // Renamed from `hadithCoverageEdition` at integration (was ambiguous
+    // with `renderTopicCoverage()`'s own per-edition rows, which independently
+    // picked the identical attribute name for a different fact about the
+    // same edition id -- see the integration report's conflict-resolution
+    // section). A selector on the old bare name would now match two
+    // differently-shaped elements per edition.
+    row.dataset.hadithTranslationCoverageEdition = ed.editionId;
+    row.appendChild(el("p", "hadith-row-name", ed.editionId));
+    row.appendChild(el("p", "", t("{en} of {n} have English, {bn} of {n} have Bangla.",
+      { en: ed.withEnglish, bn: ed.withBangla, n: ed.occurrences })));
+    body.appendChild(row);
+  }
 }
 
 /**
@@ -503,7 +540,9 @@ function renderTopicCoverage(body) {
 
   for (const ed of cov.editions) {
     const row = el("p", "hadith-topic-coverage-edition");
-    row.dataset.hadithCoverageEdition = ed.editionId;
+    // Renamed from `hadithCoverageEdition` at integration -- see
+    // `renderTranslationCoverage()`'s own note above.
+    row.dataset.hadithTopicCoverageEdition = ed.editionId;
     row.appendChild(document.createTextNode(`${ed.editionId} — `));
     row.appendChild(document.createTextNode(
       t("{covered} of {total} narrations in this edition are mapped to at least one topic; {uncovered} are not.",
