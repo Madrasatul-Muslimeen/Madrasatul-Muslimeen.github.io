@@ -248,7 +248,7 @@ Directly-relevant suites, all re-run clean: `note-foundation-data-layer.mjs`
 - **`study-note-boundary.mjs` and `journey-map-boundary.mjs` were not
   modified**, per §2/§5.
 
-## 8. Open item for Master Architect confirmation
+## 8. Open item for Master Architect confirmation — RESOLVED
 
 The one genuine design call this round made without prior authority: **a
 retired Note refuses a new source binding** (§3). The accepted Rules
@@ -257,6 +257,32 @@ either answer is defensible; this round chose the stricter one, by analogy
 with the existing content-revision rule. If the Master Architect's intent
 differs, this is a one-line change (removing the `note.status !== NOTE_STATUS.ACTIVE`
 check) with its own mutation-proof already in place to re-verify either way.
+
+**Confirmed 2026-09-20 UTC** — Master Architect audit of this PR (issue
+#113, comment
+[5752936842](https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/issues/113#issuecomment-5752936842)):
+*"APPROVED WITH NOTES at the bounded data-layer Gate C, pending independent
+diff review; preserve the stricter refusal to attach a new source to a
+retired Note, because retirement should not silently regain active
+provenance."* The stricter answer stands as authorised, not merely
+defensible-by-analogy, and this round's own mutation-proof (§7, the
+retired-Note-refusal assertion) is what the Master Architect will re-check
+this decision against, not a fresh review of the whole diff.
+
+**Recorded explicitly, per the same instruction: the Rules candidate does
+not itself enforce this restriction — it is a data-layer/service invariant
+only.** `noteSources`'s `allow create` (REL-01) checks the Note's existence
+and ownership; it does not read `notes.status`. So the refusal in
+`createNoteSource()` (§3) is the *only* thing standing between a retired
+Note and a new active source binding — nothing at the database layer would
+stop a second client, written against the same accepted Rules but without
+this function's own status check, from creating one directly. **This must
+be re-checked before any alternate client writes to `noteSources`**: a
+future write path (a different service module, a Cloud Function, a direct
+console write) that bypasses `createNoteSource()` bypasses this restriction
+entirely, silently, with no Rules-level backstop to catch it. Any such
+future path needs its own equivalent check, or an explicit decision to drop
+the restriction — never an assumption that the Rules already cover it.
 
 ## Rollback
 
