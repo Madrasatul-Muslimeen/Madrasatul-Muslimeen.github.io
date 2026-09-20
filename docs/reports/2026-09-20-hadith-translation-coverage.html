@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hadith — translation coverage in Explore, the next gate-free tranche</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Hadith — translation coverage in Explore, the next gate-free tranche</h1>
+<p><strong>Date:</strong> 2026-09-20 · <strong>Type:</strong> Hadith-owned, product feature plus tests. <strong>No shared/platform file, Firestore Rules, corpus content or version changed.</strong></p>
+<hr>
+<h2>1. Why this task, and why not the branch&#x27;s own unmerged tip</h2>
+<p>This tranche was picked up via the MMSA task bridge, instructed to build the next bounded Hadith Study tranche from current <code>main</code>, after first checking <code>feature/hadith-study</code> for any unmerged Hadith-only work rather than assuming that branch is current.</p>
+<p><strong>It is not current, and its remaining diff was inspected rather than assumed stale.</strong> <code>origin/main..origin/feature/hadith-study</code> is three commits (<code>16dd3bc</code>, <code>f35432f</code>, <code>2cea0e7</code>) — the H2-C Approach-id symbolic-slot module, its guard, a claim-freeze <strong>proposal</strong> (not applied), and a records-key inventory tool. Everything <strong>else</strong> the branch appears to change is <code>main</code> having moved past a much older base (<code>db6cb24</code>): the Hadith S5 governing-contracts work this diff seems to &quot;delete&quot; is already on <code>main</code> (<code>tools/i18n-verify/hadith-governing-contracts.mjs</code>, <code>hadith-gate-contracts.mjs</code>, <code>docs/governance/hadith-c2-live-records-path-2026-09-19.md</code> all exist here). The three genuinely new commits are themselves another pure-and-unreachable policy module awaiting an Owner decision (the Approach id namespace and v1 slot set) — exactly the closed C2/S2 gate this issue names as unresolved, not a reachable product improvement. Per the task&#x27;s own instruction (&quot;implement one meaningful, independent product improvement … rather than only another plan or guard, if an approved gate-free item exists&quot;), this tranche does not import or continue that branch.</p>
+<p><strong>What it does instead</strong> is the S5 report&#x27;s own §7 finding, still true on current <code>main</code>: <strong>S5 is &quot;the natural next safe tranche… it changes no behaviour, needs no version, and crosses no gate.&quot;</strong> This round goes one step further than S5&#x27;s own &quot;pin a contract to its document&quot; shape and ships a small, real, reader-visible improvement inside the same closed-gate boundary S5 established: Explore already counts the source hierarchy and the topic taxonomy; it did not count how much of the fixture has an English or a Bangla version at all. That gap is closed.</p>
+<hr>
+<h2>2. The feature</h2>
+<p><strong><code>translationCoverage()</code></strong>, a new pure export in <code>app/js/hadith-corpus.js</code>, reports — per edition, and overall — how many synthetic occurrences carry an English version and how many carry a Bangla version, alongside the always-present Arabic source. It reads only <code>availableLanguages()</code>, the exact per-occurrence fact the reader-facing fallback label (<code>resolveText()</code>) already depends on (schema §1: a language is never fabricated) — it invents nothing and reads no claim, Track state or Approach.</p>
+<p><strong>Explore renders it</strong> as a new &quot;Translation coverage&quot; section, after the existing Topics section: an overall line (&quot;Overall: 8 of 8 have English, 7 of 8 have Bangla.&quot;), then one line per edition. It is entirely additive — every existing Explore row, and every other tab, is untouched.</p>
+<p><strong>Why this is a real reader-facing improvement, not just another guard.</strong> Explore already exists to answer &quot;how much of the source and the taxonomy is here&quot;, and today a reader (or, later, a translator coordinating real-corpus import work) has no way to see which editions still need a translation pass. This is the first thing Explore reports that is about <strong>content completeness</strong> rather than <strong>structure count</strong> — the natural next axis, not a new one invented for this task.</p>
+<hr>
+<h2>3. What was measured, not guessed</h2>
+<p>Against the fixture (<code>app/js/hadith-fixture-data.js</code>, unchanged): 8 occurrences, all 8 carry English, 7 of 8 carry Bangla (the fixture&#x27;s own documented gap, <code>syn-occ-0008</code>, on edition <code>synthetic-beta-ar-v1</code>). The new suite asserts the per-edition split lands where the gap actually is — <code>synthetic-beta-ar-v1</code> reports 2 of 2 English, 1 of 2 Bangla — rather than trusting the overall total to imply it.</p>
+<p><strong>A mutation was run and it found a real, pre-existing latent defect, not just proved the new checks.</strong> Adding <code>translationCoverage()</code> directly after <code>exploreAggregate()</code> broke the existing check &quot;EXPLORE — the aggregate reaches no progress store of any kind&quot;: that check sliced the file from <code>indexOf(&quot;export function exploreAggregate&quot;)</code> to <strong>end of file</strong>, which was silently correct only because <code>exploreAggregate</code> used to be the last export in the module. The moment a second export was appended after it, that slice pulled the NEW function&#x27;s own doc comment — which names <code>trackableId</code> on purpose, to say it is absent — into <code>exploreAggregate</code>&#x27;s check, and the check failed a case it had no business seeing. This is the exact defect class this project&#x27;s own standing lessons already name (&quot;A mutation came back unproven and found a second defect… sliced the chokepoint&#x27;s body as <code>slice(indexOf(signature))</code> — to end of file&quot;). Fixed the same way as that precedent: a shared <code>exportedFunctionBody()</code> helper bounds a check at the <strong>next</strong> top-level <code>export function</code>, with a positive control (<code>body.length &lt; full.length</code>) asserting the slice is genuinely bounded rather than accidentally still reaching the end. Reverting the fix and re-running reproduces the failure; the fix is in place in the pushed tree.</p>
+<p><strong>Suite counts.</strong> <code>tools/i18n-verify/hadith-corpus.mjs</code>: <strong>33 → 38 passed, 0 failed</strong> (5 new COVERAGE checks; the pre-existing EXPLORE check is corrected in place, not deleted, per this project&#x27;s own rule). Every other Hadith suite is unaffected: <code>hadith-commentary-binding.mjs</code> 14/0, <code>hadith-source-rights.mjs</code> 14/0, <code>hadith-governing-contracts.mjs</code> 14/0, <code>hadith-gate-contracts.mjs</code> 11/0 — all read-only against files this tranche did not touch.</p>
+<p><strong>Mutation-proof of the new checks themselves.</strong> Swapping <code>withEnglish</code>&#x27;s source from <code>&quot;en&quot;</code> to <code>&quot;bn&quot;</code> in <code>translationCoverage()</code> was caught by two of the five new checks (36 passed, 2 failed) before being reverted; the suite returned to a clean 38/0 afterward.</p>
+<hr>
+<h2>4. Blast radius and files touched</h2>
+<div class='tw'><table><thead><tr><th>File</th><th>Change</th></tr></thead><tbody>
+<tr><td><code>app/js/hadith-corpus.js</code></td><td><strong>added</strong> <code>translationCoverage()</code> — one new pure export, nothing else changed</td></tr>
+<tr><td><code>app/js/hadith-browser.js</code></td><td><strong>added</strong> one import and one new rendering block inside <code>renderExplore()</code> — no other view, tab or function touched</td></tr>
+<tr><td><code>tools/i18n-verify/hadith-corpus.mjs</code></td><td><strong>added</strong> 5 checks and a shared bounding helper; <strong>corrected in place</strong> the pre-existing EXPLORE guard this round&#x27;s own change exposed</td></tr>
+</tbody></table></div>
+<p><strong>Nothing else changed.</strong> <code>git diff --stat</code> against <code>origin/main</code> touches exactly these three files, all Hadith-owned and outside every path this bridge&#x27;s own shared/protected list names. No <code>app/hadith-study.html</code> or <code>app/hadith-collections.html</code> markup changed — the new section renders through the existing <code>#hadithCorpusRoot</code> mount both pages already share. No fixture data, no id, no schema, no Firestore Rules, no <code>firebase.json</code>, no <code>CLAUDE.md</code>, <code>CHANGELOG.md</code>, <code>bn.js</code>, <code>behaviour.mjs</code>, <code>programme-integration-ledger.json</code>, <code>app/js/version.js</code>, or any file under <code>.github/workflows/</code> was touched. <strong>BR-0.</strong></p>
+<hr>
+<h2>5. Gates — all remain closed, none was approached</h2>
+<p>No permanent Hadith unit key, no Approach id, no real corpus text, no durable write, no Rules or index change, no migration, no deployment, no version consumed. <code>translationCoverage()</code> was swept by the suite&#x27;s own existing persistence-reachability GATE checks (<code>hadith-corpus.mjs</code>&#x27;s &quot;no Hadith module can reach Firestore or a write path&quot; and &quot;no Hadith module builds a <code>hadith:</code> permanent unit key&quot;, both of which already scan <code>hadith-browser.js</code> and <code>hadith-corpus.js</code>) — no new gate needed inventing, and both still pass.</p>
+<hr>
+<h2>6. What was NOT done, and why</h2>
+<ul><li><strong>The new strings are not yet in <code>app/js/i18n/bn.js</code>.</strong> <code>i18n.js</code>&#x27;s <code>t()</code> falls back to the English literal for any key with no catalogue entry, so on a Bangla page this section reads in English until the Bangla catalogue is extended — the exact &quot;flagged for the Quran/shared-file owner rather than assumed&quot; treatment the Stage B report already used for a shared-file touch this stream cannot make itself. <code>bn.js</code> is on this bridge&#x27;s own protected-path list; <strong>three new catalogue keys need adding there</strong>, listed verbatim in §7.</li><li><strong>No collection/edition filter was added to Search.</strong> Considered and set aside: with only two synthetic editions in the fixture, a filter control would cost real UI space for close to no benefit today, and would need its own layout measurement this bounded task did not budget for. Worth revisiting once a real multi-edition corpus exists.</li><li><strong>No DOM/Playwright-level render test was written.</strong> This sandbox has no <code>node_modules</code> and no <code>playwright</code> package installed at all (<code>npm</code>/<code>node</code> cannot resolve it here), so no suite in this repository that depends on <code>tools/i18n-verify/harness.mjs</code> can run in this environment regardless of what this tranche touched. The new rendering code reuses the exact same <code>el()</code> / <code>t()</code> idioms <code>renderExplore()</code> already uses successfully for its Topics section, immediately above the new block, to minimise the risk of an unverified DOM defect — but full-page verification is UNVERIFIED here and should be re-run wherever Playwright is available before this is treated as visually confirmed.</li><li><strong>The Bangla <code>hadith</code> lowercase subject-heading defect</strong> (noted in the Stage B report, owned by the shared <code>topic-study.js</code> renderer) was not touched — out of scope for a Hadith-owned tranche, unchanged either way by this round.</li></ul>
+<hr>
+<h2>7. For whoever holds <code>bn.js</code></h2>
+<p>Three new keys, English literal is the key itself (this project&#x27;s own convention):</p>
+<ul><li><code>&quot;Translation coverage&quot;</code></li><li><code>&quot;How many synthetic narrations carry an English or a Bangla version, alongside the Arabic source. This describes the fixture only -- it is not a measure of a real corpus.&quot;</code></li><li><code>&quot;Overall: {en} of {n} have English, {bn} of {n} have Bangla.&quot;</code> (reused twice — once for the overall line, once per edition)</li></ul>
+<hr>
+<h2>Machine-readable status</h2>
+<p>BRANCH=claude/laughing-goodall-gdrbdj</p>
+<p>BASE_MAIN_SHA=2cb405e388bb069c11c6e62a9f53854c91995e0b</p>
+<p>MAIN_VERSION=v08.31 (unchanged)</p>
+<p>FEATURE_HADITH_STUDY_TIP=2cea0e7 (inspected, not merged, not built on -- see §1)</p>
+<p>WORK=app/js/hadith-corpus.js (+translationCoverage), app/js/hadith-browser.js (Explore wiring), tools/i18n-verify/hadith-corpus.mjs (+5 checks, 1 in-place correction)</p>
+<p>TEST_RESULT=hadith-corpus.mjs 33 -&gt; 38 passed, 0 failed; hadith-commentary-binding 14/0; hadith-source-rights 14/0; hadith-governing-contracts 14/0; hadith-gate-contracts 11/0</p>
+<p>MUTATIONS=1 real latent defect found and fixed (unbounded EXPLORE guard slice); 1 deliberate mutation of the new coverage math caught by 2/5 new checks, reverted</p>
+<p>REGRESSION_SUITES=programme-ledger 8/23/0; programme-ledger-mutations 48/1 (pre-existing fixture-drift failure, present on main before this change, unrelated); brief-integrity 8/0; study-activity-evidence-boundary 27/0; study-activity-evidence-boundary-mutations 11/0; study-event-wiring 41/0; rules-authorisation-executable 38/0</p>
+<p>BLAST_RADIUS=BR-0 -- three Hadith-owned files, zero shared/protected file touched</p>
+<p>SHARED_FILES_CHANGED=NONE (bn.js needs 3 new keys -- flagged in §7, not added)</p>
+<p>VERSION=unchanged, v08.32 still unallocated -- no behaviour-changing version bump was made or requested</p>
+<p>DEPLOYMENT=NONE -- nothing deployed, no Rules or index touched</p>
+<p>OWNER_CONTROL_GATES=ALL CLOSED, none approached</p>
+<p>NEXT_ACTION=Master Architect / Quran-side review; bn.js catalogue entries; Playwright verification of the new Explore section wherever the harness is runnable</p>
+</main></body></html>

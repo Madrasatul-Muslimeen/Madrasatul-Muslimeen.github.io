@@ -375,3 +375,36 @@ export function exploreAggregate() {
     progress: { available: false, reason: "no-durable-hadith-progress" },
   };
 }
+
+/**
+ * TRANSLATION COVERAGE -- per edition and overall, how many occurrences carry
+ * an English or a Bangla version alongside the Arabic source.
+ *
+ * This reads only `availableLanguages()`, the same per-occurrence fact the
+ * reader's own language-fallback label already depends on (schema §1: a
+ * language is never fabricated). It counts the FIXTURE's own coverage, not
+ * any claim, tracked state or progress -- there is no Approach, no
+ * `trackableId` and nothing durable in reach here, the same boundary
+ * `exploreAggregate()` holds.
+ */
+export function translationCoverage() {
+  const perEdition = EDITIONS.map((ed) => {
+    const occurrences = OCCURRENCES.filter((o) => o.editionId === ed.editionId);
+    const withLang = (lang) => occurrences.filter((o) => availableLanguages(o).includes(lang)).length;
+    return {
+      editionId: ed.editionId,
+      collectionId: ed.collectionId,
+      occurrences: occurrences.length,
+      withEnglish: withLang("en"),
+      withBangla: withLang("bn"),
+    };
+  });
+  return {
+    perEdition,
+    totals: {
+      occurrences: perEdition.reduce((n, e) => n + e.occurrences, 0),
+      withEnglish: perEdition.reduce((n, e) => n + e.withEnglish, 0),
+      withBangla: perEdition.reduce((n, e) => n + e.withBangla, 0),
+    },
+  };
+}
