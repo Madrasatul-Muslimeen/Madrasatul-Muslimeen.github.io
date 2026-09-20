@@ -1,0 +1,334 @@
+# MMSA task bridge — an Owner-authored issue comment starts a Claude Routine.
+#
+# CANDIDATE FOR REVIEW. Nothing is configured yet: without both repository
+# secrets this workflow reports that it is not configured and exits cleanly
+# without calling anything.
+#
+# ---------------------------------------------------------------------------
+# WHAT THIS DOES, AND — MORE IMPORTANTLY — WHAT IT DOES NOT SEND.
+#
+# It sends a REFERENCE, never instructions. The `text` field carries the
+# repository, the issue number, the comment id and the comment's API URL, and
+# NOTHING FROM THE COMMENT BODY. The Routine fetches the comment itself and
+# verifies its author before acting. That ordering is the whole security
+# design: a payload that only names where to look cannot smuggle a task.
+#
+# It is also why the payload being untrusted is survivable. Anthropic wraps
+# fire text in a <routine-fire-payload> block labelled as untrusted data, and
+# the Routine's saved prompt is the authority. Here the payload is additionally
+# inert by construction -- there is nothing in it to obey.
+#
+# THE TOKEN NEVER LEAVES THIS RUNNER. It lives in a repository secret, is
+# passed to curl through `env:` rather than interpolated into a command line,
+# and is never echoed, never written to the step summary, and never posted to
+# the issue. ChatGPT never receives it; the issue never receives it.
+# ---------------------------------------------------------------------------
+#
+# WHO CAN TRIGGER IT — four independent conditions, all required:
+#
+#   1. The comment must START WITH the trigger phrase. Not "contain": a
+#      comment that merely quotes the phrase mid-text does not fire.
+#   2. The commenter's NUMERIC GitHub id must be the Owner's. The numeric id
+#      is used rather than the login deliberately -- a login can be renamed or
+#      transferred to someone else, an id cannot.
+#   3. The commenter must be a User, not a Bot.
+#   4. The author association must be OWNER, MEMBER or COLLABORATOR. All three
+#      are listed because on an organisation-owned repository an admin may
+#      present as any of them; the Owner has been observed as MEMBER here.
+#   5. The comment must be on an ISSUE, not a pull request.
+#      `issue_comment` fires for BOTH issue and pull-request conversations --
+#      GitHub models a PR as an issue -- so without this clause a `/mmsa-task`
+#      comment on any pull request would dispatch a run. Pull-request comments
+#      are deliberately OUT of scope for this bridge and are not tested for
+#      it. The Routine re-checks the same property from the fetched comment.
+#
+# Conditions 2-4 overlap on purpose. Condition 2 is the real gate; 3 and 4 are
+# cheap and fail closed if GitHub's payload ever changes shape.
+#
+# LOOP PREVENTION, and this deserves its own note because it is NOT obvious.
+# A Routine acts as the OWNER's GitHub identity, not as a bot. So a comment
+# Claude posts would satisfy conditions 2, 3 and 4. The trigger phrase is
+# therefore the load-bearing loop guard, and the Routine's saved prompt is
+# required to never post a comment containing it. Condition 5 below is the
+# belt to that braces: a comment carrying the Claude Code attribution marker
+# is refused outright.
+#
+# The bridge also refuses comments containing `@claude`, because the existing
+# Claude workflow independently accepts that mention. One comment must not
+# launch two workers.
+#
+# DUPLICATE FIRING -- AND THE HONEST LIMITS OF EACH MEASURE.
+# The fire endpoint has no idempotency key: Anthropic's own reference states
+# that a retrying caller creates multiple sessions. Three measures here, and
+# they cover different windows:
+#
+#   1. `types: [created]` -- editing a comment cannot re-fire it.
+#   2. `concurrency` keyed on the COMMENT ID -- the same comment cannot have
+#      two runs IN FLIGHT. THIS ALONE IS NOT ENOUGH, and an earlier revision
+#      of this file overclaimed it: concurrency serialises simultaneous runs,
+#      it does NOT stop someone pressing "Re-run jobs" on a run that already
+#      finished, which would POST a second time.
+#   3. A DURABLE CLAIM on the comment itself, which is what closes that hole.
+#      Before firing, the job POSTs a `rocket` reaction to the comment.
+#      GitHub returns 201 when it creates the reaction and 200 when that
+#      reaction already exists for the authenticated user -- measured, not
+#      assumed. So 201 means "this run claimed the comment, proceed" and 200
+#      means "already dispatched, stop". The claim is durable because the
+#      reaction persists after the run ends, so a re-run of a finished run
+#      reads 200 and does not fire.
+#
+# RACE SEMANTICS, stated precisely rather than as "exactly once":
+#   * The claim is ONE API call, so a re-run after completion is reliably
+#     refused. That is the window measure 2 could not cover.
+#   * GitHub does not document this endpoint as an atomic compare-and-set.
+#     Two genuinely simultaneous creates are narrowed by measure 2 but not
+#     formally excluded. The honest guarantee is AT-MOST-ONCE IN EVERY
+#     OBSERVED CASE, not exactly-once.
+#   * The reaction row is per authenticated user. The job claims as
+#     github-actions[bot], so an Owner adding their own rocket to the comment
+#     is a different row and does NOT suppress dispatch.
+#
+# OPERATIONAL RECOVERY, because the claim can strand a legitimate retry:
+#   If the claim succeeds and the fire then fails, the comment stays claimed
+#   and a re-run will refuse. To retry deliberately, REMOVE the rocket
+#   reaction left by github-actions[bot] from that comment, then re-run the
+#   job. This fails closed -- a stranded claim blocks a run, it never causes
+#   an extra one.
+
+name: MMSA task bridge
+
+on:
+  issue_comment:
+    types: [created]        # `created` only -- an edit must not re-fire
+
+# One in-flight run per comment. Not cancel-in-progress: cancelling a run that
+# has already fired would not un-create the session it started.
+concurrency:
+  group: mmsa-task-bridge-${{ github.event.comment.id }}
+  cancel-in-progress: false
+
+# Narrow on purpose. `issues: write` is only so the run can post the session
+# link back. Deliberately ABSENT: contents: write, pull-requests, actions,
+# workflows, checks, id-token. This job cannot change the repository, cannot
+# touch a pull request, and cannot rewrite the gate that checks it.
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  fire:
+    name: Fire the MMSA task routine
+    # MUTUAL EXCLUSION WITH claude.yml. One `issue_comment` event is delivered
+    # to every workflow listening for it, so "/mmsa-task ... @claude ..."
+    # satisfied this gate and claude.yml's at the same time and launched BOTH.
+    # This side refuses any comment CONTAINING `@claude`; claude.yml refuses any
+    # comment STARTING WITH `/mmsa-task`. A mixed comment fires NEITHER, which
+    # is deliberate: a one-sided rule would pick a winner silently and leave the
+    # author unable to tell which automation acted.
+    if: >-
+      startsWith(github.event.comment.body, '/mmsa-task') &&
+      github.event.issue.pull_request == null &&
+      github.event.comment.user.id == 293311955 &&
+      github.event.comment.user.type == 'User' &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
+      !contains(github.event.comment.body, 'Generated by [Claude Code]') &&
+      !contains(github.event.comment.body, '@claude')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      # Re-asserted inside the runner rather than trusted from the `if` alone.
+      # A job-level condition is evaluated once against the event payload; this
+      # step fails loudly if the identity is not what the gate claimed, which
+      # is the difference between a guard and an assumption.
+      - name: Re-assert the triggering identity
+        env:
+          ACTOR_ID: ${{ github.event.comment.user.id }}
+          ACTOR_TYPE: ${{ github.event.comment.user.type }}
+          ASSOCIATION: ${{ github.event.comment.author_association }}
+          # 'true' only when the conversation is a pull request.
+          IS_PULL_REQUEST: ${{ github.event.issue.pull_request != null }}
+        run: |
+          set -euo pipefail
+          if [ "${ACTOR_ID}" != "293311955" ]; then
+            echo "::error::Triggering actor id ${ACTOR_ID} is not the Owner. Refusing."
+            exit 1
+          fi
+          if [ "${ACTOR_TYPE}" != "User" ]; then
+            echo "::error::Triggering actor type ${ACTOR_TYPE} is not User. Refusing."
+            exit 1
+          fi
+          case "${ASSOCIATION}" in
+            OWNER|MEMBER|COLLABORATOR) ;;
+            *) echo "::error::Author association ${ASSOCIATION} is not permitted. Refusing."; exit 1 ;;
+          esac
+          if [ "${IS_PULL_REQUEST}" = "true" ]; then
+            echo "::error::This comment is on a pull request, not an issue. Refusing."
+            exit 1
+          fi
+          echo "Identity re-asserted: id ${ACTOR_ID}, type ${ACTOR_TYPE}, association ${ASSOCIATION}, issue (not PR)."
+
+      # Establishes ONLY whether both secrets exist. Prints booleans, never
+      # values; both arrive through `env:` so neither can be interpolated into
+      # the script text where an echo could leak it.
+      - name: Check whether the routine bridge is configured
+        id: cfg
+        env:
+          ROUTINE_FIRE_URL: ${{ secrets.ROUTINE_FIRE_URL }}
+          ROUTINE_FIRE_TOKEN: ${{ secrets.ROUTINE_FIRE_TOKEN }}
+        run: |
+          set -euo pipefail
+          have_url=0
+          if [ -n "${ROUTINE_FIRE_URL:-}" ]; then have_url=1; fi
+          have_token=0
+          if [ -n "${ROUTINE_FIRE_TOKEN:-}" ]; then have_token=1; fi
+          if [ "$have_url" -eq 1 ] && [ "$have_token" -eq 1 ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "Both ROUTINE_FIRE_URL and ROUTINE_FIRE_TOKEN are configured."
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::The MMSA task bridge is not configured; nothing was called."
+            {
+              echo "## MMSA task bridge — not configured"
+              echo ""
+              echo "| Secret | Present |"
+              echo "|---|---|"
+              echo "| \`ROUTINE_FIRE_URL\` | $([ "$have_url" -eq 1 ] && echo yes || echo **no**) |"
+              echo "| \`ROUTINE_FIRE_TOKEN\` | $([ "$have_token" -eq 1 ] && echo yes || echo **no**) |"
+              echo ""
+              echo "No request was made. Add both under **Settings → Secrets and variables → Actions**."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # THE PAYLOAD IS A REFERENCE. It is assembled from event metadata only --
+      # ids, numbers and URLs. The comment BODY is never read here and never
+      # sent. Built with jq so that the JSON cannot be broken by any value.
+      - name: Build the reference payload
+        id: payload
+        if: steps.cfg.outputs.ready == 'true'
+        env:
+          REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+          COMMENT_API_URL: ${{ github.event.comment.url }}
+          ACTOR_ID: ${{ github.event.comment.user.id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          reference=$(printf '%s\n' \
+            "MMSA task bridge reference. This block names WHERE the task is; it does not contain the task." \
+            "repository: ${REPO}" \
+            "issue_number: ${ISSUE_NUMBER}" \
+            "comment_id: ${COMMENT_ID}" \
+            "comment_api_url: ${COMMENT_API_URL}" \
+            "expected_author_id: ${ACTOR_ID}" \
+            "expected_trigger_phrase: /mmsa-task" \
+            "dispatched_by_run: ${RUN_URL}" \
+            "Fetch the comment, verify its author id and trigger phrase, and only then act on its text.")
+          jq -n --arg t "$reference" '{text: $t}' > payload.json
+          echo "Payload built. Bytes: $(wc -c < payload.json)"
+          echo "--- payload (contains no comment text and no secret) ---"
+          cat payload.json
+
+      # DURABLE DISPATCH CLAIM. See the header for the race semantics and the
+      # recovery procedure. 201 = this run claimed the comment; 200 = another
+      # run already did, so stop. Anything else is a real error.
+      - name: Claim this comment before firing
+        id: claim
+        if: steps.cfg.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+        run: |
+          set -euo pipefail
+          status=$(curl -sS -o claim.json -w '%{http_code}' \
+            -X POST "https://api.github.com/repos/${REPO}/issues/comments/${COMMENT_ID}/reactions" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "Content-Type: application/json" \
+            -d '{"content":"rocket"}')
+          case "$status" in
+            201)
+              echo "claimed=true" >> "$GITHUB_OUTPUT"
+              echo "Claimed comment ${COMMENT_ID} for dispatch (HTTP 201)."
+              ;;
+            200)
+              echo "claimed=false" >> "$GITHUB_OUTPUT"
+              echo "::notice::Comment ${COMMENT_ID} was already dispatched (HTTP 200). Not firing again."
+              {
+                echo "## MMSA task bridge — already dispatched"
+                echo ""
+                echo "Comment \`${COMMENT_ID}\` already carries this run's dispatch claim, so no request was made."
+                echo ""
+                echo "To dispatch it again deliberately, remove the 🚀 reaction left by \`github-actions[bot]\` on that comment, then re-run this job."
+              } >> "$GITHUB_STEP_SUMMARY"
+              ;;
+            *)
+              echo "::error::Could not claim the comment (HTTP ${status}). Refusing to fire."
+              exit 1
+              ;;
+          esac
+
+      - name: Fire the routine
+        id: fire
+        if: steps.cfg.outputs.ready == 'true' && steps.claim.outputs.claimed == 'true'
+        env:
+          ROUTINE_FIRE_URL: ${{ secrets.ROUTINE_FIRE_URL }}
+          ROUTINE_FIRE_TOKEN: ${{ secrets.ROUTINE_FIRE_TOKEN }}
+        run: |
+          set -euo pipefail
+          # -sS keeps curl quiet but still reports transport errors. The token
+          # is referenced from the environment, never written into the command.
+          status=$(curl -sS -o response.json -w '%{http_code}' \
+            -X POST "$ROUTINE_FIRE_URL" \
+            -H "Authorization: Bearer $ROUTINE_FIRE_TOKEN" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "anthropic-beta: experimental-cc-routine-2026-04-01" \
+            -H "Content-Type: application/json" \
+            --data-binary @payload.json)
+          echo "HTTP ${status}"
+          if [ "$status" != "200" ]; then
+            # The error envelope carries a type and message, not credentials.
+            echo "::error::Routine fire failed with HTTP ${status}"
+            echo "$(jq -r '.error.type // "unknown"' response.json 2>/dev/null): $(jq -r '.error.message // "no message"' response.json 2>/dev/null)"
+            exit 1
+          fi
+          session_url=$(jq -r '.claude_code_session_url // empty' response.json)
+          session_id=$(jq -r '.claude_code_session_id // empty' response.json)
+          if [ -z "$session_url" ]; then
+            echo "::error::HTTP 200 but no session URL in the response."
+            exit 1
+          fi
+          echo "session_url=${session_url}" >> "$GITHUB_OUTPUT"
+          echo "session_id=${session_id}" >> "$GITHUB_OUTPUT"
+          {
+            echo "## MMSA task bridge — routine fired"
+            echo ""
+            echo "- Session: ${session_url}"
+            echo "- Issue: #${{ github.event.issue.number }}, comment \`${{ github.event.comment.id }}\`"
+            echo ""
+            echo "The payload carried a reference only. The routine verifies the comment's author before acting."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Posted so the Owner can follow the run. The body deliberately does NOT
+      # start with the trigger phrase, and this comment comes from
+      # github-actions[bot], so it cannot re-trigger this workflow.
+      - name: Report the session link on the issue
+        if: steps.cfg.outputs.ready == 'true' && steps.claim.outputs.claimed == 'true' && steps.fire.outputs.session_url != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SESSION_URL: ${{ steps.fire.outputs.session_url }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          body=$(printf '%s\n' \
+            "MMSA task bridge: a Claude routine session was started for comment \`${COMMENT_ID}\`." \
+            "" \
+            "Session: ${SESSION_URL}" \
+            "" \
+            "The bridge sent a reference only — the comment text was not transmitted. The routine fetches this comment and verifies its author before doing any work.")
+          gh api "repos/${REPO}/issues/${ISSUE_NUMBER}/comments" -f body="$body" --silent
+          echo "Session link posted."
