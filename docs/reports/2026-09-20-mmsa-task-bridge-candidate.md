@@ -12,6 +12,8 @@
 
 **A correction to my own round-1 claim:** I wrote that `claude.yml` was *"byte-untouched"*. It is **no longer**, and deliberately so — closing the mixed-command defect requires a clause on **both** sides of the exclusion. `verify.yml` remains byte-untouched.
 
+**ROUND 2 WAS FIXED TWICE, IN PARALLEL, AND BOTH HALVES ARE KEPT.** While I was working, another contributor (`AAAsApps`) pushed five commits implementing the same two findings on this branch. My push was rejected, and **the branch was merged rather than force-pushed** — discarding someone else's work to make my own history tidy is not a trade this repository makes. Their contribution is real and in one respect **stronger than mine**: their prompt adds `@claude` to verification check 4, so the Routine refuses a mixed comment as well — a third layer I had not written. §6 records what each side brought and how the two prompt forms were reconciled into one.
+
 `main` is untouched at `ee3ca08…`. No application code, version, Firestore Rules, `firebase.json`, repository setting, or existing workflow was changed. The `main` pull-request rule stands.
 
 ---
@@ -177,6 +179,23 @@ satisfied **both**, so both would have launched — two independent workers on o
 
 **Tested as the property, not as the text.** A check evaluates a real mixed comment against both workflows' parsed conditions and asserts neither admits it, with **four** mutations: drop either side's clause and the mixed comment is admitted again by that side; each is caught. Proving the `claude.yml` side needed the suite's claude.yml text to be **mutable** — a guard reading straight from disk cannot be made to fail, and a guard that cannot fail has earned nothing.
 
+### The parallel fix, and what each side contributed
+
+Both halves of this finding were fixed twice over, independently and within the hour. The merge keeps the union, not the tidier of the two:
+
+| Layer | From |
+|---|---|
+| Bridge refuses `@claude` | **Both** — identical clause, arrived at separately |
+| `claude.yml` refuses `/mmsa-task` | **Mine.** The other fix was one-sided |
+| Routine prompt refuses a mixed comment (check 4) | **Theirs.** A third layer I had not written |
+| Executable `bash` validation snippet | **Theirs**, adopted as the canonical form |
+| Length bound `{1,20}`, `--` before the endpoint, no raw placeholder anywhere | **Mine**, folded into their snippet |
+| `issue_json` reused instead of a second fetch | **Theirs** — fewer commands built from payload values is strictly better |
+| Hostile-value table, cross-file guards, 25 mutations | **Mine** |
+| `.html` alongside every `.md` | **Mine** — their `2026-09-20-mmsa-task-bridge-review-fixes.md` had no HTML twin; it has one now |
+
+**On the one substantive disagreement — one-sided or two-sided exclusion — I kept two-sided, and the reason is privilege, not symmetry.** A one-sided rule is still "mutually exclusive": exactly one workflow runs. But the one that would run is `claude.yml`, which holds `contents: write`, and it would run for a comment the author wrote as a *bridge* task that merely happened to quote `@claude`. That routes an instruction to the **more powerful** worker by accident. Refusing both costs one re-comment and cannot escalate.
+
 **`claude.yml` is consequently no longer byte-untouched**, and my round-1 statement that it was is corrected above. The change is two lines: one clause and its explanation. Its permissions, its tool configuration, its preflight and its auth handling are untouched.
 
 ---
@@ -227,15 +246,15 @@ Full text in `docs/automation/mmsa-task-bridge-routine-prompt.md`. Its four step
 **REVIEW FINDING 4, ADDRESSED.** Everything in §§3–6 was previously true only of a file nobody would notice changing. `tools/automation-verify/mmsa_task_bridge_guards.py` makes each property machine-checkable, and a mutation harness proves each guard actually refuses its own violation. It is Python because the checks need to parse YAML and this repository carries no Node YAML dependency; it is deliberately **outside** `tools/i18n-verify/` so the seven-suite governance check is byte-unchanged.
 
 ```
-==== MMSA task bridge guards: 27 passed, 0 failed | mutations: 23 caught, 0 unproven, 0 not applied ====
+==== MMSA task bridge guards: 29 passed, 0 failed | mutations: 25 caught, 0 unproven, 0 not applied ====
 EXIT=0
 ```
 
-**Round 2 took it from 17 guards + 12 mutations to 26 guards + 23 mutations** (plus the positive control). The nine added guards are: no stale `all four` wording; digits-only validation before command construction; every `gh api` quoted and after `--`; no raw placeholder anywhere; the hostile-value table; the prompt forbids emitting **either** trigger phrase; the bridge refuses `@claude`; `claude.yml` refuses `/mmsa-task`; and **a mixed comment fires neither**, evaluated as the property rather than asserted as text.
+**Round 2 took it from 17 guards + 12 mutations to 28 guards + 25 mutations**, two of them contributed by the parallel fix (plus the positive control). The nine added guards are: no stale `all four` wording; digits-only validation before command construction; every `gh api` quoted and after `--`; no raw placeholder anywhere; the hostile-value table; the prompt forbids emitting **either** trigger phrase; the bridge refuses `@claude`; `claude.yml` refuses `/mmsa-task`; and **a mixed comment fires neither**, evaluated as the property rather than asserted as text.
 
 **Making the `claude.yml` side provable required a change to the harness itself.** That guard originally read the file from disk, which no mutation can reach — so it could not have failed, and a guard that cannot fail has earned nothing. The suite holds `claude.yml`'s text in a variable a mutation channel can replace, with the same unique-anchor discipline as the bridge's own.
 
-The 26 guards, plus a positive control asserting every one of them passes on the real unmutated files: trigger is `created`-only; issues only; numeric id; actor type `User`; association allow-list; trigger phrase is a prefix; attribution-marker loop guard; concurrency keyed on comment id with `cancel-in-progress: false`; permissions exactly `contents: read` + `issues: write`; the claim step distinguishes 201 from 200; fire is gated on the claim; **the comment body appears in no step**; the token is read from `env`, never interpolated; and four guards over the Routine prompt (six checks, protected paths, no version bump, no merge/deploy/approval claim).
+The 28 guards, plus a positive control asserting every one of them passes on the real unmutated files: trigger is `created`-only; issues only; numeric id; actor type `User`; association allow-list; trigger phrase is a prefix; attribution-marker loop guard; concurrency keyed on comment id with `cancel-in-progress: false`; permissions exactly `contents: read` + `issues: write`; the claim step distinguishes 201 from 200; fire is gated on the claim; **the comment body appears in no step**; the token is read from `env`, never interpolated; and four guards over the Routine prompt (six checks, protected paths, no version bump, no merge/deploy/approval claim).
 
 **Two harness defects were found by running it, and both are recorded rather than smoothed over** — this repository's own standing rule is that an UNPROVEN mutation is a finding about the guard, and chasing it is what found them:
 
@@ -243,9 +262,11 @@ The 26 guards, plus a positive control asserting every one of them passes on the
 
 2. **A mutation that never applied but was printed as CAUGHT.** Once uniqueness was enforced, two anchors turned out to be ambiguous (`COMMENT_ID:` appears three times, the claim gate twice). The harness caught the resulting exception in its general `except` and printed **CAUGHT** — a mutation that never reached the file being reported as proof. An anchor failure now raises a distinct `AnchorError`, is printed as **`ERROR … mutation NOT APPLIED`**, and **counts as a failure with exit 1**. Both ambiguous anchors were then re-pointed at unique text and both mutations now genuinely apply and are genuinely caught.
 
-The second is the one worth keeping: **the first fix created a new false green, and only reading the output rather than the exit code exposed it.** Every one of the 23 mutations now applies to the file it names, and no catch is a swallowed exception.
+The second is the one worth keeping: **the first fix created a new false green, and only reading the output rather than the exit code exposed it.** Every one of the 25 mutations now applies to the file it names, and no catch is a swallowed exception.
 
 **Round 2 added a third finding of the same family, and it is the structural one.** Every round-1 guard parsed `mmsa-task-bridge.yml` and nothing else, so **no possible mutation of that file could have exposed the mixed-command defect** — it lives in the relationship between two workflows, and a suite that opens one file cannot see a relationship. That is not a guard that failed; it is a guard whose *subject* was too narrow. **Ask what a suite is unable to see, not only whether it passes.**
+
+**The merge then produced two more of the same family, and the second is a genuine guard weakness.** (5) Three prompt mutations used a bare `prompt.replace(...)`; when the merge reworded the prompt their anchors drifted, the replace silently no-opped, and they reported UNPROVEN — *a finding about the harness wearing the costume of a finding about the guard.* Prompt mutations now go through `mutate_prompt`, with the same unique-anchor discipline the workflow mutator already had. (6) With the anchors fixed, one mutation stayed UNPROVEN **for a real reason**: `g_prompt_forbids_emitting_either_trigger` asked whether `` `@claude` `` appeared **anywhere** in the prompt, and after the merge it does — in verification check 4, which is a different rule. Deleting the no-emit clause left the guard green. It now asserts the **no-emit sentence itself** names both phrases. **Presence somewhere is not coverage.**
 
 **And one guard I wrote in round 1 was caught being half a check.** `g_prompt_six_checks` asserted `"all six"` was present; the review found `"all four"` still sitting three paragraphs below it. Both statements were true at once. **A rename is only real when the old text is asserted absent.**
 
@@ -406,15 +427,21 @@ ROUTINE_PROMPT=Step 0 SYNTAX validation, then verify-first (SIX checks incl. iss
 PROMPT_NO_EMIT=both `/mmsa-task` AND `@claude` -- a routine acts as the Owner, so either phrase could start a run
 STEP0_OBEDIENCE=NOT TESTABLE HERE -- the suite proves the RULE; only a live negative fire proves the Routine obeys it
 PROMPT_FILENAME_LOOPHOLE=CLOSED -- "unless the verified comment names the file" DELETED (count 0); a filename in the task is NOT authorization; NEVER increment the application version
-GUARDS=tools/automation-verify/mmsa_task_bridge_guards.py -- 27 passed, 0 failed; mutations 23 caught, 0 unproven, 0 not applied; exit 0
-GUARDS_ROUND2_ADDED=9 guards + 11 mutations; suite now reads BOTH workflow files
+GUARDS=tools/automation-verify/mmsa_task_bridge_guards.py -- 29 passed, 0 failed; mutations 25 caught, 0 unproven, 0 not applied; exit 0
+GUARDS_ROUND2_ADDED=11 guards + 13 mutations (2 guards + 2 mutations from the parallel fix); suite now reads BOTH workflow files
+PARALLEL_FIX=AAAsApps pushed 5 commits implementing the same 2 findings; MERGED, never force-pushed
+PARALLEL_FIX_KEPT_FROM_THEM=prompt check 4 also refuses `@claude`; executable bash snippet; issue_json reused instead of a 2nd fetch; 2 guards + 2 mutations
+PARALLEL_FIX_KEPT_FROM_ME=claude.yml side of the exclusion (theirs was one-sided); {1,20} length bound; `--` before every endpoint; no raw placeholder anywhere; hostile-value table; cross-file guards
+TWO_SIDED_EXCLUSION_RATIONALE=a one-sided rule routes a mixed comment to claude.yml, which holds contents: write -- privilege escalation by typo
 ID_RULE_TESTED=23 hostile values rejected, 4 real ids admitted; pattern read OUT of the prompt, not retyped
 MIXED_COMMAND=evaluated as a property against both parsed conditions; 4 mutations prove both sides load-bearing
-GUARD_HARNESS_DEFECTS_FOUND=4, all recorded: (1) a mutation edited PROSE via a non-unique anchor; (2) a mutation that never applied printed CAUGHT via a swallowed exception; (3) round-1 guards parsed ONE workflow so the cross-file defect was structurally invisible; (4) g_prompt_six_checks asserted the NEW wording present without asserting the OLD wording absent -- both true at once
-LESSON=ask what a suite is UNABLE to see, not only whether it passes; a rename is real only when the old text is asserted absent
+GUARD_HARNESS_DEFECTS_FOUND=6, all recorded: (1) a mutation edited PROSE via a non-unique anchor; (2) a mutation that never applied printed CAUGHT via a swallowed exception; (3) round-1 guards parsed ONE workflow so the cross-file defect was structurally invisible; (4) g_prompt_six_checks asserted the NEW wording present without asserting the OLD wording absent -- both true at once
+(5) three prompt mutations used a bare replace whose anchors drifted in the merge and silently no-opped -> mutate_prompt now enforces unique anchors; (6) g_prompt_forbids_emitting_either_trigger asked whether `@claude` appeared ANYWHERE and check 4 satisfied it -> now asserts the no-emit SENTENCE names both
+LESSON=ask what a suite is UNABLE to see, not only whether it passes; a rename is real only when the old text is asserted absent; presence somewhere is not coverage
 GUARDS_LOCATION=outside tools/i18n-verify/ deliberately -- the seven-suite governance check is byte-unchanged
 REPO_SCOPING=proxy limits GitHub API to ATTACHED repositories -- a forged repository value returns 403
-SUITES=7/7 green on this branch, exit 0 each
+SUITES=7/7 green on this branch, exit 0 each (re-run after the merge)
+REPORTS=both dated reports now have matching .md AND .html, per the round-2 instruction
 NEGATIVE_TESTS=8 in the plan (was 4, then 6): + mixed command fires neither, + comment_id "123 --method DELETE" stops at Step 0
 SESSION_CONTINUATION=NOT NEEDED -- assessed in section 13; budget ample, work bounded; this state block IS the continuation
 BIGGEST_UNTESTED=the GitHub `if:` expression itself -- only a real event can confirm it

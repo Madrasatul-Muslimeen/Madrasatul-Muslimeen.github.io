@@ -53,6 +53,10 @@
 # belt to that braces: a comment carrying the Claude Code attribution marker
 # is refused outright.
 #
+# The bridge also refuses comments containing `@claude`, because the existing
+# Claude workflow independently accepts that mention. One comment must not
+# launch two workers.
+#
 # DUPLICATE FIRING -- AND THE HONEST LIMITS OF EACH MEASURE.
 # The fire endpoint has no idempotency key: Anthropic's own reference states
 # that a retrying caller creates multiple sessions. Three measures here, and
