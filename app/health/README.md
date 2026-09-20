@@ -130,3 +130,57 @@ Guarded by `tools/health-atlas-verify/more-selectors.mjs`,
 `view-boundary-more.mjs` and `view-boundary-more-mutations.mjs`, following
 the same "read the module's own source text" pattern as tranche 1's
 `view-boundary.mjs`.
+
+## Tranche 4 (`js/health-atlas-categories-*.js`, `health-atlas-categories.html`)
+
+A third bounded, read-only browser, built on top of this foundation tranche
+only (not stacked on the separately-developed claim-provenance or
+Foods/Conditions/Age Groups tranches — see this tranche's own dated report
+for why): the food **Master Categories** index — the 8-entry taxonomy
+(`HEALTH_ATLAS_MASTER_CATEGORIES`) this dataset has carried since tranche 1
+but that no view had ever read until now.
+
+**Why this dataset needed no field-by-field deferral, unlike every earlier
+tranche:** each master category carries only `.id`, `.name` and `.subs` (a
+list of plain category-label strings) — checked directly against the live
+data file before writing any code. There is no nutrition, serving-quantity,
+remedy, treatment or lifestyle-recommendation field anywhere on this
+dataset to exclude. The one cross-dataset read this tranche makes is
+`food.category`, to count how many foods sit under each sub-category label
+— already an approved, already-displayed field. Every sub-category label
+was checked to match a real `food.category` value 1:1 in both directions
+(zero orphans either way), and the 8 categories' food counts sum to exactly
+34, the whole Foods dataset, confirming the taxonomy partitions it with no
+loss and no overlap.
+
+Guarded by `tools/health-atlas-verify/categories-selectors.mjs`,
+`view-boundary-categories.mjs` and its mutation-proof companion
+`view-boundary-categories-mutations.mjs`, following the same "read the
+module's own source text" pattern as the earlier boundary guards — even
+though this dataset carries no field of its own to defer, the guard still
+refuses an import of `HEALTH_ATLAS_DISEASES`, `HEALTH_ATLAS_LIFESTYLES` or
+`HEALTH_ATLAS_AGES`, and any Foods field beyond `.id`/`.name`/`.category`,
+since this module has no legitimate reason to touch any of them.
+
+**Originally built without a forward link from `health-atlas.html`'s
+footer**, deliberately, to avoid an unnecessary merge conflict with tranche
+3's own footer edit at integration time. This combined candidate (tranche 5,
+below) is that integration: `health-atlas.html`'s footer now links to both
+`health-atlas-more.html` and `health-atlas-categories.html`. The new page
+still links back to `health-atlas.html`.
+
+## Combined candidate (tranche 5) — reconciling tranches 1–4 into one branch
+
+This tranche does not add a dataset or a view. It merges the previously
+independent tranche 3 (`claude/health-atlas-foods-ages-tranche1`, stacked on
+the claim-provenance tranche, itself stacked on this foundation) and
+tranche 4 (`claude/health-atlas-master-categories-tranche4`, branched
+directly from this foundation tranche and never stacked on tranche 3) into
+one branch, so a future integration has a single candidate rather than two
+independent stacks that both modify this same foundation. The only
+resolution needed: this file (both tranches' sections kept, in the order
+above) and `health-atlas.html`'s footer, which now carries both tranches'
+forward links side by side. No dataset, selector or view file from any
+tranche was changed in the process — see the tranche's own dated report for
+the full merge-conflict account and the exact three-branch dependency
+table.
