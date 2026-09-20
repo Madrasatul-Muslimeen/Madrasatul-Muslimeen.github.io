@@ -422,6 +422,98 @@ export async function retireNoteSource(db, { tenantId, ownerPersonId, sourceLink
 }
 
 /**
+ * MAP Phase 5 (P5-G) — bind an EXISTING, already-created Note to a further
+ * permanent Study Unit key, independent of the Note's own creation
+ * transaction. `createPermanentNote()` could only ever write one `noteSources`
+ * link, at birth; nothing let an already-created Note gain a SECOND active
+ * link, whether because it never had one, or because its only link was later
+ * retired by `retireNoteSource()`.
+ *
+ * THE RULES ALREADY AUTHORISE THIS. The accepted Phase 5 candidate's
+ * `noteSources` `allow create` names no birth-transaction requirement — any
+ * well-formed link naming a Note the requester owns is permitted at any time.
+ * This is the same "ask what the accepted Rules authorise, then what the code
+ * can perform" method P5-F/P6-D/P6-E already used to close this exact class of
+ * gap.
+ *
+ * SAME WRITE SHAPE AS BIRTH, reused rather than reinvented: identical field
+ * set to the `source` block inside `createPermanentNote()`, built through the
+ * same `ownership()`/`relationBase()`/`requireToken()` helpers, so both writes
+ * are provably the one shape the Rules candidate governs.
+ *
+ * THE VOCABULARY IS NOT THIS FUNCTION'S TO DECIDE. `sourceKind`,
+ * `relationshipKind` and `provenanceKind` are taken from the caller's `source`
+ * exactly as `createPermanentNote()` already takes them — validated for
+ * non-empty presence only. ADR-009's closed sets are `study-note-binding.js`'s
+ * job alone, unchanged and still uninvoked; this function does not import it
+ * and does not re-implement its checks a second, driftable way.
+ *
+ * NEVER TOUCHES THE NOTE, AND NEVER TOUCHES A PLACEMENT. `notes` and
+ * `notePlacements` are absent from this function by construction (no
+ * `journey-map-contract.js` import, no `TENANT.NOTE_PLACEMENTS` reference) —
+ * the same Origin/Destination separation ADR-010 §2 requires elsewhere: a
+ * Study source binding (Origin) must never be derived from, or reshape, where
+ * a Note is filed (Destination), and vice versa. Note identity — `noteId`,
+ * `tenantId`, `ownerPersonId`, `ownerUid`, `title`, `bodyHtml`,
+ * `currentRevisionId`, `status` — is immutable through this call: the only
+ * write this function ever performs is one `noteSources` create.
+ *
+ * A RETIRED NOTE REFUSES A NEW BINDING, a data-layer decision stricter than
+ * the Rules candidate (which does not itself check the Note's `status` on
+ * create — REL-01 checks existence and ownership only). This mirrors
+ * `updatePermanentNoteContent()`'s own "Retired Note cannot be edited" rule:
+ * gaining a further origin/reference binding is, like a content revision, an
+ * action ON the Note that a reader would expect a retired Note to refuse. Not
+ * an accepted decision restated — a data-layer choice flagged in this round's
+ * own report for confirmation, since the Rules candidate itself is silent.
+ *
+ * DUPLICATE SOURCE-LINK IDS ARE REFUSED, THE SAME WAY A DUPLICATE NOTE ID IS:
+ * `createPermanentNote()` reads `notes/{noteDocId}` first and refuses an
+ * existing id; this function reads `noteSources/{sourceDocId}` first and does
+ * the same. TWO ACTIVE LINKS NAMING THE SAME `sourceKey` ARE NOT REFUSED —
+ * nothing in the accepted Rules, ADR-009, or `listNoteSourcesForUnit()`'s own
+ * read contract forbids a Note being bound twice to one unit (once `origin`,
+ * once later `reference`, for instance), so inventing that constraint here
+ * would be a new decision, not an implementation of one already accepted.
+ */
+export async function createNoteSource(db, {
+  tenantId, ownerPersonId, ownerUid = null, noteId, source, sourceLinkId = newNoteEntityId(), actorUid,
+}) {
+  const owner = ownership({ tenantId, ownerPersonId, ownerUid });
+  requireToken("noteId", noteId);
+  requireToken("sourceLinkId", sourceLinkId);
+  if (!source || typeof source !== "object") throw new TypeError("note-foundation: source is required.");
+
+  const noteDocId = noteFoundationDocId(tenantId, noteId);
+  const sourceDocId = noteFoundationDocId(tenantId, sourceLinkId);
+
+  await runEnvelopeTransaction(db, actorUid, async (transaction) => {
+    const noteSnapshot = await transaction.get(TENANT.NOTES, noteDocId);
+    if (!noteSnapshot.exists()) throw new Error("Note does not exist.");
+    const sourceSnapshot = await transaction.get(TENANT.NOTE_SOURCES, sourceDocId);
+    if (sourceSnapshot.exists()) throw new Error("Source link ID already exists.");
+
+    const note = noteSnapshot.data();
+    if (note.tenantId !== tenantId || note.ownerPersonId !== ownerPersonId) {
+      throw new Error("Cross-owner or cross-tenant source binding refused.");
+    }
+    if (note.status !== NOTE_STATUS.ACTIVE) throw new Error("A retired Note cannot gain a new source binding.");
+
+    transaction.create(TENANT.NOTE_SOURCES, sourceDocId, {
+      sourceLinkId,
+      ...relationBase(owner, noteId),
+      sourceKind: requireToken("sourceKind", source.sourceKind),
+      sourceKey: requireToken("sourceKey", source.sourceKey),
+      relationshipKind: requireToken("relationshipKind", source.relationshipKind),
+      approachId: source.approachId ?? null,
+      provenanceKind: requireToken("provenanceKind", source.provenanceKind),
+      status: NOTE_STATUS.ACTIVE,
+    });
+  });
+  return sourceLinkId;
+}
+
+/**
  * MAP Phase 6 (P6-E) — reorder a Note within its folder, which nothing could do.
  *
  * `placementIdentityUnchanged()` freezes `placementId`, `noteId` and
