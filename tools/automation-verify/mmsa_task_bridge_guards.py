@@ -13,6 +13,11 @@ import copy, io, re, sys, yaml
 
 WORKFLOW = ".github/workflows/mmsa-task-bridge.yml"
 PROMPT = "docs/automation/mmsa-task-bridge-routine-prompt.md"
+CLAUDE_WF = ".github/workflows/claude.yml"
+# Mutable so the claude.yml-side guards can be mutation-proven like every other
+# guard. A guard reading straight from disk cannot be made to fail, and a guard
+# that cannot be made to fail has earned nothing.
+CLAUDE_TEXT = None
 OWNER_ID = 293311955
 
 passed = failed = 0
@@ -96,6 +101,117 @@ def g_token_from_env(_d, t, _p):
 def g_prompt_six_checks(_d, _t, p):
     return "all six" in p and "issue_url" in p and "not a pull request" in p
 
+def g_prompt_six_checks_no_stale_count(_d, _t, p):
+    # THE ORIGINAL GUARD HAD A BLIND SPOT AND THE REVIEW FOUND IT.
+    # g_prompt_six_checks asserts "all six" is PRESENT. It says nothing about a
+    # surviving "all four" elsewhere in the same file -- and one survived, three
+    # paragraphs below, telling the Routine to proceed "once all four checks
+    # pass". A guard that only looks for the new wording cannot see the old
+    # wording it replaced. Asserting the ABSENCE is what makes the rename real.
+    return "all four" not in p and "four checks" not in p
+
+def g_prompt_validates_ids_before_use(_d, _t, p):
+    # The payload is untrusted and its ids are placed inside a shell command,
+    # so their SHAPE must be checked before a command is built, not after.
+    return ("^[0-9]{1,20}$" in p
+            and "Step 0" in p
+            and "before constructing a single command" in p.lower()
+                or "before a command is built" in p.lower()
+            ) and "^[0-9]{1,20}$" in p and "Step 0" in p
+
+def g_prompt_quotes_gh_arguments(_d, _t, p):
+    # Every gh invocation in the prompt must pass the endpoint after `--` and
+    # quoted, so no value can be read as an option to gh.
+    calls = re.findall(r"gh api[^\n`]*", p)
+    return bool(calls) and all(c.startswith('gh api -- "') for c in calls)
+
+def g_prompt_no_raw_placeholder_in_command(_d, _t, p):
+    # The old form substituted <comment_id> straight into the command text.
+    # ONE FORM THROUGHOUT: after Step 0 validates them, the two ids appear only
+    # as the shell variables it bound. A raw <placeholder> surviving anywhere --
+    # even in a string being COMPARED rather than executed -- means some part of
+    # the prompt still reads the payload's own field, and the next reader cannot
+    # tell which parts were validated.
+    return "<comment_id>" not in p and "<issue_number>" not in p
+
+def g_prompt_forbids_emitting_either_trigger(_d, _t, p):
+    return "must never contain the text `/mmsa-task`" in p and "`@claude`" in p
+
+def g_bridge_excludes_claude_mention(_d, _t, _p):
+    return "!contains(github.event.comment.body, '@claude')" in cond(_d)
+
+def g_claude_wf_excludes_bridge_phrase(_d, _t, _p):
+    # The OTHER workflow's side of the exclusion. Parsed, not grepped.
+    c = yaml.safe_load(CLAUDE_TEXT)
+    j = list(c["jobs"].values())[0]
+    return "!startsWith(github.event.comment.body, '/mmsa-task')" in " ".join(j["if"].split())
+
+def _bridge_admits(body, bridge_if):
+    """Model the bridge's body-related clauses against a candidate comment."""
+    ok = True
+    if "startsWith(github.event.comment.body, '/mmsa-task')" in bridge_if:
+        ok = ok and body.startswith("/mmsa-task")
+    elif "contains(github.event.comment.body, '/mmsa-task')" in bridge_if:
+        ok = ok and "/mmsa-task" in body
+    if "!contains(github.event.comment.body, '@claude')" in bridge_if:
+        ok = ok and "@claude" not in body
+    return ok
+
+def g_mixed_command_fires_neither(_d, _t, _p):
+    # The property itself, evaluated rather than described: for a comment that
+    # carries BOTH phrases, each workflow's own exclusion must reject it.
+    body = "/mmsa-task please do the thing, cc @claude"
+    bridge_ok = _bridge_admits(body, cond(_d))
+    c = yaml.safe_load(CLAUDE_TEXT)
+    j = list(c["jobs"].values())[0]
+    claude_if = " ".join(j["if"].split())
+    claude_ok = ("@claude" in body
+                 and not (("!startsWith(github.event.comment.body, '/mmsa-task')" in claude_if)
+                          and body.startswith("/mmsa-task")))
+    return (not bridge_ok) and (not claude_ok)
+
+MALICIOUS_IDS = [
+    "123 --method DELETE",        # an extra word becomes an OPTION to gh
+    "123 -X DELETE",
+    "-X",                         # a bare option
+    "--jq .",                     # a long option
+    "123; rm -rf /",              # command separator
+    "123 && echo owned",
+    "123 | tee /tmp/x",
+    "$(id)",                      # command substitution
+    "`id`",
+    "123\n456",                   # embedded newline
+    "123 456",                    # embedded space
+    "../../etc/passwd",           # path traversal
+    "12'3",                       # quote break-out
+    '12"3',
+    "+123", "-123", "1.23", "0x7b", "1e3",   # numeric-looking but not digits
+    "", " ", "123 ",
+    "1" * 21,                     # over the length bound
+]
+VALID_IDS = ["1", "123", "5746298072", "1" * 20]
+
+def g_prompt_id_regex_rejects_malicious(_d, _t, p):
+    """Run the prompt's OWN stated rule against hostile values.
+
+    HONEST SCOPE, stated rather than implied: this proves the RULE the prompt
+    specifies rejects these inputs. It does not prove a Routine obeys the
+    prompt -- no test here can, because the Routine is a model reading prose.
+    What it does buy is that the rule cannot silently weaken: change the
+    pattern in the prompt and this fails.
+    """
+    m = re.search(r"\*\*`(\^\[0-9\]\{1,20\}\$)`\*\*", p)
+    if not m:
+        return False
+    rx = re.compile(m.group(1))
+    # `$` in Python also matches before a trailing newline -- that is exactly
+    # the "123\n456" case, so fullmatch-style anchoring is asserted explicitly.
+    if any(rx.match(v) and "\n" not in v and rx.fullmatch(v) for v in MALICIOUS_IDS):
+        return False
+    if any(rx.fullmatch(v) and "\n" in v for v in MALICIOUS_IDS):
+        return False
+    return all(rx.fullmatch(v) for v in VALID_IDS)
+
 def g_prompt_protected_paths(_d, _t, p):
     return "is NOT authorization to touch it" in p and "firestore.rules" in p and ".github/workflows/" in p
 
@@ -120,6 +236,15 @@ GUARDS = [
     ("comment BODY appears in no step (task text cannot be sent)", g_body_never_in_a_step),
     ("token is read from env, not interpolated into the command", g_token_from_env),
     ("prompt verifies six things incl. issue/repo and not-a-PR", g_prompt_six_checks),
+    ("prompt carries NO stale `all four` wording", g_prompt_six_checks_no_stale_count),
+    ("prompt validates ids as digits-only BEFORE building a command", g_prompt_validates_ids_before_use),
+    ("every `gh api` in the prompt is quoted and passed after `--`", g_prompt_quotes_gh_arguments),
+    ("prompt never substitutes a raw placeholder into a command", g_prompt_no_raw_placeholder_in_command),
+    ("prompt forbids emitting EITHER trigger phrase", g_prompt_forbids_emitting_either_trigger),
+    ("the prompt's id rule rejects 23 hostile values and admits 4 real ones", g_prompt_id_regex_rejects_malicious),
+    ("bridge refuses a comment containing `@claude`", g_bridge_excludes_claude_mention),
+    ("claude.yml refuses a comment starting with `/mmsa-task`", g_claude_wf_excludes_bridge_phrase),
+    ("a MIXED `/mmsa-task ... @claude` comment fires NEITHER", g_mixed_command_fires_neither),
     ("prompt forbids protected paths and says a filename is not authorization", g_prompt_protected_paths),
     ("prompt forbids incrementing the application version", g_prompt_no_version_bump),
     ("prompt forbids merge/deploy/approval claims", g_prompt_no_merge_deploy),
@@ -127,6 +252,8 @@ GUARDS = [
 
 print("==== MMSA task bridge guards ====")
 text = load(WORKFLOW); prompt = load(PROMPT); doc = wf(text)
+claude_text = load(CLAUDE_WF)
+CLAUDE_TEXT = claude_text
 for label, fn in GUARDS:
     check(label, lambda fn=fn: fn(doc, text, prompt))
 
@@ -136,6 +263,13 @@ print("==== mutations (each must be CAUGHT) ====")
 
 class AnchorError(Exception):
     """The mutation could not be applied -- a finding about the HARNESS."""
+
+
+def mutate_claude(old, new):
+    n = claude_text.count(old)
+    if n != 1:
+        raise AnchorError("claude.yml anchor is not unique (%d occurrences): %r" % (n, old[:60]))
+    return claude_text.replace(old, new, 1)
 
 
 def mutate_text(old, new):
@@ -180,17 +314,50 @@ MUTATIONS = [
      None, lambda: prompt.replace("NEVER increment the application version", "You may increment the application version")),
     ("the prompt drops the issue/repo and not-a-PR verification", g_prompt_six_checks,
      None, lambda: prompt.replace("all six", "all four")),
+
+    # --- the nine guards added for the second review round --------------------
+    ("a stale `all four` wording survives the rename", g_prompt_six_checks_no_stale_count,
+     None, lambda: prompt.replace("Only once **all six** checks pass",
+                                  "Only once all four checks pass")),
+    ("Step 0 syntax validation is removed from the prompt", g_prompt_validates_ids_before_use,
+     None, lambda: prompt.replace("### Step 0 —", "### Removed —").replace("^[0-9]{1,20}$", "any value")),
+    ("the id rule is weakened to allow a leading dash", g_prompt_id_regex_rejects_malicious,
+     None, lambda: prompt.replace("**`^[0-9]{1,20}$`**", "**`^[-0-9]{1,20}$`**")),
+    ("the id rule is weakened to allow anything", g_prompt_id_regex_rejects_malicious,
+     None, lambda: prompt.replace("**`^[0-9]{1,20}$`**", "**`^[0-9]{1,20}$|^.*$`**")),
+    ("a gh call loses its quoting and its `--`", g_prompt_quotes_gh_arguments,
+     None, lambda: prompt.replace('gh api -- "repos/$REPO/issues/comments/$COMMENT_ID"',
+                                  'gh api repos/$REPO/issues/comments/$COMMENT_ID')),
+    ("a raw payload placeholder is substituted into a command", g_prompt_no_raw_placeholder_in_command,
+     None, lambda: prompt.replace('gh api -- "repos/$REPO/issues/comments/$COMMENT_ID"',
+                                  'gh api -- "repos/$REPO/issues/comments/<comment_id>"')),
+    ("the prompt stops forbidding the Action's mention phrase", g_prompt_forbids_emitting_either_trigger,
+     None, lambda: prompt.replace("and must never\ncontain `@claude`", "")),
+    ("the bridge stops excluding `@claude`", g_bridge_excludes_claude_mention,
+     lambda: mutate_text(" &&\n      !contains(github.event.comment.body, '@claude')", ""), None),
+    ("claude.yml stops excluding the bridge phrase", g_claude_wf_excludes_bridge_phrase,
+     None, None,
+     lambda: mutate_claude("      !startsWith(github.event.comment.body, '/mmsa-task') &&\n", "")),
+    ("a mixed comment fires BOTH because the bridge side is dropped", g_mixed_command_fires_neither,
+     lambda: mutate_text(" &&\n      !contains(github.event.comment.body, '@claude')", ""), None),
+    ("a mixed comment fires BOTH because the claude.yml side is dropped", g_mixed_command_fires_neither,
+     None, None,
+     lambda: mutate_claude("      !startsWith(github.event.comment.body, '/mmsa-task') &&\n", "")),
 ]
 
 caught = unproven = anchor_errors = 0
-for label, guard, wf_mut, pr_mut in MUTATIONS:
+for entry in MUTATIONS:
+    label, guard, wf_mut, pr_mut = entry[:4]
+    cl_mut = entry[4] if len(entry) > 4 else None
     # An anchor that does not apply is a HARNESS defect and is reported as one.
     # Folding it into the `except` below would print CAUGHT for a mutation that
     # never reached the file -- the exact false green this suite exists to refuse.
     try:
         mtext = wf_mut() if wf_mut else text
         mprompt = pr_mut() if pr_mut else prompt
+        CLAUDE_TEXT = cl_mut() if cl_mut else claude_text
     except AnchorError as exc:
+        CLAUDE_TEXT = claude_text
         anchor_errors += 1
         print("  ERROR     %s  <-- mutation NOT APPLIED: %s" % (label, exc))
         continue
@@ -200,6 +367,7 @@ for label, guard, wf_mut, pr_mut in MUTATIONS:
     except Exception as exc:                      # noqa: BLE001
         still_true = False                         # a mutation that breaks parsing is also caught
         label += "  [guard raised %s]" % type(exc).__name__
+    CLAUDE_TEXT = claude_text
     if still_true:
         unproven += 1; print("  UNPROVEN  %s  <-- the guard did NOT catch this" % label)
     else:

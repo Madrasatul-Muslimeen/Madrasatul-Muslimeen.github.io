@@ -173,11 +173,28 @@ jobs:
     # collaborator with role_name "admin". Listing one would risk locking out
     # the only human who can drive this.
     #
+    # MUTUAL EXCLUSION WITH THE MMSA TASK BRIDGE, and it is a real defect
+    # closed rather than a precaution. `issue_comment` delivers ONE event to
+    # EVERY workflow listening for it, so a single comment reading
+    # "/mmsa-task ... @claude ..." satisfied this gate AND the bridge's, and
+    # BOTH automations would have launched for it -- two independent workers on
+    # one instruction, each unaware of the other.
+    #
+    # The exclusion is enforced from both ends: this workflow refuses a comment
+    # that STARTS WITH the bridge's trigger phrase, and the bridge refuses a
+    # comment that CONTAINS this workflow's mention phrase. A mixed comment
+    # therefore dispatches NEITHER -- deliberately fail-closed, because a
+    # one-sided rule would silently pick a winner and the author would have no
+    # way to tell which automation read their instruction. To act, write a
+    # comment that carries one phrase and not the other.
+    #
     # DIAGNOSTIC, because a job-level `if` that fails leaves NO run to look at:
     # if an authorised "@claude" comment produces no workflow run whatsoever,
-    # this condition is the first place to look, not the Action.
+    # this condition and the exclusion above are the first places to look, not
+    # the Action.
     if: >-
       contains(github.event.comment.body, '@claude') &&
+      !startsWith(github.event.comment.body, '/mmsa-task') &&
       contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
     runs-on: ubuntu-latest
     timeout-minutes: 30

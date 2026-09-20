@@ -5,7 +5,12 @@
 
 **What is delivered:** a workflow, the Routine's saved prompt, a machine-checkable guard suite with a mutation harness, a smoke-test plan, and the exact Owner-only browser steps — on an **isolated branch with its own pull request and CI**.
 
-**Revised 20 September 2026 after Master Architect review** ([PR #92 review comment](https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/92#issuecomment-5747610670)). Four findings were raised and all four are addressed below; one of them — the duplicate-firing claim — was an **overclaim of mine that is retracted in §4 rather than softened.**
+**Revised twice on 20 September 2026 after Master Architect review.**
+
+- **Round 1** ([issuecomment-5747610670](https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/92#issuecomment-5747610670)) — four findings, all addressed. One of them, the duplicate-firing claim, was an **overclaim of mine that is retracted in §4 rather than softened.**
+- **Round 2** ([issuecomment-5747701265](https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/92#issuecomment-5747701265)) — two open Codex security findings, both real, both addressed in **§5 and §6**. One of them is a **cross-workflow defect my round-1 guards could not have seen**, because they only ever read one workflow file.
+
+**A correction to my own round-1 claim:** I wrote that `claude.yml` was *"byte-untouched"*. It is **no longer**, and deliberately so — closing the mixed-command defect requires a clause on **both** sides of the exclusion. `verify.yml` remains byte-untouched.
 
 `main` is untouched at `ee3ca08…`. No application code, version, Firestore Rules, `firebase.json`, repository setting, or existing workflow was changed. The `main` pull-request rule stands.
 
@@ -122,7 +127,61 @@ Neither gap can produce a *second* session for one comment, which is the propert
 
 ---
 
-## 5. Where the token lives, and what it never touches
+## 5. The payload's ids reached a shell command before anything checked their shape
+
+**REVIEW ROUND 2, FINDING 1 — real, and it is the framing that makes it real.** The prompt told the Routine to run
+
+```
+gh api repos/…/issues/comments/<comment_id>
+```
+
+substituting `comment_id` **straight out of the fire payload**. Everything else in this design rests on the payload being untrusted — that is why it carries a reference instead of a task — and yet its value was placed inside a command line before one thing had been checked about it.
+
+A value like `123 --method DELETE`, `-X`, `--jq .`, `123; …` or `$(…)` is not a bad *id*; it is **extra words that `gh` reads as its own options**. The current workflow builds the payload with `jq` from `github.event.comment.id`, a GitHub integer, so it cannot emit such a value today — but the prompt is the authority for **every** fire, including one from a leaked trigger token, which is the exact threat the untrusted-payload framing exists for. *"The workflow that exists today cannot send it"* is not a property of the prompt.
+
+**Fixed with a Step 0 that runs before any command is built:**
+
+- `comment_id` and `issue_number` must match **`^[0-9]{1,20}$`** — digits only, nothing before, nothing after.
+- Failure stops the run. No fetch, no command, no substitution.
+- The two validated values are bound to shell variables, and **every** `gh` call passes its endpoint quoted and after `--`: `gh api -- "repos/$REPO/issues/comments/$COMMENT_ID"`, so no value can be read as an option.
+- **One form throughout.** The raw `<issue_number>` placeholder also survived in the `issue_url` *comparison* string — not a command, but it meant part of the prompt still read the payload's own field. It uses `$ISSUE_NUMBER` now, and a guard asserts **no** raw placeholder survives anywhere.
+
+**Tested against 23 hostile values** — options, separators, substitutions, an embedded newline, quote break-outs, path traversal, `+123`/`-123`/`1.23`/`0x7b`/`1e3`, empty and over-length — **all rejected**, and 4 real ids admitted. The test extracts the pattern **from the prompt itself**, so weakening the rule fails the check; two mutations prove it (a leading dash admitted; an alternation admitting anything).
+
+**Honest scope, stated rather than implied:** this proves the **rule** rejects those inputs. It does not prove a Routine obeys the prompt — no test here can, because the Routine is a model reading prose. What it buys is that the rule cannot silently weaken.
+
+**The stale wording the review also caught:** three paragraphs below the six checks, the prompt still said *"once all four checks pass"*. My round-1 guard asserted `"all six"` was **present** and said nothing about the old wording surviving — **a guard that looks only for the new text cannot see the text it replaced.** There is now a guard asserting the **absence** of `all four`, with its own mutation.
+
+---
+
+## 6. A single comment could launch BOTH automations
+
+**REVIEW ROUND 2, FINDING 2 — and it is the finding my guards were structurally unable to find.** `issue_comment` delivers **one event to every workflow listening for it**. `claude.yml` fires on `contains(body, '@claude')`; this bridge fires on `startsWith(body, '/mmsa-task')`. A comment reading
+
+```
+/mmsa-task please do the thing, cc @claude
+```
+
+satisfied **both**, so both would have launched — two independent workers on one instruction, each unaware of the other, one of them the Claude Action with `contents: write`.
+
+**Why round 1 could not have caught it:** every guard I wrote parsed `mmsa-task-bridge.yml` and nothing else. The defect does not exist *in* either file; it exists in the **relationship between two files**, and a suite that opens one of them cannot see a relationship. The guard suite reads both now.
+
+**Fixed from both ends, and fail-closed on purpose:**
+
+| Workflow | Added clause | Effect |
+|---|---|---|
+| `mmsa-task-bridge.yml` | `!contains(body, '@claude')` | refuses a comment carrying the Action's mention phrase |
+| `claude.yml` | `!startsWith(body, '/mmsa-task')` | refuses a comment starting with the bridge's trigger phrase |
+
+**A mixed comment therefore fires NEITHER.** A one-sided rule would also be "mutually exclusive", but it would silently pick a winner and leave the author unable to tell which automation read their instruction; refusing both makes the ambiguity visible and costs one re-comment. The Routine's own no-emit rule was widened to cover `@claude` as well, since a Routine acting under the Owner's identity could otherwise loop into the *other* automation.
+
+**Tested as the property, not as the text.** A check evaluates a real mixed comment against both workflows' parsed conditions and asserts neither admits it, with **four** mutations: drop either side's clause and the mixed comment is admitted again by that side; each is caught. Proving the `claude.yml` side needed the suite's claude.yml text to be **mutable** — a guard reading straight from disk cannot be made to fail, and a guard that cannot fail has earned nothing.
+
+**`claude.yml` is consequently no longer byte-untouched**, and my round-1 statement that it was is corrected above. The change is two lines: one clause and its explanation. Its permissions, its tool configuration, its preflight and its auth handling are untouched.
+
+---
+
+## 7. Where the token lives, and what it never touches
 
 - It is a **repository secret**, `ROUTINE_FIRE_TOKEN`, alongside `ROUTINE_FIRE_URL`.
 - It is passed to `curl` **through `env:`**, never interpolated into a command line.
@@ -143,7 +202,7 @@ The built payload, executed for real:
 
 ---
 
-## 6. The Routine's saved prompt
+## 8. The Routine's saved prompt
 
 Full text in `docs/automation/mmsa-task-bridge-routine-prompt.md`. Its four steps:
 
@@ -163,16 +222,20 @@ Full text in `docs/automation/mmsa-task-bridge-routine-prompt.md`. Its four step
 
 ---
 
-## 7. The guards, and the mutation harness that proves they can fail
+## 9. The guards, and the mutation harness that proves they can fail
 
 **REVIEW FINDING 4, ADDRESSED.** Everything in §§3–6 was previously true only of a file nobody would notice changing. `tools/automation-verify/mmsa_task_bridge_guards.py` makes each property machine-checkable, and a mutation harness proves each guard actually refuses its own violation. It is Python because the checks need to parse YAML and this repository carries no Node YAML dependency; it is deliberately **outside** `tools/i18n-verify/` so the seven-suite governance check is byte-unchanged.
 
 ```
-==== MMSA task bridge guards: 18 passed, 0 failed | mutations: 12 caught, 0 unproven, 0 not applied ====
+==== MMSA task bridge guards: 27 passed, 0 failed | mutations: 23 caught, 0 unproven, 0 not applied ====
 EXIT=0
 ```
 
-The 17 guards, plus a positive control asserting every one of them passes on the real unmutated files: trigger is `created`-only; issues only; numeric id; actor type `User`; association allow-list; trigger phrase is a prefix; attribution-marker loop guard; concurrency keyed on comment id with `cancel-in-progress: false`; permissions exactly `contents: read` + `issues: write`; the claim step distinguishes 201 from 200; fire is gated on the claim; **the comment body appears in no step**; the token is read from `env`, never interpolated; and four guards over the Routine prompt (six checks, protected paths, no version bump, no merge/deploy/approval claim).
+**Round 2 took it from 17 guards + 12 mutations to 26 guards + 23 mutations** (plus the positive control). The nine added guards are: no stale `all four` wording; digits-only validation before command construction; every `gh api` quoted and after `--`; no raw placeholder anywhere; the hostile-value table; the prompt forbids emitting **either** trigger phrase; the bridge refuses `@claude`; `claude.yml` refuses `/mmsa-task`; and **a mixed comment fires neither**, evaluated as the property rather than asserted as text.
+
+**Making the `claude.yml` side provable required a change to the harness itself.** That guard originally read the file from disk, which no mutation can reach — so it could not have failed, and a guard that cannot fail has earned nothing. The suite holds `claude.yml`'s text in a variable a mutation channel can replace, with the same unique-anchor discipline as the bridge's own.
+
+The 26 guards, plus a positive control asserting every one of them passes on the real unmutated files: trigger is `created`-only; issues only; numeric id; actor type `User`; association allow-list; trigger phrase is a prefix; attribution-marker loop guard; concurrency keyed on comment id with `cancel-in-progress: false`; permissions exactly `contents: read` + `issues: write`; the claim step distinguishes 201 from 200; fire is gated on the claim; **the comment body appears in no step**; the token is read from `env`, never interpolated; and four guards over the Routine prompt (six checks, protected paths, no version bump, no merge/deploy/approval claim).
 
 **Two harness defects were found by running it, and both are recorded rather than smoothed over** — this repository's own standing rule is that an UNPROVEN mutation is a finding about the guard, and chasing it is what found them:
 
@@ -180,11 +243,15 @@ The 17 guards, plus a positive control asserting every one of them passes on the
 
 2. **A mutation that never applied but was printed as CAUGHT.** Once uniqueness was enforced, two anchors turned out to be ambiguous (`COMMENT_ID:` appears three times, the claim gate twice). The harness caught the resulting exception in its general `except` and printed **CAUGHT** — a mutation that never reached the file being reported as proof. An anchor failure now raises a distinct `AnchorError`, is printed as **`ERROR … mutation NOT APPLIED`**, and **counts as a failure with exit 1**. Both ambiguous anchors were then re-pointed at unique text and both mutations now genuinely apply and are genuinely caught.
 
-The second is the one worth keeping: **the first fix created a new false green, and only reading the output rather than the exit code exposed it.** Every one of the 12 mutations now applies to the file it names, and no catch is a swallowed exception.
+The second is the one worth keeping: **the first fix created a new false green, and only reading the output rather than the exit code exposed it.** Every one of the 23 mutations now applies to the file it names, and no catch is a swallowed exception.
+
+**Round 2 added a third finding of the same family, and it is the structural one.** Every round-1 guard parsed `mmsa-task-bridge.yml` and nothing else, so **no possible mutation of that file could have exposed the mixed-command defect** — it lives in the relationship between two workflows, and a suite that opens one file cannot see a relationship. That is not a guard that failed; it is a guard whose *subject* was too narrow. **Ask what a suite is unable to see, not only whether it passes.**
+
+**And one guard I wrote in round 1 was caught being half a check.** `g_prompt_six_checks` asserted `"all six"` was present; the review found `"all four"` still sitting three paragraphs below it. Both statements were true at once. **A rename is only real when the old text is asserted absent.**
 
 ---
 
-## 8. Minimal smoke-test plan
+## 10. Minimal smoke-test plan
 
 **Positive path — one test.** Owner comments on a throwaway issue:
 
@@ -213,14 +280,18 @@ Then record **six observations, separately**:
 | **Edit** an existing `/mmsa-task` comment | **No new run** (created-only) |
 | A comment from any non-Owner account | **No run at all** |
 | **Comment `/mmsa-task …` on a pull request** (added on review) | **No run at all** — `issue.pull_request` is non-null |
-| **Re-run the completed workflow from the Actions tab** (added on review) | The run starts, the claim step reports **200**, `claimed=false`, **fire is skipped**, no second session, run ends green |
+| **Re-run the completed workflow from the Actions tab** (added on review 1) | The run starts, the claim step reports **200**, `claimed=false`, **fire is skipped**, no second session, run ends green |
+| **`/mmsa-task do the thing, cc @claude`** — the mixed command (added on review 2) | **NEITHER workflow runs.** Check the Actions tab for *both* `MMSA task bridge` and `Claude Code`: both must be absent |
+| **Fire the Routine with `comment_id` = `123 --method DELETE`** (added on review 2) | The Routine **stops at Step 0** naming the field, before any command is built |
 | Fire the Routine with a payload naming a *different* comment id authored by someone else | The Routine **refuses at step 1** and does nothing |
 
-**The last two are the important ones.** The re-run test is the only one that exercises the duplicate-firing property that §4 retracts and re-states, and the final test is the only one that exercises the security boundary rather than the happy path — it is what would catch a Routine prompt that verifies carelessly.
+**The mixed-command test is the only one that exercises the cross-workflow boundary**, and it is the one no amount of single-file checking could substitute for. The `comment_id` test is the only one that exercises Step 0 against a live Routine — the suite proves the *rule*, only a real fire proves the *obedience*.
+
+**The last of them remains the sharpest.** The re-run test is the only one that exercises the duplicate-firing property that §4 retracts and re-states, and the final test is the only one that exercises the security boundary rather than the happy path — it is what would catch a Routine prompt that verifies carelessly.
 
 ---
 
-## 9. Exact Owner-only browser steps — **do not perform these yet**
+## 11. Exact Owner-only browser steps — **do not perform these yet**
 
 Held until the Master Architect accepts the design.
 
@@ -250,7 +321,7 @@ Held until the Master Architect accepts the design.
 
 ---
 
-## 10. Proven vs inference — kept apart
+## 12. Proven vs inference — kept apart
 
 **Proven (executed here, or quoted from documentation):**
 
@@ -262,7 +333,10 @@ Held until the Master Architect accepts the design.
 - `github.event.comment.body` appears in no step.
 - `api.github.com` is on the default allowlist; GitHub API access is scoped to attached repositories.
 - **The reactions test-and-set**: 201 on create, 200 when already held, same reaction id — executed against a real comment here, then cleaned up (204, 0 remaining).
-- **The guard suite: 18 passed, 0 failed; 12 mutations, 12 caught, 0 unproven, 0 not applied**, every mutation proven to apply to the file it names.
+- **The guard suite: 27 passed, 0 failed; 23 mutations, 23 caught, 0 unproven, 0 not applied**, every mutation proven to apply to the file it names.
+- **The prompt's id rule rejects 23 hostile values and admits 4 real ids**, with the pattern read out of the prompt rather than retyped.
+- **A mixed `/mmsa-task … @claude` comment is admitted by neither workflow's parsed condition**, with four mutations proving both sides of the exclusion are load-bearing.
+- Both workflow files parse as YAML after the change.
 - The seven governance suites pass on this branch (7/7, exit 0 each).
 
 **Inference — not yet observed, and not to be reported as working:**
@@ -274,12 +348,27 @@ Held until the Master Architect accepts the design.
 - That the loop guard holds in practice.
 - **That the claim step behaves in Actions as it did here.** The 201/200 semantics were measured against the real API, but from this session's credentials — not from `github-actions[bot]` inside a workflow. The identity differs, the endpoint does not; that it behaves identically is inference.
 - That a manual workflow re-run replays the payload such that the claim returns 200. The documented behaviour says it will; it has not been observed.
+- **That the Routine OBEYS Step 0.** The suite proves the rule the prompt states rejects hostile ids. Whether a model reading that prose actually validates before building a command is **not testable from here** and must be exercised by the negative smoke test in §10. This is the weakest link in §5 and is stated as such rather than counted as a fix.
+- That GitHub's `!contains` / `!startsWith` evaluate as modelled for the mixed comment. The property was evaluated against the parsed conditions in Python; **the conditions themselves have still never been evaluated by GitHub.**
 
 **Never true so far, stated plainly: no Routine exists, no token exists, nothing has been fired, and the bridge has never run.**
 
 ---
 
-## 11. State block
+## 13. Session continuity — assessed, and a separate continuation is NOT needed
+
+The review asked me to assess this session's remaining context and deliver a dated continuation **if a session change is needed**. Assessed honestly:
+
+- The session has been **compacted once**, earlier in this pilot. Nothing from before that compaction is load-bearing for the remaining work — the deterministic state is in the state block below, in the PR body, and in the six dated reports this pilot has produced.
+- Remaining budget is **ample**, and the outstanding work is small and bounded (accept or revise the design; then the Owner-only browser steps).
+
+**So no session change is needed, and I am deliberately not writing a separate continuation file.** This repository's own standing lesson is that a superseded handover does real damage — *"a superseded handover is not retired by writing a new one; it is retired by repointing whatever names it"* — so adding an unnecessary one is a cost, not insurance. The state block below is the continuation: it is deterministic, dated, and carries everything a fresh session would need.
+
+**The trigger to write one:** if this session is interrupted with the PR still under review, or if the Owner-only steps are performed by a different session, a continuation naming the head SHA, the review round, and the unconfigured Routine/secret state should be written at that point.
+
+---
+
+## 14. State block
 
 ```
 MMSA_TASK_BRIDGE_CANDIDATE
@@ -288,7 +377,8 @@ STATUS=CANDIDATE -- not merged; Routine NOT created; no secret; nothing fired; n
 BRANCH=claude/mmsa-task-bridge-candidate (isolated, based on main ee3ca08)
 MAIN=ee3ca08dbcc40950d56e141685b7b5a1c068225c -- untouched
 FILES=.github/workflows/mmsa-task-bridge.yml (new); docs/automation/mmsa-task-bridge-routine-prompt.md (new); tools/automation-verify/mmsa_task_bridge_guards.py (new); this report
-EXISTING_WORKFLOWS_TOUCHED=NO (claude.yml, verify.yml byte-untouched)
+EXISTING_WORKFLOWS_TOUCHED=claude.yml YES (2 lines: the exclusion clause + its comment) -- round-1 claim of "byte-untouched" CORRECTED; verify.yml still byte-untouched
+CLAUDE_YML_UNCHANGED_PARTS=permissions, tool configuration, preflight, auth handling
 PROTECTED_PATHS_TOUCHED=NO (app/ tools/ firestore.rules firebase.json docs/governance/ CLAUDE.md CHANGELOG.md tests/)
 MAIN_PR_RULE=UNCHANGED
 PAYLOAD=REFERENCE ONLY -- 536 chars; no comment text, no token; jq-built
@@ -296,7 +386,10 @@ COMMENT_BODY_IN_STEPS=NONE -- appears only in the guard conditions
 TOKEN=repository secret, passed via env:, never interpolated, never echoed, never posted
 CHATGPT_RECEIVES_TOKEN=NO; ISSUE_RECEIVES_TOKEN=NO
 GATE=startsWith trigger phrase + ISSUES-ONLY (issue.pull_request == null) + numeric id 293311955 + type User + association allow-list + no Claude attribution marker
-REVIEW=Master Architect, PR #92 issuecomment-5747610670 -- 4 findings, all 4 addressed
+REVIEW_ROUND_1=Master Architect, PR #92 issuecomment-5747610670 -- 4 findings, all 4 addressed
+REVIEW_ROUND_2=Master Architect, PR #92 issuecomment-5747701265 -- 2 Codex security findings, both addressed
+ROUND_2_F1=payload ids reached a shell command unvalidated -> Step 0 digits-only ^[0-9]{1,20}$ BEFORE command construction; all gh calls quoted and after `--`; no raw placeholder survives; stale "all four" wording fixed
+ROUND_2_F2=a single comment could launch BOTH automations -> mutual exclusion from both ends; a mixed comment fires NEITHER (fail-closed, deliberate)
 PR_CONVERSATIONS=REFUSED at three layers: job if:, runner re-assertion, Routine prompt check
 GATE_ID_NOT_LOGIN=deliberate -- a login can be renamed or transferred, an id cannot
 NON_OWNER_ORG_MEMBER=REFUSED (executed truth table, 8 cases)
@@ -309,13 +402,21 @@ CLAIM_RECOVERY=remove the 🚀 reaction left by github-actions[bot], then re-run
 RERUN_NOT_BLOCKED_BY_CONCURRENCY=stated plainly -- concurrency stops concurrent runs, not a manual re-run
 IDEMPOTENCY=endpoint has NONE -- documented; handled caller-side by the claim
 PERMISSIONS=contents:read + issues:write ONLY
-ROUTINE_PROMPT=verify-first (SIX checks incl. issue_url match and no pull_request field); refuse on any failed check; claude/ branch; PR only; NEVER merge, deploy, change Rules or claim approval
+ROUTINE_PROMPT=Step 0 SYNTAX validation, then verify-first (SIX checks incl. issue_url match and no pull_request field); refuse on any failed check; claude/ branch; PR only; NEVER merge, deploy, change Rules or claim approval
+PROMPT_NO_EMIT=both `/mmsa-task` AND `@claude` -- a routine acts as the Owner, so either phrase could start a run
+STEP0_OBEDIENCE=NOT TESTABLE HERE -- the suite proves the RULE; only a live negative fire proves the Routine obeys it
 PROMPT_FILENAME_LOOPHOLE=CLOSED -- "unless the verified comment names the file" DELETED (count 0); a filename in the task is NOT authorization; NEVER increment the application version
-GUARDS=tools/automation-verify/mmsa_task_bridge_guards.py -- 18 passed, 0 failed; mutations 12 caught, 0 unproven, 0 not applied; exit 0
-GUARD_HARNESS_DEFECTS_FOUND=2, both recorded: a mutation that edited PROSE (non-unique anchor) and a mutation that never applied but printed CAUGHT (swallowed exception)
+GUARDS=tools/automation-verify/mmsa_task_bridge_guards.py -- 27 passed, 0 failed; mutations 23 caught, 0 unproven, 0 not applied; exit 0
+GUARDS_ROUND2_ADDED=9 guards + 11 mutations; suite now reads BOTH workflow files
+ID_RULE_TESTED=23 hostile values rejected, 4 real ids admitted; pattern read OUT of the prompt, not retyped
+MIXED_COMMAND=evaluated as a property against both parsed conditions; 4 mutations prove both sides load-bearing
+GUARD_HARNESS_DEFECTS_FOUND=4, all recorded: (1) a mutation edited PROSE via a non-unique anchor; (2) a mutation that never applied printed CAUGHT via a swallowed exception; (3) round-1 guards parsed ONE workflow so the cross-file defect was structurally invisible; (4) g_prompt_six_checks asserted the NEW wording present without asserting the OLD wording absent -- both true at once
+LESSON=ask what a suite is UNABLE to see, not only whether it passes; a rename is real only when the old text is asserted absent
 GUARDS_LOCATION=outside tools/i18n-verify/ deliberately -- the seven-suite governance check is byte-unchanged
 REPO_SCOPING=proxy limits GitHub API to ATTACHED repositories -- a forged repository value returns 403
-SUITES=7/7 green on this branch
+SUITES=7/7 green on this branch, exit 0 each
+NEGATIVE_TESTS=8 in the plan (was 4, then 6): + mixed command fires neither, + comment_id "123 --method DELETE" stops at Step 0
+SESSION_CONTINUATION=NOT NEEDED -- assessed in section 13; budget ample, work bounded; this state block IS the continuation
 BIGGEST_UNTESTED=the GitHub `if:` expression itself -- only a real event can confirm it
 OWNER_STEPS=prepared in section 8; DO NOT PERFORM until the design is accepted
 USAGE_CREDITS=leave OFF so an over-cap run is rejected, not billed
