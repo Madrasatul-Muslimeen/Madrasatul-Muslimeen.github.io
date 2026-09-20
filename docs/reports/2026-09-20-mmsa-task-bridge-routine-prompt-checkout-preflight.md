@@ -272,13 +272,16 @@ issue asking the question, and end the run.
   git rev-parse origin/main >/dev/null 2>&1 \
     || { echo "CHECKOUT PREFLIGHT FAILED: origin/main did not resolve after fetch"; exit 1; }
 
-  node -e '
+  streams=$(node -e '
     const l = require("./docs/governance/programme-integration-ledger.json");
     for (const s of l.streams || []) if (s.activeBranch) console.log(s.activeBranch);
-  ' | while read -r b; do
+  ') || { echo "CHECKOUT PREFLIGHT FAILED: could not read docs/governance/programme-integration-ledger.json (node exit $?)"; exit 1; }
+
+  while IFS= read -r b; do
+    [ -z "$b" ] && continue
     git rev-parse "origin/$b" >/dev/null 2>&1 \
       || { echo "CHECKOUT PREFLIGHT FAILED: origin/$b (ledger stream activeBranch) did not resolve after fetch"; exit 1; }
-  done
+  done <<< "$streams"
   ```
 
   This is git bookkeeping local to the session's own working copy — it
@@ -401,3 +404,73 @@ extending the verification surface beyond the six checks is itself a change
 to the routine prompt's security design that would need the same
 declare-and-authorise treatment as any other change to it — not something to
 add unilaterally inside an unrelated task.
+
+## 8. Master Architect review round — two corrections applied
+
+Master Architect review on the draft PR
+([issuecomment-5749479797](https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/98#issuecomment-5749479797))
+found two real defects, both amended in place rather than worked around —
+Steps 0–2, the six verification checks and the protected-path table are
+byte-for-byte unchanged by either fix.
+
+**(1) The HTML twin was flattening this report's own §5 into unusable
+prose, and `tools/md2report.py` was genuinely responsible.** Read rather than
+assumed: the generator had no handling at all for a fenced code block
+(```` ``` ```` or a longer run of backticks) — such a line matched none of
+its per-line rules (table, heading, ordered/unordered list, rule), so it fell
+into the generic paragraph case, which joins every line with a single space.
+§5's replacement-text block is one large four-backtick fence nesting two
+three-backtick `bash` fences, a markdown table and three-hash headings as
+**literal content to be copied verbatim** — exactly the shape the paragraph
+case could not represent, so the git commands, the `Step 0` heading and the
+protected-path table were all rendered as run-together text with no fences,
+headings or table structure at all. `tools/md2report.py` is a general report
+generator (not a routine-prompt or governance file, and not on the
+protected-path table above), already amended by earlier report rounds, so
+repairing it is inside this PR's own scope. The fix adds fenced-block
+handling matching CommonMark's own nesting rule: an opening line of *N*
+consecutive backticks is closed only by a later line of *N or more*
+backticks, so a three-backtick line inside a four-backtick fence stays
+literal content rather than closing it early. Everything between open and
+close is emitted as one `<pre><code>` block, HTML-escaped and otherwise
+untouched — not re-parsed as markdown — which is what makes the copied
+block's own fences, headings and table print as plain text exactly as
+written, rather than being interpreted a second time. Verified by
+regenerating this report's own HTML with the corrected generator and reading
+the output: **two** `<pre>` blocks are produced (the standalone §2 `bash`
+example, and one single block holding all of §5's ~200 lines byte-for-byte,
+HTML-escaped), where the unfixed generator produced **zero** — every line
+that used to fall into flattened `<p>` text is inside a `<pre><code>` now,
+selectable and copyable as one block, with the inner `### Step 0` heading,
+the nested `` ```bash `` fences and the `| Family | Paths |` table all
+present as literal text rather than rendered markup or dropped.
+
+**(2) The preflight's `node -e ... | while read` pipeline could hide a
+`node` failure as a silently empty, successful loop — reproduced against a
+real shell before being fixed, not inferred.** Without `pipefail` (not set
+here, and not assumed to be set by whatever shell runs a Routine session's
+commands), the exit status of a pipeline is the exit status of its **last**
+command only. `node -e 'process.exit(1)' | while read -r b; do …; done`
+reads zero lines because the failed `node` printed nothing, so the `while`
+loop's body never runs and the loop itself still exits 0 — a broken or
+missing `docs/governance/programme-integration-ledger.json` (a bad checkout,
+a JSON syntax error, the file being moved) would silently read as "no ledger
+streams to check" rather than as the preflight failure it actually is,
+letting the suites run against an unverified checkout with no named error at
+all. The fix removes the pipe from the critical path rather than relying on
+`pipefail` being set in whatever shell executes the block: `node`'s output is
+captured into a variable with `streams=$(...)`, and `node`'s own exit status
+is checked directly with `|| { echo "CHECKOUT PREFLIGHT FAILED: …"; exit 1;
+}` before anything reads `$streams`. The branch loop then reads from that
+captured variable with a here-string (`done <<< "$streams"`) instead of a
+pipe, so there is no longer any command whose failure a trailing pipeline
+stage could mask. Verified against a real shell: the original pipe form
+exits 0 after a deliberately failing `node -e 'process.exit(1)'`; the
+corrected capture form exits 1 with the named `CHECKOUT PREFLIGHT FAILED`
+line in the same case, prints nothing extra and exits 0 when `node` succeeds
+with output, and exits 0 doing nothing when `node` succeeds with no lines
+(a ledger with no `activeBranch` streams — a legitimate, non-failure case
+that must stay silent). Applied identically to
+`docs/automation/mmsa-task-bridge-routine-prompt.md` and to this report's own
+§5 copy, so the two stay byte-for-byte identical, which is what §5's own
+instruction to the Owner already requires.

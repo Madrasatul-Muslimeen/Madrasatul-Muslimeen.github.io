@@ -166,13 +166,16 @@ issue asking the question, and end the run.
   git rev-parse origin/main >/dev/null 2>&1 \
     || { echo "CHECKOUT PREFLIGHT FAILED: origin/main did not resolve after fetch"; exit 1; }
 
-  node -e '
+  streams=$(node -e '
     const l = require("./docs/governance/programme-integration-ledger.json");
     for (const s of l.streams || []) if (s.activeBranch) console.log(s.activeBranch);
-  ' | while read -r b; do
+  ') || { echo "CHECKOUT PREFLIGHT FAILED: could not read docs/governance/programme-integration-ledger.json (node exit $?)"; exit 1; }
+
+  while IFS= read -r b; do
+    [ -z "$b" ] && continue
     git rev-parse "origin/$b" >/dev/null 2>&1 \
       || { echo "CHECKOUT PREFLIGHT FAILED: origin/$b (ledger stream activeBranch) did not resolve after fetch"; exit 1; }
-  done
+  done <<< "$streams"
   ```
 
   This is git bookkeeping local to the session's own working copy — it
