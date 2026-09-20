@@ -35,6 +35,12 @@
 #   4. The author association must be OWNER, MEMBER or COLLABORATOR. All three
 #      are listed because on an organisation-owned repository an admin may
 #      present as any of them; the Owner has been observed as MEMBER here.
+#   5. The comment must be on an ISSUE, not a pull request.
+#      `issue_comment` fires for BOTH issue and pull-request conversations --
+#      GitHub models a PR as an issue -- so without this clause a `/mmsa-task`
+#      comment on any pull request would dispatch a run. Pull-request comments
+#      are deliberately OUT of scope for this bridge and are not tested for
+#      it. The Routine re-checks the same property from the fetched comment.
 #
 # Conditions 2-4 overlap on purpose. Condition 2 is the real gate; 3 and 4 are
 # cheap and fail closed if GitHub's payload ever changes shape.
@@ -47,11 +53,43 @@
 # belt to that braces: a comment carrying the Claude Code attribution marker
 # is refused outright.
 #
-# DUPLICATE FIRING. The fire endpoint has no idempotency key -- Anthropic's
-# own reference states that a retrying caller creates multiple sessions. Two
-# measures here: the trigger is `created` only, so editing a comment cannot
-# re-fire it; and a concurrency group keyed on the COMMENT ID means the same
-# comment can never have two runs in flight.
+# DUPLICATE FIRING -- AND THE HONEST LIMITS OF EACH MEASURE.
+# The fire endpoint has no idempotency key: Anthropic's own reference states
+# that a retrying caller creates multiple sessions. Three measures here, and
+# they cover different windows:
+#
+#   1. `types: [created]` -- editing a comment cannot re-fire it.
+#   2. `concurrency` keyed on the COMMENT ID -- the same comment cannot have
+#      two runs IN FLIGHT. THIS ALONE IS NOT ENOUGH, and an earlier revision
+#      of this file overclaimed it: concurrency serialises simultaneous runs,
+#      it does NOT stop someone pressing "Re-run jobs" on a run that already
+#      finished, which would POST a second time.
+#   3. A DURABLE CLAIM on the comment itself, which is what closes that hole.
+#      Before firing, the job POSTs a `rocket` reaction to the comment.
+#      GitHub returns 201 when it creates the reaction and 200 when that
+#      reaction already exists for the authenticated user -- measured, not
+#      assumed. So 201 means "this run claimed the comment, proceed" and 200
+#      means "already dispatched, stop". The claim is durable because the
+#      reaction persists after the run ends, so a re-run of a finished run
+#      reads 200 and does not fire.
+#
+# RACE SEMANTICS, stated precisely rather than as "exactly once":
+#   * The claim is ONE API call, so a re-run after completion is reliably
+#     refused. That is the window measure 2 could not cover.
+#   * GitHub does not document this endpoint as an atomic compare-and-set.
+#     Two genuinely simultaneous creates are narrowed by measure 2 but not
+#     formally excluded. The honest guarantee is AT-MOST-ONCE IN EVERY
+#     OBSERVED CASE, not exactly-once.
+#   * The reaction row is per authenticated user. The job claims as
+#     github-actions[bot], so an Owner adding their own rocket to the comment
+#     is a different row and does NOT suppress dispatch.
+#
+# OPERATIONAL RECOVERY, because the claim can strand a legitimate retry:
+#   If the claim succeeds and the fire then fails, the comment stays claimed
+#   and a re-run will refuse. To retry deliberately, REMOVE the rocket
+#   reaction left by github-actions[bot] from that comment, then re-run the
+#   job. This fails closed -- a stranded claim blocks a run, it never causes
+#   an extra one.
 
 name: MMSA task bridge
 
@@ -78,6 +116,7 @@ jobs:
     name: Fire the MMSA task routine
     if: >-
       startsWith(github.event.comment.body, '/mmsa-task') &&
+      github.event.issue.pull_request == null &&
       github.event.comment.user.id == 293311955 &&
       github.event.comment.user.type == 'User' &&
       contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
@@ -95,6 +134,8 @@ jobs:
           ACTOR_ID: ${{ github.event.comment.user.id }}
           ACTOR_TYPE: ${{ github.event.comment.user.type }}
           ASSOCIATION: ${{ github.event.comment.author_association }}
+          # 'true' only when the conversation is a pull request.
+          IS_PULL_REQUEST: ${{ github.event.issue.pull_request != null }}
         run: |
           set -euo pipefail
           if [ "${ACTOR_ID}" != "293311955" ]; then
@@ -109,7 +150,11 @@ jobs:
             OWNER|MEMBER|COLLABORATOR) ;;
             *) echo "::error::Author association ${ASSOCIATION} is not permitted. Refusing."; exit 1 ;;
           esac
-          echo "Identity re-asserted: id ${ACTOR_ID}, type ${ACTOR_TYPE}, association ${ASSOCIATION}."
+          if [ "${IS_PULL_REQUEST}" = "true" ]; then
+            echo "::error::This comment is on a pull request, not an issue. Refusing."
+            exit 1
+          fi
+          echo "Identity re-asserted: id ${ACTOR_ID}, type ${ACTOR_TYPE}, association ${ASSOCIATION}, issue (not PR)."
 
       # Establishes ONLY whether both secrets exist. Prints booleans, never
       # values; both arrive through `env:` so neither can be interpolated into
@@ -173,9 +218,49 @@ jobs:
           echo "--- payload (contains no comment text and no secret) ---"
           cat payload.json
 
+      # DURABLE DISPATCH CLAIM. See the header for the race semantics and the
+      # recovery procedure. 201 = this run claimed the comment; 200 = another
+      # run already did, so stop. Anything else is a real error.
+      - name: Claim this comment before firing
+        id: claim
+        if: steps.cfg.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+        run: |
+          set -euo pipefail
+          status=$(curl -sS -o claim.json -w '%{http_code}' \
+            -X POST "https://api.github.com/repos/${REPO}/issues/comments/${COMMENT_ID}/reactions" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "Content-Type: application/json" \
+            -d '{"content":"rocket"}')
+          case "$status" in
+            201)
+              echo "claimed=true" >> "$GITHUB_OUTPUT"
+              echo "Claimed comment ${COMMENT_ID} for dispatch (HTTP 201)."
+              ;;
+            200)
+              echo "claimed=false" >> "$GITHUB_OUTPUT"
+              echo "::notice::Comment ${COMMENT_ID} was already dispatched (HTTP 200). Not firing again."
+              {
+                echo "## MMSA task bridge — already dispatched"
+                echo ""
+                echo "Comment \`${COMMENT_ID}\` already carries this run's dispatch claim, so no request was made."
+                echo ""
+                echo "To dispatch it again deliberately, remove the 🚀 reaction left by \`github-actions[bot]\` on that comment, then re-run this job."
+              } >> "$GITHUB_STEP_SUMMARY"
+              ;;
+            *)
+              echo "::error::Could not claim the comment (HTTP ${status}). Refusing to fire."
+              exit 1
+              ;;
+          esac
+
       - name: Fire the routine
         id: fire
-        if: steps.cfg.outputs.ready == 'true'
+        if: steps.cfg.outputs.ready == 'true' && steps.claim.outputs.claimed == 'true'
         env:
           ROUTINE_FIRE_URL: ${{ secrets.ROUTINE_FIRE_URL }}
           ROUTINE_FIRE_TOKEN: ${{ secrets.ROUTINE_FIRE_TOKEN }}
@@ -218,7 +303,7 @@ jobs:
       # start with the trigger phrase, and this comment comes from
       # github-actions[bot], so it cannot re-trigger this workflow.
       - name: Report the session link on the issue
-        if: steps.cfg.outputs.ready == 'true' && steps.fire.outputs.session_url != ''
+        if: steps.cfg.outputs.ready == 'true' && steps.claim.outputs.claimed == 'true' && steps.fire.outputs.session_url != ''
         env:
           GH_TOKEN: ${{ github.token }}
           SESSION_URL: ${{ steps.fire.outputs.session_url }}
