@@ -14,6 +14,18 @@
 // mechanically by tools/health-atlas-verify/view-boundary.mjs, which reads
 // this file's own source text — do not import those fields into this file
 // without updating that check first.
+//
+// CLAIM-LEVEL PROVENANCE (claim-provenance tranche 1, additive to the
+// above). Every function statement now renders a small badge naming its
+// EVIDENCE STATUS, from health-atlas-claims.js's closed vocabulary — never
+// an unqualified claim of verification. The badge's "cited" branch is
+// decided ONLY by comparing against the imported EVIDENCE_STATUS.CITED_EVIDENCE
+// constant, never by a literal 'cited-evidence' string written in this
+// file — tools/health-atlas-verify/view-provenance-boundary.mjs asserts
+// that literal is absent from this file's own source, so a future edit
+// cannot make a statement look cited without going through the registry.
+// A statement the registry has no entry for renders as UNCLASSIFIED
+// (visibly, not silently) rather than defaulting to either status.
 
 import {
   listSystems,
@@ -22,6 +34,11 @@ import {
   referencesFor,
   organCountsBySystem
 } from './health-atlas-selectors.js';
+import {
+  EVIDENCE_STATUS,
+  evidenceStatusFor,
+  referenceIdFor
+} from './health-atlas-claims.js';
 
 function el(tag, attrs, children) {
   const node = document.createElement(tag);
@@ -49,13 +66,38 @@ function renderReferences(refs) {
   ]);
 }
 
+// Renders one function statement's evidence-status badge. The status comes
+// ONLY from evidenceStatusFor() / the imported EVIDENCE_STATUS constant —
+// never a literal string — so a claim can never read as "cited" without a
+// real registry entry naming it so (see view-provenance-boundary.mjs).
+function renderEvidenceBadge(organId, statement, referencesById) {
+  const status = evidenceStatusFor(organId, statement);
+  if (status === EVIDENCE_STATUS.CITED_EVIDENCE) {
+    const refId = referenceIdFor(organId, statement);
+    const ref = refId ? referencesById[refId] : null;
+    const label = ref ? `Cited: ${ref.name}` : 'Cited (reference unresolved)';
+    return el('span', { class: 'ha-evidence-badge ha-evidence-cited', text: label });
+  }
+  if (status === EVIDENCE_STATUS.GENERAL_REFERENCE_ONLY) {
+    return el('span', {
+      class: 'ha-evidence-badge ha-evidence-general',
+      text: 'General reference only — not verified as evidence for this specific statement'
+    });
+  }
+  // No registry entry at all: say so plainly rather than guessing a status.
+  return el('span', { class: 'ha-evidence-badge ha-evidence-unclassified', text: 'Unclassified — no provenance record yet' });
+}
+
 function renderOrganDetail(data, organId, onBack) {
   const organ = getOrgan(data.organs, organId);
   if (!organ) return el('p', { class: 'ha-empty', text: 'Organ not found in this dataset.' });
 
   const system = data.systems.find(s => s.id === organ.system);
   const functionsList = el('ul', { class: 'ha-plain' },
-    (organ.functions || []).map(fn => el('li', { text: fn })));
+    (organ.functions || []).map(fn => el('li', {}, [
+      el('span', { class: 'ha-function-text', text: fn }),
+      renderEvidenceBadge(organ.id, fn, data.referencesById)
+    ])));
   const connections = (organ.connections || []).join(', ');
   const refs = referencesFor(organ, data.referencesById);
 
