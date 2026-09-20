@@ -38,6 +38,17 @@ while i < len(lines):
     para = []
     while i < len(lines) and lines[i].strip() and not lines[i].startswith(("|", "#", "- ", "---")) and not re.match(r'^\d+\.\s', lines[i]):
         para.append(lines[i]); i += 1
+    if not para:
+        # THE INDEX MUST ALWAYS ADVANCE, or this loops for ever.
+        # A line can slip past every branch above and still be refused by the
+        # paragraph scanner: the heading test needs whitespace after the
+        # hashes, so a GitHub Actions line like "##[error]..." quoted inside a
+        # report is not a heading, yet startswith("#") stops the scanner
+        # consuming it. Nothing then increments i. Found when a CI report
+        # quoting real "##[error]" output hung the generator indefinitely.
+        # Emitting the line as its own paragraph keeps the output faithful and
+        # guarantees progress.
+        para.append(lines[i]); i += 1
     out.append("<p>" + inline(" ".join(para)) + "</p>")
 CSS = """<style>
   :root { color-scheme: light dark;
