@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Health Atlas combined candidate (tranche 5): reconciling tranches 1-4 into one branch</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Health Atlas combined candidate (tranche 5): reconciling tranches 1-4 into one branch</h1>
+<p>Dispatched via the MMSA task bridge (issue 115, comment <code>5752939512</code>). Authoritative timestamp: 2026-09-20 22:08 UTC.</p>
+<h2>Summary</h2>
+<p>Four independent Health-owned draft pull requests existed after tranche 4: draft PR 105 (foundation), draft PR 111 (claim-provenance, stacked on 105), draft PR 119 (Foods/Conditions/Age Groups, stacked on 111) and draft PR 121 (Master Categories, branched from 105 directly and never stacked on 111 or 119). Two independent stacks both modified the same foundation branch, which is exactly the situation the dispatching task asked to reconcile into one integration-ready candidate.</p>
+<p>This tranche does that: <code>claude/health-atlas-combined-candidate-tranche5</code>, branched from PR 119&#x27;s own head (which already contains 105, 111 and 119 in a straight line) with PR 121&#x27;s tranche merged on top. <strong>No dataset, selector or view file from any of the four tranches was changed by this merge.</strong> The only files touched by the merge itself: <code>app/health/README.md</code> (both tranches&#x27; own sections kept, plus a new section recording this reconciliation) and <code>app/health/health-atlas.html</code>&#x27;s footer (now links to both <code>health-atlas-more.html</code> and <code>health-atlas-categories.html</code>, where it previously linked only to the former).</p>
+<h2>What was investigated first</h2>
+<p>Before merging anything, each PR&#x27;s actual diff was read directly from the GitHub API (<code>pull_request_read</code>, not assumed from an earlier report), and <code>git diff --stat</code> was run for every PR against its own declared base:</p>
+<div class='tw'><table><thead><tr><th>PR</th><th>Branch</th><th>Base</th><th>Files touched</th><th>Protected/shared path touched</th></tr></thead><tbody>
+<tr><td>105</td><td><code>claude/health-atlas-foundation-tranche1</code></td><td><code>main</code></td><td>12, all under <code>app/health/</code>, <code>tools/health-atlas-verify/</code>, <code>docs/reports/</code></td><td>None</td></tr>
+<tr><td>111</td><td><code>claude/health-claim-provenance-tranche1</code></td><td>105&#x27;s branch</td><td>9, same three directories</td><td>None</td></tr>
+<tr><td>119</td><td><code>claude/health-atlas-foods-ages-tranche1</code></td><td>111&#x27;s branch</td><td>10, same three directories</td><td>None</td></tr>
+<tr><td>121</td><td><code>claude/health-atlas-master-categories-tranche4</code></td><td>105&#x27;s branch</td><td>9, same three directories</td><td>None</td></tr>
+</tbody></table></div>
+<p><code>main</code> had not moved since PR 105 was opened (<code>origin/main</code> is still <code>2cb405e388</code>), so no rebase was needed to bring the stack current.</p>
+<p>The only file both independent stacks (111-through-119, and 121) modified relative to their shared base (105) is <code>app/health/README.md</code> — each tranche appended its own section. <code>health-atlas.html</code>&#x27;s footer was modified only by 119 (which added a forward link the moment it built the &quot;more&quot; page); 121 deliberately left that file alone, saying so in its own report, precisely to avoid this exact merge conflict at integration time.</p>
+<h2>What changed in the merge</h2>
+<ul><li><strong><code>git checkout -b claude/health-atlas-combined-candidate-tranche5 origin/claude/health-atlas-foods-ages-tranche1</code></strong> — this already carries 105, 111 and 119&#x27;s commits in a straight line, unmodified.</li><li><strong><code>git merge --no-ff origin/claude/health-atlas-master-categories-tranche4</code></strong> — one real conflict, in <code>app/health/README.md</code>. Resolved by keeping both sides&#x27; sections (claim-provenance, tranche 3, tranche 4, in that order) and adding one new section recording the reconciliation itself, including a correction to tranche 4&#x27;s own note that it deliberately left the footer unlinked (&quot;this combined candidate is that integration&quot;).</li><li><strong>One follow-up edit, not part of the raw merge</strong>: <code>health-atlas.html</code>&#x27;s footer now reads two links side by side — <code>Also draft: Foods, Conditions &amp; Age Groups (arrow) . Food Master Categories (arrow)</code> — rather than the single link 119 added on its own stack. This is the one-line follow-up PR 121&#x27;s own report flagged as needed &quot;at integration time,&quot; done here rather than left for later, since this branch is exactly that integration.</li></ul>
+<p>Every dataset file (<code>health-atlas-data.js</code>), every selector file, and every view file from all four tranches is present in this branch <strong>byte-identical</strong> to its own PR — confirmed by diffing this branch against each source PR&#x27;s head for those specific files.</p>
+<p>``<code> git diff origin/claude/health-atlas-foundation-tranche1 HEAD -- app/health/js/health-atlas-data.js app/health/js/health-atlas-selectors.js app/health/js/health-atlas-view.js git diff origin/claude/health-claim-provenance-tranche1 HEAD -- app/health/js/health-atlas-claims.js git diff origin/claude/health-atlas-foods-ages-tranche1 HEAD -- app/health/js/health-atlas-more-selectors.js app/health/js/health-atlas-more-view.js app/health/health-atlas-more.html git diff origin/claude/health-atlas-master-categories-tranche4 HEAD -- app/health/js/health-atlas-categories-selectors.js app/health/js/health-atlas-categories-view.js app/health/health-atlas-categories.html </code>``</p>
+<p>All four commands produce empty output.</p>
+<h2>Boundaries respected</h2>
+<p><code>git diff --stat origin/main HEAD</code> — 35 files changed, 10,429 insertions, zero deletions, every path under <code>app/health/</code>, <code>tools/health-atlas-verify/</code> or <code>docs/reports/</code>. Checked by name against every family in the shared-path ownership map (version, platform-shared, platform-shared tooling, governance, deployment/security, the workflow gate itself): zero matches. No version allocated or bumped — <code>app/js/version.js</code> untouched, <code>v08.32</code> stays unallocated. Nothing deployed. Not linked from any shared-nav surface.</p>
+<h2>Governance suite results (full-history preflight applied first)</h2>
+<p>The repository was confirmed shallow (<code>git rev-parse --is-shallow-repository</code> returned <code>true</code>), then <code>git fetch --unshallow origin</code> was run, then <code>origin/claude/pensive-knuth-2pu3jj</code> and <code>origin/claude/phase4-wiring</code> (the two HELD branches <code>docs/governance/programme-integration-ledger.json</code> declares) were fetched explicitly — the exact preflight PR 119 and PR 121 each diagnosed a piece of. <code>git rev-parse --is-shallow-repository</code> then returned <code>false</code>.</p>
+<p>All seven, on this branch&#x27;s own head, after that preflight:</p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>programme-ledger.mjs</code></td><td>8 passed, 23 noted, 0 failed</td></tr>
+<tr><td><code>programme-ledger-mutations.mjs</code></td><td>49 passed, 0 failed</td></tr>
+<tr><td><code>brief-integrity.mjs</code></td><td>8 passed, 0 failed</td></tr>
+<tr><td><code>study-activity-evidence-boundary.mjs</code></td><td>27 passed, 0 failed</td></tr>
+<tr><td><code>study-activity-evidence-boundary-mutations.mjs</code></td><td>11 passed, 0 failed</td></tr>
+<tr><td><code>study-event-wiring.mjs</code></td><td>41 passed, 0 failed</td></tr>
+<tr><td><code>rules-authorisation-executable.mjs</code></td><td>38 passed, 0 failed</td></tr>
+</tbody></table></div>
+<p><strong>182 passed, 0 failed, across all seven.</strong> Neither guard script was read, edited or weakened — both are protected tooling and both are already correct once the ledger&#x27;s declared branches are genuinely present.</p>
+<h2>Health-owned suite results</h2>
+<p>All thirteen suites this codebase now carries under <code>tools/health-atlas-verify/</code> (three from tranche 1, four from tranche 2, three from tranche 3, three from tranche 4), run unmodified on the combined branch:</p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>data-integrity.mjs</code></td><td>21 passed, 0 failed</td></tr>
+<tr><td><code>selectors.mjs</code></td><td>8 passed, 0 failed</td></tr>
+<tr><td><code>view-boundary.mjs</code></td><td>14 passed, 0 failed</td></tr>
+<tr><td><code>claims-integrity.mjs</code></td><td>10 passed, 0 failed</td></tr>
+<tr><td><code>claims-mutations.mjs</code></td><td>7 passed, 0 failed</td></tr>
+<tr><td><code>view-provenance-boundary.mjs</code></td><td>7 passed, 0 failed</td></tr>
+<tr><td><code>view-provenance-mutations.mjs</code></td><td>4 passed, 0 failed</td></tr>
+<tr><td><code>more-selectors.mjs</code></td><td>9 passed, 0 failed</td></tr>
+<tr><td><code>view-boundary-more.mjs</code></td><td>26 passed, 0 failed</td></tr>
+<tr><td><code>view-boundary-more-mutations.mjs</code></td><td>7 passed, 0 failed</td></tr>
+<tr><td><code>categories-selectors.mjs</code></td><td>7 passed, 0 failed</td></tr>
+<tr><td><code>view-boundary-categories.mjs</code></td><td>58 passed, 0 failed</td></tr>
+<tr><td><code>view-boundary-categories-mutations.mjs</code></td><td>7 passed, 0 failed</td></tr>
+</tbody></table></div>
+<p><strong>185 passed, 0 failed, across all thirteen.</strong></p>
+<h2>Browser walk of every Health page, with excluded-field checks</h2>
+<p>A focused, un-checked-in Playwright script (Chromium, served via this repo&#x27;s own <code>serve.js</code>), written for this reconciliation, deleted before this commit. It builds one excluded-field corpus from the live data module — every food&#x27;s <code>nutrition[]</code> and <code>servingQty</code>, every food&#x27;s raw <code>organs[]</code> entry that carries a digit (the dose-bearing subset tranche 3&#x27;s own report found), every disease&#x27;s <code>remedies</code>/<code>homeRemedies</code>/<code>naturalRemedies</code>, every age group&#x27;s <code>notes[]</code>, and the whole Lifestyles dataset (name and all three substantive fields) — 287 distinct values after removing entries that collide with an approved label (e.g. several foods&#x27; <code>nutrition</code> arrays literally contain the bare word &quot;Protein&quot; as a nutrient-category tag, which is also an approved master-category name).</p>
+<p>It then walks all three pages, opening every individual detail view rather than sampling:</p>
+<ul><li><strong><code>health-atlas.html</code></strong>: all 9 systems opened; all 46 organs opened individually; 82 total function statements, 82 total evidence badges (one per statement), 0 <code>cited-evidence</code>, 0 unclassified — the same honest 0-cited finding PR 111 established, unchanged by this merge. Footer carries exactly one link to <code>health-atlas-more.html</code> and exactly one link to <code>health-atlas-categories.html</code>, confirmed by <code>href</code> rather than by visible text.</li><li><strong><code>health-atlas-more.html</code></strong>: Foods tab (default) renders all 34 foods, each opened individually; Conditions tab renders all 17 diseases, each opened individually; Age Groups tab renders all 6 age groups (matched by their full rendered label, <code>Name (range)</code>, since a bare name is a real substring of another — <code>Adult</code> inside <code>Midlife Adult</code> and <code>Older Adult</code>), each opened individually. Zero Lifestyle dataset names render anywhere across any tab.</li><li><strong><code>health-atlas-categories.html</code></strong>: all 8 master categories render and were opened individually; every category&#x27;s own sub-category food counts match what the live dataset says for it, and the 8 categories&#x27; totals sum to exactly 34 — the whole Foods dataset, with no loss and no overlap, the same invariant PR 121 established. Links back to <code>health-atlas.html</code>.</li></ul>
+<p><strong>30 checks, 0 failed, 0 page errors anywhere in the walk. Zero verbatim excluded-field leaks across 287 distinct values, checked against the combined text of every list view and every individual detail view on all three pages.</strong></p>
+<p>Two probe defects were found and fixed while writing this script, neither an application defect — recorded per this repository&#x27;s own standing lesson that a failing check is surprisingly often a wrong assertion:</p>
+<ol><li>Playwright&#x27;s unquoted <code>text=name</code> locator matches by substring, and this dataset has two real collisions the earlier tranches&#x27; own narrower walks never happened to hit: <code>Bladder</code> is a substring of <code>Gallbladder</code>, and <code>Thyroid</code> is a substring of <code>Parathyroid Glands</code>. An unquoted locator silently opened the wrong organ for one of the 46 and undercounted its badges by one. Fixed by quoting every <code>text=</code> locator for an exact match (<code>text=&quot;Bladder&quot;</code>), confirmed against the dataset for every other organ and system name pair.</li><li>The age-group list button&#x27;s own rendered label is <code>Name (range)</code>, not the bare name (see <code>renderAgeGroupList</code> in <code>health-atlas-more-view.js</code>), so an exact-match locator on the bare name found nothing. Fixed by matching the exact label the view actually renders.</li></ol>
+<h2>PR dependency table (for MMSA-123&#x27;s ledger/nav authorisation)</h2>
+<div class='tw'><table><thead><tr><th>PR</th><th>Branch</th><th>Base</th><th>State</th><th>Relationship to this candidate</th></tr></thead><tbody>
+<tr><td>105</td><td><code>claude/health-atlas-foundation-tranche1</code></td><td><code>main</code></td><td>Open draft</td><td>Superseded — its dataset, selectors and Body Systems view are carried into this branch byte-identical</td></tr>
+<tr><td>111</td><td><code>claude/health-claim-provenance-tranche1</code></td><td>105&#x27;s branch</td><td>Open draft</td><td>Superseded — its claim-provenance registry and badge rendering are carried into this branch byte-identical</td></tr>
+<tr><td>119</td><td><code>claude/health-atlas-foods-ages-tranche1</code></td><td>111&#x27;s branch</td><td>Open draft</td><td>Superseded — its Foods/Conditions/Age Groups browser is carried into this branch byte-identical; its footer edit is extended (not replaced) by this branch</td></tr>
+<tr><td>121</td><td><code>claude/health-atlas-master-categories-tranche4</code></td><td>105&#x27;s branch (sibling; never stacked on 111 or 119)</td><td>Open draft</td><td>Superseded — its Master Categories browser is carried into this branch byte-identical; the footer link it deliberately deferred is added here instead</td></tr>
+<tr><td>This tranche</td><td><code>claude/health-atlas-combined-candidate-tranche5</code></td><td><code>main</code></td><td>New draft PR (opened by this task)</td><td>Supersedes all four above — the single integration-ready candidate</td></tr>
+</tbody></table></div>
+<p><strong>Recommendation, not executed here</strong>: once this combined candidate is reviewed, PRs 105, 111, 119 and 121 can be closed without merging (their content lives on, unchanged, inside this branch) rather than merged individually. Closing someone else&#x27;s open PRs is outside this task&#x27;s authorised scope — that decision, and the exact ledger/nav fields below, belong to MMSA-123.</p>
+<p>The exact <code>docs/governance/programme-integration-ledger.json</code> <code>health</code> entry fields (<code>integrationState</code>, <code>repository</code>, <code>activeBranch</code> = this branch&#x27;s name, <code>branchTip</code> = this branch&#x27;s head commit, <code>declaredVersion</code>, <code>baselineSha</code> = <code>2cb405e388</code>, <code>baselineStatus</code>, <code>ownedPaths</code> = every path under <code>app/health/</code> and <code>tools/health-atlas-verify/</code>) and the one-line <code>app/js/nav.js</code> change (matching the shape the <code>/legacy/</code>/<code>/legacy-v07/</code> links already use) are unchanged from what PR 119 and PR 121 each already specified. Neither file is touched by this tranche.</p>
+<h2>Owner app test required: NO</h2>
+<p>Not merged, not deployed, not linked from any shared-nav surface — needs <code>node serve.js</code> and a direct URL to view, same as all four superseded tranches and for the identical reason. If MMSA-123 authorises integration, the build/role/steps/evidence for a future Owner test are the same three URLs already served locally in this task (<code>app/health/health-atlas.html</code>, <code>app/health/health-atlas-more.html</code>, <code>app/health/health-atlas-categories.html</code>), with no sign-in and no tenant required.</p>
+<h2>What this deliberately does not do</h2>
+<ul><li>Does not resolve which of the five branches (four superseded plus this one) should be kept as the repository&#x27;s permanent Health branch — an Owner/Master Architect decision.</li><li>Does not edit <code>docs/governance/programme-integration-ledger.json</code> or <code>app/js/nav.js</code> — both are named above for MMSA-123, neither is touched here.</li><li>Does not close, merge, or request review on PRs 105, 111, 119 or 121.</li><li>Does not allocate or bump any version, deploy anything, or claim approval.</li><li>Does not add or change any nutrition, dose, remedy, treatment or lifestyle-recommendation content — the merge touches only <code>README.md</code> and one footer line; every dataset, selector and view file is byte-identical to its source PR.</li></ul>
+<h2>Test plan</h2>
+<ul><li>[x] <code>node tools/health-atlas-verify/data-integrity.mjs</code> -- 21/0</li><li>[x] <code>node tools/health-atlas-verify/selectors.mjs</code> -- 8/0</li><li>[x] <code>node tools/health-atlas-verify/view-boundary.mjs</code> -- 14/0</li><li>[x] <code>node tools/health-atlas-verify/claims-integrity.mjs</code> -- 10/0</li><li>[x] <code>node tools/health-atlas-verify/claims-mutations.mjs</code> -- 7/0</li><li>[x] <code>node tools/health-atlas-verify/view-provenance-boundary.mjs</code> -- 7/0</li><li>[x] <code>node tools/health-atlas-verify/view-provenance-mutations.mjs</code> -- 4/0</li><li>[x] <code>node tools/health-atlas-verify/more-selectors.mjs</code> -- 9/0</li><li>[x] <code>node tools/health-atlas-verify/view-boundary-more.mjs</code> -- 26/0</li><li>[x] <code>node tools/health-atlas-verify/view-boundary-more-mutations.mjs</code> -- 7/0</li><li>[x] <code>node tools/health-atlas-verify/categories-selectors.mjs</code> -- 7/0</li><li>[x] <code>node tools/health-atlas-verify/view-boundary-categories.mjs</code> -- 58/0</li><li>[x] <code>node tools/health-atlas-verify/view-boundary-categories-mutations.mjs</code> -- 7/0</li><li>[x] All seven required governance suites, after full-history + required-ref preflight, 182/0</li><li>[x] Focused, un-checked-in Playwright browser walk of all three pages, every detail view opened individually, 30/0, zero excluded-field leaks across 287 values</li></ul>
+</main></body></html>
