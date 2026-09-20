@@ -141,7 +141,14 @@ permanent unit key", both of which already scan `hadith-browser.js` and
   extended — the exact "flagged for the Quran/shared-file owner rather than
   assumed" treatment the Stage B report already used for a shared-file touch
   this stream cannot make itself. `bn.js` is on this bridge's own protected-path
-  list; **three new catalogue keys need adding there**, listed verbatim in §7.
+  list; **four new catalogue keys need adding there**, listed verbatim in §7.
+  **Correction, 2026-09-20 (MMSA task bridge, issue #114):** this section
+  originally said "three new catalogue keys" and §7 originally claimed the
+  per-edition line "reuses the same" key as the overall line. It does not —
+  `t(key, vars)` (`app/js/i18n.js:61`) looks a catalogue entry up by the exact
+  English literal passed as `key`, and the overall line's literal carries an
+  `"Overall: "` prefix the per-edition line's literal does not. Two different
+  strings are two different catalogue keys. §7 is corrected below.
 - **No collection/edition filter was added to Search.** Considered and set
   aside: with only two synthetic editions in the fixture, a filter control would
   cost real UI space for close to no benefit today, and would need its own
@@ -165,12 +172,16 @@ permanent unit key", both of which already scan `hadith-browser.js` and
 
 ## 7. For whoever holds `bn.js`
 
-Three new keys, English literal is the key itself (this project's own
-convention):
+**Four new keys, not three** (corrected 2026-09-20 — see §6). English literal
+is the key itself (this project's own convention). `t(key, vars)` matches on
+the literal string passed as `key`; the overall line and the per-edition line
+call `t()` with two literals that differ by the `"Overall: "` prefix, so each
+needs its own catalogue entry — neither covers the other:
 
-- `"Translation coverage"`
-- `"How many synthetic narrations carry an English or a Bangla version, alongside the Arabic source. This describes the fixture only -- it is not a measure of a real corpus."`
-- `"Overall: {en} of {n} have English, {bn} of {n} have Bangla."` (reused twice — once for the overall line, once per edition)
+- `"Translation coverage"` (the `<h3>`)
+- `"How many synthetic narrations carry an English or a Bangla version, alongside the Arabic source. This describes the fixture only -- it is not a measure of a real corpus."` (the caveat paragraph)
+- `"Overall: {en} of {n} have English, {bn} of {n} have Bangla."` (the one overall line only)
+- `"{en} of {n} have English, {bn} of {n} have Bangla."` (one per edition — this is a **distinct** literal from the one above, not a reuse of it)
 
 ---
 
@@ -194,7 +205,7 @@ REGRESSION_SUITES=programme-ledger 8/23/0; programme-ledger-mutations 48/1 (pre-
 
 BLAST_RADIUS=BR-0 -- three Hadith-owned files, zero shared/protected file touched
 
-SHARED_FILES_CHANGED=NONE (bn.js needs 3 new keys -- flagged in §7, not added)
+SHARED_FILES_CHANGED=NONE (bn.js needs 4 new keys, corrected 2026-09-20 from an original miscount of 3 -- flagged in §7, not added)
 
 VERSION=unchanged, v08.32 still unallocated -- no behaviour-changing version bump was made or requested
 
