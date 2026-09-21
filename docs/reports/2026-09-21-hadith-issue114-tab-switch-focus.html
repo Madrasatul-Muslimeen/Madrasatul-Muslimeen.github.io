@@ -19,6 +19,8 @@
   li { margin:.32rem 0 }
   code { background:var(--code); padding:.1em .38em; border-radius:.3em;
     font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  pre { background:var(--code); padding:.8em 1em; border-radius:.5em; overflow-x:auto }
+  pre code { padding:0 }
   hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
   .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
   table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
@@ -59,7 +61,10 @@
 <p>So a keyboard-only or screen-reader user loses their place to the very top of the page on <strong>every</strong> tab switch, including the exact &quot;return to Search after visiting a narration&#x27;s source&quot; round trip the task named — the data survives, the reader&#x27;s position does not.</p>
 <h3>Fix</h3>
 <p><code>app/js/hadith-browser.js</code> — one new helper, <code>focusActiveTab()</code>, called from the tab button&#x27;s own click handler right after <code>render()</code> (the same call-after-render shape <code>focusCollectionsLanding()</code> already uses at every other call site):</p>
-<p>``<code>js function focusActiveTab() {   const btn = document.querySelector(&quot;.hadith-tab.active&quot;);   if (btn) btn.focus({ preventScroll: true }); } </code>``</p>
+<pre><code>function focusActiveTab() {
+  const btn = document.querySelector(".hadith-tab.active");
+  if (btn) btn.focus({ preventScroll: true });
+}</code></pre>
 <p>Focus lands on the newly-active tab button itself — the standard ARIA-tabs pattern (focus stays on the tab list; the button is already a real, always-focusable control, so this needs no <code>tabindex</code> hack, unlike the landing elements <code>focusCollectionsLanding()</code> has to stamp one onto). <strong>Zero new translatable strings.</strong></p>
 <h3>Tests</h3>
 <p><code>tools/i18n-verify/hadith-source-navigation-browser.mjs</code>, 4 new checks: switching to the Search tab lands focus on the Search tab button; returning to Search after a &quot;View in source&quot; jump does too, <strong>and</strong> the query/results are still the same (proving the data was never the problem, only focus); switching to the Collections tab lands focus on its own button; switching to the Explore tab does too (Topics and Commentary use the identical code path — every tab shares one click-handler loop — so these four already exercise every branch of it).</p>
