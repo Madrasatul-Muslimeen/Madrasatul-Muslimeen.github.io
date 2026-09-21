@@ -177,6 +177,57 @@ node tools/i18n-verify/quran-word-card-return.mjs
 ==== 55 passed, 0 failed ====
 ```
 
+**Corrected 21 Sep 2026 — this suite's own `55 passed, 0 failed` above was not
+reproducible, and the cause is a real gap in `app/js/splash.js`, not in this
+suite's assertions.** A follow-up task-bridge round (issue #113) reviewing the
+whole #135→#137→#138→#139 stack found that re-running this file hung at the
+`page.click('#quranWordCardMount [data-word-card-level="basic"]')` line in the
+geometry section, at 46/55, until a 280s wrapper timeout — reported honestly by
+PR #139's own investigation rather than forced. Root cause, read in
+`app/js/splash.js` (unmodified, read-only): `showQuranSplash()`'s overlay stays
+on screen for a full **14 seconds** once shown, and its `shouldShow()` predicate
+special-cases only `"daily"`/`"weekly"` — **there is no `"never"` branch**, so
+`harness.mjs`'s own `mm_qs_splash_pref = "never"` convention (set by every
+context this suite opens) does not suppress it. `showBootSplash()` chains into
+`showQuranSplash()` on completion (`app/quranrevival.html`:
+`showBootSplash(() => showQuranSplash())`), so on every single fresh context the
+Quran-entry overlay reliably appears **around 6.3 seconds after page load** (the
+boot splash's own two 3s slides plus its fade) and sits over the page,
+intercepting pointer events, until **~20.3 seconds** — squarely inside the
+window `openFixtureWord()`'s own ~6.1s of accumulated waits, plus the
+`page.waitForTimeout(2800)` before the first Word Card click, lands in.
+
+**Not fixed in `app/js/splash.js`** — adding the missing `"never"` branch is a
+real, if small, application-behaviour change (it would alter what every OTHER
+splash-suppressing test and every real "Once a day"/"Once a week" reader sees),
+unrelated to issue #113's Word Card scope, and out of this task's authority
+(this round's task named it explicitly as something to reliably work around,
+not ship). Instead, **this suite now dismisses the overlay itself**, using the
+identical DOM-removal technique `harness.mjs`'s own `openPage()` already uses
+once after each page load (`document.querySelectorAll('[id*="splash"]')...
+.remove()`), applied here immediately before every click that could land while
+either splash is still showing. A new local `clickSafely(page, selector)`
+wraps every `page.click(...)` call in this file (23 call sites) with that
+removal step first, then the real click — `app/js/splash.js` is untouched, and
+every existing `check()` assertion (selector, expected value, failure message)
+is byte-identical; only the delivery of the click changed, from "hope nothing
+is on top" to "make sure nothing is on top first."
+
+Re-run against this fix, in this sandbox, start to finish with no hang:
+
+```
+node tools/i18n-verify/quran-word-card-return.mjs
+==== 55 passed, 0 failed ====
+```
+
+This is now the **real, reproducible** result the original round above
+claimed — verified a second time in a fresh run rather than assumed from the
+first. The splash `"never"`-branch gap itself remains open, flagged for
+whoever next owns `app/js/splash.js` — it also explains PR #137's own suite
+working around the same interception locally in its own file, and PR #139's
+own investigation reporting the hang honestly instead of claiming a clean run
+it could not reproduce.
+
 Also re-run, unmodified by this round, all pass at their own established
 baseline:
 - `node tools/i18n-verify/quran-word-card.mjs` → 50 passed, 0 failed
