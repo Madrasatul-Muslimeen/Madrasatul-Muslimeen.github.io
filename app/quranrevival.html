@@ -13359,7 +13359,20 @@
       renderStudyScreen();
     });
 
-    surahSelect.addEventListener("change", async () => { currentSurahNum = Number(surahSelect.value); await loadSurah(); });
+    // Issue #113 -- same fix as stepUnit()'s and goToUnitNumber()'s own
+    // tails, and for the same reason: picking a different surah directly
+    // from this dropdown is a third, independent way to cross a surah
+    // boundary (loadSurah() always lands on the new surah's own āyah 1,
+    // same target openSurahAt() uses), and it shares the identical
+    // untouched root cause -- renderFlowView()'s non-Mushaf branch replaces
+    // #pageViewContainer's innerHTML in one atomic assignment, which does
+    // not reset scrollLeft, so the OLD surah's scroll offset otherwise
+    // carries over into the NEW surah's flow strip. A no-op when the flow
+    // view is not showing (checked inside scrollFlowToCurrentAyah() itself,
+    // which is why ayahSelect's own handler below needs no matching call:
+    // it only ever fires while the flow strip is hidden -- see this round's
+    // own dated report for the reproduction that established that).
+    surahSelect.addEventListener("change", async () => { currentSurahNum = Number(surahSelect.value); await loadSurah(); await scrollFlowToCurrentAyah(); });
     trackableSelect.addEventListener("change", () => changeCurrentTrackable(trackableSelect.value));
     personSelect.addEventListener("change", async () => {
       selectedPersonId = personSelect.value;
