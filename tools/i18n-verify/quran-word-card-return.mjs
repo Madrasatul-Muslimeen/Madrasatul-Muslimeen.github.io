@@ -25,6 +25,27 @@ import { chromium, newContext, openPage } from "./harness.mjs";
 let pass = 0, fail = 0;
 const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
 
+// Issue #113 follow-up (21 Sep 2026): app/js/splash.js's shouldShow() has no
+// "never" branch, so harness.mjs's own mm_qs_splash_pref="never" convention
+// does not actually suppress either splash here -- showBootSplash chains
+// into showQuranSplash, whose overlay sits on screen for a full 14s, and it
+// reliably lands right in this suite's own click windows (openFixtureWord()
+// alone accumulates ~6.1s of waits before the first Word Card click). Not
+// app/js/splash.js's to fix -- out of this task's scope, an unrelated
+// application-behaviour change -- so this suite dismisses the overlay
+// itself, the same DOM-removal technique harness.mjs's own openPage()
+// already uses once after load, applied here before every click that could
+// land while either splash is still showing. This does not touch
+// app/js/splash.js and does not weaken or skip any check() assertion --
+// every click below still has to reach its real target and every existing
+// assertion is unchanged.
+async function clickSafely(page, selector) {
+  await page.evaluate(() => {
+    document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((el) => el.remove());
+  });
+  await page.click(selector);
+}
+
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
 
 /** Same proven fixture as quran-word-card-lemma-occurrences.mjs and
@@ -35,8 +56,8 @@ async function openFixtureWord(page) {
     const b = document.getElementById("tabReadBtn");
     return !!b && b.getBoundingClientRect().width > 0;
   });
-  if (!reachable) { await page.click("#tabStudyBtn"); await page.waitForTimeout(150); }
-  await page.click("#tabReadBtn");
+  if (!reachable) { await clickSafely(page, "#tabStudyBtn"); await page.waitForTimeout(150); }
+  await clickSafely(page, "#tabReadBtn");
   await page.waitForTimeout(500);
   await page.evaluate(() => {
     const t = document.getElementById("wbwShowToggle");
@@ -59,9 +80,9 @@ for (const lang of ["en", "bn"]) {
   const ctx = await newContext(browser, { appLang: lang, viewport: { width: 390, height: 844 } });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   await openFixtureWord(page);
-  await page.click('#quranWordCardMount [data-word-card-level="basic"]');
+  await clickSafely(page, '#quranWordCardMount [data-word-card-level="basic"]');
   await page.waitForTimeout(2800);
-  await page.click("[data-word-lemma-toggle]");
+  await clickSafely(page, "[data-word-lemma-toggle]");
   await page.waitForTimeout(2000);
 
   const origin = await page.evaluate(() => ({
@@ -102,7 +123,7 @@ for (const lang of ["en", "bn"]) {
   }
   if (scrollBefore >= 5) check(`${lang} the origin page really did scroll before leaving`, scrollBefore > 0, scrollBefore);
 
-  await page.click("[data-word-occurrence-goto]");
+  await clickSafely(page, "[data-word-occurrence-goto]");
   await page.waitForTimeout(1200);
 
   const away = await page.evaluate((wanted) => {
@@ -123,7 +144,7 @@ for (const lang of ["en", "bn"]) {
 
   // Press the actual control -- every existing suite stops at "the bar
   // appears"; this is the round trip nothing has exercised before.
-  await page.click("[data-word-card-origin-back]");
+  await clickSafely(page, "[data-word-card-origin-back]");
   await page.waitForTimeout(2600);
 
   const back = await page.evaluate(() => ({
@@ -174,20 +195,20 @@ for (const lang of ["en", "bn"]) {
   const ctx = await newContext(browser, { viewport: { width: 390, height: 844 } });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   await openFixtureWord(page);
-  await page.click('#quranWordCardMount [data-word-card-level="depth"]');
+  await clickSafely(page, '#quranWordCardMount [data-word-card-level="depth"]');
   await page.waitForTimeout(1500);
   const firstForm = await page.evaluate(() => document.querySelector("[data-word-form-toggle]")?.getAttribute("data-word-form-toggle"));
   if (!firstForm) {
     console.log("  SKIP -- fixture's root carries no derived forms to expand");
   } else {
     const originId = await page.evaluate(() => document.querySelector(".quran-word-card")?.getAttribute("data-occurrence-id"));
-    await page.click("[data-word-form-toggle]");
+    await clickSafely(page, "[data-word-form-toggle]");
     await page.waitForTimeout(2000);
     const target = await page.evaluate(() => document.querySelector("[data-word-occurrence-goto]")?.getAttribute("data-word-occurrence-goto"));
     if (target) {
-      await page.click("[data-word-occurrence-goto]");
+      await clickSafely(page, "[data-word-occurrence-goto]");
       await page.waitForTimeout(1200);
-      await page.click("[data-word-card-origin-back]");
+      await clickSafely(page, "[data-word-card-origin-back]");
       await page.waitForTimeout(2600);
       const back = await page.evaluate(() => ({
         occurrenceId: document.querySelector(".quran-word-card")?.getAttribute("data-occurrence-id"),
@@ -218,13 +239,13 @@ for (const lang of ["en", "bn"]) {
   const ctx = await newContext(browser, { viewport: { width: 390, height: 844 } });
   const { page } = await openPage(ctx, "/app/quranrevival.html");
   await openFixtureWord(page);
-  await page.click('#quranWordCardMount [data-word-card-level="basic"]');
+  await clickSafely(page, '#quranWordCardMount [data-word-card-level="basic"]');
   await page.waitForTimeout(2800);
-  await page.click("[data-word-lemma-toggle]");
+  await clickSafely(page, "[data-word-lemma-toggle]");
   await page.waitForTimeout(2000);
   const openedBefore = await page.evaluate(() => document.querySelector("[data-word-lemma-toggle]")?.getAttribute("aria-expanded"));
   check("expanded before moving", openedBefore === "true", openedBefore);
-  await page.click('[data-word-card-move="next"]');
+  await clickSafely(page, '[data-word-card-move="next"]');
   await page.waitForTimeout(2000);
   const afterMove = await page.evaluate(() => document.querySelector("[data-word-lemma-toggle]")?.getAttribute("aria-expanded"));
   check("the NEW word's own toggle starts collapsed (unchanged acceptance criterion)", afterMove !== "true", afterMove);
@@ -240,14 +261,14 @@ for (const lang of ["en", "bn"]) {
   const ctx = await newContext(browser, { viewport: { width: 390, height: 844 } });
   const { page } = await openPage(ctx, "/app/quranrevival.html");
   await openFixtureWord(page);
-  await page.click('#quranWordCardMount [data-word-card-level="basic"]');
+  await clickSafely(page, '#quranWordCardMount [data-word-card-level="basic"]');
   await page.waitForTimeout(2800);
-  await page.click("[data-word-lemma-toggle]");
+  await clickSafely(page, "[data-word-lemma-toggle]");
   await page.waitForTimeout(2000);
   const originId = await page.evaluate(() => document.querySelector(".quran-word-card")?.getAttribute("data-occurrence-id"));
   const target = await page.evaluate(() => document.querySelector("[data-word-occurrence-goto]")?.getAttribute("data-word-occurrence-goto"));
   if (target) {
-    await page.click("[data-word-occurrence-goto]");
+    await clickSafely(page, "[data-word-occurrence-goto]");
     await page.waitForTimeout(1200);
     const focusable = await page.evaluate(() => {
       const btn = document.querySelector("[data-word-card-origin-back]");
@@ -281,13 +302,13 @@ for (const lang of ["en", "bn"]) {
   const ctx = await newContext(browser, { appLang: "en", viewport: { width: 390, height: 844 } });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   await openFixtureWord(page);
-  await page.click('#quranWordCardMount [data-word-card-level="basic"]');
+  await clickSafely(page, '#quranWordCardMount [data-word-card-level="basic"]');
   await page.waitForTimeout(2800);
-  await page.click("[data-word-lemma-toggle]");
+  await clickSafely(page, "[data-word-lemma-toggle]");
   await page.waitForTimeout(2000);
   const target = await page.evaluate(() => document.querySelector("[data-word-occurrence-goto]")?.getAttribute("data-word-occurrence-goto"));
   if (target) {
-    await page.click("[data-word-occurrence-goto]");
+    await clickSafely(page, "[data-word-occurrence-goto]");
     await page.waitForTimeout(1200);
     await page.evaluate(() => { try { localStorage.setItem("mm_app_lang", "bn"); } catch {} });
     await page.reload({ waitUntil: "networkidle" });
@@ -318,16 +339,16 @@ for (const lang of ["en", "bn"]) {
       const ctx = await newContext(browser, { appLang: lang, viewport: { width, height } });
       const { page } = await openPage(ctx, "/app/quranrevival.html");
       await openFixtureWord(page);
-      await page.click('#quranWordCardMount [data-word-card-level="basic"]');
+      await clickSafely(page, '#quranWordCardMount [data-word-card-level="basic"]');
       await page.waitForTimeout(2800);
       const target = await page.evaluate(() => document.querySelector("[data-word-occurrence-goto]")?.getAttribute("data-word-occurrence-goto"));
       if (!target) {
-        await page.click("[data-word-lemma-toggle]");
+        await clickSafely(page, "[data-word-lemma-toggle]");
         await page.waitForTimeout(2000);
       }
       const finalTarget = target || await page.evaluate(() => document.querySelector("[data-word-occurrence-goto]")?.getAttribute("data-word-occurrence-goto"));
       if (!finalTarget) { console.log(`  SKIP ${lang} ${name} -- no occurrence to follow`); await ctx.close(); continue; }
-      await page.click("[data-word-occurrence-goto]");
+      await clickSafely(page, "[data-word-occurrence-goto]");
       await page.waitForTimeout(1200);
       const m = await page.evaluate((vw) => {
         const btn = document.querySelector("[data-word-card-origin-back]");
