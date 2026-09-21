@@ -36,12 +36,55 @@
 // focus state this suite checks would silently start being lost, exactly the
 // class of defect PR #135's Basic-tab lemma list and PR #138's flow-mode
 // arrival both were.
+//
+// CORRECTED 21 Sep 2026 (issue #113 task: "correct the acceptance test in
+// #139"). Three defects in THIS ACCEPTANCE TEST, none in the app:
+// (1) the "cross-surah" target filter was `!t.startsWith("2:71:")`, which
+//     excludes only the origin's own exact surah:āyah prefix -- a target
+//     like "2:100:3" (same surah 2, a different āyah) would have wrongly
+//     passed as "cross-surah" while landing on the SAME surah. It now
+//     compares the target's own leading segment, parsed as a number,
+//     against the declared ORIGIN_SURAH constant.
+// (2) the only assertion that the destination was really a different surah
+//     compared the RENDERED page state against a "wanted" surah/āyah PARSED
+//     FROM THE SAME LINK just clicked -- a consistency check on the app's
+//     own navigation, not independent proof of a genuine cross-surah trip.
+//     A new check compares the rendered `surahSelect` value directly against
+//     ORIGIN_SURAH.
+// (3) several essential preconditions (the fixture opening in the Note
+//     view's own mount at desktop width, a lemma list existing to expand, a
+//     cross-surah occurrence existing to follow, and enough Note-body
+//     content to scroll) were silent `console.log("SKIP...")` continues with
+//     NO check() call recorded -- so a run missing any of them still
+//     reported "N passed, 0 failed" while quietly testing nothing for that
+//     case. Every one of those is a named, failing check() now.
 import { chromium, newContext, openPage } from "./harness.mjs";
 
 let pass = 0, fail = 0;
 const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
+
+// The fixture's own origin surah/āyah (surah 2, āyah 71) -- named here rather
+// than left as scattered literals so the "genuinely a different SURAH" checks
+// below compare against one declared number, not a re-typed one.
+const ORIGIN_SURAH = 2;
+const ORIGIN_AYAH = 71;
+
+/** Given the raw `data-word-occurrence-goto` targets on the open Word Card,
+ *  find one landing on a surah NUMBER different from ORIGIN_SURAH.
+ *
+ *  CORRECTED 21 Sep 2026 (issue #113 task): the original filter was
+ *  `t.startsWith("2:71:")`, which excludes only the origin's own exact
+ *  "surah:ayah:" prefix -- so a target like "2:100:3" (surah 2, a DIFFERENT
+ *  āyah) does not start with "2:71:" and would have wrongly passed as a
+ *  "cross-surah" target while landing on the SAME surah. Comparing the
+ *  target's own leading segment, parsed as a number, against ORIGIN_SURAH is
+ *  the actual acceptance criterion the task names: "target surah != origin
+ *  surah, not merely a different occurrence/ayah". */
+function findCrossSurahTarget(targets) {
+  return targets.find((t) => Number(t.split(":")[0]) !== ORIGIN_SURAH);
+}
 
 /** Same proven fixture surah/āyah as quran-word-card-return.mjs and
  *  quran-word-card-flow-nav.mjs (surah 2, āyah 71) -- known to carry real
@@ -64,9 +107,9 @@ async function openFixtureWordInNoteView(page) {
     if (t && !t.checked) { t.checked = true; t.dispatchEvent(new Event("change", { bubbles: true })); }
   });
   await page.waitForTimeout(600);
-  await page.evaluate(() => { const s = document.getElementById("surahSelect"); s.value = "2"; s.dispatchEvent(new Event("change", { bubbles: true })); });
+  await page.evaluate((surah) => { const s = document.getElementById("surahSelect"); s.value = String(surah); s.dispatchEvent(new Event("change", { bubbles: true })); }, ORIGIN_SURAH);
   await page.waitForTimeout(2500);
-  await page.evaluate(() => { const s = document.getElementById("ayahSelect"); if (s.querySelector('option[value="71"]')) { s.value = "71"; s.dispatchEvent(new Event("change", { bubbles: true })); } });
+  await page.evaluate((ayah) => { const s = document.getElementById("ayahSelect"); if (s.querySelector(`option[value="${ayah}"]`)) { s.value = String(ayah); s.dispatchEvent(new Event("change", { bubbles: true })); } }, ORIGIN_AYAH);
   await page.waitForTimeout(1500);
   const noteReachable = await page.evaluate(() => {
     const b = document.getElementById("tabNoteBtn");
@@ -75,9 +118,9 @@ async function openFixtureWordInNoteView(page) {
   if (!noteReachable) { await page.click("#tabStudyBtn"); await page.waitForTimeout(150); }
   await page.click("#tabNoteBtn");
   await page.waitForTimeout(1500);
-  await page.evaluate(() => {
-    (document.querySelector('#noteView [data-word-occurrence$=":2:71:13"]') || document.querySelector("#noteView [data-word-occurrence]"))?.click();
-  });
+  await page.evaluate((suffix) => {
+    (document.querySelector(`#noteView [data-word-occurrence$="${suffix}"]`) || document.querySelector("#noteView [data-word-occurrence]"))?.click();
+  }, `:${ORIGIN_SURAH}:${ORIGIN_AYAH}:13`);
   await page.waitForTimeout(1000);
 }
 
@@ -111,7 +154,14 @@ for (const lang of ["en", "bn"]) {
   await page.click('#quranWordCardMountNote [data-word-card-level="basic"]');
   await page.waitForTimeout(2800);
   const hasLemmaToggle = await page.evaluate(() => !!document.querySelector("#quranWordCardMountNote [data-word-lemma-toggle]"));
-  if (!hasLemmaToggle) { console.log("  SKIP -- fixture carries no lemma list this run"); await ctx.close(); continue; }
+  // CORRECTED 21 Sep 2026 (issue #113 task): a missing lemma list is an
+  // ESSENTIAL precondition for everything below -- without it there is no
+  // cross-surah occurrence to follow, so the rest of this round trip proves
+  // nothing. This used to be a silent `continue` with no check() recorded at
+  // all, which let the run report "N passed, 0 failed" while quietly
+  // testing nothing for this language. It is a named, failing check now.
+  check(`${lang} the fixture's Basic tab carries a lemma list to expand (essential precondition)`, hasLemmaToggle, hasLemmaToggle);
+  if (!hasLemmaToggle) { console.log("  fixture carries no lemma list this run -- recorded as a failure above, not a skip"); await ctx.close(); continue; }
   await page.click("#quranWordCardMountNote [data-word-lemma-toggle]");
   await page.waitForTimeout(2000);
 
@@ -121,10 +171,16 @@ for (const lang of ["en", "bn"]) {
   const allTargets = await page.evaluate(() =>
     Array.from(document.querySelectorAll("#quranWordCardMountNote [data-word-occurrence-goto]"))
       .map((e) => e.getAttribute("data-word-occurrence-goto")));
-  const crossSurahTarget = allTargets.find((t) => !t.startsWith("2:71:"));
-  if (!crossSurahTarget) { console.log(`  SKIP -- fixture's lemma list has no cross-surah occurrence this run (targets=${allTargets})`); await ctx.close(); continue; }
-  check(`${lang} the fixture's lemma list reaches a different surah (proves this is a real cross-surah trip)`,
-        !crossSurahTarget.startsWith("2:71:"), crossSurahTarget);
+  const crossSurahTarget = findCrossSurahTarget(allTargets);
+  // CORRECTED 21 Sep 2026: same class of fix as above -- a fixture with no
+  // cross-surah occurrence available is an essential precondition failure,
+  // not a thing to silently skip past.
+  check(`${lang} the fixture's lemma list contains at least one occurrence on a genuinely different SURAH than the origin (essential precondition)`,
+        !!crossSurahTarget, `origin surah=${ORIGIN_SURAH}, targets=${JSON.stringify(allTargets)}`);
+  if (!crossSurahTarget) { console.log(`  fixture's lemma list has no cross-surah occurrence this run (targets=${allTargets}) -- recorded as a failure above, not a skip`); await ctx.close(); continue; }
+  const targetSurah = Number(crossSurahTarget.split(":")[0]);
+  check(`${lang} the chosen target's own surah number (${targetSurah}) really differs from the origin's (${ORIGIN_SURAH}) -- not merely a different occurrence/āyah`,
+        targetSurah !== ORIGIN_SURAH, crossSurahTarget);
   await page.evaluate((t) => {
     document.querySelectorAll("#quranWordCardMountNote [data-word-occurrence-goto]")
       .forEach((e) => { if (e.getAttribute("data-word-occurrence-goto") === t) e.setAttribute("data-repro-target", "1"); });
@@ -146,11 +202,16 @@ for (const lang of ["en", "bn"]) {
     el.scrollTop = Math.min(120, Math.max(max, 0));
     return el.scrollTop;
   });
-  if (scrollBefore === null || scrollBefore < 5) {
-    console.log(`  SKIP ${lang} scroll checks -- fixture content is too short to scroll at this viewport (scrollBefore=${scrollBefore})`);
-  } else {
-    check(`${lang} the Note view's own body really did scroll before leaving`, scrollBefore > 0, scrollBefore);
-  }
+  // CORRECTED 21 Sep 2026: an unscrollable fixture at this viewport is an
+  // essential precondition for the scroll-restore assertion below (line
+  // ~198) -- it used to be a bare console.log with no check() call at all,
+  // so a fixture that never scrolled would silently drop scroll coverage
+  // while the run still reported full success. Recorded as a named,
+  // failing check now; the final restore assertion still only runs when
+  // this precondition actually held (asserting equality against a
+  // meaningless near-zero scrollBefore would prove nothing).
+  check(`${lang} the Note view's own body actually has enough content to scroll at this viewport (essential precondition for the scroll-restore assertion below)`,
+        scrollBefore !== null && scrollBefore >= 5, `scrollBefore=${scrollBefore}`);
 
   await page.click('[data-repro-target="1"]');
   await page.waitForTimeout(1200);
@@ -167,6 +228,15 @@ for (const lang of ["en", "bn"]) {
   }, crossSurahTarget);
   check(`${lang} the occurrence link really navigates to the OTHER surah`,
         away.surahSelect === away.wantedSurah && away.ayahSelect === away.wantedAyah, JSON.stringify(away));
+  // CORRECTED 21 Sep 2026 (issue #113 task): the check above only proves the
+  // app went where its OWN href said it would -- a consistency check on the
+  // app's own navigation, not independent proof the destination is really a
+  // different surah. This reads the ACTUAL rendered `surahSelect` value off
+  // the live page and compares it against the declared ORIGIN_SURAH
+  // constant directly, asserting the real destination reached in the
+  // browser -- not assumed from the link href.
+  check(`${lang} the destination actually reached is a GENUINELY DIFFERENT surah than the origin (${ORIGIN_SURAH}), read off the rendered page state`,
+        away.surahSelect !== ORIGIN_SURAH, `origin=${ORIGIN_SURAH} away.surahSelect=${away.surahSelect}`);
   check(`${lang} the Note view is left (Read screen takes over) while away`, away.noteHidden === true, away.noteHidden);
   check(`${lang} the "Back to Word Card" bar appears`, away.returnBarVisible, away.returnBarVisible);
 
@@ -186,8 +256,8 @@ for (const lang of ["en", "bn"]) {
       && document.getElementById("quranWordCardMountNote")?.contains(document.activeElement) === true,
   }));
   check(`${lang} returning lands back on the Note view`, back.noteHidden === false, back.noteHidden);
-  check(`${lang} the ORIGINAL surah/āyah (2:71) is restored, not the destination`,
-        back.surahSelect === 2 && back.ayahSelect === 71, JSON.stringify(back));
+  check(`${lang} the ORIGINAL surah/āyah (${ORIGIN_SURAH}:${ORIGIN_AYAH}) is restored, not the destination`,
+        back.surahSelect === ORIGIN_SURAH && back.ayahSelect === ORIGIN_AYAH, JSON.stringify(back));
   check(`${lang} the ORIGINAL word reopens`, back.occurrenceId === origin.occurrenceId,
         `origin=${origin.occurrenceId} back=${back.occurrenceId}`);
   check(`${lang} the ORIGINAL tab (Basic) is restored`, back.level === "basic", back.level);
@@ -224,48 +294,78 @@ for (const lang of ["en", "bn"]) {
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   await openFixtureWordInNoteView(page);
   const landed = await page.evaluate(() => !!document.querySelector("#quranWordCardMountNote .quran-word-card"));
+  // CORRECTED 21 Sep 2026 (issue #113 task): every precondition below used to
+  // be a bare `console.log("SKIP...")` with NO check() call anywhere in this
+  // branch -- so if the fixture failed to open, carried no lemma list, or had
+  // no cross-surah occurrence at desktop width, this whole section silently
+  // asserted nothing while the run still reported full success. Each
+  // precondition is a named, failing check now, matching the mobile section
+  // above.
+  check("desktop: the fixture word opens into the Note popup's own mount (essential precondition)", landed, landed);
   if (!landed) {
-    console.log("  SKIP -- fixture did not open in the Note view this run");
+    console.log("  fixture did not open in the Note view this run -- recorded as a failure above, not a skip");
   } else {
     await page.click('#quranWordCardMountNote [data-word-card-level="basic"]');
     await page.waitForTimeout(2800);
     const hasLemmaToggle = await page.evaluate(() => !!document.querySelector("#quranWordCardMountNote [data-word-lemma-toggle]"));
-    if (hasLemmaToggle) {
+    check("desktop: the fixture's Basic tab carries a lemma list to expand (essential precondition)", hasLemmaToggle, hasLemmaToggle);
+    if (!hasLemmaToggle) {
+      console.log("  fixture carries no lemma list this run -- recorded as a failure above, not a skip");
+    } else {
       await page.click("#quranWordCardMountNote [data-word-lemma-toggle]");
       await page.waitForTimeout(2000);
-    }
-    const allTargets = await page.evaluate(() =>
-      Array.from(document.querySelectorAll("#quranWordCardMountNote [data-word-occurrence-goto]"))
-        .map((e) => e.getAttribute("data-word-occurrence-goto")));
-    const crossSurahTarget = allTargets.find((t) => !t.startsWith("2:71:"));
-    if (!crossSurahTarget) {
-      console.log(`  SKIP -- fixture's lemma list has no cross-surah occurrence this run (targets=${allTargets})`);
-    } else {
-      await page.evaluate((t) => {
-        document.querySelectorAll("#quranWordCardMountNote [data-word-occurrence-goto]")
-          .forEach((e) => { if (e.getAttribute("data-word-occurrence-goto") === t) e.setAttribute("data-repro-target", "1"); });
-      }, crossSurahTarget);
-      const scrollBefore = await page.evaluate(() => {
-        const el = document.querySelector("#noteView .note-body");
-        if (!el) return null;
-        const max = el.scrollHeight - el.clientHeight;
-        el.scrollTop = Math.min(120, Math.max(max, 0));
-        return el.scrollTop;
-      });
-      await page.click('[data-repro-target="1"]');
-      await page.waitForTimeout(1200);
-      await page.click("[data-word-card-origin-back]");
-      await page.waitForTimeout(2600);
-      const back = await page.evaluate(() => ({
-        noteHidden: document.getElementById("noteView")?.hidden,
-        scrollTop: document.querySelector("#noteView .note-body")?.scrollTop ?? null,
-        cardInNoteMount: !!document.querySelector("#quranWordCardMountNote .quran-word-card"),
-      }));
-      check("desktop: returning lands back on the Note view popup", back.noteHidden === false, back.noteHidden);
-      check("desktop: the card reopens inside the Note popup's own mount", back.cardInNoteMount, back.cardInNoteMount);
-      if (scrollBefore !== null && scrollBefore >= 5) {
-        check("desktop: scroll position is exactly where the reader left it",
-              back.scrollTop === scrollBefore, `before=${scrollBefore} after=${back.scrollTop}`);
+      const allTargets = await page.evaluate(() =>
+        Array.from(document.querySelectorAll("#quranWordCardMountNote [data-word-occurrence-goto]"))
+          .map((e) => e.getAttribute("data-word-occurrence-goto")));
+      const crossSurahTarget = findCrossSurahTarget(allTargets);
+      check("desktop: the fixture's lemma list contains at least one occurrence on a genuinely different SURAH than the origin (essential precondition)",
+            !!crossSurahTarget, `origin surah=${ORIGIN_SURAH}, targets=${JSON.stringify(allTargets)}`);
+      if (!crossSurahTarget) {
+        console.log(`  fixture's lemma list has no cross-surah occurrence this run (targets=${allTargets}) -- recorded as a failure above, not a skip`);
+      } else {
+        const targetSurah = Number(crossSurahTarget.split(":")[0]);
+        check(`desktop: the chosen target's own surah number (${targetSurah}) really differs from the origin's (${ORIGIN_SURAH})`,
+              targetSurah !== ORIGIN_SURAH, crossSurahTarget);
+        await page.evaluate((t) => {
+          document.querySelectorAll("#quranWordCardMountNote [data-word-occurrence-goto]")
+            .forEach((e) => { if (e.getAttribute("data-word-occurrence-goto") === t) e.setAttribute("data-repro-target", "1"); });
+        }, crossSurahTarget);
+        const scrollBefore = await page.evaluate(() => {
+          const el = document.querySelector("#noteView .note-body");
+          if (!el) return null;
+          const max = el.scrollHeight - el.clientHeight;
+          el.scrollTop = Math.min(120, Math.max(max, 0));
+          return el.scrollTop;
+        });
+        check("desktop: the Note popup's own body actually has enough content to scroll at this viewport (essential precondition for the scroll-restore assertion below)",
+              scrollBefore !== null && scrollBefore >= 5, `scrollBefore=${scrollBefore}`);
+        await page.click('[data-repro-target="1"]');
+        await page.waitForTimeout(1200);
+        const away = await page.evaluate((wanted) => {
+          const [s, a] = wanted.split(":").map(Number);
+          return {
+            surahSelect: Number(document.getElementById("surahSelect")?.value),
+            ayahSelect: Number(document.getElementById("ayahSelect")?.value),
+            wantedSurah: s, wantedAyah: a,
+          };
+        }, crossSurahTarget);
+        check("desktop: the occurrence link really navigates to the OTHER surah",
+              away.surahSelect === away.wantedSurah && away.ayahSelect === away.wantedAyah, JSON.stringify(away));
+        check(`desktop: the destination actually reached is a GENUINELY DIFFERENT surah than the origin (${ORIGIN_SURAH}), read off the rendered page state`,
+              away.surahSelect !== ORIGIN_SURAH, `origin=${ORIGIN_SURAH} away.surahSelect=${away.surahSelect}`);
+        await page.click("[data-word-card-origin-back]");
+        await page.waitForTimeout(2600);
+        const back = await page.evaluate(() => ({
+          noteHidden: document.getElementById("noteView")?.hidden,
+          scrollTop: document.querySelector("#noteView .note-body")?.scrollTop ?? null,
+          cardInNoteMount: !!document.querySelector("#quranWordCardMountNote .quran-word-card"),
+        }));
+        check("desktop: returning lands back on the Note view popup", back.noteHidden === false, back.noteHidden);
+        check("desktop: the card reopens inside the Note popup's own mount", back.cardInNoteMount, back.cardInNoteMount);
+        if (scrollBefore !== null && scrollBefore >= 5) {
+          check("desktop: scroll position is exactly where the reader left it",
+                back.scrollTop === scrollBefore, `before=${scrollBefore} after=${back.scrollTop}`);
+        }
       }
     }
   }
