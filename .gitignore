@@ -31,3 +31,8 @@ tools/perf/results/
 
 # Firestore emulator run log, regenerated on every run
 tools/firestore-emulator/*.log
+
+# Claude Code isolated-worktree scratch space for background subagents —
+# a full nested checkout the harness creates and removes per agent run, not
+# project content.
+.claude/worktrees/
