@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Health Atlas — report-twin repair, ledger reproduction, Lifestyle Gate A/B, and a Foods/Conditions search slice</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  pre.tw { padding:.9rem 1rem; overflow-x:auto; }
+  pre.tw code { background:none; padding:0; border-radius:0; font-size:0.84em; white-space:pre; }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Health Atlas — report-twin repair, ledger reproduction, Lifestyle Gate A/B, and a Foods/Conditions search slice</h1>
+<p><strong>21 Sep 2026. Issue #115, <code>/mmsa-task</code> comment id <code>5762935014</code>. Stack: #140 → #142 → #145 → #146 → #148 → this tranche (branch <code>claude/health-atlas-more-search-tranche11</code>, based on PR #148&#x27;s head <code>c9bc93fe83fa</code>).</strong></p>
+<h2>What this task was</h2>
+<p>The issue #115 follow-up comment asked for four things, in order: (1) repair a reported flattening defect in PR #148&#x27;s own HTML report twin and check its changed-file inventory claim; (2) reproduce a reported <code>programme-ledger-mutations</code> 48/1 failure on a full checkout and report the exact cause, without editing shared tooling; (3) investigate the still-missing Lifestyle tab against the v02.04 source handover under Gate A/B, building it only if safe; (4) build one substantial, safe, read-only, source-faithful v02.04 parity slice, pivoting to something else if Lifestyle does not clear Gate B.</p>
+<h2>Verification before touching anything</h2>
+<p>All SHAs and stack claims from the task comment were checked, not trusted:</p>
+<div class='tw'><table><thead><tr><th>Claim</th><th>Verified</th></tr></thead><tbody>
+<tr><td>PR #148 head <code>c9bc93fe</code>, base (PR #146 head) <code>5817643b</code></td><td><code>c9bc93fe83faeb0c9392269c245f33c1a3cc62b2</code> / <code>5817643bf3a7585a6c5eae7f7003f55971c7d6eb</code> — match <code>mcp__github__pull_request_read</code></td></tr>
+<tr><td><code>health/source-v02-04-handover</code> at <code>ed4dbb2e</code></td><td><code>ed4dbb2e535ba6b95ea286a5f3b29a32122ea4b9</code> — matches</td></tr>
+<tr><td>Stack #140→#142→#145→#146→#148</td><td>Confirmed by <code>mcp__github__pull_request_read</code> on #148 (base/head refs), consistent with #148&#x27;s own report table</td></tr>
+<tr><td>Issue #123 (the &quot;ledger&quot; issue)</td><td>Read — MMSA-wide coordination issue, not a document naming this tranche&#x27;s own obligations</td></tr>
+<tr><td><code>main</code> at v08.32</td><td><code>programme-ledger.mjs</code>&#x27;s own header line: <code>main 16cfb0b351 at v08.32</code></td></tr>
+</tbody></table></div>
+<h2>Part 1 — The report HTML twin: broken repository-wide, repaired for the one report this task named</h2>
+<p><code>tools/md2report.py</code> has no fenced-code-block (<code> </code>`<code> </code>) handling and no Markdown-link handling. A <code> </code>`<code> </code> line does not match any of its branches (heading, table row, list item, rule), so it falls into the generic paragraph scanner, which joins every line inside the fence onto one line with spaces and runs it through the same inline `<code> </code>text<code> </code><code>-to-</code>&lt;code&gt;<code> regex ordinary prose uses — a regex that cannot represent a multi-line fence, so the backtick fences themselves leak into the rendered output as literal </code><code> </code><code> </code><code> marks and every internal newline is lost. </code><a href="url" target="_blank" rel="noopener">text</a>` links render as literal bracket/paren text for the same reason: nothing converts them.</p>
+<p><strong>This is not specific to Health.</strong> Regenerating every <code>.md</code> in <code>docs/reports/</code> with a corrected, uncommitted local script and diffing against its committed <code>.html</code> twin: <strong>all 82 of this repository&#x27;s report pairs are affected</strong> — Quran, MAP, Hadith and Health reports alike, because they all go through the same shared generator. <code>tools/md2report.py</code> is platform-shared tooling, off limits to a Health-owned task without Master Architect authorisation — <strong>not edited here</strong>, and no other module&#x27;s already-committed report <code>.html</code> was regenerated or touched. What tranche 11 did, within scope: hand-corrected <code>docs/reports/2026-09-21-health-atlas-references-tabs-accessibility.html</code> (PR #148&#x27;s own report, the one file this task named) so its two fenced code blocks and two WAI-ARIA pattern links render correctly. Its <code>.md</code> source was already correct and needed no change — only the derived <code>.html</code> was wrong. This report&#x27;s own <code>.html</code> twin was generated with the same corrected local converter, so it does not add another broken instance to the pile.</p>
+<p><strong>PR #148&#x27;s &quot;6 files changed&quot; claim was checked, not assumed</strong>: <code>git show --stat c9bc93fe83faeb0c9392269c245f33c1a3cc62b2</code> lists exactly 6 changed files (<code>app/health/README.md</code>, <code>app/health/js/health-atlas-view.js</code>, the report <code>.md</code>/<code>.html</code> pair, and the two <code>tools/health-atlas-verify/references-*</code> files). The claim was accurate; no correction was needed.</p>
+<h2>Part 2 — The reported <code>programme-ledger-mutations</code> 48/1 failure: does not reproduce on a full checkout</h2>
+<p>Run twice, from a full <code>git fetch --unshallow</code> with every branch fetched (763 commits, vs. 121 on the shallow clone this session started from):</p>
+<div class='tw'><table><thead><tr><th>Checkout</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>origin/main</code> (<code>16cfb0b</code>, v08.32)</td><td><strong>49 passed, 0 failed</strong></td></tr>
+<tr><td>PR #148 head (<code>c9bc93fe</code>), detached worktree</td><td><strong>49 passed, 0 failed</strong></td></tr>
+</tbody></table></div>
+<p>Both genuinely obtained — not asserted from memory of PR #148&#x27;s own claim. The 48/1 result PR #148 reported is exactly the &quot;Guard E fixture drift is checkout-completeness, not a code defect&quot; finding draft PR #134 already documents: the guard&#x27;s own fixture-completeness check (which stream both declares <code>app/js/version.js</code> and shows it changed on a branch) depends on having every named branch and full history present to evaluate; a session missing some of that sees the mutation come back unproven and reports it as a failure, a session with the full checkout does not. <strong>No shared-tooling file (<code>programme-ledger.mjs</code>/<code>programme-ledger-mutations.mjs</code>) was touched or needed changing</strong> — this is a checkout-completeness artefact of a prior session, not a code defect in either file.</p>
+<h2>Part 3 — Gate A/B on the Lifestyle tab: investigated fresh, existing deferral holds</h2>
+<p>The v02.04 source (<code>docs/health-source/health-atlas-v02.04-standalone.html</code> on <code>health/source-v02-04-handover</code>, commit <code>ed4dbb2e</code>) has a <code>lifestyles[]</code> array of 10 habits, each <code>{ id, name, activities[], food[], avoid[], refs[] }</code>. <code>HEALTH_ATLAS_LIFESTYLES</code> is already ported into <code>health-atlas-data.js</code> (tranche 1) but read by nothing — <code>health-atlas-more-selectors.js</code>&#x27;s own header comment already investigated this in tranche 3 and recorded why: unlike Foods/Diseases/Age Groups, which each have a real structural field (<code>.category</code>, <code>.cause</code>/<code>.symptoms</code>/<code>.organAffected</code>, <code>.name</code>) separate from their excluded content, Lifestyles has no such remainder — <code>.activities</code>, <code>.food</code> and <code>.avoid</code> ARE the recommendation, end to end (<code>&quot;150 min/week moderate aerobic activity&quot;</code>, <code>&quot;avoid screens immediately before bed&quot;</code>). Even the bare <code>.name</code> values (&quot;Regular Physical Activity&quot;, &quot;Quality Sleep&quot;, &quot;Stress Management&quot;) are themselves habit endorsements, unlike a neutral label such as &quot;Coronary Artery Disease&quot; or &quot;Avocado&quot; — showing the list of names alone would still be presenting the app&#x27;s own opinion of what a reader&#x27;s lifestyle habits should be, with nothing structural underneath it.</p>
+<p><strong>This tranche re-investigated rather than trusted the prior conclusion</strong>, re-reading the full <code>lifestyles[]</code> array and re-checking each field against the same test tranche 3 applied to Foods/Diseases/Ages. No new field-level split was found that the original investigation missed. Per the task&#x27;s own instruction (&quot;Gate B only implement a narrowly scoped safe view if provenance and privacy boundaries allow, otherwise pivot&quot;), this tranche <strong>concurs with the existing deferral rather than overriding it without new grounds</strong>, and builds nothing under the Lifestyle tab.</p>
+<p><strong>Gap matrix — all six of the source app&#x27;s own nav tabs:</strong></p>
+<div class='tw'><table><thead><tr><th>Source tab</th><th>Status</th><th>Notes</th></tr></thead><tbody>
+<tr><td>Body Systems</td><td>Built (tranches 1, 6, 7)</td><td>Wheel/diagram + organ search built; the wheel&#x27;s third &quot;fields&quot; ring deliberately deferred — navigation convenience only, the same information is already in the safe detail pane</td></tr>
+<tr><td>Foods</td><td>Built (tranche 3); search added (tranche 11)</td><td><code>.nutrition</code>, <code>.servingQty</code>, raw <code>.organs</code> (dose-embedded) excluded</td></tr>
+<tr><td>Diseases</td><td>Built (tranche 3); search added (tranche 11)</td><td><code>.remedies</code>, <code>.homeRemedies</code>, <code>.naturalRemedies</code> excluded</td></tr>
+<tr><td>Age Groups</td><td>Built (tranche 3)</td><td><code>.notes</code> excluded; no search box — the source has none there either</td></tr>
+<tr><td><strong>Lifestyle</strong></td><td><strong>Deferred (tranche 3), reconfirmed (tranche 11)</strong></td><td>Whole dataset withheld — no safe structural subset exists</td></tr>
+<tr><td>References</td><td>Built (tranche 9); accessible view switcher (tranche 10)</td><td>—</td></tr>
+</tbody></table></div>
+<p>(Master Categories — a food sub-grouping the source itself does not expose as its own nav tab — was built separately, tranche 4.)</p>
+<p>CRUD, import/export and the header reset button are out of scope by the task&#x27;s own instruction and untouched. The wheel&#x27;s third &quot;fields&quot; ring stays deferred, unchanged from tranches 6/7.</p>
+<h2>Part 4 — The pivot slice: Foods/Conditions search, narrower than the source for safety</h2>
+<p>Since Lifestyle does not clear Gate B, this tranche built the &quot;clearly independent safe parity slice&quot; the task&#x27;s own instruction asks for in that case: the source app&#x27;s per-tab text filter, which tranche 3&#x27;s own Foods/Conditions/Age-Groups port never carried (tranche 6 already ported it for Body Systems&#x27; organ list). This is genuinely independent of the Lifestyle question — no clinical content, no new field exposure, and no overlap with the wheel/ring deferral.</p>
+<p><strong>The source&#x27;s own search is NOT safe to replicate literally, and this is the tranche&#x27;s own real finding.</strong> The source&#x27;s generic <code>matches(item, term)</code> is <code>JSON.stringify(item).toLowerCase().includes(term)</code> — it searches the entire serialized item. Ported as-is on Diseases, searching for a drug name that appears only in <code>.remedies</code> would still surface that disease in the results: a hit is itself a disclosure of the hidden field&#x27;s content, even though the field is never rendered — the same class of indirect leak <code>organNamesFor()</code>&#x27;s own dose-stripping (tranche 3) already guards against for a different field. <code>matchesFoodSearch</code>/<code>matchesDiseaseSearch</code> (<code>health-atlas-more-selectors.js</code>) are scoped instead to exactly the fields this view already renders: <code>name</code>+<code>category</code> for foods, <code>name</code>+<code>cause</code>+ <code>symptoms</code>+<code>organAffected</code> for diseases — never the excluded fields. No search box was added for Age Groups, matching the source (its own <code>SEARCH_TERM</code> object carries no <code>age</code> key).</p>
+<p><strong>UX details, matching this codebase&#x27;s own established discipline for a full-redraw screen:</strong> the typed term is preserved across opening a detail card and pressing &quot;back&quot; (kept in the mount closure&#x27;s own state, not reset by view code), and the input re-focuses itself with the caret restored to the end after each keystroke&#x27;s full redraw — the exact pattern <code>health-atlas-view.js</code>&#x27;s own organ search (tranche 6) already uses, for the same reason (a full <code>container.textContent = &#x27;&#x27;</code> redraw on every keystroke would otherwise steal focus after the first character).</p>
+<p><strong>Gate A (reproduced before touching app code).</strong> The new committed browser suite, <code>tools/health-atlas-verify/more-search-browser.mjs</code>, was run against the unmodified PR #148 head (<code>c9bc93fe</code>, a detached worktree with the new test file copied in, nothing else changed) first. Every check that depends on a search box existing times out waiting for <code>.ha-search-input</code> (<code>locator.click: Timeout 30000ms exceeded</code>), because the feature does not exist on that commit. Raw tail of that run:</p>
+<pre class='tw'><code>FAIL: desktop: clearing the search box restores the full food list: locator.click: Timeout 30000ms exceeded.
+FAIL: desktop: the search term survives opening a detail card and pressing back: locator.click: Timeout 30000ms exceeded.
+FAIL: desktop: switching to Conditions shows its own search box, and it filters by name/cause/symptom/organ: expected exactly 1 search box on the Conditions tab
+FAIL: desktop: a term that exists ONLY in an excluded field (disease .remedies) shows the empty state, not a false hit: locator.click: Timeout 30000ms exceeded.
+FAIL: tablet (768x1024): no page errors; the Foods search box is visible and real keyboard typing filters the list: expected the search box visible at tablet width
+FAIL: phone (390x844): no page errors; a real tap into the search box plus typing filters the list: locator.tap: Timeout 30000ms exceeded.</code></pre>
+<p><strong>Gate B (the build).</strong> Re-run against this tranche&#x27;s own commit:</p>
+<pre class='tw'><code>Health Atlas — Foods/Conditions search test
+
+  PASS  desktop: page loads with no page errors
+  PASS  desktop: Foods tab shows a real, typeable search box
+  PASS  desktop: typing a name term filters the food list to matching entries
+  PASS  desktop: a term that exists ONLY in an excluded field (food .nutrition) shows the empty state, not a false hit
+  PASS  desktop: typing does not steal keyboard focus across the redraw
+  PASS  desktop: clearing the search box restores the full food list
+  PASS  desktop: the search term survives opening a detail card and pressing back
+  PASS  desktop: switching to Conditions shows its own search box, and it filters by name/cause/symptom/organ
+  PASS  desktop: a term that exists ONLY in an excluded field (disease .remedies) shows the empty state, not a false hit
+  PASS  desktop: switching to Age Groups shows NO search box, matching the source app
+  PASS  tablet (768x1024): no page errors; the Foods search box is visible and real keyboard typing filters the list
+  PASS  phone (390x844): no page errors; a real tap into the search box plus typing filters the list
+
+Health Atlas more-search-browser: 12 passed, 0 failed</code></pre>
+<p>The two &quot;excluded field&quot; checks type <code>Potassium</code> (present only in avocado&#x27;s real <code>.nutrition</code> array) and <code>Statin</code> (present only in Coronary Artery Disease&#x27;s real <code>.remedies</code> array) and assert the page&#x27;s own &quot;No matches&quot; empty state, not a false hit — proving the scoped-search boundary against the REAL rendered page, not just the pure selector functions in isolation.</p>
+<p><code>tools/health-atlas-verify/more-selectors.mjs</code> gained 7 pure-function checks (empty-term, name/category/cause/symptom/organ matches, and the same two excluded-field non-matches, plus a no-throw check on a minimal fixture object). <code>view-boundary-more.mjs</code> gained 2 checks: a positive control that the view really calls <code>matchesFoodSearch</code>/<code>matchesDiseaseSearch</code> and renders both search boxes, and that <code>renderAgeGroupList</code> calls no <code>searchBox(...)</code>. Both mutation-proven: removing the Foods <code>searchBox(...)</code> call from the view makes the positive control fail by name (<code>27 passed, 1 failed</code> / <code>expected a Foods search box</code>); restoring it returns to green.</p>
+<h2>Suite results</h2>
+<p><strong>Health-owned suites (<code>tools/health-atlas-verify/</code>, 20 runnable suites — <code>import-esm-file.mjs</code> is a shared loader helper, not a suite):</strong></p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td>body-systems-parity-browser</td><td>16 passed, 0 failed</td></tr>
+<tr><td>categories-selectors</td><td>7 passed, 0 failed</td></tr>
+<tr><td>claims-integrity</td><td>10 passed, 0 failed</td></tr>
+<tr><td>claims-mutations</td><td>7 passed, 0 failed</td></tr>
+<tr><td>data-integrity</td><td>21 passed, 0 failed</td></tr>
+<tr><td><strong>more-search-browser (new)</strong></td><td><strong>12 passed, 0 failed</strong></td></tr>
+<tr><td>more-selectors</td><td>16 passed, 0 failed</td></tr>
+<tr><td>references-index-browser</td><td>12 passed, 0 failed</td></tr>
+<tr><td>references-tabs-accessibility-browser</td><td>10 passed, 0 failed</td></tr>
+<tr><td>selectors</td><td>19 passed, 0 failed</td></tr>
+<tr><td>view-boundary</td><td>14 passed, 0 failed</td></tr>
+<tr><td>view-boundary-categories</td><td>58 passed, 0 failed</td></tr>
+<tr><td>view-boundary-categories-mutations</td><td>7 passed, 0 failed</td></tr>
+<tr><td>view-boundary-more</td><td>28 passed, 0 failed</td></tr>
+<tr><td>view-boundary-more-mutations</td><td>7 passed, 0 failed</td></tr>
+<tr><td>view-boundary-wheel</td><td>57 passed, 0 failed</td></tr>
+<tr><td>view-boundary-wheel-mutations</td><td>6 passed, 0 failed</td></tr>
+<tr><td>view-provenance-boundary</td><td>7 passed, 0 failed</td></tr>
+<tr><td>view-provenance-mutations</td><td>4 passed, 0 failed</td></tr>
+<tr><td><strong>Total</strong></td><td><strong>318 passed, 0 failed</strong></td></tr>
+</tbody></table></div>
+<p><strong>Seven governance suites (<code>node tools/i18n-verify/&lt;name&gt;.mjs</code>, repository root, full history/branches fetched first):</strong></p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td>programme-ledger</td><td>8 passed, 23 noted, 0 failed</td></tr>
+<tr><td>programme-ledger-mutations</td><td>49 passed, 0 failed</td></tr>
+<tr><td>brief-integrity</td><td>8 passed, 0 failed</td></tr>
+<tr><td>study-activity-evidence-boundary</td><td>27 passed, 0 failed</td></tr>
+<tr><td>study-activity-evidence-boundary-mutations</td><td>11 passed, 0 failed</td></tr>
+<tr><td>study-event-wiring</td><td>41 passed, 0 failed</td></tr>
+<tr><td>rules-authorisation-executable</td><td>38 passed, 0 failed</td></tr>
+<tr><td><strong>Total</strong></td><td><strong>182 passed, 23 noted, 0 failed</strong></td></tr>
+</tbody></table></div>
+<p>Playwright was resolved the same local, uncommitted way #148 documents: <code>mkdir -p node_modules &amp;&amp; ln -sfn &quot;$(npm root -g)/playwright&quot; node_modules/playwright</code> — gitignored, nothing committed, no shared CI/tooling change. <code>.github/workflows/verify.yml</code> still does not run this suite class.</p>
+<h2>Files touched</h2>
+<ul><li><code>docs/reports/2026-09-21-health-atlas-references-tabs-accessibility.html</code> — repaired (Part 1); its <code>.md</code> is untouched</li><li><code>docs/reports/2026-09-21-health-atlas-more-search-tranche11.md</code> / <code>.html</code> — this report</li><li><code>app/health/js/health-atlas-more-selectors.js</code> — <code>matchesFoodSearch</code>/<code>matchesDiseaseSearch</code> (Part 4)</li><li><code>app/health/js/health-atlas-more-view.js</code> — search boxes wired into Foods/Conditions</li><li><code>app/health/health-atlas-more.html</code> — <code>.ha-search-box</code>/<code>.ha-search-input</code> CSS (copied verbatim from <code>health-atlas.html</code>), footer note</li><li><code>app/health/README.md</code> — Tranche 11 section</li><li><code>tools/health-atlas-verify/more-selectors.mjs</code> — 7 new pure-function checks</li><li><code>tools/health-atlas-verify/view-boundary-more.mjs</code> — 2 new boundary checks</li><li><code>tools/health-atlas-verify/more-search-browser.mjs</code> — new, the Gate A/B browser suite</li></ul>
+<p>All under <code>app/health/<strong></code>, <code>tools/health-atlas-verify/</strong></code>, or <code>docs/reports/</code>. No protected/shared path touched: not <code>app/js/version.js</code>, <code>CLAUDE.md</code>, <code>CHANGELOG.md</code>, <code>bn.js</code>, <code>nav.js</code>, <code>unit-keys.js</code>, <code>records.js</code>, <code>activity.js</code>, <code>catalogue-data.js</code>, <code>shell.css</code>, the platform-shared <code>tools/i18n-verify/{behaviour,harness,firebase-stub,brief-integrity, programme-ledger,programme-ledger-mutations}.mjs</code>, <code>docs/governance/</code>, <code>firestore.rules</code>, <code>firebase.json</code>, <code>tests/firestore/</code>, <code>tools/firestore-emulator/</code>, <code>tools/md2report.py</code>, or <code>.github/workflows/</code>.</p>
+<h2>What this deliberately did NOT do</h2>
+<ul><li>Did not edit <code>tools/md2report.py</code>, and did not regenerate or touch any other module&#x27;s already-committed report <code>.html</code> — even though the same defect affects all 82 pairs repository-wide. That fix, and the decision to make it, is a shared-file change needing Master Architect authorisation; it is flagged here, not made.</li><li>Did not build the Lifestyle tab — Gate B did not clear, on the same grounds tranche 3 already established, re-checked rather than assumed.</li><li>Did not add a search box to Age Groups (the source app has none there).</li><li>Did not build the wheel&#x27;s third &quot;fields&quot; ring, CRUD, import/export, or the header reset button — all out of this task&#x27;s own stated scope.</li><li>Did not touch any protected/shared path, version number, Firestore Rule/index, or <code>.github/workflows/</code>.</li><li>Did not allocate or bump any version — <code>app/js/version.js</code> is untouched; this candidate needs a version allocated by the Master Architect before any future integration, and none has been.</li><li>Did not merge, deploy, or claim approval. Draft PR, stacked on #148 exactly as #140→#142→#145→#146→#148 already stack.</li></ul>
+<h2>Owner app test</h2>
+<p><strong>Required: NO before merge</strong> — nothing here is linked from shared nav or deployed.</p>
+<p><strong>YES after merge</strong>, direct URL only, no sign-in/tenant: open <code>app/health/health-atlas-more.html</code> (served over <code>http://</code>, not <code>file://</code>).</p>
+<ol><li>On the Foods tab, type a food name (e.g. &quot;avocado&quot;) into the new search box — confirm the list narrows to matching foods only.</li><li>Clear the box — confirm the full food list returns.</li><li>Open a food&#x27;s detail card, press &quot;← All foods&quot; — confirm your search term is still in the box.</li><li>Switch to the Conditions tab — confirm it has its own, empty search box, and typing a condition name filters that list.</li><li>Switch to Age Groups — confirm there is no search box there (by design, matching the source app).</li><li>Open <code>docs/reports/2026-09-21-health-atlas-references-tabs-accessibility.html</code> in a browser — confirm the two code excerpts render as proper multi-line code blocks (not run-on text with stray backticks) and the two &quot;Tabs pattern&quot;/&quot;toggle-button pattern&quot; references are real clickable links.</li></ol>
+</main></body></html>

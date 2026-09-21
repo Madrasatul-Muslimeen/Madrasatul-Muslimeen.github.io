@@ -19,6 +19,8 @@
   li { margin:.32rem 0 }
   code { background:var(--code); padding:.1em .38em; border-radius:.3em;
     font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  pre.tw { padding:.9rem 1rem; overflow-x:auto; }
+  pre.tw code { background:none; padding:0; border-radius:0; font-size:0.84em; white-space:pre; }
   hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
   .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
   table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
@@ -42,29 +44,62 @@
 </tbody></table></div>
 <h2>Gate A — the defect, reproduced against unmodified code</h2>
 <p><code>app/health/js/health-atlas-view.js</code>&#x27;s <code>buildViewTabs()</code> (tranche 9, <code>5817643b</code>) rendered:</p>
-<p>``<code>js role: &#x27;tab&#x27;, &#x27;aria-selected&#x27;: active ? &#x27;true&#x27; : &#x27;false&#x27;, ... return el(&#x27;div&#x27;, { class: &#x27;ha-view-tabs&#x27;, role: &#x27;tablist&#x27;, ... }, buttons); </code>``</p>
-<p>This borrows the WAI-ARIA [Tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)&#x27;s vocabulary without the rest of what that pattern requires: neither button carried <code>aria-controls</code>, no element in either screen carried <code>role=&quot;tabpanel&quot;</code>, and the tablist had no <code>keydown</code> handling at all — the pattern&#x27;s own required Left/Right/Home/End arrow-key operation did nothing. A sighted mouse user saw two working buttons; a screen-reader user was told &quot;tab, 1 of 2&quot; and then had no way to discover which panel it exposes; a keyboard user following the Tabs pattern&#x27;s own convention found arrow keys inert.</p>
+<pre class='tw'><code>role: &#x27;tab&#x27;,
+&#x27;aria-selected&#x27;: active ? &#x27;true&#x27; : &#x27;false&#x27;,
+...
+return el(&#x27;div&#x27;, { class: &#x27;ha-view-tabs&#x27;, role: &#x27;tablist&#x27;, ... }, buttons);</code></pre>
+<p>This borrows the WAI-ARIA <a href="https://www.w3.org/WAI/ARIA/apg/patterns/tabs/" target="_blank" rel="noopener">Tabs pattern</a>&#x27;s vocabulary without the rest of what that pattern requires: neither button carried <code>aria-controls</code>, no element in either screen carried <code>role=&quot;tabpanel&quot;</code>, and the tablist had no <code>keydown</code> handling at all — the pattern&#x27;s own required Left/Right/Home/End arrow-key operation did nothing. A sighted mouse user saw two working buttons; a screen-reader user was told &quot;tab, 1 of 2&quot; and then had no way to discover which panel it exposes; a keyboard user following the Tabs pattern&#x27;s own convention found arrow keys inert.</p>
 <p>A new committed suite, <code>tools/health-atlas-verify/references-tabs-accessibility-browser.mjs</code>, was written and run against the <strong>unmodified</strong> tranche 9 commit <strong>before any app code changed</strong>. Raw output:</p>
-<p>``` Health Atlas — References/Body Systems view switcher accessibility test</p>
-<p>  PASS  desktop: page loads with no page errors   FAIL  desktop: no role=&quot;tab&quot; or role=&quot;tablist&quot; remains in the view switcher: expected 0 role=&quot;tab&quot; elements, found 2   FAIL  desktop: the view switcher is an accessibly-named group of ordinary buttons: expected role=&quot;group&quot; on .ha-view-tabs   FAIL  desktop: aria-pressed reflects which view is active, Body Systems by default: expected Body Systems aria-pressed=&quot;true&quot; by default, got &quot;null&quot;   PASS  desktop: real sequential Tab-key navigation reaches both buttons in order   PASS  desktop: the focused button shows a real, visible focus outline   FAIL  desktop: Enter on a focused button switches the view (native button activation): expected aria-pressed=&quot;true&quot; after Enter-activation, got &quot;null&quot;   PASS  desktop: Space on a focused button switches the view (native button activation)   PASS  tablet (768x1024): no page errors; both view-switch buttons are real, keyboard-reachable, non-empty targets   FAIL  phone (390x844): no page errors; a real tap switches the view and sets aria-pressed: expected aria-pressed=&quot;true&quot; after tap, got &quot;null&quot;</p>
-<p>Health Atlas references-tabs-accessibility-browser: 5 passed, 5 failed ```</p>
+<pre class='tw'><code>Health Atlas — References/Body Systems view switcher accessibility test
+
+  PASS  desktop: page loads with no page errors
+  FAIL  desktop: no role=&quot;tab&quot; or role=&quot;tablist&quot; remains in the view switcher: expected 0 role=&quot;tab&quot; elements, found 2
+  FAIL  desktop: the view switcher is an accessibly-named group of ordinary buttons: expected role=&quot;group&quot; on .ha-view-tabs
+  FAIL  desktop: aria-pressed reflects which view is active, Body Systems by default: expected Body Systems aria-pressed=&quot;true&quot; by default, got &quot;null&quot;
+  PASS  desktop: real sequential Tab-key navigation reaches both buttons in order
+  PASS  desktop: the focused button shows a real, visible focus outline
+  FAIL  desktop: Enter on a focused button switches the view (native button activation): expected aria-pressed=&quot;true&quot; after Enter-activation, got &quot;null&quot;
+  PASS  desktop: Space on a focused button switches the view (native button activation)
+  PASS  tablet (768x1024): no page errors; both view-switch buttons are real, keyboard-reachable, non-empty targets
+  FAIL  phone (390x844): no page errors; a real tap switches the view and sets aria-pressed: expected aria-pressed=&quot;true&quot; after tap, got &quot;null&quot;
+
+Health Atlas references-tabs-accessibility-browser: 5 passed, 5 failed</code></pre>
 <p>The hypothesis is confirmed exactly: <code>role=&quot;tab&quot;</code>/<code>&quot;tablist&quot;</code> are present (2 elements), but neither the <code>aria-pressed</code> state model this tranche settles on, nor (checked separately, by reading the source directly) <code>aria-controls</code>/<code>role=&quot;tabpanel&quot;</code>, exist anywhere. Real Tab-key navigation and Space-activation already worked, because a <code>&lt;button&gt;</code> element is natively focusable and activatable regardless of its ARIA role — the defect is specifically in the <strong>declared semantics</strong>, not in raw reachability.</p>
 <h2>Gate B — the fix</h2>
 <p>These two buttons switch between two whole, unrelated screens (the Body Systems 3-column layout and the References table) rather than showing and hiding panels of one shared view — switching does not filter or reveal content within a single region, it replaces the screen outright. Building the full Tabs pattern (an associated <code>role=&quot;tabpanel&quot;</code> for each view, <code>aria-controls</code>, and roving-tabindex arrow-key navigation across the tablist) would be real, non-trivial complexity spent modelling a pattern that does not describe what this control actually is. Issue #115&#x27;s own instruction named the alternative directly: <strong>&quot;ordinary buttons if these are view-switch actions.&quot;</strong> They are, so that is the fix.</p>
 <p><code>buildViewTabs()</code> now reads:</p>
-<p>``<code>js const btn = el(&#x27;button&#x27;, {   type: &#x27;button&#x27;,   class: </code>ha-view-tab${active ? &#x27; ha-view-tab-active&#x27; : &#x27;&#x27;}<code>,   &#x27;aria-pressed&#x27;: active ? &#x27;true&#x27; : &#x27;false&#x27;,   text: tab.label }); ... return el(&#x27;div&#x27;, { class: &#x27;ha-view-tabs&#x27;, role: &#x27;group&#x27;, &#x27;aria-label&#x27;: &#x27;Health Atlas view&#x27; }, buttons); </code>``</p>
-<p>This is the WAI-ARIA [toggle-button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/#toggle-button), which needs no bespoke keyboard handling: a native <code>&lt;button&gt;</code> is already in the document&#x27;s normal Tab order and already activates on both Enter and Space. <code>.ha-view-tab</code> never sets <code>outline: none</code> in <code>health-atlas.html</code>&#x27;s CSS (checked directly, not assumed), so the browser&#x27;s own visible focus ring was never suppressed and needed no re-adding.</p>
+<pre class='tw'><code>const btn = el(&#x27;button&#x27;, {
+  type: &#x27;button&#x27;,
+  class: `ha-view-tab${active ? &#x27; ha-view-tab-active&#x27; : &#x27;&#x27;}`,
+  &#x27;aria-pressed&#x27;: active ? &#x27;true&#x27; : &#x27;false&#x27;,
+  text: tab.label
+});
+...
+return el(&#x27;div&#x27;, { class: &#x27;ha-view-tabs&#x27;, role: &#x27;group&#x27;, &#x27;aria-label&#x27;: &#x27;Health Atlas view&#x27; }, buttons);</code></pre>
+<p>This is the WAI-ARIA <a href="https://www.w3.org/WAI/ARIA/apg/patterns/button/#toggle-button" target="_blank" rel="noopener">toggle-button pattern</a>, which needs no bespoke keyboard handling: a native <code>&lt;button&gt;</code> is already in the document&#x27;s normal Tab order and already activates on both Enter and Space. <code>.ha-view-tab</code> never sets <code>outline: none</code> in <code>health-atlas.html</code>&#x27;s CSS (checked directly, not assumed), so the browser&#x27;s own visible focus ring was never suppressed and needed no re-adding.</p>
 <p>Re-running the same suite against the fix, unchanged:</p>
-<p>``` Health Atlas — References/Body Systems view switcher accessibility test</p>
-<p>  PASS  desktop: page loads with no page errors   PASS  desktop: no role=&quot;tab&quot; or role=&quot;tablist&quot; remains in the view switcher   PASS  desktop: the view switcher is an accessibly-named group of ordinary buttons   PASS  desktop: aria-pressed reflects which view is active, Body Systems by default   PASS  desktop: real sequential Tab-key navigation reaches both buttons in order   PASS  desktop: the focused button shows a real, visible focus outline   PASS  desktop: Enter on a focused button switches the view (native button activation)   PASS  desktop: Space on a focused button switches the view (native button activation)   PASS  tablet (768x1024): no page errors; both view-switch buttons are real, keyboard-reachable, non-empty targets   PASS  phone (390x844): no page errors; a real tap switches the view and sets aria-pressed</p>
-<p>Health Atlas references-tabs-accessibility-browser: 10 passed, 0 failed ```</p>
+<pre class='tw'><code>Health Atlas — References/Body Systems view switcher accessibility test
+
+  PASS  desktop: page loads with no page errors
+  PASS  desktop: no role=&quot;tab&quot; or role=&quot;tablist&quot; remains in the view switcher
+  PASS  desktop: the view switcher is an accessibly-named group of ordinary buttons
+  PASS  desktop: aria-pressed reflects which view is active, Body Systems by default
+  PASS  desktop: real sequential Tab-key navigation reaches both buttons in order
+  PASS  desktop: the focused button shows a real, visible focus outline
+  PASS  desktop: Enter on a focused button switches the view (native button activation)
+  PASS  desktop: Space on a focused button switches the view (native button activation)
+  PASS  tablet (768x1024): no page errors; both view-switch buttons are real, keyboard-reachable, non-empty targets
+  PASS  phone (390x844): no page errors; a real tap switches the view and sets aria-pressed
+
+Health Atlas references-tabs-accessibility-browser: 10 passed, 0 failed</code></pre>
 <p><code>tools/health-atlas-verify/references-index-browser.mjs</code> (tranche 9&#x27;s own suite) had four assertions reading the now-removed <code>aria-selected</code> attribute — updated in place to read <code>aria-pressed</code> (the attribute the corrected pattern actually sets), nothing else in that file changed. Still 12/12 passing after the update, against the fixed code.</p>
 <h2>What this tranche deliberately did NOT do</h2>
 <ul><li><strong>Did not build the full ARIA Tabs pattern.</strong> Issue #115&#x27;s own instruction named ordinary buttons as an equally valid resolution when the controls are view-switch actions, which these are — this is the narrower, more conformant fix, not a partial one.</li><li><strong>Did not treat the 8 general references as citations validating the 82 function statements.</strong> Untouched by this tranche; the disclaimer text and evidence-status model (<code>health-atlas-claims.js</code>) are unmodified.</li><li><strong>Did not touch</strong> clinical/dose/remedy claims, person-level intake, CRUD/import/export, or the excluded wheel &quot;fields&quot; ring — none of this tranche&#x27;s concern.</li><li><strong>Did not touch any protected/shared path</strong> — <code>version.js</code>, <code>CLAUDE.md</code>, <code>CHANGELOG.md</code>, <code>bn.js</code>, <code>nav.js</code>, <code>unit-keys.js</code>, <code>records.js</code>, <code>activity.js</code>, <code>catalogue-data.js</code>, <code>shell.css</code>, <code>tools/i18n-verify/{behaviour,harness,firebase-stub,brief-integrity, programme-ledger,programme-ledger-mutations}.mjs</code>, <code>docs/governance/</code>, <code>firestore.rules</code>, <code>firebase.json</code>, <code>tests/firestore/</code>, <code>tools/firestore-emulator/</code>, <code>.github/workflows/</code>. Every file this tranche edited is under <code>app/health/<strong></code> or <code>tools/health-atlas-verify/</strong></code> (plus this dated report and its <code>.html</code> twin).</li><li><strong>No version bump.</strong> <code>app/js/version.js</code> is untouched; <code>main</code> remains at v08.32 and no new version has been allocated for this Health Atlas candidate stack.</li><li><strong>Nothing merged, nothing deployed.</strong> This PR is a draft, stacked on PR #146 exactly as #140→#142→#145→#146 already stack.</li></ul>
 <h2>Playwright ESM dependency/setup — identified, not fixed in shared tooling</h2>
 <p>This repository declares no <code>package.json</code>/<code>node_modules</code> for Playwright (deliberately — see <code>.gitignore</code>&#x27;s <code>node_modules/</code> entries and <code>references-index-browser.mjs</code>&#x27;s own note), and <code>.github/workflows/verify.yml</code> does not run this class of suite at all — it is explicitly excluded there (&quot;layout/panel/reading/navcheck — need Playwright and a served app&quot;), so CI has never run any Health Atlas browser suite, tranche 9&#x27;s included; the 1,073 &quot;Health-owned suites: 287 passed&quot; and similar figures earlier tranches reported are <strong>local evidence only</strong>, never independently confirmed by a CI run on this repository&#x27;s own runner.</p>
 <p>Locally, this sandbox has Playwright installed globally (<code>playwright@1.56.1</code> under <code>npm root -g</code>, <code>/opt/node22/lib/node_modules/playwright</code>) with its browsers pre-fetched at <code>/opt/pw-browsers</code> (<code>PLAYWRIGHT_BROWSERS_PATH</code>), but Node&#x27;s ESM resolver does not search global npm packages or honour <code>NODE_PATH</code> for <code>import</code> resolution — <code>import { chromium } from &#x27;playwright&#x27;</code> fails with <code>ERR_MODULE_NOT_FOUND</code> from a plain file in this repository with no local <code>node_modules/playwright</code>. The reproducible, <strong>local-only, uncommitted</strong> fix used to run every suite in this report:</p>
-<p>``<code> mkdir -p node_modules ln -sfn &quot;$(npm root -g)/playwright&quot; node_modules/playwright </code>``</p>
+<pre class='tw'><code>mkdir -p node_modules
+ln -sfn &quot;$(npm root -g)/playwright&quot; node_modules/playwright</code></pre>
 <p><code>node_modules/</code> is gitignored at the repository root (<code>.gitignore</code> lines 13 and 27), so this symlink was never staged, never committed, and touches no shared CI/tooling file — it is exactly the kind of local setup a session needs to actually run these suites rather than a repository change. Whether CI should gain Playwright (a <code>package.json</code> declaring it, plus wiring these suites into <code>verify.yml</code>) is a decision outside this tranche&#x27;s Health-owned scope — <code>.github/workflows/</code> and any new root <code>package.json</code> are shared/governance surfaces, not Health-owned files.</p>
 <h2>Full suite run (this branch, after the fix)</h2>
 <p>**Health-owned suites — <code>tools/health-atlas-verify/*.mjs</code>, 18 runnable suites (<code>import-esm-file.mjs</code> is a shared loader helper, not a suite):**</p>

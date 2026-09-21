@@ -359,3 +359,120 @@ protected/shared path, no version number, and nothing outside
 
 Full account, the Gate A raw failure output, and verification numbers:
 `docs/reports/2026-09-21-health-atlas-references-tabs-accessibility.md`.
+
+## Tranche 11 — Foods/Conditions search, plus three verification tasks (issue #115 follow-up)
+
+Issue #115's follow-up `/mmsa-task` comment asked for four things: verify
+the prior tranche's own report and governance-suite claims, reproduce a
+reported `programme-ledger-mutations` failure, investigate the still-missing
+Lifestyle tab, and then build one more safe read-only parity slice.
+
+**1. The report HTML twin was broken, and it is repository-wide, not just
+this one report.** `tools/md2report.py` (shared, platform-wide, off limits
+to a Health-owned task) has no fenced-code-block handling at all: a
+` ``` ` line does not start a heading, a table row, a list item or a rule,
+so it falls into the generic paragraph scanner, which joins every line
+inside the fence onto ONE line with spaces and passes it through the same
+inline `` `text` ``-to-`<code>` regex ordinary prose uses — which cannot
+represent a multi-line fence at all, so the backtick fences themselves
+leak into the rendered text as literal `` `` `` characters. It also has no
+Markdown-link handling, so `[text](url)` renders as literal bracket/paren
+text. Checked against every one of this repository's 82 report `.md`/
+`.html` pairs (regenerating each `.md` with a corrected, uncommitted local
+script and diffing against the committed `.html`): **all 82 are affected.**
+This is a shared-tooling defect requiring Master Architect authorisation to
+fix in `tools/md2report.py` itself — not attempted here. What tranche 11
+DID do, within Health-owned scope: hand-corrected the one report this
+task named (`docs/reports/2026-09-21-health-atlas-references-tabs-accessibility.html`,
+PR #148's own report) so its fenced code blocks and the two WAI-ARIA
+pattern links render correctly; the `.md` source was already correct and
+is untouched. PR #148's own claim of "6 files changed" was also checked
+against `git show --stat` on its actual head commit and found accurate —
+no correction needed there.
+
+**2. The reported `programme-ledger-mutations` 48/1 failure did not
+reproduce, on a full checkout.** Run with full git history
+(`git fetch --unshallow`) and every branch fetched, from both `origin/main`
+and PR #148's own head commit: **49 passed, 0 failed**, both times. The
+48/1 result PR #148 reported is the "Guard E fixture drift is
+checkout-completeness, not a code defect" finding draft PR #134 already
+documents — a session missing some branches or history sees the guard's
+own fixture-completeness check fail; a session with the full checkout does
+not. No shared-tooling file was touched or needed changing.
+
+**3. Gate A/B on the Lifestyle tab: investigated again, and the existing
+deferral holds.** Tranche 3's own boundary reasoning (`health-atlas-more-selectors.js`)
+already covers this: Foods/Diseases/Age Groups each have a real
+structural/organizational field split (name+category, or name+cause+
+symptoms+organAffected, etc.) separate from their treatment/dose content,
+so those datasets could be shown minus the unsafe fields. Lifestyles
+cannot — its three substantive fields (`.activities`, `.food`, `.avoid`)
+ARE the recommendation, end to end (`"150 min/week moderate aerobic
+activity"`, `"avoid screens immediately before bed"`); there is no
+structural remainder to show once the recommendation content is removed,
+even the bare `.name` values ("Regular Physical Activity", "Quality
+Sleep") are themselves habit endorsements rather than neutral labels the
+way "Coronary Artery Disease" or "Avocado" are. This tranche found no new
+field-level split the original investigation missed, so it concurs with
+the existing deferral rather than overriding it without new grounds, and
+built nothing under the Lifestyle tab. Gap matrix (all six of the source
+app's own nav tabs):
+
+| Source tab | Status here | Notes |
+|---|---|---|
+| Body Systems | Built (tranches 1, 6, 7) | Wheel/diagram + search; third "fields" ring deliberately deferred (navigation convenience only, not new content) |
+| Foods | Built (tranche 3), search added (tranche 11) | `.nutrition`/`.servingQty`/raw `.organs` excluded |
+| Diseases | Built (tranche 3), search added (tranche 11) | `.remedies`/`.homeRemedies`/`.naturalRemedies` excluded |
+| Age Groups | Built (tranche 3) | `.notes` excluded; no search, matching the source |
+| Lifestyle | **Deferred (tranche 3), reconfirmed (tranche 11)** | Whole dataset withheld — no safe field-level subset exists |
+| References | Built (tranche 9), accessible view switcher (tranche 10) | — |
+
+(Master Categories, a food sub-grouping the source itself does not expose
+as its own tab, was built separately in tranche 4.)
+
+**4. The pivot slice: Foods and Conditions search, matching the source
+app's own per-tab filter — but scoped more narrowly than the source for
+safety.** The source's own generic `matches(item, term)` is
+`JSON.stringify(item).toLowerCase().includes(term)` — it searches the
+WHOLE serialized item. Ported literally on Diseases, a search for a drug
+name that appears only in `.remedies` would still surface that disease: a
+hit is itself a disclosure of the hidden field's content, even though the
+field is never rendered directly — the same class of indirect leak
+`organNamesFor()`'s own dose-stripping already guards against for a
+different field. `matchesFoodSearch`/`matchesDiseaseSearch`
+(`health-atlas-more-selectors.js`) are scoped to exactly the fields this
+view already shows instead (name+category; name+cause+symptoms+
+organAffected). No search box was added to Age Groups — the source has
+none there either. The typed term is preserved across opening a detail
+card and pressing "back" (closure state, not reset), and the input
+re-focuses itself after each keystroke's full redraw, the same "a
+full-redraw screen must not steal focus" discipline `health-atlas-view.js`'s
+own organ search already follows.
+
+**Gate A (reproduced before touching app code).** The new committed
+browser suite, `tools/health-atlas-verify/more-search-browser.mjs`, run
+against the unmodified tranche 10 (`#148`) commit first: every check that
+depends on a search box times out waiting for `.ha-search-input` to exist,
+because the feature does not exist yet. Run again against tranche 11:
+12/12 pass, including two checks that type a term appearing ONLY in a real
+excluded field (`Potassium` for a food's `.nutrition`, `Statin` for a
+disease's `.remedies`) and assert the page's own "No matches" empty state,
+not a false hit — proving the scoped-search boundary against the REAL
+rendered page, not just the pure selector functions in isolation.
+`tools/health-atlas-verify/more-selectors.mjs` gained 7 pure-function
+checks for the same two selectors, and `view-boundary-more.mjs` gained 2
+checks (a positive control that the view really wires the new search
+calls, and that Age Groups carries none) — both mutation-proven (removing
+the Foods search box call makes the positive control fail by name).
+
+**What this tranche deliberately did NOT do.** Did not touch
+`tools/md2report.py` (shared, off limits) or any other module's already-
+committed report `.html` files, even though the same defect affects all
+of them — that fix, and the decision to make it, belongs to whoever owns
+that shared file. Did not build the Lifestyle tab. Did not add search to
+Age Groups (the source has none). Did not touch any protected/shared
+path, version number, Firestore Rule/index, or `.github/workflows/`. Did
+not merge anything, deploy anything, or claim approval.
+
+Full account and verification numbers:
+`docs/reports/2026-09-21-health-atlas-more-search-tranche11.md`.
