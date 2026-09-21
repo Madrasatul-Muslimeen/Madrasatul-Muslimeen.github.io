@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Word Card — Mushaf-mode cross-surah scroll targeting, fixed (2026-09-21)</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Word Card — Mushaf-mode cross-surah scroll targeting, fixed (2026-09-21)</h1>
+<h2>Task</h2>
+<p>Issue #113, a &quot;QURAN MAP v4 NEXT BOUNDED TRANCHE&quot; task-bridge round: <em>&quot;prior task 5760397546 completed at draft #139 head <code>ba86e085</code>; review current main, MAP v4/DDR/ledger and actual heads of #135→#137→#138→#139 before work. Investigate Mushaf-mode cross-surah Word Card occurrence arrival using a Playwright <code>page.route</code> synthetic data fixture, without bypassing TLS verification. Gate A: reproduce whether <code>renderFlowView</code>&#x27;s asynchronous Mushaf path leaves the destination āyah unrendered at scroll time; test English/Bangla and desktop/mobile, compare Read/Note and non-Mushaf regressions. Gate B: only if reproduced, implement ONE Quran-owned unprotected-path fix that awaits the actual render before targeting the destination, with a committed focused browser test that fails on the old behavior and passes on the fix; preserve focus, card return, Range semantics and no new write.&quot;</em></p>
+<p>This is exactly PR #139&#x27;s own named next candidate: <em>&quot;the named next eligible bounded item — Option B: restructure <code>scrollFlowToCurrentAyah()</code>&#x27;s Mushaf branch to await the real render, verified via a Playwright <code>page.route()</code> synthetic-fixture interception.&quot;</em></p>
+<h2>Verified starting state</h2>
+<ul><li><code>origin/main</code>: <code>16cfb0b3512609313a68d487dca28945a31855b8</code>, <code>app/js/version.js</code> reads <code>APP_VERSION = &quot;08.32&quot;</code>.</li><li>PR #135 <code>claude/laughing-goodall-kjfoqn</code> @ <code>4078b654e8fe74a312e56fabb80c72c11a116729</code>, draft, unmerged.</li><li>PR #137 <code>claude/laughing-goodall-s7pc6n</code> @ <code>ffeccd5a779a6c923d69e195487a313907c86a9a</code>, draft, unmerged, based on #135.</li><li>PR #138 <code>claude/laughing-goodall-wqztcn</code> @ <code>a2585a0d21192954ccde5b8efb5ebaf5b867657a</code>, draft, unmerged, based on #137, merges current <code>main</code> in.</li><li>PR #139 <code>claude/laughing-goodall-711mno</code> @ <code>ba86e0851c996dc5b7583bbcfa3f68e8f8fa33f7</code>, draft, unmerged, based on #138. This round&#x27;s own starting point.</li></ul>
+<p>All four confirmed via <code>mcp__github__pull_request_read</code> (method <code>get</code>) rather than trusted from prose. This round&#x27;s commits land on the same branch, <code>claude/laughing-goodall-711mno</code>, continuing PR #139.</p>
+<h2>Gate A: reproducing the gap, by reading first</h2>
+<p><code>app/js/quranrevival.html</code>&#x27;s <code>navigateToAyah()</code> — the word-card mechanism&#x27;s one navigation function — used to run:</p>
+<pre><code>renderStudyScreen();      // synchronous; internally FIRES renderFlowView() without awaiting it
+scrollFlowToCurrentAyah(); // ran on the very next line, synchronously</code></pre>
+<p><code>scrollFlowToCurrentAyah()</code>&#x27;s Mushaf branch was a <strong>permanent, deliberate no-op</strong> (<code>if (mushafToggle.checked) return;</code>), carried from PR #135 with the stated reason <em>&quot;hifz-renderer.js keeps no per-ayah row to target.&quot;</em> Reading <code>app/js/hifz-renderer.js</code> found that reason was half true: it has <strong>no</strong> <code>.page-flow-ayah</code>-style markup for a Mushaf page (correct), but it <strong>does</strong> keep a per-ayah <code>wordRegistry</code> (<code>Map&lt;&quot;surah:ayah&quot;, HTMLElement[]&gt;</code>), the exact primitive a scroll target needs. What actually blocked this was <strong>timing, not a missing primitive</strong>: <code>renderFlowView()</code>&#x27;s Mushaf branch is asynchronous (<code>ensureMushafData()</code> + a per-page font load + line justification inside <code>renderMushafPages()</code>), and nothing awaited it before the old code&#x27;s own (no-op) scroll attempt.</p>
+<p>This diagnosis was then <strong>measured</strong>, not just reasoned about, with a synthetic fixture (below), and two further, unplanned defects were found by the standard-lesson revert-and-confirm step this task itself requires — see &quot;Two further findings&quot; below. All three had to be closed together before Gate B could be verified as more than a partial fix.</p>
+<h2>The synthetic fixture</h2>
+<p><code>tools/i18n-verify/quran-word-card-mushaf-scroll.mjs</code> (new, 419 lines) intercepts the three real network calls <code>hifz-renderer.js</code> makes (<code>page.route()</code>, no TLS verification bypassed anywhere — the route answers the request before it leaves the browser&#x27;s own network stack):</p>
+<ul><li>the page-layout JSON (<code>mushaf-madani-v2.json</code>) — fulfilled after a 250ms delay with a small synthetic dataset;</li><li>the per-page glyph fonts — aborted after a 300ms delay (matches this sandbox&#x27;s own genuine TLS failure against the real host, paced wide enough to sample reliably);</li><li>the surah-header font — aborted immediately (unused by this fixture).</li></ul>
+<p>The synthetic Mushaf spans four pages: page 3 carries the origin āyah (2:71:13, the same proven fixture <code>quran-word-card-return.mjs</code> and <code>quran-word-card-flow-nav.mjs</code> already use, known to carry a lemma occurrence at 4:92:17 on a different surah — real local word-index data, untouched by this mock). The destination surah (4) deliberately spans <strong>three</strong> pages (44/45/46), with the target āyah (4:92) on the <strong>middle</strong> one — see &quot;A vacuous first version of Gate B&quot; below for why one page was not enough.</p>
+<p>Every essential precondition is a named, failing <code>check()</code>, never a silent skip, per this stack&#x27;s own standing correction (<code>quran-word-card-note-origin-return.mjs</code>&#x27;s dated correction).</p>
+<h2>Gate A result: reproduced</h2>
+<p>Reading confirmed the mechanism; the fixture then measured the actual race. Sampled 80ms into the render (well inside the ≥300ms font-load gap):</p>
+<pre><code>GATE A: navigateToAyah()&#x27;s own state already moved to the destination surah
+        before the render settles                         -&gt; surah === &quot;4&quot;  TRUE
+GATE A: the destination āyah&#x27;s own Mushaf content is genuinely NOT YET
+        rendered at this sampled instant (the real async gap)   TRUE</code></pre>
+<p><code>navigateToAyah()</code>&#x27;s own state mutations (<code>surahSelect</code>/<code>ayahSelect</code>) run <strong>before</strong> the async Mushaf render even starts (they&#x27;re synchronous), while the destination&#x27;s own word spans cannot exist until <code>renderPage()</code> finishes appending them — a real, measured gap, not assumed.</p>
+<h2>Gate B: the fix</h2>
+<p><strong>Quran-owned, unprotected files only</strong>: <code>app/js/hifz-renderer.js</code> and <code>app/quranrevival.html</code>. Neither is on the protected/shared list.</p>
+<ol><li><strong><code>app/quranrevival.html</code></strong> — a new module-level <code>flowRenderPromise</code>, stashed by <code>renderStudyScreen()</code>&#x27;s own flow-view branch the moment it fires <code>renderFlowView(...)</code> (one line, at that existing call site — nothing about <code>renderStudyScreen()</code>&#x27;s ~24 other call sites changes, since it stays completely synchronous). <code>scrollFlowToCurrentAyah()</code>&#x27;s Mushaf branch is no longer a no-op: it <code>await</code>s that promise, re-checks that the flow view is still the thing on screen (state may have changed while the render was in flight), then calls the new targeting primitive. Its one caller, <code>navigateToAyah()</code>, now <code>await</code>s it too (it was already an <code>async function</code>).</li><li><strong><code>app/js/hifz-renderer.js</code></strong> — a new export, <code>scrollToAyahIfRendered(ayahKey)</code>, deliberately <strong>not</strong> a reuse of the existing <code>setActiveAyah()</code> (that function&#x27;s &quot;playing&quot; class means &quot;the recitation is sounding this ayah right now&quot; — painting the destination gold for an ordinary navigation with nothing playing would be the same class of mistake <code>renderFlowView()</code>&#x27;s own &quot;Fix round&quot; comment already records fixing once). It looks the ayah up in the module&#x27;s own <code>wordRegistry</code>, scrolls its first span into view, and reports (<code>true</code>/<code>false</code>) whether it actually found something — a caller never claims a landing that did not happen.</li></ol>
+<h3>Two further findings, closed as part of the same fix</h3>
+<p><strong>(1) A pre-existing, unrelated double-render race.</strong> <code>navigateToAyah()</code> changing surah calls <code>loadSurah()</code>, whose own tail already calls <code>renderStudyScreen()</code> once (at the just-reset āyah 1); <code>navigateToAyah()</code> then calls it again itself (at the real destination āyah). For a Whole-Surah/Range unit, the page bounds do not depend on which āyah is &quot;current&quot;, so <strong>both renders can ask <code>renderMushafPages()</code> for the same page set, concurrently</strong> — and that function had no re-entrancy guard: a stale, still-in-flight render&#x27;s own <code>renderPage()</code> calls kept appending pages and words into the (by then reset) shared container and <code>wordRegistry</code> after a newer render had already started. Found by the revert-and-confirm step below, not by inspection first: the <em>unfixed</em> code&#x27;s own scroll attempt reported <strong><code>pageCount: 6</code></strong> (two full copies of a three-page render) rather than a clean 3. This is a genuine characteristic of the surrounding app (not introduced by this fix, and not specific to word-card navigation — any surah change in Mushaf + Whole Surah/Range would hit it), so it was closed rather than worked around: a monotonic <code>renderGeneration</code> token, checked inside <code>renderPage()</code> after each <code>await</code> (font load) before either the shared <code>wordRegistry</code> or the container is touched, matching the same shape <code>quranWordCardRequest</code> already uses elsewhere in this app for exactly this class of problem (&quot;a superseded async caller must stop mutating shared state&quot;).</p>
+<p><strong>(2) <code>inline: &quot;nearest&quot;</code> never scrolls this app&#x27;s own RTL scroll-snap container.</strong> The first working version of <code>scrollToAyahIfRendered()</code> used <code>{ block: &quot;nearest&quot;, inline: &quot;nearest&quot;, behavior: &quot;instant&quot; }</code>, matching <code>setActiveAyah()</code>&#x27;s own existing call. <strong>Measured, not assumed</strong>: a direct <code>element.scrollIntoView({ inline: &quot;nearest&quot; })</code> against a real off-screen page in <code>#pageViewContainer</code> (which is <code>direction: rtl</code> with <code>scroll-snap-type: x mandatory</code>, per its own shared CSS) left <code>scrollLeft</code> completely unchanged — and a <em>plain</em> <code>container.scrollLeft = &lt;any value&gt;</code> assignment (property set, <code>scrollTo()</code>, <code>scrollBy()</code>) was <strong>also</strong> silently ignored in every variant tried. <code>{ inline: &quot;start&quot; }</code>, by contrast — the exact choice <code>scrollFlowToCurrentAyah()</code>&#x27;s own non-Mushaf sibling branch already makes, for the same container — worked immediately and correctly. Fixed to match that established, already-proven convention.</p>
+<p><strong>This second finding has a real, separate implication for a DIFFERENT, untouched feature.</strong> <code>setActiveAyah()</code> (Mushaf audio-follow-the-recitation highlighting, &quot;round 28&quot;) still uses <code>inline: &quot;nearest&quot;</code> on the same container. If the sounding āyah is on a page not already on screen, this measurement says that scroll plausibly never fires in the app&#x27;s own default (sideways) reading mode. <strong>Flagged in the source (a comment on <code>scrollToAyahIfRendered()</code>) and here — not fixed.</strong> It is a different feature (audio playback, not word-card navigation), outside this task&#x27;s own scope, and deserves its own reproduction before anything is changed. No line of <code>setActiveAyah()</code> was touched.</p>
+<h2>The revert-and-confirm proof (Gate B requirement)</h2>
+<p>Per the task&#x27;s own instruction: reverted the fix locally (<code>git stash push -- app/js/hifz-renderer.js app/quranrevival.html</code>), re-ran the corrected suite, confirmed the failure, restored the fix, re-ran clean. Three rounds of this were needed, because the first two attempts each found a genuine defect of their own — this is reported as history, not smoothed over:</p>
+<ol><li><strong>First revert-and-confirm attempt found GATE B was VACUOUS.</strong> With a single-page-per-surah fixture, <code>body.read-sideways #pageViewContainer &gt; <em></code> gives every rendered page <code>flex: 0 0 100%</code> — with only one child, that page </em>is* the whole scrollable width and reads &quot;in view&quot; the instant it exists, scrolled to or not. <code>GATE B</code> passed identically on unfixed and fixed code. Closed by making the destination surah span three pages (above), with the target on the middle one, so a render that never scrolls genuinely leaves something else in view.</li><li><strong>Second attempt found a genuine TEST TIMING bug, not an app defect.</strong> With three pages, the suite&#x27;s own <code>destSettled</code> wait was keyed on the destination āyah&#x27;s marker text — which lands in the DOM as soon as the <em>middle</em> page (of three, rendered sequentially) finishes, <strong>before</strong> the render&#x27;s own promise (and therefore the fix&#x27;s own scroll call, which awaits it) has actually resolved. The suite was reading scroll state in that genuine gap and reporting a false failure against <em>correctly fixed</em> code. Closed two ways: waiting for the <strong>last</strong> page&#x27;s own marker (a named <code>LAST_PAGE_MARKER</code>) before reading scroll state, and — more directly — polling for <code>#pageViewContainer.scrollLeft !== 0</code> itself, the exact thing <code>GATE B</code> asserts, before reading the final geometry.</li><li><strong>Third attempt: clean.</strong> Reverted code: <strong>exactly one failure</strong> — <code>GATE B</code> itself, with the target&#x27;s rect at <code>left: -508.09375</code> (fully off-screen) and <code>pageCount: 6</code> (the double-render, also reproduced on unfixed code, as expected — the generation guard is part of the fix). Every other check, including the card-return and no-write checks, passed on the unfixed code too, which is the precise, isolated positive control Gate B needs. Fix restored: <strong>17/17 on the single-context debug run (<code>en</code>/mobile) and 59/59 on the full four-context suite</strong>, both clean.</li></ol>
+<h2>Suite results — raw, as observed</h2>
+<pre><code>node tools/i18n-verify/quran-word-card-mushaf-scroll.mjs   (new, this round)
+==== 59 passed, 0 failed ====</code></pre>
+<p>(4 lang×viewport contexts × 14 checks each = 56, + 3 in the Mushaf-off regression block = 59 — counted directly from the source&#x27;s own <code>check()</code> call sites, not estimated.)</p>
+<p>Re-run, unmodified by this round except where noted, <strong>all on the current, fixed head</strong>:</p>
+<pre><code>node tools/i18n-verify/quran-word-card-return.mjs            (PR #135&#x27;s own suite)
+==== 55 passed, 0 failed ====
+
+node tools/i18n-verify/quran-word-card-popup.mjs              (PR #137&#x27;s own suite)
+==== 22 passed, 0 failed ====
+
+node tools/i18n-verify/quran-word-card-flow-nav.mjs            (PR #138&#x27;s own suite)
+==== 19 passed, 0 failed ====
+
+node tools/i18n-verify/quran-word-card-note-origin-return.mjs  (PR #139&#x27;s own suite)
+==== 51 passed, 0 failed ====</code></pre>
+<p><code>quran-word-card-return.mjs</code>&#x27;s own <code>clickSafely()</code> splash-hardening (PR #135&#x27;s 21 Sep correction) reproduced clean — no hang, no timeout, matching its own documented baseline exactly.</p>
+<h2>Governance suites — raw, as observed</h2>
+<p>Checkout preflight: this session&#x27;s checkout was already a full clone (<code>git rev-parse --is-shallow-repository</code> → <code>false</code> after one <code>git fetch origin --unshallow</code> early in the session); <code>origin/claude/pensive-knuth-2pu3jj</code> and <code>origin/claude/phase4-wiring</code> (the two ledger-HELD refs) were fetched explicitly. All seven, run individually from the repository root, <strong>on the final, fixed head</strong>:</p>
+<pre><code>1) programme-ledger.mjs                           -&gt; 8 passed, 23 noted, 0 failed
+2) programme-ledger-mutations.mjs                  -&gt; 49 passed, 0 failed
+3) brief-integrity.mjs                             -&gt; 8 passed, 0 failed
+4) study-activity-evidence-boundary.mjs            -&gt; 27 passed, 0 failed
+5) study-activity-evidence-boundary-mutations.mjs  -&gt; 11 passed, 0 failed
+6) study-event-wiring.mjs                          -&gt; 41 passed, 0 failed
+7) rules-authorisation-executable.mjs              -&gt; 38 passed, 0 failed</code></pre>
+<p>All seven exit 0. None of these suites touch anything this round changed (Quran/Mushaf word-card code is outside every one of their own scopes), and the numbers above match this stack&#x27;s own previously-documented baseline exactly.</p>
+<h2>Changed-file inventory</h2>
+<p>Computed directly (<code>git diff &lt;verified-current-main-sha&gt; --stat</code>), not copied from prior rounds&#x27; prose. <strong>Whole stack (#135→#139 plus this round) against verified current <code>main</code> (<code>16cfb0b3</code>):</strong></p>
+<pre><code> app/js/hifz-renderer.js                                                     |  84 ++++-
+ app/quranrevival.html                                                       | 193 +++++++++-
+ docs/reports/2026-09-21-word-card-back-to-word-card-round-trip.html         | 101 +++++
+ docs/reports/2026-09-21-word-card-back-to-word-card-round-trip.md           | 352 ++++++++++++++++
+ docs/reports/2026-09-21-word-card-desktop-popup-window.html                 | 123 ++++++
+ docs/reports/2026-09-21-word-card-desktop-popup-window.md                   | 249 ++++++++++++
+ docs/reports/2026-09-21-word-card-flow-mode-return-navigation.html          |  94 +++++
+ docs/reports/2026-09-21-word-card-flow-mode-return-navigation.md            | 370 ++++++++++++++++
+ docs/reports/2026-09-21-word-card-note-origin-return-investigation.html     | 112 ++++++
+ docs/reports/2026-09-21-word-card-note-origin-return-investigation.md       | 169 +++++++++
+ docs/reports/2026-09-21-word-card-stack-integration-evidence-repair.html    | 118 ++++++
+ docs/reports/2026-09-21-word-card-stack-integration-evidence-repair.md      | 331 ++++++++++++++
+ tools/i18n-verify/quran-word-card-flow-nav.mjs                              | 198 ++++++++++
+ tools/i18n-verify/quran-word-card-mushaf-scroll.mjs                         | 419 +++++++++++++++++++
+ tools/i18n-verify/quran-word-card-note-origin-return.mjs                    | 410 ++++++++++++++++++
+ tools/i18n-verify/quran-word-card-popup.mjs                                 | 291 ++++++++++++++
+ tools/i18n-verify/quran-word-card-return.mjs                                | 373 ++++++++++++++++
+ 17 files changed, 3971 insertions(+), 16 deletions(-)</code></pre>
+<p><strong>This round&#x27;s own diff alone</strong>, against PR #139&#x27;s own prior head (<code>ba86e0851c</code>):</p>
+<pre><code> app/js/hifz-renderer.js                              |  84 ++++-
+ app/quranrevival.html                                |  66 +++-
+ tools/i18n-verify/quran-word-card-mushaf-scroll.mjs   | 419 +++++++++++++++++++
+ 3 files changed, 557 insertions(+), 12 deletions(-)</code></pre>
+<p>No protected or shared path anywhere in either diff — confirmed by listing, not by claim:</p>
+<ul><li>No <code>app/js/version.js</code>, <code>CLAUDE.md</code>, <code>CHANGELOG.md</code>, <code>app/js/i18n/bn.js</code>, <code>app/js/nav.js</code>, <code>app/js/unit-keys.js</code>, <code>app/js/records.js</code>, <code>app/js/activity.js</code>, <code>app/js/catalogue-data.js</code>, <code>app/css/shell.css</code>.</li><li>No <code>tools/i18n-verify/{behaviour,harness,firebase-stub,brief-integrity,programme-ledger,programme-ledger-mutations}.mjs</code>.</li><li>No <code>docs/governance/</code> path (including no <code>.rules</code>/index candidate).</li><li>No <code>firestore.rules</code>, <code>firebase.json</code>, <code>tests/firestore/</code>, <code>tools/firestore-emulator/</code>.</li><li>No <code>.github/workflows/</code>.</li></ul>
+<h2>What this deliberately does NOT do</h2>
+<ul><li><strong>No version bump.</strong> <code>app/js/version.js</code> is untouched; <code>v08.32</code> stays current per <code>docs/governance/programme-integration-ledger.json</code>, <code>v08.33</code> is next unallocated. <strong>This is a real behaviour change and needs a version allocated by the Master Architect</strong> — incomplete pending that, same position as #135/#137/#138/#139&#x27;s own.</li><li><strong><code>setActiveAyah()</code>&#x27;s own <code>inline: &quot;nearest&quot;</code> call is untouched</strong> — flagged as a plausible, separate, pre-existing defect in the audio-follow feature, not fixed here. See &quot;Two further findings&quot; above.</li><li><strong>No new translation string, no Firestore write/Rule/index.</strong></li><li><strong>No merge, no rebase, no force-push, no deploy, no approval claimed.</strong> Every commit this round pushed is a plain commit onto <code>claude/laughing-goodall-711mno</code> (PR #139&#x27;s own branch), which stays <strong>draft</strong>.</li><li><strong>The pre-existing Range/surah-crossing content-correctness defect PR #138 flagged is still untouched</strong> — out of this round&#x27;s own scope.</li></ul>
+<h2>Owner app test — NO before merge, YES after</h2>
+<p><strong>Before merge</strong>: nothing to test — this fixes behaviour not yet on the live site (PR #139, and the three PRs it stacks on, are all draft and unmerged).</p>
+<p><strong>After merge</strong>, on the live app, at any width, in either language:</p>
+<ol><li>Open Quran Study, turn on word-by-word, set Study Unit to <strong>Whole Surah</strong> (e.g. Al-Baqarah), and turn on <strong>Mushaf view</strong>.</li><li>Tap an Arabic word inside the Mushaf page — actually, tap the <em>equivalent</em> word from the ordinary Read view first (Mushaf&#x27;s own glyphs carry no tap target), switch to <strong>Basic Arabic</strong>, expand the lemma-occurrences line, and note a link on a <strong>different surah</strong>. <em>(If none is available on the loaded surah, any lemma-linked occurrence crossing surahs will do — this is a general Mushaf-mode fix, not specific to one word.)</em></li><li>Turn Mushaf on (the card stays open, floating over the page). Tap the cross-surah occurrence link.</li><li><strong>Expected (the fix)</strong>: you land on the destination surah&#x27;s own Mushaf page, genuinely scrolled to show it — not the previous page, not a blank or stale position.</li><li>Tap &quot;← Back to Word Card&quot;. <strong>Expected</strong> (unchanged, already correct): you return to the exact word and āyah you started from, with Mushaf still on.</li><li>Repeat in Bangla, and at a narrow phone width if possible.</li></ol>
+<p>No Firestore write happens anywhere in this flow.</p>
+<hr>
+<p>🤖 Generated with <a href="https://claude.com/claude-code">Claude Code</a></p>
+<p><a href="https://claude.ai/code/session_01796ZkypZ223nvqKwqZycJZ">https://claude.ai/code/session_01796ZkypZ223nvqKwqZycJZ</a></p>
+</main></body></html>

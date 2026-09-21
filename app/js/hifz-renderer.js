@@ -195,6 +195,32 @@ function watchPageWidth(pageEl) {
 let wordRegistry = new Map();
 let activeAyahKey = null;
 
+// Issue #113 -- renderMushafPages() has always been re-entrant-UNSAFE: its
+// own caller (renderFlowView()'s Mushaf branch, fired by renderStudyScreen(),
+// itself synchronous and NOT awaited by its own callers) can genuinely be
+// invoked a second time before a first call's per-page font loads finish.
+// This is a real, PRE-EXISTING characteristic of the surrounding app, not
+// introduced here: `navigateToAyah()`'s own surah-change branch calls
+// loadSurah(), whose own tail renders once at the just-reset āyah 1, and
+// then calls renderStudyScreen() a SECOND time itself, at the real
+// destination āyah -- and a Whole-Surah/Range unit's page bounds do not
+// depend on which āyah is "current", so both renders can ask for the SAME
+// page set. Found by this round's own revert-and-confirm step, not assumed:
+// a synthetic fixture proved a stale first call's still-in-flight
+// `renderPage()` continues past a second call's own container.innerHTML=""
+// reset and appendChild()s into it anyway, doubling every page and leaving
+// `wordRegistry` holding whichever span happened to register last -- which
+// is exactly the kind of state THIS round's own await-before-scroll fix
+// then reads, so a stale render corrupting it defeats that fix regardless of
+// how faithfully the caller awaits. A monotonic generation token is the
+// established fix for "a superseded async caller must stop mutating shared
+// state" -- this codebase already uses exactly this shape for the Word
+// Card's own request counter, `quranWordCardRequest`, in the page that
+// imports this module -- checked after every await inside renderPage(),
+// before either wordRegistry or the container is touched, so a superseded
+// call becomes an inert no-op rather than a race.
+let renderGeneration = 0;
+
 function renderWord(w, highlightSet) {
   const span = document.createElement("span");
   span.className = "hifz-word";
@@ -207,11 +233,17 @@ function renderWord(w, highlightSet) {
   return span;
 }
 
-async function renderPage(pageNum, highlightSet, container, surahArabicName) {
+async function renderPage(pageNum, highlightSet, container, surahArabicName, myGeneration) {
   const fontReady = await ensurePageFont(pageNum);
+  // Issue #113 -- a newer renderMushafPages() call started while this page's
+  // own font load was in flight. Stop before touching wordRegistry OR the
+  // container: both are shared with whichever call superseded this one, and
+  // appending here would silently duplicate a page that call already drew.
+  if (myGeneration !== renderGeneration) return;
   const pageData = mushafData[String(pageNum)];
   const needsHeaderFont = pageData && pageData.some((l) => l.type === "surah_name");
   const headerFontReady = needsHeaderFont ? await ensureHeaderFont() : false;
+  if (myGeneration !== renderGeneration) return; // same reasoning, the second possible await point
   const pageEl = document.createElement("div");
   pageEl.className = "hifz-page";
   pageEl.style.fontFamily = `'hifz-p${pageNum}'`;
@@ -272,6 +304,7 @@ async function renderPage(pageNum, highlightSet, container, surahArabicName) {
  * optional lookup for the surah-header fallback label.
  */
 export async function renderMushafPages(container, pages, highlightSet, surahArabicName) {
+  const myGeneration = ++renderGeneration;
   container.innerHTML = "";
   pageObservers.forEach((ro) => ro.disconnect());
   pageObservers = [];
@@ -281,7 +314,14 @@ export async function renderMushafPages(container, pages, highlightSet, surahAra
     container.innerHTML = `<p style="color:#888;">${t("Couldn't find a Mushaf page for this selection.")}</p>`;
     return;
   }
-  for (const p of pages) await renderPage(p, highlightSet, container, surahArabicName);
+  for (const p of pages) {
+    // Issue #113 -- do not even START the next page once a newer call has
+    // taken over; the per-page check inside renderPage() alone would still
+    // be correct, but stopping here too avoids wasted font-load work for a
+    // page whose result nobody will ever see.
+    if (myGeneration !== renderGeneration) return;
+    await renderPage(p, highlightSet, container, surahArabicName, myGeneration);
+  }
 }
 
 /** Highlights whichever ayah is currently sounding during audio/drill playback -- a cheap class toggle on already-rendered spans, never a re-render (renderMushafPages is comparatively expensive: font loads + justification, and would visibly jank if run on every ayah-change tick). No-op if that ayah isn't part of the currently-rendered page(s) (e.g. a drill playing past the edge of a Range). */
@@ -305,4 +345,44 @@ export function setActiveAyah(ayahKey) {
   if (first && first.offsetParent !== null) {
     first.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
   }
+}
+
+/**
+ * Issue #113 -- the word-card arrival's own targeting primitive, and
+ * deliberately NOT setActiveAyah() above. That function's "playing" class
+ * means "this is what the recitation is sounding right now" (round 28's own
+ * comment); reusing it for an ordinary navigation with nothing playing would
+ * paint the destination gold for no reason -- the same mistake
+ * renderFlowView()'s own "Fix round" comment already records fixing once
+ * (markPlayingAyah() made conditional on isPlaying()/isPaused()). Reports
+ * whether it actually found something to scroll to -- false when the ayah's
+ * spans are not part of whatever is currently rendered (a stale destination,
+ * or a page nobody's own render reached), so a caller never claims a landing
+ * that did not happen.
+ *
+ * `inline: "start"`, matching `scrollFlowToCurrentAyah()`'s own non-Mushaf
+ * sibling branch EXACTLY -- and NOT `inline: "nearest"` (setActiveAyah()'s
+ * own choice, above), which this round's own synthetic-fixture testing found
+ * never actually scrolls #pageViewContainer at all. MEASURED, not assumed: a
+ * direct `element.scrollIntoView({ inline: "nearest" })` against a real
+ * off-screen page in this exact container left `scrollLeft` unchanged (0 ->
+ * 0) in a real browser, while `{ inline: "start" }` on the identical element
+ * moved it correctly; a plain `container.scrollLeft = <any value>` assignment
+ * was ALSO silently ignored, so this is a genuine `scroll-snap-type: x
+ * mandatory` + `direction: rtl` interaction, not a mistake in how a value was
+ * computed. **This means `setActiveAyah()`'s own "nearest" call, used for the
+ * real audio-follow-recitation feature, is a plausible PRE-EXISTING, LIVE
+ * defect for the same container whenever the sounding āyah is on a page not
+ * already on screen** -- flagged here, NOT fixed: it is a different feature
+ * (audio playback, not word-card navigation), untouched by this task's own
+ * scope, and deserves its own reproduction rather than a drive-by change
+ * riding on this one's own finding. See this round's own report.
+ */
+export function scrollToAyahIfRendered(ayahKey) {
+  if (!ayahKey || !wordRegistry.has(ayahKey)) return false;
+  const spans = wordRegistry.get(ayahKey);
+  const first = spans[0];
+  if (!first || first.offsetParent === null) return false;
+  first.scrollIntoView({ inline: "start", behavior: "instant" });
+  return true;
 }
