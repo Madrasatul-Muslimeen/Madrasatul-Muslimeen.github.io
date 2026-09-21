@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MMSA governance automation — Stage A smoke test: four passes, one hard failure</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MMSA governance automation — Stage A smoke test: four passes, one hard failure</h1>
+<p><strong>Date:</strong> 20 September 2026 <strong>Test:</strong> issue [#90](https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/issues/90), comment <code>5746298072</code>, workflow run [<code>35477941634</code>](https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/actions/runs/35477941634), job <code>105990350802</code>.</p>
+<p><strong>Headline: the automation plumbing works end to end up to the Anthropic API, and then Claude&#x27;s execution fails immediately. No branch was created, no commit was made, and <code>main</code> is untouched.</strong></p>
+<p><strong>Nothing about PR authorship or PR-triggered CI is claimed from this test</strong> — the Action does not open pull requests by default, so those were out of scope by design.</p>
+<p><code>origin/main</code> is still <strong><code>ee3ca08dbcc40950d56e141685b7b5a1c068225c</code></strong>. No application code, version, Rules or repository setting changed. <strong>The secret value was never requested, read or displayed.</strong></p>
+<hr>
+<h2>1. Results, reported separately</h2>
+<div class='tw'><table><thead><tr><th>#</th><th>Item</th><th>Result</th><th>Basis</th></tr></thead><tbody>
+<tr><td>1</td><td><strong>Workflow trigger</strong></td><td><strong>PASS</strong></td><td>Run <code>35477941634</code>, event <code>issue_comment</code>, <code>head_sha</code> <code>ee3ca08</code>, triggering actor <code>AAAsapp</code></td></tr>
+<tr><td>2</td><td><strong>Preflight resolving <code>oauth</code></strong></td><td><strong>PASS — by construction, not by direct log sighting</strong> (see §2)</td><td>Step 2 succeeded <strong>and</strong> checkout ran, which happens only when <code>ready == &#x27;true&#x27;</code></td></tr>
+<tr><td>3</td><td><strong>App token exchange</strong></td><td><strong>PASS — directly observed</strong></td><td><code>claude[bot]</code> posted and then updated a comment; the <em>Revoke app token</em> step issued <code>DELETE /installation/token</code></td></tr>
+<tr><td>4</td><td><strong>Actual Claude execution</strong></td><td><strong>FAIL</strong></td><td><code>is_error: true</code>, <code>duration_ms: 132</code>, <code>total_cost_usd: 0</code>, <code>modelUsage: {}</code></td></tr>
+<tr><td>5</td><td><strong>Whether the hardened tools can commit</strong></td><td><strong>NOT PROVEN</strong> — never attempted. But the <em>resolved tool list</em> is confirmed (§4)</td><td>Claude never ran</td></tr>
+<tr><td>6</td><td><strong>Resulting branch and author identity</strong></td><td><strong>NO BRANCH, NO COMMIT</strong></td><td><code>claude/issue-90-20260920-0007</code> does not exist; verified independently</td></tr>
+<tr><td>7</td><td>PR authorship / PR-triggered CI</td><td><strong>NOT TESTED, NOT CLAIMED</strong></td><td>Out of Stage A scope by design</td></tr>
+</tbody></table></div>
+<hr>
+<h2>2. Trigger and preflight</h2>
+<p><strong>The trigger worked, and it validated a design decision that could easily have gone the other way.</strong></p>
+<p>The Owner&#x27;s comment carries <strong><code>&quot;author_association&quot;: &quot;MEMBER&quot;</code></strong> — <em>not</em> <code>OWNER</code>. The job gate accepts <code>OWNER</code>, <code>MEMBER</code> or <code>COLLABORATOR</code>. <strong>Had it been written to accept <code>OWNER</code> alone, this comment would have produced no workflow run at all, silently</strong>, with nothing to inspect. That breadth was chosen deliberately because the repository is organisation-owned and no sample association was available at the time; the choice is now confirmed by measurement.</p>
+<p><strong>On the preflight, a limit on my evidence, stated plainly.</strong> I could not read the literal <code>mode=oauth</code> line. Job logs in this repository are served from blob storage that this sandbox&#x27;s proxy refuses (<code>curl: (56) CONNECT tunnel failed, response 403</code>), leaving only a tail-limited API read that cannot reach step 2. What is directly observed is that <strong>step 2 completed successfully and checkout then ran</strong> — and checkout is guarded by <code>if: steps.auth.outputs.ready == &#x27;true&#x27;</code>.</p>
+<p>That it was specifically <code>oauth</code> follows deterministically from the code path, given the Owner configured <code>CLAUDE_CODE_OAUTH_TOKEN</code> and explicitly declined federation:</p>
+<ul><li><code>api_key</code> would require <code>ANTHROPIC_API_KEY</code>, which is not set;</li><li><code>federation</code> requires all three variables, which the Owner did not configure;</li><li>a partial federation would have <strong>exited 1</strong>, and the job did not;</li><li><code>none</code> would have set <code>ready=false</code> and <strong>skipped checkout</strong>, which did not happen.</li></ul>
+<p><strong>So: <code>oauth</code>, deduced with certainty from the branch logic — not read off the log.</strong> The distinction is kept because it is the honest one.</p>
+<hr>
+<h2>3. The App token exchange worked — this is the strongest positive result</h2>
+<p><code>claude[bot]</code> (<strong>user id <code>209825114</code></strong>, app <code>https://github.com/apps/claude</code>) posted comment <code>5746299287</code> on issue #90 at 00:07:53 and updated it at 00:08:07. Posting as that identity requires the Claude App installation token. The log also shows the Action&#x27;s <em>Revoke app token</em> step calling <code>DELETE /installation/token</code>, which only makes sense if an installation token had been minted.</p>
+<p><strong>The OIDC → <code>github-app-token-exchange</code> → installation-token mechanism is therefore no longer inferred. It is observed.</strong> That was the central unverified assumption of the whole pilot design, and it holds.</p>
+<h3>A correction to my earlier report</h3>
+<p>My previous report quoted <code>CLAUDE_APP_BOT_ID = 41898282</code> from the Action&#x27;s source as <code>claude[bot]</code>&#x27;s identity. <strong>The real <code>claude[bot]</code> user id is <code>209825114</code>.</strong> <code>41898282</code> is the Action&#x27;s default <code>bot_id</code> <em>input</em> value, not the app user&#x27;s id — and <code>41898282</code> is the id long associated with <code>github-actions[bot]</code>.</p>
+<p>This matters practically: <strong>a future check that verified commit authorship against <code>41898282</code> would have been checking the wrong number.</strong> Verification criteria should use <code>claude[bot]</code> / <code>209825114</code>.</p>
+<hr>
+<h2>4. The failure — Claude&#x27;s execution, and it is not a tools problem</h2>
+<p>From the job log:</p>
+<p>``` &quot;model&quot;: &quot;claude-opus-5&quot; {   &quot;type&quot;: &quot;result&quot;,   &quot;subtype&quot;: &quot;success&quot;,   &quot;is_error&quot;: true,   &quot;duration_ms&quot;: 132,   &quot;num_turns&quot;: 1,   &quot;total_cost_usd&quot;: 0,   &quot;permission_denials_count&quot;: 0,   &quot;modelUsage&quot;: {} }</p>
+<p>##[error]Claude result reported subtype success with is_error:true (run did not complete successfully)</p>
+<p>##[error]Action failed with error: Claude execution failed: result is_error:true</p>
+<p>```</p>
+<p><strong>Facts, separated from interpretation.</strong></p>
+<p><em>Facts:</em> the run lasted <strong>132 milliseconds</strong>; <code>total_cost_usd</code> is <strong>0</strong>; <code>modelUsage</code> is <strong>empty <code>{}</code></strong>; <code>permission_denials_count</code> is <strong>0</strong>; one turn; the Action then exited 1.</p>
+<p><em>What those facts rule out:</em></p>
+<ul><li><strong>Not a tool or permission problem.</strong> <code>permission_denials_count: 0</code> — nothing was refused. The P1 hardening is <strong>not</strong> implicated.</li><li><strong>Not the task.</strong> 132 ms is far too short for any work, and <code>num_turns: 1</code> with empty <code>modelUsage</code> means no assistant turn was produced.</li><li><strong>Not the App token.</strong> That demonstrably worked (§3). Two different credentials are in play, and it is the <em>Anthropic</em> one that is in question.</li></ul>
+<p><em>What they point to:</em> zero cost together with an empty <code>modelUsage</code> means <strong>no model was ever successfully invoked</strong> — the request failed before any inference was billed. The two candidate causes, in order of likelihood:</p>
+<ol><li><strong>The <code>CLAUDE_CODE_OAUTH_TOKEN</code> was rejected</strong> — invalid, expired, or not the kind of token this expects (it is the token produced by <code>claude setup-token</code> for subscription authentication, which is distinct from an API key).</li><li><strong>The pinned model is not available to that credential&#x27;s plan.</strong> <code>claude.yml</code> passes <code>--model &quot;claude-opus-5&quot;</code>. If that account cannot use it, the call could fail immediately.</li></ol>
+<p><strong>I cannot distinguish these two from here</strong>, and I will not guess between them in the report. §6 sets out how to separate them.</p>
+<p><strong>Downstream noise, so it is not mistaken for a second defect.</strong> The log then shows <code>Branch claude/issue-90-20260920-0007 does not exist remotely</code> and a 404 stack trace from <code>compare/main...claude/issue-90-…</code>. Both are consequences of Claude never having run. They are not independent failures.</p>
+<hr>
+<h2>5. What the run <em>did</em> confirm about the hardened configuration</h2>
+<p>Even though Claude never executed, the log printed the <strong>resolved</strong> tool list — which is the first empirical confirmation of the source audit:</p>
+<p>``<code> ALLOWED_TOOLS: Glob,Grep,LS,Read,mcp__github_comment__update_claude_comment,                mcp__github_file_ops__commit_files,mcp__github_file_ops__delete_files DISALLOWED_TOOLS: WebSearch,WebFetch </code>``</p>
+<ul><li><strong>Zero Bash tools.</strong> The P1 fix holds in the live runtime, not only in the file.</li><li><strong><code>use_commit_signing: true</code> did what the source said it would</strong>: the four default <code>Bash(git …)</code> entries are absent and the two MCP file-operation tools are present in their place.</li></ul>
+<p><strong>So the configuration is proven correct; the capability is still untested.</strong> Item 5 — whether this tool set is <em>sufficient</em> to commit — remains open, and it can only be answered once Claude actually runs.</p>
+<hr>
+<h2>6. What is needed next — one Owner check, and one experiment I can run</h2>
+<p><strong>Owner-only, and the more likely cause:</strong> confirm the <code>CLAUDE_CODE_OAUTH_TOKEN</code> secret is a current, valid Claude Code OAuth token. Regenerating and re-entering it is the direct test. <strong>Do not send me the value</strong> — I cannot read repository secrets and do not need to; re-running the smoke test will show whether it resolved.</p>
+<p><strong>Mine to run, and it isolates the other cause:</strong> remove the <code>--model &quot;claude-opus-5&quot;</code> pin so the Action uses its own default model. If the next run still fails at ~132 ms with zero cost, the credential is confirmed as the cause and the model is exonerated. If it gets further, the pin was the problem.</p>
+<p><strong>A constraint that shapes the order of these:</strong> <code>issue_comment</code> workflows always run from the <strong>default branch</strong>, so <strong>a <code>claude.yml</code> change cannot be tested without merging it to <code>main</code> first.</strong> The model experiment therefore costs a merge; the credential check costs nothing. <strong>The credential check should go first.</strong></p>
+<p>I can re-post the <code>@claude</code> comment myself, so re-running the test needs nothing from the Owner beyond the credential.</p>
+<p><strong>The follow-up PR permitting <code>mcp__github__create_pull_request</code> is prepared in design but NOT opened</strong>, because the instruction conditions it on Stage A succeeding, and Stage A did not. It remains a one-entry change that adds a typed API capability and no execution surface.</p>
+<hr>
+<h2>7. Test state and rollback</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td>Issue #90</td><td><strong>open</strong> — kept for the retry</td></tr>
+<tr><td>Bot branch</td><td><strong>none created</strong></td></tr>
+<tr><td><code>docs/automation-pilot/</code></td><td><strong>not created</strong> on <code>main</code> or anywhere</td></tr>
+<tr><td><code>origin/main</code></td><td><strong><code>ee3ca08…</code></strong> — unchanged</td></tr>
+<tr><td>Cost of rollback</td><td>close issue #90; nothing else to undo</td></tr>
+</tbody></table></div>
+<hr>
+<h2>8. State block</h2>
+<p>``<code> MMSA_AUTOMATION_PILOT_STAGE_A_RESULT ISSUED=2026-09-20 ORIGIN_MAIN=ee3ca08dbcc40950d56e141685b7b5a1c068225c (UNCHANGED) ISSUE=90  COMMENT=5746298072  RUN=35477941634  JOB=105990350802 TRIGGER=PASS -- event issue_comment, actor AAAsapp AUTHOR_ASSOCIATION_OBSERVED=MEMBER (not OWNER) -- gating on OWNER alone would have SILENTLY blocked the Owner PREFLIGHT_MODE=oauth -- PASS BY CONSTRUCTION, not read off the log (blob-storage logs are proxy-blocked; step 2 succeeded AND checkout ran, which requires ready=true) APP_TOKEN_EXCHANGE=PASS -- DIRECTLY OBSERVED: claude[bot] posted and updated a comment; DELETE /installation/token ran CLAUDE_EXECUTION=FAIL -- is_error true, duration_ms 132, total_cost_usd 0, modelUsage {}, permission_denials_count 0 FAILURE_NOT_TOOLS=permission_denials_count 0 -- the P1 hardening is NOT implicated FAILURE_NOT_APP_TOKEN=that demonstrably worked; the ANTHROPIC credential is what is in question FAILURE_CAUSE_CANDIDATES=1) CLAUDE_CODE_OAUTH_TOKEN rejected/expired/wrong kind; 2) pinned model claude-opus-5 unavailable to that plan FAILURE_CAUSE_DISTINGUISHED=NO -- cannot be separated from here RESOLVED_TOOLS_OBSERVED=Glob,Grep,LS,Read,mcp__github_comment__update_claude_comment,mcp__github_file_ops__commit_files,mcp__github_file_ops__delete_files ZERO_BASH_TOOLS_CONFIRMED_AT_RUNTIME=YES -- first empirical confirmation of the source audit COMMIT_SIGNING_EFFECT_CONFIRMED=YES -- four default Bash(git ...) entries absent, two MCP file-ops present A5_TOOLS_SUFFICIENT_TO_COMMIT=UNPROVEN -- never attempted BRANCH_CREATED=NO -- claude/issue-90-20260920-0007 does not exist; verified independently COMMIT_AUTHOR_IDENTITY=UNTESTED PR_AUTHORSHIP=NOT TESTED, NOT CLAIMED PR_TRIGGERED_CI=NOT TESTED, NOT CLAIMED CORRECTION=claude[bot] real user id is 209825114, NOT 41898282; 41898282 is the Action&#x27;s default bot_id input (the id associated with github-actions[bot]) NEXT_OWNER_ACTION=verify/regenerate CLAUDE_CODE_OAUTH_TOKEN (value never requested or displayed) NEXT_CLAUDE_EXPERIMENT=drop the --model pin to isolate; REQUIRES A MERGE because issue_comment workflows run from the default branch FOLLOWUP_PR_MCP_CREATE_PR=DESIGNED, NOT OPENED -- conditioned on Stage A success SECRET_HANDLED=NO -- never requested, read or displayed APP_CODE_CHANGED=NO VERSION=08.31 UNCHANGED </code>``</p>
+</main></body></html>

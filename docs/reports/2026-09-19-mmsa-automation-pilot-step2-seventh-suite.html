@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MMSA governance automation — the seventh gate suite, and who can invoke @claude</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MMSA governance automation — the seventh gate suite, and who can invoke @claude</h1>
+<p><strong>Date:</strong> 19 September 2026 <strong>Instruction executed:</strong> <em>&quot;On the existing PR #89, add <code>study-activity-evidence-boundary-mutations.mjs</code> to the deterministic governance check. Do not open another wiring PR. Verify the updated check actually runs all seven suites, and inspect the <code>@claude</code> comment trigger and permissions for who can invoke it. Keep application code, version, Firebase files, credentials, and repository settings untouched. Do not merge.&quot;</em></p>
+<p><strong>Result: done, observed in CI, and not merged.</strong></p>
+<p><code>app/</code> is untouched. <code>app/js/version.js</code> stays <strong><code>08.31</code></strong>, <strong><code>08.32</code> stays UNALLOCATED</strong>, <code>firestore.rules</code> and <code>firebase.json</code> are untouched, E1 stays closed, no repository setting was changed, <strong>no credential was created and no secret was printed.</strong></p>
+<p><strong>PR:</strong> &lt;https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/89&gt; — <strong>open, not merged.</strong></p>
+<hr>
+<h2>1. What changed, exactly</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td>Branch</td><td><code>claude/pilot-claude-app-wiring</code></td></tr>
+<tr><td>Commit added</td><td><strong><code>7de6802</code></strong> — <em>&quot;verify.yml: gate the evidence-boundary MUTATION harness too (six suites -&gt; seven)&quot;</em></td></tr>
+<tr><td>PR head before → after</td><td><code>a1b676b</code> → <strong><code>7de6802</code></strong></td></tr>
+<tr><td>Files in the commit</td><td><strong>One:</strong> <code>.github/workflows/verify.yml</code> (+15 / −7)</td></tr>
+<tr><td>PR total</td><td>2 commits, 2 files — <code>claude.yml</code> (new) and <code>verify.yml</code> (modified)</td></tr>
+</tbody></table></div>
+<p><code>git status</code> over <code>app/ tools/ firestore.rules firebase.json docs/ CLAUDE.md CHANGELOG.md tests/</code> <strong>and <code>.github/workflows/claude.yml</code></strong> was empty at commit time. The reports in this round are on the separate branch named in §7 so that PR #89 stays two workflow files and nothing else.</p>
+<h3>The check name is deliberately unchanged</h3>
+<p>The job is still named <strong><code>Deterministic governance suites</code></strong>. That string is what a future branch ruleset would name as a <em>required</em> check, so renaming it while making it stricter would silently detach any protection later built on it. The gate got stricter; its name did not move.</p>
+<hr>
+<h2>2. Why the seventh suite</h2>
+<p><code>study-activity-evidence-boundary.mjs</code> was gated from pilot step 1. <strong><code>study-activity-evidence-boundary-mutations.mjs</code> was not</strong> — so the gate ran a guard without running the check that the guard is <em>alive</em>.</p>
+<p>That is precisely the <code>study-event-wiring.mjs</code> failure mode this programme has already paid for once: a suite that asserted <strong>nothing</strong> for the whole of its existence while exiting in a way no grep caught. A guard whose mutation harness is ungated is a guard nobody has proven can fail.</p>
+<p>The harness is now gated beside the guard it proves, and <code>verify.yml</code>&#x27;s own header comment records that reason rather than leaving the next reader to infer it.</p>
+<hr>
+<h2>3. Observed in CI — the job-log evidence</h2>
+<p><strong>Run [<code>35470400173</code>](https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/actions/runs/35470400173), job <code>105970184964</code>, head <code>7de6802</code>, conclusion <code>success</code>.</strong> Step 5 is now named <em>&quot;Run the seven deterministic governance suites&quot;</em>. Its closing recap, read from the log rather than from a summary:</p>
+<div class='tw'><table><thead><tr><th>#</th><th>Suite</th><th>Exit</th><th>Result</th></tr></thead><tbody>
+<tr><td>1</td><td><code>programme-ledger</code></td><td>0</td><td>8 passed, 23 noted, 0 failed</td></tr>
+<tr><td>2</td><td><code>programme-ledger-mutations</code></td><td>0</td><td><strong>49 passed, 0 failed</strong></td></tr>
+<tr><td>3</td><td><code>brief-integrity</code></td><td>0</td><td>8 passed, 0 failed</td></tr>
+<tr><td>4</td><td><code>study-activity-evidence-boundary</code></td><td>0</td><td>27 passed, 0 failed</td></tr>
+<tr><td>5</td><td><strong><code>study-activity-evidence-boundary-mutations</code></strong></td><td>0</td><td><strong>11 passed, 0 failed — THE NEW ONE</strong></td></tr>
+<tr><td>6</td><td><code>study-event-wiring</code></td><td>0</td><td>41 passed, 0 failed</td></tr>
+<tr><td>7</td><td><code>rules-authorisation-executable</code></td><td>0</td><td>38 passed, 0 failed</td></tr>
+</tbody></table></div>
+<p>Every figure matches the continuation&#x27;s §9 baseline. <strong>The seventh suite carries its own positive controls</strong> — <em>&quot;the guard passes on the real, unmutated repository&quot;</em>, <em>&quot;the harness restored every file it touched&quot;</em>, a <strong>negative</strong> control proving a comment naming the store does not trip the guard, and a closing <em>&quot;every mutated file is byte-identical to how it started&quot;</em> — which the clean working tree independently confirmed.</p>
+<p><strong>A mechanism worth recording:</strong> for a <code>pull_request</code> event GitHub uses the workflow file from the <em>pull request&#x27;s own</em> merge state, not from <code>main</code>. That is why editing <code>verify.yml</code> on this branch takes effect for this branch&#x27;s own run, and it is not an assumption — PR #88 demonstrated it when the very PR that <em>added</em> <code>verify.yml</code> was checked by it.</p>
+<hr>
+<h2>4. The failure path was re-proven — and the first attempt at proving it was WRONG</h2>
+<p>Recorded rather than quietly re-run, because a control that silently tests nothing is worse than no control.</p>
+<p>The control prepends an unrunnable suite to the list and asserts the job fails. <strong>The first attempt anchored its <code>sed</code> to ten spaces of indentation that the YAML block scalar strips</strong>, so it matched nothing, ran the seven real suites unmodified, and <strong>exited 0</strong>. Reported as written, that would have read as <em>&quot;the positive control passes&quot;</em> while having proven nothing whatsoever.</p>
+<p>It was caught because <strong>the exit code disagreed with the intent</strong> — a control that is supposed to force a failure must not come back green. Re-run correctly:</p>
+<p>``<code> this-suite-cannot-exist                exit 1  (no summary line emitted) programme-ledger                       exit 0  ==== Programme integration ledger: 8 passed, 23 noted, 0 failed ==== ... rules-authorisation-executable         exit 0  ==== Rules authorisation executable: 38 passed, 0 failed ==== POSITIVE CONTROL EXIT CODE: 1 </code>``</p>
+<p><strong>Exit 1, the failing suite named, and all seven real suites still executed after it</strong> — one failure neither masks the rest nor is masked by them.</p>
+<p><strong>This is the same family as the near-miss in the previous round&#x27;s audit</strong>, where a step&#x27;s start and end falling in the same second nearly became an &quot;empty check suite&quot; finding. Both times the tell was the same: <em>a number that disagreed with what the evidence should have looked like.</em></p>
+<h3>How the step was verified before pushing</h3>
+<p>The step&#x27;s <code>run</code> script was <strong>extracted from the PARSED YAML and executed verbatim</strong>, not re-typed. That matters here specifically: an earlier attempt at editing this same file broke the block scalar by putting a closing quote at column 1, and a re-typed approximation would not have caught it. The file parses, the trigger is <code>pull_request</code> into <code>main</code>, and <code>permissions</code> on <code>verify.yml</code> remain <strong><code>contents: read</code></strong>.</p>
+<hr>
+<h2>5. Who can invoke <code>@claude</code> — inspected, and the finding is about TIMING</h2>
+<h3>The authorisation gate is real</h3>
+<p>Read from the Action&#x27;s own source, not assumed:</p>
+<ul><li><strong><code>src/github/validation/permissions.ts</code></strong> calls <code>octokit.repos.getCollaboratorPermissionLevel()</code> and accepts <strong>only <code>admin</code> or <code>write</code></strong>; anything else logs <em>&quot;Actor has insufficient permissions&quot;</em> and denies.</li><li><strong><code>src/entrypoints/prepare.ts</code></strong> runs that check <strong>before</strong> the trigger check, and on failure calls <code>core.setFailed()</code> and <code>process.exit(1)</code>.</li><li><strong><code>checkHumanActor()</code></strong> separately refuses any actor whose type is not <code>User</code> unless it is listed in <code>allowed_bots</code>, <strong>whose default is empty</strong> — so <code>chatgpt-codex-connector[bot]</code>, which already reviews on this repository, cannot invoke Claude.</li></ul>
+<p><strong>So a stranger cannot make Claude act.</strong> I set out to test the opposite: <code>checkHumanActor</code> alone only proves the actor is human, and I had drafted that as a contradiction of PR #89&#x27;s claim. Reading <code>permissions.ts</code> and <code>prepare.ts</code> disproved it. <strong>The claim in PR #89 is correct</strong>, and reporting the contradiction would have been a false finding.</p>
+<h3>The finding: the gate is LATE, not absent</h3>
+<div class='tw'><table><thead><tr><th>Fact</th><th>Basis</th></tr></thead><tbody>
+<tr><td>This repository is <strong>public</strong></td><td>GitHub API: <code>&quot;private&quot;: false</code>, <code>&quot;visibility&quot;: &quot;public&quot;</code>, <code>has_issues: true</code>, <code>allow_forking: true</code></td></tr>
+<tr><td>So <strong>any GitHub user can comment</strong> on an issue or PR</td><td>Follows from the above</td></tr>
+<tr><td>The job condition is <code>contains(github.event.comment.body, &#x27;@claude&#x27;)</code></td><td>A plain <strong>substring</strong> match anywhere in the body</td></tr>
+<tr><td>A comment merely <strong>quoting</strong> <code>@claude</code> satisfies it</td><td>Including PR #89&#x27;s own description, and this report</td></tr>
+<tr><td><code>issue_comment</code> fires on **issues <em>and</em> pull requests**</td><td>GitHub event semantics</td></tr>
+<tr><td>The permission check runs <strong>inside the Action</strong>, after the runner starts</td><td>§5 above</td></tr>
+</tbody></table></div>
+<p><strong>Consequence, stated plainly and without inflation: any GitHub user can cause a workflow run at will.</strong> They cannot make Claude do anything, and <strong>no secret is exposed</strong> — the preflight passes the key via <code>env:</code> and prints only a boolean, which I confirmed by reading the workflow. But once a credential exists, the sequence for a stranger&#x27;s comment is <em>start runner → check out the repository → be refused</em>, which is <strong>billable Actions minutes on demand from anyone</strong>.</p>
+<p>Today it stops even earlier, at the credential preflight, because the workflow is inert.</p>
+<h3>Recommended, and deliberately NOT built</h3>
+<p>Move the gate <strong>earlier</strong>, so an unauthorised comment never starts a runner: add <code>github.event.comment.author_association</code> being <code>OWNER</code>, <code>MEMBER</code> or <code>COLLABORATOR</code> to the job&#x27;s <code>if:</code>.</p>
+<p><strong>Not implemented here</strong>, and the reason is the instruction&#x27;s own boundary: it changes what <code>claude.yml</code> <em>does</em>, which is an Owner / Master Architect decision, not the housekeeping edit this round was authorised to make. The instruction was to add a suite to the gate and to <em>inspect</em> the trigger. It is flagged with its remedy attached rather than built or ignored.</p>
+<h3>One more, independent</h3>
+<p><code>issue_comment</code> workflows always run from the <strong>default branch</strong>. So <code>claude.yml</code> has no effect at all until it is on <code>main</code> — a second, separate reason the Claude path cannot be exercised on this PR, alongside the <code>workflow_not_found_on_default_branch</code> refusal PR #89 already documents.</p>
+<hr>
+<h2>6. What this PR still cannot prove</h2>
+<p>Unchanged from the previous audit, and it still governs the ordering of the pilot:</p>
+<ol><li><strong>PR #89 is authored by <code>AAAsapp</code></strong> (<code>293311955</code>), not a bot — every workflow run on it shows <code>triggering_actor: AAAsapp</code>. It therefore proves the gate runs on <em>a</em> PR, and <strong>nothing about a bot-authored PR</strong>.</li><li><strong><code>AAAsapp</code> cannot approve it.</strong> GitHub blocks a pull request&#x27;s author from approving their own.</li><li><strong>Do not enable branch protection requiring an approval yet.</strong> While <code>AAAsapp</code> authors every PR, such a rule would <strong>deadlock the repository</strong> — including the PR that would fix it.</li><li><code>chatgpt-codex-connector[bot]</code>&#x27;s review on this PR is state <code>COMMENTED</code> with no findings. <strong>Not an approval.</strong></li></ol>
+<hr>
+<h2>7. Where things are</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td>PR #89 head</td><td><strong><code>7de6802</code></strong> — open, <strong>not merged</strong></td></tr>
+<tr><td>PR #89 files</td><td><code>.github/workflows/claude.yml</code> (new), <code>.github/workflows/verify.yml</code> (modified)</td></tr>
+<tr><td>PR description</td><td><strong>Updated.</strong> It said <em>&quot;<code>verify.yml</code> is untouched&quot;</em>, which the second commit made false; corrected rather than left to contradict its own diff</td></tr>
+<tr><td>This report</td><td><code>claude/exciting-goodall-rqn1pm</code>, alongside the previous round&#x27;s audit</td></tr>
+<tr><td><code>main</code></td><td><strong><code>b871334</code></strong>, untouched by this round</td></tr>
+</tbody></table></div>
+<p><code>.github/workflows/</code> is <strong>not</strong> a declared shared path in <code>docs/governance/programme-integration-ledger.json</code>, so ledger guard E requires no declaration for this edit — checked rather than assumed. Guard E still reports 20 touch records, 13 AUTHORIZED / 7 DECLARED, 0 undeclared.</p>
+<hr>
+<h2>8. State block</h2>
+<p>``<code> MMSA_AUTOMATION_PILOT_SEVENTH_SUITE ISSUED=2026-09-19 PR=89 OPEN, NOT MERGED PR_HEAD_BEFORE=a1b676b084d6747da469a05a8f450759f61cbd53 PR_HEAD_AFTER=7de680209505d1002cfbda54b214693eafa7b601 COMMIT_FILES=1 -- .github/workflows/verify.yml only PR_TOTAL_FILES=2 -- claude.yml (new), verify.yml (modified) SUITES=6 -&gt; 7 (study-activity-evidence-boundary-mutations added) CHECK_NAME=UNCHANGED &quot;Deterministic governance suites&quot; -- it is what a ruleset would require CI_RUN=35470400173 job=105970184964 conclusion=success CI_RECAP=8/23/0 | 49/0 | 8/0 | 27/0 | 11/0 | 41/0 | 38/0 -- all seven, exit 0, read from the job log FAILURE_CONTROL=exit 1, failing suite named, all seven still ran FAILURE_CONTROL_FIRST_ATTEMPT=WRONG -- sed anchored to stripped YAML indentation, exited 0, proved nothing; recorded VERIFY_METHOD=run script extracted from PARSED YAML and executed verbatim VERIFY_YML_PERMISSIONS=contents: read (unchanged) INVOKE_GATE=REAL -- permissions.ts getCollaboratorPermissionLevel, admin|write only; prepare.ts fails before trigger check INVOKE_BOTS=refused -- checkHumanActor, allowed_bots default empty INVOKE_FINDING=gate is LATE not absent; repo is PUBLIC so anyone can START a run; contains() matches a mere quotation INVOKE_SECRET_EXPOSURE=NONE -- key passed via env, only a boolean printed INVOKE_REMEDY=author_association OWNER|MEMBER|COLLABORATOR in the job if: -- RECOMMENDED, NOT BUILT (Owner/MA decision) CLAUDE_YML_DEFAULT_BRANCH=issue_comment workflows run from the default branch, so claude.yml is inert until merged PR89_AUTHOR=AAAsapp -- still cannot demonstrate a bot PR, and self-approval is blocked BRANCH_PROTECTION_WARNING=an approval requirement would DEADLOCK while AAAsapp authors every PR APP_CODE_CHANGED=NO VERSION=08.31 UNCHANGED V0832_STATUS=UNALLOCATED FIREBASE_FILES_CHANGED=NO REPO_SETTINGS_CHANGED=NO CREDENTIAL_CREATED=NO SECRET_PRINTED=NO MERGED=NO </code>``</p>
+</main></body></html>

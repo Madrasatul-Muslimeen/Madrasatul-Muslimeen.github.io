@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MMSA governance automation — the main rule verified, and PR #89 merged</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MMSA governance automation — the main rule verified, and PR #89 merged</h1>
+<p><strong>Date:</strong> 19 September 2026 (UTC; the ruleset&#x27;s own timestamp reads <code>2026-09-20T09:46:47+10:00</code>, which is <code>2026-09-19T23:46:47Z</code> — the same moment in the Owner&#x27;s local time)</p>
+<p><strong>Result: every stated condition was met, so PR #89 was merged under the standing conditional instruction. <code>main</code> is now <code>ee3ca08dbcc40950d56e141685b7b5a1c068225c</code>.</strong></p>
+<p>No application code changed. <code>app/js/version.js</code> stays <strong><code>08.31</code></strong>, <strong><code>08.32</code> stays UNALLOCATED</strong>, <code>firestore.rules</code>, <code>firebase.json</code>, <code>docs/governance/</code>, <code>CLAUDE.md</code>, <code>CHANGELOG.md</code> and <code>tests/</code> are <strong>all untouched by the merge</strong>. <strong>No credential was added, no required status check enabled, no Firebase Rules deployed, and no Claude bot task started.</strong></p>
+<hr>
+<h2>1. The <code>main</code> rule — read back, condition by condition</h2>
+<p>Ruleset <strong><code>23712251</code></strong>, <em>&quot;main: require a pull request&quot;</em>. Read from three endpoints so that &quot;it applies to <code>main</code>&quot; is observed rather than inferred from the target expression alone.</p>
+<div class='tw'><table><thead><tr><th>Condition required</th><th>Verified value</th><th>Verdict</th></tr></thead><tbody>
+<tr><td>Rule exists and is <strong>active</strong></td><td><code>&quot;enforcement&quot;: &quot;active&quot;</code></td><td><strong>PASS</strong></td></tr>
+<tr><td>Targets <code>main</code></td><td><code>target: &quot;branch&quot;</code>, <code>conditions.ref_name.include = [&quot;~DEFAULT_BRANCH&quot;]</code> — <strong>and</strong> <code>GET /rules/branches/main</code> returns it, so it demonstrably applies to <code>main</code></td><td><strong>PASS</strong></td></tr>
+<tr><td>Requires a pull request</td><td><code>rules[0].type = &quot;pull_request&quot;</code></td><td><strong>PASS</strong></td></tr>
+<tr><td><strong>0</strong> required approvals</td><td><code>required_approving_review_count: 0</code></td><td><strong>PASS</strong></td></tr>
+<tr><td>Owner admin recovery available</td><td><code>bypass_actors: [{ actor_id: 5, actor_type: &quot;RepositoryRole&quot;, bypass_mode: &quot;always&quot; }]</code>, <strong>and</strong> <code>&quot;current_user_can_bypass&quot;: &quot;always&quot;</code></td><td><strong>PASS</strong></td></tr>
+<tr><td><strong>No Claude App bypass</strong></td><td>Exactly <strong>one</strong> bypass actor, and it is a <code>RepositoryRole</code>. <strong>No <code>Integration</code> actor of any kind</strong></td><td><strong>PASS</strong></td></tr>
+<tr><td><strong>No required status check yet</strong></td><td><code>rules[]</code> contains <strong>only</strong> <code>pull_request</code>; no <code>required_status_checks</code> rule</td><td><strong>PASS</strong></td></tr>
+</tbody></table></div>
+<p><strong>On the bypass actor, stated precisely.</strong> I did <strong>not</strong> independently resolve the numeric <code>actor_id: 5</code> to a role name — that mapping is not something I verified. What I did verify is the API&#x27;s own answer for the authenticated admin: <strong><code>current_user_can_bypass: &quot;always&quot;</code></strong>. That is direct evidence that Owner recovery works, and it is better evidence than a guessed identifier.</p>
+<p><strong>And the bot is not covered by it.</strong> The bypass is granted to a <em>repository role</em>. <code>claude[bot]</code> acts through an App installation token holding <code>contents: write</code> — <strong>it is not a repository admin and there is no <code>Integration</code> bypass actor</strong>, so it cannot bypass this rule. That is the protection the rule exists to provide.</p>
+<p><strong>No write was attempted.</strong> Every call in this section was a <code>GET</code>. The documented <code>403</code> on ruleset writes stands as established and was not retried.</p>
+<hr>
+<h2>2. Pre-merge re-verification</h2>
+<div class='tw'><table><thead><tr><th>Check</th><th>Result</th></tr></thead><tbody>
+<tr><td>PR #89 head</td><td><strong><code>e73d1dea39d47b86ac531f9db475beec16f00cf1</code></strong> — matches the instruction exactly</td></tr>
+<tr><td>Diff vs base <code>fa06217</code></td><td><strong>2 files</strong>: <code>claude.yml</code> (new, +326), <code>verify.yml</code> (+22/−7)</td></tr>
+<tr><td><code>mergeable_state</code></td><td><strong><code>clean</code></strong></td></tr>
+<tr><td>Check <code>Deterministic governance suites</code></td><td><strong>success</strong> — run <code>35471648100</code>, job <code>105973553348</code></td></tr>
+<tr><td>Recap in that run</td><td><code>8/23/0 · 49/0 · 8/0 · 27/0 · 11/0 · 41/0 · 38/0</code> — <strong>seven suites</strong></td></tr>
+<tr><td><strong>P1 fix still valid on the head</strong></td><td><code>claude_args</code> is exactly <code>--model &quot;claude-opus-5&quot;</code>; <strong>no <code>allowedTools</code>, no <code>Bash(</code>, no <code>node</code></strong>; <code>use_commit_signing: true</code>; <code>github_token</code> omitted</td></tr>
+</tbody></table></div>
+<p>Every condition held, so the conditional instruction activated.</p>
+<hr>
+<h2>3. The merge</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td>Method</td><td><strong>merge commit</strong> (history preserved — the four commits and their reasoning survive)</td></tr>
+<tr><td>Guard used</td><td><code>expectedHeadSha = e73d1de…</code> — the merge would have been refused had the head moved</td></tr>
+<tr><td>Merge commit</td><td><strong><code>ee3ca08dbcc40950d56e141685b7b5a1c068225c</code></strong></td></tr>
+<tr><td><code>main</code> before → after</td><td><code>b871334…</code> → <strong><code>ee3ca08…</code></strong></td></tr>
+</tbody></table></div>
+<hr>
+<h2>4. Post-merge verification of <code>main</code></h2>
+<div class='tw'><table><thead><tr><th>Check</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>origin/main</code></td><td><strong><code>ee3ca08dbcc40950d56e141685b7b5a1c068225c</code></strong> — re-fetched and read back</td></tr>
+<tr><td>Total change to <code>main</code></td><td><strong>2 files, +341 / −7 — both under <code>.github/workflows/</code></strong></td></tr>
+<tr><td><code>app/</code>, <code>tools/</code>, <code>firestore.rules</code>, <code>firebase.json</code>, <code>docs/governance/</code>, <code>CLAUDE.md</code>, <code>CHANGELOG.md</code>, <code>tests/</code></td><td><strong>byte-untouched</strong> — <code>git diff</code> over those paths is empty</td></tr>
+<tr><td><code>app/js/version.js</code> on <code>main</code></td><td><strong><code>08.31</code></strong> — unchanged</td></tr>
+<tr><td>Workflow files on <code>main</code></td><td><code>.github/workflows/claude.yml</code>, <code>.github/workflows/verify.yml</code></td></tr>
+<tr><td><code>claude.yml</code> on <code>main</code> — trigger</td><td><code>issue_comment: [created]</code></td></tr>
+<tr><td><code>claude.yml</code> on <code>main</code> — gate</td><td><code>contains(body,&#x27;@claude&#x27;) &amp;&amp; author_association ∈ {OWNER, MEMBER, COLLABORATOR}</code></td></tr>
+<tr><td><code>claude.yml</code> on <code>main</code> — permissions</td><td><code>contents</code>/<code>pull-requests</code>/<code>issues</code>/<code>id-token: write</code></td></tr>
+<tr><td><strong><code>claude.yml</code> on <code>main</code> — P1 fix</strong></td><td><strong>INTACT.</strong> <code>claude_args</code> = <code>--model &quot;claude-opus-5&quot;</code>; zero Bash tools; <code>use_commit_signing: true</code>; <code>github_token</code> omitted</td></tr>
+<tr><td><code>verify.yml</code> on <code>main</code> — suites</td><td><strong>7</strong>, in order: <code>programme-ledger</code>, <code>programme-ledger-mutations</code>, <code>brief-integrity</code>, <code>study-activity-evidence-boundary</code>, <code>study-activity-evidence-boundary-mutations</code>, <code>study-event-wiring</code>, <code>rules-authorisation-executable</code></td></tr>
+<tr><td>Rule after the merge</td><td>still <strong>1 rule, <code>pull_request</code>, approvals <code>0</code></strong></td></tr>
+</tbody></table></div>
+<p><strong>A note so nothing is misread: <code>verify.yml</code> did not run on this merge, and that is correct.</strong> It triggers on <code>pull_request</code> only. The merge is a push to <code>main</code>, so no gate run appears — the gate already ran on the head that was merged.</p>
+<p><strong>What changed in practice:</strong> <code>claude.yml</code> is now on the default branch, which is what the App token exchange validates against. The workflow is therefore <em>reachable</em> for the first time — and <strong>still inert</strong>, because no Claude authentication is configured, so the preflight stops the job before checkout.</p>
+<hr>
+<h2>5. Owner Gate 2 — the credential (now unlocked)</h2>
+<p>PR #89 is verified on <code>main</code>, so per the instruction the location and name are released. <strong>Add exactly one.</strong> Simplest is (a).</p>
+<div class='tw'><table><thead><tr><th></th><th>Where</th><th>Exact name</th></tr></thead><tbody>
+<tr><td><strong>(a)</strong></td><td><strong>Settings → Secrets and variables → Actions → Secrets</strong> tab → <strong>New repository secret</strong></td><td><code>ANTHROPIC_API_KEY</code></td></tr>
+<tr><td><strong>(b)</strong></td><td>same place</td><td><code>CLAUDE_CODE_OAUTH_TOKEN</code></td></tr>
+<tr><td><strong>(c)</strong></td><td><strong>Settings → Secrets and variables → Actions → Variables</strong> tab</td><td>all three of <code>ANTHROPIC_FEDERATION_RULE_ID</code>, <code>ANTHROPIC_ORGANIZATION_ID</code>, <code>ANTHROPIC_SERVICE_ACCOUNT_ID</code></td></tr>
+</tbody></table></div>
+<p><strong>No edit to any workflow file is needed for any of them</strong> — that was the point of the P2 fix.</p>
+<p>Paste the value <strong>only</strong> into that box. <strong>I will never ask for it, never handle it, and never display it.</strong> I cannot read repository secrets and do not want to; when you have added it, simply say so — the preflight will report which mode it resolved, by name, without ever printing a value.</p>
+<p><strong>Option (c) stores no credential at all</strong> and is worth considering if an Anthropic Console admin is available to register the issuer, service account and federation rule.</p>
+<hr>
+<h2>6. Verified facts vs what remains unproven</h2>
+<p><strong>Verified in this round:</strong> the rule&#x27;s enforcement, target, rule type, approval count, bypass list and absence of a required check; PR #89&#x27;s head, diff, check and P1 fix before merging; the merge commit; and <code>main</code>&#x27;s resulting SHA, workflow contents and untouched application tree.</p>
+<p><strong>Still unproven, and unchanged by this merge:</strong></p>
+<ol><li><strong>No Claude Action run has ever executed in this repository.</strong></li><li><strong>The Action does not open pull requests by default</strong> — it pushes a branch and posts a link. So <code>claude[bot]</code> <em>PR</em> authorship needs one further entry, <code>--allowedTools &quot;mcp__github__create_pull_request&quot;</code>, which is <strong>proposed on a follow-up PR and not included here</strong>. Mechanism verified from source; outcome unobserved.</li><li><strong>Whether an App installation token triggers <code>pull_request</code> workflows here</strong> — the pilot&#x27;s single most load-bearing unknown. Inferred only.</li><li>**Whether the hardened tool set is still <em>sufficient</em> to commit** — safe has been shown; capable has not. This is Stage A&#x27;s check A5.</li><li><strong>Gate 4 (ChatGPT → Claude) is untouched.</strong> A human still pastes the task.</li></ol>
+<hr>
+<h2>7. State block</h2>
+<p>``<code> MMSA_AUTOMATION_PILOT_RULE_VERIFIED_AND_PR89_MERGED ISSUED=2026-09-19 (UTC) MAIN_BEFORE=b87133461680d3c2837f7bd75fc5c824e10090d3 MAIN_AFTER=ee3ca08dbcc40950d56e141685b7b5a1c068225c MERGE_METHOD=merge commit; expectedHeadSha guard = e73d1dea39d47b86ac531f9db475beec16f00cf1 PR89=MERGED RULESET_ID=23712251 name=&quot;main: require a pull request&quot; RULE_ENFORCEMENT=active RULE_TARGET=branch; ref_name.include=[&quot;~DEFAULT_BRANCH&quot;]; confirmed via GET /rules/branches/main RULE_TYPE=pull_request RULE_APPROVALS=0 RULE_BYPASS=1 actor, RepositoryRole/always; current_user_can_bypass=always (Owner recovery CONFIRMED empirically) RULE_APP_BYPASS=NONE -- no Integration actor; claude[bot] holds contents:write, not admin, so it CANNOT bypass RULE_REQUIRED_STATUS_CHECK=NONE RULESET_WRITE_ATTEMPTED=NO -- all GETs; the documented 403 was not retried MAIN_DIFF=2 files, +341/-7, both under .github/workflows/ APP_TREE_UNTOUCHED=YES (app/ tools/ firestore.rules firebase.json docs/governance/ CLAUDE.md CHANGELOG.md tests/) VERSION=08.31 UNCHANGED; V0832 UNALLOCATED CLAUDE_YML_ON_MAIN=P1 FIX INTACT -- claude_args = --model only, zero Bash tools, use_commit_signing true, github_token omitted VERIFY_YML_ON_MAIN=7 suites VERIFY_DID_NOT_RUN_ON_MERGE=CORRECT -- it is pull_request-only; the gate ran on the merged head CLAUDE_YML_NOW_REACHABLE=YES (on default branch) BUT STILL INERT (no credential) OWNER_GATE_1=CLOSED -- rule created and verified OWNER_GATE_2=OPEN -- credential; name and location released in section 5 CREDENTIAL_HANDLED=NO -- never requested, never displayed, cannot be read CLAUDE_BOT_RUN_EVER=NO BOT_PR_AUTHORSHIP=needs mcp__github__create_pull_request -- PROPOSED on a follow-up PR, NOT in this merge B2_UNKNOWN=whether an App installation token triggers pull_request workflows -- INFERRED, UNOBSERVED A5_UNKNOWN=whether the hardened tool set is still sufficient to commit -- UNTESTED REQUIRED_STATUS_CHECK_ENABLED=NO -- deliberately, until a bot PR proves the check triggers FIREBASE_RULES_DEPLOYED=NO </code>``</p>
+</main></body></html>
