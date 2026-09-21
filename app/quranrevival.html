@@ -10125,6 +10125,36 @@
       if (el) el.scrollTop = y;
     }
 
+    /**
+     * Issue #113 -- the flow view's own counterpart to readViewScrollContainer()
+     * above, which deliberately returns null for a Whole Surah/Range unit
+     * (#pageViewContainer visible) and leaves the word-card round trip a
+     * no-op there. A CAPTURED PIXEL offset (the approach that works for
+     * #ayahPanels) is not meaningful here: #pageViewContainer's own
+     * scrollLeft is a property of the CONTAINER, not of whatever surah it
+     * currently holds, so a browser does not reset it when renderFlowView()
+     * replaces the innerHTML for a DIFFERENT surah -- the stale pixel value
+     * simply carries over into the new content's coordinate space. Reproduced
+     * in a real browser, not assumed: jumping from a lemma occurrence at
+     * 2:71 to one at 4:92 left the reader looking at surah 4's OWN ayah 71
+     * (the same pixel offset landing on the same page index), with the
+     * tapped word (4:92) off-screen -- on the ARRIVING leg, not only the
+     * return. The fix is identity-based instead: find the row for the ayah
+     * actually being shown and bring it into view directly.
+     *
+     * Mushaf mode is a different DOM shape entirely -- one printed page can
+     * hold several ayahs, and hifz-renderer.js keeps no per-ayah row to
+     * target (its word spans carry no ayah-identifying attribute) -- and is
+     * deliberately left exactly as it was, a no-op, same as before this
+     * round. See this round's own report for what closing it would need.
+     */
+    function scrollFlowToCurrentAyah() {
+      if (getComputedStyle(pageViewContainer).display === "none") return;
+      if (mushafToggle.checked) return;
+      const row = pageViewContainer.querySelector(`.page-flow-ayah[data-ayah="${currentAyahNum}"]`);
+      row?.scrollIntoView({ inline: "start", behavior: "instant" });
+    }
+
     async function goToWordOccurrence(refText) {
       const parts = String(refText).split(":").map(Number);
       if (parts.length !== 3 || parts.some((n) => !Number.isInteger(n) || n < 1)) return;
@@ -10170,6 +10200,7 @@
       currentAyahNum = ayah;
       if (ayahSelect.querySelector(`option[value="${ayah}"]`)) ayahSelect.value = String(ayah);
       renderStudyScreen();
+      scrollFlowToCurrentAyah();
     }
 
     /** The shared half of "go there and open that word" -- the way back uses it. */
