@@ -14696,3 +14696,8 @@ measurement rows; no shared application file touched. **Nothing was deployed** �
 `firestore.rules` still names `evidence` zero times and E1 stays CLOSED.
 
 Full account: `docs/reports/2026-09-19-quranrevival-d3-journaling-chokepoint.md`.
+
+
+## v08.32 — 21 Sep 2026 — Basic Arabic lemma occurrences
+
+QuranRevival Word Card PR #112 was merged to `main` at `f5b7c6c`. Its Basic Arabic lemma-occurrence count now expands to a list of written occurrences, and selecting one navigates to its ayah. The change reuses the existing occurrence data and performs no Firestore write. The MMSA Master Architect allocated v08.32 in `app/js/version.js` and the Programme Integration Ledger. The Owner tested the live app and reported that all checks passed. This is an app-visible release; it does not deploy the Phase 4–6 Rules/index package. E1 remains closed. The next unallocated number is v08.33.
