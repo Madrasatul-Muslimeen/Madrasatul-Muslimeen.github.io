@@ -5453,6 +5453,14 @@
       updateUnitControlsVisibility();
       renderStudyScreen();
       renderWheel();
+      // Issue #113 -- same fix as stepUnit()'s own tail, and for the same
+      // reason: this function crosses surah boundaries too (its own "if
+      // (row.startSurah !== currentSurahNum)" branch above), and is called
+      // both directly (the unit-number picker below) and from stepUnit()'s
+      // Juz/Hizb/Page branch, which returns before ever reaching stepUnit()'s
+      // own tail. A no-op when the flow view is not showing (checked inside
+      // scrollFlowToCurrentAyah() itself).
+      await scrollFlowToCurrentAyah();
     }
 
     unitNumSelect.addEventListener("change", () => { goToUnitNumber(Number(unitNumSelect.value)); });
@@ -5575,6 +5583,15 @@
       updateUnitControlsVisibility();
       renderStudyScreen();
       renderWheel();
+      // Issue #113 -- without this, stepping across a surah boundary (the
+      // owner's own "Next means the next surah too" rule, above) leaves the
+      // flow/Mushaf view's scroll position at whatever raw pixel offset the
+      // PREVIOUS surah had reached: the exact stale-scrollLeft defect
+      // navigateToAyah()'s own word-card jump already fixed (marked "Issue
+      // #113" at that call site), reproduced here via a completely different
+      // trigger. scrollFlowToCurrentAyah() is a safe no-op when the flow view
+      // is not showing at all (checked internally), so this is unconditional.
+      await scrollFlowToCurrentAyah();
     }
 
     /** Greys the two buttons out at the real ends rather than leaving a button
