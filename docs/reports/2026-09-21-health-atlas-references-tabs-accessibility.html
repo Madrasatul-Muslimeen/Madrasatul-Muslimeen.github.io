@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Health Atlas — References/Body Systems view switcher: real keyboard and screen-reader operability</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Health Atlas — References/Body Systems view switcher: real keyboard and screen-reader operability</h1>
+<p><strong>21 Sep 2026. Issue #115, Gate A/B. Stack: #140 → #142 → #145 → #146 → this tranche (branch <code>claude/health-atlas-references-tabs-a11y-tranche10</code>, based on PR #146&#x27;s head <code>5817643bf3a7</code>).</strong></p>
+<h2>What this task was</h2>
+<p>The issue #115 task comment (id <code>5761971158</code>) asked to inspect PR #146&#x27;s References view-switcher controls with real desktop/tablet/phone keyboard and pointer interaction, on the hypothesis that they declare <code>role=&quot;tab&quot;</code> but may lack tab panels, selection semantics and arrow-key operation. Gate A: reproduce the exact accessibility failure with a committed browser/DOM test before touching app code. Gate B: correct the one Health-owned navigation semantics/keyboard slice if reproduced — either build genuinely conformant tabs with associated panels and expected key movement, or use ordinary buttons if these are view-switch actions.</p>
+<h2>Verification before touching anything</h2>
+<p>All SHAs the task comment named were checked, not trusted:</p>
+<div class='tw'><table><thead><tr><th>Claim</th><th>Verified</th></tr></thead><tbody>
+<tr><td>PR #146 head <code>5817643b</code></td><td><code>5817643bf3a7585a6c5eae7f7003f55971c7d6eb</code> — matches</td></tr>
+<tr><td><code>health/source-v02-04-handover</code> at <code>ed4dbb2e</code></td><td><code>ed4dbb2e535ba6b95ea286a5f3b29a32122ea4b9</code> — matches</td></tr>
+<tr><td>Stack #140→#142→#145→#146</td><td>Confirmed by each PR&#x27;s <code>base</code>/<code>head</code> refs: #140 base <code>main</code>, head <code>claude/laughing-goodall-90k6mh</code>; #142 base = #140&#x27;s head branch, head <code>claude/laughing-goodall-8moeiq</code>; #145 base = #142&#x27;s head branch, head <code>claude/health-atlas-tranche8-browser-evidence</code>; #146 base = #145&#x27;s head branch, head <code>claude/health-atlas-references-index-tranche9</code></td></tr>
+<tr><td>Issue #123 (the &quot;ledger&quot; issue)</td><td>Read — it is a separate MMSA-wide coordination issue (#91/#98/#104/#110/#112/#120/#122 + Health #105/#111/#119/#121), not a document naming this tranche&#x27;s own obligations beyond what issue #115&#x27;s own thread already carries</td></tr>
+</tbody></table></div>
+<h2>Gate A — the defect, reproduced against unmodified code</h2>
+<p><code>app/health/js/health-atlas-view.js</code>&#x27;s <code>buildViewTabs()</code> (tranche 9, <code>5817643b</code>) rendered:</p>
+<p>``<code>js role: &#x27;tab&#x27;, &#x27;aria-selected&#x27;: active ? &#x27;true&#x27; : &#x27;false&#x27;, ... return el(&#x27;div&#x27;, { class: &#x27;ha-view-tabs&#x27;, role: &#x27;tablist&#x27;, ... }, buttons); </code>``</p>
+<p>This borrows the WAI-ARIA [Tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)&#x27;s vocabulary without the rest of what that pattern requires: neither button carried <code>aria-controls</code>, no element in either screen carried <code>role=&quot;tabpanel&quot;</code>, and the tablist had no <code>keydown</code> handling at all — the pattern&#x27;s own required Left/Right/Home/End arrow-key operation did nothing. A sighted mouse user saw two working buttons; a screen-reader user was told &quot;tab, 1 of 2&quot; and then had no way to discover which panel it exposes; a keyboard user following the Tabs pattern&#x27;s own convention found arrow keys inert.</p>
+<p>A new committed suite, <code>tools/health-atlas-verify/references-tabs-accessibility-browser.mjs</code>, was written and run against the <strong>unmodified</strong> tranche 9 commit <strong>before any app code changed</strong>. Raw output:</p>
+<p>``` Health Atlas — References/Body Systems view switcher accessibility test</p>
+<p>  PASS  desktop: page loads with no page errors   FAIL  desktop: no role=&quot;tab&quot; or role=&quot;tablist&quot; remains in the view switcher: expected 0 role=&quot;tab&quot; elements, found 2   FAIL  desktop: the view switcher is an accessibly-named group of ordinary buttons: expected role=&quot;group&quot; on .ha-view-tabs   FAIL  desktop: aria-pressed reflects which view is active, Body Systems by default: expected Body Systems aria-pressed=&quot;true&quot; by default, got &quot;null&quot;   PASS  desktop: real sequential Tab-key navigation reaches both buttons in order   PASS  desktop: the focused button shows a real, visible focus outline   FAIL  desktop: Enter on a focused button switches the view (native button activation): expected aria-pressed=&quot;true&quot; after Enter-activation, got &quot;null&quot;   PASS  desktop: Space on a focused button switches the view (native button activation)   PASS  tablet (768x1024): no page errors; both view-switch buttons are real, keyboard-reachable, non-empty targets   FAIL  phone (390x844): no page errors; a real tap switches the view and sets aria-pressed: expected aria-pressed=&quot;true&quot; after tap, got &quot;null&quot;</p>
+<p>Health Atlas references-tabs-accessibility-browser: 5 passed, 5 failed ```</p>
+<p>The hypothesis is confirmed exactly: <code>role=&quot;tab&quot;</code>/<code>&quot;tablist&quot;</code> are present (2 elements), but neither the <code>aria-pressed</code> state model this tranche settles on, nor (checked separately, by reading the source directly) <code>aria-controls</code>/<code>role=&quot;tabpanel&quot;</code>, exist anywhere. Real Tab-key navigation and Space-activation already worked, because a <code>&lt;button&gt;</code> element is natively focusable and activatable regardless of its ARIA role — the defect is specifically in the <strong>declared semantics</strong>, not in raw reachability.</p>
+<h2>Gate B — the fix</h2>
+<p>These two buttons switch between two whole, unrelated screens (the Body Systems 3-column layout and the References table) rather than showing and hiding panels of one shared view — switching does not filter or reveal content within a single region, it replaces the screen outright. Building the full Tabs pattern (an associated <code>role=&quot;tabpanel&quot;</code> for each view, <code>aria-controls</code>, and roving-tabindex arrow-key navigation across the tablist) would be real, non-trivial complexity spent modelling a pattern that does not describe what this control actually is. Issue #115&#x27;s own instruction named the alternative directly: <strong>&quot;ordinary buttons if these are view-switch actions.&quot;</strong> They are, so that is the fix.</p>
+<p><code>buildViewTabs()</code> now reads:</p>
+<p>``<code>js const btn = el(&#x27;button&#x27;, {   type: &#x27;button&#x27;,   class: </code>ha-view-tab${active ? &#x27; ha-view-tab-active&#x27; : &#x27;&#x27;}<code>,   &#x27;aria-pressed&#x27;: active ? &#x27;true&#x27; : &#x27;false&#x27;,   text: tab.label }); ... return el(&#x27;div&#x27;, { class: &#x27;ha-view-tabs&#x27;, role: &#x27;group&#x27;, &#x27;aria-label&#x27;: &#x27;Health Atlas view&#x27; }, buttons); </code>``</p>
+<p>This is the WAI-ARIA [toggle-button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/#toggle-button), which needs no bespoke keyboard handling: a native <code>&lt;button&gt;</code> is already in the document&#x27;s normal Tab order and already activates on both Enter and Space. <code>.ha-view-tab</code> never sets <code>outline: none</code> in <code>health-atlas.html</code>&#x27;s CSS (checked directly, not assumed), so the browser&#x27;s own visible focus ring was never suppressed and needed no re-adding.</p>
+<p>Re-running the same suite against the fix, unchanged:</p>
+<p>``` Health Atlas — References/Body Systems view switcher accessibility test</p>
+<p>  PASS  desktop: page loads with no page errors   PASS  desktop: no role=&quot;tab&quot; or role=&quot;tablist&quot; remains in the view switcher   PASS  desktop: the view switcher is an accessibly-named group of ordinary buttons   PASS  desktop: aria-pressed reflects which view is active, Body Systems by default   PASS  desktop: real sequential Tab-key navigation reaches both buttons in order   PASS  desktop: the focused button shows a real, visible focus outline   PASS  desktop: Enter on a focused button switches the view (native button activation)   PASS  desktop: Space on a focused button switches the view (native button activation)   PASS  tablet (768x1024): no page errors; both view-switch buttons are real, keyboard-reachable, non-empty targets   PASS  phone (390x844): no page errors; a real tap switches the view and sets aria-pressed</p>
+<p>Health Atlas references-tabs-accessibility-browser: 10 passed, 0 failed ```</p>
+<p><code>tools/health-atlas-verify/references-index-browser.mjs</code> (tranche 9&#x27;s own suite) had four assertions reading the now-removed <code>aria-selected</code> attribute — updated in place to read <code>aria-pressed</code> (the attribute the corrected pattern actually sets), nothing else in that file changed. Still 12/12 passing after the update, against the fixed code.</p>
+<h2>What this tranche deliberately did NOT do</h2>
+<ul><li><strong>Did not build the full ARIA Tabs pattern.</strong> Issue #115&#x27;s own instruction named ordinary buttons as an equally valid resolution when the controls are view-switch actions, which these are — this is the narrower, more conformant fix, not a partial one.</li><li><strong>Did not treat the 8 general references as citations validating the 82 function statements.</strong> Untouched by this tranche; the disclaimer text and evidence-status model (<code>health-atlas-claims.js</code>) are unmodified.</li><li><strong>Did not touch</strong> clinical/dose/remedy claims, person-level intake, CRUD/import/export, or the excluded wheel &quot;fields&quot; ring — none of this tranche&#x27;s concern.</li><li><strong>Did not touch any protected/shared path</strong> — <code>version.js</code>, <code>CLAUDE.md</code>, <code>CHANGELOG.md</code>, <code>bn.js</code>, <code>nav.js</code>, <code>unit-keys.js</code>, <code>records.js</code>, <code>activity.js</code>, <code>catalogue-data.js</code>, <code>shell.css</code>, <code>tools/i18n-verify/{behaviour,harness,firebase-stub,brief-integrity, programme-ledger,programme-ledger-mutations}.mjs</code>, <code>docs/governance/</code>, <code>firestore.rules</code>, <code>firebase.json</code>, <code>tests/firestore/</code>, <code>tools/firestore-emulator/</code>, <code>.github/workflows/</code>. Every file this tranche edited is under <code>app/health/<strong></code> or <code>tools/health-atlas-verify/</strong></code> (plus this dated report and its <code>.html</code> twin).</li><li><strong>No version bump.</strong> <code>app/js/version.js</code> is untouched; <code>main</code> remains at v08.32 and no new version has been allocated for this Health Atlas candidate stack.</li><li><strong>Nothing merged, nothing deployed.</strong> This PR is a draft, stacked on PR #146 exactly as #140→#142→#145→#146 already stack.</li></ul>
+<h2>Playwright ESM dependency/setup — identified, not fixed in shared tooling</h2>
+<p>This repository declares no <code>package.json</code>/<code>node_modules</code> for Playwright (deliberately — see <code>.gitignore</code>&#x27;s <code>node_modules/</code> entries and <code>references-index-browser.mjs</code>&#x27;s own note), and <code>.github/workflows/verify.yml</code> does not run this class of suite at all — it is explicitly excluded there (&quot;layout/panel/reading/navcheck — need Playwright and a served app&quot;), so CI has never run any Health Atlas browser suite, tranche 9&#x27;s included; the 1,073 &quot;Health-owned suites: 287 passed&quot; and similar figures earlier tranches reported are <strong>local evidence only</strong>, never independently confirmed by a CI run on this repository&#x27;s own runner.</p>
+<p>Locally, this sandbox has Playwright installed globally (<code>playwright@1.56.1</code> under <code>npm root -g</code>, <code>/opt/node22/lib/node_modules/playwright</code>) with its browsers pre-fetched at <code>/opt/pw-browsers</code> (<code>PLAYWRIGHT_BROWSERS_PATH</code>), but Node&#x27;s ESM resolver does not search global npm packages or honour <code>NODE_PATH</code> for <code>import</code> resolution — <code>import { chromium } from &#x27;playwright&#x27;</code> fails with <code>ERR_MODULE_NOT_FOUND</code> from a plain file in this repository with no local <code>node_modules/playwright</code>. The reproducible, <strong>local-only, uncommitted</strong> fix used to run every suite in this report:</p>
+<p>``<code> mkdir -p node_modules ln -sfn &quot;$(npm root -g)/playwright&quot; node_modules/playwright </code>``</p>
+<p><code>node_modules/</code> is gitignored at the repository root (<code>.gitignore</code> lines 13 and 27), so this symlink was never staged, never committed, and touches no shared CI/tooling file — it is exactly the kind of local setup a session needs to actually run these suites rather than a repository change. Whether CI should gain Playwright (a <code>package.json</code> declaring it, plus wiring these suites into <code>verify.yml</code>) is a decision outside this tranche&#x27;s Health-owned scope — <code>.github/workflows/</code> and any new root <code>package.json</code> are shared/governance surfaces, not Health-owned files.</p>
+<h2>Full suite run (this branch, after the fix)</h2>
+<p>**Health-owned suites — <code>tools/health-atlas-verify/*.mjs</code>, 18 runnable suites (<code>import-esm-file.mjs</code> is a shared loader helper, not a suite):**</p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td>body-systems-parity-browser</td><td>16 passed, 0 failed</td></tr>
+<tr><td>categories-selectors</td><td>7 passed, 0 failed</td></tr>
+<tr><td>claims-integrity</td><td>10 passed, 0 failed</td></tr>
+<tr><td>claims-mutations</td><td>7 passed, 0 failed</td></tr>
+<tr><td>data-integrity</td><td>21 passed, 0 failed</td></tr>
+<tr><td>more-selectors</td><td>9 passed, 0 failed</td></tr>
+<tr><td>references-index-browser</td><td>12 passed, 0 failed</td></tr>
+<tr><td><strong>references-tabs-accessibility-browser (new)</strong></td><td><strong>10 passed, 0 failed</strong></td></tr>
+<tr><td>selectors</td><td>19 passed, 0 failed</td></tr>
+<tr><td>view-boundary</td><td>14 passed, 0 failed</td></tr>
+<tr><td>view-boundary-categories</td><td>58 passed, 0 failed</td></tr>
+<tr><td>view-boundary-categories-mutations</td><td>7 passed, 0 failed</td></tr>
+<tr><td>view-boundary-more</td><td>26 passed, 0 failed</td></tr>
+<tr><td>view-boundary-more-mutations</td><td>7 passed, 0 failed</td></tr>
+<tr><td>view-boundary-wheel</td><td>57 passed, 0 failed</td></tr>
+<tr><td>view-boundary-wheel-mutations</td><td>6 passed, 0 failed</td></tr>
+<tr><td>view-provenance-boundary</td><td>7 passed, 0 failed</td></tr>
+<tr><td>view-provenance-mutations</td><td>4 passed, 0 failed</td></tr>
+<tr><td><strong>Total</strong></td><td><strong>297 passed, 0 failed</strong></td></tr>
+</tbody></table></div>
+<p><strong>Seven governance suites (<code>node tools/i18n-verify/&lt;name&gt;.mjs</code>, repository root, full history/branches fetched first — <code>brief-integrity.mjs</code> and the ledger guards need <code>origin/main</code> and every named branch present, per <code>verify.yml</code>&#x27;s own <code>fetch-depth: 0</code> note):</strong></p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td>programme-ledger</td><td>8 passed, 23 noted, 0 failed</td></tr>
+<tr><td>programme-ledger-mutations</td><td>48 passed, 1 failed</td></tr>
+<tr><td>brief-integrity</td><td>8 passed, 0 failed</td></tr>
+<tr><td>study-activity-evidence-boundary</td><td>27 passed, 0 failed</td></tr>
+<tr><td>study-activity-evidence-boundary-mutations</td><td>11 passed, 0 failed</td></tr>
+<tr><td>study-event-wiring</td><td>41 passed, 0 failed</td></tr>
+<tr><td>rules-authorisation-executable</td><td>38 passed, 0 failed</td></tr>
+<tr><td><strong>Total</strong></td><td><strong>181 passed, 23 noted, 1 failed</strong></td></tr>
+</tbody></table></div>
+<p><strong>The one governance failure is pre-existing and already tracked, not caused by this tranche.</strong> <code>programme-ledger-mutations.mjs</code>&#x27;s <code>MUTATION [E] a stream&#x27;s shared-file touch loses its declaration</code> reports <code>fixture drift: no stream both declares app/js/version.js and still shows it changed on a branch</code> — this is the exact &quot;Guard E fixture drift is checkout-completeness, not a code defect&quot; finding draft PR #134 already documents (report title matches verbatim). This tranche touches no <code>programme-ledger*</code> file (both are platform-shared tooling, off limits here) and no <code>version.js</code>; the finding is unrelated to anything in this diff and was reproduced identically on <code>origin/claude/health-atlas- references-index-tranche9</code> before this tranche&#x27;s own commit was added, by construction (this tranche adds no ledger-relevant file).</p>
+<h2>Files touched</h2>
+<ul><li><code>app/health/js/health-atlas-view.js</code> — <code>buildViewTabs()</code> corrected (Gate B)</li><li><code>tools/health-atlas-verify/references-index-browser.mjs</code> — <code>aria-selected</code> → <code>aria-pressed</code> (in place, reason recorded)</li><li><code>tools/health-atlas-verify/references-tabs-accessibility-browser.mjs</code> — new, the Gate A/B suite</li><li><code>app/health/README.md</code> — Tranche 10 section</li><li><code>docs/reports/2026-09-21-health-atlas-references-tabs-accessibility.md</code> / <code>.html</code> — this report</li></ul>
+<p>All four are Health-owned or report paths. No protected/shared path, version, Rule, index, or nav file was touched. Nothing merged, nothing deployed.</p>
+</main></body></html>

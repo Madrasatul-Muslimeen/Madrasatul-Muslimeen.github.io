@@ -504,20 +504,31 @@ const VIEW_TABS = [
   { id: 'references', label: 'References' }
 ];
 
+// Parity tranche 10 (issue #115 Gate A/B): these two buttons switch between
+// two whole, unrelated screens (Body Systems' 3-column layout vs. the
+// References table) rather than showing/hiding panels of one shared view,
+// so they are NOT the WAI-ARIA Tabs pattern's "tab" role — that pattern
+// requires each tab to own an associated role="tabpanel" reachable via
+// aria-controls, plus Left/Right/Home/End arrow-key operation on the
+// tablist, none of which tranche 9 built (see the dated report for the
+// reproduced failure). Ordinary buttons need none of that: a native
+// <button> is already in the normal Tab order and already activates on
+// both Enter and Space, so this is the WAI-ARIA "toggle button" pattern
+// instead — aria-pressed is the correct state attribute, not aria-selected,
+// and the group is a plain accessibly-named role="group", not a tablist.
 function buildViewTabs(state, callbacks) {
   const buttons = VIEW_TABS.map((tab) => {
     const active = state.viewMode === tab.id;
     const btn = el('button', {
       type: 'button',
       class: `ha-view-tab${active ? ' ha-view-tab-active' : ''}`,
-      role: 'tab',
-      'aria-selected': active ? 'true' : 'false',
+      'aria-pressed': active ? 'true' : 'false',
       text: tab.label
     });
     btn.addEventListener('click', () => callbacks.onSwitchView(tab.id));
     return btn;
   });
-  return el('div', { class: 'ha-view-tabs', role: 'tablist', 'aria-label': 'Health Atlas view' }, buttons);
+  return el('div', { class: 'ha-view-tabs', role: 'group', 'aria-label': 'Health Atlas view' }, buttons);
 }
 
 function buildReferencesScreen(data, callbacks) {

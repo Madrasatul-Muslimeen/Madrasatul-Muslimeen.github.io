@@ -310,3 +310,52 @@ Playwright-based suite here is not.
 
 Full account and verification numbers: `docs/reports/
 2026-09-21-health-atlas-references-index-tranche9.md`.
+
+## Tranche 10 — the view switcher's real keyboard/screen-reader operability (issue #115 Gate A/B)
+
+One bounded, read-only correction: `buildViewTabs()`'s two buttons
+(`Body Systems` / `References`) declared `role="tab"` + `aria-selected` and
+their container `role="tablist"`, borrowing the WAI-ARIA Tabs pattern's
+vocabulary without the rest of what that pattern requires — neither button
+carried `aria-controls`, nothing carried `role="tabpanel"`, and the
+tablist had no Left/Right/Home/End key handling. A screen-reader user was
+told "tab, 1 of 2" and then found nothing behind that promise; a
+keyboard-only user following the Tabs pattern's own arrow-key convention
+found it did nothing.
+
+**Gate A (reproduced before touching app code).** A new committed browser
+suite, `tools/health-atlas-verify/references-tabs-accessibility-browser.mjs`,
+was run against the unmodified tranche 9 commit (`5817643bf3a7`) first:
+5 of its 10 checks failed exactly as described above (no `aria-controls`,
+no `role="tabpanel"`, `role="tab"`/`"tablist"` present with no `aria-pressed`
+equivalent). See the dated report for the raw console output of that run.
+
+**Gate B — the fix.** These two buttons switch between two whole,
+unrelated screens (the Body Systems 3-column layout and the References
+table), not panels of one shared view, so building out full tab semantics
+(panels, `aria-controls`, arrow-key roving tabindex) would be real
+complexity spent modelling a pattern that does not describe what this
+control actually is. Issue #115's own instruction named the alternative:
+"ordinary buttons if these are view-switch actions." `buildViewTabs()` now
+drops `role="tab"`/`"tablist"`/`aria-selected` entirely and uses two plain
+`<button type="button">` elements with `aria-pressed` (the WAI-ARIA
+toggle-button pattern) inside a `role="group"` container with an
+`aria-label`. A native `<button>` needs no bespoke keyboard handling at
+all — it is already in the normal Tab order and already activates on both
+Enter and Space — and this screen never suppresses its focus outline, so
+"visible focus" was already true and stayed true. Re-running the new
+suite against the fix: 10/10 pass. `references-index-browser.mjs`'s own
+pre-existing `aria-selected` assertions were updated in place to
+`aria-pressed` (the attribute the fixed pattern actually uses) — still
+12/12 passing.
+
+**What this tranche did NOT do.** It did not build the full ARIA Tabs
+pattern (tabpanels, `aria-controls`, arrow-key navigation) — issue #115's
+instruction named ordinary buttons as an equally valid outcome when the
+controls are view-switch actions, which these are, so this is the
+narrower, more conformant fix rather than a partial one. It touched no
+protected/shared path, no version number, and nothing outside
+`app/health/**` and `tools/health-atlas-verify/**`.
+
+Full account, the Gate A raw failure output, and verification numbers:
+`docs/reports/2026-09-21-health-atlas-references-tabs-accessibility.md`.
