@@ -18,7 +18,9 @@ import { STATUSES, statusLabel } from "./unit-keys.js";
 import {
   listCollections, booksOf, chaptersOf, occurrencesIn, editionHasChapterLevel,
   occurrenceById, sourcePathOf, externalReferencesFor, resolveText,
-  availableLanguages, searchCorpus, topicIndex, exploreAggregate, CONTENT_LANGUAGES, SOURCE_LANGUAGE,
+  availableLanguages, searchCorpus, listTopics, topicIndex, exploreAggregate,
+  translationCoverage, topicCoverage,
+  CONTENT_LANGUAGES, SOURCE_LANGUAGE,
 } from "./hadith-corpus.js";
 import { SYNTHETIC_NOTICE, TAXONOMY_REVISION } from "./hadith-fixture-data.js";
 import { PANEL_TITLE, verifiedRegisterEntries, commentaryForOccurrence, renderPermission, NEVER_DO } from "./hadith-commentary.js";
@@ -44,7 +46,12 @@ export function mountHadithBrowser(root, { mount = "standalone" } = {}) {
   const state = {
     view: "collections",
     contentLang: getAppLang() === "bn" ? "bn" : "en",
-    editionId: null, bookId: null, chapterId: null, query: "",
+    editionId: null, bookId: null, chapterId: null, query: "", topicId: null,
+    // Set by jumpToSource() (Topic/Search "View in source", and a repeat
+    // badge's "view the original") and consumed exactly once by render():
+    // it names the occurrence the Collections view should scroll to and
+    // highlight on the render this navigation causes, then it is cleared.
+    focusOccurrenceId: null,
     mount,
   };
 
@@ -62,10 +69,47 @@ export function mountHadithBrowser(root, { mount = "standalone" } = {}) {
       explore: () => renderExplore(body),
       commentary: () => renderCommentary(body, state),
     })[state.view]();
+    focusPendingOccurrence(body, state);
   }
 
   render();
   return { render, state };
+}
+
+/**
+ * "View in source" / "view the original" -- the Books <-> Topics bridge.
+ *
+ * Sets the Collections view's own edition/book/chapter to the occurrence's
+ * REAL source location (via `sourcePathOf()`, the same fact `renderCollections`
+ * already navigates by) and switches to it. This does not change the Topics
+ * index and does not give the Books view any notion of "topic" -- it only
+ * lets a reader who found a narration through an index (or through a repeat
+ * badge) go SEE it in the book it actually belongs to, preserving the
+ * documented split ("[the topic view] is an index across collections. It
+ * does not change any book.").
+ */
+function jumpToSource(state, render, occurrenceId) {
+  const path = sourcePathOf(occurrenceId);
+  if (!path) return; // Data defect, not a navigation failure to throw over.
+  state.view = "collections";
+  state.editionId = path.edition.editionId;
+  state.bookId = path.book.bookChapterId;
+  state.chapterId = path.chapter ? path.chapter.bookChapterId : null;
+  state.focusOccurrenceId = occurrenceId;
+  render();
+}
+
+/** Scrolls to and highlights the occurrence `jumpToSource()` navigated to, once. */
+function focusPendingOccurrence(body, state) {
+  if (state.view !== "collections" || !state.focusOccurrenceId) return;
+  const target = [...body.querySelectorAll("[data-hadith-occurrence]")]
+    .find((n) => n.dataset.hadithOccurrence === state.focusOccurrenceId);
+  if (target) {
+    target.classList.add("hadith-card-focused");
+    target.dataset.hadithFocused = "true";
+    target.scrollIntoView({ block: "center" });
+  }
+  state.focusOccurrenceId = null;
 }
 
 // ---------------------------------------------------------------------------
@@ -224,7 +268,7 @@ function renderOccurrenceList(body, state, occurrences, render) {
 // The occurrence card
 // ---------------------------------------------------------------------------
 
-export function occurrenceCard(occurrence, state, render) {
+export function occurrenceCard(occurrence, state, render, { showSourceLink = false } = {}) {
   const uiLang = getAppLang();
   const card = el("article", "hadith-card");
   card.dataset.hadithOccurrence = occurrence.occurrenceId;
@@ -237,10 +281,24 @@ export function occurrenceCard(occurrence, state, render) {
   // displayed number above it is only a reference (schema §2).
   head.appendChild(el("code", "hadith-card-id", occurrence.occurrenceId));
   if (occurrence.repeatOfOccurrenceId) {
-    const rep = el("span", "hadith-card-repeat",
+    // Clickable: a repeat's whole point is that the original is a DIFFERENT
+    // occurrence with its own place in the source, and a reader told that
+    // should be able to go see it rather than just read its bare id.
+    const rep = el("button", "hadith-card-repeat hadith-view-source",
       t("Repeat occurrence of {id}", { id: occurrence.repeatOfOccurrenceId }));
     rep.dataset.hadithRepeat = occurrence.repeatOfOccurrenceId;
+    rep.addEventListener("click", () => jumpToSource(state, render, occurrence.repeatOfOccurrenceId));
     head.appendChild(rep);
+  }
+  // Only where the occurrence is reached OUTSIDE its own book/chapter context
+  // (a Topic index entry, a Search hit) -- inside the Collections tab the
+  // reader is already looking at its source location, and the control would
+  // be pure self-referential chrome.
+  if (showSourceLink) {
+    const src = el("button", "hadith-view-source", t("View in source"));
+    src.dataset.hadithViewSource = occurrence.occurrenceId;
+    src.addEventListener("click", () => jumpToSource(state, render, occurrence.occurrenceId));
+    head.appendChild(src);
   }
   card.appendChild(head);
 
@@ -338,8 +396,36 @@ function renderCardCommentary(occurrence) {
 
 function renderTopic(body, state, render) {
   const uiLang = getAppLang();
-  const idx = topicIndex("synthetic-topic-salah");
+
+  // No topic chosen yet -- list every topic, the same shape as the
+  // Collections tab's own edition list, rather than opening straight into a
+  // single hardcoded one. `listTopics()` already drives Explore's own
+  // per-topic cards; this is the first place it also drives NAVIGATION.
+  if (!state.topicId) {
+    body.appendChild(el("h2", null, t("Topics")));
+    const list = el("div", "hadith-list");
+    for (const tp of listTopics()) {
+      const row = el("button", "hadith-row");
+      row.dataset.hadithTopicRow = tp.topicId;
+      row.appendChild(el("span", "hadith-row-name", langText(tp.label, uiLang)));
+      row.appendChild(el("span", "hadith-row-meta", `${tp.topicId} · ${t("Synthetic")}`));
+      row.addEventListener("click", () => { state.topicId = tp.topicId; render(); });
+      list.appendChild(row);
+    }
+    body.appendChild(list);
+    return;
+  }
+
+  const idx = topicIndex(state.topicId);
   if (!idx) { body.appendChild(el("p", "hadith-note", t("Nothing here yet."))); return; }
+
+  const crumbs = el("nav", "hadith-crumbs");
+  const back = el("button", "hadith-crumb", t("Topics"));
+  back.dataset.hadithTopicBack = "true";
+  back.addEventListener("click", () => { state.topicId = null; render(); });
+  crumbs.appendChild(back);
+  crumbs.appendChild(el("span", "hadith-crumb-current", langText(idx.topic.label, uiLang)));
+  body.appendChild(crumbs);
 
   body.appendChild(el("h2", null, langText(idx.topic.label, uiLang)));
 
@@ -368,7 +454,7 @@ function renderTopic(body, state, render) {
       const row = el("div", "hadith-topic-entry");
       // The SOURCE heading stays visible beside the mapped topic (plan §3.1).
       row.appendChild(el("p", "hadith-topic-heading", langText(entry.sourceHeading, uiLang)));
-      row.appendChild(occurrenceCard(entry.occurrence, state, render));
+      row.appendChild(occurrenceCard(entry.occurrence, state, render, { showSourceLink: true }));
       sec.appendChild(row);
     }
     body.appendChild(sec);
@@ -411,7 +497,7 @@ function renderSearch(body, state, render) {
       const w = el("p", "hadith-match-where", where.join(" · "));
       w.dataset.hadithMatchWhere = [...hit.matchedLangs.map((l) => `text:${l}`), ...hit.matchedHeadingLangs.map((l) => `heading:${l}`)].join(",");
       wrap.appendChild(w);
-      wrap.appendChild(occurrenceCard(hit.occurrence, state, render));
+      wrap.appendChild(occurrenceCard(hit.occurrence, state, render, { showSourceLink: true }));
       out.appendChild(wrap);
     }
   }
@@ -480,6 +566,75 @@ function renderExplore(body) {
     }
     body.appendChild(card);
   }
+
+  renderTranslationCoverage(body);
+  renderTopicCoverage(body);
+}
+
+/**
+ * TRANSLATION COVERAGE -- per edition and overall, how many synthetic
+ * narrations carry an English or a Bangla version alongside the Arabic
+ * source. Additive only -- every existing Explore row above this is
+ * untouched. Extracted into its own function (integration merge of PR #103
+ * and PR #118, 20 Sep 2026) to match `renderTopicCoverage()`'s own shape --
+ * the two were built independently and originally differed in structure
+ * only, not in what either shows.
+ */
+function renderTranslationCoverage(body) {
+  body.appendChild(el("h3", "", t("Translation coverage")));
+  const cov = translationCoverage();
+  const covMeta = el("div", "hadith-topic-meta");
+  covMeta.dataset.hadithCoverageTotal = String(cov.totals.occurrences);
+  covMeta.appendChild(el("p", "",
+    t("How many synthetic narrations carry an English or a Bangla version, alongside the Arabic source. This describes the fixture only -- it is not a measure of a real corpus.")));
+  covMeta.appendChild(el("p", "hadith-topic-counts", t("Overall: {en} of {n} have English, {bn} of {n} have Bangla.",
+    { en: cov.totals.withEnglish, bn: cov.totals.withBangla, n: cov.totals.occurrences })));
+  body.appendChild(covMeta);
+  for (const ed of cov.perEdition) {
+    const row = el("div", "hadith-card");
+    // Renamed from `hadithCoverageEdition` at integration (was ambiguous
+    // with `renderTopicCoverage()`'s own per-edition rows, which independently
+    // picked the identical attribute name for a different fact about the
+    // same edition id -- see the integration report's conflict-resolution
+    // section). A selector on the old bare name would now match two
+    // differently-shaped elements per edition.
+    row.dataset.hadithTranslationCoverageEdition = ed.editionId;
+    row.appendChild(el("p", "hadith-row-name", ed.editionId));
+    row.appendChild(el("p", "", t("{en} of {n} have English, {bn} of {n} have Bangla.",
+      { en: ed.withEnglish, bn: ed.withBangla, n: ed.occurrences })));
+    body.appendChild(row);
+  }
+}
+
+/**
+ * TOPIC COVERAGE -- a different question from the per-topic cards above: of
+ * every narration in the corpus, how many are reached by ANY topic mapping
+ * at all, and how many are not mapped to a topic yet. Additive only -- every
+ * existing Explore row above this is untouched.
+ */
+function renderTopicCoverage(body) {
+  const cov = topicCoverage();
+
+  body.appendChild(el("h3", "", t("Topic coverage")));
+  const wrap = el("div", "hadith-topic-coverage");
+  wrap.dataset.hadithTopicCoverage = "true";
+  wrap.appendChild(el("p", "",
+    t("Of the {total} narrations in the corpus, {covered} are reachable through at least one topic mapping and {uncovered} are not mapped to any topic yet. This is distinct from the per-topic counts above, which count within one topic only.",
+      { total: cov.totals.occurrences, covered: cov.totals.covered, uncovered: cov.totals.uncovered })));
+
+  for (const ed of cov.editions) {
+    const row = el("p", "hadith-topic-coverage-edition");
+    // Renamed from `hadithCoverageEdition` at integration -- see
+    // `renderTranslationCoverage()`'s own note above.
+    row.dataset.hadithTopicCoverageEdition = ed.editionId;
+    row.appendChild(document.createTextNode(`${ed.editionId} — `));
+    row.appendChild(document.createTextNode(
+      t("{covered} of {total} narrations in this edition are mapped to at least one topic; {uncovered} are not.",
+        { covered: ed.covered, total: ed.occurrences, uncovered: ed.uncovered })));
+    wrap.appendChild(row);
+  }
+
+  body.appendChild(wrap);
 }
 
 // ---------------------------------------------------------------------------
