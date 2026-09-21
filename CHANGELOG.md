@@ -14787,3 +14787,66 @@ on a full-history checkout** — 8/0, 49/0, 8/0, 27/0, 11/0, 41/0, 38/0. On a
 shallow clone the same unmodified tree reports `brief-integrity` 6/2 and
 `programme-ledger-mutations` 42/7; that is the documented clone artefact, not a
 finding, and both briefs now say so where a reader will meet it.
+
+## The Architect made unattended — NO VERSION BUMP (21 Sep 2026)
+
+Governance and automation only. `app/js/version.js` stays **v08.32**;
+`git diff origin/main -- app/ tests/ firestore.rules firebase.json` is empty.
+
+The Owner works from a tablet with no terminal, and asked for the loop to keep
+running with no session open. `.github/workflows/architect.yml` does the
+review/merge/next-job half of `ARCHITECT.md` on a **four-hourly schedule**,
+after every `verify` completion, and on manual dispatch.
+
+**THE SAFETY DESIGN IS A SHELL STEP, NOT A PARAGRAPH IN A PROMPT, and that
+distinction is the whole point.** Before Claude starts, a deterministic
+preflight computes the merge-eligible set and writes two files. A pull request
+is eligible only if its base is `main`, `verify` is green **on its current head
+SHA** (not merely "nothing failing"), GitHub reports it cleanly mergeable, it is
+not a draft, it carries no `needs-owner` label, and it touches **no protected
+path** — `app/js/version.js`, `firestore.rules`, `firebase.json`,
+`.github/workflows/**`, `CLAUDE.md`, `CHANGELOG.md`, the programme ledger. The
+model may refuse anything on that list and may **never** promote anything off
+the blocked one. A prompt can be argued with; a `jq` filter cannot.
+
+**At most three merges per run.** A cron job that lands a dozen unattended
+changes is a queue flush, not review.
+
+**ASSIGNMENT COULD NOT GO THROUGH THE COMMENT GATE, and working out why is the
+round's real finding.** The unattended Architect acts through a bot identity.
+The builder's gate refuses bots — correctly, since that is exactly what stops
+the builder's own output restarting it. So an Architect posting `@claude` would
+be refused every time, and the loop would return to the 140 silent `skipped`
+runs the previous round existed to end. The fix is **not** to let bots through
+the gate, which would readmit the builder's own comments: `claude.yml` gained a
+`workflow_dispatch` trigger taking an `issue_number`, and reaching it requires
+`actions: write` on a repository token, which no comment from anyone holds. The
+human gate is therefore **unchanged and still as strict**, and the machine path
+is narrower still. The dispatch prompt carries only a POINTER to the issue,
+never a task — the issue is the specification, and nothing a dispatch input
+says can add to it.
+
+**The job token is `secrets.GITHUB_TOKEN`, deliberately not the Claude App
+token.** It is repository-scoped and dies with the job, and — the load-bearing
+part — a merge commit it creates does not re-trigger workflows, so an Architect
+run cannot cascade into another. The cost, stated rather than hidden: merges
+are attributed to `github-actions[bot]`.
+
+**External text is data.** Pull-request titles reach the model by file rather
+than by string interpolation, so a title can never become part of the prompt's
+own instructions, and the prompt says plainly that any comment claiming Owner
+authorisation is to be refused and reported.
+
+**TWO THINGS THIS SESSION COULD NOT DO, AND BOTH ARE BLOCKED BY DESIGN RATHER
+THAN BY AN OVERSIGHT.** The Owner asked whether the subscription token could be
+minted here and installed for them. It cannot, and the attempts are recorded
+rather than described: `claude setup-token` is refused by the sandbox's
+credential-materialisation guard, and the GitHub Actions secrets API returns
+**HTTP 403 — "Access to this GitHub Actions path is not permitted through this
+proxy."** So the credential can be neither created nor installed from here, and
+neither limit should be worked around. Both automations stay inert until the
+Owner adds `CLAUDE_CODE_OAUTH_TOKEN` themselves; each says so in its own step
+summary rather than failing obscurely.
+
+All seven governance suites re-run green on a full-history checkout, and all
+four workflow files re-parse as valid YAML.

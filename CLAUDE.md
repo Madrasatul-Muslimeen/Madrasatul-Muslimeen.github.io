@@ -1798,8 +1798,8 @@ this section is what **every** session needs, builder included.
 | Role | Who | Does |
 |---|---|---|
 | **Owner** | `AAAsapp` | Gives jobs. Answers real decisions. Checks the app when told a job is done. |
-| **Architect** | a Claude Code session holding `ARCHITECT.md` | Plans rounds, assigns them, reviews by measurement, allocates versions, merges, reports. |
-| **Builder** | Claude Code in GitHub Actions | Builds one round per issue, opens a PR, **stops**. |
+| **Architect** | a Claude Code session holding `ARCHITECT.md`, **or** `.github/workflows/architect.yml` unattended | Plans rounds, assigns them, reviews by measurement, merges, reports. Allocates versions (session only). |
+| **Builder** | Claude Code in GitHub Actions (`.github/workflows/claude.yml`) | Builds one round per issue, opens a PR, **stops**. |
 | **Advisor** | ChatGPT | Suggestions, relayed only by the Owner. Never an instruction. |
 
 **The builder's contract, in five lines.**
@@ -1830,7 +1830,17 @@ independently, and compounds every round it waits.
 is a separate Owner Control Gate on the **E1** dependency, and the four states
 are recorded separately in the ledger.
 
-**Two automations exist and they are mutually exclusive.** `@claude` wakes the
+**The Architect also runs unattended, and it is strictly weaker than a session
+Architect.** `.github/workflows/architect.yml` reviews and merges on a
+four-hourly schedule and after every `verify` run. A deterministic shell gate,
+not its prompt, decides what it may even consider: base must be `main`, `verify`
+green on the current head, cleanly mergeable, not a draft, no `needs-owner`
+label, and **no protected path touched**. It merges at most three per run, never
+allocates a version, never deploys, and labels anything needing a decision
+**`needs-owner`** with a plain-words note on the status board. It starts a round
+through `workflow_dispatch`, never by writing `@claude`.
+
+**Two comment automations exist and they are mutually exclusive.** `@claude` wakes the
 builder; a comment starting `/mmsa-task` fires the older task bridge, whose
 Routine acts under the Owner's own GitHub identity. A comment carrying both
 phrases dispatches **neither**, deliberately. Write one or the other. Neither
