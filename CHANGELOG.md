@@ -14978,3 +14978,45 @@ and it is now the only route an automated Architect uses. A human typing
 
 BR-0, no version bump; `app/`, `tests/`, `firestore.rules` and `firebase.json`
 byte-identical. Eight governance suites green.
+
+## An unfunded API key was capturing every builder run — NO VERSION BUMP (21 Sep 2026)
+
+Two builder runs died identically: `num_turns: 1`, `total_cost_usd: 0`,
+`modelUsage: {}`, `is_error: true`. Zero model usage and an instant error is a
+**startup rejection**, and the first fix attempted — removing the
+`--model "claude-opus-5"` pin — did not change the signature at all.
+
+**The cause was named by this workflow's own preflight warning**, sitting in the
+run's annotations: *"Both ANTHROPIC_API_KEY and CLAUDE_CODE_OAUTH_TOKEN are
+set."* An API-key secret exists on this repository alongside the subscription
+token, **the Action's own precedence takes the API key first**, and the Owner
+has no API billing — so the key was rejected at the first model call, every
+time.
+
+**THE REASONING THAT PUT IT THERE HAD A HOLE, AND IT IS WORTH NAMING.** Both
+inputs were passed unconditionally on the argument that *"an empty input is
+treated as unset, so whichever mode the Owner configured takes effect."* That is
+true only if **at most one** is ever set. Nothing enforced that, and the day
+both existed the workflow silently selected the one that could not work.
+
+**A warning that is merely printed while the wrong credential is used is not a
+safeguard.** Precedence is now DECIDED IN THE WORKFLOW: when
+`CLAUDE_CODE_OAUTH_TOKEN` is present the API key is passed as an empty string,
+so a stray or unfunded API-key secret cannot capture a run. The preflight
+reports `oauth` first for the same reason, and its warning now states what will
+happen rather than shrugging at precedence. The Owner's instruction — keep the
+subscription token — is enforced rather than hoped for.
+
+**Also recorded from the same two runs, because everything else worked and that
+is the useful half:** OIDC token obtained, exchanged for the Claude App
+installation token, `Verified human actor: AAAsapp`, Claude Code 2.1.278
+installed, Node 22 present, Playwright and Chromium installed, the SDK launched
+with the full tool allowlist. The whole pipeline is proven up to the model call.
+
+Deleting the unused `ANTHROPIC_API_KEY` secret is still worth doing for hygiene,
+but nothing now depends on it. That secret cannot be read or removed from a
+sandbox — the Actions secrets API returns HTTP 403 through this proxy — so it is
+the Owner's to delete.
+
+BR-0, no version bump; `app/`, `tests/`, `firestore.rules` and `firebase.json`
+byte-identical. Eight governance suites green.
