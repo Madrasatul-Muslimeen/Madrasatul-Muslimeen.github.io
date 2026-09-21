@@ -15020,3 +15020,69 @@ the Owner's to delete.
 
 BR-0, no version bump; `app/`, `tests/`, `firestore.rules` and `firebase.json`
 byte-identical. Eight governance suites green.
+
+## Three builder runs failed and none of them said why — NO VERSION BUMP (21 Sep 2026)
+
+**THE THIRD RUN DID NOT FAIL THE WAY THE FIRST TWO DID, and reading all three as
+one fault is what sent a guess to the Owner.** Runs one and two died in **167ms**
+with `modelUsage: {}` — a startup rejection, correctly diagnosed as the unfunded
+API key capturing the run (entry above). Run three, with that fixed, emitted
+`{"type":"system","subtype":"init","message":"Claude Code initialized","model":
+"claude-sonnet-5"}` and then failed **2,159ms** later, still `num_turns: 1`,
+`total_cost_usd: 0`, `modelUsage: {}`, `permission_denials_count: 0`.
+
+A resolved model and two seconds of elapsed time is not a credential refused at
+the door. The prior session read the three failures as one and reported to the
+Owner that the remaining fault "is the token itself", asking them to reissue it.
+**That was a guess, and it was the only move available**, because:
+
+**THE ONE SENTENCE THAT WOULD HAVE NAMED THE CAUSE WAS DISCARDED, THREE TIMES.**
+`anthropics/claude-code-action` runs with `show_full_output: false` — right for a
+public repository, where a full transcript in a public Actions log is a standing
+leak — but the consequence is that the result entry's own error text never
+reaches the log. What survives is the shape: counters, and `is_error: true`.
+Three runs, three shapes, no message.
+
+**So the failure is made to explain itself rather than be inferred.** Both
+`claude.yml` and `architect.yml` gain one `if: always()` step that reads the
+execution log the Action already writes to `${RUNNER_TEMP}/claude-execution-
+output.json` and prints, to the log and the step summary:
+
+- **always** — the result entry's counters (`subtype`, `is_error`, `num_turns`,
+  `duration_ms`, `total_cost_usd`). Numbers;
+- **only when `is_error` is true** — the error text, capped at 4,000 characters;
+- **on success — nothing textual at all.** On a run that succeeded, `result`
+  holds Claude's own final message, which is exactly the content
+  `show_full_output: false` exists to keep out of a public log. The narrow read
+  is the point: this does not re-open what that setting closes, and GitHub's
+  secret masking still applies underneath.
+
+`if: always()` is load-bearing — the step whose failure this explains has already
+failed by the time it runs, so any default condition would skip it.
+
+**Proven against six fixtures rather than asserted**, the embedded script
+extracted from the PARSED YAML (this project's own rule — assert on the parsed
+result, never on "it parsed") and run: **(A)** no log file → says the run never
+reached the model and points above itself; **(B)** the real failing shape in
+array form with a message → prints the counters and the message; **(C)** a
+SUCCESSFUL result whose `result` field holds a sentinel string → counters
+printed, **sentinel absent**, which is the check that matters and is what stops
+this step becoming the leak it was written to avoid; **(D)** an error carrying no
+message → says the absence is itself the finding rather than inventing a cause;
+**(E)** a 9,000-character error → capped at 4,000 with the truncation stated;
+**(F)** a log with no result entry → says so and counts what it did hold.
+Both the array and one-object-per-line forms are accepted, so this step's own
+parsing cannot become the next thing that hides a cause.
+
+**A local baseline artefact was re-derived rather than trusted, and it is the
+one `ARCHITECT.md` warns about.** `programme-ledger-mutations` reported
+**48 passed, 1 failed** (MUTATION [E], a stream's shared-file touch losing its
+declaration) — on an unmodified tree as well as a patched one. `git fetch
+--unshallow` and it is **49 passed, 0 failed**. A shallow clone, not a defect,
+and not the numbers that file records for the same class (it names 42/7); the
+class is real, the arithmetic in it is not to be trusted. Full-history totals
+with this change: **8 suites green — 8/0, 49/0, 8/0, 27/0, 11/0, 41/0, 40/0,
+10/0.**
+
+BR-0, no version bump; `app/`, `tests/`, `firestore.rules` and `firebase.json`
+byte-identical. Only the two workflow files changed.

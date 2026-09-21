@@ -406,3 +406,101 @@ jobs:
             Finish the pull request in hand, update the status board with where
             you stopped, and end. The next scheduled run continues. Do not start
             a review you cannot finish.
+
+      # ======================================================================
+      # WHY THIS STEP EXISTS, AND IT IS A FINDING RATHER THAN A PRECAUTION.
+      #
+      # Three consecutive runs died with `is_error: true`, `num_turns: 1`,
+      # `total_cost_usd: 0` and `modelUsage: {}`, and NOT ONE of them recorded
+      # a reason. The Action runs with `show_full_output: false` -- correct,
+      # because this repository is public and a full transcript in a public log
+      # is a standing leak risk -- but the consequence is that the single
+      # sentence naming the cause was discarded every time.
+      #
+      # THE COST OF THAT WAS NOT THEORETICAL. With no message to read, the
+      # three failures were diagnosed by their SHAPE alone and treated as one
+      # fault; the Owner was asked to replace a credential on that reading. The
+      # third run had in fact behaved differently from the first two -- it
+      # emitted `Claude Code initialized` with a resolved model and then failed
+      # 2.1s later, where the earlier pair failed in 167ms having resolved
+      # nothing. An instant failure and a failure after a successful start are
+      # not the same fault, and only the message distinguishes them.
+      #
+      # WHAT IS PRINTED IS DELIBERATELY NARROW, so this does not re-open what
+      # `show_full_output: false` closes:
+      #   - always: the result entry's own counters. They are numbers.
+      #   - ONLY when `is_error` is true: the error text, capped.
+      #   - on success: nothing textual at all, because on a SUCCESSFUL run
+      #     `result` holds Claude's final message, which is exactly the content
+      #     that must not reach a public log.
+      # GitHub's own secret masking still applies underneath all of it.
+      #
+      # `if: always()` is load-bearing: the step whose failure this explains has
+      # already failed by the time this runs, so any default condition skips it.
+      - name: Say why Claude stopped, when it stopped badly
+        if: always() && steps.auth.outputs.ready == 'true'
+        env:
+          CLAUDE_LOG: ${{ runner.temp }}/claude-execution-output.json
+        run: |
+          set -euo pipefail
+          cat > "${RUNNER_TEMP}/why-claude-stopped.cjs" <<'JS'
+          const fs = require("fs");
+          const path = process.env.CLAUDE_LOG;
+          const summary = process.env.GITHUB_STEP_SUMMARY;
+          const out = [];
+          const say = (line) => { out.push(line); console.log(line); };
+
+          let raw = null;
+          try { raw = fs.readFileSync(path, "utf8"); } catch (e) { raw = null; }
+
+          if (raw === null) {
+            say("No Claude execution log was written. The run ended before the model step produced one -- look above this step, not at Claude.");
+          } else {
+            // The Action has written this file as a JSON array and as one JSON
+            // object per line at different versions. Accept either rather than
+            // make this step's own parsing the next thing that hides a cause.
+            let entries = [];
+            try {
+              const parsed = JSON.parse(raw);
+              entries = Array.isArray(parsed) ? parsed : [parsed];
+            } catch (e) {
+              entries = raw.split("\n").filter(Boolean).map((line) => {
+                try { return JSON.parse(line); } catch (_) { return null; }
+              }).filter(Boolean);
+            }
+
+            const result = entries.filter((e) => e && e.type === "result").pop();
+
+            if (!result) {
+              say("The execution log holds " + entries.length + " entries and no result entry at all, so Claude never reported an outcome.");
+            } else {
+              say("subtype=" + result.subtype +
+                  " is_error=" + result.is_error +
+                  " num_turns=" + result.num_turns +
+                  " duration_ms=" + result.duration_ms +
+                  " total_cost_usd=" + result.total_cost_usd);
+
+              if (result.is_error === true) {
+                const text = [result.result, result.error, result.message]
+                  .filter((t) => typeof t === "string" && t.length > 0)
+                  .join("\n");
+                if (!text) {
+                  say("The result is an error and carries no message of any kind. That absence is itself the finding -- do not read it as a cause.");
+                } else {
+                  const CAP = 4000;
+                  say("--- why the run stopped ---");
+                  say(text.length > CAP ? text.slice(0, CAP) + "\n[truncated at " + CAP + " characters]" : text);
+                }
+              } else {
+                say("The run reported no error. Nothing further is printed: on a successful run this field holds Claude's own output, which does not belong in a public log.");
+              }
+            }
+          }
+
+          if (summary) {
+            try {
+              fs.appendFileSync(summary, "## Why Claude stopped\n\n```\n" + out.join("\n") + "\n```\n");
+            } catch (e) { /* the log above is the record; a summary is a convenience */ }
+          }
+          JS
+          node "${RUNNER_TEMP}/why-claude-stopped.cjs"
