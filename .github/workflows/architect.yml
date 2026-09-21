@@ -170,8 +170,21 @@ jobs:
 
           PROTECTED_RE='^(app/js/version\.js|firestore\.rules|firebase\.json|\.github/workflows/|CLAUDE\.md|CHANGELOG\.md|docs/governance/programme-integration-ledger\.json)'
 
+          # DELIBERATELY NOT READING `mergeable` FROM THE LIST ENDPOINT, and
+          # this was measured rather than assumed. GitHub computes mergeability
+          # LAZILY: a cold batch read returns `UNKNOWN` and merely *triggers*
+          # the computation, which a later per-pull-request read then returns.
+          # Measured on this repository: 25 of 25 open pull requests reported
+          # `unknown` from the list endpoint and `clean` from a warm single
+          # read moments later.
+          #
+          # Had the gate trusted the batch value it would have marked almost
+          # every pull request "not cleanly mergeable" on EVERY run -- each run
+          # doing one cold read and never a warm one -- so the backlog would
+          # have sat blocked for ever with a reason that was never true. The
+          # per-pull-request read below is the warm one, with one retry.
           gh pr list --repo "$REPO" --state open --limit 100 \
-            --json number,title,isDraft,baseRefName,headRefName,headRefOid,mergeable,labels,createdAt \
+            --json number,title,isDraft,baseRefName,headRefName,headRefOid,labels,createdAt \
             > /tmp/prs.json
 
           echo "Open pull requests: $(jq length /tmp/prs.json)"
@@ -185,12 +198,23 @@ jobs:
             draft=$(jq -r '.isDraft' <<<"$row")
             base=$(jq -r '.baseRefName' <<<"$row")
             head=$(jq -r '.headRefOid' <<<"$row")
-            mergeable=$(jq -r '.mergeable' <<<"$row")
             labels=$(jq -r '[.labels[].name] | join(",")' <<<"$row")
+
+            # The warm read, with one retry. See the note above the list call.
+            mergeable=$(gh pr view "$n" --repo "$REPO" --json mergeable --jq .mergeable 2>/dev/null || echo UNKNOWN)
+            if [ "$mergeable" = "UNKNOWN" ]; then
+              sleep 3
+              mergeable=$(gh pr view "$n" --repo "$REPO" --json mergeable --jq .mergeable 2>/dev/null || echo UNKNOWN)
+            fi
 
             reason=""
             [ "$base" != "main" ] && reason="stacked: base is '$base', not main"
-            [ -z "$reason" ] && [ "$draft" = "true" ] && reason="draft"
+            # A DRAFT IS REPORTED AS ITS OWN THING, not lumped in with real
+            # blockers. From the builder it means the round stopped short of
+            # asking for review, and the Architect's response is to review it
+            # and say so -- not to treat it as broken. It is still never
+            # merged while it stays a draft.
+            [ -z "$reason" ] && [ "$draft" = "true" ] && reason="DRAFT — not marked ready for review"
             [ -z "$reason" ] && [ "$mergeable" != "MERGEABLE" ] && reason="not cleanly mergeable (GitHub says: $mergeable)"
             [ -z "$reason" ] && case ",$labels," in *,needs-owner,*) reason="carries the needs-owner label";; esac
 
@@ -295,6 +319,16 @@ jobs:
                reviewable, and that the parent has to land first. Do not comment
                twice on the same pull request across runs — check for your own
                previous comment before writing.
+
+               **A `DRAFT` entry is not a broken pull request.** It means the
+               round stopped short of asking for review. Review it on its
+               merits as you would an eligible one; if it passes, mark it ready
+               (`gh pr ready <n>`) and say why in the comment — the next run
+               will then find it eligible. **Do not merge it in the same run
+               you marked it ready**: that would merge on a gate result
+               computed before it qualified, which is the one shortcut this
+               design exists to prevent. Marking ready counts against your
+               three-per-run budget just as a merge does.
 
             3. **Review the eligible list oldest first, one module at a time**
                (Quran, then Hadith, then Health — finish a module's oldest

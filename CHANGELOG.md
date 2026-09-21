@@ -14850,3 +14850,43 @@ summary rather than failing obscurely.
 
 All seven governance suites re-run green on a full-history checkout, and all
 four workflow files re-parse as valid YAML.
+
+## Two defects in the Architect's own gate, found by running it — NO VERSION BUMP (21 Sep 2026)
+
+Follow-on to the round above, and the reason it exists is that the gate was
+**run against the real backlog** instead of being trusted. Both defects would
+have made the unattended Architect do nothing for ever while reporting a
+reason that was not true.
+
+**(1) `mergeable` IS COMPUTED LAZILY, AND THE GATE READ IT COLD.** The triage
+step took `mergeable` from `gh pr list`, a batch endpoint. GitHub does not
+compute mergeability until asked for a specific pull request: the batch read
+returns `UNKNOWN` and merely *triggers* the calculation, which a later
+per-pull-request read returns. Measured: **25 of 25 open pull requests reported
+`unknown` from the list endpoint and `clean` from a warm single read moments
+later.** Since each run does exactly one cold read and never a warm one, every
+pull request would have been marked *"not cleanly mergeable"* on every run, for
+ever. The gate now does a per-pull-request warm read with one retry.
+
+**(2) 23 OF 25 OPEN PULL REQUESTS WERE DRAFTS, AND EVERY ONE WAS COMPLETE.**
+The gate refuses to merge a draft, correctly. But the bridge that built this
+backlog opened everything as a draft to signal "I am not merging this" — so the
+signal that once meant *withheld* now reads as *unfinished*, and the automation
+would have found nothing eligible on any run. Two changes rather than relaxing
+the gate: the builder contract in `CLAUDE.md` now requires a pull request
+**opened ready for review**, and the Architect reports `DRAFT` as its own
+category — review it on its merits, mark it ready if it passes, and **merge it
+only on a later run**, because merging in the same run would use an eligibility
+result computed before it qualified.
+
+**Marking ready counts against the three-per-run budget** exactly as a merge
+does, so a run cannot quietly promote a dozen pull requests into next run's
+eligible list.
+
+Also recorded from the same triage, for the Architect that picks this up:
+`verify` is **failing** on two pull requests and **has never run** on one
+(older than the workflow), and that oldest one touches two protected paths.
+None of those is merged by anything automatic.
+
+BR-0, no version bump; `app/`, `tests/`, `firestore.rules` and `firebase.json`
+byte-identical. Seven governance suites green.
