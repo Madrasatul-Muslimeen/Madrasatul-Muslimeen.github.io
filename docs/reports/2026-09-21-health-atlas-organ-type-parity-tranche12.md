@@ -1,6 +1,9 @@
 # Health Atlas — parity NEXT: independent Gate A re-audit of PR #151, plus the organ "Type" pill (tranche 12)
 
-**21 Sep 2026. Issue #123's `/mmsa-task` line "HEALTH v02.04 PARITY NEXT". Stack:
+**Attribution corrected 21 Sep 2026 (integration-readiness tranche).** This report and PR #152's own title/body originally cited issue #123 as this tranche's trigger. **The actual dispatch was issue #115 comment `5763800301`** (`/mmsa-task HEALTH v02.04 PARITY NEXT — previous task 5762935014 completed in draft #151 head eabe42da …`), posted on issue #115, not issue #123. Issue #123 ("MMSA shared integration readiness for MAP v4, Hadith and Health") is a separate, broader platform-coordination issue this tranche read for context (see the verification table below) but was never the trigger for this tranche's own work. Corrected by the next task in this stack (`docs/reports/2026-09-21-health-atlas-integration-readiness-tranche13.md`), under explicit dispatch. The line below is left as originally written, with this note making the correction, rather than silently rewritten.
+
+**21 Sep 2026. Issue #115 comment `5763800301`'s `/mmsa-task` line "HEALTH
+v02.04 PARITY NEXT". Stack:
 #140 → #142 → #145 → #146 → #148 → #151 → this tranche (branch
 `claude/health-atlas-organ-type-parity-tranche12`, based on PR #151's own
 head `eabe42da2a3b1d4f1302ca93386d1ccb39a59cf7`).**
@@ -386,8 +389,12 @@ URL, exactly as every prior Health Atlas tranche states.
 **YES after merge**, direct URL only, no sign-in/tenant: with `node
 serve.js` running, open `http://127.0.0.1:8080/app/health/health-atlas.html`.
 
-1. On the Body Systems tab, open the "Cardiovascular" section (it is open
-   by default).
+1. On the Body Systems tab, click the "Cardiovascular" section to open it
+   (every section starts collapsed — corrected 21 Sep 2026: this step
+   originally said "it is open by default", which is not what the page
+   does; `state.openSections` starts empty in `health-atlas-view.js`,
+   verified independently by loading the page and reading every section's
+   own open/closed state before clicking anything).
 2. Confirm each organ row — Heart, Aorta, Vena Cava (Superior & Inferior),
    Coronary Arteries, Carotid Arteries — now carries a small "Type" pill
    after its name (Organ / Vein / Artery).

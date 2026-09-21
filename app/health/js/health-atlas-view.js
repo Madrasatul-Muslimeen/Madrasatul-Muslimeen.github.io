@@ -16,8 +16,8 @@
 // own source text — do not import those fields into this file without
 // updating both checks first.
 //
-// PARITY TRANCHE 12 (see docs/reports/2026-09-21-health-atlas-foods-
-// conditions-parity-tranche12.md): the source's own left-column organ row
+// PARITY TRANCHE 12 (see docs/reports/2026-09-21-health-atlas-organ-type-
+// parity-tranche12.md): the source's own left-column organ row
 // (`rowHtml()`, `<span class="pill">${o.partType||'Organ'}</span>` right
 // after the name — v02.04 standalone source, SCHEMAS.organ.partType field)
 // carries a small "Type" badge (Organ / Vein / Artery / Nerve / Tissue /
