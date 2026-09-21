@@ -160,11 +160,52 @@ suites:
 - `quran-word-card-return.mjs` (PR #135's own 55-check suite) → **55 passed, 0 failed**
 - `quran-word-card-popup.mjs` (PR #137's own 22-check suite) → **22 passed, 0 failed**
 
-## Governance suites (all seven, required by this task)
+## Governance suites (all seven, required by this task) — CORRECTED 21 Sep 2026
+
+**The `48 passed, 1 failed` result this report originally recorded for (2) was
+wrong, and the "pre-existing" diagnosis that went with it was wrong too — both
+corrected by a follow-up MMSA task-bridge round (issue #113, comment
+`5757919929`) after that round's own full-history audit of current `main` and
+PR #137 reported `49 passed, 0 failed` under the same suite, on refs this
+report's own checkout never had.**
+
+**Root cause, proven by re-running from a correct checkout rather than by
+argument.** This report's own "git stash" verification re-ran the suite on the
+unmodified merge base **in the same checkout that produced the failure** —
+which reproduces a wrong number consistently, but proves nothing about
+*whether that checkout itself was complete. It was not: this branch was never
+put through the checkout preflight PR #135 and PR #137 both documented doing
+in their own reports* (`git fetch origin --unshallow`, then
+`git fetch origin claude/pensive-knuth-2pu3jj claude/phase4-wiring` — the two
+branches `docs/governance/programme-integration-ledger.json` declares HELD,
+which `programme-ledger.mjs`/`programme-ledger-mutations.mjs` read as
+remote-tracking refs). Without `origin/claude/phase4-wiring` present locally,
+`measure()`'s branch-facts builder
+(`tools/i18n-verify/programme-ledger.mjs`, the `for (const s of ledger.streams
+...)` loop building `branches[s.activeBranch]`) finds no ref for the
+`quran-phase4-wiring` stream's `activeBranch` and silently `continue`s,
+leaving `facts.branches["claude/phase4-wiring"]` **undefined** — a
+deliberately quiet fallback, correct for a genuinely absent branch, wrong here
+because the branch was merely unfetched. The specific mutation this report
+named, `MUTATION [E] a stream's shared-file touch loses its declaration`
+(`tools/i18n-verify/programme-ledger-mutations.mjs`), locates its fixture
+stream with `l.streams.find((x) => ... x.activeBranch &&
+(f.branches?.[x.activeBranch]?.changedPaths || []).includes("app/js/version.js"))`
+and then asserts `assert.ok(s, "fixture drift: ...")` — with
+`facts.branches["claude/phase4-wiring"]` undefined, that `.find()` returns
+nothing and the assertion throws, which is exactly what this report's own
+suite run reported as "1 failed". **Re-run in a checkout carrying both HELD
+refs as remote-tracking refs, this exact branch (`a9bf711`) scores `49 passed,
+0 failed`** — proven directly, not inferred, by fetching
+`origin/claude/pensive-knuth-2pu3jj` and `origin/claude/phase4-wiring` and
+re-running the identical command on the identical commit.
+
+Corrected results, this branch, full-history checkout with both HELD refs
+present:
 
 ```
 1) programme-ledger.mjs                           → 8 passed, 23 noted, 0 failed
-2) programme-ledger-mutations.mjs                  → 48 passed, 1 failed
+2) programme-ledger-mutations.mjs                  → 49 passed, 0 failed
 3) brief-integrity.mjs                             → 8 passed, 0 failed
 4) study-activity-evidence-boundary.mjs            → 27 passed, 0 failed
 5) study-activity-evidence-boundary-mutations.mjs  → 11 passed, 0 failed
@@ -172,19 +213,100 @@ suites:
 7) rules-authorisation-executable.mjs              → 38 passed, 0 failed
 ```
 
-**The one failure in (2) is pre-existing and unrelated to this change** —
-verified by `git stash`-ing this round's entire diff (both the modified
-`app/quranrevival.html` and the new test/report files) and re-running: the
-identical `48 passed, 1 failed` result reproduces on the unmodified merge
-base (`origin/claude/laughing-goodall-s7pc6n` merged with current `main`).
-The failing case is `MUTATION [E] a stream's shared-file touch loses its
-declaration` — a guard-E mutation this round never touches (this round
-declares no shared-file modification of any kind; `app/quranrevival.html` and
-the new files it adds are all Quran-owned, non-shared paths). Not
-investigated further or fixed — it is not this round's to fix, and "fix a
-pre-existing failure in a platform-shared guard script" would itself require
-touching `tools/i18n-verify/programme-ledger-mutations.mjs`, which is on the
-protected/shared-tooling list this task may not modify.
+**This was an environment defect in how this report's own round was checked
+out, never a code or application defect** — `programme-ledger-mutations.mjs`
+was correctly written and required no change, and none was made to it (it
+remains on the protected/shared-tooling list this task may not touch either
+way). The corrected acceptance suites below (PR #135's 55, PR #137's 22, this
+PR's own 19) were also re-run from the same corrected checkout to confirm
+nothing else was masked the same way — see "Acceptance suites, re-run after
+correction" below.
+
+## Acceptance suites, re-run after correction (21 Sep 2026)
+
+Re-run from the same corrected checkout (both HELD refs present, full
+history), to rule out anything else in this stack being masked the same way:
+
+```
+quran-word-card-return.mjs   (PR #135's own 55-check suite)  → 55 passed, 0 failed
+quran-word-card-popup.mjs    (PR #137's own 22-check suite)  → 22 passed, 0 failed
+quran-word-card-flow-nav.mjs (this PR's own 19-check suite)  → 19 passed, 0 failed
+```
+
+All three reproduce their own documented baseline exactly — nothing in this
+stack's application behaviour changed; only the governance-suite checkout was
+wrong.
+
+## Cross-surah Range finding — product-decision packet (read-only investigation, 21 Sep 2026)
+
+This section answers a follow-up task-bridge instruction to investigate, **read
+only**, the Range/surah-crossing defect this report already flagged above
+("A second, pre-existing defect found and NOT fixed here") and hand the Master
+Architect a concrete decision packet. **No Range code was changed to produce
+this section** — `app/quranrevival.html`'s Range-handling functions were read,
+not edited, beyond the one flow-mode fix this PR already made (which does not
+touch Range).
+
+**The defect, precisely.** `rangeFrom`/`rangeTo` (`app/quranrevival.html`,
+declared near line 4803) are plain āyah numbers scoped to whichever surah is
+currently loaded, with no surah of their own attached. Two paths change the
+loaded surah without ever touching them:
+
+- `surahSelect`'s own `change` handler (line ~13299) calls `currentSurahNum =
+  Number(surahSelect.value); await loadSurah();` directly.
+- `loadSurah()` itself (line ~5992) resets `currentAyahNum = 1` on every surah
+  change but never reads or writes `rangeFrom`/`rangeTo` at all.
+
+So switching surahs while `currentUnitType === "range"` — by hand, via the
+plain dropdown, or via a cross-surah Basic-Arabic lemma-occurrence jump (the
+word-card mechanism this PR extends) — leaves the reader looking at whatever
+`[rangeFrom, rangeTo]` window happened to be selected in the **previous**
+surah, silently reinterpreted against the new one. A 10-āyah surah's own
+window (e.g. āyahs 8–10) applied unchanged to a 286-āyah surah is a real,
+visibly wrong slice of content with no error and no indication anything moved.
+
+**One navigation path in this exact codebase already gets this right, and its
+own design is the strongest candidate remedy.** `stepFlowAyah()`'s Range
+branch (line ~5517–5541) crosses a surah boundary via Prev/Next correctly and
+says why in its own comment: *"The window keeps its own length. At a surah's
+end it gives a short tail rather than reaching into the next surah mid-window
+— a range is keyed to one surah (`buildUnitKey.range`), so a window spanning
+two could not be claimed at all."* Concretely: stepping forward past a
+surah's last āyah calls `openSurahAt(currentSurahNum + 1, 1)` and resets
+`rangeFrom = 1; rangeTo = Math.min(span, currentSurahData.ayahCount)` (the
+remembered window LENGTH, re-anchored at the new surah's start); stepping
+backward re-anchors at the new surah's end the same way. **This is a real,
+already-accepted product decision — just narrowly applied.** It answers "what
+does the same Range mean across a surah change?" for exactly one of the three
+paths that can cross a surah while a Range is selected. `surahSelect`'s
+handler and the word-card cross-surah jump are the other two, and neither
+applies it.
+
+**Why this is a decision packet, not a same-round fix.** Even though the
+remedy shape has a working precedent, wiring it into `loadSurah()` (which
+both remaining paths call) is a real behaviour change to a Study screen, not
+a bounded Quran-owned test/report addition, and it raises one question the
+precedent's own comment does not answer: `stepFlowAyah()` always re-anchors at
+the NEW surah's start (forward) or end (backward) because it knows which
+direction the reader is moving; `loadSurah()` has no such direction — a
+`surahSelect` pick or a lemma-occurrence jump can land on any surah in either
+"direction" from the current one, so "re-anchor at the start" is a genuine
+choice (a jump backward would just as plausibly re-anchor at the end, mirroring
+`stepFlowAyah()`'s own backward case), not a mechanical port.
+
+**Options, with their costs, for the Master Architect:**
+
+| # | Option | Cost / trade-off |
+|---|---|---|
+| 1 | Port `stepFlowAyah()`'s reset into `loadSurah()`, always re-anchoring the window at the new surah's **start** (āyah 1) | Simplest, one rule for every entry path; a `surahSelect` pick or lemma jump landing near a surah's end always starts the window at 1, which can feel like "starting over" rather than "arriving near where I tapped" |
+| 2 | Same reset, but re-anchor around the **specific destination āyah** when one is known (the word-card jump always has one; a plain `surahSelect` pick does not) | More context-appropriate for the word-card path this PR touches; needs two different reset rules for the two call sites, and a decision for what `surahSelect` alone should do (it has no target āyah to anchor around) |
+| 3 | Leave `surahSelect` and the word-card jump exactly as `stepFlowAyah()` already treats a "no known direction" case (there is none today) and simply **clamp** `rangeFrom`/`rangeTo` to `[1, ayahCount]` of the new surah without re-anchoring the window's position | Cheapest change; still produces an arbitrary, unrelated slice whenever the old window falls (even partially) inside the new surah's valid bounds — clamping only prevents an out-of-range crash/empty result, it does not fix the "wrong content" defect this report demonstrates |
+| 4 | Disable Range as a selectable unit type across an active surah change (force the reader back to a different unit type, or require re-picking `rangeFrom`/`rangeTo` explicitly, before a surah change takes effect) | Never shows wrong content, but changes the interaction contract for every surah change while Range is selected, on both the manual dropdown and the word-card jump — a materially different, more restrictive product behaviour than anything in the app today |
+
+No option is chosen here. This table, the located precedent, and the exact
+call sites are handed to the Master Architect as the decision packet; the code
+itself is unmodified beyond what this PR's own flow-mode fix already changed
+(which excludes Range).
 
 ## What this deliberately does NOT do
 
@@ -209,8 +331,11 @@ protected/shared-tooling list this task may not modify.
 - **Mushaf-mode flow scroll targeting is flagged, not built** (untestable in
   this sandbox; would need a shared-module change to `hifz-renderer.js`).
 - **The Range/surah-crossing content-correctness defect is flagged, not
-  fixed** — pre-existing, not scoped to issue #113, and needs a product
-  decision about what "the same range" means across a surah change.
+  fixed** — pre-existing, not scoped to issue #113. A read-only follow-up
+  investigation (21 Sep 2026, see "Cross-surah Range finding" above) located
+  an existing precedent for the fix (`stepFlowAyah()`'s own Range-reset
+  design) and handed the Master Architect a four-option decision packet; no
+  Range code was changed.
 - **The Note-view-origin scroll surface PR #135 also flagged remains
   untouched** — this round did not investigate it; it is a materially
   different, more complex scroll surface per #135's own report, and this
