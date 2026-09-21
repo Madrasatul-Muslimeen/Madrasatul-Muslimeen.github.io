@@ -14890,3 +14890,52 @@ None of those is merged by anything automatic.
 
 BR-0, no version bump; `app/`, `tests/`, `firestore.rules` and `firebase.json`
 byte-identical. Seven governance suites green.
+
+## The builder workflow would not load, and every check said it was fine — NO VERSION BUMP (21 Sep 2026)
+
+The Owner installed the credential and branch protection, and the first real
+test round triggered **nothing**. The cause was already on `main`.
+
+**`claude.yml`'s `prompt:` was a PLAIN YAML SCALAR CONTAINING `issue #{0}`, and
+in YAML a space-followed-by-hash BEGINS A COMMENT.** Everything from that hash
+onward was silently discarded, leaving `${{` with no closing `}}`. GitHub could
+not load the workflow at all — it registered **by file path instead of by its
+`name:`**, every push produced a `failure` run with no job inside it, and no
+issue or comment could trigger the builder.
+
+**BOTH CHECKS THIS SESSION RAN HAD PASSED.** PyYAML parsed the file
+"successfully" — it had *truncated a string*, which is not a parse error — and
+`action-validator`, a GitHub-schema validator, reported nothing, because the
+schema describes STRUCTURE and knows nothing about expression syntax. *"claude.yml
+parses OK"* was true and worthless. The defect was visible only by counting
+braces in the **parsed value**: 2 open, 0 close.
+
+**The tell was in the Actions list and was nearly missed.** A run named
+`.github/workflows/claude.yml` rather than `Builder (Claude Code)` is GitHub
+saying it could not read the file. Three `push`-event failures sat there on a
+workflow that declares no `push` trigger — the second tell, and the one that
+made the first worth looking at.
+
+**Fixed at the root, twice over.** The value is a `|-` block scalar, where `#`
+is ordinary text; and the wording avoids `#` entirely, so a future edit that
+drops the block scalar degrades loudly rather than silently.
+
+**`tools/i18n-verify/workflow-expressions.mjs` is the eighth gated suite**, and
+it asserts on the parsed result rather than on the fact that something parsed:
+every `${{` has a `}}`; an expression opened on a line is closed on it; a plain
+scalar carrying an expression has no ` #`; `format()` placeholders start at 0
+with no gaps; and every workflow declares a `name:`, since the path fallback is
+the signal that exposed all of this. **Mutation-proven against the exact
+original defect**, which it names by file and line.
+
+**ITS OWN FIRST RUN FAILED ON THE COMMIT THAT ADDED IT, and the finding was
+real.** A workflow's comments necessarily QUOTE the broken syntax in order to
+explain it — this suite's header does, and so does `verify.yml`'s new one — so
+counting braces across comment text reported the explanation as the defect.
+That is this repository's existing lesson (*"strip BOTH comment forms before
+grepping source for a forbidden name"*) arriving in YAML. Full-line comments are
+stripped; a trailing `#` on a value line is deliberately **not**, because that
+is the hazard itself and rule 3 must still see it.
+
+BR-0, no version bump; `app/`, `tests/`, `firestore.rules` and `firebase.json`
+byte-identical. Eight governance suites green.
