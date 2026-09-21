@@ -25,13 +25,13 @@
     "stream consumed it."
   ],
   "schemaVersion": 1,
-  "recordedOn": "2026-09-19",
+  "recordedOn": "2026-09-21",
   "status": "ACTIVE",
   "main": {
     "ref": "origin/main",
     "baselineSha": "a20892f1e4cbf4e86498fe371232466141ca95df",
     "baselineRecordedOn": "2026-09-19",
-    "version": "08.31",
+    "version": "08.32",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -113,17 +113,26 @@
         "method": "FAST_FORWARD -- linear descent from db6cb24, no merge commit, no conflict",
         "reference": "docs/reports/2026-09-19-quranrevival-v0831-main-integration.md"
       }
+    },
+    {
+      "version": "08.32",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Basic Arabic Word Card lemma-occurrence navigation; PR #112 merged to main at f5b7c6c on 2026-09-21. Read-only interaction; no Firestore Rules/index change. Allocated by MMSA Master Architect on Owner request for immediate app feedback.",
+      "integration": {
+        "authorizedOn": "2026-09-21",
+        "integratedOn": "2026-09-21",
+        "acceptedApplicationSha": "c9b57fe0",
+        "integratedMainSha": "f5b7c6c00eb3f24f98bee67f8b86daa57d8a8449",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/112"
+      }
     }
   ],
-  "nextUnallocated": "08.32",
+  "nextUnallocated": "08.33",
   "nextUnallocatedNote": [
-    "08.32 and every number above it are NOT ALLOCATED. Allocation is the Master Architect's;",
-    "no stream may stamp at or beyond this number without one.",
-    "READ THIS FIELD CORRECTLY: it is the UNALLOCATED BOUNDARY, not an allocation.",
-    "Naming 08.32 here is what lets guard B REFUSE anyone who stamps it. The v08.31",
-    "authorisation says 'do not allocate v08.32', and this records exactly that: 08.32",
-    "belongs to nobody. It is not a prediction of the next merge number either -- see",
-    "the four durable rules in CLAUDE.md's VERSION NUMBERING NOTE."
+    "08.33 and later numbers remain unallocated; allocation requires MMSA Master Architect direction.",
+    "v08.32 was allocated to QuranRevival Word Card PR #112 and merged on 2026-09-21."
   ],
   "streams": [
     {
@@ -132,7 +141,7 @@
       "role": "The umbrella: shared runtime, shared verification, governance, version allocation and module integration. It owns the platform/shared paths below; it is not a subject module.",
       "activeBranch": null,
       "integrationState": "ON_MAIN",
-      "declaredVersion": "08.31",
+      "declaredVersion": "08.32",
       "baselineSha": null,
       "baselineStatus": "NOT_APPLICABLE_IS_MAIN",
       "ownedPaths": [
@@ -156,8 +165,8 @@
       "name": "QuranRevival -- Quran Study module",
       "activeBranch": null,
       "integrationState": "MERGED_TO_MAIN",
-      "declaredVersion": "08.31",
-      "baselineSha": "cfee898be15abff09882996cf22410e499130acb",
+      "declaredVersion": "08.32",
+      "baselineSha": "f5b7c6c00eb3f24f98bee67f8b86daa57d8a8449",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
       "ownedPaths": [
         "app/quranrevival.html",
@@ -179,7 +188,7 @@
         "app/js/study-event-wiring.js",
         "app/js/study-evidence-readiness.js"
       ],
-      "baselineNote": "Its recorded baseline went stale when the ledger's own commits moved main past 5ea0d92; re-pointed at cfee898, which is main. Forward movement, not drift.",
+      "baselineNote": "v08.32 Word Card PR #112 merged to main on 2026-09-21; read-only behavior.",
       "baselineAcknowledgement": "docs/reports/2026-09-18-hadith-v0829-main-integration.md",
       "role": "Subject module (Quran). NOT the umbrella; the umbrella is MMSA.",
       "declaredSharedTouches": [
