@@ -626,5 +626,75 @@ check("NAVIGATION -- the second topic's own mapping id and topic id both carry t
   assert.equal(m.reviewStatus, "unreviewed", "a synthetic mapping must never present as scholar-reviewed");
 });
 
+// ---------------------------------------------------------------------------
+// SOURCE NAVIGATION -- issue #114 Gate A/B: a narration reached through the
+// Topics index, a Search hit, or a repeat badge can be opened in its REAL
+// book/chapter (the Books path), via `sourcePathOf()` -- never a new lookup,
+// never a permanent unit key, never a write. The Books <-> Topics split
+// stays intact: this is a bridge FROM an index TO its source, not a rewrite
+// of either. Full behavioural (scroll + highlight) proof is a browser
+// concern -- see this round's dated report for the focused Playwright
+// evidence; these checks pin the wiring shape statically.
+// ---------------------------------------------------------------------------
+
+function sliceFunction(src, signature) {
+  const start = src.indexOf(signature);
+  assert.ok(start >= 0, `${signature} not found`);
+  const next = src.indexOf("\nfunction ", start + 1);
+  const nextExport = src.indexOf("\nexport function", start + 1);
+  const ends = [next, nextExport].filter((n) => n !== -1);
+  const end = ends.length ? Math.min(...ends) : undefined;
+  return end === undefined ? src.slice(start) : src.slice(start, end);
+}
+
+check("SOURCE NAV -- jumpToSource() resolves through sourcePathOf() only, reaches no persistence or unit key", () => {
+  const src = codeOf("hadith-browser.js");
+  const body = sliceFunction(src, "function jumpToSource(");
+  assert.ok(body.length > 50 && body.length < src.length, "the slice is not plausibly bounded to jumpToSource()");
+  assert.ok(/sourcePathOf\(/.test(body), "jumpToSource must resolve the destination through sourcePathOf()");
+  for (const forbidden of ["buildUnitKey", "hadith:", "firestore", "setDoc", "records.js", "activity.js", "demoTrack", "trackableId"]) {
+    assert.ok(!body.includes(forbidden), `jumpToSource reaches ${forbidden}`);
+  }
+});
+
+check("SOURCE NAV -- the Collections (Books) tab never renders a self-referential 'View in source' link", () => {
+  const src = codeOf("hadith-browser.js");
+  // renderOccurrenceList is the Collections tab's own list renderer; its
+  // occurrenceCard() call must take the DEFAULT (showSourceLink: false).
+  const renderOccList = sliceFunction(src, "function renderOccurrenceList(");
+  assert.ok(/occurrenceCard\(o, state, render\)\s*\)/.test(renderOccList),
+    "renderOccurrenceList must call occurrenceCard with no fourth argument -- the source view already shows the occurrence in context");
+});
+
+check("SOURCE NAV -- Topic and Search views both request the source link on the occurrences they list", () => {
+  const src = codeOf("hadith-browser.js");
+  const renderTopic = sliceFunction(src, "function renderTopic(");
+  const renderSearch = sliceFunction(src, "function renderSearch(");
+  assert.ok(/occurrenceCard\([^)]*\{\s*showSourceLink:\s*true\s*\}\)/.test(renderTopic),
+    "renderTopic must render its occurrences with { showSourceLink: true }");
+  assert.ok(/occurrenceCard\([^)]*\{\s*showSourceLink:\s*true\s*\}\)/.test(renderSearch),
+    "renderSearch must render its occurrences with { showSourceLink: true }");
+});
+
+check("SOURCE NAV -- the repeat badge is wired to jump to the ORIGINAL occurrence, not the repeat itself", () => {
+  const src = codeOf("hadith-browser.js");
+  assert.ok(/jumpToSource\(state, render, occurrence\.repeatOfOccurrenceId\)/.test(src),
+    "the repeat badge must navigate to occurrence.repeatOfOccurrenceId, the original, not the repeat's own id");
+});
+
+check("SOURCE NAV -- 'View in source' navigates to the occurrence's OWN id, not a hardcoded or unrelated one", () => {
+  const src = codeOf("hadith-browser.js");
+  const cardBody = sliceFunction(src, "export function occurrenceCard(");
+  assert.ok(/dataset\.hadithViewSource\s*=\s*occurrence\.occurrenceId/.test(cardBody),
+    "the View-in-source control must be keyed to this card's own occurrence");
+  assert.ok(/jumpToSource\(state, render, occurrence\.occurrenceId\)/.test(cardBody),
+    "the View-in-source control must navigate to this card's own occurrence, not a different one");
+});
+
+check("SOURCE NAV -- one new English literal only ('View in source'), and it is a real t() call", () => {
+  const src = codeOf("hadith-browser.js");
+  assert.ok(/t\(\s*"View in source"\s*\)/.test(src), "the new control's label must go through t(), like every other Hadith string");
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed) process.exitCode = 1;
