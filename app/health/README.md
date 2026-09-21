@@ -476,3 +476,61 @@ not merge anything, deploy anything, or claim approval.
 
 Full account and verification numbers:
 `docs/reports/2026-09-21-health-atlas-more-search-tranche11.md`.
+
+## Tranche 12 — the source's own organ "Type" pill, plus a full Gate A/B re-audit (issue #123 follow-up)
+
+Verified `main`/PR #151's own claims first, independently: fetched full
+history and every remote branch, checked out PR #151's exact head commit
+(`eabe42da2a3b1d4f1302ca93386d1ccb39a59cf7`), re-ran its committed
+`more-search-browser.mjs` (12/12) and all 19 runnable
+`tools/health-atlas-verify/` suites (318/0 total, matching the PR body
+exactly) plus all seven governance suites (identical numbers to PR #151's
+own table). Independently confirmed the claimed `tools/md2report.py`
+fenced-code/link-flattening defect on a representative cross-module sample
+(a Quran/MAP report and an MMSA-automation report, not just Health) by
+regenerating with the unmodified script and diffing — both defects
+reproduce exactly as described. `tools/md2report.py` was read, not edited.
+
+**Gate B: `organ.partType` (Organ/Vein/Artery/Nerve/Tissue/Gland/Duct) was
+in the preserved dataset since tranche 1 and read by nothing.** The v02.04
+source's own `rowHtml()` prints it as a small pill right after each
+organ's name in the left-column list
+(`<span class="pill">${o.partType||'Organ'}</span>`) — this port had never
+shown it. It is a closed-set anatomical classification, the same class of
+field as `role` and `system` (already ported): never a dose, a nutrient
+amount, an activity recommendation or a remedy. All 46 organs carry one of
+exactly the source's own seven values (`data-integrity.mjs` now asserts
+this as a closed set). Ported faithfully: a `.ha-bs-type-pill` badge next
+to each organ row's name, read-only, no new selector needed (the organ
+object `organRow()` already receives carries the field).
+
+**Measured before shipping, with the real longest name in the dataset**
+("Vena Cava (Superior & Inferior)", a Vein — CLAUDE.md's own standing
+lesson against measuring with short fixture content). The name+pill group
+is its own `flex-wrap` unit rather than a single `nowrap` line, so the
+longest real combination wraps the pill onto its own line rather than
+truncating the name or overflowing the row — CLAUDE.md's own lesson that
+`white-space:nowrap`+`text-overflow:ellipsis` fails silently. Proven at
+desktop (1280x900), tablet (768x1024) and phone (390x844): zero horizontal
+page overflow at any width, real screenshots taken and inspected at all
+three. `body-systems-parity-browser.mjs` gained 4 new checks (16 → 20),
+including the Vena Cava worst-case measurement at all three widths and a
+positive control that Kidneys reads "Organ" and Coronary Arteries reads
+"Artery" (not a hardcoded default). `view-boundary.mjs` gained a positive
+control that the view really renders `organ.partType`
+(14 → 15); `view-boundary-wheel.mjs`'s independent forbidden-field re-scan
+of the same file is unaffected (`partType` was never on either boundary
+suite's forbidden list — it is not a dose/remedy field).
+
+**What this tranche deliberately did NOT do.** Did not build a Type
+*filter* (the source itself only ever shows the pill as a label, never
+filters by it) — that would be a new capability beyond parity, not ported
+here. Did not touch `tools/md2report.py` or any other module's committed
+report `.html`. Did not touch any protected/shared path, version number,
+Firestore Rule/index, or `.github/workflows/`. Did not allocate or bump
+any version — this is a real, if small, UI change and needs a Master
+Architect allocation before any future integration. Did not merge, deploy,
+or claim approval.
+
+Full account and verification numbers:
+`docs/reports/2026-09-21-health-atlas-organ-type-parity-tranche12.md`.

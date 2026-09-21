@@ -4,17 +4,30 @@
 // tranche 1 + claim-provenance tranche 1).
 //
 // DELIBERATE SCOPE BOUNDARY, UNCHANGED FROM FOUNDATION TRANCHE 1: this view
-// only ever reads organ.id, .name, .system, .role, .functions, .connections
-// and .refs (resolved through HEALTH_ATLAS_REFERENCES), plus the pure
-// decorative diagram data in health-atlas-diagrams.js. It never reads
-// nutritionNeeds, foodSources, activity, deterioration, remedies,
-// homeRemedies or naturalRemedies, and it never touches HEALTH_ATLAS_FOODS,
-// HEALTH_ATLAS_DISEASES, HEALTH_ATLAS_LIFESTYLES or HEALTH_ATLAS_AGES at
-// all. The boundary is asserted mechanically by
-// tools/health-atlas-verify/view-boundary.mjs and
+// only ever reads organ.id, .name, .system, .role, .partType (added parity
+// tranche 12, see below), .functions, .connections and .refs (resolved
+// through HEALTH_ATLAS_REFERENCES), plus the pure decorative diagram data
+// in health-atlas-diagrams.js. It never reads nutritionNeeds, foodSources,
+// activity, deterioration, remedies, homeRemedies or naturalRemedies, and
+// it never touches HEALTH_ATLAS_FOODS, HEALTH_ATLAS_DISEASES,
+// HEALTH_ATLAS_LIFESTYLES or HEALTH_ATLAS_AGES at all. The boundary is
+// asserted mechanically by tools/health-atlas-verify/view-boundary.mjs and
 // tools/health-atlas-verify/view-boundary-wheel.mjs, which read this file's
 // own source text — do not import those fields into this file without
 // updating both checks first.
+//
+// PARITY TRANCHE 12 (see docs/reports/2026-09-21-health-atlas-foods-
+// conditions-parity-tranche12.md): the source's own left-column organ row
+// (`rowHtml()`, `<span class="pill">${o.partType||'Organ'}</span>` right
+// after the name — v02.04 standalone source, SCHEMAS.organ.partType field)
+// carries a small "Type" badge (Organ / Vein / Artery / Nerve / Tissue /
+// Gland / Duct) this port had never shown. `partType` is a closed-set
+// anatomical classification, the same class of field as `role` and
+// `system` (already ported) — never a dose, a nutrient amount, an activity
+// recommendation or a remedy. All 46 organs in the preserved dataset carry
+// one of exactly those seven values (data-integrity.mjs asserts this).
+// Read-only, additive: no add/edit/delete, no new selector needed (the
+// organ object passed into organRow() already carries the field).
 //
 // NEW IN THIS TRANCHE, all read-only (no add/edit/delete/reorder/rename of
 // anything, no export/import/reset — see docs/reports/
@@ -395,9 +408,20 @@ function buildSectionsColumn(state, data, callbacks) {
 
     function organRow(organ) {
       const isSelected = state.selectedOrganId === organ.id;
+      // Parity tranche 12: source-faithful "Type" pill (organ.partType),
+      // wrapped with the name in its own flex-wrap group rather than forced
+      // onto one line — CLAUDE.md's own standing lesson is that a
+      // nowrap+ellipsis label fails SILENTLY, and the longest real name in
+      // this dataset ("Vena Cava (Superior & Inferior)", a Vein) is long
+      // enough that a fixed-width row can run out of space; wrapping the
+      // pill onto its own line there is honest instead of truncating text.
+      const nameWrap = el('span', { class: 'ha-bs-row-name' }, [
+        document.createTextNode(organ.name),
+        el('span', { class: 'ha-bs-type-pill', text: organ.partType || 'Organ' })
+      ]);
       const btn = el('button', { type: 'button', class: `ha-bs-row${isSelected ? ' ha-bs-row-active' : ''}` }, [
         el('span', { class: `ha-role-dot ${organ.role === 'main' ? 'ha-role-main' : 'ha-role-supportive'}` }),
-        document.createTextNode(organ.name)
+        nameWrap
       ]);
       btn.addEventListener('click', () => callbacks.onSelectOrgan(organ.id));
       return btn;

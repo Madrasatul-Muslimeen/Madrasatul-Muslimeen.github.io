@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Health Atlas — parity NEXT: independent Gate A re-audit of PR #151, plus the organ &quot;Type&quot; pill (tranche 12)</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Health Atlas — parity NEXT: independent Gate A re-audit of PR #151, plus the organ &quot;Type&quot; pill (tranche 12)</h1>
+<p><strong>21 Sep 2026. Issue #123&#x27;s <code>/mmsa-task</code> line &quot;HEALTH v02.04 PARITY NEXT&quot;. Stack: #140 → #142 → #145 → #146 → #148 → #151 → this tranche (branch <code>claude/health-atlas-organ-type-parity-tranche12</code>, based on PR #151&#x27;s own head <code>eabe42da2a3b1d4f1302ca93386d1ccb39a59cf7</code>).</strong></p>
+<h2>What this task was</h2>
+<p>Verify current <code>main</code>/version, the source handover commit and standalone v02.04 HTML, the issue #123 ledger, PR #151&#x27;s real head/base/diff/CI — independently, not from any prior session&#x27;s own claims. <strong>Gate A</strong>: reproduce PR #151&#x27;s committed Foods/Conditions browser suite and every other Health suite; inspect positive and excluded-field negative-control search cases, responsive behaviour and detail/back state; check the repaired report pair renders fenced code and links correctly; audit the claimed <code>tools/md2report.py</code> defect read-only, without editing it or any other module&#x27;s report. <strong>Gate B</strong>: find and build ONE substantial, safe, source-faithful, read-only parity capability still missing from <code>app/health/</code>, or produce a precise gap/decision packet if none clears the provenance/privacy boundary.</p>
+<h2>Verification before touching anything</h2>
+<div class='tw'><table><thead><tr><th>Claim</th><th>Verified</th></tr></thead><tbody>
+<tr><td><code>origin/main</code> head</td><td><code>16cfb0b351</code> (matches <code>programme-ledger.mjs</code>&#x27;s own header line, <code>main 16cfb0b351 at v08.32</code>)</td></tr>
+<tr><td>PR #151 head/base</td><td><code>eabe42da2a3b1d4f1302ca93386d1ccb39a59cf7</code> / <code>c9bc93fe83faeb0c9392269c245f33c1a3cc62b2</code> — read via <code>mcp__github__pull_request_read</code>, matches the PR body and the branch&#x27;s own git log</td></tr>
+<tr><td>PR #151 state</td><td><code>open</code>, <code>draft: true</code>, <code>merged: false</code>, <code>mergeable_state: clean</code></td></tr>
+<tr><td>PR #151 head CI</td><td><code>get_check_runs</code> → <code>total_count: 0</code>; <code>get_status</code> → <code>state: &quot;pending&quot;</code>, <code>total_count: 0</code>. <strong>No CI is configured on this head at all</strong> — not a failure, an absence. <code>.github/workflows/verify.yml</code> does not run the Playwright-based suite class (documented, unchanged)</td></tr>
+<tr><td>Handover branch <code>health/source-v02-04-handover</code> at <code>ed4dbb2e</code></td><td><code>git log -1</code> on that ref: <code>ed4dbb2e535ba6b95ea286a5f3b29a32122ea4b9</code> — matches</td></tr>
+<tr><td>Standalone v02.04 HTML</td><td>Read via <code>git show ed4dbb2e:docs/health-source/health-atlas-v02.04-standalone.html</code> (2,936 lines). Re-hashed: SHA-256 <code>f7cb56980ae125bb387118c9282bf50c92b5fe414ca3480fa92547e9af9685a1</code>, 115,697 bytes — <strong>byte-for-byte identical</strong> to <code>app/health/README.md</code>&#x27;s own recorded provenance and to <code>data-integrity.mjs</code>&#x27;s own assertion</td></tr>
+<tr><td>Issue #123</td><td>Read in full (14 comments) — MMSA-wide shared-integration coordination, names several Quran-side draft PRs out of this task&#x27;s scope (correctly ignored); no Health-specific obligation beyond what this task&#x27;s own instruction states</td></tr>
+<tr><td>Full-history preflight</td><td><code>git fetch --unshallow</code> (repo was already unshallowed in this worktree) + all remote branches fetched; both ledger-named refs present: <code>origin/claude/phase4-wiring</code> at <code>7e2931f</code>, <code>origin/claude/pensive-knuth-2pu3jj</code> at <code>b0221ce</code></td></tr>
+</tbody></table></div>
+<p><strong>Branch note:</strong> this worktree&#x27;s default branch predates PR #151; <code>claude/health-atlas-organ-type-parity-tranche12</code> was created directly from PR #151&#x27;s exact head commit, not from whatever this worktree happened to have checked out.</p>
+<h2>Gate A — independent reproduction, not trust</h2>
+<p>Every suite below was actually executed in this session, at PR #151&#x27;s exact head commit, from a clean full-history checkout — not copied from the PR body.</p>
+<p><strong>The new Foods/Conditions search suite reproduces exactly as claimed.</strong> <code>node tools/health-atlas-verify/more-search-browser.mjs</code>: <strong>12 passed, 0 failed</strong>, matching PR #151&#x27;s own table digit-for-digit. Both excluded-field negative controls were inspected individually: typing <code>Potassium</code> (present only in avocado&#x27;s real <code>.nutrition</code> array) and <code>Statin</code> (present only in Coronary Artery Disease&#x27;s real <code>.remedies</code> array) both assert the page&#x27;s own &quot;No matches&quot; empty state rather than a false hit, proven against the <strong>rendered page</strong>, not the pure selector in isolation. Desktop, tablet (768×1024) and phone (390×844) cases all pass, including a real tap (not a synthetic click) at phone width. The &quot;search term survives opening a detail card and pressing back&quot; case was inspected directly: the term is kept in the view&#x27;s own closure state, not reset by the detail-card round trip.</p>
+<p><strong>Every other Health-owned suite reproduces too — 19 runnable suites (the 20th file, <code>import-esm-file.mjs</code>, is a shared loader helper, not a suite), 318 passed, 0 failed</strong>, identical to PR #151&#x27;s own count:</p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td>body-systems-parity-browser</td><td>16 passed, 0 failed</td></tr>
+<tr><td>categories-selectors</td><td>7 passed, 0 failed</td></tr>
+<tr><td>claims-integrity</td><td>10 passed, 0 failed</td></tr>
+<tr><td>claims-mutations</td><td>7 passed, 0 failed</td></tr>
+<tr><td>data-integrity</td><td>21 passed, 0 failed</td></tr>
+<tr><td>more-search-browser</td><td>12 passed, 0 failed</td></tr>
+<tr><td>more-selectors</td><td>16 passed, 0 failed</td></tr>
+<tr><td>references-index-browser</td><td>12 passed, 0 failed</td></tr>
+<tr><td>references-tabs-accessibility-browser</td><td>10 passed, 0 failed</td></tr>
+<tr><td>selectors</td><td>19 passed, 0 failed</td></tr>
+<tr><td>view-boundary</td><td>14 passed, 0 failed</td></tr>
+<tr><td>view-boundary-categories</td><td>58 passed, 0 failed</td></tr>
+<tr><td>view-boundary-categories-mutations</td><td>7 passed, 0 failed</td></tr>
+<tr><td>view-boundary-more</td><td>28 passed, 0 failed</td></tr>
+<tr><td>view-boundary-more-mutations</td><td>7 passed, 0 failed</td></tr>
+<tr><td>view-boundary-wheel</td><td>57 passed, 0 failed</td></tr>
+<tr><td>view-boundary-wheel-mutations</td><td>6 passed, 0 failed</td></tr>
+<tr><td>view-provenance-boundary</td><td>7 passed, 0 failed</td></tr>
+<tr><td>view-provenance-mutations</td><td>4 passed, 0 failed</td></tr>
+<tr><td><strong>Total</strong></td><td><strong>318 passed, 0 failed</strong></td></tr>
+</tbody></table></div>
+<p><strong>All seven governance suites also reproduce exactly</strong>, from the same full-history checkout:</p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td>programme-ledger</td><td>8 passed, 23 noted, 0 failed</td></tr>
+<tr><td>programme-ledger-mutations</td><td>49 passed, 0 failed</td></tr>
+<tr><td>brief-integrity</td><td>8 passed, 0 failed</td></tr>
+<tr><td>study-activity-evidence-boundary</td><td>27 passed, 0 failed</td></tr>
+<tr><td>study-activity-evidence-boundary-mutations</td><td>11 passed, 0 failed</td></tr>
+<tr><td>study-event-wiring</td><td>41 passed, 0 failed</td></tr>
+<tr><td>rules-authorisation-executable</td><td>38 passed, 0 failed</td></tr>
+</tbody></table></div>
+<p>Every number matches PR #151&#x27;s own claimed table. <strong>No discrepancy found anywhere in Gate A.</strong></p>
+<p><strong>Desktop/tablet/phone focus and detail/back state, checked directly</strong>: the <code>more-search-browser.mjs</code> suite&#x27;s own tablet/phone cases were read line by line (not just re-run) to confirm they drive a real tap (<code>page.tap</code>/<code>locator.click</code> at a real viewport, not a resized desktop click), and the &quot;back&quot; case was confirmed to preserve the search term via the view&#x27;s own closure state rather than a page reload.</p>
+<p><strong>The repaired report pair renders correctly.</strong> <code>docs/reports/2026-09-21-health-atlas-references-tabs-accessibility.html</code> was opened as rendered HTML (not just diffed): both fenced code excerpts render as real multi-line <code>&lt;pre&gt;</code>-equivalent blocks (not run-on text with stray backticks), and the &quot;Tabs pattern&quot;/&quot;toggle-button pattern&quot; references are real <code>&lt;a href&gt;</code> links, not literal <code>[text](url)</code> bracket text.</p>
+<h3>The <code>tools/md2report.py</code> defect — audited read-only, confirmed independently on a cross-module sample</h3>
+<p>Read the script itself (91 lines). It has <strong>no branch that matches a triple-backtick fence line</strong> — an unmatched line falls into the generic paragraph scanner, which joins every line inside the fence with spaces and runs the same inline single-backtick-to-code regex ordinary prose uses (which cannot represent a multi-line fence), so the fence markers themselves leak into the output as literal backtick pairs and every internal newline is lost. The <code>inline()</code> helper also has <strong>no Markdown-link handling at all</strong> — a <code>[text](url)</code> link renders as literal bracket/paren text. Both are structural absences in the script, confirmed by reading it, not inferred from PR #151&#x27;s own claim.</p>
+<p><strong>Independently regenerated a representative cross-module sample (not the full 82/88 — this task&#x27;s own instruction is a spot-check, and PR #151 already did the exhaustive pass) and diffed against the committed <code>.html</code> twin.</strong> This repository currently carries 88 <code>.md</code>/<code>.html</code> report pairs (up from PR #151&#x27;s own count of 82 — six more have landed from other streams since; a re-count, not a discrepancy in PR #151&#x27;s claim, which was accurate at the time it ran). 49 of the 88 <code>.md</code> files contain a fenced code block; 11 contain a Markdown link. Sampled 9 files spanning three modules (Quran/ MAP, Hadith, Health, and the MMSA-automation coordination reports) and regenerated each with the unmodified script:</p>
+<ul><li><strong>7 of 9 regenerated byte-identical to their committed <code>.html</code></strong> — proving those committed files really were produced by the current (defective) generator, not hand-corrected.</li><li><strong>1 of 9 differed</strong>: <code>2026-09-21-health-atlas-references-tabs-accessibility</code> — expected, since PR #151 hand-corrected exactly that one file&#x27;s <code>.html</code> without touching its <code>.md</code>, so a fresh regeneration of the still-broken generator does not match the hand-fixed committed version. This is independent confirmation the hand-fix is real and isolated to that one file, not silently reverted.</li><li><strong>The 9th, this report&#x27;s own file, did not exist yet</strong> at sampling time.</li></ul>
+<p><strong>Directly inspected the defect on two non-Health files</strong>, confirming the claim is repository-wide rather than specific to Health&#x27;s own reports:</p>
+<ul><li><code>docs/reports/2026-09-13-phase2-3-merge-complete.html</code> (a Quran/MAP report): its fenced <code>git fetch …</code> / <code>git merge …</code> shell block renders as one run-on paragraph wrapped in a stray double-backtick pair and a <code>&lt;code&gt;</code> tag, every line break lost.</li><li><code>docs/reports/2026-09-19-mmsa-automation-pilot-step2-audit.html</code>: its <code>[PR #89](https://github.com/…)</code> Markdown link renders as the literal text <code>[PR #89](https://github.com/…)</code>, not a clickable link.</li></ul>
+<p><strong>Conclusion: PR #151&#x27;s claim is confirmed, independently, on real evidence — not merely re-asserted.</strong> <code>tools/md2report.py</code> is shared, platform-wide tooling; it was <strong>read, not edited</strong>, in this session, exactly as the task requires. No other module&#x27;s already-committed report <code>.html</code> was regenerated or touched.</p>
+<h2>Gate B — one substantial, safe, source-faithful capability: the organ &quot;Type&quot; pill</h2>
+<p><strong>Explicit field-level inventory, checked before writing any code.</strong> The v02.04 source&#x27;s <code>SCHEMAS.organ.fields</code> carries a <code>partType</code> field — <code>{key:&#x27;partType&#x27;, label:&#x27;Type&#x27;, type:&#x27;select&#x27;, options: Organ/Vein/Artery/ Nerve/Tissue/Gland/Duct}</code> — and the source&#x27;s own <code>rowHtml()</code> (the function that draws each organ&#x27;s row in the left-column list) prints it as <code>&lt;span class=&quot;pill&quot;&gt;${esc(o.partType||&#x27;Organ&#x27;)}&lt;/span&gt;</code> <strong>right after every organ&#x27;s name, on every row, in the read view</strong> — not merely an edit-form field. <code>app/health/js/health-atlas-view.js</code>&#x27;s own header comment (present since foundation tranche 1) whitelists exactly which organ fields it reads: <code>.id, .name, .system, .role, .functions, .connections, .refs</code> — <code>partType</code> was never in that list, and a grep of the whole <code>app/health/</code> and <code>tools/health-atlas-verify/</code> trees found it referenced only inside the preserved data file and its fixture. <strong>It was in the port&#x27;s own preserved dataset since foundation tranche 1 (all 46 organs carry it) and read by nothing.</strong></p>
+<p><strong>Confirmed this field clears the safety boundary before building anything:</strong></p>
+<ul><li>Not on <code>view-boundary.mjs</code>&#x27;s or <code>view-boundary-wheel.mjs</code>&#x27;s forbidden- field list (<code>nutritionNeeds</code>, <code>foodSources</code>, <code>.activity</code>, <code>deterioration</code>, <code>remedies</code>, <code>homeRemedies</code>, <code>naturalRemedies</code>, and the four excluded dataset names) — it never was, because it carries no dose, no nutrient amount, no activity recommendation and no remedy.</li><li>It is a <strong>closed-set anatomical classification</strong> — the same class of field as <code>role</code> (main/supportive) and <code>system</code> (which body system), both already ported and displayed — not a clinical assertion of any kind.</li><li>All 46 organs in the preserved dataset carry exactly one of the source&#x27;s own seven values; none is missing, none is outside the set (now a mechanical assertion, see below).</li><li>It is read-only, additive, and needs no new selector: the organ object already passed into the row-rendering function already carries the field.</li></ul>
+<p><strong>Built:</strong> a <code>.ha-bs-type-pill</code> badge next to each organ row&#x27;s name in the Body Systems left column, matching the source&#x27;s own placement and behaviour exactly. <code>app/health/js/health-atlas-view.js</code>&#x27;s header comment was updated to name <code>.partType</code> in its own read whitelist. No add/edit/ delete, no new tab, no new data.</p>
+<p><strong>Measured before shipping, with the real longest name in the dataset — CLAUDE.md&#x27;s own standing lesson against measuring with short fixture content.</strong> The worst case is &quot;Vena Cava (Superior &amp; Inferior)&quot; (a Vein, 31 characters + a 4-character pill). Rather than force the name+pill onto one <code>nowrap</code> line (CLAUDE.md&#x27;s own standing lesson: a <code>nowrap</code>+<code>ellipsis</code> label fails <strong>silently</strong>), the name and its pill share one <code>flex-wrap</code> group, so if the row is too narrow for both on one line, the pill drops to its own line under the name — no truncation, no horizontal overflow, no silent information loss.</p>
+<p><strong>Real-browser verification, at all three widths, with real screenshots taken and inspected (not committed as image files — this repository&#x27;s own established evidence convention, unbroken since tranche 1 through tranche 11, is the committed reproducible Playwright suite with its raw output pasted here, never a binary screenshot; see &quot;Evidence convention&quot; below):</strong></p>
+<ul><li><strong>Desktop (1280×900)</strong>: the &quot;before&quot; render (this tranche&#x27;s two changed files reverted to their PR #151 committed content, screenshotted, then restored) shows plain organ names with no Type badge. The &quot;after&quot; render shows &quot;Heart — Organ&quot;, &quot;Aorta — Artery&quot;, &quot;Coronary Arteries — Artery&quot;, and &quot;Vena Cava (Superior &amp; Inferior)&quot; wrapping its &quot;Vein&quot; pill onto its own line exactly as designed, with zero page overflow.</li><li><strong>Tablet (768×1024)</strong> and <strong>phone (390×844)</strong>: same Vena Cava worst case opened directly (its own section drilled into), zero horizontal page overflow at either width, pill still reads correctly after wrapping.</li></ul>
+<p>These three before/after comparisons are now <strong>committed, reproducible checks</strong> in <code>tools/health-atlas-verify/body-systems-parity-browser.mjs</code> (16 → <strong>20</strong> passed), not a one-off script:</p>
+<pre class='tw'><code>  PASS  desktop: each organ row carries a real &quot;Type&quot; pill matching its own partType value
+  PASS  desktop: the longest organ name + Type pill in the dataset causes no page overflow
+  PASS  tablet (768x1024): the longest organ name + Type pill causes no page overflow
+  PASS  phone (390x844): the longest organ name + Type pill causes no page overflow, wrapping onto its own line if needed</code></pre>
+<p>The first of those four is also a proof the pill is not a hardcoded default: Kidneys&#x27; own pill reads &quot;Organ&quot; and Coronary Arteries&#x27; own pill reads &quot;Artery&quot; — two different real values off two different real organs.</p>
+<p><strong>Two more suites strengthened, both mutation-relevant:</strong></p>
+<ul><li><code>data-integrity.mjs</code> (21 → <strong>22</strong>): a new check asserts every organ&#x27;s <code>partType</code> is present and is one of the source&#x27;s own exact seven values (<code>Organ</code>/<code>Vein</code>/<code>Artery</code>/<code>Nerve</code>/<code>Tissue</code>/<code>Gland</code>/<code>Duct</code>) — bound to a closed set read out of the same reasoning as the field def itself, so a future data change widening it fails here before it could reach the view&#x27;s pill with an unexpected value.</li><li><code>view-boundary.mjs</code> (14 → <strong>15</strong>): a new POSITIVE CONTROL asserts the view module really does read <code>organ.partType</code> and really does render the <code>ha-bs-type-pill</code> class — the same &quot;prove the capability actually exists&quot; shape the file&#x27;s existing organ/functions positive control already uses. Verified this new check can fail: temporarily removing the <code>ha-bs-type-pill</code> reference from the file (kept only in a scratch copy, never committed) makes it fail by name; restoring the file returns it to green.</li></ul>
+<p><strong>Evidence convention.</strong> Checked every prior Health Atlas dated report and this repository&#x27;s <code>docs/</code> tree as a whole (<code>find docs -iname &#x27;*.png&#x27; …</code>): <strong>zero image files are committed anywhere in this repository, in any module.</strong> Tranche 8&#x27;s own report is explicit about why — the committed, reproducible Playwright suite itself (not a screenshot) is what turns &quot;real when it ran&quot; into &quot;reproducible by anyone who runs it later&quot;. This tranche follows that same convention rather than inventing a new one: real screenshots were taken and visually inspected as part of verifying the before/after claim above, and the reproducible proof is the four new <code>body-systems-parity-browser.mjs</code> checks, exactly the established pattern.</p>
+<h2>Suite results (final, on this tranche&#x27;s own head)</h2>
+<p><strong>Health-owned suites (<code>tools/health-atlas-verify/</code>, 19 runnable suites — <code>import-esm-file.mjs</code> is a shared loader helper, not a suite):</strong></p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td>body-systems-parity-browser</td><td><strong>20 passed, 0 failed</strong> (was 16)</td></tr>
+<tr><td>categories-selectors</td><td>7 passed, 0 failed</td></tr>
+<tr><td>claims-integrity</td><td>10 passed, 0 failed</td></tr>
+<tr><td>claims-mutations</td><td>7 passed, 0 failed</td></tr>
+<tr><td>data-integrity</td><td><strong>22 passed, 0 failed</strong> (was 21)</td></tr>
+<tr><td>more-search-browser</td><td>12 passed, 0 failed</td></tr>
+<tr><td>more-selectors</td><td>16 passed, 0 failed</td></tr>
+<tr><td>references-index-browser</td><td>12 passed, 0 failed</td></tr>
+<tr><td>references-tabs-accessibility-browser</td><td>10 passed, 0 failed</td></tr>
+<tr><td>selectors</td><td>19 passed, 0 failed</td></tr>
+<tr><td>view-boundary</td><td><strong>15 passed, 0 failed</strong> (was 14)</td></tr>
+<tr><td>view-boundary-categories</td><td>58 passed, 0 failed</td></tr>
+<tr><td>view-boundary-categories-mutations</td><td>7 passed, 0 failed</td></tr>
+<tr><td>view-boundary-more</td><td>28 passed, 0 failed</td></tr>
+<tr><td>view-boundary-more-mutations</td><td>7 passed, 0 failed</td></tr>
+<tr><td>view-boundary-wheel</td><td>57 passed, 0 failed</td></tr>
+<tr><td>view-boundary-wheel-mutations</td><td>6 passed, 0 failed</td></tr>
+<tr><td>view-provenance-boundary</td><td>7 passed, 0 failed</td></tr>
+<tr><td>view-provenance-mutations</td><td>4 passed, 0 failed</td></tr>
+<tr><td><strong>Total</strong></td><td><strong>324 passed, 0 failed</strong> (was 318)</td></tr>
+</tbody></table></div>
+<p><strong>Seven governance suites, unchanged from Gate A (full-history checkout, repository root):</strong></p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td>programme-ledger</td><td>8 passed, 23 noted, 0 failed</td></tr>
+<tr><td>programme-ledger-mutations</td><td>49 passed, 0 failed</td></tr>
+<tr><td>brief-integrity</td><td>8 passed, 0 failed</td></tr>
+<tr><td>study-activity-evidence-boundary</td><td>27 passed, 0 failed</td></tr>
+<tr><td>study-activity-evidence-boundary-mutations</td><td>11 passed, 0 failed</td></tr>
+<tr><td>study-event-wiring</td><td>41 passed, 0 failed</td></tr>
+<tr><td>rules-authorisation-executable</td><td>38 passed, 0 failed</td></tr>
+<tr><td><strong>Total</strong></td><td><strong>182 passed, 23 noted, 0 failed</strong></td></tr>
+</tbody></table></div>
+<p>Playwright resolved the same local, uncommitted way every prior tranche documents: <code>mkdir -p node_modules &amp;&amp; ln -sfn &quot;$(npm root -g)/playwright&quot; node_modules/playwright</code> — gitignored, nothing committed, no shared CI/tooling change. <code>.github/workflows/verify.yml</code> still does not run this suite class (confirmed by reading the workflow file — unchanged).</p>
+<h2>Files touched</h2>
+<ul><li><code>app/health/js/health-atlas-view.js</code> — the &quot;Type&quot; pill (Gate B), header comment updated</li><li><code>app/health/health-atlas.html</code> — <code>.ha-bs-row-name</code>/<code>.ha-bs-type-pill</code> CSS</li><li><code>app/health/README.md</code> — Tranche 12 section</li><li><code>tools/health-atlas-verify/data-integrity.mjs</code> — closed-set <code>partType</code> check</li><li><code>tools/health-atlas-verify/view-boundary.mjs</code> — positive control for the new capability</li><li><code>tools/health-atlas-verify/body-systems-parity-browser.mjs</code> — 4 new committed browser checks (the before/after evidence)</li><li><code>docs/reports/2026-09-21-health-atlas-organ-type-parity-tranche12.md</code> / <code>.html</code> — this report</li></ul>
+<p>All under <code>app/health/<strong></code>, <code>tools/health-atlas-verify/</strong></code>, or <code>docs/reports/</code>.</p>
+<h2>What this deliberately did NOT do</h2>
+<ul><li>Did not edit <code>tools/md2report.py</code>, and did not regenerate or touch any other module&#x27;s already-committed report <code>.html</code> — confirmed the defect independently on a cross-module sample, read-only, exactly as the task requires. That fix is a shared-file change needing Master Architect authorisation; still flagged, not made.</li><li>Did not build a Type <strong>filter</strong>. The source itself only ever shows <code>partType</code> as a label on each row — it never filters or groups by it anywhere in the 2,936-line standalone source. Adding a filter would be a capability beyond the source&#x27;s own parity, not ported here.</li><li>Did not re-investigate the Lifestyle tab — tranche 11 re-investigated it this same day and found no new field-level split; re-litigating it a day later with no new evidence would not be a Gate B finding, it would be noise. The deferral stands as tranche 3/11 left it.</li><li>Did not add a search box to Age Groups (the source has none there).</li><li>Did not build the wheel&#x27;s third &quot;fields&quot; ring, CRUD, import/export, or the header reset button — all out of scope, unchanged from every prior tranche.</li><li>Did not touch any protected/shared path: not <code>app/js/version.js</code>, <code>CLAUDE.md</code>, <code>CHANGELOG.md</code>, <code>bn.js</code>, <code>nav.js</code>, <code>unit-keys.js</code>, <code>records.js</code>, <code>activity.js</code>, <code>catalogue-data.js</code>, <code>shell.css</code>, the platform-shared <code>tools/i18n-verify/{behaviour,harness,firebase-stub, brief-integrity,programme-ledger,programme-ledger-mutations}.mjs</code>, <code>docs/governance/</code>, <code>firestore.rules</code>, <code>firebase.json</code>, <code>tests/firestore/</code>, <code>tools/firestore-emulator/</code>, <code>tools/md2report.py</code>, or <code>.github/workflows/</code>.</li><li>Did not allocate or bump any version. <code>app/js/version.js</code> is untouched and stays out of this module&#x27;s authority entirely; there is also no Health-internal version marker anywhere in <code>app/health/</code> to bump. This is a real, if small, UI change and <strong>needs a version allocated by the Master Architect</strong> before any future integration — none has been given.</li><li>Did not merge, deploy, or claim approval. Draft PR, stacked on #151 exactly as the existing #140→#142→#145→#146→#148→#151 chain stacks.</li><li>Did not comment on issue #115 or #123. Did not post anything to GitHub beyond opening this one draft PR.</li></ul>
+<h2>Owner app test</h2>
+<p><strong>Required: NO before merge</strong> — nothing under <code>app/health/</code> is linked from shared nav or deployed; this whole tree needs <code>node serve.js</code> and a direct URL, exactly as every prior Health Atlas tranche states.</p>
+<p><strong>YES after merge</strong>, direct URL only, no sign-in/tenant: with <code>node serve.js</code> running, open <code>http://127.0.0.1:8080/app/health/health-atlas.html</code>.</p>
+<ol><li>On the Body Systems tab, open the &quot;Cardiovascular&quot; section (it is open by default).</li><li>Confirm each organ row — Heart, Aorta, Vena Cava (Superior &amp; Inferior), Coronary Arteries, Carotid Arteries — now carries a small &quot;Type&quot; pill after its name (Organ / Vein / Artery).</li><li>Confirm &quot;Vena Cava (Superior &amp; Inferior)&quot; wraps its pill onto its own line rather than overflowing the row.</li><li>Narrow the browser to a phone width (or use its device toolbar at 390px) — confirm no horizontal scrollbar appears anywhere on the page.</li><li>Open <code>docs/reports/2026-09-21-health-atlas-organ-type-parity-tranche12.html</code> in a browser — confirm the tables render correctly (this report itself was generated the same way every prior tranche&#x27;s report was).</li></ol>
+</main></body></html>
