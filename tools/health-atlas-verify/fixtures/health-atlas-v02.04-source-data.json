@@ -1,0 +1,2991 @@
+{
+  "references": {
+    "r1": {
+      "name": "MedlinePlus (U.S. National Library of Medicine, NIH)",
+      "url": "https://medlineplus.gov"
+    },
+    "r2": {
+      "name": "Mayo Clinic",
+      "url": "https://www.mayoclinic.org"
+    },
+    "r3": {
+      "name": "Cleveland Clinic",
+      "url": "https://my.clevelandclinic.org"
+    },
+    "r4": {
+      "name": "Harvard T.H. Chan School of Public Health — The Nutrition Source",
+      "url": "https://www.hsph.harvard.edu/nutritionsource/"
+    },
+    "r5": {
+      "name": "USDA FoodData Central",
+      "url": "https://fdc.nal.usda.gov"
+    },
+    "r6": {
+      "name": "National Institute on Aging (NIH)",
+      "url": "https://www.nia.nih.gov"
+    },
+    "r7": {
+      "name": "World Health Organization",
+      "url": "https://www.who.int"
+    },
+    "r8": {
+      "name": "NIH Office of Dietary Supplements",
+      "url": "https://ods.od.nih.gov"
+    }
+  },
+  "systems": [
+    {
+      "id": "cardio",
+      "name": "Cardiovascular",
+      "color": "#B5484B"
+    },
+    {
+      "id": "resp",
+      "name": "Respiratory",
+      "color": "#4C8C7C"
+    },
+    {
+      "id": "digest",
+      "name": "Digestive",
+      "color": "#C9A24B"
+    },
+    {
+      "id": "nervous",
+      "name": "Nervous",
+      "color": "#6E5AA6"
+    },
+    {
+      "id": "renal",
+      "name": "Renal & Urinary",
+      "color": "#3E7CA6"
+    },
+    {
+      "id": "musculo",
+      "name": "Musculoskeletal",
+      "color": "#8C8370"
+    },
+    {
+      "id": "endocrine",
+      "name": "Endocrine",
+      "color": "#A65C85"
+    },
+    {
+      "id": "integument",
+      "name": "Integumentary",
+      "color": "#7A9E5E"
+    },
+    {
+      "id": "sensory",
+      "name": "Sensory",
+      "color": "#C97B3E"
+    }
+  ],
+  "organs": [
+    {
+      "id": "heart",
+      "name": "Heart",
+      "system": "cardio",
+      "functions": [
+        "Pumps blood through the body (roughly 100,000 beats/day)",
+        "Delivers oxygen and nutrients to tissues",
+        "Removes carbon dioxide and metabolic waste",
+        "Helps maintain blood pressure"
+      ],
+      "nutritionNeeds": [
+        "Omega-3 (EPA/DHA): at least 250mg/day",
+        "Potassium: about 3,400mg/day (men), 2,600mg/day (women)",
+        "Magnesium: about 400mg/day",
+        "Soluble fibre: part of 25–30g/day total fibre",
+        "Sodium: keep under 2,300mg/day"
+      ],
+      "foodSources": [
+        "Fatty fish: 2 servings (~150g) per week",
+        "Leafy greens: 1 cup/day",
+        "Almonds: 30g/day",
+        "Oats: 40g/day",
+        "Olive oil: 2 tbsp/day"
+      ],
+      "activity": [
+        "150 min/week moderate aerobic activity, or 75 min vigorous",
+        "Resistance training 2x/week",
+        "Avoiding prolonged sitting"
+      ],
+      "deterioration": [
+        "Chronic high sodium intake",
+        "Trans fats and excess saturated fat",
+        "Smoking",
+        "Sedentary lifestyle",
+        "Chronic stress",
+        "Uncontrolled hypertension or diabetes"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r4",
+        "r8"
+      ],
+      "role": "main",
+      "partType": "Organ",
+      "connections": [
+        "Lungs",
+        "Kidneys",
+        "Brain",
+        "Liver",
+        "Skeletal Muscles",
+        "Kidneys (fluid & electrolyte balance)",
+        "Thyroid (metabolic rate)",
+        "Adrenal Glands (stress hormones)",
+        "Lungs (oxygenation)"
+      ]
+    },
+    {
+      "id": "lungs",
+      "name": "Lungs",
+      "system": "resp",
+      "functions": [
+        "Gas exchange — oxygen in, carbon dioxide out",
+        "Helps regulate blood pH via CO2 removal",
+        "Filters small clots from venous blood"
+      ],
+      "nutritionNeeds": [
+        "Vitamin C: 75–90mg/day",
+        "Vitamin E: 15mg/day",
+        "Vitamin A: 700–900mcg/day",
+        "Water: 2–3L/day"
+      ],
+      "foodSources": [
+        "Citrus fruit: 1 serving/day",
+        "Bell peppers: ½ cup/day",
+        "Carrots: 1 medium/day",
+        "Sunflower seeds: 30g/day"
+      ],
+      "activity": [
+        "Aerobic exercise to build lung capacity",
+        "Diaphragmatic / deep-breathing practice",
+        "Avoiding smoke and pollutant exposure"
+      ],
+      "deterioration": [
+        "Smoking or vaping",
+        "Air pollution exposure",
+        "Chronic shallow breathing / poor posture",
+        "Untreated respiratory infections"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r4",
+        "r7"
+      ],
+      "role": "main",
+      "partType": "Organ",
+      "connections": [
+        "Heart",
+        "Brain",
+        "All tissues (oxygen delivery)",
+        "Heart (pulmonary circulation)",
+        "Diaphragm & chest muscles",
+        "Air quality"
+      ]
+    },
+    {
+      "id": "liver",
+      "name": "Liver",
+      "system": "digest",
+      "functions": [
+        "Detoxifies blood",
+        "Produces bile for fat digestion",
+        "Stores glycogen and vitamins",
+        "Synthesises proteins including clotting factors",
+        "Metabolises medications and alcohol"
+      ],
+      "nutritionNeeds": [
+        "Protein: about 0.8g/kg body weight/day",
+        "B vitamins: B6, B9 (folate), B12",
+        "Choline: 425–550mg/day",
+        "Antioxidants: Vitamin E and C"
+      ],
+      "foodSources": [
+        "Eggs: 1/day",
+        "Leafy greens: 1 cup/day",
+        "Legumes: 1 cup/day",
+        "Whole grains: 2–3 servings/day",
+        "Garlic: 1–2 cloves/day"
+      ],
+      "activity": [
+        "Regular moderate exercise to reduce fatty-liver risk",
+        "Maintaining a healthy body weight"
+      ],
+      "deterioration": [
+        "Excess alcohol intake",
+        "High intake of added sugar / processed food",
+        "Obesity",
+        "Certain medications",
+        "Viral hepatitis",
+        "Toxin exposure"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r3",
+        "r4"
+      ],
+      "role": "main",
+      "partType": "Organ",
+      "connections": [
+        "Digestive system",
+        "Blood (clotting factors)",
+        "Brain (ammonia clearance)",
+        "Pancreas",
+        "Gallbladder",
+        "Small Intestine (absorption)",
+        "Kidneys"
+      ]
+    },
+    {
+      "id": "stomach",
+      "name": "Stomach",
+      "system": "digest",
+      "functions": [
+        "Stores food temporarily",
+        "Secretes acid and pepsin to begin protein digestion",
+        "Churns food into chyme",
+        "Regulates release into the small intestine"
+      ],
+      "nutritionNeeds": [
+        "Protein for enzyme production",
+        "Zinc: 8–11mg/day",
+        "Vitamin B12 (needs intrinsic factor made here)",
+        "Adequate fluids"
+      ],
+      "foodSources": [
+        "Lean meat: 1 serving/day",
+        "Fish: 2–3 servings/week",
+        "Legumes: 1 cup/day",
+        "Pumpkin seeds: 30g/day"
+      ],
+      "activity": [
+        "Regular meal timing",
+        "Staying upright after meals",
+        "Stress management (stress alters acid secretion)"
+      ],
+      "deterioration": [
+        "Excess alcohol",
+        "Frequent NSAID use",
+        "H. pylori infection",
+        "Chronic stress",
+        "Smoking"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r3"
+      ],
+      "role": "main",
+      "partType": "Organ",
+      "connections": [
+        "Small Intestine",
+        "Pancreas (signals enzyme release)",
+        "Liver",
+        "Nervous system (vagus nerve / stress)",
+        "Oesophagus",
+        "Overall diet composition"
+      ]
+    },
+    {
+      "id": "small-intestine",
+      "name": "Small Intestine",
+      "system": "digest",
+      "functions": [
+        "Main site of nutrient digestion and absorption",
+        "Uses enzymes from the pancreas and bile from the liver"
+      ],
+      "nutritionNeeds": [
+        "Fibre: 25–38g/day supports motility",
+        "Adequate hydration",
+        "Absorption depends on B12, folate, iron intake"
+      ],
+      "foodSources": [
+        "Whole grains: 2–3 servings/day",
+        "Fruit: 2 servings/day",
+        "Vegetables: 2–3 servings/day",
+        "Fermented foods (yoghurt): 1 serving/day"
+      ],
+      "activity": [
+        "Regular physical activity supports motility",
+        "Adequate hydration"
+      ],
+      "deterioration": [
+        "Low-fibre diet",
+        "Chronic inflammation (e.g. Crohn's disease)",
+        "Gluten sensitivity in susceptible people",
+        "Antibiotic overuse disrupting the microbiome"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r4"
+      ],
+      "role": "main",
+      "partType": "Organ",
+      "connections": [
+        "Whole body (nutrient supply)",
+        "Liver",
+        "Gut immune tissue",
+        "Stomach",
+        "Pancreas",
+        "Gut microbiome"
+      ]
+    },
+    {
+      "id": "large-intestine",
+      "name": "Large Intestine",
+      "system": "digest",
+      "functions": [
+        "Absorbs water and electrolytes",
+        "Hosts the microbiome that ferments fibre",
+        "Forms and stores stool"
+      ],
+      "nutritionNeeds": [
+        "Fibre: 25–38g/day, soluble and insoluble",
+        "Water: 2–3L/day",
+        "Prebiotic-rich foods"
+      ],
+      "foodSources": [
+        "Beans/lentils: 1 cup/day",
+        "Whole grains: 2–3 servings/day",
+        "Bananas: 1/day",
+        "Onions & garlic: regularly"
+      ],
+      "activity": [
+        "Regular movement supports motility",
+        "Adequate hydration"
+      ],
+      "deterioration": [
+        "Low-fibre diet",
+        "Dehydration",
+        "Chronic laxative overuse",
+        "Sedentary lifestyle"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r4"
+      ],
+      "role": "main",
+      "partType": "Organ",
+      "connections": [
+        "Immune system (microbiome)",
+        "Metabolic health",
+        "Small Intestine",
+        "Gut microbiome",
+        "Diet",
+        "Stress"
+      ]
+    },
+    {
+      "id": "pancreas",
+      "name": "Pancreas",
+      "system": "digest",
+      "functions": [
+        "Produces digestive enzymes (lipase, amylase, protease)",
+        "Produces insulin and glucagon to regulate blood glucose"
+      ],
+      "nutritionNeeds": [
+        "Balanced carbohydrate intake",
+        "Chromium and Magnesium",
+        "Adequate protein",
+        "Limited refined sugar"
+      ],
+      "foodSources": [
+        "Whole grains: 2–3 servings/day",
+        "Legumes: 1 cup/day",
+        "Leafy greens: 1 cup/day",
+        "Berries: 1 cup/day"
+      ],
+      "activity": [
+        "Regular aerobic activity improves insulin sensitivity",
+        "Weight management"
+      ],
+      "deterioration": [
+        "Chronic excess alcohol",
+        "High sugar / refined-carb diet",
+        "Obesity",
+        "Smoking",
+        "Gallstones blocking the pancreatic duct"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r6",
+        "r8"
+      ],
+      "role": "main",
+      "partType": "Organ",
+      "connections": [
+        "Small Intestine (digestion)",
+        "Liver",
+        "Blood-glucose regulation (whole body)",
+        "Gallbladder",
+        "Diet",
+        "Adrenal glands (stress hormones raise glucose)"
+      ]
+    },
+    {
+      "id": "kidneys",
+      "name": "Kidneys",
+      "system": "renal",
+      "functions": [
+        "Filter blood, removing waste and excess fluid as urine",
+        "Regulate electrolyte balance",
+        "Help regulate blood pressure (via renin)",
+        "Activate vitamin D",
+        "Stimulate red blood cell production (erythropoietin)"
+      ],
+      "nutritionNeeds": [
+        "Water: 2–3L/day",
+        "Moderate, not excessive, protein and sodium",
+        "Balanced potassium and phosphorus",
+        "Vitamin D"
+      ],
+      "foodSources": [
+        "Water: throughout the day",
+        "Berries: 1 cup/day",
+        "Cauliflower: 1 cup/day",
+        "Fish: 2–3 servings/week",
+        "Olive oil: 2 tbsp/day"
+      ],
+      "activity": [
+        "Regular moderate exercise",
+        "Staying well hydrated",
+        "Blood pressure management"
+      ],
+      "deterioration": [
+        "Chronic dehydration",
+        "Excess sodium intake",
+        "Uncontrolled diabetes or hypertension",
+        "Frequent NSAID use",
+        "Very high protein intake in susceptible people"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r3",
+        "r8"
+      ],
+      "role": "main",
+      "partType": "Organ",
+      "connections": [
+        "Blood pressure regulation",
+        "Bone health (vitamin D activation)",
+        "Blood (red cell production)",
+        "Heart (blood flow)",
+        "Adrenal glands",
+        "Liver",
+        "Diet & hydration"
+      ]
+    },
+    {
+      "id": "bladder",
+      "name": "Bladder",
+      "system": "renal",
+      "functions": [
+        "Stores urine produced by the kidneys",
+        "Contracts to expel urine"
+      ],
+      "nutritionNeeds": [
+        "Adequate hydration",
+        "Limiting bladder irritants (excess caffeine, alcohol)"
+      ],
+      "foodSources": [
+        "Water: throughout the day",
+        "Pears: 1/day",
+        "Bananas: 1/day",
+        "Whole grains: 2 servings/day"
+      ],
+      "activity": [
+        "Pelvic floor exercises",
+        "Regular voiding habits",
+        "Steady hydration"
+      ],
+      "deterioration": [
+        "Chronic dehydration or overhydration",
+        "Habitually delaying urination",
+        "Recurrent infections",
+        "Bladder irritants in sensitive people"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ],
+      "role": "main",
+      "partType": "Organ",
+      "connections": [
+        "Renal system (waste elimination)",
+        "Kidneys",
+        "Nervous system (bladder control)",
+        "Diet"
+      ]
+    },
+    {
+      "id": "brain",
+      "name": "Brain",
+      "system": "nervous",
+      "functions": [
+        "Controls cognition, memory and emotion",
+        "Coordinates voluntary movement",
+        "Regulates autonomic functions (breathing, heart rate)",
+        "Processes sensory input"
+      ],
+      "nutritionNeeds": [
+        "Omega-3 DHA: 250–500mg/day",
+        "B vitamins: B6, B9, B12",
+        "Antioxidants",
+        "Steady glucose supply",
+        "Adequate hydration"
+      ],
+      "foodSources": [
+        "Fatty fish: 2 servings/week",
+        "Walnuts: 30g/day",
+        "Berries: 1 cup/day",
+        "Leafy greens: 1 cup/day",
+        "Eggs: 1/day"
+      ],
+      "activity": [
+        "Regular aerobic exercise",
+        "7–9 hours of sleep/night",
+        "Cognitively stimulating activity",
+        "Social engagement"
+      ],
+      "deterioration": [
+        "Chronic sleep deprivation",
+        "Chronic stress",
+        "Excess alcohol",
+        "Diet high in saturated fat/sugar",
+        "Sedentary lifestyle",
+        "Untreated cardiovascular risk factors"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r4",
+        "r6"
+      ],
+      "role": "main",
+      "partType": "Organ",
+      "connections": [
+        "Entire nervous system",
+        "Coordination of other organs",
+        "Heart (blood flow & oxygen)",
+        "Gut microbiome (gut–brain axis)",
+        "Endocrine glands"
+      ]
+    },
+    {
+      "id": "spinal-cord",
+      "name": "Spinal Cord",
+      "system": "nervous",
+      "functions": [
+        "Relays signals between brain and body",
+        "Coordinates reflexes",
+        "Protected within the vertebral column"
+      ],
+      "nutritionNeeds": [
+        "Vitamin B12 (myelin maintenance)",
+        "Vitamin D",
+        "Calcium (vertebral support)",
+        "Omega-3s"
+      ],
+      "foodSources": [
+        "Fish: 2–3 servings/week",
+        "Dairy or fortified alternatives: 2–3 servings/day",
+        "Leafy greens: 1 cup/day",
+        "Eggs: 1/day"
+      ],
+      "activity": [
+        "Posture-supportive exercise",
+        "Core strengthening",
+        "Avoiding prolonged poor posture"
+      ],
+      "deterioration": [
+        "Vitamin B12 deficiency (demyelination)",
+        "Spinal injury",
+        "Prolonged poor posture / sitting",
+        "Obesity (disc stress)"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r8"
+      ],
+      "role": "main",
+      "partType": "Organ",
+      "connections": [
+        "Peripheral nervous system",
+        "Reflexive movement",
+        "Brain",
+        "Bones / spine",
+        "Muscles"
+      ]
+    },
+    {
+      "id": "bones",
+      "name": "Bones",
+      "system": "musculo",
+      "functions": [
+        "Structural support",
+        "Protects internal organs",
+        "Stores calcium and phosphorus",
+        "Produces blood cells (bone marrow)"
+      ],
+      "nutritionNeeds": [
+        "Calcium: 1,000–1,200mg/day",
+        "Vitamin D: 600–800 IU/day",
+        "Vitamin K",
+        "Magnesium",
+        "Protein"
+      ],
+      "foodSources": [
+        "Dairy or fortified alternatives: 2–3 servings/day",
+        "Leafy greens: 1 cup/day",
+        "Sardines (with bones): 2 servings/week",
+        "Nuts: 30g/day",
+        "Legumes: 1 cup/day"
+      ],
+      "activity": [
+        "Weight-bearing exercise",
+        "Resistance training",
+        "Sensible sunlight exposure for vitamin D"
+      ],
+      "deterioration": [
+        "Sedentary lifestyle",
+        "Calcium/vitamin D deficiency",
+        "Very high caffeine or soda intake",
+        "Smoking",
+        "Prolonged corticosteroid use"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r6"
+      ],
+      "role": "main",
+      "partType": "Organ",
+      "connections": [
+        "Muscles (attachment/leverage)",
+        "Blood production",
+        "Organ protection",
+        "Endocrine glands (parathyroid, thyroid)",
+        "Diet",
+        "Kidneys (vitamin D activation)"
+      ]
+    },
+    {
+      "id": "skeletal-muscles",
+      "name": "Skeletal Muscles",
+      "system": "musculo",
+      "functions": [
+        "Enable voluntary movement and posture",
+        "Generate heat",
+        "Support glucose metabolism"
+      ],
+      "nutritionNeeds": [
+        "Protein: 1.2–2.0g/kg/day for active adults",
+        "Leucine-rich foods",
+        "Water",
+        "Iron",
+        "B vitamins"
+      ],
+      "foodSources": [
+        "Lean meat: 1 serving/day",
+        "Fish: 2–3 servings/week",
+        "Eggs: 1/day",
+        "Legumes: 1 cup/day",
+        "Dairy or fortified alternatives: 2 servings/day"
+      ],
+      "activity": [
+        "Resistance/strength training 2–3x/week",
+        "Regular movement",
+        "Adequate protein at each meal"
+      ],
+      "deterioration": [
+        "Sedentary lifestyle (age-related muscle loss)",
+        "Inadequate protein intake",
+        "Ageing without resistance exercise",
+        "Chronic illness or inflammation"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r4"
+      ],
+      "role": "main",
+      "partType": "Organ",
+      "connections": [
+        "Skeleton (movement)",
+        "Metabolism (glucose disposal)",
+        "Circulation (muscle pump)",
+        "Nervous system (motor control)",
+        "Hormones (testosterone, growth hormone)",
+        "Diet"
+      ]
+    },
+    {
+      "id": "thyroid",
+      "name": "Thyroid",
+      "system": "endocrine",
+      "functions": [
+        "Produces hormones (T3/T4) that regulate metabolism, growth and energy use"
+      ],
+      "nutritionNeeds": [
+        "Iodine: 150mcg/day (adults)",
+        "Selenium: 55mcg/day",
+        "Zinc",
+        "Tyrosine (from dietary protein)"
+      ],
+      "foodSources": [
+        "Iodised salt: in moderation",
+        "Fish/seafood: 2–3 servings/week",
+        "Eggs: 1/day",
+        "Brazil nuts: 1–2/day",
+        "Dairy or fortified alternatives: 2 servings/day"
+      ],
+      "activity": [
+        "Regular movement supports metabolic health",
+        "Stress management"
+      ],
+      "deterioration": [
+        "Iodine deficiency or excess",
+        "Autoimmune conditions",
+        "Chronic stress",
+        "Very high raw cruciferous-vegetable intake without adequate iodine"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r8"
+      ],
+      "role": "main",
+      "partType": "Organ",
+      "connections": [
+        "Metabolic rate regulation (whole body)",
+        "Heart rate",
+        "Growth and development",
+        "Pituitary gland",
+        "Diet (iodine/selenium)",
+        "Stress / adrenal glands"
+      ]
+    },
+    {
+      "id": "adrenal-glands",
+      "name": "Adrenal Glands",
+      "system": "endocrine",
+      "functions": [
+        "Produce cortisol (stress response)",
+        "Produce adrenaline",
+        "Produce aldosterone (sodium & fluid balance)"
+      ],
+      "nutritionNeeds": [
+        "Vitamin C",
+        "B vitamins: B5, B6",
+        "Magnesium",
+        "Balanced sodium/potassium intake"
+      ],
+      "foodSources": [
+        "Citrus fruit: 1 serving/day",
+        "Leafy greens: 1 cup/day",
+        "Nuts/seeds: 30g/day",
+        "Whole grains: 2 servings/day"
+      ],
+      "activity": [
+        "Stress-reduction practices",
+        "Adequate sleep",
+        "Avoiding chronic overtraining"
+      ],
+      "deterioration": [
+        "Chronic stress",
+        "Sleep deprivation",
+        "Excessive caffeine",
+        "Chronic illness"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r8"
+      ],
+      "role": "main",
+      "partType": "Organ",
+      "connections": [
+        "Stress response (whole body)",
+        "Blood pressure / fluid balance (with kidneys)",
+        "Metabolism",
+        "Pituitary gland (ACTH)",
+        "Kidneys",
+        "Nervous system (stress signals)"
+      ]
+    },
+    {
+      "id": "skin",
+      "name": "Skin",
+      "system": "integument",
+      "functions": [
+        "Protective barrier against pathogens and UV",
+        "Regulates temperature via sweating",
+        "Synthesises vitamin D from sunlight",
+        "Sensory organ for touch"
+      ],
+      "nutritionNeeds": [
+        "Vitamin C (collagen synthesis)",
+        "Vitamin E",
+        "Zinc",
+        "Protein",
+        "Omega-3s",
+        "Water"
+      ],
+      "foodSources": [
+        "Citrus fruit: 1 serving/day",
+        "Nuts/seeds: 30g/day",
+        "Fish: 2–3 servings/week",
+        "Water: throughout the day",
+        "Berries: 1 cup/day"
+      ],
+      "activity": [
+        "Sensible, protected sun exposure",
+        "Adequate hydration",
+        "Basic skin hygiene"
+      ],
+      "deterioration": [
+        "Chronic sun overexposure",
+        "Smoking",
+        "Dehydration",
+        "Poor diet",
+        "Chronic stress"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r4"
+      ],
+      "role": "main",
+      "partType": "Organ",
+      "connections": [
+        "Immune defence (barrier)",
+        "Temperature regulation",
+        "Vitamin D synthesis (supports bones)",
+        "Diet & hydration",
+        "Hormones",
+        "Environment (sun, pollution)"
+      ]
+    },
+    {
+      "id": "eyes",
+      "name": "Eyes",
+      "system": "sensory",
+      "functions": [
+        "Capture light and convert it to neural signals for the brain to interpret as vision"
+      ],
+      "nutritionNeeds": [
+        "Vitamin A: 700–900mcg/day",
+        "Lutein & zeaxanthin",
+        "Omega-3 DHA",
+        "Vitamin C and E",
+        "Zinc"
+      ],
+      "foodSources": [
+        "Carrots: 1 medium/day",
+        "Leafy greens: 1 cup/day",
+        "Fatty fish: 2 servings/week",
+        "Eggs: 1/day",
+        "Citrus fruit: 1 serving/day"
+      ],
+      "activity": [
+        "Regular screen breaks (20-20-20 rule)",
+        "Protective eyewear in strong sun/UV",
+        "Regular eye exams"
+      ],
+      "deterioration": [
+        "Excess UV exposure without protection",
+        "Smoking",
+        "Prolonged uncorrected screen strain",
+        "Poorly controlled diabetes (retinopathy)",
+        "Poor diet"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r4"
+      ],
+      "role": "main",
+      "partType": "Organ",
+      "connections": [
+        "Brain (visual processing)",
+        "Balance and coordination",
+        "Brain",
+        "Blood vessels (retinal circulation)",
+        "Diet"
+      ]
+    },
+    {
+      "id": "aorta",
+      "name": "Aorta",
+      "system": "cardio",
+      "role": "supportive",
+      "partType": "Artery",
+      "functions": [
+        "The body's largest artery — carries oxygen-rich blood from the heart to the rest of the body"
+      ],
+      "connections": [
+        "Heart",
+        "Kidneys",
+        "Brain"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "vena-cava",
+      "name": "Vena Cava (Superior & Inferior)",
+      "system": "cardio",
+      "role": "supportive",
+      "partType": "Vein",
+      "functions": [
+        "The two largest veins — return oxygen-poor blood from the upper and lower body back to the heart"
+      ],
+      "connections": [
+        "Heart",
+        "Liver",
+        "Kidneys"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "coronary-arteries",
+      "name": "Coronary Arteries",
+      "system": "cardio",
+      "role": "supportive",
+      "partType": "Artery",
+      "functions": [
+        "Supply oxygen-rich blood to the heart muscle itself"
+      ],
+      "connections": [
+        "Heart"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "carotid-arteries",
+      "name": "Carotid Arteries",
+      "system": "cardio",
+      "role": "supportive",
+      "partType": "Artery",
+      "functions": [
+        "Main arteries supplying blood to the brain, neck and face"
+      ],
+      "connections": [
+        "Heart",
+        "Brain"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "trachea",
+      "name": "Trachea (Windpipe)",
+      "system": "resp",
+      "role": "supportive",
+      "partType": "Tissue",
+      "functions": [
+        "Airway connecting the throat to the bronchi, carrying air to and from the lungs"
+      ],
+      "connections": [
+        "Lungs"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "bronchi",
+      "name": "Bronchi",
+      "system": "resp",
+      "role": "supportive",
+      "partType": "Tissue",
+      "functions": [
+        "Branching airways carrying air from the trachea into each lung"
+      ],
+      "connections": [
+        "Lungs",
+        "Trachea (Windpipe)"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "diaphragm",
+      "name": "Diaphragm",
+      "system": "resp",
+      "role": "supportive",
+      "partType": "Tissue",
+      "functions": [
+        "Main muscle of breathing — contracts to draw air into the lungs"
+      ],
+      "connections": [
+        "Lungs",
+        "Heart"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "esophagus",
+      "name": "Oesophagus",
+      "system": "digest",
+      "role": "supportive",
+      "partType": "Tissue",
+      "functions": [
+        "Muscular tube carrying swallowed food from the throat to the stomach"
+      ],
+      "connections": [
+        "Stomach"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "gallbladder",
+      "name": "Gallbladder",
+      "system": "digest",
+      "role": "supportive",
+      "partType": "Organ",
+      "functions": [
+        "Stores and concentrates bile made by the liver, releasing it to help digest fat"
+      ],
+      "connections": [
+        "Liver",
+        "Small Intestine"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "salivary-glands",
+      "name": "Salivary Glands",
+      "system": "digest",
+      "role": "supportive",
+      "partType": "Gland",
+      "functions": [
+        "Produce saliva to begin starch digestion and ease swallowing"
+      ],
+      "connections": [
+        "Stomach"
+      ],
+      "refs": [
+        "r1"
+      ]
+    },
+    {
+      "id": "vagus-nerve",
+      "name": "Vagus Nerve",
+      "system": "nervous",
+      "role": "supportive",
+      "partType": "Nerve",
+      "functions": [
+        "Major nerve linking the brain to the heart, lungs and digestive tract; central to the rest-and-digest response"
+      ],
+      "connections": [
+        "Brain",
+        "Heart",
+        "Stomach",
+        "Lungs"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "sciatic-nerve",
+      "name": "Sciatic Nerve",
+      "system": "nervous",
+      "role": "supportive",
+      "partType": "Nerve",
+      "functions": [
+        "The body's longest nerve, running from the lower spine down each leg"
+      ],
+      "connections": [
+        "Spinal Cord",
+        "Skeletal Muscles"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "peripheral-nerves",
+      "name": "Peripheral Nerves",
+      "system": "nervous",
+      "role": "supportive",
+      "partType": "Nerve",
+      "functions": [
+        "Network of nerves carrying signals between the spinal cord and the rest of the body"
+      ],
+      "connections": [
+        "Spinal Cord",
+        "Skeletal Muscles",
+        "Skin"
+      ],
+      "refs": [
+        "r1"
+      ]
+    },
+    {
+      "id": "ureters",
+      "name": "Ureters",
+      "system": "renal",
+      "role": "supportive",
+      "partType": "Duct",
+      "functions": [
+        "Thin tubes carrying urine from each kidney down to the bladder"
+      ],
+      "connections": [
+        "Kidneys",
+        "Bladder"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "urethra",
+      "name": "Urethra",
+      "system": "renal",
+      "role": "supportive",
+      "partType": "Duct",
+      "functions": [
+        "Tube carrying urine from the bladder out of the body"
+      ],
+      "connections": [
+        "Bladder"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "renal-vessels",
+      "name": "Renal Blood Vessels",
+      "system": "renal",
+      "role": "supportive",
+      "partType": "Artery",
+      "functions": [
+        "The renal artery and vein carry blood to and from each kidney for filtering"
+      ],
+      "connections": [
+        "Kidneys",
+        "Heart"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "vertebral-column",
+      "name": "Vertebral Column (Spine)",
+      "system": "musculo",
+      "role": "supportive",
+      "partType": "Tissue",
+      "functions": [
+        "Chain of vertebrae protecting the spinal cord and supporting the trunk"
+      ],
+      "connections": [
+        "Spinal Cord",
+        "Bones"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "ribcage",
+      "name": "Ribcage",
+      "system": "musculo",
+      "role": "supportive",
+      "partType": "Tissue",
+      "functions": [
+        "Bony cage protecting the heart and lungs and assisting breathing"
+      ],
+      "connections": [
+        "Heart",
+        "Lungs",
+        "Bones"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "joints-cartilage",
+      "name": "Joints & Cartilage",
+      "system": "musculo",
+      "role": "supportive",
+      "partType": "Tissue",
+      "functions": [
+        "Cushion and connect bones, allowing smooth, low-friction movement"
+      ],
+      "connections": [
+        "Bones",
+        "Skeletal Muscles"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "tendons-ligaments",
+      "name": "Tendons & Ligaments",
+      "system": "musculo",
+      "role": "supportive",
+      "partType": "Tissue",
+      "functions": [
+        "Tendons attach muscle to bone; ligaments attach bone to bone, stabilising joints"
+      ],
+      "connections": [
+        "Bones",
+        "Skeletal Muscles"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "pituitary-gland",
+      "name": "Pituitary Gland",
+      "system": "endocrine",
+      "role": "supportive",
+      "partType": "Gland",
+      "functions": [
+        "The body's \"master gland\" — signals the thyroid, adrenal glands and other glands to release their hormones"
+      ],
+      "connections": [
+        "Thyroid",
+        "Adrenal Glands",
+        "Brain"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "parathyroid-glands",
+      "name": "Parathyroid Glands",
+      "system": "endocrine",
+      "role": "supportive",
+      "partType": "Gland",
+      "functions": [
+        "Four small glands beside the thyroid that regulate blood calcium levels"
+      ],
+      "connections": [
+        "Thyroid",
+        "Bones"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "pineal-gland",
+      "name": "Pineal Gland",
+      "system": "endocrine",
+      "role": "supportive",
+      "partType": "Gland",
+      "functions": [
+        "Small brain gland that produces melatonin, regulating the sleep–wake cycle"
+      ],
+      "connections": [
+        "Brain"
+      ],
+      "refs": [
+        "r1"
+      ]
+    },
+    {
+      "id": "sweat-glands",
+      "name": "Sweat Glands",
+      "system": "integument",
+      "role": "supportive",
+      "partType": "Gland",
+      "functions": [
+        "Release sweat to cool the body via evaporation"
+      ],
+      "connections": [
+        "Skin"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "sebaceous-glands",
+      "name": "Sebaceous Glands",
+      "system": "integument",
+      "role": "supportive",
+      "partType": "Gland",
+      "functions": [
+        "Produce oil (sebum) that lubricates and waterproofs the skin and hair"
+      ],
+      "connections": [
+        "Skin"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "hair-nails",
+      "name": "Hair & Nails",
+      "system": "integument",
+      "role": "supportive",
+      "partType": "Tissue",
+      "functions": [
+        "Protective keratin structures growing from the skin"
+      ],
+      "connections": [
+        "Skin"
+      ],
+      "refs": [
+        "r1"
+      ]
+    },
+    {
+      "id": "ears",
+      "name": "Ears",
+      "system": "sensory",
+      "role": "supportive",
+      "partType": "Organ",
+      "functions": [
+        "Capture sound waves and maintain balance"
+      ],
+      "connections": [
+        "Brain"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "optic-nerve",
+      "name": "Optic Nerve",
+      "system": "sensory",
+      "role": "supportive",
+      "partType": "Nerve",
+      "functions": [
+        "Carries visual signals from each eye to the brain"
+      ],
+      "connections": [
+        "Eyes",
+        "Brain"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "olfactory-system",
+      "name": "Olfactory System (Nose)",
+      "system": "sensory",
+      "role": "supportive",
+      "partType": "Organ",
+      "functions": [
+        "Detects smell and contributes strongly to taste perception"
+      ],
+      "connections": [
+        "Brain"
+      ],
+      "refs": [
+        "r1"
+      ]
+    }
+  ],
+  "foods": [
+    {
+      "id": "air-outdoor",
+      "name": "Fresh Outdoor Air",
+      "category": "Air",
+      "servingQty": "Continuous",
+      "nutrition": [
+        "Oxygen: ~21% of atmosphere, used in every cell's energy production"
+      ],
+      "organs": [
+        "Lungs: continuous",
+        "Heart: continuous",
+        "Brain: continuous"
+      ],
+      "refs": [
+        "r1",
+        "r7"
+      ]
+    },
+    {
+      "id": "air-quality",
+      "name": "Clean, Well-Ventilated Air",
+      "category": "Air",
+      "servingQty": "Continuous",
+      "nutrition": [
+        "Low particulate matter (PM2.5) reduces airway irritation"
+      ],
+      "organs": [
+        "Lungs: continuous exposure benefit",
+        "Skin: reduced pollutant load"
+      ],
+      "refs": [
+        "r7"
+      ]
+    },
+    {
+      "id": "water-plain",
+      "name": "Plain Water",
+      "category": "Water",
+      "servingQty": "~2.7L/day (women), ~3.7L/day (men), incl. food moisture",
+      "nutrition": [
+        "Hydration",
+        "Trace minerals vary by source"
+      ],
+      "organs": [
+        "Kidneys: continuous",
+        "Brain: continuous",
+        "Skin: continuous",
+        "Large Intestine: continuous"
+      ],
+      "refs": [
+        "r1",
+        "r5"
+      ]
+    },
+    {
+      "id": "water-mineral",
+      "name": "Mineral Water",
+      "category": "Water",
+      "servingQty": "1–2 cups/day, as part of total fluids",
+      "nutrition": [
+        "Calcium, Magnesium and other trace minerals (source-dependent)"
+      ],
+      "organs": [
+        "Bones: supportive",
+        "Heart: supportive"
+      ],
+      "refs": [
+        "r1",
+        "r5"
+      ]
+    },
+    {
+      "id": "olive-oil",
+      "name": "Olive Oil",
+      "category": "Fat",
+      "servingQty": "2 tbsp/day",
+      "nutrition": [
+        "Monounsaturated fat",
+        "Vitamin E",
+        "Polyphenols"
+      ],
+      "organs": [
+        "Heart: 2 tbsp/day",
+        "Brain: supportive"
+      ],
+      "refs": [
+        "r4",
+        "r5"
+      ]
+    },
+    {
+      "id": "avocado",
+      "name": "Avocado",
+      "category": "Fat",
+      "servingQty": "½ fruit/day",
+      "nutrition": [
+        "Monounsaturated fat",
+        "Potassium",
+        "Fibre"
+      ],
+      "organs": [
+        "Heart: supportive",
+        "Large Intestine: supportive"
+      ],
+      "refs": [
+        "r4",
+        "r5"
+      ]
+    },
+    {
+      "id": "ghee-butter",
+      "name": "Butter / Ghee (moderate use)",
+      "category": "Fat",
+      "servingQty": "1 tsp/day",
+      "nutrition": [
+        "Saturated fat",
+        "Vitamin A",
+        "Vitamin K2"
+      ],
+      "organs": [
+        "Skin: supports fat-soluble vitamin absorption"
+      ],
+      "refs": [
+        "r4",
+        "r5"
+      ]
+    },
+    {
+      "id": "oats",
+      "name": "Oats",
+      "category": "Grains",
+      "servingQty": "40g/day",
+      "nutrition": [
+        "Beta-glucan soluble fibre",
+        "Manganese",
+        "B vitamins"
+      ],
+      "organs": [
+        "Heart: 40g/day",
+        "Pancreas: supportive",
+        "Large Intestine: supportive"
+      ],
+      "refs": [
+        "r4",
+        "r5"
+      ]
+    },
+    {
+      "id": "brown-rice",
+      "name": "Brown Rice",
+      "category": "Grains",
+      "servingQty": "1 cup cooked/day",
+      "nutrition": [
+        "Complex carbohydrate",
+        "Magnesium",
+        "Fibre"
+      ],
+      "organs": [
+        "Skeletal Muscles: glycogen supply",
+        "Large Intestine: supportive"
+      ],
+      "refs": [
+        "r5"
+      ]
+    },
+    {
+      "id": "whole-wheat",
+      "name": "Whole Wheat",
+      "category": "Grains",
+      "servingQty": "2–3 servings/day",
+      "nutrition": [
+        "Fibre",
+        "B vitamins",
+        "Iron"
+      ],
+      "organs": [
+        "Large Intestine: 2–3 servings/day",
+        "Skeletal Muscles: supportive"
+      ],
+      "refs": [
+        "r4",
+        "r5"
+      ]
+    },
+    {
+      "id": "almonds",
+      "name": "Almonds",
+      "category": "Nuts",
+      "servingQty": "30g (~23 nuts)/day",
+      "nutrition": [
+        "Vitamin E",
+        "Magnesium",
+        "Healthy fats"
+      ],
+      "organs": [
+        "Heart: 30g/day",
+        "Skin: supportive",
+        "Brain: supportive"
+      ],
+      "refs": [
+        "r4",
+        "r5"
+      ]
+    },
+    {
+      "id": "walnuts",
+      "name": "Walnuts",
+      "category": "Nuts",
+      "servingQty": "30g/day",
+      "nutrition": [
+        "Omega-3 (ALA)",
+        "Antioxidants"
+      ],
+      "organs": [
+        "Brain: 30g/day",
+        "Heart: supportive"
+      ],
+      "refs": [
+        "r4",
+        "r5"
+      ]
+    },
+    {
+      "id": "brazil-nuts",
+      "name": "Brazil Nuts",
+      "category": "Nuts",
+      "servingQty": "1–2 nuts/day",
+      "nutrition": [
+        "Selenium (very high concentration)"
+      ],
+      "organs": [
+        "Thyroid: 1–2 nuts/day — more is not better here, selenium can reach toxic levels"
+      ],
+      "refs": [
+        "r5",
+        "r8"
+      ]
+    },
+    {
+      "id": "lentils",
+      "name": "Lentils",
+      "category": "Beans/Lentils",
+      "servingQty": "1 cup cooked/day",
+      "nutrition": [
+        "Plant protein",
+        "Iron",
+        "Folate",
+        "Fibre"
+      ],
+      "organs": [
+        "Liver: supportive",
+        "Skeletal Muscles: supportive",
+        "Large Intestine: 1 cup/day"
+      ],
+      "refs": [
+        "r4",
+        "r5"
+      ]
+    },
+    {
+      "id": "chickpeas",
+      "name": "Chickpeas",
+      "category": "Beans/Lentils",
+      "servingQty": "1 cup cooked/day",
+      "nutrition": [
+        "Protein",
+        "Fibre",
+        "Manganese"
+      ],
+      "organs": [
+        "Small Intestine: supportive",
+        "Pancreas: supportive"
+      ],
+      "refs": [
+        "r4",
+        "r5"
+      ]
+    },
+    {
+      "id": "black-beans",
+      "name": "Black Beans",
+      "category": "Beans/Lentils",
+      "servingQty": "1 cup cooked/day",
+      "nutrition": [
+        "Protein",
+        "Fibre",
+        "Magnesium",
+        "Antioxidants"
+      ],
+      "organs": [
+        "Heart: supportive",
+        "Large Intestine: supportive"
+      ],
+      "refs": [
+        "r4",
+        "r5"
+      ]
+    },
+    {
+      "id": "spinach",
+      "name": "Spinach",
+      "category": "Veg",
+      "servingQty": "1 cup raw/day",
+      "nutrition": [
+        "Iron",
+        "Folate",
+        "Vitamin K",
+        "Lutein"
+      ],
+      "organs": [
+        "Liver: supportive",
+        "Eyes: 1 cup/day",
+        "Bones: supportive"
+      ],
+      "refs": [
+        "r4",
+        "r5"
+      ]
+    },
+    {
+      "id": "broccoli",
+      "name": "Broccoli",
+      "category": "Veg",
+      "servingQty": "1 cup/day",
+      "nutrition": [
+        "Vitamin C",
+        "Vitamin K",
+        "Sulforaphane"
+      ],
+      "organs": [
+        "Liver: supports detox enzymes"
+      ],
+      "refs": [
+        "r4",
+        "r5"
+      ]
+    },
+    {
+      "id": "carrots",
+      "name": "Carrots",
+      "category": "Veg",
+      "servingQty": "1 medium/day",
+      "nutrition": [
+        "Beta-carotene (Vitamin A)"
+      ],
+      "organs": [
+        "Eyes: 1 medium/day",
+        "Skin: supportive"
+      ],
+      "refs": [
+        "r4",
+        "r5"
+      ]
+    },
+    {
+      "id": "cauliflower",
+      "name": "Cauliflower",
+      "category": "Veg",
+      "servingQty": "1 cup/day",
+      "nutrition": [
+        "Vitamin C",
+        "Fibre",
+        "Low potassium"
+      ],
+      "organs": [
+        "Kidneys: kidney-friendly option"
+      ],
+      "refs": [
+        "r4",
+        "r5"
+      ]
+    },
+    {
+      "id": "berries",
+      "name": "Berries (e.g. blueberries)",
+      "category": "Fruits",
+      "servingQty": "1 cup/day",
+      "nutrition": [
+        "Antioxidants (anthocyanins)",
+        "Vitamin C",
+        "Fibre"
+      ],
+      "organs": [
+        "Brain: 1 cup/day",
+        "Heart: supportive",
+        "Kidneys: supportive"
+      ],
+      "refs": [
+        "r4",
+        "r5"
+      ]
+    },
+    {
+      "id": "citrus",
+      "name": "Citrus (e.g. oranges)",
+      "category": "Fruits",
+      "servingQty": "1 fruit/day",
+      "nutrition": [
+        "Vitamin C",
+        "Folate",
+        "Potassium"
+      ],
+      "organs": [
+        "Skin: 1 fruit/day",
+        "Adrenal Glands: supportive"
+      ],
+      "refs": [
+        "r4",
+        "r5"
+      ]
+    },
+    {
+      "id": "bananas",
+      "name": "Bananas",
+      "category": "Fruits",
+      "servingQty": "1/day",
+      "nutrition": [
+        "Potassium",
+        "Vitamin B6",
+        "Fibre"
+      ],
+      "organs": [
+        "Heart: 1/day",
+        "Skeletal Muscles: supportive",
+        "Bladder: supportive"
+      ],
+      "refs": [
+        "r4",
+        "r5"
+      ]
+    },
+    {
+      "id": "apples",
+      "name": "Apples",
+      "category": "Fruits",
+      "servingQty": "1/day",
+      "nutrition": [
+        "Pectin fibre",
+        "Vitamin C"
+      ],
+      "organs": [
+        "Large Intestine: 1/day",
+        "Heart: supportive"
+      ],
+      "refs": [
+        "r4",
+        "r5"
+      ]
+    },
+    {
+      "id": "turmeric",
+      "name": "Turmeric",
+      "category": "Spices",
+      "servingQty": "~1 tsp/day (with black pepper for absorption)",
+      "nutrition": [
+        "Curcumin (anti-inflammatory compound)"
+      ],
+      "organs": [
+        "Liver: supportive",
+        "Skeletal Muscles: supportive"
+      ],
+      "refs": [
+        "r4"
+      ]
+    },
+    {
+      "id": "cinnamon",
+      "name": "Cinnamon",
+      "category": "Spices",
+      "servingQty": "½–1 tsp/day",
+      "nutrition": [
+        "Antioxidants",
+        "May support glucose regulation"
+      ],
+      "organs": [
+        "Pancreas: supportive"
+      ],
+      "refs": [
+        "r4"
+      ]
+    },
+    {
+      "id": "black-pepper",
+      "name": "Black Pepper",
+      "category": "Spices",
+      "servingQty": "To taste",
+      "nutrition": [
+        "Piperine — enhances absorption of some nutrients"
+      ],
+      "organs": [
+        "Small Intestine: supportive"
+      ],
+      "refs": [
+        "r4"
+      ]
+    },
+    {
+      "id": "garlic",
+      "name": "Garlic",
+      "category": "Herb",
+      "servingQty": "1–2 cloves/day",
+      "nutrition": [
+        "Allicin",
+        "Sulfur compounds"
+      ],
+      "organs": [
+        "Heart: 1–2 cloves/day",
+        "Liver: supportive"
+      ],
+      "refs": [
+        "r4",
+        "r5"
+      ]
+    },
+    {
+      "id": "ginger",
+      "name": "Ginger",
+      "category": "Herb",
+      "servingQty": "1 tsp fresh/day",
+      "nutrition": [
+        "Gingerol (anti-inflammatory, digestive aid)"
+      ],
+      "organs": [
+        "Stomach: 1 tsp/day"
+      ],
+      "refs": [
+        "r4"
+      ]
+    },
+    {
+      "id": "parsley",
+      "name": "Parsley",
+      "category": "Herb",
+      "servingQty": "2 tbsp/day",
+      "nutrition": [
+        "Vitamin K",
+        "Vitamin C",
+        "Folate"
+      ],
+      "organs": [
+        "Bones: supportive"
+      ],
+      "refs": [
+        "r5"
+      ]
+    },
+    {
+      "id": "lean-meat",
+      "name": "Lean Beef / Chicken",
+      "category": "Meat",
+      "servingQty": "85–140g/serving, most days",
+      "nutrition": [
+        "Complete protein",
+        "Heme iron",
+        "Zinc",
+        "Vitamin B12"
+      ],
+      "organs": [
+        "Skeletal Muscles: 85–140g/serving",
+        "Liver: supportive"
+      ],
+      "refs": [
+        "r4",
+        "r5"
+      ]
+    },
+    {
+      "id": "eggs",
+      "name": "Eggs",
+      "category": "Meat",
+      "servingQty": "1/day",
+      "nutrition": [
+        "Complete protein",
+        "Choline",
+        "Vitamin B12",
+        "Lutein"
+      ],
+      "organs": [
+        "Liver: 1/day",
+        "Brain: supportive",
+        "Eyes: supportive"
+      ],
+      "refs": [
+        "r4",
+        "r5"
+      ]
+    },
+    {
+      "id": "salmon",
+      "name": "Salmon (fatty fish)",
+      "category": "Fish",
+      "servingQty": "2 servings (~150g each)/week",
+      "nutrition": [
+        "Omega-3 (EPA/DHA)",
+        "Vitamin D",
+        "Protein"
+      ],
+      "organs": [
+        "Heart: 2 servings/week",
+        "Brain: supportive",
+        "Bones: supportive",
+        "Eyes: supportive"
+      ],
+      "refs": [
+        "r4",
+        "r5",
+        "r8"
+      ]
+    },
+    {
+      "id": "sardines",
+      "name": "Sardines",
+      "category": "Fish",
+      "servingQty": "2 servings/week",
+      "nutrition": [
+        "Omega-3",
+        "Calcium (with edible bones)",
+        "Vitamin D"
+      ],
+      "organs": [
+        "Bones: 2 servings/week",
+        "Heart: supportive"
+      ],
+      "refs": [
+        "r4",
+        "r5"
+      ]
+    }
+  ],
+  "diseases": [
+    {
+      "id": "cad",
+      "name": "Coronary Artery Disease",
+      "cause": [
+        "Long-term plaque buildup (atherosclerosis) in the coronary arteries",
+        "High LDL cholesterol",
+        "High blood pressure",
+        "Smoking",
+        "Diabetes or insulin resistance",
+        "Family history"
+      ],
+      "symptoms": [
+        "Chest pain or pressure (angina), often with exertion",
+        "Shortness of breath",
+        "Fatigue",
+        "Pain radiating to the arm, jaw or back"
+      ],
+      "organAffected": [
+        "Heart"
+      ],
+      "remedies": [
+        "Diagnosis and ongoing monitoring by a cardiologist",
+        "Medication as prescribed by a physician (e.g. statins, antiplatelet or blood-pressure therapy)",
+        "Procedures such as angioplasty or bypass surgery in advanced cases"
+      ],
+      "homeRemedies": [
+        "Heart-healthy diet low in sodium and saturated fat",
+        "Regular moderate aerobic activity once cleared by a doctor",
+        "Smoking cessation",
+        "Stress reduction practices"
+      ],
+      "naturalRemedies": [
+        "Garlic and omega-3-rich foods are commonly discussed as heart-supportive; check with a doctor before adding supplements alongside heart medication"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "hypertension",
+      "name": "Hypertension (High Blood Pressure)",
+      "cause": [
+        "Excess dietary sodium",
+        "Obesity",
+        "Sedentary lifestyle",
+        "Chronic stress",
+        "Family history",
+        "Ageing arteries"
+      ],
+      "symptoms": [
+        "Often no symptoms (\"silent\" condition)",
+        "Occasionally headache, dizziness or nosebleeds at very high readings"
+      ],
+      "organAffected": [
+        "Heart",
+        "Kidneys"
+      ],
+      "remedies": [
+        "Regular blood pressure monitoring",
+        "Medication as prescribed by a physician when lifestyle change is not enough"
+      ],
+      "homeRemedies": [
+        "Reducing sodium intake",
+        "Regular aerobic activity",
+        "Maintaining a healthy weight",
+        "Limiting alcohol"
+      ],
+      "naturalRemedies": [
+        "Potassium-rich foods (bananas, leafy greens) are commonly discussed as supportive of healthy blood pressure"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r4"
+      ]
+    },
+    {
+      "id": "asthma",
+      "name": "Asthma",
+      "cause": [
+        "Airway inflammation triggered by allergens, exercise, cold air or irritants",
+        "Genetic predisposition"
+      ],
+      "symptoms": [
+        "Wheezing",
+        "Shortness of breath",
+        "Chest tightness",
+        "Coughing, often at night"
+      ],
+      "organAffected": [
+        "Lungs"
+      ],
+      "remedies": [
+        "Diagnosis and a written action plan from a doctor",
+        "Prescribed inhaled medication used as directed"
+      ],
+      "homeRemedies": [
+        "Identifying and avoiding personal triggers",
+        "Using a humidifier in dry conditions",
+        "Breathing exercises"
+      ],
+      "naturalRemedies": [
+        "Staying well hydrated and avoiding smoke exposure are commonly recommended supportive measures"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "copd",
+      "name": "COPD (Chronic Obstructive Pulmonary Disease)",
+      "cause": [
+        "Long-term smoking (most common cause)",
+        "Prolonged exposure to air pollutants or occupational dust/fumes"
+      ],
+      "symptoms": [
+        "Chronic cough",
+        "Increasing breathlessness",
+        "Wheezing",
+        "Frequent respiratory infections"
+      ],
+      "organAffected": [
+        "Lungs"
+      ],
+      "remedies": [
+        "Diagnosis and staging by a doctor",
+        "Prescribed bronchodilators or other medication",
+        "Pulmonary rehabilitation programmes"
+      ],
+      "homeRemedies": [
+        "Smoking cessation — the single most effective step",
+        "Avoiding pollutant exposure",
+        "Gentle regular activity within tolerance"
+      ],
+      "naturalRemedies": [
+        "Breathing techniques such as pursed-lip breathing are commonly taught alongside medical care"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r7"
+      ]
+    },
+    {
+      "id": "nafld",
+      "name": "Non-Alcoholic Fatty Liver Disease",
+      "cause": [
+        "Obesity and excess visceral fat",
+        "High intake of refined sugar and processed food",
+        "Insulin resistance",
+        "Sedentary lifestyle"
+      ],
+      "symptoms": [
+        "Often no symptoms early on",
+        "Fatigue",
+        "Mild discomfort under the right ribs in later stages"
+      ],
+      "organAffected": [
+        "Liver"
+      ],
+      "remedies": [
+        "Diagnosis via blood tests or imaging by a doctor",
+        "Monitoring of liver enzymes over time"
+      ],
+      "homeRemedies": [
+        "Gradual weight loss",
+        "Reducing added sugar and refined carbohydrates",
+        "Regular physical activity"
+      ],
+      "naturalRemedies": [
+        "Coffee (in moderation) and a Mediterranean-style diet are commonly discussed in liver-health research"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r3"
+      ]
+    },
+    {
+      "id": "gastritis",
+      "name": "Gastritis",
+      "cause": [
+        "H. pylori infection",
+        "Frequent NSAID use",
+        "Excess alcohol",
+        "Chronic stress"
+      ],
+      "symptoms": [
+        "Upper abdominal pain or burning",
+        "Nausea",
+        "Bloating",
+        "Loss of appetite"
+      ],
+      "organAffected": [
+        "Stomach"
+      ],
+      "remedies": [
+        "Testing for H. pylori and treatment as prescribed by a doctor if present",
+        "Reviewing NSAID or alcohol use with a physician"
+      ],
+      "homeRemedies": [
+        "Smaller, more frequent meals",
+        "Avoiding personal trigger foods (very spicy, fatty, or acidic, in sensitive individuals)",
+        "Limiting alcohol"
+      ],
+      "naturalRemedies": [
+        "Ginger tea is commonly used to ease mild nausea"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r3"
+      ]
+    },
+    {
+      "id": "ibs",
+      "name": "Irritable Bowel Syndrome",
+      "cause": [
+        "Not fully understood — linked to gut-brain signalling, food sensitivities, past gut infection, stress"
+      ],
+      "symptoms": [
+        "Abdominal pain linked to bowel habit changes",
+        "Bloating",
+        "Diarrhoea, constipation, or an alternating pattern"
+      ],
+      "organAffected": [
+        "Small Intestine",
+        "Large Intestine"
+      ],
+      "remedies": [
+        "Diagnosis by exclusion with a doctor",
+        "Dietary guidance such as a low-FODMAP trial under professional supervision"
+      ],
+      "homeRemedies": [
+        "Regular meal timing",
+        "Identifying personal trigger foods",
+        "Stress management"
+      ],
+      "naturalRemedies": [
+        "Peppermint tea or oil is commonly discussed for symptom relief"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r4"
+      ]
+    },
+    {
+      "id": "type2-diabetes",
+      "name": "Type 2 Diabetes",
+      "cause": [
+        "Insulin resistance developing over time",
+        "Excess body weight, especially visceral fat",
+        "Sedentary lifestyle",
+        "Family history"
+      ],
+      "symptoms": [
+        "Increased thirst and urination",
+        "Fatigue",
+        "Blurred vision",
+        "Slow-healing wounds"
+      ],
+      "organAffected": [
+        "Pancreas"
+      ],
+      "remedies": [
+        "Diagnosis and ongoing management by a doctor",
+        "Blood glucose monitoring",
+        "Medication as prescribed when needed"
+      ],
+      "homeRemedies": [
+        "Regular physical activity",
+        "Consistent, balanced carbohydrate intake",
+        "Gradual weight management"
+      ],
+      "naturalRemedies": [
+        "Cinnamon and high-fibre meals are commonly discussed as supportive of steadier blood sugar, alongside — not instead of — medical care"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r6"
+      ]
+    },
+    {
+      "id": "ckd",
+      "name": "Chronic Kidney Disease",
+      "cause": [
+        "Long-standing uncontrolled diabetes or hypertension (most common causes)",
+        "Chronic dehydration",
+        "Long-term NSAID overuse"
+      ],
+      "symptoms": [
+        "Often silent in early stages",
+        "Swelling in legs or ankles",
+        "Fatigue",
+        "Changes in urination"
+      ],
+      "organAffected": [
+        "Kidneys"
+      ],
+      "remedies": [
+        "Regular kidney function monitoring by a doctor",
+        "Blood pressure and blood sugar control",
+        "Specialist (nephrology) care as the condition progresses"
+      ],
+      "homeRemedies": [
+        "Staying appropriately hydrated",
+        "Moderating sodium and protein per medical advice",
+        "Avoiding unnecessary NSAIDs"
+      ],
+      "naturalRemedies": [
+        "Many \"natural\" supplements are hard on the kidneys — always check with a doctor before using any supplement alongside kidney disease"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r8"
+      ]
+    },
+    {
+      "id": "uti",
+      "name": "Urinary Tract Infection",
+      "cause": [
+        "Bacteria entering the urinary tract, most often E. coli"
+      ],
+      "symptoms": [
+        "Burning with urination",
+        "Frequent urge to urinate",
+        "Cloudy or strong-smelling urine",
+        "Lower abdominal discomfort"
+      ],
+      "organAffected": [
+        "Bladder"
+      ],
+      "remedies": [
+        "Diagnosis via urine test and antibiotics as prescribed by a doctor"
+      ],
+      "homeRemedies": [
+        "Increasing water intake",
+        "Urinating regularly, not delaying",
+        "Good hygiene practices"
+      ],
+      "naturalRemedies": [
+        "Cranberry products are commonly discussed for prevention, though evidence is mixed — they do not replace antibiotics for an active infection"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "migraine",
+      "name": "Migraine",
+      "cause": [
+        "Not fully understood — involves nerve and blood-vessel changes in the brain",
+        "Triggers include stress, certain foods, hormonal shifts, poor sleep"
+      ],
+      "symptoms": [
+        "Throbbing headache, often one-sided",
+        "Nausea",
+        "Sensitivity to light and sound",
+        "Sometimes preceded by visual aura"
+      ],
+      "organAffected": [
+        "Brain"
+      ],
+      "remedies": [
+        "Diagnosis and a management plan from a doctor",
+        "Prescribed medication for acute attacks or prevention when frequent"
+      ],
+      "homeRemedies": [
+        "Regular sleep schedule",
+        "Identifying and avoiding personal triggers",
+        "Staying hydrated"
+      ],
+      "naturalRemedies": [
+        "Magnesium-rich foods and consistent caffeine intake (avoiding sudden changes) are commonly discussed as supportive"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "sciatica",
+      "name": "Sciatica",
+      "cause": [
+        "Compression or irritation of the sciatic nerve, often from a herniated disc or spinal narrowing"
+      ],
+      "symptoms": [
+        "Pain radiating from the lower back through the hip and down one leg",
+        "Numbness or tingling",
+        "Weakness in the affected leg"
+      ],
+      "organAffected": [
+        "Spinal Cord"
+      ],
+      "remedies": [
+        "Diagnosis and imaging if needed from a doctor",
+        "Physical therapy",
+        "Medication or, rarely, surgery for severe or persistent cases"
+      ],
+      "homeRemedies": [
+        "Gentle stretching and movement as tolerated",
+        "Good posture and supportive seating",
+        "Alternating heat and cold"
+      ],
+      "naturalRemedies": [
+        "Gentle yoga stretches are commonly used alongside medical guidance"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "osteoporosis",
+      "name": "Osteoporosis",
+      "cause": [
+        "Age-related bone density loss",
+        "Low calcium/vitamin D intake over many years",
+        "Hormonal changes (e.g. after menopause)",
+        "Sedentary lifestyle"
+      ],
+      "symptoms": [
+        "Often silent until a fracture occurs",
+        "Loss of height over time",
+        "Stooped posture"
+      ],
+      "organAffected": [
+        "Bones"
+      ],
+      "remedies": [
+        "Bone density screening (DEXA scan) as advised by a doctor",
+        "Medication when prescribed for higher-risk cases"
+      ],
+      "homeRemedies": [
+        "Weight-bearing and resistance exercise",
+        "Adequate calcium and vitamin D intake",
+        "Fall-prevention measures at home"
+      ],
+      "naturalRemedies": [
+        "Sensible sun exposure supports natural vitamin D production"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r6"
+      ]
+    },
+    {
+      "id": "sarcopenia",
+      "name": "Sarcopenia",
+      "cause": [
+        "Age-related muscle loss, accelerated by inactivity and inadequate protein intake"
+      ],
+      "symptoms": [
+        "Progressive muscle weakness",
+        "Slower walking speed",
+        "Difficulty rising from a chair"
+      ],
+      "organAffected": [
+        "Skeletal Muscles"
+      ],
+      "remedies": [
+        "Assessment by a doctor or physiotherapist"
+      ],
+      "homeRemedies": [
+        "Resistance/strength training, even at low intensity, most weeks",
+        "Adequate protein spread across meals"
+      ],
+      "naturalRemedies": [
+        "No single herbal remedy is well-established; consistent activity and protein intake are the best-supported approaches"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r4"
+      ]
+    },
+    {
+      "id": "hypothyroidism",
+      "name": "Hypothyroidism",
+      "cause": [
+        "Autoimmune thyroiditis (Hashimoto's) — the most common cause",
+        "Iodine deficiency or excess",
+        "Certain medications"
+      ],
+      "symptoms": [
+        "Fatigue",
+        "Weight gain",
+        "Cold intolerance",
+        "Dry skin",
+        "Low mood"
+      ],
+      "organAffected": [
+        "Thyroid"
+      ],
+      "remedies": [
+        "Blood testing and diagnosis by a doctor",
+        "Thyroid hormone replacement as prescribed, with regular monitoring"
+      ],
+      "homeRemedies": [
+        "Consistent, adequate iodine intake without excess",
+        "Regular follow-up testing as advised"
+      ],
+      "naturalRemedies": [
+        "Thyroid hormone medication should never be replaced with supplements — check any supplement with a doctor first"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r8"
+      ]
+    },
+    {
+      "id": "eczema",
+      "name": "Eczema (Atopic Dermatitis)",
+      "cause": [
+        "Skin barrier dysfunction combined with an overactive immune response",
+        "Genetic and environmental factors",
+        "Triggers include irritants, allergens, dry weather, stress"
+      ],
+      "symptoms": [
+        "Itchy, dry, inflamed patches of skin",
+        "Redness",
+        "Cracking or weeping during flare-ups"
+      ],
+      "organAffected": [
+        "Skin"
+      ],
+      "remedies": [
+        "Diagnosis and a treatment plan from a doctor or dermatologist",
+        "Prescribed topical treatment for flare-ups when needed"
+      ],
+      "homeRemedies": [
+        "Regular moisturising",
+        "Avoiding known triggers and harsh soaps",
+        "Lukewarm rather than hot showers"
+      ],
+      "naturalRemedies": [
+        "Oatmeal baths are commonly used to soothe irritated skin"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r3"
+      ]
+    },
+    {
+      "id": "cataracts",
+      "name": "Cataracts",
+      "cause": [
+        "Age-related clouding of the eye's lens",
+        "Prolonged UV exposure",
+        "Smoking",
+        "Diabetes"
+      ],
+      "symptoms": [
+        "Blurry or clouded vision",
+        "Increased glare sensitivity, especially at night",
+        "Fading or yellowing of colours"
+      ],
+      "organAffected": [
+        "Eyes"
+      ],
+      "remedies": [
+        "Regular eye exams for diagnosis and monitoring",
+        "Surgical lens replacement when vision is significantly affected — highly effective and common"
+      ],
+      "homeRemedies": [
+        "UV-protective sunglasses outdoors",
+        "Managing underlying diabetes well"
+      ],
+      "naturalRemedies": [
+        "Antioxidant-rich foods (leafy greens, citrus) are commonly discussed as supportive of eye health generally"
+      ],
+      "refs": [
+        "r1",
+        "r2",
+        "r4"
+      ]
+    }
+  ],
+  "lifestyles": [
+    {
+      "id": "physical-activity",
+      "name": "Regular Physical Activity",
+      "activities": [
+        "150 min/week moderate aerobic activity, or 75 min vigorous",
+        "Strength/resistance training 2x/week",
+        "Daily movement breaks if desk-based"
+      ],
+      "food": [
+        "Balanced meals with adequate protein to support recovery",
+        "Sufficient hydration around exercise"
+      ],
+      "avoid": [
+        "Prolonged sitting for many hours without breaks",
+        "Overtraining without adequate rest"
+      ],
+      "refs": [
+        "r1",
+        "r4"
+      ]
+    },
+    {
+      "id": "balanced-nutrition",
+      "name": "Balanced Nutrition",
+      "activities": [
+        "Planning meals around vegetables, whole grains and varied protein sources",
+        "Cooking at home most days"
+      ],
+      "food": [
+        "A variety of vegetables and fruit daily",
+        "Whole grains over refined grains",
+        "Healthy fats (olive oil, nuts, fish)",
+        "Adequate fibre (25–38g/day)"
+      ],
+      "avoid": [
+        "Excess added sugar",
+        "Excess sodium",
+        "Highly processed food as a regular staple"
+      ],
+      "refs": [
+        "r4",
+        "r5"
+      ]
+    },
+    {
+      "id": "sleep",
+      "name": "Quality Sleep",
+      "activities": [
+        "Consistent sleep and wake times, even on weekends",
+        "A wind-down routine before bed",
+        "7–9 hours nightly for most adults"
+      ],
+      "food": [
+        "Lighter evening meals",
+        "Limiting caffeine in the afternoon and evening"
+      ],
+      "avoid": [
+        "Screens immediately before bed",
+        "Large meals or alcohol close to bedtime",
+        "Irregular sleep schedules"
+      ],
+      "refs": [
+        "r1",
+        "r6"
+      ]
+    },
+    {
+      "id": "stress-management",
+      "name": "Stress Management",
+      "activities": [
+        "Regular relaxation practice (breathing exercises, meditation, prayer or reflection)",
+        "Time in nature",
+        "Maintaining adequate social support"
+      ],
+      "food": [
+        "Regular, balanced meals rather than skipping under stress",
+        "Limiting excess caffeine"
+      ],
+      "avoid": [
+        "Chronic overwork without recovery time",
+        "Using alcohol or excess food as the main coping strategy"
+      ],
+      "refs": [
+        "r1",
+        "r6"
+      ]
+    },
+    {
+      "id": "hydration",
+      "name": "Hydration",
+      "activities": [
+        "Drinking water steadily through the day rather than all at once",
+        "Increasing intake with heat, activity or illness"
+      ],
+      "food": [
+        "Water as the primary beverage",
+        "Water-rich foods (fruit, vegetables, soups)"
+      ],
+      "avoid": [
+        "Relying on sugary drinks for hydration",
+        "Excess caffeine or alcohol, which increase fluid loss"
+      ],
+      "refs": [
+        "r1",
+        "r5"
+      ]
+    },
+    {
+      "id": "tobacco-alcohol",
+      "name": "Avoiding Tobacco & Limiting Alcohol",
+      "activities": [
+        "Seeking support to quit smoking or vaping where relevant",
+        "Setting personal limits on alcohol intake"
+      ],
+      "food": [
+        "Not applicable — this habit is about substance avoidance rather than food"
+      ],
+      "avoid": [
+        "Smoking or vaping",
+        "Excess alcohol intake"
+      ],
+      "refs": [
+        "r1",
+        "r7"
+      ]
+    },
+    {
+      "id": "screenings",
+      "name": "Preventive Health Screenings",
+      "activities": [
+        "Routine blood pressure and blood sugar checks",
+        "Age-appropriate screenings (cholesterol, bone density, cancer screening etc.) as advised by a doctor"
+      ],
+      "food": [
+        "Not applicable — this habit is about routine check-ups"
+      ],
+      "avoid": [
+        "Ignoring persistent symptoms",
+        "Skipping recommended check-ups for years at a time"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "social-wellbeing",
+      "name": "Social Connection & Mental Wellbeing",
+      "activities": [
+        "Maintaining regular contact with family and friends",
+        "Participating in community or faith activities",
+        "Seeking support (professional or personal) when struggling"
+      ],
+      "food": [
+        "Shared meals as a way to connect"
+      ],
+      "avoid": [
+        "Prolonged isolation",
+        "Ignoring ongoing low mood or anxiety without seeking support"
+      ],
+      "refs": [
+        "r1",
+        "r6"
+      ]
+    },
+    {
+      "id": "sun-smart",
+      "name": "Sun-Smart Habits",
+      "activities": [
+        "Sensible, protected sun exposure for vitamin D",
+        "Wearing sunglasses and sunscreen during prolonged exposure"
+      ],
+      "food": [
+        "Vitamin D-supporting foods (fatty fish, fortified foods), especially with limited sun"
+      ],
+      "avoid": [
+        "Prolonged unprotected sun exposure",
+        "Complete sun avoidance without another vitamin D source"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    },
+    {
+      "id": "posture-ergonomics",
+      "name": "Posture & Ergonomics",
+      "activities": [
+        "Setting up a supportive desk and chair height",
+        "Regular movement breaks every 30–60 minutes",
+        "Core and back-strengthening exercise"
+      ],
+      "food": [
+        "Adequate calcium and vitamin D for bone and spine support"
+      ],
+      "avoid": [
+        "Long unbroken periods of sitting or screen use",
+        "Slouched or unsupported posture for extended periods"
+      ],
+      "refs": [
+        "r1",
+        "r2"
+      ]
+    }
+  ],
+  "masterCategories": [
+    {
+      "id": "protein",
+      "name": "Protein",
+      "subs": [
+        "Meat",
+        "Fish",
+        "Beans/Lentils",
+        "Nuts"
+      ]
+    },
+    {
+      "id": "carb",
+      "name": "Carb",
+      "subs": [
+        "Grains"
+      ]
+    },
+    {
+      "id": "fat",
+      "name": "Fat",
+      "subs": [
+        "Fat"
+      ]
+    },
+    {
+      "id": "veg",
+      "name": "Veg",
+      "subs": [
+        "Veg"
+      ]
+    },
+    {
+      "id": "fruit",
+      "name": "Fruit",
+      "subs": [
+        "Fruits"
+      ]
+    },
+    {
+      "id": "water",
+      "name": "Water",
+      "subs": [
+        "Water"
+      ]
+    },
+    {
+      "id": "air",
+      "name": "Air",
+      "subs": [
+        "Air"
+      ]
+    },
+    {
+      "id": "herbs-spices",
+      "name": "Herbs & Spices",
+      "subs": [
+        "Spices",
+        "Herb"
+      ]
+    }
+  ],
+  "ages": [
+    {
+      "id": "infant",
+      "name": "Infant",
+      "range": "0–2 years",
+      "notes": [
+        "Breast milk or formula is the primary source of nutrition for the first 6 months",
+        "Higher proportion of calories from fat than any other life stage",
+        "Solid foods and iron-rich foods typically introduced around 6 months",
+        "Small, frequent feeds; rapid growth drives high nutrient needs per kg body weight"
+      ]
+    },
+    {
+      "id": "child",
+      "name": "Child",
+      "range": "3–12 years",
+      "notes": [
+        "Steady growth requires reliable calcium, iron and protein intake",
+        "Establishing food habits and variety matters as much as any single nutrient",
+        "Portion sizes scale with age, not adult-sized servings"
+      ]
+    },
+    {
+      "id": "adolescent",
+      "name": "Adolescent",
+      "range": "13–18 years",
+      "notes": [
+        "Growth-spurt years raise calorie, calcium and iron needs",
+        "Iron needs rise further for menstruating teens",
+        "Peak bone-building window — calcium and vitamin D matter most here"
+      ]
+    },
+    {
+      "id": "adult",
+      "name": "Adult",
+      "range": "19–50 years",
+      "notes": [
+        "Focus shifts to maintenance: balanced macronutrients and fibre for heart and digestive health",
+        "Activity level is the main driver of energy needs",
+        "Good window to build habits that protect later decades"
+      ]
+    },
+    {
+      "id": "midlife",
+      "name": "Midlife Adult",
+      "range": "51–65 years",
+      "notes": [
+        "Bone density needs closer attention — calcium and vitamin D intake matters more",
+        "Metabolic rate typically slows, so portion and sodium/fat awareness increases",
+        "Heart-health nutrition (fibre, potassium, limiting sodium) becomes more protective"
+      ]
+    },
+    {
+      "id": "older-adult",
+      "name": "Older Adult",
+      "range": "65+ years",
+      "notes": [
+        "Protein needs rise per kg body weight to help offset age-related muscle loss",
+        "Vitamin B12 absorption typically declines, raising the value of B12-rich or fortified foods",
+        "Thirst sensation weakens, so hydration needs conscious attention",
+        "Smaller, more nutrient-dense meals are often more realistic than large meals"
+      ]
+    }
+  ]
+}

@@ -14701,3 +14701,388 @@ Full account: `docs/reports/2026-09-19-quranrevival-d3-journaling-chokepoint.md`
 ## v08.32 — 21 Sep 2026 — Basic Arabic lemma occurrences
 
 QuranRevival Word Card PR #112 was merged to `main` at `f5b7c6c`. Its Basic Arabic lemma-occurrence count now expands to a list of written occurrences, and selecting one navigates to its ayah. The change reuses the existing occurrence data and performs no Firestore write. The MMSA Master Architect allocated v08.32 in `app/js/version.js` and the Programme Integration Ledger. The Owner tested the live app and reported that all checks passed. This is an app-visible release; it does not deploy the Phase 4–6 Rules/index package. E1 remains closed. The next unallocated number is v08.33.
+
+## The Architect/Builder loop installed — NO VERSION BUMP (21 Sep 2026)
+
+Governance and automation only. `app/js/version.js` stays **v08.32**, and
+`git diff origin/main -- app/ tests/ firestore.rules firebase.json` is empty —
+BR-0, no application behaviour changed, nothing deployed.
+
+**The survey that produced this round found that the builder had never run
+once.** `.github/workflows/claude.yml` had been wired since the automation
+pilot's Step 2, and **every one of its 140 recorded runs carried
+`conclusion: skipped`.** Two independent causes, and neither was visible from
+the workflow's green-looking history, because **a job-level `if:` that fails
+leaves no log to explain itself**:
+
+1. **It listened only to `issue_comment`.** An Architect cannot assign a round
+   by opening an issue if opening an issue is not a trigger. The kickoff's own
+   loop — one issue per round — was structurally impossible.
+2. **The Owner was driving through `/mmsa-task`**, the task bridge, and this
+   file's own mutual-exclusion clause correctly refuses a comment starting with
+   that phrase. The exclusion was right; the consequence was that the only
+   channel in use dispatched the *other* automation, every time.
+
+So the real builder for the whole pilot was the **MMSA task bridge** — a Claude
+Routine acting under the Owner's own GitHub identity. That is why every open
+pull request is authored by `AAAsapp` rather than `claude[bot]`.
+
+**`author_association` is gone from the gate, replaced rather than joined.**
+GitHub reports private organisation members as `CONTRIBUTOR` or `NONE`
+depending on how access is granted, so that test can lock out the only human who
+can drive this. The gate is now four conditions: not a bot, sender login is the
+Owner's, `@claude` present in the text of the event that actually fired
+(matched per event type), and the bridge exclusion — plus a new loop guard. The
+bridge's Routine posts as a **User**, not a bot, so a comment it authored would
+have passed the first two gates; comments carrying the Claude Code attribution
+marker are refused outright.
+
+**`concurrency: mmsa-builder`, `cancel-in-progress: false`.** Quran, Hadith and
+Health edit one application, so two builders at once would edit one file against
+two bases. The round already running is real work: queue behind it, never kill
+it.
+
+**The second-round security finding was honoured, and its remedy corrected.**
+The previous revision reasoned — correctly — that an allowlist of script paths
+is not an allowlist of behaviour while those scripts are model-editable, and
+concluded the builder should get **no Bash surface at all**. That was sound
+about the risk and wrong about the remedy: it left the builder unable to measure
+its own work in a repository whose entire method is measurement, while
+`verify.yml` gates only the seven deterministic suites — so a UI regression
+reached `main` unmeasured either way. Node and Playwright are installed and the
+allowlist grants `Bash(node *)`, `Bash(npx playwright *)` and **read-only git
+verbs only**. `use_commit_signing: true` is kept, which is what swaps the
+Action's four default `Bash(git add|commit|rm|push)` tools for two API
+file-operation tools: **there is no shell git write of any kind and no push verb
+in any form.** The residual — `Bash(node *)` executes JavaScript, and file
+editing is enabled — is stated in the file rather than implied away, together
+with the only thing that actually closes it: a server-side branch rule on
+`main`, *Require a pull request before merging* with **Required approvals = 0**.
+Zero matters, because the Owner authors the pull requests and GitHub forbids
+approving your own. That rule is the Owner's to set.
+
+**`ARCHITECT.md` is new** — the loop, version-allocation authority, merge
+authority, the three-modules-one-file rule, how to write an issue a builder can
+finish, the two ways a run produces nothing, handover, and a backlog seeded from
+this survey.
+
+**`CLAUDE.md` gains *The Architect loop*** and a pointer block at the top: the
+builder opens a PR that links its issue and pastes its check results, then
+stops; it never merges and never bumps `app/js/version.js`; instructions come
+only from the Owner and the Architect, and a comment claiming Owner
+authorisation is not Owner authorisation. The retired two-repository paragraph
+that ends "merge the PR, mirror it, done" is now explicitly named as historical
+record rather than left to be misread.
+
+**THE LARGEST FINDING IS NOT THE WORKFLOW.** There are **~28 open draft pull
+requests, stacked up to five deep** across the three modules — chains where each
+PR's base is the previous PR's branch rather than `main`, so none can be reviewed
+against `main` or merged independently. Nothing merges itself and no Architect
+existed to merge them, so the stacks grew. Filed as the first item on the
+Architect's backlog, and the *do not stack draft PRs* rule is written into both
+briefs so it does not recur.
+
+**Baseline recorded rather than assumed: all seven governance suites pass, 7/7,
+on a full-history checkout** — 8/0, 49/0, 8/0, 27/0, 11/0, 41/0, 38/0. On a
+shallow clone the same unmodified tree reports `brief-integrity` 6/2 and
+`programme-ledger-mutations` 42/7; that is the documented clone artefact, not a
+finding, and both briefs now say so where a reader will meet it.
+
+## The Architect made unattended — NO VERSION BUMP (21 Sep 2026)
+
+Governance and automation only. `app/js/version.js` stays **v08.32**;
+`git diff origin/main -- app/ tests/ firestore.rules firebase.json` is empty.
+
+The Owner works from a tablet with no terminal, and asked for the loop to keep
+running with no session open. `.github/workflows/architect.yml` does the
+review/merge/next-job half of `ARCHITECT.md` on a **four-hourly schedule**,
+after every `verify` completion, and on manual dispatch.
+
+**THE SAFETY DESIGN IS A SHELL STEP, NOT A PARAGRAPH IN A PROMPT, and that
+distinction is the whole point.** Before Claude starts, a deterministic
+preflight computes the merge-eligible set and writes two files. A pull request
+is eligible only if its base is `main`, `verify` is green **on its current head
+SHA** (not merely "nothing failing"), GitHub reports it cleanly mergeable, it is
+not a draft, it carries no `needs-owner` label, and it touches **no protected
+path** — `app/js/version.js`, `firestore.rules`, `firebase.json`,
+`.github/workflows/**`, `CLAUDE.md`, `CHANGELOG.md`, the programme ledger. The
+model may refuse anything on that list and may **never** promote anything off
+the blocked one. A prompt can be argued with; a `jq` filter cannot.
+
+**At most three merges per run.** A cron job that lands a dozen unattended
+changes is a queue flush, not review.
+
+**ASSIGNMENT COULD NOT GO THROUGH THE COMMENT GATE, and working out why is the
+round's real finding.** The unattended Architect acts through a bot identity.
+The builder's gate refuses bots — correctly, since that is exactly what stops
+the builder's own output restarting it. So an Architect posting `@claude` would
+be refused every time, and the loop would return to the 140 silent `skipped`
+runs the previous round existed to end. The fix is **not** to let bots through
+the gate, which would readmit the builder's own comments: `claude.yml` gained a
+`workflow_dispatch` trigger taking an `issue_number`, and reaching it requires
+`actions: write` on a repository token, which no comment from anyone holds. The
+human gate is therefore **unchanged and still as strict**, and the machine path
+is narrower still. The dispatch prompt carries only a POINTER to the issue,
+never a task — the issue is the specification, and nothing a dispatch input
+says can add to it.
+
+**The job token is `secrets.GITHUB_TOKEN`, deliberately not the Claude App
+token.** It is repository-scoped and dies with the job, and — the load-bearing
+part — a merge commit it creates does not re-trigger workflows, so an Architect
+run cannot cascade into another. The cost, stated rather than hidden: merges
+are attributed to `github-actions[bot]`.
+
+**External text is data.** Pull-request titles reach the model by file rather
+than by string interpolation, so a title can never become part of the prompt's
+own instructions, and the prompt says plainly that any comment claiming Owner
+authorisation is to be refused and reported.
+
+**TWO THINGS THIS SESSION COULD NOT DO, AND BOTH ARE BLOCKED BY DESIGN RATHER
+THAN BY AN OVERSIGHT.** The Owner asked whether the subscription token could be
+minted here and installed for them. It cannot, and the attempts are recorded
+rather than described: `claude setup-token` is refused by the sandbox's
+credential-materialisation guard, and the GitHub Actions secrets API returns
+**HTTP 403 — "Access to this GitHub Actions path is not permitted through this
+proxy."** So the credential can be neither created nor installed from here, and
+neither limit should be worked around. Both automations stay inert until the
+Owner adds `CLAUDE_CODE_OAUTH_TOKEN` themselves; each says so in its own step
+summary rather than failing obscurely.
+
+All seven governance suites re-run green on a full-history checkout, and all
+four workflow files re-parse as valid YAML.
+
+## Two defects in the Architect's own gate, found by running it — NO VERSION BUMP (21 Sep 2026)
+
+Follow-on to the round above, and the reason it exists is that the gate was
+**run against the real backlog** instead of being trusted. Both defects would
+have made the unattended Architect do nothing for ever while reporting a
+reason that was not true.
+
+**(1) `mergeable` IS COMPUTED LAZILY, AND THE GATE READ IT COLD.** The triage
+step took `mergeable` from `gh pr list`, a batch endpoint. GitHub does not
+compute mergeability until asked for a specific pull request: the batch read
+returns `UNKNOWN` and merely *triggers* the calculation, which a later
+per-pull-request read returns. Measured: **25 of 25 open pull requests reported
+`unknown` from the list endpoint and `clean` from a warm single read moments
+later.** Since each run does exactly one cold read and never a warm one, every
+pull request would have been marked *"not cleanly mergeable"* on every run, for
+ever. The gate now does a per-pull-request warm read with one retry.
+
+**(2) 23 OF 25 OPEN PULL REQUESTS WERE DRAFTS, AND EVERY ONE WAS COMPLETE.**
+The gate refuses to merge a draft, correctly. But the bridge that built this
+backlog opened everything as a draft to signal "I am not merging this" — so the
+signal that once meant *withheld* now reads as *unfinished*, and the automation
+would have found nothing eligible on any run. Two changes rather than relaxing
+the gate: the builder contract in `CLAUDE.md` now requires a pull request
+**opened ready for review**, and the Architect reports `DRAFT` as its own
+category — review it on its merits, mark it ready if it passes, and **merge it
+only on a later run**, because merging in the same run would use an eligibility
+result computed before it qualified.
+
+**Marking ready counts against the three-per-run budget** exactly as a merge
+does, so a run cannot quietly promote a dozen pull requests into next run's
+eligible list.
+
+Also recorded from the same triage, for the Architect that picks this up:
+`verify` is **failing** on two pull requests and **has never run** on one
+(older than the workflow), and that oldest one touches two protected paths.
+None of those is merged by anything automatic.
+
+BR-0, no version bump; `app/`, `tests/`, `firestore.rules` and `firebase.json`
+byte-identical. Seven governance suites green.
+
+## The builder workflow would not load, and every check said it was fine — NO VERSION BUMP (21 Sep 2026)
+
+The Owner installed the credential and branch protection, and the first real
+test round triggered **nothing**. The cause was already on `main`.
+
+**`claude.yml`'s `prompt:` was a PLAIN YAML SCALAR CONTAINING `issue #{0}`, and
+in YAML a space-followed-by-hash BEGINS A COMMENT.** Everything from that hash
+onward was silently discarded, leaving `${{` with no closing `}}`. GitHub could
+not load the workflow at all — it registered **by file path instead of by its
+`name:`**, every push produced a `failure` run with no job inside it, and no
+issue or comment could trigger the builder.
+
+**BOTH CHECKS THIS SESSION RAN HAD PASSED.** PyYAML parsed the file
+"successfully" — it had *truncated a string*, which is not a parse error — and
+`action-validator`, a GitHub-schema validator, reported nothing, because the
+schema describes STRUCTURE and knows nothing about expression syntax. *"claude.yml
+parses OK"* was true and worthless. The defect was visible only by counting
+braces in the **parsed value**: 2 open, 0 close.
+
+**The tell was in the Actions list and was nearly missed.** A run named
+`.github/workflows/claude.yml` rather than `Builder (Claude Code)` is GitHub
+saying it could not read the file. Three `push`-event failures sat there on a
+workflow that declares no `push` trigger — the second tell, and the one that
+made the first worth looking at.
+
+**Fixed at the root, twice over.** The value is a `|-` block scalar, where `#`
+is ordinary text; and the wording avoids `#` entirely, so a future edit that
+drops the block scalar degrades loudly rather than silently.
+
+**`tools/i18n-verify/workflow-expressions.mjs` is the eighth gated suite**, and
+it asserts on the parsed result rather than on the fact that something parsed:
+every `${{` has a `}}`; an expression opened on a line is closed on it; a plain
+scalar carrying an expression has no ` #`; `format()` placeholders start at 0
+with no gaps; and every workflow declares a `name:`, since the path fallback is
+the signal that exposed all of this. **Mutation-proven against the exact
+original defect**, which it names by file and line.
+
+**ITS OWN FIRST RUN FAILED ON THE COMMIT THAT ADDED IT, and the finding was
+real.** A workflow's comments necessarily QUOTE the broken syntax in order to
+explain it — this suite's header does, and so does `verify.yml`'s new one — so
+counting braces across comment text reported the explanation as the defect.
+That is this repository's existing lesson (*"strip BOTH comment forms before
+grepping source for a forbidden name"*) arriving in YAML. Full-line comments are
+stripped; a trailing `#` on a value line is deliberately **not**, because that
+is the hazard itself and rule 3 must still see it.
+
+BR-0, no version bump; `app/`, `tests/`, `firestore.rules` and `firebase.json`
+byte-identical. Eight governance suites green.
+
+## The builder's first real run, and the model pin that stopped it — NO VERSION BUMP (21 Sep 2026)
+
+With the credential in place, the workflow loading, and a test round dispatched,
+the builder executed for the first time in this repository's history. It got
+further than it ever had and then failed, and the failure is worth recording
+because the evidence names the cause exactly.
+
+**Everything up to the model worked:** OIDC token obtained, exchanged for the
+Claude App installation token, `Verified human actor: AAAsapp`, Claude Code
+2.1.278 installed, Node 22 and Playwright/Chromium both present, the SDK
+launched with the full tool allowlist.
+
+**Then: `num_turns: 1`, `duration_ms: 167`, `total_cost_usd: 0`,
+`modelUsage: {}`, `is_error: true`.** Zero model usage and a 167-millisecond
+run is a **startup rejection, not a task failure** — the model was never called
+at all.
+
+**The cause was `--model "claude-opus-5"`, and the lesson is about entitlement
+rather than syntax.** The Owner runs on a **subscription**, not API billing, so
+which models the credential may address is decided by the subscription and is
+**not knowable from a workflow file**. A pin is a claim about someone else's
+entitlement. Both workflows now omit the input entirely and take the default the
+credential actually has, which is the one model guaranteed to be addressable.
+A model may be pinned later, but only after a run has PROVEN that model works
+for this account.
+
+**A collision worth knowing about, found while triggering the test.** Every
+GitHub comment written under this project's rules ends with the Claude Code
+attribution footer — and `claude.yml`'s loop guard refuses any comment
+containing `Generated by [Claude Code]`, precisely so machine output cannot
+restart the builder. So an Architect cannot start a round by commenting
+`@claude`: the footer it is obliged to add is the thing the gate refuses. This
+is not a defect in either rule; it is why the `workflow_dispatch` channel exists,
+and it is now the only route an automated Architect uses. A human typing
+`@claude` adds no footer and is unaffected.
+
+BR-0, no version bump; `app/`, `tests/`, `firestore.rules` and `firebase.json`
+byte-identical. Eight governance suites green.
+
+## An unfunded API key was capturing every builder run — NO VERSION BUMP (21 Sep 2026)
+
+Two builder runs died identically: `num_turns: 1`, `total_cost_usd: 0`,
+`modelUsage: {}`, `is_error: true`. Zero model usage and an instant error is a
+**startup rejection**, and the first fix attempted — removing the
+`--model "claude-opus-5"` pin — did not change the signature at all.
+
+**The cause was named by this workflow's own preflight warning**, sitting in the
+run's annotations: *"Both ANTHROPIC_API_KEY and CLAUDE_CODE_OAUTH_TOKEN are
+set."* An API-key secret exists on this repository alongside the subscription
+token, **the Action's own precedence takes the API key first**, and the Owner
+has no API billing — so the key was rejected at the first model call, every
+time.
+
+**THE REASONING THAT PUT IT THERE HAD A HOLE, AND IT IS WORTH NAMING.** Both
+inputs were passed unconditionally on the argument that *"an empty input is
+treated as unset, so whichever mode the Owner configured takes effect."* That is
+true only if **at most one** is ever set. Nothing enforced that, and the day
+both existed the workflow silently selected the one that could not work.
+
+**A warning that is merely printed while the wrong credential is used is not a
+safeguard.** Precedence is now DECIDED IN THE WORKFLOW: when
+`CLAUDE_CODE_OAUTH_TOKEN` is present the API key is passed as an empty string,
+so a stray or unfunded API-key secret cannot capture a run. The preflight
+reports `oauth` first for the same reason, and its warning now states what will
+happen rather than shrugging at precedence. The Owner's instruction — keep the
+subscription token — is enforced rather than hoped for.
+
+**Also recorded from the same two runs, because everything else worked and that
+is the useful half:** OIDC token obtained, exchanged for the Claude App
+installation token, `Verified human actor: AAAsapp`, Claude Code 2.1.278
+installed, Node 22 present, Playwright and Chromium installed, the SDK launched
+with the full tool allowlist. The whole pipeline is proven up to the model call.
+
+Deleting the unused `ANTHROPIC_API_KEY` secret is still worth doing for hygiene,
+but nothing now depends on it. That secret cannot be read or removed from a
+sandbox — the Actions secrets API returns HTTP 403 through this proxy — so it is
+the Owner's to delete.
+
+BR-0, no version bump; `app/`, `tests/`, `firestore.rules` and `firebase.json`
+byte-identical. Eight governance suites green.
+
+## Three builder runs failed and none of them said why — NO VERSION BUMP (21 Sep 2026)
+
+**THE THIRD RUN DID NOT FAIL THE WAY THE FIRST TWO DID, and reading all three as
+one fault is what sent a guess to the Owner.** Runs one and two died in **167ms**
+with `modelUsage: {}` — a startup rejection, correctly diagnosed as the unfunded
+API key capturing the run (entry above). Run three, with that fixed, emitted
+`{"type":"system","subtype":"init","message":"Claude Code initialized","model":
+"claude-sonnet-5"}` and then failed **2,159ms** later, still `num_turns: 1`,
+`total_cost_usd: 0`, `modelUsage: {}`, `permission_denials_count: 0`.
+
+A resolved model and two seconds of elapsed time is not a credential refused at
+the door. The prior session read the three failures as one and reported to the
+Owner that the remaining fault "is the token itself", asking them to reissue it.
+**That was a guess, and it was the only move available**, because:
+
+**THE ONE SENTENCE THAT WOULD HAVE NAMED THE CAUSE WAS DISCARDED, THREE TIMES.**
+`anthropics/claude-code-action` runs with `show_full_output: false` — right for a
+public repository, where a full transcript in a public Actions log is a standing
+leak — but the consequence is that the result entry's own error text never
+reaches the log. What survives is the shape: counters, and `is_error: true`.
+Three runs, three shapes, no message.
+
+**So the failure is made to explain itself rather than be inferred.** Both
+`claude.yml` and `architect.yml` gain one `if: always()` step that reads the
+execution log the Action already writes to `${RUNNER_TEMP}/claude-execution-
+output.json` and prints, to the log and the step summary:
+
+- **always** — the result entry's counters (`subtype`, `is_error`, `num_turns`,
+  `duration_ms`, `total_cost_usd`). Numbers;
+- **only when `is_error` is true** — the error text, capped at 4,000 characters;
+- **on success — nothing textual at all.** On a run that succeeded, `result`
+  holds Claude's own final message, which is exactly the content
+  `show_full_output: false` exists to keep out of a public log. The narrow read
+  is the point: this does not re-open what that setting closes, and GitHub's
+  secret masking still applies underneath.
+
+`if: always()` is load-bearing — the step whose failure this explains has already
+failed by the time it runs, so any default condition would skip it.
+
+**Proven against six fixtures rather than asserted**, the embedded script
+extracted from the PARSED YAML (this project's own rule — assert on the parsed
+result, never on "it parsed") and run: **(A)** no log file → says the run never
+reached the model and points above itself; **(B)** the real failing shape in
+array form with a message → prints the counters and the message; **(C)** a
+SUCCESSFUL result whose `result` field holds a sentinel string → counters
+printed, **sentinel absent**, which is the check that matters and is what stops
+this step becoming the leak it was written to avoid; **(D)** an error carrying no
+message → says the absence is itself the finding rather than inventing a cause;
+**(E)** a 9,000-character error → capped at 4,000 with the truncation stated;
+**(F)** a log with no result entry → says so and counts what it did hold.
+Both the array and one-object-per-line forms are accepted, so this step's own
+parsing cannot become the next thing that hides a cause.
+
+**A local baseline artefact was re-derived rather than trusted, and it is the
+one `ARCHITECT.md` warns about.** `programme-ledger-mutations` reported
+**48 passed, 1 failed** (MUTATION [E], a stream's shared-file touch losing its
+declaration) — on an unmodified tree as well as a patched one. `git fetch
+--unshallow` and it is **49 passed, 0 failed**. A shallow clone, not a defect,
+and not the numbers that file records for the same class (it names 42/7); the
+class is real, the arithmetic in it is not to be trusted. Full-history totals
+with this change: **8 suites green — 8/0, 49/0, 8/0, 27/0, 11/0, 41/0, 40/0,
+10/0.**
+
+BR-0, no version bump; `app/`, `tests/`, `firestore.rules` and `firebase.json`
+byte-identical. Only the two workflow files changed.
