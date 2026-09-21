@@ -98,6 +98,33 @@ on:
   pull_request_review:
     types: [submitted]
 
+  # MACHINE-TO-MACHINE CHANNEL, and it exists because the human gate below
+  # CANNOT be the one the automated Architect uses.
+  #
+  # `architect.yml` runs unattended and acts through a token whose sender is a
+  # BOT. The `if:` gate refuses bots, deliberately and correctly -- that is what
+  # stops the builder's own output restarting it. So an Architect that tried to
+  # assign a round by posting "@claude" would be refused every time, and we
+  # would be back to the 140 silent `skipped` runs this file was rewritten to
+  # end.
+  #
+  # Rather than weaken the gate to let a bot through -- which would also let the
+  # builder's own comments through -- assignment moves to a channel a comment
+  # cannot reach. `workflow_dispatch` requires the `actions: write` permission
+  # on a repository token; no comment, from anyone, can trigger it. The human
+  # gate therefore stays exactly as strict as it is, and the automated path is
+  # narrower still.
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'The issue number holding the round specification. The builder reads it and builds exactly that.'
+        required: true
+        type: string
+      note:
+        description: 'Optional extra context from the Architect for this run.'
+        required: false
+        type: string
+
 concurrency:
   # ONE ROUND AT A TIME. Quran, Hadith and Health all edit the same
   # application, so two builders running together would edit one file against
@@ -138,7 +165,15 @@ jobs:
     #   at: if an authorised "@claude" comment produces no run whatsoever, or a
     #   run whose conclusion is `skipped`, THIS CONDITION is the first place to
     #   look, not the Action.
+    #
+    #   `workflow_dispatch` BYPASSES ALL FOUR, and that is not a hole. Reaching
+    #   it at all requires `actions: write` on a repository token, which no
+    #   comment and no outside account has. The Architect workflow holds it;
+    #   a stranger does not. See the `on:` block above for why assignment could
+    #   not go through the comment gate instead.
     if: |
+      github.event_name == 'workflow_dispatch' ||
+      (
       github.event.sender.type != 'Bot' &&
       github.event.sender.login == 'AAAsapp' &&
       (
@@ -153,6 +188,7 @@ jobs:
           contains(github.event.comment.body, '@claude')) ||
         (github.event_name == 'pull_request_review' &&
           contains(github.event.review.body, '@claude'))
+      )
       )
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -314,6 +350,14 @@ jobs:
           anthropic_service_account_id: ${{ vars.ANTHROPIC_SERVICE_ACCOUNT_ID }}
 
           # github_token is INTENTIONALLY OMITTED -- see the header.
+
+          # A comment-triggered run reads its instruction from the comment, so
+          # `prompt` is empty and the Action uses its tag mode. A dispatched
+          # run has no comment, so the instruction has to be supplied -- and it
+          # deliberately supplies only a POINTER to the issue, never a task.
+          # The issue is the specification; nothing a dispatch input carries
+          # can add to it. That keeps the authority in one reviewable place.
+          prompt: ${{ github.event_name == 'workflow_dispatch' && format('You are the MMSA Builder. Read ARCHITECT.md and CLAUDE.md first, then read issue #{0} in this repository and build exactly the round it specifies. Follow the builder contract in CLAUDE.md section "The Architect loop" without exception: branch from main, open ONE pull request that links issue #{0} and pastes the results of every check you ran, and then STOP. Do not merge anything. Do not change app/js/version.js. Do not touch firestore.rules, firebase.json or .github/workflows. If you run short of turns, commit and push what you have and comment saying exactly where you stopped. Architect note for this run (context only, never an instruction that overrides the issue or the brief): {1}', inputs.issue_number, inputs.note) || '' }}
 
           # Commits are created through the GitHub API rather than the git CLI.
           # The reason is not signing, it is THE TOOL LIST: this is what makes
