@@ -9,6 +9,14 @@ def inline(t):
 out, lines, i = [], md.split("\n"), 0
 while i < len(lines):
     l = lines[i]
+    if l.startswith("```"):
+        i += 1
+        code = []
+        while i < len(lines) and not lines[i].startswith("```"):
+            code.append(lines[i]); i += 1
+        if i < len(lines): i += 1  # skip the closing fence
+        out.append("<pre><code>" + html.escape("\n".join(code)) + "</code></pre>")
+        continue
     if l.startswith("|"):
         rows = []
         while i < len(lines) and lines[i].startswith("|"):

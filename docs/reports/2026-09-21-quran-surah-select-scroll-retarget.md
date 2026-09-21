@@ -210,17 +210,49 @@ head-specific CI result was available at the time of writing.
 
 ## This round's own diff (against prior head `28b2a495`)
 
-3 files: `app/quranrevival.html` (14 insertions, 1 deletion — one comment
-block and one one-line change to `surahSelect`'s own handler), the new
+**Corrected 21 Sep 2026 — a seventh task-bridge round found this section's
+own count wrong: it said 3 files where the commit has 4.** `git diff --stat
+28b2a495 2a373e39` is the source of truth: `app/quranrevival.html` (14
+insertions, 1 deletion — one comment block and one one-line change to
+`surahSelect`'s own handler), the new
 `tools/i18n-verify/quran-surah-select-scroll-retarget.mjs` (357 lines, 38
-checks), and this round's own new dated report pair (this file and its
-`.html` twin). No protected or shared path touched anywhere (confirmed by
-listing — `git status --short` — not claim): `app/quranrevival.html` is
-Quran-owned application code, and the new suite is a Quran-scoped test file
-following this stack's own established naming, not one of the six
-platform-shared tooling files the task names
+checks), and this round's own new dated report pair — **two separate files**,
+`docs/reports/2026-09-21-quran-surah-select-scroll-retarget.md` (250
+insertions) and its `.html` twin (125 insertions) — which the prior wording
+bundled into one bullet and so undercounted. **4 files, 746 insertions(+), 1
+deletion(-)** in total. No protected or shared path touched anywhere
+(confirmed by listing — `git status --short` — not claim):
+`app/quranrevival.html` is Quran-owned application code, and the new suite is
+a Quran-scoped test file following this stack's own established naming, not
+one of the six platform-shared tooling files the task names
 (`behaviour.mjs`/`harness.mjs`/`firebase-stub.mjs`/`brief-integrity.mjs`/
 `programme-ledger.mjs`/`programme-ledger-mutations.mjs`).
+
+**The paired `.html` twin also broke every Markdown list item into a
+detached paragraph** — each `- ` item rendered as its own single-item
+`<ul>`, with any wrapped continuation line landing as a stray `<p>` outside
+any list, and every fenced code block rendered as a garbled single-line
+paragraph with literal stray backticks instead of `<pre><code>`. Neither
+defect is in this file's own Markdown, which was and remains untouched by
+this correction — both were defects in `tools/md2report.py`'s own rendering
+of it. `tools/md2report.py` had no fenced-code-block (`` ``` ``) handling at
+all: a fence line matched none of the parser's other branches, so its
+content fell into the plain-paragraph scanner, which joins consecutive lines
+with spaces — losing every line break and leaving the `inline()` step's
+single-backtick regex to opportunistically pair two of the fence's own three
+backticks together, swallowing the whole block as one `<code>` span with a
+stray backtick on each side. Fixed with a dedicated fence branch, checked
+first in the line loop (before any other line-type test can misinterpret a
+fenced line), that consumes verbatim lines up to the closing fence and emits
+real `<pre><code>` with the content HTML-escaped but otherwise untouched.
+**The list-detachment defect could not be reproduced by re-running the
+now-fence-fixed script against this file's own unchanged Markdown** — every
+`- `/continuation block here regenerates as one correct `<ul>` with the
+continuation text folded into its own `<li>` — so the committed `.html` twin
+was not a faithful rendering of this file to begin with. Regenerated with
+`python3 tools/md2report.py <this .md> <this .html>` using the corrected
+script; this file's own Markdown source is unchanged by this correction
+except for this section's own file count above.
 
 ## Owner app test
 
