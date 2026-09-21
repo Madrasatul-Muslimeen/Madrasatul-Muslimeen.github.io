@@ -296,13 +296,18 @@ verified current `main` (`16cfb0b3`):**
 ```
 
 **This round's own diff alone**, against PR #139's own prior head
-(`ba86e0851c`):
+(`ba86e0851c`). **Corrected 21 Sep 2026**: the count below previously
+listed three files and omitted this report's own committed Markdown/HTML
+pair, which this round's own commit carries alongside the code and test
+change — the round's real footprint is five files, not three:
 
 ```
- app/js/hifz-renderer.js                              |  84 ++++-
- app/quranrevival.html                                |  66 +++-
- tools/i18n-verify/quran-word-card-mushaf-scroll.mjs   | 419 +++++++++++++++++++
- 3 files changed, 557 insertions(+), 12 deletions(-)
+ app/js/hifz-renderer.js                                                     |  84 ++++-
+ app/quranrevival.html                                                       |  66 +++-
+ docs/reports/2026-09-21-word-card-mushaf-scroll-timing-fix.html             | 130 +++++++
+ docs/reports/2026-09-21-word-card-mushaf-scroll-timing-fix.md               | 369 ++++++++++++++++++
+ tools/i18n-verify/quran-word-card-mushaf-scroll.mjs                         | 419 +++++++++++++++++++
+ 5 files changed, 1056 insertions(+), 12 deletions(-)
 ```
 
 No protected or shared path anywhere in either diff — confirmed by listing,

@@ -1,6 +1,10 @@
 // Word Card -- Mushaf-mode cross-surah occurrence arrival. RENDERED
 // acceptance QA, in a real browser, following this project's own established
-// practice for a focused un-checked-in script.
+// practice for a focused browser acceptance suite. Committed to this
+// repository -- this is not one of the project's own ad-hoc, un-checked-in
+// scripts (the earlier convention CLAUDE.md's own history describes); it
+// runs from CI and from any future session the same way the other Word
+// Card suites in this directory do.
 //
 // Issue #113's own next-named candidate, per PR #139's own report: "restructure
 // scrollFlowToCurrentAyah()'s Mushaf branch to await the real render". PR #138

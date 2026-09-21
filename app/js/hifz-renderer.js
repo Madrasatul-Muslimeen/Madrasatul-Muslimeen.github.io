@@ -341,9 +341,19 @@ export function setActiveAyah(ayahKey) {
   // visible is never jolted. offsetParent is the cheap "is this on screen at
   // all" test -- scrolling a hidden panel would silently move the reader's
   // place for when they come back to it.
+  //
+  // Issue #113 -- `inline: "nearest"` never actually scrolls
+  // #pageViewContainer at all: it is `scroll-snap-type: x mandatory` +
+  // `direction: rtl`, the exact interaction PR #139's own synthetic-fixture
+  // testing measured for this same container's word-card targeting
+  // (scrollToAyahIfRendered(), just above -- `inline: "start"`, not
+  // "nearest"). Same container, same CSS, so the same fix applies here:
+  // `block` stays "nearest" (ordinary vertical scroll, unaffected), only
+  // `inline` changes. `behavior: "smooth"` is unchanged -- this is a scroll
+  // TARGET fix, not a playback-timing change.
   const first = spans[0];
   if (first && first.offsetParent !== null) {
-    first.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+    first.scrollIntoView({ block: "nearest", inline: "start", behavior: "smooth" });
   }
 }
 

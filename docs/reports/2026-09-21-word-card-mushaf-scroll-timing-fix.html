@@ -110,11 +110,13 @@ node tools/i18n-verify/quran-word-card-note-origin-return.mjs  (PR #139&#x27;s o
  tools/i18n-verify/quran-word-card-popup.mjs                                 | 291 ++++++++++++++
  tools/i18n-verify/quran-word-card-return.mjs                                | 373 ++++++++++++++++
  17 files changed, 3971 insertions(+), 16 deletions(-)</code></pre>
-<p><strong>This round&#x27;s own diff alone</strong>, against PR #139&#x27;s own prior head (<code>ba86e0851c</code>):</p>
-<pre><code> app/js/hifz-renderer.js                              |  84 ++++-
- app/quranrevival.html                                |  66 +++-
- tools/i18n-verify/quran-word-card-mushaf-scroll.mjs   | 419 +++++++++++++++++++
- 3 files changed, 557 insertions(+), 12 deletions(-)</code></pre>
+<p><strong>This round&#x27;s own diff alone</strong>, against PR #139&#x27;s own prior head (<code>ba86e0851c</code>). <strong>Corrected 21 Sep 2026</strong>: the count below previously listed three files and omitted this report&#x27;s own committed Markdown/HTML pair, which this round&#x27;s own commit carries alongside the code and test change — the round&#x27;s real footprint is five files, not three:</p>
+<pre><code> app/js/hifz-renderer.js                                                     |  84 ++++-
+ app/quranrevival.html                                                       |  66 +++-
+ docs/reports/2026-09-21-word-card-mushaf-scroll-timing-fix.html             | 130 +++++++
+ docs/reports/2026-09-21-word-card-mushaf-scroll-timing-fix.md               | 369 ++++++++++++++++++
+ tools/i18n-verify/quran-word-card-mushaf-scroll.mjs                         | 419 +++++++++++++++++++
+ 5 files changed, 1056 insertions(+), 12 deletions(-)</code></pre>
 <p>No protected or shared path anywhere in either diff — confirmed by listing, not by claim:</p>
 <ul><li>No <code>app/js/version.js</code>, <code>CLAUDE.md</code>, <code>CHANGELOG.md</code>, <code>app/js/i18n/bn.js</code>, <code>app/js/nav.js</code>, <code>app/js/unit-keys.js</code>, <code>app/js/records.js</code>, <code>app/js/activity.js</code>, <code>app/js/catalogue-data.js</code>, <code>app/css/shell.css</code>.</li><li>No <code>tools/i18n-verify/{behaviour,harness,firebase-stub,brief-integrity,programme-ledger,programme-ledger-mutations}.mjs</code>.</li><li>No <code>docs/governance/</code> path (including no <code>.rules</code>/index candidate).</li><li>No <code>firestore.rules</code>, <code>firebase.json</code>, <code>tests/firestore/</code>, <code>tools/firestore-emulator/</code>.</li><li>No <code>.github/workflows/</code>.</li></ul>
 <h2>What this deliberately does NOT do</h2>
