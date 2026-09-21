@@ -106,6 +106,8 @@ await click('[data-hadith-topic-row="synthetic-topic-salah"]');
 await settle();
 check("a Topic detail's occurrence cards DO carry 'View in source'",
   await has("[data-hadith-view-source]"));
+check("the Topic tab's own breadcrumb current-crumb carries aria-current=\"page\" too (issue #114 Gate A/B)",
+  await page.evaluate(() => document.querySelector(".hadith-crumb-current")?.getAttribute("aria-current") === "page"));
 const viewInSourceText = await text("[data-hadith-view-source]");
 
 // --- Clicking 'View in source' from Topics jumps to Books, focused ---------
@@ -211,6 +213,17 @@ check(`picking an edition lands focus on a crumb reading the edition's own trans
     const ae = document.activeElement;
     return !!ae && ae !== document.querySelector(".hadith-crumbs > :first-child") && ae.textContent === expected;
   }, ALPHA_COLLECTION_NAME));
+// --- Gate A/B, issue #114 comment 5761973722: the current crumb carries no
+// assistive-tech signal for "this is where you are", which only grew more
+// load-bearing once the edition crumb above made the trail deeper. Fixed
+// with `aria-current="page"` -- a fixed ARIA token, not translatable text,
+// so it needs no new Bangla key. Exclusive to the CURRENT crumb: a mutation
+// that stamped it onto every crumb must fail the second check below.
+check("the edition-level landing crumb carries aria-current=\"page\"",
+  await page.evaluate(() => document.activeElement?.getAttribute("aria-current") === "page"));
+check("no CLICKABLE crumb (a real .hadith-crumb button) carries aria-current",
+  await page.evaluate(() => Array.from(document.querySelectorAll(".hadith-crumbs .hadith-crumb"))
+    .every((b) => b.getAttribute("aria-current") === null)));
 // The fix must not regress the OTHER half of Gate A: the very next real Tab
 // key press (not a click) still has to continue at the first BOOK row, never
 // back at the top of the page and never stuck on the crumb it just landed on.
@@ -227,10 +240,14 @@ await click('[data-hadith-book="synthetic-alpha-b1"]');
 await settle();
 check("picking a book lands focus on the breadcrumb's own current-location crumb",
   await page.evaluate(() => document.activeElement?.classList.contains("hadith-crumb-current")));
+check("the book-level current crumb carries aria-current=\"page\" too",
+  await page.evaluate(() => document.activeElement?.getAttribute("aria-current") === "page"));
 await click('[data-hadith-chapter="synthetic-alpha-b1-c1"]');
 await settle();
 check("picking a chapter lands focus on the breadcrumb's own current-location crumb",
   await page.evaluate(() => document.activeElement?.classList.contains("hadith-crumb-current")));
+check("the chapter-level current crumb carries aria-current=\"page\" too",
+  await page.evaluate(() => document.activeElement?.getAttribute("aria-current") === "page"));
 // The immediate-parent crumb is always the LAST clickable one (the very last
 // crumb of all is the non-clickable current-location span) -- not a fixed
 // index, which the edition crumb added above would otherwise silently shift.
@@ -252,6 +269,8 @@ await click('[data-hadith-book]');
 await settle();
 check("on a no-chapter-level edition, picking the book also lands focus, not <body>",
   !(await page.evaluate(() => document.activeElement === document.body)));
+check("on the no-chapter-level edition too, that landing crumb carries aria-current=\"page\"",
+  await page.evaluate(() => document.activeElement?.getAttribute("aria-current") === "page"));
 await click(".hadith-crumb"); // reset before the checks below reuse Alpha ids
 
 check("no page error was raised anywhere in this run", errors.length === 0);
