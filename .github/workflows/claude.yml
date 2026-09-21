@@ -243,16 +243,19 @@ jobs:
             fi
           done
 
+          # OAUTH WINS WHEN BOTH ARE PRESENT, and the step below enforces it by
+          # passing the API key as empty. This is no longer "the Action's own
+          # precedence decides" -- that ambiguity cost two failed builder runs.
           if [ "$have_api" -eq 1 ] && [ "$have_oauth" -eq 1 ]; then
-            echo "::warning::Both ANTHROPIC_API_KEY and CLAUDE_CODE_OAUTH_TOKEN are set; the Action's own precedence decides. Remove one to make the choice explicit."
+            echo "::warning::Both an API key and CLAUDE_CODE_OAUTH_TOKEN are set. The subscription token is used and the API key is ignored. Delete the unused secret to remove the ambiguity."
           fi
 
           mode=none
           ready=false
-          if [ "$have_api" -eq 1 ]; then
-            mode=api_key; ready=true
-          elif [ "$have_oauth" -eq 1 ]; then
+          if [ "$have_oauth" -eq 1 ]; then
             mode=oauth; ready=true
+          elif [ "$have_api" -eq 1 ]; then
+            mode=api_key; ready=true
           elif [ "$fed_present" -eq 3 ]; then
             mode=federation; ready=true
           elif [ "$fed_present" -gt 0 ]; then
@@ -338,12 +341,28 @@ jobs:
         if: steps.auth.outputs.ready == 'true'
         uses: anthropics/claude-code-action@v1
         with:
-          # ALL THREE MODES ARE PASSED, ALWAYS. An empty input is treated as
-          # unset (action.yml resolves `inputs.x || env.X`), so whichever mode
-          # the Owner configured takes effect -- and there is no "swap the
-          # input" step left to get wrong. A half-configured federation is
-          # caught by the preflight above rather than read as "none".
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # THE SUBSCRIPTION TOKEN WINS, EXPLICITLY, AND THIS IS A FIX FOR A
+          # REAL FAILURE RATHER THAN A PREFERENCE.
+          #
+          # These were previously passed unconditionally, on the reasoning that
+          # an empty input is treated as unset so "whichever mode the Owner
+          # configured takes effect". That reasoning has a hole: it assumed at
+          # most ONE would be set. This repository had BOTH -- an
+          # ANTHROPIC_API_KEY left over alongside the subscription token -- and
+          # the Action's own precedence takes the API key first. The Owner has
+          # no API billing, so the key was rejected at the first model call and
+          # the builder died with `num_turns: 1`, `total_cost_usd: 0` and
+          # `modelUsage: {}`: zero usage, instant error, twice.
+          #
+          # The preflight's "both are set" warning is what named it, which is
+          # why that warning exists. But a warning that is merely printed while
+          # the wrong credential is used is not a safeguard. So precedence is
+          # now DECIDED HERE: when the subscription token is present the API
+          # key is passed as empty, so a stray or unfunded API-key secret
+          # cannot capture the run. That matches the Owner's own instruction --
+          # keep the subscription token -- and makes it enforced rather than
+          # hoped for.
+          anthropic_api_key: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN == '' && secrets.ANTHROPIC_API_KEY || '' }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           anthropic_federation_rule_id: ${{ vars.ANTHROPIC_FEDERATION_RULE_ID }}
           anthropic_organization_id: ${{ vars.ANTHROPIC_ORGANIZATION_ID }}
