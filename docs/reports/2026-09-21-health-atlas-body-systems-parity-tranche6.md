@@ -221,3 +221,26 @@ direct-URL-only draft PR, same posture as every prior tranche on this issue.
 **Expected result throughout**: everything is view-only — no save/edit/delete control anywhere on
 this page — and every function statement carries a visible "General reference only" (never
 "Cited") badge.
+
+---
+
+## CORRECTION (21 Sep 2026, via issue #115 — tranche 8, no edit to this report's own text above)
+
+The "Independent browser-level check" and "Focused browser walk" cited above (§ headed
+"Independent browser-level check, not just the static guards" and the 29-check walk in the
+Verification section) were both **un-checked-in Playwright scripts, deleted before commit**. Real
+when they ran, but — as issue #115's `/mmsa-task` comment (`5760406999`) correctly named — not
+independently reproducible by anyone who did not run that exact session. That is a genuine evidence
+gap, not a nitpick: a report citing a deleted script as its browser evidence is asking a reader to
+trust a claim nobody else can re-check.
+
+**Fixed, not by rewriting this report's own history above** (the walk described did happen, and the
+numbers reported were real at the time), **but by committing a reproducible replacement**:
+`tools/health-atlas-verify/body-systems-parity-browser.mjs`, added in tranche 8. It re-covers this
+tranche's own claims — the 3-column layout, the wheel's keyboard drill-down/back, the three built
+diagrams, search, and (tranche 8's own addition to the app) the resizable columns tranche 7 built on
+top of this one — at desktop/tablet/phone widths, with a real mouse drag and real keyboard input, and
+it is proven able to fail (two independent mutations, both caught) rather than merely proven able to
+pass. Anyone can now run `node tools/health-atlas-verify/body-systems-parity-browser.mjs` from the
+repository root and get the same result this report once had to ask to be trusted on. Full account:
+`docs/reports/2026-09-21-health-atlas-body-systems-parity-tranche8.md`.

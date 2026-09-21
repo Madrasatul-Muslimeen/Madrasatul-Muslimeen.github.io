@@ -222,3 +222,32 @@ Two bounded, read-only changes on top of tranche 6, both in
    wedges already carry. Full account, the exact clamp values and reasons,
    and the verification numbers: `docs/reports/
    2026-09-21-health-atlas-body-systems-parity-tranche7.md`.
+
+## Tranche 8 — a committed, reproducible browser acceptance test, plus a navigation slice
+
+Two bounded, read-only changes, neither touching a dataset, selector or view file's own logic:
+
+1. **`tools/health-atlas-verify/body-systems-parity-browser.mjs` (new, committed).** Every prior
+   tranche's browser verification was a "focused, un-checked-in Playwright script … deleted before
+   commit" — real when it ran, not independently reproducible afterwards. This file fixes that gap
+   for the resizable three-column Body Systems UI specifically (the evidence gap issue #115 named):
+   a real Chromium walk, run with one command
+   (`node tools/health-atlas-verify/body-systems-parity-browser.mjs`), covering desktop/tablet/phone
+   with both mouse and keyboard — the 3-column grid, both dividers' drag-resize (clamped, persisting
+   across a redraw) and keyboard resize (clamped), the wheel's keyboard drill-down/back, search, the
+   three built diagrams, and the corrected "diagram in progress" placeholder text tranche 7
+   introduced. Proven able to fail, not just to pass: two independent mutations (reintroducing the
+   retracted "accurate" claim; loosening the s3 minimum clamp) were both caught, then reverted. This
+   follows the same "committed, not wired into CI" precedent `tools/i18n-verify/layout.mjs`,
+   `panel.mjs`, `reading.mjs` and `navcheck.mjs` already set in this repository —
+   `.github/workflows/verify.yml` explicitly excludes that whole class ("need Playwright and a
+   served app") and none of them is added to it here either.
+2. **Cross-linking between the three Health pages.** `health-atlas.html`'s footer already linked to
+   both `health-atlas-more.html` and `health-atlas-categories.html` (tranche 5), but those two pages
+   only ever linked back to `health-atlas.html`, never to each other — so reaching Master Categories
+   from Foods/Conditions/Age Groups meant going back through the Body Systems page first. Each now
+   also links directly to the other, completing the same full cross-link matrix
+   `health-atlas.html` already had. Read-only, no new data read, no new page.
+
+Full account and verification numbers: `docs/reports/
+2026-09-21-health-atlas-body-systems-parity-tranche8.md`.

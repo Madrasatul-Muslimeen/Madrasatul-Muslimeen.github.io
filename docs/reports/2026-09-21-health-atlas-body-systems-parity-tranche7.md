@@ -250,4 +250,29 @@ sign-in/tenant: open `app/health/health-atlas.html` (served over `http://`, not 
 6. Narrow the browser window below roughly tablet width — confirm the layout stacks into one column
    and the resize strips disappear.
 
+---
+
+## CORRECTION (21 Sep 2026, via issue #115 — tranche 8, no edit to this report's own text above)
+
+§4's "Focused browser walk (Playwright, local `serve.js`, un-checked-in, deleted before commit),
+25 checks, 0 failed" is exactly the evidence gap issue #115's `/mmsa-task` comment (`5760406999`)
+named for this resizable three-column UI specifically: real when it ran, not independently
+reproducible afterwards, and the report goes on citing it as evidence anyway.
+
+**Fixed by committing a reproducible replacement**, not by rewriting the walk described above (it
+did happen, and its numbers were real at the time):
+`tools/health-atlas-verify/body-systems-parity-browser.mjs` (tranche 8) covers the same ground this
+round's walk did — the mouse drag-resize on both dividers (clamped, and persisting across a
+redraw), the keyboard resize (`ArrowLeft`/`ArrowRight`, clamped, including the *direction* this
+round's own §4 got right and this correction re-verified: the s3 divider's `ArrowLeft` **widens**
+the detail column, `ArrowRight` narrows it — the mirror of s1 — matching `startColumnDrag()`'s own
+sign convention), the wheel's keyboard drill-down/back, search, and the three built diagrams — at
+desktop/tablet/phone widths. It also re-asserts, as a standing regression guard rather than a
+one-time check, that the diagram placeholder never again claims the un-diagrammed systems' text is
+"accurate" (§1's own correction) — proven by mutation: reintroducing that exact word into
+`health-atlas-view.js` makes this suite fail at all three viewports, and it was reverted immediately
+after confirming that. A second mutation (loosening the s3 minimum clamp from 220px) was caught the
+same way. Run it yourself: `node tools/health-atlas-verify/body-systems-parity-browser.mjs` from the
+repository root. Full account: `docs/reports/2026-09-21-health-atlas-body-systems-parity-tranche8.md`.
+
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
