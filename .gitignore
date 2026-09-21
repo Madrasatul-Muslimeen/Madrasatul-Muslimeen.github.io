@@ -1,6 +1,10 @@
 # Machine-local settings, not shared project config
 .claude/settings.local.json
 
+# Isolated worktree checkouts the harness creates for background agents.
+# Session-local tooling state, not a repo deliverable.
+.claude/worktrees/
+
 # Installer, not part of the app
 Git-*.exe
 
