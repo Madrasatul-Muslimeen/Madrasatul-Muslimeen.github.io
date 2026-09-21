@@ -1,6 +1,10 @@
 # Machine-local settings, not shared project config
 .claude/settings.local.json
 
+# Claude Code harness worktrees for isolated background agents -- session
+# tooling state, not application content, and never something to commit
+.claude/worktrees/
+
 # Installer, not part of the app
 Git-*.exe
 
