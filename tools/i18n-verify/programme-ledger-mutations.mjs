@@ -221,10 +221,17 @@ mutation("a bare version at the END OF A SENTENCE is still seen", "D", (l, f) =>
 // branch diff. Picking the first stream with touches silently stopped working
 // when v08.30 gave the merged `quran` stream its own (branchless) touches.
 mutation("a stream's shared-file touch loses its declaration", "E", (l, f) => {
-  const s = l.streams.find((x) =>
-    (x.declaredSharedTouches || []).some((t) => t.path === "app/js/version.js") &&
-    x.activeBranch && (f.branches?.[x.activeBranch]?.changedPaths || []).includes("app/js/version.js"));
-  assert.ok(s, "fixture drift: no stream both declares app/js/version.js and still shows it changed on a branch");
+  // Build the precondition in this fixture. A real branch need not keep an
+  // historical version.js edit after its integration has reached main.
+  const s = l.streams.find((x) => x.activeBranch && f.branches?.[x.activeBranch]);
+  assert.ok(s, "fixture drift: no active branch exists for Guard E's mutation");
+  const declaration = l.streams.flatMap((x) => x.declaredSharedTouches || [])
+    .find((t) => t.path === "app/js/version.js");
+  assert.ok(declaration, "fixture drift: no version.js shared-touch declaration exists");
+  const changedPaths = f.branches[s.activeBranch].changedPaths;
+  if (!changedPaths.includes("app/js/version.js")) changedPaths.push("app/js/version.js");
+  s.declaredSharedTouches = [...(s.declaredSharedTouches || []), { ...declaration }];
+  // The mutation under test removes the declaration while retaining the edit.
   s.declaredSharedTouches = s.declaredSharedTouches.filter((t) => t.path !== "app/js/version.js");
 }, /modifies shared\/platform file app\/js\/version\.js .* with no declaration/);
 
