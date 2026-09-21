@@ -388,7 +388,21 @@ jobs:
           # READ-ONLY git verbs only, and no `git push` in any form.
           use_commit_signing: true
 
+          # NO `--model` PIN, AND THAT IS A FINDING RATHER THAN A PREFERENCE.
+          # The first real builder run pinned `claude-opus-5` and failed in
+          # 167ms at turn 1 with `total_cost_usd: 0` and `modelUsage: {}` --
+          # the model was never called at all. Everything before it had
+          # succeeded: OIDC, the App token exchange, "Verified human actor:
+          # AAAsapp", and Claude Code 2.1.278 installing cleanly. An instant
+          # zero-usage failure is a startup rejection, not a task failure.
+          #
+          # The Owner runs on a SUBSCRIPTION, not API billing, so which models
+          # the credential may address is decided by the subscription and is
+          # not knowable from this file. Omitting the input lets the Action use
+          # the default the credential actually has, which is the one thing
+          # guaranteed to be addressable. Pin a model here only after a run has
+          # PROVEN that model works for this account -- a pin is a claim about
+          # someone else's entitlement.
           claude_args: |
-            --model "claude-opus-5"
             --max-turns 250
             --allowedTools "Bash(node *),Bash(npx playwright *),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git stash:*),Bash(git rev-parse:*),Bash(git ls-remote:*),Bash(git fetch:*),Read,Edit,Write,Glob,Grep"
