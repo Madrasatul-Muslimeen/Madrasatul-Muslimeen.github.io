@@ -62,6 +62,13 @@ export function editionOf(editionId) {
   return EDITION_BY_ID.get(editionId) ?? null;
 }
 
+/** The collection an edition belongs to -- read directly off the edition's own `collectionId`, never derived through an occurrence (issue #114, Gate A). */
+export function collectionOf(editionId) {
+  const edition = editionOf(editionId);
+  if (!edition) return null;
+  return COLLECTIONS.find((c) => c.collectionId === edition.collectionId) ?? null;
+}
+
 /** Top-level books of an edition, in source order. */
 export function booksOf(editionId) {
   return ordered(BOOK_CHAPTERS.filter((b) => b.editionId === editionId && b.parentId === null));
