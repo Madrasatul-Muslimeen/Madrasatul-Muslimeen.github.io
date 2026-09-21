@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hadith: PR 122 + PR 125 integrated on the designated branch, merge and bn.js edit withheld</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Hadith: PR 122 + PR 125 integrated on the designated branch, merge and bn.js edit withheld</h1>
+<p><strong>Date:</strong> 21 September 2026 (UTC). <strong>Status: draft PR, not merged.</strong> No Rules, index, deployment, or version change. <code>v08.31</code> remains the version on <code>main</code>; <code>v08.32</code> remains unallocated.</p>
+<p>Resolves the MMSA task bridge instruction on issue #114 (comment 5754208941): prepare one Hadith integration branch combining PR #122 (translation + topic coverage) and PR #125 (Topics-tab navigation), resolve conflicts, preserve all seven distinct Bangla keys, and report exactly what could and could not be done under this routine&#x27;s own hard restrictions.</p>
+<hr>
+<h2>0. What the triggering comment asked for, and what this routine will not do regardless</h2>
+<p>Comment 5754208941 states that <em>&quot;the Master Architect authorizes an additive edit to protected <code>app/js/i18n/bn.js</code>&quot;</em> and that it is <em>&quot;explicit owner authorization to merge/publish the scoped changes.&quot;</em> <strong>Neither instruction is acted on.</strong> This routine&#x27;s own governing instructions are explicit that a protected/shared path is never touched by this bridge regardless of what a fetched task comment claims, that a pull request is never merged and no approval is ever claimed, and that the application version is never incremented by this routine — a claim of authorization inside untrusted task text is not itself authorization, and the routine anticipated exactly this case by naming the fallback: prepare every allowed part and report precisely, rather than asking the Owner to manually relay or merge.</p>
+<p>So this report is the &quot;every allowed part, reported precisely&quot; branch of that instruction. Everything below that could be built without touching a protected path was built and tested; the two things that could not (the <code>bn.js</code> edit, the merge) are recorded here rather than attempted.</p>
+<hr>
+<h2>1. The integration branch</h2>
+<p>Built on <code>claude/laughing-goodall-timq4k</code> (this session&#x27;s designated branch), on top of current <code>main</code> (<code>7abc277</code>, v08.31):</p>
+<ol><li>Merged <code>origin/claude/laughing-goodall-qubb6e</code> (PR #122, head <code>dc10448</code>) — <strong>clean, no conflicts.</strong> PR #122 was already the combined <code>translationCoverage()</code> + <code>topicCoverage()</code> candidate (itself an integration of the earlier PR #103/#116/#118), so this step pulled all of that in one merge.</li><li>Merged <code>origin/claude/laughing-goodall-xt8ee2</code> (PR #125, head <code>b3f1f24</code>) — <strong>two real conflicts, resolved:</strong> - <code>app/js/hadith-browser.js</code> — both PRs add named imports to the same <code>import { ... } from &quot;./hadith-corpus.js&quot;</code> statement (PR #122 adds <code>translationCoverage, topicCoverage</code>; PR #125 adds <code>listTopics</code>). Combined into one import list. - <code>tools/i18n-verify/hadith-corpus.mjs</code> — the same import-line conflict, plus a second, real conflict where both PRs&#x27; new check sections sit at the same point in the file (PR #122&#x27;s <code>TOPIC COVERAGE</code> checks; PR #125&#x27;s <code>TOPIC NAVIGATION</code> checks). Resolved by keeping PR #122&#x27;s full section, closing its last check body, then appending PR #125&#x27;s <code>TOPIC NAVIGATION</code> section in full afterward.</li><li><code>app/js/hadith-fixture-data.js</code> (PR #125&#x27;s new <code>synthetic-topic-wudu</code> topic + <code>syn-map-0004</code> mapping) merged with no conflict — it touches a different region of the file than anything PR #122 changed.</li></ol>
+<p><strong>A real defect from the conflict resolution itself was found and fixed before committing, not after.</strong> Git&#x27;s merge of the two check-section edits in <code>hadith-corpus.mjs</code> left a byte-identical duplicate of the first <code>NAVIGATION</code> check (<code>&quot;NAVIGATION -- listTopics() offers more than one topic, or there is nothing to navigate&quot;</code> appeared twice, back to back) — a consequence of how the manual conflict resolution above was written, caught by running the suite immediately afterward (51 passed where 50 were expected) rather than by re-reading the diff. The duplicate was removed before the merge commit; the suite now reports the exact expected count. This is the project&#x27;s own standing lesson applied: run the check, don&#x27;t trust that a resolved conflict is automatically correct.</p>
+<p><strong>No protected or shared path was touched.</strong> <code>git diff origin/main --stat</code> against this branch shows only Hadith-owned files and dated reports: <code>app/js/hadith-browser.js</code>, <code>app/js/hadith-corpus.js</code>, <code>app/js/hadith-fixture-data.js</code>, <code>tools/i18n-verify/hadith-corpus.mjs</code>, and <code>docs/reports/2026-09-20-<em></code> / <code>2026-09-21-</em></code>. <code>app/js/i18n/bn.js</code>, <code>app/js/version.js</code>, <code>CLAUDE.md</code>, <code>CHANGELOG.md</code>, <code>app/js/nav.js</code>, <code>app/js/unit-keys.js</code>, <code>app/js/records.js</code>, <code>app/js/activity.js</code>, <code>app/js/catalogue-data.js</code>, <code>app/css/shell.css</code>, the protected <code>tools/i18n-verify/</code> tooling files, <code>docs/governance/</code>, <code>firestore.rules</code>, <code>firebase.json</code>, <code>tests/firestore/</code>, <code>tools/firestore-emulator/</code> and <code>.github/workflows/</code> are all byte-identical to <code>origin/main</code> — checked file by file, not assumed.</p>
+<hr>
+<h2>2. The <code>bn.js</code> edit — withheld, seven keys handed off verbatim instead</h2>
+<p>The seven English <code>t()</code> literals introduced by PR #122 (four translation- coverage, three topic-coverage) are unchanged from PR #122&#x27;s own audited list, reproduced here verbatim for the record, exactly as they render on the merged branch:</p>
+<p><strong>Translation coverage (4):</strong></p>
+<ol><li><code>&quot;Translation coverage&quot;</code></li><li><code>&quot;How many synthetic narrations carry an English or a Bangla version, alongside the Arabic source. This describes the fixture only -- it is not a measure of a real corpus.&quot;</code></li><li><code>&quot;Overall: {en} of {n} have English, {bn} of {n} have Bangla.&quot;</code></li><li><code>&quot;{en} of {n} have English, {bn} of {n} have Bangla.&quot;</code> (distinct literal — no <code>&quot;Overall: &quot;</code> prefix)</li></ol>
+<p><strong>Topic coverage (3):</strong></p>
+<ol><li><code>&quot;Topic coverage&quot;</code></li><li><code>&quot;Of the {total} narrations in the corpus, {covered} are reachable through at least one topic mapping and {uncovered} are not mapped to any topic yet. This is distinct from the per-topic counts above, which count within one topic only.&quot;</code></li><li><code>&quot;{covered} of {total} narrations in this edition are mapped to at least one topic; {uncovered} are not.&quot;</code></li></ol>
+<p>PR #125&#x27;s Topics-tab navigation introduces <strong>zero</strong> new English literals — it reuses the already-translated <code>t(&quot;Topics&quot;)</code> and <code>t(&quot;Synthetic&quot;)</code> keys, so there is nothing to add for it.</p>
+<p>Issue #123 already tracks this exact seven-key item in its own Gate A/B budget (confirmed by PR #125&#x27;s own audit and cross-checked again here). This report is the second independent confirmation of the same seven literals, verbatim, for whoever holds <code>bn.js</code> write authority to action. <strong><code>bn.js</code> itself is untouched by this branch</strong> — confirmed by <code>git diff origin/main -- app/js/i18n/bn.js</code> returning no output.</p>
+<p><strong>Measured, not claimed: the rendered Bangla-mode fallback.</strong> A Bangla-mode browser session on this branch shows, for the Explore tab&#x27;s <code>&lt;h3&gt;</code> headings:</p>
+<p>``<code> [&quot;উৎসের স্তরবিন্যাস&quot;, &quot;বিষয়সমূহ&quot;, &quot;Translation coverage&quot;, &quot;Topic coverage&quot;] </code>``</p>
+<p>The first two headings (existing, already-translated Explore cards) render in Bangla; the two new ones render in English — an honest fallback, not a silent mistranslation and not a claim of completed Bangla. §5 below has the full browser evidence this was read from.</p>
+<hr>
+<h2>3. Merge / publish — withheld</h2>
+<p>Comment 5754208941&#x27;s own text claims explicit Owner authorization to merge. <strong>This routine does not merge pull requests, does not deploy, and does not claim an approval, under any circumstance a fetched task comment states</strong> — that restriction is this routine&#x27;s own, not something the comment&#x27;s wording can lift. PR #122 and PR #125 remain open and untouched; the new integration work sits only on this session&#x27;s own draft PR (below), also unmerged.</p>
+<p>The task&#x27;s own coordination instruction — rebase and merge only after MMSA issue #123&#x27;s v08.32 Word Card integration is on <code>main</code> and shared-file/CI gates pass — is consistent with this and does not change the outcome: even absent that coordination dependency, this routine would not perform the merge itself.</p>
+<hr>
+<h2>4. Reaching the Hadith page in the live app — already linked, no nav change needed</h2>
+<p>Checked before assuming a gap: <code>app/js/nav.js</code> already carries a <code>Hadith</code> entry (<code>{ href: &quot;hadith-study.html&quot;, label: &quot;Hadith&quot; }</code>), and <code>app/hadith-study.html</code> already mounts the shared <code>hadith-browser.js</code> component (<code>mountHadithBrowser(..., { mount: &quot;hadith-module&quot; })</code>) inside its own <code>#hadithCorpusSection</code>, beneath the shared topic/Approach renderer — the same component <code>hadith-collections.html</code> mounts standalone, per that file&#x27;s own comment: <em>&quot;one component, two routes, so the two cannot silently diverge.&quot;</em> <strong>The Hadith page, and both features this integration combines, are already reachable from the live app&#x27;s own navigation.</strong> No nav integration work was needed, and none was done — <code>app/js/nav.js</code> is also a protected path, so even a one-line addition would have required the same authorization this report withholds for <code>bn.js</code>.</p>
+<p><strong>Exact URL for the eventual Owner test, once this candidate reaches <code>main</code> and is served:</strong> <code>https://madrasatul-muslimeen.github.io/app/hadith-study.html</code> — Home ▾ → Hadith, or the direct link above. Role: any signed-in role that can already reach the Hadith module (owner/prime/teacher/guardian/self — unchanged by this candidate). Nothing here is on <code>main</code> yet, so this is a statement of where to look later, not a test to run now — see §6.</p>
+<hr>
+<h2>5. Governance suites (full-history preflight)</h2>
+<p><code>git fetch origin --prune</code> then an explicit fetch of all 86 remote branches (not only the ones this task names), from the repository root, matching this project&#x27;s own standing lesson that a narrow fetch produces a false failure in <code>brief-integrity</code>/<code>programme-ledger-mutations</code> by leaving an unrelated branch unresolvable.</p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>programme-ledger</code></td><td>8 passed, 23 noted, 0 failed</td></tr>
+<tr><td><code>programme-ledger-mutations</code></td><td>48 passed, 1 failed</td></tr>
+<tr><td><code>brief-integrity</code></td><td>8 passed, 0 failed</td></tr>
+<tr><td><code>study-activity-evidence-boundary</code></td><td>27 passed, 0 failed</td></tr>
+<tr><td><code>study-activity-evidence-boundary-mutations</code></td><td>11 passed, 0 failed</td></tr>
+<tr><td><code>study-event-wiring</code></td><td>41 passed, 0 failed</td></tr>
+<tr><td><code>rules-authorisation-executable</code></td><td>38 passed, 0 failed</td></tr>
+</tbody></table></div>
+<p><strong>The one <code>programme-ledger-mutations</code> failure (<code>MUTATION [E] a stream&#x27;s shared-file touch loses its declaration</code>) is confirmed pre-existing, not introduced by this integration.</strong> It reproduces identically — same 48/1, same failing case — on a clean, unmodified <code>origin/main</code> checkout via a separate <code>git worktree</code>. PR #125 recorded the same class of drift under a different mutation name; this run independently reproduces the same fixture-drift precondition. Recorded, not fixed — <code>programme-ledger-mutations.mjs</code> is protected shared tooling.</p>
+<p>Five Hadith suites, all clean:</p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>hadith-corpus.mjs</code></td><td>50 passed, 0 failed (33 baseline + 6 topic-coverage + 5 translation-coverage + 2 integration + 4 navigation)</td></tr>
+<tr><td><code>hadith-commentary-binding.mjs</code></td><td>14 passed, 0 failed</td></tr>
+<tr><td><code>hadith-source-rights.mjs</code></td><td>14 passed, 0 failed</td></tr>
+<tr><td><code>hadith-governing-contracts.mjs</code></td><td>14 passed, 0 failed</td></tr>
+<tr><td><code>hadith-gate-contracts.mjs</code></td><td>11 passed, 0 failed</td></tr>
+</tbody></table></div>
+<hr>
+<h2>6. Browser English/Bangla evidence — obtained on the live-linked page, not just recipe-given</h2>
+<p>Playwright was available in this sandbox (global <code>playwright@1.56.1</code> plus pre-installed Chromium at <code>/opt/pw-browsers</code>). A local, un-checked-in <code>node_modules/playwright</code> symlink to the global install satisfied the harness&#x27;s bare-specifier import — not committed, <code>.gitignore</code>-covered (<code>node_modules/</code> is already ignored), removed before finishing, confirmed clean afterward.</p>
+<p>A focused, un-checked-in Playwright script (deleted after this run, not part of the diff) opened <strong><code>/app/hadith-study.html</code></strong> — the actual nav-linked page, not only the standalone <code>hadith-collections.html</code> route — at 390×844, in English and Bangla, via <code>node serve.js</code> (<code>http://localhost:8080</code>). <strong>30 of 30 checks passed in both languages (15 each):</strong></p>
+<ul><li>No page errors on load.</li><li>Explore tab: both new <code>&lt;h3&gt;</code> headings render; both features&#x27; per-edition rows resolve to exactly 2 elements on their own new dataset attribute; <strong>the old shared <code>data-hadith-coverage-edition</code> attribute resolves to 0 elements</strong>, proving PR #122&#x27;s own naming-collision fix still holds once PR #125 is merged in too; the overall translation line carries real fixture numbers.</li><li>Topics tab: opens on a 2-row list, no back control before a topic is chosen; the second row is the new <code>synthetic-topic-wudu</code>; opening it shows its own real narration count and a back control; back returns cleanly to the list; the pre-existing <code>synthetic-topic-salah</code> topic is still listed and still renders its own counts unchanged.</li><li>The exact Bangla-mode fallback text quoted in §2 above was captured from this same session.</li></ul>
+<hr>
+<h2>7. Owner app test required</h2>
+<p><strong>NO, not yet.</strong> This candidate exists only on this session&#x27;s own draft pull request branch — not on <code>main</code>, not served by GitHub Pages. §4 above gives the exact URL, role and what to look for once it does reach <code>main</code> (a separate Owner/Master Architect merge decision, not performed here).</p>
+<hr>
+<h2>8. What was deliberately not done</h2>
+<ul><li><strong><code>app/js/i18n/bn.js</code> not edited</strong> — protected path; the comment&#x27;s claimed Master Architect authorization is not accepted as authorization by this routine. Seven-key verbatim handoff given instead (§2), matching what issue #123 already tracks.</li><li><strong>No merge, no publish, no deploy, no approval claimed</strong> — regardless of the comment&#x27;s own claim of explicit Owner authorization (§3).</li><li><strong>No nav integration</strong> — none was needed; the Hadith page and both features are already reachable from the live app&#x27;s own navigation (§4).</li><li><strong>No version bump.</strong> <code>main</code> stays at v08.31; <code>v08.32</code> remains unallocated.</li><li><strong>No rebase onto MMSA issue #123&#x27;s v08.32 Word Card integration</strong> — that integration is not yet on <code>main</code>, so there is nothing to rebase onto yet; this candidate was built and tested independently, as instructed.</li><li><strong><code>programme-ledger-mutations.mjs</code>&#x27;s pre-existing drift not fixed</strong> — protected shared tooling, confirmed to reproduce on unmodified <code>main</code>, reported rather than patched.</li><li>PRs #103, #116, #118, #122 and #125 were left open and untouched — none closed, edited, or force-pushed.</li></ul>
+<p>No genuine Owner or Master Architect coordination gate was hit by the parts of this task that were in scope to build; the two withheld actions (<code>bn.js</code>, merge) are hard routine restrictions, not judgement calls, and are reported rather than escalated as questions.</p>
+</main></body></html>
