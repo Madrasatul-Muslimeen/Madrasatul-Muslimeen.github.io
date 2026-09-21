@@ -301,6 +301,60 @@ function buildWheel(state, data, callbacks) {
 }
 
 /* ---------- Diagram panel ---------- */
+// PARITY TRANCHE 13 (see docs/reports/2026-09-21-health-atlas-integration-
+// readiness-tranche13.md): the source's own diagram highlight. The
+// v02.04 source wires SYSTEM_DIAGRAMS[system].partMap[organ.name] to a
+// DOM id inside the rendered SVG and adds a `.part-highlight` class to it
+// (source: wireTabEvents(), "if(el) el.classList.add('part-highlight')")
+// — so opening "Bladder" versus "Kidneys" within the same Renal & Urinary
+// diagram visibly points at a DIFFERENT shape. `health-atlas-diagrams.js`
+// has carried `partMap` since tranche 6, and every shape descriptor has
+// always carried its own `id`, but this view never read either: the
+// diagram rendered identically for every organ sharing a system. Purely
+// presentational (a CSS class toggle keyed off data already in the
+// preserved dataset) — no new field, no nutrition/dose/remedy content.
+//
+// SHAPES SHARING ONE PART GET ONE <g id="…">, A LONE SHAPE GETS THE id
+// DIRECTLY — matching the source's own markup (e.g. the two kidney
+// outlines share `<g id="kidney-shape">`; the single bladder ellipse
+// carries `id="bladder-shape"` itself), so `partMap`'s ids resolve to
+// exactly one element each, never zero and never a duplicate DOM id.
+function groupDiagramShapes(shapes) {
+  const units = [];
+  let i = 0;
+  while (i < shapes.length) {
+    const id = shapes[i].id || null;
+    let j = i + 1;
+    if (id) { while (j < shapes.length && shapes[j].id === id) j++; }
+    units.push({ id, shapes: shapes.slice(i, j) });
+    i = j;
+  }
+  return units;
+}
+
+function buildDiagramShapeNode(shape) {
+  return shape.tag === 'text'
+    ? svgText(shape.attrs.x, shape.attrs.y, shape.text, shape.attrs)
+    : svgEl(shape.tag, shape.attrs);
+}
+
+function buildDiagramShapeNodes(diagram, highlightPartId) {
+  return groupDiagramShapes(diagram.shapes).map((unit) => {
+    const nodes = unit.shapes.map(buildDiagramShapeNode);
+    if (unit.shapes.length > 1) {
+      const g = svgEl('g', unit.id ? { id: unit.id } : {}, nodes);
+      if (unit.id && unit.id === highlightPartId) g.classList.add('ha-diagram-part-highlight');
+      return g;
+    }
+    const node = nodes[0];
+    if (unit.id) {
+      node.setAttribute('id', unit.id);
+      if (unit.id === highlightPartId) node.classList.add('ha-diagram-part-highlight');
+    }
+    return node;
+  });
+}
+
 function buildDiagramPanel(organ, systemName) {
   const diagram = diagramForSystem(organ.system);
   if (!diagram) {
@@ -308,10 +362,8 @@ function buildDiagramPanel(organ, systemName) {
       el('div', { class: 'ha-empty', text: `Diagram for the ${systemName} system is still in progress — see the general-reference text below in the meantime.` })
     ]);
   }
-  const shapeNodes = diagram.shapes.map((shape) => {
-    if (shape.tag === 'text') return svgText(shape.attrs.x, shape.attrs.y, shape.text, shape.attrs);
-    return svgEl(shape.tag, shape.attrs);
-  });
+  const highlightPartId = (diagram.partMap && diagram.partMap[organ.name]) || null;
+  const shapeNodes = buildDiagramShapeNodes(diagram, highlightPartId);
   const svg = svgEl('svg', { viewBox: diagram.viewBox, class: 'ha-diagram-svg' }, shapeNodes);
   return el('div', { class: 'ha-diagram-card' }, [
     svg,

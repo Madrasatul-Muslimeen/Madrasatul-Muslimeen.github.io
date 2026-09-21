@@ -123,6 +123,10 @@
   .ha-diagram-card { background: var(--card); border: 1px solid var(--line); border-radius: 0.6rem; padding: 0.9rem; margin-bottom: 0.6rem; }
   .ha-diagram-svg { width: 100%; height: auto; max-height: 220px; }
   .ha-diagram-caption { font-size: 0.78rem; color: #8a8071; margin-top: 0.5rem; }
+  /* Parity tranche 13: the source's own per-organ diagram highlight
+     (`.part-highlight` in the v02.04 standalone source), ported verbatim
+     under this app's own class prefix. Purely presentational. */
+  .ha-diagram-part-highlight { stroke: var(--gold) !important; stroke-width: 4; filter: drop-shadow(0 0 5px var(--gold)); }
 
   /* ---------- View tabs + References index (parity tranche 9) ---------- */
   .ha-view-tabs { display: flex; gap: 0.4rem; margin-bottom: 1rem; border-bottom: 1px solid var(--line); }
