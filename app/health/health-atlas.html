@@ -116,6 +116,29 @@
   .ha-diagram-card { background: var(--card); border: 1px solid var(--line); border-radius: 0.6rem; padding: 0.9rem; margin-bottom: 0.6rem; }
   .ha-diagram-svg { width: 100%; height: auto; max-height: 220px; }
   .ha-diagram-caption { font-size: 0.78rem; color: #8a8071; margin-top: 0.5rem; }
+
+  /* ---------- View tabs + References index (parity tranche 9) ---------- */
+  .ha-view-tabs { display: flex; gap: 0.4rem; margin-bottom: 1rem; border-bottom: 1px solid var(--line); }
+  .ha-view-tab {
+    font: inherit; font-size: 0.85rem; font-weight: 600; padding: 0.5rem 0.9rem;
+    border: none; border-bottom: 2px solid transparent; background: none; color: #6b6255; cursor: pointer;
+  }
+  .ha-view-tab:hover { color: var(--ink); }
+  .ha-view-tab-active { color: var(--gold); border-bottom-color: var(--gold); }
+  .ha-refs-index { background: var(--card); border: 1px solid var(--line); border-radius: 0.6rem; padding: 1rem 1.1rem; overflow-x: auto; }
+  .ha-refs-index-note { font-size: 0.85rem; color: #6b6255; line-height: 1.5; margin: 0 0 0.9rem; max-width: 52rem; }
+  .ha-refs-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .ha-refs-table th { text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gold); font-weight: 600; padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--line); }
+  .ha-refs-table td { padding: 0.6rem 0.5rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .ha-ref-id { color: #8a8071; width: 2.5rem; }
+  .ha-ref-link { color: var(--gold); }
+  .ha-ref-organ-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.3rem 0.5rem; }
+  .ha-ref-organ-link {
+    font: inherit; font-size: 0.82rem; background: #f0ece1; border: 1px solid var(--line);
+    border-radius: 999px; padding: 0.15rem 0.65rem; color: var(--ink); cursor: pointer;
+  }
+  .ha-ref-organ-link:hover, .ha-ref-organ-link:focus { background: #efe4c8; color: var(--gold); }
+  .ha-ref-none { color: #8a8071; font-size: 0.82rem; }
 </style>
 </head>
 <body>
@@ -125,7 +148,9 @@
     An MMSA-internal review screen for the Health Atlas v02.04 source handover: the same
     three-column layout (drag the strips either side of the wheel to resize it, or focus a strip and
     use the arrow keys), collapsible system list, interactive systems/organs wheel and body-system
-    diagrams as the source app, over the same preserved dataset. Standalone in the sense the rest of
+    diagrams as the source app, over the same preserved dataset, plus a References index (the
+    "References" tab above the layout) naming which organs in this dataset cite each of the 8
+    general references. Standalone in the sense the rest of
     this app already is — no sign-in, no tenant, no backend, nothing persisted; it only reads the
     dataset shipped beside it. Like every other page under <code>app/</code>, its ES module imports
     need it served over http (see <code>serve.js</code>), not opened as a bare <code>file://</code>
@@ -134,7 +159,8 @@
 </header>
 <main id="healthAtlasRoot"></main>
 <footer>
-  Health Atlas Body Systems parity tranche 7 — see app/health/README.md for scope, boundaries and
+  Health Atlas parity tranche 9 (References index) on tranches 6–8 (Body Systems 3-column layout,
+  wheel, diagrams, column drag-resize) — see app/health/README.md for scope, boundaries and
   what is deliberately not built yet (system/organ add·edit·delete·reorder, the wheel's third
   "fields" ring, and header export/import/reset). Source: Health Atlas v02.04 standalone
   (<code>docs/health-source/health-atlas-v02.04-standalone.html</code> on

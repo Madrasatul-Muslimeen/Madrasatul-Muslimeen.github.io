@@ -251,3 +251,62 @@ Two bounded, read-only changes, neither touching a dataset, selector or view fil
 
 Full account and verification numbers: `docs/reports/
 2026-09-21-health-atlas-body-systems-parity-tranche8.md`.
+
+## Tranche 9 — a References index, linking into existing organ detail
+
+One bounded, read-only capability: a References index for the 8
+`HEALTH_ATLAS_REFERENCES`, reachable via a new two-tab bar
+(`Body Systems` / `References`) at the top of `health-atlas.html`, alongside
+the existing three-column Body Systems layout rather than replacing it.
+
+**What it reads: nothing new.** `organsForReference()` (the new selector,
+the reverse of the existing `referencesFor()`) reads only the same
+`organ.refs[]` field the detail column's own "General references" block
+has read since foundation tranche 1 — no new field, no new dataset, no
+change to `health-atlas-claims.js`'s evidence registry.
+
+**Gate A (source fields, ownership, boundary), decided before building:**
+the v02.04 standalone source's own References tab (`renderRefsTab()`) is a
+flat `id / name / url` table with **no organ links at all** — so "links
+into existing organ detail" is this tranche going beyond source parity, on
+issue #115's own instruction to add them "where supported". The app has no
+URL-addressable per-organ route (`health-atlas.html` takes no query
+parameter; organ selection is in-memory `state.selectedOrganId`), so an
+organ "link" is a real button wired to the exact same `onSelectOrgan()`
+path the sections column and the wheel legend already use — not a fabricated
+`<a href>` into a page that cannot resolve it. Ownership: all files touched
+are Health-owned (`app/health/**`, `tools/health-atlas-verify/**`); none is
+in any protected/shared-path family. Privacy/clinical boundary: unchanged —
+no nutrition/dose/remedy/treatment field is read, and the index explicitly
+disclaims that a reference listed for an organ backs that organ's material
+*in general*, never any one function statement individually (every
+statement's own evidence badge, unchanged by this tranche, is what actually
+makes that distinction; the index's own note text says so, and a static
+guard plus a browser check both assert the index text never uses the word
+"cited").
+
+**Gate B — built, since Gate A found no blocker.** `organsForReference()`
+in `health-atlas-selectors.js`; `buildViewTabs()` / `buildReferencesScreen()`
+in `health-atlas-view.js`; CSS for the tab bar and the references table in
+`health-atlas.html`. One real edge case exercised, not hypothetical: of the
+8 references, USDA FoodData Central (`r5`) is cited by zero organs in this
+dataset (it backs food-nutrition figures this view never renders, per the
+existing deferral boundary) — the index says so in words instead of
+rendering an empty cell.
+
+**Verification.** `selectors.mjs` gained 6 new checks for
+`organsForReference()`; `view-boundary-wheel.mjs` gained 4 new checks,
+including two positive controls (the index really links into organ
+detail, not a dead reference; the index text never claims per-statement
+verification) — both checks proven able to fail by two independent
+mutations (breaking the return-to-Body-Systems switch; weakening the
+disclaimer text), caught by both the static guard and the new browser
+suite independently, then reverted. New committed, reproducible browser
+suite `tools/health-atlas-verify/references-index-browser.mjs` (12 checks,
+desktop/tablet/phone, mouse click + keyboard Enter + a real touch tap),
+following the precedent tranche 8's `body-systems-parity-browser.mjs` set —
+not wired into `.github/workflows/verify.yml`, same reason every other
+Playwright-based suite here is not.
+
+Full account and verification numbers: `docs/reports/
+2026-09-21-health-atlas-references-index-tranche9.md`.

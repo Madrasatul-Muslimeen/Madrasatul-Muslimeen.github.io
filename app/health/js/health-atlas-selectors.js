@@ -55,3 +55,12 @@ export function matchesOrganSearch(organ, term) {
   if (String(organ.name || '').toLowerCase().includes(needle)) return true;
   return (organ.functions || []).some(fn => String(fn).toLowerCase().includes(needle));
 }
+
+// References-index tranche (parity tranche 9, additive). The reverse of
+// referencesFor(): given one reference id, which organs' own .refs[] name
+// it. Reads only the same .refs field referencesFor() already reads (never
+// a new field), so it stays inside the existing deferral boundary — see
+// tools/health-atlas-verify/view-boundary-wheel.mjs.
+export function organsForReference(organs, referenceId) {
+  return (organs || []).filter(o => Array.isArray(o.refs) && o.refs.includes(referenceId));
+}

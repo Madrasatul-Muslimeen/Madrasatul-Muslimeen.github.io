@@ -136,6 +136,31 @@ check('POSITIVE CONTROL: the wheel svg box is resizable (CSS resize: both, match
   assert(htmlRaw.includes('resize: both'), 'expected .ha-wheel-svg-box { resize: both; ... } in health-atlas.html');
 });
 
+check('POSITIVE CONTROL: the view really implements a References index (tranche 9)', () => {
+  assert(viewCode.includes('function buildReferencesScreen'), 'expected buildReferencesScreen() in health-atlas-view.js');
+  assert(viewCode.includes('organsForReference'), 'expected the view to call organsForReference()');
+  assert(selectorsCode.includes('export function organsForReference'), 'expected organsForReference() to be exported from selectors');
+});
+
+check('POSITIVE CONTROL: organsForReference reads only the existing .refs field, no new field', () => {
+  const fn = selectorsRaw.slice(selectorsRaw.indexOf('export function organsForReference'));
+  const body = fn.slice(0, fn.indexOf('\n}') + 2);
+  assert(body.includes('.refs'), 'expected organsForReference to read entity.refs');
+});
+
+check('POSITIVE CONTROL: the References index links back into the existing organ detail column, not a dead reference', () => {
+  assert(viewCode.includes('onOpenOrganFromReferences'), 'expected a callback wiring a reference row\'s organ pill into organ selection');
+  assert(viewCode.includes("state.viewMode = 'bodysystems'"), 'expected opening an organ from References to switch back to the Body Systems view');
+});
+
+check('POSITIVE CONTROL: the References index disclaims per-statement verification, never asserts it', () => {
+  const screenSrc = viewCode.slice(viewCode.indexOf('function buildReferencesScreen'), viewCode.indexOf('function buildScreen'));
+  assert(screenSrc.includes('not any one function statement individually'),
+    'expected the index to explicitly disclaim per-statement verification');
+  assert(!screenSrc.includes("EVIDENCE_STATUS.CITED_EVIDENCE") && !screenSrc.includes("'cited-evidence'"),
+    'the References index must never itself decide a statement is cited-evidence — that stays health-atlas-claims.js\'s job alone');
+});
+
 console.log(`\nHealth Atlas view-boundary-wheel: ${passed} passed, ${failed} failed`);
 if (failed) {
   for (const f of failures) console.log('  FAIL:', f);
