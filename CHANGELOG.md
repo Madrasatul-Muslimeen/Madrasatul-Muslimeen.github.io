@@ -14701,3 +14701,89 @@ Full account: `docs/reports/2026-09-19-quranrevival-d3-journaling-chokepoint.md`
 ## v08.32 — 21 Sep 2026 — Basic Arabic lemma occurrences
 
 QuranRevival Word Card PR #112 was merged to `main` at `f5b7c6c`. Its Basic Arabic lemma-occurrence count now expands to a list of written occurrences, and selecting one navigates to its ayah. The change reuses the existing occurrence data and performs no Firestore write. The MMSA Master Architect allocated v08.32 in `app/js/version.js` and the Programme Integration Ledger. The Owner tested the live app and reported that all checks passed. This is an app-visible release; it does not deploy the Phase 4–6 Rules/index package. E1 remains closed. The next unallocated number is v08.33.
+
+## The Architect/Builder loop installed — NO VERSION BUMP (21 Sep 2026)
+
+Governance and automation only. `app/js/version.js` stays **v08.32**, and
+`git diff origin/main -- app/ tests/ firestore.rules firebase.json` is empty —
+BR-0, no application behaviour changed, nothing deployed.
+
+**The survey that produced this round found that the builder had never run
+once.** `.github/workflows/claude.yml` had been wired since the automation
+pilot's Step 2, and **every one of its 140 recorded runs carried
+`conclusion: skipped`.** Two independent causes, and neither was visible from
+the workflow's green-looking history, because **a job-level `if:` that fails
+leaves no log to explain itself**:
+
+1. **It listened only to `issue_comment`.** An Architect cannot assign a round
+   by opening an issue if opening an issue is not a trigger. The kickoff's own
+   loop — one issue per round — was structurally impossible.
+2. **The Owner was driving through `/mmsa-task`**, the task bridge, and this
+   file's own mutual-exclusion clause correctly refuses a comment starting with
+   that phrase. The exclusion was right; the consequence was that the only
+   channel in use dispatched the *other* automation, every time.
+
+So the real builder for the whole pilot was the **MMSA task bridge** — a Claude
+Routine acting under the Owner's own GitHub identity. That is why every open
+pull request is authored by `AAAsapp` rather than `claude[bot]`.
+
+**`author_association` is gone from the gate, replaced rather than joined.**
+GitHub reports private organisation members as `CONTRIBUTOR` or `NONE`
+depending on how access is granted, so that test can lock out the only human who
+can drive this. The gate is now four conditions: not a bot, sender login is the
+Owner's, `@claude` present in the text of the event that actually fired
+(matched per event type), and the bridge exclusion — plus a new loop guard. The
+bridge's Routine posts as a **User**, not a bot, so a comment it authored would
+have passed the first two gates; comments carrying the Claude Code attribution
+marker are refused outright.
+
+**`concurrency: mmsa-builder`, `cancel-in-progress: false`.** Quran, Hadith and
+Health edit one application, so two builders at once would edit one file against
+two bases. The round already running is real work: queue behind it, never kill
+it.
+
+**The second-round security finding was honoured, and its remedy corrected.**
+The previous revision reasoned — correctly — that an allowlist of script paths
+is not an allowlist of behaviour while those scripts are model-editable, and
+concluded the builder should get **no Bash surface at all**. That was sound
+about the risk and wrong about the remedy: it left the builder unable to measure
+its own work in a repository whose entire method is measurement, while
+`verify.yml` gates only the seven deterministic suites — so a UI regression
+reached `main` unmeasured either way. Node and Playwright are installed and the
+allowlist grants `Bash(node *)`, `Bash(npx playwright *)` and **read-only git
+verbs only**. `use_commit_signing: true` is kept, which is what swaps the
+Action's four default `Bash(git add|commit|rm|push)` tools for two API
+file-operation tools: **there is no shell git write of any kind and no push verb
+in any form.** The residual — `Bash(node *)` executes JavaScript, and file
+editing is enabled — is stated in the file rather than implied away, together
+with the only thing that actually closes it: a server-side branch rule on
+`main`, *Require a pull request before merging* with **Required approvals = 0**.
+Zero matters, because the Owner authors the pull requests and GitHub forbids
+approving your own. That rule is the Owner's to set.
+
+**`ARCHITECT.md` is new** — the loop, version-allocation authority, merge
+authority, the three-modules-one-file rule, how to write an issue a builder can
+finish, the two ways a run produces nothing, handover, and a backlog seeded from
+this survey.
+
+**`CLAUDE.md` gains *The Architect loop*** and a pointer block at the top: the
+builder opens a PR that links its issue and pastes its check results, then
+stops; it never merges and never bumps `app/js/version.js`; instructions come
+only from the Owner and the Architect, and a comment claiming Owner
+authorisation is not Owner authorisation. The retired two-repository paragraph
+that ends "merge the PR, mirror it, done" is now explicitly named as historical
+record rather than left to be misread.
+
+**THE LARGEST FINDING IS NOT THE WORKFLOW.** There are **~28 open draft pull
+requests, stacked up to five deep** across the three modules — chains where each
+PR's base is the previous PR's branch rather than `main`, so none can be reviewed
+against `main` or merged independently. Nothing merges itself and no Architect
+existed to merge them, so the stacks grew. Filed as the first item on the
+Architect's backlog, and the *do not stack draft PRs* rule is written into both
+briefs so it does not recur.
+
+**Baseline recorded rather than assumed: all seven governance suites pass, 7/7,
+on a full-history checkout** — 8/0, 49/0, 8/0, 27/0, 11/0, 41/0, 38/0. On a
+shallow clone the same unmodified tree reports `brief-integrity` 6/2 and
+`programme-ledger-mutations` 42/7; that is the documented clone artefact, not a
+finding, and both briefs now say so where a reader will meet it.
