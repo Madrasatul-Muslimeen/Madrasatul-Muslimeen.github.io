@@ -17,7 +17,7 @@ import { getAppLang } from "./prefs.js";
 import { STATUSES, statusLabel } from "./unit-keys.js";
 import {
   listCollections, booksOf, chaptersOf, occurrencesIn, editionHasChapterLevel,
-  occurrenceById, sourcePathOf, externalReferencesFor, resolveText,
+  occurrenceById, chapterById, sourcePathOf, externalReferencesFor, resolveText,
   availableLanguages, searchCorpus, listTopics, topicIndex, exploreAggregate,
   translationCoverage, topicCoverage,
   CONTENT_LANGUAGES, SOURCE_LANGUAGE,
@@ -250,10 +250,17 @@ function breadcrumb(state, render, uiLang) {
     }
   };
   add(t("Collections"), () => { state.editionId = null; state.bookId = null; state.chapterId = null; render(); });
-  const path = state.bookId ? sourcePathOf(occurrencesIn(state.chapterId ?? state.bookId)[0]?.occurrenceId) : null;
-  const book = path?.book;
-  if (state.bookId) add(langText(book?.title, uiLang) || state.bookId, state.chapterId ? () => { state.chapterId = null; render(); } : null);
-  if (state.chapterId) add(langText(path?.chapter?.title, uiLang) || state.chapterId, null);
+  // Read the book/chapter's own record directly (`chapterById()`), never
+  // through an occurrence's `sourcePathOf()` -- a book that HAS a chapter
+  // level never holds an occurrence attached to the book id itself (every
+  // occurrence sits under one of its chapters), so deriving the book's title
+  // from `occurrencesIn(state.bookId)[0]` was silently empty at the
+  // chapter-list level and fell through to the raw internal id. Reproduced on
+  // both books of the `synthetic-alpha` edition; a book with no chapter level
+  // (`synthetic-beta`) was unaffected, because there `occurrencesIn(bookId)`
+  // is never empty.
+  if (state.bookId) add(langText(chapterById(state.bookId)?.title, uiLang) || state.bookId, state.chapterId ? () => { state.chapterId = null; render(); } : null);
+  if (state.chapterId) add(langText(chapterById(state.chapterId)?.title, uiLang) || state.chapterId, null);
   return bar;
 }
 

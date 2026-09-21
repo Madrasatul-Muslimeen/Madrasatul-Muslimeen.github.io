@@ -7,7 +7,7 @@ import path from "node:path";
 import process from "node:process";
 import {
   listCollections, booksOf, chaptersOf, occurrencesIn, editionHasChapterLevel,
-  occurrenceById, sourcePathOf, externalReferencesFor, resolveText, availableLanguages,
+  occurrenceById, chapterById, sourcePathOf, externalReferencesFor, resolveText, availableLanguages,
   searchCorpus, listTopics, topicIndex, exploreAggregate, translationCoverage, topicCoverage,
   CONTENT_LANGUAGES, SOURCE_LANGUAGE,
 } from "../../app/js/hadith-corpus.js";
@@ -694,6 +694,52 @@ check("SOURCE NAV -- 'View in source' navigates to the occurrence's OWN id, not 
 check("SOURCE NAV -- one new English literal only ('View in source'), and it is a real t() call", () => {
   const src = codeOf("hadith-browser.js");
   assert.ok(/t\(\s*"View in source"\s*\)/.test(src), "the new control's label must go through t(), like every other Hadith string");
+});
+
+// ---------------------------------------------------------------------------
+// BOOK BREADCRUMB -- issue #114 continuation (comment `5759520213`): a real,
+// reproduced defect in the Books reader itself, found by walking the actual
+// rendered page rather than by reading source. `breadcrumb()` used to derive
+// a book's own title from `sourcePathOf(occurrencesIn(state.bookId)[0]
+// ?.occurrenceId)` -- which is EMPTY for any book that has a chapter level,
+// because every occurrence there sits under a CHAPTER, never the book id
+// itself (`synthetic-alpha-b1`/`-b2` both have zero direct occurrences; only
+// their chapters do). So at the chapter-list level the breadcrumb silently
+// fell through to the raw internal book id (e.g. "synthetic-alpha-b1")
+// instead of its translated title -- reproduced live in both English and
+// Bangla. `chapterById()` was already exported for exactly this (a
+// bookChapter's own record, no occurrence detour) but had never been wired
+// into the one place that needed it.
+// ---------------------------------------------------------------------------
+
+check("BREADCRUMB -- chapterById() resolves a BOOK's own title directly, with no occurrence involved", () => {
+  const b1 = chapterById("synthetic-alpha-b1");
+  const b2 = chapterById("synthetic-alpha-b2");
+  assert.ok(b1 && b1.title?.en === "Book of the Beginning", "chapterById('synthetic-alpha-b1') must name the book itself");
+  assert.ok(b2 && b2.title?.en === "Book of Prayer", "chapterById('synthetic-alpha-b2') must name the book itself");
+});
+
+check("BREADCRUMB -- both alpha books genuinely have ZERO occurrences attached to the book id itself (the precondition the bug depended on)", () => {
+  assert.equal(occurrencesIn("synthetic-alpha-b1").length, 0,
+    "if this ever becomes nonzero, the old sourcePathOf(occurrencesIn(...)) approach would have masked the defect again -- re-check the fix still applies");
+  assert.equal(occurrencesIn("synthetic-alpha-b2").length, 0);
+});
+
+check("BREADCRUMB -- breadcrumb() reads the book/chapter title via chapterById(), not via an occurrence's sourcePathOf()", () => {
+  const src = codeOf("hadith-browser.js");
+  const body = sliceFunction(src, "function breadcrumb(");
+  assert.ok(/chapterById\(state\.bookId\)/.test(body), "breadcrumb() must resolve the book label with chapterById(state.bookId)");
+  assert.ok(/chapterById\(state\.chapterId\)/.test(body), "breadcrumb() must resolve the chapter label with chapterById(state.chapterId)");
+  assert.ok(!/occurrencesIn\(/.test(body), "breadcrumb() must not derive a label indirectly through an occurrence again -- that is what silently broke it for a book with no direct occurrences");
+});
+
+check("BREADCRUMB -- an edition with NO chapter level (synthetic-beta) is unaffected either way", () => {
+  // synthetic-beta-b1 DOES hold occurrences directly (it has no chapter
+  // level, so its occurrences attach straight to the book) -- the old code
+  // path was never broken here, and the new one must not break it either.
+  assert.ok(occurrencesIn("synthetic-beta-b1").length > 0, "synthetic-beta-b1 must still hold its occurrences directly");
+  const b = chapterById("synthetic-beta-b1");
+  assert.ok(b && b.title?.en === "Book of Acts of Worship", "chapterById() must resolve this book too");
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);
