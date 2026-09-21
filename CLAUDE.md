@@ -1804,7 +1804,12 @@ this section is what **every** session needs, builder included.
 
 **The builder's contract, in five lines.**
 
-1. One round, one issue, one pull request.
+1. One round, one issue, one pull request, **opened ready for review — not as a
+   draft.** A draft says "not finished"; the Architect's gate refuses to merge
+   one, and on 21 Sep 2026 that was measured as 23 of 25 open pull requests,
+   every one of them actually complete. If a round genuinely is unfinished, say
+   so in a comment rather than leaving the pull request in a state that silently
+   removes it from review.
 2. The pull request **links the issue it came from** and **pastes the results of
    every check it ran** — totals, and which assertions failed while stashed.
 3. **It never merges.** Not its own PR, not anyone's. Merging is the
