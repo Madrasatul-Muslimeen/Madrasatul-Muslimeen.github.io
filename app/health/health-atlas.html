@@ -42,9 +42,18 @@
   footer { max-width: 88rem; margin: 0 auto; padding: 0 1rem 3rem; color: #8a8071; font-size: 0.78rem; line-height: 1.5; }
 
   /* ---------- Three-column Body Systems layout (parity tranche 6) ---------- */
-  .ha-bs-3col { display: grid; grid-template-columns: minmax(220px, 300px) minmax(260px, 380px) minmax(240px, 1fr); gap: 1rem; align-items: start; }
-  @media (max-width: 980px) { .ha-bs-3col { grid-template-columns: 1fr; } }
+  /* grid-template-columns is set inline by JS (parity tranche 7's drag-resize,
+     source-faithful column widths); this rule is only the initial/no-JS
+     fallback. Below 980px the media query below forces single-column with
+     !important, same technique the source itself uses to override its own
+     JS-driven column widths at its own breakpoint. */
+  .ha-bs-3col { display: grid; grid-template-columns: 260px 10px minmax(240px, 1fr) 10px 300px; gap: 1rem; align-items: start; }
+  @media (max-width: 980px) { .ha-bs-3col { grid-template-columns: 1fr !important; } .ha-bs-divider { display: none; } }
   .ha-bs-col { display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; }
+  .ha-bs-divider { align-self: stretch; width: 10px; cursor: col-resize; position: relative; }
+  .ha-bs-divider::after { content: ''; position: absolute; left: 4px; top: 10%; bottom: 10%; width: 2px; background: var(--line); }
+  .ha-bs-divider:hover::after, .ha-bs-divider:focus::after { background: var(--gold); }
+  .ha-bs-divider:focus { outline: 1px solid var(--gold); outline-offset: -1px; }
   .ha-search-box { margin-bottom: 0.2rem; }
   .ha-search-input {
     width: 100%; font: inherit; font-size: 0.88rem; padding: 0.5rem 0.7rem;
@@ -114,7 +123,8 @@
   <h1>Health Atlas — Body Systems (draft, read-only)</h1>
   <p>
     An MMSA-internal review screen for the Health Atlas v02.04 source handover: the same
-    three-column layout, collapsible system list, interactive systems/organs wheel and body-system
+    three-column layout (drag the strips either side of the wheel to resize it, or focus a strip and
+    use the arrow keys), collapsible system list, interactive systems/organs wheel and body-system
     diagrams as the source app, over the same preserved dataset. Standalone in the sense the rest of
     this app already is — no sign-in, no tenant, no backend, nothing persisted; it only reads the
     dataset shipped beside it. Like every other page under <code>app/</code>, its ES module imports
@@ -124,7 +134,7 @@
 </header>
 <main id="healthAtlasRoot"></main>
 <footer>
-  Health Atlas Body Systems parity tranche 6 — see app/health/README.md for scope, boundaries and
+  Health Atlas Body Systems parity tranche 7 — see app/health/README.md for scope, boundaries and
   what is deliberately not built yet (system/organ add·edit·delete·reorder, the wheel's third
   "fields" ring, and header export/import/reset). Source: Health Atlas v02.04 standalone
   (<code>docs/health-source/health-atlas-v02.04-standalone.html</code> on

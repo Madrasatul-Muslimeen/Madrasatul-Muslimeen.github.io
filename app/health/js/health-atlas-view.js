@@ -45,6 +45,22 @@
 // system reorder/rename/delete, organ/system add/edit forms, and the
 // header JSON export/import/reset. All are real source behaviour this
 // tranche does not attempt, named here rather than silently dropped.
+//
+// PARITY TRANCHE 7 (see docs/reports/2026-09-21-health-atlas-body-systems-
+// parity-tranche7.md): two changes, both read-only.
+//   (1) Corrected an unsupported claim tranche 6 shipped in
+//       buildDiagramPanel()'s placeholder — it asserted the un-diagrammed
+//       systems' text connections "are accurate", which no part of this
+//       app's evidence-provenance model backs (every function statement is
+//       `general-reference-only`, never verified per-fact). Reworded to
+//       point at that same text without asserting its accuracy.
+//   (2) Ported the source's column drag-resize (`.bs-divider` / two-way
+//       COL_WIDTHS-style state, same mousedown/mousemove/mouseup shape) for
+//       the sections and detail columns, plus a keyboard-operable variant
+//       (ArrowLeft/ArrowRight) as an accessibility addition beyond the
+//       source's pointer-only divider — the same kind of addition the
+//       wheel wedges already carry. The middle (wheel) column stays
+//       flexible, as in the source.
 
 import {
   listSystems,
@@ -62,6 +78,31 @@ import {
 import { diagramForSystem } from './health-atlas-diagrams.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
+
+// Column drag-resize (parity tranche 7). Source-faithful: the v02.04
+// standalone source keeps a mutable {s1, s3} width object and two
+// `.bs-divider` strips either side of the (always-flexible) wheel column,
+// adjusted on mousedown/mousemove/mouseup with the dragged edge's delta,
+// clamped, and applied by writing an inline width directly to the DOM on
+// every mousemove rather than going through a full re-render — see
+// startColumnDrag() in the source's own script block. This port keeps that
+// same shape (state object, same three DOM events, same "write the style
+// directly during the drag, let state.colWidths flow through the next
+// normal draw()") rather than re-deriving a different resize mechanism.
+// Bounds are this app's own — the source's 240–640 range was tuned for its
+// wider full-bleed layout, and applying it unchanged here would let either
+// side column swallow the whole 3-column row on a laptop-width screen.
+const COL_WIDTH_MIN = { s1: 200, s3: 220 };
+const COL_WIDTH_MAX = { s1: 420, s3: 460 };
+const COL_WIDTH_STEP = 20; // keyboard nudge, an accessibility addition the source's pointer-only divider does not have
+
+function defaultColWidths() {
+  return { s1: 260, s3: 300 };
+}
+
+function gridTemplateColumns(colWidths) {
+  return `${colWidths.s1}px 10px minmax(240px, 1fr) 10px ${colWidths.s3}px`;
+}
 
 function el(tag, attrs, children) {
   const node = document.createElement(tag);
@@ -229,7 +270,7 @@ function buildDiagramPanel(organ, systemName) {
   const diagram = diagramForSystem(organ.system);
   if (!diagram) {
     return el('div', { class: 'ha-diagram-card' }, [
-      el('div', { class: 'ha-empty', text: `Diagram for the ${systemName} system is still in progress — text connections below are accurate meanwhile.` })
+      el('div', { class: 'ha-empty', text: `Diagram for the ${systemName} system is still in progress — see the general-reference text below in the meantime.` })
     ]);
   }
   const shapeNodes = diagram.shapes.map((shape) => {
@@ -366,13 +407,73 @@ function buildSectionsColumn(state, data, callbacks) {
   return el('div', { class: 'ha-bs-col' }, [searchBox, ...sections]);
 }
 
+/* ---------- Column divider (drag-to-resize, parity tranche 7) ---------- */
+function applyColWidths(gridEl, colWidths) {
+  gridEl.style.gridTemplateColumns = gridTemplateColumns(colWidths);
+}
+
+function startColumnDrag(e, which, colWidths, gridEl) {
+  e.preventDefault();
+  const startX = e.clientX;
+  const startWidth = colWidths[which];
+
+  function onMove(ev) {
+    const deltaX = ev.clientX - startX;
+    // Matches the source's own sign convention: dragging the LEFT divider
+    // (s1, between the sections column and the wheel) right of its start
+    // point widens the sections column; dragging the RIGHT divider (s3,
+    // between the wheel and the detail column) right of its start point
+    // NARROWS the detail column, since it is being pulled away from it.
+    let newWidth = which === 's1' ? startWidth + deltaX : startWidth - deltaX;
+    newWidth = Math.max(COL_WIDTH_MIN[which], Math.min(COL_WIDTH_MAX[which], newWidth));
+    colWidths[which] = newWidth;
+    applyColWidths(gridEl, colWidths);
+  }
+  function onUp() {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+  }
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+function buildDivider(which, colWidths, getGridEl) {
+  const label = which === 's1' ? 'Resize the body-system list column' : 'Resize the detail column';
+  const divider = el('div', {
+    class: 'ha-bs-divider',
+    title: 'Drag to resize',
+    tabindex: '0',
+    role: 'separator',
+    'aria-orientation': 'vertical',
+    'aria-label': label
+  });
+  divider.addEventListener('mousedown', (e) => startColumnDrag(e, which, colWidths, getGridEl()));
+  // Keyboard resize is an accessibility addition beyond the source, which
+  // only ever offers a pointer-driven divider — same reasoning as the
+  // wheel wedges' own tabindex/Enter/Space handling above.
+  divider.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    const sign = e.key === 'ArrowRight' ? 1 : -1;
+    const dir = which === 's1' ? sign : -sign;
+    let newWidth = colWidths[which] + dir * COL_WIDTH_STEP;
+    newWidth = Math.max(COL_WIDTH_MIN[which], Math.min(COL_WIDTH_MAX[which], newWidth));
+    colWidths[which] = newWidth;
+    applyColWidths(getGridEl(), colWidths);
+  });
+  return divider;
+}
+
 /* ---------- Root ---------- */
 function buildBodySystemsScreen(state, data, callbacks) {
-  return el('div', { class: 'ha-bs-3col' }, [
-    buildSectionsColumn(state, data, callbacks),
-    buildWheel(state, data, callbacks),
-    buildDetailColumn(state, data, callbacks)
-  ]);
+  const grid = el('div', { class: 'ha-bs-3col', style: `grid-template-columns:${gridTemplateColumns(state.colWidths)}` }, []);
+  const getGrid = () => grid;
+  grid.appendChild(buildSectionsColumn(state, data, callbacks));
+  grid.appendChild(buildDivider('s1', state.colWidths, getGrid));
+  grid.appendChild(buildWheel(state, data, callbacks));
+  grid.appendChild(buildDivider('s3', state.colWidths, getGrid));
+  grid.appendChild(buildDetailColumn(state, data, callbacks));
+  return grid;
 }
 
 export function mountHealthAtlas(container, rawData) {
@@ -388,7 +489,8 @@ export function mountHealthAtlas(container, rawData) {
     searchTerm: '',
     wheelLevel: 'systems',
     wheelActiveSystem: null,
-    selectedOrganId: null
+    selectedOrganId: null,
+    colWidths: defaultColWidths()
   };
 
   function draw() {

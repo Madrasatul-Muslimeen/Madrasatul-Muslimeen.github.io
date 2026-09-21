@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Health Atlas — Body Systems parity tranche 7: correction + column drag-resize (2026-09-21)</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  blockquote { margin:1rem 0; padding:.4rem 1rem; border-left:3px solid var(--accent); color:var(--muted); background:var(--card); border-radius:0 .4rem .4rem 0 }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+
+<h1>Health Atlas — Body Systems parity tranche 7: correction + column drag-resize (2026-09-21)</h1>
+<p>Authoritative timestamp: <strong>2026-09-21, UTC</strong> (system clock at time of writing: <code>2026-09-21T11:20 UTC</code>, confirmed with <code>date -u</code>).</p>
+<p>This is the independent review of draft PR #140 (<code>claude/laughing-goodall-90k6mh</code>, head <code>0c6fc05c</code>) and current <code>main</code> (PR #127 merged, <code>16cfb0b</code>) that issue #115's <code>/mmsa-task</code> comment <code>5759518320</code> asked for, plus the one bounded next slice it asked to build. Developed as <code>claude/laughing-goodall-8moeiq</code>, branched from PR #140's own head so its tranche-6 work does not have to be rebuilt — this PR should be reviewed <strong>stacked on #140</strong>, not on <code>main</code> directly.</p>
+
+<h2>0. What was independently checked before changing anything</h2>
+<p><strong>Gate re-check, not re-trust.</strong> PR #140's own report claims &#8220;All 15 Health-owned suites: 249 passed, 0 failed&#8221;, &#8220;All 7 governance suites … 182 passed, 0 failed&#8221; and a 29-check Playwright walk covering desktop/tablet/phone. All three were re-run from a clean checkout of <code>0c6fc05c</code> before any edit in this round, and reproduced exactly: <strong>249/0</strong>, <strong>182/0</strong> (after the same full-history + named-HELD-ref preflight PR #140's own report describes), and a fresh, wider focused Playwright walk (§4 below) confirmed the 3-column layout, wheel keyboard operation and the three diagrams all work as claimed.</p>
+
+<h2>1. The correction — an unsupported claim in PR #140's own diff</h2>
+<p><strong>Finding.</strong> <code>buildDiagramPanel()</code>'s placeholder for a system with no built diagram read:</p>
+<blockquote>&#8220;Diagram for the {systemName} system is still in progress — <strong>text connections below are accurate meanwhile</strong>.&#8221;</blockquote>
+<p><code>grep -n -i "accurate" $(git diff origin/main 0c6fc05c -- app/health)</code> finds exactly one hit, this one, introduced by PR #140 itself (it does not appear on <code>main</code> before that PR). This is the unsupported phrase issue #115's comment named.</p>
+<p><strong>Why it's wrong, precisely.</strong> This app's own evidence-provenance model — built in the claim-provenance tranche and unchanged since — assigns every one of the 46 organs' 82 function statements an explicit <code>EVIDENCE_STATUS</code>. All 82 are <code>general-reference-only</code> (<code>claims-integrity.mjs</code>'s own informational line: <code>cited-evidence: 0, general-reference-only: 82</code>), and the badge rendered next to every one of them says so: <em>&#8220;General reference only — not verified as evidence for this specific statement.&#8221;</em> Nothing in the registry, the data file or this tranche's own diagram data makes any statement &#8220;accurate&#8221; in a verified sense — that word asserts something this codebase's own honesty model explicitly declines to claim anywhere else on the page. It is exactly the class of overclaim the project's <code>general reference only, not per-fact verified, not medical advice</code> banner (present on this same screen, twice) exists to prevent.</p>
+<p><strong>Fix.</strong> Reworded to point at the same text without asserting its accuracy:</p>
+<blockquote>&#8220;Diagram for the {systemName} system is still in progress — <strong>see the general-reference text below in the meantime</strong>.&#8221;</blockquote>
+<p>One line, <code>app/health/js/health-atlas-view.js</code>. No other text on the page made the same claim — checked with a second sweep of the diff for <code>accurate|verified|confirmed|validated|proven</code> outside already-correct negative constructions (&#8220;not per-fact verified&#8221;, &#8220;not verified as evidence&#8221;) — zero further hits.</p>
+
+<h2>2. Re-verification of PR #140's other claims (3-column layout, wheel keyboard, diagrams)</h2>
+<p>Read <code>app/health/js/health-atlas-view.js</code> and <code>health-atlas.html</code> end to end at <code>0c6fc05c</code>, then confirmed each claim in the browser (§4):</p>
+<div class='tw'><table><thead><tr><th>Claim in PR #140's report</th><th>Re-checked</th><th>Result</th></tr></thead><tbody>
+<tr><td>Three-column CSS grid (sections / wheel / detail), collapses to one column below 980px</td><td>Read the CSS + measured at 1280/768/390px</td><td>Confirmed — grid resolves to the expected track count at desktop width, and to a single track below 980px</td></tr>
+<tr><td>Two-level interactive SVG wheel, keyboard-operable (<code>tabindex</code>, <code>role="button"</code>, Enter/Space)</td><td>Read <code>makeActivatable()</code>, then drove it with real keyboard events</td><td>Confirmed — focusing a systems-level wedge and pressing Enter drills into that system's organs; the back control returns to the systems level</td></tr>
+<tr><td>Three diagrams (Renal &amp; Urinary, Sensory, Integumentary), &#8220;in progress&#8221; notice for the other six</td><td>Read <code>health-atlas-diagrams.js</code> (3 keys, 0 imports) and opened one organ from each side</td><td>Confirmed — Kidneys (renal) renders a real SVG; Heart (cardio, no diagram) renders the placeholder — now corrected (§1)</td></tr>
+<tr><td>0 of 82 function statements ever read &#8220;Cited&#8221;</td><td>Re-read <code>health-atlas-claims.js</code>'s registry and confirmed in the browser on two different organs</td><td>Confirmed</td></tr>
+</tbody></table></div>
+<p>No further defect was found in the re-check. <strong>§1 is the only correction this round makes to tranche 6's own work.</strong></p>
+
+<h2>3. The next bounded slice — column drag-resize</h2>
+<p>The comment offered two options for the one next slice: <em>&#8220;preferably source-faithful column resizing or safe navigation among the existing six review tabs.&#8221;</em> Column resizing was chosen: it was already named as the one deferred, self-contained item in tranche 6's own report §6 (&#8220;Column drag-to-resize (the source's <code>.bs-divider</code>) — a small, self-contained follow-up&#8221;), it stays inside the Body-Systems-only scope this tranche and #140 both already carry, and it needs no new tab, page or dataset the way &#8220;navigation among six tabs&#8221; would (the app still has 3 pages, not 6 — building two more tabs, Lifestyle and References, is materially larger work the comment did not ask for as the one bounded piece).</p>
+<p><strong>What the source does</strong> (<code>docs/health-source/health-atlas-v02.04-standalone.html</code> on <code>health/source-v02-04-handover</code>, re-verified at commit <code>ed4dbb2e5</code>, unchanged since PR #105's own identity check): a mutable <code>COL_WIDTHS = {s1: 340, s3: 360}</code> object; two <code>.bs-divider</code> strips, one either side of the always-flexible wheel column; <code>startColumnDrag(e, whichCol)</code> on <code>mousedown</code>, adjusting the dragged side's width by the pointer's delta, clamped to <code>[240, 640]</code>, and writing the new width straight to the column's inline <code>style.width</code> on every <code>mousemove</code> — no full re-render during the drag, only a state update that the next normal render picks up.</p>
+<p><strong>What this tranche ports, and what it deliberately does not copy verbatim:</strong></p>
+<ul>
+<li>The same three-event shape (<code>mousedown</code> → <code>mousemove</code>/<code>mouseup</code> on <code>document</code>), the same mutable per-side width object (<code>state.colWidths = {s1, s3}</code>), and the same &#8220;write directly to the DOM during the drag, let state flow through the next ordinary redraw&#8221; technique — ported as-is.</li>
+<li><strong>Re-applied to this view's CSS Grid layout</strong> (<code>.ha-bs-3col</code>) rather than the source's flexbox one (<code>.bs-layout-3col</code>): the divider strips are now grid tracks (<code>10px</code> each) between the three content tracks, and a drag rewrites the container's own <code>grid-template-columns</code> rather than one column's <code>style.width</code>. This keeps the wheel column's existing <code>minmax(240px, 1fr)</code> flexible behaviour exactly as tranche 6 built it.</li>
+<li><strong>A narrower clamp range, deliberately not the source's <code>[240, 640]</code>.</strong> The source's row is <code>full-bleed</code> (<code>main.full-bleed { max-width: none; }</code>); this app's <code>&lt;main&gt;</code> caps at <code>88rem</code>/<code>1408px</code> with three tracks plus two 10px dividers plus a <code>1rem</code> gap on each side. Letting either side column reach 640px here would leave the wheel column as little as ~120px wide on a 1280px-wide browser window — visibly broken, not merely tight. Measured against this page's own layout: <strong><code>s1</code> (the section list) clamps to <code>[200, 420]</code>, <code>s3</code> (the detail column) to <code>[220, 460]</code></strong>, chosen so the wheel column's <code>minmax(240px, 1fr)</code> can never be squeezed below its own stated minimum at the narrowest practical desktop width this project tests.</li>
+<li><strong>Keyboard resize (<code>ArrowLeft</code>/<code>ArrowRight</code> on a focused divider) is new, not a source behaviour.</strong> The source's own divider is pointer-only. This is the same class of addition tranche 6 already made for the wheel wedges (&#8220;an accessibility addition beyond the source's own pointer-only wedges&#8221;), applied here to a second pointer-only control the source ships. The divider carries <code>role="separator"</code>, <code>aria-orientation="vertical"</code> and a descriptive <code>aria-label</code>; each arrow-key press nudges by 20px, clamped to the same bounds as the mouse drag.</li>
+<li><strong>Below the existing 980px breakpoint, dividers are hidden and the grid forces a single column with <code>!important</code></strong> — the exact same technique the source itself uses at its own (1180px) breakpoint to override its own JS-driven inline widths.</li>
+<li>Default widths (<code>s1: 260</code>, <code>s3: 300</code>) sit inside the old static <code>minmax()</code> ranges tranche 6 shipped, so a reader who never touches a divider sees the identical starting layout tranche 6 already had.</li>
+</ul>
+<p><strong>Still 100% read-only, still no new field read.</strong> This slice touches no data file, no selector, no evidence-provenance code and no diagram data — only <code>health-atlas-view.js</code> (grid construction + divider widgets) and <code>health-atlas.html</code> (divider CSS, updated copy). The existing forbidden-field boundary (<code>view-boundary-wheel.mjs</code>, §5) needed no change and was re-run unmodified.</p>
+
+<h2>4. Verification</h2>
+<p><strong>All 15 Health-owned suites, run from the repository root, 0 failed:</strong></p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>data-integrity.mjs</code></td><td>21 passed</td></tr>
+<tr><td><code>selectors.mjs</code></td><td>13 passed</td></tr>
+<tr><td><code>claims-integrity.mjs</code></td><td>10 passed</td></tr>
+<tr><td><code>claims-mutations.mjs</code></td><td>7 passed</td></tr>
+<tr><td><code>view-boundary.mjs</code></td><td>14 passed</td></tr>
+<tr><td><code>view-provenance-boundary.mjs</code></td><td>7 passed</td></tr>
+<tr><td><code>view-provenance-mutations.mjs</code></td><td>4 passed</td></tr>
+<tr><td><code>more-selectors.mjs</code></td><td>9 passed</td></tr>
+<tr><td><code>view-boundary-more.mjs</code></td><td>26 passed</td></tr>
+<tr><td><code>view-boundary-more-mutations.mjs</code></td><td>7 passed</td></tr>
+<tr><td><code>categories-selectors.mjs</code></td><td>7 passed</td></tr>
+<tr><td><code>view-boundary-categories.mjs</code></td><td>58 passed</td></tr>
+<tr><td><code>view-boundary-categories-mutations.mjs</code></td><td>7 passed</td></tr>
+<tr><td><code>view-boundary-wheel.mjs</code></td><td>53 passed</td></tr>
+<tr><td><code>view-boundary-wheel-mutations.mjs</code></td><td>6 passed</td></tr>
+</tbody></table></div>
+<p><strong>249 passed, 0 failed</strong> — identical counts to PR #140's own report; nothing in this round's diff touches anything these suites read beyond the one corrected string and the new (not required to be guarded by name, since it adds no forbidden field) divider code.</p>
+<p><strong>All 7 governance suites, run after a full-history + required-ref preflight</strong> (<code>git fetch --unshallow</code>, then explicitly fetching the two HELD branches the ledger declares, <code>claude/pensive-knuth-2pu3jj</code> and <code>claude/phase4-wiring</code>):</p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>programme-ledger.mjs</code></td><td>8 passed, 23 noted, 0 failed</td></tr>
+<tr><td><code>programme-ledger-mutations.mjs</code></td><td>49 passed, 0 failed</td></tr>
+<tr><td><code>brief-integrity.mjs</code></td><td>8 passed, 0 failed</td></tr>
+<tr><td><code>study-activity-evidence-boundary.mjs</code></td><td>27 passed, 0 failed</td></tr>
+<tr><td><code>study-activity-evidence-boundary-mutations.mjs</code></td><td>11 passed, 0 failed</td></tr>
+<tr><td><code>study-event-wiring.mjs</code></td><td>41 passed, 0 failed</td></tr>
+<tr><td><code>rules-authorisation-executable.mjs</code></td><td>38 passed, 0 failed</td></tr>
+</tbody></table></div>
+<p><strong>182 passed, 0 failed.</strong> Neither guard script was read, edited or weakened.</p>
+<p><strong>Focused browser walk</strong> (Playwright, local <code>serve.js</code>, un-checked-in, deleted before commit), <strong>25 checks, 0 failed</strong>:</p>
+<ul>
+<li><strong>Desktop (1280×900):</strong> the 3-column grid really resolves to 5 tracks (section list, divider, wheel, divider, detail); 9 system sections render; the wheel starts at the systems level and a keyboard <code>Enter</code> on a focused wedge drills into that system's organs, with the back control returning to the systems level; the corrected placeholder copy on Heart (no diagram) no longer contains &#8220;accurate&#8221; and still names the system and says &#8220;in progress&#8221;; 0 evidence badges read &#8220;Cited&#8221; on either Heart or Kidneys; Kidneys renders a real diagram <code>&lt;svg&gt;</code>; dragging the left divider with the mouse widens the sections column by the drag distance, clamped inside <code>[200, 420]</code>; the resized width survives a full redraw triggered by selecting a different organ (state persistence, not just a DOM side-effect of the drag); focusing the right divider and pressing <code>ArrowLeft</code> widens the detail column by exactly one step (20px); 20 further <code>ArrowRight</code> presses clamp at the minimum (220px) rather than shrinking further or going negative; the divider carries <code>role="separator"</code> and <code>aria-orientation="vertical"</code>.</li>
+<li><strong>Tablet (768×1024):</strong> no page errors, no horizontal overflow, the grid has collapsed to a single track (confirming the 980px breakpoint still fires), and the dividers are hidden rather than left as dead drag handles.</li>
+<li><strong>Phone (390×844):</strong> no page errors, no horizontal overflow, single-track layout, and the corrected placeholder copy renders correctly here too via a real tap (not just at desktop width).</li>
+</ul>
+<p><strong>Not applicable: browser English/Bangla.</strong> This page carries no i18n of any kind (confirmed in PR #105's own report: &#8220;no language-keying (I11) … proposed as the next tranche&#8221;; still true). There is no Bangla surface to check.</p>
+<p><strong>Not applicable: head-specific CI.</strong> This repository's CI workflow does not currently run the Health-owned suites as a named per-file check exposed to this session (only the seven governance suites are wired into <code>.github/workflows/</code>, all touching <code>tools/i18n-verify/</code>, none of it under <code>tools/health-atlas-verify/</code>); the Health-owned suites above were run directly instead, the same way every prior Health Atlas tranche has verified itself.</p>
+
+<h2>5. Safety boundary — unchanged, re-run unmodified</h2>
+<p>The deferral boundary (<code>view-boundary.mjs</code>, <code>view-boundary-wheel.mjs</code> and their mutation-proof companions) reads <code>health-atlas-view.js</code>, <code>health-atlas-selectors.js</code>, <code>health-atlas-diagrams.js</code> and <code>health-atlas.html</code>'s own source text and refuses every forbidden field/collection this app's Body Systems screen must never touch. Nothing in this round adds an import, a new data field, or an <code>innerHTML</code>/<code>outerHTML</code> call — the divider widgets are built with the same <code>el()</code>/<code>svgEl()</code> DOM helpers this file has always used, and read only <code>state.colWidths</code>, a plain number pair this tranche itself introduces. All 53 + 6 wheel-boundary checks pass unmodified (§4); no guard needed editing.</p>
+
+<h2>6. Diff budget</h2>
+<p><code>app/health/js/health-atlas-view.js</code> (the correction + the divider/grid code), <code>app/health/health-atlas.html</code> (divider CSS, updated header/footer copy), <code>app/health/README.md</code> (new Tranche 6 + Tranche 7 sections — tranche 6 had shipped without one), and this report's <code>.md</code> + <code>.html</code>. Checked by name against every protected-path family named in the task (version, platform-shared files, platform-shared tooling, governance, deployment/security, the gate itself): <strong>zero matches</strong> (<code>git diff --stat 0c6fc05c</code> touches only the four paths above).</p>
+
+<h2>7. What this deliberately does not do</h2>
+<ul>
+<li>No version allocated or bumped — <code>app/js/version.js</code> untouched, v08.32 stands.</li>
+<li>No protected/shared path touched.</li>
+<li>Nothing merged or deployed; no approval claimed.</li>
+<li>Does not build the wheel's third &#8220;fields&#8221; ring, system/organ CRUD, header export/import/reset, or the Lifestyle/References tabs — all still named as deferred, unchanged from tranche 6's own §6.</li>
+<li>Does not decide which of the two options the comment offered is &#8220;the&#8221; right one going forward — safe navigation among the (currently 3, not 6) review tabs is still open for a future round.</li>
+</ul>
+
+<h2>8. Owner app test</h2>
+<p><strong>Required: NO before merge</strong> — nothing here is linked from shared nav or deployed, same as #140.</p>
+<p><strong>YES after merge</strong> (and after #140 itself, since this PR is stacked on it), direct URL only, no sign-in/tenant: open <code>app/health/health-atlas.html</code> (served over <code>http://</code>, not <code>file://</code>).</p>
+<ol>
+<li>Expand a body system or click a wheel wedge, select an organ — confirm the detail column shows its functions with &#8220;General reference only&#8221; badges (never &#8220;Cited&#8221;).</li>
+<li>Select an organ in a system <strong>without</strong> a diagram (e.g. Heart) — confirm the placeholder text says the diagram is &#8220;still in progress&#8221; and points at the text below <strong>without calling it accurate</strong>.</li>
+<li>Select an organ in a system <strong>with</strong> a diagram (e.g. Kidneys) — confirm a real diagram renders.</li>
+<li>On a desktop-width window, hover the thin strip just left of the wheel and just right of the wheel — the cursor should change to a resize cursor; drag either one and confirm the corresponding column widens or narrows, and the wheel stays visible and usable throughout.</li>
+<li>Click into one of those same strips (so it shows a focus ring) and press the Left/Right arrow keys — confirm the same column resizes in small steps.</li>
+<li>Narrow the browser window below roughly tablet width — confirm the layout stacks into one column and the resize strips disappear.</li>
+</ol>
+
+<hr>
+<p>🤖 Generated with <a href="https://claude.com/claude-code">Claude Code</a></p>
+</main></body></html>
