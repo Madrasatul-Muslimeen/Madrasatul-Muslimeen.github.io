@@ -158,9 +158,40 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.32 on `main`** (21 Sep 2026 — QuranRevival Basic Arabic lemma-occurrence navigation, PR #112 merged at `f5b7c6c`. The Owner tested the app and confirmed all checks passed. The MMSA Master Architect allocated v08.32; `app/js/version.js` and the Programme Integration Ledger record it. This is read-only: no new Firestore write, Rule or index. E1 remains closed. The next unallocated version is v08.33.)
+**Current milestone: v08.33 on `claude/fix-list-panel-truncations`; `main` is
+still v08.32.** (22 Sep 2026 — three real, measured
+truncations fixed in the Study-options panel at phone width, the first work
+done under the Owner's own standing fix-list authorisation (see
+"THE FIX LIST IS A STANDING OWNER AUTHORISATION" in `ARCHITECT.md`).
+**`tenantSelect`** (Bar 1, "User Role") never fit its own real content —
+the owner's tenant name plus role list, `"Madrasatul Muslimeen (Owner,
+Prime)"`, needs 224px and got 115–141px at every phone width tested
+(360/390/412) — and MEASURED first before deciding the remedy: shortening
+the wording, the fix originally proposed on the fix list, turns out to be
+unsafe, because a tenant's own name is free text of any length a person
+chose for themself, not a label this round can shorten. Below 580px (the
+measured crossover — this bar's own cellW is `0.5×viewport − 35px`, a
+select's chrome is a measured 30px, so 224px of usable text needs
+`viewport ≥ 578px`) the two cells in that row stack instead of sharing one.
+**Study Unit/Surah** (`.opt-bar-units`) were the Owner Control Gate item O3b
+— *"the row is genuinely short of space… no redistribution reaches it"* —
+confirmed by the same measurement method: below 480px (the worse of the two
+unit-type cases, measured at 468px, plus a small margin) they wrap to their
+own line instead of truncating, with the small number pickers
+(unitNum/Ayah/From/To) flowing to a second line using their own existing
+fixed width. **`drillModeSelect`** (the Listen bar's Mode picker) was cut in
+**Bangla only**, at every phone width — found because `panel.mjs` had only
+ever been run in English before this round; a suite that runs one language
+measures one language. Same wrap, same 480px breakpoint; English was never
+short and is unaffected. **Proven, not asserted**: `panel.mjs` re-run in
+both languages, all 48 sections each, zero truncations remaining, one
+`KNOWN_TRUNCATED_SELECTS` baseline entry now empty rather than silently
+carried forward. MMSA Architect allocated v08.33. See
+`docs/reports/2026-09-22-fix-list-panel-truncations.md`.
 
-**Previous milestone: v08.31 on `main`** (19 Sep 2026 — the QuranRevival
+**Previous milestone: v08.32 on `main`** (21 Sep 2026 — QuranRevival Basic Arabic lemma-occurrence navigation, PR #112 merged at `f5b7c6c`. The Owner tested the app and confirmed all checks passed. The MMSA Master Architect allocated v08.32; `app/js/version.js` and the Programme Integration Ledger record it. This is read-only: no new Firestore write, Rule or index. E1 remains closed.)
+
+**Earlier milestone: v08.31 on `main`** (19 Sep 2026 — the QuranRevival
 Study-evidence persistence-readiness gate, fast-forwarded onto `main` from
 `claude/charming-rubin-xzxbk1` under the Master Architect's guarded-integration
 ruling. The accepted application change is unmodified: `git diff 65ef3c5

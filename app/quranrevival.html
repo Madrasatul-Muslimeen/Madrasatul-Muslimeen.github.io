@@ -264,10 +264,34 @@
      things in it, at 1280, 1440 and 1920 alike. On a phone it is worth more
      than tidiness -- two cells to a line is 172px each instead of 77px,
      which is the difference between "Madrasatul Muslimeen (Owner, Prime)"
-     being readable and being cut to "Madrasatul Mus...". */
+     being readable and being cut to "Madrasatul Mus...".
+
+     CORRECTED 22 Sep 2026: that claim was never actually true at phone
+     width. Measured, `tenantSelect`'s real cell never reaches 172px on a
+     phone -- it is exactly half the bar, which panel.mjs puts at 115-141px
+     usable across 360/390/412, against a MEASURED need of 224px for the
+     owner's own real tenant name plus role list ("Madrasatul Muslimeen
+     (Owner, Prime)") in EVERY unit type, at every phone width this project
+     tests. Shortening the wording is not a safe fix, unlike the label
+     round 16 shortened above -- a tenant's name is free text of any length
+     a person chose for themself (`labels.js` `roleListLabel()` joins the
+     same role vocabulary the whole app already uses), so cutting it would
+     mean inventing an abbreviation nobody asked for, or truncating a
+     person's own name, neither of which this round does. See the
+     breakpoint below instead. */
   .opt-bar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.35rem 0.4rem; align-items: end; margin: 0.45rem 0; }
   .opt-bar-1 { grid-template-columns: minmax(0, 1fr); }
   .opt-bar-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* Below the width where two equal columns cannot both hold real content --
+     MEASURED: this bar's own cellW is exactly 0.5*viewport - 35px on this
+     page, and a select's chrome (border/padding/arrow) is a measured 30px,
+     so a cell needs viewport >= 578px before 224px of usable text fits.
+     578px, given a small margin: 580px. Below it the two cells stack instead
+     of sharing a line -- costs one row's height (~46px) at phone widths
+     only; nothing changes at 580px and up, where they already fit. */
+  @media (max-width: 580px) {
+    .opt-bar-2 { grid-template-columns: 1fr; }
+  }
   /* Bar 4: Approach takes the room, "Track" takes only what its own word
      needs. The owner's ask -- an even 50/50 split spent half the line on a
      one-word button while the Approach name beside it was being cut. */
@@ -281,6 +305,22 @@
      Flex sizes itself to whatever is actually visible. */
   .opt-bar-units { display: flex; flex-wrap: nowrap; }
   .opt-bar-units > .opt-cell { flex: 1 1 0; }
+  /* Below 480px this row is GENUINELY short of space, not just unevenly
+     split -- unlike the nav fix, redistributing what is already on the row
+     cannot reach it. MEASURED: Study Unit and Surah's own cellW grows
+     exactly 0.5px per viewport px on this row (same slope every bar on this
+     page shares), and the worst case -- Range/Page, four cells sharing the
+     row -- only clears Surah's 113px longest-option need at viewport 468px;
+     Single Ayah (three cells) clears earlier, at 412px. Below 480px (a small
+     margin over the worse of the two), Study Unit and Surah each claim at
+     least 45% of the row and the small number pickers (unitNum/Ayah/
+     From/To) wrap to a line of their own -- .opt-cell-num's existing fixed
+     3.1rem is untouched and plenty for a number there. Costs one row's
+     height only below 480px; nothing changes above it. */
+  @media (max-width: 480px) {
+    .opt-bar-units { flex-wrap: wrap; }
+    .opt-bar-units > .opt-cell:not(.opt-cell-num) { flex: 1 1 45%; }
+  }
   /* An ayah number is at most three digits, so these never need a share of
      the line -- they take a fixed sliver and hand the rest to Study Unit and
      Surah, whose names are long and were being truncated for their sake. */
@@ -1716,6 +1756,18 @@
   .opt-bar-listen > .opt-cell { flex: 1 1 0; }
   .opt-bar-listen > .opt-cell-num { flex: 0 0 3.6rem; }
   .opt-bar-listen > .opt-cell-loop, .opt-bar-listen > .opt-cell-play { flex: 0 0 auto; }
+  /* MEASURED 22 Sep 2026, running panel.mjs in Bangla (it had only ever been
+     run in English before -- a check that runs in one language measures one
+     language): #drillModeSelect is the one cell here that actually absorbs
+     the squeeze (Repeat is a fixed 3.6rem, Loop/Play size to their own
+     content) -- clean in English, but "প্রতিটি আয়াত" needs 54px and gets
+     48px at every phone width tested. Same remedy as the row above: give
+     it real room and let Loop/Play wrap to a line of their own below 480px.
+     English is unaffected either way -- it was never short. */
+  @media (max-width: 480px) {
+    .opt-bar-listen { flex-wrap: wrap; }
+    .opt-bar-listen > .opt-cell-mode { flex: 1 1 auto; min-width: 8rem; }
+  }
   .loop-inline { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; font-weight: 400; white-space: nowrap; height: 1.85rem; margin: 0; }
   .reading-ticks label, .reciter-ticks label, .fs-ticks label { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.82rem; font-weight: 400; margin: 0; }
   .reading-ticks label[hidden] { display: none; }
@@ -12715,7 +12767,7 @@
       drillControlsEl.innerHTML = `
         <div class="opt-bar opt-bar-listen">
           <div class="opt-cell opt-cell-num"><label for="drillRepeatSelect">${t("Repeat")}</label><select id="drillRepeatSelect">${[1, 2, 3, 5, 10].map((n) => `<option value="${n}">${num(n)}×</option>`).join("")}</select></div>
-          <div class="opt-cell"><label for="drillModeSelect">${t("Mode")}</label><select id="drillModeSelect"><option value="each">${t("Each Ayah")}</option><option value="whole">${t("Whole Unit")}</option></select></div>
+          <div class="opt-cell opt-cell-mode"><label for="drillModeSelect">${t("Mode")}</label><select id="drillModeSelect"><option value="each">${t("Each Ayah")}</option><option value="whole">${t("Whole Unit")}</option></select></div>
           <div class="opt-cell opt-cell-loop"><label>&nbsp;</label><label class="loop-inline"><input type="checkbox" id="loopToggle" /> ${t("Loop")}</label></div>
           <div class="opt-cell opt-cell-play"><label>&nbsp;</label><button type="button" class="opt-btn-inline" id="drillPlayBtn">▶ ${t("Play")}</button></div>
         </div>`;
