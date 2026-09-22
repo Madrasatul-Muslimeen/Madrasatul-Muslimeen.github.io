@@ -265,6 +265,67 @@ jobs:
             mode=federation_incomplete
           fi
 
+
+          # =================================================================
+          # A CREDENTIAL IS NORMALISED BEFORE IT IS USED, AND THIS IS A REAL
+          # FAILURE CLOSED RATHER THAN A PRECAUTION.
+          #
+          # The fourth builder run named its own cause the moment the
+          # diagnostic step existed to print it:
+          #
+          #   Invalid Authorization header value from CLAUDE_CODE_OAUTH_TOKEN:
+          #   it contains a line break at character 121
+          #   (348 characters on 3 lines).
+          #
+          # The stored secret is a token a terminal WRAPPED for display and a
+          # copy then captured with hard newlines in it. It is not a wrong
+          # token and not a truncated one -- it is the right characters with
+          # two line breaks through the middle, and an HTTP header cannot
+          # carry a line break, so every request made with it is rejected
+          # before it leaves the runner.
+          #
+          # WHY THIS IS FIXED HERE RATHER THAN ASKED FOR AGAIN. The Owner is a
+          # non-coder pasting a 346-character string into a web form on a
+          # tablet; that is exactly where this happens, and asking for a
+          # careful re-paste leaves the trap armed for the next one. A
+          # credential of this family never legitimately contains whitespace,
+          # so stripping it changes no valid token and repairs this one.
+          #
+          # IT IS REPAIRED LOUDLY, NOT SILENTLY -- the warning below names how
+          # many whitespace characters were removed, so a malformed secret is
+          # still visible as malformed rather than papered over.
+          #
+          # `add-mask` REGISTERS THE REPAIRED VALUE BEFORE ANYTHING CAN USE
+          # IT. The stored secret is masked by GitHub automatically; the
+          # repaired string is a DIFFERENT string and would not be, so
+          # anything that echoed it would print a live credential into a
+          # public log. Masking first is what makes the rest of this safe.
+          #
+          # It is carried forward in `$GITHUB_ENV`, NOT a step output: the
+          # runner refuses to set an output whose value matches a registered
+          # secret ("Skip output since it may contain secret"), which is
+          # precisely what this value becomes the instant it is masked.
+          # =================================================================
+          clean_oauth=$(printf '%s' "${CLAUDE_CODE_OAUTH_TOKEN:-}" | tr -d '[:space:]')
+          clean_api=$(printf '%s' "${ANTHROPIC_API_KEY:-}" | tr -d '[:space:]')
+
+          if [ -n "$clean_oauth" ]; then echo "::add-mask::$clean_oauth"; fi
+          if [ -n "$clean_api" ]; then echo "::add-mask::$clean_api"; fi
+
+          raw_oauth="${CLAUDE_CODE_OAUTH_TOKEN:-}"
+          raw_api="${ANTHROPIC_API_KEY:-}"
+          if [ "${#raw_oauth}" -ne "${#clean_oauth}" ]; then
+            echo "::warning::CLAUDE_CODE_OAUTH_TOKEN was stored with $(( ${#raw_oauth} - ${#clean_oauth} )) whitespace character(s) in it, almost certainly line breaks from a wrapped copy. It has been repaired for this run. Re-saving the secret as one unbroken line removes the problem at source."
+          fi
+          if [ "${#raw_api}" -ne "${#clean_api}" ]; then
+            echo "::warning::ANTHROPIC_API_KEY was stored with $(( ${#raw_api} - ${#clean_api} )) whitespace character(s) in it and has been repaired for this run."
+          fi
+
+          {
+            echo "CLAUDE_OAUTH_CLEAN=$clean_oauth"
+            echo "CLAUDE_API_KEY_CLEAN=$clean_api"
+          } >> "$GITHUB_ENV"
+
           echo "mode=$mode" >> "$GITHUB_OUTPUT"
           echo "ready=$ready" >> "$GITHUB_OUTPUT"
 
@@ -362,8 +423,8 @@ jobs:
           # cannot capture the run. That matches the Owner's own instruction --
           # keep the subscription token -- and makes it enforced rather than
           # hoped for.
-          anthropic_api_key: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN == '' && secrets.ANTHROPIC_API_KEY || '' }}
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          anthropic_api_key: ${{ env.CLAUDE_OAUTH_CLEAN == '' && env.CLAUDE_API_KEY_CLEAN || '' }}
+          claude_code_oauth_token: ${{ env.CLAUDE_OAUTH_CLEAN }}
           anthropic_federation_rule_id: ${{ vars.ANTHROPIC_FEDERATION_RULE_ID }}
           anthropic_organization_id: ${{ vars.ANTHROPIC_ORGANIZATION_ID }}
           anthropic_service_account_id: ${{ vars.ANTHROPIC_SERVICE_ACCOUNT_ID }}
