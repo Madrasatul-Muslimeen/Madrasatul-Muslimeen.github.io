@@ -137,9 +137,10 @@ already did the real approval, by hand, in the Console.
 
 - **"Review deployments" never appears** → the environment name doesn't
   match exactly, or Required reviewers wasn't saved. Re-check step 2.
-- **The deploy fails with a permission error** → the key's two roles in
-  step 1 may be missing one, or the key wasn't pasted in full in step 3.
-  Re-check both; a partial paste is the most common cause.
+- **The deploy fails with a permission error** → the key's one role in
+  step 1 (Firebase Rules Admin) may not have been added correctly, or the
+  key wasn't pasted in full in step 3. Re-check both; a partial paste is
+  the most common cause.
 - **You want to stop this and go back to doing it by hand** → delete the
   environment secret (step 3) or the service account itself (step 1's Keys
   tab, click Delete). The workflow will then fail loudly with a clear error
