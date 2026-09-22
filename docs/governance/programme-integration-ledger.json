@@ -101,8 +101,8 @@
     {
       "version": "08.31",
       "owner": "quran",
-      "status": "LIVE",
-      "note": "QuranRevival release-gating repair -- the Study-evidence persistence-readiness gate. LIVE: main carries it, and main is what GitHub Pages serves. Integrated 2026-09-19 as a FAST-FORWARD from db6cb24b807d77630914e076d413bec6982cc3d7; the accepted application change is unmodified. It is NOT a deployment claim and it does not make the feature operational -- it makes the app honest about the fact that it is not. E1 stays CLOSED.",
+      "status": "RELEASED",
+      "note": "QuranRevival release-gating repair -- the Study-evidence persistence-readiness gate. RELEASED: main carried it until the v08.32 Word Card release on 2026-09-21. GitHub Pages served that prior main version. Integrated 2026-09-19 as a FAST-FORWARD from db6cb24b807d77630914e076d413bec6982cc3d7; the accepted application change is unmodified. It is NOT a deployment claim and it does not make the feature operational -- it makes the app honest about the fact that it is not. E1 stays CLOSED.",
       "integration": {
         "authorizedOn": "2026-09-19",
         "integratedOn": "2026-09-19",

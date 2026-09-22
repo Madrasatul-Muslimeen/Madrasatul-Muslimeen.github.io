@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Health Atlas — Foods, Conditions &amp; Age Groups (draft) — MMSA</title>
+<style>
+  :root { --ink:#1b1f27; --paper:#faf7f1; --line:#dcd3c0; --gold:#8a6220; --card:#fff; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { padding: 1.4rem 1.2rem 1rem; border-bottom: 1px solid var(--line); }
+  header h1 { margin: 0 0 0.3rem; font-size: 1.35rem; }
+  header p { margin: 0 0 0.5rem; color: #6b6255; font-size: 0.9rem; max-width: 40rem; line-height: 1.5; }
+  header a { color: var(--gold); }
+  main { max-width: 44rem; margin: 0 auto; padding: 1.2rem 1rem 4rem; }
+  .ha-draft-banner {
+    background: #f5ebd6; color: #6b4c14; border: 1px solid #e2cd9c; border-radius: 0.5rem;
+    padding: 0.6rem 0.9rem; font-size: 0.85rem; line-height: 1.4; margin-bottom: 1rem;
+  }
+  .ha-intro { color: #6b6255; font-size: 0.85rem; line-height: 1.5; margin: 0.4rem 0 0.9rem; }
+  .ha-tabbar { display: flex; gap: 0.4rem; margin-bottom: 1rem; flex-wrap: wrap; }
+  .ha-tab {
+    font: inherit; font-size: 0.85rem; padding: 0.4rem 0.9rem; border-radius: 999px;
+    border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer;
+  }
+  .ha-tab:hover { border-color: var(--gold); color: var(--gold); }
+  .ha-tab-active { background: var(--gold); border-color: var(--gold); color: #fff; }
+  .ha-system-list { display: flex; flex-direction: column; gap: 1rem; }
+  .ha-system-block { background: var(--card); border: 1px solid var(--line); border-radius: 0.6rem; padding: 0.8rem 1rem; }
+  .ha-system-head { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; margin-bottom: 0.5rem; }
+  .ha-system-name { }
+  .ha-system-count { margin-left: auto; font-weight: 400; color: #8a8071; font-size: 0.82rem; }
+  .ha-organ-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .ha-organ-btn {
+    font: inherit; font-size: 0.85rem; padding: 0.35rem 0.7rem; border-radius: 999px;
+    border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer;
+  }
+  .ha-organ-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .ha-detail-card { background: var(--card); border: 1px solid var(--line); border-radius: 0.6rem; padding: 1rem 1.1rem; }
+  .ha-detail-card h2 { margin: 0.4rem 0 0.2rem; font-size: 1.2rem; }
+  .ha-meta { color: #6b6255; font-size: 0.85rem; margin: 0.2rem 0 0.8rem; }
+  .ha-section-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gold); font-weight: 600; margin: 0.8rem 0 0.3rem; }
+  .ha-plain { margin: 0; padding-left: 1.1rem; font-size: 0.9rem; line-height: 1.55; }
+  .ha-plain li { margin-bottom: 0.5rem; }
+  .ha-back { font: inherit; font-size: 0.85rem; background: none; border: none; color: var(--gold); cursor: pointer; padding: 0; margin-bottom: 0.4rem; }
+  .ha-back:hover { text-decoration: underline; }
+  .ha-refs-block { margin-top: 0.9rem; }
+  .ha-refs-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: #8a8071; font-weight: 600; margin-bottom: 0.3rem; }
+  .ha-refs { list-style: none; margin: 0; padding: 0; font-size: 0.85rem; }
+  .ha-refs li { margin-bottom: 0.15rem; }
+  .ha-refs a { color: var(--gold); }
+  .ha-empty { color: #8a8071; }
+  footer { max-width: 44rem; margin: 0 auto; padding: 0 1rem 3rem; color: #8a8071; font-size: 0.78rem; line-height: 1.5; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Health Atlas — Foods, Conditions &amp; Age Groups (draft)</h1>
+  <p>
+    Tranche 3 of the MMSA-internal Health Atlas review screens. Standalone, same as
+    <a href="health-atlas.html">the Body Systems browser</a> — no sign-in, no tenant, no backend,
+    nothing persisted; it only reads the dataset shipped beside it. Its ES module imports need it
+    served over http (see <code>serve.js</code>), not opened as a bare <code>file://</code> path.
+    It is not linked from the shared navigation.
+  </p>
+  <p><a href="health-atlas.html">← Back to the Body Systems browser</a></p>
+</header>
+<main id="healthAtlasMoreRoot"></main>
+<footer>
+  Health Atlas tranche 3 — Foods, Conditions and Age Groups, structural/organizational fields
+  only. Amounts, serving guidance, treatment, remedies and lifestyle-activity recommendations are
+  deliberately not shown anywhere on this page — see the tranche report for the field-by-field
+  reasoning and <code>tools/health-atlas-verify/view-boundary-more.mjs</code> for the mechanical
+  guard. Source: Health Atlas v02.04 standalone
+  (<code>docs/health-source/health-atlas-v02.04-standalone.html</code> on
+  <code>health/source-v02-04-handover</code>, commit <code>ed4dbb2e</code>).
+</footer>
+<script type="module">
+  import {
+    HEALTH_ATLAS_FOODS,
+    HEALTH_ATLAS_DISEASES,
+    HEALTH_ATLAS_AGES,
+    HEALTH_ATLAS_REFERENCES
+  } from './js/health-atlas-data.js';
+  import { mountHealthAtlasMore } from './js/health-atlas-more-view.js';
+
+  mountHealthAtlasMore(document.getElementById('healthAtlasMoreRoot'), {
+    foods: HEALTH_ATLAS_FOODS,
+    diseases: HEALTH_ATLAS_DISEASES,
+    ages: HEALTH_ATLAS_AGES,
+    references: HEALTH_ATLAS_REFERENCES
+  });
+</script>
+</body>
+</html>
