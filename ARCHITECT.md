@@ -342,8 +342,15 @@ Every report follows one shape, and ends with **Done / Suggestions / Pending**:
       retarget themselves: **#140** (Health, 8 deep), **#143** (Hadith, 7 deep),
       **#135** (Word Card, 5 deep), **#130** (Hadith, 2 deep), and the older
       Health trio **#111 / #119 / #121**.
-      Cleared so far: #134 and #96 merged (both the checkout-artefact finding),
-      #94 closed as redundant.
+      Cleared so far (22 Sep 2026): merged #134 and #96 (the checkout-artefact
+      finding, from two directions), #132, #136, #124, #117, #128, #110, #129;
+      closed #94 as redundant. Where a merged report has since gone stale, the
+      merge commit says so — read the dated header, not the conclusion.
+      **#120 CONFLICTS with `main`** in
+      `tools/i18n-verify/note-foundation-data-layer.mjs`, because #104 merged
+      and touches the same file. It is the implementation of #117's Gate B
+      proposal, which is now authorised, so this is a real round: resolve the
+      conflict, re-run the note and boundary suites, merge.
       **Eight of the 21 on `main` are documentation-only** — #110, #117, #124,
       #128, #129, #131, #132, #136 — so their review is: confirm docs-only,
       suites green, and *that the report's claims are still true*. That last one
@@ -382,6 +389,25 @@ Every report follows one shape, and ends with **Done / Suggestions / Pending**:
       42/7 this file records for the same class. **The class is real and the
       arithmetic in it is not** — unshallow before believing any suite number,
       and there are now eight gated suites, not seven.
+- [ ] **NO SUITE HAS EVER HANDED THE REAL FUNCTION'S REAL OUTPUT TO A REAL
+      RULES ENGINE**, and this is filed here because a finding that lives only
+      in a report is filed nowhere. Found by PR #110, merged 22 Sep 2026.
+      `note-foundation-data-layer.mjs` loads the real `note-foundation.js`
+      source but **rewrites its Firestore import to an in-memory fake with no
+      rule evaluator behind it**, so it proves the write SHAPE and nothing
+      about authorisation. `note-foundation-v1.rules.test.mjs` *is* genuine
+      emulator proof, but its `IMM-03b` case **hand-authors the batch write**
+      and has never executed a line of `app/js/note-foundation.js`. So *"the
+      fixture matches the Rules"* and *"the fixture matches the real
+      function"* were each proven separately, **never as one chain** — the
+      same class this repository keeps rediscovering, a suite that cannot fail
+      in the way it is believed to. PR #104's fix is on `main` and does NOT
+      close this: its own proof is the JS-level half.
+      Closing it needs a case in `tools/firestore-emulator/` calling the real
+      function, which is a protected path, plus that workspace's `npm ci` —
+      neither available to the session that found it, both available to a
+      round the Architect authorises.
+
 - [ ] **E1 remains the single blocking dependency** for MAP Phases 4–6:
       authenticated Firebase access to `study-monitoring`. With it, the first
       task is deploy **four indexes, then the assembled Rules, in that order**.
