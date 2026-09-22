@@ -179,7 +179,30 @@ history: `programme-ledger`, `programme-ledger-mutations`,
 `study-event-wiring`, `rules-authorisation-executable`,
 `workflow-expressions` — all exit 0.
 
-## 6. What was deliberately NOT done
+## 6. Automated deployment — answer, not built
+
+Asked separately: can future Rules changes deploy through GitHub without
+extra billing? **Yes.** Publishing Firestore Rules and indexes is a Spark
+(free-tier) capability of the Firebase CLI's `firebase deploy --only
+firestore:rules,firestore:indexes` — it uses the Firebase Management/Rules
+API, not a billed Google Cloud resource, and needs no Blaze plan.
+
+It would need one new credential that does not exist in this repository
+today: a Google-issued service account key, scoped to the Firebase Rules
+Admin role only, stored as a GitHub secret the same way
+`CLAUDE_CODE_OAUTH_TOKEN` already is.
+
+**Recommended shape, if authorised**: a workflow step prepares the publish
+on a Rules-file change, then **waits for the Owner's own approval** (a
+GitHub Environment with a required reviewer is a built-in way to get this —
+no bespoke code needed) before it actually runs `firebase deploy`. That
+keeps the deliberate pause this project has always kept between "merged"
+and "deployed" for Rules specifically, while removing the manual
+copy-paste-into-the-Console step. **Not built in this round** — it is
+itself a new-credential decision, put to the Owner in the companion guide
+rather than assumed.
+
+## 7. What was deliberately NOT done
 
 - **`firestore.rules` itself is untouched.** The pasteable text lives at the
   candidate path above, not at `firestore.rules` — see the companion Owner

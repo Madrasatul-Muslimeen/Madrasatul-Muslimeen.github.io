@@ -210,7 +210,37 @@ Publishing this does not decide any of these:
 
 ---
 
-## 9. When you're ready
+## 9. Can this be automated next time, so you don't have to do this by hand?
+
+**Yes, and it does not cost anything extra.** Publishing Firestore rules and
+indexes is part of Firebase's free tier — it is not the kind of thing that
+needs your paid billing turned on. That is a separate question from whether
+GitHub can do the publishing for you, which it can.
+
+**How it would work:** one small robot file added to this repository, set to
+run automatically whenever a Rules file changes and is merged. It would need
+one thing from you that does not exist yet — a Google-issued key, created
+once in the Firebase Console, saved into GitHub the same way the Claude
+access token was. That key can be limited to doing only this one job:
+publishing Rules and indexes. It cannot read your data, and it cannot spend
+any money on your behalf.
+
+**One thing worth deciding, not assuming:** should a Rules change publish
+itself the moment it's merged, or should it wait for you to press a button?
+Everywhere else in this project, publishing Rules has deliberately stayed a
+separate, deliberate step from merging code — the same distinction this
+whole document is built around ("merged is not deployed"). Automating the
+mechanics does not have to mean giving that up: GitHub can be set to prepare
+the publish and then **wait for you to approve it with one click**, rather
+than doing it the instant something merges. That keeps the pause where you
+can still say no, while removing the copy-paste-into-the-Console part.
+
+**My recommendation:** build it that way — automatic preparation, one click
+from you to actually publish — rather than fully automatic. Say the word and
+this becomes its own small, bounded piece of work; nothing about it is
+started by this round.
+
+## 10. When you're ready
 
 Say **"rules are live"** once you've published and the six checks in
 section 4 all look right. That is what starts the next step: confirming word
