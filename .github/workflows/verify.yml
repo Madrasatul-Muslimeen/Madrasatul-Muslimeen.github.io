@@ -4,8 +4,19 @@
 # before any branch ruleset makes a check mandatory. Requiring a check whose
 # behaviour nobody has measured is how a pilot deadlocks on day one.
 #
-# Scope is deliberately narrow: it runs SEVEN deterministic governance suites
+# Scope is deliberately narrow: it runs EIGHT deterministic governance suites
 # and nothing else.
+#
+# THE EIGHTH WAS ADDED THE DAY A WORKFLOW BROKE IN A WAY EVERY CHECK ALLOWED.
+# claude.yml carried a plain YAML scalar containing "issue #{0}", and a
+# space-followed-by-hash begins a YAML comment -- so the rest of the line was
+# silently discarded and `${{` was left unclosed. GitHub could not load the
+# workflow: it registered by file path rather than by `name:`, every push
+# produced a `failure` run with no job, and the builder triggered on nothing.
+# A YAML parser called the file fine (it had truncated a string, not failed to
+# parse) and a GitHub-schema validator called it fine (the schema describes
+# structure, not expressions). workflow-expressions.mjs asserts on the PARSED
+# value instead, and is mutation-proven against that exact defect.
 #
 # THE SEVENTH WAS ADDED BECAUSE A GUARD WITHOUT ITS MUTATION HARNESS IS A GUARD
 # NOBODY HAS PROVEN CAN FAIL. study-activity-evidence-boundary.mjs was gated
@@ -107,7 +118,7 @@ jobs:
         id: suites
         run: |
           set -uo pipefail
-          suites="programme-ledger programme-ledger-mutations brief-integrity study-activity-evidence-boundary study-activity-evidence-boundary-mutations study-event-wiring rules-authorisation-executable"
+          suites="programme-ledger programme-ledger-mutations brief-integrity study-activity-evidence-boundary study-activity-evidence-boundary-mutations study-event-wiring rules-authorisation-executable workflow-expressions"
           failed=0
           recap="$(mktemp)"
           {

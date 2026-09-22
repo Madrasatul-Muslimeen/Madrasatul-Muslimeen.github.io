@@ -28,4 +28,5 @@
 //
 // BUILT, NOT SHIPPED. The Activity evidence Rules are not deployed (E1), so the
 // subcollection is closed to every client and the tranche must not be released.
-export const APP_VERSION = "08.31";
+// 08.32: Basic Arabic lemma occurrence navigation, allocated by the MMSA Master Architect on 21 Sep 2026.
+export const APP_VERSION = "08.32";
