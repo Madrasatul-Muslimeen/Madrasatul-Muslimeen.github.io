@@ -21,10 +21,22 @@
 // directly. Same outcome whenever the field is present; different route when it
 // is absent. Nothing compared them, because every existing check about
 // firestore.rules asserts only what it does NOT contain.
+// SUPERSEDED, 22 Sep 2026 -- kept as the historical record of the 17 Sep
+// assembly, exactly like the extracts it itself describes as kept-not-replaced
+// above. `rules-deployment-candidate-phase3-6.mjs` is the live successor: it
+// carries this file's own candidate plus MAP Phase 3, and it is what actually
+// got deployed (confirmed by the Owner, 22 Sep 2026). Because of that,
+// `firestore.rules` now equals the SUCCESSOR candidate, not this one -- so
+// every check below that needs "production" reads it from the fixed git blob
+// at the last commit before deployment, not the live working file, the same
+// way `rules-deployment-candidate-phase3-6.mjs` pins its own pre-Phase-3
+// baseline and for the identical reason: a fact about the past does not move
+// just because the live file later did.
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import { execFileSync } from "node:child_process";
 
 const root = path.resolve(process.argv[2] || process.cwd());
 const CANDIDATE = "docs/governance/phase4-6-DEPLOYMENT-candidate-2026-09-17.rules";
@@ -33,6 +45,11 @@ const EXTRACTS = [
   "docs/governance/phase6-journey-map-rules-candidate-2026-09-15.rules",
 ];
 const read = (rel) => fs.readFileSync(path.join(root, rel), "utf8");
+// The last commit where firestore.rules was still pre-deployment production --
+// i.e. before phases 3-6 were ever pasted into the Console.
+const PRE_DEPLOYMENT_REF = "35f9228e2d57c085795dc06c412b3a7191325ddd";
+const readAtRef = (ref, rel) =>
+  execFileSync("git", ["show", `${ref}:${rel}`], { cwd: root, encoding: "utf8" });
 
 let passed = 0, failed = 0;
 function check(name, fn) {
@@ -66,7 +83,7 @@ function topLevelFunctions(text) {
   return out;
 }
 
-const production = read("firestore.rules");
+const production = readAtRef(PRE_DEPLOYMENT_REF, "firestore.rules");
 const candidate = read(CANDIDATE);
 const prodFns = topLevelFunctions(production);
 
@@ -132,12 +149,18 @@ check("the extracts' divergence from production is EXACTLY the audited four", ()
     `the set of helpers that differ from production has changed -- re-audit before updating this list`);
 });
 
-// --- nothing is deployed ----------------------------------------------------
-check("nothing has been deployed: firestore.rules and firebase.json are untouched", () => {
-  assert.ok(!production.includes("match /notes/"), "firestore.rules now governs the Note Foundation");
-  assert.ok(!production.includes("/evidence/"), "firestore.rules now carries the Phase 4 amendment");
-  const firebase = JSON.parse(read("firebase.json"));
-  assert.ok(!("indexes" in (firebase.firestore ?? {})), "firebase.json now points at an index file");
+// --- this candidate was superseded before it was ever deployed alone --------
+// Deployment happened 22 Sep 2026, but of the SUCCESSOR candidate
+// (rules-deployment-candidate-phase3-6.mjs), which carries everything this
+// one does plus MAP Phase 3 -- this exact 17 Sep text was never pasted into
+// the Console on its own. That suite's own checks are the live confirmation
+// that deployment was faithful; this one only needs to record that the
+// pre-deployment baseline it was built against (PRE_DEPLOYMENT_REF above)
+// really is the commit deployment happened from, so the two suites are
+// provably talking about the same history rather than two different stories.
+check("the pinned pre-deployment baseline really is firestore.rules as it stood right before deployment", () => {
+  assert.ok(!production.includes("match /notes/"), "the pinned pre-deployment baseline already governs the Note Foundation -- PRE_DEPLOYMENT_REF points at the wrong commit");
+  assert.ok(!production.includes("/evidence/"), "the pinned pre-deployment baseline already carries the Phase 4 amendment -- PRE_DEPLOYMENT_REF points at the wrong commit");
 });
 
 check("the standing brief points at a deployment document that exists", () => {

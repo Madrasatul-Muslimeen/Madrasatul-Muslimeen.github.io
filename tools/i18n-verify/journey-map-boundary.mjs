@@ -111,12 +111,18 @@ function unchangedSinceMain(relPath) {
   assert.equal(fs.readFileSync(path.join(root, relPath), "utf8"), head,
     `${relPath} is NOT byte-identical to origin/main`);
 }
-check("noteFolders and notePlacements are still UNRULED in production", () => {
+// DEPLOYED, 22 Sep 2026 -- confirmed by the Owner in the Firebase Console.
+// This checked the opposite until then ("still UNRULED"), because claiming a
+// live rule existed before it did would have been the repository asserting a
+// deployment nobody had performed. It now guards that every Note Foundation
+// and Mapping My Journey collection genuinely got its rule, none silently
+// missing -- and `origin/main` is expected to equal the live file now, not
+// the reverse.
+check("noteFolders, notePlacements and the rest of the Note Foundation are RULED in production", () => {
   const rules = fs.readFileSync(path.join(root, "firestore.rules"), "utf8");
   for (const collection of ["noteFolders", "notePlacements", "notes", "noteSources", "noteRevisions"]) {
-    assert.ok(!rules.includes(`match /${collection}/`), `firestore.rules now governs ${collection}`);
+    assert.ok(rules.includes(`match /${collection}/`), `firestore.rules does not govern ${collection} -- deployment record is stale, or the sync regressed`);
   }
-  unchangedSinceMain("firestore.rules");
 });
 check("the Phase 5 Rules candidate's RULE CONTENT is unchanged", () => {
   // UPDATED 2026-09-17, with the reason recorded rather than the check deleted.

@@ -200,8 +200,27 @@ check("app/js/activity.js and records.js are byte-identical to origin/main", () 
   unchangedSinceMain("app/js/activity.js");
   unchangedSinceMain("app/js/records.js");
 });
-check("firestore.rules is byte-identical to origin/main -- nothing deployed, nothing proposed in place", () => {
-  unchangedSinceMain("firestore.rules");
+// PINNED, NOT `origin/main`, since 22 Sep 2026 -- and this is a fix, not a
+// weakening. The claim this check makes is about P5-C's OWN round (15 Sep
+// 2026): that it added zero Rules changes of its own. Comparing against
+// `origin/main` was the right proxy for that claim only while nothing else
+// had ever touched firestore.rules either -- once real deployment happened
+// (a later, separately-audited round, confirmed by the Owner), `origin/main`
+// stopped being a stand-in for "untouched" and became a moving target that
+// would make this check pass VACUOUSLY forever after (comparing the file to
+// itself). PRE_DEPLOYMENT_REF is the fixed commit where firestore.rules last
+// held the state P5-C's own claim is actually about.
+const PRE_DEPLOYMENT_REF = "35f9228e2d57c085795dc06c412b3a7191325ddd";
+check("firestore.rules carried no Rules change from P5-C's own round, measured against the fixed pre-deployment state", () => {
+  // Deployment landed the Phase 3-6 additions at THREE separate insertion
+  // points, not one contiguous block, so a substring check would be wrong --
+  // same line-membership technique rules-deployment-candidate.mjs already
+  // uses for the identical purative-addition question.
+  const pinned = execFileSync("git", ["show", `${PRE_DEPLOYMENT_REF}:firestore.rules`], { cwd: root, encoding: "utf8" });
+  const now = fs.readFileSync(path.join(root, "firestore.rules"), "utf8");
+  const missing = pinned.split("\n").filter((l) => l.trim() && !now.includes(l));
+  assert.deepEqual(missing.slice(0, 3), [],
+    `${missing.length} pre-deployment production line(s) are now absent -- the deployment sync dropped or altered production lines`);
 });
 check("no migration or backfill material was added", () => {
   for (const name of GUARDED) {
