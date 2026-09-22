@@ -15086,3 +15086,63 @@ with this change: **8 suites green — 8/0, 49/0, 8/0, 27/0, 11/0, 41/0, 40/0,
 
 BR-0, no version bump; `app/`, `tests/`, `firestore.rules` and `firebase.json`
 byte-identical. Only the two workflow files changed.
+
+## The builder's credential was line-wrapped, and the run said so itself — NO VERSION BUMP (22 Sep 2026)
+
+**THE DIAGNOSTIC ADDED IN THE ENTRY ABOVE PAID FOR ITSELF ON ITS FIRST REAL
+RUN.** Attempt four failed like the three before it — and for the first time
+printed why:
+
+```
+subtype=success is_error=true num_turns=1 duration_ms=274 total_cost_usd=0
+--- why the run stopped ---
+Invalid auth token - Fix external auth token - Invalid Authorization header
+value from CLAUDE_CODE_OAUTH_TOKEN: it contains a line break at character 121
+(348 characters on 3 lines).
+```
+
+**It is the right token with two line breaks through the middle of it** — 346
+characters of credential stored as 348 across 3 lines. A terminal wrapped it for
+display, the copy took the wrapping with it, and **an HTTP header cannot carry a
+line break**, so every request made with it was rejected before it left the
+runner. Not a wrong token, not a truncated one, and not the API-key precedence
+fault of the entry above it: a third distinct cause, invisible for four runs
+because the sentence naming it was being discarded.
+
+**So the credential is normalised before use, in both workflows** —
+`tr -d '[:space:]'` over the stored value, because a credential of this family
+never legitimately contains whitespace, so stripping it changes no valid token
+and repairs this one.
+
+**WHY THIS IS FIXED HERE RATHER THAN ASKED FOR AGAIN.** The Owner is a non-coder
+pasting a 346-character string into a web form on a tablet, which is exactly
+where this happens. A careful re-paste fixes today's token and leaves the trap
+armed for the next one. **It is repaired LOUDLY**: a `::warning::` names how
+many whitespace characters were removed and asks for the secret to be re-saved
+as one unbroken line, so a malformed secret stays visible as malformed instead
+of being papered over.
+
+**Two implementation facts that are load-bearing rather than incidental.**
+`::add-mask::` registers the REPAIRED value before anything can use it — the
+stored secret is masked by GitHub automatically, the repaired string is a
+*different* string and would not be, so anything echoing it would print a live
+credential into a public log. And it is carried forward in `$GITHUB_ENV`, **not
+a step output**: the runner refuses to set an output whose value matches a
+registered secret (*"Skip output since it may contain secret"*), which is
+precisely what this value becomes the instant it is masked.
+
+**Proven against three fixtures**, the shell extracted from the PARSED YAML:
+**(1)** the exact reported shape — a 346-character token broken at character 121
+into 348 characters on 3 lines — repaired to a value that **matches the original
+byte for byte**, with the warning naming 2 characters removed; **(2)** an
+already-clean token, passed through untouched with **no warning**, which is what
+stops this becoming noise on every run; **(3)** no credential at all, exiting 0
+rather than crashing under `set -u`.
+
+**What this does NOT claim.** Whether the stored token is otherwise valid is not
+knowable from here and is not asserted — only that the malformation it was
+rejected for is gone. If the repaired token is refused, the run now says so in
+its own words, and that is the difference this pair of entries buys.
+
+BR-0, no version bump; `app/`, `tests/`, `firestore.rules` and `firebase.json`
+byte-identical. Eight governance suites green on full history.
