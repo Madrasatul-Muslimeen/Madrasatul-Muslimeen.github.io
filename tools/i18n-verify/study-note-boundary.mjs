@@ -166,19 +166,35 @@ function unchangedSinceMain(relPath) {
 check("app/js/ayah-notes.js is byte-identical to origin/main -- existing notes preserved", () => {
   unchangedSinceMain("app/js/ayah-notes.js");
 });
-check("app/js/note-foundation.js changed by INSERTION ONLY -- nothing removed or reshaped", () => {
-  // UPDATED 2026-09-15 (P5-E), with the reason recorded rather than the check
-  // deleted. P5-E adds the read side of ADR-009 to this file, so byte-identity
-  // is no longer the right claim -- but "not reshaped" still is, and it is the
-  // one that matters: every existing export must behave exactly as it did.
-  // An addition-only diff proves that mechanically, and is a STRICTER thing to
-  // assert than "some lines changed and I read them and they looked fine".
-  const diff = execFileSync("git", ["diff", "--numstat", "origin/main", "--", "app/js/note-foundation.js"],
-    { cwd: root, encoding: "utf8" }).trim();
-  if (diff === "") return; // identical to origin/main
-  const [added, removed] = diff.split(/\s+/);
-  assert.equal(removed, "0", `note-foundation.js has ${removed} REMOVED lines -- an existing behaviour may have been reshaped`);
-  assert.ok(Number(added) > 0, "a non-empty diff with no additions makes no sense");
+// UPDATED 2026-09-20, with the reason recorded rather than the check
+// weakened. `retirePermanentNote()` was found to write a shape the accepted
+// Phase 5 Rules candidate can never accept in production: it changed
+// `status` only and left `currentRevisionId` pointing at the SAME revision
+// it already named, which `committedRevisionMatches()` can never accept
+// (a revision cannot chain from itself). Fixing it means REPLACING that one
+// line with a real revision-commit -- an addition-only diff cannot express
+// that fix, so a blanket "0 removed lines" rule would have forced either
+// leaving the defect in place or silently loosening this guard. Neither is
+// right, so the exception is PINNED to the exact line this round replaces:
+// removing anything else still fails, exactly as before.
+const NOTE_FOUNDATION_PINNED_REMOVAL =
+  "-    transaction.update(TENANT.NOTES, noteDocId, { status: NOTE_STATUS.RETIRED });";
+check("app/js/note-foundation.js changed by INSERTION ONLY, except one pinned line this round REPLACED to fix a real Rules-candidate defect", () => {
+  // UPDATED 2026-09-15 (P5-E) and again 2026-09-20 (see above), with the
+  // reason recorded rather than the check deleted. P5-E adds the read side
+  // of ADR-009 to this file, so byte-identity is no longer the right claim
+  // -- but "not reshaped, except the one line named above" still is, and it
+  // is the one that matters: every OTHER existing export must behave
+  // exactly as it did. Reading the actual removed lines (not just counting
+  // them) proves that mechanically.
+  const diffText = execFileSync("git", ["diff", "origin/main", "--", "app/js/note-foundation.js"],
+    { cwd: root, encoding: "utf8" });
+  if (diffText === "") return; // identical to origin/main
+  const removedLines = diffText.split("\n").filter((l) => l.startsWith("-") && !l.startsWith("---"));
+  assert.deepEqual(removedLines, [NOTE_FOUNDATION_PINNED_REMOVAL],
+    `note-foundation.js removed line(s) do not match the one pinned exception -- an existing behaviour may have been reshaped: ${JSON.stringify(removedLines)}`);
+  const addedLines = diffText.split("\n").filter((l) => l.startsWith("+") && !l.startsWith("+++"));
+  assert.ok(addedLines.length > 0, "a non-empty diff with no additions makes no sense");
 });
 check("app/js/activity.js and records.js are byte-identical to origin/main", () => {
   unchangedSinceMain("app/js/activity.js");

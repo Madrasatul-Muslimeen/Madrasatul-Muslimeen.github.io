@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MMSA governance automation — the execution surface closed, and why the merge is blocked</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MMSA governance automation — the execution surface closed, and why the merge is blocked</h1>
+<p><strong>Date:</strong> 19 September 2026 <strong>Instruction executed:</strong> <em>&quot;Remove that extra Bash execution permission entirely… Check the Action&#x27;s actual default tools for any remaining arbitrary command route. Update PR #89, resolve the review finding, and verify its check. Then configure and verify a main rule requiring a pull request, with 0 required approvals, no required status check yet, and no Claude App bypass… If you cannot set or verify that rule with your access, stop and give exact screen instructions; do not merge.&quot;</em></p>
+<p><strong>Result: the finding is closed and the check is green — but the <code>main</code> rule CANNOT be set from this environment, so the merge authorisation did not activate. PR #89 is NOT merged.</strong></p>
+<p><code>app/</code> is untouched. <code>app/js/version.js</code> stays <strong><code>08.31</code></strong>, <strong><code>08.32</code> stays UNALLOCATED</strong>, <code>firestore.rules</code> and <code>firebase.json</code> are untouched, E1 stays closed. <strong>No Anthropic credential was added, no required approvals enabled, no Firebase Rules deployed, and no Claude bot task started.</strong></p>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><strong>PR</strong></td><td>&lt;https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/89&gt;</td></tr>
+<tr><td><strong>Final PR head</strong></td><td><strong><code>e73d1dea39d47b86ac531f9db475beec16f00cf1</code></strong></td></tr>
+<tr><td><strong><code>origin/main</code></strong></td><td><strong><code>b87133461680d3c2837f7bd75fc5c824e10090d3</code></strong> — unchanged, read back after all work</td></tr>
+<tr><td><strong>Merged?</strong></td><td><strong>NO</strong></td></tr>
+<tr><td><strong>Rule on <code>main</code></strong></td><td><strong>NONE</strong> — verified, see §4</td></tr>
+</tbody></table></div>
+<hr>
+<h2>1. The new P1 finding was correct, and it is the right escalation</h2>
+<p>&gt; <em>&quot;When Claude edits any of these seven allowlisted <code>.mjs</code> files … the subsequent exact <code>node …</code> command executes the modified JavaScript, which can invoke arbitrary child processes.&quot;</em></p>
+<p>Exactly so. Naming the seven suites as exact <code>node tools/i18n-verify/&lt;suite&gt;.mjs</code> commands narrowed <strong>which file runs</strong>, not <strong>what is in it</strong>. File editing is deliberately still enabled, so Claude could edit an allowlisted <code>.mjs</code> and the next exact invocation would execute the edited JavaScript.</p>
+<p><strong>An allowlist of paths is not an allowlist of behaviour while those paths are model-editable.</strong> That sentence is the whole finding, and it is worth keeping.</p>
+<p><strong>Fixed by deleting the permission, not by narrowing it a third time.</strong> There is no <code>--allowedTools</code> line any more:</p>
+<p>``<code>yaml claude_args: |   --model &quot;claude-opus-5&quot; </code>``</p>
+<p><strong>Nothing is lost.</strong> <code>verify.yml</code> already runs all seven suites against every pull request, on a clean checkout Claude never touches. <strong>Verification belongs to CI, not to the thing being verified</strong> — narrowing the allowlist again would have been the same mistake in a smaller box.</p>
+<hr>
+<h2>2. The Action&#x27;s default tools — audited from source</h2>
+<p>Removing our own allowlist only matters if the defaults are not worse. <code>src/modes/tag/index.ts</code> was read, not assumed.</p>
+<p><strong>Base tools, unconditional:</strong></p>
+<p>``<code> Glob, Grep, LS, Read, mcp__github_comment__update_claude_comment, mcp__github_ci__get_ci_status, mcp__github_ci__get_workflow_run_details, mcp__github_ci__download_job_log </code>``</p>
+<p><strong>None of those can execute a command. There is no generic <code>Bash</code> tool, so the answer to &quot;is there a remaining arbitrary-command route&quot; is NO.</strong></p>
+<p><strong>But the defaults are not empty of shell.</strong> Without commit signing the mode appends four Bash entries:</p>
+<p>``<code> Bash(git add:<em>)   Bash(git commit:</em>)   Bash(git rm:<em>) Bash(${GITHUB_ACTION_PATH}/scripts/git-push.sh:</em>) </code>``</p>
+<p><strong>The push wrapper is genuinely defensive, and it is worth being precise about what it does and does not do.</strong> <code>scripts/git-push.sh</code> requires exactly two positional arguments, requires the first to be <code>origin</code>, validates the second with <code>git check-ref-format --branch</code>, and <strong>refuses every argument beginning with a hyphen</strong> — so <code>--force</code>, <code>--force-with-lease</code> and <code>--receive-pack</code> are all impossible. Its own comments name RCE and exfiltration as the threats it is built against.</p>
+<p><strong>What it does not do is block a branch name.</strong> A well-formed ref is accepted whatever it is called, so <strong>a default configuration can fast-forward <code>main</code></strong> — non-forced, but direct, and past both review and the gate.</p>
+<h3>The line that closes it</h3>
+<p>With <code>use_commit_signing: true</code>, the mode appends instead:</p>
+<p>``<code> mcp__github_file_ops__commit_files mcp__github_file_ops__delete_files </code>``</p>
+<p>API calls, not shell. <strong>The allowlist is then left with zero Bash tools of any kind.</strong> That is why it is set — <strong>the reason is the tool list, not signing.</strong></p>
+<p><strong><code>persist-credentials</code> on checkout is left alone deliberately.</strong> The finding rightly notes that <code>actions/checkout</code> persists a credential into <code>.git/config</code>. But with <strong>no Bash tool</strong>, nothing can read it: changing the setting would add an untested variable and no protection. Recorded as available further hardening, not done.</p>
+<p><strong>Stated honestly: none of this is testable from here.</strong> Nothing about Claude running can execute until the workflow is on the default branch <em>and</em> a credential exists. <code>use_commit_signing: true</code> is one line, and reverting it restores the documented default.</p>
+<hr>
+<h2>3. Verification of the change</h2>
+<h3>Structural assertions, from the parsed YAML</h3>
+<div class='tw'><table><thead><tr><th>Assertion</th><th>Result</th></tr></thead><tbody>
+<tr><td>YAML parses</td><td><strong>OK</strong></td></tr>
+<tr><td><code>--allowedTools</code> present</td><td><strong>NO — deleted</strong></td></tr>
+<tr><td>Any <code>Bash(</code> in <code>claude_args</code></td><td><strong>NONE</strong></td></tr>
+<tr><td>Any <code>node</code> in <code>claude_args</code></td><td><strong>NONE</strong></td></tr>
+<tr><td>Any git verb in <code>claude_args</code></td><td><strong>NONE</strong></td></tr>
+<tr><td><code>claude_args</code> is exactly <code>--model &quot;claude-opus-5&quot;</code></td><td><strong>PASS</strong></td></tr>
+<tr><td><code>use_commit_signing</code></td><td><strong>true</strong></td></tr>
+<tr><td><code>github_token</code></td><td><strong>still omitted</strong> (identity stays <code>claude[bot]</code>)</td></tr>
+<tr><td><code>permissions</code></td><td>unchanged — <code>contents</code>/<code>pull-requests</code>/<code>issues</code>/<code>id-token: write</code></td></tr>
+<tr><td><code>author_association</code> gate</td><td>unchanged</td></tr>
+<tr><td><code>verify.yml</code></td><td><strong>byte-untouched; gate stays at SEVEN suites</strong></td></tr>
+</tbody></table></div>
+<h3>Preflight re-run after the edit</h3>
+<p><code>none</code> → <code>mode=none</code> exit 0 · <code>api_key</code> → exit 0 · <code>oauth</code> → exit 0 · <code>federation 3/3</code> → exit 0 · <code>federation 2/3</code> → <strong>exit 1</strong>, named. Sentinel <strong>clean</strong> in stdout, <code>GITHUB_OUTPUT</code> and <code>GITHUB_STEP_SUMMARY</code> in every case.</p>
+<h3>The check, on the final head</h3>
+<p>Run [<code>35471648100</code>](https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/actions/runs/35471648100), job <code>105973553348</code>, head <strong><code>e73d1de</code></strong>, conclusion <strong>success</strong>:</p>
+<p>``<code> programme-ledger                           exit 0   8 passed, 23 noted, 0 failed programme-ledger-mutations                 exit 0  49 passed, 0 failed brief-integrity                            exit 0   8 passed, 0 failed study-activity-evidence-boundary           exit 0  27 passed, 0 failed study-activity-evidence-boundary-mutations exit 0  11 passed, 0 failed study-event-wiring                         exit 0  41 passed, 0 failed rules-authorisation-executable             exit 0  38 passed, 0 failed </code>``</p>
+<p>The review thread is <strong>replied to and resolved</strong>.</p>
+<hr>
+<h2>4. THE BLOCKER — the <code>main</code> rule cannot be set from here</h2>
+<p><strong>This is why the merge authorisation did not activate.</strong></p>
+<h3>What was attempted, and what came back</h3>
+<p>There is <strong>no GitHub MCP tool for branch protection or rulesets</strong> — checked, twice, by tool search. The API was therefore attempted directly. It authenticates correctly as <code>AAAsapp</code>, and <strong>reads succeed</strong>:</p>
+<p>``<code> GET  /repos/.../rulesets             -&gt; 200  [] GET  /repos/.../rules/branches/main  -&gt; 200  [] </code>``</p>
+<p><strong>The write is refused by this environment, not by GitHub:</strong></p>
+<p>``<code> POST /repos/.../rulesets -&gt; 403 {&quot;message&quot;:&quot;Write access to this GitHub API path is not permitted through this proxy.&quot;} </code>``</p>
+<p>A separate admin-only read confirms the same boundary from the other side:</p>
+<p>``<code> GET /repos/.../branches/main/protection -&gt; 403 {&quot;message&quot;:&quot;Resource not accessible by integration&quot;} </code>``</p>
+<p><strong>So: I can verify the rule state, and I cannot set it.</strong> Per the instruction, I stopped and did not merge.</p>
+<h3>Verified current state — read back, not assumed</h3>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td>Rulesets on the repository</td><td><strong>0</strong></td></tr>
+<tr><td>Rules applying to <code>main</code></td><td><strong>0</strong></td></tr>
+<tr><td><strong><code>main</code> is protected?</strong></td><td><strong>NO</strong></td></tr>
+<tr><td>Nothing was half-created</td><td>Confirmed — state re-read after each attempt, still <code>[]</code></td></tr>
+</tbody></table></div>
+<hr>
+<h2>5. Exact screen instructions for the Owner</h2>
+<p><strong>Route A — Rulesets (preferred).</strong></p>
+<ol><li>Go to <code>https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io</code></li><li>Click <strong>Settings</strong> (top row of tabs)</li><li>Left sidebar → <strong>Rules</strong> → <strong>Rulesets</strong></li><li>Click <strong>New ruleset</strong> → <strong>New branch ruleset</strong></li><li><strong>Ruleset Name:</strong> <code>main: require a pull request</code></li><li><strong>Enforcement status:</strong> switch to <strong>Active</strong></li><li><strong>Bypass list</strong> → <strong>+ Add bypass</strong> → tick <strong>Repository admin</strong> → set its mode to <strong>Always</strong> - <strong>This is the Owner recovery route. Add nothing else — in particular do NOT add Claude or any GitHub App.</strong></li><li><strong>Target branches</strong> → <strong>Add target</strong> → <strong>Include default branch</strong></li><li>Under <strong>Branch rules</strong>, tick <strong>Require a pull request before merging</strong>. Then, in the options that appear: - <strong>Required approvals: <code>0</code></strong> ← must be zero - Leave <strong>unticked</strong>: <em>Dismiss stale pull request approvals</em>, <em>Require review from Code Owners</em>, <em>Require approval of the most recent reviewable push</em>, <em>Require conversation resolution before merging</em></li><li><strong>Do NOT tick &quot;Require status checks to pass&quot;.</strong> That comes only after the first bot test.</li><li>Click <strong>Create</strong></li></ol>
+<p><strong>Route B — classic Branch protection</strong>, if your Settings shows <strong>Branches</strong> rather than <strong>Rules</strong>:</p>
+<ol><li><strong>Settings</strong> → <strong>Branches</strong> → <strong>Add branch protection rule</strong></li><li><strong>Branch name pattern:</strong> <code>main</code></li><li>Tick <strong>Require a pull request before merging</strong>; set <strong>Required approvals</strong> to <strong><code>0</code></strong></li><li>Leave <strong>&quot;Do not allow bypassing the above settings&quot; UNTICKED</strong> — that unticked box <em>is</em> the Owner admin recovery</li><li>Do <strong>not</strong> tick <em>Require status checks to pass before merging</em></li><li><strong>Create</strong></li></ol>
+<h3>Why each of those is specified</h3>
+<div class='tw'><table><thead><tr><th>Setting</th><th>Reason</th></tr></thead><tbody>
+<tr><td>Require a pull request</td><td>The only thing that makes <code>main</code> <strong>unreachable</strong> by a direct push rather than merely hard to reach — §2&#x27;s push wrapper allows a branch name</td></tr>
+<tr><td><strong>0</strong> required approvals</td><td><code>AAAsapp</code> authors every PR and GitHub forbids approving your own. <strong>Any non-zero value deadlocks the repository</strong>, including the PR that would undo it</td></tr>
+<tr><td>No required status check yet</td><td>Requiring a check nobody has watched work on a <strong>bot</strong> PR is how a pilot deadlocks on day one</td></tr>
+<tr><td>Repository admin bypass <strong>on</strong></td><td>Owner recovery. Without it a misconfiguration cannot be undone from the UI</td></tr>
+<tr><td>No Claude App bypass</td><td>The whole point: the bot must go through a pull request like anything else</td></tr>
+</tbody></table></div>
+<h3>Then</h3>
+<p>Tell me it is done and <strong>I will verify it by reading it back</strong> (<code>GET /rules/branches/main</code> — that read works). If it verifies, PR #89 can be merged — by you, or by me under a fresh instruction, since the authorisation in this round was conditional on the rule being verified and it was not.</p>
+<hr>
+<h2>6. A correction I owe</h2>
+<p>In my first reply on the review thread I closed with <em>&quot;the server-side backstop is now in place&quot;</em>. <strong>It was not, and that sentence should not have been written in the present tense before the result was known.</strong> I posted a correction on the same thread with the verified <code>[]</code> readings and the 403. Recording it here too, because a claim made on a pull request is part of the record whether or not anyone reads the correction.</p>
+<hr>
+<h2>7. State block</h2>
+<p>``<code> MMSA_AUTOMATION_PILOT_EXEC_SURFACE_AND_MERGE_BLOCK ISSUED=2026-09-19 PR=89 OPEN, NOT MERGED PR_HEAD_FINAL=e73d1dea39d47b86ac531f9db475beec16f00cf1 ORIGIN_MAIN=b87133461680d3c2837f7bd75fc5c824e10090d3 (UNCHANGED; read back) NEW_P1=CLOSED -- --allowedTools deleted entirely; claude_args is the model only NEW_P1_PRINCIPLE=an allowlist of paths is not an allowlist of behaviour while those paths are model-editable SUITES_MOVED_TO=verify.yml only -- clean checkout Claude never touches DEFAULTS_AUDIT=Glob/Grep/LS/Read + 4 read-only MCP tools; NO generic Bash; NO arbitrary-command route DEFAULTS_CAVEAT=without signing it adds Bash(git add|commit|rm:*) + scripts/git-push.sh wrapper PUSH_WRAPPER=refuses ALL flags (no --force/--receive-pack); requires origin &lt;ref&gt;; DOES NOT BLOCK A BRANCH NAME -- can fast-forward main MITIGATION=use_commit_signing: true -&gt; swaps those four for mcp__github_file_ops__{commit,delete}_files -&gt; ZERO Bash tools PERSIST_CREDENTIALS=left alone deliberately -- no Bash tool can read .git/config; changing it adds risk, not protection COMMIT_SIGNING_TESTED=NO -- untestable before merge + credential; one line, reversible VERIFY_YML=BYTE-UNTOUCHED; SEVEN suites CI_RUN=35471648100 job=105973553348 head=e73d1de conclusion=success CI_RECAP=8/23/0 | 49/0 | 8/0 | 27/0 | 11/0 | 41/0 | 38/0 REVIEW_THREAD=replied and RESOLVED (all three now resolved) MAIN_RULE_SET=NO -- BLOCKED MAIN_RULE_BLOCK_REASON=no MCP tool for rulesets; direct API write refused: &quot;Write access to this GitHub API path is not permitted through this proxy&quot; (403) MAIN_RULE_READ_ACCESS=YES -- GET /rulesets and /rules/branches/main both 200 MAIN_RULE_VERIFIED_STATE=0 rulesets, 0 rules applying to main -- main is UNPROTECTED NOTHING_HALF_CREATED=confirmed, state re-read after each attempt MERGE_AUTHORISATION=DID NOT ACTIVATE -- it was conditional on the rule being verified MERGED=NO CREDENTIAL_ADDED=NO REQUIRED_APPROVALS_ENABLED=NO FIREBASE_RULES_DEPLOYED=NO CLAUDE_BOT_TASK_STARTED=NO APP_CODE_CHANGED=NO VERSION=08.31 UNCHANGED V0832_STATUS=UNALLOCATED SELF_CORRECTION=an earlier review reply claimed the backstop was &quot;now in place&quot;; it was not; corrected on the thread and here </code>``</p>
+</main></body></html>

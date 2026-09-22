@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MMSA governance automation — resolving the two review findings, and the safe merge sequence</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MMSA governance automation — resolving the two review findings, and the safe merge sequence</h1>
+<p><strong>Date:</strong> 19 September 2026 <strong>Instruction executed:</strong> <em>&quot;Before merging PR #89, resolve the two Codex review findings on claude.yml: the preflight must accurately match the chosen Anthropic authentication method, and Claude must not have unrestricted git push commands that could update main directly. Add the early author_association filter while retaining the Action&#x27;s actual write-permission check. Keep the seven-suite check unchanged. Test the resulting workflow, update PR #89, and return matching dated .md and .html evidence. Do not merge or add a credential yet. Give the Master Architect the exact safe merge and first bot-test sequence.&quot;</em></p>
+<p><strong>Result: both findings resolved, the early gate added, tested, PR updated. Not merged. No credential added.</strong></p>
+<p><code>app/</code> is untouched. <code>app/js/version.js</code> stays <strong><code>08.31</code></strong>, <strong><code>08.32</code> stays UNALLOCATED</strong>, <code>firestore.rules</code> and <code>firebase.json</code> are untouched, E1 stays closed, <strong>no repository setting was changed, no credential was created and no secret was printed.</strong></p>
+<p><strong>PR:</strong> &lt;https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/89&gt; — head <strong><code>c7a4c14</code></strong>, open, <strong>not merged</strong>, check green.</p>
+<hr>
+<h2>1. Both findings were correct</h2>
+<p>Neither was a false positive. Both are P-rated real, and both are fixed in <code>c7a4c14</code> — one file, <code>.github/workflows/claude.yml</code>. <strong><code>verify.yml</code> is byte-untouched and the gate stays at seven suites</strong>, confirmed by <code>git diff --stat -- .github/workflows/verify.yml</code> being empty.</p>
+<h3>[P2] The preflight matched only one of the three advertised modes</h3>
+<p>The preflight tested <code>ANTHROPIC_API_KEY</code> alone, while the setup notes offered three modes and instructed the Owner to <em>&quot;swap the input&quot;</em>. An Owner choosing OAuth or Workload Identity Federation would have got <code>present=false</code> <strong>for ever</strong>: both checkout and the Claude step skipped, the workflow permanently inert, and <strong>nothing on screen saying why.</strong></p>
+<p><strong>Fixed at the root, not by widening one test.</strong> All three modes are now passed to the Action unconditionally. That is safe rather than sloppy, and it was checked rather than assumed: <code>action.yml</code> resolves each input as <code>inputs.x || env.X</code>, so <strong>an empty input is treated as unset</strong>.</p>
+<p>The consequence is the part worth keeping: <strong>there is no input left to swap.</strong> The instruction that caused the defect is gone, not merely corrected. Federation identifiers come from repository <strong>variables</strong> (<code>vars.</code>) because they are identifiers, not credentials — so no mode requires editing the workflow file at all.</p>
+<p><strong>A half-configured federation now fails by name.</strong> Two of three variables set used to be indistinguishable from no setup whatsoever. It exits 1 and names the missing variable.</p>
+<h3>[P1] Claude could have pushed straight to <code>main</code></h3>
+<p><code>--allowedTools</code> carried <code>Bash(git push:*)</code>, which pre-approves <strong>every</strong> form of push — <code>git push --force origin HEAD:main</code> included. The job holds <code>contents: write</code> and a real App token, and <code>verify.yml</code> runs <strong>only</strong> on <code>pull_request</code>. So that one pattern bypassed <strong>both</strong> pull-request review and the seven-suite gate. The review&#x27;s reasoning was exactly right.</p>
+<p><strong>Every git write verb is removed</strong> — no <code>push</code>, <code>commit</code>, <code>add</code> or <code>checkout</code>. <strong>Nothing is lost by removing them</strong>, and that was verified rather than hoped: the Action&#x27;s own documentation states Claude has <em>&quot;file operations (reading, committing, editing files, read-only git commands)&quot;</em> by default and <em>&quot;does <strong>not</strong> have access to execute arbitrary Bash commands by default&quot;</em>. Committing and branch management are the Action&#x27;s, not Bash&#x27;s.</p>
+<h3>The glob went too — which the finding did not ask for, and which mattered more</h3>
+<p><code>Bash(node tools/i18n-verify/<em>)</code> re-opened the same hole by another door. <strong>Claude can write files by default.</strong> So it could author a new script </em>into* that directory and execute it, and that script could push anywhere. A wildcard over an interpreter is arbitrary code execution wearing a narrow-looking name.</p>
+<p>The seven suites are now <strong>seven exact commands with no wildcard</strong>, and a check asserts they match the gate&#x27;s own suite list <strong>exactly</strong>, so the two cannot drift apart:</p>
+<p>``<code> gate suites  (7): brief-integrity, programme-ledger, programme-ledger-mutations,                   rules-authorisation-executable, study-activity-evidence-boundary,                   study-activity-evidence-boundary-mutations, study-event-wiring claude tools (7): (identical) MATCH: Claude may run exactly the suites the gate runs -- no more, no less </code>``</p>
+<h3>Residual risk, stated rather than implied away</h3>
+<p><strong>Any job holding a <code>contents: write</code> token can in principle reach <code>main</code>.</strong> Narrowing tools makes that hard; <strong>only a server-side rule makes it impossible.</strong></p>
+<p>The backstop is a branch rule on <code>main</code>: <strong>Require a pull request before merging, with Required approvals = 0.</strong> That blocks direct pushes outright <strong>without</strong> demanding an approval — which matters specifically here, because <code>AAAsapp</code> authors every pull request and GitHub forbids approving your own, so requiring an approval today would <strong>deadlock the repository</strong>. It is in §4 below. It is a repository setting and therefore the Owner&#x27;s, and this round changed none.</p>
+<hr>
+<h2>2. The early invocation gate — added, with the Action&#x27;s own check kept</h2>
+<p>``<code>yaml if: &gt;-   contains(github.event.comment.body, &#x27;@claude&#x27;) &amp;&amp;   contains(fromJSON(&#x27;[&quot;OWNER&quot;,&quot;MEMBER&quot;,&quot;COLLABORATOR&quot;]&#x27;), github.event.comment.author_association) </code>``</p>
+<p><strong>The Action&#x27;s own check is retained and nothing here replaces or weakens it.</strong> <code>src/github/validation/permissions.ts</code> calls <code>getCollaboratorPermissionLevel()</code> and accepts only <code>admin</code> or <code>write</code>; <code>src/entrypoints/prepare.ts</code> runs that <strong>before</strong> the trigger check and calls <code>core.setFailed()</code> otherwise. That gate is authoritative.</p>
+<p>The problem it does not solve is <em>timing</em>. It runs <strong>inside</strong> the Action, so a stranger&#x27;s comment on this <strong>public</strong> repository would still start a runner and check out the repository before being refused — billable minutes available to anyone, on demand. The association test moves the refusal to <strong>before the job starts at all</strong>. Coarse outer gate, authoritative inner gate.</p>
+<p><strong>All three associations are listed deliberately.</strong> On an organisation-owned repository an administrator may present as <code>OWNER</code>, <code>MEMBER</code> or <code>COLLABORATOR</code> depending on how access is granted. Checked rather than guessed: <code>AAAsapp</code> is the <strong>sole collaborator, <code>role_name: admin</code></strong>, and the repository is owned by the <code>Madrasatul-Muslimeen</code> <strong>organisation</strong>. There were no existing comments anywhere in the repository to sample a real <code>author_association</code> from, so <strong>listing only one would have risked silently locking out the only human who can drive this.</strong> All three cover every possible case for a repo admin.</p>
+<p><strong>One diagnostic, because this failure mode is silent.</strong> A job-level <code>if:</code> that evaluates false produces <strong>no workflow run at all</strong> — nothing to open, no log, no red X. So: <em>if an authorised <code>@claude</code> comment produces no run whatsoever, this condition is the first place to look, not the Action.</em> That sentence is in the workflow file itself, not only here.</p>
+<hr>
+<h2>3. Testing</h2>
+<h3>Structural assertions, from the parsed YAML</h3>
+<div class='tw'><table><thead><tr><th>Assertion</th><th>Result</th></tr></thead><tbody>
+<tr><td>YAML parses</td><td><strong>OK</strong></td></tr>
+<tr><td>No <code>git push</code> / <code>commit</code> / <code>add</code> / <code>checkout</code> / <code>merge</code> / <code>reset</code> / <code>tag</code> anywhere in <code>claude_args</code></td><td><strong>PASS</strong></td></tr>
+<tr><td>No wildcard in <code>--allowedTools</code></td><td><strong>PASS</strong></td></tr>
+<tr><td>Exactly 7 tools, each an exact <code>Bash(node tools/i18n-verify/&lt;suite&gt;.mjs)</code></td><td><strong>PASS</strong></td></tr>
+<tr><td><code>github_token</code> still omitted (so the identity stays <code>claude[bot]</code>)</td><td><strong>PASS</strong></td></tr>
+<tr><td>Tool list matches <code>verify.yml</code>&#x27;s suite list exactly</td><td><strong>PASS</strong></td></tr>
+<tr><td>All seven suite files exist on disk</td><td><strong>PASS</strong></td></tr>
+<tr><td><code>permissions</code> still the same four</td><td><code>contents/pull-requests/issues/id-token: write</code></td></tr>
+<tr><td><code>verify.yml</code> modified</td><td><strong>No — byte-untouched</strong></td></tr>
+</tbody></table></div>
+<h3>The preflight, executed across every mode</h3>
+<p>Extracted from the <strong>parsed</strong> YAML and run with a sentinel value (<code>SENTINEL-s3cr3t-…</code>) standing in for every secret:</p>
+<div class='tw'><table><thead><tr><th>Scenario</th><th>exit</th><th><code>mode</code></th><th><code>ready</code></th><th>sentinel leaked?</th></tr></thead><tbody>
+<tr><td>none configured</td><td>0</td><td><code>none</code></td><td>false</td><td><strong>clean</strong></td></tr>
+<tr><td><code>ANTHROPIC_API_KEY</code></td><td>0</td><td><code>api_key</code></td><td><strong>true</strong></td><td><strong>clean</strong></td></tr>
+<tr><td><code>CLAUDE_CODE_OAUTH_TOKEN</code></td><td>0</td><td><code>oauth</code></td><td><strong>true</strong></td><td><strong>clean</strong></td></tr>
+<tr><td>federation, 3 of 3</td><td>0</td><td><code>federation</code></td><td><strong>true</strong></td><td><strong>clean</strong></td></tr>
+<tr><td>federation, 2 of 3</td><td><strong>1</strong></td><td><code>federation_incomplete</code></td><td>false</td><td><strong>clean</strong></td></tr>
+<tr><td>federation, 1 of 3</td><td><strong>1</strong></td><td><code>federation_incomplete</code></td><td>false</td><td><strong>clean</strong></td></tr>
+<tr><td>both secrets set</td><td>0</td><td><code>api_key</code> + warning</td><td>true</td><td><strong>clean</strong></td></tr>
+</tbody></table></div>
+<p>The leak check covers <strong>stdout, <code>GITHUB_OUTPUT</code> and <code>GITHUB_STEP_SUMMARY</code></strong> — all three, because a secret reaching a step output or a job summary is as exposed as one printed to the log. Every secret arrives through <code>env:</code> and is tested with <code>[ -n … ]</code>; none is interpolated into the script text.</p>
+<p>The 2-of-3 case emits <code>::error::Workload Identity Federation is partially configured (2 of 3). Missing: ANTHROPIC_SERVICE_ACCOUNT_ID</code>, and writes the same list to the job summary.</p>
+<p><strong>A shell trap avoided deliberately:</strong> the flag assignments use explicit <code>if … fi</code> rather than <code>[ … ] &amp;&amp; x=1</code>, because under <code>set -euo pipefail</code> a trailing failed test terminates the step. That is why <code>none configured</code> exits <strong>0</strong> rather than dying — inert is not an error.</p>
+<h3>The gate itself, in CI</h3>
+<p>Run [<code>35471038345</code>](https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/actions/runs/35471038345), job <code>105971932851</code>, head <code>c7a4c14</code>, conclusion <strong>success</strong>:</p>
+<p>``<code> ===== RECAP: all seven suites ===== programme-ledger                           exit 0  8 passed, 23 noted, 0 failed programme-ledger-mutations                 exit 0  49 passed, 0 failed brief-integrity                            exit 0  8 passed, 0 failed study-activity-evidence-boundary           exit 0  27 passed, 0 failed study-activity-evidence-boundary-mutations exit 0  11 passed, 0 failed study-event-wiring                         exit 0  41 passed, 0 failed rules-authorisation-executable             exit 0  38 passed, 0 failed </code>``</p>
+<p><strong>What could NOT be tested here, and why:</strong> the Claude path itself has still never executed. <code>issue_comment</code> workflows always run from the <strong>default branch</strong>, and the App token exchange separately validates that the workflow exists there. Both mean the same thing — <strong>nothing about Claude actually running can be observed until this merges.</strong> That is the Action&#x27;s design, not a gap in the testing.</p>
+<hr>
+<h2>4. THE EXACT SAFE MERGE AND FIRST BOT-TEST SEQUENCE</h2>
+<p>Seven steps. <strong>Do them in this order</strong> — the ordering is what keeps the repository from deadlocking.</p>
+<h3>Phase 0 — protect <code>main</code> BEFORE merging (Owner, ~2 minutes)</h3>
+<p><strong>Step 1.</strong> Repository → <strong>Settings → Rules → Rulesets → New branch ruleset</strong> (or Settings → Branches). Target <code>main</code>. Enable <strong>&quot;Require a pull request before merging&quot;</strong> and set <strong>Required approvals to <code>0</code></strong>.</p>
+<ul><li><strong>Why now and not later:</strong> it is the only server-side thing that makes &quot;Claude pushes to <code>main</code>&quot; impossible rather than merely difficult (§1).</li><li><strong>Why <code>0</code> approvals:</strong> <code>AAAsapp</code> authors every pull request and GitHub forbids approving your own. <strong>Requiring an approval today locks the repository — including the pull request that would unlock it.</strong></li><li><strong>Leave repository-admin bypass enabled</strong> for now, so the Owner can never be locked out while this is being established.</li><li><strong>Do NOT</strong> add <code>Deterministic governance suites</code> as a <em>required</em> check yet. It becomes required at step 7, after it has been seen working on a bot pull request.</li></ul>
+<p><strong>Step 2. Merge PR #89.</strong> Squash or merge commit, either is fine.</p>
+<ul><li>It is <strong>inert</strong> — no credential exists, so the Claude step cannot run.</li><li>Merging is not optional-but-nice: <code>claude.yml</code> has <strong>no effect whatsoever</strong> until it is on the default branch, so this is the only way to reach the test.</li></ul>
+<h3>Phase 1 — add exactly one credential (Owner)</h3>
+<p><strong>Step 3.</strong> Choose one. Simplest is <strong>(a)</strong>:</p>
+<div class='tw'><table><thead><tr><th></th><th>Where</th><th>What</th></tr></thead><tbody>
+<tr><td><strong>(a)</strong></td><td>Settings → Secrets and variables → Actions → <strong>Secrets</strong> → New repository secret</td><td><code>ANTHROPIC_API_KEY</code></td></tr>
+<tr><td><strong>(b)</strong></td><td>same place</td><td><code>CLAUDE_CODE_OAUTH_TOKEN</code></td></tr>
+<tr><td><strong>(c)</strong></td><td>Settings → Secrets and variables → Actions → <strong>Variables</strong></td><td>all three of <code>ANTHROPIC_FEDERATION_RULE_ID</code>, <code>ANTHROPIC_ORGANIZATION_ID</code>, <code>ANTHROPIC_SERVICE_ACCOUNT_ID</code> — no stored credential</td></tr>
+</tbody></table></div>
+<p><strong>No edit to <code>claude.yml</code> is needed for any of them.</strong> Paste the value only into that box — never into a comment, a file, or a chat message.</p>
+<h3>Phase 2 — the first bot test, which IS Gate 2</h3>
+<p><strong>Step 4.</strong> Open a throwaway issue, e.g. <em>&quot;Bot identity smoke test&quot;</em>.</p>
+<p><strong>Step 5.</strong> Comment on it with a deliberately tiny, reversible task that touches nothing governed:</p>
+<p>&gt; <code>@claude Create a new file docs/reports/BOT-SMOKE-TEST.md containing today&#x27;s date and the words &quot;bot identity test&quot;, and open a pull request. Change nothing else — no app/ file, no version.js, no firestore.rules.</code></p>
+<p><strong>Step 6. Record these five observations separately.</strong> They are different facts and collapsing them is the mistake this programme has already corrected once:</p>
+<div class='tw'><table><thead><tr><th>#</th><th>Observation</th><th>What it proves</th><th>If it fails</th></tr></thead><tbody>
+<tr><td>i</td><td>A workflow run appears at all</td><td>The <code>author_association</code> gate let the Owner through</td><td><strong>No run at all</strong> → it is the <code>if:</code> condition, not the Action. Check the Owner&#x27;s <code>author_association</code> on that comment</td></tr>
+<tr><td>ii</td><td>The <code>Claude Code</code> job succeeds</td><td>Credential and App token exchange both work</td><td>Read the preflight step: it names the mode, or names what is missing</td></tr>
+<tr><td>iii</td><td><strong>The new PR&#x27;s author is <code>claude[bot]</code>, not <code>AAAsapp</code></strong></td><td><strong>The bot identity</strong> — the thing the whole pilot exists to establish</td><td>If it is <code>github-actions[bot]</code>, a <code>github_token</code> has been added somewhere. Remove it</td></tr>
+<tr><td>iv</td><td><strong><code>Deterministic governance suites</code> runs on that PR</strong></td><td><strong>A bot PR triggers CI</strong> — never yet observed</td><td>If absent, the App-token route is not doing what the source says</td></tr>
+<tr><td>v</td><td><strong><code>Approve</code> is available to <code>AAAsapp</code></strong> on it</td><td><strong>The Owner approval path</strong> — never yet observed</td><td>Only fails if the author is somehow <code>AAAsapp</code></td></tr>
+</tbody></table></div>
+<p><strong>Step 7.</strong> When all five hold, <strong>Gate 2 is met.</strong> Close the smoke-test PR and issue, delete the branch.</p>
+<h3>Phase 3 — only after Gate 2 is observed</h3>
+<p><strong>Step 8.</strong> Add <strong><code>Deterministic governance suites</code></strong> as a <strong>required status check</strong> on the <code>main</code> ruleset. Only now — requiring a check nobody has watched work on a bot pull request is how a pilot deadlocks on day one.</p>
+<p><strong>Step 9.</strong> Raising <strong>Required approvals to 1</strong> becomes <em>possible</em> at this point, because bot-authored pull requests exist that <code>AAAsapp</code> can approve. <strong>It is still not automatically wise:</strong> every pull request <code>AAAsapp</code> authors by hand would then need a second human. Recommendation is to <strong>leave it at <code>0</code></strong> until there is a second reviewer, and revisit then.</p>
+<h3>A cheap negative test, recommended</h3>
+<p>From any account that is not a collaborator, comment <code>@claude hello</code> on a public issue. <strong>Expect no workflow run at all.</strong> That is the early gate working; it is the only direct proof of it, and it costs nothing.</p>
+<h3>Things NOT to do, each for a stated reason</h3>
+<ul><li>**Do not tick <em>&quot;Allow GitHub Actions to create and approve pull requests&quot;</em>.** It governs the <code>GITHUB_TOKEN</code> route, which this workflow deliberately does not use, and its approval half is a control worth leaving off.</li><li><strong>Do not add <code>github_token:</code></strong> to <code>claude.yml</code>. It would make the author <code>github-actions[bot]</code> <strong>and</strong> stop the resulting PR triggering <code>verify</code> — defeating both halves of the pilot at once.</li><li><strong>Do not require an approval before step 8.</strong> Deadlock, per §1 and step 1.</li><li><strong>Do not deploy Firebase Rules as part of this.</strong> E1 is a separate dependency and is untouched by the automation pilot.</li></ul>
+<hr>
+<h2>5. What remains untested after all of this</h2>
+<p>Unchanged by this round, and still true:</p>
+<ol><li><strong>No Claude run has ever executed in this repository.</strong> Steps 4–6 are the first.</li><li><strong>No bot-authored PR has ever existed here</strong>, so &quot;a bot PR triggers CI&quot; and &quot;<code>AAAsapp</code> can approve it&quot; both remain <strong>inferred</strong>, never observed.</li><li><strong>PR #89 itself is authored by <code>AAAsapp</code></strong> and therefore still cannot demonstrate either.</li><li>The <code>chatgpt-codex-connector[bot]</code> review is state <code>COMMENTED</code>. <strong>Not an approval.</strong></li><li><strong>Gate 4 is not closed.</strong> <code>claude.yml</code> triggers on <code>issue_comment</code> only, so a human still pastes the task. Nothing here connects the Master Architect&#x27;s conversation to Claude.</li></ol>
+<hr>
+<h2>6. State block</h2>
+<p>``<code> MMSA_AUTOMATION_PILOT_STEP2_HARDENING ISSUED=2026-09-19 PR=89 OPEN, NOT MERGED PR_HEAD_BEFORE=7de680209505d1002cfbda54b214693eafa7b601 PR_HEAD_AFTER=c7a4c1447bd40dc2addf17c50dbe9d2ac2988331 COMMIT_FILES=1 -- .github/workflows/claude.yml only VERIFY_YML=BYTE-UNTOUCHED; gate stays at SEVEN suites FINDING_P2=RESOLVED -- all three auth modes passed unconditionally; empty input == unset (action.yml inputs.x || env.X) FINDING_P2_ROOT_FIX=the &quot;swap the input&quot; instruction is GONE; federation via repository VARIABLES FINDING_P2_EXTRA=half-configured federation now EXITS 1 and names the missing variable FINDING_P1=RESOLVED -- every git write verb removed (push, commit, add, checkout) FINDING_P1_NOT_LOST=Action defaults already cover file ops, committing, read-only git FINDING_P1_EXTRA=the GLOB removed too -- Bash(node tools/i18n-verify/*) + default file-write == arbitrary code execution == push by another door ALLOWED_TOOLS=7 EXACT suite commands, no wildcard, asserted identical to verify.yml&#x27;s suite list RESIDUAL_RISK=any contents:write token can in principle reach main; only a server-side branch rule makes it impossible BACKSTOP=branch rule &quot;Require a pull request&quot; with REQUIRED APPROVALS = 0 -- blocks direct push WITHOUT deadlocking EARLY_GATE=author_association in OWNER|MEMBER|COLLABORATOR, job-level if: ACTION_CHECK_RETAINED=YES -- getCollaboratorPermissionLevel admin|write, run before the trigger check ASSOCIATION_TRIO_REASON=org-owned repo; AAAsapp is sole collaborator role_name=admin; no existing comment to sample; listing one risked locking out the only human SILENT_FAILURE_DIAGNOSTIC=a false job-level if produces NO run at all; documented in the workflow itself PREFLIGHT_SCENARIOS=7 tested: none/api_key/oauth/federation/2-of-3/1-of-3/both SECRET_LEAK=NONE in stdout, GITHUB_OUTPUT or GITHUB_STEP_SUMMARY (sentinel) CI_RUN=35471038345 job=105971932851 conclusion=success; seven suites 8/23/0|49/0|8/0|27/0|11/0|41/0|38/0 CODEX_THREADS=both replied to and RESOLVED CLAUDE_PATH_TESTED=NO -- impossible before merge (issue_comment runs from default branch; token exchange validates default branch) MERGE_SEQUENCE=9 steps, Phase 0 protect -&gt; merge -&gt; credential -&gt; smoke test -&gt; only then required check GATE2_PROOF=five separate observations: run starts / job succeeds / author is claude[bot] / verify runs on it / Approve available to AAAsapp APP_CODE_CHANGED=NO VERSION=08.31 UNCHANGED V0832_STATUS=UNALLOCATED FIREBASE_FILES_CHANGED=NO REPO_SETTINGS_CHANGED=NO CREDENTIAL_CREATED=NO SECRET_PRINTED=NO MERGED=NO </code>``</p>
+</main></body></html>
