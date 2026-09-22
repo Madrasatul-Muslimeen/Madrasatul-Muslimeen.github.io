@@ -455,3 +455,16 @@ Every report follows one shape, and ends with **Done / Suggestions / Pending**:
       `tenantSelect`, `surahSelect` and `unitTypeSelect` at English 320px. No
       single remedy fits all three. Recorded in `CLAUDE.md`; do not choose for
       them.
+- [ ] **Surface Phase 4 Activity evidence somewhere a person can see it
+      (22 Sep 2026, Owner's own "remind me this later" after v08.34).**
+      `listStudyActivityEvidence()` (`app/js/study-activity-evidence-store.js`)
+      reads the per-completion D1/D2/D4 records now being saved, and nothing
+      calls it — not Monitor, not Records, no screen. Today a reader tapping
+      the Read screen's ✓ (or finishing 80%+ of listening, or working through
+      Word-by-Word) writes a real, permanent record, but it is invisible to
+      everyone until something reads it back. Candidate shape: fold it into
+      Monitor's existing report as a real per-completion trail, next to (not
+      replacing) the Approach-claim numbers Monitor already shows — a design
+      choice for the round that picks this up, not decided here. No urgency
+      stated by the Owner; queued for whenever the Notes/Journey Map rounds
+      free up.
