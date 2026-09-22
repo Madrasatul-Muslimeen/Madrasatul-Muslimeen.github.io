@@ -188,6 +188,48 @@ both languages, all 48 sections each, zero truncations remaining, one
 carried forward. MMSA Architect allocated v08.33. See
 `docs/reports/2026-09-22-fix-list-panel-truncations.md`.
 
+**22 Sep 2026 — APPROVAL-GATED FIRESTORE RULES AUTO-DEPLOY, BUILT, NOT
+TRIGGERED. BR-0, no version bump — `app/` untouched.** The Owner's own
+instruction: *"YES, build it — prepare the publish and wait for my one-tap
+approval, never publish on its own. Free only, no API billing."*
+`.github/workflows/deploy-firestore-rules.yml` fires on any future push to
+`main` touching `firestore.rules`, prepares a diff, then pauses at a
+`environment: firebase-production-deploy` job — a GitHub Environment the
+Owner configures with themselves as a **required reviewer**, so GitHub
+itself enforces the pause; nothing in this workflow can bypass it. Setup is
+one-time and Owner-facing, all clicking:
+`docs/governance/2026-09-22-auto-deploy-firestore-setup.md`.
+
+**RULES ONLY, DELIBERATELY — indexes were NOT wired in, and that is a real
+finding rather than a smaller version of the same job.** The first draft
+also populated `firebase.json`'s `indexes` key and added
+`firestore.indexes.json` at the live deploy path, to let one workflow
+publish both. `tools/i18n-verify/firestore-index-requirements.mjs` — a
+standing Phase 5 (P5-E) guard — asserts by name that neither may exist at
+that path: putting an index declaration at the live spot is **its own
+deployment-shaped change, the same tier as an Owner Control Gate**, proven
+by that suite's own check ("the candidate is a CANDIDATE"). Building the
+approval workflow is not authority to cross that gate on the Owner's
+behalf, so both files were reverted and the workflow scoped to
+`--only firestore:rules`. All 8 governance suites re-run clean afterward
+(`programme-ledger`, `brief-integrity`, `firestore-index-requirements`,
+`rules-deployment-candidate`, `rules-deployment-candidate-phase3-6`,
+`rules-authorisation-executable`, `study-activity-evidence-boundary` (+
+mutations), `study-event-wiring`, `workflow-expressions`), and
+`firebase.json` is confirmed still byte-for-byte its pre-round content.
+
+**A redundant-approval trap was designed around, not discovered afterward.**
+The moment the Owner says "rules are live" (point 4, still pending — see
+below), the Architect's own follow-up commit syncing `firestore.rules` to
+match what was just published BY HAND would otherwise re-trigger this same
+workflow and ask the Owner to approve something already live. That commit
+must carry the exact trailer `[already-deployed-manually]` in its message —
+the `prepare` job checks for it and skips the `deploy` job when present.
+**This round did not touch `firestore.rules` itself and nothing was
+deployed** — the Phase 3–6 candidate is still only at
+`docs/governance/phase3-6-DEPLOYMENT-candidate-2026-09-22.rules`, unchanged,
+and the Owner has not yet confirmed a Console publish.
+
 **Previous milestone: v08.32 on `main`** (21 Sep 2026 — QuranRevival Basic Arabic lemma-occurrence navigation, PR #112 merged at `f5b7c6c`. The Owner tested the app and confirmed all checks passed. The MMSA Master Architect allocated v08.32; `app/js/version.js` and the Programme Integration Ledger record it. This is read-only: no new Firestore write, Rule or index. E1 remains closed.)
 
 **Earlier milestone: v08.31 on `main`** (19 Sep 2026 — the QuranRevival

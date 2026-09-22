@@ -15262,3 +15262,32 @@ BR-0 does not apply — this is a real, measured layout change, which is why
 it carries a version. No Firestore write, Rule, index, or
 protected/shared path. Full account:
 `docs/reports/2026-09-22-fix-list-panel-truncations.md`.
+
+## 22 Sep 2026 — approval-gated Firestore Rules auto-deploy (governance/tooling, BR-0, no version bump)
+
+Built on the Owner's own instruction: prepare the publish and wait for a
+one-tap approval, never publish on its own, free tier only.
+`.github/workflows/deploy-firestore-rules.yml` triggers on a future push to
+`main` touching `firestore.rules`, then pauses at a GitHub Environment
+(`firebase-production-deploy`) configured with the Owner as a required
+reviewer — GitHub itself enforces the pause. One-time Owner setup, all
+clicking: `docs/governance/2026-09-22-auto-deploy-firestore-setup.md`.
+
+**Rules only, deliberately — a first draft that also wired indexes into the
+live deploy path was reverted.** `tools/i18n-verify/firestore-index-requirements.mjs`
+(a standing Phase 5 guard) asserts `firebase.json`/`firestore.indexes.json`
+must not exist at the live path, because doing so is its own
+deployment-shaped, Owner Control Gate change — building the approval
+workflow is not authority to cross that gate. Scoped to
+`--only firestore:rules`; indexes stay a manual Console step. All 8
+governance suites re-run clean; `firebase.json` confirmed unchanged.
+
+Also this round: the Phase 3–6 deployment guide
+(`docs/governance/2026-09-22-phase3-6-production-deployment-package.md`)
+gained an explicit final "confirm the publish worked" gate (a fresh
+timestamp in the Console, a test note surviving a reload) before the Owner
+says "rules are live", and a note on the new automation. Nothing was
+deployed; `firestore.rules` and the Phase 3-6 candidate file are both
+unchanged. See the CLAUDE.md entry dated 22 Sep 2026 for the full account,
+including the redundant-approval trap the sync-commit trailer
+(`[already-deployed-manually]`) avoids.

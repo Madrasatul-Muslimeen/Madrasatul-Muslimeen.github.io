@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Setting up approval-gated Firestore deploys</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Setting up approval-gated Firestore deploys — one-time, about ten minutes</h1>
+<ul><li><strong>Date:</strong> 2026-09-22</li><li><strong>For:</strong> the Owner, working in two browser tabs (Google Cloud Console and GitHub). No coding, no command line — only pasting.</li><li><strong>What this buys you:</strong> from now on, publishing a Firestore <strong>Rules</strong> change is <em>&quot;click Approve&quot;</em> instead of <em>&quot;copy the file, open the Console, paste it, press Publish, check it worked by hand.&quot;</em> You still get the final say, every single time — nothing publishes without your click.</li><li><strong>Rules only, not indexes, on purpose.</strong> This repository already has a standing rule that an index declaration only ever sits in a <code>docs/</code> candidate file until you separately authorise moving it to the live spot — the same weight as authorising a Rules publish. So indexes stay a manual Console step for now (exactly as the deployment guide already describes); automating them is real follow-up work, not assumed here.</li><li><strong>Cost:</strong> none. Everything here is on Firebase&#x27;s free (Spark) tier.</li></ul>
+<p>This is a one-time setup. Once it&#x27;s done, it stays done — you never repeat these steps for a future Rules change, only the &quot;click Approve&quot; part.</p>
+<hr>
+<h2>Before you start — what you&#x27;re actually creating</h2>
+<p>Two things, both revocable at any time, both limited to one job:</p>
+<ol>
+<li><strong>A Google-issued key</strong> that can <em>only</em> publish Firestore Rules — nothing else. It cannot read a single row of your data, and it cannot spend money — Rules publishing has no billable cost on any plan.</li>
+<li><strong>A GitHub &quot;Environment&quot;</strong> named <code>firebase-production-deploy</code>, set so that any job that uses it pauses and waits for you, specifically, to click Approve. This is a GitHub feature, not something this repository invented — the same mechanism companies use to gate production deploys.</li>
+</ol>
+<p>If at any point you want to undo this, deleting the key in Google Cloud Console or removing yourself as a reviewer in GitHub switches it off immediately — the workflow file stays but has nothing to authenticate with, so it fails safely rather than publishing anything.</p>
+<hr>
+<h2>Step 1 — create the key (Google Cloud Console)</h2>
+<ol>
+<li>Go to <strong><a href="https://console.cloud.google.com">console.cloud.google.com</a></strong> and make sure the project selector at the top reads <strong>study-monitoring</strong> (the same project as your Firebase app — there is only one).</li>
+<li>In the search bar at the top, type <strong>&quot;Service Accounts&quot;</strong> and open it.</li>
+<li>Click <strong>+ Create Service Account</strong>.
+  <ul><li>Name: <code>firestore-rules-deployer</code> (or anything you&#x27;ll recognise).</li><li>Click <strong>Create and Continue</strong>.</li></ul>
+</li>
+<li>On the <strong>&quot;Grant this service account access to project&quot;</strong> screen, add exactly this one role (search it by name, click it):
+  <ul><li><strong>Firebase Rules Admin</strong></li></ul>
+  This is deliberately narrow — it can publish Rules and nothing else. Do not add a broader role like &quot;Editor&quot; or &quot;Owner&quot; unless you hit a permission error and want a quick unblock; if you do, you can always tighten it back to this one role afterwards. (If indexes get added to this same automation later, <strong>Cloud Datastore Index Admin</strong> would join it then — not needed today.)
+</li>
+<li>Click <strong>Continue</strong>, then <strong>Done</strong>. Skip the optional &quot;grant users access&quot; screen.</li>
+<li>You&#x27;re back on the Service Accounts list. Click the account you just made, open the <strong>Keys</strong> tab, click <strong>Add Key → Create new key</strong>, choose <strong>JSON</strong>, and click <strong>Create</strong>. A <code>.json</code> file downloads to your computer.
+  <p><strong>Keep this file safe until step 3, then you can delete it from your downloads</strong> — it will live only inside GitHub&#x27;s encrypted secret store from that point on.</p>
+</li>
+</ol>
+<hr>
+<h2>Step 2 — create the GitHub Environment</h2>
+<ol>
+<li>Go to the repository on GitHub: <code>https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io</code></li>
+<li>Click <strong>Settings</strong> (top of the repo, not your account settings).</li>
+<li>In the left sidebar, click <strong>Environments</strong>.</li>
+<li>Click <strong>New environment</strong>.</li>
+<li>Name it <strong>exactly</strong>: <code>firebase-production-deploy</code> (this has to match the workflow file precisely, so copy-paste it rather than retyping).</li>
+<li>Click <strong>Configure environment</strong>.</li>
+<li>Tick <strong>Required reviewers</strong>, then add <strong>yourself</strong> (search your own GitHub username and select it).</li>
+<li>Click <strong>Save protection rules</strong>.</li>
+</ol>
+<p>This is the step that makes every future publish wait for your click — nothing else in this setup does that.</p>
+<hr>
+<h2>Step 3 — add the key as a secret, scoped to this environment</h2>
+<p>Still on the environment page you just configured (<code>firebase-production-deploy</code>):</p>
+<ol>
+<li>Scroll to <strong>Environment secrets</strong>.</li>
+<li>Click <strong>Add secret</strong>.</li>
+<li>Name: <strong>exactly</strong> <code>FIREBASE_DEPLOY_SERVICE_ACCOUNT</code>.</li>
+<li>Value: open the <code>.json</code> file you downloaded in step 1 with a plain text editor (Notepad, TextEdit — anything that shows raw text, not Word), select all, copy, and paste the whole thing here.</li>
+<li>Click <strong>Add secret</strong>.</li>
+</ol>
+<p><strong>Scoped to the environment, not the whole repository</strong> — on purpose. A repository-wide secret would be readable by any workflow in this repo; an environment secret is only readable by a job that references <code>firebase-production-deploy</code>, which is exactly one job in one file.</p>
+<p>You can now delete the downloaded <code>.json</code> file from your computer — it&#x27;s safely stored in GitHub&#x27;s encrypted secret store, which nobody (including Claude, including this session) can read back out once saved.</p>
+<hr>
+<h2>How it works from here on, every time</h2>
+<ol>
+<li>A Rules change lands on <code>main</code> — most often me, telling you what changed and why, the same as every Rules change so far.</li>
+<li>GitHub Actions runs automatically and stops at a <strong>&quot;Review deployments&quot;</strong> button, visible on the repository&#x27;s <strong>Actions</strong> tab. You&#x27;ll see a diff of exactly what changed.</li>
+<li>You read it (or have ChatGPT read it, as you&#x27;re already doing), and click <strong>Approve and deploy</strong> — or leave it, and nothing happens.</li>
+<li>Once approved, it publishes automatically and posts a short summary confirming what went live.</li>
+</ol>
+<p><strong>One case where it deliberately does nothing:</strong> if I publish a Rules change through the Console by hand first (like this round) and then push a follow-up commit just to keep the repository&#x27;s own copy matching what&#x27;s already live, that commit is marked so the automation skips it — you already did the real approval, by hand, in the Console.</p>
+<hr>
+<h2>If something goes wrong</h2>
+<ul>
+<li><strong>&quot;Review deployments&quot; never appears</strong> → the environment name doesn&#x27;t match exactly, or Required reviewers wasn&#x27;t saved. Re-check step 2.</li>
+<li><strong>The deploy fails with a permission error</strong> → the key&#x27;s two roles in step 1 may be missing one, or the key wasn&#x27;t pasted in full in step 3. Re-check both; a partial paste is the most common cause.</li>
+<li><strong>You want to stop this and go back to doing it by hand</strong> → delete the environment secret (step 3) or the service account itself (step 1&#x27;s Keys tab, click Delete). The workflow will then fail loudly with a clear error rather than publishing anything, and you can go back to the manual Console steps at any time.</li>
+</ul>
+</main></body></html>
