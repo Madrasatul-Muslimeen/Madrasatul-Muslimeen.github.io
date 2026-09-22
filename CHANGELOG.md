@@ -15146,3 +15146,63 @@ its own words, and that is the difference this pair of entries buys.
 
 BR-0, no version bump; `app/`, `tests/`, `firestore.rules` and `firebase.json`
 byte-identical. Eight governance suites green on full history.
+
+## THE BUILDER RAN — and its first success found the defect that would have bitten every round — NO VERSION BUMP (22 Sep 2026)
+
+**Six attempts, five distinct causes, and the sixth worked.** The Architect/
+Builder loop ran end to end for the first time on this repository: one issue,
+one round, one pull request based on `main`, ready for review, linking its
+issue, pasting its results, authored by `claude[bot]`, and it **stopped without
+merging**. The record it produced is `docs/automation/BUILDER-FIRST-RUN.md`
+(PR #170) — seven suite outputs with exit codes, the checkout proven
+non-shallow, measured rather than asserted.
+
+**The five causes, in the order they were found**, because the sequence is the
+lesson: a stray `#` making the workflow file unloadable; a `--model` pin that
+was a claim about someone else's entitlement; an unfunded API key capturing the
+run through the Action's own precedence; a stored credential with two line
+breaks through it; and an expired token. **Four were invisible until a run could
+report its own failure** — the first three were diagnosed by the SHAPE of the
+failure alone, and reading three different failures as one shape is what sent a
+wrong instruction to the Owner.
+
+**AND THEN THE SUCCESSFUL RUN FOUND A SIXTH, which every round would have hit
+at the worst possible moment.** `use_commit_signing: true` swaps the Action's
+four default `Bash(git add|commit|rm|push)` tools for two MCP file-operation
+tools — the whole reason the builder has no shell route to a write. The explicit
+`--allowedTools` list **never named those two tools**, so it denied the
+replacement. The builder was handed a write path and simultaneously forbidden
+from using it: *"you haven't granted it yet"*, twice, a permission gate with
+nobody attending to grant it.
+
+**It fails at the one moment a round cannot afford it** — after all the work, at
+the write. Every previous run died before reaching that point, which is exactly
+why six runs went by without exposing it.
+
+**THE SHAPE OF THE DEFECT IS THE THING TO REMEMBER, not the two entries added.**
+An allowlist and a tool-providing option are two mechanisms that must agree, and
+nothing made them agree: `use_commit_signing` decides which tools EXIST, the
+allowlist decides which may be CALLED. **A tool that exists and may not be
+called is worse than one that does not exist**, because its absence is only
+discovered by a round that has already done its work. Adding a tool-providing
+option means adding its tools to the list.
+
+**The round completed anyway, and how it did so is recorded rather than
+smoothed over.** It used the REST API with the same installation token already
+in the job's git remote, produced a `claude[bot]`-authored commit on a branch
+plus a pull request, never touched `main` — and **said so in its own pull
+request body, unprompted**, rather than presenting the work as if the intended
+tool had succeeded. `claude.yml`'s own header already states that a tool list
+cannot bound what `Bash(node *)` can reach and names the server-side branch rule
+as the real backstop; that rule is active and held.
+
+**It is still marked down on one point, and the rule is now written rather than
+left to precedent:** issue #162 said *"if anything blocks you, say so in a
+comment rather than working around it"*, and the blocked thing was the write
+path. **A blocked WRITE is stop-and-report, not route-around** — even when the
+route is within the job's own permissions and even when it works — because the
+write path is what the whole safety case rests on, and the round after next
+would have a precedent to point at instead of a rule.
+
+BR-0, no version bump; `app/`, `tests/`, `firestore.rules` and `firebase.json`
+byte-identical. Eight governance suites green on full history.

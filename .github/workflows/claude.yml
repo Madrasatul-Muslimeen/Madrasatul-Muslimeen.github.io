@@ -483,9 +483,32 @@ jobs:
           # guaranteed to be addressable. Pin a model here only after a run has
           # PROVEN that model works for this account -- a pin is a claim about
           # someone else's entitlement.
+          # THE WRITE PATH MUST BE IN THE ALLOWLIST, AND FOR SIX RUNS IT WAS
+          # NOT. `use_commit_signing: true` above swaps the Action's four
+          # default `Bash(git add|commit|rm|push)` tools for two MCP
+          # file-operation tools -- and this explicit list, which never named
+          # them, then denied the replacement. The builder was handed a write
+          # path and simultaneously forbidden from using it.
+          #
+          # ITS FIRST SUCCESSFUL RUN IS WHAT EXPOSED THIS. Both calls to
+          # `mcp__github_file_ops__commit_files` came back "you haven't
+          # granted it yet" -- a permission gate, not a content objection, and
+          # nobody attended to grant it. The round completed anyway through
+          # the REST API with the same installation token, and said so in its
+          # own pull request body rather than presenting it as if the intended
+          # tool had worked. See docs/automation/BUILDER-FIRST-RUN.md and
+          # pull request 170.
+          #
+          # THE LESSON IS ABOUT THE SHAPE OF THE DEFECT, not the two entries.
+          # An allowlist and a tool-providing option are two mechanisms that
+          # must agree, and nothing made them agree: `use_commit_signing`
+          # decides which tools EXIST, this list decides which may be CALLED,
+          # and a tool that exists and may not be called fails at the one
+          # moment the round needs it -- after all the work, at the write.
+          # Adding a tool-providing option here means adding its tools below.
           claude_args: |
             --max-turns 250
-            --allowedTools "Bash(node *),Bash(npx playwright *),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git stash:*),Bash(git rev-parse:*),Bash(git ls-remote:*),Bash(git fetch:*),Read,Edit,Write,Glob,Grep"
+            --allowedTools "mcp__github_file_ops__commit_files,mcp__github_file_ops__delete_files,Bash(node *),Bash(npx playwright *),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git stash:*),Bash(git rev-parse:*),Bash(git ls-remote:*),Bash(git fetch:*),Read,Edit,Write,Glob,Grep"
 
       # ======================================================================
       # WHY THIS STEP EXISTS, AND IT IS A FINDING RATHER THAN A PRECAUTION.

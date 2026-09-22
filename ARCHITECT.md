@@ -356,23 +356,29 @@ Every report follows one shape, and ends with **Done / Suggestions / Pending**:
       suites green, and *that the report's claims are still true*. That last one
       is the actual work; a report asserting something false is worse than no
       report.
-- [ ] **The builder has run, and is blocked on ONE thing: a valid credential.**
-      Five attempts, five causes, four of them fixed here (an unreadable
-      workflow file; a model pin that was a claim about someone else's
-      entitlement; an unfunded API key capturing the run; a stored token with
-      two line breaks through it). The fifth is the Owner's and is not
-      guessable away: `Failed to authenticate. API Error: 401 Invalid bearer
-      token`, on a header proven well-formed. **Do not spend more attempts on
-      it** — re-dispatch issue #162 only once the Owner says the secret is
-      replaced.
-      **Every one of those four was invisible until a run could report its own
-      failure.** `show_full_output: false` is correct on a public repository and
-      discards the one sentence naming the cause; both workflows now carry an
-      `if: always()` step printing the result counters always, the error text
-      only on failure, and nothing textual on success. Read that step, never the
-      shape of the failure — reading three failures as one shape is what sent a
+- [x] **THE BUILDER WORKS — proven 22 Sep 2026, PR #170.** Six attempts, six
+      causes. Five were credential or workflow faults, all fixed; the sixth
+      the successful run itself exposed — `use_commit_signing` provides the
+      MCP write tools and `--allowedTools` never named them, so the builder
+      was handed a write path and forbidden from using it. **It fails after
+      all the work, at the write**, which is why six runs went by without
+      exposing it. Fixed in `claude.yml`.
+      **The rule it produced, now written rather than left to precedent: a
+      blocked WRITE is stop-and-report, not route-around**, even when the
+      route is within the job's own permissions and even when it works.
+      Issue #162 said so and the round routed around it anyway — disclosing
+      it fully, which is what made it a finding instead of an incident.
+      **Read a run's own `Say why Claude stopped` step, never the shape of the
+      failure.** Reading three different failures as one shape is what sent a
       wrong instruction to the Owner.
-- [ ] **`verify.yml` gates only the seven deterministic governance suites.** The
+
+      *History, carrying no instruction — the six causes in order: an
+      unreadable workflow file; a `--model` pin; an unfunded `ANTHROPIC_API_KEY`
+      capturing the run; a credential stored with two line breaks; an expired
+      token (the Owner's, and the only one not fixable here); and the
+      allowlist/`use_commit_signing` disagreement above. Both workflows now
+      carry the `if: always()` step that made five of the six visible.*
+- [ ] **`verify.yml` gates only the eight deterministic governance suites.** The
       browser suites (`behaviour`, `layout`, `panel`, `reading`, `navcheck`) and
       the Firestore emulator suites are not gated anywhere, so a UI regression
       reaches `main` unmeasured. `behaviour.mjs` cannot exit 0 under a
