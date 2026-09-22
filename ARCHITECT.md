@@ -468,3 +468,35 @@ Every report follows one shape, and ends with **Done / Suggestions / Pending**:
       choice for the round that picks this up, not decided here. No urgency
       stated by the Owner; queued for whenever the Notes/Journey Map rounds
       free up.
+- [ ] **Issue #180 (Notes screen) hit an unexplained permission-denial wall,
+      three real `workflow_dispatch` attempts running, 22 Sep 2026.** All
+      three genuinely triggered (`Trigger result: true`) and all three ended
+      `is_error: false` with zero branch/comment/PR — 24/10, 32/13, 15/10
+      (turns/denials), ~$3.60 total spent. Two different root-cause guesses
+      (plain `git commit` instead of the MCP file-ops tool; a nonexistent
+      third-party-script-vendoring precedent in the issue text, corrected in
+      the issue body) both failed to change the outcome, so both diagnoses
+      were wrong. The real cause is invisible from here: this workflow runs
+      Claude with `show_full_output: false` ("hidden for security"), so the
+      actual denied tool call never reaches the log. **Do not retry a fourth
+      time blind.** Next step: either a diagnostic run with fuller output (a
+      protected `.github/workflows/claude.yml` change, so it needs an
+      Architect round, not a Builder one), or work out from first principles
+      what issue #180 asks for that #188/#189 (both succeeded, same
+      allowedTools list) didn't. Full detail on the issue's own comments.
+- [ ] **`claude.yml`'s `assignee_trigger` input is unconfigured, so GitHub
+      "assign this issue" does NOT dispatch the builder — found 22 Sep 2026,
+      the hard way.** Assigning issue #180/#182 to `AAAsapp` passed the
+      workflow's own outer job-level `if:` gate (a real job ran, "success"
+      conclusion) but the Action's own internal trigger check reported
+      `Trigger result: false` and skipped straight to cleanup — because for
+      an `assigned` event this action checks `assignee_trigger` by identity,
+      not the issue body for the trigger phrase, and that input is never set
+      here. Cost nothing (job exits in ~2 seconds) but looks deceptively like
+      a successful dispatch in the Actions list, which is worse than an
+      obvious failure. **`workflow_dispatch` (the mechanism ARCHITECT.md
+      already documents for this) is unaffected and is the reliable channel
+      — this is not blocking anything today.** Recorded so the next session
+      doesn't lose an hour to the same false-positive; fix is one line
+      (`assignee_trigger: AAAsapp`) whenever an Architect round next touches
+      this file.
