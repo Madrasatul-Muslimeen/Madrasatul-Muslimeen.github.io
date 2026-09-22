@@ -11,6 +11,22 @@
 //      the code and ADR-009 still agree with each other.
 //
 // So this suite reads the source, the untouched files, and the ADR itself.
+//
+// UPDATED 22 Sep 2026 for P5-D (issue #195), WITH THE REASON RECORDED RATHER
+// THAN THE CHECK WEAKENED. Claim 1 above -- "nothing imports this" -- was
+// true only because nothing had yet built the screen these modules exist
+// for. P5-D built that screen (app/notes.html), so "NO PAGE can reach
+// either module" stopped being the right claim to make: asserting it now
+// would be asserting the round's own wiring does not work, the identical
+// shape v08.30's own reachability guard inverted for D1/D2/D4 Activity, and
+// the identical shape 19 Sep 2026's D3-journaling-chokepoint round inverted
+// again when `study-note-service.js` gained a real caller. The two
+// reachability checks below now assert the STRONGER, narrower claim instead:
+// EXACTLY app/notes.html reaches the service, and only through it -- never
+// directly -- does anything reach the binding. Every other check in this
+// file is untouched: they are about the modules' own internal structure
+// (ADR-003/ADR-009 isolation, the quick-note boundary, the vocabulary), none
+// of which this round's wiring touches.
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -95,27 +111,43 @@ check("POSITIVE CONTROL: the reachability walker really does find a wired module
   assert.ok(control.length > 0, "the walker found no page importing records.js -- it is not working");
 });
 
-check("NO PAGE can reach either module, by any chain of any length", () => {
-  const reachable = GUARDED.flatMap((g) => chainsToTarget(g));
-  assert.deepEqual(reachable, [], `P5-C is wired in: ${reachable.join(" | ")}`);
+// P5-D (issue #195): the one page this round wired in, and the only page
+// allowed to reach either module. A second page reaching the service --
+// under any name -- is exactly the "wired in a second time, unaudited"
+// class every reachability guard in this repository exists to catch.
+const KNOWN_WIRED_PAGE = "app/notes.html";
+
+check("EXACTLY the Notes screen reaches the service, and nothing else does, by any chain of any length", () => {
+  const reachable = chainsToTarget("study-note-service.js");
+  const pages = reachable.map((r) => r.split(" -> ")[0]).sort();
+  assert.deepEqual(pages, [KNOWN_WIRED_PAGE],
+    `unexpected page(s) reaching study-note-service.js: ${reachable.join(" | ")}`);
 });
 
-check("no app source imports the binding or the service", () => {
+check("the binding is reached ONLY through the service -- never directly by any page", () => {
+  const reachable = chainsToTarget("study-note-binding.js");
+  assert.deepEqual(reachable, [`${KNOWN_WIRED_PAGE} -> study-note-service.js -> study-note-binding.js`],
+    `unexpected reachability for study-note-binding.js: ${reachable.join(" | ")}`);
+});
+
+check("no app source imports the binding or the service, except the one audited page importing the service", () => {
   const importers = [];
   for (const file of everyAppSource()) {
     if (GUARDED.some((g) => file.endsWith(path.join("js", g)))) continue;
     const text = fs.readFileSync(file, "utf8");
+    const rel = path.relative(root, file).split(path.sep).join("/");
     for (const guarded of GUARDED) {
       const base = guarded.replace(/\.js$/, "");
       // The delimiter class alone matched a BACKTICK, so a prose `study-note-binding.js`
       // in a doc comment counted as an import and reported a wiring that did not
       // exist. Requiring a from/import keyword in front makes it an import scan.
       if (new RegExp(String.raw`(?:from|import)\s*["'\`][./]*(?:js/)?${base}\.js["'\`]`).test(text)) {
-        importers.push(`${path.relative(root, file)} -> ${guarded}`);
+        importers.push(`${rel} -> ${guarded}`);
       }
     }
   }
-  assert.deepEqual(importers, [], `P5-C is wired in: ${importers.join(", ")}`);
+  assert.deepEqual(importers, [`${KNOWN_WIRED_PAGE} -> study-note-service.js`],
+    `unexpected importer set for the service/binding: ${JSON.stringify(importers)}`);
 });
 
 check("the service imports the binding, and the binding imports no database", () => {

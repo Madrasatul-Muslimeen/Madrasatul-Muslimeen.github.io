@@ -365,6 +365,14 @@ export function renderNoteView({
   // places the HTML the caller built -- I2 holds.
   backToCollectionLabel = null,
   collectionsPopoverHtml = "",
+  // MAP Phase 5 (P5-D, issue #195) -- the entry point into the real,
+  // permanent Notes screen (notes.html), scoped to whatever unit THIS Note
+  // view is currently showing. A full URL, pre-built by the caller (I2 --
+  // this renderer never knows the unit key's own shape or how to build a
+  // query string), null/omitted when there is nothing to link to (there
+  // always is one here, but the same "nothing to explain" rule
+  // canUpdateBookmark already follows applies if that ever changes).
+  notesScreenHref = null,
   // 30 Aug 2026 round -- "enable adding/attaching an Ayah... to an existing
   // GROUP, LIST, DUAL AH... may be placing it with the copy/share button."
   // Folded into the SAME ⋯ menu Update bookmark already uses (not a new
@@ -478,6 +486,8 @@ export function renderNoteView({
         <div class="note-dot-wrap">
           <button type="button" class="note-icon-btn" data-note-menu-toggle="more" aria-haspopup="true" aria-expanded="false" title="${t("Mapping My Journey")}">⋯</button>
           <div class="quick-menu" data-note-menu="more">
+            ${notesScreenHref ? `<a class="qm-item" href="${notesScreenHref}">📔 ${t("My Notes for this unit")}</a>
+            <div class="qm-divider"></div>` : ""}
             <button type="button" class="qm-item" disabled style="color:#aaa;cursor:default;">${t("Mapping My Journey")} <span class="qm-caret">${t("Coming later")}</span></button>
             ${canUpdateBookmark ? `
             <div class="qm-divider"></div>

@@ -15584,3 +15584,112 @@ below.
 the full diff read by hand — the I2 boundary, the merge-correction table,
 and the tap-target CSS technique all checked out. `app/js/version.js`:
 08.34 → **08.35**. Allocated by the MMSA Architect.
+
+Issue #195 (supersedes #180, closed as superseded for a dispatch-mechanism
+reason unrelated to its content — see #180's own final comment) is MAP
+Phase 5's **P5-D — the Notes screen, round 1**: the one piece of the Note
+Foundation deliberately held back while its data layer, Rules and indexes
+were built and audited. The Owner's own priority, 22 Sep 2026: *"Notes
+screen (Phase 5): start it next, as the main piece of visible work."*
+**No version bump — this is a Builder round**, per the Architect loop's own
+contract; allocation is the Architect's, at merge time.
+
+**A new real page, `app/notes.html` (+ `app/js/note-sanitize.js`), wired
+to the existing, previously-uninvoked data layer** —
+`app/js/study-note-service.js` (`createStudyNote`, `reviseStudyNote`,
+`retireStudyNote`, `notesForStudyUnit`, `recordJournalEvidence`) and
+`app/js/note-foundation.js` (`listNoteRevisions`). No new exported
+function was added to either — the screen was buildable entirely on top
+of what P5-B/P5-C/P5-E already shipped. For the CURRENT Study unit (the
+same `currentUnitInfo()`/`noteScopeUnitInfo()` the Mastery Wheel and
+"Choose a Unit" capsule already read): lists existing Notes
+(`notesForStudyUnit`), creates a new one, revises an existing one's
+content (showing the new `revisionId` a revision actually produces, not
+just that the text changed), shows a plain read-only revision history
+list, and retires one — worded "Remove", matching v08.01's own
+`trackables` convention, and phrased so the confirm dialog says plainly
+that nothing is destroyed (I4).
+
+**Entry point: a new, enabled item in the Read screen's existing ⋯
+("more") menu** inside the "Note & more" full-stage view
+(`app/js/ayah-note-renderer.js`'s `renderNoteView()`), right beside the
+still-disabled "Mapping My Journey" placeholder it will eventually sit
+near once Phase 6 exists — **"📔 My Notes for this unit"**, linking to
+`notes.html?unit=<unitKey>&label=<label>`. Chosen over the alternative
+(a brand-new bar-level icon) because that menu is already scoped to
+exactly the unit the Note view is showing, costs no new markup beyond one
+menu row (I2's own "renderers are shared components" — the caller builds
+the href, the renderer only places it, the same convention
+`readViewLinkHtml`/`collectionsPopoverHtml` already use), and needed no
+row-width remeasurement on the app's most tightly measured screen. The
+OLD quick-note surface (`ayah-notes.js`, opened by the same menu's
+existing "Note & more…" item) is untouched, per ADR-009 §5's own
+"promoted, never migrated" rule.
+
+**Only a Note's own author may create, revise or retire it** —
+`isNoteOwner()` in the deployed Rules is deliberately not
+`canRecordFor()` (a Note is a person's own private writing, never a
+record kept about them on someone else's behalf) — so the screen hides
+Create/Edit/Remove and shows a plain sentence explaining why whenever the
+selected roster person is not the signed-in login's own person in this
+tenant; reading (`canReadNoteOf()`) is available to a guardian, a
+co-enrolled teacher and the tenant owner/prime exactly as the Rules
+already allow.
+
+**REQUIRED sanitization, built exactly as specified.** DOMPurify is
+loaded from the pinned `cdn.jsdelivr.net` URL as a plain `<script>` tag in
+`notes.html`'s own `<head>` — this codebase's first vendored third-party
+script, so there was no existing local pattern to copy — and
+`app/js/note-sanitize.js` wraps it with a small allow-list
+(`NOTE_ALLOWED_TAGS`: bold/italic/underline/strike/headings/paragraphs/
+lists; `NOTE_ALLOWED_ATTR`: **empty**, so no `href`, no inline `style`, no
+event handler can ever be permitted through regardless of tag). Every
+render of a Note's `bodyHtml` — the read-only preview and the edit form's
+own contenteditable body — goes through `sanitizeNoteHtml()`, never
+straight to `innerHTML`; the function itself **fails closed**, throwing
+rather than silently returning raw HTML, if `window.DOMPurify` is ever
+absent (a CDN failure must be a visible error, the same I15 reasoning
+applied to a render instead of a write).
+
+**`tools/i18n-verify/note-sanitize-boundary.mjs` is the new, focused
+check the issue asked for** (7 checks): the CDN tag is present verbatim;
+the render path cannot reach `innerHTML` with an unsanitized `bodyHtml`
+(mutation-proven — reverting one call site to `row.note.bodyHtml` makes
+this fail, naming the exact offending line); every body render names
+`sanitizeNoteHtml()`; the allow-lists themselves exclude every
+script-capable tag and carry zero attributes; and `sanitizeNoteHtml()`
+genuinely throws, executed for real, when DOMPurify has not loaded (this
+sandbox has no Playwright/browser install at all, so this is what plain
+Node can prove — see the suite's own header for what it cannot: a real
+CDN load stripping a live payload needs a browser, the same recorded
+Playwright/`chromium_headless_shell` environment gap v08.35/v08.36 already
+carry, not a code defect).
+
+**`tools/i18n-verify/study-note-boundary.mjs` was UPDATED IN PLACE, with
+the reason recorded, never weakened.** Its whole premise since P5-C — "NO
+PAGE can reach `study-note-service.js`/`study-note-binding.js`" — was true
+only because nothing had built the screen these modules exist for; this
+round makes that assertion **false by design**, the identical shape
+v08.30's own D1/D2/D4 reachability guard inverted, and 19 Sep 2026's D3-
+chokepoint round inverted again. The two checks now assert the STRONGER,
+narrower claim: **exactly** `app/notes.html` reaches the service, and the
+binding is reached only through the service, never directly by any page —
+a second, unaudited importer would still fail exactly as before. Every
+other check in that suite (ADR-003/ADR-009 isolation, the quick-note
+boundary, the vocabulary binding) is untouched, since none of it is about
+wiring. 18/18 pass.
+
+**Translated in both languages from the first commit (I11)**: every new
+static and dynamically-rendered string on the page, plus the one new item
+in the ⋯ menu, added to `app/js/i18n/bn.js`. Rich-text toolbar labels
+(Bold/Italic/Bullet list/Numbered list/Clear) reuse the exact keys
+`ayah-note-renderer.js`'s own Notes editor already established, rather
+than inventing new ones.
+
+**Not built this round, per the issue's own scope**: folders, Mapping My
+Journey filing (`noteSources`/`notePlacements`/`noteFolders` — Phase 6);
+choosing a translator; anything beyond one Study unit's own Notes. Layout
+was not measured at 320/360/390/412px in a real browser in either
+language — the same Playwright/`chromium_headless_shell` environment gap
+the sanitization test's own header records — a real-phone check is the
+recommended substitute, the style Phase 3 and v08.35/v08.36 already used.
