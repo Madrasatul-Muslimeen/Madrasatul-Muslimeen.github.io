@@ -71,7 +71,7 @@ check("POSITIVE CONTROL: the reachability walker really does find a wired module
 });
 
 // UPDATED 22 Sep 2026 for MAP Phase 5 P5-D (issue #195), WITH THE REASON
-// RECORDED RATHER THAN THE CHECK WEAKENED. Until this round "NO PAGE can
+// RECORDED RATHER THAN THE CHECK WEAKENED. Until that round "NO PAGE can
 // reach the journey contract OR its service" was one claim, true only
 // because nothing page-reachable had ever loaded `note-foundation.js` AT
 // ALL. P5-D wires `study-note-service.js` -- an ALREADY-ACCEPTED Phase 5
@@ -81,39 +81,60 @@ check("POSITIVE CONTROL: the reachability walker really does find a wired module
 // Phase 6 folder-cycle validation. There is no way to wire ANY Phase 5 Note
 // function into a page without the whole module loading, so blanket
 // unreachability of `journey-map-contract.js` stopped being achievable the
-// moment P5-D was authorised -- asserting it regardless would be asserting
-// the round's own wiring does not work, the identical shape v08.30's own
-// D1/D2/D4 guard inverted, 19 Sep's D3-chokepoint round inverted again, and
-// this same round's own `study-note-boundary.mjs` update inverts a third
-// time. The claim is split into what actually still holds:
+// moment P5-D was authorised.
 //
-//   (a) `journey-map-service.js` -- the Phase 6 SERVICE, as opposed to the
-//       pure contract -- is untouched by this round and stays completely
-//       unreachable, by any chain, from any page.
-//   (b) `journey-map-contract.js` is reachable now, but ONLY through
-//       `note-foundation.js`, and ONLY from the one audited P5-D page.
-//   (c) The behaviour ADR-010 actually protects -- no Phase 6 FOLDER or
-//       PLACEMENT function ever being called from anything page-reachable --
-//       is asserted directly, below, rather than inferred from the file
-//       being unloadable.
-const KNOWN_WIRED_PAGE = "app/notes.html";
+// UPDATED AGAIN 22 Sep 2026 for MAP Phase 6 P6-F (issue #199, this round),
+// FOR THE SAME REASON. This round is the one P5-D's own comment predicted
+// would eventually land: it wires `journey-map-service.js` -- the Phase 6
+// SERVICE, the one thing the P5-D update above said stayed completely
+// unreachable -- into a brand-new page, `app/journey-map.html`. Asserting
+// blanket unreachability for the service now would be asserting THIS
+// round's own wiring does not work, the identical inversion this file's own
+// history already records twice over (v08.30's D1/D2/D4 guard, 19 Sep's
+// D3-chokepoint round, and P5-D immediately above). The claim is narrowed a
+// second time, the same way, to what still actually holds:
+//
+//   (a) `journey-map-service.js` is reachable now, but ONLY from the one
+//       audited P6-F page (`app/journey-map.html`), and by no other chain.
+//   (b) `journey-map-contract.js` is reachable from TWO audited pages now --
+//       `app/notes.html` (via `note-foundation.js`, unchanged since P5-D) and
+//       `app/journey-map.html` (via `journey-map-service.js`, this round) --
+//       and by no route that skips both of those intermediaries. The new
+//       page deliberately does NOT import the pure contract a second,
+//       separate way (it mirrors the two closed-vocabulary role ids as a
+//       local constant instead -- see the page's own comment), so this stays
+//       a two-route claim, not a three-route one.
+//   (c) The behaviour ADR-010 actually protects -- which Phase 6 FOLDER or
+//       PLACEMENT functions the two wired pages are allowed to call -- is
+//       asserted directly, below, rather than inferred from unloadability:
+//       `app/notes.html` (P5-D's own scope) still may call NONE of them;
+//       `app/journey-map.html` (this round's own scope) legitimately calls
+//       the read/create/move subset this round actually built, and is
+//       checked against exactly that subset, not a blanket allowance.
+const CONTRACT_WIRED_PAGES = ["app/journey-map.html", "app/notes.html"];
+const SERVICE_WIRED_PAGE = "app/journey-map.html";
 
-check("journey-map-service.js -- the Phase 6 service, not the pure contract -- remains unreachable by any page", () => {
-  assert.deepEqual(chainsToTarget("journey-map-service.js"), []);
+check("journey-map-service.js -- the Phase 6 service -- is reachable ONLY from the one audited P6-F page", () => {
+  const chains = chainsToTarget("journey-map-service.js");
+  const pages = [...new Set(chains.map((c) => c.split(" -> ")[0]))];
+  assert.deepEqual(pages, [SERVICE_WIRED_PAGE],
+    `unexpected page(s) reaching journey-map-service.js: ${chains.join(" | ")}`);
 });
 
-check("journey-map-contract.js is reachable ONLY via note-foundation.js, and ONLY from the one audited P5-D page", () => {
+check("journey-map-contract.js is reachable ONLY via note-foundation.js or journey-map-service.js, and ONLY from the two audited pages", () => {
   const chains = chainsToTarget("journey-map-contract.js");
-  const pages = [...new Set(chains.map((c) => c.split(" -> ")[0]))];
-  assert.deepEqual(pages, [KNOWN_WIRED_PAGE],
+  const pages = [...new Set(chains.map((c) => c.split(" -> ")[0]))].sort();
+  assert.deepEqual(pages, CONTRACT_WIRED_PAGES,
     `unexpected page(s) reaching journey-map-contract.js: ${chains.join(" | ")}`);
-  assert.ok(chains.every((c) => c.includes("note-foundation.js")),
-    `journey-map-contract.js is reached by a route that does not pass through note-foundation.js: ${chains.join(" | ")}`);
+  assert.ok(chains.every((c) => c.includes("note-foundation.js") || c.includes("journey-map-service.js")),
+    `journey-map-contract.js is reached by a route that does not pass through note-foundation.js or journey-map-service.js: ${chains.join(" | ")}`);
 });
 
 check("every importer of the journey modules is exactly the pinned set, and each is reachable only as accepted above", () => {
   // The importer SET is still pinned, so a THIRD module importing either
-  // journey file must be audited deliberately -- unchanged from P6-B.
+  // journey file must be audited deliberately -- unchanged in spirit from
+  // P6-B/P5-D, widened this round to include the one new page that now
+  // imports journey-map-service.js directly.
   const importers = [];
   (function walk(dir) {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -135,35 +156,63 @@ check("every importer of the journey modules is exactly the pinned set, and each
     }
   })(appDir);
   assert.deepEqual([...new Set(importers)].sort(),
-    ["app/js/journey-map-service.js", "app/js/note-foundation.js"],
-    `the set of modules importing the journey contract has changed: ${importers.join(", ")}`);
+    ["app/journey-map.html", "app/js/journey-map-service.js", "app/js/note-foundation.js"].sort(),
+    `the set of modules importing the journey contract/service has changed: ${importers.join(", ")}`);
+  // chainsToTarget() only ever resolves a TARGET named "*.js" (it walks
+  // app/*.html pages through js/ imports) -- app/journey-map.html is a page,
+  // not an importable module, so it has no meaningful entry here; its own
+  // reachability (as a PAGE reaching the two guarded modules) is exactly
+  // what the two checks above this one already prove.
+  const EXPECTED_PAGES_PER_JS_IMPORTER = {
+    "note-foundation.js": CONTRACT_WIRED_PAGES,      // reachable from both audited pages (notes.html since P5-D, journey-map.html new this round)
+    "journey-map-service.js": [SERVICE_WIRED_PAGE],  // reachable only from the one page that imports it directly
+  };
   for (const importer of importers) {
     const base = path.basename(importer);
+    if (!(base in EXPECTED_PAGES_PER_JS_IMPORTER)) continue; // app/journey-map.html itself -- not a .js target, nothing to re-check here
     const chains = chainsToTarget(base);
-    const pages = [...new Set(chains.map((c) => c.split(" -> ")[0]))];
-    // note-foundation.js is ACCEPTED to be reachable now, and only from the
-    // one audited page (proven above); journey-map-service.js's own importer
-    // (itself) must stay exactly as unreachable as it always was.
-    const expectedPages = base === "note-foundation.js" ? [KNOWN_WIRED_PAGE] : [];
-    assert.deepEqual(pages, expectedPages, `${importer}'s own reachability changed unexpectedly: ${chains.join(" | ")}`);
+    const pages = [...new Set(chains.map((c) => c.split(" -> ")[0]))].sort();
+    assert.deepEqual(pages, EXPECTED_PAGES_PER_JS_IMPORTER[base],
+      `${importer}'s own reachability changed unexpectedly: ${chains.join(" | ")}`);
   }
 });
 
 // THE PROTECTION THAT ACTUALLY MATTERS, asserted directly rather than
 // inferred from load-graph unreachability, since that inference is no longer
 // available. `note-foundation.js` exports both Phase 5 (Notes, accepted) and
-// Phase 6 (folders/placements, NOT accepted) functions from one file --
-// P5-D's whole job is to call the first group, and this proves it never
-// calls the second, from the one page that can now reach the file at all.
-const PHASE_6_FUNCTIONS = [
+// Phase 6 (folders/placements, NOT accepted) functions from one file, and
+// `journey-map-service.js` wraps nearly all of the Phase 6 ones (P6-C/P6-D/
+// P6-E already built every wrapper, including the folder-EDITING ones this
+// round does not use) -- so scanning the SERVICE file's own source would
+// find almost every name regardless of what this round's page actually
+// calls, and prove nothing. What is checked instead is the PAGE's own
+// source, which is the only place that shows what this round chose to call.
+const PHASE_6_DATA_LAYER_FUNCTIONS = [
   "createNoteFolder", "listNoteFoldersForOwner", "renameNoteFolder", "reorderNoteFolder",
   "reparentNoteFolder", "retireNoteFolder", "createNotePlacement",
   "listNotePlacementsForFolder", "listNotePlacementsForNote", "retireNotePlacement", "moveNotePlacement",
 ];
-check("the newly-reachable page never calls a Phase 6 folder/placement function", () => {
-  const text = fs.readFileSync(path.join(root, KNOWN_WIRED_PAGE), "utf8");
-  const used = PHASE_6_FUNCTIONS.filter((fn) => text.includes(fn));
-  assert.deepEqual(used, [], `${KNOWN_WIRED_PAGE} names Phase 6 function(s): ${used.join(", ")}`);
+check("app/notes.html (P5-D's own scope) still never calls a Phase 6 folder/placement function", () => {
+  const text = fs.readFileSync(path.join(root, "app/notes.html"), "utf8");
+  const used = PHASE_6_DATA_LAYER_FUNCTIONS.filter((fn) => text.includes(fn));
+  assert.deepEqual(used, [], `app/notes.html names Phase 6 function(s): ${used.join(", ")}`);
+});
+check("app/journey-map.html only ever names the Phase 6 data-layer functions it imports directly (create folder, create placement) -- everything else goes through the service", () => {
+  const text = fs.readFileSync(path.join(root, SERVICE_WIRED_PAGE), "utf8");
+  const used = PHASE_6_DATA_LAYER_FUNCTIONS.filter((fn) => text.includes(fn)).sort();
+  assert.deepEqual(used, ["createNoteFolder", "createNotePlacement"],
+    `app/journey-map.html's own direct Phase 6 data-layer usage changed: ${used.join(", ")} -- if this round's scope grew, widen this list deliberately rather than letting it drift`);
+});
+// The FOLDER-EDITING wrappers (rename/reorder/re-parent/retire a folder,
+// reorder a filing) are built and exported by journey-map-service.js
+// (P6-D/P6-E) but this round's screen does not offer folder management UI --
+// only creating, filing into and moving between folders. Named here rather
+// than silently possible to add unnoticed.
+const FOLDER_EDITING_SERVICE_WRAPPERS = ["renameFolder", "reorderFolder", "moveFolder", "retireFolder", "reorderFiling"];
+check("app/journey-map.html does not call the folder-editing service wrappers this round deliberately left unbuilt", () => {
+  const text = fs.readFileSync(path.join(root, SERVICE_WIRED_PAGE), "utf8");
+  const used = FOLDER_EDITING_SERVICE_WRAPPERS.filter((fn) => text.includes(fn));
+  assert.deepEqual(used, [], `app/journey-map.html names folder-editing wrapper(s) not built this round: ${used.join(", ")}`);
 });
 
 function unchangedSinceMain(relPath) {
