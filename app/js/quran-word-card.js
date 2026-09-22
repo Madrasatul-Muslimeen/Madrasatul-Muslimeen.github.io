@@ -320,25 +320,64 @@ function formsSection(layers, context, text, formatNumber, { expandable }) {
   </section>`;
 }
 
-/** One expanded form's own occurrences: the exact written word at each place,
- *  and its reference, each one a control that opens that ayah. */
-function formOccurrenceList(form, context, text, formatNumber) {
-  if (context.formOccurrencesError) {
-    return `<p role="status">${escapeHtml(String(text.occurrencesUnavailable).replace("{error}", context.formOccurrencesError))}</p>`;
-  }
-  const items = context.formOccurrences;
+/**
+ * The shared list markup for a resolved set of occurrences: the exact
+ * written word at each place, and its reference, each one a control that
+ * opens that āyah. Used by BOTH a derived form's own occurrences (Depth) and
+ * -- new in this round -- the current word's own lemma occurrences (Basic),
+ * so a reader gets ONE occurrence-list shape and ONE way to reach an āyah
+ * from it (`data-word-occurrence-goto`), not two things that look alike but
+ * behave differently.
+ */
+function occurrenceListMarkup(items, total, error, fallbackArabic, text, formatNumber) {
+  if (error) return `<p role="status">${escapeHtml(String(text.occurrencesUnavailable).replace("{error}", error))}</p>`;
   if (!items) return `<p>${escapeHtml(text.loadingOccurrences)}</p>`;
   if (!items.length) return `<p>${escapeHtml(text.noOccurrencesListed)}</p>`;
-  const truncated = Number(context.formOccurrencesTotal ?? items.length) > items.length
-    ? `<p class="word-card-forms-note">${escapeHtml(String(text.showingFirst).replace("{shown}", formatNumber(items.length)).replace("{total}", formatNumber(Number(context.formOccurrencesTotal))))}</p>`
+  const truncated = Number(total ?? items.length) > items.length
+    ? `<p class="word-card-forms-note">${escapeHtml(String(text.showingFirst).replace("{shown}", formatNumber(items.length)).replace("{total}", formatNumber(Number(total))))}</p>`
     : "";
   const rows = items.map((o) => {
     const ref = `${o.surah}:${o.ayah}:${o.position}`;
     return `<li><button type="button" class="word-card-occurrence-link" data-word-occurrence-goto="${escapeHtml(ref)}" aria-label="${escapeHtml(String(text.goToOccurrence).replace("{ref}", ref))}">` +
-      `<span class="word-card-occurrence-arabic" dir="rtl" lang="ar">${escapeHtml(o.arabic || form.lemma)}</span>` +
+      `<span class="word-card-occurrence-arabic" dir="rtl" lang="ar">${escapeHtml(o.arabic || fallbackArabic)}</span>` +
       `<span class="word-card-occurrence-ref">${escapeHtml(ref)}</span></button></li>`;
   }).join("");
   return `<div class="word-card-form-occurrences"><ol class="word-card-occurrences">${rows}</ol>${truncated}</div>`;
+}
+
+/** One expanded form's own occurrences. */
+function formOccurrenceList(form, context, text, formatNumber) {
+  return occurrenceListMarkup(context.formOccurrences, context.formOccurrencesTotal, context.formOccurrencesError, form.lemma, text, formatNumber);
+}
+
+/**
+ * The Basic tab's own "{count} lemma-linked occurrences" line, EXPANDABLE.
+ *
+ * Before this round the line was plain text: the exact same dictionary-form
+ * occurrences the "Derived forms" list already counts (one of its rows is
+ * always this very lemma), fetched into `context.lemmaOccurrences` since
+ * v08.21 (occurrenceRefsFor("lemma", ...), read for `hydrateWordCardOccurrences`)
+ * and used for nothing but a number -- a reader could reach this lemma's own
+ * occurrences only by finding the matching row in Depth's derived-forms list
+ * and expanding THAT, an indirect route for something the card already knows.
+ *
+ * This makes the line itself a toggle, reusing the exact affordance, strings
+ * and event identity Depth's own form toggle already established
+ * (`aria-expanded`, the same caret, `occurrenceListMarkup` above) -- one
+ * pattern, two entry points, no new one invented. Nothing new is fetched
+ * until the reader actually expands it: `context.lemmaOccurrences` is
+ * already resolved by the time this renders; only the WRITTEN TEXT at each
+ * position (never assumed from the lemma) is resolved on demand, the same
+ * deferral `expandWordForm` already uses for forms.
+ */
+function lemmaOccurrenceBlock(word, layers, context, text, formatNumber) {
+  const lemmaCount = Number(context.lemmaOccurrenceCount ?? context.lemmaOccurrences?.length ?? 0);
+  const countText = String(text.lemmaOccurrences).replace("{count}", formatNumber(lemmaCount));
+  if (!lemmaCount) return `<p>${escapeHtml(countText)}</p>`;
+  const open = !!context.lemmaExpanded;
+  const toggleLabel = open ? text.hideOccurrences : text.showOccurrences;
+  return `<p><button type="button" class="word-card-lemma-toggle word-card-form-toggle" data-word-lemma-toggle aria-expanded="${open ? "true" : "false"}" aria-label="${escapeHtml(`${toggleLabel} — ${countText}`)}"><span>${escapeHtml(countText)}</span><span class="word-card-form-caret" aria-hidden="true">${open ? "▾" : "▸"}</span></button></p>` +
+    (open ? occurrenceListMarkup(context.lemmaOccurrenceItems, context.lemmaOccurrenceItemsTotal, context.lemmaOccurrenceItemsError, word.arabic, text, formatNumber) : "");
 }
 
 function tabButton(level, selected, label) {
@@ -368,7 +407,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
     return `<div role="tabpanel" data-word-card-panel="basic">
       <dl><dt>${escapeHtml(text.lemma)}</dt><dd>${escapeHtml(layers.lemma || text.unknown)}</dd><dt>${escapeHtml(text.root)}</dt><dd>${escapeHtml(layers.root || text.unknown)}</dd><dt>${escapeHtml(text.partOfSpeech)}</dt><dd>${posCellHtml}</dd></dl>
       <p>${layers.root ? count(text.rootOccurrences, Number(context.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0)) : escapeHtml(text.rootUnavailable)}</p>
-      <p>${layers.lemma ? count(text.lemmaOccurrences, Number(context.lemmaOccurrenceCount ?? context.lemmaOccurrences?.length ?? 0)) : escapeHtml(text.lemmaUnavailable)}</p>
+      ${layers.lemma ? lemmaOccurrenceBlock(word, layers, context, text, formatNumber) : `<p>${escapeHtml(text.lemmaUnavailable)}</p>`}
       ${formsSection(layers, context, text, formatNumber, { expandable: false })}
       ${context.occurrencesLoading ? `<p>${escapeHtml(text.loadingOccurrences)}</p>` : ""}
       ${context.occurrencesError ? `<p role="status">${escapeHtml(String(text.occurrencesUnavailable).replace("{error}", context.occurrencesError))}</p>` : ""}

@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MMSA governance automation — subscription-only routes for the ChatGPT to Claude handoff</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MMSA governance automation — subscription-only routes for the ChatGPT to Claude handoff</h1>
+<p><strong>Date:</strong> 20 September 2026 <strong>Method:</strong> read-only investigation. <strong>Nothing was changed</strong> — no workflow, no secret, no routine, no repository setting. No credential was created, requested or displayed.</p>
+<p><strong>Headline, stated plainly: there is NO online-only way to produce the credential the GitHub Action needs. But there IS a supported, subscription-funded, browser-only route to the handoff, and it does not use the GitHub Action at all.</strong></p>
+<hr>
+<h2>1. The direct answer on <code>CLAUDE_CODE_OAUTH_TOKEN</code></h2>
+<p><strong>It cannot be generated without a terminal.</strong> From Anthropic&#x27;s authentication documentation, quoted:</p>
+<p>&gt; <em>&quot;For CI pipelines, scripts, or other environments where interactive browser login isn&#x27;t available, generate a one-year OAuth token with <code>claude setup-token</code> … The command opens the same browser authorization flow as <code>/login</code>, and the token prints to the terminal after you approve access in the browser. It does not save the token anywhere; copy it and set it as the <code>CLAUDE_CODE_OAUTH_TOKEN</code> environment variable.&quot;</em></p>
+<p>And the GitHub Actions page says the same:</p>
+<p>&gt; <em>&quot;<code>CLAUDE_CODE_OAUTH_TOKEN</code>: an OAuth token that authenticates with your Claude subscription, available on Pro, Max, Team, and Enterprise plans. <strong>Generate one by running <code>claude setup-token</code> locally.</strong>&quot;</em></p>
+<p><strong>There is no claude.ai web page that mints this token.</strong> I looked for one and found none: the only documented routes are <code>claude setup-token</code> and <code>/install-github-app</code>, and both run inside the Claude Code CLI on a machine.</p>
+<h3>Could I generate it from this cloud session?</h3>
+<p><strong>No, and I did not attempt it.</strong> Two independent blockers, either of which is fatal:</p>
+<ol><li><strong>It prints the token to the terminal.</strong> This session&#x27;s terminal output is its transcript. Generating the token here would put the secret value into the conversation and the logs — exactly what the instruction forbids.</li><li><strong>I could not save it anyway.</strong> Writing a GitHub Actions secret is a repository-settings write, and this environment refuses those: <code>POST /repos/.../rulesets → 403 &quot;Write access to this GitHub API path is not permitted through this proxy.&quot;</code> The same boundary covers the secrets API.</li></ol>
+<p>A third point makes it moot regardless: the command needs an interactive browser authorization, which a headless container does not have.</p>
+<p><strong>One useful fact for later:</strong> the token, once made, <em>is</em> subscription-funded. The docs are explicit — <em>&quot;If you authenticate with an OAuth token, runs use your Claude subscription instead of API billing.&quot;</em> So the Action is not an API-billing product; <strong>it is blocked only on the act of generating the token, which needs a terminal once.</strong></p>
+<hr>
+<h2>2. The route that does work, browser-only: Routines</h2>
+<p><strong>Routines are the supported, subscription-funded, online-only automation surface.</strong> From the routines documentation:</p>
+<p>&gt; <em>&quot;A routine is a saved Claude Code configuration: a prompt, one or more repositories, and a set of connectors… Routines execute on Anthropic-managed cloud infrastructure… Routines are available on Pro, Max, Team, and Enterprise plans. Create and manage them at claude.ai/code/routines&quot;</em></p>
+<p>Three things matter here, and all three are verified from the documentation:</p>
+<ul><li><strong>Created entirely in a browser.</strong> No CLI, no PC install.</li><li><strong>Funded by the subscription.</strong> <em>&quot;Routines draw down subscription usage the same way interactive sessions do.&quot;</em> And of cloud sessions generally: <em>&quot;There is no separate compute charge for the cloud VM.&quot;</em></li><li><strong>Three trigger types</strong>, and two of them are exactly what this programme has been trying to build.</li></ul>
+<h3>The triggers</h3>
+<div class='tw'><table><thead><tr><th>Trigger</th><th>What fires it</th><th>Relevance here</th></tr></thead><tbody>
+<tr><td><strong>Schedule</strong></td><td>hourly / daily / weekdays / weekly, or one-off</td><td>Nightly governance sweeps</td></tr>
+<tr><td><strong>API</strong></td><td><code>POST</code> to a per-routine <code>/fire</code> endpoint with a bearer token, carrying an optional <code>text</code> payload</td><td><strong>This is the ChatGPT → Claude bridge</strong></td></tr>
+<tr><td><strong>GitHub</strong></td><td>repository events</td><td><strong>Pull request and Release ONLY</strong> — see §4</td></tr>
+</tbody></table></div>
+<h3>The API trigger is the handoff the Master Architect asked for</h3>
+<p>&gt; <em>&quot;An API trigger gives a routine a dedicated HTTP endpoint. POSTing to the endpoint with the routine&#x27;s bearer token starts a new session and returns a session URL. Use this to wire Claude Code into alerting systems, deploy pipelines, internal tools, or anywhere you can make an authenticated HTTP request.&quot;</em></p>
+<p>The request is a plain <code>POST</code> with <code>Authorization: Bearer …</code> and a JSON body whose <code>text</code> field carries the task. The response returns the new session&#x27;s id and URL.</p>
+<p><strong>A security property worth knowing, and it is good design:</strong> the <code>text</code> does <strong>not</strong> arrive as instructions.</p>
+<p>&gt; <em>&quot;It arrives wrapped in a <code>&lt;routine-fire-payload&gt;</code> block that labels it as untrusted data and tells Claude not to follow instructions inside it unless the routine&#x27;s own prompt says to… Anyone holding the bearer token can send <code>text</code>, so the wrapper makes fire text from a leaked token arrive labeled as untrusted data rather than as direct instructions to your routine.&quot;</em></p>
+<p>So the routine&#x27;s <strong>saved prompt</strong> is the authority, and the fired text is evidence. That is the same separation this repository&#x27;s governance already relies on, and it means a leaked trigger token cannot redirect Claude — it can only waste a run.</p>
+<hr>
+<h2>3. The routes, with the exact Owner-only step for each</h2>
+<div class='tw'><table><thead><tr><th>#</th><th>Route</th><th>Exact Owner-only step</th><th>Extra charge</th><th>Dependency</th><th>What it actually automates</th></tr></thead><tbody>
+<tr><td><strong>R1</strong></td><td><strong>Routine + API trigger</strong></td><td>claude.ai/code/routines → <strong>New routine</strong> → name, prompt, select repo, environment → <strong>Select a trigger → API</strong> → Save → reopen → <strong>Add another trigger → API → Generate token</strong> (shown <strong>once</strong>) → give that token to the ChatGPT side</td><td><strong>None</strong> on the subscription. See the overage warning in §6</td><td>A ChatGPT-side mechanism able to make an authenticated HTTP <code>POST</code></td><td>Master Architect writes a task → fires the endpoint → a Claude cloud session starts, works the repo, pushes a <code>claude/</code> branch. <strong>Removes the paste entirely</strong></td></tr>
+<tr><td><strong>R2</strong></td><td><strong>Routine + GitHub trigger</strong></td><td>Same form → <strong>Add another trigger → GitHub event</strong> → pick repo, pick <code>pull_request.<em></code> or <code>release.</em></code>, optional filters</td><td><strong>None</strong></td><td>Claude GitHub App installed — <strong>already installed here</strong></td><td>Automatic run on every PR opened/merged/labelled. Good for review, backport, doc drift. <strong>Cannot see issue comments</strong> (§4)</td></tr>
+<tr><td><strong>R3</strong></td><td><strong>Auto-fix pull requests</strong></td><td>Open the PR&#x27;s session at claude.ai/code → CI status bar → <strong>Auto-fix</strong>; or tell Claude in the mobile app <em>&quot;watch this PR and fix CI failures or review comments&quot;</em></td><td><strong>None</strong></td><td>Claude GitHub App — already installed</td><td>Claude watches a PR and responds to CI failures and review comments by pushing fixes</td></tr>
+<tr><td><strong>R4</strong></td><td><strong>Code Review</strong></td><td>Enable the Code Review product (separate from the Action)</td><td><strong>None</strong> stated</td><td>Claude GitHub App</td><td>Automatic review on every PR <strong>without maintaining a workflow file</strong></td></tr>
+<tr><td><strong>R5</strong></td><td><strong>GitHub Action</strong> (<code>@claude</code> on an issue)</td><td><strong>Run <code>claude setup-token</code> once on any machine with a terminal</strong>, paste the token into the existing <code>CLAUDE_CODE_OAUTH_TOKEN</code> secret</td><td><strong>None</strong> once the token exists</td><td><strong>A terminal, once.</strong> No online-only substitute exists</td><td>The <code>@claude</code> comment flow already wired and merged on <code>main</code>, including <code>claude[bot]</code> authorship</td></tr>
+</tbody></table></div>
+<p><strong>R5 is not dead — it is one terminal command away.</strong> Everything else about it is built, merged and verified. If the Owner ever has access to any machine with a terminal (their own, a colleague&#x27;s, a borrowed laptop), a single <code>claude setup-token</code> unblocks it permanently for a year.</p>
+<hr>
+<h2>4. Two limitations that must not be glossed over</h2>
+<h3>GitHub triggers do not cover issue comments</h3>
+<p>The supported events are, quoted in full:</p>
+<div class='tw'><table><thead><tr><th>Event</th><th>Triggers when</th></tr></thead><tbody>
+<tr><td>Pull request</td><td>A PR is opened, closed, assigned, labeled, synchronized, or otherwise updated</td></tr>
+<tr><td>Release</td><td>A release is created, published, edited, or deleted</td></tr>
+</tbody></table></div>
+<p><strong>That is the entire list.</strong> There is no <code>issues</code> event and no <code>issue_comment</code> event. So the model this pilot has been building — <em>comment <code>@claude</code> on an issue and Claude picks it up</em> — <strong>is not available through Routines.</strong> It is available only through the GitHub Action (R5), which needs the token.</p>
+<h3>A Routine acts as the Owner, not as <code>claude[bot]</code></h3>
+<p>&gt; <em>&quot;Anything a routine does through your connected GitHub identity or connectors appears as you: commits and pull requests carry your GitHub user.&quot;</em></p>
+<p><strong>This directly contradicts the pilot&#x27;s Gate 2.</strong> The whole point of the Action route was that <code>claude[bot]</code> authors the PR so that <code>AAAsapp</code> can review and approve it. A Routine&#x27;s PR would be authored by <code>AAAsapp</code>, and GitHub forbids approving your own pull request — the same deadlock already documented.</p>
+<p><strong>So R1/R2 buy automation but not separation of duties.</strong> The <code>main</code> branch rule still forces every change through a pull request, which remains the real protection; but the reviewer would be the same person as the author. That is a governance decision for the Master Architect, not a technical gap I can close.</p>
+<p>Two smaller constraints, recorded rather than buried: routines <em>&quot;belong to your individual claude.ai account… not shared with teammates&quot;</em>, and during the research preview <em>&quot;GitHub webhook events are subject to per-routine and per-account hourly caps. Events beyond the limit are dropped.&quot;</em></p>
+<hr>
+<h2>5. What this session&#x27;s own capabilities confirm</h2>
+<p>Read-only checks against this session, not inference:</p>
+<div class='tw'><table><thead><tr><th>Fact</th><th>Value</th></tr></thead><tbody>
+<tr><td>Environment kind</td><td><strong><code>anthropic_cloud</code></strong> — an Anthropic-managed cloud session</td></tr>
+<tr><td>Model</td><td><code>claude-opus-5</code>, effort <code>high</code></td></tr>
+<tr><td>Billing signal</td><td><code>rate_limit_info: { rateLimitType: &quot;five_hour&quot;, isUsingOverage: <strong>false</strong> }</code> — a <strong>subscription rate-limit window</strong>, not metered API billing</td></tr>
+<tr><td>Routines currently on the account</td><td><strong>0</strong> — queried read-only; none created</td></tr>
+<tr><td>Repositories attached</td><td>both MMSA repositories</td></tr>
+</tbody></table></div>
+<p><strong>This session is itself the existence proof</strong> that a subscription-funded Claude cloud session can hold GitHub credentials, read and write the repositories, open pull requests and run CI — all without an API key. Everything achieved in this pilot so far was done this way.</p>
+<hr>
+<h2>6. One real cost risk, and how to keep it at zero</h2>
+<p>Routines have a <strong>daily run cap</strong> on top of normal subscription limits. The documentation then says:</p>
+<p>&gt; <em>&quot;When a routine hits the daily cap or your subscription usage limit, organizations with usage credits turned on can keep running routines on metered overage. Without usage credits, additional runs are rejected until the window resets.&quot;</em></p>
+<p><strong>Recommendation, given the Owner&#x27;s instruction that there is to be no separate billing: leave usage credits OFF</strong> at claude.ai/settings/usage. With them off, an over-cap run is <strong>rejected</strong>, not billed. That is the difference between a hard stop and a surprise invoice, and it is a one-toggle decision.</p>
+<hr>
+<h2>7. Verified facts vs untested predictions</h2>
+<p><strong>Verified — quoted from current Anthropic documentation or read from this session:</strong></p>
+<ul><li><code>CLAUDE_CODE_OAUTH_TOKEN</code> is generated only by <code>claude setup-token</code>, which needs a terminal and a browser; no web route exists.</li><li>An OAuth token makes Action runs draw on the subscription, not API billing.</li><li>Routines are created in the browser, run as cloud sessions, draw on subscription usage, and exist on Pro/Max/Team/Enterprise.</li><li>Routine triggers are schedule, API (<code>POST /fire</code> + bearer token + <code>text</code>), and GitHub.</li><li>GitHub triggers cover <strong>pull request and release events only</strong>.</li><li>Routine output carries the Owner&#x27;s GitHub identity.</li><li>Fired <code>text</code> arrives wrapped as untrusted data.</li><li>This session runs on <code>anthropic_cloud</code> under a five-hour subscription rate limit, with overage off, and the account currently has zero routines.</li></ul>
+<p><strong>Untested — predicted, and it should not be reported as working until observed:</strong></p>
+<ul><li>That the ChatGPT side can actually make the authenticated <code>POST</code> (that is an OpenAI-side capability question I cannot test from here).</li><li>That a Routine fired this way performs MMSA governance work correctly end to end.</li><li>That a <code>pull_request</code> GitHub trigger fires reliably for this repository within the preview&#x27;s hourly caps.</li><li>Anything about the GitHub Action working. <strong>It has never run successfully in this repository</strong>, and the Stage A failure is unexplained beyond the credential being the likely cause.</li></ul>
+<hr>
+<h2>8. The shortest interim workflow, without claiming the Action works</h2>
+<p><strong>Until either a terminal becomes available (R5) or a Routine is set up (R1), the honest interim is the one already in use, with one improvement.</strong></p>
+<p>Today: the Master Architect writes a task → the Owner pastes it into a Claude cloud session → Claude works the repository, pushes a branch, opens a PR, and reports back → the Owner relays the report.</p>
+<p>The improvement that costs nothing and removes half the relay:</p>
+<ol><li><strong>Keep the <code>main</code> pull-request rule as the gate.</strong> It is set, verified, and it is what actually protects the repository — regardless of which automation route is chosen.</li><li><strong>Let Claude report in the repository rather than in chat.</strong> Dated <code>.md</code>/<code>.html</code> reports are already committed to a branch and carried on a PR; the Master Architect can read them from GitHub directly instead of having them relayed. <strong>That half of the loop is already automated and is being under-used.</strong></li><li><strong>Turn on Auto-fix (R3) for open PRs.</strong> One toggle, no credential, no extra charge: Claude then responds to CI failures and review comments on a PR without the Owner relaying anything.</li></ol>
+<p>That leaves exactly one manual step — starting the task — which is precisely what R1&#x27;s API trigger or R5&#x27;s token would remove.</p>
+<hr>
+<h2>9. Recommendation</h2>
+<p><strong>Two moves, in this order.</strong></p>
+<p><strong>First, and it is cheap: set up R1</strong> (Routine + API trigger) at claude.ai/code/routines. It is browser-only, subscription-funded, and it is the only route that removes the ChatGPT → Claude paste. Even if the ChatGPT side turns out not to be able to fire it, the routine is still usable by <strong>Run now</strong> and by schedule, and costs nothing to have.</p>
+<p><strong>Second, keep R5 alive as the preferred end state.</strong> The Action is built, merged, hardened through three review findings, and gated behind a verified branch rule. It is the only route that gives <code>claude[bot]</code> authorship and therefore real separation of duties. It needs <strong>one command on any terminal, once</strong>. That is worth doing opportunistically rather than abandoning.</p>
+<p><strong>Do not</strong> enable usage credits; <strong>do not</strong> add an API key; <strong>do not</strong> treat the Action as working.</p>
+<hr>
+<h2>10. State block</h2>
+<p>``<code> MMSA_AUTOMATION_SUBSCRIPTION_ONLY_ROUTES ISSUED=2026-09-20 INVESTIGATION=READ-ONLY -- no workflow, secret, routine or repository setting changed CREDENTIAL_HANDLED=NO -- none created, requested or displayed OAUTH_TOKEN_WEB_ROUTE=DOES NOT EXIST -- claude setup-token requires a terminal AND a browser authorization OAUTH_TOKEN_FROM_THIS_SESSION=NOT ATTEMPTED -- would print the secret into the transcript; and secrets cannot be written (proxy 403 on repo-settings writes); and no browser OAUTH_TOKEN_FUNDING=SUBSCRIPTION, not API billing -- the Action is blocked on token GENERATION only ROUTINES=the supported browser-only, subscription-funded route; claude.ai/code/routines; Pro/Max/Team/Enterprise ROUTINE_TRIGGERS=schedule | API (POST /fire + bearer + text) | GitHub ROUTINE_GITHUB_EVENTS=PULL REQUEST and RELEASE ONLY -- NO issues, NO issue_comment ROUTINE_IDENTITY=acts as the OWNER&#x27;s GitHub user -- NOT claude[bot]; defeats Gate 2 separation of duties ROUTINE_FIRE_TEXT=wrapped as untrusted data; the saved prompt is the authority ROUTINE_SCOPE=individual account, not shared with teammates; webhook events have preview hourly caps R1=Routine + API trigger -- the ChatGPT to Claude bridge; Owner creates it in the browser R2=Routine + GitHub PR/release trigger -- automatic PR work; Claude App already installed R3=Auto-fix pull requests -- one toggle, no credential, responds to CI failures and review comments R4=Code Review product -- automatic PR review with no workflow file R5=GitHub Action -- BUILT, MERGED, HARDENED, GATED; needs ONE </code>claude setup-token<code> on ANY terminal, once COST_RISK=routines have a daily run cap; with usage credits ON, over-cap runs go to METERED OVERAGE COST_MITIGATION=leave usage credits OFF at claude.ai/settings/usage -- over-cap runs are then REJECTED, not billed THIS_SESSION=anthropic_cloud, five_hour subscription rate limit, isUsingOverage false, 0 routines on the account ACTION_STATUS=HAS NEVER RUN SUCCESSFULLY -- not claimed to work INTERIM=keep the main PR rule; read Claude&#x27;s committed reports from GitHub instead of relaying; enable Auto-fix on open PRs RECOMMENDATION=set up R1 now (cheap, browser-only); keep R5 as the preferred end state for claude[bot] authorship DO_NOT=enable usage credits; add an API key; claim the Action works </code>``</p>
+</main></body></html>

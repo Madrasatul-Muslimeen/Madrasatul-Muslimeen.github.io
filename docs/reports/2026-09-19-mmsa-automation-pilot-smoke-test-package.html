@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MMSA governance automation — the prepared bot smoke test, and a blocking design finding</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MMSA governance automation — the prepared bot smoke test, and a blocking design finding</h1>
+<p><strong>Date:</strong> 19 September 2026 <strong>Status of this document:</strong> <strong>PREPARATORY. Nothing here has been executed.</strong> No issue has been opened, no <code>@claude</code> comment has been posted, no credential exists, and <strong>the bot has never run.</strong> Nothing in this report claims the bot works.</p>
+<p><strong>Scope:</strong> step 1 of the Master Architect&#x27;s instruction — prepare the smallest reversible smoke test and define its pass/fail evidence. Kept <strong>entirely separate from PR #89</strong>, which is untouched by this round.</p>
+<p>&gt; <strong>One housekeeping correction.</strong> The instruction cites my previous report as <code>2026-09-20-…</code>. Its actual path is <strong><code>docs/reports/2026-09-19-mmsa-automation-pilot-step2-exec-surface-and-merge-block.md</code></strong> — this sandbox&#x27;s date is 19 September. Naming it by its real path matters because <code>brief-integrity.mjs</code> checks that every repository path the brief names exists.</p>
+<hr>
+<h2>1. Verified state — read back, not quoted</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><code>origin/main</code></td><td><strong><code>b87133461680d3c2837f7bd75fc5c824e10090d3</code></strong></td></tr>
+<tr><td>PR #89 head</td><td><strong><code>e73d1dea39d47b86ac531f9db475beec16f00cf1</code></strong> — matches the instruction exactly</td></tr>
+<tr><td>PR #89</td><td><strong>open, not merged</strong>; seven-suite check green; all three review threads resolved</td></tr>
+<tr><td>Rules applying to <code>main</code></td><td><strong>0</strong> — <code>GET /rules/branches/main</code> → <code>200 []</code></td></tr>
+<tr><td>App version</td><td><code>08.31</code>; <code>08.32</code> unallocated</td></tr>
+</tbody></table></div>
+<p><strong>No ruleset write was attempted this round.</strong> The documented <code>403</code> stands as established; it was not retried.</p>
+<hr>
+<h2>2. THE BLOCKING FINDING — the current configuration cannot produce a bot-authored PR</h2>
+<p><strong>This is the most important thing in this report, and it is better found now than after the Owner has entered a credential and spent a test cycle.</strong></p>
+<h3>What the Action actually does</h3>
+<p>From the Action&#x27;s own FAQ, quoted rather than inferred:</p>
+<p>&gt; <em>&quot;Claude doesn&#x27;t create PRs by default. Instead, it pushes commits to a branch and provides a link to a pre-filled PR submission page.&quot;</em></p>
+<p>and on branches, for an issue trigger:</p>
+<p>&gt; <em>&quot;Issues: Always creates a new branch with a timestamp.&quot;</em></p>
+<p>So on an <code>@claude</code> comment the Action will create a branch, commit to it as <code>claude[bot]</code>, and <strong>post a link</strong>. <strong>It will not open a pull request.</strong></p>
+<h3>Why that breaks the test as specified</h3>
+<p>If the Owner then clicks that link, <strong>the Owner authors the pull request.</strong> Its <code>user.login</code> would be <code>AAAsapp</code>, not <code>claude[bot]</code> — and GitHub would forbid <code>AAAsapp</code> approving it. Two of the four required proofs would fail, and they would fail for a reason that has nothing to do with whether the automation works.</p>
+<div class='tw'><table><thead><tr><th>Required proof</th><th>Under the current configuration</th></tr></thead><tbody>
+<tr><td>(a) an actual Claude Action run</td><td><strong>Testable</strong></td></tr>
+<tr><td>(b) <code>claude[bot]</code> authorship of a <strong>PR</strong></td><td><strong>NOT ACHIEVABLE</strong> — no PR is created by the Action</td></tr>
+<tr><td>(c) seven-suite CI on that <strong>bot PR</strong></td><td><strong>NOT ACHIEVABLE</strong> — <code>verify.yml</code> is <code>pull_request</code>-only, and no bot PR exists</td></tr>
+<tr><td>(d) Owner&#x27;s ability to review it</td><td><strong>NOT ACHIEVABLE</strong> — the only PR would be the Owner&#x27;s own</td></tr>
+</tbody></table></div>
+<h3>The remedy, verified from source</h3>
+<p>The Action installs the official GitHub MCP server, but <strong>conditionally</strong>:</p>
+<p>``<code>ts if (hasGitHubMcpTools) {   baseMcpConfig.mcpServers.github = {     command: &quot;docker&quot;,     args: [&quot;run&quot;,&quot;-i&quot;,&quot;--rm&quot;,&quot;-e&quot;,&quot;GITHUB_PERSONAL_ACCESS_TOKEN&quot;,&quot;-e&quot;,&quot;GITHUB_HOST&quot;,            &quot;ghcr.io/github/github-mcp-server:sha-23fa0dd&quot;],     env: { GITHUB_PERSONAL_ACCESS_TOKEN: githubToken, GITHUB_HOST: GITHUB_SERVER_URL },   }; } </code>``</p>
+<p>Two facts follow, and both were read rather than assumed:</p>
+<ol><li><strong>The condition is the allowlist itself</strong> — the server is installed when <code>allowedTools</code> contains <code>mcp__github</code> or any <code>mcp__github__*</code> entry. So naming one tool turns it on.</li><li><strong>Its token is <code>githubToken</code></strong> — the <em>resolved</em> token, which in our configuration is the <strong>Claude App installation token</strong>. A pull request opened through it is therefore authored by <strong><code>claude[bot]</code></strong>.</li></ol>
+<p>So the remedy is one entry:</p>
+<p>``<code>yaml claude_args: |   --model &quot;claude-opus-5&quot;   --allowedTools &quot;mcp__github__create_pull_request&quot; </code>``</p>
+<h3>Why this does NOT reintroduce the P1 finding</h3>
+<p><strong>An MCP tool is categorically different from a Bash tool, and the distinction is the whole point of the P1 fix.</strong></p>
+<p>The P1 finding was about <strong>execution</strong>: <code>Bash(node …)</code> runs a file, and the file is editable, so the allowlist could not bound behaviour. <code>mcp__github__create_pull_request</code> is a <strong>single typed API call</strong>. It cannot spawn a process, cannot run a script, and cannot be redirected by editing a file in the repository. The execution surface stays <strong>zero Bash tools</strong>; only one narrowly-typed capability is added.</p>
+<p><strong>This is a proposal, not a change.</strong> <code>claude.yml</code> is untouched. It belongs on a <strong>follow-up pull request after #89 merges</strong>, which also keeps it under the seven-suite check, exactly as the instruction requires for corrections.</p>
+<p>&gt; <strong>Master Architect decision needed:</strong> amend #89 before merging (one line, saves an Owner cycle, but changes what was reviewed), <strong>or</strong> merge #89 as reviewed and add this on a follow-up PR. <strong>My recommendation is the follow-up PR</strong> — #89 has a clean review record and a green check on <code>e73d1de</code>, and the staged plan in §5 gets real evidence out of Stage A regardless.</p>
+<hr>
+<h2>3. The prepared issue</h2>
+<p><strong>Title</strong></p>
+<p>``<code> Automation pilot: bot identity smoke test </code>``</p>
+<p><strong>Body</strong> — deliberately contains no <code>@claude</code> mention, so that opening the issue triggers nothing. Only the separate comment does.</p>
+<p>```markdown Throwaway issue for the governance-automation pilot. It exists to prove four things and nothing else:</p>
+<ol><li>the Claude Action runs at all when invoked from a comment;</li><li>the commit it makes is authored by <code>claude[bot]</code>, not by a human;</li><li>the seven-suite <code>Deterministic governance suites</code> check runs on the result;</li><li>the Owner can review that result.</li></ol>
+<p>It changes no application code, no version, no Firestore Rules and no repository settings. Close and delete the branch when the test is done. ```</p>
+<hr>
+<h2>4. The exact <code>@claude</code> comment</h2>
+<p><strong>Posted by the Owner, as a comment on that issue.</strong> It must come from <code>AAAsapp</code> — the job&#x27;s <code>if:</code> requires <code>author_association</code> of <code>OWNER</code>, <code>MEMBER</code> or <code>COLLABORATOR</code>.</p>
+<p>``` @claude Create a single new file at docs/automation-pilot/bot-smoke-test.md containing exactly this:</p>
+<h1>Bot smoke test</h1>
+<p>bot identity test</p>
+<p>Do not create, modify or delete any other file. Do not touch app/, tools/, firestore.rules, firebase.json, CLAUDE.md, CHANGELOG.md, docs/governance/ or app/js/version.js. When you are finished, reply in this thread with the exact name of the branch you committed to. ```</p>
+<p><strong>Why this wording:</strong> it is the smallest possible change; the target path is referenced by nothing; the exclusion list names every shared path the Programme Integration Ledger governs, so the test cannot trip guard E; and asking for the branch name back gives one more piece of evidence that costs nothing.</p>
+<h3>The payload is pre-validated — the test isolates the automation, not the content</h3>
+<p>The file was created locally and the full gate run against it, then removed. <strong>All seven suites are byte-identical to the baseline:</strong></p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Baseline</th><th>With payload</th></tr></thead><tbody>
+<tr><td><code>programme-ledger</code></td><td>8 / 23 noted / 0</td><td><strong>identical</strong></td></tr>
+<tr><td><code>programme-ledger-mutations</code></td><td>49 / 0</td><td><strong>identical</strong></td></tr>
+<tr><td><code>brief-integrity</code></td><td>8 / 0</td><td><strong>identical</strong></td></tr>
+<tr><td><code>study-activity-evidence-boundary</code></td><td>27 / 0</td><td><strong>identical</strong></td></tr>
+<tr><td><code>study-activity-evidence-boundary-mutations</code></td><td>11 / 0</td><td><strong>identical</strong></td></tr>
+<tr><td><code>study-event-wiring</code></td><td>41 / 0</td><td><strong>identical</strong></td></tr>
+<tr><td><code>rules-authorisation-executable</code></td><td>38 / 0</td><td><strong>identical</strong></td></tr>
+</tbody></table></div>
+<p>So <strong>if CI fails on the bot&#x27;s pull request, the cause is the automation, not the change.</strong> The file was deleted locally afterwards — the bot must create it, or the test proves nothing.</p>
+<hr>
+<h2>5. Pass / fail evidence, in two stages</h2>
+<p>Splitting this is a consequence of §2, not a softening of the test.</p>
+<h3>Stage A — runnable as soon as a credential exists, no config change</h3>
+<div class='tw'><table><thead><tr><th>#</th><th>Observation</th><th>PASS looks like</th><th>FAIL means</th></tr></thead><tbody>
+<tr><td>A1</td><td>A workflow run appears</td><td>Actions tab shows a <strong><code>Claude Code</code></strong> run, event <code>issue_comment</code></td><td><strong>No run at all</strong> → the <code>author_association</code> gate. Check the Owner&#x27;s association on that comment. <strong>Run present but job skipped</strong> → the <code>if:</code> was false</td></tr>
+<tr><td>A2</td><td>The preflight resolves a mode</td><td>Step <em>&quot;Establish which Claude authentication mode is configured&quot;</em> prints <code>api_key</code>, <code>oauth</code> or <code>federation</code></td><td><code>mode=none</code> → credential absent or wrongly named. <code>federation_incomplete</code> → it names the missing variable</td></tr>
+<tr><td>A3</td><td>The App-token exchange works</td><td>The Claude step proceeds past setup</td><td><code>workflow_not_found_on_default_branch</code> → <code>claude.yml</code> is not on <code>main</code> yet</td></tr>
+<tr><td>A4</td><td><strong>A branch is created and committed as <code>claude[bot]</code></strong></td><td>A new branch <code>claude/issue-&lt;N&gt;-&lt;timestamp&gt;</code> exists; its commit&#x27;s author <strong>and</strong> committer are <code>claude[bot]</code> (id <code>41898282</code>), and — because <code>use_commit_signing: true</code> — the commit is <strong>Verified</strong></td><td>Author <code>github-actions[bot]</code> → a <code>github_token</code> crept in. Author <code>AAAsapp</code> → the App-token route is not in use</td></tr>
+<tr><td>A5</td><td><strong>The hardened tool set is SUFFICIENT</strong></td><td>The file is committed using only <code>mcp__github_file_ops__commit_files</code></td><td>A &quot;no tool available&quot; style failure would mean the P1 hardening went too far — this is the check that the lockdown did not break the Action</td></tr>
+</tbody></table></div>
+<p><strong>A5 is worth naming separately.</strong> Removing every Bash tool made the configuration safe; it has never been shown to still be <em>capable</em>. Stage A is the first evidence either way.</p>
+<h3>Stage B — needs the one-line <code>mcp__github__create_pull_request</code> addition from §2</h3>
+<div class='tw'><table><thead><tr><th>#</th><th>Observation</th><th>PASS looks like</th><th>FAIL means</th></tr></thead><tbody>
+<tr><td>B1</td><td><strong><code>claude[bot]</code> authorship of a PR</strong></td><td>The new PR&#x27;s <code>user.login</code> is <strong><code>claude[bot]</code></strong>, not <code>AAAsapp</code>, not <code>github-actions[bot]</code></td><td>The identity route is not what the source says</td></tr>
+<tr><td>B2</td><td><strong>The seven-suite check runs on that bot PR</strong></td><td>A check named <strong><code>Deterministic governance suites</code></strong> appears on the bot PR, conclusion <strong>success</strong>, and its log&#x27;s closing recap lists <strong>seven</strong> suites</td><td><strong>Absent</strong> → an App installation token does <strong>not</strong> trigger <code>pull_request</code> workflows here. That would be a genuine finding and the pilot&#x27;s central assumption would need rework</td></tr>
+<tr><td>B3</td><td><strong>The Owner can review it</strong></td><td>On the bot PR, <em>Files changed → Review changes</em> offers <strong>Approve</strong> <strong>enabled</strong> for <code>AAAsapp</code></td><td>Greyed with <em>&quot;can&#x27;t approve your own&quot;</em> → the author is <code>AAAsapp</code>, so B1 failed</td></tr>
+<tr><td>B4</td><td>The <code>main</code> rule holds</td><td>The bot PR cannot be merged without going through the PR flow</td><td>The rule is absent or misconfigured</td></tr>
+</tbody></table></div>
+<p><strong>B2 is the single most load-bearing unknown in this whole pilot.</strong> Everything else has been read from source; this one can only be observed.</p>
+<hr>
+<h2>6. Rollback — the whole test is reversible in three clicks</h2>
+<ol><li><strong>Close</strong> the bot pull request <strong>without merging</strong> (Stage B), or simply leave the branch unmerged (Stage A).</li><li><strong>Delete</strong> the branch <code>claude/issue-&lt;N&gt;-&lt;timestamp&gt;</code>.</li><li><strong>Close</strong> the smoke-test issue.</li></ol>
+<p><code>main</code> is never written to. <code>docs/automation-pilot/</code> never reaches <code>main</code>. Nothing in <code>app/</code>, the Rules, the ledger or the version is touched at any point.</p>
+<hr>
+<h2>7. Verified facts vs proposed behaviour — kept apart deliberately</h2>
+<p><strong>Verified (read from source, the API, or a local run):</strong></p>
+<ul><li><code>origin/main</code>, PR #89 head, and the <code>0</code> rules on <code>main</code>.</li><li>The Action does not open pull requests by default; on an issue it creates a timestamped branch.</li><li>The <code>github</code> MCP server is installed only when <code>allowedTools</code> names an <code>mcp__github__*</code> tool, and it receives the <strong>resolved</strong> token.</li><li>Default tools contain <strong>no generic <code>Bash</code></strong>; with <code>use_commit_signing: true</code> the allowlist has <strong>zero Bash tools</strong>.</li><li>The smoke-test payload passes all seven suites, identically to baseline.</li></ul>
+<p><strong>Proposed, and NOT yet true:</strong></p>
+<ul><li>That adding <code>mcp__github__create_pull_request</code> yields a <code>claude[bot]</code>-authored PR. <em>Mechanism verified; outcome unobserved.</em></li><li>That a <code>claude[bot]</code> PR triggers <code>verify.yml</code>. <strong>Inferred only</strong> — B2.</li><li>That <code>AAAsapp</code> can approve a bot PR. Inferred from the authorship rule.</li><li>That the hardened tool set is sufficient to commit. <strong>Never exercised</strong> — A5.</li></ul>
+<p><strong>Never yet true, and stated plainly: no Claude Action run has ever occurred in this repository.</strong></p>
+<hr>
+<h2>8. The two Owner-only gates, in order</h2>
+<p><strong>Gate 1 — create the <code>main</code> rule.</strong> The only action required now.</p>
+<p><strong>Settings → Rules → Rulesets → New branch ruleset</strong></p>
+<ol><li><strong>Name</strong> <code>main: require a pull request</code>; <strong>Enforcement</strong> <strong>Active</strong></li><li><strong>Bypass list</strong> → <strong>+ Add bypass</strong> → <strong>Repository admin</strong>, mode <strong>Always</strong> — <em>Owner recovery. Add nothing else; no GitHub App, no Claude.</em></li><li><strong>Target branches</strong> → <strong>Add target</strong> → <strong>Include default branch</strong></li><li>Tick <strong>Require a pull request before merging</strong> → <strong>Required approvals <code>0</code></strong>; leave <em>dismiss stale approvals</em>, <em>Code Owners</em>, <em>last-push approval</em> and <em>conversation resolution</em> <strong>unticked</strong></li><li><strong>Do NOT</strong> tick <em>Require status checks to pass</em></li><li><strong>Create</strong></li></ol>
+<p><em>(If Settings shows <strong>Branches</strong> instead of <strong>Rules</strong>: Add branch protection rule → pattern <code>main</code> → Require a pull request, Required approvals <code>0</code> → leave <strong>&quot;Do not allow bypassing the above settings&quot; unticked</strong> → Create.)</em></p>
+<p>Then tell me. <strong>I will read the effective rule back</strong> — target, enforcement and bypass — and, if it matches, re-verify PR #89&#x27;s head, diff and check and <strong>merge it myself</strong> under the standing conditional instruction.</p>
+<p><strong>Gate 2 — the credential.</strong> <strong>Not yet.</strong> Its exact location and name are withheld until PR #89 is verified on <code>main</code>, as instructed. <strong>I will never ask for, handle, or display the credential value.</strong></p>
+<hr>
+<h2>9. State block</h2>
+<p>``<code> MMSA_AUTOMATION_PILOT_SMOKE_TEST_PACKAGE ISSUED=2026-09-19 DOCUMENT_STATUS=PREPARATORY -- nothing executed, bot has NEVER run ORIGIN_MAIN=b87133461680d3c2837f7bd75fc5c824e10090d3 PR89_HEAD=e73d1dea39d47b86ac531f9db475beec16f00cf1 (matches instruction) PR89_STATE=OPEN, NOT MERGED, check green, 3/3 review threads resolved MAIN_RULES=0 -- verified read-only; NO ruleset write attempted this round PR89_TOUCHED_THIS_ROUND=NO BLOCKING_FINDING=the Action does NOT open PRs by default -- it pushes a branch and posts a link BLOCKING_CONSEQUENCE=a human clicking that link authors the PR as AAAsapp, so criteria (b), (c) and (d) cannot pass as configured REMEDY=add --allowedTools &quot;mcp__github__create_pull_request&quot; REMEDY_BASIS=github MCP server installs iff allowedTools names mcp__github__*; its GITHUB_PERSONAL_ACCESS_TOKEN is the RESOLVED token (the Claude App installation token) REMEDY_SAFETY=an MCP tool is a typed API call, NOT execution -- P1 is not reintroduced; Bash tool count stays ZERO REMEDY_STATUS=PROPOSED ONLY -- claude.yml untouched; recommended as a FOLLOW-UP PR after #89 merges PAYLOAD=docs/automation-pilot/bot-smoke-test.md PAYLOAD_PREVALIDATED=YES -- all seven suites byte-identical to baseline; file then deleted locally STAGE_A=runnable with no config change: run occurs, mode resolves, token exchange works, branch+commit authored by claude[bot], and the hardened toolset proven SUFFICIENT (A5) STAGE_B=needs the one-line remedy: bot PR authorship, seven-suite check on the bot PR, Owner Approve enabled MOST_LOAD_BEARING_UNKNOWN=B2 -- whether an App installation token triggers pull_request workflows here ROLLBACK=close PR, delete branch, close issue; main never written OWNER_GATE_1=create the main pull-request rule (0 approvals, repo-admin bypass, no App bypass, no required check) OWNER_GATE_2=credential -- location and name WITHHELD until PR #89 is verified on main CREDENTIAL_HANDLED=NO -- never requested, never displayed CLAUDE_BOT_RUN_EVER=NO APP_CODE_CHANGED=NO VERSION=08.31 UNCHANGED FIREBASE_RULES_DEPLOYED=NO MERGED=NO </code>``</p>
+</main></body></html>
