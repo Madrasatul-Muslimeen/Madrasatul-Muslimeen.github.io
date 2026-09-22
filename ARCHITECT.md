@@ -251,6 +251,30 @@ When a job is finished and reported, carry on without being asked with the
 anything that makes the existing app more correct. **Never start a new feature
 from the backlog**: new features come from the Owner.
 
+**THE FIX LIST IS A STANDING OWNER AUTHORISATION, given 22 Sep 2026** in the
+Owner's own words: *"can i ask you doing some fixing work here and there. You
+can organise and set the plan for doing these out-of-planned fixing/
+enhancement work."* It lives in the pinned issue
+`🔧 MMSA — the fix list (drop anything here)` and is read at the start of
+every session, alongside the status board.
+
+- **The Owner writes in whatever words they like**, with no format and no
+  triage of their own. Sorting an entry is yours.
+- **Three outcomes only**: fix it (one clear right answer — do it, do not
+  ask); one short question with a recommendation (a real choice that costs
+  something either way); or it is really a feature, which becomes its own job
+  and goes back to the Owner.
+- **Order is D13 and does not get re-decided per item**: the Owner's own real
+  use first, then family, then outside students, then everything else.
+- **Fixes INTERLEAVE with planned rounds rather than queue behind them.** They
+  are small; slot them between bigger rounds. This does not suspend *one
+  bounded task at a time* — it means a fix is often the right next bounded
+  task.
+- This authorisation covers **fixes and small enhancements**. It is not
+  authority for a new feature, and it crosses no Owner Control Gate: a fix
+  that would touch Rules, tenancy, live records or a version allocation stops
+  at the same gates as anything else.
+
 **A "not done" recorded in a round is backlog work nobody has written down.**
 Every round says what it did not do; saying it in a changelog entry files it
 nowhere. When a round records something as not done, put it on the backlog in
