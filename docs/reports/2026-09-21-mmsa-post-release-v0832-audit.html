@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MMSA post-release v08.32 audit</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; --ok:#1f6e3a; --bad:#8e1f1f; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; --ok:#7fd39a; --bad:#e69a9a; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  .ok { color:var(--ok); font-weight:700 }
+  .bad { color:var(--bad); font-weight:700 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MMSA read-only post-release audit — v08.32 on <code>main</code></h1>
+<p><strong>Date:</strong> 21 Sep 2026&emsp;<strong>Status:</strong> Audit complete, read-only. No protected/shared path edited. No version allocated. No merge. Nothing deployed.&emsp;<strong>Bridge task:</strong> issue #123, comment <code>5754399917</code> (third <code>/mmsa-task</code> trigger on this issue).</p>
+
+<h2>What was verified, and how</h2>
+<p>All checks below ran against <code>origin/main</code> at commit <strong><code>af2c510518</code></strong> ("Mark v08.31 released after owner-tested v08.32"), fetched with full history and the two ledger-declared refs (<code>claude/pensive-knuth-2pu3jj</code>, <code>claude/phase4-wiring</code>), in a detached worktree kept separate from this session's own working branch.</p>
+<div class="tw"><table>
+<tr><th>Claim</th><th>Verified</th><th>Evidence</th></tr>
+<tr><td>PR #112 merged</td><td class="ok">YES</td><td><code>state: closed</code>, <code>merged: true</code>, <code>merged_by: AAAsapp</code>, <code>merged_at: 2026-09-21T01:29:05Z</code></td></tr>
+<tr><td><code>APP_VERSION</code> reads <code>08.32</code></td><td class="ok">YES</td><td><code>app/js/version.js</code> on <code>origin/main</code></td></tr>
+<tr><td>Ledger: exactly one <code>LIVE</code> allocation, and it is 08.32</td><td class="ok">YES</td><td><code>versionAllocations</code>: one <code>LIVE</code> row, <code>08.32 quran</code></td></tr>
+<tr><td>08.31 is <code>RELEASED</code></td><td class="ok">YES</td><td>Same table</td></tr>
+<tr><td><code>nextUnallocated</code> is 08.33</td><td class="ok">YES</td><td>Ledger top-level field</td></tr>
+<tr><td><code>CLAUDE.md</code> milestone names v08.32</td><td class="ok">YES</td><td>Line 143, present on <code>main</code> — corrects the prior in-thread claim that this edit was rejected</td></tr>
+<tr><td><code>CHANGELOG.md</code> has a v08.32 entry</td><td class="ok">YES</td><td><code>## v08.32 — 21 Sep 2026 — Basic Arabic lemma occurrences</code></td></tr>
+<tr><td>Owner app-test acceptance reported</td><td>Recorded in the repo, not independently verifiable from here</td><td>Both files state the Owner tested and confirmed; this session has no channel to the Owner or the live site</td></tr>
+</table></div>
+
+<p><strong>Baseline ancestry:</strong> <code>main.baselineSha</code> (<code>a20892f1e4</code>) is a real ancestor of current <code>origin/main</code> (61 commits ahead) — confirmed with <code>git merge-base --is-ancestor</code>.</p>
+<p><strong>Live GitHub Pages serving:</strong> not verified from this sandbox — the outbound proxy refuses the CONNECT tunnel to <code>github.io</code> (confirmed again this session: <code>403</code> on the tunnel itself). The ledger's <code>deployment.githubPagesServing</code> is unchanged: <code>state: PRESUMED_FROM_MAIN</code>, <code>verified: false</code>. This audit does not and should not move that to verified.</p>
+
+<h2>Seven governance suites — full history, both named refs, current <code>main</code></h2>
+<div class="tw"><table>
+<tr><th>Suite</th><th>Result</th><th>Exit</th></tr>
+<tr><td><code>programme-ledger</code></td><td>8 passed, 23 noted, 0 failed</td><td>0</td></tr>
+<tr><td><code>programme-ledger-mutations</code></td><td>49 passed, 0 failed</td><td>0</td></tr>
+<tr><td><code>brief-integrity</code></td><td>8 passed, 0 failed</td><td>0</td></tr>
+<tr><td><code>study-activity-evidence-boundary</code></td><td>27 passed, 0 failed</td><td>0</td></tr>
+<tr><td><code>study-activity-evidence-boundary-mutations</code></td><td>11 passed, 0 failed</td><td>0</td></tr>
+<tr><td><code>study-event-wiring</code></td><td>41 passed, 0 failed</td><td>0</td></tr>
+<tr><td><code>rules-authorisation-executable</code></td><td>38 passed, 0 failed</td><td>0</td></tr>
+</table></div>
+<p>All seven exit 0. The <code>programme-ledger</code> <code>NOTE</code> lines are the expected DECLARED/AUTHORIZED shared-file touch and baseline-movement records this guard always prints (guards E and F) — none is a failure. Guard <code>[A]</code> reads "08.32 is LIVE and matches main"; guard <code>[G]</code> reads "four deployment states recorded separately … the readiness declaration agrees with them."</p>
+
+<h2>Word Card suites relevant to PR #112</h2>
+<div class="tw"><table>
+<tr><th>Suite</th><th>Result</th><th>Notes</th></tr>
+<tr><td><code>quran-word-card</code></td><td>36 passed, 0 failed</td><td>Pure renderer, no browser</td></tr>
+<tr><td><code>quran-word-card-integration</code></td><td>10 passed, 0 failed</td><td>Pure integration, no browser</td></tr>
+<tr><td><code>quran-word-card-rendered</code></td><td>120 passed, <span class="bad">2 failed</span></td><td>Both <code>net::ERR_CERT_AUTHORITY_INVALID</code> — this sandbox's documented TLS-interception artifact, reproduced character-for-character; not an application defect</td></tr>
+<tr><td><code>quran-word-card-lemma-occurrences</code> (PR #112's own suite)</td><td><strong>50 passed, 0 failed</strong></td><td>Clean, matching the PR's own reported run exactly</td></tr>
+</table></div>
+<p><strong>No new failure exists anywhere in this set.</strong> Nothing to fix; no fix budget proposed.</p>
+
+<h2>What this audit deliberately did not do</h2>
+<ul>
+<li>No edit to any protected or shared path — only this report and its Markdown twin were added, under <code>docs/reports/</code>.</li>
+<li>No version allocated or bumped; 08.33 remains unallocated.</li>
+<li>No merge, no deploy, no approval claimed, no Rule or index touched.</li>
+<li>No independent contact with the Owner or the live site — both stated plainly as unverifiable from here rather than assumed.</li>
+</ul>
+
+<h2>Owner app test</h2>
+<p><strong>Not required as a result of this audit.</strong> The task's own instruction was not to ask the Owner to repeat their test without a concrete new risk. This audit found none — every runnable suite reproduces PR #112's own reported counts exactly, and every ledger/brief/changelog field checked matches. <strong>Owner app test: NO</strong> (none newly needed).</p>
+
+<hr>
+<p><strong>Bridge session:</strong> <code>session_011QvGGVBvwsxK8d7ggFw27s</code></p>
+</main></body></html>
