@@ -214,6 +214,21 @@ the app already recognises as responsible for them. Nobody outside that.
 **If you meant something stricter than that — nobody else, ever, no
 exceptions — say so and this gets rebuilt before you publish anything.**
 
+**Decided, 22 Sep 2026 — both kept exactly as this file already builds them,
+no change needed before publishing.** Two questions came out of your own
+independent audit:
+
+- **Who may read a private Note besides its author** — kept as is: the
+  author, whoever guards them, a co-enrolled teacher, and the tenant
+  owner/prime, the same circle every other study record in this app already
+  uses. Considered and set aside: tightening to "adults' own notes are
+  theirs alone", and tightening further to "Owner only, for everyone".
+- **Whether to ever let someone permanently erase their own Note** — kept
+  as is: no true permanent delete, matching D6/I4 (archive, never destroy)
+  which holds everywhere else in this app. The existing "Remove" pattern
+  (soft, reversible, no longer shown but never gone) is the fit if a
+  remove/archive action is ever added for Notes.
+
 ---
 
 ## 8. Still waiting on you, separately
