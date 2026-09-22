@@ -7,8 +7,9 @@ import path from "node:path";
 import process from "node:process";
 import {
   listCollections, booksOf, chaptersOf, occurrencesIn, editionHasChapterLevel,
-  occurrenceById, sourcePathOf, externalReferencesFor, resolveText, availableLanguages,
-  searchCorpus, topicIndex, exploreAggregate, CONTENT_LANGUAGES, SOURCE_LANGUAGE,
+  occurrenceById, chapterById, sourcePathOf, externalReferencesFor, resolveText, availableLanguages,
+  searchCorpus, listTopics, topicIndex, exploreAggregate, translationCoverage, topicCoverage,
+  CONTENT_LANGUAGES, SOURCE_LANGUAGE,
 } from "../../app/js/hadith-corpus.js";
 import {
   OCCURRENCES, SYNTHETIC_NOTICE, TAXONOMY_REVISION,
@@ -397,12 +398,348 @@ check("EXPLORE -- a repeat is counted as its own narration, never merged", () =>
   assert.equal(summed, a.totals.occurrences);
 });
 
+/**
+ * A named export's own body, bounded at the NEXT top-level `export`, never to
+ * end of file. `exploreAggregate`'s own guard once sliced to EOF, which was
+ * silently correct only because it happened to be the last export in the
+ * file -- adding `translationCoverage` after it pulled that function's own
+ * doc comment (which names `trackableId` on purpose, to say it is absent)
+ * into the slice, and the guard failed a check it had no business seeing.
+ * Positive control: this must find a body that is shorter than the whole
+ * remaining file whenever a later export exists.
+ */
+function exportedFunctionBody(code, name) {
+  const start = code.indexOf(`export function ${name}`);
+  assert.ok(start >= 0, `export function ${name} not found`);
+  const next = code.indexOf("\nexport function", start + 1);
+  return next === -1 ? code.slice(start) : code.slice(start, next);
+}
+
 check("EXPLORE -- the aggregate reaches no progress store of any kind", () => {
-  const src = fs.readFileSync(path.join(appJs, "hadith-corpus.js"), "utf8");
-  const body = src.slice(src.indexOf("export function exploreAggregate"));
+  // codeOf() strips comments -- both this function's own doc comment and the
+  // NEXT export's leading doc comment name several of these words on purpose,
+  // to say they are absent, and a raw-text slice would trip on either one.
+  const full = codeOf("hadith-corpus.js");
+  const body = exportedFunctionBody(full, "exploreAggregate");
+  assert.ok(body.length < full.length, "the slice reached end of file -- it is not bounded to this function");
   for (const forbidden of ["records", "activity", "chunkKey", "trackableId", "approach_", "claimStatus", "demoTrack"]) {
     assert.ok(!body.includes(forbidden), `exploreAggregate reaches ${forbidden}`);
   }
+});
+
+// ---------------------------------------------------------------------------
+// Translation coverage -- MEASURED against the fixture, not guessed
+// ---------------------------------------------------------------------------
+
+check("COVERAGE -- English is present on every occurrence in this fixture, and the totals prove it", () => {
+  const cov = translationCoverage();
+  assert.equal(cov.totals.occurrences, OCCURRENCES.length);
+  // The fixture's own gap (syn-occ-0008) is Bangla-only, per hadith-fixture-data.js's
+  // own comment -- if that ever stops being the only gap, this figure must move
+  // with it rather than staying a stale literal.
+  const missingBangla = OCCURRENCES.filter((o) => !availableLanguages(o).includes("bn")).length;
+  const missingEnglish = OCCURRENCES.filter((o) => !availableLanguages(o).includes("en")).length;
+  assert.equal(cov.totals.withEnglish, OCCURRENCES.length - missingEnglish);
+  assert.equal(cov.totals.withBangla, OCCURRENCES.length - missingBangla);
+  assert.equal(missingBangla, 1, "the fixture's own documented gap (syn-occ-0008) must be exactly one occurrence");
+});
+
+check("COVERAGE -- per-edition figures sum to the totals, and every edition is present", () => {
+  const cov = translationCoverage();
+  assert.equal(cov.perEdition.length, EDITIONS.length);
+  assert.equal(cov.perEdition.reduce((n, e) => n + e.occurrences, 0), cov.totals.occurrences);
+  assert.equal(cov.perEdition.reduce((n, e) => n + e.withEnglish, 0), cov.totals.withEnglish);
+  assert.equal(cov.perEdition.reduce((n, e) => n + e.withBangla, 0), cov.totals.withBangla);
+  const beta = cov.perEdition.find((e) => e.editionId === "synthetic-beta-ar-v1");
+  assert.ok(beta, "synthetic-beta-ar-v1 is missing from the coverage");
+  assert.equal(beta.occurrences, 2);
+  assert.equal(beta.withEnglish, 2, "both of Beta's occurrences have English");
+  assert.equal(beta.withBangla, 1, "syn-occ-0008's own documented gap must show up on ITS edition, not just overall");
+});
+
+check("COVERAGE -- a Bangla gap can never be reported as covered", () => {
+  const cov = translationCoverage();
+  const beta = cov.perEdition.find((e) => e.editionId === "synthetic-beta-ar-v1");
+  assert.ok(beta.withBangla < beta.occurrences, "the fixture's own gap must show up as less than full coverage");
+});
+
+check("COVERAGE -- reaches no persistence, claim or progress path", () => {
+  const src = fs.readFileSync(path.join(appJs, "hadith-corpus.js"), "utf8");
+  // Reads the CODE only (codeOf strips comments) -- the function's own doc
+  // comment names several of these words on purpose, to say they are absent.
+  const body = exportedFunctionBody(codeOf("hadith-corpus.js"), "translationCoverage");
+  for (const forbidden of ["records", "activity", "chunkKey", "trackableId", "approach_", "claimStatus", "demoTrack"]) {
+    assert.ok(!body.includes(forbidden), `translationCoverage reaches ${forbidden}`);
+  }
+});
+
+check("COVERAGE -- the Explore renderer reads it, never re-derives it from scratch", () => {
+  const src = codeOf("hadith-browser.js");
+  assert.ok(/translationCoverage/.test(src), "hadith-browser.js does not call translationCoverage() at all");
+  assert.ok(/import\s*\{[^}]*\btranslationCoverage\b[^}]*\}\s*from\s*["']\.\/hadith-corpus\.js["']/.test(src),
+    "translationCoverage must be IMPORTED from hadith-corpus.js, not redefined locally");
+});
+
+// ---------------------------------------------------------------------------
+// Integration merge (issue #114, 20 Sep 2026): translationCoverage() (PR #103)
+// and topicCoverage() (PR #118) were built independently and each named its
+// own per-edition dataset attribute `hadithCoverageEdition` -- a real
+// collision, since both attach it to a row keyed by the SAME editionId for
+// a DIFFERENT fact. A selector on the shared name would match two
+// differently-shaped elements per edition once both features render. Split
+// into `hadithTranslationCoverageEdition` and `hadithTopicCoverageEdition`
+// at merge; this guards the split rather than assuming it stuck.
+// ---------------------------------------------------------------------------
+
+check("INTEGRATION -- translation- and topic-coverage per-edition rows no longer share one dataset attribute", () => {
+  const src = codeOf("hadith-browser.js");
+  assert.ok(/hadithTranslationCoverageEdition/.test(src),
+    "renderTranslationCoverage() must set its own, unambiguous per-edition attribute");
+  assert.ok(/hadithTopicCoverageEdition/.test(src),
+    "renderTopicCoverage() must set its own, unambiguous per-edition attribute");
+  assert.ok(!/dataset\.hadithCoverageEdition\b/.test(src),
+    "the old shared attribute name must not still be assigned anywhere -- it is ambiguous between the two features");
+});
+
+check("INTEGRATION -- both coverage sections render in Explore, neither shadowing the other", () => {
+  const src = codeOf("hadith-browser.js");
+  assert.ok(/renderTranslationCoverage\(body\)/.test(src), "renderExplore must still call renderTranslationCoverage(body)");
+  assert.ok(/renderTopicCoverage\(body\)/.test(src), "renderExplore must still call renderTopicCoverage(body)");
+});
+
+// ---------------------------------------------------------------------------
+// Topic coverage -- corpus-wide "reached by ANY topic", not a per-topic count
+// ---------------------------------------------------------------------------
+
+check("TOPIC COVERAGE -- a covered occurrence is exactly one topicIndex() also lists", () => {
+  const cov = topicCoverage();
+  const listedByAnyTopic = new Set();
+  for (const t of TOPICS) {
+    const idx = topicIndex(t.topicId);
+    for (const g of idx.collections) for (const e of g.entries) listedByAnyTopic.add(e.occurrence.occurrenceId);
+  }
+  assert.equal(cov.totals.covered, listedByAnyTopic.size,
+    "topicCoverage() must resolve coverage through topicIndex() itself, never re-derive it");
+});
+
+check("TOPIC COVERAGE -- covered and uncovered partition the whole corpus, corpus-wide and per edition", () => {
+  const cov = topicCoverage();
+  assert.equal(cov.totals.occurrences, OCCURRENCES.length);
+  assert.equal(cov.totals.covered + cov.totals.uncovered, cov.totals.occurrences,
+    "covered + uncovered must equal every occurrence -- no narration may be double-counted or dropped");
+  assert.ok(cov.totals.covered > 0, "the fixture has real mappings; a zero here would mean coverage was not computed");
+  assert.ok(cov.totals.uncovered > 0, "the fixture is built with unmapped occurrences (syn-occ-0001/0002/0008); a zero here means the fixture changed or the computation is wrong");
+  let summedOccurrences = 0, summedCovered = 0, summedUncovered = 0;
+  for (const ed of cov.editions) {
+    assert.equal(ed.covered + ed.uncovered, ed.occurrences, `${ed.editionId}: covered + uncovered must equal its own occurrence count`);
+    summedOccurrences += ed.occurrences; summedCovered += ed.covered; summedUncovered += ed.uncovered;
+  }
+  assert.equal(summedOccurrences, cov.totals.occurrences, "per-edition occurrence counts must sum to the corpus total");
+  assert.equal(summedCovered, cov.totals.covered, "per-edition covered counts must sum to the corpus total");
+  assert.equal(summedUncovered, cov.totals.uncovered, "per-edition uncovered counts must sum to the corpus total");
+});
+
+check("TOPIC COVERAGE -- a chapter-level mapping's coverage matches what occurrencesUnder() resolves, measured against the fixture's own numbers", () => {
+  // syn-map-0001 (chapter alpha-b1-c2 -> 3,4), syn-map-0002 (book alpha-b2 ->
+  // its chapter alpha-b2-c1 -> 5,6) and syn-map-0003 (occurrence syn-occ-0007)
+  // together cover exactly {3,4,5,6,7} -- MEASURED off the fixture, not
+  // assumed, so a future fixture edit that changes this is caught here.
+  const cov = topicCoverage();
+  const alpha = cov.editions.find((e) => e.editionId === "synthetic-alpha-ar-v1");
+  const beta = cov.editions.find((e) => e.editionId === "synthetic-beta-ar-v1");
+  assert.ok(alpha && beta, "both fixture editions must be present in the coverage report");
+  assert.equal(alpha.occurrences, 6, "alpha carries occurrences 1-6");
+  assert.equal(alpha.covered, 4, "alpha's mapped occurrences are 3, 4, 5, 6");
+  assert.equal(alpha.uncovered, 2, "syn-occ-0001 and syn-occ-0002 are reached by no mapping");
+  assert.equal(beta.occurrences, 2, "beta carries occurrences 7-8");
+  assert.equal(beta.covered, 1, "only syn-occ-0007 is mapped, via syn-map-0003");
+  assert.equal(beta.uncovered, 1, "syn-occ-0008 (the no-Bangla fixture) is reached by no topic mapping");
+});
+
+check("TOPIC COVERAGE -- the taxonomy revision travels with the result, same as topicIndex()", () => {
+  assert.equal(topicCoverage().taxonomyRevision, TAXONOMY_REVISION);
+});
+
+check("TOPIC COVERAGE -- an unreviewed mapping still makes its target covered, and that is stated, not silently dropped", () => {
+  // topicIndex()'s allMappingsReviewed is false throughout this fixture (every
+  // synthetic mapping is unreviewed). topicCoverage() must still count what
+  // the index actually resolves today -- review status is a separate, already
+  // -reported fact (allMappingsReviewed per topic), not a filter here.
+  const idx = topicIndex("synthetic-topic-salah");
+  assert.equal(idx.allMappingsReviewed, false, "the fixture's own premise for this check");
+  const cov = topicCoverage();
+  assert.ok(cov.totals.covered > 0, "coverage must not silently exclude unreviewed mappings' targets");
+});
+
+check("TOPIC COVERAGE -- reaches no progress store, no Approach and no permanent unit key, same discipline as exploreAggregate", () => {
+  const src = fs.readFileSync(path.join(appJs, "hadith-corpus.js"), "utf8");
+  const start = src.indexOf("export function topicCoverage");
+  assert.ok(start !== -1, "topicCoverage is not exported where expected");
+  const nextExport = src.indexOf("\nexport ", start + 1);
+  const body = src.slice(start, nextExport === -1 ? undefined : nextExport);
+  assert.ok(body.length > 200, "the slice is implausibly small -- it is not really bounding topicCoverage()'s body");
+  for (const forbidden of ["records", "activity", "chunkKey", "trackableId", "approach_", "claimStatus", "demoTrack", "buildUnitKey", "hadith:"]) {
+    assert.ok(!body.includes(forbidden), `topicCoverage reaches ${forbidden}`);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// TOPIC NAVIGATION -- listTopics() must offer more than one topic to be worth
+// navigating between, and each must independently resolve. This is the fixture
+// half of the Topics-tab navigation gap; the browser half is proven by the
+// focused Playwright script referenced in this round's dated report.
+// ---------------------------------------------------------------------------
+
+check("NAVIGATION -- listTopics() offers more than one topic, or there is nothing to navigate", () => {
+  assert.ok(listTopics().length >= 2,
+    "a topic PICKER proves nothing with exactly one topic -- add a second synthetic topic to the fixture");
+});
+
+check("NAVIGATION -- every topic listTopics() offers resolves independently through topicIndex()", () => {
+  for (const tp of listTopics()) {
+    const idx = topicIndex(tp.topicId);
+    assert.ok(idx, `topicIndex("${tp.topicId}") returned null -- listTopics() offers an id that does not resolve`);
+    assert.equal(idx.topic.topicId, tp.topicId);
+  }
+});
+
+check("NAVIGATION -- the two topics are genuinely distinct in what they reach, not a copy-paste pair", () => {
+  const salah = topicIndex("synthetic-topic-salah");
+  const wudu = topicIndex("synthetic-topic-wudu");
+  assert.ok(wudu, "the new synthetic-topic-wudu fixture topic must resolve");
+  assert.notEqual(salah.distinctOccurrences, wudu.distinctOccurrences,
+    "if the two topics reach the same count, a picker showing only totals could not prove it switched topics");
+  // Every occurrence syn-map-0004 reaches belongs to the SAME book/chapter as
+  // syn-map-0002's target (`synthetic-alpha-b2`), which topicIndex() would
+  // still list correctly even from a shared ancestor -- the assertion that
+  // matters is that the NEW topic's own mapping id is the one that put it there.
+  const wuduMapping = TOPIC_MAPPINGS.find((m) => m.topicId === "synthetic-topic-wudu");
+  assert.equal(wuduMapping.topicMappingId, "syn-map-0004");
+  assert.ok(wudu.collections.every((g) => g.entries.every((e) => e.viaMappingId === "syn-map-0004")),
+    "every row the new topic lists must be reached through its OWN mapping, not inherited from Salah's");
+});
+
+check("NAVIGATION -- the second topic's own mapping id and topic id both carry the enforced synthetic prefix", () => {
+  const m = TOPIC_MAPPINGS.find((x) => x.topicId === "synthetic-topic-wudu");
+  assert.ok(m.topicMappingId.startsWith("syn-map-"));
+  assert.ok(m.topicId.startsWith("synthetic-"));
+  assert.equal(m.reviewStatus, "unreviewed", "a synthetic mapping must never present as scholar-reviewed");
+});
+
+// ---------------------------------------------------------------------------
+// SOURCE NAVIGATION -- issue #114 Gate A/B: a narration reached through the
+// Topics index, a Search hit, or a repeat badge can be opened in its REAL
+// book/chapter (the Books path), via `sourcePathOf()` -- never a new lookup,
+// never a permanent unit key, never a write. The Books <-> Topics split
+// stays intact: this is a bridge FROM an index TO its source, not a rewrite
+// of either. Full behavioural (scroll + highlight) proof is a browser
+// concern -- see this round's dated report for the focused Playwright
+// evidence; these checks pin the wiring shape statically.
+// ---------------------------------------------------------------------------
+
+function sliceFunction(src, signature) {
+  const start = src.indexOf(signature);
+  assert.ok(start >= 0, `${signature} not found`);
+  const next = src.indexOf("\nfunction ", start + 1);
+  const nextExport = src.indexOf("\nexport function", start + 1);
+  const ends = [next, nextExport].filter((n) => n !== -1);
+  const end = ends.length ? Math.min(...ends) : undefined;
+  return end === undefined ? src.slice(start) : src.slice(start, end);
+}
+
+check("SOURCE NAV -- jumpToSource() resolves through sourcePathOf() only, reaches no persistence or unit key", () => {
+  const src = codeOf("hadith-browser.js");
+  const body = sliceFunction(src, "function jumpToSource(");
+  assert.ok(body.length > 50 && body.length < src.length, "the slice is not plausibly bounded to jumpToSource()");
+  assert.ok(/sourcePathOf\(/.test(body), "jumpToSource must resolve the destination through sourcePathOf()");
+  for (const forbidden of ["buildUnitKey", "hadith:", "firestore", "setDoc", "records.js", "activity.js", "demoTrack", "trackableId"]) {
+    assert.ok(!body.includes(forbidden), `jumpToSource reaches ${forbidden}`);
+  }
+});
+
+check("SOURCE NAV -- the Collections (Books) tab never renders a self-referential 'View in source' link", () => {
+  const src = codeOf("hadith-browser.js");
+  // renderOccurrenceList is the Collections tab's own list renderer; its
+  // occurrenceCard() call must take the DEFAULT (showSourceLink: false).
+  const renderOccList = sliceFunction(src, "function renderOccurrenceList(");
+  assert.ok(/occurrenceCard\(o, state, render\)\s*\)/.test(renderOccList),
+    "renderOccurrenceList must call occurrenceCard with no fourth argument -- the source view already shows the occurrence in context");
+});
+
+check("SOURCE NAV -- Topic and Search views both request the source link on the occurrences they list", () => {
+  const src = codeOf("hadith-browser.js");
+  const renderTopic = sliceFunction(src, "function renderTopic(");
+  const renderSearch = sliceFunction(src, "function renderSearch(");
+  assert.ok(/occurrenceCard\([^)]*\{\s*showSourceLink:\s*true\s*\}\)/.test(renderTopic),
+    "renderTopic must render its occurrences with { showSourceLink: true }");
+  assert.ok(/occurrenceCard\([^)]*\{\s*showSourceLink:\s*true\s*\}\)/.test(renderSearch),
+    "renderSearch must render its occurrences with { showSourceLink: true }");
+});
+
+check("SOURCE NAV -- the repeat badge is wired to jump to the ORIGINAL occurrence, not the repeat itself", () => {
+  const src = codeOf("hadith-browser.js");
+  assert.ok(/jumpToSource\(state, render, occurrence\.repeatOfOccurrenceId\)/.test(src),
+    "the repeat badge must navigate to occurrence.repeatOfOccurrenceId, the original, not the repeat's own id");
+});
+
+check("SOURCE NAV -- 'View in source' navigates to the occurrence's OWN id, not a hardcoded or unrelated one", () => {
+  const src = codeOf("hadith-browser.js");
+  const cardBody = sliceFunction(src, "export function occurrenceCard(");
+  assert.ok(/dataset\.hadithViewSource\s*=\s*occurrence\.occurrenceId/.test(cardBody),
+    "the View-in-source control must be keyed to this card's own occurrence");
+  assert.ok(/jumpToSource\(state, render, occurrence\.occurrenceId\)/.test(cardBody),
+    "the View-in-source control must navigate to this card's own occurrence, not a different one");
+});
+
+check("SOURCE NAV -- one new English literal only ('View in source'), and it is a real t() call", () => {
+  const src = codeOf("hadith-browser.js");
+  assert.ok(/t\(\s*"View in source"\s*\)/.test(src), "the new control's label must go through t(), like every other Hadith string");
+});
+
+// ---------------------------------------------------------------------------
+// BOOK BREADCRUMB -- issue #114 continuation (comment `5759520213`): a real,
+// reproduced defect in the Books reader itself, found by walking the actual
+// rendered page rather than by reading source. `breadcrumb()` used to derive
+// a book's own title from `sourcePathOf(occurrencesIn(state.bookId)[0]
+// ?.occurrenceId)` -- which is EMPTY for any book that has a chapter level,
+// because every occurrence there sits under a CHAPTER, never the book id
+// itself (`synthetic-alpha-b1`/`-b2` both have zero direct occurrences; only
+// their chapters do). So at the chapter-list level the breadcrumb silently
+// fell through to the raw internal book id (e.g. "synthetic-alpha-b1")
+// instead of its translated title -- reproduced live in both English and
+// Bangla. `chapterById()` was already exported for exactly this (a
+// bookChapter's own record, no occurrence detour) but had never been wired
+// into the one place that needed it.
+// ---------------------------------------------------------------------------
+
+check("BREADCRUMB -- chapterById() resolves a BOOK's own title directly, with no occurrence involved", () => {
+  const b1 = chapterById("synthetic-alpha-b1");
+  const b2 = chapterById("synthetic-alpha-b2");
+  assert.ok(b1 && b1.title?.en === "Book of the Beginning", "chapterById('synthetic-alpha-b1') must name the book itself");
+  assert.ok(b2 && b2.title?.en === "Book of Prayer", "chapterById('synthetic-alpha-b2') must name the book itself");
+});
+
+check("BREADCRUMB -- both alpha books genuinely have ZERO occurrences attached to the book id itself (the precondition the bug depended on)", () => {
+  assert.equal(occurrencesIn("synthetic-alpha-b1").length, 0,
+    "if this ever becomes nonzero, the old sourcePathOf(occurrencesIn(...)) approach would have masked the defect again -- re-check the fix still applies");
+  assert.equal(occurrencesIn("synthetic-alpha-b2").length, 0);
+});
+
+check("BREADCRUMB -- breadcrumb() reads the book/chapter title via chapterById(), not via an occurrence's sourcePathOf()", () => {
+  const src = codeOf("hadith-browser.js");
+  const body = sliceFunction(src, "function breadcrumb(");
+  assert.ok(/chapterById\(state\.bookId\)/.test(body), "breadcrumb() must resolve the book label with chapterById(state.bookId)");
+  assert.ok(/chapterById\(state\.chapterId\)/.test(body), "breadcrumb() must resolve the chapter label with chapterById(state.chapterId)");
+  assert.ok(!/occurrencesIn\(/.test(body), "breadcrumb() must not derive a label indirectly through an occurrence again -- that is what silently broke it for a book with no direct occurrences");
+});
+
+check("BREADCRUMB -- an edition with NO chapter level (synthetic-beta) is unaffected either way", () => {
+  // synthetic-beta-b1 DOES hold occurrences directly (it has no chapter
+  // level, so its occurrences attach straight to the book) -- the old code
+  // path was never broken here, and the new one must not break it either.
+  assert.ok(occurrencesIn("synthetic-beta-b1").length > 0, "synthetic-beta-b1 must still hold its occurrences directly");
+  const b = chapterById("synthetic-beta-b1");
+  assert.ok(b && b.title?.en === "Book of Acts of Worship", "chapterById() must resolve this book too");
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);
