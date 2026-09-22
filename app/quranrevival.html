@@ -1873,6 +1873,14 @@
      the same edge Arabic reading starts from. */
   .ayah-num-row { display: flex; justify-content: flex-end; margin: 0.3rem 0 0.1rem; }
   .ayah-num-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 1.5rem; height: 1.5rem; padding: 0 0.4rem; border-radius: 999px; background: #f0ead9; color: #8a6d1f; font-size: 0.78rem; font-weight: 700; border: 1px solid #d8c68a; }
+  /* Issue #189 -- word-tap in the normal flowing Arabic (`.ayah-arabic` in
+     Read view, `.note-arabic` in Note view). Every button property that
+     would change how the text LOOKS or WRAPS is reset to nothing, so a word
+     reads exactly as plain text until it is tapped or focused -- "same
+     spacing, same line flow" is the round's own requirement, measured by
+     `reading.mjs`/`layout.mjs`, not just eyeballed here. */
+  button.ayah-word-clickable { background: none; border: none; margin: 0; padding: 0; font: inherit; color: inherit; text-align: inherit; line-height: inherit; cursor: pointer; display: inline; }
+  button.ayah-word-clickable:hover, button.ayah-word-clickable:focus-visible { background: rgba(31,58,110,0.14); border-radius: 0.2rem; outline: none; }
   /* Fix round -- Bismillah before ayah 1 of a surah (except Surah 9, which
      traditionally carries none), on both the Read and Note screens --
      previously it only ever appeared inside the landing wheel's own hub. */
@@ -4158,7 +4166,7 @@
     // Shell round 14 -- word/phrase search. Importing the module costs
     // nothing at load: it fetches its index only when a search actually runs.
     import { searchQuran } from "./js/quran-search.js";
-    import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootPanel, renderDerivativesPanel, renderTranslationPanel, tajweedRawToSafeHtml, digitsForLang, stripLeadingBismillah } from "./js/ayah-renderer.js";
+    import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootPanel, renderDerivativesPanel, renderTranslationPanel, tajweedRawToSafeHtml, digitsForLang, stripLeadingBismillah, splitPlainArabicWords, arabicWordButtonHtml } from "./js/ayah-renderer.js";
     import { parseQuranWordOccurrenceId } from "./js/quran-word-identity.js";
     import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard, renderQuranWordCard, WORD_CARD_POS_SEGMENTS } from "./js/quran-word-card.js";
     import { occurrenceRefsFor, rootFormsFor, unpackWordIndexRef } from "./js/quran-word-index.js";
@@ -11448,10 +11456,26 @@
         // renderArabicPanel(), so it needs the same strip applied here too,
         // or the bismillahHtml heading above and the ayah's own body would
         // show the same phrase twice.
+        // Issue #189 -- same per-word tap-to-open-Word-Card treatment as
+        // Read view's renderArabicPanel() (ayah-renderer.js), built locally
+        // for the same reason the rest of this block is: this screen reads
+        // plain ayah objects, not that renderer's own panel functions. The
+        // Tajweed branch is untouched/unsplit for the same measured reason
+        // recorded on renderArabicPanel() itself -- tajweed colouring
+        // routinely spans a word boundary in the pulled data, so there is no
+        // safe split point without a per-word tajweed dataset that doesn't
+        // exist.
         const arabicOneAyahHtml = (a) => {
-          const body = tajweedToggle.checked && a.tajweedText
-            ? tajweedRawToSafeHtml(a.tajweedText)
-            : escapeHtml(a.ayah === 1 ? stripLeadingBismillah(a.uthmaniText) : a.uthmaniText);
+          let body;
+          if (tajweedToggle.checked && a.tajweedText) {
+            body = tajweedRawToSafeHtml(a.tajweedText);
+          } else {
+            const plainSource = a.ayah === 1 ? stripLeadingBismillah(a.uthmaniText) : a.uthmaniText;
+            const segments = a.words?.length ? splitPlainArabicWords(plainSource, a.words) : null;
+            body = segments
+              ? segments.map((seg, i) => arabicWordButtonHtml(seg, a.words[i], currentSurahNum, a.ayah, translationLangs())).join(" ")
+              : escapeHtml(plainSource);
+          }
           // Fix round -- Arabic-Indic digits beside the Arabic, matching
           // renderArabicPanel()'s own rule (a block's number in that block's
           // own script). This screen builds its Arabic locally rather than
