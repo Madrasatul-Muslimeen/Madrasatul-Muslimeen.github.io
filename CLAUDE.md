@@ -158,8 +158,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.34 on `claude/phase4-evidence-enabled-2026-09-22`;
-`main` is still v08.33** (22 Sep 2026 — MAP Phase 4 Activity evidence
+**Current milestone: v08.34 on `main`** (22 Sep 2026 — MAP Phase 4 Activity evidence
 persistence ENABLED. The Owner's own words, after testing Phase 3
 word-by-word progress on a real phone per the exact steps given: *"It
 worked, switch on Phase 4."* Both preconditions `app/js/study-evidence-
