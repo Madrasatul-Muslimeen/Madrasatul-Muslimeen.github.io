@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mapping My Journey — three screen options for the Owner to choose</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Mapping My Journey — three screen options for the Owner to choose</h1>
+<ul><li><strong>Date:</strong> 2026-09-22</li><li><strong>For:</strong> the Owner, a product decision. Nothing here is built.</li><li><strong>Requested by:</strong> the Owner — <em>&quot;Don&#x27;t build yet. Give me 2–3 simple options (a short description or rough mockup of each) and I&#x27;ll choose.&quot;</em></li><li><strong>A rendered comparison of all three, viewable on a phone, is linked from the status board.</strong></li></ul>
+<hr>
+<h2>What is already decided, and is not part of this choice</h2>
+<p>ADR-010 (accepted, 15 Sep 2026) fixes the <em>data</em> underneath Mapping My Journey, independent of what the screen looks like:</p>
+<ul><li>It reads existing Notes; it never defines a Note of its own.</li><li>Every person has exactly two <strong>system folders</strong> — the <strong>Personal Journey Map</strong> and the <strong>Reflection Archive</strong> — plus as many <strong>folders they make and name themselves</strong> as they like.</li><li>A Note can be filed in more than one folder, and moving it never rewrites its identity — a move retires one filing and creates another.</li></ul>
+<p><strong>None of the three options below change any of that.</strong> They differ only in how the screen presents it, which is why picking one now does not lock in the others forever — the folders and Notes underneath stay the same no matter which screen sits on top.</p>
+<h2>The three options</h2>
+<h3>A — Folders</h3>
+<p>Open the screen, see a list of folders. Tap one, see the Notes filed in it. Tap a Note, it opens. The same shape already used for bookmarks and collections elsewhere in the app.</p>
+<ul><li><strong>To build:</strong> smallest of the three — it reuses a pattern the app already has, and a rough version of this exact screen already exists as a mock-up (<code>app/note-editor-prototype-demo.html</code>).</li><li><strong>Grows well</strong> with any number of Notes.</li><li><strong>Can become B or C later</strong> without touching the data underneath.</li></ul>
+<h3>B — Timeline</h3>
+<p>Open the screen, see every Note in the order it was written, newest first, grouped by day — like scrolling back through a diary. Filter chips at the top switch between everything, the Journey Map, the Archive, or one folder.</p>
+<ul><li><strong>To build:</strong> moderate — a new screen, but a simple list layout.</li><li>Answers a different question than folders do: not <em>where is this filed</em> but <em>what was on my mind, and when</em>.</li><li>Could exist <strong>alongside</strong> Option A rather than instead of it.</li></ul>
+<h3>C — Path</h3>
+<p>Open the screen, see an actual winding path. Each stop is a Note; the path passes through named regions for the Journey Map and the Archive, with a person&#x27;s own folders as side-trails branching off.</p>
+<ul><li><strong>To build:</strong> the largest of the three, and the only one that needs more design work as it grows — a path stays readable only up to a certain number of stops.</li><li>The most literal take on the name &quot;Mapping My Journey&quot; — the most memorable, and the most expensive.</li></ul>
+<h2>Recommendation, offered rather than decided</h2>
+<p><strong>Option A.</strong> It costs the least, it is consistent with the rest of the app, and a rough version of it already exists. Nothing about choosing it now closes the door on B or C later. This is a recommendation, not the decision — the Owner&#x27;s choice, or a mix, or something else entirely, is what gets built.</p>
+</main></body></html>
