@@ -2229,6 +2229,18 @@
   .hifz-line:not(.centered) { width: fit-content; max-width: 100%; margin-left: auto; margin-right: 0; }
   .hifz-word { white-space: nowrap; }
   .hifz-word.dim { opacity: 0.32; }
+  /* Issue #188 -- a bigger invisible TAP zone, not a bigger visible word.
+     Mushaf words sit only 0.12em apart (the line's own `gap`, print-accurate
+     and not to be widened -- see the .playing comment just below), measured
+     too tight for reliable tap accuracy at phone widths. Padding alone would
+     widen the flex item and fight justifyPageLines()'s own measurement of
+     the line's natural width, same trap that comment already names; an
+     equal-and-opposite negative margin on all four sides cancels it exactly
+     -- each word's outer (margin) box, what the line is measured and
+     justified by, is unchanged, while its padding box (what a tap can land
+     on) is larger. Real, tappable words only (clickable), never the
+     ayah-end marker (skipped in hifz-renderer.js -- see AYAH_WORD_MERGES). */
+  .hifz-word[data-word-occurrence] { cursor: pointer; padding: 0.3em 0.12em; margin: -0.3em -0.12em; }
   /* Round 28 -- a real background band on the ayah being recited, the owner's
      ask. box-shadow rather than padding on purpose: each word is a flex item,
      so padding would change the line's width and fight the justification that
