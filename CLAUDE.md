@@ -158,8 +158,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.33 on `claude/fix-list-panel-truncations`; `main` is
-still v08.32.** (22 Sep 2026 — three real, measured
+**Current milestone: v08.33 on `main`** (22 Sep 2026 — three real, measured
 truncations fixed in the Study-options panel at phone width, the first work
 done under the Owner's own standing fix-list authorisation (see
 "THE FIX LIST IS A STANDING OWNER AUTHORISATION" in `ARCHITECT.md`).
