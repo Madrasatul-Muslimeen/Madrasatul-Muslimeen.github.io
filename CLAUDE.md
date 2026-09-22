@@ -158,7 +158,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.36 on `claude/allocate-v0835-v0836-word-tap-2026-09-22`; `main` is still v08.34** (22 Sep 2026 — tap-to-open-Word-Card
+**Current milestone: v08.36 on `main`** (22 Sep 2026 — tap-to-open-Word-Card
 extended to every word a reader can see, in two rounds the same day.
 **v08.35** (issue #188, PR #190) wired the Mushaf-page Read view — real
 per-word glyph text that already carried its own word identity (`w.loc`

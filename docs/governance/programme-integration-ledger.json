@@ -29,9 +29,9 @@
   "status": "ACTIVE",
   "main": {
     "ref": "origin/main",
-    "baselineSha": "c440484a84d366fcf95af8fe4783454a5546b045",
+    "baselineSha": "416127e1b4636a7837d9ba6151375cf9feda1e26",
     "baselineRecordedOn": "2026-09-22",
-    "version": "08.34",
+    "version": "08.36",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -145,8 +145,8 @@
     {
       "version": "08.34",
       "owner": "quran",
-      "status": "LIVE",
-      "note": "MAP Phase 4 Activity evidence persistence ENABLED -- the governed decision in app/js/study-evidence-readiness.js, flipping ready:false to ready:true now that the Phase 3-6 Rules are deployed (Owner-confirmed in the Firebase Console) and Phase 3 word-by-word progress was independently verified to save and reload on the Owner's own real phone the same day. Real, user-facing behaviour change: the #readBar ✓, the Listening gate and the WbW gate all start persisting real Activity evidence. Allocated by the MMSA Architect. Superseded by v08.36 once this stamping commit merges -- see the shaNote on 08.35/08.36 below.",
+      "status": "RELEASED",
+      "note": "MAP Phase 4 Activity evidence persistence ENABLED -- the governed decision in app/js/study-evidence-readiness.js, flipping ready:false to ready:true now that the Phase 3-6 Rules are deployed (Owner-confirmed in the Firebase Console) and Phase 3 word-by-word progress was independently verified to save and reload on the Owner's own real phone the same day. Real, user-facing behaviour change: the #readBar ✓, the Listening gate and the WbW gate all start persisting real Activity evidence. Allocated by the MMSA Architect. RELEASED: main carried it until the v08.35/v08.36 word-tap releases on 2026-09-22.",
       "integration": {
         "authorizedOn": "2026-09-22",
         "integratedOn": "2026-09-22",
@@ -159,38 +159,36 @@
     {
       "version": "08.35",
       "owner": "quran",
-      "status": "RESERVED",
-      "note": "Tap a word on the Mushaf-page Read view to open its Word Card (issue #188). hifz-renderer.js's per-word glyph spans already carried real word identity (w.loc); attached the same data-word-occurrence id the rest of the app's word-tap already uses -- the existing shared click listener opens the card, no new wiring. Word-position parity between the Mushaf layout data and the app's own word-by-word numbering verified across all 6,236 ayahs; 3 real divergences found and corrected (AYAH_WORD_MERGES). Independently re-verified by the Architect before merging (fresh checkout, 8 governance suites + the new mushaf-word-occurrence-parity.mjs re-run clean, full diff read by hand). Application code already merged to main at the SHA below (PR #190) -- only this stamping commit (version.js + this ledger entry) is pending; RESERVED rather than RELEASED/LIVE until it merges, same two-step pattern as v08.33/v08.34.",
+      "status": "RELEASED",
+      "note": "Tap a word on the Mushaf-page Read view to open its Word Card (issue #188). hifz-renderer.js's per-word glyph spans already carried real word identity (w.loc); attached the same data-word-occurrence id the rest of the app's word-tap already uses -- the existing shared click listener opens the card, no new wiring. Word-position parity between the Mushaf layout data and the app's own word-by-word numbering verified across all 6,236 ayahs; 3 real divergences found and corrected (AYAH_WORD_MERGES). Independently re-verified by the Architect before merging (fresh checkout, 8 governance suites + the new mushaf-word-occurrence-parity.mjs re-run clean, full diff read by hand). RELEASED: main carried it until the v08.36 release the same day.",
       "integration": {
         "authorizedOn": "2026-09-22",
-        "integratedOn": null,
+        "integratedOn": "2026-09-22",
         "acceptedApplicationSha": "a8ac0c008ede7eb468de26c4f61efbe4983f3bd9",
         "integratedMainSha": "31c08084ce9f9aa1ceb9e2bd643f42f50ed60832",
         "method": "MERGE_PR",
         "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/190"
-      },
-      "shaNote": "integratedMainSha names the real merge commit of PR #190, already on main. integratedOn/status are pending only because THIS ledger-and-version-number stamping commit has not merged yet -- confirm after merge, per the established two-step pattern."
+      }
     },
     {
       "version": "08.36",
       "owner": "quran",
-      "status": "RESERVED",
-      "note": "The same tap-to-open-Word-Card treatment for the normal, everyday Arabic text -- Read view and Note view both (issue #189). Flowing Arabic becomes word-tappable when Tajweed display is off; Tajweed-on stays exactly as it was, measured: tajweed assimilation colours across a word boundary on ~65% of ayahs, so it cannot be safely split per word without data that doesn't exist here. Independently re-verified by the Architect before merging (fresh checkout, 8 governance suites re-run clean, full diff read by hand -- the opt-in-only change surface and the button CSS reset both checked out). Both this and v08.35 hit the identical Playwright-browser-build environment gap the Builder itself flagged; neither this sandbox nor the Architect's own could run the five browser-based layout suites -- recorded as a genuine, twice-confirmed environment limitation, not a code question. Application code already merged to main at the SHA below (PR #191) -- only this stamping commit is pending.",
+      "status": "LIVE",
+      "note": "The same tap-to-open-Word-Card treatment for the normal, everyday Arabic text -- Read view and Note view both (issue #189). Flowing Arabic becomes word-tappable when Tajweed display is off; Tajweed-on stays exactly as it was, measured: tajweed assimilation colours across a word boundary on ~65% of ayahs, so it cannot be safely split per word without data that doesn't exist here. Independently re-verified by the Architect before merging (fresh checkout, 8 governance suites re-run clean, full diff read by hand -- the opt-in-only change surface and the button CSS reset both checked out). Both this and v08.35 hit the identical Playwright-browser-build environment gap the Builder itself flagged; neither this sandbox nor the Architect's own could run the five browser-based layout suites -- recorded as a genuine, twice-confirmed environment limitation, not a code question. Allocated by the MMSA Architect.",
       "integration": {
         "authorizedOn": "2026-09-22",
-        "integratedOn": null,
+        "integratedOn": "2026-09-22",
         "acceptedApplicationSha": "6948925b72400d758a86eecc93f60001462da495",
         "integratedMainSha": "c440484a84d366fcf95af8fe4783454a5546b045",
         "method": "MERGE_PR",
         "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/191"
-      },
-      "shaNote": "integratedMainSha names the real merge commit of PR #191, already on main -- and this ledger's own main.baselineSha above, since that PR is the current tip. integratedOn/status pending only on this stamping commit merging; confirm after, per the established two-step pattern."
+      }
     }
   ],
   "nextUnallocated": "08.37",
   "nextUnallocatedNote": [
     "08.37 and later numbers remain unallocated; allocation requires MMSA Master Architect direction.",
-    "v08.36 is RESERVED for the normal-Arabic-text word-tap round; its application code is merged, its version-number stamping is pending this same commit."
+    "v08.36 was allocated to the normal-Arabic-text word-tap round, confirmed merged on 2026-09-22."
   ],
   "streams": [
     {
@@ -199,7 +197,7 @@
       "role": "The umbrella: shared runtime, shared verification, governance, version allocation and module integration. It owns the platform/shared paths below; it is not a subject module.",
       "activeBranch": null,
       "integrationState": "ON_MAIN",
-      "declaredVersion": "08.34",
+      "declaredVersion": "08.36",
       "baselineSha": null,
       "baselineStatus": "NOT_APPLICABLE_IS_MAIN",
       "ownedPaths": [
@@ -223,8 +221,8 @@
       "name": "QuranRevival -- Quran Study module",
       "activeBranch": null,
       "integrationState": "MERGED_TO_MAIN",
-      "declaredVersion": "08.34",
-      "baselineSha": "c440484a84d366fcf95af8fe4783454a5546b045",
+      "declaredVersion": "08.36",
+      "baselineSha": "416127e1b4636a7837d9ba6151375cf9feda1e26",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
       "ownedPaths": [
         "app/quranrevival.html",
