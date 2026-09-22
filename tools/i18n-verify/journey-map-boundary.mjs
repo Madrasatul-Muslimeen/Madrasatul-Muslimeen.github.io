@@ -139,17 +139,28 @@ check("the Phase 5 Rules candidate's RULE CONTENT is unchanged", () => {
       `the Phase 5 candidate now governs ${collection} -- Phase 6 has leaked into a queued deployment`);
   }
 });
-check("existing user notes untouched; the data layer changed by INSERTION ONLY", () => {
+// UPDATED 2026-09-20, with the reason recorded rather than the check
+// weakened -- same finding and same pinned-exception shape as the sibling
+// guard in study-note-boundary.mjs: `retirePermanentNote()` wrote a shape
+// the accepted Phase 5 Rules candidate can never accept (a status-only
+// update leaves `currentRevisionId` chaining from itself), and the fix
+// replaces that one line rather than only adding to it.
+const NOTE_FOUNDATION_PINNED_REMOVAL =
+  "-    transaction.update(TENANT.NOTES, noteDocId, { status: NOTE_STATUS.RETIRED });";
+check("existing user notes untouched; the data layer changed by INSERTION ONLY, except one pinned line this round REPLACED to fix a real Rules-candidate defect", () => {
   // UPDATED 2026-09-15 (P6-B): the data layer now validates a folder's parent,
   // so byte-identity is no longer the right claim -- "nothing removed or
-  // reshaped" still is, and an addition-only diff proves it mechanically.
+  // reshaped, except the one line named above" still is, and reading the
+  // actual removed lines (not just counting them) proves it mechanically.
   unchangedSinceMain("app/js/ayah-notes.js");
-  const diff = execFileSync("git", ["diff", "--numstat", "origin/main", "--", "app/js/note-foundation.js"],
-    { cwd: root, encoding: "utf8" }).trim();
-  if (diff === "") return;
-  const [added, removed] = diff.split(/\s+/);
-  assert.equal(removed, "0", `note-foundation.js has ${removed} REMOVED lines -- an existing behaviour may have been reshaped`);
-  assert.ok(Number(added) > 0);
+  const diffText = execFileSync("git", ["diff", "origin/main", "--", "app/js/note-foundation.js"],
+    { cwd: root, encoding: "utf8" });
+  if (diffText === "") return;
+  const removedLines = diffText.split("\n").filter((l) => l.startsWith("-") && !l.startsWith("---"));
+  assert.deepEqual(removedLines, [NOTE_FOUNDATION_PINNED_REMOVAL],
+    `note-foundation.js removed line(s) do not match the one pinned exception -- an existing behaviour may have been reshaped: ${JSON.stringify(removedLines)}`);
+  const addedLines = diffText.split("\n").filter((l) => l.startsWith("+") && !l.startsWith("+++"));
+  assert.ok(addedLines.length > 0);
 });
 check("the Mapping My Journey pillar is still explicitly unavailable", () => {
   const shell = fs.readFileSync(path.join(appDir, "quranrevival.html"), "utf8");
