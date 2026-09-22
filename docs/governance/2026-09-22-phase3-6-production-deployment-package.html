@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Firestore deployment package — MAP Phases 3, 4, 5 and 6</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Firestore deployment package — MAP Phases 3, 4, 5 and 6</h1>
+<ul><li><strong>Date:</strong> 2026-09-22</li><li><strong>For:</strong> the Owner, working in the Firebase Console. No coding, no command line.</li><li><strong>Project:</strong> <code>study-monitoring</code> (there is only one)</li><li><strong>Status:</strong> nothing here has been deployed yet. This document is the instructions and the exact text.</li><li><strong>Supersedes:</strong> <code>phase4-6-production-deployment-package-2026-09-17.md</code>, which covered three phases. This one covers a fourth, Arabic word-by-word progress, added on your own instruction. The old file is kept, not deleted — it is the record of what that earlier round did.</li></ul>
+<hr>
+<h2>1. Read this first — the two things that would go wrong</h2>
+<p><strong>Do NOT paste any file whose name contains <code>candidate-2026-09-13</code>, <code>candidate-2026-09-14</code> or <code>candidate-2026-09-15</code>.</strong> Those are test extracts — small files built so the automated checks can run one phase on its own. Pasting one into the Console would <strong>replace your entire live ruleset</strong> with it, and every other part of the app would stop working immediately.</p>
+<p><strong>There is exactly one file to paste, and it is:</strong></p>
+<p>``<code> docs/governance/phase3-6-DEPLOYMENT-candidate-2026-09-22.rules </code>``</p>
+<p>That file is your current live rules <strong>plus all four phases&#x27; additions</strong> — 731 lines added, <strong>0 removed</strong>, checked automatically and checked by hand.</p>
+<p><strong>Indexes go BEFORE rules.</strong> An index is a lookup table Firestore needs before it will answer certain questions. If you publish the rules first, the new screens would be <em>allowed</em> to ask questions the database then <em>refuses to answer</em>. Doing indexes first is harmless in the meantime, because the collections stay locked until the rules are published.</p>
+<hr>
+<h2>2. Step one — create four indexes</h2>
+<p><strong>Nothing changed here from before.</strong> The word-progress feature (Phase 3) does not need a new index — its one query only ever asks equality questions (&quot;this tenant, this person, this level, this surah&quot;), which Firestore answers without one. So the four indexes below are the complete list, exactly as they were on 17 September.</p>
+<p><strong>Firebase Console → Firestore Database → Indexes tab → Composite → Create index.</strong></p>
+<p>Do this four times. For each one: type the Collection ID, add the fields <strong>in the order listed</strong>, set Query scope to <strong>Collection</strong>, then Create.</p>
+<h3>Index 1</h3>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td>Collection ID</td><td><code>notes</code></td></tr>
+<tr><td>Field 1</td><td><code>tenantId</code> — Ascending</td></tr>
+<tr><td>Field 2</td><td><code>ownerPersonId</code> — Ascending</td></tr>
+<tr><td>Field 3</td><td><code>status</code> — Ascending</td></tr>
+<tr><td>Field 4</td><td><code>updatedAt</code> — <strong>Descending</strong></td></tr>
+</tbody></table></div>
+<h3>Index 2</h3>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td>Collection ID</td><td><code>noteRevisions</code></td></tr>
+<tr><td>Field 1</td><td><code>tenantId</code> — Ascending</td></tr>
+<tr><td>Field 2</td><td><code>ownerPersonId</code> — Ascending</td></tr>
+<tr><td>Field 3</td><td><code>noteId</code> — Ascending</td></tr>
+<tr><td>Field 4</td><td><code>createdAt</code> — <strong>Descending</strong></td></tr>
+</tbody></table></div>
+<h3>Index 3</h3>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td>Collection ID</td><td><code>noteSources</code></td></tr>
+<tr><td>Field 1</td><td><code>tenantId</code> — Ascending</td></tr>
+<tr><td>Field 2</td><td><code>ownerPersonId</code> — Ascending</td></tr>
+<tr><td>Field 3</td><td><code>sourceKey</code> — Ascending</td></tr>
+<tr><td>Field 4</td><td><code>status</code> — Ascending</td></tr>
+<tr><td>Field 5</td><td><code>createdAt</code> — <strong>Descending</strong></td></tr>
+</tbody></table></div>
+<h3>Index 4</h3>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td>Collection ID</td><td><code>notePlacements</code></td></tr>
+<tr><td>Field 1</td><td><code>tenantId</code> — Ascending</td></tr>
+<tr><td>Field 2</td><td><code>ownerPersonId</code> — Ascending</td></tr>
+<tr><td>Field 3</td><td><code>folderId</code> — Ascending</td></tr>
+<tr><td>Field 4</td><td><code>status</code> — Ascending</td></tr>
+<tr><td>Field 5</td><td><code>order</code> — Ascending</td></tr>
+</tbody></table></div>
+<p>Each index says <strong>Building</strong> for a few minutes and then <strong>Enabled</strong>. Wait for all four to read <strong>Enabled</strong> before step two.</p>
+<p><strong>Already done this before?</strong> If you deployed these four indexes as part of the 17 September package, you do not need to repeat this step — check the Indexes tab first; if all four already read Enabled, skip to step two.</p>
+<hr>
+<h2>3. Step two — publish the rules</h2>
+<p><strong>Firebase Console → Firestore Database → Rules tab.</strong></p>
+<ol><li><strong>Copy your current rules out first.</strong> Select everything in the editor, copy, and paste it into a plain text file on your machine named <code>rules-backup-before-phase-3-6.txt</code>. This is your undo button.</li><li>Open <code>docs/governance/phase3-6-DEPLOYMENT-candidate-2026-09-22.rules</code> on GitHub, click <strong>Raw</strong>, select all, copy.</li><li>Back in the Console Rules editor: select everything, delete it, paste the new text.</li><li>Press <strong>Publish</strong>.</li></ol>
+<p>If the Console shows a red error and refuses to publish, <strong>stop and say so</strong> — do not edit the text to make the error go away.</p>
+<hr>
+<h2>4. Step three — check it worked (about three minutes)</h2>
+<p>These are all things you can see without opening any code.</p>
+<div class='tw'><table><thead><tr><th>#</th><th>Do this</th><th>Expect</th></tr></thead><tbody>
+<tr><td>1</td><td>Open the app, go to <strong>Quran Study</strong>, open a surah</td><td>The page loads normally, Arabic renders</td></tr>
+<tr><td>2</td><td>Open the <strong>Note &amp; more</strong> view on any āyah, type something, save</td><td>It saves, exactly as before. <strong>This is the important one</strong> — it proves your existing notes are unaffected</td></tr>
+<tr><td>3</td><td>Reload the page and reopen that note</td><td>Your text is still there</td></tr>
+<tr><td>4</td><td>Open <strong>Records</strong> and <strong>Monitor</strong></td><td>Both load and show data as before</td></tr>
+<tr><td>5</td><td>Firestore Console → Indexes</td><td>All four indexes read <strong>Enabled</strong></td></tr>
+<tr><td>6</td><td>Firestore Console → Rules</td><td>Shows a new version, published today</td></tr>
+</tbody></table></div>
+<p><strong>Nothing new appears on screen yet, and that is correct.</strong> This deployment opens the door; the screens that walk through it are either not built yet (Notes, Mapping My Journey) or are held switched off on purpose until you&#x27;ve confirmed they work cleanly (Phase 3 word tracking, Phase 4 activity tracking). If something that used to work stops working, restore <code>rules-backup-before-phase-3-6.txt</code> and say so.</p>
+<hr>
+<h2>5. What this actually switches on</h2>
+<div class='tw'><table><thead><tr><th>Phase</th><th>Collections</th><th>What becomes possible</th></tr></thead><tbody>
+<tr><td><strong>3 (new)</strong></td><td><code>quranWordProgress</code>, <code>quranWordApprovals</code></td><td>A learner&#x27;s own word-by-word progress can be saved and reloaded, and a supervisor&#x27;s review of it recorded</td></tr>
+<tr><td>4</td><td><code>activity/{…}/evidence</code></td><td>Study events may record Activity evidence — never Mastery</td></tr>
+<tr><td>5</td><td><code>notes</code>, <code>noteRevisions</code>, <code>noteSources</code></td><td>Permanent Notes with revision history, bound to Study units</td></tr>
+<tr><td>6</td><td><code>noteFolders</code>, <code>notePlacements</code></td><td>Filing those Notes into Mapping My Journey</td></tr>
+</tbody></table></div>
+<p><strong>Who can touch what, in plain words:</strong> a person, whoever guards them, whoever actually teaches them, and whoever administers your account — the same circle that can already see and log that person&#x27;s other study progress today. Nobody outside that circle, ever. A Note is stricter still: only the person who wrote it may ever change it — everyone else in that circle may only read it.</p>
+<hr>
+<h2>6. Evidence this text is safe to paste</h2>
+<div class='tw'><table><thead><tr><th>Claim</th><th>How it was checked</th></tr></thead><tbody>
+<tr><td>Adds to your rules, removes nothing</td><td>731 lines added, <strong>0 removed</strong>, checked automatically</td></tr>
+<tr><td>Does not quietly change an existing rule</td><td>Every helper shared with your live rules is byte-identical to what&#x27;s already live</td></tr>
+<tr><td>Would actually compile and run</td><td>Loaded into a real local copy of Firestore and executed</td></tr>
+<tr><td>Word progress (Phase 3) still behaves, standing beside everything else</td><td>42 checks, run against <strong>this exact file</strong></td></tr>
+<tr><td>Activity evidence (Phase 4) still behaves</td><td>53 checks, run against <strong>this exact file</strong></td></tr>
+<tr><td>Notes (Phase 5) still behave</td><td>60 checks, run against <strong>this exact file</strong></td></tr>
+<tr><td>Mapping My Journey (Phase 6) still behaves</td><td>50 checks, run against <strong>this exact file</strong></td></tr>
+<tr><td>Your existing quick notes still work</td><td>Checked against this exact file: the current note-saving write still succeeds</td></tr>
+<tr><td>No new lookup table is silently required</td><td>Checked against every question the app actually asks the database</td></tr>
+</tbody></table></div>
+<p><code>tools/i18n-verify/rules-deployment-candidate-phase3-6.mjs</code> re-checks all of the structural claims on demand — anyone auditing this, including ChatGPT reading the repository, can run it themselves.</p>
+<hr>
+<h2>7. One thing worth reading before you publish</h2>
+<p>You asked for rules that only let a signed-in person touch their <strong>own</strong> data. Taken completely literally, that would stop a parent logging progress for their child, or a teacher recording for their own student — which this app is built around allowing. What is actually in this file matches the same rule every other part of your app already uses: a person, or someone the app already recognises as responsible for them. Nobody outside that.</p>
+<p><strong>If you meant something stricter than that — nobody else, ever, no exceptions — say so and this gets rebuilt before you publish anything.</strong></p>
+<hr>
+<h2>8. Still waiting on you, separately</h2>
+<p>Publishing this does not decide any of these:</p>
+<ol><li><strong>The Note editor screen</strong> — not built yet. Next on the list once this is live (see the status board).</li><li><strong>Mapping My Journey&#x27;s screen</strong> — not built yet, and what it should even look like is still your decision. Options are being prepared separately.</li><li><strong>Folder moves</strong> — Firestore cannot prevent a folder being filed inside itself two steps removed. Today that is prevented only by the app itself, not the database. Closing it in the database would mean a folder could never be moved once created. Your call, only if you want it.</li></ol>
+<hr>
+<h2>9. When you&#x27;re ready</h2>
+<p>Say <strong>&quot;rules are live&quot;</strong> once you&#x27;ve published and the six checks in section 4 all look right. That is what starts the next step: confirming word progress genuinely saves and reloads on a real phone, and telling you exactly what to tap.</p>
+</main></body></html>
