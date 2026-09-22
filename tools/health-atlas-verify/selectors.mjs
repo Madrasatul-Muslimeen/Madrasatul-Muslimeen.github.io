@@ -33,7 +33,8 @@ const {
   organsForSystem,
   getOrgan,
   referencesFor,
-  organCountsBySystem
+  organCountsBySystem,
+  matchesOrganSearch
 } = await importEsmFile(path.join(repoRoot, 'app', 'health', 'js', 'health-atlas-selectors.js'));
 
 const {
@@ -88,6 +89,35 @@ check('organCountsBySystem sums to the total organ count, once each', () => {
   const counts = organCountsBySystem(HEALTH_ATLAS_SYSTEMS, HEALTH_ATLAS_ORGANS);
   const total = counts.reduce((sum, c) => sum + c.count, 0);
   assert(total === HEALTH_ATLAS_ORGANS.length, `counts summed to ${total}, expected ${HEALTH_ATLAS_ORGANS.length}`);
+});
+
+// matchesOrganSearch (parity tranche 6, additive).
+check('matchesOrganSearch: empty/blank term matches everything', () => {
+  const heart = getOrgan(HEALTH_ATLAS_ORGANS, 'heart');
+  assert(matchesOrganSearch(heart, '') === true, 'empty term should match');
+  assert(matchesOrganSearch(heart, '   ') === true, 'blank term should match');
+});
+
+check('matchesOrganSearch: matches on organ name, case-insensitively', () => {
+  const heart = getOrgan(HEALTH_ATLAS_ORGANS, 'heart');
+  assert(matchesOrganSearch(heart, 'HeArT') === true, 'expected a case-insensitive name match');
+  assert(matchesOrganSearch(heart, 'kidney') === false, 'heart should not match "kidney"');
+});
+
+check('matchesOrganSearch: matches on a function statement substring', () => {
+  const heart = getOrgan(HEALTH_ATLAS_ORGANS, 'heart');
+  assert(matchesOrganSearch(heart, 'blood pressure') === true,
+    'expected a match against one of heart.functions ("Helps maintain blood pressure")');
+});
+
+check('matchesOrganSearch: a term matching neither name nor any function returns false', () => {
+  const heart = getOrgan(HEALTH_ATLAS_ORGANS, 'heart');
+  assert(matchesOrganSearch(heart, 'xyz-no-such-term') === false, 'expected no match');
+});
+
+check('matchesOrganSearch: is safe against an organ with no functions array', () => {
+  assert(matchesOrganSearch({ name: 'X' }, 'anything') === false, 'expected false, not a throw');
+  assert(matchesOrganSearch({ name: 'X' }, '') === true, 'blank term should still match');
 });
 
 console.log(`\nHealth Atlas selectors: ${passed} passed, ${failed} failed`);
