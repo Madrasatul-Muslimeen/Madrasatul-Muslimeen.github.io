@@ -29,9 +29,9 @@
   "status": "ACTIVE",
   "main": {
     "ref": "origin/main",
-    "baselineSha": "a20892f1e4cbf4e86498fe371232466141ca95df",
-    "baselineRecordedOn": "2026-09-19",
-    "version": "08.32",
+    "baselineSha": "0b082c8c193d3dc9154f5e67657a02f77ec3c6df",
+    "baselineRecordedOn": "2026-09-22",
+    "version": "08.33",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -117,8 +117,8 @@
     {
       "version": "08.32",
       "owner": "quran",
-      "status": "LIVE",
-      "note": "Basic Arabic Word Card lemma-occurrence navigation; PR #112 merged to main at f5b7c6c on 2026-09-21. Read-only interaction; no Firestore Rules/index change. Allocated by MMSA Master Architect on Owner request for immediate app feedback.",
+      "status": "RELEASED",
+      "note": "Basic Arabic Word Card lemma-occurrence navigation; PR #112 merged to main at f5b7c6c on 2026-09-21. RELEASED: main carried it until the v08.33 fix-list release on 2026-09-22. Read-only interaction; no Firestore Rules/index change. Allocated by MMSA Master Architect on Owner request for immediate app feedback.",
       "integration": {
         "authorizedOn": "2026-09-21",
         "integratedOn": "2026-09-21",
@@ -127,12 +127,26 @@
         "method": "MERGE_PR",
         "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/112"
       }
+    },
+    {
+      "version": "08.33",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Three real, measured Study-options-panel truncations fixed at phone width (tenantSelect, unitTypeSelect/surahSelect, and a Bangla-only drillModeSelect), under the Owner's own standing fix-list authorisation. Real layout change, measured before and after in both languages, 48/48 panel.mjs sections clean either side. No Firestore write, Rule or index. Allocated by the MMSA Architect.",
+      "integration": {
+        "authorizedOn": "2026-09-22",
+        "integratedOn": "2026-09-22",
+        "acceptedApplicationSha": "ed6b760",
+        "integratedMainSha": "0b082c8c193d3dc9154f5e67657a02f77ec3c6df",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/176"
+      }
     }
   ],
-  "nextUnallocated": "08.33",
+  "nextUnallocated": "08.34",
   "nextUnallocatedNote": [
-    "08.33 and later numbers remain unallocated; allocation requires MMSA Master Architect direction.",
-    "v08.32 was allocated to QuranRevival Word Card PR #112 and merged on 2026-09-21."
+    "08.34 and later numbers remain unallocated; allocation requires MMSA Master Architect direction.",
+    "v08.33 was allocated to the Study-options-panel fix-list round, PR #176, merged on 2026-09-22."
   ],
   "streams": [
     {
@@ -141,7 +155,7 @@
       "role": "The umbrella: shared runtime, shared verification, governance, version allocation and module integration. It owns the platform/shared paths below; it is not a subject module.",
       "activeBranch": null,
       "integrationState": "ON_MAIN",
-      "declaredVersion": "08.32",
+      "declaredVersion": "08.33",
       "baselineSha": null,
       "baselineStatus": "NOT_APPLICABLE_IS_MAIN",
       "ownedPaths": [
@@ -165,8 +179,8 @@
       "name": "QuranRevival -- Quran Study module",
       "activeBranch": null,
       "integrationState": "MERGED_TO_MAIN",
-      "declaredVersion": "08.32",
-      "baselineSha": "f5b7c6c00eb3f24f98bee67f8b86daa57d8a8449",
+      "declaredVersion": "08.33",
+      "baselineSha": "0b082c8c193d3dc9154f5e67657a02f77ec3c6df",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
       "ownedPaths": [
         "app/quranrevival.html",
