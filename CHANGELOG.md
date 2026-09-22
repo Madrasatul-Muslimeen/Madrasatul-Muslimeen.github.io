@@ -15206,3 +15206,59 @@ would have a precedent to point at instead of a rule.
 
 BR-0, no version bump; `app/`, `tests/`, `firestore.rules` and `firebase.json`
 byte-identical. Eight governance suites green on full history.
+
+## v08.33 (22 Sep 2026) — three real, measured truncations fixed in the Study-options panel
+
+**The first work done under the Owner's own standing fix-list authorisation**
+(issue "🔧 MMSA — the fix list", *"proceed with your recommended fixes on the
+three small-phone items unless I say otherwise"*). All three were already
+measured and recorded on the fix list before this round began.
+
+**`tenantSelect`** ("User Role") never fit its own real content — the owner's
+own tenant name plus role list, `"Madrasatul Muslimeen (Owner, Prime)"`, needs
+224px and got 115–141px usable at every phone width tested (360/390/412).
+**The fix list's own recommendation — shorten the wording — is corrected
+here rather than built.** `tenantSelect`'s options are `` `${m.tenantName}
+(${roleListLabel(m.roles)})` `` — a tenant's own chosen name is free text of
+any length in any language, and the role list already uses the exact
+vocabulary every other screen shows. There is no safe universal shortening:
+either a real tenant's own name gets cut, or a new abbreviated role
+vocabulary gets invented that nothing else in the app uses. **MEASURED
+first, then the remedy chosen from what the measurement actually supports**
+— below 580px (this bar's own cellW is a measured `0.5×viewport − 35px`,
+select chrome is a measured 30px, so 224px needs `viewport ≥ 578px`) the two
+cells in that row stack instead of sharing one.
+
+**`unitTypeSelect`/`surahSelect`** were the recorded Owner Control Gate item
+O3b — *"the row is genuinely short of space… no redistribution reaches
+it"* — confirmed by the same measurement method, not merely repeated: the
+worse of the two unit-type cases (Page/Range, four cells on the row) clears
+its own need at a measured 468px; Single Ayah (three cells) clears earlier,
+at 412px. Below 480px they wrap to their own line, with the small
+fixed-width number pickers flowing to a second line using their existing
+`.opt-cell-num` sizing, untouched.
+
+**`drillModeSelect`** (the Listen bar's Mode picker) was cut in **BANGLA
+ONLY**, at every phone width — found because `panel.mjs` had only ever been
+run in English before this round. **A suite that runs one language measures
+one language**, the same class of gap O3c itself was found by on 19 Sep.
+English was already clean and stays unaffected; same wrap technique, same
+480px breakpoint, one new stable class (`opt-cell-mode`) added to match the
+bar's own existing `opt-cell-loop`/`opt-cell-play` convention.
+
+**Proven, not asserted.** `panel.mjs` re-run in both languages, full 48
+sections each, before and after: English and Bangla both went from three
+(English) / four (Bangla) truncated selects across every phone width to
+**zero, 48/48 sections clean**, both languages. The suite's own baseline
+mechanism caught it independently: *"a BASELINED truncation no longer
+occurs… if that is a fix, drop it from KNOWN_TRUNCATED_SELECTS"* — now an
+empty set, not deleted, so a real regression at any of the three ids is
+reported as new rather than silently re-baselined. **Desktop and tablet
+(768px and up) are untouched** — confirmed in the same runs, byte-identical
+panel geometry at every viewport from 768px through 1920px; every new rule
+sits inside a `max-width` media query that does not reach them.
+
+BR-0 does not apply — this is a real, measured layout change, which is why
+it carries a version. No Firestore write, Rule, index, or
+protected/shared path. Full account:
+`docs/reports/2026-09-22-fix-list-panel-truncations.md`.

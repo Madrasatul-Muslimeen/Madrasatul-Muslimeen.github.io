@@ -29,4 +29,11 @@
 // BUILT, NOT SHIPPED. The Activity evidence Rules are not deployed (E1), so the
 // subcollection is closed to every client and the tranche must not be released.
 // 08.32: Basic Arabic lemma occurrence navigation, allocated by the MMSA Master Architect on 21 Sep 2026.
-export const APP_VERSION = "08.32";
+// 08.33: three Study-options-panel truncations fixed at phone width --
+// tenantSelect (own row below 580px, since its content is free text of any
+// length and cannot safely be shortened), Study Unit/Surah (wrap to two
+// lines below 480px, a genuine shortage of space per Owner Control Gate item
+// O3b), and the Bangla-only drillModeSelect (same wrap, same breakpoint).
+// Allocated by the MMSA Architect on 22 Sep 2026, under the Owner's own
+// standing authorisation for fix-list work (issue "the fix list").
+export const APP_VERSION = "08.33";
