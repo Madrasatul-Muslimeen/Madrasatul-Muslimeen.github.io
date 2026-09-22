@@ -15333,3 +15333,43 @@ remains undeployed.
 BR-0 does not apply — this is real Firestore deployment, which is why it is
 recorded this carefully. No application code changed; `app/js/version.js`
 untouched.
+
+## 22 Sep 2026 — v08.34: MAP Phase 4 Activity evidence persistence ENABLED
+
+The Owner tested Phase 3 word-by-word progress on a real phone, per the
+exact steps given (Study options → "Word by Word" → tap a word → "WbW" tab
+→ "Learning"/"Achieved" → reload → re-tap, state survived), and said: *"It
+worked, switch on Phase 4."*
+
+Both preconditions `app/js/study-evidence-readiness.js` itself requires are
+now met: `deployment.firebaseRulesDeployed` is YES (the same-day Rules
+publish), and a real save-and-reload was independently proven on the
+Owner's own device. `EVIDENCE_PERSISTENCE_DECLARATION` moved from
+`ready: false, decision: null` to `ready: true` under a governed decision
+(`by: "master-architect", on: "2026-09-22"`, `reference:
+docs/reports/2026-09-22-map-phase4-evidence-persistence-enabled.md`) — the
+exact ceremony the module's own header requires: a closed-set authority, a
+real date, an existing record, never a bare flip. Guard G re-run clean:
+code, ledger and deployment state all agree.
+
+**What changes for a real reader**: the ✓ on `#readBar` (D1 Reading) stops
+being `aria-disabled` and starts creating one real, create-only,
+deduplicated document per completion (`activity/{tenant}__{person}__{week}/evidence/{eventId}`).
+D2 Listening and D4 Word-by-Word keep recording silently, exactly as
+v08.30/v08.31 built them. **What does not change**: the writer's I15
+rethrow underneath the gate; `bulkConfirmWeek()` still reading only
+`entries[]`; D3 Journaling, still unwired (Notes, issue #180, still
+building); Notes and Mapping My Journey screens, unaffected.
+
+**Two checks updated in place, reason recorded, nothing weakened** —
+`study-activity-evidence-boundary.mjs`'s literal-reads-false assertion and
+its mutation-style check's own first assertion both asserted the OLD
+standing state; every malformed-shape refusal in the same checks (bare
+flip, empty decision, self-authorising module, unreal date) is unchanged
+and still refuses exactly as strictly as before.
+
+`app/js/version.js`: 08.33 → **08.34**. Real, user-facing behaviour
+change — a control moves from non-actionable to actionable — the same
+reasoning v08.31 used for the *gate*, applied to its release. Allocated by
+the MMSA Architect. Full account:
+`docs/reports/2026-09-22-map-phase4-evidence-persistence-enabled.md`.
