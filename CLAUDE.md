@@ -158,7 +158,35 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.34 on `main`** (22 Sep 2026 — MAP Phase 4 Activity evidence
+**Current milestone: v08.36 on `claude/allocate-v0835-v0836-word-tap-2026-09-22`; `main` is still v08.34** (22 Sep 2026 — tap-to-open-Word-Card
+extended to every word a reader can see, in two rounds the same day.
+**v08.35** (issue #188, PR #190) wired the Mushaf-page Read view — real
+per-word glyph text that already carried its own word identity (`w.loc`
+in `hifz-renderer.js`), simply never attached to the DOM. **v08.36**
+(issue #189, PR #191) did the same for the normal, everyday flowing
+Arabic text in both Read view and Note view, the more common case a
+reader actually sees — split into per-word tappable spans when Tajweed
+display is off; Tajweed-on stays exactly as it was, because tajweed
+assimilation colours across a word boundary on measured ~65% of ayahs and
+cannot be safely split without a per-word tajweed dataset that doesn't
+exist. Both rounds reuse the one existing shared `readView`/`noteView`
+click listener and the one Word Card component — no new UI, no new
+wiring beyond attaching the right `data-word-occurrence` id, the same
+format the Word-by-Word strip already used. Both were independently
+re-verified by the Architect before merging (fresh checkouts, all 8
+governance suites re-run clean, full diffs read by hand) — the Builder's
+own PR-opening step failed to run on both, so the Architect opened both
+PRs itself from the Builder's already-pushed, already-checked branches.
+**Both hit the identical Playwright-browser-build environment gap**
+(`chromium_headless_shell-1243` missing from this sandbox, only `-1194`
+present) that neither the Builder's own run nor the Architect's own
+re-check could close — recorded as a genuine, twice-confirmed environment
+limitation, not a code defect; a real-phone tap-and-check is the
+recommended substitute, the same style Phase 3 already used. Allocated by
+the MMSA Architect. Full account in `CHANGELOG.md`'s own entries for both
+issues.
+
+**Previous milestone: v08.34 on `main`** (22 Sep 2026 — MAP Phase 4 Activity evidence
 persistence ENABLED. The Owner's own words, after testing Phase 3
 word-by-word progress on a real phone per the exact steps given: *"It
 worked, switch on Phase 4."* Both preconditions `app/js/study-evidence-

@@ -45,4 +45,18 @@
 // Word-by-Word gate all start persisting real Activity evidence from this
 // version onward. Allocated by the MMSA Architect on 22 Sep 2026; see
 // docs/reports/2026-09-22-map-phase4-evidence-persistence-enabled.md.
-export const APP_VERSION = "08.34";
+// 08.35: tap a word on the Mushaf-page Read view to open its Word Card
+// (issue #188, PR #190). hifz-renderer.js's per-word glyph spans already
+// carried real word identity (w.loc); this attaches the same
+// data-word-occurrence id the rest of the app's word-tap already uses, so
+// the existing shared click listener opens the card with no new wiring.
+// Word-position parity verified across all 6,236 ayahs (3 real
+// divergences found and corrected). Allocated by the MMSA Architect.
+// 08.36: the same tap-to-open-Word-Card treatment for the normal, everyday
+// Arabic text -- Read view and Note view both (issue #189, PR #191). The
+// flowing Arabic becomes word-tappable when Tajweed display is off;
+// Tajweed-on stays exactly as it was (tajweed assimilation colours across
+// a word boundary on ~65% of ayahs, measured, so it cannot be safely
+// split per word without data that doesn't exist here). Allocated by the
+// MMSA Architect.
+export const APP_VERSION = "08.36";

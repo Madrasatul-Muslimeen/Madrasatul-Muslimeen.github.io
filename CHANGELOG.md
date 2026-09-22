@@ -15374,7 +15374,7 @@ reasoning v08.31 used for the *gate*, applied to its release. Allocated by
 the MMSA Architect. Full account:
 `docs/reports/2026-09-22-map-phase4-evidence-persistence-enabled.md`.
 
-## 22 Sep 2026 — Word-tap in the normal Arabic text: Read view and Note view (issue #189, Builder round, version pending Architect allocation)
+## 22 Sep 2026 — v08.36: Word-tap in the normal Arabic text: Read view and Note view (issue #189, PR #191)
 
 The Owner's own follow-up to the Mushaf-page word-tap round (issue #188):
 *"Is the same thing possible in Note view too? clicking on word should
@@ -15484,11 +15484,25 @@ workflow's `--allowedTools`/environment to allow `npm install playwright`
 and a Chromium download) before treating the layout requirement as
 closed.**
 
-No `firestore.rules`, schema or version change. `app/js/version.js` is
-untouched, per the Builder contract — this round asks the Architect to
-allocate the version it needs.
+**Done, same day, and it hit the identical wall.** The Architect re-ran
+the 8 governance suites independently from a fresh checkout of this
+branch (clean, matching totals) and read the full diff by hand rather
+than trust the Builder's own report alone — but `layout.mjs` and the
+other browser suites could not be run here either: this sandbox's
+Playwright install is pinned to a browser build
+(`chromium_headless_shell-1243`) the environment doesn't have
+pre-installed (only `-1194`), and `playwright install` is against this
+environment's own standing rule. Not a code question either time — a
+genuine, twice-confirmed environment gap. Recommended in its place: a
+real-phone check (Read screen, Tajweed off, tap a word, confirm the card
+opens and the line doesn't visibly re-wrap), the same style of
+confirmation Phase 3 already used.
 
-## 22 Sep 2026 — tap a Mushaf-page word to open its Word Card (issue #188)
+No `firestore.rules` or schema change. `app/js/version.js`: 08.34 →
+**08.36** (08.35 for issue #188, released the same session). Allocated by
+the MMSA Architect.
+
+## 22 Sep 2026 — v08.35: tap a Mushaf-page word to open its Word Card (issue #188, PR #190)
 
 The Owner's own ask, from a screenshot of the Mushaf-page Read view: *"Is
 it possible to enable the functionality that user click on a word and the
@@ -15561,6 +15575,12 @@ suite needed; nothing un-checked-in.
 
 Out of scope, per the issue: the separate inline Word-by-Word panel
 toggle (untouched); Note view's own flowing Arabic text, which does not
-render individual word spans yet (a different, not-yet-assigned round).
-`app/js/version.js` untouched — a Builder round never bumps it; the
-Architect allocates a version if this needs one.
+render individual word spans yet — built the same day as issue #189,
+below.
+
+**The Architect independently re-verified this round before merging**
+(PR #190): a fresh checkout, all 8 governance suites and the new
+`mushaf-word-occurrence-parity.mjs` re-run clean (matching totals), and
+the full diff read by hand — the I2 boundary, the merge-correction table,
+and the tap-target CSS technique all checked out. `app/js/version.js`:
+08.34 → **08.35**. Allocated by the MMSA Architect.
