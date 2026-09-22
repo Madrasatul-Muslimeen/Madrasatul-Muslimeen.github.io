@@ -217,13 +217,30 @@ check("the importer set is EXACTLY the wiring module -- nothing else imports the
   assert.deepEqual(importers, [WIRING],
     `the set of modules importing the evidence store has changed -- route it through ${WIRING} instead of widening this list: ${importers.join(", ")}`);
 });
+// UPDATED 2026-09-22 for P5-D (issue #195), WITH THE REASON RECORDED. This
+// case used to scan RAW text (including comments) for the three forbidden
+// names, which was harmless only by luck: nothing page-reachable had ever
+// happened to NAME `writeStudyActivityEvidence()` in prose. `study-note-
+// service.js` became page-reachable this round (app/notes.html), losing the
+// "queued, not wired" exemption below -- and its own header comment, which
+// explains that it used to call the store directly and no longer does,
+// names the very string this check greps for. This is the exact "strip both
+// comment forms before grepping source for a forbidden name" lesson
+// CLAUDE.md's Standing Lessons already records, found here for real. The
+// check now reads CODE, the same treatment codeOf() already gives every
+// file in `app/js` -- a doc comment explaining a past design is not the
+// wiring this case exists to catch.
+function withoutComments(text) {
+  return text.replace(/\/\*[\s\S]*?\*\//g, "")
+    .split("\n").filter((line) => !/^\s*(?:\/\/|\*)/.test(line)).join("\n");
+}
 check("no PAGE-REACHABLE source but the wiring module names a Study event writer", () => {
   const offenders = [];
   for (const { file, text } of appSources()) {
     const base = path.basename(file);
     if (GUARDED.includes(base)) continue;
     if (base === WIRING) continue;                                          // the audited entry point
-    if (!/writeStudyActivityEvidence|studyEvidenceId|buildStudyEvidenceDocument/.test(text)) continue;
+    if (!/writeStudyActivityEvidence|studyEvidenceId|buildStudyEvidenceDocument/.test(withoutComments(text))) continue;
     if (file.endsWith(".js") && chainsToTarget(base).length === 0) continue; // queued, not wired
     offenders.push(file);
   }

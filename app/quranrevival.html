@@ -2331,6 +2331,7 @@
     display: flex; align-items: center; gap: 0.4rem; width: 100%; background: none; border: none;
     text-align: left; padding: 0.42rem 0.5rem; font-size: 0.8rem; color: #222;
     border-radius: 0.35rem; cursor: pointer; font-family: inherit;
+    box-sizing: border-box; text-decoration: none; /* an <a class="qm-item"> (the "My Notes" link, issue #195) shares this rule with every button.qm-item */
   }
   .qm-item:hover { background: #f5f0e2; }
   .qm-caret { margin-left: auto; font-size: 0.68rem; color: #999; }
@@ -11625,6 +11626,15 @@
         backToCollectionLabel,
         isCollectionsOpen: wasQcrDrawerOpen,
         collectionsPopoverHtml: renderQcrDrawerHtml(unitKey, openQcrDdKey),
+        // MAP Phase 5 (P5-D, issue #195) -- the entry point into the real,
+        // permanent Notes screen, scoped to whatever unit THIS Note view is
+        // showing right now (unitKey/ref, the same pair the heading and
+        // Copy/Share already use). A plain relative link, same convention as
+        // every other page-to-page jump in this app (continue-strip.js's own
+        // MODULE_PAGES) -- notes.html resolves its own sign-in/tenant/person
+        // context on load exactly as bookmarks.html does, so nothing about
+        // WHO is acting needs to travel in the URL, only WHICH unit.
+        notesScreenHref: `notes.html?unit=${encodeURIComponent(unitKey)}&label=${encodeURIComponent(ref)}`,
       });
       if (showApproach && quranTrackables.some((tr) => tr.id === currentTrackableId)) {
         noteView.querySelectorAll("[data-note-approach-select]").forEach((sel) => { sel.value = currentTrackableId; });

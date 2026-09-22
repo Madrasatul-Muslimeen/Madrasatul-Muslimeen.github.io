@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="./css/shell.css" />
+<title>QuranRevival — My Notes</title>
+<!-- MAP Phase 5 (P5-D, issue #195) -- a Note's bodyHtml is rendered as markup
+     (bold/italic/lists/headings), and more than one role can READ a Note
+     (canReadNoteOf() in firestore.rules), so it is untrusted the moment it is
+     saved. DOMPurify is loaded here, from the CDN, as a plain <script> tag --
+     no build step, no npm install, no download -- and read off
+     window.DOMPurify by js/note-sanitize.js, which every render path in this
+     page goes through before assigning anything to innerHTML. -->
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 46rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
+  h1 { font-size: 1.4rem; margin-bottom: 0.2rem; }
+  p.intro { color: #555; font-size: 0.94rem; }
+  #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
+  button {
+    font-size: 0.88rem; padding: 0.32rem 0.7rem; border-radius: 0.4rem; border: 1px solid #ccc;
+    background: #1F3A6E; color: white; cursor: pointer;
+  }
+  button.secondary { background: white; color: #1F3A6E; }
+  button.danger { background: white; color: #a3352b; border-color: #d9a49d; }
+  button.tiny { padding: 0.12rem 0.5rem; font-size: 0.8rem; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  select, input[type="text"] { font-size: 0.85rem; padding: 0.3rem 0.4rem; border: 1px solid #ccc; border-radius: 0.35rem; }
+  .note { font-size: 0.88rem; color: #666; }
+  .warn { background: #fff8e6; border: 1px solid #f0d9a0; border-radius: 0.5rem; padding: 0.6rem 0.8rem; font-size: 0.88rem; margin: 0.7rem 0; }
+  .unit-banner { background: #fdf6ea; border: 1px solid #B8862F; border-radius: 0.5rem; padding: 0.6rem 0.8rem; margin: 1rem 0; font-size: 0.92rem; }
+  .unit-banner strong { color: #1F3A6E; }
+  #contextBar { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin: 1rem 0; font-size: 0.9rem; }
+  #contextBar label { margin: 0; }
+  .note-card { border: 1px solid #ddd; border-radius: 0.6rem; padding: 0.8rem 0.9rem; margin: 0.8rem 0; }
+  .note-card.retired { opacity: 0.6; }
+  .note-card-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .note-card-title { font-weight: 600; font-size: 1rem; flex: 1 1 auto; min-width: 8rem; }
+  .note-card-meta { font-size: 0.76rem; color: #888; }
+  .note-status-pill { font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 999px; background: #eef2ff; color: #1F3A6E; }
+  .note-status-pill.retired { background: #f2e9e2; color: #7a5230; }
+  .note-body-preview { margin-top: 0.5rem; font-size: 0.9rem; line-height: 1.4; }
+  .note-body-preview p { margin: 0.3rem 0; }
+  .note-actions { margin-top: 0.5rem; display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .note-history { margin-top: 0.5rem; font-size: 0.82rem; border-top: 1px dashed #ddd; padding-top: 0.4rem; }
+  .note-history-row { padding: 0.15rem 0; color: #555; }
+  .note-editor-toolbar { display: flex; gap: 0.25rem; margin: 0.4rem 0; flex-wrap: wrap; }
+  .note-editor-toolbar button { padding: 0.2rem 0.5rem; font-size: 0.82rem; }
+  .note-editor-body {
+    min-height: 5rem; border: 1px solid #ccc; border-radius: 0.35rem; padding: 0.5rem 0.6rem;
+    font-size: 0.9rem; background: #fff;
+  }
+  .note-editor-body:focus { outline: 2px solid #1F3A6E; outline-offset: 1px; }
+  .note-editor-body:empty:before { content: attr(data-placeholder); color: #bbb; }
+  .note-title-input { width: 100%; margin-bottom: 0.4rem; box-sizing: border-box; }
+  #emptyMsg { color: #888; font-size: 0.9rem; margin-top: 1rem; }
+  #truncatedMsg { color: #a3352b; font-size: 0.82rem; margin-top: 0.5rem; }
+  #newNoteBtn { margin: 0.8rem 0; }
+</style>
+</head>
+<body>
+  <h1>My Notes</h1>
+  <p class="intro">Your own permanent Notes about the Study Unit you're currently on — separate from the quick note on the Read screen, and kept forever with a full history of every revision.</p>
+
+  <nav class="app-nav" id="topNav">
+    <details class="nav-cat nav-cat-home">
+      <summary>Home</summary>
+      <div class="nav-cat-links">
+        <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v06 ↗</a>
+        <a href="https://madrasatul-muslimeen.github.io/legacy-v07/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v07 ↗</a>
+        <div id="who">Checking sign-in…</div>
+        <button id="signInBtn" style="display:none;">Sign in with Google</button>
+        <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+        <div id="navHomeExtra"></div>
+      </div>
+    </details>
+    <div id="navBar"></div>
+  </nav>
+
+  <div id="app" style="display:none;">
+    <div id="contextBar">
+      <label>Tenant
+        <select id="tenantSelect" style="width:auto;"></select>
+      </label>
+      <label>Person
+        <select id="personSelect" style="width:auto;"></select>
+      </label>
+    </div>
+
+    <div id="noUnitMsg" class="warn" style="display:none;">
+      No Study Unit was given to this screen. Open it from the Read screen's ⋯ menu ("My Notes for this unit"), which always says which unit it's opening for.
+    </div>
+
+    <div id="unitBanner" class="unit-banner" style="display:none;"></div>
+
+    <div id="readOnlyMsg" class="note" style="display:none;"></div>
+
+    <p id="pageStatusMsg" class="note" style="display:none;"></p>
+
+    <button type="button" id="newNoteBtn" style="display:none;">+ New Note about this unit</button>
+
+    <div id="newNoteForm" class="note-card" style="display:none;">
+      <h3>New Note</h3>
+      <input type="text" id="newTitleInput" class="note-title-input" placeholder="Title (optional)" />
+      <div class="note-editor-toolbar" id="newToolbar"></div>
+      <div id="newBodyEditor" class="note-editor-body" contenteditable="true" data-placeholder="Type notes here…"></div>
+      <div class="note-actions">
+        <button type="button" id="newSaveBtn">Save</button>
+        <button type="button" class="secondary" id="newCancelBtn">Cancel</button>
+      </div>
+    </div>
+
+    <div id="notesContainer"></div>
+
+    <p id="truncatedMsg" style="display:none;">Showing the most recent Notes only — there are more on this unit.</p>
+    <p id="emptyMsg" style="display:none;">No Notes yet on this Study Unit.</p>
+  </div>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-init.js";
+    import {
+      GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { doc, getDoc, getDocs, collection, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { TENANT } from "./js/collections.js";
+    import { langText } from "./js/lang.js";
+    import { getAppLang } from "./js/prefs.js";
+    import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
+    import { safeWrite } from "./js/errors.js";
+    import { bootstrapContext, setActiveContext, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
+    import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
+    import { translateStatic, t } from "./js/i18n.js";
+    import { roleListLabel } from "./js/labels.js";
+    import { unitKeyLabel } from "./js/unit-keys.js";
+    import { sanitizeNoteHtml } from "./js/note-sanitize.js";
+    import {
+      createStudyNote, reviseStudyNote, retireStudyNote, notesForStudyUnit, recordJournalEvidence,
+    } from "./js/study-note-service.js";
+    import { NOTE_STATUS, listNoteRevisions } from "./js/note-foundation.js";
+
+    translateStatic();
+
+    // ---------------------------------------------------------------------
+    // The one Study Unit this screen is scoped to (issue #195 -- "for the
+    // CURRENT Study unit"). Carried in via the URL, always, because this
+    // page is reached from a Study screen that already knows which unit is
+    // current (quranrevival.html's currentUnitInfo()/noteScopeUnitInfo()) --
+    // it is never re-derived here, and there is deliberately no manual unit
+    // picker: choosing a DIFFERENT unit's Notes is a bigger surface (a
+    // picker matching the whole Study-options bar) that this round's scope
+    // (one Study unit's own Notes) does not ask for.
+    // ---------------------------------------------------------------------
+    const params = new URLSearchParams(location.search);
+    const unitKey = params.get("unit");
+    const unitLabelParam = params.get("label");
+
+    const whoEl = document.getElementById("who");
+    const signInBtn = document.getElementById("signInBtn");
+    const signOutBtn = document.getElementById("signOutBtn");
+    const appEl = document.getElementById("app");
+    const navBar = document.getElementById("navBar");
+    const navHomeExtra = document.getElementById("navHomeExtra");
+    const tenantSelect = document.getElementById("tenantSelect");
+    const personSelect = document.getElementById("personSelect");
+    const noUnitMsg = document.getElementById("noUnitMsg");
+    const unitBanner = document.getElementById("unitBanner");
+    const readOnlyMsg = document.getElementById("readOnlyMsg");
+    const pageStatusMsg = document.getElementById("pageStatusMsg");
+    const newNoteBtn = document.getElementById("newNoteBtn");
+    const newNoteForm = document.getElementById("newNoteForm");
+    const newTitleInput = document.getElementById("newTitleInput");
+    const newBodyEditor = document.getElementById("newBodyEditor");
+    const newSaveBtn = document.getElementById("newSaveBtn");
+    const newCancelBtn = document.getElementById("newCancelBtn");
+    const notesContainer = document.getElementById("notesContainer");
+    const truncatedMsg = document.getElementById("truncatedMsg");
+    const emptyMsg = document.getElementById("emptyMsg");
+
+    // data-placeholder is a custom attribute (:empty:before { content:
+    // attr(data-placeholder) }, the same pattern quranrevival.html's own
+    // .note-notes-editor uses) -- translateStatic()'s TRANSLATABLE_ATTRS list
+    // does not cover custom attributes, so it is set through t() by hand.
+    newBodyEditor.setAttribute("data-placeholder", t("Type notes here…"));
+
+    function escapeHtml(s) {
+      return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function renderNav(roles, viewAsRole) {
+      navBar.innerHTML = renderNavBar(roles, viewAsRole);
+      navHomeExtra.innerHTML = renderHomeExtras(roles);
+      mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid });
+    }
+
+    signInBtn.addEventListener("click", () => {
+      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+        whoEl.textContent = t("Sign-in failed: {message}", { message: err.message });
+      });
+    });
+    signOutBtn.addEventListener("click", () => signOut(auth));
+
+    let activeTenantId = null;
+    let myMemberships = [];
+    let roster = [];
+    let selectedPersonId = null;
+    let currentTenantDoc = null;
+
+    function myPersonIdInActiveTenant() {
+      return myMemberships.find((m) => m.tenantId === activeTenantId)?.personId ?? null;
+    }
+
+    /** Only a Note's own author may create, revise or retire it (isNoteOwner() in firestore.rules -- deliberately NOT canRecordFor(), a Note is a person's own private writing, never a record kept about them). */
+    function isSelfSelected() {
+      return selectedPersonId != null && selectedPersonId === myPersonIdInActiveTenant();
+    }
+
+    function renderPersonSelectOptions() {
+      const prev = personSelect.value;
+      personSelect.innerHTML = roster
+        .filter((p) => p.status !== "archived")
+        .map((p) => `<option value="${p.id}">${escapeHtml(langText(p.name, getAppLang(), p.id))}</option>`)
+        .join("");
+      const stored = getSelectedPersonId();
+      const myPersonId = myPersonIdInActiveTenant();
+      const candidate = roster.some((p) => p.id === prev) ? prev
+        : (roster.some((p) => p.id === stored) ? stored
+        : (roster.some((p) => p.id === myPersonId) ? myPersonId : (roster[0]?.id ?? null)));
+      if (candidate) personSelect.value = candidate;
+    }
+
+    async function loadContextData() {
+      const rosterSnap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId)));
+      roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], null);
+      renderPersonSelectOptions();
+      selectedPersonId = personSelect.value || null;
+      const tenantSnap = await getDoc(doc(db, TENANT.TENANTS, activeTenantId));
+      currentTenantDoc = tenantSnap.exists() ? tenantSnap.data() : null;
+      await refreshView();
+    }
+
+    personSelect.addEventListener("change", async () => {
+      selectedPersonId = personSelect.value;
+      setSelectedPersonId(selectedPersonId);
+      await refreshView();
+    });
+
+    tenantSelect.addEventListener("change", async () => {
+      const chosen = myMemberships.find((m) => m.tenantId === tenantSelect.value);
+      if (!chosen) return;
+      activeTenantId = chosen.tenantId;
+      setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
+      renderNav(chosen.roles, null);
+      await loadContextData();
+    });
+
+    // -----------------------------------------------------------------------
+    // Rendering
+    // -----------------------------------------------------------------------
+
+    let currentRows = []; // [{ source, note }], as returned by notesForStudyUnit()
+    let openHistoryFor = new Set(); // noteIds whose revision list is currently shown
+    let editingNoteId = null; // the one note currently in its own edit form, or null
+
+    function renderUnitBanner() {
+      if (!unitKey) { noUnitMsg.style.display = "block"; unitBanner.style.display = "none"; newNoteBtn.style.display = "none"; return; }
+      noUnitMsg.style.display = "none";
+      unitBanner.style.display = "block";
+      const label = (unitLabelParam && unitLabelParam.trim()) || unitKeyLabel(unitKey);
+      unitBanner.innerHTML = `${t("Showing Notes about:")} <strong>${escapeHtml(label)}</strong>`;
+    }
+
+    function renderReadOnlyBanner() {
+      if (!unitKey) { readOnlyMsg.style.display = "none"; return; }
+      if (isSelfSelected()) {
+        readOnlyMsg.style.display = "none";
+        newNoteBtn.style.display = "inline-block";
+        return;
+      }
+      newNoteBtn.style.display = "none";
+      readOnlyMsg.style.display = "block";
+      const name = roster.find((p) => p.id === selectedPersonId);
+      const shownName = name ? langText(name.name, getAppLang(), name.id) : selectedPersonId;
+      readOnlyMsg.textContent = t("You're viewing {name}'s Notes. Only {name} can create, edit or remove their own Notes — you can only read them here.", { name: shownName });
+    }
+
+    function noteBodyPreviewHtml(note) {
+      return sanitizeNoteHtml(note.bodyHtml || "");
+    }
+
+    function noteCardHtml(row) {
+      const { note } = row;
+      const retired = note.status === NOTE_STATUS.RETIRED;
+      const title = note.title?.trim() || t("(untitled)");
+      const canEdit = isSelfSelected() && !retired;
+      return `<div class="note-card${retired ? " retired" : ""}" data-note-id="${escapeHtml(note.noteId)}">
+        <div class="note-card-head">
+          <span class="note-card-title">${escapeHtml(title)}</span>
+          <span class="note-status-pill${retired ? " retired" : ""}">${retired ? t("Removed") : t("Active")}</span>
+        </div>
+        <div class="note-card-meta">${t("Revision")}: ${escapeHtml(note.currentRevisionId)}</div>
+        <div class="note-body-preview" data-note-body></div>
+        <div class="note-actions">
+          ${canEdit ? `<button type="button" class="secondary tiny" data-note-edit>${t("Edit")}</button>` : ""}
+          <button type="button" class="secondary tiny" data-note-history-toggle>${openHistoryFor.has(note.noteId) ? t("Hide history") : t("Show history")}</button>
+          ${canEdit ? `<button type="button" class="danger tiny" data-note-retire>${t("Remove")}</button>` : ""}
+        </div>
+        <div class="note-history" data-note-history style="${openHistoryFor.has(note.noteId) ? "" : "display:none"}"></div>
+      </div>`;
+    }
+
+    async function renderHistoryFor(noteId, container) {
+      container.innerHTML = `<p class="note">${t("Loading…")}</p>`;
+      const revisions = await listNoteRevisions(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, noteId });
+      if (!revisions.length) { container.innerHTML = `<p class="note">${t("No revision history.")}</p>`; return; }
+      container.innerHTML = revisions.map((r) => {
+        const when = r.createdAt?.toDate ? r.createdAt.toDate().toLocaleString() : "";
+        return `<div class="note-history-row">${escapeHtml(when)} — ${escapeHtml(r.revisionReason)}</div>`;
+      }).join("");
+    }
+
+    function renderNotesList() {
+      if (!unitKey) { notesContainer.innerHTML = ""; emptyMsg.style.display = "none"; truncatedMsg.style.display = "none"; return; }
+      notesContainer.innerHTML = currentRows.map(noteCardHtml).join("");
+      emptyMsg.style.display = currentRows.length === 0 ? "block" : "none";
+      // Every body is assigned through sanitizeNoteHtml() -- never the raw
+      // bodyHtml straight from Firestore (REQUIRED, issue #195).
+      notesContainer.querySelectorAll("[data-note-id]").forEach((card) => {
+        const noteId = card.dataset.noteId;
+        const row = currentRows.find((r) => r.note.noteId === noteId);
+        if (!row) return;
+        card.querySelector("[data-note-body]").innerHTML = noteBodyPreviewHtml(row.note);
+        card.querySelector("[data-note-edit]")?.addEventListener("click", () => openEditForm(row.note));
+        card.querySelector("[data-note-retire]")?.addEventListener("click", () => retireNote(row.note));
+        card.querySelector("[data-note-history-toggle]")?.addEventListener("click", async () => {
+          const historyEl = card.querySelector("[data-note-history]");
+          const isOpen = openHistoryFor.has(noteId);
+          if (isOpen) { openHistoryFor.delete(noteId); historyEl.style.display = "none"; renderNotesList(); return; }
+          openHistoryFor.add(noteId);
+          historyEl.style.display = "block";
+          renderNotesList();
+          await renderHistoryFor(noteId, card.querySelector("[data-note-history]"));
+        });
+      });
+      // A re-render (e.g. toggling another Note's history) rebuilds every
+      // card from scratch -- reopen whichever edit form was open so it
+      // survives that, the same "patch it back in" shape quranrevival.html's
+      // own Note view uses for its own collapsible state.
+      if (editingNoteId) {
+        const stillThere = currentRows.find((r) => r.note.noteId === editingNoteId);
+        if (stillThere) openEditForm(stillThere.note); else editingNoteId = null;
+      }
+    }
+
+    async function refreshView() {
+      renderUnitBanner();
+      renderReadOnlyBanner();
+      if (!unitKey || !selectedPersonId) { currentRows = []; truncatedMsg.style.display = "none"; renderNotesList(); return; }
+      try {
+        const { rows, truncated } = await notesForStudyUnit(db, {
+          tenantId: activeTenantId, ownerPersonId: selectedPersonId, unitKey,
+        });
+        currentRows = rows;
+        truncatedMsg.style.display = truncated ? "block" : "none";
+      } catch (err) {
+        // notesForStudyUnit() throws for a unitKey that is not a permanent
+        // Study Unit key (a caller defect, not a write failure) -- I15's
+        // safeWrite() is for writes; a read-side defect is shown directly.
+        currentRows = [];
+        unitBanner.innerHTML = `${escapeHtml(t("This screen could not read Notes for that unit."))} (${escapeHtml(err.message)})`;
+      }
+      renderNotesList();
+    }
+
+    // -----------------------------------------------------------------------
+    // Rich-text editor toolbar -- the same document.execCommand() palette
+    // shape ayah-note-renderer.js's own Notes editor already uses (same
+    // labels, same t() keys, so the formatting a reader learns there behaves
+    // and reads identically here). Built once as a function, reused for both
+    // the new-Note form and every open edit form, since BOTH are DYNAMIC
+    // (i18n.js's own rule: translateStatic() only ever translates the DOM
+    // present at page load -- anything rendered afterwards needs its own
+    // t() calls, which a bare literal string cannot get retroactively).
+    // -----------------------------------------------------------------------
+    function toolbarHtml() {
+      return `
+        <button type="button" class="secondary tiny" data-cmd="bold" title="${t("Bold")}"><b>B</b></button>
+        <button type="button" class="secondary tiny" data-cmd="italic" title="${t("Italic")}"><i>I</i></button>
+        <button type="button" class="secondary tiny" data-cmd="underline" title="${t("Underline")}"><u>U</u></button>
+        <button type="button" class="secondary tiny" data-cmd="insertUnorderedList" title="${t("Bullet list")}">• ${t("List")}</button>
+        <button type="button" class="secondary tiny" data-cmd="insertOrderedList" title="${t("Numbered list")}">1. ${t("List")}</button>
+        <button type="button" class="secondary tiny" data-cmd="removeFormat" title="${t("Clear formatting")}">${t("Clear")}</button>`;
+    }
+    function wireToolbar(toolbarEl, editorEl) {
+      toolbarEl.querySelectorAll("button[data-cmd]").forEach((btn) => {
+        btn.addEventListener("mousedown", (e) => e.preventDefault());
+        btn.addEventListener("click", () => {
+          editorEl.focus();
+          document.execCommand(btn.dataset.cmd, false, null);
+        });
+      });
+    }
+    document.getElementById("newToolbar").innerHTML = toolbarHtml();
+    wireToolbar(document.getElementById("newToolbar"), newBodyEditor);
+
+    function showPageStatus(msg) {
+      pageStatusMsg.textContent = msg;
+      pageStatusMsg.style.display = "block";
+    }
+
+    function resetNewForm() {
+      newTitleInput.value = "";
+      newBodyEditor.innerHTML = "";
+      pageStatusMsg.style.display = "none";
+    }
+
+    newNoteBtn.addEventListener("click", () => {
+      resetNewForm();
+      newNoteForm.style.display = "block";
+      newNoteBtn.style.display = "none";
+      newTitleInput.focus();
+    });
+    newCancelBtn.addEventListener("click", () => {
+      newNoteForm.style.display = "none";
+      newNoteBtn.style.display = "inline-block";
+    });
+
+    async function afterCreateOrRevise(evidence) {
+      if (!evidence) return; // this unit type records no Journaling Activity (ADR-008 §6) -- a perfectly good Note, nothing to say
+      const outcome = await recordJournalEvidence(db, evidence, auth.currentUser.uid);
+      if (outcome.written) {
+        showPageStatus(t("Saved, and recorded as this week's Journaling activity."));
+      } else if (outcome.blocked) {
+        showPageStatus(t("Saved. Journaling activity was not recorded ({reason}).", { reason: outcome.reason ?? "" }));
+      }
+      // skipped or an already-recorded no-op (written:false, blocked:false):
+      // nothing to say -- the Note itself is what matters and it is saved.
+    }
+
+    newSaveBtn.addEventListener("click", async () => {
+      if (!unitKey || !isSelfSelected()) return;
+      const title = newTitleInput.value.trim();
+      const bodyHtml = newBodyEditor.innerHTML.trim();
+      if (!bodyHtml) { newBodyEditor.focus(); return; }
+      const outcome = await safeWrite(
+        () => createStudyNote(db, {
+          tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid,
+          unitKey, title, bodyHtml, actorUid: auth.currentUser.uid,
+          weekStartsOn: currentTenantDoc?.weekStartsOn ?? 6,
+        }),
+        { collection: TENANT.NOTES, action: "createStudyNote" }
+      );
+      if (!outcome.ok) return;
+      newNoteForm.style.display = "none";
+      newNoteBtn.style.display = "inline-block";
+      showPageStatus(t("Note saved."));
+      await afterCreateOrRevise(outcome.result.evidence);
+      await refreshView();
+    });
+
+    // -----------------------------------------------------------------------
+    // Editing an existing Note -- reviseStudyNote() commits a real revision
+    // (currentRevisionId moves, chained from the one being left behind), not
+    // an in-place overwrite, so "a revision was created" is shown, not just
+    // that the content changed (issue #195's own requirement).
+    // -----------------------------------------------------------------------
+    function openEditForm(note) {
+      editingNoteId = note.noteId;
+      const card = notesContainer.querySelector(`[data-note-id="${CSS.escape(note.noteId)}"]`);
+      if (!card) return;
+      const body = card.querySelector("[data-note-body]");
+      body.innerHTML = `
+        <input type="text" class="note-title-input" data-edit-title value="${escapeHtml(note.title ?? "")}" />
+        <div class="note-editor-toolbar" data-edit-toolbar>${toolbarHtml()}</div>
+        <div class="note-editor-body" contenteditable="true" data-edit-body>${sanitizeNoteHtml(note.bodyHtml || "")}</div>
+        <div class="note-actions">
+          <button type="button" data-edit-save>${t("Save revision")}</button>
+          <button type="button" class="secondary" data-edit-cancel>${t("Cancel")}</button>
+        </div>`;
+      wireToolbar(body.querySelector("[data-edit-toolbar]"), body.querySelector("[data-edit-body]"));
+      body.querySelector("[data-edit-cancel]").addEventListener("click", () => { editingNoteId = null; renderNotesList(); });
+      body.querySelector("[data-edit-save]").addEventListener("click", async () => {
+        const newTitle = body.querySelector("[data-edit-title]").value.trim();
+        const newBody = body.querySelector("[data-edit-body]").innerHTML.trim();
+        const outcome = await safeWrite(
+          () => reviseStudyNote(db, {
+            tenantId: activeTenantId, personId: selectedPersonId, noteId: note.noteId, unitKey,
+            expectedRevisionId: note.currentRevisionId, title: newTitle, bodyHtml: newBody,
+            actorUid: auth.currentUser.uid, weekStartsOn: currentTenantDoc?.weekStartsOn ?? 6,
+          }),
+          { collection: TENANT.NOTES, action: "reviseStudyNote" }
+        );
+        if (!outcome.ok) return;
+        showPageStatus(t("Saved as a new revision ({revisionId}).", { revisionId: outcome.result.commit.revisionId }));
+        await afterCreateOrRevise(outcome.result.evidence);
+        editingNoteId = null;
+        await refreshView();
+      });
+    }
+
+    async function retireNote(note) {
+      if (!confirm(t('Remove "{title}"? This keeps its full history — it can be restored by an administrator, and is never destroyed.', { title: note.title?.trim() || t("(untitled)") }))) return;
+      const outcome = await safeWrite(
+        () => retireStudyNote(db, {
+          tenantId: activeTenantId, noteId: note.noteId, expectedRevisionId: note.currentRevisionId,
+          actorUid: auth.currentUser.uid,
+        }),
+        { collection: TENANT.NOTES, action: "retireStudyNote" }
+      );
+      if (!outcome.ok) return;
+      await refreshView();
+    }
+
+    // -----------------------------------------------------------------------
+    // Sign-in / bootstrap -- same shape as bookmarks.html.
+    // -----------------------------------------------------------------------
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        whoEl.textContent = t("Not signed in.");
+        signInBtn.style.display = "inline-block";
+        signOutBtn.style.display = "none";
+        appEl.style.display = "none";
+        return;
+      }
+      whoEl.textContent = t("Signed in as {email}", { email: user.email });
+      signInBtn.style.display = "none";
+      signOutBtn.style.display = "inline-block";
+
+      try {
+        const userIndexSnap = await getDoc(doc(db, TENANT.USER_INDEX, user.uid));
+        if (adoptAppLangFromUserIndex(userIndexSnap)) return;
+        const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
+        const { context, memberships } = await bootstrapContext(db, user.uid, defaultTenantId);
+        if (!context) {
+          whoEl.innerHTML += noAccountMessageHtml();
+          return;
+        }
+        activeTenantId = context.tenantId;
+        myMemberships = memberships;
+        tenantSelect.innerHTML = myMemberships
+          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
+          .join("");
+
+        appEl.style.display = "block";
+        await loadContextData();
+      } catch (err) {
+        console.error(err);
+        whoEl.textContent += ` — ${err.message}`;
+      }
+    });
+  </script>
+</body>
+</html>

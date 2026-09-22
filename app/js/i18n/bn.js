@@ -2479,4 +2479,37 @@ export const BN = {
     "শুধু লিঙ্ক — ব্যাখ্যার পাঠ এখানে পুনরুৎপাদন করা হয়নি।",
   "Matched by reference ({scheme} {ref}). No occurrence ID until an edition is approved.":
     "সূত্র অনুযায়ী মিলিত ({scheme} {ref})। কোনো সংস্করণ অনুমোদিত না হওয়া পর্যন্ত কোনো সংঘটন আইডি নেই।",
+
+  // --- MAP Phase 5 (P5-D, issue #195) -- the permanent Notes screen -----
+  "My Notes": "আমার নোট",
+  "Your own permanent Notes about the Study Unit you're currently on — separate from the quick note on the Read screen, and kept forever with a full history of every revision.":
+    "আপনি এখন যে স্টাডি ইউনিটে আছেন তার সম্পর্কে আপনার নিজের স্থায়ী নোট — পড়া স্ক্রিনের দ্রুত নোট থেকে আলাদা, এবং প্রতিটি সংশোধনের সম্পূর্ণ ইতিহাসসহ চিরকাল সংরক্ষিত থাকে।",
+  "No Study Unit was given to this screen. Open it from the Read screen's ⋯ menu (\"My Notes for this unit\"), which always says which unit it's opening for.":
+    "এই স্ক্রিনে কোনো স্টাডি ইউনিট দেওয়া হয়নি। পড়া স্ক্রিনের ⋯ মেনু (\"এই ইউনিটের আমার নোট\") থেকে এটি খুলুন, যা সবসময় বলে দেয় এটি কোন ইউনিটের জন্য খুলছে।",
+  "Showing Notes about:": "যে বিষয়ে নোট দেখানো হচ্ছে:",
+  "This screen could not read Notes for that unit.": "এই স্ক্রিন সেই ইউনিটের নোট পড়তে পারেনি।",
+  "You're viewing {name}'s Notes. Only {name} can create, edit or remove their own Notes — you can only read them here.":
+    "আপনি {name}-এর নোট দেখছেন। শুধুমাত্র {name} নিজের নোট তৈরি, সম্পাদনা বা অপসারণ করতে পারবেন — আপনি এখানে শুধু সেগুলো পড়তে পারবেন।",
+  "+ New Note about this unit": "+ এই ইউনিট সম্পর্কে নতুন নোট",
+  "New Note": "নতুন নোট",
+  "Title (optional)": "শিরোনাম (ঐচ্ছিক)",
+  "(untitled)": "(শিরোনামহীন)",
+  "Active": "সক্রিয়",
+  "Revision": "সংশোধন",
+  "Show history": "ইতিহাস দেখুন",
+  "Hide history": "ইতিহাস লুকান",
+  "No revision history.": "কোনো সংশোধনের ইতিহাস নেই।",
+  "Save revision": "সংশোধন সংরক্ষণ করুন",
+  "Note saved.": "নোট সংরক্ষিত হয়েছে।",
+  "Saved as a new revision ({revisionId}).": "নতুন সংশোধন হিসেবে সংরক্ষিত হয়েছে ({revisionId})।",
+  "Saved, and recorded as this week's Journaling activity.":
+    "সংরক্ষিত হয়েছে, এবং এই সপ্তাহের নিজের ভাবনা লেখার কার্যক্রম হিসেবে লিপিবদ্ধ হয়েছে।",
+  "Saved. Journaling activity was not recorded ({reason}).":
+    "সংরক্ষিত হয়েছে। নিজের ভাবনা লেখার কার্যক্রম লিপিবদ্ধ হয়নি ({reason})।",
+  "Remove \"{title}\"? This keeps its full history — it can be restored by an administrator, and is never destroyed.":
+    "\"{title}\" অপসারণ করবেন? এর সম্পূর্ণ ইতিহাস রক্ষিত থাকবে — একজন প্রশাসক এটি পুনরুদ্ধার করতে পারবেন, এবং এটি কখনও ধ্বংস করা হয় না।",
+  "Showing the most recent Notes only — there are more on this unit.":
+    "শুধুমাত্র সাম্প্রতিকতম নোটগুলো দেখানো হচ্ছে — এই ইউনিটে আরও আছে।",
+  "No Notes yet on this Study Unit.": "এই স্টাডি ইউনিটে এখনো কোনো নোট নেই।",
+  "My Notes for this unit": "এই ইউনিটের আমার নোট",
 };
