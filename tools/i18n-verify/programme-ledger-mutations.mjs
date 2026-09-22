@@ -382,6 +382,12 @@ mutation("the feature is recorded operational while its Rules are not deployed",
 }, /the evidence subcollection has no rule/);
 
 mutation("the readiness gate is flipped in code and nowhere else", "G", (l, f) => {
+  // Force the precondition explicitly (ledger still says ready:false) rather
+  // than relying on the real ledger's ambient state, which stopped being
+  // false on 2026-09-22 when Phase 4 evidence persistence was actually,
+  // governedly enabled -- the same lesson the Rules-deployment mutations
+  // above already learned the same day.
+  l.evidencePersistenceReadiness.ready = false;
   f.readinessSource = readinessSrc(true);
 }, /the code and the governance record disagree/);
 
@@ -392,8 +398,12 @@ mutation("the gate is flipped in code AND in the ledger, but the Rules are still
 }, /readiness may not run ahead of the deployment it depends on/);
 
 mutation("everything is flipped, with no governed decision recorded", "G", (l, f) => {
+  // Force the precondition explicitly (no decision recorded) rather than
+  // relying on the real ledger's ambient state, which now carries a real,
+  // valid decision.
   f.readinessSource = readinessSrc(true);
   l.evidencePersistenceReadiness.ready = true;
+  l.evidencePersistenceReadiness.decision = null;
   l.deployment.firebaseRulesDeployed.state = "YES";
 }, /enablement is a decision, not an edit/);
 

@@ -395,11 +395,28 @@ check("the candidate Rules are a candidate, not the deployed file", () => {
 // offering an action it cannot perform.
 const READINESS = "study-evidence-readiness.js";
 
-check("the readiness declaration DEFAULTS TO FALSE, as a literal", () => {
+// UPDATED 2026-09-22, with the reason recorded rather than the check
+// deleted. Until this date the standing declaration really was `false`
+// (E1 CLOSED), and asserting that literal was the whole point -- a bare
+// flip to `true` with no governed decision was exactly the failure mode
+// this suite exists to catch. It is now `true`, under a real governed
+// decision (docs/reports/2026-09-22-map-phase4-evidence-persistence-enabled.md),
+// so asserting the OLD literal would itself now be the false claim. What
+// must still hold, unconditionally, is that `ready` is never a bare true:
+// it is only ever true alongside a well-formed decision the module's own
+// predicate accepts -- proven here by calling that predicate directly,
+// not by re-parsing its logic with a second regex.
+check("the readiness declaration is a REAL literal, and if true it is under a GOVERNED decision", () => {
   const src = fs.readFileSync(path.join(appJs, READINESS), "utf8");
   const m = src.match(/EVIDENCE_PERSISTENCE_DECLARATION\s*=\s*Object\.freeze\(\{[\s\S]*?ready:\s*(true|false)/);
   assert.ok(m, "ready is not a plain literal -- a computed default is not a default");
-  assert.equal(m[1], "false", "the standing declaration is not false; E1 is CLOSED");
+  const declaredReady = readiness.isStudyEvidencePersistenceReady();
+  assert.equal(declaredReady, m[1] === "true",
+    "the module's own predicate disagrees with the literal it reads -- something is malformed");
+  if (m[1] === "true") {
+    assert.equal(declaredReady, true,
+      "ready is declared true but the module's own predicate refuses it -- this is a BARE FLIP, not a governed decision");
+  }
 });
 
 check("readiness CANNOT be inferred from firestore.rules -- the module imports nothing at all", () => {
@@ -426,8 +443,14 @@ check("a bare flip of `ready` does NOT enable persistence", () => {
   // Enablement is a governed decision (requirement 5). Asserted against the
   // real predicate rather than the source, because this is the one fact here
   // a regex genuinely cannot see.
+  //
+  // UPDATED 2026-09-22: the standing declaration now genuinely IS ready
+  // (docs/reports/2026-09-22-map-phase4-evidence-persistence-enabled.md),
+  // so the first assertion here asserts that fact instead of its opposite.
+  // Every OTHER case below is unaffected and still proves the real point:
+  // an ill-formed shape must be refused no matter what the real file says.
   const m = readiness;
-  assert.equal(m.isStudyEvidencePersistenceReady(), false, "the standing declaration reads ready");
+  assert.equal(m.isStudyEvidencePersistenceReady(), true, "the standing declaration should read ready under its governed decision");
   assert.equal(m.isStudyEvidencePersistenceReady({ ready: true }), false, "a bare flip enabled it");
   assert.equal(m.isStudyEvidencePersistenceReady({ ready: true, decision: {} }), false, "an empty decision enabled it");
   assert.equal(m.isStudyEvidencePersistenceReady({ ready: true, decision: { by: "quran", on: "2026-09-19", reference: "x" } }), false,

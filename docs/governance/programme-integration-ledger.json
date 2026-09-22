@@ -132,7 +132,7 @@
       "version": "08.33",
       "owner": "quran",
       "status": "LIVE",
-      "note": "Three real, measured Study-options-panel truncations fixed at phone width (tenantSelect, unitTypeSelect/surahSelect, and a Bangla-only drillModeSelect), under the Owner's own standing fix-list authorisation. Real layout change, measured before and after in both languages, 48/48 panel.mjs sections clean either side. No Firestore write, Rule or index. Allocated by the MMSA Architect.",
+      "note": "Three real, measured Study-options-panel truncations fixed at phone width (tenantSelect, unitTypeSelect/surahSelect, and a Bangla-only drillModeSelect), under the Owner's own standing fix-list authorisation. Real layout change, measured before and after in both languages, 48/48 panel.mjs sections clean either side. No Firestore write, Rule or index. Allocated by the MMSA Architect. Stays LIVE until v08.34 actually merges to main -- see the v08.34 entry's own status.",
       "integration": {
         "authorizedOn": "2026-09-22",
         "integratedOn": "2026-09-22",
@@ -141,12 +141,27 @@
         "method": "MERGE_PR",
         "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/176"
       }
+    },
+    {
+      "version": "08.34",
+      "owner": "quran",
+      "status": "RESERVED",
+      "note": "MAP Phase 4 Activity evidence persistence ENABLED -- the governed decision in app/js/study-evidence-readiness.js, flipping ready:false to ready:true now that the Phase 3-6 Rules are deployed (Owner-confirmed in the Firebase Console) and Phase 3 word-by-word progress was independently verified to save and reload on the Owner's own real phone the same day. Real, user-facing behaviour change: the #readBar ✓, the Listening gate and the WbW gate all start persisting real Activity evidence. Allocated by the MMSA Architect. RESERVED, not yet LIVE: this entry is on the round's own branch; guard A requires the LIVE allocation to equal main's own version, so this stays RESERVED until the PR merges -- the same two-step pattern v08.33 itself used (PR #176, then the #177 confirm commit flipped it LIVE).",
+      "integration": {
+        "authorizedOn": "2026-09-22",
+        "integratedOn": null,
+        "acceptedApplicationSha": null,
+        "integratedMainSha": null,
+        "method": "MERGE_PR",
+        "reference": "docs/reports/2026-09-22-map-phase4-evidence-persistence-enabled.md",
+        "shaNote": "PENDING -- filled in, and status flipped to LIVE, by the confirm-commit that follows this PR's merge."
+      }
     }
   ],
-  "nextUnallocated": "08.34",
+  "nextUnallocated": "08.35",
   "nextUnallocatedNote": [
-    "08.34 and later numbers remain unallocated; allocation requires MMSA Master Architect direction.",
-    "v08.33 was allocated to the Study-options-panel fix-list round, PR #176, merged on 2026-09-22."
+    "08.35 and later numbers remain unallocated; allocation requires MMSA Master Architect direction.",
+    "v08.34 was allocated to MAP Phase 4 Activity evidence persistence enablement, merged on 2026-09-22."
   ],
   "streams": [
     {
@@ -155,7 +170,7 @@
       "role": "The umbrella: shared runtime, shared verification, governance, version allocation and module integration. It owns the platform/shared paths below; it is not a subject module.",
       "activeBranch": null,
       "integrationState": "ON_MAIN",
-      "declaredVersion": "08.33",
+      "declaredVersion": "08.34",
       "baselineSha": null,
       "baselineStatus": "NOT_APPLICABLE_IS_MAIN",
       "ownedPaths": [
@@ -179,8 +194,8 @@
       "name": "QuranRevival -- Quran Study module",
       "activeBranch": null,
       "integrationState": "MERGED_TO_MAIN",
-      "declaredVersion": "08.33",
-      "baselineSha": "0b082c8c193d3dc9154f5e67657a02f77ec3c6df",
+      "declaredVersion": "08.34",
+      "baselineSha": "211b4df919db45d7875226df589cd522eadea213",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
       "ownedPaths": [
         "app/quranrevival.html",
@@ -736,10 +751,10 @@
       "evidence": "firestore.rules == docs/governance/phase3-6-DEPLOYMENT-candidate-2026-09-22.rules (rules-deployment-candidate-phase3-6.mjs's own check). firestore.indexes.json declares exactly the four audited indexes (firestore-index-requirements.mjs)."
     },
     "evidenceRecordingOperational": {
-      "state": "NO",
-      "means": "The Rules dependency is now satisfied, but the Phase 4 feature still cannot record anything for anyone: enabling it is its own GOVERNED DECISION, not automatic from Rules deployment (app/js/study-evidence-readiness.js's own design -- a decision naming an authority, a date and a record, not a bare flip). That decision has not yet been made.",
-      "dependsOn": "firebaseRulesDeployed (now satisfied) AND a separate governed enablement decision (not yet made)",
-      "surfacedBy": "v08.31 -- the persistence-readiness gate. app/js/study-evidence-readiness.js still declares ready:false, deliberately, pending Phase 3 verification on a real phone (Owner instruction, 2026-09-22)."
+      "state": "YES",
+      "means": "The governed enablement decision was made 2026-09-22: Rules deployed AND Phase 3 word-by-word progress independently verified to save and reload on the Owner's own real phone the same day (\"It worked, switch on Phase 4.\"). app/js/study-evidence-readiness.js now declares ready:true with a valid decision; guard G confirms code and ledger agree.",
+      "dependsOn": "firebaseRulesDeployed (satisfied) AND the governed enablement decision (made 2026-09-22)",
+      "surfacedBy": "v08.34 -- see docs/reports/2026-09-22-map-phase4-evidence-persistence-enabled.md for the full decision record."
     },
     "e1": "OPEN",
     "firestoreRules": "DONE",
@@ -816,9 +831,14 @@
       "one-word source edit."
     ],
     "declarationPath": "app/js/study-evidence-readiness.js",
-    "ready": false,
-    "decision": null,
+    "ready": true,
+    "decision": {
+      "by": "master-architect",
+      "on": "2026-09-22",
+      "reference": "docs/reports/2026-09-22-map-phase4-evidence-persistence-enabled.md"
+    },
     "gate": "E1",
+    "enabledNote": "All three preconditions this block itself lists were met 2026-09-22, same day: deployment.firebaseRulesDeployed.state is YES; this block carries ready=true with a decision from the closed authority set; app/js/study-evidence-readiness.js carries the identical decision. Guard G re-run clean.",
     "requiredToEnable": [
       "docs/governance/programme-integration-ledger.json: deployment.firebaseRulesDeployed.state = YES, proven by an actual deployment",
       "this block: ready=true and decision={by,on,reference} from the closed authority set",

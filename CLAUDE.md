@@ -158,7 +158,48 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.33 on `main`** (22 Sep 2026 — three real, measured
+**Current milestone: v08.34 on `claude/phase4-evidence-enabled-2026-09-22`;
+`main` is still v08.33** (22 Sep 2026 — MAP Phase 4 Activity evidence
+persistence ENABLED. The Owner's own words, after testing Phase 3
+word-by-word progress on a real phone per the exact steps given: *"It
+worked, switch on Phase 4."* Both preconditions `app/js/study-evidence-
+readiness.js` itself requires are now met — `deployment.firebaseRulesDeployed`
+is YES (see the dated correction above) and a real save-and-reload was
+independently proven on the Owner's own device — so `EVIDENCE_PERSISTENCE_
+DECLARATION` moved from `ready: false, decision: null` to `ready: true` with
+a governed decision (`by: "master-architect", on: "2026-09-22"`), under the
+exact ceremony the module's own header describes: not a bare flip, but a
+decision from the closed authority set, a real date, and a reference to a
+record that exists — `docs/reports/2026-09-22-map-phase4-evidence-
+persistence-enabled.md`. **Guard G re-run clean**: the code's `ready`
+literal, the ledger's `evidencePersistenceReadiness` block and
+`deployment.firebaseRulesDeployed.state` all agree.
+
+**What actually changes for a real reader, today, once this merges**: the ✓
+on `#readBar` (D1 Reading) stops being `aria-disabled` and starts creating
+one real, create-only, deduplicated document per completion. D2 Listening
+(≥80% of the unit) and D4 Word-by-Word keep recording silently exactly as
+v08.30/v08.31 built them — neither ever invited a press. **What does not
+change**: the writer's own I15 rethrow underneath the gate; `bulkConfirmWeek()`
+still reading only `entries[]` (the Activity-to-Mastery escalation guard);
+D3 Journaling, still out of scope (no reachable producer — Notes, issue
+#180, is a separate in-progress round); Notes and Mapping My Journey
+screens, unaffected (issues #180, #182, still building).
+
+**Nine checks across two suites updated in place, with the reason
+recorded, the same discipline as the Rules-deployment round above** — a
+literal check asserting `ready` reads `false`, and a mutation-style check
+whose own first assertion asserted the SAME thing, both in
+`study-activity-evidence-boundary.mjs`. Neither was weakened: every
+malformed-shape refusal (a bare flip, an empty decision, a self-authorising
+module, an unreal date) is asserted exactly as strictly as before — only the
+assertion about the REAL file's CURRENT state changed, because that state
+genuinely changed. `app/js/version.js` bumped to **08.34** — a real,
+user-facing behaviour change (a control moves from non-actionable to
+actionable), the same reasoning v08.31 itself used for why the *gate*
+needed its own version, applied symmetrically to the gate's release.
+
+**Previous milestone: v08.33 on `main`** (22 Sep 2026 — three real, measured
 truncations fixed in the Study-options panel at phone width, the first work
 done under the Owner's own standing fix-list authorisation (see
 "THE FIX LIST IS A STANDING OWNER AUTHORISATION" in `ARCHITECT.md`).

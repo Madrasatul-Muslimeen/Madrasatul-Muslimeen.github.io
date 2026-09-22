@@ -36,4 +36,13 @@
 // O3b), and the Bangla-only drillModeSelect (same wrap, same breakpoint).
 // Allocated by the MMSA Architect on 22 Sep 2026, under the Owner's own
 // standing authorisation for fix-list work (issue "the fix list").
-export const APP_VERSION = "08.33";
+// 08.34: MAP Phase 4 Activity evidence persistence ENABLED -- the governed
+// decision in app/js/study-evidence-readiness.js flipped ready:false to
+// ready:true, now that the Phase 3-6 Rules are deployed (confirmed by the
+// Owner in the Firebase Console) and Phase 3 word-by-word progress was
+// proven to save and reload on a real phone the same day ("It worked,
+// switch on Phase 4."). The ✓ on #readBar, the Listening gate and the
+// Word-by-Word gate all start persisting real Activity evidence from this
+// version onward. Allocated by the MMSA Architect on 22 Sep 2026; see
+// docs/reports/2026-09-22-map-phase4-evidence-persistence-enabled.md.
+export const APP_VERSION = "08.34";
