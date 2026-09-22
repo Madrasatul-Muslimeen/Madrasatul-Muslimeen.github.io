@@ -94,7 +94,7 @@
 <h2>If something goes wrong</h2>
 <ul>
 <li><strong>&quot;Review deployments&quot; never appears</strong> → the environment name doesn&#x27;t match exactly, or Required reviewers wasn&#x27;t saved. Re-check step 2.</li>
-<li><strong>The deploy fails with a permission error</strong> → the key&#x27;s two roles in step 1 may be missing one, or the key wasn&#x27;t pasted in full in step 3. Re-check both; a partial paste is the most common cause.</li>
+<li><strong>The deploy fails with a permission error</strong> → the key&#x27;s one role in step 1 (Firebase Rules Admin) may not have been added correctly, or the key wasn&#x27;t pasted in full in step 3. Re-check both; a partial paste is the most common cause.</li>
 <li><strong>You want to stop this and go back to doing it by hand</strong> → delete the environment secret (step 3) or the service account itself (step 1&#x27;s Keys tab, click Delete). The workflow will then fail loudly with a clear error rather than publishing anything, and you can go back to the manual Console steps at any time.</li>
 </ul>
 </main></body></html>
