@@ -29,9 +29,9 @@
   "status": "ACTIVE",
   "main": {
     "ref": "origin/main",
-    "baselineSha": "0b082c8c193d3dc9154f5e67657a02f77ec3c6df",
+    "baselineSha": "c635d1f140e551bb23ff190f0283a852b9bb9e1f",
     "baselineRecordedOn": "2026-09-22",
-    "version": "08.33",
+    "version": "08.34",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -131,8 +131,8 @@
     {
       "version": "08.33",
       "owner": "quran",
-      "status": "LIVE",
-      "note": "Three real, measured Study-options-panel truncations fixed at phone width (tenantSelect, unitTypeSelect/surahSelect, and a Bangla-only drillModeSelect), under the Owner's own standing fix-list authorisation. Real layout change, measured before and after in both languages, 48/48 panel.mjs sections clean either side. No Firestore write, Rule or index. Allocated by the MMSA Architect. Stays LIVE until v08.34 actually merges to main -- see the v08.34 entry's own status.",
+      "status": "RELEASED",
+      "note": "Three real, measured Study-options-panel truncations fixed at phone width (tenantSelect, unitTypeSelect/surahSelect, and a Bangla-only drillModeSelect), under the Owner's own standing fix-list authorisation. Real layout change, measured before and after in both languages, 48/48 panel.mjs sections clean either side. No Firestore write, Rule or index. Allocated by the MMSA Architect. RELEASED: main carried it until the v08.34 evidence-enablement merge on 2026-09-22.",
       "integration": {
         "authorizedOn": "2026-09-22",
         "integratedOn": "2026-09-22",
@@ -145,16 +145,15 @@
     {
       "version": "08.34",
       "owner": "quran",
-      "status": "RESERVED",
-      "note": "MAP Phase 4 Activity evidence persistence ENABLED -- the governed decision in app/js/study-evidence-readiness.js, flipping ready:false to ready:true now that the Phase 3-6 Rules are deployed (Owner-confirmed in the Firebase Console) and Phase 3 word-by-word progress was independently verified to save and reload on the Owner's own real phone the same day. Real, user-facing behaviour change: the #readBar ✓, the Listening gate and the WbW gate all start persisting real Activity evidence. Allocated by the MMSA Architect. RESERVED, not yet LIVE: this entry is on the round's own branch; guard A requires the LIVE allocation to equal main's own version, so this stays RESERVED until the PR merges -- the same two-step pattern v08.33 itself used (PR #176, then the #177 confirm commit flipped it LIVE).",
+      "status": "LIVE",
+      "note": "MAP Phase 4 Activity evidence persistence ENABLED -- the governed decision in app/js/study-evidence-readiness.js, flipping ready:false to ready:true now that the Phase 3-6 Rules are deployed (Owner-confirmed in the Firebase Console) and Phase 3 word-by-word progress was independently verified to save and reload on the Owner's own real phone the same day. Real, user-facing behaviour change: the #readBar ✓, the Listening gate and the WbW gate all start persisting real Activity evidence. Allocated by the MMSA Architect.",
       "integration": {
         "authorizedOn": "2026-09-22",
-        "integratedOn": null,
-        "acceptedApplicationSha": null,
-        "integratedMainSha": null,
+        "integratedOn": "2026-09-22",
+        "acceptedApplicationSha": "6ce641aabf14f6d736b020a2e5edb13f9a45dad9",
+        "integratedMainSha": "c635d1f140e551bb23ff190f0283a852b9bb9e1f",
         "method": "MERGE_PR",
-        "reference": "docs/reports/2026-09-22-map-phase4-evidence-persistence-enabled.md",
-        "shaNote": "PENDING -- filled in, and status flipped to LIVE, by the confirm-commit that follows this PR's merge."
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/185"
       }
     }
   ],
@@ -195,7 +194,7 @@
       "activeBranch": null,
       "integrationState": "MERGED_TO_MAIN",
       "declaredVersion": "08.34",
-      "baselineSha": "211b4df919db45d7875226df589cd522eadea213",
+      "baselineSha": "c635d1f140e551bb23ff190f0283a852b9bb9e1f",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
       "ownedPaths": [
         "app/quranrevival.html",
