@@ -184,3 +184,41 @@ forward links side by side. No dataset, selector or view file from any
 tranche was changed in the process — see the tranche's own dated report for
 the full merge-conflict account and the exact three-branch dependency
 table.
+
+## Tranche 6 (`js/health-atlas-diagrams.js`, additive to `health-atlas-view.js`)
+
+Built directly on `main` (tranche 5 already merged, so no stacking was
+needed): the Body Systems page's own three-column layout, a two-level
+interactive systems/organs wheel, the three body-system diagrams the source
+actually built (Renal & Urinary, Sensory, Integumentary — the other six
+still show a plain "in progress" notice, matching the source's own split),
+and a name/function search box. All read-only, same deferral boundary as
+every earlier tranche. Guarded by `tools/health-atlas-verify/
+view-boundary-wheel.mjs` + its mutation-proof companion, and 5 new checks
+in `selectors.mjs`. Full account, the screen-by-screen parity matrix and
+the verification numbers: `docs/reports/
+2026-09-21-health-atlas-body-systems-parity-tranche6.md`.
+
+## Tranche 7 — correction + column drag-resize
+
+Two bounded, read-only changes on top of tranche 6, both in
+`health-atlas-view.js`/`health-atlas.html` only:
+
+1. **Corrected an unsupported claim tranche 6 shipped.** The "diagram still
+   in progress" placeholder asserted the text connections shown instead
+   "are accurate" — a word this app's own evidence-provenance model (every
+   one of the 82 function statements is `general-reference-only`, never
+   verified per-fact) does not support. Reworded to point at that text
+   without asserting its accuracy.
+2. **Ported the source's column drag-resize** for the sections and detail
+   columns either side of the (still-flexible) wheel column — the same
+   `mousedown`/`mousemove`/`mouseup` shape and mutable-width-object state
+   the source's own `startColumnDrag()`/`COL_WIDTHS` use, re-applied to
+   this view's CSS Grid layout rather than the source's flexbox one, with
+   its own (narrower) clamp range since this page's row is narrower than
+   the source's full-bleed one. Also keyboard-operable (`ArrowLeft`/
+   `ArrowRight` on a focused divider) as an accessibility addition beyond
+   the source's pointer-only strips — the same kind of addition the wheel
+   wedges already carry. Full account, the exact clamp values and reasons,
+   and the verification numbers: `docs/reports/
+   2026-09-21-health-atlas-body-systems-parity-tranche7.md`.
