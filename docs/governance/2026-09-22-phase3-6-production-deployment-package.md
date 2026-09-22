@@ -141,6 +141,27 @@ confirmed they work cleanly (Phase 3 word tracking, Phase 4 activity
 tracking). If something that used to work stops working, restore
 `rules-backup-before-phase-3-6.txt` and say so.
 
+### The one final check — do this before you tell me "rules are live"
+
+This is the single gate. Everything above is preparation; this is the proof.
+
+**In the Console** (Firestore Database → Rules tab): the box at the top of
+the editor should read a fresh timestamp — **"Last published [today's date],
+just now"** (or the exact wording Firebase shows) — and NOT the date of
+whatever rules were live before. If you don't see today's date there, the
+publish did not take, whatever else on the page looks fine.
+
+**In the app**: open **Note & more** on any āyah, type a short test line
+("testing 22 Sep"), and save it. Reload the page and reopen that same note.
+**If your test line is still there, the publish worked and your existing
+data is safe** — this is the one check that proves both at once, because
+saving a note goes through exactly the rules you just published.
+
+Only once **both** of those are true — a fresh timestamp in the Console, and
+your test note surviving a reload — say **"rules are live."** If either one
+looks wrong, stop, restore the backup file from step two, and tell me what
+you saw instead of what's described here.
+
 ---
 
 ## 5. What this actually switches on
@@ -235,10 +256,21 @@ the publish and then **wait for you to approve it with one click**, rather
 than doing it the instant something merges. That keeps the pause where you
 can still say no, while removing the copy-paste-into-the-Console part.
 
-**My recommendation:** build it that way — automatic preparation, one click
-from you to actually publish — rather than fully automatic. Say the word and
-this becomes its own small, bounded piece of work; nothing about it is
-started by this round.
+**Built, exactly that way — approval-gated, never automatic, and Rules only
+for now.** You agreed with the recommendation, so it's done:
+`.github/workflows/deploy-firestore-rules.yml`. From now on, whenever
+`firestore.rules` changes on `main`, GitHub prepares the publish and then
+waits — nothing happens until you click **Review deployments → Approve**.
+Setup (one-time, about ten minutes, all clicking, no typing except pasting
+one key): `docs/governance/2026-09-22-auto-deploy-firestore-setup.md`.
+**Indexes stay a manual Console step, deliberately** — this repository
+already treats putting an index file at the live deploy path as its own
+Owner Control Gate (the same weight as a Rules publish), separate from
+building the automation itself, so that's your call to make later rather
+than something bundled in here. It is not wired into THIS round either way
+— this round is still the manual Console steps above, because you're having
+it audited first — but every Rules change after this one goes through the
+automated, approval-gated path unless you ask otherwise.
 
 ## 10. When you're ready
 
