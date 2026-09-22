@@ -52,9 +52,11 @@ sentence in a comment body.
    - **use a full-history checkout** (`fetch-depth: 0` / unshallow, plus every
      branch the ledger names). On a shallow clone `brief-integrity` reports 6/2
      and `programme-ledger-mutations` 42/7 **on an unmodified tree** — an
-     artefact of the clone, not a finding. The true baseline is 7 suites green;
-   - re-run the seven governance suites yourself, plus whatever module-owned
-     suites the round touches;
+     artefact of the clone, not a finding — and the counts themselves vary by
+     checkout (this repository also produces 48/1), so unshallow and re-derive
+     rather than match a recorded number. The true baseline is 8 suites green;
+   - re-run the **eight** governance suites yourself (`workflow-expressions`
+     joined the seven), plus whatever module-owned suites the round touches;
    - for any UI change, measure before and after at the viewports the round
      names, in **both languages**, and look at the screenshots;
    - check it against the spec, the invariants I1–I17, D1–D14, and that
@@ -96,7 +98,7 @@ implementation is not an accepted one. Before you merge:
 
 - the base must be current — **never merge on a stale base**; rebase or merge
   `main` in and re-check;
-- the seven governance suites must pass on a full-history checkout;
+- the eight governance suites must pass on a full-history checkout;
 - no Owner Control Gate may be crossed (see `CLAUDE.md`, *How to work*);
 - `firestore.rules`, deployment and Firestore architecture are **never** yours
   to change or deploy — they are Owner Control Gates on the **E1** dependency.
@@ -331,24 +333,55 @@ Every report follows one shape, and ends with **Done / Suggestions / Pending**:
 
 ## Architect's backlog
 
-- [ ] **~28 open draft PRs, stacked up to five deep** (Quran/Word Card, Hadith,
-      Health Atlas). Several chain branch-on-branch rather than on `main`, so
-      none can be reviewed or merged independently. Unpick them oldest-first:
-      rebase each onto current `main`, review by measurement, merge or close.
-      This is the largest single piece of outstanding work and the reason the
-      *Do not stack draft PRs* rule above exists.
-- [ ] **The builder has never run.** All 140 recorded `claude.yml` runs were
-      `skipped` and the workflow is inert without a credential. Prove the loop
-      with one tiny test issue before assigning real work.
+- [ ] **42 open PRs — 21 on `main`, 21 stacked** (counted 22 Sep 2026; the
+      earlier "~28" predated several and did not separate the two kinds).
+      Unpick oldest-first: bring each onto current `main`, review by
+      measurement, merge or close. This is the largest single piece of
+      outstanding work and the reason the *Do not stack draft PRs* rule exists.
+      **The chains collapse from their roots**, so take these first and the rest
+      retarget themselves: **#140** (Health, 8 deep), **#143** (Hadith, 7 deep),
+      **#135** (Word Card, 5 deep), **#130** (Hadith, 2 deep), and the older
+      Health trio **#111 / #119 / #121**.
+      Cleared so far: #134 and #96 merged (both the checkout-artefact finding),
+      #94 closed as redundant.
+      **Eight of the 21 on `main` are documentation-only** — #110, #117, #124,
+      #128, #129, #131, #132, #136 — so their review is: confirm docs-only,
+      suites green, and *that the report's claims are still true*. That last one
+      is the actual work; a report asserting something false is worse than no
+      report.
+- [ ] **The builder has run, and is blocked on ONE thing: a valid credential.**
+      Five attempts, five causes, four of them fixed here (an unreadable
+      workflow file; a model pin that was a claim about someone else's
+      entitlement; an unfunded API key capturing the run; a stored token with
+      two line breaks through it). The fifth is the Owner's and is not
+      guessable away: `Failed to authenticate. API Error: 401 Invalid bearer
+      token`, on a header proven well-formed. **Do not spend more attempts on
+      it** — re-dispatch issue #162 only once the Owner says the secret is
+      replaced.
+      **Every one of those four was invisible until a run could report its own
+      failure.** `show_full_output: false` is correct on a public repository and
+      discards the one sentence naming the cause; both workflows now carry an
+      `if: always()` step printing the result counters always, the error text
+      only on failure, and nothing textual on success. Read that step, never the
+      shape of the failure — reading three failures as one shape is what sent a
+      wrong instruction to the Owner.
 - [ ] **`verify.yml` gates only the seven deterministic governance suites.** The
       browser suites (`behaviour`, `layout`, `panel`, `reading`, `navcheck`) and
       the Firestore emulator suites are not gated anywhere, so a UI regression
       reaches `main` unmeasured. `behaviour.mjs` cannot exit 0 under a
       TLS-intercepting sandbox (31e) and 22g flips on identical code — measure
       both in Actions on their own before gating either.
-- [ ] **`mmsa/fix-guard-e-fixture-v0832`** is an unmerged branch that patches a
-      protected guard to solve a problem that does not reproduce on a
-      full-history checkout. Review and close or merge; do not leave it.
+- [x] **`mmsa/fix-guard-e-fixture-v0832` — REFUSED, 22 Sep 2026**, reasons on
+      PR #134. It fixes a problem that does not reproduce (49/0 on full
+      history), and it would make Guard E's mutation build its own precondition
+      — a mutation that manufactures the state it then removes models itself,
+      not the programme. The branch is left in place as the record. If the real
+      precondition ever genuinely disappears, derive a new target from the
+      ledger; do not fabricate one.
+      **Re-derived while doing it:** a shallow clone here gives 48/1, not the
+      42/7 this file records for the same class. **The class is real and the
+      arithmetic in it is not** — unshallow before believing any suite number,
+      and there are now eight gated suites, not seven.
 - [ ] **E1 remains the single blocking dependency** for MAP Phases 4–6:
       authenticated Firebase access to `study-monitoring`. With it, the first
       task is deploy **four indexes, then the assembled Rules, in that order**.
