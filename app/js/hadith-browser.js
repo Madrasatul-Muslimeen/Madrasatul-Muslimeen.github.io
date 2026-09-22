@@ -17,7 +17,7 @@ import { getAppLang } from "./prefs.js";
 import { STATUSES, statusLabel } from "./unit-keys.js";
 import {
   listCollections, booksOf, chaptersOf, occurrencesIn, editionHasChapterLevel,
-  occurrenceById, chapterById, sourcePathOf, externalReferencesFor, resolveText,
+  occurrenceById, chapterById, collectionOf, sourcePathOf, externalReferencesFor, resolveText,
   availableLanguages, searchCorpus, listTopics, topicIndex, exploreAggregate,
   translationCoverage, topicCoverage,
   CONTENT_LANGUAGES, SOURCE_LANGUAGE,
@@ -284,6 +284,23 @@ function breadcrumb(state, render, uiLang) {
     }
   };
   add(t("Collections"), () => { state.editionId = null; state.bookId = null; state.chapterId = null; render(); focusCollectionsLanding(); });
+  // The edition itself was never named in this breadcrumb at all (issue #114,
+  // Gate A, found by reproduction against PR #144's own focus fix): right
+  // after picking an edition, `focusCollectionsLanding()`'s landing element
+  // was this bar's OWN LAST CHILD, which at that point was the "Collections"
+  // crumb above -- so a keyboard/screen-reader user who had just chosen an
+  // edition heard "Collections" again, learning nothing about which one they
+  // landed in. Read via `collectionOf()`, never through an occurrence -- the
+  // same fragile detour the book/chapter-title fix below already retired.
+  // This also fixes a second, related defect for free: with the edition now
+  // its own crumb, the "Collections" button above is no longer ever this
+  // bar's last child while sitting at edition level, so it never has
+  // `focusCollectionsLanding()`'s `tabindex="-1"` stamped onto it -- an
+  // already-interactive control was losing its normal Tab/Shift+Tab
+  // reachability purely because it happened to land last in the bar.
+  const collection = collectionOf(state.editionId);
+  add(collection ? langText(collection.name, uiLang) : state.editionId,
+    state.bookId ? () => { state.bookId = null; state.chapterId = null; render(); focusCollectionsLanding(); } : null);
   // Read the book/chapter's own record directly (`chapterById()`), never
   // through an occurrence's `sourcePathOf()` -- a book that HAS a chapter
   // level never holds an occurrence attached to the book id itself (every

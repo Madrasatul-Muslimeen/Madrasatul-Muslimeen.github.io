@@ -198,6 +198,31 @@ await click('[data-hadith-edition="synthetic-alpha-ar-v1"]');
 await settle();
 check("picking an edition does NOT drop keyboard focus to <body>",
   !(await page.evaluate(() => document.activeElement === document.body)));
+// --- Gate A independent re-check (issue #114, comment 5761151633) ----------
+// The check above only asked "not <body>" -- it never asked what the landing
+// element SAYS. Reproduced live: before this fix, the breadcrumb had no
+// edition-level crumb at all, so `focusCollectionsLanding()`'s landing
+// element (the bar's own last child) was the "Collections" crumb itself,
+// unchanged text -- a keyboard/screen-reader user who had just picked an
+// edition heard "Collections" again and learned nothing about which one.
+const ALPHA_COLLECTION_NAME = { en: "Sample Collection Alpha", bn: "নমুনা সংকলন আলফা" }[LANG];
+check(`picking an edition lands focus on a crumb reading the edition's own translated name ("${ALPHA_COLLECTION_NAME}"), not the generic 'Collections' crumb again`,
+  await page.evaluate((expected) => {
+    const ae = document.activeElement;
+    return !!ae && ae !== document.querySelector(".hadith-crumbs > :first-child") && ae.textContent === expected;
+  }, ALPHA_COLLECTION_NAME));
+// The fix must not regress the OTHER half of Gate A: the very next real Tab
+// key press (not a click) still has to continue at the first BOOK row, never
+// back at the top of the page and never stuck on the crumb it just landed on.
+await page.keyboard.press("Tab");
+check("the next real Tab key press from that landing continues at the first book row",
+  await page.evaluate(() => document.activeElement?.getAttribute("data-hadith-book") === "synthetic-alpha-b1"));
+// The landing crumb is a NEW element the click above created; the "Collections"
+// crumb before it is a pre-existing, genuinely interactive control and must
+// keep its normal (non -1) tab order rather than inheriting the landing
+// element's own `tabindex="-1"` by having briefly been the bar's last child.
+check("the 'Collections' crumb before it is NOT stripped from the normal tab order",
+  await page.evaluate(() => document.querySelector(".hadith-crumb")?.getAttribute("tabindex") !== "-1"));
 await click('[data-hadith-book="synthetic-alpha-b1"]');
 await settle();
 check("picking a book lands focus on the breadcrumb's own current-location crumb",
@@ -206,7 +231,11 @@ await click('[data-hadith-chapter="synthetic-alpha-b1-c1"]');
 await settle();
 check("picking a chapter lands focus on the breadcrumb's own current-location crumb",
   await page.evaluate(() => document.activeElement?.classList.contains("hadith-crumb-current")));
-const bookCrumbBack = (await page.$$(".hadith-crumbs .hadith-crumb"))[1];
+// The immediate-parent crumb is always the LAST clickable one (the very last
+// crumb of all is the non-clickable current-location span) -- not a fixed
+// index, which the edition crumb added above would otherwise silently shift.
+const crumbButtons = await page.$$(".hadith-crumbs .hadith-crumb");
+const bookCrumbBack = crumbButtons[crumbButtons.length - 1];
 await bookCrumbBack.click();
 await settle();
 check("stepping back one level (book crumb) also lands focus, not <body>",
