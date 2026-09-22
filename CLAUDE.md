@@ -230,6 +230,76 @@ deployed** — the Phase 3–6 candidate is still only at
 `docs/governance/phase3-6-DEPLOYMENT-candidate-2026-09-22.rules`, unchanged,
 and the Owner has not yet confirmed a Console publish.
 
+> **THE OWNER PUBLISHED, 22 Sep 2026, SAME DAY — read this before believing
+> anything above says Rules are still undeployed.** *"Rules are live. And
+> index (see image)"* — confirmed by two screenshots: the Firestore Rules
+> tab showing a fresh publish, and the Indexes tab showing all four Phase
+> 5/6 indexes **Enabled**. This is the first time any of the four deployment
+> states this file tracks has ever actually flipped to true.
+>
+> **`firestore.rules` and `firestore.indexes.json` were synced to match,
+> immediately, in the same session.** `firestore.rules` is now
+> byte-identical to `docs/governance/phase3-6-DEPLOYMENT-candidate-2026-09-22.rules`
+> (proven by `rules-deployment-candidate-phase3-6.mjs`'s own check, not
+> asserted); `firestore.indexes.json` declares exactly the four audited
+> indexes and nothing else (`firestore-index-requirements.mjs`). `firebase.json`
+> now points at both — the FIRST time this repository has ever declared a
+> live index file, and it is correct to now, having been actually deployed;
+> declaring one earlier would have been the repository claiming readiness
+> nobody had proven, which is exactly why `firestore-index-requirements.mjs`
+> used to assert the opposite.
+>
+> **A ROUND OF STALE "NOTHING IS DEPLOYED" CHECKS WAS FOUND AND FIXED THE
+> SAME SESSION, NOT LEFT RED.** Nine separate suites across this repository
+> had asserted, as their whole point, that `firestore.rules` carried none of
+> this material — true for the entire life of each suite, and false the
+> moment deployment happened. Each was **updated in place with the reason
+> recorded, never deleted, never silently routed around** (this file's own
+> standing rule): `firestore-index-requirements.mjs`, `rules-deployment-
+> candidate.mjs`, `rules-deployment-candidate-phase3-6.mjs`,
+> `study-activity-evidence-boundary.mjs`, `journey-map-boundary.mjs`,
+> `note-foundation-boundary.mjs`, `study-approach-contract-boundary.mjs`,
+> `study-note-boundary.mjs`, and two `programme-ledger-mutations.mjs`
+> mutations that had been relying on the ledger's own ambient "not deployed"
+> state instead of setting up their own precondition explicitly. **Two
+> checks needed a FIXED historical baseline, not a live one**, and for the
+> identical reason in both places: comparing against `firestore.rules` (now
+> equal to the very thing being audited) or `origin/main` (which will equal
+> it too, the moment this lands) would make the check pass vacuously
+> forever after. `rules-deployment-candidate.mjs` (the superseded 17 Sep
+> suite) and `study-note-boundary.mjs` (P5-C's own "changed nothing" claim)
+> both now pin `PRE_DEPLOYMENT_REF` = the last commit before deployment
+> (`35f9228e2d57c085795dc06c412b3a7191325ddd`) — a fact about the past does
+> not move just because the live file later did, the same principle
+> `rules-deployment-candidate-phase3-6.mjs` already applies to its own
+> pre-Phase-3 helper-origin check. **All fifteen affected suites, plus the
+> eight CI-gated ones, re-run clean.**
+>
+> **`programme-integration-ledger.json` updated, surgically, not
+> re-serialized.** `deployment.firebaseRulesDeployed.state`: `NO` → `YES` —
+> the first of the four tracked states ever to become true.
+> `deployment.evidenceRecordingOperational.state` **stays `NO`, deliberately**
+> — enabling Phase 4 is its own GOVERNED DECISION (`app/js/study-evidence-
+> readiness.js`'s own design: an authority, a date, a record, never a bare
+> flip), not something a Rules publish grants automatically, and that
+> decision has not been made — it waits on Phase 3 verification succeeding
+> on a real phone first, per the Owner's own explicit sequencing. Guard G
+> re-run clean: `four deployment states recorded separately (code YES, Pages
+> PRESUMED_FROM_MAIN, Rules YES, operational NO)`. **E1 is RESOLVED** — the
+> access blocker is gone, proven by an actual publish, not merely credentials
+> existing. **D14's own separate timezone Rules candidate was NOT part of
+> this publish** and stays undeployed; D14-WIRING is still open, no longer
+> on access, only on that specific candidate not yet being chosen.
+>
+> **What is still NOT true, and must not be assumed true from this entry:**
+> Phase 4 Activity evidence is still not operational (see above). Phase 3
+> word-by-word progress has not yet been verified to actually save and
+> reload on a real phone — that is the very next task, blocking Phase 4's
+> governed enablement. Nothing about Notes (Phase 5) or Mapping My Journey
+> (Phase 6) screens changed — those are separate, in-progress Builder
+> rounds (issues #180, #182) whose own writes will now succeed against the
+> deployed Rules once built, but the screens themselves do not yet exist.
+
 **Previous milestone: v08.32 on `main`** (21 Sep 2026 — QuranRevival Basic Arabic lemma-occurrence navigation, PR #112 merged at `f5b7c6c`. The Owner tested the app and confirmed all checks passed. The MMSA Master Architect allocated v08.32; `app/js/version.js` and the Programme Integration Ledger record it. This is read-only: no new Firestore write, Rule or index. E1 remains closed.)
 
 **Earlier milestone: v08.31 on `main`** (19 Sep 2026 — the QuranRevival

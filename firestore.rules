@@ -753,6 +753,112 @@ service cloud.firestore {
     }
 
     // =====================================================================
+    // MAP Phase 3 (Arabic Progress) -- occurrence-level word progress.
+    // ADDED 2026-09-22 under Owner-requested deployment preparation.
+    // This block is an ADDITION ONLY: no rule above or below it is altered.
+    // Candidate source: tests/firestore/word-progress-v1.proposed.rules
+    // (42 emulator assertions, MAP Phase 3, accepted 2026-09-13).
+    //
+    // TWO COLLECTIONS, which is the entire security design: a Firestore rule
+    // cannot cheaply prove that every changed key of an arbitrarily-keyed map
+    // was written by someone entitled to write THAT key -- the same limit
+    // this file already records for records/subjects/trackables. So a
+    // learner's own claims and a supervisor's decisions live in DIFFERENT
+    // documents. Each document then belongs to exactly one (person, role)
+    // pair, and document-level authority is both sufficient and exact.
+    //
+    // Read/write authority reuses this file's OWN canRecordFor() and
+    // isSelfPerson() unchanged -- the same D10 same-sitting-multiple-people
+    // access model as records/activity/domains above. Nothing here is a new
+    // person-facing capability: it is the identical circle of people (the
+    // person themself, whoever guards them, whoever teaches them, whoever
+    // administers the tenant) that can already see and log this person's
+    // other study data, now extended to occurrence-level word progress.
+    // =====================================================================
+
+    // NEW: canRecordFor() minus isSelfPerson() -- "someone who may act for
+    // this person and is not this person." Nobody signs off their own claim.
+    function canSuperviseRecordFor(tenantId, personId) {
+      return canAdminIdentity(tenantId)
+          || (isTeacherIn(tenantId) && isCoEnrolledTeacherOf(tenantId, personId))
+          || isGuardianOf(tenantId, personId);
+    }
+
+    // Identity fields are write-once. A learner may change WHAT a word's
+    // state is; nobody may repoint the document at another tenant, another
+    // person, another level or another ayah -- which is what would let a
+    // valid writer smuggle a write into someone else's data.
+    // `resource != null` is not decoration. Firestore evaluates EVERY
+    // matching allow clause, so a create request also runs the update
+    // clause -- where `resource` is null and `resource.data.tenantId`
+    // throws. The engine turns that throw into false and the create still
+    // succeeds through its own clause, so nothing was broken; but it fills
+    // the emulator log with "evaluation error" denials, which is precisely
+    // the shape that made the Phase 4 Activity candidate's own denials
+    // impossible to trust. Guarding it means every denial this block
+    // produces is a decision the rules made, not an exception they tripped
+    // over. Same S8-class defensiveness this file already applies elsewhere.
+    function wordLaneIdentityUnchanged() {
+      return resource != null
+          && request.resource.data.tenantId == resource.data.tenantId
+          && request.resource.data.personId == resource.data.personId
+          && request.resource.data.level    == resource.data.level
+          && request.resource.data.surah    == resource.data.surah
+          && request.resource.data.ayah     == resource.data.ayah
+          && request.resource.data.lane     == resource.data.lane;
+    }
+
+    // A created lane must say what it is, and only `wbw` may be written:
+    // Basic Arabic and Arabic in Depth have no approved claim unit, so the
+    // deferral is enforced at the database, not only in the client.
+    function isWordLaneCreate(lane) {
+      return request.resource.data.get('contractVersion', '') == 'quran-word-progress:v1'
+          && request.resource.data.get('identityContract', '') == 'quran-word-occurrence:v1'
+          && request.resource.data.get('lane', '') == lane
+          && request.resource.data.get('level', '') == 'wbw'
+          && request.resource.data.surah is int && request.resource.data.surah >= 1 && request.resource.data.surah <= 114
+          && request.resource.data.ayah  is int && request.resource.data.ayah  >= 1 && request.resource.data.ayah  <= 286;
+    }
+
+    // ---------------------------------------------------------------------
+    // The learner's own claims.
+    // ---------------------------------------------------------------------
+    match /quranWordProgress/{laneKey} {
+      allow read: if isPlatformAdmin();
+      // Same S8-class allowance the deployed records rule makes: the client
+      // reads a lane before deciding create-vs-update, and a nonexistent
+      // document has no data to expose.
+      allow read: if signedIn() && !exists(/databases/$(database)/documents/quranWordProgress/$(laneKey));
+      allow read: if canRecordFor(resource.data.tenantId, resource.data.personId);
+
+      allow create: if canRecordFor(request.resource.data.tenantId, request.resource.data.personId)
+                    && isWordLaneCreate('learner');
+      allow update: if resource != null
+                    && canRecordFor(resource.data.tenantId, resource.data.personId)
+                    && wordLaneIdentityUnchanged();
+      // No delete (I4/D6). Clearing a word writes not_started, a real state.
+    }
+
+    // ---------------------------------------------------------------------
+    // A supervisor's decisions. THE LEARNER MAY READ THIS AND NEVER WRITE IT.
+    // ---------------------------------------------------------------------
+    match /quranWordApprovals/{laneKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if signedIn() && !exists(/databases/$(database)/documents/quranWordApprovals/$(laneKey));
+      // A learner SEES their own approvals -- being told your work was sent
+      // back is the point of sending it back.
+      allow read: if canRecordFor(resource.data.tenantId, resource.data.personId);
+
+      allow create: if canSuperviseRecordFor(request.resource.data.tenantId, request.resource.data.personId)
+                    && isWordLaneCreate('supervisor');
+      allow update: if resource != null
+                    && canSuperviseRecordFor(resource.data.tenantId, resource.data.personId)
+                    && wordLaneIdentityUnchanged();
+      // No delete (I4/D6). A superseded decision is kept in history.
+    }
+
+
+    // =====================================================================
     // Phase 3 — Tracking core (Layer 2: records, activity, domains)
     // Version: 2026-07-31
     //
@@ -867,6 +973,214 @@ service cloud.firestore {
       allow create: if canRecordFor(request.resource.data.tenantId, request.resource.data.personId);
       allow update: if canRecordFor(resource.data.tenantId, resource.data.personId);
       // No delete (I4/D6).
+    }
+
+    // -------------------------------------------------------------------
+    // MAP Phase 4 (P4-B/P4-C) -- ADR-008 Study Activity evidence.
+    // ADDED 2026-09-14 under explicit Master Architect deployment authority.
+    // This block is an ADDITION ONLY: no rule above or below it is altered,
+    // removed or weakened by it. The parent weekly document's own rule is
+    // byte-for-byte unchanged.
+    // -------------------------------------------------------------------
+    match /activity/{activityKey}/evidence/{eventId} {
+
+      function d() { return request.resource.data; }
+
+      // ------------------------------------------------------------------
+      // COST IS A SECURITY PROPERTY HERE, so the shape below is chosen for
+      // cheapness as deliberately as for correctness.
+      //
+      // Firestore Rules has no variable binding: every helper call is
+      // re-evaluated, and a request that exceeds 1000 evaluated expressions
+      // is DENIED for that reason rather than by the logic. A first draft of
+      // this very file was measured against the emulator and 11 of its 36
+      // assertions were refused by budget exhaustion -- the identical defect
+      // that rejected the earlier Activity candidate, reproduced by accident
+      // while trying to avoid it. Three changes removed it entirely:
+      //
+      //   1. NO split(). The path/body binding is ONE string comparison --
+      //      activityKey == tenantId + '__' + personId + '__' + weekKey --
+      //      instead of splitting the key and indexing it three times.
+      //      Ambiguous splits stop mattering because nothing splits.
+      //   2. NO separator-hygiene regexes. The format constraints below
+      //      already forbid '_' inside every component of the event id, so
+      //      the "could a crafted value forge another identity" guard the
+      //      first draft spent four .matches() calls on is already implied.
+      //   3. ONE combined event/Approach check instead of three overlapping
+      //      ones, and hasAll() reduced to the four envelope fields that are
+      //      not separately checked by value.
+      //
+      // Cheap literal and regex checks are evaluated FIRST so a malformed
+      // write short-circuits before any get(); the two document reads
+      // (canRecordFor, personInTenant) are last.
+      // ------------------------------------------------------------------
+
+      // The PATH is the authority. One concatenation, compared once. A body
+      // may not describe a different tenant, person or week than the parent
+      // weekly key it was filed under.
+      function scopeMatchesPath() {
+        return activityKey == d().tenantId + '__' + d().personId + '__' + d().weekKey;
+      }
+
+      // THE IDENTITY ENFORCEMENT: the document id is re-derived from the
+      // document's own fields and must match exactly, so a client cannot
+      // choose an id that does not describe what it is storing. This is a
+      // plain string comparison, which Rules can do -- unlike a SHA-256
+      // digest or a JSON.stringify form, neither of which Rules can
+      // reproduce, and either of which would reduce "identity" to something
+      // taken on trust from the client.
+      //
+      // MASTER ARCHITECT AMENDMENT, 2026-09-14 (P4-B Required Correction 1):
+      // the Note's identity MUST participate. ADR-008 gives
+      // journal.note-created one event per committed Note and
+      // journal.note-revised at most one per Note per day, so without noteId
+      // in the identity two different Notes on the same ayah collapse into a
+      // single event and the second is silently lost as a "duplicate". The
+      // slot is filled with the literal 'none' for the three non-Note events.
+      //
+      // ONE arity for every event, rather than a four-slot form for some and
+      // a five-slot form for others: that keeps this a single concatenation
+      // instead of a branch, which is what P4-B's expression-budget finding
+      // requires. 'none' cannot be mistaken for a real noteId, which is
+      // always 32 hex characters.
+      function noteSlot() { return d().get('noteId', 'none'); }
+      function idIsDerivedIdentity() {
+        return eventId == d().eventType + '__' + d().trackableId + '__'
+                        + d().unitKey   + '__' + noteSlot() + '__'
+                        + d().dedupeScope;
+      }
+
+      // A Note event must carry a real noteId; a non-Note event must not
+      // carry one at all. Both halves matter: without the first, a journal
+      // event could take the 'none' slot and collide with every other Note
+      // on that ayah; without the second, a reading event could smuggle in a
+      // noteId and mint an unbounded family of ids for the same real event.
+      function isJournalEvent() {
+        return d().eventType == 'journal.note-created'
+            || d().eventType == 'journal.note-revised';
+      }
+      function noteIdentityOk() {
+        return isJournalEvent()
+             ? (d().get('noteId', '') is string && d().get('noteId', '').matches('[0-9a-f]{32}'))
+             : !d().keys().hasAny(['noteId']);
+      }
+
+      // ADR-008 v1: the five automatic events, each pinned to exactly the
+      // Approach(es) the contract gives it. status.claimed and
+      // status.confirmed are absent on purpose -- they belong to the
+      // explicit Mastery workflow in records/ and must never be expressible
+      // here. This single expression replaces the first draft's separate
+      // "is a known event", "is a mapped Approach" and "do they agree"
+      // checks, which overlapped completely.
+      function eventAndApproachAgree() {
+        return (d().eventType == 'reading.completed'    && (d().trackableId == 'approach_01' || d().trackableId == 'approach_03'))
+            || (d().eventType == 'listening.completed'  && (d().trackableId == 'approach_07' || d().trackableId == 'approach_08'))
+            || (d().eventType == 'journal.note-created' && d().trackableId == 'approach_10')
+            || (d().eventType == 'journal.note-revised' && d().trackableId == 'approach_10')
+            || (d().eventType == 'wbw.engaged'          && d().trackableId == 'approach_04');
+      }
+
+      // Permanent Study Unit identity (I5), and only the three unit types
+      // ADR-008's evidence contract accepts: a juz/page/topic/hadith key is
+      // refused at the database, matching the pure module's own behaviour.
+      // None of these forms can contain '_', which is what makes the event
+      // id unambiguous without a separate hygiene check.
+      //
+      // unitType is checked HERE, paired with the key it must describe,
+      // rather than as `unitType == unitKey.split(':')[0]`. That is not only
+      // cheaper -- the first cost-reduction pass dropped the split() form and
+      // silently lost the check with it, which the emulator suite caught as a
+      // real defect: a document could then store unitKey 'surah:2' while
+      // declaring unitType 'ayah', and every report that filters by unitType
+      // would mis-file it. Pairing them makes the check impossible to lose.
+      function unitIdentityOk() {
+        return (d().unitType == 'ayah'  && d().unitKey.matches('ayah:[0-9]{1,3}:[0-9]{1,3}'))
+            || (d().unitType == 'range' && d().unitKey.matches('range:[0-9]{1,3}:[0-9]{1,3}-[0-9]{1,3}'))
+            || (d().unitType == 'surah' && d().unitKey.matches('surah:[0-9]{1,3}'));
+      }
+
+      // ADR-008's own deduplication boundaries: 'once' for a Note's creation
+      // (which must dedupe for the life of that note, not per day), the UTC
+      // day for everything else. Neither form can contain '_'.
+      //
+      // MASTER ARCHITECT AMENDMENT, 2026-09-14 (P4-B Required Correction 2):
+      // wbw.engaged deduplicates by AYAH + person + day, no longer by
+      // occurrence + person + day. Nothing in this rule had to change for
+      // that -- the grain lives entirely in what the writer puts in unitKey
+      // and dedupeScope -- but the consequence is enforced here all the same:
+      // because occurrenceId is not an accepted field (see the key list
+      // below) and the unitKey is the ayah, a hundred word taps in one ayah
+      // on one day all derive the SAME id, so the first creates the document
+      // and every later one is refused as a duplicate by the database.
+      //
+      // occurrenceId is OMITTED DELIBERATELY, not overlooked. It was reviewed
+      // against every reader of Activity -- Monitor counts per student,
+      // subject and unit; backup prints entries; bulkConfirmWeek cannot see
+      // this collection at all -- and none of them needs it. Storing one
+      // would also actively mislead: whichever word happened to be tapped
+      // first that day would win the slot, and the other ninety-nine would be
+      // unrepresented, giving the appearance of occurrence-level precision
+      // that the ayah/day grain does not have. The authoritative
+      // occurrence-level state is quranWordProgress, which is unchanged.
+      function dedupeScopeOk() {
+        return d().eventType == 'journal.note-created'
+             ? d().dedupeScope == 'once'
+             : d().dedupeScope == d().dateIso;
+      }
+
+      // Cross-tenant binding. isSelfPerson() proves "this login owns that
+      // person" but NOT "that person belongs to this tenant", so without
+      // this a self-person in tenant A could file evidence under tenant B.
+      // Reads the same tenantPeople document canRecordFor already reads.
+      function personInTenant() {
+        return exists(/databases/$(database)/documents/tenantPeople/$(d().personId))
+            && get(/databases/$(database)/documents/tenantPeople/$(d().personId)).data.get('tenantId', null) == d().tenantId;
+      }
+
+      // ACTIVITY != MASTERY, enforced at the database. hasOnly() is the
+      // load-bearing half: no status, claimedStatus, confirmedStatus or
+      // confirmState field is even permitted to exist on one of these
+      // documents, so nothing stored here can be read as a claim. Mastery
+      // continues to live only in records/.
+      function isWellFormedEvidence() {
+        return d().keys().hasOnly([
+                 'contractVersion', 'eventType', 'tenantId', 'personId', 'weekKey',
+                 'dateIso', 'subjectId', 'unitKey', 'unitType', 'trackableId',
+                 'action', 'dedupeScope', 'masteryEffect', 'noteId',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll(['schemaVersion', 'createdAt', 'updatedAt', 'createdBy'])
+            && d().contractVersion == 'study-approach-contract:v1'
+            && d().action == 'practised'
+            && d().masteryEffect == 'none'
+            && d().subjectId == 'quran'
+            && eventAndApproachAgree()
+            && unitIdentityOk()
+            && d().dateIso.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+            && d().weekKey.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+            && dedupeScopeOk()
+            && noteIdentityOk()
+            && idIsDerivedIdentity()
+            && scopeMatchesPath()
+            && d().createdBy == request.auth.uid;
+      }
+
+      // READ: exactly the deployed activity rule's own audience, so this
+      // introduces no new visibility.
+      allow read: if isPlatformAdmin();
+      allow read: if canRecordFor(resource.data.tenantId, resource.data.personId);
+
+      // CREATE: the only write this collection ever permits. Cheap checks
+      // first, the two document reads last.
+      allow create: if isWellFormedEvidence()
+                    && canRecordFor(d().tenantId, d().personId)
+                    && personInTenant();
+
+      // NEVER. Accepted evidence is frozen (I4, and I6 in spirit), and
+      // deduplication RELIES on create-only semantics: an update would let a
+      // retry overwrite a real event, and a delete would let a writer erase
+      // evidence and re-create it differently.
+      allow update, delete: if false;
     }
 
     // domains/{tenantId}__{domainId} -- D12: tenant-authored tag registry
@@ -1118,5 +1432,422 @@ service cloud.firestore {
       allow update: if canAdminCatalogue(resource.data.tenantId);
       // No delete (I4/D6) -- archive via status instead.
     }
+
+    // =====================================================================
+    // MAP PHASE 5 (Note Foundation) + PHASE 6 (Mapping My Journey)
+    //
+    // ASSEMBLED 2026-09-17 from the two accepted emulator candidates:
+    //   docs/governance/phase5-note-foundation-rules-candidate-2026-09-15.rules
+    //   docs/governance/phase6-journey-map-rules-candidate-2026-09-15.rules
+    //
+    // THOSE TWO FILES ARE EXTRACTS AND MUST NEVER BE PASTED INTO THE CONSOLE:
+    // each reproduces a copy of the shared helper block so the emulator can run
+    // it in isolation, so pasting either one would REPLACE the entire deployed
+    // ruleset with a file governing three collections and nothing else.
+    //
+    // TWO THINGS HAD TO BE RESOLVED TO ASSEMBLE THIS FILE, and both are the
+    // reason it exists rather than being a copy-and-paste:
+    //
+    // 1. The extracts BOTH declare the same shared helpers at top level. Taken
+    //    together they would be duplicate definitions at one scope. The block
+    //    is therefore taken ONCE.
+    //
+    // 2. Four helpers the extracts describe as "reproduced unchanged from the
+    //    deployed rules" are NOT unchanged: hasRoleIn, myPersonIdIn,
+    //    isSelfPerson and isCoEnrolledTeacherOf were written in the extracts
+    //    with defensive `.get(field, default)` reads where production reads the
+    //    field directly. Same allow/deny outcome whenever the field is present;
+    //    they differ only when it is ABSENT, where production errors (and so
+    //    denies) and the extract denies cleanly. THIS FILE USES PRODUCTION'S
+    //    OWN HELPERS — the extract copies are dropped, not merged — so what is
+    //    deployed is the deployed security model, not a second one. The
+    //    emulator suites are re-run against THIS FILE to prove the outcomes are
+    //    unchanged.
+    //
+    // `memberUidRef()` is absent for the same reason: it existed only to serve
+    // the extracts' own hasRoleIn/myPersonIdIn, and production's
+    // tenantMemberRef() already addresses the identical document.
+    // =====================================================================
+
+    // The person must really belong to the tenant the document names.
+    // isSelfPerson() proves "this login owns that person" but NOT "that person
+    // is in this tenant" — the same cross-tenant gap the Phase 4 candidate
+    // closed, closed here too (matrix SELF-05, ADMIN-02).
+    function personInTenant(tenantId, personId) {
+      return exists(tenantPersonRef(personId))
+          && get(tenantPersonRef(personId)).data.get('tenantId', null) == tenantId;
+    }
+
+    // WHO MAY READ a Note that belongs to `ownerPersonId` in `tenantId`.
+    // Administrators are tenant-scoped on purpose: a platform administrator
+    // gets no unbounded cross-tenant reach here (ADMIN-04).
+    function canReadNoteOf(tenantId, ownerPersonId) {
+      return signedIn()
+          && personInTenant(tenantId, ownerPersonId)
+          && (isSelfPerson(ownerPersonId)
+              || isGuardianOf(tenantId, ownerPersonId)
+              || (isTeacherIn(tenantId) && isCoEnrolledTeacherOf(tenantId, ownerPersonId))
+              || isOwnerIn(tenantId) || isPrimeIn(tenantId));
+    }
+
+    // WHO MAY WRITE. Only the owner, and only their own. Deliberately NOT
+    // canRecordFor(): a guardian, teacher or administrator may read a Note
+    // and may never author or alter one (GUARD-04, TEACH-04, ADMIN-03).
+    function isNoteOwner(tenantId, ownerPersonId) {
+      return signedIn()
+          && personInTenant(tenantId, ownerPersonId)
+          && isSelfPerson(ownerPersonId);
+    }
+
+    // LIST vs GET (matrix QUERY-01/QUERY-02). Firestore Rules cannot inspect a
+    // query's `where` clauses, so "the query must be scoped" is enforced the
+    // only way it can be: the per-document rule below must hold for EVERY
+    // document the query would return, so an unscoped list over the collection
+    // fails as soon as it touches a Note the caller may not read. What Rules
+    // CAN see is the limit, and an unbounded list is refused outright — the
+    // accepted data layer always passes one (`maximum = 100`), so this costs
+    // the real client nothing and stops a scan of the whole collection.
+    function listIsBounded() {
+      return request.query.limit <= 100;
+    }
+
+    function d() { return request.resource.data; }
+
+    // Ownership block, written identically on every Foundation document.
+    function ownershipWellFormed() {
+      return d().tenantId is string && d().tenantId.size() > 0
+          && d().ownerPersonId is string && d().ownerPersonId.size() > 0
+          && (d().get('ownerUid', null) == null || d().ownerUid is string);
+    }
+
+    // Identity and origin are WRITE-ONCE (IMM-01). A valid writer may change
+    // what a Note SAYS; nobody may repoint it at another tenant, another
+    // person, or another origin — which is what would let a legitimate writer
+    // smuggle a write into someone else's data.
+    // `resource != null` is not decoration: Firestore evaluates every matching
+    // allow clause, so a create also runs the update clause where `resource`
+    // is null and a field read on it throws. Guarding it keeps every denial a
+    // decision the rules made rather than an exception they tripped over.
+    function noteIdentityUnchanged() {
+      return resource != null
+          && d().tenantId       == resource.data.tenantId
+          && d().ownerPersonId  == resource.data.ownerPersonId
+          && d().get('ownerUid', null) == resource.data.get('ownerUid', null)
+          && d().noteId         == resource.data.noteId
+          && d().visibility     == resource.data.visibility;
+    }
+
+
+    match /notes/{noteKey} {
+
+      function noteShapeOk() {
+        return d().keys().hasOnly([
+                 'noteId', 'tenantId', 'ownerPersonId', 'ownerUid', 'visibility',
+                 'title', 'bodyHtml', 'status', 'currentRevisionId',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll([
+                 'noteId', 'tenantId', 'ownerPersonId', 'visibility',
+                 'title', 'bodyHtml', 'status', 'currentRevisionId',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && ownershipWellFormed()
+            && d().noteId is string && d().noteId.size() > 0
+            && noteKey == d().tenantId + '__' + d().noteId
+            && d().visibility == 'private'
+            && d().title is string && d().bodyHtml is string
+            && (d().status == 'active' || d().status == 'retired')
+            && d().currentRevisionId is string && d().currentRevisionId.size() > 0;
+      }
+
+      // createdBy records WHO FIRST WROTE the document and is an origin fact,
+      // so it is stamped on create and frozen thereafter — never re-checked
+      // against whoever is updating.
+      //
+      // Found by mutation testing: an earlier version required
+      // `createdBy == myUid()` on BOTH paths, which conflated authorship with
+      // authorisation. It happened to deny a teacher's update — but for the
+      // wrong reason, and it meant the owner check on the update path was never
+      // exercised at all (neutralising isNoteOwner left the suite green). It
+      // would also have refused a legitimate future path where someone other
+      // than the original creator may edit. Authorisation is isNoteOwner()'s
+      // job, and only its job.
+      function createdByStampedOnCreate() { return d().createdBy == myUid(); }
+      function createdByFrozen() { return resource != null && d().createdBy == resource.data.createdBy; }
+
+      // THE ATOMICITY RULE (matrix TXN-01/TXN-02), and the reason getAfter()
+      // is used rather than trusted prose: a Note's currentRevisionId must
+      // name a revision that EXISTS once this commit lands, belongs to this
+      // same Note, tenant and owner, and — on an update — chains from the
+      // revision the Note is moving away from. Rules evaluate each document
+      // independently, so without getAfter() a client could point a Note at a
+      // revision it never wrote, and the pointer would be fiction.
+      function revisionRef(revisionId) {
+        return /databases/$(database)/documents/noteRevisions/$(d().tenantId + '__' + revisionId);
+      }
+      function committedRevisionMatches(previousRevisionId) {
+        return existsAfter(revisionRef(d().currentRevisionId))
+            && getAfter(revisionRef(d().currentRevisionId)).data.noteId == d().noteId
+            && getAfter(revisionRef(d().currentRevisionId)).data.tenantId == d().tenantId
+            && getAfter(revisionRef(d().currentRevisionId)).data.ownerPersonId == d().ownerPersonId
+            && getAfter(revisionRef(d().currentRevisionId)).data.get('previousRevisionId', null) == previousRevisionId;
+      }
+
+      allow get: if canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+      allow list: if listIsBounded() && canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+
+      allow create: if noteShapeOk()
+                    && createdByStampedOnCreate()
+                    && isNoteOwner(d().tenantId, d().ownerPersonId)
+                    && d().status == 'active'
+                    && committedRevisionMatches(null);
+
+      // An update may change the title, the body, the status and the revision
+      // pointer — and nothing else. A stale pointer is refused because the new
+      // revision must chain from the CURRENT one (matrix TXN-03).
+      allow update: if resource != null
+                    && noteShapeOk()
+                    && createdByFrozen()
+                    && isNoteOwner(resource.data.tenantId, resource.data.ownerPersonId)
+                    && noteIdentityUnchanged()
+                    && committedRevisionMatches(resource.data.currentRevisionId);
+
+      allow delete: if false; // I4/D6, matrix IMM-03. Retiring writes a status.
+    }
+
+    match /noteRevisions/{revisionKey} {
+
+      allow get: if canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+      allow list: if listIsBounded() && canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+
+      allow create: if d().keys().hasOnly([
+                         'revisionId', 'noteId', 'tenantId', 'ownerPersonId', 'ownerUid',
+                         'previousRevisionId', 'title', 'bodyHtml', 'revisionReason', 'actorUid',
+                         'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+                       ])
+                    && d().keys().hasAll([
+                         'revisionId', 'noteId', 'tenantId', 'ownerPersonId',
+                         'previousRevisionId', 'title', 'bodyHtml', 'revisionReason', 'actorUid',
+                         'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+                       ])
+                    && ownershipWellFormed()
+                    && d().revisionId is string && d().revisionId.size() > 0
+                    && revisionKey == d().tenantId + '__' + d().revisionId
+                    && d().noteId is string && d().noteId.size() > 0
+                    && (d().previousRevisionId == null || d().previousRevisionId is string)
+                    && d().title is string && d().bodyHtml is string
+                    && d().revisionReason is string && d().revisionReason.size() > 0
+                    && d().actorUid == myUid()
+                    && d().createdBy == myUid()
+                    && isNoteOwner(d().tenantId, d().ownerPersonId);
+
+      // NEVER. History that can be edited is not history (IMM-02, IMM-03).
+      allow update, delete: if false;
+    }
+
+    match /noteSources/{sourceLinkKey} {
+
+      allow get: if canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+      allow list: if listIsBounded() && canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+
+      allow create: if d().keys().hasOnly([
+                         'sourceLinkId', 'noteId', 'tenantId', 'ownerPersonId', 'ownerUid',
+                         'sourceKind', 'sourceKey', 'relationshipKind', 'approachId',
+                         'provenanceKind', 'status',
+                         'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+                       ])
+                    && d().keys().hasAll([
+                         'sourceLinkId', 'noteId', 'tenantId', 'ownerPersonId',
+                         'sourceKind', 'sourceKey', 'relationshipKind',
+                         'provenanceKind', 'status',
+                         'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+                       ])
+                    && ownershipWellFormed()
+                    && d().sourceLinkId is string && d().sourceLinkId.size() > 0
+                    && sourceLinkKey == d().tenantId + '__' + d().sourceLinkId
+                    && d().noteId is string && d().noteId.size() > 0
+                    && d().sourceKind is string && d().sourceKind.size() > 0
+                    && d().sourceKey is string && d().sourceKey.size() > 0
+                    && d().relationshipKind is string && d().relationshipKind.size() > 0
+                    && d().provenanceKind is string && d().provenanceKind.size() > 0
+                    && (d().get('approachId', null) == null || d().approachId is string)
+                    && (d().status == 'active' || d().status == 'retired')
+                    && d().createdBy == myUid()
+                    && isNoteOwner(d().tenantId, d().ownerPersonId)
+                    // REL-01: the link must belong to a Note that is really
+                    // this owner's, in this tenant. Without this a valid
+                    // writer could attach their own source link to somebody
+                    // else's Note and make it appear in that person's origins.
+                    && exists(/databases/$(database)/documents/notes/$(d().tenantId + '__' + d().noteId))
+                    && get(/databases/$(database)/documents/notes/$(d().tenantId + '__' + d().noteId)).data.ownerPersonId == d().ownerPersonId;
+
+      // A link may be retired, never repointed and never deleted.
+      allow update: if resource != null
+                    && isNoteOwner(resource.data.tenantId, resource.data.ownerPersonId)
+                    && d().diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])
+                    && (d().status == 'active' || d().status == 'retired');
+
+      allow delete: if false;
+    }
+
+    match /noteFolders/{folderKey} {
+
+      function folderRef(folderId) {
+        return /databases/$(database)/documents/noteFolders/$(d().tenantId + '__' + folderId);
+      }
+
+      function folderShapeOk() {
+        return d().keys().hasOnly([
+                 'folderId', 'tenantId', 'ownerPersonId', 'ownerUid', 'name',
+                 'parentFolderId', 'semanticRole', 'order', 'status',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll([
+                 'folderId', 'tenantId', 'ownerPersonId', 'name',
+                 'parentFolderId', 'semanticRole', 'order', 'status',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && ownershipWellFormed()
+            && d().folderId is string && d().folderId.size() > 0
+            && folderKey == d().tenantId + '__' + d().folderId
+            && d().name is string && d().name.size() > 0
+            && d().order is int
+            && (d().status == 'active' || d().status == 'retired')
+            && (d().semanticRole == 'journey-map'
+                || d().semanticRole == 'reflection-archive'
+                || d().semanticRole == 'user');
+      }
+
+      function isSystemRole(role) { return role == 'journey-map' || role == 'reflection-archive'; }
+
+      // ADR-010 §3: a system folder IS the root of its own meaning. It is
+      // neither nested nor nestable, or the Archive could be hidden inside a
+      // user folder, or filed under the Map and made a part of it — the locked
+      // distinction undone by a drag.
+      function parentOneHopOk() {
+        return d().parentFolderId == null
+            ? true
+            : (d().parentFolderId is string
+               && d().parentFolderId != d().folderId
+               && !isSystemRole(d().semanticRole)
+               && exists(folderRef(d().parentFolderId))
+               && get(folderRef(d().parentFolderId)).data.tenantId == d().tenantId
+               && get(folderRef(d().parentFolderId)).data.ownerPersonId == d().ownerPersonId
+               && get(folderRef(d().parentFolderId)).data.status == 'active'
+               && !isSystemRole(get(folderRef(d().parentFolderId)).data.semanticRole));
+      }
+
+      // Identity and ROLE are write-once. A folder may be renamed, reordered,
+      // re-parented or retired; it may never become a different folder, change
+      // owner, or change what KIND of folder it is (ADR-010 §3).
+      function folderIdentityUnchanged() {
+        return resource != null
+            && d().tenantId      == resource.data.tenantId
+            && d().ownerPersonId == resource.data.ownerPersonId
+            && d().get('ownerUid', null) == resource.data.get('ownerUid', null)
+            && d().folderId      == resource.data.folderId
+            && d().semanticRole  == resource.data.semanticRole;
+      }
+
+      function createdByStampedOnCreate() { return d().createdBy == myUid(); }
+      function createdByFrozen() { return resource != null && d().createdBy == resource.data.createdBy; }
+
+      allow get: if canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+      allow list: if listIsBounded() && canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+
+      allow create: if folderShapeOk()
+                    && createdByStampedOnCreate()
+                    && isNoteOwner(d().tenantId, d().ownerPersonId)
+                    && d().status == 'active'
+                    && parentOneHopOk();
+
+      allow update: if folderShapeOk()
+                    && folderIdentityUnchanged()
+                    && createdByFrozen()
+                    && isNoteOwner(d().tenantId, d().ownerPersonId)
+                    && parentOneHopOk();
+
+      allow delete: if false;   // I4/D6 — retire, never destroy
+    }
+
+    match /notePlacements/{placementKey} {
+
+      function noteRef(noteId) {
+        return /databases/$(database)/documents/notes/$(d().tenantId + '__' + noteId);
+      }
+      function targetFolderRef(folderId) {
+        return /databases/$(database)/documents/noteFolders/$(d().tenantId + '__' + folderId);
+      }
+
+      // ADR-010 §2 lives in this list. sourceKey, sourceKind, relationshipKind
+      // and provenanceKind are ABSENT from it, so an Origin field on a
+      // Destination document is refused by the server.
+      function placementShapeOk() {
+        return d().keys().hasOnly([
+                 'placementId', 'tenantId', 'ownerPersonId', 'ownerUid',
+                 'noteId', 'folderId', 'order', 'status',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll([
+                 'placementId', 'tenantId', 'ownerPersonId',
+                 'noteId', 'folderId', 'order', 'status',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && ownershipWellFormed()
+            && d().placementId is string && d().placementId.size() > 0
+            && placementKey == d().tenantId + '__' + d().placementId
+            && d().noteId is string && d().noteId.size() > 0
+            && d().folderId is string && d().folderId.size() > 0
+            && d().order is int
+            && (d().status == 'active' || d().status == 'retired');
+      }
+
+      // Both ends must be real, mine, and active — the same three facts
+      // createNotePlacement() already checks in its transaction, now enforced
+      // where a client cannot skip them.
+      function bothEndsOk() {
+        return exists(noteRef(d().noteId))
+            && get(noteRef(d().noteId)).data.tenantId == d().tenantId
+            && get(noteRef(d().noteId)).data.ownerPersonId == d().ownerPersonId
+            && get(noteRef(d().noteId)).data.status == 'active'
+            && exists(targetFolderRef(d().folderId))
+            && get(targetFolderRef(d().folderId)).data.tenantId == d().tenantId
+            && get(targetFolderRef(d().folderId)).data.ownerPersonId == d().ownerPersonId
+            && get(targetFolderRef(d().folderId)).data.status == 'active';
+      }
+
+      // ADR-010 §5: a move is retire-and-create. folderId and noteId are both
+      // frozen, so a placement can never be repointed — which is what would
+      // destroy the record that the Note was ever filed where it was (I4).
+      function placementIdentityUnchanged() {
+        return resource != null
+            && d().tenantId      == resource.data.tenantId
+            && d().ownerPersonId == resource.data.ownerPersonId
+            && d().get('ownerUid', null) == resource.data.get('ownerUid', null)
+            && d().placementId   == resource.data.placementId
+            && d().noteId        == resource.data.noteId
+            && d().folderId      == resource.data.folderId;
+      }
+
+      function createdByStampedOnCreate() { return d().createdBy == myUid(); }
+      function createdByFrozen() { return resource != null && d().createdBy == resource.data.createdBy; }
+
+      allow get: if canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+      allow list: if listIsBounded() && canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+
+      allow create: if placementShapeOk()
+                    && createdByStampedOnCreate()
+                    && isNoteOwner(d().tenantId, d().ownerPersonId)
+                    && d().status == 'active'
+                    && bothEndsOk();
+
+      allow update: if placementShapeOk()
+                    && placementIdentityUnchanged()
+                    && createdByFrozen()
+                    && isNoteOwner(d().tenantId, d().ownerPersonId);
+
+      allow delete: if false;   // I4/D6 — retire, never destroy
+    }
+
   }
 }

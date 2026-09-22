@@ -667,12 +667,12 @@
     {
       "id": "E1",
       "subject": "Firestore Rules and index deployment (Phases 4-6, D14)",
-      "state": "OPEN -- external Firebase Console access. Seven ledger items depend on it."
+      "state": "RESOLVED 2026-09-22 -- the Owner published the Phase 3-6 candidate and its four indexes directly in the Firebase Console. The ACCESS blocker is gone; deployment.firebaseRulesDeployed.state is YES. D14's own separate candidate (never part of Phases 3-6) is not deployed -- see D14-WIRING, no longer blocked on access, blocked on that candidate simply not having been chosen for publishing yet."
     },
     {
       "id": "D14-WIRING",
       "subject": "D14 timezone activation",
-      "state": "OPEN -- the modules are on main and unreachable by construction. Activation needs a Rules change and rides E1."
+      "state": "OPEN -- the modules are on main and unreachable by construction. Activation needs its OWN Rules change (d14-timezone-tenantpeople-rules-candidate-2026-09-18.rules), which was not part of the 2026-09-22 Phase 3-6 publish and remains undeployed. No longer blocked on E1's access question -- that is proven resolved -- only on this specific candidate being chosen and published."
     },
     {
       "id": "O3c",
@@ -707,7 +707,15 @@
       "served from the live URL even while the feature cannot function. One",
       "boolean cannot carry both facts, and collapsing them is how a control the",
       "Owner can actually see gets recorded as 'not deployed'. Master Architect",
-      "correction, 2026-09-19."
+      "correction, 2026-09-19.",
+      "",
+      "2026-09-22: firebaseRulesDeployed flipped NO -> YES, the first of these",
+      "four states ever to become true. The separation the correction above",
+      "made is exactly why this could be recorded precisely: Rules ARE",
+      "deployed now, but evidenceRecordingOperational stays NO on purpose --",
+      "a second, GOVERNED decision (Phase 4 activation), deliberately not made",
+      "in the same step as the Rules publish. Conflating the two would have",
+      "been the same class of error this file was created to stop."
     ],
     "applicationCodeIntegrated": {
       "state": "YES",
@@ -721,23 +729,22 @@
       "whyNotVerified": "PRESUMED, not measured. This sandbox's proxy refuses CONNECT to github.io, so serving cannot be observed from here. The presumption rests on this repository's own standing brief, not on a measurement."
     },
     "firebaseRulesDeployed": {
-      "state": "NO",
-      "means": "The ADR-008 Activity-evidence Rules (and the Phase 4-6 indexes) have not been deployed to the study-monitoring Firebase project.",
-      "blockedOn": "E1 -- authenticated Firebase Console access to study-monitoring. A sandbox has no credentials.",
-      "firestoreRules": "NOT_DONE",
-      "firestoreIndexes": "NOT_DONE"
+      "state": "YES",
+      "means": "The Phase 3-6 DEPLOYMENT candidate (docs/governance/phase3-6-DEPLOYMENT-candidate-2026-09-22.rules) -- MAP Phase 3 word progress, Phase 4 Activity evidence, Phase 5 Note Foundation, Phase 6 Mapping My Journey -- and its four composite indexes were published to the study-monitoring Firebase project by the Owner directly in the Console, confirmed 2026-09-22 (fresh publish timestamp; a real note round-tripped a reload). firestore.rules and firestore.indexes.json in this repository were synced to match immediately after, byte-identical.",
+      "firestoreRules": "DONE",
+      "firestoreIndexes": "DONE",
+      "evidence": "firestore.rules == docs/governance/phase3-6-DEPLOYMENT-candidate-2026-09-22.rules (rules-deployment-candidate-phase3-6.mjs's own check). firestore.indexes.json declares exactly the four audited indexes (firestore-index-requirements.mjs)."
     },
     "evidenceRecordingOperational": {
       "state": "NO",
-      "means": "The Phase 4 feature cannot record anything for anyone. The evidence subcollection has no rule, so every write would be denied.",
-      "dependsOn": "firebaseRulesDeployed",
-      "surfacedBy": "v08.31 -- the persistence-readiness gate. While this is NO the completion control is not actionable and no write is attempted; app/js/study-evidence-readiness.js declares ready:false."
+      "means": "The Rules dependency is now satisfied, but the Phase 4 feature still cannot record anything for anyone: enabling it is its own GOVERNED DECISION, not automatic from Rules deployment (app/js/study-evidence-readiness.js's own design -- a decision naming an authority, a date and a record, not a bare flip). That decision has not yet been made.",
+      "dependsOn": "firebaseRulesDeployed (now satisfied) AND a separate governed enablement decision (not yet made)",
+      "surfacedBy": "v08.31 -- the persistence-readiness gate. app/js/study-evidence-readiness.js still declares ready:false, deliberately, pending Phase 3 verification on a real phone (Owner instruction, 2026-09-22)."
     },
-    "e1": "CLOSED",
-    "firestoreRules": "NOT_DONE",
-    "firestoreIndexes": "NOT_DONE",
-    "blockedOn": "E1 -- authenticated Firebase Console access to study-monitoring. A sandbox has no credentials.",
-    "note": "Recorded as NOT DONE because it has not been proven done. The two flat keys above are retained for readers of the pre-v08.31 shape; the four states above them are authoritative."
+    "e1": "OPEN",
+    "firestoreRules": "DONE",
+    "firestoreIndexes": "DONE",
+    "note": "E1 (the access blocker) is resolved: the Owner published directly in the Console, proving the access path works. The two flat keys above are retained for readers of the pre-v08.31 shape; the four states above them are authoritative. D14's OWN separate Rules candidate (d14-timezone-tenantpeople-rules-candidate-2026-09-18.rules) was not part of what was published and remains undeployed -- see the D14-WIRING pending item."
   },
   "programme": {
     "name": "MMSA -- Madrasatul Muslimeen's Study App",

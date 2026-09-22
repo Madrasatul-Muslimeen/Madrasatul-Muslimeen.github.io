@@ -352,12 +352,26 @@ check("every Approach the writer can credit still IS that Approach", () => {
   assert.equal(APPROACH_TEMPLATES.length, 30);
 });
 
-// --- 5. no Rules, index or migration material -----------------------------
-check("production firestore.rules carries no evidence material", () => {
+// --- 5. Rules/index deployment state matches what is ACTUALLY true ---------
+// Until 22 Sep 2026 this checked the opposite: that firestore.rules carried
+// NO evidence material at all, because until the Owner published in the
+// Firebase Console, saying otherwise would have been the repository claiming
+// a deployment nobody had performed. That deployment happened (Rules and
+// indexes both, confirmed by the Owner directly) -- `rules-deployment-
+// candidate-phase3-6.mjs` is where the byte-exact proof of a faithful sync
+// lives, so this check does not repeat it. What it still needs to prove,
+// unaffected by whether Rules are deployed, is the fact right below it (the
+// readiness declaration): the evidence WRITE PATH's own gate did not move
+// just because the database now has a rule for it to write against.
+check("production firestore.rules carries the deployed evidence material, and only that -- no keyed-Activity leak", () => {
   const rules = fs.readFileSync(path.join(root, "firestore.rules"), "utf8");
-  assert.ok(!rules.includes("/evidence/"), "firestore.rules has been amended for the evidence subcollection");
-  assert.ok(!rules.includes("study-approach-contract"), "firestore.rules references the v1 contract");
-  assert.ok(!fs.existsSync(path.join(root, "firestore.indexes.json")), "a tracked index file appeared");
+  assert.ok(rules.includes("/evidence/"), "firestore.rules does not carry the evidence subcollection -- deployment record is stale, or the sync regressed");
+  assert.ok(rules.includes("study-approach-contract:v1"), "firestore.rules does not pin the accepted contract version");
+  assert.ok(fs.existsSync(path.join(root, "firestore.indexes.json")), "the live index file is missing -- deployment record is stale, or the sync regressed");
+  // The one thing that must still be ABSENT: the rejected keyed-Activity
+  // design (a hashed eventKey Rules cannot verify) never made it in alongside
+  // the accepted one, deployment or no deployment.
+  assert.ok(!rules.includes("v1Events"), "firestore.rules references the rejected keyed-Activity v1Events map");
 });
 check("the gated keyed-Activity material is still absent", () => {
   for (const rel of ["app/js/study-activity-week.js", "tests/firestore/activity-v1.proposed.rules"]) {

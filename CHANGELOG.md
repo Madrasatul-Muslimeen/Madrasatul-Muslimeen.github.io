@@ -15291,3 +15291,45 @@ deployed; `firestore.rules` and the Phase 3-6 candidate file are both
 unchanged. See the CLAUDE.md entry dated 22 Sep 2026 for the full account,
 including the redundant-approval trap the sync-commit trailer
 (`[already-deployed-manually]`) avoids.
+
+## 22 Sep 2026 — the Owner published: Phase 3-6 Rules and four indexes DEPLOYED
+
+The first of the four deployment states this repository has ever tracked to
+actually become true. The Owner published
+`docs/governance/phase3-6-DEPLOYMENT-candidate-2026-09-22.rules` and its four
+composite indexes directly in the Firebase Console, confirmed by two
+screenshots (a fresh Rules publish timestamp; all four indexes reading
+Enabled). `firestore.rules` and a new `firestore.indexes.json` were synced to
+match in the same session, proven byte-identical/exact-match by the suites
+built for exactly this (`rules-deployment-candidate-phase3-6.mjs`,
+`firestore-index-requirements.mjs`).
+
+**Nine suites' worth of "nothing is deployed" checks were now stale by
+design, and every one was fixed rather than left red or silently ignored** —
+`firestore-index-requirements.mjs`, `rules-deployment-candidate.mjs`,
+`rules-deployment-candidate-phase3-6.mjs`, `study-activity-evidence-boundary.mjs`,
+`journey-map-boundary.mjs`, `note-foundation-boundary.mjs`,
+`study-approach-contract-boundary.mjs`, `study-note-boundary.mjs`, and two
+`programme-ledger-mutations.mjs` mutations that had been silently relying on
+the ledger's own "not deployed" ambient state instead of setting up their own
+test precondition. Two needed a **fixed pre-deployment git reference**
+(`35f9228e2d57c085795dc06c412b3a7191325ddd`) rather than a live comparison,
+because comparing against `firestore.rules` or `origin/main` after both now
+equal the deployed candidate would make the check pass vacuously forever —
+the same principle the Phase 3 helper-origin check already used for its own
+pre-Phase-3 baseline. All fifteen affected suites, plus the eight CI-gated
+ones, re-run clean.
+
+**`programme-integration-ledger.json`**: `deployment.firebaseRulesDeployed.state`
+NO → YES. `evidenceRecordingOperational.state` **stays NO, deliberately** —
+enabling Phase 4 Activity evidence is a separate GOVERNED decision
+(`study-evidence-readiness.js`'s own design), not automatic from a Rules
+publish, and it waits on Phase 3 word-by-word progress being verified to
+actually save and reload on a real phone first — the Owner's own explicit
+sequencing. E1 is RESOLVED (the access blocker, proven by an actual publish).
+D14's own separate timezone Rules candidate was not part of this publish and
+remains undeployed.
+
+BR-0 does not apply — this is real Firestore deployment, which is why it is
+recorded this carefully. No application code changed; `app/js/version.js`
+untouched.

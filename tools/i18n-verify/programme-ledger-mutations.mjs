@@ -373,6 +373,11 @@ mutation("serving is claimed as verified with nothing verified", "G", (l) => {
 }, /claims SERVING_VERIFIED without verified:true/);
 
 mutation("the feature is recorded operational while its Rules are not deployed", "G", (l) => {
+  // Force the precondition explicitly (Rules NOT deployed) rather than relying
+  // on the real ledger's ambient state, which stopped being NO on 2026-09-22
+  // when Rules actually were deployed -- a mutation that borrows a fact it
+  // does not set up itself models the ledger's history, not the guard.
+  l.deployment.firebaseRulesDeployed.state = "NO";
   l.deployment.evidenceRecordingOperational.state = "YES";
 }, /the evidence subcollection has no rule/);
 
@@ -381,6 +386,7 @@ mutation("the readiness gate is flipped in code and nowhere else", "G", (l, f) =
 }, /the code and the governance record disagree/);
 
 mutation("the gate is flipped in code AND in the ledger, but the Rules are still not deployed", "G", (l, f) => {
+  l.deployment.firebaseRulesDeployed.state = "NO";
   f.readinessSource = readinessSrc(true);
   l.evidencePersistenceReadiness.ready = true;
 }, /readiness may not run ahead of the deployment it depends on/);

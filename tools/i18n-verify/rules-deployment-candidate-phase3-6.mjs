@@ -92,13 +92,28 @@ check("the deployment candidate never REDEFINES a production helper differently"
 
 check("the three genuinely-new Phase 3 helpers are genuinely new", () => {
   // canSuperviseRecordFor/wordLaneIdentityUnchanged/isWordLaneCreate must not
-  // already exist in production under a different meaning -- if they did,
-  // the redefinition check above would already have failed, but a NAME that
-  // is merely absent from production and present once in the candidate is
-  // the only shape a truly new helper can take. Assert that shape directly.
+  // already exist in PRE-PHASE-3 production under a different meaning -- if
+  // they did, the redefinition check above would already have failed, but a
+  // NAME that is merely absent from that baseline and present once in the
+  // candidate is the only shape a truly new helper can take. Assert that
+  // shape directly.
+  //
+  // BASELINE IS THE 17 SEP CANDIDATE, NOT LIVE `firestore.rules` -- and this
+  // is deliberate, not an oversight. Rules were actually deployed 22 Sep
+  // 2026 (confirmed by the Owner), so `firestore.rules` now equals THIS
+  // candidate and of course already contains all three names; comparing
+  // against it would make this check pass vacuously forever. What it needs
+  // to prove is unchanged by deployment: that these three names were new
+  // INVENTIONS at assembly time, not accidental duplicates of something
+  // production already had. `phase4-6-DEPLOYMENT-candidate-2026-09-17.rules`
+  // is the fixed historical record of exactly that pre-Phase-3 state (kept,
+  // never replaced, per this file's own header) -- the correct baseline for
+  // a fact about the past, which does not move just because `firestore.rules`
+  // later did.
+  const prePhase3Baseline = topLevelFunctions(read("docs/governance/phase4-6-DEPLOYMENT-candidate-2026-09-17.rules"));
   const candFns = topLevelFunctions(candidate);
   for (const name of ["canSuperviseRecordFor", "wordLaneIdentityUnchanged", "isWordLaneCreate"]) {
-    assert.ok(!prodFns.has(name), `${name} was supposed to be new but production already defines it`);
+    assert.ok(!prePhase3Baseline.has(name), `${name} was supposed to be new but the pre-Phase-3 baseline already defines it`);
     assert.equal(candFns.get(name)?.length, 1, `${name} is missing or defined more than once`);
   }
 });
@@ -139,13 +154,17 @@ check("the extracts' divergence from production is EXACTLY the audited four", ()
     `the set of helpers that differ from production has changed -- re-audit before updating this list`);
 });
 
-// --- nothing is deployed ----------------------------------------------------
-check("nothing has been deployed: firestore.rules and firebase.json are untouched", () => {
-  assert.ok(!production.includes("match /notes/"), "firestore.rules now governs the Note Foundation");
-  assert.ok(!production.includes("/evidence/"), "firestore.rules now carries the Phase 4 amendment");
-  assert.ok(!production.includes("match /quranWordProgress/"), "firestore.rules now governs word progress");
-  const firebase = JSON.parse(read("firebase.json"));
-  assert.ok(!("indexes" in (firebase.firestore ?? {})), "firebase.json now points at an index file");
+// --- DEPLOYED, 22 Sep 2026, AND FAITHFULLY -----------------------------------
+// This check used to assert the opposite -- that firestore.rules was
+// untouched -- because until the Owner actually published in the Firebase
+// Console, claiming otherwise would have been the repository asserting a
+// deployment nobody had performed. That deployment happened (confirmed by
+// the Owner directly, indexes and rules both). The check now guards the
+// other direction: that the sync was a clean, faithful copy, byte for byte,
+// not a paste that silently dropped or altered something on the way in.
+check("firestore.rules matches the audited Phase 3-6 candidate exactly", () => {
+  assert.equal(production, candidate,
+    "firestore.rules has diverged from the audited candidate -- either it was not a clean paste, or something has changed since");
 });
 
 check("Phase 3 needs no new index -- confirmed against the app's own query", () => {
