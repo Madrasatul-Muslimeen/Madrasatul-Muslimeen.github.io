@@ -15374,6 +15374,120 @@ reasoning v08.31 used for the *gate*, applied to its release. Allocated by
 the MMSA Architect. Full account:
 `docs/reports/2026-09-22-map-phase4-evidence-persistence-enabled.md`.
 
+## 22 Sep 2026 — Word-tap in the normal Arabic text: Read view and Note view (issue #189, Builder round, version pending Architect allocation)
+
+The Owner's own follow-up to the Mushaf-page word-tap round (issue #188):
+*"Is the same thing possible in Note view too? clicking on word should
+pop-up the WbW card too."* Investigated before building anything, not
+assumed — the real gap is broader than Note view alone, and the Owner
+confirmed building it for both Read view and Note view at once.
+
+**The finding, from reading the code first.** Word-tapping already worked,
+but only inside the separate Word by Word panel/toggle
+(`renderWordByWordPanel()`) — the everyday flowing Arabic text, the normal
+verse display everyone reads by default, had never been broken into
+individual words in EITHER view, so there was nothing there for a tap to
+land on. The shared click listener in `quranrevival.html`
+(`["readView", "noteView"].forEach(...)`) already covers both `#readView`
+and `#noteView`, keyed purely on `[data-word-occurrence]` — so it needed no
+new code at all; once both renderers emit per-word spans carrying that
+attribute, tapping just works, in both views, for free.
+
+**The Tajweed question — the one real unknown — was resolved by measuring
+the whole pulled corpus** (`tools/quran-data-pull/output/surahs`, all 114
+files, 6,236 ayahs), not guessed. Plain (Tajweed off) Arabic CAN be split
+into one tappable word per `ayah.words[]` entry: Quranic small-high marks
+(waqf/pause signs, rub-el-hizb "۞", place-of-sajdah) print as their own
+space-delimited token in the raw text, but the word-by-word data source
+folds each one into its adjacent real word instead — a naive space-split
+misaligns 44% of all ayahs against `words[]` before folding those marks
+back, and 0.05% (3 of 6,236) after. Tajweed-coloured text, by contrast,
+**cannot be safely split per word without a per-word tajweed dataset that
+does not exist here**: tajweed assimilation rules (idgham/ikhfa/iqlab)
+routinely colour the LAST letter of one word together with the FIRST
+letter of the next — e.g. surah 2:2's own
+`<tajweed class=idgham_wo_ghunnah>دًى ل</tajweed>` — measured on **~65% of
+all ayahs**. Splitting on that space would cut the `<tajweed>` span in
+half, silently losing or misattributing colour on whichever letter lands
+on the wrong side, exactly what the issue said not to ship. **Resolution**:
+the flowing Arabic is tappable per word when Tajweed is off; when Tajweed
+is on it renders exactly as before — one coloured block, untouched, not
+word-tappable. The separate Word-by-Word panel (plain text, no tajweed
+markup) is unaffected by this toggle either way and stays tappable
+regardless — a reader who wants both Tajweed colour and per-word tapping
+already has that panel today.
+
+**Built**, in `app/js/ayah-renderer.js`: `splitPlainArabicWords()` (the
+mark-folding tokenizer described above; returns `null` — never a
+best-effort guess — when a segment count doesn't land exactly on
+`words.length`, so the caller falls back to the old, untappable
+single-block rendering for that one ayah rather than ever risk a tap
+landing on the wrong word; measured, 3 of 6,236 ayahs fall back this way —
+a genuine compound name in surah 37:130, "إِلْ يَاسِينَ", which the
+word-by-word API keeps as one word despite its own internal space, and a
+pre-existing, unrelated Bismillah-stripping data quirk on surah 95:1/97:1
+that already shows Bismillah twice today, untouched by this round) and
+`arabicWordButtonHtml()` (one `<button data-word-occurrence="quran-word-
+occurrence:v1:...">` per word, the same id shape and the same
+language-aware "arabic — gloss" `aria-label` pattern
+`renderWordByWordPanel()`'s own clickable chip already uses — I11: the
+spoken name follows the reader's own chosen gloss language). `renderArabicPanel()`
+itself gained `wordCardInteractive`/`surahNumber`/`langs` options, both
+existing call sites in `quranrevival.html` already pass them.
+`quranrevival.html`'s Note view builder `arabicOneAyahHtml()` got the same
+treatment locally (it has always built its Arabic outside
+`renderArabicPanel()`, reading plain ayah objects directly), covering both
+`ayahDisplayMode`s ("by language" and "by ayah"). A new
+`button.ayah-word-clickable` CSS rule resets every button default (border,
+background, padding, the UA's own font) so a word reads as plain text until
+tapped or focused, with a subtle non-layout-affecting hover/focus
+background as the only visual addition.
+
+**Verified rather than assumed, against the whole pulled corpus via a
+focused Node script** (not checked in): 6,233 of 6,236 ayahs render
+word-tappable with the correct button count and byte-correct visible text
+once markup is stripped; the 3 fallbacks are exactly the ones predicted
+above; **Tajweed-on output is byte-for-byte identical to the pre-round
+renderer across all 6,236 ayahs**, and so is plain output for any caller
+that doesn't pass the new options — proving the change is purely additive
+for every existing caller. The ayah-number badge and ayah-1
+Bismillah-stripping both still run on the assembled per-word text in both
+views. Copy/select-all is unaffected by construction, not merely by
+inspection: `textBlocks.arabicText` (Note view) and every other
+whole-ayah plain-text read site (`arabicSnippet`, the Quick-menu copy
+path) read `a.uthmaniText`/`ayah.uthmaniText` straight from the data
+model, never the rendered DOM — none of them touch the new per-word
+markup at all.
+
+**Suites run**: the 8 governance suites from repo root all pass clean —
+`programme-ledger.mjs` (8 passed, 23 noted, 0 failed), `programme-ledger-
+mutations.mjs` (49/0), `brief-integrity.mjs` (8/0), `study-activity-
+evidence-boundary.mjs` (27/0) + its mutations (11/0), `study-event-wiring.mjs`
+(41/0), `rules-authorisation-executable.mjs` (40/0), `workflow-expressions.mjs`
+(12/0) — plus every Quran suite reachable without a browser:
+`quran-boundary.mjs` (30/0), `quran-word-card-integration.mjs` (10/0, exercises
+`ayah-renderer.js` directly), `quran-word-identity-contract.mjs` (6/0),
+`quran-word-coverage-arabic.mjs` (29/0).
+
+**Flagged, not run: the browser-based layout/behaviour suites**
+(`layout.mjs`, `reading.mjs`, `panel.mjs`, `navcheck.mjs`, `behaviour.mjs`,
+and the `*-rendered.mjs` Quran suites) all import `playwright` via
+`tools/i18n-verify/harness.mjs`, and this Builder sandbox has no
+`node_modules` and no lockfile to install one from; `npm install` requires
+interactive approval this unattended run cannot grant. The full-corpus
+static/rendering-equivalence proof above is the substitute measurement
+this round could actually run — it is strong evidence the markup is
+correct and additive, but it is not the same as an on-screen pixel
+measurement at 320/360/390/412px in both languages the issue itself asked
+for. **The Architect should run those five suites (or update this
+workflow's `--allowedTools`/environment to allow `npm install playwright`
+and a Chromium download) before treating the layout requirement as
+closed.**
+
+No `firestore.rules`, schema or version change. `app/js/version.js` is
+untouched, per the Builder contract — this round asks the Architect to
+allocate the version it needs.
+
 ## 22 Sep 2026 — tap a Mushaf-page word to open its Word Card (issue #188)
 
 The Owner's own ask, from a screenshot of the Mushaf-page Read view: *"Is
