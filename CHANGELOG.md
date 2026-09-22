@@ -15487,3 +15487,80 @@ closed.**
 No `firestore.rules`, schema or version change. `app/js/version.js` is
 untouched, per the Builder contract — this round asks the Architect to
 allocate the version it needs.
+
+## 22 Sep 2026 — tap a Mushaf-page word to open its Word Card (issue #188)
+
+The Owner's own ask, from a screenshot of the Mushaf-page Read view: *"Is
+it possible to enable the functionality that user click on a word and the
+WbW card appears?"* The Mushaf page view (`app/js/hifz-renderer.js`) was
+already real per-word text, one `<span class="hifz-word">` per word with
+its exact identity sitting in `w.loc` — simply never attached to the DOM or
+wired to anything. The Word Card already opens through one shared,
+view-agnostic click listener in `quranrevival.html` that looks for
+`[data-word-occurrence]` on whatever was tapped. This round is that
+attachment, not new plumbing: `renderWord()` now stamps
+`data-word-occurrence="quran-word-occurrence:v1:{surah}:{ayah}:{position}"`
+on every real word, in the exact id format the Word-by-Word strip already
+uses. `hifz-renderer.js` imports nothing new — the click listener and
+`openWordCard()` call stay exactly where they already lived, in
+`quranrevival.html` (I2 untouched).
+
+**Verified, not assumed, exactly per the issue's own instruction: this
+file's own word-position numbering and the app's own word-by-word
+numbering are NOT always the same number for the same word.** Checked for
+real across all 6,236 ayahs (every one, not a sample), comparing this
+file's own per-ayah word-glyph count (`mushaf/mushaf-madani-v2.json`)
+against the app's own word count
+(`tools/quran-data-pull/output/surahs/*.json`). They diverge in **exactly
+three ayahs — 2:181, 8:6, 13:37 — all for the identical reason**: the
+app's word-by-word corpus joins "بَعْدَ مَا" ("after that") into ONE word
+entry carrying an internal space, while this Mushaf page-layout data (QUL)
+prints it as two separate positions. Without a correction, a tap on any
+word after that pair in those three ayahs would have silently opened the
+wrong word's card. `AYAH_WORD_MERGES` in `hifz-renderer.js` corrects
+exactly those three: the mushaf position right after the merge point
+resolves to the SAME occurrence as the one before it (so tapping either
+half opens the one real word), and every position after the pair shifts
+back by one. Every ayah's own trailing print glyph (the ayah-end number,
+not a real word — the same "+1" convention holds across all 6,236 ayahs)
+is excluded from tapping by construction, via a new `ayahMaxWordPosition`
+index built in the same single pass `buildAyahPageIndex()` already makes.
+
+**A new check, not a one-time hand audit**:
+`tools/i18n-verify/mushaf-word-occurrence-parity.mjs` re-derives the
+divergence set from the live data on every run (not from a cached
+conclusion) and fails if a fourth ayah ever diverges from
+`AYAH_WORD_MERGES`, or if `resolveWordOccurrencePosition()`'s own
+arithmetic stops landing on every real word exactly once. Both assertions
+are mutation-proven: reverting either the table or the merge arithmetic
+makes the check fail with the exact ayah/position named, not a generic
+error.
+
+**Tap-target measurement, not a guess.** Mushaf words sit only 0.12em
+apart (`gap`, print-accurate, not to be widened). `.hifz-word[data-word-
+occurrence]` gets `padding` plus an equal-and-opposite negative `margin`
+on all four sides — the flex item's outer (margin) box, what
+`justifyPageLines()` measures and what the printed layout is judged by, is
+unchanged, while its padding box (what a tap can land on) is larger.
+Proven rather than assumed: `behaviour.mjs`'s existing 40b justification
+check (no line spills past either edge) re-run clean on the same page with
+the new CSS applied, and a new check dispatches a real tap at the very
+EDGE of a word's own padded box — not its centre — at 320/360/390/412px,
+confirming it still opens the exact right word's card at every required
+phone width.
+
+**Checks**: extended `behaviour.mjs`'s existing Mushaf section (#40,
+opened for the shell round 28 Mushaf-page work) rather than starting a new
+suite, since it already reaches the Mushaf page view with a real fixture
+and stand-in font — new sections 40f (structural exclusion of the
+ayah-end marker, correct occurrence id, tap opens the exact right word
+with real Arabic content, geometry unaffected) and 40g (tap accuracy at
+all four required widths). Plus the new
+`mushaf-word-occurrence-parity.mjs` data-integrity check above. No new
+suite needed; nothing un-checked-in.
+
+Out of scope, per the issue: the separate inline Word-by-Word panel
+toggle (untouched); Note view's own flowing Arabic text, which does not
+render individual word spans yet (a different, not-yet-assigned round).
+`app/js/version.js` untouched — a Builder round never bumps it; the
+Architect allocates a version if this needs one.
