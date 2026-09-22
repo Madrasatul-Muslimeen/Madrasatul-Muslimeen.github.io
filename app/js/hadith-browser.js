@@ -112,6 +112,40 @@ function focusPendingOccurrence(body, state) {
   state.focusOccurrenceId = null;
 }
 
+/**
+ * Moves KEYBOARD focus to the new landing spot after a Collections-tab step
+ * (edition, book or chapter picked; or a breadcrumb step back). Every such
+ * step calls `render()`, which does `root.textContent = ""` and rebuilds the
+ * whole subtree -- so the button a keyboard user just pressed no longer
+ * exists, and without this the browser drops focus to `<body>`, silently
+ * sending a Tab-only reader back to the very top of the page on every single
+ * step through collection -> book -> chapter. `focusPendingOccurrence()`
+ * (above) solves a different problem -- the one-shot highlight after a
+ * Topics/Search "View in source" jump -- and never calls `.focus()` at all,
+ * so it does not cover ordinary in-tab navigation.
+ *
+ * Lands on the breadcrumb's own current-location crumb where one exists
+ * (every state with an edition chosen), or the "Collections" heading at the
+ * top level -- the one landing element every Collections render already has,
+ * so a keyboard user is told where they arrived rather than losing their
+ * place, and the very next Tab continues from there instead of from the
+ * page's top.
+ */
+function focusCollectionsLanding() {
+  const body = document.getElementById("hadithBody");
+  if (!body) return;
+  // The breadcrumb's own last crumb names exactly where this render landed --
+  // the (non-clickable) current location where one exists (book or chapter
+  // chosen), or otherwise the still-clickable "Collections" crumb itself (an
+  // edition was just chosen, so there is no deeper "current" yet). Only the
+  // very top level -- no edition chosen at all -- has no breadcrumb; there
+  // the "Collections" heading is the one landing element every render has.
+  const landing = body.querySelector(".hadith-crumbs > :last-child") || body.querySelector("h2");
+  if (!landing) return;
+  if (!landing.hasAttribute("tabindex")) landing.setAttribute("tabindex", "-1");
+  landing.focus({ preventScroll: true });
+}
+
 // ---------------------------------------------------------------------------
 // The notice that is never conditional
 // ---------------------------------------------------------------------------
@@ -186,7 +220,7 @@ function renderCollections(body, state, render) {
         row.dataset.hadithEdition = e.editionId;
         row.appendChild(el("span", "hadith-row-name", langText(c.name, uiLang)));
         row.appendChild(el("span", "hadith-row-meta", `${e.editionId} · ${t("Synthetic")}`));
-        row.addEventListener("click", () => { state.editionId = e.editionId; state.bookId = null; state.chapterId = null; render(); });
+        row.addEventListener("click", () => { state.editionId = e.editionId; state.bookId = null; state.chapterId = null; render(); focusCollectionsLanding(); });
         list.appendChild(row);
       }
     }
@@ -203,7 +237,7 @@ function renderCollections(body, state, render) {
       row.dataset.hadithBook = b.bookChapterId;
       row.appendChild(el("span", "hadith-row-name", langText(b.title, uiLang)));
       row.appendChild(el("span", "hadith-row-heading", b.rawHeading));
-      row.addEventListener("click", () => { state.bookId = b.bookChapterId; state.chapterId = null; render(); });
+      row.addEventListener("click", () => { state.bookId = b.bookChapterId; state.chapterId = null; render(); focusCollectionsLanding(); });
       list.appendChild(row);
     }
     body.appendChild(list);
@@ -226,7 +260,7 @@ function renderCollections(body, state, render) {
       row.dataset.hadithChapter = c.bookChapterId;
       row.appendChild(el("span", "hadith-row-name", langText(c.title, uiLang)));
       row.appendChild(el("span", "hadith-row-heading", c.rawHeading));
-      row.addEventListener("click", () => { state.chapterId = c.bookChapterId; render(); });
+      row.addEventListener("click", () => { state.chapterId = c.bookChapterId; render(); focusCollectionsLanding(); });
       list.appendChild(row);
     }
     body.appendChild(list);
@@ -249,7 +283,7 @@ function breadcrumb(state, render, uiLang) {
       bar.appendChild(el("span", "hadith-crumb-current", label));
     }
   };
-  add(t("Collections"), () => { state.editionId = null; state.bookId = null; state.chapterId = null; render(); });
+  add(t("Collections"), () => { state.editionId = null; state.bookId = null; state.chapterId = null; render(); focusCollectionsLanding(); });
   // Read the book/chapter's own record directly (`chapterById()`), never
   // through an occurrence's `sourcePathOf()` -- a book that HAS a chapter
   // level never holds an occurrence attached to the book id itself (every
@@ -259,7 +293,7 @@ function breadcrumb(state, render, uiLang) {
   // both books of the `synthetic-alpha` edition; a book with no chapter level
   // (`synthetic-beta`) was unaffected, because there `occurrencesIn(bookId)`
   // is never empty.
-  if (state.bookId) add(langText(chapterById(state.bookId)?.title, uiLang) || state.bookId, state.chapterId ? () => { state.chapterId = null; render(); } : null);
+  if (state.bookId) add(langText(chapterById(state.bookId)?.title, uiLang) || state.bookId, state.chapterId ? () => { state.chapterId = null; render(); focusCollectionsLanding(); } : null);
   if (state.chapterId) add(langText(chapterById(state.chapterId)?.title, uiLang) || state.chapterId, null);
   return bar;
 }

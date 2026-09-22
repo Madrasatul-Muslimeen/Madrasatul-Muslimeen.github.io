@@ -177,6 +177,54 @@ for (const literal of ["Translation coverage", "Topic coverage"]) {
     exploreText.includes(literal));
 }
 
+// --- Keyboard focus survives a Books/chapters navigation step --------------
+// (issue #114, reproduced live). `render()` does `root.textContent = ""` and
+// rebuilds the whole Collections subtree on every navigation step, so the
+// button a keyboard user just pressed no longer exists in the DOM -- and
+// without `focusCollectionsLanding()` the browser silently drops focus to
+// `<body>`, sending a Tab-only reader back to the top of the page on EVERY
+// step through collection -> book -> chapter, and on every step back via the
+// breadcrumb. This is independent of the one-shot highlight above (which
+// covers only a Topics/Search "View in source" jump and never calls
+// `.focus()` at all) and of the breadcrumb TEXT fix earlier in this file
+// (which does not touch focus).
+await click('[data-hadith-tab="collections"]');
+await settle();
+// `state.editionId` may already be set from the Search jump above -- reset
+// to the top-level edition list first via the breadcrumb's own reset, the
+// same control the rest of this file already uses for this.
+if (await has(".hadith-crumb")) { await click(".hadith-crumb"); await settle(); }
+await click('[data-hadith-edition="synthetic-alpha-ar-v1"]');
+await settle();
+check("picking an edition does NOT drop keyboard focus to <body>",
+  !(await page.evaluate(() => document.activeElement === document.body)));
+await click('[data-hadith-book="synthetic-alpha-b1"]');
+await settle();
+check("picking a book lands focus on the breadcrumb's own current-location crumb",
+  await page.evaluate(() => document.activeElement?.classList.contains("hadith-crumb-current")));
+await click('[data-hadith-chapter="synthetic-alpha-b1-c1"]');
+await settle();
+check("picking a chapter lands focus on the breadcrumb's own current-location crumb",
+  await page.evaluate(() => document.activeElement?.classList.contains("hadith-crumb-current")));
+const bookCrumbBack = (await page.$$(".hadith-crumbs .hadith-crumb"))[1];
+await bookCrumbBack.click();
+await settle();
+check("stepping back one level (book crumb) also lands focus, not <body>",
+  !(await page.evaluate(() => document.activeElement === document.body)));
+await click(".hadith-crumb"); // "Collections" -- full reset to the top level
+await settle();
+check("resetting to the top level (Collections crumb) lands focus on the 'Collections' heading",
+  await page.evaluate(() => document.activeElement?.tagName === "H2"));
+// An edition with NO chapter level (Beta) steps book -> occurrence directly;
+// the same landing logic must hold on that shorter path too.
+await click('[data-hadith-edition="synthetic-beta-ar-v1"]');
+await settle();
+await click('[data-hadith-book]');
+await settle();
+check("on a no-chapter-level edition, picking the book also lands focus, not <body>",
+  !(await page.evaluate(() => document.activeElement === document.body)));
+await click(".hadith-crumb"); // reset before the checks below reuse Alpha ids
+
 check("no page error was raised anywhere in this run", errors.length === 0);
 if (errors.length) console.log("--- page errors ---\n", errors.join("\n"));
 
