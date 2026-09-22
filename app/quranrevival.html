@@ -4736,6 +4736,14 @@
      *  surah's own data to read the word AS WRITTEN there. The cap is stated
      *  on screen ("Showing the first N of M") rather than silently applied. */
     const WORD_FORM_OCCURRENCE_LIMIT = 50;
+    /** Whether the Basic tab's OWN "{count} lemma-linked occurrences" line is
+     *  expanded to its own resolved list. Kept outside quranWordCardContext for
+     *  the same reason quranWordCardExpandedForm is: the context is replaced
+     *  wholesale on every hydrate. Unlike a derived form, this is always the
+     *  CURRENT word's own lemma, so it does not need to be carried across a
+     *  word change (see hydrateWordCardOccurrences, which resets it). */
+    let quranWordCardLemmaExpanded = false;
+    let quranWordCardLemmaRequest = 0;
     // MAP Phase 3. `confirmationRequired` is the same computed answer
     // records.js already gives ("does this person have a teacher, guardian or
     // prime?"), fetched ON FIRST USE and cached per person -- the same
@@ -9909,6 +9917,12 @@
     async function hydrateWordCardOccurrences() {
       const requestedId = quranWordCardState.occurrenceId;
       const request = ++quranWordCardRequest;
+      // The lemma-occurrences toggle below is always THIS word's own lemma, so
+      // it starts collapsed on every word change -- unlike a derived form, it
+      // has nothing to restore across a jump (see the "way back" comment on
+      // quranWordCardExpandedForm above).
+      quranWordCardLemmaExpanded = false;
+      quranWordCardLemmaRequest++;
       if (!requestedId || !currentSurahData) return;
       const ref = parseQuranWordOccurrenceId(requestedId);
       const ayah = currentSurahData.ayahs.find((a) => a.ayah === ref.ayah);
@@ -9925,7 +9939,7 @@
           word.morphology?.root ? rootFormsFor(word.morphology.root) : null,
         ]);
         if (request !== quranWordCardRequest || !quranWordCardState.open || quranWordCardState.occurrenceId !== requestedId || currentSurahNum !== ref.surah) return;
-        quranWordCardContext = { rootOccurrences, lemmaOccurrences, rootForms, rootOccurrenceCount: rootOccurrences.length, lemmaOccurrenceCount: lemmaOccurrences.length, expandedForm: quranWordCardExpandedForm };
+        quranWordCardContext = { rootOccurrences, lemmaOccurrences, rootForms, rootOccurrenceCount: rootOccurrences.length, lemmaOccurrenceCount: lemmaOccurrences.length, expandedForm: quranWordCardExpandedForm, lemmaExpanded: false };
       } catch (error) {
         if (request !== quranWordCardRequest || !quranWordCardState.open || quranWordCardState.occurrenceId !== requestedId || currentSurahNum !== ref.surah) return;
         quranWordCardContext = { occurrencesError: error.message };
@@ -9979,6 +9993,47 @@
       quranWordCardFormRequest++;
       quranWordCardExpandedForm = null;
       quranWordCardContext = { ...quranWordCardContext, expandedForm: null, formOccurrences: null, formOccurrencesError: null, formOccurrencesTotal: 0 };
+      renderPersistentWordCard();
+    }
+
+    /**
+     * The Basic tab's OWN "{count} lemma-linked occurrences" line, expanded.
+     *
+     * `quranWordCardContext.lemmaOccurrences` is already resolved by
+     * hydrateWordCardOccurrences() -- one word's own lemma, not the whole
+     * root, so unlike expandWordForm() there is no form to look up first.
+     * Only the WRITTEN TEXT at each position is fetched here, on demand, read
+     * from that surah's own data exactly as expandWordForm() already does for
+     * a derived form -- never guessed from the lemma, which is a dictionary
+     * form and often differs from what is actually written at a given place.
+     */
+    async function expandLemmaOccurrences() {
+      const refs = quranWordCardContext.lemmaOccurrences;
+      if (!refs) return;
+      const request = ++quranWordCardLemmaRequest;
+      quranWordCardLemmaExpanded = true;
+      quranWordCardContext = { ...quranWordCardContext, lemmaExpanded: true, lemmaOccurrenceItems: null, lemmaOccurrenceItemsError: null, lemmaOccurrenceItemsTotal: refs.length };
+      renderPersistentWordCard();
+      try {
+        const wanted = refs.slice(0, WORD_FORM_OCCURRENCE_LIMIT);
+        const surahs = [...new Set(wanted.map((r) => r.surah))];
+        const loaded = new Map(await Promise.all(surahs.map(async (n) => [n, await getSurah(n)])));
+        if (request !== quranWordCardLemmaRequest) return;
+        const resolved = wanted.map((r) => {
+          const w = loaded.get(r.surah)?.ayahs?.find((a) => a.ayah === r.ayah)?.words?.find((x) => x.position === r.position);
+          return { ...r, arabic: w?.arabic ?? "" };
+        });
+        quranWordCardContext = { ...quranWordCardContext, lemmaExpanded: true, lemmaOccurrenceItems: resolved, lemmaOccurrenceItemsTotal: refs.length };
+      } catch (error) {
+        if (request !== quranWordCardLemmaRequest) return;
+        quranWordCardContext = { ...quranWordCardContext, lemmaExpanded: true, lemmaOccurrenceItemsError: error.message };
+      }
+      renderPersistentWordCard();
+    }
+    function collapseLemmaOccurrences() {
+      quranWordCardLemmaRequest++;
+      quranWordCardLemmaExpanded = false;
+      quranWordCardContext = { ...quranWordCardContext, lemmaExpanded: false, lemmaOccurrenceItems: null, lemmaOccurrenceItemsError: null, lemmaOccurrenceItemsTotal: 0 };
       renderPersistentWordCard();
     }
 
@@ -10105,6 +10160,11 @@
       if (formToggle) {
         const lemma = formToggle.dataset.wordFormToggle;
         if (quranWordCardExpandedForm === lemma) collapseWordForm(); else expandWordForm(lemma);
+        return;
+      }
+      const lemmaToggle = event.target.closest("[data-word-lemma-toggle]");
+      if (lemmaToggle) {
+        if (quranWordCardLemmaExpanded) collapseLemmaOccurrences(); else expandLemmaOccurrences();
         return;
       }
       const goto = event.target.closest("[data-word-occurrence-goto]");
