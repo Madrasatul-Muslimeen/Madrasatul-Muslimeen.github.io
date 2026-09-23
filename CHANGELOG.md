@@ -16262,3 +16262,50 @@ failures introduced by this round.**
 `app/js/version.js`: 08.39 → **08.40**. Allocated by the MMSA Architect.
 See `docs/governance/programme-integration-ledger.json` for the version
 allocation record.
+
+---
+
+**v08.41 (23 Sep 2026) — Hadith: the current breadcrumb crumb carries
+`aria-current="page"` (issue #114 Gate A/B, PR #149).** Reproduced live:
+neither the current breadcrumb crumb nor its containing `<nav>` carried any
+ARIA signal for "this is where you are", confirmed `null` at every level on
+both breadcrumb call sites (the Collections tab and the Topic tab) — more
+load-bearing now the trail runs a level deeper than it used to since an
+earlier round added the edition crumb. Fixed in `app/js/hadith-browser.js`,
+both call sites, with `aria-current="page"` on the current crumb. Zero new
+translatable strings — `aria-current`'s value is a fixed ARIA token, not
+user-facing text, so the eight-key Bangla handoff this stream has carried
+unchanged for several rounds stays unchanged again.
+
+**A real, separate finding was made and deliberately not fixed.** The
+same reproduction found that the edition crumb reads
+`collectionOf(state.editionId).name` — the collection's own name, never
+anything edition-specific — so two editions of the same collection would
+render byte-identical breadcrumb text and picker-row text. Real, but not a
+live defect: today's committed corpus carries exactly one edition per
+collection. Flagged rather than built, since manufacturing a second
+edition to force a failure would itself have been inventing evidence, and
+because closing it needs a real product/data decision (does a Hadith
+collection ever carry more than one edition?) that isn't this round's to
+make.
+
+6 new mutation-proven checks in `tools/i18n-verify/hadith-source-navigation-browser.mjs`
+(36 → 42 total, both languages) — mutation-proven by reverting the fix,
+which drops exactly the 5 new presence checks (37/5), restored and
+re-confirmed clean.
+
+**Independently re-verified by the Architect before merging.** Fresh
+checkout, clean merge with no conflicts against `main`. All 8 CI-gated
+governance suites clean. The focused suite re-run clean at 42/42 (English)
+under an available substitute Chromium build. The full `behaviour.mjs`
+suite run against both PR #149's own merged tree and a clean `origin/main`
+baseline (via a disposable `git worktree`, same substitute browser): 987
+pass/6 fail vs 984 pass/9 fail — every failure on both sides pre-existing
+and environmental (`27i`, `31e`, `40g` ×4 confirmed byte-identical pixel
+coordinates on both sides, `22g` ×3 the documented intermittent
+`archive.org` class), zero introduced by this diff, which touches only
+`app/js/hadith-browser.js`.
+
+`app/js/version.js`: 08.40 → **08.41**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.
