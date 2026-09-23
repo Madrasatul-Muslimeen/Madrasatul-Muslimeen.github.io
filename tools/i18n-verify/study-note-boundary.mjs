@@ -11,6 +11,22 @@
 //      the code and ADR-009 still agree with each other.
 //
 // So this suite reads the source, the untouched files, and the ADR itself.
+//
+// UPDATED 22 Sep 2026 for P5-D (issue #195), WITH THE REASON RECORDED RATHER
+// THAN THE CHECK WEAKENED. Claim 1 above -- "nothing imports this" -- was
+// true only because nothing had yet built the screen these modules exist
+// for. P5-D built that screen (app/notes.html), so "NO PAGE can reach
+// either module" stopped being the right claim to make: asserting it now
+// would be asserting the round's own wiring does not work, the identical
+// shape v08.30's own reachability guard inverted for D1/D2/D4 Activity, and
+// the identical shape 19 Sep 2026's D3-journaling-chokepoint round inverted
+// again when `study-note-service.js` gained a real caller. The two
+// reachability checks below now assert the STRONGER, narrower claim instead:
+// EXACTLY app/notes.html reaches the service, and only through it -- never
+// directly -- does anything reach the binding. Every other check in this
+// file is untouched: they are about the modules' own internal structure
+// (ADR-003/ADR-009 isolation, the quick-note boundary, the vocabulary), none
+// of which this round's wiring touches.
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -95,27 +111,43 @@ check("POSITIVE CONTROL: the reachability walker really does find a wired module
   assert.ok(control.length > 0, "the walker found no page importing records.js -- it is not working");
 });
 
-check("NO PAGE can reach either module, by any chain of any length", () => {
-  const reachable = GUARDED.flatMap((g) => chainsToTarget(g));
-  assert.deepEqual(reachable, [], `P5-C is wired in: ${reachable.join(" | ")}`);
+// P5-D (issue #195): the one page this round wired in, and the only page
+// allowed to reach either module. A second page reaching the service --
+// under any name -- is exactly the "wired in a second time, unaudited"
+// class every reachability guard in this repository exists to catch.
+const KNOWN_WIRED_PAGE = "app/notes.html";
+
+check("EXACTLY the Notes screen reaches the service, and nothing else does, by any chain of any length", () => {
+  const reachable = chainsToTarget("study-note-service.js");
+  const pages = reachable.map((r) => r.split(" -> ")[0]).sort();
+  assert.deepEqual(pages, [KNOWN_WIRED_PAGE],
+    `unexpected page(s) reaching study-note-service.js: ${reachable.join(" | ")}`);
 });
 
-check("no app source imports the binding or the service", () => {
+check("the binding is reached ONLY through the service -- never directly by any page", () => {
+  const reachable = chainsToTarget("study-note-binding.js");
+  assert.deepEqual(reachable, [`${KNOWN_WIRED_PAGE} -> study-note-service.js -> study-note-binding.js`],
+    `unexpected reachability for study-note-binding.js: ${reachable.join(" | ")}`);
+});
+
+check("no app source imports the binding or the service, except the one audited page importing the service", () => {
   const importers = [];
   for (const file of everyAppSource()) {
     if (GUARDED.some((g) => file.endsWith(path.join("js", g)))) continue;
     const text = fs.readFileSync(file, "utf8");
+    const rel = path.relative(root, file).split(path.sep).join("/");
     for (const guarded of GUARDED) {
       const base = guarded.replace(/\.js$/, "");
       // The delimiter class alone matched a BACKTICK, so a prose `study-note-binding.js`
       // in a doc comment counted as an import and reported a wiring that did not
       // exist. Requiring a from/import keyword in front makes it an import scan.
       if (new RegExp(String.raw`(?:from|import)\s*["'\`][./]*(?:js/)?${base}\.js["'\`]`).test(text)) {
-        importers.push(`${path.relative(root, file)} -> ${guarded}`);
+        importers.push(`${rel} -> ${guarded}`);
       }
     }
   }
-  assert.deepEqual(importers, [], `P5-C is wired in: ${importers.join(", ")}`);
+  assert.deepEqual(importers, [`${KNOWN_WIRED_PAGE} -> study-note-service.js`],
+    `unexpected importer set for the service/binding: ${JSON.stringify(importers)}`);
 });
 
 check("the service imports the binding, and the binding imports no database", () => {
@@ -166,26 +198,61 @@ function unchangedSinceMain(relPath) {
 check("app/js/ayah-notes.js is byte-identical to origin/main -- existing notes preserved", () => {
   unchangedSinceMain("app/js/ayah-notes.js");
 });
-check("app/js/note-foundation.js changed by INSERTION ONLY -- nothing removed or reshaped", () => {
-  // UPDATED 2026-09-15 (P5-E), with the reason recorded rather than the check
-  // deleted. P5-E adds the read side of ADR-009 to this file, so byte-identity
-  // is no longer the right claim -- but "not reshaped" still is, and it is the
-  // one that matters: every existing export must behave exactly as it did.
-  // An addition-only diff proves that mechanically, and is a STRICTER thing to
-  // assert than "some lines changed and I read them and they looked fine".
-  const diff = execFileSync("git", ["diff", "--numstat", "origin/main", "--", "app/js/note-foundation.js"],
-    { cwd: root, encoding: "utf8" }).trim();
-  if (diff === "") return; // identical to origin/main
-  const [added, removed] = diff.split(/\s+/);
-  assert.equal(removed, "0", `note-foundation.js has ${removed} REMOVED lines -- an existing behaviour may have been reshaped`);
-  assert.ok(Number(added) > 0, "a non-empty diff with no additions makes no sense");
+// UPDATED 2026-09-20, with the reason recorded rather than the check
+// weakened. `retirePermanentNote()` was found to write a shape the accepted
+// Phase 5 Rules candidate can never accept in production: it changed
+// `status` only and left `currentRevisionId` pointing at the SAME revision
+// it already named, which `committedRevisionMatches()` can never accept
+// (a revision cannot chain from itself). Fixing it means REPLACING that one
+// line with a real revision-commit -- an addition-only diff cannot express
+// that fix, so a blanket "0 removed lines" rule would have forced either
+// leaving the defect in place or silently loosening this guard. Neither is
+// right, so the exception is PINNED to the exact line this round replaces:
+// removing anything else still fails, exactly as before.
+const NOTE_FOUNDATION_PINNED_REMOVAL =
+  "-    transaction.update(TENANT.NOTES, noteDocId, { status: NOTE_STATUS.RETIRED });";
+check("app/js/note-foundation.js changed by INSERTION ONLY, except one pinned line this round REPLACED to fix a real Rules-candidate defect", () => {
+  // UPDATED 2026-09-15 (P5-E) and again 2026-09-20 (see above), with the
+  // reason recorded rather than the check deleted. P5-E adds the read side
+  // of ADR-009 to this file, so byte-identity is no longer the right claim
+  // -- but "not reshaped, except the one line named above" still is, and it
+  // is the one that matters: every OTHER existing export must behave
+  // exactly as it did. Reading the actual removed lines (not just counting
+  // them) proves that mechanically.
+  const diffText = execFileSync("git", ["diff", "origin/main", "--", "app/js/note-foundation.js"],
+    { cwd: root, encoding: "utf8" });
+  if (diffText === "") return; // identical to origin/main
+  const removedLines = diffText.split("\n").filter((l) => l.startsWith("-") && !l.startsWith("---"));
+  assert.deepEqual(removedLines, [NOTE_FOUNDATION_PINNED_REMOVAL],
+    `note-foundation.js removed line(s) do not match the one pinned exception -- an existing behaviour may have been reshaped: ${JSON.stringify(removedLines)}`);
+  const addedLines = diffText.split("\n").filter((l) => l.startsWith("+") && !l.startsWith("+++"));
+  assert.ok(addedLines.length > 0, "a non-empty diff with no additions makes no sense");
 });
 check("app/js/activity.js and records.js are byte-identical to origin/main", () => {
   unchangedSinceMain("app/js/activity.js");
   unchangedSinceMain("app/js/records.js");
 });
-check("firestore.rules is byte-identical to origin/main -- nothing deployed, nothing proposed in place", () => {
-  unchangedSinceMain("firestore.rules");
+// PINNED, NOT `origin/main`, since 22 Sep 2026 -- and this is a fix, not a
+// weakening. The claim this check makes is about P5-C's OWN round (15 Sep
+// 2026): that it added zero Rules changes of its own. Comparing against
+// `origin/main` was the right proxy for that claim only while nothing else
+// had ever touched firestore.rules either -- once real deployment happened
+// (a later, separately-audited round, confirmed by the Owner), `origin/main`
+// stopped being a stand-in for "untouched" and became a moving target that
+// would make this check pass VACUOUSLY forever after (comparing the file to
+// itself). PRE_DEPLOYMENT_REF is the fixed commit where firestore.rules last
+// held the state P5-C's own claim is actually about.
+const PRE_DEPLOYMENT_REF = "35f9228e2d57c085795dc06c412b3a7191325ddd";
+check("firestore.rules carried no Rules change from P5-C's own round, measured against the fixed pre-deployment state", () => {
+  // Deployment landed the Phase 3-6 additions at THREE separate insertion
+  // points, not one contiguous block, so a substring check would be wrong --
+  // same line-membership technique rules-deployment-candidate.mjs already
+  // uses for the identical purative-addition question.
+  const pinned = execFileSync("git", ["show", `${PRE_DEPLOYMENT_REF}:firestore.rules`], { cwd: root, encoding: "utf8" });
+  const now = fs.readFileSync(path.join(root, "firestore.rules"), "utf8");
+  const missing = pinned.split("\n").filter((l) => l.trim() && !now.includes(l));
+  assert.deepEqual(missing.slice(0, 3), [],
+    `${missing.length} pre-deployment production line(s) are now absent -- the deployment sync dropped or altered production lines`);
 });
 check("no migration or backfill material was added", () => {
   for (const name of GUARDED) {

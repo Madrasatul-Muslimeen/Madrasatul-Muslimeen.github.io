@@ -264,10 +264,34 @@
      things in it, at 1280, 1440 and 1920 alike. On a phone it is worth more
      than tidiness -- two cells to a line is 172px each instead of 77px,
      which is the difference between "Madrasatul Muslimeen (Owner, Prime)"
-     being readable and being cut to "Madrasatul Mus...". */
+     being readable and being cut to "Madrasatul Mus...".
+
+     CORRECTED 22 Sep 2026: that claim was never actually true at phone
+     width. Measured, `tenantSelect`'s real cell never reaches 172px on a
+     phone -- it is exactly half the bar, which panel.mjs puts at 115-141px
+     usable across 360/390/412, against a MEASURED need of 224px for the
+     owner's own real tenant name plus role list ("Madrasatul Muslimeen
+     (Owner, Prime)") in EVERY unit type, at every phone width this project
+     tests. Shortening the wording is not a safe fix, unlike the label
+     round 16 shortened above -- a tenant's name is free text of any length
+     a person chose for themself (`labels.js` `roleListLabel()` joins the
+     same role vocabulary the whole app already uses), so cutting it would
+     mean inventing an abbreviation nobody asked for, or truncating a
+     person's own name, neither of which this round does. See the
+     breakpoint below instead. */
   .opt-bar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.35rem 0.4rem; align-items: end; margin: 0.45rem 0; }
   .opt-bar-1 { grid-template-columns: minmax(0, 1fr); }
   .opt-bar-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* Below the width where two equal columns cannot both hold real content --
+     MEASURED: this bar's own cellW is exactly 0.5*viewport - 35px on this
+     page, and a select's chrome (border/padding/arrow) is a measured 30px,
+     so a cell needs viewport >= 578px before 224px of usable text fits.
+     578px, given a small margin: 580px. Below it the two cells stack instead
+     of sharing a line -- costs one row's height (~46px) at phone widths
+     only; nothing changes at 580px and up, where they already fit. */
+  @media (max-width: 580px) {
+    .opt-bar-2 { grid-template-columns: 1fr; }
+  }
   /* Bar 4: Approach takes the room, "Track" takes only what its own word
      needs. The owner's ask -- an even 50/50 split spent half the line on a
      one-word button while the Approach name beside it was being cut. */
@@ -281,6 +305,22 @@
      Flex sizes itself to whatever is actually visible. */
   .opt-bar-units { display: flex; flex-wrap: nowrap; }
   .opt-bar-units > .opt-cell { flex: 1 1 0; }
+  /* Below 480px this row is GENUINELY short of space, not just unevenly
+     split -- unlike the nav fix, redistributing what is already on the row
+     cannot reach it. MEASURED: Study Unit and Surah's own cellW grows
+     exactly 0.5px per viewport px on this row (same slope every bar on this
+     page shares), and the worst case -- Range/Page, four cells sharing the
+     row -- only clears Surah's 113px longest-option need at viewport 468px;
+     Single Ayah (three cells) clears earlier, at 412px. Below 480px (a small
+     margin over the worse of the two), Study Unit and Surah each claim at
+     least 45% of the row and the small number pickers (unitNum/Ayah/
+     From/To) wrap to a line of their own -- .opt-cell-num's existing fixed
+     3.1rem is untouched and plenty for a number there. Costs one row's
+     height only below 480px; nothing changes above it. */
+  @media (max-width: 480px) {
+    .opt-bar-units { flex-wrap: wrap; }
+    .opt-bar-units > .opt-cell:not(.opt-cell-num) { flex: 1 1 45%; }
+  }
   /* An ayah number is at most three digits, so these never need a share of
      the line -- they take a fixed sliver and hand the rest to Study Unit and
      Surah, whose names are long and were being truncated for their sake. */
@@ -776,6 +816,11 @@
      have each been bitten by it). */
   #exploreViewToggle { display: flex; align-items: center; gap: 6px; margin: 4px 0 2px; flex-wrap: wrap; }
   #exploreViewToggle[hidden] { display: none; }
+  /* Issue #206 -- same container shape as #exploreViewToggle above, reusing
+     its own .explore-view-btn control style rather than inventing a second
+     one, per this project's own standing rule. */
+  #exploreWheelColorToggle { display: flex; align-items: center; gap: 6px; margin: 4px 0 2px; flex-wrap: wrap; }
+  #exploreWheelColorToggle[hidden] { display: none; }
   .explore-view-label { color: #8fa0c2; font-size: 0.72rem; }
   /* ~36px tall, per the standing lesson that a 26px control is too small for
      a finger; these are words rather than icons, so they take their own
@@ -1311,7 +1356,16 @@
      .qcr-archived-toggle/.qcr-add-form classes QCR's own
      level bar already defined above (they were never scoped to #qcrPanel),
      so only the bar's own layout and the three selects' width need new
-     rules here. */
+     rules here.
+     Classifications round -- 23 Sep 2026: "three" is now "one per active
+     classification, plus Names" -- #asmaXLevelBar > select still applies
+     to every one of them, dynamic or static, since renderAsmaXLevelBar()
+     inserts each classification's own <select> as a plain sibling. With
+     today's two seeded classifications this is unchanged (still 3, still
+     an equal third each via `flex: 1 1 0` below); a genuinely new THIRD
+     classification means 4 selects sharing the row instead of 3 (an equal
+     quarter each) -- real new width demand this sandbox has no browser to
+     measure (see this round's own PR note). */
   #asmaXPanel { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; color: #F2E8D5; font-family: 'Inter', sans-serif; }
   /* 4 Sep 2026 one-bar round -- same treatment as #qcrLevelBar above, with
      three selects instead of two: `nowrap` plus `flex: 1 1 0` is what keeps
@@ -1441,6 +1495,28 @@
   .asma-item-badge.weak { background: rgba(217,122,99,0.22); color: #ffb9a6; }
   .asma-way-meaning { display: block; font-size: 11.5px; color: #9aa7be; margin: 3px 0 0 44px; line-height: 1.4; }
 
+  /* Classifications round -- 23 Sep 2026. "also in…" (a small row under a
+     Names-level entry that is filed in some OTHER list too) and "Belongs
+     to" (the References-level card's own full list of every classification
+     x list a Name is filed under) -- same chip family as .asma-xref-chip
+     above, gold to read as "navigate elsewhere" rather than the blue
+     Qur'an-reference chips carry. */
+  .asma-also-in-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin: 4px 0 0 44px; }
+  .asma-also-in-label { font-size: 10px; color: #8fa0c2; }
+  .asma-also-in-chip {
+    font-size: 10.5px; padding: 1px 8px; border-radius: 999px; font-family: inherit; cursor: pointer;
+    background: rgba(201,162,75,0.16); border: 1px solid rgba(201,162,75,0.4); color: #C9A24B;
+  }
+  .asma-also-in-chip:hover { background: rgba(201,162,75,0.3); }
+  .asma-belongs-block { margin: 0.6rem 0; }
+  .asma-belongs-label { font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase; color: #8fa0c2; margin-bottom: 6px; }
+  .asma-belongs-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .asma-belongs-chip {
+    font-size: 12.5px; padding: 5px 11px; border-radius: 999px; font-family: inherit; cursor: pointer;
+    background: rgba(201,162,75,0.16); border: 1px solid rgba(201,162,75,0.4); color: #C9A24B;
+  }
+  .asma-belongs-chip:hover { background: rgba(201,162,75,0.3); }
+
   /* References level -- a short list of chips, not a third wheel (usually
      only 1-3 references per Name); reuses asma-renderer.js's own
      renderAsmaXrefBlock({inPage:true}), re-coloured for this dark panel
@@ -1554,9 +1630,10 @@
      picker (#asmaXGroupsOverlay). Reuses the attach overlay's own card and
      row look above verbatim; only the kind badge beside each collection
      (Group vs Dual) is its own. */
-  .asmaX-groups-kind { margin-left: auto; font-size: 0.66rem; font-weight: 600; padding: 1px 7px; border-radius: 999px; white-space: nowrap; }
-  .asmaX-groups-kind.group { background: rgba(201,162,75,0.22); color: #C9A24B; }
-  .asmaX-groups-kind.dual { background: rgba(91,132,196,0.22); color: #a9c3ec; }
+  /* Classifications round -- 23 Sep 2026: was two hardcoded colours, one
+     per legal `kind`. Any number of classifications share one consistent
+     colour now -- there is no fixed palette to assign a NEW one from. */
+  .asmaX-groups-kind { margin-left: auto; font-size: 0.66rem; font-weight: 600; padding: 1px 7px; border-radius: 999px; white-space: nowrap; background: rgba(201,162,75,0.22); color: #C9A24B; }
   #asmaXGroupsIntro { font-size: 0.78rem; color: #9aa7be; margin: 0 0 0.6rem; }
   .asma-poster {
     width: 300px; aspect-ratio: 210 / 297;
@@ -1716,6 +1793,18 @@
   .opt-bar-listen > .opt-cell { flex: 1 1 0; }
   .opt-bar-listen > .opt-cell-num { flex: 0 0 3.6rem; }
   .opt-bar-listen > .opt-cell-loop, .opt-bar-listen > .opt-cell-play { flex: 0 0 auto; }
+  /* MEASURED 22 Sep 2026, running panel.mjs in Bangla (it had only ever been
+     run in English before -- a check that runs in one language measures one
+     language): #drillModeSelect is the one cell here that actually absorbs
+     the squeeze (Repeat is a fixed 3.6rem, Loop/Play size to their own
+     content) -- clean in English, but "প্রতিটি আয়াত" needs 54px and gets
+     48px at every phone width tested. Same remedy as the row above: give
+     it real room and let Loop/Play wrap to a line of their own below 480px.
+     English is unaffected either way -- it was never short. */
+  @media (max-width: 480px) {
+    .opt-bar-listen { flex-wrap: wrap; }
+    .opt-bar-listen > .opt-cell-mode { flex: 1 1 auto; min-width: 8rem; }
+  }
   .loop-inline { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; font-weight: 400; white-space: nowrap; height: 1.85rem; margin: 0; }
   .reading-ticks label, .reciter-ticks label, .fs-ticks label { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.82rem; font-weight: 400; margin: 0; }
   .reading-ticks label[hidden] { display: none; }
@@ -1821,6 +1910,14 @@
      the same edge Arabic reading starts from. */
   .ayah-num-row { display: flex; justify-content: flex-end; margin: 0.3rem 0 0.1rem; }
   .ayah-num-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 1.5rem; height: 1.5rem; padding: 0 0.4rem; border-radius: 999px; background: #f0ead9; color: #8a6d1f; font-size: 0.78rem; font-weight: 700; border: 1px solid #d8c68a; }
+  /* Issue #189 -- word-tap in the normal flowing Arabic (`.ayah-arabic` in
+     Read view, `.note-arabic` in Note view). Every button property that
+     would change how the text LOOKS or WRAPS is reset to nothing, so a word
+     reads exactly as plain text until it is tapped or focused -- "same
+     spacing, same line flow" is the round's own requirement, measured by
+     `reading.mjs`/`layout.mjs`, not just eyeballed here. */
+  button.ayah-word-clickable { background: none; border: none; margin: 0; padding: 0; font: inherit; color: inherit; text-align: inherit; line-height: inherit; cursor: pointer; display: inline; }
+  button.ayah-word-clickable:hover, button.ayah-word-clickable:focus-visible { background: rgba(31,58,110,0.14); border-radius: 0.2rem; outline: none; }
   /* Fix round -- Bismillah before ayah 1 of a surah (except Surah 9, which
      traditionally carries none), on both the Read and Note screens --
      previously it only ever appeared inside the landing wheel's own hub. */
@@ -1971,10 +2068,27 @@
      same 900px breakpoint, so "popup on desktop, docked strip on touch" stays
      one rule for the whole app rather than a second one just for this card.
      Below 900px NONE of this applies and the card is the docked strip it has
-     been since Phase 2. */
+     been since Phase 2.
+
+     Issue #113 -- z-index was 60, TIED with #dock's own z-index:60, where
+     #noteView/#wheelPopupView/#exploreView all deliberately use 55, one
+     step BELOW #dock, with their own comment saying why: "the dock stays
+     reachable even if the popup's own geometry overlaps it." A tie
+     resolves by DOM order rather than by either side's own stated intent
+     -- #dock happened to win it here too, so nothing on screen changes,
+     but a coincidence is not the same thing as the policy every other
+     popup states outright. 55 makes this card state the same policy
+     explicitly instead of relying on where #dock happens to sit in the
+     document. It does NOT change, and was never meant to change, the
+     thing a real drag+resize round trip found and this task could not
+     safely change: dragged low enough to overlap #dock, the card's own
+     south/southeast/southwest resize handles sit UNDER the dock (by the
+     same "dock always wins" policy, which is shared by all four popups
+     and is a real, if narrow, product trade-off, not a Word-Card-only
+     bug) -- recorded, not built, see the dated report. */
   @media (min-width: 900px) {
     #quranWordCardMount, #quranWordCardMountNote {
-      position: fixed; z-index: 60; max-height: none; border: 1px solid #d8c68a; border-top: 1px solid #d8c68a;
+      position: fixed; z-index: 55; max-height: none; border: 1px solid #d8c68a; border-top: 1px solid #d8c68a;
       border-radius: 0.6rem; box-shadow: 0 0.6rem 2rem rgba(0,0,0,0.28); display: flex; flex-direction: column;
       /* The WINDOW must not scroll -- its content does (.word-card-content
          below). The base rule's overflow-y:auto would otherwise CLIP the
@@ -2177,6 +2291,18 @@
   .hifz-line:not(.centered) { width: fit-content; max-width: 100%; margin-left: auto; margin-right: 0; }
   .hifz-word { white-space: nowrap; }
   .hifz-word.dim { opacity: 0.32; }
+  /* Issue #188 -- a bigger invisible TAP zone, not a bigger visible word.
+     Mushaf words sit only 0.12em apart (the line's own `gap`, print-accurate
+     and not to be widened -- see the .playing comment just below), measured
+     too tight for reliable tap accuracy at phone widths. Padding alone would
+     widen the flex item and fight justifyPageLines()'s own measurement of
+     the line's natural width, same trap that comment already names; an
+     equal-and-opposite negative margin on all four sides cancels it exactly
+     -- each word's outer (margin) box, what the line is measured and
+     justified by, is unchanged, while its padding box (what a tap can land
+     on) is larger. Real, tappable words only (clickable), never the
+     ayah-end marker (skipped in hifz-renderer.js -- see AYAH_WORD_MERGES). */
+  .hifz-word[data-word-occurrence] { cursor: pointer; padding: 0.3em 0.12em; margin: -0.3em -0.12em; }
   /* Round 28 -- a real background band on the ayah being recited, the owner's
      ask. box-shadow rather than padding on purpose: each word is a flex item,
      so padding would change the line's width and fight the justification that
@@ -2259,6 +2385,7 @@
     display: flex; align-items: center; gap: 0.4rem; width: 100%; background: none; border: none;
     text-align: left; padding: 0.42rem 0.5rem; font-size: 0.8rem; color: #222;
     border-radius: 0.35rem; cursor: pointer; font-family: inherit;
+    box-sizing: border-box; text-decoration: none; /* an <a class="qm-item"> (the "My Notes" link, issue #195) shares this rule with every button.qm-item */
   }
   .qm-item:hover { background: #f5f0e2; }
   .qm-caret { margin-left: auto; font-size: 0.68rem; color: #999; }
@@ -3419,6 +3546,20 @@
                    v08.02 already weighed and declined letting a second
                    meaning compete for the same colour. -->
               <div id="exploreArabicCoverage" class="explore-arabic-coverage" hidden></div>
+              <!-- Issue #206 -- combines the Owner-approved demo's two
+                   options into one: a gold ring (always drawn once the
+                   running-counter gate is open, see renderScopedWheel's own
+                   `ring` option) plus this toggle, which switches only what
+                   the WEDGES are coloured by. "Approach" is the existing,
+                   unchanged pooled-status colouring above; "Word-by-Word"
+                   recolours each Juz wedge by its own known/total. Shown
+                   ONLY at the "quran" level (each wedge IS a Juz there) and
+                   only once the gate is open -- absent otherwise, exactly
+                   like the ring itself. -->
+              <div id="exploreWheelColorToggle" role="group" aria-label="Colour the wheel by" hidden>
+                <button type="button" class="explore-view-btn on" id="exploreColorApproachBtn" aria-pressed="true">Approach</button>
+                <button type="button" class="explore-view-btn" id="exploreColorWbwBtn" aria-pressed="false">Word by Word</button>
+              </div>
               <p class="hint">Click a segment to drill in &mdash; Quran &rarr; Juz &rarr; Surah &rarr; Ruku' &rarr; an ayah in Study. Colours pool this Approach's real ayah-by-ayah progress across whatever's inside each segment &mdash; it only turns fully green once every ayah inside it is Mastered.</p>
             </div>
             <div class="list-splitter" id="exploreListSplitter" role="separator" aria-orientation="vertical" title="Drag to resize">
@@ -3555,10 +3696,20 @@
                  palette away from under the reader. -->
             <div id="asmaXLevelBar">
               <!-- 30 Aug 2026 -- the owner's own order: Group, then Single,
-                   then Dual. -->
-              <select id="asmaXGroupSelect" aria-label="Group"></select>
+                   then Dual.
+                   Classifications round -- 23 Sep 2026: the two selects
+                   that used to be hardcoded here (id="asmaXGroupSelect"/
+                   "asmaXDualSelect") are now rendered dynamically, one per
+                   ACTIVE classification, in classification order, directly
+                   ahead of asmaXSingleSelect -- renderAsmaXLevelBar() below
+                   inserts and removes them as plain <select data-asmax-
+                   class-select="{key}"> siblings, so with exactly today's
+                   two classifications this is the same two selects in the
+                   same position; a third only ever appears once the owner
+                   actually adds one. The flat "Names" picker stays static
+                   markup -- it is its own entry point, not a classification
+                   (the owner's own instruction: "keep... as it is"). -->
               <select id="asmaXSingleSelect" aria-label="Names"></select>
-              <select id="asmaXDualSelect" aria-label="Dual Names"></select>
               <div class="bar-palette-wrap" data-bar-palette-wrap="asmax">
                 <button type="button" class="qcr-icon-btn bar-palette-toggle" id="asmaXPaletteBtn" data-bar-palette-toggle="asmax" title="More" aria-label="More" aria-haspopup="true" aria-expanded="false">⋯</button>
                 <div class="bar-palette" data-bar-palette="asmax">
@@ -3578,6 +3729,15 @@
                     <button type="button" class="qcr-icon-btn" id="asmaXRenameLevelBtn" title="Rename">✎</button>
                     <button type="button" class="qcr-icon-btn danger" id="asmaXArchiveLevelBtn" title="Archive">🗄</button>
                     <button type="button" class="qcr-icon-btn" id="asmaXAddLevelBtn" title="Add collection">+</button>
+                    <!-- Classification rename/archive round -- 23 Sep 2026:
+                         same pair as asmaXRenameLevelBtn/asmaXArchiveLevelBtn
+                         above, but acting on the currently-browsed
+                         CLASSIFICATION (asmaXKind) rather than the currently-
+                         browsed collection (asmaXGroupId) -- the "C" suffix
+                         mirrors asmaXNewClassBtn's own "+C" beside plain "+". -->
+                    <button type="button" class="qcr-icon-btn" id="asmaXRenameClassBtn" title="Rename classification">✎C</button>
+                    <button type="button" class="qcr-icon-btn danger" id="asmaXArchiveClassBtn" title="Archive classification">🗄C</button>
+                    <button type="button" class="qcr-icon-btn" id="asmaXNewClassBtn" title="New classification">+C</button>
                     <button type="button" class="qcr-icon-btn" id="asmaXNewNameBtn" title="Add Name">+N</button>
                     <button type="button" class="qcr-icon-btn" id="asmaXAttachRefBtn" title="Attach a reference to several Names">🔗</button>
                     <label class="qcr-archived-toggle"><input type="checkbox" id="asmaXShowArchivedToggle"> Show archived</label>
@@ -4089,31 +4249,38 @@
     import {
       collectionsFrom as asmaCollectionsFrom, extraNamesFrom as asmaExtraNamesFrom,
       overridesFrom as asmaOverridesFrom, overridesEnFrom as asmaOverridesEnFrom, refOverridesFrom as asmaRefOverridesFrom,
-      activeCollections as asmaActiveCollections, activeExtraNames as asmaActiveExtraNames,
+      classificationsFrom as asmaClassificationsFrom,
+      activeCollections as asmaActiveCollections, activeExtraNames as asmaActiveExtraNames, activeClassifications as asmaActiveClassifications,
       addCollection as asmaAddCollectionLocal, renameCollection as asmaRenameCollectionLocal, setCollectionStatus as asmaSetCollectionStatusLocal,
+      addClassification as asmaAddClassificationLocal, renameClassification as asmaRenameClassificationLocal, setClassificationStatus as asmaSetClassificationStatusLocal,
       addItem as asmaAddItemLocal, removeItem as asmaRemoveItemLocal, moveItem as asmaMoveItemLocal,
       addExtraName as asmaAddExtraNameLocal, updateExtraName as asmaUpdateExtraNameLocal, setExtraNameStatus as asmaSetExtraNameStatusLocal,
       setNameOverrideBn as asmaSetNameOverrideBnLocal, setNameOverrideEn as asmaSetNameOverrideEnLocal,
       setNameRefOverride as asmaSetNameRefOverrideLocal, appendRefToName as asmaAppendRefToNameLocal,
       reorderCollections as asmaReorderCollectionsLocal, reorderItems as asmaReorderItemsLocal, asmaPositionLabels,
+      membershipsOfName as asmaMembershipsOfNameLocal,
       resolveAsmaEntry, getAsmaCollectionsDoc, saveAsmaCollections,
     } from "./js/asma-collections.js";
-    import { asmaEntryDisplayName, asmaEntryMeaningText, renderAsmaCollectionListHtml, renderAsmaXrefBlock, renderAsmaPosterHtml } from "./js/asma-renderer.js";
+    import { asmaEntryDisplayName, asmaEntryMeaningText, renderAsmaCollectionListHtml, renderAsmaXrefBlock, renderAsmaPosterHtml, renderAsmaBelongsToHtml } from "./js/asma-renderer.js";
     import { wireDragReorder } from "./js/drag-reorder.js";
     import { parseAsmaRef } from "./js/asma-ref-parser.js";
     import { listEnrollmentsForPerson, programSubjectMapFromEnrollments } from "./js/course-offers.js";
-    import { getSurah, getSurahIndex, getJuzIndex, getPageIndex, getHizbIndex } from "./js/quran-data.js";
+    import { getSurah, getSurahIndex, getJuzIndex, getPageIndex, getHizbIndex, getJuzWordTotalsIndex } from "./js/quran-data.js";
     // Shell round 14 -- word/phrase search. Importing the module costs
     // nothing at load: it fetches its index only when a search actually runs.
     import { searchQuran } from "./js/quran-search.js";
-    import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootPanel, renderDerivativesPanel, renderTranslationPanel, tajweedRawToSafeHtml, digitsForLang, stripLeadingBismillah } from "./js/ayah-renderer.js";
+    import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootPanel, renderDerivativesPanel, renderTranslationPanel, tajweedRawToSafeHtml, digitsForLang, stripLeadingBismillah, splitPlainArabicWords, arabicWordButtonHtml } from "./js/ayah-renderer.js";
     import { parseQuranWordOccurrenceId } from "./js/quran-word-identity.js";
     import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard, renderQuranWordCard, WORD_CARD_POS_SEGMENTS } from "./js/quran-word-card.js";
     import { occurrenceRefsFor, rootFormsFor, unpackWordIndexRef } from "./js/quran-word-index.js";
-    import { wordProgressAuthority, WBW_WORD_STATES } from "./js/quran-word-progress.js";
+    import { wordProgressAuthority, WBW_WORD_STATES, resolveWordProgress } from "./js/quran-word-progress.js";
     import { primeAyahProgress, getSurahProgress, wordProgressFor, setWordState, decideWordApproval, clearWordProgressCache } from "./js/quran-word-progress-data.js";
     import { computeArabicCoverage, occurrenceIdsForAyah, occurrenceIdsForAyahRange, occurrenceIdsForSurah } from "./js/quran-word-coverage.js";
-    import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
+    // Issue #206 -- the whole-Qur'an/Juz running word counter.
+    import { QURAN_TOTAL_WORD_COUNT, knownDelta, juzForSurahAyah, wordTotalRatio } from "./js/quran-word-total.js";
+    import { getWordTotals, recordWordTotalDelta } from "./js/quran-word-total-data.js";
+    import { isWbwTotalPersistenceReady } from "./js/study-wbw-total-readiness.js";
+    import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah, scrollToAyahIfRendered } from "./js/hifz-renderer.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     import {
@@ -4154,7 +4321,7 @@
     // -- each respects its own Every time/Once a day/Once a week preference
     // independently, same as when they were two separate page loads.
     showBootSplash(() => showQuranSplash());
-    import { renderWheelLegend, renderScopedWheel, attachScopedWheelClickHandler, renderWheelSidebar, attachWheelSidebarClickHandler, wrapWheelLabel } from "./js/mastery-wheel.js";
+    import { renderWheelLegend, renderScopedWheel, attachScopedWheelClickHandler, renderWheelSidebar, attachWheelSidebarClickHandler, wrapWheelLabel, wordTotalRampColor } from "./js/mastery-wheel.js";
     import {
       renderGuideTab, renderTrackTab, renderBreakdownTab, renderCoverageTab,
       renderWayModalShell, attachWayModalHandlers, renderWayEmbed, attachWayEmbedHandlers,
@@ -4500,6 +4667,9 @@
     const exploreWheelLegendContainer = document.getElementById("exploreWheelLegendContainer");
     const exploreArabicCoverageEl = document.getElementById("exploreArabicCoverage");
     const exploreSidebarContainer = document.getElementById("exploreSidebarContainer");
+    const exploreWheelColorToggle = document.getElementById("exploreWheelColorToggle");
+    const exploreColorApproachBtn = document.getElementById("exploreColorApproachBtn");
+    const exploreColorWbwBtn = document.getElementById("exploreColorWbwBtn");
     const exploreListSplitter = document.getElementById("exploreListSplitter");
     const exploreListCollapseBtn = document.getElementById("exploreListCollapseBtn");
     const tabExploreBtn = document.getElementById("tabExploreBtn");
@@ -4540,13 +4710,15 @@
 
     const explorePaletteAsmaBtn = document.getElementById("explorePaletteAsmaBtn");
     const asmaXPanelEl = document.getElementById("asmaXPanel");
-    const asmaXGroupSelect = document.getElementById("asmaXGroupSelect");
-    const asmaXDualSelect = document.getElementById("asmaXDualSelect");
+    const asmaXLevelBarEl = document.getElementById("asmaXLevelBar");
     const asmaXSingleSelect = document.getElementById("asmaXSingleSelect");
     const asmaXLevelManageActions = document.getElementById("asmaXLevelManageActions");
     const asmaXRenameLevelBtn = document.getElementById("asmaXRenameLevelBtn");
     const asmaXArchiveLevelBtn = document.getElementById("asmaXArchiveLevelBtn");
     const asmaXAddLevelBtn = document.getElementById("asmaXAddLevelBtn");
+    const asmaXRenameClassBtn = document.getElementById("asmaXRenameClassBtn");
+    const asmaXArchiveClassBtn = document.getElementById("asmaXArchiveClassBtn");
+    const asmaXNewClassBtn = document.getElementById("asmaXNewClassBtn");
     const asmaXNewNameBtn = document.getElementById("asmaXNewNameBtn");
     const asmaXAttachRefBtn = document.getElementById("asmaXAttachRefBtn");
     const asmaXShowArchivedToggle = document.getElementById("asmaXShowArchivedToggle");
@@ -4739,11 +4911,19 @@
     /** Whether the Basic tab's OWN "{count} lemma-linked occurrences" line is
      *  expanded to its own resolved list. Kept outside quranWordCardContext for
      *  the same reason quranWordCardExpandedForm is: the context is replaced
-     *  wholesale on every hydrate. Unlike a derived form, this is always the
-     *  CURRENT word's own lemma, so it does not need to be carried across a
-     *  word change (see hydrateWordCardOccurrences, which resets it). */
+     *  wholesale on every hydrate. It always starts collapsed for a genuinely
+     *  NEW word (opened directly, or reached via Prev/Next) -- see
+     *  hydrateWordCardOccurrences, which resets it by default. */
     let quranWordCardLemmaExpanded = false;
     let quranWordCardLemmaRequest = 0;
+    /** Issue #113 -- "Back to Word Card" round trip: a ONE-SHOT signal, read
+     *  and cleared by hydrateWordCardOccurrences(), that this specific hydrate
+     *  is the reopen after returnToWordCardOrigin() and should restore the
+     *  lemma list to how the reader left it -- the same treatment
+     *  quranWordCardExpandedForm already gets for a Depth-tab derived form.
+     *  Left false for every other hydrate (a direct word open, Prev/Next),
+     *  so those keep starting collapsed exactly as before. */
+    let quranWordCardRestoreLemmaExpanded = false;
     // MAP Phase 3. `confirmationRequired` is the same computed answer
     // records.js already gives ("does this person have a teacher, guardian or
     // prime?"), fetched ON FIRST USE and cached per person -- the same
@@ -4821,6 +5001,22 @@
     let exploreSurahNum = null;
     let exploreRukuIndex = null;
 
+    // Issue #206 -- the whole-Qur'an/Juz running word counter. `juzWordTotalsData`
+    // ({quranTotalWords, byJuz:[{juz,totalWords}]}) and `personWordTotals` (this
+    // reader's own quranWordTotals document, or null) are both loaded lazily by
+    // ensureWordTotalsForExplore(), called only when Explore's Quran/Juz level is
+    // actually open (I9) -- never on the startup path. Both stay null while
+    // isWbwTotalPersistenceReady() is false, which is true for everyone today,
+    // so nothing below changes any existing behaviour until a governed decision
+    // enables the gate.
+    let juzWordTotalsData = null;
+    let personWordTotals = null;
+    // "approach" (today's real, unchanged pooled-status colouring) or "wbw"
+    // (each Juz wedge recoloured by its own known/total). Session-only,
+    // Explore "quran" level only -- deliberately not persisted, so nobody's
+    // browser habit silently reinterprets what a colour means.
+    let wbwWheelColorMode = "approach";
+
     // Ayah Collections (QCR) round -- Explore's own palette state, alongside
     // the Quran drill-down above. Loaded lazily, once per sign-in, the first
     // time the QCR palette entry is actually opened (I9 -- Explore is
@@ -4849,10 +5045,20 @@
     let asmaXOverrides = {};
     let asmaXOverridesEn = {}; // 30 Aug 2026: the owner's own English correction to a canonical Name's meaning
     let asmaXRefOverrides = {}; // 30 Aug 2026: the owner's own replacement/appended reference for a canonical Name
-    let asmaXDataTenantId = null; // which tenant the five above were loaded for
+    // Classifications round -- 23 Sep 2026: the open, owner-extensible set
+    // of classifications ("Group"/"Dual Names" are just the seeded first
+    // two) -- see js/asma-collections.js's own classificationsFrom().
+    let asmaXClassifications = null;
+    let asmaXDataTenantId = null; // which tenant the six above were loaded for
     let asmaXDocExists = false; // whether asmaCollections/{tenantId} has ever been written -- decides create vs update on the next save
     let asmaXLevel = "groups"; // "groups" | "names" | "refs"
-    let asmaXKind = "group"; // "group" | "dual" -- which collection kind the "groups"/"names" levels are browsing (30 Aug 2026 round)
+    // A classification's own `key` (asmaXClassifications) and a collection's
+    // own `kind` (asmaXCollections) share the same string space by design --
+    // this is which classification the "groups"/"names" levels are browsing.
+    // "group" and "dual" were the only two legal values before the
+    // Classifications round (23 Sep 2026); it is any active classification's
+    // key now.
+    let asmaXKind = "group";
     let asmaXGroupId = null;
     let asmaXNumber = null; // the Name currently open at the "refs" level
     /** 5 Sep 2026 -- was `let asmaXManageOn = false`, a session-only mode
@@ -5428,6 +5634,14 @@
       updateUnitControlsVisibility();
       renderStudyScreen();
       renderWheel();
+      // Issue #113 -- same fix as stepUnit()'s own tail, and for the same
+      // reason: this function crosses surah boundaries too (its own "if
+      // (row.startSurah !== currentSurahNum)" branch above), and is called
+      // both directly (the unit-number picker below) and from stepUnit()'s
+      // Juz/Hizb/Page branch, which returns before ever reaching stepUnit()'s
+      // own tail. A no-op when the flow view is not showing (checked inside
+      // scrollFlowToCurrentAyah() itself).
+      await scrollFlowToCurrentAyah();
     }
 
     unitNumSelect.addEventListener("change", () => { goToUnitNumber(Number(unitNumSelect.value)); });
@@ -5550,6 +5764,15 @@
       updateUnitControlsVisibility();
       renderStudyScreen();
       renderWheel();
+      // Issue #113 -- without this, stepping across a surah boundary (the
+      // owner's own "Next means the next surah too" rule, above) leaves the
+      // flow/Mushaf view's scroll position at whatever raw pixel offset the
+      // PREVIOUS surah had reached: the exact stale-scrollLeft defect
+      // navigateToAyah()'s own word-card jump already fixed (marked "Issue
+      // #113" at that call site), reproduced here via a completely different
+      // trigger. scrollFlowToCurrentAyah() is a safe no-op when the flow view
+      // is not showing at all (checked internally), so this is unconditional.
+      await scrollFlowToCurrentAyah();
     }
 
     /** Greys the two buttons out at the real ends rather than leaving a button
@@ -7240,6 +7463,68 @@
       });
     });
 
+    // Issue #206 -- the wedge-colouring toggle. Shown ONLY at the "quran"
+    // level (each wedge is a Juz there, so a Juz-scoped known/total means
+    // something) and only once the running-counter gate is open -- absent
+    // otherwise, same rule the ring itself follows.
+    function syncWheelColorModeToggle() {
+      const show = exploreLevel === "quran" && isWbwTotalPersistenceReady();
+      exploreWheelColorToggle.hidden = !show;
+      if (!show) return;
+      for (const [btn, mode] of [[exploreColorApproachBtn, "approach"], [exploreColorWbwBtn, "wbw"]]) {
+        const on = mode === wbwWheelColorMode;
+        btn.classList.toggle("on", on);
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
+      }
+    }
+
+    [[exploreColorApproachBtn, "approach"], [exploreColorWbwBtn, "wbw"]].forEach(([btn, mode]) => {
+      btn.addEventListener("click", () => {
+        if (wbwWheelColorMode === mode) return;
+        wbwWheelColorMode = mode;
+        renderExplore();
+      });
+    });
+
+    /**
+     * Issue #206 -- loads this reader's own running-counter document and the
+     * packaged per-Juz totals, but ONLY while the gate is open and ONLY when
+     * Explore's Quran/Juz level is actually open (I9). Awaited from
+     * renderExplore() BEFORE the wheel paints, so the ring and the toggle are
+     * correct on the very first paint rather than lagging one render behind
+     * an async load. While the gate is closed (true for everyone today) this
+     * resolves immediately without ever calling Firestore -- getWordTotals()
+     * itself refuses before that point.
+     */
+    async function ensureWordTotalsForExplore() {
+      const { tenantId, subjectPersonId } = wordProgressActor();
+      if (!tenantId || !subjectPersonId || !isWbwTotalPersistenceReady()) {
+        personWordTotals = null;
+        return;
+      }
+      try {
+        const [totals, juzTotals] = await Promise.all([
+          getWordTotals(db, { tenantId, personId: subjectPersonId }),
+          juzWordTotalsData ?? getJuzWordTotalsIndex(),
+        ]);
+        personWordTotals = totals;
+        juzWordTotalsData = juzTotals;
+      } catch (error) {
+        reportWriteFailure(error, { what: "read the whole-Qur'an word total" }); // I15
+        personWordTotals = null;
+      }
+    }
+
+    /** The gold ring's own ratio: this reader's whole-Qur'an known/total, 0 while nothing has been recorded yet. */
+    function wholeQuranWordTotalRatio() {
+      return wordTotalRatio(Number(personWordTotals?.known ?? 0), Number(personWordTotals?.total ?? QURAN_TOTAL_WORD_COUNT));
+    }
+
+    /** `{ ratio }` for renderScopedWheel's own `ring` option, or `null` while the gate is closed -- the ring is simply absent then, never drawn empty. */
+    function wheelRingOption() {
+      return isWbwTotalPersistenceReady() ? { ratio: wholeQuranWordTotalRatio() } : null;
+    }
+
     // -----------------------------------------------------------------------
     // MAP Phase 3 -- Arabic word coverage in Explore.
     //
@@ -7262,10 +7547,28 @@
       const { tenantId, subjectPersonId } = wordProgressActor();
       const scoped = exploreLevel === "surah" || exploreLevel === "ruku";
       if (!tenantId || !subjectPersonId || exploreSurahNum == null || !scoped) {
-        el.hidden = !(exploreLevel === "quran" || exploreLevel === "juz");
-        if (!el.hidden) {
+        const wideLevel = exploreLevel === "quran" || exploreLevel === "juz";
+        el.hidden = !wideLevel;
+        if (el.hidden) return;
+        // Issue #206 -- this used to always say "not available at this
+        // granularity". By the time renderExplore() calls this,
+        // ensureWordTotalsForExplore() has already resolved for quran/juz
+        // levels, so personWordTotals/juzWordTotalsData are already the
+        // right ones for THIS level -- no new fetch here, purely synchronous.
+        if (!tenantId || !subjectPersonId || !isWbwTotalPersistenceReady()) {
           el.innerHTML = `<span class="eac-unavailable">${escapeHtml(t("Arabic word coverage isn't available at this granularity — open a Surah or a Ruku' to see it."))}</span>`;
+          return;
         }
+        let known = 0, total = QURAN_TOTAL_WORD_COUNT;
+        if (exploreLevel === "juz") {
+          const row = juzWordTotalsData?.byJuz?.find((r) => r.juz === exploreJuzNum);
+          total = row ? row.totalWords : 0;
+          known = Number(personWordTotals?.byJuz?.[String(exploreJuzNum)]?.known ?? 0);
+        } else {
+          total = Number(personWordTotals?.total ?? QURAN_TOTAL_WORD_COUNT);
+          known = Number(personWordTotals?.known ?? 0);
+        }
+        el.innerHTML = `<span class="eac-figure">${escapeHtml(t("{known} of {total} Arabic words known", { known: num(known), total: num(total) }))}</span>`;
         return;
       }
       el.hidden = false;
@@ -7308,9 +7611,15 @@
 
     async function renderExplore() {
       renderExploreBreadcrumb();
-      renderExploreArabicCoverage();
       renderExploreApproachList();
       syncExploreViewToggle();
+      // Issue #206 -- awaited BEFORE the wheel paints (quran/juz levels
+      // only), so the ring and the wedge-colour toggle are correct on the
+      // very first paint. While the gate is closed this resolves with no
+      // Firestore call at all, so it costs nothing for anyone today.
+      if (exploreLevel === "quran" || exploreLevel === "juz") await ensureWordTotalsForExplore();
+      syncWheelColorModeToggle();
+      renderExploreArabicCoverage();
       if (exploreLevel === "quran") return renderExploreQuranLevel();
       if (exploreLevel === "juz") return renderExploreJuzLevel();
       if (exploreLevel === "surah") return renderExploreSurahLevel();
@@ -7346,10 +7655,33 @@
       const approachName = langText(trackable.name, getAppLang(), trackable.id);
       const labelsById = statusLabelsById();
       for (const it of items) it.title = segTitle(it.label, it.statusId, labelsById);
-      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Whole Quran"), centerSub: approachName });
+
+      // Issue #206 -- the wedge-colouring toggle. The Approach branch above
+      // (statusId, the pooled progress colouring) is completely untouched;
+      // this ONLY overlays `fill`/`title` on top of it, and only in "wbw"
+      // mode with the gate open and the per-Juz totals actually loaded.
+      // renderScopedWheel prefers `entry.fill` over `STATUS_COLORS[statusId]`
+      // when it is present, so the Approach mode's own colours are byte-
+      // identical to before this round: `fill` is simply never set there.
+      const wbwMode = wbwWheelColorMode === "wbw" && isWbwTotalPersistenceReady() && juzWordTotalsData;
+      if (wbwMode) {
+        for (const it of items) {
+          const row = juzWordTotalsData.byJuz.find((r) => r.juz === it.key);
+          const total = row ? row.totalWords : 0;
+          const known = Number(personWordTotals?.byJuz?.[String(it.key)]?.known ?? 0);
+          const ratio = wordTotalRatio(known, total);
+          it.fill = wordTotalRampColor(ratio);
+          it.title = `${it.label} — ${t("{known} of {total} Arabic words known", { known: num(known), total: num(total) })}`;
+        }
+      }
+
+      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Whole Quran"), centerSub: approachName, ring: wheelRingOption() });
       attachScopedWheelClickHandler(exploreWheelContainer, jumpToJuz);
 
-      exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
+      // The legend describes the Approach-status colours only, so it is
+      // hidden rather than left up while wedges mean something else --
+      // never showing a key that no longer describes what is on screen.
+      exploreWheelLegendContainer.innerHTML = wbwMode ? "" : renderWheelLegend(labelsById);
       exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
       attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToJuz);
     }
@@ -7387,7 +7719,11 @@
       };
 
       const approachName = langText(trackable.name, getAppLang(), trackable.id);
-      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Whole Quran"), centerSub: approachName });
+      // Issue #206 -- the ring is "always visible once ready" at every
+      // reading of the "quran" level, including this 114-surah one; the
+      // wedge-colour TOGGLE does not apply here (no per-surah counter data),
+      // so wedges stay Approach-coloured regardless of wbwWheelColorMode.
+      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Whole Quran"), centerSub: approachName, ring: wheelRingOption() });
       attachScopedWheelClickHandler(exploreWheelContainer, jumpToSurah);
 
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
@@ -7436,7 +7772,7 @@
       const approachName = langText(trackable.name, getAppLang(), trackable.id);
       const labelsById = statusLabelsById();
       for (const it of items) it.title = segTitle(it.label, it.statusId, labelsById);
-      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Juz {juz}", { juz: num(exploreJuzNum) }), centerSub: approachName });
+      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Juz {juz}", { juz: num(exploreJuzNum) }), centerSub: approachName, ring: wheelRingOption() });
       attachScopedWheelClickHandler(exploreWheelContainer, jumpToSurahForPage);
 
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
@@ -7503,7 +7839,7 @@
       };
 
       const approachName = langText(trackable.name, getAppLang(), trackable.id);
-      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Juz {juz}", { juz: num(exploreJuzNum) }), centerSub: approachName });
+      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Juz {juz}", { juz: num(exploreJuzNum) }), centerSub: approachName, ring: wheelRingOption() });
       attachScopedWheelClickHandler(exploreWheelContainer, jumpToSurah);
 
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
@@ -8016,6 +8352,7 @@
         asmaXOverrides = asmaOverridesFrom(docData);
         asmaXOverridesEn = asmaOverridesEnFrom(docData);
         asmaXRefOverrides = asmaRefOverridesFrom(docData);
+        asmaXClassifications = asmaClassificationsFrom(docData);
       } catch (err) {
         console.warn("Couldn't read this tenant's saved Asma collections yet (showing the built-in defaults instead):", err.message);
         asmaXDocExists = false;
@@ -8024,6 +8361,7 @@
         asmaXOverrides = {};
         asmaXOverridesEn = {};
         asmaXRefOverrides = {};
+        asmaXClassifications = asmaClassificationsFrom(null);
       }
       asmaXDataTenantId = activeTenantId;
     }
@@ -8076,6 +8414,48 @@
       return list.filter((c) => c.kind === kind);
     }
 
+    /** Classifications round -- 23 Sep 2026. Every OTHER list (any
+        classification) this Name is filed in, resolved into the
+        display-ready shape asma-renderer.js's own renderAsmaBelongsToHtml()/
+        renderAsmaAlsoInHtml() read -- {collectionId, collectionTitle,
+        classificationKey, classificationTitle}. `excludeCollectionId` leaves
+        out the list currently being browsed ("also in" means somewhere
+        ELSE; the Names-level list already shows this collection); pass
+        null to include every membership (the References-level "Belongs
+        to" section, which isn't "browsing" any one list). Pure lookup over
+        already-loaded state, no new Firestore read (I9). */
+    function asmaXOtherMemberships(number, excludeCollectionId) {
+      return asmaMembershipsOfNameLocal(asmaXCollections ?? [], number)
+        .filter((m) => m.collectionId !== excludeCollectionId)
+        .map((m) => {
+          const col = (asmaXCollections ?? []).find((c) => c.id === m.collectionId);
+          const cls = (asmaXClassifications ?? []).find((c) => c.key === m.kind);
+          return {
+            collectionId: m.collectionId,
+            collectionTitle: col?.title ?? { en: "" },
+            classificationKey: m.kind,
+            classificationTitle: cls?.title ?? { en: m.kind },
+          };
+        });
+    }
+
+    /** Both the "also in…" chips and the "Belongs to" section navigate the
+        same way -- jump straight to the OTHER list, exactly what tapping it
+        in the Groups level or a level-bar select already does. Collection
+        ids are unique across every classification, so the classification
+        half of the chip's own "{classificationKey}:{collectionId}" value
+        never needs reading back out here. */
+    function asmaXWireAlsoInJumps(container) {
+      container.querySelectorAll("[data-asma-also-in-jump]").forEach((btn) => {
+        btn.addEventListener("click", () => openAsmaXGroup(btn.dataset.asmaAlsoInJump.split(":")[1]));
+      });
+    }
+    function asmaXWireBelongsJumps(container) {
+      container.querySelectorAll("[data-asma-belongs-jump]").forEach((btn) => {
+        btn.addEventListener("click", () => openAsmaXGroup(btn.dataset.asmaBelongsJump.split(":")[1]));
+      });
+    }
+
     async function openAsmaXPalette() {
       setExplorePalette("asma");
       asmaXWaysListContainer.innerHTML = t("Loading…");
@@ -8088,16 +8468,39 @@
       renderAsmaXPanel();
     }
 
-    /** The level bar: three real dropdown fields, each an alternate entry
-        point into the same Groups/Names/References state -- Group and Dual
-        switch which COLLECTION KIND is being browsed and jump straight to
-        that collection's own Names; Single jumps straight to one Name's own
-        References, no browsing step of its own (the owner's own "a straight
-        full list... as a drop-down field"). Manage-mode actions (owner/prime
-        only) mirror QCR's own renderQcrLevelBar() shape. */
+    /** classification key -> its own display title, or the bare key as a
+        last-resort fallback (should never actually show -- every collection's
+        `kind` is meant to name a real classification -- but a fallback that
+        prints SOMETHING beats one that throws). Reads the FULL registry, not
+        just the active half, so an archived classification's own collections
+        (still reachable by an "also in…"/"Belongs to" chip, I4) still get a
+        real label rather than the fallback. */
+    function asmaXClassificationTitle(key) {
+      const cls = (asmaXClassifications ?? []).find((c) => c.key === key);
+      return cls ? langText(cls.title, getAppLang()) : key;
+    }
+
+    /** The level bar: one real dropdown field per ACTIVE classification
+        (Classifications round, 23 Sep 2026 -- was hardcoded to exactly
+        Group and Dual), each an alternate entry point into the same
+        Groups/Names/References state, switching which classification is
+        being browsed and jumping straight to that list's own Names; plus
+        the flat Single-Names field, jumping straight to one Name's own
+        References with no browsing step of its own (the owner's own "a
+        straight full list... as a drop-down field") -- a separate entry
+        point, not a classification, so it stays exactly where it was.
+        Manage-mode actions (owner/prime only) mirror QCR's own
+        renderQcrLevelBar() shape. */
     function renderAsmaXLevelBar() {
-      const groups = asmaXCollectionsOfKind("group");
-      const duals = asmaXCollectionsOfKind("dual");
+      // Classification rename/archive round -- 23 Sep 2026: "Show archived"
+      // already reveals an archived COLLECTION inside a kind's own list
+      // (asmaXCollectionsOfKind); the same one flag now also reveals an
+      // archived CLASSIFICATION's own switcher field, mirroring it rather
+      // than adding a second toggle for the same idea (the cleanest fit
+      // against the existing pattern, per this round's own issue).
+      const activeClasses = asmaXShowArchived
+        ? [...(asmaXClassifications ?? [])].sort((a, b) => a.order - b.order)
+        : asmaActiveClassifications(asmaXClassifications ?? []);
       const names = asmaXAllNameEntries();
 
       const collOptionsHtml = (list, placeholder, selectedId) => {
@@ -8107,16 +8510,35 @@
         }).join("");
         return `<option value=""${selectedId ? "" : " selected"}>${escapeHtml(placeholder)}</option>${opts}`;
       };
-      // 4 Sep 2026 one-bar round -- "Field names change to Group, Names,
-      // Dual Names": the three placeholders were "All Groups"/"All Names"/
-      // "All dual Names", which is what the field is showing when nothing is
-      // picked, and with three selects now sharing one phone-width row the
-      // shorter word is what actually fits. All three keys already existed
-      // in bn.js, so this costs no new translation; the three "All …" keys
-      // stay there, unused, per this project's own rule for a string that
-      // stops being called.
-      asmaXGroupSelect.innerHTML = collOptionsHtml(groups, t("Group"), asmaXKind === "group" ? asmaXGroupId : null);
-      asmaXDualSelect.innerHTML = collOptionsHtml(duals, t("Dual Names"), asmaXKind === "dual" ? asmaXGroupId : null);
+      // One <select data-asmax-class-select="{key}"> per active
+      // classification, inserted as a plain sibling directly ahead of
+      // asmaXSingleSelect (both direct children of #asmaXLevelBar, its own
+      // flex row) -- re-created on every render rather than diffed in
+      // place, the same "static ids, dynamic body" split the rest of this
+      // panel already uses. With today's two seeded classifications this is
+      // the exact same two selects, same position, same width as the
+      // hardcoded Group/Dual pair it replaces (4 Sep 2026 one-bar round's
+      // own "Field names change to Group, Names, Dual Names" wording is
+      // preserved byte-for-byte for those two, via asmaXClassificationTitle()
+      // below reading their own seeded titles); a third classification is
+      // new width demand on this row that this sandbox has no browser to
+      // measure (see this round's own PR note).
+      asmaXLevelBarEl.querySelectorAll("select[data-asmax-class-select]").forEach((el) => el.remove());
+      for (const cls of activeClasses) {
+        const sel = document.createElement("select");
+        sel.dataset.asmaxClassSelect = cls.key;
+        const clsTitle = langText(cls.title, getAppLang()) + (cls.status === "archived" ? ` (${t("Archived")})` : "");
+        sel.setAttribute("aria-label", clsTitle);
+        sel.innerHTML = collOptionsHtml(asmaXCollectionsOfKind(cls.key), clsTitle, asmaXKind === cls.key ? asmaXGroupId : null);
+        sel.addEventListener("change", () => {
+          asmaXKind = cls.key;
+          asmaXNumber = null;
+          if (sel.value) { asmaXGroupId = sel.value; asmaXLevel = "names"; }
+          else { asmaXGroupId = null; asmaXLevel = "groups"; }
+          renderAsmaXPanel();
+        });
+        asmaXLevelBarEl.insertBefore(sel, asmaXSingleSelect);
+      }
 
       const singleSelectedNumber = asmaXLevel === "refs" ? asmaXNumber : null;
       asmaXSingleSelect.innerHTML = [
@@ -8140,8 +8562,27 @@
         asmaXArchiveLevelBtn.classList.toggle("danger", !archived);
         asmaXArchiveLevelBtn.disabled = !col;
         asmaXRenameLevelBtn.disabled = !col;
-        asmaXAddLevelBtn.title = asmaXKind === "dual" ? t("Add dual-name collection") : t("Add collection");
+        // Byte-identical wording for the two pre-existing kinds; a genuinely
+        // new classification gets an honest generic phrasing rather than
+        // being silently called "collection" with no context.
+        asmaXAddLevelBtn.title = asmaXKind === "dual" ? t("Add dual-name collection")
+          : asmaXKind === "group" ? t("Add collection")
+          : t("Add to {classification}", { classification: asmaXClassificationTitle(asmaXKind) });
         asmaXAddLevelBtn.setAttribute("aria-label", asmaXAddLevelBtn.title);
+        // Classification rename/archive round -- 23 Sep 2026: the same
+        // ✎/🗄 pair as asmaXRenameLevelBtn/asmaXArchiveLevelBtn above, now
+        // for the classification tab itself (asmaXKind), not the collection
+        // currently browsed inside it. asmaXKind always names a real entry
+        // in asmaXClassifications (default "group", always seeded), so this
+        // is disabled only in the defensive case that lookup fails.
+        const currentCls = (asmaXClassifications ?? []).find((c) => c.key === asmaXKind);
+        const clsArchived = currentCls?.status === "archived";
+        asmaXArchiveClassBtn.textContent = clsArchived ? "↺C" : "🗄C";
+        asmaXArchiveClassBtn.title = clsArchived ? t("Restore classification") : t("Archive classification");
+        asmaXArchiveClassBtn.setAttribute("aria-label", asmaXArchiveClassBtn.title);
+        asmaXArchiveClassBtn.classList.toggle("danger", !clsArchived);
+        asmaXArchiveClassBtn.disabled = !currentCls;
+        asmaXRenameClassBtn.disabled = !currentCls;
         asmaXShowArchivedToggle.checked = asmaXShowArchived;
       }
     }
@@ -8196,7 +8637,14 @@
         always used. */
     function renderAsmaXGroupsLevel() {
       const groups = asmaXCollectionsOfKind(asmaXKind);
-      const titleText = asmaXKind === "dual" ? t("All dual Names") : t("All Groups");
+      // Byte-identical wording for the two pre-existing kinds (their own
+      // seeded titles are "Group"/"Dual Names", not "All Groups"/"All dual
+      // Names" -- these two strings predate the classifications registry
+      // and are kept verbatim); a genuinely new classification reads its
+      // own title from the registry instead of one more hardcoded string.
+      const titleText = asmaXKind === "dual" ? t("All dual Names")
+        : asmaXKind === "group" ? t("All Groups")
+        : t("All {classification}", { classification: asmaXClassificationTitle(asmaXKind) });
       asmaXListHeaderEl.innerHTML = `
         <span class="qcr-list-title">${escapeHtml(titleText)}</span>
         <span class="qcr-list-count">${escapeHtml(t("{count} groups", { count: num(groups.length) }))}</span>`;
@@ -8291,12 +8739,19 @@
       // the permanent canonical id. Display-only: `e.number` itself, and
       // every unit key, are untouched (I5).
       const { labelByKey, runningByKey } = asmaPositionLabels(asmaXCollectionsOfKind(group.kind));
+      // Classifications round -- 23 Sep 2026: which OTHER lists (any
+      // classification) each Name here is also filed in, keyed by its own
+      // unit key -- the "also in…" row under a Name that belongs to more
+      // than just this one list.
+      const otherMembershipsByKey = new Map(entries.map((e) => [e.key, asmaXOtherMemberships(e.number, group.id)]));
       asmaXWaysListContainer.innerHTML = renderAsmaCollectionListHtml(entries, {
         manageOn: asmaXCanManage(), otherCollections, enableReorder: true, positionLabelByKey: labelByKey, runningNumberByKey: runningByKey,
+        otherMembershipsByKey,
       });
       asmaXWaysListContainer.querySelectorAll("[data-asma-jump]").forEach((btn) => {
         btn.addEventListener("click", () => openAsmaXName(Number(btn.dataset.asmaJump.split(":")[1])));
       });
+      asmaXWireAlsoInJumps(asmaXWaysListContainer);
       asmaXWaysListContainer.querySelectorAll("[data-asma-remove]").forEach((btn) => {
         btn.addEventListener("click", () => asmaXRemoveItemAction(group.id, btn.dataset.asmaRemove));
       });
@@ -8403,18 +8858,26 @@
       // "Enable a button at the markup space, to move the Name under a
       // different group or place in multiple group."
       document.getElementById("asmaXGroupsThisNameBtn")?.addEventListener("click", () => openAsmaXGroupsPopover(entry.number));
+      // Classifications round -- 23 Sep 2026: the owner's own "a name card
+      // should show the names of all LISTS it belongs to" -- every
+      // classification's own list this Name is filed under, ALL of them
+      // (null excludeCollectionId -- References level isn't "browsing" any
+      // one list, unlike the Names-level "also in…" row above it).
+      const memberships = asmaXOtherMemberships(entry.number, null);
       asmaXWaysListContainer.innerHTML = `
         <div id="asmaXRefCard">
           <div class="asma-ref-arabic">${escapeHtml(entry.arabic)}</div>
           <div class="asma-ref-lat">${escapeHtml(asmaEntryDisplayName(entry))}</div>
           <div class="asma-ref-meaning">${escapeHtml(asmaEntryMeaningText(entry))}</div>
           ${renderAsmaXrefBlock(entry, { inPage: true })}
+          ${renderAsmaBelongsToHtml(memberships)}
           <button type="button" class="secondary asma-ref-poster-btn" id="asmaXRefPosterBtn">🖼 ${escapeHtml(t("Poster"))}</button>
         </div>`;
       asmaXWaysListContainer.querySelectorAll("[data-asma-xref-jump]").forEach((btn) => {
         const [surah, ayah] = btn.dataset.asmaXrefJump.split(":").map(Number);
         btn.addEventListener("click", () => goToAyahFromAsmaX(surah, ayah, asmaXGroupId, asmaXNumber));
       });
+      asmaXWireBelongsJumps(asmaXWaysListContainer);
       document.getElementById("asmaXRefPosterBtn")?.addEventListener("click", () => openAsmaXPoster(entry));
       asmaXAddFormSlot.innerHTML = "";
       asmaXWheelContainerEl.innerHTML = "";
@@ -8456,6 +8919,7 @@
           overrides: asmaXOverrides,
           overridesEn: asmaXOverridesEn,
           refOverrides: asmaXRefOverrides,
+          classifications: asmaXClassifications,
           docExists: asmaXDocExists,
           uid: auth.currentUser.uid,
         }),
@@ -8493,7 +8957,13 @@
     }
 
     async function asmaXAddCollectionPrompt(kind) {
-      const typed = prompt(kind === "dual" ? t("New dual-name collection:") : t("New group name:"));
+      // Byte-identical wording for the two pre-existing kinds; any other
+      // (genuinely new) classification gets an honest generic phrasing
+      // naming it, rather than a silent "collection" with no context.
+      const promptText = kind === "dual" ? t("New dual-name collection:")
+        : kind === "group" ? t("New group name:")
+        : t("New {classification} entry:", { classification: asmaXClassificationTitle(kind) });
+      const typed = prompt(promptText);
       if (!typed || !typed.trim()) return;
       const prev = asmaXCollections;
       const prevGroupId = asmaXGroupId;
@@ -8504,6 +8974,87 @@
       asmaXLevel = "names";
       renderAsmaXPanel();
       if (!(await asmaXPersist())) { asmaXCollections = prev; asmaXGroupId = prevGroupId; asmaXLevel = prevLevel; renderAsmaXPanel(); }
+    }
+
+    /** The owner's own explicit ask: "+ New classification" -- one new
+        action, otherwise every existing control keeps working exactly as
+        it does today. Opens straight into the new classification's own
+        (empty) Groups level, same shape asmaXAddCollectionPrompt() already
+        uses for a new collection. Rename/archive of a classification itself
+        is asmaXRenameClassificationPrompt()/asmaXToggleArchiveClassification()
+        below, the closing half of this round's own issue (#205). */
+    async function asmaXAddClassificationPrompt() {
+      const typed = prompt(t("New classification:"));
+      if (!typed || !typed.trim()) return;
+      const prev = asmaXClassifications;
+      const prevKind = asmaXKind;
+      const prevGroupId = asmaXGroupId;
+      const prevLevel = asmaXLevel;
+      asmaXClassifications = asmaAddClassificationLocal(asmaXClassifications ?? [], { title: { [getAppLang()]: typed.trim() } });
+      asmaXKind = asmaXClassifications[asmaXClassifications.length - 1].key;
+      asmaXGroupId = null;
+      asmaXLevel = "groups";
+      renderAsmaXPanel();
+      if (!(await asmaXPersist())) {
+        asmaXClassifications = prev;
+        asmaXKind = prevKind;
+        asmaXGroupId = prevGroupId;
+        asmaXLevel = prevLevel;
+        renderAsmaXPanel();
+      }
+    }
+
+    /** Rename the currently-browsed CLASSIFICATION tab (asmaXKind) -- same
+        shape as asmaXRenameCollectionPrompt() above, one level up: a real
+        English/Bangla title, same as every other rename in this feature. */
+    async function asmaXRenameClassificationPrompt(key) {
+      const cls = (asmaXClassifications ?? []).find((c) => c.key === key);
+      if (!cls) return;
+      const current = langText(cls.title, getAppLang());
+      const typed = prompt(t("Rename classification:"), current);
+      if (!typed || !typed.trim() || typed.trim() === current) return;
+      const prev = asmaXClassifications;
+      asmaXClassifications = asmaRenameClassificationLocal(asmaXClassifications ?? [], key, setLangText(cls.title, getAppLang(), typed.trim()));
+      renderAsmaXPanel();
+      if (!(await asmaXPersist())) { asmaXClassifications = prev; renderAsmaXPanel(); }
+    }
+
+    /** Archive/restore the currently-browsed CLASSIFICATION tab -- I4: a
+        classification's own lists (and every Name filed in them) are
+        untouched by this, exactly as setClassificationStatus()'s own header
+        says; archiving only ever stops it being offered as somewhere NEW to
+        add a collection or file a Name (asmaXFileIntoRowHtml() below), same
+        as archiving a collection stops it being offered as somewhere new to
+        file a Name into. Same shape as asmaXToggleArchiveCollection() above,
+        one level up: if the tab just archived was the one being browsed and
+        Show archived is off, fall back to another active classification (or
+        the seeded "group" if none remain), never to a tab the switcher no
+        longer shows. */
+    async function asmaXToggleArchiveClassification(key) {
+      const cls = (asmaXClassifications ?? []).find((c) => c.key === key);
+      if (!cls) return;
+      const name = langText(cls.title, getAppLang());
+      const willArchive = cls.status !== "archived";
+      if (!confirm(willArchive ? t('Archive "{name}"?', { name }) : t('Restore "{name}"?', { name }))) return;
+      const prev = asmaXClassifications;
+      const prevKind = asmaXKind;
+      const prevGroupId = asmaXGroupId;
+      const prevLevel = asmaXLevel;
+      asmaXClassifications = asmaSetClassificationStatusLocal(asmaXClassifications ?? [], key, willArchive ? "archived" : "active");
+      if (willArchive && !asmaXShowArchived && asmaXKind === key) {
+        const stillActive = asmaActiveClassifications(asmaXClassifications ?? [])[0];
+        asmaXKind = stillActive ? stillActive.key : "group";
+        asmaXGroupId = null;
+        asmaXLevel = "groups";
+      }
+      renderAsmaXPanel();
+      if (!(await asmaXPersist())) {
+        asmaXClassifications = prev;
+        asmaXKind = prevKind;
+        asmaXGroupId = prevGroupId;
+        asmaXLevel = prevLevel;
+        renderAsmaXPanel();
+      }
     }
 
     async function asmaXRemoveItemAction(collectionId, unitKey) {
@@ -8581,34 +9132,54 @@
     // -----------------------------------------------------------------
     let asmaXEditContext = null; // { mode: "create" | "edit", number, fileInto }
 
-    /** The "file it under" row, only ever drawn for a brand-new Name that
-        was asked for from somewhere with a destination in mind (5 Sep 2026
-        -- the Note view's own "+ New Name"/"+ New Dual Name"). `kind` is
-        which list the reader is filling: "group" is the everyday thematic
-        grouping, "dual" is the separate paired-Names list that has its own
-        dropdown on the Asma bar. Both are the SAME collection mechanism
-        (asma-collections.js's own `kind` field) -- so a "Dual Name" is a
-        real Name, carrying its own reference like any other, that lives in
-        a Dual Names collection. That is what makes "attach the Ayah as ref
-        to that new name" work for a dual name at all: a collection has no
-        `ref` field and never has, a Name does. */
-    function asmaXFileIntoRowHtml(kind) {
+    /** The list-picker half of the "file it under" row -- every non-
+        archived collection of ONE classification, plus "+ New list…",
+        exactly asmaXFileIntoRowHtml()'s own pre-generalization body (the
+        same set asmaXAddCollectionPrompt()'s own kind-scoped view uses).
+        Split out so the classification select below can re-fill it on
+        change without re-drawing the whole row (and losing focus/the
+        reader's own typed "+ New list" title). */
+    function asmaXFileSelectOptionsHtml(kind) {
       const options = (asmaXCollections ?? [])
         .filter((c) => c.kind === kind && c.status !== "archived")
         .sort((a, b) => a.order - b.order)
         .map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(langText(c.title, getAppLang()))}</option>`)
         .join("");
-      const newLabel = kind === "dual" ? t("+ New Dual Names list…") : t("+ New group…");
-      const fieldLabel = kind === "dual" ? t("File under (Dual Names)") : t("File under (Group)");
-      const titleLabel = kind === "dual" ? t("New Dual Names list title") : t("New group title");
+      return `${options}<option value="__new__"${options ? "" : " selected"}>${escapeHtml(t("+ New list…"))}</option>`;
+    }
+
+    /** The "file it under" row, only ever drawn for a brand-new Name that
+        was asked for from somewhere with a destination in mind (5 Sep 2026
+        -- the Note view's own "+ New Name"/"+ New Dual Name"). `defaultKind`
+        is which classification that entry point defaults to ("group" or
+        "dual") -- a starting point, not a limit: issue #205's own closing
+        half of the Classifications round (23 Sep 2026) generalizes this row
+        with its OWN classification picker, one per active classification
+        (same asmaActiveClassifications() list the level bar's own switcher
+        reads, kept in sync by the same Show-archived flag), so a brand-new
+        Name can be filed under any of them from this one popover, not only
+        the two the button that opened it happened to default to. Both
+        "group" and "dual" are the SAME collection mechanism (asma-
+        collections.js's own `kind` field) as every other classification --
+        so a "Dual Name" is a real Name, carrying its own reference like any
+        other, that lives in a Dual Names collection. That is what makes
+        "attach the Ayah as ref to that new name" work for a dual name at
+        all: a collection has no `ref` field and never has, a Name does. */
+    function asmaXFileIntoRowHtml(defaultKind) {
+      const activeClasses = asmaActiveClassifications(asmaXClassifications ?? []);
+      const clsOptions = activeClasses
+        .map((c) => `<option value="${escapeHtml(c.key)}"${c.key === defaultKind ? " selected" : ""}>${escapeHtml(langText(c.title, getAppLang()))}</option>`)
+        .join("");
+      const effectiveDefault = activeClasses.some((c) => c.key === defaultKind) ? defaultKind : (activeClasses[0]?.key ?? defaultKind);
+      const hasExisting = (asmaXCollections ?? []).some((c) => c.kind === effectiveDefault && c.status !== "archived");
       return `
-        <label>${escapeHtml(fieldLabel)}
-          <select id="asmaXEditFileSelect">
-            ${options}
-            <option value="__new__"${options ? "" : " selected"}>${escapeHtml(newLabel)}</option>
-          </select>
+        <label>${escapeHtml(t("Classification"))}
+          <select id="asmaXEditClassSelect">${clsOptions}</select>
         </label>
-        <label id="asmaXEditNewCollLabel"${options ? " hidden" : ""}>${escapeHtml(titleLabel)}<input type="text" id="asmaXEditNewColl"></label>`;
+        <label>${escapeHtml(t("File under"))}
+          <select id="asmaXEditFileSelect">${asmaXFileSelectOptionsHtml(effectiveDefault)}</select>
+        </label>
+        <label id="asmaXEditNewCollLabel"${hasExisting ? " hidden" : ""}>${escapeHtml(t("New list title"))}<input type="text" id="asmaXEditNewColl"></label>`;
     }
 
     function openAsmaXEditOverlay({ mode, number = null, prefillRef = "", fileInto = null }) {
@@ -8617,9 +9188,12 @@
       const entry = mode === "edit" && number != null ? asmaXResolve(number) : null;
       if (mode === "edit" && !entry) return;
       if (mode === "create" || entry.isExtra) {
-        asmaXEditTitleEl.textContent = mode === "create"
-          ? (fileInto?.kind === "dual" ? t("Add a new Dual Name") : t("Add a new Name"))
-          : t("Edit Name");
+        // Classification round -- 23 Sep 2026: no longer branches on
+        // fileInto.kind === "dual" for its own wording -- the row itself now
+        // carries a real, user-visible Classification field (below), so a
+        // fixed title naming one classification would go stale the moment
+        // the reader picks a different one from it.
+        asmaXEditTitleEl.textContent = mode === "create" ? t("Add a new Name") : t("Edit Name");
         // 30 Aug 2026 round -- "attaching an Ayah... and creating New Name":
         // creating a brand-new Name from the Read/Note view's own attach
         // flow pre-fills the Reference field with the āyah just typed
@@ -8642,6 +9216,20 @@
         fileSel?.addEventListener("change", () => {
           const lbl = document.getElementById("asmaXEditNewCollLabel");
           if (lbl) lbl.hidden = fileSel.value !== "__new__";
+        });
+        // Classification round -- 23 Sep 2026: switching the Classification
+        // field re-fills the File-under select for THAT classification's own
+        // lists (asmaXFileSelectOptionsHtml), the same cascading shape the
+        // level bar's own per-classification selects already use -- so a
+        // brand-new Name can be filed under any active classification, not
+        // only the one the opening button defaulted to.
+        const classSel = document.getElementById("asmaXEditClassSelect");
+        classSel?.addEventListener("change", () => {
+          if (!fileSel) return;
+          fileSel.innerHTML = asmaXFileSelectOptionsHtml(classSel.value);
+          const lbl = document.getElementById("asmaXEditNewCollLabel");
+          const hasExisting = (asmaXCollections ?? []).some((c) => c.kind === classSel.value && c.status !== "archived");
+          if (lbl) lbl.hidden = hasExisting;
         });
       } else {
         asmaXEditTitleEl.textContent = t("Edit Name");
@@ -8683,6 +9271,12 @@
           isPhrase: !!document.getElementById("asmaXEditIsPhrase")?.checked,
         };
         const fileInto = asmaXEditContext.fileInto;
+        // Classification round -- 23 Sep 2026: which classification to file
+        // under now comes from the row's own Classification field (any
+        // active classification the reader picked), falling back to
+        // fileInto.kind only if that field never rendered (defensive; the
+        // row is always drawn together with it whenever fileInto is set).
+        const classSelectValue = document.getElementById("asmaXEditClassSelect")?.value ?? "";
         const fileSelectValue = document.getElementById("asmaXEditFileSelect")?.value ?? "";
         const newCollTitle = document.getElementById("asmaXEditNewColl")?.value.trim() ?? "";
         const prevExtra = asmaXExtraNames;
@@ -8695,10 +9289,11 @@
           // title when nothing was typed -- that is almost always what a
           // dual Name's own list is called, and it beats a second error
           // message for a field the reader has already effectively filled.
+          const kind = classSelectValue || fileInto.kind;
           let targetId = fileSelectValue;
           if (!targetId || targetId === "__new__") {
             const title = newCollTitle || translit;
-            const next = asmaAddCollectionLocal(asmaXCollections ?? [], { title: { en: title }, kind: fileInto.kind });
+            const next = asmaAddCollectionLocal(asmaXCollections ?? [], { title: { en: title }, kind });
             targetId = next[next.length - 1].id;
             asmaXCollections = next;
           }
@@ -8979,20 +9574,31 @@
     }
     function renderAsmaXGroupsList() {
       const unitKey = asmaXGroupsNumber != null ? buildUnitKey.name(asmaXGroupsNumber) : null;
+      // Classifications round -- 23 Sep 2026: sort by the classification's
+      // own registered order, then the collection's own order within it --
+      // was hardcoded to "group before dual before anything else", which
+      // is exactly what the registry's seeded orders (10, 20) already
+      // reproduce for those two, so this is unchanged for an existing
+      // tenant and simply extends to however many classifications exist.
+      const classOrderByKey = new Map((asmaXClassifications ?? []).map((c) => [c.key, c.order]));
       // An archived collection is offered only when this Name is actually in
       // it -- so it can be taken OUT -- never as somewhere new to file it.
       const rows = (asmaXCollections ?? [])
         .filter((c) => c.status !== "archived" || (unitKey && (c.items ?? []).includes(unitKey)))
-        .sort((a, b) => (a.kind === b.kind ? a.order - b.order : a.kind === "group" ? -1 : 1));
+        .sort((a, b) => {
+          const ao = classOrderByKey.get(a.kind) ?? 999;
+          const bo = classOrderByKey.get(b.kind) ?? 999;
+          return ao !== bo ? ao - bo : a.order - b.order;
+        });
       asmaXGroupsListEl.innerHTML = rows.length
         ? rows.map((c) => {
-            const kindLabel = c.kind === "dual" ? t("Dual Names") : t("Group");
+            const kindLabel = asmaXClassificationTitle(c.kind);
             const title = langText(c.title, getAppLang()) + (c.status === "archived" ? ` (${t("Archived")})` : "");
             return `
             <label class="asmaX-attach-row">
               <input type="checkbox" data-asmax-groups-check="${escapeHtml(c.id)}" ${asmaXGroupsChecked.has(c.id) ? "checked" : ""}>
               <span>${escapeHtml(title)}</span>
-              <span class="asmaX-groups-kind ${c.kind === "dual" ? "dual" : "group"}">${escapeHtml(kindLabel)}</span>
+              <span class="asmaX-groups-kind">${escapeHtml(kindLabel)}</span>
             </label>`;
           }).join("")
         : `<p class="hint">${escapeHtml(t("No collections yet."))}</p>`;
@@ -9047,21 +9653,11 @@
 
     // Level bar controls wired ONCE (mirrors QCR's own "the level bar's own
     // controls are static markup now" pattern) rather than re-attached on
-    // every render.
-    asmaXGroupSelect.addEventListener("change", () => {
-      asmaXKind = "group";
-      asmaXNumber = null;
-      if (asmaXGroupSelect.value) { asmaXGroupId = asmaXGroupSelect.value; asmaXLevel = "names"; }
-      else { asmaXGroupId = null; asmaXLevel = "groups"; }
-      renderAsmaXPanel();
-    });
-    asmaXDualSelect.addEventListener("change", () => {
-      asmaXKind = "dual";
-      asmaXNumber = null;
-      if (asmaXDualSelect.value) { asmaXGroupId = asmaXDualSelect.value; asmaXLevel = "names"; }
-      else { asmaXGroupId = null; asmaXLevel = "groups"; }
-      renderAsmaXPanel();
-    });
+    // every render. Classifications round -- 23 Sep 2026: the per-
+    // classification selects are no longer part of that static set -- they
+    // are created fresh (and wired individually) inside renderAsmaXLevelBar()
+    // itself, since there can be any number of them now. asmaXSingleSelect
+    // stays static; it is its own entry point, not a classification.
     asmaXSingleSelect.addEventListener("change", () => {
       if (!asmaXSingleSelect.value) return;
       asmaXNumber = Number(asmaXSingleSelect.value);
@@ -9072,6 +9668,9 @@
     asmaXRenameLevelBtn.addEventListener("click", () => { if (asmaXGroupId) asmaXRenameCollectionPrompt(asmaXGroupId); });
     asmaXArchiveLevelBtn.addEventListener("click", () => { if (asmaXGroupId) asmaXToggleArchiveCollection(asmaXGroupId); });
     asmaXAddLevelBtn.addEventListener("click", () => asmaXAddCollectionPrompt(asmaXKind));
+    asmaXRenameClassBtn.addEventListener("click", () => asmaXRenameClassificationPrompt(asmaXKind));
+    asmaXArchiveClassBtn.addEventListener("click", () => asmaXToggleArchiveClassification(asmaXKind));
+    asmaXNewClassBtn.addEventListener("click", () => asmaXAddClassificationPrompt());
     asmaXNewNameBtn.addEventListener("click", () => openAsmaXEditOverlay({ mode: "create" }));
     asmaXAttachRefBtn.addEventListener("click", () => openAsmaXAttachPopover({}));
 
@@ -9713,6 +10312,8 @@
         semanticRangeMissing: t("Semantic range not yet supplied"),
         openDictionary: t("Open dictionary source"),
         dictionaryUnavailable: t("Dictionary source unavailable"),
+        // Issue #206 -- the Word Card's own occurrence-share line.
+        wordShareOfQuran: t("Appears {count} times in the Qur'an — {percent}% of all words"),
       };
     }
 
@@ -9811,6 +10412,47 @@
       if (quranWordCardState.open && quranWordCardState.occurrenceId === requestedId) renderPersistentWordCard();
     }
 
+    /**
+     * Issue #206 -- the running counter's OWN "before" snapshot, read
+     * synchronously out of the already-primed cache (never a Firestore
+     * call) so it reflects exactly the state a write is about to change.
+     * `null` while the gate is closed, which the caller treats as "there is
+     * nothing to record" rather than "nothing changed".
+     */
+    function wordProgressCountsAsKnownNow(tenantId, personId, occurrenceId, confirmationRequired) {
+      return isWbwTotalPersistenceReady()
+        ? wordProgressFor({ tenantId, personId, occurrenceId, confirmationRequired }).countsAsKnown
+        : null;
+    }
+
+    /**
+     * Issue #206 -- moves the whole-Qur'an/Juz running counter by exactly
+     * the countsAsKnown transition a real write just produced. Runs AFTER
+     * that write has already succeeded, gated and silent exactly like the
+     * Activity evidence block below it: recording this counter can never be
+     * why a word tap fails, and a reader who never presses Explore's own
+     * ring/toggle is never told anything about it either way. juzIndexData/
+     * juzWordTotalsData are fetched here on FIRST USE if Explore was never
+     * opened this session -- still never on the startup path (I9), and the
+     * whole function returns immediately, before any of that, whenever
+     * `beforeKnown` is null (the gate is closed).
+     */
+    async function applyWordTotalCounterDelta({ tenantId, personId, occurrenceId, confirmationRequired, beforeKnown }) {
+      if (beforeKnown === null) return;
+      const afterKnown = wordProgressFor({ tenantId, personId, occurrenceId, confirmationRequired }).countsAsKnown;
+      const delta = knownDelta(beforeKnown, afterKnown);
+      if (!delta) return;
+      const ref = parseQuranWordOccurrenceId(occurrenceId);
+      if (!juzIndexData) juzIndexData = await getJuzIndex();
+      const juz = juzForSurahAyah(juzIndexData, ref.surah, ref.ayah);
+      if (juz == null) return; // a malformed/incomplete index refuses rather than mis-crediting a Juz
+      if (!juzWordTotalsData) juzWordTotalsData = await getJuzWordTotalsIndex();
+      await safeWrite(
+        () => recordWordTotalDelta(db, { tenantId, personId, juz, delta, actorUid: auth.currentUser?.uid, juzWordTotals: juzWordTotalsData.byJuz }),
+        { what: "update the whole-Qur'an word total", occurrenceId }
+      );
+    }
+
     async function runWordProgressAction(action) {
       const { tenantId, subjectPersonId, actorPersonId, isSupervisor } = wordProgressActor();
       if (!tenantId || !subjectPersonId || !actorPersonId || !quranWordCardState.occurrenceId) return;
@@ -9819,6 +10461,8 @@
         tenantId, personId: subjectPersonId, occurrenceId: quranWordCardState.occurrenceId,
         actorPersonId, actorUid: auth.currentUser?.uid, isSupervisor, confirmationRequired,
       };
+      // Issue #206 -- snapshotted BEFORE either write below changes it.
+      const beforeKnown = wordProgressCountsAsKnownNow(tenantId, subjectPersonId, common.occurrenceId, confirmationRequired);
       // I15 throughout: safeWrite() is this app's own "a failed write must
       // reach the user" wrapper, and it is what every other write on this
       // page already goes through.
@@ -9858,10 +10502,12 @@
             { collection: "activity", action: "wbwEngaged" }
           );
         }
+        await applyWordTotalCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown });
       } else {
         const note = action.review === "returned" ? (window.prompt(t("What should they look at again?")) ?? null) : null;
         await safeWrite(() => decideWordApproval(db, { ...common, review: action.review, note }),
           { what: "decide Arabic word progress", occurrenceId: common.occurrenceId });
+        await applyWordTotalCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown });
       }
       renderPersistentWordCard();
     }
@@ -9917,10 +10563,12 @@
     async function hydrateWordCardOccurrences() {
       const requestedId = quranWordCardState.occurrenceId;
       const request = ++quranWordCardRequest;
-      // The lemma-occurrences toggle below is always THIS word's own lemma, so
-      // it starts collapsed on every word change -- unlike a derived form, it
-      // has nothing to restore across a jump (see the "way back" comment on
-      // quranWordCardExpandedForm above).
+      // Issue #113 -- consume the one-shot "Back to Word Card" restore signal
+      // BEFORE resetting the live flag, so every other caller (a direct word
+      // open, Prev/Next) still starts the lemma list collapsed exactly as
+      // before, and only a genuine return-to-origin re-expands it below.
+      const restoreLemmaExpanded = quranWordCardRestoreLemmaExpanded;
+      quranWordCardRestoreLemmaExpanded = false;
       quranWordCardLemmaExpanded = false;
       quranWordCardLemmaRequest++;
       if (!requestedId || !currentSurahData) return;
@@ -9953,6 +10601,14 @@
       // the data actually lands is self-correcting.
       if (quranWordCardExpandedForm && !quranWordCardContext.formOccurrences && !quranWordCardContext.formOccurrencesError) {
         await expandWordForm(quranWordCardExpandedForm);
+      }
+      // Issue #113 -- the Basic tab's own lemma list gets the SAME re-open
+      // treatment, but only when this hydrate was the reopen after
+      // returnToWordCardOrigin(): restoreLemmaExpanded is the one-shot signal
+      // read at the top of this function, so an ordinary word change never
+      // reaches here with it true.
+      if (restoreLemmaExpanded && quranWordCardContext.lemmaOccurrences?.length && !quranWordCardContext.lemmaOccurrenceItems && !quranWordCardContext.lemmaOccurrenceItemsError) {
+        await expandLemmaOccurrences();
       }
     }
 
@@ -10044,6 +10700,124 @@
      *  contenteditable and take the reader's unsaved text with it. Switching
      *  stage view only toggles `hidden`, so the note's own DOM -- text, caret
      *  content and all -- is still there, untouched, when "back" returns. */
+    /**
+     * Issue #113 -- the scroll position `goToWordOccurrence()` / the return
+     * trip actually need. `window.scrollY` is always 0 in this app's shell:
+     * `body { height: 100vh; overflow: hidden; }`, so the document itself
+     * never scrolls. Measured, not assumed: the round-trip acceptance script
+     * (quran-word-card-return.mjs) scrolls the origin screen to a real
+     * position and found `window.scrollY` reads back 0 every time -- the
+     * scroll-restore this app already wrote for the way back could never
+     * have done anything in the actual layout.
+     *
+     * WHICH element actually scrolls depends on reading mode, and sideways
+     * paging is the OWNER'S OWN DEFAULT (`getSidewaysReading()` in
+     * `prefs.js`: "never set: the owner's own default" -> true) -- not a rare
+     * toggle, so a fix scoped only to the non-sideways case would do nothing
+     * for most real readers. Bare, not assumed either: the first version of
+     * this fix targeted `#readScroll`, and a debug run against the actual
+     * fixture (which never touches this preference, so it renders in the
+     * real default) showed `read-sideways` already on the body and the
+     * capture reading 0 through the very guard meant to avoid a wrong value.
+     * `body.read-sideways #readScroll { overflow: hidden; }` -- `#ayahPanels`
+     * is the one that scrolls there instead (`overflow-y: auto`), for the
+     * ordinary case (a single-āyah-at-a-time unit: ayah/ruku/juz/hizb/page).
+     * A FLOW unit (Whole Surah/Range) or Mushaf pages `#pageViewContainer`
+     * HORIZONTALLY in sideways mode instead -- a materially different
+     * restore (which whole PAGE was showing) this task does not reach, so
+     * that case still falls back to the pre-existing no-op (0), not a
+     * regression. Note view's own popup, when that is the ORIGIN being
+     * returned to, is a third, more complex scroll surface, left the same
+     * way.
+     */
+    function readViewScrollContainer() {
+      if (stageView !== "read") return null;
+      if (document.body.classList.contains("read-sideways")) {
+        if (getComputedStyle(pageViewContainer).display !== "none") return null;
+        return ayahPanels;
+      }
+      return document.getElementById("readScroll");
+    }
+    function readViewScrollTop() {
+      return readViewScrollContainer()?.scrollTop ?? 0;
+    }
+    function setReadViewScrollTop(y) {
+      const el = readViewScrollContainer();
+      if (el) el.scrollTop = y;
+    }
+
+    /**
+     * Issue #113 -- renderStudyScreen()'s own flow-view branch stashes the
+     * Mushaf render's promise here the moment it starts one (one line at its
+     * own `renderFlowView(...)` call site, marked "Issue #113"), so
+     * scrollFlowToCurrentAyah() below can await the render THIS caller just
+     * triggered without renderStudyScreen() itself becoming async -- it has
+     * ~24 call sites and none of the others need to know when a Mushaf page
+     * settles. Safe by construction, not by luck: renderStudyScreen() is
+     * synchronous and sets this (inside its own flow branch) before it
+     * returns, so by the time any caller's next line runs, this always holds
+     * that exact call's own promise, never a stale one from an earlier
+     * render -- there is no `await` between the two for another render to
+     * interleave through.
+     */
+    let flowRenderPromise = null;
+
+    /**
+     * Issue #113 -- the flow view's own counterpart to readViewScrollContainer()
+     * above, which deliberately returns null for a Whole Surah/Range unit
+     * (#pageViewContainer visible) and leaves the word-card round trip a
+     * no-op there. A CAPTURED PIXEL offset (the approach that works for
+     * #ayahPanels) is not meaningful here: #pageViewContainer's own
+     * scrollLeft is a property of the CONTAINER, not of whatever surah it
+     * currently holds, so a browser does not reset it when renderFlowView()
+     * replaces the innerHTML for a DIFFERENT surah -- the stale pixel value
+     * simply carries over into the new content's coordinate space. Reproduced
+     * in a real browser, not assumed: jumping from a lemma occurrence at
+     * 2:71 to one at 4:92 left the reader looking at surah 4's OWN ayah 71
+     * (the same pixel offset landing on the same page index), with the
+     * tapped word (4:92) off-screen -- on the ARRIVING leg, not only the
+     * return. The fix is identity-based instead: find the row for the ayah
+     * actually being shown and bring it into view directly.
+     *
+     * Mushaf mode IS covered as of this round (Issue #113 continuation).
+     * hifz-renderer.js DOES keep a per-ayah registry to target
+     * (`wordRegistry`, keyed exactly like the non-Mushaf branch's own
+     * `data-ayah`) -- the earlier "no per-ayah row to target" note was
+     * about `.page-flow-ayah`, this function's OWN markup, which the Mushaf
+     * branch never draws. What actually blocked this is timing, not a
+     * missing primitive: renderFlowView()'s Mushaf branch is asynchronous
+     * (`ensureMushafData()` + per-page font loads + justification inside
+     * renderMushafPages()), and renderStudyScreen() -- synchronous, called
+     * from roughly two dozen sites that never need to know when a Mushaf
+     * page finishes rendering -- fires it without awaiting. Read this
+     * function's own caller in navigateToAyah(): it used to run on the very
+     * next line after renderStudyScreen(), before the destination āyah's own
+     * spans could possibly exist in hifz-renderer.js's registry. `
+     * flowRenderPromise` below is what lets THIS one caller find out, without
+     * touching renderStudyScreen()'s own signature or any of its other call
+     * sites -- see that variable's own comment.
+     */
+    async function scrollFlowToCurrentAyah() {
+      if (getComputedStyle(pageViewContainer).display === "none") return;
+      if (mushafToggle.checked) {
+        // Await the render this exact renderStudyScreen() call just started
+        // (see flowRenderPromise's own comment) before asking hifz-renderer.js
+        // for the destination's spans -- asking before that settles is
+        // exactly the race this round closes; renderFlowView() already
+        // paints its own on-screen failure message on a rejection, so there
+        // is nothing further for this caller to report on one.
+        try { await flowRenderPromise; } catch { /* renderFlowView() already reports its own failure on-screen. */ }
+        // The state captured before awaiting may be stale by now (Mushaf
+        // turned off, or the flow view hidden entirely, while the render was
+        // still in flight) -- re-check rather than trust it.
+        if (getComputedStyle(pageViewContainer).display === "none" || !mushafToggle.checked) return;
+        scrollToAyahIfRendered(`${currentSurahNum}:${currentAyahNum}`);
+        return;
+      }
+      const row = pageViewContainer.querySelector(`.page-flow-ayah[data-ayah="${currentAyahNum}"]`);
+      row?.scrollIntoView({ inline: "start", behavior: "instant" });
+    }
+
     async function goToWordOccurrence(refText) {
       const parts = String(refText).split(":").map(Number);
       if (parts.length !== 3 || parts.some((n) => !Number.isInteger(n) || n < 1)) return;
@@ -10061,7 +10835,8 @@
           surah: currentSurahNum, ayah: currentAyahNum, stageView,
           unitType: currentUnitType, level: quranWordCardState.level,
           expandedForm: quranWordCardExpandedForm,
-          scrollY: window.scrollY,
+          lemmaExpanded: quranWordCardLemmaExpanded,
+          scrollY: readViewScrollTop(),
         };
       }
       // v08.22 -- CLOSE the card before navigating. The reader asked to see
@@ -10088,6 +10863,7 @@
       currentAyahNum = ayah;
       if (ayahSelect.querySelector(`option[value="${ayah}"]`)) ayahSelect.value = String(ayah);
       renderStudyScreen();
+      await scrollFlowToCurrentAyah();
     }
 
     /** The shared half of "go there and open that word" -- the way back uses it. */
@@ -10099,6 +10875,11 @@
       // just the word: the tab they were on and the form they had expanded.
       if (restore?.level) quranWordCardState = selectWordCardLevel(quranWordCardState, restore.level);
       quranWordCardExpandedForm = restore?.expandedForm ?? null;
+      // Issue #113 -- one-shot signal consumed and cleared by
+      // hydrateWordCardOccurrences() below, which is the only thing that
+      // actually re-expands the lemma list (it needs quranWordCardContext.
+      // lemmaOccurrences, which resolves inside that call).
+      quranWordCardRestoreLemmaExpanded = !!restore?.lemmaExpanded;
       quranWordCardContext = {};
       renderPersistentWordCard();
       activeWordCardMount()?.querySelector("[data-word-card-close]")?.focus({ preventScroll: true });
@@ -10140,8 +10921,9 @@
       }
       let ref;
       try { ref = parseQuranWordOccurrenceId(origin.occurrenceId); } catch { return; }
-      await openWordOccurrenceAt(ref.surah, ref.ayah, ref.position, origin.stageView === "note" ? "note" : "read", origin);
-      if (Number.isFinite(origin.scrollY)) window.scrollTo({ top: origin.scrollY, behavior: "auto" });
+      const returnView = origin.stageView === "note" ? "note" : "read";
+      await openWordOccurrenceAt(ref.surah, ref.ayah, ref.position, returnView, origin);
+      if (returnView === "read" && Number.isFinite(origin.scrollY)) setReadViewScrollTop(origin.scrollY);
       // The expanded form is restored by hydrateWordCardOccurrences() once the
       // forms index lands -- see its own comment for why it belongs there.
     }
@@ -11396,10 +12178,26 @@
         // renderArabicPanel(), so it needs the same strip applied here too,
         // or the bismillahHtml heading above and the ayah's own body would
         // show the same phrase twice.
+        // Issue #189 -- same per-word tap-to-open-Word-Card treatment as
+        // Read view's renderArabicPanel() (ayah-renderer.js), built locally
+        // for the same reason the rest of this block is: this screen reads
+        // plain ayah objects, not that renderer's own panel functions. The
+        // Tajweed branch is untouched/unsplit for the same measured reason
+        // recorded on renderArabicPanel() itself -- tajweed colouring
+        // routinely spans a word boundary in the pulled data, so there is no
+        // safe split point without a per-word tajweed dataset that doesn't
+        // exist.
         const arabicOneAyahHtml = (a) => {
-          const body = tajweedToggle.checked && a.tajweedText
-            ? tajweedRawToSafeHtml(a.tajweedText)
-            : escapeHtml(a.ayah === 1 ? stripLeadingBismillah(a.uthmaniText) : a.uthmaniText);
+          let body;
+          if (tajweedToggle.checked && a.tajweedText) {
+            body = tajweedRawToSafeHtml(a.tajweedText);
+          } else {
+            const plainSource = a.ayah === 1 ? stripLeadingBismillah(a.uthmaniText) : a.uthmaniText;
+            const segments = a.words?.length ? splitPlainArabicWords(plainSource, a.words) : null;
+            body = segments
+              ? segments.map((seg, i) => arabicWordButtonHtml(seg, a.words[i], currentSurahNum, a.ayah, translationLangs())).join(" ")
+              : escapeHtml(plainSource);
+          }
           // Fix round -- Arabic-Indic digits beside the Arabic, matching
           // renderArabicPanel()'s own rule (a block's number in that block's
           // own script). This screen builds its Arabic locally rather than
@@ -11537,6 +12335,15 @@
         backToCollectionLabel,
         isCollectionsOpen: wasQcrDrawerOpen,
         collectionsPopoverHtml: renderQcrDrawerHtml(unitKey, openQcrDdKey),
+        // MAP Phase 5 (P5-D, issue #195) -- the entry point into the real,
+        // permanent Notes screen, scoped to whatever unit THIS Note view is
+        // showing right now (unitKey/ref, the same pair the heading and
+        // Copy/Share already use). A plain relative link, same convention as
+        // every other page-to-page jump in this app (continue-strip.js's own
+        // MODULE_PAGES) -- notes.html resolves its own sign-in/tenant/person
+        // context on load exactly as bookmarks.html does, so nothing about
+        // WHO is acting needs to travel in the URL, only WHICH unit.
+        notesScreenHref: `notes.html?unit=${encodeURIComponent(unitKey)}&label=${encodeURIComponent(ref)}`,
       });
       if (showApproach && quranTrackables.some((tr) => tr.id === currentTrackableId)) {
         noteView.querySelectorAll("[data-note-approach-select]").forEach((sel) => { sel.value = currentTrackableId; });
@@ -12571,7 +13378,11 @@
         // currentUnitAyahBounds() already returns [currentAyahNum,
         // currentAyahNum] for the Single Ayah unit -- so the special case
         // was not only wrong, it was never needed.
-        renderFlowView(unitFrom, unitTo, panels, isMushaf);
+        // Issue #113 -- stash this call's own promise (see flowRenderPromise's
+        // own comment above). Still fire-and-forget from THIS function's own
+        // point of view: renderStudyScreen() itself awaits nothing and its
+        // ~24 other call sites are completely unaffected by this line.
+        flowRenderPromise = renderFlowView(unitFrom, unitTo, panels, isMushaf);
       } else {
         const ayah = currentSurahData.ayahs.find((a) => a.ayah === currentAyahNum);
         if (!ayah) return;
@@ -12715,7 +13526,7 @@
       drillControlsEl.innerHTML = `
         <div class="opt-bar opt-bar-listen">
           <div class="opt-cell opt-cell-num"><label for="drillRepeatSelect">${t("Repeat")}</label><select id="drillRepeatSelect">${[1, 2, 3, 5, 10].map((n) => `<option value="${n}">${num(n)}×</option>`).join("")}</select></div>
-          <div class="opt-cell"><label for="drillModeSelect">${t("Mode")}</label><select id="drillModeSelect"><option value="each">${t("Each Ayah")}</option><option value="whole">${t("Whole Unit")}</option></select></div>
+          <div class="opt-cell opt-cell-mode"><label for="drillModeSelect">${t("Mode")}</label><select id="drillModeSelect"><option value="each">${t("Each Ayah")}</option><option value="whole">${t("Whole Unit")}</option></select></div>
           <div class="opt-cell opt-cell-loop"><label>&nbsp;</label><label class="loop-inline"><input type="checkbox" id="loopToggle" /> ${t("Loop")}</label></div>
           <div class="opt-cell opt-cell-play"><label>&nbsp;</label><button type="button" class="opt-btn-inline" id="drillPlayBtn">▶ ${t("Play")}</button></div>
         </div>`;
@@ -13177,7 +13988,20 @@
       renderStudyScreen();
     });
 
-    surahSelect.addEventListener("change", async () => { currentSurahNum = Number(surahSelect.value); await loadSurah(); });
+    // Issue #113 -- same fix as stepUnit()'s and goToUnitNumber()'s own
+    // tails, and for the same reason: picking a different surah directly
+    // from this dropdown is a third, independent way to cross a surah
+    // boundary (loadSurah() always lands on the new surah's own āyah 1,
+    // same target openSurahAt() uses), and it shares the identical
+    // untouched root cause -- renderFlowView()'s non-Mushaf branch replaces
+    // #pageViewContainer's innerHTML in one atomic assignment, which does
+    // not reset scrollLeft, so the OLD surah's scroll offset otherwise
+    // carries over into the NEW surah's flow strip. A no-op when the flow
+    // view is not showing (checked inside scrollFlowToCurrentAyah() itself,
+    // which is why ayahSelect's own handler below needs no matching call:
+    // it only ever fires while the flow strip is hidden -- see this round's
+    // own dated report for the reproduction that established that).
+    surahSelect.addEventListener("change", async () => { currentSurahNum = Number(surahSelect.value); await loadSurah(); await scrollFlowToCurrentAyah(); });
     trackableSelect.addEventListener("change", () => changeCurrentTrackable(trackableSelect.value));
     personSelect.addEventListener("change", async () => {
       selectedPersonId = personSelect.value;

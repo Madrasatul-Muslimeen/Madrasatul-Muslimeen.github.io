@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Phase 3-6 Firestore Rules deployment candidate — assembly and evidence</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>The Phase 3-6 Firestore Rules deployment candidate — assembly and evidence</h1>
+<ul><li><strong>Date:</strong> 2026-09-22</li><li><strong>For:</strong> the repository record, and the Master Architect / ChatGPT audit the Owner asked for before publishing.</li><li><strong>Requested by:</strong> the Owner, in these exact words — <em>&quot;Write the exact Firestore security rules needed for Phases 3–6, and commit them to the repo as firestore.rules... Rules must only let a signed-in user read/write their OWN data.&quot;</em></li><li><strong>Status:</strong> a candidate, assembled and verified. <strong>Nothing has been deployed.</strong> <code>firestore.rules</code> on <code>main</code> is untouched.</li></ul>
+<hr>
+<h2>1. What this is</h2>
+<p>Four MAP phases each already produced an accepted, individually-tested Rules candidate, at different dates, none of them assembled together and none of them including Phase 3:</p>
+<div class='tw'><table><thead><tr><th>Phase</th><th>Candidate</th><th>Accepted</th></tr></thead><tbody>
+<tr><td>3 — Arabic Progress</td><td><code>tests/firestore/word-progress-v1.proposed.rules</code></td><td>13 Sep 2026, 42 emulator assertions</td></tr>
+<tr><td>4 — Study Activity evidence</td><td><code>docs/governance/phase4-activity-evidence-rules-candidate-2026-09-14.rules</code></td><td>14 Sep 2026</td></tr>
+<tr><td>5 — Note Foundation</td><td><code>docs/governance/phase5-note-foundation-rules-candidate-2026-09-15.rules</code></td><td>15 Sep 2026</td></tr>
+<tr><td>6 — Mapping My Journey</td><td><code>docs/governance/phase6-journey-map-rules-candidate-2026-09-15.rules</code></td><td>15 Sep 2026</td></tr>
+</tbody></table></div>
+<p>A 17 Sep 2026 round already assembled Phases 4-6 into one pasteable file, <code>docs/governance/phase4-6-DEPLOYMENT-candidate-2026-09-17.rules</code>. <strong>Phase 3 was never folded in</strong> — it predates that round and nobody has since combined it with the other three, so no single file has ever existed that a person could paste once to get all four phases working together.</p>
+<p>This round adds Phase 3 to that file. The new, complete candidate is:</p>
+<p>``<code> docs/governance/phase3-6-DEPLOYMENT-candidate-2026-09-22.rules </code>``</p>
+<p>The 17 Sep file is <strong>kept, unmodified</strong> — it is the historical record of the three-phase assembly and stays exactly as it was.</p>
+<h2>2. Where the Phase 3 addition sits, and why there</h2>
+<p>Inserted after <code>personLevels</code> and before the repository&#x27;s own <strong>build-phase</strong> &quot;Phase 3 — Tracking core&quot; section (records/activity/domains, already deployed since 31 Jul 2026). <strong>These are two different things sharing one number by coincidence</strong> — MAP v4&#x27;s Phase 3 (Arabic word-by-word progress) and this repository&#x27;s own build-phase-3 (the general tracking core) — and <code>CLAUDE.md</code> already warns this exact collision has caused confusion before. The new block is labelled <code>MAP Phase 3 (Arabic Progress)</code> throughout, never bare <code>Phase 3</code>, so nobody reading the rules file mistakes one for the other.</p>
+<h2>3. What was added, precisely</h2>
+<p><strong>Three new helper functions</strong> (none collide with an existing production name — checked):</p>
+<ul><li><code>canSuperviseRecordFor(tenantId, personId)</code> — <code>canRecordFor()</code> minus <code>isSelfPerson()</code>: someone who may act for this person and is not this person. Nobody signs off their own claim.</li><li><code>wordLaneIdentityUnchanged()</code> — an update may change what state a word is in; it may never repoint the document at a different tenant, person, level, surah or ayah.</li><li><code>isWordLaneCreate(lane)</code> — a created lane must declare its contract version, that it is <code>wbw</code>, and a real surah/ayah in range. Basic Arabic and Arabic in Depth have no approved claim unit, so the deferral is enforced at the database, not only in the client.</li></ul>
+<p><strong>Two new collections</strong>, <code>quranWordProgress</code> (a learner&#x27;s own claims) and <code>quranWordApprovals</code> (a supervisor&#x27;s decisions) — kept as separate documents on purpose, because a Firestore rule cannot cheaply prove that every changed key of an arbitrarily-keyed map was written by someone entitled to write that one key, the same limit this file already records for <code>records</code>, <code>subjects</code> and <code>trackables</code>.</p>
+<p><strong>Reused, not duplicated:</strong> <code>canRecordFor()</code>, <code>isSelfPerson()</code>, <code>isPlatformAdmin()</code> and every role helper are the same functions the rest of the file already defines — nothing about them changes, and no second copy of any of them was written for this block.</p>
+<h2>4. &quot;Own data only&quot; — what that means in this app, stated plainly</h2>
+<p>The Owner&#x27;s instruction was that rules must only let a signed-in user read/write their own data. Taken completely literally — <em>nobody but the person themself, ever</em> — that would break the app&#x27;s whole family/tenant model on purpose: a guardian logging a child&#x27;s progress, or a teacher recording for a co-enrolled student, is not that person reading someone else&#x27;s data by accident, it is the feature working as designed (D10).</p>
+<p><strong>What was actually built matches the access model already governing every other collection in this file</strong>: a signed-in person may act on a <code>quranWordProgress</code>/<code>quranWordApprovals</code> document if, and only if, they are the person themself, or someone the app already recognises as entitled to act for that person — a co-enrolled teacher, a guardian, or a tenant administrator. Nobody outside that circle can read or write it, platform admin excepted (read-only, and <code>platformAdmin</code> cannot be self-granted — I10). The supervisor&#x27;s own decisions collection additionally excludes the learner from ever writing it, even about themself.</p>
+<p><strong>If the Owner meant something stricter than this — literally nobody but the person themself, no guardian, no teacher exception — say so and it will be rebuilt.</strong> This report states the interpretation rather than assuming it passed silently.</p>
+<h2>5. Verification performed</h2>
+<h3>5.1 Static — <code>tools/i18n-verify/rules-deployment-candidate-phase3-6.mjs</code></h3>
+<p>A new guard, written for this file specifically (the 17 Sep guard is kept governing its own three-phase file, unmodified). Eleven checks:</p>
+<p>``` PASS  POSITIVE CONTROL: the function comparator really reads bodies PASS  the deployment candidate drops no production line PASS  the deployment candidate defines no top-level helper twice PASS  the deployment candidate never REDEFINES a production helper differently PASS  the three genuinely-new Phase 3 helpers are genuinely new PASS  the deployment candidate governs every collection the four phases add PASS  the Phase 5/6 extracts still declare themselves undeployable PASS  the Phase 3 extract still declares itself a candidate, not production PASS  the extracts&#x27; divergence from production is EXACTLY the audited four PASS  nothing has been deployed: firestore.rules and firebase.json are untouched PASS  Phase 3 needs no new index -- confirmed against the app&#x27;s own query</p>
+<p>==== Rules deployment candidate (Phase 3-6): 11 passed, 0 failed ==== ```</p>
+<p><strong>Mutation-proven rather than trusted</strong>, four cases: dropping a real production line, redefining <code>canRecordFor</code> to <code>return true</code>, deleting the <code>quranWordApprovals</code> match block, and duplicating <code>isWordLaneCreate</code> — every one produced the FAIL it was supposed to.</p>
+<p><strong>Line count:</strong> 731 lines added to production, <strong>0 removed</strong> (confirmed by the diff itself, not only the guard). 294 open braces, 294 close — balanced.</p>
+<h3>5.2 Executable — real Firestore emulator, real candidate text</h3>
+<p>Every one of the four phases&#x27; own accepted emulator suites was re-run with its <code>RULES_FILE</code> pointed at the <strong>new assembled file</strong> — the actual text that would be pasted — rather than each phase&#x27;s own isolated extract. This is the same method Phases 5 and 6 already established (<em>&quot;tested against the ruleset ACTIVATION WOULD PRODUCE... because an extract calling helpers it does not contain proves only that a file parses&quot;</em>), now extended to cover Phase 3 for the first time: <code>word-progress-v1.rules.test.mjs</code> did not support this before and could only ever run against its own extract. It now takes the same <code>RULES_FILE</code> override the other three suites do, and its extract-mode run was re-confirmed unaffected.</p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Mode</th><th>Result</th></tr></thead><tbody>
+<tr><td>Phase 3 (word progress)</td><td>extract</td><td>1/1 passed (42 internal assertions)</td></tr>
+<tr><td>Phase 3 (word progress)</td><td><strong>against the assembled file</strong></td><td>1/1 passed</td></tr>
+<tr><td>Phase 4 (Activity evidence)</td><td><strong>against the assembled file</strong></td><td>1/1 passed (53 internal assertions)</td></tr>
+<tr><td>Phase 5 (Note Foundation)</td><td><strong>against the assembled file</strong></td><td>1/1 passed (60 internal assertions)</td></tr>
+<tr><td>Phase 6 (Mapping My Journey)</td><td><strong>against the assembled file</strong></td><td>1/1 passed (50 internal assertions)</td></tr>
+</tbody></table></div>
+<p>Real local Firestore emulator (<code>cloud-firestore-emulator-v1.22.0</code>), not a stub — every case is a real client write judged by the real Rules engine loaded with the real candidate text.</p>
+<h3>5.3 Indexes</h3>
+<p><strong>No new index is needed for Phase 3.</strong> <code>getSurahProgress()</code> — the only query Phase 3 makes — filters on <code>tenantId</code>, <code>personId</code>, <code>level</code>, <code>surah</code>, all equality, no <code>orderBy</code>, no range filter. Firestore serves that from single-field indexes automatically. <code>tools/i18n-verify/ firestore-index-requirements.mjs</code>, which scans every query in the whole app, already confirms this (<em>&quot;no query in the app uses a range filter... the candidate declares no index no query needs&quot;</em>) and continues to pass unmodified. <strong>The four indexes from the 17 Sep package are unchanged and still the complete list</strong> — see the companion Owner guide.</p>
+<h3>5.4 Full governance suite</h3>
+<p>All eight repository-wide governance suites re-run on the branch, full history: <code>programme-ledger</code>, <code>programme-ledger-mutations</code>, <code>brief-integrity</code>, <code>study-activity-evidence-boundary</code> (×2), <code>study-event-wiring</code>, <code>rules-authorisation-executable</code>, <code>workflow-expressions</code> — all exit 0.</p>
+<h2>6. Automated deployment — answer, not built</h2>
+<p>Asked separately: can future Rules changes deploy through GitHub without extra billing? <strong>Yes.</strong> Publishing Firestore Rules and indexes is a Spark (free-tier) capability of the Firebase CLI&#x27;s <code>firebase deploy --only firestore:rules,firestore:indexes</code> — it uses the Firebase Management/Rules API, not a billed Google Cloud resource, and needs no Blaze plan.</p>
+<p>It would need one new credential that does not exist in this repository today: a Google-issued service account key, scoped to the Firebase Rules Admin role only, stored as a GitHub secret the same way <code>CLAUDE_CODE_OAUTH_TOKEN</code> already is.</p>
+<p><strong>Recommended shape, if authorised</strong>: a workflow step prepares the publish on a Rules-file change, then <strong>waits for the Owner&#x27;s own approval</strong> (a GitHub Environment with a required reviewer is a built-in way to get this — no bespoke code needed) before it actually runs <code>firebase deploy</code>. That keeps the deliberate pause this project has always kept between &quot;merged&quot; and &quot;deployed&quot; for Rules specifically, while removing the manual copy-paste-into-the-Console step. <strong>Not built in this round</strong> — it is itself a new-credential decision, put to the Owner in the companion guide rather than assumed.</p>
+<h2>7. What was deliberately NOT done</h2>
+<ul><li><strong><code>firestore.rules</code> itself is untouched.</strong> The pasteable text lives at the candidate path above, not at <code>firestore.rules</code> — see the companion Owner guide for why, and for exactly when that changes.</li><li><strong>Nothing was deployed.</strong> No Firebase Console action was taken from this session; no credentials exist here to take one.</li><li><strong>No version bump, no application code change.</strong></li><li><strong>The known &quot;own data only&quot; interpretation above is stated, not assumed silently accepted</strong> — see §4.</li></ul>
+</main></body></html>

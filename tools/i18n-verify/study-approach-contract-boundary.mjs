@@ -217,11 +217,17 @@ check("the accepted occurrence id is exactly what quranWordOccurrenceId produces
 
 // --- 5. no Rules, index or migration material in this tranche ---------------
 
-check("no Firestore Rules or index file is touched by this tranche", () => {
+// DEPLOYED, 22 Sep 2026 -- confirmed by the Owner. This tranche's own material
+// stayed pure and uninvoked (that story is unchanged and is what the rest of
+// this suite still proves); it is the SURROUNDING Rules file, deployed by a
+// separately-audited later round, that now legitimately carries the accepted
+// contract version literal and a live index file. What must still be absent,
+// deployment or no deployment, is the REJECTED keyed-Activity design.
+check("the accepted contract is deployed, and the rejected keyed-Activity design still is not", () => {
   const rules = fs.readFileSync(path.join(root, "firestore.rules"), "utf8");
   assert.ok(!rules.includes("v1Events"), "firestore.rules carries keyed-Activity material");
-  assert.ok(!rules.includes("study-approach-contract"), "firestore.rules references the v1 contract");
-  assert.ok(!fs.existsSync(path.join(root, "firestore.indexes.json")), "a tracked index file appeared");
+  assert.ok(rules.includes("study-approach-contract:v1"), "firestore.rules does not pin the accepted contract version -- deployment record is stale, or the sync regressed");
+  assert.ok(fs.existsSync(path.join(root, "firestore.indexes.json")), "the live index file is missing -- deployment record is stale, or the sync regressed");
   assert.ok(!fs.existsSync(path.join(root, "tests", "firestore", "activity-v1.proposed.rules")),
     "the gated Activity Rules candidate leaked into this tranche");
 });
