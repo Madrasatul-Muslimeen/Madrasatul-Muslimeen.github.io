@@ -190,4 +190,51 @@
 // v08.39), full diff read by hand, no protected path touched. No
 // Firestore write, Rule or index; no new translation string.
 // Allocated by the MMSA Architect.
-export const APP_VERSION = "08.40";
+// 08.41: Word-by-Word whole-Qur'an/Juz percentage running counter, BUILT
+// AND GATED (issue #206, PR #209). A new, additive Firestore collection
+// (quranWordTotals) backs a gold ring around the Explore wheel (whole-
+// Qur'an known/total) and an Approach/Word-by-Word wedge-colour toggle at
+// the Juz level, plus a gate-free Word Card "Appears N times -- X% of all
+// words" line. NOTHING CHANGES FOR A REAL READER YET -- same shape as
+// v08.30's Activity evidence before v08.34 turned it on. The gate,
+// app/js/study-wbw-total-readiness.js, copies study-evidence-readiness.js's
+// shape exactly: ready:false as a literal, a governed-decision requirement
+// (closed authority set, real date, existing reference) before it can ever
+// read true, and it IMPORTS NOTHING AT ALL -- confirmed by reading the
+// file, not merely asserted. Both the counter write (in
+// quran-word-total-data.js, called from the same word-tap action in
+// quranrevival.html that already writes the real per-occurrence state) and
+// the counter read consult the gate FIRST and never touch Firestore while
+// it is closed -- verified directly: applyWordTotalCounterDelta() returns
+// before calling recordWordTotalDelta() whenever the pre-write snapshot is
+// null (gate closed), and recordWordTotalDelta()/getWordTotals() each
+// independently re-check the gate at their own top as well. An ordinary
+// WbW tap today can never throw over this undeployed collection -- the
+// exact defect class v08.31 had to fix for Activity evidence was not
+// reintroduced here. The counter only moves on genuine countsAsKnown
+// transitions, the same definition computeArabicCoverage() uses. Per-Juz
+// totals (30 rows, summing to the real 77,429) are derived from the real
+// packaged corpus by tools/quran-data-pull/build-juz-word-totals.js, not
+// hand-typed -- independently re-run by the Architect against the real
+// corpus and reproduces the shipped file byte-for-byte. The Rules
+// candidate lives only at docs/governance/2026-09-23-wbw-total-counter-
+// rules-candidate.rules; firestore.rules and firebase.json are untouched.
+// The Approach wheel's own pooled-status colouring is provably unchanged
+// (fill/ring are strictly opt-in renderScopedWheel() params). New
+// tools/i18n-verify/quran-word-total-boundary.mjs (25 checks) covers the
+// gate's shape, the write/read gate-order, a claim -> confirm -> return ->
+// re-claim -> confirm correctness reconciliation against an independent
+// recount, and the Juz-total derivation. Independently re-verified by the
+// Architect (fresh worktree off origin/main, all 8 CI-gated governance
+// suites plus this new suite re-run clean, full diffs read by hand, no
+// protected path touched, clean merge against main); behaviour.mjs could
+// not run in this sandbox (chromium_headless_shell-1243 missing, only
+// -1194 present -- the same, now four-times-documented Playwright
+// build-version gap from v08.35/v08.36/v08.38/v08.39). This PR was opened
+// by the Architect from the Builder's already-pushed branch (its own
+// PR-opening step again did not execute, the same recurring gap). Turning
+// this on for real needs a Rules Console publish PLUS a separate governed
+// enablement decision, exactly the same two-step shape v08.34 used for
+// Activity evidence -- neither has happened. Allocated by the MMSA
+// Architect.
+export const APP_VERSION = "08.41";

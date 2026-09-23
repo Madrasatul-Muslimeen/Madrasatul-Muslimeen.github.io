@@ -158,7 +158,92 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.40 on `main`** (23 Sep 2026 — Word Card: the
+**Current milestone: v08.41 on `main`** (23 Sep 2026 — Word-by-Word
+whole-Qur'an/Juz percentage running counter, BUILT AND GATED — the Owner
+reviewed an interactive demo and said "Go ahead, build it," issue #206,
+PR #209. **What actually changes for a real reader today: nothing.** This
+is the exact same shape as v08.30's Activity evidence before v08.34 turned
+it on — a real, additive Firestore collection (`quranWordTotals`) and a
+real UI (a gold ring around the Explore wheel showing the reader's own
+whole-Qur'an known/total; a toggle at the Juz level switching wedge
+colouring between "Approach" — today's real, unchanged pooled-status
+colouring — and "Word by Word" — each Juz wedge recoloured by its own
+known/total; the Word Card's own gate-free "Appears N times in the Qur'an
+— X% of all words" line) are all BUILT, but the ring, the toggle and the
+Juz/Quran-level coverage caption stay completely absent until two more
+things happen, neither of which this round performs: **(1)** the Owner
+publishes the Rules candidate
+(`docs/governance/2026-09-23-wbw-total-counter-rules-candidate.rules`) in
+the Firebase Console, the same kind of one-tap publish that turned on
+Phase 3-6 on 22 Sep 2026, and **(2)** a separate, explicit governed
+decision is then recorded (an authority, a real date, a reference to a
+proof it was actually deployed) — the identical two-step shape v08.34 used
+to turn on Activity evidence, never a bare code flip. **The gate,
+`app/js/study-wbw-total-readiness.js`, copies
+`study-evidence-readiness.js`'s shape exactly**: `ready: false` as a real
+literal, and — independently confirmed by the Architect reading the file
+itself, not merely trusting the PR's own claim — **it imports nothing at
+all**, so it cannot even accidentally consult `firestore.rules`. **The
+write-gate-blocking guarantee was verified directly, line by line, because
+this is the one thing that could make the round unsafe to ship even while
+gated**: the same write path that already changes one occurrence's real
+stored state (`runWordProgressAction()` in `quranrevival.html`) snapshots
+the counter's own "before" state through a helper that returns `null`
+whenever the gate is closed, and the function that would move the running
+counter (`applyWordTotalCounterDelta()`) returns immediately, before
+fetching any index or calling the data layer at all, whenever that
+snapshot is `null`. The data layer's own two exported functions
+(`recordWordTotalDelta()`, `getWordTotals()` in
+`quran-word-total-data.js`) *also* independently re-check the same gate at
+their own top and return before touching Firestore, so even a future
+caller that skipped the first check could not reach the database while
+closed. **An ordinary Word-by-Word tap today can never throw an error over
+this collection** — the exact defect class v08.31 had to fix for Activity
+evidence was not reintroduced here for a different collection. The
+counter only moves on a genuine `countsAsKnown` transition — the same
+definition `computeArabicCoverage()` already uses for the existing
+Surah/Ruku' coverage caption — never on "any write", proven by a
+claim → teacher-confirm → return → re-claim → confirm sequence reconciled
+against an independent recount of the final state. **The per-Juz
+denominators (30 rows, summing to the real 77,429) are derived, not
+hand-typed**: `tools/quran-data-pull/build-juz-word-totals.js` walks the
+real packaged per-ayah word arrays — the Architect independently re-ran
+this script against the real corpus and it reproduces the shipped
+`juz-word-totals.json` byte-for-byte. `QURAN_TOTAL_WORD_COUNT` (77,429) is
+exported once, from `app/js/quran-word-total.js`, and both the Word Card
+line and the Juz-total validation import that same constant — no second
+hardcoding anywhere. **The Approach wheel's own pooled-status colouring is
+provably untouched**: `renderScopedWheel()`'s new `fill`/`ring` options are
+strictly opt-in, defaulting to exactly the prior geometry and colouring
+when absent, and `renderExploreQuranLevel()`'s Approach-mode wedge
+computation runs unconditionally with the Word-by-Word overlay applied
+only afterward, only in "wbw" mode. I9: the counter document and the
+per-Juz totals load only when Explore's Juz/Quran level is actually
+opened, the same lazy-load pattern `getJuzIndex()`/`getHizbIndex()`
+already use — never on the startup path. I11: new strings translated in
+Bangla (`bn.js`); the toggle's own "Approach"/"Word by Word" button labels
+reuse existing translated keys rather than adding new ones. New
+`tools/i18n-verify/quran-word-total-boundary.mjs`, 25 checks, including
+an anchored regex proving the gate check is the literal first statement in
+both exported data-layer functions (not merely "a return appears nearby"),
+the correctness reconciliation above, and an independent re-derivation of
+the Juz totals from the real surah files inside the check itself.
+**`firestore.rules`/`firebase.json`/`app/js/version.js` genuinely
+untouched by the Builder's own round** — confirmed by diff, not assumed.
+**The Builder's own PR-opening step again did not run** (Actions run
+35821824718, `conclusion: success`, branch pushed, no PR — the same,
+recurring gap v08.35/v08.36/v08.38/v08.39/v08.40 all recorded); the
+Architect opened PR #209 itself from the already-pushed, already-checked
+branch. **Independently re-verified by the Architect before merging**:
+fresh worktree off `origin/main`, all 8 CI-gated governance suites plus
+this round's own new suite re-run clean, full diffs read by hand, no
+protected path touched, clean merge against `main` (re-checked immediately
+before merging, since concurrent rounds were landing on `main` throughout
+this session). `behaviour.mjs` could not run in this sandbox —
+`chromium_headless_shell-1243` missing, only `-1194` present, the same
+documented Playwright build-version gap. Allocated by the MMSA Architect.
+
+**Previous milestone: v08.40 on `main`** (23 Sep 2026 — Word Card: the
 "Back to Word Card" round trip actually works, issue #113, PR #135. Every
 existing Word Card suite stopped the moment the return bar appeared on
 screen and never pressed it — pressing it in a real browser found two

@@ -29,9 +29,9 @@
   "status": "ACTIVE",
   "main": {
     "ref": "origin/main",
-    "baselineSha": "4c60bdd6a6acbec3bcf970381692f918b2614f54",
+    "baselineSha": "06986c72127111a4ba9dbd635df0630f427ca69b",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.40",
+    "version": "08.41",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -229,8 +229,8 @@
     {
       "version": "08.40",
       "owner": "quran",
-      "status": "LIVE",
-      "note": "Word Card: the \"Back to Word Card\" round trip actually works (issue #113, PR #135). Every existing Word Card suite stopped at \"the return bar appears\" and never pressed it -- doing that in a real browser found two real, narrowly-scoped defects in the Basic Arabic lemma/root feature's own return mechanism (built v08.20-v08.22): the Basic tab's lemma list did not survive the round trip (fixed with a one-shot restore signal, mirroring the Depth tab's own expandedForm treatment), and the scroll restore could never have worked (window.scrollY is always 0 in this app's shell; readViewScrollContainer() now reads the correct live element for the current rendering mode, with sideways-flow and Note-view-origin cases flagged rather than silently fixed). New quran-word-card-return.mjs suite, 55 checks. No protected path, no new translation string, no Firestore write/Rule/index. Independently re-verified by the Architect before merging: fresh checkout, clean merge with no conflicts, all 8 CI-gated governance suites clean, the focused suite 55/0, behaviour.mjs run against both the merged tree and a clean main baseline under the same substitute Chromium build -- 987/6 vs 984/9, every failure on both sides pre-existing and environmental (27i, 31e, 40g x4 confirmed byte-identical pixel coordinates on both sides, 22g x3 the documented intermittent archive.org class), zero introduced by this round.",
+      "status": "RELEASED",
+      "note": "Word Card: the \"Back to Word Card\" round trip actually works (issue #113, PR #135). Every existing Word Card suite stopped at \"the return bar appears\" and never pressed it -- doing that in a real browser found two real, narrowly-scoped defects in the Basic Arabic lemma/root feature's own return mechanism (built v08.20-v08.22): the Basic tab's lemma list did not survive the round trip (fixed with a one-shot restore signal, mirroring the Depth tab's own expandedForm treatment), and the scroll restore could never have worked (window.scrollY is always 0 in this app's shell; readViewScrollContainer() now reads the correct live element for the current rendering mode, with sideways-flow and Note-view-origin cases flagged rather than silently fixed). New quran-word-card-return.mjs suite, 55 checks. No protected path, no new translation string, no Firestore write/Rule/index. Independently re-verified by the Architect before merging: fresh checkout, clean merge with no conflicts, all 8 CI-gated governance suites clean, the focused suite 55/0, behaviour.mjs run against both the merged tree and a clean main baseline under the same substitute Chromium build -- 987/6 vs 984/9, every failure on both sides pre-existing and environmental (27i, 31e, 40g x4 confirmed byte-identical pixel coordinates on both sides, 22g x3 the documented intermittent archive.org class), zero introduced by this round. A PRIOR main milestone -- superseded by 08.41.",
       "integration": {
         "authorizedOn": "2026-09-23",
         "integratedOn": "2026-09-23",
@@ -239,10 +239,25 @@
         "method": "MERGE_PR",
         "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/135"
       }
+    },
+    {
+      "version": "08.41",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Word-by-Word whole-Qur'an/Juz percentage running counter -- BUILT AND GATED, not turned on (issue #206, PR #209). A new, additive Firestore collection (quranWordTotals) backs a gold ring around the Explore wheel (whole-Qur'an known/total), an Approach/Word-by-Word wedge-colour toggle at the Juz level, and a gate-free Word Card 'Appears N times -- X% of all words' line. Nothing changes for a real reader yet -- the same shape as v08.30's Activity evidence before v08.34 turned it on. The gate, app/js/study-wbw-total-readiness.js, copies study-evidence-readiness.js's shape exactly: ready:false as a literal, a governed decision required to flip it, and it imports nothing at all (confirmed by reading the file). The write-gate-blocking guarantee was verified directly: applyWordTotalCounterDelta() in quranrevival.html returns before calling the data layer whenever the pre-write countsAsKnown snapshot is null (gate closed), and recordWordTotalDelta()/getWordTotals() in quran-word-total-data.js each independently re-check the same gate at their own top too -- an ordinary WbW tap can never throw over this undeployed collection, the exact defect class v08.31 fixed for Activity evidence was not reintroduced here. The counter only moves on a genuine countsAsKnown transition, proven by a claim->confirm->return->re-claim->confirm sequence reconciled against an independent recount. Per-Juz totals (30 rows summing to the real 77,429) are derived by tools/quran-data-pull/build-juz-word-totals.js from the real packaged corpus, independently re-run by the Architect and reproduces the shipped file byte-for-byte. The Approach wheel's own pooled-status colouring is provably unchanged (fill/ring are strictly opt-in renderScopedWheel() params). New quran-word-total-boundary.mjs, 25 checks. firestore.rules/firebase.json untouched; Rules candidate at docs/governance/2026-09-23-wbw-total-counter-rules-candidate.rules, not deployed. The Builder's own PR-opening step did not run (workflow run 35821824718, conclusion success, no PR); the Architect opened PR #209 itself from the already-pushed branch. Independently re-verified: fresh worktree off origin/main, all 8 CI-gated governance suites plus the new suite re-run clean, no protected path touched, clean merge against main (re-checked immediately before merging). behaviour.mjs could not run in this sandbox (chromium_headless_shell-1243 missing, only -1194 present, the same documented Playwright build-version gap).",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-23",
+        "acceptedApplicationSha": "bb720bd199c282433a4f7e445d87157b1f9372a5",
+        "integratedMainSha": "a459ea61c34c54e33f5f31a7cef11a882b5ee677",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/209"
+      }
     }
   ],
-  "nextUnallocated": "08.41",
+  "nextUnallocated": "08.42",
   "nextUnallocatedNote": [
+    "v08.41 was allocated to the Word-by-Word whole-Qur'an/Juz percentage running counter round (issue #206, PR #209), BUILT AND GATED, confirmed merged on 2026-09-23.",
     "v08.40 was allocated to the Word Card back-to-Word-Card round trip fix (issue #113, PR #135), confirmed merged on 2026-09-23.",
     "08.41 and later numbers remain unallocated; allocation requires MMSA Master Architect direction.",
     "v08.39 was allocated to the Asma ul Husna classification rename/archive + file-a-Name generalization round (issue #205, PR #207), confirmed merged on 2026-09-23.",
@@ -280,8 +295,8 @@
       "name": "QuranRevival -- Quran Study module",
       "activeBranch": null,
       "integrationState": "MERGED_TO_MAIN",
-      "declaredVersion": "08.40",
-      "baselineSha": "4c60bdd6a6acbec3bcf970381692f918b2614f54",
+      "declaredVersion": "08.41",
+      "baselineSha": "06986c72127111a4ba9dbd635df0630f427ca69b",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
       "ownedPaths": [
         "app/quranrevival.html",
@@ -301,9 +316,10 @@
         "tools/i18n-verify/journey-map-*.mjs",
         "tools/i18n-verify/d14-*.mjs",
         "app/js/study-event-wiring.js",
-        "app/js/study-evidence-readiness.js"
+        "app/js/study-evidence-readiness.js",
+        "app/js/study-wbw-total-readiness.js"
       ],
-      "baselineNote": "v08.40 Word Card back-to-Word-Card round trip fix PR #135 merged to main on 2026-09-23.",
+      "baselineNote": "v08.41 Word-by-Word whole-Qur'an/Juz percentage running counter (BUILT AND GATED) PR #209 merged to main on 2026-09-23.",
       "baselineAcknowledgement": "docs/reports/2026-09-18-hadith-v0829-main-integration.md",
       "role": "Subject module (Quran). NOT the umbrella; the umbrella is MMSA.",
       "declaredSharedTouches": [
@@ -845,7 +861,29 @@
     "e1": "OPEN",
     "firestoreRules": "DONE",
     "firestoreIndexes": "DONE",
-    "note": "E1 (the access blocker) is resolved: the Owner published directly in the Console, proving the access path works. The two flat keys above are retained for readers of the pre-v08.31 shape; the four states above them are authoritative. D14's OWN separate Rules candidate (d14-timezone-tenantpeople-rules-candidate-2026-09-18.rules) was not part of what was published and remains undeployed -- see the D14-WIRING pending item."
+    "note": "E1 (the access blocker) is resolved: the Owner published directly in the Console, proving the access path works. The two flat keys above are retained for readers of the pre-v08.31 shape; the four states above them are authoritative. D14's OWN separate Rules candidate (d14-timezone-tenantpeople-rules-candidate-2026-09-18.rules) was not part of what was published and remains undeployed -- see the D14-WIRING pending item.",
+    "wbwTotalRulesDeployed": {
+      "$comment": [
+        "A SEPARATE, NEWER deployment tracking entry -- issue #206 (v08.41, PR",
+        "#209) added a SECOND, INDEPENDENT Firestore collection (quranWordTotals),",
+        "with its own Rules candidate, its own readiness gate module and its own",
+        "governed-enablement record below. It is tracked in its own key rather",
+        "than folded into firebaseRulesDeployed above, because that key already",
+        "means one specific, already-published deployment event (the Phase 3-6",
+        "candidate published 2026-09-22) -- conflating a second, still-undeployed",
+        "candidate into the same key would make a true 'Rules deployed' claim",
+        "cover a Rules candidate that is not deployed. No guard cross-checks this",
+        "key yet (programme-ledger.mjs's guard G reads a fixed four-key set); it",
+        "exists so the fact is recorded the same shape as every other deployment",
+        "state in this file, ready for a guard extension if this collection's",
+        "own readiness is ever governed-enabled."
+      ],
+      "state": "NOT_DONE",
+      "means": "quranWordTotals (issue #206, PR #209, v08.41) has no deployed Firestore Rules. The candidate is docs/governance/2026-09-23-wbw-total-counter-rules-candidate.rules, not deployed. app/js/study-wbw-total-readiness.js gates the app so nothing here is attempted against production until this flips to DONE and a governed enablement decision is recorded in wbwTotalPersistenceReadiness below.",
+      "firestoreRules": "NOT_DONE",
+      "firestoreIndexes": "NOT_APPLICABLE",
+      "evidence": "firestore.rules carries no mention of quranWordTotals (grepped, zero occurrences). The candidate's own comment states it is a self-contained extract, never merged into the live ruleset, and that the collection needs no composite index (queried only by its own document id)."
+    }
   },
   "programme": {
     "name": "MMSA -- Madrasatul Muslimeen's Study App",
@@ -929,6 +967,33 @@
       "docs/governance/programme-integration-ledger.json: deployment.firebaseRulesDeployed.state = YES, proven by an actual deployment",
       "this block: ready=true and decision={by,on,reference} from the closed authority set",
       "app/js/study-evidence-readiness.js: EVIDENCE_PERSISTENCE_DECLARATION.ready=true with the same decision"
+    ]
+  },
+  "wbwTotalPersistenceReadiness": {
+    "$comment": [
+      "The governed deployment-readiness decision for issue #206's whole-Qur'an/",
+      "Juz running word counter (quranWordTotals), same shape as",
+      "evidencePersistenceReadiness immediately above -- a SEPARATE record",
+      "because it is a separate collection with its own Rules candidate and its",
+      "own readiness gate module, not a redeclaration of the Activity-evidence",
+      "gate. app/js/study-wbw-total-readiness.js holds the runtime declaration;",
+      "this is the governance record it must agree with, the same discipline",
+      "evidencePersistenceReadiness/guard G already established. No guard reads",
+      "this block yet -- programme-ledger.mjs's guard G is scoped to a fixed",
+      "four-key deployment set and to evidencePersistenceReadiness by name. This",
+      "block is recorded now, in the established shape, so a future guard",
+      "extension (if this collection's readiness is ever governed-enabled) has",
+      "a real record to check against rather than inventing one at that time."
+    ],
+    "declarationPath": "app/js/study-wbw-total-readiness.js",
+    "ready": false,
+    "decision": null,
+    "gate": "E1",
+    "note": "quranWordTotals has no deployed Firestore Rules. The candidate is docs/governance/2026-09-23-wbw-total-counter-rules-candidate.rules, not deployed. The ring, the Approach/Word-by-Word toggle, and the Juz/Quran-level coverage caption stay absent until deployment.wbwTotalRulesDeployed.state = DONE (proven by an actual deployment) AND a governed decision is recorded here, mirroring exactly how v08.34 turned on Activity evidence.",
+    "requiredToEnable": [
+      "docs/governance/programme-integration-ledger.json: deployment.wbwTotalRulesDeployed.state = DONE, proven by an actual deployment",
+      "this block: ready=true and decision={by,on,reference} from the closed authority set",
+      "app/js/study-wbw-total-readiness.js: WBW_TOTAL_PERSISTENCE_DECLARATION.ready=true with the same decision"
     ]
   }
 }
