@@ -223,8 +223,19 @@ check("app/js/note-foundation.js changed by INSERTION ONLY, except one pinned li
     { cwd: root, encoding: "utf8" });
   if (diffText === "") return; // identical to origin/main
   const removedLines = diffText.split("\n").filter((l) => l.startsWith("-") && !l.startsWith("---"));
-  assert.deepEqual(removedLines, [NOTE_FOUNDATION_PINNED_REMOVAL],
-    `note-foundation.js removed line(s) do not match the one pinned exception -- an existing behaviour may have been reshaped: ${JSON.stringify(removedLines)}`);
+  // UPDATED 2026-09-23, reason recorded rather than the check weakened.
+  // The pinned exception above names a line PR #104's own round REPLACED
+  // relative to the `main` it was diffed against at the time -- but that
+  // fix has since landed ON `main` itself (P5-G, merged this same round),
+  // so a branch diffed against a CURRENT `main` that already carries it
+  // sees no removal at all: the file is genuinely insertion-only from
+  // that baseline. `[]` is therefore just as valid a shape as the pinned
+  // single-line replacement -- both mean "nothing else was reshaped" --
+  // and accepting only one of them made this check fail on a correct,
+  // unreshaped diff the moment `main` caught up to the exception it names.
+  // Removing anything ELSE still fails, exactly as before.
+  assert.ok(removedLines.length === 0 || JSON.stringify(removedLines) === JSON.stringify([NOTE_FOUNDATION_PINNED_REMOVAL]),
+    `note-foundation.js removed line(s) do not match the pinned exception (or the now-equally-valid empty case) -- an existing behaviour may have been reshaped: ${JSON.stringify(removedLines)}`);
   const addedLines = diffText.split("\n").filter((l) => l.startsWith("+") && !l.startsWith("+++"));
   assert.ok(addedLines.length > 0, "a non-empty diff with no additions makes no sense");
 });
