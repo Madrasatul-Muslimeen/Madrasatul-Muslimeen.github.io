@@ -16092,3 +16092,103 @@ invented.
 `app/js/version.js`: 08.37 → **08.38**. Allocated by the MMSA Architect.
 See `docs/governance/programme-integration-ledger.json` for the version
 allocation record.
+
+---
+
+**v08.39 (23 Sep 2026) — Asma ul Husna: classification rename/archive wired,
+and "file a new Name" generalized to every classification (issue #205,
+PR #207).** The closing half of v08.38's own round (issue #202): that PR's
+review disclosed two gaps against #202's spec, not hidden but not closed
+either, and this round closes both — same file, same mechanism, no new
+data-layer work.
+
+**(1) Rename/archive a classification, from the UI.** The data-layer
+functions (`renameClassification`/`setClassificationStatus`) were already
+built and tested in #202 — only the ✎/🗄 pair for the classification tab
+itself was missing. Added `asmaXRenameClassBtn`/`asmaXArchiveClassBtn`
+("✎C"/"🗄C") next to the classification switcher, owner/prime only
+(`canAdminCatalogueClientSide()`), mirroring the existing collection-level
+✎/🗄 pair one level down. Renaming writes to the CURRENT app language via
+`setLangText`, same shape as every other rename in this feature. Archiving
+is I4 (archive, never delete): a classification's own lists and every Name
+filed in them stay in the data, they just stop being offered as somewhere
+new. The existing "Show archived" toggle now also reveals an archived
+classification's own switcher field, rather than adding a second toggle for
+the same idea — the cleanest fit against the existing pattern, per the
+issue's own instruction.
+
+**(2) "File a new Name into a list" generalized to every active
+classification.** `openAsmaXGroupsPopover()` — the issue's own "likely"
+guess for where the gap was — turned out to already be fully generalized by
+#202 (it iterates every collection unfiltered by kind, labelled by
+`asmaXClassificationTitle(c.kind)`). The real ungeneralized flow, found by
+reading the real call sites rather than trusting the guess, was the
+brand-new-Name "file it under" row (`asmaXFileIntoRowHtml`/
+`openAsmaXEditOverlay`'s own `fileInto` handling) — reachable from the Note
+view's ✚/✚² buttons, each hardcoding a single kind ("group"/"dual"). It now
+carries a real Classification `<select>` built from the live registry
+(`asmaActiveClassifications`), which cascades into the File-under list
+picker on change — a brand-new Name is filable under any active
+classification from this one popover, not only the two the opening button
+happened to default to.
+
+**Requirements carried over from #202, confirmed unchanged**: no new
+Firestore read on any startup path (I9); no `firestore.rules`/
+`firebase.json`/index/`app/js/version.js` change from the Builder's own
+round — both changes are UI wiring against the already-authorized
+`asmaCollections` document, confirmed by reading `firestore.rules` directly
+rather than assumed; every new/changed user-visible string added to
+`app/js/i18n/bn.js` (I11); `asma-study.html`'s own separate panel untouched.
+
+**`asma-classifications-boundary.mjs` extended 26 → 36 checks**, covering:
+the classification-level rename/archive buttons exist and are wired to
+their own prompts (not the collection-level pair); renaming writes the
+typed title into the current app language; archiving calls
+`setClassificationStatus` and never the collection-level status setter, and
+never drops a classification's collections or their memberships (I4,
+re-asserted through the exact call the UI now makes); archiving the
+classification currently being browsed falls back to another active one (or
+the seeded "group") rather than a tab the switcher no longer shows; the
+Show-archived flag reveals an archived classification's own switcher field;
+the file-into row's Classification select is built from the live registry
+with a positive control (a freshly-added THIRD classification is reachable
+from it, the same shape #202's own suite used for the switcher); the
+Classification select cascades into the file-under picker on change; and
+the save handler files under whichever classification was chosen, not a
+hardcoded `fileInto.kind`. Two of the new checks were manually
+mutation-tested by the Builder and confirmed to fail before being reverted.
+
+**Independently re-verified by the Architect** — the Builder's own
+PR-opening step failed to run again (the same gap v08.35/v08.36/v08.38
+recorded), so the Architect opened PR #207 itself from the Builder's
+already-pushed, already-checked branch (`claude/issue-205-20260923-0108` at
+`e3db37a`). Fresh checkout, all 8 CI-gated governance suites re-run clean
+and matching the Builder's own numbers exactly (`programme-ledger.mjs` 8
+passed/23 noted/0 failed, `programme-ledger-mutations.mjs` 49/0,
+`brief-integrity.mjs` 8/0, `study-activity-evidence-boundary.mjs` 27/0, its
+mutations suite 11/0, `study-event-wiring.mjs` 41/0,
+`rules-authorisation-executable.mjs` 40/0, `workflow-expressions.mjs`
+12/0), plus `asma-classifications-boundary.mjs` re-run clean at 36/0. Full
+diff read by hand (`app/quranrevival.html` 194 lines, `app/js/i18n/bn.js`
+17 lines of new English/Bangla string pairs, the extended boundary suite 96
+lines) — `git diff --name-only origin/main...` confirms only those three
+files, no protected path touched. Clean fast-forward against `main` at
+merge time.
+
+**`behaviour.mjs` could not run in this sandbox** —
+`chromium_headless_shell-1243` missing, only `-1194` present, the
+identical, now three-times-documented Playwright build-version gap this
+file already records for v08.35/v08.36/v08.37/v08.38 — not a code defect.
+A real-phone check of the Explore panel's ⋯ menu, both languages, is the
+recommended substitute, the same standing substitute those earlier rounds
+used.
+
+**What was NOT built**: no new theological content or classification
+assignment; no change to `openAsmaXGroupsPopover()` (confirmed already
+correct, left untouched); no change to the reference-attach popover or its
+own "+ Create a new Dual Name" button (a separate, explicitly-untouched
+mechanism).
+
+`app/js/version.js`: 08.38 → **08.39**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.

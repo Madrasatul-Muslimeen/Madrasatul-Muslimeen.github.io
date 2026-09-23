@@ -158,7 +158,41 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.38 on `main`** (23 Sep 2026 — Asma ul Husna's
+**Current milestone: v08.39 on `main`** (23 Sep 2026 — Asma ul Husna's
+classification rename/archive wired, and "file a new Name" generalized to
+every classification, issue #205, PR #207 — the closing half of v08.38's
+own round, issue #202. **What actually changes for a real reader**: in the
+Explore panel's ⋯ Manage menu, an owner/prime user can now rename or
+archive the classification TAB itself (not just a collection inside it) —
+the data-layer functions were already built and tested in #202, only their
+UI was missing. And when filing a brand-new Name (the Note view's own
+"+ New Name"/"+ New Dual Name" buttons), the popover now offers a real
+Classification field built from the live registry, so a Name can be filed
+under any classification the owner has added, not only the two seeded
+"Group"/"Dual Names" ones. **What stays the same**: archiving a
+classification is I4 (archive, never delete) — its lists and every Name
+filed in them stay in the data and keep resolving in "Belongs to"; the
+existing "Show archived" toggle was extended to also reveal an archived
+classification rather than adding a second toggle; `openAsmaXGroupsPopover()`
+— the issue's own "likely" guess for where the second gap was — turned out
+to already be fully generalized by #202 and was correctly left untouched.
+No new Firestore read on any startup path (I9), no `firestore.rules`/
+`firebase.json`/index change — both changes are UI wiring against the
+already-authorized `asmaCollections` document. No new theological content.
+`asma-classifications-boundary.mjs` extended 26 → 36 checks, two of them
+mutation-tested. **Independently re-verified by the Architect** (fresh
+checkout of the Builder's branch, all 8 CI-gated governance suites plus
+the extended boundary suite re-run clean, full diff read by hand, no
+protected path touched, clean fast-forward against `main`); `behaviour.mjs`
+could not run in this sandbox — `chromium_headless_shell-1243` missing,
+only `-1194` present, the identical, now three-times-documented Playwright
+build-version gap from v08.35/v08.36 — a real-phone check of the Explore
+panel's ⋯ menu, both languages, is the recommended substitute. **This PR
+was opened by the Architect from the Builder's already-pushed branch** —
+its own PR-opening step again did not execute, the same gap v08.35/v08.36/
+v08.38 all recorded. Allocated by the MMSA Architect.
+
+**Previous milestone: v08.38 on `main`** (23 Sep 2026 — Asma ul Husna's
 Groups/Dual Names generalized into an open, owner-defined set of
 classifications, issue #202, PR #203. The Owner reviewed an interactive
 demo (a mockup, not real data or code) and said *"Al Hamdulillah! Build
