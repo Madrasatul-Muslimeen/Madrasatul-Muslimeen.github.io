@@ -190,4 +190,31 @@
 // v08.39), full diff read by hand, no protected path touched. No
 // Firestore write, Rule or index; no new translation string.
 // Allocated by the MMSA Architect.
-export const APP_VERSION = "08.40";
+// 08.41: Hadith -- the current breadcrumb crumb carries aria-current="page"
+// (issue #114 Gate A/B, PR #149). Reproduced live: neither the current
+// breadcrumb crumb nor its containing <nav> carried any accessible signal
+// for "this is where you are", confirmed null at every level on both
+// breadcrumb call sites (Collections tab and Topic tab) -- more
+// load-bearing now the trail runs a level deeper than it used to. Fixed
+// in app/js/hadith-browser.js, both call sites. Zero new translatable
+// strings -- aria-current's value is a fixed ARIA token, not user-facing
+// text. A real, separate multi-edition breadcrumb-ambiguity question was
+// found and reproduced during the same investigation (two editions of one
+// collection would render byte-identical breadcrumb text) but is
+// deliberately NOT fixed here -- today's committed corpus carries exactly
+// one edition per collection, so it is not a live defect, and it would
+// need a real product/data decision this round has no authority to make.
+// 6 new mutation-proven checks in hadith-source-navigation-browser.mjs
+// (36 -> 42), both languages. Independently re-verified by the Architect
+// before merging: fresh checkout, clean merge with no conflicts against
+// main, all 8 CI-gated governance suites clean, the focused suite re-run
+// clean at 42/42 under an available substitute Chromium build, and the
+// full behaviour.mjs suite run against both PR #149's own merged tree and
+// a clean origin/main baseline (via a disposable git worktree, same
+// substitute browser): 987 pass/6 fail vs 984 pass/9 fail, every failure
+// on both sides pre-existing and environmental (27i, 31e, 40g x4
+// confirmed byte-identical pixel coordinates on both sides, 22g x3 the
+// documented intermittent archive.org class) -- zero introduced by this
+// diff, which touches only app/js/hadith-browser.js. No protected path,
+// no Rules/index change. Allocated by the MMSA Architect.
+export const APP_VERSION = "08.41";

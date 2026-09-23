@@ -158,7 +158,36 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.40 on `main`** (23 Sep 2026 — Word Card: the
+**Current milestone: v08.41 on `main`** (23 Sep 2026 — Hadith: the current
+breadcrumb crumb carries `aria-current="page"`, issue #114 Gate A/B, PR
+#149. Reproduced live: neither the current breadcrumb crumb nor its
+containing `<nav>` carried any accessible signal for "this is where you
+are" — confirmed `null` at every level, on both breadcrumb call sites
+(Collections tab and Topic tab) — more load-bearing now the trail runs a
+level deeper than it used to. **What actually changes for a real
+reader**: nothing visible for sighted keyboard use; a screen reader now
+correctly announces the current location in the breadcrumb trail. Zero
+new translatable strings — `aria-current`'s value is a fixed ARIA token,
+not user-facing text. A real, separate multi-edition breadcrumb-ambiguity
+question was found and reproduced during the same investigation (two
+editions of one collection would render byte-identical breadcrumb text)
+but is deliberately **not fixed here** — today's committed corpus carries
+exactly one edition per collection, so it is not a live defect, and
+closing it would need a real product/data decision (does a Hadith
+collection ever carry more than one edition?) this round has no authority
+to make. 6 new mutation-proven checks in
+`hadith-source-navigation-browser.mjs` (36 → 42), both languages.
+**Independently re-verified by the Architect** before merging: fresh
+checkout, clean merge with no conflicts against `main`, all 8 CI-gated
+governance suites clean, the focused suite re-run clean at 42/42 under an
+available substitute Chromium build, and the full `behaviour.mjs` suite
+run against both the merged tree and a clean `origin/main` baseline (via
+a disposable `git worktree`) — 987 pass/6 fail vs 984 pass/9 fail, every
+failure on both sides pre-existing and environmental, zero introduced by
+this diff, which touches only `app/js/hadith-browser.js`. Allocated by
+the MMSA Architect.
+
+**Previous milestone: v08.40 on `main`** (23 Sep 2026 — Word Card: the
 "Back to Word Card" round trip actually works, issue #113, PR #135. Every
 existing Word Card suite stopped the moment the return bar appeared on
 screen and never pressed it — pressing it in a real browser found two
