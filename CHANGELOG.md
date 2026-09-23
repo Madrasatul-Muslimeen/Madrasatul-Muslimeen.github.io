@@ -16986,3 +16986,53 @@ no Firestore write/Rule/index.
 `app/js/version.js`: 08.49 → **08.50**. Allocated by the MMSA Architect.
 See `docs/governance/programme-integration-ledger.json` for the version
 allocation record.
+
+---
+
+**v08.51 (23 Sep 2026) — Health Atlas: organ Type pill parity (issue
+#115, PR #152).**
+
+1. **Gate A: independently re-verified PR #151's own claims, not
+trusted.** Fetched full history and every remote branch, checked out PR
+#151's exact head commit, re-ran everything from scratch. Every Health
+suite number and every governance suite number reproduced exactly as PR
+#151's own table states. Independently confirmed the claimed
+`tools/md2report.py` defect, read-only, on a representative cross-module
+sample (not just Health).
+
+2. **Gate B: `organ.partType`** (Organ/Vein/Artery/Nerve/Tissue/Gland/
+Duct) was in the preserved dataset since foundation tranche 1 and read by
+nothing. The v02.04 source's own `rowHtml()` prints it as a small pill
+right after each organ's name — this port had never shown it. It is a
+closed-set anatomical classification, the same class of field as `role`
+and `system` (already ported): never a dose, nutrient amount, activity
+recommendation or remedy. All 46 organs carry one of exactly the source's
+own seven values. Ported faithfully: a `.ha-bs-type-pill` badge next to
+each organ row's name, read-only, no new selector needed.
+
+3. **Measured with the real longest name in the dataset** ("Vena Cava
+(Superior & Inferior)", a Vein) at desktop/tablet/phone before shipping.
+The name+pill group is its own `flex-wrap` unit rather than a single
+`nowrap` line, so the worst case wraps the pill onto its own line instead
+of truncating the name or overflowing the row. Zero horizontal page
+overflow at any width.
+
+`body-systems-parity-browser.mjs` gained 4 new checks (16 → 20), a new
+`data-integrity` closed-set assertion (21 → 22), a new `view-boundary`
+positive control (14 → 15).
+
+**What this deliberately did not do**: build a Type *filter* (the source
+only ever shows `partType` as a label); touch `tools/md2report.py` or any
+other module's committed report; re-investigate the Lifestyle deferral.
+
+**Independently re-verified by the Architect before merging**: fresh
+full-history checkout, retargeted from its stale stacked base onto `main`
+and merged current `main` in (clean auto-merge), all 11 governance suites
+clean, all 19 runnable Health-owned suites clean matching the PR's own
+claimed numbers exactly (`body-systems-parity-browser` 20/20,
+`data-integrity` 22/22, `view-boundary` 15/15). No protected path
+touched, no Firestore write/Rule/index.
+
+`app/js/version.js`: 08.50 → **08.51**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.

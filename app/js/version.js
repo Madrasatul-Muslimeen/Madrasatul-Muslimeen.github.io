@@ -507,4 +507,29 @@
 // onto main and merged current main in (clean), all 11 governance
 // suites clean, all 19 runnable Health-owned suites clean including the
 // new suite 12/12. Allocated by the MMSA Architect.
-export const APP_VERSION = "08.50";
+// 08.51: Health Atlas -- organ Type pill parity (issue #115, PR #152).
+// The v02.04 source's own organ "Type" pill (organ.partType --
+// Organ/Vein/Artery/Nerve/Tissue/Gland/Duct) was in the preserved dataset
+// since foundation tranche 1 and read by nothing. A closed-set anatomical
+// classification, the same class of field as the already-ported
+// role/system -- never a dose, nutrient amount, activity recommendation
+// or remedy. Ported faithfully as a small pill next to each organ's name
+// in the Body Systems list. Measured with the real longest name in the
+// dataset ("Vena Cava (Superior & Inferior)", a Vein) at desktop/tablet/
+// phone before shipping -- the name+pill share one flex-wrap group rather
+// than a nowrap line, so the worst case wraps the pill onto its own line
+// instead of truncating the name or overflowing the row. Zero horizontal
+// page overflow at any width. 4 new committed browser checks
+// (body-systems-parity-browser.mjs 16 -> 20), a new closed-set
+// data-integrity assertion (21 -> 22), a new view-boundary positive
+// control (14 -> 15). A repository-wide tools/md2report.py
+// fenced-code/link-flattening defect (affecting all 82 report .md/.html
+// pairs) was independently confirmed cross-module, read-only, not fixed
+// -- needs Master Architect authorisation. No protected path touched, no
+// Firestore write/Rule/index. Independently re-verified by the Architect
+// before merging: fresh full-history checkout, retargeted from its stale
+// stacked base onto main and merged current main in (clean), all 11
+// governance suites clean, all 19 runnable Health-owned suites clean
+// matching the PR's own claimed numbers exactly. Allocated by the MMSA
+// Architect.
+export const APP_VERSION = "08.51";
