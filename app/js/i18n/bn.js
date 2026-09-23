@@ -1173,6 +1173,10 @@ export const BN = {
   "Arabic word coverage isn't available at this granularity — open a Surah or a Ruku' to see it.":
     "এই স্তরে আরবি শব্দের অগ্রগতি দেখানো যায় না — দেখতে হলে একটি সূরা বা রুকু খুলুন।",
   "{known} of {total} Arabic words known": "{total}টি আরবি শব্দের মধ্যে {known}টি জানা",
+  // Issue #206 -- the gold running-total ring + Approach/Word by Word wedge-
+  // colouring toggle. The button labels reuse the existing "Approach" and
+  // "Word by Word" keys above/below rather than adding new ones.
+  "Colour the wheel by": "চাকাটি যে অনুযায়ী রঙ করা হবে",
   // MAP Phase 3 -- WbW word progress on the Quran Word Card.
   "Word progress": "শব্দের অগ্রগতি",
   "Waiting to be checked": "যাচাইয়ের অপেক্ষায়",
@@ -2112,13 +2116,6 @@ export const BN = {
   "New classification:": "নতুন শ্রেণিবিভাগ:", // ?
   "New classification": "নতুন শ্রেণিবিভাগ", // ?
 
-  // Classification rename/archive round (23 Sep 2026, issue #205) -- the
-  // ✎/🗄 pair for the classification tab itself, same shape as "Rename
-  // group:"/"Archive"/"Restore" above, one level up.
-  "Rename classification:": "শ্রেণিবিভাগের নাম পরিবর্তন করুন:", // ?
-  "Archive classification": "শ্রেণিবিভাগ সংরক্ষণাগারে রাখুন", // ?
-  "Restore classification": "শ্রেণিবিভাগ ফিরিয়ে আনুন", // ?
-
   // Back-button round -- the popup note view's own Back control.
   "Back": "পেছনে", // ?
 
@@ -2184,16 +2181,6 @@ export const BN = {
   "New group title": "নতুন গ্রুপের শিরোনাম", // ?
   "New Dual Names list title": "নতুন জোড়া-নামের তালিকার শিরোনাম", // ?
 
-  // Classification round (23 Sep 2026, issue #205) -- the "file it under"
-  // row generalized: a real Classification field alongside the list picker,
-  // so a brand-new Name can be filed under any active classification, not
-  // only the two "File under (Group)"/"File under (Dual Names)" wordings
-  // above (kept, unused, per this project's own rule).
-  "Classification": "শ্রেণিবিভাগ", // ?
-  "File under": "যেখানে রাখবেন", // ?
-  "+ New list…": "+ নতুন তালিকা…", // ?
-  "New list title": "নতুন তালিকার শিরোনাম", // ?
-
   // 2 Sep 2026 -- the list-pane splitter/collapse toggle shared by
   // Approach, Explore, QCR and Asma ul Husna.
   "Collapse list": "তালিকা সংকুচিত করুন", // ?
@@ -2254,6 +2241,8 @@ export const BN = {
   "{count} root-linked occurrences": "ধাতু-সম্পর্কিত {count}টি ব্যবহার",
   "{count} lemma-linked occurrences": "মূল রূপ-সম্পর্কিত {count}টি ব্যবহার",
   "Derived forms of this root": "এই ধাতু থেকে উৎপন্ন রূপসমূহ",
+  // Issue #206 -- the Word Card's own occurrence-share line.
+  "Appears {count} times in the Qur'an — {percent}% of all words": "কুরআনে {count} বার এসেছে — সকল শব্দের {percent}%",
   "{total} occurrences in {forms} derived forms": "{forms}টি উৎপন্ন রূপে {total}টি ব্যবহার",
   "{count} occurrences": "{count}টি ব্যবহার",
   "Category not recorded": "শ্রেণি লিপিবদ্ধ নেই",

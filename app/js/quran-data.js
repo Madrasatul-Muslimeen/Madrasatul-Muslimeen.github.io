@@ -168,3 +168,27 @@ export async function getHizbIndex() {
   }
   return hizbIndexPromise;
 }
+
+let juzWordTotalsPromise = null;
+
+/**
+ * Issue #206 -- the whole-Qur'an/Juz running counter's DENOMINATOR: 30 real
+ * per-Juz word counts, `{ quranTotalWords, byJuz: [{juz, totalWords}, ...] }`,
+ * computed once from the real pulled per-ayah `words[]` arrays by
+ * tools/quran-data-pull/build-juz-word-totals.js -- never estimated or
+ * hand-typed. Tiny (30 rows); loaded on first use like the three indexes
+ * above, never on the startup path (I9) -- only when Explore's Juz or
+ * whole-Qur'an level is actually opened.
+ */
+export async function getJuzWordTotalsIndex() {
+  if (!juzWordTotalsPromise) {
+    juzWordTotalsPromise = fetch(`${BASE_URL}/juz-word-totals.json`).then((res) => {
+      if (!res.ok) throw new Error(`Couldn't load the juz word totals (HTTP ${res.status}).`);
+      return res.json();
+    }).catch((err) => {
+      juzWordTotalsPromise = null;
+      throw err;
+    });
+  }
+  return juzWordTotalsPromise;
+}
