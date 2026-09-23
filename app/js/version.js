@@ -350,4 +350,29 @@
 // checkout, merged current main in (clean, no conflicts), all 11
 // governance suites clean, all five Word Card suites re-run matching the
 // round's own claims exactly. Allocated by the MMSA Architect.
-export const APP_VERSION = "08.45";
+// 08.46: Health Atlas -- the References view switcher gets a real
+// keyboard/screen-reader fix (issue #115 Gate A/B, PR #148). Gate A
+// (reproduced first): tranche 9's buildViewTabs() declared
+// role="tab"/"tablist" + aria-selected on the Body Systems/References
+// switcher, but built none of the rest the WAI-ARIA Tabs pattern
+// requires -- no aria-controls, no role="tabpanel" anywhere, no
+// arrow-key handling. A new committed browser suite run against the
+// unmodified tranche 9 commit failed 5 of 10 checks, reproducing exactly
+// that. Gate B: these two buttons replace the whole screen (Body Systems
+// vs References), not panels of one shared view, so per issue #115's own
+// instruction this uses ordinary buttons (the WAI-ARIA toggle-button
+// pattern: aria-pressed, role="group" container) rather than building
+// out full tab-panel semantics for a control that isn't one -- a native
+// <button> needs no bespoke keyboard handling, already in Tab order,
+// already Enter/Space-activatable. references-tabs-accessibility-
+// browser.mjs: 5/10 -> 10/10. references-index-browser.mjs's own
+// pre-existing aria-selected assertions updated in place to
+// aria-pressed, still 12/12. Independently re-verified by the Architect
+// before merging: fresh full-history checkout, merged current main in
+// (clean, no conflicts), all 11 governance suites clean, all 18
+// Health-owned suites clean, mutation-proven by reverting the fix to
+// origin/main's copy of health-atlas-view.js (exactly 5 of 10 checks
+// fail, matching Gate A's own reproduction). No protected path touched,
+// no version bump beyond this allocation, no Firestore write/Rule/index.
+// Allocated by the MMSA Architect.
+export const APP_VERSION = "08.46";

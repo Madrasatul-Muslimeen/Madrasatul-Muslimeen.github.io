@@ -16652,3 +16652,48 @@ no new translation string, no Firestore write/Rule/index.
 `app/js/version.js`: 08.44 → **08.45**. Allocated by the MMSA Architect.
 See `docs/governance/programme-integration-ledger.json` for the version
 allocation record.
+
+---
+
+**v08.46 (23 Sep 2026) — Health Atlas: References view switcher real
+keyboard/screen-reader fix (issue #115 Gate A/B, PR #148).**
+
+**Gate A (reproduced before touching app code)**: tranche 9's
+`buildViewTabs()` declared `role="tab"`/`"tablist"` + `aria-selected` on
+the Body Systems / References view switcher, but built none of the rest
+the WAI-ARIA Tabs pattern requires — no `aria-controls`, no
+`role="tabpanel"` anywhere, no arrow-key handling. A new committed
+browser suite (`tools/health-atlas-verify/references-tabs-accessibility-
+browser.mjs`) run against the **unmodified** tranche 9 commit failed 5 of
+10 checks, reproducing exactly that.
+
+**Gate B (the fix)**: these two buttons replace the whole screen (Body
+Systems vs. References), not panels of one shared view — so per issue
+#115's own instruction, this uses **ordinary buttons** (the WAI-ARIA
+toggle-button pattern: `aria-pressed`, `role="group"` container) rather
+than building out full tab-panel semantics for a control that isn't one.
+A native `<button>` needs no bespoke keyboard handling — already in Tab
+order, already Enter/Space-activatable — and the screen never suppressed
+its focus outline. Same suite re-run against the fix: 10/10 pass.
+`references-index-browser.mjs`'s own pre-existing `aria-selected`
+assertions were updated in place to `aria-pressed` — still 12/12 passing,
+nothing else in that file changed.
+
+**What this deliberately did not do**: build the full ARIA Tabs pattern
+(tabpanels/`aria-controls`/roving-tabindex arrow keys) — issue #115 named
+ordinary buttons as an equally valid resolution for view-switch actions,
+which these are.
+
+**Independently re-verified by the Architect before merging**: fresh
+full-history checkout, merged current `main` in (clean auto-merge, no
+conflicts), all 11 governance suites clean, all 18 Health-owned suites
+clean (297 checks: 15 non-browser suites plus `references-index-
+browser.mjs` 12/12, `references-tabs-accessibility-browser.mjs` 10/10,
+`body-systems-parity-browser.mjs` 16/16), and **mutation-proven**:
+reverting the fix to `origin/main`'s copy of `health-atlas-view.js` fails
+exactly 5 of 10 checks, matching Gate A's own reproduction. No protected
+path touched, no Firestore write/Rule/index.
+
+`app/js/version.js`: 08.45 → **08.46**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.

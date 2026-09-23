@@ -158,7 +158,39 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.45 on `main`** (23 Sep 2026 — Word Card: desktop
+**Current milestone: v08.46 on `main`** (23 Sep 2026 — Health Atlas: the
+References view switcher gets a real keyboard/screen-reader fix, issue
+#115 Gate A/B, PR #148. **Gate A (reproduced before touching app code)**:
+tranche 9's `buildViewTabs()` declared `role="tab"`/`"tablist"` +
+`aria-selected` on the Body Systems/References view switcher, but built
+none of the rest the WAI-ARIA Tabs pattern requires — no
+`aria-controls`, no `role="tabpanel"` anywhere, no arrow-key handling. A
+new committed browser suite
+(`tools/health-atlas-verify/references-tabs-accessibility-browser.mjs`)
+run against the unmodified tranche 9 commit failed 5 of 10 checks,
+reproducing exactly that. **Gate B (the fix)**: these two buttons replace
+the whole screen (Body Systems vs. References), not panels of one shared
+view — so per issue #115's own instruction, this uses **ordinary
+buttons** (the WAI-ARIA toggle-button pattern: `aria-pressed`,
+`role="group"` container) rather than building out full tab-panel
+semantics for a control that isn't one. A native `<button>` needs no
+bespoke keyboard handling — already in Tab order, already
+Enter/Space-activatable — and the screen never suppressed its focus
+outline. Same suite re-run against the fix: 10/10 pass.
+`references-index-browser.mjs`'s own pre-existing `aria-selected`
+assertions were updated in place to `aria-pressed` — still 12/12 passing,
+nothing else in that file changed. **Independently re-verified by the
+Architect before merging**: fresh full-history checkout, merged current
+`main` in (clean, no conflicts), all 11 governance suites clean, all 18
+Health-owned suites clean (297 checks), and **mutation-proven**:
+reverting the fix to `origin/main`'s copy of `health-atlas-view.js` fails
+exactly 5 of 10 checks, matching Gate A's own reproduction. No protected
+path touched. Did not build the full ARIA Tabs pattern
+(tabpanels/`aria-controls`/roving-tabindex arrow keys) — issue #115 named
+ordinary buttons as an equally valid resolution for view-switch actions,
+which these are. Allocated by the MMSA Architect.
+
+**Previous milestone: v08.45 on `main`** (23 Sep 2026 — Word Card: desktop
 drag/resize verified, one z-index defect fixed, issue #113, PR #137. The
 movable/resizable Word Card window has existed since v08.20, via the
 shared `initPopupWindow()` (`app/js/note-popup.js`) the Note/Wheel/Explore
