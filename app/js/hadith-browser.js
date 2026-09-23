@@ -280,7 +280,16 @@ function breadcrumb(state, render, uiLang) {
       b.addEventListener("click", onClick);
       bar.appendChild(b);
     } else {
-      bar.appendChild(el("span", "hadith-crumb-current", label));
+      // aria-current marks the trail's own current location for assistive
+      // tech (issue #114 Gate A/B, found by reproduction: neither this crumb
+      // nor its containing <nav> carried any accessible signal for which
+      // level is "here", and that grew more load-bearing the moment the
+      // edition crumb above made the trail two levels deeper). No new
+      // translatable string: aria-current's value is a fixed ARIA token, not
+      // user-facing text.
+      const cur = el("span", "hadith-crumb-current", label);
+      cur.setAttribute("aria-current", "page");
+      bar.appendChild(cur);
     }
   };
   add(t("Collections"), () => { state.editionId = null; state.bookId = null; state.chapterId = null; render(); focusCollectionsLanding(); });
@@ -482,7 +491,9 @@ function renderTopic(body, state, render) {
   back.dataset.hadithTopicBack = "true";
   back.addEventListener("click", () => { state.topicId = null; render(); });
   crumbs.appendChild(back);
-  crumbs.appendChild(el("span", "hadith-crumb-current", langText(idx.topic.label, uiLang)));
+  const topicCur = el("span", "hadith-crumb-current", langText(idx.topic.label, uiLang));
+  topicCur.setAttribute("aria-current", "page");
+  crumbs.appendChild(topicCur);
   body.appendChild(crumbs);
 
   body.appendChild(el("h2", null, langText(idx.topic.label, uiLang)));
