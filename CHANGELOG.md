@@ -16450,3 +16450,113 @@ Integration Ledger — the identical two-step shape v08.34 used.
 `app/js/version.js`: 08.41 → **08.42**. Allocated by the MMSA Architect.
 See `docs/governance/programme-integration-ledger.json` for the version
 allocation record.
+
+---
+
+**v08.43 (23 Sep 2026) — Health Atlas: a References index, one new
+top-level view mode alongside Body Systems (issue #115 Gate A/B, PR #146,
+tranche 9).** Each of the 8 `HEALTH_ATLAS_REFERENCES` rows now lists which
+organs in this dataset cite it — `organsForReference()`, new in
+`health-atlas-selectors.js`, the reverse of the existing `referencesFor()`.
+It reads only the existing `organ.refs[]` field, no new field.
+
+**Gate A, investigated before building.** The v02.04 standalone source's
+own References tab (`renderRefsTab()`) is a flat id/name/url table with no
+organ links at all, so "links into existing organ detail" goes beyond
+source parity, deliberately. The app has no URL-addressable per-organ route
+(organ selection lives in `mountHealthAtlas()`'s own closure state, not a
+query param), so an organ "link" is a real button wired through the exact
+same `onSelectOrgan()` path the sections column and the wheel legend
+already use, into the *same* detail column — not a fabricated `<a>` into a
+page that cannot resolve it.
+
+**Gate B, built.** `buildViewTabs()`/`buildReferencesScreen()` in
+`health-atlas-view.js` — a small "Body Systems / References" tab bar;
+opening an organ from References switches back to Body Systems and reuses
+the existing organ-selection state (`onSelectOrgan`/
+`onOpenOrganFromReferences` now share one `selectOrgan()` helper). CSS for
+the tab bar and table in `health-atlas.html`. New, committed, reproducible
+browser suite `tools/health-atlas-verify/references-index-browser.mjs` (12
+checks, desktop/tablet/phone, mouse click + keyboard `Enter` + a real touch
+`tap()`), following the same precedent tranche 8's
+`body-systems-parity-browser.mjs` set.
+
+**Privacy/clinical boundary unchanged.** The index's own note text
+explicitly disclaims that a listed reference backs an organ's material *in
+general*, never any one function statement individually, and never itself
+decides a statement is `cited-evidence` — asserted by a new static positive
+control in `view-boundary-wheel.mjs` (53 → 57 checks). One reference (USDA
+FoodData Central) genuinely cites zero organs in this dataset — a real
+edge case, not hypothetical, exercised by both the static guard and the
+new browser suite.
+
+**This is the first global version number ever allocated to the Health
+stream, and it exposed a stale ledger record.** The `health` stream in
+`docs/governance/programme-integration-ledger.json` had recorded
+`EXTERNAL_PENDING_ACQUISITION` / repository `UNKNOWN` / "No Health
+implementation exists in this repository" — true on 18 Sep 2026 when first
+written, false by the time this allocation read it: real Health Atlas code
+has existed under `app/health/` since 17 Sep 2026 across well over a dozen
+tranches (foundation, food/ages, master categories, claim provenance, the
+combined candidate, Body Systems parity, References tabs/a11y, more-search,
+organ-type parity, integration readiness), all merged directly to `main`
+with no version bump — each PR's own body says so explicitly. Corrected in
+this round by reading the real repository state rather than trusting the
+prior record: `integrationState` moves to `MERGED_TO_MAIN`, real
+`ownedPaths` are recorded, and `declaredVersion` moves off `null` for the
+first time.
+
+**A real version-number collision happened and was correctly resolved —
+exactly the class this repository's own standing rule exists to prevent.**
+This round was first drafted as v08.42, reading `main`'s tip at the start
+of review. The concurrently-running issue #206 Builder round (dispatched
+independently, watched by a separate process, per this session's own
+explicit instruction not to touch it) reached `main` first and took
+v08.42 for itself. `programme-ledger.mjs`'s own guard A caught the
+attempted collision the moment this round tried to allocate against a
+stale local branch; the fix was to read the next-free number off `main`
+again — never trust arithmetic or a number chosen minutes earlier — and
+move to v08.43. No content was lost: the CLAUDE.md/CHANGELOG/version.js/
+ledger edits originally drafted for v08.42 were rebuilt fresh against the
+real, current `main` tip rather than salvaged by conflict-resolution,
+avoiding the risk of silently carrying stale text forward.
+
+**Independently re-verified by the Architect before merging.** Fresh
+checkout, clean merge with no conflicts against `main`. All 8 CI-gated
+governance suites clean. All 17 Health-owned suites clean — the 15
+non-browser suites (`categories-selectors`, `claims-integrity`,
+`claims-mutations`, `data-integrity`, `more-selectors`, `selectors`,
+`view-boundary-categories` + its mutations, `view-boundary-more` + its
+mutations, `view-boundary-wheel` + its mutations, `view-boundary`,
+`view-provenance-boundary` + its mutations — 250 checks total) plus both
+committed browser suites (`references-index-browser.mjs` 12/12,
+`body-systems-parity-browser.mjs` 16/16, run under an available substitute
+Chromium build wired in as the environment's own expected
+`chromium_headless_shell-1243` path, since that exact revision is missing
+from this sandbox — the same documented gap as v08.35/v08.36/v08.39/
+v08.40/v08.41). The full `behaviour.mjs` suite run once against `main`
+(which already carries this round after the merge): **986 pass/7 fail** —
+every failure pre-existing and environmental, none in Health-owned code:
+`22h` and `31e` are network/TLS sandbox artefacts, `27i` a pre-existing
+Study-options layout measurement, `40g` at all four measured widths a
+Mushaf word-tap hit-testing artefact of the substitute browser, confirmed
+byte-identical pixel coordinates across three separate runs this session
+(v08.40's, v08.41's and this round's) — proof it is a property of the
+substitute browser build, not of any of these three diffs, none of which
+touch Mushaf/word-tap code.
+
+**Diff budget**: `app/health/health-atlas.html`, `health-atlas-selectors.js`,
+`health-atlas-view.js`, `app/health/README.md` (+Tranche 9 section),
+`tools/health-atlas-verify/selectors.mjs` (+6 checks),
+`view-boundary-wheel.mjs` (+4 checks), `references-index-browser.mjs`
+(new). No protected/shared path touched.
+
+**Deliberately not done**: does not build the Lifestyle tab (out of scope,
+per tranche 8's own matrix); does not add per-statement (as opposed to
+per-organ) reference citations; does not wire the new browser suite into
+`.github/workflows/verify.yml` (same reason no Playwright-based suite here
+is).
+
+`app/js/version.js`: 08.42 → **08.43**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.

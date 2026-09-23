@@ -29,9 +29,9 @@
   "status": "ACTIVE",
   "main": {
     "ref": "origin/main",
-    "baselineSha": "b7d9bd45a0f9e83685fac7150958c0428b80b8ef",
+    "baselineSha": "395249dc7a2e23aa54985dc1536f26c205c53897",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.42",
+    "version": "08.43",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -257,7 +257,7 @@
     {
       "version": "08.42",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Word-by-Word whole-Qur'an/Juz percentage running counter -- BUILT AND GATED, not turned on (issue #206, PR #209). A new, additive Firestore collection (quranWordTotals) backs a gold ring around the Explore wheel (whole-Qur'an known/total), an Approach/Word-by-Word wedge-colour toggle at the Juz level, and a gate-free Word Card 'Appears N times -- X% of all words' line. Nothing changes for a real reader yet -- the same shape as v08.30's Activity evidence before v08.34 turned it on. The gate, app/js/study-wbw-total-readiness.js, copies study-evidence-readiness.js's shape exactly: ready:false as a literal, a governed decision required to flip it, and it imports nothing at all (confirmed by reading the file). The write-gate-blocking guarantee was verified directly: applyWordTotalCounterDelta() in quranrevival.html returns before calling the data layer whenever the pre-write countsAsKnown snapshot is null (gate closed), and recordWordTotalDelta()/getWordTotals() in quran-word-total-data.js each independently re-check the same gate at their own top too -- an ordinary WbW tap can never throw over this undeployed collection, the exact defect class v08.31 fixed for Activity evidence was not reintroduced here. The counter only moves on a genuine countsAsKnown transition, proven by a claim->confirm->return->re-claim->confirm sequence reconciled against an independent recount. Per-Juz totals (30 rows summing to the real 77,429) are derived by tools/quran-data-pull/build-juz-word-totals.js from the real packaged corpus, independently re-run by the Architect and reproduces the shipped file byte-for-byte. The Approach wheel's own pooled-status colouring is provably unchanged (fill/ring are strictly opt-in renderScopedWheel() params). New quran-word-total-boundary.mjs, 25 checks. firestore.rules/firebase.json untouched; Rules candidate at docs/governance/2026-09-23-wbw-total-counter-rules-candidate.rules, not deployed. The Builder's own PR-opening step did not run (workflow run 35821824718, conclusion success, no PR); the Architect opened PR #209 itself from the already-pushed branch. Independently re-verified: fresh worktree off origin/main, all 8 CI-gated governance suites plus the new suite re-run clean, no protected path touched, clean merge against main -- mergeability re-checked immediately before each merge attempt, since this version allocation collided TWICE with other concurrently-landing rounds while in flight (08.40 taken by the Word Card fix, 08.41 by the Hadith breadcrumb fix, both mid-review), the real free number re-read off origin/main each time. behaviour.mjs could not run in this sandbox (chromium_headless_shell-1243 missing, only -1194 present, the same documented Playwright build-version gap).",
       "integration": {
         "authorizedOn": "2026-09-23",
@@ -267,10 +267,26 @@
         "method": "MERGE_PR",
         "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/209"
       }
+    },
+    {
+      "version": "08.43",
+      "owner": "health",
+      "status": "LIVE",
+      "note": "Health Atlas: a References index, one new top-level view mode alongside Body Systems (issue #115 Gate A/B, PR #146, tranche 9). Each of the 8 HEALTH_ATLAS_REFERENCES rows lists which organs cite it (organsForReference(), reads only the existing organ.refs[] field). An organ pill is a real link into the existing organ detail column, reusing the existing onSelectOrgan() path -- this app has no URL-addressable per-organ route to link to instead. The source app's own References tab has no organ links at all, so this deliberately goes beyond source parity (Gate A finding). The index disclaims per-statement verification in its own visible text and never itself decides a statement is cited-evidence -- asserted by a new static positive control. Still 100% read-only, same DRAFT/internal-review status as every other Health Atlas screen. This is the FIRST global version number ever allocated to the Health stream -- the 'health' stream record itself was found stale at this allocation (previously recorded EXTERNAL_PENDING_ACQUISITION / repository UNKNOWN, though real Health Atlas code has existed in this repository under app/health/ since 17 Sep 2026 across many tranches) and corrected in the same round; see that stream's own integrationStateCorrectionNote. This allocation was first drafted as v08.42, reading main's tip at the start of review -- the concurrently-running issue #206 round (see the entry directly above) reached main first and took v08.42 for itself; caught by guard A the moment this round tried to allocate, and re-derived cleanly as v08.43 by re-reading main rather than trusting the earlier read. New references-index-browser.mjs suite (12 checks). Independently re-verified by the Architect before merging: fresh checkout, clean merge with no conflicts, all 8 CI-gated governance suites clean, all 17 Health-owned suites clean (250 non-browser checks plus both committed browser suites, 12+16), behaviour.mjs run against main (already carrying this round) -- 986 pass/7 fail, every failure pre-existing/environmental and none in Health-owned code.",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-23",
+        "acceptedApplicationSha": "4c60bdd6a6acbec3bcf970381692f918b2614f54",
+        "integratedMainSha": "395249dc7a2e23aa54985dc1536f26c205c53897",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/146"
+      }
     }
   ],
-  "nextUnallocated": "08.43",
+  "nextUnallocated": "08.44",
   "nextUnallocatedNote": [
+    "v08.43 was allocated to the Health Atlas References index tranche 9 (issue #115 Gate A/B, PR #146), confirmed merged on 2026-09-23 -- the first global version number ever allocated to the Health stream, and the second version this session drafted-then-corrected after a concurrent-round collision (first drafted as v08.42, re-derived as v08.43 once issue #206's round took 08.42 first).",
+    "08.44 and later numbers remain unallocated; allocation requires MMSA Master Architect direction.",
     "v08.42 was allocated to the Word-by-Word whole-Qur'an/Juz percentage running counter round (issue #206, PR #209), BUILT AND GATED, confirmed merged on 2026-09-23.",
     "v08.41 was allocated to the Hadith breadcrumb aria-current fix (issue #114 Gate A/B, PR #149), confirmed merged on 2026-09-23.",
     "08.43 and later numbers remain unallocated; allocation requires MMSA Master Architect direction.",
@@ -585,17 +601,25 @@
     },
     {
       "id": "health",
-      "name": "Health Study module",
-      "role": "Subject module. Exists in a SEPARATE development account/repository context and is NOT integrated into MMSA.",
-      "integrationState": "EXTERNAL_PENDING_ACQUISITION",
-      "repository": "UNKNOWN",
+      "name": "Health Atlas -- Health Study module",
+      "role": "Subject module. Built IN THIS REPOSITORY, under app/health/, across many tranches since 2026-09-17 -- a real reader-facing (though still DRAFT/internal-review-only) screen, not an external dependency.",
+      "integrationState": "MERGED_TO_MAIN",
+      "integrationStateCorrectionNote": "CORRECTED 2026-09-23, at v08.43's own allocation. This entry previously read EXTERNAL_PENDING_ACQUISITION / repository UNKNOWN / 'No Health implementation exists in this repository' -- true on 18 Sep 2026 when this record was first written, false by the time it was next read: app/health/health-atlas.html and its supporting js/ modules have existed in this repository since the health-atlas-foundation-tranche1 branch, well over a dozen tranches have merged directly to main (Body Systems 3-column layout, wheel, diagrams, search, evidence-provenance boundary guards, a claims registry, and now this References index), and v08.43 is this stream's first entry in versionAllocations. The stale record was not caught earlier because no Health round had needed a global version number until this one. Corrected by reading the real repository state rather than trusting the prior record.",
       "activeBranch": null,
-      "branchTip": "UNKNOWN",
-      "declaredVersion": null,
-      "baselineSha": null,
-      "baselineStatus": "NOT_APPLICABLE_EXTERNAL",
-      "ownedPaths": [],
-      "note": "Registered so the programme can REPRESENT it, not because anything is known about it. Repository, commit, version and technical details are UNKNOWN and were not invented. No Health implementation exists in this repository and none was created. Acquiring it is a Master Architect action: until then it holds no version allocation and the guards have nothing to check it against."
+      "activeBranchNote": "NULL: Health rounds are built on short-lived per-tranche branches off main and merged directly, the same shape every other module stream now uses post-integration -- no branch of its own carries an ongoing stamp.",
+      "branchTip": "4c60bdd6a6acbec3bcf970381692f918b2614f54",
+      "branchTipNote": "The commit at which the References index tranche (PR #146) reached main. Descriptive, not a moving pointer -- see the equivalent hadith/quran-phase4-wiring notes for why.",
+      "declaredVersion": "08.43",
+      "declaredVersionNote": "08.43 (23 Sep 2026): the References index tranche (issue #115 Gate A/B, PR #146) is this stream's first independently allocated global application version -- first drafted as v08.42, re-derived as v08.43 after a real collision with the concurrently-landing issue #206 round (see versionAllocations). Every earlier Health Atlas tranche (foundation, food/ages, master categories, claim provenance, combined candidate, Body Systems parity, References tabs/a11y, more-search, organ-type parity, integration readiness) merged to main with NO version bump -- each PR's own body says so explicitly (\"No version allocated or bumped\") -- so there is no earlier Health entry in versionAllocations to reconcile.",
+      "baselineSha": "395249dc7a2e23aa54985dc1536f26c205c53897",
+      "baselineStatus": "MOVED_ACKNOWLEDGED",
+      "ownedPaths": [
+        "app/health/*.html",
+        "app/health/js/*.js",
+        "app/health/README.md",
+        "tools/health-atlas-verify/*"
+      ],
+      "note": "Read-only, DRAFT/internal-review-only status carried since foundation tranche 1: no add/edit/delete/reorder, no export/import/reset, nothing linked from shared nav, nothing deployed to a real reader. All 82 function statements are general-reference-only -- zero are marked cited-evidence -- enforced by claims-integrity.mjs/claims-mutations.mjs and the view-provenance-boundary guards. See app/health/README.md for the tranche-by-tranche scope and what remains deliberately unbuilt."
     }
   ],
   "platformSharedPaths": [

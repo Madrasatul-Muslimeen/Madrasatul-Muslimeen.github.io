@@ -158,7 +158,68 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.42 on `main`** (23 Sep 2026 — Word-by-Word
+**Current milestone: v08.43 on `main`** (23 Sep 2026 — Health Atlas: a
+References index, one new top-level view mode alongside Body Systems,
+issue #115 Gate A/B, PR #146 (tranche 9). Each of the 8
+`HEALTH_ATLAS_REFERENCES` rows now lists which organs in this dataset cite
+it (`organsForReference()`, the reverse of the existing `referencesFor()` —
+reads only the existing `organ.refs[]` field, no new field). **What
+actually changes for anyone opening this internal-review screen directly**
+(it is not linked from shared nav or deployed to a real reader — still
+100% read-only, same DRAFT status as every other Health Atlas surface): a
+"Body Systems / References" tab bar above the existing layout; the
+References tab lists all 8 references with which organs cite each one, and
+an organ pill is a real link into the existing organ detail column (reuses
+the same `onSelectOrgan()` path the sections list and the wheel already
+use), not a fabricated link into a route that cannot resolve it — this app
+has no URL-addressable per-organ route to link to instead. The source
+app's own References tab is a flat id/name/url table with no organ links
+at all, so this deliberately goes beyond source parity — investigated as
+Gate A before building, not assumed safe. **What stays the same**: the
+index's own note text explicitly disclaims that a listed reference backs
+an organ's material in general, never any one function statement
+individually, and the index never itself decides a statement is
+`cited-evidence` — that distinction stays `health-atlas-claims.js`'s job
+alone, asserted by a new static positive control. One reference (USDA
+FoodData Central) genuinely cites zero organs in this dataset — a real
+edge case exercised by both the static guard and the new browser suite,
+not a hypothetical. New `references-index-browser.mjs` suite (12 checks,
+desktop/tablet/phone, mouse + keyboard + real touch `tap()`),
+mutation-proven two ways.
+
+**This is the FIRST global version number ever allocated to the Health
+stream, and it exposed a stale ledger record.** `docs/governance/programme-integration-ledger.json`'s
+`health` stream had recorded `EXTERNAL_PENDING_ACQUISITION` / repository
+`UNKNOWN` / "No Health implementation exists in this repository" — true on
+18 Sep 2026 when first written, false by the time this allocation read it:
+real Health Atlas code has existed under `app/health/` since 17 Sep 2026
+across well over a dozen tranches, all merged directly to `main`, none
+needing a global version number until this one. Corrected in this same
+round, by reading the real repository state rather than trusting the
+prior record.
+
+**A real version-number collision happened and was correctly resolved,
+the exact class this repository's own standing rule exists to prevent.**
+This round was first drafted as v08.42, reading main's tip at the start of
+review — but the concurrently-running issue #206 Builder round (dispatched
+independently, watched by a different process) reached `main` first and
+took v08.42 for itself. Caught by `programme-ledger.mjs`'s own guard A the
+moment this round tried to allocate: read the next-free number off `main`
+again rather than trusting the number chosen minutes earlier, and moved to
+v08.43. **Independently re-verified by the Architect** before merging:
+fresh checkout, clean merge with no conflicts against `main`, all 8
+CI-gated governance suites clean, all 17 Health-owned suites clean (287+
+checks across selectors, boundary guards and both browser suites),
+`behaviour.mjs` run in full against `main` (which already carries this
+round) — 986 pass/7 fail, every failure pre-existing and environmental and
+none in Health-owned code (`22h` and `31e` are network/TLS sandbox
+artefacts, `27i` a pre-existing Study-options layout measurement, `40g` ×4
+a Mushaf word-tap hit-testing artefact of the substitute Chromium build,
+confirmed byte-identical pixel coordinates across three separate runs this
+session). No protected path touched, no Rules/index change from the
+Builder's own round. Allocated by the MMSA Architect.
+
+**Previous milestone: v08.42 on `main`** (23 Sep 2026 — Word-by-Word
 whole-Qur'an/Juz percentage running counter, BUILT AND GATED — the Owner
 reviewed an interactive demo and said "Go ahead, build it," issue #206,
 PR #209. **What actually changes for a real reader today: nothing.** This
