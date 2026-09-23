@@ -3693,6 +3693,14 @@
                     <button type="button" class="qcr-icon-btn" id="asmaXRenameLevelBtn" title="Rename">✎</button>
                     <button type="button" class="qcr-icon-btn danger" id="asmaXArchiveLevelBtn" title="Archive">🗄</button>
                     <button type="button" class="qcr-icon-btn" id="asmaXAddLevelBtn" title="Add collection">+</button>
+                    <!-- Classification rename/archive round -- 23 Sep 2026:
+                         same pair as asmaXRenameLevelBtn/asmaXArchiveLevelBtn
+                         above, but acting on the currently-browsed
+                         CLASSIFICATION (asmaXKind) rather than the currently-
+                         browsed collection (asmaXGroupId) -- the "C" suffix
+                         mirrors asmaXNewClassBtn's own "+C" beside plain "+". -->
+                    <button type="button" class="qcr-icon-btn" id="asmaXRenameClassBtn" title="Rename classification">✎C</button>
+                    <button type="button" class="qcr-icon-btn danger" id="asmaXArchiveClassBtn" title="Archive classification">🗄C</button>
                     <button type="button" class="qcr-icon-btn" id="asmaXNewClassBtn" title="New classification">+C</button>
                     <button type="button" class="qcr-icon-btn" id="asmaXNewNameBtn" title="Add Name">+N</button>
                     <button type="button" class="qcr-icon-btn" id="asmaXAttachRefBtn" title="Attach a reference to several Names">🔗</button>
@@ -4208,7 +4216,7 @@
       classificationsFrom as asmaClassificationsFrom,
       activeCollections as asmaActiveCollections, activeExtraNames as asmaActiveExtraNames, activeClassifications as asmaActiveClassifications,
       addCollection as asmaAddCollectionLocal, renameCollection as asmaRenameCollectionLocal, setCollectionStatus as asmaSetCollectionStatusLocal,
-      addClassification as asmaAddClassificationLocal,
+      addClassification as asmaAddClassificationLocal, renameClassification as asmaRenameClassificationLocal, setClassificationStatus as asmaSetClassificationStatusLocal,
       addItem as asmaAddItemLocal, removeItem as asmaRemoveItemLocal, moveItem as asmaMoveItemLocal,
       addExtraName as asmaAddExtraNameLocal, updateExtraName as asmaUpdateExtraNameLocal, setExtraNameStatus as asmaSetExtraNameStatusLocal,
       setNameOverrideBn as asmaSetNameOverrideBnLocal, setNameOverrideEn as asmaSetNameOverrideEnLocal,
@@ -4665,6 +4673,8 @@
     const asmaXRenameLevelBtn = document.getElementById("asmaXRenameLevelBtn");
     const asmaXArchiveLevelBtn = document.getElementById("asmaXArchiveLevelBtn");
     const asmaXAddLevelBtn = document.getElementById("asmaXAddLevelBtn");
+    const asmaXRenameClassBtn = document.getElementById("asmaXRenameClassBtn");
+    const asmaXArchiveClassBtn = document.getElementById("asmaXArchiveClassBtn");
     const asmaXNewClassBtn = document.getElementById("asmaXNewClassBtn");
     const asmaXNewNameBtn = document.getElementById("asmaXNewNameBtn");
     const asmaXAttachRefBtn = document.getElementById("asmaXAttachRefBtn");
@@ -8285,7 +8295,15 @@
         Manage-mode actions (owner/prime only) mirror QCR's own
         renderQcrLevelBar() shape. */
     function renderAsmaXLevelBar() {
-      const activeClasses = asmaActiveClassifications(asmaXClassifications ?? []);
+      // Classification rename/archive round -- 23 Sep 2026: "Show archived"
+      // already reveals an archived COLLECTION inside a kind's own list
+      // (asmaXCollectionsOfKind); the same one flag now also reveals an
+      // archived CLASSIFICATION's own switcher field, mirroring it rather
+      // than adding a second toggle for the same idea (the cleanest fit
+      // against the existing pattern, per this round's own issue).
+      const activeClasses = asmaXShowArchived
+        ? [...(asmaXClassifications ?? [])].sort((a, b) => a.order - b.order)
+        : asmaActiveClassifications(asmaXClassifications ?? []);
       const names = asmaXAllNameEntries();
 
       const collOptionsHtml = (list, placeholder, selectedId) => {
@@ -8312,7 +8330,7 @@
       for (const cls of activeClasses) {
         const sel = document.createElement("select");
         sel.dataset.asmaxClassSelect = cls.key;
-        const clsTitle = langText(cls.title, getAppLang());
+        const clsTitle = langText(cls.title, getAppLang()) + (cls.status === "archived" ? ` (${t("Archived")})` : "");
         sel.setAttribute("aria-label", clsTitle);
         sel.innerHTML = collOptionsHtml(asmaXCollectionsOfKind(cls.key), clsTitle, asmaXKind === cls.key ? asmaXGroupId : null);
         sel.addEventListener("change", () => {
@@ -8354,6 +8372,20 @@
           : asmaXKind === "group" ? t("Add collection")
           : t("Add to {classification}", { classification: asmaXClassificationTitle(asmaXKind) });
         asmaXAddLevelBtn.setAttribute("aria-label", asmaXAddLevelBtn.title);
+        // Classification rename/archive round -- 23 Sep 2026: the same
+        // ✎/🗄 pair as asmaXRenameLevelBtn/asmaXArchiveLevelBtn above, now
+        // for the classification tab itself (asmaXKind), not the collection
+        // currently browsed inside it. asmaXKind always names a real entry
+        // in asmaXClassifications (default "group", always seeded), so this
+        // is disabled only in the defensive case that lookup fails.
+        const currentCls = (asmaXClassifications ?? []).find((c) => c.key === asmaXKind);
+        const clsArchived = currentCls?.status === "archived";
+        asmaXArchiveClassBtn.textContent = clsArchived ? "↺C" : "🗄C";
+        asmaXArchiveClassBtn.title = clsArchived ? t("Restore classification") : t("Archive classification");
+        asmaXArchiveClassBtn.setAttribute("aria-label", asmaXArchiveClassBtn.title);
+        asmaXArchiveClassBtn.classList.toggle("danger", !clsArchived);
+        asmaXArchiveClassBtn.disabled = !currentCls;
+        asmaXRenameClassBtn.disabled = !currentCls;
         asmaXShowArchivedToggle.checked = asmaXShowArchived;
       }
     }
@@ -8751,10 +8783,9 @@
         action, otherwise every existing control keeps working exactly as
         it does today. Opens straight into the new classification's own
         (empty) Groups level, same shape asmaXAddCollectionPrompt() already
-        uses for a new collection. Rename/archive of a classification
-        itself is NOT built this round (data layer only, already tested --
-        renameClassification()/setClassificationStatus() -- a UI for it is
-        real, separate work outside this issue's explicit ask). */
+        uses for a new collection. Rename/archive of a classification itself
+        is asmaXRenameClassificationPrompt()/asmaXToggleArchiveClassification()
+        below, the closing half of this round's own issue (#205). */
     async function asmaXAddClassificationPrompt() {
       const typed = prompt(t("New classification:"));
       if (!typed || !typed.trim()) return;
@@ -8766,6 +8797,59 @@
       asmaXKind = asmaXClassifications[asmaXClassifications.length - 1].key;
       asmaXGroupId = null;
       asmaXLevel = "groups";
+      renderAsmaXPanel();
+      if (!(await asmaXPersist())) {
+        asmaXClassifications = prev;
+        asmaXKind = prevKind;
+        asmaXGroupId = prevGroupId;
+        asmaXLevel = prevLevel;
+        renderAsmaXPanel();
+      }
+    }
+
+    /** Rename the currently-browsed CLASSIFICATION tab (asmaXKind) -- same
+        shape as asmaXRenameCollectionPrompt() above, one level up: a real
+        English/Bangla title, same as every other rename in this feature. */
+    async function asmaXRenameClassificationPrompt(key) {
+      const cls = (asmaXClassifications ?? []).find((c) => c.key === key);
+      if (!cls) return;
+      const current = langText(cls.title, getAppLang());
+      const typed = prompt(t("Rename classification:"), current);
+      if (!typed || !typed.trim() || typed.trim() === current) return;
+      const prev = asmaXClassifications;
+      asmaXClassifications = asmaRenameClassificationLocal(asmaXClassifications ?? [], key, setLangText(cls.title, getAppLang(), typed.trim()));
+      renderAsmaXPanel();
+      if (!(await asmaXPersist())) { asmaXClassifications = prev; renderAsmaXPanel(); }
+    }
+
+    /** Archive/restore the currently-browsed CLASSIFICATION tab -- I4: a
+        classification's own lists (and every Name filed in them) are
+        untouched by this, exactly as setClassificationStatus()'s own header
+        says; archiving only ever stops it being offered as somewhere NEW to
+        add a collection or file a Name (asmaXFileIntoRowHtml() below), same
+        as archiving a collection stops it being offered as somewhere new to
+        file a Name into. Same shape as asmaXToggleArchiveCollection() above,
+        one level up: if the tab just archived was the one being browsed and
+        Show archived is off, fall back to another active classification (or
+        the seeded "group" if none remain), never to a tab the switcher no
+        longer shows. */
+    async function asmaXToggleArchiveClassification(key) {
+      const cls = (asmaXClassifications ?? []).find((c) => c.key === key);
+      if (!cls) return;
+      const name = langText(cls.title, getAppLang());
+      const willArchive = cls.status !== "archived";
+      if (!confirm(willArchive ? t('Archive "{name}"?', { name }) : t('Restore "{name}"?', { name }))) return;
+      const prev = asmaXClassifications;
+      const prevKind = asmaXKind;
+      const prevGroupId = asmaXGroupId;
+      const prevLevel = asmaXLevel;
+      asmaXClassifications = asmaSetClassificationStatusLocal(asmaXClassifications ?? [], key, willArchive ? "archived" : "active");
+      if (willArchive && !asmaXShowArchived && asmaXKind === key) {
+        const stillActive = asmaActiveClassifications(asmaXClassifications ?? [])[0];
+        asmaXKind = stillActive ? stillActive.key : "group";
+        asmaXGroupId = null;
+        asmaXLevel = "groups";
+      }
       renderAsmaXPanel();
       if (!(await asmaXPersist())) {
         asmaXClassifications = prev;
@@ -8851,34 +8935,54 @@
     // -----------------------------------------------------------------
     let asmaXEditContext = null; // { mode: "create" | "edit", number, fileInto }
 
-    /** The "file it under" row, only ever drawn for a brand-new Name that
-        was asked for from somewhere with a destination in mind (5 Sep 2026
-        -- the Note view's own "+ New Name"/"+ New Dual Name"). `kind` is
-        which list the reader is filling: "group" is the everyday thematic
-        grouping, "dual" is the separate paired-Names list that has its own
-        dropdown on the Asma bar. Both are the SAME collection mechanism
-        (asma-collections.js's own `kind` field) -- so a "Dual Name" is a
-        real Name, carrying its own reference like any other, that lives in
-        a Dual Names collection. That is what makes "attach the Ayah as ref
-        to that new name" work for a dual name at all: a collection has no
-        `ref` field and never has, a Name does. */
-    function asmaXFileIntoRowHtml(kind) {
+    /** The list-picker half of the "file it under" row -- every non-
+        archived collection of ONE classification, plus "+ New list…",
+        exactly asmaXFileIntoRowHtml()'s own pre-generalization body (the
+        same set asmaXAddCollectionPrompt()'s own kind-scoped view uses).
+        Split out so the classification select below can re-fill it on
+        change without re-drawing the whole row (and losing focus/the
+        reader's own typed "+ New list" title). */
+    function asmaXFileSelectOptionsHtml(kind) {
       const options = (asmaXCollections ?? [])
         .filter((c) => c.kind === kind && c.status !== "archived")
         .sort((a, b) => a.order - b.order)
         .map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(langText(c.title, getAppLang()))}</option>`)
         .join("");
-      const newLabel = kind === "dual" ? t("+ New Dual Names list…") : t("+ New group…");
-      const fieldLabel = kind === "dual" ? t("File under (Dual Names)") : t("File under (Group)");
-      const titleLabel = kind === "dual" ? t("New Dual Names list title") : t("New group title");
+      return `${options}<option value="__new__"${options ? "" : " selected"}>${escapeHtml(t("+ New list…"))}</option>`;
+    }
+
+    /** The "file it under" row, only ever drawn for a brand-new Name that
+        was asked for from somewhere with a destination in mind (5 Sep 2026
+        -- the Note view's own "+ New Name"/"+ New Dual Name"). `defaultKind`
+        is which classification that entry point defaults to ("group" or
+        "dual") -- a starting point, not a limit: issue #205's own closing
+        half of the Classifications round (23 Sep 2026) generalizes this row
+        with its OWN classification picker, one per active classification
+        (same asmaActiveClassifications() list the level bar's own switcher
+        reads, kept in sync by the same Show-archived flag), so a brand-new
+        Name can be filed under any of them from this one popover, not only
+        the two the button that opened it happened to default to. Both
+        "group" and "dual" are the SAME collection mechanism (asma-
+        collections.js's own `kind` field) as every other classification --
+        so a "Dual Name" is a real Name, carrying its own reference like any
+        other, that lives in a Dual Names collection. That is what makes
+        "attach the Ayah as ref to that new name" work for a dual name at
+        all: a collection has no `ref` field and never has, a Name does. */
+    function asmaXFileIntoRowHtml(defaultKind) {
+      const activeClasses = asmaActiveClassifications(asmaXClassifications ?? []);
+      const clsOptions = activeClasses
+        .map((c) => `<option value="${escapeHtml(c.key)}"${c.key === defaultKind ? " selected" : ""}>${escapeHtml(langText(c.title, getAppLang()))}</option>`)
+        .join("");
+      const effectiveDefault = activeClasses.some((c) => c.key === defaultKind) ? defaultKind : (activeClasses[0]?.key ?? defaultKind);
+      const hasExisting = (asmaXCollections ?? []).some((c) => c.kind === effectiveDefault && c.status !== "archived");
       return `
-        <label>${escapeHtml(fieldLabel)}
-          <select id="asmaXEditFileSelect">
-            ${options}
-            <option value="__new__"${options ? "" : " selected"}>${escapeHtml(newLabel)}</option>
-          </select>
+        <label>${escapeHtml(t("Classification"))}
+          <select id="asmaXEditClassSelect">${clsOptions}</select>
         </label>
-        <label id="asmaXEditNewCollLabel"${options ? " hidden" : ""}>${escapeHtml(titleLabel)}<input type="text" id="asmaXEditNewColl"></label>`;
+        <label>${escapeHtml(t("File under"))}
+          <select id="asmaXEditFileSelect">${asmaXFileSelectOptionsHtml(effectiveDefault)}</select>
+        </label>
+        <label id="asmaXEditNewCollLabel"${hasExisting ? " hidden" : ""}>${escapeHtml(t("New list title"))}<input type="text" id="asmaXEditNewColl"></label>`;
     }
 
     function openAsmaXEditOverlay({ mode, number = null, prefillRef = "", fileInto = null }) {
@@ -8887,9 +8991,12 @@
       const entry = mode === "edit" && number != null ? asmaXResolve(number) : null;
       if (mode === "edit" && !entry) return;
       if (mode === "create" || entry.isExtra) {
-        asmaXEditTitleEl.textContent = mode === "create"
-          ? (fileInto?.kind === "dual" ? t("Add a new Dual Name") : t("Add a new Name"))
-          : t("Edit Name");
+        // Classification round -- 23 Sep 2026: no longer branches on
+        // fileInto.kind === "dual" for its own wording -- the row itself now
+        // carries a real, user-visible Classification field (below), so a
+        // fixed title naming one classification would go stale the moment
+        // the reader picks a different one from it.
+        asmaXEditTitleEl.textContent = mode === "create" ? t("Add a new Name") : t("Edit Name");
         // 30 Aug 2026 round -- "attaching an Ayah... and creating New Name":
         // creating a brand-new Name from the Read/Note view's own attach
         // flow pre-fills the Reference field with the āyah just typed
@@ -8912,6 +9019,20 @@
         fileSel?.addEventListener("change", () => {
           const lbl = document.getElementById("asmaXEditNewCollLabel");
           if (lbl) lbl.hidden = fileSel.value !== "__new__";
+        });
+        // Classification round -- 23 Sep 2026: switching the Classification
+        // field re-fills the File-under select for THAT classification's own
+        // lists (asmaXFileSelectOptionsHtml), the same cascading shape the
+        // level bar's own per-classification selects already use -- so a
+        // brand-new Name can be filed under any active classification, not
+        // only the one the opening button defaulted to.
+        const classSel = document.getElementById("asmaXEditClassSelect");
+        classSel?.addEventListener("change", () => {
+          if (!fileSel) return;
+          fileSel.innerHTML = asmaXFileSelectOptionsHtml(classSel.value);
+          const lbl = document.getElementById("asmaXEditNewCollLabel");
+          const hasExisting = (asmaXCollections ?? []).some((c) => c.kind === classSel.value && c.status !== "archived");
+          if (lbl) lbl.hidden = hasExisting;
         });
       } else {
         asmaXEditTitleEl.textContent = t("Edit Name");
@@ -8953,6 +9074,12 @@
           isPhrase: !!document.getElementById("asmaXEditIsPhrase")?.checked,
         };
         const fileInto = asmaXEditContext.fileInto;
+        // Classification round -- 23 Sep 2026: which classification to file
+        // under now comes from the row's own Classification field (any
+        // active classification the reader picked), falling back to
+        // fileInto.kind only if that field never rendered (defensive; the
+        // row is always drawn together with it whenever fileInto is set).
+        const classSelectValue = document.getElementById("asmaXEditClassSelect")?.value ?? "";
         const fileSelectValue = document.getElementById("asmaXEditFileSelect")?.value ?? "";
         const newCollTitle = document.getElementById("asmaXEditNewColl")?.value.trim() ?? "";
         const prevExtra = asmaXExtraNames;
@@ -8965,10 +9092,11 @@
           // title when nothing was typed -- that is almost always what a
           // dual Name's own list is called, and it beats a second error
           // message for a field the reader has already effectively filled.
+          const kind = classSelectValue || fileInto.kind;
           let targetId = fileSelectValue;
           if (!targetId || targetId === "__new__") {
             const title = newCollTitle || translit;
-            const next = asmaAddCollectionLocal(asmaXCollections ?? [], { title: { en: title }, kind: fileInto.kind });
+            const next = asmaAddCollectionLocal(asmaXCollections ?? [], { title: { en: title }, kind });
             targetId = next[next.length - 1].id;
             asmaXCollections = next;
           }
@@ -9343,6 +9471,8 @@
     asmaXRenameLevelBtn.addEventListener("click", () => { if (asmaXGroupId) asmaXRenameCollectionPrompt(asmaXGroupId); });
     asmaXArchiveLevelBtn.addEventListener("click", () => { if (asmaXGroupId) asmaXToggleArchiveCollection(asmaXGroupId); });
     asmaXAddLevelBtn.addEventListener("click", () => asmaXAddCollectionPrompt(asmaXKind));
+    asmaXRenameClassBtn.addEventListener("click", () => asmaXRenameClassificationPrompt(asmaXKind));
+    asmaXArchiveClassBtn.addEventListener("click", () => asmaXToggleArchiveClassification(asmaXKind));
     asmaXNewClassBtn.addEventListener("click", () => asmaXAddClassificationPrompt());
     asmaXNewNameBtn.addEventListener("click", () => openAsmaXEditOverlay({ mode: "create" }));
     asmaXAttachRefBtn.addEventListener("click", () => openAsmaXAttachPopover({}));
