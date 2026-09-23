@@ -29,9 +29,9 @@
   "status": "ACTIVE",
   "main": {
     "ref": "origin/main",
-    "baselineSha": "33931c3ace1bd678f6afd936ac9f043cf44a3299",
+    "baselineSha": "4c60bdd6a6acbec3bcf970381692f918b2614f54",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.39",
+    "version": "08.40",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -215,7 +215,7 @@
     {
       "version": "08.39",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Asma ul Husna: classification rename/archive wired, and \"file a new Name\" generalized to every classification (issue #205, PR #207) -- the closing half of v08.38's own round (issue #202). (1) Rename/archive for the classification TAB itself (asmaXRenameClassBtn/asmaXArchiveClassBtn), owner/prime only, calling the already-tested renameClassification/setClassificationStatus data-layer functions from #202; archiving is I4 (archive, never delete) -- a classification's own lists and every Name filed in them stay in the data. The existing \"Show archived\" toggle now also reveals an archived classification's own switcher field. (2) The brand-new-Name \"file it under\" row generalized from a hardcoded group/dual pair to a real Classification select built from the live registry, cascading into the file-under list picker -- openAsmaXGroupsPopover() itself was confirmed already generalized by #202 and left untouched. No new Firestore read on any startup path (I9), no firestore.rules/firebase.json/index change -- UI wiring against the already-authorized asmaCollections document. No new theological content. asma-classifications-boundary.mjs extended 26 -> 36 checks, two mutation-tested. The Builder's own PR-opening step failed to run again (the same gap v08.35/v08.36/v08.38 recorded); the Architect opened PR #207 itself from the Builder's already-pushed, already-checked branch. Independently re-verified before merging: fresh checkout, all 8 CI-gated governance suites plus the extended boundary suite re-run clean and matching the Builder's own numbers exactly, full diff read by hand, no protected path touched, clean fast-forward against main. behaviour.mjs could not run in this sandbox (chromium_headless_shell-1243 missing, only -1194 present) -- the identical, now three-times-documented Playwright build-version gap, not a code defect; a real-phone check of the Explore panel's menu, both languages, is the recommended substitute.",
       "integration": {
         "authorizedOn": "2026-09-23",
@@ -225,12 +225,27 @@
         "method": "MERGE_PR",
         "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/207"
       }
+    },
+    {
+      "version": "08.40",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Word Card: the \"Back to Word Card\" round trip actually works (issue #113, PR #135). Every existing Word Card suite stopped at \"the return bar appears\" and never pressed it -- doing that in a real browser found two real, narrowly-scoped defects in the Basic Arabic lemma/root feature's own return mechanism (built v08.20-v08.22): the Basic tab's lemma list did not survive the round trip (fixed with a one-shot restore signal, mirroring the Depth tab's own expandedForm treatment), and the scroll restore could never have worked (window.scrollY is always 0 in this app's shell; readViewScrollContainer() now reads the correct live element for the current rendering mode, with sideways-flow and Note-view-origin cases flagged rather than silently fixed). New quran-word-card-return.mjs suite, 55 checks. No protected path, no new translation string, no Firestore write/Rule/index. Independently re-verified by the Architect before merging: fresh checkout, clean merge with no conflicts, all 8 CI-gated governance suites clean, the focused suite 55/0, behaviour.mjs run against both the merged tree and a clean main baseline under the same substitute Chromium build -- 987/6 vs 984/9, every failure on both sides pre-existing and environmental (27i, 31e, 40g x4 confirmed byte-identical pixel coordinates on both sides, 22g x3 the documented intermittent archive.org class), zero introduced by this round.",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-23",
+        "acceptedApplicationSha": "b7a032da490a44f4446715bef18ba36b29702354",
+        "integratedMainSha": "4c60bdd6a6acbec3bcf970381692f918b2614f54",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/135"
+      }
     }
   ],
-  "nextUnallocated": "08.40",
+  "nextUnallocated": "08.41",
   "nextUnallocatedNote": [
+    "v08.40 was allocated to the Word Card back-to-Word-Card round trip fix (issue #113, PR #135), confirmed merged on 2026-09-23.",
+    "08.41 and later numbers remain unallocated; allocation requires MMSA Master Architect direction.",
     "v08.39 was allocated to the Asma ul Husna classification rename/archive + file-a-Name generalization round (issue #205, PR #207), confirmed merged on 2026-09-23.",
-    "08.40 and later numbers remain unallocated; allocation requires MMSA Master Architect direction.",
     "v08.38 was allocated to the Asma ul Husna open-classifications round, confirmed merged on 2026-09-23.",
     "v08.37 was allocated to the Mapping My Journey screen round (issue #199, PR #200), merged 2026-09-23."
   ],
@@ -265,8 +280,8 @@
       "name": "QuranRevival -- Quran Study module",
       "activeBranch": null,
       "integrationState": "MERGED_TO_MAIN",
-      "declaredVersion": "08.39",
-      "baselineSha": "33931c3ace1bd678f6afd936ac9f043cf44a3299",
+      "declaredVersion": "08.40",
+      "baselineSha": "4c60bdd6a6acbec3bcf970381692f918b2614f54",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
       "ownedPaths": [
         "app/quranrevival.html",
@@ -288,7 +303,7 @@
         "app/js/study-event-wiring.js",
         "app/js/study-evidence-readiness.js"
       ],
-      "baselineNote": "v08.39 Asma ul Husna classification rename/archive + file-a-Name generalization PR #207 merged to main on 2026-09-23.",
+      "baselineNote": "v08.40 Word Card back-to-Word-Card round trip fix PR #135 merged to main on 2026-09-23.",
       "baselineAcknowledgement": "docs/reports/2026-09-18-hadith-v0829-main-integration.md",
       "role": "Subject module (Quran). NOT the umbrella; the umbrella is MMSA.",
       "declaredSharedTouches": [

@@ -16192,3 +16192,73 @@ mechanism).
 `app/js/version.js`: 08.38 → **08.39**. Allocated by the MMSA Architect.
 See `docs/governance/programme-integration-ledger.json` for the version
 allocation record.
+
+---
+
+**v08.40 (23 Sep 2026) — Word Card: the "Back to Word Card" round trip
+actually works (issue #113, PR #135).** Every existing Word Card suite
+(`quran-word-card.mjs`, `-integration.mjs`, `-rendered.mjs`, the Basic-tab
+lemma-occurrences suite) stopped at "the return bar appears" and never
+pressed it. Doing that in a real browser found two real, narrowly-scoped
+defects in the Basic Arabic lemma/root feature's own return mechanism
+(built v08.20–v08.22), both closed with no new architecture, no shared or
+protected path, and no new translation string.
+
+**(1) The Basic tab's own lemma list did not survive the round trip.**
+`hydrateWordCardOccurrences()` unconditionally collapsed it on every
+hydrate, including the reopen after `returnToWordCardOrigin()`. Fixed with
+a one-shot restore signal (`quranWordCardRestoreLemmaExpanded`), mirroring
+exactly how the Depth tab's own `expandedForm` is already carried across a
+round trip — consumed and cleared at the top of the hydrate function, so an
+ordinary word change (Prev/Next, opening a different word) is completely
+unaffected.
+
+**(2) The scroll restore could never have worked.** `window.scrollY` is
+always 0 in this app's shell (`body { overflow: hidden }`). The first fix
+attempt was itself wrong — it targeted `#readScroll`, which sounds right
+and isn't: sideways paging is this app's own default
+(`getSidewaysReading()` in `prefs.js` — "never set: the owner's own
+default" → `true`), and in that mode `#readScroll` carries
+`overflow: hidden`; `#ayahPanels` is what actually scrolls. A debug run
+against the real fixture caught this before it shipped.
+`readViewScrollContainer()` now picks the right element for the current
+rendering mode. Sideways/Mushaf flow mode (Whole Surah/Range, which pages
+`#pageViewContainer` horizontally) and a Note-view origin are explicitly
+NOT covered — both fall back to the pre-existing no-op, never a
+regression — and are flagged rather than silently left broken.
+
+New `tools/i18n-verify/quran-word-card-return.mjs` suite (55 checks): full
+round trip in both languages, Depth-tab regression, Prev/Next no-leak
+regression, keyboard operability, language-switch-while-visible, geometry
+at 320/390/412px. A follow-up correction (21 Sep 2026, before this PR was
+reviewed) hardened the suite against a real splash-interception hang — an
+unrelated gap in `app/js/splash.js` (`shouldShow()` has no `"never"`
+branch) that made `page.click()` calls hang until a wrapper timeout; routed
+around with a local `clickSafely()` helper, `app/js/splash.js` itself left
+untouched as out of scope.
+
+**Independently re-verified by the Architect before merging.** Fresh
+checkout of the Builder's branch, clean merge with no conflicts against
+current `main` (`f1a15f1`). All 8 CI-gated governance suites clean. The
+focused suite re-run clean at 55/0, under an available substitute Chromium
+build (`/opt/pw-browsers/chromium-1194`'s own `chrome` binary — the
+documented `chromium_headless_shell-1243` this environment needs is
+missing, the same gap v08.35/v08.36/v08.39 already recorded).
+`behaviour.mjs` run in full, twice — once against the merged tree, once
+against a clean `origin/main` baseline via a disposable `git worktree`,
+both under the same substitute browser: **987 pass/6 fail vs 984 pass/9
+fail.** Every failure on both sides is pre-existing and environmental —
+`27i` (a pre-existing Study-options layout measurement), `31e` (the
+documented sandbox TLS artefact), `40g` at all four measured widths (a
+Mushaf word-tap hit-testing edge case, confirmed **byte-identical pixel
+coordinates** on both sides — an artefact of the substitute browser build,
+not of this diff, which never touches Mushaf/word-tap code at all), and
+`22g` ×3 (the documented intermittent `archive.org` class — present on the
+`main` baseline run and simply not triggered on the merged-tree run, the
+exact intermittency this file's own standing lessons already record: "22g
+× 3 … passed in runs 1/3/5/9/10 and failed in 2/4/6/7/8/11"). **Zero
+failures introduced by this round.**
+
+`app/js/version.js`: 08.39 → **08.40**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.
