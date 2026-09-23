@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hadith: independent Gate A correction of PR #153&#x27;s version-gate claim, a combined-stack integration inventory, and a Gate B investigation that found no further gate-free defect (issue #114)</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.7rem; line-height:1.3; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  pre { background:var(--code); padding:.8em 1em; border-radius:.5em; overflow-x:auto }
+  pre code { padding:0; word-break:normal; white-space:pre }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.3rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Hadith: independent Gate A correction of PR #153&#x27;s version-gate claim, a combined-stack integration inventory, and a Gate B investigation that found no further gate-free defect (issue #114)</h1>
+
+<p><strong>Date:</strong> 2026-09-21 (UTC) <strong>Trigger:</strong> MMSA bridge task following up issue #114 (previous task <code>5763798251</code>, completed in draft PR #153, head <code>18ecef56</code>) <strong>Branch:</strong> <code>claude/hadith-integration-readiness-01</code>, built directly on PR #153&#x27;s own head (<code>18ecef56c4c8cfbcb166d8294d731d7b09b394a6</code>), itself stacked on PR #150&#x27;s head (<code>00713f18</code>) → PR #149&#x27;s head (<code>84e2c46d</code>) → PR #147&#x27;s head (<code>fa9444a6</code>) → PR #144&#x27;s head (<code>466dc313</code>) → PR #143&#x27;s head (<code>34c3fcd5</code>) <strong>Base:</strong> <code>main</code> at <code>16cfb0b3</code> (v08.32, re-verified live via <code>git ls-remote origin main</code> at the start and end of this task, unchanged throughout)</p>
+
+<h2>0. What this round was asked to do</h2>
+<p>Verify current <code>main</code>, issue #114&#x27;s own task text, the Hadith source-rights contracts, issue #123&#x27;s platform ledger, and the actual PR heads/base/diff/CI for the stack, independently rather than trusting any prior round&#x27;s account. <strong>Gate A</strong>: correct PR #153&#x27;s claim that its Arabic <code>lang</code>/<code>dir</code> reader-facing accessibility fix "needs no central version" — it is a real, stacked, reader-facing behaviour change and does need an MMSA version allocated by the Master Architect before integration, even though building it needed no version bump. Independently re-run PR #153&#x27;s committed 50-check English/Bangla browser suite, its negative control, and the five Hadith suites; inspect its dated Markdown/HTML report twin for fenced-output parity; and record explicitly that a DOM <code>lang</code>/<code>dir</code> attribute check proves the attribute is present, not that a screen reader actually pronounces the text correctly — that is a manual-acceptance fact, not automated evidence. <strong>Gate B</strong>: produce a concrete combined-stack integration inventory against current <code>main</code>, and investigate one further independently reproducible Books/chapters or Search→source gap, implementing it only if a committed real-browser test reproduces an actual failure on old code and passes on new. Run the seven governance suites. Report Owner app-test readiness explicitly.</p>
+
+<h2>1. Independent verification, before touching anything</h2>
+<p><code>origin/main</code> is <code>16cfb0b3512609313a68d487dca28945a31855b8</code> at <strong>v08.32</strong> (<code>app/js/version.js</code> → <code>APP_VERSION = "08.32"</code>, re-read directly, not quoted from a prior report). Unmoved at the end of this task too.</p>
+<p><strong>The stack, read live via <code>pull_request_read</code>/<code>list_pull_requests</code>, not assumed from the task text:</strong></p>
+<div class='tw'><table><thead><tr><th>PR</th><th>Base</th><th>Base SHA</th><th>Head SHA</th><th>State</th></tr></thead><tbody>
+<tr><td>#143</td><td><code>main</code></td><td><code>16cfb0b3</code></td><td><code>34c3fcd5</code></td><td>draft, open</td></tr>
+<tr><td>#144</td><td><code>claude/laughing-goodall-4dhs97</code> (#143)</td><td><code>34c3fcd5</code></td><td><code>466dc313</code></td><td>draft, open</td></tr>
+<tr><td>#147</td><td><code>claude/laughing-goodall-iacemr</code> (#144)</td><td><code>466dc313</code></td><td><code>fa9444a6</code></td><td>draft, open</td></tr>
+<tr><td>#149</td><td><code>claude/laughing-goodall-k8z5yh</code> (#147)</td><td><code>fa9444a6</code></td><td><code>84e2c46d</code></td><td>draft, open</td></tr>
+<tr><td>#150</td><td><code>claude/laughing-goodall-te0yu5</code> (#149)</td><td><code>84e2c46d</code></td><td><code>00713f18</code></td><td>draft, open</td></tr>
+<tr><td>#153</td><td><code>claude/laughing-goodall-rjhnzm</code> (#150)</td><td><code>00713f18</code></td><td><code>18ecef56</code></td><td>draft, open</td></tr>
+</tbody></table></div>
+<p><code>#130</code> (base <code>main</code>, head <code>claude/laughing-goodall-timq4k</code>) and <code>#141</code> (base <code>#130</code>&#x27;s own branch, head <code>claude/laughing-goodall-v1u18w</code>) are both still open drafts, unchanged, exactly as every round on this thread has recorded — confirmed by direct listing, not re-quoted.</p>
+<p><strong>PR #153&#x27;s own CI</strong>, read via <code>pull_request_read → get_status</code> against head <code>18ecef56</code>: <strong><code>state: "pending"</code>, <code>total_count: 0</code>, zero statuses</strong> — no CI has run against this head, an absence rather than a pass or fail, the same shape as every PR in this stack in this environment.</p>
+<p>The Hadith source-rights and synthetic-namespace contracts (<code>docs/reports/2026-09-18-hadith-h0-*</code>, <code>...-h1-*</code>, <code>CLAUDE.md</code>&#x27;s own Hadith section) and issue #123&#x27;s own platform-ledger coordination task were re-read; neither is touched by this round, and <code>programme-ledger.mjs</code> (§6) independently confirms the ledger&#x27;s own guards still pass against current <code>main</code>.</p>
+
+<h2>2. Gate A — the version-gate claim, corrected</h2>
+<p>PR #153&#x27;s report (<code>docs/reports/2026-09-21-hadith-issue114-books-row-heading-lang.md</code>, "Central version gate") states: <em>"No version bump. <code>app/js/version.js</code> untouched; <code>v08.32</code> remains the current <code>main</code> milestone; version allocation is the Master Architect&#x27;s, and this round needs none."</em></p>
+<p><strong>The first two clauses are true and stay true</strong> — <code>app/js/version.js</code> is untouched by PR #153&#x27;s diff (confirmed: <code>git diff origin/claude/laughing-goodall-rjhnzm origin/claude/hadith-books-next-01 -- app/js/version.js</code> is empty), and building/testing the fix needed no bump, per this project&#x27;s own standing rule that a session never self-allocates a version.</p>
+<p><strong>The fourth clause — "this round needs none" — overstates it, and this is the correction.</strong> PR #153&#x27;s own fix is a real, reader-facing behaviour change (a screen reader now pronounces Books/chapters headings in Arabic instead of the page&#x27;s UI-language voice) stacked for eventual integration onto <code>main</code>. <code>CLAUDE.md</code>&#x27;s own standing rule is explicit: <em>"NEVER increment the application version, even for a behaviour change... state plainly in the body that the change needs a version and none has been allocated."</em> "This round needs none" reads as though the change will never need a version at all, which is not what is true — what is true is narrower: <strong>no version bump was needed to build or test this round, and none is being claimed or requested; a version will still need to be allocated by the Master Architect before this change (as part of the combined stack) is integrated onto <code>main</code>.</strong> PR #153&#x27;s own text is left exactly as it was written — it is not edited, per this project&#x27;s own "historical reports are deliberately NOT rewritten" rule — and this correction is recorded here instead, on the stacked branch that follows it, the same way PR #153 itself corrected PR #150&#x27;s report by adding a fix on top rather than rewriting PR #150.</p>
+<p><strong><code>app/js/version.js</code> is confirmed untouched by this round too</strong>: <code>git status --short</code> at the end of this task (§7) shows no change to it.</p>
+
+<h2>3. Gate A — independent re-run of PR #153&#x27;s own evidence</h2>
+<p>Checked out <code>claude/hadith-books-next-01</code> at <code>18ecef56</code> (PR #153&#x27;s real head), served locally, ran the five Hadith suites unmodified:</p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>hadith-corpus</code></td><td>60 passed, 0 failed</td></tr>
+<tr><td><code>hadith-commentary-binding</code></td><td>14 passed, 0 failed</td></tr>
+<tr><td><code>hadith-source-rights</code></td><td>14 passed, 0 failed</td></tr>
+<tr><td><code>hadith-governing-contracts</code></td><td>14 passed, 0 failed</td></tr>
+<tr><td><code>hadith-gate-contracts</code></td><td>11 passed, 0 failed</td></tr>
+</tbody></table></div>
+<p>Then <code>hadith-source-navigation-browser.mjs</code> (English + Bangla): <strong>50 passed, 0 failed</strong>, matching PR #153&#x27;s claim exactly — including the three new <code>lang="ar"</code>/<code>dir="rtl"</code> checks on the book row, the chapter row, and the no-chapter-level edition&#x27;s book row.</p>
+<p><strong>Negative control, independently repeated</strong>: swapped <code>app/js/hadith-browser.js</code> for its exact content at PR #150&#x27;s own head (<code>00713f18</code>, i.e. immediately before PR #153&#x27;s fix), re-ran the suite: <strong>47 passed, 3 failed</strong> — exactly the three new checks named above and nothing else, confirming the suite is not vacuous. Restored the fixed file (<code>git status --short</code> showed zero residual change afterward) and reconfirmed <strong>50/50 in both languages</strong>.</p>
+
+<h2>4. Fenced-output parity, and the DOM-versus-pronunciation clarification</h2>
+<p>Inspected <code>docs/reports/2026-09-21-hadith-issue114-books-row-heading-lang.md</code> and its <code>.html</code> twin as a pair. The report&#x27;s only quoted fenced/raw block is the <em>illustrative</em> garbled snippet from <strong>PR #150&#x27;s</strong> report (shown as evidence of that earlier defect, not this report&#x27;s own live test output); the Markdown&#x27;s fenced block and the HTML&#x27;s <code>&lt;pre&gt;&lt;code&gt;</code> block carry the identical literal text. <strong>No fenced-output mismatch found in PR #153&#x27;s own report</strong> — the repair it made to PR #150&#x27;s HTML twin is a separate file and was not re-broken.</p>
+<p><strong>On DOM <code>lang</code>/<code>dir</code> checks versus screen-reader pronunciation, recorded explicitly, as asked:</strong> the three new automated checks assert <code>getAttribute("lang") === "ar"</code> and <code>getAttribute("dir") === "rtl"</code> on the rendered heading elements. That is real, mutation-proven evidence that the <em>attributes</em> are present and correctly valued — it is <strong>not</strong> evidence that any particular screen reader&#x27;s Arabic voice/pronunciation engine actually activates correctly on them, which depends on the reader&#x27;s own OS, browser, and installed voice packs and cannot be observed by a DOM assertion. PR #153&#x27;s own report already states the mechanism correctly (<code>lang</code> has no CSS-direction-style fallback, unlike <code>dir</code>) but its Owner-app-test section invites the Owner to confirm this "with a screen reader... expected: it is announced in Arabic" <strong>as if that were the remaining acceptance step</strong>, without separately flagging that the automated suite cannot itself close that step. <strong>This is now recorded as its own line item</strong>, not folded into the automated pass/fail count: the 50/50 result is evidence the markup contract is met; a screen-reader pronunciation confirmation is a distinct, manual, Owner-side acceptance step, listed again in §8.</p>
+
+<h2>5. Gate B — combined-stack integration inventory against current <code>main</code></h2>
+<p><strong>Dependency order</strong> (unchanged from PR #153&#x27;s own report, independently re-verified in §1): <code>main</code> → #143 → #144 → #147 → #149 → #150 → #153 → <em>(this round, no new commit against app code — see §6)</em>. #130 and #141 are a separate, still-independent pair not yet folded into this chain (base <code>main</code>, not based on #143). Integrating the six-PR Hadith-books chain needs no rebase at this time — every base/head pair in §1&#x27;s table is exactly consecutive.</p>
+<p><strong>Source rights</strong>: the synthetic-namespace enforcement (<code>synthetic-</code>/<code>syn-occ-</code>/<code>syn-map-</code>) and the three-state rights model are unchanged across the whole stack — <code>hadith-corpus.mjs</code> and <code>hadith-source-rights.mjs</code> pass unmodified at PR #153&#x27;s head (§3), and no PR in the chain touches <code>docs/governance/</code> or any rights-classification field.</p>
+<p><strong>Eight untranslated Bangla <code>t()</code> keys</strong>, independently re-derived by a fresh regex scan of <code>app/js/hadith-browser.js</code> against <code>app/js/i18n/bn.js</code> (56 distinct literal keys found; the same fixed set of eight missing, unchanged from every prior round on this thread):</p>
+<ol>
+<li><code>"View in source"</code></li>
+<li><code>"Translation coverage"</code></li>
+<li><code>"How many synthetic narrations carry an English or a Bangla version, alongside the Arabic source. This describes the fixture only -- it is not a measure of a real corpus."</code></li>
+<li><code>"Overall: {en} of {n} have English, {bn} of {n} have Bangla."</code></li>
+<li><code>"{en} of {n} have English, {bn} of {n} have Bangla."</code></li>
+<li><code>"Topic coverage"</code></li>
+<li><code>"Of the {total} narrations in the corpus, {covered} are reachable through at least one topic mapping and {uncovered} are not mapped to any topic yet. This is distinct from the per-topic counts above, which count within one topic only."</code></li>
+<li><code>"{covered} of {total} narrations in this edition are mapped to at least one topic; {uncovered} are not."</code></li>
+</ol>
+<p><code>app/js/i18n/bn.js</code> is protected/shared and was not opened for editing. The translation handoff for the whole combined stack is these same eight keys — no PR in the chain adds or removes any.</p>
+<p><strong>Protected/shared translation handoff</strong>: none of #143/#144/#147/#149/#150/#153 touches <code>bn.js</code>, <code>nav.js</code>, <code>unit-keys.js</code>, <code>records.js</code>, <code>activity.js</code>, <code>catalogue-data.js</code>, <code>shell.css</code>, <code>version.js</code>, <code>CLAUDE.md</code>, <code>CHANGELOG.md</code>, the six protected tooling files, <code>docs/governance/</code>, <code>firestore.rules</code>, <code>firebase.json</code>, <code>tests/firestore/</code>, <code>tools/firestore-emulator/</code>, or <code>.github/workflows/</code> — confirmed by <code>git diff --stat origin/main..origin/claude/hadith-books-next-01</code> (the chain&#x27;s combined diff), which lists only <code>app/js/hadith-browser.js</code>, <code>tools/i18n-verify/hadith-source-navigation-browser.mjs</code>, and the chain&#x27;s own <code>docs/reports/2026-09-21-hadith-issue114-*.{md,html}</code> files.</p>
+<p><strong>Remaining acceptance gaps carried forward, unchanged and re-confirmed rather than re-discovered:</strong></p>
+<ul>
+<li>Full ARIA <code>role="tablist"</code>/<code>role="tab"</code>/<code>role="tabpanel"</code> semantics for the top tab bar — still materially larger than any one round&#x27;s own reproducible finding.</li>
+<li><code>&lt;nav class="hadith-crumbs"&gt;</code>&#x27;s missing <code>aria-label</code> — still not touched (a new string would widen the eight-key handoff above §5).</li>
+<li>The multi-edition same-collection breadcrumb ambiguity PR #149 first recorded — still a documented future schema case, no fixture invented.</li>
+<li>The screen-reader pronunciation confirmation named in §4 — a manual Owner-side step, not something an automated suite can close.</li>
+</ul>
+<p><strong>A candidate investigated this round and NOT implemented, recorded rather than acted on speculatively</strong>: the Search tab&#x27;s result-count line (<code>t("{n} results", …)</code>, <code>renderSearch()</code> in <code>app/js/hadith-browser.js</code>) is a plain <code>&lt;p class="hadith-note"&gt;</code> rebuilt inside the results container on every keystroke, with no <code>role="status"</code>/<code>aria-live</code> region anywhere in the Search view — unlike the <code>role="status"</code> pattern this app already uses elsewhere for dynamic status text (e.g. <code>app/js/quran-word-card.js</code>&#x27;s "forms/occurrences unavailable" messages). A screen reader user typing a query is not told the result count changed unless they separately navigate into the results. This is a real usability gap, not invented, but it is <strong>an enhancement to a working feature, not a broken one</strong> — nothing is lost, mis-stated, or mis-pronounced, unlike the lang/dir defect PR #153 fixed — and closing it properly means introducing a live region without over-announcing the result cards&#x27; own interactive content, which is a materially larger and more failure-prone change than this round&#x27;s own committed-test bar calls for lightly. <strong>Not implemented this round</strong>, for the same reason PR #150/#153 deferred full tablist semantics: it is real, but it is a design decision about how much to announce and when, not a one-function reproducible-failure fix. Flagged here for whoever picks the next Books/chapters round up.</p>
+<p>No other reproducible Books/chapters or Search→source gap was found: real <code>Tab</code>+<code>Enter</code> keyboard navigation at every level, the <code>:focus-visible</code> mouse-vs-keyboard distinction, the breadcrumb reset paths, and the Search→source round trip were all re-probed live and confirmed correct (same findings PR #153 already recorded, re-checked rather than re-assumed).</p>
+
+<h2>6. Seven governance suites (full-history preflight, this round&#x27;s own run)</h2>
+<p><code>git fetch --unshallow</code> had already been run earlier in this task; <code>git rev-parse --is-shallow-repository</code> → <code>false</code>. Both ledger-named commits (<code>7e2931f…</code>, the held <code>claude/phase4-wiring</code> tip; <code>43dd96f…</code>, the Hadith stream&#x27;s own recorded branch tip) confirmed present as real objects.</p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>programme-ledger</code></td><td>8 passed, 23 noted, 0 failed</td></tr>
+<tr><td><code>programme-ledger-mutations</code></td><td>49 passed, 0 failed</td></tr>
+<tr><td><code>brief-integrity</code></td><td>8 passed, 0 failed</td></tr>
+<tr><td><code>study-activity-evidence-boundary</code></td><td>27 passed, 0 failed</td></tr>
+<tr><td><code>study-activity-evidence-boundary-mutations</code></td><td>11 passed, 0 failed</td></tr>
+<tr><td><code>study-event-wiring</code></td><td>41 passed, 0 failed</td></tr>
+<tr><td><code>rules-authorisation-executable</code></td><td>38 passed, 0 failed</td></tr>
+</tbody></table></div>
+<p>All seven match PR #153&#x27;s own reported numbers exactly, re-run independently on this round&#x27;s own checkout rather than re-quoted. <code>programme-ledger</code>&#x27;s own "20 shared-file touch record(s): 13 AUTHORIZED, 7 DECLARED" reflects the ledger&#x27;s current state on <code>main</code>, read live.</p>
+
+<h2>7. Boundaries preserved</h2>
+<p>This round&#x27;s own diff against PR #153&#x27;s head (<code>git status --short</code> on this branch): <strong>only this report&#x27;s own two new files</strong> (<code>docs/reports/2026-09-21-hadith-issue114-integration-readiness.{md,html}</code>). No application code, test file, or existing report was edited — Gate A&#x27;s correction (§2) and Gate B&#x27;s inventory (§5) are both new content, not a rewrite of PR #153&#x27;s own files, matching this project&#x27;s "historical reports are deliberately NOT rewritten" rule.</p>
+<p>Every path in the bridge&#x27;s protected/shared table was confirmed untouched: <code>app/js/version.js</code>, <code>CLAUDE.md</code>, <code>CHANGELOG.md</code>, <code>app/js/i18n/bn.js</code>, <code>app/js/nav.js</code>, <code>app/js/unit-keys.js</code>, <code>app/js/records.js</code>, <code>app/js/activity.js</code>, <code>app/js/catalogue-data.js</code>, <code>app/css/shell.css</code>, the six protected tooling files, <code>docs/governance/</code>, <code>firestore.rules</code>, <code>firebase.json</code>, <code>tests/firestore/</code>, <code>tools/firestore-emulator/</code>, <code>.github/workflows/</code>.</p>
+<p>No new persistent id, no Rules/index candidate, no Firestore write, no merge, no deploy, no repository setting change, no review approval claimed or requested.</p>
+
+<h2>8. Central version gate</h2>
+<p><strong>No version bump — and, per §2, no version bump is being claimed as unnecessary either.</strong> <code>app/js/version.js</code> untouched; <code>v08.32</code> remains the current <code>main</code> milestone; version allocation is the Master Architect&#x27;s. <strong>The combined six-PR stack (#143→#144→#147→#149→#150→#153) is a real, reader-facing behaviour change and will need a version allocated before it is integrated onto <code>main</code></strong> — this round does not request or predict one, per this project&#x27;s own rule that a held/stacked stream never predicts its own merge number.</p>
+
+<h2>9. Owner app test required</h2>
+<p><strong>NO — not yet, and not from this round alone.</strong> Nothing in this seven-PR chain is reachable from the served app until the whole stack is integrated and a version is allocated. When it is, two separate things need the Owner&#x27;s own confirmation, not one:</p>
+<ol>
+<li><strong>Automated-equivalent check</strong> (already proven by §3&#x27;s suite): sign in at <code>https://madrasatul-muslimeen.github.io/app/hadith-collections.html</code>, open Collections, pick any edition, inspect a book/chapter row&#x27;s Arabic heading in the browser&#x27;s accessibility tree (or DevTools Elements panel) — expect <code>lang="ar"</code> and <code>dir="rtl"</code> present on <code>.hadith-row-heading</code>.</li>
+<li><strong>Manual-only confirmation</strong> (§4 — cannot be automated): with a screen reader actually turned on, read the same heading — expect it announced with Arabic pronunciation, not read letter-by-letter or in an English/Bangla accent. This second step is the one no suite in this repository can close by itself.</li>
+</ol>
+<p>No visible layout change anywhere in this round&#x27;s own diff (it adds no application code at all — only this report).</p>
+
+<h2>10. Deliberately not done</h2>
+<ul>
+<li>The Search result-count <code>aria-live</code>/<code>role="status"</code> gap (§5) — investigated, real, but an enhancement rather than a broken behaviour, and larger in scope than this round&#x27;s one-function bar; flagged for a future round.</li>
+<li>Full ARIA tablist/tab/tabpanel semantics — still deferred, unchanged reasoning.</li>
+<li><code>&lt;nav class="hadith-crumbs"&gt;</code>&#x27;s <code>aria-label</code> — still deferred, would widen the eight-key handoff.</li>
+<li>The multi-edition breadcrumb ambiguity — still a recorded future schema case, no fixture invented.</li>
+<li>PR #153&#x27;s own report text — not edited; this round&#x27;s correction is new content, per §2 and §7.</li>
+<li><code>bn.js</code>, <code>version.js</code>, <code>CLAUDE.md</code>, <code>CHANGELOG.md</code>, <code>nav.js</code>, and every other protected/shared path — untouched.</li>
+<li>No merge, deploy, Rules/index change, or version allocation.</li>
+<li>Protected shared tooling — not edited.</li>
+<li>PRs #103, #116, #118, #122, #125, #130, #141 — left open and untouched.</li>
+</ul>
+
+<hr>
+<p>🤖 Generated with <a href="https://claude.com/claude-code">Claude Code</a></p>
+<p><a href="https://claude.ai/code/session_01Qp2KqE9C6SyzSaGZPpLUSM">https://claude.ai/code/session_01Qp2KqE9C6SyzSaGZPpLUSM</a></p>
+<hr>
+<p><em>Generated by <a href="https://claude.ai/code/session_01Qp2KqE9C6SyzSaGZPpLUSM">Claude Code</a></em></p>
+</main></body></html>

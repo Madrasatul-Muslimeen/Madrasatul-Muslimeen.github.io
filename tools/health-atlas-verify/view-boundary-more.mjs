@@ -106,6 +106,18 @@ check('the page never imports HEALTH_ATLAS_LIFESTYLES', () => {
   assert(!rawPage.includes('HEALTH_ATLAS_LIFESTYLES'), 'health-atlas-more.html imports the Lifestyles export');
 });
 
+check('POSITIVE CONTROL: the view module really wires the new Foods/Conditions search (tranche 11)', () => {
+  assert(codeView.includes('matchesFoodSearch('), 'expected the view to call matchesFoodSearch(...) somewhere');
+  assert(codeView.includes('matchesDiseaseSearch('), 'expected the view to call matchesDiseaseSearch(...) somewhere');
+  assert(codeView.includes("searchBox('Search foods"), 'expected a Foods search box');
+  assert(codeView.includes("searchBox('Search conditions"), 'expected a Conditions search box');
+});
+
+check('Age Groups gets no search box -- matches the source app, which has none there either', () => {
+  const ageListFn = codeView.slice(codeView.indexOf('function renderAgeGroupList'), codeView.indexOf('function renderAgeGroupList') + 400);
+  assert(!ageListFn.includes('searchBox('), 'renderAgeGroupList should not call searchBox(...)');
+});
+
 check("the raw (unstripped) view source is allowed to explain the boundary in prose", () => {
   assert(rawView.includes('servingQty') && rawView.includes('HEALTH_ATLAS_LIFESTYLES'), "expected the file's own header comment to name the deferred fields/dataset for a future reader");
 });

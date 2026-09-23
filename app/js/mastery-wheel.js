@@ -44,6 +44,24 @@ export const STATUS_COLORS = Object.freeze({
   mastered: "#3fae74",
 });
 
+/**
+ * Issue #206 -- linear interpolation between two hex colours, used ONLY for
+ * the Word-by-Word wedge-colouring ramp. Reuses this file's own two real
+ * colours (not_started's slate, mastered's green) as the ramp's ends rather
+ * than inventing new ones, exactly as the Owner's approved demo did. `ratio`
+ * is clamped to [0, 1] so a caller passing an out-of-range figure never
+ * produces an invalid colour.
+ */
+export function wordTotalRampColor(ratio, { from = STATUS_COLORS.not_started, to = STATUS_COLORS.mastered } = {}) {
+  const clamp = Math.max(0, Math.min(1, Number(ratio) || 0));
+  const hex = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+  const [r1, g1, b1] = hex(from);
+  const [r2, g2, b2] = hex(to);
+  const mix = (a, b) => Math.round(a + (b - a) * clamp);
+  const toHex = (n) => n.toString(16).padStart(2, "0");
+  return `#${toHex(mix(r1, r2))}${toHex(mix(g1, g2))}${toHex(mix(b1, b2))}`;
+}
+
 export function polarToCartesian(cx, cy, r, angleDeg) {
   const rad = ((angleDeg - 90) * Math.PI) / 180;
   return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
@@ -297,9 +315,47 @@ export function wrapWheelLabel(text, maxLen = 14) {
  * caller that never sets `sliceArabicLines` renders byte-for-byte as
  * before (every non-Arabic line, or a caller with no Arabic line at all).
  */
-export function renderScopedWheel(items, { size = 360, centerArabic, centerRef, centerLabel, centerSub } = {}) {
+/**
+ * Issue #206 -- the gold running-total ring, drawn OUTSIDE the wedge radius
+ * so it never overlaps or recolours them. `ratio` is the reader's own
+ * known/total (0..1); a ratio of exactly 0 draws the track only. Two
+ * semicircle arcs are used for the always-drawn track (a single 360deg arc
+ * with equal start/end points is a degenerate SVG path) and the same
+ * two-semicircle shape is used for the fill only when ratio is close enough
+ * to 1 that a single arc would be degenerate for the same reason.
+ */
+function renderWheelRing(cx, cy, rInner, rOuter, ratio) {
+  const clamp = Math.max(0, Math.min(1, Number(ratio) || 0));
+  const track = `<path class="wheel-ring-track" d="${segmentPath(cx, cy, rInner, rOuter, 0, 180)}" fill="#333f5c"/>` +
+    `<path class="wheel-ring-track" d="${segmentPath(cx, cy, rInner, rOuter, 180, 360)}" fill="#333f5c"/>`;
+  if (clamp <= 0) return track;
+  const fillColor = "#C9A24B"; // the app's own gold, matching the Owner-approved demo's gold ring.
+  const fill = clamp >= 0.999
+    ? `<path class="wheel-ring-fill" d="${segmentPath(cx, cy, rInner, rOuter, 0, 180)}" fill="${fillColor}"/>` +
+      `<path class="wheel-ring-fill" d="${segmentPath(cx, cy, rInner, rOuter, 180, 360)}" fill="${fillColor}"/>`
+    : `<path class="wheel-ring-fill" d="${segmentPath(cx, cy, rInner, rOuter, 0, clamp * 360)}" fill="${fillColor}"/>`;
+  return `${track}${fill}`;
+}
+
+/**
+ * items: [{ key, statusId, title, number, sliceLines?, fill? }] -- `fill`
+ * (Issue #206) is a strictly OPT-IN literal colour override for the
+ * Word-by-Word wedge-colouring toggle: when present it is used INSTEAD OF
+ * `STATUS_COLORS[entry.statusId]`, so every existing caller that never sets
+ * `fill` (QCR, Asma, every Explore level's own Approach colouring, every
+ * call before this round) renders byte-for-byte as before.
+ *
+ * `ring` (Issue #206) is a second strictly OPT-IN extra: `{ ratio }` draws
+ * the gold running-total ring OUTSIDE the wedge radius, which is why the
+ * wedges themselves shrink by a fixed margin ONLY when `ring` is supplied --
+ * every caller that never sets `ring` keeps the exact geometry it always
+ * had (byte-for-byte: `rOuter` is computed identically to before when this
+ * option is absent).
+ */
+export function renderScopedWheel(items, { size = 360, centerArabic, centerRef, centerLabel, centerSub, ring = null } = {}) {
   const cx = size / 2, cy = size / 2;
-  const rOuter = size / 2 - 4;
+  const ringMargin = ring ? 14 : 0;
+  const rOuter = size / 2 - 4 - ringMargin;
   const rInner = rOuter * 0.5;
   const labelOffset = Math.max(10, rOuter * 0.065);
   const n = items.length || 1;
@@ -311,7 +367,7 @@ export function renderScopedWheel(items, { size = 360, centerArabic, centerRef, 
       const start = i * anglePer;
       const end = start + anglePer - Math.min(1.2, anglePer * 0.08);
       const mid = (start + end) / 2;
-      const fill = STATUS_COLORS[entry.statusId] ?? STATUS_COLORS.not_started;
+      const fill = entry.fill ?? STATUS_COLORS[entry.statusId] ?? STATUS_COLORS.not_started;
       const rot = ringNumberRotation(mid);
       const lp = polarToCartesian(cx, cy, rOuter + labelOffset, mid);
       const numText = `<text class="wheel-seg-num" x="${lp.x}" y="${lp.y}" text-anchor="middle" transform="rotate(${rot} ${lp.x} ${lp.y})" style="pointer-events:none">${entry.number ?? entry.key}</text>`;
@@ -335,8 +391,11 @@ export function renderScopedWheel(items, { size = 360, centerArabic, centerRef, 
     })
     .join("");
 
+  const ringMarkup = ring ? renderWheelRing(cx, cy, rOuter + 4, rOuter + ringMargin - 2, ring.ratio) : "";
+
   return `<svg class="mastery-wheel" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
     <defs>${naHatchDefs()}</defs>
+    ${ringMarkup}
     ${segments}
     ${centerLabelMarkup(cx, cy, rInner, { centerArabic, centerRef, centerLabel, centerSub })}
   </svg>`;

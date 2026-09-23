@@ -3,19 +3,29 @@
 //
 // WHY THIS SUITE EXISTS, and why no emulator run could replace it.
 //
-// The repository declares no Firestore composite index anywhere: `firebase.json`
-// has no `indexes` key and no `firestore.indexes.json` exists. That was harmless
-// for the whole life of the app, because every query outside the Note Foundation
-// is equality-only, and Firestore serves those without a declared composite
-// index. The Note Foundation introduced the first queries that combine equality
-// filters with an `orderBy` on a DIFFERENT field, and each of those fails in
-// production with `failed-precondition: The query requires an index`.
+// For most of this app's life it declared no Firestore composite index
+// anywhere, because every query outside the Note Foundation is equality-only
+// and Firestore serves those from single-field indexes. The Note Foundation
+// introduced the first queries that combine equality filters with an
+// `orderBy` on a DIFFERENT field, and each of those fails in production with
+// `failed-precondition: The query requires an index` unless one is declared.
 //
 // The Firestore EMULATOR does not enforce this. Proven, not assumed:
 // `tools/firestore-emulator/index-probe.test.mjs` starts the emulator with an
 // index file declaring ZERO indexes and the query is served anyway. So a green
 // emulator suite says nothing at all about index requirements, and this gap
 // could only ever be caught by reading the queries -- which is what this does.
+//
+// DEPLOYED, 22 Sep 2026 -- `firebase.json`/`firestore.indexes.json` now exist
+// at the live path, confirmed by the Owner in the Firebase Console (all four
+// indexes read Enabled). Until this date the last check below asserted the
+// OPPOSITE -- that no live index file existed -- because declaring one before
+// it was actually deployed would have been the repository claiming readiness
+// nobody had proven. That claim is no longer premature; it is fact. The check
+// now guards the other direction: the live declaration must match exactly
+// what was audited and actually deployed, so a FUTURE index cannot be slipped
+// onto the live path without going through the same declared-candidate,
+// audited, Owner-confirmed ceremony this one did.
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -147,13 +157,24 @@ check("the candidate declares no index no query needs", () => {
   assert.deepEqual(spare, [], `the candidate declares indexes nothing queries: ${spare.join(", ")}`);
 });
 
-// --- CANDIDATE ONLY ---------------------------------------------------------
-check("the candidate is a CANDIDATE: firebase.json still declares no indexes", () => {
+// --- DEPLOYED, AND EXACTLY WHAT WAS AUDITED ---------------------------------
+check("indexes are deployed: firebase.json points at a live index file", () => {
   const firebase = JSON.parse(fs.readFileSync(path.join(root, "firebase.json"), "utf8"));
-  assert.ok(!("indexes" in (firebase.firestore ?? {})),
-    "firebase.json now points at an index file -- that is a deployment-shaped change and an Owner Control Gate");
-  assert.ok(!fs.existsSync(path.join(root, "firestore.indexes.json")),
-    "a firestore.indexes.json now sits at the deploy path -- the candidate must stay under docs/governance/");
+  assert.equal(firebase.firestore?.indexes, "firestore.indexes.json",
+    "firebase.json does not point at firestore.indexes.json -- the Owner confirmed these indexes are deployed on 22 Sep 2026, so the repository must say so too");
+});
+
+check("the live index file declares EXACTLY the audited candidate set -- no more, no fewer", () => {
+  const livePath = path.join(root, "firestore.indexes.json");
+  assert.ok(fs.existsSync(livePath), "firestore.indexes.json does not exist at the live deploy path");
+  const live = JSON.parse(fs.readFileSync(livePath, "utf8"));
+  const key = (idx) => `${idx.collectionGroup}:${idx.fields.map((f) => `${f.fieldPath}:${f.order}`).join(",")}`;
+  const liveKeys = new Set(live.indexes.map(key));
+  const candidateKeys = new Set(candidate.indexes.map(key));
+  const missing = [...candidateKeys].filter((k) => !liveKeys.has(k));
+  const extra = [...liveKeys].filter((k) => !candidateKeys.has(k));
+  assert.deepEqual(missing, [], `an audited index is missing from the live file: ${missing.join(", ")}`);
+  assert.deepEqual(extra, [], `the live file declares an index that was never audited as a candidate: ${extra.join(", ")} -- a new index needs the same candidate-and-audit ceremony before it reaches the live path`);
 });
 
 console.log(`\n==== Firestore index requirements: ${passed} passed, ${failed} failed ====`);

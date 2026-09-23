@@ -36,7 +36,9 @@ const {
   listDiseases,
   getDisease,
   listAgeGroups,
-  getAgeGroup
+  getAgeGroup,
+  matchesFoodSearch,
+  matchesDiseaseSearch
 } = await importEsmFile(path.join(repoRoot, 'app', 'health', 'js', 'health-atlas-more-selectors.js'));
 
 const {
@@ -117,6 +119,51 @@ check('getAgeGroup resolves a known age group and returns null for an unknown id
   const child = getAgeGroup(HEALTH_ATLAS_AGES, 'child');
   assert(child && child.range === '3–12 years', 'did not resolve child with its range');
   assert(getAgeGroup(HEALTH_ATLAS_AGES, 'no-such-age') === null, 'unknown age id should return null');
+});
+
+check('matchesFoodSearch: empty term matches everything', () => {
+  const avocado = getFood(HEALTH_ATLAS_FOODS, 'avocado');
+  assert(matchesFoodSearch(avocado, ''), 'expected an empty term to match');
+  assert(matchesFoodSearch(avocado, '   '), 'expected a whitespace-only term to match');
+});
+
+check('matchesFoodSearch matches on name and category, case-insensitively', () => {
+  const avocado = getFood(HEALTH_ATLAS_FOODS, 'avocado');
+  assert(matchesFoodSearch(avocado, 'Avo'), 'expected a name-prefix match');
+  assert(matchesFoodSearch(avocado, 'FAT'), 'expected a category match regardless of case');
+  assert(!matchesFoodSearch(avocado, 'zzz-no-such-term'), 'expected no match for an unrelated term');
+});
+
+check('matchesFoodSearch does NOT match on the excluded .nutrition field -- a real, present value must stay invisible to search', () => {
+  const avocado = getFood(HEALTH_ATLAS_FOODS, 'avocado');
+  assert(avocado.nutrition.some(n => /potassium/i.test(n)), 'fixture assumption broke: avocado no longer lists Potassium in .nutrition');
+  assert(!matchesFoodSearch(avocado, 'potassium'), 'search matched a term that only appears in the excluded .nutrition field -- this is exactly the indirect leak the boundary comment warns about');
+});
+
+check('matchesDiseaseSearch: empty term matches everything', () => {
+  const cad = getDisease(HEALTH_ATLAS_DISEASES, 'cad');
+  assert(matchesDiseaseSearch(cad, ''), 'expected an empty term to match');
+});
+
+check('matchesDiseaseSearch matches on name, cause, symptoms and organAffected', () => {
+  const cad = getDisease(HEALTH_ATLAS_DISEASES, 'cad');
+  assert(matchesDiseaseSearch(cad, 'coronary'), 'expected a name match');
+  assert(matchesDiseaseSearch(cad, 'plaque'), 'expected a .cause match');
+  assert(matchesDiseaseSearch(cad, 'chest pain'), 'expected a .symptoms match');
+  assert(matchesDiseaseSearch(cad, 'heart'), 'expected an .organAffected match');
+  assert(!matchesDiseaseSearch(cad, 'zzz-no-such-term'), 'expected no match for an unrelated term');
+});
+
+check('matchesDiseaseSearch does NOT match on .remedies/.homeRemedies/.naturalRemedies -- present, real values must stay invisible to search', () => {
+  const cad = getDisease(HEALTH_ATLAS_DISEASES, 'cad');
+  assert(cad.remedies.some(r => /statin/i.test(r)), 'fixture assumption broke: cad no longer mentions statins in .remedies');
+  assert(!matchesDiseaseSearch(cad, 'statin'), 'search matched a term that only appears in the excluded .remedies field -- a hit list is itself a disclosure of that hidden text');
+  assert(!matchesDiseaseSearch(cad, 'angioplasty'), 'search matched a term that only appears in the excluded .remedies field');
+});
+
+check('matchesFoodSearch and matchesDiseaseSearch never throw on an entry missing an optional array field', () => {
+  assert(matchesDiseaseSearch({ id: 'x', name: 'X' }, 'anything') === false, 'expected a graceful non-match, not a throw, on a disease with no cause/symptoms/organAffected');
+  assert(matchesFoodSearch({ id: 'x', name: 'X' }, 'anything') === false, 'expected a graceful non-match, not a throw, on a food with no category');
 });
 
 console.log(`\nHealth Atlas more-selectors: ${passed} passed, ${failed} failed`);
