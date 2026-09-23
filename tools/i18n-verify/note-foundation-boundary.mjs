@@ -104,8 +104,15 @@ check("Foundation data layer has no legacy fallback or dual write",
   !/TENANT\.AYAH_NOTES|from\s+["']\.\/ayah-notes\.js["']|saveAyahNote\s*\(/.test(foundation));
 check("Foundation data layer remains uninvoked by the Quran shell",
   !/note-foundation\.js/.test(quranShell));
-check("no Foundation Rules match is implemented",
-  contract.foundationCollections.every((name) => !firestoreRules.includes(`match /${name}/`)));
+// DEPLOYED, 22 Sep 2026 -- confirmed by the Owner in the Firebase Console,
+// via a later, separately-audited candidate (the Phase 3-6 assembly), not by
+// this task acquiring deployment authority it was never given (see "no
+// deployment is authorised" below, still true and still unrelated to this).
+// The Rules match existing is now the expected, correct state; the check
+// guards the other direction now -- that every collection this contract
+// names really did get a live rule, none silently missing.
+check("every Foundation collection has a Rules match in production",
+  contract.foundationCollections.every((name) => firestoreRules.includes(`match /${name}/`)));
 check("no per-Note guardian approval UI is implemented",
   !/data-note-guardian-approval|approveGuardianNoteEdit/.test(quranShell));
 

@@ -73,7 +73,50 @@ export function asmaEntryMeaningText(entry) {
   return langText(entry.meaning, lang);
 }
 
-export function renderAsmaDetail(entry, claimEntry, { isBookmarked = false } = {}) {
+/** Classifications round -- 23 Sep 2026. The owner's own ask: "a name card
+    should show the names of all LISTS it belongs to." Shared by
+    renderAsmaDetail() below AND, directly, by quranrevival.html's own
+    Explore References-level card -- that card builds its own markup
+    rather than calling renderAsmaDetail() (asma-study.js is the ONLY
+    caller of that function; see this file's own header note on I2), so a
+    standalone exported helper is what lets both surfaces show the same
+    chip row without a second copy of it.
+
+    `memberships`: null/undefined omits the whole section (existing callers
+    untouched, byte-identical); an array (even empty) renders it, with a
+    hint line when empty rather than an empty box. Each entry is already
+    resolved by the caller -- {collectionId, collectionTitle: {en,bn},
+    classificationKey, classificationTitle: {en,bn}} -- this stays a pure
+    renderer (I2): it never reads the collections/classifications registry
+    itself. Every chip carries `data-asma-belongs-jump="{classificationKey}:{collectionId}"`;
+    the caller wires the actual navigation (open that list). */
+export function renderAsmaBelongsToHtml(memberships) {
+  if (!memberships) return "";
+  const chips = memberships
+    .map((m) => `<button type="button" class="asma-belongs-chip" data-asma-belongs-jump="${escapeHtml(m.classificationKey)}:${escapeHtml(m.collectionId)}">${escapeHtml(langText(m.classificationTitle, getAppLang()))}: ${escapeHtml(langText(m.collectionTitle, getAppLang()))}</button>`)
+    .join("");
+  return `<div class="asma-belongs-block">
+    <div class="asma-belongs-label">${escapeHtml(t("Belongs to"))}</div>
+    ${chips ? `<div class="asma-belongs-row">${chips}</div>` : `<p class="hint">${escapeHtml(t("Not filed in any list yet."))}</p>`}
+  </div>`;
+}
+
+/** Same shape as renderAsmaBelongsToHtml() above, for the smaller
+    per-row "also in…" chips renderAsmaCollectionListHtml() shows under a
+    Name that is filed in more than the one list currently being browsed.
+    `data-asma-also-in-jump` carries the same "{classificationKey}:{collectionId}"
+    value so both chip families can share one click-navigation wiring on
+    the caller's side. Returns "" for a null/empty list, so a Name filed
+    nowhere else prints no row at all rather than an empty one. */
+export function renderAsmaAlsoInHtml(memberships) {
+  if (!memberships || !memberships.length) return "";
+  const chips = memberships
+    .map((m) => `<button type="button" class="asma-also-in-chip" data-asma-also-in-jump="${escapeHtml(m.classificationKey)}:${escapeHtml(m.collectionId)}">${escapeHtml(langText(m.classificationTitle, getAppLang()))}: ${escapeHtml(langText(m.collectionTitle, getAppLang()))}</button>`)
+    .join("");
+  return `<div class="asma-also-in-row"><span class="asma-also-in-label">${escapeHtml(t("Also in:"))}</span>${chips}</div>`;
+}
+
+export function renderAsmaDetail(entry, claimEntry, { isBookmarked = false, memberships = null } = {}) {
   // Was a raw claimedStatus with its underscores swapped for spaces, and a
   // raw confirmState id -- both meaningless in either language. They go
   // through the shared label helpers now, and the whole line is ONE
@@ -104,6 +147,7 @@ export function renderAsmaDetail(entry, claimEntry, { isBookmarked = false } = {
     <p class="asma-detail-meaning">${escapeHtml(asmaEntryMeaningText(entry))}</p>
     ${badges ? `<p class="asma-detail-badges">${badges}</p>` : ""}
     ${renderAsmaXrefBlock(entry)}
+    ${renderAsmaBelongsToHtml(memberships)}
     <p>${statusLine}</p>
     <button type="button" id="trackAsmaBtn">${t("Track my progress")}</button>
     <button type="button" id="posterAsmaBtn" class="secondary">🖼 ${t("Poster")}</button>
@@ -189,8 +233,16 @@ export function renderAsmaXrefBlock(entry, { inPage = false } = {}) {
     claims, bookmarks and notes) never changes, and asma-study.html's own
     panel (which never passes this) keeps showing the permanent id exactly
     as it always has. A second follow-up the same day dropped the "#"
-    prefix the badge used to carry -- it now shows the bare number. */
-export function renderAsmaCollectionListHtml(entries, { manageOn = false, otherCollections = [], enableReorder = false, positionLabelByKey = null, runningNumberByKey = null } = {}) {
+    prefix the badge used to carry -- it now shows the bare number.
+
+    Classifications round -- 23 Sep 2026: `otherMembershipsByKey`
+    (Map(unitKey -> memberships[]), same shape renderAsmaBelongsToHtml()/
+    renderAsmaAlsoInHtml() read), also OFF by default so every existing
+    caller (asma-study.html's own panel included) renders byte-identical.
+    quranrevival.html's own Names-level list is the one caller that passes
+    it -- one "also in…" row per Name that is filed in some OTHER list too,
+    each chip navigating there. */
+export function renderAsmaCollectionListHtml(entries, { manageOn = false, otherCollections = [], enableReorder = false, positionLabelByKey = null, runningNumberByKey = null, otherMembershipsByKey = null } = {}) {
   if (!entries.length) return `<p class="hint">${escapeHtml(t("No Names in this group yet."))}</p>`;
   return entries
     .map(({ key, entry, statusId }) => {
@@ -230,6 +282,7 @@ export function renderAsmaCollectionListHtml(entries, { manageOn = false, otherC
       const dragHandle = enableReorder && manageOn
         ? `<button type="button" class="asma-drag-handle" data-asma-drag-handle title="${escapeHtml(t("Drag to reorder"))}" aria-label="${escapeHtml(t("Drag to reorder"))}">⠿</button>`
         : "";
+      const alsoInRow = renderAsmaAlsoInHtml(otherMembershipsByKey?.get(key));
       return `<div class="way-row asma-way-row"${enableReorder ? ` data-asma-way-key="${escapeHtml(key)}"` : ""}>
         ${dragHandle}
         <div class="asma-way-main">
@@ -242,6 +295,7 @@ export function renderAsmaCollectionListHtml(entries, { manageOn = false, otherC
           <span class="asma-status-chip" style="background:${STATUS_COLORS[statusId] ?? STATUS_COLORS.not_started}">${escapeHtml(statusLabel(statusId))}</span>
         </div>
         ${badges ? `<span class="asma-way-badges">${badges}</span>` : ""}
+        ${alsoInRow}
         <span class="asma-way-meaning">${escapeHtml(asmaEntryMeaningText(entry))}</span>
       </div>`;
     })
