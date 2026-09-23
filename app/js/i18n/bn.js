@@ -1173,6 +1173,10 @@ export const BN = {
   "Arabic word coverage isn't available at this granularity — open a Surah or a Ruku' to see it.":
     "এই স্তরে আরবি শব্দের অগ্রগতি দেখানো যায় না — দেখতে হলে একটি সূরা বা রুকু খুলুন।",
   "{known} of {total} Arabic words known": "{total}টি আরবি শব্দের মধ্যে {known}টি জানা",
+  // Issue #206 -- the gold running-total ring + Approach/Word by Word wedge-
+  // colouring toggle. The button labels reuse the existing "Approach" and
+  // "Word by Word" keys above/below rather than adding new ones.
+  "Colour the wheel by": "চাকাটি যে অনুযায়ী রঙ করা হবে",
   // MAP Phase 3 -- WbW word progress on the Quran Word Card.
   "Word progress": "শব্দের অগ্রগতি",
   "Waiting to be checked": "যাচাইয়ের অপেক্ষায়",
@@ -2254,6 +2258,8 @@ export const BN = {
   "{count} root-linked occurrences": "ধাতু-সম্পর্কিত {count}টি ব্যবহার",
   "{count} lemma-linked occurrences": "মূল রূপ-সম্পর্কিত {count}টি ব্যবহার",
   "Derived forms of this root": "এই ধাতু থেকে উৎপন্ন রূপসমূহ",
+  // Issue #206 -- the Word Card's own occurrence-share line.
+  "Appears {count} times in the Qur'an — {percent}% of all words": "কুরআনে {count} বার এসেছে — সকল শব্দের {percent}%",
   "{total} occurrences in {forms} derived forms": "{forms}টি উৎপন্ন রূপে {total}টি ব্যবহার",
   "{count} occurrences": "{count}টি ব্যবহার",
   "Category not recorded": "শ্রেণি লিপিবদ্ধ নেই",

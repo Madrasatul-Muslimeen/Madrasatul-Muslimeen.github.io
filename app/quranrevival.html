@@ -816,6 +816,11 @@
      have each been bitten by it). */
   #exploreViewToggle { display: flex; align-items: center; gap: 6px; margin: 4px 0 2px; flex-wrap: wrap; }
   #exploreViewToggle[hidden] { display: none; }
+  /* Issue #206 -- same container shape as #exploreViewToggle above, reusing
+     its own .explore-view-btn control style rather than inventing a second
+     one, per this project's own standing rule. */
+  #exploreWheelColorToggle { display: flex; align-items: center; gap: 6px; margin: 4px 0 2px; flex-wrap: wrap; }
+  #exploreWheelColorToggle[hidden] { display: none; }
   .explore-view-label { color: #8fa0c2; font-size: 0.72rem; }
   /* ~36px tall, per the standing lesson that a 26px control is too small for
      a finger; these are words rather than icons, so they take their own
@@ -3524,6 +3529,20 @@
                    v08.02 already weighed and declined letting a second
                    meaning compete for the same colour. -->
               <div id="exploreArabicCoverage" class="explore-arabic-coverage" hidden></div>
+              <!-- Issue #206 -- combines the Owner-approved demo's two
+                   options into one: a gold ring (always drawn once the
+                   running-counter gate is open, see renderScopedWheel's own
+                   `ring` option) plus this toggle, which switches only what
+                   the WEDGES are coloured by. "Approach" is the existing,
+                   unchanged pooled-status colouring above; "Word-by-Word"
+                   recolours each Juz wedge by its own known/total. Shown
+                   ONLY at the "quran" level (each wedge IS a Juz there) and
+                   only once the gate is open -- absent otherwise, exactly
+                   like the ring itself. -->
+              <div id="exploreWheelColorToggle" role="group" aria-label="Colour the wheel by" hidden>
+                <button type="button" class="explore-view-btn on" id="exploreColorApproachBtn" aria-pressed="true">Approach</button>
+                <button type="button" class="explore-view-btn" id="exploreColorWbwBtn" aria-pressed="false">Word by Word</button>
+              </div>
               <p class="hint">Click a segment to drill in &mdash; Quran &rarr; Juz &rarr; Surah &rarr; Ruku' &rarr; an ayah in Study. Colours pool this Approach's real ayah-by-ayah progress across whatever's inside each segment &mdash; it only turns fully green once every ayah inside it is Mastered.</p>
             </div>
             <div class="list-splitter" id="exploreListSplitter" role="separator" aria-orientation="vertical" title="Drag to resize">
@@ -4229,7 +4248,7 @@
     import { wireDragReorder } from "./js/drag-reorder.js";
     import { parseAsmaRef } from "./js/asma-ref-parser.js";
     import { listEnrollmentsForPerson, programSubjectMapFromEnrollments } from "./js/course-offers.js";
-    import { getSurah, getSurahIndex, getJuzIndex, getPageIndex, getHizbIndex } from "./js/quran-data.js";
+    import { getSurah, getSurahIndex, getJuzIndex, getPageIndex, getHizbIndex, getJuzWordTotalsIndex } from "./js/quran-data.js";
     // Shell round 14 -- word/phrase search. Importing the module costs
     // nothing at load: it fetches its index only when a search actually runs.
     import { searchQuran } from "./js/quran-search.js";
@@ -4237,9 +4256,13 @@
     import { parseQuranWordOccurrenceId } from "./js/quran-word-identity.js";
     import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard, renderQuranWordCard, WORD_CARD_POS_SEGMENTS } from "./js/quran-word-card.js";
     import { occurrenceRefsFor, rootFormsFor, unpackWordIndexRef } from "./js/quran-word-index.js";
-    import { wordProgressAuthority, WBW_WORD_STATES } from "./js/quran-word-progress.js";
+    import { wordProgressAuthority, WBW_WORD_STATES, resolveWordProgress } from "./js/quran-word-progress.js";
     import { primeAyahProgress, getSurahProgress, wordProgressFor, setWordState, decideWordApproval, clearWordProgressCache } from "./js/quran-word-progress-data.js";
     import { computeArabicCoverage, occurrenceIdsForAyah, occurrenceIdsForAyahRange, occurrenceIdsForSurah } from "./js/quran-word-coverage.js";
+    // Issue #206 -- the whole-Qur'an/Juz running word counter.
+    import { QURAN_TOTAL_WORD_COUNT, knownDelta, juzForSurahAyah, wordTotalRatio } from "./js/quran-word-total.js";
+    import { getWordTotals, recordWordTotalDelta } from "./js/quran-word-total-data.js";
+    import { isWbwTotalPersistenceReady } from "./js/study-wbw-total-readiness.js";
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { mountBookmarkMenu } from "./js/bookmark-nav.js";
@@ -4281,7 +4304,7 @@
     // -- each respects its own Every time/Once a day/Once a week preference
     // independently, same as when they were two separate page loads.
     showBootSplash(() => showQuranSplash());
-    import { renderWheelLegend, renderScopedWheel, attachScopedWheelClickHandler, renderWheelSidebar, attachWheelSidebarClickHandler, wrapWheelLabel } from "./js/mastery-wheel.js";
+    import { renderWheelLegend, renderScopedWheel, attachScopedWheelClickHandler, renderWheelSidebar, attachWheelSidebarClickHandler, wrapWheelLabel, wordTotalRampColor } from "./js/mastery-wheel.js";
     import {
       renderGuideTab, renderTrackTab, renderBreakdownTab, renderCoverageTab,
       renderWayModalShell, attachWayModalHandlers, renderWayEmbed, attachWayEmbedHandlers,
@@ -4627,6 +4650,9 @@
     const exploreWheelLegendContainer = document.getElementById("exploreWheelLegendContainer");
     const exploreArabicCoverageEl = document.getElementById("exploreArabicCoverage");
     const exploreSidebarContainer = document.getElementById("exploreSidebarContainer");
+    const exploreWheelColorToggle = document.getElementById("exploreWheelColorToggle");
+    const exploreColorApproachBtn = document.getElementById("exploreColorApproachBtn");
+    const exploreColorWbwBtn = document.getElementById("exploreColorWbwBtn");
     const exploreListSplitter = document.getElementById("exploreListSplitter");
     const exploreListCollapseBtn = document.getElementById("exploreListCollapseBtn");
     const tabExploreBtn = document.getElementById("tabExploreBtn");
@@ -4957,6 +4983,22 @@
     let exploreJuzNum = null;
     let exploreSurahNum = null;
     let exploreRukuIndex = null;
+
+    // Issue #206 -- the whole-Qur'an/Juz running word counter. `juzWordTotalsData`
+    // ({quranTotalWords, byJuz:[{juz,totalWords}]}) and `personWordTotals` (this
+    // reader's own quranWordTotals document, or null) are both loaded lazily by
+    // ensureWordTotalsForExplore(), called only when Explore's Quran/Juz level is
+    // actually open (I9) -- never on the startup path. Both stay null while
+    // isWbwTotalPersistenceReady() is false, which is true for everyone today,
+    // so nothing below changes any existing behaviour until a governed decision
+    // enables the gate.
+    let juzWordTotalsData = null;
+    let personWordTotals = null;
+    // "approach" (today's real, unchanged pooled-status colouring) or "wbw"
+    // (each Juz wedge recoloured by its own known/total). Session-only,
+    // Explore "quran" level only -- deliberately not persisted, so nobody's
+    // browser habit silently reinterprets what a colour means.
+    let wbwWheelColorMode = "approach";
 
     // Ayah Collections (QCR) round -- Explore's own palette state, alongside
     // the Quran drill-down above. Loaded lazily, once per sign-in, the first
@@ -7387,6 +7429,68 @@
       });
     });
 
+    // Issue #206 -- the wedge-colouring toggle. Shown ONLY at the "quran"
+    // level (each wedge is a Juz there, so a Juz-scoped known/total means
+    // something) and only once the running-counter gate is open -- absent
+    // otherwise, same rule the ring itself follows.
+    function syncWheelColorModeToggle() {
+      const show = exploreLevel === "quran" && isWbwTotalPersistenceReady();
+      exploreWheelColorToggle.hidden = !show;
+      if (!show) return;
+      for (const [btn, mode] of [[exploreColorApproachBtn, "approach"], [exploreColorWbwBtn, "wbw"]]) {
+        const on = mode === wbwWheelColorMode;
+        btn.classList.toggle("on", on);
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
+      }
+    }
+
+    [[exploreColorApproachBtn, "approach"], [exploreColorWbwBtn, "wbw"]].forEach(([btn, mode]) => {
+      btn.addEventListener("click", () => {
+        if (wbwWheelColorMode === mode) return;
+        wbwWheelColorMode = mode;
+        renderExplore();
+      });
+    });
+
+    /**
+     * Issue #206 -- loads this reader's own running-counter document and the
+     * packaged per-Juz totals, but ONLY while the gate is open and ONLY when
+     * Explore's Quran/Juz level is actually open (I9). Awaited from
+     * renderExplore() BEFORE the wheel paints, so the ring and the toggle are
+     * correct on the very first paint rather than lagging one render behind
+     * an async load. While the gate is closed (true for everyone today) this
+     * resolves immediately without ever calling Firestore -- getWordTotals()
+     * itself refuses before that point.
+     */
+    async function ensureWordTotalsForExplore() {
+      const { tenantId, subjectPersonId } = wordProgressActor();
+      if (!tenantId || !subjectPersonId || !isWbwTotalPersistenceReady()) {
+        personWordTotals = null;
+        return;
+      }
+      try {
+        const [totals, juzTotals] = await Promise.all([
+          getWordTotals(db, { tenantId, personId: subjectPersonId }),
+          juzWordTotalsData ?? getJuzWordTotalsIndex(),
+        ]);
+        personWordTotals = totals;
+        juzWordTotalsData = juzTotals;
+      } catch (error) {
+        reportWriteFailure(error, { what: "read the whole-Qur'an word total" }); // I15
+        personWordTotals = null;
+      }
+    }
+
+    /** The gold ring's own ratio: this reader's whole-Qur'an known/total, 0 while nothing has been recorded yet. */
+    function wholeQuranWordTotalRatio() {
+      return wordTotalRatio(Number(personWordTotals?.known ?? 0), Number(personWordTotals?.total ?? QURAN_TOTAL_WORD_COUNT));
+    }
+
+    /** `{ ratio }` for renderScopedWheel's own `ring` option, or `null` while the gate is closed -- the ring is simply absent then, never drawn empty. */
+    function wheelRingOption() {
+      return isWbwTotalPersistenceReady() ? { ratio: wholeQuranWordTotalRatio() } : null;
+    }
+
     // -----------------------------------------------------------------------
     // MAP Phase 3 -- Arabic word coverage in Explore.
     //
@@ -7409,10 +7513,28 @@
       const { tenantId, subjectPersonId } = wordProgressActor();
       const scoped = exploreLevel === "surah" || exploreLevel === "ruku";
       if (!tenantId || !subjectPersonId || exploreSurahNum == null || !scoped) {
-        el.hidden = !(exploreLevel === "quran" || exploreLevel === "juz");
-        if (!el.hidden) {
+        const wideLevel = exploreLevel === "quran" || exploreLevel === "juz";
+        el.hidden = !wideLevel;
+        if (el.hidden) return;
+        // Issue #206 -- this used to always say "not available at this
+        // granularity". By the time renderExplore() calls this,
+        // ensureWordTotalsForExplore() has already resolved for quran/juz
+        // levels, so personWordTotals/juzWordTotalsData are already the
+        // right ones for THIS level -- no new fetch here, purely synchronous.
+        if (!tenantId || !subjectPersonId || !isWbwTotalPersistenceReady()) {
           el.innerHTML = `<span class="eac-unavailable">${escapeHtml(t("Arabic word coverage isn't available at this granularity — open a Surah or a Ruku' to see it."))}</span>`;
+          return;
         }
+        let known = 0, total = QURAN_TOTAL_WORD_COUNT;
+        if (exploreLevel === "juz") {
+          const row = juzWordTotalsData?.byJuz?.find((r) => r.juz === exploreJuzNum);
+          total = row ? row.totalWords : 0;
+          known = Number(personWordTotals?.byJuz?.[String(exploreJuzNum)]?.known ?? 0);
+        } else {
+          total = Number(personWordTotals?.total ?? QURAN_TOTAL_WORD_COUNT);
+          known = Number(personWordTotals?.known ?? 0);
+        }
+        el.innerHTML = `<span class="eac-figure">${escapeHtml(t("{known} of {total} Arabic words known", { known: num(known), total: num(total) }))}</span>`;
         return;
       }
       el.hidden = false;
@@ -7455,9 +7577,15 @@
 
     async function renderExplore() {
       renderExploreBreadcrumb();
-      renderExploreArabicCoverage();
       renderExploreApproachList();
       syncExploreViewToggle();
+      // Issue #206 -- awaited BEFORE the wheel paints (quran/juz levels
+      // only), so the ring and the wedge-colour toggle are correct on the
+      // very first paint. While the gate is closed this resolves with no
+      // Firestore call at all, so it costs nothing for anyone today.
+      if (exploreLevel === "quran" || exploreLevel === "juz") await ensureWordTotalsForExplore();
+      syncWheelColorModeToggle();
+      renderExploreArabicCoverage();
       if (exploreLevel === "quran") return renderExploreQuranLevel();
       if (exploreLevel === "juz") return renderExploreJuzLevel();
       if (exploreLevel === "surah") return renderExploreSurahLevel();
@@ -7493,10 +7621,33 @@
       const approachName = langText(trackable.name, getAppLang(), trackable.id);
       const labelsById = statusLabelsById();
       for (const it of items) it.title = segTitle(it.label, it.statusId, labelsById);
-      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Whole Quran"), centerSub: approachName });
+
+      // Issue #206 -- the wedge-colouring toggle. The Approach branch above
+      // (statusId, the pooled progress colouring) is completely untouched;
+      // this ONLY overlays `fill`/`title` on top of it, and only in "wbw"
+      // mode with the gate open and the per-Juz totals actually loaded.
+      // renderScopedWheel prefers `entry.fill` over `STATUS_COLORS[statusId]`
+      // when it is present, so the Approach mode's own colours are byte-
+      // identical to before this round: `fill` is simply never set there.
+      const wbwMode = wbwWheelColorMode === "wbw" && isWbwTotalPersistenceReady() && juzWordTotalsData;
+      if (wbwMode) {
+        for (const it of items) {
+          const row = juzWordTotalsData.byJuz.find((r) => r.juz === it.key);
+          const total = row ? row.totalWords : 0;
+          const known = Number(personWordTotals?.byJuz?.[String(it.key)]?.known ?? 0);
+          const ratio = wordTotalRatio(known, total);
+          it.fill = wordTotalRampColor(ratio);
+          it.title = `${it.label} — ${t("{known} of {total} Arabic words known", { known: num(known), total: num(total) })}`;
+        }
+      }
+
+      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Whole Quran"), centerSub: approachName, ring: wheelRingOption() });
       attachScopedWheelClickHandler(exploreWheelContainer, jumpToJuz);
 
-      exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
+      // The legend describes the Approach-status colours only, so it is
+      // hidden rather than left up while wedges mean something else --
+      // never showing a key that no longer describes what is on screen.
+      exploreWheelLegendContainer.innerHTML = wbwMode ? "" : renderWheelLegend(labelsById);
       exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
       attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToJuz);
     }
@@ -7534,7 +7685,11 @@
       };
 
       const approachName = langText(trackable.name, getAppLang(), trackable.id);
-      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Whole Quran"), centerSub: approachName });
+      // Issue #206 -- the ring is "always visible once ready" at every
+      // reading of the "quran" level, including this 114-surah one; the
+      // wedge-colour TOGGLE does not apply here (no per-surah counter data),
+      // so wedges stay Approach-coloured regardless of wbwWheelColorMode.
+      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Whole Quran"), centerSub: approachName, ring: wheelRingOption() });
       attachScopedWheelClickHandler(exploreWheelContainer, jumpToSurah);
 
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
@@ -7583,7 +7738,7 @@
       const approachName = langText(trackable.name, getAppLang(), trackable.id);
       const labelsById = statusLabelsById();
       for (const it of items) it.title = segTitle(it.label, it.statusId, labelsById);
-      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Juz {juz}", { juz: num(exploreJuzNum) }), centerSub: approachName });
+      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Juz {juz}", { juz: num(exploreJuzNum) }), centerSub: approachName, ring: wheelRingOption() });
       attachScopedWheelClickHandler(exploreWheelContainer, jumpToSurahForPage);
 
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
@@ -7650,7 +7805,7 @@
       };
 
       const approachName = langText(trackable.name, getAppLang(), trackable.id);
-      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Juz {juz}", { juz: num(exploreJuzNum) }), centerSub: approachName });
+      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Juz {juz}", { juz: num(exploreJuzNum) }), centerSub: approachName, ring: wheelRingOption() });
       attachScopedWheelClickHandler(exploreWheelContainer, jumpToSurah);
 
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
@@ -10123,6 +10278,8 @@
         semanticRangeMissing: t("Semantic range not yet supplied"),
         openDictionary: t("Open dictionary source"),
         dictionaryUnavailable: t("Dictionary source unavailable"),
+        // Issue #206 -- the Word Card's own occurrence-share line.
+        wordShareOfQuran: t("Appears {count} times in the Qur'an — {percent}% of all words"),
       };
     }
 
@@ -10221,6 +10378,47 @@
       if (quranWordCardState.open && quranWordCardState.occurrenceId === requestedId) renderPersistentWordCard();
     }
 
+    /**
+     * Issue #206 -- the running counter's OWN "before" snapshot, read
+     * synchronously out of the already-primed cache (never a Firestore
+     * call) so it reflects exactly the state a write is about to change.
+     * `null` while the gate is closed, which the caller treats as "there is
+     * nothing to record" rather than "nothing changed".
+     */
+    function wordProgressCountsAsKnownNow(tenantId, personId, occurrenceId, confirmationRequired) {
+      return isWbwTotalPersistenceReady()
+        ? wordProgressFor({ tenantId, personId, occurrenceId, confirmationRequired }).countsAsKnown
+        : null;
+    }
+
+    /**
+     * Issue #206 -- moves the whole-Qur'an/Juz running counter by exactly
+     * the countsAsKnown transition a real write just produced. Runs AFTER
+     * that write has already succeeded, gated and silent exactly like the
+     * Activity evidence block below it: recording this counter can never be
+     * why a word tap fails, and a reader who never presses Explore's own
+     * ring/toggle is never told anything about it either way. juzIndexData/
+     * juzWordTotalsData are fetched here on FIRST USE if Explore was never
+     * opened this session -- still never on the startup path (I9), and the
+     * whole function returns immediately, before any of that, whenever
+     * `beforeKnown` is null (the gate is closed).
+     */
+    async function applyWordTotalCounterDelta({ tenantId, personId, occurrenceId, confirmationRequired, beforeKnown }) {
+      if (beforeKnown === null) return;
+      const afterKnown = wordProgressFor({ tenantId, personId, occurrenceId, confirmationRequired }).countsAsKnown;
+      const delta = knownDelta(beforeKnown, afterKnown);
+      if (!delta) return;
+      const ref = parseQuranWordOccurrenceId(occurrenceId);
+      if (!juzIndexData) juzIndexData = await getJuzIndex();
+      const juz = juzForSurahAyah(juzIndexData, ref.surah, ref.ayah);
+      if (juz == null) return; // a malformed/incomplete index refuses rather than mis-crediting a Juz
+      if (!juzWordTotalsData) juzWordTotalsData = await getJuzWordTotalsIndex();
+      await safeWrite(
+        () => recordWordTotalDelta(db, { tenantId, personId, juz, delta, actorUid: auth.currentUser?.uid, juzWordTotals: juzWordTotalsData.byJuz }),
+        { what: "update the whole-Qur'an word total", occurrenceId }
+      );
+    }
+
     async function runWordProgressAction(action) {
       const { tenantId, subjectPersonId, actorPersonId, isSupervisor } = wordProgressActor();
       if (!tenantId || !subjectPersonId || !actorPersonId || !quranWordCardState.occurrenceId) return;
@@ -10229,6 +10427,8 @@
         tenantId, personId: subjectPersonId, occurrenceId: quranWordCardState.occurrenceId,
         actorPersonId, actorUid: auth.currentUser?.uid, isSupervisor, confirmationRequired,
       };
+      // Issue #206 -- snapshotted BEFORE either write below changes it.
+      const beforeKnown = wordProgressCountsAsKnownNow(tenantId, subjectPersonId, common.occurrenceId, confirmationRequired);
       // I15 throughout: safeWrite() is this app's own "a failed write must
       // reach the user" wrapper, and it is what every other write on this
       // page already goes through.
@@ -10268,10 +10468,12 @@
             { collection: "activity", action: "wbwEngaged" }
           );
         }
+        await applyWordTotalCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown });
       } else {
         const note = action.review === "returned" ? (window.prompt(t("What should they look at again?")) ?? null) : null;
         await safeWrite(() => decideWordApproval(db, { ...common, review: action.review, note }),
           { what: "decide Arabic word progress", occurrenceId: common.occurrenceId });
+        await applyWordTotalCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown });
       }
       renderPersistentWordCard();
     }
