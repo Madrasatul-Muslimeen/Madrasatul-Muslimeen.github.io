@@ -158,7 +158,61 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.36 on `main`** (22 Sep 2026 — tap-to-open-Word-Card
+**Current milestone: v08.37 on `main`** (23 Sep 2026 — MAP Phase 6 (P6-F),
+issue #199, PR #200 — Mapping My Journey gets a real, reachable screen. The
+Owner's own instruction: *"Journey Map: don't wait for my design. Build all
+three options now with a toggle to switch between them, so I can try each in
+the real app and choose."* The Phase 6 data layer — `journey-map-service.js`,
+the folder/placement functions in `note-foundation.js`, the pure
+`journey-map-contract.js` — has been built and accepted since P6-A/P6-E and
+sat completely unreached by any page until this round. New page
+`app/journey-map.html`, one shared toggle over one load of the person's
+folder tree and Notes: **Folders** (the two system folders — Personal Journey
+Map, Reflection Archive — always first, then the person's own; create, file,
+move), **Timeline** (newest-first, grouped by day, filter chips), and
+**Path** — an honest first pass, exactly as the issue asked for rather than
+skipped or over-built: a straight date-ordered track, with the full
+region/side-trail metaphor explicitly not built and the reason recorded in
+code and in `CHANGELOG.md` — a Note filed in two folders at once (ADR-010
+§5's many-to-many) cannot honestly occupy two places on one continuous line,
+and a real build of that needs a resolved design (one path per region with
+cross-links, or a branching diagram) this round's honest-first-pass budget
+did not cover. **The two system folders are represented as virtual nodes
+before either has a Firestore document** — real enough to open and see the
+correct empty state for, never a faked stored one — and the first write that
+genuinely needs one to exist creates it for real, once. Nav entry under Home
+▾, alongside Records/Monitor/About; `notes.html`'s own contextual entry
+(Read screen's ⋯ menu) is untouched. Read-only for everyone but the Note
+owner, mirroring `firestore.rules` exactly as `notes.html` already does;
+every write-triggering control gated on `isSelfSelected()`; a Note's
+`bodyHtml` is never rendered except through `sanitizeNoteHtml()`. Full
+Bangla translation from the first commit, verified programmatically (33
+keys). **No new exported function on `journey-map-service.js` or
+`note-foundation.js`, no Rules, index or `version.js` change from the
+Builder** — the version bump above is the Architect's own separate,
+follow-up commit, per the Builder contract. `journey-map-boundary.mjs`
+(the P5-D-era reachability guard) was **updated in place, reason
+recorded, never weakened**: its old claim that `journey-map-service.js`
+"remains completely unreachable by any page" was true only because nothing
+had wired it in yet, and this round is exactly that wiring — narrowed to
+name the one page that may now reach it (`app/journey-map.html`) and assert
+which Phase 6 functions each wired page may call, including the five
+folder-editing wrappers (`renameFolder`/`reorderFolder`/`moveFolder`/
+`retireFolder`/`reorderFiling`) this screen deliberately does not wire in
+this round. A new suite, `journey-map-screen.mjs` (16 checks), covers the
+screen's own contract. **Independently re-verified by the Architect before
+merging**: fresh full-history checkout of the PR branch, all ten relevant
+suites re-run clean (the 8 CI-gated governance suites, `journey-map-
+boundary.mjs` 17/17, `journey-map-screen.mjs` 16/16), no protected path
+touched, base was already current `main`, diff read by hand. **Layout was
+NOT measured in a real browser** — a harder form of the same environment
+gap v08.35/v08.36 recorded: this sandbox had no Playwright package
+installed at all, so none of the five browser-driven suites could run for
+this or any other page; a real-phone open-and-tap-each-view check at
+320/360/390/412px in both languages, across all three views, is the
+recommended substitute. Full account in `CHANGELOG.md`'s own P6-F entry.
+
+**Previous milestone: v08.36 on `main`** (22 Sep 2026 — tap-to-open-Word-Card
 extended to every word a reader can see, in two rounds the same day.
 **v08.35** (issue #188, PR #190) wired the Mushaf-page Read view — real
 per-word glyph text that already carried its own word identity (`w.loc`

@@ -29,9 +29,9 @@
   "status": "ACTIVE",
   "main": {
     "ref": "origin/main",
-    "baselineSha": "416127e1b4636a7837d9ba6151375cf9feda1e26",
-    "baselineRecordedOn": "2026-09-22",
-    "version": "08.36",
+    "baselineSha": "3d3a1b84e89cde77b31d3360fe595e9496b5ca54",
+    "baselineRecordedOn": "2026-09-23",
+    "version": "08.37",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -173,8 +173,8 @@
     {
       "version": "08.36",
       "owner": "quran",
-      "status": "LIVE",
-      "note": "The same tap-to-open-Word-Card treatment for the normal, everyday Arabic text -- Read view and Note view both (issue #189). Flowing Arabic becomes word-tappable when Tajweed display is off; Tajweed-on stays exactly as it was, measured: tajweed assimilation colours across a word boundary on ~65% of ayahs, so it cannot be safely split per word without data that doesn't exist here. Independently re-verified by the Architect before merging (fresh checkout, 8 governance suites re-run clean, full diff read by hand -- the opt-in-only change surface and the button CSS reset both checked out). Both this and v08.35 hit the identical Playwright-browser-build environment gap the Builder itself flagged; neither this sandbox nor the Architect's own could run the five browser-based layout suites -- recorded as a genuine, twice-confirmed environment limitation, not a code question. Allocated by the MMSA Architect.",
+      "status": "RELEASED",
+      "note": "The same tap-to-open-Word-Card treatment for the normal, everyday Arabic text -- Read view and Note view both (issue #189). Flowing Arabic becomes word-tappable when Tajweed display is off; Tajweed-on stays exactly as it was, measured: tajweed assimilation colours across a word boundary on ~65% of ayahs, so it cannot be safely split per word without data that doesn't exist here. Independently re-verified by the Architect before merging (fresh checkout, 8 governance suites re-run clean, full diff read by hand -- the opt-in-only change surface and the button CSS reset both checked out). Both this and v08.35 hit the identical Playwright-browser-build environment gap the Builder itself flagged; neither this sandbox nor the Architect's own could run the five browser-based layout suites -- recorded as a genuine, twice-confirmed environment limitation, not a code question. Allocated by the MMSA Architect. RELEASED: a prior main milestone, superseded by 08.37.",
       "integration": {
         "authorizedOn": "2026-09-22",
         "integratedOn": "2026-09-22",
@@ -183,12 +183,26 @@
         "method": "MERGE_PR",
         "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/191"
       }
+    },
+    {
+      "version": "08.37",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "MAP Phase 6 (P6-F): Mapping My Journey round 1 -- a real, reachable screen (app/journey-map.html) over the already-accepted Phase 6 data layer, unreached since P6-A/P6-E. All three screen options (Folders, Timeline, Path) built and switchable over one shared data load, per the Owner's own 'don't wait for my design, build all three with a toggle' instruction. No new exported function on journey-map-service.js or note-foundation.js; no Rules, index or schema change. journey-map-boundary.mjs updated in place (reason recorded, never weakened) to reflect the new, narrowly-scoped reachability; a new journey-map-screen.mjs suite (16 checks) covers the screen's own contract. Independently re-verified by the Architect before merging (fresh full-history checkout, all 10 relevant suites re-run clean, no protected path touched, full diff read by hand). Layout not measured in a real browser -- this sandbox had no Playwright package installed at all -- recorded as a genuine environment limitation; a real-phone check is the recommended substitute.",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-23",
+        "acceptedApplicationSha": "d730b2e872d530067f684ccb081329ad725c7e98",
+        "integratedMainSha": "3d3a1b84e89cde77b31d3360fe595e9496b5ca54",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/200"
+      }
     }
   ],
-  "nextUnallocated": "08.37",
+  "nextUnallocated": "08.38",
   "nextUnallocatedNote": [
-    "08.37 and later numbers remain unallocated; allocation requires MMSA Master Architect direction.",
-    "v08.36 was allocated to the normal-Arabic-text word-tap round, confirmed merged on 2026-09-22."
+    "08.38 and later numbers remain unallocated; allocation requires MMSA Master Architect direction.",
+    "v08.37 was allocated to the Mapping My Journey screen round (issue #199, PR #200), merged 2026-09-23."
   ],
   "streams": [
     {
@@ -197,7 +211,7 @@
       "role": "The umbrella: shared runtime, shared verification, governance, version allocation and module integration. It owns the platform/shared paths below; it is not a subject module.",
       "activeBranch": null,
       "integrationState": "ON_MAIN",
-      "declaredVersion": "08.36",
+      "declaredVersion": "08.37",
       "baselineSha": null,
       "baselineStatus": "NOT_APPLICABLE_IS_MAIN",
       "ownedPaths": [
@@ -221,8 +235,8 @@
       "name": "QuranRevival -- Quran Study module",
       "activeBranch": null,
       "integrationState": "MERGED_TO_MAIN",
-      "declaredVersion": "08.36",
-      "baselineSha": "416127e1b4636a7837d9ba6151375cf9feda1e26",
+      "declaredVersion": "08.37",
+      "baselineSha": "3d3a1b84e89cde77b31d3360fe595e9496b5ca54",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
       "ownedPaths": [
         "app/quranrevival.html",
