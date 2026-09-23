@@ -123,4 +123,38 @@
 // merged by the unattended Architect workflow once `verify` reported
 // green -- confirmed sound by this independent review after the fact.
 // Allocated by the MMSA Architect.
-export const APP_VERSION = "08.38";
+// 08.39: Asma ul Husna -- the closing half of the open-classifications
+// round (issue #205, PR #207), completing #202/v08.38. Two disclosed gaps
+// from that review, both closed, same file, same mechanism, no new
+// data-layer work. (1) Rename/archive for a classification TAB itself
+// (asmaXRenameClassBtn/asmaXArchiveClassBtn, "renC"/"archC" icons), next
+// to the classification switcher, owner/prime only -- the data-layer
+// functions (renameClassification/setClassificationStatus) were already
+// built and tested in #202, only their UI was missing. Archiving is I4
+// (archive, never delete): a classification's own lists and every Name
+// filed in them stay in the data, they just stop being offered as
+// somewhere new; the existing "Show archived" toggle now also reveals an
+// archived classification's own switcher field rather than adding a
+// second toggle. (2) The brand-new-Name "file it under" row (reachable
+// from the Note view's own "+ New Name"/"+ New Dual Name" buttons)
+// generalized from a hardcoded group/dual pair to a real Classification
+// field built from the live registry, cascading into the file-under list
+// picker on change -- openAsmaXGroupsPopover() itself, the issue's own
+// "likely" guess for where the gap was, turned out to already be fully
+// generalized by #202 and was left untouched. Both are UI wiring against
+// the already-authorized asmaCollections document: no new Firestore read
+// on any startup path (I9), no firestore.rules/firebase.json/index
+// change. No new theological content.
+// asma-classifications-boundary.mjs extended 26 -> 36 checks.
+// Independently re-verified by the Architect (fresh checkout of the
+// Builder's branch, all 8 governance suites plus the extended boundary
+// suite re-run clean, full diff read by hand, no protected path touched,
+// clean fast-forward against main); behaviour.mjs could not run in this
+// sandbox (chromium_headless_shell-1243 missing, only -1194 present) --
+// the identical, twice-already-documented Playwright build-version gap
+// from v08.35/v08.36, not a code defect; a real-phone check of the
+// Explore panel's ... menu, both languages, is the recommended
+// substitute. This PR was opened by the Architect from the Builder's
+// already-pushed branch (its own PR-opening step again did not execute,
+// the same gap v08.38 recorded). Allocated by the MMSA Architect.
+export const APP_VERSION = "08.39";

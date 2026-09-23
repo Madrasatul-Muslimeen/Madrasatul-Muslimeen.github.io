@@ -29,9 +29,9 @@
   "status": "ACTIVE",
   "main": {
     "ref": "origin/main",
-    "baselineSha": "4a188dfa69bc072503a2c0c2d7b4620af2ad6cbf",
+    "baselineSha": "33931c3ace1bd678f6afd936ac9f043cf44a3299",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.38",
+    "version": "08.39",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -201,8 +201,8 @@
     {
       "version": "08.38",
       "owner": "quran",
-      "status": "LIVE",
-      "note": "Asma ul Husna: Groups/Dual Names generalized into an open, owner-defined set of classifications (issue #202, PR #203). `kind` on a collection is any non-empty string now (was a closed group/dual pair), defaulting to \"group\" so every existing tenant reads unchanged; a new classifications registry, additive on the same asmaCollections/{tenantId} document (no new collection, no new read, no Rules change -- the deployed allow update carries no hasOnly() restriction, confirmed by reading firestore.rules directly), is seeded with exactly \"Group\"/\"Dual Names\". A Name card gains a \"Belongs to\" section and a Names-level row gains an \"also in...\" chip, both from a new pure membershipsOfName() reverse index. Manage mode gains \"+ New classification\". Deliberately not seeded with any real theological content (\"Unique to Allah\"/\"Shared\"/\"By Act\"/\"By Essence\" were the Owner's own worked examples of what a classification is, not a request to apply them) -- verified by reading the full diff, which carries no Name-to-classification assignment beyond the two mechanism entries. The reference-adding mechanism, poster view, Track-my-progress, extra-Name editing, drag-reposition and asma-study.html's own separate panel are all confirmed untouched. New asma-classifications-boundary.mjs suite (26 checks, 2 mutations caught), including a positive control on a freshly-added third classification. The Builder's own PR-opening step did not run; the Architect opened PR #203 from the already-pushed branch, and the unattended Architect workflow merged it once verify reported green, before the session Architect's own independent re-verification finished. That re-verification proceeded anyway and confirms the merge was sound: all 8 governance suites plus this stream's own suite re-run clean on a fresh full-history checkout, no protected path touched, and behaviour.mjs run in full against both this branch and main under an available substitute Chromium build -- 785 pass / 2 fail identically on both sides, both failures and the section-40 Mushaf crash point pre-existing and environmental, none introduced by this round.",
+      "status": "RELEASED",
+      "note": "Asma ul Husna: Groups/Dual Names generalized into an open, owner-defined set of classifications (issue #202, PR #203). `kind` on a collection is any non-empty string now (was a closed group/dual pair), defaulting to \"group\" so every existing tenant reads unchanged; a new classifications registry, additive on the same asmaCollections/{tenantId} document (no new collection, no new read, no Rules change -- the deployed allow update carries no hasOnly() restriction, confirmed by reading firestore.rules directly), is seeded with exactly \"Group\"/\"Dual Names\". A Name card gains a \"Belongs to\" section and a Names-level row gains an \"also in...\" chip, both from a new pure membershipsOfName() reverse index. Manage mode gains \"+ New classification\". Deliberately not seeded with any real theological content (\"Unique to Allah\"/\"Shared\"/\"By Act\"/\"By Essence\" were the Owner's own worked examples of what a classification is, not a request to apply them) -- verified by reading the full diff, which carries no Name-to-classification assignment beyond the two mechanism entries. The reference-adding mechanism, poster view, Track-my-progress, extra-Name editing, drag-reposition and asma-study.html's own separate panel are all confirmed untouched. New asma-classifications-boundary.mjs suite (26 checks, 2 mutations caught), including a positive control on a freshly-added third classification. The Builder's own PR-opening step did not run; the Architect opened PR #203 from the already-pushed branch, and the unattended Architect workflow merged it once verify reported green, before the session Architect's own independent re-verification finished. That re-verification proceeded anyway and confirms the merge was sound: all 8 governance suites plus this stream's own suite re-run clean on a fresh full-history checkout, no protected path touched, and behaviour.mjs run in full against both this branch and main under an available substitute Chromium build -- 785 pass / 2 fail identically on both sides, both failures and the section-40 Mushaf crash point pre-existing and environmental, none introduced by this round. RELEASED: a prior main milestone, superseded by 08.39.",
       "integration": {
         "authorizedOn": "2026-09-23",
         "integratedOn": "2026-09-23",
@@ -211,12 +211,27 @@
         "method": "MERGE_PR",
         "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/203"
       }
+    },
+    {
+      "version": "08.39",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Asma ul Husna: classification rename/archive wired, and \"file a new Name\" generalized to every classification (issue #205, PR #207) -- the closing half of v08.38's own round (issue #202). (1) Rename/archive for the classification TAB itself (asmaXRenameClassBtn/asmaXArchiveClassBtn), owner/prime only, calling the already-tested renameClassification/setClassificationStatus data-layer functions from #202; archiving is I4 (archive, never delete) -- a classification's own lists and every Name filed in them stay in the data. The existing \"Show archived\" toggle now also reveals an archived classification's own switcher field. (2) The brand-new-Name \"file it under\" row generalized from a hardcoded group/dual pair to a real Classification select built from the live registry, cascading into the file-under list picker -- openAsmaXGroupsPopover() itself was confirmed already generalized by #202 and left untouched. No new Firestore read on any startup path (I9), no firestore.rules/firebase.json/index change -- UI wiring against the already-authorized asmaCollections document. No new theological content. asma-classifications-boundary.mjs extended 26 -> 36 checks, two mutation-tested. The Builder's own PR-opening step failed to run again (the same gap v08.35/v08.36/v08.38 recorded); the Architect opened PR #207 itself from the Builder's already-pushed, already-checked branch. Independently re-verified before merging: fresh checkout, all 8 CI-gated governance suites plus the extended boundary suite re-run clean and matching the Builder's own numbers exactly, full diff read by hand, no protected path touched, clean fast-forward against main. behaviour.mjs could not run in this sandbox (chromium_headless_shell-1243 missing, only -1194 present) -- the identical, now three-times-documented Playwright build-version gap, not a code defect; a real-phone check of the Explore panel's menu, both languages, is the recommended substitute.",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-23",
+        "acceptedApplicationSha": "33931c3ace1bd678f6afd936ac9f043cf44a3299",
+        "integratedMainSha": "33931c3ace1bd678f6afd936ac9f043cf44a3299",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/207"
+      }
     }
   ],
-  "nextUnallocated": "08.39",
+  "nextUnallocated": "08.40",
   "nextUnallocatedNote": [
+    "v08.39 was allocated to the Asma ul Husna classification rename/archive + file-a-Name generalization round (issue #205, PR #207), confirmed merged on 2026-09-23.",
+    "08.40 and later numbers remain unallocated; allocation requires MMSA Master Architect direction.",
     "v08.38 was allocated to the Asma ul Husna open-classifications round, confirmed merged on 2026-09-23.",
-    "08.38 and later numbers remain unallocated; allocation requires MMSA Master Architect direction.",
     "v08.37 was allocated to the Mapping My Journey screen round (issue #199, PR #200), merged 2026-09-23."
   ],
   "streams": [
@@ -250,8 +265,8 @@
       "name": "QuranRevival -- Quran Study module",
       "activeBranch": null,
       "integrationState": "MERGED_TO_MAIN",
-      "declaredVersion": "08.38",
-      "baselineSha": "4a188dfa69bc072503a2c0c2d7b4620af2ad6cbf",
+      "declaredVersion": "08.39",
+      "baselineSha": "33931c3ace1bd678f6afd936ac9f043cf44a3299",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
       "ownedPaths": [
         "app/quranrevival.html",
@@ -273,7 +288,7 @@
         "app/js/study-event-wiring.js",
         "app/js/study-evidence-readiness.js"
       ],
-      "baselineNote": "v08.38 Asma ul Husna open-classifications PR #203 merged to main on 2026-09-23.",
+      "baselineNote": "v08.39 Asma ul Husna classification rename/archive + file-a-Name generalization PR #207 merged to main on 2026-09-23.",
       "baselineAcknowledgement": "docs/reports/2026-09-18-hadith-v0829-main-integration.md",
       "role": "Subject module (Quran). NOT the umbrella; the umbrella is MMSA.",
       "declaredSharedTouches": [
