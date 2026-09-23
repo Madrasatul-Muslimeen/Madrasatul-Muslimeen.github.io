@@ -29,9 +29,9 @@
   "status": "ACTIVE",
   "main": {
     "ref": "origin/main",
-    "baselineSha": "b45a1f9a4e1c7d1e1bdb122d4677dc69331b686f",
+    "baselineSha": "b9007b20a4d07eaee9c15c7aef22169cd250ec47",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.46",
+    "version": "08.47",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -313,7 +313,7 @@
     {
       "version": "08.46",
       "owner": "health",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Health Atlas: the References view switcher gets a real keyboard/screen-reader fix (issue #115 Gate A/B, PR #148). Gate A (reproduced first): tranche 9's buildViewTabs() declared role=tab/tablist + aria-selected but built none of the rest the WAI-ARIA Tabs pattern requires -- no aria-controls, no role=tabpanel, no arrow-key handling; a new browser suite run against the unmodified tranche 9 commit failed 5/10, reproducing exactly that. Gate B: these two buttons replace the whole screen (Body Systems vs References), not panels of one shared view, so per issue #115's own instruction this uses ordinary buttons (aria-pressed, role=group) rather than full tab-panel semantics for a control that isn't one. references-tabs-accessibility-browser.mjs 5/10 -> 10/10; references-index-browser.mjs's own aria-selected assertions updated in place to aria-pressed, still 12/12. Independently re-verified by the Architect before merging: fresh full-history checkout, merged current main in (clean, no conflicts), all 11 governance suites clean, all 18 Health-owned suites clean (297 checks), mutation-proven by reverting the fix to origin/main's copy of health-atlas-view.js (exactly 5/10 fail, matching Gate A's own reproduction). No protected path touched, no Firestore write/Rule/index.",
       "integration": {
         "authorizedOn": "2026-09-23",
@@ -323,10 +323,27 @@
         "method": "MERGE_PR",
         "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/148"
       }
+    },
+    {
+      "version": "08.47",
+      "owner": "quran",
+      "status": "LIVE",
+      "retroactive": true,
+      "note": "RETROACTIVE ALLOCATION (23 Sep 2026): MAP Phase 5 P5-D, the Notes screen, round 1 (issue #195, PR #198), which merged to main on 22 Sep 2026 as commit 530af1f and was never given a version number until now -- found and closed during this session's routine sweep, the same sweep that investigated whether D3 Journaling had become reachable. A new real page, app/notes.html (+ app/js/note-sanitize.js), wired to the existing, previously-uninvoked data layer (study-note-service.js: createStudyNote/reviseStudyNote/retireStudyNote/notesForStudyUnit/recordJournalEvidence; note-foundation.js: listNoteRevisions). No new exported function added to either. Entry point: Read screen's existing more menu, 'My Notes for this unit'. Only a Note's own author may create/revise/retire it (isNoteOwner(), distinct from canRecordFor()). DOMPurify-based sanitization, fails closed if absent; note-sanitize-boundary.mjs 7/7, mutation-proven. study-note-boundary.mjs UPDATED IN PLACE in the SAME round that built this screen, reason recorded: exactly app/notes.html reaches study-note-service.js, 18/18. D3 JOURNALING IS NOW LIVE, NOT MERELY REACHABLE: study-evidence-readiness.js's gate has read ready:true since v08.34, so saving a Note against an ayah/range/surah Study Unit records real Journaling Activity evidence right now. Verified directly: notes.html's afterCreateOrRevise() calls recordJournalEvidence() only after a real create/revise succeeds, which calls recordStudyEvidence() -- the ONE chokepoint in study-event-wiring.js, exactly the shape the 19 Sep 2026 D3-chokepoint round enforced. study-activity-evidence-boundary.mjs was already updated for this transition IN THE SAME ROUND, correctly, with the reason recorded -- re-confirmed 27/27 at this allocation. A Note filed against a unit type ADR-008 does not cover (juz/topic/etc.) records no Journaling evidence and says nothing -- silence, not a false claim. Not built this round: folders/Mapping My Journey filing (Phase 6, built later as v08.37), choosing a translator. Layout not measured in a real browser (documented Playwright environment gap). Independently re-verified by the Architect at this retroactive allocation: fresh full-history checkout of current main, all 11 governance suites clean, note-sanitize-boundary.mjs 7/0, study-note-boundary.mjs 18/0, study-activity-evidence-boundary.mjs 27/0, PR #198's diff read by hand.",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-22",
+        "acceptedApplicationSha": "2f8f7a8a275ee69e6dd05545c7c69cc0c523b892",
+        "integratedMainSha": "530af1fdef896b10b1e81ada6045cc35c2150853",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/198",
+        "note": "RETROACTIVE: the feature merged (integratedOn) a day before the version was allocated (authorizedOn). See the 'retroactive' flag and the entry's own note for why."
+      }
     }
   ],
-  "nextUnallocated": "08.47",
+  "nextUnallocated": "08.48",
   "nextUnallocatedNote": [
+    "v08.47 was allocated RETROACTIVELY to the Notes screen round 1 (MAP Phase 5 P5-D, issue #195, PR #198), which had merged to main on 2026-09-22 with no version bump and was found unallocated during this session's routine sweep on 2026-09-23; D3 Journaling evidence recording is live as of this same round (the readiness gate has read ready:true since v08.34).",
     "v08.46 was allocated to the Health Atlas References view switcher keyboard/screen-reader fix (issue #115 Gate A/B, PR #148), confirmed merged on 2026-09-23.",
     "v08.45 was allocated to the Word Card desktop drag/resize z-index fix (issue #113, PR #137), confirmed merged on 2026-09-23.",
     "v08.44 was allocated to the Hadith tab-switch keyboard-focus fix (issue #114 Gate A/B, PR #150), confirmed merged on 2026-09-23.",
@@ -371,9 +388,9 @@
       "name": "QuranRevival -- Quran Study module",
       "activeBranch": null,
       "integrationState": "MERGED_TO_MAIN",
-      "declaredVersion": "08.45",
-      "declaredVersionNote": "08.45 (23 Sep 2026): Word Card desktop drag/resize verified, one z-index defect fixed (issue #113, PR #137) -- see versionAllocations. 08.42 (RELEASED, PR #209, the Word-by-Word whole-Qur'an/Juz counter, built and gated) is the prior one.",
-      "baselineSha": "522d042311b465b77d8021c5c1128794de15760f",
+      "declaredVersion": "08.47",
+      "declaredVersionNote": "08.47 (23 Sep 2026, RETROACTIVE): the Notes screen round 1 (MAP Phase 5 P5-D, issue #195, PR #198), merged to main 2026-09-22 as 530af1f with no version bump at the time -- found unallocated and closed at this allocation; D3 Journaling evidence recording is live as of this round. 08.45 (RELEASED, PR #137, Word Card z-index fix) is the prior non-retroactive one; 08.42 (RELEASED, PR #209, the Word-by-Word whole-Qur'an/Juz counter) before that.",
+      "baselineSha": "b9007b20a4d07eaee9c15c7aef22169cd250ec47",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
       "ownedPaths": [
         "app/quranrevival.html",

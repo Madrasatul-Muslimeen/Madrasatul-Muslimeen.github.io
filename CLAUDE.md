@@ -158,7 +158,73 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.46 on `main`** (23 Sep 2026 — Health Atlas: the
+**Current milestone: v08.47 on `main`** — **RETROACTIVE ALLOCATION, 23 Sep
+2026, and read this whole paragraph before assuming D3 Journaling is
+still unreachable anywhere else in this file.** This is MAP Phase 5
+**P5-D, the Notes screen, round 1** (issue #195, PR #198), which merged
+to `main` on **22 Sep 2026** as commit `530af1f` — the Owner's own top
+priority that day (*"Notes screen (Phase 5): start it next, as the main
+piece of visible work"*) — and shipped real, correctly-tested,
+user-facing functionality, but the Architect loop's own
+version-allocation follow-up was never done for it. It sat on `main`,
+live, unnumbered, through v08.35 → v08.46 (a full day of other rounds),
+found and closed during this session's routine sweep, the same sweep
+that investigated whether D3 Journaling had become reachable per the
+question below.
+
+**A new real page, `app/notes.html`** (+ `app/js/note-sanitize.js`),
+wired to the existing, previously-uninvoked data layer —
+`app/js/study-note-service.js` (`createStudyNote`, `reviseStudyNote`,
+`retireStudyNote`, `notesForStudyUnit`, `recordJournalEvidence`) and
+`app/js/note-foundation.js` (`listNoteRevisions`). No new exported
+function was added to either — the screen was buildable entirely on top
+of what P5-B/P5-C/P5-E already shipped. For the current Study Unit: lists
+existing Notes, creates a new one, revises an existing one (showing the
+real `revisionId` a revision produces), shows a read-only revision
+history, and retires one (worded "Remove", I4 — nothing destroyed).
+Entry point: a new item in the Read screen's existing ⋯ menu, **"📔 My
+Notes for this unit"**. Only a Note's own author may create/revise/retire
+it (`isNoteOwner()` in the deployed Rules, deliberately distinct from
+`canRecordFor()` — a Note is a person's own private writing). Every
+render of a Note's `bodyHtml` goes through `sanitizeNoteHtml()`
+(DOMPurify, CDN-vendored — this codebase's first vendored third-party
+script), which fails closed if DOMPurify is absent.
+`note-sanitize-boundary.mjs`, 7 checks, mutation-proven.
+
+**D3 JOURNALING IS NOW LIVE, NOT MERELY REACHABLE — the answer to "is it
+now reachable" is yes, and it is also already turned on.**
+`study-evidence-readiness.js`'s gate has read `ready: true` since v08.34,
+so saving a Note against an `ayah`/`range`/`surah` Study Unit records
+real Journaling Activity evidence **right now**, for a real reader.
+Verified directly: `notes.html`'s `afterCreateOrRevise()` calls
+`recordJournalEvidence()` only after a real create/revise succeeds, which
+itself calls `recordStudyEvidence()` — the ONE chokepoint, in
+`study-event-wiring.js` — exactly the shape the 19 Sep 2026 D3-chokepoint
+round enforced (see that entry below; it is not superseded, it is
+fulfilled). **`study-activity-evidence-boundary.mjs` was already updated
+in place for this transition, correctly, with the reason recorded, in
+the same round that built this screen** — the importer set is asserted
+to be exactly `[study-event-wiring.js]`, and the reachability invariant
+requires every page-reachable path to the writer pass THROUGH the wiring
+module — re-confirmed true today, 27/0. `study-note-boundary.mjs`
+independently asserts the narrower claim: **exactly** `app/notes.html`
+reaches `study-note-service.js` — 18/0. A Note filed against a unit type
+ADR-008 §6 does not cover (`juz`/`topic`/etc.) records no Journaling
+evidence and the screen says nothing about it — silence, not a false
+claim, per `afterCreateOrRevise()`'s own `if (!evidence) return;`.
+
+**Not built this round, per the issue's own scope**: folders, Mapping My
+Journey filing (Phase 6, built later as v08.37), choosing a translator.
+Layout not measured in a real browser (documented Playwright/
+`chromium_headless_shell` environment gap); a real-phone check is the
+recommended substitute. **Independently re-verified by the Architect at
+this retroactive allocation**: fresh full-history checkout of current
+`main` (which already carries this round), all 11 governance suites
+clean, `note-sanitize-boundary.mjs` 7/0, `study-note-boundary.mjs` 18/0,
+`study-activity-evidence-boundary.mjs` 27/0, the PR #198 diff read by
+hand. Allocated by the MMSA Architect.
+
+**Previous milestone: v08.46 on `main`** (23 Sep 2026 — Health Atlas: the
 References view switcher gets a real keyboard/screen-reader fix, issue
 #115 Gate A/B, PR #148. **Gate A (reproduced before touching app code)**:
 tranche 9's `buildViewTabs()` declared `role="tab"`/`"tablist"` +

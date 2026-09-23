@@ -375,4 +375,66 @@
 // fail, matching Gate A's own reproduction). No protected path touched,
 // no version bump beyond this allocation, no Firestore write/Rule/index.
 // Allocated by the MMSA Architect.
-export const APP_VERSION = "08.46";
+// 08.47: RETROACTIVE ALLOCATION -- MAP Phase 5 P5-D, the Notes screen,
+// round 1 (issue #195, PR #198, merged 22 Sep 2026 as commit 530af1f).
+// The Owner's own priority: "Notes screen (Phase 5): start it next, as
+// the main piece of visible work." This round shipped real, user-facing
+// functionality and was correctly built and tested, but the Architect
+// loop's own version-allocation follow-up was never done for it -- it
+// sat on main, live, for a full day (through v08.35-v08.46) with no
+// number. Found and closed by the Architect during the routine sweep
+// that also investigated whether D3 Journaling had become reachable
+// (CLAUDE.md's own 19 Sep 2026 entry recorded it as page-unreachable at
+// the time, "0 of 29 pages reach it" -- true then, false the moment this
+// round wired app/notes.html in).
+//
+// A new real page, app/notes.html (+ app/js/note-sanitize.js), wired to
+// the existing, previously-uninvoked data layer -- study-note-service.js
+// (createStudyNote, reviseStudyNote, retireStudyNote, notesForStudyUnit,
+// recordJournalEvidence) and note-foundation.js (listNoteRevisions). No
+// new exported function was added to either. Lists/creates/revises/
+// retires Notes for the current Study Unit; entry point is a new item in
+// the Read screen's existing more menu ("My Notes for this unit").
+// Sanitization via DOMPurify (CDN-vendored, first in this codebase),
+// wrapped by note-sanitize.js's own allow-list, fails closed if DOMPurify
+// is absent. Only a Note's own author may create/revise/retire it
+// (isNoteOwner() in the deployed Rules, deliberately distinct from
+// canRecordFor() -- a Note is a person's own private writing).
+//
+// D3 JOURNALING IS NOW LIVE, NOT MERELY REACHABLE: saving a Note against
+// an ayah/range/surah Study Unit now records real Journaling Activity
+// evidence, because study-evidence-readiness.js's gate has read
+// ready:true since v08.34. Verified directly, not assumed: notes.html's
+// afterCreateOrRevise() calls recordJournalEvidence() (imported from
+// study-note-service.js) only after a real create/revise succeeds, which
+// itself calls recordStudyEvidence() -- the ONE chokepoint, in
+// study-event-wiring.js -- exactly the shape the 19 Sep 2026 D3-
+// chokepoint round enforced. study-activity-evidence-boundary.mjs was
+// ALREADY updated in place for this transition, correctly, with the
+// reason recorded, at the same time this round was built: the importer
+// set is asserted to be exactly [study-event-wiring.js], and the
+// reachability invariant is inverted to require every page-reachable
+// path pass THROUGH the wiring module -- proven still true today (27/0).
+// study-note-boundary.mjs independently asserts the narrower claim:
+// EXACTLY app/notes.html reaches study-note-service.js (18/0). A Note
+// filed against a unit type ADR-008 does not cover (juz/topic/etc.)
+// records no Journaling evidence and notes.html says nothing -- silence,
+// not a false claim, per afterCreateOrRevise()'s own null check.
+//
+// note-sanitize-boundary.mjs, 7 checks (mutation-proven: reverting one
+// render call site to raw innerHTML fails it, naming the exact line).
+// Full Bangla translation from the first commit. Not built this round,
+// per the issue's own scope: folders, Mapping My Journey filing
+// (Phase 6, built later as v08.37), choosing a translator. Layout not
+// measured in a real browser (documented Playwright/chromium_headless_
+// shell environment gap); a real-phone check is the recommended
+// substitute.
+//
+// Independently re-verified by the Architect at this retroactive
+// allocation: fresh full-history checkout of current main (which already
+// carries this round), all 11 governance suites clean,
+// note-sanitize-boundary.mjs 7/0, study-note-boundary.mjs 18/0,
+// study-activity-evidence-boundary.mjs 27/0, diff of PR #198 read by
+// hand. No protected path touched by this allocation beyond the
+// version-allocation files themselves. Allocated by the MMSA Architect.
+export const APP_VERSION = "08.47";
