@@ -16309,3 +16309,144 @@ coordinates on both sides, `22g` ×3 the documented intermittent
 `app/js/version.js`: 08.40 → **08.41**. Allocated by the MMSA Architect.
 See `docs/governance/programme-integration-ledger.json` for the version
 allocation record.
+
+---
+
+**v08.42 (23 Sep 2026) — Word-by-Word whole-Qur'an/Juz percentage: a gold
+ring, a wedge-colour toggle, and a Word Card share line — BUILT AND GATED,
+not turned on (issue #206, PR #209).** The Owner reviewed an interactive
+demo and said "Go ahead, build it," having already confirmed the
+instant/running-counter approach over a live on-demand read, and asked for
+two of the demo's options combined into one experience: a gold ring
+around the Explore wheel always showing the whole-Qur'an total, plus a
+toggle switching what the wedges themselves are coloured by — today's
+real Approach-status colouring, or this Juz's own % of words known —
+never both meanings on one wedge at once.
+
+**A new, additive Firestore collection, `quranWordTotals`** — one document
+per (tenant, person), a running `known` integer against `total: 77429`
+plus a `byJuz` map of the 30 real per-Juz `{known, total}` pairs. Same
+shape discipline as every prior MAP round: the Rules candidate lives only
+at `docs/governance/2026-09-23-wbw-total-counter-rules-candidate.rules`,
+reproducing `canRecordFor()` unchanged from the deployed Rules, no delete
+(I4/D6); `firestore.rules`/`firebase.json` are untouched, and deploying
+the candidate stays an Owner Control Gate.
+
+**The readiness gate, `app/js/study-wbw-total-readiness.js`, copies
+`study-evidence-readiness.js`'s shape exactly** — `ready: false` as a
+literal default, a governed decision required to flip it (an authority
+from a closed set, a real date, a reference to a record that exists), and
+**it imports nothing at all**, so it cannot even accidentally consult
+`firestore.rules`; a boundary check asserts the absence directly.
+
+**The write-gate-blocking guarantee, verified line by line rather than
+assumed, because this is the one thing that could have made the round
+unsafe to ship even while gated.** The same write path that already
+changes one occurrence's real stored state
+(`runWordProgressAction()`/`applyWordTotalCounterDelta()` in
+`quranrevival.html`) snapshots the counter's own "before" state through a
+helper that returns `null` whenever the gate is closed, and the function
+that would move the running counter returns immediately — before
+fetching the Juz index, before fetching the per-Juz totals, before
+calling the data layer at all — whenever that snapshot is `null`. The
+data layer's own two exported functions (`recordWordTotalDelta()`,
+`getWordTotals()` in `quran-word-total-data.js`) *also* independently
+re-check the same gate at their own top and return before touching
+Firestore — defence in depth, not a single point of trust. An ordinary
+Word-by-Word tap today can never throw an error over this undeployed
+collection: the exact defect class v08.31 had to fix for Activity
+evidence was not reintroduced here for a different collection.
+
+**The counter only moves on a genuine `countsAsKnown` transition** — the
+same definition `computeArabicCoverage()` already uses for the existing
+Surah/Ruku' coverage caption, via `knownDelta()`'s exact -1/0/+1
+arithmetic on two booleans — never on "any write". Proven by a
+claim → teacher-confirms → returns → learner re-claims → teacher confirms
+again sequence, reconciled at the end against an independent recount of
+the final raw state, plus the other half (no confirmation required, a
+bare claim counts immediately).
+
+**Per-Juz denominators are derived, not hand-typed.**
+`tools/quran-data-pull/build-juz-word-totals.js` walks the real, already-
+pulled per-ayah `words[]` arrays (the same data `build-juz-index.js`
+already reads) and refuses to write a self-contradictory file if the 30
+totals do not sum to the traversed whole-Qur'an total. The Architect
+independently re-ran this script against the real packaged corpus and it
+reproduces the shipped `juz-word-totals.json` byte-for-byte, summing to
+exactly **77,429** across all 30 Juz. `QURAN_TOTAL_WORD_COUNT` is exported
+once, from the new pure `app/js/quran-word-total.js`, and both the Word
+Card's share line and the Juz-total validation import that same constant
+— no second hardcoding anywhere in the codebase.
+
+**The wheel UI.** `mastery-wheel.js`'s `renderScopedWheel()` gains two
+strictly opt-in parameters: `ring` (drawn OUTSIDE the wedge radius,
+shrinking it by a fixed margin only when supplied) and per-item `fill`
+(preferred over `STATUS_COLORS[statusId]` only when present). Every
+existing caller that never sets either renders byte-identical geometry
+and colouring to before this round — proven by a boundary check reading
+`renderExploreQuranLevel()`'s own source: the Approach-mode wedge
+computation is unconditional, and the Word-by-Word overlay is a strictly
+separate, opt-in-only block applied afterward, only in "wbw" mode, only
+once the gate is open and the per-Juz totals have actually loaded. The
+Word-by-Word ramp reuses this app's own existing `not_started`/`mastered`
+colours as its two ends rather than inventing new ones. The
+Surah/Ruku'-level coverage caption (`renderExploreArabicCoverage()`)
+extends upward to show the real Juz/whole-Qur'an figure once the gate is
+open, replacing the "not available at this granularity" message at those
+two levels only — Hizb/Rub/Manzil/Page stay exactly as they were,
+genuinely out of scope.
+
+**The Word Card's new line needs no gate at all.** "Appears {count} times
+in the Qur'an — {percent}% of all words" reads
+`occurrenceRefsFor("lemma", value).length` (already loaded by the Basic
+tab) against the one exported total, rounded with the exact same
+`Math.round(x * 10000) / 100` rule `computeArabicCoverage()` uses, and
+writes nothing.
+
+**I9**: `getJuzWordTotalsIndex()` (new, in `quran-data.js`) and the
+counter document load only when Explore's Juz/Quran level is actually
+opened — the same lazy, memoized, first-use pattern
+`getJuzIndex()`/`getHizbIndex()` already use just above it in the same
+file. **I11**: "Colour the wheel by" and the Word Card share line are
+translated in `bn.js`; the toggle's own "Approach"/"Word by Word" button
+labels reuse existing translated keys rather than adding new ones.
+
+New `tools/i18n-verify/quran-word-total-boundary.mjs`, 25 checks: the
+gate's own malformed-shape refusals (mirroring
+`study-activity-evidence-boundary.mjs`'s discipline exactly); an anchored
+regex proving the gate check is the literal first statement in both
+exported data-layer functions, not merely "a return appears somewhere
+nearby"; the correctness reconciliation above; the packaged Juz totals
+checked against an independent re-derivation from the real surah files
+inside the check itself; and the wheel-rendering byte-identity checks.
+
+**Independently re-verified by the Architect before merging.** The
+Builder's own PR-opening step again did not run (Actions run 35821824718,
+`conclusion: success`, branch pushed, no PR — the same, recurring gap
+several other rounds this same day also recorded); the Architect opened
+PR #209 itself from the already-pushed, already-checked branch. Fresh
+worktree off `origin/main`, all 8 CI-gated governance suites
+(`programme-ledger.mjs`, `programme-ledger-mutations.mjs`,
+`brief-integrity.mjs`, `study-activity-evidence-boundary.mjs` + its
+mutations suite, `study-event-wiring.mjs`, `rules-authorisation-
+executable.mjs`, `workflow-expressions.mjs`) plus this round's own new
+suite re-run clean, full diffs read by hand, no protected path touched,
+mergeability re-checked immediately before each merge attempt — the
+version number this follow-up allocation round needed collided TWICE with
+other concurrently-landing rounds while it was in flight (08.40 taken by
+the Word Card round-trip fix, 08.41 by a Hadith breadcrumb fix, both
+mid-review), so the real free number was re-read off `origin/main` each
+time rather than assumed. `behaviour.mjs` could not run in this sandbox at
+all — `chromium_headless_shell-1243` missing, only `-1194` present, the
+same documented Playwright build-version gap.
+
+**Nothing changes for a real reader yet** — same shape as v08.30's
+Activity evidence before v08.34 turned it on. Turning this feature on for
+real needs the Owner to publish the Rules candidate in the Firebase
+Console, then a separate, explicit governed enablement decision recorded
+in both `app/js/study-wbw-total-readiness.js` and the Programme
+Integration Ledger — the identical two-step shape v08.34 used.
+
+`app/js/version.js`: 08.41 → **08.42**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.
