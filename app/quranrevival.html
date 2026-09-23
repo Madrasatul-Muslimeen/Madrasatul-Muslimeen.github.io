@@ -4868,11 +4868,19 @@
     /** Whether the Basic tab's OWN "{count} lemma-linked occurrences" line is
      *  expanded to its own resolved list. Kept outside quranWordCardContext for
      *  the same reason quranWordCardExpandedForm is: the context is replaced
-     *  wholesale on every hydrate. Unlike a derived form, this is always the
-     *  CURRENT word's own lemma, so it does not need to be carried across a
-     *  word change (see hydrateWordCardOccurrences, which resets it). */
+     *  wholesale on every hydrate. It always starts collapsed for a genuinely
+     *  NEW word (opened directly, or reached via Prev/Next) -- see
+     *  hydrateWordCardOccurrences, which resets it by default. */
     let quranWordCardLemmaExpanded = false;
     let quranWordCardLemmaRequest = 0;
+    /** Issue #113 -- "Back to Word Card" round trip: a ONE-SHOT signal, read
+     *  and cleared by hydrateWordCardOccurrences(), that this specific hydrate
+     *  is the reopen after returnToWordCardOrigin() and should restore the
+     *  lemma list to how the reader left it -- the same treatment
+     *  quranWordCardExpandedForm already gets for a Depth-tab derived form.
+     *  Left false for every other hydrate (a direct word open, Prev/Next),
+     *  so those keep starting collapsed exactly as before. */
+    let quranWordCardRestoreLemmaExpanded = false;
     // MAP Phase 3. `confirmationRequired` is the same computed answer
     // records.js already gives ("does this person have a teacher, guardian or
     // prime?"), fetched ON FIRST USE and cached per person -- the same
@@ -10319,10 +10327,12 @@
     async function hydrateWordCardOccurrences() {
       const requestedId = quranWordCardState.occurrenceId;
       const request = ++quranWordCardRequest;
-      // The lemma-occurrences toggle below is always THIS word's own lemma, so
-      // it starts collapsed on every word change -- unlike a derived form, it
-      // has nothing to restore across a jump (see the "way back" comment on
-      // quranWordCardExpandedForm above).
+      // Issue #113 -- consume the one-shot "Back to Word Card" restore signal
+      // BEFORE resetting the live flag, so every other caller (a direct word
+      // open, Prev/Next) still starts the lemma list collapsed exactly as
+      // before, and only a genuine return-to-origin re-expands it below.
+      const restoreLemmaExpanded = quranWordCardRestoreLemmaExpanded;
+      quranWordCardRestoreLemmaExpanded = false;
       quranWordCardLemmaExpanded = false;
       quranWordCardLemmaRequest++;
       if (!requestedId || !currentSurahData) return;
@@ -10355,6 +10365,14 @@
       // the data actually lands is self-correcting.
       if (quranWordCardExpandedForm && !quranWordCardContext.formOccurrences && !quranWordCardContext.formOccurrencesError) {
         await expandWordForm(quranWordCardExpandedForm);
+      }
+      // Issue #113 -- the Basic tab's own lemma list gets the SAME re-open
+      // treatment, but only when this hydrate was the reopen after
+      // returnToWordCardOrigin(): restoreLemmaExpanded is the one-shot signal
+      // read at the top of this function, so an ordinary word change never
+      // reaches here with it true.
+      if (restoreLemmaExpanded && quranWordCardContext.lemmaOccurrences?.length && !quranWordCardContext.lemmaOccurrenceItems && !quranWordCardContext.lemmaOccurrenceItemsError) {
+        await expandLemmaOccurrences();
       }
     }
 
@@ -10446,6 +10464,52 @@
      *  contenteditable and take the reader's unsaved text with it. Switching
      *  stage view only toggles `hidden`, so the note's own DOM -- text, caret
      *  content and all -- is still there, untouched, when "back" returns. */
+    /**
+     * Issue #113 -- the scroll position `goToWordOccurrence()` / the return
+     * trip actually need. `window.scrollY` is always 0 in this app's shell:
+     * `body { height: 100vh; overflow: hidden; }`, so the document itself
+     * never scrolls. Measured, not assumed: the round-trip acceptance script
+     * (quran-word-card-return.mjs) scrolls the origin screen to a real
+     * position and found `window.scrollY` reads back 0 every time -- the
+     * scroll-restore this app already wrote for the way back could never
+     * have done anything in the actual layout.
+     *
+     * WHICH element actually scrolls depends on reading mode, and sideways
+     * paging is the OWNER'S OWN DEFAULT (`getSidewaysReading()` in
+     * `prefs.js`: "never set: the owner's own default" -> true) -- not a rare
+     * toggle, so a fix scoped only to the non-sideways case would do nothing
+     * for most real readers. Bare, not assumed either: the first version of
+     * this fix targeted `#readScroll`, and a debug run against the actual
+     * fixture (which never touches this preference, so it renders in the
+     * real default) showed `read-sideways` already on the body and the
+     * capture reading 0 through the very guard meant to avoid a wrong value.
+     * `body.read-sideways #readScroll { overflow: hidden; }` -- `#ayahPanels`
+     * is the one that scrolls there instead (`overflow-y: auto`), for the
+     * ordinary case (a single-āyah-at-a-time unit: ayah/ruku/juz/hizb/page).
+     * A FLOW unit (Whole Surah/Range) or Mushaf pages `#pageViewContainer`
+     * HORIZONTALLY in sideways mode instead -- a materially different
+     * restore (which whole PAGE was showing) this task does not reach, so
+     * that case still falls back to the pre-existing no-op (0), not a
+     * regression. Note view's own popup, when that is the ORIGIN being
+     * returned to, is a third, more complex scroll surface, left the same
+     * way.
+     */
+    function readViewScrollContainer() {
+      if (stageView !== "read") return null;
+      if (document.body.classList.contains("read-sideways")) {
+        if (getComputedStyle(pageViewContainer).display !== "none") return null;
+        return ayahPanels;
+      }
+      return document.getElementById("readScroll");
+    }
+    function readViewScrollTop() {
+      return readViewScrollContainer()?.scrollTop ?? 0;
+    }
+    function setReadViewScrollTop(y) {
+      const el = readViewScrollContainer();
+      if (el) el.scrollTop = y;
+    }
+
     async function goToWordOccurrence(refText) {
       const parts = String(refText).split(":").map(Number);
       if (parts.length !== 3 || parts.some((n) => !Number.isInteger(n) || n < 1)) return;
@@ -10463,7 +10527,8 @@
           surah: currentSurahNum, ayah: currentAyahNum, stageView,
           unitType: currentUnitType, level: quranWordCardState.level,
           expandedForm: quranWordCardExpandedForm,
-          scrollY: window.scrollY,
+          lemmaExpanded: quranWordCardLemmaExpanded,
+          scrollY: readViewScrollTop(),
         };
       }
       // v08.22 -- CLOSE the card before navigating. The reader asked to see
@@ -10501,6 +10566,11 @@
       // just the word: the tab they were on and the form they had expanded.
       if (restore?.level) quranWordCardState = selectWordCardLevel(quranWordCardState, restore.level);
       quranWordCardExpandedForm = restore?.expandedForm ?? null;
+      // Issue #113 -- one-shot signal consumed and cleared by
+      // hydrateWordCardOccurrences() below, which is the only thing that
+      // actually re-expands the lemma list (it needs quranWordCardContext.
+      // lemmaOccurrences, which resolves inside that call).
+      quranWordCardRestoreLemmaExpanded = !!restore?.lemmaExpanded;
       quranWordCardContext = {};
       renderPersistentWordCard();
       activeWordCardMount()?.querySelector("[data-word-card-close]")?.focus({ preventScroll: true });
@@ -10542,8 +10612,9 @@
       }
       let ref;
       try { ref = parseQuranWordOccurrenceId(origin.occurrenceId); } catch { return; }
-      await openWordOccurrenceAt(ref.surah, ref.ayah, ref.position, origin.stageView === "note" ? "note" : "read", origin);
-      if (Number.isFinite(origin.scrollY)) window.scrollTo({ top: origin.scrollY, behavior: "auto" });
+      const returnView = origin.stageView === "note" ? "note" : "read";
+      await openWordOccurrenceAt(ref.surah, ref.ayah, ref.position, returnView, origin);
+      if (returnView === "read" && Number.isFinite(origin.scrollY)) setReadViewScrollTop(origin.scrollY);
       // The expanded form is restored by hydrateWordCardOccurrences() once the
       // forms index lands -- see its own comment for why it belongs there.
     }
