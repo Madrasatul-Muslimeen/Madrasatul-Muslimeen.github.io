@@ -266,4 +266,41 @@
 // Rules Console publish PLUS a separate governed enablement decision,
 // exactly the same two-step shape v08.34 used for Activity evidence --
 // neither has happened. Allocated by the MMSA Architect.
-export const APP_VERSION = "08.42";
+// 08.43: Health Atlas -- a References index, one new top-level view mode
+// alongside Body Systems (issue #115 Gate A/B, PR #146, tranche 9). Each
+// of the 8 HEALTH_ATLAS_REFERENCES rows now lists which organs in this
+// dataset cite it (organsForReference(), the reverse of the existing
+// referencesFor() -- reads only the existing organ.refs[] field, no new
+// field). An organ pill is a real link into the existing organ detail
+// column (reuses the same onSelectOrgan() path the sections list and the
+// wheel already use), not a fabricated <a> into a route that cannot
+// resolve it -- this app has no URL-addressable per-organ route. The
+// source app's own References tab is a flat id/name/url table with no
+// organ links at all, so this deliberately goes beyond source parity;
+// investigated as Gate A before building, not assumed safe. The index's
+// own note text explicitly disclaims that a listed reference backs an
+// organ's material in general, never any one function statement
+// individually, and the index never itself decides a statement is
+// cited-evidence -- that distinction stays health-atlas-claims.js's job
+// alone, asserted by a new static positive control. One reference (USDA
+// FoodData Central) genuinely cites zero organs in this dataset -- a real
+// edge case exercised by both the static guard and the new browser suite,
+// not a hypothetical. Still 100% read-only, same DRAFT/internal-review
+// status as every other Health Atlas screen -- nothing here is linked
+// from shared nav or deployed to a real reader. New
+// references-index-browser.mjs suite (12 checks, desktop/tablet/phone,
+// mouse + keyboard + real touch tap()), mutation-proven two ways.
+// This is the FIRST global version number ever allocated to the Health
+// stream -- the ledger's own "health" stream record was found stale at
+// this allocation (it had recorded EXTERNAL_PENDING_ACQUISITION /
+// repository UNKNOWN, though real Health Atlas code has existed in this
+// repository under app/health/ since 17 Sep 2026 across many tranches)
+// and corrected in the same round. Independently re-verified by the
+// Architect before merging: fresh checkout, clean merge with no
+// conflicts against main, all 8 CI-gated governance suites clean, all 17
+// Health-owned suites clean, no protected path touched. The next-free
+// number was re-read off main at the time of THIS bump rather than
+// assumed -- the concurrent issue #206 round took v08.42 first, a real,
+// correctly-resolved collision of exactly the kind this file's own
+// standing rule exists to prevent. Allocated by the MMSA Architect.
+export const APP_VERSION = "08.43";
