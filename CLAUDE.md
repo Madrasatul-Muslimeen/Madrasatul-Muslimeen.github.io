@@ -158,7 +158,36 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.49 on `main`** (23 Sep 2026 — Hadith: book/
+**Current milestone: v08.50 on `main`** (23 Sep 2026 — Health Atlas:
+Foods and Conditions each gain a text search box, issue #115, PR #151,
+matching the source app's own per-tab filter. **Deliberately narrower
+than the source's own `matches()`** (which does
+`JSON.stringify(item).toLowerCase().includes(term)` — the whole
+serialized item, excluded fields included) — `matchesFoodSearch`/
+`matchesDiseaseSearch` are scoped to exactly the fields this view already
+renders, so a search term present only in an excluded field (a real drug
+name in a real disease's `.remedies`) cannot surface a false hit, proven
+by two checks against the real rendered page. Age Groups gets no search
+box, matching the source (it has none there either). **The still-missing
+Lifestyle tab was re-investigated under Gate A/B and the existing
+deferral reasoning re-confirmed, not overridden** — unlike Foods/
+Diseases/Age Groups, the Lifestyle dataset has no safe structural
+remainder once its activities/food/avoid recommendation content is
+excluded, and no new field-level split was found. New
+`more-search-browser.mjs` suite, 12 checks. **A repository-wide
+report-generator defect was found and flagged, not fixed**:
+`tools/md2report.py`'s fenced-code-block/link handling flattens every
+report's `.html` twin, checked against all 82 `.md`/`.html` pairs and
+confirmed repository-wide, not Health-specific — only the one report this
+round's own task named was hand-corrected; the shared-tooling fix needs
+Master Architect authorisation. No protected path touched, no Firestore
+write/Rule/index. **Independently re-verified by the Architect before
+merging**: fresh full-history checkout, retargeted from its stale stacked
+base onto `main` and merged current `main` in (clean), all 11 governance
+suites clean, all 19 runnable Health-owned suites clean including the new
+suite 12/12. Allocated by the MMSA Architect.
+
+**Previous milestone: v08.49 on `main`** (23 Sep 2026 — Hadith: book/
 chapter row headings get a real `lang`/`dir` attribute, issue #114, PR
 #153. Every book/chapter row's own native-script heading
 (`.hadith-row-heading`, real Arabic text) rendered with **no `lang`/`dir`

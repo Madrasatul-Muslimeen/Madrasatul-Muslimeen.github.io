@@ -16944,3 +16944,45 @@ Firestore write/Rule/index.
 `app/js/version.js`: 08.48 → **08.49**. Allocated by the MMSA Architect.
 See `docs/governance/programme-integration-ledger.json` for the version
 allocation record.
+
+---
+
+**v08.50 (23 Sep 2026) — Health Atlas: Foods/Conditions search (issue
+#115, PR #151).**
+
+1. **Repaired the HTML twin of the prior round's own report**
+(`docs/reports/2026-09-21-health-atlas-references-tabs-accessibility.html`):
+its fenced code blocks and two WAI-ARIA pattern links were flattened by
+`tools/md2report.py`'s lack of fenced-code/link handling. **Checked
+against all 82 report `.md`/`.html` pairs in the repository: the
+generator defect is repository-wide, not Health-specific.**
+`tools/md2report.py` is shared, platform-wide tooling and is **not
+edited here** — only the one report this task named was hand-corrected;
+the shared-tooling fix needs Master Architect authorisation.
+
+2. **Re-investigated the still-missing Lifestyle tab under Gate A/B.**
+The existing deferral reasoning holds: unlike Foods/Diseases/Age Groups,
+the Lifestyle dataset has no safe structural remainder once its
+activities/food/avoid recommendation content is excluded — even its bare
+names are habit endorsements, not neutral labels. This round found no new
+field-level split the original investigation missed, so it concurs with
+the existing deferral rather than overriding it without new grounds.
+
+3. **Foods/Conditions search boxes**, matching the source app's own
+per-tab filter. **Deliberately narrower than the source's own
+`matches()`** (whole serialized item, excluded fields included) —
+`matchesFoodSearch`/`matchesDiseaseSearch` are scoped to exactly the
+fields this view already renders, so a search term present only in an
+excluded field cannot surface a false hit — proven by two checks against
+the real rendered page. New `more-search-browser.mjs` suite, 12 checks.
+
+**Independently re-verified by the Architect before merging**: fresh
+full-history checkout, retargeted from its stale stacked base onto `main`
+and merged current `main` in (clean auto-merge), all 11 governance suites
+clean, all 19 runnable Health-owned suites clean including the new suite
+12/12. No protected path touched, no version bump beyond this allocation,
+no Firestore write/Rule/index.
+
+`app/js/version.js`: 08.49 → **08.50**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.

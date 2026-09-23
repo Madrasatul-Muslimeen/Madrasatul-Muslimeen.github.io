@@ -29,9 +29,9 @@
   "status": "ACTIVE",
   "main": {
     "ref": "origin/main",
-    "baselineSha": "ff678dae84ebbc5559d70666a36baaa4ba0cd894",
+    "baselineSha": "bbf653a2a180e0f33f34815d3372550e4db3413f",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.49",
+    "version": "08.50",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -357,7 +357,7 @@
     {
       "version": "08.49",
       "owner": "hadith",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Hadith: book/chapter row headings get a real lang/dir attribute (issue #114, PR #153). Every book/chapter row's own native-script heading (.hadith-row-heading) rendered with no lang/dir attribute -- getComputedStyle().direction still read rtl (Unicode Bidi auto-detects Arabic), which is why no sighted check ever caught it, but lang has no such fallback: a screen reader read every heading in the UI-language voice instead of Arabic. Fixed with one rawHeadingSpan() helper stamping lang=SOURCE_LANGUAGE, dir=rtl, covering both edition shapes through one function. Zero new translatable strings. 3 new checks in hadith-source-navigation-browser.mjs (47 -> 50), mutation-proven (reverting the fix fails exactly the 3 new checks, 47/50). Independently re-verified by the Architect before merging: fresh full-history checkout, retargeted from its stale stacked base onto main and merged current main in (clean), all 11 governance suites clean, all 5 Hadith-owned data suites clean, hadith-source-navigation-browser.mjs 50/50 in both languages.",
       "integration": {
         "authorizedOn": "2026-09-23",
@@ -367,10 +367,25 @@
         "method": "MERGE_PR",
         "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/153"
       }
+    },
+    {
+      "version": "08.50",
+      "owner": "health",
+      "status": "LIVE",
+      "note": "Health Atlas: Foods and Conditions each gain a text search box (issue #115, PR #151), matching the source app's own per-tab filter. Deliberately narrower than the source's own matches() (whole serialized item, excluded fields included) -- matchesFoodSearch/matchesDiseaseSearch are scoped to exactly the fields this view already renders, so a search term present only in an excluded field cannot surface a false hit, proven by two checks against the real rendered page. Age Groups gets no search box, matching the source. The still-missing Lifestyle tab was re-investigated under Gate A/B and the existing deferral reasoning re-confirmed, not overridden. New more-search-browser.mjs suite, 12 checks. A repository-wide report-generator defect (tools/md2report.py flattens fenced code blocks/links, affecting all 82 report .md/.html pairs) was found and flagged for Master Architect authorisation, not fixed here. No protected path touched, no Firestore write/Rule/index. Independently re-verified by the Architect before merging: fresh full-history checkout, retargeted from its stale stacked base onto main and merged current main in (clean), all 11 governance suites clean, all 19 runnable Health-owned suites clean including the new suite 12/12.",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-23",
+        "acceptedApplicationSha": "eabe42da2a3b1d4f1302ca93386d1ccb39a59cf7",
+        "integratedMainSha": "bbf653a2a180e0f33f34815d3372550e4db3413f",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/151"
+      }
     }
   ],
-  "nextUnallocated": "08.50",
+  "nextUnallocated": "08.51",
   "nextUnallocatedNote": [
+    "v08.50 was allocated to the Health Atlas Foods/Conditions search round (issue #115, PR #151), confirmed merged on 2026-09-23.",
     "v08.49 was allocated to the Hadith book/chapter row-heading lang/dir fix (issue #114, PR #153), confirmed merged on 2026-09-23.",
     "v08.48 was allocated to the Word Card flow-mode cross-surah navigation fix (issue #113, PR #138), confirmed merged on 2026-09-23.",
     "v08.47 was allocated RETROACTIVELY to the Notes screen round 1 (MAP Phase 5 P5-D, issue #195, PR #198), which had merged to main on 2026-09-22 with no version bump and was found unallocated during this session's routine sweep on 2026-09-23; D3 Journaling evidence recording is live as of this same round (the readiness gate has read ready:true since v08.34).",
@@ -700,11 +715,11 @@
       "integrationStateCorrectionNote": "CORRECTED 2026-09-23, at v08.43's own allocation. This entry previously read EXTERNAL_PENDING_ACQUISITION / repository UNKNOWN / 'No Health implementation exists in this repository' -- true on 18 Sep 2026 when this record was first written, false by the time it was next read: app/health/health-atlas.html and its supporting js/ modules have existed in this repository since the health-atlas-foundation-tranche1 branch, well over a dozen tranches have merged directly to main (Body Systems 3-column layout, wheel, diagrams, search, evidence-provenance boundary guards, a claims registry, and now this References index), and v08.43 is this stream's first entry in versionAllocations. The stale record was not caught earlier because no Health round had needed a global version number until this one. Corrected by reading the real repository state rather than trusting the prior record.",
       "activeBranch": null,
       "activeBranchNote": "NULL: Health rounds are built on short-lived per-tranche branches off main and merged directly, the same shape every other module stream now uses post-integration -- no branch of its own carries an ongoing stamp.",
-      "branchTip": "b45a1f9a4e1c7d1e1bdb122d4677dc69331b686f",
-      "branchTipNote": "The commit at which the References view switcher a11y fix (PR #148) reached main. Descriptive, not a moving pointer -- see the equivalent hadith/quran-phase4-wiring notes for why.",
-      "declaredVersion": "08.46",
-      "declaredVersionNote": "08.46 (23 Sep 2026): the References view switcher keyboard/screen-reader fix (issue #115 Gate A/B, PR #148) is this stream's second independently allocated global application version. 08.43 (RELEASED, PR #146, the References index tranche) is the prior one -- first drafted as v08.42, re-derived as v08.43 after a real collision with the concurrently-landing issue #206 round (see versionAllocations). Every earlier Health Atlas tranche (foundation, food/ages, master categories, claim provenance, combined candidate, Body Systems parity, References tabs/a11y, more-search, organ-type parity, integration readiness) merged to main with NO version bump -- each PR's own body says so explicitly (\"No version allocated or bumped\") -- so there is no earlier Health entry in versionAllocations to reconcile.",
-      "baselineSha": "b45a1f9a4e1c7d1e1bdb122d4677dc69331b686f",
+      "branchTip": "bbf653a2a180e0f33f34815d3372550e4db3413f",
+      "branchTipNote": "The commit at which the Foods/Conditions search round (PR #151) reached main. Descriptive, not a moving pointer -- see the equivalent hadith/quran-phase4-wiring notes for why.",
+      "declaredVersion": "08.50",
+      "declaredVersionNote": "08.50 (23 Sep 2026): the Foods/Conditions search round (issue #115, PR #151) is this stream's third independently allocated global application version. 08.46 (RELEASED, PR #148, the References view switcher a11y fix) is the prior one; 08.43 (RELEASED, PR #146, the References index tranche) before that. Every earlier Health Atlas tranche merged to main with NO version bump -- each PR's own body says so explicitly.",
+      "baselineSha": "bbf653a2a180e0f33f34815d3372550e4db3413f",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
       "ownedPaths": [
         "app/health/*.html",
