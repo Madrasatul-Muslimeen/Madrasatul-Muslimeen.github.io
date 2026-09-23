@@ -2100,6 +2100,18 @@ export const BN = {
   "References": "রেফারেন্স", // ?
   "Pick a Group first": "প্রথমে একটি গ্রুপ বাছুন", // ?
 
+  // Classifications round (23 Sep 2026) -- the open, owner-extensible set
+  // of classifications ("Group"/"Dual Names" are the seeded first two;
+  // {classification} is whichever one the reader is looking at).
+  "Belongs to": "যেসব তালিকায় আছে", // ?
+  "Not filed in any list yet.": "এখনো কোনো তালিকায় রাখা হয়নি।", // ?
+  "Also in:": "আরও যেখানে আছে:", // ?
+  "All {classification}": "সব {classification}", // ?
+  "New {classification} entry:": "নতুন {classification} এন্ট্রি:", // ?
+  "Add to {classification}": "{classification}-এ যোগ করুন", // ?
+  "New classification:": "নতুন শ্রেণিবিভাগ:", // ?
+  "New classification": "নতুন শ্রেণিবিভাগ", // ?
+
   // Back-button round -- the popup note view's own Back control.
   "Back": "পেছনে", // ?
 
