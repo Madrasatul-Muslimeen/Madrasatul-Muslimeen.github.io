@@ -158,7 +158,65 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.51 on `main`** (23 Sep 2026 — Health Atlas:
+**Current milestone: v08.52 on `main`** (23 Sep 2026 — Word Card: Mushaf
+audio-follow/word-card scroll fixes, a real race-condition fix, three
+further cross-surah scroll-retarget sites, and the Note-view-origin path
+investigated with no defect found, issue #113, PR #139, four consolidated
+task-bridge rounds).
+
+**(1) A genuine PRE-EXISTING race, found and fixed**:
+`renderMushafPages()` was re-entrant-unsafe — `navigateToAyah()`'s own
+surah-change branch can call `renderStudyScreen()` twice in quick
+succession, and a stale first call's still-in-flight `renderPage()` (font
+loads) could append into a container a second call had already reset,
+doubling pages and corrupting `wordRegistry`. Fixed with a monotonic
+generation token (`renderGeneration`), checked after every `await` inside
+`renderPage()`, before either `wordRegistry` or the container is touched
+— the same shape this codebase's own `quranWordCardRequest` counter
+already uses.
+
+**(2)** `setActiveAyah()` (the audio/drill "follow the recitation"
+primitive) used `inline: "nearest"`, which this round's own
+synthetic-fixture testing measured as **never actually scrolling
+`#pageViewContainer` at all** (`scroll-snap-type: x mandatory` +
+`direction: rtl`) — the same defect class PR #138 already fixed for the
+word-card jump path. Fixed to `inline: "start"`, matching its sibling
+exactly.
+
+**(3)** `scrollFlowToCurrentAyah()` now covers Mushaf mode too
+(previously a no-op there) via a new `scrollToAyahIfRendered()` primitive
+and a stashed `flowRenderPromise` the caller awaits before targeting the
+destination.
+
+**(4)** Three further cross-surah trigger points (`stepUnit()`,
+`goToUnitNumber()`, `surahSelect`) now call `scrollFlowToCurrentAyah()`
+at their own tail, closing the same stale-`scrollLeft` defect PR #138
+fixed for the word-card jump, reproduced via three independent triggers.
+`ayahSelect` needs no matching call — structurally proven never
+interactable while the flow strip is visible.
+
+**(5)** The Note-view-origin return path was re-investigated and
+confirmed structurally different from the flow-mode case: no defect
+found.
+
+**Five new suites**: `quran-flow-step-nav.mjs` (32),
+`quran-mushaf-audio-follow-scroll.mjs` (25),
+`quran-word-card-mushaf-scroll.mjs` (59),
+`quran-word-card-note-origin-return.mjs` (51),
+`quran-surah-select-scroll-retarget.mjs` (38) — 205 checks. Three
+pre-existing regression suites re-run clean: `quran-word-card-return.mjs`
+55, `quran-word-card-flow-nav.mjs` 19, `quran-word-card-popup.mjs` 22. A
+real, unrelated Range/surah-crossing content-correctness gap remains
+flagged, not fixed. No new translation string, no Firestore write/Rule/
+index. **Independently re-verified by the Architect before merging**:
+fresh full-history checkout, retargeted from its stale stacked base onto
+`main` and merged current `main` in (one real import-list conflict,
+resolved by combining both additive import sets — no logic conflict),
+all 11 governance suites clean, all five new suites plus all three
+regression suites re-run matching claimed counts exactly (301 checks
+total). Allocated by the MMSA Architect.
+
+**Previous milestone: v08.51 on `main`** (23 Sep 2026 — Health Atlas:
 organ Type pill parity, issue #115, PR #152. The v02.04 source's own
 organ "Type" pill (`organ.partType` — Organ/Vein/Artery/Nerve/Tissue/
 Gland/Duct) was in the preserved dataset since foundation tranche 1 and

@@ -29,9 +29,9 @@
   "status": "ACTIVE",
   "main": {
     "ref": "origin/main",
-    "baselineSha": "6dcd00a91de065f4084407d334c6903a8f2baa26",
+    "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.51",
+    "version": "08.52",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -385,7 +385,7 @@
     {
       "version": "08.51",
       "owner": "health",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Health Atlas: organ Type pill parity (issue #115, PR #152). organ.partType (Organ/Vein/Artery/Nerve/Tissue/Gland/Duct) was in the preserved dataset since foundation tranche 1 and read by nothing -- a closed-set anatomical classification, the same class of field as the already-ported role/system, never a dose/nutrient/activity/remedy field. Ported as a small pill next to each organ's name. Measured with the real longest name in the dataset (\"Vena Cava (Superior & Inferior)\", a Vein) at desktop/tablet/phone -- the name+pill share one flex-wrap group rather than a nowrap line, so the worst case wraps the pill onto its own line instead of truncating or overflowing. Zero horizontal page overflow at any width. 4 new body-systems-parity-browser.mjs checks (16 -> 20), a new closed-set data-integrity assertion (21 -> 22), a new view-boundary positive control (14 -> 15). A repository-wide tools/md2report.py fenced-code/link-flattening defect (82 report pairs) independently confirmed cross-module, read-only, not fixed -- needs Master Architect authorisation. No protected path touched, no Firestore write/Rule/index. Independently re-verified by the Architect before merging: fresh full-history checkout, retargeted from its stale stacked base onto main and merged current main in (clean), all 11 governance suites clean, all 19 runnable Health-owned suites clean matching the PR's own claimed numbers exactly.",
       "integration": {
         "authorizedOn": "2026-09-23",
@@ -395,10 +395,25 @@
         "method": "MERGE_PR",
         "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/152"
       }
+    },
+    {
+      "version": "08.52",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Word Card: Mushaf audio-follow/word-card scroll fixes, a real race-condition fix, three further cross-surah scroll-retarget sites, Note-view-origin investigated with no defect found (issue #113, PR #139, four consolidated task-bridge rounds). A genuine pre-existing race: renderMushafPages() was re-entrant-unsafe, fixed with a monotonic generation token (renderGeneration) checked after every await inside renderPage(). setActiveAyah() used inline:nearest, measured as never actually scrolling #pageViewContainer at all (same scroll-snap-type:x + direction:rtl interaction PR #138 fixed) -- changed to inline:start. Mushaf mode now covered by scrollFlowToCurrentAyah() via a new scrollToAyahIfRendered() primitive and a stashed flowRenderPromise. Three further cross-surah trigger points (stepUnit, goToUnitNumber, surahSelect) now call scrollFlowToCurrentAyah() at their own tail. Note-view-origin return path re-investigated, no defect found (structurally different from the flow-mode case). Five new suites, 205 checks: quran-flow-step-nav.mjs (32), quran-mushaf-audio-follow-scroll.mjs (25), quran-word-card-mushaf-scroll.mjs (59), quran-word-card-note-origin-return.mjs (51), quran-surah-select-scroll-retarget.mjs (38). Three pre-existing regression suites re-run clean: quran-word-card-return.mjs (55), quran-word-card-flow-nav.mjs (19), quran-word-card-popup.mjs (22). The Range/surah-crossing content-correctness gap remains flagged, not fixed. No new translation string, no Firestore write/Rule/index. Independently re-verified by the Architect before merging: fresh full-history checkout, retargeted from its stale stacked base onto main and merged current main in (one real import-list conflict, resolved by combining both additive import sets), all 11 governance suites clean, all five new suites plus all three regression suites re-run matching claimed counts exactly (301 checks total).",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-23",
+        "acceptedApplicationSha": "2a373e39e0fb3fb53c1e749c66b581fdbfdc2a43",
+        "integratedMainSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/139"
+      }
     }
   ],
-  "nextUnallocated": "08.52",
+  "nextUnallocated": "08.53",
   "nextUnallocatedNote": [
+    "v08.52 was allocated to the Word Card Mushaf/race-condition/scroll-retarget round (issue #113, PR #139), confirmed merged on 2026-09-23.",
     "v08.51 was allocated to the Health Atlas organ Type pill parity round (issue #115, PR #152), confirmed merged on 2026-09-23.",
     "v08.50 was allocated to the Health Atlas Foods/Conditions search round (issue #115, PR #151), confirmed merged on 2026-09-23.",
     "v08.49 was allocated to the Hadith book/chapter row-heading lang/dir fix (issue #114, PR #153), confirmed merged on 2026-09-23.",
@@ -448,9 +463,9 @@
       "name": "QuranRevival -- Quran Study module",
       "activeBranch": null,
       "integrationState": "MERGED_TO_MAIN",
-      "declaredVersion": "08.48",
-      "declaredVersionNote": "08.48 (23 Sep 2026): Word Card flow-mode cross-surah navigation fix (issue #113, PR #138) -- see versionAllocations. 08.47 (RELEASED, PR #198, the Notes screen, RETROACTIVE) is the prior one; 08.45 (RELEASED, PR #137, Word Card z-index fix) before that.",
-      "baselineSha": "5cfb1a65809dab3e050181387bc4ba261f4e62f1",
+      "declaredVersion": "08.52",
+      "declaredVersionNote": "08.52 (23 Sep 2026): Word Card Mushaf/race-condition/scroll-retarget round (issue #113, PR #139) -- see versionAllocations. 08.48 (RELEASED, PR #138, flow-mode cross-surah navigation fix) is the prior one; 08.47 (RELEASED, PR #198, the Notes screen, RETROACTIVE) before that.",
+      "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
       "ownedPaths": [
         "app/quranrevival.html",

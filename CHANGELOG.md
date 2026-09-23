@@ -17036,3 +17036,78 @@ touched, no Firestore write/Rule/index.
 `app/js/version.js`: 08.50 → **08.51**. Allocated by the MMSA Architect.
 See `docs/governance/programme-integration-ledger.json` for the version
 allocation record.
+
+---
+
+**v08.52 (23 Sep 2026) — Word Card: Mushaf audio-follow/word-card scroll
+fixes, a real race-condition fix, three further cross-surah
+scroll-retarget sites, Note-view-origin investigated with no defect
+found (issue #113, PR #139, four consolidated task-bridge rounds).**
+
+**A genuine, pre-existing race condition, found and fixed.**
+`renderMushafPages()` was re-entrant-unsafe: `navigateToAyah()`'s own
+surah-change branch can call `renderStudyScreen()` twice in quick
+succession, and a stale first call's still-in-flight `renderPage()`
+(font loads) could append into a container a second call had already
+reset, doubling every page and leaving `wordRegistry` holding whichever
+span happened to register last. Fixed with a monotonic generation token
+(`renderGeneration`), checked after every `await` inside `renderPage()`,
+before either `wordRegistry` or the container is touched — the same
+shape this codebase's own Word Card request counter,
+`quranWordCardRequest`, already uses.
+
+**Mushaf audio-follow scroll fix.** `setActiveAyah()` used
+`inline: "nearest"`, measured (synthetic fixture, real browser) as never
+actually scrolling `#pageViewContainer` at all — the same
+`scroll-snap-type: x mandatory` + `direction: rtl` interaction PR #138
+already fixed for the word-card jump path. Fixed to `inline: "start"`,
+matching its sibling exactly.
+
+**Mushaf mode now covered by `scrollFlowToCurrentAyah()`** (previously a
+no-op there): a new `scrollToAyahIfRendered()` primitive plus a stashed
+`flowRenderPromise` the caller awaits before targeting the destination,
+so an asynchronous Mushaf render settles before its own arrival point is
+scrolled to.
+
+**Three further cross-surah trigger points fixed**: `stepUnit()` (the
+Next/Previous unit buttons), `goToUnitNumber()` (the unit-number picker),
+and `surahSelect` (the plain dropdown) each now call
+`scrollFlowToCurrentAyah()` at their own tail — the identical
+stale-`scrollLeft` defect PR #138 fixed for the word-card jump,
+reproduced via three independent triggers. `ayahSelect` needs no
+matching call, structurally proven (10 checks) never interactable while
+the flow strip is visible.
+
+**Note-view-origin return path re-investigated, no defect found.**
+`.note-body` is the Note view's real scroll surface; the round trip's
+four driving functions never call `renderNoteViewNow()`; `#noteView`'s
+DOM is never destroyed/rebuilt while the reader is away — structurally
+different from the flow-mode case PR #138 fixed.
+
+**Five new suites, 205 checks**: `quran-flow-step-nav.mjs` (32),
+`quran-mushaf-audio-follow-scroll.mjs` (25),
+`quran-word-card-mushaf-scroll.mjs` (59),
+`quran-word-card-note-origin-return.mjs` (51),
+`quran-surah-select-scroll-retarget.mjs` (38). Each round's own fix was
+mutation-proven with a real revert-and-confirm. Three pre-existing
+regression suites re-run clean: `quran-word-card-return.mjs` (55),
+`quran-word-card-flow-nav.mjs` (19), `quran-word-card-popup.mjs` (22).
+
+**What this deliberately did not do**: resolve the pre-existing,
+unrelated Range/surah-crossing content-correctness gap (a
+product-decision packet, four costed options, none chosen).
+
+**Independently re-verified by the Architect before merging**: fresh
+full-history checkout, retargeted from its stale stacked base onto
+`main` and merged current `main` in — one real conflict in
+`app/quranrevival.html`'s own import list (the v08.42 word-total imports
+and this round's own `scrollToAyahIfRendered` import), resolved by
+combining both additive import sets, no logic conflict — all 11
+governance suites clean, all five new suites plus all three regression
+suites re-run matching claimed counts exactly (301 checks total). No
+protected path touched, no new translation string, no Firestore
+write/Rule/index.
+
+`app/js/version.js`: 08.51 → **08.52**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.
