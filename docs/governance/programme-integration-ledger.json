@@ -29,9 +29,9 @@
   "status": "ACTIVE",
   "main": {
     "ref": "origin/main",
-    "baselineSha": "3d3a1b84e89cde77b31d3360fe595e9496b5ca54",
+    "baselineSha": "4a188dfa69bc072503a2c0c2d7b4620af2ad6cbf",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.37",
+    "version": "08.38",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -187,8 +187,8 @@
     {
       "version": "08.37",
       "owner": "quran",
-      "status": "LIVE",
-      "note": "MAP Phase 6 (P6-F): Mapping My Journey round 1 -- a real, reachable screen (app/journey-map.html) over the already-accepted Phase 6 data layer, unreached since P6-A/P6-E. All three screen options (Folders, Timeline, Path) built and switchable over one shared data load, per the Owner's own 'don't wait for my design, build all three with a toggle' instruction. No new exported function on journey-map-service.js or note-foundation.js; no Rules, index or schema change. journey-map-boundary.mjs updated in place (reason recorded, never weakened) to reflect the new, narrowly-scoped reachability; a new journey-map-screen.mjs suite (16 checks) covers the screen's own contract. Independently re-verified by the Architect before merging (fresh full-history checkout, all 10 relevant suites re-run clean, no protected path touched, full diff read by hand). Layout not measured in a real browser -- this sandbox had no Playwright package installed at all -- recorded as a genuine environment limitation; a real-phone check is the recommended substitute.",
+      "status": "RELEASED",
+      "note": "MAP Phase 6 (P6-F): Mapping My Journey round 1 -- a real, reachable screen (app/journey-map.html) over the already-accepted Phase 6 data layer, unreached since P6-A/P6-E. All three screen options (Folders, Timeline, Path) built and switchable over one shared data load, per the Owner's own 'don't wait for my design, build all three with a toggle' instruction. No new exported function on journey-map-service.js or note-foundation.js; no Rules, index or schema change. journey-map-boundary.mjs updated in place (reason recorded, never weakened) to reflect the new, narrowly-scoped reachability; a new journey-map-screen.mjs suite (16 checks) covers the screen's own contract. Independently re-verified by the Architect before merging (fresh full-history checkout, all 10 relevant suites re-run clean, no protected path touched, full diff read by hand). Layout not measured in a real browser -- this sandbox had no Playwright package installed at all -- recorded as a genuine environment limitation; a real-phone check is the recommended substitute. RELEASED: a prior main milestone, superseded by 08.38.",
       "integration": {
         "authorizedOn": "2026-09-23",
         "integratedOn": "2026-09-23",
@@ -197,10 +197,25 @@
         "method": "MERGE_PR",
         "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/200"
       }
+    },
+    {
+      "version": "08.38",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Asma ul Husna: Groups/Dual Names generalized into an open, owner-defined set of classifications (issue #202, PR #203). `kind` on a collection is any non-empty string now (was a closed group/dual pair), defaulting to \"group\" so every existing tenant reads unchanged; a new classifications registry, additive on the same asmaCollections/{tenantId} document (no new collection, no new read, no Rules change -- the deployed allow update carries no hasOnly() restriction, confirmed by reading firestore.rules directly), is seeded with exactly \"Group\"/\"Dual Names\". A Name card gains a \"Belongs to\" section and a Names-level row gains an \"also in...\" chip, both from a new pure membershipsOfName() reverse index. Manage mode gains \"+ New classification\". Deliberately not seeded with any real theological content (\"Unique to Allah\"/\"Shared\"/\"By Act\"/\"By Essence\" were the Owner's own worked examples of what a classification is, not a request to apply them) -- verified by reading the full diff, which carries no Name-to-classification assignment beyond the two mechanism entries. The reference-adding mechanism, poster view, Track-my-progress, extra-Name editing, drag-reposition and asma-study.html's own separate panel are all confirmed untouched. New asma-classifications-boundary.mjs suite (26 checks, 2 mutations caught), including a positive control on a freshly-added third classification. The Builder's own PR-opening step did not run; the Architect opened PR #203 from the already-pushed branch, and the unattended Architect workflow merged it once verify reported green, before the session Architect's own independent re-verification finished. That re-verification proceeded anyway and confirms the merge was sound: all 8 governance suites plus this stream's own suite re-run clean on a fresh full-history checkout, no protected path touched, and behaviour.mjs run in full against both this branch and main under an available substitute Chromium build -- 785 pass / 2 fail identically on both sides, both failures and the section-40 Mushaf crash point pre-existing and environmental, none introduced by this round.",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-23",
+        "acceptedApplicationSha": "7040d2866af628596db24192fa0977addf2098bb",
+        "integratedMainSha": "4a188dfa69bc072503a2c0c2d7b4620af2ad6cbf",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/203"
+      }
     }
   ],
-  "nextUnallocated": "08.38",
+  "nextUnallocated": "08.39",
   "nextUnallocatedNote": [
+    "v08.38 was allocated to the Asma ul Husna open-classifications round, confirmed merged on 2026-09-23.",
     "08.38 and later numbers remain unallocated; allocation requires MMSA Master Architect direction.",
     "v08.37 was allocated to the Mapping My Journey screen round (issue #199, PR #200), merged 2026-09-23."
   ],
@@ -235,8 +250,8 @@
       "name": "QuranRevival -- Quran Study module",
       "activeBranch": null,
       "integrationState": "MERGED_TO_MAIN",
-      "declaredVersion": "08.37",
-      "baselineSha": "3d3a1b84e89cde77b31d3360fe595e9496b5ca54",
+      "declaredVersion": "08.38",
+      "baselineSha": "4a188dfa69bc072503a2c0c2d7b4620af2ad6cbf",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
       "ownedPaths": [
         "app/quranrevival.html",
@@ -258,7 +273,7 @@
         "app/js/study-event-wiring.js",
         "app/js/study-evidence-readiness.js"
       ],
-      "baselineNote": "v08.32 Word Card PR #112 merged to main on 2026-09-21; read-only behavior.",
+      "baselineNote": "v08.38 Asma ul Husna open-classifications PR #203 merged to main on 2026-09-23.",
       "baselineAcknowledgement": "docs/reports/2026-09-18-hadith-v0829-main-integration.md",
       "role": "Subject module (Quran). NOT the umbrella; the umbrella is MMSA.",
       "declaredSharedTouches": [

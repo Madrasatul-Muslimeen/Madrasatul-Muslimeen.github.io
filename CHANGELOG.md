@@ -15875,3 +15875,220 @@ entries frame it; the source-level `journey-map-screen.mjs` suite above is
 what plain Node can prove, and a real-phone open-and-tap-each-view check at
 320/360/390/412px in both languages, across all three views, is the
 recommended substitute this round could not perform itself.
+
+## 23 Sep 2026 — v08.38: Asma ul Husna, open owner-defined classifications (issue #202, PR #203)
+
+**GROUPS AND DUAL NAMES ARE NOW TWO ENTRIES IN AN OPEN, OWNER-EXTENSIBLE SET
+OF CLASSIFICATIONS, NOT THE ONLY TWO THAT COULD EVER EXIST.** The Owner
+reviewed an interactive demo (a mockup, not real data or code) of two fixed
+toggle-style axes and corrected the shape of the whole thing before it was
+built for real: *"This is a LIST (actually grouped by classifications) of:
+(Enable me to edit/add/move/delete these lists and those names in the
+lists.) Then, a name card should show the names of all LISTS it belongs to
+… Then, I choose a group, I want to see all those names under the group,
+and each of those should also show where (other classification/group) it
+belongs."* Two worked examples came with the ask — Names/Attributes UNIQUE
+to Allah vs SHARED with human beings; by Allah's ACT vs by Allah's
+ESSENCE — as illustrations of what a classification IS, not as content to
+seed.
+
+**Data layer** (`app/js/asma-collections.js`, `asma-collections-data.js`).
+`normalizeCollection()`'s `kind` field was hardcoded to
+`c?.kind === "dual" ? "dual" : "group"` — a closed two-value set, which is
+exactly what made "Group" and "Dual Names" the only two classifications the
+app could ever browse. It is any non-empty string now, trimmed, defaulting
+to `"group"` when absent or blank — so every collection ever saved before
+this round (genuinely `"group"`, genuinely `"dual"`, or simply absent and
+meaning `"group"`) reads exactly as it did before. A new classifications
+registry, `DEFAULT_ASMA_CLASSIFICATIONS`, seeds exactly
+`{key: "group", title: "Group"}` and `{key: "dual", title: "Dual Names"}` —
+the two kinds every tenant's data already implicitly used — with the same
+CRUD shape the file already has for collections: `classificationsFrom()`,
+`addClassification()`, `renameClassification()`, `setClassificationStatus()`
+(archive/restore only — I4, never a delete), `nextClassificationOrder()`,
+`activeClassifications()`. A new pure `membershipsOfName(collections,
+number)` is the reverse index everything else reads from: every
+`{collectionId, kind}` whose `items` includes that Name's own permanent
+unit key (I5, via `buildUnitKey.name()`), across every classification,
+O(collections × items), no new Firestore call (I9).
+
+**Persistence, additive on the SAME document.** `saveAsmaCollections()`
+gains one more field, `classifications`, written alongside the existing
+`collections`/`extraNames`/`nameOverrides` on `asmaCollections/{tenantId}` —
+no new collection, no new read. This was checked against the deployed
+Rules before assuming it, not after: `firestore.rules`'s own
+`match /asmaCollections/{tenantId}` carries
+`allow update: if canAdminCatalogue(tenantId);` with no `hasOnly()` field
+restriction (unlike, say, `tenantPeople`'s narrow timezone rule) — so the
+new field is already authorized and this round needed no Rules change,
+confirmed by reading the rule directly rather than guessed.
+
+**Renderer** (`app/js/asma-renderer.js`). Two new exported, purely
+presentational helpers: `renderAsmaBelongsToHtml(memberships)` — a "Belongs
+to" section, one chip per classification × list, `null`/omitted renders
+nothing so every existing caller is byte-identical — and
+`renderAsmaAlsoInHtml(memberships)` — a smaller "also in…" row under a
+Names-level entry filed elsewhere too. Both wired into `renderAsmaDetail()`
+and `renderAsmaCollectionListHtml()` as optional, off-by-default
+parameters; `asma-study.js` — the Explore panel's only other caller of
+either function — passes neither, so `asma-study.html`'s own separate,
+older panel renders exactly as it always has, per this project's standing
+rule for that screen.
+
+**Explore UI** (`app/quranrevival.html`, `#asmaXPanel`). The fixed
+`asmaXGroupSelect`/`asmaXDualSelect` pair — two hardcoded `<select>`
+elements — is gone; `renderAsmaXLevelBar()` now inserts one
+`<select data-asmax-class-select="{key}">` per ACTIVE classification, read
+live from the registry, directly ahead of the untouched, still-static
+`asmaXSingleSelect` (the flat "Names" picker stays exactly where it was —
+its own entry point, not a classification, per the Owner's own "keep …
+as it is"). With today's two seeded classifications this is pixel-for-
+pixel the same two selects in the same position; a third only ever
+appears once an owner actually adds one. The Groups-level list, the
+Names-level list, and the References-level card all read
+`asmaXCollectionsOfKind(asmaXKind)`/`asmaXOtherMemberships()` off the live
+classification the reader is browsing rather than a hardcoded `group`/
+`dual` branch; a Names-level row gains its "also in…" chip and the
+References-level card gains its "Belongs to" section, both wired to jump
+straight to the other list via `openAsmaXGroup()`. Manage mode (owner/
+prime only) gains **"+ New classification"** (`asmaXAddClassificationPrompt()`
+→ `addClassification()`), opening straight into the new classification's
+own empty Groups level; every existing control (✎ rename, 🗄 archive, +
+add collection, +N add Name, 🔗 attach reference, drag-reorder) keeps
+working, generalized to whichever classification tab is active instead of
+two hardcoded kinds.
+
+**i18n** (`app/js/i18n/bn.js`): 8 new keys, English + Bangla — "Belongs
+to", "Not filed in any list yet.", "Also in:", "All {classification}",
+"New {classification} entry:", "Add to {classification}", "New
+classification:", "New classification" — cross-checked by exact substring
+match against every new `t()`/static `title=` call site both directions
+(the static `title="New classification"` on the new toolbar button is
+picked up by `translateStatic()`'s own attribute pass, the same mechanism
+"Rename"/"Archive"/"Add collection" already rely on).
+
+**DELIBERATELY NOT SEEDED, per the issue's own explicit instruction: no
+real theological content.** "Unique to Allah" vs "Shared" and "By Act" vs
+"By Essence" are nowhere in the seed data — they were the Owner's own two
+worked EXAMPLES of what a classification is, in the request that produced
+this round, not a request to apply them to real Names. `DEFAULT_ASMA_
+CLASSIFICATIONS` carries only the two mechanism entries ("Group", "Dual
+Names") every tenant's data already implicitly used; deciding which Names
+belong under any future classification remains the Owner's own curatorial
+work, exactly as "Dual Names" itself shipped with zero seeded pairs.
+Independently re-verified: the diff was read end to end and contains no
+Name-to-classification assignment of any kind beyond what already existed.
+
+**Deliberately not built this round, and said so rather than guessed at:**
+rename/archive-classification UI (the data layer — `renameClassification`/
+`setClassificationStatus` — is built and tested; no button wires it in
+yet, since the issue's explicit ask was only "+ New classification"); the
+Note-view "file a brand-new Name into a Group or Dual Names list" flow
+(`asmaXFileIntoRowHtml`) still only offers Group/Dual, a separate, smaller
+surface the issue didn't name.
+
+**Must-remain-exactly-as-is surfaces, read and confirmed untouched rather
+than merely claimed:** the reference-adding mechanism
+(`renderAsmaXrefBlock()`, the 🔗 attach-reference popover,
+`asma-ref-parser.js`) — zero diff on `asma-ref-parser.js`, every existing
+call site to `renderAsmaXrefBlock()` unchanged; the poster view,
+Track-my-progress, extra-Name editing, archive/restore, drag-reposition
+(`reorderCollections`/`reorderItems`/`asmaPositionLabels`); `asma-
+study.html`'s own separate panel, byte-identical (`git diff` empty) —
+`asma-study.js`'s only calls to `renderAsmaDetail()`/
+`renderAsmaCollectionListHtml()` pass neither of the new parameters.
+
+**New `tools/i18n-verify/asma-classifications-boundary.mjs` — 26 checks,
+0 failed, spot mutation-tested.** Loads the real `asma-collections.js`
+source as a `data:` module with its Firestore-touching imports rewritten
+to injected globals (the same technique `quran-word-progress-data.mjs`/
+`study-event-wiring.mjs` established), so the module under test is the
+one that ships. Covers: `kind` genuinely open, not silently coerced back
+to two values, on a fresh collection AND on every pre-existing
+`"group"`/`"dual"`/absent shape; classifications CRUD round-trips
+(add/rename/archive-restore/order); `membershipsOfName()` correct on a
+Name filed in 3+ lists spanning different classifications AND the same
+one; I4 — archiving a classification never drops a membership record,
+and never silently archives the collections filed under it; and a
+**positive control** proving a freshly-added THIRD classification's own
+collections are reachable exactly like the seeded two, both at the data
+layer and, by reading the real page source (no Playwright browser binary
+was installed in the Builder's sandbox at all — see below), in the
+Explore panel's own live wiring. Two hand mutations (reverting the `kind`
+normalization; making `setClassificationStatus` delete instead of
+archive) were both caught, confirming the checks are not vacuous.
+
+**No `firestore.rules`/`firebase.json`/`app/js/version.js` change from the
+round itself** — a version needed allocating after review, exactly as the
+Builder contract requires.
+
+**THE BUILDER'S OWN PR-OPENING STEP DID NOT RUN, and the Architect opened
+PR #203 itself from the already-pushed, already-checked branch — the same
+recovery v08.35/v08.36 used.** Workflow run 35801162383 completed with
+conclusion `success` and the branch (`claude/issue-202-20260923-0014`,
+commit `7040d28`) carries all of the above, fully checked by the Builder's
+own final comment on issue #202 — but no pull request existed. This is
+exactly the "success with an empty branch" shape `ARCHITECT.md` names:
+look at the branch and the commits, never the tick. The Architect
+reconstructed the PR from the run's own comment (which already carried
+the intended title and body) and opened it, then began independent
+re-verification.
+
+**THE UNATTENDED ARCHITECT WORKFLOW MERGED PR #203 ON ITS OWN, eight
+minutes after it opened** — before the session Architect's own
+independent re-verification had finished. `.github/workflows/
+architect.yml` runs after every `verify` completion on a pull request; PR
+#203's base was current `main`, `verify` was green, it was mergeable, not
+a draft, carried no `needs-owner` label and touched no protected path, so
+it cleared the unattended gate and was merged
+(`4a188dfa69bc072503a2c0c2d7b4620af2ad6cbf`) by the bot identity before a
+human or the session Architect looked at it. **The session Architect's
+own review proceeded anyway, against the real merged commit, exactly as
+thorough as if it had happened first**, and confirms the merge was sound
+rather than merely assuming it because the gate allowed it:
+
+- All 8 CI-gated governance suites plus `programme-ledger-mutations.mjs`
+  and `study-activity-evidence-boundary-mutations.mjs` re-run clean on a
+  fresh full-history checkout of the merged branch:
+  `programme-ledger.mjs` (8/23/0), `programme-ledger-mutations.mjs`
+  (49/0), `brief-integrity.mjs` (8/0), `study-activity-evidence-
+  boundary.mjs` (27/0) + its mutations (11/0), `study-event-wiring.mjs`
+  (41/0), `rules-authorisation-executable.mjs` (40/0),
+  `workflow-expressions.mjs` (12/0) — plus the new
+  `asma-classifications-boundary.mjs` (26/0).
+- `git diff --stat origin/main origin/claude/issue-202-20260923-0014`
+  (before this follow-up's own commit) touches exactly 6 files, none of
+  them a protected path: `app/js/asma-collections-data.js`,
+  `app/js/asma-collections.js`, `app/js/asma-renderer.js`,
+  `app/js/i18n/bn.js`, `app/quranrevival.html`,
+  `tools/i18n-verify/asma-classifications-boundary.mjs`.
+- **`behaviour.mjs` run in full, twice** — once against this branch, once
+  against `origin/main` — under an available substitute Chromium build
+  (`/opt/pw-browsers/chromium-1194`'s own `chrome` binary; neither the
+  `chromium_headless_shell-1194` nor the documented-missing `-1243` this
+  repository's own environment notes name). **Both runs: 785 pass, 2
+  fail, byte-for-byte identical failures and an identical crash point** —
+  `27i` (a pre-existing Study-options Range-bar line-wrap measurement) and
+  `31e` (the documented sandbox TLS artefact), then an identical
+  `page.waitForTimeout: Target page, context or browser has been closed`
+  crash inside `openMushaf()` (section 40) on BOTH branches, at the exact
+  same source line. Nothing in this comparison is new to this round; it is
+  the same environment limitation this file already records for v08.35/
+  v08.36 and v08.37, reproduced here with a different substitute browser
+  build and confirmed identical on both sides of the diff rather than
+  merely asserted.
+- Mergeability against current `main` at review time: clean — `origin/main`
+  is a direct, single-commit ancestor of the PR branch (fast-forward
+  base), so the branch this suite ran on was already exactly PR #203's
+  content on top of an unmoved `main`.
+
+**No content-seeding concern.** The full diff was read by hand, not
+sampled: the only Name-bearing data in it is the unchanged
+`DEFAULT_ASMA_COLLECTIONS`/`DEFAULT_EXTRA_ASMA_NAMES` seed files (zero
+lines changed) plus the two new mechanism-only classification entries
+described above. No real classification assignment of any Name was
+invented.
+
+`app/js/version.js`: 08.37 → **08.38**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.
