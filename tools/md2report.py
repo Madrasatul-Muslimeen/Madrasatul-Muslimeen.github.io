@@ -9,6 +9,16 @@ def inline(t):
 out, lines, i = [], md.split("\n"), 0
 while i < len(lines):
     l = lines[i]
+    fence = re.match(r'^(`{3,})\s*(\S*)\s*$', l)
+    if fence:
+        fence_len, lang = len(fence.group(1)), fence.group(2)
+        i += 1
+        code = []
+        while i < len(lines) and not re.match(r'^`{' + str(fence_len) + r',}\s*$', lines[i]):
+            code.append(lines[i]); i += 1
+        i += 1  # skip the closing fence (or, if unterminated, the EOF index is already past the end)
+        cls = f' class="language-{html.escape(lang)}"' if lang else ''
+        out.append(f"<pre><code{cls}>{html.escape(chr(10).join(code))}</code></pre>"); continue
     if l.startswith("|"):
         rows = []
         while i < len(lines) and lines[i].startswith("|"):
@@ -67,6 +77,10 @@ CSS = """<style>
   li { margin:.32rem 0 }
   code { background:var(--code); padding:.1em .38em; border-radius:.3em;
     font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  pre { background:var(--code); border:1px solid var(--rule); border-radius:.55rem;
+    padding:.9rem 1rem; margin:1rem 0; overflow-x:auto; -webkit-user-select:text; user-select:text }
+  pre code { background:none; padding:0; border-radius:0; font-size:.86em;
+    white-space:pre; word-break:normal; display:block }
   hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
   .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
   table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }

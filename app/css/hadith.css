@@ -57,6 +57,20 @@
   .hadith-card-id { background: #f2efe4; padding: 0.05em 0.4em; border-radius: 0.3em; font-size: 0.78rem; }
   .hadith-card-repeat { color: #7d1f1e; font-weight: 600; }
 
+  /* "View in source" (Topic/Search -> Collections) and the repeat badge's own
+     "view the original" -- both are real navigation, styled as an inline text
+     link like .hadith-crumb/.hadith-commentary-link already are in this same
+     component, not as chrome buttons. */
+  .hadith-view-source {
+    background: none; border: none; padding: 0.3rem 0; margin: 0; font: inherit;
+    color: var(--hadith-gold); font-weight: 600; font-size: 0.8rem;
+    text-decoration: underline; cursor: pointer;
+  }
+  .hadith-card-repeat.hadith-view-source { color: #7d1f1e; }
+  /* The destination of a jump, briefly outlined so a reader who just
+     navigated can find the exact narration among a whole book/chapter list. */
+  .hadith-card-focused { outline: 3px solid var(--hadith-gold); outline-offset: 2px; }
+
   /* Arabic source text at about twice the English size (Start Prompt §3). */
   .hadith-arabic {
     font-size: 2em; line-height: 1.9; direction: rtl; text-align: right;

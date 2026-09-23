@@ -133,6 +133,23 @@ export const DEFAULT_EXTRA_ASMA_NAMES = Object.freeze([
   { number: 132, arabic: "الله", transliteration: "Allah", bnName: "আল্লাহ", bn: "আল্লাহ", ref: "কুরআন ১:১ (সর্বত্র)", weak: false, isPhrase: false, status: "active" },
 ]);
 
+// Classifications round -- 23 Sep 2026. The owner's own ask: an OPEN,
+// owner-extensible set of classifications (this file's own "Group" and
+// "Dual Names" are just the first two), each holding its own owner-edited
+// lists, using the exact same add/rename/archive/move mechanism a
+// collection already has. Seeded with exactly the two kinds every existing
+// tenant's data already uses -- js/asma-collections.js's own
+// normalizeCollection() used to hardcode "group"/"dual" as the only two
+// legal `kind` values; this is what those two strings NAME now that `kind`
+// is open. A brand-new classification (e.g. "Unique to Allah" vs "Shared")
+// is the owner's own future add via the Manage-mode "+ New classification"
+// action -- nothing here pre-populates one, per the owner's own explicit
+// "do not invent theological content" instruction.
+export const DEFAULT_ASMA_CLASSIFICATIONS = Object.freeze([
+  { key: "group", title: { en: "Group", bn: "গ্রুপ" }, order: 10, status: "active" },
+  { key: "dual", title: { en: "Dual Names", bn: "জোড়া নাম" }, order: 20, status: "active" },
+]);
+
 export const DEFAULT_ASMA_COLLECTIONS = Object.freeze([
   { id: "asmacat_01", title: { en: "The Only One to worship, The Carer, The Nourisher and Provider", bn: "একত্ব ও উপাস্য" }, badge: "", order: 10, status: "active", items: ["name:100", "name:101", "name:67", "name:102"] },
   { id: "asmacat_02", title: { en: "The Most Glorious, Most High, Exalted, Uppermost", bn: "মহিমা ও সর্বোচ্চতা" }, badge: "", order: 20, status: "active", items: ["name:103", "name:104", "name:105", "name:106", "name:78", "name:37", "name:75", "name:10"] },

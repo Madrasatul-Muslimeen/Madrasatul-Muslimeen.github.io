@@ -225,7 +225,15 @@ const baselineSeen = new Set();
 //   surahSelect    "1. Al-Faatiha" -- 74px of text in an 89px cell, tight once
 //                  the 22px dropdown arrow is allowed for.
 //   unitTypeSelect the Study Unit names, same shape.
-const KNOWN_TRUNCATED_SELECTS = new Set(["tenantSelect", "surahSelect", "unitTypeSelect"]);
+// FIXED 22 Sep 2026 (v08.33) -- all three were genuine, MEASURED
+// truncations (see app/quranrevival.html's own comments at .opt-bar-2 and
+// .opt-bar-units for the exact numbers): tenantSelect never fit at any
+// phone width because a tenant's own name is free text of any length,
+// unlike a label a round could shorten; Study Unit/Surah were a genuine
+// shortage of space, not a redistribution problem. Set left empty rather
+// than deleted, so a REAL regression at any of these three ids is reported
+// as new rather than silently re-baselined.
+const KNOWN_TRUNCATED_SELECTS = new Set([]);
 
 function report(name, m) {
   console.log(`\n--- ${name} (viewport height ${m.viewportH}) ---`);

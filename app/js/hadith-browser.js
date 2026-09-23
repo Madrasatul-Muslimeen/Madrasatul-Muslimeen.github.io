@@ -17,8 +17,10 @@ import { getAppLang } from "./prefs.js";
 import { STATUSES, statusLabel } from "./unit-keys.js";
 import {
   listCollections, booksOf, chaptersOf, occurrencesIn, editionHasChapterLevel,
-  occurrenceById, sourcePathOf, externalReferencesFor, resolveText,
-  availableLanguages, searchCorpus, topicIndex, exploreAggregate, CONTENT_LANGUAGES, SOURCE_LANGUAGE,
+  occurrenceById, chapterById, collectionOf, sourcePathOf, externalReferencesFor, resolveText,
+  availableLanguages, searchCorpus, listTopics, topicIndex, exploreAggregate,
+  translationCoverage, topicCoverage,
+  CONTENT_LANGUAGES, SOURCE_LANGUAGE,
 } from "./hadith-corpus.js";
 import { SYNTHETIC_NOTICE, TAXONOMY_REVISION } from "./hadith-fixture-data.js";
 import { PANEL_TITLE, verifiedRegisterEntries, commentaryForOccurrence, renderPermission, NEVER_DO } from "./hadith-commentary.js";
@@ -44,7 +46,12 @@ export function mountHadithBrowser(root, { mount = "standalone" } = {}) {
   const state = {
     view: "collections",
     contentLang: getAppLang() === "bn" ? "bn" : "en",
-    editionId: null, bookId: null, chapterId: null, query: "",
+    editionId: null, bookId: null, chapterId: null, query: "", topicId: null,
+    // Set by jumpToSource() (Topic/Search "View in source", and a repeat
+    // badge's "view the original") and consumed exactly once by render():
+    // it names the occurrence the Collections view should scroll to and
+    // highlight on the render this navigation causes, then it is cleared.
+    focusOccurrenceId: null,
     mount,
   };
 
@@ -62,10 +69,99 @@ export function mountHadithBrowser(root, { mount = "standalone" } = {}) {
       explore: () => renderExplore(body),
       commentary: () => renderCommentary(body, state),
     })[state.view]();
+    focusPendingOccurrence(body, state);
   }
 
   render();
   return { render, state };
+}
+
+/**
+ * "View in source" / "view the original" -- the Books <-> Topics bridge.
+ *
+ * Sets the Collections view's own edition/book/chapter to the occurrence's
+ * REAL source location (via `sourcePathOf()`, the same fact `renderCollections`
+ * already navigates by) and switches to it. This does not change the Topics
+ * index and does not give the Books view any notion of "topic" -- it only
+ * lets a reader who found a narration through an index (or through a repeat
+ * badge) go SEE it in the book it actually belongs to, preserving the
+ * documented split ("[the topic view] is an index across collections. It
+ * does not change any book.").
+ */
+function jumpToSource(state, render, occurrenceId) {
+  const path = sourcePathOf(occurrenceId);
+  if (!path) return; // Data defect, not a navigation failure to throw over.
+  state.view = "collections";
+  state.editionId = path.edition.editionId;
+  state.bookId = path.book.bookChapterId;
+  state.chapterId = path.chapter ? path.chapter.bookChapterId : null;
+  state.focusOccurrenceId = occurrenceId;
+  render();
+}
+
+/** Scrolls to and highlights the occurrence `jumpToSource()` navigated to, once. */
+function focusPendingOccurrence(body, state) {
+  if (state.view !== "collections" || !state.focusOccurrenceId) return;
+  const target = [...body.querySelectorAll("[data-hadith-occurrence]")]
+    .find((n) => n.dataset.hadithOccurrence === state.focusOccurrenceId);
+  if (target) {
+    target.classList.add("hadith-card-focused");
+    target.dataset.hadithFocused = "true";
+    target.scrollIntoView({ block: "center" });
+  }
+  state.focusOccurrenceId = null;
+}
+
+/**
+ * Moves KEYBOARD focus to the new landing spot after a Collections-tab step
+ * (edition, book or chapter picked; or a breadcrumb step back). Every such
+ * step calls `render()`, which does `root.textContent = ""` and rebuilds the
+ * whole subtree -- so the button a keyboard user just pressed no longer
+ * exists, and without this the browser drops focus to `<body>`, silently
+ * sending a Tab-only reader back to the very top of the page on every single
+ * step through collection -> book -> chapter. `focusPendingOccurrence()`
+ * (above) solves a different problem -- the one-shot highlight after a
+ * Topics/Search "View in source" jump -- and never calls `.focus()` at all,
+ * so it does not cover ordinary in-tab navigation.
+ *
+ * Lands on the breadcrumb's own current-location crumb where one exists
+ * (every state with an edition chosen), or the "Collections" heading at the
+ * top level -- the one landing element every Collections render already has,
+ * so a keyboard user is told where they arrived rather than losing their
+ * place, and the very next Tab continues from there instead of from the
+ * page's top.
+ */
+function focusCollectionsLanding() {
+  const body = document.getElementById("hadithBody");
+  if (!body) return;
+  // The breadcrumb's own last crumb names exactly where this render landed --
+  // the (non-clickable) current location where one exists (book or chapter
+  // chosen), or otherwise the still-clickable "Collections" crumb itself (an
+  // edition was just chosen, so there is no deeper "current" yet). Only the
+  // very top level -- no edition chosen at all -- has no breadcrumb; there
+  // the "Collections" heading is the one landing element every render has.
+  const landing = body.querySelector(".hadith-crumbs > :last-child") || body.querySelector("h2");
+  if (!landing) return;
+  if (!landing.hasAttribute("tabindex")) landing.setAttribute("tabindex", "-1");
+  landing.focus({ preventScroll: true });
+}
+
+/**
+ * Moves KEYBOARD focus to the newly-active tab button after switching
+ * Collections/Topics/Search/Explore/Commentary (issue #114, found by
+ * reproduction: `render()` tears down and rebuilds the whole subtree on
+ * every tab click, same as every in-tab Collections step -- but unlike
+ * those steps, nothing restored focus afterward, so a keyboard user lost
+ * their place to `<body>` on every single tab switch, not just Search's).
+ * `focusCollectionsLanding()` covers steps WITHIN the Collections tab and
+ * `focusPendingOccurrence()` covers the one-shot Topics/Search "View in
+ * source" jump; neither runs on a plain tab switch. The tab button itself
+ * is already a real, always-focusable control, so this needs no tabindex
+ * hack -- the standard ARIA-tabs pattern of leaving focus on the tab list.
+ */
+function focusActiveTab() {
+  const btn = document.querySelector(".hadith-tab.active");
+  if (btn) btn.focus({ preventScroll: true });
 }
 
 // ---------------------------------------------------------------------------
@@ -101,7 +197,7 @@ function controls(state, render) {
   ]) {
     const b = el("button", `hadith-tab${state.view === view ? " active" : ""}`, label);
     b.dataset.hadithTab = view;
-    b.addEventListener("click", () => { state.view = view; render(); });
+    b.addEventListener("click", () => { state.view = view; render(); focusActiveTab(); });
     tabs.appendChild(b);
   }
   bar.appendChild(tabs);
@@ -126,6 +222,30 @@ function controls(state, render) {
   return bar;
 }
 
+/**
+ * A book/chapter row's own native-script heading (e.g. "كتاب البداية"),
+ * always the SOURCE edition's own text -- never translated, by design (the
+ * translated title sits beside it in its own span). Every OTHER source-script
+ * surface in this file stamps `lang`/`dir` (the occurrence card's Arabic
+ * paragraph, the commentary panel's Arabic title) so a screen reader uses the
+ * right pronunciation rules and a reader's browser applies the right
+ * direction; this one, reproduced live in the real rendered Books/chapters
+ * list, did not (issue #114 Gate B). `getComputedStyle().direction` still
+ * came out "rtl" because the Unicode Bidi Algorithm auto-detects a run of
+ * pure Arabic characters -- so it LOOKS right and a sighted mouse-only check
+ * would never catch this -- but `lang` has no such fallback: a screen reader
+ * with no language cue reads it in the page's UI language (English/Bangla)
+ * voice and pronunciation rules, mispronouncing every book and chapter
+ * heading in the list. Current-location semantics, breadcrumb ancestry and
+ * focus handling are all untouched by this fix.
+ */
+function rawHeadingSpan(rawHeading) {
+  const span = el("span", "hadith-row-heading", rawHeading);
+  span.lang = SOURCE_LANGUAGE;
+  span.dir = "rtl";
+  return span;
+}
+
 // ---------------------------------------------------------------------------
 // Source view -- collection -> book -> chapter -> occurrence, in source order
 // ---------------------------------------------------------------------------
@@ -142,7 +262,7 @@ function renderCollections(body, state, render) {
         row.dataset.hadithEdition = e.editionId;
         row.appendChild(el("span", "hadith-row-name", langText(c.name, uiLang)));
         row.appendChild(el("span", "hadith-row-meta", `${e.editionId} · ${t("Synthetic")}`));
-        row.addEventListener("click", () => { state.editionId = e.editionId; state.bookId = null; state.chapterId = null; render(); });
+        row.addEventListener("click", () => { state.editionId = e.editionId; state.bookId = null; state.chapterId = null; render(); focusCollectionsLanding(); });
         list.appendChild(row);
       }
     }
@@ -158,8 +278,8 @@ function renderCollections(body, state, render) {
       const row = el("button", "hadith-row");
       row.dataset.hadithBook = b.bookChapterId;
       row.appendChild(el("span", "hadith-row-name", langText(b.title, uiLang)));
-      row.appendChild(el("span", "hadith-row-heading", b.rawHeading));
-      row.addEventListener("click", () => { state.bookId = b.bookChapterId; state.chapterId = null; render(); });
+      row.appendChild(rawHeadingSpan(b.rawHeading));
+      row.addEventListener("click", () => { state.bookId = b.bookChapterId; state.chapterId = null; render(); focusCollectionsLanding(); });
       list.appendChild(row);
     }
     body.appendChild(list);
@@ -181,8 +301,8 @@ function renderCollections(body, state, render) {
       const row = el("button", "hadith-row");
       row.dataset.hadithChapter = c.bookChapterId;
       row.appendChild(el("span", "hadith-row-name", langText(c.title, uiLang)));
-      row.appendChild(el("span", "hadith-row-heading", c.rawHeading));
-      row.addEventListener("click", () => { state.chapterId = c.bookChapterId; render(); });
+      row.appendChild(rawHeadingSpan(c.rawHeading));
+      row.addEventListener("click", () => { state.chapterId = c.bookChapterId; render(); focusCollectionsLanding(); });
       list.appendChild(row);
     }
     body.appendChild(list);
@@ -202,14 +322,47 @@ function breadcrumb(state, render, uiLang) {
       b.addEventListener("click", onClick);
       bar.appendChild(b);
     } else {
-      bar.appendChild(el("span", "hadith-crumb-current", label));
+      // aria-current marks the trail's own current location for assistive
+      // tech (issue #114 Gate A/B, found by reproduction: neither this crumb
+      // nor its containing <nav> carried any accessible signal for which
+      // level is "here", and that grew more load-bearing the moment the
+      // edition crumb above made the trail two levels deeper). No new
+      // translatable string: aria-current's value is a fixed ARIA token, not
+      // user-facing text.
+      const cur = el("span", "hadith-crumb-current", label);
+      cur.setAttribute("aria-current", "page");
+      bar.appendChild(cur);
     }
   };
-  add(t("Collections"), () => { state.editionId = null; state.bookId = null; state.chapterId = null; render(); });
-  const path = state.bookId ? sourcePathOf(occurrencesIn(state.chapterId ?? state.bookId)[0]?.occurrenceId) : null;
-  const book = path?.book;
-  if (state.bookId) add(langText(book?.title, uiLang) || state.bookId, state.chapterId ? () => { state.chapterId = null; render(); } : null);
-  if (state.chapterId) add(langText(path?.chapter?.title, uiLang) || state.chapterId, null);
+  add(t("Collections"), () => { state.editionId = null; state.bookId = null; state.chapterId = null; render(); focusCollectionsLanding(); });
+  // The edition itself was never named in this breadcrumb at all (issue #114,
+  // Gate A, found by reproduction against PR #144's own focus fix): right
+  // after picking an edition, `focusCollectionsLanding()`'s landing element
+  // was this bar's OWN LAST CHILD, which at that point was the "Collections"
+  // crumb above -- so a keyboard/screen-reader user who had just chosen an
+  // edition heard "Collections" again, learning nothing about which one they
+  // landed in. Read via `collectionOf()`, never through an occurrence -- the
+  // same fragile detour the book/chapter-title fix below already retired.
+  // This also fixes a second, related defect for free: with the edition now
+  // its own crumb, the "Collections" button above is no longer ever this
+  // bar's last child while sitting at edition level, so it never has
+  // `focusCollectionsLanding()`'s `tabindex="-1"` stamped onto it -- an
+  // already-interactive control was losing its normal Tab/Shift+Tab
+  // reachability purely because it happened to land last in the bar.
+  const collection = collectionOf(state.editionId);
+  add(collection ? langText(collection.name, uiLang) : state.editionId,
+    state.bookId ? () => { state.bookId = null; state.chapterId = null; render(); focusCollectionsLanding(); } : null);
+  // Read the book/chapter's own record directly (`chapterById()`), never
+  // through an occurrence's `sourcePathOf()` -- a book that HAS a chapter
+  // level never holds an occurrence attached to the book id itself (every
+  // occurrence sits under one of its chapters), so deriving the book's title
+  // from `occurrencesIn(state.bookId)[0]` was silently empty at the
+  // chapter-list level and fell through to the raw internal id. Reproduced on
+  // both books of the `synthetic-alpha` edition; a book with no chapter level
+  // (`synthetic-beta`) was unaffected, because there `occurrencesIn(bookId)`
+  // is never empty.
+  if (state.bookId) add(langText(chapterById(state.bookId)?.title, uiLang) || state.bookId, state.chapterId ? () => { state.chapterId = null; render(); focusCollectionsLanding(); } : null);
+  if (state.chapterId) add(langText(chapterById(state.chapterId)?.title, uiLang) || state.chapterId, null);
   return bar;
 }
 
@@ -224,7 +377,7 @@ function renderOccurrenceList(body, state, occurrences, render) {
 // The occurrence card
 // ---------------------------------------------------------------------------
 
-export function occurrenceCard(occurrence, state, render) {
+export function occurrenceCard(occurrence, state, render, { showSourceLink = false } = {}) {
   const uiLang = getAppLang();
   const card = el("article", "hadith-card");
   card.dataset.hadithOccurrence = occurrence.occurrenceId;
@@ -237,10 +390,24 @@ export function occurrenceCard(occurrence, state, render) {
   // displayed number above it is only a reference (schema §2).
   head.appendChild(el("code", "hadith-card-id", occurrence.occurrenceId));
   if (occurrence.repeatOfOccurrenceId) {
-    const rep = el("span", "hadith-card-repeat",
+    // Clickable: a repeat's whole point is that the original is a DIFFERENT
+    // occurrence with its own place in the source, and a reader told that
+    // should be able to go see it rather than just read its bare id.
+    const rep = el("button", "hadith-card-repeat hadith-view-source",
       t("Repeat occurrence of {id}", { id: occurrence.repeatOfOccurrenceId }));
     rep.dataset.hadithRepeat = occurrence.repeatOfOccurrenceId;
+    rep.addEventListener("click", () => jumpToSource(state, render, occurrence.repeatOfOccurrenceId));
     head.appendChild(rep);
+  }
+  // Only where the occurrence is reached OUTSIDE its own book/chapter context
+  // (a Topic index entry, a Search hit) -- inside the Collections tab the
+  // reader is already looking at its source location, and the control would
+  // be pure self-referential chrome.
+  if (showSourceLink) {
+    const src = el("button", "hadith-view-source", t("View in source"));
+    src.dataset.hadithViewSource = occurrence.occurrenceId;
+    src.addEventListener("click", () => jumpToSource(state, render, occurrence.occurrenceId));
+    head.appendChild(src);
   }
   card.appendChild(head);
 
@@ -338,8 +505,38 @@ function renderCardCommentary(occurrence) {
 
 function renderTopic(body, state, render) {
   const uiLang = getAppLang();
-  const idx = topicIndex("synthetic-topic-salah");
+
+  // No topic chosen yet -- list every topic, the same shape as the
+  // Collections tab's own edition list, rather than opening straight into a
+  // single hardcoded one. `listTopics()` already drives Explore's own
+  // per-topic cards; this is the first place it also drives NAVIGATION.
+  if (!state.topicId) {
+    body.appendChild(el("h2", null, t("Topics")));
+    const list = el("div", "hadith-list");
+    for (const tp of listTopics()) {
+      const row = el("button", "hadith-row");
+      row.dataset.hadithTopicRow = tp.topicId;
+      row.appendChild(el("span", "hadith-row-name", langText(tp.label, uiLang)));
+      row.appendChild(el("span", "hadith-row-meta", `${tp.topicId} · ${t("Synthetic")}`));
+      row.addEventListener("click", () => { state.topicId = tp.topicId; render(); });
+      list.appendChild(row);
+    }
+    body.appendChild(list);
+    return;
+  }
+
+  const idx = topicIndex(state.topicId);
   if (!idx) { body.appendChild(el("p", "hadith-note", t("Nothing here yet."))); return; }
+
+  const crumbs = el("nav", "hadith-crumbs");
+  const back = el("button", "hadith-crumb", t("Topics"));
+  back.dataset.hadithTopicBack = "true";
+  back.addEventListener("click", () => { state.topicId = null; render(); });
+  crumbs.appendChild(back);
+  const topicCur = el("span", "hadith-crumb-current", langText(idx.topic.label, uiLang));
+  topicCur.setAttribute("aria-current", "page");
+  crumbs.appendChild(topicCur);
+  body.appendChild(crumbs);
 
   body.appendChild(el("h2", null, langText(idx.topic.label, uiLang)));
 
@@ -368,7 +565,7 @@ function renderTopic(body, state, render) {
       const row = el("div", "hadith-topic-entry");
       // The SOURCE heading stays visible beside the mapped topic (plan §3.1).
       row.appendChild(el("p", "hadith-topic-heading", langText(entry.sourceHeading, uiLang)));
-      row.appendChild(occurrenceCard(entry.occurrence, state, render));
+      row.appendChild(occurrenceCard(entry.occurrence, state, render, { showSourceLink: true }));
       sec.appendChild(row);
     }
     body.appendChild(sec);
@@ -391,6 +588,22 @@ function renderSearch(body, state, render) {
   form.appendChild(input);
   body.appendChild(form);
 
+  // The result-count announcer (issue #114 Gate B). A screen reader only
+  // reliably announces a change to a live region that was ALREADY in the DOM
+  // before the mutation, so this element is created ONCE and updated by
+  // `textContent` below -- never removed and recreated the way `out` is on
+  // every keystroke. It carries ONLY the count, never a result card: putting
+  // `aria-live` on `out` itself would make a screen reader announce every
+  // interactive card on every keystroke too, which nobody asked for and
+  // nobody wants. No new translation key -- it reuses the same "{n} results"
+  // string the visible line already carried.
+  const status = el("p", "hadith-note hadith-search-status");
+  status.id = "hadithSearchStatus";
+  status.dataset.hadithSearchStatus = "true";
+  status.setAttribute("role", "status");
+  status.setAttribute("aria-live", "polite");
+  body.appendChild(status);
+
   const out = el("div", "hadith-search-results");
   out.id = "hadithSearchResults";
   body.appendChild(out);
@@ -398,9 +611,9 @@ function renderSearch(body, state, render) {
   function renderResults() {
     out.textContent = "";
     const r = searchCorpus(state.query);
-    if (!state.query.trim()) return;
+    if (!state.query.trim()) { status.textContent = ""; return; }
     out.dataset.hadithResultCount = String(r.results.length);
-    out.appendChild(el("p", "hadith-note", t("{n} results", { n: r.results.length })));
+    status.textContent = t("{n} results", { n: r.results.length });
     if (r.truncated) out.appendChild(el("p", "hadith-note", t("Showing the first results only.")));
     for (const hit of r.results) {
       const wrap = el("div", "hadith-search-hit");
@@ -411,7 +624,7 @@ function renderSearch(body, state, render) {
       const w = el("p", "hadith-match-where", where.join(" · "));
       w.dataset.hadithMatchWhere = [...hit.matchedLangs.map((l) => `text:${l}`), ...hit.matchedHeadingLangs.map((l) => `heading:${l}`)].join(",");
       wrap.appendChild(w);
-      wrap.appendChild(occurrenceCard(hit.occurrence, state, render));
+      wrap.appendChild(occurrenceCard(hit.occurrence, state, render, { showSourceLink: true }));
       out.appendChild(wrap);
     }
   }
@@ -480,6 +693,75 @@ function renderExplore(body) {
     }
     body.appendChild(card);
   }
+
+  renderTranslationCoverage(body);
+  renderTopicCoverage(body);
+}
+
+/**
+ * TRANSLATION COVERAGE -- per edition and overall, how many synthetic
+ * narrations carry an English or a Bangla version alongside the Arabic
+ * source. Additive only -- every existing Explore row above this is
+ * untouched. Extracted into its own function (integration merge of PR #103
+ * and PR #118, 20 Sep 2026) to match `renderTopicCoverage()`'s own shape --
+ * the two were built independently and originally differed in structure
+ * only, not in what either shows.
+ */
+function renderTranslationCoverage(body) {
+  body.appendChild(el("h3", "", t("Translation coverage")));
+  const cov = translationCoverage();
+  const covMeta = el("div", "hadith-topic-meta");
+  covMeta.dataset.hadithCoverageTotal = String(cov.totals.occurrences);
+  covMeta.appendChild(el("p", "",
+    t("How many synthetic narrations carry an English or a Bangla version, alongside the Arabic source. This describes the fixture only -- it is not a measure of a real corpus.")));
+  covMeta.appendChild(el("p", "hadith-topic-counts", t("Overall: {en} of {n} have English, {bn} of {n} have Bangla.",
+    { en: cov.totals.withEnglish, bn: cov.totals.withBangla, n: cov.totals.occurrences })));
+  body.appendChild(covMeta);
+  for (const ed of cov.perEdition) {
+    const row = el("div", "hadith-card");
+    // Renamed from `hadithCoverageEdition` at integration (was ambiguous
+    // with `renderTopicCoverage()`'s own per-edition rows, which independently
+    // picked the identical attribute name for a different fact about the
+    // same edition id -- see the integration report's conflict-resolution
+    // section). A selector on the old bare name would now match two
+    // differently-shaped elements per edition.
+    row.dataset.hadithTranslationCoverageEdition = ed.editionId;
+    row.appendChild(el("p", "hadith-row-name", ed.editionId));
+    row.appendChild(el("p", "", t("{en} of {n} have English, {bn} of {n} have Bangla.",
+      { en: ed.withEnglish, bn: ed.withBangla, n: ed.occurrences })));
+    body.appendChild(row);
+  }
+}
+
+/**
+ * TOPIC COVERAGE -- a different question from the per-topic cards above: of
+ * every narration in the corpus, how many are reached by ANY topic mapping
+ * at all, and how many are not mapped to a topic yet. Additive only -- every
+ * existing Explore row above this is untouched.
+ */
+function renderTopicCoverage(body) {
+  const cov = topicCoverage();
+
+  body.appendChild(el("h3", "", t("Topic coverage")));
+  const wrap = el("div", "hadith-topic-coverage");
+  wrap.dataset.hadithTopicCoverage = "true";
+  wrap.appendChild(el("p", "",
+    t("Of the {total} narrations in the corpus, {covered} are reachable through at least one topic mapping and {uncovered} are not mapped to any topic yet. This is distinct from the per-topic counts above, which count within one topic only.",
+      { total: cov.totals.occurrences, covered: cov.totals.covered, uncovered: cov.totals.uncovered })));
+
+  for (const ed of cov.editions) {
+    const row = el("p", "hadith-topic-coverage-edition");
+    // Renamed from `hadithCoverageEdition` at integration -- see
+    // `renderTranslationCoverage()`'s own note above.
+    row.dataset.hadithTopicCoverageEdition = ed.editionId;
+    row.appendChild(document.createTextNode(`${ed.editionId} — `));
+    row.appendChild(document.createTextNode(
+      t("{covered} of {total} narrations in this edition are mapped to at least one topic; {uncovered} are not.",
+        { covered: ed.covered, total: ed.occurrences, uncovered: ed.uncovered })));
+    wrap.appendChild(row);
+  }
+
+  body.appendChild(wrap);
 }
 
 // ---------------------------------------------------------------------------

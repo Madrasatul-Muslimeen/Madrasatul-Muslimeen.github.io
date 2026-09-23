@@ -1,0 +1,181 @@
+# Deploy Firestore Rules -- MMSA.
+#
+# Turns the Owner's own manual Console steps (see
+# docs/governance/2026-09-22-phase3-6-production-deployment-package.md,
+# section 3) into one push plus one click, without ever publishing anything
+# on its own. Built on the Owner's explicit instruction (22 Sep 2026):
+# "YES, build it -- prepare the publish and wait for my one-tap approval,
+# never publish on its own. Free only, no API billing."
+#
+# RULES ONLY, DELIBERATELY, NOT INDEXES -- read this before "completing" it.
+# `tools/i18n-verify/firestore-index-requirements.mjs` asserts, by name, that
+# `firebase.json` carries no `indexes` key and no `firestore.indexes.json`
+# exists at the repository root: an existing check, from the Phase 5 Note
+# Foundation round, that treats putting an index declaration at the LIVE
+# deploy path as its own deployment-shaped change -- the same tier as
+# publishing Rules, an Owner Control Gate, not something this workflow gets
+# to decide on the Owner's behalf while building automation. So this
+# workflow only ever runs `firebase deploy --only firestore:rules`. Wiring
+# indexes into this same automation is real follow-up work, gated on the
+# Owner explicitly authorising `firestore.indexes.json` to exist at the live
+# path -- naturally the same moment as "rules are live" for this round,
+# since indexes go before rules in the manual guide too, but that is the
+# Owner's call to make, not an assumption to build ahead of.
+#
+# ===========================================================================
+# THE SHAPE OF THE SAFETY, IN ONE SENTENCE: the `deploy` job below carries
+# `environment: firebase-production-deploy`, a GitHub Environment the Owner
+# configures with themselves as a REQUIRED REVIEWER (see the setup guide,
+# docs/governance/2026-09-22-auto-deploy-firestore-setup.md). GitHub pauses
+# any job that references a protected environment until a required reviewer
+# approves it in the Actions tab -- that pause is what "wait for my one-tap
+# approval" means here, enforced by GitHub itself, not by this file's own
+# logic. There is no second path to `firebase deploy` in this workflow.
+#
+# WHAT IT NEVER DOES:
+#   - Publish without the Owner's explicit approval on THAT run, every time.
+#     Approving one run does not pre-approve the next -- GitHub re-asks on
+#     every job that references the environment.
+#   - Cost anything. `firebase deploy --only firestore:rules` is part of the
+#     Spark (free) plan -- confirmed before this was built.
+#   - Touch indexes. See above.
+#   - Read or touch anything except `firestore.rules`. The service account
+#     behind it should be scoped to exactly the one role named in the setup
+#     guide, and nothing wider.
+#   - Run for a commit that is only SYNCING the repository's copy of
+#     `firestore.rules` to match something already published by hand through
+#     the Console -- see "Skip a redundant approval" below. That is a real
+#     case this project hits: the Owner publishes via Console first (their
+#     own audited, deliberate step), and the Architect's follow-up commit
+#     that updates the repository to match would otherwise ask for a second,
+#     meaningless approval of something already live.
+# ===========================================================================
+
+name: Deploy Firestore Rules
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'firestore.rules'
+  workflow_dispatch: {}
+
+concurrency:
+  # Never two deploys racing the same project.
+  group: mmsa-firestore-deploy
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      skip_deploy: ${{ steps.marker.outputs.skip_deploy }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - name: Summarise what would be published
+        run: |
+          set -euo pipefail
+          {
+            echo "## Firestore Rules deploy -- what would be published"
+            echo ""
+            echo "Project: \`study-monitoring\` (the only Firebase project this app uses -- D1)"
+            echo ""
+            if git rev-parse HEAD~1 >/dev/null 2>&1; then
+              echo "### Diff against the previous commit"
+              echo '```diff'
+              git diff HEAD~1 HEAD -- firestore.rules || true
+              echo '```'
+            else
+              echo "(first commit in this checkout -- no diff to show)"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # SKIP A REDUNDANT APPROVAL. A commit whose message carries this exact
+      # trailer is the Architect syncing the repository's copy of
+      # `firestore.rules` to match what the Owner ALREADY published by hand
+      # through the Firebase Console (see CLAUDE.md, "merged is not
+      # deployed" / the E1 gate). Deploying it again would be a no-op at
+      # best, and asking the Owner to approve something already live is
+      # exactly the kind of false decision this project's governance style
+      # avoids. Anything else -- including a plain push with no trailer --
+      # is treated as a real, undeployed change and goes to the approval
+      # gate below.
+      - name: Decide whether this push needs the approval gate
+        id: marker
+        run: |
+          set -euo pipefail
+          msg=$(git log -1 --format=%B)
+          if printf '%s' "$msg" | grep -qF '[already-deployed-manually]'; then
+            echo "skip_deploy=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Commit message carries [already-deployed-manually] -- this push is a repository sync, not a new publish. The deploy job will not run."
+          else
+            echo "skip_deploy=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  deploy:
+    needs: prepare
+    if: needs.prepare.outputs.skip_deploy != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # THIS LINE IS THE APPROVAL GATE. See the header. The environment must
+    # exist and carry the Owner as a required reviewer, or this job runs
+    # with no pause at all -- the setup guide's own step 3 is not optional.
+    environment: firebase-production-deploy
+    permissions:
+      contents: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install the Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Write the service account key
+        env:
+          SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_DEPLOY_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SERVICE_ACCOUNT_JSON:-}" ]; then
+            echo "::error::The FIREBASE_DEPLOY_SERVICE_ACCOUNT secret is not set on the firebase-production-deploy environment. See docs/governance/2026-09-22-auto-deploy-firestore-setup.md."
+            exit 1
+          fi
+          printf '%s' "$SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/firebase-deploy-key.json"
+
+      - name: Publish Rules
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-deploy-key.json
+        run: |
+          set -euo pipefail
+          firebase deploy \
+            --only firestore:rules \
+            --project study-monitoring \
+            --non-interactive
+
+      - name: Remove the key from disk
+        if: always()
+        run: rm -f "$RUNNER_TEMP/firebase-deploy-key.json"
+
+      - name: Say what was published
+        if: success()
+        run: |
+          {
+            echo "## Firestore Rules deploy -- published"
+            echo ""
+            echo "Rules deployed to \`study-monitoring\` from commit \`${{ github.sha }}\`, approved by the required reviewer on this environment."
+            echo ""
+            echo "Confirm in the Firebase Console: Firestore Database -> Rules tab shows a new version published just now."
+            echo ""
+            echo "Indexes are NOT part of this automation yet -- see the workflow file's own header. Continue creating indexes by hand in the Console, as the deployment guide describes."
+          } >> "$GITHUB_STEP_SUMMARY"
