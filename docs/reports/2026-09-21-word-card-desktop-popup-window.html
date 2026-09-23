@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Word Card — desktop movable/resizable window verified, one z-index defect fixed, two gaps recorded (2026-09-21)</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  pre { background:var(--code); padding:.8em 1em; border-radius:.5em; overflow-x:auto; border:1px solid var(--rule) }
+  pre code { background:none; padding:0 }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} }
+</style></head><body><main>
+<h1>Word Card — desktop movable/resizable window verified, one z-index defect fixed, two gaps recorded (2026-09-21)</h1>
+<h2>Task</h2>
+<p>Issue #113, comment <code>5756219158</code> (verified against the six MMSA task-bridge checks before being read as a task): <em>&quot;Continue MAP v4 from current main v08.32 and draft #135. Plan one bounded Word Card desktop movable/resizable interaction, an Owner-requested Phase 2 extension. Inspect current card positioning, pointer/keyboard accessibility, small screen constraints, and #135&#x27;s app/quranrevival.html diff for overlap. Gate A/B: exact drag/resize behavior, persistence policy (prefer session-only unless a governing decision already exists), file budget, responsive constraints, tests and rollback. If entirely read-only/Quran-owned and can be cleanly stacked on #135 without harming its round-trip state, build one tranche on your designated branch, preserving mobile fixed layout and the 55-check return suite; otherwise deliver an exact merge-safe plan and stop only at actual coordination/DDR gate.&quot;</em></p>
+<h2>Gate A (read-only) — the interaction already exists</h2>
+<p>Reading <code>app/quranrevival.html</code> and <code>app/js/note-popup.js</code> before writing anything found the same shape PR #135 itself found for &quot;Back to Word Card&quot;: <strong>the movable/resizable interaction was not missing.</strong> It was built in <strong>v08.20</strong> (6–7 Sep 2026), reusing the shared popup-window mechanism the Note view has had since 28 Aug 2026 and the Approach/Explore stage views since 2 Sep 2026:</p>
+<ul>
+<li><code>initPopupWindow()</code> (<code>app/js/note-popup.js</code>) is wired for BOTH Word Card</li>
+</ul>
+<p>mounts — <code>quranWordCardMount</code> (Read screen) and <code>quranWordCardMountNote</code> (Note screen) — each with its own remembered geometry (<code>id: &quot;wordcard&quot;</code> / <code>&quot;wordcard-note&quot;</code>), at the app&#x27;s existing <code>@media (min-width: 900px)</code> breakpoint (<code>app/quranrevival.html</code> lines ~7766–7777).</p>
+<ul>
+<li><strong>Drag</strong>: the header is the handle (<code>dragFromSelector: &quot;header&quot;</code>, needed</li>
+</ul>
+<p>because the header&#x27;s own content is rewritten on every tab switch, so it cannot itself hold the listener — the static mount does).</p>
+<ul>
+<li><strong>Resize</strong>: 8 handles (<code>data-note-resize=&quot;n/s/e/w/ne/nw/se/sw&quot;</code>), any</li>
+</ul>
+<p>edge or corner.</p>
+<ul>
+<li><strong>Persistence policy</strong>: the task&#x27;s own instruction says &quot;prefer</li>
+</ul>
+<p>session-only unless a governing decision already exists&quot; — <strong>one already exists</strong>, and it is not session-only. Every popup window in this app (Note, Wheel/Approach, Explore, and the Word Card since v08.20) persists its geometry to <code>localStorage</code>, keyed per view (<code>mm_&lt;id&gt;_popup_geometry</code>), so a reader&#x27;s remembered window shape survives a reload — the app&#x27;s own established, consistent policy across all four popups, not a Word-Card-specific choice to make fresh.</p>
+<ul>
+<li><strong>Responsive constraint</strong>: below 900px <code>initPopupWindow</code> never applies</li>
+</ul>
+<p>inline geometry at all (<code>clearGeometry()</code>), so the docked/fixed mobile strip — the exact layout PR #135&#x27;s own 55-check <code>quran-word-card-return.mjs</code> suite exercises — is untouched <strong>by construction</strong>, not by a check added this round.</p>
+<p>No MAP v4 document or execution ledger exists in this repository (confirmed again by grep, consistent with every prior session&#x27;s own finding, most recently PR #135&#x27;s own body) — &quot;Gate A/B&quot; here is this task&#x27;s own framing.</p>
+<p><strong>Gate A&#x27;s real finding</strong>: nothing needed <em>building</em>. What no suite had ever done was actually drag or resize a Word Card window in a real browser and check what happened — the same blind spot PR #135 found in the &quot;Back to Word Card&quot; bar itself.</p>
+<h2>Overlap with #135&#x27;s <code>app/quranrevival.html</code> diff</h2>
+<p><code>git diff</code> between this branch&#x27;s base (<code>claude/laughing-goodall-kjfoqn</code>, PR #135&#x27;s head) and this round&#x27;s own commit touches only the one CSS rule below — PR #135&#x27;s own diff (the <code>readViewScrollContainer</code>/return-bar work, lines ~10100–10280 and the <code>&lt;style&gt;</code> block around line 1950) is untouched. This round stacks cleanly on top of #135 with no textual or behavioural overlap.</p>
+<h2>Gate B — one real, narrowly-scoped defect found and fixed</h2>
+<p>Driving the mechanism with real pointer coordinates (not <code>page.click()</code>, which auto-waits past anything in the way) found that after a header drag, <strong>the resize handles stopped receiving pointer events</strong>, landing on the app&#x27;s own bottom <code>#dock</code> instead.</p>
+<p>Read rather than guessed: <code>#dock</code> (<code>app/quranrevival.html</code>) is <code>position: sticky; bottom: 0; z-index: 60</code>. <code>#noteView</code>, <code>#wheelPopupView</code> and <code>#exploreView</code> — the other three popups sharing this exact mechanism — all deliberately sit at <code>z-index: 55</code>, <strong>one step below <code>#dock</code></strong>, with their own comment stating the policy outright: <em>&quot;below #dock&#x27;s z-index:60 — the dock stays reachable even if the popup&#x27;s own geometry overlaps it.&quot;</em> The Word Card mounts were the one exception, at <code>z-index: 60</code> — an <strong>accidental tie</strong> with <code>#dock</code>, resolved only by DOM order (which happened to still favour <code>#dock</code>, so nothing was visibly different on screen) rather than by the same explicit policy every other popup states.</p>
+<p><strong>Fix</strong>: one line, <code>app/quranrevival.html</code>&#x27;s shared <code>@media (min-width: 900px)</code> rule for <code>#quranWordCardMount, #quranWordCardMountNote</code> — <code>z-index: 60</code> → <code>z-index: 55</code>, matching the other three popups exactly. No new architecture, no shared/protected path, no version bump. This makes the Word Card state the same policy explicitly instead of relying on where <code>#dock</code> happens to sit in the document — it does <strong>not</strong> change, and could not by itself change, the thing recorded below.</p>
+<h2>Gate B — two things recorded, not built (both need authority this task does not have)</h2>
+<p><strong>1. Zero keyboard support, for any of the four popups.</strong> Grepped: <code>app/js/note-popup.js</code> wires <code>pointerdown</code>/<code>pointermove</code>/<code>pointerup</code> only — no <code>keydown</code> anywhere, and none of the drag handle or the 8 resize handles (for any of the six mounts across four views) carries a <code>tabindex</code> or <code>aria-label</code>. A keyboard-only or switch-access reader cannot move or resize any of these windows today.</p>
+<p>Closing it needs an accessible name on each handle (&quot;Move window&quot;, &quot;Resize from the top-left corner&quot;, etc.) in <strong>both</strong> languages — a declared <code>app/js/i18n/bn.js</code> touch, which is on the platform-shared list this routine is not authorised to edit — plus keyboard-move/resize behaviour (e.g. arrow keys nudge, <code>Shift</code>+arrow for a larger step) added to the one shared <code>initPopupWindow()</code> function that all four popups call, so the fix is inherently cross-view, not Word-Card-scoped. <strong>Merge-safe plan for a later, separately-authorised round</strong>: add <code>tabindex=&quot;0&quot;</code> and a <code>keydown</code> handler to <code>dragHandleEl</code> and each <code>resizeHandleEls</code> entry inside <code>initPopupWindow()</code>; add ~10 new translated strings (one drag verb, 8 direction names or a single parametrised name, one &quot;press Escape to stop&quot; hint if a modal drag-mode is added); extend this round&#x27;s own <code>quran-word-card-popup.mjs</code> (or a shared <code>note-popup.mjs</code> suite, since the behaviour is shared) to prove each handle is reachable by <code>Tab</code> and operable by arrow keys, in both languages, without regressing the pointer path. File budget: <code>note-popup.js</code> (behaviour), <code>bn.js</code> + English string table (names), the markup adding <code>tabindex</code>, one new/extended test file.</p>
+<p><strong>2. <code>#dock</code> occluding the south-edge handles once dragged low enough is a deliberate, shared trade-off, not a bug to fix here.</strong> Dragged far enough down, a popup&#x27;s own south/southeast/southwest resize handles sit under <code>#dock</code> — proven in <code>quran-word-card-popup.mjs</code> section 5. This is the <em>same</em> &quot;the dock always wins&quot; policy the z-index fix above makes explicit, applying to all four popups by design. Changing it (e.g. clamping a popup&#x27;s geometry so its bottom edge can never reach <code>#dock</code>) is a real product trade-off — a smaller maximum window height on a short screen — not a one-line fix, and not Word-Card-specific. Recorded so it is proven rather than merely asserted; left to a future round with the authority to make that trade-off, for all four popups at once (changing it for the Word Card alone would make it the one popup that behaves differently from the other three).</p>
+<h2>What was verified (real browser, <code>tools/i18n-verify/quran-word-card-popup.mjs</code>, new, 22 checks)</h2>
+<ul>
+<li>Desktop (1280×900), both languages: the card renders as a fixed popup</li>
+</ul>
+<p>window; dragging the header moves it; the header&#x27;s own prev/next/close buttons stay clickable while dragging is wired (the drag listener already ignores <code>button/select/input/a</code> targets); dragging the south-east handle resizes it; the resulting geometry is persisted to <code>localStorage</code>; reloading and reopening the same word restores the remembered shape; no real page errors (the sandbox&#x27;s own documented TLS artifact excluded, per this project&#x27;s own standing lesson).</p>
+<ul>
+<li>390px and 412px (mobile): the card is <strong>not</strong> a floating fixed window and</li>
+</ul>
+<p>carries no inline width/height/top/left leaked from a wider session — confirms the popup mechanism does not touch the mobile layout PR #135&#x27;s own suite depends on.</p>
+<ul>
+<li>The Read-view and Note-view mounts remember independent geometry —</li>
+</ul>
+<p>dragging one never writes the other&#x27;s key.</p>
+<ul>
+<li>The two Gate-B findings above, each proven mechanically (section 4:</li>
+</ul>
+<p>keyboard reach; section 5: the <code>#dock</code> overlap), not merely described.</p>
+<p>A real environmental finding surfaced while writing this suite: <code>app/js/splash.js</code>&#x27;s <code>shouldShow()</code> has no <code>&quot;never&quot;</code> branch (only <code>&quot;daily&quot;</code>/<code>&quot;weekly&quot;</code> throttling), so the harness&#x27;s own documented <code>mm_qs_splash_pref = &quot;never&quot;</code> convention does not actually suppress the Quran-entry splash — it is created asynchronously, after the one DOM-sweep <code>harness.mjs</code>&#x27;s <code>openPage()</code> performs, and sits over the page for its full ~14s unless a real <code>page.click()</code> (which auto-waits) is used. This is why no earlier suite driving the Word Card with raw pointer coordinates had seen it. Worked around locally in this suite&#x27;s own file (a splash re-sweep before any raw-pointer interaction); <strong>not fixed</strong>, since <code>app/js/splash.js</code> is outside this bounded task and the fix belongs to whoever owns the splash preference next.</p>
+<pre><code>node tools/i18n-verify/quran-word-card-popup.mjs
+==== 22 passed, 0 failed ====</code></pre>
+<p>Re-run, unmodified by this round, to confirm the one-line z-index fix regresses nothing:</p>
+<pre><code>node tools/i18n-verify/quran-word-card.mjs               → 36 passed, 0 failed
+node tools/i18n-verify/quran-word-card-integration.mjs   → 10 passed, 0 failed
+node tools/i18n-verify/quran-word-card-lemma-occurrences.mjs → 50 passed, 0 failed
+node tools/i18n-verify/quran-word-card-return.mjs (PR #135&#x27;s own 55-check suite) → 55 passed, 0 failed</code></pre>
+<h2>Governance suites (all seven, required by this task)</h2>
+<pre><code>1) programme-ledger.mjs                           → PENDING (recorded below once run)
+2) programme-ledger-mutations.mjs                  → PENDING
+3) brief-integrity.mjs                              → PENDING
+4) study-activity-evidence-boundary.mjs             → PENDING
+5) study-activity-evidence-boundary-mutations.mjs   → PENDING
+6) study-event-wiring.mjs                           → PENDING
+7) rules-authorisation-executable.mjs               → PENDING</code></pre>
+<h2>What this deliberately does NOT do</h2>
+<ul>
+<li><strong>No protected or shared path touched</strong> — none of <code>app/js/version.js</code>,</li>
+</ul>
+<p><code>CLAUDE.md</code>, <code>CHANGELOG.md</code>, <code>app/js/i18n/bn.js</code>, <code>app/js/nav.js</code>, <code>app/js/unit-keys.js</code>, <code>app/js/records.js</code>, <code>app/js/activity.js</code>, <code>app/js/catalogue-data.js</code>, <code>app/css/shell.css</code>, any <code>tools/i18n-verify/{behaviour,harness,firebase-stub,brief-integrity, programme-ledger,programme-ledger-mutations}.mjs</code>, anything under <code>docs/governance/</code>, <code>firestore.rules</code>, <code>firebase.json</code>, <code>tests/firestore/</code>, <code>tools/firestore-emulator/</code>, or <code>.github/workflows/</code>.</p>
+<ul>
+<li><strong>No new translation string</strong> — the one code change is a CSS number; no</li>
+</ul>
+<p>markup, no user-visible text.</p>
+<ul>
+<li><strong>No Firestore write, Rule, or index</strong> — this feature is pure client-side</li>
+</ul>
+<p>DOM/localStorage, exactly as it was built in v08.20.</p>
+<ul>
+<li><strong>No version bump.</strong> <code>app/js/version.js</code> is untouched; <code>08.32</code> stays</li>
+</ul>
+<p>current per <code>docs/governance/programme-integration-ledger.json</code>, <code>08.33</code> is next unallocated. <strong>This is a real (if tiny) behaviour change and needs a version allocated by the Master Architect</strong> — incomplete pending that, exactly as PR #135 itself recorded for its own round.</p>
+<ul>
+<li><strong>No merge, no deploy, no approval claimed.</strong></li>
+<li>**Keyboard accessibility and the <code>#dock</code>-overlap trade-off are recorded,</li>
+</ul>
+<p>not built** — see the two Gate-B sections above for exactly why and what each would need.</p>
+<h2>Owner app test — NO before merge, YES after</h2>
+<p><strong>Before merge</strong>: nothing to test — the one code change (a CSS number) has no visible effect in the tie-broken case this app already had, and the feature itself (drag/resize) is not new; it has been live since v08.20.</p>
+<p><strong>After merge</strong>, on the live app, at a desktop width (≥900px): 1. Open Quran Study, turn on word-by-word, tap any Arabic word to open its Word Card. 2. Drag the card by its header. <strong>Expected</strong>: it moves smoothly, its own prev/next/close buttons stay pressable. 3. Resize it from any edge or corner. <strong>Expected</strong>: it grows/shrinks from that edge. 4. Reload the page and reopen a word. <strong>Expected</strong>: the card reopens at the shape and position you left it. 5. Drag it down near the bottom navigation bar. <strong>Expected</strong> (unchanged, deliberate): the navigation bar stays clickable even where it overlaps the card — the card&#x27;s own resize handles in that overlapped strip will not respond there, by the same design the Note/Approach/Explore popups already have.</p>
+<p>No Firestore write happens anywhere in this flow.</p>
+</main></body></html>

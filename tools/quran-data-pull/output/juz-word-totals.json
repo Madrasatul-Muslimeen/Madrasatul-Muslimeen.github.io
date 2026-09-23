@@ -1,0 +1,125 @@
+{
+  "quranTotalWords": 77429,
+  "byJuz": [
+    {
+      "juz": 1,
+      "totalWords": 2522
+    },
+    {
+      "juz": 2,
+      "totalWords": 2578
+    },
+    {
+      "juz": 3,
+      "totalWords": 2622
+    },
+    {
+      "juz": 4,
+      "totalWords": 2506
+    },
+    {
+      "juz": 5,
+      "totalWords": 2579
+    },
+    {
+      "juz": 6,
+      "totalWords": 2503
+    },
+    {
+      "juz": 7,
+      "totalWords": 2774
+    },
+    {
+      "juz": 8,
+      "totalWords": 2566
+    },
+    {
+      "juz": 9,
+      "totalWords": 2486
+    },
+    {
+      "juz": 10,
+      "totalWords": 2389
+    },
+    {
+      "juz": 11,
+      "totalWords": 2657
+    },
+    {
+      "juz": 12,
+      "totalWords": 2693
+    },
+    {
+      "juz": 13,
+      "totalWords": 2613
+    },
+    {
+      "juz": 14,
+      "totalWords": 2499
+    },
+    {
+      "juz": 15,
+      "totalWords": 2684
+    },
+    {
+      "juz": 16,
+      "totalWords": 2747
+    },
+    {
+      "juz": 17,
+      "totalWords": 2443
+    },
+    {
+      "juz": 18,
+      "totalWords": 2641
+    },
+    {
+      "juz": 19,
+      "totalWords": 2611
+    },
+    {
+      "juz": 20,
+      "totalWords": 2554
+    },
+    {
+      "juz": 21,
+      "totalWords": 2582
+    },
+    {
+      "juz": 22,
+      "totalWords": 2638
+    },
+    {
+      "juz": 23,
+      "totalWords": 2627
+    },
+    {
+      "juz": 24,
+      "totalWords": 2520
+    },
+    {
+      "juz": 25,
+      "totalWords": 2668
+    },
+    {
+      "juz": 26,
+      "totalWords": 2612
+    },
+    {
+      "juz": 27,
+      "totalWords": 2528
+    },
+    {
+      "juz": 28,
+      "totalWords": 2618
+    },
+    {
+      "juz": 29,
+      "totalWords": 2661
+    },
+    {
+      "juz": 30,
+      "totalWords": 2308
+    }
+  ]
+}

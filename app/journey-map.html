@@ -1,0 +1,788 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="./css/shell.css" />
+<title>QuranRevival — Mapping My Journey</title>
+<!-- MAP Phase 6 (P6-F, issue #199) -- a Note's bodyHtml is rendered as markup
+     here too (the same read path notes.html already uses), so it goes
+     through the same DOMPurify allow-list before ever touching innerHTML. -->
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 46rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
+  h1 { font-size: 1.4rem; margin-bottom: 0.2rem; }
+  p.intro { color: #555; font-size: 0.94rem; }
+  #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
+  button {
+    font-size: 0.88rem; padding: 0.32rem 0.7rem; border-radius: 0.4rem; border: 1px solid #ccc;
+    background: #1F3A6E; color: white; cursor: pointer;
+  }
+  button.secondary { background: white; color: #1F3A6E; }
+  button.danger { background: white; color: #a3352b; border-color: #d9a49d; }
+  button.tiny { padding: 0.12rem 0.5rem; font-size: 0.8rem; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  select, input[type="text"] { font-size: 0.85rem; padding: 0.3rem 0.4rem; border: 1px solid #ccc; border-radius: 0.35rem; }
+  .note { font-size: 0.88rem; color: #666; }
+  .warn { background: #fff8e6; border: 1px solid #f0d9a0; border-radius: 0.5rem; padding: 0.6rem 0.8rem; font-size: 0.88rem; margin: 0.7rem 0; }
+  #contextBar { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin: 1rem 0; font-size: 0.9rem; }
+  #contextBar label { margin: 0; }
+
+  /* -- the toggle: one small segmented control, three buttons, same purpose
+     -- and roughly the same shape -- as this app's own "View as" chips
+     elsewhere, sized as real tap targets (>=36px) at every phone width. -- */
+  #viewToggle { display: flex; gap: 0.3rem; margin: 1rem 0; flex-wrap: wrap; }
+  .view-toggle-btn {
+    flex: 1 1 8rem; min-height: 36px; padding: 0.4rem 0.5rem; font-size: 0.85rem;
+    border-radius: 999px; border: 1px solid #1F3A6E; background: #fff; color: #1F3A6E;
+  }
+  .view-toggle-btn[aria-pressed="true"] { background: #1F3A6E; color: #fff; }
+
+  #emptyMsg { color: #888; font-size: 0.9rem; margin: 1rem 0; }
+
+  /* -- Option A: folders -- */
+  .folder-list { list-style: none; margin: 0.6rem 0; padding: 0; }
+  .folder-row {
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.6rem; margin: 0.3rem 0;
+    border: 1px solid #ddd; border-radius: 0.5rem; background: #fff; cursor: pointer; min-height: 36px;
+  }
+  .folder-row.system { border-color: #B8862F; background: #fdf6ea; }
+  .folder-row-name { flex: 1 1 auto; font-weight: 600; font-size: 0.94rem; color: #1F3A6E; }
+  .folder-row-count { font-size: 0.78rem; color: #888; }
+  .folder-children { margin-left: 1.2rem; }
+  #folderCrumb { font-size: 0.88rem; margin: 0.6rem 0; }
+  #folderCrumb button { background: none; border: none; color: #1F3A6E; text-decoration: underline; padding: 0; font-size: inherit; cursor: pointer; }
+  #newFolderBtn { margin: 0.6rem 0; }
+  #newFolderForm { display: flex; gap: 0.4rem; margin: 0.6rem 0; flex-wrap: wrap; }
+  #newFolderForm input { flex: 1 1 10rem; }
+
+  /* -- Option B: timeline -- */
+  .filter-chips { display: flex; gap: 0.35rem; flex-wrap: wrap; margin: 0.7rem 0; }
+  .filter-chip {
+    font-size: 0.8rem; padding: 0.28rem 0.65rem; min-height: 32px; border-radius: 999px;
+    border: 1px solid #1F3A6E; background: #fff; color: #1F3A6E; cursor: pointer;
+  }
+  .filter-chip[aria-pressed="true"] { background: #1F3A6E; color: #fff; }
+  .timeline-day { margin: 1rem 0 0.3rem; font-size: 0.82rem; font-weight: 600; color: #888; border-bottom: 1px dashed #ddd; padding-bottom: 0.2rem; }
+
+  /* -- Option C: path -- */
+  #pathTrack { position: relative; margin: 1.2rem 0 1.2rem 0.7rem; padding-left: 1.4rem; border-left: 3px solid #B8862F; }
+  .path-stop { position: relative; margin: 0 0 1.1rem; }
+  .path-stop::before {
+    content: ""; position: absolute; left: -1.86rem; top: 0.2rem; width: 12px; height: 12px;
+    border-radius: 50%; background: #B8862F; border: 2px solid #fff; box-shadow: 0 0 0 1px #B8862F;
+  }
+  .path-stop-date { font-size: 0.76rem; color: #888; }
+
+  /* -- shared note row/card, all three views -- */
+  .note-card { border: 1px solid #ddd; border-radius: 0.6rem; padding: 0.7rem 0.85rem; margin: 0.6rem 0; background: #fff; }
+  .note-card-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; cursor: pointer; }
+  .note-card-title { font-weight: 600; font-size: 0.96rem; flex: 1 1 auto; min-width: 8rem; }
+  .note-card-meta { font-size: 0.76rem; color: #888; }
+  .note-body-preview { margin-top: 0.5rem; font-size: 0.9rem; line-height: 1.4; display: none; }
+  .note-body-preview.open { display: block; }
+  .note-body-preview p { margin: 0.3rem 0; }
+  .note-actions { margin-top: 0.5rem; display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .folder-chip { display: inline-block; font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 999px; background: #eef2ff; color: #1F3A6E; margin: 0.1rem 0.2rem 0 0; }
+  #truncatedMsg { color: #a3352b; font-size: 0.82rem; margin-top: 0.5rem; }
+</style>
+</head>
+<body>
+  <h1>Mapping My Journey</h1>
+  <p class="intro">Every permanent Note you've written, organised your way — folders, a timeline, or a path. Try all three; the app remembers which you picked.</p>
+
+  <nav class="app-nav" id="topNav">
+    <details class="nav-cat nav-cat-home">
+      <summary>Home</summary>
+      <div class="nav-cat-links">
+        <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v06 ↗</a>
+        <a href="https://madrasatul-muslimeen.github.io/legacy-v07/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v07 ↗</a>
+        <div id="who">Checking sign-in…</div>
+        <button id="signInBtn" style="display:none;">Sign in with Google</button>
+        <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+        <div id="navHomeExtra"></div>
+      </div>
+    </details>
+    <div id="navBar"></div>
+  </nav>
+
+  <div id="app" style="display:none;">
+    <div id="contextBar">
+      <label>Tenant
+        <select id="tenantSelect" style="width:auto;"></select>
+      </label>
+      <label>Person
+        <select id="personSelect" style="width:auto;"></select>
+      </label>
+    </div>
+
+    <div id="readOnlyMsg" class="note" style="display:none;"></div>
+    <p id="pageStatusMsg" class="note" style="display:none;"></p>
+
+    <div id="viewToggle" role="group" aria-label="View">
+      <button type="button" class="view-toggle-btn" data-view="folders">Folders</button>
+      <button type="button" class="view-toggle-btn" data-view="timeline">Timeline</button>
+      <button type="button" class="view-toggle-btn" data-view="path">Path</button>
+    </div>
+
+    <div id="viewFolders"></div>
+    <div id="viewTimeline" style="display:none;"></div>
+    <div id="viewPath" style="display:none;"></div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-init.js";
+    import {
+      GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { doc, getDoc, getDocs, collection, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { TENANT } from "./js/collections.js";
+    import { langText } from "./js/lang.js";
+    import { getAppLang } from "./js/prefs.js";
+    import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
+    import { safeWrite } from "./js/errors.js";
+    import { bootstrapContext, setActiveContext, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
+    import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
+    import { translateStatic, t } from "./js/i18n.js";
+    import { roleListLabel } from "./js/labels.js";
+    import { sanitizeNoteHtml } from "./js/note-sanitize.js";
+    import { NOTE_STATUS, createNoteFolder, createNotePlacement, listNotesForOwner } from "./js/note-foundation.js";
+    import { ownerFolderTree, folderContents, moveNoteToFolder } from "./js/journey-map-service.js";
+
+    translateStatic();
+
+    // ADR-010 §3's closed set, mirrored rather than imported directly from
+    // journey-map-contract.js -- this screen goes through journey-map-
+    // service.js for everything else, and importing the pure contract a
+    // second, separate way would widen its reachability with no benefit
+    // (the service already re-exports the one function of the contract's
+    // this page actually needs, buildFolderTree(), via ownerFolderTree()).
+    // These two ids are ADR-010's own locked vocabulary, not something this
+    // page decides -- see journey-map-contract.js's SYSTEM_FOLDER_ROLES.
+    const SYSTEM_FOLDER_ROLES = Object.freeze(["journey-map", "reflection-archive"]);
+    function isSystemFolderRole(role) { return SYSTEM_FOLDER_ROLES.includes(role); }
+
+    // -----------------------------------------------------------------------
+    // The two system folders always exist CONCEPTUALLY (ADR-010 §3 -- "every
+    // person has exactly two system folders") even before either has a real
+    // Firestore document. Rather than fabricate a fake document for one, this
+    // screen represents it as a VIRTUAL node (folderId: null) until the person
+    // does something that genuinely needs the real thing to exist -- filing a
+    // Note into it, which createNotePlacement() can only do against a folder
+    // that is really there. At that point ensureRealFolder() creates it for
+    // real, once, the same way any other folder is created. This is a judgment
+    // call the issue itself asked to be stated rather than assumed: no fake
+    // doc is ever rendered as if it were stored, and the one write this
+    // triggers is a genuine, real, I17-stamped createNoteFolder() call.
+    // -----------------------------------------------------------------------
+    const SYSTEM_ROLE_LABEL = {
+      "journey-map": () => t("Personal Journey Map"),
+      "reflection-archive": () => t("Reflection Archive"),
+    };
+
+    function systemFolderNode(role) {
+      return { folderId: null, semanticRole: role, name: SYSTEM_ROLE_LABEL[role](), status: NOTE_STATUS.ACTIVE, order: SYSTEM_FOLDER_ROLES.indexOf(role), children: [], virtual: true };
+    }
+
+    function folderDisplayName(folder) {
+      if (isSystemFolderRole(folder.semanticRole)) return SYSTEM_ROLE_LABEL[folder.semanticRole]();
+      return folder.name || t("(untitled folder)");
+    }
+
+    /** roots merged with any system role missing a real document -- real ones (once created) simply appear among ownerFolderTree()'s own roots, since a system folder has no parent. */
+    function mergedRoots() {
+      const roots = folderTree.roots || [];
+      const real = new Map(roots.filter((f) => isSystemFolderRole(f.semanticRole)).map((f) => [f.semanticRole, f]));
+      const systemNodes = SYSTEM_FOLDER_ROLES.map((role) => real.get(role) ?? systemFolderNode(role));
+      const userRoots = roots.filter((f) => !isSystemFolderRole(f.semanticRole));
+      return [...systemNodes, ...userRoots];
+    }
+
+    function flattenFolders(nodes, depth = 0, out = []) {
+      for (const f of nodes) {
+        out.push({ folder: f, depth });
+        if (f.children?.length) flattenFolders(f.children, depth + 1, out);
+      }
+      return out;
+    }
+
+    const whoEl = document.getElementById("who");
+    const signInBtn = document.getElementById("signInBtn");
+    const signOutBtn = document.getElementById("signOutBtn");
+    const appEl = document.getElementById("app");
+    const navBar = document.getElementById("navBar");
+    const navHomeExtra = document.getElementById("navHomeExtra");
+    const tenantSelect = document.getElementById("tenantSelect");
+    const personSelect = document.getElementById("personSelect");
+    const readOnlyMsg = document.getElementById("readOnlyMsg");
+    const pageStatusMsg = document.getElementById("pageStatusMsg");
+    const viewToggle = document.getElementById("viewToggle");
+    const viewFolders = document.getElementById("viewFolders");
+    const viewTimeline = document.getElementById("viewTimeline");
+    const viewPath = document.getElementById("viewPath");
+
+    function escapeHtml(s) {
+      return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function renderNav(roles, viewAsRole) {
+      navBar.innerHTML = renderNavBar(roles, viewAsRole);
+      navHomeExtra.innerHTML = renderHomeExtras(roles);
+      mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid });
+    }
+
+    signInBtn.addEventListener("click", () => {
+      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+        whoEl.textContent = t("Sign-in failed: {message}", { message: err.message });
+      });
+    });
+    signOutBtn.addEventListener("click", () => signOut(auth));
+
+    let activeTenantId = null;
+    let myMemberships = [];
+    let roster = [];
+    let selectedPersonId = null;
+
+    // The three views, and which one is remembered -- localStorage, per
+    // viewer, a convenience only (the issue is explicit this is not data).
+    const VIEW_KEY = "qr.journeyMapView";
+    let currentView = ["folders", "timeline", "path"].includes(localStorage.getItem(VIEW_KEY))
+      ? localStorage.getItem(VIEW_KEY) : "folders";
+
+    // Loaded once per refresh, shared by all three views over the SAME data
+    // (the issue's own requirement -- one toggle, not three separate pages).
+    let folderTree = { roots: [], orphaned: [], cyclic: [], tooDeep: [] };
+    let allNotes = [];
+    let openFolderPath = []; // stack of folder nodes drilled into, Option A
+    let timelineFilter = "everything"; // "everything" | a semanticRole | a real folderId
+    let expandedNoteIds = new Set();
+
+    function myPersonIdInActiveTenant() {
+      return myMemberships.find((m) => m.tenantId === activeTenantId)?.personId ?? null;
+    }
+    /** Only a Note's own author may write anything here (isNoteOwner() in firestore.rules) -- everyone else this screen is visible to (guardian/teacher/admin, per canReadNoteOf()) gets a read-only view of the same two views. */
+    function isSelfSelected() {
+      return selectedPersonId != null && selectedPersonId === myPersonIdInActiveTenant();
+    }
+
+    function renderPersonSelectOptions() {
+      const prev = personSelect.value;
+      personSelect.innerHTML = roster
+        .filter((p) => p.status !== "archived")
+        .map((p) => `<option value="${p.id}">${escapeHtml(langText(p.name, getAppLang(), p.id))}</option>`)
+        .join("");
+      const stored = getSelectedPersonId();
+      const myPersonId = myPersonIdInActiveTenant();
+      const candidate = roster.some((p) => p.id === prev) ? prev
+        : (roster.some((p) => p.id === stored) ? stored
+        : (roster.some((p) => p.id === myPersonId) ? myPersonId : (roster[0]?.id ?? null)));
+      if (candidate) personSelect.value = candidate;
+    }
+
+    async function loadContextData() {
+      const rosterSnap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId)));
+      roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], null);
+      renderPersonSelectOptions();
+      selectedPersonId = personSelect.value || null;
+      openFolderPath = [];
+      await refreshAll();
+    }
+
+    personSelect.addEventListener("change", async () => {
+      selectedPersonId = personSelect.value;
+      setSelectedPersonId(selectedPersonId);
+      openFolderPath = [];
+      await refreshAll();
+    });
+
+    tenantSelect.addEventListener("change", async () => {
+      const chosen = myMemberships.find((m) => m.tenantId === tenantSelect.value);
+      if (!chosen) return;
+      activeTenantId = chosen.tenantId;
+      setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
+      renderNav(chosen.roles, null);
+      await loadContextData();
+    });
+
+    // -------------------------------------------------------------------
+    // The toggle itself
+    // -------------------------------------------------------------------
+    function renderToggle() {
+      viewToggle.querySelectorAll(".view-toggle-btn").forEach((btn) => {
+        btn.setAttribute("aria-pressed", String(btn.dataset.view === currentView));
+      });
+      viewFolders.style.display = currentView === "folders" ? "block" : "none";
+      viewTimeline.style.display = currentView === "timeline" ? "block" : "none";
+      viewPath.style.display = currentView === "path" ? "block" : "none";
+    }
+    viewToggle.querySelectorAll(".view-toggle-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        currentView = btn.dataset.view;
+        try { localStorage.setItem(VIEW_KEY, currentView); } catch { /* private browsing -- the choice just doesn't stick */ }
+        renderToggle();
+        renderCurrentView();
+      });
+    });
+
+    function showPageStatus(msg) {
+      pageStatusMsg.textContent = msg;
+      pageStatusMsg.style.display = "block";
+    }
+    function renderReadOnlyBanner() {
+      if (isSelfSelected()) { readOnlyMsg.style.display = "none"; return; }
+      readOnlyMsg.style.display = "block";
+      const name = roster.find((p) => p.id === selectedPersonId);
+      const shownName = name ? langText(name.name, getAppLang(), name.id) : selectedPersonId;
+      readOnlyMsg.textContent = t("You're viewing {name}'s Journey. Only {name} can create folders or file Notes here — you can only read it.", { name: shownName });
+    }
+
+    // -------------------------------------------------------------------
+    // Loading -- ONE read of the folder tree and ONE read of the Notes list,
+    // shared across all three views (never three separate loads for three
+    // separate screens).
+    // -------------------------------------------------------------------
+    async function refreshAll() {
+      renderReadOnlyBanner();
+      if (!activeTenantId || !selectedPersonId) {
+        folderTree = { roots: [], orphaned: [], cyclic: [], tooDeep: [] };
+        allNotes = [];
+        renderCurrentView();
+        return;
+      }
+      [folderTree, allNotes] = await Promise.all([
+        ownerFolderTree(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId }),
+        listNotesForOwner(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId }),
+      ]);
+      if (openFolderPath.length) {
+        // Every folder in the drilled-into path may have just changed (a
+        // virtual system folder's id changing from null once it's created
+        // for real is the common case) -- resolve EACH one fresh out of the
+        // tree we just reloaded, preserving the full breadcrumb, rather than
+        // trusting stale nodes or collapsing back to just the last one.
+        const roots = mergedRoots();
+        const resolved = [];
+        for (const step of openFolderPath) {
+          const found = findByRole(roots, step);
+          if (!found) break; // that folder is gone (retired elsewhere) -- stop at the last one still real
+          resolved.push(found);
+        }
+        openFolderPath = resolved;
+      }
+      renderCurrentView();
+    }
+
+    function findByRole(nodes, node) {
+      for (const f of nodes) {
+        if (f.folderId && node.folderId && f.folderId === node.folderId) return f;
+        if (!f.folderId && !node.folderId && f.semanticRole === node.semanticRole) return f;
+        const child = findByRole(f.children ?? [], node);
+        if (child) return child;
+      }
+      return null;
+    }
+
+    function renderCurrentView() {
+      if (currentView === "folders") renderFoldersView();
+      else if (currentView === "timeline") renderTimelineView();
+      else renderPathView();
+    }
+
+    // -------------------------------------------------------------------
+    // Shared: one Note row, used identically by all three views. Clicking
+    // the head toggles a read-only, sanitized preview of the body -- opening
+    // a Note in place rather than navigating away, since this screen's job
+    // is browsing/organising, not editing (editing a permanent Note is
+    // notes.html's job, scoped to the Study Unit it was written about).
+    // -------------------------------------------------------------------
+    function noteCardHtml(note, { fileControl = false } = {}) {
+      const retired = note.status === NOTE_STATUS.RETIRED;
+      const title = note.title?.trim() || t("(untitled)");
+      const open = expandedNoteIds.has(note.noteId);
+      return `<div class="note-card" data-note-id="${escapeHtml(note.noteId)}">
+        <div class="note-card-head" data-note-toggle>
+          <span class="note-card-title">${escapeHtml(title)}</span>
+          <span class="note-card-meta">${when(note.updatedAt)}</span>
+        </div>
+        <div class="note-body-preview${open ? " open" : ""}" data-note-body></div>
+        <div class="note-actions" data-note-actions style="${open ? "" : "display:none"}">
+          ${fileControl && isSelfSelected() ? `<button type="button" class="secondary tiny" data-note-file>${t("File in a folder…")}</button>` : ""}
+        </div>
+      </div>`;
+    }
+    function when(ts) {
+      const d = ts?.toDate ? ts.toDate() : null;
+      return d ? d.toLocaleString() : "";
+    }
+    function wireNoteCards(container, notes) {
+      container.querySelectorAll("[data-note-id]").forEach((card) => {
+        const noteId = card.dataset.noteId;
+        const note = notes.find((n) => n.noteId === noteId);
+        if (!note) return;
+        card.querySelector("[data-note-toggle]").addEventListener("click", () => {
+          if (expandedNoteIds.has(noteId)) expandedNoteIds.delete(noteId); else expandedNoteIds.add(noteId);
+          card.querySelector("[data-note-body]").classList.toggle("open");
+          card.querySelector("[data-note-actions]").style.display = expandedNoteIds.has(noteId) ? "" : "none";
+          if (expandedNoteIds.has(noteId)) card.querySelector("[data-note-body]").innerHTML = sanitizeNoteHtml(note.bodyHtml || "");
+        });
+        if (expandedNoteIds.has(noteId)) card.querySelector("[data-note-body]").innerHTML = sanitizeNoteHtml(note.bodyHtml || "");
+        card.querySelector("[data-note-file]")?.addEventListener("click", () => openFileDialog(note));
+      });
+    }
+
+    /** Creates the real folder document for a still-virtual system role, once, the first time a write genuinely needs it to exist. */
+    async function ensureRealFolder(node) {
+      if (node.folderId) return node.folderId;
+      const outcome = await safeWrite(
+        () => createNoteFolder(db, {
+          tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid,
+          name: SYSTEM_ROLE_LABEL[node.semanticRole](), semanticRole: node.semanticRole,
+          order: SYSTEM_FOLDER_ROLES.indexOf(node.semanticRole), actorUid: auth.currentUser.uid,
+        }),
+        { collection: TENANT.NOTE_FOLDERS, action: "createNoteFolder(system)" }
+      );
+      return outcome.ok ? outcome.result : null;
+    }
+
+    async function fileNoteInFolder(note, targetNode) {
+      const folderId = await ensureRealFolder(targetNode);
+      if (!folderId) return;
+      const outcome = await safeWrite(
+        () => createNotePlacement(db, {
+          tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid,
+          noteId: note.noteId, folderId, actorUid: auth.currentUser.uid,
+        }),
+        { collection: TENANT.NOTE_PLACEMENTS, action: "createNotePlacement" }
+      );
+      if (!outcome.ok) return;
+      showPageStatus(t('"{title}" filed in {folder}.', { title: note.title?.trim() || t("(untitled)"), folder: folderDisplayName(targetNode) }));
+      await refreshAll();
+    }
+
+    function openFileDialog(note) {
+      const flat = flattenFolders(mergedRoots());
+      const options = flat.map(({ folder, depth }) =>
+        `<option value="${escapeHtml(folder.folderId ?? folder.semanticRole)}">${"— ".repeat(depth)}${escapeHtml(folderDisplayName(folder))}</option>`).join("");
+      const choice = prompt(
+        t('File "{title}" in which folder? Type the exact name shown, or cancel.', { title: note.title?.trim() || t("(untitled)") })
+        + "\n" + flat.map(({ folder, depth }) => `${"— ".repeat(depth)}${folderDisplayName(folder)}`).join("\n")
+      );
+      if (!choice) return;
+      const match = flat.find(({ folder }) => folderDisplayName(folder).trim().toLowerCase() === choice.trim().toLowerCase());
+      if (!match) { showPageStatus(t("No folder matched that name — nothing filed.")); return; }
+      fileNoteInFolder(note, match.folder);
+    }
+
+    // =====================================================================
+    // OPTION A -- Folders
+    // =====================================================================
+    function renderFoldersView() {
+      const roots = mergedRoots();
+      const current = openFolderPath[openFolderPath.length - 1] ?? null;
+
+      let html = "";
+      // NOTHING IS SILENTLY DROPPED (buildFolderTree()'s own rule, carried
+      // into this screen): an orphaned, cyclic or too-deep folder is named
+      // rather than simply missing from the list, even though a fresh build
+      // should never actually produce one through this screen's own writes.
+      const problems = [...folderTree.orphaned, ...folderTree.cyclic, ...folderTree.tooDeep];
+      if (problems.length) {
+        html += `<p class="warn">${escapeHtml(t("{count} folder(s) could not be shown safely and are not listed below — this needs administrator attention.", { count: problems.length }))}</p>`;
+      }
+      if (current) {
+        const crumbs = openFolderPath.map((f, i) =>
+          `<button type="button" data-crumb-index="${i}">${escapeHtml(folderDisplayName(f))}</button>`).join(" &rsaquo; ");
+        html += `<p id="folderCrumb"><button type="button" data-crumb-root>${escapeHtml(t("All folders"))}</button> &rsaquo; ${crumbs}</p>`;
+      }
+
+      if (!current) {
+        html += `<ul class="folder-list">${roots.map((f) => folderRowHtml(f)).join("")}</ul>`;
+        if (isSelfSelected()) {
+          html += `<button type="button" id="newFolderBtn">${t("+ New folder")}</button>
+            <form id="newFolderForm" style="display:none;">
+              <input type="text" id="newFolderName" placeholder="${escapeHtml(t("Folder name"))}" />
+              <button type="submit">${t("Create")}</button>
+              <button type="button" class="secondary" id="newFolderCancel">${t("Cancel")}</button>
+            </form>`;
+        }
+        viewFolders.innerHTML = html;
+        wireFolderRows(roots);
+        wireNewFolderForm();
+        return;
+      }
+
+      // Inside one folder: its own subfolders (if any), then the Notes filed
+      // in it directly.
+      if (current.children?.length) {
+        html += `<ul class="folder-list">${current.children.map((f) => folderRowHtml(f)).join("")}</ul>`;
+      }
+      html += `<div id="folderNotes"></div>`;
+      viewFolders.innerHTML = html;
+      viewFolders.querySelector("[data-crumb-root]").addEventListener("click", () => { openFolderPath = []; renderFoldersView(); });
+      viewFolders.querySelectorAll("[data-crumb-index]").forEach((btn) => {
+        btn.addEventListener("click", () => { openFolderPath = openFolderPath.slice(0, Number(btn.dataset.crumbIndex) + 1); renderFoldersView(); });
+      });
+      wireFolderRows(current.children ?? []);
+      loadFolderContents(current);
+    }
+
+    function folderRowHtml(f) {
+      return `<li><div class="folder-row${isSystemFolderRole(f.semanticRole) ? " system" : ""}" data-folder-role="${escapeHtml(f.semanticRole)}" data-folder-id="${escapeHtml(f.folderId ?? "")}">
+        <span class="folder-row-name">${escapeHtml(folderDisplayName(f))}</span>
+      </div></li>`;
+    }
+    function wireFolderRows(nodes) {
+      viewFolders.querySelectorAll("[data-folder-role]").forEach((row) => {
+        row.addEventListener("click", () => {
+          const folderId = row.dataset.folderId || null;
+          const role = row.dataset.folderRole;
+          const node = findNodeByIdOrRole(mergedRoots(), folderId, role);
+          if (!node) return;
+          openFolderPath = [...openFolderPath, node];
+          renderFoldersView();
+        });
+      });
+    }
+    function findNodeByIdOrRole(nodes, folderId, role) {
+      for (const f of nodes) {
+        if (folderId ? f.folderId === folderId : (!f.folderId && f.semanticRole === role)) return f;
+        const child = findNodeByIdOrRole(f.children ?? [], folderId, role);
+        if (child) return child;
+      }
+      return null;
+    }
+
+    async function loadFolderContents(node) {
+      const target = document.getElementById("folderNotes");
+      if (!node.folderId) {
+        // A virtual system folder with no document yet genuinely holds
+        // nothing -- no query is made, there is nothing to query.
+        target.innerHTML = `<p id="emptyMsg">${escapeHtml(emptyStateFor(node))}</p>`;
+        return;
+      }
+      target.innerHTML = `<p class="note">${t("Loading…")}</p>`;
+      const { rows, truncated } = await folderContents(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, folderId: node.folderId });
+      if (rows.length === 0) {
+        target.innerHTML = `<p id="emptyMsg">${escapeHtml(emptyStateFor(node))}</p>`;
+      } else {
+        target.innerHTML = rows.map(({ note }) => noteCardHtml(note)).join("")
+          + (truncated ? `<p id="truncatedMsg">${escapeHtml(t("Showing the most recent Notes only — there are more in this folder."))}</p>` : "");
+        wireNoteCards(target, rows.map((r) => r.note));
+        // "Move to…" -- only meaningful here, where the CURRENT placement is
+        // known (a Note may be filed in more than one folder, so moving from
+        // a Timeline/Path row would be ambiguous about which filing to
+        // retire -- see fileNoteInFolder() for the unambiguous "add a
+        // filing" action those two views offer instead).
+        if (isSelfSelected()) {
+          rows.forEach(({ placement, note }) => {
+            const card = target.querySelector(`[data-note-id="${CSS.escape(note.noteId)}"] [data-note-actions]`);
+            if (!card) return;
+            const btn = document.createElement("button");
+            btn.type = "button"; btn.className = "secondary tiny"; btn.textContent = t("Move to…");
+            btn.addEventListener("click", () => moveNoteDialog(note, placement, node));
+            card.appendChild(btn);
+          });
+        }
+      }
+      if (isSelfSelected() && allNotes.some((n) => !rows.some((r) => r.note.noteId === n.noteId))) {
+        const fileBtn = document.createElement("button");
+        fileBtn.type = "button"; fileBtn.style.marginTop = "0.6rem"; fileBtn.textContent = t("+ File a Note here…");
+        fileBtn.addEventListener("click", () => {
+          const candidate = allNotes.find((n) => !rows.some((r) => r.note.noteId === n.noteId));
+          if (candidate) fileNoteInFolder(candidate, node);
+        });
+        target.appendChild(fileBtn);
+      }
+    }
+
+    function emptyStateFor(node) {
+      if (node.semanticRole === "journey-map") return t("Your Personal Journey Map is empty so far — Notes you file here will appear as your own journey through what you've studied.");
+      if (node.semanticRole === "reflection-archive") return t("Your Reflection Archive is empty so far — file a Note here to keep it as a longer-term reflection, separate from your day-to-day journey.");
+      return t("This folder is empty.");
+    }
+
+    async function moveNoteDialog(note, placement, fromNode) {
+      const flat = flattenFolders(mergedRoots()).filter(({ folder }) => !(folder.folderId ? folder.folderId === fromNode.folderId : folder.semanticRole === fromNode.semanticRole));
+      const choice = prompt(
+        t('Move "{title}" to which folder? Type the exact name shown, or cancel.', { title: note.title?.trim() || t("(untitled)") })
+        + "\n" + flat.map(({ folder, depth }) => `${"— ".repeat(depth)}${folderDisplayName(folder)}`).join("\n")
+      );
+      if (!choice) return;
+      const match = flat.find(({ folder }) => folderDisplayName(folder).trim().toLowerCase() === choice.trim().toLowerCase());
+      if (!match) { showPageStatus(t("No folder matched that name — nothing moved.")); return; }
+      const toFolderId = await ensureRealFolder(match.folder);
+      if (!toFolderId) return;
+      const outcome = await safeWrite(
+        () => moveNoteToFolder(db, {
+          tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid,
+          noteId: note.noteId, fromPlacementId: placement.placementId, toFolderId, actorUid: auth.currentUser.uid,
+        }),
+        { collection: TENANT.NOTE_PLACEMENTS, action: "moveNoteToFolder" }
+      );
+      if (!outcome.ok) return;
+      showPageStatus(t('"{title}" moved to {folder}.', { title: note.title?.trim() || t("(untitled)"), folder: folderDisplayName(match.folder) }));
+      await refreshAll();
+    }
+
+    function wireNewFolderForm() {
+      const btn = document.getElementById("newFolderBtn");
+      const form = document.getElementById("newFolderForm");
+      if (!btn || !form) return;
+      btn.addEventListener("click", () => { form.style.display = "flex"; btn.style.display = "none"; document.getElementById("newFolderName").focus(); });
+      document.getElementById("newFolderCancel").addEventListener("click", () => { form.style.display = "none"; btn.style.display = "inline-block"; });
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const name = document.getElementById("newFolderName").value.trim();
+        if (!name) return;
+        // Round-1 folders are top-level only (parentFolderId: null) -- the
+        // data layer supports nesting up to MAX_FOLDER_DEPTH, but a UI for
+        // choosing a parent is not built this round; see the PR notes.
+        const outcome = await safeWrite(
+          () => createNoteFolder(db, {
+            tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid,
+            name, semanticRole: "user", order: mergedRoots().length, actorUid: auth.currentUser.uid,
+          }),
+          { collection: TENANT.NOTE_FOLDERS, action: "createNoteFolder" }
+        );
+        if (!outcome.ok) return;
+        showPageStatus(t('Folder "{name}" created.', { name }));
+        await refreshAll();
+      });
+    }
+
+    // =====================================================================
+    // OPTION B -- Timeline
+    // =====================================================================
+    function timelineFilters() {
+      const roots = mergedRoots();
+      return [
+        { key: "everything", label: t("Everything") },
+        ...roots.map((f) => ({ key: f.folderId ? `folder:${f.folderId}` : `role:${f.semanticRole}`, label: folderDisplayName(f), node: f })),
+      ];
+    }
+
+    async function timelineNotesForFilter() {
+      if (timelineFilter === "everything") return allNotes;
+      const filters = timelineFilters();
+      const chosen = filters.find((f) => f.key === timelineFilter);
+      if (!chosen?.node) return allNotes;
+      if (!chosen.node.folderId) return []; // a virtual folder with no document has nothing filed in it
+      const { rows } = await folderContents(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, folderId: chosen.node.folderId });
+      return rows.map((r) => r.note);
+    }
+
+    // A token, not just an element lookup, is what keeps a slow filter
+    // switch from overwriting a faster later one: clicking a second chip
+    // before the first's folderContents() read resolves re-renders the
+    // chips AND a fresh #timelineBody, so a bare getElementById() after the
+    // await would find (and wrongly fill) the SECOND click's own container
+    // with the FIRST click's stale results.
+    let timelineRenderToken = 0;
+    async function renderTimelineView() {
+      const myToken = ++timelineRenderToken;
+      const filters = timelineFilters();
+      const chipsHtml = `<div class="filter-chips">${filters.map((f) =>
+        `<button type="button" class="filter-chip" data-filter="${escapeHtml(f.key)}" aria-pressed="${f.key === timelineFilter}">${escapeHtml(f.label)}</button>`).join("")}</div>`;
+      viewTimeline.innerHTML = chipsHtml + `<div id="timelineBody"><p class="note">${t("Loading…")}</p></div>`;
+      viewTimeline.querySelectorAll("[data-filter]").forEach((btn) => {
+        btn.addEventListener("click", () => { timelineFilter = btn.dataset.filter; renderTimelineView(); });
+      });
+
+      const notes = await timelineNotesForFilter();
+      if (myToken !== timelineRenderToken) return; // a later click already superseded this one
+      const body = document.getElementById("timelineBody");
+      if (!body) return; // the view was switched away while this was loading
+      if (notes.length === 0) {
+        body.innerHTML = `<p id="emptyMsg">${escapeHtml(t("Nothing here yet — Notes you write will appear on your timeline the day you write them."))}</p>`;
+        return;
+      }
+      // Newest first, grouped by calendar day (the issue's own spec).
+      const sorted = [...notes].sort((a, b) => (b.updatedAt?.toMillis?.() ?? 0) - (a.updatedAt?.toMillis?.() ?? 0));
+      let lastDay = null;
+      let html = "";
+      for (const note of sorted) {
+        const d = note.updatedAt?.toDate ? note.updatedAt.toDate() : null;
+        const dayKey = d ? d.toDateString() : t("Unknown date");
+        if (dayKey !== lastDay) { html += `<div class="timeline-day">${escapeHtml(d ? d.toLocaleDateString() : t("Unknown date"))}</div>`; lastDay = dayKey; }
+        html += noteCardHtml(note, { fileControl: true });
+      }
+      body.innerHTML = html;
+      wireNoteCards(body, sorted);
+    }
+
+    // =====================================================================
+    // OPTION C -- Path
+    // =====================================================================
+    // A HONEST FIRST PASS, per the issue's own instruction, not the full
+    // path metaphor the options doc describes. It renders every Note as a
+    // stop on one straight vertical track, oldest first (a journey read top
+    // to bottom), which is enough to compare against Folders and Timeline.
+    //
+    // WHAT THIS DOES NOT BUILD, stated rather than silently skipped: the
+    // options doc's own "named regions the path passes through" (Journey Map
+    // / Archive) and "side-trails" for a person's own folders. A Note can be
+    // filed in more than one folder at once (ADR-010 §5), so a single
+    // continuous path cannot honestly show "this stretch IS the Archive" --
+    // a Note filed in both the Archive and a side folder would need to sit
+    // in two places on one line at once. A real build of the region/
+    // side-trail version needs that resolved first (e.g. one path per
+    // region with cross-links, or a branching diagram rather than a single
+    // line) -- genuinely more design work than this round's honest-first-
+    // pass budget, exactly as the issue anticipated.
+    function renderPathView() {
+      if (allNotes.length === 0) {
+        viewPath.innerHTML = `<p id="emptyMsg">${escapeHtml(t("Your path is empty so far — every Note you write will appear here as a new stop, oldest to newest."))}</p>`;
+        return;
+      }
+      const sorted = [...allNotes].sort((a, b) => (a.updatedAt?.toMillis?.() ?? 0) - (b.updatedAt?.toMillis?.() ?? 0));
+      viewPath.innerHTML = `<div id="pathTrack">${sorted.map((note) => {
+        const d = note.updatedAt?.toDate ? note.updatedAt.toDate() : null;
+        return `<div class="path-stop" data-note-id="${escapeHtml(note.noteId)}">
+          <div class="path-stop-date">${escapeHtml(d ? d.toLocaleDateString() : "")}</div>
+          ${noteCardHtml(note, { fileControl: true })}
+        </div>`;
+      }).join("")}</div>`;
+      wireNoteCards(viewPath, sorted);
+    }
+
+    // -----------------------------------------------------------------------
+    // Sign-in / bootstrap -- same shape as notes.html / bookmarks.html.
+    // -----------------------------------------------------------------------
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        whoEl.textContent = t("Not signed in.");
+        signInBtn.style.display = "inline-block";
+        signOutBtn.style.display = "none";
+        appEl.style.display = "none";
+        return;
+      }
+      whoEl.textContent = t("Signed in as {email}", { email: user.email });
+      signInBtn.style.display = "none";
+      signOutBtn.style.display = "inline-block";
+
+      try {
+        const userIndexSnap = await getDoc(doc(db, TENANT.USER_INDEX, user.uid));
+        if (adoptAppLangFromUserIndex(userIndexSnap)) return;
+        const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
+        const { context, memberships } = await bootstrapContext(db, user.uid, defaultTenantId);
+        if (!context) {
+          whoEl.innerHTML += noAccountMessageHtml();
+          return;
+        }
+        activeTenantId = context.tenantId;
+        myMemberships = memberships;
+        tenantSelect.innerHTML = myMemberships
+          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
+          .join("");
+
+        renderToggle();
+        appEl.style.display = "block";
+        await loadContextData();
+      } catch (err) {
+        console.error(err);
+        whoEl.textContent += ` — ${err.message}`;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MMSA task bridge — `retirePermanentNote()` would be denied by the accepted Phase 5 Rules candidate</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MMSA task bridge — <code>retirePermanentNote()</code> would be denied by the accepted Phase 5 Rules candidate</h1>
+<p><strong>Date:</strong> 20 September 2026 <strong>Origin:</strong> issue #100, comment [5749486448](https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/issues/100#issuecomment-5749486448) — &quot;Resume actual QuranRevival MAP implementation from current MMSA <code>main</code> (v08.31).&quot; <strong>Status: CANDIDATE. Not merged. Nothing deployed.</strong> <code>app/js/version.js</code> stays <code>08.31</code> — this round is a correctness fix inside an already-uninvoked module, not a shipped behaviour change, and it is not claimed as one.</p>
+<hr>
+<h2>1. What was asked, and how the candidate was chosen</h2>
+<p>The task asked to resume MAP product work: find one bounded, genuinely unfinished tranche in Quran-owned, non-protected paths, preferring Study/Word Card/Mapping My Journey, and to fall back to the next independent buildable item if the first candidate needs a deferred architecture decision or a protected/shared path.</p>
+<p><strong>Every remaining MAP tranche in Study/Word Card/Mapping My Journey that would be new user-visible capability turned out to be blocked, and each is named rather than silently skipped:</strong></p>
+<ul><li><code>DDR-001</code>–<code>DDR-004</code> (<code>docs/governance/DDR.md</code>) lock the non-Quran progress model, subject-scoped teacher authority, translator selection, and the 30-Approach count — all Owner/Master Architect decisions, none reopened here.</li><li>Every remaining Note Foundation / Mapping My Journey capability that would matter to a real reader (the Note editor surface, any Journey Map screen, deploying the Phase 4/5/6 Rules and indexes) is gated on <strong>E1 — Firestore Rules deployment</strong>, which <code>CLAUDE.md</code>&#x27;s current milestone records as still CLOSED, and Rules/index deployment is explicitly a protected path this bridge must not touch.</li><li>Closing the remaining translation-coverage gap (<code>node tools/i18n-coverage.mjs</code> reports 61 missing strings) is <em>not</em> an Owner-gated decision — <code>DDR.md</code>&#x27;s own &quot;Corrected non-DDR items&quot; says so — but every missing string lives in <code>app/js/i18n/bn.js</code>, which is on this bridge&#x27;s protected/shared-path table. Flagged, not touched.</li><li>&quot;Edit banner needs a home&quot; (<code>LAYOUT-BACKLOG.md</code> item 7) is real, small, and fully specified, but wiring its link into Home → Settings needs an edit to <code>app/js/nav.js</code>, also on the protected table.</li></ul>
+<p><strong>So the search moved to the exact method this codebase already uses for safe MAP progress under E1 closure</strong>: read what the accepted-but-undeployed Rules CANDIDATES authorise, then check whether the JS data layer can actually perform it — in <strong>both directions</strong>, including the direction this repository&#x27;s own standing lessons note nobody had run yet: <em>does the data layer ever write a shape the Rules candidate would refuse?</em></p>
+<p>That reverse-direction check found a real, mechanically-provable defect.</p>
+<hr>
+<h2>2. The defect</h2>
+<p><code>app/js/note-foundation.js</code>&#x27;s <code>retirePermanentNote()</code> — the only way <code>study-note-service.js</code>&#x27;s <code>retireStudyNote()</code> retires a permanent Note — did exactly one write:</p>
+<p>``<code>js transaction.update(TENANT.NOTES, noteDocId, { status: NOTE_STATUS.RETIRED }); </code>``</p>
+<p><code>docs/governance/phase5-note-foundation-rules-candidate-2026-09-15.rules</code>&#x27;s <code>notes/{noteKey}</code> match block applies <code>committedRevisionMatches(resource.data.currentRevisionId)</code> to <strong>every</strong> <code>allow update</code>, not only a content revision:</p>
+<p>``<code> function committedRevisionMatches(previousRevisionId) {   return existsAfter(revisionRef(d().currentRevisionId))       &amp;&amp; getAfter(revisionRef(d().currentRevisionId)).data.noteId == d().noteId       &amp;&amp; getAfter(revisionRef(d().currentRevisionId)).data.tenantId == d().tenantId       &amp;&amp; getAfter(revisionRef(d().currentRevisionId)).data.ownerPersonId == d().ownerPersonId       &amp;&amp; getAfter(revisionRef(d().currentRevisionId)).data.get(&#x27;previousRevisionId&#x27;, null) == previousRevisionId; } </code>``</p>
+<p>A status-only update leaves <code>currentRevisionId</code> pointing at the <strong>same</strong> revision it already named. The rule then requires that revision&#x27;s own <code>previousRevisionId</code> field to equal itself — a revision chaining from itself, which is never true (a revision&#x27;s <code>previousRevisionId</code> is fixed at its own creation). <strong>Every retire would therefore be denied the moment this Rules candidate is deployed.</strong> The same text is carried unchanged into the assembled <code>phase4-6-DEPLOYMENT-candidate-2026-09-17.rules</code>, so it is not fixed downstream either.</p>
+<p><strong>The emulator suite&#x27;s own IMM-03b case had already recorded the correct shape by hand</strong>, and passed only because it hand-crafts a batch write (a new revision plus the status/<code>currentRevisionId</code> update) rather than calling the real function:</p>
+<p>``<code>js // tools/firestore-emulator/note-foundation-v1.rules.test.mjs (protected — read only, not touched) await ok(&quot;IMM-03b&quot;, &quot;retiring writes a status instead&quot;, (() =&gt; {   const b = writeBatch(p1);   b.set(doc(p1, &quot;noteRevisions&quot;, nk(T, &quot;rev...009&quot;)),     revDoc({ revisionId: &quot;rev...009&quot;, previousRevisionId: REV2, revisionReason: &quot;retired&quot; }));   b.update(doc(p1, &quot;notes&quot;, nk(T, NOTE)), { status: &quot;retired&quot;, currentRevisionId: &quot;rev...009&quot;, updatedAt: new Date() });   return b.commit(); })()); </code>``</p>
+<p>So the accepted design was correct, and never implemented. The data layer&#x27;s own unit tests never caught it either: <code>tools/i18n-verify/note-foundation-data-layer.mjs</code> never called <code>retirePermanentNote()</code> at all, and <code>tools/i18n-verify/study-note-service.mjs</code> stubs it out completely (<code>retirePermanentNote: async (_db, args) =&gt; { calls.retire.push(args); }</code>), so nothing anywhere exercised its real write shape until this round.</p>
+<hr>
+<h2>3. The fix</h2>
+<p><code>retirePermanentNote()</code> now commits a real revision when it retires a Note — the exact shape IMM-03b already expected:</p>
+<p>```js export async function retirePermanentNote(db, { tenantId, noteId, expectedRevisionId, actorUid }) {   const noteDocId = noteFoundationDocId(tenantId, noteId);   const revisionId = newNoteEntityId();   await runEnvelopeTransaction(db, actorUid, async (transaction) =&gt; {     const snapshot = await transaction.get(TENANT.NOTES, noteDocId);     if (!snapshot.exists()) throw new Error(&quot;Note does not exist.&quot;);     const note = snapshot.data();     if (note.currentRevisionId !== expectedRevisionId) throw new Error(&quot;Stale Note revision.&quot;);</p>
+<p>    transaction.create(TENANT.NOTE_REVISIONS, noteFoundationDocId(tenantId, revisionId), {       revisionId, noteId,       tenantId: note.tenantId, ownerPersonId: note.ownerPersonId, ownerUid: note.ownerUid ?? null,       previousRevisionId: expectedRevisionId,       title: note.title, bodyHtml: note.bodyHtml,       revisionReason: &quot;retired&quot;, actorUid,     });     transaction.update(TENANT.NOTES, noteDocId, { status: NOTE_STATUS.RETIRED, currentRevisionId: revisionId });   });   return revisionId; } ```</p>
+<p>Title and body are carried forward unchanged into the retirement revision — retiring is not a content edit, and <code>updatePermanentNoteContent()</code>&#x27;s own <code>noteShapeOk()</code>-satisfying shape already relies on the Rules seeing a full, valid document, not a partial one. <code>envelope.js</code>&#x27;s <code>createDocument</code>/<code>runEnvelopeTransaction</code> (untouched, and outside this bridge&#x27;s edit anyway — it lives in <code>app/js/envelope.js</code>, not on the protected list, but nothing about it needed to change) stamps the usual <code>schemaVersion</code>/<code>createdAt</code>/<code>updatedAt</code>/<code>createdBy</code> envelope on both writes, satisfying <code>noteRevisions</code>&#x27; own <code>hasAll</code>/<code>hasOnly</code> list unchanged.</p>
+<p>The single caller, <code>study-note-service.js</code>&#x27;s <code>retireStudyNote()</code>, is unaffected: it never used the old function&#x27;s (nonexistent) return value, and the new returned <code>revisionId</code> is additive.</p>
+<hr>
+<h2>4. Change budget</h2>
+<p><strong>Touched, all Quran-owned and none on the protected/shared-path table:</strong></p>
+<div class='tw'><table><thead><tr><th>File</th><th>Change</th></tr></thead><tbody>
+<tr><td><code>app/js/note-foundation.js</code></td><td><code>retirePermanentNote()</code> now commits a real revision (see §3). One existing line replaced; nothing else in the file changed.</td></tr>
+<tr><td><code>tools/i18n-verify/note-foundation-data-layer.mjs</code></td><td>New focused section: 11 assertions exercising the real function (not a stub) against the fixed shape, plus the two pre-existing error paths (stale revision, missing Note).</td></tr>
+<tr><td><code>tools/i18n-verify/study-note-boundary.mjs</code></td><td>Its &quot;insertion only&quot; guard against <code>note-foundation.js</code> is narrowed from &quot;0 removed lines&quot; to &quot;removed lines are exactly the one pinned line this round replaces&quot; — see §5.</td></tr>
+<tr><td><code>tools/i18n-verify/journey-map-boundary.mjs</code></td><td>Same narrowing, same reason — it carries an identical guard over the same file.</td></tr>
+<tr><td>This report (<code>.md</code> + <code>.html</code>)</td><td>New.</td></tr>
+</tbody></table></div>
+<p><strong>Not touched:</strong> <code>app/js/version.js</code>, <code>CLAUDE.md</code>, <code>CHANGELOG.md</code>, <code>app/js/i18n/bn.js</code>, <code>app/js/nav.js</code>, <code>app/js/unit-keys.js</code>, <code>app/js/records.js</code>, <code>app/js/activity.js</code>, <code>app/js/catalogue-data.js</code>, <code>app/css/shell.css</code>, anything under <code>docs/governance/</code> (including every <code>.rules</code>/index candidate and the ledger), <code>firestore.rules</code>, <code>firebase.json</code>, <code>tests/firestore/</code>, <code>tools/firestore-emulator/</code>, <code>.github/workflows/</code>, <code>tools/i18n-verify/behaviour.mjs</code>, <code>harness.mjs</code>, <code>firebase-stub.mjs</code>, <code>brief-integrity.mjs</code>, <code>programme-ledger.mjs</code>, <code>programme-ledger-mutations.mjs</code>. No Rules, index, or deployment change of any kind. No merge.</p>
+<p><strong>App version:</strong> unchanged at <code>08.31</code>. <strong><code>08.32</code> remains unallocated.</strong> This fix has no user-visible effect today — <code>note-foundation.js</code> is still imported by nothing reachable from any page (unaffected by this round; see the boundary suites above, both still green) — so there is no live behaviour to gate a version bump on. If a future round wires a Note surface to this module, that round&#x27;s own version allocation is the Master Architect&#x27;s, not predicted here.</p>
+<hr>
+<h2>5. Why two existing checks were narrowed, not weakened</h2>
+<p><code>study-note-boundary.mjs</code> and <code>journey-map-boundary.mjs</code> each carry a guard reading, in effect, &quot;<code>app/js/note-foundation.js</code> changed by insertion only — 0 removed lines,&quot; which is how earlier rounds mechanically proved &quot;every existing export still behaves exactly as it did&quot; without having to re-read the whole file by eye every time.</p>
+<p>That claim is genuinely incompatible with fixing a bug <strong>inside</strong> an existing function: the one line this round removes is the exact line that was wrong. Weakening the guard to &quot;some lines may be removed&quot; would have let a future round reshape anything in this file unnoticed — the opposite of what the guard is for. So both guards keep the same strength for everything else and add exactly one named exception:</p>
+<p>``<code>js const NOTE_FOUNDATION_PINNED_REMOVAL =   &quot;-    transaction.update(TENANT.NOTES, noteDocId, { status: NOTE_STATUS.RETIRED });&quot;; // removedLines must deep-equal [NOTE_FOUNDATION_PINNED_REMOVAL] — anything else still fails </code>``</p>
+<p><strong>Proven both ways, not assumed:</strong></p>
+<ul><li>With the fix applied and no other change, both suites pass (17/0 and 13/0 — one more executing check than the prior baseline, since the guard now runs to completion instead of failing).</li><li>With the fix reverted (<code>git stash</code> on <code>app/js/note-foundation.js</code> alone), the new focused test in <code>note-foundation-data-layer.mjs</code> fails exactly where expected (<code>create:noteRevisions</code> missing from the write sequence) — this is the direct mutation proof that the new test catches the original defect.</li><li>With an unrelated, deliberately introduced removal in <code>note-foundation.js</code> (a mutation of <code>NOTE_VISIBILITY</code>&#x27;s own declaration, reverted immediately after), both narrowed guards still fail, naming the extra line — proving the exception is pinned to exactly the one line this round claims, not loosened generally.</li></ul>
+<hr>
+<h2>6. Tests</h2>
+<p><strong>New:</strong> <code>tools/i18n-verify/note-foundation-data-layer.mjs</code> gained 11 assertions calling the real <code>retirePermanentNote()</code> (not a stub) and checking:</p>
+<ul><li>the write sequence is <code>create:noteRevisions</code> then <code>update:notes</code> (not the old single <code>update:notes</code>);</li><li>the new revision&#x27;s <code>previousRevisionId</code> chains from the revision being left behind, and its <code>revisionReason</code> is <code>&quot;retired&quot;</code>;</li><li>the new revision carries the Note&#x27;s own <code>noteId</code>/<code>tenantId</code>/<code>ownerPersonId</code>;</li><li>the Note&#x27;s own update sets <code>status: &quot;retired&quot;</code> <strong>and</strong> <code>currentRevisionId</code> to the freshly minted revision id, never the old one;</li><li>the existing stale-revision and missing-Note error paths are unchanged.</li></ul>
+<p><strong>Updated:</strong> the two &quot;insertion only&quot; boundary guards above, narrowed with a pinned, mutation-proven exception (§5).</p>
+<p><strong>Run (repository root, full history and all branches fetched first, per the known checkout-artifact lesson in <code>PHASE-5-STATUS.md</code>/<code>CLAUDE.md</code>&#x27;s own standing lessons):</strong></p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>note-foundation-data-layer</code></td><td>47 + 30 P6-D + 18 P5-F/P6-E + 11 retire-revision = 106 assertions passed</td></tr>
+<tr><td><code>note-foundation-boundary</code></td><td>30 passed, 0 failed</td></tr>
+<tr><td><code>note-foundation-transaction</code></td><td>16 assertions passed</td></tr>
+<tr><td><code>note-foundation-size-preflight</code></td><td>5 synthetic fixtures measured, no Firestore claim</td></tr>
+<tr><td><code>note-foundation-emulator-scaffold</code></td><td>31 passed, 0 failed</td></tr>
+<tr><td><code>study-note-service</code></td><td>35 passed</td></tr>
+<tr><td><code>study-note-boundary</code></td><td>17 passed, 0 failed</td></tr>
+<tr><td><code>study-note-binding</code></td><td>16 passed</td></tr>
+<tr><td><code>journey-map-service</code></td><td>18 passed</td></tr>
+<tr><td><code>journey-map-boundary</code></td><td>13 passed, 0 failed</td></tr>
+<tr><td><code>journey-map-contract</code></td><td>34 passed</td></tr>
+<tr><td><code>hadith-corpus</code> (forbidden-token scan names <code>note-foundation.js</code>)</td><td>33 passed, 0 failed</td></tr>
+</tbody></table></div>
+<p><strong>Seven governance suites required by the task bridge (repository root, full history fetched):</strong></p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>programme-ledger</code></td><td>8 passed, 23 noted, 0 failed</td></tr>
+<tr><td><code>programme-ledger-mutations</code></td><td>49 passed, 0 failed</td></tr>
+<tr><td><code>brief-integrity</code></td><td>8 passed, 0 failed</td></tr>
+<tr><td><code>study-activity-evidence-boundary</code></td><td>27 passed, 0 failed</td></tr>
+<tr><td><code>study-activity-evidence-boundary-mutations</code></td><td>11 passed, 0 failed</td></tr>
+<tr><td><code>study-event-wiring</code></td><td>41 passed, 0 failed</td></tr>
+<tr><td><code>rules-authorisation-executable</code></td><td>40 passed, 0 failed (was 38 on the unmodified baseline — the two new passes are <code>notes</code>&#x27;s own FORWARD/BACKWARD field checks now exercising the fixed shape)</td></tr>
+</tbody></table></div>
+<p>All thirteen suites run in this round exit 0.</p>
+<hr>
+<h2>7. Acceptance gaps and what this does NOT do</h2>
+<ul><li><strong>This is not deployed and cannot be</strong>, whatever it fixes: <code>notes</code>/<code>noteRevisions</code>/<code>noteSources</code> still carry no live Firestore Rule (E1 remains closed per <code>CLAUDE.md</code>&#x27;s current milestone), so retiring a permanent Note is still denied in production today — exactly as it was before this round, for the unrelated reason that nothing is deployed at all. This round makes the CANDIDATE correct; it does not make the feature usable.</li><li><strong><code>note-foundation.js</code> remains imported by nothing reachable from any page.</strong> Both boundary suites above still assert that, unchanged.</li><li><strong>A second, real gap the same investigation found is NOT closed here, and is flagged rather than folded in:</strong> the Phase 5 Rules candidate authorises creating a <code>noteSources</code> link against any existing, owned Note (<code>REL-01</code> only checks the Note exists and is the owner&#x27;s) — but the data layer creates a <code>noteSources</code> document in exactly one place, inside <code>createPermanentNote()</code> at birth. Nothing can add a second source link to an already-existing Note, so <code>relationshipKind: &quot;reference&quot;</code> (defined in <code>study-note-binding.js</code>) is only ever settable at creation, and re-binding a Note to a second Study Unit after the fact is unreachable. <code>retireNoteSource()</code> (P5-F) covers the retire half of that lifecycle only. This is a genuine &quot;an accepted decision no code can perform&quot; gap of the same shape as the one this round closed, and it is a reasonable next bounded tranche — deliberately left for its own round rather than widening this one.</li><li><strong>No rollback is needed against any live system</strong>: nothing was deployed, and the only affected artefact is an uninvoked module plus its own tests.</li></ul>
+<hr>
+<h2>8. Rollback</h2>
+<p>Revert this commit. <code>retirePermanentNote()</code> returns to its pre-existing (defective) single-line update; the two boundary guards return to their unnarrowed form; the new test section is removed with it. No data, Rule, or index is affected either way, because none was touched.</p>
+</main></body></html>

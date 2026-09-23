@@ -50,8 +50,9 @@
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
 import { createDocument, updateDocument } from "./envelope.js";
-import { DEFAULT_ASMA_COLLECTIONS, DEFAULT_EXTRA_ASMA_NAMES, DEFAULT_WEAK_CANONICAL_NUMBERS, DEFAULT_CANONICAL_REFS } from "./asma-collections-data.js";
+import { DEFAULT_ASMA_COLLECTIONS, DEFAULT_EXTRA_ASMA_NAMES, DEFAULT_WEAK_CANONICAL_NUMBERS, DEFAULT_CANONICAL_REFS, DEFAULT_ASMA_CLASSIFICATIONS } from "./asma-collections-data.js";
 import { getAsmaName } from "./asma-data.js";
+import { buildUnitKey } from "./unit-keys.js";
 
 function normalizeCollection(c) {
   return {
@@ -71,7 +72,27 @@ function normalizeCollection(c) {
     // DEFAULT_ASMA_COLLECTIONS's own header) -- the owner populates this
     // list themselves, since guessing which Names count as a traditional
     // pair is a real content decision, not a coding one.
-    kind: c?.kind === "dual" ? "dual" : "group",
+    //
+    // Classifications round -- 23 Sep 2026: `kind` was a closed 2-value
+    // set ("dual" or else "group"), which is exactly what made "Group" and
+    // "Dual Names" the only two classifications the app could ever browse.
+    // It is any non-empty string now -- one of the classifications registry's
+    // own `key`s (classificationsFrom(), below) -- with "group" as the
+    // fallback for a missing/blank value, so every collection ever saved
+    // before this round (every one of them either genuinely "group" or
+    // "dual", or simply absent and meaning "group") reads exactly as it did
+    // before. I5 holds: a collection's `kind` is never the permanent key
+    // anything is claimed against -- only which list it is.
+    kind: (typeof c?.kind === "string" && c.kind.trim()) ? c.kind.trim() : "group",
+  };
+}
+
+function normalizeClassification(c) {
+  return {
+    key: String(c?.key ?? "").trim(),
+    title: c?.title ?? { en: "" },
+    order: Number.isFinite(Number(c?.order)) ? Number(c.order) : 999,
+    status: c?.status === "archived" ? "archived" : "active",
   };
 }
 
@@ -139,6 +160,18 @@ export function refOverridesFrom(docData) {
   return stored && typeof stored === "object" ? stored : {};
 }
 
+/** Classifications round -- 23 Sep 2026: the open, owner-extensible set of
+ *  classifications (the classification a collection's own `kind` names).
+ *  Same "tenant's own saved list wins the moment it exists, else the
+ *  seed" fallback as collectionsFrom()/extraNamesFrom() above -- a
+ *  brand-new tenant sees the two classifications every existing
+ *  collection already implicitly belongs to, not an empty switcher. */
+export function classificationsFrom(docData) {
+  const stored = docData?.classifications;
+  if (Array.isArray(stored) && stored.length) return stored.map(normalizeClassification);
+  return DEFAULT_ASMA_CLASSIFICATIONS.map(normalizeClassification);
+}
+
 export function activeCollections(collections) {
   return collections.filter((c) => c.status === "active").sort((a, b) => a.order - b.order);
 }
@@ -147,12 +180,24 @@ export function activeExtraNames(extraNames) {
   return extraNames.filter((e) => e.status === "active");
 }
 
+export function activeClassifications(classifications) {
+  return classifications.filter((c) => c.status === "active").sort((a, b) => a.order - b.order);
+}
+
 export function newCollectionId() {
   return `asmacat_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 }
 
+export function newClassificationKey() {
+  return `class_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+}
+
 export function nextCollectionOrder(collections) {
   return collections.reduce((max, c) => Math.max(max, c.order), 0) + 10;
+}
+
+export function nextClassificationOrder(classifications) {
+  return classifications.reduce((max, c) => Math.max(max, c.order), 0) + 10;
 }
 
 export function nextExtraNameNumber(extraNames) {
@@ -205,6 +250,59 @@ export function removeItem(collections, collectionId, unitKey) {
 export function moveItem(collections, fromId, toId, unitKey) {
   if (fromId === toId) return collections;
   return addItem(removeItem(collections, fromId, unitKey), toId, unitKey);
+}
+
+// ---------------------------------------------------------------------------
+// Classifications round -- 23 Sep 2026. Pure editing helpers for the
+// classifications registry, the exact same CRUD shape as the collection
+// helpers above (addCollection/renameCollection/setCollectionStatus): array
+// in, array out, the page controller decides when to persist. I4 holds here
+// too -- setClassificationStatus only ever archives/restores, a
+// classification's own lists (and every Name still filed in them) are
+// untouched by archiving it.
+// ---------------------------------------------------------------------------
+
+export function addClassification(classifications, partial) {
+  return [
+    ...classifications,
+    normalizeClassification({
+      ...partial,
+      key: partial.key || newClassificationKey(),
+      order: partial.order ?? nextClassificationOrder(classifications),
+    }),
+  ];
+}
+
+export function renameClassification(classifications, key, title) {
+  return classifications.map((c) => (c.key === key ? normalizeClassification({ ...c, title }) : c));
+}
+
+/** I4: archive/restore only -- a collection whose `kind` names an archived
+ *  classification is untouched (its own `status` field is what says
+ *  whether IT is browsable), so archiving a classification only ever
+ *  stops it being offered as somewhere new to add a collection or file a
+ *  Name; every list and membership already filed under it stays exactly as
+ *  it was and stays reachable by anything (like a "Belongs to"/"also in…"
+ *  chip) that already names the collection directly. */
+export function setClassificationStatus(classifications, key, status) {
+  return classifications.map((c) =>
+    c.key === key ? normalizeClassification({ ...c, status: status === "archived" ? "archived" : "active" }) : c
+  );
+}
+
+/** Every list (of ANY classification) this Name currently belongs to --
+ *  the reverse index the "Belongs to"/"also in…" chips and the existing
+ *  cross-classification "which lists is this Name in" picker
+ *  (quranrevival.html's own openAsmaXGroupsPopover) read from. Pure and
+ *  O(collections x items); no new Firestore call (I9). Includes an
+ *  archived collection's own membership -- I4 never drops a membership
+ *  record just because the list holding it was archived, it only stops
+ *  that list being offered as somewhere NEW to file something. */
+export function membershipsOfName(collections, number) {
+  const unitKey = buildUnitKey.name(number);
+  return collections
+    .filter((c) => (c.items ?? []).includes(unitKey))
+    .map((c) => ({ collectionId: c.id, kind: c.kind }));
 }
 
 // ---------------------------------------------------------------------------
@@ -421,13 +519,22 @@ export async function getAsmaCollectionsDoc(db, tenantId) {
  *  qcr.js's own saveQcrCollections() uses. I15: a failure reaches the user
  *  through safeWrite(); the caller rolls the optimistic in-memory change
  *  back on failure. */
-export async function saveAsmaCollections(db, { tenantId, collections, extraNames, overrides, overridesEn, refOverrides, docExists, uid }) {
+export async function saveAsmaCollections(db, { tenantId, collections, extraNames, overrides, overridesEn, refOverrides, classifications, docExists, uid }) {
   const payload = {
     collections,
     extraNames,
     nameOverrides: overrides,
     nameOverridesEn: overridesEn ?? {},
     nameRefOverrides: refOverrides ?? {},
+    // Classifications round -- 23 Sep 2026, additive on this SAME document
+    // (no new collection, no new read, no Rules change -- firestore.rules'
+    // own `allow update: if canAdminCatalogue(tenantId)` for this document
+    // carries no hasOnly() field restriction, confirmed by reading it
+    // directly rather than assumed). Falls back to the seeded two so a
+    // tenant that has never touched classifications still writes a real,
+    // resolvable value rather than an empty array that would out-race the
+    // seed on the next read.
+    classifications: classifications ?? DEFAULT_ASMA_CLASSIFICATIONS.map(normalizeClassification),
     tenantId,
   };
   if (docExists) {

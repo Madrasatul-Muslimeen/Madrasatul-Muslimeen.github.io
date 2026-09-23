@@ -119,6 +119,19 @@ const SETTINGS_LINKS = [
 // Phase 13 round 1: About reads the feature registry live (getFullRegistry()).
 const ABOUT_LINKS = [{ href: "about.html", label: "About" }];
 
+// MAP Phase 6 (P6-F, issue #199): the Mapping My Journey screen's own entry
+// point. Placed under Home rather than Modules -- it is not a study module
+// with its own subject tree, it is a whole-app, whole-person screen over
+// permanent Notes, the same shape as Records/Monitor/About already are. Home
+// is where those whole-app screens already live for a signed-in reader, and
+// it is the one category every page's own static pre-JS markup already
+// carries (so, like the rest of renderHomeExtras(), this appears the moment
+// roles are known rather than waiting on a second render). The Notes screen
+// itself (app/notes.html) deliberately has NO entry here -- it is reached
+// contextually, scoped to one Study Unit, from the Read screen's own ⋯ menu,
+// and adding a second, unscoped route to it is not this round's job.
+const JOURNEY_LINKS = [{ href: "journey-map.html", label: "Mapping My Journey" }];
+
 // Kept exported for reuse -- the literal link lives in each page's own
 // static Home markup (see quranrevival.html etc.), not in this renderer's
 // output, so it's visible before sign-in resolves same as "who".
@@ -225,8 +238,9 @@ export function renderHomeExtras(roles = []) {
   const adminHtml = canAdmin
     ? `<div class="nav-cat-group"><div class="nav-cat-group-label">${t("Admin")}</div>${renderLinks(ADMIN_LINKS, currentFile, canAdmin)}</div>`
     : "";
+  const journeyHtml = `<div class="nav-cat-group">${renderLinks(JOURNEY_LINKS, currentFile, canAdmin)}</div>`;
   const aboutHtml = `<div class="nav-cat-group">${renderLinks(ABOUT_LINKS, currentFile, canAdmin)}</div>`;
-  return adminHtml + aboutHtml + renderSettings(canAdmin);
+  return adminHtml + journeyHtml + aboutHtml + renderSettings(canAdmin);
 }
 
 // Shell round 13 (13 Aug 2026) -- Language is a real control now, not the
