@@ -42,3 +42,25 @@ export function organCountsBySystem(systems, organs) {
     count: organs.filter(o => o.system === sys.id).length
   }));
 }
+
+// Search predicate (parity tranche 6, additive). Matches on organ.name and
+// organ.functions only — the two fields this view already renders. It never
+// reads nutritionNeeds/foodSources/activity/deterioration, so search cannot
+// become a side door into a field the view itself is barred from showing;
+// tools/health-atlas-verify/view-boundary-wheel.mjs asserts this file still
+// carries none of those field names anywhere in its source.
+export function matchesOrganSearch(organ, term) {
+  const needle = String(term || '').trim().toLowerCase();
+  if (!needle) return true;
+  if (String(organ.name || '').toLowerCase().includes(needle)) return true;
+  return (organ.functions || []).some(fn => String(fn).toLowerCase().includes(needle));
+}
+
+// References-index tranche (parity tranche 9, additive). The reverse of
+// referencesFor(): given one reference id, which organs' own .refs[] name
+// it. Reads only the same .refs field referencesFor() already reads (never
+// a new field), so it stays inside the existing deferral boundary — see
+// tools/health-atlas-verify/view-boundary-wheel.mjs.
+export function organsForReference(organs, referenceId) {
+  return (organs || []).filter(o => Array.isArray(o.refs) && o.refs.includes(referenceId));
+}

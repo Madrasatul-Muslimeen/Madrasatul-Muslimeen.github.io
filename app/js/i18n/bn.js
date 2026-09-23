@@ -1173,6 +1173,10 @@ export const BN = {
   "Arabic word coverage isn't available at this granularity — open a Surah or a Ruku' to see it.":
     "এই স্তরে আরবি শব্দের অগ্রগতি দেখানো যায় না — দেখতে হলে একটি সূরা বা রুকু খুলুন।",
   "{known} of {total} Arabic words known": "{total}টি আরবি শব্দের মধ্যে {known}টি জানা",
+  // Issue #206 -- the gold running-total ring + Approach/Word by Word wedge-
+  // colouring toggle. The button labels reuse the existing "Approach" and
+  // "Word by Word" keys above/below rather than adding new ones.
+  "Colour the wheel by": "চাকাটি যে অনুযায়ী রঙ করা হবে",
   // MAP Phase 3 -- WbW word progress on the Quran Word Card.
   "Word progress": "শব্দের অগ্রগতি",
   "Waiting to be checked": "যাচাইয়ের অপেক্ষায়",
@@ -2100,6 +2104,25 @@ export const BN = {
   "References": "রেফারেন্স", // ?
   "Pick a Group first": "প্রথমে একটি গ্রুপ বাছুন", // ?
 
+  // Classifications round (23 Sep 2026) -- the open, owner-extensible set
+  // of classifications ("Group"/"Dual Names" are the seeded first two;
+  // {classification} is whichever one the reader is looking at).
+  "Belongs to": "যেসব তালিকায় আছে", // ?
+  "Not filed in any list yet.": "এখনো কোনো তালিকায় রাখা হয়নি।", // ?
+  "Also in:": "আরও যেখানে আছে:", // ?
+  "All {classification}": "সব {classification}", // ?
+  "New {classification} entry:": "নতুন {classification} এন্ট্রি:", // ?
+  "Add to {classification}": "{classification}-এ যোগ করুন", // ?
+  "New classification:": "নতুন শ্রেণিবিভাগ:", // ?
+  "New classification": "নতুন শ্রেণিবিভাগ", // ?
+
+  // Classification rename/archive round (23 Sep 2026, issue #205) -- the
+  // ✎/🗄 pair for the classification tab itself, same shape as "Rename
+  // group:"/"Archive"/"Restore" above, one level up.
+  "Rename classification:": "শ্রেণিবিভাগের নাম পরিবর্তন করুন:", // ?
+  "Archive classification": "শ্রেণিবিভাগ সংরক্ষণাগারে রাখুন", // ?
+  "Restore classification": "শ্রেণিবিভাগ ফিরিয়ে আনুন", // ?
+
   // Back-button round -- the popup note view's own Back control.
   "Back": "পেছনে", // ?
 
@@ -2165,6 +2188,16 @@ export const BN = {
   "New group title": "নতুন গ্রুপের শিরোনাম", // ?
   "New Dual Names list title": "নতুন জোড়া-নামের তালিকার শিরোনাম", // ?
 
+  // Classification round (23 Sep 2026, issue #205) -- the "file it under"
+  // row generalized: a real Classification field alongside the list picker,
+  // so a brand-new Name can be filed under any active classification, not
+  // only the two "File under (Group)"/"File under (Dual Names)" wordings
+  // above (kept, unused, per this project's own rule).
+  "Classification": "শ্রেণিবিভাগ", // ?
+  "File under": "যেখানে রাখবেন", // ?
+  "+ New list…": "+ নতুন তালিকা…", // ?
+  "New list title": "নতুন তালিকার শিরোনাম", // ?
+
   // 2 Sep 2026 -- the list-pane splitter/collapse toggle shared by
   // Approach, Explore, QCR and Asma ul Husna.
   "Collapse list": "তালিকা সংকুচিত করুন", // ?
@@ -2225,6 +2258,8 @@ export const BN = {
   "{count} root-linked occurrences": "ধাতু-সম্পর্কিত {count}টি ব্যবহার",
   "{count} lemma-linked occurrences": "মূল রূপ-সম্পর্কিত {count}টি ব্যবহার",
   "Derived forms of this root": "এই ধাতু থেকে উৎপন্ন রূপসমূহ",
+  // Issue #206 -- the Word Card's own occurrence-share line.
+  "Appears {count} times in the Qur'an — {percent}% of all words": "কুরআনে {count} বার এসেছে — সকল শব্দের {percent}%",
   "{total} occurrences in {forms} derived forms": "{forms}টি উৎপন্ন রূপে {total}টি ব্যবহার",
   "{count} occurrences": "{count}টি ব্যবহার",
   "Category not recorded": "শ্রেণি লিপিবদ্ধ নেই",
@@ -2479,4 +2514,79 @@ export const BN = {
     "শুধু লিঙ্ক — ব্যাখ্যার পাঠ এখানে পুনরুৎপাদন করা হয়নি।",
   "Matched by reference ({scheme} {ref}). No occurrence ID until an edition is approved.":
     "সূত্র অনুযায়ী মিলিত ({scheme} {ref})। কোনো সংস্করণ অনুমোদিত না হওয়া পর্যন্ত কোনো সংঘটন আইডি নেই।",
+
+  // --- MAP Phase 5 (P5-D, issue #195) -- the permanent Notes screen -----
+  "My Notes": "আমার নোট",
+  "Your own permanent Notes about the Study Unit you're currently on — separate from the quick note on the Read screen, and kept forever with a full history of every revision.":
+    "আপনি এখন যে স্টাডি ইউনিটে আছেন তার সম্পর্কে আপনার নিজের স্থায়ী নোট — পড়া স্ক্রিনের দ্রুত নোট থেকে আলাদা, এবং প্রতিটি সংশোধনের সম্পূর্ণ ইতিহাসসহ চিরকাল সংরক্ষিত থাকে।",
+  "No Study Unit was given to this screen. Open it from the Read screen's ⋯ menu (\"My Notes for this unit\"), which always says which unit it's opening for.":
+    "এই স্ক্রিনে কোনো স্টাডি ইউনিট দেওয়া হয়নি। পড়া স্ক্রিনের ⋯ মেনু (\"এই ইউনিটের আমার নোট\") থেকে এটি খুলুন, যা সবসময় বলে দেয় এটি কোন ইউনিটের জন্য খুলছে।",
+  "Showing Notes about:": "যে বিষয়ে নোট দেখানো হচ্ছে:",
+  "This screen could not read Notes for that unit.": "এই স্ক্রিন সেই ইউনিটের নোট পড়তে পারেনি।",
+  "You're viewing {name}'s Notes. Only {name} can create, edit or remove their own Notes — you can only read them here.":
+    "আপনি {name}-এর নোট দেখছেন। শুধুমাত্র {name} নিজের নোট তৈরি, সম্পাদনা বা অপসারণ করতে পারবেন — আপনি এখানে শুধু সেগুলো পড়তে পারবেন।",
+  "+ New Note about this unit": "+ এই ইউনিট সম্পর্কে নতুন নোট",
+  "New Note": "নতুন নোট",
+  "Title (optional)": "শিরোনাম (ঐচ্ছিক)",
+  "(untitled)": "(শিরোনামহীন)",
+  "Active": "সক্রিয়",
+  "Revision": "সংশোধন",
+  "Show history": "ইতিহাস দেখুন",
+  "Hide history": "ইতিহাস লুকান",
+  "No revision history.": "কোনো সংশোধনের ইতিহাস নেই।",
+  "Save revision": "সংশোধন সংরক্ষণ করুন",
+  "Note saved.": "নোট সংরক্ষিত হয়েছে।",
+  "Saved as a new revision ({revisionId}).": "নতুন সংশোধন হিসেবে সংরক্ষিত হয়েছে ({revisionId})।",
+  "Saved, and recorded as this week's Journaling activity.":
+    "সংরক্ষিত হয়েছে, এবং এই সপ্তাহের নিজের ভাবনা লেখার কার্যক্রম হিসেবে লিপিবদ্ধ হয়েছে।",
+  "Saved. Journaling activity was not recorded ({reason}).":
+    "সংরক্ষিত হয়েছে। নিজের ভাবনা লেখার কার্যক্রম লিপিবদ্ধ হয়নি ({reason})।",
+  "Remove \"{title}\"? This keeps its full history — it can be restored by an administrator, and is never destroyed.":
+    "\"{title}\" অপসারণ করবেন? এর সম্পূর্ণ ইতিহাস রক্ষিত থাকবে — একজন প্রশাসক এটি পুনরুদ্ধার করতে পারবেন, এবং এটি কখনও ধ্বংস করা হয় না।",
+  "Showing the most recent Notes only — there are more on this unit.":
+    "শুধুমাত্র সাম্প্রতিকতম নোটগুলো দেখানো হচ্ছে — এই ইউনিটে আরও আছে।",
+  "No Notes yet on this Study Unit.": "এই স্টাডি ইউনিটে এখনো কোনো নোট নেই।",
+  "My Notes for this unit": "এই ইউনিটের আমার নোট",
+
+  // --- MAP Phase 6 (P6-F, issue #199) -- Mapping My Journey, all three view options + toggle ---
+  "QuranRevival — Mapping My Journey": "কুরআনরিভাইভাল — আমার যাত্রার মানচিত্র",
+  "Every permanent Note you've written, organised your way — folders, a timeline, or a path. Try all three; the app remembers which you picked.":
+    "আপনি যে সব স্থায়ী নোট লিখেছেন, সেগুলো আপনার নিজের পছন্দমতো সাজানো — ফোল্ডার, টাইমলাইন, অথবা পথ। তিনটিই চেষ্টা করে দেখুন; অ্যাপ মনে রাখবে আপনি কোনটি বেছে নিয়েছেন।",
+  "Everything": "সবকিছু",
+  "Timeline": "টাইমলাইন",
+  "Path": "পথ",
+  "All folders": "সব ফোল্ডার",
+  "+ New folder": "+ নতুন ফোল্ডার",
+  "Folder name": "ফোল্ডারের নাম",
+  "+ File a Note here…": "+ এখানে একটি নোট ফাইল করুন…",
+  "File in a folder…": "একটি ফোল্ডারে ফাইল করুন…",
+  "Move to…": "সরান…",
+  "(untitled folder)": "(শিরোনামহীন ফোল্ডার)",
+  "Personal Journey Map": "ব্যক্তিগত যাত্রা মানচিত্র",
+  "Reflection Archive": "প্রতিফলন আর্কাইভ",
+  "This folder is empty.": "এই ফোল্ডারটি খালি।",
+  "Your Personal Journey Map is empty so far — Notes you file here will appear as your own journey through what you've studied.":
+    "আপনার ব্যক্তিগত যাত্রা মানচিত্র এখনও খালি — এখানে আপনি যে নোট ফাইল করবেন, তা আপনার পড়াশোনার মধ্য দিয়ে নিজস্ব যাত্রা হিসেবে দেখা যাবে।",
+  "Your Reflection Archive is empty so far — file a Note here to keep it as a longer-term reflection, separate from your day-to-day journey.":
+    "আপনার প্রতিফলন আর্কাইভ এখনও খালি — এখানে একটি নোট ফাইল করে এটিকে আপনার দৈনন্দিন যাত্রা থেকে আলাদা, দীর্ঘমেয়াদী প্রতিফলন হিসেবে রাখুন।",
+  "Your path is empty so far — every Note you write will appear here as a new stop, oldest to newest.":
+    "আপনার পথ এখনও খালি — আপনি যে প্রতিটি নোট লিখবেন তা এখানে একটি নতুন স্টপ হিসেবে দেখা যাবে, পুরনো থেকে নতুন ক্রমে।",
+  "Nothing here yet — Notes you write will appear on your timeline the day you write them.":
+    "এখনও এখানে কিছু নেই — আপনি যে দিন নোট লিখবেন, সেদিনই তা আপনার টাইমলাইনে দেখা যাবে।",
+  "Unknown date": "অজানা তারিখ",
+  "Showing the most recent Notes only — there are more in this folder.":
+    "শুধুমাত্র সাম্প্রতিকতম নোটগুলো দেখানো হচ্ছে — এই ফোল্ডারে আরও আছে।",
+  "You're viewing {name}'s Journey. Only {name} can create folders or file Notes here — you can only read it.":
+    "আপনি {name}-এর যাত্রা দেখছেন। শুধুমাত্র {name} এখানে ফোল্ডার তৈরি বা নোট ফাইল করতে পারবেন — আপনি এটি শুধু পড়তে পারবেন।",
+  "{count} folder(s) could not be shown safely and are not listed below — this needs administrator attention.":
+    "{count}টি ফোল্ডার নিরাপদে দেখানো যায়নি এবং নিচে তালিকাভুক্ত নয় — এতে প্রশাসকের দৃষ্টি প্রয়োজন।",
+  "No folder matched that name — nothing filed.": "সেই নামের কোনো ফোল্ডার পাওয়া যায়নি — কিছুই ফাইল করা হয়নি।",
+  "No folder matched that name — nothing moved.": "সেই নামের কোনো ফোল্ডার পাওয়া যায়নি — কিছুই সরানো হয়নি।",
+  "\"{title}\" filed in {folder}.": "\"{title}\" {folder}-এ ফাইল করা হয়েছে।",
+  "\"{title}\" moved to {folder}.": "\"{title}\" {folder}-এ সরানো হয়েছে।",
+  "File \"{title}\" in which folder? Type the exact name shown, or cancel.":
+    "\"{title}\" কোন ফোল্ডারে ফাইল করবেন? দেখানো নামটি হুবহু লিখুন, অথবা বাতিল করুন।",
+  "Move \"{title}\" to which folder? Type the exact name shown, or cancel.":
+    "\"{title}\" কোন ফোল্ডারে সরাবেন? দেখানো নামটি হুবহু লিখুন, অথবা বাতিল করুন।",
+  "Folder \"{name}\" created.": "ফোল্ডার \"{name}\" তৈরি হয়েছে।",
 };

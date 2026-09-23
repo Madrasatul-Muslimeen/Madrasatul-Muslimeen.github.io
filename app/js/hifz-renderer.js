@@ -35,6 +35,13 @@ const SURAH_HEADER_GLYPHS = ["ﱅ","ﱆ","ﱇ","ﱊ","ﱋ","ﱎ","ﱏ","ﱑ","�
 let mushafDataPromise = null;
 let mushafData = null;
 let ayahPageIndex = null; // "surah:ayah" -> sorted array of page numbers
+// "surah:ayah" -> highest w.loc position seen for that ayah. The Mushaf's own
+// per-page layout data always carries one MORE position than the ayah has
+// real words -- the print's own ayah-end-number glyph, occupying the final
+// position -- so this is what tells renderWord() (below) which span is that
+// marker rather than a real, tappable word. Built once alongside
+// ayahPageIndex from the same single pass over mushafData.
+let ayahMaxWordPosition = null;
 
 /** Fetches the 604-page layout JSON once, caches it for the rest of the session. */
 export function ensureMushafData() {
@@ -59,20 +66,54 @@ export function ensureMushafData() {
 
 function buildAyahPageIndex() {
   ayahPageIndex = {};
+  ayahMaxWordPosition = {};
   Object.keys(mushafData).forEach((pageNum) => {
     mushafData[pageNum].forEach((line) => {
       if (line.type !== "ayah" || !line.words) return;
       line.words.forEach((w) => {
         const loc = w.loc.split(":"); // "surah:ayah:word"
         const key = `${loc[0]}:${loc[1]}`;
+        const pos = Number(loc[2]);
         if (!ayahPageIndex[key]) ayahPageIndex[key] = new Set();
         ayahPageIndex[key].add(Number(pageNum));
+        if (!ayahMaxWordPosition[key] || pos > ayahMaxWordPosition[key]) ayahMaxWordPosition[key] = pos;
       });
     });
   });
   Object.keys(ayahPageIndex).forEach((k) => {
     ayahPageIndex[k] = Array.from(ayahPageIndex[k]).sort((a, b) => a - b);
   });
+}
+
+// Issue #188 -- tap a Mushaf-page word to open its Word Card.
+//
+// This file's own w.loc position and the app's own word-by-word position
+// (quranWordOccurrenceId() / renderWordByWordPanel() in ayah-renderer.js,
+// sourced from tools/quran-data-pull/output/surahs/*.json) are NOT always
+// the same number for the same word -- checked for real, across all 6,236
+// ayahs, by comparing this file's own per-ayah word-glyph count (excluding
+// the trailing ayah-end marker above) against the app's own word count.
+// Exactly three ayahs diverge, all for the identical reason: the app's
+// word-by-word corpus joins "بَعْدَ مَا" ("after that") into ONE word entry
+// carrying an internal space, while this Mushaf page-layout data (QUL)
+// prints it as two separate positions. mergeAt is the app-side word
+// position of "بَعْدَ مَا" in each; the mushaf position right after it is the
+// second half of that SAME word and must open the SAME occurrence, not the
+// next one -- every position after the pair is then shifted back by one.
+// tools/i18n-verify/mushaf-word-occurrence-parity.mjs re-derives this from
+// the live data on every run and fails if a fourth ayah ever diverges.
+// Exported so tools/i18n-verify/mushaf-word-occurrence-parity.mjs checks the
+// SAME table production uses, rather than a copy that could silently drift.
+export const AYAH_WORD_MERGES = { "2:181": 3, "8:6": 4, "13:37": 8 };
+
+// Exported for the same reason as AYAH_WORD_MERGES above -- so the parity
+// check exercises the real function rather than a re-implementation of it.
+export function resolveWordOccurrencePosition(ayahKey, mushafPosition) {
+  const mergeAt = AYAH_WORD_MERGES[ayahKey];
+  if (!mergeAt) return mushafPosition;
+  if (mushafPosition <= mergeAt) return mushafPosition;
+  if (mushafPosition === mergeAt + 1) return mergeAt; // second half of the joined word -- same occurrence
+  return mushafPosition - 1;
 }
 
 /** Real Mushaf page numbers spanned by a list of "surah:ayah" keys (a small number of ayahs split across a page boundary contribute more than one page). Call after ensureMushafData() resolves. */
@@ -199,9 +240,23 @@ function renderWord(w, highlightSet) {
   const span = document.createElement("span");
   span.className = "hifz-word";
   const loc = w.loc.split(":");
-  const ayahKey = `${loc[0]}:${loc[1]}`;
+  const [surahStr, ayahStr, posStr] = loc;
+  const ayahKey = `${surahStr}:${ayahStr}`;
   if (highlightSet && !highlightSet.has(ayahKey)) span.classList.add("dim");
   span.textContent = w.g;
+  // I2: this is a DOM attribute only -- the click listener and openWordCard()
+  // call stay in quranrevival.html's own shared ["readView", "noteView"]
+  // handler (the same one the Word-by-Word strip already uses), and this
+  // file imports nothing new to produce it. Skip the ayah's own trailing
+  // end-marker position (not a real word) and correct for the three known
+  // divergent ayahs (see AYAH_WORD_MERGES above) so a tap never opens the
+  // wrong word.
+  const mushafPosition = Number(posStr);
+  const maxPosition = ayahMaxWordPosition && ayahMaxWordPosition[ayahKey];
+  if (maxPosition && mushafPosition < maxPosition) {
+    const wordPosition = resolveWordOccurrencePosition(ayahKey, mushafPosition);
+    span.dataset.wordOccurrence = `quran-word-occurrence:v1:${surahStr}:${ayahStr}:${wordPosition}`;
+  }
   if (!wordRegistry.has(ayahKey)) wordRegistry.set(ayahKey, []);
   wordRegistry.get(ayahKey).push(span);
   return span;

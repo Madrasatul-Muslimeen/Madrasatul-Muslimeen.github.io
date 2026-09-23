@@ -25,6 +25,12 @@
   }
   .ha-tab:hover { border-color: var(--gold); color: var(--gold); }
   .ha-tab-active { background: var(--gold); border-color: var(--gold); color: #fff; }
+  .ha-search-box { margin-bottom: 0.6rem; }
+  .ha-search-input {
+    width: 100%; font: inherit; font-size: 0.88rem; padding: 0.5rem 0.7rem;
+    border: 1px solid var(--line); border-radius: 0.4rem; background: #fff; color: var(--ink);
+  }
+  .ha-search-input:focus { outline: 1px solid var(--gold); border-color: var(--gold); }
   .ha-system-list { display: flex; flex-direction: column; gap: 1rem; }
   .ha-system-block { background: var(--card); border: 1px solid var(--line); border-radius: 0.6rem; padding: 0.8rem 1rem; }
   .ha-system-head { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; margin-bottom: 0.5rem; }
@@ -64,6 +70,7 @@
     It is not linked from the shared navigation.
   </p>
   <p><a href="health-atlas.html">← Back to the Body Systems browser</a></p>
+  <p>Also draft: <a href="health-atlas-categories.html">Food Master Categories →</a></p>
 </header>
 <main id="healthAtlasMoreRoot"></main>
 <footer>
@@ -71,7 +78,9 @@
   only. Amounts, serving guidance, treatment, remedies and lifestyle-activity recommendations are
   deliberately not shown anywhere on this page — see the tranche report for the field-by-field
   reasoning and <code>tools/health-atlas-verify/view-boundary-more.mjs</code> for the mechanical
-  guard. Source: Health Atlas v02.04 standalone
+  guard. Tranche 11 added the Foods/Conditions search boxes; they filter on the same safe fields
+  already shown here, never on the excluded ones — see
+  <code>tools/health-atlas-verify/more-search-browser.mjs</code>. Source: Health Atlas v02.04 standalone
   (<code>docs/health-source/health-atlas-v02.04-standalone.html</code> on
   <code>health/source-v02-04-handover</code>, commit <code>ed4dbb2e</code>).
 </footer>

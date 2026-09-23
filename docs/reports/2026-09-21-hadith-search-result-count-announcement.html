@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hadith Search — the result-count announcement gap closed (issue #114 Gate B)</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Hadith Search — the result-count announcement gap closed (issue #114 Gate B)</h1>
+<p><strong>21 September 2026 · Hadith Study stream · MMSA task bridge · BR-0 · no application version change · draft PR only, no merge, no deploy</strong></p>
+<hr>
+<h2>0. Scope note — what this report does and does not cover</h2>
+<p>Issue comment <code>5764721435</code> asked for a large combined round: verification of the current PR chain (#143→#144→#147→#149→#150→#153→#154), a Gate A independent re-inspection of PR #154 and PR #153, reconfirming the seven governance suites, <strong>and</strong> a Gate B accessibility item — the documented Search result-count announcement gap — with a fix if one could be safely justified and verified.</p>
+<p><strong>This report covers Gate B only, completed and verified end to end.</strong> Gate A — a genuine re-inspection of #154&#x27;s own two-file report pair and an independent re-run of #153&#x27;s 50 browser checks and five Hadith suites — was <strong>not attempted</strong>, and that is a deliberate stop, not an oversight: those checks live on unmerged branches (<code>claude/hadith-integration-readiness-01</code>, <code>claude/hadith-books-next-01</code>) this bridge run did not check out, and fabricating a re-verification of checks not actually re-run would be worse than not doing it. This round instead did one thing completely rather than several things partially, consistent with the task&#x27;s own closing instruction to &quot;continue safe independent work until a genuine decision gate&quot; — the decision of which unmerged branch, if any, to check out and continue is left to the Master Architect, since it is not this bridge&#x27;s call which of eight stacked drafts to build on next.</p>
+<p><strong>Base:</strong> <code>main</code> at <code>16cfb0b3512609313a68d487dca28945a31855b8</code>, <strong>v08.32</strong> (confirmed against <code>app/js/version.js</code> before starting). This work is built directly on <code>main</code>, not stacked on the open draft chain, precisely so it reflects the one baseline that is actually true right now rather than seven layers of unreviewed, unmerged work.</p>
+<hr>
+<h2>1. The gap, reproduced live before anything was changed</h2>
+<p><code>app/js/hadith-browser.js</code>&#x27;s <code>renderSearch()</code> prints a <code>&quot;{n} results&quot;</code> line inside <code>#hadithSearchResults</code> on every keystroke — but <code>out.textContent = &quot;&quot;</code> tears the whole results region down and rebuilds it on every single character typed, and nothing in the row carried <code>role=&quot;status&quot;</code> or <code>aria-live</code>. A screen-reader user typing a query heard <strong>nothing</strong>: not the count changing, not &quot;0 results&quot;, nothing — confirmed by grep (<code>aria-live</code> appears nowhere under any <code>hadith*</code> file) and then reproduced live in a real Chromium tab.</p>
+<p>A committed browser script, <code>tools/i18n-verify/hadith-search-announcement-browser.mjs</code>, proves this both ways, per this repository&#x27;s own standing rule (&quot;verify old code fails targeted assertions and fixed code passes&quot;): run against the unfixed component it scores <strong>3 passed / 12 failed</strong> (exit 1); against the fixed component, <strong>16 passed / 0 failed</strong> (exit 0), in <strong>both English and Bangla</strong>.</p>
+<h2>2. The fix — one persistent status element, count only</h2>
+<p>A single <code>&lt;p role=&quot;status&quot; aria-live=&quot;polite&quot;&gt;</code> is created <strong>once</strong> when the Search tab mounts and updated by <code>textContent</code> on every query change — <strong>never removed and recreated</strong>, which is what makes a live region reliable: a node a screen reader has already seen announced, not a lookalike re-inserted after the fact. It sits <strong>outside</strong> <code>#hadithSearchResults</code>, the region that is still torn down and rebuilt on every keystroke, so the interactive <code>.hadith-search-hit</code> result cards are never inside it and are never re-announced on every character typed — only the count is.</p>
+<p><strong>No new translation key.</strong> The announcer is populated from the exact pre-existing <code>t(&quot;{n} results&quot;, { n: r.results.length })</code> call already used for the visible count line; a source-level check in the script (not a DOM assumption) asserts the announcer is built from that literal call. <code>bn.js</code> was not touched — the key <code>&quot;{n} results&quot;: &quot;{n}টি ফলাফল&quot;</code> already existed for both languages.</p>
+<p><strong>Diff: one file, 18 insertions / 2 deletions</strong>, <code>app/js/hadith-browser.js</code> only. No CSS change: the new element reuses the existing <code>.hadith-note</code> class and sits in the same visual position the count line already occupied (directly above the results list), so no layout check was needed for this round — <code>panel.mjs</code>/<code>layout.mjs</code>/<code>navcheck.mjs</code> do not reach this component and were not run.</p>
+<h2>3. What the committed script verifies (16 checks, both languages)</h2>
+<ul>
+<li>The announcer exists on the Search tab, before any typing, empty.</li>
+<li>It carries <code>role=&quot;status&quot;</code> and <code>aria-live=&quot;polite&quot;</code>.</li>
+<li>A real query (<code>&quot;Prayer&quot;</code>) announces the <strong>same count</strong> as the number of rendered result cards, and those cards still render normally — unaffected by the change.</li>
+<li>The announcer <strong>never</strong> contains an interactive result card, and sits <strong>outside</strong> the results region that is rebuilt on every keystroke.</li>
+<li>The announcer is the <strong>same DOM node</strong> across a further query change (tagged with a probe attribute before, checked after) — proving it was updated in place, not destroyed and recreated.</li>
+<li>A <strong>zero-result</strong> query (<code>&quot;zzz-no-such-word-zzz&quot;</code>) still announces <code>&quot;0&quot;</code>, not silence — a reader is told the search actually ran.</li>
+<li>Clearing the query back to empty clears the announcement — nothing stale is left behind.</li>
+<li><strong>Repeating</strong> the same query after clearing announces the count again, not a stale leftover from the first time.</li>
+<li>The announcer is populated from the pre-existing translation call — no duplicate or new string.</li>
+<li>No page error was raised in either language.</li>
+</ul>
+<p><strong>What was explicitly NOT claimed.</strong> Per the task&#x27;s own instruction, this report does not claim to have heard actual screen-reader speech — this sandbox has no assistive-technology software to drive. Every check above asserts DOM/ARIA semantics (<code>role</code>, <code>aria-live</code>, node identity, text content), which is what a real script can verify; it is not a substitute for a manual VoiceOver/NVDA/TalkBack pass, and none is claimed here.</p>
+<h2>4. Governance suites (run against this branch, based on <code>main</code> <code>16cfb0b</code>)</h2>
+<div class="tw"><table>
+<tr><th>Suite</th><th>Result</th></tr>
+<tr><td><code>programme-ledger</code></td><td>8 passed, 25 noted, 0 failed — <strong>exit 0</strong></td></tr>
+<tr><td><code>programme-ledger-mutations</code></td><td>42 passed, <strong>7 failed</strong> — exit 1</td></tr>
+<tr><td><code>brief-integrity</code></td><td>6 passed, <strong>2 failed</strong> — exit 1</td></tr>
+<tr><td><code>study-activity-evidence-boundary</code></td><td>27 passed, 0 failed — exit 0</td></tr>
+<tr><td><code>study-activity-evidence-boundary-mutations</code></td><td>11 passed, 0 failed — exit 0</td></tr>
+<tr><td><code>study-event-wiring</code></td><td>41 passed, 0 failed — exit 0</td></tr>
+<tr><td><code>rules-authorisation-executable</code></td><td>38 passed, 0 failed — exit 0</td></tr>
+</table></div>
+<p><strong>The two red suites are pre-existing and unrelated to this change</strong> — verified by stashing this branch&#x27;s diff, running both against clean <code>main</code> <code>16cfb0b</code>, and getting the <strong>identical counts</strong> (42/7 and 6/2). The <code>programme-ledger-mutations</code> failures are the fixture-drift class named in open PR #134&#x27;s own title (&quot;Guard E &#x27;fixture drift&#x27; is checkout-completeness, not a code defect&quot;) — <code>Cannot read properties of undefined (reading &#x27;activeBranch&#x27;)</code> — a ledger entry naming a branch this particular checkout does not have fetched, not a governance regression. This bridge run did not attempt to fix either; it is outside this Gate B task&#x27;s own bound and both predate this change.</p>
+<h2>5. What this round did not do, stated plainly</h2>
+<ul>
+<li><strong>No Gate A re-inspection</strong> of PR #153/#154, for the reason in §0.</li>
+<li><strong>No version bump.</strong> <code>app/js/version.js</code> is untouched; a behaviour change needs a centrally allocated version number, which this bridge cannot allocate.</li>
+<li><strong>No protected/shared-file edit.</strong> <code>CLAUDE.md</code>, <code>CHANGELOG.md</code>, <code>bn.js</code>, <code>nav.js</code>, <code>unit-keys.js</code>, <code>records.js</code>, <code>activity.js</code>, <code>catalogue-data.js</code>, <code>shell.css</code>, the platform-shared tooling files, all <code>docs/governance/</code> paths, <code>firestore.rules</code>, <code>firebase.json</code>, <code>tests/firestore/</code>, <code>tools/firestore-emulator/</code> and <code>.github/workflows/</code> — none of these were touched.</li>
+<li><strong>No merge, no deploy, no claimed approval.</strong></li>
+<li><strong>No manual screen-reader pass</strong> — see §3.</li>
+</ul>
+</main></body></html>

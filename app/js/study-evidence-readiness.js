@@ -49,24 +49,31 @@ export const READINESS_AUTHORITIES = Object.freeze(["master-architect"]);
 /**
  * THE DECLARATION. This is the single place the answer lives.
  *
- * `ready: false` is the standing state and the default. It is false because
- * E1 is CLOSED: the ADR-008 evidence Rules have not been deployed to the
- * `study-monitoring` Firebase project, and nothing in this repository can
- * prove otherwise.
+ * ENABLED, 2026-09-22, under an explicit governed deployment-readiness
+ * decision -- see docs/reports/2026-09-22-map-phase4-evidence-persistence-enabled.md.
+ * `deployment.firebaseRulesDeployed.state` records YES (the Owner published
+ * the Phase 3-6 Rules candidate directly in the Firebase Console the same
+ * day), and Phase 3 word-by-word progress was independently verified to
+ * save and reload on the Owner's own real phone before this was flipped.
  *
- * To enable, BOTH of these must change together, under an explicit governed
- * deployment-readiness decision:
- *   ready:    true
- *   decision: { by: "<authority>", on: "YYYY-MM-DD", reference: "<record>" }
- * and the programme ledger's `deployment.firestoreRules` must record DONE.
+ * This was NOT a bare edit: isStudyEvidencePersistenceReady() requires the
+ * `decision` shape below (a closed-set authority, a real date, an existing
+ * reference), and tools/i18n-verify/programme-ledger.mjs guard G
+ * cross-checks this literal against the ledger's own recorded deployment
+ * state -- both re-run clean against this exact change.
  */
 export const EVIDENCE_PERSISTENCE_DECLARATION = Object.freeze({
-  ready: false,
-  decision: null,
+  ready: true,
+  decision: Object.freeze({
+    by: "master-architect",
+    on: "2026-09-22",
+    reference: "docs/reports/2026-09-22-map-phase4-evidence-persistence-enabled.md",
+  }),
   gate: "E1",
   note:
-    "ADR-008 Activity evidence Rules are NOT deployed to study-monitoring. " +
-    "Recorded as not ready because it has not been proven ready.",
+    "ADR-008 Activity evidence Rules are deployed to study-monitoring, " +
+    "confirmed by the Owner in the Firebase Console, and Phase 3 word " +
+    "progress was proven to save and reload on a real phone the same day.",
 });
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;

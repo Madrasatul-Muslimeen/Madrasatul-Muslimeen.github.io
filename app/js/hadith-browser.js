@@ -588,6 +588,22 @@ function renderSearch(body, state, render) {
   form.appendChild(input);
   body.appendChild(form);
 
+  // The result-count announcer (issue #114 Gate B). A screen reader only
+  // reliably announces a change to a live region that was ALREADY in the DOM
+  // before the mutation, so this element is created ONCE and updated by
+  // `textContent` below -- never removed and recreated the way `out` is on
+  // every keystroke. It carries ONLY the count, never a result card: putting
+  // `aria-live` on `out` itself would make a screen reader announce every
+  // interactive card on every keystroke too, which nobody asked for and
+  // nobody wants. No new translation key -- it reuses the same "{n} results"
+  // string the visible line already carried.
+  const status = el("p", "hadith-note hadith-search-status");
+  status.id = "hadithSearchStatus";
+  status.dataset.hadithSearchStatus = "true";
+  status.setAttribute("role", "status");
+  status.setAttribute("aria-live", "polite");
+  body.appendChild(status);
+
   const out = el("div", "hadith-search-results");
   out.id = "hadithSearchResults";
   body.appendChild(out);
@@ -595,9 +611,9 @@ function renderSearch(body, state, render) {
   function renderResults() {
     out.textContent = "";
     const r = searchCorpus(state.query);
-    if (!state.query.trim()) return;
+    if (!state.query.trim()) { status.textContent = ""; return; }
     out.dataset.hadithResultCount = String(r.results.length);
-    out.appendChild(el("p", "hadith-note", t("{n} results", { n: r.results.length })));
+    status.textContent = t("{n} results", { n: r.results.length });
     if (r.truncated) out.appendChild(el("p", "hadith-note", t("Showing the first results only.")));
     for (const hit of r.results) {
       const wrap = el("div", "hadith-search-hit");

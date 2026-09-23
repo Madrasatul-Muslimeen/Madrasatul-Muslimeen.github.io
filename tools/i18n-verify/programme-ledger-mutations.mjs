@@ -182,10 +182,23 @@ mutation("the brief predicts a merge number for the held branch", "C", (l, f) =>
   f.briefText += `\n\nThe wiring at \`${held.branchTip.slice(0, 7)}\` conflicts at merge and resolves to the next free number -- ${rival.version} as of this line.\n`;
 }, /is ahead of main .* claimed by stream/);
 
+// DERIVED, not hardcoded -- the earlier version of this mutation named a
+// literal "v08.44", which was correct the moment it was written and stopped
+// being a prediction of an unclaimed number the instant main's own real
+// version reached 08.44 (v08.44, 23 Sep 2026): the mutated text then equalled
+// main's own LIVE version rather than a number "ahead of main", so the guard
+// correctly stopped calling it a forward allocation and this mutation went
+// UNPROVEN. Exactly the "hardcoding 08.28 stopped being a prediction once
+// main reached 08.29" defect this file's own comment above already names,
+// found a second time in its neighbour. Fixed the same way: take one past
+// main's own recorded version, which by construction belongs to nobody yet.
 mutation("...and it is caught even when the number belongs to nobody yet", "C", (l, f) => {
   const s = heldStream(l);
-  f.briefText += `\n\nAt merge \`${s.branchTip.slice(0, 7)}\` will take v08.44.\n`;
-}, /08\.44, ahead of main .* that is a forward allocation/);
+  const [maj, min] = l.main.version.split(".").map(Number);
+  const unclaimed = `${String(maj).padStart(2, "0")}.${String(min + 1).padStart(2, "0")}`;
+  assert.ok(!l.versionAllocations.some((a) => a.version === unclaimed), `fixture drift: ${unclaimed} is already allocated`);
+  f.briefText += `\n\nAt merge \`${s.branchTip.slice(0, 7)}\` will take v${unclaimed}.\n`;
+}, /, ahead of main \(\d\d\.\d\d\) -- that is a forward allocation/);
 
 // ---- D: malformed / non-canonical version references ----------------------
 mutation("a ledger version is written in prose form", "D", (l) => {
@@ -373,21 +386,37 @@ mutation("serving is claimed as verified with nothing verified", "G", (l) => {
 }, /claims SERVING_VERIFIED without verified:true/);
 
 mutation("the feature is recorded operational while its Rules are not deployed", "G", (l) => {
+  // Force the precondition explicitly (Rules NOT deployed) rather than relying
+  // on the real ledger's ambient state, which stopped being NO on 2026-09-22
+  // when Rules actually were deployed -- a mutation that borrows a fact it
+  // does not set up itself models the ledger's history, not the guard.
+  l.deployment.firebaseRulesDeployed.state = "NO";
   l.deployment.evidenceRecordingOperational.state = "YES";
 }, /the evidence subcollection has no rule/);
 
 mutation("the readiness gate is flipped in code and nowhere else", "G", (l, f) => {
+  // Force the precondition explicitly (ledger still says ready:false) rather
+  // than relying on the real ledger's ambient state, which stopped being
+  // false on 2026-09-22 when Phase 4 evidence persistence was actually,
+  // governedly enabled -- the same lesson the Rules-deployment mutations
+  // above already learned the same day.
+  l.evidencePersistenceReadiness.ready = false;
   f.readinessSource = readinessSrc(true);
 }, /the code and the governance record disagree/);
 
 mutation("the gate is flipped in code AND in the ledger, but the Rules are still not deployed", "G", (l, f) => {
+  l.deployment.firebaseRulesDeployed.state = "NO";
   f.readinessSource = readinessSrc(true);
   l.evidencePersistenceReadiness.ready = true;
 }, /readiness may not run ahead of the deployment it depends on/);
 
 mutation("everything is flipped, with no governed decision recorded", "G", (l, f) => {
+  // Force the precondition explicitly (no decision recorded) rather than
+  // relying on the real ledger's ambient state, which now carries a real,
+  // valid decision.
   f.readinessSource = readinessSrc(true);
   l.evidencePersistenceReadiness.ready = true;
+  l.evidencePersistenceReadiness.decision = null;
   l.deployment.firebaseRulesDeployed.state = "YES";
 }, /enablement is a decision, not an edit/);
 
