@@ -485,4 +485,26 @@
 // suites clean, all 5 Hadith-owned data suites clean,
 // hadith-source-navigation-browser.mjs 50/50 in both languages.
 // Allocated by the MMSA Architect.
-export const APP_VERSION = "08.49";
+// 08.50: Health Atlas -- Foods and Conditions each gain a text search box
+// (issue #115, PR #151), matching the source app's own per-tab filter.
+// Deliberately narrower than the source's own matches() (whole
+// serialized item, excluded fields included): matchesFoodSearch/
+// matchesDiseaseSearch are scoped to exactly the fields this view
+// already renders, so a search term present only in an excluded field (a
+// real drug name in a real disease's .remedies) cannot surface a false
+// hit -- proven by two checks against the real rendered page. Age Groups
+// gets no search box, matching the source (it has none there either).
+// The still-missing Lifestyle tab was re-investigated under Gate A/B and
+// the existing deferral reasoning re-confirmed, not overridden -- no new
+// field-level split found. New more-search-browser.mjs suite, 12 checks.
+// A repository-wide report-generator defect (fenced code blocks/links
+// flattened by tools/md2report.py, affecting all 82 report .md/.html
+// pairs) was found and flagged for Master Architect authorisation, not
+// fixed here -- only the one report this round's own task named was
+// hand-corrected. No protected path touched, no Firestore write/Rule/
+// index. Independently re-verified by the Architect before merging:
+// fresh full-history checkout, retargeted from its stale stacked base
+// onto main and merged current main in (clean), all 11 governance
+// suites clean, all 19 runnable Health-owned suites clean including the
+// new suite 12/12. Allocated by the MMSA Architect.
+export const APP_VERSION = "08.50";
