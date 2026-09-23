@@ -417,6 +417,78 @@ await foundation.retireNoteSource({}, { tenantId: "tenant", ownerPersonId: "pers
 assert.equal(writes.filter((w) => w.collectionName === "notes").length, 0,
   "retiring a link must not cascade into the Note");
 
+// --- P5-G: createNoteSource(), binding an EXISTING Note to a further unit -
+// createPermanentNote() could only ever write one noteSources link, at birth.
+// Nothing let an already-created Note gain a SECOND active link -- whether
+// it never had one, or its only link was later retired.
+const NOTE = (o = {}) => ({ noteId: "note-1", tenantId: "tenant", ownerPersonId: "person",
+  ownerUid: "owner-uid", status: "active", currentRevisionId: "rev-1", ...o });
+const putNote = (row) => documents.set(`notes/tenant__${row.noteId}`, row);
+const SOURCE_ARGS = (o = {}) => ({ tenantId: "tenant", ownerPersonId: "person", ownerUid: "owner-uid",
+  noteId: "note-1", sourceLinkId: "src-2", actorUid: "owner-uid",
+  source: { sourceKind: "quran-unit", sourceKey: "juz:5", relationshipKind: "reference", provenanceKind: "study-note" },
+  ...o });
+
+writes.length = 0; documents.clear(); putNote(NOTE());
+const boundId = await foundation.createNoteSource({}, SOURCE_ARGS());
+assert.equal(boundId, "src-2");
+assert.deepEqual(writes.map(({ kind, collectionName }) => `${kind}:${collectionName}`), ["create:noteSources"]);
+assert.deepEqual(writes[0].data, {
+  sourceLinkId: "src-2", tenantId: "tenant", ownerPersonId: "person", ownerUid: "owner-uid", noteId: "note-1",
+  sourceKind: "quran-unit", sourceKey: "juz:5", relationshipKind: "reference", approachId: null,
+  provenanceKind: "study-note", status: "active",
+}, "the additional binding carries the exact birth-time noteSources shape");
+assert.equal(writes.filter((w) => w.collectionName === "notes").length, 0,
+  "the Note document is never written by this call -- identity stays immutable");
+
+// Duplicate sourceLinkId is refused, the same way createPermanentNote()
+// refuses a duplicate Note id.
+writes.length = 0; documents.clear(); putNote(NOTE()); putSource(SRC({ sourceLinkId: "src-2" }));
+await assert.rejects(() => foundation.createNoteSource({}, SOURCE_ARGS()), /Source link ID already exists/);
+assert.equal(writes.length, 0);
+
+// Two ACTIVE links naming the SAME sourceKey are NOT refused -- nothing in the
+// accepted Rules, ADR-009 or listNoteSourcesForUnit()'s own read contract
+// forbids a Note being bound twice to one unit.
+writes.length = 0; documents.clear(); putNote(NOTE()); putSource(SRC({ sourceLinkId: "src-1", sourceKey: "juz:5" }));
+const secondId = await foundation.createNoteSource({}, SOURCE_ARGS({
+  sourceLinkId: "src-3",
+  source: { sourceKind: "quran-unit", sourceKey: "juz:5", relationshipKind: "origin", provenanceKind: "study-note" },
+}));
+assert.equal(secondId, "src-3");
+assert.equal(writes.length, 1, "a second active link to the same unit is written, not refused");
+
+// A missing Note is refused before any write.
+writes.length = 0; documents.clear();
+await assert.rejects(() => foundation.createNoteSource({}, SOURCE_ARGS()), /Note does not exist/);
+assert.equal(writes.length, 0);
+
+// Cross-owner and cross-tenant are refused by reading the Note document, not
+// by trusting the caller's own arguments -- same shape as retireNoteSource().
+writes.length = 0; documents.clear(); putNote(NOTE({ ownerPersonId: "someone-else" }));
+await assert.rejects(() => foundation.createNoteSource({}, SOURCE_ARGS()),
+  /Cross-owner or cross-tenant source binding refused/);
+assert.equal(writes.length, 0);
+
+// A retired Note refuses a new binding -- stricter than the Rules candidate,
+// which does not itself check status on create (REL-01 checks existence and
+// ownership only).
+writes.length = 0; documents.clear(); putNote(NOTE({ status: "retired" }));
+await assert.rejects(() => foundation.createNoteSource({}, SOURCE_ARGS()),
+  /A retired Note cannot gain a new source binding/);
+assert.equal(writes.length, 0);
+
+// Composes cleanly with retireNoteSource(): create a new link, then retire
+// exactly that link -- independent of the Note and of any other link.
+writes.length = 0; documents.clear(); putNote(NOTE());
+await foundation.createNoteSource({}, SOURCE_ARGS());
+putSource(SRC({ sourceLinkId: "src-2", sourceKey: "juz:5", relationshipKind: "reference" }));
+writes.length = 0;
+await foundation.retireNoteSource({}, { tenantId: "tenant", ownerPersonId: "person",
+  sourceLinkId: "src-2", actorUid: "owner-uid" });
+assert.deepEqual(writes.map(({ kind, collectionName }) => `${kind}:${collectionName}`), ["update:noteSources"]);
+assert.deepEqual(writes[0].data, { status: "retired" });
+
 // --- P6-E: reorderNotePlacement(), the only field left unreachable --------
 // placementIdentityUnchanged() freezes placementId, noteId and folderId, so
 // `order` and `status` are all an update may touch. retireNotePlacement()
@@ -454,4 +526,4 @@ assert.equal(writes.filter((w) => w.kind === "delete").length, 0);
 delete globalThis.__nfCollections;
 delete globalThis.__nfFirestore;
 delete globalThis.__nfEnvelope;
-console.log("==== Note Foundation data layer: 47 + 30 P6-D + 18 P5-F/P6-E + 11 retire-revision assertions passed ====");
+console.log("==== Note Foundation data layer: 47 + 30 P6-D + 18 P5-F/P6-E + 11 retire-revision + 16 P5-G assertions passed ====");

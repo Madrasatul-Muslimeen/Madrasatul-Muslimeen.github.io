@@ -272,8 +272,16 @@ check("existing user notes untouched; the data layer changed by INSERTION ONLY, 
     { cwd: root, encoding: "utf8" });
   if (diffText === "") return;
   const removedLines = diffText.split("\n").filter((l) => l.startsWith("-") && !l.startsWith("---"));
-  assert.deepEqual(removedLines, [NOTE_FOUNDATION_PINNED_REMOVAL],
-    `note-foundation.js removed line(s) do not match the one pinned exception -- an existing behaviour may have been reshaped: ${JSON.stringify(removedLines)}`);
+  // UPDATED 2026-09-23, reason recorded rather than the check weakened --
+  // same fix, same reason, as study-note-boundary.mjs's identical check:
+  // the pinned exception names a line an earlier round REPLACED relative
+  // to the `main` it was diffed against at the time, and that fix has
+  // since landed ON `main` itself, so a branch diffed against a CURRENT
+  // `main` that already carries it sees no removal at all -- `[]` is just
+  // as valid a shape as the pinned single-line replacement. Removing
+  // anything ELSE still fails, exactly as before.
+  assert.ok(removedLines.length === 0 || JSON.stringify(removedLines) === JSON.stringify([NOTE_FOUNDATION_PINNED_REMOVAL]),
+    `note-foundation.js removed line(s) do not match the pinned exception (or the now-equally-valid empty case) -- an existing behaviour may have been reshaped: ${JSON.stringify(removedLines)}`);
   const addedLines = diffText.split("\n").filter((l) => l.startsWith("+") && !l.startsWith("+++"));
   assert.ok(addedLines.length > 0);
 });
