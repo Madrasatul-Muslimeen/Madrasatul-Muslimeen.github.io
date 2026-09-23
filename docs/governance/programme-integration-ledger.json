@@ -29,9 +29,9 @@
   "status": "ACTIVE",
   "main": {
     "ref": "origin/main",
-    "baselineSha": "395249dc7a2e23aa54985dc1536f26c205c53897",
+    "baselineSha": "8621f2f11222a38c0867eb80fe7b44e9ee464d23",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.43",
+    "version": "08.44",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -271,7 +271,7 @@
     {
       "version": "08.43",
       "owner": "health",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Health Atlas: a References index, one new top-level view mode alongside Body Systems (issue #115 Gate A/B, PR #146, tranche 9). Each of the 8 HEALTH_ATLAS_REFERENCES rows lists which organs cite it (organsForReference(), reads only the existing organ.refs[] field). An organ pill is a real link into the existing organ detail column, reusing the existing onSelectOrgan() path -- this app has no URL-addressable per-organ route to link to instead. The source app's own References tab has no organ links at all, so this deliberately goes beyond source parity (Gate A finding). The index disclaims per-statement verification in its own visible text and never itself decides a statement is cited-evidence -- asserted by a new static positive control. Still 100% read-only, same DRAFT/internal-review status as every other Health Atlas screen. This is the FIRST global version number ever allocated to the Health stream -- the 'health' stream record itself was found stale at this allocation (previously recorded EXTERNAL_PENDING_ACQUISITION / repository UNKNOWN, though real Health Atlas code has existed in this repository under app/health/ since 17 Sep 2026 across many tranches) and corrected in the same round; see that stream's own integrationStateCorrectionNote. This allocation was first drafted as v08.42, reading main's tip at the start of review -- the concurrently-running issue #206 round (see the entry directly above) reached main first and took v08.42 for itself; caught by guard A the moment this round tried to allocate, and re-derived cleanly as v08.43 by re-reading main rather than trusting the earlier read. New references-index-browser.mjs suite (12 checks). Independently re-verified by the Architect before merging: fresh checkout, clean merge with no conflicts, all 8 CI-gated governance suites clean, all 17 Health-owned suites clean (250 non-browser checks plus both committed browser suites, 12+16), behaviour.mjs run against main (already carrying this round) -- 986 pass/7 fail, every failure pre-existing/environmental and none in Health-owned code.",
       "integration": {
         "authorizedOn": "2026-09-23",
@@ -281,12 +281,27 @@
         "method": "MERGE_PR",
         "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/146"
       }
+    },
+    {
+      "version": "08.44",
+      "owner": "hadith",
+      "status": "LIVE",
+      "note": "Hadith: keyboard focus is restored to the newly-active tab button on every Collections/Topics/Search/Explore/Commentary tab switch (issue #114 Gate A/B, PR #150). render() tears down and rebuilds the whole subtree on every tab click; unlike an in-tab Collections step (focusCollectionsLanding()) or the one-shot 'View in source' jump (focusPendingOccurrence()), nothing restored focus on a plain tab switch -- so a keyboard user lost their place to <body> on every single tab click, including returning to Search after visiting a narration's source (the query/results persisted; focus did not). Fixed with one new focusActiveTab() helper in app/js/hadith-browser.js, called from the tab button's own click handler -- the standard ARIA-tabs pattern of leaving focus on the tab list. Zero new translatable strings. 4 new checks in hadith-source-navigation-browser.mjs (43 -> 47), mutation-proven by the Architect (reverting the fix to origin/main's copy fails exactly the 4 new checks, 43/47; restored and re-confirmed clean). The multi-edition breadcrumb ambiguity PR #149 found stays exactly as recorded -- the committed corpus still carries one edition per collection, not a live defect. Independently re-verified by the Architect before merging: fresh full-history checkout, merged current main in (clean, no conflicts), all 11 governance suites clean, all 5 Hadith-owned data suites clean, hadith-source-navigation-browser.mjs 47/47 in both languages. No protected path touched, no Firestore write/Rule/index.",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-23",
+        "acceptedApplicationSha": "00713f18d81035016b9bb1e897f90bd55f6204c7",
+        "integratedMainSha": "8621f2f11222a38c0867eb80fe7b44e9ee464d23",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/150"
+      }
     }
   ],
-  "nextUnallocated": "08.44",
+  "nextUnallocated": "08.45",
   "nextUnallocatedNote": [
+    "v08.44 was allocated to the Hadith tab-switch keyboard-focus fix (issue #114 Gate A/B, PR #150), confirmed merged on 2026-09-23.",
     "v08.43 was allocated to the Health Atlas References index tranche 9 (issue #115 Gate A/B, PR #146), confirmed merged on 2026-09-23 -- the first global version number ever allocated to the Health stream, and the second version this session drafted-then-corrected after a concurrent-round collision (first drafted as v08.42, re-derived as v08.43 once issue #206's round took 08.42 first).",
-    "08.44 and later numbers remain unallocated; allocation requires MMSA Master Architect direction.",
+    "08.45 and later numbers remain unallocated; allocation requires MMSA Master Architect direction.",
     "v08.42 was allocated to the Word-by-Word whole-Qur'an/Juz percentage running counter round (issue #206, PR #209), BUILT AND GATED, confirmed merged on 2026-09-23.",
     "v08.41 was allocated to the Hadith breadcrumb aria-current fix (issue #114 Gate A/B, PR #149), confirmed merged on 2026-09-23.",
     "08.43 and later numbers remain unallocated; allocation requires MMSA Master Architect direction.",
@@ -507,9 +522,9 @@
       "branchTip": "43dd96f58eeee5ad33dc82bb4e260660e3c290c9",
       "branchTipNote": "The commit at which this stream's work reached `main` -- not a moving branch tip. branchTip is read by guard C only for an integrationState of HELD, so for a merged stream it is descriptive. Re-stamping it with the branch's own newest commit would name the very commit that wrote the stamp, and would move again every time the branch merged main: an endless self-reference. This commit never moves. The branch's pre-repair tip was c1a4f19a70ec824372fa1fda49e4e7dbc38bc40c.",
       "integrationState": "MERGED_TO_MAIN",
-      "declaredVersion": "08.41",
-      "declaredVersionNote": "08.41 (23 Sep 2026): the Hadith breadcrumb aria-current fix (issue #114 Gate A/B, PR #149) is this stream's first independently allocated application version since the 08.29 integration -- see versionAllocations. 08.28 (HISTORICAL, stamped at 7f61328) and 08.29 (RELEASED, stamped at 22526b2) stay in versionAllocations as facts about what it shipped before then -- nothing was withdrawn and nothing was re-allocated. 08.30 through 08.40 belonged to other streams; this stream carried no independent allocation across that span, and the version its branch's version.js read in that window was main's own, owned by whichever stream the ledger named.",
-      "baselineSha": "06986c72127111a4ba9dbd635df0630f427ca69b",
+      "declaredVersion": "08.44",
+      "declaredVersionNote": "08.44 (23 Sep 2026): the Hadith tab-switch keyboard-focus fix (issue #114 Gate A/B, PR #150) is this stream's second independently allocated application version since the 08.29 integration -- see versionAllocations. 08.41 (RELEASED, PR #149, the breadcrumb aria-current fix) is the prior one. 08.28 (HISTORICAL, stamped at 7f61328) and 08.29 (RELEASED, stamped at 22526b2) stay in versionAllocations as facts about what it shipped before then -- nothing was withdrawn and nothing was re-allocated. 08.30 through 08.40, 08.42, 08.43 belonged to other streams; this stream carried no independent allocation across those spans, and the version its branch's version.js read in that window was main's own, owned by whichever stream the ledger named.",
+      "baselineSha": "8621f2f11222a38c0867eb80fe7b44e9ee464d23",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
       "ownedPaths": [
         "app/hadith-*.html",
