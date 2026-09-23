@@ -2512,4 +2512,46 @@ export const BN = {
     "শুধুমাত্র সাম্প্রতিকতম নোটগুলো দেখানো হচ্ছে — এই ইউনিটে আরও আছে।",
   "No Notes yet on this Study Unit.": "এই স্টাডি ইউনিটে এখনো কোনো নোট নেই।",
   "My Notes for this unit": "এই ইউনিটের আমার নোট",
+
+  // --- MAP Phase 6 (P6-F, issue #199) -- Mapping My Journey, all three view options + toggle ---
+  "QuranRevival — Mapping My Journey": "কুরআনরিভাইভাল — আমার যাত্রার মানচিত্র",
+  "Every permanent Note you've written, organised your way — folders, a timeline, or a path. Try all three; the app remembers which you picked.":
+    "আপনি যে সব স্থায়ী নোট লিখেছেন, সেগুলো আপনার নিজের পছন্দমতো সাজানো — ফোল্ডার, টাইমলাইন, অথবা পথ। তিনটিই চেষ্টা করে দেখুন; অ্যাপ মনে রাখবে আপনি কোনটি বেছে নিয়েছেন।",
+  "Everything": "সবকিছু",
+  "Timeline": "টাইমলাইন",
+  "Path": "পথ",
+  "All folders": "সব ফোল্ডার",
+  "+ New folder": "+ নতুন ফোল্ডার",
+  "Folder name": "ফোল্ডারের নাম",
+  "+ File a Note here…": "+ এখানে একটি নোট ফাইল করুন…",
+  "File in a folder…": "একটি ফোল্ডারে ফাইল করুন…",
+  "Move to…": "সরান…",
+  "(untitled folder)": "(শিরোনামহীন ফোল্ডার)",
+  "Personal Journey Map": "ব্যক্তিগত যাত্রা মানচিত্র",
+  "Reflection Archive": "প্রতিফলন আর্কাইভ",
+  "This folder is empty.": "এই ফোল্ডারটি খালি।",
+  "Your Personal Journey Map is empty so far — Notes you file here will appear as your own journey through what you've studied.":
+    "আপনার ব্যক্তিগত যাত্রা মানচিত্র এখনও খালি — এখানে আপনি যে নোট ফাইল করবেন, তা আপনার পড়াশোনার মধ্য দিয়ে নিজস্ব যাত্রা হিসেবে দেখা যাবে।",
+  "Your Reflection Archive is empty so far — file a Note here to keep it as a longer-term reflection, separate from your day-to-day journey.":
+    "আপনার প্রতিফলন আর্কাইভ এখনও খালি — এখানে একটি নোট ফাইল করে এটিকে আপনার দৈনন্দিন যাত্রা থেকে আলাদা, দীর্ঘমেয়াদী প্রতিফলন হিসেবে রাখুন।",
+  "Your path is empty so far — every Note you write will appear here as a new stop, oldest to newest.":
+    "আপনার পথ এখনও খালি — আপনি যে প্রতিটি নোট লিখবেন তা এখানে একটি নতুন স্টপ হিসেবে দেখা যাবে, পুরনো থেকে নতুন ক্রমে।",
+  "Nothing here yet — Notes you write will appear on your timeline the day you write them.":
+    "এখনও এখানে কিছু নেই — আপনি যে দিন নোট লিখবেন, সেদিনই তা আপনার টাইমলাইনে দেখা যাবে।",
+  "Unknown date": "অজানা তারিখ",
+  "Showing the most recent Notes only — there are more in this folder.":
+    "শুধুমাত্র সাম্প্রতিকতম নোটগুলো দেখানো হচ্ছে — এই ফোল্ডারে আরও আছে।",
+  "You're viewing {name}'s Journey. Only {name} can create folders or file Notes here — you can only read it.":
+    "আপনি {name}-এর যাত্রা দেখছেন। শুধুমাত্র {name} এখানে ফোল্ডার তৈরি বা নোট ফাইল করতে পারবেন — আপনি এটি শুধু পড়তে পারবেন।",
+  "{count} folder(s) could not be shown safely and are not listed below — this needs administrator attention.":
+    "{count}টি ফোল্ডার নিরাপদে দেখানো যায়নি এবং নিচে তালিকাভুক্ত নয় — এতে প্রশাসকের দৃষ্টি প্রয়োজন।",
+  "No folder matched that name — nothing filed.": "সেই নামের কোনো ফোল্ডার পাওয়া যায়নি — কিছুই ফাইল করা হয়নি।",
+  "No folder matched that name — nothing moved.": "সেই নামের কোনো ফোল্ডার পাওয়া যায়নি — কিছুই সরানো হয়নি।",
+  "\"{title}\" filed in {folder}.": "\"{title}\" {folder}-এ ফাইল করা হয়েছে।",
+  "\"{title}\" moved to {folder}.": "\"{title}\" {folder}-এ সরানো হয়েছে।",
+  "File \"{title}\" in which folder? Type the exact name shown, or cancel.":
+    "\"{title}\" কোন ফোল্ডারে ফাইল করবেন? দেখানো নামটি হুবহু লিখুন, অথবা বাতিল করুন।",
+  "Move \"{title}\" to which folder? Type the exact name shown, or cancel.":
+    "\"{title}\" কোন ফোল্ডারে সরাবেন? দেখানো নামটি হুবহু লিখুন, অথবা বাতিল করুন।",
+  "Folder \"{name}\" created.": "ফোল্ডার \"{name}\" তৈরি হয়েছে।",
 };

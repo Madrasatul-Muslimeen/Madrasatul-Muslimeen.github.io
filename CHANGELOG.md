@@ -15693,3 +15693,176 @@ was not measured at 320/360/390/412px in a real browser in either
 language — the same Playwright/`chromium_headless_shell` environment gap
 the sanitization test's own header records — a real-phone check is the
 recommended substitute, the style Phase 3 and v08.35/v08.36 already used.
+
+**MAP Phase 6 (P6-F, issue #199) — MAPPING MY JOURNEY, ALL THREE SCREEN
+OPTIONS BUILT AND SWITCHABLE, over the already-accepted Phase 6 data layer
+that had sat unreached since P6-A/P6-E.** The Owner's own instruction: *"Don't
+wait for my design. Build all three options now with a toggle to switch
+between them, so I can try each in the real app and choose."* — reversing the
+earlier plan (`docs/governance/2026-09-22-mapping-my-journey-screen-options.md`)
+of showing mockups first. New page `app/journey-map.html`, no new exported
+function on `journey-map-service.js` or `note-foundation.js` (the issue's own
+constraint — this round is the screen, not the data layer).
+
+**A shared toggle over ONE load of the same data, not three pages.** One
+`refreshAll()` reads the person's folder tree (`ownerFolderTree()`) and their
+Notes (`listNotesForOwner()`) once; **Folders**, **Timeline** and **Path** all
+render from that same pair of arrays, and switching between them (a three-
+button segmented control, ≥36px tap targets) never re-fetches. The last-chosen
+view is remembered in `localStorage` (`qr.journeyMapView`) as a per-viewer
+convenience — explicitly not data, per the issue.
+
+**Option A — Folders**, built in the order the issue asked (A first, as the
+safest fallback). The two system folders (**Personal Journey Map**,
+**Reflection Archive**) always sort first; a person's own folders follow.
+Tapping a folder shows what's filed in it (`folderContents()`); tapping a Note
+expands a read-only, sanitized preview in place — editing a permanent Note
+stays `notes.html`'s job, scoped to the Study Unit it was written about, not
+this screen's. A person can create a top-level folder (`+ New folder`), file
+an unfiled Note into one (`+ File a Note here…`, unambiguous — it only ever
+ADDS a filing, ADR-010 §5's many-to-many), and move a Note between folders
+(`Move to…`, retire-and-create through `moveNoteToFolder()`) — offered only
+inside a folder's own contents, where the placement being retired is
+unambiguous; Timeline/Path offer "File in a folder…" instead (an unambiguous
+ADD) rather than a "Move" that couldn't know which of a Note's several
+filings to retire. **Folder rename/reorder/re-parent/retire — built and
+exported by `journey-map-service.js` since P6-D/P6-E — are deliberately NOT
+wired into this screen**: the issue scoped this round to organising and
+filing, not folder management, and `journey-map-screen.mjs`'s own check names
+exactly the five wrappers (`renameFolder`/`reorderFolder`/`moveFolder`/
+`retireFolder`/`reorderFiling`) this page must never call, so a later round
+that adds folder-editing UI does so deliberately rather than by accident.
+
+**The two system folders are represented before either has a Firestore
+document, and never as a faked one.** ADR-010 §3 says every person HAS
+exactly two system folders; nothing server-side creates them in advance. This
+screen renders them as VIRTUAL nodes (`folderId: null`) — real enough to tap,
+open, and see the correct empty-state sentence for, but never presented as a
+stored document. The FIRST write that genuinely needs one to exist (filing a
+Note into it, or moving one there) creates it for real, once
+(`ensureRealFolder()` → a genuine, I17-stamped `createNoteFolder()` call) —
+stated as the judgment call the issue itself asked for rather than guessed at
+silently, because the alternative (fabricating a document that was never
+written) would be the app asserting a deployment fact nobody proved.
+
+**Option B — Timeline.** Every Note newest-first, grouped by calendar day,
+with filter chips (Everything / Personal Journey Map / Reflection Archive /
+each of the person's own folders) reusing the same `folderContents()` read a
+chip's folder needs. **A render token, not a bare element lookup, resolves a
+race the naive shape would have gotten wrong**: clicking a second chip before
+the first's read resolves re-renders both the chips and a fresh
+`#timelineBody`, so a bare post-`await` `getElementById()` would find (and
+wrongly fill) the SECOND click's own container with the FIRST click's stale
+results — `timelineRenderToken` is bumped per render and checked before
+writing, so a superseded load writes nothing rather than winning the race.
+
+**Option C — Path, an HONEST FIRST PASS, exactly as the issue asked for
+rather than either skipped or over-built.** A straight vertical track, every
+Note as a stop in date order (oldest first — a journey read top to bottom),
+enough to compare against A and B. **What it deliberately does NOT build, and
+why, stated in the code rather than silently dropped**: the options doc's own
+"named regions the path passes through" and "side-trails" for a person's own
+folders. A Note can be filed in more than one folder at once (ADR-010 §5's
+many-to-many), so a single continuous line cannot honestly show "this stretch
+IS the Archive" — a Note filed in both the Archive and a side folder would
+need to occupy two places on one line simultaneously. A real build of the
+region/side-trail version needs that resolved first (one path per region with
+cross-links, or a branching diagram rather than a single line), which is
+genuinely more design work than this round's honest-first-pass budget.
+
+**Every view states its own empty state, in words, in both languages** — the
+likely-true zero-Notes, two-system-folders-only case the issue named
+explicitly: Folders names what an empty Personal Journey Map and an empty
+Reflection Archive each mean (not a generic "empty"); Timeline says Notes
+will appear here the day they're written; Path says the same for stops.
+`buildFolderTree()`'s own **"nothing is silently dropped"** rule is carried
+into the screen too — an orphaned, cyclic or too-deep folder (never
+produced by this screen's own writes, but not assumed impossible either) is
+named in a banner rather than vanishing from the list.
+
+**Nav entry point: Home ▾ menu**, alongside Records/Monitor/About — stated
+and reasoned in the PR per the issue's own ask. `app/notes.html`'s own entry
+point (the Read screen's ⋯ menu, `"📔 " + t("My Notes for this unit")` in
+`ayah-note-renderer.js`) is untouched; Mapping My Journey is a whole-person,
+whole-app screen, not scoped to one Study Unit, so it does not belong beside
+a per-unit contextual link.
+
+**Read-only for everyone but the Note owner, mirroring
+`isNoteOwner()`/`canReadNoteOf()` in `firestore.rules` exactly the way
+`notes.html` already does.** Every write-triggering control (`+ New folder`,
+`+ File a Note here…`, `Move to…`) is gated behind `isSelfSelected()`; a
+guardian/teacher/admin viewing someone else's journey gets the same three
+views, entirely read-only, with a banner saying so in words.
+
+**A Note's `bodyHtml` is never rendered unsanitized.** The same DOMPurify
+CDN `<script>` tag and `sanitizeNoteHtml()` allow-list `notes.html` already
+uses — every one of the (small number of) places this screen reads
+`note.bodyHtml` goes through it before ever touching `innerHTML`,
+mutation-checked by `journey-map-screen.mjs`.
+
+**Translated in both languages from the first commit (I11)**, verified
+programmatically rather than by eye: every `t("...")`/`t('...')` key this
+page calls (33, after filtering one false match on
+`document.createElement("button")`) has a Bangla entry in
+`app/js/i18n/bn.js`, including the page's own `<title>` and intro paragraph.
+
+**`tools/i18n-verify/journey-map-boundary.mjs` — the P5-D-era reachability
+guard — UPDATED IN PLACE, WITH THE REASON RECORDED, NEVER WEAKENED, the
+SAME shape its own file history already records twice (v08.30's D1/D2/D4
+guard, the 19 Sep D3-chokepoint round, and this suite's own P5-D update).**
+Its whole claim used to be *"`journey-map-service.js` remains completely
+unreachable by any page"* — true only because nothing had wired it in yet,
+and this round is exactly that wiring. The claim is narrowed rather than
+dropped: `journey-map-service.js` is reachable now, but ONLY from
+`app/journey-map.html`; `journey-map-contract.js` is reachable from exactly
+TWO audited pages (`app/notes.html` via `note-foundation.js`, unchanged; and
+`app/journey-map.html` via `journey-map-service.js`, this round) and by no
+other route — the new page deliberately does NOT import the pure contract a
+second, separate way, mirroring its two closed-vocabulary role ids as a
+local constant instead, so the claim stays two-route rather than
+three-route. **The protection that actually matters — WHICH Phase 6
+functions each wired page may call — is asserted directly**: `app/notes.html`
+still names none of them; `app/journey-map.html` names only the two it
+imports directly (`createNoteFolder`, `createNotePlacement`) plus what
+`journey-map-service.js` already wraps, and a separate check names the five
+folder-editing wrappers this page must never call. **17/17 checks pass.**
+
+**A new focused suite, `tools/i18n-verify/journey-map-screen.mjs` (16
+checks), covers the SCREEN's own contract** — the toggle really offers all
+three views over one shared load; every view's empty state; the system
+folders' virtual-then-real lifecycle; the sanitization boundary; the
+per-write ownership gate; full translation coverage; and the nav entry
+point, both new and untouched. **Three real bugs in the suite's OWN first
+draft were found and fixed while writing it, not shipped**: a `localStorage`
+check that assumed a literal key argument where the page (correctly) uses a
+shared constant; an `isSelfSelected()` proximity check that matched a
+*comment* naming "Move to…" before the real gated call site, rather than the
+literal `t("Move to…")` call; and a check for the existing `notes.html` entry
+point that looked in the wrong file (`quranrevival.html`) for a string that
+actually lives in `ayah-note-renderer.js`. Each was fixed by tightening the
+check to what is actually true, never by loosening the claim.
+
+**`journey-map-contract.js` was NOT changed** — read, not altered, per the
+issue's own instruction; every rule it enforces (cycle/depth bounds, Origin
+≠ Destination) is exactly as P6-A left it.
+
+**Neither `firestore.rules` nor `firestore.indexes.json` changed** — the
+Phase 3-6 Rules candidate already governs `noteFolders`/`notePlacements`
+(published by the Owner, 22 Sep 2026, recorded above), and every write this
+round makes was already authorised; nothing needed a new Rule.
+`app/js/version.js` is untouched, per the Builder contract.
+
+**LAYOUT WAS NOT MEASURED IN A REAL BROWSER — a harder form of the same gap
+CLAUDE.md's v08.35/v08.36 and the notes.html round (P5-D) already record.**
+Those two rounds were missing one Playwright browser build
+(`chromium_headless_shell-1243`); this sandbox does not have the `playwright`
+package installed AT ALL (`node tools/i18n-verify/behaviour.mjs` fails at
+`import` with `ERR_MODULE_NOT_FOUND: playwright`), so no Playwright-driven
+suite — `behaviour.mjs`, `layout.mjs`, `panel.mjs`, `navcheck.mjs`,
+`reading.mjs` — could be run for this round at all, on this brand-new page or
+anywhere else. This is recorded as a genuine, confirmed environment
+limitation, not a code defect, exactly as those two prior rounds' own
+entries frame it; the source-level `journey-map-screen.mjs` suite above is
+what plain Node can prove, and a real-phone open-and-tap-each-view check at
+320/360/390/412px in both languages, across all three views, is the
+recommended substitute this round could not perform itself.
