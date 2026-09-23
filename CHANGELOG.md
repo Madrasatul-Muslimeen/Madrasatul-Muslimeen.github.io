@@ -16697,3 +16697,147 @@ path touched, no Firestore write/Rule/index.
 `app/js/version.js`: 08.45 → **08.46**. Allocated by the MMSA Architect.
 See `docs/governance/programme-integration-ledger.json` for the version
 allocation record.
+
+---
+
+## v08.47 — RETROACTIVE ALLOCATION (23 Sep 2026): MAP Phase 5 P5-D, the Notes screen, round 1 (issue #195, PR #198, merged 22 Sep 2026)
+
+**This round shipped real functionality on 22 Sep 2026 and was never given
+a version number until now.** Issue #195 (supersedes #180) is the Owner's
+own top priority that day: *"Notes screen (Phase 5): start it next, as
+the main piece of visible work."* The Builder's PR #198 was correctly
+merged to `main` as commit `530af1f`, and every other round that landed
+the same day (v08.35, v08.36) received its own version-allocation
+follow-up — this one did not. It sat on `main`, live, unnumbered, through
+v08.35 → v08.46 (a full day and more of other rounds landing on top of
+it). Found and closed during this session's own routine sweep, the same
+sweep that investigated whether D3 Journaling — recorded in this file's
+19 Sep 2026 entry as page-unreachable, "0 of 29 pages reach it" — had
+become reachable now that a real Notes screen exists.
+
+**A new real page, `app/notes.html` (+ `app/js/note-sanitize.js`), wired
+to the existing, previously-uninvoked data layer** —
+`app/js/study-note-service.js` (`createStudyNote`, `reviseStudyNote`,
+`retireStudyNote`, `notesForStudyUnit`, `recordJournalEvidence`) and
+`app/js/note-foundation.js` (`listNoteRevisions`). No new exported
+function was added to either — the screen was buildable entirely on top
+of what P5-B/P5-C/P5-E already shipped. For the CURRENT Study unit: lists
+existing Notes (`notesForStudyUnit`), creates a new one, revises an
+existing one's content (showing the new `revisionId` a revision actually
+produces, not just that the text changed), shows a plain read-only
+revision history list, and retires one — worded "Remove", matching
+v08.01's own `trackables` convention, phrased so the confirm dialog says
+plainly that nothing is destroyed (I4).
+
+**Entry point: a new, enabled item in the Read screen's existing ⋯
+("more") menu** inside the "Note & more" full-stage view
+(`app/js/ayah-note-renderer.js`'s `renderNoteView()`) — **"📔 My Notes for
+this unit"**, linking to `notes.html?unit=<unitKey>&label=<label>`. The
+OLD quick-note surface (`ayah-notes.js`) is untouched, per ADR-009 §5's
+own "promoted, never migrated" rule.
+
+**Only a Note's own author may create, revise or retire it** —
+`isNoteOwner()` in the deployed Rules is deliberately not
+`canRecordFor()` (a Note is a person's own private writing, never a
+record kept about them on someone else's behalf) — so the screen hides
+Create/Edit/Remove and shows a plain sentence explaining why whenever the
+selected roster person is not the signed-in login's own person in this
+tenant; reading (`canReadNoteOf()`) is available to a guardian, a
+co-enrolled teacher and the tenant owner/prime exactly as the Rules
+already allow.
+
+**REQUIRED sanitization, built exactly as specified.** DOMPurify is
+loaded from the pinned `cdn.jsdelivr.net` URL as a plain `<script>` tag —
+this codebase's first vendored third-party script — and
+`app/js/note-sanitize.js` wraps it with a small allow-list. Every render
+of a Note's `bodyHtml` goes through `sanitizeNoteHtml()`, never straight
+to `innerHTML`; the function itself fails closed, throwing rather than
+silently returning raw HTML, if `window.DOMPurify` is ever absent.
+`tools/i18n-verify/note-sanitize-boundary.mjs`, 7 checks, mutation-proven
+(reverting one render call site to raw `innerHTML` fails it, naming the
+exact offending line).
+
+**`tools/i18n-verify/study-note-boundary.mjs` was UPDATED IN PLACE, with
+the reason recorded, never weakened, in the SAME round that built this
+screen.** Its whole premise since P5-C — "NO PAGE can reach
+`study-note-service.js`/`study-note-binding.js`" — was true only because
+nothing had built the screen these modules exist for; this round makes
+that assertion false by design, the identical shape v08.30's own D1/D2/D4
+reachability guard inverted, and 19 Sep 2026's D3-chokepoint round
+inverted again. The two checks now assert the stronger, narrower claim:
+exactly `app/notes.html` reaches the service, and the binding is reached
+only through the service, never directly by any page. 18/18 pass.
+
+## D3 JOURNALING: THE ANSWER TO "IS IT REACHABLE NOW" IS YES — AND IT IS ALSO ALREADY TURNED ON
+
+**Verified directly by the Architect at this retroactive allocation, not
+assumed from the CHANGELOG entry above.** `app/js/study-evidence-
+readiness.js`'s `EVIDENCE_PERSISTENCE_DECLARATION.ready` reads `true`
+(the governed decision recorded at v08.34, 22 Sep 2026 — Phase 3-6 Rules
+deployed and word-by-word progress verified on the Owner's own phone), so
+`notes.html`'s save path records real Journaling Activity evidence for a
+real reader **right now**, not merely once some future gate opens.
+
+The wiring is correct end to end: `notes.html`'s `afterCreateOrRevise()`
+calls `recordJournalEvidence(db, evidence, uid)` (imported from
+`study-note-service.js`) only after a real `createStudyNote`/
+`reviseStudyNote` call succeeds — never on load, never on a read.
+`recordJournalEvidence()` calls `recordStudyEvidence()`, the ONE
+chokepoint in `study-event-wiring.js`, exactly as the 19 Sep 2026
+D3-chokepoint round required (`docs/reports/2026-09-19-quranrevival-d3-
+journaling-chokepoint.md`) — that round removed `study-note-service.js`'s
+direct call to the evidence store precisely so that the day something
+wired D3 in, it would go through the chokepoint automatically. It does.
+`recordStudyEvidence()` itself re-checks `isStudyEvidencePersistenceReady()`
+before writing, so the write-gate-blocking guarantee this app's other
+evidence paths (D1/D2/D4) carry applies identically here.
+
+**`study-activity-evidence-boundary.mjs` already asserts this, correctly,
+and was updated for it in the SAME round that built the screen** — not a
+stale check this allocation had to fix. The importer set of the evidence
+store is asserted to be exactly `[study-event-wiring.js]` (no widened
+exception list); the reachability invariant, inverted back in the 19 Sep
+2026 D3-chokepoint round from "no page may reach the writer" to "every
+page-reachable path must pass through the wiring module", is
+re-confirmed true today. Re-run at this allocation: **27 passed, 0
+failed.** `study-note-boundary.mjs`'s own `KNOWN_WIRED_PAGE =
+"app/notes.html"` constant independently pins the same fact from the
+Note-side suite: **18 passed, 0 failed.**
+
+**A Note filed against a unit type ADR-008 §6 does not cover
+(`juz`/`hizb`/`rub`/`manzil`/`page`/`topic`/`name`) records no Journaling
+evidence, and says nothing about it** — `journalEvidenceArgs()` (in
+`app/js/note-journal-evidence.js`) returns `null` for those unit types,
+and `afterCreateOrRevise()`'s own `if (!evidence) return;` means the
+screen shows no message at all rather than a false "recorded" claim. This
+is silence by design (ADR-008's own scope), not a defect.
+
+**Not built this round, per the issue's own scope**: folders, Mapping My
+Journey filing (`noteSources`/`notePlacements`/`noteFolders` — Phase 6,
+built later as v08.37's Journey Map screen); choosing a translator;
+anything beyond one Study unit's own Notes. Layout was not measured at
+320/360/390/412px in a real browser in either language — the same
+Playwright/`chromium_headless_shell` environment gap this file records
+repeatedly elsewhere; a real-phone open-and-tap-through check, both
+languages, is the recommended substitute.
+
+**Translated in both languages from the first commit (I11)**: every new
+static and dynamically-rendered string on the page, plus the one new item
+in the ⋯ menu. Rich-text toolbar labels reuse the exact keys
+`ayah-note-renderer.js`'s own Notes editor already established.
+
+**Independently re-verified by the Architect at this retroactive
+allocation**: fresh full-history checkout of current `main` (which
+already carries this round via PR #198's earlier merge), all 11
+governance suites clean, `note-sanitize-boundary.mjs` 7/0,
+`study-note-boundary.mjs` 18/0, `study-activity-evidence-boundary.mjs`
+27/0, PR #198's diff read by hand against what this entry describes. No
+protected path touched by this allocation beyond the version-allocation
+files themselves (`firestore.rules`/`firebase.json`/`app/js/version.js`
+[this file only] genuinely untouched by the Builder's own round, per PR
+#198's own claim, confirmed by diff).
+
+`app/js/version.js`: 08.46 → **08.47**. Allocated by the MMSA Architect,
+retroactively, for a round that merged to `main` on 22 Sep 2026. See
+`docs/governance/programme-integration-ledger.json` for the version
+allocation record.
