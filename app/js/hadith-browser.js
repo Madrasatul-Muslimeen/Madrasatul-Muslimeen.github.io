@@ -222,6 +222,30 @@ function controls(state, render) {
   return bar;
 }
 
+/**
+ * A book/chapter row's own native-script heading (e.g. "كتاب البداية"),
+ * always the SOURCE edition's own text -- never translated, by design (the
+ * translated title sits beside it in its own span). Every OTHER source-script
+ * surface in this file stamps `lang`/`dir` (the occurrence card's Arabic
+ * paragraph, the commentary panel's Arabic title) so a screen reader uses the
+ * right pronunciation rules and a reader's browser applies the right
+ * direction; this one, reproduced live in the real rendered Books/chapters
+ * list, did not (issue #114 Gate B). `getComputedStyle().direction` still
+ * came out "rtl" because the Unicode Bidi Algorithm auto-detects a run of
+ * pure Arabic characters -- so it LOOKS right and a sighted mouse-only check
+ * would never catch this -- but `lang` has no such fallback: a screen reader
+ * with no language cue reads it in the page's UI language (English/Bangla)
+ * voice and pronunciation rules, mispronouncing every book and chapter
+ * heading in the list. Current-location semantics, breadcrumb ancestry and
+ * focus handling are all untouched by this fix.
+ */
+function rawHeadingSpan(rawHeading) {
+  const span = el("span", "hadith-row-heading", rawHeading);
+  span.lang = SOURCE_LANGUAGE;
+  span.dir = "rtl";
+  return span;
+}
+
 // ---------------------------------------------------------------------------
 // Source view -- collection -> book -> chapter -> occurrence, in source order
 // ---------------------------------------------------------------------------
@@ -254,7 +278,7 @@ function renderCollections(body, state, render) {
       const row = el("button", "hadith-row");
       row.dataset.hadithBook = b.bookChapterId;
       row.appendChild(el("span", "hadith-row-name", langText(b.title, uiLang)));
-      row.appendChild(el("span", "hadith-row-heading", b.rawHeading));
+      row.appendChild(rawHeadingSpan(b.rawHeading));
       row.addEventListener("click", () => { state.bookId = b.bookChapterId; state.chapterId = null; render(); focusCollectionsLanding(); });
       list.appendChild(row);
     }
@@ -277,7 +301,7 @@ function renderCollections(body, state, render) {
       const row = el("button", "hadith-row");
       row.dataset.hadithChapter = c.bookChapterId;
       row.appendChild(el("span", "hadith-row-name", langText(c.title, uiLang)));
-      row.appendChild(el("span", "hadith-row-heading", c.rawHeading));
+      row.appendChild(rawHeadingSpan(c.rawHeading));
       row.addEventListener("click", () => { state.chapterId = c.bookChapterId; render(); focusCollectionsLanding(); });
       list.appendChild(row);
     }

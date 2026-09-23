@@ -45,11 +45,35 @@ await click('[data-hadith-tab="collections"]');
 await settle();
 await click('[data-hadith-edition="synthetic-alpha-ar-v1"]');
 await settle();
+// --- Book/chapter row headings carry their own source-script `lang`/`dir`
+// (issue #114 Gate B, found by reproduction). `.hadith-row-heading` prints
+// the SOURCE edition's own native-script heading (e.g. "كتاب البداية"), and
+// every OTHER source-script surface this component renders (the occurrence
+// card's Arabic paragraph, the commentary panel's Arabic title) already
+// stamps `lang`/`dir` -- this one did not. `getComputedStyle().direction`
+// still read "rtl" even before the fix, because the Unicode Bidi Algorithm
+// auto-detects a run of pure Arabic characters, so a sighted mouse-only
+// check would never have caught this; `lang` has no such fallback, and a
+// screen reader with no language cue reads the heading in the page's UI
+// language voice, mispronouncing it. Checked at BOTH the book list (this
+// edition, chapter-level) and the chapter list below, and again on the
+// no-chapter-level edition further down -- `rawHeadingSpan()` is the one
+// function all three paths call.
+check("a book row's native-script heading carries lang=\"ar\" and dir=\"rtl\"",
+  await page.evaluate(() => {
+    const h = document.querySelector(".hadith-row-heading");
+    return h?.getAttribute("lang") === "ar" && h?.getAttribute("dir") === "rtl" && h.textContent.trim().length > 0;
+  }));
 await click('[data-hadith-book="synthetic-alpha-b1"]');
 await settle();
 const bookCrumbText = await text(".hadith-crumb-current");
 check("the book breadcrumb shows the book's TRANSLATED title, not its raw internal id",
   !bookCrumbText.includes("synthetic-alpha-b1") && bookCrumbText.trim().length > 0);
+check("a chapter row's native-script heading carries lang=\"ar\" and dir=\"rtl\" too",
+  await page.evaluate(() => {
+    const h = document.querySelector(".hadith-row-heading");
+    return h?.getAttribute("lang") === "ar" && h?.getAttribute("dir") === "rtl" && h.textContent.trim().length > 0;
+  }));
 await click('[data-hadith-chapter="synthetic-alpha-b1-c1"]');
 await settle();
 const chapterCrumbText = await text(".hadith-crumb-current");
@@ -265,6 +289,11 @@ check("resetting to the top level (Collections crumb) lands focus on the 'Collec
 // the same landing logic must hold on that shorter path too.
 await click('[data-hadith-edition="synthetic-beta-ar-v1"]');
 await settle();
+check("on the no-chapter-level edition too, its book row's native-script heading carries lang=\"ar\" and dir=\"rtl\"",
+  await page.evaluate(() => {
+    const h = document.querySelector(".hadith-row-heading");
+    return h?.getAttribute("lang") === "ar" && h?.getAttribute("dir") === "rtl" && h.textContent.trim().length > 0;
+  }));
 await click('[data-hadith-book]');
 await settle();
 check("on a no-chapter-level edition, picking the book also lands focus, not <body>",
