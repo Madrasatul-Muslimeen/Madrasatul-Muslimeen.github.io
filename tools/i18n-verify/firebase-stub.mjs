@@ -354,6 +354,11 @@ export async function getCountFromServer(q) {
 export async function waitForPendingWrites() {}
 export function serverTimestamp() { return new Date(); }
 export function arrayUnion(...v) { return v; }
+// Issue #206 -- app/js/quran-word-total-data.js is the first module to
+// import increment(). A real sentinel object, not a resolved number: the
+// stub never mutates its own DATA (this file's own standing lesson), so a
+// caller must not be able to mistake this for the post-increment value.
+export function increment(n) { return { __increment: n }; }
 export function writeBatch() {
   let n = 0;
   return { set() { n++; }, update() { n++; }, async commit() { return __trip("batchCommit", "(batch of " + n + ")", null, function () {}); } };

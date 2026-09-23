@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAP Phase 4 — Activity evidence persistence ENABLED (v08.34)</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code, pre { background:var(--code); border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+  code { padding:.1em .38em; word-break:break-word }
+  pre { padding:.9rem 1rem; overflow-x:auto; margin:1rem 0 }
+  pre code { padding:0; background:none }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  blockquote { margin:1rem 0; padding:.2rem 1rem; border-left:3px solid var(--accent); color:var(--muted) }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} }
+</style></head><body><main>
+<h1>MAP Phase 4 — Activity evidence persistence ENABLED (v08.34)</h1>
+<ul>
+<li><strong>Date:</strong> 2026-09-22</li>
+<li><strong>Authority:</strong> MMSA Architect (this session), the sole closed authority <code>study-evidence-readiness.js</code> accepts (<code>READINESS_AUTHORITIES = ["master-architect"]</code>).</li>
+<li><strong>Status:</strong> GOVERNED DECISION, executed. This is the record <code>EVIDENCE_PERSISTENCE_DECLARATION.decision.reference</code> points at.</li>
+</ul>
+<hr>
+<h2>The decision</h2>
+<p><code>app/js/study-evidence-readiness.js</code>'s <code>EVIDENCE_PERSISTENCE_DECLARATION</code> is changed from <code>ready: false, decision: null</code> to:</p>
+<pre><code>ready: true,
+decision: {
+  by: "master-architect",
+  on: "2026-09-22",
+  reference: "docs/reports/2026-09-22-map-phase4-evidence-persistence-enabled.md",
+},</code></pre>
+<p>This enables the ✓ on <code>#readBar</code> (D1 Reading), the ≥80% Listening gate (D2) and the Word-by-Word gate (D4) to actually persist Activity evidence for every reader, effective the moment this change reaches <code>main</code>.</p>
+<hr>
+<h2>Why now — both preconditions this file's own design requires are met</h2>
+<ol>
+<li><strong><code>deployment.firebaseRulesDeployed.state</code> is YES.</strong> The Owner published the Phase 3-6 Rules candidate directly in the Firebase Console on 22 Sep 2026 (see CLAUDE.md's dated correction, same day). <code>firestore.rules</code> now contains <code>/evidence/</code> and the accepted <code>study-approach-contract:v1</code> literal — proven, not asserted, by <code>rules-deployment-candidate-phase3-6.mjs</code>'s own byte-exact check.</li>
+<li><strong>Phase 3 word-by-word progress was verified on the Owner's own real phone, the same day</strong>, following the exact steps: open Quran Study → tick &quot;Word by Word&quot; in Study options → tap an Arabic word → the &quot;WbW&quot; tab's &quot;Learning&quot;/&quot;Achieved&quot; button → close the card, reload the page, re-tap the same word → the pressed state survived the reload. The Owner's own words: <em>&quot;It worked, switch on Phase 4.&quot;</em></li>
+</ol>
+<p>Both conditions this module's header names as prerequisites (Rules deployed; a real save-and-reload proven, not merely Rules existing) are satisfied, and the second is stronger than the module's own minimum bar — it proves the <em>sibling</em> Firestore write path this Rules publish opened also works for real, not just that the Rules text parses.</p>
+<hr>
+<h2>What this actually changes for a real reader, today</h2>
+<ul>
+<li><strong>D1 Reading</strong>: the ✓ on <code>#readBar</code> stops being <code>aria-disabled</code>. A real tap creates one document at <code>activity/{tenant}__{person}__{week}/evidence/{eventId}</code> — create-only, deduplicated by the database because the identity IS the document id (ADR-008).</li>
+<li><strong>D2 Listening</strong> (≥80% of the selected unit) and <strong>D4 Word-by-Word</strong> (āyah + day, on the learner's own state action) start recording silently, exactly as v08.30/v08.31 built them — neither ever invited a press, and that is unchanged.</li>
+<li><strong>D3 Journaling remains out of scope</strong> — <code>note-journal-evidence.js</code> still has no reachable producer (P5-D, the Notes screen, is a separate in-progress Builder round, issue #180). Nothing about this decision wires it.</li>
+</ul>
+<hr>
+<h2>What does NOT change</h2>
+<ul>
+<li>The writer's own rethrow (I15) — untouched, still the defence-in-depth layer underneath this gate.</li>
+<li><code>bulkConfirmWeek()</code> — still reads only <code>entries[]</code>, never the evidence subcollection (the Activity-to-Mastery escalation guard, unaffected).</li>
+<li>Nothing about Notes (Phase 5) or Mapping My Journey (Phase 6) — those remain separate, in-progress Builder rounds (issues #180, #182).</li>
+</ul>
+<hr>
+<h2>Verification</h2>
+<ul>
+<li><code>app/js/study-evidence-readiness.js</code>'s own <code>isStudyEvidencePersistenceReady()</code> returns <code>true</code> for the new declaration (closed-authority, real-date, non-empty-reference checks all satisfied — the same predicate that has refused every prior bare-flip mutation continues to refuse a malformed one; it simply now also accepts this well-formed one).</li>
+<li><code>programme-ledger.mjs</code> guard G re-run clean against the updated ledger: the code's <code>ready</code> literal, the ledger's <code>evidencePersistenceReadiness</code> block, and <code>deployment.firebaseRulesDeployed.state</code> all agree.</li>
+<li><code>study-activity-evidence-boundary.mjs</code>'s own &quot;readiness declaration&quot; check updated in place (not deleted) to assert the new state is well-formed, since asserting the old &quot;defaults to false&quot; literal would now be asserting something no longer true — the same class of fix already applied across nine other suites the same day the Rules were confirmed deployed.</li>
+</ul>
+<hr>
+<h2>Version</h2>
+<p><strong>v08.34</strong>, allocated by the MMSA Architect. This is a real, user-facing behaviour change (a control moves from non-actionable to actionable and begins performing real writes) — the same reasoning v08.31 itself used for why the <em>gate</em> needed its own version, applied symmetrically to the gate's release.</p>
+</main></body></html>

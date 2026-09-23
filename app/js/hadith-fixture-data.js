@@ -204,6 +204,16 @@ export const TOPICS = Object.freeze([
     synonyms: { en: ["prayer", "salat", "salah"], bn: ["নামাজ", "সালাত"], ar: ["صلاة", "الصلاة"] },
     taxonomyRevision: TAXONOMY_REVISION,
   },
+  // A SECOND topic, added so the Topics tab has a real topic to NAVIGATE
+  // between rather than exactly one to hardcode -- see the H2 topic-navigation
+  // gap this fixture addition exists to prove. Reuses existing occurrence and
+  // book/chapter ids only; no new permanent id family, no real corpus text.
+  {
+    topicId: "synthetic-topic-wudu", synthetic: true,
+    label: { ar: "الوضوء", en: "Wuḍūʼ", bn: "ওজু" },
+    synonyms: { en: ["ablution", "wudu"], bn: ["ওজু", "অজু"], ar: ["وضوء", "الوضوء"] },
+    taxonomyRevision: TAXONOMY_REVISION,
+  },
 ]);
 
 /**
@@ -223,4 +233,8 @@ export const TOPIC_MAPPINGS = Object.freeze([
     rationale: "Whole book is about prayer.", reviewStatus: "unreviewed", reviewer: null, taxonomyRevision: TAXONOMY_REVISION, synthetic: true },
   { topicMappingId: "syn-map-0003", topicId: "synthetic-topic-salah", targetType: "occurrence", targetId: "syn-occ-0007",
     rationale: "Single occurrence in a collection with no chapter level.", reviewStatus: "unreviewed", reviewer: null, taxonomyRevision: TAXONOMY_REVISION, synthetic: true },
+  // The second topic's own mapping -- one chapter, so its index is small and
+  // clearly distinct in size from Salah's three mappings.
+  { topicMappingId: "syn-map-0004", topicId: "synthetic-topic-wudu", targetType: "bookChapter", targetId: "synthetic-alpha-b2-c1",
+    rationale: "Chapter heading names ablution before prayer.", reviewStatus: "unreviewed", reviewer: null, taxonomyRevision: TAXONOMY_REVISION, synthetic: true },
 ]);

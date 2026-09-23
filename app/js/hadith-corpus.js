@@ -62,6 +62,13 @@ export function editionOf(editionId) {
   return EDITION_BY_ID.get(editionId) ?? null;
 }
 
+/** The collection an edition belongs to -- read directly off the edition's own `collectionId`, never derived through an occurrence (issue #114, Gate A). */
+export function collectionOf(editionId) {
+  const edition = editionOf(editionId);
+  if (!edition) return null;
+  return COLLECTIONS.find((c) => c.collectionId === edition.collectionId) ?? null;
+}
+
 /** Top-level books of an edition, in source order. */
 export function booksOf(editionId) {
   return ordered(BOOK_CHAPTERS.filter((b) => b.editionId === editionId && b.parentId === null));
@@ -311,6 +318,62 @@ export { occurrencesUnder, compareBySourcePosition };
  * and its own place in the source order), so it counts once per occurrence,
  * never merged by text.
  */
+/**
+ * TOPIC COVERAGE -- corpus-wide, and a DIFFERENT question from `topicIndex()`
+ * or `exploreAggregate()`'s own per-topic `distinctOccurrences`/`mappingCount`.
+ *
+ * Those answer "how much does THIS topic reach". This answers: of every
+ * occurrence in the corpus, how many are reachable by AT LEAST ONE topic
+ * mapping (any topic), and how many are reached by none at all -- corpus-wide
+ * and per edition. With only one topic in the fixture the two questions look
+ * similar; the moment a second topic exists they diverge, because an
+ * occurrence reached by topic A is "covered" here even if topic A's own count
+ * is all this function has ever been asked about it.
+ *
+ * "Covered" is resolved through `topicIndex()` itself, never re-derived --
+ * an occurrence counted as covered here is exactly one `topicIndex()` would
+ * also list under its own topic, so the two can never disagree about what a
+ * mapping resolves to (chapter mappings included, via `occurrencesUnder()`).
+ *
+ * Deliberately excluded, same as `exploreAggregate()`: `reviewStatus` is not
+ * folded in here -- an unreviewed mapping still makes its target "covered" by
+ * the topic index today, and this counts what the index actually resolves,
+ * not what a future review might keep. That is `allMappingsReviewed`'s job,
+ * already reported per topic.
+ */
+export function topicCoverage() {
+  const coveredIds = new Set();
+  for (const topic of TOPICS) {
+    const idx = topicIndex(topic.topicId);
+    if (!idx) continue;
+    for (const group of idx.collections) {
+      for (const entry of group.entries) coveredIds.add(entry.occurrence.occurrenceId);
+    }
+  }
+
+  const editions = EDITIONS.map((ed) => {
+    const occurrencesInEdition = OCCURRENCES.filter((o) => o.editionId === ed.editionId);
+    const covered = occurrencesInEdition.filter((o) => coveredIds.has(o.occurrenceId)).length;
+    return {
+      editionId: ed.editionId,
+      occurrences: occurrencesInEdition.length,
+      covered,
+      uncovered: occurrencesInEdition.length - covered,
+    };
+  });
+
+  return {
+    taxonomyRevision: TAXONOMY_REVISION,
+    topics: TOPICS.length,
+    editions,
+    totals: {
+      occurrences: OCCURRENCES.length,
+      covered: coveredIds.size,
+      uncovered: OCCURRENCES.length - coveredIds.size,
+    },
+  };
+}
+
 export function exploreAggregate() {
   const collections = listCollections().map((c) => {
     const editions = EDITIONS.filter((e) => e.collectionId === c.collectionId).map((ed) => {
@@ -373,5 +436,38 @@ export function exploreAggregate() {
     topics,
     // Not zero, and not a number at all: there is no durable progress to read.
     progress: { available: false, reason: "no-durable-hadith-progress" },
+  };
+}
+
+/**
+ * TRANSLATION COVERAGE -- per edition and overall, how many occurrences carry
+ * an English or a Bangla version alongside the Arabic source.
+ *
+ * This reads only `availableLanguages()`, the same per-occurrence fact the
+ * reader's own language-fallback label already depends on (schema §1: a
+ * language is never fabricated). It counts the FIXTURE's own coverage, not
+ * any claim, tracked state or progress -- there is no Approach, no
+ * `trackableId` and nothing durable in reach here, the same boundary
+ * `exploreAggregate()` holds.
+ */
+export function translationCoverage() {
+  const perEdition = EDITIONS.map((ed) => {
+    const occurrences = OCCURRENCES.filter((o) => o.editionId === ed.editionId);
+    const withLang = (lang) => occurrences.filter((o) => availableLanguages(o).includes(lang)).length;
+    return {
+      editionId: ed.editionId,
+      collectionId: ed.collectionId,
+      occurrences: occurrences.length,
+      withEnglish: withLang("en"),
+      withBangla: withLang("bn"),
+    };
+  });
+  return {
+    perEdition,
+    totals: {
+      occurrences: perEdition.reduce((n, e) => n + e.occurrences, 0),
+      withEnglish: perEdition.reduce((n, e) => n + e.withEnglish, 0),
+      withBangla: perEdition.reduce((n, e) => n + e.withBangla, 0),
+    },
   };
 }

@@ -184,3 +184,178 @@ forward links side by side. No dataset, selector or view file from any
 tranche was changed in the process — see the tranche's own dated report for
 the full merge-conflict account and the exact three-branch dependency
 table.
+
+## Tranche 6 (`js/health-atlas-diagrams.js`, additive to `health-atlas-view.js`)
+
+Built directly on `main` (tranche 5 already merged, so no stacking was
+needed): the Body Systems page's own three-column layout, a two-level
+interactive systems/organs wheel, the three body-system diagrams the source
+actually built (Renal & Urinary, Sensory, Integumentary — the other six
+still show a plain "in progress" notice, matching the source's own split),
+and a name/function search box. All read-only, same deferral boundary as
+every earlier tranche. Guarded by `tools/health-atlas-verify/
+view-boundary-wheel.mjs` + its mutation-proof companion, and 5 new checks
+in `selectors.mjs`. Full account, the screen-by-screen parity matrix and
+the verification numbers: `docs/reports/
+2026-09-21-health-atlas-body-systems-parity-tranche6.md`.
+
+## Tranche 7 — correction + column drag-resize
+
+Two bounded, read-only changes on top of tranche 6, both in
+`health-atlas-view.js`/`health-atlas.html` only:
+
+1. **Corrected an unsupported claim tranche 6 shipped.** The "diagram still
+   in progress" placeholder asserted the text connections shown instead
+   "are accurate" — a word this app's own evidence-provenance model (every
+   one of the 82 function statements is `general-reference-only`, never
+   verified per-fact) does not support. Reworded to point at that text
+   without asserting its accuracy.
+2. **Ported the source's column drag-resize** for the sections and detail
+   columns either side of the (still-flexible) wheel column — the same
+   `mousedown`/`mousemove`/`mouseup` shape and mutable-width-object state
+   the source's own `startColumnDrag()`/`COL_WIDTHS` use, re-applied to
+   this view's CSS Grid layout rather than the source's flexbox one, with
+   its own (narrower) clamp range since this page's row is narrower than
+   the source's full-bleed one. Also keyboard-operable (`ArrowLeft`/
+   `ArrowRight` on a focused divider) as an accessibility addition beyond
+   the source's pointer-only strips — the same kind of addition the wheel
+   wedges already carry. Full account, the exact clamp values and reasons,
+   and the verification numbers: `docs/reports/
+   2026-09-21-health-atlas-body-systems-parity-tranche7.md`.
+
+## Tranche 8 — a committed, reproducible browser acceptance test, plus a navigation slice
+
+Two bounded, read-only changes, neither touching a dataset, selector or view file's own logic:
+
+1. **`tools/health-atlas-verify/body-systems-parity-browser.mjs` (new, committed).** Every prior
+   tranche's browser verification was a "focused, un-checked-in Playwright script … deleted before
+   commit" — real when it ran, not independently reproducible afterwards. This file fixes that gap
+   for the resizable three-column Body Systems UI specifically (the evidence gap issue #115 named):
+   a real Chromium walk, run with one command
+   (`node tools/health-atlas-verify/body-systems-parity-browser.mjs`), covering desktop/tablet/phone
+   with both mouse and keyboard — the 3-column grid, both dividers' drag-resize (clamped, persisting
+   across a redraw) and keyboard resize (clamped), the wheel's keyboard drill-down/back, search, the
+   three built diagrams, and the corrected "diagram in progress" placeholder text tranche 7
+   introduced. Proven able to fail, not just to pass: two independent mutations (reintroducing the
+   retracted "accurate" claim; loosening the s3 minimum clamp) were both caught, then reverted. This
+   follows the same "committed, not wired into CI" precedent `tools/i18n-verify/layout.mjs`,
+   `panel.mjs`, `reading.mjs` and `navcheck.mjs` already set in this repository —
+   `.github/workflows/verify.yml` explicitly excludes that whole class ("need Playwright and a
+   served app") and none of them is added to it here either.
+2. **Cross-linking between the three Health pages.** `health-atlas.html`'s footer already linked to
+   both `health-atlas-more.html` and `health-atlas-categories.html` (tranche 5), but those two pages
+   only ever linked back to `health-atlas.html`, never to each other — so reaching Master Categories
+   from Foods/Conditions/Age Groups meant going back through the Body Systems page first. Each now
+   also links directly to the other, completing the same full cross-link matrix
+   `health-atlas.html` already had. Read-only, no new data read, no new page.
+
+Full account and verification numbers: `docs/reports/
+2026-09-21-health-atlas-body-systems-parity-tranche8.md`.
+
+## Tranche 9 — a References index, linking into existing organ detail
+
+One bounded, read-only capability: a References index for the 8
+`HEALTH_ATLAS_REFERENCES`, reachable via a new two-tab bar
+(`Body Systems` / `References`) at the top of `health-atlas.html`, alongside
+the existing three-column Body Systems layout rather than replacing it.
+
+**What it reads: nothing new.** `organsForReference()` (the new selector,
+the reverse of the existing `referencesFor()`) reads only the same
+`organ.refs[]` field the detail column's own "General references" block
+has read since foundation tranche 1 — no new field, no new dataset, no
+change to `health-atlas-claims.js`'s evidence registry.
+
+**Gate A (source fields, ownership, boundary), decided before building:**
+the v02.04 standalone source's own References tab (`renderRefsTab()`) is a
+flat `id / name / url` table with **no organ links at all** — so "links
+into existing organ detail" is this tranche going beyond source parity, on
+issue #115's own instruction to add them "where supported". The app has no
+URL-addressable per-organ route (`health-atlas.html` takes no query
+parameter; organ selection is in-memory `state.selectedOrganId`), so an
+organ "link" is a real button wired to the exact same `onSelectOrgan()`
+path the sections column and the wheel legend already use — not a fabricated
+`<a href>` into a page that cannot resolve it. Ownership: all files touched
+are Health-owned (`app/health/**`, `tools/health-atlas-verify/**`); none is
+in any protected/shared-path family. Privacy/clinical boundary: unchanged —
+no nutrition/dose/remedy/treatment field is read, and the index explicitly
+disclaims that a reference listed for an organ backs that organ's material
+*in general*, never any one function statement individually (every
+statement's own evidence badge, unchanged by this tranche, is what actually
+makes that distinction; the index's own note text says so, and a static
+guard plus a browser check both assert the index text never uses the word
+"cited").
+
+**Gate B — built, since Gate A found no blocker.** `organsForReference()`
+in `health-atlas-selectors.js`; `buildViewTabs()` / `buildReferencesScreen()`
+in `health-atlas-view.js`; CSS for the tab bar and the references table in
+`health-atlas.html`. One real edge case exercised, not hypothetical: of the
+8 references, USDA FoodData Central (`r5`) is cited by zero organs in this
+dataset (it backs food-nutrition figures this view never renders, per the
+existing deferral boundary) — the index says so in words instead of
+rendering an empty cell.
+
+**Verification.** `selectors.mjs` gained 6 new checks for
+`organsForReference()`; `view-boundary-wheel.mjs` gained 4 new checks,
+including two positive controls (the index really links into organ
+detail, not a dead reference; the index text never claims per-statement
+verification) — both checks proven able to fail by two independent
+mutations (breaking the return-to-Body-Systems switch; weakening the
+disclaimer text), caught by both the static guard and the new browser
+suite independently, then reverted. New committed, reproducible browser
+suite `tools/health-atlas-verify/references-index-browser.mjs` (12 checks,
+desktop/tablet/phone, mouse click + keyboard Enter + a real touch tap),
+following the precedent tranche 8's `body-systems-parity-browser.mjs` set —
+not wired into `.github/workflows/verify.yml`, same reason every other
+Playwright-based suite here is not.
+
+Full account and verification numbers: `docs/reports/
+2026-09-21-health-atlas-references-index-tranche9.md`.
+
+## Tranche 10 — the view switcher's real keyboard/screen-reader operability (issue #115 Gate A/B)
+
+One bounded, read-only correction: `buildViewTabs()`'s two buttons
+(`Body Systems` / `References`) declared `role="tab"` + `aria-selected` and
+their container `role="tablist"`, borrowing the WAI-ARIA Tabs pattern's
+vocabulary without the rest of what that pattern requires — neither button
+carried `aria-controls`, nothing carried `role="tabpanel"`, and the
+tablist had no Left/Right/Home/End key handling. A screen-reader user was
+told "tab, 1 of 2" and then found nothing behind that promise; a
+keyboard-only user following the Tabs pattern's own arrow-key convention
+found it did nothing.
+
+**Gate A (reproduced before touching app code).** A new committed browser
+suite, `tools/health-atlas-verify/references-tabs-accessibility-browser.mjs`,
+was run against the unmodified tranche 9 commit (`5817643bf3a7`) first:
+5 of its 10 checks failed exactly as described above (no `aria-controls`,
+no `role="tabpanel"`, `role="tab"`/`"tablist"` present with no `aria-pressed`
+equivalent). See the dated report for the raw console output of that run.
+
+**Gate B — the fix.** These two buttons switch between two whole,
+unrelated screens (the Body Systems 3-column layout and the References
+table), not panels of one shared view, so building out full tab semantics
+(panels, `aria-controls`, arrow-key roving tabindex) would be real
+complexity spent modelling a pattern that does not describe what this
+control actually is. Issue #115's own instruction named the alternative:
+"ordinary buttons if these are view-switch actions." `buildViewTabs()` now
+drops `role="tab"`/`"tablist"`/`aria-selected` entirely and uses two plain
+`<button type="button">` elements with `aria-pressed` (the WAI-ARIA
+toggle-button pattern) inside a `role="group"` container with an
+`aria-label`. A native `<button>` needs no bespoke keyboard handling at
+all — it is already in the normal Tab order and already activates on both
+Enter and Space — and this screen never suppresses its focus outline, so
+"visible focus" was already true and stayed true. Re-running the new
+suite against the fix: 10/10 pass. `references-index-browser.mjs`'s own
+pre-existing `aria-selected` assertions were updated in place to
+`aria-pressed` (the attribute the fixed pattern actually uses) — still
+12/12 passing.
+
+**What this tranche did NOT do.** It did not build the full ARIA Tabs
+pattern (tabpanels, `aria-controls`, arrow-key navigation) — issue #115's
+instruction named ordinary buttons as an equally valid outcome when the
+controls are view-switch actions, which these are, so this is the
+narrower, more conformant fix rather than a partial one. It touched no
+protected/shared path, no version number, and nothing outside
+`app/health/**` and `tools/health-atlas-verify/**`.
+
+Full account, the Gate A raw failure output, and verification numbers:
+`docs/reports/2026-09-21-health-atlas-references-tabs-accessibility.md`.

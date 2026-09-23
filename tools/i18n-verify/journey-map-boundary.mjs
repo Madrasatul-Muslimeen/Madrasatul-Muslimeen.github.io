@@ -69,16 +69,72 @@ function chainsToTarget(target) {
 check("POSITIVE CONTROL: the reachability walker really does find a wired module", () => {
   assert.ok(chainsToTarget("records.js").length > 0, "the walker is not working");
 });
-check("NO PAGE can reach the journey contract or its service, by any chain", () => {
-  assert.deepEqual(GUARDED.flatMap((g) => chainsToTarget(g)), []);
+
+// UPDATED 22 Sep 2026 for MAP Phase 5 P5-D (issue #195), WITH THE REASON
+// RECORDED RATHER THAN THE CHECK WEAKENED. Until that round "NO PAGE can
+// reach the journey contract OR its service" was one claim, true only
+// because nothing page-reachable had ever loaded `note-foundation.js` AT
+// ALL. P5-D wires `study-note-service.js` -- an ALREADY-ACCEPTED Phase 5
+// wrapper that has imported `note-foundation.js` since it was written -- into
+// a real page (`app/notes.html`) for the first time, and `note-foundation.js`
+// has imported the journey contract since P6-B (15 Sep 2026), for its own
+// Phase 6 folder-cycle validation. There is no way to wire ANY Phase 5 Note
+// function into a page without the whole module loading, so blanket
+// unreachability of `journey-map-contract.js` stopped being achievable the
+// moment P5-D was authorised.
+//
+// UPDATED AGAIN 22 Sep 2026 for MAP Phase 6 P6-F (issue #199, this round),
+// FOR THE SAME REASON. This round is the one P5-D's own comment predicted
+// would eventually land: it wires `journey-map-service.js` -- the Phase 6
+// SERVICE, the one thing the P5-D update above said stayed completely
+// unreachable -- into a brand-new page, `app/journey-map.html`. Asserting
+// blanket unreachability for the service now would be asserting THIS
+// round's own wiring does not work, the identical inversion this file's own
+// history already records twice over (v08.30's D1/D2/D4 guard, 19 Sep's
+// D3-chokepoint round, and P5-D immediately above). The claim is narrowed a
+// second time, the same way, to what still actually holds:
+//
+//   (a) `journey-map-service.js` is reachable now, but ONLY from the one
+//       audited P6-F page (`app/journey-map.html`), and by no other chain.
+//   (b) `journey-map-contract.js` is reachable from TWO audited pages now --
+//       `app/notes.html` (via `note-foundation.js`, unchanged since P5-D) and
+//       `app/journey-map.html` (via `journey-map-service.js`, this round) --
+//       and by no route that skips both of those intermediaries. The new
+//       page deliberately does NOT import the pure contract a second,
+//       separate way (it mirrors the two closed-vocabulary role ids as a
+//       local constant instead -- see the page's own comment), so this stays
+//       a two-route claim, not a three-route one.
+//   (c) The behaviour ADR-010 actually protects -- which Phase 6 FOLDER or
+//       PLACEMENT functions the two wired pages are allowed to call -- is
+//       asserted directly, below, rather than inferred from unloadability:
+//       `app/notes.html` (P5-D's own scope) still may call NONE of them;
+//       `app/journey-map.html` (this round's own scope) legitimately calls
+//       the read/create/move subset this round actually built, and is
+//       checked against exactly that subset, not a blanket allowance.
+const CONTRACT_WIRED_PAGES = ["app/journey-map.html", "app/notes.html"];
+const SERVICE_WIRED_PAGE = "app/journey-map.html";
+
+check("journey-map-service.js -- the Phase 6 service -- is reachable ONLY from the one audited P6-F page", () => {
+  const chains = chainsToTarget("journey-map-service.js");
+  const pages = [...new Set(chains.map((c) => c.split(" -> ")[0]))];
+  assert.deepEqual(pages, [SERVICE_WIRED_PAGE],
+    `unexpected page(s) reaching journey-map-service.js: ${chains.join(" | ")}`);
 });
-check("every importer of the journey modules is itself unreachable from any page", () => {
-  // UPDATED 2026-09-15 (P6-B), with the reason recorded rather than the check
-  // deleted. P6-B closes createNoteFolder()'s missing parent validation against
-  // ADR-010, so note-foundation.js now imports the contract. The claim that
-  // matters -- nothing a reader can reach touches this -- is unchanged, and the
-  // reachability case above is what actually holds it. The importer set is
-  // PINNED so a new one must be audited deliberately.
+
+check("journey-map-contract.js is reachable ONLY via note-foundation.js or journey-map-service.js, and ONLY from the two audited pages", () => {
+  const chains = chainsToTarget("journey-map-contract.js");
+  const pages = [...new Set(chains.map((c) => c.split(" -> ")[0]))].sort();
+  assert.deepEqual(pages, CONTRACT_WIRED_PAGES,
+    `unexpected page(s) reaching journey-map-contract.js: ${chains.join(" | ")}`);
+  assert.ok(chains.every((c) => c.includes("note-foundation.js") || c.includes("journey-map-service.js")),
+    `journey-map-contract.js is reached by a route that does not pass through note-foundation.js or journey-map-service.js: ${chains.join(" | ")}`);
+});
+
+check("every importer of the journey modules is exactly the pinned set, and each is reachable only as accepted above", () => {
+  // The importer SET is still pinned, so a THIRD module importing either
+  // journey file must be audited deliberately -- unchanged in spirit from
+  // P6-B/P5-D, widened this round to include the one new page that now
+  // imports journey-map-service.js directly.
   const importers = [];
   (function walk(dir) {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -89,7 +145,8 @@ check("every importer of the journey modules is itself unreachable from any page
       for (const guarded of GUARDED) {
         // Skip only a SELF-import. The service importing the contract is a real
         // and expected edge, and worth listing: both are guarded, and the case
-        // below proves each importer is itself unreachable from any page.
+        // below proves each importer's own reachability is exactly what is
+        // now accepted.
         if (entry.name === guarded) continue;
         const base = guarded.replace(/\.js$/, "");
         if (new RegExp(String.raw`(?:from|import)\s*["'\`][./]*(?:js/)?${base}\.js["'\`]`).test(text)) {
@@ -99,11 +156,63 @@ check("every importer of the journey modules is itself unreachable from any page
     }
   })(appDir);
   assert.deepEqual([...new Set(importers)].sort(),
-    ["app/js/journey-map-service.js", "app/js/note-foundation.js"],
-    `the set of modules importing the journey contract has changed: ${importers.join(", ")}`);
+    ["app/journey-map.html", "app/js/journey-map-service.js", "app/js/note-foundation.js"].sort(),
+    `the set of modules importing the journey contract/service has changed: ${importers.join(", ")}`);
+  // chainsToTarget() only ever resolves a TARGET named "*.js" (it walks
+  // app/*.html pages through js/ imports) -- app/journey-map.html is a page,
+  // not an importable module, so it has no meaningful entry here; its own
+  // reachability (as a PAGE reaching the two guarded modules) is exactly
+  // what the two checks above this one already prove.
+  const EXPECTED_PAGES_PER_JS_IMPORTER = {
+    "note-foundation.js": CONTRACT_WIRED_PAGES,      // reachable from both audited pages (notes.html since P5-D, journey-map.html new this round)
+    "journey-map-service.js": [SERVICE_WIRED_PAGE],  // reachable only from the one page that imports it directly
+  };
   for (const importer of importers) {
-    assert.deepEqual(chainsToTarget(path.basename(importer)), [], `${importer} is now loaded by a page`);
+    const base = path.basename(importer);
+    if (!(base in EXPECTED_PAGES_PER_JS_IMPORTER)) continue; // app/journey-map.html itself -- not a .js target, nothing to re-check here
+    const chains = chainsToTarget(base);
+    const pages = [...new Set(chains.map((c) => c.split(" -> ")[0]))].sort();
+    assert.deepEqual(pages, EXPECTED_PAGES_PER_JS_IMPORTER[base],
+      `${importer}'s own reachability changed unexpectedly: ${chains.join(" | ")}`);
   }
+});
+
+// THE PROTECTION THAT ACTUALLY MATTERS, asserted directly rather than
+// inferred from load-graph unreachability, since that inference is no longer
+// available. `note-foundation.js` exports both Phase 5 (Notes, accepted) and
+// Phase 6 (folders/placements, NOT accepted) functions from one file, and
+// `journey-map-service.js` wraps nearly all of the Phase 6 ones (P6-C/P6-D/
+// P6-E already built every wrapper, including the folder-EDITING ones this
+// round does not use) -- so scanning the SERVICE file's own source would
+// find almost every name regardless of what this round's page actually
+// calls, and prove nothing. What is checked instead is the PAGE's own
+// source, which is the only place that shows what this round chose to call.
+const PHASE_6_DATA_LAYER_FUNCTIONS = [
+  "createNoteFolder", "listNoteFoldersForOwner", "renameNoteFolder", "reorderNoteFolder",
+  "reparentNoteFolder", "retireNoteFolder", "createNotePlacement",
+  "listNotePlacementsForFolder", "listNotePlacementsForNote", "retireNotePlacement", "moveNotePlacement",
+];
+check("app/notes.html (P5-D's own scope) still never calls a Phase 6 folder/placement function", () => {
+  const text = fs.readFileSync(path.join(root, "app/notes.html"), "utf8");
+  const used = PHASE_6_DATA_LAYER_FUNCTIONS.filter((fn) => text.includes(fn));
+  assert.deepEqual(used, [], `app/notes.html names Phase 6 function(s): ${used.join(", ")}`);
+});
+check("app/journey-map.html only ever names the Phase 6 data-layer functions it imports directly (create folder, create placement) -- everything else goes through the service", () => {
+  const text = fs.readFileSync(path.join(root, SERVICE_WIRED_PAGE), "utf8");
+  const used = PHASE_6_DATA_LAYER_FUNCTIONS.filter((fn) => text.includes(fn)).sort();
+  assert.deepEqual(used, ["createNoteFolder", "createNotePlacement"],
+    `app/journey-map.html's own direct Phase 6 data-layer usage changed: ${used.join(", ")} -- if this round's scope grew, widen this list deliberately rather than letting it drift`);
+});
+// The FOLDER-EDITING wrappers (rename/reorder/re-parent/retire a folder,
+// reorder a filing) are built and exported by journey-map-service.js
+// (P6-D/P6-E) but this round's screen does not offer folder management UI --
+// only creating, filing into and moving between folders. Named here rather
+// than silently possible to add unnoticed.
+const FOLDER_EDITING_SERVICE_WRAPPERS = ["renameFolder", "reorderFolder", "moveFolder", "retireFolder", "reorderFiling"];
+check("app/journey-map.html does not call the folder-editing service wrappers this round deliberately left unbuilt", () => {
+  const text = fs.readFileSync(path.join(root, SERVICE_WIRED_PAGE), "utf8");
+  const used = FOLDER_EDITING_SERVICE_WRAPPERS.filter((fn) => text.includes(fn));
+  assert.deepEqual(used, [], `app/journey-map.html names folder-editing wrapper(s) not built this round: ${used.join(", ")}`);
 });
 
 function unchangedSinceMain(relPath) {
@@ -111,12 +220,18 @@ function unchangedSinceMain(relPath) {
   assert.equal(fs.readFileSync(path.join(root, relPath), "utf8"), head,
     `${relPath} is NOT byte-identical to origin/main`);
 }
-check("noteFolders and notePlacements are still UNRULED in production", () => {
+// DEPLOYED, 22 Sep 2026 -- confirmed by the Owner in the Firebase Console.
+// This checked the opposite until then ("still UNRULED"), because claiming a
+// live rule existed before it did would have been the repository asserting a
+// deployment nobody had performed. It now guards that every Note Foundation
+// and Mapping My Journey collection genuinely got its rule, none silently
+// missing -- and `origin/main` is expected to equal the live file now, not
+// the reverse.
+check("noteFolders, notePlacements and the rest of the Note Foundation are RULED in production", () => {
   const rules = fs.readFileSync(path.join(root, "firestore.rules"), "utf8");
   for (const collection of ["noteFolders", "notePlacements", "notes", "noteSources", "noteRevisions"]) {
-    assert.ok(!rules.includes(`match /${collection}/`), `firestore.rules now governs ${collection}`);
+    assert.ok(rules.includes(`match /${collection}/`), `firestore.rules does not govern ${collection} -- deployment record is stale, or the sync regressed`);
   }
-  unchangedSinceMain("firestore.rules");
 });
 check("the Phase 5 Rules candidate's RULE CONTENT is unchanged", () => {
   // UPDATED 2026-09-17, with the reason recorded rather than the check deleted.
@@ -139,17 +254,28 @@ check("the Phase 5 Rules candidate's RULE CONTENT is unchanged", () => {
       `the Phase 5 candidate now governs ${collection} -- Phase 6 has leaked into a queued deployment`);
   }
 });
-check("existing user notes untouched; the data layer changed by INSERTION ONLY", () => {
+// UPDATED 2026-09-20, with the reason recorded rather than the check
+// weakened -- same finding and same pinned-exception shape as the sibling
+// guard in study-note-boundary.mjs: `retirePermanentNote()` wrote a shape
+// the accepted Phase 5 Rules candidate can never accept (a status-only
+// update leaves `currentRevisionId` chaining from itself), and the fix
+// replaces that one line rather than only adding to it.
+const NOTE_FOUNDATION_PINNED_REMOVAL =
+  "-    transaction.update(TENANT.NOTES, noteDocId, { status: NOTE_STATUS.RETIRED });";
+check("existing user notes untouched; the data layer changed by INSERTION ONLY, except one pinned line this round REPLACED to fix a real Rules-candidate defect", () => {
   // UPDATED 2026-09-15 (P6-B): the data layer now validates a folder's parent,
   // so byte-identity is no longer the right claim -- "nothing removed or
-  // reshaped" still is, and an addition-only diff proves it mechanically.
+  // reshaped, except the one line named above" still is, and reading the
+  // actual removed lines (not just counting them) proves it mechanically.
   unchangedSinceMain("app/js/ayah-notes.js");
-  const diff = execFileSync("git", ["diff", "--numstat", "origin/main", "--", "app/js/note-foundation.js"],
-    { cwd: root, encoding: "utf8" }).trim();
-  if (diff === "") return;
-  const [added, removed] = diff.split(/\s+/);
-  assert.equal(removed, "0", `note-foundation.js has ${removed} REMOVED lines -- an existing behaviour may have been reshaped`);
-  assert.ok(Number(added) > 0);
+  const diffText = execFileSync("git", ["diff", "origin/main", "--", "app/js/note-foundation.js"],
+    { cwd: root, encoding: "utf8" });
+  if (diffText === "") return;
+  const removedLines = diffText.split("\n").filter((l) => l.startsWith("-") && !l.startsWith("---"));
+  assert.deepEqual(removedLines, [NOTE_FOUNDATION_PINNED_REMOVAL],
+    `note-foundation.js removed line(s) do not match the one pinned exception -- an existing behaviour may have been reshaped: ${JSON.stringify(removedLines)}`);
+  const addedLines = diffText.split("\n").filter((l) => l.startsWith("+") && !l.startsWith("+++"));
+  assert.ok(addedLines.length > 0);
 });
 check("the Mapping My Journey pillar is still explicitly unavailable", () => {
   const shell = fs.readFileSync(path.join(appDir, "quranrevival.html"), "utf8");

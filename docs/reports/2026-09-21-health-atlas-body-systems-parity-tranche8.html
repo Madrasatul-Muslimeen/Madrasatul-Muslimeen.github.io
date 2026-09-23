@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Health Atlas — Body Systems parity tranche 8: committed browser evidence + navigation slice (2026-09-21)</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  blockquote { margin:1rem 0; padding:.4rem 1rem; border-left:3px solid var(--accent); color:var(--muted); background:var(--card); border-radius:0 .4rem .4rem 0 }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+
+<h1>Health Atlas — Body Systems parity tranche 8: committed browser evidence + navigation slice (2026-09-21)</h1>
+<p>Authoritative timestamp: <strong>2026-09-21, UTC</strong>.</p>
+<p>Dispatched via the MMSA task bridge (issue #115, comment <code>5760406999</code>). Developed as <code>claude/laughing-goodall-8moeiq</code> continued (stacked on PR #142's own head <code>3d6be395</code>, itself stacked on PR #140's head <code>0c6fc05c</code>, itself based on <code>main</code> at <code>16cfb0b</code> where PR #127 is already merged) — this round should be reviewed <strong>stacked on #142</strong>, which should itself be reviewed stacked on #140.</p>
+
+<h2>0. What was independently checked before changing anything</h2>
+<p><strong>Gate re-check, not re-trust.</strong> PR #142's own report claims &#8220;All 15 Health-owned suites: 249 passed, 0 failed&#8221; and &#8220;All 7 governance suites … 182 passed, 0 failed&#8221;. Both were re-run from a clean checkout of <code>3d6be395</code> before any edit in this round and reproduced exactly: <strong>249/0</strong> and <strong>182/0</strong> (after the same full-history + named-HELD-ref preflight every prior tranche's report describes).</p>
+<p>The comment's own instruction was read in full before deciding scope: fix the evidence gap first, then build one further slice, preferring navigation among currently implemented views. Both are done, in that order, below.</p>
+
+<h2>1. The evidence gap — a committed, reproducible browser acceptance test</h2>
+<p><strong>Finding, confirmed by reading the reports rather than assumed from the comment's framing</strong>: both PR #140's report and PR #142's report cite a &#8220;focused … Playwright walk&#8221; as their browser evidence, and both say, in their own words, that the script was &#8220;un-checked-in … deleted before commit&#8221;. That is real evidence of what those sessions actually observed, but it is not evidence anyone else can re-check — a report that goes on citing a deleted script is asking a reader to trust a claim nobody can reproduce.</p>
+<p><strong>Fix</strong>: <code>tools/health-atlas-verify/body-systems-parity-browser.mjs</code> (new, committed). It is a genuine departure from this project's own usual convention of throwaway probe scripts (<code>CLAUDE.md</code>'s own &#8220;Standing lessons&#8221; describe many of them, by design) — the right call for a one-off measurement, the wrong one for a claim a report goes on citing after the session ends. The precedent for a <em>committed</em> Playwright-based suite already exists in this repository: <code>tools/i18n-verify/layout.mjs</code>, <code>panel.mjs</code>, <code>reading.mjs</code> and <code>navcheck.mjs</code> are all committed, none is wired into <code>.github/workflows/verify.yml</code> (that workflow's own comment says why: &#8220;need Playwright and a served app&#8221;), and all are run directly by whoever needs the result. This file follows the identical shape, scoped to Health.</p>
+<p><strong>What it covers, at desktop (1280&times;900), tablet (768&times;1024) and phone (390&times;844), 16 checks:</strong></p>
+<ul>
+<li>The 3-column grid resolving to 5 tracks at desktop and collapsing to 1 track below the 980px breakpoint at tablet/phone (including with a <strong>stale, already-resized</strong> inline width still on the grid — proving the media query's <code>!important</code> really overrides a JS-driven value, not just the CSS-only default case).</li>
+<li>Both dividers: real <code>role="separator"</code>/<code>aria-orientation="vertical"</code> elements; a real mouse drag on the left (s1) divider, clamped to <code>[200, 420]</code>, and — critically — persisting across a full redraw triggered by selecting a different organ (state, not a DOM side-effect of the drag alone); real keyboard input (<code>ArrowLeft</code>/<code>ArrowRight</code>) on the right (s3) divider, clamped to its stated minimum (220px).</li>
+<li>The wheel's keyboard drill-down (<code>Enter</code> on a focused system wedge) into that system's organs, and the back control returning to all 9 system-level wedges.</li>
+<li>The search box: a real match (&#8220;kidneys&#8221; &rarr; at least one matching row) and a real non-match (&#8220;zzz-no-such-organ-zzz&#8221; &rarr; zero rows), proving it filters in both directions rather than only ever narrowing.</li>
+<li>All three built diagrams (Kidneys/Renal &amp; Urinary, Eyes/Sensory, Skin/Integumentary) rendering real <code>&lt;svg&gt;</code> shapes, not an empty box.</li>
+<li>The corrected &#8220;diagram in progress&#8221; placeholder (tranche 7's own fix) on a system with no built diagram (Heart/Cardiovascular), asserted at <strong>all three viewports</strong>, including that it never again claims the text below it is &#8220;accurate&#8221;.</li>
+<li>Zero function-statement evidence badges reading &#8220;Cited&#8221; (0 of 82 statements carry a specific citation, per the claim-provenance registry).</li>
+</ul>
+<p><strong>Proven able to fail, not just to pass</strong> — two independent mutations, each reverted immediately after confirming the failure:</p>
+<ol>
+<li>Reintroduced tranche 7's own retracted claim (<code>text connections below are accurate meantime</code>) into <code>buildDiagramPanel()</code>'s placeholder. Result: <strong>3 of 16 checks failed</strong> (desktop, tablet and phone all independently caught it), each naming the exact offending sentence.</li>
+<li>Loosened the s3 (detail column) minimum clamp from <code>220</code> to <code>180</code>. Result: <strong>1 of 16 checks failed</strong>, naming the wrong clamp value observed (180 instead of 220).</li>
+</ol>
+<p>Both reverts were confirmed with <code>git diff --stat app/health/js/health-atlas-view.js</code> returning empty before proceeding.</p>
+<p><strong>One real discovery while writing this suite, corrected before it ever shipped</strong>: the s3 (detail-column) divider's keyboard direction is the <em>mirror</em> of s1's, by design — <code>startColumnDrag()</code>'s own sign convention makes <code>ArrowLeft</code> on the right divider <strong>widen</strong> the detail column (moving the divider toward the wheel) and <code>ArrowRight</code> <strong>narrow</strong> it, the opposite of the intuitive &#8220;left always shrinks&#8221; reading. The test's first draft asserted the intuitive-but-wrong direction and failed against the real, correct app behaviour; re-reading <code>startColumnDrag()</code>'s mouse formula (<code>newWidth = which === 's1' ? startWidth + deltaX : startWidth - deltaX</code>) confirmed the app is right and the test's assumption was wrong, not the reverse. This matches tranche 7's own &sect;4, which already described this exact sequence correctly (&#8220;<code>ArrowLeft</code> widens the detail column … 20 further <code>ArrowRight</code> presses clamp at the minimum&#8221;) — the new suite now encodes that as a checked invariant instead of a paragraph a reader has to trust.</p>
+<p><strong>Both dated report twins this evidence gap was raised against are corrected</strong>, not rewritten: <code>docs/reports/2026-09-21-health-atlas-body-systems-parity-tranche6.md</code>/<code>.html</code> and <code>2026-09-21-health-atlas-body-systems-parity-tranche7.md</code>/<code>.html</code> each gained a <code>CORRECTION</code> section, appended after their original content (never edited in place), naming the gap and pointing at this file.</p>
+
+<h2>2. The next bounded slice — navigation among currently implemented views</h2>
+<p>The comment's own preference order was read and followed: <em>&#8220;prefer navigation among currently implemented views or another demonstrable feature from the six-tab parity matrix&#8221;</em>. Navigation was chosen because a safe candidate existed and needed no new dataset, selector, view logic or field read.</p>
+<p><strong>The exact six-tab parity matrix</strong>, re-verified against the v02.04 standalone source (<code>health/source-v02-04-handover</code>, commit <code>ed4dbb2e5</code>, unchanged):</p>
+<div class="tw"><table>
+<tr><th>Source tab</th><th>Built here as</th><th>Status</th></tr>
+<tr><td>Body Systems</td><td><code>health-atlas.html</code></td><td>Built (tranches 1/6/7, this tranche's own evidence fix)</td></tr>
+<tr><td>Foods</td><td><code>health-atlas-more.html</code></td><td>Built, structural fields only (tranche 3)</td></tr>
+<tr><td>Diseases</td><td><code>health-atlas-more.html</code></td><td>Built, structural fields only (tranche 3)</td></tr>
+<tr><td>Age Groups</td><td><code>health-atlas-more.html</code></td><td>Built, structural fields only (tranche 3)</td></tr>
+<tr><td>Lifestyle</td><td>&mdash;</td><td><strong>Not built</strong> &mdash; tranche 3's own finding: no clean structural/organizational subset exists (all three substantive fields are lifestyle recommendations end to end); deferred, not silently dropped</td></tr>
+<tr><td>References</td><td>&mdash;</td><td><strong>Not built as its own browser</strong> &mdash; the 8 references are shown inline, per organ, on the Body Systems detail column; no standalone list-all-references view exists</td></tr>
+<tr><td><em>(bonus, not a source tab)</em></td><td><code>health-atlas-categories.html</code></td><td>Food Master Categories index (tranche 4)</td></tr>
+</table></div>
+<p>So this app has <strong>3 pages, not 6</strong>, and one source tab (Lifestyle) and one source feature (a standalone References index) remain out of scope for the reason already on record. Building either now would be materially larger than &#8220;the one next bounded slice&#8221; the comment asked for — Lifestyle needs its own product decision (the comment forbids &#8220;uncited verification&#8221; and &#8220;unsupported clinical/dose/remedy advice&#8221;, and Lifestyle's dataset is exactly that end to end), and a standalone References browser is a new page, not a link between existing ones.</p>
+<p><strong>What this tranche found and fixed instead</strong>: <code>health-atlas.html</code>'s footer has linked to both <code>health-atlas-more.html</code> and <code>health-atlas-categories.html</code> since the tranche-5 integration, but those two pages only ever linked back to <code>health-atlas.html</code> — never to each other. Reaching Master Categories from Foods/Conditions/Age Groups meant going back through the Body Systems page first, even though both are one hop from it. Each page's header now also links directly to the other:</p>
+<ul>
+<li><code>app/health/health-atlas-more.html</code>: added <code>&lt;a href="health-atlas-categories.html"&gt;Food Master Categories &rarr;&lt;/a&gt;</code>, matching the exact wording <code>health-atlas.html</code>'s own footer already uses.</li>
+<li><code>app/health/health-atlas-categories.html</code>: added <code>&lt;a href="health-atlas-more.html"&gt;Foods, Conditions &amp; Age Groups &rarr;&lt;/a&gt;</code>, the same pairing in reverse.</li>
+</ul>
+<p>All three pages now form a complete cross-link matrix (each links to the other two), matching what <code>health-atlas.html</code> already had. <strong>Read-only, no new data read, no new page, no CRUD, no import/export, no clinical/dose/remedy content, no uncited claim.</strong></p>
+<p><strong>Verified by a throwaway Playwright script</strong> (not committed — this is ordinary navigation, not the resizable-UI evidence gap this tranche exists to fix): from <code>health-atlas-more.html</code>, clicking &#8220;Food Master Categories&#8221; landed on <code>health-atlas-categories.html</code> with zero page errors; from <code>health-atlas-categories.html</code>, clicking &#8220;Foods, Conditions &amp; Age Groups&#8221; landed back on <code>health-atlas-more.html</code>, also with zero page errors.</p>
+
+<h2>3. Verification</h2>
+<p><strong>All 16 Health-owned suites, run from the repository root, 0 failed</strong> (15 pre-existing + this tranche's new committed browser suite):</p>
+<div class="tw"><table>
+<tr><th>Suite</th><th>Result</th></tr>
+<tr><td><code>data-integrity.mjs</code></td><td>21 passed</td></tr>
+<tr><td><code>selectors.mjs</code></td><td>13 passed</td></tr>
+<tr><td><code>claims-integrity.mjs</code></td><td>10 passed</td></tr>
+<tr><td><code>claims-mutations.mjs</code></td><td>7 passed</td></tr>
+<tr><td><code>view-boundary.mjs</code></td><td>14 passed</td></tr>
+<tr><td><code>view-provenance-boundary.mjs</code></td><td>7 passed</td></tr>
+<tr><td><code>view-provenance-mutations.mjs</code></td><td>4 passed</td></tr>
+<tr><td><code>more-selectors.mjs</code></td><td>9 passed</td></tr>
+<tr><td><code>view-boundary-more.mjs</code></td><td>26 passed</td></tr>
+<tr><td><code>view-boundary-more-mutations.mjs</code></td><td>7 passed</td></tr>
+<tr><td><code>categories-selectors.mjs</code></td><td>7 passed</td></tr>
+<tr><td><code>view-boundary-categories.mjs</code></td><td>58 passed</td></tr>
+<tr><td><code>view-boundary-categories-mutations.mjs</code></td><td>7 passed</td></tr>
+<tr><td><code>view-boundary-wheel.mjs</code></td><td>53 passed</td></tr>
+<tr><td><code>view-boundary-wheel-mutations.mjs</code></td><td>6 passed</td></tr>
+<tr><td><code>body-systems-parity-browser.mjs</code> (new)</td><td>16 passed</td></tr>
+</table></div>
+<p><strong>265 passed, 0 failed.</strong> The 15 pre-existing suites' counts are byte-identical to PR #142's own report (249) — nothing in this round's diff touches anything they read; the new 16 are additive.</p>
+<p><strong>All 7 governance suites, run after a full-history + required-ref preflight</strong> (<code>git fetch --unshallow</code>, then explicitly fetching the two HELD branches the ledger declares, <code>claude/pensive-knuth-2pu3jj</code> and <code>claude/phase4-wiring</code>):</p>
+<div class="tw"><table>
+<tr><th>Suite</th><th>Result</th></tr>
+<tr><td><code>programme-ledger.mjs</code></td><td>8 passed, 23 noted, 0 failed</td></tr>
+<tr><td><code>programme-ledger-mutations.mjs</code></td><td>49 passed, 0 failed</td></tr>
+<tr><td><code>brief-integrity.mjs</code></td><td>8 passed, 0 failed</td></tr>
+<tr><td><code>study-activity-evidence-boundary.mjs</code></td><td>27 passed, 0 failed</td></tr>
+<tr><td><code>study-activity-evidence-boundary-mutations.mjs</code></td><td>11 passed, 0 failed</td></tr>
+<tr><td><code>study-event-wiring.mjs</code></td><td>41 passed, 0 failed</td></tr>
+<tr><td><code>rules-authorisation-executable.mjs</code></td><td>38 passed, 0 failed</td></tr>
+</table></div>
+<p><strong>182 passed, 0 failed.</strong> Neither guard script was read, edited or weakened.</p>
+<p><strong>Not applicable: browser English/Bangla.</strong> Confirmed unchanged from every prior tranche's own finding — <code>grep -c "i18n\|translateStatic\|t(" app/health/js/health-atlas-view.js</code> still returns 0. There is no Bangla surface on any Health Atlas page to check.</p>
+<p><strong>Not applicable: head-specific CI.</strong> <code>.github/workflows/verify.yml</code> runs only the seven governance suites; none of <code>tools/health-atlas-verify/</code> (including the new browser suite) is wired into it, by that workflow's own explicit design. Run directly instead, as every prior tranche has.</p>
+
+<h2>4. Safety boundary — unchanged, re-run unmodified</h2>
+<p>Nothing in this round touches a dataset, selector, or the view module's rendering logic — the new suite reads the page from the outside (a real browser, real DOM), and the two HTML edits add one <code>&lt;a&gt;</code> element each to a header that already contained cross-links in the opposite direction. All 14 existing boundary/mutation suites (view-boundary, view-boundary-wheel, view-boundary-more, view-boundary-categories, view-provenance-boundary, and their mutation-proof companions) pass unmodified — none needed a change, because none of this round's files are in their scope.</p>
+
+<h2>5. Diff budget</h2>
+<p><code>tools/health-atlas-verify/body-systems-parity-browser.mjs</code> (new), <code>app/health/health-atlas-more.html</code> (one added <code>&lt;a&gt;</code>), <code>app/health/health-atlas-categories.html</code> (one added <code>&lt;a&gt;</code>), <code>app/health/README.md</code> (new Tranche 8 section), <code>docs/reports/2026-09-21-health-atlas-body-systems-parity-tranche6.md</code>/<code>.html</code> (correction appended), <code>docs/reports/2026-09-21-health-atlas-body-systems-parity-tranche7.md</code>/<code>.html</code> (correction appended), and this report's own <code>.md</code>/<code>.html</code>. Checked by name against every protected-path family named in the task (version, platform-shared files, platform-shared tooling, governance, deployment/security, the gate itself): <strong>zero matches</strong>.</p>
+
+<h2>6. What this deliberately does not do</h2>
+<ul>
+<li>No version allocated or bumped — <code>app/js/version.js</code> untouched, v08.32 stands.</li>
+<li>No protected/shared path touched.</li>
+<li>Nothing merged or deployed; no approval claimed.</li>
+<li>Does not build a Lifestyle tab or a standalone References browser — both remain out of scope for the reasons in &sect;2's matrix, not silently dropped.</li>
+<li>Does not add the new browser suite to <code>.github/workflows/verify.yml</code> — that workflow's own design excludes every Playwright-based suite in this repository, and widening it is outside this task's authorised scope (and touches the protected <code>.github/workflows/</code> family).</li>
+<li>Does not decide whether a Lifestyle or References surface should ever be built, or in what shape — both are Owner/product calls, not test-authoring ones.</li>
+</ul>
+
+<h2>7. Owner app test</h2>
+<p><strong>Required: NO before merge</strong> — nothing here is linked from shared nav or deployed, same posture as every prior tranche on this issue.</p>
+<p><strong>YES after merge</strong> (and after #140 and #142, since this is stacked on both), direct URL only, no sign-in/tenant:</p>
+<ol>
+<li>Open <code>app/health/health-atlas-more.html</code> (served over <code>http://</code>, not <code>file://</code>) and confirm a new &#8220;Food Master Categories &rarr;&#8221; link appears under the existing &#8220;&larr; Back to the Body Systems browser&#8221; link; click it and confirm it opens <code>health-atlas-categories.html</code>.</li>
+<li>From there, confirm a &#8220;Foods, Conditions &amp; Age Groups &rarr;&#8221; link appears and returns to <code>health-atlas-more.html</code>.</li>
+<li>No other visible change on any of the three Health Atlas pages.</li>
+</ol>
+
+<hr>
+<p>🤖 Generated with <a href="https://claude.com/claude-code">Claude Code</a></p>
+</main></body></html>

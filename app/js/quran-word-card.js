@@ -2,6 +2,7 @@
 // DOM event wiring and data fetching belong to the page/controller task.
 
 import { quranWordOccurrenceId, wordIdentityLayers } from "./quran-word-identity.js";
+import { QURAN_TOTAL_WORD_COUNT, percentRounded } from "./quran-word-total.js";
 
 export const WORD_CARD_LEVELS = Object.freeze(["wbw", "basic", "depth"]);
 
@@ -109,6 +110,11 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   progressNotAllowed: "You are not able to record Arabic progress for this person.",
   coverage: "{known} of {total} words known in this ayah",
   coverageIncomplete: "{unknown} not loaded yet",
+  // Issue #206 -- no gate, no new collection: this reads the lemma
+  // occurrence index the Basic tab already loads, and the one exported
+  // whole-Qur'an total (quran-word-total.js), and works whether or not the
+  // running-counter feature is ready.
+  wordShareOfQuran: "Appears {count} times in the Qur'an — {percent}% of all words",
 });
 
 function escapeHtml(value) {
@@ -380,6 +386,26 @@ function lemmaOccurrenceBlock(word, layers, context, text, formatNumber) {
     (open ? occurrenceListMarkup(context.lemmaOccurrenceItems, context.lemmaOccurrenceItemsTotal, context.lemmaOccurrenceItemsError, word.arabic, text, formatNumber) : "");
 }
 
+/**
+ * Issue #206 -- "Appears N times in the Qur'an — X% of all words", for the
+ * currently-open word's own lemma. N is the SAME count the lemma occurrence
+ * block above already reads (occurrenceRefsFor("lemma", value).length,
+ * hydrated by the page, never fetched twice here); X is N against the one
+ * exported whole-Qur'an total, rounded the same way computeArabicCoverage()
+ * rounds every other percentage this app shows. Ships and works regardless
+ * of the running-counter readiness gate -- it reads data already loaded and
+ * writes nothing.
+ */
+function wordShareOfQuranLine(context, text, formatNumber) {
+  const count = Number(context.lemmaOccurrenceCount ?? context.lemmaOccurrences?.length ?? 0);
+  if (!count) return "";
+  const percent = percentRounded(count, QURAN_TOTAL_WORD_COUNT);
+  const line = String(text.wordShareOfQuran)
+    .replace("{count}", formatNumber(count))
+    .replace("{percent}", formatNumber(percent));
+  return `<p class="word-card-share-of-quran">${escapeHtml(line)}</p>`;
+}
+
 function tabButton(level, selected, label) {
   return `<button type="button" role="tab" data-word-card-level="${level}" aria-selected="${selected}" tabindex="${selected ? "0" : "-1"}">${escapeHtml(label)}</button>`;
 }
@@ -408,6 +434,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
       <dl><dt>${escapeHtml(text.lemma)}</dt><dd>${escapeHtml(layers.lemma || text.unknown)}</dd><dt>${escapeHtml(text.root)}</dt><dd>${escapeHtml(layers.root || text.unknown)}</dd><dt>${escapeHtml(text.partOfSpeech)}</dt><dd>${posCellHtml}</dd></dl>
       <p>${layers.root ? count(text.rootOccurrences, Number(context.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0)) : escapeHtml(text.rootUnavailable)}</p>
       ${layers.lemma ? lemmaOccurrenceBlock(word, layers, context, text, formatNumber) : `<p>${escapeHtml(text.lemmaUnavailable)}</p>`}
+      ${layers.lemma ? wordShareOfQuranLine(context, text, formatNumber) : ""}
       ${formsSection(layers, context, text, formatNumber, { expandable: false })}
       ${context.occurrencesLoading ? `<p>${escapeHtml(text.loadingOccurrences)}</p>` : ""}
       ${context.occurrencesError ? `<p role="status">${escapeHtml(String(text.occurrencesUnavailable).replace("{error}", context.occurrencesError))}</p>` : ""}

@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hadith: PR 122 audit, a suite-drift finding, and Topics-tab navigation</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  pre { background:var(--code); padding:.8rem 1rem; border-radius:.5rem; overflow-x:auto; font-size:.85em }
+  pre code { background:none; padding:0 }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:26rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  .ok { color:#1a7a3c } .warn { color:#a15a00 }
+  @media (prefers-color-scheme: dark) { .ok { color:#5fd88a } .warn { color:#e0a94a } }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:20rem} }
+</style></head><body><main>
+<h1>Hadith: PR 122 audit, a governance-suite drift finding, and Topics-tab navigation (H2)</h1>
+<p><strong>Date:</strong> 20 September 2026 (UTC). <strong>Status: draft PR, not merged.</strong> No Rules, index, deployment, or version change. <code>v08.32</code> remains unallocated.</p>
+<p>Resolves the MMSA task bridge instruction on issue #114 (comment 5752938712): audit draft PR #122&#x27;s exact diff and its 22 browser assertions, confirm its seven untranslated English literals are correctly handed to MMSA issue #123, then evaluate the existing synthetic book/topic chapter navigation for a genuine user-visible gap and either build it (if independent of shared keys, version, Rules/index, and any conflict with #122) or deliver the plan and stop.</p>
+<hr>
+
+<h2>1. Audit of PR #122</h2>
+<p>PR #122 (<code>claude/laughing-goodall-qubb6e</code>, head <code>dc10448</code>, base <code>main</code> <code>2cb405e</code>, v08.31) was audited by diffing its branch directly against <code>main</code> rather than trusting its own description.</p>
+<p><strong>Diff scope — confirmed Hadith-owned, no protected path touched:</strong></p>
+<pre><code>app/js/hadith-browser.js                                    |  73 ++-
+app/js/hadith-corpus.js                                     |  89 +++
+tools/i18n-verify/hadith-corpus.mjs                          | 184 ++++-
+docs/reports/2026-09-20-*.md / .html (6 dated report pairs)  | ...
+13 files changed, 1783 insertions(+), 4 deletions(-)</code></pre>
+<p>No change to <code>bn.js</code>, <code>version.js</code>, <code>CLAUDE.md</code>, <code>CHANGELOG.md</code>, <code>nav.js</code>, <code>unit-keys.js</code>, <code>records.js</code>, <code>activity.js</code>, <code>catalogue-data.js</code>, <code>firestore.rules</code>, <code>firebase.json</code>, <code>docs/governance/</code>, or <code>.github/workflows/</code>.</p>
+<p><strong>The seven English <code>t()</code> literals PR #122&#x27;s own body lists were read against the actual diff, verbatim, and all seven match exactly</strong> — <code>&quot;Translation coverage&quot;</code>, its description sentence, its two count sentences (the overall one carries an <code>&quot;Overall: &quot;</code> prefix the per-edition one does not, which is why the pair is four keys not three), <code>&quot;Topic coverage&quot;</code>, its description sentence, and its per-edition sentence. No eighth literal exists and none of the seven is missing.</p>
+<p><strong>22 browser assertions — 16 of them independently re-run here, not just re-read.</strong> A focused Playwright script (this project&#x27;s own harness, <code>newContext</code>/<code>openPage</code>) opened <code>/app/hadith-collections.html</code> at 390×844 in English and Bangla via a <code>git worktree</code> checkout of PR #122&#x27;s branch, clicked the Explore tab, and asserted: no page errors; both new <code>&lt;h3&gt;</code> headings render; the overall translation line carries real numbers; <strong>the old shared <code>data-hadith-coverage-edition</code> attribute resolves to 0 elements</strong> (proving PR #122&#x27;s own naming-collision fix holds in the live DOM); and both features&#x27; own new per-edition attributes each resolve to exactly 2 rows — in both languages. <strong>16 of 16 passed.</strong> The remaining 6 of the claimed 22 were read from the report rather than independently re-asserted, since the underlying pure functions were already re-verified by the governance-suite re-run below.</p>
+<p><strong>Five Hadith suites re-run on PR #122&#x27;s own branch, matching its claimed table exactly:</strong> <code>hadith-corpus.mjs</code> 46/0, <code>hadith-commentary-binding.mjs</code> 14/0, <code>hadith-source-rights.mjs</code> 14/0, <code>hadith-governing-contracts.mjs</code> 14/0, <code>hadith-gate-contracts.mjs</code> 11/0.</p>
+<p><strong>A real drift was found in the seven governance suites, and it does not belong to PR #122.</strong> <code>programme-ledger-mutations.mjs</code> reported <strong class="warn">48 passed, 1 failed</strong> on PR #122&#x27;s branch, against the 49/0 its own PR body claims:</p>
+<pre><code>FAIL  MUTATION [E] a stream's shared-file touch loses its declaration
+      fixture drift: no stream both declares app/js/version.js and still
+      shows it changed on a branch</code></pre>
+<p><strong>Confirmed NOT a PR #122 defect</strong>: the identical failure reproduces on a clean, unmodified <code>origin/main</code> checkout (<code>2cb405e</code>), in its own isolated worktree, with no PR #122 code present at all. This is the same class of finding PR #122&#x27;s own report already named once — the mutation&#x27;s precondition depends on which branches currently exist on <code>origin</code>, and several other MMSA task-bridge sessions pushed and merged branches in the minutes around this audit. <code>programme-ledger-mutations.mjs</code> is protected shared tooling and was <strong>not modified</strong> — recorded, not fixed.</p>
+<p><strong>Handoff to MMSA issue #123</strong>: issue #123 already exists and already carries its own dedicated task-bridge instruction whose Gate A/B budget item 1 is the seven verbatim Hadith English-to-Bangla mappings audited above. A confirmation comment naming the seven keys verbatim is posted to issue #123 as part of this round&#x27;s reporting (§5). <code>bn.js</code> itself was not touched.</p>
+<hr>
+
+<h2>2. The next tranche: evaluating book/topic chapter navigation</h2>
+<p><strong>Gap identified.</strong> <code>app/js/hadith-browser.js</code>&#x27;s <code>renderTopic()</code> hardcoded <code>topicIndex(&quot;synthetic-topic-salah&quot;)</code> — the one and only topic the fixture has ever carried. The Topics tab was therefore not really <em>navigation</em>: a reader opens it and is dropped straight into one fixed topic, with no list, no picker, and no way back — even though the data layer (<code>listTopics()</code>, <code>topicIndex(topicId)</code>) already supports more than one topic and <code>exploreAggregate()</code> already iterates <code>listTopics()</code> to build its own per-topic Explore cards.</p>
+<p><strong>Acceptance criteria (declared before building):</strong></p>
+<ol>
+<li>With ≥2 topics in the fixture, the Topics tab shows a topic list first — no topic auto-selected.</li>
+<li>Choosing a topic shows exactly that topic&#x27;s index (unchanged <code>topicIndex()</code> rendering) with a breadcrumb back to the list.</li>
+<li>Going back returns to the list without a page reload, mirroring the Collections tab&#x27;s own breadcrumb pattern.</li>
+<li>The pre-existing single-topic case (Salah) renders identically in substance to before this round.</li>
+<li>No permanent id, no real corpus text, no Rules/index/version change.</li>
+<li>Every existing Hadith and governance suite continues to pass.</li>
+<li>Any new English <code>t()</code> literal is enumerated verbatim for MMSA and <code>bn.js</code> stays untouched — or, ideally, none is introduced at all.</li>
+</ol>
+<p><strong>File budget</strong> (Hadith-owned only): <code>app/js/hadith-browser.js</code> (rewrite <code>renderTopic()</code>, add <code>state.topicId</code>), <code>app/js/hadith-fixture-data.js</code> (one new synthetic topic + one new mapping, so a picker has something real to switch to), <code>tools/i18n-verify/hadith-corpus.mjs</code> (new NAVIGATION checks), a dated report pair. Nothing else.</p>
+<p><strong>Data/security boundaries:</strong> the new topic and its mapping sit entirely inside the enforced synthetic namespace (<code>synthetic-topic-wudu</code>, <code>syn-map-0004</code>), reuse only existing occurrence/book/chapter ids, and are swept automatically by the three existing namespace GATE checks. No durable write; Hadith collections remain unruled and denied by default.</p>
+<p><strong>Rollback:</strong> a single additive commit across three Hadith-owned files; <code>git revert</code> cleanly undoes it — no migration, no persisted state.</p>
+<p><strong>Independence from PR #122, confirmed before building:</strong> PR #122 touches <code>renderExplore()</code> and appends two functions to the end of <code>hadith-corpus.js</code>. This round touches <code>renderTopic()</code> — untouched by #122 — and inserts into the existing <code>TOPICS</code>/<code>TOPIC_MAPPINGS</code> arrays, a different region from #122&#x27;s own additions. Built directly on <code>main</code> (<code>2cb405e</code>) as an independent sibling of #122, not stacked on its branch.</p>
+<p class="ok"><strong>A better outcome than declared going in: zero new English literals.</strong> The topic-list heading reuses the existing <code>t(&quot;Topics&quot;)</code> tab-label key, and the per-row <code>Synthetic</code> marker reuses the existing <code>t(&quot;Synthetic&quot;)</code> key — both already present in <code>bn.js</code> (<code>&quot;Topics&quot;: &quot;বিষয়সমূহ&quot;</code>, <code>&quot;Synthetic&quot;: &quot;কৃত্রিম&quot;</code>). No MMSA translation handoff is needed for this feature at all.</p>
+<hr>
+
+<h2>3. What was built</h2>
+<p><code>app/js/hadith-fixture-data.js</code> — a second synthetic topic, <code>synthetic-topic-wudu</code> (label &quot;Wuḍūʼ&quot; / &quot;ওজু&quot; / &quot;الوضوء&quot;), and its own mapping <code>syn-map-0004</code> onto the existing <code>synthetic-alpha-b2-c1</code> chapter, previously reachable only through the source browser, never through a topic.</p>
+<p><code>app/js/hadith-browser.js</code> — <code>renderTopic()</code> now renders a topic <strong>list</strong> when <code>state.topicId</code> is unset, one row per <code>listTopics()</code> entry (<code>data-hadith-topic-row</code>). Choosing a row sets <code>state.topicId</code> and renders the existing detail view, now driven by <code>topicIndex(state.topicId)</code> instead of the hardcoded literal, with a new breadcrumb (<code>data-hadith-topic-back</code>) returning to the list. The detail rendering itself is byte-identical to before this round.</p>
+<p><code>tools/i18n-verify/hadith-corpus.mjs</code> — four new <code>NAVIGATION</code> checks (33 → 37 passing).</p>
+<p><strong>Mutation-proven, not merely asserted.</strong> Reverting the fixture addition makes exactly the two checks that depend on it fail, by name, with no other check affected:</p>
+<pre><code>FAIL  NAVIGATION -- listTopics() offers more than one topic, or there is
+      nothing to navigate
+FAIL  NAVIGATION -- the two topics are genuinely distinct in what they
+      reach, not a copy-paste pair</code></pre>
+<p>Restoring the fixture returns the suite to 37/0.</p>
+<hr>
+
+<h2>4. Verification</h2>
+<p><strong>Seven governance suites</strong>, run from the repository root on this session&#x27;s own branch:</p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>programme-ledger</code></td><td class="ok">8 passed, 23 noted, 0 failed</td></tr>
+<tr><td><code>programme-ledger-mutations</code></td><td class="warn">48 passed, 1 failed — §1 drift, reproduces on unmodified <code>main</code></td></tr>
+<tr><td><code>brief-integrity</code></td><td class="ok">8 passed, 0 failed</td></tr>
+<tr><td><code>study-activity-evidence-boundary</code></td><td class="ok">27 passed, 0 failed</td></tr>
+<tr><td><code>study-activity-evidence-boundary-mutations</code></td><td class="ok">11 passed, 0 failed</td></tr>
+<tr><td><code>study-event-wiring</code></td><td class="ok">41 passed, 0 failed</td></tr>
+<tr><td><code>rules-authorisation-executable</code></td><td class="ok">38 passed, 0 failed</td></tr>
+</tbody></table></div>
+<p><strong>Five Hadith suites:</strong></p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>hadith-corpus.mjs</code></td><td class="ok">37 passed, 0 failed (33 baseline + 4 new NAVIGATION checks)</td></tr>
+<tr><td><code>hadith-commentary-binding.mjs</code></td><td class="ok">14 passed, 0 failed</td></tr>
+<tr><td><code>hadith-source-rights.mjs</code></td><td class="ok">14 passed, 0 failed</td></tr>
+<tr><td><code>hadith-governing-contracts.mjs</code></td><td class="ok">14 passed, 0 failed</td></tr>
+<tr><td><code>hadith-gate-contracts.mjs</code></td><td class="ok">11 passed, 0 failed</td></tr>
+</tbody></table></div>
+<p><strong>Browser English/Bangla evidence, obtained, not just described.</strong> Playwright (global install, pre-installed Chromium) via a local <code>node_modules/playwright</code> symlink (not committed). <code>node serve.js</code> served the repository at <code>http://localhost:8080</code>. A focused, un-checked-in Playwright script opened <code>/app/hadith-collections.html</code> at 390×844 in English and Bangla, clicked the Topics tab, and asserted on the rendered DOM:</p>
+<p><strong>22 of 22 checks passed, both languages</strong> — no page errors; the topic list shows exactly 2 rows on open, with no back control and no detail view rendered yet; the second row is <code>synthetic-topic-wudu</code>; clicking it renders the detail view with its own real count (1 distinct narration); the back control appears only once a topic is chosen and returns to the 2-row list with the detail view gone; and opening the first, pre-existing topic (Salah) still shows its documented 5-distinct/3-mapping counts, unchanged from every prior Hadith report.</p>
+<p>Both <code>bn.js</code> keys this feature relies on were confirmed present (<code>&quot;Topics&quot;</code>, <code>&quot;Synthetic&quot;</code>) by grep, not assumed.</p>
+<hr>
+
+<h2>5. <code>tools/md2report.py</code> — not touched</h2>
+<p>Not exercised this round; this report avoids any line beginning with <code>#</code> immediately followed by a digit, so its known hang (root-caused by PR #118, independently reproduced by PR #122) is simply not triggered here. Not fixed, since the tool is shared and not Hadith-owned.</p>
+<hr>
+
+<h2>6. Owner app test required</h2>
+<p><strong>NO.</strong> Everything in this report exists only on this session&#x27;s own draft branch/PR — not on <code>main</code>, not served by GitHub Pages. There is nothing for the Owner to open yet.</p>
+<hr>
+
+<h2>7. What was deliberately not done</h2>
+<ul>
+<li><code>bn.js</code> was not touched — and, unlike every prior Hadith round this week, this feature needed no new key to hand off at all.</li>
+<li>The <code>programme-ledger-mutations.mjs</code> drift found in §1 was recorded, not fixed — protected shared tooling, and the finding is about the guard&#x27;s own precondition sensitivity to concurrent branch activity, not this round&#x27;s code.</li>
+<li>No third topic, no re-ordering of the topic list, no search-within-topics, no synonym-based topic lookup — real possible extensions, none asked for and none needed to close this round&#x27;s specific gap.</li>
+<li>No merge, no deploy, no Rules/index change, no version bump. <code>v08.32</code> remains unallocated.</li>
+<li>PR #122 (and #103, #116, #118) were not touched, closed, or force-pushed.</li>
+</ul>
+</main></body></html>

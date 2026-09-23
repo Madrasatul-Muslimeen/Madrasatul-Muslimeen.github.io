@@ -66,20 +66,111 @@ export function stripLeadingBismillah(text) {
   return rest || text;
 }
 
+// Issue #189 -- word-tap in the NORMAL flowing Arabic (not just the separate
+// Word by Word panel). Quranic small-high marks (the waqf/pause signs, the
+// rub-el-hizb "۞" and the place-of-sajdah sign) print as their OWN
+// space-delimited token in uthmaniText, but the word-by-word data source
+// folds each one into the ADJACENT real word instead of giving it its own
+// entry -- confirmed against the whole pulled corpus
+// (tools/quran-data-pull/output/surahs, all 114 files, 6,236 ayahs): a
+// naive split on spaces misaligns 44% of ayahs against `words[]` before this
+// fold-back, 0.05% after it (see splitPlainArabicWords's own comment for
+// what's left). A LEADING mark (rub-el-hizb, which opens some ayahs) has no
+// preceding token to fold onto, so it folds forward onto the first word
+// instead.
+const QURANIC_MARK_ONLY = /^[ۖ-ۜ۞۩]+$/;
+
+/**
+ * Splits `rawText` (plain Uthmani text, already Bismillah-stripped where
+ * that applies -- no HTML tags) into one segment per entry of `words`, in
+ * the same left-to-right order as `words[].position`. Returns `null` --
+ * never a best-effort guess -- when the count still doesn't land exactly on
+ * `words.length` after folding back the marks above: measured across the
+ * whole pulled corpus, 3 of 6,236 ayahs (surah 37:130's "إِلْ يَاسِينَ",
+ * one compound name the word API keeps as a single word despite its own
+ * internal space; and surah 95:1/97:1, where stripLeadingBismillah() itself
+ * fails to match a variant form of the Bismillah prefix in the pulled data --
+ * a bug that already exists in today's single-block rendering for those two
+ * ayahs, pre-existing and unrelated to this round). Callers MUST fall back
+ * to the untappable single-block rendering when this returns null, rather
+ * than ever risk a word landing on the wrong occurrence id.
+ */
+export function splitPlainArabicWords(rawText, words) {
+  if (!words?.length || !rawText) return null;
+  const tokens = rawText.trim().split(/ +/).filter(Boolean);
+  const merged = [];
+  let leadingMarks = [];
+  for (const tok of tokens) {
+    const isMark = QURANIC_MARK_ONLY.test(tok);
+    if (isMark && merged.length === 0) {
+      leadingMarks.push(tok);
+    } else if (isMark) {
+      merged[merged.length - 1] += " " + tok;
+    } else if (leadingMarks.length) {
+      merged.push(leadingMarks.join(" ") + " " + tok);
+      leadingMarks = [];
+    } else {
+      merged.push(tok);
+    }
+  }
+  if (leadingMarks.length) merged.push(leadingMarks.join(" "));
+  return merged.length === words.length ? merged : null;
+}
+
+/** One tappable word inside the normal flowing Arabic (Read and Note view
+    alike) -- same occurrence-id shape and the same "arabic — gloss"
+    aria-label pattern renderWordByWordPanel()'s own clickable chip uses
+    (I11: the spoken name follows the reader's own chosen gloss language,
+    never a hardcoded English fallback). The CSS reset for this button lives
+    in the stylesheet (`button.ayah-word-clickable`), not here. */
+export function arabicWordButtonHtml(segmentText, word, surahNumber, ayahNum, langs) {
+  const occurrenceId = `quran-word-occurrence:v1:${surahNumber}:${ayahNum}:${word.position}`;
+  const spokenGloss = langs?.map((l) => word.translation?.[l]).find(Boolean)
+    || word.translation?.en || word.translation?.bn || t("Quran word");
+  const accessibleName = escapeHtml(`${word.arabic} — ${spokenGloss}`);
+  return `<button type="button" class="ayah-word-clickable" data-word-occurrence="${occurrenceId}" data-surah="${surahNumber}" data-ayah="${ayahNum}" data-position="${word.position}" aria-label="${accessibleName}">${escapeHtml(segmentText)}</button>`;
+}
+
 /** Panel: the Arabic script itself, plain or tajweed-colour-coded (F-049 toggle).
     Fix round: the ayah number used to show trailing and only in the
     non-tajweed path (tajweed's own embedded end-marker is a different,
     Arabic-digit glyph, easy to miss) -- now a plain, always-present badge
     BEFORE the text, in every setting, matching the owner's own reference
-    screenshot and the equivalent fix in ayah-note-renderer.js's Note view. */
-export function renderArabicPanel(ayah, { tajweedOn } = {}) {
-  const body = tajweedOn && ayah.tajweedText
-    ? tajweedRawToSafeHtml(ayah.tajweedText)
+    screenshot and the equivalent fix in ayah-note-renderer.js's Note view.
+    Issue #189 -- when `wordCardInteractive` and a `surahNumber` are given,
+    the PLAIN branch (tajweed off) renders one <button> per word instead of
+    one escaped block, each carrying the click target the shared
+    readView/noteView listener already recognises (openWordCard() needs no
+    new code at all). The TAJWEED branch is deliberately left as one block,
+    investigated and NOT split: tajweed colouring in the pulled data
+    routinely spans a word boundary (idgham/ikhfa/iqlab -- an assimilation
+    rule colours the last letter of one word together with the first of the
+    next, e.g. surah 2:2's own
+    `<tajweed class=idgham_wo_ghunnah>دًى ل</tajweed>` -- measured across the
+    whole corpus, on ~65% of all ayahs), so there is no space to safely split
+    ON without either cutting a `<tajweed>` span in half (corrupting the
+    markup and silently losing colour on whichever letter lands on the wrong
+    side) or merging words together in a way this data cannot disambiguate.
+    That needs a PER-WORD tajweed dataset that does not exist here. The
+    separate Word-by-Word panel is unaffected by this toggle at all (it
+    never used tajweed markup to begin with) and stays tappable either
+    way. */
+export function renderArabicPanel(ayah, { tajweedOn, wordCardInteractive, surahNumber, langs } = {}) {
+  const clickable = wordCardInteractive && Number.isInteger(surahNumber) && !!ayah.words?.length;
+  let body;
+  if (tajweedOn && ayah.tajweedText) {
+    body = tajweedRawToSafeHtml(ayah.tajweedText);
+  } else {
     // Fix round -- ayah 1's own text is stripped of its embedded Bismillah
     // prefix here, since the decorative heading above (bismillahHtmlFor())
     // already shows it once. Tajweed's own text never carried the prefix in
     // the first place, so that branch is untouched.
-    : escapeHtml(ayah.ayah === 1 ? stripLeadingBismillah(ayah.uthmaniText) : ayah.uthmaniText);
+    const plainSource = ayah.ayah === 1 ? stripLeadingBismillah(ayah.uthmaniText) : ayah.uthmaniText;
+    const segments = clickable ? splitPlainArabicWords(plainSource, ayah.words) : null;
+    body = segments
+      ? segments.map((seg, i) => arabicWordButtonHtml(seg, ayah.words[i], surahNumber, ayah.ayah, langs)).join(" ")
+      : escapeHtml(plainSource);
+  }
   // Fix round -- the Arabic block's own number is in ARABIC-INDIC digits
   // (٠١٢٣٤٥٦٧٨٩), always, whatever the app's display language happens to be.
   // Exactly the rule digitsForLang() already encoded for the two translation
