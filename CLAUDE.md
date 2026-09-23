@@ -158,7 +158,35 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.47 on `main`** — **RETROACTIVE ALLOCATION, 23 Sep
+**Current milestone: v08.48 on `main`** (23 Sep 2026 — Word Card: the
+flow-mode cross-surah navigation gap PR #135 flagged is fixed, issue
+#113, PR #138. Following a lemma occurrence into a different surah in
+Whole Surah flow mode left the reader on the arrival surah's own page at
+the SAME scroll offset as the origin āyah — not the tapped word, which
+could be measurably off-screen — because raw `scrollLeft` is a property
+of the container, not of whichever surah's content it currently holds,
+and a browser does not reset it when `renderFlowView()` rebuilds the
+`innerHTML` for a different surah. Fixed with one new identity-based
+function, `scrollFlowToCurrentAyah()`, called from `navigateToAyah()` —
+the word-card mechanism's only navigation function, so the fix cannot
+affect Prev/Next, the Ayah/Surah selects, or the flow strip's own swipe
+navigation. New `quran-word-card-flow-nav.mjs` suite, 19 checks. **A
+second, pre-existing, UNRELATED defect was found and NOT fixed**: Range
+unit type carries no surah of its own, so crossing surahs while Range is
+selected shows an arbitrary slice of the wrong surah — this predates
+issue #113 and is not scoped to word-card navigation at all (the plain
+`surahSelect` dropdown has the same gap); recorded as a product-decision
+packet with four costed options, none chosen. Mushaf-mode flow scroll
+targeting is also flagged, not built — `hifz-renderer.js`'s word spans
+carry no ayah-identifying attribute to target. No new translation
+string, no Firestore write/Rule/index. **Independently re-verified by
+the Architect before merging**: fresh full-history checkout, retargeted
+from its stale stacked base onto `main` and merged current `main` in
+(clean), all 11 governance suites clean, the new suite 19/19 and the
+unmodified `quran-word-card-return.mjs` regression suite 55/55.
+Allocated by the MMSA Architect.
+
+**Previous milestone: v08.47 on `main`** — **RETROACTIVE ALLOCATION, 23 Sep
 2026, and read this whole paragraph before assuming D3 Journaling is
 still unreachable anywhere else in this file.** This is MAP Phase 5
 **P5-D, the Notes screen, round 1** (issue #195, PR #198), which merged
