@@ -146,6 +146,24 @@ function focusCollectionsLanding() {
   landing.focus({ preventScroll: true });
 }
 
+/**
+ * Moves KEYBOARD focus to the newly-active tab button after switching
+ * Collections/Topics/Search/Explore/Commentary (issue #114, found by
+ * reproduction: `render()` tears down and rebuilds the whole subtree on
+ * every tab click, same as every in-tab Collections step -- but unlike
+ * those steps, nothing restored focus afterward, so a keyboard user lost
+ * their place to `<body>` on every single tab switch, not just Search's).
+ * `focusCollectionsLanding()` covers steps WITHIN the Collections tab and
+ * `focusPendingOccurrence()` covers the one-shot Topics/Search "View in
+ * source" jump; neither runs on a plain tab switch. The tab button itself
+ * is already a real, always-focusable control, so this needs no tabindex
+ * hack -- the standard ARIA-tabs pattern of leaving focus on the tab list.
+ */
+function focusActiveTab() {
+  const btn = document.querySelector(".hadith-tab.active");
+  if (btn) btn.focus({ preventScroll: true });
+}
+
 // ---------------------------------------------------------------------------
 // The notice that is never conditional
 // ---------------------------------------------------------------------------
@@ -179,7 +197,7 @@ function controls(state, render) {
   ]) {
     const b = el("button", `hadith-tab${state.view === view ? " active" : ""}`, label);
     b.dataset.hadithTab = view;
-    b.addEventListener("click", () => { state.view = view; render(); });
+    b.addEventListener("click", () => { state.view = view; render(); focusActiveTab(); });
     tabs.appendChild(b);
   }
   bar.appendChild(tabs);

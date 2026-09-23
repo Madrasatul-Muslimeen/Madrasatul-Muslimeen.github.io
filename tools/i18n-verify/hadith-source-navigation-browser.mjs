@@ -273,6 +273,44 @@ check("on the no-chapter-level edition too, that landing crumb carries aria-curr
   await page.evaluate(() => document.activeElement?.getAttribute("aria-current") === "page"));
 await click(".hadith-crumb"); // reset before the checks below reuse Alpha ids
 
+// --- Keyboard focus survives a TOP-LEVEL TAB SWITCH, not just an in-tab
+// Collections step (issue #114, found by reproduction while re-verifying the
+// crumb `aria-current` fix above). `render()` tears down and rebuilds the
+// WHOLE subtree -- tab bar included -- on every click, exactly as it does for
+// an in-tab Collections step; `focusCollectionsLanding()` (above) and
+// `focusPendingOccurrence()` (the one-shot Topics/Search "View in source"
+// highlight) both cover a step WITHIN a tab, but nothing restored focus on
+// the plain act of switching tabs itself -- so a keyboard user lost their
+// place to <body> on EVERY tab click, including landing back in Collections
+// via "View in source" and then clicking back to Search: the query and
+// results survive (state.query persists on `state`, proven below), but the
+// reader's keyboard position did not, every single time, on every tab.
+await click('[data-hadith-tab="search"]');
+await settle();
+check("switching to the Search tab lands keyboard focus on the Search tab button, not <body>",
+  await page.evaluate(() => document.activeElement?.dataset?.hadithTab === "search"));
+await page.fill("#hadithSearchInput", "Prayer");
+await settle();
+await click(".hadith-search-hit [data-hadith-view-source]");
+await settle();
+await click('[data-hadith-tab="search"]');
+await settle();
+check("returning to Search after a 'View in source' jump lands focus on the Search tab button, not <body>",
+  await page.evaluate(() => document.activeElement?.dataset?.hadithTab === "search"));
+check("returning to Search after the jump keeps the SAME query and results (nothing was lost, only focus needed restoring)",
+  (await page.inputValue("#hadithSearchInput")) === "Prayer" &&
+  (await page.evaluate(() => document.querySelectorAll(".hadith-search-hit").length)) > 0);
+await click('[data-hadith-tab="collections"]');
+await settle();
+check("switching to the Collections tab lands keyboard focus on the Collections tab button, not <body>",
+  await page.evaluate(() => document.activeElement?.dataset?.hadithTab === "collections"));
+await click('[data-hadith-tab="explore"]');
+await settle();
+check("switching to the Explore tab lands keyboard focus on the Explore tab button, not <body>",
+  await page.evaluate(() => document.activeElement?.dataset?.hadithTab === "explore"));
+await click('[data-hadith-tab="collections"]');
+await settle();
+
 check("no page error was raised anywhere in this run", errors.length === 0);
 if (errors.length) console.log("--- page errors ---\n", errors.join("\n"));
 
