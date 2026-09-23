@@ -357,29 +357,50 @@ Every report follows one shape, and ends with **Done / Suggestions / Pending**:
 
 ## Architect's backlog
 
-- [ ] **42 open PRs — 21 on `main`, 21 stacked** (counted 22 Sep 2026; the
-      earlier "~28" predated several and did not separate the two kinds).
-      Unpick oldest-first: bring each onto current `main`, review by
-      measurement, merge or close. This is the largest single piece of
-      outstanding work and the reason the *Do not stack draft PRs* rule exists.
-      **The chains collapse from their roots**, so take these first and the rest
-      retarget themselves: **#140** (Health, 8 deep), **#143** (Hadith, 7 deep),
-      **#135** (Word Card, 5 deep), **#130** (Hadith, 2 deep), and the older
-      Health trio **#111 / #119 / #121**.
-      Cleared so far (22 Sep 2026): merged #134 and #96 (the checkout-artefact
-      finding, from two directions), #132, #136, #124, #117, #128, #110, #129;
-      closed #94 as redundant. Where a merged report has since gone stale, the
-      merge commit says so — read the dated header, not the conclusion.
-      **#120 CONFLICTS with `main`** in
-      `tools/i18n-verify/note-foundation-data-layer.mjs`, because #104 merged
-      and touches the same file. It is the implementation of #117's Gate B
-      proposal, which is now authorised, so this is a real round: resolve the
-      conflict, re-run the note and boundary suites, merge.
-      **Eight of the 21 on `main` are documentation-only** — #110, #117, #124,
-      #128, #129, #131, #132, #136 — so their review is: confirm docs-only,
-      suites green, and *that the report's claims are still true*. That last one
-      is the actual work; a report asserting something false is worse than no
-      report.
+- [x] **42 open PRs — CLEARED, 23 Sep 2026.** The 22 Sep entries below
+      (chains rooted at #140/#143/#135/#130 and the Health trio
+      #111/#119/#121) were cleared by the unattended Architect's own 22 Sep
+      sweep, per the status board's session log — by the time this session
+      opened, none of those numbers were still open. **This session cleared
+      what remained**: the three then-current chain roots (#150 Hadith,
+      #148 Health, #137 Word Card) and every PR stacked behind each —
+      #150→#153→#154 (Hadith), #148→#151→#152→#155 (Health),
+      #137→#138→#139→#157 (Word Card) — plus the long-separate #120
+      (MAP Phase 5 P5-G), whose real conflict in
+      `tools/i18n-verify/note-foundation-data-layer.mjs` (a summary-line
+      collision, not a semantic one) was resolved by combining both
+      counts. Each root and every PR behind it was independently
+      re-verified (fresh checkout, merged current `main` in, all 11
+      governance suites, the round's own focused suites re-run matching
+      claimed counts, mutation-proofs re-run where the round claimed one)
+      before merging — never rubber-stamped. Two real conflicts were found
+      and resolved on the way: an import-list conflict in
+      `app/quranrevival.html` (PR #139, both sides additive, combined
+      cleanly) and `tools/md2report.py` (PR #157, main's own version was
+      already a strict superset of the PR's fix, so main's was kept and
+      the PR's two report `.html` twins were regenerated with it). Two
+      real, live-failing checks were found and fixed in the same pass,
+      reason recorded, mutation-proven, never silently weakened:
+      `study-note-boundary.mjs` and `journey-map-boundary.mjs` both
+      demanded a pinned single-line removal from `note-foundation.js`
+      that had since landed on `main` itself, so a correct insertion-only
+      diff against current `main` showed zero removed lines and failed a
+      check written for an older baseline — both now accept either shape.
+      A governance-tooling mutation
+      (`programme-ledger-mutations.mjs`) was also found hardcoded to the
+      literal `v08.44` the moment this session's own allocation made that
+      number real, and fixed to derive the unclaimed number from the
+      ledger instead. **Result: `main` moved v08.43 → v08.52 across nine
+      real version allocations** (v08.44 Hadith tab-switch focus, v08.45
+      Word Card z-index, v08.46 Health References switcher a11y, v08.47
+      the Notes screen retroactively — see the D3 Journaling finding
+      below, v08.48 Word Card flow-mode cross-surah nav, v08.49 Hadith
+      row-heading lang/dir, v08.50 Health Foods/Conditions search, v08.51
+      Health organ Type pill, v08.52 Word Card Mushaf/race-condition/
+      scroll-retarget fixes), plus #120 and two purely-documentary rounds
+      (#154, #157) merged with no version bump (no user-visible
+      behaviour). **Zero open PRs remain except #37**, the Owner's own
+      standing decision item, deliberately untouched.
 - [x] **THE BUILDER WORKS — proven 22 Sep 2026, PR #170.** Six attempts, six
       causes. Five were credential or workflow faults, all fixed; the sixth
       the successful run itself exposed — `use_commit_signing` provides the
