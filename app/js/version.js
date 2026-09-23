@@ -464,4 +464,25 @@
 // main and merged current main in (clean), all 11 governance suites
 // clean, the new suite 19/19 and the unmodified quran-word-card-
 // return.mjs regression suite 55/55. Allocated by the MMSA Architect.
-export const APP_VERSION = "08.48";
+// 08.49: Hadith -- book/chapter row headings get a real lang/dir
+// attribute (issue #114, PR #153). Every book/chapter row's own
+// native-script heading (.hadith-row-heading, real Arabic text) rendered
+// with no lang/dir attribute. getComputedStyle().direction still read
+// "rtl" (Unicode Bidi auto-detects a run of Arabic characters), which is
+// why no sighted or screenshot check ever caught it -- but lang has no
+// such fallback: a screen reader read every book/chapter heading in the
+// page's UI-language voice (English/Bangla) instead of Arabic. Every
+// other Arabic-script surface this component renders already stamped
+// lang/dir; only these two call sites did not. Fixed with one
+// rawHeadingSpan() helper stamping lang=SOURCE_LANGUAGE, dir="rtl",
+// covering both edition shapes (with and without a chapter level)
+// through one function. Zero new translatable strings. 3 new checks in
+// hadith-source-navigation-browser.mjs (47 -> 50), mutation-proven
+// (reverting to the pre-fix state fails exactly the 3 new checks,
+// 47/50). Independently re-verified by the Architect before merging:
+// fresh full-history checkout, retargeted from its stale stacked base
+// onto main and merged current main in (clean), all 11 governance
+// suites clean, all 5 Hadith-owned data suites clean,
+// hadith-source-navigation-browser.mjs 50/50 in both languages.
+// Allocated by the MMSA Architect.
+export const APP_VERSION = "08.49";
