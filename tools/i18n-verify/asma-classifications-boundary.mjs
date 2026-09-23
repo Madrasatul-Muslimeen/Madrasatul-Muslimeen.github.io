@@ -332,5 +332,99 @@ check("asma-study.js is asma-collections.js's ONLY other page-controller consume
   assert.ok(!asmaStudyJs.includes("addClassification"), "asma-study.js now writes to the classifications registry -- it was meant to stay untouched this round");
 });
 
-console.log(`\n==== Asma classifications boundary (issue #202): ${passed} passed, ${failed} failed ====`);
+// ---------------------------------------------------------------------------
+// Issue #205 -- the two gaps #202's own PR review disclosed and left open:
+// (1) rename/archive a CLASSIFICATION from the UI (the data-layer functions
+// were already built and already tested above; only the wiring was missing),
+// and (2) the "file a new Name" flow generalized to every active
+// classification, not just the two the opening button happened to default
+// to. openAsmaXGroupsPopover() -- the issue's own "likely" guess -- turned
+// out to be ALREADY generalized by #202 (it iterates every collection
+// unfiltered by kind and labels each with asmaXClassificationTitle(c.kind));
+// the real ungeneralized flow was the brand-new-Name "file it under" row
+// (asmaXFileIntoRowHtml/openAsmaXEditOverlay's own fileInto handling),
+// confirmed by reading its real call sites (the Note view's ✚/✚² buttons,
+// each hardcoding a single kind).
+// ---------------------------------------------------------------------------
+
+check("the classification-level rename/archive buttons exist and are wired to their own prompts, not the collection-level pair", () => {
+  assert.ok(qrHtml.includes('id="asmaXRenameClassBtn"'), "asmaXRenameClassBtn markup is missing");
+  assert.ok(qrHtml.includes('id="asmaXArchiveClassBtn"'), "asmaXArchiveClassBtn markup is missing");
+  assert.ok(qrHtml.includes('asmaXRenameClassBtn.addEventListener("click", () => asmaXRenameClassificationPrompt(asmaXKind))'), "asmaXRenameClassBtn is not wired to asmaXRenameClassificationPrompt");
+  assert.ok(qrHtml.includes('asmaXArchiveClassBtn.addEventListener("click", () => asmaXToggleArchiveClassification(asmaXKind))'), "asmaXArchiveClassBtn is not wired to asmaXToggleArchiveClassification");
+});
+
+check("asmaXRenameClassificationPrompt calls the data layer's renameClassification and writes the typed title into the CURRENT app language, same shape asmaXRenameCollectionPrompt uses one level down", () => {
+  const fn = qrHtml.slice(qrHtml.indexOf("async function asmaXRenameClassificationPrompt"), qrHtml.indexOf("async function asmaXToggleArchiveClassification"));
+  assert.ok(fn && fn.length > 0, "asmaXRenameClassificationPrompt is missing");
+  assert.ok(fn.includes("asmaRenameClassificationLocal("), "does not call the data layer's renameClassification");
+  assert.ok(fn.includes("setLangText(cls.title, getAppLang(), typed.trim())"), "does not write the typed title into the CURRENT app language slot -- a rename while reading Bangla would silently overwrite the English title, the exact I11 defect this file's own header records was fixed for collection rename");
+});
+
+check("asmaXToggleArchiveClassification calls setClassificationStatus (I4: archive/restore, never delete) and never calls the COLLECTION status setter", () => {
+  const fn = qrHtml.slice(qrHtml.indexOf("async function asmaXToggleArchiveClassification"), qrHtml.indexOf("async function asmaXRemoveItemAction"));
+  assert.ok(fn && fn.length > 0, "asmaXToggleArchiveClassification is missing");
+  assert.ok(fn.includes("asmaSetClassificationStatusLocal("), "does not call the data layer's setClassificationStatus");
+  assert.ok(!fn.includes("asmaSetCollectionStatusLocal("), "archiving a classification must never call the COLLECTION status setter -- that would archive its lists too, not just hide the tab from the switcher (I4)");
+});
+
+check("archiving the classification currently being browsed falls back to another active one (or the seeded \"group\"), never to a tab the switcher no longer shows", () => {
+  const fn = qrHtml.slice(qrHtml.indexOf("async function asmaXToggleArchiveClassification"), qrHtml.indexOf("async function asmaXRemoveItemAction"));
+  assert.ok(fn.includes("asmaActiveClassifications(asmaXClassifications"), "does not re-derive a still-active classification to fall back to");
+  assert.ok(fn.includes('asmaXLevel = "groups"'), "does not reset the browsing level when the current tab is archived out from under it");
+});
+
+check("the level bar's existing Show-archived flag also reveals an archived classification's own switcher field -- reused, not a second toggle", () => {
+  const fn = qrHtml.slice(qrHtml.indexOf("function renderAsmaXLevelBar"), qrHtml.indexOf("function renderAsmaXPanel"));
+  assert.ok(fn.includes("asmaXShowArchived") && fn.includes("asmaActiveClassifications(asmaXClassifications"), "renderAsmaXLevelBar no longer branches on asmaXShowArchived for which classifications to offer");
+  assert.ok(!qrHtml.includes('id="asmaXShowArchivedClassToggle"'), "a second, separate 'show archived classifications' toggle was added instead of extending the existing one");
+});
+
+check("archiving a classification never drops its collections or their memberships -- re-asserted through the exact call the UI now makes (I4)", () => {
+  let classifications = addClassification(classificationsFrom(null), { key: "attr-unique", title: { en: "Unique to Allah" } });
+  const collections = [collWithItems("uniqueNames", "attr-unique", ["name:1"])];
+  classifications = setClassificationStatus(classifications, "attr-unique", "archived");
+  assert.equal(collections.length, 1, "the collection vanished when its classification was archived");
+  assert.equal(membershipsOfName(collections, 1).length, 1, "the Name's membership vanished when its classification was archived -- it must still show in that Name's own \"Belongs to\" section");
+  assert.equal(collections[0].status, "active", "archiving the classification silently archived the collection too");
+});
+
+check("the \"file a new Name\" row (asmaXFileIntoRowHtml) builds its Classification field from the live registry, not a hardcoded group/dual pair", () => {
+  const fn = qrHtml.slice(qrHtml.indexOf("function asmaXFileIntoRowHtml"), qrHtml.indexOf("function openAsmaXEditOverlay"));
+  assert.ok(fn && fn.length > 0, "asmaXFileIntoRowHtml is missing");
+  assert.ok(fn.includes("asmaActiveClassifications(asmaXClassifications"), "the file-into row does not read the live classifications registry");
+  assert.ok(fn.includes('id="asmaXEditClassSelect"'), "the Classification <select> is missing from the file-into row");
+  assert.ok(!/kind === "dual" \? t\(/.test(fn), "the row still branches on a hardcoded dual/group kind for its own wording rather than the live registry");
+});
+
+check("POSITIVE CONTROL: a freshly-added THIRD classification is among the active set the file-into row's Classification select is built from, exactly like the level bar's own switcher", () => {
+  const classifications = addClassification(classificationsFrom(null), { key: "by-act-essence", title: { en: "By Act / By Essence" } });
+  const active = activeClassifications(classifications);
+  assert.equal(active.length, 3, "a freshly-added classification did not join the active set");
+  const third = active.find((c) => c.key === "by-act-essence");
+  assert.ok(third, "the freshly-added classification is not among the active set asmaXFileIntoRowHtml maps into <option> elements");
+  assert.equal(third.title.en, "By Act / By Essence");
+  // A Name filed under it is reachable exactly like the two seeded
+  // classifications (same lookup asmaXCollectionsOfKind/asmaXFileSelectOptionsHtml
+  // both use: active collections filtered by classification key).
+  let collections = addCollection(DEFAULT_ASMA_COLLECTIONS.map((c) => ({ ...c })), { title: { en: "By Act" }, kind: "by-act-essence" });
+  const col = collections.find((c) => c.kind === "by-act-essence");
+  collections = addItem(collections, col.id, buildUnitKey.name(1));
+  const reached = activeCollections(collections).filter((c) => c.kind === "by-act-essence");
+  assert.equal(reached.length, 1);
+  assert.ok(reached[0].items.includes(buildUnitKey.name(1)));
+});
+
+check("the Classification select cascades into the file-under select on change (asmaXFileSelectOptionsHtml), so a Name is filable under any active classification's own lists from this one popover", () => {
+  assert.ok(qrHtml.includes('fileSel.innerHTML = asmaXFileSelectOptionsHtml(classSel.value)'), "the Classification select's change handler does not re-fill the file-under select for the newly chosen classification");
+});
+
+check("the save handler files the new Name under whichever classification was chosen in the row, not a hardcoded fileInto.kind", () => {
+  const saveFn = qrHtml.slice(qrHtml.indexOf('asmaXEditSaveBtn.addEventListener("click"'), qrHtml.indexOf("let asmaXAttachChecked"));
+  assert.ok(saveFn.length > 0, "asmaXEditSaveBtn's own click handler is missing");
+  assert.ok(saveFn.includes('document.getElementById("asmaXEditClassSelect")'), "the save handler never reads the Classification field's own chosen value");
+  assert.ok(saveFn.includes("const kind = classSelectValue || fileInto.kind"), "the save handler does not prefer the row's own chosen classification over the opening button's default");
+});
+
+console.log(`\n==== Asma classifications boundary (issues #202/#205): ${passed} passed, ${failed} failed ====`);
 if (failed) process.exitCode = 1;

@@ -2112,6 +2112,13 @@ export const BN = {
   "New classification:": "নতুন শ্রেণিবিভাগ:", // ?
   "New classification": "নতুন শ্রেণিবিভাগ", // ?
 
+  // Classification rename/archive round (23 Sep 2026, issue #205) -- the
+  // ✎/🗄 pair for the classification tab itself, same shape as "Rename
+  // group:"/"Archive"/"Restore" above, one level up.
+  "Rename classification:": "শ্রেণিবিভাগের নাম পরিবর্তন করুন:", // ?
+  "Archive classification": "শ্রেণিবিভাগ সংরক্ষণাগারে রাখুন", // ?
+  "Restore classification": "শ্রেণিবিভাগ ফিরিয়ে আনুন", // ?
+
   // Back-button round -- the popup note view's own Back control.
   "Back": "পেছনে", // ?
 
@@ -2176,6 +2183,16 @@ export const BN = {
   "+ New Dual Names list…": "+ নতুন জোড়া-নামের তালিকা…", // ?
   "New group title": "নতুন গ্রুপের শিরোনাম", // ?
   "New Dual Names list title": "নতুন জোড়া-নামের তালিকার শিরোনাম", // ?
+
+  // Classification round (23 Sep 2026, issue #205) -- the "file it under"
+  // row generalized: a real Classification field alongside the list picker,
+  // so a brand-new Name can be filed under any active classification, not
+  // only the two "File under (Group)"/"File under (Dual Names)" wordings
+  // above (kept, unused, per this project's own rule).
+  "Classification": "শ্রেণিবিভাগ", // ?
+  "File under": "যেখানে রাখবেন", // ?
+  "+ New list…": "+ নতুন তালিকা…", // ?
+  "New list title": "নতুন তালিকার শিরোনাম", // ?
 
   // 2 Sep 2026 -- the list-pane splitter/collapse toggle shared by
   // Approach, Explore, QCR and Asma ul Husna.
