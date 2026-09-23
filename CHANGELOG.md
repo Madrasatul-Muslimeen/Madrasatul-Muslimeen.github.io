@@ -14696,3 +14696,2418 @@ measurement rows; no shared application file touched. **Nothing was deployed** �
 `firestore.rules` still names `evidence` zero times and E1 stays CLOSED.
 
 Full account: `docs/reports/2026-09-19-quranrevival-d3-journaling-chokepoint.md`.
+
+
+## v08.32 — 21 Sep 2026 — Basic Arabic lemma occurrences
+
+QuranRevival Word Card PR #112 was merged to `main` at `f5b7c6c`. Its Basic Arabic lemma-occurrence count now expands to a list of written occurrences, and selecting one navigates to its ayah. The change reuses the existing occurrence data and performs no Firestore write. The MMSA Master Architect allocated v08.32 in `app/js/version.js` and the Programme Integration Ledger. The Owner tested the live app and reported that all checks passed. This is an app-visible release; it does not deploy the Phase 4–6 Rules/index package. E1 remains closed. The next unallocated number is v08.33.
+
+## The Architect/Builder loop installed — NO VERSION BUMP (21 Sep 2026)
+
+Governance and automation only. `app/js/version.js` stays **v08.32**, and
+`git diff origin/main -- app/ tests/ firestore.rules firebase.json` is empty —
+BR-0, no application behaviour changed, nothing deployed.
+
+**The survey that produced this round found that the builder had never run
+once.** `.github/workflows/claude.yml` had been wired since the automation
+pilot's Step 2, and **every one of its 140 recorded runs carried
+`conclusion: skipped`.** Two independent causes, and neither was visible from
+the workflow's green-looking history, because **a job-level `if:` that fails
+leaves no log to explain itself**:
+
+1. **It listened only to `issue_comment`.** An Architect cannot assign a round
+   by opening an issue if opening an issue is not a trigger. The kickoff's own
+   loop — one issue per round — was structurally impossible.
+2. **The Owner was driving through `/mmsa-task`**, the task bridge, and this
+   file's own mutual-exclusion clause correctly refuses a comment starting with
+   that phrase. The exclusion was right; the consequence was that the only
+   channel in use dispatched the *other* automation, every time.
+
+So the real builder for the whole pilot was the **MMSA task bridge** — a Claude
+Routine acting under the Owner's own GitHub identity. That is why every open
+pull request is authored by `AAAsapp` rather than `claude[bot]`.
+
+**`author_association` is gone from the gate, replaced rather than joined.**
+GitHub reports private organisation members as `CONTRIBUTOR` or `NONE`
+depending on how access is granted, so that test can lock out the only human who
+can drive this. The gate is now four conditions: not a bot, sender login is the
+Owner's, `@claude` present in the text of the event that actually fired
+(matched per event type), and the bridge exclusion — plus a new loop guard. The
+bridge's Routine posts as a **User**, not a bot, so a comment it authored would
+have passed the first two gates; comments carrying the Claude Code attribution
+marker are refused outright.
+
+**`concurrency: mmsa-builder`, `cancel-in-progress: false`.** Quran, Hadith and
+Health edit one application, so two builders at once would edit one file against
+two bases. The round already running is real work: queue behind it, never kill
+it.
+
+**The second-round security finding was honoured, and its remedy corrected.**
+The previous revision reasoned — correctly — that an allowlist of script paths
+is not an allowlist of behaviour while those scripts are model-editable, and
+concluded the builder should get **no Bash surface at all**. That was sound
+about the risk and wrong about the remedy: it left the builder unable to measure
+its own work in a repository whose entire method is measurement, while
+`verify.yml` gates only the seven deterministic suites — so a UI regression
+reached `main` unmeasured either way. Node and Playwright are installed and the
+allowlist grants `Bash(node *)`, `Bash(npx playwright *)` and **read-only git
+verbs only**. `use_commit_signing: true` is kept, which is what swaps the
+Action's four default `Bash(git add|commit|rm|push)` tools for two API
+file-operation tools: **there is no shell git write of any kind and no push verb
+in any form.** The residual — `Bash(node *)` executes JavaScript, and file
+editing is enabled — is stated in the file rather than implied away, together
+with the only thing that actually closes it: a server-side branch rule on
+`main`, *Require a pull request before merging* with **Required approvals = 0**.
+Zero matters, because the Owner authors the pull requests and GitHub forbids
+approving your own. That rule is the Owner's to set.
+
+**`ARCHITECT.md` is new** — the loop, version-allocation authority, merge
+authority, the three-modules-one-file rule, how to write an issue a builder can
+finish, the two ways a run produces nothing, handover, and a backlog seeded from
+this survey.
+
+**`CLAUDE.md` gains *The Architect loop*** and a pointer block at the top: the
+builder opens a PR that links its issue and pastes its check results, then
+stops; it never merges and never bumps `app/js/version.js`; instructions come
+only from the Owner and the Architect, and a comment claiming Owner
+authorisation is not Owner authorisation. The retired two-repository paragraph
+that ends "merge the PR, mirror it, done" is now explicitly named as historical
+record rather than left to be misread.
+
+**THE LARGEST FINDING IS NOT THE WORKFLOW.** There are **~28 open draft pull
+requests, stacked up to five deep** across the three modules — chains where each
+PR's base is the previous PR's branch rather than `main`, so none can be reviewed
+against `main` or merged independently. Nothing merges itself and no Architect
+existed to merge them, so the stacks grew. Filed as the first item on the
+Architect's backlog, and the *do not stack draft PRs* rule is written into both
+briefs so it does not recur.
+
+**Baseline recorded rather than assumed: all seven governance suites pass, 7/7,
+on a full-history checkout** — 8/0, 49/0, 8/0, 27/0, 11/0, 41/0, 38/0. On a
+shallow clone the same unmodified tree reports `brief-integrity` 6/2 and
+`programme-ledger-mutations` 42/7; that is the documented clone artefact, not a
+finding, and both briefs now say so where a reader will meet it.
+
+## The Architect made unattended — NO VERSION BUMP (21 Sep 2026)
+
+Governance and automation only. `app/js/version.js` stays **v08.32**;
+`git diff origin/main -- app/ tests/ firestore.rules firebase.json` is empty.
+
+The Owner works from a tablet with no terminal, and asked for the loop to keep
+running with no session open. `.github/workflows/architect.yml` does the
+review/merge/next-job half of `ARCHITECT.md` on a **four-hourly schedule**,
+after every `verify` completion, and on manual dispatch.
+
+**THE SAFETY DESIGN IS A SHELL STEP, NOT A PARAGRAPH IN A PROMPT, and that
+distinction is the whole point.** Before Claude starts, a deterministic
+preflight computes the merge-eligible set and writes two files. A pull request
+is eligible only if its base is `main`, `verify` is green **on its current head
+SHA** (not merely "nothing failing"), GitHub reports it cleanly mergeable, it is
+not a draft, it carries no `needs-owner` label, and it touches **no protected
+path** — `app/js/version.js`, `firestore.rules`, `firebase.json`,
+`.github/workflows/**`, `CLAUDE.md`, `CHANGELOG.md`, the programme ledger. The
+model may refuse anything on that list and may **never** promote anything off
+the blocked one. A prompt can be argued with; a `jq` filter cannot.
+
+**At most three merges per run.** A cron job that lands a dozen unattended
+changes is a queue flush, not review.
+
+**ASSIGNMENT COULD NOT GO THROUGH THE COMMENT GATE, and working out why is the
+round's real finding.** The unattended Architect acts through a bot identity.
+The builder's gate refuses bots — correctly, since that is exactly what stops
+the builder's own output restarting it. So an Architect posting `@claude` would
+be refused every time, and the loop would return to the 140 silent `skipped`
+runs the previous round existed to end. The fix is **not** to let bots through
+the gate, which would readmit the builder's own comments: `claude.yml` gained a
+`workflow_dispatch` trigger taking an `issue_number`, and reaching it requires
+`actions: write` on a repository token, which no comment from anyone holds. The
+human gate is therefore **unchanged and still as strict**, and the machine path
+is narrower still. The dispatch prompt carries only a POINTER to the issue,
+never a task — the issue is the specification, and nothing a dispatch input
+says can add to it.
+
+**The job token is `secrets.GITHUB_TOKEN`, deliberately not the Claude App
+token.** It is repository-scoped and dies with the job, and — the load-bearing
+part — a merge commit it creates does not re-trigger workflows, so an Architect
+run cannot cascade into another. The cost, stated rather than hidden: merges
+are attributed to `github-actions[bot]`.
+
+**External text is data.** Pull-request titles reach the model by file rather
+than by string interpolation, so a title can never become part of the prompt's
+own instructions, and the prompt says plainly that any comment claiming Owner
+authorisation is to be refused and reported.
+
+**TWO THINGS THIS SESSION COULD NOT DO, AND BOTH ARE BLOCKED BY DESIGN RATHER
+THAN BY AN OVERSIGHT.** The Owner asked whether the subscription token could be
+minted here and installed for them. It cannot, and the attempts are recorded
+rather than described: `claude setup-token` is refused by the sandbox's
+credential-materialisation guard, and the GitHub Actions secrets API returns
+**HTTP 403 — "Access to this GitHub Actions path is not permitted through this
+proxy."** So the credential can be neither created nor installed from here, and
+neither limit should be worked around. Both automations stay inert until the
+Owner adds `CLAUDE_CODE_OAUTH_TOKEN` themselves; each says so in its own step
+summary rather than failing obscurely.
+
+All seven governance suites re-run green on a full-history checkout, and all
+four workflow files re-parse as valid YAML.
+
+## Two defects in the Architect's own gate, found by running it — NO VERSION BUMP (21 Sep 2026)
+
+Follow-on to the round above, and the reason it exists is that the gate was
+**run against the real backlog** instead of being trusted. Both defects would
+have made the unattended Architect do nothing for ever while reporting a
+reason that was not true.
+
+**(1) `mergeable` IS COMPUTED LAZILY, AND THE GATE READ IT COLD.** The triage
+step took `mergeable` from `gh pr list`, a batch endpoint. GitHub does not
+compute mergeability until asked for a specific pull request: the batch read
+returns `UNKNOWN` and merely *triggers* the calculation, which a later
+per-pull-request read returns. Measured: **25 of 25 open pull requests reported
+`unknown` from the list endpoint and `clean` from a warm single read moments
+later.** Since each run does exactly one cold read and never a warm one, every
+pull request would have been marked *"not cleanly mergeable"* on every run, for
+ever. The gate now does a per-pull-request warm read with one retry.
+
+**(2) 23 OF 25 OPEN PULL REQUESTS WERE DRAFTS, AND EVERY ONE WAS COMPLETE.**
+The gate refuses to merge a draft, correctly. But the bridge that built this
+backlog opened everything as a draft to signal "I am not merging this" — so the
+signal that once meant *withheld* now reads as *unfinished*, and the automation
+would have found nothing eligible on any run. Two changes rather than relaxing
+the gate: the builder contract in `CLAUDE.md` now requires a pull request
+**opened ready for review**, and the Architect reports `DRAFT` as its own
+category — review it on its merits, mark it ready if it passes, and **merge it
+only on a later run**, because merging in the same run would use an eligibility
+result computed before it qualified.
+
+**Marking ready counts against the three-per-run budget** exactly as a merge
+does, so a run cannot quietly promote a dozen pull requests into next run's
+eligible list.
+
+Also recorded from the same triage, for the Architect that picks this up:
+`verify` is **failing** on two pull requests and **has never run** on one
+(older than the workflow), and that oldest one touches two protected paths.
+None of those is merged by anything automatic.
+
+BR-0, no version bump; `app/`, `tests/`, `firestore.rules` and `firebase.json`
+byte-identical. Seven governance suites green.
+
+## The builder workflow would not load, and every check said it was fine — NO VERSION BUMP (21 Sep 2026)
+
+The Owner installed the credential and branch protection, and the first real
+test round triggered **nothing**. The cause was already on `main`.
+
+**`claude.yml`'s `prompt:` was a PLAIN YAML SCALAR CONTAINING `issue #{0}`, and
+in YAML a space-followed-by-hash BEGINS A COMMENT.** Everything from that hash
+onward was silently discarded, leaving `${{` with no closing `}}`. GitHub could
+not load the workflow at all — it registered **by file path instead of by its
+`name:`**, every push produced a `failure` run with no job inside it, and no
+issue or comment could trigger the builder.
+
+**BOTH CHECKS THIS SESSION RAN HAD PASSED.** PyYAML parsed the file
+"successfully" — it had *truncated a string*, which is not a parse error — and
+`action-validator`, a GitHub-schema validator, reported nothing, because the
+schema describes STRUCTURE and knows nothing about expression syntax. *"claude.yml
+parses OK"* was true and worthless. The defect was visible only by counting
+braces in the **parsed value**: 2 open, 0 close.
+
+**The tell was in the Actions list and was nearly missed.** A run named
+`.github/workflows/claude.yml` rather than `Builder (Claude Code)` is GitHub
+saying it could not read the file. Three `push`-event failures sat there on a
+workflow that declares no `push` trigger — the second tell, and the one that
+made the first worth looking at.
+
+**Fixed at the root, twice over.** The value is a `|-` block scalar, where `#`
+is ordinary text; and the wording avoids `#` entirely, so a future edit that
+drops the block scalar degrades loudly rather than silently.
+
+**`tools/i18n-verify/workflow-expressions.mjs` is the eighth gated suite**, and
+it asserts on the parsed result rather than on the fact that something parsed:
+every `${{` has a `}}`; an expression opened on a line is closed on it; a plain
+scalar carrying an expression has no ` #`; `format()` placeholders start at 0
+with no gaps; and every workflow declares a `name:`, since the path fallback is
+the signal that exposed all of this. **Mutation-proven against the exact
+original defect**, which it names by file and line.
+
+**ITS OWN FIRST RUN FAILED ON THE COMMIT THAT ADDED IT, and the finding was
+real.** A workflow's comments necessarily QUOTE the broken syntax in order to
+explain it — this suite's header does, and so does `verify.yml`'s new one — so
+counting braces across comment text reported the explanation as the defect.
+That is this repository's existing lesson (*"strip BOTH comment forms before
+grepping source for a forbidden name"*) arriving in YAML. Full-line comments are
+stripped; a trailing `#` on a value line is deliberately **not**, because that
+is the hazard itself and rule 3 must still see it.
+
+BR-0, no version bump; `app/`, `tests/`, `firestore.rules` and `firebase.json`
+byte-identical. Eight governance suites green.
+
+## The builder's first real run, and the model pin that stopped it — NO VERSION BUMP (21 Sep 2026)
+
+With the credential in place, the workflow loading, and a test round dispatched,
+the builder executed for the first time in this repository's history. It got
+further than it ever had and then failed, and the failure is worth recording
+because the evidence names the cause exactly.
+
+**Everything up to the model worked:** OIDC token obtained, exchanged for the
+Claude App installation token, `Verified human actor: AAAsapp`, Claude Code
+2.1.278 installed, Node 22 and Playwright/Chromium both present, the SDK
+launched with the full tool allowlist.
+
+**Then: `num_turns: 1`, `duration_ms: 167`, `total_cost_usd: 0`,
+`modelUsage: {}`, `is_error: true`.** Zero model usage and a 167-millisecond
+run is a **startup rejection, not a task failure** — the model was never called
+at all.
+
+**The cause was `--model "claude-opus-5"`, and the lesson is about entitlement
+rather than syntax.** The Owner runs on a **subscription**, not API billing, so
+which models the credential may address is decided by the subscription and is
+**not knowable from a workflow file**. A pin is a claim about someone else's
+entitlement. Both workflows now omit the input entirely and take the default the
+credential actually has, which is the one model guaranteed to be addressable.
+A model may be pinned later, but only after a run has PROVEN that model works
+for this account.
+
+**A collision worth knowing about, found while triggering the test.** Every
+GitHub comment written under this project's rules ends with the Claude Code
+attribution footer — and `claude.yml`'s loop guard refuses any comment
+containing `Generated by [Claude Code]`, precisely so machine output cannot
+restart the builder. So an Architect cannot start a round by commenting
+`@claude`: the footer it is obliged to add is the thing the gate refuses. This
+is not a defect in either rule; it is why the `workflow_dispatch` channel exists,
+and it is now the only route an automated Architect uses. A human typing
+`@claude` adds no footer and is unaffected.
+
+BR-0, no version bump; `app/`, `tests/`, `firestore.rules` and `firebase.json`
+byte-identical. Eight governance suites green.
+
+## An unfunded API key was capturing every builder run — NO VERSION BUMP (21 Sep 2026)
+
+Two builder runs died identically: `num_turns: 1`, `total_cost_usd: 0`,
+`modelUsage: {}`, `is_error: true`. Zero model usage and an instant error is a
+**startup rejection**, and the first fix attempted — removing the
+`--model "claude-opus-5"` pin — did not change the signature at all.
+
+**The cause was named by this workflow's own preflight warning**, sitting in the
+run's annotations: *"Both ANTHROPIC_API_KEY and CLAUDE_CODE_OAUTH_TOKEN are
+set."* An API-key secret exists on this repository alongside the subscription
+token, **the Action's own precedence takes the API key first**, and the Owner
+has no API billing — so the key was rejected at the first model call, every
+time.
+
+**THE REASONING THAT PUT IT THERE HAD A HOLE, AND IT IS WORTH NAMING.** Both
+inputs were passed unconditionally on the argument that *"an empty input is
+treated as unset, so whichever mode the Owner configured takes effect."* That is
+true only if **at most one** is ever set. Nothing enforced that, and the day
+both existed the workflow silently selected the one that could not work.
+
+**A warning that is merely printed while the wrong credential is used is not a
+safeguard.** Precedence is now DECIDED IN THE WORKFLOW: when
+`CLAUDE_CODE_OAUTH_TOKEN` is present the API key is passed as an empty string,
+so a stray or unfunded API-key secret cannot capture a run. The preflight
+reports `oauth` first for the same reason, and its warning now states what will
+happen rather than shrugging at precedence. The Owner's instruction — keep the
+subscription token — is enforced rather than hoped for.
+
+**Also recorded from the same two runs, because everything else worked and that
+is the useful half:** OIDC token obtained, exchanged for the Claude App
+installation token, `Verified human actor: AAAsapp`, Claude Code 2.1.278
+installed, Node 22 present, Playwright and Chromium installed, the SDK launched
+with the full tool allowlist. The whole pipeline is proven up to the model call.
+
+Deleting the unused `ANTHROPIC_API_KEY` secret is still worth doing for hygiene,
+but nothing now depends on it. That secret cannot be read or removed from a
+sandbox — the Actions secrets API returns HTTP 403 through this proxy — so it is
+the Owner's to delete.
+
+BR-0, no version bump; `app/`, `tests/`, `firestore.rules` and `firebase.json`
+byte-identical. Eight governance suites green.
+
+## Three builder runs failed and none of them said why — NO VERSION BUMP (21 Sep 2026)
+
+**THE THIRD RUN DID NOT FAIL THE WAY THE FIRST TWO DID, and reading all three as
+one fault is what sent a guess to the Owner.** Runs one and two died in **167ms**
+with `modelUsage: {}` — a startup rejection, correctly diagnosed as the unfunded
+API key capturing the run (entry above). Run three, with that fixed, emitted
+`{"type":"system","subtype":"init","message":"Claude Code initialized","model":
+"claude-sonnet-5"}` and then failed **2,159ms** later, still `num_turns: 1`,
+`total_cost_usd: 0`, `modelUsage: {}`, `permission_denials_count: 0`.
+
+A resolved model and two seconds of elapsed time is not a credential refused at
+the door. The prior session read the three failures as one and reported to the
+Owner that the remaining fault "is the token itself", asking them to reissue it.
+**That was a guess, and it was the only move available**, because:
+
+**THE ONE SENTENCE THAT WOULD HAVE NAMED THE CAUSE WAS DISCARDED, THREE TIMES.**
+`anthropics/claude-code-action` runs with `show_full_output: false` — right for a
+public repository, where a full transcript in a public Actions log is a standing
+leak — but the consequence is that the result entry's own error text never
+reaches the log. What survives is the shape: counters, and `is_error: true`.
+Three runs, three shapes, no message.
+
+**So the failure is made to explain itself rather than be inferred.** Both
+`claude.yml` and `architect.yml` gain one `if: always()` step that reads the
+execution log the Action already writes to `${RUNNER_TEMP}/claude-execution-
+output.json` and prints, to the log and the step summary:
+
+- **always** — the result entry's counters (`subtype`, `is_error`, `num_turns`,
+  `duration_ms`, `total_cost_usd`). Numbers;
+- **only when `is_error` is true** — the error text, capped at 4,000 characters;
+- **on success — nothing textual at all.** On a run that succeeded, `result`
+  holds Claude's own final message, which is exactly the content
+  `show_full_output: false` exists to keep out of a public log. The narrow read
+  is the point: this does not re-open what that setting closes, and GitHub's
+  secret masking still applies underneath.
+
+`if: always()` is load-bearing — the step whose failure this explains has already
+failed by the time it runs, so any default condition would skip it.
+
+**Proven against six fixtures rather than asserted**, the embedded script
+extracted from the PARSED YAML (this project's own rule — assert on the parsed
+result, never on "it parsed") and run: **(A)** no log file → says the run never
+reached the model and points above itself; **(B)** the real failing shape in
+array form with a message → prints the counters and the message; **(C)** a
+SUCCESSFUL result whose `result` field holds a sentinel string → counters
+printed, **sentinel absent**, which is the check that matters and is what stops
+this step becoming the leak it was written to avoid; **(D)** an error carrying no
+message → says the absence is itself the finding rather than inventing a cause;
+**(E)** a 9,000-character error → capped at 4,000 with the truncation stated;
+**(F)** a log with no result entry → says so and counts what it did hold.
+Both the array and one-object-per-line forms are accepted, so this step's own
+parsing cannot become the next thing that hides a cause.
+
+**A local baseline artefact was re-derived rather than trusted, and it is the
+one `ARCHITECT.md` warns about.** `programme-ledger-mutations` reported
+**48 passed, 1 failed** (MUTATION [E], a stream's shared-file touch losing its
+declaration) — on an unmodified tree as well as a patched one. `git fetch
+--unshallow` and it is **49 passed, 0 failed**. A shallow clone, not a defect,
+and not the numbers that file records for the same class (it names 42/7); the
+class is real, the arithmetic in it is not to be trusted. Full-history totals
+with this change: **8 suites green — 8/0, 49/0, 8/0, 27/0, 11/0, 41/0, 40/0,
+10/0.**
+
+BR-0, no version bump; `app/`, `tests/`, `firestore.rules` and `firebase.json`
+byte-identical. Only the two workflow files changed.
+
+## The builder's credential was line-wrapped, and the run said so itself — NO VERSION BUMP (22 Sep 2026)
+
+**THE DIAGNOSTIC ADDED IN THE ENTRY ABOVE PAID FOR ITSELF ON ITS FIRST REAL
+RUN.** Attempt four failed like the three before it — and for the first time
+printed why:
+
+```
+subtype=success is_error=true num_turns=1 duration_ms=274 total_cost_usd=0
+--- why the run stopped ---
+Invalid auth token - Fix external auth token - Invalid Authorization header
+value from CLAUDE_CODE_OAUTH_TOKEN: it contains a line break at character 121
+(348 characters on 3 lines).
+```
+
+**It is the right token with two line breaks through the middle of it** — 346
+characters of credential stored as 348 across 3 lines. A terminal wrapped it for
+display, the copy took the wrapping with it, and **an HTTP header cannot carry a
+line break**, so every request made with it was rejected before it left the
+runner. Not a wrong token, not a truncated one, and not the API-key precedence
+fault of the entry above it: a third distinct cause, invisible for four runs
+because the sentence naming it was being discarded.
+
+**So the credential is normalised before use, in both workflows** —
+`tr -d '[:space:]'` over the stored value, because a credential of this family
+never legitimately contains whitespace, so stripping it changes no valid token
+and repairs this one.
+
+**WHY THIS IS FIXED HERE RATHER THAN ASKED FOR AGAIN.** The Owner is a non-coder
+pasting a 346-character string into a web form on a tablet, which is exactly
+where this happens. A careful re-paste fixes today's token and leaves the trap
+armed for the next one. **It is repaired LOUDLY**: a `::warning::` names how
+many whitespace characters were removed and asks for the secret to be re-saved
+as one unbroken line, so a malformed secret stays visible as malformed instead
+of being papered over.
+
+**Two implementation facts that are load-bearing rather than incidental.**
+`::add-mask::` registers the REPAIRED value before anything can use it — the
+stored secret is masked by GitHub automatically, the repaired string is a
+*different* string and would not be, so anything echoing it would print a live
+credential into a public log. And it is carried forward in `$GITHUB_ENV`, **not
+a step output**: the runner refuses to set an output whose value matches a
+registered secret (*"Skip output since it may contain secret"*), which is
+precisely what this value becomes the instant it is masked.
+
+**Proven against three fixtures**, the shell extracted from the PARSED YAML:
+**(1)** the exact reported shape — a 346-character token broken at character 121
+into 348 characters on 3 lines — repaired to a value that **matches the original
+byte for byte**, with the warning naming 2 characters removed; **(2)** an
+already-clean token, passed through untouched with **no warning**, which is what
+stops this becoming noise on every run; **(3)** no credential at all, exiting 0
+rather than crashing under `set -u`.
+
+**What this does NOT claim.** Whether the stored token is otherwise valid is not
+knowable from here and is not asserted — only that the malformation it was
+rejected for is gone. If the repaired token is refused, the run now says so in
+its own words, and that is the difference this pair of entries buys.
+
+BR-0, no version bump; `app/`, `tests/`, `firestore.rules` and `firebase.json`
+byte-identical. Eight governance suites green on full history.
+
+## THE BUILDER RAN — and its first success found the defect that would have bitten every round — NO VERSION BUMP (22 Sep 2026)
+
+**Six attempts, five distinct causes, and the sixth worked.** The Architect/
+Builder loop ran end to end for the first time on this repository: one issue,
+one round, one pull request based on `main`, ready for review, linking its
+issue, pasting its results, authored by `claude[bot]`, and it **stopped without
+merging**. The record it produced is `docs/automation/BUILDER-FIRST-RUN.md`
+(PR #170) — seven suite outputs with exit codes, the checkout proven
+non-shallow, measured rather than asserted.
+
+**The five causes, in the order they were found**, because the sequence is the
+lesson: a stray `#` making the workflow file unloadable; a `--model` pin that
+was a claim about someone else's entitlement; an unfunded API key capturing the
+run through the Action's own precedence; a stored credential with two line
+breaks through it; and an expired token. **Four were invisible until a run could
+report its own failure** — the first three were diagnosed by the SHAPE of the
+failure alone, and reading three different failures as one shape is what sent a
+wrong instruction to the Owner.
+
+**AND THEN THE SUCCESSFUL RUN FOUND A SIXTH, which every round would have hit
+at the worst possible moment.** `use_commit_signing: true` swaps the Action's
+four default `Bash(git add|commit|rm|push)` tools for two MCP file-operation
+tools — the whole reason the builder has no shell route to a write. The explicit
+`--allowedTools` list **never named those two tools**, so it denied the
+replacement. The builder was handed a write path and simultaneously forbidden
+from using it: *"you haven't granted it yet"*, twice, a permission gate with
+nobody attending to grant it.
+
+**It fails at the one moment a round cannot afford it** — after all the work, at
+the write. Every previous run died before reaching that point, which is exactly
+why six runs went by without exposing it.
+
+**THE SHAPE OF THE DEFECT IS THE THING TO REMEMBER, not the two entries added.**
+An allowlist and a tool-providing option are two mechanisms that must agree, and
+nothing made them agree: `use_commit_signing` decides which tools EXIST, the
+allowlist decides which may be CALLED. **A tool that exists and may not be
+called is worse than one that does not exist**, because its absence is only
+discovered by a round that has already done its work. Adding a tool-providing
+option means adding its tools to the list.
+
+**The round completed anyway, and how it did so is recorded rather than
+smoothed over.** It used the REST API with the same installation token already
+in the job's git remote, produced a `claude[bot]`-authored commit on a branch
+plus a pull request, never touched `main` — and **said so in its own pull
+request body, unprompted**, rather than presenting the work as if the intended
+tool had succeeded. `claude.yml`'s own header already states that a tool list
+cannot bound what `Bash(node *)` can reach and names the server-side branch rule
+as the real backstop; that rule is active and held.
+
+**It is still marked down on one point, and the rule is now written rather than
+left to precedent:** issue #162 said *"if anything blocks you, say so in a
+comment rather than working around it"*, and the blocked thing was the write
+path. **A blocked WRITE is stop-and-report, not route-around** — even when the
+route is within the job's own permissions and even when it works — because the
+write path is what the whole safety case rests on, and the round after next
+would have a precedent to point at instead of a rule.
+
+BR-0, no version bump; `app/`, `tests/`, `firestore.rules` and `firebase.json`
+byte-identical. Eight governance suites green on full history.
+
+## v08.33 (22 Sep 2026) — three real, measured truncations fixed in the Study-options panel
+
+**The first work done under the Owner's own standing fix-list authorisation**
+(issue "🔧 MMSA — the fix list", *"proceed with your recommended fixes on the
+three small-phone items unless I say otherwise"*). All three were already
+measured and recorded on the fix list before this round began.
+
+**`tenantSelect`** ("User Role") never fit its own real content — the owner's
+own tenant name plus role list, `"Madrasatul Muslimeen (Owner, Prime)"`, needs
+224px and got 115–141px usable at every phone width tested (360/390/412).
+**The fix list's own recommendation — shorten the wording — is corrected
+here rather than built.** `tenantSelect`'s options are `` `${m.tenantName}
+(${roleListLabel(m.roles)})` `` — a tenant's own chosen name is free text of
+any length in any language, and the role list already uses the exact
+vocabulary every other screen shows. There is no safe universal shortening:
+either a real tenant's own name gets cut, or a new abbreviated role
+vocabulary gets invented that nothing else in the app uses. **MEASURED
+first, then the remedy chosen from what the measurement actually supports**
+— below 580px (this bar's own cellW is a measured `0.5×viewport − 35px`,
+select chrome is a measured 30px, so 224px needs `viewport ≥ 578px`) the two
+cells in that row stack instead of sharing one.
+
+**`unitTypeSelect`/`surahSelect`** were the recorded Owner Control Gate item
+O3b — *"the row is genuinely short of space… no redistribution reaches
+it"* — confirmed by the same measurement method, not merely repeated: the
+worse of the two unit-type cases (Page/Range, four cells on the row) clears
+its own need at a measured 468px; Single Ayah (three cells) clears earlier,
+at 412px. Below 480px they wrap to their own line, with the small
+fixed-width number pickers flowing to a second line using their existing
+`.opt-cell-num` sizing, untouched.
+
+**`drillModeSelect`** (the Listen bar's Mode picker) was cut in **BANGLA
+ONLY**, at every phone width — found because `panel.mjs` had only ever been
+run in English before this round. **A suite that runs one language measures
+one language**, the same class of gap O3c itself was found by on 19 Sep.
+English was already clean and stays unaffected; same wrap technique, same
+480px breakpoint, one new stable class (`opt-cell-mode`) added to match the
+bar's own existing `opt-cell-loop`/`opt-cell-play` convention.
+
+**Proven, not asserted.** `panel.mjs` re-run in both languages, full 48
+sections each, before and after: English and Bangla both went from three
+(English) / four (Bangla) truncated selects across every phone width to
+**zero, 48/48 sections clean**, both languages. The suite's own baseline
+mechanism caught it independently: *"a BASELINED truncation no longer
+occurs… if that is a fix, drop it from KNOWN_TRUNCATED_SELECTS"* — now an
+empty set, not deleted, so a real regression at any of the three ids is
+reported as new rather than silently re-baselined. **Desktop and tablet
+(768px and up) are untouched** — confirmed in the same runs, byte-identical
+panel geometry at every viewport from 768px through 1920px; every new rule
+sits inside a `max-width` media query that does not reach them.
+
+BR-0 does not apply — this is a real, measured layout change, which is why
+it carries a version. No Firestore write, Rule, index, or
+protected/shared path. Full account:
+`docs/reports/2026-09-22-fix-list-panel-truncations.md`.
+
+## 22 Sep 2026 — approval-gated Firestore Rules auto-deploy (governance/tooling, BR-0, no version bump)
+
+Built on the Owner's own instruction: prepare the publish and wait for a
+one-tap approval, never publish on its own, free tier only.
+`.github/workflows/deploy-firestore-rules.yml` triggers on a future push to
+`main` touching `firestore.rules`, then pauses at a GitHub Environment
+(`firebase-production-deploy`) configured with the Owner as a required
+reviewer — GitHub itself enforces the pause. One-time Owner setup, all
+clicking: `docs/governance/2026-09-22-auto-deploy-firestore-setup.md`.
+
+**Rules only, deliberately — a first draft that also wired indexes into the
+live deploy path was reverted.** `tools/i18n-verify/firestore-index-requirements.mjs`
+(a standing Phase 5 guard) asserts `firebase.json`/`firestore.indexes.json`
+must not exist at the live path, because doing so is its own
+deployment-shaped, Owner Control Gate change — building the approval
+workflow is not authority to cross that gate. Scoped to
+`--only firestore:rules`; indexes stay a manual Console step. All 8
+governance suites re-run clean; `firebase.json` confirmed unchanged.
+
+Also this round: the Phase 3–6 deployment guide
+(`docs/governance/2026-09-22-phase3-6-production-deployment-package.md`)
+gained an explicit final "confirm the publish worked" gate (a fresh
+timestamp in the Console, a test note surviving a reload) before the Owner
+says "rules are live", and a note on the new automation. Nothing was
+deployed; `firestore.rules` and the Phase 3-6 candidate file are both
+unchanged. See the CLAUDE.md entry dated 22 Sep 2026 for the full account,
+including the redundant-approval trap the sync-commit trailer
+(`[already-deployed-manually]`) avoids.
+
+## 22 Sep 2026 — the Owner published: Phase 3-6 Rules and four indexes DEPLOYED
+
+The first of the four deployment states this repository has ever tracked to
+actually become true. The Owner published
+`docs/governance/phase3-6-DEPLOYMENT-candidate-2026-09-22.rules` and its four
+composite indexes directly in the Firebase Console, confirmed by two
+screenshots (a fresh Rules publish timestamp; all four indexes reading
+Enabled). `firestore.rules` and a new `firestore.indexes.json` were synced to
+match in the same session, proven byte-identical/exact-match by the suites
+built for exactly this (`rules-deployment-candidate-phase3-6.mjs`,
+`firestore-index-requirements.mjs`).
+
+**Nine suites' worth of "nothing is deployed" checks were now stale by
+design, and every one was fixed rather than left red or silently ignored** —
+`firestore-index-requirements.mjs`, `rules-deployment-candidate.mjs`,
+`rules-deployment-candidate-phase3-6.mjs`, `study-activity-evidence-boundary.mjs`,
+`journey-map-boundary.mjs`, `note-foundation-boundary.mjs`,
+`study-approach-contract-boundary.mjs`, `study-note-boundary.mjs`, and two
+`programme-ledger-mutations.mjs` mutations that had been silently relying on
+the ledger's own "not deployed" ambient state instead of setting up their own
+test precondition. Two needed a **fixed pre-deployment git reference**
+(`35f9228e2d57c085795dc06c412b3a7191325ddd`) rather than a live comparison,
+because comparing against `firestore.rules` or `origin/main` after both now
+equal the deployed candidate would make the check pass vacuously forever —
+the same principle the Phase 3 helper-origin check already used for its own
+pre-Phase-3 baseline. All fifteen affected suites, plus the eight CI-gated
+ones, re-run clean.
+
+**`programme-integration-ledger.json`**: `deployment.firebaseRulesDeployed.state`
+NO → YES. `evidenceRecordingOperational.state` **stays NO, deliberately** —
+enabling Phase 4 Activity evidence is a separate GOVERNED decision
+(`study-evidence-readiness.js`'s own design), not automatic from a Rules
+publish, and it waits on Phase 3 word-by-word progress being verified to
+actually save and reload on a real phone first — the Owner's own explicit
+sequencing. E1 is RESOLVED (the access blocker, proven by an actual publish).
+D14's own separate timezone Rules candidate was not part of this publish and
+remains undeployed.
+
+BR-0 does not apply — this is real Firestore deployment, which is why it is
+recorded this carefully. No application code changed; `app/js/version.js`
+untouched.
+
+## 22 Sep 2026 — v08.34: MAP Phase 4 Activity evidence persistence ENABLED
+
+The Owner tested Phase 3 word-by-word progress on a real phone, per the
+exact steps given (Study options → "Word by Word" → tap a word → "WbW" tab
+→ "Learning"/"Achieved" → reload → re-tap, state survived), and said: *"It
+worked, switch on Phase 4."*
+
+Both preconditions `app/js/study-evidence-readiness.js` itself requires are
+now met: `deployment.firebaseRulesDeployed` is YES (the same-day Rules
+publish), and a real save-and-reload was independently proven on the
+Owner's own device. `EVIDENCE_PERSISTENCE_DECLARATION` moved from
+`ready: false, decision: null` to `ready: true` under a governed decision
+(`by: "master-architect", on: "2026-09-22"`, `reference:
+docs/reports/2026-09-22-map-phase4-evidence-persistence-enabled.md`) — the
+exact ceremony the module's own header requires: a closed-set authority, a
+real date, an existing record, never a bare flip. Guard G re-run clean:
+code, ledger and deployment state all agree.
+
+**What changes for a real reader**: the ✓ on `#readBar` (D1 Reading) stops
+being `aria-disabled` and starts creating one real, create-only,
+deduplicated document per completion (`activity/{tenant}__{person}__{week}/evidence/{eventId}`).
+D2 Listening and D4 Word-by-Word keep recording silently, exactly as
+v08.30/v08.31 built them. **What does not change**: the writer's I15
+rethrow underneath the gate; `bulkConfirmWeek()` still reading only
+`entries[]`; D3 Journaling, still unwired (Notes, issue #180, still
+building); Notes and Mapping My Journey screens, unaffected.
+
+**Two checks updated in place, reason recorded, nothing weakened** —
+`study-activity-evidence-boundary.mjs`'s literal-reads-false assertion and
+its mutation-style check's own first assertion both asserted the OLD
+standing state; every malformed-shape refusal in the same checks (bare
+flip, empty decision, self-authorising module, unreal date) is unchanged
+and still refuses exactly as strictly as before.
+
+`app/js/version.js`: 08.33 → **08.34**. Real, user-facing behaviour
+change — a control moves from non-actionable to actionable — the same
+reasoning v08.31 used for the *gate*, applied to its release. Allocated by
+the MMSA Architect. Full account:
+`docs/reports/2026-09-22-map-phase4-evidence-persistence-enabled.md`.
+
+## 22 Sep 2026 — v08.36: Word-tap in the normal Arabic text: Read view and Note view (issue #189, PR #191)
+
+The Owner's own follow-up to the Mushaf-page word-tap round (issue #188):
+*"Is the same thing possible in Note view too? clicking on word should
+pop-up the WbW card too."* Investigated before building anything, not
+assumed — the real gap is broader than Note view alone, and the Owner
+confirmed building it for both Read view and Note view at once.
+
+**The finding, from reading the code first.** Word-tapping already worked,
+but only inside the separate Word by Word panel/toggle
+(`renderWordByWordPanel()`) — the everyday flowing Arabic text, the normal
+verse display everyone reads by default, had never been broken into
+individual words in EITHER view, so there was nothing there for a tap to
+land on. The shared click listener in `quranrevival.html`
+(`["readView", "noteView"].forEach(...)`) already covers both `#readView`
+and `#noteView`, keyed purely on `[data-word-occurrence]` — so it needed no
+new code at all; once both renderers emit per-word spans carrying that
+attribute, tapping just works, in both views, for free.
+
+**The Tajweed question — the one real unknown — was resolved by measuring
+the whole pulled corpus** (`tools/quran-data-pull/output/surahs`, all 114
+files, 6,236 ayahs), not guessed. Plain (Tajweed off) Arabic CAN be split
+into one tappable word per `ayah.words[]` entry: Quranic small-high marks
+(waqf/pause signs, rub-el-hizb "۞", place-of-sajdah) print as their own
+space-delimited token in the raw text, but the word-by-word data source
+folds each one into its adjacent real word instead — a naive space-split
+misaligns 44% of all ayahs against `words[]` before folding those marks
+back, and 0.05% (3 of 6,236) after. Tajweed-coloured text, by contrast,
+**cannot be safely split per word without a per-word tajweed dataset that
+does not exist here**: tajweed assimilation rules (idgham/ikhfa/iqlab)
+routinely colour the LAST letter of one word together with the FIRST
+letter of the next — e.g. surah 2:2's own
+`<tajweed class=idgham_wo_ghunnah>دًى ل</tajweed>` — measured on **~65% of
+all ayahs**. Splitting on that space would cut the `<tajweed>` span in
+half, silently losing or misattributing colour on whichever letter lands
+on the wrong side, exactly what the issue said not to ship. **Resolution**:
+the flowing Arabic is tappable per word when Tajweed is off; when Tajweed
+is on it renders exactly as before — one coloured block, untouched, not
+word-tappable. The separate Word-by-Word panel (plain text, no tajweed
+markup) is unaffected by this toggle either way and stays tappable
+regardless — a reader who wants both Tajweed colour and per-word tapping
+already has that panel today.
+
+**Built**, in `app/js/ayah-renderer.js`: `splitPlainArabicWords()` (the
+mark-folding tokenizer described above; returns `null` — never a
+best-effort guess — when a segment count doesn't land exactly on
+`words.length`, so the caller falls back to the old, untappable
+single-block rendering for that one ayah rather than ever risk a tap
+landing on the wrong word; measured, 3 of 6,236 ayahs fall back this way —
+a genuine compound name in surah 37:130, "إِلْ يَاسِينَ", which the
+word-by-word API keeps as one word despite its own internal space, and a
+pre-existing, unrelated Bismillah-stripping data quirk on surah 95:1/97:1
+that already shows Bismillah twice today, untouched by this round) and
+`arabicWordButtonHtml()` (one `<button data-word-occurrence="quran-word-
+occurrence:v1:...">` per word, the same id shape and the same
+language-aware "arabic — gloss" `aria-label` pattern
+`renderWordByWordPanel()`'s own clickable chip already uses — I11: the
+spoken name follows the reader's own chosen gloss language). `renderArabicPanel()`
+itself gained `wordCardInteractive`/`surahNumber`/`langs` options, both
+existing call sites in `quranrevival.html` already pass them.
+`quranrevival.html`'s Note view builder `arabicOneAyahHtml()` got the same
+treatment locally (it has always built its Arabic outside
+`renderArabicPanel()`, reading plain ayah objects directly), covering both
+`ayahDisplayMode`s ("by language" and "by ayah"). A new
+`button.ayah-word-clickable` CSS rule resets every button default (border,
+background, padding, the UA's own font) so a word reads as plain text until
+tapped or focused, with a subtle non-layout-affecting hover/focus
+background as the only visual addition.
+
+**Verified rather than assumed, against the whole pulled corpus via a
+focused Node script** (not checked in): 6,233 of 6,236 ayahs render
+word-tappable with the correct button count and byte-correct visible text
+once markup is stripped; the 3 fallbacks are exactly the ones predicted
+above; **Tajweed-on output is byte-for-byte identical to the pre-round
+renderer across all 6,236 ayahs**, and so is plain output for any caller
+that doesn't pass the new options — proving the change is purely additive
+for every existing caller. The ayah-number badge and ayah-1
+Bismillah-stripping both still run on the assembled per-word text in both
+views. Copy/select-all is unaffected by construction, not merely by
+inspection: `textBlocks.arabicText` (Note view) and every other
+whole-ayah plain-text read site (`arabicSnippet`, the Quick-menu copy
+path) read `a.uthmaniText`/`ayah.uthmaniText` straight from the data
+model, never the rendered DOM — none of them touch the new per-word
+markup at all.
+
+**Suites run**: the 8 governance suites from repo root all pass clean —
+`programme-ledger.mjs` (8 passed, 23 noted, 0 failed), `programme-ledger-
+mutations.mjs` (49/0), `brief-integrity.mjs` (8/0), `study-activity-
+evidence-boundary.mjs` (27/0) + its mutations (11/0), `study-event-wiring.mjs`
+(41/0), `rules-authorisation-executable.mjs` (40/0), `workflow-expressions.mjs`
+(12/0) — plus every Quran suite reachable without a browser:
+`quran-boundary.mjs` (30/0), `quran-word-card-integration.mjs` (10/0, exercises
+`ayah-renderer.js` directly), `quran-word-identity-contract.mjs` (6/0),
+`quran-word-coverage-arabic.mjs` (29/0).
+
+**Flagged, not run: the browser-based layout/behaviour suites**
+(`layout.mjs`, `reading.mjs`, `panel.mjs`, `navcheck.mjs`, `behaviour.mjs`,
+and the `*-rendered.mjs` Quran suites) all import `playwright` via
+`tools/i18n-verify/harness.mjs`, and this Builder sandbox has no
+`node_modules` and no lockfile to install one from; `npm install` requires
+interactive approval this unattended run cannot grant. The full-corpus
+static/rendering-equivalence proof above is the substitute measurement
+this round could actually run — it is strong evidence the markup is
+correct and additive, but it is not the same as an on-screen pixel
+measurement at 320/360/390/412px in both languages the issue itself asked
+for. **The Architect should run those five suites (or update this
+workflow's `--allowedTools`/environment to allow `npm install playwright`
+and a Chromium download) before treating the layout requirement as
+closed.**
+
+**Done, same day, and it hit the identical wall.** The Architect re-ran
+the 8 governance suites independently from a fresh checkout of this
+branch (clean, matching totals) and read the full diff by hand rather
+than trust the Builder's own report alone — but `layout.mjs` and the
+other browser suites could not be run here either: this sandbox's
+Playwright install is pinned to a browser build
+(`chromium_headless_shell-1243`) the environment doesn't have
+pre-installed (only `-1194`), and `playwright install` is against this
+environment's own standing rule. Not a code question either time — a
+genuine, twice-confirmed environment gap. Recommended in its place: a
+real-phone check (Read screen, Tajweed off, tap a word, confirm the card
+opens and the line doesn't visibly re-wrap), the same style of
+confirmation Phase 3 already used.
+
+No `firestore.rules` or schema change. `app/js/version.js`: 08.34 →
+**08.36** (08.35 for issue #188, released the same session). Allocated by
+the MMSA Architect.
+
+## 22 Sep 2026 — v08.35: tap a Mushaf-page word to open its Word Card (issue #188, PR #190)
+
+The Owner's own ask, from a screenshot of the Mushaf-page Read view: *"Is
+it possible to enable the functionality that user click on a word and the
+WbW card appears?"* The Mushaf page view (`app/js/hifz-renderer.js`) was
+already real per-word text, one `<span class="hifz-word">` per word with
+its exact identity sitting in `w.loc` — simply never attached to the DOM or
+wired to anything. The Word Card already opens through one shared,
+view-agnostic click listener in `quranrevival.html` that looks for
+`[data-word-occurrence]` on whatever was tapped. This round is that
+attachment, not new plumbing: `renderWord()` now stamps
+`data-word-occurrence="quran-word-occurrence:v1:{surah}:{ayah}:{position}"`
+on every real word, in the exact id format the Word-by-Word strip already
+uses. `hifz-renderer.js` imports nothing new — the click listener and
+`openWordCard()` call stay exactly where they already lived, in
+`quranrevival.html` (I2 untouched).
+
+**Verified, not assumed, exactly per the issue's own instruction: this
+file's own word-position numbering and the app's own word-by-word
+numbering are NOT always the same number for the same word.** Checked for
+real across all 6,236 ayahs (every one, not a sample), comparing this
+file's own per-ayah word-glyph count (`mushaf/mushaf-madani-v2.json`)
+against the app's own word count
+(`tools/quran-data-pull/output/surahs/*.json`). They diverge in **exactly
+three ayahs — 2:181, 8:6, 13:37 — all for the identical reason**: the
+app's word-by-word corpus joins "بَعْدَ مَا" ("after that") into ONE word
+entry carrying an internal space, while this Mushaf page-layout data (QUL)
+prints it as two separate positions. Without a correction, a tap on any
+word after that pair in those three ayahs would have silently opened the
+wrong word's card. `AYAH_WORD_MERGES` in `hifz-renderer.js` corrects
+exactly those three: the mushaf position right after the merge point
+resolves to the SAME occurrence as the one before it (so tapping either
+half opens the one real word), and every position after the pair shifts
+back by one. Every ayah's own trailing print glyph (the ayah-end number,
+not a real word — the same "+1" convention holds across all 6,236 ayahs)
+is excluded from tapping by construction, via a new `ayahMaxWordPosition`
+index built in the same single pass `buildAyahPageIndex()` already makes.
+
+**A new check, not a one-time hand audit**:
+`tools/i18n-verify/mushaf-word-occurrence-parity.mjs` re-derives the
+divergence set from the live data on every run (not from a cached
+conclusion) and fails if a fourth ayah ever diverges from
+`AYAH_WORD_MERGES`, or if `resolveWordOccurrencePosition()`'s own
+arithmetic stops landing on every real word exactly once. Both assertions
+are mutation-proven: reverting either the table or the merge arithmetic
+makes the check fail with the exact ayah/position named, not a generic
+error.
+
+**Tap-target measurement, not a guess.** Mushaf words sit only 0.12em
+apart (`gap`, print-accurate, not to be widened). `.hifz-word[data-word-
+occurrence]` gets `padding` plus an equal-and-opposite negative `margin`
+on all four sides — the flex item's outer (margin) box, what
+`justifyPageLines()` measures and what the printed layout is judged by, is
+unchanged, while its padding box (what a tap can land on) is larger.
+Proven rather than assumed: `behaviour.mjs`'s existing 40b justification
+check (no line spills past either edge) re-run clean on the same page with
+the new CSS applied, and a new check dispatches a real tap at the very
+EDGE of a word's own padded box — not its centre — at 320/360/390/412px,
+confirming it still opens the exact right word's card at every required
+phone width.
+
+**Checks**: extended `behaviour.mjs`'s existing Mushaf section (#40,
+opened for the shell round 28 Mushaf-page work) rather than starting a new
+suite, since it already reaches the Mushaf page view with a real fixture
+and stand-in font — new sections 40f (structural exclusion of the
+ayah-end marker, correct occurrence id, tap opens the exact right word
+with real Arabic content, geometry unaffected) and 40g (tap accuracy at
+all four required widths). Plus the new
+`mushaf-word-occurrence-parity.mjs` data-integrity check above. No new
+suite needed; nothing un-checked-in.
+
+Out of scope, per the issue: the separate inline Word-by-Word panel
+toggle (untouched); Note view's own flowing Arabic text, which does not
+render individual word spans yet — built the same day as issue #189,
+below.
+
+**The Architect independently re-verified this round before merging**
+(PR #190): a fresh checkout, all 8 governance suites and the new
+`mushaf-word-occurrence-parity.mjs` re-run clean (matching totals), and
+the full diff read by hand — the I2 boundary, the merge-correction table,
+and the tap-target CSS technique all checked out. `app/js/version.js`:
+08.34 → **08.35**. Allocated by the MMSA Architect.
+
+Issue #195 (supersedes #180, closed as superseded for a dispatch-mechanism
+reason unrelated to its content — see #180's own final comment) is MAP
+Phase 5's **P5-D — the Notes screen, round 1**: the one piece of the Note
+Foundation deliberately held back while its data layer, Rules and indexes
+were built and audited. The Owner's own priority, 22 Sep 2026: *"Notes
+screen (Phase 5): start it next, as the main piece of visible work."*
+**No version bump — this is a Builder round**, per the Architect loop's own
+contract; allocation is the Architect's, at merge time.
+
+**A new real page, `app/notes.html` (+ `app/js/note-sanitize.js`), wired
+to the existing, previously-uninvoked data layer** —
+`app/js/study-note-service.js` (`createStudyNote`, `reviseStudyNote`,
+`retireStudyNote`, `notesForStudyUnit`, `recordJournalEvidence`) and
+`app/js/note-foundation.js` (`listNoteRevisions`). No new exported
+function was added to either — the screen was buildable entirely on top
+of what P5-B/P5-C/P5-E already shipped. For the CURRENT Study unit (the
+same `currentUnitInfo()`/`noteScopeUnitInfo()` the Mastery Wheel and
+"Choose a Unit" capsule already read): lists existing Notes
+(`notesForStudyUnit`), creates a new one, revises an existing one's
+content (showing the new `revisionId` a revision actually produces, not
+just that the text changed), shows a plain read-only revision history
+list, and retires one — worded "Remove", matching v08.01's own
+`trackables` convention, and phrased so the confirm dialog says plainly
+that nothing is destroyed (I4).
+
+**Entry point: a new, enabled item in the Read screen's existing ⋯
+("more") menu** inside the "Note & more" full-stage view
+(`app/js/ayah-note-renderer.js`'s `renderNoteView()`), right beside the
+still-disabled "Mapping My Journey" placeholder it will eventually sit
+near once Phase 6 exists — **"📔 My Notes for this unit"**, linking to
+`notes.html?unit=<unitKey>&label=<label>`. Chosen over the alternative
+(a brand-new bar-level icon) because that menu is already scoped to
+exactly the unit the Note view is showing, costs no new markup beyond one
+menu row (I2's own "renderers are shared components" — the caller builds
+the href, the renderer only places it, the same convention
+`readViewLinkHtml`/`collectionsPopoverHtml` already use), and needed no
+row-width remeasurement on the app's most tightly measured screen. The
+OLD quick-note surface (`ayah-notes.js`, opened by the same menu's
+existing "Note & more…" item) is untouched, per ADR-009 §5's own
+"promoted, never migrated" rule.
+
+**Only a Note's own author may create, revise or retire it** —
+`isNoteOwner()` in the deployed Rules is deliberately not
+`canRecordFor()` (a Note is a person's own private writing, never a
+record kept about them on someone else's behalf) — so the screen hides
+Create/Edit/Remove and shows a plain sentence explaining why whenever the
+selected roster person is not the signed-in login's own person in this
+tenant; reading (`canReadNoteOf()`) is available to a guardian, a
+co-enrolled teacher and the tenant owner/prime exactly as the Rules
+already allow.
+
+**REQUIRED sanitization, built exactly as specified.** DOMPurify is
+loaded from the pinned `cdn.jsdelivr.net` URL as a plain `<script>` tag in
+`notes.html`'s own `<head>` — this codebase's first vendored third-party
+script, so there was no existing local pattern to copy — and
+`app/js/note-sanitize.js` wraps it with a small allow-list
+(`NOTE_ALLOWED_TAGS`: bold/italic/underline/strike/headings/paragraphs/
+lists; `NOTE_ALLOWED_ATTR`: **empty**, so no `href`, no inline `style`, no
+event handler can ever be permitted through regardless of tag). Every
+render of a Note's `bodyHtml` — the read-only preview and the edit form's
+own contenteditable body — goes through `sanitizeNoteHtml()`, never
+straight to `innerHTML`; the function itself **fails closed**, throwing
+rather than silently returning raw HTML, if `window.DOMPurify` is ever
+absent (a CDN failure must be a visible error, the same I15 reasoning
+applied to a render instead of a write).
+
+**`tools/i18n-verify/note-sanitize-boundary.mjs` is the new, focused
+check the issue asked for** (7 checks): the CDN tag is present verbatim;
+the render path cannot reach `innerHTML` with an unsanitized `bodyHtml`
+(mutation-proven — reverting one call site to `row.note.bodyHtml` makes
+this fail, naming the exact offending line); every body render names
+`sanitizeNoteHtml()`; the allow-lists themselves exclude every
+script-capable tag and carry zero attributes; and `sanitizeNoteHtml()`
+genuinely throws, executed for real, when DOMPurify has not loaded (this
+sandbox has no Playwright/browser install at all, so this is what plain
+Node can prove — see the suite's own header for what it cannot: a real
+CDN load stripping a live payload needs a browser, the same recorded
+Playwright/`chromium_headless_shell` environment gap v08.35/v08.36 already
+carry, not a code defect).
+
+**`tools/i18n-verify/study-note-boundary.mjs` was UPDATED IN PLACE, with
+the reason recorded, never weakened.** Its whole premise since P5-C — "NO
+PAGE can reach `study-note-service.js`/`study-note-binding.js`" — was true
+only because nothing had built the screen these modules exist for; this
+round makes that assertion **false by design**, the identical shape
+v08.30's own D1/D2/D4 reachability guard inverted, and 19 Sep 2026's D3-
+chokepoint round inverted again. The two checks now assert the STRONGER,
+narrower claim: **exactly** `app/notes.html` reaches the service, and the
+binding is reached only through the service, never directly by any page —
+a second, unaudited importer would still fail exactly as before. Every
+other check in that suite (ADR-003/ADR-009 isolation, the quick-note
+boundary, the vocabulary binding) is untouched, since none of it is about
+wiring. 18/18 pass.
+
+**Translated in both languages from the first commit (I11)**: every new
+static and dynamically-rendered string on the page, plus the one new item
+in the ⋯ menu, added to `app/js/i18n/bn.js`. Rich-text toolbar labels
+(Bold/Italic/Bullet list/Numbered list/Clear) reuse the exact keys
+`ayah-note-renderer.js`'s own Notes editor already established, rather
+than inventing new ones.
+
+**Not built this round, per the issue's own scope**: folders, Mapping My
+Journey filing (`noteSources`/`notePlacements`/`noteFolders` — Phase 6);
+choosing a translator; anything beyond one Study unit's own Notes. Layout
+was not measured at 320/360/390/412px in a real browser in either
+language — the same Playwright/`chromium_headless_shell` environment gap
+the sanitization test's own header records — a real-phone check is the
+recommended substitute, the style Phase 3 and v08.35/v08.36 already used.
+
+## 23 Sep 2026 — v08.37: Mapping My Journey, all three screen options (MAP Phase 6 / P6-F, issue #199, PR #200)
+
+**MAPPING MY JOURNEY, ALL THREE SCREEN OPTIONS BUILT AND SWITCHABLE, over the
+already-accepted Phase 6 data layer that had sat unreached since
+P6-A/P6-E.** The Owner's own instruction: *"Don't
+wait for my design. Build all three options now with a toggle to switch
+between them, so I can try each in the real app and choose."* — reversing the
+earlier plan (`docs/governance/2026-09-22-mapping-my-journey-screen-options.md`)
+of showing mockups first. New page `app/journey-map.html`, no new exported
+function on `journey-map-service.js` or `note-foundation.js` (the issue's own
+constraint — this round is the screen, not the data layer).
+
+**A shared toggle over ONE load of the same data, not three pages.** One
+`refreshAll()` reads the person's folder tree (`ownerFolderTree()`) and their
+Notes (`listNotesForOwner()`) once; **Folders**, **Timeline** and **Path** all
+render from that same pair of arrays, and switching between them (a three-
+button segmented control, ≥36px tap targets) never re-fetches. The last-chosen
+view is remembered in `localStorage` (`qr.journeyMapView`) as a per-viewer
+convenience — explicitly not data, per the issue.
+
+**Option A — Folders**, built in the order the issue asked (A first, as the
+safest fallback). The two system folders (**Personal Journey Map**,
+**Reflection Archive**) always sort first; a person's own folders follow.
+Tapping a folder shows what's filed in it (`folderContents()`); tapping a Note
+expands a read-only, sanitized preview in place — editing a permanent Note
+stays `notes.html`'s job, scoped to the Study Unit it was written about, not
+this screen's. A person can create a top-level folder (`+ New folder`), file
+an unfiled Note into one (`+ File a Note here…`, unambiguous — it only ever
+ADDS a filing, ADR-010 §5's many-to-many), and move a Note between folders
+(`Move to…`, retire-and-create through `moveNoteToFolder()`) — offered only
+inside a folder's own contents, where the placement being retired is
+unambiguous; Timeline/Path offer "File in a folder…" instead (an unambiguous
+ADD) rather than a "Move" that couldn't know which of a Note's several
+filings to retire. **Folder rename/reorder/re-parent/retire — built and
+exported by `journey-map-service.js` since P6-D/P6-E — are deliberately NOT
+wired into this screen**: the issue scoped this round to organising and
+filing, not folder management, and `journey-map-screen.mjs`'s own check names
+exactly the five wrappers (`renameFolder`/`reorderFolder`/`moveFolder`/
+`retireFolder`/`reorderFiling`) this page must never call, so a later round
+that adds folder-editing UI does so deliberately rather than by accident.
+
+**The two system folders are represented before either has a Firestore
+document, and never as a faked one.** ADR-010 §3 says every person HAS
+exactly two system folders; nothing server-side creates them in advance. This
+screen renders them as VIRTUAL nodes (`folderId: null`) — real enough to tap,
+open, and see the correct empty-state sentence for, but never presented as a
+stored document. The FIRST write that genuinely needs one to exist (filing a
+Note into it, or moving one there) creates it for real, once
+(`ensureRealFolder()` → a genuine, I17-stamped `createNoteFolder()` call) —
+stated as the judgment call the issue itself asked for rather than guessed at
+silently, because the alternative (fabricating a document that was never
+written) would be the app asserting a deployment fact nobody proved.
+
+**Option B — Timeline.** Every Note newest-first, grouped by calendar day,
+with filter chips (Everything / Personal Journey Map / Reflection Archive /
+each of the person's own folders) reusing the same `folderContents()` read a
+chip's folder needs. **A render token, not a bare element lookup, resolves a
+race the naive shape would have gotten wrong**: clicking a second chip before
+the first's read resolves re-renders both the chips and a fresh
+`#timelineBody`, so a bare post-`await` `getElementById()` would find (and
+wrongly fill) the SECOND click's own container with the FIRST click's stale
+results — `timelineRenderToken` is bumped per render and checked before
+writing, so a superseded load writes nothing rather than winning the race.
+
+**Option C — Path, an HONEST FIRST PASS, exactly as the issue asked for
+rather than either skipped or over-built.** A straight vertical track, every
+Note as a stop in date order (oldest first — a journey read top to bottom),
+enough to compare against A and B. **What it deliberately does NOT build, and
+why, stated in the code rather than silently dropped**: the options doc's own
+"named regions the path passes through" and "side-trails" for a person's own
+folders. A Note can be filed in more than one folder at once (ADR-010 §5's
+many-to-many), so a single continuous line cannot honestly show "this stretch
+IS the Archive" — a Note filed in both the Archive and a side folder would
+need to occupy two places on one line simultaneously. A real build of the
+region/side-trail version needs that resolved first (one path per region with
+cross-links, or a branching diagram rather than a single line), which is
+genuinely more design work than this round's honest-first-pass budget.
+
+**Every view states its own empty state, in words, in both languages** — the
+likely-true zero-Notes, two-system-folders-only case the issue named
+explicitly: Folders names what an empty Personal Journey Map and an empty
+Reflection Archive each mean (not a generic "empty"); Timeline says Notes
+will appear here the day they're written; Path says the same for stops.
+`buildFolderTree()`'s own **"nothing is silently dropped"** rule is carried
+into the screen too — an orphaned, cyclic or too-deep folder (never
+produced by this screen's own writes, but not assumed impossible either) is
+named in a banner rather than vanishing from the list.
+
+**Nav entry point: Home ▾ menu**, alongside Records/Monitor/About — stated
+and reasoned in the PR per the issue's own ask. `app/notes.html`'s own entry
+point (the Read screen's ⋯ menu, `"📔 " + t("My Notes for this unit")` in
+`ayah-note-renderer.js`) is untouched; Mapping My Journey is a whole-person,
+whole-app screen, not scoped to one Study Unit, so it does not belong beside
+a per-unit contextual link.
+
+**Read-only for everyone but the Note owner, mirroring
+`isNoteOwner()`/`canReadNoteOf()` in `firestore.rules` exactly the way
+`notes.html` already does.** Every write-triggering control (`+ New folder`,
+`+ File a Note here…`, `Move to…`) is gated behind `isSelfSelected()`; a
+guardian/teacher/admin viewing someone else's journey gets the same three
+views, entirely read-only, with a banner saying so in words.
+
+**A Note's `bodyHtml` is never rendered unsanitized.** The same DOMPurify
+CDN `<script>` tag and `sanitizeNoteHtml()` allow-list `notes.html` already
+uses — every one of the (small number of) places this screen reads
+`note.bodyHtml` goes through it before ever touching `innerHTML`,
+mutation-checked by `journey-map-screen.mjs`.
+
+**Translated in both languages from the first commit (I11)**, verified
+programmatically rather than by eye: every `t("...")`/`t('...')` key this
+page calls (33, after filtering one false match on
+`document.createElement("button")`) has a Bangla entry in
+`app/js/i18n/bn.js`, including the page's own `<title>` and intro paragraph.
+
+**`tools/i18n-verify/journey-map-boundary.mjs` — the P5-D-era reachability
+guard — UPDATED IN PLACE, WITH THE REASON RECORDED, NEVER WEAKENED, the
+SAME shape its own file history already records twice (v08.30's D1/D2/D4
+guard, the 19 Sep D3-chokepoint round, and this suite's own P5-D update).**
+Its whole claim used to be *"`journey-map-service.js` remains completely
+unreachable by any page"* — true only because nothing had wired it in yet,
+and this round is exactly that wiring. The claim is narrowed rather than
+dropped: `journey-map-service.js` is reachable now, but ONLY from
+`app/journey-map.html`; `journey-map-contract.js` is reachable from exactly
+TWO audited pages (`app/notes.html` via `note-foundation.js`, unchanged; and
+`app/journey-map.html` via `journey-map-service.js`, this round) and by no
+other route — the new page deliberately does NOT import the pure contract a
+second, separate way, mirroring its two closed-vocabulary role ids as a
+local constant instead, so the claim stays two-route rather than
+three-route. **The protection that actually matters — WHICH Phase 6
+functions each wired page may call — is asserted directly**: `app/notes.html`
+still names none of them; `app/journey-map.html` names only the two it
+imports directly (`createNoteFolder`, `createNotePlacement`) plus what
+`journey-map-service.js` already wraps, and a separate check names the five
+folder-editing wrappers this page must never call. **17/17 checks pass.**
+
+**A new focused suite, `tools/i18n-verify/journey-map-screen.mjs` (16
+checks), covers the SCREEN's own contract** — the toggle really offers all
+three views over one shared load; every view's empty state; the system
+folders' virtual-then-real lifecycle; the sanitization boundary; the
+per-write ownership gate; full translation coverage; and the nav entry
+point, both new and untouched. **Three real bugs in the suite's OWN first
+draft were found and fixed while writing it, not shipped**: a `localStorage`
+check that assumed a literal key argument where the page (correctly) uses a
+shared constant; an `isSelfSelected()` proximity check that matched a
+*comment* naming "Move to…" before the real gated call site, rather than the
+literal `t("Move to…")` call; and a check for the existing `notes.html` entry
+point that looked in the wrong file (`quranrevival.html`) for a string that
+actually lives in `ayah-note-renderer.js`. Each was fixed by tightening the
+check to what is actually true, never by loosening the claim.
+
+**`journey-map-contract.js` was NOT changed** — read, not altered, per the
+issue's own instruction; every rule it enforces (cycle/depth bounds, Origin
+≠ Destination) is exactly as P6-A left it.
+
+**Neither `firestore.rules` nor `firestore.indexes.json` changed** — the
+Phase 3-6 Rules candidate already governs `noteFolders`/`notePlacements`
+(published by the Owner, 22 Sep 2026, recorded above), and every write this
+round makes was already authorised; nothing needed a new Rule.
+`app/js/version.js` is untouched by the Builder, per the Builder contract.
+
+**Merged by the Architect, 23 Sep 2026, after an independent re-verification
+on a fresh full-history checkout** — all ten relevant suites re-run clean
+(the 8 CI-gated governance suites, `journey-map-boundary.mjs` 17/17,
+`journey-map-screen.mjs` 16/16), no protected path touched, base already
+current `main`, full diff read by hand. `app/js/version.js`: 08.36 →
+**08.37**. Allocated by the MMSA Architect.
+
+**LAYOUT WAS NOT MEASURED IN A REAL BROWSER — a harder form of the same gap
+CLAUDE.md's v08.35/v08.36 and the notes.html round (P5-D) already record.**
+Those two rounds were missing one Playwright browser build
+(`chromium_headless_shell-1243`); this sandbox does not have the `playwright`
+package installed AT ALL (`node tools/i18n-verify/behaviour.mjs` fails at
+`import` with `ERR_MODULE_NOT_FOUND: playwright`), so no Playwright-driven
+suite — `behaviour.mjs`, `layout.mjs`, `panel.mjs`, `navcheck.mjs`,
+`reading.mjs` — could be run for this round at all, on this brand-new page or
+anywhere else. This is recorded as a genuine, confirmed environment
+limitation, not a code defect, exactly as those two prior rounds' own
+entries frame it; the source-level `journey-map-screen.mjs` suite above is
+what plain Node can prove, and a real-phone open-and-tap-each-view check at
+320/360/390/412px in both languages, across all three views, is the
+recommended substitute this round could not perform itself.
+
+## 23 Sep 2026 — v08.38: Asma ul Husna, open owner-defined classifications (issue #202, PR #203)
+
+**GROUPS AND DUAL NAMES ARE NOW TWO ENTRIES IN AN OPEN, OWNER-EXTENSIBLE SET
+OF CLASSIFICATIONS, NOT THE ONLY TWO THAT COULD EVER EXIST.** The Owner
+reviewed an interactive demo (a mockup, not real data or code) of two fixed
+toggle-style axes and corrected the shape of the whole thing before it was
+built for real: *"This is a LIST (actually grouped by classifications) of:
+(Enable me to edit/add/move/delete these lists and those names in the
+lists.) Then, a name card should show the names of all LISTS it belongs to
+… Then, I choose a group, I want to see all those names under the group,
+and each of those should also show where (other classification/group) it
+belongs."* Two worked examples came with the ask — Names/Attributes UNIQUE
+to Allah vs SHARED with human beings; by Allah's ACT vs by Allah's
+ESSENCE — as illustrations of what a classification IS, not as content to
+seed.
+
+**Data layer** (`app/js/asma-collections.js`, `asma-collections-data.js`).
+`normalizeCollection()`'s `kind` field was hardcoded to
+`c?.kind === "dual" ? "dual" : "group"` — a closed two-value set, which is
+exactly what made "Group" and "Dual Names" the only two classifications the
+app could ever browse. It is any non-empty string now, trimmed, defaulting
+to `"group"` when absent or blank — so every collection ever saved before
+this round (genuinely `"group"`, genuinely `"dual"`, or simply absent and
+meaning `"group"`) reads exactly as it did before. A new classifications
+registry, `DEFAULT_ASMA_CLASSIFICATIONS`, seeds exactly
+`{key: "group", title: "Group"}` and `{key: "dual", title: "Dual Names"}` —
+the two kinds every tenant's data already implicitly used — with the same
+CRUD shape the file already has for collections: `classificationsFrom()`,
+`addClassification()`, `renameClassification()`, `setClassificationStatus()`
+(archive/restore only — I4, never a delete), `nextClassificationOrder()`,
+`activeClassifications()`. A new pure `membershipsOfName(collections,
+number)` is the reverse index everything else reads from: every
+`{collectionId, kind}` whose `items` includes that Name's own permanent
+unit key (I5, via `buildUnitKey.name()`), across every classification,
+O(collections × items), no new Firestore call (I9).
+
+**Persistence, additive on the SAME document.** `saveAsmaCollections()`
+gains one more field, `classifications`, written alongside the existing
+`collections`/`extraNames`/`nameOverrides` on `asmaCollections/{tenantId}` —
+no new collection, no new read. This was checked against the deployed
+Rules before assuming it, not after: `firestore.rules`'s own
+`match /asmaCollections/{tenantId}` carries
+`allow update: if canAdminCatalogue(tenantId);` with no `hasOnly()` field
+restriction (unlike, say, `tenantPeople`'s narrow timezone rule) — so the
+new field is already authorized and this round needed no Rules change,
+confirmed by reading the rule directly rather than guessed.
+
+**Renderer** (`app/js/asma-renderer.js`). Two new exported, purely
+presentational helpers: `renderAsmaBelongsToHtml(memberships)` — a "Belongs
+to" section, one chip per classification × list, `null`/omitted renders
+nothing so every existing caller is byte-identical — and
+`renderAsmaAlsoInHtml(memberships)` — a smaller "also in…" row under a
+Names-level entry filed elsewhere too. Both wired into `renderAsmaDetail()`
+and `renderAsmaCollectionListHtml()` as optional, off-by-default
+parameters; `asma-study.js` — the Explore panel's only other caller of
+either function — passes neither, so `asma-study.html`'s own separate,
+older panel renders exactly as it always has, per this project's standing
+rule for that screen.
+
+**Explore UI** (`app/quranrevival.html`, `#asmaXPanel`). The fixed
+`asmaXGroupSelect`/`asmaXDualSelect` pair — two hardcoded `<select>`
+elements — is gone; `renderAsmaXLevelBar()` now inserts one
+`<select data-asmax-class-select="{key}">` per ACTIVE classification, read
+live from the registry, directly ahead of the untouched, still-static
+`asmaXSingleSelect` (the flat "Names" picker stays exactly where it was —
+its own entry point, not a classification, per the Owner's own "keep …
+as it is"). With today's two seeded classifications this is pixel-for-
+pixel the same two selects in the same position; a third only ever
+appears once an owner actually adds one. The Groups-level list, the
+Names-level list, and the References-level card all read
+`asmaXCollectionsOfKind(asmaXKind)`/`asmaXOtherMemberships()` off the live
+classification the reader is browsing rather than a hardcoded `group`/
+`dual` branch; a Names-level row gains its "also in…" chip and the
+References-level card gains its "Belongs to" section, both wired to jump
+straight to the other list via `openAsmaXGroup()`. Manage mode (owner/
+prime only) gains **"+ New classification"** (`asmaXAddClassificationPrompt()`
+→ `addClassification()`), opening straight into the new classification's
+own empty Groups level; every existing control (✎ rename, 🗄 archive, +
+add collection, +N add Name, 🔗 attach reference, drag-reorder) keeps
+working, generalized to whichever classification tab is active instead of
+two hardcoded kinds.
+
+**i18n** (`app/js/i18n/bn.js`): 8 new keys, English + Bangla — "Belongs
+to", "Not filed in any list yet.", "Also in:", "All {classification}",
+"New {classification} entry:", "Add to {classification}", "New
+classification:", "New classification" — cross-checked by exact substring
+match against every new `t()`/static `title=` call site both directions
+(the static `title="New classification"` on the new toolbar button is
+picked up by `translateStatic()`'s own attribute pass, the same mechanism
+"Rename"/"Archive"/"Add collection" already rely on).
+
+**DELIBERATELY NOT SEEDED, per the issue's own explicit instruction: no
+real theological content.** "Unique to Allah" vs "Shared" and "By Act" vs
+"By Essence" are nowhere in the seed data — they were the Owner's own two
+worked EXAMPLES of what a classification is, in the request that produced
+this round, not a request to apply them to real Names. `DEFAULT_ASMA_
+CLASSIFICATIONS` carries only the two mechanism entries ("Group", "Dual
+Names") every tenant's data already implicitly used; deciding which Names
+belong under any future classification remains the Owner's own curatorial
+work, exactly as "Dual Names" itself shipped with zero seeded pairs.
+Independently re-verified: the diff was read end to end and contains no
+Name-to-classification assignment of any kind beyond what already existed.
+
+**Deliberately not built this round, and said so rather than guessed at:**
+rename/archive-classification UI (the data layer — `renameClassification`/
+`setClassificationStatus` — is built and tested; no button wires it in
+yet, since the issue's explicit ask was only "+ New classification"); the
+Note-view "file a brand-new Name into a Group or Dual Names list" flow
+(`asmaXFileIntoRowHtml`) still only offers Group/Dual, a separate, smaller
+surface the issue didn't name.
+
+**Must-remain-exactly-as-is surfaces, read and confirmed untouched rather
+than merely claimed:** the reference-adding mechanism
+(`renderAsmaXrefBlock()`, the 🔗 attach-reference popover,
+`asma-ref-parser.js`) — zero diff on `asma-ref-parser.js`, every existing
+call site to `renderAsmaXrefBlock()` unchanged; the poster view,
+Track-my-progress, extra-Name editing, archive/restore, drag-reposition
+(`reorderCollections`/`reorderItems`/`asmaPositionLabels`); `asma-
+study.html`'s own separate panel, byte-identical (`git diff` empty) —
+`asma-study.js`'s only calls to `renderAsmaDetail()`/
+`renderAsmaCollectionListHtml()` pass neither of the new parameters.
+
+**New `tools/i18n-verify/asma-classifications-boundary.mjs` — 26 checks,
+0 failed, spot mutation-tested.** Loads the real `asma-collections.js`
+source as a `data:` module with its Firestore-touching imports rewritten
+to injected globals (the same technique `quran-word-progress-data.mjs`/
+`study-event-wiring.mjs` established), so the module under test is the
+one that ships. Covers: `kind` genuinely open, not silently coerced back
+to two values, on a fresh collection AND on every pre-existing
+`"group"`/`"dual"`/absent shape; classifications CRUD round-trips
+(add/rename/archive-restore/order); `membershipsOfName()` correct on a
+Name filed in 3+ lists spanning different classifications AND the same
+one; I4 — archiving a classification never drops a membership record,
+and never silently archives the collections filed under it; and a
+**positive control** proving a freshly-added THIRD classification's own
+collections are reachable exactly like the seeded two, both at the data
+layer and, by reading the real page source (no Playwright browser binary
+was installed in the Builder's sandbox at all — see below), in the
+Explore panel's own live wiring. Two hand mutations (reverting the `kind`
+normalization; making `setClassificationStatus` delete instead of
+archive) were both caught, confirming the checks are not vacuous.
+
+**No `firestore.rules`/`firebase.json`/`app/js/version.js` change from the
+round itself** — a version needed allocating after review, exactly as the
+Builder contract requires.
+
+**THE BUILDER'S OWN PR-OPENING STEP DID NOT RUN, and the Architect opened
+PR #203 itself from the already-pushed, already-checked branch — the same
+recovery v08.35/v08.36 used.** Workflow run 35801162383 completed with
+conclusion `success` and the branch (`claude/issue-202-20260923-0014`,
+commit `7040d28`) carries all of the above, fully checked by the Builder's
+own final comment on issue #202 — but no pull request existed. This is
+exactly the "success with an empty branch" shape `ARCHITECT.md` names:
+look at the branch and the commits, never the tick. The Architect
+reconstructed the PR from the run's own comment (which already carried
+the intended title and body) and opened it, then began independent
+re-verification.
+
+**THE UNATTENDED ARCHITECT WORKFLOW MERGED PR #203 ON ITS OWN, eight
+minutes after it opened** — before the session Architect's own
+independent re-verification had finished. `.github/workflows/
+architect.yml` runs after every `verify` completion on a pull request; PR
+#203's base was current `main`, `verify` was green, it was mergeable, not
+a draft, carried no `needs-owner` label and touched no protected path, so
+it cleared the unattended gate and was merged
+(`4a188dfa69bc072503a2c0c2d7b4620af2ad6cbf`) by the bot identity before a
+human or the session Architect looked at it. **The session Architect's
+own review proceeded anyway, against the real merged commit, exactly as
+thorough as if it had happened first**, and confirms the merge was sound
+rather than merely assuming it because the gate allowed it:
+
+- All 8 CI-gated governance suites plus `programme-ledger-mutations.mjs`
+  and `study-activity-evidence-boundary-mutations.mjs` re-run clean on a
+  fresh full-history checkout of the merged branch:
+  `programme-ledger.mjs` (8/23/0), `programme-ledger-mutations.mjs`
+  (49/0), `brief-integrity.mjs` (8/0), `study-activity-evidence-
+  boundary.mjs` (27/0) + its mutations (11/0), `study-event-wiring.mjs`
+  (41/0), `rules-authorisation-executable.mjs` (40/0),
+  `workflow-expressions.mjs` (12/0) — plus the new
+  `asma-classifications-boundary.mjs` (26/0).
+- `git diff --stat origin/main origin/claude/issue-202-20260923-0014`
+  (before this follow-up's own commit) touches exactly 6 files, none of
+  them a protected path: `app/js/asma-collections-data.js`,
+  `app/js/asma-collections.js`, `app/js/asma-renderer.js`,
+  `app/js/i18n/bn.js`, `app/quranrevival.html`,
+  `tools/i18n-verify/asma-classifications-boundary.mjs`.
+- **`behaviour.mjs` run in full, twice** — once against this branch, once
+  against `origin/main` — under an available substitute Chromium build
+  (`/opt/pw-browsers/chromium-1194`'s own `chrome` binary; neither the
+  `chromium_headless_shell-1194` nor the documented-missing `-1243` this
+  repository's own environment notes name). **Both runs: 785 pass, 2
+  fail, byte-for-byte identical failures and an identical crash point** —
+  `27i` (a pre-existing Study-options Range-bar line-wrap measurement) and
+  `31e` (the documented sandbox TLS artefact), then an identical
+  `page.waitForTimeout: Target page, context or browser has been closed`
+  crash inside `openMushaf()` (section 40) on BOTH branches, at the exact
+  same source line. Nothing in this comparison is new to this round; it is
+  the same environment limitation this file already records for v08.35/
+  v08.36 and v08.37, reproduced here with a different substitute browser
+  build and confirmed identical on both sides of the diff rather than
+  merely asserted.
+- Mergeability against current `main` at review time: clean — `origin/main`
+  is a direct, single-commit ancestor of the PR branch (fast-forward
+  base), so the branch this suite ran on was already exactly PR #203's
+  content on top of an unmoved `main`.
+
+**No content-seeding concern.** The full diff was read by hand, not
+sampled: the only Name-bearing data in it is the unchanged
+`DEFAULT_ASMA_COLLECTIONS`/`DEFAULT_EXTRA_ASMA_NAMES` seed files (zero
+lines changed) plus the two new mechanism-only classification entries
+described above. No real classification assignment of any Name was
+invented.
+
+`app/js/version.js`: 08.37 → **08.38**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.
+
+---
+
+**v08.39 (23 Sep 2026) — Asma ul Husna: classification rename/archive wired,
+and "file a new Name" generalized to every classification (issue #205,
+PR #207).** The closing half of v08.38's own round (issue #202): that PR's
+review disclosed two gaps against #202's spec, not hidden but not closed
+either, and this round closes both — same file, same mechanism, no new
+data-layer work.
+
+**(1) Rename/archive a classification, from the UI.** The data-layer
+functions (`renameClassification`/`setClassificationStatus`) were already
+built and tested in #202 — only the ✎/🗄 pair for the classification tab
+itself was missing. Added `asmaXRenameClassBtn`/`asmaXArchiveClassBtn`
+("✎C"/"🗄C") next to the classification switcher, owner/prime only
+(`canAdminCatalogueClientSide()`), mirroring the existing collection-level
+✎/🗄 pair one level down. Renaming writes to the CURRENT app language via
+`setLangText`, same shape as every other rename in this feature. Archiving
+is I4 (archive, never delete): a classification's own lists and every Name
+filed in them stay in the data, they just stop being offered as somewhere
+new. The existing "Show archived" toggle now also reveals an archived
+classification's own switcher field, rather than adding a second toggle for
+the same idea — the cleanest fit against the existing pattern, per the
+issue's own instruction.
+
+**(2) "File a new Name into a list" generalized to every active
+classification.** `openAsmaXGroupsPopover()` — the issue's own "likely"
+guess for where the gap was — turned out to already be fully generalized by
+#202 (it iterates every collection unfiltered by kind, labelled by
+`asmaXClassificationTitle(c.kind)`). The real ungeneralized flow, found by
+reading the real call sites rather than trusting the guess, was the
+brand-new-Name "file it under" row (`asmaXFileIntoRowHtml`/
+`openAsmaXEditOverlay`'s own `fileInto` handling) — reachable from the Note
+view's ✚/✚² buttons, each hardcoding a single kind ("group"/"dual"). It now
+carries a real Classification `<select>` built from the live registry
+(`asmaActiveClassifications`), which cascades into the File-under list
+picker on change — a brand-new Name is filable under any active
+classification from this one popover, not only the two the opening button
+happened to default to.
+
+**Requirements carried over from #202, confirmed unchanged**: no new
+Firestore read on any startup path (I9); no `firestore.rules`/
+`firebase.json`/index/`app/js/version.js` change from the Builder's own
+round — both changes are UI wiring against the already-authorized
+`asmaCollections` document, confirmed by reading `firestore.rules` directly
+rather than assumed; every new/changed user-visible string added to
+`app/js/i18n/bn.js` (I11); `asma-study.html`'s own separate panel untouched.
+
+**`asma-classifications-boundary.mjs` extended 26 → 36 checks**, covering:
+the classification-level rename/archive buttons exist and are wired to
+their own prompts (not the collection-level pair); renaming writes the
+typed title into the current app language; archiving calls
+`setClassificationStatus` and never the collection-level status setter, and
+never drops a classification's collections or their memberships (I4,
+re-asserted through the exact call the UI now makes); archiving the
+classification currently being browsed falls back to another active one (or
+the seeded "group") rather than a tab the switcher no longer shows; the
+Show-archived flag reveals an archived classification's own switcher field;
+the file-into row's Classification select is built from the live registry
+with a positive control (a freshly-added THIRD classification is reachable
+from it, the same shape #202's own suite used for the switcher); the
+Classification select cascades into the file-under picker on change; and
+the save handler files under whichever classification was chosen, not a
+hardcoded `fileInto.kind`. Two of the new checks were manually
+mutation-tested by the Builder and confirmed to fail before being reverted.
+
+**Independently re-verified by the Architect** — the Builder's own
+PR-opening step failed to run again (the same gap v08.35/v08.36/v08.38
+recorded), so the Architect opened PR #207 itself from the Builder's
+already-pushed, already-checked branch (`claude/issue-205-20260923-0108` at
+`e3db37a`). Fresh checkout, all 8 CI-gated governance suites re-run clean
+and matching the Builder's own numbers exactly (`programme-ledger.mjs` 8
+passed/23 noted/0 failed, `programme-ledger-mutations.mjs` 49/0,
+`brief-integrity.mjs` 8/0, `study-activity-evidence-boundary.mjs` 27/0, its
+mutations suite 11/0, `study-event-wiring.mjs` 41/0,
+`rules-authorisation-executable.mjs` 40/0, `workflow-expressions.mjs`
+12/0), plus `asma-classifications-boundary.mjs` re-run clean at 36/0. Full
+diff read by hand (`app/quranrevival.html` 194 lines, `app/js/i18n/bn.js`
+17 lines of new English/Bangla string pairs, the extended boundary suite 96
+lines) — `git diff --name-only origin/main...` confirms only those three
+files, no protected path touched. Clean fast-forward against `main` at
+merge time.
+
+**`behaviour.mjs` could not run in this sandbox** —
+`chromium_headless_shell-1243` missing, only `-1194` present, the
+identical, now three-times-documented Playwright build-version gap this
+file already records for v08.35/v08.36/v08.37/v08.38 — not a code defect.
+A real-phone check of the Explore panel's ⋯ menu, both languages, is the
+recommended substitute, the same standing substitute those earlier rounds
+used.
+
+**What was NOT built**: no new theological content or classification
+assignment; no change to `openAsmaXGroupsPopover()` (confirmed already
+correct, left untouched); no change to the reference-attach popover or its
+own "+ Create a new Dual Name" button (a separate, explicitly-untouched
+mechanism).
+
+`app/js/version.js`: 08.38 → **08.39**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.
+
+---
+
+**v08.40 (23 Sep 2026) — Word Card: the "Back to Word Card" round trip
+actually works (issue #113, PR #135).** Every existing Word Card suite
+(`quran-word-card.mjs`, `-integration.mjs`, `-rendered.mjs`, the Basic-tab
+lemma-occurrences suite) stopped at "the return bar appears" and never
+pressed it. Doing that in a real browser found two real, narrowly-scoped
+defects in the Basic Arabic lemma/root feature's own return mechanism
+(built v08.20–v08.22), both closed with no new architecture, no shared or
+protected path, and no new translation string.
+
+**(1) The Basic tab's own lemma list did not survive the round trip.**
+`hydrateWordCardOccurrences()` unconditionally collapsed it on every
+hydrate, including the reopen after `returnToWordCardOrigin()`. Fixed with
+a one-shot restore signal (`quranWordCardRestoreLemmaExpanded`), mirroring
+exactly how the Depth tab's own `expandedForm` is already carried across a
+round trip — consumed and cleared at the top of the hydrate function, so an
+ordinary word change (Prev/Next, opening a different word) is completely
+unaffected.
+
+**(2) The scroll restore could never have worked.** `window.scrollY` is
+always 0 in this app's shell (`body { overflow: hidden }`). The first fix
+attempt was itself wrong — it targeted `#readScroll`, which sounds right
+and isn't: sideways paging is this app's own default
+(`getSidewaysReading()` in `prefs.js` — "never set: the owner's own
+default" → `true`), and in that mode `#readScroll` carries
+`overflow: hidden`; `#ayahPanels` is what actually scrolls. A debug run
+against the real fixture caught this before it shipped.
+`readViewScrollContainer()` now picks the right element for the current
+rendering mode. Sideways/Mushaf flow mode (Whole Surah/Range, which pages
+`#pageViewContainer` horizontally) and a Note-view origin are explicitly
+NOT covered — both fall back to the pre-existing no-op, never a
+regression — and are flagged rather than silently left broken.
+
+New `tools/i18n-verify/quran-word-card-return.mjs` suite (55 checks): full
+round trip in both languages, Depth-tab regression, Prev/Next no-leak
+regression, keyboard operability, language-switch-while-visible, geometry
+at 320/390/412px. A follow-up correction (21 Sep 2026, before this PR was
+reviewed) hardened the suite against a real splash-interception hang — an
+unrelated gap in `app/js/splash.js` (`shouldShow()` has no `"never"`
+branch) that made `page.click()` calls hang until a wrapper timeout; routed
+around with a local `clickSafely()` helper, `app/js/splash.js` itself left
+untouched as out of scope.
+
+**Independently re-verified by the Architect before merging.** Fresh
+checkout of the Builder's branch, clean merge with no conflicts against
+current `main` (`f1a15f1`). All 8 CI-gated governance suites clean. The
+focused suite re-run clean at 55/0, under an available substitute Chromium
+build (`/opt/pw-browsers/chromium-1194`'s own `chrome` binary — the
+documented `chromium_headless_shell-1243` this environment needs is
+missing, the same gap v08.35/v08.36/v08.39 already recorded).
+`behaviour.mjs` run in full, twice — once against the merged tree, once
+against a clean `origin/main` baseline via a disposable `git worktree`,
+both under the same substitute browser: **987 pass/6 fail vs 984 pass/9
+fail.** Every failure on both sides is pre-existing and environmental —
+`27i` (a pre-existing Study-options layout measurement), `31e` (the
+documented sandbox TLS artefact), `40g` at all four measured widths (a
+Mushaf word-tap hit-testing edge case, confirmed **byte-identical pixel
+coordinates** on both sides — an artefact of the substitute browser build,
+not of this diff, which never touches Mushaf/word-tap code at all), and
+`22g` ×3 (the documented intermittent `archive.org` class — present on the
+`main` baseline run and simply not triggered on the merged-tree run, the
+exact intermittency this file's own standing lessons already record: "22g
+× 3 … passed in runs 1/3/5/9/10 and failed in 2/4/6/7/8/11"). **Zero
+failures introduced by this round.**
+
+`app/js/version.js`: 08.39 → **08.40**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.
+
+---
+
+**v08.41 (23 Sep 2026) — Hadith: the current breadcrumb crumb carries
+`aria-current="page"` (issue #114 Gate A/B, PR #149).** Reproduced live:
+neither the current breadcrumb crumb nor its containing `<nav>` carried any
+ARIA signal for "this is where you are", confirmed `null` at every level on
+both breadcrumb call sites (the Collections tab and the Topic tab) — more
+load-bearing now the trail runs a level deeper than it used to since an
+earlier round added the edition crumb. Fixed in `app/js/hadith-browser.js`,
+both call sites, with `aria-current="page"` on the current crumb. Zero new
+translatable strings — `aria-current`'s value is a fixed ARIA token, not
+user-facing text, so the eight-key Bangla handoff this stream has carried
+unchanged for several rounds stays unchanged again.
+
+**A real, separate finding was made and deliberately not fixed.** The
+same reproduction found that the edition crumb reads
+`collectionOf(state.editionId).name` — the collection's own name, never
+anything edition-specific — so two editions of the same collection would
+render byte-identical breadcrumb text and picker-row text. Real, but not a
+live defect: today's committed corpus carries exactly one edition per
+collection. Flagged rather than built, since manufacturing a second
+edition to force a failure would itself have been inventing evidence, and
+because closing it needs a real product/data decision (does a Hadith
+collection ever carry more than one edition?) that isn't this round's to
+make.
+
+6 new mutation-proven checks in `tools/i18n-verify/hadith-source-navigation-browser.mjs`
+(36 → 42 total, both languages) — mutation-proven by reverting the fix,
+which drops exactly the 5 new presence checks (37/5), restored and
+re-confirmed clean.
+
+**Independently re-verified by the Architect before merging.** Fresh
+checkout, clean merge with no conflicts against `main`. All 8 CI-gated
+governance suites clean. The focused suite re-run clean at 42/42 (English)
+under an available substitute Chromium build. The full `behaviour.mjs`
+suite run against both PR #149's own merged tree and a clean `origin/main`
+baseline (via a disposable `git worktree`, same substitute browser): 987
+pass/6 fail vs 984 pass/9 fail — every failure on both sides pre-existing
+and environmental (`27i`, `31e`, `40g` ×4 confirmed byte-identical pixel
+coordinates on both sides, `22g` ×3 the documented intermittent
+`archive.org` class), zero introduced by this diff, which touches only
+`app/js/hadith-browser.js`.
+
+`app/js/version.js`: 08.40 → **08.41**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.
+
+---
+
+**v08.42 (23 Sep 2026) — Word-by-Word whole-Qur'an/Juz percentage: a gold
+ring, a wedge-colour toggle, and a Word Card share line — BUILT AND GATED,
+not turned on (issue #206, PR #209).** The Owner reviewed an interactive
+demo and said "Go ahead, build it," having already confirmed the
+instant/running-counter approach over a live on-demand read, and asked for
+two of the demo's options combined into one experience: a gold ring
+around the Explore wheel always showing the whole-Qur'an total, plus a
+toggle switching what the wedges themselves are coloured by — today's
+real Approach-status colouring, or this Juz's own % of words known —
+never both meanings on one wedge at once.
+
+**A new, additive Firestore collection, `quranWordTotals`** — one document
+per (tenant, person), a running `known` integer against `total: 77429`
+plus a `byJuz` map of the 30 real per-Juz `{known, total}` pairs. Same
+shape discipline as every prior MAP round: the Rules candidate lives only
+at `docs/governance/2026-09-23-wbw-total-counter-rules-candidate.rules`,
+reproducing `canRecordFor()` unchanged from the deployed Rules, no delete
+(I4/D6); `firestore.rules`/`firebase.json` are untouched, and deploying
+the candidate stays an Owner Control Gate.
+
+**The readiness gate, `app/js/study-wbw-total-readiness.js`, copies
+`study-evidence-readiness.js`'s shape exactly** — `ready: false` as a
+literal default, a governed decision required to flip it (an authority
+from a closed set, a real date, a reference to a record that exists), and
+**it imports nothing at all**, so it cannot even accidentally consult
+`firestore.rules`; a boundary check asserts the absence directly.
+
+**The write-gate-blocking guarantee, verified line by line rather than
+assumed, because this is the one thing that could have made the round
+unsafe to ship even while gated.** The same write path that already
+changes one occurrence's real stored state
+(`runWordProgressAction()`/`applyWordTotalCounterDelta()` in
+`quranrevival.html`) snapshots the counter's own "before" state through a
+helper that returns `null` whenever the gate is closed, and the function
+that would move the running counter returns immediately — before
+fetching the Juz index, before fetching the per-Juz totals, before
+calling the data layer at all — whenever that snapshot is `null`. The
+data layer's own two exported functions (`recordWordTotalDelta()`,
+`getWordTotals()` in `quran-word-total-data.js`) *also* independently
+re-check the same gate at their own top and return before touching
+Firestore — defence in depth, not a single point of trust. An ordinary
+Word-by-Word tap today can never throw an error over this undeployed
+collection: the exact defect class v08.31 had to fix for Activity
+evidence was not reintroduced here for a different collection.
+
+**The counter only moves on a genuine `countsAsKnown` transition** — the
+same definition `computeArabicCoverage()` already uses for the existing
+Surah/Ruku' coverage caption, via `knownDelta()`'s exact -1/0/+1
+arithmetic on two booleans — never on "any write". Proven by a
+claim → teacher-confirms → returns → learner re-claims → teacher confirms
+again sequence, reconciled at the end against an independent recount of
+the final raw state, plus the other half (no confirmation required, a
+bare claim counts immediately).
+
+**Per-Juz denominators are derived, not hand-typed.**
+`tools/quran-data-pull/build-juz-word-totals.js` walks the real, already-
+pulled per-ayah `words[]` arrays (the same data `build-juz-index.js`
+already reads) and refuses to write a self-contradictory file if the 30
+totals do not sum to the traversed whole-Qur'an total. The Architect
+independently re-ran this script against the real packaged corpus and it
+reproduces the shipped `juz-word-totals.json` byte-for-byte, summing to
+exactly **77,429** across all 30 Juz. `QURAN_TOTAL_WORD_COUNT` is exported
+once, from the new pure `app/js/quran-word-total.js`, and both the Word
+Card's share line and the Juz-total validation import that same constant
+— no second hardcoding anywhere in the codebase.
+
+**The wheel UI.** `mastery-wheel.js`'s `renderScopedWheel()` gains two
+strictly opt-in parameters: `ring` (drawn OUTSIDE the wedge radius,
+shrinking it by a fixed margin only when supplied) and per-item `fill`
+(preferred over `STATUS_COLORS[statusId]` only when present). Every
+existing caller that never sets either renders byte-identical geometry
+and colouring to before this round — proven by a boundary check reading
+`renderExploreQuranLevel()`'s own source: the Approach-mode wedge
+computation is unconditional, and the Word-by-Word overlay is a strictly
+separate, opt-in-only block applied afterward, only in "wbw" mode, only
+once the gate is open and the per-Juz totals have actually loaded. The
+Word-by-Word ramp reuses this app's own existing `not_started`/`mastered`
+colours as its two ends rather than inventing new ones. The
+Surah/Ruku'-level coverage caption (`renderExploreArabicCoverage()`)
+extends upward to show the real Juz/whole-Qur'an figure once the gate is
+open, replacing the "not available at this granularity" message at those
+two levels only — Hizb/Rub/Manzil/Page stay exactly as they were,
+genuinely out of scope.
+
+**The Word Card's new line needs no gate at all.** "Appears {count} times
+in the Qur'an — {percent}% of all words" reads
+`occurrenceRefsFor("lemma", value).length` (already loaded by the Basic
+tab) against the one exported total, rounded with the exact same
+`Math.round(x * 10000) / 100` rule `computeArabicCoverage()` uses, and
+writes nothing.
+
+**I9**: `getJuzWordTotalsIndex()` (new, in `quran-data.js`) and the
+counter document load only when Explore's Juz/Quran level is actually
+opened — the same lazy, memoized, first-use pattern
+`getJuzIndex()`/`getHizbIndex()` already use just above it in the same
+file. **I11**: "Colour the wheel by" and the Word Card share line are
+translated in `bn.js`; the toggle's own "Approach"/"Word by Word" button
+labels reuse existing translated keys rather than adding new ones.
+
+New `tools/i18n-verify/quran-word-total-boundary.mjs`, 25 checks: the
+gate's own malformed-shape refusals (mirroring
+`study-activity-evidence-boundary.mjs`'s discipline exactly); an anchored
+regex proving the gate check is the literal first statement in both
+exported data-layer functions, not merely "a return appears somewhere
+nearby"; the correctness reconciliation above; the packaged Juz totals
+checked against an independent re-derivation from the real surah files
+inside the check itself; and the wheel-rendering byte-identity checks.
+
+**Independently re-verified by the Architect before merging.** The
+Builder's own PR-opening step again did not run (Actions run 35821824718,
+`conclusion: success`, branch pushed, no PR — the same, recurring gap
+several other rounds this same day also recorded); the Architect opened
+PR #209 itself from the already-pushed, already-checked branch. Fresh
+worktree off `origin/main`, all 8 CI-gated governance suites
+(`programme-ledger.mjs`, `programme-ledger-mutations.mjs`,
+`brief-integrity.mjs`, `study-activity-evidence-boundary.mjs` + its
+mutations suite, `study-event-wiring.mjs`, `rules-authorisation-
+executable.mjs`, `workflow-expressions.mjs`) plus this round's own new
+suite re-run clean, full diffs read by hand, no protected path touched,
+mergeability re-checked immediately before each merge attempt — the
+version number this follow-up allocation round needed collided TWICE with
+other concurrently-landing rounds while it was in flight (08.40 taken by
+the Word Card round-trip fix, 08.41 by a Hadith breadcrumb fix, both
+mid-review), so the real free number was re-read off `origin/main` each
+time rather than assumed. `behaviour.mjs` could not run in this sandbox at
+all — `chromium_headless_shell-1243` missing, only `-1194` present, the
+same documented Playwright build-version gap.
+
+**Nothing changes for a real reader yet** — same shape as v08.30's
+Activity evidence before v08.34 turned it on. Turning this feature on for
+real needs the Owner to publish the Rules candidate in the Firebase
+Console, then a separate, explicit governed enablement decision recorded
+in both `app/js/study-wbw-total-readiness.js` and the Programme
+Integration Ledger — the identical two-step shape v08.34 used.
+
+`app/js/version.js`: 08.41 → **08.42**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.
+
+---
+
+**v08.43 (23 Sep 2026) — Health Atlas: a References index, one new
+top-level view mode alongside Body Systems (issue #115 Gate A/B, PR #146,
+tranche 9).** Each of the 8 `HEALTH_ATLAS_REFERENCES` rows now lists which
+organs in this dataset cite it — `organsForReference()`, new in
+`health-atlas-selectors.js`, the reverse of the existing `referencesFor()`.
+It reads only the existing `organ.refs[]` field, no new field.
+
+**Gate A, investigated before building.** The v02.04 standalone source's
+own References tab (`renderRefsTab()`) is a flat id/name/url table with no
+organ links at all, so "links into existing organ detail" goes beyond
+source parity, deliberately. The app has no URL-addressable per-organ route
+(organ selection lives in `mountHealthAtlas()`'s own closure state, not a
+query param), so an organ "link" is a real button wired through the exact
+same `onSelectOrgan()` path the sections column and the wheel legend
+already use, into the *same* detail column — not a fabricated `<a>` into a
+page that cannot resolve it.
+
+**Gate B, built.** `buildViewTabs()`/`buildReferencesScreen()` in
+`health-atlas-view.js` — a small "Body Systems / References" tab bar;
+opening an organ from References switches back to Body Systems and reuses
+the existing organ-selection state (`onSelectOrgan`/
+`onOpenOrganFromReferences` now share one `selectOrgan()` helper). CSS for
+the tab bar and table in `health-atlas.html`. New, committed, reproducible
+browser suite `tools/health-atlas-verify/references-index-browser.mjs` (12
+checks, desktop/tablet/phone, mouse click + keyboard `Enter` + a real touch
+`tap()`), following the same precedent tranche 8's
+`body-systems-parity-browser.mjs` set.
+
+**Privacy/clinical boundary unchanged.** The index's own note text
+explicitly disclaims that a listed reference backs an organ's material *in
+general*, never any one function statement individually, and never itself
+decides a statement is `cited-evidence` — asserted by a new static positive
+control in `view-boundary-wheel.mjs` (53 → 57 checks). One reference (USDA
+FoodData Central) genuinely cites zero organs in this dataset — a real
+edge case, not hypothetical, exercised by both the static guard and the
+new browser suite.
+
+**This is the first global version number ever allocated to the Health
+stream, and it exposed a stale ledger record.** The `health` stream in
+`docs/governance/programme-integration-ledger.json` had recorded
+`EXTERNAL_PENDING_ACQUISITION` / repository `UNKNOWN` / "No Health
+implementation exists in this repository" — true on 18 Sep 2026 when first
+written, false by the time this allocation read it: real Health Atlas code
+has existed under `app/health/` since 17 Sep 2026 across well over a dozen
+tranches (foundation, food/ages, master categories, claim provenance, the
+combined candidate, Body Systems parity, References tabs/a11y, more-search,
+organ-type parity, integration readiness), all merged directly to `main`
+with no version bump — each PR's own body says so explicitly. Corrected in
+this round by reading the real repository state rather than trusting the
+prior record: `integrationState` moves to `MERGED_TO_MAIN`, real
+`ownedPaths` are recorded, and `declaredVersion` moves off `null` for the
+first time.
+
+**A real version-number collision happened and was correctly resolved —
+exactly the class this repository's own standing rule exists to prevent.**
+This round was first drafted as v08.42, reading `main`'s tip at the start
+of review. The concurrently-running issue #206 Builder round (dispatched
+independently, watched by a separate process, per this session's own
+explicit instruction not to touch it) reached `main` first and took
+v08.42 for itself. `programme-ledger.mjs`'s own guard A caught the
+attempted collision the moment this round tried to allocate against a
+stale local branch; the fix was to read the next-free number off `main`
+again — never trust arithmetic or a number chosen minutes earlier — and
+move to v08.43. No content was lost: the CLAUDE.md/CHANGELOG/version.js/
+ledger edits originally drafted for v08.42 were rebuilt fresh against the
+real, current `main` tip rather than salvaged by conflict-resolution,
+avoiding the risk of silently carrying stale text forward.
+
+**Independently re-verified by the Architect before merging.** Fresh
+checkout, clean merge with no conflicts against `main`. All 8 CI-gated
+governance suites clean. All 17 Health-owned suites clean — the 15
+non-browser suites (`categories-selectors`, `claims-integrity`,
+`claims-mutations`, `data-integrity`, `more-selectors`, `selectors`,
+`view-boundary-categories` + its mutations, `view-boundary-more` + its
+mutations, `view-boundary-wheel` + its mutations, `view-boundary`,
+`view-provenance-boundary` + its mutations — 250 checks total) plus both
+committed browser suites (`references-index-browser.mjs` 12/12,
+`body-systems-parity-browser.mjs` 16/16, run under an available substitute
+Chromium build wired in as the environment's own expected
+`chromium_headless_shell-1243` path, since that exact revision is missing
+from this sandbox — the same documented gap as v08.35/v08.36/v08.39/
+v08.40/v08.41). The full `behaviour.mjs` suite run once against `main`
+(which already carries this round after the merge): **986 pass/7 fail** —
+every failure pre-existing and environmental, none in Health-owned code:
+`22h` and `31e` are network/TLS sandbox artefacts, `27i` a pre-existing
+Study-options layout measurement, `40g` at all four measured widths a
+Mushaf word-tap hit-testing artefact of the substitute browser, confirmed
+byte-identical pixel coordinates across three separate runs this session
+(v08.40's, v08.41's and this round's) — proof it is a property of the
+substitute browser build, not of any of these three diffs, none of which
+touch Mushaf/word-tap code.
+
+**Diff budget**: `app/health/health-atlas.html`, `health-atlas-selectors.js`,
+`health-atlas-view.js`, `app/health/README.md` (+Tranche 9 section),
+`tools/health-atlas-verify/selectors.mjs` (+6 checks),
+`view-boundary-wheel.mjs` (+4 checks), `references-index-browser.mjs`
+(new). No protected/shared path touched.
+
+**Deliberately not done**: does not build the Lifestyle tab (out of scope,
+per tranche 8's own matrix); does not add per-statement (as opposed to
+per-organ) reference citations; does not wire the new browser suite into
+`.github/workflows/verify.yml` (same reason no Playwright-based suite here
+is).
+
+`app/js/version.js`: 08.42 → **08.43**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.
+
+---
+
+**v08.44 (23 Sep 2026) — Hadith: keyboard focus restored on every tab
+switch (issue #114 Gate A/B, PR #150).** Reproducing the task's own
+fallback item (Search→source return) found the gap was not
+Search-specific — it's every tab switch. `render()` tears down and
+rebuilds the whole subtree on every Collections/Topics/Search/Explore/
+Commentary tab click, and unlike an in-tab Collections step
+(`focusCollectionsLanding()`) or the one-shot "View in source" highlight
+(`focusPendingOccurrence()`), nothing restored focus on a plain tab
+switch — so a keyboard user lost their place to `<body>` on every single
+tab click, including returning to Search after visiting a narration's
+source (the query and results persist; focus did not).
+
+**Fix**: `app/js/hadith-browser.js` — a `focusActiveTab()` helper, called
+from the tab button's own click handler, focuses the newly-active tab
+button (the standard ARIA-tabs pattern). Zero new translatable strings.
+
+**Tests**: 4 new checks in `hadith-source-navigation-browser.mjs`
+(43 → 47). **Mutation-proven by the Architect**: reverting the fix to
+`origin/main`'s copy of `hadith-browser.js` fails exactly the 4 new
+checks (43/47); restored and re-confirmed clean.
+
+**The multi-edition breadcrumb ambiguity stays exactly as PR #149 recorded
+it** — the committed corpus still carries one edition per collection, so
+it is not a live defect; no fixture invented, no product choice made.
+
+**Independently re-verified by the Architect before merging**: fresh
+full-history checkout, merged current `main` in (clean auto-merge, no
+conflicts), all 11 governance suites clean (the 8 CI-gated plus
+`firestore-index-requirements`/`rules-deployment-candidate`/
+`rules-deployment-candidate-phase3-6`), all 5 Hadith-owned data suites
+clean (`hadith-corpus` 60/0, `hadith-commentary-binding` 14/0,
+`hadith-source-rights` 14/0, `hadith-governing-contracts` 14/0,
+`hadith-gate-contracts` 11/0), `hadith-source-navigation-browser.mjs`
+47/47 in both languages, matching PR #150's own claims exactly. No
+protected path touched, no Firestore write/Rule/index.
+
+`app/js/version.js`: 08.43 → **08.44**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.
+
+---
+
+**v08.45 (23 Sep 2026) — Word Card: desktop drag/resize verified, one
+z-index defect fixed (issue #113, PR #137).** The movable/resizable Word
+Card window has existed since v08.20, via the shared `initPopupWindow()`
+(`app/js/note-popup.js`) the Note/Wheel/Explore popups also use, at the
+same 900px breakpoint. Persistence is `localStorage`, matching the app's
+own existing, consistent policy across all four popups.
+
+**Gate B (build) was reached** for one real, narrowly-scoped defect: a
+real drag-then-resize round trip (never driven by any suite before this
+one) found the Word Card mounts' `z-index` was `60`, an accidental **tie**
+with `#dock`'s own `z-index:60`, where `#noteView`/`#wheelPopupView`/
+`#exploreView` all deliberately sit at `55` — one step below `#dock` —
+with their own comment stating the policy outright. A tie resolves by DOM
+order rather than by either side's own stated intent — `#dock` happened
+to win it here too, so nothing on screen changes, but a coincidence is
+not the same thing as the policy every other popup states outright. Fixed
+to `55`.
+
+**Two things recorded, not built** (both need authority this round did
+not have): (1) zero keyboard support anywhere in this mechanism, for any
+of the four popup views — no `keydown`, `tabindex`, or `aria-label`
+anywhere in `note-popup.js` or on the `data-note-resize` markup; closing
+it needs new accessible names in both languages plus keyboard-move/resize
+behaviour added to the one shared `initPopupWindow()` function all four
+popups call. (2) `#dock` deliberately wins its overlap with a popup's own
+south-edge resize handles once dragged low enough — the same "dock always
+wins" policy the z-index fix above makes explicit, shared by all four
+popups by design. Changing it is a real product trade-off (a smaller
+maximum popup height on a short screen), not a one-line fix.
+
+**New `quran-word-card-popup.mjs` suite, 22 checks**: desktop drag/resize/
+persistence round trip (both languages), mobile layout untouched by
+construction, independent per-mount geometry. Pre-existing suites re-run
+unmodified and unaffected: `quran-word-card.mjs` 36/0,
+`quran-word-card-integration.mjs` 10/0,
+`quran-word-card-lemma-occurrences.mjs` 50/0,
+`quran-word-card-return.mjs` (v08.40's own 55-check suite) 55/0.
+
+**Independently re-verified by the Architect before merging**: fresh
+full-history checkout, merged current `main` in (clean auto-merge, no
+conflicts), all 11 governance suites clean, all five Word Card suites
+re-run matching PR #137's own claims exactly. No protected path touched,
+no new translation string, no Firestore write/Rule/index.
+
+`app/js/version.js`: 08.44 → **08.45**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.
+
+---
+
+**v08.46 (23 Sep 2026) — Health Atlas: References view switcher real
+keyboard/screen-reader fix (issue #115 Gate A/B, PR #148).**
+
+**Gate A (reproduced before touching app code)**: tranche 9's
+`buildViewTabs()` declared `role="tab"`/`"tablist"` + `aria-selected` on
+the Body Systems / References view switcher, but built none of the rest
+the WAI-ARIA Tabs pattern requires — no `aria-controls`, no
+`role="tabpanel"` anywhere, no arrow-key handling. A new committed
+browser suite (`tools/health-atlas-verify/references-tabs-accessibility-
+browser.mjs`) run against the **unmodified** tranche 9 commit failed 5 of
+10 checks, reproducing exactly that.
+
+**Gate B (the fix)**: these two buttons replace the whole screen (Body
+Systems vs. References), not panels of one shared view — so per issue
+#115's own instruction, this uses **ordinary buttons** (the WAI-ARIA
+toggle-button pattern: `aria-pressed`, `role="group"` container) rather
+than building out full tab-panel semantics for a control that isn't one.
+A native `<button>` needs no bespoke keyboard handling — already in Tab
+order, already Enter/Space-activatable — and the screen never suppressed
+its focus outline. Same suite re-run against the fix: 10/10 pass.
+`references-index-browser.mjs`'s own pre-existing `aria-selected`
+assertions were updated in place to `aria-pressed` — still 12/12 passing,
+nothing else in that file changed.
+
+**What this deliberately did not do**: build the full ARIA Tabs pattern
+(tabpanels/`aria-controls`/roving-tabindex arrow keys) — issue #115 named
+ordinary buttons as an equally valid resolution for view-switch actions,
+which these are.
+
+**Independently re-verified by the Architect before merging**: fresh
+full-history checkout, merged current `main` in (clean auto-merge, no
+conflicts), all 11 governance suites clean, all 18 Health-owned suites
+clean (297 checks: 15 non-browser suites plus `references-index-
+browser.mjs` 12/12, `references-tabs-accessibility-browser.mjs` 10/10,
+`body-systems-parity-browser.mjs` 16/16), and **mutation-proven**:
+reverting the fix to `origin/main`'s copy of `health-atlas-view.js` fails
+exactly 5 of 10 checks, matching Gate A's own reproduction. No protected
+path touched, no Firestore write/Rule/index.
+
+`app/js/version.js`: 08.45 → **08.46**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.
+
+---
+
+## v08.47 — RETROACTIVE ALLOCATION (23 Sep 2026): MAP Phase 5 P5-D, the Notes screen, round 1 (issue #195, PR #198, merged 22 Sep 2026)
+
+**This round shipped real functionality on 22 Sep 2026 and was never given
+a version number until now.** Issue #195 (supersedes #180) is the Owner's
+own top priority that day: *"Notes screen (Phase 5): start it next, as
+the main piece of visible work."* The Builder's PR #198 was correctly
+merged to `main` as commit `530af1f`, and every other round that landed
+the same day (v08.35, v08.36) received its own version-allocation
+follow-up — this one did not. It sat on `main`, live, unnumbered, through
+v08.35 → v08.46 (a full day and more of other rounds landing on top of
+it). Found and closed during this session's own routine sweep, the same
+sweep that investigated whether D3 Journaling — recorded in this file's
+19 Sep 2026 entry as page-unreachable, "0 of 29 pages reach it" — had
+become reachable now that a real Notes screen exists.
+
+**A new real page, `app/notes.html` (+ `app/js/note-sanitize.js`), wired
+to the existing, previously-uninvoked data layer** —
+`app/js/study-note-service.js` (`createStudyNote`, `reviseStudyNote`,
+`retireStudyNote`, `notesForStudyUnit`, `recordJournalEvidence`) and
+`app/js/note-foundation.js` (`listNoteRevisions`). No new exported
+function was added to either — the screen was buildable entirely on top
+of what P5-B/P5-C/P5-E already shipped. For the CURRENT Study unit: lists
+existing Notes (`notesForStudyUnit`), creates a new one, revises an
+existing one's content (showing the new `revisionId` a revision actually
+produces, not just that the text changed), shows a plain read-only
+revision history list, and retires one — worded "Remove", matching
+v08.01's own `trackables` convention, phrased so the confirm dialog says
+plainly that nothing is destroyed (I4).
+
+**Entry point: a new, enabled item in the Read screen's existing ⋯
+("more") menu** inside the "Note & more" full-stage view
+(`app/js/ayah-note-renderer.js`'s `renderNoteView()`) — **"📔 My Notes for
+this unit"**, linking to `notes.html?unit=<unitKey>&label=<label>`. The
+OLD quick-note surface (`ayah-notes.js`) is untouched, per ADR-009 §5's
+own "promoted, never migrated" rule.
+
+**Only a Note's own author may create, revise or retire it** —
+`isNoteOwner()` in the deployed Rules is deliberately not
+`canRecordFor()` (a Note is a person's own private writing, never a
+record kept about them on someone else's behalf) — so the screen hides
+Create/Edit/Remove and shows a plain sentence explaining why whenever the
+selected roster person is not the signed-in login's own person in this
+tenant; reading (`canReadNoteOf()`) is available to a guardian, a
+co-enrolled teacher and the tenant owner/prime exactly as the Rules
+already allow.
+
+**REQUIRED sanitization, built exactly as specified.** DOMPurify is
+loaded from the pinned `cdn.jsdelivr.net` URL as a plain `<script>` tag —
+this codebase's first vendored third-party script — and
+`app/js/note-sanitize.js` wraps it with a small allow-list. Every render
+of a Note's `bodyHtml` goes through `sanitizeNoteHtml()`, never straight
+to `innerHTML`; the function itself fails closed, throwing rather than
+silently returning raw HTML, if `window.DOMPurify` is ever absent.
+`tools/i18n-verify/note-sanitize-boundary.mjs`, 7 checks, mutation-proven
+(reverting one render call site to raw `innerHTML` fails it, naming the
+exact offending line).
+
+**`tools/i18n-verify/study-note-boundary.mjs` was UPDATED IN PLACE, with
+the reason recorded, never weakened, in the SAME round that built this
+screen.** Its whole premise since P5-C — "NO PAGE can reach
+`study-note-service.js`/`study-note-binding.js`" — was true only because
+nothing had built the screen these modules exist for; this round makes
+that assertion false by design, the identical shape v08.30's own D1/D2/D4
+reachability guard inverted, and 19 Sep 2026's D3-chokepoint round
+inverted again. The two checks now assert the stronger, narrower claim:
+exactly `app/notes.html` reaches the service, and the binding is reached
+only through the service, never directly by any page. 18/18 pass.
+
+## D3 JOURNALING: THE ANSWER TO "IS IT REACHABLE NOW" IS YES — AND IT IS ALSO ALREADY TURNED ON
+
+**Verified directly by the Architect at this retroactive allocation, not
+assumed from the CHANGELOG entry above.** `app/js/study-evidence-
+readiness.js`'s `EVIDENCE_PERSISTENCE_DECLARATION.ready` reads `true`
+(the governed decision recorded at v08.34, 22 Sep 2026 — Phase 3-6 Rules
+deployed and word-by-word progress verified on the Owner's own phone), so
+`notes.html`'s save path records real Journaling Activity evidence for a
+real reader **right now**, not merely once some future gate opens.
+
+The wiring is correct end to end: `notes.html`'s `afterCreateOrRevise()`
+calls `recordJournalEvidence(db, evidence, uid)` (imported from
+`study-note-service.js`) only after a real `createStudyNote`/
+`reviseStudyNote` call succeeds — never on load, never on a read.
+`recordJournalEvidence()` calls `recordStudyEvidence()`, the ONE
+chokepoint in `study-event-wiring.js`, exactly as the 19 Sep 2026
+D3-chokepoint round required (`docs/reports/2026-09-19-quranrevival-d3-
+journaling-chokepoint.md`) — that round removed `study-note-service.js`'s
+direct call to the evidence store precisely so that the day something
+wired D3 in, it would go through the chokepoint automatically. It does.
+`recordStudyEvidence()` itself re-checks `isStudyEvidencePersistenceReady()`
+before writing, so the write-gate-blocking guarantee this app's other
+evidence paths (D1/D2/D4) carry applies identically here.
+
+**`study-activity-evidence-boundary.mjs` already asserts this, correctly,
+and was updated for it in the SAME round that built the screen** — not a
+stale check this allocation had to fix. The importer set of the evidence
+store is asserted to be exactly `[study-event-wiring.js]` (no widened
+exception list); the reachability invariant, inverted back in the 19 Sep
+2026 D3-chokepoint round from "no page may reach the writer" to "every
+page-reachable path must pass through the wiring module", is
+re-confirmed true today. Re-run at this allocation: **27 passed, 0
+failed.** `study-note-boundary.mjs`'s own `KNOWN_WIRED_PAGE =
+"app/notes.html"` constant independently pins the same fact from the
+Note-side suite: **18 passed, 0 failed.**
+
+**A Note filed against a unit type ADR-008 §6 does not cover
+(`juz`/`hizb`/`rub`/`manzil`/`page`/`topic`/`name`) records no Journaling
+evidence, and says nothing about it** — `journalEvidenceArgs()` (in
+`app/js/note-journal-evidence.js`) returns `null` for those unit types,
+and `afterCreateOrRevise()`'s own `if (!evidence) return;` means the
+screen shows no message at all rather than a false "recorded" claim. This
+is silence by design (ADR-008's own scope), not a defect.
+
+**Not built this round, per the issue's own scope**: folders, Mapping My
+Journey filing (`noteSources`/`notePlacements`/`noteFolders` — Phase 6,
+built later as v08.37's Journey Map screen); choosing a translator;
+anything beyond one Study unit's own Notes. Layout was not measured at
+320/360/390/412px in a real browser in either language — the same
+Playwright/`chromium_headless_shell` environment gap this file records
+repeatedly elsewhere; a real-phone open-and-tap-through check, both
+languages, is the recommended substitute.
+
+**Translated in both languages from the first commit (I11)**: every new
+static and dynamically-rendered string on the page, plus the one new item
+in the ⋯ menu. Rich-text toolbar labels reuse the exact keys
+`ayah-note-renderer.js`'s own Notes editor already established.
+
+**Independently re-verified by the Architect at this retroactive
+allocation**: fresh full-history checkout of current `main` (which
+already carries this round via PR #198's earlier merge), all 11
+governance suites clean, `note-sanitize-boundary.mjs` 7/0,
+`study-note-boundary.mjs` 18/0, `study-activity-evidence-boundary.mjs`
+27/0, PR #198's diff read by hand against what this entry describes. No
+protected path touched by this allocation beyond the version-allocation
+files themselves (`firestore.rules`/`firebase.json`/`app/js/version.js`
+[this file only] genuinely untouched by the Builder's own round, per PR
+#198's own claim, confirmed by diff).
+
+`app/js/version.js`: 08.46 → **08.47**. Allocated by the MMSA Architect,
+retroactively, for a round that merged to `main` on 22 Sep 2026. See
+`docs/governance/programme-integration-ledger.json` for the version
+allocation record.
+
+---
+
+**v08.48 (23 Sep 2026) — Word Card: the flow-mode cross-surah navigation
+gap PR #135 flagged is fixed (issue #113, PR #138).**
+
+**Gate A (reproduce) found the flagged gap is real, but not in the shape
+its own name suggests.** PR #135 left flow mode (`#pageViewContainer`
+visible) as a no-op because a captured pixel scroll offset is meaningless
+once the strip re-renders a different surah. A debug run in a real
+browser found the actual defect: `#pageViewContainer`'s raw `scrollLeft`
+is a property of the *container*, not of whichever surah's content it
+holds — a browser does not reset it when `renderFlowView()` rebuilds the
+`innerHTML` for a different surah. Following a lemma occurrence from 2:71
+to a different surah (4:92) in Whole Surah flow mode left the reader
+looking at surah 4's own āyah 71 (the same stale pixel offset landing on
+the same page index) — not āyah 92, the word actually tapped, which was
+measurably off-screen. This is on the arrival leg, not only the return.
+
+**Gate B (build)**: one new function, `scrollFlowToCurrentAyah()`,
+targets the destination āyah's own row directly (identity-based, not
+pixel-based) instead of trying to preserve a coordinate. Called from
+`navigateToAyah()` — the word-card mechanism's only navigation function
+— so the fix is scoped exactly to this feature and cannot affect
+Prev/Next, the Ayah/Surah selects, or the flow strip's own swipe
+navigation.
+
+**A second, pre-existing defect found and NOT fixed**: Range unit type
+derives its bounds from raw `rangeFrom`/`rangeTo` āyah numbers with no
+surah attached, so crossing surahs while Range is selected shows an
+arbitrary slice of the wrong surah. This predates issue #113 and is not
+scoped to word-card navigation at all — the plain `surahSelect`
+dropdown's own change handler has exactly the same gap. Recorded as a
+product-decision packet: `stepFlowAyah()`'s own Range branch already
+shows a working precedent (re-anchoring the window on a surah-crossing
+Prev/Next), four costed options are tabled, none chosen.
+
+**New `quran-word-card-flow-nav.mjs` suite, 19 checks**: Whole Surah
+cross-surah round trip (both languages), Range same-surah regression, the
+ordinary single-āyah unit type (proving the new function is a true no-op
+outside flow mode). Pre-existing suites re-run unmodified and unaffected:
+`quran-word-card-return.mjs` (v08.40's own suite) 55/0,
+`quran-word-card-popup.mjs` (v08.45's own suite) 22/0.
+
+**What this deliberately does not do**: Mushaf-mode flow scroll
+targeting — `hifz-renderer.js`'s word spans carry no ayah-identifying
+attribute to target. The Range/surah-crossing content-correctness defect
+— flagged, not fixed.
+
+**Independently re-verified by the Architect before merging**: fresh
+full-history checkout, retargeted from its stale stacked base onto `main`
+and merged current `main` in (clean auto-merge), all 11 governance suites
+clean, the new suite 19/19, the unmodified regression suite
+`quran-word-card-return.mjs` re-run 55/55. No protected path touched, no
+new translation string, no Firestore write/Rule/index.
+
+`app/js/version.js`: 08.47 → **08.48**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.
+
+---
+
+**v08.49 (23 Sep 2026) — Hadith: book/chapter row headings get a real
+`lang`/`dir` attribute (issue #114, PR #153).**
+
+Ruled out first (live re-probes, not just re-reading the prior round's
+suite): real `Tab`+`Enter` navigation through edition→book→chapter
+continues correctly at every level; the `:focus-visible` mouse-vs-
+keyboard distinction on the landing crumbs is correct browser behaviour;
+every breadcrumb reset path is unchanged and correct.
+
+**Found**: every book/chapter row's own native-script heading
+(`.hadith-row-heading`, real Arabic text from the existing fixture, e.g.
+"كتاب البداية") renders with **no `lang`/`dir` attribute** —
+`getComputedStyle().direction` reads `"rtl"` anyway (Unicode Bidi
+auto-detects a run of Arabic characters), which is exactly why no sighted
+or screenshot check ever caught it, but `lang` has no such fallback: a
+screen reader reads every book/chapter heading in the page's UI-language
+voice (English/Bangla) instead of Arabic. Every *other* Arabic-script
+surface this component renders (the occurrence card's source paragraph,
+the commentary panel's Arabic title) already stamps `lang`/`dir` — only
+these two call sites did not.
+
+**Fix**: one `rawHeadingSpan()` helper (`app/js/hadith-browser.js`)
+stamping `lang = SOURCE_LANGUAGE` (the module's own existing constant,
+not a new literal) and `dir = "rtl"`, replacing both call sites (book
+list, chapter list) — covers both edition shapes (with and without a
+chapter level) through the one function. Zero new translatable strings.
+
+**Tests**: 3 new checks in `hadith-source-navigation-browser.mjs`
+(47 → 50). **Mutation-proven**: reverting to the pre-fix state fails
+exactly the 3 new checks (47/50); restored and reconfirmed clean.
+
+**Independently re-verified by the Architect before merging**: fresh
+full-history checkout, retargeted from its stale stacked base onto `main`
+and merged current `main` in (clean auto-merge), all 11 governance suites
+clean, all 5 Hadith-owned data suites clean, `hadith-source-navigation-
+browser.mjs` 50/50 in both languages. No protected path touched, no
+Firestore write/Rule/index.
+
+`app/js/version.js`: 08.48 → **08.49**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.
+
+---
+
+**v08.50 (23 Sep 2026) — Health Atlas: Foods/Conditions search (issue
+#115, PR #151).**
+
+1. **Repaired the HTML twin of the prior round's own report**
+(`docs/reports/2026-09-21-health-atlas-references-tabs-accessibility.html`):
+its fenced code blocks and two WAI-ARIA pattern links were flattened by
+`tools/md2report.py`'s lack of fenced-code/link handling. **Checked
+against all 82 report `.md`/`.html` pairs in the repository: the
+generator defect is repository-wide, not Health-specific.**
+`tools/md2report.py` is shared, platform-wide tooling and is **not
+edited here** — only the one report this task named was hand-corrected;
+the shared-tooling fix needs Master Architect authorisation.
+
+2. **Re-investigated the still-missing Lifestyle tab under Gate A/B.**
+The existing deferral reasoning holds: unlike Foods/Diseases/Age Groups,
+the Lifestyle dataset has no safe structural remainder once its
+activities/food/avoid recommendation content is excluded — even its bare
+names are habit endorsements, not neutral labels. This round found no new
+field-level split the original investigation missed, so it concurs with
+the existing deferral rather than overriding it without new grounds.
+
+3. **Foods/Conditions search boxes**, matching the source app's own
+per-tab filter. **Deliberately narrower than the source's own
+`matches()`** (whole serialized item, excluded fields included) —
+`matchesFoodSearch`/`matchesDiseaseSearch` are scoped to exactly the
+fields this view already renders, so a search term present only in an
+excluded field cannot surface a false hit — proven by two checks against
+the real rendered page. New `more-search-browser.mjs` suite, 12 checks.
+
+**Independently re-verified by the Architect before merging**: fresh
+full-history checkout, retargeted from its stale stacked base onto `main`
+and merged current `main` in (clean auto-merge), all 11 governance suites
+clean, all 19 runnable Health-owned suites clean including the new suite
+12/12. No protected path touched, no version bump beyond this allocation,
+no Firestore write/Rule/index.
+
+`app/js/version.js`: 08.49 → **08.50**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.
+
+---
+
+**v08.51 (23 Sep 2026) — Health Atlas: organ Type pill parity (issue
+#115, PR #152).**
+
+1. **Gate A: independently re-verified PR #151's own claims, not
+trusted.** Fetched full history and every remote branch, checked out PR
+#151's exact head commit, re-ran everything from scratch. Every Health
+suite number and every governance suite number reproduced exactly as PR
+#151's own table states. Independently confirmed the claimed
+`tools/md2report.py` defect, read-only, on a representative cross-module
+sample (not just Health).
+
+2. **Gate B: `organ.partType`** (Organ/Vein/Artery/Nerve/Tissue/Gland/
+Duct) was in the preserved dataset since foundation tranche 1 and read by
+nothing. The v02.04 source's own `rowHtml()` prints it as a small pill
+right after each organ's name — this port had never shown it. It is a
+closed-set anatomical classification, the same class of field as `role`
+and `system` (already ported): never a dose, nutrient amount, activity
+recommendation or remedy. All 46 organs carry one of exactly the source's
+own seven values. Ported faithfully: a `.ha-bs-type-pill` badge next to
+each organ row's name, read-only, no new selector needed.
+
+3. **Measured with the real longest name in the dataset** ("Vena Cava
+(Superior & Inferior)", a Vein) at desktop/tablet/phone before shipping.
+The name+pill group is its own `flex-wrap` unit rather than a single
+`nowrap` line, so the worst case wraps the pill onto its own line instead
+of truncating the name or overflowing the row. Zero horizontal page
+overflow at any width.
+
+`body-systems-parity-browser.mjs` gained 4 new checks (16 → 20), a new
+`data-integrity` closed-set assertion (21 → 22), a new `view-boundary`
+positive control (14 → 15).
+
+**What this deliberately did not do**: build a Type *filter* (the source
+only ever shows `partType` as a label); touch `tools/md2report.py` or any
+other module's committed report; re-investigate the Lifestyle deferral.
+
+**Independently re-verified by the Architect before merging**: fresh
+full-history checkout, retargeted from its stale stacked base onto `main`
+and merged current `main` in (clean auto-merge), all 11 governance suites
+clean, all 19 runnable Health-owned suites clean matching the PR's own
+claimed numbers exactly (`body-systems-parity-browser` 20/20,
+`data-integrity` 22/22, `view-boundary` 15/15). No protected path
+touched, no Firestore write/Rule/index.
+
+`app/js/version.js`: 08.50 → **08.51**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.
+
+---
+
+**v08.52 (23 Sep 2026) — Word Card: Mushaf audio-follow/word-card scroll
+fixes, a real race-condition fix, three further cross-surah
+scroll-retarget sites, Note-view-origin investigated with no defect
+found (issue #113, PR #139, four consolidated task-bridge rounds).**
+
+**A genuine, pre-existing race condition, found and fixed.**
+`renderMushafPages()` was re-entrant-unsafe: `navigateToAyah()`'s own
+surah-change branch can call `renderStudyScreen()` twice in quick
+succession, and a stale first call's still-in-flight `renderPage()`
+(font loads) could append into a container a second call had already
+reset, doubling every page and leaving `wordRegistry` holding whichever
+span happened to register last. Fixed with a monotonic generation token
+(`renderGeneration`), checked after every `await` inside `renderPage()`,
+before either `wordRegistry` or the container is touched — the same
+shape this codebase's own Word Card request counter,
+`quranWordCardRequest`, already uses.
+
+**Mushaf audio-follow scroll fix.** `setActiveAyah()` used
+`inline: "nearest"`, measured (synthetic fixture, real browser) as never
+actually scrolling `#pageViewContainer` at all — the same
+`scroll-snap-type: x mandatory` + `direction: rtl` interaction PR #138
+already fixed for the word-card jump path. Fixed to `inline: "start"`,
+matching its sibling exactly.
+
+**Mushaf mode now covered by `scrollFlowToCurrentAyah()`** (previously a
+no-op there): a new `scrollToAyahIfRendered()` primitive plus a stashed
+`flowRenderPromise` the caller awaits before targeting the destination,
+so an asynchronous Mushaf render settles before its own arrival point is
+scrolled to.
+
+**Three further cross-surah trigger points fixed**: `stepUnit()` (the
+Next/Previous unit buttons), `goToUnitNumber()` (the unit-number picker),
+and `surahSelect` (the plain dropdown) each now call
+`scrollFlowToCurrentAyah()` at their own tail — the identical
+stale-`scrollLeft` defect PR #138 fixed for the word-card jump,
+reproduced via three independent triggers. `ayahSelect` needs no
+matching call, structurally proven (10 checks) never interactable while
+the flow strip is visible.
+
+**Note-view-origin return path re-investigated, no defect found.**
+`.note-body` is the Note view's real scroll surface; the round trip's
+four driving functions never call `renderNoteViewNow()`; `#noteView`'s
+DOM is never destroyed/rebuilt while the reader is away — structurally
+different from the flow-mode case PR #138 fixed.
+
+**Five new suites, 205 checks**: `quran-flow-step-nav.mjs` (32),
+`quran-mushaf-audio-follow-scroll.mjs` (25),
+`quran-word-card-mushaf-scroll.mjs` (59),
+`quran-word-card-note-origin-return.mjs` (51),
+`quran-surah-select-scroll-retarget.mjs` (38). Each round's own fix was
+mutation-proven with a real revert-and-confirm. Three pre-existing
+regression suites re-run clean: `quran-word-card-return.mjs` (55),
+`quran-word-card-flow-nav.mjs` (19), `quran-word-card-popup.mjs` (22).
+
+**What this deliberately did not do**: resolve the pre-existing,
+unrelated Range/surah-crossing content-correctness gap (a
+product-decision packet, four costed options, none chosen).
+
+**Independently re-verified by the Architect before merging**: fresh
+full-history checkout, retargeted from its stale stacked base onto
+`main` and merged current `main` in — one real conflict in
+`app/quranrevival.html`'s own import list (the v08.42 word-total imports
+and this round's own `scrollToAyahIfRendered` import), resolved by
+combining both additive import sets, no logic conflict — all 11
+governance suites clean, all five new suites plus all three regression
+suites re-run matching claimed counts exactly (301 checks total). No
+protected path touched, no new translation string, no Firestore
+write/Rule/index.
+
+`app/js/version.js`: 08.51 → **08.52**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.

@@ -158,15 +158,45 @@ export async function updatePermanentNoteContent(db, {
   return revisionId;
 }
 
+// Retiring commits a REAL revision rather than only flipping `status`.
+//
+// The Phase 5 Rules candidate's `committedRevisionMatches()` re-checks
+// `currentRevisionId` on every update, retire included: the revision it
+// names must exist and must chain (`previousRevisionId`) from the revision
+// the Note is leaving behind. A status-only update leaves `currentRevisionId`
+// pointing at the SAME revision it already named, which can never chain from
+// itself -- so every retire would be denied the moment these Rules deploy.
+// This was found by comparing what the candidate authorises against what
+// this function actually wrote (the "ASK WHAT THE ACCEPTED RULES AUTHORISE,
+// THEN WHAT THE CODE CAN PERFORM" method this module already uses elsewhere,
+// run in the direction nobody had run it before: what the code WRITES that
+// the Rules would refuse). The emulator suite's own IMM-03b case already
+// expected exactly this shape by hand; the data layer had simply never
+// matched it.
 export async function retirePermanentNote(db, { tenantId, noteId, expectedRevisionId, actorUid }) {
   const noteDocId = noteFoundationDocId(tenantId, noteId);
+  const revisionId = newNoteEntityId();
   await runEnvelopeTransaction(db, actorUid, async (transaction) => {
     const snapshot = await transaction.get(TENANT.NOTES, noteDocId);
     if (!snapshot.exists()) throw new Error("Note does not exist.");
     const note = snapshot.data();
     if (note.currentRevisionId !== expectedRevisionId) throw new Error("Stale Note revision.");
-    transaction.update(TENANT.NOTES, noteDocId, { status: NOTE_STATUS.RETIRED });
+
+    transaction.create(TENANT.NOTE_REVISIONS, noteFoundationDocId(tenantId, revisionId), {
+      revisionId,
+      noteId,
+      tenantId: note.tenantId,
+      ownerPersonId: note.ownerPersonId,
+      ownerUid: note.ownerUid ?? null,
+      previousRevisionId: expectedRevisionId,
+      title: note.title,
+      bodyHtml: note.bodyHtml,
+      revisionReason: "retired",
+      actorUid,
+    });
+    transaction.update(TENANT.NOTES, noteDocId, { status: NOTE_STATUS.RETIRED, currentRevisionId: revisionId });
   });
+  return revisionId;
 }
 
 /** One person's folders, for judging a tree. Equality-only and bounded, so it needs no composite index (P5-E). */

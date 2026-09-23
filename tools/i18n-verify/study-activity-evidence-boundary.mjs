@@ -217,13 +217,30 @@ check("the importer set is EXACTLY the wiring module -- nothing else imports the
   assert.deepEqual(importers, [WIRING],
     `the set of modules importing the evidence store has changed -- route it through ${WIRING} instead of widening this list: ${importers.join(", ")}`);
 });
+// UPDATED 2026-09-22 for P5-D (issue #195), WITH THE REASON RECORDED. This
+// case used to scan RAW text (including comments) for the three forbidden
+// names, which was harmless only by luck: nothing page-reachable had ever
+// happened to NAME `writeStudyActivityEvidence()` in prose. `study-note-
+// service.js` became page-reachable this round (app/notes.html), losing the
+// "queued, not wired" exemption below -- and its own header comment, which
+// explains that it used to call the store directly and no longer does,
+// names the very string this check greps for. This is the exact "strip both
+// comment forms before grepping source for a forbidden name" lesson
+// CLAUDE.md's Standing Lessons already records, found here for real. The
+// check now reads CODE, the same treatment codeOf() already gives every
+// file in `app/js` -- a doc comment explaining a past design is not the
+// wiring this case exists to catch.
+function withoutComments(text) {
+  return text.replace(/\/\*[\s\S]*?\*\//g, "")
+    .split("\n").filter((line) => !/^\s*(?:\/\/|\*)/.test(line)).join("\n");
+}
 check("no PAGE-REACHABLE source but the wiring module names a Study event writer", () => {
   const offenders = [];
   for (const { file, text } of appSources()) {
     const base = path.basename(file);
     if (GUARDED.includes(base)) continue;
     if (base === WIRING) continue;                                          // the audited entry point
-    if (!/writeStudyActivityEvidence|studyEvidenceId|buildStudyEvidenceDocument/.test(text)) continue;
+    if (!/writeStudyActivityEvidence|studyEvidenceId|buildStudyEvidenceDocument/.test(withoutComments(text))) continue;
     if (file.endsWith(".js") && chainsToTarget(base).length === 0) continue; // queued, not wired
     offenders.push(file);
   }
@@ -352,12 +369,26 @@ check("every Approach the writer can credit still IS that Approach", () => {
   assert.equal(APPROACH_TEMPLATES.length, 30);
 });
 
-// --- 5. no Rules, index or migration material -----------------------------
-check("production firestore.rules carries no evidence material", () => {
+// --- 5. Rules/index deployment state matches what is ACTUALLY true ---------
+// Until 22 Sep 2026 this checked the opposite: that firestore.rules carried
+// NO evidence material at all, because until the Owner published in the
+// Firebase Console, saying otherwise would have been the repository claiming
+// a deployment nobody had performed. That deployment happened (Rules and
+// indexes both, confirmed by the Owner directly) -- `rules-deployment-
+// candidate-phase3-6.mjs` is where the byte-exact proof of a faithful sync
+// lives, so this check does not repeat it. What it still needs to prove,
+// unaffected by whether Rules are deployed, is the fact right below it (the
+// readiness declaration): the evidence WRITE PATH's own gate did not move
+// just because the database now has a rule for it to write against.
+check("production firestore.rules carries the deployed evidence material, and only that -- no keyed-Activity leak", () => {
   const rules = fs.readFileSync(path.join(root, "firestore.rules"), "utf8");
-  assert.ok(!rules.includes("/evidence/"), "firestore.rules has been amended for the evidence subcollection");
-  assert.ok(!rules.includes("study-approach-contract"), "firestore.rules references the v1 contract");
-  assert.ok(!fs.existsSync(path.join(root, "firestore.indexes.json")), "a tracked index file appeared");
+  assert.ok(rules.includes("/evidence/"), "firestore.rules does not carry the evidence subcollection -- deployment record is stale, or the sync regressed");
+  assert.ok(rules.includes("study-approach-contract:v1"), "firestore.rules does not pin the accepted contract version");
+  assert.ok(fs.existsSync(path.join(root, "firestore.indexes.json")), "the live index file is missing -- deployment record is stale, or the sync regressed");
+  // The one thing that must still be ABSENT: the rejected keyed-Activity
+  // design (a hashed eventKey Rules cannot verify) never made it in alongside
+  // the accepted one, deployment or no deployment.
+  assert.ok(!rules.includes("v1Events"), "firestore.rules references the rejected keyed-Activity v1Events map");
 });
 check("the gated keyed-Activity material is still absent", () => {
   for (const rel of ["app/js/study-activity-week.js", "tests/firestore/activity-v1.proposed.rules"]) {
@@ -381,11 +412,28 @@ check("the candidate Rules are a candidate, not the deployed file", () => {
 // offering an action it cannot perform.
 const READINESS = "study-evidence-readiness.js";
 
-check("the readiness declaration DEFAULTS TO FALSE, as a literal", () => {
+// UPDATED 2026-09-22, with the reason recorded rather than the check
+// deleted. Until this date the standing declaration really was `false`
+// (E1 CLOSED), and asserting that literal was the whole point -- a bare
+// flip to `true` with no governed decision was exactly the failure mode
+// this suite exists to catch. It is now `true`, under a real governed
+// decision (docs/reports/2026-09-22-map-phase4-evidence-persistence-enabled.md),
+// so asserting the OLD literal would itself now be the false claim. What
+// must still hold, unconditionally, is that `ready` is never a bare true:
+// it is only ever true alongside a well-formed decision the module's own
+// predicate accepts -- proven here by calling that predicate directly,
+// not by re-parsing its logic with a second regex.
+check("the readiness declaration is a REAL literal, and if true it is under a GOVERNED decision", () => {
   const src = fs.readFileSync(path.join(appJs, READINESS), "utf8");
   const m = src.match(/EVIDENCE_PERSISTENCE_DECLARATION\s*=\s*Object\.freeze\(\{[\s\S]*?ready:\s*(true|false)/);
   assert.ok(m, "ready is not a plain literal -- a computed default is not a default");
-  assert.equal(m[1], "false", "the standing declaration is not false; E1 is CLOSED");
+  const declaredReady = readiness.isStudyEvidencePersistenceReady();
+  assert.equal(declaredReady, m[1] === "true",
+    "the module's own predicate disagrees with the literal it reads -- something is malformed");
+  if (m[1] === "true") {
+    assert.equal(declaredReady, true,
+      "ready is declared true but the module's own predicate refuses it -- this is a BARE FLIP, not a governed decision");
+  }
 });
 
 check("readiness CANNOT be inferred from firestore.rules -- the module imports nothing at all", () => {
@@ -412,8 +460,14 @@ check("a bare flip of `ready` does NOT enable persistence", () => {
   // Enablement is a governed decision (requirement 5). Asserted against the
   // real predicate rather than the source, because this is the one fact here
   // a regex genuinely cannot see.
+  //
+  // UPDATED 2026-09-22: the standing declaration now genuinely IS ready
+  // (docs/reports/2026-09-22-map-phase4-evidence-persistence-enabled.md),
+  // so the first assertion here asserts that fact instead of its opposite.
+  // Every OTHER case below is unaffected and still proves the real point:
+  // an ill-formed shape must be refused no matter what the real file says.
   const m = readiness;
-  assert.equal(m.isStudyEvidencePersistenceReady(), false, "the standing declaration reads ready");
+  assert.equal(m.isStudyEvidencePersistenceReady(), true, "the standing declaration should read ready under its governed decision");
   assert.equal(m.isStudyEvidencePersistenceReady({ ready: true }), false, "a bare flip enabled it");
   assert.equal(m.isStudyEvidencePersistenceReady({ ready: true, decision: {} }), false, "an empty decision enabled it");
   assert.equal(m.isStudyEvidencePersistenceReady({ ready: true, decision: { by: "quran", on: "2026-09-19", reference: "x" } }), false,

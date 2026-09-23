@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Health Atlas (draft foundation) — MMSA</title>
+<style>
+  :root { --ink:#1b1f27; --paper:#faf7f1; --line:#dcd3c0; --gold:#8a6220; --card:#fff; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { padding: 1.4rem 1.2rem 1rem; border-bottom: 1px solid var(--line); }
+  header h1 { margin: 0 0 0.3rem; font-size: 1.35rem; }
+  header p { margin: 0; color: #6b6255; font-size: 0.9rem; max-width: 40rem; line-height: 1.5; }
+  main { max-width: 88rem; margin: 0 auto; padding: 1.2rem 1rem 4rem; }
+  .ha-draft-banner {
+    background: #f5ebd6; color: #6b4c14; border: 1px solid #e2cd9c; border-radius: 0.5rem;
+    padding: 0.6rem 0.9rem; font-size: 0.85rem; line-height: 1.4; margin-bottom: 1rem;
+  }
+  .ha-swatch { width: 0.7rem; height: 0.7rem; border-radius: 2px; display: inline-block; flex-shrink: 0; }
+  .ha-detail-card { background: var(--card); border: 1px solid var(--line); border-radius: 0.6rem; padding: 1rem 1.1rem; }
+  .ha-detail-card h2 { margin: 0.4rem 0 0.2rem; font-size: 1.2rem; }
+  .ha-meta { color: #6b6255; font-size: 0.85rem; margin: 0.2rem 0 0.8rem; display: flex; align-items: center; gap: 0.35rem; }
+  .ha-section-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gold); font-weight: 600; margin: 0.8rem 0 0.3rem; }
+  .ha-plain { margin: 0; padding-left: 1.1rem; font-size: 0.9rem; line-height: 1.55; }
+  .ha-plain li { margin-bottom: 0.5rem; }
+  .ha-function-text { display: block; }
+  .ha-evidence-badge {
+    display: inline-block; margin-top: 0.15rem; font-size: 0.72rem; font-weight: 600;
+    padding: 0.1rem 0.5rem; border-radius: 999px; line-height: 1.4;
+  }
+  .ha-evidence-general { background: #f0ece1; color: #6b6255; border: 1px solid #dcd3c0; }
+  .ha-evidence-cited { background: #e4f0e6; color: #2f6b3f; border: 1px solid #bcd8c0; }
+  .ha-evidence-unclassified { background: #fbe4e4; color: #9c2f2f; border: 1px solid #e8bcbc; }
+  .ha-back { font: inherit; font-size: 0.85rem; background: none; border: none; color: var(--gold); cursor: pointer; padding: 0; margin-bottom: 0.4rem; }
+  .ha-back:hover { text-decoration: underline; }
+  .ha-refs-block { margin-top: 0.9rem; }
+  .ha-refs-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: #8a8071; font-weight: 600; margin-bottom: 0.3rem; }
+  .ha-refs { list-style: none; margin: 0; padding: 0; font-size: 0.85rem; }
+  .ha-refs li { margin-bottom: 0.15rem; }
+  .ha-refs a { color: var(--gold); }
+  .ha-empty { color: #8a8071; }
+  footer { max-width: 88rem; margin: 0 auto; padding: 0 1rem 3rem; color: #8a8071; font-size: 0.78rem; line-height: 1.5; }
+
+  /* ---------- Three-column Body Systems layout (parity tranche 6) ---------- */
+  /* grid-template-columns is set inline by JS (parity tranche 7's drag-resize,
+     source-faithful column widths); this rule is only the initial/no-JS
+     fallback. Below 980px the media query below forces single-column with
+     !important, same technique the source itself uses to override its own
+     JS-driven column widths at its own breakpoint. */
+  .ha-bs-3col { display: grid; grid-template-columns: 260px 10px minmax(240px, 1fr) 10px 300px; gap: 1rem; align-items: start; }
+  @media (max-width: 980px) { .ha-bs-3col { grid-template-columns: 1fr !important; } .ha-bs-divider { display: none; } }
+  .ha-bs-col { display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; }
+  .ha-bs-divider { align-self: stretch; width: 10px; cursor: col-resize; position: relative; }
+  .ha-bs-divider::after { content: ''; position: absolute; left: 4px; top: 10%; bottom: 10%; width: 2px; background: var(--line); }
+  .ha-bs-divider:hover::after, .ha-bs-divider:focus::after { background: var(--gold); }
+  .ha-bs-divider:focus { outline: 1px solid var(--gold); outline-offset: -1px; }
+  .ha-search-box { margin-bottom: 0.2rem; }
+  .ha-search-input {
+    width: 100%; font: inherit; font-size: 0.88rem; padding: 0.5rem 0.7rem;
+    border: 1px solid var(--line); border-radius: 0.4rem; background: #fff; color: var(--ink);
+  }
+  .ha-search-input:focus { outline: 1px solid var(--gold); border-color: var(--gold); }
+  .ha-bs-section { border: 1px solid var(--line); border-radius: 0.5rem; overflow: hidden; background: var(--card); }
+  .ha-bs-section-head {
+    display: flex; align-items: center; gap: 0.5rem; width: 100%; text-align: left;
+    font: inherit; font-weight: 600; font-size: 0.9rem; padding: 0.6rem 0.8rem;
+    border: none; background: #f5f1e6; color: var(--ink); cursor: pointer;
+  }
+  .ha-bs-section-head:hover { background: #efe9d8; }
+  .ha-bs-chevron { transition: transform 0.15s; color: #8a8071; font-size: 0.75rem; }
+  .ha-bs-chevron-open { transform: rotate(0deg); }
+  .ha-bs-chevron:not(.ha-bs-chevron-open) { transform: rotate(-90deg); }
+  .ha-pill { margin-left: auto; font-size: 0.72rem; color: #8a8071; background: #efe9d8; border-radius: 999px; padding: 0.05rem 0.5rem; }
+  .ha-bs-section-body { padding: 0 0.6rem 0.5rem; }
+  .ha-bs-section:not(.ha-bs-section-open) .ha-bs-section-body { display: none; }
+  .ha-bs-subhead { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gold); font-weight: 600; margin: 0.5rem 0 0.3rem; display: flex; align-items: center; gap: 0.35rem; }
+  .ha-bs-row-list { display: flex; flex-direction: column; gap: 1px; }
+  .ha-bs-row {
+    display: flex; align-items: center; gap: 0.5rem; width: 100%; text-align: left;
+    font: inherit; font-size: 0.85rem; padding: 0.4rem 0.4rem; border: none; border-radius: 0.3rem;
+    background: transparent; color: var(--ink); cursor: pointer;
+  }
+  .ha-bs-row:hover { background: #f0ece1; }
+  .ha-bs-row-active { background: #efe4c8; font-weight: 600; }
+  .ha-bs-row-empty { color: #8a8071; font-size: 0.8rem; padding: 0.3rem 0.4rem; }
+  .ha-role-dot { display: inline-block; width: 0.55rem; height: 0.55rem; border-radius: 50%; flex-shrink: 0; }
+  .ha-role-dot.ha-role-main { background: var(--gold); }
+  .ha-role-dot.ha-role-supportive { background: transparent; border: 1.5px solid #8a8071; }
+  /* Parity tranche 12: source-faithful organ "Type" pill (organ.partType),
+     e.g. Organ/Vein/Artery/Nerve/Tissue/Gland/Duct. The name+pill group
+     wraps as its own unit (flex-wrap) rather than truncating the name or
+     overflowing the row horizontally on a long real name at a narrow
+     width — see the tranche's own report for the measured widths. */
+  .ha-bs-row-name { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; flex-wrap: wrap; column-gap: 0.35rem; row-gap: 0.1rem; }
+  .ha-bs-type-pill { flex-shrink: 0; white-space: nowrap; font-size: 0.68rem; color: #8a8071; background: #efe9d8; border-radius: 999px; padding: 0.03rem 0.45rem; }
+
+  /* ---------- Wheel ---------- */
+  .ha-wheel-panel { background: var(--card); border: 1px solid var(--line); border-radius: 0.6rem; padding: 1rem; display: flex; flex-direction: column; align-items: center; gap: 0.6rem; }
+  .ha-wheel-back { font: inherit; font-size: 0.82rem; background: none; border: none; color: var(--gold); cursor: pointer; align-self: flex-start; padding: 0; }
+  .ha-wheel-back:hover { text-decoration: underline; }
+  .ha-wheel-wrap { display: flex; justify-content: center; width: 100%; overflow: auto; }
+  .ha-wheel-svg-box {
+    resize: both; overflow: hidden; width: 280px; height: 280px; min-width: 200px; min-height: 200px;
+    max-width: 560px; max-height: 560px; position: relative; border: 1px dashed var(--line); border-radius: 0.5rem;
+  }
+  .ha-wheel-svg-box svg { width: 100%; height: 100%; display: block; }
+  .ha-wheel-hint { position: absolute; bottom: 2px; right: 6px; font-size: 0.6rem; color: #8a8071; pointer-events: none; }
+  .ha-wedge { cursor: pointer; }
+  .ha-wedge-path { stroke: var(--paper); stroke-width: 1.5; transition: opacity 0.15s; }
+  .ha-wedge:hover .ha-wedge-path, .ha-wedge:focus .ha-wedge-path { opacity: 0.8; }
+  .ha-wedge:focus { outline: none; }
+  .ha-wedge:focus .ha-wedge-path { stroke: var(--gold); stroke-width: 3; }
+  .ha-wedge-label { pointer-events: none; }
+  .ha-wheel-center { cursor: default; }
+  .ha-wheel-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 0.9rem; justify-content: center; }
+  .ha-legend-item {
+    font: inherit; font-size: 0.8rem; display: flex; align-items: center; gap: 0.35rem;
+    background: none; border: none; color: var(--ink); cursor: pointer; padding: 0.1rem 0.2rem;
+  }
+  .ha-legend-item:hover, .ha-legend-item-active { color: var(--gold); }
+
+  /* ---------- Diagrams ---------- */
+  .ha-diagram-card { background: var(--card); border: 1px solid var(--line); border-radius: 0.6rem; padding: 0.9rem; margin-bottom: 0.6rem; }
+  .ha-diagram-svg { width: 100%; height: auto; max-height: 220px; }
+  .ha-diagram-caption { font-size: 0.78rem; color: #8a8071; margin-top: 0.5rem; }
+  /* Parity tranche 13: the source's own per-organ diagram highlight
+     (`.part-highlight` in the v02.04 standalone source), ported verbatim
+     under this app's own class prefix. Purely presentational. */
+  .ha-diagram-part-highlight { stroke: var(--gold) !important; stroke-width: 4; filter: drop-shadow(0 0 5px var(--gold)); }
+
+  /* ---------- View tabs + References index (parity tranche 9) ---------- */
+  .ha-view-tabs { display: flex; gap: 0.4rem; margin-bottom: 1rem; border-bottom: 1px solid var(--line); }
+  .ha-view-tab {
+    font: inherit; font-size: 0.85rem; font-weight: 600; padding: 0.5rem 0.9rem;
+    border: none; border-bottom: 2px solid transparent; background: none; color: #6b6255; cursor: pointer;
+  }
+  .ha-view-tab:hover { color: var(--ink); }
+  .ha-view-tab-active { color: var(--gold); border-bottom-color: var(--gold); }
+  .ha-refs-index { background: var(--card); border: 1px solid var(--line); border-radius: 0.6rem; padding: 1rem 1.1rem; overflow-x: auto; }
+  .ha-refs-index-note { font-size: 0.85rem; color: #6b6255; line-height: 1.5; margin: 0 0 0.9rem; max-width: 52rem; }
+  .ha-refs-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .ha-refs-table th { text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gold); font-weight: 600; padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--line); }
+  .ha-refs-table td { padding: 0.6rem 0.5rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .ha-ref-id { color: #8a8071; width: 2.5rem; }
+  .ha-ref-link { color: var(--gold); }
+  .ha-ref-organ-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.3rem 0.5rem; }
+  .ha-ref-organ-link {
+    font: inherit; font-size: 0.82rem; background: #f0ece1; border: 1px solid var(--line);
+    border-radius: 999px; padding: 0.15rem 0.65rem; color: var(--ink); cursor: pointer;
+  }
+  .ha-ref-organ-link:hover, .ha-ref-organ-link:focus { background: #efe4c8; color: var(--gold); }
+  .ha-ref-none { color: #8a8071; font-size: 0.82rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Health Atlas — Body Systems (draft, read-only)</h1>
+  <p>
+    An MMSA-internal review screen for the Health Atlas v02.04 source handover: the same
+    three-column layout (drag the strips either side of the wheel to resize it, or focus a strip and
+    use the arrow keys), collapsible system list, interactive systems/organs wheel and body-system
+    diagrams as the source app, over the same preserved dataset, plus a References index (the
+    "References" tab above the layout) naming which organs in this dataset cite each of the 8
+    general references. Standalone in the sense the rest of
+    this app already is — no sign-in, no tenant, no backend, nothing persisted; it only reads the
+    dataset shipped beside it. Like every other page under <code>app/</code>, its ES module imports
+    need it served over http (see <code>serve.js</code>), not opened as a bare <code>file://</code>
+    path. It is not linked from the shared navigation.
+  </p>
+</header>
+<main id="healthAtlasRoot"></main>
+<footer>
+  Health Atlas parity tranche 9 (References index) on tranches 6–8 (Body Systems 3-column layout,
+  wheel, diagrams, column drag-resize) — see app/health/README.md for scope, boundaries and
+  what is deliberately not built yet (system/organ add·edit·delete·reorder, the wheel's third
+  "fields" ring, and header export/import/reset). Source: Health Atlas v02.04 standalone
+  (<code>docs/health-source/health-atlas-v02.04-standalone.html</code> on
+  <code>health/source-v02-04-handover</code>, commit <code>ed4dbb2e</code>).
+  Also draft: <a href="health-atlas-more.html">Foods, Conditions &amp; Age Groups →</a>
+  · <a href="health-atlas-categories.html">Food Master Categories →</a>
+</footer>
+<script type="module">
+  import {
+    HEALTH_ATLAS_SYSTEMS,
+    HEALTH_ATLAS_ORGANS,
+    HEALTH_ATLAS_REFERENCES
+  } from './js/health-atlas-data.js';
+  import { mountHealthAtlas } from './js/health-atlas-view.js';
+
+  mountHealthAtlas(document.getElementById('healthAtlasRoot'), {
+    systems: HEALTH_ATLAS_SYSTEMS,
+    organs: HEALTH_ATLAS_ORGANS,
+    references: HEALTH_ATLAS_REFERENCES
+  });
+</script>
+</body>
+</html>

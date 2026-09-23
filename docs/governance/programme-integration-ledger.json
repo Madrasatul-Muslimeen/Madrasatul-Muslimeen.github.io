@@ -25,13 +25,13 @@
     "stream consumed it."
   ],
   "schemaVersion": 1,
-  "recordedOn": "2026-09-19",
+  "recordedOn": "2026-09-21",
   "status": "ACTIVE",
   "main": {
     "ref": "origin/main",
-    "baselineSha": "a20892f1e4cbf4e86498fe371232466141ca95df",
-    "baselineRecordedOn": "2026-09-19",
-    "version": "08.31",
+    "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
+    "baselineRecordedOn": "2026-09-23",
+    "version": "08.52",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -101,8 +101,8 @@
     {
       "version": "08.31",
       "owner": "quran",
-      "status": "LIVE",
-      "note": "QuranRevival release-gating repair -- the Study-evidence persistence-readiness gate. LIVE: main carries it, and main is what GitHub Pages serves. Integrated 2026-09-19 as a FAST-FORWARD from db6cb24b807d77630914e076d413bec6982cc3d7; the accepted application change is unmodified. It is NOT a deployment claim and it does not make the feature operational -- it makes the app honest about the fact that it is not. E1 stays CLOSED.",
+      "status": "RELEASED",
+      "note": "QuranRevival release-gating repair -- the Study-evidence persistence-readiness gate. RELEASED: main carried it until the v08.32 Word Card release on 2026-09-21. GitHub Pages served that prior main version. Integrated 2026-09-19 as a FAST-FORWARD from db6cb24b807d77630914e076d413bec6982cc3d7; the accepted application change is unmodified. It is NOT a deployment claim and it does not make the feature operational -- it makes the app honest about the fact that it is not. E1 stays CLOSED.",
       "integration": {
         "authorizedOn": "2026-09-19",
         "integratedOn": "2026-09-19",
@@ -113,17 +113,324 @@
         "method": "FAST_FORWARD -- linear descent from db6cb24, no merge commit, no conflict",
         "reference": "docs/reports/2026-09-19-quranrevival-v0831-main-integration.md"
       }
+    },
+    {
+      "version": "08.32",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Basic Arabic Word Card lemma-occurrence navigation; PR #112 merged to main at f5b7c6c on 2026-09-21. RELEASED: main carried it until the v08.33 fix-list release on 2026-09-22. Read-only interaction; no Firestore Rules/index change. Allocated by MMSA Master Architect on Owner request for immediate app feedback.",
+      "integration": {
+        "authorizedOn": "2026-09-21",
+        "integratedOn": "2026-09-21",
+        "acceptedApplicationSha": "c9b57fe0",
+        "integratedMainSha": "f5b7c6c00eb3f24f98bee67f8b86daa57d8a8449",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/112"
+      }
+    },
+    {
+      "version": "08.33",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Three real, measured Study-options-panel truncations fixed at phone width (tenantSelect, unitTypeSelect/surahSelect, and a Bangla-only drillModeSelect), under the Owner's own standing fix-list authorisation. Real layout change, measured before and after in both languages, 48/48 panel.mjs sections clean either side. No Firestore write, Rule or index. Allocated by the MMSA Architect. RELEASED: main carried it until the v08.34 evidence-enablement merge on 2026-09-22.",
+      "integration": {
+        "authorizedOn": "2026-09-22",
+        "integratedOn": "2026-09-22",
+        "acceptedApplicationSha": "ed6b760",
+        "integratedMainSha": "0b082c8c193d3dc9154f5e67657a02f77ec3c6df",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/176"
+      }
+    },
+    {
+      "version": "08.34",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "MAP Phase 4 Activity evidence persistence ENABLED -- the governed decision in app/js/study-evidence-readiness.js, flipping ready:false to ready:true now that the Phase 3-6 Rules are deployed (Owner-confirmed in the Firebase Console) and Phase 3 word-by-word progress was independently verified to save and reload on the Owner's own real phone the same day. Real, user-facing behaviour change: the #readBar ✓, the Listening gate and the WbW gate all start persisting real Activity evidence. Allocated by the MMSA Architect. RELEASED: main carried it until the v08.35/v08.36 word-tap releases on 2026-09-22.",
+      "integration": {
+        "authorizedOn": "2026-09-22",
+        "integratedOn": "2026-09-22",
+        "acceptedApplicationSha": "6ce641aabf14f6d736b020a2e5edb13f9a45dad9",
+        "integratedMainSha": "c635d1f140e551bb23ff190f0283a852b9bb9e1f",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/185"
+      }
+    },
+    {
+      "version": "08.35",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Tap a word on the Mushaf-page Read view to open its Word Card (issue #188). hifz-renderer.js's per-word glyph spans already carried real word identity (w.loc); attached the same data-word-occurrence id the rest of the app's word-tap already uses -- the existing shared click listener opens the card, no new wiring. Word-position parity between the Mushaf layout data and the app's own word-by-word numbering verified across all 6,236 ayahs; 3 real divergences found and corrected (AYAH_WORD_MERGES). Independently re-verified by the Architect before merging (fresh checkout, 8 governance suites + the new mushaf-word-occurrence-parity.mjs re-run clean, full diff read by hand). RELEASED: main carried it until the v08.36 release the same day.",
+      "integration": {
+        "authorizedOn": "2026-09-22",
+        "integratedOn": "2026-09-22",
+        "acceptedApplicationSha": "a8ac0c008ede7eb468de26c4f61efbe4983f3bd9",
+        "integratedMainSha": "31c08084ce9f9aa1ceb9e2bd643f42f50ed60832",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/190"
+      }
+    },
+    {
+      "version": "08.36",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "The same tap-to-open-Word-Card treatment for the normal, everyday Arabic text -- Read view and Note view both (issue #189). Flowing Arabic becomes word-tappable when Tajweed display is off; Tajweed-on stays exactly as it was, measured: tajweed assimilation colours across a word boundary on ~65% of ayahs, so it cannot be safely split per word without data that doesn't exist here. Independently re-verified by the Architect before merging (fresh checkout, 8 governance suites re-run clean, full diff read by hand -- the opt-in-only change surface and the button CSS reset both checked out). Both this and v08.35 hit the identical Playwright-browser-build environment gap the Builder itself flagged; neither this sandbox nor the Architect's own could run the five browser-based layout suites -- recorded as a genuine, twice-confirmed environment limitation, not a code question. Allocated by the MMSA Architect. RELEASED: a prior main milestone, superseded by 08.37.",
+      "integration": {
+        "authorizedOn": "2026-09-22",
+        "integratedOn": "2026-09-22",
+        "acceptedApplicationSha": "6948925b72400d758a86eecc93f60001462da495",
+        "integratedMainSha": "c440484a84d366fcf95af8fe4783454a5546b045",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/191"
+      }
+    },
+    {
+      "version": "08.37",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "MAP Phase 6 (P6-F): Mapping My Journey round 1 -- a real, reachable screen (app/journey-map.html) over the already-accepted Phase 6 data layer, unreached since P6-A/P6-E. All three screen options (Folders, Timeline, Path) built and switchable over one shared data load, per the Owner's own 'don't wait for my design, build all three with a toggle' instruction. No new exported function on journey-map-service.js or note-foundation.js; no Rules, index or schema change. journey-map-boundary.mjs updated in place (reason recorded, never weakened) to reflect the new, narrowly-scoped reachability; a new journey-map-screen.mjs suite (16 checks) covers the screen's own contract. Independently re-verified by the Architect before merging (fresh full-history checkout, all 10 relevant suites re-run clean, no protected path touched, full diff read by hand). Layout not measured in a real browser -- this sandbox had no Playwright package installed at all -- recorded as a genuine environment limitation; a real-phone check is the recommended substitute. RELEASED: a prior main milestone, superseded by 08.38.",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-23",
+        "acceptedApplicationSha": "d730b2e872d530067f684ccb081329ad725c7e98",
+        "integratedMainSha": "3d3a1b84e89cde77b31d3360fe595e9496b5ca54",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/200"
+      }
+    },
+    {
+      "version": "08.38",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Asma ul Husna: Groups/Dual Names generalized into an open, owner-defined set of classifications (issue #202, PR #203). `kind` on a collection is any non-empty string now (was a closed group/dual pair), defaulting to \"group\" so every existing tenant reads unchanged; a new classifications registry, additive on the same asmaCollections/{tenantId} document (no new collection, no new read, no Rules change -- the deployed allow update carries no hasOnly() restriction, confirmed by reading firestore.rules directly), is seeded with exactly \"Group\"/\"Dual Names\". A Name card gains a \"Belongs to\" section and a Names-level row gains an \"also in...\" chip, both from a new pure membershipsOfName() reverse index. Manage mode gains \"+ New classification\". Deliberately not seeded with any real theological content (\"Unique to Allah\"/\"Shared\"/\"By Act\"/\"By Essence\" were the Owner's own worked examples of what a classification is, not a request to apply them) -- verified by reading the full diff, which carries no Name-to-classification assignment beyond the two mechanism entries. The reference-adding mechanism, poster view, Track-my-progress, extra-Name editing, drag-reposition and asma-study.html's own separate panel are all confirmed untouched. New asma-classifications-boundary.mjs suite (26 checks, 2 mutations caught), including a positive control on a freshly-added third classification. The Builder's own PR-opening step did not run; the Architect opened PR #203 from the already-pushed branch, and the unattended Architect workflow merged it once verify reported green, before the session Architect's own independent re-verification finished. That re-verification proceeded anyway and confirms the merge was sound: all 8 governance suites plus this stream's own suite re-run clean on a fresh full-history checkout, no protected path touched, and behaviour.mjs run in full against both this branch and main under an available substitute Chromium build -- 785 pass / 2 fail identically on both sides, both failures and the section-40 Mushaf crash point pre-existing and environmental, none introduced by this round. RELEASED: a prior main milestone, superseded by 08.39.",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-23",
+        "acceptedApplicationSha": "7040d2866af628596db24192fa0977addf2098bb",
+        "integratedMainSha": "4a188dfa69bc072503a2c0c2d7b4620af2ad6cbf",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/203"
+      }
+    },
+    {
+      "version": "08.39",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Asma ul Husna: classification rename/archive wired, and \"file a new Name\" generalized to every classification (issue #205, PR #207) -- the closing half of v08.38's own round (issue #202). (1) Rename/archive for the classification TAB itself (asmaXRenameClassBtn/asmaXArchiveClassBtn), owner/prime only, calling the already-tested renameClassification/setClassificationStatus data-layer functions from #202; archiving is I4 (archive, never delete) -- a classification's own lists and every Name filed in them stay in the data. The existing \"Show archived\" toggle now also reveals an archived classification's own switcher field. (2) The brand-new-Name \"file it under\" row generalized from a hardcoded group/dual pair to a real Classification select built from the live registry, cascading into the file-under list picker -- openAsmaXGroupsPopover() itself was confirmed already generalized by #202 and left untouched. No new Firestore read on any startup path (I9), no firestore.rules/firebase.json/index change -- UI wiring against the already-authorized asmaCollections document. No new theological content. asma-classifications-boundary.mjs extended 26 -> 36 checks, two mutation-tested. The Builder's own PR-opening step failed to run again (the same gap v08.35/v08.36/v08.38 recorded); the Architect opened PR #207 itself from the Builder's already-pushed, already-checked branch. Independently re-verified before merging: fresh checkout, all 8 CI-gated governance suites plus the extended boundary suite re-run clean and matching the Builder's own numbers exactly, full diff read by hand, no protected path touched, clean fast-forward against main. behaviour.mjs could not run in this sandbox (chromium_headless_shell-1243 missing, only -1194 present) -- the identical, now three-times-documented Playwright build-version gap, not a code defect; a real-phone check of the Explore panel's menu, both languages, is the recommended substitute.",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-23",
+        "acceptedApplicationSha": "33931c3ace1bd678f6afd936ac9f043cf44a3299",
+        "integratedMainSha": "33931c3ace1bd678f6afd936ac9f043cf44a3299",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/207"
+      }
+    },
+    {
+      "version": "08.40",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Word Card: the \"Back to Word Card\" round trip actually works (issue #113, PR #135). Every existing Word Card suite stopped at \"the return bar appears\" and never pressed it -- doing that in a real browser found two real, narrowly-scoped defects in the Basic Arabic lemma/root feature's own return mechanism (built v08.20-v08.22): the Basic tab's lemma list did not survive the round trip (fixed with a one-shot restore signal, mirroring the Depth tab's own expandedForm treatment), and the scroll restore could never have worked (window.scrollY is always 0 in this app's shell; readViewScrollContainer() now reads the correct live element for the current rendering mode, with sideways-flow and Note-view-origin cases flagged rather than silently fixed). New quran-word-card-return.mjs suite, 55 checks. No protected path, no new translation string, no Firestore write/Rule/index. Independently re-verified by the Architect before merging: fresh checkout, clean merge with no conflicts, all 8 CI-gated governance suites clean, the focused suite 55/0, behaviour.mjs run against both the merged tree and a clean main baseline under the same substitute Chromium build -- 987/6 vs 984/9, every failure on both sides pre-existing and environmental (27i, 31e, 40g x4 confirmed byte-identical pixel coordinates on both sides, 22g x3 the documented intermittent archive.org class), zero introduced by this round.",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-23",
+        "acceptedApplicationSha": "b7a032da490a44f4446715bef18ba36b29702354",
+        "integratedMainSha": "4c60bdd6a6acbec3bcf970381692f918b2614f54",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/135"
+      }
+    },
+    {
+      "version": "08.41",
+      "owner": "hadith",
+      "status": "RELEASED",
+      "note": "Hadith: the current breadcrumb crumb carries aria-current=\"page\" (issue #114 Gate A/B, PR #149). Neither the current crumb nor its containing <nav> carried any accessible signal for \"this is where you are\" -- fixed in app/js/hadith-browser.js, both call sites (Collections tab, Topic tab). Zero new translatable strings. A real, separate multi-edition breadcrumb-ambiguity finding (two editions of one collection would render byte-identical breadcrumb text) was reproduced but deliberately NOT fixed -- not a live defect against today's one-edition-per-collection corpus, and closing it needs a real product/data decision outside this round's authority. 6 new mutation-proven checks in hadith-source-navigation-browser.mjs (36 -> 42). Independently re-verified by the Architect before merging: fresh checkout, clean merge with no conflicts, all 8 CI-gated governance suites clean, the focused suite 42/42, behaviour.mjs run against both the merged tree and a clean main baseline confirming zero failures introduced by this diff (which touches only app/js/hadith-browser.js). A PRIOR main milestone -- superseded by 08.42.",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-23",
+        "acceptedApplicationSha": "c58d29052535a95d91a3031bd62405457e2a69c7",
+        "integratedMainSha": "06986c72127111a4ba9dbd635df0630f427ca69b",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/149"
+      }
+    },
+    {
+      "version": "08.42",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Word-by-Word whole-Qur'an/Juz percentage running counter -- BUILT AND GATED, not turned on (issue #206, PR #209). A new, additive Firestore collection (quranWordTotals) backs a gold ring around the Explore wheel (whole-Qur'an known/total), an Approach/Word-by-Word wedge-colour toggle at the Juz level, and a gate-free Word Card 'Appears N times -- X% of all words' line. Nothing changes for a real reader yet -- the same shape as v08.30's Activity evidence before v08.34 turned it on. The gate, app/js/study-wbw-total-readiness.js, copies study-evidence-readiness.js's shape exactly: ready:false as a literal, a governed decision required to flip it, and it imports nothing at all (confirmed by reading the file). The write-gate-blocking guarantee was verified directly: applyWordTotalCounterDelta() in quranrevival.html returns before calling the data layer whenever the pre-write countsAsKnown snapshot is null (gate closed), and recordWordTotalDelta()/getWordTotals() in quran-word-total-data.js each independently re-check the same gate at their own top too -- an ordinary WbW tap can never throw over this undeployed collection, the exact defect class v08.31 fixed for Activity evidence was not reintroduced here. The counter only moves on a genuine countsAsKnown transition, proven by a claim->confirm->return->re-claim->confirm sequence reconciled against an independent recount. Per-Juz totals (30 rows summing to the real 77,429) are derived by tools/quran-data-pull/build-juz-word-totals.js from the real packaged corpus, independently re-run by the Architect and reproduces the shipped file byte-for-byte. The Approach wheel's own pooled-status colouring is provably unchanged (fill/ring are strictly opt-in renderScopedWheel() params). New quran-word-total-boundary.mjs, 25 checks. firestore.rules/firebase.json untouched; Rules candidate at docs/governance/2026-09-23-wbw-total-counter-rules-candidate.rules, not deployed. The Builder's own PR-opening step did not run (workflow run 35821824718, conclusion success, no PR); the Architect opened PR #209 itself from the already-pushed branch. Independently re-verified: fresh worktree off origin/main, all 8 CI-gated governance suites plus the new suite re-run clean, no protected path touched, clean merge against main -- mergeability re-checked immediately before each merge attempt, since this version allocation collided TWICE with other concurrently-landing rounds while in flight (08.40 taken by the Word Card fix, 08.41 by the Hadith breadcrumb fix, both mid-review), the real free number re-read off origin/main each time. behaviour.mjs could not run in this sandbox (chromium_headless_shell-1243 missing, only -1194 present, the same documented Playwright build-version gap).",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-23",
+        "acceptedApplicationSha": "bb720bd199c282433a4f7e445d87157b1f9372a5",
+        "integratedMainSha": "a459ea61c34c54e33f5f31a7cef11a882b5ee677",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/209"
+      }
+    },
+    {
+      "version": "08.43",
+      "owner": "health",
+      "status": "RELEASED",
+      "note": "Health Atlas: a References index, one new top-level view mode alongside Body Systems (issue #115 Gate A/B, PR #146, tranche 9). Each of the 8 HEALTH_ATLAS_REFERENCES rows lists which organs cite it (organsForReference(), reads only the existing organ.refs[] field). An organ pill is a real link into the existing organ detail column, reusing the existing onSelectOrgan() path -- this app has no URL-addressable per-organ route to link to instead. The source app's own References tab has no organ links at all, so this deliberately goes beyond source parity (Gate A finding). The index disclaims per-statement verification in its own visible text and never itself decides a statement is cited-evidence -- asserted by a new static positive control. Still 100% read-only, same DRAFT/internal-review status as every other Health Atlas screen. This is the FIRST global version number ever allocated to the Health stream -- the 'health' stream record itself was found stale at this allocation (previously recorded EXTERNAL_PENDING_ACQUISITION / repository UNKNOWN, though real Health Atlas code has existed in this repository under app/health/ since 17 Sep 2026 across many tranches) and corrected in the same round; see that stream's own integrationStateCorrectionNote. This allocation was first drafted as v08.42, reading main's tip at the start of review -- the concurrently-running issue #206 round (see the entry directly above) reached main first and took v08.42 for itself; caught by guard A the moment this round tried to allocate, and re-derived cleanly as v08.43 by re-reading main rather than trusting the earlier read. New references-index-browser.mjs suite (12 checks). Independently re-verified by the Architect before merging: fresh checkout, clean merge with no conflicts, all 8 CI-gated governance suites clean, all 17 Health-owned suites clean (250 non-browser checks plus both committed browser suites, 12+16), behaviour.mjs run against main (already carrying this round) -- 986 pass/7 fail, every failure pre-existing/environmental and none in Health-owned code.",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-23",
+        "acceptedApplicationSha": "4c60bdd6a6acbec3bcf970381692f918b2614f54",
+        "integratedMainSha": "395249dc7a2e23aa54985dc1536f26c205c53897",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/146"
+      }
+    },
+    {
+      "version": "08.44",
+      "owner": "hadith",
+      "status": "RELEASED",
+      "note": "Hadith: keyboard focus is restored to the newly-active tab button on every Collections/Topics/Search/Explore/Commentary tab switch (issue #114 Gate A/B, PR #150). render() tears down and rebuilds the whole subtree on every tab click; unlike an in-tab Collections step (focusCollectionsLanding()) or the one-shot 'View in source' jump (focusPendingOccurrence()), nothing restored focus on a plain tab switch -- so a keyboard user lost their place to <body> on every single tab click, including returning to Search after visiting a narration's source (the query/results persisted; focus did not). Fixed with one new focusActiveTab() helper in app/js/hadith-browser.js, called from the tab button's own click handler -- the standard ARIA-tabs pattern of leaving focus on the tab list. Zero new translatable strings. 4 new checks in hadith-source-navigation-browser.mjs (43 -> 47), mutation-proven by the Architect (reverting the fix to origin/main's copy fails exactly the 4 new checks, 43/47; restored and re-confirmed clean). The multi-edition breadcrumb ambiguity PR #149 found stays exactly as recorded -- the committed corpus still carries one edition per collection, not a live defect. Independently re-verified by the Architect before merging: fresh full-history checkout, merged current main in (clean, no conflicts), all 11 governance suites clean, all 5 Hadith-owned data suites clean, hadith-source-navigation-browser.mjs 47/47 in both languages. No protected path touched, no Firestore write/Rule/index.",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-23",
+        "acceptedApplicationSha": "00713f18d81035016b9bb1e897f90bd55f6204c7",
+        "integratedMainSha": "8621f2f11222a38c0867eb80fe7b44e9ee464d23",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/150"
+      }
+    },
+    {
+      "version": "08.45",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Word Card: desktop drag/resize verified, one z-index defect fixed (issue #113, PR #137). The movable/resizable Word Card window has existed since v08.20, via the shared initPopupWindow() (app/js/note-popup.js) the Note/Wheel/Explore popups also use. A real drag-then-resize round trip (never driven by any suite before this one) found the Word Card mounts' z-index was 60, an accidental TIE with #dock's own z-index:60, where #noteView/#wheelPopupView/#exploreView all deliberately use 55, one step below #dock, with their own comment stating the policy outright. Fixed to 55 -- nothing changes on screen since DOM order already tie-broke the same way, but the card now states the same dock-wins policy explicitly. New quran-word-card-popup.mjs suite, 22 checks. Two things recorded, not built: zero keyboard support anywhere in the four-popup mechanism, and #dock deliberately winning its overlap with a popup's own south-edge resize handles once dragged low enough (a real product trade-off, not a one-line fix). Pre-existing suites re-run unmodified and unaffected: quran-word-card.mjs 36/0, quran-word-card-integration.mjs 10/0, quran-word-card-lemma-occurrences.mjs 50/0, quran-word-card-return.mjs (v08.40's own suite) 55/0. No new translation string, no Firestore write/Rule/index. Independently re-verified by the Architect before merging: fresh full-history checkout, merged current main in (clean, no conflicts), all 11 governance suites clean, all five Word Card suites re-run matching the round's own claims exactly.",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-23",
+        "acceptedApplicationSha": "ffeccd5a779a6c923d69e195487a313907c86a9a",
+        "integratedMainSha": "522d042311b465b77d8021c5c1128794de15760f",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/137"
+      }
+    },
+    {
+      "version": "08.46",
+      "owner": "health",
+      "status": "RELEASED",
+      "note": "Health Atlas: the References view switcher gets a real keyboard/screen-reader fix (issue #115 Gate A/B, PR #148). Gate A (reproduced first): tranche 9's buildViewTabs() declared role=tab/tablist + aria-selected but built none of the rest the WAI-ARIA Tabs pattern requires -- no aria-controls, no role=tabpanel, no arrow-key handling; a new browser suite run against the unmodified tranche 9 commit failed 5/10, reproducing exactly that. Gate B: these two buttons replace the whole screen (Body Systems vs References), not panels of one shared view, so per issue #115's own instruction this uses ordinary buttons (aria-pressed, role=group) rather than full tab-panel semantics for a control that isn't one. references-tabs-accessibility-browser.mjs 5/10 -> 10/10; references-index-browser.mjs's own aria-selected assertions updated in place to aria-pressed, still 12/12. Independently re-verified by the Architect before merging: fresh full-history checkout, merged current main in (clean, no conflicts), all 11 governance suites clean, all 18 Health-owned suites clean (297 checks), mutation-proven by reverting the fix to origin/main's copy of health-atlas-view.js (exactly 5/10 fail, matching Gate A's own reproduction). No protected path touched, no Firestore write/Rule/index.",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-23",
+        "acceptedApplicationSha": "c9bc93fe83faeb0c9392269c245f33c1a3cc62b2",
+        "integratedMainSha": "b45a1f9a4e1c7d1e1bdb122d4677dc69331b686f",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/148"
+      }
+    },
+    {
+      "version": "08.47",
+      "owner": "quran",
+      "status": "RELEASED",
+      "retroactive": true,
+      "note": "RETROACTIVE ALLOCATION (23 Sep 2026): MAP Phase 5 P5-D, the Notes screen, round 1 (issue #195, PR #198), which merged to main on 22 Sep 2026 as commit 530af1f and was never given a version number until now -- found and closed during this session's routine sweep, the same sweep that investigated whether D3 Journaling had become reachable. A new real page, app/notes.html (+ app/js/note-sanitize.js), wired to the existing, previously-uninvoked data layer (study-note-service.js: createStudyNote/reviseStudyNote/retireStudyNote/notesForStudyUnit/recordJournalEvidence; note-foundation.js: listNoteRevisions). No new exported function added to either. Entry point: Read screen's existing more menu, 'My Notes for this unit'. Only a Note's own author may create/revise/retire it (isNoteOwner(), distinct from canRecordFor()). DOMPurify-based sanitization, fails closed if absent; note-sanitize-boundary.mjs 7/7, mutation-proven. study-note-boundary.mjs UPDATED IN PLACE in the SAME round that built this screen, reason recorded: exactly app/notes.html reaches study-note-service.js, 18/18. D3 JOURNALING IS NOW LIVE, NOT MERELY REACHABLE: study-evidence-readiness.js's gate has read ready:true since v08.34, so saving a Note against an ayah/range/surah Study Unit records real Journaling Activity evidence right now. Verified directly: notes.html's afterCreateOrRevise() calls recordJournalEvidence() only after a real create/revise succeeds, which calls recordStudyEvidence() -- the ONE chokepoint in study-event-wiring.js, exactly the shape the 19 Sep 2026 D3-chokepoint round enforced. study-activity-evidence-boundary.mjs was already updated for this transition IN THE SAME ROUND, correctly, with the reason recorded -- re-confirmed 27/27 at this allocation. A Note filed against a unit type ADR-008 does not cover (juz/topic/etc.) records no Journaling evidence and says nothing -- silence, not a false claim. Not built this round: folders/Mapping My Journey filing (Phase 6, built later as v08.37), choosing a translator. Layout not measured in a real browser (documented Playwright environment gap). Independently re-verified by the Architect at this retroactive allocation: fresh full-history checkout of current main, all 11 governance suites clean, note-sanitize-boundary.mjs 7/0, study-note-boundary.mjs 18/0, study-activity-evidence-boundary.mjs 27/0, PR #198's diff read by hand.",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-22",
+        "acceptedApplicationSha": "2f8f7a8a275ee69e6dd05545c7c69cc0c523b892",
+        "integratedMainSha": "530af1fdef896b10b1e81ada6045cc35c2150853",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/198",
+        "note": "RETROACTIVE: the feature merged (integratedOn) a day before the version was allocated (authorizedOn). See the 'retroactive' flag and the entry's own note for why."
+      }
+    },
+    {
+      "version": "08.48",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Word Card: the flow-mode cross-surah navigation gap PR #135 flagged is fixed (issue #113, PR #138). Following a lemma occurrence into a different surah in Whole Surah flow mode left the reader on the arrival surah's own page at the SAME scroll offset as the origin ayah -- not the tapped word, measurably off-screen -- because raw scrollLeft is a container property that a browser does not reset when renderFlowView() rebuilds the innerHTML for a different surah. Fixed with one new identity-based function, scrollFlowToCurrentAyah(), called from navigateToAyah() -- the word-card mechanism's only navigation function. New quran-word-card-flow-nav.mjs suite, 19 checks. A second, pre-existing, UNRELATED defect (Range unit type has no surah of its own, so crossing surahs while Range is selected shows an arbitrary slice of the wrong surah) was found and NOT fixed -- recorded as a product-decision packet, four costed options, none chosen. No new translation string, no Firestore write/Rule/index. Independently re-verified by the Architect before merging: fresh full-history checkout, retargeted from its stale stacked base onto main and merged current main in (clean), all 11 governance suites clean, the new suite 19/19, the unmodified quran-word-card-return.mjs regression suite 55/55.",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-23",
+        "acceptedApplicationSha": "a2585a0d21192954ccde5b8efb5ebaf5b867657a",
+        "integratedMainSha": "5cfb1a65809dab3e050181387bc4ba261f4e62f1",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/138"
+      }
+    },
+    {
+      "version": "08.49",
+      "owner": "hadith",
+      "status": "RELEASED",
+      "note": "Hadith: book/chapter row headings get a real lang/dir attribute (issue #114, PR #153). Every book/chapter row's own native-script heading (.hadith-row-heading) rendered with no lang/dir attribute -- getComputedStyle().direction still read rtl (Unicode Bidi auto-detects Arabic), which is why no sighted check ever caught it, but lang has no such fallback: a screen reader read every heading in the UI-language voice instead of Arabic. Fixed with one rawHeadingSpan() helper stamping lang=SOURCE_LANGUAGE, dir=rtl, covering both edition shapes through one function. Zero new translatable strings. 3 new checks in hadith-source-navigation-browser.mjs (47 -> 50), mutation-proven (reverting the fix fails exactly the 3 new checks, 47/50). Independently re-verified by the Architect before merging: fresh full-history checkout, retargeted from its stale stacked base onto main and merged current main in (clean), all 11 governance suites clean, all 5 Hadith-owned data suites clean, hadith-source-navigation-browser.mjs 50/50 in both languages.",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-23",
+        "acceptedApplicationSha": "18ecef56c4c8cfbcb166d8294d731d7b09b394a6",
+        "integratedMainSha": "ff678dae84ebbc5559d70666a36baaa4ba0cd894",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/153"
+      }
+    },
+    {
+      "version": "08.50",
+      "owner": "health",
+      "status": "RELEASED",
+      "note": "Health Atlas: Foods and Conditions each gain a text search box (issue #115, PR #151), matching the source app's own per-tab filter. Deliberately narrower than the source's own matches() (whole serialized item, excluded fields included) -- matchesFoodSearch/matchesDiseaseSearch are scoped to exactly the fields this view already renders, so a search term present only in an excluded field cannot surface a false hit, proven by two checks against the real rendered page. Age Groups gets no search box, matching the source. The still-missing Lifestyle tab was re-investigated under Gate A/B and the existing deferral reasoning re-confirmed, not overridden. New more-search-browser.mjs suite, 12 checks. A repository-wide report-generator defect (tools/md2report.py flattens fenced code blocks/links, affecting all 82 report .md/.html pairs) was found and flagged for Master Architect authorisation, not fixed here. No protected path touched, no Firestore write/Rule/index. Independently re-verified by the Architect before merging: fresh full-history checkout, retargeted from its stale stacked base onto main and merged current main in (clean), all 11 governance suites clean, all 19 runnable Health-owned suites clean including the new suite 12/12.",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-23",
+        "acceptedApplicationSha": "eabe42da2a3b1d4f1302ca93386d1ccb39a59cf7",
+        "integratedMainSha": "bbf653a2a180e0f33f34815d3372550e4db3413f",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/151"
+      }
+    },
+    {
+      "version": "08.51",
+      "owner": "health",
+      "status": "RELEASED",
+      "note": "Health Atlas: organ Type pill parity (issue #115, PR #152). organ.partType (Organ/Vein/Artery/Nerve/Tissue/Gland/Duct) was in the preserved dataset since foundation tranche 1 and read by nothing -- a closed-set anatomical classification, the same class of field as the already-ported role/system, never a dose/nutrient/activity/remedy field. Ported as a small pill next to each organ's name. Measured with the real longest name in the dataset (\"Vena Cava (Superior & Inferior)\", a Vein) at desktop/tablet/phone -- the name+pill share one flex-wrap group rather than a nowrap line, so the worst case wraps the pill onto its own line instead of truncating or overflowing. Zero horizontal page overflow at any width. 4 new body-systems-parity-browser.mjs checks (16 -> 20), a new closed-set data-integrity assertion (21 -> 22), a new view-boundary positive control (14 -> 15). A repository-wide tools/md2report.py fenced-code/link-flattening defect (82 report pairs) independently confirmed cross-module, read-only, not fixed -- needs Master Architect authorisation. No protected path touched, no Firestore write/Rule/index. Independently re-verified by the Architect before merging: fresh full-history checkout, retargeted from its stale stacked base onto main and merged current main in (clean), all 11 governance suites clean, all 19 runnable Health-owned suites clean matching the PR's own claimed numbers exactly.",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-23",
+        "acceptedApplicationSha": "d13d1742744e60cf83111a3d406a969ffd254283",
+        "integratedMainSha": "6dcd00a91de065f4084407d334c6903a8f2baa26",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/152"
+      }
+    },
+    {
+      "version": "08.52",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Word Card: Mushaf audio-follow/word-card scroll fixes, a real race-condition fix, three further cross-surah scroll-retarget sites, Note-view-origin investigated with no defect found (issue #113, PR #139, four consolidated task-bridge rounds). A genuine pre-existing race: renderMushafPages() was re-entrant-unsafe, fixed with a monotonic generation token (renderGeneration) checked after every await inside renderPage(). setActiveAyah() used inline:nearest, measured as never actually scrolling #pageViewContainer at all (same scroll-snap-type:x + direction:rtl interaction PR #138 fixed) -- changed to inline:start. Mushaf mode now covered by scrollFlowToCurrentAyah() via a new scrollToAyahIfRendered() primitive and a stashed flowRenderPromise. Three further cross-surah trigger points (stepUnit, goToUnitNumber, surahSelect) now call scrollFlowToCurrentAyah() at their own tail. Note-view-origin return path re-investigated, no defect found (structurally different from the flow-mode case). Five new suites, 205 checks: quran-flow-step-nav.mjs (32), quran-mushaf-audio-follow-scroll.mjs (25), quran-word-card-mushaf-scroll.mjs (59), quran-word-card-note-origin-return.mjs (51), quran-surah-select-scroll-retarget.mjs (38). Three pre-existing regression suites re-run clean: quran-word-card-return.mjs (55), quran-word-card-flow-nav.mjs (19), quran-word-card-popup.mjs (22). The Range/surah-crossing content-correctness gap remains flagged, not fixed. No new translation string, no Firestore write/Rule/index. Independently re-verified by the Architect before merging: fresh full-history checkout, retargeted from its stale stacked base onto main and merged current main in (one real import-list conflict, resolved by combining both additive import sets), all 11 governance suites clean, all five new suites plus all three regression suites re-run matching claimed counts exactly (301 checks total).",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-23",
+        "acceptedApplicationSha": "2a373e39e0fb3fb53c1e749c66b581fdbfdc2a43",
+        "integratedMainSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/139"
+      }
     }
   ],
-  "nextUnallocated": "08.32",
+  "nextUnallocated": "08.53",
   "nextUnallocatedNote": [
-    "08.32 and every number above it are NOT ALLOCATED. Allocation is the Master Architect's;",
-    "no stream may stamp at or beyond this number without one.",
-    "READ THIS FIELD CORRECTLY: it is the UNALLOCATED BOUNDARY, not an allocation.",
-    "Naming 08.32 here is what lets guard B REFUSE anyone who stamps it. The v08.31",
-    "authorisation says 'do not allocate v08.32', and this records exactly that: 08.32",
-    "belongs to nobody. It is not a prediction of the next merge number either -- see",
-    "the four durable rules in CLAUDE.md's VERSION NUMBERING NOTE."
+    "v08.52 was allocated to the Word Card Mushaf/race-condition/scroll-retarget round (issue #113, PR #139), confirmed merged on 2026-09-23.",
+    "v08.51 was allocated to the Health Atlas organ Type pill parity round (issue #115, PR #152), confirmed merged on 2026-09-23.",
+    "v08.50 was allocated to the Health Atlas Foods/Conditions search round (issue #115, PR #151), confirmed merged on 2026-09-23.",
+    "v08.49 was allocated to the Hadith book/chapter row-heading lang/dir fix (issue #114, PR #153), confirmed merged on 2026-09-23.",
+    "v08.48 was allocated to the Word Card flow-mode cross-surah navigation fix (issue #113, PR #138), confirmed merged on 2026-09-23.",
+    "v08.47 was allocated RETROACTIVELY to the Notes screen round 1 (MAP Phase 5 P5-D, issue #195, PR #198), which had merged to main on 2026-09-22 with no version bump and was found unallocated during this session's routine sweep on 2026-09-23; D3 Journaling evidence recording is live as of this same round (the readiness gate has read ready:true since v08.34).",
+    "v08.46 was allocated to the Health Atlas References view switcher keyboard/screen-reader fix (issue #115 Gate A/B, PR #148), confirmed merged on 2026-09-23.",
+    "v08.45 was allocated to the Word Card desktop drag/resize z-index fix (issue #113, PR #137), confirmed merged on 2026-09-23.",
+    "v08.44 was allocated to the Hadith tab-switch keyboard-focus fix (issue #114 Gate A/B, PR #150), confirmed merged on 2026-09-23.",
+    "v08.43 was allocated to the Health Atlas References index tranche 9 (issue #115 Gate A/B, PR #146), confirmed merged on 2026-09-23 -- the first global version number ever allocated to the Health stream, and the second version this session drafted-then-corrected after a concurrent-round collision (first drafted as v08.42, re-derived as v08.43 once issue #206's round took 08.42 first).",
+    "08.45 and later numbers remain unallocated; allocation requires MMSA Master Architect direction.",
+    "v08.42 was allocated to the Word-by-Word whole-Qur'an/Juz percentage running counter round (issue #206, PR #209), BUILT AND GATED, confirmed merged on 2026-09-23.",
+    "v08.41 was allocated to the Hadith breadcrumb aria-current fix (issue #114 Gate A/B, PR #149), confirmed merged on 2026-09-23.",
+    "08.43 and later numbers remain unallocated; allocation requires MMSA Master Architect direction.",
+    "v08.40 was allocated to the Word Card back-to-Word-Card round trip fix (issue #113, PR #135), confirmed merged on 2026-09-23.",
+    "v08.39 was allocated to the Asma ul Husna classification rename/archive + file-a-Name generalization round (issue #205, PR #207), confirmed merged on 2026-09-23.",
+    "v08.38 was allocated to the Asma ul Husna open-classifications round, confirmed merged on 2026-09-23.",
+    "v08.37 was allocated to the Mapping My Journey screen round (issue #199, PR #200), merged 2026-09-23."
   ],
   "streams": [
     {
@@ -132,7 +439,7 @@
       "role": "The umbrella: shared runtime, shared verification, governance, version allocation and module integration. It owns the platform/shared paths below; it is not a subject module.",
       "activeBranch": null,
       "integrationState": "ON_MAIN",
-      "declaredVersion": "08.31",
+      "declaredVersion": "08.37",
       "baselineSha": null,
       "baselineStatus": "NOT_APPLICABLE_IS_MAIN",
       "ownedPaths": [
@@ -156,8 +463,9 @@
       "name": "QuranRevival -- Quran Study module",
       "activeBranch": null,
       "integrationState": "MERGED_TO_MAIN",
-      "declaredVersion": "08.31",
-      "baselineSha": "cfee898be15abff09882996cf22410e499130acb",
+      "declaredVersion": "08.52",
+      "declaredVersionNote": "08.52 (23 Sep 2026): Word Card Mushaf/race-condition/scroll-retarget round (issue #113, PR #139) -- see versionAllocations. 08.48 (RELEASED, PR #138, flow-mode cross-surah navigation fix) is the prior one; 08.47 (RELEASED, PR #198, the Notes screen, RETROACTIVE) before that.",
+      "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
       "ownedPaths": [
         "app/quranrevival.html",
@@ -177,9 +485,10 @@
         "tools/i18n-verify/journey-map-*.mjs",
         "tools/i18n-verify/d14-*.mjs",
         "app/js/study-event-wiring.js",
-        "app/js/study-evidence-readiness.js"
+        "app/js/study-evidence-readiness.js",
+        "app/js/study-wbw-total-readiness.js"
       ],
-      "baselineNote": "Its recorded baseline went stale when the ledger's own commits moved main past 5ea0d92; re-pointed at cfee898, which is main. Forward movement, not drift.",
+      "baselineNote": "v08.42 Word-by-Word whole-Qur'an/Juz percentage running counter (BUILT AND GATED) PR #209 merged to main on 2026-09-23.",
       "baselineAcknowledgement": "docs/reports/2026-09-18-hadith-v0829-main-integration.md",
       "role": "Subject module (Quran). NOT the umbrella; the umbrella is MMSA.",
       "declaredSharedTouches": [
@@ -336,9 +645,9 @@
       "branchTip": "43dd96f58eeee5ad33dc82bb4e260660e3c290c9",
       "branchTipNote": "The commit at which this stream's work reached `main` -- not a moving branch tip. branchTip is read by guard C only for an integrationState of HELD, so for a merged stream it is descriptive. Re-stamping it with the branch's own newest commit would name the very commit that wrote the stamp, and would move again every time the branch merged main: an endless self-reference. This commit never moves. The branch's pre-repair tip was c1a4f19a70ec824372fa1fda49e4e7dbc38bc40c.",
       "integrationState": "MERGED_TO_MAIN",
-      "declaredVersion": null,
-      "declaredVersionNote": "NULL: this stream carries NO independently allocated application version. 08.28 (HISTORICAL, stamped at 7f61328) and 08.29 (RELEASED, stamped at 22526b2) stay in versionAllocations as facts about what it shipped -- nothing was withdrawn and nothing was re-allocated. The version the branch's version.js now reads is main's own, and belongs to whichever stream the ledger says owns it. 08.32 is NOT allocated, to this stream or to any other.",
-      "baselineSha": "cfee898be15abff09882996cf22410e499130acb",
+      "declaredVersion": "08.49",
+      "declaredVersionNote": "08.49 (23 Sep 2026): the Hadith book/chapter row-heading lang/dir fix (issue #114, PR #153) -- see versionAllocations. 08.44 (RELEASED, PR #150, the tab-switch keyboard-focus fix) is the prior one; 08.41 (RELEASED, PR #149, the breadcrumb aria-current fix) before that. 08.28 (HISTORICAL, stamped at 7f61328) and 08.29 (RELEASED, stamped at 22526b2) stay in versionAllocations as facts about what it shipped before then -- nothing was withdrawn and nothing was re-allocated. Every span between these not named belonged to other streams.",
+      "baselineSha": "ff678dae84ebbc5559d70666a36baaa4ba0cd894",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
       "ownedPaths": [
         "app/hadith-*.html",
@@ -430,17 +739,25 @@
     },
     {
       "id": "health",
-      "name": "Health Study module",
-      "role": "Subject module. Exists in a SEPARATE development account/repository context and is NOT integrated into MMSA.",
-      "integrationState": "EXTERNAL_PENDING_ACQUISITION",
-      "repository": "UNKNOWN",
+      "name": "Health Atlas -- Health Study module",
+      "role": "Subject module. Built IN THIS REPOSITORY, under app/health/, across many tranches since 2026-09-17 -- a real reader-facing (though still DRAFT/internal-review-only) screen, not an external dependency.",
+      "integrationState": "MERGED_TO_MAIN",
+      "integrationStateCorrectionNote": "CORRECTED 2026-09-23, at v08.43's own allocation. This entry previously read EXTERNAL_PENDING_ACQUISITION / repository UNKNOWN / 'No Health implementation exists in this repository' -- true on 18 Sep 2026 when this record was first written, false by the time it was next read: app/health/health-atlas.html and its supporting js/ modules have existed in this repository since the health-atlas-foundation-tranche1 branch, well over a dozen tranches have merged directly to main (Body Systems 3-column layout, wheel, diagrams, search, evidence-provenance boundary guards, a claims registry, and now this References index), and v08.43 is this stream's first entry in versionAllocations. The stale record was not caught earlier because no Health round had needed a global version number until this one. Corrected by reading the real repository state rather than trusting the prior record.",
       "activeBranch": null,
-      "branchTip": "UNKNOWN",
-      "declaredVersion": null,
-      "baselineSha": null,
-      "baselineStatus": "NOT_APPLICABLE_EXTERNAL",
-      "ownedPaths": [],
-      "note": "Registered so the programme can REPRESENT it, not because anything is known about it. Repository, commit, version and technical details are UNKNOWN and were not invented. No Health implementation exists in this repository and none was created. Acquiring it is a Master Architect action: until then it holds no version allocation and the guards have nothing to check it against."
+      "activeBranchNote": "NULL: Health rounds are built on short-lived per-tranche branches off main and merged directly, the same shape every other module stream now uses post-integration -- no branch of its own carries an ongoing stamp.",
+      "branchTip": "6dcd00a91de065f4084407d334c6903a8f2baa26",
+      "branchTipNote": "The commit at which the organ Type pill parity round (PR #152) reached main. Descriptive, not a moving pointer -- see the equivalent hadith/quran-phase4-wiring notes for why.",
+      "declaredVersion": "08.51",
+      "declaredVersionNote": "08.51 (23 Sep 2026): the organ Type pill parity round (issue #115, PR #152) is this stream's fourth independently allocated global application version. 08.50 (RELEASED, PR #151, Foods/Conditions search) is the prior one; 08.46 (RELEASED, PR #148, the References view switcher a11y fix) before that. Every earlier Health Atlas tranche merged to main with NO version bump -- each PR's own body says so explicitly.",
+      "baselineSha": "6dcd00a91de065f4084407d334c6903a8f2baa26",
+      "baselineStatus": "MOVED_ACKNOWLEDGED",
+      "ownedPaths": [
+        "app/health/*.html",
+        "app/health/js/*.js",
+        "app/health/README.md",
+        "tools/health-atlas-verify/*"
+      ],
+      "note": "Read-only, DRAFT/internal-review-only status carried since foundation tranche 1: no add/edit/delete/reorder, no export/import/reset, nothing linked from shared nav, nothing deployed to a real reader. All 82 function statements are general-reference-only -- zero are marked cited-evidence -- enforced by claims-integrity.mjs/claims-mutations.mjs and the view-provenance-boundary guards. See app/health/README.md for the tranche-by-tranche scope and what remains deliberately unbuilt."
     }
   ],
   "platformSharedPaths": [
@@ -644,12 +961,12 @@
     {
       "id": "E1",
       "subject": "Firestore Rules and index deployment (Phases 4-6, D14)",
-      "state": "OPEN -- external Firebase Console access. Seven ledger items depend on it."
+      "state": "RESOLVED 2026-09-22 -- the Owner published the Phase 3-6 candidate and its four indexes directly in the Firebase Console. The ACCESS blocker is gone; deployment.firebaseRulesDeployed.state is YES. D14's own separate candidate (never part of Phases 3-6) is not deployed -- see D14-WIRING, no longer blocked on access, blocked on that candidate simply not having been chosen for publishing yet."
     },
     {
       "id": "D14-WIRING",
       "subject": "D14 timezone activation",
-      "state": "OPEN -- the modules are on main and unreachable by construction. Activation needs a Rules change and rides E1."
+      "state": "OPEN -- the modules are on main and unreachable by construction. Activation needs its OWN Rules change (d14-timezone-tenantpeople-rules-candidate-2026-09-18.rules), which was not part of the 2026-09-22 Phase 3-6 publish and remains undeployed. No longer blocked on E1's access question -- that is proven resolved -- only on this specific candidate being chosen and published."
     },
     {
       "id": "O3c",
@@ -684,7 +1001,15 @@
       "served from the live URL even while the feature cannot function. One",
       "boolean cannot carry both facts, and collapsing them is how a control the",
       "Owner can actually see gets recorded as 'not deployed'. Master Architect",
-      "correction, 2026-09-19."
+      "correction, 2026-09-19.",
+      "",
+      "2026-09-22: firebaseRulesDeployed flipped NO -> YES, the first of these",
+      "four states ever to become true. The separation the correction above",
+      "made is exactly why this could be recorded precisely: Rules ARE",
+      "deployed now, but evidenceRecordingOperational stays NO on purpose --",
+      "a second, GOVERNED decision (Phase 4 activation), deliberately not made",
+      "in the same step as the Rules publish. Conflating the two would have",
+      "been the same class of error this file was created to stop."
     ],
     "applicationCodeIntegrated": {
       "state": "YES",
@@ -698,23 +1023,44 @@
       "whyNotVerified": "PRESUMED, not measured. This sandbox's proxy refuses CONNECT to github.io, so serving cannot be observed from here. The presumption rests on this repository's own standing brief, not on a measurement."
     },
     "firebaseRulesDeployed": {
-      "state": "NO",
-      "means": "The ADR-008 Activity-evidence Rules (and the Phase 4-6 indexes) have not been deployed to the study-monitoring Firebase project.",
-      "blockedOn": "E1 -- authenticated Firebase Console access to study-monitoring. A sandbox has no credentials.",
-      "firestoreRules": "NOT_DONE",
-      "firestoreIndexes": "NOT_DONE"
+      "state": "YES",
+      "means": "The Phase 3-6 DEPLOYMENT candidate (docs/governance/phase3-6-DEPLOYMENT-candidate-2026-09-22.rules) -- MAP Phase 3 word progress, Phase 4 Activity evidence, Phase 5 Note Foundation, Phase 6 Mapping My Journey -- and its four composite indexes were published to the study-monitoring Firebase project by the Owner directly in the Console, confirmed 2026-09-22 (fresh publish timestamp; a real note round-tripped a reload). firestore.rules and firestore.indexes.json in this repository were synced to match immediately after, byte-identical.",
+      "firestoreRules": "DONE",
+      "firestoreIndexes": "DONE",
+      "evidence": "firestore.rules == docs/governance/phase3-6-DEPLOYMENT-candidate-2026-09-22.rules (rules-deployment-candidate-phase3-6.mjs's own check). firestore.indexes.json declares exactly the four audited indexes (firestore-index-requirements.mjs)."
     },
     "evidenceRecordingOperational": {
-      "state": "NO",
-      "means": "The Phase 4 feature cannot record anything for anyone. The evidence subcollection has no rule, so every write would be denied.",
-      "dependsOn": "firebaseRulesDeployed",
-      "surfacedBy": "v08.31 -- the persistence-readiness gate. While this is NO the completion control is not actionable and no write is attempted; app/js/study-evidence-readiness.js declares ready:false."
+      "state": "YES",
+      "means": "The governed enablement decision was made 2026-09-22: Rules deployed AND Phase 3 word-by-word progress independently verified to save and reload on the Owner's own real phone the same day (\"It worked, switch on Phase 4.\"). app/js/study-evidence-readiness.js now declares ready:true with a valid decision; guard G confirms code and ledger agree.",
+      "dependsOn": "firebaseRulesDeployed (satisfied) AND the governed enablement decision (made 2026-09-22)",
+      "surfacedBy": "v08.34 -- see docs/reports/2026-09-22-map-phase4-evidence-persistence-enabled.md for the full decision record."
     },
-    "e1": "CLOSED",
-    "firestoreRules": "NOT_DONE",
-    "firestoreIndexes": "NOT_DONE",
-    "blockedOn": "E1 -- authenticated Firebase Console access to study-monitoring. A sandbox has no credentials.",
-    "note": "Recorded as NOT DONE because it has not been proven done. The two flat keys above are retained for readers of the pre-v08.31 shape; the four states above them are authoritative."
+    "e1": "OPEN",
+    "firestoreRules": "DONE",
+    "firestoreIndexes": "DONE",
+    "note": "E1 (the access blocker) is resolved: the Owner published directly in the Console, proving the access path works. The two flat keys above are retained for readers of the pre-v08.31 shape; the four states above them are authoritative. D14's OWN separate Rules candidate (d14-timezone-tenantpeople-rules-candidate-2026-09-18.rules) was not part of what was published and remains undeployed -- see the D14-WIRING pending item.",
+    "wbwTotalRulesDeployed": {
+      "$comment": [
+        "A SEPARATE, NEWER deployment tracking entry -- issue #206 (v08.42, PR",
+        "#209) added a SECOND, INDEPENDENT Firestore collection (quranWordTotals),",
+        "with its own Rules candidate, its own readiness gate module and its own",
+        "governed-enablement record below. It is tracked in its own key rather",
+        "than folded into firebaseRulesDeployed above, because that key already",
+        "means one specific, already-published deployment event (the Phase 3-6",
+        "candidate published 2026-09-22) -- conflating a second, still-undeployed",
+        "candidate into the same key would make a true 'Rules deployed' claim",
+        "cover a Rules candidate that is not deployed. No guard cross-checks this",
+        "key yet (programme-ledger.mjs's guard G reads a fixed four-key set); it",
+        "exists so the fact is recorded the same shape as every other deployment",
+        "state in this file, ready for a guard extension if this collection's",
+        "own readiness is ever governed-enabled."
+      ],
+      "state": "NOT_DONE",
+      "means": "quranWordTotals (issue #206, PR #209, v08.42) has no deployed Firestore Rules. The candidate is docs/governance/2026-09-23-wbw-total-counter-rules-candidate.rules, not deployed. app/js/study-wbw-total-readiness.js gates the app so nothing here is attempted against production until this flips to DONE and a governed enablement decision is recorded in wbwTotalPersistenceReadiness below.",
+      "firestoreRules": "NOT_DONE",
+      "firestoreIndexes": "NOT_APPLICABLE",
+      "evidence": "firestore.rules carries no mention of quranWordTotals (grepped, zero occurrences). The candidate's own comment states it is a self-contained extract, never merged into the live ruleset, and that the collection needs no composite index (queried only by its own document id)."
+    }
   },
   "programme": {
     "name": "MMSA -- Madrasatul Muslimeen's Study App",
@@ -786,13 +1132,45 @@
       "one-word source edit."
     ],
     "declarationPath": "app/js/study-evidence-readiness.js",
-    "ready": false,
-    "decision": null,
+    "ready": true,
+    "decision": {
+      "by": "master-architect",
+      "on": "2026-09-22",
+      "reference": "docs/reports/2026-09-22-map-phase4-evidence-persistence-enabled.md"
+    },
     "gate": "E1",
+    "enabledNote": "All three preconditions this block itself lists were met 2026-09-22, same day: deployment.firebaseRulesDeployed.state is YES; this block carries ready=true with a decision from the closed authority set; app/js/study-evidence-readiness.js carries the identical decision. Guard G re-run clean.",
     "requiredToEnable": [
       "docs/governance/programme-integration-ledger.json: deployment.firebaseRulesDeployed.state = YES, proven by an actual deployment",
       "this block: ready=true and decision={by,on,reference} from the closed authority set",
       "app/js/study-evidence-readiness.js: EVIDENCE_PERSISTENCE_DECLARATION.ready=true with the same decision"
+    ]
+  },
+  "wbwTotalPersistenceReadiness": {
+    "$comment": [
+      "The governed deployment-readiness decision for issue #206's whole-Qur'an/",
+      "Juz running word counter (quranWordTotals), same shape as",
+      "evidencePersistenceReadiness immediately above -- a SEPARATE record",
+      "because it is a separate collection with its own Rules candidate and its",
+      "own readiness gate module, not a redeclaration of the Activity-evidence",
+      "gate. app/js/study-wbw-total-readiness.js holds the runtime declaration;",
+      "this is the governance record it must agree with, the same discipline",
+      "evidencePersistenceReadiness/guard G already established. No guard reads",
+      "this block yet -- programme-ledger.mjs's guard G is scoped to a fixed",
+      "four-key deployment set and to evidencePersistenceReadiness by name. This",
+      "block is recorded now, in the established shape, so a future guard",
+      "extension (if this collection's readiness is ever governed-enabled) has",
+      "a real record to check against rather than inventing one at that time."
+    ],
+    "declarationPath": "app/js/study-wbw-total-readiness.js",
+    "ready": false,
+    "decision": null,
+    "gate": "E1",
+    "note": "quranWordTotals has no deployed Firestore Rules. The candidate is docs/governance/2026-09-23-wbw-total-counter-rules-candidate.rules, not deployed. The ring, the Approach/Word-by-Word toggle, and the Juz/Quran-level coverage caption stay absent until deployment.wbwTotalRulesDeployed.state = DONE (proven by an actual deployment) AND a governed decision is recorded here, mirroring exactly how v08.34 turned on Activity evidence.",
+    "requiredToEnable": [
+      "docs/governance/programme-integration-ledger.json: deployment.wbwTotalRulesDeployed.state = DONE, proven by an actual deployment",
+      "this block: ready=true and decision={by,on,reference} from the closed authority set",
+      "app/js/study-wbw-total-readiness.js: WBW_TOTAL_PERSISTENCE_DECLARATION.ready=true with the same decision"
     ]
   }
 }

@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MMSA governance automation — audit of pilot step 2, the Claude GitHub Action wiring</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MMSA governance automation — audit of pilot step 2, the Claude GitHub Action wiring</h1>
+<p><strong>Date:</strong> 19 September 2026 <strong>Instruction audited:</strong> <em>&quot;On a new branch, prepare the Claude GitHub Action wiring and open a PR, but do not merge it. Establish from the real configuration how a Claude-created PR is authored by a bot distinct from <code>AAAsapp</code> and triggers <code>Deterministic governance suites</code>. … Do not call an empty check suite or a declared permission a successful pilot.&quot;</em></p>
+<p><strong>Result: the build already existed. This is its audit, not a second copy of it.</strong></p>
+<p><code>app/</code> is untouched. <code>app/js/version.js</code> stays <strong><code>08.31</code></strong>, <strong><code>08.32</code> stays UNALLOCATED</strong>, <code>firestore.rules</code> is untouched, E1 stays closed, no repository setting was changed, <strong>no credential was created and no secret was printed.</strong></p>
+<hr>
+<h2>1. The reported SHA was correct — for the first time in three handovers</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td>Reported <code>origin/main</code></td><td><code>b87133461680d3c2837f7bd75fc5c824e10090d3</code></td></tr>
+<tr><td><strong>Actual <code>origin/main</code>, fetched and read back</strong></td><td><strong><code>b87133461680d3c2837f7bd75fc5c824e10090d3</code></strong> — identical</td></tr>
+<tr><td><code>main</code> tip subject</td><td><em>Repoint the brief&#x27;s handover pointer, and stamp the continuation&#x27;s main SHA</em></td></tr>
+<tr><td>Application version on the remote</td><td><strong><code>08.31</code></strong></td></tr>
+<tr><td>PR #88 (pilot step 1)</td><td><strong>MERGED</strong> at <code>fa06217</code></td></tr>
+</tbody></table></div>
+<p>The continuation&#x27;s lesson 11 says <em>&quot;verify a reported SHA before using it.&quot;</em> It was verified. It had <strong>not</strong> moved. That is recorded as plainly as a drift would have been — a check that passes is evidence, not a formality.</p>
+<hr>
+<h2>2. The instruction had already been carried out</h2>
+<p>[PR #89](https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/89) — <em>&quot;Pilot step 2: wire the Claude GitHub Action as a reviewable, inert configuration&quot;</em> — was opened on 19 September at 09:37 UTC by an earlier Claude session, and is <strong>open, not merged, <code>mergeable_state: clean</code></strong>, one file, +125 lines, <code>.github/workflows/claude.yml</code>.</p>
+<div class='tw'><table><thead><tr><th>What the instruction asked for</th><th>Where it is</th></tr></thead><tbody>
+<tr><td>New branch, wiring prepared, PR opened, <strong>not merged</strong></td><td><strong>Done</strong> — <code>claude/pilot-claude-app-wiring</code>, PR #89, open</td></tr>
+<tr><td>Identity mechanism established from real configuration</td><td><strong>Done</strong> — and independently re-verified below</td></tr>
+<tr><td>No assumption that the App token is ambient</td><td><strong>Done</strong> — and correct; see §3</td></tr>
+<tr><td>No credential created, no secret printed</td><td><strong>Done</strong> — verified by reading the workflow</td></tr>
+<tr><td>Narrow permissions</td><td><strong>Done</strong> — four, each justified inline</td></tr>
+<tr><td>No app / version / Rules / settings change</td><td><strong>Done</strong> — one file, <code>.github/</code> only</td></tr>
+<tr><td><strong>Dated <code>.md</code> and <code>.html</code> reports</strong></td><td><strong>NOT DELIVERED.</strong> PR #89 changed exactly one file, and no automation report exists under <code>docs/reports/</code></td></tr>
+</tbody></table></div>
+<p><strong>So one thing was genuinely missing, and it is the thing the Master Architect asked for twice. This file and its <code>.html</code> twin are that deliverable.</strong></p>
+<p><strong>I did not open a duplicate PR.</strong> A second PR adding the same workflow would have put two competing copies of <code>claude.yml</code> in front of the Owner and split the review. Where a bounded instruction has already been executed, the useful work is auditing it.</p>
+<hr>
+<h2>3. The identity mechanism — verified from the Action&#x27;s own source</h2>
+<p>The warning <em>&quot;do not assume the installed App&#x27;s token is available inside a workflow&quot;</em> was the right one to give. <strong>It is not ambient</strong>, and the way it is obtained is specific.</p>
+<p>Read from <code>anthropics/claude-code-action</code> at <code>main</code>:</p>
+<p><strong><code>src/github/token.ts</code></strong> — when <code>github_token</code> is <strong>not</strong> supplied:</p>
+<ol><li><code>core.getIDToken(&quot;claude-code-github-action&quot;)</code> mints a GitHub Actions OIDC token. <strong>This is why <code>id-token: write</code> is load-bearing rather than boilerplate — without it there is no OIDC token, no App token, and no bot identity.</strong></li><li>It <code>POST</code>s that token to <code>https://api.anthropic.com/api/github/github-app-token-exchange</code>.</li><li>It receives back <code>{ token | app_token }</code> — a short-lived <strong>installation token for the Claude GitHub App already installed on this repository</strong>.</li></ol>
+<p><strong><code>src/github/constants.ts</code></strong> — the bot identity is a declared constant, not an inference:</p>
+<p>``<code> export const CLAUDE_APP_BOT_ID = 41898282; export const CLAUDE_BOT_LOGIN  = &quot;claude[bot]&quot;; </code>``</p>
+<p><strong>Two credentials are in play and they are easy to conflate. The audit turns on keeping them apart:</strong></p>
+<div class='tw'><table><thead><tr><th></th><th>Authenticates to</th><th>Supplied by</th></tr></thead><tbody>
+<tr><td><strong>GitHub identity</strong> (<code>claude[bot]</code>)</td><td>GitHub</td><td>The installed Claude App, via the OIDC exchange above. <strong>Not a stored secret.</strong></td></tr>
+<tr><td><strong>Claude API identity</strong></td><td><code>api.anthropic.com</code></td><td><strong>The Owner.</strong> <code>ANTHROPIC_API_KEY</code>, <code>CLAUDE_CODE_OAUTH_TOKEN</code>, or Workload Identity Federation</td></tr>
+</tbody></table></div>
+<p><code>docs/setup.md</code> in the same repository confirms the second: the App installation does <strong>not</strong> supply the Anthropic credential. That is the blocker, and it is not the one the phrase &quot;the App is installed&quot; suggests.</p>
+<p><strong>Minor item recorded as unverified:</strong> I could not resolve the numeric id <code>41898282</code> to an account from this sandbox — the egress proxy refuses <code>api.github.com</code> user lookups. The constant is quoted as the source declares it. It governs the <strong>git committer string</strong>, not PR authorship, which is determined by the token; so it does not affect the conclusions below.</p>
+<hr>
+<h2>4. Four identity routes, and only one satisfies all three requirements at once</h2>
+<p>The instruction asks for a PR that is <strong>(a)</strong> authored by a bot distinct from <code>AAAsapp</code>, <strong>(b)</strong> able to trigger <code>Deterministic governance suites</code>, and <strong>(c)</strong> approvable by <code>AAAsapp</code>. Those three are in tension, and that tension is the whole finding.</p>
+<div class='tw'><table><thead><tr><th>Route</th><th>Author ≠ <code>AAAsapp</code>?</th><th>Triggers <code>verify</code>?</th><th><code>AAAsapp</code> can approve?</th><th>Needs an Owner credential?</th></tr></thead><tbody>
+<tr><td><strong>A Claude Code session</strong> (this one, and the one that opened #89)</td><td>**NO — it <em>is</em> <code>AAAsapp</code>**</td><td>Yes</td><td><strong>No</strong> — self-approval is blocked</td><td>Already present</td></tr>
+<tr><td>Workflow <code>GITHUB_TOKEN</code> → <code>github-actions[bot]</code></td><td>Yes</td><td><strong>NO</strong> — GitHub&#x27;s loop-prevention rule</td><td>Yes</td><td>No, but needs a repo setting</td></tr>
+<tr><td>PAT on a machine account</td><td>Yes</td><td>Yes</td><td>Yes</td><td><strong>Yes</strong> — new account + PAT</td></tr>
+<tr><td>Custom GitHub App token</td><td>Yes (<code>&lt;app&gt;[bot]</code>)</td><td>Yes</td><td>Yes</td><td><strong>Yes</strong> — App id + private key</td></tr>
+<tr><td><strong>Claude App token via OIDC exchange</strong> (what PR #89 selects)</td><td><strong>Yes — <code>claude[bot]</code></strong></td><td><strong>Expected yes</strong>, never observed</td><td><strong>Yes</strong></td><td><strong>Yes</strong> — the Anthropic credential</td></tr>
+</tbody></table></div>
+<p>On the second row, <code>peter-evans/create-pull-request</code>&#x27;s concepts guide states the rule plainly: <em>&quot;When you use the repository&#x27;s <code>GITHUB_TOKEN</code> to perform tasks, events triggered by the <code>GITHUB_TOKEN</code> will not create a new workflow run&quot;</em>, and pull requests created with it <em>&quot;cannot trigger other workflows. If you have <code>on: pull_request</code> … workflows acting as checks on pull requests, they will not run.&quot;</em> It lists a GitHub App token as a documented way round it. <strong>PR #89&#x27;s decision to omit <code>github_token</code> is therefore correct, and its stated reasoning holds.</strong></p>
+<hr>
+<h2>5. THE CENTRAL FINDING — PR #89 cannot demonstrate Gate 2, because <code>AAAsapp</code> authored it</h2>
+<p><code>PR #89.user.login</code> is <strong><code>AAAsapp</code></strong> (id <code>293311955</code>). So is PR #88&#x27;s. So is every workflow run&#x27;s <code>triggering_actor</code>.</p>
+<p><strong>This session authenticates the same way.</strong> <code>get_me</code> returns <code>AAAsapp</code>. That is not incidental — <strong>a Claude Code session in this environment acts as the Owner&#x27;s own account, so no session can produce a bot-authored PR from the sandbox at all.</strong> The <code>claude[bot]</code> identity exists only <em>inside a GitHub Actions run of <code>claude.yml</code></em>, which cannot happen until that file is on the default branch.</p>
+<p>The consequences, stated separately because they are different facts:</p>
+<ul><li>PR #89 <strong>does</strong> prove the gate runs on a pull request. (§6.)</li><li>PR #89 proves <strong>nothing</strong> about a bot-authored PR — no such PR has ever existed in this repository.</li><li><strong><code>AAAsapp</code> cannot approve PR #89.</strong> GitHub does not let a pull request&#x27;s author submit an approving review on it. The Owner&#x27;s approval path is therefore <em>also</em> untested.</li></ul>
+<p><strong>A warning that follows directly, and it matters for the ordering of Gate 3.</strong> If branch protection is enabled requiring one approving review <strong>while <code>AAAsapp</code> is both the only human and the author of every PR, the repository deadlocks</strong> — no PR could ever be merged, including the one that would fix it. The Master Architect&#x27;s instruction <em>&quot;do not enable branch protection until a bot-created test PR and Owner approval path are observed&quot;</em> is not caution; it is the only order that works. This audit supplies the mechanism behind it.</p>
+<hr>
+<h2>6. Observed check execution — read from the job log, not from a report</h2>
+<p>The instruction says not to call an empty check suite a successful pilot. So the log was read.</p>
+<p>Run <code>35435223928</code>, job <code>105876627516</code>, on PR #89&#x27;s head <code>a1b676b</code>, conclusion <strong>success</strong>. Its closing recap:</p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Exit</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>programme-ledger</code></td><td>0</td><td>8 passed, 23 noted, 0 failed</td></tr>
+<tr><td><code>programme-ledger-mutations</code></td><td>0</td><td><strong>49 passed, 0 failed</strong></td></tr>
+<tr><td><code>brief-integrity</code></td><td>0</td><td>8 passed, 0 failed</td></tr>
+<tr><td><code>study-activity-evidence-boundary</code></td><td>0</td><td>27 passed, 0 failed</td></tr>
+<tr><td><code>study-event-wiring</code></td><td>0</td><td><strong>41 passed, 0 failed</strong></td></tr>
+<tr><td><code>rules-authorisation-executable</code></td><td>0</td><td>38 passed, 0 failed</td></tr>
+</tbody></table></div>
+<p>The log carries real per-check <code>PASS</code> lines above the recap, and <strong>every figure matches the continuation&#x27;s §9 baseline exactly.</strong> The check is genuinely executing. It is not an empty green.</p>
+<p><strong>A near-miss worth recording, because it is the house lesson in miniature.</strong> The job&#x27;s step timings show <em>&quot;Run the six deterministic governance suites&quot;</em> starting and completing <strong>in the same second</strong>, and I drafted that as a finding — six Node suites, including a 49-mutation harness, cannot run in under a second. <strong>Reading the log disproved it.</strong> The suites are pure static analysis and genuinely are sub-second; the step boundary simply rounds. <em>A grep of timings is not a reading of the log</em>, and had this been reported it would have been a false finding of exactly the kind this project keeps catching.</p>
+<hr>
+<h2>7. The shallow-clone false red, reproduced and cured independently</h2>
+<p>Before writing anything I ran the six suites in this sandbox and got:</p>
+<p>``<code> programme-ledger-mutations   exit 1   42 passed, 7 failed brief-integrity              exit 1    6 passed, 2 failed </code>``</p>
+<p>Those are <strong>the exact figures PR #88&#x27;s commit message records</strong> as the artefact it was built to prevent. After <code>git fetch --unshallow</code> and fetching all heads (64 remote branches), the same six returned to <strong>8/23/0 · 49/0 · 8/0 · 27/0 · 41/0 · 38/0</strong> — the documented baseline, to the number.</p>
+<p>So PR #88&#x27;s diagnosis and its remedy are <strong>independently confirmed on a second machine</strong>: the failures name branches, they are an artefact of the clone, and <code>fetch-depth: 0</code> plus the ref-assertion step is the correct fix rather than a weakened suite.</p>
+<hr>
+<h2>8. A gate-coverage gap that is still open</h2>
+<p><code>tools/i18n-verify/study-activity-evidence-boundary-mutations.mjs</code> exists, passes <strong>11/0</strong> (confirmed locally, matching the baseline), and is <strong>not among the six suites the gate runs.</strong></p>
+<p>It is the harness that proves the evidence-boundary guard <em>can fail</em>. Its absence means the gate runs a guard without running the check that the guard is alive — the precise shape of the <code>study-event-wiring.mjs</code> defect that sat dead for a whole version. The earlier session flagged it; <strong>it remains unaddressed, and it is a one-word change to the suite list.</strong></p>
+<hr>
+<h2>9. What merging PR #89 would, and would not, buy</h2>
+<p><code>claude.yml</code> triggers on <strong><code>issue_comment</code> only</strong>, gated on the body containing <code>@claude</code>.</p>
+<p>So even with a credential added and the file on <code>main</code>, the loop is:</p>
+<p>&gt; Master Architect writes a task → <strong>a human pastes it as a GitHub comment</strong> → <code>claude[bot]</code> builds → opens a PR → <code>verify</code> runs → Owner approves.</p>
+<p>That removes the relay of <em>results</em> back to the Owner, and it gives a bot author that <code>AAAsapp</code> can approve. <strong>It does not connect this ChatGPT conversation to Claude, and it does not remove the paste.</strong> Gate 4 in the automation-status table stands exactly where it stood. Nothing in PR #89 should be read as narrowing it.</p>
+<hr>
+<h2>10. A ChatGPT-side bot already has access to this repository</h2>
+<p><code>chatgpt-codex-connector[bot]</code> (id <code>199175422</code>) submitted a review on PR #89 at 09:43 UTC. Its state is <strong><code>COMMENTED</code>, not <code>APPROVED</code></strong>, and it carried <strong>no findings</strong> — only its own explanatory boilerplate.</p>
+<p>Two things follow. <strong>It is not an approval</strong> and must not be counted as one toward Gate 2. And a Codex review of a workflow file is a weak signal: it is the reviewer least able to judge a claim about GitHub token exchange, which is why this audit reads the Action&#x27;s source instead.</p>
+<p>Recorded because it is materially relevant to the Master Architect&#x27;s Gate 4 thinking: an OpenAI-side integration with repository access <strong>already exists here</strong> and may be a shorter path to chat-to-builder handoff than a new orchestration service. <strong>No recommendation is made — that is an Owner decision with its own cost and security review.</strong></p>
+<hr>
+<h2>11. Proven, inferred, untested — kept separate</h2>
+<div class='tw'><table><thead><tr><th>Claim</th><th>Status</th></tr></thead><tbody>
+<tr><td>The six-suite gate executes on a real PR and matches the baseline</td><td><strong>PROVEN</strong> — job log read, and reproduced locally</td></tr>
+<tr><td>The Claude App token is obtained by OIDC exchange, not ambient</td><td><strong>PROVEN from source</strong> — <code>token.ts</code>, <code>constants.ts</code></td></tr>
+<tr><td><code>id-token: write</code> is required for that exchange</td><td><strong>PROVEN from source</strong></td></tr>
+<tr><td>Omitting <code>github_token</code> is what selects the bot identity</td><td><strong>PROVEN from source</strong></td></tr>
+<tr><td>The Anthropic credential is the Owner&#x27;s to add</td><td><strong>PROVEN</strong> — <code>docs/setup.md</code></td></tr>
+<tr><td>PR #89 is inert without a credential</td><td><strong>PROVEN by reading the workflow</strong> — the preflight gates every later step</td></tr>
+<tr><td>A <code>claude[bot]</code> PR <strong>would</strong> trigger <code>verify</code></td><td><strong>INFERRED.</strong> Well-supported (App tokens are the documented way round the <code>GITHUB_TOKEN</code> rule) but <strong>never observed here</strong></td></tr>
+<tr><td><code>AAAsapp</code> can approve a <code>claude[bot]</code> PR</td><td><strong>INFERRED</strong> from the authorship rule; <strong>never observed</strong></td></tr>
+<tr><td>The exchange is refused with <code>workflow_not_found_on_default_branch</code> before merge</td><td><strong>REPORTED by the earlier session, not re-verified here</strong> — it cannot be, without merging</td></tr>
+<tr><td>The Claude path end-to-end</td><td><strong>UNTESTED. No Claude run has ever occurred in this repository.</strong></td></tr>
+</tbody></table></div>
+<hr>
+<h2>12. Exact Owner setup, click by click</h2>
+<p><strong>Nothing here has been done for you, and none of it should be done before the Master Architect rules on §5.</strong></p>
+<p><strong>Step 1 — choose the Claude API credential.</strong> Exactly one:</p>
+<div class='tw'><table><thead><tr><th></th><th>What to add</th><th>Stores a secret?</th></tr></thead><tbody>
+<tr><td><strong>(a)</strong></td><td>Repository secret <code>ANTHROPIC_API_KEY</code></td><td>Yes</td></tr>
+<tr><td><strong>(b)</strong></td><td>Repository secret <code>CLAUDE_CODE_OAUTH_TOKEN</code>, and swap the input in <code>claude.yml</code></td><td>Yes</td></tr>
+<tr><td><strong>(c)</strong></td><td>Workload Identity Federation — three identifiers, no stored credential</td><td><strong>No</strong></td></tr>
+</tbody></table></div>
+<p>Option (c) needs an Anthropic Console admin to register a GitHub Actions issuer, a service account and a federation rule. It is the only option that puts no long-lived secret in GitHub.</p>
+<p><strong>To add a secret (a or b):</strong> repository → <strong>Settings</strong> → <strong>Secrets and variables</strong> → <strong>Actions</strong> → <strong>New repository secret</strong> → name it exactly as above → paste the value → <strong>Add secret</strong>. Paste it <strong>only</strong> into that box. Never into a comment, a file, or a chat message.</p>
+<p><strong>Step 2 — merge PR #89.</strong> It is inert until step 1 is done, so the order is safe either way. Merging is what puts <code>claude.yml</code> on the default branch, which the token exchange requires before it will ever succeed.</p>
+<p><strong>Step 3 — the first real test.</strong> Comment <code>@claude</code> plus a small, throwaway task on any issue or PR. Then check three things and report them separately:</p>
+<ol><li>Does a PR appear, and is its author <strong><code>claude[bot]</code></strong> rather than <code>AAAsapp</code>?</li><li>Does <strong><code>Deterministic governance suites</code></strong> appear and run on it?</li><li>On that PR, is <strong>Approve</strong> available to <code>AAAsapp</code>?</li></ol>
+<p><strong>Those three answers are Gate 2. Until all three are observed, do not enable branch protection</strong> — see the deadlock in §5.</p>
+<p><strong>Do not</strong> tick <em>&quot;Allow GitHub Actions to create and approve pull requests&quot;</em> for this. It governs the <code>GITHUB_TOKEN</code> route, which PR #89 deliberately does not use, and the approval half of it is a control worth leaving off.</p>
+<hr>
+<h2>13. Recommendation</h2>
+<ol><li><strong>Do not re-do step 2.</strong> PR #89 is the deliverable; it is sound, its central claim is verified from source, and its reasoning for omitting <code>github_token</code> is correct.</li><li><strong>Read §5 before merging.</strong> PR #89 cannot prove Gate 2, and the Owner-approval path is untested. Merging is still the right next move — it is the only way to reach the test — but it should be merged knowing what it does and does not establish.</li><li><strong>Add <code>study-activity-evidence-boundary-mutations</code> to the gate</strong> (§8). One word, and it closes a real hole.</li><li><strong>Nothing here touches E1</strong>, the Firestore Rules, the indexes, evidence readiness, or <code>v08.32</code>. The automation pilot and the deployment gate remain entirely separate, and this work moved neither.</li></ol>
+<hr>
+<h2>14. State block</h2>
+<p>``<code> MMSA_AUTOMATION_PILOT_STEP2_AUDIT ISSUED=2026-09-19 MAIN_SHA_VERIFIED=b87133461680d3c2837f7bd75fc5c824e10090d3 (reported SHA was CORRECT) MAIN_VERSION=08.31 V0832_STATUS=UNALLOCATED STEP2_PR=#89 OPEN, NOT MERGED, mergeable_state=clean, 1 file, +125 STEP2_ALREADY_DONE=YES -- no duplicate PR was opened MISSING_DELIVERABLE_NOW_CLOSED=dated .md and .html reports IDENTITY_MECHANISM=OIDC (aud claude-code-github-action) -&gt; api.anthropic.com/api/github/github-app-token-exchange -&gt; Claude App installation token APP_TOKEN_AMBIENT=NO -- requires id-token: write AND github_token unset CLAUDE_BOT_LOGIN=claude[bot] (CLAUDE_APP_BOT_ID=41898282, numeric id NOT independently resolved here) ANTHROPIC_CREDENTIAL=OWNER&#x27;S TO ADD -- not supplied by the App installation PR89_AUTHOR=AAAsapp (293311955) -- SO PR #89 CANNOT DEMONSTRATE GATE 2 SESSION_IDENTITY=AAAsapp -- a Claude Code session here cannot produce a bot-authored PR at all SELF_APPROVAL=BLOCKED BY GITHUB -- AAAsapp cannot approve PR #89 BRANCH_PROTECTION_WARNING=requiring an approval while AAAsapp authors every PR DEADLOCKS the repository CHECK_EXECUTION=PROVEN from job log 105876627516; six suites, baseline figures exactly GATE_COVERAGE_GAP=study-activity-evidence-boundary-mutations (11/0) exists and is NOT in the six SHALLOW_CLONE_ARTEFACT=REPRODUCED (6/2, 42/7) and CURED (8/0, 49/0) independently CLAUDE_YML_TRIGGER=issue_comment only -- a human paste is still required; GATE 4 NOT CLOSED CODEX_BOT=chatgpt-codex-connector[bot] reviewed PR #89, state COMMENTED, no findings, NOT an approval BOT_PR_TRIGGERS_CI=INFERRED, NEVER OBSERVED OWNER_CAN_APPROVE_BOT_PR=INFERRED, NEVER OBSERVED CLAUDE_RUN_EVER_EXECUTED=NO E1_STATUS=CLOSED -- untouched by this work FIREBASE_RULES_DEPLOYED=NO -- untouched by this work APP_CODE_CHANGED=NO CREDENTIAL_CREATED=NO SECRET_PRINTED=NO </code>``</p>
+</main></body></html>

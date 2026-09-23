@@ -4040,6 +4040,115 @@ console.log("\n=== 40. Shell round 28: the Mushaf page ===");
   await ctx.close();
 }
 
+{
+  // --- 40f Issue #188 -- tap a Mushaf word to open its Word Card -----------
+  // The shared click listener (["readView", "noteView"].forEach in
+  // quranrevival.html) already looks for [data-word-occurrence] on whatever
+  // was tapped -- proof here is that it really reaches #pageViewContainer's
+  // Mushaf-mode children too, with the RIGHT occurrence id, not just that the
+  // attribute exists in markup.
+  const ctx = await mushafCtx({ banner: false });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  page.on("dialog", (d) => d.dismiss().catch(() => {}));
+  await openMushaf(page);
+
+  const struct = await page.evaluate(() => {
+    const words = [...document.querySelectorAll("#pageViewContainer .hifz-word")];
+    const tappable = words.filter((w) => w.dataset.wordOccurrence);
+    const ayahsSeen = new Set(tappable.map((w) => w.dataset.wordOccurrence.split(":").slice(2, 4).join(":")));
+    return { total: words.length, tappable: tappable.length, ayahsSeen: ayahsSeen.size };
+  });
+  // Exactly one word per ayah rendered on the page carries no
+  // data-word-occurrence -- the print's own ayah-end-number glyph, which is
+  // real per-page layout data but not a real word (see AYAH_WORD_MERGES's own
+  // comment in hifz-renderer.js).
+  check("40f every ayah on the page has exactly one non-tappable word (the ayah-end marker)",
+        struct.tappable > 0 && struct.total - struct.tappable === struct.ayahsSeen, JSON.stringify(struct));
+
+  // Surah 3 āyah 1 ("الٓمٓ") is the fixture's own one-word ayah (checked
+  // against the app's real surah_003.json in the round that built this): its
+  // SECOND Mushaf position is the marker and must stay non-tappable, while
+  // its first is a real word.
+  const ayah1 = await page.evaluate(() => ({
+    first: !!document.querySelector('[data-word-occurrence$=":3:1:1"]'),
+    marker: !!document.querySelector('[data-word-occurrence$=":3:1:2"]'),
+  }));
+  check("40f ayah 3:1's own one real word is tappable", ayah1.first, JSON.stringify(ayah1));
+  check("40f ...and its trailing marker position is NOT", !ayah1.marker, JSON.stringify(ayah1));
+
+  // Surah 3 āyah 2's first word is "ٱللَّهُ" ("Allah") -- tap it and prove the
+  // Word Card that opens is really that occurrence, not merely A card.
+  const target = page.locator('#pageViewContainer [data-word-occurrence$=":3:2:1"]');
+  const wantedId = await target.getAttribute("data-word-occurrence");
+  await target.click();
+  await page.waitForTimeout(500);
+  const card = await page.evaluate(() => {
+    const c = document.querySelector(".quran-word-card");
+    if (!c) return null;
+    const r = c.getBoundingClientRect();
+    return { id: c.getAttribute("data-occurrence-id"), w: Math.round(r.width), h: Math.round(r.height), arabic: c.querySelector(".word-card-arabic")?.textContent.trim() };
+  });
+  check("40f tapping a Mushaf word opens the Word Card, on screen", !!card && card.w > 0 && card.h > 0, JSON.stringify(card));
+  check("40f ...as the EXACT word that was tapped, not a neighbour", card?.id === wantedId, `${card?.id} vs ${wantedId}`);
+  check("40f ...showing real Arabic text", !!card?.arabic && card.arabic.length > 0, card?.arabic);
+
+  // Re-run the SAME geometry proof 40b already trusts (every line still
+  // justified, nothing spills past either edge) on this same page, now that
+  // .hifz-word[data-word-occurrence] carries the round's padding+negative-
+  // margin hit-area trick -- proof the enlarged tap zone cost no visible
+  // layout, not just an assertion that it should net to zero.
+  const just = await page.evaluate(() => {
+    const el = document.querySelector(".hifz-page");
+    const cs = getComputedStyle(el);
+    const contentRight = el.getBoundingClientRect().right - parseFloat(cs.paddingRight);
+    const contentLeft = el.getBoundingClientRect().left + parseFloat(cs.paddingLeft);
+    const lines = [...el.querySelectorAll(".hifz-line:not(.centered)")];
+    const rects = lines.map((l) => l.getBoundingClientRect());
+    return {
+      count: lines.length,
+      pastRight: rects.filter((r) => r.right > contentRight + 1).length,
+      pastLeft: rects.filter((r) => r.left < contentLeft - 1).length,
+    };
+  });
+  check("40f the tap hit-area costs no visible width -- lines still fit exactly as 40b measured",
+        just.count > 0 && just.pastRight === 0 && just.pastLeft === 0, JSON.stringify(just));
+
+  await page.close();
+  await ctx.close();
+}
+
+{
+  // --- 40g Issue #188 -- tap accuracy at every required phone width --------
+  // The issue's own instruction: "measure real tap accuracy at
+  // 320/360/390/412px ... consider a small invisible padding/hit-area rather
+  // than changing the print-accurate visual layout." This is that
+  // measurement: a real tap dispatched at the very EDGE of a word's own
+  // padded box (not its centre) still has to open THAT word's card, at every
+  // required width -- proof the enlarged hit-area is functionally real, not
+  // just present in the stylesheet.
+  for (const width of [320, 360, 390, 412]) {
+    const ctx = await mushafCtx({ banner: false, viewport: { width, height: 844 } });
+    const { page } = await openPage(ctx, "/app/quranrevival.html");
+    page.on("dialog", (d) => d.dismiss().catch(() => {}));
+    await openMushaf(page);
+
+    const target = page.locator('#pageViewContainer [data-word-occurrence$=":3:2:1"]');
+    const wantedId = await target.getAttribute("data-word-occurrence");
+    const box = await target.boundingBox();
+    // 2px in from the top-left corner of the PADDED box -- inside the
+    // invisible hit-area this round adds, not inside the visible glyph,
+    // which (at these font sizes) sits well clear of the box's own edge.
+    await page.mouse.click(box.x + 2, box.y + 2);
+    await page.waitForTimeout(500);
+    const openedId = await page.evaluate(() => document.querySelector(".quran-word-card")?.getAttribute("data-occurrence-id"));
+    check(`40g @${width}px a tap at the padded hit-area's own edge still opens the right word`,
+          openedId === wantedId, `${openedId} vs ${wantedId}, box=${JSON.stringify(box)}`);
+
+    await page.close();
+    await ctx.close();
+  }
+}
+
 // ---------------------------------------------------------------------------
 // 41. Shell round 28: the reading moves sideways, page by page.
 // ---------------------------------------------------------------------------

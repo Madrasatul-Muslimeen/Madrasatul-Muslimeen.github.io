@@ -24,7 +24,15 @@ const PROJECT = "demo-quranrevival-word-progress-v1";
 const HOST = "127.0.0.1";
 const PORT = 8086;
 const here = path.dirname(fileURLToPath(import.meta.url));
-const candidate = fs.readFileSync(path.resolve(here, "../../tests/firestore/word-progress-v1.proposed.rules"), "utf8");
+// RULES_FILE lets this same suite run against the ASSEMBLED DEPLOYMENT
+// CANDIDATE -- the text that would actually be pasted into the Console --
+// instead of the isolated extract. Without that, every assertion here proves
+// something about a file nobody will ever deploy. Same pattern as
+// note-foundation-v1.rules.test.mjs and journey-map-v1.rules.test.mjs.
+const EXTRACT = "tests/firestore/word-progress-v1.proposed.rules";
+const RULES_FILE = process.env.RULES_FILE || EXTRACT;
+const againstDeployment = RULES_FILE !== EXTRACT;
+const candidate = fs.readFileSync(path.resolve(here, "../..", RULES_FILE), "utf8");
 assert.match(PROJECT, /^demo-/);
 assert.notEqual(PROJECT, "study-monitoring");
 // The candidate must be an ISOLATED extract, not the deployed file with two
@@ -35,11 +43,23 @@ assert.notEqual(PROJECT, "study-monitoring");
 // prose and failed itself.
 // `databases` is the structural wrapper every ruleset opens with, not a
 // collection, so it is excluded rather than the pattern being loosened.
-const matchBlocks = [...candidate.matchAll(/match \/(\w+)\//g)].map((m) => m[1]).filter((n) => n !== "databases");
-assert.deepEqual([...new Set(matchBlocks)].sort(), ["quranWordApprovals", "quranWordProgress"],
-  `the candidate must govern exactly the two Phase 3 collections, saw: ${matchBlocks.join(",")}`);
-assert.ok(!/Version: 2026-07-30|S8-class fix|match \/tenantInvites\//.test(candidate),
-  "the candidate must not be a copy of the deployed production rules");
+const matchBlocks = [...new Set([...candidate.matchAll(/match \/(\w+)\//g)].map((m) => m[1]))].filter((n) => n !== "databases");
+if (againstDeployment) {
+  // The deployment candidate is production PLUS the phases, so the integrity
+  // guards are the opposite ones: it must carry the whole live ruleset, and it
+  // must add to firestore.rules rather than replace it.
+  for (const required of ["quranWordProgress", "quranWordApprovals", "tenantInvites"]) {
+    assert.ok(matchBlocks.includes(required), `the deployment candidate is missing match /${required}/`);
+  }
+  const production = fs.readFileSync(path.resolve(here, "../../firestore.rules"), "utf8").split("\n");
+  const missing = production.filter((line) => line.trim() && !candidate.includes(line));
+  assert.deepEqual(missing, [], `the deployment candidate DROPS ${missing.length} production line(s) -- it would remove live rules`);
+} else {
+  assert.deepEqual(matchBlocks.sort(), ["quranWordApprovals", "quranWordProgress"],
+    `the candidate must govern exactly the two Phase 3 collections, saw: ${matchBlocks.join(",")}`);
+  assert.ok(!/match \/tenantInvites\//.test(candidate),
+    "the candidate must not be a copy of the deployed production rules");
+}
 
 const T = "t1";
 const LEARNER = (personId, surah, ayah) => `${T}__${personId}__wbw__${surah}_${ayah}`;

@@ -90,6 +90,38 @@ await assert.rejects(() => foundation.updatePermanentNoteContent({}, {
   title: "No", bodyHtml: "No", actorUid: "owner-uid",
 }), /Stale Note revision/);
 
+// --- retirePermanentNote() must commit a real revision, not only a status --
+// The Phase 5 Rules candidate's committedRevisionMatches() re-checks
+// currentRevisionId on every update, retire included: the named revision
+// must exist and must chain from the revision the Note is leaving behind. A
+// status-only write leaves currentRevisionId pointing at the SAME revision,
+// which can never chain from itself, so retiring would be denied the moment
+// these Rules deploy. `documents.get("notes/tenant__note-1")` here is still
+// the row set before updatePermanentNoteContent() above (the stub never
+// writes its own `update` calls back into `documents`), so it is still
+// pinned at currentRevisionId "rev-1" -- the fixture this case targets.
+writes.length = 0;
+const retiredRevisionId = await foundation.retirePermanentNote({}, {
+  tenantId: "tenant", noteId: "note-1", expectedRevisionId: "rev-1", actorUid: "owner-uid",
+});
+assert.deepEqual(writes.map(({ collectionName, kind }) => `${kind}:${collectionName}`), ["create:noteRevisions", "update:notes"]);
+assert.equal(writes[0].data.previousRevisionId, "rev-1", "the retirement revision must chain from the revision being left behind");
+assert.equal(writes[0].data.revisionReason, "retired");
+assert.equal(writes[0].data.noteId, "note-1");
+assert.equal(writes[0].data.tenantId, "tenant");
+assert.equal(writes[0].data.ownerPersonId, "person");
+assert.equal(writes[1].data.status, "retired");
+assert.equal(writes[1].data.currentRevisionId, retiredRevisionId, "the Note must point at the NEW revision, never the one it retired from");
+assert.notEqual(retiredRevisionId, "rev-1", "retiring must mint a fresh revision id, never reuse the old one");
+
+await assert.rejects(() => foundation.retirePermanentNote({}, {
+  tenantId: "tenant", noteId: "note-1", expectedRevisionId: "stale", actorUid: "owner-uid",
+}), /Stale Note revision/);
+
+await assert.rejects(() => foundation.retirePermanentNote({}, {
+  tenantId: "tenant", noteId: "missing-note", expectedRevisionId: "rev-1", actorUid: "owner-uid",
+}), /Note does not exist/);
+
 // --- P6-B: createNoteFolder() validates its parent (ADR-010) ---------------
 // This function used to validate parentFolderId not at all. Each case below is
 // a thing it would previously have written to the database without a murmur.
@@ -494,4 +526,4 @@ assert.equal(writes.filter((w) => w.kind === "delete").length, 0);
 delete globalThis.__nfCollections;
 delete globalThis.__nfFirestore;
 delete globalThis.__nfEnvelope;
-console.log("==== Note Foundation data layer: 47 + 30 P6-D + 18 P5-F/P6-E + 16 P5-G assertions passed ====");
+console.log("==== Note Foundation data layer: 47 + 30 P6-D + 18 P5-F/P6-E + 11 retire-revision + 16 P5-G assertions passed ====");
