@@ -437,4 +437,31 @@
 // study-activity-evidence-boundary.mjs 27/0, diff of PR #198 read by
 // hand. No protected path touched by this allocation beyond the
 // version-allocation files themselves. Allocated by the MMSA Architect.
-export const APP_VERSION = "08.47";
+// 08.48: Word Card -- the flow-mode cross-surah navigation gap #135
+// flagged is fixed (issue #113, PR #138). Following a lemma occurrence
+// into a DIFFERENT surah in Whole Surah flow mode (#pageViewContainer
+// visible) left the reader on the arrival surah's own page at the SAME
+// scroll offset as the origin ayah -- not the tapped word, which could be
+// measurably off-screen -- because raw scrollLeft is a property of the
+// container, not of whichever surah's content it currently holds, and a
+// browser does not reset it when renderFlowView() rebuilds the innerHTML
+// for a different surah. Fixed with one new identity-based function,
+// scrollFlowToCurrentAyah(), called from navigateToAyah() -- the
+// word-card mechanism's only navigation function, so the fix cannot
+// affect Prev/Next, the Ayah/Surah selects, or the flow strip's own
+// swipe navigation. New quran-word-card-flow-nav.mjs suite, 19 checks.
+// A second, pre-existing, UNRELATED defect was found and NOT fixed:
+// Range unit type carries no surah of its own, so crossing surahs while
+// Range is selected shows an arbitrary slice of the wrong surah -- this
+// predates issue #113 and is not scoped to word-card navigation (the
+// plain surahSelect dropdown has the same gap); recorded as a
+// product-decision packet with four costed options, none chosen.
+// Mushaf-mode flow scroll targeting is also flagged, not built --
+// hifz-renderer.js's word spans carry no ayah-identifying attribute to
+// target. No new translation string, no Firestore write/Rule/index.
+// Independently re-verified by the Architect before merging: fresh
+// full-history checkout, retargeted from its stale stacked base onto
+// main and merged current main in (clean), all 11 governance suites
+// clean, the new suite 19/19 and the unmodified quran-word-card-
+// return.mjs regression suite 55/55. Allocated by the MMSA Architect.
+export const APP_VERSION = "08.48";

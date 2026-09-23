@@ -29,9 +29,9 @@
   "status": "ACTIVE",
   "main": {
     "ref": "origin/main",
-    "baselineSha": "b9007b20a4d07eaee9c15c7aef22169cd250ec47",
+    "baselineSha": "5cfb1a65809dab3e050181387bc4ba261f4e62f1",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.47",
+    "version": "08.48",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -327,7 +327,7 @@
     {
       "version": "08.47",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "retroactive": true,
       "note": "RETROACTIVE ALLOCATION (23 Sep 2026): MAP Phase 5 P5-D, the Notes screen, round 1 (issue #195, PR #198), which merged to main on 22 Sep 2026 as commit 530af1f and was never given a version number until now -- found and closed during this session's routine sweep, the same sweep that investigated whether D3 Journaling had become reachable. A new real page, app/notes.html (+ app/js/note-sanitize.js), wired to the existing, previously-uninvoked data layer (study-note-service.js: createStudyNote/reviseStudyNote/retireStudyNote/notesForStudyUnit/recordJournalEvidence; note-foundation.js: listNoteRevisions). No new exported function added to either. Entry point: Read screen's existing more menu, 'My Notes for this unit'. Only a Note's own author may create/revise/retire it (isNoteOwner(), distinct from canRecordFor()). DOMPurify-based sanitization, fails closed if absent; note-sanitize-boundary.mjs 7/7, mutation-proven. study-note-boundary.mjs UPDATED IN PLACE in the SAME round that built this screen, reason recorded: exactly app/notes.html reaches study-note-service.js, 18/18. D3 JOURNALING IS NOW LIVE, NOT MERELY REACHABLE: study-evidence-readiness.js's gate has read ready:true since v08.34, so saving a Note against an ayah/range/surah Study Unit records real Journaling Activity evidence right now. Verified directly: notes.html's afterCreateOrRevise() calls recordJournalEvidence() only after a real create/revise succeeds, which calls recordStudyEvidence() -- the ONE chokepoint in study-event-wiring.js, exactly the shape the 19 Sep 2026 D3-chokepoint round enforced. study-activity-evidence-boundary.mjs was already updated for this transition IN THE SAME ROUND, correctly, with the reason recorded -- re-confirmed 27/27 at this allocation. A Note filed against a unit type ADR-008 does not cover (juz/topic/etc.) records no Journaling evidence and says nothing -- silence, not a false claim. Not built this round: folders/Mapping My Journey filing (Phase 6, built later as v08.37), choosing a translator. Layout not measured in a real browser (documented Playwright environment gap). Independently re-verified by the Architect at this retroactive allocation: fresh full-history checkout of current main, all 11 governance suites clean, note-sanitize-boundary.mjs 7/0, study-note-boundary.mjs 18/0, study-activity-evidence-boundary.mjs 27/0, PR #198's diff read by hand.",
       "integration": {
@@ -339,10 +339,25 @@
         "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/198",
         "note": "RETROACTIVE: the feature merged (integratedOn) a day before the version was allocated (authorizedOn). See the 'retroactive' flag and the entry's own note for why."
       }
+    },
+    {
+      "version": "08.48",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Word Card: the flow-mode cross-surah navigation gap PR #135 flagged is fixed (issue #113, PR #138). Following a lemma occurrence into a different surah in Whole Surah flow mode left the reader on the arrival surah's own page at the SAME scroll offset as the origin ayah -- not the tapped word, measurably off-screen -- because raw scrollLeft is a container property that a browser does not reset when renderFlowView() rebuilds the innerHTML for a different surah. Fixed with one new identity-based function, scrollFlowToCurrentAyah(), called from navigateToAyah() -- the word-card mechanism's only navigation function. New quran-word-card-flow-nav.mjs suite, 19 checks. A second, pre-existing, UNRELATED defect (Range unit type has no surah of its own, so crossing surahs while Range is selected shows an arbitrary slice of the wrong surah) was found and NOT fixed -- recorded as a product-decision packet, four costed options, none chosen. No new translation string, no Firestore write/Rule/index. Independently re-verified by the Architect before merging: fresh full-history checkout, retargeted from its stale stacked base onto main and merged current main in (clean), all 11 governance suites clean, the new suite 19/19, the unmodified quran-word-card-return.mjs regression suite 55/55.",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-23",
+        "acceptedApplicationSha": "a2585a0d21192954ccde5b8efb5ebaf5b867657a",
+        "integratedMainSha": "5cfb1a65809dab3e050181387bc4ba261f4e62f1",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/138"
+      }
     }
   ],
-  "nextUnallocated": "08.48",
+  "nextUnallocated": "08.49",
   "nextUnallocatedNote": [
+    "v08.48 was allocated to the Word Card flow-mode cross-surah navigation fix (issue #113, PR #138), confirmed merged on 2026-09-23.",
     "v08.47 was allocated RETROACTIVELY to the Notes screen round 1 (MAP Phase 5 P5-D, issue #195, PR #198), which had merged to main on 2026-09-22 with no version bump and was found unallocated during this session's routine sweep on 2026-09-23; D3 Journaling evidence recording is live as of this same round (the readiness gate has read ready:true since v08.34).",
     "v08.46 was allocated to the Health Atlas References view switcher keyboard/screen-reader fix (issue #115 Gate A/B, PR #148), confirmed merged on 2026-09-23.",
     "v08.45 was allocated to the Word Card desktop drag/resize z-index fix (issue #113, PR #137), confirmed merged on 2026-09-23.",
@@ -388,9 +403,9 @@
       "name": "QuranRevival -- Quran Study module",
       "activeBranch": null,
       "integrationState": "MERGED_TO_MAIN",
-      "declaredVersion": "08.47",
-      "declaredVersionNote": "08.47 (23 Sep 2026, RETROACTIVE): the Notes screen round 1 (MAP Phase 5 P5-D, issue #195, PR #198), merged to main 2026-09-22 as 530af1f with no version bump at the time -- found unallocated and closed at this allocation; D3 Journaling evidence recording is live as of this round. 08.45 (RELEASED, PR #137, Word Card z-index fix) is the prior non-retroactive one; 08.42 (RELEASED, PR #209, the Word-by-Word whole-Qur'an/Juz counter) before that.",
-      "baselineSha": "b9007b20a4d07eaee9c15c7aef22169cd250ec47",
+      "declaredVersion": "08.48",
+      "declaredVersionNote": "08.48 (23 Sep 2026): Word Card flow-mode cross-surah navigation fix (issue #113, PR #138) -- see versionAllocations. 08.47 (RELEASED, PR #198, the Notes screen, RETROACTIVE) is the prior one; 08.45 (RELEASED, PR #137, Word Card z-index fix) before that.",
+      "baselineSha": "5cfb1a65809dab3e050181387bc4ba261f4e62f1",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
       "ownedPaths": [
         "app/quranrevival.html",

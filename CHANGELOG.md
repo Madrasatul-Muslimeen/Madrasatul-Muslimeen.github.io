@@ -16841,3 +16841,62 @@ files themselves (`firestore.rules`/`firebase.json`/`app/js/version.js`
 retroactively, for a round that merged to `main` on 22 Sep 2026. See
 `docs/governance/programme-integration-ledger.json` for the version
 allocation record.
+
+---
+
+**v08.48 (23 Sep 2026) — Word Card: the flow-mode cross-surah navigation
+gap PR #135 flagged is fixed (issue #113, PR #138).**
+
+**Gate A (reproduce) found the flagged gap is real, but not in the shape
+its own name suggests.** PR #135 left flow mode (`#pageViewContainer`
+visible) as a no-op because a captured pixel scroll offset is meaningless
+once the strip re-renders a different surah. A debug run in a real
+browser found the actual defect: `#pageViewContainer`'s raw `scrollLeft`
+is a property of the *container*, not of whichever surah's content it
+holds — a browser does not reset it when `renderFlowView()` rebuilds the
+`innerHTML` for a different surah. Following a lemma occurrence from 2:71
+to a different surah (4:92) in Whole Surah flow mode left the reader
+looking at surah 4's own āyah 71 (the same stale pixel offset landing on
+the same page index) — not āyah 92, the word actually tapped, which was
+measurably off-screen. This is on the arrival leg, not only the return.
+
+**Gate B (build)**: one new function, `scrollFlowToCurrentAyah()`,
+targets the destination āyah's own row directly (identity-based, not
+pixel-based) instead of trying to preserve a coordinate. Called from
+`navigateToAyah()` — the word-card mechanism's only navigation function
+— so the fix is scoped exactly to this feature and cannot affect
+Prev/Next, the Ayah/Surah selects, or the flow strip's own swipe
+navigation.
+
+**A second, pre-existing defect found and NOT fixed**: Range unit type
+derives its bounds from raw `rangeFrom`/`rangeTo` āyah numbers with no
+surah attached, so crossing surahs while Range is selected shows an
+arbitrary slice of the wrong surah. This predates issue #113 and is not
+scoped to word-card navigation at all — the plain `surahSelect`
+dropdown's own change handler has exactly the same gap. Recorded as a
+product-decision packet: `stepFlowAyah()`'s own Range branch already
+shows a working precedent (re-anchoring the window on a surah-crossing
+Prev/Next), four costed options are tabled, none chosen.
+
+**New `quran-word-card-flow-nav.mjs` suite, 19 checks**: Whole Surah
+cross-surah round trip (both languages), Range same-surah regression, the
+ordinary single-āyah unit type (proving the new function is a true no-op
+outside flow mode). Pre-existing suites re-run unmodified and unaffected:
+`quran-word-card-return.mjs` (v08.40's own suite) 55/0,
+`quran-word-card-popup.mjs` (v08.45's own suite) 22/0.
+
+**What this deliberately does not do**: Mushaf-mode flow scroll
+targeting — `hifz-renderer.js`'s word spans carry no ayah-identifying
+attribute to target. The Range/surah-crossing content-correctness defect
+— flagged, not fixed.
+
+**Independently re-verified by the Architect before merging**: fresh
+full-history checkout, retargeted from its stale stacked base onto `main`
+and merged current `main` in (clean auto-merge), all 11 governance suites
+clean, the new suite 19/19, the unmodified regression suite
+`quran-word-card-return.mjs` re-run 55/55. No protected path touched, no
+new translation string, no Firestore write/Rule/index.
+
+`app/js/version.js`: 08.47 → **08.48**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.
