@@ -16560,3 +16560,45 @@ is).
 `app/js/version.js`: 08.42 → **08.43**. Allocated by the MMSA Architect.
 See `docs/governance/programme-integration-ledger.json` for the version
 allocation record.
+
+---
+
+**v08.44 (23 Sep 2026) — Hadith: keyboard focus restored on every tab
+switch (issue #114 Gate A/B, PR #150).** Reproducing the task's own
+fallback item (Search→source return) found the gap was not
+Search-specific — it's every tab switch. `render()` tears down and
+rebuilds the whole subtree on every Collections/Topics/Search/Explore/
+Commentary tab click, and unlike an in-tab Collections step
+(`focusCollectionsLanding()`) or the one-shot "View in source" highlight
+(`focusPendingOccurrence()`), nothing restored focus on a plain tab
+switch — so a keyboard user lost their place to `<body>` on every single
+tab click, including returning to Search after visiting a narration's
+source (the query and results persist; focus did not).
+
+**Fix**: `app/js/hadith-browser.js` — a `focusActiveTab()` helper, called
+from the tab button's own click handler, focuses the newly-active tab
+button (the standard ARIA-tabs pattern). Zero new translatable strings.
+
+**Tests**: 4 new checks in `hadith-source-navigation-browser.mjs`
+(43 → 47). **Mutation-proven by the Architect**: reverting the fix to
+`origin/main`'s copy of `hadith-browser.js` fails exactly the 4 new
+checks (43/47); restored and re-confirmed clean.
+
+**The multi-edition breadcrumb ambiguity stays exactly as PR #149 recorded
+it** — the committed corpus still carries one edition per collection, so
+it is not a live defect; no fixture invented, no product choice made.
+
+**Independently re-verified by the Architect before merging**: fresh
+full-history checkout, merged current `main` in (clean auto-merge, no
+conflicts), all 11 governance suites clean (the 8 CI-gated plus
+`firestore-index-requirements`/`rules-deployment-candidate`/
+`rules-deployment-candidate-phase3-6`), all 5 Hadith-owned data suites
+clean (`hadith-corpus` 60/0, `hadith-commentary-binding` 14/0,
+`hadith-source-rights` 14/0, `hadith-governing-contracts` 14/0,
+`hadith-gate-contracts` 11/0), `hadith-source-navigation-browser.mjs`
+47/47 in both languages, matching PR #150's own claims exactly. No
+protected path touched, no Firestore write/Rule/index.
+
+`app/js/version.js`: 08.43 → **08.44**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.

@@ -158,7 +158,32 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.43 on `main`** (23 Sep 2026 — Health Atlas: a
+**Current milestone: v08.44 on `main`** (23 Sep 2026 — Hadith: keyboard
+focus is restored to the newly-active tab button on every
+Collections/Topics/Search/Explore/Commentary tab switch, issue #114 Gate
+A/B, PR #150. `render()` tears down and rebuilds the whole subtree on
+every tab click; unlike an in-tab Collections step
+(`focusCollectionsLanding()`) or the one-shot "View in source" jump
+(`focusPendingOccurrence()`), nothing restored focus on a plain tab
+switch — so a keyboard user lost their place to `<body>` on every single
+tab click, including returning to Search after visiting a narration's
+source (the query and results persisted; focus did not). Fixed with one
+new `focusActiveTab()` helper in `app/js/hadith-browser.js`, called from
+the tab button's own click handler — the standard ARIA-tabs pattern of
+leaving focus on the tab list. Zero new translatable strings. 4 new
+checks in `hadith-source-navigation-browser.mjs` (43 → 47).
+**Independently re-verified by the Architect before merging**: fresh
+full-history checkout, merged current `main` in (clean, no conflicts),
+all 11 governance suites clean, all 5 Hadith-owned data suites clean,
+`hadith-source-navigation-browser.mjs` 47/47 in both languages, and
+**mutation-proven**: reverting the fix to `origin/main`'s copy of
+`hadith-browser.js` fails exactly the 4 new checks (43/47), restored and
+re-confirmed clean. No protected path touched, no Firestore write/Rule/
+index. The multi-edition breadcrumb ambiguity PR #149 found stays exactly
+as recorded — the committed corpus still carries one edition per
+collection, so it is not a live defect. Allocated by the MMSA Architect.
+
+**Previous milestone: v08.43 on `main`** (23 Sep 2026 — Health Atlas: a
 References index, one new top-level view mode alongside Body Systems,
 issue #115 Gate A/B, PR #146 (tranche 9). Each of the 8
 `HEALTH_ATLAS_REFERENCES` rows now lists which organs in this dataset cite

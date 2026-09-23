@@ -303,4 +303,24 @@
 // assumed -- the concurrent issue #206 round took v08.42 first, a real,
 // correctly-resolved collision of exactly the kind this file's own
 // standing rule exists to prevent. Allocated by the MMSA Architect.
-export const APP_VERSION = "08.43";
+// 08.44: Hadith -- keyboard focus is restored to the newly-active tab
+// button on every Collections/Topics/Search/Explore/Commentary tab switch
+// (issue #114 Gate A/B, PR #150). render() tears down and rebuilds the
+// whole subtree on every tab click; unlike an in-tab Collections step or
+// the one-shot "View in source" jump, nothing restored focus on a plain
+// tab switch, so a keyboard user lost their place to <body> on every
+// single tab click, including returning to Search after visiting a
+// narration's source (the query/results persisted; focus did not). Fixed
+// with one new focusActiveTab() helper in app/js/hadith-browser.js,
+// called from the tab button's own click handler -- the standard
+// ARIA-tabs pattern of leaving focus on the tab list. Zero new
+// translatable strings. 4 new checks in hadith-source-navigation-
+// browser.mjs (43 -> 47), mutation-proven by the Architect: reverting the
+// fix to origin/main's copy of hadith-browser.js fails exactly the 4 new
+// checks (43/47), restored and re-confirmed clean. Independently
+// re-verified before merging: fresh full-history checkout, merged
+// current main in (clean, no conflicts), all 11 governance suites clean,
+// all 5 Hadith-owned data suites clean, hadith-source-navigation-
+// browser.mjs 47/47 in both languages. No protected path touched, no
+// Firestore write/Rule/index. Allocated by the MMSA Architect.
+export const APP_VERSION = "08.44";
