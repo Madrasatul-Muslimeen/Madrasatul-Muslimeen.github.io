@@ -1,6 +1,15 @@
 // Health Atlas — References index: a COMMITTED, reproducible browser
 // acceptance test (parity tranche 9).
 //
+// UPDATED IN PLACE, tranche 10 (issue #115 Gate A/B): the view switcher's
+// buttons no longer carry role="tab"/aria-selected — see
+// health-atlas-view.js's buildViewTabs() and
+// references-tabs-accessibility-browser.mjs for why (they are ordinary
+// view-switch buttons, not panel-associated tabs, and tranche 9's
+// role="tab" was incomplete ARIA that a keyboard/screen-reader user could
+// not actually operate). Every assertion below that read aria-selected now
+// reads aria-pressed instead; nothing else in this file changed.
+//
 // WHY THIS FILE EXISTS. Following the precedent
 // body-systems-parity-browser.mjs set in tranche 8 (a "focused,
 // un-checked-in Playwright script, deleted before commit" is real when it
@@ -131,10 +140,10 @@ async function main() {
       });
 
       await check('desktop: Body Systems tab is the default, References is not active', async () => {
-        const bodySystemsSelected = await page.locator('.ha-view-tab', { hasText: 'Body Systems' }).getAttribute('aria-selected');
-        const referencesSelected = await page.locator('.ha-view-tab', { hasText: 'References' }).getAttribute('aria-selected');
-        assert(bodySystemsSelected === 'true', `expected Body Systems tab selected by default, got aria-selected="${bodySystemsSelected}"`);
-        assert(referencesSelected === 'false', `expected References tab not selected by default, got aria-selected="${referencesSelected}"`);
+        const bodySystemsPressed = await page.locator('.ha-view-tab', { hasText: 'Body Systems' }).getAttribute('aria-pressed');
+        const referencesPressed = await page.locator('.ha-view-tab', { hasText: 'References' }).getAttribute('aria-pressed');
+        assert(bodySystemsPressed === 'true', `expected Body Systems tab selected by default, got aria-pressed="${bodySystemsPressed}"`);
+        assert(referencesPressed === 'false', `expected References tab not selected by default, got aria-pressed="${referencesPressed}"`);
         assert(await page.locator('.ha-bs-3col').isVisible(), 'expected the Body Systems 3-column grid to be showing by default');
         assert(await page.locator('.ha-refs-index').count() === 0, 'expected no References table in the DOM before switching tabs');
       });
@@ -143,8 +152,8 @@ async function main() {
         await openReferencesTab(page);
         assert(await page.locator('.ha-refs-index').isVisible(), 'expected the References index to render');
         assert(await page.locator('.ha-bs-3col').count() === 0, 'expected the Body Systems grid to be gone while on the References tab');
-        const referencesSelected = await page.locator('.ha-view-tab', { hasText: 'References' }).getAttribute('aria-selected');
-        assert(referencesSelected === 'true', 'expected the References tab to read aria-selected="true" once active');
+        const referencesPressed = await page.locator('.ha-view-tab', { hasText: 'References' }).getAttribute('aria-pressed');
+        assert(referencesPressed === 'true', 'expected the References tab to read aria-pressed="true" once active');
       });
 
       await check('desktop: the table lists exactly the 8 general references, each a real external link', async () => {
@@ -190,8 +199,8 @@ async function main() {
         assert((await heading.textContent()) === 'Lungs', `expected the detail column to show Lungs, got "${await heading.textContent()}"`);
         const badges = page.locator('.ha-detail-card .ha-evidence-badge');
         assert(await badges.count() > 0, 'expected the opened organ to render its own evidence badges, same as opening it any other way');
-        const bodySystemsSelected = await page.locator('.ha-view-tab', { hasText: 'Body Systems' }).getAttribute('aria-selected');
-        assert(bodySystemsSelected === 'true', 'expected the Body Systems tab to read as selected after opening an organ from References');
+        const bodySystemsPressed = await page.locator('.ha-view-tab', { hasText: 'Body Systems' }).getAttribute('aria-pressed');
+        assert(bodySystemsPressed === 'true', 'expected the Body Systems tab to read as selected after opening an organ from References');
       });
 
       await check('desktop: the index disclaims per-statement verification in visible rendered text, not just source', async () => {
