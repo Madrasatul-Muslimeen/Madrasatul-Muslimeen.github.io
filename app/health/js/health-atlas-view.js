@@ -61,6 +61,27 @@
 //       source's pointer-only divider — the same kind of addition the
 //       wheel wedges already carry. The middle (wheel) column stays
 //       flexible, as in the source.
+//
+// PARITY TRANCHE 9 (see docs/reports/2026-09-21-health-atlas-references-
+// index-tranche9.md): a References index, one new top-level view mode
+// alongside Body Systems (a small two-tab bar; the source's own References
+// tab is a flat id/name/url table with no organ links at all — see that
+// report's Gate A for why this tranche goes beyond the source there). Each
+// of the 8 HEALTH_ATLAS_REFERENCES rows lists the organs whose own .refs[]
+// names it (organsForReference(), the reverse of the existing
+// referencesFor()) — NOT a new field, the same .refs array the detail
+// column's "General references" block already reads. An organ pill is a
+// REAL link into the existing organ detail column (switches back to Body
+// Systems and calls the same onSelectOrgan() path the sections list and
+// the wheel already use) rather than a dead reference, since the app has
+// no URL-addressable per-organ route to link to instead (Gate A finding).
+// Explicitly NOT a claim that a listed reference backs any one function
+// statement individually — every statement's own evidence badge already
+// makes that distinction (health-atlas-claims.js), and this index changes
+// none of them; the index note says so in words. One reference (USDA
+// FoodData Central) genuinely lists no organ in this dataset — a real
+// case, not a hypothetical, so the "no organ" branch below has real
+// coverage.
 
 import {
   listSystems,
@@ -68,7 +89,8 @@ import {
   getOrgan,
   referencesFor,
   organCountsBySystem,
-  matchesOrganSearch
+  matchesOrganSearch,
+  organsForReference
 } from './health-atlas-selectors.js';
 import {
   EVIDENCE_STATUS,
@@ -476,6 +498,67 @@ function buildBodySystemsScreen(state, data, callbacks) {
   return grid;
 }
 
+/* ---------- View tabs + References index (parity tranche 9) ---------- */
+const VIEW_TABS = [
+  { id: 'bodysystems', label: 'Body Systems' },
+  { id: 'references', label: 'References' }
+];
+
+function buildViewTabs(state, callbacks) {
+  const buttons = VIEW_TABS.map((tab) => {
+    const active = state.viewMode === tab.id;
+    const btn = el('button', {
+      type: 'button',
+      class: `ha-view-tab${active ? ' ha-view-tab-active' : ''}`,
+      role: 'tab',
+      'aria-selected': active ? 'true' : 'false',
+      text: tab.label
+    });
+    btn.addEventListener('click', () => callbacks.onSwitchView(tab.id));
+    return btn;
+  });
+  return el('div', { class: 'ha-view-tabs', role: 'tablist', 'aria-label': 'Health Atlas view' }, buttons);
+}
+
+function buildReferencesScreen(data, callbacks) {
+  const rows = Object.entries(data.referencesById).map(([id, ref]) => {
+    const organs = organsForReference(data.organs, id);
+    const organsCell = organs.length
+      ? el('ul', { class: 'ha-ref-organ-list' }, organs.map((organ) => {
+          const btn = el('button', { type: 'button', class: 'ha-ref-organ-link', text: organ.name });
+          btn.addEventListener('click', () => callbacks.onOpenOrganFromReferences(organ.id));
+          return el('li', {}, [btn]);
+        }))
+      : el('span', { class: 'ha-ref-none', text: 'No organ in this dataset names this reference directly' });
+
+    return el('tr', {}, [
+      el('td', { class: 'ha-ref-id', text: id }),
+      el('td', {}, [el('a', { class: 'ha-ref-link', href: ref.url, target: '_blank', rel: 'noopener', text: ref.name })]),
+      el('td', {}, [organsCell])
+    ]);
+  });
+
+  const table = el('table', { class: 'ha-refs-table' }, [
+    el('thead', {}, [el('tr', {}, [
+      el('th', { text: 'Ref' }),
+      el('th', { text: 'Source' }),
+      el('th', { text: 'Organs in this dataset that cite it' })
+    ])]),
+    el('tbody', {}, rows)
+  ]);
+
+  return el('div', { class: 'ha-refs-index' }, [
+    el('p', { class: 'ha-refs-index-note', text: 'General public-health references this dataset’s organ material draws from. A reference listed for an organ backs that organ’s material in general, not any one function statement individually — open an organ and see its own evidence badge for that distinction. None of the 82 function statements in this dataset is verified against a specific source here.' }),
+    table
+  ]);
+}
+
+/* ---------- Root screen dispatch ---------- */
+function buildScreen(state, data, callbacks) {
+  if (state.viewMode === 'references') return buildReferencesScreen(data, callbacks);
+  return buildBodySystemsScreen(state, data, callbacks);
+}
+
 export function mountHealthAtlas(container, rawData) {
   const referencesById = rawData.references;
   const data = {
@@ -485,6 +568,7 @@ export function mountHealthAtlas(container, rawData) {
   };
 
   const state = {
+    viewMode: 'bodysystems',
     openSections: new Set(),
     searchTerm: '',
     wheelLevel: 'systems',
@@ -493,16 +577,36 @@ export function mountHealthAtlas(container, rawData) {
     colWidths: defaultColWidths()
   };
 
+  function selectOrgan(organId) {
+    const organ = getOrgan(data.organs, organId);
+    state.selectedOrganId = organId;
+    if (organ) {
+      state.wheelActiveSystem = organ.system;
+      state.wheelLevel = 'items';
+      state.openSections.add(organ.system);
+    }
+  }
+
   function draw() {
     container.textContent = '';
     container.appendChild(el('div', {
       class: 'ha-draft-banner',
       text: 'DRAFT — general reference dataset for internal review only. Not per-fact verified. Not medical advice. Read-only: nothing on this page can be added, edited, deleted or reordered yet.'
     }));
-    container.appendChild(buildBodySystemsScreen(state, data, callbacks));
+    container.appendChild(buildViewTabs(state, callbacks));
+    container.appendChild(buildScreen(state, data, callbacks));
   }
 
   const callbacks = {
+    onSwitchView(mode) {
+      state.viewMode = VIEW_TABS.some((t) => t.id === mode) ? mode : state.viewMode;
+      draw();
+    },
+    onOpenOrganFromReferences(organId) {
+      selectOrgan(organId);
+      state.viewMode = 'bodysystems';
+      draw();
+    },
     onSearch(value) {
       state.searchTerm = value;
       draw();
@@ -528,13 +632,7 @@ export function mountHealthAtlas(container, rawData) {
       draw();
     },
     onSelectOrgan(organId) {
-      const organ = getOrgan(data.organs, organId);
-      state.selectedOrganId = organId;
-      if (organ) {
-        state.wheelActiveSystem = organ.system;
-        state.wheelLevel = 'items';
-        state.openSections.add(organ.system);
-      }
+      selectOrgan(organId);
       draw();
     },
     onWheelBack() {

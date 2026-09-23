@@ -34,7 +34,8 @@ const {
   getOrgan,
   referencesFor,
   organCountsBySystem,
-  matchesOrganSearch
+  matchesOrganSearch,
+  organsForReference
 } = await importEsmFile(path.join(repoRoot, 'app', 'health', 'js', 'health-atlas-selectors.js'));
 
 const {
@@ -118,6 +119,40 @@ check('matchesOrganSearch: a term matching neither name nor any function returns
 check('matchesOrganSearch: is safe against an organ with no functions array', () => {
   assert(matchesOrganSearch({ name: 'X' }, 'anything') === false, 'expected false, not a throw');
   assert(matchesOrganSearch({ name: 'X' }, '') === true, 'blank term should still match');
+});
+
+// organsForReference (references-index tranche 9, additive) — the reverse
+// of referencesFor(): reference id -> organs whose own .refs[] names it.
+check('organsForReference: r1 (MedlinePlus) is cited by every one of the 46 organs', () => {
+  const organs = organsForReference(HEALTH_ATLAS_ORGANS, 'r1');
+  assert(organs.length === HEALTH_ATLAS_ORGANS.length, `got ${organs.length}, expected all ${HEALTH_ATLAS_ORGANS.length}`);
+});
+
+check('organsForReference: r5 (USDA FoodData Central) is cited by no organ — a real case, not hypothetical', () => {
+  const organs = organsForReference(HEALTH_ATLAS_ORGANS, 'r5');
+  assert(Array.isArray(organs) && organs.length === 0, `got ${organs.length}, expected 0`);
+});
+
+check('organsForReference: every returned organ really names the id in its own .refs[]', () => {
+  const organs = organsForReference(HEALTH_ATLAS_ORGANS, 'r7');
+  assert(organs.length > 0, 'expected at least one organ for r7 (World Health Organization)');
+  assert(organs.every(o => Array.isArray(o.refs) && o.refs.includes('r7')), 'a returned organ does not actually name r7');
+});
+
+check('organsForReference: an unknown reference id returns an empty array, not a throw', () => {
+  const organs = organsForReference(HEALTH_ATLAS_ORGANS, 'no-such-ref');
+  assert(Array.isArray(organs) && organs.length === 0, 'expected an empty array for an unknown reference id');
+});
+
+check('organsForReference: is safe against a non-array organs list entry with no refs field', () => {
+  const organs = organsForReference([{ id: 'x', name: 'X' }], 'r1');
+  assert(Array.isArray(organs) && organs.length === 0, 'expected an empty array, not a throw');
+});
+
+check('sanity: HEALTH_ATLAS_REFERENCES has exactly the 8 ids the source defines', () => {
+  const ids = Object.keys(HEALTH_ATLAS_REFERENCES).sort();
+  const expected = ['r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7', 'r8'];
+  assert(ids.length === expected.length && expected.every(id => ids.includes(id)), `got [${ids.join(', ')}]`);
 });
 
 console.log(`\nHealth Atlas selectors: ${passed} passed, ${failed} failed`);
