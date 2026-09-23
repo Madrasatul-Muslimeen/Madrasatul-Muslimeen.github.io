@@ -19,6 +19,20 @@
 // Every displayed food/disease/age-group entry also carries the same DRAFT
 // / "not medical advice" notice the foundation tranche uses, and the same
 // general-references block (via the existing, generic referencesFor()).
+//
+// SEARCH (parity tranche 11, additive). Foods and Conditions each gain a
+// text filter, matching the source app's own per-tab search boxes and
+// reusing health-atlas.html's existing `.ha-search-box`/`.ha-search-input`
+// classes verbatim (copied into this page's own stylesheet). Filtering
+// goes through matchesFoodSearch/matchesDiseaseSearch, which are scoped to
+// the same safe fields this view already renders — see the boundary
+// comment in health-atlas-more-selectors.js for why the source's own
+// whole-object `matches()` is deliberately not replicated. Age Groups gets
+// no search box, matching the source (it has none there either). The
+// search box is part of the LIST state only, same as the tab bar — it
+// disappears behind an open detail card and reappears on "back", and the
+// typed term is preserved across that round trip because it lives in this
+// closure's own state, not reset by view code.
 
 import {
   listFoodCategories,
@@ -28,7 +42,9 @@ import {
   listDiseases,
   getDisease,
   listAgeGroups,
-  getAgeGroup
+  getAgeGroup,
+  matchesFoodSearch,
+  matchesDiseaseSearch
 } from './health-atlas-more-selectors.js';
 import { referencesFor } from './health-atlas-selectors.js';
 
@@ -70,6 +86,12 @@ function plainList(items, className) {
   return el('ul', { class: className || 'ha-plain' }, items.map(t => el('li', { text: t })));
 }
 
+function searchBox(placeholder, term, onSearch) {
+  const input = el('input', { type: 'text', class: 'ha-search-input', placeholder, value: term });
+  input.addEventListener('input', (e) => onSearch(e.target.value));
+  return el('div', { class: 'ha-search-box' }, [input]);
+}
+
 function tabBar(tabs, activeId, onSelect) {
   const bar = el('div', { class: 'ha-tabbar' });
   for (const tab of tabs) {
@@ -103,10 +125,11 @@ function renderFoodDetail(data, foodId, onBack) {
   ]);
 }
 
-function renderFoodList(data, onOpenFood) {
+function renderFoodList(data, term, onSearch, onOpenFood) {
   const categories = listFoodCategories(data.foods);
   const blocks = categories.map(cat => {
-    const items = foodsByCategory(data.foods, cat);
+    const items = foodsByCategory(data.foods, cat).filter(f => matchesFoodSearch(f, term));
+    if (!items.length) return null;
     const heading = el('div', { class: 'ha-system-head' }, [
       el('span', { class: 'ha-system-name', text: cat }),
       el('span', { class: 'ha-system-count', text: `${items.length} item${items.length === 1 ? '' : 's'}` })
@@ -117,9 +140,14 @@ function renderFoodList(data, onOpenFood) {
       return el('li', {}, [btn]);
     });
     return el('section', { class: 'ha-system-block' }, [heading, el('ul', { class: 'ha-organ-list' }, buttons)]);
-  });
+  }).filter(Boolean);
+  const empty = !blocks.length
+    ? el('p', { class: 'ha-empty', text: 'No matches. Try a different search.' })
+    : null;
   return el('div', { class: 'ha-system-list' }, [
+    searchBox('Search foods…', term, onSearch),
     el('p', { class: 'ha-intro', text: 'Grouped by category. Amounts and serving guidance are deliberately not shown here — see the tranche report.' }),
+    empty,
     ...blocks
   ]);
 }
@@ -147,14 +175,20 @@ function renderDiseaseDetail(data, diseaseId, onBack) {
   ]);
 }
 
-function renderDiseaseList(data, onOpenDisease) {
-  const items = listDiseases(data.diseases).map(d => {
+function renderDiseaseList(data, term, onSearch, onOpenDisease) {
+  const matched = listDiseases(data.diseases).filter(d => matchesDiseaseSearch(d, term));
+  const items = matched.map(d => {
     const btn = el('button', { class: 'ha-organ-btn', type: 'button', text: d.name });
     btn.addEventListener('click', () => onOpenDisease(d.id));
     return el('li', {}, [btn]);
   });
+  const empty = !matched.length
+    ? el('p', { class: 'ha-empty', text: 'No matches. Try a different search.' })
+    : null;
   return el('div', {}, [
+    searchBox('Search conditions…', term, onSearch),
     el('p', { class: 'ha-intro', text: 'Cause and symptom information only. Treatment-related and dosage content is deliberately not shown here.' }),
+    empty,
     el('ul', { class: 'ha-organ-list' }, items)
   ]);
 }
@@ -201,6 +235,24 @@ export function mountHealthAtlasMore(container, rawData) {
 
   let activeTab = 'foods';
   let openDetailId = null;
+  // Independent per tab, not reset on tab switch or on opening/closing a
+  // detail card — same persistence the source app's own SEARCH_TERM object
+  // gives each tab.
+  const searchTerm = { foods: '', diseases: '' };
+
+  function onSearch(term) {
+    return value => {
+      searchTerm[term] = value;
+      draw();
+      // Re-focus after the full redraw so typing isn't interrupted — the
+      // same reason health-atlas-view.js's own organ search does this.
+      const input = container.querySelector('.ha-search-input');
+      if (input) {
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+      }
+    };
+  }
 
   function draw() {
     container.textContent = '';
@@ -213,11 +265,11 @@ export function mountHealthAtlasMore(container, rawData) {
     if (activeTab === 'foods') {
       container.appendChild(openDetailId
         ? renderFoodDetail(data, openDetailId, () => { openDetailId = null; draw(); })
-        : renderFoodList(data, id => { openDetailId = id; draw(); }));
+        : renderFoodList(data, searchTerm.foods, onSearch('foods'), id => { openDetailId = id; draw(); }));
     } else if (activeTab === 'diseases') {
       container.appendChild(openDetailId
         ? renderDiseaseDetail(data, openDetailId, () => { openDetailId = null; draw(); })
-        : renderDiseaseList(data, id => { openDetailId = id; draw(); }));
+        : renderDiseaseList(data, searchTerm.diseases, onSearch('diseases'), id => { openDetailId = id; draw(); }));
     } else {
       container.appendChild(openDetailId
         ? renderAgeGroupDetail(data, openDetailId, () => { openDetailId = null; draw(); })

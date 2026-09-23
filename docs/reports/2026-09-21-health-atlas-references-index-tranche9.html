@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Health Atlas — References index, tranche 9 (2026-09-21)</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  blockquote { margin:1rem 0; padding:.4rem 1rem; border-left:3px solid var(--accent); color:var(--muted); background:var(--card); border-radius:0 .4rem .4rem 0 }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+
+<h1>Health Atlas &mdash; References index, tranche 9 (2026-09-21)</h1>
+<p>Authoritative timestamp: <strong>2026-09-21, UTC</strong>.</p>
+<p>Dispatched via the MMSA task bridge (issue #115, comment <code>5761149699</code>). Developed as <code>claude/health-atlas-references-index-tranche9</code>, <strong>stacked on PR #145's own head <code>665eac92</code></strong> (itself stacked on PR #142's head <code>3d6be395</code>, itself stacked on PR #140's head <code>0c6fc05c</code>, itself based on <code>main</code> at <code>16cfb0b</code> where PR #127 is already merged) &mdash; review in that order: <strong>#140, then #142, then #145, then this PR.</strong></p>
+<h2>0. What was verified before changing anything</h2>
+<p>Read, not assumed, before any edit:</p>
+<ul>
+<li><strong><code>main</code></strong>: <code>origin/main</code> at <code>16cfb0b3512609313a68d487dca28945a31855b8</code>, <code>app/js/version.js</code> reads <code>v08.32</code>. PR #127 (Health Atlas combined candidate) is merged into it.</li>
+<li><strong>The source</strong>: <code>health/source-v02-04-handover</code>, commit <code>ed4dbb2e535ba6b95ea286a5f3b29a32122ea4b9</code> (&#8220;Stage exact Health Atlas v02.04 standalone source for isolated integration review&#8221;) &mdash; present on the remote, matches the comment's own reference exactly. <code>docs/health-source/ health-atlas-v02.04-standalone.html</code> on that commit SHA-256s to <code>f7cb56980ae125bb387118c9282bf50c92b5fe414ca3480fa92547e9af9685a1</code>, the same hash <code>health-atlas-data.js</code>'s own <code>sourceSha256</code> field already records &mdash; confirmed, not re-trusted.</li>
+<li><strong>The exact PR heads the comment names</strong>: #145 head <code>665eac9293848e8ff9163f45e1db8c9f34c93e97</code> (fetched from <code>claude/health-atlas-tranche8-browser-evidence</code>), stacked on #142's <code>3d6be395</code> (base <code>claude/laughing-goodall-8moeiq</code>), stacked on #140's <code>0c6fc05c</code> (base <code>claude/laughing-goodall-90k6mh</code>, itself based on <code>main</code>) &mdash; <strong>all three match the comment's own claim exactly</strong>, read from the PRs themselves rather than trusted from the comment text.</li>
+<li><strong>Issue #115's own parity matrix</strong> (tranche 8's report, §2): 3 built pages, Lifestyle deferred (no clean structural/organizational subset), and <strong>&#8220;References&#8221; listed as &#8220;Not built as its own browser &mdash; the 8 references are shown inline, per organ … no standalone list-all-references view exists.&#8221;</strong> This tranche is exactly that item.</li>
+</ul>
+<h2>1. Independent review of PR #145's committed browser test</h2>
+<p><strong>Reproducibility, checked by actually running it, not by reading its report.</strong> <code>tools/health-atlas-verify/body-systems-parity-browser.mjs</code> imports <code>chromium</code> from the bare specifier <code>'playwright'</code>. In this sandbox that import fails by default &mdash; <code>playwright</code> is installed globally (<code>$(npm root -g)/playwright</code>) but Node's ESM resolver, unlike <code>require()</code>, does not consult <code>NODE_PATH</code>, so a bare <code>import &#8216;playwright&#8217;</code> cannot see it. This is <strong>not a defect in the suite</strong>: its own header comment already states the precondition plainly &mdash; <em>&#8220;whoever runs this suite provides the same working <code>playwright</code> import every other Playwright-based suite in this repository already assumes&#8221;</em> &mdash; the same precondition every suite under <code>tools/i18n-verify/</code> sharing <code>harness.mjs</code> already carries, and this repository deliberately ships no <code>package.json</code> that could declare it (PR #105's own report). What actually made it reproducible here: a <code>node_modules/playwright</code> symlink to the global install, created locally (<code>node_modules/</code> is already <code>.gitignore</code>d &mdash; confirmed before creating it) and removed again once verification finished. Recorded here because &#8220;committed and reproducible&#8221; is a claim worth being precise about, not because anything needs fixing.</p>
+<p><strong>Server reuse</strong>, read from source and confirmed by running it twice concurrently in the same session (once for this file, once moments later for this tranche's own new suite, §3): <code>ensureServer()</code> pings <code>GET /app/health/health-atlas.html</code> on port 8080 first and only spawns <code>serve.js</code> if that fails, so a session with its own server already up is reused rather than fought &mdash; confirmed: the second suite's run in this session reused the first's server (<code>pingServer()</code> returned <code>true</code> immediately, no second <code>serve.js</code> process spawned).</p>
+<p><strong>Independently run, raw results</strong>:</p>
+<ul>
+<li><code>body-systems-parity-browser.mjs</code>: <strong>16 passed, 0 failed</strong> &mdash; re-run against the checked-out stack before any edit in this tranche, then re-run again after every edit below to confirm nothing regressed (§4).</li>
+<li>All 15 pre-existing Health-owned suites: <strong>249 passed, 0 failed</strong>, byte-identical to PR #145's own claimed count.</li>
+<li>All 7 governance suites, after <code>git fetch --unshallow</code> and fetching the one HELD ref the ledger currently declares (<code>docs/governance/programme-integration-ledger.json</code>'s <code>quran-phase4-wiring.activeBranch</code>, <code>claude/phase4-wiring</code> &mdash; the ledger no longer names <code>claude/pensive-knuth-2pu3jj</code> at all, confirmed by grep before assuming it still needed fetching): <strong>182 passed, 0 failed.</strong></li>
+</ul>
+<h2>2. Gate A &mdash; the References index, specified before building</h2>
+<p><strong>Exact source fields.</strong> The source's own References tab (<code>renderRefsTab()</code>, source lines 2625&ndash;2636) is a flat table over <code>REFERENCES = {r1..r8}</code>, each <code>{name, url}</code> &mdash; id, name, a plain <code>&lt;a&gt;</code> to the url. <strong>No per-reference organ list, no organ links of any kind</strong> &mdash; confirmed by reading the function body directly, not inferred. Already ported into this codebase unchanged, as <code>HEALTH_ATLAS_REFERENCES</code> in <code>health-atlas-data.js</code> (8 entries, same ids/names/urls, SHA-verified against the source above), and already read once &mdash; every organ's own <code>.refs[]</code> array names a subset of these ids, resolved by the existing <code>referencesFor()</code> selector and rendered as the detail column's &#8220;General references&#8221; block (foundation tranche 1, unchanged since).</p>
+<p><strong>The comment's own instruction goes beyond the source</strong>: <em>&#8220;links into existing organ detail where supported&#8221;</em> &mdash; the source has no such links at all. Investigated what &#8220;where supported&#8221; can mean mechanically: an organ &#8220;supports&#8221; a reference exactly when that reference's id appears in the organ's own <code>.refs[]</code> &mdash; the reverse of the read <code>referencesFor()</code> already performs. Measured, not assumed: of the 8 references, <code>r1</code> (MedlinePlus) is named by all 46 organs, <code>r2</code> (Mayo Clinic) by 41, down to <code>r5</code> (USDA FoodData Central) by <strong>zero</strong> &mdash; a real, not hypothetical, &#8220;no organ&#8221; case (USDA FoodData Central backs food-nutrition figures this view has never rendered, per the existing deferral boundary &mdash; see <code>view-boundary.mjs</code>).</p>
+<p><strong>Ownership.</strong> Every file this tranche touches is Health-owned: <code>app/health/health-atlas.html</code>, <code>app/health/js/health-atlas-selectors.js</code>, <code>app/health/js/health-atlas-view.js</code>, <code>tools/health-atlas-verify/selectors.mjs</code>, <code>tools/health-atlas-verify/view-boundary-wheel.mjs</code>, plus one new file, <code>tools/health-atlas-verify/references-index-browser.mjs</code>. Checked by name against every protected-path family the task names (version, platform-shared files, platform-shared tooling, governance, deployment/security, the gate itself): <strong>zero matches</strong> (§5).</p>
+<p><strong>Browser acceptance, decided before building.</strong> The app has <strong>no URL-addressable per-organ route</strong> &mdash; <code>health-atlas.html</code> takes no query parameter, and organ selection lives entirely in <code>mountHealthAtlas()</code>'s own closure state (<code>state.selectedOrganId</code>), set by <code>draw()</code> calls, not by navigation. So a real <code>&lt;a href=&#8220;...&#8221;&gt;</code> from a References row into &#8220;the Heart page&#8221; cannot be built &mdash; there is no such page. The mechanism actually available, and the one this tranche uses: a button wired to the same <code>onSelectOrgan()</code> callback path the sections column and the wheel legend already call, which is a real link into the SAME detail column those two already open, not a separate/duplicate view. Verified by browser test, not assumed (§3): clicking an organ pill under a reference switches back to the Body Systems tab and opens that exact organ, with its own evidence badges rendering exactly as if it had been opened any other way.</p>
+<p><strong>Privacy/clinical boundary.</strong> No new field is read: <code>organsForReference()</code> reads only <code>.refs</code>, the field <code>referencesFor()</code> already reads. Nothing in <code>nutritionNeeds</code>/<code>foodSources</code>/<code>.activity</code>/ <code>deterioration</code>/<code>remedies</code>/<code>homeRemedies</code>/<code>naturalRemedies</code> or the <code>HEALTH_ATLAS_FOODS</code>/ <code>HEALTH_ATLAS_DISEASES</code>/<code>HEALTH_ATLAS_LIFESTYLES</code>/<code>HEALTH_ATLAS_AGES</code> datasets is touched &mdash; asserted mechanically by the unmodified <code>view-boundary.mjs</code>/<code>view-boundary-wheel.mjs</code> forbidden-identifier sweeps, which now also cover this tranche's added code (both suites re-read the same files this tranche edited). <strong>The evidence-provenance boundary is the one most at risk of a &#8220;helpful&#8221; but false claim, so it gets its own explicit check</strong>: the index's own note text disclaims that a reference listed for an organ backs that organ's material <em>in general</em>, never any one function statement individually, and never itself decides a statement is <code>cited-evidence</code> (that stays <code>health-atlas-claims.js</code>'s job alone, unchanged and unread by this tranche's new code beyond the existing badge renderer). Both a static positive control (<code>view-boundary-wheel.mjs</code>) and a browser check (<code>references-index-browser.mjs</code>) assert this, and both were proven able to fail by the same two mutations (§4).</p>
+<p><strong>Parity delta, exact.</strong> Source: References is a flat table, no organ links, part of a six-tab single-page app. Built here: References is a second top-level view mode (a two-tab bar) inside the existing single Body Systems page, same 8 rows, <strong>plus</strong> a reverse index (reference &rarr; citing organs) the source never had, <strong>plus</strong> real links into the existing organ detail column the source also never had (the source has no separate &#8220;organ detail&#8221; concept to link into &mdash; its own detail pane is driven by the same in-page wheel/legend selection this app's Body Systems screen already mirrors). Net: this tranche is source-faithful in DATA (the same 8 references, same names/urls, no invented reference) and deliberately non-faithful in ONE interaction (organ links), on the comment's own explicit instruction and because the app's existing architecture makes that the correct-shaped addition rather than a new page.</p>
+<h2>3. Gate B &mdash; built (Gate A found no blocker)</h2>
+<ul>
+<li><strong><code>organsForReference(organs, referenceId)</code></strong> in <code>health-atlas-selectors.js</code> &mdash; the reverse of the existing <code>referencesFor()</code>. Pure, no DOM, reads only <code>.refs</code>.</li>
+<li><strong><code>buildViewTabs()</code> / <code>buildReferencesScreen()</code> / <code>buildScreen()</code></strong> in <code>health-atlas-view.js</code> &mdash; a small <code>state.viewMode</code> (<code>'bodysystems' | &#8216;references&#8217;</code>), a two-tab bar rendered above whichever screen is active, and the References table itself (id / linked source name / organ pills, or a &#8220;no organ in this dataset names this reference directly&#8221; sentence when empty). Organ-selection logic was factored into one <code>selectOrgan()</code> helper so <code>onSelectOrgan</code> (existing) and <code>onOpenOrganFromReferences</code> (new) share the exact same state mutation &mdash; no second, divergent &#8220;open an organ&#8221; code path.</li>
+<li><strong>CSS</strong> for the tab bar and the references table in <code>health-atlas.html</code>, following the existing file's own variable/class naming (<code>--gold</code>, <code>.ha-*</code> prefixes).</li>
+<li><strong><code>node tools/health-atlas-verify/references-index-browser.mjs</code> (new, committed)</strong> &mdash; 12 checks, desktop (1280&times;900) / tablet (768&times;1024) / phone (390&times;844), mouse click, keyboard <code>Enter</code> on a focused tab, and a real touch <code>tap()</code>. Follows the exact precedent tranche 8 set with <code>body-systems-parity-browser.mjs</code> (same <code>check()</code>/<code>ensureServer()</code>/<code>pingServer()</code> shape, same &#8220;committed, not wired into <code>.github/workflows/verify.yml</code>&#8221; posture &mdash; that workflow already excludes this whole class, and widening it would touch the protected <code>.github/workflows/</code> family, outside this task's scope).</li>
+</ul>
+<h2>4. Verification</h2>
+<p><strong>All 17 Health-owned suites, run from the repository root, 0 failed</strong> (15 pre-existing + tranche 8's browser suite + this tranche's new browser suite):</p>
+<div class="tw"><table>
+<tr><th>Suite</th><th>Result</th></tr>
+<tr><td><code>data-integrity.mjs</code></td><td>21 passed</td></tr>
+<tr><td><code>selectors.mjs</code></td><td><strong>19 passed</strong> (13 + 6 new: <code>organsForReference</code>)</td></tr>
+<tr><td><code>claims-integrity.mjs</code></td><td>10 passed</td></tr>
+<tr><td><code>claims-mutations.mjs</code></td><td>7 passed</td></tr>
+<tr><td><code>view-boundary.mjs</code></td><td>14 passed</td></tr>
+<tr><td><code>view-provenance-boundary.mjs</code></td><td>7 passed</td></tr>
+<tr><td><code>view-provenance-mutations.mjs</code></td><td>4 passed</td></tr>
+<tr><td><code>more-selectors.mjs</code></td><td>9 passed</td></tr>
+<tr><td><code>view-boundary-more.mjs</code></td><td>26 passed</td></tr>
+<tr><td><code>view-boundary-more-mutations.mjs</code></td><td>7 passed</td></tr>
+<tr><td><code>categories-selectors.mjs</code></td><td>7 passed</td></tr>
+<tr><td><code>view-boundary-categories.mjs</code></td><td>58 passed</td></tr>
+<tr><td><code>view-boundary-categories-mutations.mjs</code></td><td>7 passed</td></tr>
+<tr><td><code>view-boundary-wheel.mjs</code></td><td><strong>57 passed</strong> (53 + 4 new: References index positive controls)</td></tr>
+<tr><td><code>view-boundary-wheel-mutations.mjs</code></td><td>6 passed</td></tr>
+<tr><td><code>body-systems-parity-browser.mjs</code></td><td>16 passed (unmodified; re-run to confirm no regression)</td></tr>
+<tr><td><code>references-index-browser.mjs</code> (new)</td><td><strong>12 passed</strong></td></tr>
+</table></div>
+<p><strong>287 passed, 0 failed.</strong> The 15 files this tranche did not touch reproduce PR #145's own counts exactly (249); the +10 in <code>selectors.mjs</code>/<code>view-boundary-wheel.mjs</code> and the +12 new browser suite are this tranche's own additions.</p>
+<p><strong>All 7 governance suites, after the same full-history + required-ref preflight as §1: 182 passed, 0 failed.</strong> Neither guard script was read, edited or weakened; none of this tranche's files are anything either guard reads.</p>
+<p><strong>Mutation-proven, not just asserted able to fail</strong> &mdash; two independent mutations, each caught by more than one guard, then reverted (<code>git diff --stat app/health/js/health-atlas-view.js</code> confirmed empty before proceeding each time):</p>
+<ol>
+<li><strong>Removed the return-to-Body-Systems switch</strong> (<code>state.viewMode = &#8216;bodysystems&#8217;</code> in <code>onOpenOrganFromReferences</code>). Caught by <code>references-index-browser.mjs</code> (2 of 12 checks failed: the desktop click assertion, and the phone tap &mdash; the latter as a genuine timeout, since the detail column literally does not appear while <code>viewMode</code> stays <code>'references'</code>).</li>
+<li><strong>Weakened the disclaimer text</strong> (<code>'not any one function statement individually'</code> &rarr; <code>'EVERY function statement individually verified'</code>, simulating exactly the false claim Gate A said this tranche must never make). Caught <strong>independently by two different guards</strong>: the new browser suite (1 of 12 failed, quoting the corrupted sentence back) AND the static <code>view-boundary-wheel.mjs</code> positive control (1 of 57 failed) &mdash; confirming the disclaimer is enforced both in the rendered page and in the source text, not only one or the other.</li>
+</ol>
+<p><strong>Not applicable: browser English/Bangla.</strong> No i18n on any Health Atlas page (unchanged from every prior tranche's own finding).</p>
+<p><strong>Not applicable: head-specific CI.</strong> <code>.github/workflows/verify.yml</code> runs only the seven governance suites; none of <code>tools/health-atlas-verify/</code> is wired into it. Run directly, as every prior tranche has.</p>
+<h2>5. Diff budget</h2>
+<p><code>app/health/health-atlas.html</code> (CSS + header/footer copy for the tab bar and index), <code>app/health/js/ health-atlas-selectors.js</code> (+<code>organsForReference</code>), <code>app/health/js/health-atlas-view.js</code> (view tabs + References screen + the <code>selectOrgan()</code> refactor), <code>app/health/README.md</code> (+Tranche 9 section), <code>tools/health-atlas-verify/selectors.mjs</code> (+6 checks), <code>tools/health-atlas-verify/ view-boundary-wheel.mjs</code> (+4 checks), <code>tools/health-atlas-verify/references-index-browser.mjs</code> (new), and this report's own <code>.md</code>/<code>.html</code>. Checked by name against every protected-path family named in the task &mdash; version (<code>app/js/version.js</code>), platform-shared files (<code>CLAUDE.md</code>, <code>CHANGELOG.md</code>, <code>bn.js</code>, <code>nav.js</code>, <code>unit-keys.js</code>, <code>records.js</code>, <code>activity.js</code>, <code>catalogue-data.js</code>, <code>shell.css</code>), platform-shared tooling (<code>tools/i18n-verify/*</code>), governance (<code>docs/governance/<strong></code>), deployment/security (<code>firestore.rules</code>, <code>firebase.json</code>, <code>tests/firestore/</code>, <code>tools/firestore-emulator/</code>), the gate itself (<code>.github/workflows/</code>): </strong>zero matches.**</p>
+<h2>6. What this deliberately does not do</h2>
+<ul>
+<li>No version allocated or bumped &mdash; <code>app/js/version.js</code> untouched, v08.32 stands. This is a real reader-visible behaviour change (a new tab, a new screen), so per the task's own instruction it needs a version allocated by the Master Architect before it could ever be considered released; none is claimed here.</li>
+<li>No protected/shared path touched.</li>
+<li>Nothing merged or deployed; no approval claimed.</li>
+<li>Does not build the Lifestyle tab &mdash; still out of scope for the reason on record (tranche 8's §2: every substantive Lifestyle field is unverified guidance end to end).</li>
+<li>Does not add per-statement (as opposed to per-organ) reference citations &mdash; that would require actually tracing each of the 82 function statements to a specific source, which <code>health-atlas-claims.js</code>'s own header comment already says has never been attempted and remains <code>general-reference-only</code> for all 82.</li>
+<li>Does not add the new browser suite to <code>.github/workflows/verify.yml</code> &mdash; outside this task's scope, and that path is protected.</li>
+<li>Does not decide any future References/Lifestyle product shape &mdash; Owner/product calls, not test- or view-authoring ones.</li>
+</ul>
+<h2>7. Owner app test</h2>
+<p><strong>Required: NO before merge</strong> &mdash; nothing here is linked from shared nav or deployed, same posture as every prior tranche on this issue.</p>
+<p><strong>YES after merge</strong> (and after #140, #142 and #145, since this is stacked on all three), direct URL only, no sign-in/tenant, served over <code>http://</code> (not <code>file://</code>, <code>serve.js</code>):</p>
+<ol>
+<li>Open <code>app/health/health-atlas.html</code>. Confirm a &#8220;Body Systems / References&#8221; tab bar appears above the existing three-column layout, with &#8220;Body Systems&#8221; active by default and the layout unchanged.</li>
+<li>Click &#8220;References&#8221;. Confirm a table of 8 rows appears (Ref / Source / Organs in this dataset that cite it), each source name a real link that opens in a new tab.</li>
+<li>Find the row for &#8220;USDA FoodData Central&#8221; &mdash; confirm it says no organ in this dataset names it, rather than showing an empty cell.</li>
+<li>Find the row for &#8220;World Health Organization&#8221; &mdash; confirm it shows one organ pill, &#8220;Lungs&#8221;. Click it. Confirm the screen switches back to &#8220;Body Systems&#8221; (tab now active) and the detail column shows Lungs, with its own evidence badges, exactly as opening it from the system list would.</li>
+<li>Narrow the browser window to phone width and repeat step 2&ndash;4 with taps; confirm nothing scrolls the whole page sideways.</li>
+</ol>
+<hr>
+<p>🤖 Generated with <a href="https://claude.com/claude-code">Claude Code</a></p>
+<p><a href="https://claude.ai/code/session_01UsWaWXVy5JbJttGKEcqm7c">https://claude.ai/code/session_01UsWaWXVy5JbJttGKEcqm7c</a></p>
+<hr>
+<p><em>Generated by <a href="https://claude.ai/code/session_01UsWaWXVy5JbJttGKEcqm7c">Claude Code</a></em></p>
+
+</main></body></html>

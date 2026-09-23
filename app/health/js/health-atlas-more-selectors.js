@@ -36,6 +36,36 @@
 // file's own source text and health-atlas-more-view.js's — do not import
 // a new field or HEALTH_ATLAS_LIFESTYLES here without updating that guard
 // first.
+//
+// SEARCH (parity tranche 11, additive). The source app's own generic
+// `matches(item, term)` is `JSON.stringify(item).toLowerCase().includes(term)`
+// — it searches the ENTIRE serialized item, excluded fields included. That
+// is not source-faithful here: replicating it on Diseases would let a
+// search term surface a result because it appears in `remedies`,
+// `homeRemedies` or `naturalRemedies` — a hit list is itself a disclosure of
+// that hidden text's content even though the field is never rendered
+// directly, the exact class of leak `organNamesFor()`'s own dose-stripping
+// above already guards against for a different field. matchesFoodSearch and
+// matchesDiseaseSearch below are therefore scoped to EXACTLY the fields this
+// view already renders (the same discipline health-atlas-selectors.js's own
+// matchesOrganSearch uses for organs) — never the excluded ones. No search
+// predicate is added for Age Groups: the source app itself has none (its
+// own SEARCH_TERM carries no `age` key).
+export function matchesFoodSearch(food, term) {
+  const needle = String(term || '').trim().toLowerCase();
+  if (!needle) return true;
+  if (String(food.name || '').toLowerCase().includes(needle)) return true;
+  return String(food.category || '').toLowerCase().includes(needle);
+}
+
+export function matchesDiseaseSearch(disease, term) {
+  const needle = String(term || '').trim().toLowerCase();
+  if (!needle) return true;
+  if (String(disease.name || '').toLowerCase().includes(needle)) return true;
+  if ((disease.organAffected || []).some(o => String(o).toLowerCase().includes(needle))) return true;
+  if ((disease.cause || []).some(c => String(c).toLowerCase().includes(needle))) return true;
+  return (disease.symptoms || []).some(s => String(s).toLowerCase().includes(needle));
+}
 
 export function listFoodCategories(foods) {
   const seen = [];

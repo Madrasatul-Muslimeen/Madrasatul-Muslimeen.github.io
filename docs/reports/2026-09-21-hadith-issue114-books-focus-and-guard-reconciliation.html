@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hadith: Books/chapters keyboard-focus fix, and the programme-ledger-mutations 48/49 reconciliation</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Hadith: Books/chapters keyboard-focus fix, and the programme-ledger-mutations 48/49 reconciliation</h1>
+<p><strong>Date:</strong> 2026-09-21 (UTC) <strong>Trigger:</strong> issue #114, comment <code>5760404627</code> (<code>/mmsa-task</code>, author id <code>293311955</code>) <strong>Branch:</strong> <code>claude/laughing-goodall-iacemr</code>, built on PR #143&#x27;s head (<code>34c3fcd5</code>) <strong>Base:</strong> <code>main</code> at <code>16cfb0b3</code> (v08.32)</p>
+<h2>0. Scope of this comment</h2>
+<p>This round of the standing issue #114 asked for four things: (1) reconcile the <code>programme-ledger-mutations</code> &quot;48 passed, 1 failed&quot; figure PR #143 (and #141, #130) reported against issue #123&#x27;s own &quot;49 passed, 0 failed&quot; full-ref result; (2) verify the seven governance suites, the five Hadith suites, and head-specific CI on PR #143; (3) independently enumerate the eight distinct missing Bangla <code>t()</code> keys PR #143 already declared; (4) reproduce one real, independent Books/chapters usability defect (navigation/focus/identity) and, only if confirmed and Hadith-owned, fix it with focused tests, without overlapping PR #143&#x27;s breadcrumb fix or PR #141&#x27;s &quot;View in source&quot; jump.</p>
+<p>Everything below was verified directly in this session — nothing here is copied from a prior PR&#x27;s own claim without being re-run.</p>
+<h2>1. The 48/1 vs 49/0 reconciliation</h2>
+<p><strong>Reproduced from a completely fresh, single-branch clone</strong> (<code>git clone --branch main --single-branch</code>, no other refs at all): <code>programme-ledger-mutations.mjs</code> fails <strong>7</strong> checks, all four under guards A/B/C plus three under guard E — not one. Every failing case traces to the same root cause: the <code>quran-phase4-wiring</code> stream&#x27;s held branch (<code>claude/phase4-wiring</code>, the ledger&#x27;s only <code>activeBranch</code> entry) was never fetched, so the mutation fixtures&#x27; <code>facts.branches[...]</code> lookups came back empty.</p>
+<p><strong>Isolated the exact dependency</strong>: fetching every one of the other 100+ remote branches <em>except</em> <code>claude/phase4-wiring</code> still leaves the same 7 failures. Fetching <code>claude/phase4-wiring</code> alone, with nothing else fetched beyond <code>main</code>&#x27;s own full history, brings the suite to <strong>49 passed, 0 failed</strong>. This matches issue #123&#x27;s own comment <code>5754544986</code> finding exactly (&quot;all seven traced to the same root cause ... the suite is unmodified and passes 49/0&quot;).</p>
+<p><strong>Could not reproduce the specific &quot;48 passed, 1 failed&quot; figure</strong> PR #130/#141/#143 each reported under any combination of missing refs tried (full single-branch clone: 7 failed; every branch but <code>phase4-wiring</code>: 7 failed; everything fetched: 0 failed). Ran the suite three more times on fully-preflighted checkouts to be sure the result is stable, not intermittent:</p>
+<div class='tw'><table><thead><tr><th>Checkout</th><th>Result</th></tr></thead><tbody>
+<tr><td>This session&#x27;s own branch, at PR #143&#x27;s head, full history + <code>claude/phase4-wiring</code> fetched</td><td>49 passed, 0 failed</td></tr>
+<tr><td>A throwaway <code>git worktree</code> of PR #143&#x27;s exact head (<code>34c3fcd5</code>), same refs</td><td>49 passed, 0 failed</td></tr>
+<tr><td>A fresh <code>git clone --single-branch main</code>, then every remote branch fetched</td><td>49 passed, 0 failed</td></tr>
+</tbody></table></div>
+<p><strong>Conclusion, consistent with issue #123&#x27;s own prior finding</strong>: under a complete preflight (full history + the one ledger-declared HELD branch), <code>programme-ledger-mutations.mjs</code> reliably reports 49/0 on both <code>main</code> and PR #143&#x27;s own head. The &quot;1 failure&quot; three PRs on this thread reported does not reproduce here and was not chased further to its exact partial-fetch recipe — what matters for the guard&#x27;s own integrity is that a <em>complete</em> preflight gives a stable, reproducible 49/0, which this session confirms three ways. <strong>The protected suite (<code>programme-ledger-mutations.mjs</code>) was not edited.</strong></p>
+<h2>2. Seven governance suites + five Hadith suites, PR #143 head (worktree)</h2>
+<p>Run against a throwaway <code>git worktree</code> of <code>34c3fcd5</code> (PR #143&#x27;s exact head, untouched by anything in this round):</p>
+<div class='tw'><table><thead><tr><th>Governance suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>programme-ledger</code></td><td>8 passed, 23 noted, 0 failed</td></tr>
+<tr><td><code>programme-ledger-mutations</code></td><td>49 passed, 0 failed</td></tr>
+<tr><td><code>brief-integrity</code></td><td>8 passed, 0 failed</td></tr>
+<tr><td><code>study-activity-evidence-boundary</code></td><td>27 passed, 0 failed</td></tr>
+<tr><td><code>study-activity-evidence-boundary-mutations</code></td><td>11 passed, 0 failed</td></tr>
+<tr><td><code>study-event-wiring</code></td><td>41 passed, 0 failed</td></tr>
+<tr><td><code>rules-authorisation-executable</code></td><td>38 passed, 0 failed</td></tr>
+</tbody></table></div>
+<div class='tw'><table><thead><tr><th>Hadith suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>hadith-corpus</code></td><td>60 passed, 0 failed</td></tr>
+<tr><td><code>hadith-commentary-binding</code></td><td>14 passed, 0 failed</td></tr>
+<tr><td><code>hadith-source-rights</code></td><td>14 passed, 0 failed</td></tr>
+<tr><td><code>hadith-governing-contracts</code></td><td>14 passed, 0 failed</td></tr>
+<tr><td><code>hadith-gate-contracts</code></td><td>11 passed, 0 failed</td></tr>
+</tbody></table></div>
+<p>All twelve suites are clean on PR #143&#x27;s own head under a full preflight — PR #143&#x27;s reported figures for the eleven suites other than <code>programme-ledger-mutations</code> are confirmed exactly; the twelfth is corrected per §1 above.</p>
+<p><strong>Head-specific CI</strong>: PR #143&#x27;s &quot;Deterministic governance suites&quot; check run (<code>106314620371</code>) is <code>completed</code> / <code>success</code> against head <code>34c3fcd5</code>.</p>
+<h2>3. Eight-key Bangla handoff — independently re-derived</h2>
+<p>Extracted every literal <code>t(&quot;...&quot;)</code> call in <code>app/js/hadith-browser.js</code> on PR #143&#x27;s own head (57 distinct literals, by grep + dedup, not by reading PR #143&#x27;s own list), then checked each one for a verbatim match in <code>app/js/i18n/bn.js</code>. <strong>Exactly eight came back missing</strong>, and they are character-for-character the same eight PR #143 already declared:</p>
+<ol><li><code>&quot;Translation coverage&quot;</code></li><li><code>&quot;Topic coverage&quot;</code></li><li><code>&quot;View in source&quot;</code></li><li><code>&quot;How many synthetic narrations carry an English or a Bangla version, alongside the Arabic source. This describes the fixture only -- it is not a measure of a real corpus.&quot;</code></li><li><code>&quot;Overall: {en} of {n} have English, {bn} of {n} have Bangla.&quot;</code></li><li><code>&quot;{en} of {n} have English, {bn} of {n} have Bangla.&quot;</code></li><li><code>&quot;Of the {total} narrations in the corpus, {covered} are reachable through at least one topic mapping and {uncovered} are not mapped to any topic yet. This is distinct from the per-topic counts above, which count within one topic only.&quot;</code></li><li><code>&quot;{covered} of {total} narrations in this edition are mapped to at least one topic; {uncovered} are not.&quot;</code></li></ol>
+<p><code>app/js/i18n/bn.js</code> was not opened for editing at any point in this session. This round&#x27;s own fix (§4) introduces <strong>zero</strong> new English literals — it manipulates DOM focus only, calling no <code>t()</code> of its own.</p>
+<h2>4. Gate A — the defect found by reproduction</h2>
+<p><strong>Live-walked the Collections tab</strong> (<code>hadith-collections.html</code>) with a Playwright probe reading <code>document.activeElement</code> after every navigation click, in both edition shapes the fixture carries (Alpha, which has a chapter level; Beta, which does not).</p>
+<p><strong>Found</strong>: <code>render()</code> (in <code>mountHadithBrowser()</code>, <code>app/js/hadith-browser.js</code>) does <code>root.textContent = &quot;&quot;</code> and rebuilds the whole Collections subtree on <strong>every</strong> navigation step — picking an edition, a book, a chapter, or stepping back via any breadcrumb crumb. The button a keyboard user just pressed is destroyed in that rebuild, and with nothing to receive focus afterward, the browser drops it to <code>&lt;body&gt;</code>. Reproduced four separate ways, confirmed with <code>document.activeElement === document.body</code>:</p>
+<div class='tw'><table><thead><tr><th>Step</th><th><code>document.activeElement</code> before fix</th></tr></thead><tbody>
+<tr><td>Pick an edition</td><td><code>&lt;body&gt;</code></td></tr>
+<tr><td>Pick a book</td><td><code>&lt;body&gt;</code></td></tr>
+<tr><td>Pick a chapter</td><td><code>&lt;body&gt;</code></td></tr>
+<tr><td>Step back via a breadcrumb crumb</td><td><code>&lt;body&gt;</code></td></tr>
+</tbody></table></div>
+<p><strong>Why this is a real usability defect, not a cosmetic one</strong>: a keyboard-only or screen-reader user navigating this reader has their tab position reset to the top of the document on every single step through collection → book → chapter, and on every step back — they must re-Tab from the page&#x27;s very top each time rather than continuing from where they were. This is a general property of <code>render()</code>&#x27;s full-rebuild strategy, which <code>CLAUDE.md</code>&#x27;s own standing lesson already names for a different symptom (&quot;Re-render wipes UI state ... anything a reader opened by hand needs a session flag threaded back in&quot;) — this is the same mechanism, applied to keyboard focus rather than open/closed UI state.</p>
+<p><strong>Independent of both open PRs on this thread</strong>: PR #141&#x27;s <code>focusPendingOccurrence()</code> covers a different, narrower case — the one-shot highlight after a Topics/Search &quot;View in source&quot; jump — and calls no <code>.focus()</code> at all (only <code>.scrollIntoView()</code>), so it never addressed ordinary Collections-tab navigation. PR #143&#x27;s breadcrumb fix changes what text a crumb shows, not where focus goes. Neither touches this.</p>
+<h2>5. Gate B — the bounded fix</h2>
+<p><strong><code>app/js/hadith-browser.js</code></strong>: one new function, <code>focusCollectionsLanding()</code>, called from the five Collections-tab navigation click handlers (edition row, book row, chapter row, the &quot;Collections&quot; breadcrumb reset, and the one-level-back book-crumb click) right after each one&#x27;s own <code>render()</code> call. It reads the freshly rendered <code>#hadithBody</code> (a stable id <code>render()</code> already gives the body element), and focuses the breadcrumb&#x27;s own last crumb — the non-clickable current-location span where one exists (a book or chapter is chosen), or the still-clickable &quot;Collections&quot; crumb itself (an edition was just picked, nothing deeper chosen yet) — or, at the very top level where no breadcrumb exists at all, the &quot;Collections&quot; <code>&lt;h2&gt;</code>. A <code>tabindex=&quot;-1&quot;</code> is added only if the landing element does not already carry one, so a real button&#x27;s own tab order is never touched.</p>
+<p><strong>Why this lands, not just &quot;doesn&#x27;t crash&quot;</strong>: the breadcrumb already names exactly where a click just landed, in the reader&#x27;s own language — reusing it means no new string, no new UI element, and a screen-reader user is told their new location by the very act of receiving focus there.</p>
+<p><strong>Deliberately NOT touched</strong>: <code>jumpToSource()</code> and <code>focusPendingOccurrence()</code> (PR #141&#x27;s own mechanism) are untouched; Topics-tab and Search-tab navigation are untouched (out of this round&#x27;s named scope, &quot;Books/chapters reader&quot;); no CSS change (the existing native focus outline renders correctly on both a <code>&lt;span&gt;</code>/<code>&lt;button&gt;</code> crumb and the <code>&lt;h2&gt;</code>, confirmed visually — no rule in <code>app/css/hadith.css</code> suppresses <code>outline</code> on either).</p>
+<p><strong><code>app/css/hadith.css</code></strong>: unchanged.</p>
+<h2>6. Focused tests, mutation-proven</h2>
+<p>Extended the existing, already-committed <code>tools/i18n-verify/hadith-source-navigation-browser.mjs</code> (PR #143&#x27;s own file, Hadith-owned, not a protected path) with six new checks covering: an edition pick, a book pick, a chapter pick, and a one-level-back crumb click all landing focus off <code>&lt;body&gt;</code>; the top-level &quot;Collections&quot; reset landing on the <code>&lt;h2&gt;</code>; and the no-chapter-level edition (Beta) path landing correctly too, on its shorter book → occurrence route.</p>
+<p><strong>33 passed, 0 failed in English; 33 passed, 0 failed in Bangla</strong> (27 pre-existing + 6 new, both languages).</p>
+<p><strong>Mutation-proven</strong>: reverted <code>app/js/hadith-browser.js</code> to PR #143&#x27;s original (<code>git stash</code> isolating only that file) and re-ran the English pass — <strong>exactly the 6 new checks fail</strong> (27 passed, 6 failed), every other pre-existing check in the file stays green, confirming the new checks isolate this fix specifically and nothing else. The fix was then restored and both languages re-confirmed clean (§8).</p>
+<h2>7. Boundaries preserved</h2>
+<ul><li>No new id, collection, Rules/index change, permanent unit key, or write.</li><li>No new English literal (§3) — the fix calls no <code>t()</code>.</li><li><code>app/css/hadith.css</code> untouched.</li><li>Fully reversible: two files, <code>app/js/hadith-browser.js</code> (+44/−5) and <code>tools/i18n-verify/hadith-source-navigation-browser.mjs</code> (+48).</li><li>Independent of PR #130/#141/#143&#x27;s own diffs — none of the three touches focus management; this round does not touch breadcrumb text or the &quot;View in source&quot; jump.</li></ul>
+<h2>8. Final state, all suites re-run</h2>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>programme-ledger</code></td><td>8 passed, 23 noted, 0 failed</td></tr>
+<tr><td><code>programme-ledger-mutations</code></td><td>49 passed, 0 failed</td></tr>
+<tr><td><code>brief-integrity</code></td><td>8 passed, 0 failed</td></tr>
+<tr><td><code>study-activity-evidence-boundary</code></td><td>27 passed, 0 failed</td></tr>
+<tr><td><code>study-activity-evidence-boundary-mutations</code></td><td>11 passed, 0 failed</td></tr>
+<tr><td><code>study-event-wiring</code></td><td>41 passed, 0 failed</td></tr>
+<tr><td><code>rules-authorisation-executable</code></td><td>38 passed, 0 failed</td></tr>
+<tr><td><code>hadith-corpus</code></td><td>60 passed, 0 failed</td></tr>
+<tr><td><code>hadith-commentary-binding</code></td><td>14 passed, 0 failed</td></tr>
+<tr><td><code>hadith-source-rights</code></td><td>14 passed, 0 failed</td></tr>
+<tr><td><code>hadith-governing-contracts</code></td><td>14 passed, 0 failed</td></tr>
+<tr><td><code>hadith-gate-contracts</code></td><td>11 passed, 0 failed</td></tr>
+<tr><td><code>hadith-source-navigation-browser</code> (en)</td><td>33 passed, 0 failed</td></tr>
+<tr><td><code>hadith-source-navigation-browser</code> (bn)</td><td>33 passed, 0 failed</td></tr>
+</tbody></table></div>
+<h2>Ownership boundary</h2>
+<p>Every changed path is Hadith-owned application/tooling, confirmed empty against <code>origin/main</code> for each protected/shared path in the bridge&#x27;s own table (<code>app/js/version.js</code>, <code>CLAUDE.md</code>, <code>CHANGELOG.md</code>, <code>app/js/i18n/bn.js</code>, <code>app/js/nav.js</code>, <code>app/js/unit-keys.js</code>, <code>app/js/records.js</code>, <code>app/js/activity.js</code>, <code>app/js/catalogue-data.js</code>, <code>app/css/shell.css</code>, the six protected tooling files, <code>docs/governance/</code>, <code>firestore.rules</code>, <code>firebase.json</code>, <code>tests/firestore/</code>, <code>tools/firestore-emulator/</code>, <code>.github/workflows/</code>).</p>
+<h2>Dependency / integration order</h2>
+<ol><li>Draft PR #130, PR #141 (unchanged; still open).</li><li>Draft PR #143 (unchanged by this round; this round&#x27;s branch is built directly on its head).</li><li>This round&#x27;s PR — a follow-on to #143, touching only <code>app/js/hadith-browser.js</code> (the focus fix) and <code>tools/i18n-verify/hadith-source-navigation-browser.mjs</code> (the new tests). No further rebase needed at integration time — already built on current <code>main</code> via #143&#x27;s own head.</li></ol>
+<h2>Central version gate</h2>
+<p><strong>No version bump.</strong> <code>app/js/version.js</code> untouched. <code>v08.32</code> remains the current <code>main</code> milestone; version allocation is the Master Architect&#x27;s.</p>
+<h2>Owner app test required</h2>
+<p><strong>NO.</strong> Exists only on this branch, stacked on unmerged PR #143. When both land: <code>https://madrasatul-muslimeen.github.io/app/hadith-collections.html</code> → Collections tab → pick any edition, then a book, then (if the edition has one) a chapter, using Tab + Enter only, never the mouse. Expected: after each step, the next Tab press continues from the breadcrumb&#x27;s current location — never from the top of the page.</p>
+<h2>Deliberately not done</h2>
+<ul><li><code>bn.js</code> not extended (eight-key handoff given in §3, matching PR #143&#x27;s own list exactly).</li><li>No merge, deploy, Rules/index change, or version bump.</li><li><code>programme-ledger-mutations.mjs</code>&#x27;s exact &quot;48/1&quot; partial-fetch recipe was not chased down to its precise cause (§1) — the guard itself was not edited, and a complete preflight is confirmed stable at 49/0 three ways.</li><li>Topics-tab and Search-tab focus management not touched (out of this round&#x27;s named scope).</li><li>PRs #103, #116, #118, #122, #125, #130, #141 left open and untouched.</li></ul>
+</main></body></html>
