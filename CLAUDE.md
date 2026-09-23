@@ -158,7 +158,74 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.37 on `main`** (23 Sep 2026 — MAP Phase 6 (P6-F),
+**Current milestone: v08.38 on `main`** (23 Sep 2026 — Asma ul Husna's
+Groups/Dual Names generalized into an open, owner-defined set of
+classifications, issue #202, PR #203. The Owner reviewed an interactive
+demo (a mockup, not real data or code) and said *"Al Hamdulillah! Build
+it."*, then corrected the shape mid-review from two fixed toggle-style
+axes to a real list mechanism: *"Enable me to edit/add/move/delete these
+lists and those names in the lists... a name card should show the names
+of all LISTS it belongs to."* `kind` on an Asma collection — hardcoded to
+a closed `"group"`/`"dual"` pair since the feature shipped — is any
+non-empty string now, defaulting to `"group"` so every existing tenant's
+saved data reads exactly as it did before. A new **classifications
+registry**, additive on the same `asmaCollections/{tenantId}` document (no
+new collection, no new read — I9 — no Rules change: the deployed
+`allow update` on that document carries no `hasOnly()` restriction,
+confirmed by reading `firestore.rules` directly rather than assumed), is
+seeded with exactly the two entries every tenant's data already
+implicitly used — `"Group"`, `"Dual Names"` — so nothing visibly changes
+until an owner adds a third. **A Name card now shows every list it
+belongs to** (a new "Belongs to" section, any classification, each entry
+a clickable chip jumping straight to that list), and a **Names-level list
+row shows an "also in…" chip** for a Name filed somewhere else too — both
+read from a new pure `membershipsOfName()` reverse index, O(collections ×
+items), no new Firestore call. Manage mode (owner/prime only) gains
+**"+ New classification"**; every existing collection control (rename,
+archive, add, add Name, attach reference, drag-reorder) keeps working,
+generalized to whichever classification tab is active instead of two
+hardcoded kinds. **Deliberately NOT seeded**: any real theological
+assignment — "Unique to Allah" vs "Shared", "By Act" vs "By Essence" were
+the Owner's own two worked examples of what a classification IS, and the
+issue's own explicit instruction was that assigning real Names to them is
+the Owner's own curatorial work, not this round's — the seed carries only
+the two mechanism entries, no application of them to a third axis.
+**Read, proven, and left exactly as they were**: the reference-adding
+mechanism (`renderAsmaXrefBlock()`, the 🔗 attach popover,
+`asma-ref-parser.js`), the poster view, Track-my-progress, extra-Name
+editing, drag-reposition, and `asma-study.html`'s own separate, older
+panel — the same standing rule every prior Asma round has followed. New
+`tools/i18n-verify/asma-classifications-boundary.mjs` (26 checks): open
+`kind` genuinely not coerced back to two values; classifications CRUD
+round-trips; `membershipsOfName()` correct on a Name in 3+ lists across
+different classifications AND the same one; I4 (archiving a
+classification never drops a membership record — the collections filed
+under it, and everything in them, are untouched); and a **positive
+control** proving a freshly-added THIRD classification's own collections
+are reachable exactly like the seeded two, at both the data layer and (by
+reading the real page source, since this sandbox has no Playwright
+browser binary installed at all) the Explore panel's own wiring. **The
+Builder's own PR-opening step did not run** (workflow run 35801162383,
+conclusion `success`, branch pushed, no PR) — the Architect opened PR #203
+itself from the already-pushed, already-checked branch, the same recovery
+v08.35/v08.36 used. **The unattended Architect workflow merged PR #203 on
+its own**, eight minutes after it opened, once `verify` reported green —
+faster than the session Architect's own independent re-verification could
+finish; that re-verification proceeded anyway, after the fact, against
+the real merged commit, and confirms the merge was sound: all 8 CI-gated
+governance suites plus the new suite re-run clean on a fresh full-history
+checkout, no protected path touched, `firestore.rules`/`firebase.json`/
+`app/js/version.js` genuinely untouched by the round itself, and
+`behaviour.mjs` run in full against both this branch and `origin/main`
+under an available substitute Chromium build (`chromium-1194`'s own
+`chrome` binary, neither the documented `-1194`/`-1243` headless-shell
+pair) — **785 pass / 2 fail either side, byte-identical**, both failures
+(27i, a pre-existing layout measurement; 31e, the documented TLS
+artefact) and the section-40 Mushaf crash point pre-existing on `main`
+too, none introduced by this round. Allocated by the MMSA Architect. Full
+account in `CHANGELOG.md`'s own entry.
+
+**Previous milestone: v08.37 on `main`** (23 Sep 2026 — MAP Phase 6 (P6-F),
 issue #199, PR #200 — Mapping My Journey gets a real, reachable screen. The
 Owner's own instruction: *"Journey Map: don't wait for my design. Build all
 three options now with a toggle to switch between them, so I can try each in

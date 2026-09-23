@@ -84,4 +84,43 @@
 // v08.36 recorded; a real-phone check at 320/360/390/412px in both
 // languages, across all three views, is the recommended substitute.
 // Allocated by the MMSA Architect.
-export const APP_VERSION = "08.37";
+// 08.38: Asma ul Husna -- Groups/Dual Names generalized into an open,
+// owner-defined set of classifications (issue #202, PR #203). The Owner's
+// own ask, after approving an interactive demo: "a name card should show
+// the names of all LISTS it belongs to... enable me to edit/add/move/
+// delete these lists." `kind` on a collection is any non-empty string now
+// (was a closed "group"/"dual" set), defaulting to "group" so every
+// existing tenant's data reads unchanged; a new classifications registry
+// on the same asmaCollections/{tenantId} document (no new collection, no
+// new read, no Rules change -- the deployed rule carries no hasOnly()
+// restriction, confirmed by reading firestore.rules directly) is seeded
+// with exactly "Group" and "Dual Names", so nothing changes for an
+// existing tenant until the owner adds a third. A Name card gains a
+// "Belongs to" section (every list, any classification, it is filed
+// under) and a Names-level list row gains an "also in..." chip for a Name
+// filed elsewhere too, both navigating straight to the other list. Manage
+// mode gains "+ New classification". Deliberately NOT seeded: any real
+// theological assignment ("Unique to Allah"/"Shared"/"By Act"/"By
+// Essence") -- the issue's own explicit instruction was that curatorial
+// work is the Owner's, not this round's, and the seed carries only the
+// two mechanism entries every tenant already implicitly used. The
+// reference-adding mechanism, poster view, Track-my-progress, extra-Name
+// editing, drag-reposition and asma-study.html's own separate panel are
+// all untouched, read and proven rather than assumed. New
+// asma-classifications-boundary.mjs suite (26 checks) covers open `kind`,
+// classifications CRUD, membershipsOfName() correctness across 3+ lists,
+// I4 (archiving a classification never drops a membership), and a
+// positive control on a freshly-added THIRD classification being
+// reachable exactly like the seeded two. Independently re-verified by the
+// Architect (fresh checkout, all 8 governance suites plus the new suite
+// re-run clean, full diff read by hand, no protected path touched;
+// behaviour.mjs re-run against both this branch and main under an
+// available substitute Chromium build -- 785/787 identical either side,
+// the 2 differences (27i, 31e) and the section-40 Mushaf crash point all
+// pre-existing and environmental, none introduced by this round). This
+// PR was opened by the Architect from the Builder's already-pushed,
+// already-checked branch (its own PR-opening step did not execute), then
+// merged by the unattended Architect workflow once `verify` reported
+// green -- confirmed sound by this independent review after the fact.
+// Allocated by the MMSA Architect.
+export const APP_VERSION = "08.38";
