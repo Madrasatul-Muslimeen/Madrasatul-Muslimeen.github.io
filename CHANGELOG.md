@@ -15694,9 +15694,11 @@ language — the same Playwright/`chromium_headless_shell` environment gap
 the sanitization test's own header records — a real-phone check is the
 recommended substitute, the style Phase 3 and v08.35/v08.36 already used.
 
-**MAP Phase 6 (P6-F, issue #199) — MAPPING MY JOURNEY, ALL THREE SCREEN
-OPTIONS BUILT AND SWITCHABLE, over the already-accepted Phase 6 data layer
-that had sat unreached since P6-A/P6-E.** The Owner's own instruction: *"Don't
+## 23 Sep 2026 — v08.37: Mapping My Journey, all three screen options (MAP Phase 6 / P6-F, issue #199, PR #200)
+
+**MAPPING MY JOURNEY, ALL THREE SCREEN OPTIONS BUILT AND SWITCHABLE, over the
+already-accepted Phase 6 data layer that had sat unreached since
+P6-A/P6-E.** The Owner's own instruction: *"Don't
 wait for my design. Build all three options now with a toggle to switch
 between them, so I can try each in the real app and choose."* — reversing the
 earlier plan (`docs/governance/2026-09-22-mapping-my-journey-screen-options.md`)
@@ -15850,7 +15852,14 @@ issue's own instruction; every rule it enforces (cycle/depth bounds, Origin
 Phase 3-6 Rules candidate already governs `noteFolders`/`notePlacements`
 (published by the Owner, 22 Sep 2026, recorded above), and every write this
 round makes was already authorised; nothing needed a new Rule.
-`app/js/version.js` is untouched, per the Builder contract.
+`app/js/version.js` is untouched by the Builder, per the Builder contract.
+
+**Merged by the Architect, 23 Sep 2026, after an independent re-verification
+on a fresh full-history checkout** — all ten relevant suites re-run clean
+(the 8 CI-gated governance suites, `journey-map-boundary.mjs` 17/17,
+`journey-map-screen.mjs` 16/16), no protected path touched, base already
+current `main`, full diff read by hand. `app/js/version.js`: 08.36 →
+**08.37**. Allocated by the MMSA Architect.
 
 **LAYOUT WAS NOT MEASURED IN A REAL BROWSER — a harder form of the same gap
 CLAUDE.md's v08.35/v08.36 and the notes.html round (P5-D) already record.**

@@ -59,4 +59,29 @@
 // a word boundary on ~65% of ayahs, measured, so it cannot be safely
 // split per word without data that doesn't exist here). Allocated by the
 // MMSA Architect.
-export const APP_VERSION = "08.36";
+// 08.37: MAP Phase 6 (P6-F) Mapping My Journey round 1 -- a real, reachable
+// screen (app/journey-map.html) over the already-accepted Phase 6 data
+// layer, which had sat built and unreached since P6-A/P6-E. All three
+// screen options the Owner asked for ("don't wait for my design, build all
+// three with a toggle") in one switchable shell over one shared data load:
+// Folders (system folders first, then the person's own; create/file/move),
+// Timeline (newest-first, grouped by day, filter chips) and Path (an
+// honest first pass -- a straight date-ordered track; the region/
+// side-trail metaphor is explicitly not built, reason recorded in code and
+// CHANGELOG.md, since a Note filed in two folders at once cannot honestly
+// occupy two places on one line). Nav entry under Home, alongside Records/
+// Monitor/About. Read-only for everyone but the Note owner, mirroring
+// firestore.rules; every write gated on isSelfSelected(); Note bodies only
+// ever rendered through sanitizeNoteHtml(). Full Bangla translation from
+// the first commit (33 keys, verified programmatically). No new exported
+// function on journey-map-service.js or note-foundation.js; no Rules,
+// index or schema change. Independently re-verified by the Architect
+// before merging (fresh full-history checkout, all 10 relevant suites --
+// the 8 governance suites plus journey-map-boundary.mjs and the new
+// journey-map-screen.mjs -- re-run clean, diff read by hand). Layout was
+// NOT measured in a real browser -- this sandbox had no Playwright package
+// installed at all, a harder form of the same environment gap v08.35/
+// v08.36 recorded; a real-phone check at 320/360/390/412px in both
+// languages, across all three views, is the recommended substitute.
+// Allocated by the MMSA Architect.
+export const APP_VERSION = "08.37";
