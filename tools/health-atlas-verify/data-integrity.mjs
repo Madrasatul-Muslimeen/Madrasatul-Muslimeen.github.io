@@ -38,6 +38,12 @@ const fixture = JSON.parse(readFileSync(
 ));
 
 const mod = await importEsmFile(path.join(repoRoot, 'app', 'health', 'js', 'health-atlas-data.js'));
+// Loaded at top level (not inside a check body) precisely because check()
+// above is SYNCHRONOUS and does not await a promise a check body returns —
+// an async check body here would report PASS immediately, before its own
+// assertions ever ran (the exact "a synchronous check runner counts an
+// async body as a PASS" trap CLAUDE.md's own standing lessons name).
+const diagramsMod = await importEsmFile(path.join(repoRoot, 'app', 'health', 'js', 'health-atlas-diagrams.js'));
 
 check('HEALTH_ATLAS_STATUS is the literal string DRAFT', () => {
   assert(mod.HEALTH_ATLAS_STATUS === 'DRAFT', `got ${JSON.stringify(mod.HEALTH_ATLAS_STATUS)}`);
@@ -119,6 +125,24 @@ check('every organ.partType is one of the source\'s own seven closed values (par
   assert(missing.length === 0, `organs missing partType: ${missing.map(o => o.id).join(', ')}`);
   const bad = mod.HEALTH_ATLAS_ORGANS.filter(o => !closedSet.has(o.partType));
   assert(bad.length === 0, `organs with an unexpected partType: ${bad.map(o => `${o.id}=${o.partType}`).join(', ')}`);
+});
+
+check('every diagram partMap entry (parity tranche 13) names a real organ AND a real shape id in the SAME system', () => {
+  // Cross-file consistency: health-atlas-diagrams.js's partMap is keyed by
+  // organ NAME and valued by a shape id, both of which must correspond to
+  // something real in health-atlas-data.js / the diagram's own shapes array
+  // — otherwise health-atlas-view.js's highlight lookup
+  // (diagram.partMap[organ.name]) would silently resolve to undefined (no
+  // highlight, no error) for a real organ, or point at a shape id that does
+  // not exist in that system's own diagram.
+  for (const [systemId, diagram] of Object.entries(diagramsMod.HEALTH_ATLAS_DIAGRAMS)) {
+    const organsInSystem = new Set(mod.HEALTH_ATLAS_ORGANS.filter(o => o.system === systemId).map(o => o.name));
+    const shapeIdsInDiagram = new Set(diagram.shapes.map(s => s.id).filter(Boolean));
+    for (const [organName, shapeId] of Object.entries(diagram.partMap)) {
+      assert(organsInSystem.has(organName), `${systemId}.partMap names organ "${organName}", which is not a real organ in that system`);
+      assert(shapeIdsInDiagram.has(shapeId), `${systemId}.partMap["${organName}"] = "${shapeId}", which is not a real shape id in that diagram`);
+    }
+  }
 });
 
 check('every exported entity array/object is frozen (Object.freeze)', () => {

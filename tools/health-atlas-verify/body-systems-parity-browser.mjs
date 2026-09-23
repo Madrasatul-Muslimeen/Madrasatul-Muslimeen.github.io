@@ -138,18 +138,41 @@ async function gridTemplate(page) {
   });
 }
 
+// PARITY TRANCHE 13 FIX: this helper used to CLICK every section head on
+// its way to the target row without checking whether that section was
+// ALREADY open — a section header toggles, so walking past an
+// already-open section (left open by an earlier check's own side effect,
+// e.g. the wheel drill-down check opening Renal & Urinary) silently
+// CLOSED it again. That was invisible for the life of this file because
+// every check's own use of openOrgan() happened, by accident of ordering,
+// to leave the specific sections later checks depended on in the state
+// they needed — the exact "fragile, order-dependent, happens to pass"
+// shape CLAUDE.md's own standing lessons warn about elsewhere in this
+// repository. Adding tranche 13's own diagram-highlight checks (which
+// call openOrgan() on Kidneys/Bladder/Eyes in a different order) broke
+// that accidental chain and made two PRE-EXISTING, UNRELATED checks fail
+// ("Coronary Arteries" row not found) — a real latent defect in the test
+// harness, not in the app, found by disturbing it rather than by reading
+// it. Fixed to be idempotent: a head is clicked only if its OWN section
+// is not already open, so this helper only ever OPENS sections and never
+// closes one as a side effect of looking for a different organ.
 async function openOrgan(page, organName) {
   // The left-column row is the least ambiguous way to select a named organ
   // by real text, independent of which system section is currently open —
   // clicking the section head first if the row is not yet visible.
   const row = page.locator('.ha-bs-row', { hasText: organName }).first();
   if (!(await row.isVisible().catch(() => false))) {
-    // Open every section so the row becomes reachable regardless of order.
+    // Open every closed section so the row becomes reachable regardless of
+    // order, WITHOUT toggling shut a section some earlier check already
+    // opened for its own reason.
     const heads = page.locator('.ha-bs-section-head');
     const n = await heads.count();
     for (let i = 0; i < n; i++) {
       if (await row.isVisible().catch(() => false)) break;
-      await heads.nth(i).click();
+      const alreadyOpen = await heads.nth(i).evaluate(
+        (el) => el.closest('.ha-bs-section')?.classList.contains('ha-bs-section-open') === true
+      );
+      if (!alreadyOpen) await heads.nth(i).click();
     }
   }
   await row.click();
@@ -296,6 +319,61 @@ async function main() {
         }
       });
 
+      // Parity tranche 13: the source's own per-organ diagram highlight
+      // (`.part-highlight` in the v02.04 source), ported here as
+      // `.ha-diagram-part-highlight`. Proven by SWITCHING organ within the
+      // SAME diagrammed system and asserting the highlighted shape moves —
+      // asserting only "Kidneys highlights something" would pass even if
+      // every organ highlighted the same (wrong) shape or nothing moved at
+      // all when the selection changed.
+      await check('desktop: selecting Kidneys highlights #kidney-shape and NOT #bladder-shape in the Renal & Urinary diagram', async () => {
+        await openOrgan(page, 'Kidneys');
+        await page.waitForSelector('.ha-diagram-svg');
+        const kidneyHi = await page.evaluate(() => document.getElementById('kidney-shape')?.classList.contains('ha-diagram-part-highlight'));
+        const bladderHi = await page.evaluate(() => document.getElementById('bladder-shape')?.classList.contains('ha-diagram-part-highlight'));
+        assert(kidneyHi === true, 'expected #kidney-shape to carry the highlight class when Kidneys is selected');
+        assert(bladderHi === false, 'expected #bladder-shape NOT to carry the highlight class when Kidneys is selected');
+      });
+
+      await check('desktop: switching to Bladder MOVES the highlight off #kidney-shape and onto #bladder-shape, in the SAME diagram', async () => {
+        await openOrgan(page, /^Bladder/); // ^-anchored: 'Bladder' vs 'Gallbladder' both contain "Bladder"
+        await page.waitForSelector('.ha-diagram-svg');
+        const kidneyHi = await page.evaluate(() => document.getElementById('kidney-shape')?.classList.contains('ha-diagram-part-highlight'));
+        const bladderHi = await page.evaluate(() => document.getElementById('bladder-shape')?.classList.contains('ha-diagram-part-highlight'));
+        assert(kidneyHi === false, 'expected #kidney-shape to lose the highlight class once Bladder is selected instead');
+        assert(bladderHi === true, 'expected #bladder-shape to carry the highlight class once Bladder is selected');
+      });
+
+      await check('desktop: a 3-shape grouped part (Eyes -> #eye-main) highlights as ONE element, with no duplicate DOM ids anywhere on the page', async () => {
+        await openOrgan(page, 'Eyes');
+        await page.waitForSelector('.ha-diagram-svg');
+        const eyeHi = await page.evaluate(() => document.getElementById('eye-main')?.classList.contains('ha-diagram-part-highlight'));
+        assert(eyeHi === true, 'expected #eye-main (the 3-shape eye group) to carry the highlight class when Eyes is selected');
+        const dupIds = await page.evaluate(() => {
+          const counts = {};
+          document.querySelectorAll('[id]').forEach((el) => { counts[el.id] = (counts[el.id] || 0) + 1; });
+          return Object.entries(counts).filter(([, c]) => c > 1).map(([id]) => id);
+        });
+        assert(dupIds.length === 0, `expected zero duplicate DOM ids, found: ${dupIds.join(', ')}`);
+      });
+
+      await check('desktop: a body part with NO diagram highlight defined for its system (Heart) renders the placeholder, with nothing to wrongly highlight', async () => {
+        await openOrgan(page, 'Heart');
+        const placeholder = page.locator('.ha-diagram-card .ha-empty');
+        assert(await placeholder.count() === 1, 'expected the "in progress" placeholder for Heart (Cardiovascular has no built diagram)');
+        const anyHighlighted = await page.evaluate(() => document.querySelectorAll('.ha-diagram-part-highlight').length);
+        assert(anyHighlighted === 0, 'expected zero highlighted elements when no diagram is rendered at all');
+      });
+
+      await check('desktop: a system-level colour class name is never confused for the diagram highlight (no ha-diagram-part-highlight before any organ is opened)', async () => {
+        await ctx.newPage().then(async (freshPage) => {
+          await freshPage.goto(HEALTH_ATLAS_URL, { waitUntil: 'networkidle' });
+          const anyHighlighted = await freshPage.evaluate(() => document.querySelectorAll('.ha-diagram-part-highlight').length);
+          assert(anyHighlighted === 0, 'expected zero highlighted elements before any organ is ever selected');
+          await freshPage.close();
+        });
+      });
+
       await check('desktop: a system with no built diagram shows the corrected placeholder, and it never claims to be "accurate"', async () => {
         await openOrgan(page, 'Heart');
         const placeholder = page.locator('.ha-diagram-card .ha-empty');
@@ -320,22 +398,23 @@ async function main() {
       // Parity tranche 12: the source-faithful "Type" pill on each organ
       // row (organ.partType — Organ/Vein/Artery/Nerve/Tissue/Gland/Duct).
       await check('desktop: each organ row carries a real "Type" pill matching its own partType value', async () => {
-        const heads = page.locator('.ha-bs-section-head');
-        await heads.first().click(); // open a section so its rows exist
+        // Tranche 13: this used to open a section with a bare, unconditional
+        // `heads.first().click()` — a blind toggle that could just as
+        // easily CLOSE Cardiovascular if some earlier check had already
+        // opened it (see openOrgan()'s own tranche-13 fix above for the
+        // full account of that class of bug). Using the shared, now
+        // idempotent openOrgan() for BOTH rows removes the duplicated
+        // ad-hoc walk and makes this check's own outcome independent of
+        // whatever section-open state earlier checks left behind.
+        await openOrgan(page, 'Kidneys');
         const kidneysRow = page.locator('.ha-bs-row', { hasText: 'Kidneys' }).first();
-        if (!(await kidneysRow.isVisible().catch(() => false))) {
-          const n = await heads.count();
-          for (let i = 0; i < n; i++) {
-            if (await kidneysRow.isVisible().catch(() => false)) break;
-            await heads.nth(i).click();
-          }
-        }
         const kidneysPill = kidneysRow.locator('.ha-bs-type-pill');
         assert(await kidneysPill.count() === 1, 'expected exactly one Type pill on the Kidneys row');
         assert((await kidneysPill.textContent()).trim() === 'Organ', `expected Kidneys' pill to read "Organ", got ${(await kidneysPill.textContent()).trim()}`);
 
         // Coronary Arteries: a real non-"Organ" partType (Artery), proving
         // the pill is not a hardcoded default.
+        await openOrgan(page, 'Coronary Arteries');
         const arteryRow = page.locator('.ha-bs-row', { hasText: 'Coronary Arteries' }).first();
         assert(await arteryRow.count() === 1, 'expected a Coronary Arteries row');
         const arteryPill = arteryRow.locator('.ha-bs-type-pill');
@@ -347,14 +426,14 @@ async function main() {
       // measured worst case for the row-wrap CSS (CLAUDE.md: "measure a
       // content-sized control with content the length a REAL entry has").
       await check('desktop: the longest organ name + Type pill in the dataset causes no page overflow', async () => {
+        // Tranche 13: this referenced an OUTER `heads` variable that was
+        // never in scope for this check's own closure — dead code that
+        // never threw only because Vena Cava's own section
+        // (Cardiovascular) already happened to be open by the time this
+        // check ran, so the `if` branch never executed. Using openOrgan()
+        // makes the intent explicit and removes the dead, broken branch.
+        await openOrgan(page, 'Vena Cava');
         const row = page.locator('.ha-bs-row', { hasText: 'Vena Cava' }).first();
-        if (!(await row.isVisible().catch(() => false))) {
-          const n = await heads.count();
-          for (let i = 0; i < n; i++) {
-            if (await row.isVisible().catch(() => false)) break;
-            await heads.nth(i).click();
-          }
-        }
         assert(await row.count() === 1, 'expected a Vena Cava row');
         const pill = row.locator('.ha-bs-type-pill');
         assert((await pill.textContent()).trim() === 'Vein', `expected Vena Cava's pill to read "Vein", got ${(await pill.textContent()).trim()}`);
@@ -396,16 +475,21 @@ async function main() {
       });
 
       await check('tablet (768x1024): the longest organ name + Type pill causes no page overflow', async () => {
-        const heads = page.locator('.ha-bs-section-head');
+        await openOrgan(page, 'Vena Cava');
         const row = page.locator('.ha-bs-row', { hasText: 'Vena Cava' }).first();
-        const n = await heads.count();
-        for (let i = 0; i < n; i++) {
-          if (await row.isVisible().catch(() => false)) break;
-          await heads.nth(i).click();
-        }
         assert(await row.count() === 1, 'expected a Vena Cava row');
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
         assert(overflow <= 1, `expected no horizontal page overflow at tablet width, got ${overflow}px`);
+      });
+
+      await check('tablet (768x1024): the diagram highlight moves between two real organs in the same collapsed single-column layout', async () => {
+        await openOrgan(page, 'Kidneys');
+        await page.waitForSelector('.ha-diagram-svg');
+        assert((await page.evaluate(() => document.getElementById('kidney-shape')?.classList.contains('ha-diagram-part-highlight'))) === true, 'expected #kidney-shape highlighted for Kidneys at tablet width');
+        await openOrgan(page, /^Bladder/); // ^-anchored: 'Bladder' vs 'Gallbladder' both contain "Bladder"
+        await page.waitForSelector('.ha-diagram-svg');
+        assert((await page.evaluate(() => document.getElementById('kidney-shape')?.classList.contains('ha-diagram-part-highlight'))) === false, 'expected #kidney-shape to lose the highlight once Bladder is selected at tablet width');
+        assert((await page.evaluate(() => document.getElementById('bladder-shape')?.classList.contains('ha-diagram-part-highlight'))) === true, 'expected #bladder-shape highlighted for Bladder at tablet width');
       });
 
       await ctx.close();
@@ -435,18 +519,25 @@ async function main() {
       });
 
       await check('phone (390x844): the longest organ name + Type pill causes no page overflow, wrapping onto its own line if needed', async () => {
-        const heads = page.locator('.ha-bs-section-head');
+        await openOrgan(page, 'Vena Cava');
         const row = page.locator('.ha-bs-row', { hasText: 'Vena Cava' }).first();
-        const n = await heads.count();
-        for (let i = 0; i < n; i++) {
-          if (await row.isVisible().catch(() => false)) break;
-          await heads.nth(i).click();
-        }
         assert(await row.count() === 1, 'expected a Vena Cava row');
         const pill = row.locator('.ha-bs-type-pill');
         assert((await pill.textContent()).trim() === 'Vein', 'expected the Vena Cava pill to read "Vein" at phone width too');
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
         assert(overflow <= 1, `expected no horizontal page overflow at phone width, got ${overflow}px`);
+      });
+
+      await check('phone (390x844): a real tap selecting Eyes highlights the 3-shape #eye-main group, with no duplicate DOM ids', async () => {
+        await openOrgan(page, 'Eyes');
+        await page.waitForSelector('.ha-diagram-svg');
+        assert((await page.evaluate(() => document.getElementById('eye-main')?.classList.contains('ha-diagram-part-highlight'))) === true, 'expected #eye-main highlighted for Eyes at phone width');
+        const dupIds = await page.evaluate(() => {
+          const counts = {};
+          document.querySelectorAll('[id]').forEach((el) => { counts[el.id] = (counts[el.id] || 0) + 1; });
+          return Object.entries(counts).filter(([, c]) => c > 1).map(([id]) => id);
+        });
+        assert(dupIds.length === 0, `expected zero duplicate DOM ids at phone width, found: ${dupIds.join(', ')}`);
       });
 
       await ctx.close();

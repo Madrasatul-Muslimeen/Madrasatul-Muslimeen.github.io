@@ -534,3 +534,92 @@ or claim approval.
 
 Full account and verification numbers:
 `docs/reports/2026-09-21-health-atlas-organ-type-parity-tranche12.md`.
+
+## Tranche 13 — integration-readiness audit, plus the source's own diagram highlight
+
+Dispatched by issue #115 comment `5764238189` (this tranche's own trigger;
+see the attribution correction landed on branch
+`claude/health-atlas-organ-type-parity-tranche12` for the record of tranche
+12's own title/report having wrongly cited issue #123 instead).
+
+**Gate A: fixed the misattribution and the stale report path** (on the
+tranche-12 branch itself, not here): PR #152's title/body and its own report
+pair corrected to cite issue #115 comment `5763800301` rather than issue
+#123; `health-atlas-view.js`'s header comment corrected from a nonexistent
+`...-health-atlas-foods-conditions-parity-tranche12.md` path to the real
+`...-health-atlas-organ-type-parity-tranche12.md`. Independently re-ran the
+organ-Type browser checks at desktop/tablet/phone (all pass, matching the
+real longest name — "Vena Cava (Superior & Inferior)" — re-derived from the
+live dataset rather than trusted); the "Type" pill's wording was checked
+across the view and the report and found to read as a source-dataset
+classification label throughout, never as an individually medically
+verified fact.
+
+**Gate B: a full port-vs-source audit, tab by tab**, plus ONE further
+capability found and built: the v02.04 source's own per-organ diagram
+**highlight**. `health-atlas-diagrams.js` has carried `partMap` (organ name
+→ shape id) since tranche 6, and every shape descriptor has always carried
+its own `id`, but `buildDiagramPanel()` never read either — the rendered
+diagram looked identical no matter which organ within that system was
+selected, and the shape `id`s never even reached the DOM (`svgEl(shape.tag,
+shape.attrs)` passed only `.attrs`, dropping the sibling `.id` field
+entirely). Purely presentational — the same `.part-highlight` CSS class the
+source itself uses (renamed `.ha-diagram-part-highlight` under this app's
+own prefix), toggled by data already in the preserved, unmodified dataset.
+No new field, no nutrition/dose/remedy content, no new selector.
+
+**Shapes sharing one part get one `<g id="…">`, a lone shape gets the `id`
+directly** — reconstructing the source's own grouping (its markup wraps
+repeated shapes, like the two kidney outlines, in one `<g>`) rather than the
+flat per-shape array `health-atlas-diagrams.js` denormalized them into, so
+`partMap`'s ids resolve to exactly one DOM element each and never collide.
+Verified directly: switching between Kidneys and Bladder in the same Renal &
+Urinary diagram moves the highlight; the 3-shape `eye-main` group and
+3-shape `skin-layer-all` group each highlight as one unit with zero
+duplicate DOM ids anywhere on the page.
+
+**A real, pre-existing test-harness defect was found and fixed in the same
+pass — not an application defect.** `body-systems-parity-browser.mjs`'s
+shared `openOrgan()` helper walked every section head with a blind,
+unconditional `.click()` on its way to a target row — since a section
+header **toggles**, walking past a section some earlier check had already
+opened (e.g. the wheel drill-down check opening Renal & Urinary) silently
+**closed it again**. This was invisible for the file's whole life because
+every existing check's own call to `openOrgan()` happened, by accident of
+ordering, to leave the sections a later check needed in the state it
+needed — exactly the "fragile, order-dependent, happens to pass" shape
+CLAUDE.md's own standing lessons warn about. Adding this tranche's own
+Kidneys/Bladder/Eyes checks disturbed that accidental chain and broke two
+**pre-existing, unrelated** checks ("Coronary Arteries" row not found).
+Fixed to be idempotent — a head is clicked only if its own section is not
+already open — and two more latent bugs the same investigation turned up
+were fixed alongside it: one check referenced an out-of-scope `heads`
+variable that was dead code no execution path had ever reached, and two
+others in the tablet/phone blocks duplicated the same blind-toggle pattern
+inline. All now go through the shared, fixed `openOrgan()`. Full account:
+`docs/reports/2026-09-21-health-atlas-integration-readiness-tranche13.md`.
+
+**7 new committed browser checks** (20 → 27 in
+`body-systems-parity-browser.mjs`) and **1 new data-integrity check** (22 →
+23: every `partMap` entry names a real organ and a real shape id in the
+same system) — proven able to fail by three independent mutations (no
+highlight at all; duplicate DOM ids from un-grouped shapes; a `partMap`
+entry pointing at a nonexistent shape id), each reverted afterward.
+
+**The Gate B decision packet** — the full six-tab port-vs-source matrix,
+what is deliberately withheld and why, and the exact ownership/ledger/
+version/nav decisions integration would need — is
+`docs/reports/2026-09-21-health-atlas-integration-readiness-tranche13.md`.
+It found the Programme Integration Ledger's own `health` stream entry
+(`docs/governance/programme-integration-ledger.json`) now describes a
+programme state that no longer holds: it still reads
+`EXTERNAL_PENDING_ACQUISITION` / `repository: UNKNOWN` / `ownedPaths: []`,
+written before any Health code existed in this repository. Twelve tranches
+now exist here, on this very branch chain — the ledger is stale, and
+correcting it is the Master Architect's, since `docs/governance/` is
+platform-shared and outside this tranche's authority.
+
+No version allocated or bumped. No protected/shared path touched — every
+file this tranche changed is under `app/health/**` or
+`tools/health-atlas-verify/**`, plus this report under `docs/reports/`.
+Nothing merged, nothing deployed.
