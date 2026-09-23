@@ -29,9 +29,9 @@
   "status": "ACTIVE",
   "main": {
     "ref": "origin/main",
-    "baselineSha": "bbf653a2a180e0f33f34815d3372550e4db3413f",
+    "baselineSha": "6dcd00a91de065f4084407d334c6903a8f2baa26",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.50",
+    "version": "08.51",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -371,7 +371,7 @@
     {
       "version": "08.50",
       "owner": "health",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Health Atlas: Foods and Conditions each gain a text search box (issue #115, PR #151), matching the source app's own per-tab filter. Deliberately narrower than the source's own matches() (whole serialized item, excluded fields included) -- matchesFoodSearch/matchesDiseaseSearch are scoped to exactly the fields this view already renders, so a search term present only in an excluded field cannot surface a false hit, proven by two checks against the real rendered page. Age Groups gets no search box, matching the source. The still-missing Lifestyle tab was re-investigated under Gate A/B and the existing deferral reasoning re-confirmed, not overridden. New more-search-browser.mjs suite, 12 checks. A repository-wide report-generator defect (tools/md2report.py flattens fenced code blocks/links, affecting all 82 report .md/.html pairs) was found and flagged for Master Architect authorisation, not fixed here. No protected path touched, no Firestore write/Rule/index. Independently re-verified by the Architect before merging: fresh full-history checkout, retargeted from its stale stacked base onto main and merged current main in (clean), all 11 governance suites clean, all 19 runnable Health-owned suites clean including the new suite 12/12.",
       "integration": {
         "authorizedOn": "2026-09-23",
@@ -381,10 +381,25 @@
         "method": "MERGE_PR",
         "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/151"
       }
+    },
+    {
+      "version": "08.51",
+      "owner": "health",
+      "status": "LIVE",
+      "note": "Health Atlas: organ Type pill parity (issue #115, PR #152). organ.partType (Organ/Vein/Artery/Nerve/Tissue/Gland/Duct) was in the preserved dataset since foundation tranche 1 and read by nothing -- a closed-set anatomical classification, the same class of field as the already-ported role/system, never a dose/nutrient/activity/remedy field. Ported as a small pill next to each organ's name. Measured with the real longest name in the dataset (\"Vena Cava (Superior & Inferior)\", a Vein) at desktop/tablet/phone -- the name+pill share one flex-wrap group rather than a nowrap line, so the worst case wraps the pill onto its own line instead of truncating or overflowing. Zero horizontal page overflow at any width. 4 new body-systems-parity-browser.mjs checks (16 -> 20), a new closed-set data-integrity assertion (21 -> 22), a new view-boundary positive control (14 -> 15). A repository-wide tools/md2report.py fenced-code/link-flattening defect (82 report pairs) independently confirmed cross-module, read-only, not fixed -- needs Master Architect authorisation. No protected path touched, no Firestore write/Rule/index. Independently re-verified by the Architect before merging: fresh full-history checkout, retargeted from its stale stacked base onto main and merged current main in (clean), all 11 governance suites clean, all 19 runnable Health-owned suites clean matching the PR's own claimed numbers exactly.",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-23",
+        "acceptedApplicationSha": "d13d1742744e60cf83111a3d406a969ffd254283",
+        "integratedMainSha": "6dcd00a91de065f4084407d334c6903a8f2baa26",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/152"
+      }
     }
   ],
-  "nextUnallocated": "08.51",
+  "nextUnallocated": "08.52",
   "nextUnallocatedNote": [
+    "v08.51 was allocated to the Health Atlas organ Type pill parity round (issue #115, PR #152), confirmed merged on 2026-09-23.",
     "v08.50 was allocated to the Health Atlas Foods/Conditions search round (issue #115, PR #151), confirmed merged on 2026-09-23.",
     "v08.49 was allocated to the Hadith book/chapter row-heading lang/dir fix (issue #114, PR #153), confirmed merged on 2026-09-23.",
     "v08.48 was allocated to the Word Card flow-mode cross-surah navigation fix (issue #113, PR #138), confirmed merged on 2026-09-23.",
@@ -715,11 +730,11 @@
       "integrationStateCorrectionNote": "CORRECTED 2026-09-23, at v08.43's own allocation. This entry previously read EXTERNAL_PENDING_ACQUISITION / repository UNKNOWN / 'No Health implementation exists in this repository' -- true on 18 Sep 2026 when this record was first written, false by the time it was next read: app/health/health-atlas.html and its supporting js/ modules have existed in this repository since the health-atlas-foundation-tranche1 branch, well over a dozen tranches have merged directly to main (Body Systems 3-column layout, wheel, diagrams, search, evidence-provenance boundary guards, a claims registry, and now this References index), and v08.43 is this stream's first entry in versionAllocations. The stale record was not caught earlier because no Health round had needed a global version number until this one. Corrected by reading the real repository state rather than trusting the prior record.",
       "activeBranch": null,
       "activeBranchNote": "NULL: Health rounds are built on short-lived per-tranche branches off main and merged directly, the same shape every other module stream now uses post-integration -- no branch of its own carries an ongoing stamp.",
-      "branchTip": "bbf653a2a180e0f33f34815d3372550e4db3413f",
-      "branchTipNote": "The commit at which the Foods/Conditions search round (PR #151) reached main. Descriptive, not a moving pointer -- see the equivalent hadith/quran-phase4-wiring notes for why.",
-      "declaredVersion": "08.50",
-      "declaredVersionNote": "08.50 (23 Sep 2026): the Foods/Conditions search round (issue #115, PR #151) is this stream's third independently allocated global application version. 08.46 (RELEASED, PR #148, the References view switcher a11y fix) is the prior one; 08.43 (RELEASED, PR #146, the References index tranche) before that. Every earlier Health Atlas tranche merged to main with NO version bump -- each PR's own body says so explicitly.",
-      "baselineSha": "bbf653a2a180e0f33f34815d3372550e4db3413f",
+      "branchTip": "6dcd00a91de065f4084407d334c6903a8f2baa26",
+      "branchTipNote": "The commit at which the organ Type pill parity round (PR #152) reached main. Descriptive, not a moving pointer -- see the equivalent hadith/quran-phase4-wiring notes for why.",
+      "declaredVersion": "08.51",
+      "declaredVersionNote": "08.51 (23 Sep 2026): the organ Type pill parity round (issue #115, PR #152) is this stream's fourth independently allocated global application version. 08.50 (RELEASED, PR #151, Foods/Conditions search) is the prior one; 08.46 (RELEASED, PR #148, the References view switcher a11y fix) before that. Every earlier Health Atlas tranche merged to main with NO version bump -- each PR's own body says so explicitly.",
+      "baselineSha": "6dcd00a91de065f4084407d334c6903a8f2baa26",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
       "ownedPaths": [
         "app/health/*.html",
