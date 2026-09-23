@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>surahSelect's own dropdown never re-targeted the flow/Mushaf scroll position either — reproduced, fixed; ayahSelect investigated and does not reproduce</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  pre { background:var(--code); padding:.8em 1em; border-radius:.5em; overflow-x:auto; border:1px solid var(--rule) }
+  pre code { background:none; padding:0; white-space:pre }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+</style>
+</head><body><main>
+<h1><code>surahSelect</code>'s own dropdown never re-targeted the flow/Mushaf scroll position either — reproduced, fixed; <code>ayahSelect</code> investigated and does not reproduce</h1>
+<p><strong>Issue #113, comment <code>5764719193</code></strong> (&quot;QURAN MAP v4 NEXT&quot;), following on from <code>5763795772</code>'s own <code>stepUnit()</code>/<code>goToUnitNumber()</code> cross-surah scroll fix (PR #139 head <code>28b2a495</code>). Verified first rather than trusted: <code>origin/main</code> at <code>16cfb0b</code> (<code>v08.32</code>); stack heads <code>#135</code> <code>4078b65</code>, <code>#137</code> <code>ffeccd5</code>, <code>#138</code> <code>a2585a0</code>, <code>#139</code> <code>28b2a495852fc5cb80d3c40f90edc23eab9a4bed</code> (matches the task's own stated head exactly). Issue #123 (the platform coordination issue the task also named) was re-read for context; nothing in it bears on this Quran-owned, Word-Card-adjacent task.</p>
+<h2>Gate A — independently re-run, reproduces PR #139's own exact baseline: 32/25/59/55/22/19/51, all passing</h2>
+<pre><code>node tools/i18n-verify/quran-flow-step-nav.mjs (#139)                     -&gt; 32 passed, 0 failed
+node tools/i18n-verify/quran-mushaf-audio-follow-scroll.mjs (#139)        -&gt; 25 passed, 0 failed
+node tools/i18n-verify/quran-word-card-mushaf-scroll.mjs (#139)           -&gt; 59 passed, 0 failed
+node tools/i18n-verify/quran-word-card-return.mjs (#135)                  -&gt; 55 passed, 0 failed
+node tools/i18n-verify/quran-word-card-popup.mjs (#137)                   -&gt; 22 passed, 0 failed
+node tools/i18n-verify/quran-word-card-flow-nav.mjs (#138)                -&gt; 19 passed, 0 failed
+node tools/i18n-verify/quran-word-card-note-origin-return.mjs (#139)      -&gt; 51 passed, 0 failed</code></pre>
+<p>Every number matches PR #139's own report byte-for-byte.</p>
+<p><strong>The negative-control claim was independently re-verified, not just read.</strong> The task asked specifically to inspect it: <em>&quot;only four non-Mushaf checks differentiate; Mushaf and <code>goToUnitNumber()</code> checks pass even reverted.&quot;</em> A manual revert (commenting out the two <code>await scrollFlowToCurrentAyah();</code> calls added at the tails of <code>stepUnit()</code> and <code>goToUnitNumber()</code>, this project's own established convention rather than an automated dual-run) and re-run of <code>quran-flow-step-nav.mjs</code> produced:</p>
+<pre><code>reverted:      28 passed, 4 failed</code></pre>
+<p>The four failures are exactly the four checks the report calls out: <code>GATE B: the flow strip is actually SCROLLED to surah 2's own āyah 1 (this is the fix)</code>, <code>GATE B: ... surah 1's own āyah 1 (backward direction)</code>, <code>GATE B: ... the new window's own first āyah</code> (Range, cross-surah), and <code>the flow strip lands on the new window's own first āyah</code> (Range, same-surah regression case). All two Mushaf-mode checks and both <code>goToUnitNumber()</code> checks passed unchanged on the reverted code, confirmed non-differentiating exactly as claimed. Restored and re-confirmed: <code>32 passed, 0 failed</code>.</p>
+<p>The prior round's own report pair (<code>2026-09-21-word-card-mushaf-audio-follow-and-evidence-repair.md</code>/<code>.html</code>) was opened; its fenced code blocks render as real <code>&lt;pre&gt;&lt;code&gt;</code> in the <code>.html</code> twin, not literal backticks — no repair needed. PR #139's body already describes its current head (<code>28b2a495</code>) accurately as of the start of this round; it is extended below, not rewritten, per the task's own instruction not to rewrite historical reports.</p>
+<h2>Gate B — the adjacent gap PR #139's own report flagged, investigated for real</h2>
+<p>PR #139's report named it explicitly and deliberately left it alone: <em>&quot;The bare <code>surahSelect</code>/<code>ayahSelect</code> dropdown change handlers share the identical root cause (grepped: neither calls <code>scrollFlowToCurrentAyah()</code> either) and are flagged, not fixed, as a separate item for a future round.&quot;</em> This round is that future round — reproducing each one for real before deciding anything, per the task's own instruction, rather than assuming both are the same defect just because they were flagged together.</p>
+<h3><code>surahSelect</code> — REPRODUCES</h3>
+<p>Read first, not assumed: <code>surahSelect.addEventListener(&quot;change&quot;, async () =&gt; { currentSurahNum = Number(surahSelect.value); await loadSurah(); });</code> (<code>app/quranrevival.html</code>, pre-existing). <code>loadSurah()</code> always resets <code>currentAyahNum</code> to <code>1</code> — the identical target <code>openSurahAt()</code> uses for <code>stepUnit()</code>'s own surah-unit branch — but never called <code>scrollFlowToCurrentAyah()</code>.</p>
+<p><strong>Reproduced with a debug run before touching any code</strong>: Whole Surah unit, surah 1 (7 āyahs), flow strip scrolled to its own last āyah (<code>7</code>), then surah 2 picked directly from the <code>#surahSelect</code> dropdown (not the Next button — a different trigger than PR #139's own round, isolating this exact code path). State correctly moved to <code>{&quot;surah&quot;:&quot;2&quot;,&quot;ayah&quot;:&quot;1&quot;}</code>, but the flow strip stayed visually on āyah <code>7</code> (<code>scrollLeft: -2136</code>, unchanged from before the pick) — the identical <code>renderFlowView()</code> non-Mushaf-branch &quot;one atomic <code>innerHTML</code> assignment does not reset <code>scrollLeft</code>&quot; defect <code>stepUnit()</code>/<code>goToUnitNumber()</code>/<code>navigateToAyah()</code> already needed the same fix for, reproduced here through a third, independent trigger.</p>
+<p><strong>The fix</strong>: one line, the same already-shipped, never-modified <code>scrollFlowToCurrentAyah()</code> every other cross-surah site already calls, added to the tail of <code>surahSelect</code>'s own change handler:</p>
+<pre><code>surahSelect.addEventListener(&quot;change&quot;, async () =&gt; {
+  currentSurahNum = Number(surahSelect.value);
+  await loadSurah();
+  await scrollFlowToCurrentAyah();
+});</code></pre>
+<h3><code>ayahSelect</code> — does NOT reproduce, investigated rather than invented</h3>
+<p>The task's own instruction: <em>&quot;If it does not reproduce, do not invent it.&quot;</em> Read the two <code>display</code> toggles in <code>renderStudyScreen()</code> before assuming anything: <code>ayahSelectControl.style.display = unitRendersWhole() ? &quot;none&quot; : &quot;&quot;;</code> and <code>pageViewContainer.style.display = usesFlow ? &quot;&quot; : &quot;none&quot;;</code>, where <code>unitRendersWhole()</code> is <code>mushafToggle.checked || currentUnitType === &quot;surah&quot; || currentUnitType === &quot;range&quot;</code> and <code>usesFlow</code> is <code>isMushaf || isPageUnit</code> (<code>isPageUnit</code> being the identical <code>surah</code>/<code>range</code> test). <strong>The two conditions are the same condition</strong> — <code>ayahSelect</code> is shown exactly when the flow strip is hidden, and vice versa, for every unit type and with Mushaf on or off. Its change handler can therefore never fire while there is anything for <code>scrollFlowToCurrentAyah()</code> to retarget.</p>
+<p>Measured on the rendered page rather than trusted from the reading above: <code>quran-surah-select-scroll-retarget.mjs</code> case 5 drives every unit type (<code>ayah</code>, <code>ruku</code>, <code>surah</code>, <code>range</code>) plus Mushaf-on-a-non-flow-unit, in both languages, asserting <code>ayahSelectShown</code> and <code>flowShown</code> are never both true at once — 10 checks, all passing. <code>ayahSelect</code>'s handler is left untouched.</p>
+<h3>A separate, out-of-scope gap found while reproducing — flagged, not fixed</h3>
+<p>Investigating <code>surahSelect</code> with a Range unit surfaced a second, unrelated defect: <code>loadSurah()</code> resets <code>currentAyahNum</code> but never touches <code>rangeFrom</code>/<code>rangeTo</code>, so picking a different surah while a Range window does not fit inside the new surah leaves the flow strip showing the OLD window's āyah numbers rendered against the NEW surah's text (reproduced: surah 1 range <code>3..7</code>, surah picked to <code>2</code>, state read <code>{&quot;surah&quot;:&quot;2&quot;,&quot;ayah&quot;:&quot;1&quot;}</code> but the rendered rows stayed <code>[&quot;3&quot;,&quot;4&quot;,&quot;5&quot;,&quot;6&quot;,&quot;7&quot;]</code> and the stale scroll position was, correctly, left where it was since āyah <code>1</code> has no rendered row to scroll to). This is a <strong>content</strong> question — what a Range window should show after crossing a surah boundary — not a scroll question, and the task's own instruction is explicit: <em>&quot;Do not decide cross-surah Range content policy.&quot;</em> Case 3 of the new suite isolates the scroll-retargeting fix from this by choosing a window (<code>1..5</code>) that stays valid in the destination surah, so it proves only what this round fixes. <strong>Flagged for a future round, not fixed here</strong>, the same &quot;flag rather than drive-by fix an adjacent site&quot; convention this stack's earlier rounds already follow.</p>
+<h2>New suite: <code>tools/i18n-verify/quran-surah-select-scroll-retarget.mjs</code> (38 checks)</h2>
+<ul>
+<li>Case 1: Whole Surah, non-Mushaf, English + Bangla, mobile (390×844) — the</li>
+</ul>
+<p>  GATE B assertion, plus state/row-count/no-writes/no-errors.</p>
+<ul>
+<li>Case 2: same, desktop width (1100×800) — the fix proven at a second</li>
+</ul>
+<p>  viewport, not assumed from the mobile case (this project's own recurring   &quot;measure at more than one viewport&quot; lesson).</p>
+<ul>
+<li>Case 3: Range unit, window <code>1..5</code> (stays valid in the destination surah) —</li>
+</ul>
+<p>  isolates the scroll fix from the separate Range content-policy gap above.</p>
+<ul>
+<li>Case 4: Mushaf mode — **honestly recorded as correctness/regression, not</li>
+</ul>
+<p>  GATE-B-differentiating** (verified by the same manual revert-and-confirm   below), the same reason PR #139's own Mushaf cases were non-differentiating:   <code>renderMushafPages()</code>'s own <code>innerHTML = &quot;&quot;</code> step resets <code>scrollLeft</code>   before repainting, and a direct surah pick always lands on the   destination's own first āyah — exactly what a reset-to-0 container already   shows.</p>
+<ul>
+<li>Case 5: <code>ayahSelect</code> structural proof (above), both languages.</li>
+</ul>
+<p><strong>Revert-and-confirm performed for real</strong> (commenting out only the new <code>await scrollFlowToCurrentAyah();</code> line in <code>surahSelect</code>'s own handler, leaving <code>stepUnit()</code>/<code>goToUnitNumber()</code>/<code>navigateToAyah()</code>'s own calls untouched):</p>
+<pre><code>fixed code:    38 passed, 0 failed
+reverted:      34 passed, 4 failed
+fix restored:  38 passed, 0 failed</code></pre>
+<p>The four failures on the reverted code are exactly the four GATE-B-labelled checks (English, Bangla, desktop, Range) — the Mushaf case and both <code>ayahSelect</code> cases (10 checks across both languages) pass unchanged either way, confirmed non-differentiating rather than assumed.</p>
+<h2>Full regression sweep, all eight Quran suites re-run against this round's final state</h2>
+<pre><code>quran-flow-step-nav.mjs (#139)                    -&gt; 32 passed, 0 failed
+quran-mushaf-audio-follow-scroll.mjs (#139)       -&gt; 25 passed, 0 failed
+quran-word-card-mushaf-scroll.mjs (#139)          -&gt; 59 passed, 0 failed
+quran-word-card-return.mjs (#135)                 -&gt; 55 passed, 0 failed
+quran-word-card-popup.mjs (#137)                  -&gt; 22 passed, 0 failed
+quran-word-card-flow-nav.mjs (#138)               -&gt; 19 passed, 0 failed
+quran-word-card-note-origin-return.mjs (#139)     -&gt; 51 passed, 0 failed
+quran-surah-select-scroll-retarget.mjs (new)      -&gt; 38 passed, 0 failed</code></pre>
+<p>No regression anywhere.</p>
+<h2>Governance suites, all seven, re-run after fetching full history and every ledger-named remote ref</h2>
+<p>The sandbox's default checkout was <strong>shallow</strong> and was missing two ledger-named branches (<code>claude/pensive-knuth-2pu3jj</code>, <code>claude/phase4-wiring</code>), which is exactly what the task asked to guard against (&quot;full-history and every ledger-named remote ref&quot;). <code>git fetch origin --unshallow</code> plus fetching both named branches turned two spurious local failures (<code>programme-ledger-mutations.mjs</code> 42/7, <code>brief-integrity.mjs</code> 6/2 — both <code>fatal: … unknown revision</code> on the two missing refs, not real governance failures) into the documented baseline:</p>
+<pre><code>programme-ledger.mjs                           -&gt; 8 passed, 23 noted, 0 failed
+programme-ledger-mutations.mjs                 -&gt; 49 passed, 0 failed
+brief-integrity.mjs                             -&gt; 8 passed, 0 failed
+study-activity-evidence-boundary.mjs            -&gt; 27 passed, 0 failed
+study-activity-evidence-boundary-mutations.mjs  -&gt; 11 passed, 0 failed
+study-event-wiring.mjs                          -&gt; 41 passed, 0 failed
+rules-authorisation-executable.mjs              -&gt; 38 passed, 0 failed</code></pre>
+<p>All seven reproduce the exact documented baseline. Local results only — no head-specific CI result was available at the time of writing.</p>
+<h2>This round's own diff (against prior head <code>28b2a495</code>)</h2>
+<p>3 files: <code>app/quranrevival.html</code> (14 insertions, 1 deletion — one comment block and one one-line change to <code>surahSelect</code>'s own handler), the new <code>tools/i18n-verify/quran-surah-select-scroll-retarget.mjs</code> (357 lines, 38 checks), and this round's own new dated report pair (this file and its <code>.html</code> twin). No protected or shared path touched anywhere (confirmed by listing — <code>git status --short</code> — not claim): <code>app/quranrevival.html</code> is Quran-owned application code, and the new suite is a Quran-scoped test file following this stack's own established naming, not one of the six platform-shared tooling files the task names (<code>behaviour.mjs</code>/<code>harness.mjs</code>/<code>firebase-stub.mjs</code>/<code>brief-integrity.mjs</code>/ <code>programme-ledger.mjs</code>/<code>programme-ledger-mutations.mjs</code>).</p>
+<h2>Owner app test</h2>
+<p><strong>NO before integration, YES after (informational only; nothing to fix before merge).</strong> Steps, once integrated and deployed: open the app, go to Read, pick a Study Unit of <strong>Whole Surah</strong>, scroll the reading strip a little (swipe left/right), then pick a <strong>different Surah</strong> from the Surah dropdown near the top of Study options. <strong>Expected</strong>: the reading strip lands on the new surah's own first āyah, on screen, not wherever the old scroll position happened to land. No sign-in beyond the existing owner/prime session is needed; nothing is written to Firestore by this change (confirmed: <code>writes=0</code> in every case above).</p>
+<h2>Deliberately NOT done</h2>
+<ul>
+<li><strong>No version bump</strong> (<code>v08.32</code> stays current, <code>v08.33</code> unallocated — this</li>
+</ul>
+<p>  IS a real behaviour change and needs a Master Architect allocation, same   as every prior round on this branch).</p>
+<ul>
+<li><strong>No merge/deploy/Rules change.</strong></li>
+<li><strong><code>ayahSelect</code>'s own handler is untouched</strong> — investigated, does not</li>
+</ul>
+<p>  reproduce, left alone rather than &quot;fixed&quot; defensively.</p>
+<ul>
+<li><strong>The Range cross-surah content-policy gap is flagged, not fixed</strong> —</li>
+</ul>
+<p>  a genuine Owner/Master-Architect product decision, out of this task's own   named scope.</p>
+<ul>
+<li><strong>PR #139's own body is extended with this round's update, not rewritten</strong></li>
+</ul>
+<p>  — its earlier rounds' own sections are kept as history, per the task's own   instruction.</p>
+</main></body></html>

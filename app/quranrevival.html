@@ -4280,7 +4280,7 @@
     import { QURAN_TOTAL_WORD_COUNT, knownDelta, juzForSurahAyah, wordTotalRatio } from "./js/quran-word-total.js";
     import { getWordTotals, recordWordTotalDelta } from "./js/quran-word-total-data.js";
     import { isWbwTotalPersistenceReady } from "./js/study-wbw-total-readiness.js";
-    import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
+    import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah, scrollToAyahIfRendered } from "./js/hifz-renderer.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     import {
@@ -5634,6 +5634,14 @@
       updateUnitControlsVisibility();
       renderStudyScreen();
       renderWheel();
+      // Issue #113 -- same fix as stepUnit()'s own tail, and for the same
+      // reason: this function crosses surah boundaries too (its own "if
+      // (row.startSurah !== currentSurahNum)" branch above), and is called
+      // both directly (the unit-number picker below) and from stepUnit()'s
+      // Juz/Hizb/Page branch, which returns before ever reaching stepUnit()'s
+      // own tail. A no-op when the flow view is not showing (checked inside
+      // scrollFlowToCurrentAyah() itself).
+      await scrollFlowToCurrentAyah();
     }
 
     unitNumSelect.addEventListener("change", () => { goToUnitNumber(Number(unitNumSelect.value)); });
@@ -5756,6 +5764,15 @@
       updateUnitControlsVisibility();
       renderStudyScreen();
       renderWheel();
+      // Issue #113 -- without this, stepping across a surah boundary (the
+      // owner's own "Next means the next surah too" rule, above) leaves the
+      // flow/Mushaf view's scroll position at whatever raw pixel offset the
+      // PREVIOUS surah had reached: the exact stale-scrollLeft defect
+      // navigateToAyah()'s own word-card jump already fixed (marked "Issue
+      // #113" at that call site), reproduced here via a completely different
+      // trigger. scrollFlowToCurrentAyah() is a safe no-op when the flow view
+      // is not showing at all (checked internally), so this is unconditional.
+      await scrollFlowToCurrentAyah();
     }
 
     /** Greys the two buttons out at the real ends rather than leaving a button
@@ -10730,6 +10747,22 @@
     }
 
     /**
+     * Issue #113 -- renderStudyScreen()'s own flow-view branch stashes the
+     * Mushaf render's promise here the moment it starts one (one line at its
+     * own `renderFlowView(...)` call site, marked "Issue #113"), so
+     * scrollFlowToCurrentAyah() below can await the render THIS caller just
+     * triggered without renderStudyScreen() itself becoming async -- it has
+     * ~24 call sites and none of the others need to know when a Mushaf page
+     * settles. Safe by construction, not by luck: renderStudyScreen() is
+     * synchronous and sets this (inside its own flow branch) before it
+     * returns, so by the time any caller's next line runs, this always holds
+     * that exact call's own promise, never a stale one from an earlier
+     * render -- there is no `await` between the two for another render to
+     * interleave through.
+     */
+    let flowRenderPromise = null;
+
+    /**
      * Issue #113 -- the flow view's own counterpart to readViewScrollContainer()
      * above, which deliberately returns null for a Whole Surah/Range unit
      * (#pageViewContainer visible) and leaves the word-card round trip a
@@ -10746,15 +10779,41 @@
      * return. The fix is identity-based instead: find the row for the ayah
      * actually being shown and bring it into view directly.
      *
-     * Mushaf mode is a different DOM shape entirely -- one printed page can
-     * hold several ayahs, and hifz-renderer.js keeps no per-ayah row to
-     * target (its word spans carry no ayah-identifying attribute) -- and is
-     * deliberately left exactly as it was, a no-op, same as before this
-     * round. See this round's own report for what closing it would need.
+     * Mushaf mode IS covered as of this round (Issue #113 continuation).
+     * hifz-renderer.js DOES keep a per-ayah registry to target
+     * (`wordRegistry`, keyed exactly like the non-Mushaf branch's own
+     * `data-ayah`) -- the earlier "no per-ayah row to target" note was
+     * about `.page-flow-ayah`, this function's OWN markup, which the Mushaf
+     * branch never draws. What actually blocked this is timing, not a
+     * missing primitive: renderFlowView()'s Mushaf branch is asynchronous
+     * (`ensureMushafData()` + per-page font loads + justification inside
+     * renderMushafPages()), and renderStudyScreen() -- synchronous, called
+     * from roughly two dozen sites that never need to know when a Mushaf
+     * page finishes rendering -- fires it without awaiting. Read this
+     * function's own caller in navigateToAyah(): it used to run on the very
+     * next line after renderStudyScreen(), before the destination āyah's own
+     * spans could possibly exist in hifz-renderer.js's registry. `
+     * flowRenderPromise` below is what lets THIS one caller find out, without
+     * touching renderStudyScreen()'s own signature or any of its other call
+     * sites -- see that variable's own comment.
      */
-    function scrollFlowToCurrentAyah() {
+    async function scrollFlowToCurrentAyah() {
       if (getComputedStyle(pageViewContainer).display === "none") return;
-      if (mushafToggle.checked) return;
+      if (mushafToggle.checked) {
+        // Await the render this exact renderStudyScreen() call just started
+        // (see flowRenderPromise's own comment) before asking hifz-renderer.js
+        // for the destination's spans -- asking before that settles is
+        // exactly the race this round closes; renderFlowView() already
+        // paints its own on-screen failure message on a rejection, so there
+        // is nothing further for this caller to report on one.
+        try { await flowRenderPromise; } catch { /* renderFlowView() already reports its own failure on-screen. */ }
+        // The state captured before awaiting may be stale by now (Mushaf
+        // turned off, or the flow view hidden entirely, while the render was
+        // still in flight) -- re-check rather than trust it.
+        if (getComputedStyle(pageViewContainer).display === "none" || !mushafToggle.checked) return;
+        scrollToAyahIfRendered(`${currentSurahNum}:${currentAyahNum}`);
+        return;
+      }
       const row = pageViewContainer.querySelector(`.page-flow-ayah[data-ayah="${currentAyahNum}"]`);
       row?.scrollIntoView({ inline: "start", behavior: "instant" });
     }
@@ -10804,7 +10863,7 @@
       currentAyahNum = ayah;
       if (ayahSelect.querySelector(`option[value="${ayah}"]`)) ayahSelect.value = String(ayah);
       renderStudyScreen();
-      scrollFlowToCurrentAyah();
+      await scrollFlowToCurrentAyah();
     }
 
     /** The shared half of "go there and open that word" -- the way back uses it. */
@@ -13319,7 +13378,11 @@
         // currentUnitAyahBounds() already returns [currentAyahNum,
         // currentAyahNum] for the Single Ayah unit -- so the special case
         // was not only wrong, it was never needed.
-        renderFlowView(unitFrom, unitTo, panels, isMushaf);
+        // Issue #113 -- stash this call's own promise (see flowRenderPromise's
+        // own comment above). Still fire-and-forget from THIS function's own
+        // point of view: renderStudyScreen() itself awaits nothing and its
+        // ~24 other call sites are completely unaffected by this line.
+        flowRenderPromise = renderFlowView(unitFrom, unitTo, panels, isMushaf);
       } else {
         const ayah = currentSurahData.ayahs.find((a) => a.ayah === currentAyahNum);
         if (!ayah) return;
@@ -13925,7 +13988,20 @@
       renderStudyScreen();
     });
 
-    surahSelect.addEventListener("change", async () => { currentSurahNum = Number(surahSelect.value); await loadSurah(); });
+    // Issue #113 -- same fix as stepUnit()'s and goToUnitNumber()'s own
+    // tails, and for the same reason: picking a different surah directly
+    // from this dropdown is a third, independent way to cross a surah
+    // boundary (loadSurah() always lands on the new surah's own āyah 1,
+    // same target openSurahAt() uses), and it shares the identical
+    // untouched root cause -- renderFlowView()'s non-Mushaf branch replaces
+    // #pageViewContainer's innerHTML in one atomic assignment, which does
+    // not reset scrollLeft, so the OLD surah's scroll offset otherwise
+    // carries over into the NEW surah's flow strip. A no-op when the flow
+    // view is not showing (checked inside scrollFlowToCurrentAyah() itself,
+    // which is why ayahSelect's own handler below needs no matching call:
+    // it only ever fires while the flow strip is hidden -- see this round's
+    // own dated report for the reproduction that established that).
+    surahSelect.addEventListener("change", async () => { currentSurahNum = Number(surahSelect.value); await loadSurah(); await scrollFlowToCurrentAyah(); });
     trackableSelect.addEventListener("change", () => changeCurrentTrackable(trackableSelect.value));
     personSelect.addEventListener("change", async () => {
       selectedPersonId = personSelect.value;
