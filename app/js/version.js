@@ -157,4 +157,37 @@
 // substitute. This PR was opened by the Architect from the Builder's
 // already-pushed branch (its own PR-opening step again did not execute,
 // the same gap v08.38 recorded). Allocated by the MMSA Architect.
-export const APP_VERSION = "08.39";
+// 08.40: Word Card -- the "Back to Word Card" round trip actually works
+// (issue #113, PR #135). Every existing suite stopped at "the return bar
+// appears" and never pressed it; doing that in a real browser found two
+// real, narrowly-scoped defects in the Basic Arabic lemma/root feature's
+// own return mechanism (built v08.20-v08.22). (1) The Basic tab's
+// "lemma-linked occurrences" list did not survive the round trip -- it
+// always collapsed on reopen, even when the reader had it expanded before
+// following an occurrence link away. Fixed with a one-shot restore signal
+// (quranWordCardRestoreLemmaExpanded), the same treatment the Depth tab's
+// own expandedForm already gets. (2) The scroll-position restore could
+// never have worked at all: window.scrollY is always 0 in this app's
+// shell (body { overflow: hidden }). The first fix attempt targeted the
+// wrong element (#readScroll) -- sideways paging is this app's own
+// default (getSidewaysReading() in prefs.js), and in that mode
+// #ayahPanels is what actually scrolls, not #readScroll; caught by a
+// debug run against the real fixture before shipping.
+// readViewScrollContainer()/readViewScrollTop()/setReadViewScrollTop()
+// pick the right element for the current rendering mode. Sideways/Mushaf
+// flow mode (Whole Surah/Range) and a Note-view origin are explicitly NOT
+// covered -- both fall back to the pre-existing no-op, never a
+// regression -- and are flagged rather than silently left broken.
+// New quran-word-card-return.mjs suite, 55 checks: full round trip in
+// both languages, Depth-tab regression, Prev/Next no-leak regression,
+// keyboard operability, language-switch-while-visible, geometry at
+// 320/390/412px. Independently re-verified by the Architect before
+// merging: fresh checkout, clean merge with no conflicts against current
+// main, all 8 CI-gated governance suites clean, the focused suite re-run
+// clean at 55/0 under an available substitute Chromium build
+// (chromium-1194's own chrome binary -- chromium_headless_shell-1243 is
+// missing from this sandbox, the same documented gap as v08.35/v08.36/
+// v08.39), full diff read by hand, no protected path touched. No
+// Firestore write, Rule or index; no new translation string.
+// Allocated by the MMSA Architect.
+export const APP_VERSION = "08.40";

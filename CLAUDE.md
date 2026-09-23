@@ -158,7 +158,45 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.39 on `main`** (23 Sep 2026 — Asma ul Husna's
+**Current milestone: v08.40 on `main`** (23 Sep 2026 — Word Card: the
+"Back to Word Card" round trip actually works, issue #113, PR #135. Every
+existing Word Card suite stopped the moment the return bar appeared on
+screen and never pressed it — pressing it in a real browser found two
+real, narrowly-scoped defects in the Basic Arabic lemma/root feature's own
+return mechanism (built v08.20–v08.22). **What actually changes for a
+real reader**: following a lemma-occurrence link away from a word, then
+tapping "← Back to Word Card", now returns to the exact word, on the exact
+tab, WITH the lemma list still expanded if it was before (it used to
+silently collapse), and the screen scrolled back to roughly where the
+reader was (it used to snap to the top, because `window.scrollY` is
+always 0 in this app's shell and the original code read it anyway). The
+first fix attempt for the scroll case targeted the wrong element — this
+app's own default is sideways/Mushaf-style paging, where `#ayahPanels`
+scrolls, not `#readScroll` — caught before shipping by testing against
+the real fixture rather than assumed. **What stays the same**: sideways
+flow mode (Whole Surah/Range) and a Note-view origin still fall back to
+the pre-existing no-op scroll restore, flagged rather than silently
+fixed; no new translation string (`backToWord`/`backToWordCard`/etc.
+already existed since v08.20–22); no Firestore write, Rule or index. New
+`quran-word-card-return.mjs` suite, 55 checks. **Independently
+re-verified by the Architect** before merging: fresh checkout, clean
+merge with no conflicts against current `main`, all 8 CI-gated governance
+suites clean, the focused suite re-run clean at 55/0 under an available
+substitute Chromium build (`chromium-1194`'s own `chrome` binary —
+`chromium_headless_shell-1243` is missing from this sandbox, the same
+documented gap as v08.35/v08.36/v08.39); `behaviour.mjs` run in full
+against both this merge and a clean `origin/main` baseline under the same
+substitute browser — **987 pass/6 fail vs 984 pass/9 fail**, every
+failure on both sides pre-existing and environmental (27i a pre-existing
+layout measurement, 31e the documented sandbox TLS artefact, 40g×4 an
+identical-to-the-pixel substitute-browser hit-testing artefact confirmed
+byte-identical on both sides, 22g×3 the documented intermittent
+archive.org class — present on the `main` baseline run and simply not
+triggered on this one, exactly the intermittency this file's own standing
+lessons already record), **zero failures introduced by this round**.
+Allocated by the MMSA Architect.
+
+**Previous milestone: v08.39 on `main`** (23 Sep 2026 — Asma ul Husna's
 classification rename/archive wired, and "file a new Name" generalized to
 every classification, issue #205, PR #207 — the closing half of v08.38's
 own round, issue #202. **What actually changes for a real reader**: in the
