@@ -76,6 +76,11 @@ check('POSITIVE CONTROL: the view module really does implement the organ/functio
   assert(codeOnly.includes('getOrgan') && codeOnly.includes('referencesFor'), 'expected the view to call getOrgan and referencesFor');
 });
 
+check('POSITIVE CONTROL: the view module renders organ.partType (parity tranche 12 "Type" pill)', () => {
+  assert(codeOnly.includes('organ.partType'), 'expected the view to read organ.partType somewhere');
+  assert(codeOnly.includes('ha-bs-type-pill'), 'expected the view to render the ha-bs-type-pill class');
+});
+
 for (const forbidden of forbiddenIdentifiers) {
   check(`view module never reads "${forbidden}" (comments excluded)`, () => {
     assert(!codeOnly.includes(forbidden), `found "${forbidden}" in executable source, outside a comment`);

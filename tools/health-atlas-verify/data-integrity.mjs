@@ -107,6 +107,20 @@ check('every refs[] id across organs/foods/diseases/lifestyles resolves to a rea
   assert(dangling.length === 0, `dangling refs: ${dangling.join(', ')}`);
 });
 
+check('every organ.partType is one of the source\'s own seven closed values (parity tranche 12)', () => {
+  // The v02.04 source's own SCHEMAS.organ.partType field def:
+  // ['Organ','Vein','Artery','Nerve','Tissue','Gland','Duct']. Bound to
+  // that set rather than hardcoded loosely, so a future data change that
+  // widens it fails here first rather than silently reaching the view's
+  // "Type" pill (health-atlas-view.js, parity tranche 12) with an
+  // unexpected value.
+  const closedSet = new Set(['Organ', 'Vein', 'Artery', 'Nerve', 'Tissue', 'Gland', 'Duct']);
+  const missing = mod.HEALTH_ATLAS_ORGANS.filter(o => !o.partType);
+  assert(missing.length === 0, `organs missing partType: ${missing.map(o => o.id).join(', ')}`);
+  const bad = mod.HEALTH_ATLAS_ORGANS.filter(o => !closedSet.has(o.partType));
+  assert(bad.length === 0, `organs with an unexpected partType: ${bad.map(o => `${o.id}=${o.partType}`).join(', ')}`);
+});
+
 check('every exported entity array/object is frozen (Object.freeze)', () => {
   for (const [exportName] of entityMap) {
     assert(Object.isFrozen(mod[exportName]), `${exportName} is not frozen`);

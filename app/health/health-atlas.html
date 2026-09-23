@@ -86,6 +86,13 @@
   .ha-role-dot { display: inline-block; width: 0.55rem; height: 0.55rem; border-radius: 50%; flex-shrink: 0; }
   .ha-role-dot.ha-role-main { background: var(--gold); }
   .ha-role-dot.ha-role-supportive { background: transparent; border: 1.5px solid #8a8071; }
+  /* Parity tranche 12: source-faithful organ "Type" pill (organ.partType),
+     e.g. Organ/Vein/Artery/Nerve/Tissue/Gland/Duct. The name+pill group
+     wraps as its own unit (flex-wrap) rather than truncating the name or
+     overflowing the row horizontally on a long real name at a narrow
+     width — see the tranche's own report for the measured widths. */
+  .ha-bs-row-name { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; flex-wrap: wrap; column-gap: 0.35rem; row-gap: 0.1rem; }
+  .ha-bs-type-pill { flex-shrink: 0; white-space: nowrap; font-size: 0.68rem; color: #8a8071; background: #efe9d8; border-radius: 999px; padding: 0.03rem 0.45rem; }
 
   /* ---------- Wheel ---------- */
   .ha-wheel-panel { background: var(--card); border: 1px solid var(--line); border-radius: 0.6rem; padding: 1rem; display: flex; flex-direction: column; align-items: center; gap: 0.6rem; }

@@ -317,6 +317,54 @@ async function main() {
         }
       });
 
+      // Parity tranche 12: the source-faithful "Type" pill on each organ
+      // row (organ.partType — Organ/Vein/Artery/Nerve/Tissue/Gland/Duct).
+      await check('desktop: each organ row carries a real "Type" pill matching its own partType value', async () => {
+        const heads = page.locator('.ha-bs-section-head');
+        await heads.first().click(); // open a section so its rows exist
+        const kidneysRow = page.locator('.ha-bs-row', { hasText: 'Kidneys' }).first();
+        if (!(await kidneysRow.isVisible().catch(() => false))) {
+          const n = await heads.count();
+          for (let i = 0; i < n; i++) {
+            if (await kidneysRow.isVisible().catch(() => false)) break;
+            await heads.nth(i).click();
+          }
+        }
+        const kidneysPill = kidneysRow.locator('.ha-bs-type-pill');
+        assert(await kidneysPill.count() === 1, 'expected exactly one Type pill on the Kidneys row');
+        assert((await kidneysPill.textContent()).trim() === 'Organ', `expected Kidneys' pill to read "Organ", got ${(await kidneysPill.textContent()).trim()}`);
+
+        // Coronary Arteries: a real non-"Organ" partType (Artery), proving
+        // the pill is not a hardcoded default.
+        const arteryRow = page.locator('.ha-bs-row', { hasText: 'Coronary Arteries' }).first();
+        assert(await arteryRow.count() === 1, 'expected a Coronary Arteries row');
+        const arteryPill = arteryRow.locator('.ha-bs-type-pill');
+        assert((await arteryPill.textContent()).trim() === 'Artery', `expected Coronary Arteries' pill to read "Artery", got ${(await arteryPill.textContent()).trim()}`);
+      });
+
+      // The longest real name+type combination in the whole dataset
+      // ("Vena Cava (Superior & Inferior)", a Vein, 31 + 4 chars) is the
+      // measured worst case for the row-wrap CSS (CLAUDE.md: "measure a
+      // content-sized control with content the length a REAL entry has").
+      await check('desktop: the longest organ name + Type pill in the dataset causes no page overflow', async () => {
+        const row = page.locator('.ha-bs-row', { hasText: 'Vena Cava' }).first();
+        if (!(await row.isVisible().catch(() => false))) {
+          const n = await heads.count();
+          for (let i = 0; i < n; i++) {
+            if (await row.isVisible().catch(() => false)) break;
+            await heads.nth(i).click();
+          }
+        }
+        assert(await row.count() === 1, 'expected a Vena Cava row');
+        const pill = row.locator('.ha-bs-type-pill');
+        assert((await pill.textContent()).trim() === 'Vein', `expected Vena Cava's pill to read "Vein", got ${(await pill.textContent()).trim()}`);
+        const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+        assert(overflow <= 1, `expected no horizontal page overflow from the longest name+pill combination, got ${overflow}px`);
+        const rowBox = await row.boundingBox();
+        const colBox = await page.locator('.ha-bs-col').first().boundingBox();
+        assert(rowBox.x + rowBox.width <= colBox.x + colBox.width + 1, 'expected the Vena Cava row to stay within its own column, not overflow it horizontally');
+      });
+
       await ctx.close();
     }
 
@@ -347,6 +395,19 @@ async function main() {
         assert(!/accurate/i.test(text), `placeholder must not claim "accurate" at tablet width either: ${text}`);
       });
 
+      await check('tablet (768x1024): the longest organ name + Type pill causes no page overflow', async () => {
+        const heads = page.locator('.ha-bs-section-head');
+        const row = page.locator('.ha-bs-row', { hasText: 'Vena Cava' }).first();
+        const n = await heads.count();
+        for (let i = 0; i < n; i++) {
+          if (await row.isVisible().catch(() => false)) break;
+          await heads.nth(i).click();
+        }
+        assert(await row.count() === 1, 'expected a Vena Cava row');
+        const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+        assert(overflow <= 1, `expected no horizontal page overflow at tablet width, got ${overflow}px`);
+      });
+
       await ctx.close();
     }
 
@@ -371,6 +432,21 @@ async function main() {
         assert(await placeholder.count() === 1, 'expected the placeholder to render after a real tap at phone width');
         const text = (await placeholder.textContent()) || '';
         assert(!/accurate/i.test(text), `placeholder must not claim "accurate" at phone width either: ${text}`);
+      });
+
+      await check('phone (390x844): the longest organ name + Type pill causes no page overflow, wrapping onto its own line if needed', async () => {
+        const heads = page.locator('.ha-bs-section-head');
+        const row = page.locator('.ha-bs-row', { hasText: 'Vena Cava' }).first();
+        const n = await heads.count();
+        for (let i = 0; i < n; i++) {
+          if (await row.isVisible().catch(() => false)) break;
+          await heads.nth(i).click();
+        }
+        assert(await row.count() === 1, 'expected a Vena Cava row');
+        const pill = row.locator('.ha-bs-type-pill');
+        assert((await pill.textContent()).trim() === 'Vein', 'expected the Vena Cava pill to read "Vein" at phone width too');
+        const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+        assert(overflow <= 1, `expected no horizontal page overflow at phone width, got ${overflow}px`);
       });
 
       await ctx.close();
