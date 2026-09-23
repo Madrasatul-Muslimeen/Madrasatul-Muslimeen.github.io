@@ -323,4 +323,31 @@
 // all 5 Hadith-owned data suites clean, hadith-source-navigation-
 // browser.mjs 47/47 in both languages. No protected path touched, no
 // Firestore write/Rule/index. Allocated by the MMSA Architect.
-export const APP_VERSION = "08.44";
+// 08.45: Word Card -- desktop drag/resize verified, one z-index defect
+// fixed (issue #113, PR #137). The movable/resizable Word Card window has
+// existed since v08.20; a real drag-then-resize round trip (never driven
+// by any suite before this one) found the Word Card mounts' z-index was
+// 60, an accidental TIE with #dock's own z-index:60, where
+// #noteView/#wheelPopupView/#exploreView all deliberately use 55, one
+// step below #dock, with their own comment stating the policy outright.
+// Fixed to 55 to match. Nothing changes on screen -- DOM order already
+// tie-broke the same way -- but the card now states the same dock-wins
+// policy explicitly instead of relying on a coincidence. New
+// quran-word-card-popup.mjs suite, 22 checks: desktop drag/resize/
+// persistence round trip (both languages), mobile layout untouched,
+// independent per-mount geometry. Two things recorded, not built (both
+// need authority this round did not have): zero keyboard support
+// anywhere in the four-popup mechanism, and #dock deliberately winning
+// its overlap with a popup's own south-edge resize handles once dragged
+// low enough (the same "dock always wins" policy this fix makes
+// explicit, shared by all four popups by design). Pre-existing suites
+// re-run unmodified and unaffected: quran-word-card.mjs 36/0,
+// quran-word-card-integration.mjs 10/0,
+// quran-word-card-lemma-occurrences.mjs 50/0,
+// quran-word-card-return.mjs (PR #135's own suite) 55/0. No new
+// translation string, no Firestore write/Rule/index. Independently
+// re-verified by the Architect before merging: fresh full-history
+// checkout, merged current main in (clean, no conflicts), all 11
+// governance suites clean, all five Word Card suites re-run matching the
+// round's own claims exactly. Allocated by the MMSA Architect.
+export const APP_VERSION = "08.45";

@@ -158,7 +158,42 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.44 on `main`** (23 Sep 2026 — Hadith: keyboard
+**Current milestone: v08.45 on `main`** (23 Sep 2026 — Word Card: desktop
+drag/resize verified, one z-index defect fixed, issue #113, PR #137. The
+movable/resizable Word Card window has existed since v08.20, via the
+shared `initPopupWindow()` (`app/js/note-popup.js`) the Note/Wheel/Explore
+popups also use, at the same 900px breakpoint. A real drag-then-resize
+round trip — never driven by any suite before this one — found the Word
+Card mounts' `z-index` was `60`, an accidental **tie** with `#dock`'s own
+`z-index:60`, where `#noteView`/`#wheelPopupView`/`#exploreView` all
+deliberately use `55`, one step below `#dock`, with their own comment
+stating the policy outright ("the dock stays reachable even if the
+popup's own geometry overlaps it"). Fixed to `55` to match. **Nothing
+changes on screen** — DOM order already tie-broke the same way — but the
+card now states the same dock-wins policy explicitly instead of relying
+on a coincidence. New `quran-word-card-popup.mjs` suite, 22 checks:
+desktop drag/resize/persistence round trip (both languages), mobile
+layout untouched (below 900px no inline geometry is ever applied, so
+v08.40's own 55-check return suite is untouched by construction),
+independent per-mount geometry. **Two things recorded, not built** (both
+need authority this round did not have): zero keyboard support anywhere
+in the four-popup mechanism (no `keydown`, `tabindex`, or `aria-label` on
+any drag handle or resize control), and `#dock` deliberately winning its
+overlap with a popup's own south-edge resize handles once dragged low
+enough — the same "dock always wins" policy this fix makes explicit,
+shared by all four popups by design, and a real product trade-off (a
+smaller maximum popup height on a short screen) rather than a one-line
+fix. Pre-existing suites re-run unmodified and unaffected:
+`quran-word-card.mjs` 36/0, `quran-word-card-integration.mjs` 10/0,
+`quran-word-card-lemma-occurrences.mjs` 50/0,
+`quran-word-card-return.mjs` (v08.40's own suite) 55/0. No new
+translation string, no Firestore write/Rule/index. **Independently
+re-verified by the Architect before merging**: fresh full-history
+checkout, merged current `main` in (clean, no conflicts), all 11
+governance suites clean, all five Word Card suites re-run matching the
+round's own claims exactly. Allocated by the MMSA Architect.
+
+**Previous milestone: v08.44 on `main`** (23 Sep 2026 — Hadith: keyboard
 focus is restored to the newly-active tab button on every
 Collections/Topics/Search/Explore/Commentary tab switch, issue #114 Gate
 A/B, PR #150. `render()` tears down and rebuilds the whole subtree on

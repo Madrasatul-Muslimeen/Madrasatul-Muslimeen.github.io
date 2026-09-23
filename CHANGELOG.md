@@ -16602,3 +16602,53 @@ protected path touched, no Firestore write/Rule/index.
 `app/js/version.js`: 08.43 → **08.44**. Allocated by the MMSA Architect.
 See `docs/governance/programme-integration-ledger.json` for the version
 allocation record.
+
+---
+
+**v08.45 (23 Sep 2026) — Word Card: desktop drag/resize verified, one
+z-index defect fixed (issue #113, PR #137).** The movable/resizable Word
+Card window has existed since v08.20, via the shared `initPopupWindow()`
+(`app/js/note-popup.js`) the Note/Wheel/Explore popups also use, at the
+same 900px breakpoint. Persistence is `localStorage`, matching the app's
+own existing, consistent policy across all four popups.
+
+**Gate B (build) was reached** for one real, narrowly-scoped defect: a
+real drag-then-resize round trip (never driven by any suite before this
+one) found the Word Card mounts' `z-index` was `60`, an accidental **tie**
+with `#dock`'s own `z-index:60`, where `#noteView`/`#wheelPopupView`/
+`#exploreView` all deliberately sit at `55` — one step below `#dock` —
+with their own comment stating the policy outright. A tie resolves by DOM
+order rather than by either side's own stated intent — `#dock` happened
+to win it here too, so nothing on screen changes, but a coincidence is
+not the same thing as the policy every other popup states outright. Fixed
+to `55`.
+
+**Two things recorded, not built** (both need authority this round did
+not have): (1) zero keyboard support anywhere in this mechanism, for any
+of the four popup views — no `keydown`, `tabindex`, or `aria-label`
+anywhere in `note-popup.js` or on the `data-note-resize` markup; closing
+it needs new accessible names in both languages plus keyboard-move/resize
+behaviour added to the one shared `initPopupWindow()` function all four
+popups call. (2) `#dock` deliberately wins its overlap with a popup's own
+south-edge resize handles once dragged low enough — the same "dock always
+wins" policy the z-index fix above makes explicit, shared by all four
+popups by design. Changing it is a real product trade-off (a smaller
+maximum popup height on a short screen), not a one-line fix.
+
+**New `quran-word-card-popup.mjs` suite, 22 checks**: desktop drag/resize/
+persistence round trip (both languages), mobile layout untouched by
+construction, independent per-mount geometry. Pre-existing suites re-run
+unmodified and unaffected: `quran-word-card.mjs` 36/0,
+`quran-word-card-integration.mjs` 10/0,
+`quran-word-card-lemma-occurrences.mjs` 50/0,
+`quran-word-card-return.mjs` (v08.40's own 55-check suite) 55/0.
+
+**Independently re-verified by the Architect before merging**: fresh
+full-history checkout, merged current `main` in (clean auto-merge, no
+conflicts), all 11 governance suites clean, all five Word Card suites
+re-run matching PR #137's own claims exactly. No protected path touched,
+no new translation string, no Firestore write/Rule/index.
+
+`app/js/version.js`: 08.44 → **08.45**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.
