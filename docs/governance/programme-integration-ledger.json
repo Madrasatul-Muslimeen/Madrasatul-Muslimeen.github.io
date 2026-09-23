@@ -29,9 +29,9 @@
   "status": "ACTIVE",
   "main": {
     "ref": "origin/main",
-    "baselineSha": "5cfb1a65809dab3e050181387bc4ba261f4e62f1",
+    "baselineSha": "ff678dae84ebbc5559d70666a36baaa4ba0cd894",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.48",
+    "version": "08.49",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -343,7 +343,7 @@
     {
       "version": "08.48",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Word Card: the flow-mode cross-surah navigation gap PR #135 flagged is fixed (issue #113, PR #138). Following a lemma occurrence into a different surah in Whole Surah flow mode left the reader on the arrival surah's own page at the SAME scroll offset as the origin ayah -- not the tapped word, measurably off-screen -- because raw scrollLeft is a container property that a browser does not reset when renderFlowView() rebuilds the innerHTML for a different surah. Fixed with one new identity-based function, scrollFlowToCurrentAyah(), called from navigateToAyah() -- the word-card mechanism's only navigation function. New quran-word-card-flow-nav.mjs suite, 19 checks. A second, pre-existing, UNRELATED defect (Range unit type has no surah of its own, so crossing surahs while Range is selected shows an arbitrary slice of the wrong surah) was found and NOT fixed -- recorded as a product-decision packet, four costed options, none chosen. No new translation string, no Firestore write/Rule/index. Independently re-verified by the Architect before merging: fresh full-history checkout, retargeted from its stale stacked base onto main and merged current main in (clean), all 11 governance suites clean, the new suite 19/19, the unmodified quran-word-card-return.mjs regression suite 55/55.",
       "integration": {
         "authorizedOn": "2026-09-23",
@@ -353,10 +353,25 @@
         "method": "MERGE_PR",
         "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/138"
       }
+    },
+    {
+      "version": "08.49",
+      "owner": "hadith",
+      "status": "LIVE",
+      "note": "Hadith: book/chapter row headings get a real lang/dir attribute (issue #114, PR #153). Every book/chapter row's own native-script heading (.hadith-row-heading) rendered with no lang/dir attribute -- getComputedStyle().direction still read rtl (Unicode Bidi auto-detects Arabic), which is why no sighted check ever caught it, but lang has no such fallback: a screen reader read every heading in the UI-language voice instead of Arabic. Fixed with one rawHeadingSpan() helper stamping lang=SOURCE_LANGUAGE, dir=rtl, covering both edition shapes through one function. Zero new translatable strings. 3 new checks in hadith-source-navigation-browser.mjs (47 -> 50), mutation-proven (reverting the fix fails exactly the 3 new checks, 47/50). Independently re-verified by the Architect before merging: fresh full-history checkout, retargeted from its stale stacked base onto main and merged current main in (clean), all 11 governance suites clean, all 5 Hadith-owned data suites clean, hadith-source-navigation-browser.mjs 50/50 in both languages.",
+      "integration": {
+        "authorizedOn": "2026-09-23",
+        "integratedOn": "2026-09-23",
+        "acceptedApplicationSha": "18ecef56c4c8cfbcb166d8294d731d7b09b394a6",
+        "integratedMainSha": "ff678dae84ebbc5559d70666a36baaa4ba0cd894",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/153"
+      }
     }
   ],
-  "nextUnallocated": "08.49",
+  "nextUnallocated": "08.50",
   "nextUnallocatedNote": [
+    "v08.49 was allocated to the Hadith book/chapter row-heading lang/dir fix (issue #114, PR #153), confirmed merged on 2026-09-23.",
     "v08.48 was allocated to the Word Card flow-mode cross-surah navigation fix (issue #113, PR #138), confirmed merged on 2026-09-23.",
     "v08.47 was allocated RETROACTIVELY to the Notes screen round 1 (MAP Phase 5 P5-D, issue #195, PR #198), which had merged to main on 2026-09-22 with no version bump and was found unallocated during this session's routine sweep on 2026-09-23; D3 Journaling evidence recording is live as of this same round (the readiness gate has read ready:true since v08.34).",
     "v08.46 was allocated to the Health Atlas References view switcher keyboard/screen-reader fix (issue #115 Gate A/B, PR #148), confirmed merged on 2026-09-23.",
@@ -585,9 +600,9 @@
       "branchTip": "43dd96f58eeee5ad33dc82bb4e260660e3c290c9",
       "branchTipNote": "The commit at which this stream's work reached `main` -- not a moving branch tip. branchTip is read by guard C only for an integrationState of HELD, so for a merged stream it is descriptive. Re-stamping it with the branch's own newest commit would name the very commit that wrote the stamp, and would move again every time the branch merged main: an endless self-reference. This commit never moves. The branch's pre-repair tip was c1a4f19a70ec824372fa1fda49e4e7dbc38bc40c.",
       "integrationState": "MERGED_TO_MAIN",
-      "declaredVersion": "08.44",
-      "declaredVersionNote": "08.44 (23 Sep 2026): the Hadith tab-switch keyboard-focus fix (issue #114 Gate A/B, PR #150) is this stream's second independently allocated application version since the 08.29 integration -- see versionAllocations. 08.41 (RELEASED, PR #149, the breadcrumb aria-current fix) is the prior one. 08.28 (HISTORICAL, stamped at 7f61328) and 08.29 (RELEASED, stamped at 22526b2) stay in versionAllocations as facts about what it shipped before then -- nothing was withdrawn and nothing was re-allocated. 08.30 through 08.40, 08.42, 08.43 belonged to other streams; this stream carried no independent allocation across those spans, and the version its branch's version.js read in that window was main's own, owned by whichever stream the ledger named.",
-      "baselineSha": "8621f2f11222a38c0867eb80fe7b44e9ee464d23",
+      "declaredVersion": "08.49",
+      "declaredVersionNote": "08.49 (23 Sep 2026): the Hadith book/chapter row-heading lang/dir fix (issue #114, PR #153) -- see versionAllocations. 08.44 (RELEASED, PR #150, the tab-switch keyboard-focus fix) is the prior one; 08.41 (RELEASED, PR #149, the breadcrumb aria-current fix) before that. 08.28 (HISTORICAL, stamped at 7f61328) and 08.29 (RELEASED, stamped at 22526b2) stay in versionAllocations as facts about what it shipped before then -- nothing was withdrawn and nothing was re-allocated. Every span between these not named belonged to other streams.",
+      "baselineSha": "ff678dae84ebbc5559d70666a36baaa4ba0cd894",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
       "ownedPaths": [
         "app/hadith-*.html",

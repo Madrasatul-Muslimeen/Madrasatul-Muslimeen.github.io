@@ -158,7 +158,31 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.48 on `main`** (23 Sep 2026 — Word Card: the
+**Current milestone: v08.49 on `main`** (23 Sep 2026 — Hadith: book/
+chapter row headings get a real `lang`/`dir` attribute, issue #114, PR
+#153. Every book/chapter row's own native-script heading
+(`.hadith-row-heading`, real Arabic text) rendered with **no `lang`/`dir`
+attribute** — `getComputedStyle().direction` still read `"rtl"` (Unicode
+Bidi auto-detects a run of Arabic characters), which is exactly why no
+sighted or screenshot check ever caught it, but `lang` has no such
+fallback: a screen reader read every book/chapter heading in the page's
+UI-language voice (English/Bangla) instead of Arabic. Every other
+Arabic-script surface this component renders (the occurrence card's
+source paragraph, the commentary panel's Arabic title) already stamped
+`lang`/`dir`; only these two call sites did not. **Fix**: one
+`rawHeadingSpan()` helper stamping `lang = SOURCE_LANGUAGE` (the module's
+own existing constant) and `dir = "rtl"`, covering both edition shapes
+(with and without a chapter level) through one function. Zero new
+translatable strings. 3 new checks in `hadith-source-navigation-
+browser.mjs` (47 → 50). **Independently re-verified by the Architect
+before merging**: fresh full-history checkout, retargeted from its stale
+stacked base onto `main` and merged current `main` in (clean), all 11
+governance suites clean, all 5 Hadith-owned data suites clean,
+`hadith-source-navigation-browser.mjs` 50/50 in both languages, and
+**mutation-proven**: reverting the fix fails exactly the 3 new checks
+(47/50). No protected path touched. Allocated by the MMSA Architect.
+
+**Previous milestone: v08.48 on `main`** (23 Sep 2026 — Word Card: the
 flow-mode cross-surah navigation gap PR #135 flagged is fixed, issue
 #113, PR #138. Following a lemma occurrence into a different surah in
 Whole Surah flow mode left the reader on the arrival surah's own page at

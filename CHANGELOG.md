@@ -16900,3 +16900,47 @@ new translation string, no Firestore write/Rule/index.
 `app/js/version.js`: 08.47 → **08.48**. Allocated by the MMSA Architect.
 See `docs/governance/programme-integration-ledger.json` for the version
 allocation record.
+
+---
+
+**v08.49 (23 Sep 2026) — Hadith: book/chapter row headings get a real
+`lang`/`dir` attribute (issue #114, PR #153).**
+
+Ruled out first (live re-probes, not just re-reading the prior round's
+suite): real `Tab`+`Enter` navigation through edition→book→chapter
+continues correctly at every level; the `:focus-visible` mouse-vs-
+keyboard distinction on the landing crumbs is correct browser behaviour;
+every breadcrumb reset path is unchanged and correct.
+
+**Found**: every book/chapter row's own native-script heading
+(`.hadith-row-heading`, real Arabic text from the existing fixture, e.g.
+"كتاب البداية") renders with **no `lang`/`dir` attribute** —
+`getComputedStyle().direction` reads `"rtl"` anyway (Unicode Bidi
+auto-detects a run of Arabic characters), which is exactly why no sighted
+or screenshot check ever caught it, but `lang` has no such fallback: a
+screen reader reads every book/chapter heading in the page's UI-language
+voice (English/Bangla) instead of Arabic. Every *other* Arabic-script
+surface this component renders (the occurrence card's source paragraph,
+the commentary panel's Arabic title) already stamps `lang`/`dir` — only
+these two call sites did not.
+
+**Fix**: one `rawHeadingSpan()` helper (`app/js/hadith-browser.js`)
+stamping `lang = SOURCE_LANGUAGE` (the module's own existing constant,
+not a new literal) and `dir = "rtl"`, replacing both call sites (book
+list, chapter list) — covers both edition shapes (with and without a
+chapter level) through the one function. Zero new translatable strings.
+
+**Tests**: 3 new checks in `hadith-source-navigation-browser.mjs`
+(47 → 50). **Mutation-proven**: reverting to the pre-fix state fails
+exactly the 3 new checks (47/50); restored and reconfirmed clean.
+
+**Independently re-verified by the Architect before merging**: fresh
+full-history checkout, retargeted from its stale stacked base onto `main`
+and merged current `main` in (clean auto-merge), all 11 governance suites
+clean, all 5 Hadith-owned data suites clean, `hadith-source-navigation-
+browser.mjs` 50/50 in both languages. No protected path touched, no
+Firestore write/Rule/index.
+
+`app/js/version.js`: 08.48 → **08.49**. Allocated by the MMSA Architect.
+See `docs/governance/programme-integration-ledger.json` for the version
+allocation record.
