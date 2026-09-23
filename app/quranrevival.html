@@ -1351,7 +1351,16 @@
      .qcr-archived-toggle/.qcr-add-form classes QCR's own
      level bar already defined above (they were never scoped to #qcrPanel),
      so only the bar's own layout and the three selects' width need new
-     rules here. */
+     rules here.
+     Classifications round -- 23 Sep 2026: "three" is now "one per active
+     classification, plus Names" -- #asmaXLevelBar > select still applies
+     to every one of them, dynamic or static, since renderAsmaXLevelBar()
+     inserts each classification's own <select> as a plain sibling. With
+     today's two seeded classifications this is unchanged (still 3, still
+     an equal third each via `flex: 1 1 0` below); a genuinely new THIRD
+     classification means 4 selects sharing the row instead of 3 (an equal
+     quarter each) -- real new width demand this sandbox has no browser to
+     measure (see this round's own PR note). */
   #asmaXPanel { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; color: #F2E8D5; font-family: 'Inter', sans-serif; }
   /* 4 Sep 2026 one-bar round -- same treatment as #qcrLevelBar above, with
      three selects instead of two: `nowrap` plus `flex: 1 1 0` is what keeps
@@ -1481,6 +1490,28 @@
   .asma-item-badge.weak { background: rgba(217,122,99,0.22); color: #ffb9a6; }
   .asma-way-meaning { display: block; font-size: 11.5px; color: #9aa7be; margin: 3px 0 0 44px; line-height: 1.4; }
 
+  /* Classifications round -- 23 Sep 2026. "also in…" (a small row under a
+     Names-level entry that is filed in some OTHER list too) and "Belongs
+     to" (the References-level card's own full list of every classification
+     x list a Name is filed under) -- same chip family as .asma-xref-chip
+     above, gold to read as "navigate elsewhere" rather than the blue
+     Qur'an-reference chips carry. */
+  .asma-also-in-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin: 4px 0 0 44px; }
+  .asma-also-in-label { font-size: 10px; color: #8fa0c2; }
+  .asma-also-in-chip {
+    font-size: 10.5px; padding: 1px 8px; border-radius: 999px; font-family: inherit; cursor: pointer;
+    background: rgba(201,162,75,0.16); border: 1px solid rgba(201,162,75,0.4); color: #C9A24B;
+  }
+  .asma-also-in-chip:hover { background: rgba(201,162,75,0.3); }
+  .asma-belongs-block { margin: 0.6rem 0; }
+  .asma-belongs-label { font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase; color: #8fa0c2; margin-bottom: 6px; }
+  .asma-belongs-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .asma-belongs-chip {
+    font-size: 12.5px; padding: 5px 11px; border-radius: 999px; font-family: inherit; cursor: pointer;
+    background: rgba(201,162,75,0.16); border: 1px solid rgba(201,162,75,0.4); color: #C9A24B;
+  }
+  .asma-belongs-chip:hover { background: rgba(201,162,75,0.3); }
+
   /* References level -- a short list of chips, not a third wheel (usually
      only 1-3 references per Name); reuses asma-renderer.js's own
      renderAsmaXrefBlock({inPage:true}), re-coloured for this dark panel
@@ -1594,9 +1625,10 @@
      picker (#asmaXGroupsOverlay). Reuses the attach overlay's own card and
      row look above verbatim; only the kind badge beside each collection
      (Group vs Dual) is its own. */
-  .asmaX-groups-kind { margin-left: auto; font-size: 0.66rem; font-weight: 600; padding: 1px 7px; border-radius: 999px; white-space: nowrap; }
-  .asmaX-groups-kind.group { background: rgba(201,162,75,0.22); color: #C9A24B; }
-  .asmaX-groups-kind.dual { background: rgba(91,132,196,0.22); color: #a9c3ec; }
+  /* Classifications round -- 23 Sep 2026: was two hardcoded colours, one
+     per legal `kind`. Any number of classifications share one consistent
+     colour now -- there is no fixed palette to assign a NEW one from. */
+  .asmaX-groups-kind { margin-left: auto; font-size: 0.66rem; font-weight: 600; padding: 1px 7px; border-radius: 999px; white-space: nowrap; background: rgba(201,162,75,0.22); color: #C9A24B; }
   #asmaXGroupsIntro { font-size: 0.78rem; color: #9aa7be; margin: 0 0 0.6rem; }
   .asma-poster {
     width: 300px; aspect-ratio: 210 / 297;
@@ -3628,10 +3660,20 @@
                  palette away from under the reader. -->
             <div id="asmaXLevelBar">
               <!-- 30 Aug 2026 -- the owner's own order: Group, then Single,
-                   then Dual. -->
-              <select id="asmaXGroupSelect" aria-label="Group"></select>
+                   then Dual.
+                   Classifications round -- 23 Sep 2026: the two selects
+                   that used to be hardcoded here (id="asmaXGroupSelect"/
+                   "asmaXDualSelect") are now rendered dynamically, one per
+                   ACTIVE classification, in classification order, directly
+                   ahead of asmaXSingleSelect -- renderAsmaXLevelBar() below
+                   inserts and removes them as plain <select data-asmax-
+                   class-select="{key}"> siblings, so with exactly today's
+                   two classifications this is the same two selects in the
+                   same position; a third only ever appears once the owner
+                   actually adds one. The flat "Names" picker stays static
+                   markup -- it is its own entry point, not a classification
+                   (the owner's own instruction: "keep... as it is"). -->
               <select id="asmaXSingleSelect" aria-label="Names"></select>
-              <select id="asmaXDualSelect" aria-label="Dual Names"></select>
               <div class="bar-palette-wrap" data-bar-palette-wrap="asmax">
                 <button type="button" class="qcr-icon-btn bar-palette-toggle" id="asmaXPaletteBtn" data-bar-palette-toggle="asmax" title="More" aria-label="More" aria-haspopup="true" aria-expanded="false">⋯</button>
                 <div class="bar-palette" data-bar-palette="asmax">
@@ -3651,6 +3693,7 @@
                     <button type="button" class="qcr-icon-btn" id="asmaXRenameLevelBtn" title="Rename">✎</button>
                     <button type="button" class="qcr-icon-btn danger" id="asmaXArchiveLevelBtn" title="Archive">🗄</button>
                     <button type="button" class="qcr-icon-btn" id="asmaXAddLevelBtn" title="Add collection">+</button>
+                    <button type="button" class="qcr-icon-btn" id="asmaXNewClassBtn" title="New classification">+C</button>
                     <button type="button" class="qcr-icon-btn" id="asmaXNewNameBtn" title="Add Name">+N</button>
                     <button type="button" class="qcr-icon-btn" id="asmaXAttachRefBtn" title="Attach a reference to several Names">🔗</button>
                     <label class="qcr-archived-toggle"><input type="checkbox" id="asmaXShowArchivedToggle"> Show archived</label>
@@ -4162,16 +4205,19 @@
     import {
       collectionsFrom as asmaCollectionsFrom, extraNamesFrom as asmaExtraNamesFrom,
       overridesFrom as asmaOverridesFrom, overridesEnFrom as asmaOverridesEnFrom, refOverridesFrom as asmaRefOverridesFrom,
-      activeCollections as asmaActiveCollections, activeExtraNames as asmaActiveExtraNames,
+      classificationsFrom as asmaClassificationsFrom,
+      activeCollections as asmaActiveCollections, activeExtraNames as asmaActiveExtraNames, activeClassifications as asmaActiveClassifications,
       addCollection as asmaAddCollectionLocal, renameCollection as asmaRenameCollectionLocal, setCollectionStatus as asmaSetCollectionStatusLocal,
+      addClassification as asmaAddClassificationLocal,
       addItem as asmaAddItemLocal, removeItem as asmaRemoveItemLocal, moveItem as asmaMoveItemLocal,
       addExtraName as asmaAddExtraNameLocal, updateExtraName as asmaUpdateExtraNameLocal, setExtraNameStatus as asmaSetExtraNameStatusLocal,
       setNameOverrideBn as asmaSetNameOverrideBnLocal, setNameOverrideEn as asmaSetNameOverrideEnLocal,
       setNameRefOverride as asmaSetNameRefOverrideLocal, appendRefToName as asmaAppendRefToNameLocal,
       reorderCollections as asmaReorderCollectionsLocal, reorderItems as asmaReorderItemsLocal, asmaPositionLabels,
+      membershipsOfName as asmaMembershipsOfNameLocal,
       resolveAsmaEntry, getAsmaCollectionsDoc, saveAsmaCollections,
     } from "./js/asma-collections.js";
-    import { asmaEntryDisplayName, asmaEntryMeaningText, renderAsmaCollectionListHtml, renderAsmaXrefBlock, renderAsmaPosterHtml } from "./js/asma-renderer.js";
+    import { asmaEntryDisplayName, asmaEntryMeaningText, renderAsmaCollectionListHtml, renderAsmaXrefBlock, renderAsmaPosterHtml, renderAsmaBelongsToHtml } from "./js/asma-renderer.js";
     import { wireDragReorder } from "./js/drag-reorder.js";
     import { parseAsmaRef } from "./js/asma-ref-parser.js";
     import { listEnrollmentsForPerson, programSubjectMapFromEnrollments } from "./js/course-offers.js";
@@ -4613,13 +4659,13 @@
 
     const explorePaletteAsmaBtn = document.getElementById("explorePaletteAsmaBtn");
     const asmaXPanelEl = document.getElementById("asmaXPanel");
-    const asmaXGroupSelect = document.getElementById("asmaXGroupSelect");
-    const asmaXDualSelect = document.getElementById("asmaXDualSelect");
+    const asmaXLevelBarEl = document.getElementById("asmaXLevelBar");
     const asmaXSingleSelect = document.getElementById("asmaXSingleSelect");
     const asmaXLevelManageActions = document.getElementById("asmaXLevelManageActions");
     const asmaXRenameLevelBtn = document.getElementById("asmaXRenameLevelBtn");
     const asmaXArchiveLevelBtn = document.getElementById("asmaXArchiveLevelBtn");
     const asmaXAddLevelBtn = document.getElementById("asmaXAddLevelBtn");
+    const asmaXNewClassBtn = document.getElementById("asmaXNewClassBtn");
     const asmaXNewNameBtn = document.getElementById("asmaXNewNameBtn");
     const asmaXAttachRefBtn = document.getElementById("asmaXAttachRefBtn");
     const asmaXShowArchivedToggle = document.getElementById("asmaXShowArchivedToggle");
@@ -4922,10 +4968,20 @@
     let asmaXOverrides = {};
     let asmaXOverridesEn = {}; // 30 Aug 2026: the owner's own English correction to a canonical Name's meaning
     let asmaXRefOverrides = {}; // 30 Aug 2026: the owner's own replacement/appended reference for a canonical Name
-    let asmaXDataTenantId = null; // which tenant the five above were loaded for
+    // Classifications round -- 23 Sep 2026: the open, owner-extensible set
+    // of classifications ("Group"/"Dual Names" are just the seeded first
+    // two) -- see js/asma-collections.js's own classificationsFrom().
+    let asmaXClassifications = null;
+    let asmaXDataTenantId = null; // which tenant the six above were loaded for
     let asmaXDocExists = false; // whether asmaCollections/{tenantId} has ever been written -- decides create vs update on the next save
     let asmaXLevel = "groups"; // "groups" | "names" | "refs"
-    let asmaXKind = "group"; // "group" | "dual" -- which collection kind the "groups"/"names" levels are browsing (30 Aug 2026 round)
+    // A classification's own `key` (asmaXClassifications) and a collection's
+    // own `kind` (asmaXCollections) share the same string space by design --
+    // this is which classification the "groups"/"names" levels are browsing.
+    // "group" and "dual" were the only two legal values before the
+    // Classifications round (23 Sep 2026); it is any active classification's
+    // key now.
+    let asmaXKind = "group";
     let asmaXGroupId = null;
     let asmaXNumber = null; // the Name currently open at the "refs" level
     /** 5 Sep 2026 -- was `let asmaXManageOn = false`, a session-only mode
@@ -8089,6 +8145,7 @@
         asmaXOverrides = asmaOverridesFrom(docData);
         asmaXOverridesEn = asmaOverridesEnFrom(docData);
         asmaXRefOverrides = asmaRefOverridesFrom(docData);
+        asmaXClassifications = asmaClassificationsFrom(docData);
       } catch (err) {
         console.warn("Couldn't read this tenant's saved Asma collections yet (showing the built-in defaults instead):", err.message);
         asmaXDocExists = false;
@@ -8097,6 +8154,7 @@
         asmaXOverrides = {};
         asmaXOverridesEn = {};
         asmaXRefOverrides = {};
+        asmaXClassifications = asmaClassificationsFrom(null);
       }
       asmaXDataTenantId = activeTenantId;
     }
@@ -8149,6 +8207,48 @@
       return list.filter((c) => c.kind === kind);
     }
 
+    /** Classifications round -- 23 Sep 2026. Every OTHER list (any
+        classification) this Name is filed in, resolved into the
+        display-ready shape asma-renderer.js's own renderAsmaBelongsToHtml()/
+        renderAsmaAlsoInHtml() read -- {collectionId, collectionTitle,
+        classificationKey, classificationTitle}. `excludeCollectionId` leaves
+        out the list currently being browsed ("also in" means somewhere
+        ELSE; the Names-level list already shows this collection); pass
+        null to include every membership (the References-level "Belongs
+        to" section, which isn't "browsing" any one list). Pure lookup over
+        already-loaded state, no new Firestore read (I9). */
+    function asmaXOtherMemberships(number, excludeCollectionId) {
+      return asmaMembershipsOfNameLocal(asmaXCollections ?? [], number)
+        .filter((m) => m.collectionId !== excludeCollectionId)
+        .map((m) => {
+          const col = (asmaXCollections ?? []).find((c) => c.id === m.collectionId);
+          const cls = (asmaXClassifications ?? []).find((c) => c.key === m.kind);
+          return {
+            collectionId: m.collectionId,
+            collectionTitle: col?.title ?? { en: "" },
+            classificationKey: m.kind,
+            classificationTitle: cls?.title ?? { en: m.kind },
+          };
+        });
+    }
+
+    /** Both the "also in…" chips and the "Belongs to" section navigate the
+        same way -- jump straight to the OTHER list, exactly what tapping it
+        in the Groups level or a level-bar select already does. Collection
+        ids are unique across every classification, so the classification
+        half of the chip's own "{classificationKey}:{collectionId}" value
+        never needs reading back out here. */
+    function asmaXWireAlsoInJumps(container) {
+      container.querySelectorAll("[data-asma-also-in-jump]").forEach((btn) => {
+        btn.addEventListener("click", () => openAsmaXGroup(btn.dataset.asmaAlsoInJump.split(":")[1]));
+      });
+    }
+    function asmaXWireBelongsJumps(container) {
+      container.querySelectorAll("[data-asma-belongs-jump]").forEach((btn) => {
+        btn.addEventListener("click", () => openAsmaXGroup(btn.dataset.asmaBelongsJump.split(":")[1]));
+      });
+    }
+
     async function openAsmaXPalette() {
       setExplorePalette("asma");
       asmaXWaysListContainer.innerHTML = t("Loading…");
@@ -8161,16 +8261,31 @@
       renderAsmaXPanel();
     }
 
-    /** The level bar: three real dropdown fields, each an alternate entry
-        point into the same Groups/Names/References state -- Group and Dual
-        switch which COLLECTION KIND is being browsed and jump straight to
-        that collection's own Names; Single jumps straight to one Name's own
-        References, no browsing step of its own (the owner's own "a straight
-        full list... as a drop-down field"). Manage-mode actions (owner/prime
-        only) mirror QCR's own renderQcrLevelBar() shape. */
+    /** classification key -> its own display title, or the bare key as a
+        last-resort fallback (should never actually show -- every collection's
+        `kind` is meant to name a real classification -- but a fallback that
+        prints SOMETHING beats one that throws). Reads the FULL registry, not
+        just the active half, so an archived classification's own collections
+        (still reachable by an "also in…"/"Belongs to" chip, I4) still get a
+        real label rather than the fallback. */
+    function asmaXClassificationTitle(key) {
+      const cls = (asmaXClassifications ?? []).find((c) => c.key === key);
+      return cls ? langText(cls.title, getAppLang()) : key;
+    }
+
+    /** The level bar: one real dropdown field per ACTIVE classification
+        (Classifications round, 23 Sep 2026 -- was hardcoded to exactly
+        Group and Dual), each an alternate entry point into the same
+        Groups/Names/References state, switching which classification is
+        being browsed and jumping straight to that list's own Names; plus
+        the flat Single-Names field, jumping straight to one Name's own
+        References with no browsing step of its own (the owner's own "a
+        straight full list... as a drop-down field") -- a separate entry
+        point, not a classification, so it stays exactly where it was.
+        Manage-mode actions (owner/prime only) mirror QCR's own
+        renderQcrLevelBar() shape. */
     function renderAsmaXLevelBar() {
-      const groups = asmaXCollectionsOfKind("group");
-      const duals = asmaXCollectionsOfKind("dual");
+      const activeClasses = asmaActiveClassifications(asmaXClassifications ?? []);
       const names = asmaXAllNameEntries();
 
       const collOptionsHtml = (list, placeholder, selectedId) => {
@@ -8180,16 +8295,35 @@
         }).join("");
         return `<option value=""${selectedId ? "" : " selected"}>${escapeHtml(placeholder)}</option>${opts}`;
       };
-      // 4 Sep 2026 one-bar round -- "Field names change to Group, Names,
-      // Dual Names": the three placeholders were "All Groups"/"All Names"/
-      // "All dual Names", which is what the field is showing when nothing is
-      // picked, and with three selects now sharing one phone-width row the
-      // shorter word is what actually fits. All three keys already existed
-      // in bn.js, so this costs no new translation; the three "All …" keys
-      // stay there, unused, per this project's own rule for a string that
-      // stops being called.
-      asmaXGroupSelect.innerHTML = collOptionsHtml(groups, t("Group"), asmaXKind === "group" ? asmaXGroupId : null);
-      asmaXDualSelect.innerHTML = collOptionsHtml(duals, t("Dual Names"), asmaXKind === "dual" ? asmaXGroupId : null);
+      // One <select data-asmax-class-select="{key}"> per active
+      // classification, inserted as a plain sibling directly ahead of
+      // asmaXSingleSelect (both direct children of #asmaXLevelBar, its own
+      // flex row) -- re-created on every render rather than diffed in
+      // place, the same "static ids, dynamic body" split the rest of this
+      // panel already uses. With today's two seeded classifications this is
+      // the exact same two selects, same position, same width as the
+      // hardcoded Group/Dual pair it replaces (4 Sep 2026 one-bar round's
+      // own "Field names change to Group, Names, Dual Names" wording is
+      // preserved byte-for-byte for those two, via asmaXClassificationTitle()
+      // below reading their own seeded titles); a third classification is
+      // new width demand on this row that this sandbox has no browser to
+      // measure (see this round's own PR note).
+      asmaXLevelBarEl.querySelectorAll("select[data-asmax-class-select]").forEach((el) => el.remove());
+      for (const cls of activeClasses) {
+        const sel = document.createElement("select");
+        sel.dataset.asmaxClassSelect = cls.key;
+        const clsTitle = langText(cls.title, getAppLang());
+        sel.setAttribute("aria-label", clsTitle);
+        sel.innerHTML = collOptionsHtml(asmaXCollectionsOfKind(cls.key), clsTitle, asmaXKind === cls.key ? asmaXGroupId : null);
+        sel.addEventListener("change", () => {
+          asmaXKind = cls.key;
+          asmaXNumber = null;
+          if (sel.value) { asmaXGroupId = sel.value; asmaXLevel = "names"; }
+          else { asmaXGroupId = null; asmaXLevel = "groups"; }
+          renderAsmaXPanel();
+        });
+        asmaXLevelBarEl.insertBefore(sel, asmaXSingleSelect);
+      }
 
       const singleSelectedNumber = asmaXLevel === "refs" ? asmaXNumber : null;
       asmaXSingleSelect.innerHTML = [
@@ -8213,7 +8347,12 @@
         asmaXArchiveLevelBtn.classList.toggle("danger", !archived);
         asmaXArchiveLevelBtn.disabled = !col;
         asmaXRenameLevelBtn.disabled = !col;
-        asmaXAddLevelBtn.title = asmaXKind === "dual" ? t("Add dual-name collection") : t("Add collection");
+        // Byte-identical wording for the two pre-existing kinds; a genuinely
+        // new classification gets an honest generic phrasing rather than
+        // being silently called "collection" with no context.
+        asmaXAddLevelBtn.title = asmaXKind === "dual" ? t("Add dual-name collection")
+          : asmaXKind === "group" ? t("Add collection")
+          : t("Add to {classification}", { classification: asmaXClassificationTitle(asmaXKind) });
         asmaXAddLevelBtn.setAttribute("aria-label", asmaXAddLevelBtn.title);
         asmaXShowArchivedToggle.checked = asmaXShowArchived;
       }
@@ -8269,7 +8408,14 @@
         always used. */
     function renderAsmaXGroupsLevel() {
       const groups = asmaXCollectionsOfKind(asmaXKind);
-      const titleText = asmaXKind === "dual" ? t("All dual Names") : t("All Groups");
+      // Byte-identical wording for the two pre-existing kinds (their own
+      // seeded titles are "Group"/"Dual Names", not "All Groups"/"All dual
+      // Names" -- these two strings predate the classifications registry
+      // and are kept verbatim); a genuinely new classification reads its
+      // own title from the registry instead of one more hardcoded string.
+      const titleText = asmaXKind === "dual" ? t("All dual Names")
+        : asmaXKind === "group" ? t("All Groups")
+        : t("All {classification}", { classification: asmaXClassificationTitle(asmaXKind) });
       asmaXListHeaderEl.innerHTML = `
         <span class="qcr-list-title">${escapeHtml(titleText)}</span>
         <span class="qcr-list-count">${escapeHtml(t("{count} groups", { count: num(groups.length) }))}</span>`;
@@ -8364,12 +8510,19 @@
       // the permanent canonical id. Display-only: `e.number` itself, and
       // every unit key, are untouched (I5).
       const { labelByKey, runningByKey } = asmaPositionLabels(asmaXCollectionsOfKind(group.kind));
+      // Classifications round -- 23 Sep 2026: which OTHER lists (any
+      // classification) each Name here is also filed in, keyed by its own
+      // unit key -- the "also in…" row under a Name that belongs to more
+      // than just this one list.
+      const otherMembershipsByKey = new Map(entries.map((e) => [e.key, asmaXOtherMemberships(e.number, group.id)]));
       asmaXWaysListContainer.innerHTML = renderAsmaCollectionListHtml(entries, {
         manageOn: asmaXCanManage(), otherCollections, enableReorder: true, positionLabelByKey: labelByKey, runningNumberByKey: runningByKey,
+        otherMembershipsByKey,
       });
       asmaXWaysListContainer.querySelectorAll("[data-asma-jump]").forEach((btn) => {
         btn.addEventListener("click", () => openAsmaXName(Number(btn.dataset.asmaJump.split(":")[1])));
       });
+      asmaXWireAlsoInJumps(asmaXWaysListContainer);
       asmaXWaysListContainer.querySelectorAll("[data-asma-remove]").forEach((btn) => {
         btn.addEventListener("click", () => asmaXRemoveItemAction(group.id, btn.dataset.asmaRemove));
       });
@@ -8476,18 +8629,26 @@
       // "Enable a button at the markup space, to move the Name under a
       // different group or place in multiple group."
       document.getElementById("asmaXGroupsThisNameBtn")?.addEventListener("click", () => openAsmaXGroupsPopover(entry.number));
+      // Classifications round -- 23 Sep 2026: the owner's own "a name card
+      // should show the names of all LISTS it belongs to" -- every
+      // classification's own list this Name is filed under, ALL of them
+      // (null excludeCollectionId -- References level isn't "browsing" any
+      // one list, unlike the Names-level "also in…" row above it).
+      const memberships = asmaXOtherMemberships(entry.number, null);
       asmaXWaysListContainer.innerHTML = `
         <div id="asmaXRefCard">
           <div class="asma-ref-arabic">${escapeHtml(entry.arabic)}</div>
           <div class="asma-ref-lat">${escapeHtml(asmaEntryDisplayName(entry))}</div>
           <div class="asma-ref-meaning">${escapeHtml(asmaEntryMeaningText(entry))}</div>
           ${renderAsmaXrefBlock(entry, { inPage: true })}
+          ${renderAsmaBelongsToHtml(memberships)}
           <button type="button" class="secondary asma-ref-poster-btn" id="asmaXRefPosterBtn">🖼 ${escapeHtml(t("Poster"))}</button>
         </div>`;
       asmaXWaysListContainer.querySelectorAll("[data-asma-xref-jump]").forEach((btn) => {
         const [surah, ayah] = btn.dataset.asmaXrefJump.split(":").map(Number);
         btn.addEventListener("click", () => goToAyahFromAsmaX(surah, ayah, asmaXGroupId, asmaXNumber));
       });
+      asmaXWireBelongsJumps(asmaXWaysListContainer);
       document.getElementById("asmaXRefPosterBtn")?.addEventListener("click", () => openAsmaXPoster(entry));
       asmaXAddFormSlot.innerHTML = "";
       asmaXWheelContainerEl.innerHTML = "";
@@ -8529,6 +8690,7 @@
           overrides: asmaXOverrides,
           overridesEn: asmaXOverridesEn,
           refOverrides: asmaXRefOverrides,
+          classifications: asmaXClassifications,
           docExists: asmaXDocExists,
           uid: auth.currentUser.uid,
         }),
@@ -8566,7 +8728,13 @@
     }
 
     async function asmaXAddCollectionPrompt(kind) {
-      const typed = prompt(kind === "dual" ? t("New dual-name collection:") : t("New group name:"));
+      // Byte-identical wording for the two pre-existing kinds; any other
+      // (genuinely new) classification gets an honest generic phrasing
+      // naming it, rather than a silent "collection" with no context.
+      const promptText = kind === "dual" ? t("New dual-name collection:")
+        : kind === "group" ? t("New group name:")
+        : t("New {classification} entry:", { classification: asmaXClassificationTitle(kind) });
+      const typed = prompt(promptText);
       if (!typed || !typed.trim()) return;
       const prev = asmaXCollections;
       const prevGroupId = asmaXGroupId;
@@ -8577,6 +8745,35 @@
       asmaXLevel = "names";
       renderAsmaXPanel();
       if (!(await asmaXPersist())) { asmaXCollections = prev; asmaXGroupId = prevGroupId; asmaXLevel = prevLevel; renderAsmaXPanel(); }
+    }
+
+    /** The owner's own explicit ask: "+ New classification" -- one new
+        action, otherwise every existing control keeps working exactly as
+        it does today. Opens straight into the new classification's own
+        (empty) Groups level, same shape asmaXAddCollectionPrompt() already
+        uses for a new collection. Rename/archive of a classification
+        itself is NOT built this round (data layer only, already tested --
+        renameClassification()/setClassificationStatus() -- a UI for it is
+        real, separate work outside this issue's explicit ask). */
+    async function asmaXAddClassificationPrompt() {
+      const typed = prompt(t("New classification:"));
+      if (!typed || !typed.trim()) return;
+      const prev = asmaXClassifications;
+      const prevKind = asmaXKind;
+      const prevGroupId = asmaXGroupId;
+      const prevLevel = asmaXLevel;
+      asmaXClassifications = asmaAddClassificationLocal(asmaXClassifications ?? [], { title: { [getAppLang()]: typed.trim() } });
+      asmaXKind = asmaXClassifications[asmaXClassifications.length - 1].key;
+      asmaXGroupId = null;
+      asmaXLevel = "groups";
+      renderAsmaXPanel();
+      if (!(await asmaXPersist())) {
+        asmaXClassifications = prev;
+        asmaXKind = prevKind;
+        asmaXGroupId = prevGroupId;
+        asmaXLevel = prevLevel;
+        renderAsmaXPanel();
+      }
     }
 
     async function asmaXRemoveItemAction(collectionId, unitKey) {
@@ -9052,20 +9249,31 @@
     }
     function renderAsmaXGroupsList() {
       const unitKey = asmaXGroupsNumber != null ? buildUnitKey.name(asmaXGroupsNumber) : null;
+      // Classifications round -- 23 Sep 2026: sort by the classification's
+      // own registered order, then the collection's own order within it --
+      // was hardcoded to "group before dual before anything else", which
+      // is exactly what the registry's seeded orders (10, 20) already
+      // reproduce for those two, so this is unchanged for an existing
+      // tenant and simply extends to however many classifications exist.
+      const classOrderByKey = new Map((asmaXClassifications ?? []).map((c) => [c.key, c.order]));
       // An archived collection is offered only when this Name is actually in
       // it -- so it can be taken OUT -- never as somewhere new to file it.
       const rows = (asmaXCollections ?? [])
         .filter((c) => c.status !== "archived" || (unitKey && (c.items ?? []).includes(unitKey)))
-        .sort((a, b) => (a.kind === b.kind ? a.order - b.order : a.kind === "group" ? -1 : 1));
+        .sort((a, b) => {
+          const ao = classOrderByKey.get(a.kind) ?? 999;
+          const bo = classOrderByKey.get(b.kind) ?? 999;
+          return ao !== bo ? ao - bo : a.order - b.order;
+        });
       asmaXGroupsListEl.innerHTML = rows.length
         ? rows.map((c) => {
-            const kindLabel = c.kind === "dual" ? t("Dual Names") : t("Group");
+            const kindLabel = asmaXClassificationTitle(c.kind);
             const title = langText(c.title, getAppLang()) + (c.status === "archived" ? ` (${t("Archived")})` : "");
             return `
             <label class="asmaX-attach-row">
               <input type="checkbox" data-asmax-groups-check="${escapeHtml(c.id)}" ${asmaXGroupsChecked.has(c.id) ? "checked" : ""}>
               <span>${escapeHtml(title)}</span>
-              <span class="asmaX-groups-kind ${c.kind === "dual" ? "dual" : "group"}">${escapeHtml(kindLabel)}</span>
+              <span class="asmaX-groups-kind">${escapeHtml(kindLabel)}</span>
             </label>`;
           }).join("")
         : `<p class="hint">${escapeHtml(t("No collections yet."))}</p>`;
@@ -9120,21 +9328,11 @@
 
     // Level bar controls wired ONCE (mirrors QCR's own "the level bar's own
     // controls are static markup now" pattern) rather than re-attached on
-    // every render.
-    asmaXGroupSelect.addEventListener("change", () => {
-      asmaXKind = "group";
-      asmaXNumber = null;
-      if (asmaXGroupSelect.value) { asmaXGroupId = asmaXGroupSelect.value; asmaXLevel = "names"; }
-      else { asmaXGroupId = null; asmaXLevel = "groups"; }
-      renderAsmaXPanel();
-    });
-    asmaXDualSelect.addEventListener("change", () => {
-      asmaXKind = "dual";
-      asmaXNumber = null;
-      if (asmaXDualSelect.value) { asmaXGroupId = asmaXDualSelect.value; asmaXLevel = "names"; }
-      else { asmaXGroupId = null; asmaXLevel = "groups"; }
-      renderAsmaXPanel();
-    });
+    // every render. Classifications round -- 23 Sep 2026: the per-
+    // classification selects are no longer part of that static set -- they
+    // are created fresh (and wired individually) inside renderAsmaXLevelBar()
+    // itself, since there can be any number of them now. asmaXSingleSelect
+    // stays static; it is its own entry point, not a classification.
     asmaXSingleSelect.addEventListener("change", () => {
       if (!asmaXSingleSelect.value) return;
       asmaXNumber = Number(asmaXSingleSelect.value);
@@ -9145,6 +9343,7 @@
     asmaXRenameLevelBtn.addEventListener("click", () => { if (asmaXGroupId) asmaXRenameCollectionPrompt(asmaXGroupId); });
     asmaXArchiveLevelBtn.addEventListener("click", () => { if (asmaXGroupId) asmaXToggleArchiveCollection(asmaXGroupId); });
     asmaXAddLevelBtn.addEventListener("click", () => asmaXAddCollectionPrompt(asmaXKind));
+    asmaXNewClassBtn.addEventListener("click", () => asmaXAddClassificationPrompt());
     asmaXNewNameBtn.addEventListener("click", () => openAsmaXEditOverlay({ mode: "create" }));
     asmaXAttachRefBtn.addEventListener("click", () => openAsmaXAttachPopover({}));
 
