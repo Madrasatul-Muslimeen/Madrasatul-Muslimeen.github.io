@@ -17543,3 +17543,35 @@ proves a failed second commit reaches the caller with the Note saved.
 reads red on this branch before merge by construction and clean once `main`
 carries it — verified by the post-merge simulation. No Rules, index,
 `firebase.json` or workflow change.
+
+**v08.57 (24 Sep 2026).** `app/js/version.js`: 08.56 → **08.57**, allocated by
+the MMSA Architect. **The Owner's report: "app (site) takes years to open."**
+Measured before changing anything: the page itself is usable in ~0.4s under the
+harness (2.1 MB over 71 requests, Firebase stubbed), but **two opening splashes
+played back to back on EVERY open by default** — the Ta'awwudh/Basmala card
+(3s + 3s + fade = 6.35s) then the "Quran Revival" brand card (14s + fade =
+14.5s) — **about 21 seconds** before anything could be touched, with no way
+past them. That, not the network, was the wait.
+
+- `app/js/splash.js`: an UNSET preference now means **"Once a day"** instead of
+  "Every time". Anyone who chose "Every time" from the gear keeps it. **A tap
+  anywhere skips an opener** (the gear and its panel stop their own clicks), a
+  skipped opener still counts as shown today, and a one-line hint says so
+  ("Tap to skip", Bangla added — I11).
+- **"never" now really suppresses both openers.** `harness.mjs` has written
+  `mm_splash_pref = "never"` for the life of the suites, believing it turned
+  them off; `shouldShow()` had no such case, so every suite ran with a splash
+  over the page and several removed it by hand. Not offered in the panel.
+- Root `index.html` now redirects straight to `/app/quranrevival.html` instead
+  of via `/app/index.html` (itself a redirect) — one HTML round trip fewer on
+  the address most people type. `/app/index.html` is unchanged and still works.
+- New `tools/i18n-verify/splash-skip.mjs`, 11 checks, both languages;
+  mutation-proven (the old `splash.js` fails 8 of 11).
+
+**Found, deliberately NOT changed:** the Google Fonts `@import` (Amiri /
+Cormorant Garamond) sits at line ~436 of `quranrevival.html`'s inline
+`<style>`, after other rules — where CSS requires `@import` to come first — so
+browsers ignore it and those two fonts have never loaded from it. Moving it to
+a `<link>` would ADD a download and visibly change the wheel's type, which is
+not a speed fix. Also recorded for a later round: `bn.js` (244 KB) is loaded
+for English readers too, and the module graph is 64 files, 3 levels deep.
