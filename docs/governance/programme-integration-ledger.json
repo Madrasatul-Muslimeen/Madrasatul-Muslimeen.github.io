@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.54",
+    "version": "08.55",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -425,7 +425,7 @@
     {
       "version": "08.54",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "MAP v4 Phase 6 (P6-G): folder editing wired into Mapping My Journey (issue #229, built on PR #233's branch) plus its review fix (issue #234): rename, reorder, move and remove a user folder, and reorder Notes inside a folder, all through the five existing journey-map-service.js wrappers; system folders get no controls (ADR-010 §3). The Architect's review of #229 found the up/down reorder was a silent no-op because every folder/filing is created at order 0; fixed with a pure planReorder() that renumbers by display position and writes only what changed, plus nextOrder() at creation. journey-map-boundary.mjs inverted in place (17/0), journey-map-screen.mjs 16 -> 33 checks, the new checks run the old swap as a mutation control. No Rules, index or firebase.json change.",
       "integration": {
         "authorizedOn": "2026-09-24",
@@ -433,10 +433,23 @@
         "method": "MERGE_PR",
         "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/issues/234"
       }
+    },
+    {
+      "version": "08.55",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "MAP v4 Phase 4 (P4-F): Monitor's weekly view shows a read-only 'Study activity this week' section for the selected student (issues #230/#238) -- the ADR-008 evidence rows recorded since v08.34 (Reading, Listening, Journaling, Word-by-Word) read through P4-E's listStudyActivityEvidence(), grouped by kind, units via unitKeyLabel(), empty state and truncation note. ADR-003 kept by construction: plain text only, no claim/confirm affordance. study-activity-evidence-boundary.mjs updated in place with the reason recorded (27 -> 28, mutations 11 -> 13): the writer invariant is unchanged; the reader importer set widens by exactly monitor.js, pinned to the reader only. New monitor-study-activity.mjs, 12 checks. No Rules, index or firebase.json change -- the evidence read rule has been deployed since 22 Sep.",
+      "integration": {
+        "authorizedOn": "2026-09-24",
+        "integratedOn": "2026-09-24",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/issues/238"
+      }
     }
   ],
-  "nextUnallocated": "08.55",
+  "nextUnallocated": "08.56",
   "nextUnallocatedNote": [
+    "v08.55 was allocated to MAP v4 Phase 4 P4-F, Study activity in Monitor's weekly view (issues #230/#238), 2026-09-24.",
     "v08.54 was allocated to MAP v4 Phase 6 P6-G, folder editing in Mapping My Journey (issues #229/#234), 2026-09-24.",
     "v08.53 was allocated to switching ON the Word-by-Word percentage counter (issue #206), on the Owner's explicit instruction, 2026-09-24.",
     "v08.52 was allocated to the Word Card Mushaf/race-condition/scroll-retarget round (issue #113, PR #139), confirmed merged on 2026-09-23.",

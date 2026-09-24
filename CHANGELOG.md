@@ -17409,3 +17409,7 @@ recurring documented gap several other rounds in this file record) — a
 real-phone check at 320/360/390/412px and desktop, both languages, with a
 week containing all four kinds and a long surah name, is the recommended
 substitute.
+
+**v08.55 (24 Sep 2026).** `app/js/version.js`: 08.54 → **08.55** for the
+P4-F Monitor study-activity round above (issues #230/#238), allocated by the
+MMSA Architect after an independent review.
