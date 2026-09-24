@@ -158,7 +158,30 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.52 on `main`** (23 Sep 2026 — Word Card: Mushaf
+**Current milestone: v08.53 on `main`** (24 Sep 2026 — the Word-by-Word
+whole-Qur'an/Juz percentage counter (issue #206, built and gated in v08.42)
+is SWITCHED ON. The Owner published its Rules the same day and, asked
+"shall I switch it on now so you can see it and try it?", answered "Yes,
+switch it on" — replacing the earlier plan to wait for an "it works"
+message first, because the Owner had looked for the feature and correctly
+seen nothing while it was gated invisible. `study-wbw-total-readiness.js`
+reads `ready: true` with a governed decision; the ledger's
+`wbwTotalPersistenceReadiness` block agrees; `quran-word-total-boundary.mjs`
+updated in place, reason recorded (25/0). The running total starts at 0
+for everyone — words already known before today count only once their
+state next changes; no backfill was performed. See
+`docs/reports/2026-09-24-wbw-total-counter-enabled.md`.
+
+**Also 24 Sep 2026 — Owner decisions recorded by the MMSA Architect:**
+Mapping My Journey keeps ALL THREE views permanently behind its toggle (no
+choice pending). MAP v4 Phases 7–8 (Dawah, Share/Media) product answers:
+a Dawah piece is visible **inside the Madrasah only**; its form is a
+**printable page**; a **child's** piece needs a guardian/teacher's approval
+before it is shared, an adult's does not. The MAP v4 source document is
+still not in this repository, so these Owner answers ARE the Phase 7–8
+definition until it is supplied.
+
+**Previous milestone: v08.52 on `main`** (23 Sep 2026 — Word Card: Mushaf
 audio-follow/word-card scroll fixes, a real race-condition fix, three
 further cross-surah scroll-retarget sites, and the Note-view-origin path
 investigated with no defect found, issue #113, PR #139, four consolidated

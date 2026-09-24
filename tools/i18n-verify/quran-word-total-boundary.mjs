@@ -63,17 +63,33 @@ check("the wbw-total readiness module imports NOTHING at all -- enforcement by i
   assert.ok(raw.includes("firestore.rules"), "the module no longer explains why it does not read the rules file");
 });
 
-check("the standing declaration is NOT ready, and it is a real literal", () => {
+// UPDATED IN PLACE 24 Sep 2026, reason recorded, not weakened: this check
+// asserted the standing declaration read ready:false, true for the whole of
+// the gated period. The Owner published the quranWordTotals Rules and then
+// instructed "Yes, switch it on" (docs/reports/2026-09-24-wbw-total-counter-
+// enabled.md), so the REAL file's CURRENT state genuinely changed -- the same
+// transition study-activity-evidence-boundary.mjs recorded at v08.34. It now
+// asserts the enabled state is a real literal carrying a governed decision
+// whose reference file EXISTS; every malformed-shape refusal below is
+// asserted exactly as strictly as before.
+check("the standing declaration is ENABLED by a governed decision, as a real literal, with a reference that exists", () => {
   const src = fs.readFileSync(READINESS_FILE, "utf8");
   const m = src.match(/WBW_TOTAL_PERSISTENCE_DECLARATION\s*=\s*Object\.freeze\(\{[\s\S]*?ready:\s*(true|false)/);
   assert.ok(m, "ready is not a plain literal -- a computed default is not a default");
-  assert.equal(m[1], "false", "this round did not deploy anything, so the standing declaration must read ready: false");
-  assert.equal(readiness.isWbwTotalPersistenceReady(), false, "the module's own predicate disagrees with the literal it reads");
+  assert.equal(m[1], "true", "the Owner-instructed enablement (2026-09-24) should read ready: true");
+  assert.equal(readiness.isWbwTotalPersistenceReady(), true, "the module's own predicate disagrees with the literal it reads");
+  const ref = readiness.WBW_TOTAL_PERSISTENCE_DECLARATION.decision.reference;
+  assert.ok(fs.existsSync(ref), `the decision's reference does not exist: ${ref}`);
+  const ledger = JSON.parse(fs.readFileSync("docs/governance/programme-integration-ledger.json", "utf8"));
+  assert.equal(ledger.wbwTotalPersistenceReadiness.ready, true, "the ledger's governance record disagrees with the code");
+  assert.deepEqual(ledger.wbwTotalPersistenceReadiness.decision, { ...readiness.WBW_TOTAL_PERSISTENCE_DECLARATION.decision },
+    "the ledger's decision differs from the code's");
+  assert.equal(ledger.deployment.wbwTotalRulesDeployed.state, "DONE", "enabled while the ledger does not record the Rules as deployed");
 });
 
 check("a bare flip of `ready` does NOT enable the counter", () => {
   const m = readiness;
-  assert.equal(m.isWbwTotalPersistenceReady(), false, "the standing declaration should read not-ready");
+  assert.equal(m.isWbwTotalPersistenceReady({ ready: false, decision: null }), false, "the not-ready shape should read not-ready");
   assert.equal(m.isWbwTotalPersistenceReady({ ready: true }), false, "a bare flip enabled it");
   assert.equal(m.isWbwTotalPersistenceReady({ ready: true, decision: {} }), false, "an empty decision enabled it");
   assert.equal(m.isWbwTotalPersistenceReady({ ready: true, decision: { by: "quran", on: "2026-09-23", reference: "x" } }), false,
@@ -89,7 +105,8 @@ check("a bare flip of `ready` does NOT enable the counter", () => {
 });
 
 check("the unavailable-reason key distinguishes NOT_DEPLOYED from DECISION_INCOMPLETE", () => {
-  assert.equal(readiness.wbwTotalUnavailableReason(), readiness.REASON_WBW_TOTAL_NOT_DEPLOYED);
+  assert.equal(readiness.wbwTotalUnavailableReason({ ready: false, decision: null }), readiness.REASON_WBW_TOTAL_NOT_DEPLOYED);
+  assert.equal(readiness.wbwTotalUnavailableReason(), null, "the enabled standing declaration still reports a reason to be unavailable");
   assert.equal(
     readiness.wbwTotalUnavailableReason({ ready: true, decision: null }),
     readiness.REASON_WBW_TOTAL_DECISION_INCOMPLETE,
