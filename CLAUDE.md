@@ -158,7 +158,30 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.55 on `main`** (24 Sep 2026 — MAP v4 Phase 4
+**Current milestone: v08.56 on `main`** (24 Sep 2026 — **a live defect
+fixed: the Notes screen (v08.47) could never save a Note.** Found by the
+builder's new suite `tools/firestore-emulator/note-foundation-real-function.
+rules.test.mjs` (issue #242), the first to run the REAL `note-foundation.js`
+functions against the REAL Rules engine. Two causes in the data layer, fixed
+in code with **no Rules publish needed**: (1) `createPermanentNote()` and
+`createNoteSource()` pre-read the document they were about to create, and the
+deployed `allow get` evaluates `resource.data.*` — on a document that does not
+exist `resource` is null, an evaluation error that denies the whole
+transaction; the pre-reads are gone (ids are random UUIDs). (2) The Note's
+birth-time `noteSources` link was written in the same transaction as the Note,
+but the deployed REL-01 check uses `exists()`/`get()`, which see the database
+BEFORE the commit — so every Note born attached to a Study Unit, i.e. every
+Note `notes.html` creates, was refused. The link is now a second commit after
+the Note; if it fails the reader is told the Note itself was saved (I15).
+Suite 5/5 against the Phase 5 candidate AND the live `firestore.rules`; fails
+with the old code (stash proof). **Lesson worth keeping: a client `get` of a
+document that may not exist is DENIED, not empty, under any rule reading
+`resource.data` — and `exists()`/`get()` in a create rule cannot see a sibling
+written in the same commit; only `existsAfter()`/`getAfter()` can.** A Rules
+candidate switching REL-01 to `getAfter()` would restore the single-commit
+shape; not needed and not drafted.)
+
+**Previous milestone: v08.55 on `main`** (24 Sep 2026 — MAP v4 Phase 4
 P4-F: Monitor's weekly view gains a read-only **"Study activity this week"**
 section for the selected student (issues #230/#238), showing the ADR-008
 evidence rows recorded since v08.34 — Reading, Listening, Journaling (both
