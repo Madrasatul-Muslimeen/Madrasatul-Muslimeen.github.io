@@ -93,6 +93,7 @@ export const BN = {
   "Opener settings": "সূচনা পর্দার সেটিংস",
   "Every time": "প্রতিবার",
   "Once a day": "দিনে একবার",
+  "Tap to skip": "এড়িয়ে যেতে ট্যাপ করুন",
   "Once a week": "সপ্তাহে একবার",
   "Show this opener": "এই সূচনা পর্দা দেখান",
 

@@ -37,13 +37,21 @@ function todayStr() {
 
 function makePrefStore(prefKey, lastKey) {
   function getPref() {
-    try { return localStorage.getItem(prefKey) || "always"; } catch { return "always"; }
+    // v08.57 -- the DEFAULT is "Once a day", not "Every time". Both openers
+    // together held the app behind ~21 seconds of splash on EVERY open (3s +
+    // 3s + fade, then 14s + fade), with no way past them; the Owner's own
+    // report was "app takes years to open". Anyone who chose "Every time"
+    // from the gear keeps it -- only an unset preference changed.
+    try { return localStorage.getItem(prefKey) || "daily"; } catch { return "daily"; }
   }
   function setPref(v) {
     try { localStorage.setItem(prefKey, v); } catch { /* storage unavailable -- falls back to "always" next time, same as the old app */ }
   }
   function shouldShow() {
     const pref = getPref();
+    // Not offered in the panel; the test harness has always written it,
+    // believing it switched the openers off. It now really does.
+    if (pref === "never") return false;
     if (pref === "daily" || pref === "weekly") {
       let last = null;
       try { last = localStorage.getItem(lastKey); } catch { /* falls through to "show" below */ }
@@ -94,6 +102,12 @@ function wirePrefPanel(overlay, gearId, panelId, store) {
   });
 }
 
+// v08.57 -- a tap anywhere on an opener skips it (the gear and its panel stop
+// their own clicks from reaching here). A one-line hint says so.
+function skipHintHtml() {
+  return `<div class="splash-skip-hint">${t("Tap to skip")}</div>`;
+}
+
 const bootStore = makePrefStore("mm_splash_pref", "mm_splash_last_date");
 
 /** Boot splash -- Ta'awwudh then Basmala, 3s each. Calls onDone once closed (immediately, synchronously-ish, if skipped by preference). */
@@ -114,23 +128,30 @@ export function showBootSplash(onDone) {
       <div class="splash-arabic">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
       <div class="splash-english">In the name of Allah, the Most Gracious, the Most Merciful.</div>
     </div>`;
+  overlay.insertAdjacentHTML("beforeend", skipHintHtml());
   document.body.appendChild(overlay);
   wirePrefPanel(overlay, "bootSplashGear", "bootSplashPanel", bootStore);
 
   const slide1 = overlay.querySelector("#bootSplashSlide1");
   const slide2 = overlay.querySelector("#bootSplashSlide2");
 
+  let closed = false;
+  const timers = [];
   function closeSplash() {
+    if (closed) return;
+    closed = true;
+    timers.forEach(clearTimeout);
     bootStore.markShownToday();
     overlay.style.transition = "opacity .35s ease";
     overlay.style.opacity = "0";
     setTimeout(() => { overlay.remove(); onDone?.(); }, 350);
   }
-  setTimeout(() => {
+  overlay.addEventListener("click", closeSplash);
+  timers.push(setTimeout(() => {
     slide1.classList.remove("show");
     slide2.classList.add("show");
-    setTimeout(closeSplash, SLIDE_MS);
-  }, SLIDE_MS);
+    timers.push(setTimeout(closeSplash, SLIDE_MS));
+  }, SLIDE_MS));
 }
 
 const quranStore = makePrefStore("mm_qs_splash_pref", "mm_qs_splash_last_date");
@@ -151,10 +172,15 @@ export function showQuranSplash(onDone) {
       <div class="splash-qs-item splash-qs-tagline2" style="animation-delay:8.7s">Building Muslim-Mindset, reviving the Quran, reviving the Ummah!</div>
       <div class="splash-qs-item splash-qs-motto" style="animation-delay:11.5s">Akhlaq &bull; Ilm &bull; Tawheed &bull; Dawah &bull; Hukm</div>
     </div>`;
+  overlay.insertAdjacentHTML("beforeend", skipHintHtml());
   document.body.appendChild(overlay);
   wirePrefPanel(overlay, "quranSplashGear", "quranSplashPanel", quranStore);
 
-  setTimeout(() => {
+  let closed = false;
+  function closeSplash() {
+    if (closed) return;
+    closed = true;
+    clearTimeout(timer);
     overlay.style.transition = "opacity .5s ease";
     overlay.style.opacity = "0";
     setTimeout(() => {
@@ -162,5 +188,7 @@ export function showQuranSplash(onDone) {
       quranStore.markShownToday();
       onDone?.();
     }, 500);
-  }, 14000);
+  }
+  overlay.addEventListener("click", closeSplash);
+  const timer = setTimeout(closeSplash, 14000);
 }
