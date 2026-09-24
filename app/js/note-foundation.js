@@ -216,7 +216,12 @@ export async function retirePermanentNote(db, { tenantId, noteId, expectedRevisi
 }
 
 /** One person's folders, for judging a tree. Equality-only and bounded, so it needs no composite index (P5-E). */
-export async function listNoteFoldersForOwner(db, { tenantId, ownerPersonId, status = NOTE_STATUS.ACTIVE, maximum = 500 }) {
+// v08.58 -- `maximum` was 500, and the deployed Rules' `listIsBounded()`
+// refuses any list whose limit is above 100, so EVERY folder list was denied
+// in production: the folder tree Mapping My Journey draws on open, and every
+// create-with-parent / move / retire that reads the tree first. Found by
+// journey-map-real-function.rules.test.mjs (issue #247). 100 is the Rules cap.
+export async function listNoteFoldersForOwner(db, { tenantId, ownerPersonId, status = NOTE_STATUS.ACTIVE, maximum = 100 }) {
   const q = query(collection(db, TENANT.NOTE_FOLDERS),
     where("tenantId", "==", requireToken("tenantId", tenantId)),
     where("ownerPersonId", "==", requireToken("ownerPersonId", ownerPersonId)),

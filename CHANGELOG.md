@@ -17674,3 +17674,59 @@ suite had never tested (an unrelated guardian, an unlinked teacher, an owner on
 their own page) plus the two queries' allow/deny pairs; **eight mutations each
 fail the suite** where three had survived before. Also restored the
 `note-foundation-real-function` npm script the round had replaced.
+
+**Test-only, no version bump (issue #247).** New
+`tools/firestore-emulator/journey-map-real-function.rules.test.mjs` — the same
+proof #242 gave `app/js/note-foundation.js` (real exported functions, not
+hand-authored `setDoc`s, run against the REAL Firestore emulator under the
+REAL Rules), extended to Mapping My Journey's own writers and readers:
+`createNoteFolder`, `createNotePlacement`, `retireNotePlacement`,
+`listNoteFoldersForOwner`, `listNotePlacementsForFolder`/`ForNote` from
+`note-foundation.js`, and `renameFolder`, `reorderFolder`, `moveFolder`,
+`retireFolder`, `reorderFiling`, `moveNoteToFolder`, `folderContents`,
+`noteFilings`, `ownerFolderTree` from `journey-map-service.js`. Both modules
+are loaded with the identical `data:`-URL loader technique
+`note-foundation-real-function.rules.test.mjs` already uses, extended one
+module further — `journey-map-service.js`'s own `"./note-foundation.js"`
+specifier is rewritten to the SAME data URL the suite's direct import uses, so
+both resolve to one module instance rather than two independently-loaded
+copies. Unlike the Phase 5 suite (which still defaults to the Phase 5
+candidate extract), this one defaults `RULES_FILE` to `firestore.rules`
+itself — the `noteFolders`/`notePlacements` Rules have been deployed and live
+since 22 Sep 2026, so "the real Rules" and "the deployed Rules" are the same
+file here. New `journey-map-real-function.firebase.json` on port 8090 (checked
+against every other `*.firebase.json` in the directory; never 8089/8092/8093).
+`journey-map-real-function` added to `package.json`'s `scripts`, every
+existing script left untouched. Cases cover create/rename/reorder/
+re-parent/retire on folders (including the two system folders, created the
+same on-first-need way `app/journey-map.html`'s own `ensureRealFolder()`
+does), create/reorder/move/retire on placements, all six read functions, and
+four Rules-layer denials (a cross-tenant person cannot create a folder or
+placement in another tenant; a co-tenant peer with no guardian/teacher/admin
+standing cannot rename or re-parent someone else's folder). `npm ci` was
+refused by the building sandbox, so the suite could not be executed there —
+written in full per the issue's own fallback instruction, for the Architect to
+run.
+
+**v08.58 (24 Sep 2026).** `app/js/version.js`: 08.57 → **08.58**, allocated by
+the MMSA Architect. **A live defect, same class as v08.56: Mapping My Journey
+could not read anyone's folders against the deployed Rules.** The builder's new
+real-function suite (issue #247), run by the Architect, failed at its second
+case. The deployed Note-Foundation rules' `listIsBounded()` refuses any list
+whose `limit` exceeds 100, and two callers asked for more:
+
+1. `listNoteFoldersForOwner()` defaulted to `maximum = 500`. It is the read
+   behind the folder tree `journey-map.html` draws on open, and behind every
+   create-with-parent, move and retire (each reads the tree first to refuse a
+   cycle) — all denied. Now 100, the Rules cap.
+2. `journey-map-service.js`'s `folderContents()`/`noteFilings()` ask for
+   `MAX_PLACEMENTS_PER_READ + 1` to detect truncation, and the constant was 100,
+   so they asked for 101. Now 99, so the probe asks for exactly 100.
+
+No Rules publish needed. `journey-map-real-function.rules.test.mjs`: **26
+assertions, exit 0**, against the live `firestore.rules`; **fails with the old
+code** (stash proof). Swept every other "+1" and large-limit read: the Activity
+evidence (201) and word-progress (300) collections carry no `listIsBounded()`
+cap, and `notesForStudyUnit()` asks for 31 — all unaffected. The merge of
+current `main` into the builder's branch also kept every existing emulator
+script.
