@@ -17755,3 +17755,101 @@ dawahPages in firestore.rules" check was updated in place with the reason
 recorded: it now asserts `firestore.rules` IS the published file (mutation:
 one extra line fails it). The ledger records `DAWAH-RULES` as deployed. The
 screens (P7-B, issue #250) remain gated until a governed decision opens them.
+
+**MAP v4 Phase 7 (P7-B, issue #250) is the Dawah SCREENS, built and GATED --
+what actually changes for a real reader today is nothing.** A new
+readiness gate, `app/js/dawah-readiness.js`, copies
+`study-evidence-readiness.js`/`study-wbw-total-readiness.js`'s shape
+exactly: `ready: false` as a real literal, `decision: null`, and it
+**imports nothing at all**, so it cannot consult `firestore.rules` even by
+accident -- a boundary check proves the absence rather than assuming it.
+Every read and write on the new screens goes through this gate first;
+while it is closed no `dawahPages` Firestore call is ever attempted, every
+action button is `aria-disabled="true"` (never `disabled` -- this
+project's own standing lesson: a control that opens and explains itself
+beats one that is not there), and pressing one says, in English and
+Bangla, "Dawah pages are not switched on yet -- waiting for the Madrasah's
+owner to publish the database rules." A reader can never see a permission
+error from this feature. **The Architect flips this gate after the Owner
+publishes the Rules candidate P7-A already proved; this round does not.**
+
+**New page `app/dawah.html`**, three views behind one toggle, no person
+selector (deliberately -- unlike `notes.html`/`journey-map.html`, every
+view here is already scoped to the signed-in person's own membership, not
+a browsable-by-child list): **My pages** (the signed-in person's own
+pages, grouped by status, with Share for an adult or Send for approval
+for a child -- chosen via `authorNeedsDawahApproval()`, never guessed --
+Remove (I4: retire, never delete), Print, and a returned page's own
+`returnedNote` shown in place); **Waiting for my approval** (offered only
+to guardian/teacher/owner/prime -- the toggle button itself is hidden for
+anyone else -- Approve and Return, Return requiring a non-empty reason; a
+child can never approve their own page, checked in the UI as defence in
+depth on top of the data layer's and the Rules' own independent refusals);
+**Madrasah pages** (the shared list, read-only, Print only). **Print** is
+a clean `@media print` layout -- title, body, author's name, the source
+Study Unit label via `unitKeyLabel()` when present, the Madrasah name, no
+nav/buttons/chrome -- rendering `bodyHtml` ONLY through
+`sanitizeNoteHtml()`, the same DOMPurify allow-list `notes.html`/
+`journey-map.html` already use.
+
+**Entry point from Notes**: each of the viewer's own active Notes gains a
+"Make a printable page" action (gated the same way, same `canEdit`
+condition Edit/Remove already use), calling `createDawahPage()` with that
+Note's CURRENT revision and then opening `dawah.html` on success.
+
+**Nav**: "Dawah" under Home ▾, wired into `nav.js`'s own
+`renderHomeExtras()` exactly the way `journey-map.html`'s entry was added
+-- one shared file, no per-page static markup, no role restriction beyond
+sign-in.
+
+**`tools/i18n-verify/dawah-boundary.mjs` updated in place, reason
+recorded, never weakened**: "no page reaches dawah-contract.js/
+dawah-data.js" was true only because nothing had yet built the screens
+these modules exist for -- P7-B built them, so the claim inverts to the
+STRONGER, NARROWER one: EXACTLY `app/dawah.html` and `app/notes.html`
+reach the guarded modules (now three: the contract, the data layer, and
+the new readiness gate), by any chain of any length, and no other file
+imports them directly. A new section proves every one of `dawah-data.js`'s
+six exported WRITE functions is called on both pages only from behind the
+gate, reading the real page source rather than trusting the pattern.
+**14 → 21 checks, two mutation-proven**: removing `returnPage()`'s own
+gate clause from a real in-memory copy of `dawah.html`'s source is shown
+to surface as an offender; a genuine disposable third page written to
+`app/` and importing `dawah-data.js` is shown to change the reachable
+page set, then removed again in a `finally` block. **New suite
+`tools/i18n-verify/dawah-screen.mjs`, 23/23, pure and static** (no
+Playwright in this sandbox -- the documented, repeated environment gap):
+the three views exist, the gate message exists in both languages, Approve
+and Return are absent for the viewer's own page (mutation-proven), every
+`bodyHtml` render is paired with `sanitizeNoteHtml()`, and the print
+stylesheet hides nav and buttons.
+
+**All required checks re-run clean from the repository root**: the 8
+CI-gated governance suites (`programme-ledger` 8, `programme-ledger-mutations`
+49, `brief-integrity` 8, `study-activity-evidence-boundary` 28 +
+`-mutations` 13, `study-event-wiring` 41, `rules-authorisation-executable`
+40, `workflow-expressions` 12), `dawah-boundary` 21, `dawah-screen` 23,
+`note-sanitize-boundary` 7, `study-note-boundary` 18 -- **228 checks, 0
+failed.** `app/js/version.js`, `CLAUDE.md`, `firestore.rules`,
+`firebase.json`, `.github/workflows/**`, `app/js/note-foundation.js`,
+`app/js/dawah-data.js` and the Rules candidate are all untouched --
+confirmed by the boundary suite reading them directly. No version was
+bumped; the Architect allocates one.
+
+**v08.59 (24 Sep 2026).** `app/js/version.js`: 08.58 → **08.59**, allocated by
+the MMSA Architect, for P7-B above — **and the Dawah screens are switched on in
+the same release.** The Owner had already published the Dawah Rules ("Dawah
+rules are live"; `firestore.rules` synced byte-for-byte in PR #253), so
+`app/js/dawah-readiness.js` moves to `ready: true` with a governed decision
+(`by: "master-architect", on: "2026-09-24"`,
+`docs/reports/2026-09-24-dawah-pages-enabled.md`). `dawah-boundary.mjs`'s
+"defaults to NOT ready" check updated in place, reason recorded: it now asserts
+the declaration is ready ONLY through a well-formed decision whose reference
+file exists, and every malformed-shape refusal is asserted as before (21/0).
+**Verified in a real browser by the Architect** (the builder's sandbox has no
+Playwright): `app/dawah.html` at 360px and 1100px, English and Bangla — gate
+closed: 0 `dawahPages` calls, the explanation shown; gate open: 3 list queries,
+no page errors, zero overflow. **The builder's own CHANGELOG change had
+overwritten earlier text** (a three-way merge would have silently dropped the
+v08.58 entry, which `brief-integrity.mjs` caught); the log was rebuilt as
+`main`'s plus the P7-B entry only — a pure addition.
