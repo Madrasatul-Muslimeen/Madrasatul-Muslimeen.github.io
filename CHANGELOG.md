@@ -17744,3 +17744,14 @@ every Dawah list is equality-only. Owner guide:
 `docs/governance/2026-09-24-dawah-rules-publish-guide.md`. `firestore.rules`
 is untouched; it is synced after the Owner's Console publish with the
 `[already-deployed-manually]` trailer.
+
+**Dawah Rules published (24 Sep 2026), BR-0, no version bump.** The Owner
+published `docs/governance/phase7-dawah-DEPLOYMENT-candidate-2026-09-24.rules`
+in the Firebase Console: *"Dawah rules are live."* `firestore.rules` is synced
+to it byte-for-byte (256 lines appended, 0 removed) with the
+`[already-deployed-manually]` trailer so the approval-gated deploy workflow does
+not ask the Owner to approve what is already live. `dawah-boundary.mjs`'s "no
+dawahPages in firestore.rules" check was updated in place with the reason
+recorded: it now asserts `firestore.rules` IS the published file (mutation:
+one extra line fails it). The ledger records `DAWAH-RULES` as deployed. The
+screens (P7-B, issue #250) remain gated until a governed decision opens them.

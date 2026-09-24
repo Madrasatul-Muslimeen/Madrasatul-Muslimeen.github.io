@@ -1051,6 +1051,11 @@
       "subject": "#drillModeSelect truncated in BANGLA at six viewports in the Study-options panel",
       "state": "OPEN -- Owner UI decision. Found 19 Sep 2026 by running panel.mjs in Bangla; PROVEN pre-existing by reverting app/ to the accepted v08.30 build (8ea445fb) and getting the identical six findings. English is clean. Reported rather than absorbed into a release-gating tranche: the remedies (widen, shrink the type, reword in both languages) are the same materially-different choices O3 and O3b carry.",
       "processNote": "panel.mjs takes a language argument and routine verification had only ever run it in English. A suite that only ever runs in one language is measuring one language."
+    },
+    {
+      "id": "DAWAH-RULES",
+      "subject": "MAP v4 Phase 7 Dawah pages Rules",
+      "state": "DEPLOYED 2026-09-24 -- the Owner published docs/governance/phase7-dawah-DEPLOYMENT-candidate-2026-09-24.rules (the live rules plus an append-only dawahPages block, 65/5/26 emulator assertions against the assembled file) in the Firebase Console and said 'Dawah rules are live.' firestore.rules synced byte-identical the same day with [already-deployed-manually]; dawah-boundary.mjs asserts the identity. No index was needed. The Dawah SCREENS stay gated behind app/js/dawah-readiness.js (issue #250, P7-B) until a governed decision flips it."
     }
   ],
   "d14": {
