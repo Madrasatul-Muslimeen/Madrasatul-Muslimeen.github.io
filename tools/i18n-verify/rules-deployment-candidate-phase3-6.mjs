@@ -17,6 +17,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import { execFileSync } from "node:child_process";
 
 const root = path.resolve(process.argv[2] || process.cwd());
 const CANDIDATE = "docs/governance/phase3-6-DEPLOYMENT-candidate-2026-09-22.rules";
@@ -26,6 +27,23 @@ const EXTRACTS = [
   "docs/governance/phase6-journey-map-rules-candidate-2026-09-15.rules",
 ];
 const read = (rel) => fs.readFileSync(path.join(root, rel), "utf8");
+// The commit where firestore.rules was synced to CANDIDATE above, faithfully
+// and nothing else -- i.e. the Phase 3-6 deployment, confirmed byte-identical
+// to CANDIDATE by this suite's own equality check at the time (`git show
+// a8bb2d8:firestore.rules` == CANDIDATE, still true, still checked below).
+// A LATER, separate, also-audited deployment (issue #206's quranWordTotals,
+// 2026-09-24) has since been synced into firestore.rules on top of this --
+// correctly, since it is a real later fact, not a defect. Comparing THAT
+// live file against this Phase-3-6-only candidate would therefore report a
+// growing "divergence" forever after, for every future legitimate Rules
+// round, which is the same "vacuous forever" trap this file's own sibling
+// check ("the three genuinely-new Phase 3 helpers are genuinely new") was
+// already written to avoid. What this suite exists to prove is a fact about
+// THIS round's own deployment -- that it was pasted faithfully -- and that
+// fact does not move just because a later, different round shipped after it.
+const AUDITED_DEPLOYMENT_REF = "a8bb2d8";
+const readAtRef = (ref, rel) =>
+  execFileSync("git", ["show", `${ref}:${rel}`], { cwd: root, encoding: "utf8" });
 
 let passed = 0, failed = 0;
 function check(name, fn) {
@@ -62,6 +80,10 @@ function topLevelFunctions(text) {
 const production = read("firestore.rules");
 const candidate = read(CANDIDATE);
 const prodFns = topLevelFunctions(production);
+// Pinned per AUDITED_DEPLOYMENT_REF's own comment above -- used only by the
+// two checks that assert a fact about THIS round's deployment specifically,
+// not by anything checking the extracts against current reality.
+const productionAtSync = readAtRef(AUDITED_DEPLOYMENT_REF, "firestore.rules");
 
 check("POSITIVE CONTROL: the function comparator really reads bodies", () => {
   assert.ok(prodFns.size > 30, `only ${prodFns.size} top-level helpers found in firestore.rules`);
@@ -69,8 +91,12 @@ check("POSITIVE CONTROL: the function comparator really reads bodies", () => {
 });
 
 // --- the candidate is production PLUS, never production ALTERED -------------
+// Uses productionAtSync (pinned), not live production -- see
+// AUDITED_DEPLOYMENT_REF's own comment: this is a fact about THIS round's
+// deployment, and a later, separate, also-audited round syncing more
+// material into firestore.rules afterward does not make it false.
 check("the deployment candidate drops no production line", () => {
-  const missing = production.split("\n").filter((l) => l.trim() && !candidate.includes(l));
+  const missing = productionAtSync.split("\n").filter((l) => l.trim() && !candidate.includes(l));
   assert.deepEqual(missing.slice(0, 3), [],
     `${missing.length} production line(s) absent -- deploying this would REMOVE live rules`);
 });
@@ -162,9 +188,20 @@ check("the extracts' divergence from production is EXACTLY the audited four", ()
 // the Owner directly, indexes and rules both). The check now guards the
 // other direction: that the sync was a clean, faithful copy, byte for byte,
 // not a paste that silently dropped or altered something on the way in.
-check("firestore.rules matches the audited Phase 3-6 candidate exactly", () => {
-  assert.equal(production, candidate,
-    "firestore.rules has diverged from the audited candidate -- either it was not a clean paste, or something has changed since");
+//
+// UPDATED IN PLACE 2026-09-24, reason recorded: this compared against LIVE
+// firestore.rules, which was correct while this Phase 3-6 sync was the most
+// recent deployment -- and stopped being correct the moment a second,
+// separate, also-audited round (issue #206's quranWordTotals) was synced in
+// afterward, which would otherwise make this check fail forever after for a
+// reason that has nothing to do with whether THIS round's paste was clean.
+// Pinned to productionAtSync (AUDITED_DEPLOYMENT_REF, see above) instead --
+// a fact about the past does not move just because firestore.rules later did,
+// the same principle rules-deployment-candidate.mjs's own PRE_DEPLOYMENT_REF
+// and this file's "genuinely new Phase 3 helpers" check already apply.
+check("firestore.rules (as synced 2026-09-22) matched the audited Phase 3-6 candidate exactly", () => {
+  assert.equal(productionAtSync, candidate,
+    "firestore.rules at the Phase 3-6 sync commit has diverged from the audited candidate -- either it was not a clean paste, or AUDITED_DEPLOYMENT_REF points at the wrong commit");
 });
 
 check("Phase 3 needs no new index -- confirmed against the app's own query", () => {
