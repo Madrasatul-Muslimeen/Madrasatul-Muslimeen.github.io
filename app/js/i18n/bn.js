@@ -2589,4 +2589,39 @@ export const BN = {
   "Move \"{title}\" to which folder? Type the exact name shown, or cancel.":
     "\"{title}\" কোন ফোল্ডারে সরাবেন? দেখানো নামটি হুবহু লিখুন, অথবা বাতিল করুন।",
   "Folder \"{name}\" created.": "ফোল্ডার \"{name}\" তৈরি হয়েছে।",
+
+  // P6-G (issue #229) -- folder editing wired into Mapping My Journey:
+  // rename, reorder, move, remove a folder, and reorder Notes inside one.
+  "A folder needs a name — nothing renamed.": "একটি ফোল্ডারের নাম দরকার — কিছুই নাম পরিবর্তন হয়নি।",
+  "Folder renamed to \"{name}\".": "ফোল্ডারের নাম পরিবর্তন করে \"{name}\" করা হয়েছে।",
+  "Move folder \"{name}\" under which folder? Type the exact name shown, \"{topLevel}\" for the top level, or cancel.":
+    "\"{name}\" ফোল্ডারটি কোন ফোল্ডারের ভেতরে সরাবেন? দেখানো নামটি হুবহু লিখুন, শীর্ষ স্তরের জন্য \"{topLevel}\" লিখুন, অথবা বাতিল করুন।",
+  "(Top level)": "(শীর্ষ স্তর)",
+  "Folder \"{name}\" moved.": "ফোল্ডার \"{name}\" সরানো হয়েছে।",
+  "Remove folder \"{name}\"? This can't be undone from here, but nothing is destroyed — an administrator can restore it. Notes filed in it are not deleted.":
+    "\"{name}\" ফোল্ডারটি সরিয়ে ফেলবেন? এখান থেকে এটি পূর্বাবস্থায় ফেরানো যাবে না, তবে কিছুই মুছে ফেলা হয় না — একজন প্রশাসক এটি পুনরুদ্ধার করতে পারবেন। এতে ফাইল করা নোটগুলো মুছে যায় না।",
+  "\"{name}\" still has folders inside it — remove those first, then this one.":
+    "\"{name}\"-এর ভেতরে এখনও ফোল্ডার আছে — আগে সেগুলো সরান, তারপর এটি।",
+  "Folder \"{name}\" removed.": "ফোল্ডার \"{name}\" সরিয়ে ফেলা হয়েছে।",
+  "This folder still has other folders inside it — remove those first, then this one.":
+    "এই ফোল্ডারের ভেতরে এখনও অন্য ফোল্ডার আছে — আগে সেগুলো সরান, তারপর এটি।",
+  "A folder can't be moved inside itself.": "একটি ফোল্ডারকে নিজের ভেতরে সরানো যায় না।",
+  "That folder no longer exists — please refresh and try again.": "সেই ফোল্ডারটি আর নেই — পাতাটি রিফ্রেশ করে আবার চেষ্টা করুন।",
+  "That isn't your folder to move into.": "সেটি আপনার ফোল্ডার নয়, তাই এর ভেতরে সরানো যাবে না।",
+  "That folder has been removed, so nothing can be moved into it.": "সেই ফোল্ডারটি সরিয়ে ফেলা হয়েছে, তাই এর ভেতরে কিছু সরানো যাবে না।",
+  "Personal Journey Map and Reflection Archive can't hold other folders inside them.":
+    "ব্যক্তিগত যাত্রা মানচিত্র এবং প্রতিফলন আর্কাইভের ভেতরে অন্য ফোল্ডার রাখা যায় না।",
+  "Moving it there would nest folders too deeply. Choose a folder closer to the top.":
+    "সেখানে সরালে ফোল্ডারগুলো অনেক বেশি স্তরে চলে যাবে। শীর্ষের কাছাকাছি একটি ফোল্ডার বেছে নিন।",
+  "Moving it there would put a folder inside one of its own folders. Choose a different folder.":
+    "সেখানে সরালে একটি ফোল্ডার তার নিজেরই ফোল্ডারের ভেতরে চলে যাবে। অন্য একটি ফোল্ডার বেছে নিন।",
+  "That folder's place could not be confirmed — please refresh and try again.":
+    "সেই ফোল্ডারের অবস্থান নিশ্চিত করা যায়নি — পাতাটি রিফ্রেশ করে আবার চেষ্টা করুন।",
+  "That move was refused.": "সেই স্থানান্তর প্রত্যাখ্যান করা হয়েছে।",
+  "That folder has already been removed, so it can't be renamed.": "সেই ফোল্ডারটি ইতিমধ্যে সরিয়ে ফেলা হয়েছে, তাই এর নাম পরিবর্তন করা যাবে না।",
+  "That folder has already been removed, so it can't be reordered.": "সেই ফোল্ডারটি ইতিমধ্যে সরিয়ে ফেলা হয়েছে, তাই এর ক্রম পরিবর্তন করা যাবে না।",
+  "That folder could not be found — please refresh and try again.": "সেই ফোল্ডারটি খুঁজে পাওয়া যায়নি — পাতাটি রিফ্রেশ করে আবার চেষ্টা করুন।",
+  "That Note has already been removed from this folder, so it can't be reordered.":
+    "সেই নোটটি ইতিমধ্যে এই ফোল্ডার থেকে সরিয়ে ফেলা হয়েছে, তাই এর ক্রম পরিবর্তন করা যাবে না।",
+  "That filing could not be found — please refresh and try again.": "সেই ফাইলিং খুঁজে পাওয়া যায়নি — পাতাটি রিফ্রেশ করে আবার চেষ্টা করুন।",
 };

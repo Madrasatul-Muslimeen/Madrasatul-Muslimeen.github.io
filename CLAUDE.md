@@ -158,7 +158,23 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.53 on `main`** (24 Sep 2026 — the Word-by-Word
+**Current milestone: v08.54 on `main`** (24 Sep 2026 — MAP v4 Phase 6
+P6-G: Mapping My Journey's Folders view can now rename, reorder, move and
+remove a person's own folders and reorder the Notes filed in one (issues
+#229 and #234), wired through the five `journey-map-service.js` wrappers
+the deployed Rules already authorised. **The Architect's review caught a
+real defect before merge**: every folder and filing is created at
+`order: 0`, so the builder's first ▲▼ (swap the two neighbours' values)
+wrote two documents and changed nothing; its own "two-value SWAP" check
+passed against the no-op. Fixed with a pure `planReorder()` (renumber by
+display position, write only what changed — v08.01's `reorderTrackables()`
+shape) and `nextOrder()` at creation; the new checks run the OLD swap as a
+mutation control. `journey-map-screen.mjs` 33/0, `journey-map-boundary.mjs`
+17/0. **Lesson worth keeping: a reorder check must assert the DISPLAY ORDER
+moved, not that writes happened.** Layout not measured in a real browser
+(no Playwright in the builder sandbox); a real-phone look is the substitute.)
+
+**Previous milestone: v08.53 on `main`** (24 Sep 2026 — the Word-by-Word
 whole-Qur'an/Juz percentage counter (issue #206, built and gated in v08.42)
 is SWITCHED ON. The Owner published its Rules the same day and, asked
 "shall I switch it on now so you can see it and try it?", answered "Yes,
