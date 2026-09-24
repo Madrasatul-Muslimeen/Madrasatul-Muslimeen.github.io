@@ -1751,7 +1751,14 @@
      into a flex row without ever fighting the code that hides it.
      --------------------------------------------------------------------- */
   body.read-sideways #readScroll { overflow: hidden; }
-  body.read-sideways #studyScreen { height: 100%; display: flex; flex-direction: column; min-height: 0; }
+  /* v08.60 -- `height: 100%` on a content-box with 1rem padding, a border and
+     a 0.5rem top margin made #studyScreen 42px TALLER than #readScroll, whose
+     overflow is hidden in this mode, so the bottom ~10px of the last line of a
+     long āyah could never be scrolled into view (measured on 2:282 at
+     360/390/1280px). border-box + the margin taken out of the height makes it
+     fit exactly; the inner #ayahPanels still does all the scrolling. */
+  body.read-sideways #studyScreen { height: calc(100% - 0.5rem); box-sizing: border-box; display: flex; flex-direction: column; min-height: 0; }
+  body.read-sideways.immersive-read #studyScreen { height: 100%; }
   body.read-sideways #ayahPanels { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
   body.read-sideways #pageViewContainer {
     display: flex; flex-direction: row; flex: 1 1 auto; min-height: 0;

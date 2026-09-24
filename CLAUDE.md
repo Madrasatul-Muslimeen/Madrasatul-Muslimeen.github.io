@@ -158,7 +158,21 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.59 on `main`** (24 Sep 2026 — MAP v4 Phase 7
+**Current milestone: v08.60 on `main`** (24 Sep 2026 — the Owner asked,
+before closing old draft PR #37, whether its "can't scroll" defect still
+happens. **The severe form is gone** (with "Page by page" on, `#ayahPanels`
+now does the scrolling), **but a residue was real and is fixed**:
+`body.read-sideways #studyScreen { height: 100% }` on a content-box with 1rem
+padding, a border and a 0.5rem margin was 42px taller than `#readScroll`
+(overflow hidden in this mode), so the bottom ~10px of the last line of a long
+āyah could never be scrolled into view — measured on 2:282 at five widths, both
+languages. `box-sizing: border-box; height: calc(100% - 0.5rem)` (100% in
+immersive) — the last line now clears the edge by ~32px everywhere. New
+`read-sideways-last-line.mjs` 24/0, 12 failing with the old CSS. PR #37 closed
+as superseded. **Lesson: `height: 100%` on a padded, margined content-box is
+never 100% — measure the container's own scroll overflow, not the child's.**)
+
+**Previous milestone: v08.59 on `main`** (24 Sep 2026 — MAP v4 Phase 7
 **P7-B, the Dawah screens, BUILT AND SWITCHED ON** (issue #250).
 `app/dawah.html`: My pages (Share for an adult / Send for approval for a child,
 via `authorNeedsDawahApproval()`; Remove; Print; a returned page's reason),
