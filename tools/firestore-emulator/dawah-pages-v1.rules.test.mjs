@@ -27,7 +27,10 @@ const HOST = "127.0.0.1";
 const PORT = 8092;
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "../..");
-const CANDIDATE_PATH = "docs/governance/phase7-dawah-pages-rules-candidate-2026-09-24.rules";
+const EXTRACT_PATH = "docs/governance/phase7-dawah-pages-rules-candidate-2026-09-24.rules";
+// RULES_FILE (24 Sep 2026) runs the SAME cases against an assembled deployment
+// file -- production plus the Dawah block -- which is what a publish applies.
+const CANDIDATE_PATH = process.env.RULES_FILE || EXTRACT_PATH;
 const candidate = fs.readFileSync(path.join(root, CANDIDATE_PATH), "utf8");
 
 assert.match(PROJECT, /^demo-/);
@@ -37,8 +40,12 @@ assert.equal(HOST, "127.0.0.1");
 // This candidate governs exactly the Phase 7 domain -- notes/noteRevisions/
 // noteSources stay with Phase 5, and this file must never grow a second
 // collection's rules by accident.
-const blocks = [...new Set([...candidate.matchAll(/match \/(\w+)\//g)].map((m) => m[1]))].filter((n) => n !== "databases");
-assert.deepEqual(blocks, ["dawahPages"], `the candidate must govern exactly dawahPages, saw: ${blocks}`);
+// (Checked on the extract only: an assembled deployment file governs every
+// collection by design.)
+if (CANDIDATE_PATH === EXTRACT_PATH) {
+  const blocks = [...new Set([...candidate.matchAll(/match \/(\w+)\//g)].map((m) => m[1]))].filter((n) => n !== "databases");
+  assert.deepEqual(blocks, ["dawahPages"], `the candidate must govern exactly dawahPages, saw: ${blocks}`);
+}
 
 const T = "t1", T2 = "t2";
 const env0 = { schemaVersion: 1, createdAt: new Date(), updatedAt: new Date(), createdBy: "uid-p1" };
