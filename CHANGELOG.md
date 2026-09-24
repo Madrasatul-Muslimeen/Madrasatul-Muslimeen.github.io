@@ -17575,3 +17575,36 @@ browsers ignore it and those two fonts have never loaded from it. Moving it to
 a `<link>` would ADD a download and visibly change the wheel's type, which is
 not a speed fix. Also recorded for a later round: `bn.js` (244 KB) is loaded
 for English readers too, and the module graph is 64 files, 3 levels deep.
+
+**Test-only, no version bump (issue #247).** New
+`tools/firestore-emulator/journey-map-real-function.rules.test.mjs` — the same
+proof #242 gave `app/js/note-foundation.js` (real exported functions, not
+hand-authored `setDoc`s, run against the REAL Firestore emulator under the
+REAL Rules), extended to Mapping My Journey's own writers and readers:
+`createNoteFolder`, `createNotePlacement`, `retireNotePlacement`,
+`listNoteFoldersForOwner`, `listNotePlacementsForFolder`/`ForNote` from
+`note-foundation.js`, and `renameFolder`, `reorderFolder`, `moveFolder`,
+`retireFolder`, `reorderFiling`, `moveNoteToFolder`, `folderContents`,
+`noteFilings`, `ownerFolderTree` from `journey-map-service.js`. Both modules
+are loaded with the identical `data:`-URL loader technique
+`note-foundation-real-function.rules.test.mjs` already uses, extended one
+module further — `journey-map-service.js`'s own `"./note-foundation.js"`
+specifier is rewritten to the SAME data URL the suite's direct import uses, so
+both resolve to one module instance rather than two independently-loaded
+copies. Unlike the Phase 5 suite (which still defaults to the Phase 5
+candidate extract), this one defaults `RULES_FILE` to `firestore.rules`
+itself — the `noteFolders`/`notePlacements` Rules have been deployed and live
+since 22 Sep 2026, so "the real Rules" and "the deployed Rules" are the same
+file here. New `journey-map-real-function.firebase.json` on port 8090 (checked
+against every other `*.firebase.json` in the directory; never 8089/8092/8093).
+`journey-map-real-function` added to `package.json`'s `scripts`, every
+existing script left untouched. Cases cover create/rename/reorder/
+re-parent/retire on folders (including the two system folders, created the
+same on-first-need way `app/journey-map.html`'s own `ensureRealFolder()`
+does), create/reorder/move/retire on placements, all six read functions, and
+four Rules-layer denials (a cross-tenant person cannot create a folder or
+placement in another tenant; a co-tenant peer with no guardian/teacher/admin
+standing cannot rename or re-parent someone else's folder). `npm ci` was
+refused by the building sandbox, so the suite could not be executed there —
+written in full per the issue's own fallback instruction, for the Architect to
+run.
