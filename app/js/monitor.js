@@ -15,10 +15,11 @@
 
 import { weekKeyFor, getWeekActivity } from "./activity.js";
 import { listAllRecordsForPerson } from "./records.js";
-import { summarizeStatuses } from "./unit-keys.js";
+import { summarizeStatuses, unitKeyLabel } from "./unit-keys.js";
 import { langText } from "./lang.js";
 import { getAppLang } from "./prefs.js";
-import { t } from "./i18n.js";
+import { t, num } from "./i18n.js";
+import { listStudyActivityEvidence } from "./study-activity-evidence-store.js";
 
 // ---------------------------------------------------------------------------
 // Fetching -- bounded to the date range actually asked for, never "the
@@ -222,4 +223,100 @@ export function printReportHtml(title, innerHtml) {
     try { win.print(); } catch { /* pop-up already surfaced above if this was ever going to fail */ }
     setTimeout(() => { try { win.close(); } catch { } }, 1500);
   }, 400);
+}
+
+// ---------------------------------------------------------------------------
+// MAP v4 Phase 4 (P4-F) -- Study activity evidence, Monitor's WEEKLY view
+// only. Reads listStudyActivityEvidence() (P4-E), which nothing has ever
+// called from a page -- the ADR-008 evidence rows have existed since v08.34
+// with no screen showing them (issue #230/#238).
+//
+// ADR-003 / Activity != Mastery, kept by construction rather than by review:
+// studyActivitySectionHtml() below renders plain text inside <h3>/<ul>/<li>
+// only -- no link, button, status class or claim/confirm affordance anywhere
+// in this markup, so nothing here can be mistaken for, or wired to, a
+// claim/confirm control. It computes no status, credits no Approach and
+// calls nothing in records.js or activity.js.
+// ---------------------------------------------------------------------------
+
+const STUDY_ACTIVITY_KIND_ORDER = ["reading", "listening", "journaling", "wbw"];
+
+/** ADR-008's five automatic eventTypes, mapped to the four kinds Monitor shows. Both Journaling eventTypes (a Note's first save and every later revision) collapse into one kind -- the reader wants "did I journal that day", not "was this a create or a revise". */
+const STUDY_ACTIVITY_EVENT_KIND = Object.freeze({
+  "reading.completed": "reading",
+  "listening.completed": "listening",
+  "journal.note-created": "journaling",
+  "journal.note-revised": "journaling",
+  "wbw.engaged": "wbw",
+});
+
+// "Word by Word" (no hyphens) reuses the app's own existing label for the
+// same concept -- the Explore wheel's Approach/Word by Word colouring toggle
+// (issue #206) -- rather than a second, differently-spelled string for one
+// idea.
+const STUDY_ACTIVITY_KIND_LABELS = Object.freeze({
+  reading: "Reading", listening: "Listening", journaling: "Journaling", wbw: "Word by Word",
+});
+
+/** Which of Monitor's four kinds an ADR-008 eventType belongs to, or null for anything this contract does not (yet) recognise -- a future evidence eventType must never be guessed into the wrong bucket. */
+export function studyActivityKind(eventType) {
+  return STUDY_ACTIVITY_EVENT_KIND[eventType] ?? null;
+}
+
+/** This kind's display name, in the reader's own language. */
+export function studyActivityKindLabel(kind) {
+  return t(STUDY_ACTIVITY_KIND_LABELS[kind] ?? kind);
+}
+
+/**
+ * P4-E's `{ rows, truncated }` (one person, one week), grouped into Monitor's
+ * four kinds -- PRESENT kinds only (a kind with nothing recorded is simply
+ * absent, not printed as a zero), each carrying its own count and its
+ * `{ unitKey, dateIso }` items, oldest-eventType-order rather than re-sorted
+ * by date (P4-E's own read carries no `orderBy`, by design -- an extra
+ * composite index for a display-only sort is not worth adding here).
+ */
+export function groupStudyActivityByKind(rows) {
+  const byKind = new Map(STUDY_ACTIVITY_KIND_ORDER.map((k) => [k, []]));
+  for (const row of rows) {
+    const kind = studyActivityKind(row.eventType);
+    if (!kind) continue;
+    byKind.get(kind).push({ unitKey: row.unitKey, dateIso: row.dateIso });
+  }
+  return STUDY_ACTIVITY_KIND_ORDER
+    .map((kind) => ({ kind, count: byKind.get(kind).length, items: byKind.get(kind) }))
+    .filter((g) => g.count > 0);
+}
+
+/**
+ * The whole "Study activity this week" section, as HTML -- a plain empty
+ * state when nothing was recorded, an honest note when P4-E's own read cap
+ * (MAX_EVIDENCE_PER_READ) truncated the week. Units are printed through
+ * unitKeyLabel() -- the app's existing unit-key reader ("Ayah 2:255"), never
+ * the raw stored key.
+ */
+export function studyActivitySectionHtml(rows, truncated) {
+  const groups = groupStudyActivityByKind(rows);
+  if (groups.length === 0) {
+    return `<p class="muted">${t("No study activity recorded this week.")}</p>`;
+  }
+  const sections = groups.map((g) => `
+    <h3 style="font-size:1rem;">${studyActivityKindLabel(g.kind)} (${num(g.count)})</h3>
+    <ul>${g.items.map((it) => `<li>${unitKeyLabel(it.unitKey)} — ${num(it.dateIso)}</li>`).join("")}</ul>
+  `).join("");
+  const note = truncated
+    ? `<p class="muted">${t("More study activity was recorded this week than is shown here.")}</p>`
+    : "";
+  return sections + note;
+}
+
+/**
+ * Fetches one person's evidence for one week (P4-E's own read, unchanged)
+ * and returns the section's HTML in one call -- so `monitor.html` never
+ * needs to import the evidence store itself, and the store's importer set
+ * stays pinned to exactly this module.
+ */
+export async function studyActivitySectionForWeek(db, { tenantId, personId, weekKey }) {
+  const { rows, truncated } = await listStudyActivityEvidence(db, { tenantId, personId, weekKey });
+  return studyActivitySectionHtml(rows, truncated);
 }

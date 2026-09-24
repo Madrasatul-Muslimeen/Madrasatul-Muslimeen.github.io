@@ -193,7 +193,43 @@ check("NEGATIVE CONTROL: a comment naming the store does NOT trip the guard", ()
   } finally { fs.writeFileSync(SERVICE, backup); }
 });
 
-// --- 5. the restore, asserted rather than assumed ---------------------------
+// --- 5. MAP v4 Phase 4 (P4-F, issue #230/#238) -- Monitor's own reader ------
+//
+// 24 Sep 2026 added a second, deliberately narrow exception to the
+// reachability guard: Monitor's weekly view may reach the evidence store,
+// but ONLY by the exact shape "monitor.html -> monitor.js -> the store", and
+// ONLY for the reader. Both edges of that are proven here to actually be
+// enforced, not merely asserted in a comment.
+const MONITOR_HTML = path.join(root, "app", "monitor.html");
+const MONITOR_JS = path.join(root, "app", "js", "monitor.js");
+
+// The exact regression an earlier draft of this round produced, live: import
+// the store straight into monitor.html instead of going through monitor.js.
+// The exception is pinned to one exact chain shape, so this must NOT be
+// silently covered by it.
+mutation(
+  "monitor.html imports the store directly, bypassing monitor.js",
+  [[MONITOR_HTML, (s) => s.replace(
+    '<script type="module">',
+    '<script type="module">\n    import { listStudyActivityEvidence } from "./js/study-activity-evidence-store.js";')]],
+  /every page-reachable path to the writer/,
+  /app\/monitor\.html -> study-activity-evidence-store\.js/,
+);
+
+// The import alone, without the exact chain shape changing -- monitor.js
+// keeps its one legitimate import AND quietly picks up the writer too. Only
+// the dedicated "imports ONLY the reader" check can see this: reachability
+// alone cannot, because monitor.js already legitimately reaches the store.
+mutation(
+  "monitor.js keeps its reader import but also imports the writer",
+  [[MONITOR_JS, (s) => s.replace(
+    'import { listStudyActivityEvidence } from "./study-activity-evidence-store.js";',
+    'import { listStudyActivityEvidence } from "./study-activity-evidence-store.js";\nimport { writeStudyActivityEvidence } from "./study-activity-evidence-store.js";')]],
+  /monitor\.js imports ONLY the reader/,
+  /monitor\.js should import from the evidence store exactly once/,
+);
+
+// --- 6. the restore, asserted rather than assumed ---------------------------
 check("POSITIVE CONTROL: every mutated file is byte-identical to how it started", () => {
   const svc = fs.readFileSync(SERVICE, "utf8");
   assert.ok(svc.includes('import { recordStudyEvidence } from "./study-event-wiring.js";'),
@@ -203,6 +239,12 @@ check("POSITIVE CONTROL: every mutated file is byte-identical to how it started"
     "study-event-wiring.js was not restored");
   assert.ok(!fs.readFileSync(path.join(root, "app", "js", "study-note-binding.js"), "utf8").includes("__smuggle"),
     "study-note-binding.js was not restored");
+  const monitorHtml = fs.readFileSync(MONITOR_HTML, "utf8");
+  assert.equal((monitorHtml.match(/study-activity-evidence-store\.js/g) || []).length, 0,
+    "monitor.html was not restored -- it still names the evidence store directly");
+  const monitorJs = fs.readFileSync(MONITOR_JS, "utf8");
+  assert.equal((monitorJs.match(/writeStudyActivityEvidence/g) || []).length, 0,
+    "monitor.js was not restored -- it still names the writer");
   const { code } = runGuard();
   assert.equal(code, 0, "the guard does not pass again after the restore");
 });

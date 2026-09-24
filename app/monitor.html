@@ -97,6 +97,14 @@
       <p class="muted">Loading…</p>
     </div>
 
+    <div id="activitySection">
+      <h2>Study activity this week — <span id="activityPersonName"></span></h2>
+      <p class="muted">Read-only. This is what was actually studied, never a claim or confirmation — see the Quran Approach breakdown below for status.</p>
+      <div id="activityBody">
+        <p class="muted">Loading…</p>
+      </div>
+    </div>
+
     <h2>Quran Approach breakdown — <span id="quranStudentName"></span></h2>
     <p class="muted">Current claimed status per Approach, across every ayah/juz/page this student has ever touched — not scoped to the week/month above (this is a status snapshot, not an activity log).</p>
     <div id="quranBody">
@@ -128,7 +136,7 @@
       setSelectedPersonId,
     } from "./js/session-context.js";
     import { getSubjectTree, getTrackables } from "./js/catalogue.js";
-    import { activityForRoster, monthWeekKeys, filterEntriesToMonth, summarizeByStudent, summarizeBySubject, summarizeQuranApproaches, entriesToCsvRows, downloadCsv, printReportHtml } from "./js/monitor.js";
+    import { activityForRoster, monthWeekKeys, filterEntriesToMonth, summarizeByStudent, summarizeBySubject, summarizeQuranApproaches, entriesToCsvRows, downloadCsv, printReportHtml, studyActivitySectionForWeek } from "./js/monitor.js";
     import { weekKeyFor } from "./js/activity.js";
     import { listAllRecordsForPerson } from "./js/records.js";
     import { statusLabel, unitKeyLabel } from "./js/unit-keys.js";
@@ -171,6 +179,9 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     const csvBtn = document.getElementById("csvBtn");
     const printBtn = document.getElementById("printBtn");
     const reportBody = document.getElementById("reportBody");
+    const activitySection = document.getElementById("activitySection");
+    const activityPersonName = document.getElementById("activityPersonName");
+    const activityBody = document.getElementById("activityBody");
     const quranStudentName = document.getElementById("quranStudentName");
     const quranBody = document.getElementById("quranBody");
 
@@ -249,6 +260,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
 
       await refreshReport();
       await refreshQuranBreakdown();
+      await refreshStudyActivity();
     }
 
     // ---------------------------------------------------------------------
@@ -337,6 +349,34 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       `;
     }
 
+    // ---------------------------------------------------------------------
+    // MAP v4 Phase 4 (P4-F) -- Study activity this week, weekly view only
+    // (issue #230/#238). Scoped to the single selected student, like the
+    // Quran Approach breakdown below -- the evidence path is per-person, and
+    // "whole roster" is a report-table concept this section doesn't share.
+    // One read per (person, week) opened, never on month view or roster mode.
+    // ---------------------------------------------------------------------
+
+    async function refreshStudyActivity() {
+      if (reportMode !== "week") { activitySection.style.display = "none"; return; }
+      activitySection.style.display = "";
+      const personId = personSelect.value;
+      if (!personId) {
+        activityBody.innerHTML = `<p class="muted">${t("Pick a student first.")}</p>`;
+        activityPersonName.textContent = "";
+        return;
+      }
+      activityPersonName.textContent = personName(personId);
+      activityBody.innerHTML = `<p class="muted">${t("Loading…")}</p>`;
+      try {
+        const { weekKey } = weekRangeLabelFor(weekAnchor.value || toDateInputValue(new Date()));
+        activityBody.innerHTML = await studyActivitySectionForWeek(db, { tenantId: activeTenantId, personId, weekKey });
+      } catch (err) {
+        activityBody.innerHTML = `<p style="color:#9c3b2e;">${t("Couldn't load study activity:")} ${err.code ?? ""} ${err.message}</p>`;
+        console.error(err);
+      }
+    }
+
     function personName(id) { const p = roster.find((r) => r.id === id); return p ? langText(p.name, getAppLang(), id) : id; }
     function subjectName(id) { const n = subjectTree.find((s) => s.id === id); return n ? langText(n.name, getAppLang(), id) : id; }
     function trackableName(id) { const t = trackableList.find((tr) => tr.id === id); return t ? langText(t.name, getAppLang(), id) : (id ?? "—"); }
@@ -346,15 +386,17 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       weekTabBtn.classList.add("active"); monthTabBtn.classList.remove("active");
       weekControls.style.display = ""; monthControls.style.display = "none";
       refreshReport();
+      refreshStudyActivity();
     });
     monthTabBtn.addEventListener("click", () => {
       reportMode = "month";
       monthTabBtn.classList.add("active"); weekTabBtn.classList.remove("active");
       monthControls.style.display = ""; weekControls.style.display = "none";
       refreshReport();
+      refreshStudyActivity();
     });
-    weekAnchor.addEventListener("change", refreshReport);
-    monthAnchor.addEventListener("change", refreshReport);
+    weekAnchor.addEventListener("change", () => { refreshReport(); refreshStudyActivity(); });
+    monthAnchor.addEventListener("change", () => { refreshReport(); refreshStudyActivity(); });
     weekPrevBtn.addEventListener("click", () => { shiftWeek(-7); });
     weekNextBtn.addEventListener("click", () => { shiftWeek(7); });
     monthPrevBtn.addEventListener("click", () => { shiftMonth(-1); });
@@ -365,6 +407,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       d.setUTCDate(d.getUTCDate() + days);
       weekAnchor.value = toDateInputValue(d);
       refreshReport();
+      refreshStudyActivity();
     }
     function shiftMonth(delta) {
       let [y, m] = (monthAnchor.value || new Date().toISOString().slice(0, 7)).split("-").map(Number);
@@ -372,9 +415,10 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       if (m > 12) { m = 1; y++; } if (m < 1) { m = 12; y--; }
       monthAnchor.value = `${y}-${String(m).padStart(2, "0")}`;
       refreshReport();
+      refreshStudyActivity();
     }
 
-    personSelect.addEventListener("change", () => { setSelectedPersonId(personSelect.value); refreshReport(); refreshQuranBreakdown(); });
+    personSelect.addEventListener("change", () => { setSelectedPersonId(personSelect.value); refreshReport(); refreshQuranBreakdown(); refreshStudyActivity(); });
     wholeRoster.addEventListener("change", refreshReport);
 
     csvBtn.addEventListener("click", () => {

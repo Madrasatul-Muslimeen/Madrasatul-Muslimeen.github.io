@@ -158,7 +158,25 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.54 on `main`** (24 Sep 2026 — MAP v4 Phase 6
+**Current milestone: v08.55 on `main`** (24 Sep 2026 — MAP v4 Phase 4
+P4-F: Monitor's weekly view gains a read-only **"Study activity this week"**
+section for the selected student (issues #230/#238), showing the ADR-008
+evidence rows recorded since v08.34 — Reading, Listening, Journaling (both
+Note events collapsed into one kind) and Word-by-Word — through P4-E's
+`listStudyActivityEvidence()`, the first page ever to call it. Units print
+through `unitKeyLabel()`, never a raw key; empty state and truncation note
+included; month view and whole-roster mode do not read it. **ADR-003 kept by
+construction**: plain text only, no link, button or claim/confirm
+affordance, asserted on the rendered markup. `study-activity-evidence-
+boundary.mjs` updated in place with the reason recorded (27 → 28, mutations
+11 → 13): the WRITER invariant is exactly as strict as before; the store's
+importer set widens by exactly `monitor.js`, and a dedicated check pins
+`monitor.js` to the reader alone. New `monitor-study-activity.mjs`, 12/0.
+No Rules/index change — the evidence read rule has been deployed since 22
+Sep. Layout not measured in a real browser; a real-phone look is the
+substitute.)
+
+**Previous milestone: v08.54 on `main`** (24 Sep 2026 — MAP v4 Phase 6
 P6-G: Mapping My Journey's Folders view can now rename, reorder, move and
 remove a person's own folders and reorder the Notes filed in one (issues
 #229 and #234), wired through the five `journey-map-service.js` wrappers

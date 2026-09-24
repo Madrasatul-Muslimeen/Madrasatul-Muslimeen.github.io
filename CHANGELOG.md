@@ -17299,3 +17299,117 @@ before this fix). No new exported function in `note-foundation.js` /
 **v08.54 (24 Sep 2026).** `app/js/version.js`: 08.53 → **08.54** for the P6-G folder-editing round
 above (issues #229 and #234), allocated by the MMSA Architect after an
 independent review that found and sent back the reorder no-op.
+
+---
+
+**MAP v4 Phase 4 (P4-F round 1), 24 Sep 2026 — saved Study activity surfaced
+in Monitor's weekly view (issue #230/#238, PR pending). No version bump in
+this round — the MMSA Architect allocates one at merge, per the Builder
+contract.**
+
+**The gap, verified on `main` at `9050c84` (v08.52) before building**: since
+v08.34 every Reading ✓, every ≥80% Listening and every Word-by-Word session
+has written one real ADR-008 evidence document to
+`activity/{tenant}__{person}__{week}/evidence/`; Journaling (saving a Note)
+has too since v08.47. `listStudyActivityEvidence()` (P4-E) has been able to
+read them back since 17 Sep 2026, and nothing in `app/js` had ever called
+it — the records existed and no screen showed them.
+
+**What was built**: a read-only "Study activity this week" section in
+Monitor's WEEKLY view only (not the monthly report — a real behaviour
+boundary this round drew, since P4-E's read is one document per week by
+construction and a month view would mean one read per week in range),
+scoped to the single selected student exactly like the existing Quran
+Approach breakdown below it. Counts by kind — Reading / Listening /
+Journaling / Word-by-Word, with the two Journaling eventTypes
+(`journal.note-created`/`journal.note-revised`) collapsed into one kind —
+each with the units studied underneath, labelled through `unitKeyLabel()`
+(the app's own existing unit-key reader, e.g. "Ayah 2:255") and never a
+raw stored key, alongside the day. A plain empty state
+("No study activity recorded this week.") when nothing was recorded, and
+an honest note when P4-E's own read cap (`MAX_EVIDENCE_PER_READ`)
+truncated the week. A permission refusal from Firestore Rules is shown in
+words (I15), matching the existing `refreshReport()`/
+`refreshQuranBreakdown()` error-handling shape on the same page, not
+swallowed.
+
+**ADR-003 / Activity ≠ Mastery, kept by construction rather than by
+review**: the whole section's HTML (`studyActivitySectionHtml()`) is
+plain `<h3>`/`<ul>`/`<li>` text — no link, button, status class or
+claim/confirm affordance anywhere in it, proven by a check that greps the
+rendered markup for exactly those forbidden shapes. The section computes
+no status, credits no Approach, and calls nothing in `records.js` or
+`activity.js`.
+
+**The read happens only when the weekly view is opened for a person/week**
+— one read per (person, week), triggered alongside the existing
+`refreshReport()` call at every place that already re-fetches the weekly
+report (tab switch, date navigation, person change, initial load) — never
+on month view (I9: this join is Monitor's own on-first-use load, the same
+tier its existing Quran Approach breakdown already sits at, not the app's
+landing-page startup path).
+
+**`monitor.js` gained one new module boundary, and
+`study-activity-evidence-boundary.mjs` was updated in place, reason
+recorded, never weakened, to hold it**: the writer invariant — every
+page-reachable path to `writeStudyActivityEvidence()` must pass through
+`study-event-wiring.js` — stays exactly as strict as before, with no new
+exception. The importer-set check widens from `[study-event-wiring.js]`
+to `[monitor.js, study-event-wiring.js]`, and the reachability check gains
+exactly ONE named, exact exception for Monitor's own read-only chain
+(`app/monitor.html -> monitor.js -> study-activity-evidence-store.js`,
+proven to actually exist by its own positive control rather than trusted
+by name). A new, dedicated check pins `monitor.js` to importing *only*
+`listStudyActivityEvidence` from the store, never the writer — the
+reachability check alone cannot see this, since a module already
+legitimately reaching the store could still quietly pick up the writer
+too. Two new mutations prove both halves: `monitor.html` importing the
+store directly (bypassing `monitor.js`) is refused by name, and
+`monitor.js` importing the writer alongside its legitimate reader is
+refused by name. `study-activity-evidence-boundary.mjs` 27 → 28 checks;
+`study-activity-evidence-boundary-mutations.mjs` 11 → 13 checks; both
+suites 0 failed.
+
+**New focused suite, `tools/i18n-verify/monitor-study-activity.mjs`
+(12 checks)**, run against the real `app/js/monitor.js` source (its
+Firebase-touching imports rewritten to injected stubs, the same technique
+`study-activity-evidence-store.mjs` already uses — never a copy of the
+file): all four kinds render from seeded evidence with the Journaling
+collapse proven by count, the empty state renders when and only when
+nothing was recorded, truncation gets its own note, the ADR-003 boundary
+check above, and `studyActivitySectionForWeek()` (the fetch+render
+wrapper) is proven to pass `tenantId`/`personId`/`weekKey` through to the
+reader unchanged and to turn its result into the same HTML. One mutation
+sanity-check (breaking the Journaling collapse) confirmed the suite's own
+checks are not vacuous — three of the twelve failed by name, as expected,
+and were reverted.
+
+**`app/js/i18n/bn.js`**: six new keys, all translated ("Study activity
+this week —", the section's own read-only sub-heading, "Couldn't load
+study activity:", the empty state, the truncation note, and a standalone
+"Reading" label) — the Word-by-Word kind label reuses the app's own
+existing "Word by Word" string (issue #206's Explore-wheel toggle) rather
+than a second, differently-spelled string for one idea. **This round
+lands beside P6-G's own bn.js additions (issue #229), disjoint keys, both
+kept in full**, per this round's own instruction.
+
+**No protected path touched**: `app/js/version.js`, `CLAUDE.md`,
+`firestore.rules`, `firebase.json` and `.github/workflows/**` are all
+untouched by this round. No Firestore write, Rule or index change — this
+is a read of an already-authorised collection through P4-E's own
+pre-existing reader.
+
+**Deliberately out of this round's scope, per the issue's own title
+("— start")**: the monthly report gets no equivalent section (a real
+product/cost question — reading N weeks of evidence per person needs its
+own design, not assumed here); no link from the section to any Approach,
+claim or confirm control (ADR-003, see above); layout was not measured in
+a real browser (this sandbox has no Playwright browser binary, the same
+recurring documented gap several other rounds in this file record) — a
+real-phone check at 320/360/390/412px and desktop, both languages, with a
+week containing all four kinds and a long surah name, is the recommended
+substitute.
+
+**v08.55 (24 Sep 2026).** `app/js/version.js`: 08.54 → **08.55** for the
+P4-F Monitor study-activity round above (issues #230/#238), allocated by the
+MMSA Architect after an independent review.
