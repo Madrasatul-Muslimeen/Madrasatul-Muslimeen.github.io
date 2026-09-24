@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="./css/shell.css" />
+<title>QuranRevival — Dawah</title>
+<!-- MAP v4 Phase 7 (P7-B, issue #250) -- a Dawah page's bodyHtml is a frozen
+     copy of a Note's own bodyHtml (ADR-011 §2), so it goes through the same
+     DOMPurify allow-list notes.html/journey-map.html already use before ever
+     touching innerHTML. -->
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 46rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
+  h1 { font-size: 1.4rem; margin-bottom: 0.2rem; }
+  p.intro { color: #555; font-size: 0.94rem; }
+  #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
+  button {
+    font-size: 0.88rem; padding: 0.32rem 0.7rem; border-radius: 0.4rem; border: 1px solid #ccc;
+    background: #1F3A6E; color: white; cursor: pointer;
+  }
+  button.secondary { background: white; color: #1F3A6E; }
+  button.danger { background: white; color: #a3352b; border-color: #d9a49d; }
+  button.tiny { padding: 0.12rem 0.5rem; font-size: 0.8rem; }
+  /* aria-disabled, NOT disabled -- a control that opens and explains itself
+     beats a control that simply refuses to act (this project's own standing
+     lesson). The tap target is identical in both states; nothing shrinks. */
+  button[aria-disabled="true"] { opacity: 0.5; cursor: default; }
+  select { font-size: 0.85rem; padding: 0.3rem 0.4rem; border: 1px solid #ccc; border-radius: 0.35rem; }
+  .note { font-size: 0.88rem; color: #666; }
+  .warn { background: #fff8e6; border: 1px solid #f0d9a0; border-radius: 0.5rem; padding: 0.6rem 0.8rem; font-size: 0.88rem; margin: 0.7rem 0; }
+  #contextBar { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin: 1rem 0; font-size: 0.9rem; }
+  #contextBar label { margin: 0; }
+
+  /* -- the toggle: same shape as journey-map.html's own three-way segmented
+     control -- real tap targets (>=36px) at every phone width. -- */
+  #viewToggle { display: flex; gap: 0.3rem; margin: 1rem 0; flex-wrap: wrap; }
+  .view-toggle-btn {
+    flex: 1 1 8rem; min-height: 36px; padding: 0.4rem 0.5rem; font-size: 0.85rem;
+    border-radius: 999px; border: 1px solid #1F3A6E; background: #fff; color: #1F3A6E;
+  }
+  .view-toggle-btn[aria-pressed="true"] { background: #1F3A6E; color: #fff; }
+
+  #emptyMsg { color: #888; font-size: 0.9rem; margin: 1rem 0; }
+  .status-group-heading { margin: 1.1rem 0 0.3rem; font-size: 0.86rem; font-weight: 600; color: #555; border-bottom: 1px dashed #ddd; padding-bottom: 0.2rem; }
+
+  .page-card { border: 1px solid #ddd; border-radius: 0.6rem; padding: 0.7rem 0.85rem; margin: 0.6rem 0; background: #fff; }
+  .page-card-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .page-card-title { font-weight: 600; font-size: 0.96rem; flex: 1 1 auto; min-width: 8rem; }
+  .page-card-meta { font-size: 0.76rem; color: #888; }
+  .page-status-pill { font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 999px; background: #eef2ff; color: #1F3A6E; }
+  .page-status-pill.status-shared { background: #e5f5ea; color: #1a6b34; }
+  .page-status-pill.status-retired { background: #f2e9e2; color: #7a5230; }
+  .page-status-pill.status-awaiting-approval { background: #fff3d6; color: #8a5a00; }
+  .page-body-preview { margin-top: 0.5rem; font-size: 0.9rem; line-height: 1.4; }
+  .page-body-preview p { margin: 0.3rem 0; }
+  .page-returned-note { margin-top: 0.45rem; font-size: 0.84rem; color: #a3352b; background: #fdf1ef; border: 1px solid #f0c9c2; border-radius: 0.4rem; padding: 0.4rem 0.55rem; }
+  .page-actions { margin-top: 0.5rem; display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  #truncatedMsg { color: #a3352b; font-size: 0.82rem; margin-top: 0.5rem; }
+
+  /* -- Print -- a clean layout, no nav/buttons/chrome. -- */
+  #printArea { display: none; }
+  #printArea .print-body p { margin: 0.4rem 0; }
+  @media print {
+    body * { visibility: hidden; }
+    #printArea, #printArea * { visibility: visible; }
+    #printArea { display: block; position: absolute; top: 0; left: 0; width: 100%; margin: 0; padding: 1rem; }
+    .app-nav, #contextBar, #viewToggle, #gateMsg, #pageStatusMsg, button {
+      display: none !important;
+    }
+  }
+</style>
+</head>
+<body>
+  <h1>Dawah</h1>
+  <p class="intro">Turn one of your own permanent Notes into a printable page — shared inside this Madrasah once it's ready.</p>
+
+  <nav class="app-nav" id="topNav">
+    <details class="nav-cat nav-cat-home">
+      <summary>Home</summary>
+      <div class="nav-cat-links">
+        <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v06 ↗</a>
+        <a href="https://madrasatul-muslimeen.github.io/legacy-v07/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v07 ↗</a>
+        <div id="who">Checking sign-in…</div>
+        <button id="signInBtn" style="display:none;">Sign in with Google</button>
+        <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+        <div id="navHomeExtra"></div>
+      </div>
+    </details>
+    <div id="navBar"></div>
+  </nav>
+
+  <div id="app" style="display:none;">
+    <div id="contextBar">
+      <label>Tenant
+        <select id="tenantSelect" style="width:auto;"></select>
+      </label>
+    </div>
+
+    <div id="gateMsg" class="warn" style="display:none;"></div>
+    <p id="pageStatusMsg" class="note" style="display:none;"></p>
+
+    <div id="viewToggle" role="group" aria-label="View">
+      <button type="button" class="view-toggle-btn" data-view="mine">My pages</button>
+      <button type="button" class="view-toggle-btn" data-view="approvals">Waiting for my approval</button>
+      <button type="button" class="view-toggle-btn" data-view="shared">Madrasah pages</button>
+    </div>
+
+    <div id="viewMine"></div>
+    <div id="viewApprovals" style="display:none;"></div>
+    <div id="viewShared" style="display:none;"></div>
+  </div>
+
+  <div id="printArea"></div>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-init.js";
+    import {
+      GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { doc, getDoc, getDocs, collection, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { TENANT } from "./js/collections.js";
+    import { langText } from "./js/lang.js";
+    import { getAppLang } from "./js/prefs.js";
+    import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
+    import { safeWrite } from "./js/errors.js";
+    import { bootstrapContext, setActiveContext } from "./js/session-context.js";
+    import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
+    import { translateStatic, t } from "./js/i18n.js";
+    import { unitKeyLabel } from "./js/unit-keys.js";
+    import { sanitizeNoteHtml } from "./js/note-sanitize.js";
+    import { DAWAH_STATUS } from "./js/dawah-contract.js";
+    import { isDawahReady } from "./js/dawah-readiness.js";
+    import {
+      listOwnDawahPages, listSharedDawahPages, listDawahPagesAwaitingMyApproval,
+      authorNeedsDawahApproval, submitDawahPageForApproval, shareDawahPage,
+      retireDawahPage, approveDawahPage, returnDawahPageToDraft,
+    } from "./js/dawah-data.js";
+
+    translateStatic();
+
+    // ---------------------------------------------------------------------
+    // No person selector on this screen, deliberately (unlike notes.html /
+    // journey-map.html). Every view here is scoped to the SIGNED-IN person's
+    // own membership -- "My pages" is always "my own pages" (never a
+    // browsable-by-child list: a Dawah page's own draft is that person's
+    // private writing until it is shared), "Waiting for my approval" is
+    // always "pages I personally may act on", and "Madrasah pages" is the
+    // whole tenant's shared list. A multi-tenant login still needs the
+    // tenant selector.
+    // ---------------------------------------------------------------------
+
+    const ROLE_APPROVER_SET = ["guardian", "teacher", "owner", "prime"];
+
+    const whoEl = document.getElementById("who");
+    const signInBtn = document.getElementById("signInBtn");
+    const signOutBtn = document.getElementById("signOutBtn");
+    const appEl = document.getElementById("app");
+    const navBar = document.getElementById("navBar");
+    const navHomeExtra = document.getElementById("navHomeExtra");
+    const tenantSelect = document.getElementById("tenantSelect");
+    const gateMsg = document.getElementById("gateMsg");
+    const pageStatusMsg = document.getElementById("pageStatusMsg");
+    const viewToggle = document.getElementById("viewToggle");
+    const viewMine = document.getElementById("viewMine");
+    const viewApprovals = document.getElementById("viewApprovals");
+    const viewShared = document.getElementById("viewShared");
+    const printArea = document.getElementById("printArea");
+    const approvalsToggleBtn = viewToggle.querySelector('[data-view="approvals"]');
+
+    function escapeHtml(s) {
+      return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function renderNav(roles, viewAsRole) {
+      navBar.innerHTML = renderNavBar(roles, viewAsRole);
+      navHomeExtra.innerHTML = renderHomeExtras(roles);
+      mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid });
+    }
+
+    signInBtn.addEventListener("click", () => {
+      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+        whoEl.textContent = t("Sign-in failed: {message}", { message: err.message });
+      });
+    });
+    signOutBtn.addEventListener("click", () => signOut(auth));
+
+    let activeTenantId = null;
+    let myMemberships = [];
+    let roster = [];
+    let myPersonId = null;
+    let canApprove = false;
+
+    // v08.31/v08.42's own gate shape: a governed declaration, never an
+    // inference -- see js/dawah-readiness.js. Re-read on every refresh
+    // rather than cached once, the same defensive style the study-evidence
+    // gate uses, though in practice it only ever changes across a deploy.
+    let dawahReady = false;
+
+    // The three views, remembered per viewer -- a convenience only, same as
+    // journey-map.html's VIEW_KEY.
+    const VIEW_KEY = "qr.dawahView";
+    let currentView = ["mine", "approvals", "shared"].includes(localStorage.getItem(VIEW_KEY))
+      ? localStorage.getItem(VIEW_KEY) : "mine";
+
+    let myPages = [];
+    let approvalPages = [];
+    let sharedPages = [];
+    let authorNeedsApproval = null; // null until loaded; true/false thereafter
+    let expandedPageIds = new Set();
+
+    function myPersonIdInActiveTenant() {
+      return myMemberships.find((m) => m.tenantId === activeTenantId)?.personId ?? null;
+    }
+
+    function authorLabel(personId) {
+      const person = roster.find((p) => p.id === personId);
+      return person ? langText(person.name, getAppLang(), person.id) : personId;
+    }
+
+    function tenantLabel() {
+      return myMemberships.find((m) => m.tenantId === activeTenantId)?.tenantName ?? activeTenantId;
+    }
+
+    async function loadContextData() {
+      const rosterSnap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId)));
+      roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const roles = myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [];
+      renderNav(roles, null);
+      myPersonId = myPersonIdInActiveTenant();
+      canApprove = roles.some((r) => ROLE_APPROVER_SET.includes(r));
+      approvalsToggleBtn.style.display = canApprove ? "" : "none";
+      if (currentView === "approvals" && !canApprove) currentView = "mine";
+      await refreshAll();
+    }
+
+    tenantSelect.addEventListener("change", async () => {
+      const chosen = myMemberships.find((m) => m.tenantId === tenantSelect.value);
+      if (!chosen) return;
+      activeTenantId = chosen.tenantId;
+      setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
+      renderNav(chosen.roles, null);
+      await loadContextData();
+    });
+
+    // -----------------------------------------------------------------------
+    // The toggle
+    // -----------------------------------------------------------------------
+    function renderToggle() {
+      viewToggle.querySelectorAll(".view-toggle-btn").forEach((btn) => {
+        btn.setAttribute("aria-pressed", String(btn.dataset.view === currentView));
+      });
+      viewMine.style.display = currentView === "mine" ? "block" : "none";
+      viewApprovals.style.display = currentView === "approvals" ? "block" : "none";
+      viewShared.style.display = currentView === "shared" ? "block" : "none";
+    }
+    viewToggle.querySelectorAll(".view-toggle-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        currentView = btn.dataset.view;
+        try { localStorage.setItem(VIEW_KEY, currentView); } catch { /* private browsing -- the choice just doesn't stick */ }
+        renderToggle();
+        renderCurrentView();
+      });
+    });
+
+    function showPageStatus(msg) {
+      pageStatusMsg.textContent = msg;
+      pageStatusMsg.style.display = "block";
+    }
+
+    /** The gate's own sentence -- same wording on every surface that has to say it (I11). */
+    function dawahUnavailableText() {
+      return t("Dawah pages are not switched on yet — waiting for the Madrasah's owner to publish the database rules.");
+    }
+
+    /** Returns true when the gate is open. When it is not, shows the notice and returns false -- the caller's job is then just `return`. No Firestore call is ever made from the closed branch. */
+    function dawahGateOpenOrExplain() {
+      if (dawahReady) return true;
+      showPageStatus(dawahUnavailableText());
+      return false;
+    }
+
+    // -----------------------------------------------------------------------
+    // Loading -- ALL Firestore reads on this screen go through the gate
+    // first (js/dawah-readiness.js). While it is closed, no dawahPages read
+    // is ever attempted -- a reader must never see a permission error from
+    // this feature.
+    // -----------------------------------------------------------------------
+    async function refreshAll() {
+      dawahReady = isDawahReady();
+      gateMsg.style.display = dawahReady ? "none" : "block";
+      if (!dawahReady) gateMsg.textContent = dawahUnavailableText();
+
+      if (!activeTenantId || !myPersonId || !dawahReady) {
+        myPages = []; approvalPages = []; sharedPages = []; authorNeedsApproval = null;
+        renderCurrentView();
+        return;
+      }
+      const tasks = [
+        listOwnDawahPages(db, { tenantId: activeTenantId, authorPersonId: myPersonId }),
+        listSharedDawahPages(db, { tenantId: activeTenantId }),
+        authorNeedsDawahApproval(db, { tenantId: activeTenantId, authorPersonId: myPersonId }),
+        canApprove
+          ? listDawahPagesAwaitingMyApproval(db, { tenantId: activeTenantId, approverPersonId: myPersonId })
+          : Promise.resolve([]),
+      ];
+      const [mine, shared, needsApproval, approvals] = await Promise.all(tasks);
+      myPages = mine; sharedPages = shared; authorNeedsApproval = needsApproval; approvalPages = approvals;
+      renderCurrentView();
+    }
+
+    function renderCurrentView() {
+      renderToggle();
+      if (currentView === "mine") renderMineView();
+      else if (currentView === "approvals") renderApprovalsView();
+      else renderSharedView();
+    }
+
+    // -----------------------------------------------------------------------
+    // Shared: one page's title/status/preview, used by all three views.
+    // -----------------------------------------------------------------------
+    function pageHeadHtml(page) {
+      const title = page.title?.trim() || t("(untitled)");
+      return `<div class="page-card-head" data-page-toggle>
+          <span class="page-card-title">${escapeHtml(title)}</span>
+          <span class="page-status-pill status-${escapeHtml(page.status)}">${statusLabel(page.status)}</span>
+        </div>`;
+    }
+    function statusLabel(status) {
+      switch (status) {
+        case DAWAH_STATUS.DRAFT: return t("Draft");
+        case DAWAH_STATUS.AWAITING_APPROVAL: return t("Awaiting approval");
+        case DAWAH_STATUS.SHARED: return t("Shared");
+        case DAWAH_STATUS.RETIRED: return t("Removed");
+        default: return escapeHtml(status);
+      }
+    }
+    function wirePageToggle(container, pages) {
+      container.querySelectorAll("[data-page-id]").forEach((card) => {
+        const pageId = card.dataset.pageId;
+        const page = pages.find((p) => p.pageId === pageId);
+        if (!page) return;
+        card.querySelector("[data-page-toggle]").addEventListener("click", () => {
+          if (expandedPageIds.has(pageId)) expandedPageIds.delete(pageId); else expandedPageIds.add(pageId);
+          renderCurrentView();
+        });
+        if (expandedPageIds.has(pageId)) {
+          const preview = card.querySelector("[data-page-body]");
+          if (preview) preview.innerHTML = sanitizeNoteHtml(page.bodyHtml || "");
+        }
+      });
+    }
+    function bodyPreviewHtml(page) {
+      if (!expandedPageIds.has(page.pageId)) return "";
+      return `<div class="page-body-preview" data-page-body></div>`;
+    }
+
+    // =====================================================================
+    // MY PAGES -- grouped by status. Share/Send for approval, Remove, Print.
+    // =====================================================================
+    const STATUS_GROUP_ORDER = [DAWAH_STATUS.DRAFT, DAWAH_STATUS.AWAITING_APPROVAL, DAWAH_STATUS.SHARED, DAWAH_STATUS.RETIRED];
+    const STATUS_GROUP_LABEL = {
+      [DAWAH_STATUS.DRAFT]: () => t("Draft"),
+      [DAWAH_STATUS.AWAITING_APPROVAL]: () => t("Awaiting approval"),
+      [DAWAH_STATUS.SHARED]: () => t("Shared"),
+      [DAWAH_STATUS.RETIRED]: () => t("Removed"),
+    };
+
+    function myPageCardHtml(page) {
+      const canRetire = page.status !== DAWAH_STATUS.RETIRED;
+      const canSubmitOrShare = page.status === DAWAH_STATUS.DRAFT;
+      const shareLabel = authorNeedsApproval === true ? t("Send for approval") : t("Share");
+      const returnedNoteHtml = page.status === DAWAH_STATUS.DRAFT && page.returnedNote
+        ? `<div class="page-returned-note">${escapeHtml(t("Returned: {reason}", { reason: page.returnedNote }))}</div>`
+        : "";
+      return `<div class="page-card" data-page-id="${escapeHtml(page.pageId)}">
+        ${pageHeadHtml(page)}
+        ${returnedNoteHtml}
+        ${bodyPreviewHtml(page)}
+        <div class="page-actions">
+          ${canSubmitOrShare ? `<button type="button" class="secondary tiny" data-page-submit aria-disabled="${dawahReady ? "false" : "true"}">${shareLabel}</button>` : ""}
+          ${canRetire ? `<button type="button" class="danger tiny" data-page-retire aria-disabled="${dawahReady ? "false" : "true"}">${t("Remove")}</button>` : ""}
+          <button type="button" class="secondary tiny" data-page-print aria-disabled="${dawahReady ? "false" : "true"}">${t("Print")}</button>
+        </div>
+      </div>`;
+    }
+
+    function renderMineView() {
+      if (myPages.length === 0) {
+        viewMine.innerHTML = `<p id="emptyMsg">${escapeHtml(t("You have no Dawah pages yet — open one of your Notes and choose \"Make a printable page\"."))}</p>`;
+        return;
+      }
+      let html = "";
+      for (const status of STATUS_GROUP_ORDER) {
+        const group = myPages.filter((p) => p.status === status);
+        if (!group.length) continue;
+        html += `<div class="status-group-heading">${escapeHtml(STATUS_GROUP_LABEL[status]())}</div>`;
+        html += group.map(myPageCardHtml).join("");
+      }
+      viewMine.innerHTML = html;
+      wirePageToggle(viewMine, myPages);
+      viewMine.querySelectorAll("[data-page-id]").forEach((card) => {
+        const page = myPages.find((p) => p.pageId === card.dataset.pageId);
+        if (!page) return;
+        card.querySelector("[data-page-submit]")?.addEventListener("click", () => submitOrShare(page));
+        card.querySelector("[data-page-retire]")?.addEventListener("click", () => retirePage(page));
+        card.querySelector("[data-page-print]")?.addEventListener("click", () => printPage(page));
+      });
+    }
+
+    async function submitOrShare(page) {
+      if (!dawahGateOpenOrExplain()) return;
+      const write = authorNeedsApproval === true
+        ? () => submitDawahPageForApproval(db, { tenantId: activeTenantId, pageId: page.pageId, actorUid: auth.currentUser.uid })
+        : () => shareDawahPage(db, { tenantId: activeTenantId, pageId: page.pageId, actorUid: auth.currentUser.uid });
+      const outcome = await safeWrite(write, { collection: TENANT.DAWAH_PAGES, action: authorNeedsApproval === true ? "submitDawahPageForApproval" : "shareDawahPage" });
+      if (!outcome.ok) return;
+      showPageStatus(authorNeedsApproval === true ? t("Sent for approval.") : t("Shared with the Madrasah."));
+      await refreshAll();
+    }
+
+    async function retirePage(page) {
+      if (!dawahGateOpenOrExplain()) return;
+      const title = page.title?.trim() || t("(untitled)");
+      if (!confirm(t('Remove "{title}"? This keeps its full history — nothing is destroyed.', { title }))) return;
+      const outcome = await safeWrite(
+        () => retireDawahPage(db, { tenantId: activeTenantId, pageId: page.pageId, actorUid: auth.currentUser.uid }),
+        { collection: TENANT.DAWAH_PAGES, action: "retireDawahPage" }
+      );
+      if (!outcome.ok) return;
+      showPageStatus(t("Removed."));
+      await refreshAll();
+    }
+
+    // =====================================================================
+    // WAITING FOR MY APPROVAL -- guardian/teacher/owner/prime only. A child
+    // can never approve their own page: hidden here even as defence in depth
+    // (the data layer and the Rules refuse it independently -- ADR-011 §3).
+    // =====================================================================
+    function approvalCardHtml(page) {
+      const canAct = page.authorPersonId !== myPersonId;
+      return `<div class="page-card" data-page-id="${escapeHtml(page.pageId)}">
+        ${pageHeadHtml(page)}
+        <div class="page-card-meta">${escapeHtml(t("By {name}", { name: authorLabel(page.authorPersonId) }))}</div>
+        ${bodyPreviewHtml(page)}
+        <div class="page-actions">
+          ${canAct ? `<button type="button" class="secondary tiny" data-page-approve aria-disabled="${dawahReady ? "false" : "true"}">${t("Approve")}</button>` : ""}
+          ${canAct ? `<button type="button" class="danger tiny" data-page-return aria-disabled="${dawahReady ? "false" : "true"}">${t("Return")}</button>` : ""}
+        </div>
+      </div>`;
+    }
+
+    function renderApprovalsView() {
+      if (!canApprove) { viewApprovals.innerHTML = ""; return; }
+      if (approvalPages.length === 0) {
+        viewApprovals.innerHTML = `<p id="emptyMsg">${escapeHtml(t("Nothing is waiting for your approval."))}</p>`;
+        return;
+      }
+      viewApprovals.innerHTML = approvalPages.map(approvalCardHtml).join("");
+      wirePageToggle(viewApprovals, approvalPages);
+      viewApprovals.querySelectorAll("[data-page-id]").forEach((card) => {
+        const page = approvalPages.find((p) => p.pageId === card.dataset.pageId);
+        if (!page) return;
+        card.querySelector("[data-page-approve]")?.addEventListener("click", () => approvePage(page));
+        card.querySelector("[data-page-return]")?.addEventListener("click", () => returnPage(page));
+      });
+    }
+
+    async function approvePage(page) {
+      if (!dawahGateOpenOrExplain()) return;
+      const outcome = await safeWrite(
+        () => approveDawahPage(db, { tenantId: activeTenantId, pageId: page.pageId, approverPersonId: myPersonId, actorUid: auth.currentUser.uid }),
+        { collection: TENANT.DAWAH_PAGES, action: "approveDawahPage" }
+      );
+      if (!outcome.ok) return;
+      showPageStatus(t("Approved and shared with the Madrasah."));
+      await refreshAll();
+    }
+
+    async function returnPage(page) {
+      if (!dawahGateOpenOrExplain()) return;
+      const reason = prompt(t("Why is this page being returned? This will be shown to its author."));
+      if (reason == null) return;
+      const trimmed = reason.trim();
+      if (!trimmed) { showPageStatus(t("A reason is needed — nothing returned.")); return; }
+      const outcome = await safeWrite(
+        () => returnDawahPageToDraft(db, { tenantId: activeTenantId, pageId: page.pageId, approverPersonId: myPersonId, returnedNote: trimmed, actorUid: auth.currentUser.uid }),
+        { collection: TENANT.DAWAH_PAGES, action: "returnDawahPageToDraft" }
+      );
+      if (!outcome.ok) return;
+      showPageStatus(t("Returned to the author."));
+      await refreshAll();
+    }
+
+    // =====================================================================
+    // MADRASAH PAGES -- the shared list, read-only, with Print.
+    // =====================================================================
+    function sharedCardHtml(page) {
+      return `<div class="page-card" data-page-id="${escapeHtml(page.pageId)}">
+        ${pageHeadHtml(page)}
+        <div class="page-card-meta">${escapeHtml(t("By {name}", { name: authorLabel(page.authorPersonId) }))}</div>
+        ${bodyPreviewHtml(page)}
+        <div class="page-actions">
+          <button type="button" class="secondary tiny" data-page-print aria-disabled="${dawahReady ? "false" : "true"}">${t("Print")}</button>
+        </div>
+      </div>`;
+    }
+    function renderSharedView() {
+      if (sharedPages.length === 0) {
+        viewShared.innerHTML = `<p id="emptyMsg">${escapeHtml(t("No pages have been shared with this Madrasah yet."))}</p>`;
+        return;
+      }
+      viewShared.innerHTML = sharedPages.map(sharedCardHtml).join("");
+      wirePageToggle(viewShared, sharedPages);
+      viewShared.querySelectorAll("[data-page-id]").forEach((card) => {
+        const page = sharedPages.find((p) => p.pageId === card.dataset.pageId);
+        if (!page) return;
+        card.querySelector("[data-page-print]")?.addEventListener("click", () => printPage(page));
+      });
+    }
+
+    // =====================================================================
+    // PRINT -- a clean layout, no nav/buttons/chrome (@media print, above).
+    // Title, body, author, source Study Unit label (if any), Madrasah name.
+    // bodyHtml is rendered ONLY through the shared sanitizer, same as everywhere else on this screen.
+    // =====================================================================
+    function printPage(page) {
+      if (!dawahGateOpenOrExplain()) return;
+      const title = page.title?.trim() || t("(untitled)");
+      const unitLabel = page.sourceUnitKey ? unitKeyLabel(page.sourceUnitKey) : null;
+      printArea.innerHTML = `
+        <h1>${escapeHtml(title)}</h1>
+        <p class="print-meta">${escapeHtml(t("By {name}", { name: authorLabel(page.authorPersonId) }))}</p>
+        ${unitLabel ? `<p class="print-meta">${escapeHtml(unitLabel)}</p>` : ""}
+        <div class="print-body"></div>
+        <p class="print-meta">${escapeHtml(tenantLabel())}</p>
+      `;
+      printArea.querySelector(".print-body").innerHTML = sanitizeNoteHtml(page.bodyHtml || "");
+      window.print();
+    }
+
+    // -----------------------------------------------------------------------
+    // Sign-in / bootstrap -- same shape as notes.html / journey-map.html.
+    // -----------------------------------------------------------------------
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        whoEl.textContent = t("Not signed in.");
+        signInBtn.style.display = "inline-block";
+        signOutBtn.style.display = "none";
+        appEl.style.display = "none";
+        return;
+      }
+      whoEl.textContent = t("Signed in as {email}", { email: user.email });
+      signInBtn.style.display = "none";
+      signOutBtn.style.display = "inline-block";
+
+      try {
+        const userIndexSnap = await getDoc(doc(db, TENANT.USER_INDEX, user.uid));
+        if (adoptAppLangFromUserIndex(userIndexSnap)) return;
+        const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
+        const { context, memberships } = await bootstrapContext(db, user.uid, defaultTenantId);
+        if (!context) {
+          whoEl.innerHTML += noAccountMessageHtml();
+          return;
+        }
+        activeTenantId = context.tenantId;
+        myMemberships = memberships;
+        tenantSelect.innerHTML = myMemberships
+          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${escapeHtml(m.tenantName)}</option>`)
+          .join("");
+
+        appEl.style.display = "block";
+        await loadContextData();
+      } catch (err) {
+        console.error(err);
+        whoEl.textContent += ` — ${err.message}`;
+      }
+    });
+  </script>
+</body>
+</html>

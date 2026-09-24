@@ -2636,4 +2636,39 @@ export const BN = {
   "That Note has already been removed from this folder, so it can't be reordered.":
     "সেই নোটটি ইতিমধ্যে এই ফোল্ডার থেকে সরিয়ে ফেলা হয়েছে, তাই এর ক্রম পরিবর্তন করা যাবে না।",
   "That filing could not be found — please refresh and try again.": "সেই ফাইলিং খুঁজে পাওয়া যায়নি — পাতাটি রিফ্রেশ করে আবার চেষ্টা করুন।",
+
+  // --- MAP v4 Phase 7 (P7-B, issue #250) -- the Dawah printable-pages screen,
+  // and the "Make a printable page" entry point on notes.html. "Dawah" is
+  // kept as the transliterated term (দাওয়াহ) -- an English translation would
+  // lose the specific meaning the Owner's own ADR-011 uses throughout.
+  "Dawah": "দাওয়াহ", // ?
+  "QuranRevival — Dawah": "কুরআনরিভাইভাল — দাওয়াহ", // ?
+  "Turn one of your own permanent Notes into a printable page — shared inside this Madrasah once it's ready.":
+    "আপনার নিজের একটি স্থায়ী নোটকে একটি প্রিন্টযোগ্য পাতায় রূপান্তর করুন — এটি প্রস্তুত হলে এই মাদরাসার ভেতরে শেয়ার করা হবে।",
+  "My pages": "আমার পাতাসমূহ",
+  "Waiting for my approval": "আমার অনুমোদনের অপেক্ষায়",
+  "Madrasah pages": "মাদরাসার পাতাসমূহ",
+  "Dawah pages are not switched on yet — waiting for the Madrasah's owner to publish the database rules.":
+    "দাওয়াহ পাতা এখনো চালু হয়নি — মাদরাসার মালিক ডেটাবেসের নিয়ম প্রকাশ করার অপেক্ষায়।",
+  "Awaiting approval": "অনুমোদনের অপেক্ষায়",
+  "Shared": "শেয়ার করা হয়েছে",
+  "You have no Dawah pages yet — open one of your Notes and choose \"Make a printable page\".":
+    "আপনার এখনো কোনো দাওয়াহ পাতা নেই — আপনার কোনো একটি নোট খুলে \"একটি প্রিন্টযোগ্য পাতা তৈরি করুন\" বেছে নিন।",
+  "Send for approval": "অনুমোদনের জন্য পাঠান",
+  "Returned: {reason}": "ফেরত পাঠানো হয়েছে: {reason}",
+  "Remove \"{title}\"? This keeps its full history — nothing is destroyed.":
+    "\"{title}\" সরিয়ে ফেলবেন? এর সম্পূর্ণ ইতিহাস রক্ষিত থাকবে — কিছুই ধ্বংস করা হয় না।",
+  "Sent for approval.": "অনুমোদনের জন্য পাঠানো হয়েছে।",
+  "Shared with the Madrasah.": "মাদরাসার সাথে শেয়ার করা হয়েছে।",
+  "By {name}": "{name} কর্তৃক",
+  "Approve": "অনুমোদন করুন",
+  "Nothing is waiting for your approval.": "আপনার অনুমোদনের অপেক্ষায় কিছু নেই।",
+  "Why is this page being returned? This will be shown to its author.":
+    "এই পাতাটি কেন ফেরত পাঠানো হচ্ছে? এটি এর লেখককে দেখানো হবে।",
+  "A reason is needed — nothing returned.": "একটি কারণ প্রয়োজন — কিছুই ফেরত পাঠানো হয়নি।",
+  "Approved and shared with the Madrasah.": "অনুমোদিত হয়েছে এবং মাদরাসার সাথে শেয়ার করা হয়েছে।",
+  "Returned to the author.": "লেখকের কাছে ফেরত পাঠানো হয়েছে।",
+  "No pages have been shared with this Madrasah yet.": "এই মাদরাসার সাথে এখনো কোনো পাতা শেয়ার করা হয়নি।",
+  "Make a printable page": "একটি প্রিন্টযোগ্য পাতা তৈরি করুন",
+  "Removed.": "সরিয়ে ফেলা হয়েছে।",
 };

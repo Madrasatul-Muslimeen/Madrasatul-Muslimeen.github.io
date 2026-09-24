@@ -17675,72 +17675,82 @@ their own page) plus the two queries' allow/deny pairs; **eight mutations each
 fail the suite** where three had survived before. Also restored the
 `note-foundation-real-function` npm script the round had replaced.
 
-**Test-only, no version bump (issue #247).** New
-`tools/firestore-emulator/journey-map-real-function.rules.test.mjs` — the same
-proof #242 gave `app/js/note-foundation.js` (real exported functions, not
-hand-authored `setDoc`s, run against the REAL Firestore emulator under the
-REAL Rules), extended to Mapping My Journey's own writers and readers:
-`createNoteFolder`, `createNotePlacement`, `retireNotePlacement`,
-`listNoteFoldersForOwner`, `listNotePlacementsForFolder`/`ForNote` from
-`note-foundation.js`, and `renameFolder`, `reorderFolder`, `moveFolder`,
-`retireFolder`, `reorderFiling`, `moveNoteToFolder`, `folderContents`,
-`noteFilings`, `ownerFolderTree` from `journey-map-service.js`. Both modules
-are loaded with the identical `data:`-URL loader technique
-`note-foundation-real-function.rules.test.mjs` already uses, extended one
-module further — `journey-map-service.js`'s own `"./note-foundation.js"`
-specifier is rewritten to the SAME data URL the suite's direct import uses, so
-both resolve to one module instance rather than two independently-loaded
-copies. Unlike the Phase 5 suite (which still defaults to the Phase 5
-candidate extract), this one defaults `RULES_FILE` to `firestore.rules`
-itself — the `noteFolders`/`notePlacements` Rules have been deployed and live
-since 22 Sep 2026, so "the real Rules" and "the deployed Rules" are the same
-file here. New `journey-map-real-function.firebase.json` on port 8090 (checked
-against every other `*.firebase.json` in the directory; never 8089/8092/8093).
-`journey-map-real-function` added to `package.json`'s `scripts`, every
-existing script left untouched. Cases cover create/rename/reorder/
-re-parent/retire on folders (including the two system folders, created the
-same on-first-need way `app/journey-map.html`'s own `ensureRealFolder()`
-does), create/reorder/move/retire on placements, all six read functions, and
-four Rules-layer denials (a cross-tenant person cannot create a folder or
-placement in another tenant; a co-tenant peer with no guardian/teacher/admin
-standing cannot rename or re-parent someone else's folder). `npm ci` was
-refused by the building sandbox, so the suite could not be executed there —
-written in full per the issue's own fallback instruction, for the Architect to
-run.
+**MAP v4 Phase 7 (P7-B, issue #250) is the Dawah SCREENS, built and GATED --
+what actually changes for a real reader today is nothing.** A new
+readiness gate, `app/js/dawah-readiness.js`, copies
+`study-evidence-readiness.js`/`study-wbw-total-readiness.js`'s shape
+exactly: `ready: false` as a real literal, `decision: null`, and it
+**imports nothing at all**, so it cannot consult `firestore.rules` even by
+accident -- a boundary check proves the absence rather than assuming it.
+Every read and write on the new screens goes through this gate first;
+while it is closed no `dawahPages` Firestore call is ever attempted, every
+action button is `aria-disabled="true"` (never `disabled` -- this
+project's own standing lesson: a control that opens and explains itself
+beats one that is not there), and pressing one says, in English and
+Bangla, "Dawah pages are not switched on yet -- waiting for the Madrasah's
+owner to publish the database rules." A reader can never see a permission
+error from this feature. **The Architect flips this gate after the Owner
+publishes the Rules candidate P7-A already proved; this round does not.**
 
-**v08.58 (24 Sep 2026).** `app/js/version.js`: 08.57 → **08.58**, allocated by
-the MMSA Architect. **A live defect, same class as v08.56: Mapping My Journey
-could not read anyone's folders against the deployed Rules.** The builder's new
-real-function suite (issue #247), run by the Architect, failed at its second
-case. The deployed Note-Foundation rules' `listIsBounded()` refuses any list
-whose `limit` exceeds 100, and two callers asked for more:
+**New page `app/dawah.html`**, three views behind one toggle, no person
+selector (deliberately -- unlike `notes.html`/`journey-map.html`, every
+view here is already scoped to the signed-in person's own membership, not
+a browsable-by-child list): **My pages** (the signed-in person's own
+pages, grouped by status, with Share for an adult or Send for approval
+for a child -- chosen via `authorNeedsDawahApproval()`, never guessed --
+Remove (I4: retire, never delete), Print, and a returned page's own
+`returnedNote` shown in place); **Waiting for my approval** (offered only
+to guardian/teacher/owner/prime -- the toggle button itself is hidden for
+anyone else -- Approve and Return, Return requiring a non-empty reason; a
+child can never approve their own page, checked in the UI as defence in
+depth on top of the data layer's and the Rules' own independent refusals);
+**Madrasah pages** (the shared list, read-only, Print only). **Print** is
+a clean `@media print` layout -- title, body, author's name, the source
+Study Unit label via `unitKeyLabel()` when present, the Madrasah name, no
+nav/buttons/chrome -- rendering `bodyHtml` ONLY through
+`sanitizeNoteHtml()`, the same DOMPurify allow-list `notes.html`/
+`journey-map.html` already use.
 
-1. `listNoteFoldersForOwner()` defaulted to `maximum = 500`. It is the read
-   behind the folder tree `journey-map.html` draws on open, and behind every
-   create-with-parent, move and retire (each reads the tree first to refuse a
-   cycle) — all denied. Now 100, the Rules cap.
-2. `journey-map-service.js`'s `folderContents()`/`noteFilings()` ask for
-   `MAX_PLACEMENTS_PER_READ + 1` to detect truncation, and the constant was 100,
-   so they asked for 101. Now 99, so the probe asks for exactly 100.
+**Entry point from Notes**: each of the viewer's own active Notes gains a
+"Make a printable page" action (gated the same way, same `canEdit`
+condition Edit/Remove already use), calling `createDawahPage()` with that
+Note's CURRENT revision and then opening `dawah.html` on success.
 
-No Rules publish needed. `journey-map-real-function.rules.test.mjs`: **26
-assertions, exit 0**, against the live `firestore.rules`; **fails with the old
-code** (stash proof). Swept every other "+1" and large-limit read: the Activity
-evidence (201) and word-progress (300) collections carry no `listIsBounded()`
-cap, and `notesForStudyUnit()` asks for 31 — all unaffected. The merge of
-current `main` into the builder's branch also kept every existing emulator
-script.
+**Nav**: "Dawah" under Home ▾, wired into `nav.js`'s own
+`renderHomeExtras()` exactly the way `journey-map.html`'s entry was added
+-- one shared file, no per-page static markup, no role restriction beyond
+sign-in.
 
-**Dawah Rules publish package (24 Sep 2026), BR-0, no version bump.**
-`docs/governance/phase7-dawah-DEPLOYMENT-candidate-2026-09-24.rules` is the
-live `firestore.rules` plus the Dawah block, **appended only** (`diff`: 0 lines
-removed, 256 added), using production's own shared helpers rather than the
-extract's copies — the Phase 4-6 assembly's choice. Proven against the
-assembled file, not the extract: `dawah-pages` **65/65**,
-`note-foundation-real-function` **5/5**, `journey-map-real-function`
-**26/26**. `dawah-pages-v1.rules.test.mjs` gained a `RULES_FILE` override (its
-"governs exactly dawahPages" check still runs on the extract). No index needed:
-every Dawah list is equality-only. Owner guide:
-`docs/governance/2026-09-24-dawah-rules-publish-guide.md`. `firestore.rules`
-is untouched; it is synced after the Owner's Console publish with the
-`[already-deployed-manually]` trailer.
+**`tools/i18n-verify/dawah-boundary.mjs` updated in place, reason
+recorded, never weakened**: "no page reaches dawah-contract.js/
+dawah-data.js" was true only because nothing had yet built the screens
+these modules exist for -- P7-B built them, so the claim inverts to the
+STRONGER, NARROWER one: EXACTLY `app/dawah.html` and `app/notes.html`
+reach the guarded modules (now three: the contract, the data layer, and
+the new readiness gate), by any chain of any length, and no other file
+imports them directly. A new section proves every one of `dawah-data.js`'s
+six exported WRITE functions is called on both pages only from behind the
+gate, reading the real page source rather than trusting the pattern.
+**14 → 21 checks, two mutation-proven**: removing `returnPage()`'s own
+gate clause from a real in-memory copy of `dawah.html`'s source is shown
+to surface as an offender; a genuine disposable third page written to
+`app/` and importing `dawah-data.js` is shown to change the reachable
+page set, then removed again in a `finally` block. **New suite
+`tools/i18n-verify/dawah-screen.mjs`, 23/23, pure and static** (no
+Playwright in this sandbox -- the documented, repeated environment gap):
+the three views exist, the gate message exists in both languages, Approve
+and Return are absent for the viewer's own page (mutation-proven), every
+`bodyHtml` render is paired with `sanitizeNoteHtml()`, and the print
+stylesheet hides nav and buttons.
+
+**All required checks re-run clean from the repository root**: the 8
+CI-gated governance suites (`programme-ledger` 8, `programme-ledger-mutations`
+49, `brief-integrity` 8, `study-activity-evidence-boundary` 28 +
+`-mutations` 13, `study-event-wiring` 41, `rules-authorisation-executable`
+40, `workflow-expressions` 12), `dawah-boundary` 21, `dawah-screen` 23,
+`note-sanitize-boundary` 7, `study-note-boundary` 18 -- **228 checks, 0
+failed.** `app/js/version.js`, `CLAUDE.md`, `firestore.rules`,
+`firebase.json`, `.github/workflows/**`, `app/js/note-foundation.js`,
+`app/js/dawah-data.js` and the Rules candidate are all untouched --
+confirmed by the boundary suite reading them directly. No version was
+bumped; the Architect allocates one.

@@ -132,6 +132,15 @@ const ABOUT_LINKS = [{ href: "about.html", label: "About" }];
 // and adding a second, unscoped route to it is not this round's job.
 const JOURNEY_LINKS = [{ href: "journey-map.html", label: "Mapping My Journey" }];
 
+// MAP v4 Phase 7 (P7-B, issue #250): the Dawah printable-pages screen's own
+// entry point. Same reasoning as JOURNEY_LINKS immediately above -- it is a
+// whole-app, whole-person screen (my own pages, whatever's shared with the
+// Madrasah), not a study module with its own subject tree, so it lives under
+// Home rather than Modules. The screen itself stays behind the readiness
+// gate (js/dawah-readiness.js) regardless of this link's own visibility --
+// nothing here depends on whether the Rules are deployed.
+const DAWAH_LINKS = [{ href: "dawah.html", label: "Dawah" }];
+
 // Kept exported for reuse -- the literal link lives in each page's own
 // static Home markup (see quranrevival.html etc.), not in this renderer's
 // output, so it's visible before sign-in resolves same as "who".
@@ -239,8 +248,9 @@ export function renderHomeExtras(roles = []) {
     ? `<div class="nav-cat-group"><div class="nav-cat-group-label">${t("Admin")}</div>${renderLinks(ADMIN_LINKS, currentFile, canAdmin)}</div>`
     : "";
   const journeyHtml = `<div class="nav-cat-group">${renderLinks(JOURNEY_LINKS, currentFile, canAdmin)}</div>`;
+  const dawahHtml = `<div class="nav-cat-group">${renderLinks(DAWAH_LINKS, currentFile, canAdmin)}</div>`;
   const aboutHtml = `<div class="nav-cat-group">${renderLinks(ABOUT_LINKS, currentFile, canAdmin)}</div>`;
-  return adminHtml + journeyHtml + aboutHtml + renderSettings(canAdmin);
+  return adminHtml + journeyHtml + dawahHtml + aboutHtml + renderSettings(canAdmin);
 }
 
 // Shell round 13 (13 Aug 2026) -- Language is a real control now, not the

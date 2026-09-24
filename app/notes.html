@@ -26,6 +26,10 @@
   button.danger { background: white; color: #a3352b; border-color: #d9a49d; }
   button.tiny { padding: 0.12rem 0.5rem; font-size: 0.8rem; }
   button:disabled { opacity: 0.5; cursor: default; }
+  /* MAP v4 Phase 7 (P7-B) -- the "Make a printable page" gate, aria-disabled
+     NOT disabled (a control that opens and explains itself, this project's
+     own standing lesson): same dimmed look as :disabled, still focusable. */
+  button[aria-disabled="true"] { opacity: 0.5; cursor: default; }
   select, input[type="text"] { font-size: 0.85rem; padding: 0.3rem 0.4rem; border: 1px solid #ccc; border-radius: 0.35rem; }
   .note { font-size: 0.88rem; color: #666; }
   .warn { background: #fff8e6; border: 1px solid #f0d9a0; border-radius: 0.5rem; padding: 0.6rem 0.8rem; font-size: 0.88rem; margin: 0.7rem 0; }
@@ -138,6 +142,8 @@
       createStudyNote, reviseStudyNote, retireStudyNote, notesForStudyUnit, recordJournalEvidence,
     } from "./js/study-note-service.js";
     import { NOTE_STATUS, listNoteRevisions } from "./js/note-foundation.js";
+    import { isDawahReady } from "./js/dawah-readiness.js";
+    import { createDawahPage } from "./js/dawah-data.js";
 
     translateStatic();
 
@@ -304,6 +310,7 @@
         <div class="note-actions">
           ${canEdit ? `<button type="button" class="secondary tiny" data-note-edit>${t("Edit")}</button>` : ""}
           <button type="button" class="secondary tiny" data-note-history-toggle>${openHistoryFor.has(note.noteId) ? t("Hide history") : t("Show history")}</button>
+          ${canEdit ? `<button type="button" class="secondary tiny" data-note-dawah aria-disabled="${isDawahReady() ? "false" : "true"}">${t("Make a printable page")}</button>` : ""}
           ${canEdit ? `<button type="button" class="danger tiny" data-note-retire>${t("Remove")}</button>` : ""}
         </div>
         <div class="note-history" data-note-history style="${openHistoryFor.has(note.noteId) ? "" : "display:none"}"></div>
@@ -332,6 +339,7 @@
         if (!row) return;
         card.querySelector("[data-note-body]").innerHTML = noteBodyPreviewHtml(row.note);
         card.querySelector("[data-note-edit]")?.addEventListener("click", () => openEditForm(row.note));
+        card.querySelector("[data-note-dawah]")?.addEventListener("click", () => makeDawahPage(row.note));
         card.querySelector("[data-note-retire]")?.addEventListener("click", () => retireNote(row.note));
         card.querySelector("[data-note-history-toggle]")?.addEventListener("click", async () => {
           const historyEl = card.querySelector("[data-note-history]");
@@ -497,6 +505,31 @@
         editingNoteId = null;
         await refreshView();
       });
+    }
+
+    // -----------------------------------------------------------------------
+    // MAP v4 Phase 7 (P7-B, issue #250) -- "Make a printable page" turns THIS
+    // Note's CURRENT revision into a Dawah page (ADR-011 §2: a frozen copy,
+    // never a live link back to this Note). Gated behind the same readiness
+    // declaration dawah.html itself checks (js/dawah-readiness.js) -- while
+    // it is closed, no Firestore call is attempted at all, the aria-disabled
+    // button says why in words, and nothing here silently fails.
+    // -----------------------------------------------------------------------
+    async function makeDawahPage(note) {
+      if (!isDawahReady()) {
+        showPageStatus(t("Dawah pages are not switched on yet — waiting for the Madrasah's owner to publish the database rules."));
+        return;
+      }
+      const outcome = await safeWrite(
+        () => createDawahPage(db, {
+          tenantId: activeTenantId, authorPersonId: selectedPersonId,
+          sourceNoteId: note.noteId, sourceRevisionId: note.currentRevisionId,
+          actorUid: auth.currentUser.uid,
+        }),
+        { collection: TENANT.DAWAH_PAGES, action: "createDawahPage" }
+      );
+      if (!outcome.ok) return;
+      location.href = "dawah.html";
     }
 
     async function retireNote(note) {

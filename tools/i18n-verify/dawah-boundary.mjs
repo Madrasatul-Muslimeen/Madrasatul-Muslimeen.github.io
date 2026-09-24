@@ -18,6 +18,25 @@
 //      graph from every `app/*.html` page, the same shape
 //      `study-note-boundary.mjs`/`study-approach-contract-boundary.mjs` both
 //      already use for an uninvoked module.
+//
+// UPDATED for P7-B (issue #250), WITH THE REASON RECORDED RATHER THAN THE
+// CHECK WEAKENED. "No page reaches dawah-contract.js/dawah-data.js" was true
+// only because nothing had yet built the screens these modules exist for.
+// P7-B built them (app/dawah.html, and app/notes.html's own "Make a
+// printable page" entry point), so asserting continued unreachability now
+// would be asserting the round's own wiring does not work -- the identical
+// shape study-note-boundary.mjs's own P5-D update, and v08.30's Activity
+// reachability guard, both already inverted for exactly this reason. The
+// three reachability/importer checks below now assert the STRONGER, NARROWER
+// claim instead: EXACTLY app/dawah.html and app/notes.html reach the guarded
+// modules, by any chain of any length, and no other file imports them
+// directly. A new module, js/dawah-readiness.js (the same readiness-gate
+// shape app/js/study-evidence-readiness.js/study-wbw-total-readiness.js
+// already use), is added to the same reachability/purity discipline, and a
+// new section proves every one of dawah-data.js's six exported WRITE
+// functions is called on both pages only from behind that gate -- so a
+// reader can never see a permission error from an undeployed collection,
+// which is the whole reason the gate exists.
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -25,6 +44,7 @@ import process from "node:process";
 import { execFileSync } from "node:child_process";
 
 import { DAWAH_ACTIONS, DAWAH_PAGE_STATUSES, DAWAH_STATUS, dawahTransition } from "../../app/js/dawah-contract.js";
+import { DAWAH_READINESS_DECLARATION, isDawahReady } from "../../app/js/dawah-readiness.js";
 
 const root = path.resolve(process.argv[2] || process.cwd());
 const appDir = path.join(root, "app");
@@ -43,7 +63,8 @@ function check(name, fn) {
   } catch (err) { failed++; console.log(`  FAIL  ${name}\n        ${err.message}`); }
 }
 
-const GUARDED = ["dawah-contract.js", "dawah-data.js"];
+const GUARDED = ["dawah-contract.js", "dawah-data.js", "dawah-readiness.js"];
+const WIRED_PAGES = ["app/dawah.html", "app/notes.html"];
 
 /** A module's CODE, with block comments and whole-line `//` comments removed -- so a forbidden name in a doc comment never counts as a real reference. */
 function codeOf(name) {
@@ -108,17 +129,28 @@ check("POSITIVE CONTROL: the reachability walker really does find a wired module
   assert.ok(control.length > 0, "the walker found no page importing records.js -- it is not working");
 });
 
-check("no page reaches dawah-data.js, by any chain of any length -- it stays unreachable until P7-B", () => {
+// UPDATED for P7-B (issue #250) -- see the header comment above. "Exactly
+// these two pages" is the stronger, narrower claim continued unreachability
+// can no longer make.
+check("EXACTLY app/dawah.html and app/notes.html reach dawah-data.js, by any chain of any length", () => {
   const reachable = chainsToTarget("dawah-data.js");
-  assert.deepEqual(reachable, [], `unexpected reachability for dawah-data.js: ${reachable.join(" | ")}`);
+  const pages = reachable.map((r) => r.split(" -> ")[0]).sort();
+  assert.deepEqual(pages, WIRED_PAGES, `unexpected page(s) reaching dawah-data.js: ${reachable.join(" | ")}`);
 });
 
-check("no page reaches dawah-contract.js, by any chain of any length", () => {
+check("EXACTLY app/dawah.html and app/notes.html reach dawah-contract.js, by any chain of any length", () => {
   const reachable = chainsToTarget("dawah-contract.js");
-  assert.deepEqual(reachable, [], `unexpected reachability for dawah-contract.js: ${reachable.join(" | ")}`);
+  const pages = reachable.map((r) => r.split(" -> ")[0]).sort();
+  assert.deepEqual(pages, WIRED_PAGES, `unexpected page(s) reaching dawah-contract.js: ${reachable.join(" | ")}`);
 });
 
-check("no app source imports either guarded module, by a direct textual scan", () => {
+check("EXACTLY app/dawah.html and app/notes.html reach dawah-readiness.js, by any chain of any length", () => {
+  const reachable = chainsToTarget("dawah-readiness.js");
+  const pages = reachable.map((r) => r.split(" -> ")[0]).sort();
+  assert.deepEqual(pages, WIRED_PAGES, `unexpected page(s) reaching dawah-readiness.js: ${reachable.join(" | ")}`);
+});
+
+check("the only direct importers of the guarded modules are the two wired pages, by a direct textual scan", () => {
   const importers = [];
   for (const file of everyAppSource()) {
     if (GUARDED.some((g) => file.endsWith(path.join("js", g)))) continue;
@@ -131,7 +163,19 @@ check("no app source imports either guarded module, by a direct textual scan", (
       }
     }
   }
-  assert.deepEqual(importers, [], `unexpected importer(s) of the guarded modules: ${JSON.stringify(importers)}`);
+  // notes.html reaches dawah-contract.js only TRANSITIVELY (through
+  // dawah-data.js's own import of it) -- it has no reason to name
+  // dawah-contract.js directly, and doesn't. dawah.html imports all three
+  // guarded modules directly: DAWAH_STATUS for its status groupings/labels,
+  // the gate, and the six write functions plus the three list reads.
+  const expected = [
+    "app/dawah.html -> dawah-contract.js",
+    "app/dawah.html -> dawah-data.js",
+    "app/dawah.html -> dawah-readiness.js",
+    "app/notes.html -> dawah-data.js",
+    "app/notes.html -> dawah-readiness.js",
+  ];
+  assert.deepEqual(importers.sort(), expected.sort(), `unexpected importer set for the guarded modules: ${JSON.stringify(importers)}`);
 });
 
 // --- 2. ADR-005: dawah-data.js DOES NOT IMPORT note-foundation.js AT ALL ----
@@ -139,6 +183,30 @@ check("no app source imports either guarded module, by a direct textual scan", (
 check("dawah-contract.js imports nothing at all -- pure policy, same pattern as journey-map-contract.js", () => {
   const text = fs.readFileSync(path.join(appJs, "dawah-contract.js"), "utf8");
   assert.equal([...text.matchAll(/^\s*import\s/gm)].length, 0);
+});
+
+// P7-B (issue #250) -- the readiness gate copies study-evidence-readiness.js/
+// study-wbw-total-readiness.js's own enforcement-by-inability EXACTLY: it
+// cannot infer readiness from firestore.rules because it cannot read
+// anything at all, and this is what proves that rather than merely asserting it.
+check("dawah-readiness.js imports nothing at all -- it cannot consult firestore.rules even by accident", () => {
+  const text = fs.readFileSync(path.join(appJs, "dawah-readiness.js"), "utf8");
+  assert.equal([...text.matchAll(/^\s*import\s/gm)].length, 0);
+});
+
+check("the readiness declaration defaults to NOT ready, as a real literal, with no decision", () => {
+  // Mirrors study-wbw-total-readiness.js's own guard: a hurried one-word
+  // edit (ready: true with no decision) must not be enough to enable the
+  // feature -- proven by calling the real predicate against the real
+  // declaration, not by reading the source as text.
+  assert.equal(DAWAH_READINESS_DECLARATION.ready, false);
+  assert.equal(DAWAH_READINESS_DECLARATION.decision, null);
+  assert.equal(isDawahReady(), false);
+  assert.equal(isDawahReady({ ready: true, decision: null }), false, "ready:true with no decision must still refuse");
+  assert.equal(isDawahReady({ ready: true, decision: { by: "master-architect", on: "2026-09-24", reference: "x" } }), true,
+    "a genuinely well-formed governed decision must be accepted");
+  assert.equal(isDawahReady({ ready: true, decision: { by: "the-author-itself", on: "2026-09-24", reference: "x" } }), false,
+    "an authority outside the closed set must be refused");
 });
 
 check("dawah-data.js does not import note-foundation.js at all -- ADR-005, the strongest form of the claim", () => {
@@ -215,7 +283,98 @@ check("no transition skips a status ADR-011 does not name -- e.g. no draft -> sh
   assert.equal(dawahTransition("retire", "bogus-status"), null, "an unrecognised status must refuse, not guess");
 });
 
-// --- 4. no Rules/index/version material was touched this round -------------
+// --- 4. EVERY WRITE FUNCTION IS CALLED ONLY BEHIND THE READINESS GATE ------
+// (issue #250, build step 8) -- "No Firestore call is made at all" while the
+// gate is closed is a claim about EVERY call site, not about the gate module
+// existing. Both pages gate every write with the same two markers:
+// dawah.html's own dawahGateOpenOrExplain() (a single "return true when
+// ready, else explain and return false" helper used by every write handler)
+// and notes.html's bare isDawahReady() check inside makeDawahPage(). A write
+// call is identified by its own real call shape (`funcName(db,` -- the same
+// text no import statement can ever contain), and the gate marker must
+// appear somewhere in the WINDOW of source immediately before it -- measured
+// against the actual longest gap this round's own code has (returnPage(),
+// ~360 characters from its own `dawahGateOpenOrExplain()` guard clause to
+// its `returnDawahPageToDraft(db,` call), with real margin on top of that.
+const DAWAH_WRITE_FUNCTIONS = [
+  "createDawahPage", "submitDawahPageForApproval", "approveDawahPage",
+  "returnDawahPageToDraft", "shareDawahPage", "retireDawahPage",
+];
+const GATE_MARKERS = ["isDawahReady()", "dawahGateOpenOrExplain("];
+const GATE_WINDOW = 500;
+
+/** Every write-function call in `text` (identified by its own `funcName(db,` shape) with no readiness-gate marker in the GATE_WINDOW characters immediately before it. Pure -- operates on whatever text it is given, real or mutated. */
+function gatedOffenders(text, label) {
+  const offenders = [];
+  for (const fn of DAWAH_WRITE_FUNCTIONS) {
+    const marker = `${fn}(db,`;
+    let idx = -1;
+    while ((idx = text.indexOf(marker, idx + 1)) !== -1) {
+      const before = text.slice(Math.max(0, idx - GATE_WINDOW), idx);
+      if (!GATE_MARKERS.some((g) => before.includes(g))) {
+        offenders.push(`${label}: ${fn}() call with no readiness gate in the preceding ${GATE_WINDOW} characters`);
+      }
+    }
+  }
+  return offenders;
+}
+
+const dawahHtmlText = fs.readFileSync(path.join(appDir, "dawah.html"), "utf8");
+const notesHtmlText = fs.readFileSync(path.join(appDir, "notes.html"), "utf8");
+
+check("every write function dawah-data.js exports is called only behind the readiness gate, on both pages that reach it", () => {
+  const offenders = [...gatedOffenders(dawahHtmlText, "app/dawah.html"), ...gatedOffenders(notesHtmlText, "app/notes.html")];
+  assert.deepEqual(offenders, [], `ungated write call(s) found: ${offenders.join(" | ")}`);
+});
+
+check("this check is not vacuous -- both pages really do call real write functions", () => {
+  const callsIn = (text) => DAWAH_WRITE_FUNCTIONS.filter((fn) => text.includes(`${fn}(db,`));
+  const dawahCalls = callsIn(dawahHtmlText);
+  const notesCalls = callsIn(notesHtmlText);
+  assert.ok(dawahCalls.length >= 5, `expected app/dawah.html to call most of the six write functions, found: ${dawahCalls.join(", ")}`);
+  assert.deepEqual(notesCalls, ["createDawahPage"], `expected app/notes.html to call exactly createDawahPage(), found: ${notesCalls.join(", ")}`);
+});
+
+// MUTATION-PROVEN #1 (issue #250's own instruction): strip the ONE gate
+// clause guarding returnPage()'s own call -- the real function with the
+// largest measured gap between its guard and its write -- from a real,
+// in-memory copy of dawah.html's own text (never the file on disk), and
+// confirm gatedOffenders() now names it. If this did not fail, the window or
+// the marker search would be too loose to mean anything.
+check("MUTATION-PROVEN: removing returnPage()'s own gate clause makes the check above fail", () => {
+  const marker = 'async function returnPage(page) {\n      if (!dawahGateOpenOrExplain()) return;\n';
+  const at = dawahHtmlText.indexOf(marker);
+  assert.ok(at !== -1, "returnPage()'s own guard clause is not where expected -- the source shape changed");
+  const mutated = dawahHtmlText.slice(0, at)
+    + 'async function returnPage(page) {\n'
+    + dawahHtmlText.slice(at + marker.length);
+  assert.notEqual(mutated, dawahHtmlText, "the mutation did not change the source");
+  const offenders = gatedOffenders(mutated, "app/dawah.html (mutated)");
+  assert.ok(offenders.some((o) => o.includes("returnDawahPageToDraft")),
+    `removing the gate clause did not surface as an offender -- the check is not proving what it claims to: ${JSON.stringify(offenders)}`);
+});
+
+// MUTATION-PROVEN #2: an accidental THIRD page importing dawah-data.js must
+// be caught by the reachability walker, not silently accepted. A real,
+// disposable scratch file is written under app/ (chainsToTarget() reads real
+// files, so this cannot be proven purely in-memory), the walk is re-run
+// against the real, now-three-page repository state, and the file is always
+// removed afterwards even if an assertion throws.
+check("MUTATION-PROVEN: an accidental third importer of dawah-data.js changes the reachable page set", () => {
+  const scratchPath = path.join(appDir, "zz-dawah-mutation-scratch.html");
+  assert.ok(!fs.existsSync(scratchPath), "a stray scratch file from a previous run was not cleaned up");
+  fs.writeFileSync(scratchPath, '<script type="module">import { createDawahPage } from "./js/dawah-data.js";</script>\n');
+  try {
+    const reachable = chainsToTarget("dawah-data.js");
+    const pages = reachable.map((r) => r.split(" -> ")[0]).sort();
+    assert.ok(pages.includes("app/zz-dawah-mutation-scratch.html"), "the walker did not detect the new importer at all");
+    assert.notDeepEqual(pages, WIRED_PAGES, "the reachable page set did not change when a third importer was added -- this check has no bite");
+  } finally {
+    fs.unlinkSync(scratchPath);
+  }
+});
+
+// --- 5. no Rules/index/version material was touched this round -------------
 
 function unchangedSinceMain(relPath) {
   const head = execFileSync("git", ["show", `origin/main:${relPath}`], { cwd: root, encoding: "utf8" });
