@@ -130,12 +130,27 @@ service cloud.firestore {
     // or owner/prime. A CHILD CAN NEVER APPROVE THEIR OWN PAGE, checked
     // first and unconditionally so no later clause can reopen it — the
     // server-side twin of isValidDawahApprover() in dawah-contract.js.
+    //
+    // Written with `let` rather than by calling isGuardianOf()/
+    // isCoEnrolledTeacherOf()/hasRoleIn() (24 Sep 2026): those re-derive
+    // myPersonIdIn() and the member roles on every call, and in the
+    // error-mode first evaluation phase (see the `allow update` note) two
+    // calls of the old form alone exceeded the 1000-expression budget. The
+    // conditions are the same ones, clause for clause: 'x' in myRolesIn()
+    // is exactly hasRoleIn(x), and the guardian/teacher clauses are those
+    // helpers' own bodies with `me` bound once.
     function isDawahApprover(tenantId, authorPersonId) {
-      return signedIn() && myPersonIdIn(tenantId) != null
-          && myPersonIdIn(tenantId) != authorPersonId
-          && ( isGuardianOf(tenantId, authorPersonId)
-               || (isTeacherIn(tenantId) && isCoEnrolledTeacherOf(tenantId, authorPersonId))
-               || isOwnerIn(tenantId) || isPrimeIn(tenantId) );
+      let me = myPersonIdIn(tenantId);
+      let roles = myRolesIn(tenantId);
+      return signedIn() && me != null
+          && me != authorPersonId
+          && ( ('guardian' in roles
+                && exists(tenantPersonRef(authorPersonId))
+                && get(tenantPersonRef(authorPersonId)).data.get('managedByPersonId', null) == me)
+               || ('teacher' in roles
+                   && exists(teacherStudentLinkRef(tenantId, me, authorPersonId))
+                   && get(teacherStudentLinkRef(tenantId, me, authorPersonId)).data.get('active', false) == true)
+               || 'owner' in roles || 'prime' in roles );
     }
 
     function isDawahMinorAuthor(tenantId, authorPersonId) {
@@ -251,7 +266,7 @@ service cloud.firestore {
       allow get: if canReadDawahPage(resource.data.tenantId, resource.data.authorPersonId, resource.data.status);
       allow list: if listIsBounded() && canReadDawahPage(resource.data.tenantId, resource.data.authorPersonId, resource.data.status);
 
-      allow create: if debug(request.resource.data.pageId) != null && dawahPageShapeOk()
+      allow create: if dawahPageShapeOk()
                     && createdByStampedOnCreate()
                     && isDawahAuthor(d().tenantId, d().authorPersonId)
                     && d().status == 'draft'
@@ -263,53 +278,63 @@ service cloud.firestore {
       // ADR-011 §5 — status moves only along the named transitions, each
       // gated on who may perform it and what the write may otherwise touch.
       //
-      // `resource != null` and the cheap identity checks come FIRST (Architect
-      // review, 24 Sep 2026): a setDoc on a page that does not exist is also
-      // evaluated against this update rule, and with the shape check first it
-      // ran the 1000-expression budget out before failing (D-SHAPE-02). Every
-      // named transition CHANGES the status, so a write that leaves it
-      // unchanged is refused before any get()-backed check runs. A refusal
-      // must come from the security logic, never from the budget.
-      allow update: if debug(resource) != null
-                    && d().status != resource.data.status
+      // WHY THE TRANSITIONS ARE GROUPED BY ACTOR (24 Sep 2026, D-SHAPE-02):
+      // Firestore evaluates a write in two phases. In the first, `resource`
+      // and every get()/exists() target are not yet loaded, so any expression
+      // reading them is an ERROR rather than true/false -- and `&&`/`||`
+      // keep evaluating past an error instead of short-circuiting. A setDoc
+      // is an upsert, so the first phase also evaluates this update rule
+      // even for a page that does not exist. With each of the five
+      // transitions calling its own isDawahAuthor()/isDawahApprover(), that
+      // error-mode walk ran through every helper five times and hit the
+      // 1000-expression limit, so a correctly refused write was ALSO being
+      // refused by the budget. (An updateDoc is worse: the merged
+      // request.resource.data is unresolved too, so NOTHING short-circuits.)
+      // The actor check is now made ONCE per actor (author: SUBMIT/SHARE/
+      // RETIRE; approver: APPROVE/RETURN) -- the same conditions, factored
+      // (A&&X || A&&Y == A&&(X||Y)), nothing loosened -- and
+      // isDawahApprover() binds its lookups with `let`.
+      // A refusal must come from the security logic, never from the budget.
+      allow update: if dawahPageShapeOk()
                     && dawahIdentityUnchanged()
                     && createdByFrozen()
-                    && dawahPageShapeOk()
+                    && resource != null
                     && (
-                         // SUBMIT: draft -> awaiting-approval, by the author.
-                         (resource.data.status == 'draft' && d().status == 'awaiting-approval'
-                          && isDawahAuthor(resource.data.tenantId, resource.data.authorPersonId)
-                          && d().diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']))
+                         (isDawahAuthor(resource.data.tenantId, resource.data.authorPersonId)
+                          && (
+                               // SUBMIT: draft -> awaiting-approval, by the author.
+                               (resource.data.status == 'draft' && d().status == 'awaiting-approval'
+                                && d().diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']))
+                               ||
+                               // SHARE (adult, direct): draft -> shared, by the
+                               // author, ONLY when their piece needs no approval.
+                               (resource.data.status == 'draft' && d().status == 'shared'
+                                && !isDawahMinorAuthor(resource.data.tenantId, resource.data.authorPersonId)
+                                && d().diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']))
+                               ||
+                               // RETIRE: any non-retired status -> retired, by the
+                               // author (I4 — archive, never delete).
+                               (resource.data.status != 'retired' && d().status == 'retired'
+                                && d().diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']))
+                             ))
                          ||
-                         // SHARE (adult, direct): draft -> shared, by the
-                         // author, ONLY when their piece needs no approval.
-                         (resource.data.status == 'draft' && d().status == 'shared'
-                          && isDawahAuthor(resource.data.tenantId, resource.data.authorPersonId)
-                          && !isDawahMinorAuthor(resource.data.tenantId, resource.data.authorPersonId)
-                          && d().diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']))
-                         ||
-                         // APPROVE: awaiting-approval -> shared, by a valid
-                         // approver, who must name THEMSELVES as approver.
-                         (resource.data.status == 'awaiting-approval' && d().status == 'shared'
-                          && isDawahApprover(resource.data.tenantId, resource.data.authorPersonId)
-                          && d().approvedByPersonId == myPersonIdIn(resource.data.tenantId)
-                          && d().approvedAt is timestamp
-                          && d().diff(resource.data).affectedKeys().hasOnly(
-                               ['status', 'approvedByPersonId', 'approvedAt', 'updatedAt']))
-                         ||
-                         // RETURN: awaiting-approval -> draft, by a valid
-                         // approver, with a real (non-empty) reason.
-                         (resource.data.status == 'awaiting-approval' && d().status == 'draft'
-                          && isDawahApprover(resource.data.tenantId, resource.data.authorPersonId)
-                          && d().returnedNote is string && d().returnedNote.size() > 0
-                          && d().diff(resource.data).affectedKeys().hasOnly(
-                               ['status', 'returnedNote', 'updatedAt']))
-                         ||
-                         // RETIRE: any non-retired status -> retired, by the
-                         // author (I4 — archive, never delete).
-                         (resource.data.status != 'retired' && d().status == 'retired'
-                          && isDawahAuthor(resource.data.tenantId, resource.data.authorPersonId)
-                          && d().diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']))
+                         (isDawahApprover(resource.data.tenantId, resource.data.authorPersonId)
+                          && (
+                               // APPROVE: awaiting-approval -> shared, by a valid
+                               // approver, who must name THEMSELVES as approver.
+                               (resource.data.status == 'awaiting-approval' && d().status == 'shared'
+                                && d().approvedByPersonId == myPersonIdIn(resource.data.tenantId)
+                                && d().approvedAt is timestamp
+                                && d().diff(resource.data).affectedKeys().hasOnly(
+                                     ['status', 'approvedByPersonId', 'approvedAt', 'updatedAt']))
+                               ||
+                               // RETURN: awaiting-approval -> draft, by a valid
+                               // approver, with a real (non-empty) reason.
+                               (resource.data.status == 'awaiting-approval' && d().status == 'draft'
+                                && d().returnedNote is string && d().returnedNote.size() > 0
+                                && d().diff(resource.data).affectedKeys().hasOnly(
+                                     ['status', 'returnedNote', 'updatedAt']))
+                             ))
                        );
 
       allow delete: if false; // I4/D6 — retire, never destroy.
