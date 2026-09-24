@@ -192,30 +192,75 @@ check("POSITIVE CONTROL: the reachability walker really does find a wired module
 // have placed two invariants side by side without reconciling them.
 const WIRING = "study-event-wiring.js";
 
-check("every page-reachable path to the writer passes THROUGH the wiring module", () => {
+// UPDATED 2026-09-24 for MAP v4 Phase 4 (P4-F, issue #230/#238), WITH THE
+// REASON RECORDED rather than the check weakened. P4-E's own reader,
+// listStudyActivityEvidence(), had been authorised since P4-C and called by
+// nothing -- Monitor is the first page to call it, from monitor.js. That is
+// a READ, not a write: it cannot enlarge what bulkConfirmWeek() confirms,
+// cannot touch entries[], and cannot reach Mastery (Monitor's own boundary is
+// asserted below). So the WRITER invariant stays exactly as strict as
+// before -- every path to the writer must still pass through WIRING, with no
+// exception -- and only the reader gains ONE named, exact exception, proven
+// to exist so the exception itself cannot silently swallow an unrelated
+// defect.
+const READER = "monitor.js";
+const ALLOWED_READER_CHAIN = `app/monitor.html -> ${READER} -> study-activity-evidence-store.js`;
+
+check("every page-reachable path to the writer passes THROUGH the wiring module, with exactly one authorised READ-ONLY exception", () => {
   const chains = GUARDED.flatMap((guarded) => chainsToTarget(guarded));
   // The positive control a negative assertion needs: zero chains would satisfy
   // a naive "no unaudited path" test while meaning the wiring is broken.
   assert.ok(chains.length > 0,
-    "no page reaches the writer at all -- the v08.30 Study wiring is live, so that means it is broken");
-  const unaudited = chains.filter((chain) => !chain.includes(`-> ${WIRING} ->`));
+    "no page reaches the store at all -- the v08.30 Study wiring is live, so that means it is broken");
+  // store.js itself imports study-activity-evidence-id.js (it always has, to
+  // build a write document), so the walker also reports a SECOND, longer
+  // chain for the reader -- "...store.js -> ...id.js" -- which is the same
+  // audited exception one hop further, not a new one. Matched by PREFIX
+  // rather than a second exact string, so it stays exactly as strict about
+  // everything else.
+  const unaudited = chains.filter((chain) => !chain.includes(`-> ${WIRING} ->`)
+    && chain !== ALLOWED_READER_CHAIN
+    && !chain.startsWith(`${ALLOWED_READER_CHAIN} -> `));
   assert.deepEqual(unaudited, [],
-    `a page reaches the writer WITHOUT going through ${WIRING}: ${unaudited.join(" | ")}`);
+    `a page reaches the writer WITHOUT going through ${WIRING} and without being the one authorised reader: ${unaudited.join(" | ")}`);
+  // The exception is an EXACT string (or that string as a prefix), not a
+  // loose pattern -- so this positive control is what stops it from being a
+  // silent escape hatch: if the named chain is not actually the one Monitor
+  // produces (e.g. because monitor.js stopped importing the store, or a
+  // second page started reaching it by the same shape), this fails rather
+  // than the exception quietly covering something else.
+  assert.ok(chains.includes(ALLOWED_READER_CHAIN),
+    `the one authorised reader chain is missing or has changed shape -- re-check this guard: ${chains.join(" | ")}`);
 });
-check("the importer set is EXACTLY the wiring module -- nothing else imports the store", () => {
-  // NARROWED, and the narrowing is the whole of this tranche. Until now this
-  // read `[WIRING, "study-note-service.js"]`: P5-C's service imported the
-  // store directly and was tolerated because it is page-unreachable. That made
-  // "recordStudyEvidence() is the ONE chokepoint" a claim about REACHABILITY,
-  // which expires silently the day somebody wires D3 Journaling. The service
-  // goes through recordStudyEvidence() now, so the list is a list of one and
-  // the claim rests on the code.
+check("the importer set is EXACTLY the wiring module plus Monitor's own reader -- nothing else imports the store", () => {
+  // NARROWED to one, then WIDENED to two, both times with the reason
+  // recorded. Until 15 Sep 2026 this read `[WIRING, "study-note-service.js"]`:
+  // P5-C's service imported the store directly and was tolerated because it
+  // was page-unreachable. That made "recordStudyEvidence() is the ONE
+  // chokepoint" a claim about REACHABILITY, which expired silently the day
+  // somebody wired D3 Journaling -- so the service was routed through
+  // recordStudyEvidence() instead, and the list became a list of one.
   //
-  // A tolerated exception is how a list of one becomes a list of ten. There is
-  // no exception left to add to.
+  // 24 Sep 2026 (P4-F, issue #230/#238): Monitor's weekly view calls P4-E's
+  // own reader, listStudyActivityEvidence() -- the first page to do so. A
+  // READ cannot become a Mastery bypass the way a second WRITER could, so
+  // this is a deliberate widening, not the same "tolerated exception" this
+  // check's own history warns against -- the dedicated check right below
+  // pins monitor.js to the reader alone, so it can never quietly pick up the
+  // writer too.
   const importers = directImportersOf();
-  assert.deepEqual(importers, [WIRING],
-    `the set of modules importing the evidence store has changed -- route it through ${WIRING} instead of widening this list: ${importers.join(", ")}`);
+  assert.deepEqual(importers, [READER, WIRING],
+    `the set of modules importing the evidence store has changed -- route a WRITE through ${WIRING}, a READ through nothing but listStudyActivityEvidence(), instead of widening this list further: ${importers.join(", ")}`);
+});
+check("monitor.js imports ONLY the reader from the evidence store, never the writer", () => {
+  const text = fs.readFileSync(path.join(appJs, READER), "utf8");
+  const importLines = [...text.matchAll(/import\s*\{([^}]+)\}\s*from\s*["'`]\.\/study-activity-evidence-store\.js["'`]/g)];
+  assert.equal(importLines.length, 1, `monitor.js should import from the evidence store exactly once, saw ${importLines.length}`);
+  const named = importLines[0][1].split(",").map((s) => s.trim()).filter(Boolean);
+  assert.deepEqual(named, ["listStudyActivityEvidence"],
+    `monitor.js imports more than the reader from the store: ${named.join(", ")}`);
+  const code = codeOf(READER);
+  assert.ok(!/writeStudyActivityEvidence/.test(code), "monitor.js references the writer");
 });
 // UPDATED 2026-09-22 for P5-D (issue #195), WITH THE REASON RECORDED. This
 // case used to scan RAW text (including comments) for the three forbidden

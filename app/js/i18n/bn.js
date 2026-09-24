@@ -1224,6 +1224,14 @@ export const BN = {
   "Pick a student first.": "আগে একজন শিক্ষার্থী বেছে নিন।",
   "Couldn't load the report:": "প্রতিবেদন লোড করা যায়নি:",
   "Couldn't load the breakdown:": "বিশ্লেষণ লোড করা যায়নি:",
+  // MAP v4 Phase 4 (P4-F, issue #230/#238) -- Study activity this week.
+  "Study activity this week —": "এই সপ্তাহের অধ্যয়ন কার্যক্রম —",
+  "Read-only. This is what was actually studied, never a claim or confirmation — see the Quran Approach breakdown below for status.":
+    "শুধুমাত্র দেখার জন্য। এখানে প্রকৃতপক্ষে যা অধ্যয়ন করা হয়েছে তা দেখানো হয়েছে, কোনো দাবি বা নিশ্চিতকরণ নয় — অবস্থা জানতে নিচের কুরআন পদ্ধতির বিশ্লেষণ দেখুন।",
+  "Couldn't load study activity:": "অধ্যয়ন কার্যক্রম লোড করা যায়নি:",
+  "No study activity recorded this week.": "এই সপ্তাহে কোনো অধ্যয়ন কার্যক্রম লিপিবদ্ধ হয়নি।",
+  "More study activity was recorded this week than is shown here.": "এই সপ্তাহে এখানে দেখানোর চেয়ে বেশি অধ্যয়ন কার্যক্রম লিপিবদ্ধ হয়েছে।",
+  "Reading": "পড়া",
   "Quran Approach breakdown —": "কুরআন পদ্ধতির বিশ্লেষণ —",
   "Current claimed status per Approach, across every ayah/juz/page this student has ever touched — not scoped to the week/month above (this is a status snapshot, not an activity log).":
     "এই শিক্ষার্থী আজ পর্যন্ত যত আয়াত/জুয/পৃষ্ঠা ছুঁয়েছেন, তার সবটিতে প্রতিটি পদ্ধতির বর্তমান দাবিকৃত অবস্থা — উপরের সপ্তাহ/মাসের সীমায় আবদ্ধ নয় (এটি অবস্থার একটি চিত্র, কার্যকলাপের তালিকা নয়)।",
@@ -2592,6 +2600,9 @@ export const BN = {
 
   // P6-G (issue #229) -- folder editing wired into Mapping My Journey:
   // rename, reorder, move, remove a folder, and reorder Notes inside one.
+  // Kept alongside this round's own P4-F additions per #230/#238's own
+  // instruction: "if you conflict [in bn.js] with another round, keep both
+  // sides" -- these two rounds touch disjoint keys, so both are kept whole.
   "A folder needs a name — nothing renamed.": "একটি ফোল্ডারের নাম দরকার — কিছুই নাম পরিবর্তন হয়নি।",
   "Folder renamed to \"{name}\".": "ফোল্ডারের নাম পরিবর্তন করে \"{name}\" করা হয়েছে।",
   "Move folder \"{name}\" under which folder? Type the exact name shown, \"{topLevel}\" for the top level, or cancel.":
