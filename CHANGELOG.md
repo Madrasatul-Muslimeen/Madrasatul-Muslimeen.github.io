@@ -17414,132 +17414,72 @@ substitute.
 P4-F Monitor study-activity round above (issues #230/#238), allocated by the
 MMSA Architect after an independent review.
 
-**Note Foundation: the real write functions proven against the real Rules
-engine, test infrastructure only (24 Sep 2026), issue #242.** No application
-behaviour changed and no version number is needed. Two suites had each ever
-proven half of the Note Foundation write path: `note-foundation-data-layer.mjs`
-calls the REAL `app/js/note-foundation.js` functions but rewrites their
-Firestore import to an in-memory fake with no Rules evaluator behind it, so it
-proves the write SHAPE and nothing about authorisation; `note-foundation-v1.
-rules.test.mjs` runs the real emulator against the real candidate Rules but
-every case hand-authors the write with `setDoc`/`writeBatch`, never calling a
-function from `note-foundation.js` or `envelope.js`. The comment above
-`retirePermanentNote()` records the risk this left open: a real mismatch
-between what that function wrote and what the Rules required was found and
-fixed once already, by reading both sides by eye — no suite caught it.
+**MAP v4 Phase 7 (P7-A), 24 Sep 2026 — Dawah printable-page foundation, no
+version bump.** The Owner's own product decisions the same day (tenant-only
+visibility, a printable page made from a Note, a child's piece needing a
+guardian's or teacher's approval, an adult's not — issue #244) are recorded
+as **ADR-011** (`docs/governance/adr/ADR-011-dawah-printable-pages-v1.md`,
+ACCEPTED), enforceable rather than merely stated. **"Child" and "approver"
+were verified against `firestore.rules` and `app/js/people.js` before being
+written down, per the issue's own instruction to stop rather than invent a
+field if the data could not support the rule — it can**:
+`tenantPeople.isMinor`/`.managedByPersonId` are real, already-written fields;
+the approver set (a minor's own guardian, a co-enrolled teacher, or
+owner/prime) reuses the identical `isGuardianOf()`/`isCoEnrolledTeacherOf()`/
+`isOwnerIn()`/`isPrimeIn()` relationships the deployed Rules already use for
+Notes. Nothing was invented.
 
-New, additive: `tools/firestore-emulator/note-foundation-real-function.rules.
-test.mjs` and its own `note-foundation-real-function.firebase.json` (port
-8089 — 8098, the port the originating issue suggested, had since been taken
-by `wbw-total-counter.firebase.json`; the directory was checked fresh rather
-than trusting the issue's own number). It loads the REAL `app/js/envelope.js`
-and `app/js/note-foundation.js` as `data:` URL modules — same read-source /
-regex-replace / `data:` technique `note-foundation-data-layer.mjs` already
-uses — but rewrites their gstatic Firestore import to the real `firebase/
-firestore` package this workspace depends on (resolved via `import.meta.
-resolve()` from the test file's own location, since a `data:` module has no
-base URL and cannot resolve a bare specifier on its own — confirmed by
-reproducing the exact failure first: "Invalid relative URL or base scheme is
-not hierarchical"), not to a fake. `./collections.js` and `./journey-map-
-contract.js` are resolved to the real files with `pathToFileURL()` (both
-pure, no rewriting needed); `./envelope.js` is rewritten to the `data:` URL
-built for the real envelope module. The whole loader was dry-run structurally
-against a throwaway stub `firebase/firestore` package before being committed
-(the stub is not part of this commit) — confirmed every real export is
-present and `createPermanentNote()` runs its real logic end to end.
+**Two new modules, both uninvoked** (a boundary suite asserts it): a pure
+policy module, `app/js/dawah-contract.js` (closed status vocabulary —
+`draft`/`awaiting-approval`/`shared`/`retired` — the five named transitions,
+the needs-approval rule, and the approver rule, imports nothing at all, same
+enforcement-by-inability pattern as `journey-map-contract.js`), and the data
+layer, `app/js/dawah-data.js`, for one new, additive, unruled collection,
+`dawahPages` (added to `app/js/collections.js`). **ADR-005 ("a Dawah piece is
+derived output and must never overwrite its source Note") is kept the
+strongest way available**: `dawah-data.js` does not import
+`note-foundation.js` at all — not its write functions, not its read
+functions, not even its id helpers — reading `notes`/`noteRevisions`/
+`noteSources` directly, read-only, through its own tiny local helpers. A
+page's `title`/`bodyHtml`/`sourceUnitKey` are a frozen copy taken from a
+pinned Note revision at creation and never looked at again.
 
-Four cases, each calling the real function rather than a hand-typed write:
-`createPermanentNote()` succeeds for the owner including the `source` branch,
-with the resulting `noteSources` document independently read back to prove it
-persisted (mirrors SELF-02); `updatePermanentNoteContent()` succeeds on a
-fresh revision, then is refused with a stale `expectedRevisionId` (mirrors
-TXN-03); `retirePermanentNote()` succeeds for the owner, with the new
-revision's `previousRevisionId` read back to confirm it really chains
-(mirrors IMM-03b — the exact shape the retire-revision fix above depends on);
-a cross-tenant `createPermanentNote()` is refused (mirrors ISO-04). Reuses
-the existing suite's `ok()`/`no()` helper shape, including the check that a
-denial's deciding evaluation is a clean `false`, never an expression-budget
-refusal.
+**A Rules CANDIDATE**, in its own self-contained file
+(`docs/governance/phase7-dawah-pages-rules-candidate-2026-09-24.rules`,
+governing exactly `dawahPages`), enforces tenant isolation, author-only
+create from the author's own Note/revision, the frozen copy provably
+matching the pinned revision's own stored content (checked with `get()`, not
+trusted), the closed transitions, the approver rule (a child can never
+approve their own page, checked first and unconditionally), write-once
+identity (ADR-005), and no delete (I4). **One read-scope trade-off is
+recorded rather than smoothed over**: a Firestore list query fails wholesale
+the moment any one returned document denies the reader, so
+`listDawahPagesAwaitingMyApproval()`'s own query (bounded, tenant+status
+equality only, no new index) cannot be scoped to "documents I may approve" —
+READ for an `awaiting-approval` page is therefore granted to any
+guardian/teacher in the tenant, while WRITE (approve/return) stays narrow to
+the true, specific approver, checked by the data layer before the write and
+again by the Rules candidate itself.
 
-**One case's own denial mechanism is recorded rather than assumed to match
-its namesake.** TXN-03 in the hand-authored suite is refused by the Rules'
-`committedRevisionMatches()`, because that suite's write bypasses the
-function entirely. `updatePermanentNoteContent()` re-reads the Note's live
-`currentRevisionId` inside its own transaction before attempting any write,
-and throws "Stale Note revision." itself the moment that disagrees with the
-caller's `expectedRevisionId` — the same invariant, enforced one layer
-earlier. So the real-function case is refused by the function's own
-optimistic-concurrency guard, never by a Firestore `permission-denied`; there
-is no way to reach the Rules' own staleness check through this function with
-a genuinely stale pointer, because the function never attempts the write.
-What the case still proves is real: refused end-to-end, nothing written —
-asserted by re-reading the Note afterward and confirming it is exactly where
-the prior successful update left it, and that no stray revision document
-exists.
+**A companion emulator suite**
+(`tools/firestore-emulator/dawah-pages-v1.rules.test.mjs`, its own
+`dawah-pages-v1.firebase.json` on port **8092** — 8089 and 8098 already
+taken by other suites) carries roughly 50 assertions, each denial paired
+with an allow differing in one fact, asserting the deciding evaluation was a
+clean `false` rather than an expression-budget refusal. **Written and
+pushed but NOT EXECUTED in this sandbox** — `npm ci`/Firebase emulator
+access were both denied twice, exactly the documented class of sandbox
+limitation this file's own standing lessons already record for `java`/
+`firebase-tools`; it is left for the Architect to run before merge.
 
-**A likely real finding, flagged for the Architect and NOT fixed here** (out
-of this round's declared scope — test infrastructure only, and a Rules change
-is an Owner Control Gate): the `notes` collection's `allow get` in the Phase 5
-candidate is a single clause, `canReadNoteOf(resource.data.tenantId,
-resource.data.ownerPersonId)`, with no guard for a nonexistent document.
-`createPermanentNote()` calls `transaction.get(TENANT.NOTES, noteDocId)`
-*before* the Note exists, to check for a duplicate id. On a nonexistent
-document `resource` is `null`, and `resource.data.tenantId` throws — this
-repository's own `firestore.rules` documents exactly this mechanism in its
-`wordLaneIdentityUnchanged()` comment ("the engine turns that throw into
-false"), and `quranWordProgress`'s own `allow read` carries an explicit
-`!exists(...)` fallback for precisely this reason: "the client reads a lane
-before deciding create-vs-update, and a nonexistent document has no data to
-expose." The Phase 5 `notes` collection's `allow get` has no equivalent
-fallback. If this reading of Firestore's rule semantics holds, `createPermanentNote()`'s
-own pre-existence read would be denied for every caller — meaning case 1 of
-this new suite (`SELF-02-REAL`) would fail the moment it is actually run.
-**Not independently confirmed**: this sandbox's `npm`/`java` invocations both
-require an approval this automated session could not obtain, so neither
-`npm ci` nor the emulator itself could be run here. The suite was written to
-the issue's exact specification regardless, dry-run structurally (module
-loading and rewriting only, against a stub Firestore) rather than against the
-real Rules engine. The "prove it can fail" mutation step (temporarily
-reverting `retirePermanentNote()` to a status-only update, confirming exactly
-case 3 fails, then restoring it) could not be performed for the same reason.
-The Architect runs `npm ci && npm run note-foundation-real-function` from
-`tools/firestore-emulator/` to get a real result.
+**A new boundary suite, `tools/i18n-verify/dawah-boundary.mjs`, 14/14,
+mutation-proven three ways**: a real `note-foundation.js` import, a page
+wired to `dawah-data.js`, and a broken transition table were each tried
+against the real files and each caught by name, then reverted. All 8
+CI-gated governance suites re-run clean from the repository root: 8, 49, 8,
+28, 13, 41, 42, 12 — 201 checks, 0 failed.
 
-**Untouched, as instructed**: `app/js/note-foundation.js`, `app/js/
-envelope.js`, `note-foundation-v1.rules.test.mjs`, `firestore.rules`,
-`firebase.json`, `.github/workflows/**`, `app/js/version.js`.
-
-**v08.56 (24 Sep 2026).** `app/js/version.js`: 08.55 → **08.56**, allocated by
-the MMSA Architect. **A live defect, fixed: creating a Note was refused by the
-deployed Firestore Rules, so the Notes screen (v08.47) could never save one.**
-The builder's suite above is what found it — the Architect's own run of it
-failed at the very first case (`SELF-02-REAL`). Two causes, both in
-`app/js/note-foundation.js`, both fixed in code, **no Rules publish needed**:
-
-1. `createPermanentNote()` and `createNoteSource()` read the document they were
-   about to create, to refuse a duplicate id. The deployed `allow get` evaluates
-   `resource.data.tenantId`; on a document that does not exist `resource` is
-   null, the evaluation errors, and the whole transaction is denied. Both
-   pre-reads are removed — ids are random UUIDs from `newNoteEntityId()`.
-2. The Note's birth-time `noteSources` link was written in the SAME transaction
-   as the Note, but the deployed REL-01 check reads the Note with
-   `exists()`/`get()`, which see the database before the commit. Since
-   `createStudyNote()` always passes a source, every Note `notes.html` creates
-   was refused. The link is now a second commit once the Note exists; a failure
-   there is rethrown, saying the Note itself was saved (I15).
-
-The real-function suite now passes **5/5 against the Phase 5 candidate AND
-against the live `firestore.rules`** (`RULES_FILE=firestore.rules`), and
-**fails with the old `note-foundation.js` restored** (stash proof). Its own
-TXN-03 follow-up read a non-existent revision as the client — the same
-null-`resource` denial — and now asks with rules disabled. 
-`note-foundation-data-layer.mjs` updated in place with the reason recorded: the
-duplicate-id refusal assertion became an assertion that neither create path
-pre-reads its own document; its transaction stub now commits creates into its
-in-memory store (the "stub never mutates its own DATA" trap), and a new case
-proves a failed second commit reaches the caller with the Note saved.
-`study-note-boundary.mjs`/`journey-map-boundary.mjs` each carry one
-"note-foundation.js changed by insertion only versus `origin/main`" check that
-reads red on this branch before merge by construction and clean once `main`
-carries it — verified by the post-merge simulation. No Rules, index,
-`firebase.json` or workflow change.
+**No screen exists yet (P7-B is separate).** `app/js/version.js`,
+`firestore.rules` and `firebase.json` are untouched — confirmed by the
+boundary suite reading them directly rather than assumed. Phase 8
+(Share/Media) is untouched and needs its own decision when it is picked up.
