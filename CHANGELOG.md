@@ -17295,3 +17295,7 @@ the pre-fix file and re-running the suite reproduces the exact failure
 before this fix). No new exported function in `note-foundation.js` /
 `journey-map-service.js`, no protected path touched, no
 `app/js/version.js` bump.
+
+`app/js/version.js`: 08.53 → **08.54** for the P6-G folder-editing round
+above (issues #229 and #234), allocated by the MMSA Architect after an
+independent review that found and sent back the reorder no-op.

@@ -578,4 +578,4 @@
 // all 11 governance suites clean, all five new suites plus all three
 // regression suites re-run matching claimed counts exactly (301 checks
 // total). Allocated by the MMSA Architect.
-export const APP_VERSION = "08.53";
+export const APP_VERSION = "08.54";

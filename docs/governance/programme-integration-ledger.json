@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.53",
+    "version": "08.54",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -413,7 +413,7 @@
     {
       "version": "08.53",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Word-by-Word whole-Qur'an/Juz percentage counter SWITCHED ON (issue #206, built v08.42, PR #209). Governed enablement of app/js/study-wbw-total-readiness.js: ready:true with decision {master-architect, 2026-09-24, docs/reports/2026-09-24-wbw-total-counter-enabled.md}, on the Owner's explicit instruction 'Yes, switch it on' after the Owner's own Rules publish (deployment.wbwTotalRulesDeployed = DONE). The gold ring on the Explore wheel, the Approach/Word-by-Word toggle at the Juz level and the Juz/Quran coverage caption now render; the counter moves only on a genuine countsAsKnown transition. quran-word-total-boundary.mjs's 'standing declaration is NOT ready' check updated in place, reason recorded. No Rules, index or firebase.json change.",
       "integration": {
         "authorizedOn": "2026-09-24",
@@ -421,10 +421,23 @@
         "method": "MERGE_PR",
         "reference": "docs/reports/2026-09-24-wbw-total-counter-enabled.md"
       }
+    },
+    {
+      "version": "08.54",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "MAP v4 Phase 6 (P6-G): folder editing wired into Mapping My Journey (issue #229, built on PR #233's branch) plus its review fix (issue #234): rename, reorder, move and remove a user folder, and reorder Notes inside a folder, all through the five existing journey-map-service.js wrappers; system folders get no controls (ADR-010 §3). The Architect's review of #229 found the up/down reorder was a silent no-op because every folder/filing is created at order 0; fixed with a pure planReorder() that renumbers by display position and writes only what changed, plus nextOrder() at creation. journey-map-boundary.mjs inverted in place (17/0), journey-map-screen.mjs 16 -> 33 checks, the new checks run the old swap as a mutation control. No Rules, index or firebase.json change.",
+      "integration": {
+        "authorizedOn": "2026-09-24",
+        "integratedOn": "2026-09-24",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/issues/234"
+      }
     }
   ],
-  "nextUnallocated": "08.54",
+  "nextUnallocated": "08.55",
   "nextUnallocatedNote": [
+    "v08.54 was allocated to MAP v4 Phase 6 P6-G, folder editing in Mapping My Journey (issues #229/#234), 2026-09-24.",
     "v08.53 was allocated to switching ON the Word-by-Word percentage counter (issue #206), on the Owner's explicit instruction, 2026-09-24.",
     "v08.52 was allocated to the Word Card Mushaf/race-condition/scroll-retarget round (issue #113, PR #139), confirmed merged on 2026-09-23.",
     "v08.51 was allocated to the Health Atlas organ Type pill parity round (issue #115, PR #152), confirmed merged on 2026-09-23.",
