@@ -49,23 +49,28 @@ export const WBW_TOTAL_READINESS_AUTHORITIES = Object.freeze(["master-architect"
 /**
  * THE DECLARATION. This is the single place the answer lives.
  *
- * NOT ENABLED. `quranWordTotals` has no deployed Rules -- the candidate this
- * round writes lives only under docs/governance/, and firestore.rules
- * contains no mention of "quranWordTotals". Nothing in this checkout can
- * observe a Firebase Console deployment, so this stays false until a real
- * governed decision is recorded here, mirroring EVIDENCE_PERSISTENCE_
- * DECLARATION's own shape.
+ * ENABLED, 2026-09-24, under an explicit governed decision -- see
+ * docs/reports/2026-09-24-wbw-total-counter-enabled.md. Both preconditions
+ * are recorded: the Owner published quranWordTotals' Rules in the Firebase
+ * Console on 2026-09-24 (ledger deployment.wbwTotalRulesDeployed = DONE),
+ * and the Owner then instructed, in their own words, "Yes, switch it on",
+ * so they can see and try it. That instruction REPLACES the earlier plan
+ * of waiting for a "it works" confirmation first -- the feature cannot be
+ * tried while it is invisible, which the Owner found by looking for it.
+ * It can be switched off again by restoring ready:false/decision:null.
  */
 export const WBW_TOTAL_PERSISTENCE_DECLARATION = Object.freeze({
-  ready: false,
-  decision: null,
+  ready: true,
+  decision: Object.freeze({
+    by: "master-architect",
+    on: "2026-09-24",
+    reference: "docs/reports/2026-09-24-wbw-total-counter-enabled.md",
+  }),
   gate: "E1",
   note:
-    "quranWordTotals has no deployed Firestore Rules. The candidate is " +
-    "docs/governance/2026-09-23-wbw-total-counter-rules-candidate.rules, " +
-    "not deployed. The ring, the Approach/Word-by-Word toggle, and the " +
-    "Juz/Quran-level coverage caption stay absent until a governed decision " +
-    "is recorded here after a real deployment.",
+    "quranWordTotals Rules are deployed to study-monitoring (Owner-published " +
+    "and confirmed 2026-09-24), and the Owner instructed the counter be " +
+    "switched on the same day so they can try it.",
 });
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;

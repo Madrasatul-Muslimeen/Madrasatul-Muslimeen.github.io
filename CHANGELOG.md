@@ -17111,3 +17111,35 @@ write/Rule/index.
 `app/js/version.js`: 08.51 → **08.52**. Allocated by the MMSA Architect.
 See `docs/governance/programme-integration-ledger.json` for the version
 allocation record.
+
+---
+
+**v08.53 (24 Sep 2026) — the Word-by-Word percentage counter is switched on.**
+Issue #206's counter (built and gated in v08.42, PR #209) had both
+preconditions met on one day: the Owner published the `quranWordTotals`
+Rules in the Firebase Console (synced in `9050c84`), and then, asked by the
+Architect "shall I switch it on now so you can see it and try it?", answered
+"Yes, switch it on". The earlier plan — wait for the Owner to say "it
+works" first — could not be carried out, because the Owner looked for the
+feature and correctly found nothing while it was gated invisible.
+`app/js/study-wbw-total-readiness.js` now reads `ready: true` with
+`decision: { by: "master-architect", on: "2026-09-24", reference:
+"docs/reports/2026-09-24-wbw-total-counter-enabled.md" }`, and the ledger's
+`wbwTotalPersistenceReadiness` block carries the identical decision.
+
+**What a reader sees now:** the gold ring on the Explore wheel (their own
+whole-Qur'an known/total), the Approach / Word-by-Word colouring toggle at
+the Juz level, and the Juz/Quran coverage caption. **Known limit, recorded
+rather than hidden:** every running total starts at 0, and words already
+known before today count only once their state next changes — no backfill
+was performed (that would be a data migration).
+
+`quran-word-total-boundary.mjs`'s "standing declaration is NOT ready" check
+was updated in place, reason recorded: it now asserts the enabled literal,
+that the decision's reference file exists, that code and ledger agree, and
+that the ledger records the Rules as deployed. Every malformed-shape refusal
+(bare flip, empty decision, self-authorising module, unreal date, empty
+reference) is asserted as strictly as before. 25/0. No Rules, index or
+`firebase.json` change.
+
+`app/js/version.js`: 08.52 → **08.53**. Allocated by the MMSA Architect.
