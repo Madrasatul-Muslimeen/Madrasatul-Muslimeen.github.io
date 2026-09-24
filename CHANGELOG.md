@@ -17707,3 +17707,26 @@ standing cannot rename or re-parent someone else's folder). `npm ci` was
 refused by the building sandbox, so the suite could not be executed there —
 written in full per the issue's own fallback instruction, for the Architect to
 run.
+
+**v08.58 (24 Sep 2026).** `app/js/version.js`: 08.57 → **08.58**, allocated by
+the MMSA Architect. **A live defect, same class as v08.56: Mapping My Journey
+could not read anyone's folders against the deployed Rules.** The builder's new
+real-function suite (issue #247), run by the Architect, failed at its second
+case. The deployed Note-Foundation rules' `listIsBounded()` refuses any list
+whose `limit` exceeds 100, and two callers asked for more:
+
+1. `listNoteFoldersForOwner()` defaulted to `maximum = 500`. It is the read
+   behind the folder tree `journey-map.html` draws on open, and behind every
+   create-with-parent, move and retire (each reads the tree first to refuse a
+   cycle) — all denied. Now 100, the Rules cap.
+2. `journey-map-service.js`'s `folderContents()`/`noteFilings()` ask for
+   `MAX_PLACEMENTS_PER_READ + 1` to detect truncation, and the constant was 100,
+   so they asked for 101. Now 99, so the probe asks for exactly 100.
+
+No Rules publish needed. `journey-map-real-function.rules.test.mjs`: **26
+assertions, exit 0**, against the live `firestore.rules`; **fails with the old
+code** (stash proof). Swept every other "+1" and large-limit read: the Activity
+evidence (201) and word-progress (300) collections carry no `listIsBounded()`
+cap, and `notesForStudyUnit()` asks for 31 — all unaffected. The merge of
+current `main` into the builder's branch also kept every existing emulator
+script.

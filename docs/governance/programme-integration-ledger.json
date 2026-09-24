@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.57",
+    "version": "08.58",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -461,7 +461,7 @@
     {
       "version": "08.57",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Owner report 'app takes years to open': two opening splashes played back to back on every open by default (~21s, unskippable). app/js/splash.js: an unset preference now means 'Once a day' (a chosen 'Every time' is kept); a tap anywhere skips an opener; 'never' (written by harness.mjs for the life of the suites) now really suppresses them; 'Tap to skip' hint with Bangla. Root index.html redirects straight to /app/quranrevival.html, one round trip fewer. New splash-skip.mjs, 11 checks, mutation-proven. The ignored mid-stylesheet Google Fonts @import was found and deliberately left alone (moving it would add a download and change the wheel's type).",
       "integration": {
         "authorizedOn": "2026-09-24",
@@ -469,10 +469,23 @@
         "method": "MERGE_PR",
         "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/245"
       }
+    },
+    {
+      "version": "08.58",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Live-defect fix: Mapping My Journey could not read folders or folder contents against the deployed Rules. The deployed listIsBounded() refuses any Note-Foundation list whose limit exceeds 100; listNoteFoldersForOwner() asked for 500 (so the folder tree on open, create-with-parent, move and retire were all denied) and journey-map-service.js asked for MAX_PLACEMENTS_PER_READ + 1 = 101 (so folderContents/noteFilings were denied). Fixed in code, no Rules publish: folder list maximum 100, MAX_PLACEMENTS_PER_READ 99. Found by the builder's new journey-map-real-function.rules.test.mjs (issue #247): 26 assertions through the real functions, passing against the live firestore.rules and failing with the old code.",
+      "integration": {
+        "authorizedOn": "2026-09-24",
+        "integratedOn": "2026-09-24",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/issues/247"
+      }
     }
   ],
-  "nextUnallocated": "08.58",
+  "nextUnallocated": "08.59",
   "nextUnallocatedNote": [
+    "v08.58 was allocated to the Mapping My Journey list-limit live-defect fix (issue #247), 2026-09-24.",
     "v08.57 was allocated to the app-opening speed fix (the two ~21s unskippable opening splashes), on the Owner's report, 2026-09-24.",
     "v08.56 was allocated to the MAP v4 Phase 5 live-defect fix -- Notes could not be created against the deployed Rules (issue #242), 2026-09-24.",
     "v08.55 was allocated to MAP v4 Phase 4 P4-F, Study activity in Monitor's weekly view (issues #230/#238), 2026-09-24.",

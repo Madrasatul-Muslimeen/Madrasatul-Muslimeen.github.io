@@ -158,7 +158,21 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.57 on `main`** (24 Sep 2026 — the Owner's report
+**Current milestone: v08.58 on `main`** (24 Sep 2026 — **a second live
+defect, same class as v08.56: Mapping My Journey could not read folders.** The
+deployed `listIsBounded()` refuses any Note-Foundation list above 100, and
+`listNoteFoldersForOwner()` asked for **500** — so the folder tree on open, and
+every create-with-parent/move/retire that reads it first, was denied — while
+`journey-map-service.js` asked for `MAX_PLACEMENTS_PER_READ + 1` = **101** to
+detect truncation, denying every folder's contents. Fixed in code, no Rules
+publish (100 and 99). Found by the builder's
+`journey-map-real-function.rules.test.mjs` (issue #247): 26/26 against the live
+`firestore.rules`, 0 with the old code. **Lesson: a "fetch one more to detect
+truncation" probe must stay inside the server's own cap — the cap is on the
+number SENT, not the number shown.** Only the Note-Foundation collections carry
+the cap; the evidence (201) and word-progress (300) reads are unaffected.)
+
+**Previous milestone: v08.57 on `main`** (24 Sep 2026 — the Owner's report
 "app takes years to open" MEASURED first: the page is usable in ~0.4s under
 the harness, but **two opening splashes played back to back on every open by
 default — about 21 seconds, with no way past them.** `app/js/splash.js`: an

@@ -24,8 +24,16 @@ import {
 } from "./note-foundation.js";
 import { buildFolderTree, notePlacement } from "./journey-map-contract.js";
 
-/** The most placements one read will resolve. A cap, not an expected cost. */
-export const MAX_PLACEMENTS_PER_READ = 100;
+/**
+ * The most placements one read will resolve. A cap, not an expected cost.
+ *
+ * v08.58 -- was 100. Every read asks for ONE MORE than this to detect
+ * truncation, so it asked for 101, and the deployed Rules' `listIsBounded()`
+ * refuses any list above 100: every folder's contents and every Note's
+ * filings were denied in production. Found by
+ * journey-map-real-function.rules.test.mjs (issue #247). 99 + 1 = the cap.
+ */
+export const MAX_PLACEMENTS_PER_READ = 99;
 
 /**
  * What is in one folder, as `{ rows, truncated }` where each row is
