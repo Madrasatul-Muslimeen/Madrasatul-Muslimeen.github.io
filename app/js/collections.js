@@ -74,6 +74,7 @@ export const TENANT = Object.freeze({
   NOTE_FOLDERS: "noteFolders",
   NOTE_PLACEMENTS: "notePlacements",
   NOTE_REVISIONS: "noteRevisions",
+  DAWAH_PAGES: "dawahPages", // MAP v4 Phase 7 (P7-A): one printable page per (tenant, page), derived from a pinned Note revision (ADR-011). Unruled and uninvoked this round -- see app/js/dawah-contract.js and app/js/dawah-data.js.
   DOMAINS: "domains", // Phase 3 addition (D12): tenant-authored tag registry backing records.entries.domainIds[] — the Architecture doc names the domainIds field but never lists a domains collection. Same "not in the original doc, added to support a named field" shape as D9's tenantMemberUids/inviteTokens. Mirrors ladders: tenant-authored, no platform seed, freeform tags (legacy app's "Domains are optional & user-defined").
 
   // Layer 2.5 — communication
