@@ -58,8 +58,15 @@ export const DAWAH_READINESS_AUTHORITIES = Object.freeze(["master-architect"]);
  * the same two-step shape v08.34/v08.42's own enablement rounds used.
  */
 export const DAWAH_READINESS_DECLARATION = Object.freeze({
-  ready: false,
-  decision: null,
+  // ENABLED 24 Sep 2026 by governed decision: the Owner published the Dawah
+  // Rules ("Dawah rules are live") and firestore.rules is synced to them.
+  // Switch off again by restoring ready:false / decision:null.
+  ready: true,
+  decision: Object.freeze({
+    by: "master-architect",
+    on: "2026-09-24",
+    reference: "docs/reports/2026-09-24-dawah-pages-enabled.md",
+  }),
   gate: "E1",
   note:
     "dawahPages' Rules candidate (docs/governance/" +

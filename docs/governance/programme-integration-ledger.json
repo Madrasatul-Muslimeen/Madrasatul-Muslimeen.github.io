@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.58",
+    "version": "08.59",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -473,7 +473,7 @@
     {
       "version": "08.58",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Live-defect fix: Mapping My Journey could not read folders or folder contents against the deployed Rules. The deployed listIsBounded() refuses any Note-Foundation list whose limit exceeds 100; listNoteFoldersForOwner() asked for 500 (so the folder tree on open, create-with-parent, move and retire were all denied) and journey-map-service.js asked for MAX_PLACEMENTS_PER_READ + 1 = 101 (so folderContents/noteFilings were denied). Fixed in code, no Rules publish: folder list maximum 100, MAX_PLACEMENTS_PER_READ 99. Found by the builder's new journey-map-real-function.rules.test.mjs (issue #247): 26 assertions through the real functions, passing against the live firestore.rules and failing with the old code.",
       "integration": {
         "authorizedOn": "2026-09-24",
@@ -481,10 +481,23 @@
         "method": "MERGE_PR",
         "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/issues/247"
       }
+    },
+    {
+      "version": "08.59",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "MAP v4 Phase 7 (P7-B, issue #250): the Dawah screens -- app/dawah.html (My pages / Waiting for my approval / Madrasah pages, print layout), a 'Make a printable page' action on the viewer's own Notes in notes.html, and a Dawah entry under Home. Gated by app/js/dawah-readiness.js, which this same release ENABLES by governed decision (docs/reports/2026-09-24-dawah-pages-enabled.md) because the Owner had already published the Dawah Rules ('Dawah rules are live'). Verified in a real browser at 360/1100px in both languages with the gate closed (0 dawahPages calls, explanation shown) and open (3 list queries, no errors, no overflow). dawah-boundary 21/0, dawah-screen 23/0. The builder's CHANGELOG edit had overwritten earlier text; restored to main's log plus the P7-B entry only.",
+      "integration": {
+        "authorizedOn": "2026-09-24",
+        "integratedOn": "2026-09-24",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/issues/250"
+      }
     }
   ],
-  "nextUnallocated": "08.59",
+  "nextUnallocated": "08.60",
   "nextUnallocatedNote": [
+    "v08.59 was allocated to MAP v4 Phase 7 P7-B, the Dawah screens, enabled the same day (issue #250), 2026-09-24.",
     "v08.58 was allocated to the Mapping My Journey list-limit live-defect fix (issue #247), 2026-09-24.",
     "v08.57 was allocated to the app-opening speed fix (the two ~21s unskippable opening splashes), on the Owner's report, 2026-09-24.",
     "v08.56 was allocated to the MAP v4 Phase 5 live-defect fix -- Notes could not be created against the deployed Rules (issue #242), 2026-09-24.",

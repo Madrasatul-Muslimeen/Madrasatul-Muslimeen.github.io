@@ -17835,3 +17835,21 @@ failed.** `app/js/version.js`, `CLAUDE.md`, `firestore.rules`,
 `app/js/dawah-data.js` and the Rules candidate are all untouched --
 confirmed by the boundary suite reading them directly. No version was
 bumped; the Architect allocates one.
+
+**v08.59 (24 Sep 2026).** `app/js/version.js`: 08.58 → **08.59**, allocated by
+the MMSA Architect, for P7-B above — **and the Dawah screens are switched on in
+the same release.** The Owner had already published the Dawah Rules ("Dawah
+rules are live"; `firestore.rules` synced byte-for-byte in PR #253), so
+`app/js/dawah-readiness.js` moves to `ready: true` with a governed decision
+(`by: "master-architect", on: "2026-09-24"`,
+`docs/reports/2026-09-24-dawah-pages-enabled.md`). `dawah-boundary.mjs`'s
+"defaults to NOT ready" check updated in place, reason recorded: it now asserts
+the declaration is ready ONLY through a well-formed decision whose reference
+file exists, and every malformed-shape refusal is asserted as before (21/0).
+**Verified in a real browser by the Architect** (the builder's sandbox has no
+Playwright): `app/dawah.html` at 360px and 1100px, English and Bangla — gate
+closed: 0 `dawahPages` calls, the explanation shown; gate open: 3 list queries,
+no page errors, zero overflow. **The builder's own CHANGELOG change had
+overwritten earlier text** (a three-way merge would have silently dropped the
+v08.58 entry, which `brief-integrity.mjs` caught); the log was rebuilt as
+`main`'s plus the P7-B entry only — a pure addition.

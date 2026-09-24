@@ -158,7 +158,25 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.58 on `main`** (24 Sep 2026 — **a second live
+**Current milestone: v08.59 on `main`** (24 Sep 2026 — MAP v4 Phase 7
+**P7-B, the Dawah screens, BUILT AND SWITCHED ON** (issue #250).
+`app/dawah.html`: My pages (Share for an adult / Send for approval for a child,
+via `authorNeedsDawahApproval()`; Remove; Print; a returned page's reason),
+Waiting for my approval (guardian/teacher/owner/prime; Approve/Return; a child
+never approves their own page), Madrasah pages (shared, read-only). Print is a
+clean `@media print` page, `bodyHtml` only through `sanitizeNoteHtml()`.
+`notes.html` gains "Make a printable page"; Home ▾ gains Dawah. The Owner had
+already published the Dawah Rules ("Dawah rules are live"; `firestore.rules`
+synced in PR #253), so `app/js/dawah-readiness.js` is enabled in this same
+release by governed decision (`docs/reports/2026-09-24-dawah-pages-enabled.md`).
+Real browser, 360/1100px, both languages: closed = 0 `dawahPages` calls and the
+explanation shown; open = 3 list queries, no errors, no overflow.
+`dawah-boundary` 21/0 (its readiness check updated in place, reason recorded),
+`dawah-screen` 23/0. **Lesson: the builder's CHANGELOG edit overwrote an
+earlier entry rather than appending** — rebuilt as `main`'s log plus the new
+entry only; check a shared log's diff for deletions, not just additions.)
+
+**Previous milestone: v08.58 on `main`** (24 Sep 2026 — **a second live
 defect, same class as v08.56: Mapping My Journey could not read folders.** The
 deployed `listIsBounded()` refuses any Note-Foundation list above 100, and
 `listNoteFoldersForOwner()` asked for **500** — so the folder tree on open, and

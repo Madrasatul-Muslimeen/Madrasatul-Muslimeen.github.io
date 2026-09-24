@@ -194,14 +194,18 @@ check("dawah-readiness.js imports nothing at all -- it cannot consult firestore.
   assert.equal([...text.matchAll(/^\s*import\s/gm)].length, 0);
 });
 
-check("the readiness declaration defaults to NOT ready, as a real literal, with no decision", () => {
-  // Mirrors study-wbw-total-readiness.js's own guard: a hurried one-word
-  // edit (ready: true with no decision) must not be enough to enable the
-  // feature -- proven by calling the real predicate against the real
-  // declaration, not by reading the source as text.
-  assert.equal(DAWAH_READINESS_DECLARATION.ready, false);
-  assert.equal(DAWAH_READINESS_DECLARATION.decision, null);
-  assert.equal(isDawahReady(), false);
+// UPDATED IN PLACE, 24 Sep 2026: the declaration was ENABLED by a governed
+// decision after the Owner published the Dawah Rules. Only the assertion
+// about the REAL file's CURRENT state changed (it is ready, and ready ONLY
+// through a well-formed decision whose reference file exists); every
+// malformed-shape refusal below is asserted exactly as strictly as before.
+check("the readiness declaration is enabled ONLY through a governed decision naming a real record", () => {
+  assert.equal(DAWAH_READINESS_DECLARATION.ready, true);
+  const dec = DAWAH_READINESS_DECLARATION.decision;
+  assert.ok(dec && dec.by === "master-architect" && /^\d{4}-\d{2}-\d{2}$/.test(dec.on), "decision must name the authority and a real date");
+  assert.ok(fs.existsSync(path.join(root, dec.reference)), `the decision's reference ${dec.reference} does not exist`);
+  assert.equal(isDawahReady(), true);
+  assert.equal(isDawahReady({ ...DAWAH_READINESS_DECLARATION, decision: null }), false, "the same ready:true without its decision must refuse");
   assert.equal(isDawahReady({ ready: true, decision: null }), false, "ready:true with no decision must still refuse");
   assert.equal(isDawahReady({ ready: true, decision: { by: "master-architect", on: "2026-09-24", reference: "x" } }), true,
     "a genuinely well-formed governed decision must be accepted");
