@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.59",
+    "version": "08.60",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -485,7 +485,7 @@
     {
       "version": "08.59",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "MAP v4 Phase 7 (P7-B, issue #250): the Dawah screens -- app/dawah.html (My pages / Waiting for my approval / Madrasah pages, print layout), a 'Make a printable page' action on the viewer's own Notes in notes.html, and a Dawah entry under Home. Gated by app/js/dawah-readiness.js, which this same release ENABLES by governed decision (docs/reports/2026-09-24-dawah-pages-enabled.md) because the Owner had already published the Dawah Rules ('Dawah rules are live'). Verified in a real browser at 360/1100px in both languages with the gate closed (0 dawahPages calls, explanation shown) and open (3 list queries, no errors, no overflow). dawah-boundary 21/0, dawah-screen 23/0. The builder's CHANGELOG edit had overwritten earlier text; restored to main's log plus the P7-B entry only.",
       "integration": {
         "authorizedOn": "2026-09-24",
@@ -493,10 +493,23 @@
         "method": "MERGE_PR",
         "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/issues/250"
       }
+    },
+    {
+      "version": "08.60",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "'Page by page' reading: the last line of a long ayah could not be scrolled fully into view. body.read-sideways #studyScreen had height:100% on a content-box with 1rem padding, a border and a 0.5rem top margin, so it was 42px taller than #readScroll (overflow hidden in this mode) and the bottom ~10px of the final line was unreachable -- measured on 2:282 at 320/360/390/768/1280px, both languages. Fixed with border-box and height:calc(100% - 0.5rem) (100% in immersive mode): the last line now clears the edge by ~32px everywhere. This is the residue of the scroll trap draft PR #37 reported on 31 Aug 2026; the severe form had already been fixed on main by a different route (#ayahPanels scrolls). New read-sideways-last-line.mjs, 24 checks, fails 12 with the old CSS. PR #37 closed as superseded on the Owner's instruction after this check.",
+      "integration": {
+        "authorizedOn": "2026-09-24",
+        "integratedOn": "2026-09-24",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/37"
+      }
     }
   ],
-  "nextUnallocated": "08.60",
+  "nextUnallocated": "08.61",
   "nextUnallocatedNote": [
+    "v08.60 was allocated to the Page-by-page last-line scroll fix (the residue of draft PR #37), 2026-09-24.",
     "v08.59 was allocated to MAP v4 Phase 7 P7-B, the Dawah screens, enabled the same day (issue #250), 2026-09-24.",
     "v08.58 was allocated to the Mapping My Journey list-limit live-defect fix (issue #247), 2026-09-24.",
     "v08.57 was allocated to the app-opening speed fix (the two ~21s unskippable opening splashes), on the Owner's report, 2026-09-24.",

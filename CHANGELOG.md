@@ -17853,3 +17853,21 @@ no page errors, zero overflow. **The builder's own CHANGELOG change had
 overwritten earlier text** (a three-way merge would have silently dropped the
 v08.58 entry, which `brief-integrity.mjs` caught); the log was rebuilt as
 `main`'s plus the P7-B entry only — a pure addition.
+
+**v08.60 (24 Sep 2026).** `app/js/version.js`: 08.59 → **08.60**, allocated by
+the MMSA Architect. **"Page by page" reading: the last line of a long āyah can
+now be scrolled fully into view.** The Owner asked to check whether old draft
+PR #37's "content trapped, can't scroll" defect still happens before closing
+it. Measured on current `main` with 2:282, the longest āyah: **the severe form
+is gone** — `#ayahPanels` now scrolls in this mode — **but a residue was
+real**. `body.read-sideways #readScroll` hides its overflow, and
+`#studyScreen`'s `height: 100%` sat on a content-box with 1rem padding, a
+border and a 0.5rem top margin, making it **42px taller than its container**:
+the bottom **~10px of the final line** was below the visible edge at every
+width (320–1280px), both languages, every full-screen step. Fixed in CSS only —
+`box-sizing: border-box; height: calc(100% - 0.5rem)`, and `100%` in immersive
+mode where the margin is 0. The last line now clears the edge by ~32px
+everywhere, `#readScroll` has zero overflow, and there is no horizontal
+overflow. New `tools/i18n-verify/read-sideways-last-line.mjs`: **24/0**, with a
+positive control that "Page by page" is really on; **the old CSS fails all 12
+reachability checks**. PR #37 closed as superseded.
