@@ -251,7 +251,7 @@ service cloud.firestore {
       allow get: if canReadDawahPage(resource.data.tenantId, resource.data.authorPersonId, resource.data.status);
       allow list: if listIsBounded() && canReadDawahPage(resource.data.tenantId, resource.data.authorPersonId, resource.data.status);
 
-      allow create: if dawahPageShapeOk()
+      allow create: if debug(request.resource.data.pageId) != null && dawahPageShapeOk()
                     && createdByStampedOnCreate()
                     && isDawahAuthor(d().tenantId, d().authorPersonId)
                     && d().status == 'draft'
@@ -262,10 +262,19 @@ service cloud.firestore {
 
       // ADR-011 §5 — status moves only along the named transitions, each
       // gated on who may perform it and what the write may otherwise touch.
-      allow update: if dawahPageShapeOk()
+      //
+      // `resource != null` and the cheap identity checks come FIRST (Architect
+      // review, 24 Sep 2026): a setDoc on a page that does not exist is also
+      // evaluated against this update rule, and with the shape check first it
+      // ran the 1000-expression budget out before failing (D-SHAPE-02). Every
+      // named transition CHANGES the status, so a write that leaves it
+      // unchanged is refused before any get()-backed check runs. A refusal
+      // must come from the security logic, never from the budget.
+      allow update: if debug(resource) != null
+                    && d().status != resource.data.status
                     && dawahIdentityUnchanged()
                     && createdByFrozen()
-                    && resource != null
+                    && dawahPageShapeOk()
                     && (
                          // SUBMIT: draft -> awaiting-approval, by the author.
                          (resource.data.status == 'draft' && d().status == 'awaiting-approval'
