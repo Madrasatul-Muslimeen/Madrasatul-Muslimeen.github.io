@@ -17721,6 +17721,31 @@ Note's CURRENT revision and then opening `dawah.html` on success.
 -- one shared file, no per-page static markup, no role restriction beyond
 sign-in.
 
+**Dawah Rules publish package (24 Sep 2026), BR-0, no version bump.**
+`docs/governance/phase7-dawah-DEPLOYMENT-candidate-2026-09-24.rules` is the
+live `firestore.rules` plus the Dawah block, **appended only** (`diff`: 0 lines
+removed, 256 added), using production's own shared helpers rather than the
+extract's copies — the Phase 4-6 assembly's choice. Proven against the
+assembled file, not the extract: `dawah-pages` **65/65**,
+`note-foundation-real-function` **5/5**, `journey-map-real-function`
+**26/26**. `dawah-pages-v1.rules.test.mjs` gained a `RULES_FILE` override (its
+"governs exactly dawahPages" check still runs on the extract). No index needed:
+every Dawah list is equality-only. Owner guide:
+`docs/governance/2026-09-24-dawah-rules-publish-guide.md`. `firestore.rules`
+is untouched; it is synced after the Owner's Console publish with the
+`[already-deployed-manually]` trailer.
+
+**Dawah Rules published (24 Sep 2026), BR-0, no version bump.** The Owner
+published `docs/governance/phase7-dawah-DEPLOYMENT-candidate-2026-09-24.rules`
+in the Firebase Console: *"Dawah rules are live."* `firestore.rules` is synced
+to it byte-for-byte (256 lines appended, 0 removed) with the
+`[already-deployed-manually]` trailer so the approval-gated deploy workflow does
+not ask the Owner to approve what is already live. `dawah-boundary.mjs`'s "no
+dawahPages in firestore.rules" check was updated in place with the reason
+recorded: it now asserts `firestore.rules` IS the published file (mutation:
+one extra line fails it). The ledger records `DAWAH-RULES` as deployed. The
+screens (P7-B, issue #250) remain gated until a governed decision opens them.
+
 **`tools/i18n-verify/dawah-boundary.mjs` updated in place, reason
 recorded, never weakened**: "no page reaches dawah-contract.js/
 dawah-data.js" was true only because nothing had yet built the screens

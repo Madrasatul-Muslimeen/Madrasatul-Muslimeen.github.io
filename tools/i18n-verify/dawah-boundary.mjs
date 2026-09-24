@@ -386,9 +386,16 @@ check("app/js/version.js is untouched -- no version bump from this round", () =>
   unchangedSinceMain("app/js/version.js");
 });
 
-check("firestore.rules and firebase.json carry no dawahPages material -- nothing was deployed", () => {
+// UPDATED IN PLACE, 24 Sep 2026. This check used to assert firestore.rules
+// named no dawahPages at all -- true until the Owner published the Dawah
+// Rules in the Firebase Console the same day ("Dawah rules are live"). It now
+// asserts the repository copy is BYTE-IDENTICAL to the audited, append-only
+// deployment file the Owner was given, so nothing else can ride in with it.
+// firebase.json still carries no Dawah material (no index was needed).
+check("firestore.rules is exactly the published Dawah deployment file, and firebase.json is unchanged", () => {
   const rules = fs.readFileSync(path.join(root, "firestore.rules"), "utf8");
-  assert.ok(!rules.includes("dawahPages"), "firestore.rules already names dawahPages -- deployment record is stale, or this round leaked into it");
+  const published = fs.readFileSync(path.join(root, "docs/governance/phase7-dawah-DEPLOYMENT-candidate-2026-09-24.rules"), "utf8");
+  assert.equal(rules, published, "firestore.rules differs from the Dawah deployment file the Owner published");
   unchangedSinceMain("firebase.json");
 });
 
