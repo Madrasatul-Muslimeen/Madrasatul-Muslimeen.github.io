@@ -1055,11 +1055,11 @@
         "state in this file, ready for a guard extension if this collection's",
         "own readiness is ever governed-enabled."
       ],
-      "state": "NOT_DONE",
-      "means": "quranWordTotals (issue #206, PR #209, v08.42) has no deployed Firestore Rules. The candidate is docs/governance/2026-09-23-wbw-total-counter-rules-candidate.rules, not deployed. app/js/study-wbw-total-readiness.js gates the app so nothing here is attempted against production until this flips to DONE and a governed enablement decision is recorded in wbwTotalPersistenceReadiness below.",
-      "firestoreRules": "NOT_DONE",
+      "state": "DONE",
+      "means": "quranWordTotals (issue #206, PR #209, v08.42) has DEPLOYED Firestore Rules as of 2026-09-24 -- the Owner published docs/governance/2026-09-24-wbw-total-counter-DEPLOYMENT-candidate.rules (the full live ruleset plus this one collection's block, assembled and 27-assertion emulator-verified by the Architect in PR #227) in the Firebase Console and confirmed it directly (\"Rules are published for the word counter\"). firestore.rules was synced to match in the same session, commit carrying [already-deployed-manually] so the approval-gated auto-deploy workflow does not ask for a redundant re-approval. THIS IS STEP ONE OF TWO ONLY: app/js/study-wbw-total-readiness.js still gates the app so nothing on screen changes -- see wbwTotalPersistenceReadiness below, which stays ready:false until a SEPARATE governed decision is made after the Owner confirms the feature actually works, mirroring v08.34's Activity-evidence ceremony exactly.",
+      "firestoreRules": "DONE",
       "firestoreIndexes": "NOT_APPLICABLE",
-      "evidence": "firestore.rules carries no mention of quranWordTotals (grepped, zero occurrences). The candidate's own comment states it is a self-contained extract, never merged into the live ruleset, and that the collection needs no composite index (queried only by its own document id)."
+      "evidence": "firestore.rules now contains the quranWordTotals match block and its two new helper functions (grepped, confirmed present) -- byte-identical to the deployed candidate's own block, verified by diff. This collection needs no composite index (queried only by its own document id), so firestoreIndexes stays NOT_APPLICABLE rather than DONE."
     }
   },
   "programme": {
@@ -1166,7 +1166,7 @@
     "ready": false,
     "decision": null,
     "gate": "E1",
-    "note": "quranWordTotals has no deployed Firestore Rules. The candidate is docs/governance/2026-09-23-wbw-total-counter-rules-candidate.rules, not deployed. The ring, the Approach/Word-by-Word toggle, and the Juz/Quran-level coverage caption stay absent until deployment.wbwTotalRulesDeployed.state = DONE (proven by an actual deployment) AND a governed decision is recorded here, mirroring exactly how v08.34 turned on Activity evidence.",
+    "note": "ONE OF TWO preconditions is now met: deployment.wbwTotalRulesDeployed.state = DONE as of 2026-09-24 (the Owner published and confirmed the Rules in the Firebase Console). This block still carries ready:false and decision:null, deliberately -- flipping it needs the SECOND precondition, a real governed decision made only after the Owner has actually tried the feature and confirmed it works, the same two-message shape v08.34 required for Activity evidence (\"It worked\" is a separate message from \"Rules are published\"). The ring, the Approach/Word-by-Word toggle, and the Juz/Quran-level coverage caption stay absent until both are true.",
     "requiredToEnable": [
       "docs/governance/programme-integration-ledger.json: deployment.wbwTotalRulesDeployed.state = DONE, proven by an actual deployment",
       "this block: ready=true and decision={by,on,reference} from the closed authority set",

@@ -857,6 +857,87 @@ service cloud.firestore {
       // No delete (I4/D6). A superseded decision is kept in history.
     }
 
+    // =====================================================================
+    // Issue #206 -- the whole-Qur'an/Juz running word-percentage counter
+    // (quranWordTotals). Assembled 24 Sep 2026 from the self-contained
+    // candidate at docs/governance/2026-09-23-wbw-total-counter-rules-
+    // candidate.rules into THIS file, unmodified everywhere else, as
+    // docs/governance/2026-09-24-wbw-total-counter-DEPLOYMENT-candidate.rules
+    // -- this is that assembled file. STATUS: CANDIDATE. NOT DEPLOYED.
+    // Deploying Rules is an Owner Control Gate; app/js/study-wbw-total-
+    // readiness.js keeps the feature gated off in the app regardless.
+    //
+    // Every helper this collection needs (signedIn, myUid, tenantPersonRef,
+    // hasRoleIn, myPersonIdIn, isPlatformAdmin, canAdminIdentity,
+    // isTeacherIn, isCoEnrolledTeacherOf, isGuardianOf, isSelfPerson,
+    // canRecordFor) already exists elsewhere in this file and is reused
+    // exactly as deployed -- nothing here redefines any of them. (The
+    // 23 Sep candidate extract's own local copies of hasRoleIn,
+    // myPersonIdIn, isCoEnrolledTeacherOf and isSelfPerson used defensive
+    // `.get(field, default)` reads where the real deployed versions read
+    // the field directly -- the same divergence class the 17 Sep 2026
+    // Phase 4-6 assembly round found in the same four helper names. Not
+    // carried over here: this block calls the REAL functions already in
+    // this file, not the extract's copies, so the divergence never reaches
+    // production.) Only the two genuinely new helpers this collection
+    // needs are added below.
+    //
+    // WHY ONE DOCUMENT PER PERSON, NOT PER (PERSON, JUZ). The running total
+    // is a small, bounded aggregate -- one `known` integer and one `byJuz`
+    // map of exactly 30 `{known, total}` pairs. It is read only by its own
+    // document id (tenantId + '__' + personId), never queried or listed,
+    // so there is no list-safety proof to make and NO COMPOSITE INDEX to
+    // declare -- this round needs no index file change, unlike Phase 4-6.
+    //
+    // WHO MAY WRITE IT: exactly canRecordFor()'s existing set (self, an
+    // active co-enrolled teacher, a guardian, or tenant/platform admin) --
+    // the same authority the deployed quranWordProgress/quranWordApprovals
+    // rules already grant for word progress, immediately above. No new
+    // authority idea.
+    // =====================================================================
+
+    // Identity fields are write-once, the same reasoning
+    // wordLaneIdentityUnchanged() already applies to quranWordProgress: a
+    // valid writer for THIS person must never be able to repoint the
+    // document at another tenant or person, or alter the fixed whole-
+    // Qur'an total.
+    function wordTotalIdentityUnchanged() {
+      return resource != null
+          && request.resource.data.tenantId == resource.data.tenantId
+          && request.resource.data.personId == resource.data.personId
+          && request.resource.data.total    == resource.data.total;
+    }
+
+    // A created document must say what it is and must already carry the
+    // real whole-Qur'an total -- never a value a client invented.
+    function isWordTotalCreate() {
+      return request.resource.data.get('contractVersion', '') == 'quran-word-total:v1'
+          && request.resource.data.get('total', 0) == 77429
+          && request.resource.data.known is int && request.resource.data.known >= 0
+          && request.resource.data.byJuz is map;
+    }
+
+    // total_key/{tenantId}__{personId}
+    match /quranWordTotals/{totalsKey} {
+      allow read: if isPlatformAdmin();
+      // S8-class allowance the deployed quranWordProgress rule already
+      // makes: the client reads this document before deciding create-vs-
+      // update, and a nonexistent document has no data to expose.
+      allow read: if signedIn() && !exists(/databases/$(database)/documents/quranWordTotals/$(totalsKey));
+      allow read: if canRecordFor(resource.data.tenantId, resource.data.personId);
+
+      allow create: if canRecordFor(request.resource.data.tenantId, request.resource.data.personId)
+                    && isWordTotalCreate();
+      // Only `known`, `byJuz` (its per-juz `known` sub-fields) and the
+      // envelope's own `updatedAt` may move on update -- never `total`,
+      // never the identity fields, never a whole-document overwrite.
+      allow update: if resource != null
+                    && canRecordFor(resource.data.tenantId, resource.data.personId)
+                    && wordTotalIdentityUnchanged()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['known', 'byJuz', 'updatedAt']);
+      // No delete (I4/D6). The counter only ever moves; it is never reset.
+    }
+
 
     // =====================================================================
     // Phase 3 — Tracking core (Layer 2: records, activity, domains)
