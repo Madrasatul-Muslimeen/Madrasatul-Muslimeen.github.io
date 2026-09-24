@@ -139,6 +139,23 @@ test("candidate Dawah Pages Rules: ADR-011 enforced at the server", async () => 
       await seed("kidawaitH00000000000000000001", { ...kidBase, status: "awaiting-approval" });
       await seed("kidawaitI00000000000000000001", { ...kidBase, status: "awaiting-approval" });
       await seed("kidawaitJ00000000000000000001", { ...kidBase, status: "awaiting-approval" });
+      // Approver-relationship coverage (24 Sep 2026): each clause of
+      // isDawahApprover() gets a denial paired with an allow differing in one
+      // fact -- an UNRELATED guardian, an UNLINKED teacher, and an owner
+      // approving their OWN page were never exercised before.
+      await seed("kidawaitK00000000000000000001", { ...kidBase, status: "awaiting-approval" });
+      await seed("kidawaitL00000000000000000001", { ...kidBase, status: "awaiting-approval" });
+      await seed("kidawaitM00000000000000000001", { ...kidBase, status: "awaiting-approval" });
+      const p2Base = {
+        authorPersonId: "p2", sourceNoteId: "notep2000000000000000000000001", sourceRevisionId: "revp2a000000000000000000001",
+        title: "P2 title", bodyHtml: "<p>P2 body</p>", createdBy: "uid-p2",
+      };
+      await seed("p2awaitA0000000000000000000001", { ...p2Base, status: "awaiting-approval" });
+      await seed("p2awaitB0000000000000000000001", { ...p2Base, status: "awaiting-approval" });
+      await seed("admawaitA000000000000000000001", {
+        authorPersonId: "adm", sourceNoteId: "noteadm0000000000000000000001", sourceRevisionId: "revadm000000000000000000001",
+        title: "Adm title", bodyHtml: "<p>Adm body</p>", createdBy: "uid-adm", status: "awaiting-approval",
+      });
     });
 
     const p1 = env.authenticatedContext("uid-p1").firestore();
@@ -273,6 +290,22 @@ test("candidate Dawah Pages Rules: ADR-011 enforced at the server", async () => 
       updateDoc(doc(g1, "dawahPages", nk(T, "kidawaitI00000000000000000001")),
         { status: "shared", approvedByPersonId: "g1", approvedAt: new Date(), title: "Rewritten", updatedAt: new Date() }));
 
+    // --- APPROVE: each approver relationship, allow paired with deny -------
+    const approveAs = (as, who, id) => updateDoc(doc(as, "dawahPages", nk(T, id)),
+      { status: "shared", approvedByPersonId: who, approvedAt: new Date(), updatedAt: new Date() });
+    await ok("D-APPROVE-08", "the MANAGING guardian approves their child's page",
+      approveAs(g1, "g1", "kidawaitK00000000000000000001"));
+    await no("D-APPROVE-09", "an UNRELATED guardian cannot approve someone else's child's page",
+      approveAs(g2, "g2", "kidawaitL00000000000000000001"));
+    await ok("D-APPROVE-10", "a LINKED teacher approves their student's page",
+      approveAs(tch, "tch", "kidawaitM00000000000000000001"));
+    await no("D-APPROVE-11", "an UNLINKED teacher cannot approve a page by someone they do not teach",
+      approveAs(tch, "tch", "p2awaitA0000000000000000000001"));
+    await ok("D-APPROVE-12", "an owner approves another person's page",
+      approveAs(adm, "adm", "p2awaitB0000000000000000000001"));
+    await no("D-APPROVE-13", "an owner can NEVER approve their OWN page",
+      approveAs(adm, "adm", "admawaitA000000000000000000001"));
+
     // --- RETURN: awaiting-approval -> draft ---------------------------------
     await ok("D-RETURN-01", "the guardian returns a page to draft with a reason",
       updateDoc(doc(g1, "dawahPages", nk(T, "kidawaitF00000000000000000001")),
@@ -312,6 +345,14 @@ test("candidate Dawah Pages Rules: ADR-011 enforced at the server", async () => 
     // --- query bounds --------------------------------------------------------
     await ok("D-QUERY-01", "a scoped, bounded shared-pages query is allowed", getDocs(query(collection(p2, "dawahPages"),
       where("tenantId", "==", T), where("status", "==", "shared"), limit(50))));
+    await no("D-QUERY-06", "a person OUTSIDE the tenant may not list its shared pages", getDocs(query(collection(pX, "dawahPages"),
+      where("tenantId", "==", T), where("status", "==", "shared"), limit(50))));
+    // The exact query listDawahPagesAwaitingMyApproval() (app/js/dawah-data.js)
+    // issues: tenantId + status, bounded at its default maximum of 100.
+    const awaitingBrowse = (as) => getDocs(query(collection(as, "dawahPages"),
+      where("tenantId", "==", T), where("status", "==", "awaiting-approval"), limit(100)));
+    await ok("D-QUERY-04", "a guardian may run the awaiting-approval browse query", awaitingBrowse(g1));
+    await no("D-QUERY-05", "a plain self-only member may NOT run the awaiting-approval browse query", awaitingBrowse(p2));
     await no("D-QUERY-02", "an unscoped list is refused", getDocs(query(collection(p1, "dawahPages"), limit(50))));
     await no("D-QUERY-03", "an unbounded list is refused even when scoped", getDocs(query(collection(p1, "dawahPages"),
       where("tenantId", "==", T), where("status", "==", "shared"))));

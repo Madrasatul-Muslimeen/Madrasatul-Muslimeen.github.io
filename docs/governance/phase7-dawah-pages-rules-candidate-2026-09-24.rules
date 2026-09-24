@@ -266,6 +266,39 @@ service cloud.firestore {
       allow get: if canReadDawahPage(resource.data.tenantId, resource.data.authorPersonId, resource.data.status);
       allow list: if listIsBounded() && canReadDawahPage(resource.data.tenantId, resource.data.authorPersonId, resource.data.status);
 
+      // TENANT-WIDE BROWSE QUERIES (24 Sep 2026). A list query is authorised
+      // against its FILTERS, not per stored document, so every clause of
+      // canReadDawahPage() above is unprovable for a query that does not
+      // filter on authorPersonId: personInTenant(tenantId,
+      // resource.data.authorPersonId) needs a get() on a document the query
+      // never names, and the emulator refuses it ("Property authorPersonId
+      // is undefined on object"). The two queries the data layer actually
+      // issues filter only on tenantId + status, so each gets its own rule
+      // stated purely in terms of those filters and the VIEWER's own roles.
+      // Nothing is lost: the author's membership of the tenant is enforced at
+      // create (isDawahAuthor -> personInTenant) and tenantId/authorPersonId
+      // are frozen on every update (dawahIdentityUnchanged), so no page can
+      // name an author outside its own tenant through these Rules.
+      //
+      // (1) Shared pages: ADR-011 Owner decision 1 -- a shared piece is
+      //     visible inside the Madrasah (tenant) only, to any member of it.
+      allow list: if listIsBounded() && signedIn()
+                  && resource.data.status == 'shared'
+                  && myRolesIn(resource.data.tenantId).size() > 0;
+      // (2) The awaiting-approval browse that listDawahPagesAwaitingMyApproval()
+      //     (app/js/dawah-data.js) issues: tenantId + status only. Mirrors
+      //     canReadDawahPage()'s awaiting clause -- the recorded browse/decide
+      //     trade-off in this file's header -- plus owner/prime, whom
+      //     isValidDawahApprover() admits as approvers (they may already read
+      //     every page one at a time). WRITE stays narrow: only
+      //     isDawahApprover() may approve or return.
+      allow list: if listIsBounded() && signedIn()
+                  && resource.data.status == 'awaiting-approval'
+                  && ( 'guardian' in myRolesIn(resource.data.tenantId)
+                       || 'teacher' in myRolesIn(resource.data.tenantId)
+                       || 'owner' in myRolesIn(resource.data.tenantId)
+                       || 'prime' in myRolesIn(resource.data.tenantId) );
+
       allow create: if dawahPageShapeOk()
                     && createdByStampedOnCreate()
                     && isDawahAuthor(d().tenantId, d().authorPersonId)

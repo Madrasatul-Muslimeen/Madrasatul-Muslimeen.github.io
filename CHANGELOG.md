@@ -17645,3 +17645,32 @@ CI-gated governance suites re-run clean from the repository root: 8, 49, 8,
 `firestore.rules` and `firebase.json` are untouched — confirmed by the
 boundary suite reading them directly rather than assumed. Phase 8
 (Share/Media) is untouched and needs its own decision when it is picked up.
+
+**P7-A Architect review (24 Sep 2026), before merge — the emulator suite the
+builder could not run was run, and failed.** Two real defects in the Dawah
+Rules candidate, both fixed in the candidate, no application code changed:
+
+1. **Expression budget.** Firestore evaluates a write in two phases, and in the
+   first `resource` and every `get()`/`exists()` are unresolved, so `&&`/`||`
+   do not short-circuit. A `setDoc` is an upsert, so the `update` rule is also
+   evaluated for a create; the original `update` called `isDawahApprover()`
+   twice and `isDawahAuthor()` three times, and two error-mode approver calls
+   exceed 1000 expressions. Every refused update would have been refused by the
+   budget rather than the security logic. Fixed by evaluating each actor once
+   (`isDawahAuthor(...) && (SUBMIT || SHARE || RETIRE) || isDawahApprover(...)
+   && (APPROVE || RETURN)` — the same truth table) and binding
+   `myPersonIdIn`/`myRolesIn` once with `let` inside `isDawahApprover()`.
+2. **Unprovable list queries.** `canReadDawahPage()` puts
+   `personInTenant(tenantId, resource.data.authorPersonId)` first, which a
+   tenant-wide list query (no `authorPersonId` filter) can never prove — so the
+   Madrasah's shared list and the approval queue were both refused outright.
+   Two narrow `allow list` rules added: shared pages to any member of that
+   tenant (the Owner's "inside the Madrasah only"), awaiting-approval pages to a
+   guardian/teacher/owner/prime of that tenant (the browse/decide trade-off
+   ADR-011's candidate already recorded). Writes are unchanged.
+
+Suite 56 → **65 assertions, exit 0**, adding the three approver clauses the
+suite had never tested (an unrelated guardian, an unlinked teacher, an owner on
+their own page) plus the two queries' allow/deny pairs; **eight mutations each
+fail the suite** where three had survived before. Also restored the
+`note-foundation-real-function` npm script the round had replaced.
