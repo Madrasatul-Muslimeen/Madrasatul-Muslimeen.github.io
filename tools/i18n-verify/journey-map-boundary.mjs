@@ -203,16 +203,34 @@ check("app/journey-map.html only ever names the Phase 6 data-layer functions it 
   assert.deepEqual(used, ["createNoteFolder", "createNotePlacement"],
     `app/journey-map.html's own direct Phase 6 data-layer usage changed: ${used.join(", ")} -- if this round's scope grew, widen this list deliberately rather than letting it drift`);
 });
-// The FOLDER-EDITING wrappers (rename/reorder/re-parent/retire a folder,
-// reorder a filing) are built and exported by journey-map-service.js
-// (P6-D/P6-E) but this round's screen does not offer folder management UI --
-// only creating, filing into and moving between folders. Named here rather
-// than silently possible to add unnoticed.
+// UPDATED 24 Sep 2026 for MAP Phase 6 P6-G (issue #229), WITH THE REASON
+// RECORDED RATHER THAN THE CHECK WEAKENED. Until this round, the
+// FOLDER-EDITING wrappers (rename/reorder/re-parent/retire a folder, reorder
+// a filing) were built and exported by journey-map-service.js (P6-D/P6-E)
+// but P6-F's screen offered no folder management UI at all -- only creating,
+// filing into and moving Notes between folders. That was an accepted
+// decision (the deployed Rules already say "a folder may be renamed,
+// reordered, re-parented or retired") no screen could carry out, exactly the
+// gap CLAUDE.md's own standing lesson names ("Ask what the accepted Rules
+// authorise, then what the code can perform"). P6-G closes it: this check
+// is INVERTED, not deleted, the same shape every prior inversion in this
+// file already used -- it now asserts the five wrappers ARE wired, and
+// asserts it from `app/journey-map.html`'s Folders view specifically (the
+// issue's own scope -- Timeline/Path need no edit controls), and from
+// NOWHERE ELSE (`app/notes.html`'s own check above already proves it calls
+// no Phase 6 folder/placement function at all; the service-reachability
+// check earlier in this file already proves journey-map.html is the only
+// page that reaches journey-map-service.js in the first place).
 const FOLDER_EDITING_SERVICE_WRAPPERS = ["renameFolder", "reorderFolder", "moveFolder", "retireFolder", "reorderFiling"];
-check("app/journey-map.html does not call the folder-editing service wrappers this round deliberately left unbuilt", () => {
+check("app/journey-map.html now wires every folder-editing service wrapper (P6-G), and imports each by name", () => {
   const text = fs.readFileSync(path.join(root, SERVICE_WIRED_PAGE), "utf8");
   const used = FOLDER_EDITING_SERVICE_WRAPPERS.filter((fn) => text.includes(fn));
-  assert.deepEqual(used, [], `app/journey-map.html names folder-editing wrapper(s) not built this round: ${used.join(", ")}`);
+  assert.deepEqual(used.sort(), [...FOLDER_EDITING_SERVICE_WRAPPERS].sort(),
+    `app/journey-map.html no longer names every folder-editing wrapper: ${used.join(", ")}`);
+  for (const fn of FOLDER_EDITING_SERVICE_WRAPPERS) {
+    assert.ok(new RegExp(String.raw`import\s*\{[^}]*\b${fn}\b[^}]*\}\s*from\s*["'\`]\./js/journey-map-service\.js["'\`]`).test(text),
+      `app/journey-map.html calls ${fn} without importing it from journey-map-service.js`);
+  }
 });
 
 function unchangedSinceMain(relPath) {

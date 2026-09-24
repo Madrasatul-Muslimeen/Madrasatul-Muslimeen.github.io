@@ -17111,3 +17111,114 @@ write/Rule/index.
 `app/js/version.js`: 08.51 → **08.52**. Allocated by the MMSA Architect.
 See `docs/governance/programme-integration-ledger.json` for the version
 allocation record.
+
+**MAP Phase 6 (P6-G), 24 Sep 2026 — folder editing wired into Mapping My
+Journey (issue #229, PR pending). No version bump in this round — the
+MMSA Architect allocates one at merge, per the Builder contract.**
+`journey-map-service.js` has exported five folder-editing wrappers
+(`renameFolder`, `reorderFolder`, `moveFolder`, `retireFolder`,
+`reorderFiling`) since P6-D/P6-E, authorised by the deployed Phase 3–6
+Rules ("a folder may be renamed, reordered, re-parented or retired") —
+and `app/journey-map.html` (v08.37, P6-F) called none of them: a person
+could create a folder and file a Note, but never rename, reorder, move
+or remove a folder, or reorder Notes inside one. An accepted decision no
+screen could carry out, exactly the class of gap CLAUDE.md's own
+standing lesson names ("Ask what the accepted Rules authorise, then what
+the code can perform").
+
+**What was built, in the Folders view only** (Timeline/Path need no edit
+controls, and a check now proves it — `folderRowHtml()`, the one function
+that builds every editing control, is never called from either): rename,
+reorder (▲▼) and move a user folder, remove (retire) it, and reorder the
+Notes filed inside one (▲▼ on each). Both system folders (Personal
+Journey Map, Reflection Archive) render none of these controls at all —
+ADR-010 §3 forbids renaming, reparenting or removing either — checked by
+reading the same `editable` gate the rendering function itself computes
+(`isSelfSelected() && !isSystemFolderRole(...)`), not merely asserted.
+Per-folder actions (rename/move/remove) sit behind one ⋯ menu per row,
+reusing `js/bar-palette.js` (open/close/outside-click/Escape/"only one at
+a time" all come free, the same mechanism Explore/QCR/Asma already
+share); reorder is two dedicated 40px ▲▼ buttons per row, per the issue's
+own instruction and this project's own standing lesson that a 26px
+button is too small.
+
+**A refused move is shown in words, in the accepted refusal vocabulary's
+own translated sentences — never a raw contract slug.** The client-side
+cycle/depth refusals already live in `folderTreeRefusal()`
+(`journey-map-contract.js`); rather than duplicate that policy a second
+time in the page (the exact drift ADR-009 already closed once for
+`noteSources`), the page lets the write attempt run and translates
+whichever of the contract's eight reasons comes back (`self-parent`,
+`parent-missing`, `parent-not-mine`, `parent-not-active`,
+`parent-is-system`, `too-deep`, `cycle`, `ancestor-missing`) into its own
+sentence — a new test asserts the page's own dictionary names *exactly*
+that set, read out of the contract's source rather than retyped, so a
+future reason added to the contract fails this check until the page
+learns to say it too. **Retiring a folder with active children is
+refused in words *before* the write is attempted**, not discovered by
+letting it fail: the precondition is checked against the folder tree
+already in memory (no extra read — `node.children` already reflects only
+ACTIVE folders, the same set the underlying Rules-authorised retire path
+checks), mutation-proven (removing the precheck is shown to make the
+"checked before the write" assertion fail). The remove control is worded
+"Remove" and its confirmation states in words that it can't be undone
+from here but nothing is destroyed (I4) — a Note filed in a removed
+folder is not deleted.
+
+**No new exported function in `note-foundation.js` or
+`journey-map-service.js`.** Every write goes through the five wrappers
+that already existed; the page reads the already-loaded folder tree for
+the retire precondition rather than adding a data-layer function to ask
+it, and translates the existing contract's own refusal vocabulary rather
+than adding a new query to pre-validate a move.
+
+**`tools/i18n-verify/journey-map-boundary.mjs` updated in place, reason
+recorded, never weakened**: its check that the five folder-editing
+wrappers were deliberately *not* called is inverted — the same shape
+every prior inversion in this file already used — to assert they now
+*are* wired from `journey-map.html`, by name, imported from
+`journey-map-service.js`, and (via the pre-existing service-reachability
+check earlier in the same file, unchanged) from nowhere else.
+
+**`tools/i18n-verify/journey-map-screen.mjs` extended, 16 → 25 checks**:
+the five actions each covered (rendered only in Folders view; gated
+behind `isSelfSelected()` and excludes system folders; a reorder is a
+genuine two-value swap, never a single overwrite; a refused move names
+every contract reason in translated words; a refused retire is said
+before the write; the "Remove"/nothing-destroyed wording; every action
+refreshes from real data afterwards) plus one pre-existing check widened
+with the reason recorded (`"Move to…"` stopped being a unique marker the
+moment the folder ⋯ menu gained its own "Move to…" action — the
+proximity window widened from 700 to 1700 characters, measured against
+the real, now-longer distance between each occurrence and its own
+`isSelfSelected()` gate, and every occurrence is checked now, not just
+the first). One check is MUTATION-PROVEN: removing the retire
+precondition's own guard clause is shown to make the "checked before the
+write" assertion fail.
+
+**Layout could not be measured in a real browser** — this sandbox has no
+`playwright` package installed at all (confirmed: `require("playwright")`
+fails with `MODULE_NOT_FOUND`, not merely a missing browser build, the
+same class of gap several other rounds in this file already record).
+Computed instead, from the real CSS box values: `.folder-row-name` is
+`flex: 1 1 auto; min-width: 0` beside three `flex: 0 0 auto` 40px
+controls, so by flexbox construction (not merely for one measured name)
+the name column always receives exactly "whatever width is left" and
+shrinks/wraps (`overflow-wrap: anywhere`) rather than push the row wider
+than its container — at 320px English, with three controls + gaps
+consuming ~144px of ~267px available inside `.folder-row`, the name
+column gets ~123px and wraps a long real name
+("Reflections on Surah Al-Baqarah, Ramadan 1447") onto several lines
+rather than truncating or overflowing. This is a structural guarantee,
+not a one-off number, but a real-device check across 320/360/390/412px
+and desktop, both languages, is still the recommended substitute for an
+actual render.
+
+**Suite totals**: all 8 CI-gated governance suites clean
+(`programme-ledger` 8/0, `programme-ledger-mutations` 49/0,
+`brief-integrity` 8/0, `study-activity-evidence-boundary` 27/0,
+`study-activity-evidence-boundary-mutations` 11/0, `study-event-wiring`
+41/0, `rules-authorisation-executable` 42/0, `workflow-expressions`
+12/0), plus `journey-map-boundary.mjs` 17/0 and `journey-map-screen.mjs`
+25/0. No protected path touched, no Firestore Rules/index change, no
+`app/js/version.js` bump.

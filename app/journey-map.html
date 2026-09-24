@@ -47,9 +47,44 @@
     border: 1px solid #ddd; border-radius: 0.5rem; background: #fff; cursor: pointer; min-height: 36px;
   }
   .folder-row.system { border-color: #B8862F; background: #fdf6ea; }
-  .folder-row-name { flex: 1 1 auto; font-weight: 600; font-size: 0.94rem; color: #1F3A6E; }
+  /* min-width: 0 is load-bearing (this project's own standing lesson: a flex
+     item defaults to min-width: auto, which refuses to shrink below its own
+     content's intrinsic width and silently overflows the row) -- a real
+     folder name ("Reflections on Surah Al-Baqarah, Ramadan 1447") must be
+     able to wrap onto several lines inside its own column rather than push
+     the row wider than the screen or get cut with an ellipsis nobody can
+     read the rest of. */
+  .folder-row-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; font-weight: 600; font-size: 0.94rem; color: #1F3A6E; }
   .folder-row-count { font-size: 0.78rem; color: #888; }
   .folder-children { margin-left: 1.2rem; }
+  /* P6-G folder-editing controls -- reorder arrows are dedicated 40px
+     buttons (this project's own standing lesson: a 26px button is too
+     small), everything else (rename/move/remove) sits behind one ⋯ menu per
+     row rather than five buttons on every row. Both are flex: 0 0 auto so
+     the name column is what shrinks, never these. */
+  .folder-order-btn {
+    flex: 0 0 auto; width: 40px; height: 40px; padding: 0; font-size: 1rem; line-height: 1;
+    border-radius: 0.4rem; border: 1px solid #ccc; background: #fff; color: #1F3A6E; cursor: pointer;
+  }
+  .folder-order-btn:disabled { opacity: 0.35; cursor: default; }
+  .folder-menu-wrap { position: relative; flex: 0 0 auto; }
+  .folder-menu-btn {
+    width: 40px; height: 40px; padding: 0; font-size: 1.15rem; line-height: 1;
+    border-radius: 0.4rem; border: 1px solid #ccc; background: #fff; color: #1F3A6E; cursor: pointer;
+  }
+  /* Same shape as quranrevival.html's own js/bar-palette.js popovers --
+     the module owns open/close/outside-click/Escape/"only one at a time",
+     this page only supplies the look. */
+  .bar-palette {
+    display: none; position: absolute; top: 2.4rem; right: 0; z-index: 20;
+    background: #fff; border: 1px solid #ddd; border-radius: 0.5rem;
+    box-shadow: 0 10px 26px rgba(20,30,60,0.25);
+    width: 11rem; max-width: calc(100vw - 2rem); box-sizing: border-box;
+    padding: 0.5rem; flex-direction: column; gap: 0.3rem;
+  }
+  .bar-palette.open { display: flex; }
+  .bar-palette button { width: 100%; text-align: left; }
+  .note-order-btn { min-width: 2.4rem; }
   #folderCrumb { font-size: 0.88rem; margin: 0.6rem 0; }
   #folderCrumb button { background: none; border: none; color: #1F3A6E; text-decoration: underline; padding: 0; font-size: inherit; cursor: pointer; }
   #newFolderBtn { margin: 0.6rem 0; }
@@ -140,14 +175,18 @@
     import { langText } from "./js/lang.js";
     import { getAppLang } from "./js/prefs.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
-    import { safeWrite } from "./js/errors.js";
+    import { safeWrite, reportWriteFailure } from "./js/errors.js";
     import { bootstrapContext, setActiveContext, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { translateStatic, t } from "./js/i18n.js";
     import { roleListLabel } from "./js/labels.js";
     import { sanitizeNoteHtml } from "./js/note-sanitize.js";
+    import { closeAllBarPalettes } from "./js/bar-palette.js";
     import { NOTE_STATUS, createNoteFolder, createNotePlacement, listNotesForOwner } from "./js/note-foundation.js";
-    import { ownerFolderTree, folderContents, moveNoteToFolder } from "./js/journey-map-service.js";
+    import {
+      ownerFolderTree, folderContents, moveNoteToFolder,
+      renameFolder, reorderFolder, moveFolder, retireFolder, reorderFiling,
+    } from "./js/journey-map-service.js";
 
     translateStatic();
 
@@ -189,21 +228,97 @@
       return folder.name || t("(untitled folder)");
     }
 
+    /**
+     * `order` is display only (note-foundation.js's own comment on the
+     * folder-reorder writer this page calls through `reorderFolder()`) and
+     * the folder LIST READ in note-foundation.js carries no `orderBy` at all
+     * (an equality-only query needs no composite index) -- so every place
+     * this screen shows a set of siblings sorts by `order` itself. A stable
+     * sort (native since ES2019) means two folders that
+     * happen to share an `order` value keep whatever relative position the
+     * database returned them in, rather than jittering between renders.
+     */
+    function byOrder(a, b) { return (a.order ?? 0) - (b.order ?? 0); }
+
     /** roots merged with any system role missing a real document -- real ones (once created) simply appear among ownerFolderTree()'s own roots, since a system folder has no parent. */
     function mergedRoots() {
       const roots = folderTree.roots || [];
       const real = new Map(roots.filter((f) => isSystemFolderRole(f.semanticRole)).map((f) => [f.semanticRole, f]));
       const systemNodes = SYSTEM_FOLDER_ROLES.map((role) => real.get(role) ?? systemFolderNode(role));
-      const userRoots = roots.filter((f) => !isSystemFolderRole(f.semanticRole));
+      const userRoots = roots.filter((f) => !isSystemFolderRole(f.semanticRole)).sort(byOrder);
       return [...systemNodes, ...userRoots];
     }
 
     function flattenFolders(nodes, depth = 0, out = []) {
-      for (const f of nodes) {
+      for (const f of [...nodes].sort(byOrder)) {
         out.push({ folder: f, depth });
         if (f.children?.length) flattenFolders(f.children, depth + 1, out);
       }
       return out;
+    }
+
+    /**
+     * P6-G -- the folder-editing wrappers throw a plain `Error` naming
+     * ADR-010's own refusal vocabulary (`folderTreeRefusal()`'s slugs, or one
+     * of note-foundation.js's own fixed sentences) rather than carrying a
+     * Firestore `.code`. `errors.js`'s own `plainMessageFor()` only knows
+     * Firestore codes, so an unrecognised `.code` falls through to its
+     * generic "(unknown)" sentence -- true, translated, and reaches the user
+     * (I15), but not the specific, actionable sentence a refused move or a
+     * refused retire needs. This reads the SAME accepted reason vocabulary
+     * (never a second, divergent copy of ADR-010's own policy) and turns it
+     * into words; anything it does not recognise (a genuine Firestore
+     * failure) returns null and falls through to the normal safeWrite path.
+     */
+    const FOLDER_PARENT_REFUSAL_MESSAGES = {
+      "self-parent": () => t("A folder can't be moved inside itself."),
+      "parent-missing": () => t("That folder no longer exists — please refresh and try again."),
+      "parent-not-mine": () => t("That isn't your folder to move into."),
+      "parent-not-active": () => t("That folder has been removed, so nothing can be moved into it."),
+      "parent-is-system": () => t("Personal Journey Map and Reflection Archive can't hold other folders inside them."),
+      "too-deep": () => t("Moving it there would nest folders too deeply. Choose a folder closer to the top."),
+      "cycle": () => t("Moving it there would put a folder inside one of its own folders. Choose a different folder."),
+      "ancestor-missing": () => t("That folder's place could not be confirmed — please refresh and try again."),
+    };
+    function folderBusinessRefusal(err) {
+      const msg = err?.message || "";
+      const parentRefusal = msg.match(/^Folder parent refused: (.+)$/);
+      if (parentRefusal) {
+        const known = FOLDER_PARENT_REFUSAL_MESSAGES[parentRefusal[1]];
+        return known ? known() : t("That move was refused.");
+      }
+      if (/^Folder still holds active folders:/.test(msg)) {
+        return t("This folder still has other folders inside it — remove those first, then this one.");
+      }
+      if (msg === "A retired folder cannot be renamed.") return t("That folder has already been removed, so it can't be renamed.");
+      if (msg === "A retired folder cannot be reordered.") return t("That folder has already been removed, so it can't be reordered.");
+      if (msg === "Folder does not exist.") return t("That folder could not be found — please refresh and try again.");
+      if (msg === "A retired placement cannot be reordered.") return t("That Note has already been removed from this folder, so it can't be reordered.");
+      if (msg === "Placement does not exist.") return t("That filing could not be found — please refresh and try again.");
+      return null;
+    }
+    /**
+     * The same contract as `safeWrite()` (`{ ok, result }`), so every call
+     * site below reads identically to the rest of the page -- but a refusal
+     * this page KNOWS the reason for is shown in its own translated words
+     * (I15: never silently, always in words) instead of the generic
+     * Firestore-style fallback, which is reserved for a failure this page
+     * cannot explain any better than that.
+     */
+    async function runFolderWrite(writeFn, context) {
+      try {
+        const result = await writeFn();
+        return { ok: true, result };
+      } catch (err) {
+        const known = folderBusinessRefusal(err);
+        if (known) {
+          console.error("[folder refusal]", context, err);
+          showPageStatus(known);
+          return { ok: false };
+        }
+        reportWriteFailure(err, context);
+        return { ok: false };
+      }
     }
 
     const whoEl = document.getElementById("who");
@@ -496,7 +611,12 @@
       }
 
       if (!current) {
-        html += `<ul class="folder-list">${roots.map((f) => folderRowHtml(f)).join("")}</ul>`;
+        // Siblings for reorder purposes are the USER roots only -- the two
+        // system folders sit at their own fixed positions (SYSTEM_FOLDER_ROLES'
+        // own order) and are neither renameable, moveable nor reorderable
+        // (ADR-010 §3), so they never take part in this swap.
+        const userRoots = roots.filter((f) => !isSystemFolderRole(f.semanticRole));
+        html += `<ul class="folder-list">${roots.map((f) => folderRowHtml(f, userRoots)).join("")}</ul>`;
         if (isSelfSelected()) {
           html += `<button type="button" id="newFolderBtn">${t("+ New folder")}</button>
             <form id="newFolderForm" style="display:none;">
@@ -506,15 +626,18 @@
             </form>`;
         }
         viewFolders.innerHTML = html;
-        wireFolderRows(roots);
+        wireFolderRows(userRoots);
         wireNewFolderForm();
         return;
       }
 
       // Inside one folder: its own subfolders (if any), then the Notes filed
-      // in it directly.
-      if (current.children?.length) {
-        html += `<ul class="folder-list">${current.children.map((f) => folderRowHtml(f)).join("")}</ul>`;
+      // in it directly. Every child of a real folder is a user folder --
+      // a system folder can never have a parent (ADR-010 §3) -- so the whole
+      // list doubles as its own sibling set for reordering.
+      const children = (current.children ?? []).slice().sort(byOrder);
+      if (children.length) {
+        html += `<ul class="folder-list">${children.map((f) => folderRowHtml(f, children)).join("")}</ul>`;
       }
       html += `<div id="folderNotes"></div>`;
       viewFolders.innerHTML = html;
@@ -522,22 +645,66 @@
       viewFolders.querySelectorAll("[data-crumb-index]").forEach((btn) => {
         btn.addEventListener("click", () => { openFolderPath = openFolderPath.slice(0, Number(btn.dataset.crumbIndex) + 1); renderFoldersView(); });
       });
-      wireFolderRows(current.children ?? []);
+      wireFolderRows(children);
       loadFolderContents(current);
     }
 
-    function folderRowHtml(f) {
+    /**
+     * `siblings` is the sorted, user-folder-only list `f` reorders within --
+     * empty for a system folder, which renders no editing controls at all
+     * (ADR-010 §3: neither renameable, moveable, reorderable nor removable).
+     */
+    function folderRowHtml(f, siblings) {
+      const editable = isSelfSelected() && !isSystemFolderRole(f.semanticRole);
+      let controls = "";
+      if (editable) {
+        const idx = siblings.findIndex((s) => s.folderId === f.folderId);
+        const upDisabled = idx <= 0;
+        const downDisabled = idx === -1 || idx >= siblings.length - 1;
+        const menuId = `folderMenu-${escapeHtml(f.folderId)}`;
+        controls = `
+          <button type="button" class="folder-order-btn" data-folder-up ${upDisabled ? "disabled" : ""} aria-label="${escapeHtml(t("Move up"))}">▲</button>
+          <button type="button" class="folder-order-btn" data-folder-down ${downDisabled ? "disabled" : ""} aria-label="${escapeHtml(t("Move down"))}">▼</button>
+          <span class="bar-palette-wrap folder-menu-wrap" data-bar-palette-wrap="${menuId}">
+            <button type="button" class="folder-menu-btn bar-palette-toggle" data-bar-palette-toggle="${menuId}" aria-haspopup="true" aria-expanded="false" title="${escapeHtml(t("More"))}" aria-label="${escapeHtml(t("More"))}">⋯</button>
+            <div class="bar-palette" data-bar-palette="${menuId}">
+              <button type="button" class="secondary tiny" data-folder-rename>${t("Rename")}</button>
+              <button type="button" class="secondary tiny" data-folder-move>${t("Move to…")}</button>
+              <button type="button" class="danger tiny" data-folder-remove>${t("Remove")}</button>
+            </div>
+          </span>`;
+      }
       return `<li><div class="folder-row${isSystemFolderRole(f.semanticRole) ? " system" : ""}" data-folder-role="${escapeHtml(f.semanticRole)}" data-folder-id="${escapeHtml(f.folderId ?? "")}">
-        <span class="folder-row-name">${escapeHtml(folderDisplayName(f))}</span>
+        <span class="folder-row-name">${escapeHtml(folderDisplayName(f))}</span>${controls}
       </div></li>`;
     }
-    function wireFolderRows(nodes) {
+    function wireFolderRows(siblings) {
       viewFolders.querySelectorAll("[data-folder-role]").forEach((row) => {
-        row.addEventListener("click", () => {
-          const folderId = row.dataset.folderId || null;
-          const role = row.dataset.folderRole;
-          const node = findNodeByIdOrRole(mergedRoots(), folderId, role);
-          if (!node) return;
+        const folderId = row.dataset.folderId || null;
+        const role = row.dataset.folderRole;
+        const node = findNodeByIdOrRole(mergedRoots(), folderId, role);
+        if (!node) return;
+        const idx = siblings.findIndex((s) => s.folderId === node.folderId);
+
+        row.querySelector("[data-folder-up]")?.addEventListener("click", (e) => {
+          e.stopPropagation(); reorderFolderSwap(siblings, idx, -1);
+        });
+        row.querySelector("[data-folder-down]")?.addEventListener("click", (e) => {
+          e.stopPropagation(); reorderFolderSwap(siblings, idx, 1);
+        });
+        row.querySelector("[data-folder-rename]")?.addEventListener("click", (e) => {
+          e.stopPropagation(); closeAllBarPalettes(null); renameFolderPrompt(node);
+        });
+        row.querySelector("[data-folder-move]")?.addEventListener("click", (e) => {
+          e.stopPropagation(); closeAllBarPalettes(null); moveFolderPrompt(node);
+        });
+        row.querySelector("[data-folder-remove]")?.addEventListener("click", (e) => {
+          e.stopPropagation(); closeAllBarPalettes(null); removeFolderPrompt(node);
+        });
+        // Clicking the row itself drills in -- but not when the click came
+        // from one of the editing controls layered on top of it.
+        row.addEventListener("click", (e) => {
+          if (e.target.closest(".folder-order-btn, .folder-menu-wrap")) return;
           openFolderPath = [...openFolderPath, node];
           renderFoldersView();
         });
@@ -550,6 +717,88 @@
         if (child) return child;
       }
       return null;
+    }
+
+    /** ▲▼ swap `order` with the adjacent sibling -- two single-field updates, not a transaction: a partial failure leaves a display-order quirk (I5: nothing is keyed by `order`), never a corruption. */
+    async function reorderFolderSwap(siblings, idx, direction) {
+      const mine = siblings[idx];
+      const other = siblings[idx + direction];
+      if (!mine || !other) return;
+      const mineOrder = mine.order ?? 0, otherOrder = other.order ?? 0;
+      const first = await runFolderWrite(
+        () => reorderFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, folderId: mine.folderId, order: otherOrder, actorUid: auth.currentUser.uid }),
+        { collection: TENANT.NOTE_FOLDERS, action: "reorderFolder" }
+      );
+      if (!first.ok) return;
+      const second = await runFolderWrite(
+        () => reorderFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, folderId: other.folderId, order: mineOrder, actorUid: auth.currentUser.uid }),
+        { collection: TENANT.NOTE_FOLDERS, action: "reorderFolder" }
+      );
+      if (!second.ok) return;
+      await refreshAll();
+    }
+
+    async function renameFolderPrompt(node) {
+      const name = prompt(t("Rename this folder:"), node.name ?? "");
+      if (name == null) return;
+      const trimmed = name.trim();
+      if (!trimmed) { showPageStatus(t("A folder needs a name — nothing renamed.")); return; }
+      const outcome = await runFolderWrite(
+        () => renameFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, folderId: node.folderId, name: trimmed, actorUid: auth.currentUser.uid }),
+        { collection: TENANT.NOTE_FOLDERS, action: "renameFolder" }
+      );
+      if (!outcome.ok) return;
+      showPageStatus(t('Folder renamed to "{name}".', { name: trimmed }));
+      await refreshAll();
+    }
+
+    /** Same prompt-a-folder-name-from-a-list shape as `openFileDialog()`/`moveNoteDialog()` -- system folders are excluded as a DESTINATION (they refuse a parent outright, per journeyFolder()'s own rule) and the folder can't be moved into itself. Any other refusal (a cycle, too deep) is only known once the write is attempted, and is surfaced in words by `runFolderWrite()`. */
+    async function moveFolderPrompt(node) {
+      const TOP_LEVEL = t("(Top level)");
+      const flat = flattenFolders(mergedRoots()).filter(({ folder }) =>
+        folder.folderId !== node.folderId && !isSystemFolderRole(folder.semanticRole));
+      const choice = prompt(
+        t('Move folder "{name}" under which folder? Type the exact name shown, "{topLevel}" for the top level, or cancel.',
+          { name: folderDisplayName(node), topLevel: TOP_LEVEL })
+        + "\n" + TOP_LEVEL + "\n" + flat.map(({ folder, depth }) => `${"— ".repeat(depth)}${folderDisplayName(folder)}`).join("\n")
+      );
+      if (!choice) return;
+      let parentFolderId = null;
+      if (choice.trim().toLowerCase() !== TOP_LEVEL.trim().toLowerCase()) {
+        const match = flat.find(({ folder }) => folderDisplayName(folder).trim().toLowerCase() === choice.trim().toLowerCase());
+        if (!match) { showPageStatus(t("No folder matched that name — nothing moved.")); return; }
+        parentFolderId = match.folder.folderId;
+      }
+      const outcome = await runFolderWrite(
+        () => moveFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, folderId: node.folderId, parentFolderId, actorUid: auth.currentUser.uid }),
+        { collection: TENANT.NOTE_FOLDERS, action: "moveFolder" }
+      );
+      if (!outcome.ok) return;
+      showPageStatus(t('Folder "{name}" moved.', { name: folderDisplayName(node) }));
+      await refreshAll();
+    }
+
+    /**
+     * Retiring a folder with active children is refused by the Rules
+     * (`parentOneHopOk()`) -- checked here FIRST, against the tree already
+     * loaded (no extra read: `node.children` already reflects only ACTIVE
+     * folders, the same set the underlying retire writer itself checks), so
+     * the common case says so in words before ever attempting the write.
+     */
+    async function removeFolderPrompt(node) {
+      if ((node.children ?? []).length > 0) {
+        showPageStatus(t('"{name}" still has folders inside it — remove those first, then this one.', { name: folderDisplayName(node) }));
+        return;
+      }
+      if (!confirm(t('Remove folder "{name}"? This can\'t be undone from here, but nothing is destroyed — an administrator can restore it. Notes filed in it are not deleted.', { name: folderDisplayName(node) }))) return;
+      const outcome = await runFolderWrite(
+        () => retireFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, folderId: node.folderId, actorUid: auth.currentUser.uid }),
+        { collection: TENANT.NOTE_FOLDERS, action: "retireFolder" }
+      );
+      if (!outcome.ok) return;
+      showPageStatus(t('Folder "{name}" removed.', { name: folderDisplayName(node) }));
+      if (openFolderPath.some((f) => f.folderId === node.folderId)) openFolderPath = [];
+      await refreshAll();
     }
 
     async function loadFolderContents(node) {
@@ -574,9 +823,28 @@
         // retire -- see fileNoteInFolder() for the unambiguous "add a
         // filing" action those two views offer instead).
         if (isSelfSelected()) {
-          rows.forEach(({ placement, note }) => {
+          // `rows` is already in the author's own placement order -- the
+          // per-folder placement READ itself queries `orderBy("order")`
+          // (the one Note Foundation query this project's own composite
+          // index candidate exists to serve) -- so array index IS the
+          // display order, and up/down swap the `order` field with the
+          // adjacent placement exactly the way folder reorder swaps siblings.
+          rows.forEach(({ placement, note }, idx) => {
             const card = target.querySelector(`[data-note-id="${CSS.escape(note.noteId)}"] [data-note-actions]`);
             if (!card) return;
+            const up = document.createElement("button");
+            up.type = "button"; up.className = "secondary tiny note-order-btn"; up.textContent = "▲";
+            up.setAttribute("aria-label", t("Move up"));
+            up.disabled = idx === 0;
+            up.addEventListener("click", () => reorderNoteInFolder(rows, idx, -1));
+            const down = document.createElement("button");
+            down.type = "button"; down.className = "secondary tiny note-order-btn"; down.textContent = "▼";
+            down.setAttribute("aria-label", t("Move down"));
+            down.disabled = idx === rows.length - 1;
+            down.addEventListener("click", () => reorderNoteInFolder(rows, idx, 1));
+            card.appendChild(up);
+            card.appendChild(down);
+
             const btn = document.createElement("button");
             btn.type = "button"; btn.className = "secondary tiny"; btn.textContent = t("Move to…");
             btn.addEventListener("click", () => moveNoteDialog(note, placement, node));
@@ -593,6 +861,25 @@
         });
         target.appendChild(fileBtn);
       }
+    }
+
+    /** ▲▼ for a Note filed in the currently-open folder -- P6-E's `reorderFiling()`, swapping `order` with the adjacent placement the same way `reorderFolderSwap()` swaps folder siblings. */
+    async function reorderNoteInFolder(rows, idx, direction) {
+      const mine = rows[idx]?.placement;
+      const other = rows[idx + direction]?.placement;
+      if (!mine || !other) return;
+      const mineOrder = mine.order ?? 0, otherOrder = other.order ?? 0;
+      const first = await runFolderWrite(
+        () => reorderFiling(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, placementId: mine.placementId, order: otherOrder, actorUid: auth.currentUser.uid }),
+        { collection: TENANT.NOTE_PLACEMENTS, action: "reorderFiling" }
+      );
+      if (!first.ok) return;
+      const second = await runFolderWrite(
+        () => reorderFiling(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, placementId: other.placementId, order: mineOrder, actorUid: auth.currentUser.uid }),
+        { collection: TENANT.NOTE_PLACEMENTS, action: "reorderFiling" }
+      );
+      if (!second.ok) return;
+      await refreshAll();
     }
 
     function emptyStateFor(node) {
