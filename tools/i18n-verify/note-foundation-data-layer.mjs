@@ -46,11 +46,21 @@ globalThis.__nfFirestore = {
 };
 globalThis.__nfEnvelope = {
   createDocument: async (_db, collectionName, docId, data, uid) => writes.push({ kind: "create", collectionName, docId, data, uid }),
-  runEnvelopeTransaction: async (_db, uid, callback) => callback({
-    get: async (collectionName, docId) => snapshot(documents.get(`${collectionName}/${docId}`)),
-    create: (collectionName, docId, data) => writes.push({ kind: "create", collectionName, docId, data, uid }),
-    update: (collectionName, docId, data) => writes.push({ kind: "update", collectionName, docId, data, uid }),
-  }),
+  // v08.56: a successful transaction now COMMITS its creates into `documents`,
+  // as real Firestore does. createPermanentNote() writes its birth-time source
+  // link in a second commit that reads the Note the first one created, so a
+  // stub that never persisted a create could not model it (the standing
+  // "the stub never mutates its own DATA" trap).
+  runEnvelopeTransaction: async (_db, uid, callback) => {
+    const pending = [];
+    const result = await callback({
+      get: async (collectionName, docId) => snapshot(documents.get(`${collectionName}/${docId}`)),
+      create: (collectionName, docId, data) => { pending.push([`${collectionName}/${docId}`, data]); writes.push({ kind: "create", collectionName, docId, data, uid }); },
+      update: (collectionName, docId, data) => writes.push({ kind: "update", collectionName, docId, data, uid }),
+    });
+    for (const [key, data] of pending) documents.set(key, data);
+    return result;
+  },
 };
 
 const moduleUrl = `data:text/javascript;base64,${Buffer.from(source).toString("base64")}`;
@@ -70,6 +80,18 @@ assert.deepEqual(writes.map(({ collectionName }) => collectionName), ["noteRevis
 assert.equal(writes[0].data.previousRevisionId, null);
 assert.equal(writes[1].data.currentRevisionId, "rev-1");
 assert.equal(writes[2].data.sourceKey, "ayah:1:1");
+
+// v08.56: the source link is a SECOND commit. If it fails, the reader is told
+// (I15) and told the Note itself was saved -- never a silent half-success.
+writes.length = 0;
+await assert.rejects(() => foundation.createPermanentNote({}, {
+  tenantId: "tenant", ownerPersonId: "person", ownerUid: "owner-uid",
+  noteId: "note-half", revisionId: "rev-half", title: "T", bodyHtml: "<p>B</p>", actorUid: "owner-uid",
+  source: { sourceLinkId: "source-half", sourceKind: "", sourceKey: "ayah:1:1", relationshipKind: "origin", provenanceKind: "study-note" },
+}), /The Note was saved, but linking it to its study unit failed/);
+assert.ok(documents.has("notes/tenant__note-half"), "the Note committed before the link was attempted");
+assert.deepEqual(writes.map(({ collectionName }) => collectionName), ["noteRevisions", "notes"]);
+documents.delete("notes/tenant__note-half"); documents.delete("noteRevisions/tenant__rev-half");
 
 documents.set("notes/tenant__note-1", {
   noteId: "note-1", tenantId: "tenant", ownerPersonId: "person", ownerUid: "owner-uid",
@@ -441,11 +463,23 @@ assert.deepEqual(writes[0].data, {
 assert.equal(writes.filter((w) => w.collectionName === "notes").length, 0,
   "the Note document is never written by this call -- identity stays immutable");
 
-// Duplicate sourceLinkId is refused, the same way createPermanentNote()
-// refuses a duplicate Note id.
-writes.length = 0; documents.clear(); putNote(NOTE()); putSource(SRC({ sourceLinkId: "src-2" }));
-await assert.rejects(() => foundation.createNoteSource({}, SOURCE_ARGS()), /Source link ID already exists/);
-assert.equal(writes.length, 0);
+// UPDATED IN PLACE, v08.56. This used to assert a duplicate sourceLinkId is
+// refused by a pre-read of noteSources/{id}. That pre-read was a LIVE DEFECT:
+// the deployed `allow get` reads `resource.data.*`, a not-yet-existing document
+// has a null `resource`, and the evaluation error denied EVERY source link (and,
+// via the same pattern, every Note create) in production -- proven by
+// note-foundation-real-function.rules.test.mjs against the real Rules engine.
+// Ids are random UUIDs, so the pre-read is gone; what is asserted now is that
+// neither create path reads the document it is about to create.
+writes.length = 0; documents.clear(); putNote(NOTE());
+{
+  const src = await import("node:fs").then((fs) => fs.readFileSync(new URL("../../app/js/note-foundation.js", import.meta.url), "utf8"));
+  const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+  assert.equal(/transaction\.get\(TENANT\.NOTE_SOURCES,\s*sourceDocId\)/.test(code), false,
+    "createNoteSource never pre-reads the source link it is about to create");
+  assert.equal(/transaction\.get\(TENANT\.NOTES,\s*noteDocId\)[\s\S]{0,80}already exists/.test(code), false,
+    "createPermanentNote never pre-reads the Note it is about to create");
+}
 
 // Two ACTIVE links naming the SAME sourceKey are NOT refused -- nothing in the
 // accepted Rules, ADR-009 or listNoteSourcesForUnit()'s own read contract

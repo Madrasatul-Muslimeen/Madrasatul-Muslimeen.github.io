@@ -75,8 +75,13 @@ export async function createPermanentNote(db, {
   const revisionDocId = noteFoundationDocId(tenantId, revisionId);
 
   await runEnvelopeTransaction(db, actorUid, async (transaction) => {
-    const existing = await transaction.get(TENANT.NOTES, noteDocId);
-    if (existing.exists()) throw new Error("Note ID already exists.");
+    // NO PRE-READ OF `notes/{noteDocId}` (removed v08.56). The deployed
+    // `allow get` evaluates `resource.data.tenantId`, and on a document that
+    // does not exist `resource` is null — so reading a not-yet-created Note is
+    // an evaluation error, the whole transaction is denied, and creating a
+    // Note has been impossible in production. The id is a random UUID
+    // (`newNoteEntityId()`), and `transaction.create()` is the only write
+    // here, so there is nothing a duplicate-id read was protecting.
 
     transaction.create(TENANT.NOTE_REVISIONS, revisionDocId, {
       revisionId,
@@ -97,21 +102,32 @@ export async function createPermanentNote(db, {
       status: NOTE_STATUS.ACTIVE,
       currentRevisionId: revisionId,
     });
-
-    if (source) {
-      const sourceLinkId = source.sourceLinkId ?? newNoteEntityId();
-      transaction.create(TENANT.NOTE_SOURCES, noteFoundationDocId(tenantId, sourceLinkId), {
-        sourceLinkId,
-        ...relationBase(owner, noteId),
-        sourceKind: requireToken("sourceKind", source.sourceKind),
-        sourceKey: requireToken("sourceKey", source.sourceKey),
-        relationshipKind: requireToken("relationshipKind", source.relationshipKind),
-        approachId: source.approachId ?? null,
-        provenanceKind: requireToken("provenanceKind", source.provenanceKind),
-        status: NOTE_STATUS.ACTIVE,
-      });
-    }
   });
+
+  // THE BIRTH-TIME SOURCE LINK IS A SECOND, SEPARATE COMMIT (v08.56). It used
+  // to be written inside the transaction above, and the deployed
+  // `noteSources` create rule checks REL-01 with `exists()`/`get()` on the
+  // Note — which see the database BEFORE this commit, where the Note does not
+  // exist yet. So every Note born with a source was denied, and since
+  // `createStudyNote()` always passes one, no Note could be created from the
+  // Notes screen at all. Proven against the real Rules engine by
+  // note-foundation-real-function.rules.test.mjs. Writing the link once the
+  // Note has committed satisfies the deployed rule as it stands; if that
+  // second write fails, the error is rethrown so it reaches the reader (I15)
+  // and says the Note itself WAS saved.
+  if (source) {
+    try {
+      await createNoteSource(db, {
+        tenantId, ownerPersonId, ownerUid, noteId, source,
+        sourceLinkId: source.sourceLinkId ?? newNoteEntityId(), actorUid,
+      });
+    } catch (error) {
+      const wrapped = new Error(`The Note was saved, but linking it to its study unit failed: ${error?.message ?? error}`);
+      wrapped.cause = error;
+      wrapped.code = error?.code;
+      throw wrapped;
+    }
+  }
 
   return { noteId, revisionId, noteDocId, revisionDocId };
 }
@@ -497,10 +513,9 @@ export async function retireNoteSource(db, { tenantId, ownerPersonId, sourceLink
  * an accepted decision restated — a data-layer choice flagged in this round's
  * own report for confirmation, since the Rules candidate itself is silent.
  *
- * DUPLICATE SOURCE-LINK IDS ARE REFUSED, THE SAME WAY A DUPLICATE NOTE ID IS:
- * `createPermanentNote()` reads `notes/{noteDocId}` first and refuses an
- * existing id; this function reads `noteSources/{sourceDocId}` first and does
- * the same. TWO ACTIVE LINKS NAMING THE SAME `sourceKey` ARE NOT REFUSED —
+ * SOURCE-LINK IDS ARE NOT PRE-READ (v08.56): reading a document that does not
+ * exist is an evaluation error under the deployed `allow get`, which denied
+ * every source link in production. The id is a random UUID. TWO ACTIVE LINKS NAMING THE SAME `sourceKey` ARE NOT REFUSED —
  * nothing in the accepted Rules, ADR-009, or `listNoteSourcesForUnit()`'s own
  * read contract forbids a Note being bound twice to one unit (once `origin`,
  * once later `reference`, for instance), so inventing that constraint here
@@ -520,8 +535,8 @@ export async function createNoteSource(db, {
   await runEnvelopeTransaction(db, actorUid, async (transaction) => {
     const noteSnapshot = await transaction.get(TENANT.NOTES, noteDocId);
     if (!noteSnapshot.exists()) throw new Error("Note does not exist.");
-    const sourceSnapshot = await transaction.get(TENANT.NOTE_SOURCES, sourceDocId);
-    if (sourceSnapshot.exists()) throw new Error("Source link ID already exists.");
+    // NO PRE-READ OF `noteSources/{sourceDocId}` (removed v08.56) — the same
+    // null-`resource` evaluation error as `createPermanentNote()`; see there.
 
     const note = noteSnapshot.data();
     if (note.tenantId !== tenantId || note.ownerPersonId !== ownerPersonId) {

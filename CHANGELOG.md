@@ -17508,3 +17508,38 @@ The Architect runs `npm ci && npm run note-foundation-real-function` from
 **Untouched, as instructed**: `app/js/note-foundation.js`, `app/js/
 envelope.js`, `note-foundation-v1.rules.test.mjs`, `firestore.rules`,
 `firebase.json`, `.github/workflows/**`, `app/js/version.js`.
+
+**v08.56 (24 Sep 2026).** `app/js/version.js`: 08.55 → **08.56**, allocated by
+the MMSA Architect. **A live defect, fixed: creating a Note was refused by the
+deployed Firestore Rules, so the Notes screen (v08.47) could never save one.**
+The builder's suite above is what found it — the Architect's own run of it
+failed at the very first case (`SELF-02-REAL`). Two causes, both in
+`app/js/note-foundation.js`, both fixed in code, **no Rules publish needed**:
+
+1. `createPermanentNote()` and `createNoteSource()` read the document they were
+   about to create, to refuse a duplicate id. The deployed `allow get` evaluates
+   `resource.data.tenantId`; on a document that does not exist `resource` is
+   null, the evaluation errors, and the whole transaction is denied. Both
+   pre-reads are removed — ids are random UUIDs from `newNoteEntityId()`.
+2. The Note's birth-time `noteSources` link was written in the SAME transaction
+   as the Note, but the deployed REL-01 check reads the Note with
+   `exists()`/`get()`, which see the database before the commit. Since
+   `createStudyNote()` always passes a source, every Note `notes.html` creates
+   was refused. The link is now a second commit once the Note exists; a failure
+   there is rethrown, saying the Note itself was saved (I15).
+
+The real-function suite now passes **5/5 against the Phase 5 candidate AND
+against the live `firestore.rules`** (`RULES_FILE=firestore.rules`), and
+**fails with the old `note-foundation.js` restored** (stash proof). Its own
+TXN-03 follow-up read a non-existent revision as the client — the same
+null-`resource` denial — and now asks with rules disabled. 
+`note-foundation-data-layer.mjs` updated in place with the reason recorded: the
+duplicate-id refusal assertion became an assertion that neither create path
+pre-reads its own document; its transaction stub now commits creates into its
+in-memory store (the "stub never mutates its own DATA" trap), and a new case
+proves a failed second commit reaches the caller with the Note saved.
+`study-note-boundary.mjs`/`journey-map-boundary.mjs` each carry one
+"note-foundation.js changed by insertion only versus `origin/main`" check that
+reads red on this branch before merge by construction and clean once `main`
+carries it — verified by the post-merge simulation. No Rules, index,
+`firebase.json` or workflow change.

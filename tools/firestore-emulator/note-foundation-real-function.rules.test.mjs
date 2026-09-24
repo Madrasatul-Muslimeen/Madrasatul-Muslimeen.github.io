@@ -209,8 +209,16 @@ test("real note-foundation.js functions against the real candidate Rules", async
     assert.equal(noteSnapAfterStaleAttempt.data().currentRevisionId, REV2,
       "a refused stale update must leave the Note exactly where it was");
     assert.equal(noteSnapAfterStaleAttempt.data().title, "Revised title");
-    const staleRevisionSnap = await getDoc(doc(p1, "noteRevisions", nk(T, REV3_STALE_ATTEMPT)));
-    assert.ok(!staleRevisionSnap.exists(), "a refused stale update must not have written its revision either");
+    // Read with rules DISABLED: the deployed `allow get` evaluates
+    // `resource.data.*`, so a client get of a revision that does not exist is
+    // an evaluation error, not an empty snapshot -- the very defect v08.56
+    // removed from the data layer. Asking as an admin is what can answer
+    // "was nothing written?".
+    let staleExists = null;
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      staleExists = (await getDoc(doc(ctx.firestore(), "noteRevisions", nk(T, REV3_STALE_ATTEMPT)))).exists();
+    });
+    assert.equal(staleExists, false, "a refused stale update must not have written its revision either");
 
     // --- 3. retirePermanentNote() succeeds for the owner (mirrors IMM-03b) -
     // This is the exact case the comment above retirePermanentNote() in
