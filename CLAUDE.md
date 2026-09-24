@@ -158,7 +158,18 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.56 on `main`** (24 Sep 2026 — **a live defect
+**Current milestone: v08.57 on `main`** (24 Sep 2026 — the Owner's report
+"app takes years to open" MEASURED first: the page is usable in ~0.4s under
+the harness, but **two opening splashes played back to back on every open by
+default — about 21 seconds, with no way past them.** `app/js/splash.js`: an
+unset preference now means "Once a day" (a chosen "Every time" is kept), a tap
+anywhere skips an opener, and "never" — which `harness.mjs` has always
+written, believing it switched them off — now really does. Root `index.html`
+goes straight to `/app/quranrevival.html`. `splash-skip.mjs` 11/0,
+mutation-proven. **Lesson: when someone says "slow", time what they actually
+wait through before measuring bytes.**)
+
+**Previous milestone: v08.56 on `main`** (24 Sep 2026 — **a live defect
 fixed: the Notes screen (v08.47) could never save a Note.** Found by the
 builder's new suite `tools/firestore-emulator/note-foundation-real-function.
 rules.test.mjs` (issue #242), the first to run the REAL `note-foundation.js`

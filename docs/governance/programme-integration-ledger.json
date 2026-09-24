@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.56",
+    "version": "08.57",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -449,7 +449,7 @@
     {
       "version": "08.56",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "MAP v4 Phase 5 live-defect fix: creating a Note was refused by the deployed Rules, so the Notes screen (v08.47) could never save one. Two causes, both in app/js/note-foundation.js and both found by the builder's new real-function emulator suite (issue #242): (1) createPermanentNote()/createNoteSource() pre-read the document they were about to create, and the deployed `allow get` evaluates resource.data on a null resource -- an evaluation error that denies the whole transaction; the pre-reads are removed (ids are random UUIDs); (2) the birth-time noteSources link was written in the SAME transaction as the Note, but the deployed REL-01 check uses exists()/get(), which see the database before the commit -- the link is now a second commit after the Note, and a failure there is rethrown saying the Note itself was saved (I15). Code-only: no Rules, index or firebase.json change. note-foundation-real-function.rules.test.mjs (issue #242) passes 5/5 against the candidate AND the live firestore.rules, and fails with the old code. note-foundation-data-layer.mjs updated in place with the reason recorded.",
       "integration": {
         "authorizedOn": "2026-09-24",
@@ -457,10 +457,23 @@
         "method": "MERGE_PR",
         "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/issues/242"
       }
+    },
+    {
+      "version": "08.57",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Owner report 'app takes years to open': two opening splashes played back to back on every open by default (~21s, unskippable). app/js/splash.js: an unset preference now means 'Once a day' (a chosen 'Every time' is kept); a tap anywhere skips an opener; 'never' (written by harness.mjs for the life of the suites) now really suppresses them; 'Tap to skip' hint with Bangla. Root index.html redirects straight to /app/quranrevival.html, one round trip fewer. New splash-skip.mjs, 11 checks, mutation-proven. The ignored mid-stylesheet Google Fonts @import was found and deliberately left alone (moving it would add a download and change the wheel's type).",
+      "integration": {
+        "authorizedOn": "2026-09-24",
+        "integratedOn": "2026-09-24",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/245"
+      }
     }
   ],
-  "nextUnallocated": "08.57",
+  "nextUnallocated": "08.58",
   "nextUnallocatedNote": [
+    "v08.57 was allocated to the app-opening speed fix (the two ~21s unskippable opening splashes), on the Owner's report, 2026-09-24.",
     "v08.56 was allocated to the MAP v4 Phase 5 live-defect fix -- Notes could not be created against the deployed Rules (issue #242), 2026-09-24.",
     "v08.55 was allocated to MAP v4 Phase 4 P4-F, Study activity in Monitor's weekly view (issues #230/#238), 2026-09-24.",
     "v08.54 was allocated to MAP v4 Phase 6 P6-G, folder editing in Mapping My Journey (issues #229/#234), 2026-09-24.",
