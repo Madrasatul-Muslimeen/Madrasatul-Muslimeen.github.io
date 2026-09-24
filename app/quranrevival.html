@@ -4101,7 +4101,18 @@
              the same "tap the open tab to close it" idiom Read/Note/Approach
              already use. -->
         <button type="button" class="qr-tab qr-tab-view" id="tabExploreBtn" aria-controls="exploreView" aria-pressed="false">Explore</button>
-        <button type="button" class="qr-tab qr-tab-view" id="tabJourneyBtn" disabled aria-disabled="true" title="Coming later">Mapping My Journey</button>
+        <!-- Issue #257 (24 Sep 2026) -- the Owner's own instruction: "Folder
+             should be built/accessible from the Mapping tab." The real
+             screen (app/journey-map.html) has existed since v08.37; this
+             was a disabled placeholder for the whole time since. A tap
+             navigates straight there, opened on the Folders view via a
+             plain "#folders" hash token -- that page's own viewFromHash()
+             reads it, honouring the viewer's remembered choice only when no
+             hash is present (see its own comment). Unlike Approach/Study/
+             Explore this is a LINK to a different page, not an in-page
+             view switch -- no aria-pressed, and nothing here loads until
+             pressed, so nothing joins the Quran Study startup path (I9). -->
+        <button type="button" class="qr-tab qr-tab-view" id="tabJourneyBtn">Mapping My Journey</button>
       </div>
       <div id="unitLabel"></div>
     </div><!-- /#dock -->
@@ -4681,6 +4692,7 @@
     const exploreListSplitter = document.getElementById("exploreListSplitter");
     const exploreListCollapseBtn = document.getElementById("exploreListCollapseBtn");
     const tabExploreBtn = document.getElementById("tabExploreBtn");
+    const tabJourneyBtn = document.getElementById("tabJourneyBtn");
     const exploreView = document.getElementById("exploreView");
     const exploreBarEl = document.getElementById("exploreBar");
     const exploreFullscreenBtn = document.getElementById("exploreFullscreenBtn");
@@ -7101,6 +7113,15 @@
       closeAllPanels();
       setStageView("explore");
       await openExplore();
+    });
+
+    // Issue #257 -- Mapping My Journey is a real, separate page, not an
+    // in-page #stage view like its three siblings, so its tab is a plain
+    // navigation rather than a stage-view switch. Opens straight to the
+    // Folders view (the issue's own ask) via the hash journey-map.html's
+    // own viewFromHash() reads.
+    tabJourneyBtn.addEventListener("click", () => {
+      window.location.href = "journey-map.html#folders";
     });
 
     /** Explore's own full screen -- two states, a separate mechanism from

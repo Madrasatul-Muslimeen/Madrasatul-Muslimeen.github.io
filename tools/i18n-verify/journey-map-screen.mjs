@@ -426,9 +426,66 @@ check("the Notes screen's own contextual entry point (Read screen's ⋯ menu, wi
   const renderer = fs.readFileSync(path.join(root, "app/js/ayah-note-renderer.js"), "utf8");
   assert.ok(renderer.includes("My Notes for this unit") && renderer.includes("notesScreenHref"),
     "the existing notes.html entry point regressed");
+});
+// UPDATED 24 Sep 2026 for issue #257, WITH THE REASON RECORDED RATHER THAN
+// THE CHECK WEAKENED. P6-F's own accepted decision was that the entry point
+// was Home ONLY, not a contextual menu -- true then, because the Mapping
+// tab and the ⋯ menu's own Mapping My Journey row were both the disabled
+// placeholder, so a reference from either side would have pointed at
+// nothing real. The Owner's own instruction ("Folder should be built/
+// accessible from the Mapping tab") is exactly a second, contextual entry
+// point, so the claim above is narrowed (Notes' own entry point is
+// untouched) rather than kept as "no journey-map.html reference anywhere",
+// and this new check covers the two real entry points that replaced it.
+check("the dock's Mapping tab and the Note view's own ⋯ menu are both real, wired entry points into journey-map.html's Folders view (issue #257)", () => {
+  const renderer = fs.readFileSync(path.join(root, "app/js/ayah-note-renderer.js"), "utf8");
   const quranShell = fs.readFileSync(path.join(root, "app/quranrevival.html"), "utf8");
-  assert.ok(!quranShell.includes("journey-map.html") && !renderer.includes("journey-map.html"),
-    "the Read screen's own ⋯ menu should not gain a direct journey-map.html reference this round -- the entry point is Home, not a contextual menu");
+  assert.ok(!/id="tabJourneyBtn"[^>]*(?:disabled|aria-disabled="true")/.test(quranShell),
+    "the dock's Mapping tab is still disabled");
+  assert.ok(quranShell.includes('"journey-map.html#folders"'),
+    "the dock's Mapping tab no longer navigates to journey-map.html#folders");
+  assert.ok(!/qm-item"\s*disabled[^>]*>\$\{t\("Mapping My Journey"\)\}/.test(renderer),
+    "the Note view's ⋯ menu Mapping My Journey row is still the disabled placeholder");
+  assert.ok(/<a class="qm-item" href="journey-map\.html#folders">\$\{t\("Mapping My Journey"\)\}<\/a>/.test(renderer),
+    "the Note view's ⋯ menu Mapping My Journey row is not a real link to journey-map.html#folders");
+});
+
+// --- 9. HASH-BASED VIEW SELECTION (issue #257) -------------------------------
+// The dock's Mapping tab and the Note view's own ⋯ menu both now open this
+// page pointed at the Folders view via a plain "#folders" hash -- checked
+// from THEIR own side above and in journey-map-boundary.mjs/
+// quran-boundary.mjs. This section covers the READING side, here on the
+// page that has to make sense of whatever hash a caller sends it.
+check("the initial view is read from location.hash via a dedicated helper, not inlined ad hoc", () => {
+  assert.ok(/function viewFromHash\s*\(/.test(page), "no viewFromHash() helper found");
+  assert.ok(/location\.hash/.test(page), "the page never reads location.hash");
+});
+check("only the three view tokens are accepted from the hash -- anything else is ignored, not partially matched", () => {
+  const body = functionBody(page, "viewFromHash");
+  assert.ok(/VALID_VIEWS\.includes\(raw\)/.test(body),
+    "viewFromHash() does not validate the token against the closed three-view set");
+  assert.ok(!/\.startsWith\(|\.match\(|\.test\(/.test(body),
+    "viewFromHash() should not pattern-match the hash -- an exact membership check is what makes an unrecognised token safely ignored rather than partially honoured");
+});
+check("VALID_VIEWS names exactly the three views the toggle itself offers, nowhere retyped as a second literal", () => {
+  const decl = page.match(/const VALID_VIEWS = (\[[^\]]+\]);/);
+  assert.ok(decl, "no VALID_VIEWS constant declaration found");
+  assert.deepEqual(JSON.parse(decl[1].replace(/'/g, '"')), ["folders", "timeline", "path"]);
+});
+check("an unknown or absent hash falls back to today's default -- the remembered view, or \"folders\"", () => {
+  const decl = page.match(/let currentView = (viewFromHash\(\)[\s\S]*?);\s*\n/);
+  assert.ok(decl, "no `currentView` initial-value expression found, or it no longer starts from viewFromHash()");
+  assert.ok(/localStorage\.getItem\(VIEW_KEY\)/.test(decl[1]) && /"folders"/.test(decl[1]),
+    "currentView's fallback (when the hash is absent/invalid) no longer reads the remembered view, defaulting to \"folders\"");
+});
+check("the hash wins over the remembered view ONLY when it is actually present -- viewFromHash() is consulted first", () => {
+  const decl = page.match(/let currentView = (viewFromHash\(\)[\s\S]*?);\s*\n/);
+  assert.ok(decl, "no `currentView` initial-value expression found");
+  const hashAt = decl[1].indexOf("viewFromHash()");
+  const storedAt = decl[1].indexOf("localStorage.getItem(VIEW_KEY)");
+  assert.ok(hashAt !== -1 && storedAt !== -1 && hashAt < storedAt,
+    "viewFromHash() must be tried before the remembered localStorage value, via ?? (nullish coalescing), so a present, valid hash wins and an absent/invalid one falls through");
+  assert.ok(decl[1].includes("??"), "currentView no longer falls through with ?? -- a present hash must win outright, never be merely preferred");
 });
 
 console.log(`\n==== Mapping My Journey screen (P6-F): ${passed} passed, ${failed} failed ====`);

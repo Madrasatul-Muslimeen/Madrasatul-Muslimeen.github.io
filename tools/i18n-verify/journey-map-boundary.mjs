@@ -303,9 +303,36 @@ check("existing user notes untouched; the data layer changed by INSERTION ONLY, 
   const addedLines = diffText.split("\n").filter((l) => l.startsWith("+") && !l.startsWith("+++"));
   assert.ok(addedLines.length > 0);
 });
-check("the Mapping My Journey pillar is still explicitly unavailable", () => {
+// UPDATED 24 Sep 2026 for issue #257, WITH THE REASON RECORDED RATHER THAN
+// THE CHECK WEAKENED. Until now this asserted the Mapping tab stayed an
+// explicit placeholder -- true for the whole life of the P6-F/P6-G rounds,
+// because nothing had ever wired it to the real screen those rounds built.
+// The Owner's own instruction ("Folder should be built/accessible from the
+// Mapping tab") is exactly that wiring, so asserting the placeholder still
+// holds would be asserting this round's own change did not happen -- the
+// same shape every prior inversion in this file already uses. Inverted,
+// not deleted: it now asserts the tab is enabled AND that its own click
+// handler is wired to the real screen's Folders view, by id and by target,
+// not merely that the word "disabled" is gone from the markup.
+check("the Mapping My Journey pillar is switched on, and its tap opens journey-map.html straight to the Folders view", () => {
   const shell = fs.readFileSync(path.join(appDir, "quranrevival.html"), "utf8");
-  assert.match(shell, /id="tabJourneyBtn"[^>]*(?:disabled|aria-disabled="true")/);
+  assert.ok(!/id="tabJourneyBtn"[^>]*(?:disabled|aria-disabled="true")/.test(shell),
+    "the Mapping tab is still disabled");
+  assert.ok(shell.includes('getElementById("tabJourneyBtn")'),
+    "nothing in quranrevival.html's own script wires the Mapping tab by id");
+  assert.ok(shell.includes('"journey-map.html#folders"'),
+    "the Mapping tab's own click handler does not navigate to journey-map.html#folders");
+});
+// The Note view's own ⋯ menu item (app/js/ayah-note-renderer.js) is the
+// SECOND entry point the issue names, and it was the identical disabled
+// placeholder -- inverted the same way, and checked from here since this
+// file already owns the "is the Mapping pillar still unavailable" claim.
+check("the Note view's own ⋯ menu carries a real Mapping My Journey link to journey-map.html's Folders view, not the disabled placeholder", () => {
+  const renderer = fs.readFileSync(path.join(appJs, "ayah-note-renderer.js"), "utf8");
+  assert.ok(!/qm-item"\s*disabled[^>]*>\$\{t\("Mapping My Journey"\)\}/.test(renderer),
+    "the ⋯ menu's Mapping My Journey row is still the disabled placeholder");
+  assert.ok(/<a class="qm-item" href="journey-map\.html#folders">\$\{t\("Mapping My Journey"\)\}<\/a>/.test(renderer),
+    "the ⋯ menu's Mapping My Journey row is not a real link to journey-map.html#folders");
 });
 
 // --- 2. ORIGIN != DESTINATION, enforced by inability ------------------------

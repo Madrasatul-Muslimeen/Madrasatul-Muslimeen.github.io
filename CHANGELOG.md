@@ -17871,3 +17871,80 @@ everywhere, `#readScroll` has zero overflow, and there is no horizontal
 overflow. New `tools/i18n-verify/read-sideways-last-line.mjs`: **24/0**, with a
 positive control that "Page by page" is really on; **the old CSS fails all 12
 reachability checks**. PR #37 closed as superseded.
+
+**Mapping My Journey's dock tab is switched on** (issue #257). The Owner's own
+instruction: *"Folder should be built/accessible from the Mapping tab."*
+`#tabJourneyBtn` — the fourth dock tab in `app/quranrevival.html`, a disabled
+placeholder since before Phase 6 — is enabled: `disabled`, `aria-disabled` and
+its `title="Coming later"` are gone, and a tap navigates to the real screen
+(`app/journey-map.html`, built v08.37) via `window.location.href =
+"journey-map.html#folders"`. Unlike its three siblings (Approach/Study/
+Explore), this is a genuine page navigation, not an in-page `#stage` view
+switch — no `aria-pressed`, nothing loads until pressed, and nothing joins the
+Quran Study startup path (I9).
+
+`journey-map.html` gains a small, explicit hash contract: `viewFromHash()`
+reads a plain `#folders`/`#timeline`/`#path` token from `location.hash` and
+ignores anything else (an exact membership check against the same
+`VALID_VIEWS` the toggle itself already used, never a partial match). The hash
+wins over the remembered `localStorage` choice ONLY when it is present
+(`viewFromHash() ?? (remembered-or-"folders")`), so a link that names a view
+and a viewer's own remembered choice on a plain open both keep working.
+
+The Note view's own ⋯ menu (`app/js/ayah-note-renderer.js`) gets the second
+entry point the issue asked for: the disabled "Mapping My Journey … Coming
+later" row is now a real `<a href="journey-map.html#folders">` link, the same
+target the dock tab opens. Neither entry point needs to carry WHO is acting in
+the URL — `journey-map.html` resolves its own sign-in/tenant/person context on
+load, exactly as `notes.html` already does — only WHICH view.
+
+**Four pre-existing checks asserted the opposite of this round's own ask, and
+all four are UPDATED IN PLACE, reason recorded, never weakened or deleted:**
+`journey-map-boundary.mjs`'s "the Mapping My Journey pillar is still
+explicitly unavailable" and `quran-boundary.mjs`'s matching check both now
+assert the tab is enabled, wired by id, and its tap targets
+`journey-map.html#folders` — plus a paired check in each that the Note view's
+own ⋯ item carries the same real link, not the disabled placeholder.
+`journey-map-screen.mjs` carried a THIRD casualty: P6-F's own accepted
+decision that the entry point was Home only, asserted as "no
+`journey-map.html` reference anywhere in the shell or the renderer" — exactly
+what this round's own two entry points now are. Narrowed to the claim that
+still holds (Notes' own separate entry point is untouched) plus a new check
+covering the two real entry points that replaced it. `behaviour.mjs`'s 42p
+check ("Mapping My Journey is in the ⋯ menu … still the placeholder") is the
+FOURTH: it now reads the ⋯ menu's real `journey-map.html#folders` link instead
+of a `.qm-item[disabled]` that no longer exists. All four inversions are
+mutation-proven: reintroducing `disabled`/the old placeholder row fails
+exactly the checks that changed, nothing else.
+
+`journey-map-screen.mjs` also gains five new checks for the hash contract
+itself: the hash is read via a dedicated helper naming `location.hash`; only
+the three view tokens are accepted (no `.match()`/`.test()`/`.startsWith()` —
+an unrecognised token is ignored outright, not partially honoured);
+`VALID_VIEWS` names exactly the three views the toggle offers, never a second
+retyped literal; an absent/invalid hash falls back to today's default (the
+remembered view, or `"folders"`); and the hash is tried BEFORE the remembered
+value via `??`, so a present, valid hash wins outright rather than merely
+being preferred. Mutation-proven: removing `viewFromHash()` entirely fails all
+five.
+
+No new translatable string (the tab's own label and the menu item's own text
+are unchanged; only their gating and target changed), no CSS change (the tab
+already carried `.qr-tab.qr-tab-view`; enabling it removes only the generic
+`button:disabled { opacity: 0.5 }` dimming — geometry is unaffected by
+construction, since no rule keys width/padding/font off `[disabled]`), no
+Firestore read/Rule/index, no version bump — **the Architect allocates one**.
+`app/js/version.js`, `CLAUDE.md`, `firestore.rules`, `firebase.json`,
+`.github/workflows/**`, `app/js/note-foundation.js` and
+`app/js/journey-map-service.js` are untouched.
+
+**All required checks re-run clean from the repository root**: the 8
+CI-gated governance suites (`programme-ledger` 8, `programme-ledger-mutations`
+49, `brief-integrity` 8, `study-activity-evidence-boundary` 28 +
+`-mutations` 13, `study-event-wiring` 41, `rules-authorisation-executable` 40,
+`workflow-expressions` 12), `journey-map-boundary` 18, `journey-map-screen` 39,
+`quran-boundary` 31 — **287 checks, 0 failed.** Playwright is not installed in
+this sandbox (the documented, repeated environment gap), so `layout.mjs` and
+`navcheck.mjs` could not be run; the dock's geometry is unaffected by
+construction (above), and a real-phone check at 320/360/390/412/768/1100px in
+both languages is the recommended substitute.
