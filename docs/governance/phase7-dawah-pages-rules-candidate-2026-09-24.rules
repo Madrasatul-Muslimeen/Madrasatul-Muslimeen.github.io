@@ -1,0 +1,376 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // =====================================================================
+    // MAP v4 Phase 7 (P7-A) — CANDIDATE Rules for Dawah printable pages.
+    //
+    // STATUS: CANDIDATE. NOT DEPLOYED. NOT MERGED INTO firestore.rules.
+    // Deploying Rules is an Owner Control Gate.
+    //
+    // ITS OWN FILE, ON PURPOSE — same reasoning as the Phase 6 candidate:
+    // this must never change what a queued-for-deployment candidate would
+    // apply, and nothing here is queued for deployment.
+    //
+    // GOVERNS EXACTLY ONE COLLECTION: dawahPages.
+    //
+    // SELF-CONTAINED EXTRACT: the helper block below is reproduced from
+    // production `firestore.rules` / the Phase 5-6 candidates so the emulator
+    // can run this file in isolation. It must never be pasted as a whole
+    // file. Four helpers (hasRoleIn, myPersonIdIn, isSelfPerson,
+    // isCoEnrolledTeacherOf) use defensive `.get(field, default)` reads where
+    // production reads the field directly — same allow/deny outcome
+    // whenever the field is present, differing only when it is ABSENT,
+    // where production errors (and so denies) and this denies cleanly. No
+    // case flips — the same, already-accepted divergence the Phase 6
+    // candidate's own header records.
+    //
+    // ---------------------------------------------------------------------
+    // ADR-011's FOUR OWNER DECISIONS, AS RULES
+    // ---------------------------------------------------------------------
+    // 1. Tenant-only visibility: every read below is gated on
+    //    personInTenant() naming THIS tenant, and a SHARED page is readable
+    //    by any signed-in member of that tenant (myRolesIn().size() > 0) —
+    //    never by anyone outside it, and never publicly.
+    // 2. Printable page from a Note: `create` requires the pinned
+    //    Note/revision to exist, belong to the same tenant and author, and
+    //    — the one check that closes the "claim a revision, send different
+    //    text" gap — requires the frozen `title`/`bodyHtml` sent on create to
+    //    equal the PINNED REVISION's own stored content, read via `get()`.
+    // 3. Approval: `isDawahApprover()` is the server-side twin of
+    //    `isValidDawahApprover()` (app/js/dawah-contract.js) — a minor's
+    //    guardian, a co-enrolled teacher, or owner/prime, and NEVER the
+    //    author themselves, checked first and unconditionally.
+    // 4. ADR-005: `dawahIdentityUnchanged()` freezes `sourceNoteId`,
+    //    `sourceRevisionId`, `title`, `bodyHtml` and `sourceUnitKey` on every
+    //    update — the frozen copy and the pin cannot change after creation,
+    //    by the server, not merely by client discipline.
+    //
+    // ---------------------------------------------------------------------
+    // A RECORDED READ-SCOPE DECISION, NOT AN OVERSIGHT
+    // ---------------------------------------------------------------------
+    // `listDawahPagesAwaitingMyApproval()` (app/js/dawah-data.js) queries
+    // `awaiting-approval` pages by tenant alone — it cannot filter by "am I
+    // this specific author's approver" in a `where()` clause, and Firestore
+    // denies an ENTIRE list query the moment any one returned document fails
+    // the per-document rule (the same LIST-vs-GET fact the Note Foundation
+    // candidates already document). So READ for an `awaiting-approval` page
+    // is granted to any GUARDIAN or TEACHER in the tenant, not narrowed to
+    // the one valid approver for that specific author — the data layer's own
+    // `isValidDawahApprover()` filter, applied after the read, is what
+    // narrows the list to pages a given approver may actually act on.
+    // WRITE (approve/return) stays narrow: only `isDawahApprover()` — the
+    // true, specific relationship — may change a page's status. A guardian
+    // or teacher can therefore see that SOME Dawah submission is pending in
+    // their tenant before they are the one who may decide it; they can never
+    // decide one that is not theirs to decide. This is a real, considered
+    // trade-off (browseability against tighter per-author privacy on a
+    // PENDING piece), not an unexamined gap, and it is exactly the same
+    // shape this codebase already accepts for `isActiveTeacherInContext()`
+    // and the homework roster it authorises.
+    //
+    // ---------------------------------------------------------------------
+    // COST IS A SECURITY PROPERTY, same as every Foundation candidate: no
+    // rule below walks a map, counts entries or inspects a dynamic key.
+    // =====================================================================
+
+    function signedIn() { return request.auth != null; }
+    function myUid() { return request.auth.uid; }
+
+    function tenantPersonRef(personId) { return /databases/$(database)/documents/tenantPeople/$(personId); }
+    function memberUidRef(tenantId)    { return /databases/$(database)/documents/tenantMemberUids/$(tenantId + '__' + myUid()); }
+    function teacherStudentLinkRef(tenantId, teacherPersonId, studentPersonId) {
+      return /databases/$(database)/documents/teacherStudentLinks/$(tenantId + '__' + teacherPersonId + '__' + studentPersonId);
+    }
+
+    function hasRoleIn(tenantId, role) {
+      return signedIn() && exists(memberUidRef(tenantId))
+          && role in get(memberUidRef(tenantId)).data.get('roles', []);
+    }
+    function myPersonIdIn(tenantId) {
+      return signedIn() && exists(memberUidRef(tenantId))
+           ? get(memberUidRef(tenantId)).data.get('personId', null) : null;
+    }
+    function myRolesIn(tenantId) {
+      return signedIn() && exists(memberUidRef(tenantId))
+           ? get(memberUidRef(tenantId)).data.get('roles', []) : [];
+    }
+    function isPlatformAdmin() {
+      return signedIn()
+          && exists(/databases/$(database)/documents/userIndex/$(myUid()))
+          && get(/databases/$(database)/documents/userIndex/$(myUid())).data.get('platformAdmin', false) == true;
+    }
+    function isOwnerIn(tenantId)    { return hasRoleIn(tenantId, 'owner'); }
+    function isPrimeIn(tenantId)    { return hasRoleIn(tenantId, 'prime'); }
+    function isTeacherIn(tenantId)  { return hasRoleIn(tenantId, 'teacher'); }
+    function isGuardianIn(tenantId) { return hasRoleIn(tenantId, 'guardian'); }
+
+    function isSelfPerson(personId) {
+      return signedIn() && exists(tenantPersonRef(personId))
+          && get(tenantPersonRef(personId)).data.get('authUid', null) == myUid();
+    }
+    function isGuardianOf(tenantId, childPersonId) {
+      return isGuardianIn(tenantId)
+          && exists(tenantPersonRef(childPersonId))
+          && get(tenantPersonRef(childPersonId)).data.get('managedByPersonId', null) == myPersonIdIn(tenantId);
+    }
+    function isCoEnrolledTeacherOf(tenantId, studentPersonId) {
+      return signedIn() && myPersonIdIn(tenantId) != null
+          && exists(teacherStudentLinkRef(tenantId, myPersonIdIn(tenantId), studentPersonId))
+          && get(teacherStudentLinkRef(tenantId, myPersonIdIn(tenantId), studentPersonId)).data.get('active', false) == true;
+    }
+    // The person must really belong to the tenant the document names — the
+    // same cross-tenant gap the Note Foundation candidates close (SELF-05,
+    // ADMIN-02), closed here too.
+    function personInTenant(tenantId, personId) {
+      return exists(tenantPersonRef(personId))
+          && get(tenantPersonRef(personId)).data.get('tenantId', null) == tenantId;
+    }
+
+    // ADR-011 §3 — ANY of: the minor's own guardian, a co-enrolled teacher,
+    // or owner/prime. A CHILD CAN NEVER APPROVE THEIR OWN PAGE, checked
+    // first and unconditionally so no later clause can reopen it — the
+    // server-side twin of isValidDawahApprover() in dawah-contract.js.
+    //
+    // Written with `let` rather than by calling isGuardianOf()/
+    // isCoEnrolledTeacherOf()/hasRoleIn() (24 Sep 2026): those re-derive
+    // myPersonIdIn() and the member roles on every call, and in the
+    // error-mode first evaluation phase (see the `allow update` note) two
+    // calls of the old form alone exceeded the 1000-expression budget. The
+    // conditions are the same ones, clause for clause: 'x' in myRolesIn()
+    // is exactly hasRoleIn(x), and the guardian/teacher clauses are those
+    // helpers' own bodies with `me` bound once.
+    function isDawahApprover(tenantId, authorPersonId) {
+      let me = myPersonIdIn(tenantId);
+      let roles = myRolesIn(tenantId);
+      return signedIn() && me != null
+          && me != authorPersonId
+          && ( ('guardian' in roles
+                && exists(tenantPersonRef(authorPersonId))
+                && get(tenantPersonRef(authorPersonId)).data.get('managedByPersonId', null) == me)
+               || ('teacher' in roles
+                   && exists(teacherStudentLinkRef(tenantId, me, authorPersonId))
+                   && get(teacherStudentLinkRef(tenantId, me, authorPersonId)).data.get('active', false) == true)
+               || 'owner' in roles || 'prime' in roles );
+    }
+
+    function isDawahMinorAuthor(tenantId, authorPersonId) {
+      return exists(tenantPersonRef(authorPersonId))
+          && get(tenantPersonRef(authorPersonId)).data.get('isMinor', false) == true;
+    }
+
+    // WHO MAY READ. `status` is a document field the caller names, matched
+    // against the `resource.data.status` the per-document evaluation
+    // supplies — see the READ-SCOPE header note above for the
+    // awaiting-approval browse/decide split.
+    function canReadDawahPage(tenantId, authorPersonId, status) {
+      return signedIn()
+          && personInTenant(tenantId, authorPersonId)
+          && ( (status == 'shared' && myRolesIn(tenantId).size() > 0)
+               || isSelfPerson(authorPersonId)
+               || isGuardianOf(tenantId, authorPersonId)
+               || (isTeacherIn(tenantId) && isCoEnrolledTeacherOf(tenantId, authorPersonId))
+               || isOwnerIn(tenantId) || isPrimeIn(tenantId)
+               || (status == 'awaiting-approval' && (isGuardianIn(tenantId) || isTeacherIn(tenantId))) );
+    }
+
+    // WHO MAY AUTHOR. Only the person themselves, in their own tenant —
+    // deliberately NOT canRecordFor(): a guardian/teacher/administrator may
+    // read a Dawah page and may never author, revise or resubmit one for
+    // somebody else.
+    function isDawahAuthor(tenantId, authorPersonId) {
+      return signedIn()
+          && personInTenant(tenantId, authorPersonId)
+          && isSelfPerson(authorPersonId);
+    }
+
+    function listIsBounded() { return request.query.limit <= 100; }
+
+    function d() { return request.resource.data; }
+
+    // -------------------------------------------------------------------
+    // dawahPages/{pageKey}   pageKey = tenantId__pageId
+    // -------------------------------------------------------------------
+    match /dawahPages/{pageKey} {
+
+      function noteRef(noteId) {
+        return /databases/$(database)/documents/notes/$(d().tenantId + '__' + noteId);
+      }
+      function revisionRef(revisionId) {
+        return /databases/$(database)/documents/noteRevisions/$(d().tenantId + '__' + revisionId);
+      }
+
+      function dawahPageShapeOk() {
+        return d().keys().hasOnly([
+                 'pageId', 'tenantId', 'authorPersonId', 'sourceNoteId', 'sourceRevisionId',
+                 'title', 'bodyHtml', 'sourceUnitKey', 'status',
+                 'approvedByPersonId', 'approvedAt', 'returnedNote',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll([
+                 'pageId', 'tenantId', 'authorPersonId', 'sourceNoteId', 'sourceRevisionId',
+                 'title', 'bodyHtml', 'sourceUnitKey', 'status',
+                 'approvedByPersonId', 'approvedAt', 'returnedNote',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().tenantId is string && d().tenantId.size() > 0
+            && d().authorPersonId is string && d().authorPersonId.size() > 0
+            && d().pageId is string && d().pageId.size() > 0
+            && pageKey == d().tenantId + '__' + d().pageId
+            && d().sourceNoteId is string && d().sourceNoteId.size() > 0
+            && d().sourceRevisionId is string && d().sourceRevisionId.size() > 0
+            && d().title is string && d().bodyHtml is string
+            && (d().sourceUnitKey == null || d().sourceUnitKey is string)
+            && (d().status == 'draft' || d().status == 'awaiting-approval'
+                || d().status == 'shared' || d().status == 'retired')
+            && (d().approvedByPersonId == null || d().approvedByPersonId is string)
+            && (d().approvedAt == null || d().approvedAt is timestamp)
+            && (d().returnedNote == null || d().returnedNote is string);
+      }
+
+      // ADR-011 §2/§4 — the printable page IS a frozen copy of the pinned
+      // revision. The Note and the revision must exist, belong to the same
+      // tenant and author, and — the check that closes "claim a revision,
+      // send different text" — the sent title/bodyHtml must equal the
+      // revision's OWN stored content, proven with get(), not trusted.
+      function sourceNoteAndRevisionOk() {
+        return exists(noteRef(d().sourceNoteId))
+            && get(noteRef(d().sourceNoteId)).data.tenantId == d().tenantId
+            && get(noteRef(d().sourceNoteId)).data.ownerPersonId == d().authorPersonId
+            && exists(revisionRef(d().sourceRevisionId))
+            && get(revisionRef(d().sourceRevisionId)).data.noteId == d().sourceNoteId
+            && get(revisionRef(d().sourceRevisionId)).data.tenantId == d().tenantId
+            && get(revisionRef(d().sourceRevisionId)).data.ownerPersonId == d().authorPersonId
+            && get(revisionRef(d().sourceRevisionId)).data.title == d().title
+            && get(revisionRef(d().sourceRevisionId)).data.bodyHtml == d().bodyHtml;
+      }
+
+      // ADR-011 §4 (ADR-005) — the frozen copy and the pin are write-once.
+      function dawahIdentityUnchanged() {
+        return resource != null
+            && d().tenantId          == resource.data.tenantId
+            && d().authorPersonId    == resource.data.authorPersonId
+            && d().sourceNoteId      == resource.data.sourceNoteId
+            && d().sourceRevisionId  == resource.data.sourceRevisionId
+            && d().title             == resource.data.title
+            && d().bodyHtml          == resource.data.bodyHtml
+            && d().sourceUnitKey     == resource.data.sourceUnitKey;
+      }
+
+      function createdByStampedOnCreate() { return d().createdBy == myUid(); }
+      function createdByFrozen() { return resource != null && d().createdBy == resource.data.createdBy; }
+
+      // Read-before-create on a nonexistent document hands the rule a null
+      // `resource` -- the same S8-class fix memberships/subjects/trackables/
+      // quranWordProgress already carry.
+      allow get: if signedIn() && !exists(/databases/$(database)/documents/dawahPages/$(pageKey));
+      allow get: if canReadDawahPage(resource.data.tenantId, resource.data.authorPersonId, resource.data.status);
+      allow list: if listIsBounded() && canReadDawahPage(resource.data.tenantId, resource.data.authorPersonId, resource.data.status);
+
+      // TENANT-WIDE BROWSE QUERIES (24 Sep 2026). A list query is authorised
+      // against its FILTERS, not per stored document, so every clause of
+      // canReadDawahPage() above is unprovable for a query that does not
+      // filter on authorPersonId: personInTenant(tenantId,
+      // resource.data.authorPersonId) needs a get() on a document the query
+      // never names, and the emulator refuses it ("Property authorPersonId
+      // is undefined on object"). The two queries the data layer actually
+      // issues filter only on tenantId + status, so each gets its own rule
+      // stated purely in terms of those filters and the VIEWER's own roles.
+      // Nothing is lost: the author's membership of the tenant is enforced at
+      // create (isDawahAuthor -> personInTenant) and tenantId/authorPersonId
+      // are frozen on every update (dawahIdentityUnchanged), so no page can
+      // name an author outside its own tenant through these Rules.
+      //
+      // (1) Shared pages: ADR-011 Owner decision 1 -- a shared piece is
+      //     visible inside the Madrasah (tenant) only, to any member of it.
+      allow list: if listIsBounded() && signedIn()
+                  && resource.data.status == 'shared'
+                  && myRolesIn(resource.data.tenantId).size() > 0;
+      // (2) The awaiting-approval browse that listDawahPagesAwaitingMyApproval()
+      //     (app/js/dawah-data.js) issues: tenantId + status only. Mirrors
+      //     canReadDawahPage()'s awaiting clause -- the recorded browse/decide
+      //     trade-off in this file's header -- plus owner/prime, whom
+      //     isValidDawahApprover() admits as approvers (they may already read
+      //     every page one at a time). WRITE stays narrow: only
+      //     isDawahApprover() may approve or return.
+      allow list: if listIsBounded() && signedIn()
+                  && resource.data.status == 'awaiting-approval'
+                  && ( 'guardian' in myRolesIn(resource.data.tenantId)
+                       || 'teacher' in myRolesIn(resource.data.tenantId)
+                       || 'owner' in myRolesIn(resource.data.tenantId)
+                       || 'prime' in myRolesIn(resource.data.tenantId) );
+
+      allow create: if dawahPageShapeOk()
+                    && createdByStampedOnCreate()
+                    && isDawahAuthor(d().tenantId, d().authorPersonId)
+                    && d().status == 'draft'
+                    && d().approvedByPersonId == null
+                    && d().approvedAt == null
+                    && d().returnedNote == null
+                    && sourceNoteAndRevisionOk();
+
+      // ADR-011 §5 — status moves only along the named transitions, each
+      // gated on who may perform it and what the write may otherwise touch.
+      //
+      // WHY THE TRANSITIONS ARE GROUPED BY ACTOR (24 Sep 2026, D-SHAPE-02):
+      // Firestore evaluates a write in two phases. In the first, `resource`
+      // and every get()/exists() target are not yet loaded, so any expression
+      // reading them is an ERROR rather than true/false -- and `&&`/`||`
+      // keep evaluating past an error instead of short-circuiting. A setDoc
+      // is an upsert, so the first phase also evaluates this update rule
+      // even for a page that does not exist. With each of the five
+      // transitions calling its own isDawahAuthor()/isDawahApprover(), that
+      // error-mode walk ran through every helper five times and hit the
+      // 1000-expression limit, so a correctly refused write was ALSO being
+      // refused by the budget. (An updateDoc is worse: the merged
+      // request.resource.data is unresolved too, so NOTHING short-circuits.)
+      // The actor check is now made ONCE per actor (author: SUBMIT/SHARE/
+      // RETIRE; approver: APPROVE/RETURN) -- the same conditions, factored
+      // (A&&X || A&&Y == A&&(X||Y)), nothing loosened -- and
+      // isDawahApprover() binds its lookups with `let`.
+      // A refusal must come from the security logic, never from the budget.
+      allow update: if dawahPageShapeOk()
+                    && dawahIdentityUnchanged()
+                    && createdByFrozen()
+                    && resource != null
+                    && (
+                         (isDawahAuthor(resource.data.tenantId, resource.data.authorPersonId)
+                          && (
+                               // SUBMIT: draft -> awaiting-approval, by the author.
+                               (resource.data.status == 'draft' && d().status == 'awaiting-approval'
+                                && d().diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']))
+                               ||
+                               // SHARE (adult, direct): draft -> shared, by the
+                               // author, ONLY when their piece needs no approval.
+                               (resource.data.status == 'draft' && d().status == 'shared'
+                                && !isDawahMinorAuthor(resource.data.tenantId, resource.data.authorPersonId)
+                                && d().diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']))
+                               ||
+                               // RETIRE: any non-retired status -> retired, by the
+                               // author (I4 — archive, never delete).
+                               (resource.data.status != 'retired' && d().status == 'retired'
+                                && d().diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']))
+                             ))
+                         ||
+                         (isDawahApprover(resource.data.tenantId, resource.data.authorPersonId)
+                          && (
+                               // APPROVE: awaiting-approval -> shared, by a valid
+                               // approver, who must name THEMSELVES as approver.
+                               (resource.data.status == 'awaiting-approval' && d().status == 'shared'
+                                && d().approvedByPersonId == myPersonIdIn(resource.data.tenantId)
+                                && d().approvedAt is timestamp
+                                && d().diff(resource.data).affectedKeys().hasOnly(
+                                     ['status', 'approvedByPersonId', 'approvedAt', 'updatedAt']))
+                               ||
+                               // RETURN: awaiting-approval -> draft, by a valid
+                               // approver, with a real (non-empty) reason.
+                               (resource.data.status == 'awaiting-approval' && d().status == 'draft'
+                                && d().returnedNote is string && d().returnedNote.size() > 0
+                                && d().diff(resource.data).affectedKeys().hasOnly(
+                                     ['status', 'returnedNote', 'updatedAt']))
+                             ))
+                       );
+
+      allow delete: if false; // I4/D6 — retire, never destroy.
+    }
+  }
+}

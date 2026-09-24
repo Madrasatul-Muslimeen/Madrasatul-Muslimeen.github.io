@@ -17576,6 +17576,105 @@ a `<link>` would ADD a download and visibly change the wheel's type, which is
 not a speed fix. Also recorded for a later round: `bn.js` (244 KB) is loaded
 for English readers too, and the module graph is 64 files, 3 levels deep.
 
+**MAP v4 Phase 7 (P7-A), 24 Sep 2026 — Dawah printable-page foundation, no
+version bump.** The Owner's own product decisions the same day (tenant-only
+visibility, a printable page made from a Note, a child's piece needing a
+guardian's or teacher's approval, an adult's not — issue #244) are recorded
+as **ADR-011** (`docs/governance/adr/ADR-011-dawah-printable-pages-v1.md`,
+ACCEPTED), enforceable rather than merely stated. **"Child" and "approver"
+were verified against `firestore.rules` and `app/js/people.js` before being
+written down, per the issue's own instruction to stop rather than invent a
+field if the data could not support the rule — it can**:
+`tenantPeople.isMinor`/`.managedByPersonId` are real, already-written fields;
+the approver set (a minor's own guardian, a co-enrolled teacher, or
+owner/prime) reuses the identical `isGuardianOf()`/`isCoEnrolledTeacherOf()`/
+`isOwnerIn()`/`isPrimeIn()` relationships the deployed Rules already use for
+Notes. Nothing was invented.
+
+**Two new modules, both uninvoked** (a boundary suite asserts it): a pure
+policy module, `app/js/dawah-contract.js` (closed status vocabulary —
+`draft`/`awaiting-approval`/`shared`/`retired` — the five named transitions,
+the needs-approval rule, and the approver rule, imports nothing at all, same
+enforcement-by-inability pattern as `journey-map-contract.js`), and the data
+layer, `app/js/dawah-data.js`, for one new, additive, unruled collection,
+`dawahPages` (added to `app/js/collections.js`). **ADR-005 ("a Dawah piece is
+derived output and must never overwrite its source Note") is kept the
+strongest way available**: `dawah-data.js` does not import
+`note-foundation.js` at all — not its write functions, not its read
+functions, not even its id helpers — reading `notes`/`noteRevisions`/
+`noteSources` directly, read-only, through its own tiny local helpers. A
+page's `title`/`bodyHtml`/`sourceUnitKey` are a frozen copy taken from a
+pinned Note revision at creation and never looked at again.
+
+**A Rules CANDIDATE**, in its own self-contained file
+(`docs/governance/phase7-dawah-pages-rules-candidate-2026-09-24.rules`,
+governing exactly `dawahPages`), enforces tenant isolation, author-only
+create from the author's own Note/revision, the frozen copy provably
+matching the pinned revision's own stored content (checked with `get()`, not
+trusted), the closed transitions, the approver rule (a child can never
+approve their own page, checked first and unconditionally), write-once
+identity (ADR-005), and no delete (I4). **One read-scope trade-off is
+recorded rather than smoothed over**: a Firestore list query fails wholesale
+the moment any one returned document denies the reader, so
+`listDawahPagesAwaitingMyApproval()`'s own query (bounded, tenant+status
+equality only, no new index) cannot be scoped to "documents I may approve" —
+READ for an `awaiting-approval` page is therefore granted to any
+guardian/teacher in the tenant, while WRITE (approve/return) stays narrow to
+the true, specific approver, checked by the data layer before the write and
+again by the Rules candidate itself.
+
+**A companion emulator suite**
+(`tools/firestore-emulator/dawah-pages-v1.rules.test.mjs`, its own
+`dawah-pages-v1.firebase.json` on port **8092** — 8089 and 8098 already
+taken by other suites) carries roughly 50 assertions, each denial paired
+with an allow differing in one fact, asserting the deciding evaluation was a
+clean `false` rather than an expression-budget refusal. **Written and
+pushed but NOT EXECUTED in this sandbox** — `npm ci`/Firebase emulator
+access were both denied twice, exactly the documented class of sandbox
+limitation this file's own standing lessons already record for `java`/
+`firebase-tools`; it is left for the Architect to run before merge.
+
+**A new boundary suite, `tools/i18n-verify/dawah-boundary.mjs`, 14/14,
+mutation-proven three ways**: a real `note-foundation.js` import, a page
+wired to `dawah-data.js`, and a broken transition table were each tried
+against the real files and each caught by name, then reverted. All 8
+CI-gated governance suites re-run clean from the repository root: 8, 49, 8,
+28, 13, 41, 42, 12 — 201 checks, 0 failed.
+
+**No screen exists yet (P7-B is separate).** `app/js/version.js`,
+`firestore.rules` and `firebase.json` are untouched — confirmed by the
+boundary suite reading them directly rather than assumed. Phase 8
+(Share/Media) is untouched and needs its own decision when it is picked up.
+
+**P7-A Architect review (24 Sep 2026), before merge — the emulator suite the
+builder could not run was run, and failed.** Two real defects in the Dawah
+Rules candidate, both fixed in the candidate, no application code changed:
+
+1. **Expression budget.** Firestore evaluates a write in two phases, and in the
+   first `resource` and every `get()`/`exists()` are unresolved, so `&&`/`||`
+   do not short-circuit. A `setDoc` is an upsert, so the `update` rule is also
+   evaluated for a create; the original `update` called `isDawahApprover()`
+   twice and `isDawahAuthor()` three times, and two error-mode approver calls
+   exceed 1000 expressions. Every refused update would have been refused by the
+   budget rather than the security logic. Fixed by evaluating each actor once
+   (`isDawahAuthor(...) && (SUBMIT || SHARE || RETIRE) || isDawahApprover(...)
+   && (APPROVE || RETURN)` — the same truth table) and binding
+   `myPersonIdIn`/`myRolesIn` once with `let` inside `isDawahApprover()`.
+2. **Unprovable list queries.** `canReadDawahPage()` puts
+   `personInTenant(tenantId, resource.data.authorPersonId)` first, which a
+   tenant-wide list query (no `authorPersonId` filter) can never prove — so the
+   Madrasah's shared list and the approval queue were both refused outright.
+   Two narrow `allow list` rules added: shared pages to any member of that
+   tenant (the Owner's "inside the Madrasah only"), awaiting-approval pages to a
+   guardian/teacher/owner/prime of that tenant (the browse/decide trade-off
+   ADR-011's candidate already recorded). Writes are unchanged.
+
+Suite 56 → **65 assertions, exit 0**, adding the three approver clauses the
+suite had never tested (an unrelated guardian, an unlinked teacher, an owner on
+their own page) plus the two queries' allow/deny pairs; **eight mutations each
+fail the suite** where three had survived before. Also restored the
+`note-foundation-real-function` npm script the round had replaced.
+
 **Test-only, no version bump (issue #247).** New
 `tools/firestore-emulator/journey-map-real-function.rules.test.mjs` — the same
 proof #242 gave `app/js/note-foundation.js` (real exported functions, not
