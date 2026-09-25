@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.71",
+    "version": "08.72",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -629,8 +629,20 @@
     {
       "version": "08.71",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Speed part 3 (issue #278). getMyMemberships() is split into getMyMembershipRoles() (the tenantMemberUids query alone) and hydrateMemberships() (tenant names and documents); getMyMemberships() is their composition, unchanged for every other page. Quran Study picks the active tenant from the roles alone and fires the tenant documents together with tenantPeople and trackables, so it is usable after 3 database round trips in sequence (4 in v08.70, 7 before #272). The tenant picker shows ids for a moment inside the closed Study options panel, then real names. New session-context-two-tenant.mjs 14/0 (two tenants, stale defaultTenantId never used, picker names; a pickContext() mutation is caught).",
+      "integration": {
+        "authorizedOn": "2026-09-25",
+        "integratedOn": "2026-09-25",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "08.72",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Speed part 4 (issue #280). Deen Study and the other topic modules (topic-study.js), Health and the routine modules (routine-study.js), Asma ul Husna (asma-study.js) and Records pick the active tenant from membership roles alone and read the tenant documents in the same wave as their own startup reads, as Quran Study does since v08.71. Round trips in sequence before usable: Deen/Health/Asma 6 -> 4, Records 5 -> 3; Quran Study unchanged at 3. New module-startup-reads.mjs 8/0 pins each page (reverting topic-study.js makes Deen Study read 6 and fail).",
       "integration": {
         "authorizedOn": "2026-09-25",
         "integratedOn": "2026-09-25",
@@ -639,8 +651,9 @@
       }
     }
   ],
-  "nextUnallocated": "08.72",
+  "nextUnallocated": "08.73",
   "nextUnallocatedNote": [
+    "v08.72 was allocated to speed part 4: Deen Study, Health, Asma ul Husna and Records startup down to 4 or fewer database round trips (issue #280), 2026-09-25.",
     "v08.71 was allocated to speed part 3: Quran Study startup down to 3 database round trips in sequence (issue #278), 2026-09-25.",
     "v08.70 was allocated to speed part 2: Quran Study startup down to 4 database round trips in sequence, and Bangla digits in the import preview (issue #276), 2026-09-25.",
     "v08.69 was allocated to load speed: the app kept on the phone, Bangla loaded only for Bangla readers, a shorter startup chain (issue #272), 2026-09-25.",

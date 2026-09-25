@@ -158,7 +158,15 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.71 on `main`** (25 Sep 2026 — **speed part 3**,
+**Current milestone: v08.72 on `main`** (25 Sep 2026 — **speed part 4**,
+issue #280: Deen Study, Health and Asma ul Husna now need **4** database
+round trips in sequence before they are usable (6 before), Records **3** (5), and Quran
+Study stays at 3. It is the same fix as v08.71: pick the tenant from roles alone,
+and read tenant documents alongside the page's own reads.
+`module-startup-reads.mjs` and `quranrevival-startup-reads.mjs` pin every
+limit.)
+
+**Previous milestone: v08.71 on `main`** (25 Sep 2026 — **speed part 3**,
 issue #278: Quran Study is usable after **3 database round trips in a
 row** (4 in v08.70, 7 this morning). The active tenant is picked from the
 membership roles alone and the tenant documents are read alongside
