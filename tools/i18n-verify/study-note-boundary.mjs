@@ -288,7 +288,14 @@ check("every vocabulary word in the code appears in ADR-009, and vice versa", ()
     assert.ok(codeOf("study-note-binding.js").includes(`"${kind}"`), `the binding does not derive ${kind}`);
   }
   assert.equal(RELATIONSHIP_KINDS.length, 2);
-  assert.equal(PROVENANCE_KINDS.length, 2);
+  // UPDATED for issue #265, reason recorded rather than the check weakened:
+  // "imported" is a real, accepted third member of this closed set (a Note
+  // carried in from an external system, never composed here and never
+  // promoted from the quick note) -- the word-bound-to-ADR-009 assertion
+  // above already requires ADR-009 to name it in backticks, so this length
+  // check is widened to match the vocabulary it is actually counting rather
+  // than a stale "always two" assumption.
+  assert.equal(PROVENANCE_KINDS.length, 3);
 });
 
 // --- 5. ADR-009 IS BOUND TO THE ACCEPTED NOTE FOUNDATION CONTRACT ----------

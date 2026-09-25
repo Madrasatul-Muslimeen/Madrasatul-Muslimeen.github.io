@@ -295,6 +295,16 @@
       return sanitizeNoteHtml(note.bodyHtml || "");
     }
 
+    // Issue #265 -- a WordPress-imported Note carries its own real original
+    // date, kept separate from `updatedAt` (which for an imported Note only
+    // ever means "when this import ran"). Shown only when present, so a
+    // Note this app itself wrote (which never carries this field) is
+    // unaffected.
+    function originalWhen(ts) {
+      const d = ts?.toDate ? ts.toDate() : null;
+      return d ? d.toLocaleString() : "";
+    }
+
     function noteCardHtml(row) {
       const { note } = row;
       const retired = note.status === NOTE_STATUS.RETIRED;
@@ -306,6 +316,7 @@
           <span class="note-status-pill${retired ? " retired" : ""}">${retired ? t("Removed") : t("Active")}</span>
         </div>
         <div class="note-card-meta">${t("Revision")}: ${escapeHtml(note.currentRevisionId)}</div>
+        ${note.originalCreatedAt ? `<div class="note-card-meta">${t("Originally written")}: ${escapeHtml(originalWhen(note.originalCreatedAt))}</div>` : ""}
         <div class="note-body-preview" data-note-body></div>
         <div class="note-actions">
           ${canEdit ? `<button type="button" class="secondary tiny" data-note-edit>${t("Edit")}</button>` : ""}

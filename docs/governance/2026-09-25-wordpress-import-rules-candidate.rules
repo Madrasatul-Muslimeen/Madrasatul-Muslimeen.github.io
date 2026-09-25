@@ -1,0 +1,287 @@
+// WORDPRESS IMPORT (mappingmyjourney.com) -- notes/noteFolders Rules CANDIDATE, 25 Sep 2026.
+// Issue #265.
+//
+// ███ THIS IS AN EXTRACT. NEVER PASTE THIS FILE INTO THE FIREBASE CONSOLE. ███
+//
+// It contains TWO match blocks, `notes` and `noteFolders`. Pasting it would
+// replace the entire live ruleset with a file governing two collections --
+// the exact hazard the standing brief records for the `candidate-2026-09-15`
+// extracts. It exists to be reviewed and to be executed against the
+// emulator. When this candidate is activated, these two blocks REPLACE the
+// corresponding blocks inside the production ruleset; nothing else in
+// `firestore.rules` is touched by this candidate.
+//
+// NOT DEPLOYED. `firestore.rules` is untouched and stays untouched.
+// `app/js/study-wordpress-import-readiness.js` gates every write this
+// widening would authorise, at `ready: false`, until the Owner confirms a
+// Console publish and the Architect records the governed decision.
+//
+// ---------------------------------------------------------------------------
+// WHAT CHANGES, AND WHAT DELIBERATELY DOES NOT
+//
+// Three fields join `notes`' shape, all OPTIONAL: `originalCreatedAt`,
+// `originalModifiedAt` (the WordPress post's own `post_date_gmt`/
+// `post_modified_gmt`, as real Firestore Timestamps) and `importSource` (a
+// small map -- `{ system, site, postId, status, link, imageUrls, hadithRef }`,
+// see app/js/wordpress-import-parser.js's own analyzeWxrImport() for the
+// exact shape it writes). One field joins `noteFolders`' shape, also
+// optional: `importSource` (`{ system, termId, niceName }`).
+//
+// EVERY OTHER CLAUSE -- read, the identity-frozen fields, `createdBy`
+// stamping, the revision-chain check on `notes`, `parentOneHopOk()` on
+// `noteFolders`, both `allow delete: if false` -- is reproduced BYTE-FOR-BYTE
+// from the deployed `firestore.rules`, so a reviewer can diff them and see
+// that this candidate widens exactly the two shape checks named above and
+// nothing else. The three helper functions each block already calls
+// (`canReadNoteOf`, `isNoteOwner`, `listIsBounded`, `d`,
+// `ownershipWellFormed`) are copied unchanged from the shared block above
+// both `match` statements in production.
+//
+// WHY OPTIONAL, NOT REQUIRED: every Note/folder this app itself creates
+// (createStudyNote(), promoteQuickNoteToStudyNote(), a plain folder from
+// journey-map.html) has no WordPress origin at all, and must keep writing
+// and updating exactly as it does today. `d().keys().hasAll([...])` names
+// only the fields that were already required; the three/one new fields
+// appear only in `hasOnly([...])`, so a write that omits them is unchanged,
+// and a write that includes them must be well-typed (a real Timestamp, a
+// real map) or is refused.
+//
+// WHY THIS DOES NOT NEED A NEW COLLECTION OR A NEW INDEX. Nothing here adds
+// a query -- the import service reads a Note/folder by its own deterministic
+// id (a `get`, not a `where`), and no new field is ever the target of an
+// `orderBy`. `docs/governance/2026-09-25-wordpress-import-rules-candidate.rules`
+// is Rules only; there is no matching indexes candidate for this round.
+// ---------------------------------------------------------------------------
+
+    // The person must really belong to the tenant the document names.
+    function personInTenant(tenantId, personId) {
+      return exists(tenantPersonRef(personId))
+          && get(tenantPersonRef(personId)).data.get('tenantId', null) == tenantId;
+    }
+
+    function canReadNoteOf(tenantId, ownerPersonId) {
+      return signedIn()
+          && personInTenant(tenantId, ownerPersonId)
+          && (isSelfPerson(ownerPersonId)
+              || isGuardianOf(tenantId, ownerPersonId)
+              || (isTeacherIn(tenantId) && isCoEnrolledTeacherOf(tenantId, ownerPersonId))
+              || isOwnerIn(tenantId) || isPrimeIn(tenantId));
+    }
+
+    function isNoteOwner(tenantId, ownerPersonId) {
+      return signedIn()
+          && personInTenant(tenantId, ownerPersonId)
+          && isSelfPerson(ownerPersonId);
+    }
+
+    function listIsBounded() {
+      return request.query.limit <= 100;
+    }
+
+    function d() { return request.resource.data; }
+
+    function ownershipWellFormed() {
+      return d().tenantId is string && d().tenantId.size() > 0
+          && d().ownerPersonId is string && d().ownerPersonId.size() > 0
+          && (d().get('ownerUid', null) == null || d().ownerUid is string);
+    }
+
+    function noteIdentityUnchanged() {
+      return resource != null
+          && d().tenantId       == resource.data.tenantId
+          && d().ownerPersonId  == resource.data.ownerPersonId
+          && d().get('ownerUid', null) == resource.data.get('ownerUid', null)
+          && d().noteId         == resource.data.noteId
+          && d().visibility     == resource.data.visibility;
+    }
+
+
+    match /notes/{noteKey} {
+
+      // --- WORDPRESS IMPORT (issue #265), NEW ---------------------------
+      // Every one of the three fields below is OPTIONAL and, when present,
+      // must be well-typed -- a real Timestamp for a date, a real map for
+      // provenance. A write that never touches them (every non-imported
+      // Note, forever) is completely unaffected.
+      function importFieldsWellFormed() {
+        return (d().get('originalCreatedAt', null) == null || d().originalCreatedAt is timestamp)
+            && (d().get('originalModifiedAt', null) == null || d().originalModifiedAt is timestamp)
+            && (d().get('importSource', null) == null || d().importSource is map);
+      }
+
+      // Architect review, 25 Sep 2026: the three import fields are ORIGIN
+      // facts, like createdBy -- stamped on create, frozen on every update.
+      // Without this a later revision could silently rewrite when a Note was
+      // first written, or add an import provenance to a Note this app wrote.
+      function importFieldsFrozen() {
+        return d().get('originalCreatedAt', null) == resource.data.get('originalCreatedAt', null)
+            && d().get('originalModifiedAt', null) == resource.data.get('originalModifiedAt', null)
+            && d().get('importSource', null) == resource.data.get('importSource', null);
+      }
+      // --- end WORDPRESS IMPORT ------------------------------------------
+
+      function noteShapeOk() {
+        return d().keys().hasOnly([
+                 'noteId', 'tenantId', 'ownerPersonId', 'ownerUid', 'visibility',
+                 'title', 'bodyHtml', 'status', 'currentRevisionId',
+                 'originalCreatedAt', 'originalModifiedAt', 'importSource',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll([
+                 'noteId', 'tenantId', 'ownerPersonId', 'visibility',
+                 'title', 'bodyHtml', 'status', 'currentRevisionId',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && ownershipWellFormed()
+            && importFieldsWellFormed()
+            && d().noteId is string && d().noteId.size() > 0
+            && noteKey == d().tenantId + '__' + d().noteId
+            && d().visibility == 'private'
+            && d().title is string && d().bodyHtml is string
+            && (d().status == 'active' || d().status == 'retired')
+            && d().currentRevisionId is string && d().currentRevisionId.size() > 0;
+      }
+
+      // createdBy records WHO FIRST WROTE the document and is an origin fact,
+      // so it is stamped on create and frozen thereafter — never re-checked
+      // against whoever is updating.
+      //
+      // Found by mutation testing: an earlier version required
+      // `createdBy == myUid()` on BOTH paths, which conflated authorship with
+      // authorisation. It happened to deny a teacher's update — but for the
+      // wrong reason, and it meant the owner check on the update path was never
+      // exercised at all (neutralising isNoteOwner left the suite green). It
+      // would also have refused a legitimate future path where someone other
+      // than the original creator may edit. Authorisation is isNoteOwner()'s
+      // job, and only its job.
+      function createdByStampedOnCreate() { return d().createdBy == myUid(); }
+      function createdByFrozen() { return resource != null && d().createdBy == resource.data.createdBy; }
+
+      // THE ATOMICITY RULE (matrix TXN-01/TXN-02), and the reason getAfter()
+      // is used rather than trusted prose: a Note's currentRevisionId must
+      // name a revision that EXISTS once this commit lands, belongs to this
+      // same Note, tenant and owner, and — on an update — chains from the
+      // revision the Note is moving away from. Rules evaluate each document
+      // independently, so without getAfter() a client could point a Note at a
+      // revision it never wrote, and the pointer would be fiction.
+      function revisionRef(revisionId) {
+        return /databases/$(database)/documents/noteRevisions/$(d().tenantId + '__' + revisionId);
+      }
+      function committedRevisionMatches(previousRevisionId) {
+        return existsAfter(revisionRef(d().currentRevisionId))
+            && getAfter(revisionRef(d().currentRevisionId)).data.noteId == d().noteId
+            && getAfter(revisionRef(d().currentRevisionId)).data.tenantId == d().tenantId
+            && getAfter(revisionRef(d().currentRevisionId)).data.ownerPersonId == d().ownerPersonId
+            && getAfter(revisionRef(d().currentRevisionId)).data.get('previousRevisionId', null) == previousRevisionId;
+      }
+
+      allow get: if canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+      allow list: if listIsBounded() && canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+
+      allow create: if noteShapeOk()
+                    && createdByStampedOnCreate()
+                    && isNoteOwner(d().tenantId, d().ownerPersonId)
+                    && d().status == 'active'
+                    && committedRevisionMatches(null);
+
+      // An update may change the title, the body, the status and the revision
+      // pointer — and nothing else. A stale pointer is refused because the new
+      // revision must chain from the CURRENT one (matrix TXN-03).
+      allow update: if resource != null
+                    && noteShapeOk()
+                    && createdByFrozen()
+                    && importFieldsFrozen()
+                    && isNoteOwner(resource.data.tenantId, resource.data.ownerPersonId)
+                    && noteIdentityUnchanged()
+                    && committedRevisionMatches(resource.data.currentRevisionId);
+
+      allow delete: if false; // I4/D6, matrix IMM-03. Retiring writes a status.
+    }
+
+    match /noteFolders/{folderKey} {
+
+      function folderRef(folderId) {
+        return /databases/$(database)/documents/noteFolders/$(d().tenantId + '__' + folderId);
+      }
+
+      // --- WORDPRESS IMPORT (issue #265), NEW -----------------------------
+      function folderImportFieldsWellFormed() {
+        return d().get('importSource', null) == null || d().importSource is map;
+      }
+      // --- end WORDPRESS IMPORT --------------------------------------------
+
+      function folderShapeOk() {
+        return d().keys().hasOnly([
+                 'folderId', 'tenantId', 'ownerPersonId', 'ownerUid', 'name',
+                 'parentFolderId', 'semanticRole', 'order', 'status', 'importSource',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll([
+                 'folderId', 'tenantId', 'ownerPersonId', 'name',
+                 'parentFolderId', 'semanticRole', 'order', 'status',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && ownershipWellFormed()
+            && folderImportFieldsWellFormed()
+            && d().folderId is string && d().folderId.size() > 0
+            && folderKey == d().tenantId + '__' + d().folderId
+            && d().name is string && d().name.size() > 0
+            && d().order is int
+            && (d().status == 'active' || d().status == 'retired')
+            && (d().semanticRole == 'journey-map'
+                || d().semanticRole == 'reflection-archive'
+                || d().semanticRole == 'user');
+      }
+
+      function isSystemRole(role) { return role == 'journey-map' || role == 'reflection-archive'; }
+
+      // ADR-010 §3: a system folder IS the root of its own meaning. It is
+      // neither nested nor nestable, or the Archive could be hidden inside a
+      // user folder, or filed under the Map and made a part of it — the locked
+      // distinction undone by a drag.
+      function parentOneHopOk() {
+        return d().parentFolderId == null
+            ? true
+            : (d().parentFolderId is string
+               && d().parentFolderId != d().folderId
+               && !isSystemRole(d().semanticRole)
+               && exists(folderRef(d().parentFolderId))
+               && get(folderRef(d().parentFolderId)).data.tenantId == d().tenantId
+               && get(folderRef(d().parentFolderId)).data.ownerPersonId == d().ownerPersonId
+               && get(folderRef(d().parentFolderId)).data.status == 'active'
+               && !isSystemRole(get(folderRef(d().parentFolderId)).data.semanticRole));
+      }
+
+      // Identity and ROLE are write-once. A folder may be renamed, reordered,
+      // re-parented or retired; it may never become a different folder, change
+      // owner, or change what KIND of folder it is (ADR-010 §3).
+      function folderIdentityUnchanged() {
+        return resource != null
+            && d().tenantId      == resource.data.tenantId
+            && d().ownerPersonId == resource.data.ownerPersonId
+            && d().get('ownerUid', null) == resource.data.get('ownerUid', null)
+            && d().folderId      == resource.data.folderId
+            && d().semanticRole  == resource.data.semanticRole;
+      }
+
+      function createdByStampedOnCreate() { return d().createdBy == myUid(); }
+      function createdByFrozen() { return resource != null && d().createdBy == resource.data.createdBy; }
+
+      allow get: if canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+      allow list: if listIsBounded() && canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+
+      allow create: if folderShapeOk()
+                    && createdByStampedOnCreate()
+                    && isNoteOwner(d().tenantId, d().ownerPersonId)
+                    && d().status == 'active'
+                    && parentOneHopOk();
+
+      allow update: if folderShapeOk()
+                    && folderIdentityUnchanged()
+                    && createdByFrozen()
+                    && d().get('importSource', null) == resource.data.get('importSource', null)
+                    && isNoteOwner(d().tenantId, d().ownerPersonId)
+                    && parentOneHopOk();
+
+      allow delete: if false;   // I4/D6 — retire, never destroy
+    }

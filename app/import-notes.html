@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="./css/shell.css" />
+<title>QuranRevival — Import from WordPress</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 46rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
+  h1 { font-size: 1.4rem; margin-bottom: 0.2rem; }
+  h2 { font-size: 1.05rem; margin: 1.2rem 0 0.4rem; }
+  p.intro { color: #555; font-size: 0.94rem; }
+  #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
+  button {
+    font-size: 0.88rem; padding: 0.32rem 0.7rem; border-radius: 0.4rem; border: 1px solid #ccc;
+    background: #1F3A6E; color: white; cursor: pointer; min-height: 40px;
+  }
+  button.secondary { background: white; color: #1F3A6E; }
+  button:disabled, button[aria-disabled="true"] { opacity: 0.5; cursor: default; }
+  select, input[type="text"] { font-size: 0.85rem; padding: 0.3rem 0.4rem; border: 1px solid #ccc; border-radius: 0.35rem; }
+  .note { font-size: 0.88rem; color: #666; }
+  .warn { background: #fff8e6; border: 1px solid #f0d9a0; border-radius: 0.5rem; padding: 0.6rem 0.8rem; font-size: 0.88rem; margin: 0.7rem 0; }
+  .gate-notice { background: #fdf6ea; border: 1px solid #B8862F; border-radius: 0.5rem; padding: 0.6rem 0.8rem; font-size: 0.88rem; margin: 0.7rem 0; }
+  #contextBar { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin: 1rem 0; font-size: 0.9rem; }
+  #contextBar label { margin: 0; }
+  #fileInput { margin: 0.6rem 0; }
+  .preview-card { border: 1px solid #ddd; border-radius: 0.6rem; padding: 0.8rem 0.9rem; margin: 0.8rem 0; }
+  .preview-stats { display: flex; flex-wrap: wrap; gap: 0.6rem 1.2rem; margin: 0.5rem 0; }
+  .preview-stat { font-size: 0.86rem; }
+  .preview-stat strong { display: block; font-size: 1.15rem; color: #1F3A6E; }
+  .sample-list { font-size: 0.82rem; color: #555; margin: 0.4rem 0 0; padding-left: 1.1rem; }
+  .refusal-list { font-size: 0.8rem; color: #a3352b; margin: 0.4rem 0 0; padding-left: 1.1rem; max-height: 12rem; overflow-y: auto; }
+  #progressLine { font-size: 0.88rem; color: #1F3A6E; margin: 0.5rem 0; }
+  #resultLine { font-size: 0.9rem; margin: 0.5rem 0; }
+</style>
+</head>
+<body>
+  <h1>Import from WordPress</h1>
+  <p class="intro">Bring your mappingmyjourney.com folders and Notes into Mapping My Journey — the same folders, the same Notes, each linked to its āyah where its title names one. This never touches your existing folders or Notes, and never deletes anything.</p>
+
+  <nav class="app-nav" id="topNav">
+    <details class="nav-cat nav-cat-home">
+      <summary>Home</summary>
+      <div class="nav-cat-links">
+        <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v06 ↗</a>
+        <a href="https://madrasatul-muslimeen.github.io/legacy-v07/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v07 ↗</a>
+        <div id="who">Checking sign-in…</div>
+        <button id="signInBtn" style="display:none;">Sign in with Google</button>
+        <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+        <div id="navHomeExtra"></div>
+      </div>
+    </details>
+    <div id="navBar"></div>
+  </nav>
+
+  <a id="backLink" href="journey-map.html#folders"><span aria-hidden="true">←</span> <span>Back to Mapping My Journey</span></a>
+
+  <div id="app" style="display:none;">
+    <div id="contextBar">
+      <label>Tenant
+        <select id="tenantSelect" style="width:auto;"></select>
+      </label>
+      <label>Person
+        <select id="personSelect" style="width:auto;"></select>
+      </label>
+    </div>
+
+    <div id="readOnlyMsg" class="warn" style="display:none;"></div>
+    <p id="pageStatusMsg" class="note" style="display:none;"></p>
+
+    <div id="pickerSection">
+      <h2>1. Choose your export file</h2>
+      <p class="note">In WordPress: Tools → Export → All content, then download the .xml file. It is read in this browser only — nothing is uploaded anywhere else, and the file itself is never saved to this app.</p>
+      <input type="file" id="fileInput" accept=".xml" />
+      <p id="parsingMsg" class="note" style="display:none;"></p>
+    </div>
+
+    <div id="previewSection" style="display:none;">
+      <h2>2. Preview</h2>
+      <div class="preview-card">
+        <div class="preview-stats">
+          <span class="preview-stat"><strong id="statFolders">0</strong>Folders</span>
+          <span class="preview-stat"><strong id="statNotes">0</strong>Notes</span>
+          <span class="preview-stat"><strong id="statAyahLinks">0</strong>Linked to one āyah</span>
+          <span class="preview-stat"><strong id="statRangeLinks">0</strong>Linked to a range</span>
+          <span class="preview-stat"><strong id="statHadith">0</strong>Carry a Hadith reference</span>
+          <span class="preview-stat"><strong id="statNoRef">0</strong>No reference found</span>
+        </div>
+        <p id="unmatchedIntro" class="note" style="display:none;"></p>
+        <ul id="unmatchedSample" class="sample-list"></ul>
+      </div>
+
+      <div id="gateNotice" class="gate-notice" style="display:none;"></div>
+
+      <h2>3. Import</h2>
+      <button type="button" id="importBtn" aria-disabled="true">Import</button>
+      <p id="progressLine" style="display:none;"></p>
+      <p id="resultLine" style="display:none;"></p>
+      <ul id="refusalList" class="refusal-list" style="display:none;"></ul>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-init.js";
+    import {
+      GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { doc, getDoc, getDocs, collection, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { TENANT } from "./js/collections.js";
+    import { langText } from "./js/lang.js";
+    import { getAppLang } from "./js/prefs.js";
+    import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
+    import { bootstrapContext, setActiveContext, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
+    import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
+    import { translateStatic, t } from "./js/i18n.js";
+    import { roleListLabel } from "./js/labels.js";
+    import { getSurahIndex } from "./js/quran-data.js";
+    import { parseWxrXml, analyzeWxrImport } from "./js/wordpress-import-parser.js";
+    import { runWordpressImport } from "./js/wordpress-import-service.js";
+    import { isWordpressImportPersistenceReady, wordpressImportUnavailableReason } from "./js/study-wordpress-import-readiness.js";
+
+    translateStatic();
+
+    const whoEl = document.getElementById("who");
+    const signInBtn = document.getElementById("signInBtn");
+    const signOutBtn = document.getElementById("signOutBtn");
+    const appEl = document.getElementById("app");
+    const navBar = document.getElementById("navBar");
+    const navHomeExtra = document.getElementById("navHomeExtra");
+    const tenantSelect = document.getElementById("tenantSelect");
+    const personSelect = document.getElementById("personSelect");
+    const readOnlyMsg = document.getElementById("readOnlyMsg");
+    const pageStatusMsg = document.getElementById("pageStatusMsg");
+    const fileInput = document.getElementById("fileInput");
+    const parsingMsg = document.getElementById("parsingMsg");
+    const previewSection = document.getElementById("previewSection");
+    const unmatchedIntro = document.getElementById("unmatchedIntro");
+    const unmatchedSampleEl = document.getElementById("unmatchedSample");
+    const gateNotice = document.getElementById("gateNotice");
+    const importBtn = document.getElementById("importBtn");
+    const progressLine = document.getElementById("progressLine");
+    const resultLine = document.getElementById("resultLine");
+    const refusalListEl = document.getElementById("refusalList");
+
+    function escapeHtml(s) {
+      return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function renderNav(roles, viewAsRole) {
+      navBar.innerHTML = renderNavBar(roles, viewAsRole);
+      navHomeExtra.innerHTML = renderHomeExtras(roles);
+      mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid });
+    }
+
+    signInBtn.addEventListener("click", () => {
+      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+        whoEl.textContent = t("Sign-in failed: {message}", { message: err.message });
+      });
+    });
+    signOutBtn.addEventListener("click", () => signOut(auth));
+
+    let activeTenantId = null;
+    let myMemberships = [];
+    let roster = [];
+    let selectedPersonId = null;
+    let currentPlan = null;
+
+    function myPersonIdInActiveTenant() {
+      return myMemberships.find((m) => m.tenantId === activeTenantId)?.personId ?? null;
+    }
+
+    // Only an owner may import INTO THEIR OWN Mapping My Journey --
+    // isNoteOwner() in firestore.rules requires the Note's own author to be
+    // the signed-in person, exactly as notes.html/journey-map.html already
+    // require for every other write here.
+    function isSelfSelected() {
+      return selectedPersonId != null && selectedPersonId === myPersonIdInActiveTenant();
+    }
+
+    function renderPersonSelectOptions() {
+      const prev = personSelect.value;
+      personSelect.innerHTML = roster
+        .filter((p) => p.status !== "archived")
+        .map((p) => `<option value="${p.id}">${escapeHtml(langText(p.name, getAppLang(), p.id))}</option>`)
+        .join("");
+      const stored = getSelectedPersonId();
+      const myPersonId = myPersonIdInActiveTenant();
+      const candidate = roster.some((p) => p.id === prev) ? prev
+        : (roster.some((p) => p.id === stored) ? stored
+        : (roster.some((p) => p.id === myPersonId) ? myPersonId : (roster[0]?.id ?? null)));
+      if (candidate) personSelect.value = candidate;
+    }
+
+    function renderReadOnlyBanner() {
+      if (isSelfSelected()) { readOnlyMsg.style.display = "none"; return; }
+      readOnlyMsg.style.display = "block";
+      readOnlyMsg.textContent = t("You can only import into your own Mapping My Journey — choose yourself in the Person picker above.");
+    }
+
+    async function loadContextData() {
+      const rosterSnap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId)));
+      roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], null);
+      renderPersonSelectOptions();
+      selectedPersonId = personSelect.value || null;
+      renderReadOnlyBanner();
+      refreshImportGate();
+    }
+
+    personSelect.addEventListener("change", () => {
+      selectedPersonId = personSelect.value;
+      setSelectedPersonId(selectedPersonId);
+      renderReadOnlyBanner();
+      refreshImportGate();
+    });
+
+    tenantSelect.addEventListener("change", async () => {
+      const chosen = myMemberships.find((m) => m.tenantId === tenantSelect.value);
+      if (!chosen) return;
+      activeTenantId = chosen.tenantId;
+      setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
+      renderNav(chosen.roles, null);
+      await loadContextData();
+    });
+
+    // -----------------------------------------------------------------------
+    // Step 1: choose the file, parse it. Preview needs no readiness gate at
+    // all (issue #265's own explicit requirement) -- nothing here writes.
+    // -----------------------------------------------------------------------
+    let surahIndexPromise = null;
+
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files?.[0];
+      if (!file) return;
+      currentPlan = null;
+      previewSection.style.display = "none";
+      parsingMsg.style.display = "block";
+      parsingMsg.textContent = t("Reading {name}…", { name: file.name });
+      try {
+        const [xmlText, surahIndex] = await Promise.all([
+          file.text(),
+          surahIndexPromise ?? (surahIndexPromise = getSurahIndex()),
+        ]);
+        const parsed = parseWxrXml(xmlText);
+        currentPlan = analyzeWxrImport(parsed, { surahIndex });
+        renderPreview(currentPlan);
+        parsingMsg.style.display = "none";
+        previewSection.style.display = "block";
+      } catch (err) {
+        console.error(err);
+        parsingMsg.textContent = t("Could not read that file: {message}", { message: err.message });
+      }
+      refreshImportGate();
+    });
+
+    function renderPreview(plan) {
+      document.getElementById("statFolders").textContent = plan.preview.folderCount;
+      document.getElementById("statNotes").textContent = plan.preview.noteCount;
+      document.getElementById("statAyahLinks").textContent = plan.preview.ayahLinkCount;
+      document.getElementById("statRangeLinks").textContent = plan.preview.rangeLinkCount;
+      document.getElementById("statHadith").textContent = plan.preview.hadithCount;
+      document.getElementById("statNoRef").textContent = plan.preview.noRefCount + plan.preview.invalidRefCount;
+      const sample = plan.preview.unmatchedSample;
+      if (sample.length) {
+        unmatchedIntro.style.display = "block";
+        unmatchedIntro.textContent = t("Titles with no usable reference (a sample):");
+        unmatchedSampleEl.innerHTML = sample.map((title) => `<li>${escapeHtml(title || t("(untitled)"))}</li>`).join("");
+      } else {
+        unmatchedIntro.style.display = "none";
+        unmatchedSampleEl.innerHTML = "";
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // The gate: the Import button is a control that opens and explains
+    // itself rather than one that is simply not there (this project's own
+    // standing lesson) -- aria-disabled, not disabled, dimmed the same way,
+    // reachable by keyboard, and a press while gated says in words why.
+    // -----------------------------------------------------------------------
+    function refreshImportGate() {
+      const ready = isWordpressImportPersistenceReady();
+      const reason = wordpressImportUnavailableReason();
+      if (!ready) {
+        gateNotice.style.display = "block";
+        gateNotice.textContent = reason === "wordpress-import-readiness-decision-incomplete"
+          ? t("Importing is nearly ready, but the governed decision that turns it on is incomplete.")
+          : t("Importing is not switched on yet — the Owner needs to publish one Rules update first. The preview above works either way.");
+        importBtn.setAttribute("aria-disabled", "true");
+        return;
+      }
+      gateNotice.style.display = "none";
+      const canWrite = !!currentPlan && isSelfSelected();
+      importBtn.setAttribute("aria-disabled", canWrite ? "false" : "true");
+    }
+
+    importBtn.addEventListener("click", async () => {
+      if (importBtn.getAttribute("aria-disabled") === "true") {
+        if (!isWordpressImportPersistenceReady()) {
+          showResult(t("Importing is not switched on yet — the Owner needs to publish one Rules update first."));
+        } else if (!currentPlan) {
+          showResult(t("Choose a file first."));
+        } else if (!isSelfSelected()) {
+          showResult(t("You can only import into your own Mapping My Journey — choose yourself in the Person picker above."));
+        }
+        return;
+      }
+      importBtn.setAttribute("aria-disabled", "true");
+      progressLine.style.display = "block";
+      resultLine.style.display = "none";
+      refusalListEl.style.display = "none";
+      refusalListEl.innerHTML = "";
+      try {
+        const actorUid = auth.currentUser.uid;
+        const result = await runWordpressImport(db, {
+          tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: actorUid, actorUid,
+          plan: currentPlan,
+          onProgress: (p) => {
+            progressLine.textContent = p.phase === "folders"
+              ? t("Folders: {created} created, {skipped} already there ({done} of {total})…",
+                  { created: p.created, skipped: p.skipped, done: p.created + p.skipped + p.refused, total: p.total })
+              : t("Notes: {created} created, {skipped} already there ({done} of {total})…",
+                  { created: p.created, skipped: p.skipped, done: p.created + p.skipped + p.refused, total: p.total });
+          },
+        });
+        progressLine.style.display = "none";
+        resultLine.style.display = "block";
+        resultLine.textContent = t("Done. Folders: {fc} created, {fs} already there. Notes: {nc} created, {ns} already there.", {
+          fc: result.folders.created, fs: result.folders.skipped,
+          nc: result.notes.created, ns: result.notes.skipped,
+        });
+        const refusals = [...result.folders.refusals, ...result.notes.refusals];
+        if (refusals.length) {
+          refusalListEl.style.display = "block";
+          refusalListEl.innerHTML = refusals.map((r) =>
+            `<li>${escapeHtml(r.name || r.title || "")} — ${escapeHtml(r.message)}</li>`).join("");
+        }
+      } catch (err) {
+        console.error(err);
+        progressLine.style.display = "none";
+        showResult(t("The import stopped early: {message}. It is safe to try again — anything already created will be skipped.", { message: err.message }));
+      }
+      refreshImportGate();
+    });
+
+    function showResult(text) {
+      resultLine.style.display = "block";
+      resultLine.textContent = text;
+    }
+
+    // -----------------------------------------------------------------------
+    // Sign-in / bootstrap -- same shape as notes.html.
+    // -----------------------------------------------------------------------
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        whoEl.textContent = t("Not signed in.");
+        signInBtn.style.display = "inline-block";
+        signOutBtn.style.display = "none";
+        appEl.style.display = "none";
+        return;
+      }
+      whoEl.textContent = t("Signed in as {email}", { email: user.email });
+      signInBtn.style.display = "none";
+      signOutBtn.style.display = "inline-block";
+
+      try {
+        const userIndexSnap = await getDoc(doc(db, TENANT.USER_INDEX, user.uid));
+        if (adoptAppLangFromUserIndex(userIndexSnap)) return;
+        const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
+        const { context, memberships } = await bootstrapContext(db, user.uid, defaultTenantId);
+        if (!context) {
+          whoEl.innerHTML += noAccountMessageHtml();
+          return;
+        }
+        activeTenantId = context.tenantId;
+        myMemberships = memberships;
+        tenantSelect.innerHTML = myMemberships
+          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
+          .join("");
+
+        appEl.style.display = "block";
+        await loadContextData();
+      } catch (err) {
+        console.error(err);
+        whoEl.textContent += ` — ${err.message}`;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -18353,3 +18353,33 @@ failed outside loads, the same filter `journey-map-screen.mjs` uses. Checks:
 word-segments-data 10/0, word-card-segments-browser 40/0, quran-word-card
 36/0, quran-word-card-integration 10/0, quran-word-card-return 55/0, and
 explore-wbw-tab 91/0 still passes. Screenshot looked at: وَيَصُدُّونَ (14:3:7).
+
+**v08.66 (25 Sep 2026).** Issue #265's round, allocated by the MMSA Architect.
+Review changes on top of the Builder's branch: (1) **first-run-fatal defect
+fixed** — `wordpress-import-service.js` checked existence with per-id
+`getDoc` reads, which the deployed rules DENY for a missing document; it now
+loads the owner's folders, Notes, links and filings through paged list queries
+(new `listNoteSourcesForOwnerPage`, equality-only, no index) and the per-id
+readers the Builder added were removed. The new
+`tools/firestore-emulator/wordpress-import-real-function.rules.test.mjs`
+fails on the Builder's version (permission-denied on the first get) and passes
+on this one — 9/0 with the Owner's own export (not committed): 1,464 folders,
+1,083 Notes, 550 āyah links, 2,319 filings, 0 refused, 62s; a second run 3.7s,
+nothing created. (2) **Draft dates**: 246 drafts carry
+`post_date_gmt` 0000-00-00; `fillMissingGmtDates()` derives the site offset
+from posts with both dates and converts the local date — every Note keeps a
+date. (3) **Import fields frozen after create** (`importFieldsFrozen()`, and
+folder `importSource`); the Builder's IMPORT-07 (a bare update adding a date)
+was a wrong assertion — every Note update must commit a revision — replaced by
+07a–d plus folder cases 12/13, 16/0, the freeze mutation-proven (07b/c/d fail
+without it). (4) The candidate's blocks rebuilt as the live blocks plus
+additions only (the Builder's copy dropped ~30 lines of rule comments), and a
+whole-file DEPLOYMENT candidate the suite asserts is exactly what it tested;
+the Owner guide is now select-all, paste, publish. (5) Restored the #263
+Bangla strings the branch deleted. Browser: the preview reads the real 17.7 MB
+file in 0.3s at 390/1100px in both languages, no sideways scroll, Import
+disabled with its explanation. Other checks: wordpress-import-parser 45/0,
+wordpress-import-screen 13/0, journey-map-real-function and
+note-foundation-real-function pass, rules-authorisation-executable 40/0,
+firestore-index-requirements 10/0. Not done: Bangla digits in the preview
+counts (shown as 1464, not ১৪৬৪).

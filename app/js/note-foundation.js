@@ -77,6 +77,13 @@ export async function createPermanentNote(db, {
   noteId = newNoteEntityId(),
   revisionId = newNoteEntityId(),
   source = null,
+  // Issue #265 -- optional, additive-only provenance for a Note that was
+  // IMPORTED rather than written here: the WordPress post's own original
+  // dates and a small importSource map. `undefined` by default, so every
+  // existing caller (createStudyNote(), promoteQuickNoteToStudyNote()) is
+  // byte-identical in behaviour -- nothing is written unless a caller
+  // actually supplies it.
+  importMeta = null,
   actorUid,
 }) {
   const owner = ownership({ tenantId, ownerPersonId, ownerUid });
@@ -116,6 +123,7 @@ export async function createPermanentNote(db, {
       bodyHtml,
       status: NOTE_STATUS.ACTIVE,
       currentRevisionId: revisionId,
+      ...(importMeta ?? {}),
     });
   });
 
@@ -243,6 +251,32 @@ export async function listNoteFoldersForOwner(db, { tenantId, ownerPersonId, sta
     where("status", "==", status), limit(maximum));
   const snapshot = await getDocs(q);
   return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+}
+
+/**
+ * Issue #265 -- the paged twin of `listNoteFoldersForOwner()` above, the same
+ * shape `listNotePlacementsForOwnerPage()` already uses: equality filters
+ * only (tenantId, ownerPersonId, status), so a `startAfter` cursor on the
+ * implicit document-id ordering needs no composite index. `listNoteFoldersForOwner()`
+ * itself is unchanged -- every existing caller that only ever wanted "up to
+ * 100 folders" still gets exactly that -- but an owner with more than 100
+ * folders (the WordPress import can create over a thousand) could never see
+ * the rest through it, in any view.
+ */
+export async function listNoteFoldersForOwnerPage(db, {
+  tenantId, ownerPersonId, status = NOTE_STATUS.ACTIVE, pageSize = 100, after = null,
+}) {
+  requirePageSize(pageSize);
+  const q = query(collection(db, TENANT.NOTE_FOLDERS),
+    where("tenantId", "==", requireToken("tenantId", tenantId)),
+    where("ownerPersonId", "==", requireToken("ownerPersonId", ownerPersonId)),
+    where("status", "==", status),
+    ...(after ? [startAfter(after)] : []),
+    limit(pageSize));
+  const snapshot = await getDocs(q);
+  const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  const next = snapshot.docs.length < pageSize ? null : snapshot.docs[snapshot.docs.length - 1];
+  return { rows, next };
 }
 
 /**
@@ -741,6 +775,32 @@ export async function getNotesByIds(db, tenantId, noteIds) {
   const snapshots = await Promise.all(noteIds.map(
     (noteId) => getDoc(doc(db, TENANT.NOTES, noteFoundationDocId(tenantId, noteId)))));
   return snapshots.filter((snap) => snap.exists()).map((snap) => ({ id: snap.id, ...snap.data() }));
+}
+
+/**
+ * Issue #265, Architect review -- every source link one person owns, a page
+ * at a time. The importer needs "which links already exist?" and must NOT
+ * ask it by reading each link's id directly: the deployed `allow get`
+ * evaluates `resource.data`, so a get of a link that does not exist yet is
+ * DENIED, not empty (the v08.56 lesson), and every first run would stop on
+ * the first Note. Equality filters only and no `orderBy`, so it is served by
+ * single-field indexes and needs no composite index -- the same reasoning as
+ * `listNotePlacementsForOwnerPage()`.
+ */
+export async function listNoteSourcesForOwnerPage(db, {
+  tenantId, ownerPersonId, status = NOTE_STATUS.ACTIVE, pageSize = 100, after = null,
+}) {
+  requirePageSize(pageSize);
+  const q = query(collection(db, TENANT.NOTE_SOURCES),
+    where("tenantId", "==", requireToken("tenantId", tenantId)),
+    where("ownerPersonId", "==", requireToken("ownerPersonId", ownerPersonId)),
+    where("status", "==", status),
+    ...(after ? [startAfter(after)] : []),
+    limit(pageSize));
+  const snapshot = await getDocs(q);
+  const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  const next = snapshot.docs.length < pageSize ? null : snapshot.docs[snapshot.docs.length - 1];
+  return { rows, next };
 }
 
 // ---------------------------------------------------------------------------

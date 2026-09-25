@@ -580,4 +580,5 @@
 // total). Allocated by the MMSA Architect.
 // 08.64: Word by Word as its own Explore tab (issue #261). Allocated by the MMSA Architect.
 // 08.65: Word Card colours each part of an Arabic word and the matching part of its meaning (issue #263). Allocated by the MMSA Architect.
-export const APP_VERSION = "08.65";
+// 08.66: the mappingmyjourney.com WordPress importer, built and gated (issue #265). Allocated by the MMSA Architect.
+export const APP_VERSION = "08.66";

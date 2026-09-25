@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.65",
+    "version": "08.66",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -557,8 +557,20 @@
     {
       "version": "08.65",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Word Card word-part colouring (issue #263), on the Owner's 'Look at the coloring of each segment of a word. Make this.' Each word's Quranic Arabic Corpus segments (particle, person, stem, and so on) coloured in the Arabic and in the matching words of the English gloss, with a legend and a 'Colour word parts' switch (on by default, remembered on the device). Data is packaged per surah under tools/quran-data-pull/output/word-segments (build-word-segments.mjs; 99.64% of words aligned, the rest shown uncoloured) and loaded only when a Word Card opens (I9). Colours measured at 4.5:1 or better against the card. word-segments-data 10/0, word-card-segments-browser 40/0 (the sandbox's failed outside loads now filtered, as elsewhere), quran-word-card 36/0, -integration 10/0, -return 55/0.",
+      "integration": {
+        "authorizedOn": "2026-09-25",
+        "integratedOn": "2026-09-25",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "08.66",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The mappingmyjourney.com WordPress importer (issue #265), BUILT AND GATED. New app/import-notes.html (from Mapping My Journey's ⋯ menu): choose the export file, see a preview (1,464 folders, 1,083 Notes, 503 āyah and 47 range links, 171 Hadith references, 362 with none), then Import -- disabled until the Owner publishes the Rules (study-wordpress-import-readiness.js, ready:false). Idempotent with deterministic ids; nothing deleted. Folder tree paging past 100. Notes keep the original WordPress date (drafts' zero GMT dates recovered from local time) and an importSource record; Hadith references stored, not linked. Review fixed a first-run-fatal defect (per-id existence reads denied under the deployed rules), froze the import fields after create, and produced a one-paste DEPLOYMENT file. Real importer on the real rules with the Owner's export: 1,464 folders, 1,083 Notes, 550 links, 2,319 filings, 0 refused; re-run creates nothing.",
       "integration": {
         "authorizedOn": "2026-09-25",
         "integratedOn": "2026-09-25",
@@ -567,8 +579,9 @@
       }
     }
   ],
-  "nextUnallocated": "08.66",
+  "nextUnallocated": "08.67",
   "nextUnallocatedNote": [
+    "v08.66 was allocated to the mappingmyjourney.com WordPress importer, built and gated (issue #265), 2026-09-25.",
     "v08.65 was allocated to Word Card colours each part of an Arabic word and the matching part of its meaning (issue #263), 2026-09-25.",
     "v08.64 was allocated to Word by Word as its own Explore tab (issue #261), 2026-09-25.",
     "v08.63 was allocated to the Siyagah-style folder tree in Mapping My Journey (issue #259), 2026-09-25.",
