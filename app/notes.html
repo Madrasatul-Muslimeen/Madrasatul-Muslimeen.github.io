@@ -132,7 +132,7 @@
     import { getAppLang } from "./js/prefs.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { safeWrite } from "./js/errors.js";
-    import { bootstrapContext, setActiveContext, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
+    import { getMyMembershipRoles, hydrateMemberships, pickContext, setActiveContext, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { translateStatic, t } from "./js/i18n.js";
     import { registerServiceWorker } from "./js/sw-register.js";
@@ -237,14 +237,28 @@
       if (candidate) personSelect.value = candidate;
     }
 
-    async function loadContextData() {
-      const rosterSnap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId)));
+    // Speed, part 7 (issue #291): the tenant document used to be read TWICE --
+    // once inside hydrateMemberships() (for the tenant picker's real names)
+    // and again here, one round trip later, for weekStartsOn. currentTenantDoc
+    // now comes straight off the same hydrated membership, and the roster
+    // query fires ALONGSIDE hydration rather than after it -- same split
+    // homework.html/course-offers.html's own issue #288 fix uses.
+    async function loadContextData(hydratedMembershipsPromise) {
+      const hydrationPromise = hydratedMembershipsPromise ?? Promise.resolve(myMemberships);
+      const [rosterSnap, hydrated] = await Promise.all([
+        getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId))),
+        hydrationPromise,
+      ]);
       roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      myMemberships = hydrated;
+      tenantSelect.innerHTML = myMemberships
+        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
+        .join("");
+
       renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], null);
       renderPersonSelectOptions();
       selectedPersonId = personSelect.value || null;
-      const tenantSnap = await getDoc(doc(db, TENANT.TENANTS, activeTenantId));
-      currentTenantDoc = tenantSnap.exists() ? tenantSnap.data() : null;
+      currentTenantDoc = myMemberships.find((m) => m.tenantId === activeTenantId)?.tenantData ?? null;
       await refreshView();
     }
 
@@ -260,6 +274,8 @@
       activeTenantId = chosen.tenantId;
       setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
       renderNav(chosen.roles, null);
+      // myMemberships already carries every membership's own hydrated tenant
+      // document (fetched once, at sign-in) -- no reason to fetch it again.
       await loadContextData();
     });
 
@@ -574,22 +590,33 @@
       signOutBtn.style.display = "inline-block";
 
       try {
+        // Speed, part 7 (issue #291), the same pattern issue #278's own fix
+        // uses: userIndex and the ROLES-ONLY membership query are fired
+        // together -- pickContext() below only ever reads tenantId/personId/
+        // roles, never tenantName/tenantData.
+        const membershipRolesPromise = getMyMembershipRoles(db, user.uid);
+        membershipRolesPromise.catch(() => {}); // see the real await below; this only stops a reload (adoptAppLangFromUserIndex) from logging it as unhandled.
+
         const userIndexSnap = await getDoc(doc(db, TENANT.USER_INDEX, user.uid));
         if (adoptAppLangFromUserIndex(userIndexSnap)) return;
         const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
-        const { context, memberships } = await bootstrapContext(db, user.uid, defaultTenantId);
+
+        const membershipRoles = await membershipRolesPromise;
+        const context = pickContext(membershipRoles, defaultTenantId);
         if (!context) {
           whoEl.innerHTML += noAccountMessageHtml();
           return;
         }
         activeTenantId = context.tenantId;
-        myMemberships = memberships;
-        tenantSelect.innerHTML = myMemberships
-          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
-          .join("");
+
+        // The tenant picker's real names come from the SAME hydration call
+        // loadContextData() fires its own reads alongside, rather than
+        // being awaited before any of them.
+        const hydratedMembershipsPromise = hydrateMemberships(db, membershipRoles);
+        hydratedMembershipsPromise.catch(() => {}); // real failure surfaces via the awaited copy inside loadContextData().
 
         appEl.style.display = "block";
-        await loadContextData();
+        await loadContextData(hydratedMembershipsPromise);
       } catch (err) {
         console.error(err);
         whoEl.textContent += ` — ${err.message}`;
