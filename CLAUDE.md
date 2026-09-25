@@ -158,7 +158,18 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.67 on `main`** (25 Sep 2026 — the Owner's
+**Current milestone: v08.68 on `main`** (25 Sep 2026 — **the Evernote
+importer is BUILT AND GATED** (issue #271). The Import page now takes a
+WordPress export (.xml) or one or more Evernote notebooks (.enex): each
+notebook becomes a folder, each note a Note with its original dates, linked
+to its āyah where the title or opening names one. Pictures are not stored
+yet, just named placeholders recorded for a later move. It is behind the
+same gate as WordPress and **needs no new Rules** beyond the v08.66
+DEPLOYMENT candidate the Owner has still to publish. The Builder applied
+v08.66's lesson unprompted: existence is checked through paged owner lists,
+never a read of a missing id.)
+
+**Previous milestone: v08.67 on `main`** (25 Sep 2026 — the Owner's
 decision *"Path view: branching with links"*, built (issue #267). Each
 folder is a branch, its Notes stops along it by original date; a Note filed
 in several folders shows on every branch with a 🔗 badge that highlights all

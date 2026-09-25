@@ -40,6 +40,14 @@
 // `originalCreatedAt`/`originalModifiedAt`/`importSource` -- is gated.
 //
 // This module is PURE and imports nothing. Do not give it an import.
+//
+// Issue #271 -- app/js/evernote-import-service.js REUSES this exact gate,
+// unrenamed, rather than forking a second one. Both importers write the
+// identical three optional fields (originalCreatedAt/originalModifiedAt/
+// importSource) on the identical two collections (notes/noteFolders), under
+// the identical Rules candidate named above -- it is the same governed
+// dependency, so it gets the same governed answer. A second gate for the
+// same underlying fact would just be two places that could disagree.
 
 /** Who may declare deployment readiness. Closed: a module cannot authorise itself. */
 export const WORDPRESS_IMPORT_READINESS_AUTHORITIES = Object.freeze(["master-architect"]);

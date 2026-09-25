@@ -18402,3 +18402,16 @@ have failed on `main`. Checks: journey-map-path 32/0 (the size fixture:
 1,500 folders, 1,100 Notes, ~1.1s), journey-map-screen 48/0, journey-map-back
 38/0, journey-map-service 28/0, journey-map-boundary 18/0,
 journey-map-real-function passes. Screenshot looked at, 390px.
+
+**v08.68 (25 Sep 2026).** Issue #271 — the Evernote (.enex) importer, allocated
+by the MMSA Architect. Reviewed on a merge with current `main` (clean). The
+Builder moved the source-independent parts into `app/js/notes-import-shared.js`,
+so after that refactor the WordPress importer was re-proven with the Owner's
+real export: `wordpress-import-real-function` 9/0, 1,464 folders, 1,083
+Notes, 550 links, 0 refused. Checks: evernote-import-parser 41/0,
+evernote-import-real-function 12/0 (the real importer on the real rules,
+including a re-run that creates nothing), wordpress-import-parser 45/0,
+wordpress-import-v1 16/0, wordpress-import-screen 21/0, journey-map-boundary
+18/0, journey-map-screen 48/0, note-sanitize-boundary passes. Browser: two
+fixture .enex files previewed at 390px in both languages, no errors, no
+sideways scroll. Not done: preview counts still show Latin digits in Bangla.

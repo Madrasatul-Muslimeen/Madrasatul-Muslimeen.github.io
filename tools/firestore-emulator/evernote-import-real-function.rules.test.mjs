@@ -1,20 +1,26 @@
-// Issue #265, Architect review -- runs the REAL importer
-// (app/js/wordpress-import-parser.js + app/js/wordpress-import-service.js +
+// Issue #271, Architect review pattern (matching issue #265's own
+// wordpress-import-real-function.rules.test.mjs) -- runs the REAL importer
+// (app/js/evernote-import-parser.js + app/js/evernote-import-service.js +
 // app/js/note-foundation.js) against the REAL emulator running the ruleset
 // the Owner's publish would produce: firestore.rules with its notes and
-// noteFolders blocks replaced by the candidate's
-// (docs/governance/2026-09-25-wordpress-import-rules-candidate.rules).
+// noteFolders blocks replaced by the SAME candidate the WordPress importer
+// uses (docs/governance/2026-09-25-wordpress-import-rules-candidate.rules)
+// -- no new Rules are needed for Evernote (see evernote-import-service.js's
+// own header: `importSource` is authorised as `is map` with no per-`system`
+// shape check, so an `{ system: "evernote", ... }` value needs nothing new).
 //
-// Why it exists: the Builder's service asked "does this Note / link / filing
-// already exist?" by reading each id directly. The deployed `allow get`
-// rules evaluate `resource.data`, so reading an id that does not exist yet is
-// DENIED, not empty (the v08.56 lesson) -- every first import would have
-// stopped on its first Note. No pure suite can see that; this one can.
+// Why it exists: the same v08.56-class lesson wordpress-import-real-
+// function.rules.test.mjs was built to catch -- a service that asks "does
+// this already exist?" by reading a document id directly is DENIED, not
+// empty, under the deployed `allow get` rules (which evaluate
+// `resource.data`), so the first import would stop on its first Note.
+// evernote-import-service.js reuses the identical paged-list technique; this
+// suite proves it against the real Rules engine rather than trusting that by
+// resemblance alone.
 //
-// Default input is the committed fixture. Set WXR_FILE to run a real export
-// (the Owner's own file is never committed).
-//
-// Isolated: a demo- project id on 127.0.0.1, never a production endpoint.
+// Default input is the two committed fixtures (tools/evernote-import/
+// fixture.enex and fixture-second.enex, one shared stack folder). Isolated:
+// a demo- project id on 127.0.0.1, never a production endpoint.
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -23,15 +29,16 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { initializeTestEnvironment } from "@firebase/rules-unit-testing";
 import { doc, getDoc, getDocs, collection, setDoc } from "firebase/firestore";
 
-const PROJECT = "demo-quranrevival-wordpress-import-real-function";
+const PROJECT = "demo-quranrevival-evernote-import-real-function";
 const HOST = "127.0.0.1";
-const PORT = 8099;
+const PORT = 8100;
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "../..");
 assert.match(PROJECT, /^demo-/);
 assert.notEqual(PROJECT, "study-monitoring");
 
-// --- the ruleset activation would produce ----------------------------------
+// --- the ruleset activation would produce (identical assembly to the
+// WordPress real-function suite -- same candidate, same two blocks) --------
 function matchBlock(text, name) {
   const start = text.indexOf(`match /${name}/`);
   assert.notEqual(start, -1, `no ${name} block found`);
@@ -50,11 +57,11 @@ let rules = deployed.replace(matchBlock(deployed, "notes"), matchBlock(candidate
 rules = rules.replace(matchBlock(deployed, "noteFolders"), matchBlock(candidate, "noteFolders"));
 assert.ok(rules.includes("importFieldsWellFormed") && rules.includes("folderImportFieldsWellFormed"),
   "the candidate blocks were not substituted -- this suite would be testing the deployed rules");
-// The Owner pastes ONE whole file. It must be exactly the ruleset tested here.
+// This must match the SAME deployment file the WordPress suite writes and
+// checks -- both importers activate against one identical assembled ruleset.
 const DEPLOYMENT_FILE = "docs/governance/2026-09-25-wordpress-import-DEPLOYMENT-candidate.rules";
-if (process.env.WRITE_DEPLOYMENT_FILE) fs.writeFileSync(path.join(root, DEPLOYMENT_FILE), rules);
 assert.equal(fs.readFileSync(path.join(root, DEPLOYMENT_FILE), "utf8"), rules,
-  `${DEPLOYMENT_FILE} is not exactly firestore.rules with the candidate's two blocks -- regenerate it with WRITE_DEPLOYMENT_FILE=1`);
+  `${DEPLOYMENT_FILE} is not exactly firestore.rules with the candidate's two blocks -- regenerate it via the WordPress suite (WRITE_DEPLOYMENT_FILE=1)`);
 
 // --- load the real modules, every relative import rewritten -----------------
 const GSTATIC = /import\s*\{[\s\S]*?\}\s*from\s*"https:\/\/www\.gstatic\.com\/firebasejs\/10\.12\.2\/firebase-firestore\.js";/;
@@ -81,42 +88,44 @@ nf = spec(nf, "./journey-map-contract.js", real("journey-map-contract.js"), "not
 nf = spec(nf, "./envelope.js", envelopeUrl, "note-foundation.js");
 const nfUrl = toDataUrl(nf);
 
-// unit-keys.js imports i18n.js only for labels; buildUnitKey needs neither.
 const i18nStub = toDataUrl("export const t = (s) => s; export const num = (n) => String(n);");
 const unitKeysUrl = toDataUrl(spec(read("unit-keys.js"), "./i18n.js", i18nStub, "unit-keys.js"));
-// Issue #271 -- the parser now imports the source-independent reference
-// finder/id scheme from notes-import-shared.js (also pure, also no imports
-// of its own), so that one relative import needs rewriting to a data: URL
-// too, exactly like every other module loaded this way.
+
 const sharedUrl = toDataUrl(read("notes-import-shared.js"));
-let parserSrc = read("wordpress-import-parser.js");
-parserSrc = spec(parserSrc, "./notes-import-shared.js", sharedUrl, "wordpress-import-parser.js");
-assert.ok(!/from "\.\//.test(parserSrc), "wordpress-import-parser.js has a relative import this loader did not rewrite");
+let parserSrc = read("evernote-import-parser.js");
+parserSrc = spec(parserSrc, "./notes-import-shared.js", sharedUrl, "evernote-import-parser.js");
+assert.ok(!/from "\.\//.test(parserSrc), "evernote-import-parser.js has a relative import this loader did not rewrite");
 const parserUrl = toDataUrl(parserSrc);
+
 // The readiness gate is closed in the repository (ready: false) until the
-// Owner publishes; this suite tests what happens once it is open.
+// Owner publishes; this suite tests what happens once it is open. Same
+// stub the WordPress suite uses, for the same shared gate module.
 const readyStub = toDataUrl("export function isWordpressImportPersistenceReady() { return true; }");
 
-let svc = read("wordpress-import-service.js");
+let svc = read("evernote-import-service.js");
 svc = spec(svc, "./collections.js", real("collections.js"), "service");
 svc = spec(svc, "./envelope.js", envelopeUrl, "service");
 svc = spec(svc, "./journey-map-contract.js", real("journey-map-contract.js"), "service");
 svc = spec(svc, "./unit-keys.js", unitKeysUrl, "service");
-svc = spec(svc, "./wordpress-import-parser.js", parserUrl, "service");
+svc = spec(svc, "./evernote-import-parser.js", parserUrl, "service");
 svc = spec(svc, "./study-wordpress-import-readiness.js", readyStub, "service");
 svc = spec(svc, "./note-foundation.js", nfUrl, "service");
-assert.ok(!/from "\.\//.test(svc), "wordpress-import-service.js has a relative import this loader did not rewrite");
+assert.ok(!/from "\.\//.test(svc), "evernote-import-service.js has a relative import this loader did not rewrite");
 
-const { parseWxrXml, analyzeWxrImport } = await import(parserUrl);
-const { runWordpressImport } = await import(toDataUrl(svc));
+const { parseEnexXml, planEnexImport } = await import(parserUrl);
+const { runEvernoteImport } = await import(toDataUrl(svc));
 
-const wxrPath = process.env.WXR_FILE || path.join(root, "tools/wordpress-import/fixture.wxr.xml");
+const fixture1 = process.env.ENEX_FILE_1 || path.join(root, "tools/evernote-import/fixture.enex");
+const fixture2 = process.env.ENEX_FILE_2 || path.join(root, "tools/evernote-import/fixture-second.enex");
 const surahIndex = JSON.parse(fs.readFileSync(path.join(root, "tools/quran-data-pull/output/surah-index.json"), "utf8"));
-const plan = analyzeWxrImport(parseWxrXml(fs.readFileSync(wxrPath, "utf8")), { surahIndex });
-assert.ok(plan.folders.length > 0 && plan.notes.length > 0, "the plan is empty -- the parser or the file is wrong");
+const plan = planEnexImport([
+  { notebookName: "Reflections", parentFolderName: "Personal Journal", items: parseEnexXml(fs.readFileSync(fixture1, "utf8")).items },
+  { notebookName: "Tafsir Notes", parentFolderName: "Personal Journal", items: parseEnexXml(fs.readFileSync(fixture2, "utf8")).items },
+], { surahIndex });
+assert.ok(plan.folders.length > 0 && plan.notes.length > 0, "the plan is empty -- the parser or the fixtures are wrong");
 
 const T = "t1";
-test("the real importer against the rules the Owner's publish would produce", async () => {
+test("the real Evernote importer against the rules the Owner's publish would produce", async () => {
   const env = await initializeTestEnvironment({ projectId: PROJECT, firestore: { host: HOST, port: PORT, rules } });
   let passed = 0, failed = 0;
   const check = (name, cond, detail = "") => {
@@ -134,10 +143,10 @@ test("the real importer against the rules the Owner's publish would produce", as
 
     const expectedFilings = plan.notes.reduce((n, note) => n + note.folderIds.length, 0);
     const expectedLinks = plan.notes.filter((n) => n.reference.kind === "ayah" || n.reference.kind === "range").length;
-    console.log(`  input: ${path.basename(wxrPath)} -- ${plan.folders.length} folders, ${plan.notes.length} Notes, ${expectedLinks} āyah links, ${expectedFilings} filings`);
+    console.log(`  input: 2 .enex files -- ${plan.folders.length} folders, ${plan.notes.length} Notes, ${expectedLinks} āyah links, ${expectedFilings} filings`);
 
     const t0 = Date.now();
-    const first = await runWordpressImport(db, { ...who, plan });
+    const first = await runEvernoteImport(db, { ...who, plan });
     console.log(`  first run took ${((Date.now() - t0) / 1000).toFixed(1)}s`);
     const allRefusals = [...first.folders.refusals, ...first.notes.refusals];
     check("first run: every folder created, none refused",
@@ -159,29 +168,33 @@ test("the real importer against the rules the Owner's publish would produce", as
         && counts.notePlacements === expectedFilings, JSON.stringify(counts));
 
     // One Note with a reference, read back as its owner.
-    const sample = plan.notes.find((n) => n.reference.kind === "ayah" && n.folderIds.length && n.postDateGmt);
+    const sample = plan.notes.find((n) => n.reference.kind === "ayah" && n.created);
     if (sample) {
       const snap = await getDoc(doc(db, "notes", `${T}__${sample.noteId}`));
       const data = snap.data();
-      const wanted = new Date(`${sample.postDateGmt.replace(" ", "T")}Z`).getTime();
-      check("a Note keeps its original WordPress date as a real timestamp",
-        data?.originalCreatedAt?.toMillis?.() === wanted, `${data?.originalCreatedAt?.toDate?.()} vs ${sample.postDateGmt}`);
-      check("a Note carries its import record (site and post id)",
-        data?.importSource?.system === "wordpress" && data?.importSource?.postId === sample.postId);
+      const wanted = new Date(`${sample.created.slice(0, 4)}-${sample.created.slice(4, 6)}-${sample.created.slice(6, 8)}T${sample.created.slice(9, 11)}:${sample.created.slice(11, 13)}:${sample.created.slice(13, 15)}Z`).getTime();
+      check("a Note keeps its original Evernote date as a real timestamp",
+        data?.originalCreatedAt?.toMillis?.() === wanted, `${data?.originalCreatedAt?.toDate?.()} vs ${sample.created}`);
+      check("a Note carries its import record (system and notebook)",
+        data?.importSource?.system === "evernote" && typeof data?.importSource?.notebook === "string");
+      check("a Note's importSource carries its resources array (possibly empty) and its tags",
+        Array.isArray(data?.importSource?.resources) && Array.isArray(data?.importSource?.tags));
+    }
+    // The picture Note specifically, to prove a resource round-trips through Firestore.
+    const pictureNote = plan.notes.find((n) => n.importSource.resources.length > 0);
+    if (pictureNote) {
+      const snap = await getDoc(doc(db, "notes", `${T}__${pictureNote.noteId}`));
+      const data = snap.data();
+      check("a Note with a picture/attachment records its resource's file name and MD5",
+        data?.importSource?.resources?.[0]?.fileName === pictureNote.importSource.resources[0].fileName
+          && data?.importSource?.resources?.[0]?.md5 === pictureNote.importSource.resources[0].md5);
+      check("a Note with a picture stores a visible placeholder in its bodyHtml, never the raw <en-media> tag",
+        !data?.bodyHtml?.includes("<en-media") && /\[(picture|attachment):/.test(data?.bodyHtml || ""));
     }
 
     const t1 = Date.now();
-    const second = await runWordpressImport(db, { ...who, plan });
+    const second = await runEvernoteImport(db, { ...who, plan });
     console.log(`  second run took ${((Date.now() - t1) / 1000).toFixed(1)}s`);
-    // Every Note whose file carries any usable date must keep one.
-    const dated = plan.notes.filter((n) => n.postDateGmt && !/^0000/.test(n.postDateGmt));
-    let withDate = 0;
-    await env.withSecurityRulesDisabled(async (ctx) => {
-      for (const d of (await getDocs(collection(ctx.firestore(), "notes"))).docs) if (d.data().originalCreatedAt) withDate++;
-    });
-    check("every Note with a date in the file keeps its original date (drafts included)",
-      withDate === dated.length && dated.length === plan.notes.length, `${withDate} with a date, ${dated.length} dated in the plan, ${plan.notes.length} Notes`);
-
     check("a second run creates nothing and skips everything",
       second.folders.created === 0 && second.folders.skipped === plan.folders.length
         && second.notes.created === 0 && second.notes.skipped === plan.notes.length
@@ -193,9 +206,21 @@ test("the real importer against the rules the Owner's publish would produce", as
       for (const c of Object.keys(counts)) after[c] = (await getDocs(collection(adb, c))).size;
     });
     check("a second run leaves the database exactly as it was", JSON.stringify(after) === JSON.stringify(counts), JSON.stringify(after));
+
+    // The two notebooks share ONE stack folder in the real database too --
+    // not just in the pure plan (planEnexImport's own dedup is proven by
+    // the parser suite; this proves the WRITER honours it against the
+    // real Rules rather than accidentally writing the stack twice).
+    let stackDocs = 0;
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const adb = ctx.firestore();
+      const snap = await getDocs(collection(adb, "noteFolders"));
+      stackDocs = snap.docs.filter((d) => d.data().name === "Personal Journal").length;
+    });
+    check("the shared stack folder was written exactly once, not once per file", stackDocs === 1, `${stackDocs} stack folder documents`);
   } finally {
     await env.cleanup();
   }
-  console.log(`\n==== WordPress import, real functions: ${passed} passed, ${failed} failed ====`);
+  console.log(`\n==== Evernote import, real functions: ${passed} passed, ${failed} failed ====`);
   if (failed) process.exitCode = 1;
 });

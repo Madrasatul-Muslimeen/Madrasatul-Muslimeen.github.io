@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!DOCTYPE en-export SYSTEM "http://xml.evernote.com/pub/evernote-export3.dtd">
+<en-export export-date="20260925T000000Z" application="Evernote" version="10.0">
+
+<note>
+<title>Quran 2:255</title>
+<content><![CDATA[<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml2.dtd">
+<en-note><div>Ayat al-Kursi, the greatest ayah in the Qur&apos;an.</div><div><en-todo checked="true"/>Read the tafsir</div><div><en-todo checked="false"/>Memorise the ayah</div></en-note>]]></content>
+<created>20180105T090000Z</created>
+<updated>20180106T100000Z</updated>
+<tag>tafsir</tag>
+<tag>memorisation</tag>
+<note-attributes>
+<source-url>https://example.com/notes/1</source-url>
+<author>Owner</author>
+</note-attributes>
+</note>
+
+<note>
+<title>A photo from our trip</title>
+<content><![CDATA[<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml2.dtd">
+<en-note><div>Look what we found on the way.</div><en-media hash="9032b3c0e57285522b5dcf4c4dbfe803" type="image/jpeg"/></en-note>]]></content>
+<created>20180203T120000Z</created>
+<updated>20180203T120000Z</updated>
+<tag>family</tag>
+<tag>trip</tag>
+<note-attributes>
+<source-url></source-url>
+</note-attributes>
+<resource>
+<data encoding="base64">
+RkFLRS1KUEVHLUJZVEVTLUZPUi1URVNUSU5HLU9OTFk=
+</data>
+<mime>image/jpeg</mime>
+<resource-attributes>
+<file-name>trip-photo.jpg</file-name>
+</resource-attributes>
+</resource>
+</note>
+
+<note>
+<title>1:1-7 reflections on the Fatiha</title>
+<content><![CDATA[<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml2.dtd">
+<en-note><div>The opening chapter, recited in every prayer.</div></en-note>]]></content>
+<created>20180301T083000Z</created>
+<updated>20180301T083000Z</updated>
+<note-attributes/>
+</note>
+
+<note>
+<title>Sahih Bukhari Hadith 1</title>
+<content><![CDATA[<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml2.dtd">
+<en-note><div>Actions are judged by intentions.</div></en-note>]]></content>
+<created>20180402T140000Z</created>
+<updated>20180402T140000Z</updated>
+<note-attributes/>
+</note>
+
+<note>
+<title>2:300 misprint</title>
+<content><![CDATA[<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml2.dtd">
+<en-note><div>This ayah number does not exist -- an out-of-range test case.</div></en-note>]]></content>
+<created>20180505T091500Z</created>
+<updated>20180505T091500Z</updated>
+<note-attributes/>
+</note>
+
+<note>
+<title></title>
+<content><![CDATA[<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml2.dtd">
+<en-note><div>Just a quiet reflection this evening with no numbers at all.</div></en-note>]]></content>
+<created>20180607T200000Z</created>
+<updated>20180607T200000Z</updated>
+<note-attributes/>
+</note>
+
+<note>
+<title>Packing list</title>
+<content><![CDATA[<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml2.dtd">
+<en-note><div>Do not forget:</div><en-media hash="841fc3458fb3f426e0740cd547713bee" type="application/pdf"/></en-note>]]></content>
+<created>20180708T083000Z</created>
+<note-attributes/>
+<resource>
+<data encoding="base64">
+RkFLRS1QREYtQllURVMtRk9SLVRFU1RJTkctT05MWQ==
+</data>
+<mime>application/pdf</mime>
+<resource-attributes>
+<file-name>packing-list.pdf</file-name>
+</resource-attributes>
+</resource>
+</note>
+
+</en-export>

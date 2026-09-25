@@ -582,4 +582,5 @@
 // 08.65: Word Card colours each part of an Arabic word and the matching part of its meaning (issue #263). Allocated by the MMSA Architect.
 // 08.66: the mappingmyjourney.com WordPress importer, built and gated (issue #265). Allocated by the MMSA Architect.
 // 08.67: the Mapping My Journey Path view as branches with links (issue #267). Allocated by the MMSA Architect.
-export const APP_VERSION = "08.67";
+// 08.68: the Evernote (.enex) importer, built and gated (issue #271). Allocated by the MMSA Architect.
+export const APP_VERSION = "08.68";

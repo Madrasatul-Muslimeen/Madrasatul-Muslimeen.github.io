@@ -11,7 +11,8 @@
     "note-foundation-real-function": "firebase emulators:exec --only firestore --project demo-quranrevival-note-foundation-real-function --config note-foundation-real-function.firebase.json \"node --test note-foundation-real-function.rules.test.mjs\"",
     "journey-map-real-function": "firebase emulators:exec --only firestore --project demo-quranrevival-journey-map-real-function --config journey-map-real-function.firebase.json \"node --test journey-map-real-function.rules.test.mjs\"",
     "wordpress-import": "firebase emulators:exec --only firestore --project demo-quranrevival-wordpress-import --config wordpress-import-v1.firebase.json \"node --test wordpress-import-v1.rules.test.mjs\"",
-    "wordpress-import-real-function": "firebase emulators:exec --only firestore --project demo-quranrevival-wordpress-import-real-function --config wordpress-import-real-function.firebase.json \"node --test wordpress-import-real-function.rules.test.mjs\""
+    "wordpress-import-real-function": "firebase emulators:exec --only firestore --project demo-quranrevival-wordpress-import-real-function --config wordpress-import-real-function.firebase.json \"node --test wordpress-import-real-function.rules.test.mjs\"",
+    "evernote-import-real-function": "firebase emulators:exec --only firestore --project demo-quranrevival-evernote-import-real-function --config evernote-import-real-function.firebase.json \"node --test evernote-import-real-function.rules.test.mjs\""
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "5.0.2",

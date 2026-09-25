@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.67",
+    "version": "08.68",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -581,8 +581,20 @@
     {
       "version": "08.67",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Mapping My Journey's Path view becomes branching with links (issue #267), the Owner's decision. Each folder is a branch (trunk first, then children), its Notes stops along it ordered by original date; a Note filed in several folders appears on every branch with a 🔗 badge, and tapping it highlights every appearance and draws the connecting lines (tap again or Escape clears). Branches start collapsed below the top two levels; more than 20 stops show as '+N more'. 1,500 folders / 1,100 Notes render in about 1.1s. Read-only. Review: merged v08.66 in (folder paging now in both), fixed the view toggle wrapping 'Path' onto its own line at phone width after v08.66's ⋯ menu, served DOMPurify to the test browser from a vendored copy (the sandbox proxy broke the CDN), and updated journey-map-service K9/K28 for v08.66's paged ownerFolderTree().",
+      "integration": {
+        "authorizedOn": "2026-09-25",
+        "integratedOn": "2026-09-25",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "08.68",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The Evernote (.enex) importer (issue #271), built and behind the same gate as the WordPress importer. The Import page offers WordPress (.xml) or Evernote (.enex, several files at once); each .enex file becomes a folder (optionally under a typed stack name), each note a Note with its original created/updated dates, tags and source URL in importSource, linked to its āyah/range by the same reference finder, Hadith references stored not linked. Pictures and attachments are not stored this round: each becomes a visible [picture: name] placeholder and is recorded (name, type, md5, size) for a later move. Shared code moved into notes-import-shared.js. Idempotent via paged owner lists (never a per-id read). No new Rules: the v08.66 candidate already allows every field. evernote-import-real-function 12/0 on the emulator; the WordPress real-function suite re-run with the Owner's export after the parser refactor, unchanged (1,464/1,083/550, 0 refused).",
       "integration": {
         "authorizedOn": "2026-09-25",
         "integratedOn": "2026-09-25",
@@ -591,8 +603,9 @@
       }
     }
   ],
-  "nextUnallocated": "08.68",
+  "nextUnallocated": "08.69",
   "nextUnallocatedNote": [
+    "v08.68 was allocated to the Evernote (.enex) importer, built and gated (issue #271), 2026-09-25.",
     "v08.67 was allocated to the Mapping My Journey Path view as branches with links (issue #267), 2026-09-25.",
     "v08.66 was allocated to the mappingmyjourney.com WordPress importer, built and gated (issue #265), 2026-09-25.",
     "v08.65 was allocated to Word Card colours each part of an Arabic word and the matching part of its meaning (issue #263), 2026-09-25.",
