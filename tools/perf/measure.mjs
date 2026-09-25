@@ -261,7 +261,9 @@ function summarise(page, results) {
  * without a worker would show every app-file response with this false.
  */
 async function measureSecondOpen(browser, page) {
-  const ctx = await newContext(browser, { banner: false, viewport: { width: 390, height: 844 }, latencyMs: LATENCY, seedTemplates: SEEDED });
+  // allowServiceWorker: the harness switches the worker OFF by default, and
+  // without this the wait for it below never ends (found in review).
+  const ctx = await newContext(browser, { banner: false, allowServiceWorker: true, viewport: { width: 390, height: 844 }, latencyMs: LATENCY, seedTemplates: SEEDED });
   const first = await ctx.newPage();
   await throttle(ctx, first);
   await first.goto(`${BASE}${page.path}`);
@@ -272,13 +274,14 @@ async function measureSecondOpen(browser, page) {
   await first.evaluate(async () => {
     if (!("serviceWorker" in navigator)) return "unsupported";
     try {
-      await navigator.serviceWorker.ready;
+      await Promise.race([navigator.serviceWorker.ready, new Promise((_, no) => setTimeout(() => no(new Error("timeout")), 15000))]);
       return "ready";
     } catch {
       return "error";
     }
   });
-  await first.waitForTimeout(500);
+  // The page hands the worker the list of files it loaded; give that a moment.
+  await first.waitForTimeout(1500);
   await first.close();
 
   const responses = [];

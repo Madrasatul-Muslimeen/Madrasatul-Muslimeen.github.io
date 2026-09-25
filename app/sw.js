@@ -50,16 +50,38 @@ function isCacheable(request) {
   return /\.(?:html|js|mjs|css|json|woff2?|ttf|otf|png|jpe?g|svg|webp)$/i.test(url.pathname);
 }
 
-self.addEventListener("install", (event) => {
-  // Take over installing promptly -- nothing is served from this cache
-  // until fetch time (no precache list; each file is cached "once fetched",
-  // per the issue), so skipWaiting() here changes nothing a reader can see.
-  // Telling them a new version exists is the PAGE side's job
-  // (sw-register.js watches this same install via `updatefound`) --
-  // skipWaiting() only lets activation (which deletes the OLD cache) follow
-  // close behind installation instead of waiting for every open tab of the
-  // old version to close first.
-  event.waitUntil(self.skipWaiting());
+self.addEventListener("install", () => {
+  // Architect review, 25 Sep 2026: NO skipWaiting() here. A new version waits
+  // until the reader taps "Updated -- tap to reload" (sw-register.js sends
+  // "skipWaiting") or closes every tab of the app. Taking over at once let an
+  // already-open page of the OLD version fetch its not-yet-loaded modules
+  // from the NEW version -- two versions' files mixed in one page.
+});
+
+self.addEventListener("message", (event) => {
+  const data = event.data || {};
+  if (data.type === "skipWaiting") {
+    self.skipWaiting();
+    return;
+  }
+  // Architect review: the first open of a page happens BEFORE this worker
+  // controls it, so nothing that page loaded passed through the fetch handler
+  // and the SECOND open still went to the network. The page sends the list of
+  // files it has already loaded, and they are cached now, so the second open
+  // really is served from the phone.
+  if (data.type === "warm" && Array.isArray(data.urls)) {
+    event.waitUntil((async () => {
+      const cache = await caches.open(CACHE_NAME);
+      await Promise.all(data.urls.map(async (u) => {
+        try {
+          const request = new Request(u);
+          if (!isCacheable(request) || await cache.match(request)) return;
+          const response = await fetch(request);
+          if (response && response.ok) await cache.put(request, response);
+        } catch { /* best effort: a file that fails to cache is fetched next time */ }
+      }));
+    })());
+  }
 });
 
 self.addEventListener("activate", (event) => {

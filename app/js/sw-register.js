@@ -63,6 +63,17 @@ function unregisterAny() {
  * to load (the exact moment a caching bug would otherwise leave a reader
  * stuck on old code with no way to know).
  */
+let reloadOnTakeover = false;
+
+/** Same-origin files this page has already loaded, for the worker to keep. */
+function loadedAppFiles() {
+  const urls = new Set([location.href.split("#")[0]]);
+  for (const entry of performance.getEntriesByType("resource")) {
+    if (entry.name.startsWith(location.origin)) urls.add(entry.name.split("#")[0]);
+  }
+  return [...urls];
+}
+
 function announceUpdate() {
   if (document.getElementById("swUpdateNotice")) return; // already showing
   const notice = document.createElement("button");
@@ -84,7 +95,15 @@ function announceUpdate() {
     boxShadow: "0 2px 10px rgba(0,0,0,0.25)",
     cursor: "pointer",
   });
-  notice.addEventListener("click", () => location.reload());
+  notice.addEventListener("click", () => {
+    // Let the waiting new version take over; the page reloads once it has
+    // (controllerchange below), so it never runs on a mix of two versions.
+    reloadOnTakeover = true;
+    navigator.serviceWorker.getRegistration("/app/").then((reg) => {
+      if (reg?.waiting) reg.waiting.postMessage({ type: "skipWaiting" });
+      else location.reload();
+    }).catch(() => location.reload());
+  });
   document.body.appendChild(notice);
 }
 
@@ -104,10 +123,16 @@ export function registerServiceWorker() {
     return;
   }
 
-  window.addEventListener("load", () => {
+  const start = () => {
     // { type: "module" } -- sw.js imports APP_VERSION directly (see its own
     // header) rather than duplicating the version string a second time.
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (reloadOnTakeover) location.reload();
+    });
     navigator.serviceWorker.register("/app/sw.js", { type: "module" }).then((reg) => {
+      // A new version already downloaded on an earlier open and still
+      // waiting: say so again, every open, until the reader takes it.
+      if (reg.waiting && navigator.serviceWorker.controller) announceUpdate();
       reg.addEventListener("updatefound", () => {
         const installing = reg.installing;
         if (!installing) return;
@@ -120,11 +145,19 @@ export function registerServiceWorker() {
           }
         });
       });
+      return navigator.serviceWorker.ready;
+    }).then((reg) => {
+      reg?.active?.postMessage({ type: "warm", urls: loadedAppFiles() });
     }).catch((err) => {
       // Best-effort, like every other progressive-enhancement feature in
       // this app: a registration failure must never block the page the
       // person actually came to use.
       console.warn("Service worker registration failed:", err.message);
     });
-  });
+  };
+  // Deferred until the page has finished loading (see above). A page that
+  // calls this after its own load event has already fired would otherwise
+  // never register at all.
+  if (document.readyState === "complete") start();
+  else window.addEventListener("load", start, { once: true });
 }

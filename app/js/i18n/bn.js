@@ -2301,14 +2301,28 @@ export const BN = {
   // into Mapping My Journey: app/import-notes.html, its ⋯-menu entry point
   // in journey-map.html, and the "Originally written" date line on an
   // imported Note's own card in notes.html.
-  "Import from WordPress": "ওয়ার্ডপ্রেস থেকে ইমপোর্ট করুন", // ?
-  "Bring your mappingmyjourney.com folders and Notes into Mapping My Journey — the same folders, the same Notes, each linked to its āyah where its title names one. This never touches your existing folders or Notes, and never deletes anything.":
-    "আপনার mappingmyjourney.com-এর ফোল্ডার এবং নোটগুলো Mapping My Journey-তে আনুন — একই ফোল্ডার, একই নোট, প্রতিটি তার শিরোনামে উল্লেখিত আয়াতের সাথে যুক্ত। এটি আপনার বিদ্যমান ফোল্ডার বা নোট স্পর্শ করে না, এবং কিছুই মুছে ফেলে না।", // ?
+  // --- Issue #271 -- Evernote (.enex) added as a second source on the same
+  // page, generalizing several of the strings above from "WordPress" to
+  // "Import Notes" -- both the old and new key forms are listed here so the
+  // rename is visible; the old keys below are gone from the live markup.
+  "Import Notes": "নোট ইমপোর্ট করুন", // ?
+  "Bring Notes from another app into Mapping My Journey — folders and Notes, each linked to its āyah where its title or text names one. This never touches your existing folders or Notes, and never deletes anything.":
+    "অন্য অ্যাপ থেকে নোট আপনার Mapping My Journey-তে আনুন — ফোল্ডার ও নোট, প্রতিটি তার শিরোনাম বা লেখায় উল্লেখিত আয়াতের সাথে যুক্ত। এটি আপনার বিদ্যমান ফোল্ডার বা নোট স্পর্শ করে না, এবং কিছুই মুছে ফেলে না।", // ?
   "Back to Mapping My Journey": "Mapping My Journey-তে ফিরে যান",
-  "1. Choose your export file": "১. আপনার এক্সপোর্ট ফাইল বেছে নিন",
+  "1. Choose your export": "১. আপনার এক্সপোর্ট বেছে নিন",
+  "Source": "উৎস", // ?
+  "WordPress export (.xml)": "ওয়ার্ডপ্রেস এক্সপোর্ট (.xml)", // ?
+  "Evernote export (.enex)": "এভারনোট এক্সপোর্ট (.enex)", // ?
   "In WordPress: Tools → Export → All content, then download the .xml file. It is read in this browser only — nothing is uploaded anywhere else, and the file itself is never saved to this app.":
     "ওয়ার্ডপ্রেসে: Tools → Export → All content, তারপর .xml ফাইলটি ডাউনলোড করুন। এটি শুধু এই ব্রাউজারে পড়া হয় — অন্য কোথাও আপলোড করা হয় না, এবং এই ফাইলটি এই অ্যাপে কখনো সংরক্ষিত হয় না।", // ?
+  "In Evernote: File → Export Notes, choose Evernote XML Format (.enex), one file per notebook. You may choose several .enex files at once — each becomes its own folder. Pictures and attachments are not imported this round: each is replaced by a small placeholder in the Note, like [picture: file-name]. It is read in this browser only — nothing is uploaded anywhere else, and the files themselves are never saved to this app.":
+    "এভারনোটে: File → Export Notes থেকে Evernote XML Format (.enex) বেছে নিন, প্রতিটি নোটবুকের জন্য একটি ফাইল। আপনি একসাথে একাধিক .enex ফাইল বেছে নিতে পারেন — প্রতিটি তার নিজস্ব ফোল্ডার হয়ে যাবে। ছবি ও সংযুক্তি এই দফায় ইমপোর্ট করা হয় না: প্রতিটির বদলে নোটে একটি ছোট প্লেসহোল্ডার থাকবে, যেমন [picture: file-name]। এটি শুধু এই ব্রাউজারে পড়া হয় — অন্য কোথাও আপলোড করা হয় না, এবং ফাইলগুলো এই অ্যাপে কখনো সংরক্ষিত হয় না।", // ?
+  "Stack name (optional) — becomes one shared parent folder above the notebooks you choose below":
+    "স্ট্যাক নাম (ঐচ্ছিক) — আপনার বেছে নেওয়া নোটবুকগুলোর উপরে একটি ভাগ করা প্যারেন্ট ফোল্ডার হয়ে যাবে", // ?
+  "e.g. Personal Journal": "যেমন: ব্যক্তিগত জার্নাল", // ?
   "2. Preview": "২. প্রিভিউ",
+  "Files chosen": "নির্বাচিত ফাইল", // ?
+  "Pictures/attachments not imported": "ছবি/সংযুক্তি ইমপোর্ট হয়নি", // ?
   "Linked to one āyah": "একটি আয়াতের সাথে যুক্ত",
   "Linked to a range": "একটি পরিসরের সাথে যুক্ত",
   "Carry a Hadith reference": "হাদিসের একটি উল্লেখ বহন করে",
@@ -2316,6 +2330,7 @@ export const BN = {
   "3. Import": "৩. ইমপোর্ট",
   "Import": "ইমপোর্ট",
   "Reading {name}…": "{name} পড়া হচ্ছে…",
+  "Reading {count} files…": "{count}টি ফাইল পড়া হচ্ছে…", // ?
   "Could not read that file: {message}": "সেই ফাইলটি পড়া যায়নি: {message}",
   "Titles with no usable reference (a sample):": "কোনো ব্যবহারযোগ্য উল্লেখ নেই এমন শিরোনাম (একটি নমুনা):",
   "You can only import into your own Mapping My Journey — choose yourself in the Person picker above.":
@@ -2333,7 +2348,9 @@ export const BN = {
     "সম্পন্ন। ফোল্ডার: {fc}টি তৈরি হয়েছে, {fs}টি আগে থেকেই ছিল। নোট: {nc}টি তৈরি হয়েছে, {ns}টি আগে থেকেই ছিল।",
   "The import stopped early: {message}. It is safe to try again — anything already created will be skipped.":
     "ইমপোর্ট মাঝপথে থেমে গেছে: {message}। আবার চেষ্টা করা নিরাপদ — যা আগে থেকেই তৈরি হয়েছে তা এড়িয়ে যাওয়া হবে।", // ?
-  "Import from WordPress…": "ওয়ার্ডপ্রেস থেকে ইমপোর্ট করুন…", // ?
+  "Import Notes…": "নোট ইমপোর্ট করুন…", // ?
+  "{notebook}: {count} Notes — {ayah} āyah, {range} range, {hadith} Hadith, {noref} no reference, {res} pictures/attachments not imported":
+    "{notebook}: {count}টি নোট — {ayah}টি আয়াত, {range}টি পরিসর, {hadith}টি হাদিস, {noref}টি কোনো উল্লেখ নেই, {res}টি ছবি/সংযুক্তি ইমপোর্ট হয়নি", // ?
   "Originally written": "মূলত লেখা হয়েছিল", // ?
   "{total} occurrences in {forms} derived forms": "{forms}টি উৎপন্ন রূপে {total}টি ব্যবহার",
   "{count} occurrences": "{count}টি ব্যবহার",

@@ -17,6 +17,7 @@
 // documented substitute this repository's own standing lessons already
 // recommend for exactly this class of environment gap.
 import { chromium, newContext, BASE } from "./harness.mjs";
+import fs from "node:fs";
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = "") => {
@@ -27,6 +28,24 @@ const check = (name, ok, detail = "") => {
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
 const VIEWPORT = { width: 390, height: 844 };
 const PAGE_PATH = "/app/about.html"; // a plain, sign-in-optional page -- the worker's own behaviour does not depend on which page asked for it
+
+/** Architect review: the cache fills asynchronously (the page tells the
+ *  worker what it loaded once the worker is ready), so poll rather than
+ *  guess a fixed pause. */
+async function waitForCached(page, suffix, timeoutMs = 8000) {
+  return page.waitForFunction(async (sfx) => {
+    for (const n of await caches.keys()) {
+      if (!n.startsWith("mm-app-")) continue;
+      const keys = await (await caches.open(n)).keys();
+      if (keys.some((r) => r.url.endsWith(sfx))) return true;
+    }
+    return false;
+  }, suffix, { timeout: timeoutMs }).then(() => true).catch(() => false);
+}
+
+async function waitForController(page, timeoutMs = 8000) {
+  return page.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: timeoutMs }).then(() => true).catch(() => false);
+}
 
 async function waitForActivation(page) {
   return page.evaluate(async () => {
@@ -52,7 +71,7 @@ async function waitForActivation(page) {
   check("a registration becomes ready with no error", !state.error, state.error);
   check("the registration's scope is /app/", typeof state.scope === "string" && state.scope.endsWith("/app/"), state.scope);
 
-  await page.waitForTimeout(500); // let the background cache-fill (event.waitUntil in sw.js) land
+  await waitForCached(page, PAGE_PATH);
   const cacheNames = await page.evaluate(() => caches.keys());
   check("a versioned mm-app-* cache exists", cacheNames.some((n) => n.startsWith("mm-app-")), JSON.stringify(cacheNames));
   const cachedUrls = await page.evaluate(async (names) => {
@@ -78,7 +97,8 @@ async function waitForActivation(page) {
   const first = await ctx.newPage();
   await first.goto(`${BASE}${PAGE_PATH}`);
   await waitForActivation(first);
-  await first.waitForTimeout(500);
+  await waitForCached(first, PAGE_PATH);
+  await first.waitForTimeout(500); // let the rest of the warm list land
   await first.close();
 
   const second = await ctx.newPage();
@@ -136,36 +156,37 @@ async function waitForActivation(page) {
   await page.goto(`${BASE}${PAGE_PATH}`);
   await waitForActivation(page);
   await page.waitForTimeout(500);
+  await waitForCached(page, PAGE_PATH);
   const beforeCaches = await page.evaluate(() => caches.keys());
   const beforeName = beforeCaches.find((n) => n.startsWith("mm-app-"));
   check("a first-version cache exists before the bump", !!beforeName, JSON.stringify(beforeCaches));
 
-  // Route ONLY this context's copy of version.js to a bumped value -- the
-  // repository file itself is never touched.
-  await ctx.route(`${BASE}/app/js/version.js`, (route) =>
-    route.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: 'export const APP_VERSION = "99.99";' })
-  );
-  const reg = await page.evaluate(() => navigator.serviceWorker.getRegistration());
-  await page.evaluate(async () => {
-    const r = await navigator.serviceWorker.getRegistration();
-    await r?.update();
-  });
-  // The new worker installs, then (per sw-register.js's own `updatefound`
-  // handler) waits at "installed" rather than taking over immediately --
-  // this suite drives the same activation a reader's own "Updated -- tap to
-  // reload" tap would.
-  await page.waitForTimeout(500);
-  await page.evaluate(async () => {
-    const r = await navigator.serviceWorker.getRegistration();
-    r?.waiting?.postMessage?.({}); // harmless if sw.js never listens for a message; skipWaiting() already ran at install
-  });
-  await page.reload();
-  await waitForActivation(page);
-  await page.waitForTimeout(500);
-
-  const afterCaches = await page.evaluate(() => caches.keys());
-  check("the new version's cache exists after the bump", afterCaches.some((n) => n === "mm-app-99.99"), JSON.stringify(afterCaches));
-  check("the OLD version's cache was deleted on activate", !afterCaches.includes(beforeName), JSON.stringify(afterCaches));
+  // Architect review: bump the version the way a real publish does -- the
+  // served version.js changes -- and put it back whatever happens. (Routing
+  // the page's own request cannot reach the worker's update check.)
+  const versionPath = new URL("../../app/js/version.js", import.meta.url);
+  const original = fs.readFileSync(versionPath, "utf8");
+  try {
+    fs.writeFileSync(versionPath, original.replace(/APP_VERSION = "[^"]+"/, 'APP_VERSION = "99.99"'));
+    await page.evaluate(async () => { const r = await navigator.serviceWorker.getRegistration(); await r?.update(); });
+    const waiting = await page.waitForFunction(async () => !!(await navigator.serviceWorker.getRegistration())?.waiting, null, { timeout: 8000 })
+      .then(() => true).catch(() => false);
+    check("the new version downloads and WAITS instead of taking over the open page", waiting);
+    const still = await page.evaluate(() => caches.keys());
+    check("while it waits, the open page keeps its own version's files (no mixing)", still.includes(beforeName), JSON.stringify(still));
+    const notice = await page.waitForSelector("#swUpdateNotice", { timeout: 5000 }).then(() => true).catch(() => false);
+    check("the reader is told: \"Updated — tap to reload\"", notice);
+    if (notice) {
+      await Promise.all([page.waitForNavigation({ timeout: 10000 }).catch(() => {}), page.click("#swUpdateNotice")]);
+    }
+    await waitForActivation(page);
+    await page.waitForTimeout(500);
+    const afterCaches = await page.evaluate(() => caches.keys());
+    check("after the tap, the new version's cache is in use", afterCaches.includes("mm-app-99.99"), JSON.stringify(afterCaches));
+    check("the OLD version's cache was deleted on activate", !afterCaches.includes(beforeName), JSON.stringify(afterCaches));
+  } finally {
+    fs.writeFileSync(versionPath, original);
+  }
   await ctx.close();
 }
 
@@ -176,8 +197,8 @@ async function waitForActivation(page) {
   const ctx = await newContext(browser, { banner: false, allowServiceWorker: true, viewport: VIEWPORT });
   const page = await ctx.newPage();
   await page.goto(`${BASE}${PAGE_PATH}`);
-  const before = await waitForActivation(page);
-  check("(setup) a worker is controlling the page before ?nosw is used", before.controller === true);
+  await waitForActivation(page);
+  check("(setup) a worker is controlling the page before ?nosw is used", await waitForController(page));
 
   await page.goto(`${BASE}${PAGE_PATH}?nosw=1`);
   await page.waitForTimeout(300);
