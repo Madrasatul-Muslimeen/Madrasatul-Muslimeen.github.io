@@ -158,7 +158,9 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.74 on `main`** (25 Sep 2026 — **speed part 6a**,
+**Current milestone: v08.75 on `main`** (25 Sep 2026 — the Owner: *"While on mushaf view … click on a Ayah … attach this Ayah to a Asmaul Husna, a single/ multiple folder (mapping) a QCR, a bookmark, or take note"* (issue #286). Tapping an āyah's end marker in the Mushaf now opens a **This āyah** menu: Bookmark, Note & more, Asma ul Husna Name(s), QCR collection(s), **File in folder(s)** (ticks for several folders at once; files the reader's Note on that āyah, creating one if there is none; unticking retires the filing, nothing deleted), Play, Copy, Share. The Word Card gains a **This āyah ⋯** button to the same menu. No Rules change. **Review found the builder's synthetic 21-character marker running off the page** and failing its own hit-test for a reason the real one-glyph marker never has; a real-Mushaf probe confirmed every visible marker opens the right āyah at 360/390/1100px.)
+
+**Previous milestone: v08.74 on `main`** (25 Sep 2026 — **speed part 6a**,
 issue #285: **Monitor** 8 → 3 database round trips in a row (1.18s → 0.58s)
 and **Catalogue** 11 → 2 (1.60s → 0.43s). Catalogue no longer runs its
 seeding routine and three repair checks on every open — only when what it just
