@@ -307,6 +307,20 @@ const PAGES = [
       return !!app && app.style.display !== "none" && !!tree && tree.children.length > 0;
     },
   },
+  // Issue #288 (speed, part 6b) -- "usable" is the Assignments list, the
+  // first thing this page draws. assignmentsBody carries a static
+  // "Loading…" placeholder rather than starting empty, so the loading state
+  // is told apart from the loaded one by the `.loading-placeholder` class
+  // every render of that placeholder carries, not by children.length alone.
+  {
+    path: "/app/homework.html",
+    name: "Homework",
+    usable: () => {
+      const app = document.getElementById("app");
+      const body = document.getElementById("assignmentsBody");
+      return !!app && app.style.display !== "none" && !!body && body.children.length > 0 && !body.querySelector(".loading-placeholder");
+    },
+  },
 ];
 
 /** Busy time on the timeline (union of every call's interval), in ms. */

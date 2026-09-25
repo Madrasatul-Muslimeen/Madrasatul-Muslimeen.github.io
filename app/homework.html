@@ -97,7 +97,7 @@
     </fieldset>
 
     <h2 id="assignmentsHeading">Assignments</h2>
-    <div id="assignmentsBody"><p class="muted">Loading…</p></div>
+    <div id="assignmentsBody"><p class="muted loading-placeholder">Loading…</p></div>
 
     <h2>My private teaching notes</h2>
     <p class="muted">Only you can ever see these — never shown to the student, guardian, or anyone else.</p>
@@ -129,7 +129,9 @@
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { safeWrite } from "./js/errors.js";
     import {
-      bootstrapContext,
+      getMyMembershipRoles,
+      hydrateMemberships,
+      pickContext,
       getActiveContext,
       setActiveContext,
       effectiveRoles,
@@ -139,7 +141,8 @@
     } from "./js/session-context.js";
     import { getSubjectTree } from "./js/catalogue.js";
     import {
-      createAssignment, listAssignmentsForPerson, listAssignmentsForReader, getSubmission,
+      createAssignment, listAssignmentsForPerson, listAssignmentsForReader,
+      listSubmissionsForPerson,
       markSubmitted, scoreSubmission, createTeachingNote, listMyTeachingNotes,
     } from "./js/homework.js";
     import { submissionStatusLabel } from "./js/homework.js";
@@ -230,9 +233,45 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       return membership?.personId ?? personSelect.value;
     }
 
-    async function loadContextData() {
-      const rosterSnap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId)));
+    // Speed, part 6b (issue #288): this used to be a long sequential chain --
+    // roster, then (for a teacher) their own enrolments, then classes+offers,
+    // then the "assign to" roster for whichever context ended up selected,
+    // then the subject tree, then assignments, then one getSubmission() per
+    // assignment card, then teaching notes -- none of which needs any other
+    // one's RESULT to know what to ask for (everything it depends on --
+    // activeTenantId, and this login's own roles/personId, already known
+    // from the roles-only membership query) except the "assign to" roster,
+    // which needs to know which context the picker below auto-selects.
+    // Roles/personId are read early off `membershipRoles` (or, on a tenant
+    // switch, `myMemberships`, which carries the identical field) rather
+    // than waited on through hydrateMemberships() -- same split
+    // quranrevival.html's own issue #278 fix uses.
+    function rolesFor(memberships) { return memberships.find((m) => m.tenantId === activeTenantId)?.roles ?? []; }
+    function personIdFor(memberships) { return memberships.find((m) => m.tenantId === activeTenantId)?.personId ?? null; }
+
+    async function loadContextData(hydratedMembershipsPromise, membershipRoles) {
+      const hydrationPromise = hydratedMembershipsPromise ?? Promise.resolve(myMemberships);
+      const rolesSource = membershipRoles ?? myMemberships;
+      const viewAsRoleEarly = getActiveContext()?.viewAsRole ?? null;
+      const effRolesEarly = effectiveRoles(rolesFor(rolesSource), viewAsRoleEarly);
+      const myPersonIdEarly = personIdFor(rolesSource);
+      const isAdminEarly = effRolesEarly.includes("owner") || effRolesEarly.includes("prime");
+      const isTeacherRoleEarly = effRolesEarly.includes("teacher");
+
+      const [rosterSnap, tree, classes, offers, myEnrollments, hydrated] = await Promise.all([
+        getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId))),
+        getSubjectTree(db, activeTenantId),
+        (isAdminEarly || isTeacherRoleEarly) ? listClasses(db, activeTenantId) : Promise.resolve([]),
+        (isAdminEarly || isTeacherRoleEarly) ? listCourseOffers(db, activeTenantId) : Promise.resolve([]),
+        (isTeacherRoleEarly && myPersonIdEarly) ? listEnrollmentsForPerson(db, activeTenantId, myPersonIdEarly) : Promise.resolve([]),
+        hydrationPromise,
+      ]);
       roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      subjectTree = tree;
+      myMemberships = hydrated;
+      tenantSelect.innerHTML = myMemberships
+        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
+        .join("");
 
       const { viewAsRole, effRoles, myPersonId: myPersonIdFromPreview } = currentPreview();
       renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], viewAsRole);
@@ -262,27 +301,26 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       isAdmin = effRoles.includes("owner") || effRoles.includes("prime");
       myPersonId = myPersonIdFromPreview;
       isPureTeacher = effRoles.length === 1 && effRoles[0] === "teacher"; // (kept for the create-time contextId requirement below)
-      myActiveTeacherContextIds = [];
-      if (effRoles.includes("teacher") && myPersonId) {
-        const myEnrollments = await listEnrollmentsForPerson(db, activeTenantId, myPersonId);
-        myActiveTeacherContextIds = activeTeacherContextIdsFromEnrollments(myEnrollments);
-      }
-      await refreshContextPicker(isAdmin, effRoles.includes("teacher"));
+      myActiveTeacherContextIds = activeTeacherContextIdsFromEnrollments(myEnrollments);
+      renderContextPicker(classes, offers, isAdmin, effRoles.includes("teacher"));
 
-      await refreshAssignToChecks();
       noteAboutSelect.innerHTML = visibleRoster
         .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
         .join("");
-
-      subjectTree = await getSubjectTree(db, activeTenantId);
       const leaves = subjectTree.filter((n) => n.isTrackable && n.status !== "archived");
       subjectSelect.innerHTML = `<option value="">${t("(none)")}</option>` + leaves
         .map((n) => `<option value="${n.id}">${langText(n.name, getAppLang(), n.id)}</option>`)
         .join("");
 
-      await refreshAssignments();
-      if (canCreate) await refreshMyNotes();
-      else notesBody.innerHTML = "";
+      if (!canCreate) notesBody.innerHTML = "";
+      // These three are independent of one another (assignToChecks only
+      // needs the context picker just rendered above, synchronously) --
+      // fired together rather than one after another.
+      await Promise.all([
+        refreshAssignToChecks(),
+        refreshAssignments(),
+        canCreate ? refreshMyNotes() : Promise.resolve(),
+      ]);
     }
 
     function subjectName(id) { const n = subjectTree.find((s) => s.id === id); return n ? langText(n.name, getAppLang(), id) : id; }
@@ -293,8 +331,8 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     // context picker, and the roster restriction it drives.
     // -----------------------------------------------------------------------
 
-    /** isAdmin sees every class/course offer; a teacher (isTeacherRole) sees only their own actively-taught contexts. "(none)" is offered to everyone EXCEPT a pure-teacher actor (isPureTeacher, module-level) -- firestore.rules' isActiveTeacherInContext() means a teacher-created assignment MUST declare a real contextId, but a mixed teacher+guardian/admin actor can still fall back to their other (contextId-independent) branch, e.g. assigning their own child something outside any class. A guardian-only/self actor never needs this row at all, so it stays hidden for them. */
-    async function refreshContextPicker(isAdmin, isTeacherRole) {
+    /** isAdmin sees every class/course offer; a teacher (isTeacherRole) sees only their own actively-taught contexts. "(none)" is offered to everyone EXCEPT a pure-teacher actor (isPureTeacher, module-level) -- firestore.rules' isActiveTeacherInContext() means a teacher-created assignment MUST declare a real contextId, but a mixed teacher+guardian/admin actor can still fall back to their other (contextId-independent) branch, e.g. assigning their own child something outside any class. A guardian-only/self actor never needs this row at all, so it stays hidden for them. Speed, part 6b (issue #288): classes/offers are now handed in, already fetched alongside this page's own other startup reads, rather than fetched here -- this is a pure render now. */
+    function renderContextPicker(classes, offers, isAdmin, isTeacherRole) {
       if (!isAdmin && !isTeacherRole) {
         contextRow.style.display = "none";
         availableContexts = [];
@@ -302,10 +340,6 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         return;
       }
       contextRow.style.display = "";
-      const [classes, offers] = await Promise.all([
-        listClasses(db, activeTenantId),
-        listCourseOffers(db, activeTenantId),
-      ]);
       const allContexts = [
         ...classes.filter((c) => c.status !== "archived").map((c) => ({ id: c.id, type: "class", name: langText(c.name, getAppLang(), c.id) })),
         ...offers.filter((o) => o.status !== "archived").map((o) => ({ id: o.id, type: "courseOffer", name: langText(o.name, getAppLang(), o.id) })),
@@ -353,7 +387,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       const personId = personSelect.value;
       if (!personId) { assignmentsBody.innerHTML = `<p class="muted">${t("Pick a student first.")}</p>`; return; }
       assignmentsHeading.textContent = t("Assignments for {name}", { name: personName(personId) });
-      assignmentsBody.innerHTML = `<p class="muted">${t("Loading…")}</p>`;
+      assignmentsBody.innerHTML = `<p class="muted loading-placeholder">${t("Loading…")}</p>`;
       try {
         // Follow-up round (Homework teacher-scoping + guardian-scoping):
         // admin, or viewing your OWN assignments (personId === myPersonId,
@@ -365,14 +399,23 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         // own query doesn't filter on -- then narrowed client-side to just
         // this person's own assignments (see that function's own doc
         // comment for why the narrowing can't happen in the query itself).
-        const assignments = (isAdmin || personId === myPersonId)
-          ? await listAssignmentsForPerson(db, activeTenantId, personId)
-          : (await listAssignmentsForReader(db, activeTenantId, myPersonId))
-              .filter((a) => a.assignedToPersonIds.includes(personId));
+        // Speed, part 6b (issue #288): one query for every submission this
+        // person has, rather than one getSubmission() round trip per
+        // assignment card -- same list-safety shape as
+        // listAllRecordsForPerson() (records.js), fired alongside the
+        // assignments query itself rather than after it.
+        const [assignments, submissions] = await Promise.all([
+          (isAdmin || personId === myPersonId)
+            ? listAssignmentsForPerson(db, activeTenantId, personId)
+            : listAssignmentsForReader(db, activeTenantId, myPersonId)
+                .then((all) => all.filter((a) => a.assignedToPersonIds.includes(personId))),
+          listSubmissionsForPerson(db, activeTenantId, personId),
+        ]);
         const active = assignments.filter((a) => a.status !== "archived");
         if (!active.length) { assignmentsBody.innerHTML = `<p class="muted">${t("No assignments yet.")}</p>`; return; }
 
-        const cards = await Promise.all(active.map((a) => renderAssignmentCard(a, personId)));
+        const submissionByFullId = new Map(submissions.map((s) => [s.id, s]));
+        const cards = active.map((a) => renderAssignmentCard(a, personId, submissionByFullId.get(`${activeTenantId}__${a.id}__${personId}`) ?? null));
         assignmentsBody.innerHTML = cards.join("");
         wireAssignmentCardActions();
       } catch (err) {
@@ -381,8 +424,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       }
     }
 
-    async function renderAssignmentCard(a, personId) {
-      const sub = await getSubmission(db, `${activeTenantId}__${a.id}`, personId);
+    function renderAssignmentCard(a, personId, sub) {
       const status = sub?.status ?? "not_submitted";
       const subjectLine = a.subjectId ? `<div class="muted">${t("Subject:")} ${subjectName(a.subjectId)}</div>` : "";
       const dueLine = a.dueDate ? `<div class="muted">${t("Due:")} ${num(a.dueDate)}</div>` : "";
@@ -561,29 +603,35 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       }
 
       try {
+        // Speed, part 6b (issue #288), the same pattern issue #278's own fix
+        // uses: userIndex and the ROLES-ONLY membership query are fired
+        // together -- pickContext() below only ever reads tenantId/personId/
+        // roles, never tenantName/tenantData.
+        const membershipRolesPromise = getMyMembershipRoles(db, user.uid);
+        membershipRolesPromise.catch(() => {}); // see the real await below; this only stops a reload (adoptAppLangFromUserIndex) from logging it as unhandled.
+
         const userIndexSnap = await step("read your userIndex", () => getDoc(doc(db, TENANT.USER_INDEX, user.uid)));
         // v07.37: if this account has a language set on another device, take it
         // and reload. Costs no extra read -- the snapshot is already in hand.
         if (adoptAppLangFromUserIndex(userIndexSnap)) return;
         const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
 
-        // One membership load, not two: bootstrapContext() hands back the
-        // list it used to choose the context, which this page then used to
-        // fetch a second time, one round trip later, for the tenant picker.
-        const { context, memberships } = await step("initialize active context", () => bootstrapContext(db, user.uid, defaultTenantId));
+        const membershipRoles = await step("load your tenant memberships", () => membershipRolesPromise);
+        const context = pickContext(membershipRoles, defaultTenantId);
         if (!context) {
           whoEl.innerHTML += noAccountMessageHtml();
           return;
         }
         activeTenantId = context.tenantId;
 
-        myMemberships = memberships;
-        tenantSelect.innerHTML = myMemberships
-          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
-          .join("");
+        // The tenant picker's real names come from the SAME hydration call
+        // loadContextData() fires its own reads alongside, rather than
+        // being awaited before any of them.
+        const hydratedMembershipsPromise = step("load tenant names", () => hydrateMemberships(db, membershipRoles));
+        hydratedMembershipsPromise.catch(() => {}); // real failure surfaces via the awaited copy inside loadContextData().
 
         appEl.style.display = "block";
-        await step("load context data", loadContextData);
+        await step("load context data", () => loadContextData(hydratedMembershipsPromise, membershipRoles));
       } catch (err) {
         whoEl.textContent += ` — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`;
         console.error(err);
@@ -595,6 +643,8 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       if (!chosen) return;
       activeTenantId = chosen.tenantId;
       setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
+      // myMemberships already carries every membership's own hydrated tenant
+      // document (fetched once, at sign-in) -- no reason to fetch it again.
       await loadContextData();
     });
   </script>

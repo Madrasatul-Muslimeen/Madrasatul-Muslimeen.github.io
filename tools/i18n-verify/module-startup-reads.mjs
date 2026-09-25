@@ -104,6 +104,21 @@ const PAGES = [
       return !!app && app.style.display !== "none" && !!body && body.children.length > 0;
     },
   },
+  // Issue #288 (speed, part 6b) -- "usable" is the Assignments list, the
+  // first thing this page draws. assignmentsBody starts as static markup
+  // carrying a "Loading…" placeholder (unlike a bare empty <tbody>), so the
+  // loading state is told apart from the loaded one by the
+  // `.loading-placeholder` class every render of that placeholder carries,
+  // not by children.length alone.
+  {
+    path: "/app/homework.html",
+    name: "Homework",
+    usable: () => {
+      const app = document.getElementById("app");
+      const body = document.getElementById("assignmentsBody");
+      return !!app && app.style.display !== "none" && !!body && body.children.length > 0 && !body.querySelector(".loading-placeholder");
+    },
+  },
 ];
 
 const browser = await chromium.launch();
@@ -133,5 +148,5 @@ for (const page of PAGES) {
 }
 
 await browser.close();
-console.log(`\n==== Module startup reads (Deen Study, Health, Asma ul Husna, Records, Monitor, Catalogue): ${pass} passed, ${fail} failed ====`);
+console.log(`\n==== Module startup reads (Deen Study, Health, Asma ul Husna, Records, Monitor, Catalogue, Homework): ${pass} passed, ${fail} failed ====`);
 process.exit(fail ? 1 : 0);
