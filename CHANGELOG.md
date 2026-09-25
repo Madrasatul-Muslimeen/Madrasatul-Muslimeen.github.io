@@ -18415,3 +18415,25 @@ wordpress-import-v1 16/0, wordpress-import-screen 21/0, journey-map-boundary
 18/0, journey-map-screen 48/0, note-sanitize-boundary passes. Browser: two
 fixture .enex files previewed at 390px in both languages, no errors, no
 sideways scroll. Not done: preview counts still show Latin digits in Bangla.
+
+**v08.69 (25 Sep 2026).** Issue #272, load speed, allocated by the MMSA
+Architect. Review changes: (1) the branch carried stale copies of
+`app/import-notes.html`, the Mapping ⋯ label, the #271 Bangla block and
+`version.js` (08.67): rebuilt as current `main` plus only this round's
+additions. (2) `sw.js` no longer calls `skipWaiting()` at install; a new
+version waits for the reader's tap, so an open old page never loads new
+modules. (3) The page posts the files it already loaded and the worker caches
+them, so the second open is served from the phone (before, only the third
+was); `registerServiceWorker()` also works when called after `load`.
+(4) `service-worker.mjs` rebuilt to wait for the cache rather than guess, and
+to bump the version as a publish does (the served file, always restored):
+16/0, where the Builder's version was 9/4. (5) `measure.mjs --warm` never
+enabled the worker and hung; fixed. Measured (Quran Study, phone processor
+×4): first open 3.4s fast 4G / 10.8s slow 4G on the uncompressed local server
+(before 3.1s / 12.4s); **second open 1.1s / 1.3s, 66 of 66 app files from the
+phone.** Sequential startup round trips 7 → 6 (the issue asked for ≤4 — not
+met; recorded). English opens no longer fetch `bn.js`; Bangla does.
+behaviour.mjs 984/9, the same 9 environmental and pre-existing failures as
+`main`; layout.mjs unchanged at every viewport; navcheck and panel pass in
+both languages; dawah-boundary, splash-skip, journey-map-*,
+wordpress-import-screen and the governance suites pass.

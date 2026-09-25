@@ -595,3 +595,4 @@ total). Allocated by the MMSA Architect.
 08.66: the mappingmyjourney.com WordPress importer, built and gated (issue #265). Allocated by the MMSA Architect.
 08.67: the Mapping My Journey Path view as branches with links (issue #267). Allocated by the MMSA Architect.
 08.68: the Evernote (.enex) importer, built and gated (issue #271). Allocated by the MMSA Architect.
+08.69: load speed: the app kept on the phone, Bangla loaded only for Bangla readers, a shorter startup chain (issue #272). Allocated by the MMSA Architect.
