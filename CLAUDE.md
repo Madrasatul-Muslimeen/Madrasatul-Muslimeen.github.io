@@ -158,7 +158,16 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.70 on `main`** (25 Sep 2026 — **speed part 2**,
+**Current milestone: v08.71 on `main`** (25 Sep 2026 — **speed part 3**,
+issue #278: Quran Study is usable after **3 database round trips in a
+row** (4 in v08.70, 7 this morning). The active tenant is picked from the
+membership roles alone and the tenant documents are read alongside
+`tenantPeople`/`trackables`; every other page keeps the old combined
+`getMyMemberships()`. `session-context-two-tenant.mjs` guards tenant choice
+and stale ids. **The Builder pushed first this time** — the instruction
+added after #276's lost run worked.)
+
+**Previous milestone: v08.70 on `main`** (25 Sep 2026 — **speed part 2**,
 issue #276: Quran Study is usable after **4 database round trips in a row**
 (5 in v08.69, 7 before it). The last one was the Approach-name sync reading
 the whole `trackables` collection again straight after the startup wave had

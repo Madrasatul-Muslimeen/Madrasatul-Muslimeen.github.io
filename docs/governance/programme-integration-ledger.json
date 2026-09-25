@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.70",
+    "version": "08.71",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -617,8 +617,20 @@
     {
       "version": "08.70",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Speed part 2 (issue #276). Quran Study now becomes usable after 4 database round trips in sequence (5 in v08.69, 7 before #272): the background Approach-name sync reused the trackables the startup wave had just read instead of reading the whole collection again. New quranrevival-startup-reads.mjs pins at most 4 sequential trips and a single trackables read (mutation-proven: 5 and 2 with the change reverted). The Import page's counts and progress lines show Bangla digits in Bangla. Built by the Architect: the Builder's first run did the work but ran out of time before pushing, and the re-run comment was skipped by the workflow.",
+      "integration": {
+        "authorizedOn": "2026-09-25",
+        "integratedOn": "2026-09-25",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "08.71",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Speed part 3 (issue #278). getMyMemberships() is split into getMyMembershipRoles() (the tenantMemberUids query alone) and hydrateMemberships() (tenant names and documents); getMyMemberships() is their composition, unchanged for every other page. Quran Study picks the active tenant from the roles alone and fires the tenant documents together with tenantPeople and trackables, so it is usable after 3 database round trips in sequence (4 in v08.70, 7 before #272). The tenant picker shows ids for a moment inside the closed Study options panel, then real names. New session-context-two-tenant.mjs 14/0 (two tenants, stale defaultTenantId never used, picker names; a pickContext() mutation is caught).",
       "integration": {
         "authorizedOn": "2026-09-25",
         "integratedOn": "2026-09-25",
@@ -627,8 +639,9 @@
       }
     }
   ],
-  "nextUnallocated": "08.71",
+  "nextUnallocated": "08.72",
   "nextUnallocatedNote": [
+    "v08.71 was allocated to speed part 3: Quran Study startup down to 3 database round trips in sequence (issue #278), 2026-09-25.",
     "v08.70 was allocated to speed part 2: Quran Study startup down to 4 database round trips in sequence, and Bangla digits in the import preview (issue #276), 2026-09-25.",
     "v08.69 was allocated to load speed: the app kept on the phone, Bangla loaded only for Bangla readers, a shorter startup chain (issue #272), 2026-09-25.",
     "v08.68 was allocated to the Evernote (.enex) importer, built and gated (issue #271), 2026-09-25.",

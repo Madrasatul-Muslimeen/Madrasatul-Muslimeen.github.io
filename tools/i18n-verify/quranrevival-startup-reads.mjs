@@ -1,9 +1,14 @@
-// Speed part 2 (issue #276, 25 Sep 2026): Quran Study must be usable after at
-// most 4 database round trips IN SEQUENCE, and must read `trackables` once.
-// v08.69 left it at 5: the background Approach-name sync re-read the whole
-// trackables collection right after the startup wave had just read it. Every
-// round trip is one full phone-network wait, so this is a speed floor, not a
-// style point. Run from the repository root with `node serve.js` running.
+// Speed part 3 (issue #278, 25 Sep 2026): Quran Study must be usable after at
+// most 3 database round trips IN SEQUENCE, and must read `trackables` once.
+// v08.70 left it at 4: getMyMemberships() hydrated every membership's own
+// tenant document -- a round trip pickContext() never needed -- BEFORE
+// tenantPeople/trackables could even start. session-context.js now splits
+// that into a roles-only read (getMyMembershipRoles(), enough to pick the
+// active tenant) and a separate hydration step (hydrateMemberships()) that
+// quranrevival.html fires ALONGSIDE tenantPeople/trackables instead of
+// before them, folding what were two round trips into one. Every round trip
+// is one full phone-network wait, so this is a speed floor, not a style
+// point. Run from the repository root with `node serve.js` running.
 import { chromium, newContext, BASE } from "./harness.mjs";
 import { SUBJECT_TEMPLATES, MODULE_TEMPLATES } from "../../app/js/catalogue-data.js";
 import { APPROACH_TEMPLATES, TOPIC_TRACKABLE_TEMPLATES } from "../../app/js/catalogue-data.js";
@@ -38,7 +43,7 @@ await page.waitForTimeout(1200); // let background work land, so a late repeat r
 const { log, usableAt } = await page.evaluate(() => ({ log: window.__fsLog, usableAt: window.__usableAt }));
 const before = log.filter((r) => r.t0 <= usableAt);
 const trips = sequentialTrips(before);
-check(`Quran Study is usable after at most 4 database round trips in sequence (measured ${trips})`, trips <= 4,
+check(`Quran Study is usable after at most 3 database round trips in sequence (measured ${trips})`, trips <= 3,
   before.map((r) => `${r.kind} ${r.col}${r.id ? "/" + r.id : ""}`).join(" | "));
 const trackableReads = log.filter((r) => r.col === "trackables" && r.kind === "getDocs").length;
 check(`trackables is read once, including background work after the page is usable (measured ${trackableReads})`, trackableReads === 1);
