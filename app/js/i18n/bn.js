@@ -2783,4 +2783,8 @@ export const BN = {
     "একাধিক ফোল্ডারে ফাইল করা একটি নোটে 🔗 ব্যাজ দেখা যায় — এটি কোথায় কোথায় আছে তা দেখতে ট্যাপ করুন।",
   "In {count} places": "{count}টি জায়গায় আছে",
   "+{count} more": "আরও {count}টি",
+
+  // Load speed (issue #272, 25 Sep 2026) -- the service worker's own "a new
+  // version is cached and ready" notice (app/js/sw-register.js).
+  "Updated — tap to reload": "হালনাগাদ হয়েছে — রিলোড করতে ট্যাপ করুন",
 };

@@ -137,6 +137,7 @@
     import { bootstrapContext, setActiveContext, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { translateStatic, t } from "./js/i18n.js";
+    import { registerServiceWorker } from "./js/sw-register.js";
     import { roleListLabel } from "./js/labels.js";
     import { getSurahIndex } from "./js/quran-data.js";
     import { parseWxrXml, analyzeWxrImport } from "./js/wordpress-import-parser.js";
@@ -146,6 +147,7 @@
     import { isWordpressImportPersistenceReady, wordpressImportUnavailableReason } from "./js/study-wordpress-import-readiness.js";
 
     translateStatic();
+    registerServiceWorker();
 
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");

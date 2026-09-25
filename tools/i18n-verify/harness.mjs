@@ -9,7 +9,7 @@ export const BASE = "http://localhost:8080";
 // appLang seeds THIS DEVICE (localStorage); accountLang seeds the ACCOUNT
 // (userIndex/{uid}.appLang) -- v07.37. Setting them differently is what
 // exercises the sync: the account's value should win and reload the page.
-export async function newContext(browser, { banner = true, appLang = null, accountLang = null, viewport, latencyMs = 0, emptyTenant = false, seedTemplates = null, taglines = null, extraSeedJs = null } = {}) {
+export async function newContext(browser, { banner = true, appLang = null, accountLang = null, viewport, latencyMs = 0, emptyTenant = false, seedTemplates = null, taglines = null, extraSeedJs = null, allowServiceWorker = false } = {}) {
   const ctx = await browser.newContext({ viewport });
   const stub = stubFor({ banner, accountLang, latencyMs, emptyTenant, seedTemplates, taglines, extraSeedJs });
   await ctx.route("https://www.gstatic.com/firebasejs/**", (route) =>
@@ -35,10 +35,18 @@ export async function newContext(browser, { banner = true, appLang = null, accou
   );
   // Splashes would sit over the page and break every measurement; the old
   // app's own preference keys are the supported way to turn them off.
-  await ctx.addInitScript((lang) => {
+  await ctx.addInitScript(({ lang, allowServiceWorker }) => {
     try {
       localStorage.setItem("mm_splash_pref", "never");
       localStorage.setItem("mm_qs_splash_pref", "never");
+      // LOAD SPEED (issue #272): a real service worker intercepting fetches
+      // on top of this file's own Firebase/DOMPurify request routing is a
+      // real-world interaction no existing suite was written to expect --
+      // sw-register.js checks this flag before ever calling register(), so
+      // every suite here keeps faking the network exactly as it always has.
+      // The one suite that tests the worker ITSELF passes
+      // `allowServiceWorker: true` to opt back out of this.
+      if (!allowServiceWorker) localStorage.setItem("mm_disable_service_worker", "1");
       // Only if ABSENT. addInitScript runs on every navigation, including
       // the reload the v07.37 account-language sync does -- so setting it
       // unconditionally re-imposed the device's value after every adopt
@@ -46,7 +54,7 @@ export async function newContext(browser, { banner = true, appLang = null, accou
       // once and keeps it; nothing re-asserts it on each load.
       if (lang && !localStorage.getItem("mm_app_lang")) localStorage.setItem("mm_app_lang", lang);
     } catch {}
-  }, appLang);
+  }, { lang: appLang, allowServiceWorker });
   return ctx;
 }
 

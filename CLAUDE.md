@@ -158,7 +158,21 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.68 on `main`** (25 Sep 2026 — **the Evernote
+**Current milestone: v08.69 on `main`** (25 Sep 2026 — **load speed,
+issue #272**, on the Owner's *"max 3 seconds"*. The app now keeps its own
+files on the phone (`app/sw.js`): **every open after the first is usable in
+1.1s on fast 4G and 1.3s on slow 4G** at phone processor speed (it was 3.1s
+and 12.4s), with 0 app files fetched. A new version waits for *"Updated —
+tap to reload"* so a page never runs on two versions' files. Bangla loads
+only for Bangla readers; `version.js` is one line (its history is in
+`docs/governance/version-history.md`). **The first-ever open is still over
+3s** — about 3.4s on fast 4G — and the remaining cut, a minified build,
+needs the Owner to switch GitHub Pages to publish from an Action. **Review
+caught the Builder's branch overwriting v08.68 again** (the import page, the
+Bangla labels and `version.js`), plus a worker that took over mid-session
+and only helped from the third open.)
+
+**Previous milestone: v08.68 on `main`** (25 Sep 2026 — **the Evernote
 importer is BUILT AND GATED** (issue #271). The Import page now takes a
 WordPress export (.xml) or one or more Evernote notebooks (.enex): each
 notebook becomes a folder, each note a Note with its original dates, linked

@@ -278,11 +278,13 @@
   <script type="module">
     import { initAsmaStudyPage } from "./js/asma-study.js";
     import { translateStatic } from "./js/i18n.js";
+    import { registerServiceWorker } from "./js/sw-register.js";
 
     // Phase 1 of the full translation: turn this page's own static markup
     // (headings, labels, buttons) into the chosen language before anything
     // else runs, so a Bangla reader never sees an English frame first.
     translateStatic();
+    registerServiceWorker();
     initAsmaStudyPage();
   </script>
 </body>

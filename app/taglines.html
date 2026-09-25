@@ -170,6 +170,7 @@
     import { updateDocument } from "./js/envelope.js";
     import { safeWrite } from "./js/errors.js";
     import { translateStatic, t, num, parseNum } from "./js/i18n.js";
+    import { registerServiceWorker } from "./js/sw-register.js";
     import {
       TAGLINE_MOTIONS, TAGLINE_HOLDS, taglinesFrom, taglineSettingsFrom, taglineText,
       isUsingDefaultTaglines, addTagline, updateTagline, setTaglineStatus, moveTagline,
@@ -177,6 +178,7 @@
     } from "./js/taglines.js";
 
     translateStatic();
+    registerServiceWorker();
 
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");

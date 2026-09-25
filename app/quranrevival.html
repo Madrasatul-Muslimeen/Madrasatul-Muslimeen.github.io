@@ -4315,7 +4315,7 @@
     import { langText, setLangText } from "./js/lang.js";
     import { roleListLabel, roleLabel } from "./js/labels.js";
     import { safeWrite, reportWriteFailure } from "./js/errors.js";
-    import { bootstrapContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
+    import { getMyMemberships, pickContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { getTrackables, syncUnneditedTrackableNames, tenantOwnsSections } from "./js/catalogue.js";
     import { buildUnitKey, parseUnitKey, STATUSES, rukuIndexInSurah, statusLabelsById, statusLabel } from "./js/unit-keys.js";
     import { chunkKeyFor, getRecordsChunk, claimStatus, getSubjectConfirmationOverride, computeConfirmationRequired } from "./js/records.js";
@@ -4442,12 +4442,14 @@
       warmSegmentedTimestamps, pause as pauseAudio, resume as resumeAudio, isPlaying, isPaused, unlockAudio,
       setPlaybackStateHandler, playOneAndWait,
     } from "./js/audio-player.js";
-    import { translateStatic, t, num, parseNum, surahName } from "./js/i18n.js";
+    import { translateStatic, t, num, parseNum, surahName, ensureCatalogueReady } from "./js/i18n.js";
+    import { registerServiceWorker } from "./js/sw-register.js";
 
     // Phase 1 of the full translation: turn this page's own static markup
     // (headings, labels, buttons) into the chosen language before anything
     // else runs, so a Bangla reader never sees an English frame first.
     translateStatic();
+    registerServiceWorker();
 
     // Async playback failures (network drop mid-file, a source that turns
     // out not to exist, etc.) never reject play()'s own promise -- without
@@ -4563,7 +4565,12 @@
         nav (whose category and link labels are translated at render time).
         translateStatic() remembers each node's original English, so this
         works in both directions -- Bangla back to English included. */
-    function applyAppLangChange() {
+    async function applyAppLangChange() {
+      // LOAD SPEED (issue #272): this page is the one place that changes
+      // language WITHOUT a reload, so it is the one place that has to wait
+      // for the Bangla catalogue explicitly -- i18n.js already finished
+      // loading in English by the time someone switches at runtime.
+      await ensureCatalogueReady();
       translateStatic();
       renderNav(lastRenderedRoles, lastRenderedViewAsRole);
       renderPersonSelectOptions();
@@ -6221,21 +6228,36 @@
       searchResults.replaceChildren(...found.results.map(searchHitButton));
     }
 
-    async function loadContextData() {
+    async function loadContextData(preloadedTenantData) {
       const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
       // LOAD SPEED (Aug 2026): one wave, not three. The trackables read used
       // to happen twice -- once inside syncUnneditedTrackableNames() and
       // again right after it -- and both waited on the roster read first,
       // which none of them depends on. The surah index is a bundled JSON
       // file, not Firestore, but it was also being waited for in turn.
-      const [rosterSnap, tenantSnap, allTrackables, loadedSurahIndex] = await Promise.all([
+      //
+      // LOAD SPEED (issue #272): the tenant document itself is no longer a
+      // guaranteed fourth read in this wave. bootstrapContext() already
+      // fetched every membership's own tenant document one round trip ago
+      // (to build the tenant picker's names) -- the FIRST call into this
+      // function, right after sign-in, passes that document straight in
+      // (preloadedTenantData), so this wave skips re-reading a document
+      // this page already has. A tenant SWITCH (the picker's own change
+      // handler, below) calls this with no argument on purpose: the person
+      // is now looking at that tenant on purpose, so its document is read
+      // fresh rather than served from a membership list that could be
+      // stale by then.
+      const tenantDataPromise = preloadedTenantData !== undefined
+        ? Promise.resolve(preloadedTenantData)
+        : getDoc(doc(db, TENANT.TENANTS, activeTenantId)).then((snap) => (snap.exists() ? snap.data() : null));
+      const [rosterSnap, tenantData, allTrackables, loadedSurahIndex] = await Promise.all([
         getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId))),
-        getDoc(doc(db, TENANT.TENANTS, activeTenantId)),
+        tenantDataPromise,
         getTrackables(db, activeTenantId),
         getSurahIndex(),
       ]);
       roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      currentTenantDoc = tenantSnap.exists() ? tenantSnap.data() : null;
+      currentTenantDoc = tenantData;
       tenantWeekStartsOn = currentTenantDoc?.weekStartsOn ?? 6;
       renderPersonSelectOptions();
       selectedPersonId = personSelect.value || null; // whichever person is actually visible/selected (round 11: may be scoped by an active "View as" preview)
@@ -14531,16 +14553,27 @@
       }
 
       try {
+        // LOAD SPEED (issue #272): userIndex and the membership list used to
+        // be strictly sequential (this code awaited userIndex, THEN started
+        // the membership query with its result as an argument), but the
+        // ONLY thing that argument (defaultTenantId) is used for is
+        // pickContext()'s own synchronous choice below -- the membership
+        // query itself never needed it. Firing both reads together folds
+        // what were two round trips into one.
+        const membershipsPromise = getMyMemberships(db, user.uid);
+        membershipsPromise.catch(() => {}); // see the real await below; this only stops a reload (adoptAppLangFromUserIndex) from logging it as unhandled.
+
         const userIndexSnap = await step("read your userIndex", () => getDoc(doc(db, TENANT.USER_INDEX, user.uid)));
         // v07.37: if this account has a language set on another device, take it
         // and reload. Costs no extra read -- the snapshot is already in hand.
         if (adoptAppLangFromUserIndex(userIndexSnap)) return;
         const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
 
-        // One membership load, not two: bootstrapContext() hands back the
-        // list it used to choose the context, which this page then used to
-        // fetch a second time, one round trip later, for the tenant picker.
-        const { context, memberships } = await step("initialize active context", () => bootstrapContext(db, user.uid, defaultTenantId));
+        // One membership load, not two: this page used to fetch its own
+        // second copy, one round trip later, for the tenant picker -- now
+        // it is the very list pickContext() itself chooses from.
+        const memberships = await step("load your tenant memberships", () => membershipsPromise);
+        const context = pickContext(memberships, defaultTenantId);
         if (!context) {
           whoEl.innerHTML += noAccountMessageHtml();
           return;
@@ -14554,7 +14587,12 @@
         renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], getActiveContext()?.viewAsRole ?? null);
 
         appEl.style.display = "flex"; // flex, not block: #app is the shell column (stage + dock) since shell round 7
-        await step("load context data", loadContextData);
+        // The active tenant's own document was already read a moment ago,
+        // above, to build the tenant picker's names -- handed straight in
+        // rather than read a second time (see loadContextData()'s own
+        // comment on why only THIS call passes it).
+        const activeTenantData = myMemberships.find((m) => m.tenantId === activeTenantId)?.tenantData ?? null;
+        await step("load context data", () => loadContextData(activeTenantData));
         await step("open bookmark", openBookmarkFromQueryString);
         await step("open goto link", openGotoFromQueryString);
         // Last: "the app opens in the last settings/options in all view."

@@ -127,6 +127,7 @@
     import { bootstrapContext, setActiveContext } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { translateStatic, t } from "./js/i18n.js";
+    import { registerServiceWorker } from "./js/sw-register.js";
     import { unitKeyLabel } from "./js/unit-keys.js";
     import { sanitizeNoteHtml } from "./js/note-sanitize.js";
     import { DAWAH_STATUS } from "./js/dawah-contract.js";
@@ -138,6 +139,7 @@
     } from "./js/dawah-data.js";
 
     translateStatic();
+    registerServiceWorker();
 
     // ---------------------------------------------------------------------
     // No person selector on this screen, deliberately (unlike notes.html /

@@ -110,11 +110,13 @@
     import { getAppLang } from "./js/prefs.js";
     import { langText } from "./js/lang.js";
     import { translateStatic, t, num } from "./js/i18n.js";
+    import { registerServiceWorker } from "./js/sw-register.js";
     import { APP_VERSION } from "./js/version.js";
     import { collectBackup } from "./js/backup.js";
     import { buildBackupHtml, backupFilename } from "./js/backup-file.js";
 
     translateStatic();
+    registerServiceWorker();
 
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");

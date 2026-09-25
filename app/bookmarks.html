@@ -185,6 +185,7 @@
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
 import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     import { translateStatic, t, num, surahName } from "./js/i18n.js";
+    import { registerServiceWorker } from "./js/sw-register.js";
     import { MODULE_PAGES, MODULE_LABELS } from "./js/continue-strip.js";
     import { buildUnitKey, rukuIndexInSurah } from "./js/unit-keys.js";
     import { getSurah, getSurahIndex, getJuzIndex, getHizbIndex, getPageIndex } from "./js/quran-data.js";
@@ -197,6 +198,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     } from "./js/bookmarks.js";
 
     translateStatic();
+    registerServiceWorker();
 
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");

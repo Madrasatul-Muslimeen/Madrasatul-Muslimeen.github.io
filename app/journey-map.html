@@ -255,6 +255,7 @@
     import { bootstrapContext, setActiveContext, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { translateStatic, t } from "./js/i18n.js";
+    import { registerServiceWorker } from "./js/sw-register.js";
     import { roleListLabel } from "./js/labels.js";
     import { sanitizeNoteHtml } from "./js/note-sanitize.js";
     import { closeAllBarPalettes } from "./js/bar-palette.js";
@@ -266,6 +267,7 @@
     } from "./js/journey-map-service.js";
 
     translateStatic();
+    registerServiceWorker();
 
     // Back: return to wherever the reader came from inside this app (the
     // dock's Mapping tab, the Note view's ⋯ menu, Home ▾), so they land on

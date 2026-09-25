@@ -123,11 +123,13 @@
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
 import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     import { translateStatic, t, num } from "./js/i18n.js";
+    import { registerServiceWorker } from "./js/sw-register.js";
 
     // Phase 1 of the full translation: turn this page's own static markup
     // (headings, labels, buttons) into the chosen language before anything
     // else runs, so a Bangla reader never sees an English frame first.
     translateStatic();
+    registerServiceWorker();
 
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");

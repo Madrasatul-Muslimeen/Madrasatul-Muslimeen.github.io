@@ -34,6 +34,7 @@
   <script type="module">
     import { mountHadithBrowser } from "./js/hadith-browser.js";
     import { translateStatic, t } from "./js/i18n.js";
+    import { registerServiceWorker } from "./js/sw-register.js";
     import { APP_VERSION } from "./js/version.js";
 
     const params = new URLSearchParams(location.search);
@@ -48,6 +49,7 @@
       t("Mounted inside QuranRevival — the same component as the standalone page.");
 
     translateStatic();
+    registerServiceWorker();
     mountHadithBrowser(document.getElementById("hadithRoot"), { mount });
   </script>
 </body>
