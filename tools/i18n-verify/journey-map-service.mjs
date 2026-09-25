@@ -15,14 +15,19 @@ const root = path.resolve(process.argv[2] || process.cwd());
 let source = fs.readFileSync(path.join(root, "app/js/journey-map-service.js"), "utf8");
 source = source
   .replace(/import \{[\s\S]*?\} from "\.\/note-foundation\.js";/,
-    "const { NOTE_STATUS, getNotesByIds, listNoteFoldersForOwner, listNoteFoldersForOwnerPage, listNotePlacementsForFolder, listNotePlacementsForNote, listNotesForOwnerPage, listNotePlacementsForOwnerPage, moveNotePlacement, renameNoteFolder, reorderNoteFolder, reparentNoteFolder, retireNoteFolder, reorderNotePlacement } = globalThis.__jmFoundation;")
+    "const { NOTE_STATUS, getNotesByIds, listNoteFoldersForOwner, listNoteFoldersForOwnerPage, listNotePlacementsForFolder, listNotePlacementsForNote, listNotesForOwnerPage, listNotesForOwnerIdPage, listNotePlacementsForOwnerPage, moveNotePlacement, renameNoteFolder, reorderNoteFolder, reparentNoteFolder, retireNoteFolder, reorderNotePlacement } = globalThis.__jmFoundation;")
   .replace(/from "\.\/journey-map-contract\.js"/,
-    `from "${pathToFileURL(path.join(root, "app/js/journey-map-contract.js")).href}"`);
+    `from "${pathToFileURL(path.join(root, "app/js/journey-map-contract.js")).href}"`)
+  // Issue #282 -- journey-map-service.js's own sharded loaders import the
+  // (pure, no imports of its own) id-range splitter directly; pointed at the
+  // real file on disk, the same treatment the contract import already gets.
+  .replace(/from "\.\/journey-map-shard\.js"/,
+    `from "${pathToFileURL(path.join(root, "app/js/journey-map-shard.js")).href}"`);
 assert.ok(!/from "\.\//.test(source), "an import was not rewritten");
 
 const calls = { folderQuery: [], noteQuery: [], folders: [], notes: [], move: [],
                 rename: [], reorder: [], reparent: [], retire: [], reorderFiling: [],
-                notesPage: [], placementsPage: [], foldersPage: [] };
+                notesPage: [], placementsPage: [], foldersPage: [], notesIdPage: [] };
 let placementRows = [], folderRows = [], noteRows = [];
 // Issue #259 -- separate, larger backing arrays for the two PAGED readers,
 // so K19+ below can seed "more than one page" without disturbing the
@@ -30,9 +35,15 @@ let placementRows = [], folderRows = [], noteRows = [];
 // single-shot read. Issue #267 adds the same for folders --
 // listNoteFoldersForOwnerPage() is a THIRD, independent paged reader.
 let notesPageRows = [], placementsPageRows = [], foldersPageRows = [];
-function pageOf(all, { pageSize, after }) {
-  const startIdx = after ? all.findIndex((r) => r.id === after.id) + 1 : 0;
-  const slice = all.slice(startIdx, startIdx + pageSize);
+// Issue #282 -- `idRange` (a `{ gte, lt }` pair of ids) narrows the backing
+// array to the shard journey-map-service.js's own sharded loader asked for,
+// BEFORE paging it -- the same two-step "filter, then cursor-slice" a real
+// Firestore `where(documentId(), ...)` + `startAfter()` query performs.
+function pageOf(all, { pageSize, after, idRange } = {}) {
+  const scoped = !idRange ? all
+    : all.filter((r) => (idRange.gte === undefined || r.id >= idRange.gte) && (idRange.lt === undefined || r.id < idRange.lt));
+  const startIdx = after ? scoped.findIndex((r) => r.id === after.id) + 1 : 0;
+  const slice = scoped.slice(startIdx, startIdx + pageSize);
   const next = slice.length < pageSize ? null : slice[slice.length - 1];
   return { rows: slice, next };
 }
@@ -45,6 +56,11 @@ globalThis.__jmFoundation = {
   listNoteFoldersForOwnerPage: async (_db, a) => { calls.foldersPage.push(a); return pageOf(foldersPageRows, a); },
   getNotesByIds:               async (_db, t, ids) => { calls.notes.push({ t, ids }); return noteRows.filter((n) => ids.includes(n.noteId)); },
   listNotesForOwnerPage:       async (_db, a) => { calls.notesPage.push(a); return pageOf(notesPageRows, a); },
+  // Issue #282 -- the sharded loader's own reader: same backing rows as
+  // listNotesForOwnerPage() above (nothing about loadAllOwnerNotesSharded()
+  // needs a SEPARATE fixture), a distinct call log so K19's own count stays
+  // exactly what it always asserted.
+  listNotesForOwnerIdPage:     async (_db, a) => { calls.notesIdPage.push(a); return pageOf(notesPageRows, a); },
   listNotePlacementsForOwnerPage: async (_db, a) => { calls.placementsPage.push(a); return pageOf(placementsPageRows, a); },
   moveNotePlacement:           async (_db, a) => { calls.move.push(a); return "new-placement"; },
   // P6-D -- the folder editing side. Recorded, not simulated: these wrappers
@@ -72,7 +88,9 @@ function reset() {
 const mod = await import(`data:text/javascript,${encodeURIComponent(source)}`);
 const { MAX_PLACEMENTS_PER_READ, folderContents, moveNoteToFolder, noteFilings, ownerFolderTree,
         ownerFolderTreePaged, moveFolder, renameFolder, reorderFolder, retireFolder, reorderFiling,
-        loadAllOwnerNotes, loadAllOwnerPlacements, folderNoteCounts, folderMoveRefusal } = mod;
+        loadAllOwnerNotes, loadAllOwnerPlacements, folderNoteCounts, folderMoveRefusal,
+        loadAllOwnerFoldersSharded, loadAllOwnerNotesSharded, loadAllOwnerPlacementsSharded,
+        ownerFolderTreePagedSharded } = mod;
 
 let passed = 0;
 async function check(name, fn) { await fn(); passed++; console.log(`  PASS  ${name}`); }
@@ -327,6 +345,64 @@ await check("K28 ownerFolderTree() pages too since v08.66 -- it reads every fold
   const { roots } = await ownerFolderTree(db, own);
   assert.equal(roots.length, 150, "ownerFolderTree() must read every page, not the single-shot capped read");
   assert.equal(calls.folders.length, 0, "ownerFolderTree() must no longer use the single-shot listNoteFoldersForOwner()");
+});
+
+// --- issue #282 (speed, part 5): the SHARDED parallel loaders ------------
+// `entityIdShardRanges()` is the real thing journey-map-service.js's own
+// sharded loaders use to split the read into several parallel cursors; it is
+// imported here directly (not through the rewritten module under test) so
+// these fixtures are guaranteed to land in the shard they claim to, however
+// the split itself is tuned later.
+const { entityIdShardRanges } = await import(pathToFileURL(path.join(root, "app/js/journey-map-shard.js")).href);
+/** One representative id strictly inside each of `entityIdShardRanges(kind, shardCount)`'s own ranges, in order -- shard i's id is used to prove row i really lands in shard i and nowhere else. */
+function oneIdPerShard(kind, shardCount) {
+  return entityIdShardRanges(kind, shardCount).map((r) => `${r.gte ?? "0"}${"a".repeat(20)}`);
+}
+
+await check("K29 loadAllOwnerNotesSharded() returns every row across every shard, none missing, none duplicated", async () => {
+  reset();
+  const shardIds = oneIdPerShard("note", 5);
+  notesPageRows = shardIds.map((id, i) => ({ id, noteId: `n${i}` }));
+  const { rows, truncated } = await loadAllOwnerNotesSharded(db, { ...own, shardCount: 5 });
+  assert.equal(truncated, false);
+  assert.deepEqual(rows.map((r) => r.noteId).sort(), shardIds.map((_, i) => `n${i}`).sort(),
+    "expected exactly the one seeded row per shard back, once each");
+  // Every one of the 5 requested shards really made its own page request --
+  // proof the loader did not collapse to one chain (the whole point of it).
+  assert.equal(calls.notesIdPage.filter((a) => a.after === null).length, 5,
+    `expected 5 independent shard chains (5 first-page requests); got ${calls.notesIdPage.filter((a) => a.after === null).length}`);
+});
+await check("K30 loadAllOwnerPlacementsSharded() is the same shape over the placement page reader", async () => {
+  reset();
+  const shardIds = oneIdPerShard("placement", 5);
+  placementsPageRows = shardIds.map((id, i) => ({ id, placementId: `p${i}` }));
+  const { rows, truncated } = await loadAllOwnerPlacementsSharded(db, { ...own, shardCount: 5 });
+  assert.equal(truncated, false);
+  assert.deepEqual(rows.map((r) => r.placementId).sort(), shardIds.map((_, i) => `p${i}`).sort());
+});
+await check("K31 loadAllOwnerFoldersSharded() / ownerFolderTreePagedSharded() are the same shape, and the tree still walks safely afterward", async () => {
+  reset();
+  const shardIds = oneIdPerShard("folder", 5);
+  foldersPageRows = shardIds.map((id, i) => ({ id, folderId: `f${i}`, name: `f${i}`, parentFolderId: null, status: "active", semanticRole: "user", ...own }));
+  const flat = await loadAllOwnerFoldersSharded(db, { ...own, shardCount: 5 });
+  assert.equal(flat.truncated, false);
+  assert.deepEqual(flat.rows.map((r) => r.folderId).sort(), shardIds.map((_, i) => `f${i}`).sort());
+  const { roots, truncated } = await ownerFolderTreePagedSharded(db, { ...own, shardCount: 5 });
+  assert.equal(truncated, false);
+  assert.equal(roots.length, 5, "every sharded folder is a root (no parentFolderId) and must appear in the walked tree");
+});
+await check("K32 a shard that never actually advances is stopped after its OWN 50-page safety cap and reported truncated -- the other shards are unaffected", async () => {
+  reset();
+  const shardIds = oneIdPerShard("note", 5);
+  // Shard 0 alone is a stuck cursor (every row shares one id, the same K21
+  // shape); every other shard gets its own single, real row.
+  notesPageRows = [
+    ...Array.from({ length: 200 }, () => ({ id: shardIds[0], noteId: "dup" })),
+    ...shardIds.slice(1).map((id, i) => ({ id, noteId: `n${i + 1}` })),
+  ];
+  const { truncated } = await loadAllOwnerNotesSharded(db, { ...own, shardCount: 5 });
+  assert.equal(truncated, true, "a stuck shard must make the WHOLE read report truncated, even though the other 4 shards finished cleanly");
+  assert.equal(calls.notesIdPage.length, 50 + 4, "expected the stuck shard's own 50-page cap plus one clean page each from the other 4 shards");
 });
 
 console.log(`\n${passed} passed`);

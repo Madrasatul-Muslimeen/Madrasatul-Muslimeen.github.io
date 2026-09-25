@@ -27,6 +27,7 @@ import test from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { initializeTestEnvironment, assertSucceeds } from "@firebase/rules-unit-testing";
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import { stableImportId } from "../../app/js/notes-import-shared.js";
 
 const PROJECT = "demo-quranrevival-journey-map-real-function";
 const HOST = "127.0.0.1";
@@ -96,7 +97,10 @@ const envelopeDataUrl = toDataUrl(envelopeSource);
 
 let noteFoundationSource = fs.readFileSync(path.join(root, "app/js/note-foundation.js"), "utf8");
 noteFoundationSource = rewriteGstaticImport(noteFoundationSource,
-  `import { collection, doc, getDoc, getDocs, limit, orderBy, query, startAfter, where } from "${firestorePackageUrl}";`,
+  // Issue #282 -- documentId() joined this import list (the sharded parallel
+  // loader's own document-ID range bound, idRangeClauses()); the real
+  // `firebase/firestore` package exports it under the same name.
+  `import { collection, doc, documentId, getDoc, getDocs, limit, orderBy, query, startAfter, where } from "${firestorePackageUrl}";`,
   "note-foundation.js");
 noteFoundationSource = rewriteSpecifier(noteFoundationSource, "./collections.js", realFileUrl("collections.js"), "note-foundation.js");
 noteFoundationSource = rewriteSpecifier(noteFoundationSource, "./journey-map-contract.js", realFileUrl("journey-map-contract.js"), "note-foundation.js");
@@ -119,6 +123,9 @@ const {
 let journeyMapServiceSource = fs.readFileSync(path.join(root, "app/js/journey-map-service.js"), "utf8");
 journeyMapServiceSource = rewriteSpecifier(journeyMapServiceSource, "./note-foundation.js", noteFoundationDataUrl, "journey-map-service.js");
 journeyMapServiceSource = rewriteSpecifier(journeyMapServiceSource, "./journey-map-contract.js", realFileUrl("journey-map-contract.js"), "journey-map-service.js");
+// Issue #282 -- journey-map-service.js's own sharded loaders import the
+// (pure, no imports of its own) id-range splitter directly.
+journeyMapServiceSource = rewriteSpecifier(journeyMapServiceSource, "./journey-map-shard.js", realFileUrl("journey-map-shard.js"), "journey-map-service.js");
 
 const {
   folderContents,
@@ -132,6 +139,10 @@ const {
   reorderFiling,
   loadAllOwnerNotes,
   loadAllOwnerPlacements,
+  loadAllOwnerFoldersSharded,
+  loadAllOwnerNotesSharded,
+  loadAllOwnerPlacementsSharded,
+  ownerFolderTreePagedSharded,
 } = await import(toDataUrl(journeyMapServiceSource));
 
 // Two cheap positive controls: the loaders really did load the real modules,
@@ -145,6 +156,7 @@ for (const [name, fn] of Object.entries({
   folderContents, noteFilings, ownerFolderTree, moveNoteToFolder,
   renameFolder, reorderFolder, moveFolder, retireFolder, reorderFiling,
   loadAllOwnerNotes, loadAllOwnerPlacements,
+  loadAllOwnerFoldersSharded, loadAllOwnerNotesSharded, loadAllOwnerPlacementsSharded, ownerFolderTreePagedSharded,
 })) {
   assert.equal(typeof fn, "function", `the loaded journey-map-service.js module is missing ${name} -- the loader is broken`);
 }
@@ -487,6 +499,88 @@ test("real journey-map-service.js / note-foundation.js functions against the rea
     assert.equal(pagedPlacements.truncated, false);
     assert.equal(pagedPlacements.rows.filter((r) => r.placementId.startsWith("paged-placement-")).length, PAGED_PLACEMENT_COUNT,
       "expected every one of the 250 seeded placements back, not a subset capped at 100");
+
+    // --- Issue #282 (speed, part 5): the SHARDED parallel loaders ----------
+    // The same proof shape as PAGED-NOTES-ALL-REAL/PAGED-PLACEMENTS-ALL-REAL
+    // above, extended to journey-map-service.js's own sharded loaders and to
+    // FOLDERS too (never proven end-to-end before this round). Seeded with
+    // REAL import-shaped ids (stableImportId(), the same function the
+    // WordPress/Evernote importers call in production) rather than the
+    // "paged-note-N" plain ids above, specifically so this run exercises the
+    // real leading-character clustering journey-map-shard.js exists to
+    // split -- a synthetic evenly-spread id would prove far less.
+    const SHARD_PROOF_COUNT = 300;
+    const shardProofNoteIds = Array.from({ length: SHARD_PROOF_COUNT },
+      (_, i) => stableImportId("wordpress-import", "note", String(i)));
+    const shardProofFolderIds = Array.from({ length: SHARD_PROOF_COUNT },
+      (_, i) => stableImportId("wordpress-import", "folder", String(i)));
+    const shardProofPlacementIds = shardProofNoteIds.map((noteId, i) =>
+      stableImportId("wordpress-import", "placement", `${noteId}|${shardProofFolderIds[i]}`));
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      const writes = [];
+      for (let i = 0; i < SHARD_PROOF_COUNT; i += 1) {
+        writes.push(setDoc(doc(db, "noteFolders", nk(T, shardProofFolderIds[i])), {
+          folderId: shardProofFolderIds[i], tenantId: T, ownerPersonId: "p1", ownerUid: "uid-p1",
+          name: `Shard folder ${i}`, parentFolderId: null, semanticRole: "user", order: i, status: "active",
+        }));
+        writes.push(setDoc(doc(db, "notes", nk(T, shardProofNoteIds[i])), {
+          noteId: shardProofNoteIds[i], tenantId: T, ownerPersonId: "p1", ownerUid: "uid-p1",
+          visibility: "private", title: `Shard note ${i}`, bodyHtml: "", status: "active", currentRevisionId: "rev",
+        }));
+        writes.push(setDoc(doc(db, "notePlacements", nk(T, shardProofPlacementIds[i])), {
+          placementId: shardProofPlacementIds[i], tenantId: T, ownerPersonId: "p1", ownerUid: "uid-p1",
+          noteId: shardProofNoteIds[i], folderId: shardProofFolderIds[i], order: i, status: "active",
+        }));
+      }
+      await Promise.all(writes);
+    });
+
+    // SHARD-FOLDERS-ALL-REAL
+    const shardFoldersPromise = loadAllOwnerFoldersSharded(p1, { tenantId: T, ownerPersonId: "p1" });
+    await ok("SHARD-FOLDERS-ALL-REAL", "loadAllOwnerFoldersSharded() returns every seeded import-shaped folder, across several parallel shards, against the real deployed Rules", shardFoldersPromise);
+    const shardFolders = await shardFoldersPromise;
+    assert.equal(shardFolders.truncated, false);
+    assert.deepEqual(shardFolders.rows.map((r) => r.folderId).sort(), [...shardProofFolderIds].sort(),
+      "expected exactly the 300 seeded folders back, once each -- no shard boundary may miss or duplicate one");
+
+    // SHARD-NOTES-ALL-REAL
+    const shardNotesPromise = loadAllOwnerNotesSharded(p1, { tenantId: T, ownerPersonId: "p1" });
+    await ok("SHARD-NOTES-ALL-REAL", "loadAllOwnerNotesSharded() returns every seeded import-shaped Note, across several parallel shards, against the real deployed Rules", shardNotesPromise);
+    const shardNotes = await shardNotesPromise;
+    assert.equal(shardNotes.truncated, false);
+    assert.deepEqual(shardNotes.rows.map((r) => r.noteId).sort(), [...shardProofNoteIds].sort());
+
+    // SHARD-PLACEMENTS-ALL-REAL
+    const shardPlacementsPromise = loadAllOwnerPlacementsSharded(p1, { tenantId: T, ownerPersonId: "p1" });
+    await ok("SHARD-PLACEMENTS-ALL-REAL", "loadAllOwnerPlacementsSharded() returns every seeded import-shaped placement, across several parallel shards, against the real deployed Rules", shardPlacementsPromise);
+    const shardPlacements = await shardPlacementsPromise;
+    assert.equal(shardPlacements.truncated, false);
+    assert.deepEqual(shardPlacements.rows.map((r) => r.placementId).sort(), [...shardProofPlacementIds].sort());
+
+    // SHARD-FOLDER-TREE-REAL: the tree built from the sharded folder read
+    // still walks safely (every seeded folder is a root, none cyclic).
+    const shardTreePromise = ownerFolderTreePagedSharded(p1, { tenantId: T, ownerPersonId: "p1" });
+    await ok("SHARD-FOLDER-TREE-REAL", "ownerFolderTreePagedSharded() walks the sharded folder read safely", shardTreePromise);
+    const shardTree = await shardTreePromise;
+    // A SUBSET check, deliberately, rather than an exact root count: this
+    // suite already creates several of its own root folders earlier (the two
+    // system folders, rootFolderId, secondRootFolderId), and asserting a
+    // hand-counted exact total would silently go stale the moment an earlier
+    // case in this same file adds or retires one. What matters here is that
+    // every one of THIS block's 300 seeded folders reads back as a root,
+    // undropped and undupped by the shard split.
+    const shardTreeRootIds = shardTree.roots.map((f) => f.folderId);
+    assert.deepEqual([...shardProofFolderIds].sort().filter((id) => !shardTreeRootIds.includes(id)), [],
+      "a seeded shard-proof folder is missing from the walked tree's roots");
+    assert.equal(shardTree.cyclic.length, 0);
+
+    // ISO-SHARD-REAL: pX (tenant T2) has no read authority over p1's data at
+    // all -- each sharded loader's OWN underlying page reader must be
+    // refused by the real Rules for every shard, not just the first.
+    await no("ISO-SHARD-NOTES-REAL", "a cross-tenant loadAllOwnerNotesSharded() is refused", loadAllOwnerNotesSharded(pX, {
+      tenantId: T, ownerPersonId: "p1",
+    }));
 
     // ISO-PAGED-PLACEMENTS-REAL: pX (tenant T2) has no read authority over
     // p1's placements at all -- the single-page reader itself must be

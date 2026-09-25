@@ -17,6 +17,7 @@ import {
   listNotePlacementsForFolder,
   listNotePlacementsForNote,
   listNotesForOwnerPage,
+  listNotesForOwnerIdPage,
   listNotePlacementsForOwnerPage,
   moveNotePlacement,
   renameNoteFolder,
@@ -26,6 +27,7 @@ import {
   retireNoteFolder,
 } from "./note-foundation.js";
 import { buildFolderTree, folderTreeRefusal, notePlacement } from "./journey-map-contract.js";
+import { entityIdShardRanges, docIdRangeFor } from "./journey-map-shard.js";
 
 /**
  * The most placements one read will resolve. A cap, not an expected cost.
@@ -173,6 +175,82 @@ export async function loadAllOwnerNotes(db, { tenantId, ownerPersonId, status, p
 
 export async function loadAllOwnerPlacements(db, { tenantId, ownerPersonId, status, pageSize = 100 } = {}) {
   return loadAllPages((after) => listNotePlacementsForOwnerPage(db, { tenantId, ownerPersonId, status, pageSize, after }));
+}
+
+// ---------------------------------------------------------------------------
+// Issue #282 -- SHARDED parallel loading. journey-map.html's own #folders/
+// #path/#timeline data is the whole of one owner's set, across three
+// collections, and the functions above page each one through a SINGLE
+// cursor chain: at the Owner's real import size that is ~15 sequential
+// folder pages, ~11 note pages, ~24 placement pages -- 24 round trips in a
+// row for the largest one alone. These new functions are ADDITIVE
+// (`loadAllOwnerFolders`/`loadAllOwnerNotes`/`loadAllOwnerPlacements` above,
+// and every existing test pinning their exact single-chain call shape, are
+// untouched) and run `shardCount` independent cursor chains over disjoint
+// id ranges (`journey-map-shard.js`) at once, merging the results. Same
+// safety-cap discipline as `loadAllPages()`: each shard is bounded at
+// `OWNER_LOAD_PAGE_SAFETY_CAP` pages of its own, reported truncated rather
+// than hung or silently incomplete if it is ever hit.
+// ---------------------------------------------------------------------------
+// 5, not 4: shard 0 is reserved for a plain UUID (a folder/Note/placement
+// created by hand rather than imported -- see journey-map-shard.js's own
+// header), which the Owner's real, ~100%-imported population leaves empty.
+// 4 USEFUL shards for the import block is what actually gives the largest
+// collection (placements, ~24 sequential pages at the Owner's real scale)
+// its real ~4-way parallelism, proven at that scale in journey-map-shard.mjs.
+const DEFAULT_SHARD_COUNT = 5;
+
+async function loadOneShard(fetchPage, idRange) {
+  const rows = [];
+  let after = null;
+  for (let page = 0; page < OWNER_LOAD_PAGE_SAFETY_CAP; page += 1) {
+    const result = await fetchPage(after, idRange);
+    rows.push(...result.rows);
+    if (!result.next) return { rows, truncated: false };
+    after = result.next;
+  }
+  return { rows, truncated: true };
+}
+
+async function loadAllPagesSharded(kind, fetchPage, { tenantId, shardCount = DEFAULT_SHARD_COUNT } = {}) {
+  const ranges = entityIdShardRanges(kind, shardCount);
+  const results = await Promise.all(
+    ranges.map((entityRange) => loadOneShard(fetchPage, docIdRangeFor(tenantId, entityRange))));
+  return {
+    rows: results.flatMap((r) => r.rows),
+    truncated: results.some((r) => r.truncated),
+  };
+}
+
+/** The folder-side sharded loader, feeding `ownerFolderTreePagedSharded()` below. */
+export async function loadAllOwnerFoldersSharded(db, { tenantId, ownerPersonId, status, pageSize = 100, shardCount = DEFAULT_SHARD_COUNT } = {}) {
+  return loadAllPagesSharded("folder",
+    (after, idRange) => listNoteFoldersForOwnerPage(db, { tenantId, ownerPersonId, status, pageSize, after, idRange }),
+    { tenantId, shardCount });
+}
+
+/** Every Note the owner has ever written, across `shardCount` parallel cursors. Order is not preserved (see `listNotesForOwnerIdPage()`'s own header) -- nothing here needs it. */
+export async function loadAllOwnerNotesSharded(db, { tenantId, ownerPersonId, status, pageSize = 100, shardCount = DEFAULT_SHARD_COUNT } = {}) {
+  return loadAllPagesSharded("note",
+    (after, idRange) => listNotesForOwnerIdPage(db, { tenantId, ownerPersonId, status, pageSize, after, idRange }),
+    { tenantId, shardCount });
+}
+
+/** Every placement the owner has ever created, across `shardCount` parallel cursors. */
+export async function loadAllOwnerPlacementsSharded(db, { tenantId, ownerPersonId, status, pageSize = 100, shardCount = DEFAULT_SHARD_COUNT } = {}) {
+  return loadAllPagesSharded("placement",
+    (after, idRange) => listNotePlacementsForOwnerPage(db, { tenantId, ownerPersonId, status, pageSize, after, idRange }),
+    { tenantId, shardCount });
+}
+
+/**
+ * The sharded twin of `ownerFolderTreePaged()` -- the whole folder tree plus
+ * a `truncated` flag, loaded across `shardCount` parallel cursors instead of
+ * one chain.
+ */
+export async function ownerFolderTreePagedSharded(db, { tenantId, ownerPersonId, pageSize = 100, shardCount = DEFAULT_SHARD_COUNT } = {}) {
+  const { rows, truncated } = await loadAllOwnerFoldersSharded(db, { tenantId, ownerPersonId, pageSize, shardCount });
+  return { ...buildFolderTree(rows), truncated };
 }
 
 /**

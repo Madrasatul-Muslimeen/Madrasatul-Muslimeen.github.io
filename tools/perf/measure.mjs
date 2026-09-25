@@ -43,6 +43,7 @@
 import { chromium, newContext, BASE } from "../i18n-verify/harness.mjs";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { SUBJECT_TEMPLATES, MODULE_TEMPLATES, APPROACH_TEMPLATES, TOPIC_TRACKABLE_TEMPLATES } from "../../app/js/catalogue-data.js";
+import { stableImportId } from "../../app/js/notes-import-shared.js";
 
 // The tenant is measured in the state the owner's real one is in: seeded
 // weeks ago, nothing left for the seeding paths to write.
@@ -94,6 +95,118 @@ async function throttle(ctx, page) {
   return client;
 }
 
+// ---------------------------------------------------------------------------
+// Mapping My Journey at the Owner's real size (issue #282, speed part 5):
+// 1,464 folders nested up to 6 deep, 1,083 Notes, 2,319 filings -- the exact
+// numbers the Owner's own real mappingmyjourney.com export produced (v08.66's
+// changelog entry). Built in Node, not as a giant literal inside the stub's
+// own template string: `stableImportId()` is the REAL id-shape generator the
+// WordPress/Evernote importers use in production
+// (wordpress-import-parser.js's own `stableImportId("folder", termId)`), so
+// the fixture's ids are genuinely import-shaped -- exercising the SAME
+// leading-character clustering ("imp" + kind code + hash) journey-map-shard.js
+// exists to split, rather than a synthetic id shape that would flatter it.
+//
+// updatedAt/createdAt are deliberately OMITTED: the stub's own
+// serverTimestamp() returns a plain Date with no `.toDate()`, so journey-
+// map.html's own optional-chained date rendering already tolerates their
+// absence, and neither of the two profiles measured here (Folders, Path)
+// needs a real date to become "usable" per this file's own definition below.
+function buildJourneyMapSeed({ tenantId, ownerPersonId, ownerUid, folderCount, noteCount, placementCount, maxDepth }) {
+  const folders = [];
+  let created = 0;
+  let level = [null]; // one virtual root parent, so the first generation are top-level folders
+  let depth = 0;
+  // A small root count and branching factor -- genuinely reaching maxDepth
+  // (6) before folderCount is exhausted matters more here than a wide,
+  // shallow tree would: it is what actually exercises deep nesting in the
+  // Folders/Path views, not just the raw count.
+  while (created < folderCount && depth <= maxDepth) {
+    const nextLevel = [];
+    for (const parentId of level) {
+      if (created >= folderCount) break;
+      const childCount = depth === 0 ? 4 : 2 + (created % 2);
+      for (let c = 0; c < childCount && created < folderCount; c += 1) {
+        const folderId = stableImportId("wordpress-import", "folder", String(created));
+        folders.push({ folderId, parentFolderId: parentId, depth });
+        nextLevel.push(folderId);
+        created += 1;
+      }
+    }
+    level = nextLevel;
+    depth += 1;
+  }
+  // Every folder short of folderCount once maxDepth is reached becomes an
+  // EXTRA CHILD of an existing folder (round-robin over every folder created
+  // so far), not a new flat root -- a real WordPress category export nests
+  // deeply because a real Owner organises by subject, not because every
+  // folder sits at the top level. Depth is still capped at maxDepth: a
+  // folder chosen as a parent that is already AT maxDepth gets its extra
+  // child folded one level shallower instead (its own parent), so nothing
+  // this function returns ever exceeds MAX_FOLDER_DEPTH.
+  for (let i = 0; created < folderCount; i += 1) {
+    const parent = folders[i % folders.length];
+    const parentDepth = parent.depth < maxDepth ? parent.depth : parent.depth - 1;
+    const parentId = parent.depth < maxDepth ? parent.folderId : parent.parentFolderId;
+    const folderId = stableImportId("wordpress-import", "folder", String(created));
+    folders.push({ folderId, parentFolderId: parentId, depth: parentDepth + 1 });
+    created += 1;
+  }
+
+  const notes = Array.from({ length: noteCount }, (_, i) => ({
+    noteId: stableImportId("wordpress-import", "note", String(i)),
+  }));
+
+  // Every Note gets ONE filing first (so nothing is orphaned), then the
+  // remaining filings (placementCount - noteCount) are a SECOND folder for a
+  // note chosen round-robin -- a real, if simplified, stand-in for ADR-010
+  // §5's many-to-many placement, which is what makes a 🔗-badged Note in the
+  // Path view exercisable at all.
+  const placements = [];
+  for (let i = 0; i < noteCount; i += 1) {
+    const folder = folders[i % folders.length];
+    placements.push({ noteId: notes[i].noteId, folderId: folder.folderId, rawKey: `${i}|${folder.folderId}` });
+  }
+  for (let i = 0; placements.length < placementCount; i += 1) {
+    const note = notes[i % notes.length];
+    const folder = folders[(i * 7 + 1) % folders.length]; // a different stride than the first pass, so it is usually a DIFFERENT folder
+    placements.push({ noteId: note.noteId, folderId: folder.folderId, rawKey: `${note.noteId}-extra-${i}|${folder.folderId}` });
+  }
+
+  const own = { tenantId, ownerPersonId, ownerUid };
+  return {
+    noteFolders: folders.map((f, i) => ({
+      _id: `${tenantId}__${f.folderId}`, folderId: f.folderId, ...own,
+      name: `Folder ${i}`, parentFolderId: f.parentFolderId, semanticRole: "user", order: i, status: "active",
+    })),
+    notes: notes.map((n, i) => ({
+      _id: `${tenantId}__${n.noteId}`, noteId: n.noteId, ...own,
+      visibility: "private", title: `Imported Note ${i}`, bodyHtml: `<p>Note ${i}</p>`,
+      status: "active", currentRevisionId: stableImportId("wordpress-import", "revision", String(i)),
+    })),
+    notePlacements: placements.map((p, i) => ({
+      _id: `${tenantId}__${stableImportId("wordpress-import", "placement", p.rawKey)}`,
+      placementId: stableImportId("wordpress-import", "placement", p.rawKey), ...own,
+      noteId: p.noteId, folderId: p.folderId, order: i, status: "active",
+    })),
+  };
+}
+
+/** `extraSeedJs` for `newContext()`: appends the Owner's real-scale Mapping My Journey data to DATA, additively (concat, never replacing what the base stub already seeds for p1/t1). */
+function journeyMapExtraSeedJs() {
+  const seed = buildJourneyMapSeed({
+    tenantId: "t1", ownerPersonId: "p1", ownerUid: "test-uid",
+    folderCount: 1464, noteCount: 1083, placementCount: 2319, maxDepth: 6,
+  });
+  return `
+DATA.noteFolders = (DATA.noteFolders || []).concat(${JSON.stringify(seed.noteFolders)});
+DATA.notes = (DATA.notes || []).concat(${JSON.stringify(seed.notes)});
+DATA.notePlacements = (DATA.notePlacements || []).concat(${JSON.stringify(seed.notePlacements)});
+`;
+}
+
+const JOURNEY_MAP_SEED_JS = journeyMapExtraSeedJs();
+
 // "Usable" is per page: the moment the thing a person came for is on screen,
 // not merely the moment the shell paints. Each predicate runs in the page.
 const PAGES = [
@@ -142,6 +255,34 @@ const PAGES = [
       return !!app && app.style.display !== "none" && !!body && body.children.length > 0;
     },
   },
+  // Issue #282 (speed, part 5) -- "usable" is the issue's own definition:
+  // the folder tree is drawn. Neither profile waits for Notes/placements to
+  // finish loading in the background (this round's own progressive-render
+  // change) -- that would be measuring the OLD, sequential-everything
+  // behaviour this round replaces, not what a reader actually waits through.
+  // Computed ONCE (JOURNEY_MAP_SEED_JS below) and reused by both profiles --
+  // it is a pure function of fixed numbers, and building the 4,866-row
+  // fixture twice would cost real seconds for no reason.
+  {
+    path: "/app/journey-map.html#folders",
+    name: "Mapping My Journey -- Folders, at real size (1,464 folders)",
+    extraSeedJs: JOURNEY_MAP_SEED_JS,
+    usable: () => {
+      const app = document.getElementById("app");
+      const tree = document.querySelector("[data-folder-tree]");
+      return !!app && app.style.display !== "none" && !!tree && tree.children.length > 0;
+    },
+  },
+  {
+    path: "/app/journey-map.html#path",
+    name: "Mapping My Journey -- Path, at real size (1,464 folders, 1,083 Notes)",
+    extraSeedJs: JOURNEY_MAP_SEED_JS,
+    usable: () => {
+      const app = document.getElementById("app");
+      const tree = document.querySelector("[data-path-tree]");
+      return !!app && app.style.display !== "none" && !!tree && tree.children.length > 0;
+    },
+  },
 ];
 
 /** Busy time on the timeline (union of every call's interval), in ms. */
@@ -170,6 +311,7 @@ async function measureOnce(browser, page) {
     viewport: { width: 390, height: 844 },
     latencyMs: LATENCY,
     seedTemplates: SEEDED,
+    extraSeedJs: page.extraSeedJs ?? null,
   });
   const p = await ctx.newPage();
   const errors = [];
