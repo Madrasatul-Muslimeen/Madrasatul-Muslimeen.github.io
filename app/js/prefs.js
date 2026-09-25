@@ -711,3 +711,35 @@ export function setQuranLastSession(session) {
     position: session.position ?? null,
   }));
 }
+
+// ---------------------------------------------------------------------------
+// Issue #263 -- whether the Word Card colours each part of a word (particle,
+// person marker, determiner, stem) and the matching part of its English
+// meaning. Same additive localStorage shape every other reading preference
+// in this app already uses: no new startup read (the Word Card itself only
+// opens on demand), no collection, no firestore.rules change. On by default,
+// per the Owner's own instruction.
+// ---------------------------------------------------------------------------
+const COLOUR_WORD_PARTS_KEY = "mm_word_segments_colour";
+
+function readColourWordParts() {
+  try {
+    const raw = localStorage.getItem(COLOUR_WORD_PARTS_KEY);
+    if (raw === null) return true; // never set: on by default
+    return raw === "1";
+  } catch {
+    return true;
+  }
+}
+
+let cachedColourWordParts = readColourWordParts();
+
+export function getColourWordParts() {
+  return cachedColourWordParts;
+}
+
+export function setColourWordParts(on) {
+  cachedColourWordParts = !!on;
+  writeStored(COLOUR_WORD_PARTS_KEY, cachedColourWordParts ? "1" : "0");
+  return cachedColourWordParts;
+}
