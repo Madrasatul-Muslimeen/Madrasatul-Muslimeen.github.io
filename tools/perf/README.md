@@ -13,6 +13,13 @@ node tools/perf/measure.mjs --latency 150 --runs 3 --label before
 node tools/perf/new-tenant.mjs                    # seeding still works?
 ```
 
+Phone conditions (added 25 Sep 2026): `--net fast4g|slow4g` throttles every
+byte the page downloads, and `--cpu 4` slows its JavaScript like a mid-range
+phone. For example, `--net fast4g --cpu 4 --latency 100`. Without them this
+measures a fast desktop on a fast line. The local `serve.js` does not
+compress files, while GitHub Pages does, so a throttled local run overstates
+download time somewhat.
+
 `CHROMIUM_PATH` overrides the browser, same as the i18n-verify suites.
 Results are written to `tools/perf/results/<label>-<latency>ms.json`.
 
