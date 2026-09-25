@@ -11,6 +11,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import { spawnSync } from "node:child_process";
 import * as total from "../../app/js/quran-word-total.js";
 import * as readiness from "../../app/js/study-wbw-total-readiness.js";
 import { renderScopedWheel, wordTotalRampColor, STATUS_COLORS, segmentPath, polarToCartesian } from "../../app/js/mastery-wheel.js";
@@ -42,6 +43,14 @@ function functionBody(code, signature) {
   assert.ok(start > -1, `${signature} is gone`);
   const after = code.indexOf("\nexport ", start + 1);
   return after === -1 ? code.slice(start) : code.slice(start, after);
+}
+
+/** Same idea as functionBody() above, for quranrevival.html's plain (non-`export`) functions: bounded at the next top-level `function `/`async function ` declaration rather than at `export `. */
+function pageFunctionBody(code, signature) {
+  const start = code.indexOf(signature);
+  assert.ok(start > -1, `${signature} is gone`);
+  const after = code.slice(start + signature.length).search(/\n\s*(?:async\s+)?function\s+\w/);
+  return after === -1 ? code.slice(start) : code.slice(start, start + signature.length + after);
 }
 
 // ===========================================================================
@@ -371,14 +380,21 @@ check("renderScopedWheel()'s `fill` override takes precedence over statusId, and
 });
 
 // ===========================================================================
-// The Approach wheel's own rendering path is provably untouched: `statusId`
-// is computed unconditionally, and `fill`/wbw-mode titling only ever happens
-// INSIDE a block gated on wbwWheelColorMode === "wbw".
+// UPDATED IN PLACE 25 Sep 2026, reason recorded, not weakened -- issue #261.
+// This check used to assert that renderExploreQuranLevel()'s Approach-mode
+// wedge computation ran unconditionally and the Word-by-Word overlay was
+// gated behind `if (wbwMode)`. The Owner could not find that overlay (it
+// even showed, inertly, in the Surahs view), so issue #261 REMOVED it from
+// the Quran tab entirely and gave Word-by-Word colouring its own Explore
+// tab (renderWbwQuranLevel() etc., below). The claim this check must now
+// prove is the stronger one: the Quran tab's Approach colouring is
+// completely UNCONDITIONAL and carries no `fill`/wbw-mode branch of any
+// kind any more -- not merely "the branch, when present, is gated right".
 // ===========================================================================
 
 const PAGE_FILE = path.join(root, "app", "quranrevival.html");
 
-check("renderExploreQuranLevel()'s Approach-mode wedge computation is unconditional, and the Word-by-Word overlay is strictly opt-in", () => {
+check("renderExploreQuranLevel()'s Approach-mode wedge computation is unconditional, and NO Word-by-Word overlay branch remains (issue #261 moved it to its own tab)", () => {
   const html = fs.readFileSync(PAGE_FILE, "utf8");
   const start = html.indexOf("async function renderExploreQuranLevel");
   assert.ok(start > -1, "renderExploreQuranLevel is gone");
@@ -388,20 +404,117 @@ check("renderExploreQuranLevel()'s Approach-mode wedge computation is unconditio
 
   const statusIdAt = body.indexOf("const statusId = pooled ?? ");
   const titleAt = body.indexOf("it.title = segTitle(it.label, it.statusId, labelsById)");
-  const wbwModeAt = body.indexOf('const wbwMode = wbwWheelColorMode === "wbw"');
-  assert.ok(statusIdAt > -1 && titleAt > -1 && wbwModeAt > -1, "one of the three anchor lines is gone -- re-check the source");
-  // The Approach status and its title are computed BEFORE wbwMode is even
-  // evaluated -- proving they do not sit inside any conditional keyed on it.
-  assert.ok(statusIdAt < wbwModeAt, "the Approach statusId computation moved after the wbw-mode branch");
-  assert.ok(titleAt < wbwModeAt, "the Approach segTitle() call moved after the wbw-mode branch");
+  assert.ok(statusIdAt > -1 && titleAt > -1, "one of the two anchor lines is gone -- re-check the source");
 
-  // `it.fill =` and the wbw-specific `it.title =` overwrite must appear ONLY
-  // inside the `if (wbwMode) {`-guarded block, textually after it.
-  const fillAt = body.indexOf("it.fill = wordTotalRampColor(ratio)");
-  assert.ok(fillAt > wbwModeAt, "the fill override is not textually inside the wbw-mode branch");
-  const guardBlock = body.slice(wbwModeAt, fillAt);
-  assert.ok(/if\s*\(\s*wbwMode\s*\)/.test(guardBlock), "the fill override is not actually gated by `if (wbwMode)`");
+  // The Word-by-Word overlay this check used to require is now gone
+  // entirely -- not merely gated. Its absence IS the proof of "unconditional".
+  for (const goneToken of ["wbwMode", "wbwWheelColorMode", "it.fill =", "wordTotalRampColor"]) {
+    assert.ok(!body.includes(goneToken), `renderExploreQuranLevel() still contains ${goneToken} -- the Word-by-Word overlay was supposed to move to its own tab, not merely be re-gated`);
+  }
+  // The ring stays -- issue #261 kept it exactly as issue #206 built it.
+  assert.ok(body.includes("ring: wheelRingOption()"), "the gold ring option is gone -- it was supposed to stay on the Quran tab");
+  assert.ok(body.includes("renderWheelLegend(labelsById)"), "the legend is no longer rendered unconditionally");
 });
 
-console.log(`\n==== Quran word total (Issue #206) boundary: ${passed} passed, ${failed} failed ====`);
+check("the Word-by-Word wedge-colouring toggle (#exploreWheelColorToggle) no longer exists anywhere in the page", () => {
+  const html = fs.readFileSync(PAGE_FILE, "utf8");
+  for (const goneId of ["exploreWheelColorToggle", "exploreColorApproachBtn", "exploreColorWbwBtn"]) {
+    assert.ok(!html.includes(goneId), `${goneId} still appears in the page -- the toggle was supposed to be removed, not merely hidden`);
+  }
+});
+
+// ===========================================================================
+// Issue #261 -- Word by Word's own Explore tab. A fourth palette mode,
+// alongside Quran/QCR/Asma, following exactly the same pattern.
+// ===========================================================================
+
+check("the fourth palette button and its own panel exist, wired the same way QCR/Asma already are", () => {
+  const html = fs.readFileSync(PAGE_FILE, "utf8");
+  assert.ok(html.includes('data-explore-mode="wbw"'), "the Word by Word palette button is missing");
+  assert.ok(html.includes('id="wbwPanel"'), "#wbwPanel is missing");
+  assert.ok(html.includes("openWbwPalette()"), "nothing calls openWbwPalette()");
+  assert.ok(html.includes('wbwPanelEl.hidden = mode !== "wbw"'), "setExplorePalette() does not toggle #wbwPanel");
+});
+
+check("the Word by Word tab's own render functions consult the readiness gate and read the counter only when opened", () => {
+  const html = fs.readFileSync(PAGE_FILE, "utf8");
+  const start = html.indexOf("async function openWbwPalette");
+  assert.ok(start > -1, "openWbwPalette is gone");
+  const end = html.indexOf("async function goToSurahFromWbw", start);
+  assert.ok(end > start, "could not bound the Word by Word tab's own block");
+  const block = html.slice(start, end);
+  assert.ok(block.includes("isWbwTotalPersistenceReady()"), "openWbwPalette() never consults the readiness gate");
+  assert.ok(block.includes("renderWbwPanel()"), "openWbwPalette() never renders the panel");
+  // The counter fetch (ensureWordTotalsForExplore()) must be textually
+  // INSIDE the `if (isWbwTotalPersistenceReady())` guard in openWbwPalette,
+  // not called unconditionally on every open -- the gate-closed case must
+  // make no counter read at all.
+  const openBody = functionBody(block, "async function openWbwPalette");
+  const gateAt = openBody.indexOf("isWbwTotalPersistenceReady()");
+  const fetchAt = openBody.indexOf("ensureWordTotalsForExplore()");
+  assert.ok(gateAt > -1 && fetchAt > -1, "openWbwPalette() is missing its gate check or its counter fetch");
+  assert.ok(gateAt < fetchAt, "the counter fetch is not textually inside the gate check");
+  // renderWbwQuranLevel/JuzLevel/SurahLevel must never call
+  // ensureWordTotalsForExplore()/getWordTotals() themselves -- the counter
+  // is read exactly once per tab open, not once per level navigated to.
+  for (const sig of ["function renderWbwQuranLevel", "function renderWbwJuzLevel", "async function renderWbwSurahLevel"]) {
+    const fnBody = pageFunctionBody(block, sig);
+    assert.ok(!fnBody.includes("ensureWordTotalsForExplore("), `${sig} re-fetches the counter on its own -- it must reuse what openWbwPalette() already loaded`);
+    assert.ok(!fnBody.includes("getWordTotals("), `${sig} calls getWordTotals() directly`);
+  }
+});
+
+check("the Word by Word tab's gate-closed state shows a notice and never reaches the wheel-rendering levels", () => {
+  const html = fs.readFileSync(PAGE_FILE, "utf8");
+  const start = html.indexOf("function renderWbwPanel()");
+  assert.ok(start > -1, "renderWbwPanel is gone");
+  const end = html.indexOf("/** Level 1", start);
+  assert.ok(end > start, "could not bound renderWbwPanel()'s own body");
+  const body = html.slice(start, end);
+  assert.ok(/if\s*\(\s*!ready\s*\)\s*\{[\s\S]*?return/.test(body), "renderWbwPanel() does not return immediately when the gate is closed");
+  const returnAt = body.search(/if\s*\(\s*!ready\s*\)\s*\{[\s\S]*?return/);
+  const renderQuranAt = body.indexOf("renderWbwQuranLevel()");
+  assert.ok(renderQuranAt === -1 || renderQuranAt > returnAt, "a level renderer is called before the gate-closed return");
+});
+
+// ===========================================================================
+// The per-surah packaged denominator (surah-word-totals.json), new this
+// round -- same discipline as the per-Juz one above: DERIVED from the real
+// pulled per-ayah word arrays, never hand-typed, re-derived independently
+// here rather than trusted from the packaged file, and the build script
+// must reproduce it byte-for-byte.
+// ===========================================================================
+
+check("the packaged surah-word-totals.json sums to exactly QURAN_TOTAL_WORD_COUNT across all 114 surahs, and matches an INDEPENDENT re-derivation from the real surah files", () => {
+  const packaged = JSON.parse(fs.readFileSync(path.join(toolsDir, "output", "surah-word-totals.json"), "utf8"));
+  assert.equal(packaged.bySurah.length, 114);
+  const sum = packaged.bySurah.reduce((s, r) => s + r.totalWords, 0);
+  assert.equal(sum, total.QURAN_TOTAL_WORD_COUNT, "the packaged per-surah totals do not sum to the real whole-Qur'an total");
+  assert.equal(packaged.quranTotalWords, total.QURAN_TOTAL_WORD_COUNT);
+
+  const surahsDir = path.join(toolsDir, "output", "surahs");
+  const recount = new Map();
+  for (const file of fs.readdirSync(surahsDir).filter((f) => f.endsWith(".json"))) {
+    const data = JSON.parse(fs.readFileSync(path.join(surahsDir, file), "utf8"));
+    let count = 0;
+    for (const a of data.ayahs) count += a.words?.length ?? 0;
+    recount.set(data.surahNumber, count);
+  }
+  assert.equal(recount.size, 114, "the real corpus does not have exactly 114 surahs");
+  for (const row of packaged.bySurah) {
+    assert.equal(recount.get(row.surah), row.totalWords, `surah ${row.surah}'s packaged total does not match a fresh count of the real corpus`);
+  }
+});
+
+check("re-running build-surah-word-totals.js reproduces the packaged file byte-for-byte", () => {
+  const outPath = path.join(toolsDir, "output", "surah-word-totals.json");
+  const before = fs.readFileSync(outPath, "utf8");
+  const scriptPath = path.join(toolsDir, "build-surah-word-totals.js");
+  const result = spawnSync(process.execPath, [scriptPath], { encoding: "utf8" });
+  assert.equal(result.status, 0, `build-surah-word-totals.js exited ${result.status}: ${result.stderr}`);
+  const after = fs.readFileSync(outPath, "utf8");
+  assert.equal(after, before, "re-running the build script changed the packaged file -- it is not a pure re-derivation");
+});
+
+console.log(`\n==== Quran word total (Issues #206, #261) boundary: ${passed} passed, ${failed} failed ====`);
 if (failed > 0) process.exit(1);

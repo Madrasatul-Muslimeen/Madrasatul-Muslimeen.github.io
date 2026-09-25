@@ -192,3 +192,28 @@ export async function getJuzWordTotalsIndex() {
   }
   return juzWordTotalsPromise;
 }
+
+let surahWordTotalsPromise = null;
+
+/**
+ * Issue #261 -- Word by Word's own Explore tab, Juz level: one wedge per
+ * surah/part-surah inside the open Juz, each labelled with that surah's OWN
+ * word total -- `{ quranTotalWords, bySurah: [{surah, totalWords}, ...] }`,
+ * computed once from the real pulled per-ayah `words[]` arrays by
+ * tools/quran-data-pull/build-surah-word-totals.js -- never estimated or
+ * hand-typed, same discipline as getJuzWordTotalsIndex() above. Tiny (114
+ * rows); loaded on first use, never on the startup path (I9) -- only when
+ * Explore's Word by Word tab is actually opened.
+ */
+export async function getSurahWordTotalsIndex() {
+  if (!surahWordTotalsPromise) {
+    surahWordTotalsPromise = fetch(`${BASE_URL}/surah-word-totals.json`).then((res) => {
+      if (!res.ok) throw new Error(`Couldn't load the surah word totals (HTTP ${res.status}).`);
+      return res.json();
+    }).catch((err) => {
+      surahWordTotalsPromise = null;
+      throw err;
+    });
+  }
+  return surahWordTotalsPromise;
+}
