@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.60",
+    "version": "08.61",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -497,7 +497,7 @@
     {
       "version": "08.60",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "'Page by page' reading: the last line of a long ayah could not be scrolled fully into view. body.read-sideways #studyScreen had height:100% on a content-box with 1rem padding, a border and a 0.5rem top margin, so it was 42px taller than #readScroll (overflow hidden in this mode) and the bottom ~10px of the final line was unreachable -- measured on 2:282 at 320/360/390/768/1280px, both languages. Fixed with border-box and height:calc(100% - 0.5rem) (100% in immersive mode): the last line now clears the edge by ~32px everywhere. This is the residue of the scroll trap draft PR #37 reported on 31 Aug 2026; the severe form had already been fixed on main by a different route (#ayahPanels scrolls). New read-sideways-last-line.mjs, 24 checks, fails 12 with the old CSS. PR #37 closed as superseded on the Owner's instruction after this check.",
       "integration": {
         "authorizedOn": "2026-09-24",
@@ -505,10 +505,23 @@
         "method": "MERGE_PR",
         "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/37"
       }
+    },
+    {
+      "version": "08.61",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Mapping My Journey's dock tab switched on (issue #257). #tabJourneyBtn in quranrevival.html, a disabled 'Coming later' placeholder since before Phase 6, now navigates to journey-map.html#folders; the Note view's ⋯ 'Mapping My Journey' item does the same. journey-map.html reads a plain #folders/#timeline/#path hash (anything else ignored; the remembered view wins only when no hash is present). Nothing added to the Quran Study startup path (I9). Checks inverted in place with reasons: journey-map-boundary 18/0, journey-map-screen 39/0, quran-boundary 31/0, behaviour.mjs 42p updated. layout.mjs and navcheck.mjs clean against main; tab tapped in a real browser in both languages opens the Folders view. Owner instruction: 'Folder should be built/accessible from the Mapping tab.'",
+      "integration": {
+        "authorizedOn": "2026-09-25",
+        "integratedOn": "2026-09-25",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/issues/257"
+      }
     }
   ],
-  "nextUnallocated": "08.61",
+  "nextUnallocated": "08.62",
   "nextUnallocatedNote": [
+    "v08.61 was allocated to switching on the Mapping My Journey dock tab (issue #257), 2026-09-25.",
     "v08.60 was allocated to the Page-by-page last-line scroll fix (the residue of draft PR #37), 2026-09-24.",
     "v08.59 was allocated to MAP v4 Phase 7 P7-B, the Dawah screens, enabled the same day (issue #250), 2026-09-24.",
     "v08.58 was allocated to the Mapping My Journey list-limit live-defect fix (issue #247), 2026-09-24.",

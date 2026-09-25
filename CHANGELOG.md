@@ -17872,7 +17872,7 @@ overflow. New `tools/i18n-verify/read-sideways-last-line.mjs`: **24/0**, with a
 positive control that "Page by page" is really on; **the old CSS fails all 12
 reachability checks**. PR #37 closed as superseded.
 
-**Mapping My Journey's dock tab is switched on** (issue #257). The Owner's own
+**v08.61 (25 Sep 2026).** **Mapping My Journey's dock tab is switched on** (issue #257). The Owner's own
 instruction: *"Folder should be built/accessible from the Mapping tab."*
 `#tabJourneyBtn` — the fourth dock tab in `app/quranrevival.html`, a disabled
 placeholder since before Phase 6 — is enabled: `disabled`, `aria-disabled` and

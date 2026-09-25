@@ -158,7 +158,19 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.60 on `main`** (24 Sep 2026 — the Owner asked,
+**Current milestone: v08.61 on `main`** (25 Sep 2026 — the Owner:
+*"Folder should be built/accessible from the Mapping tab."* The dock's fourth
+tab, **Mapping My Journey**, a disabled "Coming later" placeholder since
+before Phase 6, now opens `journey-map.html#folders`; the Note view's ⋯ item
+does the same (issue #257). `journey-map.html` reads only a plain
+`#folders`/`#timeline`/`#path` hash. Three suites' "still disabled" checks
+inverted in place, reasons recorded; `layout.mjs`/`navcheck.mjs` clean.
+**Owner decisions recorded the same day:** the Path view is to be
+**branching with links** (a Note filed in two folders appears on both
+branches, linked); the folders are to gain the functions of Siyagah's
+"My Notebooks" dialog, pending that app's own Architect's written answers.)
+
+**Previous milestone: v08.60 on `main`** (24 Sep 2026 — the Owner asked,
 before closing old draft PR #37, whether its "can't scroll" defect still
 happens. **The severe form is gone** (with "Page by page" on, `#ayahPanels`
 now does the scrolling), **but a residue was real and is fixed**:
