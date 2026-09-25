@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.78",
+    "version": "08.79",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -713,8 +713,20 @@
     {
       "version": "08.78",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "About, Catalogue, Monitor, Records and People no longer scroll sideways at 320-412px: tables scroll in their own box below 600px, People's Invite box and the tenant picker fit. phone-width-overflow.mjs 39 failures -> 0. Issue #293.",
+      "integration": {
+        "authorizedOn": "2026-09-25",
+        "integratedOn": "2026-09-25",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "08.79",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The Owner published the WordPress/Evernote import rules; firestore.rules synced, study-wordpress-import-readiness.js ready:true by governed decision. The Import button is live for both importers.",
       "integration": {
         "authorizedOn": "2026-09-25",
         "integratedOn": "2026-09-25",
@@ -723,8 +735,9 @@
       }
     }
   ],
-  "nextUnallocated": "08.79",
+  "nextUnallocated": "08.80",
   "nextUnallocatedNote": [
+    "v08.79 was allocated to WordPress/Evernote import switched on, 2026-09-25.",
     "v08.78 was allocated to phone width: no sideways scroll (issue #293), 2026-09-25.",
     "v08.77 was allocated to speed part 7 (issue #291), 2026-09-25.",
     "v08.76 was allocated to speed part 6b (issue #288), 2026-09-25.",
