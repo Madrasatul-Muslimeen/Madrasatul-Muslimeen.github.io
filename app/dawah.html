@@ -124,7 +124,7 @@
     import { getAppLang } from "./js/prefs.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { safeWrite } from "./js/errors.js";
-    import { bootstrapContext, setActiveContext } from "./js/session-context.js";
+    import { getMyMembershipRoles, hydrateMemberships, pickContext, setActiveContext } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { translateStatic, t } from "./js/i18n.js";
     import { registerServiceWorker } from "./js/sw-register.js";
@@ -224,9 +224,24 @@
       return myMemberships.find((m) => m.tenantId === activeTenantId)?.tenantName ?? activeTenantId;
     }
 
-    async function loadContextData() {
-      const rosterSnap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId)));
+    // Speed, part 7 (issue #291): the tenantPeople query and the tenant-name
+    // hydration used to run one after another -- neither needs the other's
+    // result, so they fire together now, the same split homework.html/
+    // course-offers.html's own issue #288 fix uses. refreshAll()'s own dawah
+    // reads stay a genuine third round trip -- they need myPersonId/
+    // canApprove, only known once the hydrated membership is in hand.
+    async function loadContextData(hydratedMembershipsPromise) {
+      const hydrationPromise = hydratedMembershipsPromise ?? Promise.resolve(myMemberships);
+      const [rosterSnap, hydrated] = await Promise.all([
+        getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId))),
+        hydrationPromise,
+      ]);
       roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      myMemberships = hydrated;
+      tenantSelect.innerHTML = myMemberships
+        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${escapeHtml(m.tenantName)}</option>`)
+        .join("");
+
       const roles = myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [];
       renderNav(roles, null);
       myPersonId = myPersonIdInActiveTenant();
@@ -557,22 +572,33 @@
       signOutBtn.style.display = "inline-block";
 
       try {
+        // Speed, part 7 (issue #291), the same pattern issue #278's own fix
+        // uses: userIndex and the ROLES-ONLY membership query are fired
+        // together -- pickContext() below only ever reads tenantId/personId/
+        // roles, never tenantName/tenantData.
+        const membershipRolesPromise = getMyMembershipRoles(db, user.uid);
+        membershipRolesPromise.catch(() => {}); // see the real await below; this only stops a reload (adoptAppLangFromUserIndex) from logging it as unhandled.
+
         const userIndexSnap = await getDoc(doc(db, TENANT.USER_INDEX, user.uid));
         if (adoptAppLangFromUserIndex(userIndexSnap)) return;
         const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
-        const { context, memberships } = await bootstrapContext(db, user.uid, defaultTenantId);
+
+        const membershipRoles = await membershipRolesPromise;
+        const context = pickContext(membershipRoles, defaultTenantId);
         if (!context) {
           whoEl.innerHTML += noAccountMessageHtml();
           return;
         }
         activeTenantId = context.tenantId;
-        myMemberships = memberships;
-        tenantSelect.innerHTML = myMemberships
-          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${escapeHtml(m.tenantName)}</option>`)
-          .join("");
+
+        // The tenant picker's real names come from the SAME hydration call
+        // loadContextData() fires its own reads alongside, rather than
+        // being awaited before any of them.
+        const hydratedMembershipsPromise = hydrateMemberships(db, membershipRoles);
+        hydratedMembershipsPromise.catch(() => {}); // real failure surfaces via the awaited copy inside loadContextData().
 
         appEl.style.display = "block";
-        await loadContextData();
+        await loadContextData(hydratedMembershipsPromise);
       } catch (err) {
         console.error(err);
         whoEl.textContent += ` — ${err.message}`;

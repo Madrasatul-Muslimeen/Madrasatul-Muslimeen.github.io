@@ -345,6 +345,80 @@ const PAGES = [
       return !!app && app.style.display !== "none" && !!body && body.children.length > 0 && !body.querySelector(".loading-placeholder");
     },
   },
+  // Issue #291 (speed, part 7) -- "usable" is the Notes list for the one
+  // Study Unit this screen is scoped to (a real unit key, carried in the
+  // URL exactly the way the Read screen's own "My Notes for this unit" menu
+  // item always supplies one) -- either a rendered card or the "No Notes
+  // yet" empty state, both of which only appear once notesForStudyUnit()
+  // has resolved.
+  {
+    path: "/app/notes.html?unit=" + encodeURIComponent("ayah:1:1"),
+    name: "My Notes",
+    usable: () => {
+      const app = document.getElementById("app");
+      const banner = document.getElementById("unitBanner");
+      const notesContainer = document.getElementById("notesContainer");
+      const emptyMsg = document.getElementById("emptyMsg");
+      return !!app && app.style.display !== "none" && banner.style.display === "block"
+        && (notesContainer.children.length > 0 || emptyMsg.style.display === "block");
+    },
+  },
+  // Issue #291 (speed, part 7) -- "usable" is the bookmarks manager's own
+  // rendered state: a folder/unfiled/tagged-for row (there is one real
+  // seeded bookmark), or -- for a person with none -- the "No bookmarks
+  // saved yet" empty message. renderAll() always sets exactly one of these,
+  // never both, so checking all four together is the honest "render
+  // finished" signal for whichever grouping mode is active.
+  {
+    path: "/app/bookmarks.html",
+    name: "Bookmarks",
+    usable: () => {
+      const app = document.getElementById("app");
+      const folders = document.getElementById("foldersContainer");
+      const unfiled = document.getElementById("unfiledContainer");
+      const tagged = document.getElementById("taggedForContainer");
+      const emptyMsg = document.getElementById("emptyMsg");
+      return !!app && app.style.display !== "none"
+        && (folders.children.length > 0 || unfiled.children.length > 0 || tagged.children.length > 0 || emptyMsg.style.display === "block");
+    },
+  },
+  // Issue #291 (speed, part 7) -- "usable" is the roster table, the first
+  // thing this page draws.
+  {
+    path: "/app/people.html",
+    name: "People",
+    usable: () => {
+      const app = document.getElementById("app");
+      const body = document.getElementById("rosterBody");
+      return !!app && app.style.display !== "none" && !!body && body.children.length > 0;
+    },
+  },
+  // Issue #291 (speed, part 7) -- "usable" is the Classes list, the first
+  // thing this page draws. Same loading-placeholder marker reasoning as
+  // Homework/Curriculum/Course Offers above -- classesBody carries a static
+  // "Loading…" placeholder rather than starting empty.
+  {
+    path: "/app/classes.html",
+    name: "Classes",
+    usable: () => {
+      const app = document.getElementById("app");
+      const body = document.getElementById("classesBody");
+      return !!app && app.style.display !== "none" && !!body && body.children.length > 0 && !body.querySelector(".loading-placeholder");
+    },
+  },
+  // Issue #291 (speed, part 7) -- "usable" is the default "My pages" view,
+  // the first thing this page draws -- either a page card or the "You have
+  // no Dawah pages yet" empty state, both of which only appear once
+  // refreshAll()'s own reads have resolved.
+  {
+    path: "/app/dawah.html",
+    name: "Dawah",
+    usable: () => {
+      const app = document.getElementById("app");
+      const view = document.getElementById("viewMine");
+      return !!app && app.style.display !== "none" && !!view && view.children.length > 0;
+    },
+  },
 ];
 
 /** Busy time on the timeline (union of every call's interval), in ms. */
