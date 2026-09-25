@@ -115,6 +115,15 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   // whole-Qur'an total (quran-word-total.js), and works whether or not the
   // running-counter feature is ready.
   wordShareOfQuran: "Appears {count} times in the Qur'an — {percent}% of all words",
+  // Issue #263 -- word-part colouring. `wordSegments` (loaded on demand, see
+  // quran-word-segments.js) is only ever present for a word the build
+  // script could align exactly -- see that script's own "never guess" rule
+  // -- so these strings never appear for a word without segments.
+  colourWordPartsToggle: "Colour word parts",
+  segmentLegendParticle: "particle",
+  segmentLegendPerson: "person",
+  segmentLegendDeterminer: "determiner",
+  segmentLegendStem: "stem",
 });
 
 function escapeHtml(value) {
@@ -127,6 +136,76 @@ function safeDictionaryUrl(value) {
     const url = new URL(value);
     return url.protocol === "https:" ? url.href : null;
   } catch { return null; }
+}
+
+/**
+ * Issue #263 -- the four segment roles the Word Card colours the Arabic
+ * word (and the matching part of its gloss) by. Exported so a caller and
+ * this module's own tests share one closed vocabulary rather than two.
+ */
+export const WORD_SEGMENT_ROLES = Object.freeze(["particle", "person", "determiner", "stem"]);
+
+function validSegments(segments) {
+  return Array.isArray(segments) && segments.length > 0 &&
+    segments.every((s) => s && Number.isInteger(s.from) && Number.isInteger(s.to) && s.to > s.from && WORD_SEGMENT_ROLES.includes(s.role));
+}
+
+/**
+ * Renders `token` as one plain text run broken into colour-coded `<span>`s,
+ * one per segment. Deliberately NOTHING else sits between the spans (no
+ * space, no other markup) -- a plain inline `<span>` with the default
+ * `unicode-bidi: normal` does not isolate its own contextual shaping from
+ * its neighbours, so Arabic letter joining survives the span boundaries;
+ * this is proven in a real browser by word-card-segments-browser.mjs
+ * (measured rendered width, coloured vs. plain, within 1px).
+ */
+export function segmentedArabicHtml(token, segments) {
+  if (!validSegments(segments)) return escapeHtml(token);
+  let out = "", cursor = 0;
+  for (const seg of segments) {
+    if (seg.from > cursor) out += escapeHtml(token.slice(cursor, seg.from));
+    out += `<span class="word-card-segment word-card-segment-${seg.role}">${escapeHtml(token.slice(seg.from, seg.to))}</span>`;
+    cursor = seg.to;
+  }
+  if (cursor < token.length) out += escapeHtml(token.slice(cursor));
+  return out;
+}
+
+/**
+ * Colours the English gloss to match: a segment's own `cue` (one word, or
+ * `|`-separated alternatives -- see build-word-segments.mjs) is looked for
+ * as a WHOLE word, case-insensitively, and that word takes the segment's
+ * colour. Every other word in the gloss takes the stem colour (the part of
+ * the meaning nothing more specific claimed). A cue that is not found in
+ * this particular gloss colours nothing -- never a guess at which word it
+ * might have meant.
+ */
+export function segmentedGlossHtml(gloss, segments) {
+  if (typeof gloss !== "string" || !gloss) return escapeHtml(gloss ?? "");
+  if (!validSegments(segments)) return escapeHtml(gloss);
+  const cueRoleByWord = new Map();
+  for (const seg of segments) {
+    if (!seg.cue) continue;
+    for (const alt of String(seg.cue).split("|")) {
+      const key = alt.trim().toLowerCase();
+      if (key) cueRoleByWord.set(key, seg.role);
+    }
+  }
+  // Built piece by piece (never a bare `.replace` on the raw string) so
+  // every non-word character -- punctuation, whitespace, anything else the
+  // gloss carries -- is escaped exactly once, same as the rest of this file.
+  let out = "", cursor = 0;
+  const wordRe = /[A-Za-z]+/g;
+  let m;
+  while ((m = wordRe.exec(gloss))) {
+    if (m.index > cursor) out += escapeHtml(gloss.slice(cursor, m.index));
+    const word = m[0];
+    const role = cueRoleByWord.get(word.toLowerCase()) || "stem";
+    out += `<span class="word-card-gloss-segment word-card-segment-${role}">${escapeHtml(word)}</span>`;
+    cursor = m.index + word.length;
+  }
+  if (cursor < gloss.length) out += escapeHtml(gloss.slice(cursor));
+  return out;
 }
 
 /**
@@ -415,8 +494,16 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
     // Deliberately bilingual: WbW shows the English and Bangla gloss together
     // whatever the reader's language, so each fallback stays in its own
     // language rather than following the interface setting.
+    // Issue #263 -- the English gloss is coloured to match the Arabic
+    // segments when both the segments and the device preference are
+    // present; a Bangla cue table was deliberately not built this round
+    // (see build-word-segments.mjs and the PR), so the Bangla gloss below
+    // stays plain regardless.
+    const showSegmentColour = context.colourWordPartsEnabled && validSegments(context.wordSegments);
+    const enGloss = word.translation?.en || text.meaningUnavailableEn;
+    const enGlossHtml = showSegmentColour ? segmentedGlossHtml(enGloss, context.wordSegments) : escapeHtml(enGloss);
     return `<div role="tabpanel" data-word-card-panel="wbw">
-      <p class="word-card-meaning word-card-meaning-en" lang="en">${escapeHtml(word.translation?.en || text.meaningUnavailableEn)}</p>
+      <p class="word-card-meaning word-card-meaning-en" lang="en">${enGlossHtml}</p>
       <p class="word-card-meaning word-card-meaning-bn" lang="bn">${escapeHtml(word.translation?.bn || text.meaningUnavailableBn)}</p>
       ${word.transliteration ? `<p class="word-card-transliteration">${escapeHtml(word.transliteration)}</p>` : ""}
       ${progressBlock(context.progress, context.authority, context.coverage, text, formatNumber)}
@@ -489,6 +576,22 @@ function originBar(origin, text) {
     `<button type="button" data-word-card-origin-back title="${escapeHtml(text.backToWordTitle)}" aria-label="${escapeHtml(String(text.backToWord).replace("{ref}", ref))}">↩ ${escapeHtml(ref)}</button></div>`;
 }
 
+/**
+ * Issue #263 -- the toggle is offered whenever this word HAS segments,
+ * whatever the current on/off state, so a reader can turn colouring back
+ * on; the legend only prints while colouring is actually showing.
+ */
+function segmentControlsHtml(segments, colourOn, text) {
+  if (!validSegments(segments)) return "";
+  const toggle = `<label class="word-card-segment-toggle"><input type="checkbox" data-word-card-colour-toggle${colourOn ? " checked" : ""}> ${escapeHtml(text.colourWordPartsToggle)}</label>`;
+  if (!colourOn) return `<div class="word-card-segment-controls">${toggle}</div>`;
+  const label = { particle: text.segmentLegendParticle, person: text.segmentLegendPerson, determiner: text.segmentLegendDeterminer, stem: text.segmentLegendStem };
+  const legend = WORD_SEGMENT_ROLES.filter((r) => segments.some((s) => s.role === r))
+    .map((r) => `<span class="word-card-segment-legend-item"><span class="word-card-segment-legend-dot word-card-segment-${r}">●</span>${escapeHtml(label[r])}</span>`)
+    .join("");
+  return `<div class="word-card-segment-controls">${toggle}<span class="word-card-segment-legend">${legend}</span></div>`;
+}
+
 export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, labels = {}, formatNumber = String } = {}) {
   if (!state?.open || !word) return "";
   const occurrenceId = quranWordOccurrenceId(chapter.surahNumber, ayah.ayah, word.position);
@@ -498,11 +601,18 @@ export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, 
   // the card its reader's own language. The English values are the fallback
   // for a caller that supplies nothing, never the only thing a reader can get.
   const text = { ...WORD_CARD_DEFAULT_LABELS, ...labels };
+  // Issue #263 -- on demand, per word: `context.wordSegments` is only ever
+  // set once the caller has loaded that surah's segment file (quran-word-
+  // segments.js); a word with no exact alignment, or before it has loaded,
+  // simply has none, and the card renders exactly as it always did.
+  const showSegmentColour = context.colourWordPartsEnabled && validSegments(context.wordSegments);
+  const arabicHtml = showSegmentColour ? segmentedArabicHtml(layers.surfaceToken, context.wordSegments) : escapeHtml(layers.surfaceToken);
   return `<section class="quran-word-card" role="region" aria-label="${escapeHtml(text.cardRegion)}" data-occurrence-id="${escapeHtml(occurrenceId)}">
     <header><button type="button" data-word-card-move="previous" aria-label="${escapeHtml(text.previous)}"${context.hasPrevious ? "" : " disabled"}>‹</button>
-      <div><div class="word-card-arabic" dir="rtl" lang="ar">${escapeHtml(layers.surfaceToken)}</div><div class="word-card-reference">${chapter.surahNumber}:${ayah.ayah}:${word.position}</div></div>
+      <div><div class="word-card-arabic" dir="rtl" lang="ar">${arabicHtml}</div><div class="word-card-reference">${chapter.surahNumber}:${ayah.ayah}:${word.position}</div></div>
       <button type="button" data-word-card-move="next" aria-label="${escapeHtml(text.next)}"${context.hasNext ? "" : " disabled"}>›</button>
       <button type="button" data-word-card-close aria-label="${escapeHtml(text.close)}">×</button></header>
+    ${segmentControlsHtml(context.wordSegments, context.colourWordPartsEnabled, text)}
     ${originBar(context.origin, text)}
     <div role="tablist" aria-label="${escapeHtml(text.tablist)}">${tabButton("wbw", state.level === "wbw", text.wbw)}${tabButton("basic", state.level === "basic", text.basic)}${tabButton("depth", state.level === "depth", text.depth)}</div>
     ${levelPanel(state.level, word, layers, context, text, formatNumber)}

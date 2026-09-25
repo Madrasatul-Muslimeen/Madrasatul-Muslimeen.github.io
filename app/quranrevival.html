@@ -2131,6 +2131,27 @@
   .quran-word-card header button:disabled { opacity: 0.4; cursor: default; }
   .quran-word-card header > div { flex: 1 1 auto; min-width: 0; }
   .word-card-arabic { font-family: var(--quran-font); font-size: 2rem; line-height: 1.5; }
+  /* Issue #263 -- word-part colouring. Deliberately plain inline spans with
+     nothing between them (no space, no other element) so Arabic contextual
+     shaping/joining survives the span boundaries -- proven in a real browser
+     by word-card-segments-browser.mjs (coloured vs. plain rendered width,
+     within 1px). All four measured >= 4.5:1 against this card's own
+     background (#fffdf6), which the card keeps even where it is mounted
+     inside Explore's dark panel (see the desktop-drag rule above -- only
+     the border/shadow/max-width are stripped there, never the background),
+     so no separate dark-panel palette is needed. */
+  /* Both the Arabic spans (segmentedArabicHtml) and the gloss spans
+     (segmentedGlossHtml) carry this same role class alongside their own
+     container class, so one rule per role colours both. */
+  .word-card-segment-particle { color: #1F3A6E; }
+  .word-card-segment-person { color: #B3261E; }
+  .word-card-segment-stem { color: #1E6B3C; }
+  .word-card-segment-determiner { color: #6A3FA0; }
+  .word-card-segment-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-top: 0.3rem; font-size: 0.8rem; }
+  .word-card-segment-toggle { display: inline-flex; align-items: center; gap: 0.3rem; cursor: pointer; }
+  .word-card-segment-legend { display: inline-flex; flex-wrap: wrap; gap: 0.5rem; }
+  .word-card-segment-legend-item { display: inline-flex; align-items: center; gap: 0.2rem; }
+  .word-card-segment-legend-dot { font-size: 0.7rem; line-height: 1; }
   .word-card-reference, .word-card-transliteration, .quran-word-card dd, .quran-word-card p { font-size: 0.9rem; }
   /* The boxes do not overlap -- measured, bottom meets top exactly -- but an
      Arabic kasra paints below its line box, so the reference sat against the
@@ -4359,6 +4380,7 @@
     import { parseQuranWordOccurrenceId } from "./js/quran-word-identity.js";
     import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard, renderQuranWordCard, WORD_CARD_POS_SEGMENTS } from "./js/quran-word-card.js";
     import { occurrenceRefsFor, rootFormsFor, unpackWordIndexRef } from "./js/quran-word-index.js";
+    import { wordSegmentsFor } from "./js/quran-word-segments.js";
     import { wordProgressAuthority, WBW_WORD_STATES, resolveWordProgress } from "./js/quran-word-progress.js";
     import { primeAyahProgress, getSurahProgress, wordProgressFor, setWordState, decideWordApproval, clearWordProgressCache } from "./js/quran-word-progress-data.js";
     import { computeArabicCoverage, occurrenceIdsForAyah, occurrenceIdsForAyahRange, occurrenceIdsForSurah } from "./js/quran-word-coverage.js";
@@ -4379,6 +4401,7 @@
       getQuranLastSession, setQuranLastSession,
       getExploreJuzView, setExploreJuzView,
       getExploreQuranView, setExploreQuranView,
+      getColourWordParts, setColourWordParts,
     } from "./js/prefs.js";
     import { wireWheelResize } from "./js/wheel-resize.js";
     import { renderTextSizeButtonHtml } from "./js/text-size.js";
@@ -10656,6 +10679,12 @@
         dictionaryUnavailable: t("Dictionary source unavailable"),
         // Issue #206 -- the Word Card's own occurrence-share line.
         wordShareOfQuran: t("Appears {count} times in the Qur'an — {percent}% of all words"),
+        // Issue #263 -- word-part colouring switch + legend.
+        colourWordPartsToggle: t("Colour word parts"),
+        segmentLegendParticle: t("particle"),
+        segmentLegendPerson: t("person"),
+        segmentLegendDeterminer: t("determiner"),
+        segmentLegendStem: t("stem"),
       };
     }
 
@@ -10886,7 +10915,9 @@
             ? `[data-word-progress-state="${focused.dataset.wordProgressState}"]`
             : focused?.dataset.wordProgressDecide
               ? `[data-word-progress-decide="${focused.dataset.wordProgressDecide}"]`
-              : focused?.hasAttribute("data-word-card-close") ? "[data-word-card-close]" : null;
+              : focused?.hasAttribute("data-word-card-close")
+                ? "[data-word-card-close]"
+                : focused?.hasAttribute("data-word-card-colour-toggle") ? "[data-word-card-colour-toggle]" : null;
       let ref;
       try { ref = parseQuranWordOccurrenceId(quranWordCardState.occurrenceId); } catch { quranWordCardState = closeWordCard(quranWordCardState); clearWordCardMounts(); return; }
       if (ref.surah !== currentSurahNum) { clearWordCardMounts(); return; }
@@ -10898,7 +10929,7 @@
       wordCardMountEls().forEach((m) => { if (m !== mount) { m.hidden = true; const c = m.querySelector("[data-word-card-content]"); if (c) c.innerHTML = ""; } });
       mount.hidden = false;
       const content = mount.querySelector("[data-word-card-content]") ?? mount;
-      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, ...wordProgressContext(ref), hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0 }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, ...wordProgressContext(ref), hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: getColourWordParts() }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
       if (focusSelector) (mount.querySelector(focusSelector)?.disabled ? mount.querySelector("[data-word-card-close]") : mount.querySelector(focusSelector))?.focus({ preventScroll: true });
     }
 
@@ -10923,13 +10954,19 @@
       try {
         // v08.21 -- the derived forms come from the SAME two packaged indexes
         // these two reads already load, so this adds no new fetch.
-        const [rootOccurrences, lemmaOccurrences, rootForms] = await Promise.all([
+        // Issue #263 -- the word-part segments load alongside, on demand and
+        // cached per surah (quran-word-segments.js); a failed load (or a
+        // word with no exact alignment) never breaks the rest of the card --
+        // it just leaves the word uncoloured, so its own errors are caught
+        // here rather than joining the root/lemma `Promise.all` rejection.
+        const [rootOccurrences, lemmaOccurrences, rootForms, wordSegments] = await Promise.all([
           occurrenceRefsFor("root", word.morphology?.root),
           occurrenceRefsFor("lemma", word.morphology?.lemma),
           word.morphology?.root ? rootFormsFor(word.morphology.root) : null,
+          wordSegmentsFor(ref.surah, ref.ayah, ref.position).catch(() => null),
         ]);
         if (request !== quranWordCardRequest || !quranWordCardState.open || quranWordCardState.occurrenceId !== requestedId || currentSurahNum !== ref.surah) return;
-        quranWordCardContext = { rootOccurrences, lemmaOccurrences, rootForms, rootOccurrenceCount: rootOccurrences.length, lemmaOccurrenceCount: lemmaOccurrences.length, expandedForm: quranWordCardExpandedForm, lemmaExpanded: false };
+        quranWordCardContext = { rootOccurrences, lemmaOccurrences, rootForms, rootOccurrenceCount: rootOccurrences.length, lemmaOccurrenceCount: lemmaOccurrences.length, expandedForm: quranWordCardExpandedForm, lemmaExpanded: false, wordSegments };
       } catch (error) {
         if (request !== quranWordCardRequest || !quranWordCardState.open || quranWordCardState.occurrenceId !== requestedId || currentSurahNum !== ref.surah) return;
         quranWordCardContext = { occurrencesError: error.message };
@@ -11305,6 +11342,17 @@
       if (event.target.closest("[data-word-card-close]")) { quranWordCardRequest++; quranWordCardOrigin = null; renderWordCardReturnBar(); quranWordCardState = closeWordCard(quranWordCardState); renderPersistentWordCard(); if (quranWordCardTrigger?.isConnected) quranWordCardTrigger.focus({ preventScroll: true }); return; }
       const move = event.target.closest("[data-word-card-move]");
       if (move) { quranWordCardState = moveWordCard(quranWordCardState, wordCardOccurrenceIds(), move.dataset.wordCardMove); quranWordCardContext = {}; renderPersistentWordCard(); hydrateWordCardOccurrences(); hydrateWordProgress(); }
+    });
+    // Issue #263 -- the "Colour word parts" switch is a per-device
+    // preference (prefs.js), not word-card state, so it survives Prev/Next
+    // and re-opening the card; toggling it only re-renders, it never
+    // re-fetches the segments already loaded for this word.
+    document.getElementById(viewId).addEventListener("change", (event) => {
+      if (!(event.target instanceof Element)) return;
+      if (event.target.closest("[data-word-card-colour-toggle]")) {
+        setColourWordParts(event.target.checked);
+        renderPersistentWordCard();
+      }
     });
     document.getElementById(viewId).addEventListener("keydown", (event) => {
       if (!quranWordCardState.open || !(event.target instanceof Element)) return;

@@ -2291,6 +2291,12 @@ export const BN = {
   "Derived forms of this root": "এই ধাতু থেকে উৎপন্ন রূপসমূহ",
   // Issue #206 -- the Word Card's own occurrence-share line.
   "Appears {count} times in the Qur'an — {percent}% of all words": "কুরআনে {count} বার এসেছে — সকল শব্দের {percent}%",
+  // Issue #263 -- word-part colouring switch + legend.
+  "Colour word parts": "শব্দাংশ রঙিন করা",
+  "particle": "অব্যয়",
+  "person": "পুরুষ",
+  "determiner": "নির্দেশক",
+  "stem": "কাণ্ড",
   "{total} occurrences in {forms} derived forms": "{forms}টি উৎপন্ন রূপে {total}টি ব্যবহার",
   "{count} occurrences": "{count}টি ব্যবহার",
   "Category not recorded": "শ্রেণি লিপিবদ্ধ নেই",

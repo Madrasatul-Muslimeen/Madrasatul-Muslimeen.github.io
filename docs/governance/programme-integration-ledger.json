@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.64",
+    "version": "08.65",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -545,8 +545,20 @@
     {
       "version": "08.64",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Word by Word gets its own Explore tab (issue #261), on the Owner's 'Yes, make WbW its own tab in Explore.' Qur'an wheel of 30 Juz coloured by words known, Juz list with percentages, tap a Juz for its Surahs (per-surah word totals derived by build-surah-word-totals.js), open a Surah for its Ruku' breakdown. The dead Approach | Word by Word toggle on the Quran tab (#206) removed; the gold ring stays. At most one counter read when the tab opens, none on the landing path (I9). Review restored 17 Mapping My Journey Bangla strings (#259) and 127 CHANGELOG lines the builder's branch deleted. explore-wbw-tab.mjs 91/0, quran-word-total-boundary 31/0, journey-map-screen 48/0, journey-map-back 38/0.",
+      "integration": {
+        "authorizedOn": "2026-09-25",
+        "integratedOn": "2026-09-25",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "08.65",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Word Card word-part colouring (issue #263), on the Owner's 'Look at the coloring of each segment of a word. Make this.' Each word's Quranic Arabic Corpus segments (particle, person, stem, and so on) coloured in the Arabic and in the matching words of the English gloss, with a legend and a 'Colour word parts' switch (on by default, remembered on the device). Data is packaged per surah under tools/quran-data-pull/output/word-segments (build-word-segments.mjs; 99.64% of words aligned, the rest shown uncoloured) and loaded only when a Word Card opens (I9). Colours measured at 4.5:1 or better against the card. word-segments-data 10/0, word-card-segments-browser 40/0 (the sandbox's failed outside loads now filtered, as elsewhere), quran-word-card 36/0, -integration 10/0, -return 55/0.",
       "integration": {
         "authorizedOn": "2026-09-25",
         "integratedOn": "2026-09-25",
@@ -555,8 +567,9 @@
       }
     }
   ],
-  "nextUnallocated": "08.65",
+  "nextUnallocated": "08.66",
   "nextUnallocatedNote": [
+    "v08.65 was allocated to Word Card colours each part of an Arabic word and the matching part of its meaning (issue #263), 2026-09-25.",
     "v08.64 was allocated to Word by Word as its own Explore tab (issue #261), 2026-09-25.",
     "v08.63 was allocated to the Siyagah-style folder tree in Mapping My Journey (issue #259), 2026-09-25.",
     "v08.62 was allocated to the Mapping My Journey Back button, on the Owner's report, 2026-09-25.",

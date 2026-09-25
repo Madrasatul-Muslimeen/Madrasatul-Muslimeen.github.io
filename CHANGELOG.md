@@ -18209,3 +18209,147 @@ v08.63's folder tree (`app/js/i18n/bn.js`), and 127 lines of this log
 `#206` "Colour the wheel by" key and toggle was deliberate and is kept.
 Checks: `explore-wbw-tab.mjs` 91/0, `quran-word-total-boundary.mjs` 31/0,
 `journey-map-screen.mjs` 48/0, `journey-map-back.mjs` 38/0. Screenshot looked at, 390px English.
+
+## 25 Sep 2026 — Word Card: colour each part of an Arabic word, and the matching part of its English meaning (issue #263, NO VERSION BUMP — the Architect allocates one)
+
+The Owner showed a screenshot from another Qur'an app's word pop-up:
+وَيَصُدُّونَ (14:3:7) with وَ blue, يَ red, صُدُّ green, ونَ red, and its gloss
+coloured to match — "so a learner sees which part of the Arabic carries which
+part of the meaning." Built in two halves: a new build script that derives
+per-segment colouring data from the same Quranic Arabic Corpus morphology
+file `pull.js` already downloads, and the Word Card wired to use it.
+
+**`tools/quran-data-pull/build-word-segments.mjs`** reads one row per word
+SEGMENT (Buckwalter form + tag + features) and, for every word whose
+segments can be aligned EXACTLY to the already-packaged Uthmani text
+(`output/surahs/surah_NNN.json`, byte-for-byte untouched), writes character
+offsets into that word's own `arabic` string plus a role
+(particle/person/determiner/stem) and an English cue per segment, to a new
+`output/word-segments/surah_NNN.json` per surah (114 files + a manifest).
+**A word that cannot be aligned exactly gets no entry at all — never a
+guess** — the Word Card then shows it uncoloured, exactly as today.
+
+Alignment compares LETTER SKELETONS (a positive whitelist of Arabic letters,
+canonicalising hamza-on-alif forms and alif wasla to bare alif, ta marbuta to
+ha, alif maksura to ya — the same mapping `pull.js`'s own
+`normalizeArabicForMatch` already uses) rather than the raw text: harakat,
+shadda, sukun, dagger alif, madda/hamza-above combining marks, Qur'anic
+pause/small-letter annotations, tatweel and a trailing quran.com pause-mark
+space all fall out of the whitelist automatically, so they attach to the
+letter before them as trailing decoration — which is also what makes a
+segment's own diacritics, and the very last segment's trailing pause mark,
+stay inside its own offsets with no separate strip step. **This measurably
+improves on the coverage `pull.js`'s own word-level matching gets** (64.5%,
+per `manifest.json`) because that function's diacritic-strip regex does not
+cover the madda/hamza-above marks (U+0653/U+0654) the packaged Uthmani text
+actually uses on ~7% of characters — this round's own whitelist approach
+does not need to enumerate them at all. **Result: 77,147 of 77,429 words
+aligned (99.64%)**, printed by the script and recorded in
+`output/word-segments/manifest.json`. The 0.36% that fail are genuinely
+unalignable under this round's own "never guess" rule — overwhelmingly words
+using the Qur'anic combining-hamza-on-tatweel spelling for a medial hamza
+(e.g. اَلْـَٔاخِرَة), which the whitelist correctly refuses to collapse into a
+letter rather than guess it away.
+
+QAC keeps the imperfect verb's person prefix (ya-/ta-/na-/hamza-) INSIDE the
+verb stem's own row — splitting it off as its own "person" segment (the
+issue's own worked example: يَ off of يَصُدُّ) is done by recognising the eight
+Buckwalter prefix forms (ya/yu/ta/tu/na/nu/>a/>u) on a `STEM|V|IMPF` row and
+reading the subject pronoun off that row's own person/number/gender feature
+(3MP → "they"). Every cue is a single, well-known word or a `|`-separated
+set of them (`w`/CONJ → "and", `bi` → "with|by|in", DET → "the") — never
+guessed for a particle whose translation genuinely varies by context
+(resumption, circumstantial, causative, interrogative, energetic/vocative
+suffixes all stay `cue: null`, same as every stem).
+
+**`app/js/quran-word-segments.js`** loads a surah's segment file ON DEMAND,
+the first time a Word Card for that surah opens, and caches it — the same
+per-surah on-demand shape `quran-word-index.js` already uses for the
+root/lemma occurrence indexes (I9: nothing joins the startup path).
+**`app/js/quran-word-card.js`** gains `segmentedArabicHtml()` (plain
+`<span>`s with nothing between them, so Arabic contextual shaping/joining
+survives the span boundaries — proven in a real browser by measuring
+rendered width, coloured vs. plain, within 1px) and `segmentedGlossHtml()`
+(a segment's own cue, found as a WHOLE word case-insensitively in the
+English gloss, colours that word; every other word takes the stem colour;
+a cue not found in this particular gloss colours nothing). Both are wired
+into the card's header Arabic and the WbW tab's English gloss; **the Bangla
+gloss stays plain this round — no Bangla cue table was built**, said in the
+code rather than left silent. A small legend line ("● particle ● person ●
+stem", only the roles the current word actually has) and a per-device
+**"Colour word parts"** switch (on by default, `localStorage`, try/catch —
+`prefs.js`'s `getColourWordParts()`/`setColourWordParts()`, the same
+additive shape every other reading preference in this app already uses) sit
+under the header whenever a word has segments; the toggle stays offered
+even with colouring off, the legend only while it is on.
+
+Four colours, each measured **>= 4.5:1 against the card's own background**
+(`#fffdf6`, which the card keeps even mounted inside Explore's dark panel —
+only its border/shadow/max-width are stripped there, never the background,
+so no separate dark-panel palette was needed): particle `#1F3A6E` (10.92:1,
+this app's own existing primary blue), person `#B3261E` (6.42:1), stem
+`#1E6B3C` (6.40:1), determiner `#6A3FA0` (7.29:1).
+
+**`tools/i18n-verify/word-segments-data.mjs` — 10/10 passing**, pure (no
+network, no browser): the issue's own worked example (14:3:7, checked by
+letter skeleton rather than a hand-typed literal — Arabic combining-mark
+order is not stable across a text-editor round trip, which is exactly the
+class of problem this round's own alignment algorithm had to solve for QAC
+vs. Uthmani spelling); a full sweep proving every one of the 77,147 aligned
+words' segments cover their own `arabic` string exactly, in order, with no
+gaps or overlaps, and every role/cue is well-formed; a real determiner
+example (2:2) and a real preposition example (2:3); a real unalignable word
+(2:4:10) has no entry; coverage >= 99%, cross-checked against a fresh
+recount of the files rather than trusting the manifest; the build's own
+pure functions proven deterministic. **Two checks mutation-proven**: the
+`deepEqual` comparison on the worked example, and the gap/overlap validator
+the full sweep relies on. The full build script was independently re-run
+twice during this round and produced byte-identical output both times
+(114 files + manifest, 0 bytes different) — recorded here rather than
+re-run inside the test suite, since a second full network fetch does not
+belong in a suite that runs offline.
+
+**`tools/i18n-verify/word-card-segments-browser.mjs` is WRITTEN BUT
+UNRUN** — `playwright` is not resolvable in this sandbox, the same
+documented, repeated environment gap every browser-driven suite in this
+project records. It opens the real app on 14:3:7 and checks: four coloured
+spans with the right roles; each rendered colour's measured contrast; the
+real gloss's "and" coloured to match (the real gloss for this word, "and
+hinder", has no word matching the person cue "they", so the person-cue
+gloss mechanism is separately proven directly, by importing
+`segmentedGlossHtml()` and feeding it a synthetic gloss that does contain
+"they"); coloured-vs-plain rendered width within 1px; the switch turning
+colouring off; both languages; 390px and 1100px. **The unmodified
+`quran-word-card.mjs` suite (36/36) and `quran-word-card-return.mjs` (real
+browser, unrun for the same reason) were re-checked against this round's
+diff**: every new context field (`wordSegments`, `colourWordPartsEnabled`)
+defaults to absent/false for a caller that supplies neither, so a word
+with no segments — or a page that has not wired this round in at all —
+renders byte-identical markup to before.
+
+I11: `colourWordPartsToggle`/`segmentLegendParticle`/`segmentLegendPerson`/
+`segmentLegendDeterminer`/`segmentLegendStem` are in `app/js/i18n/bn.js` in
+real Bengali characters.
+
+**Do not touch, and did not**: `app/js/version.js`, `CLAUDE.md`,
+`firestore.rules`, `firebase.json`, `.github/workflows/**`, and every
+existing `output/surahs/*.json` file (byte-for-byte untouched — this round
+only ADDS a new folder). No Firestore write, Rule or index. **This round
+needs a version number, which only the Architect allocates.**
+
+**Checks re-run from the repository root**: `programme-ledger`,
+`programme-ledger-mutations`, `brief-integrity`,
+`study-activity-evidence-boundary` (+ mutations), `study-event-wiring`,
+`rules-authorisation-executable`, `workflow-expressions`, `stub-parity`,
+`word-segments-data` (10/10, new), `quran-word-card` (36/36) — all clean;
+`word-card-segments-browser` and `quran-word-card-return` are real-browser
+and unrun in this sandbox for the reason stated above.
+
+**v08.65 (25 Sep 2026).** Issue #263's round above, allocated by the MMSA
+Architect. It was merged with current `main`: `CHANGELOG.md` conflicted,
+and was resolved as `main`'s log plus this round's entry, with 0 lines
+deleted. `word-card-segments-browser.mjs` now ignores the sandbox proxy's
+failed outside loads, the same filter `journey-map-screen.mjs` uses. Checks:
+word-segments-data 10/0, word-card-segments-browser 40/0, quran-word-card
+36/0, quran-word-card-integration 10/0, quran-word-card-return 55/0, and
+explore-wbw-tab 91/0 still passes. Screenshot looked at: وَيَصُدُّونَ (14:3:7).

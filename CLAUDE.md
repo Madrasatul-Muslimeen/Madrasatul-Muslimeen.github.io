@@ -158,7 +158,16 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.64 on `main`** (25 Sep 2026 — the Owner: *"Yes,
+**Current milestone: v08.65 on `main`** (25 Sep 2026 — the Owner: *"Look
+at the coloring of each segment of a word. Make this."* The Word Card now
+colours each part of an Arabic word (particle, person, stem…) from the
+Quranic Arabic Corpus, and colours the matching words of the English
+meaning. It has a legend and a **Colour word parts** switch, which is on by
+default. The data is packaged per surah (99.64% of words aligned; the rest
+show uncoloured) and loaded only when a Word Card opens (issue #263). Every
+colour measures at least 4.5:1 against the card.)
+
+**Previous milestone: v08.64 on `main`** (25 Sep 2026 — the Owner: *"Yes,
 make WbW its own tab in Explore."* Explore gains a **Word by Word** tab
 (issue #261): a Qur'an wheel of 30 Juz coloured by words known, a Juz list
 with percentages, a Juz's Surahs, and a Surah's Ruku' breakdown. The Quran
