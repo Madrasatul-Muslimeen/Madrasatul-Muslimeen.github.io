@@ -24,7 +24,7 @@ import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./lang-syn
 import { t, num, asmaName, translateStatic } from "./i18n.js";
 import { safeWrite } from "./errors.js";
 import {
-  bootstrapContext, getActiveContext, setActiveContext,
+  getMyMembershipRoles, hydrateMemberships, pickContext, getActiveContext, setActiveContext,
   effectiveRoles, scopedRoster, getSelectedPersonId, setSelectedPersonId,
 } from "./session-context.js";
 import { getTrackables } from "./catalogue.js";
@@ -71,6 +71,17 @@ export function initAsmaStudyPage() {
     navHomeExtra.innerHTML = renderHomeExtras(roles);
     mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid }); // v07.37 -- Settings -> Language, saved to the account so it follows this person to their other devices
     mountBookmarkMenu(navBar, { db, getTenantId: () => activeTenantId, getPersonId: () => selectedPersonId, getBookmarksDoc: () => bookmarksDoc, getRoster: () => roster });
+  }
+  // LOAD SPEED part 4 (issue #280): same helper as topic-study.js/
+  // routine-study.js/records.html -- the tenant picker's real names come
+  // from hydrateMemberships(), fired alongside roster/trackables rather
+  // than awaited before either (see loadContextData()), so this renders
+  // once with each tenant's raw id as a placeholder label, and is called
+  // again the moment real names are in.
+  function renderTenantSelect(memberships) {
+    tenantSelect.innerHTML = memberships
+      .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName ?? m.tenantId} (${roleListLabel(m.roles)})</option>`)
+      .join("");
   }
   const tenantSelect = document.getElementById("tenantSelect");
   const personSelect = document.getElementById("personSelect");
@@ -501,13 +512,23 @@ export function initAsmaStudyPage() {
     asmaCatToggleBtn.textContent = t("Browse by Category");
   }
 
-  async function loadContextData() {
+  async function loadContextData(hydratedMembershipsPromise) {
     // LOAD SPEED (Aug 2026): the trackables read used to sit on its own,
     // after the roster had already come back, and behind three seeding
     // checks before that. It depends on neither.
-    let [rosterSnap, trackables] = await Promise.all([
+    //
+    // LOAD SPEED part 4 (issue #280): this page never read the active
+    // tenant's own document (no per-tenant setting it needs), so the only
+    // repeat to close is hydrateMemberships() itself being awaited BEFORE
+    // this wave could even start. The FIRST call passes the in-flight
+    // promise the sign-in wave already started, folding it into this same
+    // round trip; a tenant SWITCH calls this with no argument, and
+    // myMemberships is simply left as whatever the switch handler already
+    // set from its own (already-hydrated) membership list.
+    let [rosterSnap, trackables, hydratedMemberships] = await Promise.all([
       getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId))),
       getTrackables(db, activeTenantId),
+      hydratedMembershipsPromise ?? Promise.resolve(undefined),
     ]);
     // Asma's 99 Names are fixed platform data, not a tenant-authored tree,
     // so the thing that has to exist for this page is its own trackable --
@@ -517,6 +538,10 @@ export function initAsmaStudyPage() {
       trackables = await getTrackables(db, activeTenantId);
     }
     roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    if (hydratedMemberships !== undefined) {
+      myMemberships = hydratedMemberships;
+      renderTenantSelect(myMemberships);
+    }
 
     const context = getActiveContext();
     const activeMembership = myMemberships.find((m) => m.tenantId === activeTenantId);
@@ -893,25 +918,35 @@ export function initAsmaStudyPage() {
     }
 
     try {
+      // LOAD SPEED part 4 (issue #280) -- see topic-study.js's own copy of
+      // this comment for the full reasoning.
+      const membershipRolesPromise = getMyMembershipRoles(db, user.uid);
+      membershipRolesPromise.catch(() => {}); // see the real await below; this only stops a reload (adoptAppLangFromUserIndex) from logging it as unhandled.
+
       const userIndexSnap = await step("read your userIndex", () => getDoc(doc(db, TENANT.USER_INDEX, user.uid)));
       // v07.37: if this account has a language set on another device, take it
       // and reload. Costs no extra read -- the snapshot is already in hand.
       if (adoptAppLangFromUserIndex(userIndexSnap)) return;
       const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
 
-      // One membership load, not two. bootstrapContext() hands back the very
-      // list it used to choose the context -- the page used to fetch that
-      // same list a second time, one round trip later, for the tenant picker.
-      const { context, memberships } = await step("initialize active context", () => bootstrapContext(db, user.uid, defaultTenantId));
+      // One membership load, not two: this page used to fetch its own
+      // second copy, one round trip later, for the tenant picker -- now it
+      // is the very list pickContext() itself chooses from.
+      const membershipRoles = await step("load your tenant memberships", () => membershipRolesPromise);
+      const context = pickContext(membershipRoles, defaultTenantId);
       if (!context) {
         whoEl.innerHTML += noAccountMessageHtml();
         return;
       }
       activeTenantId = context.tenantId;
-      myMemberships = memberships;
-      tenantSelect.innerHTML = myMemberships
-        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
-        .join("");
+
+      // The tenant picker's real names ride alongside the roster/trackables
+      // reads inside loadContextData() now, rather than being awaited
+      // before either.
+      const hydratedMembershipsPromise = step("load tenant names", () => hydrateMemberships(db, membershipRoles));
+      hydratedMembershipsPromise.catch(() => {}); // real failure surfaces via the awaited copy inside loadContextData()/below.
+
+      renderTenantSelect(membershipRoles.map((m) => ({ ...m, tenantName: m.tenantId })));
 
       appEl.style.display = "block";
       // Still self-repairing, but no longer at the person's expense. The
@@ -921,7 +956,7 @@ export function initAsmaStudyPage() {
       // data it reads for itself turns out to be missing, and the full drift
       // check runs in the background once the page is usable. See
       // catalogue-repair.js for the whole reasoning.
-      await step("load Asma ul Husna", loadContextData);
+      await step("load Asma ul Husna", () => loadContextData(hydratedMembershipsPromise));
       repairCatalogueInBackground(db, activeTenantId, user.uid, loadContextData);
     } catch (err) {
       whoEl.textContent += ` — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`;

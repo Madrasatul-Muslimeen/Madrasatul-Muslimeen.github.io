@@ -32,7 +32,7 @@ import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./lang-syn
 import { t, translateStatic } from "./i18n.js";
 import { safeWrite } from "./errors.js";
 import {
-  bootstrapContext, getActiveContext, setActiveContext,
+  getMyMembershipRoles, hydrateMemberships, pickContext, getActiveContext, setActiveContext,
   effectiveRoles, scopedRoster, getSelectedPersonId, setSelectedPersonId,
 } from "./session-context.js";
 import { getSubjectTree, getTrackables } from "./catalogue.js";
@@ -91,6 +91,18 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
   const continueStripContainer = document.getElementById("continueStrip");
   const reminderBanner = document.getElementById("reminderBanner"); // optional
 
+  // LOAD SPEED part 4 (issue #280): same as topic-study.js's own copy of
+  // this helper -- the tenant picker's real names come from
+  // hydrateMemberships(), fired alongside roster/subject-tree/trackables
+  // rather than awaited before any of them (see loadContextData()), so this
+  // renders once with each tenant's raw id as a placeholder label, and is
+  // called again the moment real names are in.
+  function renderTenantSelect(memberships) {
+    tenantSelect.innerHTML = memberships
+      .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName ?? m.tenantId} (${roleListLabel(m.roles)})</option>`)
+      .join("");
+  }
+
 
   signInBtn.addEventListener("click", () => {
     signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
@@ -146,13 +158,23 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
       .map((p) => ({ id: p.id, name: langText(p.name, getAppLang(), p.id), isSelf: p.id === myPersonId }));
   }
 
-  async function loadContextData() {
+  async function loadContextData(hydratedMembershipsPromise) {
     // LOAD SPEED (Aug 2026): one wave, not three -- see topic-study.js's own
     // copy of this comment. The subject tree and trackables do not depend on
     // the roster, so there was never a reason to wait for it first.
-    let [rosterSnap, tenantSnap, tree, trackables] = await Promise.all([
+    //
+    // LOAD SPEED part 4 (issue #280): the tenant document itself is no
+    // longer a guaranteed second read of the same collection in this wave --
+    // see topic-study.js's own copy of this comment for the full reasoning.
+    // The FIRST call passes the in-flight hydrateMemberships() promise the
+    // sign-in wave already started; a tenant SWITCH calls this with no
+    // argument, so its document is read fresh.
+    const tenantDataPromise = hydratedMembershipsPromise !== undefined
+      ? hydratedMembershipsPromise
+      : getDoc(doc(db, TENANT.TENANTS, activeTenantId)).then((snap) => (snap.exists() ? snap.data() : null));
+    let [rosterSnap, tenantDataResult, tree, trackables] = await Promise.all([
       getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId))),
-      getDoc(doc(db, TENANT.TENANTS, activeTenantId)),
+      tenantDataPromise,
       getSubjectTree(db, activeTenantId),
       getTrackables(db, activeTenantId),
     ]);
@@ -164,7 +186,17 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
       ]);
     }
     roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    tenantWeekStartsOn = tenantSnap.exists() ? (tenantSnap.data().weekStartsOn ?? 6) : 6;
+    // On the FIRST call, `tenantDataResult` is the full hydrated membership
+    // list -- see topic-study.js's own copy of this comment.
+    let tenantData;
+    if (hydratedMembershipsPromise !== undefined) {
+      myMemberships = tenantDataResult;
+      tenantData = myMemberships.find((m) => m.tenantId === activeTenantId)?.tenantData ?? null;
+      renderTenantSelect(myMemberships);
+    } else {
+      tenantData = tenantDataResult;
+    }
+    tenantWeekStartsOn = tenantData?.weekStartsOn ?? 6;
 
     const { viewAsRole, effRoles, myPersonId } = currentPreview();
     renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], viewAsRole);
@@ -563,25 +595,36 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
     }
 
     try {
+      // LOAD SPEED part 4 (issue #280) -- see topic-study.js's own copy of
+      // this comment for the full reasoning.
+      const membershipRolesPromise = getMyMembershipRoles(db, user.uid);
+      membershipRolesPromise.catch(() => {}); // see the real await below; this only stops a reload (adoptAppLangFromUserIndex) from logging it as unhandled.
+
       const userIndexSnap = await step("read your userIndex", () => getDoc(doc(db, TENANT.USER_INDEX, user.uid)));
       // v07.37: if this account has a language set on another device, take it
       // and reload. Costs no extra read -- the snapshot is already in hand.
       if (adoptAppLangFromUserIndex(userIndexSnap)) return;
       const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
 
-      // One membership load, not two. bootstrapContext() hands back the very
-      // list it used to choose the context -- the page used to fetch that
-      // same list a second time, one round trip later, for the tenant picker.
-      const { context, memberships } = await step("initialize active context", () => bootstrapContext(db, user.uid, defaultTenantId));
+      // One membership load, not two: this page used to fetch its own
+      // second copy, one round trip later, for the tenant picker -- now it
+      // is the very list pickContext() itself chooses from.
+      const membershipRoles = await step("load your tenant memberships", () => membershipRolesPromise);
+      const context = pickContext(membershipRoles, defaultTenantId);
       if (!context) {
         whoEl.innerHTML += noAccountMessageHtml();
         return;
       }
       activeTenantId = context.tenantId;
-      myMemberships = memberships;
-      tenantSelect.innerHTML = myMemberships
-        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
-        .join("");
+
+      // The tenant picker's real names, and loadContextData()'s own tenant
+      // document, both come from the SAME hydration call now -- fired here,
+      // alongside tenantPeople/subject-tree/trackables (inside
+      // loadContextData), rather than awaited before any of them.
+      const hydratedMembershipsPromise = step("load tenant names", () => hydrateMemberships(db, membershipRoles));
+      hydratedMembershipsPromise.catch(() => {}); // real failure surfaces via the awaited copy inside loadContextData()/below.
+
+      renderTenantSelect(membershipRoles.map((m) => ({ ...m, tenantName: m.tenantId })));
 
       appEl.style.display = "block";
       // Still self-repairing, but no longer at the person's expense. The
@@ -591,7 +634,7 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
       // data it reads for itself turns out to be missing, and the full drift
       // check runs in the background once the page is usable. See
       // catalogue-repair.js for the whole reasoning.
-      await step("load this module", loadContextData);
+      await step("load this module", () => loadContextData(hydratedMembershipsPromise));
       repairCatalogueInBackground(db, activeTenantId, user.uid, loadContextData);
     } catch (err) {
       whoEl.textContent += ` — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`;
