@@ -602,3 +602,4 @@ total). Allocated by the MMSA Architect.
 08.73: speed part 5: Mapping My Journey at the Owner's real size draws its folder tree first and loads in parallel shards (issue #282). Allocated by the MMSA Architect.
 08.74: speed part 6a: Monitor and Catalogue startup (issue #285). Allocated by the MMSA Architect.
 08.75: Mushaf āyah menu (issue #286). Allocated by the MMSA Architect.
+08.76: speed part 6b (issue #288). Allocated by the MMSA Architect.
