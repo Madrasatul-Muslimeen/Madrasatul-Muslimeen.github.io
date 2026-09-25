@@ -295,6 +295,16 @@ console.log(`\n=== Ayah Card -- number badge, Take an Approach, Status B (issue 
   check("Status B.2 reads 'Known 2 of 4 words', matching the seeded lane independently (not the app's own arithmetic)", wbwCount === "Known 2 of 4 words", wbwCount);
   const knownChips = await page.evaluate(() => document.querySelectorAll(".ayah-wbw-chip.is-known").length);
   check("exactly 2 chips carry is-known, the same 2 the count line reports", knownChips === 2, String(knownChips));
+  // Architect review: the chips first shipped with no colour of their own and
+  // inherited the app's WHITE button text -- invisible on cream, while every
+  // other assertion here passed. Measure the rendered contrast of both kinds.
+  const chipContrast = await page.evaluate(() => {
+    const lum = (c) => { const [r, g, b] = c.match(/\d+/g).slice(0, 3).map(Number).map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+    const ratio = (el) => { const cs = getComputedStyle(el); const a = lum(cs.color), b = lum(cs.backgroundColor); return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05); };
+    return [...document.querySelectorAll(".ayah-wbw-chip")].map(ratio);
+  });
+  check("every Word by Word chip's text is readable: contrast at least 4.5:1 against its own background",
+    chipContrast.length > 0 && chipContrast.every((r) => r >= 4.5), JSON.stringify(chipContrast.map((r) => r.toFixed(2))));
 
   // --- tapping a Word by Word chip still opens the Word Card ---
   await clickSafely(page, ".ayah-wbw-row .ayah-wbw-chip:not(.is-known)");
@@ -318,12 +328,22 @@ console.log(`\n=== Ayah Card -- number badge, Take an Approach, Status B (issue 
     !!claimWrite && Object.keys(claimWrite.data ?? {}).includes("entries.ayah:1:1::recite"), JSON.stringify(claimWrite?.data && Object.keys(claimWrite.data)));
   const writtenEntry = claimWrite?.data?.["entries.ayah:1:1::recite"];
   check("the claim is recorded as 'learning' -- the Ayah Card's own single-step default", writtenEntry?.claimedStatus === "learning", JSON.stringify(writtenEntry));
-  const selectReset = await page.evaluate(() => document.querySelector("[data-ayah-sheet-approach-select]")?.value);
-  check("the pull-down resets to its own placeholder after firing (no lingering false 'still selected' state)", selectReset === "", selectReset);
+  // Architect review: choosing an Approach closes the card (the claim is the
+  // whole action), so there is no pull-down left to reset -- assert that
+  // instead of reading a select that no longer exists.
+  const afterPick = await page.evaluate(() => ({
+    open: !!document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"),
+    select: document.querySelector("[data-ayah-sheet-approach-select]")?.value ?? null,
+  }));
+  check("after choosing an Approach the card closes -- no lingering 'still selected' pull-down", !afterPick.open && afterPick.select === null, JSON.stringify(afterPick));
   const sheetClosedAfterClaim = await page.evaluate(() => !document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"));
   check("choosing an Approach closes the card (same 'close first' rule every other action follows)", sheetClosedAfterClaim);
 
   // --- entry point (c), Note view: the same number badge, built locally there ---
+  // Note lives inside the Study menu; open it first (CLAUDE.md: a control
+  // moved into a menu still RESOLVES but is 0x0 until the menu opens).
+  const noteReachable = await page.evaluate(() => (document.getElementById("tabNoteBtn")?.getBoundingClientRect().width ?? 0) > 0);
+  if (!noteReachable) { await page.click("#tabStudyBtn"); await page.waitForTimeout(150); }
   await page.click("#tabNoteBtn");
   await page.waitForTimeout(1200);
   const noteBadge = await page.$('#noteView [data-ayah-num-badge="1:1"]');
