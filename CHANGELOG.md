@@ -18344,3 +18344,12 @@ needs a version number, which only the Architect allocates.**
 `word-segments-data` (10/10, new), `quran-word-card` (36/36) — all clean;
 `word-card-segments-browser` and `quran-word-card-return` are real-browser
 and unrun in this sandbox for the reason stated above.
+
+**v08.65 (25 Sep 2026).** Issue #263's round above, allocated by the MMSA
+Architect. It was merged with current `main`: `CHANGELOG.md` conflicted,
+and was resolved as `main`'s log plus this round's entry, with 0 lines
+deleted. `word-card-segments-browser.mjs` now ignores the sandbox proxy's
+failed outside loads, the same filter `journey-map-screen.mjs` uses. Checks:
+word-segments-data 10/0, word-card-segments-browser 40/0, quran-word-card
+36/0, quran-word-card-integration 10/0, quran-word-card-return 55/0, and
+explore-wbw-tab 91/0 still passes. Screenshot looked at: وَيَصُدُّونَ (14:3:7).
