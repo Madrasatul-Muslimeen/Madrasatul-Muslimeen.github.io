@@ -18101,6 +18101,115 @@ which never mutates its own data. It now seeds a real folder, and
 are correct and there is no sideways scroll. Recorded, not changed: at desktop
 width the row actions still sit behind ⋯ rather than showing as separate icons.
 
+**Issue #261 (25 Sep 2026, no version bump — the Architect allocates one).**
+**Word by Word gets its own Explore tab.** The Owner: *"Yes, make WbW its own
+tab in Explore."* Issue #206's gold ring/caption stayed inside the Quran
+tab, alongside an "Approach | Word by Word" wedge-colouring toggle
+(`#exploreWheelColorToggle`) that also rendered, doing nothing, in the
+Surahs view — the Owner reported they could not find Word-by-Word colouring
+at all. That toggle and its Quran-tab overlay branch (`wbwMode`/`it.fill =`
+in `renderExploreQuranLevel()`) are **removed outright**, not re-gated; the
+Quran tab's own Approach colouring, gold ring and "words known" caption are
+unchanged (proven byte-identical by `quran-word-total-boundary.mjs`'s own
+updated check, mutation-tested).
+
+**A fourth palette button, "Word by Word"** (`data-explore-mode="wbw"`),
+after Asma ul Husna, opening its own panel (`#wbwPanel`) the same way
+QCR/Asma already do (`openWbwPalette()`, mirroring `openQcrPalette()`), and
+sharing `#exploreBar`'s fullscreen/PC-popup handling for free. Read-only,
+three levels, its own breadcrumb (`#wbwBreadcrumb`/`wbwLevel`/`wbwJuzNum`/
+`wbwSurahNum`) deliberately independent of the Quran tab's own drill-down
+position: **Level 1 (Whole Qur'an)** — 30 Juz wedges coloured by that Juz's
+own known/total from the counter's `byJuz` (issue #206's own ramp, reused
+verbatim), the gold ring for the whole-Qur'an known/total, a centre/caption
+reading "N of 77,429 words known — X%", and a 30-row sidebar. **Level 2
+(one Juz)** — one wedge per surah/part-surah inside it, each labelled with
+that surah's OWN packaged word total (`surah-word-totals.json`, new this
+round — see below); per-surah KNOWN is not tracked anywhere and this
+deliberately does not add a collection or a many-document read to
+approximate it, so wedges carry a neutral "no data" colour
+(`wordTotalRampColor(0)`) and the text says plainly, in the Owner's own
+issue wording: *"Open a Surah to see which of its words you know."*
+**Level 3 (one Surah)** — reuses `computeArabicCoverage()` and the ONE
+per-surah load `renderExploreArabicCoverage()`'s own surah-scoped branch
+already performs (`getSurah` + `getSurahProgress` + `wordProgressFor` per
+occurrence) — no second read path — plus a per-Ruku' breakdown computed
+from that SAME `views` map, no extra fetch per Ruku', and a **"Study this
+Surah"** button (`goToSurahFromWbw()`, the same drill-to-study idiom
+`goToAyahFromExplore()` uses, set to the `surah` unit type).
+
+**The counter is read exactly once per tab open (I9), never per level
+navigated to.** `openWbwPalette()` calls `ensureWordTotalsForExplore()` —
+the SAME shared module-level `personWordTotals`/`juzWordTotalsData` the
+Quran tab's own gold ring already populates, so opening this tab can never
+disagree with what the Quran tab shows, and `getWordTotals()`'s own
+per-person cache means a reader who already opened the Quran tab that
+session may cost this tab's own open ZERO further reads — only inside the
+`if (isWbwTotalPersistenceReady())` guard, so the gate-closed state makes
+no counter read at all. Every level renderer below the initial open
+(`renderWbwQuranLevel`/`renderWbwJuzLevel`/`renderWbwSurahLevel`) is a pure
+re-render over data already in memory; `quran-word-total-boundary.mjs`
+asserts none of the three calls `ensureWordTotalsForExplore()` or
+`getWordTotals()` itself. Gate closed: the tab still shows and says so in
+words, in both languages, with no counter read.
+
+**A new packaged, DERIVED denominator, `surah-word-totals.json`** (114
+rows, `{surah, totalWords}`), built by a new
+`tools/quran-data-pull/build-surah-word-totals.js` extending the same
+per-ayah `words[]` scan `build-juz-word-totals.js` already uses for the
+per-Juz file — **never hand-typed**, sums to exactly 77,429, re-derives
+byte-for-byte on a fresh run (both proven by two new checks in
+`quran-word-total-boundary.mjs`, one of which re-invokes the build script
+itself via `child_process.spawnSync` and diffs the output). A new
+`getSurahWordTotalsIndex()` in `app/js/quran-data.js` mirrors
+`getJuzWordTotalsIndex()` exactly — loaded on first use, never on the
+startup path.
+
+**A real, disclosed layout cost, not hidden**: going from 3 palette
+buttons to 4 shrinks every button's own share of `.explore-palette-row` at
+a phone width, on the row's own `flex: 1 1 0` equal split with no
+`white-space: nowrap` — "Word by Word" and "Asma ul Husna" are its two
+longest labels and could wrap onto two lines while their siblings stay
+one. Below 480px the row now wraps onto two lines of two buttons instead
+(`flex: 1 1 45%`), each keeping the width it already had at 3-per-row.
+**Not verified in a real browser this round** — Playwright is not
+installed in this sandbox (the same documented, repeated environment gap
+recorded throughout this file) — a real-phone check of `#exploreBar` at
+≤480px, both languages, is the recommended substitute before this ships.
+
+**Nine strings translated (I11)**, real Bangla characters, added to
+`app/js/i18n/bn.js`; the now-dead "Colour the wheel by" key (issue #206's
+removed toggle) is deleted rather than left orphaned. New
+`tools/i18n-verify/explore-wbw-tab.mjs`, a browser suite: the tab
+button/hit-test, 30 wedges with fills that genuinely differ where seeded
+known values differ (and are identical where they don't), the gold ring,
+the caption's real numbers, the I9 read-count contract at every step,
+tapping Juz 30 into its real 37 surahs with totals equal to the packaged
+file, tapping a surah into its real coverage and "Study this Surah", both
+languages, 390px and 1100px, no sideways scroll — **written but UNRUN**,
+same documented Playwright gap; the Architect runs it.
+`quran-word-total-boundary.mjs` updated in place (31/31, two of its own
+new checks mutation-proven: reverting the Quran-tab removal, and
+corrupting `surah-word-totals.json`, each caught and named by exactly the
+check meant to catch it). All 8 CI-gated governance suites (`programme-
+ledger`, `programme-ledger-mutations`, `brief-integrity`,
+`study-activity-evidence-boundary` + mutations, `study-event-wiring`,
+`rules-authorisation-executable`, `workflow-expressions`, `stub-parity`)
+re-run clean. `app/js/version.js`, `CLAUDE.md`, `firestore.rules`,
+`firebase.json`, `firestore.indexes.json`, `.github/workflows/**` and
+`app/js/quran-word-total-data.js` (the write path) are untouched; no
+Rules, index or collection change — needs no new authority. Needs a
+version number — **the Architect allocates one.**
+
+**v08.64 (25 Sep 2026).** Issue #261's round above, allocated by the MMSA
+Architect. Review restored what the builder's branch had deleted from shared
+files, though its base was current `main`: 17 Bangla strings belonging to
+v08.63's folder tree (`app/js/i18n/bn.js`), and 127 lines of this log
+(rebuilt as `main`'s log plus the new entry only). The removal of the
+`#206` "Colour the wheel by" key and toggle was deliberate and is kept.
+Checks: `explore-wbw-tab.mjs` 91/0, `quran-word-total-boundary.mjs` 31/0,
+`journey-map-screen.mjs` 48/0, `journey-map-back.mjs` 38/0. Screenshot looked at, 390px English.
+
 ## 25 Sep 2026 — Word Card: colour each part of an Arabic word, and the matching part of its English meaning (issue #263, NO VERSION BUMP — the Architect allocates one)
 
 The Owner showed a screenshot from another Qur'an app's word pop-up:

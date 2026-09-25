@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.63",
+    "version": "08.64",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -533,7 +533,7 @@
     {
       "version": "08.63",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Mapping My Journey's Folders view becomes a Siyagah-style folder tree (issue #259): expand/collapse, subtree Note counts (folderNoteCounts, distinct Notes, retired excluded), display-only (01)/(01.02) numbering with a Show numbers switch (never written into a name), 📍 new-folder target, inline rename, Remove (retire; Notes untouched), drag to reorder/move on desktop with ▲▼ and Move to… for touch, Notes as leaves, search over folder names and Note titles, A−/A+ text size. Paged reads (listNotesForOwnerPage, listNotePlacementsForOwnerPage, loadAllOwnerNotes/Placements) lift the 100-Note cap; no Rules or index change. Architect's review fixed four things before merge: the builder's branch had silently removed v08.62's Back button and CHANGELOG entry (restored); a backtick in firebase-stub.mjs broke every browser suite (fixed); the emulator suite's import rewrite lacked startAfter (fixed, 30/30 against the live rules); and the hit-test check opened the wrong URL and relied on a stub write (fixed with a seeded folder, 48/0).",
       "integration": {
         "authorizedOn": "2026-09-25",
@@ -541,10 +541,23 @@
         "method": "MERGE_PR",
         "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/issues/259"
       }
+    },
+    {
+      "version": "08.64",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Word by Word gets its own Explore tab (issue #261), on the Owner's 'Yes, make WbW its own tab in Explore.' Qur'an wheel of 30 Juz coloured by words known, Juz list with percentages, tap a Juz for its Surahs (per-surah word totals derived by build-surah-word-totals.js), open a Surah for its Ruku' breakdown. The dead Approach | Word by Word toggle on the Quran tab (#206) removed; the gold ring stays. At most one counter read when the tab opens, none on the landing path (I9). Review restored 17 Mapping My Journey Bangla strings (#259) and 127 CHANGELOG lines the builder's branch deleted. explore-wbw-tab.mjs 91/0, quran-word-total-boundary 31/0, journey-map-screen 48/0, journey-map-back 38/0.",
+      "integration": {
+        "authorizedOn": "2026-09-25",
+        "integratedOn": "2026-09-25",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "08.64",
+  "nextUnallocated": "08.65",
   "nextUnallocatedNote": [
+    "v08.64 was allocated to Word by Word as its own Explore tab (issue #261), 2026-09-25.",
     "v08.63 was allocated to the Siyagah-style folder tree in Mapping My Journey (issue #259), 2026-09-25.",
     "v08.62 was allocated to the Mapping My Journey Back button, on the Owner's report, 2026-09-25.",
     "v08.61 was allocated to switching on the Mapping My Journey dock tab (issue #257), 2026-09-25.",

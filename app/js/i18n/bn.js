@@ -1174,10 +1174,32 @@ export const BN = {
   "Arabic word coverage isn't available at this granularity — open a Surah or a Ruku' to see it.":
     "এই স্তরে আরবি শব্দের অগ্রগতি দেখানো যায় না — দেখতে হলে একটি সূরা বা রুকু খুলুন।",
   "{known} of {total} Arabic words known": "{total}টি আরবি শব্দের মধ্যে {known}টি জানা",
-  // Issue #206 -- the gold running-total ring + Approach/Word by Word wedge-
-  // colouring toggle. The button labels reuse the existing "Approach" and
-  // "Word by Word" keys above/below rather than adding new ones.
-  "Colour the wheel by": "চাকাটি যে অনুযায়ী রঙ করা হবে",
+  // Issue #206 (gold running-total ring) originally also added an
+  // "Approach | Word by Word" wedge-colouring toggle to the Quran tab, whose
+  // key here was "Colour the wheel by". Issue #261 removed that toggle --
+  // the Owner could not find it -- and moved Word-by-Word colouring into its
+  // own Explore tab (below), so that key is gone rather than left unused.
+  //
+  // Issue #261 -- Word by Word's own Explore tab (Qur'an -> Juz -> Surah).
+  // The palette button reuses the existing "Word by Word" key below.
+  "Juz {juz}: {known} of {total} words ({percent}%)":
+    "জুয {juz}: {total}টি শব্দের মধ্যে {known}টি জানা ({percent}%)",
+  "{percent}% known": "{percent}% জানা",
+  "{known} of {total} words known — {percent}%":
+    "{total}টি শব্দের মধ্যে {known}টি জানা — {percent}%",
+  "Tap a Juz to see its Surahs.": "এর সূরাগুলো দেখতে একটি জুযে চাপ দিন।",
+  "{surah}: {total} words": "{surah}: {total}টি শব্দ",
+  "{known} of {total} words known in this Juz — {percent}%":
+    "এই জুযের {total}টি শব্দের মধ্যে {known}টি জানা — {percent}%",
+  "Open a Surah to see which of its words you know.":
+    "কোন কোন শব্দ জানেন তা দেখতে একটি সূরা খুলুন।",
+  "Ruku' {ruku}: {known} of {total} words ({percent}%)":
+    "রুকু' {ruku}: {total}টি শব্দের মধ্যে {known}টি জানা ({percent}%)",
+  "Word-by-Word coverage by Ruku'.": "রুকু' অনুযায়ী শব্দে শব্দে অগ্রগতি।",
+  "Word-by-Word totals aren't switched on yet — check back once they are.":
+    "শব্দে শব্দে মোট সংখ্যা এখনও চালু করা হয়নি — চালু হলে পরে দেখুন।",
+  "Study this Surah": "এই সূরাটি অধ্যয়ন করুন",
+  "Pick a Student first.": "প্রথমে একজন শিক্ষার্থী বেছে নিন।",
   // MAP Phase 3 -- WbW word progress on the Quran Word Card.
   "Word progress": "শব্দের অগ্রগতি",
   "Waiting to be checked": "যাচাইয়ের অপেক্ষায়",

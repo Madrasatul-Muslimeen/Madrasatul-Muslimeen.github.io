@@ -817,11 +817,6 @@
      have each been bitten by it). */
   #exploreViewToggle { display: flex; align-items: center; gap: 6px; margin: 4px 0 2px; flex-wrap: wrap; }
   #exploreViewToggle[hidden] { display: none; }
-  /* Issue #206 -- same container shape as #exploreViewToggle above, reusing
-     its own .explore-view-btn control style rather than inventing a second
-     one, per this project's own standing rule. */
-  #exploreWheelColorToggle { display: flex; align-items: center; gap: 6px; margin: 4px 0 2px; flex-wrap: wrap; }
-  #exploreWheelColorToggle[hidden] { display: none; }
   .explore-view-label { color: #8fa0c2; font-size: 0.72rem; }
   /* ~36px tall, per the standing lesson that a 26px control is too small for
      a finger; these are words rather than icons, so they take their own
@@ -918,6 +913,22 @@
     font-weight: 700; font-size: 0.78rem; padding: 0.4rem 0.3rem; cursor: pointer;
   }
   .explore-palette-btn.on { background: #1F3A6E; color: white; border-color: #1F3A6E; }
+  /* Issue #261 -- a NEW control is a layout change and gets the same
+     measurement as one that moved (this project's own standing lesson).
+     Going from 3 palette buttons to 4 shrinks EVERY button's own share at a
+     phone width, and "Word by Word"/"Asma ul Husna" are this row's two
+     longest labels -- an equal `flex: 1 1 0` split with no min-width and no
+     `white-space: nowrap` would let the browser wrap one button's text onto
+     two lines while its siblings stay one, an uneven row rather than a
+     truncation. Below 480px the row wraps onto two lines of two buttons
+     instead, each keeping the same width it already had at 3-per-row.
+     NOT verified in a real browser this round (documented Playwright/
+     sandbox gap) -- a real-phone check of #exploreBar at <=480px, both
+     languages, is the recommended substitute before this ships. */
+  @media (max-width: 480px) {
+    .explore-palette-row { flex-wrap: wrap; row-gap: 0.3rem; }
+    .explore-palette-btn { flex: 1 1 45%; }
+  }
   /* Owner's own ask (27 Aug 2026): "Enable the EXPLORE screen to move to
      full screen (may be by tapping) in Tablet n Mob." A separate mechanism
      from Reading's own immersive-read and Note's own note-immersive (same
@@ -2181,6 +2192,21 @@
   .explore-arabic-coverage .eac-figure { font-weight: 700; color: #E8C77A; }
   .explore-arabic-coverage .eac-incomplete { color: #F0A98A; }
   .explore-arabic-coverage .eac-unavailable { color: #b6c0d2; font-style: italic; }
+  /* Issue #261 -- Word by Word's own Explore tab. #wbwPanel reuses
+     .wheel-box/.wheel-col/.wheel-sidebar/.explore-head-row/.ways-list/
+     .way-row/.explore-crumb wholesale (the same idiom every other Explore
+     mode already uses); these are the only genuinely new rules it needs. */
+  #wbwGateNotice { color: #b6c0d2; font-style: italic; text-align: center; margin: 0.6rem 0; }
+  #wbwGateNotice[hidden] { display: none; }
+  #wbwBody[hidden] { display: none; }
+  .wbw-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 0.78rem; color: #cdd5e3; flex-shrink: 0; }
+  /* A per-Ruku' breakdown row is informational only -- no click, no hover
+     affordance (contrast with .way-row's own cursor:pointer/hover, which
+     genuinely IS clickable everywhere else it's used). */
+  .way-row.wbw-static-row { cursor: default; }
+  .way-row.wbw-static-row:hover { background: rgba(255,255,255,0.03); border-color: transparent; }
+  #wbwSurahDetail { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; width: 100%; }
+  #wbwSurahDetail[hidden] { display: none; }
   .word-card-progress { margin-top: 0.6rem; padding-top: 0.55rem; border-top: 1px solid #e8dcae; }
   .word-progress-heading { margin: 0 0 0.35rem; font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: #5b4a20; }
   .word-progress-states, .word-progress-decide { display: grid; gap: 0.35rem; }
@@ -3490,6 +3516,14 @@
             <button type="button" class="explore-palette-btn on" id="explorePaletteQuranBtn" data-explore-mode="quran" aria-pressed="true">Quran</button>
             <button type="button" class="explore-palette-btn" id="explorePaletteQcrBtn" data-explore-mode="qcr" aria-pressed="false">QCR</button>
             <button type="button" class="explore-palette-btn" id="explorePaletteAsmaBtn" data-explore-mode="asma" aria-pressed="false">Asma ul Husna</button>
+            <!-- Issue #261 -- Word by Word's own Explore tab, alongside
+                 Quran/QCR/Asma. Follows the same palette pattern as the two
+                 above: its own panel, opened through openWbwPalette(), the
+                 "tap the open one to close it" behaviour and the shared
+                 fullscreen/PC-popup handling all come free from #exploreBar/
+                 #exploreView, which this button shares with every other
+                 mode. -->
+            <button type="button" class="explore-palette-btn" id="explorePaletteWbwBtn" data-explore-mode="wbw" aria-pressed="false">Word by Word</button>
           </div>
           <button type="button" class="explore-fullscreen-btn" id="exploreFullscreenBtn" title="Full screen" aria-label="Full screen" aria-pressed="false">⤢</button>
           <button type="button" class="explore-fullscreen-btn" id="explorePopupMaximizeBtn" title="Maximize" aria-label="Maximize" aria-pressed="false">⬜</button>
@@ -3575,20 +3609,18 @@
                    v08.02 already weighed and declined letting a second
                    meaning compete for the same colour. -->
               <div id="exploreArabicCoverage" class="explore-arabic-coverage" hidden></div>
-              <!-- Issue #206 -- combines the Owner-approved demo's two
-                   options into one: a gold ring (always drawn once the
-                   running-counter gate is open, see renderScopedWheel's own
-                   `ring` option) plus this toggle, which switches only what
-                   the WEDGES are coloured by. "Approach" is the existing,
-                   unchanged pooled-status colouring above; "Word-by-Word"
-                   recolours each Juz wedge by its own known/total. Shown
-                   ONLY at the "quran" level (each wedge IS a Juz there) and
-                   only once the gate is open -- absent otherwise, exactly
-                   like the ring itself. -->
-              <div id="exploreWheelColorToggle" role="group" aria-label="Colour the wheel by" hidden>
-                <button type="button" class="explore-view-btn on" id="exploreColorApproachBtn" aria-pressed="true">Approach</button>
-                <button type="button" class="explore-view-btn" id="exploreColorWbwBtn" aria-pressed="false">Word by Word</button>
-              </div>
+              <!-- Issue #206 gave this wheel a gold ring (always drawn once
+                   the running-counter gate is open, see renderScopedWheel's
+                   own `ring` option) plus an "Approach | Word by Word" wedge-
+                   colouring toggle. Issue #261 removes the toggle: the Owner
+                   could not find Word-by-Word colouring living inside the
+                   Quran tab, partly because the toggle also showed (and did
+                   nothing) in the Surahs view. Word-by-Word colouring now
+                   lives in its own tab (#wbwPanel below) -- the ring and the
+                   "words known" caption stay exactly as they were, and the
+                   Approach colouring this wheel draws was and remains
+                   completely unconditional (quran-word-total-boundary.mjs
+                   proves it byte-identical). -->
               <p class="hint">Click a segment to drill in &mdash; Quran &rarr; Juz &rarr; Surah &rarr; Ruku' &rarr; an ayah in Study. Colours pool this Approach's real ayah-by-ayah progress across whatever's inside each segment &mdash; it only turns fully green once every ayah inside it is Mastered.</p>
             </div>
             <div class="list-splitter" id="exploreListSplitter" role="separator" aria-orientation="vertical" title="Drag to resize">
@@ -3814,6 +3846,41 @@
             </div>
           </div>
         </div>
+
+        <!-- Issue #261 -- Word by Word's own Explore tab: a fourth mode
+             alongside Quran/QCR/Asma. Deliberately simpler than those three
+             (no drag-resize, no Manage mode, no per-collection level bar):
+             this is a read-only view over a person's own running word
+             counter, with no editable content of its own. Qur'an -> Juz ->
+             Surah, the same breadcrumb idiom #exploreBreadcrumb already
+             uses (see renderWbwBreadcrumb()). -->
+        <div id="wbwPanel" hidden>
+          <div class="wheel-box">
+            <div class="wheel-col">
+              <div class="explore-head-row">
+                <div id="wbwBreadcrumb"></div>
+              </div>
+              <p class="opt-note" id="wbwGateNotice" hidden></p>
+              <div id="wbwBody" hidden>
+                <div id="wbwWheelResizeWrap" class="wheel-resize-wrap">
+                  <div id="wbwWheelContainer" class="wheel-resize-target">Loading&hellip;</div>
+                </div>
+                <div id="wbwCoverageCaption" class="explore-arabic-coverage"></div>
+                <!-- Level 3 (one Surah) only: the per-Ruku' breakdown lives
+                     in the sidebar itself (renderWbwSurahLevel() labels each
+                     wedge/row "Ruku' n"); this holds only the "Study this
+                     Surah" jump, the same drill-to-study idiom the Quran
+                     tab's own goToAyahFromExplore() already uses. -->
+                <div id="wbwSurahDetail" hidden>
+                  <button type="button" class="opt-btn opt-btn-primary" id="wbwStudySurahBtn">Study this Surah</button>
+                </div>
+                <p class="hint" id="wbwHint"></p>
+              </div>
+            </div>
+            <div id="wbwSidebarContainer" class="wheel-sidebar"></div>
+          </div>
+        </div>
+
         <!-- The popup WINDOW's own 8 resize handles (dragging #exploreView
              itself), children of #exploreView same as #noteView/
              #wheelPopupView's own. -->
@@ -4305,7 +4372,7 @@
     import { wireDragReorder } from "./js/drag-reorder.js";
     import { parseAsmaRef } from "./js/asma-ref-parser.js";
     import { listEnrollmentsForPerson, programSubjectMapFromEnrollments } from "./js/course-offers.js";
-    import { getSurah, getSurahIndex, getJuzIndex, getPageIndex, getHizbIndex, getJuzWordTotalsIndex } from "./js/quran-data.js";
+    import { getSurah, getSurahIndex, getJuzIndex, getPageIndex, getHizbIndex, getJuzWordTotalsIndex, getSurahWordTotalsIndex } from "./js/quran-data.js";
     // Shell round 14 -- word/phrase search. Importing the module costs
     // nothing at load: it fetches its index only when a search actually runs.
     import { searchQuran } from "./js/quran-search.js";
@@ -4318,7 +4385,7 @@
     import { primeAyahProgress, getSurahProgress, wordProgressFor, setWordState, decideWordApproval, clearWordProgressCache } from "./js/quran-word-progress-data.js";
     import { computeArabicCoverage, occurrenceIdsForAyah, occurrenceIdsForAyahRange, occurrenceIdsForSurah } from "./js/quran-word-coverage.js";
     // Issue #206 -- the whole-Qur'an/Juz running word counter.
-    import { QURAN_TOTAL_WORD_COUNT, knownDelta, juzForSurahAyah, wordTotalRatio } from "./js/quran-word-total.js";
+    import { QURAN_TOTAL_WORD_COUNT, knownDelta, juzForSurahAyah, wordTotalRatio, percentRounded } from "./js/quran-word-total.js";
     import { getWordTotals, recordWordTotalDelta } from "./js/quran-word-total-data.js";
     import { isWbwTotalPersistenceReady } from "./js/study-wbw-total-readiness.js";
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah, scrollToAyahIfRendered } from "./js/hifz-renderer.js";
@@ -4709,9 +4776,6 @@
     const exploreWheelLegendContainer = document.getElementById("exploreWheelLegendContainer");
     const exploreArabicCoverageEl = document.getElementById("exploreArabicCoverage");
     const exploreSidebarContainer = document.getElementById("exploreSidebarContainer");
-    const exploreWheelColorToggle = document.getElementById("exploreWheelColorToggle");
-    const exploreColorApproachBtn = document.getElementById("exploreColorApproachBtn");
-    const exploreColorWbwBtn = document.getElementById("exploreColorWbwBtn");
     const exploreListSplitter = document.getElementById("exploreListSplitter");
     const exploreListCollapseBtn = document.getElementById("exploreListCollapseBtn");
     const tabExploreBtn = document.getElementById("tabExploreBtn");
@@ -4815,6 +4879,23 @@
     const asmaXGroupsCloseBtn = document.getElementById("asmaXGroupsCloseBtn");
     let asmaXGroupsNumber = null;
     let asmaXGroupsChecked = new Set();
+
+    // Issue #261 -- Word by Word's own Explore tab.
+    const explorePaletteWbwBtn = document.getElementById("explorePaletteWbwBtn");
+    const wbwPanelEl = document.getElementById("wbwPanel");
+    const wbwBreadcrumbEl = document.getElementById("wbwBreadcrumb");
+    const wbwGateNoticeEl = document.getElementById("wbwGateNotice");
+    const wbwBodyEl = document.getElementById("wbwBody");
+    const wbwWheelContainer = document.getElementById("wbwWheelContainer");
+    const wbwCoverageCaptionEl = document.getElementById("wbwCoverageCaption");
+    const wbwSidebarContainer = document.getElementById("wbwSidebarContainer");
+    const wbwSurahDetailEl = document.getElementById("wbwSurahDetail");
+    const wbwStudySurahBtn = document.getElementById("wbwStudySurahBtn");
+    const wbwHintEl = document.getElementById("wbwHint");
+    let wbwLevel = "quran"; // "quran" | "juz" | "surah"
+    let wbwJuzNum = null;
+    let wbwSurahNum = null;
+    let surahWordTotalsData = null; // loaded lazily on first Explore-WbW open (I9)
 
     const taglineStripEl = document.getElementById("taglineStrip");
     const globalBannerEl = document.getElementById("globalBanner");
@@ -5054,11 +5135,6 @@
     // enables the gate.
     let juzWordTotalsData = null;
     let personWordTotals = null;
-    // "approach" (today's real, unchanged pooled-status colouring) or "wbw"
-    // (each Juz wedge recoloured by its own known/total). Session-only,
-    // Explore "quran" level only -- deliberately not persisted, so nobody's
-    // browser habit silently reinterprets what a colour means.
-    let wbwWheelColorMode = "approach";
 
     // Ayah Collections (QCR) round -- Explore's own palette state, alongside
     // the Quran drill-down above. Loaded lazily, once per sign-in, the first
@@ -7515,29 +7591,6 @@
       });
     });
 
-    // Issue #206 -- the wedge-colouring toggle. Shown ONLY at the "quran"
-    // level (each wedge is a Juz there, so a Juz-scoped known/total means
-    // something) and only once the running-counter gate is open -- absent
-    // otherwise, same rule the ring itself follows.
-    function syncWheelColorModeToggle() {
-      const show = exploreLevel === "quran" && isWbwTotalPersistenceReady();
-      exploreWheelColorToggle.hidden = !show;
-      if (!show) return;
-      for (const [btn, mode] of [[exploreColorApproachBtn, "approach"], [exploreColorWbwBtn, "wbw"]]) {
-        const on = mode === wbwWheelColorMode;
-        btn.classList.toggle("on", on);
-        btn.setAttribute("aria-pressed", on ? "true" : "false");
-      }
-    }
-
-    [[exploreColorApproachBtn, "approach"], [exploreColorWbwBtn, "wbw"]].forEach(([btn, mode]) => {
-      btn.addEventListener("click", () => {
-        if (wbwWheelColorMode === mode) return;
-        wbwWheelColorMode = mode;
-        renderExplore();
-      });
-    });
-
     /**
      * Issue #206 -- loads this reader's own running-counter document and the
      * packaged per-Juz totals, but ONLY while the gate is open and ONLY when
@@ -7666,11 +7719,10 @@
       renderExploreApproachList();
       syncExploreViewToggle();
       // Issue #206 -- awaited BEFORE the wheel paints (quran/juz levels
-      // only), so the ring and the wedge-colour toggle are correct on the
-      // very first paint. While the gate is closed this resolves with no
-      // Firestore call at all, so it costs nothing for anyone today.
+      // only), so the ring is correct on the very first paint. While the
+      // gate is closed this resolves with no Firestore call at all, so it
+      // costs nothing for anyone today.
       if (exploreLevel === "quran" || exploreLevel === "juz") await ensureWordTotalsForExplore();
-      syncWheelColorModeToggle();
       renderExploreArabicCoverage();
       if (exploreLevel === "quran") return renderExploreQuranLevel();
       if (exploreLevel === "juz") return renderExploreJuzLevel();
@@ -7708,32 +7760,16 @@
       const labelsById = statusLabelsById();
       for (const it of items) it.title = segTitle(it.label, it.statusId, labelsById);
 
-      // Issue #206 -- the wedge-colouring toggle. The Approach branch above
-      // (statusId, the pooled progress colouring) is completely untouched;
-      // this ONLY overlays `fill`/`title` on top of it, and only in "wbw"
-      // mode with the gate open and the per-Juz totals actually loaded.
-      // renderScopedWheel prefers `entry.fill` over `STATUS_COLORS[statusId]`
-      // when it is present, so the Approach mode's own colours are byte-
-      // identical to before this round: `fill` is simply never set there.
-      const wbwMode = wbwWheelColorMode === "wbw" && isWbwTotalPersistenceReady() && juzWordTotalsData;
-      if (wbwMode) {
-        for (const it of items) {
-          const row = juzWordTotalsData.byJuz.find((r) => r.juz === it.key);
-          const total = row ? row.totalWords : 0;
-          const known = Number(personWordTotals?.byJuz?.[String(it.key)]?.known ?? 0);
-          const ratio = wordTotalRatio(known, total);
-          it.fill = wordTotalRampColor(ratio);
-          it.title = `${it.label} — ${t("{known} of {total} Arabic words known", { known: num(known), total: num(total) })}`;
-        }
-      }
-
+      // Issue #261 -- the Word-by-Word wedge-colouring overlay that used to
+      // live here (issue #206) is gone: this wheel's own Approach-status
+      // colouring (statusId, computed unconditionally above) is now the
+      // ONLY thing this function ever colours by. The gold ring stays
+      // (wheelRingOption(), unchanged); Word-by-Word colouring lives in its
+      // own tab now (renderWbwQuranLevel() below).
       exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Whole Quran"), centerSub: approachName, ring: wheelRingOption() });
       attachScopedWheelClickHandler(exploreWheelContainer, jumpToJuz);
 
-      // The legend describes the Approach-status colours only, so it is
-      // hidden rather than left up while wedges mean something else --
-      // never showing a key that no longer describes what is on screen.
-      exploreWheelLegendContainer.innerHTML = wbwMode ? "" : renderWheelLegend(labelsById);
+      exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
       exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
       attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToJuz);
     }
@@ -7772,9 +7808,10 @@
 
       const approachName = langText(trackable.name, getAppLang(), trackable.id);
       // Issue #206 -- the ring is "always visible once ready" at every
-      // reading of the "quran" level, including this 114-surah one; the
-      // wedge-colour TOGGLE does not apply here (no per-surah counter data),
-      // so wedges stay Approach-coloured regardless of wbwWheelColorMode.
+      // reading of the "quran" level, including this 114-surah one; wedges
+      // stay Approach-coloured throughout (issue #261 moved Word-by-Word
+      // colouring into its own tab, and it never applied to this 114-surah
+      // reading in the first place -- no per-surah counter data existed).
       exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Whole Quran"), centerSub: approachName, ring: wheelRingOption() });
       attachScopedWheelClickHandler(exploreWheelContainer, jumpToSurah);
 
@@ -7984,6 +8021,278 @@
     }
 
     // -----------------------------------------------------------------------
+    // Issue #261 -- Word by Word's own Explore tab, alongside Quran/QCR/Asma.
+    //
+    // Read-only over a person's own running word counter -- the SAME
+    // quranWordTotals document (personWordTotals) and packaged per-Juz
+    // denominator (juzWordTotalsData) the Quran tab's gold ring/caption
+    // already read via ensureWordTotalsForExplore(), plus one new packaged
+    // per-Surah denominator (surahWordTotalsData, surah-word-totals.json,
+    // built the same DERIVED way as the per-Juz file). Its own breadcrumb
+    // (#wbwBreadcrumb/wbwLevel/wbwJuzNum/wbwSurahNum) is deliberately
+    // separate from #exploreBreadcrumb/exploreLevel -- the two tabs' own
+    // drill-downs are independent, so opening one must never move the
+    // other's position.
+    //
+    // The counter is read exactly ONCE per tab open (openWbwPalette(), I9):
+    // every level below is a pure re-render over data already in memory,
+    // never a re-fetch on drill-down.
+    // -----------------------------------------------------------------------
+
+    /** Packaged, static per-surah totals (114 rows) -- loaded on first use, cached like juzWordTotalsData, never on the startup path (I9). */
+    async function ensureWbwSurahTotals() {
+      if (!surahWordTotalsData) surahWordTotalsData = await getSurahWordTotalsIndex();
+      return surahWordTotalsData;
+    }
+
+    async function openWbwPalette() {
+      setExplorePalette("wbw");
+      wbwLevel = "quran";
+      wbwJuzNum = null;
+      wbwSurahNum = null;
+      if (isWbwTotalPersistenceReady()) {
+        wbwWheelContainer.innerHTML = t("Loading…");
+        // The one counter read for this whole tab open. Shared module-level
+        // state with the Quran tab's own gold ring (ensureWordTotalsForExplore()),
+        // so this tab can never disagree with what the Quran tab already shows.
+        await Promise.all([ensureWordTotalsForExplore(), ensureWbwSurahTotals()]);
+      }
+      renderWbwPanel();
+    }
+
+    /** Qur'an › Juz N › Surah name -- same clickable-crumb idiom as renderExploreBreadcrumb(), kept separate because this tab's drill-down position is independent of the Quran tab's own. */
+    function renderWbwBreadcrumb() {
+      const crumbs = [{ label: t("Whole Quran"), level: "quran" }];
+      if (wbwJuzNum != null) crumbs.push({ label: t("Juz {juz}", { juz: num(wbwJuzNum) }), level: "juz" });
+      if (wbwSurahNum != null) {
+        const found = surahIndex.find((s) => s.surahNumber === wbwSurahNum);
+        const name = found ? surahName(found.surahNumber, found.nameEnglish) : t("Surah {surah}", { surah: num(wbwSurahNum) });
+        crumbs.push({ label: name, level: "surah" });
+      }
+      wbwBreadcrumbEl.innerHTML = crumbs
+        .map((c) => `<button type="button" class="explore-crumb${c.level === wbwLevel ? " active" : ""}" data-level="${c.level}">${c.label}</button>`)
+        .join('<span class="explore-crumb-sep">›</span>');
+      wbwBreadcrumbEl.querySelectorAll(".explore-crumb").forEach((btn) => {
+        if (btn.dataset.level === wbwLevel) return;
+        btn.addEventListener("click", () => {
+          const level = btn.dataset.level;
+          if (level === "quran") { wbwJuzNum = null; wbwSurahNum = null; }
+          else if (level === "juz") { wbwSurahNum = null; }
+          wbwLevel = level;
+          renderWbwPanel();
+        });
+      });
+    }
+
+    /** Shared sidebar markup for all three levels -- reuses .ways-list/.way-row/.badge/.name wholesale (mastery-wheel.js's own renderWheelSidebar() needs a statusId/labelsById pair this data doesn't have, so this is a small, deliberate sibling rather than a forced fit). `staticRows` drops the pointer cursor/hover and the caller simply never attaches a click handler -- used for the Level-3 per-Ruku' breakdown, which is informational only. */
+    function wbwSidebarRowsHtml(items, { staticRows = false } = {}) {
+      const rowClass = staticRows ? "way-row wbw-static-row" : "way-row";
+      const rows = items
+        .map((it) => `<div class="${rowClass}" data-key="${it.key}">
+          <span class="badge">${it.number}</span>
+          <span class="name">${escapeHtml(it.label)}</span>
+          ${it.chipHtml ?? ""}
+        </div>`)
+        .join("");
+      return `<div class="ways-list">${rows}</div>`;
+    }
+
+    function renderWbwPanel() {
+      renderWbwBreadcrumb();
+      const ready = isWbwTotalPersistenceReady();
+      wbwGateNoticeEl.hidden = ready;
+      wbwBodyEl.hidden = !ready;
+      if (!ready) {
+        wbwGateNoticeEl.textContent = t("Word-by-Word totals aren't switched on yet — check back once they are.");
+        wbwSidebarContainer.innerHTML = "";
+        return;
+      }
+      wbwSurahDetailEl.hidden = wbwLevel !== "surah";
+      if (wbwLevel === "quran") return renderWbwQuranLevel();
+      if (wbwLevel === "juz") return renderWbwJuzLevel();
+      if (wbwLevel === "surah") return renderWbwSurahLevel();
+    }
+
+    /** Level 1 -- 30 Juz wedges, each coloured by that Juz's own known/total (issue #206's ramp, reused verbatim -- wordTotalRampColor's own two endpoints, not invented colours). */
+    function renderWbwQuranLevel() {
+      const known = Number(personWordTotals?.known ?? 0);
+      const total = QURAN_TOTAL_WORD_COUNT;
+      const rows = juzWordTotalsData?.byJuz ?? [];
+      const items = rows.map((row) => {
+        const juzKnown = Number(personWordTotals?.byJuz?.[String(row.juz)]?.known ?? 0);
+        const ratio = wordTotalRatio(juzKnown, row.totalWords);
+        const percent = percentRounded(juzKnown, row.totalWords);
+        const fill = wordTotalRampColor(ratio);
+        const label = t("Juz {juz}", { juz: num(row.juz) });
+        return {
+          key: row.juz, number: row.juz, label, fill,
+          title: t("Juz {juz}: {known} of {total} words ({percent}%)", { juz: num(row.juz), known: num(juzKnown), total: num(row.totalWords), percent: num(percent) }),
+          chipHtml: `<span class="wbw-chip"><span class="legend-swatch" style="background:${fill}"></span>${num(percent)}%</span>`,
+        };
+      });
+      const jumpToJuz = (key) => {
+        wbwJuzNum = Number(key);
+        wbwSurahNum = null;
+        wbwLevel = "juz";
+        renderWbwPanel();
+      };
+      wbwWheelContainer.innerHTML = renderScopedWheel(items, {
+        centerLabel: t("Whole Quran"),
+        centerSub: t("{percent}% known", { percent: num(percentRounded(known, total)) }),
+        ring: { ratio: wordTotalRatio(known, total) },
+      });
+      attachScopedWheelClickHandler(wbwWheelContainer, jumpToJuz);
+      wbwCoverageCaptionEl.hidden = false;
+      wbwCoverageCaptionEl.innerHTML = `<span class="eac-figure">${escapeHtml(t("{known} of {total} words known — {percent}%", { known: num(known), total: num(total), percent: num(percentRounded(known, total)) }))}</span>`;
+      wbwSidebarContainer.innerHTML = wbwSidebarRowsHtml(items);
+      attachWheelSidebarClickHandler(wbwSidebarContainer, jumpToJuz);
+      wbwHintEl.textContent = t("Tap a Juz to see its Surahs.");
+    }
+
+    /**
+     * Level 2 -- one wedge per surah/part-surah inside the open Juz,
+     * labelled with that SURAH'S OWN packaged word total (surah-word-
+     * totals.json) -- not a portion restricted to this Juz, which the
+     * packaged file does not carry and which would need a per-ayah re-scan
+     * to compute honestly. Per-surah KNOWN is not tracked anywhere and this
+     * deliberately does not add a new collection or a many-document read to
+     * approximate it (issue #261's own instruction) -- wedges carry a
+     * neutral "no data" colour (wordTotalRampColor(0), the ramp's own
+     * not_started end) and the Juz's own known/total, already in hand,
+     * stands in for what this level can honestly show.
+     */
+    function renderWbwJuzLevel() {
+      const juzRow = juzIndexData?.find((j) => j.juz === wbwJuzNum);
+      const totalsRow = juzWordTotalsData?.byJuz?.find((r) => r.juz === wbwJuzNum);
+      if (!juzRow || !totalsRow) return;
+      const known = Number(personWordTotals?.byJuz?.[String(wbwJuzNum)]?.known ?? 0);
+      const surahsInJuz = surahIndex.filter((s) => s.surahNumber >= juzRow.startSurah && s.surahNumber <= juzRow.endSurah);
+      const neutralFill = wordTotalRampColor(0);
+      const items = surahsInJuz.map((s) => {
+        const totalRow = surahWordTotalsData?.bySurah?.find((r) => r.surah === s.surahNumber);
+        const totalWords = totalRow ? totalRow.totalWords : 0;
+        const name = surahName(s.surahNumber, s.nameEnglish);
+        return {
+          key: s.surahNumber, number: s.surahNumber, label: name, fill: neutralFill,
+          title: t("{surah}: {total} words", { surah: name, total: num(totalWords) }),
+          chipHtml: `<span class="wbw-chip">${num(totalWords)}</span>`,
+        };
+      });
+      const jumpToSurah = (key) => {
+        wbwSurahNum = Number(key);
+        wbwLevel = "surah";
+        renderWbwPanel();
+      };
+      wbwWheelContainer.innerHTML = renderScopedWheel(items, {
+        centerLabel: t("Juz {juz}", { juz: num(wbwJuzNum) }),
+        centerSub: t("{percent}% known", { percent: num(percentRounded(known, totalsRow.totalWords)) }),
+        ring: { ratio: wordTotalRatio(known, totalsRow.totalWords) },
+      });
+      attachScopedWheelClickHandler(wbwWheelContainer, jumpToSurah);
+      wbwCoverageCaptionEl.hidden = false;
+      wbwCoverageCaptionEl.innerHTML = `<span class="eac-figure">${escapeHtml(t("{known} of {total} words known in this Juz — {percent}%", { known: num(known), total: num(totalsRow.totalWords), percent: num(percentRounded(known, totalsRow.totalWords)) }))}</span>`;
+      wbwSidebarContainer.innerHTML = wbwSidebarRowsHtml(items);
+      attachWheelSidebarClickHandler(wbwSidebarContainer, jumpToSurah);
+      wbwHintEl.textContent = t("Open a Surah to see which of its words you know.");
+    }
+
+    /**
+     * Level 3 -- reuses the existing Surah coverage path exactly:
+     * getSurah() + getSurahProgress() + wordProgressFor() per occurrence,
+     * the SAME one per-surah load renderExploreArabicCoverage()'s own
+     * surah-scoped branch already performs (no second read path, per issue
+     * #261's own instruction). The per-Ruku' breakdown is computed from
+     * that SAME `views` map -- no extra fetch per Ruku'.
+     */
+    async function renderWbwSurahLevel() {
+      const surahNum = wbwSurahNum;
+      if (surahNum == null) return;
+      wbwWheelContainer.innerHTML = t("Loading this surah…");
+      wbwSidebarContainer.innerHTML = "";
+      wbwCoverageCaptionEl.hidden = true;
+      const surahData = await getSurah(surahNum);
+      const exploreSurah = surahIndex.find((s) => s.surahNumber === surahNum);
+      const name = exploreSurah ? surahName(exploreSurah.surahNumber, exploreSurah.nameEnglish) : t("Surah {surah}", { surah: num(surahNum) });
+      wbwStudySurahBtn.onclick = () => goToSurahFromWbw(surahNum);
+
+      const { tenantId, subjectPersonId } = wordProgressActor();
+      if (!tenantId || !subjectPersonId) {
+        wbwWheelContainer.innerHTML = `<p style="color:#8fa0c2;">${t("Pick a Student first.")}</p>`;
+        return;
+      }
+      let figure, items, truncated;
+      try {
+        await wordProgressConfirmationRequired(tenantId, subjectPersonId);
+        ({ truncated } = await getSurahProgress(db, { tenantId, personId: subjectPersonId, surah: surahNum }));
+        const scope = occurrenceIdsForSurah(surahData);
+        const confirmationRequired = !!wordProgressConfirmRequired;
+        const views = new Map(scope.map((occ) => [occ, wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: occ, confirmationRequired })]));
+        figure = computeArabicCoverage({ scopeOccurrenceIds: scope, views, label: `wbw-surah:${surahNum}` });
+
+        const rukuRanges = new Map();
+        for (const a of surahData.ayahs) {
+          const idx = rukuIndexInSurah(surahData.ayahs, a.ruku);
+          const g = rukuRanges.get(idx) ?? { from: a.ayah, to: a.ayah };
+          g.from = Math.min(g.from, a.ayah);
+          g.to = Math.max(g.to, a.ayah);
+          rukuRanges.set(idx, g);
+        }
+        items = [...rukuRanges.entries()].sort((a, b) => a[0] - b[0]).map(([idx, range]) => {
+          const rukuScope = occurrenceIdsForAyahRange(surahData, range.from, range.to);
+          const rukuFigure = computeArabicCoverage({ scopeOccurrenceIds: rukuScope, views, label: `wbw-ruku:${surahNum}:${idx}` });
+          const ratio = wordTotalRatio(rukuFigure.known, rukuFigure.total);
+          const percent = percentRounded(rukuFigure.known, rukuFigure.total);
+          const fill = wordTotalRampColor(ratio);
+          return {
+            key: idx, number: idx, label: t("Ruku' {ruku}", { ruku: num(idx) }), fill,
+            title: t("Ruku' {ruku}: {known} of {total} words ({percent}%)", { ruku: num(idx), known: num(rukuFigure.known), total: num(rukuFigure.total), percent: num(percent) }),
+            chipHtml: `<span class="wbw-chip"><span class="legend-swatch" style="background:${fill}"></span>${num(percent)}%</span>`,
+          };
+        });
+      } catch (error) {
+        reportWriteFailure(error, { what: "read Word by Word coverage", surah: surahNum }); // I15
+        wbwWheelContainer.innerHTML = `<p style="color:#8fa0c2;">${t("Progress not loaded yet")}</p>`;
+        return;
+      }
+
+      // A slow read must not paint over a scope the reader has since left.
+      if (wbwLevel !== "surah" || wbwSurahNum !== surahNum) return;
+
+      wbwWheelContainer.innerHTML = renderScopedWheel(items, {
+        centerLabel: name,
+        centerSub: t("{percent}% known", { percent: num(percentRounded(figure.known, figure.total)) }),
+        ring: { ratio: wordTotalRatio(figure.known, figure.total) },
+      });
+      // Informational only -- no click handler. Drilling further is the
+      // "Study this Surah" button below, not a per-Ruku' jump this round
+      // does not build.
+      wbwCoverageCaptionEl.hidden = false;
+      const caveat = figure.complete && !truncated
+        ? ""
+        : ` <span class="eac-incomplete">${escapeHtml(t("{unknown} not loaded yet", { unknown: num(figure.unknown) }))}</span>`;
+      wbwCoverageCaptionEl.innerHTML = `<span class="eac-figure">${escapeHtml(t("{known} of {total} words known — {percent}%", { known: num(figure.known), total: num(figure.total), percent: num(percentRounded(figure.known, figure.total)) }))}</span>${caveat}`;
+      wbwSidebarContainer.innerHTML = wbwSidebarRowsHtml(items, { staticRows: true });
+      wbwHintEl.textContent = t("Word-by-Word coverage by Ruku'.");
+    }
+
+    /** "Study this Surah" -- the same drill-to-study idiom goToAyahFromExplore() already uses, set to the "surah" unit type rather than one ayah. */
+    async function goToSurahFromWbw(surahNum) {
+      closeAllPanels();
+      setStageView("read");
+      currentUnitType = "surah";
+      unitTypeSelect.value = "surah";
+      updateUnitControlsVisibility();
+      if (surahNum !== currentSurahNum) {
+        currentSurahNum = surahNum;
+        surahSelect.value = String(surahNum);
+        await loadSurah();
+      }
+      renderStudyScreen();
+      renderWheel();
+      updateUnitControlsVisibility();
+    }
+
+    // -----------------------------------------------------------------------
     // Ayah Collections (QCR), 26 Aug 2026 -- Explore's own palette, alongside
     // the Quran-structure drill-down above (#explorePanel, untouched by this
     // round). A demo was shown and confirmed before this was built (this
@@ -8024,9 +8333,12 @@
       explorePaletteQcrBtn.setAttribute("aria-pressed", String(mode === "qcr"));
       explorePaletteAsmaBtn.classList.toggle("on", mode === "asma");
       explorePaletteAsmaBtn.setAttribute("aria-pressed", String(mode === "asma"));
+      explorePaletteWbwBtn.classList.toggle("on", mode === "wbw");
+      explorePaletteWbwBtn.setAttribute("aria-pressed", String(mode === "wbw"));
       explorePanelEl.hidden = mode !== "quran";
       qcrPanelEl.hidden = mode !== "qcr";
       asmaXPanelEl.hidden = mode !== "asma";
+      wbwPanelEl.hidden = mode !== "wbw";
       // 4 Sep 2026 one-bar round -- same reason closeAllPanels() does it: a
       // ⋯ palette left open on the level bar of whichever mode is being
       // hidden goes off screen still marked open, and would come back
@@ -8036,6 +8348,7 @@
     explorePaletteQuranBtn.addEventListener("click", () => { setExplorePalette("quran"); renderExplore(); });
     explorePaletteQcrBtn.addEventListener("click", () => openQcrPalette());
     explorePaletteAsmaBtn.addEventListener("click", () => openAsmaXPalette());
+    explorePaletteWbwBtn.addEventListener("click", () => openWbwPalette());
     qcrApproachSelect.addEventListener("change", () => changeCurrentTrackable(qcrApproachSelect.value));
 
     /** 28 Aug 2026: "I want this wheel to be resizable by me" -- applies (or

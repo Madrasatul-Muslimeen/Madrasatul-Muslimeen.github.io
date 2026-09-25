@@ -158,7 +158,18 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.63 on `main`** (25 Sep 2026 — Mapping My Journey's
+**Current milestone: v08.64 on `main`** (25 Sep 2026 — the Owner: *"Yes,
+make WbW its own tab in Explore."* Explore gains a **Word by Word** tab
+(issue #261): a Qur'an wheel of 30 Juz coloured by words known, a Juz list
+with percentages, a Juz's Surahs, and a Surah's Ruku' breakdown. The Quran
+tab's Approach | Word by Word toggle (#206), which the Owner could not find,
+is gone; the gold ring stays. **Review caught the builder deleting other
+rounds' work again**: 17 Bangla strings for the v08.63 folder tree and 127
+lines of `CHANGELOG.md`, both restored. `explore-wbw-tab.mjs` 91/0.
+**The v08.63 lesson still applies: check a builder's branch for deletions
+against current `main`, especially in `bn.js` and `CHANGELOG.md`.**)
+
+**Previous milestone: v08.63 on `main`** (25 Sep 2026 — Mapping My Journey's
 Folders view becomes a Siyagah-style folder tree, issue #259: expand/collapse,
 subtree Note counts, display-only `(01.02)` numbering, 📍 new-folder target,
 inline rename, Remove (retire only), drag plus ▲▼/Move to…, Notes as leaves,
