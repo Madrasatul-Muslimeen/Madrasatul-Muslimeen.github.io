@@ -119,6 +119,18 @@ const PAGES = [
       return !!app && app.style.display !== "none" && !!body && body.children.length > 0 && !body.querySelector(".loading-placeholder");
     },
   },
+  // Issue #288 (speed, part 6b) -- "usable" is the Curriculum units list,
+  // the first thing this admin page draws. Same loading-placeholder marker
+  // reasoning as Homework above.
+  {
+    path: "/app/curriculum.html",
+    name: "Curriculum",
+    usable: () => {
+      const app = document.getElementById("app");
+      const body = document.getElementById("unitsBody");
+      return !!app && app.style.display !== "none" && !!body && body.children.length > 0 && !body.querySelector(".loading-placeholder");
+    },
+  },
 ];
 
 const browser = await chromium.launch();
@@ -148,5 +160,5 @@ for (const page of PAGES) {
 }
 
 await browser.close();
-console.log(`\n==== Module startup reads (Deen Study, Health, Asma ul Husna, Records, Monitor, Catalogue, Homework): ${pass} passed, ${fail} failed ====`);
+console.log(`\n==== Module startup reads (Deen Study, Health, Asma ul Husna, Records, Monitor, Catalogue, Homework, Curriculum): ${pass} passed, ${fail} failed ====`);
 process.exit(fail ? 1 : 0);

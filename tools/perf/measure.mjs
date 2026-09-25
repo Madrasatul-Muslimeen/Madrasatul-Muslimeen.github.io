@@ -321,6 +321,18 @@ const PAGES = [
       return !!app && app.style.display !== "none" && !!body && body.children.length > 0 && !body.querySelector(".loading-placeholder");
     },
   },
+  // Issue #288 (speed, part 6b) -- "usable" is the Curriculum units list,
+  // the first thing this admin page draws. Same loading-placeholder marker
+  // reasoning as Homework above.
+  {
+    path: "/app/curriculum.html",
+    name: "Curriculum",
+    usable: () => {
+      const app = document.getElementById("app");
+      const body = document.getElementById("unitsBody");
+      return !!app && app.style.display !== "none" && !!body && body.children.length > 0 && !body.querySelector(".loading-placeholder");
+    },
+  },
 ];
 
 /** Busy time on the timeline (union of every call's interval), in ms. */
