@@ -473,22 +473,28 @@ export function renderNoteView({
           </div>
         </div>
 
-        <!-- ⋯ -- Mapping My Journey (still the disabled placeholder) and
-             Update bookmark. Approach USED to live here too, disabled with
-             "Single āyah only" when the scope wasn't a single āyah -- it
-             moved into the Track card's own header (round after: "change
-             the approach from inside the card straight away"), so there is
-             nothing left here to explain either way and the row is gone
-             rather than kept as a second, now-pointless copy. (6 Sep 2026:
-             that card shows for EVERY unit now, not only a single āyah, so
-             the wording it used to carry would be wrong as well as
-             duplicated.) -->
+        <!-- ⋯ -- Mapping My Journey and Update bookmark. Approach USED to
+             live here too, disabled with "Single āyah only" when the scope
+             wasn't a single āyah -- it moved into the Track card's own
+             header (round after: "change the approach from inside the card
+             straight away"), so there is nothing left here to explain
+             either way and the row is gone rather than kept as a second,
+             now-pointless copy. (6 Sep 2026: that card shows for EVERY unit
+             now, not only a single āyah, so the wording it used to carry
+             would be wrong as well as duplicated.)
+             Issue #257 (24 Sep 2026) -- Mapping My Journey stops being the
+             disabled placeholder it was since P6-F: it now opens
+             journey-map.html straight to the Folders view, the same
+             "#folders" hash the dock's own Mapping tab uses. Nothing about
+             WHO is acting travels in the URL (journey-map.html resolves
+             its own sign-in/tenant/person context, exactly as notes.html
+             does) -- only WHICH view. -->
         <div class="note-dot-wrap">
           <button type="button" class="note-icon-btn" data-note-menu-toggle="more" aria-haspopup="true" aria-expanded="false" title="${t("Mapping My Journey")}">⋯</button>
           <div class="quick-menu" data-note-menu="more">
             ${notesScreenHref ? `<a class="qm-item" href="${notesScreenHref}">📔 ${t("My Notes for this unit")}</a>
             <div class="qm-divider"></div>` : ""}
-            <button type="button" class="qm-item" disabled style="color:#aaa;cursor:default;">${t("Mapping My Journey")} <span class="qm-caret">${t("Coming later")}</span></button>
+            <a class="qm-item" href="journey-map.html#folders">${t("Mapping My Journey")}</a>
             ${canUpdateBookmark ? `
             <div class="qm-divider"></div>
             <button type="button" class="qm-item" data-note-update-bookmark>${t("Update bookmark")}</button>` : ""}

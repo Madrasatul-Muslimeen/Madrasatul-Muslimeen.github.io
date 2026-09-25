@@ -407,8 +407,20 @@
     // The three views, and which one is remembered -- localStorage, per
     // viewer, a convenience only (the issue is explicit this is not data).
     const VIEW_KEY = "qr.journeyMapView";
-    let currentView = ["folders", "timeline", "path"].includes(localStorage.getItem(VIEW_KEY))
-      ? localStorage.getItem(VIEW_KEY) : "folders";
+    const VALID_VIEWS = ["folders", "timeline", "path"];
+    // Issue #257 -- a caller (the dock's Mapping tab, the Note view's own
+    // ⋯ menu) can now open this page pointed straight at one of the three
+    // views via a plain "#folders" / "#timeline" / "#path" hash. Only that
+    // exact token is read -- anything else is ignored outright, not
+    // partially matched -- and the hash wins over the remembered choice
+    // ONLY when it is actually present, so a bookmark or a stale tab with
+    // no hash still reopens wherever the viewer left it last.
+    function viewFromHash() {
+      const raw = (location.hash || "").slice(1);
+      return VALID_VIEWS.includes(raw) ? raw : null;
+    }
+    let currentView = viewFromHash()
+      ?? (VALID_VIEWS.includes(localStorage.getItem(VIEW_KEY)) ? localStorage.getItem(VIEW_KEY) : "folders");
 
     // Loaded once per refresh, shared by all three views over the SAME data
     // (the issue's own requirement -- one toggle, not three separate pages).

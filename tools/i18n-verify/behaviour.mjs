@@ -4665,11 +4665,14 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
         approachInMore: !!view.querySelector('[data-note-menu="more"] [data-note-approach-select]'),
         approachInCard: !!view.querySelector('[data-note-field="approach"] .way-embed-header [data-note-approach-select]'),
         approachCopies: view.querySelectorAll("[data-note-approach-select]").length,
-        // ⋯ still carries Mapping My Journey, as the disabled placeholder it
-        // has always been. Asserted against the ⋯ button's own title rather
-        // than an English literal, so it holds in either language.
+        // UPDATED 24 Sep 2026 for issue #257, reason recorded rather than the
+        // check weakened: ⋯ still carries Mapping My Journey, but it stopped
+        // being the disabled placeholder -- it is now a real link to
+        // journey-map.html's Folders view (the same entry point the dock's
+        // own Mapping tab opens).
         moreToggleTitle: bar2El.querySelector('[data-note-menu-toggle="more"]')?.getAttribute("title") || "",
-        journeyItemText: view.querySelector('[data-note-menu="more"] .qm-item[disabled]')?.textContent.trim() || "",
+        journeyMenuHref: view.querySelector('[data-note-menu="more"] a.qm-item[href^="journey-map.html"]')?.getAttribute("href") || "",
+        journeyMenuText: view.querySelector('[data-note-menu="more"] a.qm-item[href^="journey-map.html"]')?.textContent.trim() || "",
         mobileBarExists: !!mobileBarEl,
         approachDesktopExists: !!bar2El.querySelector(".note-approach-desktop"),
         overflowX: document.documentElement.scrollWidth > window.innerWidth,
@@ -4700,9 +4703,9 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   // holds at every viewport instead of branching on width: one ⋯ menu, both
   // controls inside it, and NO second bar anywhere.
   for (const [label, info] of [["phone", mobile], ["desktop", desktop]]) {
-    check(`42p Mapping My Journey is in the ⋯ menu on a ${label}, still the placeholder`,
+    check(`42p Mapping My Journey is a real link in the ⋯ menu on a ${label}, opening journey-map.html's Folders view`,
           info.moreTogglePresent && info.moreToggleTitle.length > 0
-            && info.journeyItemText.startsWith(info.moreToggleTitle), JSON.stringify(info));
+            && info.journeyMenuHref === "journey-map.html#folders" && info.journeyMenuText.length > 0, JSON.stringify(info));
     check(`42p ...the Approach picker is in the Track card's header on a ${label}, NOT in ⋯, and there is only one of it`,
           info.approachInCard && !info.approachInMore && info.approachCopies === 1, JSON.stringify(info));
     check(`42p ...and there is no separate Approach bar on a ${label} -- the design that needed one is gone`,

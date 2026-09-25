@@ -69,8 +69,25 @@ for (const action of ["read", "note", "options"]) {
   check(`Study selector retains the ${action} internal seam`,
     new RegExp(`data-study-action="${action}"`).test(quranShell));
 }
-check("Mapping My Journey pillar is explicitly unavailable",
-  /id="tabJourneyBtn"[^>]*(?:disabled|aria-disabled="true")/.test(quranShell));
+// UPDATED 24 Sep 2026 for issue #257, WITH THE REASON RECORDED RATHER THAN
+// THE CHECK WEAKENED. This asserted the Mapping tab was explicitly
+// unavailable for the whole life of the P6-F/P6-G rounds, because nothing
+// had ever wired it to the real screen (app/journey-map.html) those rounds
+// built. The Owner's own instruction ("Folder should be built/accessible
+// from the Mapping tab") is exactly that wiring, so the claim is inverted,
+// not deleted -- it now asserts the tab is enabled, wired by id, and its
+// tap targets the real screen's Folders view.
+check("Mapping My Journey pillar is switched on, and its tap wires to journey-map.html#folders",
+  !/id="tabJourneyBtn"[^>]*(?:disabled|aria-disabled="true")/.test(quranShell) &&
+  quranShell.includes('getElementById("tabJourneyBtn")') &&
+  quranShell.includes('"journey-map.html#folders"'));
+// The Note view's own ⋯ menu item (ayah-note-renderer.js) is the SECOND
+// entry point the issue names, and it carried the identical disabled
+// placeholder -- checked here since this file already reads
+// ayahNoteRenderer for the sibling check above.
+check("Note view ⋯ menu carries a real Mapping My Journey link, not the disabled placeholder",
+  !/qm-item"\s*disabled[^>]*>\$\{t\("Mapping My Journey"\)\}/.test(ayahNoteRenderer) &&
+  /<a class="qm-item" href="journey-map\.html#folders">\$\{t\("Mapping My Journey"\)\}<\/a>/.test(ayahNoteRenderer));
 check("relocated Options action remains wired to the existing panel controller",
   /querySelectorAll\(['"]#dock \[data-panel=\\?"panelStudyOptions\\?"\]['"]\)/.test(quranShell));
 check("existing internal stage view identifiers remain unchanged",
