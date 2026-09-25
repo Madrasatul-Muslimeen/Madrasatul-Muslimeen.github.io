@@ -97,7 +97,9 @@
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { safeWrite } from "./js/errors.js";
     import {
-      bootstrapContext,
+      getMyMembershipRoles,
+      hydrateMemberships,
+      pickContext,
       getActiveContext,
       setActiveContext,
       effectiveRoles,
@@ -105,7 +107,7 @@
     } from "./js/session-context.js";
     import { getSubjectTree } from "./js/catalogue.js";
     import { createClass, listClasses, setClassStatus } from "./js/classes.js";
-    import { enrolPerson, endEnrollment, listEnrollmentsForOffer } from "./js/course-offers.js";
+    import { enrolPerson, endEnrollment, listAllEnrollmentsForTenant } from "./js/course-offers.js";
     import { bulkConfirmClass } from "./js/records.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
 import { mountBookmarkMenu } from "./js/bookmark-nav.js";
@@ -153,6 +155,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     let visibleRoster = [];
     let subjectTree = [];
     let classes = [];
+    let enrollmentsAll = []; // every enrolment in the tenant -- speed part 7, see loadContextData()'s own comment
     let myPersonId = null;
     let canAdmin = false; // owner/prime -- create classes, manage any enrolment/roster
 
@@ -164,9 +167,30 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       return { viewAsRole, effRoles: effectiveRoles(realRoles, viewAsRole), myPersonId: activeMembership?.personId ?? null };
     }
 
-    async function loadContextData() {
-      const rosterSnap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId)));
+    // Speed, part 7 (issue #291): this used to be a sequential chain --
+    // roster, then the subject tree, then classes, then ONE ROUND TRIP PER
+    // CLASS for its own roster (renderClassRoster's own listEnrollmentsForOffer
+    // call, one per card). None of it needs any other one's result, so
+    // everything now fires together, and the per-class roster loop is
+    // replaced by ONE whole-tenant enrollments read (listAllEnrollmentsForTenant
+    // -- enrollments' anyMemberOf() read rule doesn't even need a contextId
+    // filter to stay list-safe), grouped client-side per class card -- the
+    // same shape course-offers.html's own issue #288 fix uses.
+    async function loadContextData(hydratedMembershipsPromise) {
+      const hydrationPromise = hydratedMembershipsPromise ?? Promise.resolve(myMemberships);
+      const [rosterSnap, tree, classesRaw, enrollments, hydrated] = await Promise.all([
+        getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId))),
+        getSubjectTree(db, activeTenantId),
+        listClasses(db, activeTenantId),
+        listAllEnrollmentsForTenant(db, activeTenantId),
+        hydrationPromise,
+      ]);
       roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      subjectTree = tree;
+      myMemberships = hydrated;
+      tenantSelect.innerHTML = myMemberships
+        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
+        .join("");
 
       const preview = currentPreview();
       const { viewAsRole, effRoles } = preview;
@@ -177,13 +201,14 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       canAdmin = effRoles.some((r) => ["owner", "prime"].includes(r));
       createFieldset.style.display = canAdmin ? "" : "none";
 
-      subjectTree = await getSubjectTree(db, activeTenantId);
       const leaves = subjectTree.filter((n) => n.isTrackable && n.status !== "archived");
       subjectChecks.innerHTML = leaves
         .map((n) => `<label><input type="checkbox" value="${n.id}" /> ${langText(n.name, getAppLang(), n.id)}</label>`)
         .join("") || `<span class="muted">${t("No subjects yet.")}</span>`;
 
-      await refreshClasses();
+      classes = classesRaw.filter((c) => canAdmin || c.status === "active");
+      enrollmentsAll = enrollments;
+      renderClasses();
     }
 
     function subjectName(id) { const n = subjectTree.find((s) => s.id === id); return n ? langText(n.name, getAppLang(), id) : id; }
@@ -193,23 +218,29 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     // Classes.
     // -----------------------------------------------------------------------
 
-    async function refreshClasses() {
-      classesBody.innerHTML = `<p class="muted">${t("Loading…")}</p>`;
-      try {
-        classes = (await listClasses(db, activeTenantId)).filter((c) => canAdmin || c.status === "active");
-        classesBody.innerHTML = classes.length
-          ? (await Promise.all(classes.map(renderClassCard))).join("")
-          : `<p class="muted">${t("No classes yet.")}</p>`;
-        wireClassCardActions();
-      } catch (err) {
-        classesBody.innerHTML = `<p style="color:#9c3b2e;">${t("Couldn't load classes:")} ${err.code ?? ""} ${err.message}</p>`;
-        console.error(err);
-      }
+    // Speed, part 7 (issue #291): loadContextData() already fetched `classes`
+    // and `enrollmentsAll` once, together, at startup -- this is a pure
+    // render off that cached state, no fetch. A write handler below that
+    // changes one or the other calls reloadClasses()/reloadEnrollments() to
+    // refresh the cache first, then re-renders.
+    function renderClasses() {
+      classesBody.innerHTML = classes.length
+        ? classes.map(renderClassCard).join("")
+        : `<p class="muted">${t("No classes yet.")}</p>`;
+      wireClassCardActions();
     }
 
-    async function renderClassCard(c) {
+    async function reloadClasses() {
+      classes = (await listClasses(db, activeTenantId)).filter((c) => canAdmin || c.status === "active");
+    }
+
+    async function reloadEnrollments() {
+      enrollmentsAll = await listAllEnrollmentsForTenant(db, activeTenantId);
+    }
+
+    function renderClassCard(c) {
       const subjectsLine = (c.subjectIds ?? []).map(subjectName).join(", ") || t("(no subjects set)");
-      const rosterHtml = await renderClassRoster(c);
+      const rosterHtml = renderClassRoster(c);
       const archiveBtn = canAdmin && c.status === "active"
         ? `<button class="small secondary archiveClassBtn" data-class="${c.id}">${t("Archive")}</button>`
         : "";
@@ -244,9 +275,8 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       </div>`;
     }
 
-    async function renderClassRoster(c) {
-      const enrolled = await listEnrollmentsForOffer(db, activeTenantId, c.id); // generic by contextId
-      const active = enrolled.filter((e) => e.status === "active");
+    function renderClassRoster(c) {
+      const active = enrollmentsAll.filter((e) => e.contextId === c.id && e.status === "active");
       if (!active.length) return `<div class="muted" style="margin-top:0.4rem;">${t("No one enrolled yet.")}</div>`;
       const rows = active.map((e) => {
         const endBtn = canAdmin ? `<button class="small secondary endEnrolBtn" data-class="${c.id}" data-person="${e.personId}">${t("End")}</button>` : "";
@@ -269,7 +299,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
             { collection: "enrollments", action: "enrolPerson (class)" }
           );
           btn.disabled = false;
-          if (outcome.ok) await refreshClasses();
+          if (outcome.ok) { await reloadEnrollments(); renderClasses(); }
           else alert(outcome.entry.message);
         });
       });
@@ -280,7 +310,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
             () => setClassStatus(db, activeTenantId, btn.dataset.class, "archived"),
             { collection: "classes", action: "setClassStatus" }
           );
-          if (outcome.ok) await refreshClasses();
+          if (outcome.ok) { await reloadClasses(); renderClasses(); }
           else { alert(outcome.entry.message); btn.disabled = false; }
         });
       });
@@ -291,7 +321,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
             () => endEnrollment(db, activeTenantId, btn.dataset.class, btn.dataset.person, auth.currentUser.uid),
             { collection: "enrollments", action: "endEnrollment (class)" }
           );
-          if (outcome.ok) await refreshClasses();
+          if (outcome.ok) { await reloadEnrollments(); renderClasses(); }
           else { alert(outcome.entry.message); btn.disabled = false; }
         });
       });
@@ -337,7 +367,8 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         createResult.textContent = t("Class created.");
         classNameInput.value = ""; classGlossInput.value = "";
         subjectChecks.querySelectorAll("input:checked").forEach((c) => (c.checked = false));
-        await refreshClasses();
+        await reloadClasses();
+        renderClasses();
       } else {
         createResult.textContent = outcome.entry.message;
       }
@@ -361,29 +392,35 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       }
 
       try {
+        // Speed, part 7 (issue #291), the same pattern issue #278's own fix
+        // uses: userIndex and the ROLES-ONLY membership query are fired
+        // together -- pickContext() below only ever reads tenantId/personId/
+        // roles, never tenantName/tenantData.
+        const membershipRolesPromise = getMyMembershipRoles(db, user.uid);
+        membershipRolesPromise.catch(() => {}); // see the real await below; this only stops a reload (adoptAppLangFromUserIndex) from logging it as unhandled.
+
         const userIndexSnap = await step("read your userIndex", () => getDoc(doc(db, TENANT.USER_INDEX, user.uid)));
         // v07.37: if this account has a language set on another device, take it
         // and reload. Costs no extra read -- the snapshot is already in hand.
         if (adoptAppLangFromUserIndex(userIndexSnap)) return;
         const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
 
-        // One membership load, not two: bootstrapContext() hands back the
-        // list it used to choose the context, which this page then used to
-        // fetch a second time, one round trip later, for the tenant picker.
-        const { context, memberships } = await step("initialize active context", () => bootstrapContext(db, user.uid, defaultTenantId));
+        const membershipRoles = await step("load your tenant memberships", () => membershipRolesPromise);
+        const context = pickContext(membershipRoles, defaultTenantId);
         if (!context) {
           whoEl.innerHTML += noAccountMessageHtml();
           return;
         }
         activeTenantId = context.tenantId;
 
-        myMemberships = memberships;
-        tenantSelect.innerHTML = myMemberships
-          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
-          .join("");
+        // The tenant picker's real names come from the SAME hydration call
+        // loadContextData() fires its own reads alongside, rather than
+        // being awaited before any of them.
+        const hydratedMembershipsPromise = step("load tenant names", () => hydrateMemberships(db, membershipRoles));
+        hydratedMembershipsPromise.catch(() => {}); // real failure surfaces via the awaited copy inside loadContextData().
 
         appEl.style.display = "block";
-        await step("load context data", loadContextData);
+        await step("load context data", () => loadContextData(hydratedMembershipsPromise));
       } catch (err) {
         whoEl.textContent += ` — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`;
         console.error(err);
