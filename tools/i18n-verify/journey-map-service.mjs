@@ -61,7 +61,14 @@ globalThis.__jmFoundation = {
   // needs a SEPARATE fixture), a distinct call log so K19's own count stays
   // exactly what it always asserted.
   listNotesForOwnerIdPage:     async (_db, a) => { calls.notesIdPage.push(a); return pageOf(notesPageRows, a); },
-  listNotePlacementsForOwnerPage: async (_db, a) => { calls.placementsPage.push(a); return pageOf(placementsPageRows, a); },
+  listNotePlacementsForOwnerPage: async (_db, a) => {
+    calls.placementsPage.push(a);
+    // Architect review: stands in for production refusing a documentId()
+    // range with "needs an index" -- the stub is destructured at load, so a
+    // flag is how one case switches it on.
+    if (globalThis.__refuseIdRanges && a.idRange) { const e = new Error("The query requires an index."); e.code = "failed-precondition"; throw e; }
+    return pageOf(placementsPageRows, a);
+  },
   moveNotePlacement:           async (_db, a) => { calls.move.push(a); return "new-placement"; },
   // P6-D -- the folder editing side. Recorded, not simulated: these wrappers
   // are meant to be thin, and what is asserted is that they FORWARD faithfully
@@ -403,6 +410,32 @@ await check("K32 a shard that never actually advances is stopped after its OWN 5
   const { truncated } = await loadAllOwnerNotesSharded(db, { ...own, shardCount: 5 });
   assert.equal(truncated, true, "a stuck shard must make the WHOLE read report truncated, even though the other 4 shards finished cleanly");
   assert.equal(calls.notesIdPage.length, 50 + 4, "expected the stuck shard's own 50-page cap plus one clean page each from the other 4 shards");
+});
+
+await check("K33 if production refuses the id-range query (failed-precondition), the sharded loader falls back to one cursor and still returns every row", async () => {
+  reset();
+  placementsPageRows = Array.from({ length: 230 }, (_, i) => ({ id: `t1__impp${i.toString(16).padStart(4, "0")}`, placementId: `impp${i}`, ...own }));
+  globalThis.__refuseIdRanges = true;
+  try {
+    const { rows, truncated } = await loadAllOwnerPlacementsSharded(db, { ...own, shardCount: 5 });
+    assert.equal(rows.length, 230, "every row must still arrive through the fallback");
+    assert.equal(new Set(rows.map((r) => r.id)).size, 230, "no row duplicated");
+    assert.equal(truncated, false);
+    assert.ok(calls.placementsPage.some((c) => !c.idRange), "the fallback must use the plain, un-ranged reader");
+  } finally { globalThis.__refuseIdRanges = false; }
+});
+await check("K34 any OTHER error from a sharded read is not swallowed", async () => {
+  reset();
+  placementsPageRows = [{ id: "t1__impp0001", ...own }];
+  globalThis.__refuseIdRanges = true;
+  const realCode = "failed-precondition";
+  try {
+    // permission-denied must reach the caller (I15), never fall back silently
+    const orig = placementsPageRows;
+    placementsPageRows = new Proxy(orig, { get(t, k) { if (k === "filter") { const e = new Error("denied"); e.code = "permission-denied"; throw e; } return t[k]; } });
+    globalThis.__refuseIdRanges = false;
+    await assert.rejects(loadAllOwnerPlacementsSharded(db, { ...own, shardCount: 5 }), (e) => e.code === "permission-denied");
+  } finally { globalThis.__refuseIdRanges = false; void realCode; }
 });
 
 console.log(`\n${passed} passed`);

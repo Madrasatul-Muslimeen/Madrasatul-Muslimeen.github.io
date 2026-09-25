@@ -72,4 +72,19 @@ assert.match(
 pass++;
 console.log("  PASS  the harness still routes the Firebase CDN to the stub");
 
+// Architect review, 25 Sep 2026: firebase-stub.mjs keeps the whole stub
+// module inside ONE template literal, so a backtick anywhere in it -- even in
+// a comment -- ends the literal early and the file stops parsing. Every
+// browser suite then dies at import, which reads like a broken app. It has
+// happened twice in one week (issues #259 and #282). Import it here, so the
+// guard names the file instead.
+{
+  let loaded = false, message = "";
+  try { await import(new URL("./firebase-stub.mjs", import.meta.url).href); loaded = true; }
+  catch (err) { message = err.message; }
+  assert.ok(loaded, `firebase-stub.mjs does not parse (${message}) -- look for a backtick inside the stub's template literal, often in a comment`);
+  pass++;
+  console.log("  PASS  firebase-stub.mjs parses (no stray backtick inside its template literal)");
+}
+
 console.log(`\n==== Firebase stub parity: ${pass} passed, 0 failed ====`);

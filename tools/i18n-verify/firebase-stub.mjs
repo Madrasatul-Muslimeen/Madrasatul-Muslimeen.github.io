@@ -282,9 +282,9 @@ export function limit(n) { return { __limit: n }; }
 export function startAfter(snapshotOrDoc) { return { __startAfter: snapshotOrDoc?.id ?? snapshotOrDoc }; }
 export function query(col, ...clauses) { return { __col: col.__col, __clauses: clauses.filter(Boolean) }; }
 // Issue #282 -- Mapping My Journey's sharded parallel loader ranges a page
-// query over `documentId()` (note-foundation.js's own `idRangeClauses()`),
-// which the real Firebase SDK resolves to the sentinel field name `__name__`
-// that `matches()` below already special-cases for `d._id`.
+// query over documentId() (note-foundation.js's own idRangeClauses()),
+// which the real Firebase SDK resolves to the sentinel field name __name__
+// that matches() below already special-cases for d._id.
 export function documentId() { return "__name__"; }
 
 function matches(d, c) {
@@ -295,9 +295,9 @@ function matches(d, c) {
   if (c.op === "array-contains-any") return Array.isArray(v) && c.value.some((x) => v.includes(x));
   if (c.op === ">=") return v >= c.value;
   if (c.op === "<=") return v <= c.value;
-  // Issue #282 -- the sharded loader's upper bound is exclusive (`<`), so
+  // Issue #282 -- the sharded loader's upper bound is exclusive (<), so
   // this is not merely a nice-to-have completion: without it, every shard's
-  // upper-bound clause would silently fall through to `return true` (match
+  // upper-bound clause would silently fall through to return true (match
   // everything), and every shard would re-read the WHOLE range rather than
   // its own slice -- correct-looking totals hiding wasted, duplicated reads.
   if (c.op === "<") return v < c.value;

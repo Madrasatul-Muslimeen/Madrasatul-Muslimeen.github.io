@@ -541,7 +541,11 @@ test("real journey-map-service.js / note-foundation.js functions against the rea
     await ok("SHARD-FOLDERS-ALL-REAL", "loadAllOwnerFoldersSharded() returns every seeded import-shaped folder, across several parallel shards, against the real deployed Rules", shardFoldersPromise);
     const shardFolders = await shardFoldersPromise;
     assert.equal(shardFolders.truncated, false);
-    assert.deepEqual(shardFolders.rows.map((r) => r.folderId).sort(), [...shardProofFolderIds].sort(),
+    // Architect review: earlier cases in this same run created hand-made
+    // (non-imported) rows too, and the sharded loader rightly returns those as
+    // well. So check the seeded imported set exactly, no id twice, and nothing lost.
+    assert.equal(new Set(shardFolders.rows.map((r) => r.folderId)).size, shardFolders.rows.length, "a row came back from two shards");
+    assert.deepEqual(shardFolders.rows.map((r) => r.folderId).filter((id) => id.startsWith("imp")).sort(), [...shardProofFolderIds].sort(),
       "expected exactly the 300 seeded folders back, once each -- no shard boundary may miss or duplicate one");
 
     // SHARD-NOTES-ALL-REAL
@@ -549,14 +553,22 @@ test("real journey-map-service.js / note-foundation.js functions against the rea
     await ok("SHARD-NOTES-ALL-REAL", "loadAllOwnerNotesSharded() returns every seeded import-shaped Note, across several parallel shards, against the real deployed Rules", shardNotesPromise);
     const shardNotes = await shardNotesPromise;
     assert.equal(shardNotes.truncated, false);
-    assert.deepEqual(shardNotes.rows.map((r) => r.noteId).sort(), [...shardProofNoteIds].sort());
+    // Architect review: earlier cases in this same run created hand-made
+    // (non-imported) rows too, and the sharded loader rightly returns those as
+    // well. So check the seeded imported set exactly, no id twice, and nothing lost.
+    assert.equal(new Set(shardNotes.rows.map((r) => r.noteId)).size, shardNotes.rows.length, "a row came back from two shards");
+    assert.deepEqual(shardNotes.rows.map((r) => r.noteId).filter((id) => id.startsWith("imp")).sort(), [...shardProofNoteIds].sort());
 
     // SHARD-PLACEMENTS-ALL-REAL
     const shardPlacementsPromise = loadAllOwnerPlacementsSharded(p1, { tenantId: T, ownerPersonId: "p1" });
     await ok("SHARD-PLACEMENTS-ALL-REAL", "loadAllOwnerPlacementsSharded() returns every seeded import-shaped placement, across several parallel shards, against the real deployed Rules", shardPlacementsPromise);
     const shardPlacements = await shardPlacementsPromise;
     assert.equal(shardPlacements.truncated, false);
-    assert.deepEqual(shardPlacements.rows.map((r) => r.placementId).sort(), [...shardProofPlacementIds].sort());
+    // Architect review: earlier cases in this same run created hand-made
+    // (non-imported) rows too, and the sharded loader rightly returns those as
+    // well. So check the seeded imported set exactly, no id twice, and nothing lost.
+    assert.equal(new Set(shardPlacements.rows.map((r) => r.placementId)).size, shardPlacements.rows.length, "a row came back from two shards");
+    assert.deepEqual(shardPlacements.rows.map((r) => r.placementId).filter((id) => id.startsWith("imp")).sort(), [...shardProofPlacementIds].sort());
 
     // SHARD-FOLDER-TREE-REAL: the tree built from the sharded folder read
     // still walks safely (every seeded folder is a root, none cyclic).

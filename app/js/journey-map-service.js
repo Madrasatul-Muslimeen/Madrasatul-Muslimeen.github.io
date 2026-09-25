@@ -214,12 +214,23 @@ async function loadOneShard(fetchPage, idRange) {
 
 async function loadAllPagesSharded(kind, fetchPage, { tenantId, shardCount = DEFAULT_SHARD_COUNT } = {}) {
   const ranges = entityIdShardRanges(kind, shardCount);
-  const results = await Promise.all(
-    ranges.map((entityRange) => loadOneShard(fetchPage, docIdRangeFor(tenantId, entityRange))));
-  return {
-    rows: results.flatMap((r) => r.rows),
-    truncated: results.some((r) => r.truncated),
-  };
+  try {
+    const results = await Promise.all(
+      ranges.map((entityRange) => loadOneShard(fetchPage, docIdRangeFor(tenantId, entityRange))));
+    return {
+      rows: results.flatMap((r) => r.rows),
+      truncated: results.some((r) => r.truncated),
+    };
+  } catch (err) {
+    // Architect review: a documentId() range beside equality filters should
+    // be served by single-field indexes, but no emulator can prove what
+    // production will accept (the emulator does not enforce indexes). If
+    // production ever answers "needs an index", fall back to the one-cursor
+    // chain every earlier version used, so the page is slower, never broken.
+    if (err?.code !== "failed-precondition") throw err;
+    console.warn(`Sharded ${kind} load refused (${err.message}); falling back to a single cursor.`);
+    return loadOneShard(fetchPage, null);
+  }
 }
 
 /** The folder-side sharded loader, feeding `ownerFolderTreePagedSharded()` below. */
