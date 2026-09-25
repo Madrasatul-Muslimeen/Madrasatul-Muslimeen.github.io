@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="stylesheet" href="./css/shell.css" />
-<title>QuranRevival — Import from WordPress</title>
+<title>QuranRevival — Import Notes</title>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 46rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
   h1 { font-size: 1.4rem; margin-bottom: 0.2rem; }
@@ -32,11 +32,17 @@
   .refusal-list { font-size: 0.8rem; color: #a3352b; margin: 0.4rem 0 0; padding-left: 1.1rem; max-height: 12rem; overflow-y: auto; }
   #progressLine { font-size: 0.88rem; color: #1F3A6E; margin: 0.5rem 0; }
   #resultLine { font-size: 0.9rem; margin: 0.5rem 0; }
+  #sourceBar { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; margin: 0.6rem 0; }
+  #stackNameRow { margin: 0.5rem 0; }
+  #stackNameRow input[type="text"] { width: 16rem; max-width: 100%; }
+  .file-preview-list { list-style: none; padding: 0; margin: 0.6rem 0 0; }
+  .file-preview-list li { border-top: 1px solid #eee; padding: 0.4rem 0; font-size: 0.84rem; }
+  .file-preview-list li:first-child { border-top: none; }
 </style>
 </head>
 <body>
-  <h1>Import from WordPress</h1>
-  <p class="intro">Bring your mappingmyjourney.com folders and Notes into Mapping My Journey — the same folders, the same Notes, each linked to its āyah where its title names one. This never touches your existing folders or Notes, and never deletes anything.</p>
+  <h1>Import Notes</h1>
+  <p class="intro">Bring Notes from another app into Mapping My Journey — folders and Notes, each linked to its āyah where its title or text names one. This never touches your existing folders or Notes, and never deletes anything.</p>
 
   <nav class="app-nav" id="topNav">
     <details class="nav-cat nav-cat-home">
@@ -69,8 +75,23 @@
     <p id="pageStatusMsg" class="note" style="display:none;"></p>
 
     <div id="pickerSection">
-      <h2>1. Choose your export file</h2>
-      <p class="note">In WordPress: Tools → Export → All content, then download the .xml file. It is read in this browser only — nothing is uploaded anywhere else, and the file itself is never saved to this app.</p>
+      <h2>1. Choose your export</h2>
+      <div id="sourceBar">
+        <label>Source
+          <select id="sourceSelect">
+            <option value="wordpress">WordPress export (.xml)</option>
+            <option value="evernote">Evernote export (.enex)</option>
+          </select>
+        </label>
+      </div>
+      <p id="sourceHelpWordpress" class="note">In WordPress: Tools → Export → All content, then download the .xml file. It is read in this browser only — nothing is uploaded anywhere else, and the file itself is never saved to this app.</p>
+      <p id="sourceHelpEvernote" class="note" style="display:none;">In Evernote: File → Export Notes, choose Evernote XML Format (.enex), one file per notebook. You may choose several .enex files at once — each becomes its own folder. Pictures and attachments are not imported this round: each is replaced by a small placeholder in the Note, like [picture: file-name]. It is read in this browser only — nothing is uploaded anywhere else, and the files themselves are never saved to this app.</p>
+      <div id="stackNameRow" style="display:none;">
+        <label>Stack name (optional) — becomes one shared parent folder above the notebooks you choose below
+          <br />
+          <input type="text" id="stackNameInput" placeholder="e.g. Personal Journal" />
+        </label>
+      </div>
       <input type="file" id="fileInput" accept=".xml" />
       <p id="parsingMsg" class="note" style="display:none;"></p>
     </div>
@@ -79,13 +100,16 @@
       <h2>2. Preview</h2>
       <div class="preview-card">
         <div class="preview-stats">
+          <span class="preview-stat" id="statFilesWrap" style="display:none;"><strong id="statFiles">0</strong>Files chosen</span>
           <span class="preview-stat"><strong id="statFolders">0</strong>Folders</span>
           <span class="preview-stat"><strong id="statNotes">0</strong>Notes</span>
           <span class="preview-stat"><strong id="statAyahLinks">0</strong>Linked to one āyah</span>
           <span class="preview-stat"><strong id="statRangeLinks">0</strong>Linked to a range</span>
           <span class="preview-stat"><strong id="statHadith">0</strong>Carry a Hadith reference</span>
           <span class="preview-stat"><strong id="statNoRef">0</strong>No reference found</span>
+          <span class="preview-stat" id="statResourcesWrap" style="display:none;"><strong id="statResources">0</strong>Pictures/attachments not imported</span>
         </div>
+        <ul id="filePreviewList" class="file-preview-list" style="display:none;"></ul>
         <p id="unmatchedIntro" class="note" style="display:none;"></p>
         <ul id="unmatchedSample" class="sample-list"></ul>
       </div>
@@ -117,6 +141,8 @@
     import { getSurahIndex } from "./js/quran-data.js";
     import { parseWxrXml, analyzeWxrImport } from "./js/wordpress-import-parser.js";
     import { runWordpressImport } from "./js/wordpress-import-service.js";
+    import { parseEnexXml, planEnexImport } from "./js/evernote-import-parser.js";
+    import { runEvernoteImport } from "./js/evernote-import-service.js";
     import { isWordpressImportPersistenceReady, wordpressImportUnavailableReason } from "./js/study-wordpress-import-readiness.js";
 
     translateStatic();
@@ -131,9 +157,17 @@
     const personSelect = document.getElementById("personSelect");
     const readOnlyMsg = document.getElementById("readOnlyMsg");
     const pageStatusMsg = document.getElementById("pageStatusMsg");
+    const sourceSelect = document.getElementById("sourceSelect");
+    const sourceHelpWordpress = document.getElementById("sourceHelpWordpress");
+    const sourceHelpEvernote = document.getElementById("sourceHelpEvernote");
+    const stackNameRow = document.getElementById("stackNameRow");
+    const stackNameInput = document.getElementById("stackNameInput");
     const fileInput = document.getElementById("fileInput");
     const parsingMsg = document.getElementById("parsingMsg");
     const previewSection = document.getElementById("previewSection");
+    const statFilesWrap = document.getElementById("statFilesWrap");
+    const statResourcesWrap = document.getElementById("statResourcesWrap");
+    const filePreviewList = document.getElementById("filePreviewList");
     const unmatchedIntro = document.getElementById("unmatchedIntro");
     const unmatchedSampleEl = document.getElementById("unmatchedSample");
     const gateNotice = document.getElementById("gateNotice");
@@ -164,6 +198,34 @@
     let roster = [];
     let selectedPersonId = null;
     let currentPlan = null;
+    let currentSource = "wordpress";
+
+    // -----------------------------------------------------------------------
+    // The source picker -- issue #271: "WordPress export (.xml)" and
+    // "Evernote export (.enex)" side by side on the one page, rather than a
+    // second page forking the whole screen. Switching sources resets any
+    // in-progress preview, exactly like choosing a new file does.
+    // -----------------------------------------------------------------------
+    sourceSelect.addEventListener("change", () => {
+      currentSource = sourceSelect.value;
+      currentPlan = null;
+      previewSection.style.display = "none";
+      if (currentSource === "evernote") {
+        sourceHelpWordpress.style.display = "none";
+        sourceHelpEvernote.style.display = "block";
+        stackNameRow.style.display = "block";
+        fileInput.accept = ".enex";
+        fileInput.multiple = true;
+      } else {
+        sourceHelpWordpress.style.display = "block";
+        sourceHelpEvernote.style.display = "none";
+        stackNameRow.style.display = "none";
+        fileInput.accept = ".xml";
+        fileInput.multiple = false;
+      }
+      fileInput.value = "";
+      refreshImportGate();
+    });
 
     function myPersonIdInActiveTenant() {
       return myMemberships.find((m) => m.tenantId === activeTenantId)?.personId ?? null;
@@ -230,20 +292,30 @@
     let surahIndexPromise = null;
 
     fileInput.addEventListener("change", async () => {
-      const file = fileInput.files?.[0];
-      if (!file) return;
+      const files = [...(fileInput.files || [])];
+      if (!files.length) return;
       currentPlan = null;
       previewSection.style.display = "none";
       parsingMsg.style.display = "block";
-      parsingMsg.textContent = t("Reading {name}…", { name: file.name });
+      parsingMsg.textContent = files.length === 1
+        ? t("Reading {name}…", { name: files[0].name })
+        : t("Reading {count} files…", { count: files.length });
       try {
-        const [xmlText, surahIndex] = await Promise.all([
-          file.text(),
-          surahIndexPromise ?? (surahIndexPromise = getSurahIndex()),
-        ]);
-        const parsed = parseWxrXml(xmlText);
-        currentPlan = analyzeWxrImport(parsed, { surahIndex });
-        renderPreview(currentPlan);
+        const surahIndex = await (surahIndexPromise ?? (surahIndexPromise = getSurahIndex()));
+        if (currentSource === "evernote") {
+          const stackName = stackNameInput.value.trim() || null;
+          const perFile = await Promise.all(files.map(async (file) => ({
+            notebookName: file.name.replace(/\.enex$/i, ""),
+            parentFolderName: stackName,
+            items: parseEnexXml(await file.text()).items,
+          })));
+          currentPlan = planEnexImport(perFile, { surahIndex });
+        } else {
+          const xmlText = await files[0].text();
+          const parsed = parseWxrXml(xmlText);
+          currentPlan = analyzeWxrImport(parsed, { surahIndex });
+        }
+        renderPreview(currentPlan, currentSource);
         parsingMsg.style.display = "none";
         previewSection.style.display = "block";
       } catch (err) {
@@ -253,13 +325,33 @@
       refreshImportGate();
     });
 
-    function renderPreview(plan) {
+    function renderPreview(plan, source) {
       document.getElementById("statFolders").textContent = plan.preview.folderCount;
       document.getElementById("statNotes").textContent = plan.preview.noteCount;
       document.getElementById("statAyahLinks").textContent = plan.preview.ayahLinkCount;
       document.getElementById("statRangeLinks").textContent = plan.preview.rangeLinkCount;
       document.getElementById("statHadith").textContent = plan.preview.hadithCount;
       document.getElementById("statNoRef").textContent = plan.preview.noRefCount + plan.preview.invalidRefCount;
+
+      const isEvernote = source === "evernote";
+      statFilesWrap.style.display = isEvernote ? "" : "none";
+      statResourcesWrap.style.display = isEvernote ? "" : "none";
+      if (isEvernote) {
+        document.getElementById("statFiles").textContent = plan.preview.fileCount;
+        document.getElementById("statResources").textContent = plan.preview.resourceCount;
+        filePreviewList.style.display = plan.filePreviews.length > 1 ? "block" : "none";
+        filePreviewList.innerHTML = plan.filePreviews.map((p) => `<li>${escapeHtml(t(
+          "{notebook}: {count} Notes — {ayah} āyah, {range} range, {hadith} Hadith, {noref} no reference, {res} pictures/attachments not imported",
+          {
+            notebook: p.notebookName, count: p.noteCount, ayah: p.ayahLinkCount, range: p.rangeLinkCount,
+            hadith: p.hadithCount, noref: p.noRefCount + p.invalidRefCount, res: p.resourceCount,
+          },
+        ))}</li>`).join("");
+      } else {
+        filePreviewList.style.display = "none";
+        filePreviewList.innerHTML = "";
+      }
+
       const sample = plan.preview.unmatchedSample;
       if (sample.length) {
         unmatchedIntro.style.display = "block";
@@ -311,7 +403,8 @@
       refusalListEl.innerHTML = "";
       try {
         const actorUid = auth.currentUser.uid;
-        const result = await runWordpressImport(db, {
+        const runImport = currentSource === "evernote" ? runEvernoteImport : runWordpressImport;
+        const result = await runImport(db, {
           tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: actorUid, actorUid,
           plan: currentPlan,
           onProgress: (p) => {

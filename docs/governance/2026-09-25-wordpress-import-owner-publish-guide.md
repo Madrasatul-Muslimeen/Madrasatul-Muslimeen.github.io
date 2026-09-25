@@ -36,3 +36,16 @@ exactly the ruleset they tested:
   refused, and a second run created nothing.
 - `tools/firestore-emulator/wordpress-import-v1.rules.test.mjs` has 16
   allow/deny cases.
+
+## Issue #271 addendum -- this same one paste also unlocks Evernote
+
+The Evernote (.enex) importer built for issue #271 lives on the same page
+(`app/import-notes.html`, a Source choice above the file picker) and writes
+the identical three optional fields (`originalCreatedAt`, `originalModifiedAt`,
+`importSource`) on the identical two collections. It reuses this exact gate,
+`isWordpressImportPersistenceReady()`, rather than a second one -- so nothing
+further needs publishing for it, and no second guide is needed. Its own
+real-function proof is `tools/firestore-emulator/evernote-import-real-
+function.rules.test.mjs`, against a committed hand-built fixture (Evernote's
+own export was not available to build this round, so there are no real Owner
+counts to quote here the way the WordPress numbers above were).
