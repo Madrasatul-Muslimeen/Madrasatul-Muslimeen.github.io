@@ -217,6 +217,25 @@ export async function listSubmissionsForAssignment(db, tenantId, fullAssignmentI
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
+/**
+ * Speed, part 6b (issue #288) -- every submission for one person, across
+ * however many assignments they have, one query -- rather than
+ * homework.html's old `Promise.all(assignments.map(getSubmission))` loop, one
+ * round trip per assignment card. Same list-safety shape as
+ * listAllRecordsForPerson() in records.js: tenantId+personId are both fixed
+ * by the query's own filters, the exact fields submissions' canRecordFor()
+ * read rule checks.
+ */
+export async function listSubmissionsForPerson(db, tenantId, personId) {
+  const q = query(
+    collection(db, TENANT.SUBMISSIONS),
+    where("tenantId", "==", tenantId),
+    where("personId", "==", personId)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
 /** Student/self action -- no file attachment (Phase 15+ territory), just a timestamp and an optional note. */
 export async function markSubmitted(db, fullAssignmentId, personId, note) {
   return updateDocument(db, TENANT.SUBMISSIONS, submissionDocId(fullAssignmentId, personId), {

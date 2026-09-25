@@ -93,7 +93,7 @@
         <button id="createUnitBtn" style="margin-top:0.8rem;">Create unit</button>
         <div id="createUnitResult" class="muted"></div>
       </fieldset>
-      <div id="unitsBody"><p class="muted">Loading…</p></div>
+      <div id="unitsBody"><p class="muted loading-placeholder">Loading…</p></div>
 
       <h2>Curriculum plan</h2>
       <p class="muted">4 terms × 10 weeks. Pick who the plan is for — a
@@ -209,12 +209,14 @@
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { safeWrite } from "./js/errors.js";
     import {
-      bootstrapContext,
+      getMyMembershipRoles,
+      hydrateMemberships,
+      pickContext,
       getActiveContext,
       setActiveContext,
       effectiveRoles,
     } from "./js/session-context.js";
-    import { getSubjectTree, listLadders, listLevels } from "./js/catalogue.js";
+    import { getSubjectTree, listLadders, listAllLevelsForTenant } from "./js/catalogue.js";
     import { listClasses } from "./js/classes.js";
     import {
       createCurriculumUnit, listCurriculumUnits, setCurriculumUnitStatus,
@@ -328,9 +330,40 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       return null;
     }
 
-    async function loadContextData() {
-      const rosterSnap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId)));
+    /** {ladderId -> that ladder's own levels}, from one whole-tenant read (listAllLevelsForTenant) instead of one query per ladder -- same helper shape catalogue.html's own levelsByLadder() uses. */
+    function groupLevelsByLadder(levels) {
+      const map = new Map();
+      for (const lv of levels) {
+        if (!map.has(lv.ladderId)) map.set(lv.ladderId, []);
+        map.get(lv.ladderId).push(lv);
+      }
+      return map;
+    }
+
+    // Speed, part 6b (issue #288): this used to be a long sequential chain --
+    // roster, then the subject tree, then ladders, then ONE ROUND TRIP PER
+    // LADDER for its own levels, then classes, then (in one combined batch)
+    // units/resources/plan/grades. None of the first five needs any other
+    // one's RESULT to know what to ask for (all of it only needs
+    // activeTenantId), so they now fire together -- and the per-ladder loop
+    // is one whole-tenant query (listAllLevelsForTenant, the same fix issue
+    // #285 gave catalogue.html for its own ladders table), grouped
+    // client-side instead of fetched per ladder.
+    async function loadContextData(hydratedMembershipsPromise) {
+      const hydrationPromise = hydratedMembershipsPromise ?? Promise.resolve(myMemberships);
+      const [rosterSnap, tree, allLadders, allLevels, cls, hydrated] = await Promise.all([
+        getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId))),
+        getSubjectTree(db, activeTenantId),
+        listLadders(db, activeTenantId),
+        listAllLevelsForTenant(db, activeTenantId),
+        listClasses(db, activeTenantId),
+        hydrationPromise,
+      ]);
       roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      myMemberships = hydrated;
+      tenantSelect.innerHTML = myMemberships
+        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
+        .join("");
 
       const preview = currentPreview();
       const { viewAsRole, effRoles } = preview;
@@ -342,15 +375,14 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       noAdminNote.style.display = canAdmin ? "none" : "";
       if (!canAdmin) return;
 
-      subjectTree = await getSubjectTree(db, activeTenantId);
+      subjectTree = tree;
       const leaves = subjectTree.filter((n) => n.isTrackable && n.status !== "archived");
       unitSubjectChecks.innerHTML = leaves
         .map((n) => `<label><input type="checkbox" value="${n.id}" /> ${langText(n.name, getAppLang(), n.id)}</label>`)
         .join("") || `<span class="muted">${t("No subjects yet.")}</span>`;
 
-      ladders = (await listLadders(db, activeTenantId)).filter((l) => l.status === "active");
-      levelsByLadder = new Map();
-      for (const l of ladders) levelsByLadder.set(l.id, await listLevels(db, activeTenantId, l.id));
+      ladders = allLadders.filter((l) => l.status === "active");
+      levelsByLadder = groupLevelsByLadder(allLevels);
 
       const ladderOptions = `<option value="">—</option>` + ladders.map((l) => `<option value="${l.id}">${langText(l.name, getAppLang(), l.id)}</option>`).join("");
       unitLadderSelect.innerHTML = ladderOptions;
@@ -359,7 +391,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       refreshUnitLevelOptions();
       refreshGradeLevelOptions();
 
-      classes = (await listClasses(db, activeTenantId)).filter((c) => c.status === "active");
+      classes = cls.filter((c) => c.status === "active");
 
       // The loop variable is deliberately NOT called `t` here -- that would
       // shadow the imported translate function for the whole callback.
@@ -399,7 +431,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     // -----------------------------------------------------------------------
 
     async function refreshUnits() {
-      unitsBody.innerHTML = `<p class="muted">${t("Loading…")}</p>`;
+      unitsBody.innerHTML = `<p class="muted loading-placeholder">${t("Loading…")}</p>`;
       try {
         units = await listCurriculumUnits(db, activeTenantId);
         const visible = units.filter((u) => u.status === "active");
@@ -695,29 +727,35 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       }
 
       try {
+        // Speed, part 6b (issue #288), the same pattern issue #278's own fix
+        // uses: userIndex and the ROLES-ONLY membership query are fired
+        // together -- pickContext() below only ever reads tenantId/personId/
+        // roles, never tenantName/tenantData.
+        const membershipRolesPromise = getMyMembershipRoles(db, user.uid);
+        membershipRolesPromise.catch(() => {}); // see the real await below; this only stops a reload (adoptAppLangFromUserIndex) from logging it as unhandled.
+
         const userIndexSnap = await step("read your userIndex", () => getDoc(doc(db, TENANT.USER_INDEX, user.uid)));
         // v07.37: if this account has a language set on another device, take it
         // and reload. Costs no extra read -- the snapshot is already in hand.
         if (adoptAppLangFromUserIndex(userIndexSnap)) return;
         const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
 
-        // One membership load, not two: bootstrapContext() hands back the
-        // list it used to choose the context, which this page then used to
-        // fetch a second time, one round trip later, for the tenant picker.
-        const { context, memberships } = await step("initialize active context", () => bootstrapContext(db, user.uid, defaultTenantId));
+        const membershipRoles = await step("load your tenant memberships", () => membershipRolesPromise);
+        const context = pickContext(membershipRoles, defaultTenantId);
         if (!context) {
           whoEl.innerHTML += noAccountMessageHtml();
           return;
         }
         activeTenantId = context.tenantId;
 
-        myMemberships = memberships;
-        tenantSelect.innerHTML = myMemberships
-          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
-          .join("");
+        // The tenant picker's real names come from the SAME hydration call
+        // loadContextData() fires its own reads alongside, rather than
+        // being awaited before any of them.
+        const hydratedMembershipsPromise = step("load tenant names", () => hydrateMemberships(db, membershipRoles));
+        hydratedMembershipsPromise.catch(() => {}); // real failure surfaces via the awaited copy inside loadContextData().
 
         appEl.style.display = "block";
-        await step("load context data", loadContextData);
+        await step("load context data", () => loadContextData(hydratedMembershipsPromise));
       } catch (err) {
         whoEl.textContent += ` — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`;
         console.error(err);
@@ -729,6 +767,8 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       if (!chosen) return;
       activeTenantId = chosen.tenantId;
       setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
+      // myMemberships already carries every membership's own hydrated tenant
+      // document (fetched once, at sign-in) -- no reason to fetch it again.
       await loadContextData();
     });
   </script>

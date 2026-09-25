@@ -104,6 +104,45 @@ const PAGES = [
       return !!app && app.style.display !== "none" && !!body && body.children.length > 0;
     },
   },
+  // Issue #288 (speed, part 6b) -- "usable" is the Assignments list, the
+  // first thing this page draws. assignmentsBody starts as static markup
+  // carrying a "Loading…" placeholder (unlike a bare empty <tbody>), so the
+  // loading state is told apart from the loaded one by the
+  // `.loading-placeholder` class every render of that placeholder carries,
+  // not by children.length alone.
+  {
+    path: "/app/homework.html",
+    name: "Homework",
+    usable: () => {
+      const app = document.getElementById("app");
+      const body = document.getElementById("assignmentsBody");
+      return !!app && app.style.display !== "none" && !!body && body.children.length > 0 && !body.querySelector(".loading-placeholder");
+    },
+  },
+  // Issue #288 (speed, part 6b) -- "usable" is the Curriculum units list,
+  // the first thing this admin page draws. Same loading-placeholder marker
+  // reasoning as Homework above.
+  {
+    path: "/app/curriculum.html",
+    name: "Curriculum",
+    usable: () => {
+      const app = document.getElementById("app");
+      const body = document.getElementById("unitsBody");
+      return !!app && app.style.display !== "none" && !!body && body.children.length > 0 && !body.querySelector(".loading-placeholder");
+    },
+  },
+  // Issue #288 (speed, part 6b) -- "usable" is the Course offers list, the
+  // first thing this page draws. Same loading-placeholder marker reasoning
+  // as Homework above.
+  {
+    path: "/app/course-offers.html",
+    name: "Course Offers",
+    usable: () => {
+      const app = document.getElementById("app");
+      const body = document.getElementById("offersBody");
+      return !!app && app.style.display !== "none" && !!body && body.children.length > 0 && !body.querySelector(".loading-placeholder");
+    },
+  },
 ];
 
 const browser = await chromium.launch();
@@ -133,5 +172,5 @@ for (const page of PAGES) {
 }
 
 await browser.close();
-console.log(`\n==== Module startup reads (Deen Study, Health, Asma ul Husna, Records, Monitor, Catalogue): ${pass} passed, ${fail} failed ====`);
+console.log(`\n==== Module startup reads (Deen Study, Health, Asma ul Husna, Records, Monitor, Catalogue, Homework, Curriculum, Course Offers): ${pass} passed, ${fail} failed ====`);
 process.exit(fail ? 1 : 0);
