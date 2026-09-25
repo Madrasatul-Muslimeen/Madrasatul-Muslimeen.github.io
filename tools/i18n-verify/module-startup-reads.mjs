@@ -20,6 +20,15 @@
 // reads together and skip the seeding/repair checks entirely when what was
 // just read shows nothing missing.
 //
+// Speed part 7 (issue #291, 25 Sep 2026) adds Notes, Bookmarks, People,
+// Classes and Dawah to the same pin. Notes/Bookmarks/People/Dawah were each
+// five or six sequential round trips (userIndex, then getMyMembershipRoles,
+// then hydrateMemberships, then tenantPeople, then the page's own reads --
+// none of it fired together). Classes was the worst: on top of the same
+// chain, one listEnrollmentsForOffer() round trip PER CLASS CARD -- replaced
+// with the whole-tenant listAllEnrollmentsForTenant() course-offers.html
+// already uses, grouped client-side per card instead.
+//
 // Run from the repository root with `node serve.js` running.
 import { chromium, newContext, BASE } from "./harness.mjs";
 import { SUBJECT_TEMPLATES, MODULE_TEMPLATES } from "../../app/js/catalogue-data.js";
@@ -143,6 +152,70 @@ const PAGES = [
       return !!app && app.style.display !== "none" && !!body && body.children.length > 0 && !body.querySelector(".loading-placeholder");
     },
   },
+  // Issue #291 (speed, part 7) -- "usable" is the Notes list for the one
+  // Study Unit this screen is scoped to, same shape measure.mjs's own copy
+  // of this predicate uses.
+  {
+    path: "/app/notes.html?unit=" + encodeURIComponent("ayah:1:1"),
+    name: "My Notes",
+    usable: () => {
+      const app = document.getElementById("app");
+      const banner = document.getElementById("unitBanner");
+      const notesContainer = document.getElementById("notesContainer");
+      const emptyMsg = document.getElementById("emptyMsg");
+      return !!app && app.style.display !== "none" && banner.style.display === "block"
+        && (notesContainer.children.length > 0 || emptyMsg.style.display === "block");
+    },
+  },
+  // Issue #291 (speed, part 7) -- "usable" is the bookmarks manager's own
+  // rendered state (a folder/unfiled/tagged-for row, or the empty message).
+  {
+    path: "/app/bookmarks.html",
+    name: "Bookmarks",
+    usable: () => {
+      const app = document.getElementById("app");
+      const folders = document.getElementById("foldersContainer");
+      const unfiled = document.getElementById("unfiledContainer");
+      const tagged = document.getElementById("taggedForContainer");
+      const emptyMsg = document.getElementById("emptyMsg");
+      return !!app && app.style.display !== "none"
+        && (folders.children.length > 0 || unfiled.children.length > 0 || tagged.children.length > 0 || emptyMsg.style.display === "block");
+    },
+  },
+  // Issue #291 (speed, part 7) -- "usable" is the roster table, the first
+  // thing this page draws.
+  {
+    path: "/app/people.html",
+    name: "People",
+    usable: () => {
+      const app = document.getElementById("app");
+      const body = document.getElementById("rosterBody");
+      return !!app && app.style.display !== "none" && !!body && body.children.length > 0;
+    },
+  },
+  // Issue #291 (speed, part 7) -- "usable" is the Classes list, the first
+  // thing this page draws. Same loading-placeholder marker reasoning as
+  // Homework/Curriculum/Course Offers above.
+  {
+    path: "/app/classes.html",
+    name: "Classes",
+    usable: () => {
+      const app = document.getElementById("app");
+      const body = document.getElementById("classesBody");
+      return !!app && app.style.display !== "none" && !!body && body.children.length > 0 && !body.querySelector(".loading-placeholder");
+    },
+  },
+  // Issue #291 (speed, part 7) -- "usable" is the default "My pages" view,
+  // the first thing this page draws.
+  {
+    path: "/app/dawah.html",
+    name: "Dawah",
+    usable: () => {
+      const app = document.getElementById("app");
+      const view = document.getElementById("viewMine");
+      return !!app && app.style.display !== "none" && !!view && view.children.length > 0;
+    },
+  },
 ];
 
 const browser = await chromium.launch();
@@ -172,5 +245,5 @@ for (const page of PAGES) {
 }
 
 await browser.close();
-console.log(`\n==== Module startup reads (Deen Study, Health, Asma ul Husna, Records, Monitor, Catalogue, Homework, Curriculum, Course Offers): ${pass} passed, ${fail} failed ====`);
+console.log(`\n==== Module startup reads (Deen Study, Health, Asma ul Husna, Records, Monitor, Catalogue, Homework, Curriculum, Course Offers, My Notes, Bookmarks, People, Classes, Dawah): ${pass} passed, ${fail} failed ====`);
 process.exit(fail ? 1 : 0);
