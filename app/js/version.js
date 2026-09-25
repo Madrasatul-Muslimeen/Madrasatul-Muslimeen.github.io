@@ -578,4 +578,5 @@
 // all 11 governance suites clean, all five new suites plus all three
 // regression suites re-run matching claimed counts exactly (301 checks
 // total). Allocated by the MMSA Architect.
-export const APP_VERSION = "08.63";
+// 08.64: Word by Word as its own Explore tab (issue #261). Allocated by the MMSA Architect.
+export const APP_VERSION = "08.64";

@@ -17965,6 +17965,142 @@ with `elementFromPoint`), at least 40px tall, correct text, no sideways
 scroll, and pressing it returns to Quran Study, plus the direct-visit case.
 With the change removed the suite fails.
 
+## 25 Sep 2026 — Mapping My Journey: Folders view becomes a Siyagah-style folder tree (issue #259, NO VERSION BUMP — the Architect allocates one)
+
+The Owner asked for MMSA's Folders view to work like the "My Notebooks"
+dialog in Siyagah, another of the Owner's own apps, whose Architect wrote a
+full reference for this round to adapt (not copy — Siyagah's own
+implementation keeps one whole notebook in memory, has real delete, and has
+no owner checks; none of that carries over here). Two parts, committed
+separately as the issue asked.
+
+**Part 1 — the data layer.** Two real limits existed before this round:
+`listNotesForOwner()` capped at 100 (an owner with more Notes never saw the
+rest, in ANY view), and each folder showed at most 99 filed Notes
+(`journey-map-service.js`'s own `MAX_PLACEMENTS_PER_READ`). The deployed
+Rules' `listIsBounded()` refuses any list request above 100 regardless, so
+the fix is paging, never a bigger `limit()`. `note-foundation.js` gains
+`listNotesForOwnerPage()`/`listNotePlacementsForOwnerPage()`, the same query
+shapes as the existing unpaged readers (so no new composite index), with
+`pageSize` capped at 100 and thrown on before any request is made.
+`journey-map-service.js` gains `loadAllOwnerNotes()`/`loadAllOwnerPlacements()`
+(loop pages to exhaustion, a 50-page safety cap reported via `truncated`,
+never spun forever), `folderNoteCounts()` (a pure per-folder distinct-active-
+Note subtree count, built on the existing `buildFolderTree()` walk — no
+second recursive walk was written), and `folderMoveRefusal()` (a thin
+forward to the contract's `folderTreeRefusal()`, so the screen can preview a
+refused drag-and-drop move without importing the pure contract a second,
+direct way — `journey-map-boundary.mjs` pins that reachability). The
+harness's Firebase stub (`firebase-stub.mjs`) gained a real `startAfter()`
+export with cursor support in its own `getDocs()`, so `stub-parity.mjs`
+stays green. New pure suite `journey-map-counts.mjs` (9 checks, 2
+mutation-proven) for `folderNoteCounts()`; `journey-map-service.mjs`
+extended (K19–K25) covering the two paging loops, the safety cap, and
+`folderMoveRefusal()`. `journey-map-real-function.rules.test.mjs` extended
+with the emulator cases the issue names (250 Notes/250 placements across
+pages against the REAL deployed Rules, a cross-tenant denial, `pageSize:
+101` throwing before any request) — **this sandbox cannot run the
+emulator**, so these are written but unrun; the Architect runs them.
+
+**Part 2 — the tree.** The Folders view's breadcrumb drill-down
+(`openFolderPath`, one folder open at a time, `prompt()` dialogs) is
+replaced by a single expandable tree, reading the owner's WHOLE set of
+Notes and placements up front via Part 1's new paged loaders and computing
+every folder's contents and count badge locally (no per-folder read),
+which is what actually fixes both real limits in practice. Built: ▶/▾
+expand/collapse (children rendered only when open, expand state per device
+in `localStorage`); a count badge from `folderNoteCounts()` (hidden at
+zero); numbering DERIVED at render time from display position — `(01)`,
+`(01.02)` — and NEVER sent in a `renameFolder()` payload, behind a
+per-device "Show numbers" toggle (default on); the two system folders
+always first, never numbered; a 📍 pin marking where "+ New folder" will
+file, shown in the footer as "New folder in: X ✕"; inline rename
+(Enter/blur saves, Escape cancels, an empty name is ignored); Remove
+retitled to an IN-PAGE confirmation (never `window.confirm()`), refusing a
+folder with active children in words BEFORE the confirmation is even
+offered, worded per I4 (kept, not deleted; Notes untouched); dragging a row
+(top 28% = before, bottom 28% = after, middle 44% = inside), refusing a
+self-drop, a drop into the dragged folder's own subtree, or anything past
+`MAX_FOLDER_DEPTH`, previewed via `folderMoveRefusal()` and said in words;
+▲▼ and "Move to…" kept in the ⋯ menu for a phone, reusing the existing
+`moveFolder`/`reorderFolder`/`reorderFiling` wrappers — reordering
+generalised from the existing `planReorder()` (adjacent-swap only) to a
+new, equally pure `planMove()` for an arbitrary drag target, same
+discipline (renumber by display position, write only what changed); Notes
+rendered as leaves of an open folder (a Note filed in two folders appears
+under both, independently — ADR-010 §5), with their own ▲▼/Move to…; a
+search box filtering folder names and Note titles in the already-loaded
+data (no new read), with a flat result list, a breadcrumb per folder
+result, and tap-to-expand-and-scroll; A−/A+ text size for the tree, per
+device, via a `--tree-scale` CSS custom property (regular `font-size`
+would not have cascaded, since the existing rules already use `rem`,
+relative to the document root, not to the tree). Timeline and Path now
+read through `loadAllOwnerNotes()` too, so they stop capping at 100 —
+their own per-folder filter/render logic is otherwise untouched, per the
+issue's own scope.
+
+**A deliberate, stated simplification from the Owner's own Siyagah
+reference**: Siyagah shows 📍/✏️/▲/▼/Move to…/🗑 as separate icons above
+~900px and folds them into one ⋯ menu only below it; this round folds them
+into ONE menu at every width. The concretely testable requirement — a
+hit-testable ⋯ menu below 900px, the exact defect class Siyagah's own bug
+was (its menu opened BEHIND the dialog on a phone) — is met either way; a
+second, wider desktop icon row is not built this round.
+
+**Two existing sections of `journey-map-screen.mjs` were UPDATED IN PLACE,
+reasons recorded, never silently loosened**: the P6-G folder-editing
+section (the old breadcrumb-drill-down assumptions, the `confirm()`-based
+retire flow, and the `renameFolderPrompt`/`removeFolderPrompt` refreshAll
+claims all changed for real reasons the issue itself asked for) and the
+`isSelfSelected()` gating window (widened from 1700 to 2600 characters,
+measured directly against the ⋯ menu's own five-action markup).
+`journey-map-boundary.mjs`'s `PHASE_6_DATA_LAYER_FUNCTIONS` list gained
+`listNotePlacementsForOwnerPage()`, the new placement page-reader, for the
+same reason its siblings are already there. New checks: the tree markup
+exists; numbering is derived and never sent in a `renameFolder()` payload;
+Remove never calls a Note-writing function; `planMove()` is proven the
+same way `planReorder()` already is. The ⋯ menu hit-test at 390px
+(`document.elementFromPoint()` at the menu's own centre) is WRITTEN but
+UNRUN — Playwright is not installed in this sandbox, the same documented,
+repeated gap every browser-driven suite in this project records; the
+Architect runs it.
+
+**No Rules or index change** — Part 1's new reads are equality/orderBy
+shapes the deployed Rules and the existing composite indexes already
+cover. `app/js/version.js`, `CLAUDE.md`, `firestore.rules`,
+`firebase.json`, `firestore.indexes.json` and `.github/workflows/**` are
+untouched; **this round needs a version number, which only the Architect
+allocates.**
+
+**All 13 checks named in the issue re-run clean from the repository root**:
+`programme-ledger` 8, `programme-ledger-mutations` 49, `brief-integrity` 8,
+`study-activity-evidence-boundary` 28 + `-mutations` 13, `study-event-wiring`
+41, `rules-authorisation-executable` 40, `workflow-expressions` 12,
+`stub-parity` 3, `journey-map-boundary` 18, `journey-map-screen` 47 (46 run
++ 1 browser check skipped, Playwright unavailable), `journey-map-counts` 9,
+`note-foundation-boundary` 30, `firestore-index-requirements` 10 — **306
+checks run, 0 failed.** The emulator suite (Part 1's own new cases) could
+not run in this sandbox at all; the Architect runs it.
+
+**v08.63 (25 Sep 2026)** allocates the folder-tree round above (issue #259).
+The Architect's review fixed four things before merge. **(1)** The builder's
+branch had deleted v08.62's Back button from `journey-map.html` and its
+CHANGELOG entry: the branch was cut before v08.62 and the file was rewritten
+whole. Both are restored (`journey-map-back.mjs` 38/0). **(2)** A backtick
+inside a comment in `firebase-stub.mjs`, which is served as a template
+literal, was a SyntaxError that stopped every browser suite. **(3)**
+`journey-map-real-function.rules.test.mjs` rewrote `note-foundation.js`'s
+Firebase import without the new `startAfter`, so the suite threw before any
+check ran. It is now **30/30 against the live `firestore.rules`**, including
+250 Notes and 250 placements read back across pages and a 101 page size
+refused. **(4)** The ⋯-menu hit-test opened `/journey-map.html` instead of
+`/app/journey-map.html`, and depended on a folder created through the stub,
+which never mutates its own data. It now seeds a real folder, and
+`journey-map-screen.mjs` is 48/0. Looked at in a real browser at 390px
+(English and Bangla) and 1100px with nested folders and filed Notes: counts
+are correct and there is no sideways scroll. Recorded, not changed: at desktop
+width the row actions still sit behind ⋯ rather than showing as separate icons.
+
 **Issue #261 (25 Sep 2026, no version bump — the Architect allocates one).**
 **Word by Word gets its own Explore tab.** The Owner: *"Yes, make WbW its own
 tab in Explore."* Issue #206's gold ring/caption stayed inside the Quran
@@ -18064,3 +18200,12 @@ re-run clean. `app/js/version.js`, `CLAUDE.md`, `firestore.rules`,
 `app/js/quran-word-total-data.js` (the write path) are untouched; no
 Rules, index or collection change — needs no new authority. Needs a
 version number — **the Architect allocates one.**
+
+**v08.64 (25 Sep 2026).** Issue #261's round above, allocated by the MMSA
+Architect. Review restored what the builder's branch had deleted from shared
+files, though its base was current `main`: 17 Bangla strings belonging to
+v08.63's folder tree (`app/js/i18n/bn.js`), and 127 lines of this log
+(rebuilt as `main`'s log plus the new entry only). The removal of the
+`#206` "Colour the wheel by" key and toggle was deliberate and is kept.
+Checks: `explore-wbw-tab.mjs` 91/0, `quran-word-total-boundary.mjs` 31/0,
+`journey-map-screen.mjs` 48/0, `journey-map-back.mjs` 38/0. Screenshot looked at, 390px English.
