@@ -268,6 +268,17 @@ const PAGES = [
       return !!app && app.style.display !== "none" && !!body && !!body.querySelector("table");
     },
   },
+  // Issue #285 (speed, part 6a) -- "usable" is the Modules table, the first
+  // thing this admin page draws.
+  {
+    path: "/app/catalogue.html",
+    name: "Catalogue",
+    usable: () => {
+      const app = document.getElementById("app");
+      const body = document.getElementById("modulesBody");
+      return !!app && app.style.display !== "none" && !!body && body.children.length > 0;
+    },
+  },
   // Issue #282 (speed, part 5) -- "usable" is the issue's own definition:
   // the folder tree is drawn. Neither profile waits for Notes/placements to
   // finish loading in the background (this round's own progressive-render

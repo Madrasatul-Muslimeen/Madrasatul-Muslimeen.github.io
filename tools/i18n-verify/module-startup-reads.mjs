@@ -93,6 +93,17 @@ const PAGES = [
       return !!app && app.style.display !== "none" && !!body && !!body.querySelector("table");
     },
   },
+  // Issue #285 (speed, part 6a) -- "usable" is the Modules table, the first
+  // thing this admin page draws.
+  {
+    path: "/app/catalogue.html",
+    name: "Catalogue",
+    usable: () => {
+      const app = document.getElementById("app");
+      const body = document.getElementById("modulesBody");
+      return !!app && app.style.display !== "none" && !!body && body.children.length > 0;
+    },
+  },
 ];
 
 const browser = await chromium.launch();
@@ -122,5 +133,5 @@ for (const page of PAGES) {
 }
 
 await browser.close();
-console.log(`\n==== Module startup reads (Deen Study, Health, Asma ul Husna, Records, Monitor): ${pass} passed, ${fail} failed ====`);
+console.log(`\n==== Module startup reads (Deen Study, Health, Asma ul Husna, Records, Monitor, Catalogue): ${pass} passed, ${fail} failed ====`);
 process.exit(fail ? 1 : 0);

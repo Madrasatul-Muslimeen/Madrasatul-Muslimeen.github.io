@@ -172,7 +172,9 @@
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { safeWrite } from "./js/errors.js";
     import {
-      bootstrapContext,
+      getMyMembershipRoles,
+      hydrateMemberships,
+      pickContext,
       getActiveContext,
       setActiveContext,
       effectiveRoles,
@@ -181,6 +183,8 @@
     import {
       ensureSubjectTemplatesSeeded,
       ensureTenantCatalogueSeeded,
+      catalogueTemplatesMissing,
+      listAllLevelsForTenant,
       getSubjectTree,
       getTrackables,
       editCatalogueNode,
@@ -197,7 +201,6 @@
       createLadder,
       createLevel,
       listLadders,
-      listLevels,
       createTopicSubject,
       ensureHealthStudyReparented,
       ensureLifeSkillReparented,
@@ -319,8 +322,11 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     });
     const rendererLabel = (r) => (RENDERER_LABELS[r] ? t(RENDERER_LABELS[r]) : (r ?? ""));
 
-    async function loadModules() {
-      const modules = await listModules(db);
+    // Speed part 6a (issue #285): split into a pure render (reused by the
+    // startup wave below, which fetches `modules` alongside everything else
+    // this page needs) and a fetch-then-render wrapper (unchanged shape,
+    // used by every post-mutation refresh -- e.g. after a module move).
+    function renderModulesTable(modules) {
       moduleNameById = new Map(modules.map((m) => [m.id, langText(m.name, getAppLang(), m.id)]));
       modulesBody.innerHTML = modules
         .map((m, i) => {
@@ -349,6 +355,10 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       modulesBody.querySelectorAll(".moduleMoveDownBtn").forEach((btn) => {
         btn.addEventListener("click", (e) => { e.stopPropagation(); moveModule(modules, btn.dataset.id, "down"); });
       });
+    }
+
+    async function loadModules() {
+      renderModulesTable(await listModules(db));
     }
 
     /** modules is already sorted by order (listModules()'s own contract). Swaps order with the immediate neighbour -- the whole "move" operation for a flat, non-hierarchical list. */
@@ -524,8 +534,10 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       </tr>`;
     }
 
-    async function loadSubjects() {
-      subjectTree = await getSubjectTree(db, activeTenantId);
+    // Speed part 6a (issue #285): same fetch/render split as the modules
+    // table above.
+    function applySubjectTree(tree) {
+      subjectTree = tree;
       if (!collapseInitialized) {
         collapsedSubjectIds = new Set(
           subjectTree.filter((n) => subjectTree.some((c) => c.parentId === n.id)).map((n) => n.id)
@@ -534,6 +546,10 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       }
       renderSubjects();
       newSubjParent.innerHTML = parentOptionsHtml(null, null);
+    }
+
+    async function loadSubjects() {
+      applySubjectTree(await getSubjectTree(db, activeTenantId));
     }
 
     /** Swaps `order` with the immediate sibling in the given direction -- the whole "move" operation, auto-renumbered since it's just the two affected ranks trading places. */
@@ -814,12 +830,20 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       renderSections();
     }
 
-    async function loadSections() {
-      tenantDoc = await getTenantDoc(db, activeTenantId);
+    // Speed part 6a (issue #285): same fetch/render split as the modules
+    // table above. At startup this is fed the tenant document ALREADY read
+    // by hydrateMemberships() for the tenant picker -- no second read of
+    // the same document (the exact repeat issue #278 fixed elsewhere).
+    function applySections(tenantDocData) {
+      tenantDoc = tenantDocData;
       // `from` is the number each row currently HAS in the data; a row added
       // in this sitting has none until it is saved.
       sections = sectionsFromTenantDoc(tenantDoc).map((sec) => ({ ...sec, from: sec.n }));
       renderSections();
+    }
+
+    async function loadSections() {
+      applySections(await getTenantDoc(db, activeTenantId));
     }
 
     async function saveSections() {
@@ -1048,10 +1072,16 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     let trackableList = [];
     let editingTrackableId = null;
 
-    async function loadTrackables() {
-      trackableList = await getTrackables(db, activeTenantId);
+    // Speed part 6a (issue #285): same fetch/render split as the modules
+    // table above.
+    function applyTrackables(list) {
+      trackableList = list;
       renderTrackables();
       refreshSectionCounts();
+    }
+
+    async function loadTrackables() {
+      applyTrackables(await getTrackables(db, activeTenantId));
     }
 
     /** Reads the whole visible order off screen, moves one Approach within
@@ -1264,9 +1294,24 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       });
     }
 
-    async function loadLadders() {
+    /** {ladderId -> that ladder's own levels}, from one whole-tenant read (listAllLevelsForTenant) instead of one query per ladder. */
+    function levelsByLadder(levels) {
+      const map = new Map();
+      for (const lv of levels) {
+        if (!map.has(lv.ladderId)) map.set(lv.ladderId, []);
+        map.get(lv.ladderId).push(lv);
+      }
+      return map;
+    }
+
+    // Speed part 6a (issue #285): split into a pure render (fed the ladders
+    // AND levels the startup wave below already fetched together) and a
+    // fetch-then-render wrapper for post-mutation refreshes. The fetch side
+    // used to be a real N+1 -- one listLevels() round trip PER LADDER, in a
+    // row, before this table could draw at all -- replaced by one
+    // whole-tenant levels read, grouped here instead of by the server.
+    function renderLaddersTable(allLadders, levelsByLadderId) {
       const showArchived = showArchivedLadders.checked;
-      const allLadders = await listLadders(db, activeTenantId);
       const ladders = showArchived ? allLadders : allLadders.filter((l) => l.status !== "archived");
 
       levelLadderSelect.innerHTML = allLadders
@@ -1276,7 +1321,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
 
       const rows = [];
       for (const ladder of ladders) {
-        const allLevels = await listLevels(db, activeTenantId, ladder.id);
+        const allLevels = levelsByLadderId.get(ladder.id) ?? [];
         const levels = showArchived ? allLevels : allLevels.filter((lv) => lv.status !== "archived");
         const levelChips = levels.length
           ? levels.map((lv) => {
@@ -1332,28 +1377,160 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       });
     }
 
-    async function runSeedIfNeeded() {
-      seedStatusEl.style.display = "block";
-      seedStatusEl.className = "";
-      seedStatusEl.textContent = t("Checking catalogue…");
+    async function loadLadders() {
+      const [allLadders, allLevels] = await Promise.all([
+        listLadders(db, activeTenantId),
+        listAllLevelsForTenant(db, activeTenantId),
+      ]);
+      renderLaddersTable(allLadders, levelsByLadder(allLevels));
+    }
+
+    /** Pure -- given the subject tree already in hand, do the health_study/
+        life_skill/ldog placement repairs (below) have real work to do? Same
+        reasoning as catalogueTemplatesMissing(): let the caller decide
+        without paying for a read just to find out. */
+    function placementRepairNeeded(tree) {
+      const healthStudy = tree.find((n) => n.id === "health_study");
+      const lifeSkill = tree.find((n) => n.id === "life_skill");
+      const ldog = tree.find((n) => n.id === "daily_deen_habit");
+      return (!!healthStudy && healthStudy.parentId === "general_enhancement" && tree.some((n) => n.id === "health"))
+        || (!!lifeSkill && lifeSkill.parentId === "general_enhancement")
+        || (!!ldog && ldog.parentId === "deen_enhancement" && tree.some((n) => n.id === "ldog"));
+    }
+
+    // Speed part 6a (issue #285): platform-drift repair (a subject seeded
+    // under an old parent before its own module existed) moved OFF the
+    // startup path, the same shape catalogue-repair.js already uses for
+    // every study page's own background seeding check. The three
+    // ensure*Reparented() calls used to run on EVERY load, each starting
+    // with its own getSubjectTree() read to look for a node that, on an
+    // already-repaired tenant, is never misplaced -- three more round trips
+    // for nothing, every time. Checked here for free (the tree the startup
+    // wave already read), fixed in the background only if there is
+    // genuinely something to fix, at most once per tab.
+    const PLACEMENT_REPAIR_FLAG = "qr.cataloguePlacementRepairRan";
+    function repairPlacementInBackground(tree) {
+      if (!placementRepairNeeded(tree)) return;
       try {
-        await ensureModulesSeeded(db, auth.currentUser.uid);
-        await ensureSubjectTemplatesSeeded(db, auth.currentUser.uid);
-        const result = await ensureTenantCatalogueSeeded(db, activeTenantId, auth.currentUser.uid);
-        await ensureHealthStudyReparented(db, activeTenantId, auth.currentUser.uid);
-        await ensureLifeSkillReparented(db, activeTenantId, auth.currentUser.uid);
-        await ensureLdogReparented(db, activeTenantId, auth.currentUser.uid);
-        seedStatusEl.className = "ok";
-        seedStatusEl.textContent = result.seeded
-          ? t("Catalogue set up: {subjects} subjects and {approaches} Approaches.",
-              { subjects: num(result.subjectCount), approaches: num(result.trackableCount) })
-          : t("Catalogue is already set up.");
-      } catch (err) {
-        seedStatusEl.className = "fail";
-        seedStatusEl.textContent = `${t("Could not set up the catalogue:")} ${err.code ?? ""} ${err.message}`;
-        console.error(err);
-        throw err;
+        if (sessionStorage.getItem(PLACEMENT_REPAIR_FLAG) === activeTenantId) return;
+        sessionStorage.setItem(PLACEMENT_REPAIR_FLAG, activeTenantId);
+      } catch {
+        // Private browsing with storage blocked: just run it, same as before.
       }
+      (async () => {
+        try {
+          await ensureHealthStudyReparented(db, activeTenantId, auth.currentUser.uid);
+          await ensureLifeSkillReparented(db, activeTenantId, auth.currentUser.uid);
+          await ensureLdogReparented(db, activeTenantId, auth.currentUser.uid);
+          await loadSubjects();
+        } catch (err) {
+          console.warn("Background subject-placement repair skipped:", err.message);
+        }
+      })();
+    }
+
+    // Speed part 6a (issue #285): this page used to make 8+ database round
+    // trips in a row before drawing anything -- three unconditional seeding
+    // checks, three unconditional placement-repair checks (each its own
+    // re-read of the subject tree), then five more sequential loads
+    // (modules, subjects, sections, trackables, ladders -- the last of
+    // those its own N+1, one round trip per ladder). All of it ran on every
+    // single load, even for a tenant seeded weeks ago, because nothing
+    // checked first whether there was anything to do.
+    //
+    // Now: everything this page draws fires together in one wave; seeding
+    // runs only if what was just read shows something genuinely missing
+    // (rare -- a brand new tenant, or one older than a module); and the
+    // placement repair moves to the background. hydratedMembershipsPromise
+    // is only ever handed in from the sign-in wave below, for the very
+    // first load -- a tenant switch already has a fully hydrated
+    // myMemberships in hand.
+    async function loadContextData(hydratedMembershipsPromise) {
+      const hydrationPromise = hydratedMembershipsPromise ?? Promise.resolve(myMemberships);
+      const [tree, trackables, modules, ladders, levels, hydrated] = await Promise.all([
+        getSubjectTree(db, activeTenantId),
+        getTrackables(db, activeTenantId),
+        listModules(db),
+        listLadders(db, activeTenantId),
+        listAllLevelsForTenant(db, activeTenantId),
+        hydrationPromise,
+      ]);
+
+      myMemberships = hydrated;
+      tenantSelect.innerHTML = myMemberships
+        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
+        .join("");
+
+      const activeMembership = myMemberships.find((m) => m.tenantId === activeTenantId);
+      // Round 11 -- "View as" wired up for real: previewing as a role that
+      // can't edit the catalogue now actually hides the edit controls,
+      // same as it would for that role genuinely. effectiveRoles() falls
+      // back to the real roles unchanged when no preview is active.
+      const viewAsRole = getActiveContext()?.viewAsRole ?? null;
+      const effRoles = effectiveRoles(activeMembership?.roles ?? [], viewAsRole);
+      canEdit = effRoles.includes("owner") || effRoles.includes("prime");
+      renderNav(activeMembership?.roles ?? [], viewAsRole);
+      moduleActionsHead.style.display = canEdit ? "" : "none";
+      subjActionsHead.style.display = canEdit ? "" : "none";
+      trkActionsHead.style.display = canEdit ? "" : "none";
+      addSubjectBox.style.display = canEdit ? "block" : "none";
+      addLadderBox.style.display = canEdit ? "block" : "none";
+      readOnlyNote.style.display = canEdit ? "none" : "block";
+
+      // Sections BEFORE trackables: renderTrackables() groups the Approach
+      // list by `sections`, and the original loadSections()-then-
+      // loadTrackables() order relied on that -- do it here rather than
+      // deriving it from the tenant document twice.
+      applySections(activeMembership?.tenantData ?? null);
+
+      if (catalogueTemplatesMissing(tree, trackables)) {
+        // Rare: a genuinely new tenant, or one older than a module. Seed for
+        // real (several more round trips -- acceptable here, this is not
+        // the steady-state case the round-trip budget is about), then
+        // re-read just the three collections seeding can change.
+        seedStatusEl.style.display = "block";
+        seedStatusEl.className = "";
+        seedStatusEl.textContent = t("Checking catalogue…");
+        try {
+          await ensureModulesSeeded(db, auth.currentUser.uid);
+          await ensureSubjectTemplatesSeeded(db, auth.currentUser.uid);
+          const result = await ensureTenantCatalogueSeeded(db, activeTenantId, auth.currentUser.uid);
+          seedStatusEl.className = "ok";
+          seedStatusEl.textContent = result.seeded
+            ? t("Catalogue set up: {subjects} subjects and {approaches} Approaches.",
+                { subjects: num(result.subjectCount), approaches: num(result.trackableCount) })
+            : t("Catalogue is already set up.");
+          const [freshTree, freshTrackables, freshModules] = await Promise.all([
+            getSubjectTree(db, activeTenantId),
+            getTrackables(db, activeTenantId),
+            listModules(db),
+          ]);
+          // renderModulesTable() first: applySubjectTree() calls
+          // parentOptionsHtml(), which reads moduleNameById -- populated
+          // only by renderModulesTable(). Same order the original
+          // loadModules()-then-loadSubjects() sequence always used.
+          renderModulesTable(freshModules);
+          applySubjectTree(freshTree);
+          applyTrackables(freshTrackables);
+        } catch (err) {
+          seedStatusEl.className = "fail";
+          seedStatusEl.textContent = `${t("Could not set up the catalogue:")} ${err.code ?? ""} ${err.message}`;
+          console.error(err);
+          throw err;
+        }
+      } else {
+        seedStatusEl.style.display = "block";
+        seedStatusEl.className = "ok";
+        seedStatusEl.textContent = t("Catalogue is already set up.");
+        // renderModulesTable() first -- see the comment in the branch above.
+        renderModulesTable(modules);
+        applySubjectTree(tree);
+        applyTrackables(trackables);
+      }
+
+      renderLaddersTable(ladders, levelsByLadder(levels));
+
+      repairPlacementInBackground(subjectTree);
     }
 
     onAuthStateChanged(auth, async (user) => {
@@ -1378,50 +1555,37 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       }
 
       try {
+        // Speed part 6a (issue #285), the same pattern quranrevival.html's
+        // own issue #278 fix uses: userIndex and the ROLES-ONLY membership
+        // query are fired together -- pickContext() below only ever reads
+        // tenantId/personId/roles, never tenantName/tenantData.
+        const membershipRolesPromise = getMyMembershipRoles(db, user.uid);
+        membershipRolesPromise.catch(() => {}); // see the real await below; this only stops a reload (adoptAppLangFromUserIndex) from logging it as unhandled.
+
         const userIndexSnap = await step("read your userIndex", () => getDoc(doc(db, TENANT.USER_INDEX, user.uid)));
         // v07.37: if this account has a language set on another device, take it
         // and reload. Costs no extra read -- the snapshot is already in hand.
         if (adoptAppLangFromUserIndex(userIndexSnap)) return;
         const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
 
-        // One membership load, not two: bootstrapContext() hands back the
-        // list it used to choose the context, which this page then used to
-        // fetch a second time, one round trip later, for the tenant picker.
-        const { context, memberships } = await step("initialize active context", () => bootstrapContext(db, user.uid, defaultTenantId));
+        const membershipRoles = await step("load your tenant memberships", () => membershipRolesPromise);
+        const context = pickContext(membershipRoles, defaultTenantId);
         if (!context) {
           whoEl.innerHTML += noAccountMessageHtml();
           return;
         }
         activeTenantId = context.tenantId;
 
-        myMemberships = memberships;
-        tenantSelect.innerHTML = myMemberships
-          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
-          .join("");
-
-        const activeMembership = myMemberships.find((m) => m.tenantId === activeTenantId);
-        // Round 11 -- "View as" wired up for real: previewing as a role that
-        // can't edit the catalogue now actually hides the edit controls,
-        // same as it would for that role genuinely. effectiveRoles() falls
-        // back to the real roles unchanged when no preview is active.
-        const viewAsRole = getActiveContext()?.viewAsRole ?? null;
-        const effRoles = effectiveRoles(activeMembership?.roles ?? [], viewAsRole);
-        canEdit = effRoles.includes("owner") || effRoles.includes("prime");
-        renderNav(activeMembership?.roles ?? [], viewAsRole);
-        moduleActionsHead.style.display = canEdit ? "" : "none";
-        subjActionsHead.style.display = canEdit ? "" : "none";
-        trkActionsHead.style.display = canEdit ? "" : "none";
-        addSubjectBox.style.display = canEdit ? "block" : "none";
-        addLadderBox.style.display = canEdit ? "block" : "none";
-        readOnlyNote.style.display = canEdit ? "none" : "block";
+        // The tenant picker's real names, and loadContextData()'s own
+        // tenant document (read off each membership's own tenantData,
+        // never a second getDoc), come from this SAME hydration call --
+        // fired here, alongside the subject tree/trackables/modules/
+        // ladders, rather than awaited before any of them.
+        const hydratedMembershipsPromise = step("load tenant names", () => hydrateMemberships(db, membershipRoles));
+        hydratedMembershipsPromise.catch(() => {}); // real failure surfaces via the awaited copy inside loadContextData().
 
         appEl.style.display = "block";
-        await step("set up catalogue", runSeedIfNeeded);
-        await step("load modules", loadModules);
-        await step("load subjects", loadSubjects);
-        await step("load Approach sections", loadSections);
-        await step("load trackables", loadTrackables);
-        await step("load ladders", loadLadders);
+        await step("load catalogue", () => loadContextData(hydratedMembershipsPromise));
       } catch (err) {
         whoEl.textContent += ` — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`;
         console.error(err);
@@ -1433,21 +1597,10 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       if (!chosen) return;
       activeTenantId = chosen.tenantId;
       setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
-      renderNav(chosen.roles, null); // switching tenants resets any active preview
-      canEdit = chosen.roles.includes("owner") || chosen.roles.includes("prime");
-      moduleActionsHead.style.display = canEdit ? "" : "none";
-      subjActionsHead.style.display = canEdit ? "" : "none";
-      trkActionsHead.style.display = canEdit ? "" : "none";
-      addSubjectBox.style.display = canEdit ? "block" : "none";
-      addLadderBox.style.display = canEdit ? "block" : "none";
-      readOnlyNote.style.display = canEdit ? "none" : "block";
       collapseInitialized = false; // fresh view for this tenant -- back to all-collapsed
-
-      await runSeedIfNeeded();
-      await loadSubjects();
-      await loadSections(); // before the Approaches: their table groups by these
-      await loadTrackables();
-      await loadLadders();
+      // myMemberships already carries every membership's own hydrated tenant
+      // document (fetched once, at sign-in) -- no reason to fetch it again.
+      await loadContextData();
     });
 
     newSubjResourceType.addEventListener("change", () => {
