@@ -146,6 +146,22 @@ export async function listEnrollmentsForOffer(db, tenantId, contextId) {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
+/**
+ * Speed, part 6b (issue #288) -- every enrolment in the whole tenant, one
+ * query, rather than course-offers.html's old
+ * `Promise.all(offers.map(listEnrollmentsForOffer))` loop, one round trip
+ * per offer card. Equality-only on tenantId, the one field enrollments'
+ * anyMemberOf() read rule actually checks -- unlike listEnrollmentsForOffer/
+ * listEnrollmentsForPerson above, this doesn't even need a second filter to
+ * stay list-safe, since the rule doesn't depend on contextId or personId at
+ * all. Grouping by contextId/personId is the caller's job now.
+ */
+export async function listAllEnrollmentsForTenant(db, tenantId) {
+  const q = query(collection(db, TENANT.ENROLLMENTS), where("tenantId", "==", tenantId));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
 /** Every enrolment naming this specific person -- the query's own personId-derived doc structure means array-contains isn't needed here (unlike assignments). Read-safe for any tenant member per the Phase 10 anyMemberOf() widening noted on listEnrollmentsForOffer() above. */
 export async function listEnrollmentsForPerson(db, tenantId, personId) {
   const q = query(
