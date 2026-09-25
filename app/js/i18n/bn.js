@@ -2796,4 +2796,33 @@ export const BN = {
   "Loading your Notes…": "আপনার নোট লোড হচ্ছে…",
   "Notes are still loading — stops will appear on their branch as they arrive.":
     "নোট এখনও লোড হচ্ছে — সেগুলো লোড হওয়ার সাথে সাথে নিজ নিজ শাখায় স্টপ হিসেবে দেখা যাবে।",
+
+  // "This āyah" action sheet (issue #286, 25 Sep 2026) -- tap the Mushaf
+  // page's own ayah-end marker, or the Word Card's "This āyah ⋯" button.
+  "This āyah ⋯": "এই আয়াত ⋯",
+  "This āyah": "এই আয়াত",
+  "Asma ul Husna Name(s)…": "আসমাউল হুসনার নাম(সমূহ)…",
+  "QCR collection(s)…": "QCR সংকলন(সমূহ)…",
+  "File in folder(s)…": "ফোল্ডার(সমূহ)-এ ফাইল করুন…",
+  "Only your own record can create or file a Note.":
+    "শুধুমাত্র আপনার নিজের রেকর্ডে একটি নোট তৈরি বা ফাইল করা যায়।",
+  "Files your Note on this āyah (creates one if you have none).":
+    "এই আয়াতের উপর আপনার নোট ফাইল করে (আপনার কোনো নোট না থাকলে একটি তৈরি করে)।",
+
+  // The "File in folder(s)…" folder chooser.
+  "New folder here": "এখানে নতুন ফোল্ডার",
+  "New folder under {name}": "{name}-এর অধীনে নতুন ফোল্ডার",
+  "Folder name": "ফোল্ডারের নাম",
+  "Search folders…": "ফোল্ডার খুঁজুন…",
+  "No folders match your search.": "আপনার খোঁজের সাথে মিলে এমন কোনো ফোল্ডার নেই।",
+  "No folders yet.": "এখনো কোনো ফোল্ডার নেই।",
+  "+ New folder": "+ নতুন ফোল্ডার",
+  "File {ref} in folder(s)": "{ref} ফোল্ডার(সমূহ)-এ ফাইল করুন",
+  "You have more than one Note on this āyah. Which one?":
+    "এই আয়াতে আপনার একাধিক নোট আছে। কোনটি?",
+  "(untitled Note)": "(শিরোনামহীন নোট)",
+  "Couldn't load your folders.": "আপনার ফোল্ডার লোড করা যায়নি।",
+  "Couldn't load this Note's folders.": "এই নোটের ফোল্ডার লোড করা যায়নি।",
+  "Some folders couldn't be saved -- please try again.":
+    "কিছু ফোল্ডার সংরক্ষণ করা যায়নি — দয়া করে আবার চেষ্টা করুন।",
 };

@@ -2355,15 +2355,94 @@
      equal-and-opposite negative margin on all four sides cancels it exactly
      -- each word's outer (margin) box, what the line is measured and
      justified by, is unchanged, while its padding box (what a tap can land
-     on) is larger. Real, tappable words only (clickable), never the
-     ayah-end marker (skipped in hifz-renderer.js -- see AYAH_WORD_MERGES). */
+     on) is larger. Real, tappable words only (clickable); the ayah-end
+     marker gets its OWN, bigger version just below (issue #286 -- it used
+     to be skipped entirely, see AYAH_WORD_MERGES). */
   .hifz-word[data-word-occurrence] { cursor: pointer; padding: 0.3em 0.12em; margin: -0.3em -0.12em; }
+  /* Issue #286 -- the round ayah-end print number opens the "This āyah"
+     action sheet. It is a small glyph, so it gets a bigger version of the
+     same margin-cancels-padding trick above -- >=40px of tappable area at
+     every measured phone width (34px/6.07cqw base font -- 0.6em padding a
+     side is >=20px even at the smallest rendered size this app measures),
+     with its outer box, and so the line's own justification, unchanged. */
+  .hifz-word[data-ayah-marker] { cursor: pointer; padding: 0.6em; margin: -0.6em; }
   /* Round 28 -- a real background band on the ayah being recited, the owner's
      ask. box-shadow rather than padding on purpose: each word is a flex item,
      so padding would change the line's width and fight the justification that
      spans it. The 0.06em spread bridges the 0.12em word gap so the ayah reads
      as one continuous band rather than a row of separate tiles. */
   .hifz-word.playing { color: #1F3A6E; background: #ffe9a8; box-shadow: 0 0 0 0.06em #ffe9a8; border-radius: 2px; }
+
+  /* Issue #286 -- "This āyah" action sheet: a bottom sheet at phone widths
+     (spec item 5 -- 360-412px, 40px tap targets), a fixed popover on a wide
+     screen. It is NOT literally anchored to the tapped marker/word's own
+     pixel position -- a small, sometimes-scrolling anchor is exactly the
+     shape this file's own standing lessons have already measured running
+     off-screen more than once (the 390px Word-by-Word capsule, the Note
+     bar's own popover); a fixed, always-on-screen position is the safer
+     trade at this round's own scope, flagged as a follow-up refinement
+     rather than built speculatively. Reuses .qm-item/.qm-divider (the
+     Read/Note view quick menus' own item styling) for every action row. */
+  #ayahActionSheetOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 960; }
+  #ayahActionSheetOverlay.open { display: block; }
+  .ayah-sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; max-height: 82vh; overflow-y: auto;
+    background: #fff; border-radius: 14px 14px 0 0; padding: 0.5rem 0.7rem 1rem;
+    box-shadow: 0 -6px 24px rgba(0,0,0,0.25); font-family: inherit;
+  }
+  .ayah-sheet-handle { width: 36px; height: 4px; background: #ddd; border-radius: 999px; margin: 0.3rem auto 0.6rem; }
+  .ayah-sheet-header { display: flex; align-items: center; justify-content: space-between; padding: 0 0.2rem 0.4rem; border-bottom: 1px solid #eee; margin-bottom: 0.3rem; }
+  .ayah-sheet-ref { font-size: 0.9rem; color: #1F3A6E; font-weight: 600; }
+  .ayah-sheet-close { background: none; border: none; color: #666; font-size: 1.5rem; line-height: 1; padding: 0.2rem 0.5rem; cursor: pointer; }
+  .ayah-sheet .qm-item { min-height: 40px; font-size: 0.88rem; }
+  .ayah-sheet .qm-item.is-disabled { opacity: 0.5; cursor: default; }
+  .ayah-sheet .qm-item.is-disabled:hover { background: none; }
+  .ayah-sheet-hint { font-size: 0.74rem; color: #888; margin: -0.1rem 0.5rem 0.35rem; }
+  @media (min-width: 900px) {
+    .ayah-sheet {
+      left: auto; right: 1.4rem; bottom: auto; top: 4.5rem; border-radius: 12px;
+      width: min(22rem, 90vw); border: 1px solid #ddd; box-shadow: 0 12px 32px rgba(0,0,0,0.25);
+    }
+  }
+
+  /* The "File in folder(s)…" folder chooser, opened from the sheet above.
+     Same dark card-on-scrim idiom as the Asma attach/edit overlays --
+     #asmaXEditOverlay/#asmaXAttachOverlay/#asmaXGroupsOverlay -- since,
+     unlike the quick action sheet, this is a real multi-step form (search,
+     tick, create a folder) rather than a one-tap list. */
+  #ayahFolderFilingOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 970; align-items: center; justify-content: center; padding: 1rem; }
+  #ayahFolderFilingOverlay.open { display: flex; }
+  #ayahFolderFilingCard {
+    width: min(94vw, 28rem); max-height: 85vh; overflow-y: auto;
+    background: #1B2A41; border: 1px solid rgba(201,162,75,0.35); border-radius: 12px;
+    padding: 1.1rem 1rem; color: #F2E8D5; font-family: 'Inter', sans-serif;
+  }
+  #ayahFolderFilingCard h3 { margin: 0 0 0.6rem; color: #C9A24B; font-family: 'Cormorant Garamond', serif; font-size: 1.15rem; }
+  .ayah-folder-picker { display: flex; flex-direction: column; gap: 0.45rem; }
+  .ayah-folder-search { padding: 0.4rem 0.6rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.06); color: #F2E8D5; font-family: inherit; }
+  .ayah-folder-tree { max-height: 38vh; overflow-y: auto; }
+  .ayah-folder-row { display: flex; align-items: center; justify-content: space-between; min-height: 40px; }
+  .ayah-folder-row-label { display: flex; align-items: center; gap: 0.5rem; flex: 1 1 auto; min-width: 0; cursor: pointer; }
+  .ayah-folder-row-label span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ayah-folder-new-here { flex: 0 0 auto; width: 32px; height: 32px; background: none; border: none; color: #C9A24B; font-size: 1.15rem; cursor: pointer; }
+  .ayah-folder-empty { color: #9aa7be; font-size: 0.84rem; }
+  .ayah-folder-new-root { align-self: flex-start; background: none; border: none; color: #C9A24B; padding: 0.4rem 0.1rem; cursor: pointer; font-family: inherit; }
+  .ayah-folder-new-form { display: flex; gap: 0.4rem; align-items: center; }
+  .ayah-folder-new-name { flex: 1 1 auto; min-width: 0; padding: 0.35rem 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.06); color: #F2E8D5; font-family: inherit; }
+  .ayah-folder-actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 0.3rem; }
+  .ayah-folder-save { background: #C9A24B; color: #1B2A41; border: none; border-radius: 8px; padding: 0.5rem 1.1rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .ayah-folder-note-picker { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.7rem; }
+  .ayah-folder-note-picker label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
+
+  /* Word Card "This āyah ⋯" (issue #286) -- its own row below the header,
+     never inside it, so the header's own Prev/Arabic/Next/Close row (what
+     the drag/resize and layout suites measure) is byte-for-byte unchanged. */
+  .word-card-ayah-action-row { padding: 0 0.1rem 0.5rem; }
+  .word-card-ayah-action-btn {
+    width: 100%; min-height: 40px; background: #fff8e6; border: 1px solid #d8c68a; border-radius: 0.4rem;
+    color: #7a5f1e; font-size: 0.85rem; font-family: inherit; cursor: pointer;
+  }
+  .word-card-ayah-action-btn:hover { background: #fdf0cc; }
   .hifz-surah-header { justify-content: center; background: rgba(201,162,75,0.14); border: 1px solid rgba(201,162,75,0.4); border-radius: 6px; font-size: 16px; font-size: 4.5cqw; font-family: system-ui, sans-serif; color: #7a5f1e; padding: 0.3em 0.6em; }
   .hifz-surah-header.glyph-loaded { background: none; border: none; padding: 0.2em 0; font-size: 20px; font-size: 6cqw; }
   .hifz-basmallah { justify-content: center; font-size: 16px; font-size: 4.5cqw; }
@@ -4280,6 +4359,26 @@
     </div>
   </div>
 
+  <!-- Issue #286 -- "This āyah" action sheet: opened by tapping the Mushaf
+       page's own ayah-end marker, or the Word Card's "This āyah ⋯" button.
+       Mount only -- renderAyahActionSheetNow() rebuilds it on every open,
+       the same pattern the Asma attach popover above already uses. -->
+  <div id="ayahActionSheetOverlay" data-keep-note-popovers>
+    <div id="ayahActionSheetMount"></div>
+  </div>
+
+  <!-- Issue #286 -- "File in folder(s)…", opened FROM the sheet above.
+       Files this reader's own Note on the āyah (creating one if none
+       exists yet) into whichever Mapping My Journey folder(s) are ticked. -->
+  <div id="ayahFolderFilingOverlay" data-keep-note-popovers>
+    <div id="ayahFolderFilingCard">
+      <h3 id="ayahFolderFilingTitle"></h3>
+      <div id="ayahFolderFilingNotePickerMount"></div>
+      <div id="ayahFolderFilingPickerMount"></div>
+      <p class="hint" id="ayahFolderFilingMsg" style="display:none;"></p>
+    </div>
+  </div>
+
   <!-- 4 Sep 2026 -- the owner's own ask on the Asma Name screen: "Enable a
        button at the markup space, to move the Name under a different group
        or place in multiple group." Both halves are the same question asked
@@ -4332,7 +4431,7 @@
     import { getBookmarks, saveBookmark, removeSavedBookmark, updateSavedBookmarkFields, findSavedBookmark, createFolder, flattenFolderTree } from "./js/bookmarks.js";
     import { openBookmarkNamePopover } from "./js/bookmark-popover.js";
     import { getAyahNotes, ayahNoteHtml, ayahHasNote, saveAyahNote, ensureAyahNotesWritable } from "./js/ayah-notes.js";
-    import { renderQuickMenu, attachQuickMenuHandlers, renderNoteView, attachNoteViewHandlers, notesToPlainText } from "./js/ayah-note-renderer.js";
+    import { renderQuickMenu, attachQuickMenuHandlers, renderNoteView, attachNoteViewHandlers, notesToPlainText, copyToClipboard, shareText } from "./js/ayah-note-renderer.js";
     import { initPopupWindow, initSideSplitter, initListCollapse, loadSideViewMode, saveSideViewMode } from "./js/note-popup.js";
     import {
       collectionsFrom, activeCollections,
@@ -4389,6 +4488,15 @@
     import { getWordTotals, recordWordTotalDelta } from "./js/quran-word-total-data.js";
     import { isWbwTotalPersistenceReady } from "./js/study-wbw-total-readiness.js";
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah, scrollToAyahIfRendered } from "./js/hifz-renderer.js";
+    // Issue #286 -- the "This āyah" action sheet (Mushaf marker tap, Word
+    // Card "This āyah ⋯") and its one new action, filing this reader's own
+    // Note on the āyah into Mapping My Journey folder(s).
+    import { renderAyahActionSheetHtml, attachAyahActionSheetHandlers } from "./js/ayah-action-sheet.js";
+    import { renderAyahFolderPickerHtml, attachAyahFolderPickerHandlers } from "./js/ayah-folder-filing-renderer.js";
+    import { planFolderFilings } from "./js/ayah-folder-filing-plan.js";
+    import { createStudyNote, notesForStudyUnit } from "./js/study-note-service.js";
+    import { createNoteFolder, createNotePlacement, retireNotePlacement } from "./js/note-foundation.js";
+    import { ownerFolderTreePaged, noteFilings } from "./js/journey-map-service.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     import {
@@ -4884,6 +4992,15 @@
     const asmaXGroupsSaveBtn = document.getElementById("asmaXGroupsSaveBtn");
     const asmaXGroupsCancelBtn = document.getElementById("asmaXGroupsCancelBtn");
     const asmaXGroupsCloseBtn = document.getElementById("asmaXGroupsCloseBtn");
+
+    // Issue #286 -- "This āyah" action sheet + "File in folder(s)…".
+    const ayahActionSheetOverlayEl = document.getElementById("ayahActionSheetOverlay");
+    const ayahActionSheetMountEl = document.getElementById("ayahActionSheetMount");
+    const ayahFolderFilingOverlayEl = document.getElementById("ayahFolderFilingOverlay");
+    const ayahFolderFilingTitleEl = document.getElementById("ayahFolderFilingTitle");
+    const ayahFolderFilingNotePickerMountEl = document.getElementById("ayahFolderFilingNotePickerMount");
+    const ayahFolderFilingPickerMountEl = document.getElementById("ayahFolderFilingPickerMount");
+    const ayahFolderFilingMsgEl = document.getElementById("ayahFolderFilingMsg");
     let asmaXGroupsNumber = null;
     let asmaXGroupsChecked = new Set();
 
@@ -5055,6 +5172,22 @@
      *  Left false for every other hydrate (a direct word open, Prev/Next),
      *  so those keep starting collapsed exactly as before. */
     let quranWordCardRestoreLemmaExpanded = false;
+
+    // Issue #286 -- "This āyah" action sheet. `ayahSheetUnitKey` null means
+    // closed; the mount is rendered fresh on every open/close, same pattern
+    // as the Asma attach popover's own overlay. `ayahSheetPendingQcrOpen` is
+    // a one-shot flag: the "QCR collection(s)…" action navigates into the
+    // existing Note view and asks it to open its own 🗂 Attach panel on the
+    // very next render, the same shape a real tenant tap would have left the
+    // live DOM in, then clears itself so a later, unrelated Note-view render
+    // doesn't reopen it.
+    let ayahSheetUnitKey = null;
+    let ayahSheetPendingQcrOpen = false;
+    // The "File in folder(s)…" overlay, opened FROM the sheet. Null means
+    // closed. `noteId: null` with `notes.length > 1` means "more than one
+    // Note already exists on this āyah -- ask which one" (spec item 3); with
+    // `notes.length === 0` it means "none yet -- Save creates one".
+    let ayahFolderFilingState = null; // { unitKey, ref, notes, noteId, tree, checkedFolderIds, searchTerm, newFolderUnder, busy }
     // MAP Phase 3. `confirmationRequired` is the same computed answer
     // records.js already gives ("does this person have a teacher, guardian or
     // prime?"), fetched ON FIRST USE and cached per person -- the same
@@ -10671,6 +10804,7 @@
         previous: t("Previous word"),
         next: t("Next word"),
         close: t("Close word card"),
+        ayahActionsButton: t("This āyah ⋯"),
         wbw: t("WbW"),
         basic: t("Basic Arabic"),
         depth: t("Arabic in Depth"),
@@ -11355,6 +11489,12 @@
       // Opening a word directly is a fresh start: any "visiting from" trail
       // from an earlier occurrence hop is over.
       if (occurrence) { quranWordCardTrigger = occurrence; quranWordCardOrigin = null; renderWordCardReturnBar(); quranWordCardExpandedForm = null; quranWordCardState = openWordCard(quranWordCardState, occurrence.dataset.wordOccurrence); quranWordCardContext = {}; renderPersistentWordCard(); activeWordCardMount()?.querySelector("[data-word-card-close]")?.focus({ preventScroll: true }); hydrateWordCardOccurrences(); hydrateWordProgress(); return; }
+      // Issue #286 -- (a) the Mushaf page's own round ayah-end marker.
+      const ayahMarker = event.target.closest("[data-ayah-marker]");
+      if (ayahMarker) { openAyahActionSheet(ayahMarker.dataset.ayahMarker); return; }
+      // Issue #286 -- (b) the Word Card's own "This āyah ⋯" button.
+      const wordCardAyahAction = event.target.closest("[data-word-card-ayah-action]");
+      if (wordCardAyahAction) { openAyahActionSheet(wordCardAyahAction.dataset.wordCardAyahAction); return; }
       const formToggle = event.target.closest("[data-word-form-toggle]");
       if (formToggle) {
         const lemma = formToggle.dataset.wordFormToggle;
@@ -11823,6 +11963,278 @@
         onToggleDerivatives: toggleNoteDerivatives,
       });
     }
+
+    // ===================== Issue #286 -- "This āyah" action sheet =====================
+
+    /** Same isSelfSelected() rule notes.html/journey-map.html already use:
+        only the reader's OWN record may create/file a Note (isNoteOwner()
+        in firestore.rules is deliberately stricter than canRecordFor()).
+        selectedPersonId can legitimately be a child a teacher/guardian is
+        recording FOR (D10 -- "log each person's progress in turn from a
+        dropdown"), which is exactly the case this must say no to. */
+    function isSelfSelectedForAyahActions() {
+      const membership = myMemberships.find((m) => m.tenantId === activeTenantId);
+      const myPersonId = membership?.personId ?? null;
+      return selectedPersonId != null && selectedPersonId === myPersonId;
+    }
+
+    function closeAyahActionSheet() {
+      ayahSheetUnitKey = null;
+      ayahActionSheetOverlayEl.classList.remove("open");
+      ayahActionSheetMountEl.innerHTML = "";
+    }
+
+    function renderAyahActionSheetNow() {
+      if (!ayahSheetUnitKey) return;
+      const { surah, ayah: ayahNum } = parseAyahUnitKey(ayahSheetUnitKey);
+      const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: ayahSheetUnitKey });
+      ayahActionSheetMountEl.innerHTML = renderAyahActionSheetHtml({
+        unitKey: ayahSheetUnitKey,
+        ref: ayahRefLabel(surah, ayahNum),
+        hasNote: ayahHasNote(ayahNotesDoc, ayahSheetUnitKey),
+        isBookmarked,
+        isSelf: isSelfSelectedForAyahActions(),
+      });
+      attachAyahActionSheetHandlers(ayahActionSheetMountEl, {
+        onClose: closeAyahActionSheet,
+        onBookmark: (unitKey) => toggleAyahBookmark(unitKey),
+        onNote: (unitKey) => openNoteView(unitKey),
+        onAsma: (unitKey) => {
+          const { surah: s, ayah: a } = parseAyahUnitKey(unitKey);
+          openAsmaXAttachPopover({ prefillRef: ayahRefLabel(s, a) });
+        },
+        onQcr: (unitKey) => {
+          // Navigate into the existing Note view's own QCR 🗂 drawer rather
+          // than duplicating renderQcrDrawerHtml() -- I2: one shared
+          // component, reached from a second place. The flag opens the
+          // Attach panel on the very next render only (see its own
+          // declaration comment) -- exactly the state a real tap on 🗂 then
+          // Attach would have left, without adding a second drawer.
+          ayahSheetPendingQcrOpen = true;
+          openNoteView(unitKey);
+        },
+        onFileInFolder: (unitKey) => openAyahFolderFiling(unitKey),
+        onPlay: (unitKey) => quickPlayAyah(unitKey),
+        onCopy: async (unitKey) => {
+          const langs = ["ar", getAppLang() === "bn" ? "bn" : "en"];
+          await copyToClipboard(buildAyahText(unitKey, langs));
+        },
+        onShare: async (unitKey) => {
+          const langs = ["ar", getAppLang() === "bn" ? "bn" : "en"];
+          await shareText(buildAyahText(unitKey, langs), unitKey);
+        },
+      });
+    }
+
+    /** Entry point (a): the Mushaf page's own round ayah-end marker
+        (`span.dataset.ayahMarker`, hifz-renderer.js's own plain
+        "surah:ayah" ayahKey shape). Entry point (b): the Word Card's
+        "This āyah ⋯" button (`${chapter.surahNumber}:${ayah.ayah}`,
+        the identical plain shape). Both are normalised to the one real
+        unit key here. */
+    function openAyahActionSheet(ayahKey) {
+      const [surahStr, ayahStr] = ayahKey.split(":");
+      const unitKey = buildUnitKey.ayah(Number(surahStr), Number(ayahStr));
+      ayahSheetUnitKey = unitKey;
+      renderAyahActionSheetNow();
+      ayahActionSheetOverlayEl.classList.add("open");
+      ensureAyahNoteDataLoaded().then(() => { if (ayahSheetUnitKey === unitKey) renderAyahActionSheetNow(); });
+    }
+
+    ayahActionSheetOverlayEl.addEventListener("click", (e) => { if (e.target === ayahActionSheetOverlayEl) closeAyahActionSheet(); });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && ayahActionSheetOverlayEl.classList.contains("open")) closeAyahActionSheet();
+    });
+
+    // ===================== Issue #286 -- "File in folder(s)…" =====================
+
+    function closeAyahFolderFiling() {
+      ayahFolderFilingState = null;
+      ayahFolderFilingOverlayEl.classList.remove("open");
+      ayahFolderFilingNotePickerMountEl.innerHTML = "";
+      ayahFolderFilingPickerMountEl.innerHTML = "";
+      ayahFolderFilingMsgEl.style.display = "none";
+    }
+
+    function ayahFolderFilingMsg(text) {
+      ayahFolderFilingMsgEl.textContent = text ?? "";
+      ayahFolderFilingMsgEl.style.display = text ? "" : "none";
+    }
+
+    /** Opens the folder chooser for `unitKey`'s Note(s) -- spec item 3: one
+        Note reused if exactly one already exists, a picker if several, or
+        none yet (Save will create one). Uses the paged tree
+        (ownerFolderTreePaged) and noteFilings()/notesForStudyUnit(), the
+        same list-based reads the rest of Mapping My Journey already uses --
+        never a per-id get() of something that may not exist (the v08.56
+        lesson). */
+    async function openAyahFolderFiling(unitKey) {
+      if (!auth.currentUser || !selectedPersonId) return;
+      const { surah, ayah: ayahNum } = parseAyahUnitKey(unitKey);
+      const ref = ayahRefLabel(surah, ayahNum);
+      ayahFolderFilingTitleEl.textContent = t("File {ref} in folder(s)", { ref });
+      ayahFolderFilingState = {
+        unitKey, ref, notes: [], noteId: null, tree: { roots: [] },
+        checkedFolderIds: [], searchTerm: "", newFolderUnder: null, busy: true,
+      };
+      ayahFolderFilingOverlayEl.classList.add("open");
+      renderAyahFolderFilingNow();
+      try {
+        const [notesResult, tree] = await Promise.all([
+          notesForStudyUnit(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, unitKey }),
+          ownerFolderTreePaged(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId }),
+        ]);
+        if (!ayahFolderFilingState || ayahFolderFilingState.unitKey !== unitKey) return; // closed/reopened while awaiting
+        const notes = notesResult.rows.map((row) => row.note);
+        ayahFolderFilingState.notes = notes;
+        ayahFolderFilingState.tree = tree;
+        ayahFolderFilingState.busy = false;
+        if (notes.length === 1) {
+          await selectAyahFolderFilingNote(notes[0].noteId);
+        } else {
+          renderAyahFolderFilingNow();
+        }
+      } catch (err) {
+        if (ayahFolderFilingState) { ayahFolderFilingState.busy = false; ayahFolderFilingMsg(err.message || t("Couldn't load your folders.")); renderAyahFolderFilingNow(); }
+      }
+    }
+
+    /** Loads which folders `noteId` is already filed in (noteFilings() --
+        resolves folder objects too, the same read journey-map.html itself
+        uses), so the picker's checkboxes start correct. */
+    async function selectAyahFolderFilingNote(noteId) {
+      if (!ayahFolderFilingState) return;
+      ayahFolderFilingState.noteId = noteId;
+      ayahFolderFilingState.busy = true;
+      renderAyahFolderFilingNow();
+      try {
+        const { rows } = await noteFilings(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, noteId });
+        if (!ayahFolderFilingState || ayahFolderFilingState.noteId !== noteId) return;
+        ayahFolderFilingState.checkedFolderIds = rows.map((row) => row.placement.folderId);
+        ayahFolderFilingState.busy = false;
+        renderAyahFolderFilingNow();
+      } catch (err) {
+        if (ayahFolderFilingState) { ayahFolderFilingState.busy = false; ayahFolderFilingMsg(err.message || t("Couldn't load this Note's folders.")); renderAyahFolderFilingNow(); }
+      }
+    }
+
+    function renderAyahFolderFilingNow() {
+      const st = ayahFolderFilingState;
+      if (!st) return;
+      // More than one Note already exists on this āyah and none is chosen
+      // yet -- ask which one (spec item 3), rather than guessing.
+      if (st.notes.length > 1 && !st.noteId) {
+        ayahFolderFilingNotePickerMountEl.innerHTML = `
+          <p class="ayah-folder-note-picker-intro">${escapeHtml(t("You have more than one Note on this āyah. Which one?"))}</p>
+          <div class="ayah-folder-note-picker">
+            ${st.notes.map((n) => `<label><input type="radio" name="ayahFolderFilingNote" data-ayah-folder-note-pick="${escapeHtml(n.noteId)}"> <span>${escapeHtml(n.title || t("(untitled Note)"))}</span></label>`).join("")}
+          </div>`;
+        ayahFolderFilingNotePickerMountEl.querySelectorAll("[data-ayah-folder-note-pick]").forEach((radio) => {
+          radio.addEventListener("change", () => { if (radio.checked) selectAyahFolderFilingNote(radio.dataset.ayahFolderNotePick); });
+        });
+        ayahFolderFilingPickerMountEl.innerHTML = "";
+        return;
+      }
+      ayahFolderFilingNotePickerMountEl.innerHTML = "";
+      if (st.busy) {
+        ayahFolderFilingPickerMountEl.innerHTML = `<p class="ayah-folder-empty">${escapeHtml(t("Loading…"))}</p>`;
+        return;
+      }
+      ayahFolderFilingPickerMountEl.innerHTML = renderAyahFolderPickerHtml({
+        tree: st.tree, checkedFolderIds: st.checkedFolderIds, searchTerm: st.searchTerm, newFolderUnder: st.newFolderUnder,
+      });
+      attachAyahFolderPickerHandlers(ayahFolderFilingPickerMountEl, {
+        onSearch: (term) => { st.searchTerm = term; renderAyahFolderFilingNow(); },
+        onToggle: (folderId, checked) => {
+          st.checkedFolderIds = checked ? [...st.checkedFolderIds, folderId] : st.checkedFolderIds.filter((id) => id !== folderId);
+        },
+        onNewFolderRequest: (parentFolderId) => { st.newFolderUnder = parentFolderId; renderAyahFolderFilingNow(); },
+        onNewFolderCancel: () => { st.newFolderUnder = null; renderAyahFolderFilingNow(); },
+        onNewFolderConfirm: (name) => createAyahFolderFilingFolder(name),
+        onCancel: closeAyahFolderFiling,
+        onSave: (checkedFolderIds) => saveAyahFolderFiling(checkedFolderIds),
+      });
+    }
+
+    async function createAyahFolderFilingFolder(name) {
+      const st = ayahFolderFilingState;
+      if (!st || !name || !name.trim()) return;
+      ayahFolderFilingMsg("");
+      const outcome = await safeWrite(
+        () => createNoteFolder(db, {
+          tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid,
+          name: name.trim(), parentFolderId: st.newFolderUnder || null, actorUid: auth.currentUser.uid,
+        }),
+        { collection: TENANT.NOTE_FOLDERS, action: "createNoteFolder" }
+      );
+      if (!outcome.ok) return;
+      st.newFolderUnder = null;
+      // A freshly created folder is one more row `ownerFolderTreePaged()`
+      // would now return -- re-fetch rather than hand-splice it into the
+      // tree, the same "read it back" shape createFolder()'s own bookmark
+      // caller uses when a new folder must show up ticked-ready immediately.
+      st.tree = await ownerFolderTreePaged(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId });
+      st.checkedFolderIds = [...st.checkedFolderIds, outcome.result];
+      renderAyahFolderFilingNow();
+    }
+
+    /** Save: ensure a Note exists for this āyah (creating one titled with
+        the āyah reference if the reader has none -- spec item 3), then
+        create/retire placements for exactly the folders that changed
+        (planFolderFilings(), pure -- see its own header comment). Every
+        write goes through safeWrite() (I15): a failure is reported to the
+        reader, never swallowed, and Save is left open so nothing already
+        ticked is lost. */
+    async function saveAyahFolderFiling(checkedFolderIds) {
+      const st = ayahFolderFilingState;
+      if (!st || st.busy) return;
+      st.busy = true;
+      ayahFolderFilingMsg("");
+      renderAyahFolderFilingNow();
+
+      let noteId = st.noteId;
+      if (!noteId) {
+        const outcome = await safeWrite(
+          () => createStudyNote(db, {
+            tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid,
+            unitKey: st.unitKey, title: st.ref, actorUid: auth.currentUser.uid,
+          }),
+          { collection: TENANT.NOTES, action: "createStudyNote" }
+        );
+        if (!outcome.ok) { st.busy = false; renderAyahFolderFilingNow(); return; }
+        noteId = outcome.result.note.noteId;
+        st.noteId = noteId;
+      }
+
+      const { rows } = await noteFilings(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, noteId });
+      const currentPlacements = rows.map((row) => row.placement);
+      const { toCreate, toRetire } = planFolderFilings(currentPlacements, checkedFolderIds);
+      const results = await Promise.all([
+        ...toCreate.map((folderId) => safeWrite(
+          () => createNotePlacement(db, {
+            tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid,
+            noteId, folderId, actorUid: auth.currentUser.uid,
+          }),
+          { collection: TENANT.NOTE_PLACEMENTS, action: "createNotePlacement" }
+        )),
+        ...toRetire.map((placementId) => safeWrite(
+          () => retireNotePlacement(db, { tenantId: activeTenantId, placementId, actorUid: auth.currentUser.uid }),
+          { collection: TENANT.NOTE_PLACEMENTS, action: "retireNotePlacement" }
+        )),
+      ]);
+      st.busy = false;
+      if (results.every((r) => r.ok)) {
+        closeAyahFolderFiling();
+      } else {
+        ayahFolderFilingMsg(t("Some folders couldn't be saved -- please try again."));
+        renderAyahFolderFilingNow();
+      }
+    }
+
+    ayahFolderFilingOverlayEl.addEventListener("click", (e) => { if (e.target === ayahFolderFilingOverlayEl) closeAyahFolderFiling(); });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && ayahFolderFilingOverlayEl.classList.contains("open")) closeAyahFolderFiling();
+    });
 
     /** Enhancement round -- the settings a Quran bookmark restores on reopen (item 4). Only what actually resets on a fresh load/session (checkbox state, unit type/position, Approach) -- device-wide reading prefs (translation languages, reciters, Arabic font) already come back on their own via prefs.js/localStorage, so capturing them here too would be redundant. */
     function captureQuranBookmarkSettings() {
@@ -12709,10 +13121,20 @@
       // flag -- that way it's automatically correct whether the drawer was
       // closed by its own toggle, an outside click, or another popover
       // opening in its place, with nothing to keep in sync by hand.
-      const wasQcrDrawerOpen = noteView.querySelector('[data-note-sub-wrap="collections"] .note-sub-popover')?.classList.contains("open") ?? false;
-      const openQcrDdKey = noteView.querySelector('[data-note-qcr-dd-pop].on')?.dataset.noteQcrDdPop
+      let wasQcrDrawerOpen = noteView.querySelector('[data-note-sub-wrap="collections"] .note-sub-popover')?.classList.contains("open") ?? false;
+      let openQcrDdKey = noteView.querySelector('[data-note-qcr-dd-pop].on')?.dataset.noteQcrDdPop
         ?? noteView.querySelector('[data-asmax-dd-pop].on')?.dataset.asmaxDdPop
         ?? null;
+      // Issue #286 -- the "This āyah" sheet's "QCR collection(s)…" action
+      // navigated here and asked the 🗂 Attach panel to already be open on
+      // this very first render, the same DOM state a real 🗂 -> Attach tap
+      // would have left. One-shot: cleared immediately so a later,
+      // unrelated re-render never reopens it on its own.
+      if (ayahSheetPendingQcrOpen) {
+        ayahSheetPendingQcrOpen = false;
+        wasQcrDrawerOpen = true;
+        openQcrDdKey = "attach";
+      }
 
       // PC popup: only #noteViewMount is replaced -- the static title bar/
       // side pane/resize handles around it (see #noteView's own markup

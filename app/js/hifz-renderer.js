@@ -282,6 +282,14 @@ function renderWord(w, highlightSet) {
   if (maxPosition && mushafPosition < maxPosition) {
     const wordPosition = resolveWordOccurrencePosition(ayahKey, mushafPosition);
     span.dataset.wordOccurrence = `quran-word-occurrence:v1:${surahStr}:${ayahStr}:${wordPosition}`;
+  } else if (maxPosition && mushafPosition === maxPosition) {
+    // Issue #286 -- this IS the ayah-end marker (the round print number),
+    // the one span the block above deliberately never gives a
+    // data-word-occurrence to. Tapping it opens the "This āyah" action
+    // sheet rather than the Word Card -- same I2 split as above: a DOM
+    // attribute only, the click listener stays in quranrevival.html.
+    span.classList.add("hifz-ayah-marker");
+    span.dataset.ayahMarker = ayahKey;
   }
   if (!wordRegistry.has(ayahKey)) wordRegistry.set(ayahKey, []);
   wordRegistry.get(ayahKey).push(span);

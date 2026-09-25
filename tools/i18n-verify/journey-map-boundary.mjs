@@ -124,17 +124,31 @@ check("POSITIVE CONTROL: the reachability walker really does find a wired module
 // that file's own header for why), so it needs the identical bulk-folder
 // validation for the identical reason. The PAGE set is unchanged -- still
 // the same three audited pages, not a fourth.
-const CONTRACT_WIRED_PAGES = ["app/import-notes.html", "app/journey-map.html", "app/notes.html"];
-const SERVICE_WIRED_PAGE = "app/journey-map.html";
+//
+// UPDATED AGAIN for issue #286 (the "This āyah" action sheet's "File in
+// folder(s)…"), reason recorded rather than the check weakened.
+// `app/quranrevival.html` is a FIFTH audited page: it reaches the contract
+// via `note-foundation.js` (`createNoteFolder`/`createNotePlacement`/
+// `retireNotePlacement`, called directly, the same convention
+// `app/journey-map.html` already uses for its own create calls) AND, for
+// the first time from a page OTHER than `app/journey-map.html`, imports
+// `journey-map-service.js` directly too (`ownerFolderTreePaged()` for the
+// folder tree, `noteFilings()` for which folders a Note already sits in --
+// both READ-ONLY wrappers this round did not need to duplicate). Its own
+// bounded scope -- exactly which Phase 6 functions it may call, and that it
+// calls none of the folder-EDITING wrappers -- is asserted directly, below,
+// the same way `app/notes.html` and `app/journey-map.html` already are.
+const CONTRACT_WIRED_PAGES = ["app/import-notes.html", "app/journey-map.html", "app/notes.html", "app/quranrevival.html"];
+const SERVICE_WIRED_PAGES = ["app/journey-map.html", "app/quranrevival.html"];
 
-check("journey-map-service.js -- the Phase 6 service -- is reachable ONLY from the one audited P6-F page", () => {
+check("journey-map-service.js -- the Phase 6 service -- is reachable ONLY from the audited pages that import it directly", () => {
   const chains = chainsToTarget("journey-map-service.js");
-  const pages = [...new Set(chains.map((c) => c.split(" -> ")[0]))];
-  assert.deepEqual(pages, [SERVICE_WIRED_PAGE],
+  const pages = [...new Set(chains.map((c) => c.split(" -> ")[0]))].sort();
+  assert.deepEqual(pages, [...SERVICE_WIRED_PAGES].sort(),
     `unexpected page(s) reaching journey-map-service.js: ${chains.join(" | ")}`);
 });
 
-check("journey-map-contract.js is reachable ONLY via note-foundation.js, journey-map-service.js, wordpress-import-service.js or evernote-import-service.js, and ONLY from the three audited pages", () => {
+check("journey-map-contract.js is reachable ONLY via note-foundation.js, journey-map-service.js, wordpress-import-service.js or evernote-import-service.js, and ONLY from the four audited pages", () => {
   const chains = chainsToTarget("journey-map-contract.js");
   const pages = [...new Set(chains.map((c) => c.split(" -> ")[0]))].sort();
   assert.deepEqual(pages, CONTRACT_WIRED_PAGES,
@@ -188,8 +202,12 @@ check("every importer of the journey modules is exactly the pinned set, and each
   // UPDATED AGAIN for issue #271: `app/js/evernote-import-service.js` is a
   // FOURTH direct importer, its own Evernote-writing twin of the same
   // WordPress module, for the identical reason.
+  // UPDATED AGAIN for issue #286: `app/quranrevival.html` is a SECOND page
+  // (alongside `app/journey-map.html`) importing `journey-map-service.js`
+  // directly, and a further importer of `note-foundation.js` too -- see the
+  // header comment above `CONTRACT_WIRED_PAGES`.
   assert.deepEqual([...new Set(importers)].sort(),
-    ["app/journey-map.html", "app/js/evernote-import-service.js", "app/js/journey-map-service.js", "app/js/note-foundation.js", "app/js/wordpress-import-service.js"].sort(),
+    ["app/journey-map.html", "app/js/evernote-import-service.js", "app/js/journey-map-service.js", "app/js/note-foundation.js", "app/js/wordpress-import-service.js", "app/quranrevival.html"].sort(),
     `the set of modules importing the journey contract/service has changed: ${importers.join(", ")}`);
   // chainsToTarget() only ever resolves a TARGET named "*.js" (it walks
   // app/*.html pages through js/ imports) -- app/journey-map.html is a page,
@@ -197,8 +215,8 @@ check("every importer of the journey modules is exactly the pinned set, and each
   // reachability (as a PAGE reaching the two guarded modules) is exactly
   // what the two checks above this one already prove.
   const EXPECTED_PAGES_PER_JS_IMPORTER = {
-    "note-foundation.js": CONTRACT_WIRED_PAGES,      // reachable from all three audited pages (notes.html since P5-D, journey-map.html since P6-F, import-notes.html new this round)
-    "journey-map-service.js": [SERVICE_WIRED_PAGE],  // reachable only from the one page that imports it directly
+    "note-foundation.js": CONTRACT_WIRED_PAGES,      // reachable from every audited page (notes.html since P5-D, journey-map.html since P6-F, import-notes.html for #265, quranrevival.html for #286)
+    "journey-map-service.js": SERVICE_WIRED_PAGES,   // reachable only from the pages that import it directly (journey-map.html, and quranrevival.html since #286)
     "wordpress-import-service.js": ["app/import-notes.html"], // reachable only from the one page that imports it directly
     "evernote-import-service.js": ["app/import-notes.html"], // issue #271 -- reachable only from the same one page, alongside its WordPress sibling
   };
@@ -207,7 +225,7 @@ check("every importer of the journey modules is exactly the pinned set, and each
     if (!(base in EXPECTED_PAGES_PER_JS_IMPORTER)) continue; // app/journey-map.html itself -- not a .js target, nothing to re-check here
     const chains = chainsToTarget(base);
     const pages = [...new Set(chains.map((c) => c.split(" -> ")[0]))].sort();
-    assert.deepEqual(pages, EXPECTED_PAGES_PER_JS_IMPORTER[base],
+    assert.deepEqual(pages, [...EXPECTED_PAGES_PER_JS_IMPORTER[base]].sort(),
       `${importer}'s own reachability changed unexpectedly: ${chains.join(" | ")}`);
   }
 });
@@ -241,7 +259,7 @@ check("app/notes.html (P5-D's own scope) still never calls a Phase 6 folder/plac
   assert.deepEqual(used, [], `app/notes.html names Phase 6 function(s): ${used.join(", ")}`);
 });
 check("app/journey-map.html only ever names the Phase 6 data-layer functions it imports directly (create folder, create placement) -- everything else goes through the service", () => {
-  const text = fs.readFileSync(path.join(root, SERVICE_WIRED_PAGE), "utf8");
+  const text = fs.readFileSync(path.join(root, "app/journey-map.html"), "utf8");
   const used = PHASE_6_DATA_LAYER_FUNCTIONS.filter((fn) => text.includes(fn)).sort();
   assert.deepEqual(used, ["createNoteFolder", "createNotePlacement"],
     `app/journey-map.html's own direct Phase 6 data-layer usage changed: ${used.join(", ")} -- if this round's scope grew, widen this list deliberately rather than letting it drift`);
@@ -266,7 +284,7 @@ check("app/journey-map.html only ever names the Phase 6 data-layer functions it 
 // page that reaches journey-map-service.js in the first place).
 const FOLDER_EDITING_SERVICE_WRAPPERS = ["renameFolder", "reorderFolder", "moveFolder", "retireFolder", "reorderFiling"];
 check("app/journey-map.html now wires every folder-editing service wrapper (P6-G), and imports each by name", () => {
-  const text = fs.readFileSync(path.join(root, SERVICE_WIRED_PAGE), "utf8");
+  const text = fs.readFileSync(path.join(root, "app/journey-map.html"), "utf8");
   const used = FOLDER_EDITING_SERVICE_WRAPPERS.filter((fn) => text.includes(fn));
   assert.deepEqual(used.sort(), [...FOLDER_EDITING_SERVICE_WRAPPERS].sort(),
     `app/journey-map.html no longer names every folder-editing wrapper: ${used.join(", ")}`);
@@ -274,6 +292,25 @@ check("app/journey-map.html now wires every folder-editing service wrapper (P6-G
     assert.ok(new RegExp(String.raw`import\s*\{[^}]*\b${fn}\b[^}]*\}\s*from\s*["'\`]\./js/journey-map-service\.js["'\`]`).test(text),
       `app/journey-map.html calls ${fn} without importing it from journey-map-service.js`);
   }
+});
+
+// UPDATED for issue #286, reason recorded rather than the check widened
+// silently: `app/quranrevival.html`'s own "File in folder(s)…" needs a
+// THIRD direct call `app/journey-map.html` does not, `retireNotePlacement`
+// (unticking a folder retires that placement, I4) -- the identical function
+// `app/journey-map.html`'s own P5-F move/retire controls already call, just
+// from a second page now. Checked as its own bounded set, not folded into
+// the journey-map.html check above, since the two pages' own scopes differ:
+// `app/quranrevival.html` calls no folder-editing wrapper at all (renaming,
+// reordering and re-parenting a folder stay `app/journey-map.html`'s own
+// Folders-view job).
+check("app/quranrevival.html's own Phase 6 data-layer usage is exactly create folder / create placement / retire placement, and it never calls a folder-editing wrapper", () => {
+  const text = fs.readFileSync(path.join(root, "app/quranrevival.html"), "utf8");
+  const used = PHASE_6_DATA_LAYER_FUNCTIONS.filter((fn) => text.includes(fn)).sort();
+  assert.deepEqual(used, ["createNoteFolder", "createNotePlacement", "retireNotePlacement"],
+    `app/quranrevival.html's own direct Phase 6 data-layer usage changed: ${used.join(", ")} -- if this round's scope grew, widen this list deliberately rather than letting it drift`);
+  const editingUsed = FOLDER_EDITING_SERVICE_WRAPPERS.filter((fn) => text.includes(fn));
+  assert.deepEqual(editingUsed, [], `app/quranrevival.html names folder-editing wrapper(s) it should not: ${editingUsed.join(", ")}`);
 });
 
 function unchangedSinceMain(relPath) {

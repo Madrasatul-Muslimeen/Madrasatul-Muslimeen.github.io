@@ -102,8 +102,25 @@ check("Foundation data layer preserves atomic full-snapshot revisions",
   /TENANT\.NOTE_REVISIONS/.test(foundation) && /expectedRevisionId/.test(foundation));
 check("Foundation data layer has no legacy fallback or dual write",
   !/TENANT\.AYAH_NOTES|from\s+["']\.\/ayah-notes\.js["']|saveAyahNote\s*\(/.test(foundation));
-check("Foundation data layer remains uninvoked by the Quran shell",
-  !/note-foundation\.js/.test(quranShell));
+// UPDATED for issue #286 (25 Sep 2026), reason recorded rather than the
+// check weakened. "This āyah" action sheet's "File in folder(s)…" needs a
+// real Note Foundation write path from Mushaf/Read view -- reusing this
+// same accepted data layer (I2), not a copy -- so blanket unreachability
+// stopped being true the moment that round was authorised. Narrowed to what
+// still holds, the identical shape journey-map-boundary.mjs's own P5-D/P6-F
+// updates already used for this same file: the Quran shell's own DIRECT
+// import from note-foundation.js is exactly the three folder/placement
+// functions this round's scope needs (create a folder, file into it, retire
+// a filing) and nothing else -- every other Note Foundation access from
+// that page goes through study-note-service.js's own already-accepted
+// createStudyNote()/notesForStudyUnit() instead.
+check("the Quran shell's own DIRECT note-foundation.js import is exactly createNoteFolder/createNotePlacement/retireNotePlacement (issue #286)",
+  (() => {
+    const m = quranShell.match(/import\s*\{([^}]*)\}\s*from\s*["'`]\.\/js\/note-foundation\.js["'`]/);
+    if (!m) return false;
+    const names = m[1].split(",").map((s) => s.trim()).filter(Boolean).sort();
+    return names.join(",") === ["createNoteFolder", "createNotePlacement", "retireNotePlacement"].sort().join(",");
+  })());
 // DEPLOYED, 22 Sep 2026 -- confirmed by the Owner in the Firebase Console,
 // via a later, separately-audited candidate (the Phase 3-6 assembly), not by
 // this task acquiring deployment authority it was never given (see "no

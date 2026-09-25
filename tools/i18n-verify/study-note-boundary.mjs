@@ -111,26 +111,36 @@ check("POSITIVE CONTROL: the reachability walker really does find a wired module
   assert.ok(control.length > 0, "the walker found no page importing records.js -- it is not working");
 });
 
-// P5-D (issue #195): the one page this round wired in, and the only page
-// allowed to reach either module. A second page reaching the service --
-// under any name -- is exactly the "wired in a second time, unaudited"
-// class every reachability guard in this repository exists to catch.
-const KNOWN_WIRED_PAGE = "app/notes.html";
+// P5-D (issue #195): the one page that round wired in. A second page
+// reaching the service -- under any name -- is exactly the "wired in a
+// second time, unaudited" class every reachability guard in this repository
+// exists to catch, so a new page joining this list must be a deliberate,
+// recorded decision, never a silent side effect of some other import.
+//
+// UPDATED for issue #286 (25 Sep 2026), reason recorded rather than the
+// check weakened: `app/quranrevival.html` is a SECOND audited page. The
+// "This āyah" action sheet's "File in folder(s)…" needs the accepted
+// createStudyNote()/notesForStudyUnit() the Notes screen already uses (I2 --
+// the same functions, not a copy), to reuse the reader's own existing Note
+// on this āyah or create one before filing it into Mapping My Journey
+// folders. The claim narrows to "exactly these two pages", not back to one.
+const KNOWN_WIRED_PAGES = ["app/notes.html", "app/quranrevival.html"];
 
-check("EXACTLY the Notes screen reaches the service, and nothing else does, by any chain of any length", () => {
+check("EXACTLY the audited pages reach the service, and nothing else does, by any chain of any length", () => {
   const reachable = chainsToTarget("study-note-service.js");
   const pages = reachable.map((r) => r.split(" -> ")[0]).sort();
-  assert.deepEqual(pages, [KNOWN_WIRED_PAGE],
+  assert.deepEqual(pages, [...KNOWN_WIRED_PAGES].sort(),
     `unexpected page(s) reaching study-note-service.js: ${reachable.join(" | ")}`);
 });
 
 check("the binding is reached ONLY through the service -- never directly by any page", () => {
-  const reachable = chainsToTarget("study-note-binding.js");
-  assert.deepEqual(reachable, [`${KNOWN_WIRED_PAGE} -> study-note-service.js -> study-note-binding.js`],
+  const reachable = chainsToTarget("study-note-binding.js").sort();
+  const expected = KNOWN_WIRED_PAGES.map((page) => `${page} -> study-note-service.js -> study-note-binding.js`).sort();
+  assert.deepEqual(reachable, expected,
     `unexpected reachability for study-note-binding.js: ${reachable.join(" | ")}`);
 });
 
-check("no app source imports the binding or the service, except the one audited page importing the service", () => {
+check("no app source imports the binding or the service, except the audited pages importing the service", () => {
   const importers = [];
   for (const file of everyAppSource()) {
     if (GUARDED.some((g) => file.endsWith(path.join("js", g)))) continue;
@@ -146,7 +156,8 @@ check("no app source imports the binding or the service, except the one audited 
       }
     }
   }
-  assert.deepEqual(importers, [`${KNOWN_WIRED_PAGE} -> study-note-service.js`],
+  const expected = KNOWN_WIRED_PAGES.map((page) => `${page} -> study-note-service.js`).sort();
+  assert.deepEqual(importers.sort(), expected,
     `unexpected importer set for the service/binding: ${JSON.stringify(importers)}`);
 });
 
