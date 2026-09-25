@@ -1621,10 +1621,33 @@ service cloud.firestore {
 
     match /notes/{noteKey} {
 
+      // --- WORDPRESS IMPORT (issue #265), NEW ---------------------------
+      // Every one of the three fields below is OPTIONAL and, when present,
+      // must be well-typed -- a real Timestamp for a date, a real map for
+      // provenance. A write that never touches them (every non-imported
+      // Note, forever) is completely unaffected.
+      function importFieldsWellFormed() {
+        return (d().get('originalCreatedAt', null) == null || d().originalCreatedAt is timestamp)
+            && (d().get('originalModifiedAt', null) == null || d().originalModifiedAt is timestamp)
+            && (d().get('importSource', null) == null || d().importSource is map);
+      }
+
+      // Architect review, 25 Sep 2026: the three import fields are ORIGIN
+      // facts, like createdBy -- stamped on create, frozen on every update.
+      // Without this a later revision could silently rewrite when a Note was
+      // first written, or add an import provenance to a Note this app wrote.
+      function importFieldsFrozen() {
+        return d().get('originalCreatedAt', null) == resource.data.get('originalCreatedAt', null)
+            && d().get('originalModifiedAt', null) == resource.data.get('originalModifiedAt', null)
+            && d().get('importSource', null) == resource.data.get('importSource', null);
+      }
+      // --- end WORDPRESS IMPORT ------------------------------------------
+
       function noteShapeOk() {
         return d().keys().hasOnly([
                  'noteId', 'tenantId', 'ownerPersonId', 'ownerUid', 'visibility',
                  'title', 'bodyHtml', 'status', 'currentRevisionId',
+                 'originalCreatedAt', 'originalModifiedAt', 'importSource',
                  'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
                ])
             && d().keys().hasAll([
@@ -1633,6 +1656,7 @@ service cloud.firestore {
                  'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
                ])
             && ownershipWellFormed()
+            && importFieldsWellFormed()
             && d().noteId is string && d().noteId.size() > 0
             && noteKey == d().tenantId + '__' + d().noteId
             && d().visibility == 'private'
@@ -1689,6 +1713,7 @@ service cloud.firestore {
       allow update: if resource != null
                     && noteShapeOk()
                     && createdByFrozen()
+                    && importFieldsFrozen()
                     && isNoteOwner(resource.data.tenantId, resource.data.ownerPersonId)
                     && noteIdentityUnchanged()
                     && committedRevisionMatches(resource.data.currentRevisionId);
@@ -1777,10 +1802,16 @@ service cloud.firestore {
         return /databases/$(database)/documents/noteFolders/$(d().tenantId + '__' + folderId);
       }
 
+      // --- WORDPRESS IMPORT (issue #265), NEW -----------------------------
+      function folderImportFieldsWellFormed() {
+        return d().get('importSource', null) == null || d().importSource is map;
+      }
+      // --- end WORDPRESS IMPORT --------------------------------------------
+
       function folderShapeOk() {
         return d().keys().hasOnly([
                  'folderId', 'tenantId', 'ownerPersonId', 'ownerUid', 'name',
-                 'parentFolderId', 'semanticRole', 'order', 'status',
+                 'parentFolderId', 'semanticRole', 'order', 'status', 'importSource',
                  'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
                ])
             && d().keys().hasAll([
@@ -1789,6 +1820,7 @@ service cloud.firestore {
                  'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
                ])
             && ownershipWellFormed()
+            && folderImportFieldsWellFormed()
             && d().folderId is string && d().folderId.size() > 0
             && folderKey == d().tenantId + '__' + d().folderId
             && d().name is string && d().name.size() > 0
@@ -1845,6 +1877,7 @@ service cloud.firestore {
       allow update: if folderShapeOk()
                     && folderIdentityUnchanged()
                     && createdByFrozen()
+                    && d().get('importSource', null) == resource.data.get('importSource', null)
                     && isNoteOwner(d().tenantId, d().ownerPersonId)
                     && parentOneHopOk();
 

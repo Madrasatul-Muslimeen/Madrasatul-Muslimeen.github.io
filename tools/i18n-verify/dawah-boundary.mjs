@@ -419,10 +419,34 @@ check("app/js/version.js is untouched -- no version bump from this round", () =>
 // asserts the repository copy is BYTE-IDENTICAL to the audited, append-only
 // deployment file the Owner was given, so nothing else can ride in with it.
 // firebase.json still carries no Dawah material (no index was needed).
-check("firestore.rules is exactly the published Dawah deployment file, and firebase.json is unchanged", () => {
+// Updated in place 25 Sep 2026 (Architect): the Owner has since published a
+// LATER whole-file deployment built on top of the Dawah one (the WordPress/
+// Evernote import rules), so "firestore.rules equals the Dawah file" stopped
+// being true for a correct reason. The check keeps both halves of its intent:
+// firestore.rules must be byte-identical to an Owner-PUBLISHED deployment file
+// (nothing unaudited rides in), and the dawahPages block inside it must still
+// be byte-identical to the one the Owner published for Dawah.
+const PUBLISHED_DEPLOYMENTS = [
+  "docs/governance/phase7-dawah-DEPLOYMENT-candidate-2026-09-24.rules",
+  "docs/governance/2026-09-25-wordpress-import-DEPLOYMENT-candidate.rules",
+];
+function dawahBlock(text) {
+  const start = text.indexOf("match /dawahPages/");
+  assert.notEqual(start, -1, "no dawahPages block");
+  const open = text.indexOf("{", start);
+  let depth = 0;
+  for (let i = open; i < text.length; i++) {
+    if (text[i] === "{") depth++;
+    else if (text[i] === "}" && --depth === 0) return text.slice(start, i + 1);
+  }
+  throw new Error("unterminated dawahPages block");
+}
+check("firestore.rules is exactly an Owner-published deployment file, its dawahPages block is the published Dawah one, and firebase.json is unchanged", () => {
   const rules = fs.readFileSync(path.join(root, "firestore.rules"), "utf8");
-  const published = fs.readFileSync(path.join(root, "docs/governance/phase7-dawah-DEPLOYMENT-candidate-2026-09-24.rules"), "utf8");
-  assert.equal(rules, published, "firestore.rules differs from the Dawah deployment file the Owner published");
+  const matches = PUBLISHED_DEPLOYMENTS.filter((p) => fs.readFileSync(path.join(root, p), "utf8") === rules);
+  assert.equal(matches.length >= 1, true, "firestore.rules is not byte-identical to any Owner-published deployment file");
+  const dawahPublished = fs.readFileSync(path.join(root, PUBLISHED_DEPLOYMENTS[0]), "utf8");
+  assert.equal(dawahBlock(rules), dawahBlock(dawahPublished), "the live dawahPages block differs from the one the Owner published for Dawah");
   unchangedSinceMain("firebase.json");
 });
 
