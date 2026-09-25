@@ -6,6 +6,7 @@
 import {
   collection,
   doc,
+  documentId,
   getDoc,
   getDocs,
   limit,
@@ -55,6 +56,37 @@ function requirePageSize(pageSize) {
     throw new RangeError("note-foundation: pageSize must be an integer between 1 and 100.");
   }
   return pageSize;
+}
+
+/**
+ * Issue #282 -- an optional document-ID RANGE, for a caller paging several
+ * disjoint shards of one collection in parallel (see journey-map-shard.js).
+ * `gte`/`lt` are full document ids (already `${tenantId}__${entityId}`, built
+ * by the caller); either or both may be omitted, since the equality filters
+ * already scope the query to one owner and Firestore needs no lower/upper
+ * bound to make that safe.
+ *
+ * WHY THIS NEEDS NO NEW COMPOSITE INDEX: every paged reader below already
+ * ranges over the collection's own implicit `__name__` order via
+ * `startAfter()` -- that IS a range condition on the document id, merely
+ * expressed as a cursor instead of a literal `where()` -- and it already
+ * runs in production today, at real scale, combined with these exact
+ * equality filters (the Owner's own WordPress import: "1,464 folders, 1,083
+ * Notes, 2,319 filings, 0 refused" -- v08.66's changelog entry). An explicit
+ * `where(documentId(), '>=', x)` / `'<'` `y` bound is the identical index
+ * shape Firestore already serves for that cursor; splitting the SAME scan
+ * into several disjoint sub-ranges costs nothing new. See
+ * `firestore-index-requirements.mjs`'s own guard, updated to recognise and
+ * allow exactly this one range shape (a range on `__name__` alone), while
+ * still refusing any OTHER field's range filter until it is worked out by
+ * hand, as before.
+ */
+function idRangeClauses(idRange) {
+  if (!idRange) return [];
+  const clauses = [];
+  if (idRange.gte !== undefined && idRange.gte !== null) clauses.push(where(documentId(), ">=", idRange.gte));
+  if (idRange.lt !== undefined && idRange.lt !== null) clauses.push(where(documentId(), "<", idRange.lt));
+  return clauses;
 }
 
 function ownership({ tenantId, ownerPersonId, ownerUid }) {
@@ -264,13 +296,14 @@ export async function listNoteFoldersForOwner(db, { tenantId, ownerPersonId, sta
  * the rest through it, in any view.
  */
 export async function listNoteFoldersForOwnerPage(db, {
-  tenantId, ownerPersonId, status = NOTE_STATUS.ACTIVE, pageSize = 100, after = null,
+  tenantId, ownerPersonId, status = NOTE_STATUS.ACTIVE, pageSize = 100, after = null, idRange = null,
 }) {
   requirePageSize(pageSize);
   const q = query(collection(db, TENANT.NOTE_FOLDERS),
     where("tenantId", "==", requireToken("tenantId", tenantId)),
     where("ownerPersonId", "==", requireToken("ownerPersonId", ownerPersonId)),
     where("status", "==", status),
+    ...idRangeClauses(idRange),
     ...(after ? [startAfter(after)] : []),
     limit(pageSize));
   const snapshot = await getDocs(q);
@@ -697,13 +730,46 @@ export async function listNotesForOwnerPage(db, {
  * single-field indexes alone.
  */
 export async function listNotePlacementsForOwnerPage(db, {
-  tenantId, ownerPersonId, status = NOTE_STATUS.ACTIVE, pageSize = 100, after = null,
+  tenantId, ownerPersonId, status = NOTE_STATUS.ACTIVE, pageSize = 100, after = null, idRange = null,
 }) {
   requirePageSize(pageSize);
   const q = query(collection(db, TENANT.NOTE_PLACEMENTS),
     where("tenantId", "==", requireToken("tenantId", tenantId)),
     where("ownerPersonId", "==", requireToken("ownerPersonId", ownerPersonId)),
     where("status", "==", status),
+    ...idRangeClauses(idRange),
+    ...(after ? [startAfter(after)] : []),
+    limit(pageSize));
+  const snapshot = await getDocs(q);
+  const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  const next = snapshot.docs.length < pageSize ? null : snapshot.docs[snapshot.docs.length - 1];
+  return { rows, next };
+}
+
+/**
+ * Issue #282 -- the SHARDABLE twin of `listNotesForOwnerPage()` above, for a
+ * caller that wants EVERY Note (Mapping My Journey's own "load it all, in
+ * several parallel shards" path) and does not need `updatedAt` ordering:
+ * nothing downstream of `journey-map-service.js`'s own sharded loader sorts
+ * by the order rows arrive in, and the one view that cares about date order
+ * (Timeline) already re-sorts explicitly before it renders anything.
+ *
+ * DELIBERATELY NO `orderBy`: Firestore refuses a range filter on a field
+ * that is not the query's own first `orderBy`, and the whole point of this
+ * function is a range filter on `documentId()` for parallel sharding (see
+ * `idRangeClauses()` above and `journey-map-shard.js`). `listNotesForOwnerPage()`
+ * itself is untouched — every existing caller that wants "the most recent
+ * N, in order" still gets exactly that.
+ */
+export async function listNotesForOwnerIdPage(db, {
+  tenantId, ownerPersonId, status = NOTE_STATUS.ACTIVE, pageSize = 100, after = null, idRange = null,
+}) {
+  requirePageSize(pageSize);
+  const q = query(collection(db, TENANT.NOTES),
+    where("tenantId", "==", requireToken("tenantId", tenantId)),
+    where("ownerPersonId", "==", requireToken("ownerPersonId", ownerPersonId)),
+    where("status", "==", status),
+    ...idRangeClauses(idRange),
     ...(after ? [startAfter(after)] : []),
     limit(pageSize));
   const snapshot = await getDocs(q);

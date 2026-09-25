@@ -261,9 +261,9 @@
     import { closeAllBarPalettes } from "./js/bar-palette.js";
     import { NOTE_STATUS, createNoteFolder, createNotePlacement } from "./js/note-foundation.js";
     import {
-      ownerFolderTreePaged, folderContents, moveNoteToFolder,
+      ownerFolderTreePagedSharded, folderContents, moveNoteToFolder,
       renameFolder, reorderFolder, moveFolder, retireFolder, reorderFiling,
-      loadAllOwnerNotes, loadAllOwnerPlacements, folderNoteCounts, folderMoveRefusal,
+      loadAllOwnerNotesSharded, loadAllOwnerPlacementsSharded, folderNoteCounts, folderMoveRefusal,
     } from "./js/journey-map-service.js";
 
     translateStatic();
@@ -519,20 +519,35 @@
     // Issue #259 -- Folders became an expandable TREE (every folder shown at
     // once, not a one-folder-at-a-time drill-down), so it needs the owner's
     // WHOLE set of placements up front too, never capped at 99 per folder.
-    // loadAllOwnerNotes()/loadAllOwnerPlacements() page past the deployed
-    // listIsBounded() cap rather than asking for a bigger limit().
+    // loadAllOwnerNotesSharded()/loadAllOwnerPlacementsSharded() page past the
+    // deployed listIsBounded() cap rather than asking for a bigger limit().
     let allPlacements = [];
     let notesTruncated = false;
     let placementsTruncated = false;
-    // Issue #267 -- ownerFolderTreePaged() pages past the same 100-folder
-    // Rules cap the single-shot folder reader alone was silently capped at
-    // (see journey-map-service.js's own comment) -- the Owner's own imported
-    // site has roughly 1,464 folders (issue #265), well past it.
+    // Issue #267 -- ownerFolderTreePagedSharded() pages past the same
+    // 100-folder Rules cap the single-shot folder reader alone was silently
+    // capped at (see journey-map-service.js's own comment) -- the Owner's own
+    // imported site has roughly 1,464 folders (issue #265), well past it.
     let foldersTruncated = false;
     // Per-folder distinct-active-Note subtree counts (issue #259's own count
     // badge), recomputed alongside the tree on every refresh -- pure, no
     // extra read (journey-map-service.js's folderNoteCounts()).
     let folderCounts = {};
+    // Issue #282 (speed, part 5) -- the folder tree is drawn the moment its
+    // OWN read resolves; Notes and placements (the two collections a real
+    // folder tree can dwarf -- the Owner's own import: 1,083 Notes, 2,319
+    // filings) load AFTER, in the background, across several parallel
+    // shards. `notesAndPlacementsLoaded` is what tells a render function
+    // "0" (genuinely empty) apart from "not counted yet" -- a folder count
+    // badge, Timeline and Path all read it so a reader is told counts are
+    // still arriving rather than shown a zero that looks final (I15's own
+    // "never silently" applied to a READ, not just a write).
+    let notesAndPlacementsLoaded = true;
+    // A later refreshAll() (a person/tenant switch, or a second render
+    // triggered while the first is still loading) must win over an earlier
+    // one still in flight -- the same superseded-render guard
+    // renderTimelineView()'s own timelineRenderToken already uses.
+    let refreshToken = 0;
     let timelineFilter = "everything"; // "everything" | a semanticRole | a real folderId
     let expandedNoteIds = new Set();
 
@@ -626,24 +641,49 @@
     // -------------------------------------------------------------------
     async function refreshAll() {
       renderReadOnlyBanner();
+      const myRefresh = ++refreshToken;
       if (!activeTenantId || !selectedPersonId) {
         folderTree = { roots: [], orphaned: [], cyclic: [], tooDeep: [] };
         allNotes = []; allPlacements = []; folderCounts = {};
+        notesAndPlacementsLoaded = true;
         renderCurrentView();
         return;
       }
-      const [tree, notesPage, placementsPage] = await Promise.all([
-        ownerFolderTreePaged(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId }),
-        loadAllOwnerNotes(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId }),
-        loadAllOwnerPlacements(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId }),
+      notesAndPlacementsLoaded = false;
+      // Cleared, not left stale: a person/tenant switch must never show the
+      // PREVIOUS person's Note counts under the new person's folder names
+      // while the new load is still in flight.
+      allNotes = []; allPlacements = []; folderCounts = {};
+      notesTruncated = false; placementsTruncated = false;
+      // Notes and placements start loading NOW, in the background, across
+      // several parallel shards each (journey-map-service.js) -- but nothing
+      // here awaits them yet. The Owner's real numbers (issue #282): the
+      // folder tree alone is what "usable" means for this screen, and it is
+      // now the ONLY thing between a person opening this page and seeing
+      // their own folders on screen.
+      const notesAndPlacementsPromise = Promise.all([
+        loadAllOwnerNotesSharded(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId }),
+        loadAllOwnerPlacementsSharded(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId }),
       ]);
+
+      const tree = await ownerFolderTreePagedSharded(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId });
+      if (myRefresh !== refreshToken) return; // superseded by a later refresh already
       folderTree = tree;
       foldersTruncated = tree.truncated;
+      // The tree is drawn HERE, before a single Note or placement has
+      // arrived -- every folder count badge and the Timeline/Path views
+      // read notesAndPlacementsLoaded and say so in words rather than
+      // showing a zero that would look like a final, counted answer.
+      renderCurrentView();
+
+      const [notesPage, placementsPage] = await notesAndPlacementsPromise;
+      if (myRefresh !== refreshToken) return; // superseded while notes/placements were still loading
       allNotes = notesPage.rows;
       notesTruncated = notesPage.truncated;
       allPlacements = placementsPage.rows;
       placementsTruncated = placementsPage.truncated;
       folderCounts = folderNoteCounts(rawFolderList(folderTree), allPlacements, allNotes);
+      notesAndPlacementsLoaded = true;
       renderCurrentView();
     }
 
@@ -894,6 +934,15 @@
       if (notesTruncated || placementsTruncated || foldersTruncated) {
         html += `<p id="truncatedMsg">${escapeHtml(t("Showing a large first batch only — there is more than could be loaded at once."))}</p>`;
       }
+      // Issue #282 -- the tree above this line is drawn from a real, complete
+      // read; only the COUNT BADGES beside each folder (folderRowHtml()'s own
+      // "…" below) are still arriving. Said in words rather than left to a
+      // reader to notice every badge reads "…" -- and never removed by
+      // simply not truncating the message once loading finishes; it clears
+      // on its own the next render, same as the truncated notice above.
+      if (!notesAndPlacementsLoaded) {
+        html += `<p id="notesLoadingMsg" class="note">${escapeHtml(t("Counting the Notes filed in each folder…"))}</p>`;
+      }
       html += folderToolbarHtml();
       const query = folderSearchQuery.trim().toLowerCase();
       if (query) {
@@ -963,7 +1012,13 @@
       const toggle = expandable
         ? `<button type="button" class="folder-toggle" data-folder-toggle aria-expanded="${expanded}" aria-label="${expanded ? escapeHtml(t("Collapse")) : escapeHtml(t("Expand"))}">${expanded ? "▾" : "▶"}</button>`
         : `<span class="folder-toggle folder-toggle-leaf" aria-hidden="true">▶</span>`;
-      const badge = count > 0 ? `<span class="folder-row-count">${count}</span>` : "";
+      // Issue #282 -- "…" while Notes/placements are still loading, NEVER a
+      // bare "0": a real folder's count is provisional until it is loaded,
+      // and a reader must not read a provisional zero as a final, counted
+      // answer (a real folder here could turn out to hold hundreds).
+      const badge = !notesAndPlacementsLoaded
+        ? `<span class="folder-row-count" data-folder-count-loading>…</span>`
+        : (count > 0 ? `<span class="folder-row-count">${count}</span>` : "");
       const pin = isPinnedTarget(f) ? `<span class="folder-pin-flag" title="${escapeHtml(t("New folders go here"))}">📍</span>` : "";
       const nameHtml = inlineRenameKey === key
         ? `<input type="text" class="folder-rename-input" data-folder-rename-input value="${escapeHtml(f.name ?? "")}" aria-label="${escapeHtml(t("Rename this folder"))}" />`
@@ -1537,6 +1592,16 @@
       if (myToken !== timelineRenderToken) return; // a later click already superseded this one
       const body = document.getElementById("timelineBody");
       if (!body) return; // the view was switched away while this was loading
+      // Issue #282 -- the "Everything" filter reads allNotes DIRECTLY
+      // (timelineNotesForFilter() above), with no read of its own to await,
+      // so an empty array here can mean either "genuinely no Notes yet" or
+      // "still loading" -- and the two must never look the same. A per-folder
+      // filter already makes its own real read (folderContents()) and is
+      // unaffected.
+      if (timelineFilter === "everything" && !notesAndPlacementsLoaded) {
+        body.innerHTML = `<p class="note">${escapeHtml(t("Loading your Notes…"))}</p>`;
+        return;
+      }
       if (notes.length === 0) {
         body.innerHTML = `<p id="emptyMsg">${escapeHtml(t("Nothing here yet — Notes you write will appear on your timeline the day you write them."))}</p>`;
         return;
@@ -1657,7 +1722,14 @@
     });
 
     function renderPathView() {
-      if (allNotes.length === 0) {
+      // Issue #282 -- Path draws its own BRANCH structure (mergedRoots(), the
+      // same folder tree Folders draws) the moment it is loaded, exactly like
+      // Folders -- it does not wait for Notes/placements just to show a
+      // reader their own folders as branches. Only the empty-path message
+      // (which claims there is NOTHING to show at all) needs the distinction:
+      // an empty allNotes here can mean "still loading" rather than
+      // "genuinely no Notes yet", and the two must not read the same.
+      if (allNotes.length === 0 && notesAndPlacementsLoaded) {
         viewPath.innerHTML = `<p id="emptyMsg">${escapeHtml(t("Your path is empty so far — every Note you write will appear here as a new stop, oldest to newest."))}</p>`;
         return;
       }
@@ -1666,6 +1738,9 @@
       let html = "";
       if (foldersTruncated) {
         html += `<p id="pathTruncatedMsg">${escapeHtml(t("Showing a large first batch only — there is more than could be loaded at once."))}</p>`;
+      }
+      if (!notesAndPlacementsLoaded) {
+        html += `<p id="pathNotesLoadingMsg" class="note">${escapeHtml(t("Notes are still loading — stops will appear on their branch as they arrive."))}</p>`;
       }
       if (anyLinked) {
         html += `<p class="path-hint">${escapeHtml(t("A Note filed in more than one folder shows a 🔗 badge — tap it to see every place it appears."))}</p>`;
@@ -1686,7 +1761,11 @@
       const toggle = expandable
         ? `<button type="button" class="path-branch-toggle" data-path-branch-toggle="${escapeHtml(key)}" data-path-depth="${depth}" aria-expanded="${expanded}" aria-label="${expanded ? escapeHtml(t("Collapse")) : escapeHtml(t("Expand"))}">${expanded ? "▾" : "▶"}</button>`
         : `<span class="path-branch-toggle path-branch-toggle-leaf" aria-hidden="true">▶</span>`;
-      const badge = stops.length > 0 ? `<span class="path-branch-count">${stops.length}</span>` : "";
+      // Issue #282 -- "…" while Notes/placements are still loading, the same
+      // provisional-count rule folderRowHtml()'s own badge already applies.
+      const badge = !notesAndPlacementsLoaded
+        ? `<span class="path-branch-count" data-branch-count-loading>…</span>`
+        : (stops.length > 0 ? `<span class="path-branch-count">${stops.length}</span>` : "");
       let html = `<div class="path-branch${isSystemFolderRole(f.semanticRole) ? " system" : ""}" data-path-branch data-branch-key="${escapeHtml(key)}">
         <div class="path-branch-head" data-path-branch-head>${toggle}<span class="path-branch-name">${escapeHtml(folderDisplayName(f))}</span>${badge}</div>`;
       if (expanded) {

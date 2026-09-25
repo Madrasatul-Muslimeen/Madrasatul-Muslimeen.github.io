@@ -323,7 +323,22 @@ check("the Phase 5 Rules candidate's RULE CONTENT is unchanged", () => {
 // replaces that one line rather than only adding to it.
 const NOTE_FOUNDATION_PINNED_REMOVAL =
   "-    transaction.update(TENANT.NOTES, noteDocId, { status: NOTE_STATUS.RETIRED });";
-check("existing user notes untouched; the data layer changed by INSERTION ONLY, except one pinned line this round REPLACED to fix a real Rules-candidate defect", () => {
+// UPDATED 25 Sep 2026 for issue #282 (speed, part 5), reason recorded rather
+// than the check weakened. `listNoteFoldersForOwnerPage()` and
+// `listNotePlacementsForOwnerPage()` both gained an optional trailing
+// `idRange = null` parameter (the sharded parallel loader's own
+// documentId()-range bound -- see idRangeClauses() and journey-map-shard.js),
+// so their shared signature line was REPLACED rather than only appended to.
+// This is the identical shape the retire-line exception above already
+// covers -- a deliberate, reviewed, BACKWARD-COMPATIBLE widening (every
+// existing caller that never passes idRange gets byte-identical behaviour,
+// proven by K1-K28 and note-foundation-real-function.rules.test.mjs staying
+// green unmodified) -- not a reshaping of what an existing caller already
+// gets. Both functions share the exact same old signature text, so the
+// pinned exception is the SAME line appearing twice, not two different ones.
+const NOTE_FOUNDATION_PINNED_SIGNATURE_WIDENING = Array(2).fill(
+  "-  tenantId, ownerPersonId, status = NOTE_STATUS.ACTIVE, pageSize = 100, after = null,");
+check("existing user notes untouched; the data layer changed by INSERTION ONLY, except the pinned lines this round and an earlier one each REPLACED for a stated reason", () => {
   // UPDATED 2026-09-15 (P6-B): the data layer now validates a folder's parent,
   // so byte-identity is no longer the right claim -- "nothing removed or
   // reshaped, except the one line named above" still is, and reading the
@@ -341,8 +356,14 @@ check("existing user notes untouched; the data layer changed by INSERTION ONLY, 
   // `main` that already carries it sees no removal at all -- `[]` is just
   // as valid a shape as the pinned single-line replacement. Removing
   // anything ELSE still fails, exactly as before.
-  assert.ok(removedLines.length === 0 || JSON.stringify(removedLines) === JSON.stringify([NOTE_FOUNDATION_PINNED_REMOVAL]),
-    `note-foundation.js removed line(s) do not match the pinned exception (or the now-equally-valid empty case) -- an existing behaviour may have been reshaped: ${JSON.stringify(removedLines)}`);
+  const allowedRemovals = [
+    [],
+    [NOTE_FOUNDATION_PINNED_REMOVAL],
+    NOTE_FOUNDATION_PINNED_SIGNATURE_WIDENING,
+    [NOTE_FOUNDATION_PINNED_REMOVAL, ...NOTE_FOUNDATION_PINNED_SIGNATURE_WIDENING],
+  ];
+  assert.ok(allowedRemovals.some((allowed) => JSON.stringify(removedLines) === JSON.stringify(allowed)),
+    `note-foundation.js removed line(s) do not match any pinned exception (or the now-equally-valid empty case) -- an existing behaviour may have been reshaped: ${JSON.stringify(removedLines)}`);
   const addedLines = diffText.split("\n").filter((l) => l.startsWith("+") && !l.startsWith("+++"));
   assert.ok(addedLines.length > 0);
 });

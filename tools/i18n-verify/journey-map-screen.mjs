@@ -144,8 +144,16 @@ check("every render of a Note's own body names sanitizeNoteHtml()", () => {
 // its `const editable = isSelfSelected() && …` gate than before -- measured
 // directly at 2473 characters; the window widens to 2600 to comfortably
 // clear that.
+//
+// UPDATED AGAIN for issue #282 (speed, part 5): `folderRowHtml()`'s own count
+// badge grew a provisional "…" state (Notes/placements loading in the
+// background), and the comment explaining it sits between the SAME
+// `const editable = isSelfSelected() && …` gate and that row's own
+// "Move to…" text -- measured directly at 2870 characters; the window widens
+// to 3000 to comfortably clear that. The gate itself did not move or weaken;
+// only the text between it and what it protects grew.
 check("every write-triggering control is gated behind isSelfSelected(), at every occurrence", () => {
-  const WINDOW = 2600;
+  const WINDOW = 3000;
   for (const marker of ['id="newFolderForm"', 't("+ File a Note here…")', 't("Move to…")']) {
     let idx = -1, found = 0;
     while ((idx = page.indexOf(marker, idx + 1)) !== -1) {

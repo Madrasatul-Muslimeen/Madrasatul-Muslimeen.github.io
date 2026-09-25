@@ -211,7 +211,18 @@ check("app/js/ayah-notes.js is byte-identical to origin/main -- existing notes p
 // removing anything else still fails, exactly as before.
 const NOTE_FOUNDATION_PINNED_REMOVAL =
   "-    transaction.update(TENANT.NOTES, noteDocId, { status: NOTE_STATUS.RETIRED });";
-check("app/js/note-foundation.js changed by INSERTION ONLY, except one pinned line this round REPLACED to fix a real Rules-candidate defect", () => {
+// UPDATED 25 Sep 2026 for issue #282 (speed, part 5), reason recorded rather
+// than the check weakened -- the identical finding and fix as
+// journey-map-boundary.mjs's own sibling check: `listNoteFoldersForOwnerPage()`
+// and `listNotePlacementsForOwnerPage()` both gained an optional trailing
+// `idRange = null` parameter (Mapping My Journey's own sharded parallel
+// loader), so their shared signature line was REPLACED, not only appended
+// to -- a deliberate, reviewed, backward-compatible widening (every existing
+// caller that never passes `idRange` is byte-identical in behaviour), the
+// same shape the retire-line exception above already covers.
+const NOTE_FOUNDATION_PINNED_SIGNATURE_WIDENING = Array(2).fill(
+  "-  tenantId, ownerPersonId, status = NOTE_STATUS.ACTIVE, pageSize = 100, after = null,");
+check("app/js/note-foundation.js changed by INSERTION ONLY, except the pinned lines this round and an earlier one each REPLACED for a stated reason", () => {
   // UPDATED 2026-09-15 (P5-E) and again 2026-09-20 (see above), with the
   // reason recorded rather than the check deleted. P5-E adds the read side
   // of ADR-009 to this file, so byte-identity is no longer the right claim
@@ -234,8 +245,14 @@ check("app/js/note-foundation.js changed by INSERTION ONLY, except one pinned li
   // and accepting only one of them made this check fail on a correct,
   // unreshaped diff the moment `main` caught up to the exception it names.
   // Removing anything ELSE still fails, exactly as before.
-  assert.ok(removedLines.length === 0 || JSON.stringify(removedLines) === JSON.stringify([NOTE_FOUNDATION_PINNED_REMOVAL]),
-    `note-foundation.js removed line(s) do not match the pinned exception (or the now-equally-valid empty case) -- an existing behaviour may have been reshaped: ${JSON.stringify(removedLines)}`);
+  const allowedRemovals = [
+    [],
+    [NOTE_FOUNDATION_PINNED_REMOVAL],
+    NOTE_FOUNDATION_PINNED_SIGNATURE_WIDENING,
+    [NOTE_FOUNDATION_PINNED_REMOVAL, ...NOTE_FOUNDATION_PINNED_SIGNATURE_WIDENING],
+  ];
+  assert.ok(allowedRemovals.some((allowed) => JSON.stringify(removedLines) === JSON.stringify(allowed)),
+    `note-foundation.js removed line(s) do not match any pinned exception (or the now-equally-valid empty case) -- an existing behaviour may have been reshaped: ${JSON.stringify(removedLines)}`);
   const addedLines = diffText.split("\n").filter((l) => l.startsWith("+") && !l.startsWith("+++"));
   assert.ok(addedLines.length > 0, "a non-empty diff with no additions makes no sense");
 });

@@ -84,14 +84,25 @@ function compositeIndexQueries() {
     for (const expr of queryExpressions(text)) {
       const order = [...expr.matchAll(/orderBy\(\s*"([^"]+)"(?:\s*,\s*"(asc|desc)")?/g)]
         .map((m) => ({ field: m[1], direction: (m[2] ?? "asc") === "desc" ? "DESCENDING" : "ASCENDING" }));
-      const clauses = [...expr.matchAll(/where\(\s*"([^"]+)"\s*,\s*"([^"]+)"/g)]
-        .map((m) => ({ field: m[1], op: m[2] }));
+      const clauses = [
+        ...[...expr.matchAll(/where\(\s*"([^"]+)"\s*,\s*"([^"]+)"/g)].map((m) => ({ field: m[1], op: m[2] })),
+        // Issue #282 -- Mapping My Journey's sharded parallel loader ranges a
+        // page query over `documentId()` rather than a plain field name, so
+        // the field-name regex above never sees it at all. Recognised here as
+        // the same `"__name__"` sentinel the real Firestore SDK resolves
+        // `documentId()` to, so the range check below can name it explicitly
+        // rather than being silently blind to a whole class of query.
+        ...[...expr.matchAll(/where\(\s*documentId\(\)\s*,\s*"([^"]+)"/g)].map((m) => ({ field: "__name__", op: m[1] })),
+      ];
       const ranges = clauses.filter((c) => RANGE_OPS.has(c.op));
       // An equality-only query with no ordering is served by single-field
       // indexes (zigzag merge), which is why this app has needed no index file
       // until now. Anything with an orderBy on another field, or a range
-      // filter, needs a composite index declared.
-      if (order.length === 0 && ranges.length === 0) continue;
+      // filter on any field OTHER than `__name__`, needs a composite index
+      // declared. A range on `__name__` alone needs none (see the next check's
+      // own reasoning) and is not itself grounds for inclusion here.
+      const rangesNeedingIndex = ranges.filter((r) => r.field !== "__name__");
+      if (order.length === 0 && rangesNeedingIndex.length === 0) continue;
       const col = expr.match(/collection\(\s*[A-Za-z0-9_]+\s*,\s*TENANT\.([A-Z_]+)\s*\)/);
       assert.ok(col, `could not read the collection of a query in ${file}: ${expr.slice(0, 80)}`);
       const collectionGroup = names.get(col[1]);
@@ -99,7 +110,7 @@ function compositeIndexQueries() {
       out.push({
         file, collectionGroup, order,
         equality: clauses.filter((c) => c.op === "==").map((c) => c.field),
-        hasRange: ranges.length > 0,
+        hasRange: rangesNeedingIndex.length > 0,
       });
     }
   }
@@ -123,9 +134,64 @@ check("POSITIVE CONTROL: the scanner really finds queries", () => {
     `index-requiring queries appeared outside the Note Foundation: ${files.join(", ")} -- each needs a declared index`);
 });
 
-check("no query in the app uses a range filter -- so orderBy is the only index driver", () => {
+// Issue #282 -- this used to assert "no query in the app uses a range filter
+// at all". `journey-map-shard.js`'s sharded parallel loader introduced one on
+// purpose: `where(documentId(), '>='/'<' , ...)`, combined with the SAME
+// equality filters (tenantId, ownerPersonId, status) every Note Foundation
+// list query already uses. THIS NEEDS NO COMPOSITE INDEX, and it is not a new
+// query SHAPE either: every paged reader in note-foundation.js already ranges
+// over the collection's own implicit `__name__` order via `startAfter()` --
+// that IS a range condition on the document id, merely expressed as a cursor
+// -- and it already runs in production today, at the Owner's real import
+// scale, combined with these exact equality filters (v08.66's own changelog:
+// "1,464 folders, 1,083 Notes, 2,319 filings, 0 refused"). An explicit
+// `where(documentId(), ...)` bound is the identical index shape Firestore
+// already serves for that cursor. UPDATED IN PLACE rather than deleted, the
+// reason recorded here: the check now names and allows exactly this one
+// understood range shape, and still refuses (below) any OTHER field's range
+// filter, or a `__name__` range that shows up ALONGSIDE one, unchanged from
+// before -- either would still need its own by-hand analysis.
+check("every range filter on a field OTHER than documentId() (__name__) still needs its own by-hand analysis -- none has appeared", () => {
   const ranged = queries.filter((q) => q.hasRange);
-  assert.deepEqual(ranged, [], "a range query has appeared; its index requirement must be worked out by hand");
+  assert.deepEqual(ranged, [], "a range query on a field other than documentId() has appeared; its index requirement must be worked out by hand");
+});
+
+// The three sharded readers build their `where(documentId(), ...)` clauses
+// through ONE shared helper (`idRangeClauses()`), not inline inside each
+// `query(...)` call -- so `compositeIndexQueries()`'s own textual walk of
+// `query(...)` bodies cannot see them at all (the same class of scanner
+// blind spot this file's own header already names for the emulator). That
+// cuts both ways harmlessly here (nothing demands a nonexistent index for a
+// query the scanner cannot see either), but it means the guarantee above --
+// "no OTHER range filter has appeared" -- says nothing about whether
+// `idRangeClauses()` itself stayed a `__name__`-only range. Checked directly
+// against its own source instead.
+const noteFoundationSrc = fs.readFileSync(path.join(appJs, "note-foundation.js"), "utf8");
+check("POSITIVE CONTROL: idRangeClauses() (the sharded readers' own documentId()-range helper) still exists and still ranges only on documentId()", () => {
+  const fn = noteFoundationSrc.match(/function idRangeClauses\([^)]*\)\s*\{[\s\S]*?\n\}/);
+  assert.ok(fn, "idRangeClauses() was not found -- this check needs updating, or the sharded readers lost their range helper");
+  const body = fn[0];
+  assert.match(body, /where\(documentId\(\),\s*">="/, "idRangeClauses() no longer builds a documentId() >= bound");
+  assert.match(body, /where\(documentId\(\),\s*"<"/, "idRangeClauses() no longer builds a documentId() < bound");
+  assert.ok(!/where\(\s*"[^"]/.test(body), "idRangeClauses() now also ranges on a named field -- that combination needs its own by-hand index analysis, not this check's blanket allowance");
+});
+check("idRangeClauses() is used by exactly the three sharded Note Foundation readers this round added it for", () => {
+  const users = [];
+  for (const m of noteFoundationSrc.matchAll(/^export async function (\w+)\(/gm)) {
+    // Balance parens from the signature's own opening "(" to its matching
+    // ")" -- these signatures destructure a param object (`{ ... }`), whose
+    // OWN opening brace is not the function body, so a naive "first { wins"
+    // scan (tried first, found broken) stops mid-signature every time.
+    let depth = 0, i = m.index + m[0].length - 1;
+    for (; i < noteFoundationSrc.length; i++) {
+      if (noteFoundationSrc[i] === "(") depth++;
+      else if (noteFoundationSrc[i] === ")") { depth--; if (depth === 0) break; }
+    }
+    const header = noteFoundationSrc.slice(m.index, i + 1);
+    if (/\bidRange\b/.test(header)) users.push(m[1]);
+  }
+  assert.deepEqual(users.sort(), ["listNoteFoldersForOwnerPage", "listNotePlacementsForOwnerPage", "listNotesForOwnerIdPage"].sort(),
+    `expected exactly the three sharded readers to accept idRange; found ${users.join(", ") || "(none)"}`);
 });
 
 // --- EVERY REQUIRING QUERY HAS A DECLARED INDEX -----------------------------

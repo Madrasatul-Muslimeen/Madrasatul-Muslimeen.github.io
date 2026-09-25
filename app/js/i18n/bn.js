@@ -2787,4 +2787,13 @@ export const BN = {
   // Load speed (issue #272, 25 Sep 2026) -- the service worker's own "a new
   // version is cached and ready" notice (app/js/sw-register.js).
   "Updated — tap to reload": "হালনাগাদ হয়েছে — রিলোড করতে ট্যাপ করুন",
+
+  // Speed, part 5 (issue #282, 25 Sep 2026) -- Mapping My Journey draws its
+  // folder tree first and loads Notes/placements afterward, in the
+  // background; these say so in words rather than showing a "0" that would
+  // look like a final, counted answer.
+  "Counting the Notes filed in each folder…": "প্রতিটি ফোল্ডারে ফাইল করা নোট গোনা হচ্ছে…",
+  "Loading your Notes…": "আপনার নোট লোড হচ্ছে…",
+  "Notes are still loading — stops will appear on their branch as they arrive.":
+    "নোট এখনও লোড হচ্ছে — সেগুলো লোড হওয়ার সাথে সাথে নিজ নিজ শাখায় স্টপ হিসেবে দেখা যাবে।",
 };

@@ -44,7 +44,15 @@ source = source
   .replace(/import \{[\s\S]*?\} from "\.\/note-foundation\.js";/,
     'const NOTE_STATUS = Object.freeze({ ACTIVE: "active", RETIRED: "retired" });')
   .replace(/from "\.\/journey-map-contract\.js"/,
-    `from "${pathToFileURL(path.join(root, "app/js/journey-map-contract.js")).href}"`);
+    `from "${pathToFileURL(path.join(root, "app/js/journey-map-contract.js")).href}"`)
+  // Issue #282 -- journey-map-service.js gained a second pure, no-imports-of-
+  // its-own sibling (journey-map-shard.js, the parallel-loading id-range
+  // split), the same treatment the contract import already gets: pointed at
+  // the real file on disk rather than stubbed, since folderNoteCounts()
+  // never calls anything it exports and the module-load itself only needs
+  // the specifier to resolve.
+  .replace(/from "\.\/journey-map-shard\.js"/,
+    `from "${pathToFileURL(path.join(root, "app/js/journey-map-shard.js")).href}"`);
 assert.ok(!/from "\.\//.test(source), "an import was not rewritten");
 const { folderNoteCounts } = await import(`data:text/javascript,${encodeURIComponent(source)}`);
 

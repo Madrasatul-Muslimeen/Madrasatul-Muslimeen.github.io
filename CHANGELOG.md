@@ -18479,3 +18479,24 @@ Quran 3. `module-startup-reads.mjs` 8/0; restoring `main`'s `topic-study.js`
 makes Deen Study measure 6 and fail. `quranrevival-startup-reads` 2/0,
 `session-context-two-tenant` 14/0, behaviour.mjs 984/9 (the same 9 as `main`),
 layout.mjs 0 changed, navcheck and panel pass in both languages.
+
+**v08.73 (25 Sep 2026).** Issue #282, speed part 5, allocated by the MMSA
+Architect. Measured with the new real-size seed (`measure.mjs --only
+journey-map --net fast4g --cpu 4 --latency 100`): Folders and Path, usable
+3.9s → 2.0s, round trips in sequence 29 → 11 (before = `main`'s three files
+swapped in). Review changes: (1) the sharded loader falls back to one cursor
+on `failed-precondition` — a `documentId()` range beside equality filters
+should need no composite index, but no emulator can prove what production
+accepts; K33/K34 cover the fallback and that other errors still surface.
+(2) The Builder's comment in `firebase-stub.mjs` carried backticks, which end
+the stub's template literal and broke every browser suite (the #259 slip
+again); fixed, and `stub-parity.mjs` now imports the stub and names the file
+if it stops parsing (4/0). (3) Its new emulator shard cases expected only the
+seeded rows while earlier cases in the run had created others; now they
+assert no duplicates and the exact imported set.
+`journey-map-real-function` passes on the emulator against the deployed
+Rules, including cross-tenant refusal. journey-map-service 34/0,
+journey-map-shard 11/0, journey-map-screen 48/0, journey-map-path 32/0,
+journey-map-back 38/0, journey-map-boundary 18/0, journey-map-counts 9/0,
+firestore-index-requirements 12/0, behaviour.mjs 987/6 (the known
+environmental set), navcheck passes.
