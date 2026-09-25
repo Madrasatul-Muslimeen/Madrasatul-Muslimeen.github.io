@@ -18500,3 +18500,19 @@ journey-map-shard 11/0, journey-map-screen 48/0, journey-map-path 32/0,
 journey-map-back 38/0, journey-map-boundary 18/0, journey-map-counts 9/0,
 firestore-index-requirements 12/0, behaviour.mjs 987/6 (the known
 environmental set), navcheck passes.
+
+**v08.74 (25 Sep 2026).** Issue #285, speed part 6a, allocated by the MMSA
+Architect (the part of #284 the Builder could finish; #284 itself ran out of time
+and was split). Measured at `--latency 150`, before = `main`'s files: Monitor 8
+round trips / 1.18s → 3 / 0.58s; Catalogue 11 / 1.60s → 2 / 0.43s. New
+`listAllLevelsForTenant()` (one equality query on `tenantId`, allowed by the
+deployed `levels` read rule) replaces a query per ladder. **Review change:**
+`catalogueTemplatesMissing()` now also checks `MODULE_TEMPLATES` against the
+modules the page read. The first version checked subjects and Approaches only,
+so a module added later would never have been seeded once the unconditional
+`ensureModulesSeeded()` was gone. New `catalogue-startup-seed.mjs` 5/0: a
+brand-new tenant is seeded; a missing module is created (this fails with the
+check removed); a fully seeded tenant gets no writes. `module-startup-reads`
+12/0 (Monitor 3, Catalogue 2), `quranrevival-startup-reads` 2/0,
+`session-context-two-tenant` 14/0, `monitor-study-activity` 12/0,
+`new-tenant.mjs` 10/0, `behaviour.mjs` 984/9 (the known set), navcheck passes.

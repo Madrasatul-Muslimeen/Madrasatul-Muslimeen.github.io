@@ -158,7 +158,15 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.73 on `main`** (25 Sep 2026 — **speed part 5**,
+**Current milestone: v08.74 on `main`** (25 Sep 2026 — **speed part 6a**,
+issue #285: **Monitor** 8 → 3 database round trips in a row (1.18s → 0.58s)
+and **Catalogue** 11 → 2 (1.60s → 0.43s). Catalogue no longer runs its
+seeding routine and three repair checks on every open — only when what it just
+read shows something missing. **Review caught that check ignoring modules**, so
+a platform module added later would never have been created;
+`catalogue-startup-seed.mjs` pins all three cases.)
+
+**Previous milestone: v08.73 on `main`** (25 Sep 2026 — **speed part 5**,
 issue #282: Mapping My Journey at the Owner's real import size (1,464
 folders, 1,083 Notes, 2,319 filings) is usable in **2.0s instead of 3.9s** on
 a fast-4G phone (29 → 11 sequential round trips): the folder tree draws first,

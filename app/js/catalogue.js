@@ -32,7 +32,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
 import { createDocument, commitEnvelopeBatch, updateDocument } from "./envelope.js";
-import { SUBJECT_TEMPLATES, APPROACH_TEMPLATES, TOPIC_TRACKABLE_TEMPLATES, SECTION_NAMES } from "./catalogue-data.js";
+import { MODULE_TEMPLATES, SUBJECT_TEMPLATES, APPROACH_TEMPLATES, TOPIC_TRACKABLE_TEMPLATES, SECTION_NAMES } from "./catalogue-data.js";
 import { createResource } from "./resources.js";
 
 /**
@@ -694,4 +694,42 @@ export async function listLevels(db, tenantId, ladderId) {
   return snap.docs
     .map((d) => ({ id: d.id.replace(`${tenantId}__`, ""), ...d.data() }))
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+}
+
+/**
+ * Speed part 6a (issue #285) -- every level for the WHOLE tenant, one query,
+ * rather than catalogue.html's old `for (const ladder of ladders) { await
+ * listLevels(...) }` loop -- one sequential round trip per ladder, in a row,
+ * before the ladders table could draw. Equality-only on tenantId (same shape
+ * every other tenant-scoped list query here already uses), so no composite
+ * index is needed; grouping by ladderId is the caller's job now.
+ */
+export async function listAllLevelsForTenant(db, tenantId) {
+  const q = query(collection(db, TENANT.LEVELS), where("tenantId", "==", tenantId));
+  const snap = await getDocs(q);
+  return snap.docs
+    .map((d) => ({ id: d.id.replace(`${tenantId}__`, ""), ...d.data() }))
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+}
+
+/**
+ * Speed part 6a (issue #285) -- the pure half of ensureTenantCatalogueSeeded()'s
+ * own missing-check, for a caller that already has the subject tree and
+ * trackables in hand (from its own startup reads) and just needs to know
+ * whether the real, re-reading seed function is worth calling at all. Reads
+ * nothing; mirrors that function's diff exactly so the two can never disagree
+ * about what "missing" means.
+ */
+export function catalogueTemplatesMissing(tree, trackables, modules = null) {
+  const subjectIds = new Set(tree.map((n) => n.id));
+  const trackableIds = new Set(trackables.map((t) => t.id));
+  // Architect review: a platform module added to MODULE_TEMPLATES later must
+  // still get seeded, even when no subject or Approach is missing -- the old
+  // page ran ensureModulesSeeded() on every load. Pass the modules the caller
+  // already read.
+  const moduleIds = modules ? new Set(modules.map((m) => m.id)) : null;
+  if (moduleIds && MODULE_TEMPLATES.some((m) => !moduleIds.has(m.id))) return true;
+  return SUBJECT_TEMPLATES.some((n) => !subjectIds.has(n.id))
+    || APPROACH_TEMPLATES.some((t) => !trackableIds.has(t.id))
+    || TOPIC_TRACKABLE_TEMPLATES.some((t) => !trackableIds.has(t.id));
 }

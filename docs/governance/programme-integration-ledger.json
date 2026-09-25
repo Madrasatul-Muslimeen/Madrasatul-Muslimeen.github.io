@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.73",
+    "version": "08.74",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -653,8 +653,20 @@
     {
       "version": "08.73",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Speed part 5 (issue #282). Mapping My Journey draws the folder tree as soon as folders arrive and loads Notes and placements afterwards, saying so while counts are still arriving; each collection is read over several parallel documentId() ranges (journey-map-shard.js) instead of one 100-at-a-time cursor chain. At the Owner's real import size (1,464 folders, 1,083 Notes, 2,319 filings; fast 4G, phone CPU): usable 3.9s -> 2.0s, sequential round trips 29 -> 11. If production ever refuses the range query as needing an index, it falls back to the single cursor. Proven on the emulator against the deployed Rules (journey-map-real-function).",
+      "integration": {
+        "authorizedOn": "2026-09-25",
+        "integratedOn": "2026-09-25",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "08.74",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Speed part 6a (issue #285). Monitor: 8 -> 3 database round trips in sequence before usable (1.18s -> 0.58s at 150ms per trip); tenant picked from roles alone, subjects/Approaches/tenant names read in one wave, its three report sections loaded side by side. Catalogue: 11 -> 2 (1.60s -> 0.43s); everything it draws in one wave, all ladder levels in one query instead of one per ladder, seeding only when something is actually missing, and the placement repair moved to the background. Review: the missing-check now includes platform modules (catalogue-startup-seed.mjs 5/0).",
       "integration": {
         "authorizedOn": "2026-09-25",
         "integratedOn": "2026-09-25",
@@ -663,8 +675,9 @@
       }
     }
   ],
-  "nextUnallocated": "08.74",
+  "nextUnallocated": "08.75",
   "nextUnallocatedNote": [
+    "v08.74 was allocated to speed part 6a: Monitor and Catalogue startup (issue #285), 2026-09-25.",
     "v08.73 was allocated to speed part 5: Mapping My Journey at the Owner's real size draws its folder tree first and loads in parallel shards (issue #282), 2026-09-25.",
     "v08.72 was allocated to speed part 4: Deen Study, Health, Asma ul Husna and Records startup down to 4 or fewer database round trips (issue #280), 2026-09-25.",
     "v08.71 was allocated to speed part 3: Quran Study startup down to 3 database round trips in sequence (issue #278), 2026-09-25.",
