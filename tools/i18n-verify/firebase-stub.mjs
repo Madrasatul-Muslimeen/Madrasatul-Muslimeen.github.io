@@ -272,6 +272,14 @@ export function where(field, op, value) { return { field, op, value }; }
 // an unordered, unbounded result while looking green.
 export function orderBy(field, direction = "asc") { return { __orderBy: field, __dir: direction }; }
 export function limit(n) { return { __limit: n }; }
+// Issue #259 -- note-foundation.js's new paged readers (listNotesForOwnerPage,
+// listNotePlacementsForOwnerPage) import startAfter(); its absence here would
+// be the same module-level SyntaxError stub-parity.mjs exists to catch. The
+// cursor is the LAST document snapshot a previous page returned (its own
+// `id`), and getDocs() below slices the already-sorted/filtered result set to
+// whatever comes after that id -- correct for both an orderBy'd query and an
+// equality-only one, since either way the stub's own filter+sort is stable.
+export function startAfter(snapshotOrDoc) { return { __startAfter: snapshotOrDoc?.id ?? snapshotOrDoc }; }
 export function query(col, ...clauses) { return { __col: col.__col, __clauses: clauses.filter(Boolean) }; }
 
 function matches(d, c) {
@@ -288,9 +296,10 @@ function matches(d, c) {
 export async function getDocs(q) {
   return __trip("getDocs", q.__col, null, function () {
     const all = q.__clauses || [];
-    const filters = all.filter((c) => c && c.__orderBy === undefined && c.__limit === undefined);
+    const filters = all.filter((c) => c && c.__orderBy === undefined && c.__limit === undefined && c.__startAfter === undefined);
     const order = all.find((c) => c && c.__orderBy !== undefined);
     const cap = all.find((c) => c && c.__limit !== undefined);
+    const cursor = all.find((c) => c && c.__startAfter !== undefined);
     let rows = (DATA[q.__col] || []).filter((d) => filters.every((c) => matches(d, c)));
     if (order) {
       const f = order.__orderBy, sign = order.__dir === "desc" ? -1 : 1;
@@ -301,6 +310,10 @@ export async function getDocs(q) {
         if (y === undefined || y === null) return -1;
         return (x > y ? 1 : -1) * sign;
       });
+    }
+    if (cursor) {
+      const idx = rows.findIndex((d) => d._id === cursor.__startAfter);
+      rows = idx === -1 ? [] : rows.slice(idx + 1);
     }
     if (cap && Number.isFinite(cap.__limit)) rows = rows.slice(0, cap.__limit);
     return { docs: rows.map(snapDoc), empty: rows.length === 0, size: rows.length, forEach(f) { this.docs.forEach(f); } };

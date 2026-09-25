@@ -111,6 +111,8 @@ const {
   listNoteFoldersForOwner,
   listNotePlacementsForFolder,
   listNotePlacementsForNote,
+  listNotesForOwnerPage,
+  listNotePlacementsForOwnerPage,
   noteFoundationDocId,
 } = await import(noteFoundationDataUrl);
 
@@ -128,6 +130,8 @@ const {
   moveFolder,
   retireFolder,
   reorderFiling,
+  loadAllOwnerNotes,
+  loadAllOwnerPlacements,
 } = await import(toDataUrl(journeyMapServiceSource));
 
 // Two cheap positive controls: the loaders really did load the real modules,
@@ -140,6 +144,7 @@ assert.equal(noteFoundationDocId("tenant", "note"), "tenant__note",
 for (const [name, fn] of Object.entries({
   folderContents, noteFilings, ownerFolderTree, moveNoteToFolder,
   renameFolder, reorderFolder, moveFolder, retireFolder, reorderFiling,
+  loadAllOwnerNotes, loadAllOwnerPlacements,
 })) {
   assert.equal(typeof fn, "function", `the loaded journey-map-service.js module is missing ${name} -- the loader is broken`);
 }
@@ -430,6 +435,80 @@ test("real journey-map-service.js / note-foundation.js functions against the rea
     }));
     const unmovedSnap = await getDoc(doc(p1, "noteFolders", nk(T, secondRootFolderId)));
     assert.equal(unmovedSnap.data().parentFolderId, null, "a refused move must leave the folder exactly where it was");
+
+    // --- Issue #259: paging -----------------------------------------------
+    // Two real limits existed before this round: listNotesForOwner() capped
+    // at 100 (an owner with more Notes never saw the rest, in any view), and
+    // each folder showed at most 99 filed Notes. The fix is paging, never a
+    // bigger limit() -- the deployed Rules' listIsBounded() refuses any list
+    // request above 100 regardless. These seed straight past the app's own
+    // writers (setDoc with security rules disabled) purely to get 250 real
+    // documents in place fast; the WRITE path for a Note/placement is
+    // already proven above, through the real functions, against the real
+    // Rules -- what is new here is the READ side's paging loop.
+    const PAGED_NOTE_COUNT = 250;
+    const PAGED_PLACEMENT_COUNT = 250;
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      const base = Date.now();
+      const writes = [];
+      for (let i = 0; i < PAGED_NOTE_COUNT; i += 1) {
+        writes.push(setDoc(doc(db, "notes", nk(T, `paged-note-${i}`)), {
+          noteId: `paged-note-${i}`, tenantId: T, ownerPersonId: "p1", ownerUid: "uid-p1",
+          visibility: "private", title: `Paged ${i}`, bodyHtml: "", status: "active",
+          currentRevisionId: "rev", updatedAt: new Date(base + i * 1000),
+        }));
+      }
+      for (let i = 0; i < PAGED_PLACEMENT_COUNT; i += 1) {
+        writes.push(setDoc(doc(db, "notePlacements", nk(T, `paged-placement-${i}`)), {
+          placementId: `paged-placement-${i}`, tenantId: T, ownerPersonId: "p1", ownerUid: "uid-p1",
+          noteId: "paged-note-0", folderId: rootFolderId, order: i, status: "active",
+        }));
+      }
+      await Promise.all(writes);
+    });
+
+    // PAGED-NOTES-ALL-REAL: loadAllOwnerNotes() loops until every one of the
+    // 250 seeded Notes has come back, three pages of <=100 (the deployed
+    // cap), never one big request.
+    const pagedNotesPromise = loadAllOwnerNotes(p1, { tenantId: T, ownerPersonId: "p1" });
+    await ok("PAGED-NOTES-ALL-REAL", "loadAllOwnerNotes() returns all 250 seeded Notes across pages, against the real deployed Rules", pagedNotesPromise);
+    const pagedNotes = await pagedNotesPromise;
+    assert.equal(pagedNotes.truncated, false);
+    assert.equal(pagedNotes.rows.filter((r) => r.noteId.startsWith("paged-note-")).length, PAGED_NOTE_COUNT,
+      "expected every one of the 250 seeded Notes back, not a subset capped at 100");
+
+    // PAGED-PLACEMENTS-ALL-REAL: the placement-side twin -- equality-only,
+    // no orderBy, so no new composite index, and still every one of the 250
+    // comes back.
+    const pagedPlacementsPromise = loadAllOwnerPlacements(p1, { tenantId: T, ownerPersonId: "p1" });
+    await ok("PAGED-PLACEMENTS-ALL-REAL", "loadAllOwnerPlacements() returns all 250 seeded placements across pages, against the real deployed Rules", pagedPlacementsPromise);
+    const pagedPlacements = await pagedPlacementsPromise;
+    assert.equal(pagedPlacements.truncated, false);
+    assert.equal(pagedPlacements.rows.filter((r) => r.placementId.startsWith("paged-placement-")).length, PAGED_PLACEMENT_COUNT,
+      "expected every one of the 250 seeded placements back, not a subset capped at 100");
+
+    // ISO-PAGED-PLACEMENTS-REAL: pX (tenant T2) has no read authority over
+    // p1's placements at all -- the single-page reader itself must be
+    // refused by the real Rules, the same isolation shape as
+    // ISO-FOLDER-REAL/ISO-PLACEMENT-REAL above.
+    await no("ISO-PAGED-PLACEMENTS-REAL", "a cross-tenant listNotePlacementsForOwnerPage() is refused", listNotePlacementsForOwnerPage(pX, {
+      tenantId: T, ownerPersonId: "p1", pageSize: 10,
+    }));
+
+    // PAGE-SIZE-CAP-REAL: pageSize above the deployed listIsBounded() cap
+    // must throw BEFORE any request reaches the database -- proven here by
+    // asking for a page against a person pX has no authority to read at
+    // all; if the throw happened after a request were made, this would come
+    // back as a Rules denial (a rejected promise for the WRONG reason)
+    // rather than the synchronous RangeError note-foundation.js itself
+    // raises.
+    let capError = null;
+    try {
+      await listNotePlacementsForOwnerPage(pX, { tenantId: T, ownerPersonId: "p1", pageSize: 101 });
+    } catch (e) { capError = e; }
+    assert.ok(capError instanceof RangeError, "pageSize: 101 must throw a RangeError, not reach the database at all");
+    n++; seen.add("PAGE-SIZE-CAP-REAL"); console.log("  PASS  PAGE-SIZE-CAP-REAL  pageSize above 100 throws before any request is made");
 
     if (KNOWN_LIVE_DEFECT.length > 0) {
       console.log(`\n!!!! KNOWN_LIVE_DEFECT: ${KNOWN_LIVE_DEFECT.join("; ")}`);
