@@ -41,6 +41,13 @@ function arg(name, fallback) {
   return i >= 0 ? args[i + 1] : fallback;
 }
 const LATENCY = Number(arg("latency", 150));
+// Phone conditions (added 25 Sep 2026, the Owner's "max 3 seconds"). --net
+// throttles every byte the page downloads (Chrome DevTools' own emulation);
+// --cpu slows the page's JavaScript by that factor (4 ~ a mid-range phone).
+// Without them this tool measures a fast desktop on a fast line.
+const NET = arg("net", "none");
+const CPU = Number(arg("cpu", 1));
+const NET_PROFILES = { slow4g: [150, 1.6e6 / 8, 750e3 / 8], fast4g: [60, 9e6 / 8, 3e6 / 8] };
 const RUNS = Number(arg("runs", 3));
 const LABEL = arg("label", "run");
 const ONLY = arg("only", null);
@@ -126,6 +133,15 @@ async function measureOnce(browser, page) {
   const errors = [];
   p.on("pageerror", (e) => errors.push(String(e)));
 
+  if (NET !== "none" || CPU > 1) {
+    const cdp = await ctx.newCDPSession(p);
+    const n = NET_PROFILES[NET];
+    if (n) {
+      await cdp.send("Network.enable");
+      await cdp.send("Network.emulateNetworkConditions", { offline: false, latency: n[0], downloadThroughput: n[1], uploadThroughput: n[2] });
+    }
+    if (CPU > 1) await cdp.send("Emulation.setCPUThrottlingRate", { rate: CPU });
+  }
   const t0 = Date.now();
   await p.goto(`${BASE}${page.path}`);
   // Two moments, not one. "Shell" is when the page stops saying
