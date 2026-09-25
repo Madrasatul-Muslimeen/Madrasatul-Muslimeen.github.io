@@ -48,13 +48,31 @@
 
   #emptyMsg { color: #888; font-size: 0.9rem; margin: 1rem 0; }
 
-  /* -- Option A: folders -- */
-  .folder-list { list-style: none; margin: 0.6rem 0; padding: 0; }
+  /* -- Option A: folders -- an expandable TREE (issue #259), replacing the
+     former one-folder-at-a-time drill-down. --tree-scale is the A-/A+ text
+     size control: font-size: calc(...) is how a custom property re-scales
+     several rules at once without a `transform` (which would scale layout
+     boxes, not just text). */
+  #viewFolders { --tree-scale: 1; }
+  .folder-toolbar { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin: 0.6rem 0; }
+  .folder-search-input { flex: 1 1 12rem; }
+  .folder-toolbar-check { display: flex; align-items: center; gap: 0.3rem; font-size: 0.82rem; color: #555; white-space: nowrap; }
+  .folder-textsize-group { display: flex; gap: 0.2rem; }
+  .folder-tree, .folder-search-results { list-style: none; margin: 0.6rem 0; padding: 0; }
+  .folder-tree-item { margin: 0.25rem 0; }
   .folder-row {
-    display: flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.6rem; margin: 0.3rem 0;
-    border: 1px solid #ddd; border-radius: 0.5rem; background: #fff; cursor: pointer; min-height: 36px;
+    display: flex; align-items: center; gap: 0.4rem; padding: 0.5rem 0.55rem;
+    border: 1px solid #ddd; border-radius: 0.5rem; background: #fff; cursor: pointer; min-height: 40px;
   }
   .folder-row.system { border-color: #B8862F; background: #fdf6ea; }
+  .folder-row.drag-over-before { border-top: 3px solid #1F3A6E; }
+  .folder-row.drag-over-after { border-bottom: 3px solid #1F3A6E; }
+  .folder-row.drag-over-inside { background: #eef2ff; border-color: #1F3A6E; }
+  .folder-toggle {
+    flex: 0 0 auto; width: 28px; height: 28px; padding: 0; font-size: 0.85rem; line-height: 1;
+    border: none; background: none; color: #1F3A6E; cursor: pointer;
+  }
+  .folder-toggle-leaf { visibility: hidden; }
   /* min-width: 0 is load-bearing (this project's own standing lesson: a flex
      item defaults to min-width: auto, which refuses to shrink below its own
      content's intrinsic width and silently overflows the row) -- a real
@@ -62,19 +80,18 @@
      able to wrap onto several lines inside its own column rather than push
      the row wider than the screen or get cut with an ellipsis nobody can
      read the rest of. */
-  .folder-row-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; font-weight: 600; font-size: 0.94rem; color: #1F3A6E; }
-  .folder-row-count { font-size: 0.78rem; color: #888; }
-  .folder-children { margin-left: 1.2rem; }
-  /* P6-G folder-editing controls -- reorder arrows are dedicated 40px
-     buttons (this project's own standing lesson: a 26px button is too
-     small), everything else (rename/move/remove) sits behind one ⋯ menu per
-     row rather than five buttons on every row. Both are flex: 0 0 auto so
-     the name column is what shrinks, never these. */
-  .folder-order-btn {
-    flex: 0 0 auto; width: 40px; height: 40px; padding: 0; font-size: 1rem; line-height: 1;
-    border-radius: 0.4rem; border: 1px solid #ccc; background: #fff; color: #1F3A6E; cursor: pointer;
-  }
-  .folder-order-btn:disabled { opacity: 0.35; cursor: default; }
+  .folder-row-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; font-weight: 600; color: #1F3A6E; font-size: calc(0.94rem * var(--tree-scale, 1)); }
+  .folder-row-count { font-size: calc(0.78rem * var(--tree-scale, 1)); color: #888; }
+  .folder-pin-flag { font-size: 0.85rem; }
+  .folder-rename-input { flex: 1 1 auto; min-width: 0; font-weight: 600; color: #1F3A6E; font-size: calc(0.94rem * var(--tree-scale, 1)); }
+  .folder-tree-empty, .folder-tree-file-btn { font-size: 0.85rem; color: #888; padding: 0.3rem 0; }
+  .folder-remove-confirm { background: #fff2f0; border: 1px solid #eab7ae; border-radius: 0.5rem; padding: 0.5rem 0.6rem; margin: 0.3rem 0 0.3rem 0; font-size: 0.85rem; }
+  .folder-remove-confirm p { margin: 0 0 0.4rem; }
+  /* P6-G/issue #259 -- every editing action (📍/✏️/▲/▼/Move to…/🗑) folds
+     into ONE ⋯ menu, at every width (a stated simplification from the
+     Owner's own Siyagah reference -- see folderRowHtml()'s own comment).
+     A 40px square button, this project's own standing lesson against a
+     26px control. */
   .folder-menu-wrap { position: relative; flex: 0 0 auto; }
   .folder-menu-btn {
     width: 40px; height: 40px; padding: 0; font-size: 1.15rem; line-height: 1;
@@ -82,7 +99,10 @@
   }
   /* Same shape as quranrevival.html's own js/bar-palette.js popovers --
      the module owns open/close/outside-click/Escape/"only one at a time",
-     this page only supplies the look. */
+     this page only supplies the look. Siyagah's own bug was this exact menu
+     opening BEHIND other page content on a phone; z-index: 20 plus its own
+     stacking context (position: relative on the wrap) is what keeps it on
+     top here, checked by hit-testing in journey-map-screen.mjs. */
   .bar-palette {
     display: none; position: absolute; top: 2.4rem; right: 0; z-index: 20;
     background: #fff; border: 1px solid #ddd; border-radius: 0.5rem;
@@ -93,10 +113,11 @@
   .bar-palette.open { display: flex; }
   .bar-palette button { width: 100%; text-align: left; }
   .note-order-btn { min-width: 2.4rem; }
-  #folderCrumb { font-size: 0.88rem; margin: 0.6rem 0; }
-  #folderCrumb button { background: none; border: none; color: #1F3A6E; text-decoration: underline; padding: 0; font-size: inherit; cursor: pointer; }
-  #newFolderBtn { margin: 0.6rem 0; }
-  #newFolderForm { display: flex; gap: 0.4rem; margin: 0.6rem 0; flex-wrap: wrap; }
+  .folder-search-breadcrumb { display: block; font-size: 0.76rem; color: #888; }
+  .folder-search-result { padding: 0.4rem 0.55rem; border: 1px solid #ddd; border-radius: 0.5rem; margin: 0.3rem 0; cursor: pointer; background: #fff; }
+  .folder-footer { margin: 0.8rem 0 0.3rem; border-top: 1px dashed #ddd; padding-top: 0.6rem; }
+  .folder-footer-target { font-size: 0.82rem; color: #555; margin: 0 0 0.4rem; }
+  #newFolderForm { display: flex; gap: 0.4rem; margin: 0.3rem 0; flex-wrap: wrap; }
   #newFolderForm input { flex: 1 1 10rem; }
 
   /* -- Option B: timeline -- */
@@ -192,10 +213,11 @@
     import { roleListLabel } from "./js/labels.js";
     import { sanitizeNoteHtml } from "./js/note-sanitize.js";
     import { closeAllBarPalettes } from "./js/bar-palette.js";
-    import { NOTE_STATUS, createNoteFolder, createNotePlacement, listNotesForOwner } from "./js/note-foundation.js";
+    import { NOTE_STATUS, createNoteFolder, createNotePlacement } from "./js/note-foundation.js";
     import {
       ownerFolderTree, folderContents, moveNoteToFolder,
       renameFolder, reorderFolder, moveFolder, retireFolder, reorderFiling,
+      loadAllOwnerNotes, loadAllOwnerPlacements, folderNoteCounts, folderMoveRefusal,
     } from "./js/journey-map-service.js";
 
     translateStatic();
@@ -447,7 +469,18 @@
     // (the issue's own requirement -- one toggle, not three separate pages).
     let folderTree = { roots: [], orphaned: [], cyclic: [], tooDeep: [] };
     let allNotes = [];
-    let openFolderPath = []; // stack of folder nodes drilled into, Option A
+    // Issue #259 -- Folders became an expandable TREE (every folder shown at
+    // once, not a one-folder-at-a-time drill-down), so it needs the owner's
+    // WHOLE set of placements up front too, never capped at 99 per folder.
+    // loadAllOwnerNotes()/loadAllOwnerPlacements() page past the deployed
+    // listIsBounded() cap rather than asking for a bigger limit().
+    let allPlacements = [];
+    let notesTruncated = false;
+    let placementsTruncated = false;
+    // Per-folder distinct-active-Note subtree counts (issue #259's own count
+    // badge), recomputed alongside the tree on every refresh -- pure, no
+    // extra read (journey-map-service.js's folderNoteCounts()).
+    let folderCounts = {};
     let timelineFilter = "everything"; // "everything" | a semanticRole | a real folderId
     let expandedNoteIds = new Set();
 
@@ -479,14 +512,12 @@
       renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], null);
       renderPersonSelectOptions();
       selectedPersonId = personSelect.value || null;
-      openFolderPath = [];
       await refreshAll();
     }
 
     personSelect.addEventListener("change", async () => {
       selectedPersonId = personSelect.value;
       setSelectedPersonId(selectedPersonId);
-      openFolderPath = [];
       await refreshAll();
     });
 
@@ -532,48 +563,43 @@
     }
 
     // -------------------------------------------------------------------
-    // Loading -- ONE read of the folder tree and ONE read of the Notes list,
-    // shared across all three views (never three separate loads for three
-    // separate screens).
+    // Loading -- ONE read of the folder tree, ONE (paged) read of every Note
+    // and ONE (paged) read of every placement, shared across all three views
+    // (never three separate loads for three separate screens). The tree is
+    // stateless across a refresh: expandedFolderIds is keyed by folderId (or
+    // by semanticRole for the two system folders, so a virtual folder
+    // becoming real does not reset its own expand state -- see
+    // expandKeyFor()), never by object identity, so nothing here needs to
+    // "resolve stale nodes" the way the old drill-down path once did.
     // -------------------------------------------------------------------
     async function refreshAll() {
       renderReadOnlyBanner();
       if (!activeTenantId || !selectedPersonId) {
         folderTree = { roots: [], orphaned: [], cyclic: [], tooDeep: [] };
-        allNotes = [];
+        allNotes = []; allPlacements = []; folderCounts = {};
         renderCurrentView();
         return;
       }
-      [folderTree, allNotes] = await Promise.all([
+      const [tree, notesPage, placementsPage] = await Promise.all([
         ownerFolderTree(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId }),
-        listNotesForOwner(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId }),
+        loadAllOwnerNotes(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId }),
+        loadAllOwnerPlacements(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId }),
       ]);
-      if (openFolderPath.length) {
-        // Every folder in the drilled-into path may have just changed (a
-        // virtual system folder's id changing from null once it's created
-        // for real is the common case) -- resolve EACH one fresh out of the
-        // tree we just reloaded, preserving the full breadcrumb, rather than
-        // trusting stale nodes or collapsing back to just the last one.
-        const roots = mergedRoots();
-        const resolved = [];
-        for (const step of openFolderPath) {
-          const found = findByRole(roots, step);
-          if (!found) break; // that folder is gone (retired elsewhere) -- stop at the last one still real
-          resolved.push(found);
-        }
-        openFolderPath = resolved;
-      }
+      folderTree = tree;
+      allNotes = notesPage.rows;
+      notesTruncated = notesPage.truncated;
+      allPlacements = placementsPage.rows;
+      placementsTruncated = placementsPage.truncated;
+      folderCounts = folderNoteCounts(rawFolderList(folderTree), allPlacements, allNotes);
       renderCurrentView();
     }
 
-    function findByRole(nodes, node) {
-      for (const f of nodes) {
-        if (f.folderId && node.folderId && f.folderId === node.folderId) return f;
-        if (!f.folderId && !node.folderId && f.semanticRole === node.semanticRole) return f;
-        const child = findByRole(f.children ?? [], node);
-        if (child) return child;
-      }
-      return null;
+    /** Every real folder document behind `folderTree` (roots + orphaned + cyclic + tooDeep), flattened for folderNoteCounts() -- never the page's OWN virtual system-folder placeholders (mergedRoots()), which folderId: null would collide against inside buildFolderTree()'s own id-keyed map. */
+    function rawFolderList(tree) {
+      const out = [];
+      (function walk(nodes) { for (const f of nodes) { out.push(f); walk(f.children ?? []); } })(tree.roots ?? []);
+      out.push(...(tree.orphaned ?? []), ...(tree.cyclic ?? []), ...(tree.tooDeep ?? []));
+      return out;
     }
 
     function renderCurrentView() {
@@ -675,126 +701,78 @@
     }
 
     // =====================================================================
-    // OPTION A -- Folders
+    // OPTION A -- Folders: an expandable TREE (issue #259), replacing the
+    // former one-folder-at-a-time drill-down/breadcrumb. Loosely modelled
+    // on the Owner's OWN Siyagah app's "My Notebooks" folder dialog, a
+    // design reference only -- Siyagah's own implementation keeps one whole
+    // notebook in memory, has real delete, and has no owner checks; none of
+    // that carries over here.
     // =====================================================================
-    function renderFoldersView() {
-      const roots = mergedRoots();
-      const current = openFolderPath[openFolderPath.length - 1] ?? null;
 
-      let html = "";
-      // NOTHING IS SILENTLY DROPPED (buildFolderTree()'s own rule, carried
-      // into this screen): an orphaned, cyclic or too-deep folder is named
-      // rather than simply missing from the list, even though a fresh build
-      // should never actually produce one through this screen's own writes.
-      const problems = [...folderTree.orphaned, ...folderTree.cyclic, ...folderTree.tooDeep];
-      if (problems.length) {
-        html += `<p class="warn">${escapeHtml(t("{count} folder(s) could not be shown safely and are not listed below — this needs administrator attention.", { count: problems.length }))}</p>`;
-      }
-      if (current) {
-        const crumbs = openFolderPath.map((f, i) =>
-          `<button type="button" data-crumb-index="${i}">${escapeHtml(folderDisplayName(f))}</button>`).join(" &rsaquo; ");
-        html += `<p id="folderCrumb"><button type="button" data-crumb-root>${escapeHtml(t("All folders"))}</button> &rsaquo; ${crumbs}</p>`;
-      }
+    // Per-device state, wrapped in try/catch (private browsing): which
+    // folders are expanded, whether derived numbering is shown, and the
+    // tree's own text-size step. None of this is data (the issue is
+    // explicit) and none of it is synced.
+    const EXPANDED_KEY = "qr.journeyMapExpanded";
+    const SHOW_NUMBERS_KEY = "qr.journeyMapShowNumbers";
+    const TEXT_SIZE_KEY = "qr.journeyMapTreeTextSize";
+    const TEXT_SIZE_SCALES = [0.82, 0.88, 0.94, 1.0, 1.08, 1.16];
+    const TEXT_SIZE_DEFAULT_INDEX = 2; // 0.94rem -- the tree's own pre-existing row size
 
-      if (!current) {
-        // Siblings for reorder purposes are the USER roots only -- the two
-        // system folders sit at their own fixed positions (SYSTEM_FOLDER_ROLES'
-        // own order) and are neither renameable, moveable nor reorderable
-        // (ADR-010 §3), so they never take part in this swap.
-        const userRoots = roots.filter((f) => !isSystemFolderRole(f.semanticRole));
-        html += `<ul class="folder-list">${roots.map((f) => folderRowHtml(f, userRoots)).join("")}</ul>`;
-        if (isSelfSelected()) {
-          html += `<button type="button" id="newFolderBtn">${t("+ New folder")}</button>
-            <form id="newFolderForm" style="display:none;">
-              <input type="text" id="newFolderName" placeholder="${escapeHtml(t("Folder name"))}" />
-              <button type="submit">${t("Create")}</button>
-              <button type="button" class="secondary" id="newFolderCancel">${t("Cancel")}</button>
-            </form>`;
-        }
-        viewFolders.innerHTML = html;
-        wireFolderRows(userRoots);
-        wireNewFolderForm();
-        return;
-      }
-
-      // Inside one folder: its own subfolders (if any), then the Notes filed
-      // in it directly. Every child of a real folder is a user folder --
-      // a system folder can never have a parent (ADR-010 §3) -- so the whole
-      // list doubles as its own sibling set for reordering.
-      const children = (current.children ?? []).slice().sort(byOrder);
-      if (children.length) {
-        html += `<ul class="folder-list">${children.map((f) => folderRowHtml(f, children)).join("")}</ul>`;
-      }
-      html += `<div id="folderNotes"></div>`;
-      viewFolders.innerHTML = html;
-      viewFolders.querySelector("[data-crumb-root]").addEventListener("click", () => { openFolderPath = []; renderFoldersView(); });
-      viewFolders.querySelectorAll("[data-crumb-index]").forEach((btn) => {
-        btn.addEventListener("click", () => { openFolderPath = openFolderPath.slice(0, Number(btn.dataset.crumbIndex) + 1); renderFoldersView(); });
-      });
-      wireFolderRows(children);
-      loadFolderContents(current);
+    function loadExpandedIds() {
+      try { return new Set(JSON.parse(localStorage.getItem(EXPANDED_KEY) || "[]")); }
+      catch { return new Set(); }
+    }
+    let expandedFolderIds = loadExpandedIds();
+    function saveExpandedIds() {
+      try { localStorage.setItem(EXPANDED_KEY, JSON.stringify([...expandedFolderIds])); }
+      catch { /* private browsing -- expand state just doesn't stick */ }
+    }
+    function loadShowNumbers() {
+      try { const v = localStorage.getItem(SHOW_NUMBERS_KEY); return v === null ? true : v === "1"; }
+      catch { return true; }
+    }
+    let showNumbers = loadShowNumbers();
+    function saveShowNumbers() {
+      try { localStorage.setItem(SHOW_NUMBERS_KEY, showNumbers ? "1" : "0"); } catch { /* private browsing */ }
+    }
+    function loadTreeTextSizeIndex() {
+      try {
+        const v = Number(localStorage.getItem(TEXT_SIZE_KEY));
+        return Number.isInteger(v) && v >= 0 && v < TEXT_SIZE_SCALES.length ? v : TEXT_SIZE_DEFAULT_INDEX;
+      } catch { return TEXT_SIZE_DEFAULT_INDEX; }
+    }
+    let treeTextSizeIndex = loadTreeTextSizeIndex();
+    function saveTreeTextSizeIndex() {
+      try { localStorage.setItem(TEXT_SIZE_KEY, String(treeTextSizeIndex)); } catch { /* private browsing */ }
     }
 
-    /**
-     * `siblings` is the sorted, user-folder-only list `f` reorders within --
-     * empty for a system folder, which renders no editing controls at all
-     * (ADR-010 §3: neither renameable, moveable, reorderable nor removable).
-     */
-    function folderRowHtml(f, siblings) {
-      const editable = isSelfSelected() && !isSystemFolderRole(f.semanticRole);
-      let controls = "";
-      if (editable) {
-        const idx = siblings.findIndex((s) => s.folderId === f.folderId);
-        const upDisabled = idx <= 0;
-        const downDisabled = idx === -1 || idx >= siblings.length - 1;
-        const menuId = `folderMenu-${escapeHtml(f.folderId)}`;
-        controls = `
-          <button type="button" class="folder-order-btn" data-folder-up ${upDisabled ? "disabled" : ""} aria-label="${escapeHtml(t("Move up"))}">▲</button>
-          <button type="button" class="folder-order-btn" data-folder-down ${downDisabled ? "disabled" : ""} aria-label="${escapeHtml(t("Move down"))}">▼</button>
-          <span class="bar-palette-wrap folder-menu-wrap" data-bar-palette-wrap="${menuId}">
-            <button type="button" class="folder-menu-btn bar-palette-toggle" data-bar-palette-toggle="${menuId}" aria-haspopup="true" aria-expanded="false" title="${escapeHtml(t("More"))}" aria-label="${escapeHtml(t("More"))}">⋯</button>
-            <div class="bar-palette" data-bar-palette="${menuId}">
-              <button type="button" class="secondary tiny" data-folder-rename>${t("Rename")}</button>
-              <button type="button" class="secondary tiny" data-folder-move>${t("Move to…")}</button>
-              <button type="button" class="danger tiny" data-folder-remove>${t("Remove")}</button>
-            </div>
-          </span>`;
-      }
-      return `<li><div class="folder-row${isSystemFolderRole(f.semanticRole) ? " system" : ""}" data-folder-role="${escapeHtml(f.semanticRole)}" data-folder-id="${escapeHtml(f.folderId ?? "")}">
-        <span class="folder-row-name">${escapeHtml(folderDisplayName(f))}</span>${controls}
-      </div></li>`;
-    }
-    function wireFolderRows(siblings) {
-      viewFolders.querySelectorAll("[data-folder-role]").forEach((row) => {
-        const folderId = row.dataset.folderId || null;
-        const role = row.dataset.folderRole;
-        const node = findNodeByIdOrRole(mergedRoots(), folderId, role);
-        if (!node) return;
-        const idx = siblings.findIndex((s) => s.folderId === node.folderId);
+    // Transient, session-only, never persisted: the 📍 target for
+    // "+ New folder", the search box's own query, which folder's Remove
+    // confirmation (or inline rename) is open, and which folder is
+    // mid-drag.
+    let newFolderTargetNode = null; // null = top level
+    let folderSearchQuery = "";
+    let pendingRemoveKey = null;
+    let inlineRenameKey = null;
+    let dragFolderKey = null;
 
-        row.querySelector("[data-folder-up]")?.addEventListener("click", (e) => {
-          e.stopPropagation(); reorderFolderSwap(siblings, idx, -1);
-        });
-        row.querySelector("[data-folder-down]")?.addEventListener("click", (e) => {
-          e.stopPropagation(); reorderFolderSwap(siblings, idx, 1);
-        });
-        row.querySelector("[data-folder-rename]")?.addEventListener("click", (e) => {
-          e.stopPropagation(); closeAllBarPalettes(null); renameFolderPrompt(node);
-        });
-        row.querySelector("[data-folder-move]")?.addEventListener("click", (e) => {
-          e.stopPropagation(); closeAllBarPalettes(null); moveFolderPrompt(node);
-        });
-        row.querySelector("[data-folder-remove]")?.addEventListener("click", (e) => {
-          e.stopPropagation(); closeAllBarPalettes(null); removeFolderPrompt(node);
-        });
-        // Clicking the row itself drills in -- but not when the click came
-        // from one of the editing controls layered on top of it.
-        row.addEventListener("click", (e) => {
-          if (e.target.closest(".folder-order-btn, .folder-menu-wrap")) return;
-          openFolderPath = [...openFolderPath, node];
-          renderFoldersView();
-        });
-      });
+    /** Stable across a virtual system folder becoming real (folderId: null -> a real id): the two system folders key on their own semanticRole, every other folder on its own folderId. Used for expand state, the 📍 pin and the drag preview, none of which may reset just because ensureRealFolder() ran. */
+    function expandKeyFor(node) {
+      return isSystemFolderRole(node.semanticRole) ? `role:${node.semanticRole}` : node.folderId;
+    }
+    function toggleExpanded(node) {
+      const key = expandKeyFor(node);
+      if (expandedFolderIds.has(key)) expandedFolderIds.delete(key); else expandedFolderIds.add(key);
+      saveExpandedIds();
+      renderFoldersView();
+    }
+    function isPinnedTarget(f) {
+      return newFolderTargetNode != null && expandKeyFor(f) === expandKeyFor(newFolderTargetNode);
+    }
+    function numberedLabel(f, numberPath) {
+      const name = folderDisplayName(f);
+      return showNumbers && numberPath ? `(${numberPath}) ${name}` : name;
     }
     function findNodeByIdOrRole(nodes, folderId, role) {
       for (const f of nodes) {
@@ -804,48 +782,396 @@
       }
       return null;
     }
+    function findNodeByExpandKey(nodes, key) {
+      for (const f of nodes) {
+        if (expandKeyFor(f) === key) return f;
+        const child = findNodeByExpandKey(f.children ?? [], key);
+        if (child) return child;
+      }
+      return null;
+    }
+    /** The sibling set a folder reorders/drags within: its parent's own children (sorted), or the user-folder roots at the top level. System folders never take part (ADR-010 §3: neither renameable, moveable, reorderable nor removable). */
+    function siblingsOf(node) {
+      const parentId = node.parentFolderId ?? null;
+      if (parentId === null) return mergedRoots().filter((f) => !isSystemFolderRole(f.semanticRole));
+      const parent = findNodeByIdOrRole(mergedRoots(), parentId, null);
+      return (parent?.children ?? []).slice().sort(byOrder);
+    }
+    function folderAncestorPath(folderId) {
+      const chain = [];
+      let cursor = folderId ? findNodeByIdOrRole(mergedRoots(), folderId, null) : null;
+      while (cursor) {
+        chain.unshift(cursor);
+        cursor = cursor.parentFolderId ? findNodeByIdOrRole(mergedRoots(), cursor.parentFolderId, null) : null;
+      }
+      return chain;
+    }
+    /** One real folder's own filed Notes, in the author's order, resolved from the already fully-loaded allPlacements/allNotes -- no per-folder read (the whole point of paging everything up front once is that opening a tenth folder costs nothing more). Mirrors folderContents()'s own two exclusions so a reader sees the identical set either way: an inactive placement, or a placement naming a retired/missing Note. */
+    function notesInFolder(node) {
+      if (!node.folderId) return [];
+      const notesById = new Map(allNotes.map((n) => [n.noteId, n]));
+      return allPlacements
+        .filter((p) => p.folderId === node.folderId && p.status === NOTE_STATUS.ACTIVE)
+        .map((placement) => ({ placement, note: notesById.get(placement.noteId) ?? null }))
+        .filter((row) => row.note !== null && row.note.status === NOTE_STATUS.ACTIVE)
+        .sort((a, b) => (a.placement.order ?? 0) - (b.placement.order ?? 0));
+    }
+
+    function renderFoldersView() {
+      const roots = mergedRoots();
+      let html = "";
+      // NOTHING IS SILENTLY DROPPED (buildFolderTree()'s own rule, carried
+      // into this screen): an orphaned, cyclic or too-deep folder is named
+      // rather than simply missing from the list, even though a fresh build
+      // should never actually produce one through this screen's own writes.
+      const problems = [...folderTree.orphaned, ...folderTree.cyclic, ...folderTree.tooDeep];
+      if (problems.length) {
+        html += `<p class="warn">${escapeHtml(t("{count} folder(s) could not be shown safely and are not listed below — this needs administrator attention.", { count: problems.length }))}</p>`;
+      }
+      if (notesTruncated || placementsTruncated) {
+        html += `<p id="truncatedMsg">${escapeHtml(t("Showing a large first batch only — there is more than could be loaded at once."))}</p>`;
+      }
+      html += folderToolbarHtml();
+      const query = folderSearchQuery.trim().toLowerCase();
+      if (query) {
+        html += folderSearchResultsHtml(query);
+      } else {
+        let userIndex = 0;
+        html += `<ul class="folder-tree" data-folder-tree>${roots.map((f) => {
+          const numberPath = isSystemFolderRole(f.semanticRole) ? null : String(++userIndex).padStart(2, "0");
+          return renderFolderSubtree(f, 0, numberPath);
+        }).join("")}</ul>`;
+      }
+      html += folderFooterHtml();
+      viewFolders.innerHTML = html;
+      viewFolders.style.setProperty("--tree-scale", String(TEXT_SIZE_SCALES[treeTextSizeIndex]));
+      wireFolderToolbar();
+      if (query) wireFolderSearchResults(); else wireFolderTree();
+      wireNewFolderForm();
+    }
+
+    /** One folder row, then (if expanded) its own child folders and the Notes filed directly in it -- a single flat, indented list rather than nested <ul>s, which keeps drag-and-drop and event delegation simple. */
+    function renderFolderSubtree(f, depth, numberPath) {
+      const childFolders = (f.children ?? []).slice().sort(byOrder);
+      const leafRows = notesInFolder(f);
+      const expandable = childFolders.length > 0 || leafRows.length > 0;
+      const expanded = expandedFolderIds.has(expandKeyFor(f));
+      let html = folderRowHtml(f, depth, numberPath, expandable, expanded);
+      if (!expanded) return html;
+      if (childFolders.length === 0 && leafRows.length === 0) {
+        html += `<li class="folder-tree-item folder-tree-empty" style="margin-left:${((depth + 1) * 1.1).toFixed(2)}rem">${escapeHtml(emptyStateFor(f))}</li>`;
+      } else {
+        let childIndex = 0;
+        for (const child of childFolders) {
+          const childNumberPath = numberPath ? `${numberPath}.${String(++childIndex).padStart(2, "0")}` : String(++childIndex).padStart(2, "0");
+          html += renderFolderSubtree(child, depth + 1, childNumberPath);
+        }
+        html += leafRows.map((row, idx) => noteLeafHtml(row, depth + 1, leafRows, idx)).join("");
+      }
+      if (isSelfSelected() && f.folderId && allNotes.some((n) => !leafRows.some((r) => r.note.noteId === n.noteId))) {
+        html += `<li class="folder-tree-item folder-tree-file-btn" data-file-into-folder="${escapeHtml(f.folderId)}" style="margin-left:${((depth + 1) * 1.1).toFixed(2)}rem">
+          <button type="button" class="secondary tiny" data-folder-file-note>${t("+ File a Note here…")}</button>
+        </li>`;
+      }
+      return html;
+    }
 
     /**
-     * ▲▼ move a folder among its siblings -- single-field updates, not a
-     * transaction: a partial failure leaves a display-order quirk (I5:
-     * nothing is keyed by `order`), never a corruption.
+     * ONE row of the tree -- issue #259's own required control set: ▶/▾
+     * expand, the derived (never STORED) number, a count badge (hidden at
+     * zero), and -- for the folder's own author only -- a single ⋯ menu
+     * folding 📍/✏️/▲/▼/Move to…/🗑, plus an inline rename input when
+     * `inlineRenameKey` names this row. A system folder (ADR-010 §3) gets
+     * none of the editing controls, the same rule this file already
+     * enforced under the old drill-down.
      *
-     * P6-G fix (issue #234, review of PR #233): this used to read the two
-     * neighbours' own `order` fields and swap them, which silently did
-     * nothing whenever they collided -- and every real folder collided,
-     * because nothing here passed a distinct `order` at creation before
-     * this fix. `planReorder()` renumbers the whole sibling sequence by
-     * display position and writes only what actually changed.
+     * A DELIBERATE SIMPLIFICATION FROM THE OWNER'S OWN SIYAGAH REFERENCE,
+     * stated rather than silently built as if it were the whole spec:
+     * Siyagah shows these as separate icons above ~900px and folds them into
+     * one ⋯ menu only below it. This round folds them into ONE menu at
+     * EVERY width -- the concretely testable requirement (a hit-testable
+     * menu below 900px, the exact defect class Siyagah's own bug was) is met
+     * either way, and a second, wider desktop icon row is not built.
      */
-    async function reorderFolderSwap(siblings, idx, direction) {
-      const other = idx + direction;
-      if (!siblings[idx] || !siblings[other]) return;
-      const writes = planReorder(siblings.map((f) => ({ id: f.folderId, order: f.order ?? 0 })), idx, direction);
-      for (const write of writes) {
+    function folderRowHtml(f, depth, numberPath, expandable, expanded) {
+      const key = expandKeyFor(f);
+      const editable = isSelfSelected() && !isSystemFolderRole(f.semanticRole);
+      const count = f.folderId ? (folderCounts[f.folderId] ?? 0) : 0;
+      const toggle = expandable
+        ? `<button type="button" class="folder-toggle" data-folder-toggle aria-expanded="${expanded}" aria-label="${expanded ? escapeHtml(t("Collapse")) : escapeHtml(t("Expand"))}">${expanded ? "▾" : "▶"}</button>`
+        : `<span class="folder-toggle folder-toggle-leaf" aria-hidden="true">▶</span>`;
+      const badge = count > 0 ? `<span class="folder-row-count">${count}</span>` : "";
+      const pin = isPinnedTarget(f) ? `<span class="folder-pin-flag" title="${escapeHtml(t("New folders go here"))}">📍</span>` : "";
+      const nameHtml = inlineRenameKey === key
+        ? `<input type="text" class="folder-rename-input" data-folder-rename-input value="${escapeHtml(f.name ?? "")}" aria-label="${escapeHtml(t("Rename this folder"))}" />`
+        : `<span class="folder-row-name" data-folder-name>${escapeHtml(numberedLabel(f, numberPath))}</span>`;
+      let menu = "";
+      if (editable && inlineRenameKey !== key) {
+        const siblings = siblingsOf(f);
+        const idx = siblings.findIndex((s) => s.folderId === f.folderId);
+        const upDisabled = idx <= 0;
+        const downDisabled = idx === -1 || idx >= siblings.length - 1;
+        const menuId = `folderMenu-${escapeHtml(f.folderId)}`;
+        menu = `
+          <span class="bar-palette-wrap folder-menu-wrap" data-bar-palette-wrap="${menuId}">
+            <button type="button" class="folder-menu-btn bar-palette-toggle" data-bar-palette-toggle="${menuId}" aria-haspopup="true" aria-expanded="false" title="${escapeHtml(t("More"))}" aria-label="${escapeHtml(t("More"))}">⋯</button>
+            <div class="bar-palette folder-row-menu" data-bar-palette="${menuId}">
+              <button type="button" class="secondary tiny" data-folder-pin>📍 ${t("New folders go here")}</button>
+              <button type="button" class="secondary tiny" data-folder-rename>✏️ ${t("Rename")}</button>
+              <button type="button" class="secondary tiny" data-folder-up ${upDisabled ? "disabled" : ""} aria-label="${escapeHtml(t("Move up"))}">▲ ${t("Move up")}</button>
+              <button type="button" class="secondary tiny" data-folder-down ${downDisabled ? "disabled" : ""} aria-label="${escapeHtml(t("Move down"))}">▼ ${t("Move down")}</button>
+              <button type="button" class="secondary tiny" data-folder-move>${t("Move to…")}</button>
+              <button type="button" class="danger tiny" data-folder-remove>🗑 ${t("Remove")}</button>
+            </div>
+          </span>`;
+      }
+      const removeConfirm = pendingRemoveKey === key ? folderRemoveConfirmHtml(f) : "";
+      const draggableAttr = editable ? ' draggable="true"' : "";
+      return `<li class="folder-tree-item" data-depth="${depth}">
+        <div class="folder-row${isSystemFolderRole(f.semanticRole) ? " system" : ""}" style="margin-left:${(depth * 1.1).toFixed(2)}rem"
+             data-folder-role="${escapeHtml(f.semanticRole)}" data-folder-id="${escapeHtml(f.folderId ?? "")}"${draggableAttr}>
+          ${toggle}${nameHtml}${badge}${pin}${menu}
+        </div>
+        ${removeConfirm}
+      </li>`;
+    }
+
+    /** In-page confirmation (never the browser's own confirm dialog) for retiring a folder, rendered as the row's own sibling block. Worded per I4: kept, not deleted; Notes untouched. */
+    function folderRemoveConfirmHtml(f) {
+      return `<div class="folder-remove-confirm" data-folder-remove-confirm>
+        <p>${escapeHtml(t('Remove "{name}"? It will be kept, not deleted — an administrator can restore it. Notes filed in it are untouched.', { name: folderDisplayName(f) }))}</p>
+        <button type="button" class="danger tiny" data-folder-remove-confirm-yes>${t("Remove")}</button>
+        <button type="button" class="secondary tiny" data-folder-remove-confirm-cancel>${t("Cancel")}</button>
+      </div>`;
+    }
+
+    /** A Note filed directly in an OPEN folder, as a leaf of the tree -- the same shared note-card/preview toggle every view uses (wireNoteCards() is reused for it), plus its own ▲▼/Move to… when the owner is looking at their own tree. A Note filed in two folders appears under both, independently (ADR-010 §5). */
+    function noteLeafHtml(row, depth, siblingRows, idx) {
+      const { note, placement } = row;
+      const title = note.title?.trim() || t("(untitled)");
+      const controls = isSelfSelected() ? `
+          <button type="button" class="secondary tiny note-order-btn" data-note-up ${idx <= 0 ? "disabled" : ""} aria-label="${escapeHtml(t("Move up"))}">▲</button>
+          <button type="button" class="secondary tiny note-order-btn" data-note-down ${idx >= siblingRows.length - 1 ? "disabled" : ""} aria-label="${escapeHtml(t("Move down"))}">▼</button>
+          <button type="button" class="secondary tiny" data-note-move>${t("Move to…")}</button>` : "";
+      return `<li class="folder-tree-item folder-tree-note" data-note-leaf data-note-id="${escapeHtml(note.noteId)}" data-placement-id="${escapeHtml(placement.placementId)}" style="margin-left:${(depth * 1.1).toFixed(2)}rem">
+        <div class="note-card">
+          <div class="note-card-head" data-note-toggle>
+            <span class="note-card-title">📄 ${escapeHtml(title)}</span>
+            <span class="note-card-meta">${when(note.updatedAt)}</span>
+          </div>
+          <div class="note-body-preview" data-note-body></div>
+          <div class="note-actions" data-note-actions style="display:none">${controls}</div>
+        </div>
+      </li>`;
+    }
+
+    function wireFolderTree() {
+      const container = document.querySelector("[data-folder-tree]");
+      if (!container) return;
+      container.querySelectorAll(".folder-row").forEach((row) => {
+        const folderId = row.dataset.folderId || null;
+        const role = row.dataset.folderRole;
+        const node = findNodeByIdOrRole(mergedRoots(), folderId, role);
+        if (!node) return;
+        const li = row.closest("li");
+
+        row.querySelector("[data-folder-toggle]")?.addEventListener("click", (e) => { e.stopPropagation(); toggleExpanded(node); });
+        const renameInput = row.querySelector("[data-folder-rename-input]");
+        renameInput?.addEventListener("click", (e) => e.stopPropagation());
+        renameInput?.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") { e.preventDefault(); commitInlineRename(node, e.target.value); }
+          else if (e.key === "Escape") { e.preventDefault(); inlineRenameKey = null; renderFoldersView(); }
+        });
+        renameInput?.addEventListener("blur", (e) => commitInlineRename(node, e.target.value));
+        row.querySelector("[data-folder-pin]")?.addEventListener("click", (e) => {
+          e.stopPropagation(); closeAllBarPalettes(null);
+          newFolderTargetNode = isPinnedTarget(node) ? null : node;
+          renderFoldersView();
+        });
+        row.querySelector("[data-folder-rename]")?.addEventListener("click", (e) => {
+          e.stopPropagation(); closeAllBarPalettes(null);
+          beginInlineRename(node);
+        });
+        row.querySelector("[data-folder-up]")?.addEventListener("click", (e) => {
+          e.stopPropagation(); closeAllBarPalettes(null);
+          const siblings = siblingsOf(node);
+          reorderFolderSwap(siblings, siblings.findIndex((s) => s.folderId === node.folderId), -1);
+        });
+        row.querySelector("[data-folder-down]")?.addEventListener("click", (e) => {
+          e.stopPropagation(); closeAllBarPalettes(null);
+          const siblings = siblingsOf(node);
+          reorderFolderSwap(siblings, siblings.findIndex((s) => s.folderId === node.folderId), 1);
+        });
+        row.querySelector("[data-folder-move]")?.addEventListener("click", (e) => {
+          e.stopPropagation(); closeAllBarPalettes(null); moveFolderPrompt(node);
+        });
+        row.querySelector("[data-folder-remove]")?.addEventListener("click", (e) => {
+          e.stopPropagation(); closeAllBarPalettes(null); removeFolderPrompt(node);
+        });
+        li?.querySelector("[data-folder-remove-confirm-yes]")?.addEventListener("click", () => confirmRemoveFolder(node));
+        li?.querySelector("[data-folder-remove-confirm-cancel]")?.addEventListener("click", () => { pendingRemoveKey = null; renderFoldersView(); });
+
+        // Drag a row: top 28% = before, bottom 28% = after, middle 44% =
+        // inside (Siyagah's own zones). Mouse/desktop only, per the issue's
+        // own scope -- a phone keeps ▲▼ and Move to… in the ⋯ menu above,
+        // per Siyagah's own "touch drag did not work" finding.
+        if (row.hasAttribute("draggable")) {
+          row.addEventListener("dragstart", (e) => { dragFolderKey = expandKeyFor(node); e.dataTransfer.effectAllowed = "move"; });
+          row.addEventListener("dragend", () => { dragFolderKey = null; clearDragIndicators(container); });
+        }
+        row.addEventListener("dragover", (e) => {
+          if (dragFolderKey == null) return;
+          e.preventDefault();
+          clearDragIndicators(container);
+          row.classList.add(`drag-over-${dragZoneFor(row, e.clientY)}`);
+        });
+        row.addEventListener("dragleave", () => row.classList.remove("drag-over-before", "drag-over-after", "drag-over-inside"));
+        row.addEventListener("drop", (e) => {
+          e.preventDefault();
+          const zone = dragZoneFor(row, e.clientY);
+          clearDragIndicators(container);
+          const draggedNode = dragFolderKey ? findNodeByExpandKey(mergedRoots(), dragFolderKey) : null;
+          dragFolderKey = null;
+          if (draggedNode && draggedNode.folderId !== node.folderId) performFolderDrop(draggedNode, node, zone);
+        });
+
+        // Clicking the row's own name toggles it open/closed too, so the
+        // whole row is a target, not just the small ▶/▾ glyph.
+        row.addEventListener("click", (e) => {
+          if (e.target.closest(".folder-menu-wrap, .folder-rename-input")) return;
+          if (expandable(node)) toggleExpanded(node);
+        });
+      });
+
+      container.querySelectorAll("[data-file-into-folder]").forEach((fileLi) => {
+        const folderId = fileLi.dataset.fileIntoFolder;
+        const node = findNodeByIdOrRole(mergedRoots(), folderId, null);
+        fileLi.querySelector("[data-folder-file-note]")?.addEventListener("click", () => {
+          if (!node) return;
+          const already = notesInFolder(node);
+          const candidate = allNotes.find((n) => !already.some((r) => r.note.noteId === n.noteId));
+          if (candidate) fileNoteInFolder(candidate, node);
+        });
+      });
+
+      wireNoteLeaves(container);
+    }
+    function expandable(node) {
+      return (node.children ?? []).length > 0 || notesInFolder(node).length > 0;
+    }
+    function dragZoneFor(row, clientY) {
+      const rect = row.getBoundingClientRect();
+      const ratio = rect.height ? (clientY - rect.top) / rect.height : 0.5;
+      if (ratio < 0.28) return "before";
+      if (ratio > 0.72) return "after";
+      return "inside";
+    }
+    function clearDragIndicators(container) {
+      container.querySelectorAll(".drag-over-before, .drag-over-after, .drag-over-inside")
+        .forEach((el) => el.classList.remove("drag-over-before", "drag-over-after", "drag-over-inside"));
+    }
+
+    /**
+     * A drag-and-drop move, previewed against `folderMoveRefusal()` -- the
+     * service's own thin forward to the contract's `folderTreeRefusal()` --
+     * before ever attempting a write, and said in words if refused (a
+     * self-drop, a drop into the dragged folder's own subtree, or anything
+     * past MAX_FOLDER_DEPTH). "inside" re-parents onto the target; "before"/
+     * "after" position the dragged folder among the target's own siblings.
+     */
+    async function performFolderDrop(draggedNode, targetNode, zone) {
+      const newParentId = zone === "inside" ? targetNode.folderId : (targetNode.parentFolderId ?? null);
+      const changingParent = (draggedNode.parentFolderId ?? null) !== newParentId;
+      if (changingParent) {
+        const folders = new Map(rawFolderList(folderTree).map((f) => [f.folderId, f]));
+        const refusal = folderMoveRefusal({ folders, tenantId: activeTenantId, ownerPersonId: selectedPersonId, folderId: draggedNode.folderId, parentFolderId: newParentId });
+        if (refusal) { showPageStatus(FOLDER_PARENT_REFUSAL_MESSAGES[refusal]?.() ?? t("That move was refused.")); return; }
         const outcome = await runFolderWrite(
-          () => reorderFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, folderId: write.id, order: write.order, actorUid: auth.currentUser.uid }),
-          { collection: TENANT.NOTE_FOLDERS, action: "reorderFolder" }
+          () => moveFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, folderId: draggedNode.folderId, parentFolderId: newParentId, actorUid: auth.currentUser.uid }),
+          { collection: TENANT.NOTE_FOLDERS, action: "moveFolder" }
         );
         if (!outcome.ok) return;
+        await refreshAll(); // siblingsOf(targetNode) below must see the dragged folder among its NEW siblings
       }
+      if (zone !== "inside") {
+        const siblings = siblingsOf(targetNode);
+        const fromIndex = siblings.findIndex((s) => s.folderId === draggedNode.folderId);
+        const targetIdx = siblings.findIndex((s) => s.folderId === targetNode.folderId);
+        if (fromIndex !== -1 && targetIdx !== -1) {
+          const toIndex = zone === "before" ? (fromIndex < targetIdx ? targetIdx - 1 : targetIdx) : (fromIndex < targetIdx ? targetIdx : targetIdx + 1);
+          const writes = planMove(siblings.map((f) => ({ id: f.folderId, order: f.order ?? 0 })), fromIndex, toIndex);
+          for (const write of writes) {
+            const outcome = await runFolderWrite(
+              () => reorderFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, folderId: write.id, order: write.order, actorUid: auth.currentUser.uid }),
+              { collection: TENANT.NOTE_FOLDERS, action: "reorderFolder" }
+            );
+            if (!outcome.ok) return;
+          }
+        }
+      }
+      showPageStatus(t('"{name}" moved.', { name: folderDisplayName(draggedNode) }));
       await refreshAll();
     }
 
-    async function renameFolderPrompt(node) {
-      const name = prompt(t("Rename this folder:"), node.name ?? "");
-      if (name == null) return;
-      const trimmed = name.trim();
-      if (!trimmed) { showPageStatus(t("A folder needs a name — nothing renamed.")); return; }
+    /**
+     * Same discipline as `planReorder()` above (renumber by DISPLAY
+     * POSITION, write only what changed) generalised to an arbitrary target
+     * index -- `planReorder()` itself only ever swaps two ADJACENT positions
+     * (▲/▼), and a drag can land a folder anywhere in the list, not just one
+     * step away.
+     */
+    function planMove(siblings, fromIndex, toIndex) {
+      if (fromIndex === toIndex || !siblings[fromIndex]) return [];
+      const sequence = siblings.slice();
+      const [moved] = sequence.splice(fromIndex, 1);
+      sequence.splice(Math.max(0, Math.min(toIndex, sequence.length)), 0, moved);
+      return sequence
+        .map((item, order) => ({ id: item.id, order, prevOrder: item.order ?? 0 }))
+        .filter((w) => w.order !== w.prevOrder)
+        .map(({ id, order }) => ({ id, order }));
+    }
+
+    function wireNoteLeaves(container) {
+      wireNoteCards(container, allNotes);
+      if (!isSelfSelected()) return;
+      container.querySelectorAll("[data-note-leaf]").forEach((li) => {
+        const placementId = li.dataset.placementId;
+        const noteId = li.dataset.noteId;
+        const placement = allPlacements.find((p) => p.placementId === placementId);
+        const note = allNotes.find((n) => n.noteId === noteId);
+        const folderNode = placement ? findNodeByIdOrRole(mergedRoots(), placement.folderId, null) : null;
+        if (!placement || !note || !folderNode) return;
+        const rows = notesInFolder(folderNode);
+        const idx = rows.findIndex((r) => r.placement.placementId === placementId);
+        li.querySelector("[data-note-up]")?.addEventListener("click", () => reorderNoteInFolder(rows, idx, -1));
+        li.querySelector("[data-note-down]")?.addEventListener("click", () => reorderNoteInFolder(rows, idx, 1));
+        li.querySelector("[data-note-move]")?.addEventListener("click", () => moveNoteDialog(note, placement, folderNode));
+      });
+    }
+
+    /** Opens inline editing for one folder's name -- Enter/blur saves via commitInlineRename(), Escape cancels, an empty name is ignored there. */
+    function beginInlineRename(node) {
+      inlineRenameKey = expandKeyFor(node);
+      renderFoldersView();
+      const input = document.querySelector("[data-folder-rename-input]");
+      input?.focus();
+      input?.select();
+    }
+    async function commitInlineRename(node, rawName) {
+      if (inlineRenameKey !== expandKeyFor(node)) return; // already saved, cancelled, or superseded by a re-render
+      const trimmed = (rawName ?? "").trim();
+      inlineRenameKey = null;
+      if (!trimmed || trimmed === node.name) { renderFoldersView(); return; }
       const outcome = await runFolderWrite(
         () => renameFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, folderId: node.folderId, name: trimmed, actorUid: auth.currentUser.uid }),
         { collection: TENANT.NOTE_FOLDERS, action: "renameFolder" }
       );
-      if (!outcome.ok) return;
+      if (!outcome.ok) { renderFoldersView(); return; }
       showPageStatus(t('Folder renamed to "{name}".', { name: trimmed }));
       await refreshAll();
     }
 
-    /** Same prompt-a-folder-name-from-a-list shape as `openFileDialog()`/`moveNoteDialog()` -- system folders are excluded as a DESTINATION (they refuse a parent outright, per journeyFolder()'s own rule) and the folder can't be moved into itself. Any other refusal (a cycle, too deep) is only known once the write is attempted, and is surfaced in words by `runFolderWrite()`. */
+    /** Same prompt-a-folder-name-from-a-list shape as `openFileDialog()`/`moveNoteDialog()` -- system folders are excluded as a DESTINATION (they refuse a parent outright, per journeyFolder()'s own rule) and the folder can't be moved into itself. Any other refusal (a cycle, too deep) is only known once the write is attempted, and is surfaced in words by `runFolderWrite()`. Kept as a text prompt rather than rebuilt as a richer picker -- the issue's own "Keep ▲▼ and Move to… for every folder, reachable on a phone" names this control by its EXISTING behaviour. */
     async function moveFolderPrompt(node) {
       const TOP_LEVEL = t("(Top level)");
       const flat = flattenFolders(mergedRoots()).filter(({ folder }) =>
@@ -876,96 +1202,57 @@
      * (`parentOneHopOk()`) -- checked here FIRST, against the tree already
      * loaded (no extra read: `node.children` already reflects only ACTIVE
      * folders, the same set the underlying retire writer itself checks), so
-     * the common case says so in words before ever attempting the write.
+     * the common case says so in words BEFORE any confirmation is even
+     * offered. Confirming happens on the page itself (issue #259) -- never
+     * the browser's own confirm dialog -- so this function only OPENS the
+     * confirmation; `confirmRemoveFolder()` below performs the actual write.
      */
     async function removeFolderPrompt(node) {
       if ((node.children ?? []).length > 0) {
         showPageStatus(t('"{name}" still has folders inside it — remove those first, then this one.', { name: folderDisplayName(node) }));
         return;
       }
-      if (!confirm(t('Remove folder "{name}"? This can\'t be undone from here, but nothing is destroyed — an administrator can restore it. Notes filed in it are not deleted.', { name: folderDisplayName(node) }))) return;
+      pendingRemoveKey = expandKeyFor(node);
+      renderFoldersView();
+    }
+    async function confirmRemoveFolder(node) {
+      pendingRemoveKey = null;
       const outcome = await runFolderWrite(
         () => retireFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, folderId: node.folderId, actorUid: auth.currentUser.uid }),
         { collection: TENANT.NOTE_FOLDERS, action: "retireFolder" }
       );
-      if (!outcome.ok) return;
+      if (!outcome.ok) { renderFoldersView(); return; }
       showPageStatus(t('Folder "{name}" removed.', { name: folderDisplayName(node) }));
-      if (openFolderPath.some((f) => f.folderId === node.folderId)) openFolderPath = [];
       await refreshAll();
     }
 
-    async function loadFolderContents(node) {
-      const target = document.getElementById("folderNotes");
-      if (!node.folderId) {
-        // A virtual system folder with no document yet genuinely holds
-        // nothing -- no query is made, there is nothing to query.
-        target.innerHTML = `<p id="emptyMsg">${escapeHtml(emptyStateFor(node))}</p>`;
-        return;
+    /**
+     * ▲▼ move a folder among its siblings -- single-field updates, not a
+     * transaction: a partial failure leaves a display-order quirk (I5:
+     * nothing is keyed by `order`), never a corruption. `planReorder()`
+     * renumbers the whole sibling sequence by display position and writes
+     * only what actually changed (P6-G, issue #234's own fix, unchanged
+     * here -- only its CALL SITE, now the tree's ⋯ menu, is new).
+     */
+    async function reorderFolderSwap(siblings, idx, direction) {
+      const other = idx + direction;
+      if (!siblings[idx] || !siblings[other]) return;
+      const writes = planReorder(siblings.map((f) => ({ id: f.folderId, order: f.order ?? 0 })), idx, direction);
+      for (const write of writes) {
+        const outcome = await runFolderWrite(
+          () => reorderFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, folderId: write.id, order: write.order, actorUid: auth.currentUser.uid }),
+          { collection: TENANT.NOTE_FOLDERS, action: "reorderFolder" }
+        );
+        if (!outcome.ok) return;
       }
-      target.innerHTML = `<p class="note">${t("Loading…")}</p>`;
-      const { rows, truncated } = await folderContents(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, folderId: node.folderId });
-      if (rows.length === 0) {
-        target.innerHTML = `<p id="emptyMsg">${escapeHtml(emptyStateFor(node))}</p>`;
-      } else {
-        target.innerHTML = rows.map(({ note }) => noteCardHtml(note)).join("")
-          + (truncated ? `<p id="truncatedMsg">${escapeHtml(t("Showing the most recent Notes only — there are more in this folder."))}</p>` : "");
-        wireNoteCards(target, rows.map((r) => r.note));
-        // "Move to…" -- only meaningful here, where the CURRENT placement is
-        // known (a Note may be filed in more than one folder, so moving from
-        // a Timeline/Path row would be ambiguous about which filing to
-        // retire -- see fileNoteInFolder() for the unambiguous "add a
-        // filing" action those two views offer instead).
-        if (isSelfSelected()) {
-          // `rows` is already in the author's own placement order -- the
-          // per-folder placement READ itself queries `orderBy("order")`
-          // (the one Note Foundation query this project's own composite
-          // index candidate exists to serve) -- so array index IS the
-          // display order, and up/down swap the `order` field with the
-          // adjacent placement exactly the way folder reorder swaps siblings.
-          rows.forEach(({ placement, note }, idx) => {
-            const card = target.querySelector(`[data-note-id="${CSS.escape(note.noteId)}"] [data-note-actions]`);
-            if (!card) return;
-            const up = document.createElement("button");
-            up.type = "button"; up.className = "secondary tiny note-order-btn"; up.textContent = "▲";
-            up.setAttribute("aria-label", t("Move up"));
-            up.disabled = idx === 0;
-            up.addEventListener("click", () => reorderNoteInFolder(rows, idx, -1));
-            const down = document.createElement("button");
-            down.type = "button"; down.className = "secondary tiny note-order-btn"; down.textContent = "▼";
-            down.setAttribute("aria-label", t("Move down"));
-            down.disabled = idx === rows.length - 1;
-            down.addEventListener("click", () => reorderNoteInFolder(rows, idx, 1));
-            card.appendChild(up);
-            card.appendChild(down);
-
-            const btn = document.createElement("button");
-            btn.type = "button"; btn.className = "secondary tiny"; btn.textContent = t("Move to…");
-            btn.addEventListener("click", () => moveNoteDialog(note, placement, node));
-            card.appendChild(btn);
-          });
-        }
-      }
-      if (isSelfSelected() && allNotes.some((n) => !rows.some((r) => r.note.noteId === n.noteId))) {
-        const fileBtn = document.createElement("button");
-        fileBtn.type = "button"; fileBtn.style.marginTop = "0.6rem"; fileBtn.textContent = t("+ File a Note here…");
-        fileBtn.addEventListener("click", () => {
-          const candidate = allNotes.find((n) => !rows.some((r) => r.note.noteId === n.noteId));
-          if (candidate) fileNoteInFolder(candidate, node);
-        });
-        target.appendChild(fileBtn);
-      }
+      await refreshAll();
     }
 
     /**
-     * ▲▼ for a Note filed in the currently-open folder -- P6-E's
-     * `reorderFiling()`, moved the same way `reorderFolderSwap()` moves
-     * folder siblings.
-     *
-     * P6-G fix (issue #234, review of PR #233): `createNotePlacement()`
-     * defaults `order: 0` and `fileNoteInFolder()` never overrode it before
-     * this round, so every real filing in a folder collided at 0 and the
-     * old swap-the-two-fields logic wrote two documents that changed
-     * nothing on screen. Same `planReorder()` fix as the folder swap above.
+     * ▲▼ for a Note filed in an open folder -- P6-E's `reorderFiling()`,
+     * moved the same way `reorderFolderSwap()` moves folder siblings.
+     * Unchanged from P6-G (issue #234): only its call site (a note leaf's
+     * own buttons, rather than the old single-open-folder view) is new.
      */
     async function reorderNoteInFolder(rows, idx, direction) {
       const other = idx + direction;
@@ -1010,34 +1297,136 @@
       await refreshAll();
     }
 
+    // -- Toolbar: search (folders + Note titles, in the already-loaded data,
+    // no new read), "Show numbers", and A-/A+ tree text size. --
+    function folderToolbarHtml() {
+      return `<div class="folder-toolbar">
+        <input type="text" id="folderSearchInput" class="folder-search-input" placeholder="${escapeHtml(t("Search folders and Notes…"))}" value="${escapeHtml(folderSearchQuery)}" aria-label="${escapeHtml(t("Search folders and Notes…"))}" />
+        <label class="folder-toolbar-check"><input type="checkbox" id="folderShowNumbers" ${showNumbers ? "checked" : ""} /> ${t("Show numbers")}</label>
+        <span class="folder-textsize-group">
+          <button type="button" id="folderTextSizeDown" class="secondary tiny" aria-label="${escapeHtml(t("Smaller text"))}" ${treeTextSizeIndex <= 0 ? "disabled" : ""}>A−</button>
+          <button type="button" id="folderTextSizeUp" class="secondary tiny" aria-label="${escapeHtml(t("Larger text"))}" ${treeTextSizeIndex >= TEXT_SIZE_SCALES.length - 1 ? "disabled" : ""}>A+</button>
+        </span>
+      </div>`;
+    }
+    function wireFolderToolbar() {
+      const input = document.getElementById("folderSearchInput");
+      input?.addEventListener("input", () => {
+        folderSearchQuery = input.value;
+        renderFoldersView();
+        // Re-rendering replaces the <input> itself (this app's own standing
+        // "re-render wipes UI state" lesson) -- focus and caret position are
+        // threaded back in explicitly so typing is not interrupted.
+        const restored = document.getElementById("folderSearchInput");
+        if (restored) { restored.focus(); restored.setSelectionRange(restored.value.length, restored.value.length); }
+      });
+      document.getElementById("folderShowNumbers")?.addEventListener("change", (e) => { showNumbers = e.target.checked; saveShowNumbers(); renderFoldersView(); });
+      document.getElementById("folderTextSizeDown")?.addEventListener("click", () => { if (treeTextSizeIndex > 0) { treeTextSizeIndex -= 1; saveTreeTextSizeIndex(); renderFoldersView(); } });
+      document.getElementById("folderTextSizeUp")?.addEventListener("click", () => { if (treeTextSizeIndex < TEXT_SIZE_SCALES.length - 1) { treeTextSizeIndex += 1; saveTreeTextSizeIndex(); renderFoldersView(); } });
+    }
+
+    function folderSearchResultsHtml(query) {
+      const folderMatches = flattenFolders(mergedRoots()).map(({ folder }) => folder)
+        .filter((f) => folderDisplayName(f).toLowerCase().includes(query));
+      const noteMatches = allNotes.filter((n) => (n.title || "").toLowerCase().includes(query));
+      if (folderMatches.length === 0 && noteMatches.length === 0) {
+        return `<p id="emptyMsg">${escapeHtml(t('No folders or Notes match "{query}".', { query: folderSearchQuery.trim() }))}</p>`;
+      }
+      let html = `<ul class="folder-search-results" data-folder-search-results>`;
+      for (const f of folderMatches) {
+        const crumb = folderAncestorPath(f.folderId).map((a) => folderDisplayName(a)).join(" › ") || t("All folders");
+        html += `<li class="folder-search-result" data-search-folder-id="${escapeHtml(f.folderId ?? "")}" data-search-folder-role="${escapeHtml(f.semanticRole)}">
+          <span class="folder-row-name">${escapeHtml(folderDisplayName(f))}</span>
+          <span class="folder-search-breadcrumb">${escapeHtml(crumb)}</span>
+        </li>`;
+      }
+      for (const note of noteMatches) {
+        html += `<li class="folder-search-result folder-search-result-note" data-search-note-id="${escapeHtml(note.noteId)}">
+          <span class="note-card-title">📄 ${escapeHtml(note.title?.trim() || t("(untitled)"))}</span>
+        </li>`;
+      }
+      html += `</ul>`;
+      return html;
+    }
+    function wireFolderSearchResults() {
+      const container = document.querySelector("[data-folder-search-results]");
+      if (!container) return;
+      container.querySelectorAll("[data-search-folder-id]").forEach((li) => {
+        li.addEventListener("click", () => {
+          const folderId = li.dataset.searchFolderId || null;
+          const role = li.dataset.searchFolderRole;
+          const node = findNodeByIdOrRole(mergedRoots(), folderId, role);
+          if (!node) return;
+          for (const ancestor of folderAncestorPath(folderId)) expandedFolderIds.add(expandKeyFor(ancestor));
+          saveExpandedIds();
+          folderSearchQuery = "";
+          renderFoldersView();
+          requestAnimationFrame(() => {
+            document.querySelector(`.folder-row[data-folder-id="${CSS.escape(folderId ?? "")}"][data-folder-role="${CSS.escape(role)}"]`)
+              ?.scrollIntoView({ block: "center" });
+          });
+        });
+      });
+      container.querySelectorAll("[data-search-note-id]").forEach((li) => {
+        li.addEventListener("click", () => {
+          const noteId = li.dataset.searchNoteId;
+          for (const placement of allPlacements.filter((p) => p.noteId === noteId && p.status === NOTE_STATUS.ACTIVE)) {
+            const target = findNodeByIdOrRole(mergedRoots(), placement.folderId, null);
+            if (!target) continue;
+            for (const ancestor of folderAncestorPath(placement.folderId)) expandedFolderIds.add(expandKeyFor(ancestor));
+            expandedFolderIds.add(expandKeyFor(target));
+          }
+          expandedNoteIds.add(noteId);
+          saveExpandedIds();
+          folderSearchQuery = "";
+          renderFoldersView();
+          requestAnimationFrame(() => {
+            document.querySelector(`[data-note-leaf][data-note-id="${CSS.escape(noteId)}"]`)?.scrollIntoView({ block: "center" });
+          });
+        });
+      });
+    }
+
+    // -- Footer: the 📍 target line and "+ New folder". --
+    function folderFooterHtml() {
+      if (!isSelfSelected()) return "";
+      const targetLabel = newFolderTargetNode ? folderDisplayName(newFolderTargetNode) : t("Top level");
+      return `<div class="folder-footer">
+        <p class="folder-footer-target">${escapeHtml(t("New folder in: {target}", { target: targetLabel }))}${newFolderTargetNode ? ` <button type="button" id="clearFolderTarget" class="secondary tiny" aria-label="${escapeHtml(t("Clear target"))}">✕</button>` : ""}</p>
+        <form id="newFolderForm">
+          <input type="text" id="newFolderName" placeholder="${escapeHtml(t("Folder name"))}" />
+          <button type="submit">${t("+ New folder")}</button>
+        </form>
+      </div>`;
+    }
     function wireNewFolderForm() {
-      const btn = document.getElementById("newFolderBtn");
+      document.getElementById("clearFolderTarget")?.addEventListener("click", () => { newFolderTargetNode = null; renderFoldersView(); });
       const form = document.getElementById("newFolderForm");
-      if (!btn || !form) return;
-      btn.addEventListener("click", () => { form.style.display = "flex"; btn.style.display = "none"; document.getElementById("newFolderName").focus(); });
-      document.getElementById("newFolderCancel").addEventListener("click", () => { form.style.display = "none"; btn.style.display = "inline-block"; });
+      if (!form) return;
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
         const name = document.getElementById("newFolderName").value.trim();
         if (!name) return;
-        // Round-1 folders are top-level only (parentFolderId: null) -- the
-        // data layer supports nesting up to MAX_FOLDER_DEPTH, but a UI for
-        // choosing a parent is not built this round; see the PR notes.
-        // P6-G fix (issue #234) -- order against the actual USER-folder
-        // siblings (what reorderFolderSwap() swaps within), not a root
-        // COUNT that includes the two system folders and drifts the moment
-        // a folder is retired (mergedRoots().length can then repeat an
-        // order a surviving sibling already holds).
+        const target = newFolderTargetNode;
+        const parentFolderId = target ? await ensureRealFolder(target) : null;
+        if (target && !parentFolderId) return;
+        // P6-G's own fix (issue #234), now generalised to a pinned target
+        // (issue #259): order against the real CURRENT siblings at whichever
+        // level the folder is landing -- the user-folder roots when nothing
+        // is pinned, unchanged from P6-G, or the pinned target's own real
+        // children once one is.
+        const order = target
+          ? nextOrder((findNodeByIdOrRole(mergedRoots(), parentFolderId, null)?.children ?? []))
+          : nextOrder(mergedRoots().filter((f) => !isSystemFolderRole(f.semanticRole)));
         const outcome = await safeWrite(
           () => createNoteFolder(db, {
             tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid,
-            name, semanticRole: "user",
-            order: nextOrder(mergedRoots().filter((f) => !isSystemFolderRole(f.semanticRole))),
-            actorUid: auth.currentUser.uid,
+            name, semanticRole: "user", parentFolderId, order, actorUid: auth.currentUser.uid,
           }),
           { collection: TENANT.NOTE_FOLDERS, action: "createNoteFolder" }
         );
         if (!outcome.ok) return;
+        if (parentFolderId) { expandedFolderIds.add(parentFolderId); saveExpandedIds(); }
         showPageStatus(t('Folder "{name}" created.', { name }));
         await refreshAll();
       });

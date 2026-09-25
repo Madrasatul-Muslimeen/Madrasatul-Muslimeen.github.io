@@ -11,6 +11,7 @@ import {
   limit,
   orderBy,
   query,
+  startAfter,
   where,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
@@ -40,6 +41,20 @@ function requireToken(name, value) {
 function requireText(name, value) {
   if (typeof value !== "string") throw new Error(`${name} must be a string.`);
   return value;
+}
+
+/**
+ * Issue #259 -- the deployed Rules' `listIsBounded()` refuses any Note
+ * Foundation list request whose `limit` exceeds 100. Thrown BEFORE any
+ * request is made (a paged reader must never learn the cap by being denied),
+ * never silently clamped -- a caller asking for more than the server will
+ * ever honour has a bug worth surfacing, not hiding.
+ */
+function requirePageSize(pageSize) {
+  if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100) {
+    throw new RangeError("note-foundation: pageSize must be an integer between 1 and 100.");
+  }
+  return pageSize;
 }
 
 function ownership({ tenantId, ownerPersonId, ownerUid }) {
@@ -601,6 +616,66 @@ export async function listNotesForOwner(db, { tenantId, ownerPersonId, status = 
     where("status", "==", status), orderBy("updatedAt", "desc"), limit(maximum));
   const snapshot = await getDocs(q);
   return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+}
+
+/**
+ * Issue #259 -- the deployed Rules' `listIsBounded()` refuses any Note
+ * Foundation list request above 100 (v08.58's own finding, the same cap that
+ * bit `listNoteFoldersForOwner()`). `listNotesForOwner()` above is unchanged
+ * -- callers that only ever wanted "the most recent 100" still get exactly
+ * that -- but an owner with MORE than 100 Notes could never see the rest
+ * through it, in any view. The fix is paging, never a bigger `limit()`: a
+ * bigger number is still refused the moment it exceeds the cap the server
+ * itself enforces.
+ *
+ * SAME QUERY SHAPE AS `listNotesForOwner()`, deliberately: the same
+ * `orderBy("updatedAt", "desc")`, so a page of this function is served by the
+ * exact same deployed composite index `listNotesForOwner()` already uses --
+ * no new index candidate needed.
+ */
+export async function listNotesForOwnerPage(db, {
+  tenantId, ownerPersonId, status = NOTE_STATUS.ACTIVE, pageSize = 100, after = null,
+}) {
+  requirePageSize(pageSize);
+  const q = query(collection(db, TENANT.NOTES),
+    where("tenantId", "==", requireToken("tenantId", tenantId)),
+    where("ownerPersonId", "==", requireToken("ownerPersonId", ownerPersonId)),
+    where("status", "==", status),
+    orderBy("updatedAt", "desc"),
+    ...(after ? [startAfter(after)] : []),
+    limit(pageSize));
+  const snapshot = await getDocs(q);
+  const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  const next = snapshot.docs.length < pageSize ? null : snapshot.docs[snapshot.docs.length - 1];
+  return { rows, next };
+}
+
+/**
+ * Issue #259 -- the placement-side twin of `listNotesForOwnerPage()` above.
+ * Each folder showed at most 99 filed Notes (`journey-map-service.js`'s own
+ * `MAX_PLACEMENTS_PER_READ`), so the Owner's real folder of 187 Notes was cut
+ * off; paging this read is what lets a caller assemble the whole set.
+ *
+ * DELIBERATELY NO `orderBy` -- equality filters only (tenantId, ownerPersonId,
+ * status), exactly `listNotePlacementsForFolder()`'s own reasoning for why it
+ * costs no composite index: Firestore serves an equality-only query, plus a
+ * `startAfter` cursor on its own implicit document-id ordering, from
+ * single-field indexes alone.
+ */
+export async function listNotePlacementsForOwnerPage(db, {
+  tenantId, ownerPersonId, status = NOTE_STATUS.ACTIVE, pageSize = 100, after = null,
+}) {
+  requirePageSize(pageSize);
+  const q = query(collection(db, TENANT.NOTE_PLACEMENTS),
+    where("tenantId", "==", requireToken("tenantId", tenantId)),
+    where("ownerPersonId", "==", requireToken("ownerPersonId", ownerPersonId)),
+    where("status", "==", status),
+    ...(after ? [startAfter(after)] : []),
+    limit(pageSize));
+  const snapshot = await getDocs(q);
+  const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  const next = snapshot.docs.length < pageSize ? null : snapshot.docs[snapshot.docs.length - 1];
+  return { rows, next };
 }
 
 export async function listNoteRevisions(db, { tenantId, ownerPersonId, noteId, maximum = 100 }) {

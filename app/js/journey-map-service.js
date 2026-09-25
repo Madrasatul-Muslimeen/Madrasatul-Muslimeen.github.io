@@ -15,6 +15,8 @@ import {
   listNoteFoldersForOwner,
   listNotePlacementsForFolder,
   listNotePlacementsForNote,
+  listNotesForOwnerPage,
+  listNotePlacementsForOwnerPage,
   moveNotePlacement,
   renameNoteFolder,
   reorderNotePlacement,
@@ -22,7 +24,7 @@ import {
   reparentNoteFolder,
   retireNoteFolder,
 } from "./note-foundation.js";
-import { buildFolderTree, notePlacement } from "./journey-map-contract.js";
+import { buildFolderTree, folderTreeRefusal, notePlacement } from "./journey-map-contract.js";
 
 /**
  * The most placements one read will resolve. A cap, not an expected cost.
@@ -104,6 +106,113 @@ export async function noteFilings(db, {
  */
 export async function ownerFolderTree(db, { tenantId, ownerPersonId } = {}) {
   return buildFolderTree(await listNoteFoldersForOwner(db, { tenantId, ownerPersonId }));
+}
+
+/**
+ * Issue #259 -- the folder tree becomes an expandable, all-at-once view (not
+ * a one-folder-at-a-time drill-down), so the screen needs its OWNER'S WHOLE
+ * set of Notes and placements up front, never capped at 100/99. A bigger
+ * `limit()` is refused by the deployed Rules (`listIsBounded()`); paging is
+ * the only way past it, so these two loop over `note-foundation.js`'s new
+ * paged readers until each is exhausted.
+ *
+ * A HARD SAFETY CAP, not an expected cost: 50 pages at 100 rows each is 5,000
+ * Notes (or placements) for one person, which is pathological, not real. A
+ * cap that is hit is REPORTED (`truncated: true`), never spun forever --
+ * this is the codebase's own standing shape (`MAX_PLACEMENTS_PER_READ`,
+ * `MAX_FOLDER_DEPTH`): a bound is enforced and the caller is told when it
+ * was reached, rather than either hanging or lying about completeness.
+ */
+const OWNER_LOAD_PAGE_SAFETY_CAP = 50;
+
+async function loadAllPages(fetchPage) {
+  const rows = [];
+  let after = null;
+  for (let page = 0; page < OWNER_LOAD_PAGE_SAFETY_CAP; page += 1) {
+    const result = await fetchPage(after);
+    rows.push(...result.rows);
+    if (!result.next) return { rows, truncated: false };
+    after = result.next;
+  }
+  return { rows, truncated: true };
+}
+
+export async function loadAllOwnerNotes(db, { tenantId, ownerPersonId, status, pageSize = 100 } = {}) {
+  return loadAllPages((after) => listNotesForOwnerPage(db, { tenantId, ownerPersonId, status, pageSize, after }));
+}
+
+export async function loadAllOwnerPlacements(db, { tenantId, ownerPersonId, status, pageSize = 100 } = {}) {
+  return loadAllPages((after) => listNotePlacementsForOwnerPage(db, { tenantId, ownerPersonId, status, pageSize, after }));
+}
+
+/**
+ * Issue #259 -- how many DISTINCT active Notes sit in one folder, or any
+ * folder beneath it. Pure, and deliberately so: `folders`/`placements`/
+ * `notes` are plain arrays already read by the caller, so this can be
+ * mutation-tested with no Firebase and no browser (`journey-map-counts.mjs`).
+ *
+ * USES `buildFolderTree()` FOR THE WALK -- no second recursive walk of the
+ * raw folder set is written here. `buildFolderTree()` is already bounded
+ * (`MAX_FOLDER_DEPTH`) and cycle-safe (P6-B/P6-D), so aggregating over its
+ * OWN returned `children` arrays inherits that bound for free: a cyclic or
+ * orphaned folder is simply absent from `roots`, so it (and anything only
+ * reachable through it) contributes to no ancestor's count, exactly as
+ * `buildFolderTree()`'s own "nothing is silently dropped, it is NAMED
+ * elsewhere" contract already promises the caller.
+ *
+ * SETS, NOT SUMS, is what makes "a Note filed in two folders of the same
+ * subtree counts once for their common ancestor" true: each node's subtree
+ * count is the SIZE of the union of its own directly-filed Notes and each
+ * child's own subtree set, so a Note reachable through two children of one
+ * folder still contributes exactly one member to that folder's set.
+ *
+ * A RETIRED NOTE COUNTS NOWHERE, decided by the NOTE's own status -- the
+ * same rule `folderContents()` already applies, for the same reason: I4
+ * never touches a placement when its Note is retired, so an active
+ * placement pointing at a retired Note is normal, not corruption, and must
+ * not inflate a badge the reader would read as "still there".
+ *
+ * Returns a plain object keyed by folderId (never a Map): every caller here
+ * is UI code building an HTML string with `${counts[folderId] ?? 0}`, and a
+ * plain object is what that reads most simply against.
+ */
+export function folderNoteCounts(folders, placements, notes) {
+  const activeNoteIds = new Set(
+    (notes ?? []).filter((n) => n && n.status === NOTE_STATUS.ACTIVE).map((n) => n.noteId));
+  const directByFolder = new Map();
+  for (const p of placements ?? []) {
+    if (!p || p.status !== NOTE_STATUS.ACTIVE) continue;
+    if (!activeNoteIds.has(p.noteId)) continue;
+    if (!directByFolder.has(p.folderId)) directByFolder.set(p.folderId, new Set());
+    directByFolder.get(p.folderId).add(p.noteId);
+  }
+
+  const { roots } = buildFolderTree(folders ?? []);
+  const counts = {};
+  function walk(node) {
+    const subtree = new Set(directByFolder.get(node.folderId) ?? []);
+    for (const child of node.children ?? []) {
+      for (const noteId of walk(child)) subtree.add(noteId);
+    }
+    counts[node.folderId] = subtree.size;
+    return subtree;
+  }
+  for (const root of roots) walk(root);
+  return counts;
+}
+
+/**
+ * Issue #259 -- why a proposed drag-and-drop move would be refused, or
+ * `null` when it would not, WITHOUT attempting the write. `journey-map.html`
+ * deliberately does not import `journey-map-contract.js` a second, direct
+ * way (`journey-map-boundary.mjs` pins the contract as reachable only via
+ * `note-foundation.js` or this module) -- so the screen's drag-and-drop
+ * preview reaches `folderTreeRefusal()` through this one-line forward,
+ * exactly the "everything else goes through the service" shape every other
+ * folder-editing wrapper in this file already uses.
+ */
+export function folderMoveRefusal({ folders, tenantId, ownerPersonId, folderId, parentFolderId } = {}) {
+  return folderTreeRefusal({ folders, tenantId, ownerPersonId, folderId, parentFolderId });
 }
 
 /**

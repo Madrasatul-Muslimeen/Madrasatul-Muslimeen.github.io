@@ -132,9 +132,21 @@ check("every render of a Note's own body names sanitizeNoteHtml()", () => {
 // "Move to…" text (the Note-in-folder one, now preceded by the folder ⋯
 // menu's own markup plus the two new Note reorder buttons); the window
 // widens to 1700 to comfortably clear that measured distance.
+//
+// UPDATED AGAIN for issue #259, reason recorded: Folders became an
+// expandable tree with no separate "+ New folder" reveal button any more --
+// `folderFooterHtml()` renders the form directly, gated on the same
+// `isSelfSelected()` check, so `id="newFolderBtn"` is replaced with
+// `id="newFolderForm"`, the form the check can still find and still needs
+// to prove is gated. And `folderRowHtml()`'s own ⋯ menu now carries FIVE
+// actions (📍/✏️/▲/▼/Move to…/🗑, plus the toggle/badge/pin/name markup built
+// before them) rather than three, so its own "Move to…" sits further from
+// its `const editable = isSelfSelected() && …` gate than before -- measured
+// directly at 2473 characters; the window widens to 2600 to comfortably
+// clear that.
 check("every write-triggering control is gated behind isSelfSelected(), at every occurrence", () => {
-  const WINDOW = 1700;
-  for (const marker of ['id="newFolderBtn"', 't("+ File a Note here…")', 't("Move to…")']) {
+  const WINDOW = 2600;
+  for (const marker of ['id="newFolderForm"', 't("+ File a Note here…")', 't("Move to…")']) {
     let idx = -1, found = 0;
     while ((idx = page.indexOf(marker, idx + 1)) !== -1) {
       found++;
@@ -357,6 +369,32 @@ check("planReorder() returns no writes past either end of the sibling list -- th
   assert.deepEqual(planReorder(seeded, 1, 1), [], "moving the last item further down must be a no-op");
 });
 
+// --- issue #259: planMove() -- the drag-and-drop generalisation of planReorder() ---
+const planMove = extractCallable(page, "planMove");
+check("planMove() is a real, pure function -- same discipline as planReorder() (renumber by display position, write only what changed), generalised to an arbitrary target index", () => {
+  assert.equal(typeof planMove, "function");
+  const declAt = page.indexOf("function planMove(");
+  assert.ok(!/\bdb\b|firebase|getFirestore|auth\.currentUser|document\./.test(page.slice(declAt, declAt + 500)),
+    "planMove() must not reference db/Firebase/DOM -- it has to be genuinely pure");
+});
+check("planMove() genuinely relocates a folder several positions away, not just an adjacent swap", () => {
+  const siblings = [{ id: "a", order: 0 }, { id: "b", order: 1 }, { id: "c", order: 2 }, { id: "d", order: 3 }];
+  const writes = planMove(siblings, 0, 2); // drag "a" to land after "c"
+  const after = applyWrites(siblings, writes);
+  assert.deepEqual(displayOrderIds(after), ["b", "c", "a", "d"]);
+});
+check("planMove() is a no-op when the target is the folder's own current position", () => {
+  const siblings = [{ id: "a", order: 0 }, { id: "b", order: 1 }];
+  assert.deepEqual(planMove(siblings, 1, 1), []);
+});
+check("planMove() writes only the entries whose display position actually changed", () => {
+  // Moving the LAST item to the front shifts every other entry's position --
+  // moving the FIRST item to the second slot only ever touches those two.
+  const siblings = [{ id: "a", order: 0 }, { id: "b", order: 1 }, { id: "c", order: 2 }];
+  const writes = planMove(siblings, 0, 1);
+  assert.equal(writes.length, 2, `expected exactly 2 changed entries, got ${writes.length}`);
+});
+
 check("nextOrder() is pure and callable, and lands a new sibling strictly after the current maximum -- never colliding at 0", () => {
   assert.equal(typeof nextOrder, "function");
   assert.equal(nextOrder([]), 0, "an empty sibling set must start at 0");
@@ -371,30 +409,47 @@ check("filing a Note into a folder computes its order from that folder's own cur
   assert.ok(/\border\b/.test(createCall.slice(0, 200)), "createNotePlacement() is no longer passed an explicit order");
 });
 
-check("creating a new user folder computes its order from nextOrder() over the real user-folder siblings, not a root COUNT that can repeat an order after a retirement", () => {
+// UPDATED for issue #259, reason recorded rather than the check loosened
+// without one: "+ New folder" now supports a pinned 📍 target (any real
+// folder, not only the top level), so the order computation genuinely
+// branches -- `order: nextOrder(...)` is no longer a single object-literal
+// shorthand, it is a `const order = target ? … : nextOrder(mergedRoots()
+// .filter(…))` ternary computed before the call. Both branches are asserted:
+// the unpinned (top-level) case is the SAME nextOrder(mergedRoots().filter(…))
+// shape P6-G already fixed, and the pinned case reads the real target
+// folder's own current children, never a stale or hardcoded count.
+check("creating a new user folder computes its order from nextOrder() over the real user-folder siblings, not a root COUNT that can repeat an order after a retirement -- and a pinned target uses that folder's own real children the same way", () => {
   const body = functionBody(page, "wireNewFolderForm");
-  assert.ok(/order:\s*nextOrder\(mergedRoots\(\)\.filter\(/.test(body), "new-folder creation no longer computes order via nextOrder() over the user-folder siblings");
+  assert.ok(/nextOrder\(mergedRoots\(\)\.filter\(/.test(body), "new-folder creation no longer computes order via nextOrder() over the user-folder siblings");
+  assert.ok(/nextOrder\(\(findNodeByIdOrRole\(mergedRoots\(\), parentFolderId, null\)\?\.\s*children\s*\?\?\s*\[\]\)\)/.test(body),
+    "a pinned target's new-folder order no longer reads that folder's own real, current children");
   assert.ok(!/order:\s*mergedRoots\(\)\.length/.test(body), "new-folder creation still uses the old root-COUNT shape");
 });
 
 // Retiring a folder with active children is refused by the Rules
 // (`parentOneHopOk()`); the issue asks for this to be said in words BEFORE
-// the write, not discovered by letting it fail. Checked two ways: the
-// precheck genuinely comes before the write in source order (so a reader
-// never sees a request go out that the Rules were always going to refuse),
-// and MUTATION-PROVEN -- removing the precheck's own early return is proven
-// to make the ordering assertion fail, so the check has real bite rather
-// than passing for a reason unrelated to what it claims to test.
+// the write, not discovered by letting it fail.
+//
+// UPDATED for issue #259, reason recorded rather than the check silently
+// loosened: the issue's own instruction is "Confirm on the page itself,
+// never with confirm()" -- so `removeFolderPrompt()` no longer confirms OR
+// writes at all; it only opens an in-page confirmation panel
+// (`pendingRemoveKey`), and a SEPARATE function, `confirmRemoveFolder()`
+// (wired to the panel's own "Remove" button), performs the actual
+// `retireFolder()` write once the reader presses it. The ordering claim
+// therefore narrows to what `removeFolderPrompt()` alone can prove: the
+// active-children precheck comes before the confirmation is ever opened.
+// MUTATION-PROVEN as before -- removing the precheck's own early return
+// still must make the ordering assertion fail.
 function retirePrecheckOrdered(source) {
   const body = functionBody(source, "removeFolderPrompt");
   const precheckAt = body.indexOf("children");
-  const confirmAt = body.indexOf("confirm(");
-  const writeAt = body.indexOf("retireFolder(");
-  if (precheckAt === -1 || confirmAt === -1 || writeAt === -1) return false;
-  return precheckAt < confirmAt && confirmAt < writeAt;
+  const openConfirmAt = body.indexOf("pendingRemoveKey");
+  if (precheckAt === -1 || openConfirmAt === -1) return false;
+  return precheckAt < openConfirmAt;
 }
-check("retiring a folder with active children is refused in words BEFORE the confirm dialog or the write, not after", () => {
-  assert.ok(retirePrecheckOrdered(page), "removeFolderPrompt() no longer checks for active children before confirming/writing");
+check("retiring a folder with active children is refused in words BEFORE the in-page Remove confirmation is even offered", () => {
+  assert.ok(retirePrecheckOrdered(page), "removeFolderPrompt() no longer checks for active children before opening the in-page confirmation");
 });
 check("MUTATION-PROVEN: removing the active-children precheck makes the ordering assertion above fail", () => {
   const marker = "if ((node.children ?? []).length > 0) {";
@@ -405,18 +460,39 @@ check("MUTATION-PROVEN: removing the active-children precheck makes the ordering
   assert.notEqual(mutated, page, "the mutation did not change the source -- the precheck's own shape must have changed");
   assert.ok(!retirePrecheckOrdered(mutated), "removing the precheck did not make the ordering check fail -- it is not proving what it claims to");
 });
-check("the retire confirmation uses the issue's own required wording -- \"Remove\", and states in words that nothing is destroyed (I4)", () => {
-  assert.ok(page.includes('t("Remove")'), 'the folder menu\'s remove action must be worded "Remove"');
-  // A JS-escape-aware capture: the confirm text itself contains an escaped
-  // apostrophe ("can\'t"), which a naive [^']+ capture stops at, truncating
-  // the match before "nothing is destroyed" and failing for a reason that
-  // has nothing to do with the wording actually being checked.
-  const confirmCall = page.match(/confirm\(t\('((?:[^'\\]|\\.)*)'/);
-  assert.ok(confirmCall && /nothing is destroyed/.test(confirmCall[1]),
-    "the retire confirmation does not state in words that nothing is destroyed");
+check("the retire confirmation is shown ON THE PAGE ITSELF, never via the browser's own confirm() dialog, uses the issue's own required wording -- \"Remove\" -- and states in words that the folder is kept, not deleted, and its Notes are untouched (I4)", () => {
+  assert.ok(!/\bconfirm\(/.test(page), "window.confirm() must not be called anywhere on this page -- issue #259 requires the confirmation to live on the page itself");
+  const body = functionBody(page, "folderRemoveConfirmHtml");
+  assert.ok(/t\("Remove"\)/.test(body), 'the in-page Remove confirmation must be worded "Remove"');
+  assert.ok(/kept, not deleted/.test(body), "the in-page Remove confirmation does not state in words that the folder is kept, not deleted");
+  assert.ok(/untouched/.test(body), "the in-page Remove confirmation does not state in words that filed Notes are untouched");
+  // MUTATION-PROVEN: the confirmation is DATA-DRIVEN (pendingRemoveKey), not
+  // decoration -- rendered only for the one folder whose Remove was pressed.
+  assert.ok(/pendingRemoveKey === key/.test(functionBody(page, "folderRowHtml")),
+    "folderRowHtml() no longer gates the confirmation panel on pendingRemoveKey -- it would render for every folder, or none, regardless of which Remove was pressed");
 });
-check("reordering, moving and removing a folder each refresh from the real data afterwards, never just patch the DOM by hand", () => {
-  for (const fn of ["reorderFolderSwap", "moveFolderPrompt", "removeFolderPrompt", "reorderNoteInFolder", "renameFolderPrompt"]) {
+check("Remove never calls a Note-writing function -- only retireFolder() -- and the actual write happens ONLY once the reader presses the in-page confirmation's own button, never on removeFolderPrompt()'s own precheck pass", () => {
+  const promptBody = functionBody(page, "removeFolderPrompt");
+  assert.ok(!/retireFolder\(/.test(promptBody), "removeFolderPrompt() must not itself call retireFolder() -- that must wait for the reader's own confirmation");
+  for (const forbidden of ["createPermanentNote", "updatePermanentNoteContent", "retirePermanentNote", "createNotePlacement", "moveNotePlacement", "retireNotePlacement"]) {
+    assert.ok(!promptBody.includes(forbidden) , `removeFolderPrompt() must never touch a Note or a placement: found ${forbidden}`);
+  }
+  const confirmBody = functionBody(page, "confirmRemoveFolder");
+  assert.ok(/retireFolder\(/.test(confirmBody), "confirmRemoveFolder() no longer calls retireFolder()");
+  for (const forbidden of ["createPermanentNote", "updatePermanentNoteContent", "retirePermanentNote", "createNotePlacement", "moveNotePlacement", "retireNotePlacement"]) {
+    assert.ok(!confirmBody.includes(forbidden), `confirmRemoveFolder() must never touch a Note or a placement: found ${forbidden}`);
+  }
+  assert.ok(/data-folder-remove-confirm-yes\]"\)\?\.addEventListener\("click",\s*\(\)\s*=>\s*confirmRemoveFolder\(node\)\)/.test(functionBody(page, "wireFolderTree")),
+    "the in-page confirmation's own \"Remove\" button no longer calls confirmRemoveFolder() directly");
+});
+// UPDATED for issue #259, reason recorded: "removeFolderPrompt" and
+// "renameFolderPrompt" no longer perform any write at all -- rename became
+// inline (beginInlineRename() opens the input, commitInlineRename() saves)
+// and remove became an in-page confirmation (removeFolderPrompt() opens it,
+// confirmRemoveFolder() retires) -- so the refreshAll-after-a-real-write
+// claim now names the functions that actually write.
+check("reordering, moving, renaming and removing a folder each refresh from the real data afterwards, never just patch the DOM by hand", () => {
+  for (const fn of ["reorderFolderSwap", "moveFolderPrompt", "confirmRemoveFolder", "reorderNoteInFolder", "commitInlineRename"]) {
     const body = functionBody(page, fn);
     assert.ok(/await refreshAll\(\);/.test(body), `${fn}() does not call refreshAll() after a successful write`);
   }
@@ -487,6 +563,107 @@ check("the hash wins over the remembered view ONLY when it is actually present -
     "viewFromHash() must be tried before the remembered localStorage value, via ?? (nullish coalescing), so a present, valid hash wins and an absent/invalid one falls through");
   assert.ok(decl[1].includes("??"), "currentView no longer falls through with ?? -- a present hash must win outright, never be merely preferred");
 });
+
+// --- 10. THE TREE ITSELF (issue #259) ---------------------------------------
+// Folders became an expandable TREE, replacing the former one-folder-at-a-
+// time drill-down/breadcrumb. This section covers what a source-only suite
+// CAN prove: the tree's own markup exists, numbering is DERIVED at render
+// time and never stored, and Remove never reaches a Note or a placement.
+// (Remove's own contract is proven above, in section 7-8; it is not
+// repeated here.)
+check("the tree markup exists: a single flat, indented <ul data-folder-tree> whose rows carry an expand/collapse toggle", () => {
+  assert.ok(/<ul class="folder-tree" data-folder-tree>/.test(page), "no <ul data-folder-tree> tree container found");
+  assert.ok(/data-folder-toggle/.test(page), "no expand/collapse toggle found anywhere in the tree");
+  assert.ok(/folder-tree-item/.test(page), "no folder-tree-item row class found");
+  assert.ok(/data-note-leaf/.test(page), "Notes are no longer rendered as leaves of the tree");
+});
+check("numbering is DERIVED at render time only -- never written into the stored name, and never sent in a renameFolder() payload", () => {
+  const numberedLabelBody = functionBody(page, "numberedLabel");
+  assert.ok(/showNumbers/.test(numberedLabelBody), "numberedLabel() no longer reads the showNumbers toggle");
+  const commitBody = functionBody(page, "commitInlineRename");
+  assert.ok(!/numberedLabel/.test(commitBody), "commitInlineRename() must never touch numberedLabel() -- a save must send the raw name only");
+  assert.ok(/renameFolder\(db,\s*\{[^}]*name:\s*trimmed/.test(commitBody), "commitInlineRename() no longer sends the raw trimmed name to renameFolder()");
+  const rowBody = functionBody(page, "folderRowHtml");
+  const inlineInputMatch = rowBody.match(/data-folder-rename-input value="\$\{escapeHtml\(([^)]+)\)\}"/);
+  assert.ok(inlineInputMatch, "no inline rename <input> with a seeded value was found in folderRowHtml()");
+  assert.equal(inlineInputMatch[1].trim(), 'f.name ?? ""',
+    "the inline rename input must seed from the folder's own raw name (f.name), never numberedLabel()'s derived, numbered text");
+});
+check("the two system folders are never numbered, and always come first", () => {
+  const renderBody = functionBody(page, "renderFoldersView");
+  assert.ok(/isSystemFolderRole\(f\.semanticRole\) \? null :/.test(renderBody),
+    "root-level numbering no longer skips the two system folders");
+  assert.ok(/const roots = mergedRoots\(\);/.test(renderBody), "renderFoldersView() no longer reads mergedRoots(), whose own systemNodes-first ordering keeps the two system folders first");
+});
+
+// --- 11. THE ⋯ MENU IS HIT-TESTABLE BELOW 900px (issue #259) ----------------
+// Siyagah's own bug: its ⋯ menu opened BEHIND the dialog on a phone. A check
+// that only asserts the menu is "displayed" cannot catch that class of
+// defect -- document.elementFromPoint() at the menu's own centre is what
+// proves it is really the TOPMOST element there, not merely present in the
+// DOM. Playwright is not installed in this sandbox (the same documented,
+// repeated gap this project's own CLAUDE.md records for every browser-driven
+// suite in this directory) -- written here, NOT run here; the Architect runs
+// it. `checkAsync()` is a local, async-aware twin of `check()` above (which
+// deliberately REFUSES a promise -- see its own guard clause), needed only
+// for this one browser-driven case.
+async function checkAsync(name, fn) {
+  try {
+    await fn();
+    passed++; console.log(`  PASS  ${name}`);
+  } catch (err) { failed++; console.log(`  FAIL  ${name}\n        ${err.message}`); }
+}
+let playwrightMod = null;
+try { playwrightMod = await import("playwright"); } catch { /* not installed in this sandbox -- see below */ }
+if (!playwrightMod) {
+  console.log("  SKIPPED  the ⋯ menu hit-test at 390px -- Playwright is not installed in this sandbox; the Architect should run this");
+} else {
+  await checkAsync("the ⋯ menu is hit-testable at 390px -- opening it and reading document.elementFromPoint() at its own centre returns the menu or one of its children, not something behind it", async () => {
+    const { newContext, openPage } = await import("./harness.mjs");
+    const browser = await playwrightMod.chromium.launch();
+    try {
+      // Architect's review, 25 Sep 2026: the stub never mutates its own DATA
+      // (a standing harness lesson), so creating a folder through the form and
+      // waiting for its row could never pass here. Seed one real user folder
+      // instead, so a ⋯ menu is guaranteed to exist to hit-test.
+      const SEED = `DATA.noteFolders = [{ _id: TENANT_ID + "__f-hit", folderId: "f-hit", tenantId: TENANT_ID,
+        ownerPersonId: "p1", ownerUid: UID, name: "Hit-test folder", parentFolderId: null,
+        semanticRole: "user", order: 1, status: "active", schemaVersion: 1,
+        createdAt: "2026-09-25T00:00:00.000Z", updatedAt: "2026-09-25T00:00:00.000Z", createdBy: UID }];`;
+      const ctx = await newContext(browser, { viewport: { width: 390, height: 844 }, extraSeedJs: SEED });
+      const { page: browserPage, errors } = await openPage(ctx, "/app/journey-map.html#folders");
+      await browserPage.waitForSelector("[data-folder-tree] .folder-row", { timeout: 5000 });
+      // The seeded stub tenant may or may not already carry a non-system
+      // folder; create one if needed so a ⋯ menu (system folders carry none)
+      // is guaranteed to exist to test.
+      const menuBtn = browserPage.locator(".folder-menu-btn").first();
+      if (await menuBtn.count() === 0) {
+        await browserPage.fill("#newFolderName", "Hit-test folder");
+        await browserPage.click("#newFolderForm button[type=submit]");
+        await browserPage.waitForSelector(".folder-menu-btn", { timeout: 5000 });
+      }
+      await browserPage.locator(".folder-menu-btn").first().click();
+      const menu = browserPage.locator(".bar-palette.open").first();
+      await menu.waitFor({ state: "visible", timeout: 5000 });
+      const box = await menu.boundingBox();
+      if (!box) throw new Error("the opened ⋯ menu has no bounding box -- it is not really visible");
+      const hit = await browserPage.evaluate(([x, y]) => {
+        const el = document.elementFromPoint(x, y);
+        return el ? { tag: el.tagName, cls: el.className, insideMenu: !!el.closest(".bar-palette") } : null;
+      }, [box.x + box.width / 2, box.y + box.height / 2]);
+      if (!hit || !hit.insideMenu) {
+        throw new Error(`elementFromPoint() at the menu's own centre did not land inside it -- got ${JSON.stringify(hit)}; something else is on top of it`);
+      }
+      // A resource the sandbox's proxy cannot reach (a CDN script or font) is
+      // environmental, the same class CLAUDE.md records for the TLS artefact;
+      // any other page error still fails the check.
+      const real = errors.filter((e) => !/Failed to load resource: net::ERR_(TUNNEL_CONNECTION_FAILED|CERT_AUTHORITY_INVALID)/.test(e));
+      if (real.length) throw new Error(`page errors: ${real.join("; ")}`);
+    } finally {
+      await browser.close();
+    }
+  });
+}
 
 console.log(`\n==== Mapping My Journey screen (P6-F): ${passed} passed, ${failed} failed ====`);
 if (failed) process.exitCode = 1;
