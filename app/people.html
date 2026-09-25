@@ -167,7 +167,9 @@
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { safeWrite } from "./js/errors.js";
     import {
-      bootstrapContext,
+      getMyMembershipRoles,
+      hydrateMemberships,
+      pickContext,
       getActiveContext,
       setActiveContext,
       canUseViewAs,
@@ -264,10 +266,23 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     // offered by either Add or Edit (D14).
     const EDITABLE_ROLES_UI = ["teacher", "student", "guardian", "prime"];
 
-    async function loadRoster() {
-      const q = query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId));
-      const snap = await getDocs(q);
+    // Speed, part 7 (issue #291): the tenantPeople query and the tenant-name
+    // hydration used to run one after another -- neither needs the other's
+    // result, so they fire together now, the same split homework.html/
+    // course-offers.html's own issue #288 fix uses. rosterRoles stays a
+    // genuine second round trip -- getRosterRoles() needs the roster's own
+    // personIds, only known once the query above resolves.
+    async function loadRoster(hydratedMembershipsPromise) {
+      const hydrationPromise = hydratedMembershipsPromise ?? Promise.resolve(myMemberships);
+      const [snap, hydrated] = await Promise.all([
+        getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId))),
+        hydrationPromise,
+      ]);
       roster = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      myMemberships = hydrated;
+      tenantSelect.innerHTML = myMemberships
+        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
+        .join("");
       // Fix round (25 Aug 2026): tenantPeople never carried a `roles` field
       // (only memberships/tenantMemberUids do) -- this roster table's own
       // Roles column has been silently blank since the page was built. See
@@ -506,35 +521,45 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       }
 
       try {
+        // Speed, part 7 (issue #291), the same pattern issue #278's own fix
+        // uses: userIndex and the ROLES-ONLY membership query are fired
+        // together -- pickContext() below only ever reads tenantId/personId/
+        // roles, never tenantName/tenantData.
+        const membershipRolesPromise = getMyMembershipRoles(db, user.uid);
+        membershipRolesPromise.catch(() => {}); // see the real await below; this only stops a reload (adoptAppLangFromUserIndex) from logging it as unhandled.
+
         const userIndexSnap = await step("read your userIndex", () => getDoc(doc(db, TENANT.USER_INDEX, user.uid)));
         // v07.37: if this account has a language set on another device, take it
         // and reload. Costs no extra read -- the snapshot is already in hand.
         if (adoptAppLangFromUserIndex(userIndexSnap)) return;
         const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
 
-        // One membership load, not two: bootstrapContext() hands back the
-        // list it used to choose the context, which this page then used to
-        // fetch a second time, one round trip later, for the tenant picker.
-        const { context, memberships } = await step("initialize active context", () => bootstrapContext(db, user.uid, defaultTenantId));
+        const membershipRoles = await step("load your tenant memberships", () => membershipRolesPromise);
+        const context = pickContext(membershipRoles, defaultTenantId);
         if (!context) {
           whoEl.innerHTML += noAccountMessageHtml();
           return;
         }
         activeTenantId = context.tenantId;
 
-        myMemberships = memberships;
-        tenantSelect.innerHTML = myMemberships
-          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
-          .join("");
-
-        const activeMembership = myMemberships.find((m) => m.tenantId === activeTenantId);
-        const showViewAs = activeMembership && canUseViewAs(activeMembership.roles);
+        // canUseViewAs() only needs `roles`, already known from the
+        // roles-only query above -- no reason to wait for hydration just to
+        // read the identical field off myMemberships.
+        const activeMembershipEarly = membershipRoles.find((m) => m.tenantId === activeTenantId);
+        const showViewAs = activeMembershipEarly && canUseViewAs(activeMembershipEarly.roles);
         viewAsWrap.style.display = showViewAs ? "inline-block" : "none";
         viewAsSelect.value = context.viewAsRole ?? "";
 
+        // The tenant picker's real names come from the SAME hydration call
+        // loadRoster() fires its own reads alongside, rather than being
+        // awaited before any of them. listInvitesForTenant() needs neither
+        // the roster nor the hydrated tenant names, so it fires alongside
+        // both rather than after loadRoster() finishes.
+        const hydratedMembershipsPromise = step("load tenant names", () => hydrateMemberships(db, membershipRoles));
+        hydratedMembershipsPromise.catch(() => {}); // real failure surfaces via the awaited copy inside loadRoster().
+
         appEl.style.display = "block";
-        await step("load roster", loadRoster);
-        await step("load invites", loadInvites);
+        await step("load roster and invites", () => Promise.all([loadRoster(hydratedMembershipsPromise), loadInvites()]));
       } catch (err) {
         // I15: a failure here must never just leave a half-loaded page with
         // no explanation -- show exactly what went wrong, and where.
