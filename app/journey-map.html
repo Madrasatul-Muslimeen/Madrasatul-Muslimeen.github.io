@@ -41,7 +41,10 @@
     background: #fff; color: #1f3a6e; font-weight: 600; text-decoration: none; }
   #backLink:focus-visible { outline: 2px solid #1f3a6e; outline-offset: 2px; }
   .view-toggle-btn {
-    flex: 1 1 8rem; min-height: 36px; padding: 0.4rem 0.5rem; font-size: 0.85rem;
+    /* flex-basis 0 so the three views share the row equally and the ⋯ menu
+       (v08.66) stays on the same line; 8rem each pushed "Path" onto a line
+       of its own below 440px. */
+    flex: 1 1 0; min-width: 0; min-height: 36px; padding: 0.4rem 0.5rem; font-size: 0.85rem;
     border-radius: 999px; border: 1px solid #1F3A6E; background: #fff; color: #1F3A6E;
   }
   .view-toggle-btn[aria-pressed="true"] { background: #1F3A6E; color: #fff; }
@@ -225,6 +228,12 @@
       <button type="button" class="view-toggle-btn" data-view="folders">Folders</button>
       <button type="button" class="view-toggle-btn" data-view="timeline">Timeline</button>
       <button type="button" class="view-toggle-btn" data-view="path">Path</button>
+      <span class="bar-palette-wrap page-menu-wrap" data-bar-palette-wrap="pageMenu">
+        <button type="button" class="folder-menu-btn bar-palette-toggle" data-bar-palette-toggle="pageMenu" aria-haspopup="true" aria-expanded="false" title="More" aria-label="More">⋯</button>
+        <div class="bar-palette" data-bar-palette="pageMenu">
+          <a class="secondary tiny" href="import-notes.html" style="display:block; text-align:left; text-decoration:none; padding:0.32rem 0.7rem;">Import from WordPress…</a>
+        </div>
+      </span>
     </div>
 
     <div id="viewFolders"></div>
@@ -664,7 +673,7 @@
       return `<div class="note-card" data-note-id="${escapeHtml(note.noteId)}">
         <div class="note-card-head" data-note-toggle>
           <span class="note-card-title">${escapeHtml(title)}</span>
-          <span class="note-card-meta">${when(note.updatedAt)}</span>
+          <span class="note-card-meta">${when(displayTimestamp(note))}</span>
           ${extraHead}
         </div>
         <div class="note-body-preview${open ? " open" : ""}" data-note-body></div>
@@ -672,6 +681,15 @@
           ${fileControl && isSelfSelected() ? `<button type="button" class="secondary tiny" data-note-file>${t("File in a folder…")}</button>` : ""}
         </div>
       </div>`;
+    }
+    // Issue #265 -- a WordPress-imported Note carries its REAL original date
+    // (`originalCreatedAt`) alongside `updatedAt`, which for an imported Note
+    // is only ever "when this import ran". Every place this screen shows or
+    // sorts by a Note's date now prefers the original one when it is
+    // present, and falls back to `updatedAt` for every Note this app itself
+    // wrote (which never carries `originalCreatedAt` at all).
+    function displayTimestamp(note) {
+      return note?.originalCreatedAt ?? note?.updatedAt;
     }
     function when(ts) {
       const d = ts?.toDate ? ts.toDate() : null;
@@ -1000,7 +1018,7 @@
         <div class="note-card">
           <div class="note-card-head" data-note-toggle>
             <span class="note-card-title">📄 ${escapeHtml(title)}</span>
-            <span class="note-card-meta">${when(note.updatedAt)}</span>
+            <span class="note-card-meta">${when(displayTimestamp(note))}</span>
           </div>
           <div class="note-body-preview" data-note-body></div>
           <div class="note-actions" data-note-actions style="display:none">${controls}</div>
@@ -1522,11 +1540,11 @@
         return;
       }
       // Newest first, grouped by calendar day (the issue's own spec).
-      const sorted = [...notes].sort((a, b) => (b.updatedAt?.toMillis?.() ?? 0) - (a.updatedAt?.toMillis?.() ?? 0));
+      const sorted = [...notes].sort((a, b) => (displayTimestamp(b)?.toMillis?.() ?? 0) - (displayTimestamp(a)?.toMillis?.() ?? 0));
       let lastDay = null;
       let html = "";
       for (const note of sorted) {
-        const d = note.updatedAt?.toDate ? note.updatedAt.toDate() : null;
+        const d = displayTimestamp(note)?.toDate ? displayTimestamp(note).toDate() : null;
         const dayKey = d ? d.toDateString() : t("Unknown date");
         if (dayKey !== lastDay) { html += `<div class="timeline-day">${escapeHtml(d ? d.toLocaleDateString() : t("Unknown date"))}</div>`; lastDay = dayKey; }
         html += noteCardHtml(note, { fileControl: true });

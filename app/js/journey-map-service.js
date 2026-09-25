@@ -104,23 +104,28 @@ export async function noteFilings(db, {
  * show the reader that orphaned or cyclic folders exist rather than quietly
  * omitting them, because a folder missing from the screen is indistinguishable,
  * to its author, from a folder that was lost.
+ *
+ * Issue #265 -- PAGES through every folder rather than reading the capped
+ * 100. `listNoteFoldersForOwner()` itself is untouched (deliberately, for
+ * every OTHER caller of it), but a WordPress import can create well over a
+ * thousand folders, and `listIsBounded()` refuses any single request above
+ * 100 — so a person with more than 100 folders could not see the rest of
+ * their own tree, at all, until this. `loadAllOwnerFolders()` below is the
+ * same bounded page-loop `loadAllOwnerNotes()`/`loadAllOwnerPlacements()`
+ * already use, so this stays a fast, cache-free change to what one call
+ * fetches, not a new mechanism.
  */
 export async function ownerFolderTree(db, { tenantId, ownerPersonId } = {}) {
-  return buildFolderTree(await listNoteFoldersForOwner(db, { tenantId, ownerPersonId }));
+  const { rows } = await loadAllOwnerFolders(db, { tenantId, ownerPersonId });
+  return buildFolderTree(rows);
 }
 
 /**
- * Issue #267 -- `ownerFolderTree()` above is capped at the deployed Rules'
- * 100-folder ceiling with no truncation notice, which the branching Path view
- * cannot honestly build on: the Owner's own imported site has roughly 1,464
- * folders (issue #265), and a Path that silently drew only the first 100
- * would show a tree that is not the reader's own. This pages past the cap the
- * same way `loadAllOwnerNotes()`/`loadAllOwnerPlacements()` already do, and
- * reports truncation rather than ever spinning or lying about completeness.
- *
- * `journey-map.html` calls this one, not `ownerFolderTree()`, for the ONE
- * shared tree every view (Folders, Timeline, Path) now renders from --
- * `ownerFolderTree()` itself is left exactly as it was, unmodified.
+ * Issue #267 -- the whole folder tree plus a `truncated` flag, for the one
+ * shared tree every Mapping My Journey view renders from. (When #267 was
+ * built `ownerFolderTree()` above still stopped at 100 folders; #265, merged
+ * first, made it page too. This one is kept because the page also needs to
+ * know whether the safety cap on pages was hit, so it can say so.)
  */
 export async function ownerFolderTreePaged(db, { tenantId, ownerPersonId, pageSize = 100 } = {}) {
   const { rows, truncated } = await loadAllPages((after) =>
@@ -155,6 +160,11 @@ async function loadAllPages(fetchPage) {
     after = result.next;
   }
   return { rows, truncated: true };
+}
+
+/** Issue #265 -- the folder-side twin of the two below, used by `ownerFolderTree()` above so the tree is never capped at 100. */
+export async function loadAllOwnerFolders(db, { tenantId, ownerPersonId, status, pageSize = 100 } = {}) {
+  return loadAllPages((after) => listNoteFoldersForOwnerPage(db, { tenantId, ownerPersonId, status, pageSize, after }));
 }
 
 export async function loadAllOwnerNotes(db, { tenantId, ownerPersonId, status, pageSize = 100 } = {}) {

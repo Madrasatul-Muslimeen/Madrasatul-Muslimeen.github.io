@@ -111,7 +111,13 @@ check("POSITIVE CONTROL: the reachability walker really does find a wired module
 //       `app/journey-map.html` (this round's own scope) legitimately calls
 //       the read/create/move subset this round actually built, and is
 //       checked against exactly that subset, not a blanket allowance.
-const CONTRACT_WIRED_PAGES = ["app/journey-map.html", "app/notes.html"];
+// UPDATED for issue #265, reason recorded rather than the check weakened:
+// `app/import-notes.html` reaches `journey-map-contract.js` through its own
+// new `wordpress-import-service.js` (both directly, for `journeyFolder()`/
+// `folderTreeRefusal()`'s bulk-folder validation, and indirectly through
+// `note-foundation.js`, exactly as `app/notes.html` already does) -- a
+// third audited page, not a widened blanket allowance.
+const CONTRACT_WIRED_PAGES = ["app/import-notes.html", "app/journey-map.html", "app/notes.html"];
 const SERVICE_WIRED_PAGE = "app/journey-map.html";
 
 check("journey-map-service.js -- the Phase 6 service -- is reachable ONLY from the one audited P6-F page", () => {
@@ -121,13 +127,20 @@ check("journey-map-service.js -- the Phase 6 service -- is reachable ONLY from t
     `unexpected page(s) reaching journey-map-service.js: ${chains.join(" | ")}`);
 });
 
-check("journey-map-contract.js is reachable ONLY via note-foundation.js or journey-map-service.js, and ONLY from the two audited pages", () => {
+check("journey-map-contract.js is reachable ONLY via note-foundation.js, journey-map-service.js or wordpress-import-service.js, and ONLY from the three audited pages", () => {
   const chains = chainsToTarget("journey-map-contract.js");
   const pages = [...new Set(chains.map((c) => c.split(" -> ")[0]))].sort();
   assert.deepEqual(pages, CONTRACT_WIRED_PAGES,
     `unexpected page(s) reaching journey-map-contract.js: ${chains.join(" | ")}`);
-  assert.ok(chains.every((c) => c.includes("note-foundation.js") || c.includes("journey-map-service.js")),
-    `journey-map-contract.js is reached by a route that does not pass through note-foundation.js or journey-map-service.js: ${chains.join(" | ")}`);
+  // UPDATED for issue #265, reason recorded rather than the check weakened:
+  // `wordpress-import-service.js` is a THIRD accepted intermediary --
+  // app/import-notes.html reaches the contract directly through it
+  // (`journeyFolder()`/`folderTreeRefusal()`, for bulk-folder validation
+  // against an in-memory set rather than a per-folder Firestore re-read),
+  // not through note-foundation.js or journey-map-service.js at all. Every
+  // OTHER route must still pass through one of the three named modules.
+  assert.ok(chains.every((c) => c.includes("note-foundation.js") || c.includes("journey-map-service.js") || c.includes("wordpress-import-service.js")),
+    `journey-map-contract.js is reached by a route that does not pass through note-foundation.js, journey-map-service.js or wordpress-import-service.js: ${chains.join(" | ")}`);
 });
 
 check("every importer of the journey modules is exactly the pinned set, and each is reachable only as accepted above", () => {
@@ -155,8 +168,15 @@ check("every importer of the journey modules is exactly the pinned set, and each
       }
     }
   })(appDir);
+  // UPDATED for issue #265, reason recorded rather than the check weakened:
+  // `app/js/wordpress-import-service.js` is a NEW, third direct importer of
+  // `journey-map-contract.js` -- it uses `journeyFolder()`/
+  // `folderTreeRefusal()` directly, for the same reason `note-foundation.js`
+  // itself does (judging a folder tree needs the pure contract, and a bulk
+  // WordPress import needs to judge it against an in-memory set rather than
+  // re-reading Firestore per folder -- see that file's own header).
   assert.deepEqual([...new Set(importers)].sort(),
-    ["app/journey-map.html", "app/js/journey-map-service.js", "app/js/note-foundation.js"].sort(),
+    ["app/journey-map.html", "app/js/journey-map-service.js", "app/js/note-foundation.js", "app/js/wordpress-import-service.js"].sort(),
     `the set of modules importing the journey contract/service has changed: ${importers.join(", ")}`);
   // chainsToTarget() only ever resolves a TARGET named "*.js" (it walks
   // app/*.html pages through js/ imports) -- app/journey-map.html is a page,
@@ -164,8 +184,9 @@ check("every importer of the journey modules is exactly the pinned set, and each
   // reachability (as a PAGE reaching the two guarded modules) is exactly
   // what the two checks above this one already prove.
   const EXPECTED_PAGES_PER_JS_IMPORTER = {
-    "note-foundation.js": CONTRACT_WIRED_PAGES,      // reachable from both audited pages (notes.html since P5-D, journey-map.html new this round)
+    "note-foundation.js": CONTRACT_WIRED_PAGES,      // reachable from all three audited pages (notes.html since P5-D, journey-map.html since P6-F, import-notes.html new this round)
     "journey-map-service.js": [SERVICE_WIRED_PAGE],  // reachable only from the one page that imports it directly
+    "wordpress-import-service.js": ["app/import-notes.html"], // reachable only from the one page that imports it directly
   };
   for (const importer of importers) {
     const base = path.basename(importer);

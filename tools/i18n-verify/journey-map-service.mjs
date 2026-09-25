@@ -141,8 +141,10 @@ await check("K8 a placement naming a folder that is gone is dropped, not thrown"
 
 // --- ownerFolderTree --------------------------------------------------------
 await check("K9 the tree comes back already walked safely, cycles reported", async () => {
-  reset(); folderRows = [folder("a"), folder("b", { parentFolderId: "a" }),
-                         folder("c", { parentFolderId: "d" }), folder("d", { parentFolderId: "c" })];
+  // v08.66 (#265): ownerFolderTree() pages now, so the rows go to the paged
+  // reader's backing array (each needs an `id` for the page cursor).
+  reset(); foldersPageRows = [folder("a"), folder("b", { parentFolderId: "a" }),
+                         folder("c", { parentFolderId: "d" }), folder("d", { parentFolderId: "c" })].map((f) => ({ id: f.folderId, ...f }));
   const { roots, cyclic } = await ownerFolderTree(db, own);
   assert.deepEqual(roots.map((r) => r.folderId), ["a"]);
   assert.deepEqual(cyclic.map((r) => r.folderId).sort(), ["c", "d"]);
@@ -313,13 +315,18 @@ await check("K27 ownerFolderTreePaged() reports truncated once the 50-page safet
   assert.equal(truncated, true);
   assert.equal(calls.foldersPage.length, 50);
 });
-await check("K28 ownerFolderTree() itself is UNCHANGED -- still a single-shot read, still capped, still the function issue #247's own fixture guards", async () => {
+// K28 UPDATED IN PLACE, Architect review 25 Sep 2026: issue #267 was built
+// while ownerFolderTree() was still a single 100-capped read and asserted it
+// stayed so. Issue #265 (v08.66, merged first) deliberately made it page too,
+// so a person with more than 100 folders sees them all in every view. The
+// check now asserts that newer fact rather than the one #265 replaced.
+await check("K28 ownerFolderTree() pages too since v08.66 -- it reads every folder, active and beyond the first 100", async () => {
   reset();
-  foldersPageRows = Array.from({ length: 5 }, (_, i) => ({ id: `p${i}`, folderId: `p${i}`, name: `p${i}`, parentFolderId: null, status: "active", semanticRole: "user", ...own }));
+  foldersPageRows = Array.from({ length: 150 }, (_, i) => ({ id: `p${i}`, folderId: `p${i}`, name: `p${i}`, parentFolderId: null, status: "active", semanticRole: "user", ...own }));
   folderRows = [folder("a")];
   const { roots } = await ownerFolderTree(db, own);
-  assert.deepEqual(roots.map((r) => r.folderId), ["a"], "ownerFolderTree() must still read the single-shot listNoteFoldersForOwner(), not the paged reader");
-  assert.equal(calls.foldersPage.length, 0, "ownerFolderTree() must never touch the paged reader");
+  assert.equal(roots.length, 150, "ownerFolderTree() must read every page, not the single-shot capped read");
+  assert.equal(calls.folders.length, 0, "ownerFolderTree() must no longer use the single-shot listNoteFoldersForOwner()");
 });
 
 console.log(`\n${passed} passed`);

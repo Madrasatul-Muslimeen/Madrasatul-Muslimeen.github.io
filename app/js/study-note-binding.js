@@ -22,8 +22,18 @@ import { parseUnitKey } from "./unit-keys.js";
 /** ADR-009 §3 — why a Note is attached to a unit. Closed set. */
 export const RELATIONSHIP_KINDS = Object.freeze(["origin", "reference"]);
 
-/** ADR-009 §4 — where the Note's text came from. Closed set. */
-export const PROVENANCE_KINDS = Object.freeze(["study-note", "promoted-ayah-note"]);
+/**
+ * ADR-009 §4 — where the Note's text came from. Closed set.
+ *
+ * Issue #265 -- "imported" joins the two original members: a Note carried in
+ * from an external system (mappingmyjourney.com's WordPress export is the
+ * first), never composed in a Study/Note surface and never promoted from the
+ * per-ayah quick note. `wordpress-import-service.js` is the only writer of
+ * this value -- it never imports this module (see that file's own header for
+ * why: bulk import needs to build the source payload directly, without a
+ * validator that would re-read the owner's whole folder set per call).
+ */
+export const PROVENANCE_KINDS = Object.freeze(["study-note", "promoted-ayah-note", "imported"]);
 
 // ADR-009 §2 — the namespace each unit type's key lives in. The Quran's nine
 // unit types share ONE kind on purpose: the unit type is already the key's own
