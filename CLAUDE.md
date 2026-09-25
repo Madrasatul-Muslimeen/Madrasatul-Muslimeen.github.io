@@ -158,7 +158,22 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.65 on `main`** (25 Sep 2026 — the Owner: *"Look
+**Current milestone: v08.66 on `main`** (25 Sep 2026 — **the
+mappingmyjourney.com importer is BUILT AND GATED** (issue #265). New
+`app/import-notes.html`, reached from Mapping My Journey's ⋯ menu: choose
+the WordPress export, see a preview, press Import. **Import stays off until
+the Owner publishes** `docs/governance/2026-09-25-wordpress-import-DEPLOYMENT-candidate.rules`
+(one whole-file paste; the guide is beside it) and the Architect flips
+`study-wordpress-import-readiness.js`. **Review caught a first-run-fatal
+defect**: the importer checked "already there?" by reading each id, and
+under the deployed rules a read of a missing document is DENIED — proven on
+the emulator, fixed by paged owner lists. The Owner's real export through the
+real importer on the real rules: 1,464 folders, 1,083 Notes, 550 āyah links,
+2,319 filings, 0 refused, re-run creates nothing. **Lesson, third time:
+the v08.56 rule — never `get` a document that may not exist — applies to
+every new writer, and only a real-function emulator run catches it.**)
+
+**Previous milestone: v08.65 on `main`** (25 Sep 2026 — the Owner: *"Look
 at the coloring of each segment of a word. Make this."* The Word Card now
 colours each part of an Arabic word (particle, person, stem…) from the
 Quranic Arabic Corpus, and colours the matching words of the English
