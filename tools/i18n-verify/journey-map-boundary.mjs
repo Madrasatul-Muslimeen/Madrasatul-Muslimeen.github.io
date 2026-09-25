@@ -187,10 +187,18 @@ check("every importer of the journey modules is exactly the pinned set, and each
 // find almost every name regardless of what this round's page actually
 // calls, and prove nothing. What is checked instead is the PAGE's own
 // source, which is the only place that shows what this round chose to call.
+// UPDATED for issue #259, reason recorded: `listNotePlacementsForOwnerPage()`
+// is a new note-foundation.js placement READER (the paged twin of
+// `listNotePlacementsForFolder()`/`listNotePlacementsForNote()` above), so it
+// joins this list for the same reason its siblings are here -- both checks
+// below stay exactly as strict as before, now covering one more name.
+// `app/journey-map.html` never calls it directly: the tree reaches paging
+// only through `journey-map-service.js`'s own `loadAllOwnerPlacements()`.
 const PHASE_6_DATA_LAYER_FUNCTIONS = [
   "createNoteFolder", "listNoteFoldersForOwner", "renameNoteFolder", "reorderNoteFolder",
   "reparentNoteFolder", "retireNoteFolder", "createNotePlacement",
-  "listNotePlacementsForFolder", "listNotePlacementsForNote", "retireNotePlacement", "moveNotePlacement",
+  "listNotePlacementsForFolder", "listNotePlacementsForNote", "listNotePlacementsForOwnerPage",
+  "retireNotePlacement", "moveNotePlacement",
 ];
 check("app/notes.html (P5-D's own scope) still never calls a Phase 6 folder/placement function", () => {
   const text = fs.readFileSync(path.join(root, "app/notes.html"), "utf8");

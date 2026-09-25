@@ -17949,18 +17949,119 @@ this sandbox (the documented, repeated environment gap), so `layout.mjs` and
 construction (above), and a real-phone check at 320/360/390/412/768/1100px in
 both languages is the recommended substitute.
 
-**v08.62 (25 Sep 2026).** **Mapping My Journey gets a Back button.** The
-Owner: *"There's no go back button to exit from Mapping view."* Since v08.61
-the dock's Mapping tab opens `app/journey-map.html` as its own page, and on a
-phone the browser's own back control may not be visible, so there was no way
-out except Home ▾. `#backLink` ("← Back" / "← পেছনে", reusing the existing
-`Back` translation) sits above the view toggle and outside `#app`, so it is
-there even before sign-in resolves. Pressing it goes back through history when
-the reader arrived from a page of this app (the dock tab, the Note view's ⋯
-menu, Home ▾), which returns them to the same screen; opened directly from a
-bookmark or shared link, its plain `href` takes them to Quran Study. New
-`tools/i18n-verify/journey-map-back.mjs`, **38/0** in a real browser at
-320/390/1100px in both languages: present, on screen, not covered (hit-tested
-with `elementFromPoint`), at least 40px tall, correct text, no sideways
-scroll, and pressing it returns to Quran Study, plus the direct-visit case.
-With the change removed the suite fails.
+## 25 Sep 2026 — Mapping My Journey: Folders view becomes a Siyagah-style folder tree (issue #259, NO VERSION BUMP — the Architect allocates one)
+
+The Owner asked for MMSA's Folders view to work like the "My Notebooks"
+dialog in Siyagah, another of the Owner's own apps, whose Architect wrote a
+full reference for this round to adapt (not copy — Siyagah's own
+implementation keeps one whole notebook in memory, has real delete, and has
+no owner checks; none of that carries over here). Two parts, committed
+separately as the issue asked.
+
+**Part 1 — the data layer.** Two real limits existed before this round:
+`listNotesForOwner()` capped at 100 (an owner with more Notes never saw the
+rest, in ANY view), and each folder showed at most 99 filed Notes
+(`journey-map-service.js`'s own `MAX_PLACEMENTS_PER_READ`). The deployed
+Rules' `listIsBounded()` refuses any list request above 100 regardless, so
+the fix is paging, never a bigger `limit()`. `note-foundation.js` gains
+`listNotesForOwnerPage()`/`listNotePlacementsForOwnerPage()`, the same query
+shapes as the existing unpaged readers (so no new composite index), with
+`pageSize` capped at 100 and thrown on before any request is made.
+`journey-map-service.js` gains `loadAllOwnerNotes()`/`loadAllOwnerPlacements()`
+(loop pages to exhaustion, a 50-page safety cap reported via `truncated`,
+never spun forever), `folderNoteCounts()` (a pure per-folder distinct-active-
+Note subtree count, built on the existing `buildFolderTree()` walk — no
+second recursive walk was written), and `folderMoveRefusal()` (a thin
+forward to the contract's `folderTreeRefusal()`, so the screen can preview a
+refused drag-and-drop move without importing the pure contract a second,
+direct way — `journey-map-boundary.mjs` pins that reachability). The
+harness's Firebase stub (`firebase-stub.mjs`) gained a real `startAfter()`
+export with cursor support in its own `getDocs()`, so `stub-parity.mjs`
+stays green. New pure suite `journey-map-counts.mjs` (9 checks, 2
+mutation-proven) for `folderNoteCounts()`; `journey-map-service.mjs`
+extended (K19–K25) covering the two paging loops, the safety cap, and
+`folderMoveRefusal()`. `journey-map-real-function.rules.test.mjs` extended
+with the emulator cases the issue names (250 Notes/250 placements across
+pages against the REAL deployed Rules, a cross-tenant denial, `pageSize:
+101` throwing before any request) — **this sandbox cannot run the
+emulator**, so these are written but unrun; the Architect runs them.
+
+**Part 2 — the tree.** The Folders view's breadcrumb drill-down
+(`openFolderPath`, one folder open at a time, `prompt()` dialogs) is
+replaced by a single expandable tree, reading the owner's WHOLE set of
+Notes and placements up front via Part 1's new paged loaders and computing
+every folder's contents and count badge locally (no per-folder read),
+which is what actually fixes both real limits in practice. Built: ▶/▾
+expand/collapse (children rendered only when open, expand state per device
+in `localStorage`); a count badge from `folderNoteCounts()` (hidden at
+zero); numbering DERIVED at render time from display position — `(01)`,
+`(01.02)` — and NEVER sent in a `renameFolder()` payload, behind a
+per-device "Show numbers" toggle (default on); the two system folders
+always first, never numbered; a 📍 pin marking where "+ New folder" will
+file, shown in the footer as "New folder in: X ✕"; inline rename
+(Enter/blur saves, Escape cancels, an empty name is ignored); Remove
+retitled to an IN-PAGE confirmation (never `window.confirm()`), refusing a
+folder with active children in words BEFORE the confirmation is even
+offered, worded per I4 (kept, not deleted; Notes untouched); dragging a row
+(top 28% = before, bottom 28% = after, middle 44% = inside), refusing a
+self-drop, a drop into the dragged folder's own subtree, or anything past
+`MAX_FOLDER_DEPTH`, previewed via `folderMoveRefusal()` and said in words;
+▲▼ and "Move to…" kept in the ⋯ menu for a phone, reusing the existing
+`moveFolder`/`reorderFolder`/`reorderFiling` wrappers — reordering
+generalised from the existing `planReorder()` (adjacent-swap only) to a
+new, equally pure `planMove()` for an arbitrary drag target, same
+discipline (renumber by display position, write only what changed); Notes
+rendered as leaves of an open folder (a Note filed in two folders appears
+under both, independently — ADR-010 §5), with their own ▲▼/Move to…; a
+search box filtering folder names and Note titles in the already-loaded
+data (no new read), with a flat result list, a breadcrumb per folder
+result, and tap-to-expand-and-scroll; A−/A+ text size for the tree, per
+device, via a `--tree-scale` CSS custom property (regular `font-size`
+would not have cascaded, since the existing rules already use `rem`,
+relative to the document root, not to the tree). Timeline and Path now
+read through `loadAllOwnerNotes()` too, so they stop capping at 100 —
+their own per-folder filter/render logic is otherwise untouched, per the
+issue's own scope.
+
+**A deliberate, stated simplification from the Owner's own Siyagah
+reference**: Siyagah shows 📍/✏️/▲/▼/Move to…/🗑 as separate icons above
+~900px and folds them into one ⋯ menu only below it; this round folds them
+into ONE menu at every width. The concretely testable requirement — a
+hit-testable ⋯ menu below 900px, the exact defect class Siyagah's own bug
+was (its menu opened BEHIND the dialog on a phone) — is met either way; a
+second, wider desktop icon row is not built this round.
+
+**Two existing sections of `journey-map-screen.mjs` were UPDATED IN PLACE,
+reasons recorded, never silently loosened**: the P6-G folder-editing
+section (the old breadcrumb-drill-down assumptions, the `confirm()`-based
+retire flow, and the `renameFolderPrompt`/`removeFolderPrompt` refreshAll
+claims all changed for real reasons the issue itself asked for) and the
+`isSelfSelected()` gating window (widened from 1700 to 2600 characters,
+measured directly against the ⋯ menu's own five-action markup).
+`journey-map-boundary.mjs`'s `PHASE_6_DATA_LAYER_FUNCTIONS` list gained
+`listNotePlacementsForOwnerPage()`, the new placement page-reader, for the
+same reason its siblings are already there. New checks: the tree markup
+exists; numbering is derived and never sent in a `renameFolder()` payload;
+Remove never calls a Note-writing function; `planMove()` is proven the
+same way `planReorder()` already is. The ⋯ menu hit-test at 390px
+(`document.elementFromPoint()` at the menu's own centre) is WRITTEN but
+UNRUN — Playwright is not installed in this sandbox, the same documented,
+repeated gap every browser-driven suite in this project records; the
+Architect runs it.
+
+**No Rules or index change** — Part 1's new reads are equality/orderBy
+shapes the deployed Rules and the existing composite indexes already
+cover. `app/js/version.js`, `CLAUDE.md`, `firestore.rules`,
+`firebase.json`, `firestore.indexes.json` and `.github/workflows/**` are
+untouched; **this round needs a version number, which only the Architect
+allocates.**
+
+**All 13 checks named in the issue re-run clean from the repository root**:
+`programme-ledger` 8, `programme-ledger-mutations` 49, `brief-integrity` 8,
+`study-activity-evidence-boundary` 28 + `-mutations` 13, `study-event-wiring`
+41, `rules-authorisation-executable` 40, `workflow-expressions` 12,
+`stub-parity` 3, `journey-map-boundary` 18, `journey-map-screen` 47 (46 run
++ 1 browser check skipped, Playwright unavailable), `journey-map-counts` 9,
+`note-foundation-boundary` 30, `firestore-index-requirements` 10 — **306
+checks run, 0 failed.** The emulator suite (Part 1's own new cases) could
+not run in this sandbox at all; the Architect runs it.

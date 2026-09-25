@@ -2637,6 +2637,26 @@ export const BN = {
     "সেই নোটটি ইতিমধ্যে এই ফোল্ডার থেকে সরিয়ে ফেলা হয়েছে, তাই এর ক্রম পরিবর্তন করা যাবে না।",
   "That filing could not be found — please refresh and try again.": "সেই ফাইলিং খুঁজে পাওয়া যায়নি — পাতাটি রিফ্রেশ করে আবার চেষ্টা করুন।",
 
+  // --- Issue #259 -- Folders becomes an expandable tree, modelled on the
+  // Owner's own Siyagah app's "My Notebooks" dialog: expand/collapse,
+  // derived numbering, a 📍 new-folder target, inline rename, an in-page
+  // Remove confirmation (never window.confirm()), drag-and-drop, Notes as
+  // leaves, search, and A-/A+ text size.
+  "Showing a large first batch only — there is more than could be loaded at once.":
+    "শুধুমাত্র একটি বড় প্রথম ব্যাচ দেখানো হচ্ছে — একসাথে লোড করা যায়, তার চেয়ে বেশি আছে।",
+  "New folders go here": "নতুন ফোল্ডার এখানে যাবে",
+  "Rename this folder": "এই ফোল্ডারের নাম পরিবর্তন করুন",
+  "Search folders and Notes…": "ফোল্ডার ও নোট খুঁজুন…",
+  "Show numbers": "নম্বর দেখান",
+  "Smaller text": "ছোট লেখা",
+  "Larger text": "বড় লেখা",
+  "New folder in: {target}": "নতুন ফোল্ডার তৈরি হবে: {target}",
+  "Clear target": "লক্ষ্য সরিয়ে দিন",
+  "Remove \"{name}\"? It will be kept, not deleted — an administrator can restore it. Notes filed in it are untouched.":
+    "\"{name}\" সরিয়ে ফেলবেন? এটি রাখা থাকবে, মুছে ফেলা হবে না — একজন প্রশাসক এটি পুনরুদ্ধার করতে পারবেন। এতে ফাইল করা নোটগুলো অপরিবর্তিত থাকবে।",
+  "\"{name}\" moved.": "\"{name}\" সরানো হয়েছে।",
+  "No folders or Notes match \"{query}\".": "\"{query}\"-এর সাথে কোনো ফোল্ডার বা নোট মেলেনি।",
+
   // --- MAP v4 Phase 7 (P7-B, issue #250) -- the Dawah printable-pages screen,
   // and the "Make a printable page" entry point on notes.html. "Dawah" is
   // kept as the transliterated term (দাওয়াহ) -- an English translation would
