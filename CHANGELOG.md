@@ -18467,3 +18467,15 @@ and Records 5 are unchanged. `quranrevival-startup-reads.mjs` now pins ≤3 (2/0
 browser the tenant picker shows the tenant's name, and the page raised no
 errors. behaviour.mjs 984/9 (the same 9 as `main`), layout.mjs 0 changed,
 navcheck and panel (both languages) pass.
+
+**v08.72 (25 Sep 2026).** Issue #280, speed part 4, allocated by the MMSA
+Architect. The Builder's five-file change (`topic-study.js`, `routine-study.js`,
+`asma-study.js`, `records.html` and a new suite) was reviewed on a clean merge
+with `main`, with no overwritten work. `bootstrapContext()` is exactly
+`getMyMemberships()` + `pickContext()`, so replacing it with the split pair
+drops no step. Measured at `--latency 150`: Deen Study, Health and Asma 4 round
+trips in sequence (were 6), usable in about 0.58s (was 0.87s); Records 3 (was 5);
+Quran 3. `module-startup-reads.mjs` 8/0; restoring `main`'s `topic-study.js`
+makes Deen Study measure 6 and fail. `quranrevival-startup-reads` 2/0,
+`session-context-two-tenant` 14/0, behaviour.mjs 984/9 (the same 9 as `main`),
+layout.mjs 0 changed, navcheck and panel pass in both languages.
