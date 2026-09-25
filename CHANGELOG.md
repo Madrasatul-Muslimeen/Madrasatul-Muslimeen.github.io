@@ -18437,3 +18437,21 @@ behaviour.mjs 984/9, the same 9 environmental and pre-existing failures as
 `main`; layout.mjs unchanged at every viewport; navcheck and panel pass in
 both languages; dawah-boundary, splash-skip, journey-map-*,
 wordpress-import-screen and the governance suites pass.
+
+**v08.70 (25 Sep 2026).** Issue #276, speed part 2, built and allocated by the
+MMSA Architect. The Builder's first run finished its checklist except
+`behaviour.mjs` and never pushed; the `@claude` re-run comment was skipped by
+the workflow. So the Architect built the part that met the target:
+`syncUnneditedTrackableNames()` gains an optional `trackables` argument and
+Quran Study passes the rows the startup wave just read. That removes the second
+`trackables` read, so the sequential round trips before usable go from 5 to
+**4** (at `--latency 150`). Other pages are unchanged: Deen Study 6, Health 6,
+Asma 6, Records 5. New `tools/i18n-verify/quranrevival-startup-reads.mjs` 2/0;
+with the change reverted it fails with 5 trips and 2 reads. The Import page's
+preview counts, per-file lines, progress and result go through `num()`;
+checked on the Owner's real file in Bangla (১৪৬৪ / ১০৮৩ / ৫০৩). Not done: the
+Builder's further idea — splitting `getMyMemberships()` so the tenant document
+is read alongside `tenantPeople`/`trackables` (≈3 trips) — touches tenant
+selection and was left for a round with its own two-tenant tests.
+behaviour.mjs 984/9 (the same 9 as `main`), layout.mjs 0 changed, navcheck,
+panel (both languages), splash-skip and wordpress-import-screen pass.

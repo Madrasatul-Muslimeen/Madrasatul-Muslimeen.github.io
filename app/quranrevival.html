@@ -6323,7 +6323,7 @@
         // because renaming a SECTION is deliberately not an edit to the
         // Approach itself.
         syncUnneditedTrackableNames(db, activeTenantId, auth.currentUser.uid,
-            { keepSectionNames: tenantOwnsSections(currentTenantDoc) })
+            { keepSectionNames: tenantOwnsSections(currentTenantDoc), trackables: allTrackables })
           .catch((err) => console.warn("Trackable name sync skipped:", err.message));
       }
     }

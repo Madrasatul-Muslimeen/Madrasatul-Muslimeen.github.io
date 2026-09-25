@@ -136,7 +136,7 @@
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { bootstrapContext, setActiveContext, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
-    import { translateStatic, t } from "./js/i18n.js";
+    import { translateStatic, t, num } from "./js/i18n.js";
     import { registerServiceWorker } from "./js/sw-register.js";
     import { roleListLabel } from "./js/labels.js";
     import { getSurahIndex } from "./js/quran-data.js";
@@ -301,7 +301,7 @@
       parsingMsg.style.display = "block";
       parsingMsg.textContent = files.length === 1
         ? t("Reading {name}…", { name: files[0].name })
-        : t("Reading {count} files…", { count: files.length });
+        : t("Reading {count} files…", { count: num(files.length) });
       try {
         const surahIndex = await (surahIndexPromise ?? (surahIndexPromise = getSurahIndex()));
         if (currentSource === "evernote") {
@@ -328,25 +328,25 @@
     });
 
     function renderPreview(plan, source) {
-      document.getElementById("statFolders").textContent = plan.preview.folderCount;
-      document.getElementById("statNotes").textContent = plan.preview.noteCount;
-      document.getElementById("statAyahLinks").textContent = plan.preview.ayahLinkCount;
-      document.getElementById("statRangeLinks").textContent = plan.preview.rangeLinkCount;
-      document.getElementById("statHadith").textContent = plan.preview.hadithCount;
-      document.getElementById("statNoRef").textContent = plan.preview.noRefCount + plan.preview.invalidRefCount;
+      document.getElementById("statFolders").textContent = num(plan.preview.folderCount);
+      document.getElementById("statNotes").textContent = num(plan.preview.noteCount);
+      document.getElementById("statAyahLinks").textContent = num(plan.preview.ayahLinkCount);
+      document.getElementById("statRangeLinks").textContent = num(plan.preview.rangeLinkCount);
+      document.getElementById("statHadith").textContent = num(plan.preview.hadithCount);
+      document.getElementById("statNoRef").textContent = num(plan.preview.noRefCount + plan.preview.invalidRefCount);
 
       const isEvernote = source === "evernote";
       statFilesWrap.style.display = isEvernote ? "" : "none";
       statResourcesWrap.style.display = isEvernote ? "" : "none";
       if (isEvernote) {
-        document.getElementById("statFiles").textContent = plan.preview.fileCount;
-        document.getElementById("statResources").textContent = plan.preview.resourceCount;
+        document.getElementById("statFiles").textContent = num(plan.preview.fileCount);
+        document.getElementById("statResources").textContent = num(plan.preview.resourceCount);
         filePreviewList.style.display = plan.filePreviews.length > 1 ? "block" : "none";
         filePreviewList.innerHTML = plan.filePreviews.map((p) => `<li>${escapeHtml(t(
           "{notebook}: {count} Notes — {ayah} āyah, {range} range, {hadith} Hadith, {noref} no reference, {res} pictures/attachments not imported",
           {
-            notebook: p.notebookName, count: p.noteCount, ayah: p.ayahLinkCount, range: p.rangeLinkCount,
-            hadith: p.hadithCount, noref: p.noRefCount + p.invalidRefCount, res: p.resourceCount,
+            notebook: p.notebookName, count: num(p.noteCount), ayah: num(p.ayahLinkCount), range: num(p.rangeLinkCount),
+            hadith: num(p.hadithCount), noref: num(p.noRefCount + p.invalidRefCount), res: num(p.resourceCount),
           },
         ))}</li>`).join("");
       } else {
@@ -412,16 +412,16 @@
           onProgress: (p) => {
             progressLine.textContent = p.phase === "folders"
               ? t("Folders: {created} created, {skipped} already there ({done} of {total})…",
-                  { created: p.created, skipped: p.skipped, done: p.created + p.skipped + p.refused, total: p.total })
+                  { created: num(p.created), skipped: num(p.skipped), done: num(p.created + p.skipped + p.refused), total: num(p.total) })
               : t("Notes: {created} created, {skipped} already there ({done} of {total})…",
-                  { created: p.created, skipped: p.skipped, done: p.created + p.skipped + p.refused, total: p.total });
+                  { created: num(p.created), skipped: num(p.skipped), done: num(p.created + p.skipped + p.refused), total: num(p.total) });
           },
         });
         progressLine.style.display = "none";
         resultLine.style.display = "block";
         resultLine.textContent = t("Done. Folders: {fc} created, {fs} already there. Notes: {nc} created, {ns} already there.", {
-          fc: result.folders.created, fs: result.folders.skipped,
-          nc: result.notes.created, ns: result.notes.skipped,
+          fc: num(result.folders.created), fs: num(result.folders.skipped),
+          nc: num(result.notes.created), ns: num(result.notes.skipped),
         });
         const refusals = [...result.folders.refusals, ...result.notes.refusals];
         if (refusals.length) {
