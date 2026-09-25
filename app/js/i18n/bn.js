@@ -1174,10 +1174,32 @@ export const BN = {
   "Arabic word coverage isn't available at this granularity — open a Surah or a Ruku' to see it.":
     "এই স্তরে আরবি শব্দের অগ্রগতি দেখানো যায় না — দেখতে হলে একটি সূরা বা রুকু খুলুন।",
   "{known} of {total} Arabic words known": "{total}টি আরবি শব্দের মধ্যে {known}টি জানা",
-  // Issue #206 -- the gold running-total ring + Approach/Word by Word wedge-
-  // colouring toggle. The button labels reuse the existing "Approach" and
-  // "Word by Word" keys above/below rather than adding new ones.
-  "Colour the wheel by": "চাকাটি যে অনুযায়ী রঙ করা হবে",
+  // Issue #206 (gold running-total ring) originally also added an
+  // "Approach | Word by Word" wedge-colouring toggle to the Quran tab, whose
+  // key here was "Colour the wheel by". Issue #261 removed that toggle --
+  // the Owner could not find it -- and moved Word-by-Word colouring into its
+  // own Explore tab (below), so that key is gone rather than left unused.
+  //
+  // Issue #261 -- Word by Word's own Explore tab (Qur'an -> Juz -> Surah).
+  // The palette button reuses the existing "Word by Word" key below.
+  "Juz {juz}: {known} of {total} words ({percent}%)":
+    "জুয {juz}: {total}টি শব্দের মধ্যে {known}টি জানা ({percent}%)",
+  "{percent}% known": "{percent}% জানা",
+  "{known} of {total} words known — {percent}%":
+    "{total}টি শব্দের মধ্যে {known}টি জানা — {percent}%",
+  "Tap a Juz to see its Surahs.": "এর সূরাগুলো দেখতে একটি জুযে চাপ দিন।",
+  "{surah}: {total} words": "{surah}: {total}টি শব্দ",
+  "{known} of {total} words known in this Juz — {percent}%":
+    "এই জুযের {total}টি শব্দের মধ্যে {known}টি জানা — {percent}%",
+  "Open a Surah to see which of its words you know.":
+    "কোন কোন শব্দ জানেন তা দেখতে একটি সূরা খুলুন।",
+  "Ruku' {ruku}: {known} of {total} words ({percent}%)":
+    "রুকু' {ruku}: {total}টি শব্দের মধ্যে {known}টি জানা ({percent}%)",
+  "Word-by-Word coverage by Ruku'.": "রুকু' অনুযায়ী শব্দে শব্দে অগ্রগতি।",
+  "Word-by-Word totals aren't switched on yet — check back once they are.":
+    "শব্দে শব্দে মোট সংখ্যা এখনও চালু করা হয়নি — চালু হলে পরে দেখুন।",
+  "Study this Surah": "এই সূরাটি অধ্যয়ন করুন",
+  "Pick a Student first.": "প্রথমে একজন শিক্ষার্থী বেছে নিন।",
   // MAP Phase 3 -- WbW word progress on the Quran Word Card.
   "Word progress": "শব্দের অগ্রগতি",
   "Waiting to be checked": "যাচাইয়ের অপেক্ষায়",
@@ -2636,26 +2658,6 @@ export const BN = {
   "That Note has already been removed from this folder, so it can't be reordered.":
     "সেই নোটটি ইতিমধ্যে এই ফোল্ডার থেকে সরিয়ে ফেলা হয়েছে, তাই এর ক্রম পরিবর্তন করা যাবে না।",
   "That filing could not be found — please refresh and try again.": "সেই ফাইলিং খুঁজে পাওয়া যায়নি — পাতাটি রিফ্রেশ করে আবার চেষ্টা করুন।",
-
-  // --- Issue #259 -- Folders becomes an expandable tree, modelled on the
-  // Owner's own Siyagah app's "My Notebooks" dialog: expand/collapse,
-  // derived numbering, a 📍 new-folder target, inline rename, an in-page
-  // Remove confirmation (never window.confirm()), drag-and-drop, Notes as
-  // leaves, search, and A-/A+ text size.
-  "Showing a large first batch only — there is more than could be loaded at once.":
-    "শুধুমাত্র একটি বড় প্রথম ব্যাচ দেখানো হচ্ছে — একসাথে লোড করা যায়, তার চেয়ে বেশি আছে।",
-  "New folders go here": "নতুন ফোল্ডার এখানে যাবে",
-  "Rename this folder": "এই ফোল্ডারের নাম পরিবর্তন করুন",
-  "Search folders and Notes…": "ফোল্ডার ও নোট খুঁজুন…",
-  "Show numbers": "নম্বর দেখান",
-  "Smaller text": "ছোট লেখা",
-  "Larger text": "বড় লেখা",
-  "New folder in: {target}": "নতুন ফোল্ডার তৈরি হবে: {target}",
-  "Clear target": "লক্ষ্য সরিয়ে দিন",
-  "Remove \"{name}\"? It will be kept, not deleted — an administrator can restore it. Notes filed in it are untouched.":
-    "\"{name}\" সরিয়ে ফেলবেন? এটি রাখা থাকবে, মুছে ফেলা হবে না — একজন প্রশাসক এটি পুনরুদ্ধার করতে পারবেন। এতে ফাইল করা নোটগুলো অপরিবর্তিত থাকবে।",
-  "\"{name}\" moved.": "\"{name}\" সরানো হয়েছে।",
-  "No folders or Notes match \"{query}\".": "\"{query}\"-এর সাথে কোনো ফোল্ডার বা নোট মেলেনি।",
 
   // --- MAP v4 Phase 7 (P7-B, issue #250) -- the Dawah printable-pages screen,
   // and the "Make a printable page" entry point on notes.html. "Dawah" is

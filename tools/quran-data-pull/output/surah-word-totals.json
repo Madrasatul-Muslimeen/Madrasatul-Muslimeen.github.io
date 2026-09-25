@@ -1,0 +1,461 @@
+{
+  "quranTotalWords": 77429,
+  "bySurah": [
+    {
+      "surah": 1,
+      "totalWords": 29
+    },
+    {
+      "surah": 2,
+      "totalWords": 6116
+    },
+    {
+      "surah": 3,
+      "totalWords": 3481
+    },
+    {
+      "surah": 4,
+      "totalWords": 3747
+    },
+    {
+      "surah": 5,
+      "totalWords": 2804
+    },
+    {
+      "surah": 6,
+      "totalWords": 3050
+    },
+    {
+      "surah": 7,
+      "totalWords": 3320
+    },
+    {
+      "surah": 8,
+      "totalWords": 1233
+    },
+    {
+      "surah": 9,
+      "totalWords": 2498
+    },
+    {
+      "surah": 10,
+      "totalWords": 1833
+    },
+    {
+      "surah": 11,
+      "totalWords": 1917
+    },
+    {
+      "surah": 12,
+      "totalWords": 1777
+    },
+    {
+      "surah": 13,
+      "totalWords": 853
+    },
+    {
+      "surah": 14,
+      "totalWords": 830
+    },
+    {
+      "surah": 15,
+      "totalWords": 655
+    },
+    {
+      "surah": 16,
+      "totalWords": 1844
+    },
+    {
+      "surah": 17,
+      "totalWords": 1556
+    },
+    {
+      "surah": 18,
+      "totalWords": 1579
+    },
+    {
+      "surah": 19,
+      "totalWords": 961
+    },
+    {
+      "surah": 20,
+      "totalWords": 1335
+    },
+    {
+      "surah": 21,
+      "totalWords": 1169
+    },
+    {
+      "surah": 22,
+      "totalWords": 1274
+    },
+    {
+      "surah": 23,
+      "totalWords": 1050
+    },
+    {
+      "surah": 24,
+      "totalWords": 1316
+    },
+    {
+      "surah": 25,
+      "totalWords": 893
+    },
+    {
+      "surah": 26,
+      "totalWords": 1318
+    },
+    {
+      "surah": 27,
+      "totalWords": 1151
+    },
+    {
+      "surah": 28,
+      "totalWords": 1430
+    },
+    {
+      "surah": 29,
+      "totalWords": 976
+    },
+    {
+      "surah": 30,
+      "totalWords": 817
+    },
+    {
+      "surah": 31,
+      "totalWords": 546
+    },
+    {
+      "surah": 32,
+      "totalWords": 372
+    },
+    {
+      "surah": 33,
+      "totalWords": 1287
+    },
+    {
+      "surah": 34,
+      "totalWords": 883
+    },
+    {
+      "surah": 35,
+      "totalWords": 775
+    },
+    {
+      "surah": 36,
+      "totalWords": 725
+    },
+    {
+      "surah": 37,
+      "totalWords": 860
+    },
+    {
+      "surah": 38,
+      "totalWords": 733
+    },
+    {
+      "surah": 39,
+      "totalWords": 1172
+    },
+    {
+      "surah": 40,
+      "totalWords": 1219
+    },
+    {
+      "surah": 41,
+      "totalWords": 794
+    },
+    {
+      "surah": 42,
+      "totalWords": 860
+    },
+    {
+      "surah": 43,
+      "totalWords": 830
+    },
+    {
+      "surah": 44,
+      "totalWords": 346
+    },
+    {
+      "surah": 45,
+      "totalWords": 488
+    },
+    {
+      "surah": 46,
+      "totalWords": 643
+    },
+    {
+      "surah": 47,
+      "totalWords": 539
+    },
+    {
+      "surah": 48,
+      "totalWords": 560
+    },
+    {
+      "surah": 49,
+      "totalWords": 347
+    },
+    {
+      "surah": 50,
+      "totalWords": 373
+    },
+    {
+      "surah": 51,
+      "totalWords": 360
+    },
+    {
+      "surah": 52,
+      "totalWords": 312
+    },
+    {
+      "surah": 53,
+      "totalWords": 360
+    },
+    {
+      "surah": 54,
+      "totalWords": 342
+    },
+    {
+      "surah": 55,
+      "totalWords": 351
+    },
+    {
+      "surah": 56,
+      "totalWords": 379
+    },
+    {
+      "surah": 57,
+      "totalWords": 574
+    },
+    {
+      "surah": 58,
+      "totalWords": 472
+    },
+    {
+      "surah": 59,
+      "totalWords": 445
+    },
+    {
+      "surah": 60,
+      "totalWords": 348
+    },
+    {
+      "surah": 61,
+      "totalWords": 221
+    },
+    {
+      "surah": 62,
+      "totalWords": 175
+    },
+    {
+      "surah": 63,
+      "totalWords": 180
+    },
+    {
+      "surah": 64,
+      "totalWords": 241
+    },
+    {
+      "surah": 65,
+      "totalWords": 287
+    },
+    {
+      "surah": 66,
+      "totalWords": 249
+    },
+    {
+      "surah": 67,
+      "totalWords": 333
+    },
+    {
+      "surah": 68,
+      "totalWords": 300
+    },
+    {
+      "surah": 69,
+      "totalWords": 258
+    },
+    {
+      "surah": 70,
+      "totalWords": 217
+    },
+    {
+      "surah": 71,
+      "totalWords": 226
+    },
+    {
+      "surah": 72,
+      "totalWords": 285
+    },
+    {
+      "surah": 73,
+      "totalWords": 199
+    },
+    {
+      "surah": 74,
+      "totalWords": 255
+    },
+    {
+      "surah": 75,
+      "totalWords": 164
+    },
+    {
+      "surah": 76,
+      "totalWords": 243
+    },
+    {
+      "surah": 77,
+      "totalWords": 181
+    },
+    {
+      "surah": 78,
+      "totalWords": 173
+    },
+    {
+      "surah": 79,
+      "totalWords": 179
+    },
+    {
+      "surah": 80,
+      "totalWords": 133
+    },
+    {
+      "surah": 81,
+      "totalWords": 104
+    },
+    {
+      "surah": 82,
+      "totalWords": 80
+    },
+    {
+      "surah": 83,
+      "totalWords": 169
+    },
+    {
+      "surah": 84,
+      "totalWords": 107
+    },
+    {
+      "surah": 85,
+      "totalWords": 109
+    },
+    {
+      "surah": 86,
+      "totalWords": 61
+    },
+    {
+      "surah": 87,
+      "totalWords": 72
+    },
+    {
+      "surah": 88,
+      "totalWords": 92
+    },
+    {
+      "surah": 89,
+      "totalWords": 137
+    },
+    {
+      "surah": 90,
+      "totalWords": 82
+    },
+    {
+      "surah": 91,
+      "totalWords": 54
+    },
+    {
+      "surah": 92,
+      "totalWords": 71
+    },
+    {
+      "surah": 93,
+      "totalWords": 40
+    },
+    {
+      "surah": 94,
+      "totalWords": 27
+    },
+    {
+      "surah": 95,
+      "totalWords": 34
+    },
+    {
+      "surah": 96,
+      "totalWords": 72
+    },
+    {
+      "surah": 97,
+      "totalWords": 30
+    },
+    {
+      "surah": 98,
+      "totalWords": 94
+    },
+    {
+      "surah": 99,
+      "totalWords": 36
+    },
+    {
+      "surah": 100,
+      "totalWords": 40
+    },
+    {
+      "surah": 101,
+      "totalWords": 36
+    },
+    {
+      "surah": 102,
+      "totalWords": 28
+    },
+    {
+      "surah": 103,
+      "totalWords": 14
+    },
+    {
+      "surah": 104,
+      "totalWords": 33
+    },
+    {
+      "surah": 105,
+      "totalWords": 23
+    },
+    {
+      "surah": 106,
+      "totalWords": 17
+    },
+    {
+      "surah": 107,
+      "totalWords": 25
+    },
+    {
+      "surah": 108,
+      "totalWords": 10
+    },
+    {
+      "surah": 109,
+      "totalWords": 26
+    },
+    {
+      "surah": 110,
+      "totalWords": 19
+    },
+    {
+      "surah": 111,
+      "totalWords": 23
+    },
+    {
+      "surah": 112,
+      "totalWords": 15
+    },
+    {
+      "surah": 113,
+      "totalWords": 23
+    },
+    {
+      "surah": 114,
+      "totalWords": 20
+    }
+  ]
+}
