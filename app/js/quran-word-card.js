@@ -47,6 +47,10 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   previous: "Previous word",
   next: "Next word",
   close: "Close word card",
+  // Issue #286 -- the round ayah-end marker in Mushaf view is small and
+  // easy to miss; this reaches the same "This āyah" action sheet from
+  // whichever word's Word Card is already open.
+  ayahActionsButton: "This āyah ⋯",
   wbw: "WbW",
   basic: "Basic Arabic",
   depth: "Arabic in Depth",
@@ -612,6 +616,9 @@ export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, 
       <div><div class="word-card-arabic" dir="rtl" lang="ar">${arabicHtml}</div><div class="word-card-reference">${chapter.surahNumber}:${ayah.ayah}:${word.position}</div></div>
       <button type="button" data-word-card-move="next" aria-label="${escapeHtml(text.next)}"${context.hasNext ? "" : " disabled"}>›</button>
       <button type="button" data-word-card-close aria-label="${escapeHtml(text.close)}">×</button></header>
+    <div class="word-card-ayah-action-row">
+      <button type="button" class="word-card-ayah-action-btn" data-word-card-ayah-action="${chapter.surahNumber}:${ayah.ayah}">${escapeHtml(text.ayahActionsButton)}</button>
+    </div>
     ${segmentControlsHtml(context.wordSegments, context.colourWordPartsEnabled, text)}
     ${originBar(context.origin, text)}
     <div role="tablist" aria-label="${escapeHtml(text.tablist)}">${tabButton("wbw", state.level === "wbw", text.wbw)}${tabButton("basic", state.level === "basic", text.basic)}${tabButton("depth", state.level === "depth", text.depth)}</div>
