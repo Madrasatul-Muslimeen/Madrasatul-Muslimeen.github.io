@@ -18522,3 +18522,5 @@ check removed); a fully seeded tenant gets no writes. `module-startup-reads`
 **v08.76 (25 Sep 2026).** Speed part 6b, issue #288: Homework 9→3, Curriculum 9→3, Course Offers 8→2 sequential round trips. module-startup-reads 18/0, behaviour.mjs 984/9 (baseline incl. intermittent 22g), real-browser check of all three pages in both languages.
 
 **v08.77 (25 Sep 2026).** Speed part 7, issue #291: My Notes 5→3, Bookmarks 5→3, People 6→3, Classes 6+→2, Dawah 5→3 sequential round trips. module-startup-reads 28/0, behaviour.mjs 984/9 (baseline), real-browser open of all five pages in both languages.
+
+**v08.78 (25 Sep 2026).** Phone width, issue #293: About, Catalogue, Monitor, Records and People no longer scroll sideways at phone width. phone-width-overflow.mjs 178/39 before, 217/0 after; behaviour.mjs 987/6 (baseline); navcheck clean. Lesson: the Builder workflow's concurrency keeps one pending run, so opening several issues at once silently drops all but the newest — dispatch one at a time.

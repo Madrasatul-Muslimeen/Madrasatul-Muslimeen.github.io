@@ -21,6 +21,9 @@
   .tag-built { background: #d7f4d7; color: #1a5e1a; }
   .tag-planned { background: #eee; color: #555; }
   .delivers { color: #666; }
+  /* Issue #293 -- at phone width a wide table scrolls inside its own box
+     instead of dragging the whole page sideways. Desktop is untouched. */
+  @media (max-width: 600px) { table { display: block; overflow-x: auto; } }
 </style>
 </head>
 <body>
