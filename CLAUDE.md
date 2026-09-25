@@ -158,7 +158,16 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.69 on `main`** (25 Sep 2026 — **load speed,
+**Current milestone: v08.70 on `main`** (25 Sep 2026 — **speed part 2**,
+issue #276: Quran Study is usable after **4 database round trips in a row**
+(5 in v08.69, 7 before it). The last one was the Approach-name sync reading
+the whole `trackables` collection again straight after the startup wave had
+read it; it now reuses those rows. `quranrevival-startup-reads.mjs` pins
+both limits. The Import page's counts are in Bangla digits for Bangla readers.
+**The Architect built this round**: the Builder's run did the work and ran
+out of time before pushing, so all of it was lost — push first, test after.)
+
+**Previous milestone: v08.69 on `main`** (25 Sep 2026 — **load speed,
 issue #272**, on the Owner's *"max 3 seconds"*. The app now keeps its own
 files on the phone (`app/sw.js`): **every open after the first is usable in
 1.1s on fast 4G and 1.3s on slow 4G** at phone processor speed (it was 3.1s
