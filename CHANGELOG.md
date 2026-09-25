@@ -18520,3 +18520,5 @@ check removed); a fully seeded tenant gets no writes. `module-startup-reads`
 **v08.75 (25 Sep 2026).** Mushaf 'This āyah' menu, issue #286: marker tap and Word Card button open one menu for bookmark, Note, Asma Names, QCR collections, multi-folder filing, play, copy and share. No Rules change. behaviour.mjs 987/6 (baseline), layout/navcheck/panel clean, journey-map real-function on the emulator clean, action-sheet browser suite 44/0 after the review's fixture fix.
 
 **v08.76 (25 Sep 2026).** Speed part 6b, issue #288: Homework 9→3, Curriculum 9→3, Course Offers 8→2 sequential round trips. module-startup-reads 18/0, behaviour.mjs 984/9 (baseline incl. intermittent 22g), real-browser check of all three pages in both languages.
+
+**v08.77 (25 Sep 2026).** Speed part 7, issue #291: My Notes 5→3, Bookmarks 5→3, People 6→3, Classes 6+→2, Dawah 5→3 sequential round trips. module-startup-reads 28/0, behaviour.mjs 984/9 (baseline), real-browser open of all five pages in both languages.
