@@ -108,6 +108,16 @@
             && (d().get('originalModifiedAt', null) == null || d().originalModifiedAt is timestamp)
             && (d().get('importSource', null) == null || d().importSource is map);
       }
+
+      // Architect review, 25 Sep 2026: the three import fields are ORIGIN
+      // facts, like createdBy -- stamped on create, frozen on every update.
+      // Without this a later revision could silently rewrite when a Note was
+      // first written, or add an import provenance to a Note this app wrote.
+      function importFieldsFrozen() {
+        return d().get('originalCreatedAt', null) == resource.data.get('originalCreatedAt', null)
+            && d().get('originalModifiedAt', null) == resource.data.get('originalModifiedAt', null)
+            && d().get('importSource', null) == resource.data.get('importSource', null);
+      }
       // --- end WORDPRESS IMPORT ------------------------------------------
 
       function noteShapeOk() {
@@ -132,9 +142,28 @@
             && d().currentRevisionId is string && d().currentRevisionId.size() > 0;
       }
 
+      // createdBy records WHO FIRST WROTE the document and is an origin fact,
+      // so it is stamped on create and frozen thereafter — never re-checked
+      // against whoever is updating.
+      //
+      // Found by mutation testing: an earlier version required
+      // `createdBy == myUid()` on BOTH paths, which conflated authorship with
+      // authorisation. It happened to deny a teacher's update — but for the
+      // wrong reason, and it meant the owner check on the update path was never
+      // exercised at all (neutralising isNoteOwner left the suite green). It
+      // would also have refused a legitimate future path where someone other
+      // than the original creator may edit. Authorisation is isNoteOwner()'s
+      // job, and only its job.
       function createdByStampedOnCreate() { return d().createdBy == myUid(); }
       function createdByFrozen() { return resource != null && d().createdBy == resource.data.createdBy; }
 
+      // THE ATOMICITY RULE (matrix TXN-01/TXN-02), and the reason getAfter()
+      // is used rather than trusted prose: a Note's currentRevisionId must
+      // name a revision that EXISTS once this commit lands, belongs to this
+      // same Note, tenant and owner, and — on an update — chains from the
+      // revision the Note is moving away from. Rules evaluate each document
+      // independently, so without getAfter() a client could point a Note at a
+      // revision it never wrote, and the pointer would be fiction.
       function revisionRef(revisionId) {
         return /databases/$(database)/documents/noteRevisions/$(d().tenantId + '__' + revisionId);
       }
@@ -155,9 +184,13 @@
                     && d().status == 'active'
                     && committedRevisionMatches(null);
 
+      // An update may change the title, the body, the status and the revision
+      // pointer — and nothing else. A stale pointer is refused because the new
+      // revision must chain from the CURRENT one (matrix TXN-03).
       allow update: if resource != null
                     && noteShapeOk()
                     && createdByFrozen()
+                    && importFieldsFrozen()
                     && isNoteOwner(resource.data.tenantId, resource.data.ownerPersonId)
                     && noteIdentityUnchanged()
                     && committedRevisionMatches(resource.data.currentRevisionId);
@@ -202,6 +235,10 @@
 
       function isSystemRole(role) { return role == 'journey-map' || role == 'reflection-archive'; }
 
+      // ADR-010 §3: a system folder IS the root of its own meaning. It is
+      // neither nested nor nestable, or the Archive could be hidden inside a
+      // user folder, or filed under the Map and made a part of it — the locked
+      // distinction undone by a drag.
       function parentOneHopOk() {
         return d().parentFolderId == null
             ? true
@@ -215,6 +252,9 @@
                && !isSystemRole(get(folderRef(d().parentFolderId)).data.semanticRole));
       }
 
+      // Identity and ROLE are write-once. A folder may be renamed, reordered,
+      // re-parented or retired; it may never become a different folder, change
+      // owner, or change what KIND of folder it is (ADR-010 §3).
       function folderIdentityUnchanged() {
         return resource != null
             && d().tenantId      == resource.data.tenantId
@@ -239,6 +279,7 @@
       allow update: if folderShapeOk()
                     && folderIdentityUnchanged()
                     && createdByFrozen()
+                    && d().get('importSource', null) == resource.data.get('importSource', null)
                     && isNoteOwner(d().tenantId, d().ownerPersonId)
                     && parentOneHopOk();
 

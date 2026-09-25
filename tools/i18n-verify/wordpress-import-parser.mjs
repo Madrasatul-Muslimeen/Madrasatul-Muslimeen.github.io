@@ -15,7 +15,7 @@ import process from "node:process";
 import {
   decodeHtmlEntities, parseWxrXml, stableImportId, wpautop, collectImageUrls,
   addLazyLoading, stripTags, titleFromBody, resolveNoteReference,
-  findHadithReference, analyzeWxrImport,
+  findHadithReference, analyzeWxrImport, fillMissingGmtDates,
 } from "../../app/js/wordpress-import-parser.js";
 
 const root = path.resolve(process.argv[2] || process.cwd());
@@ -239,6 +239,23 @@ check("analyzeWxrImport: a valid range is recorded on the note", () => {
   assert.deepEqual(note106.reference, { kind: "range", surah: 2, ayahFrom: 1, ayahTo: 5 });
   const note107 = plan.notes.find((n) => n.postId === "107");
   assert.deepEqual(note107.reference, { kind: "range", surah: 2, ayahFrom: 1, ayahTo: 5 });
+});
+
+// Architect review -- the Owner's real export has 246 drafts whose GMT date is
+// "0000-00-00 00:00:00" while the local date is real.
+check("a draft with no GMT date gets one from its local date and the site's own offset", () => {
+  const items = [
+    { postDate: "2018-01-05 15:00:00", postDateGmt: "2018-01-05 09:00:00", postModified: "2018-01-05 15:00:00", postModifiedGmt: "2018-01-05 09:00:00" },
+    { postDate: "2019-03-01 12:00:00", postDateGmt: "2019-03-01 06:00:00", postModified: "2019-03-01 12:00:00", postModifiedGmt: "2019-03-01 06:00:00" },
+    { postDate: "2020-07-10 18:30:00", postDateGmt: "0000-00-00 00:00:00", postModified: "2020-07-11 08:00:00", postModifiedGmt: "0000-00-00 00:00:00" },
+    { postDate: "0000-00-00 00:00:00", postDateGmt: "0000-00-00 00:00:00", postModified: null, postModifiedGmt: null },
+  ];
+  const offset = fillMissingGmtDates(items);
+  assert.equal(offset, 6 * 3600 * 1000, "the site offset should read as +6h");
+  assert.equal(items[2].postDateGmt, "2020-07-10 12:30:00");
+  assert.equal(items[2].postModifiedGmt, "2020-07-11 02:00:00");
+  assert.equal(items[0].postDateGmt, "2018-01-05 09:00:00", "a real GMT date is never touched");
+  assert.equal(items[3].postDateGmt, null, "no date at all stays no date, never a made-up one");
 });
 
 console.log(`\n==== wordpress-import-parser: ${passed} passed, ${failed} failed ====`);

@@ -99,12 +99,51 @@ export function parseWxrXml(xmlText) {
       contentEncoded: field(block, "content:encoded") || "",
       postDateGmt: field(block, "wp:post_date_gmt") || null,
       postModifiedGmt: field(block, "wp:post_modified_gmt") || null,
+      postDate: field(block, "wp:post_date") || null,
+      postModified: field(block, "wp:post_modified") || null,
       link: field(block, "link") || "",
       categoryNiceNames: [...new Set(categoryNiceNames)],
     });
   }
 
+  fillMissingGmtDates(items);
   return { categories, items };
+}
+
+// ---------------------------------------------------------------------------
+// Architect review, 25 Sep 2026 -- measured on the Owner's real export: 246
+// of 519 drafts carry `post_date_gmt` "0000-00-00 00:00:00" (WordPress does
+// not set a GMT date on a draft until it is published), while every one of
+// them still has its LOCAL `post_date`. Without this those Notes would lose
+// their original date entirely. The site's own UTC offset is read off the
+// posts that carry both dates (the most common difference, so one odd post
+// cannot skew it) and applied to the local date.
+// ---------------------------------------------------------------------------
+const ZERO_DATE = /^0000-00-00/;
+function wpDateMs(value) {
+  if (!value || ZERO_DATE.test(value)) return null;
+  const ms = Date.parse(`${value.trim().replace(" ", "T")}Z`);
+  return Number.isNaN(ms) ? null : ms;
+}
+function formatWpDate(ms) {
+  return new Date(ms).toISOString().slice(0, 19).replace("T", " ");
+}
+export function fillMissingGmtDates(items) {
+  const offsets = new Map();
+  for (const item of items) {
+    const local = wpDateMs(item.postDate), gmt = wpDateMs(item.postDateGmt);
+    if (local !== null && gmt !== null) offsets.set(local - gmt, (offsets.get(local - gmt) || 0) + 1);
+  }
+  let offset = 0, best = -1;
+  for (const [value, count] of offsets) if (count > best) { best = count; offset = value; }
+  for (const item of items) {
+    for (const [gmtKey, localKey] of [["postDateGmt", "postDate"], ["postModifiedGmt", "postModified"]]) {
+      if (wpDateMs(item[gmtKey]) !== null) continue;
+      const local = wpDateMs(item[localKey]);
+      item[gmtKey] = local === null ? null : formatWpDate(local - offset);
+    }
+  }
+  return offset;
 }
 
 // ---------------------------------------------------------------------------

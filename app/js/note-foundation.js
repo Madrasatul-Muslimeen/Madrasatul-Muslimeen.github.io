@@ -777,20 +777,30 @@ export async function getNotesByIds(db, tenantId, noteIds) {
   return snapshots.filter((snap) => snap.exists()).map((snap) => ({ id: snap.id, ...snap.data() }));
 }
 
-/** Issue #265 -- the source-link twin of `getNotesByIds()`, for the same idempotent-bulk-write reason. */
-export async function getNoteSourcesByIds(db, tenantId, sourceLinkIds) {
-  requireToken("tenantId", tenantId);
-  const snapshots = await Promise.all(sourceLinkIds.map(
-    (sourceLinkId) => getDoc(doc(db, TENANT.NOTE_SOURCES, noteFoundationDocId(tenantId, sourceLinkId)))));
-  return snapshots.filter((snap) => snap.exists()).map((snap) => ({ id: snap.id, ...snap.data() }));
-}
-
-/** Issue #265 -- the placement twin of `getNotesByIds()`, for the same idempotent-bulk-write reason. */
-export async function getNotePlacementsByIds(db, tenantId, placementIds) {
-  requireToken("tenantId", tenantId);
-  const snapshots = await Promise.all(placementIds.map(
-    (placementId) => getDoc(doc(db, TENANT.NOTE_PLACEMENTS, noteFoundationDocId(tenantId, placementId)))));
-  return snapshots.filter((snap) => snap.exists()).map((snap) => ({ id: snap.id, ...snap.data() }));
+/**
+ * Issue #265, Architect review -- every source link one person owns, a page
+ * at a time. The importer needs "which links already exist?" and must NOT
+ * ask it by reading each link's id directly: the deployed `allow get`
+ * evaluates `resource.data`, so a get of a link that does not exist yet is
+ * DENIED, not empty (the v08.56 lesson), and every first run would stop on
+ * the first Note. Equality filters only and no `orderBy`, so it is served by
+ * single-field indexes and needs no composite index -- the same reasoning as
+ * `listNotePlacementsForOwnerPage()`.
+ */
+export async function listNoteSourcesForOwnerPage(db, {
+  tenantId, ownerPersonId, status = NOTE_STATUS.ACTIVE, pageSize = 100, after = null,
+}) {
+  requirePageSize(pageSize);
+  const q = query(collection(db, TENANT.NOTE_SOURCES),
+    where("tenantId", "==", requireToken("tenantId", tenantId)),
+    where("ownerPersonId", "==", requireToken("ownerPersonId", ownerPersonId)),
+    where("status", "==", status),
+    ...(after ? [startAfter(after)] : []),
+    limit(pageSize));
+  const snapshot = await getDocs(q);
+  const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  const next = snapshot.docs.length < pageSize ? null : snapshot.docs[snapshot.docs.length - 1];
+  return { rows, next };
 }
 
 // ---------------------------------------------------------------------------

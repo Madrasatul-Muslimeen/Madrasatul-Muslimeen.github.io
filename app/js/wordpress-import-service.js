@@ -60,10 +60,10 @@ import {
   createPermanentNote,
   createNoteSource,
   createNotePlacement,
-  getNotesByIds,
-  getNoteSourcesByIds,
-  getNotePlacementsByIds,
   listNoteFoldersForOwnerPage,
+  listNotesForOwnerPage,
+  listNoteSourcesForOwnerPage,
+  listNotePlacementsForOwnerPage,
 } from "./note-foundation.js";
 
 /** A blocked-write result shape, shared by every gated function below. */
@@ -86,6 +86,28 @@ function gmtToDate(gmtString) {
 const FOLDER_PAGE_SAFETY_CAP = 60;
 
 /**
+ * Architect review -- every row one person owns in a collection, BOTH active
+ * and retired, a page at a time, through a paged list query. This is how the
+ * importer asks "does this already exist?". It must never ask by reading an
+ * id directly: the deployed `allow get` rules evaluate `resource.data`, so
+ * reading an id that does not exist yet is DENIED rather than empty (the
+ * v08.56 lesson), which would stop every first import on its first item.
+ */
+async function loadOwnedRows(listPage, db, { tenantId, ownerPersonId }) {
+  const rows = [];
+  for (const status of [NOTE_STATUS.ACTIVE, NOTE_STATUS.RETIRED]) {
+    let after = null;
+    for (let page = 0; page < FOLDER_PAGE_SAFETY_CAP; page += 1) {
+      const result = await listPage(db, { tenantId, ownerPersonId, status, after });
+      rows.push(...result.rows);
+      if (!result.next) break;
+      after = result.next;
+    }
+  }
+  return rows;
+}
+
+/**
  * Creates every folder in `folders` (analyzeWxrImport()'s own topologically-
  * ordered output) that does not already exist, skipping the rest. Returns
  * `{ created, skipped, refused, refusals }`.
@@ -95,13 +117,11 @@ export async function importWordpressFolders(db, {
 } = {}) {
   if (!isWordpressImportPersistenceReady()) return BLOCKED_RESULT;
 
+  // Retired folders count as "already there" too: re-creating one would be
+  // an update of an existing document and is refused by the Rules.
   const known = new Map();
-  let after = null;
-  for (let page = 0; page < FOLDER_PAGE_SAFETY_CAP; page += 1) {
-    const { rows, next } = await listNoteFoldersForOwnerPage(db, { tenantId, ownerPersonId, after });
-    for (const row of rows) known.set(row.folderId, row);
-    if (!next) break;
-    after = next;
+  for (const row of await loadOwnedRows(listNoteFoldersForOwnerPage, db, { tenantId, ownerPersonId })) {
+    known.set(row.folderId, row);
   }
 
   let created = 0, skipped = 0, refused = 0;
@@ -158,10 +178,14 @@ export async function importWordpressNotes(db, {
   let created = 0, skipped = 0, refused = 0;
   const refusals = [];
 
+  const scope = { tenantId, ownerPersonId };
+  const noteIds = new Set((await loadOwnedRows(listNotesForOwnerPage, db, scope)).map((r) => r.noteId));
+  const sourceIds = new Set((await loadOwnedRows(listNoteSourcesForOwnerPage, db, scope)).map((r) => r.sourceLinkId));
+  const placementIds = new Set((await loadOwnedRows(listNotePlacementsForOwnerPage, db, scope)).map((r) => r.placementId));
+
   for (const note of notes) {
     let noteReady = false;
-    const existing = await getNotesByIds(db, tenantId, [note.noteId]);
-    if (existing.length) {
+    if (noteIds.has(note.noteId)) {
       noteReady = true;
       skipped += 1;
     } else {
@@ -178,6 +202,7 @@ export async function importWordpressNotes(db, {
           actorUid, importMeta,
         });
         created += 1;
+        noteIds.add(note.noteId);
         noteReady = true;
       } catch (err) {
         refused += 1;
@@ -191,8 +216,7 @@ export async function importWordpressNotes(db, {
 
     if (note.reference.kind === "ayah" || note.reference.kind === "range") {
       const sourceLinkId = stableImportId("source", note.postId);
-      const existingSource = await getNoteSourcesByIds(db, tenantId, [sourceLinkId]);
-      if (!existingSource.length) {
+      if (!sourceIds.has(sourceLinkId)) {
         try {
           const unitKey = note.reference.kind === "ayah"
             ? buildUnitKey.ayah(note.reference.surah, note.reference.ayahFrom)
@@ -205,6 +229,7 @@ export async function importWordpressNotes(db, {
             },
             sourceLinkId, actorUid,
           });
+          sourceIds.add(sourceLinkId);
         } catch (err) {
           refusals.push({ postId: note.postId, title: note.title, stage: "source", message: err?.message ?? String(err) });
         }
@@ -213,12 +238,12 @@ export async function importWordpressNotes(db, {
 
     for (const folderId of note.folderIds) {
       const placementId = stableImportId("placement", `${note.postId}|${folderId}`);
-      const existingPlacement = await getNotePlacementsByIds(db, tenantId, [placementId]);
-      if (existingPlacement.length) continue;
+      if (placementIds.has(placementId)) continue;
       try {
         await createNotePlacement(db, {
           tenantId, ownerPersonId, ownerUid, noteId: note.noteId, folderId, order: 0, placementId, actorUid,
         });
+        placementIds.add(placementId);
       } catch (err) {
         refusals.push({ postId: note.postId, title: note.title, stage: "placement", folderId, message: err?.message ?? String(err) });
       }

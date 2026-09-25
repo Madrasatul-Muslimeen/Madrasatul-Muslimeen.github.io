@@ -14,12 +14,11 @@
 // asserted twice (once per block), so a silent failure to substitute cannot
 // leave this suite quietly testing the deployed rules instead.
 //
-// NOT RUN IN THIS SANDBOX -- no Firebase CLI / emulator binary and no
-// network access here (the same documented gap this project's own
-// `tools/firestore-emulator/package.json` `devDependencies` already assume
-// an `npm install` this sandbox could not run). Written to the same
-// standard as every other emulator suite in this directory; the Architect
-// or a later session with emulator access should run it before deployment.
+// Run by the Architect on 25 Sep 2026 against the emulator: 16 passed, 0
+// failed. The original IMPORT-07 (a bare update adding originalCreatedAt)
+// was a wrong assertion -- every Note update must commit a revision -- and
+// was replaced by IMPORT-07a..d; IMPORT-12/13 were added for folders. The
+// freeze was proven by removing it (07b, 07c, 07d then fail).
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -166,13 +165,41 @@ test("WordPress import candidate: notes and noteFolders optional fields", async 
     await no("IMPORT-06 a DIFFERENT person cannot create a Note claiming pSelf as owner (owner-only unaffected)",
       createNoteAndRevision(otherDb, "note-other", "rev-other", {}));
 
-    await ok("IMPORT-07 an existing Note may gain originalCreatedAt on a later update",
+    // Architect review: IMPORT-07 originally asserted that a bare update
+    // could ADD originalCreatedAt to an existing Note. The deployed rules
+    // refuse every Note update that does not commit a new revision, and the
+    // import fields are origin facts frozen after create -- so the correct
+    // assertions are the three below.
+    async function reviseNote(noteId, fromRev, toRev, noteChanges) {
+      const batch = writeBatch(selfDb);
+      batch.set(doc(selfDb, "noteRevisions", `${T}__${toRev}`), {
+        revisionId: toRev, noteId, tenantId: T, ownerPersonId: "pSelf", ownerUid: "uid-self",
+        previousRevisionId: fromRev, title: "Revised", bodyHtml: "<p>Revised</p>",
+        revisionReason: "edited", actorUid: "uid-self",
+        schemaVersion: 1, createdAt: new Date(), updatedAt: new Date(), createdBy: "uid-self",
+      });
+      batch.update(doc(selfDb, "notes", `${T}__${noteId}`), {
+        title: "Revised", bodyHtml: "<p>Revised</p>", currentRevisionId: toRev, updatedAt: new Date(), ...noteChanges,
+      });
+      return batch.commit();
+    }
+
+    await ok("IMPORT-07a an imported Note can be revised with its original date left as it is",
+      reviseNote("note-imported", "rev-imported", "rev-imported-2", {}));
+
+    await no("IMPORT-07b a revision may NOT change an imported Note's originalCreatedAt",
+      reviseNote("note-imported", "rev-imported-2", "rev-imported-3", { originalCreatedAt: new Date("2020-01-01T00:00:00Z") }));
+
+    await no("IMPORT-07c a revision may NOT add an original date to a Note this app wrote",
+      reviseNote("note-baseline", "rev-baseline", "rev-baseline-2", { originalCreatedAt: new Date("2018-01-05T09:00:00Z") }));
+
+    await no("IMPORT-07d a revision may NOT remove an imported Note's importSource",
       (async () => {
-        await createNoteAndRevision(selfDb, "note-update", "rev-update");
-        return updateDoc(doc(selfDb, "notes", `${T}__note-update`), {
-          originalCreatedAt: new Date("2018-01-05T09:00:00Z"),
-        });
-      })());
+        // Its own Note, so the revision chain is valid whatever 07b did.
+        await createNoteAndRevision(selfDb, "note-imported-d", "rev-imported-d", {
+          originalCreatedAt: new Date("2018-01-05T09:00:00Z"), importSource: { system: "wordpress", postId: "102" } });
+        const { deleteField } = await import("firebase/firestore");
+        return reviseNote("note-imported-d", "rev-imported-d", "rev-imported-d2", { importSource: deleteField() }); })());
 
     const folderBase = (folderId, extra = {}) => ({
       folderId, tenantId: T, ownerPersonId: "pSelf", ownerUid: "uid-self", name: "Imported Folder",
@@ -192,6 +219,12 @@ test("WordPress import candidate: notes and noteFolders optional fields", async 
       setDoc(doc(selfDb, "noteFolders", `${T}__folder-bad-source`), folderBase("folder-bad-source", {
         importSource: "wordpress",
       })));
+
+    await no("IMPORT-12 a folder update may NOT change its importSource",
+      updateDoc(doc(selfDb, "noteFolders", `${T}__folder-imported`), { importSource: { system: "other" }, updatedAt: new Date() }));
+
+    await ok("IMPORT-13 an imported folder can still be renamed",
+      updateDoc(doc(selfDb, "noteFolders", `${T}__folder-imported`), { name: "Renamed", updatedAt: new Date() }));
 
     await no("IMPORT-11 a DIFFERENT person cannot create a folder claiming pSelf as owner (owner-only unaffected)",
       setDoc(doc(otherDb, "noteFolders", `${T}__folder-other`), folderBase("folder-other")));
