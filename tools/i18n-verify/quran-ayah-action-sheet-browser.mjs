@@ -50,10 +50,15 @@ const SURAH_HEADER_FONT_URL = "https://raw.githubusercontent.com/Madrasatul-Musl
 // needs at least two positions per ayah to make the two spans (word vs.
 // marker) distinguishable at all -- one real word at position 1, the marker
 // at position 2.
-const MARKER_GLYPH = "TESTGLYPH-2-71-MARKER";
+// Architect review: short, like the real one-glyph print number. The first
+// version used a 21-character string, which at Mushaf size was 267px wide,
+// ran off the page's left edge, and put its own centre outside the page --
+// so the hit-test failed and the click was intercepted, for a reason the real
+// Mushaf never has.
+const MARKER_GLYPH = "\u24C2";
 const SYNTHETIC_MUSHAF_DATA = {
   "3": [{ type: "ayah", words: [
-    { g: "TESTGLYPH-2-71-WORD1", loc: "2:71:1" },
+    { g: "\u24CC", loc: "2:71:1" },
     { g: MARKER_GLYPH, loc: "2:71:2" },
   ] }],
 };
@@ -164,7 +169,8 @@ for (const viewport of [{ width: 390, height: 844, label: "mobile 390x844" }, { 
     }
 
     // --- Word taps still open the Word Card (regression guard for THIS suite's own fixture -- the full regression suites are quran-word-card*.mjs / quran-mushaf-*.mjs, run separately).
-    const real = errors.filter((e) => !/Failed to load resource: net::ERR_(TUNNEL_CONNECTION_FAILED|CERT_AUTHORITY_INVALID)/.test(e));
+    // ERR_FAILED is this suite's own route.abort() on the Mushaf fonts (above).
+    const real = errors.filter((e) => !/Failed to load resource: net::ERR_(TUNNEL_CONNECTION_FAILED|CERT_AUTHORITY_INVALID|FAILED)/.test(e));
     check(`${lang} ${viewport.label} no unexpected page errors`, real.length === 0, real.join("; "));
 
     await page.close();
