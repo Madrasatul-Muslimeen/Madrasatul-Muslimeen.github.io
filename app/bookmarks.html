@@ -181,7 +181,7 @@
     import { getAppLang, getBookmarkMenuGroupBy, setBookmarkMenuGroupBy, BOOKMARK_GROUP_BYS } from "./js/prefs.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { safeWrite } from "./js/errors.js";
-    import { bootstrapContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
+    import { getMyMembershipRoles, hydrateMemberships, pickContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
 import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     import { translateStatic, t, num, surahName } from "./js/i18n.js";
@@ -314,9 +314,22 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       if (candidate) personSelect.value = candidate;
     }
 
-    async function loadContextData() {
-      const rosterSnap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId)));
+    // Speed, part 7 (issue #291): the tenantPeople query and the tenant-name
+    // hydration used to run one after another -- neither needs the other's
+    // result, so they fire together now, the same split homework.html/
+    // course-offers.html's own issue #288 fix uses.
+    async function loadContextData(hydratedMembershipsPromise) {
+      const hydrationPromise = hydratedMembershipsPromise ?? Promise.resolve(myMemberships);
+      const [rosterSnap, hydrated] = await Promise.all([
+        getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId))),
+        hydrationPromise,
+      ]);
       roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      myMemberships = hydrated;
+      tenantSelect.innerHTML = myMemberships
+        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
+        .join("");
+
       const { viewAsRole } = currentPreview();
       renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], viewAsRole);
       renderPersonSelectOptions();
@@ -324,20 +337,24 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       await refreshBookmarks();
     }
 
+    // Speed, part 7 (issue #291): the two getBookmarks() reads -- the
+    // selected person's own document and (when different) the signed-in
+    // login's own, for the "tagged for {name} by you" section -- both fire
+    // together now rather than one after the other. Neither depends on the
+    // other's result; canRecordFor(tenantId, personId) authorises each
+    // independently of the other being read first.
     async function refreshBookmarks() {
       if (!selectedPersonId) { bookmarksDoc = { resume: {}, saved: [], folders: [] }; taggedForSelected = []; renderAll(); return; }
-      bookmarksDoc = await getBookmarks(db, activeTenantId, selectedPersonId);
       const { myPersonId } = currentPreview();
-      if (myPersonId && myPersonId !== selectedPersonId) {
-        try {
-          const myDoc = await getBookmarks(db, activeTenantId, myPersonId);
-          taggedForSelected = (myDoc.saved ?? []).filter((b) => !b.removed && b.personTagId === selectedPersonId);
-        } catch {
-          taggedForSelected = []; // not readable (e.g. no rules-granted relationship) -- show nothing extra rather than error the whole page
-        }
-      } else {
-        taggedForSelected = [];
-      }
+      const needsTaggedFor = myPersonId && myPersonId !== selectedPersonId;
+      const [mainDoc, myDoc] = await Promise.all([
+        getBookmarks(db, activeTenantId, selectedPersonId),
+        needsTaggedFor
+          ? getBookmarks(db, activeTenantId, myPersonId).catch(() => null) // not readable (e.g. no rules-granted relationship) -- show nothing extra rather than error the whole page
+          : Promise.resolve(null),
+      ]);
+      bookmarksDoc = mainDoc;
+      taggedForSelected = myDoc ? (myDoc.saved ?? []).filter((b) => !b.removed && b.personTagId === selectedPersonId) : [];
       renderAll();
     }
 
@@ -977,22 +994,33 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       signOutBtn.style.display = "inline-block";
 
       try {
+        // Speed, part 7 (issue #291), the same pattern issue #278's own fix
+        // uses: userIndex and the ROLES-ONLY membership query are fired
+        // together -- pickContext() below only ever reads tenantId/personId/
+        // roles, never tenantName/tenantData.
+        const membershipRolesPromise = getMyMembershipRoles(db, user.uid);
+        membershipRolesPromise.catch(() => {}); // see the real await below; this only stops a reload (adoptAppLangFromUserIndex) from logging it as unhandled.
+
         const userIndexSnap = await getDoc(doc(db, TENANT.USER_INDEX, user.uid));
         if (adoptAppLangFromUserIndex(userIndexSnap)) return;
         const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
-        const { context, memberships } = await bootstrapContext(db, user.uid, defaultTenantId);
+
+        const membershipRoles = await membershipRolesPromise;
+        const context = pickContext(membershipRoles, defaultTenantId);
         if (!context) {
           whoEl.innerHTML += noAccountMessageHtml();
           return;
         }
         activeTenantId = context.tenantId;
-        myMemberships = memberships;
-        tenantSelect.innerHTML = myMemberships
-          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
-          .join("");
+
+        // The tenant picker's real names come from the SAME hydration call
+        // loadContextData() fires its own reads alongside, rather than
+        // being awaited before any of them.
+        const hydratedMembershipsPromise = hydrateMemberships(db, membershipRoles);
+        hydratedMembershipsPromise.catch(() => {}); // real failure surfaces via the awaited copy inside loadContextData().
 
         appEl.style.display = "block";
-        await loadContextData();
+        await loadContextData(hydratedMembershipsPromise);
       } catch (err) {
         console.error(err);
         whoEl.textContent += ` — ${err.message}`;
@@ -1005,6 +1033,8 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       activeTenantId = chosen.tenantId;
       setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
       renderNav(chosen.roles, null);
+      // myMemberships already carries every membership's own hydrated tenant
+      // document (fetched once, at sign-in) -- no reason to fetch it again.
       await loadContextData();
     });
   </script>
