@@ -158,7 +158,16 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.72 on `main`** (25 Sep 2026 — **speed part 4**,
+**Current milestone: v08.73 on `main`** (25 Sep 2026 — **speed part 5**,
+issue #282: Mapping My Journey at the Owner's real import size (1,464
+folders, 1,083 Notes, 2,319 filings) is usable in **2.0s instead of 3.9s** on
+a fast-4G phone (29 → 11 sequential round trips): the folder tree draws first,
+Notes and filings follow over parallel id-range shards, with a fallback to the
+old single cursor if production ever wants an index. **Review caught
+backticks in the stub's template literal a second time** — `stub-parity.mjs`
+now fails by name when the stub does not parse.)
+
+**Previous milestone: v08.72 on `main`** (25 Sep 2026 — **speed part 4**,
 issue #280: Deen Study, Health and Asma ul Husna now need **4** database
 round trips in sequence before they are usable (6 before), Records **3** (5), and Quran
 Study stays at 3. It is the same fix as v08.71: pick the tenant from roles alone,

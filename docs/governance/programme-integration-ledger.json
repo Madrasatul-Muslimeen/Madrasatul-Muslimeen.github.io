@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.72",
+    "version": "08.73",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -641,8 +641,20 @@
     {
       "version": "08.72",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Speed part 4 (issue #280). Deen Study and the other topic modules (topic-study.js), Health and the routine modules (routine-study.js), Asma ul Husna (asma-study.js) and Records pick the active tenant from membership roles alone and read the tenant documents in the same wave as their own startup reads, as Quran Study does since v08.71. Round trips in sequence before usable: Deen/Health/Asma 6 -> 4, Records 5 -> 3; Quran Study unchanged at 3. New module-startup-reads.mjs 8/0 pins each page (reverting topic-study.js makes Deen Study read 6 and fail).",
+      "integration": {
+        "authorizedOn": "2026-09-25",
+        "integratedOn": "2026-09-25",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "08.73",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Speed part 5 (issue #282). Mapping My Journey draws the folder tree as soon as folders arrive and loads Notes and placements afterwards, saying so while counts are still arriving; each collection is read over several parallel documentId() ranges (journey-map-shard.js) instead of one 100-at-a-time cursor chain. At the Owner's real import size (1,464 folders, 1,083 Notes, 2,319 filings; fast 4G, phone CPU): usable 3.9s -> 2.0s, sequential round trips 29 -> 11. If production ever refuses the range query as needing an index, it falls back to the single cursor. Proven on the emulator against the deployed Rules (journey-map-real-function).",
       "integration": {
         "authorizedOn": "2026-09-25",
         "integratedOn": "2026-09-25",
@@ -651,8 +663,9 @@
       }
     }
   ],
-  "nextUnallocated": "08.73",
+  "nextUnallocated": "08.74",
   "nextUnallocatedNote": [
+    "v08.73 was allocated to speed part 5: Mapping My Journey at the Owner's real size draws its folder tree first and loads in parallel shards (issue #282), 2026-09-25.",
     "v08.72 was allocated to speed part 4: Deen Study, Health, Asma ul Husna and Records startup down to 4 or fewer database round trips (issue #280), 2026-09-25.",
     "v08.71 was allocated to speed part 3: Quran Study startup down to 3 database round trips in sequence (issue #278), 2026-09-25.",
     "v08.70 was allocated to speed part 2: Quran Study startup down to 4 database round trips in sequence, and Bangla digits in the import preview (issue #276), 2026-09-25.",

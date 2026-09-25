@@ -599,3 +599,4 @@ total). Allocated by the MMSA Architect.
 08.70: speed part 2: Quran Study startup down to 4 database round trips in sequence, and Bangla digits in the import preview (issue #276). Allocated by the MMSA Architect.
 08.71: speed part 3: Quran Study startup down to 3 database round trips in sequence (issue #278). Allocated by the MMSA Architect.
 08.72: speed part 4: Deen Study, Health, Asma ul Husna and Records startup down to 4 or fewer database round trips (issue #280). Allocated by the MMSA Architect.
+08.73: speed part 5: Mapping My Journey at the Owner's real size draws its folder tree first and loads in parallel shards (issue #282). Allocated by the MMSA Architect.
