@@ -177,7 +177,21 @@ export function renderArabicPanel(ayah, { tajweedOn, wordCardInteractive, surahN
   // blocks: a block's number belongs to that block's own script, so an
   // English-mode reader still sees ١٠ beside the Arabic and a Bangla-mode
   // reader still sees ١٠ there and ১০ beside the Bangla.
-  return `<div class="ayah-num-row"><span class="ayah-num-badge">${digitsForLang(ayah.ayah, "ar")}</span></div><div class="ayah-arabic" dir="rtl" lang="ar">${body}</div>`;
+  // Issue #295 -- the number badge is a real <button> now (the Ayah Card's
+  // own third entry point, "tap the āyah number badge"), carrying the SAME
+  // plain "surah:ayah" shape openAyahActionSheet() already accepts from the
+  // Mushaf marker and the Word Card's own "This āyah ⋯" button -- one
+  // normaliser, three doors in. Only reachable when wordCardInteractive AND
+  // a surahNumber are given (the same precondition the word buttons above
+  // already require): the badge's own click target must never appear on a
+  // render this file cannot also identify by surah, or the sheet would open
+  // on the wrong āyah. Sized and positioned in CSS exactly as the old
+  // `<span>` was -- turning it into a button changes nothing about the
+  // row's own measured layout.
+  const numBadge = clickable
+    ? `<button type="button" class="ayah-num-badge" data-ayah-num-badge="${surahNumber}:${ayah.ayah}" aria-label="${escapeHtml(t("This āyah"))}">${digitsForLang(ayah.ayah, "ar")}</button>`
+    : `<span class="ayah-num-badge">${digitsForLang(ayah.ayah, "ar")}</span>`;
+  return `<div class="ayah-num-row">${numBadge}</div><div class="ayah-arabic" dir="rtl" lang="ar">${body}</div>`;
 }
 
 /** Panel: translation text, in whichever language(s) are asked for (F-060 —
