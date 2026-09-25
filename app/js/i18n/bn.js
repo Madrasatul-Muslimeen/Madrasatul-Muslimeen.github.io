@@ -2291,12 +2291,6 @@ export const BN = {
   "Derived forms of this root": "এই ধাতু থেকে উৎপন্ন রূপসমূহ",
   // Issue #206 -- the Word Card's own occurrence-share line.
   "Appears {count} times in the Qur'an — {percent}% of all words": "কুরআনে {count} বার এসেছে — সকল শব্দের {percent}%",
-  // Issue #263 -- word-part colouring switch + legend.
-  "Colour word parts": "শব্দাংশ রঙিন করা",
-  "particle": "অব্যয়",
-  "person": "পুরুষ",
-  "determiner": "নির্দেশক",
-  "stem": "কাণ্ড",
   "{total} occurrences in {forms} derived forms": "{forms}টি উৎপন্ন রূপে {total}টি ব্যবহার",
   "{count} occurrences": "{count}টি ব্যবহার",
   "Category not recorded": "শ্রেণি লিপিবদ্ধ নেই",
@@ -2719,4 +2713,43 @@ export const BN = {
   "No pages have been shared with this Madrasah yet.": "এই মাদরাসার সাথে এখনো কোনো পাতা শেয়ার করা হয়নি।",
   "Make a printable page": "একটি প্রিন্টযোগ্য পাতা তৈরি করুন",
   "Removed.": "সরিয়ে ফেলা হয়েছে।",
+
+  // --- Issue #265 -- importing mappingmyjourney.com (a WordPress export)
+  // into Mapping My Journey: app/import-notes.html, its ⋯-menu entry point
+  // in journey-map.html, and the "Originally written" date line on an
+  // imported Note's own card in notes.html.
+  "Import from WordPress": "ওয়ার্ডপ্রেস থেকে ইমপোর্ট করুন", // ?
+  "Bring your mappingmyjourney.com folders and Notes into Mapping My Journey — the same folders, the same Notes, each linked to its āyah where its title names one. This never touches your existing folders or Notes, and never deletes anything.":
+    "আপনার mappingmyjourney.com-এর ফোল্ডার এবং নোটগুলো Mapping My Journey-তে আনুন — একই ফোল্ডার, একই নোট, প্রতিটি তার শিরোনামে উল্লেখিত আয়াতের সাথে যুক্ত। এটি আপনার বিদ্যমান ফোল্ডার বা নোট স্পর্শ করে না, এবং কিছুই মুছে ফেলে না।", // ?
+  "Back to Mapping My Journey": "Mapping My Journey-তে ফিরে যান",
+  "1. Choose your export file": "১. আপনার এক্সপোর্ট ফাইল বেছে নিন",
+  "In WordPress: Tools → Export → All content, then download the .xml file. It is read in this browser only — nothing is uploaded anywhere else, and the file itself is never saved to this app.":
+    "ওয়ার্ডপ্রেসে: Tools → Export → All content, তারপর .xml ফাইলটি ডাউনলোড করুন। এটি শুধু এই ব্রাউজারে পড়া হয় — অন্য কোথাও আপলোড করা হয় না, এবং এই ফাইলটি এই অ্যাপে কখনো সংরক্ষিত হয় না।", // ?
+  "2. Preview": "২. প্রিভিউ",
+  "Linked to one āyah": "একটি আয়াতের সাথে যুক্ত",
+  "Linked to a range": "একটি পরিসরের সাথে যুক্ত",
+  "Carry a Hadith reference": "হাদিসের একটি উল্লেখ বহন করে",
+  "No reference found": "কোনো উল্লেখ পাওয়া যায়নি",
+  "3. Import": "৩. ইমপোর্ট",
+  "Import": "ইমপোর্ট",
+  "Reading {name}…": "{name} পড়া হচ্ছে…",
+  "Could not read that file: {message}": "সেই ফাইলটি পড়া যায়নি: {message}",
+  "Titles with no usable reference (a sample):": "কোনো ব্যবহারযোগ্য উল্লেখ নেই এমন শিরোনাম (একটি নমুনা):",
+  "You can only import into your own Mapping My Journey — choose yourself in the Person picker above.":
+    "আপনি শুধু আপনার নিজের Mapping My Journey-তে ইমপোর্ট করতে পারবেন — উপরে পার্সন পিকার থেকে নিজেকে বেছে নিন।",
+  "Importing is nearly ready, but the governed decision that turns it on is incomplete.":
+    "ইমপোর্ট করা প্রায় প্রস্তুত, কিন্তু এটি চালু করার সিদ্ধান্তটি এখনো সম্পূর্ণ হয়নি।", // ?
+  "Importing is not switched on yet — the Owner needs to publish one Rules update first. The preview above works either way.":
+    "ইমপোর্ট এখনো চালু হয়নি — মালিককে প্রথমে একটি নিয়ম হালনাগাদ প্রকাশ করতে হবে। উপরের প্রিভিউ যেভাবেই হোক কাজ করে।", // ?
+  "Choose a file first.": "প্রথমে একটি ফাইল বেছে নিন।",
+  "Folders: {created} created, {skipped} already there ({done} of {total})…":
+    "ফোল্ডার: {created}টি তৈরি হয়েছে, {skipped}টি আগে থেকেই আছে ({total}-এর মধ্যে {done})…", // ?
+  "Notes: {created} created, {skipped} already there ({done} of {total})…":
+    "নোট: {created}টি তৈরি হয়েছে, {skipped}টি আগে থেকেই আছে ({total}-এর মধ্যে {done})…", // ?
+  "Done. Folders: {fc} created, {fs} already there. Notes: {nc} created, {ns} already there.":
+    "সম্পন্ন। ফোল্ডার: {fc}টি তৈরি হয়েছে, {fs}টি আগে থেকেই ছিল। নোট: {nc}টি তৈরি হয়েছে, {ns}টি আগে থেকেই ছিল।",
+  "The import stopped early: {message}. It is safe to try again — anything already created will be skipped.":
+    "ইমপোর্ট মাঝপথে থেমে গেছে: {message}। আবার চেষ্টা করা নিরাপদ — যা আগে থেকেই তৈরি হয়েছে তা এড়িয়ে যাওয়া হবে।", // ?
+  "Import from WordPress…": "ওয়ার্ডপ্রেস থেকে ইমপোর্ট করুন…", // ?
+  "Originally written": "মূলত লেখা হয়েছিল", // ?
 };

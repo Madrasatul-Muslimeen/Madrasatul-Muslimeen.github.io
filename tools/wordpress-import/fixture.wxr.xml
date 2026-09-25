@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  Issue #265 -- a small, HAND-BUILT WXR fixture for
+  tools/i18n-verify/wordpress-import-parser.mjs. This is NOT the Owner's real
+  mappingmyjourney.com export (17.7MB, never committed to this repository) --
+  it is a minimal file built by hand to the shapes the Architect measured in
+  the real one: every title format named in issue #265, an invalid ayah
+  reference, both hyphen and en-dash ranges, two Hadith-shaped titles, two
+  empty titles (one falling back to body words, one falling back to "Untitled
+  (date)"), an entity-encoded category name, a post filed in three
+  categories, an image, an attachment and a page (both must be skipped, real
+  post_type != "post"), and a trashed post (must be skipped, real status).
+-->
+<rss version="2.0"
+  xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
+  xmlns:content="http://purl.org/rss/1.0/modules/content/"
+  xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+  xmlns:dc="http://purl.org/dc/elements/1.1/"
+  xmlns:wp="http://wordpress.org/export/1.2/">
+<channel>
+  <title>Mapping My Journey (fixture)</title>
+  <link>https://mappingmyjourney.com</link>
+  <wp:wxr_version>1.2</wp:wxr_version>
+
+  <wp:category>
+    <wp:term_id>10</wp:term_id>
+    <wp:category_nicename><![CDATA[quran-study]]></wp:category_nicename>
+    <wp:category_parent><![CDATA[]]></wp:category_parent>
+    <wp:cat_name><![CDATA[Qur&#8217;an Study]]></wp:cat_name>
+  </wp:category>
+  <wp:category>
+    <wp:term_id>11</wp:term_id>
+    <wp:category_nicename><![CDATA[tafsir]]></wp:category_nicename>
+    <wp:category_parent><![CDATA[quran-study]]></wp:category_parent>
+    <wp:cat_name><![CDATA[Tafsir]]></wp:cat_name>
+  </wp:category>
+  <wp:category>
+    <wp:term_id>12</wp:term_id>
+    <wp:category_nicename><![CDATA[surah-al-baqarah]]></wp:category_nicename>
+    <wp:category_parent><![CDATA[tafsir]]></wp:category_parent>
+    <wp:cat_name><![CDATA[Surah Al-Baqarah]]></wp:cat_name>
+  </wp:category>
+  <wp:category>
+    <wp:term_id>20</wp:term_id>
+    <wp:category_nicename><![CDATA[hadith-notes]]></wp:category_nicename>
+    <wp:category_parent><![CDATA[]]></wp:category_parent>
+    <wp:cat_name><![CDATA[Hadith Notes]]></wp:cat_name>
+  </wp:category>
+  <wp:category>
+    <wp:term_id>30</wp:term_id>
+    <wp:category_nicename><![CDATA[reflections]]></wp:category_nicename>
+    <wp:category_parent><![CDATA[]]></wp:category_parent>
+    <wp:cat_name><![CDATA[Reflections]]></wp:cat_name>
+  </wp:category>
+
+  <item>
+    <title><![CDATA[Quran 2:255]]></title>
+    <link>https://mappingmyjourney.com/?p=101</link>
+    <content:encoded><![CDATA[<p>Ayat al-Kursi, the greatest ayah in the Qur'an.</p>]]></content:encoded>
+    <wp:post_id>101</wp:post_id>
+    <wp:post_date_gmt><![CDATA[2018-01-05 09:00:00]]></wp:post_date_gmt>
+    <wp:post_modified_gmt><![CDATA[2018-01-06 10:00:00]]></wp:post_modified_gmt>
+    <wp:status><![CDATA[publish]]></wp:status>
+    <wp:post_type><![CDATA[post]]></wp:post_type>
+    <category domain="category" nicename="quran-study"><![CDATA[Qur'an Study]]></category>
+    <category domain="category" nicename="tafsir"><![CDATA[Tafsir]]></category>
+  </item>
+
+  <item>
+    <title><![CDATA[An-Nisa' 4:113.]]></title>
+    <link>https://mappingmyjourney.com/?p=102</link>
+    <content:encoded><![CDATA[On following the best of what has been revealed.]]></content:encoded>
+    <wp:post_id>102</wp:post_id>
+    <wp:post_date_gmt><![CDATA[2018-01-07 09:00:00]]></wp:post_date_gmt>
+    <wp:post_modified_gmt><![CDATA[2018-01-07 09:00:00]]></wp:post_modified_gmt>
+    <wp:status><![CDATA[draft]]></wp:status>
+    <wp:post_type><![CDATA[post]]></wp:post_type>
+    <category domain="category" nicename="tafsir"><![CDATA[Tafsir]]></category>
+  </item>
+
+  <item>
+    <title><![CDATA[49:13 Al-Ĥujurāt]]></title>
+    <link>https://mappingmyjourney.com/?p=103</link>
+    <content:encoded><![CDATA[Mankind, We created you from a male and a female.]]></content:encoded>
+    <wp:post_id>103</wp:post_id>
+    <wp:post_date_gmt><![CDATA[2018-01-08 09:00:00]]></wp:post_date_gmt>
+    <wp:post_modified_gmt><![CDATA[2018-01-08 09:00:00]]></wp:post_modified_gmt>
+    <wp:status><![CDATA[publish]]></wp:status>
+    <wp:post_type><![CDATA[post]]></wp:post_type>
+    <category domain="category" nicename="surah-al-baqarah"><![CDATA[Surah Al-Baqarah]]></category>
+  </item>
+
+  <item>
+    <title><![CDATA[Sura 48 (Al-Fath) Ayat 29]]></title>
+    <link>https://mappingmyjourney.com/?p=104</link>
+    <content:encoded><![CDATA[Muhammad is the Messenger of Allah.]]></content:encoded>
+    <wp:post_id>104</wp:post_id>
+    <wp:post_date_gmt><![CDATA[2018-01-09 09:00:00]]></wp:post_date_gmt>
+    <wp:post_modified_gmt><![CDATA[2018-01-09 09:00:00]]></wp:post_modified_gmt>
+    <wp:status><![CDATA[publish]]></wp:status>
+    <wp:post_type><![CDATA[post]]></wp:post_type>
+    <category domain="category" nicename="quran-study"><![CDATA[Qur'an Study]]></category>
+    <category domain="category" nicename="tafsir"><![CDATA[Tafsir]]></category>
+    <category domain="category" nicename="reflections"><![CDATA[Reflections]]></category>
+  </item>
+
+  <item>
+    <title><![CDATA[7:33.]]></title>
+    <link>https://mappingmyjourney.com/?p=105</link>
+    <content:encoded><![CDATA[My Lord has only forbidden immoralities.]]></content:encoded>
+    <wp:post_id>105</wp:post_id>
+    <wp:post_date_gmt><![CDATA[2018-01-10 09:00:00]]></wp:post_date_gmt>
+    <wp:post_modified_gmt><![CDATA[2018-01-10 09:00:00]]></wp:post_modified_gmt>
+    <wp:status><![CDATA[publish]]></wp:status>
+    <wp:post_type><![CDATA[post]]></wp:post_type>
+    <category domain="category" nicename="reflections"><![CDATA[Reflections]]></category>
+  </item>
+
+  <item>
+    <title><![CDATA[2:1-5]]></title>
+    <link>https://mappingmyjourney.com/?p=106</link>
+    <content:encoded><![CDATA[Alif Lam Meem. This is the Book about which there is no doubt.]]></content:encoded>
+    <wp:post_id>106</wp:post_id>
+    <wp:post_date_gmt><![CDATA[2018-01-11 09:00:00]]></wp:post_date_gmt>
+    <wp:post_modified_gmt><![CDATA[2018-01-11 09:00:00]]></wp:post_modified_gmt>
+    <wp:status><![CDATA[publish]]></wp:status>
+    <wp:post_type><![CDATA[post]]></wp:post_type>
+    <category domain="category" nicename="tafsir"><![CDATA[Tafsir]]></category>
+  </item>
+
+  <item>
+    <title><![CDATA[2:1–5]]></title>
+    <link>https://mappingmyjourney.com/?p=107</link>
+    <content:encoded><![CDATA[Same range, en-dash instead of a hyphen.]]></content:encoded>
+    <wp:post_id>107</wp:post_id>
+    <wp:post_date_gmt><![CDATA[2018-01-12 09:00:00]]></wp:post_date_gmt>
+    <wp:post_modified_gmt><![CDATA[2018-01-12 09:00:00]]></wp:post_modified_gmt>
+    <wp:status><![CDATA[publish]]></wp:status>
+    <wp:post_type><![CDATA[post]]></wp:post_type>
+    <category domain="category" nicename="tafsir"><![CDATA[Tafsir]]></category>
+  </item>
+
+  <item>
+    <title><![CDATA[2:300]]></title>
+    <link>https://mappingmyjourney.com/?p=108</link>
+    <content:encoded><![CDATA[Surah Al-Baqarah has only 286 ayahs, so this reference is invalid.]]></content:encoded>
+    <wp:post_id>108</wp:post_id>
+    <wp:post_date_gmt><![CDATA[2018-01-13 09:00:00]]></wp:post_date_gmt>
+    <wp:post_modified_gmt><![CDATA[2018-01-13 09:00:00]]></wp:post_modified_gmt>
+    <wp:status><![CDATA[publish]]></wp:status>
+    <wp:post_type><![CDATA[post]]></wp:post_type>
+    <category domain="category" nicename="quran-study"><![CDATA[Qur'an Study]]></category>
+  </item>
+
+  <item>
+    <title><![CDATA[Sunan Nasaee' 143]]></title>
+    <link>https://mappingmyjourney.com/?p=109</link>
+    <content:encoded><![CDATA[A note about a hadith from Sunan an-Nasa'i.]]></content:encoded>
+    <wp:post_id>109</wp:post_id>
+    <wp:post_date_gmt><![CDATA[2018-01-14 09:00:00]]></wp:post_date_gmt>
+    <wp:post_modified_gmt><![CDATA[2018-01-14 09:00:00]]></wp:post_modified_gmt>
+    <wp:status><![CDATA[publish]]></wp:status>
+    <wp:post_type><![CDATA[post]]></wp:post_type>
+    <category domain="category" nicename="hadith-notes"><![CDATA[Hadith Notes]]></category>
+  </item>
+
+  <item>
+    <title><![CDATA[Sahih Muslim Book 1 Hadith 164]]></title>
+    <link>https://mappingmyjourney.com/?p=110</link>
+    <content:encoded><![CDATA[The reference sits in the middle of this title.]]></content:encoded>
+    <wp:post_id>110</wp:post_id>
+    <wp:post_date_gmt><![CDATA[2018-01-15 09:00:00]]></wp:post_date_gmt>
+    <wp:post_modified_gmt><![CDATA[2018-01-15 09:00:00]]></wp:post_modified_gmt>
+    <wp:status><![CDATA[publish]]></wp:status>
+    <wp:post_type><![CDATA[post]]></wp:post_type>
+    <category domain="category" nicename="hadith-notes"><![CDATA[Hadith Notes]]></category>
+  </item>
+
+  <item>
+    <title><![CDATA[]]></title>
+    <link>https://mappingmyjourney.com/?p=111</link>
+    <content:encoded><![CDATA[Reflecting on patience during a difficult week of exams and travel together.]]></content:encoded>
+    <wp:post_id>111</wp:post_id>
+    <wp:post_date_gmt><![CDATA[2018-01-16 09:00:00]]></wp:post_date_gmt>
+    <wp:post_modified_gmt><![CDATA[2018-01-16 09:00:00]]></wp:post_modified_gmt>
+    <wp:status><![CDATA[publish]]></wp:status>
+    <wp:post_type><![CDATA[post]]></wp:post_type>
+    <category domain="category" nicename="reflections"><![CDATA[Reflections]]></category>
+  </item>
+
+  <item>
+    <title><![CDATA[]]></title>
+    <link>https://mappingmyjourney.com/?p=112</link>
+    <content:encoded><![CDATA[   ]]></content:encoded>
+    <wp:post_id>112</wp:post_id>
+    <wp:post_date_gmt><![CDATA[2018-01-17 09:00:00]]></wp:post_date_gmt>
+    <wp:post_modified_gmt><![CDATA[2018-01-17 09:00:00]]></wp:post_modified_gmt>
+    <wp:status><![CDATA[publish]]></wp:status>
+    <wp:post_type><![CDATA[post]]></wp:post_type>
+    <category domain="category" nicename="reflections"><![CDATA[Reflections]]></category>
+  </item>
+
+  <item>
+    <title><![CDATA[A photo from the masjid trip]]></title>
+    <link>https://mappingmyjourney.com/?p=113</link>
+    <content:encoded><![CDATA[<img src="https://mappingmyjourney.com/wp-content/uploads/2018/01/photo.jpg" alt="Masjid">
+
+A second paragraph, separated by a blank line, so wpautop wraps it too.]]></content:encoded>
+    <wp:post_id>113</wp:post_id>
+    <wp:post_date_gmt><![CDATA[2018-01-18 09:00:00]]></wp:post_date_gmt>
+    <wp:post_modified_gmt><![CDATA[2018-01-18 09:00:00]]></wp:post_modified_gmt>
+    <wp:status><![CDATA[publish]]></wp:status>
+    <wp:post_type><![CDATA[post]]></wp:post_type>
+    <category domain="category" nicename="reflections"><![CDATA[Reflections]]></category>
+  </item>
+
+  <item>
+    <title><![CDATA[photo.jpg]]></title>
+    <link>https://mappingmyjourney.com/?p=114</link>
+    <content:encoded><![CDATA[]]></content:encoded>
+    <wp:post_id>114</wp:post_id>
+    <wp:post_date_gmt><![CDATA[2018-01-18 09:05:00]]></wp:post_date_gmt>
+    <wp:post_modified_gmt><![CDATA[2018-01-18 09:05:00]]></wp:post_modified_gmt>
+    <wp:status><![CDATA[inherit]]></wp:status>
+    <wp:post_type><![CDATA[attachment]]></wp:post_type>
+  </item>
+
+  <item>
+    <title><![CDATA[About this site]]></title>
+    <link>https://mappingmyjourney.com/?p=115</link>
+    <content:encoded><![CDATA[A static page, not a post.]]></content:encoded>
+    <wp:post_id>115</wp:post_id>
+    <wp:post_date_gmt><![CDATA[2018-01-19 09:00:00]]></wp:post_date_gmt>
+    <wp:post_modified_gmt><![CDATA[2018-01-19 09:00:00]]></wp:post_modified_gmt>
+    <wp:status><![CDATA[publish]]></wp:status>
+    <wp:post_type><![CDATA[page]]></wp:post_type>
+  </item>
+
+  <item>
+    <title><![CDATA[Quran 2:250]]></title>
+    <link>https://mappingmyjourney.com/?p=116</link>
+    <content:encoded><![CDATA[This one was deleted on the site and must not be imported.]]></content:encoded>
+    <wp:post_id>116</wp:post_id>
+    <wp:post_date_gmt><![CDATA[2018-01-20 09:00:00]]></wp:post_date_gmt>
+    <wp:post_modified_gmt><![CDATA[2018-01-20 09:00:00]]></wp:post_modified_gmt>
+    <wp:status><![CDATA[trash]]></wp:status>
+    <wp:post_type><![CDATA[post]]></wp:post_type>
+    <category domain="category" nicename="quran-study"><![CDATA[Qur'an Study]]></category>
+  </item>
+
+</channel>
+</rss>

@@ -13,6 +13,7 @@ import {
   NOTE_STATUS,
   getNotesByIds,
   listNoteFoldersForOwner,
+  listNoteFoldersForOwnerPage,
   listNotePlacementsForFolder,
   listNotePlacementsForNote,
   listNotesForOwnerPage,
@@ -103,9 +104,20 @@ export async function noteFilings(db, {
  * show the reader that orphaned or cyclic folders exist rather than quietly
  * omitting them, because a folder missing from the screen is indistinguishable,
  * to its author, from a folder that was lost.
+ *
+ * Issue #265 -- PAGES through every folder rather than reading the capped
+ * 100. `listNoteFoldersForOwner()` itself is untouched (deliberately, for
+ * every OTHER caller of it), but a WordPress import can create well over a
+ * thousand folders, and `listIsBounded()` refuses any single request above
+ * 100 — so a person with more than 100 folders could not see the rest of
+ * their own tree, at all, until this. `loadAllOwnerFolders()` below is the
+ * same bounded page-loop `loadAllOwnerNotes()`/`loadAllOwnerPlacements()`
+ * already use, so this stays a fast, cache-free change to what one call
+ * fetches, not a new mechanism.
  */
 export async function ownerFolderTree(db, { tenantId, ownerPersonId } = {}) {
-  return buildFolderTree(await listNoteFoldersForOwner(db, { tenantId, ownerPersonId }));
+  const { rows } = await loadAllOwnerFolders(db, { tenantId, ownerPersonId });
+  return buildFolderTree(rows);
 }
 
 /**
@@ -135,6 +147,11 @@ async function loadAllPages(fetchPage) {
     after = result.next;
   }
   return { rows, truncated: true };
+}
+
+/** Issue #265 -- the folder-side twin of the two below, used by `ownerFolderTree()` above so the tree is never capped at 100. */
+export async function loadAllOwnerFolders(db, { tenantId, ownerPersonId, status, pageSize = 100 } = {}) {
+  return loadAllPages((after) => listNoteFoldersForOwnerPage(db, { tenantId, ownerPersonId, status, pageSize, after }));
 }
 
 export async function loadAllOwnerNotes(db, { tenantId, ownerPersonId, status, pageSize = 100 } = {}) {

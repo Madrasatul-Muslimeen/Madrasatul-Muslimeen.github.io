@@ -189,6 +189,12 @@
       <button type="button" class="view-toggle-btn" data-view="folders">Folders</button>
       <button type="button" class="view-toggle-btn" data-view="timeline">Timeline</button>
       <button type="button" class="view-toggle-btn" data-view="path">Path</button>
+      <span class="bar-palette-wrap page-menu-wrap" data-bar-palette-wrap="pageMenu">
+        <button type="button" class="folder-menu-btn bar-palette-toggle" data-bar-palette-toggle="pageMenu" aria-haspopup="true" aria-expanded="false" title="More" aria-label="More">⋯</button>
+        <div class="bar-palette" data-bar-palette="pageMenu">
+          <a class="secondary tiny" href="import-notes.html" style="display:block; text-align:left; text-decoration:none; padding:0.32rem 0.7rem;">Import from WordPress…</a>
+        </div>
+      </span>
     </div>
 
     <div id="viewFolders"></div>
@@ -622,13 +628,22 @@
       return `<div class="note-card" data-note-id="${escapeHtml(note.noteId)}">
         <div class="note-card-head" data-note-toggle>
           <span class="note-card-title">${escapeHtml(title)}</span>
-          <span class="note-card-meta">${when(note.updatedAt)}</span>
+          <span class="note-card-meta">${when(displayTimestamp(note))}</span>
         </div>
         <div class="note-body-preview${open ? " open" : ""}" data-note-body></div>
         <div class="note-actions" data-note-actions style="${open ? "" : "display:none"}">
           ${fileControl && isSelfSelected() ? `<button type="button" class="secondary tiny" data-note-file>${t("File in a folder…")}</button>` : ""}
         </div>
       </div>`;
+    }
+    // Issue #265 -- a WordPress-imported Note carries its REAL original date
+    // (`originalCreatedAt`) alongside `updatedAt`, which for an imported Note
+    // is only ever "when this import ran". Every place this screen shows or
+    // sorts by a Note's date now prefers the original one when it is
+    // present, and falls back to `updatedAt` for every Note this app itself
+    // wrote (which never carries `originalCreatedAt` at all).
+    function displayTimestamp(note) {
+      return note?.originalCreatedAt ?? note?.updatedAt;
     }
     function when(ts) {
       const d = ts?.toDate ? ts.toDate() : null;
@@ -957,7 +972,7 @@
         <div class="note-card">
           <div class="note-card-head" data-note-toggle>
             <span class="note-card-title">📄 ${escapeHtml(title)}</span>
-            <span class="note-card-meta">${when(note.updatedAt)}</span>
+            <span class="note-card-meta">${when(displayTimestamp(note))}</span>
           </div>
           <div class="note-body-preview" data-note-body></div>
           <div class="note-actions" data-note-actions style="display:none">${controls}</div>
@@ -1479,11 +1494,11 @@
         return;
       }
       // Newest first, grouped by calendar day (the issue's own spec).
-      const sorted = [...notes].sort((a, b) => (b.updatedAt?.toMillis?.() ?? 0) - (a.updatedAt?.toMillis?.() ?? 0));
+      const sorted = [...notes].sort((a, b) => (displayTimestamp(b)?.toMillis?.() ?? 0) - (displayTimestamp(a)?.toMillis?.() ?? 0));
       let lastDay = null;
       let html = "";
       for (const note of sorted) {
-        const d = note.updatedAt?.toDate ? note.updatedAt.toDate() : null;
+        const d = displayTimestamp(note)?.toDate ? displayTimestamp(note).toDate() : null;
         const dayKey = d ? d.toDateString() : t("Unknown date");
         if (dayKey !== lastDay) { html += `<div class="timeline-day">${escapeHtml(d ? d.toLocaleDateString() : t("Unknown date"))}</div>`; lastDay = dayKey; }
         html += noteCardHtml(note, { fileControl: true });
@@ -1516,9 +1531,9 @@
         viewPath.innerHTML = `<p id="emptyMsg">${escapeHtml(t("Your path is empty so far — every Note you write will appear here as a new stop, oldest to newest."))}</p>`;
         return;
       }
-      const sorted = [...allNotes].sort((a, b) => (a.updatedAt?.toMillis?.() ?? 0) - (b.updatedAt?.toMillis?.() ?? 0));
+      const sorted = [...allNotes].sort((a, b) => (displayTimestamp(a)?.toMillis?.() ?? 0) - (displayTimestamp(b)?.toMillis?.() ?? 0));
       viewPath.innerHTML = `<div id="pathTrack">${sorted.map((note) => {
-        const d = note.updatedAt?.toDate ? note.updatedAt.toDate() : null;
+        const d = displayTimestamp(note)?.toDate ? displayTimestamp(note).toDate() : null;
         return `<div class="path-stop" data-note-id="${escapeHtml(note.noteId)}">
           <div class="path-stop-date">${escapeHtml(d ? d.toLocaleDateString() : "")}</div>
           ${noteCardHtml(note, { fileControl: true })}

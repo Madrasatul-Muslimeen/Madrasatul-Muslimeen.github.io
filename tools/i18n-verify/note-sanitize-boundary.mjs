@@ -51,8 +51,21 @@ function check(name, fn) {
 const sanitizeSrc = fs.readFileSync(path.join(root, "app/js/note-sanitize.js"), "utf8");
 const notesHtml = fs.readFileSync(path.join(root, "app/notes.html"), "utf8");
 
-const DANGEROUS_TAGS = ["script", "iframe", "object", "embed", "style", "img", "a", "svg", "form", "input", "link", "meta", "base"];
-const DANGEROUS_ATTR_PATTERN = /^on|href|src|style|xlink/i;
+// UPDATED for issue #265, reason recorded rather than the check weakened:
+// `img` moved OUT of this list and into its own, narrower set of checks
+// below. It is now a deliberate, narrow widening (a WordPress-imported
+// Note's own inline pictures) -- proven safe by what ATTRIBUTES it may
+// carry (src/alt/loading only, asserted below) and by a restricted
+// ALLOWED_URI_REGEXP on `src`, not by keeping the tag off the list
+// entirely. Every OTHER dangerous tag stays refused exactly as before.
+const DANGEROUS_TAGS = ["script", "iframe", "object", "embed", "style", "a", "svg", "form", "input", "link", "meta", "base"];
+// `src` is deliberately excluded from this pattern now that NOTE_ALLOWED_ATTR
+// legitimately carries it for `img` -- the dedicated checks below (the exact
+// allow-list is {src, alt, loading} and nothing else, plus the URI
+// restriction) are what prove it safe, a stronger and more specific claim
+// than a blanket "src is dangerous-shaped" pattern could make while still
+// wanting to allow it for one purpose.
+const DANGEROUS_ATTR_PATTERN = /^on|href|style|xlink/i;
 
 check("DOMPurify is loaded from the pinned CDN, as a plain <script> tag, in notes.html's own <head>", () => {
   const headMatch = notesHtml.match(/<head>([\s\S]*?)<\/head>/);
@@ -97,14 +110,36 @@ check("NOTE_ALLOWED_TAGS excludes every tag that could carry a script or load a 
   }
 });
 
-check("NOTE_ALLOWED_ATTR carries no attribute at all -- no event handler, no href, no inline style is possible", () => {
+// UPDATED for issue #265, reason recorded rather than the check weakened:
+// NOTE_ALLOWED_ATTR is no longer empty -- `img` needs src/alt/loading. The
+// claim is narrowed to "exactly these three, and none of them is a
+// dangerous-shaped attribute (on*/href/style/xlink)" -- still a closed-set
+// assertion, not a loosened one.
+check("NOTE_ALLOWED_ATTR carries exactly src/alt/loading -- no event handler, no href, no inline style is possible", () => {
   const match = sanitizeSrc.match(/NOTE_ALLOWED_ATTR = Object\.freeze\(\[([\s\S]*?)\]\)/);
   assert.ok(match, "NOTE_ALLOWED_ATTR is not defined as expected");
   const attrs = [...match[1].matchAll(/"([a-zA-Z-]+)"/g)].map((m) => m[1]);
-  assert.deepEqual(attrs, [], `NOTE_ALLOWED_ATTR permits attribute(s): ${JSON.stringify(attrs)}`);
+  assert.deepEqual(attrs.sort(), ["alt", "loading", "src"], `NOTE_ALLOWED_ATTR changed unexpectedly: ${JSON.stringify(attrs)}`);
   for (const attr of attrs) {
     assert.ok(!DANGEROUS_ATTR_PATTERN.test(attr), `NOTE_ALLOWED_ATTR permits a dangerous-shaped attribute: ${attr}`);
   }
+});
+
+check("img is allowed, but ONLY with src restricted to http(s) -- no javascript: or data: URI", () => {
+  assert.ok(sanitizeSrc.includes('"img"'), "NOTE_ALLOWED_TAGS no longer permits <img> -- issue #265's own imported images would be stripped");
+  const match = sanitizeSrc.match(/ALLOWED_URI_REGEXP\s*=\s*(\/[^\n]+\/i)/);
+  assert.ok(match, "no ALLOWED_URI_REGEXP is defined -- img src would fall back to DOMPurify's own broader default");
+  // eslint-disable-next-line no-eval -- reading the literal regex out of the source, the same technique this file already uses for NOTE_ALLOWED_TAGS/NOTE_ALLOWED_ATTR
+  const uriRegexp = new Function(`return ${match[1]};`)();
+  assert.ok(uriRegexp.test("https://mappingmyjourney.com/x.jpg"), "the URI restriction refuses a real, safe https image URL");
+  assert.ok(uriRegexp.test("http://mappingmyjourney.com/x.jpg"), "the URI restriction refuses a real, safe http image URL");
+  assert.ok(!uriRegexp.test("javascript:alert(1)"), "the URI restriction permits a javascript: URI");
+  assert.ok(!uriRegexp.test("data:text/html,<script>alert(1)</script>"), "the URI restriction permits a data: URI");
+});
+
+check("sanitizeNoteHtml() passes ALLOWED_URI_REGEXP to DOMPurify -- defining the restriction is not enough if it is never used", () => {
+  assert.ok(/ALLOWED_URI_REGEXP:\s*NOTE_ALLOWED_URI_REGEXP/.test(sanitizeSrc),
+    "sanitizeNoteHtml() does not pass ALLOWED_URI_REGEXP to DOMPurify.sanitize()");
 });
 
 // -----------------------------------------------------------------------
@@ -128,8 +163,9 @@ check("the exported allow-lists are exactly what the structural checks above jus
   // regex above extracted" -- the same tie-breaker this repository's own lessons
   // recommend (prefer the source/emulator over a grep when they could disagree).
   assert.ok(Array.isArray(NOTE_ALLOWED_TAGS) && NOTE_ALLOWED_TAGS.length > 0);
-  assert.deepEqual(NOTE_ALLOWED_ATTR, []);
+  assert.deepEqual([...NOTE_ALLOWED_ATTR].sort(), ["alt", "loading", "src"]);
   for (const dangerous of DANGEROUS_TAGS) assert.ok(!NOTE_ALLOWED_TAGS.includes(dangerous));
+  assert.ok(NOTE_ALLOWED_TAGS.includes("img"), "img should be allowed (issue #265)");
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

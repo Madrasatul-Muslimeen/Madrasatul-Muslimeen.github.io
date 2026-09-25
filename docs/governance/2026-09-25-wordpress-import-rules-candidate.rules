@@ -1,0 +1,246 @@
+// WORDPRESS IMPORT (mappingmyjourney.com) -- notes/noteFolders Rules CANDIDATE, 25 Sep 2026.
+// Issue #265.
+//
+// ███ THIS IS AN EXTRACT. NEVER PASTE THIS FILE INTO THE FIREBASE CONSOLE. ███
+//
+// It contains TWO match blocks, `notes` and `noteFolders`. Pasting it would
+// replace the entire live ruleset with a file governing two collections --
+// the exact hazard the standing brief records for the `candidate-2026-09-15`
+// extracts. It exists to be reviewed and to be executed against the
+// emulator. When this candidate is activated, these two blocks REPLACE the
+// corresponding blocks inside the production ruleset; nothing else in
+// `firestore.rules` is touched by this candidate.
+//
+// NOT DEPLOYED. `firestore.rules` is untouched and stays untouched.
+// `app/js/study-wordpress-import-readiness.js` gates every write this
+// widening would authorise, at `ready: false`, until the Owner confirms a
+// Console publish and the Architect records the governed decision.
+//
+// ---------------------------------------------------------------------------
+// WHAT CHANGES, AND WHAT DELIBERATELY DOES NOT
+//
+// Three fields join `notes`' shape, all OPTIONAL: `originalCreatedAt`,
+// `originalModifiedAt` (the WordPress post's own `post_date_gmt`/
+// `post_modified_gmt`, as real Firestore Timestamps) and `importSource` (a
+// small map -- `{ system, site, postId, status, link, imageUrls, hadithRef }`,
+// see app/js/wordpress-import-parser.js's own analyzeWxrImport() for the
+// exact shape it writes). One field joins `noteFolders`' shape, also
+// optional: `importSource` (`{ system, termId, niceName }`).
+//
+// EVERY OTHER CLAUSE -- read, the identity-frozen fields, `createdBy`
+// stamping, the revision-chain check on `notes`, `parentOneHopOk()` on
+// `noteFolders`, both `allow delete: if false` -- is reproduced BYTE-FOR-BYTE
+// from the deployed `firestore.rules`, so a reviewer can diff them and see
+// that this candidate widens exactly the two shape checks named above and
+// nothing else. The three helper functions each block already calls
+// (`canReadNoteOf`, `isNoteOwner`, `listIsBounded`, `d`,
+// `ownershipWellFormed`) are copied unchanged from the shared block above
+// both `match` statements in production.
+//
+// WHY OPTIONAL, NOT REQUIRED: every Note/folder this app itself creates
+// (createStudyNote(), promoteQuickNoteToStudyNote(), a plain folder from
+// journey-map.html) has no WordPress origin at all, and must keep writing
+// and updating exactly as it does today. `d().keys().hasAll([...])` names
+// only the fields that were already required; the three/one new fields
+// appear only in `hasOnly([...])`, so a write that omits them is unchanged,
+// and a write that includes them must be well-typed (a real Timestamp, a
+// real map) or is refused.
+//
+// WHY THIS DOES NOT NEED A NEW COLLECTION OR A NEW INDEX. Nothing here adds
+// a query -- the import service reads a Note/folder by its own deterministic
+// id (a `get`, not a `where`), and no new field is ever the target of an
+// `orderBy`. `docs/governance/2026-09-25-wordpress-import-rules-candidate.rules`
+// is Rules only; there is no matching indexes candidate for this round.
+// ---------------------------------------------------------------------------
+
+    // The person must really belong to the tenant the document names.
+    function personInTenant(tenantId, personId) {
+      return exists(tenantPersonRef(personId))
+          && get(tenantPersonRef(personId)).data.get('tenantId', null) == tenantId;
+    }
+
+    function canReadNoteOf(tenantId, ownerPersonId) {
+      return signedIn()
+          && personInTenant(tenantId, ownerPersonId)
+          && (isSelfPerson(ownerPersonId)
+              || isGuardianOf(tenantId, ownerPersonId)
+              || (isTeacherIn(tenantId) && isCoEnrolledTeacherOf(tenantId, ownerPersonId))
+              || isOwnerIn(tenantId) || isPrimeIn(tenantId));
+    }
+
+    function isNoteOwner(tenantId, ownerPersonId) {
+      return signedIn()
+          && personInTenant(tenantId, ownerPersonId)
+          && isSelfPerson(ownerPersonId);
+    }
+
+    function listIsBounded() {
+      return request.query.limit <= 100;
+    }
+
+    function d() { return request.resource.data; }
+
+    function ownershipWellFormed() {
+      return d().tenantId is string && d().tenantId.size() > 0
+          && d().ownerPersonId is string && d().ownerPersonId.size() > 0
+          && (d().get('ownerUid', null) == null || d().ownerUid is string);
+    }
+
+    function noteIdentityUnchanged() {
+      return resource != null
+          && d().tenantId       == resource.data.tenantId
+          && d().ownerPersonId  == resource.data.ownerPersonId
+          && d().get('ownerUid', null) == resource.data.get('ownerUid', null)
+          && d().noteId         == resource.data.noteId
+          && d().visibility     == resource.data.visibility;
+    }
+
+
+    match /notes/{noteKey} {
+
+      // --- WORDPRESS IMPORT (issue #265), NEW ---------------------------
+      // Every one of the three fields below is OPTIONAL and, when present,
+      // must be well-typed -- a real Timestamp for a date, a real map for
+      // provenance. A write that never touches them (every non-imported
+      // Note, forever) is completely unaffected.
+      function importFieldsWellFormed() {
+        return (d().get('originalCreatedAt', null) == null || d().originalCreatedAt is timestamp)
+            && (d().get('originalModifiedAt', null) == null || d().originalModifiedAt is timestamp)
+            && (d().get('importSource', null) == null || d().importSource is map);
+      }
+      // --- end WORDPRESS IMPORT ------------------------------------------
+
+      function noteShapeOk() {
+        return d().keys().hasOnly([
+                 'noteId', 'tenantId', 'ownerPersonId', 'ownerUid', 'visibility',
+                 'title', 'bodyHtml', 'status', 'currentRevisionId',
+                 'originalCreatedAt', 'originalModifiedAt', 'importSource',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll([
+                 'noteId', 'tenantId', 'ownerPersonId', 'visibility',
+                 'title', 'bodyHtml', 'status', 'currentRevisionId',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && ownershipWellFormed()
+            && importFieldsWellFormed()
+            && d().noteId is string && d().noteId.size() > 0
+            && noteKey == d().tenantId + '__' + d().noteId
+            && d().visibility == 'private'
+            && d().title is string && d().bodyHtml is string
+            && (d().status == 'active' || d().status == 'retired')
+            && d().currentRevisionId is string && d().currentRevisionId.size() > 0;
+      }
+
+      function createdByStampedOnCreate() { return d().createdBy == myUid(); }
+      function createdByFrozen() { return resource != null && d().createdBy == resource.data.createdBy; }
+
+      function revisionRef(revisionId) {
+        return /databases/$(database)/documents/noteRevisions/$(d().tenantId + '__' + revisionId);
+      }
+      function committedRevisionMatches(previousRevisionId) {
+        return existsAfter(revisionRef(d().currentRevisionId))
+            && getAfter(revisionRef(d().currentRevisionId)).data.noteId == d().noteId
+            && getAfter(revisionRef(d().currentRevisionId)).data.tenantId == d().tenantId
+            && getAfter(revisionRef(d().currentRevisionId)).data.ownerPersonId == d().ownerPersonId
+            && getAfter(revisionRef(d().currentRevisionId)).data.get('previousRevisionId', null) == previousRevisionId;
+      }
+
+      allow get: if canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+      allow list: if listIsBounded() && canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+
+      allow create: if noteShapeOk()
+                    && createdByStampedOnCreate()
+                    && isNoteOwner(d().tenantId, d().ownerPersonId)
+                    && d().status == 'active'
+                    && committedRevisionMatches(null);
+
+      allow update: if resource != null
+                    && noteShapeOk()
+                    && createdByFrozen()
+                    && isNoteOwner(resource.data.tenantId, resource.data.ownerPersonId)
+                    && noteIdentityUnchanged()
+                    && committedRevisionMatches(resource.data.currentRevisionId);
+
+      allow delete: if false; // I4/D6, matrix IMM-03. Retiring writes a status.
+    }
+
+    match /noteFolders/{folderKey} {
+
+      function folderRef(folderId) {
+        return /databases/$(database)/documents/noteFolders/$(d().tenantId + '__' + folderId);
+      }
+
+      // --- WORDPRESS IMPORT (issue #265), NEW -----------------------------
+      function folderImportFieldsWellFormed() {
+        return d().get('importSource', null) == null || d().importSource is map;
+      }
+      // --- end WORDPRESS IMPORT --------------------------------------------
+
+      function folderShapeOk() {
+        return d().keys().hasOnly([
+                 'folderId', 'tenantId', 'ownerPersonId', 'ownerUid', 'name',
+                 'parentFolderId', 'semanticRole', 'order', 'status', 'importSource',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll([
+                 'folderId', 'tenantId', 'ownerPersonId', 'name',
+                 'parentFolderId', 'semanticRole', 'order', 'status',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && ownershipWellFormed()
+            && folderImportFieldsWellFormed()
+            && d().folderId is string && d().folderId.size() > 0
+            && folderKey == d().tenantId + '__' + d().folderId
+            && d().name is string && d().name.size() > 0
+            && d().order is int
+            && (d().status == 'active' || d().status == 'retired')
+            && (d().semanticRole == 'journey-map'
+                || d().semanticRole == 'reflection-archive'
+                || d().semanticRole == 'user');
+      }
+
+      function isSystemRole(role) { return role == 'journey-map' || role == 'reflection-archive'; }
+
+      function parentOneHopOk() {
+        return d().parentFolderId == null
+            ? true
+            : (d().parentFolderId is string
+               && d().parentFolderId != d().folderId
+               && !isSystemRole(d().semanticRole)
+               && exists(folderRef(d().parentFolderId))
+               && get(folderRef(d().parentFolderId)).data.tenantId == d().tenantId
+               && get(folderRef(d().parentFolderId)).data.ownerPersonId == d().ownerPersonId
+               && get(folderRef(d().parentFolderId)).data.status == 'active'
+               && !isSystemRole(get(folderRef(d().parentFolderId)).data.semanticRole));
+      }
+
+      function folderIdentityUnchanged() {
+        return resource != null
+            && d().tenantId      == resource.data.tenantId
+            && d().ownerPersonId == resource.data.ownerPersonId
+            && d().get('ownerUid', null) == resource.data.get('ownerUid', null)
+            && d().folderId      == resource.data.folderId
+            && d().semanticRole  == resource.data.semanticRole;
+      }
+
+      function createdByStampedOnCreate() { return d().createdBy == myUid(); }
+      function createdByFrozen() { return resource != null && d().createdBy == resource.data.createdBy; }
+
+      allow get: if canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+      allow list: if listIsBounded() && canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+
+      allow create: if folderShapeOk()
+                    && createdByStampedOnCreate()
+                    && isNoteOwner(d().tenantId, d().ownerPersonId)
+                    && d().status == 'active'
+                    && parentOneHopOk();
+
+      allow update: if folderShapeOk()
+                    && folderIdentityUnchanged()
+                    && createdByFrozen()
+                    && isNoteOwner(d().tenantId, d().ownerPersonId)
+                    && parentOneHopOk();
+
+      allow delete: if false;   // I4/D6 — retire, never destroy
+    }
