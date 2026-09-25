@@ -1483,7 +1483,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       // deriving it from the tenant document twice.
       applySections(activeMembership?.tenantData ?? null);
 
-      if (catalogueTemplatesMissing(tree, trackables)) {
+      if (catalogueTemplatesMissing(tree, trackables, modules)) {
         // Rare: a genuinely new tenant, or one older than a module. Seed for
         // real (several more round trips -- acceptable here, this is not
         // the steady-state case the round-trip budget is about), then
