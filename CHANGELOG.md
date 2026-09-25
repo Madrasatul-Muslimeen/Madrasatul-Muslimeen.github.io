@@ -18455,3 +18455,15 @@ is read alongside `tenantPeople`/`trackables` (≈3 trips) — touches tenant
 selection and was left for a round with its own two-tenant tests.
 behaviour.mjs 984/9 (the same 9 as `main`), layout.mjs 0 changed, navcheck,
 panel (both languages), splash-skip and wordpress-import-screen pass.
+
+**v08.71 (25 Sep 2026).** Issue #278, speed part 3, allocated by the MMSA
+Architect. The Builder's four-file change (`session-context.js`,
+`quranrevival.html`, two suites) was reviewed on a clean merge with `main`,
+with no overwritten work. Measured at `--latency 150`: Quran Study 3
+sequential round trips, usable in about 0.8s; Deen Study 6, Health 6, Asma 6
+and Records 5 are unchanged. `quranrevival-startup-reads.mjs` now pins ≤3 (2/0).
+`session-context-two-tenant.mjs` 14/0, including a mutation of
+`pickContext()` that ignores `defaultTenantId` and is caught. In a real
+browser the tenant picker shows the tenant's name, and the page raised no
+errors. behaviour.mjs 984/9 (the same 9 as `main`), layout.mjs 0 changed,
+navcheck and panel (both languages) pass.
