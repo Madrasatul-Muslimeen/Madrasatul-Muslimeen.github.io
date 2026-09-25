@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.62",
+    "version": "08.63",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -521,7 +521,7 @@
     {
       "version": "08.62",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Mapping My Journey gains a Back button. The Owner: 'There's no go back button to exit from Mapping view.' #backLink on journey-map.html, above the view toggle and outside #app so it shows before sign-in resolves: history.back() when the reader came from a page of this app (the dock's Mapping tab, the Note view's ⋯ menu, Home ▾), otherwise its plain href to quranrevival.html. 40px tall, both languages ('← Back' / '← পেছনে', reusing the existing 'Back' key). New journey-map-back.mjs 38/0 in a real browser at 320/390/1100px, both languages, including a hit-test that nothing covers it; the suite fails with the change removed.",
       "integration": {
         "authorizedOn": "2026-09-25",
@@ -529,10 +529,23 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "08.63",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Mapping My Journey's Folders view becomes a Siyagah-style folder tree (issue #259): expand/collapse, subtree Note counts (folderNoteCounts, distinct Notes, retired excluded), display-only (01)/(01.02) numbering with a Show numbers switch (never written into a name), 📍 new-folder target, inline rename, Remove (retire; Notes untouched), drag to reorder/move on desktop with ▲▼ and Move to… for touch, Notes as leaves, search over folder names and Note titles, A−/A+ text size. Paged reads (listNotesForOwnerPage, listNotePlacementsForOwnerPage, loadAllOwnerNotes/Placements) lift the 100-Note cap; no Rules or index change. Architect's review fixed four things before merge: the builder's branch had silently removed v08.62's Back button and CHANGELOG entry (restored); a backtick in firebase-stub.mjs broke every browser suite (fixed); the emulator suite's import rewrite lacked startAfter (fixed, 30/30 against the live rules); and the hit-test check opened the wrong URL and relied on a stub write (fixed with a seeded folder, 48/0).",
+      "integration": {
+        "authorizedOn": "2026-09-25",
+        "integratedOn": "2026-09-25",
+        "method": "MERGE_PR",
+        "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/issues/259"
+      }
     }
   ],
-  "nextUnallocated": "08.63",
+  "nextUnallocated": "08.64",
   "nextUnallocatedNote": [
+    "v08.63 was allocated to the Siyagah-style folder tree in Mapping My Journey (issue #259), 2026-09-25.",
     "v08.62 was allocated to the Mapping My Journey Back button, on the Owner's report, 2026-09-25.",
     "v08.61 was allocated to switching on the Mapping My Journey dock tab (issue #257), 2026-09-25.",
     "v08.60 was allocated to the Page-by-page last-line scroll fix (the residue of draft PR #37), 2026-09-24.",

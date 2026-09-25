@@ -622,8 +622,16 @@ if (!playwrightMod) {
     const { newContext, openPage } = await import("./harness.mjs");
     const browser = await playwrightMod.chromium.launch();
     try {
-      const ctx = await newContext(browser, { viewport: { width: 390, height: 844 } });
-      const { page: browserPage, errors } = await openPage(ctx, "/journey-map.html#folders");
+      // Architect's review, 25 Sep 2026: the stub never mutates its own DATA
+      // (a standing harness lesson), so creating a folder through the form and
+      // waiting for its row could never pass here. Seed one real user folder
+      // instead, so a ⋯ menu is guaranteed to exist to hit-test.
+      const SEED = `DATA.noteFolders = [{ _id: TENANT_ID + "__f-hit", folderId: "f-hit", tenantId: TENANT_ID,
+        ownerPersonId: "p1", ownerUid: UID, name: "Hit-test folder", parentFolderId: null,
+        semanticRole: "user", order: 1, status: "active", schemaVersion: 1,
+        createdAt: "2026-09-25T00:00:00.000Z", updatedAt: "2026-09-25T00:00:00.000Z", createdBy: UID }];`;
+      const ctx = await newContext(browser, { viewport: { width: 390, height: 844 }, extraSeedJs: SEED });
+      const { page: browserPage, errors } = await openPage(ctx, "/app/journey-map.html#folders");
       await browserPage.waitForSelector("[data-folder-tree] .folder-row", { timeout: 5000 });
       // The seeded stub tenant may or may not already carry a non-system
       // folder; create one if needed so a ⋯ menu (system folders carry none)
@@ -646,7 +654,11 @@ if (!playwrightMod) {
       if (!hit || !hit.insideMenu) {
         throw new Error(`elementFromPoint() at the menu's own centre did not land inside it -- got ${JSON.stringify(hit)}; something else is on top of it`);
       }
-      if (errors.length) throw new Error(`page errors: ${errors.join("; ")}`);
+      // A resource the sandbox's proxy cannot reach (a CDN script or font) is
+      // environmental, the same class CLAUDE.md records for the TLS artefact;
+      // any other page error still fails the check.
+      const real = errors.filter((e) => !/Failed to load resource: net::ERR_(TUNNEL_CONNECTION_FAILED|CERT_AUTHORITY_INVALID)/.test(e));
+      if (real.length) throw new Error(`page errors: ${real.join("; ")}`);
     } finally {
       await browser.close();
     }

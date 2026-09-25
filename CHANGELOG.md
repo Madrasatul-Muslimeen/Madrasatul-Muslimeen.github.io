@@ -17949,6 +17949,22 @@ this sandbox (the documented, repeated environment gap), so `layout.mjs` and
 construction (above), and a real-phone check at 320/360/390/412/768/1100px in
 both languages is the recommended substitute.
 
+**v08.62 (25 Sep 2026).** **Mapping My Journey gets a Back button.** The
+Owner: *"There's no go back button to exit from Mapping view."* Since v08.61
+the dock's Mapping tab opens `app/journey-map.html` as its own page, and on a
+phone the browser's own back control may not be visible, so there was no way
+out except Home ▾. `#backLink` ("← Back" / "← পেছনে", reusing the existing
+`Back` translation) sits above the view toggle and outside `#app`, so it is
+there even before sign-in resolves. Pressing it goes back through history when
+the reader arrived from a page of this app (the dock tab, the Note view's ⋯
+menu, Home ▾), which returns them to the same screen; opened directly from a
+bookmark or shared link, its plain `href` takes them to Quran Study. New
+`tools/i18n-verify/journey-map-back.mjs`, **38/0** in a real browser at
+320/390/1100px in both languages: present, on screen, not covered (hit-tested
+with `elementFromPoint`), at least 40px tall, correct text, no sideways
+scroll, and pressing it returns to Quran Study, plus the direct-visit case.
+With the change removed the suite fails.
+
 ## 25 Sep 2026 — Mapping My Journey: Folders view becomes a Siyagah-style folder tree (issue #259, NO VERSION BUMP — the Architect allocates one)
 
 The Owner asked for MMSA's Folders view to work like the "My Notebooks"
@@ -18065,3 +18081,22 @@ allocates.**
 `note-foundation-boundary` 30, `firestore-index-requirements` 10 — **306
 checks run, 0 failed.** The emulator suite (Part 1's own new cases) could
 not run in this sandbox at all; the Architect runs it.
+
+**v08.63 (25 Sep 2026)** allocates the folder-tree round above (issue #259).
+The Architect's review fixed four things before merge. **(1)** The builder's
+branch had deleted v08.62's Back button from `journey-map.html` and its
+CHANGELOG entry: the branch was cut before v08.62 and the file was rewritten
+whole. Both are restored (`journey-map-back.mjs` 38/0). **(2)** A backtick
+inside a comment in `firebase-stub.mjs`, which is served as a template
+literal, was a SyntaxError that stopped every browser suite. **(3)**
+`journey-map-real-function.rules.test.mjs` rewrote `note-foundation.js`'s
+Firebase import without the new `startAfter`, so the suite threw before any
+check ran. It is now **30/30 against the live `firestore.rules`**, including
+250 Notes and 250 placements read back across pages and a 101 page size
+refused. **(4)** The ⋯-menu hit-test opened `/journey-map.html` instead of
+`/app/journey-map.html`, and depended on a folder created through the stub,
+which never mutates its own data. It now seeds a real folder, and
+`journey-map-screen.mjs` is 48/0. Looked at in a real browser at 390px
+(English and Bangla) and 1100px with nested folders and filed Notes: counts
+are correct and there is no sideways scroll. Recorded, not changed: at desktop
+width the row actions still sit behind ⋯ rather than showing as separate icons.

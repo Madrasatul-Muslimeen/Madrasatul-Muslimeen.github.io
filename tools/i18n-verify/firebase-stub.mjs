@@ -276,7 +276,7 @@ export function limit(n) { return { __limit: n }; }
 // listNotePlacementsForOwnerPage) import startAfter(); its absence here would
 // be the same module-level SyntaxError stub-parity.mjs exists to catch. The
 // cursor is the LAST document snapshot a previous page returned (its own
-// `id`), and getDocs() below slices the already-sorted/filtered result set to
+// "id"), and getDocs() below slices the already-sorted/filtered result set to
 // whatever comes after that id -- correct for both an orderBy'd query and an
 // equality-only one, since either way the stub's own filter+sort is stable.
 export function startAfter(snapshotOrDoc) { return { __startAfter: snapshotOrDoc?.id ?? snapshotOrDoc }; }

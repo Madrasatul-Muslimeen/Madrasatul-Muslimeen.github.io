@@ -158,7 +158,20 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.62 on `main`** (25 Sep 2026 — the Owner: *"There's
+**Current milestone: v08.63 on `main`** (25 Sep 2026 — Mapping My Journey's
+Folders view becomes a Siyagah-style folder tree, issue #259: expand/collapse,
+subtree Note counts, display-only `(01.02)` numbering, 📍 new-folder target,
+inline rename, Remove (retire only), drag plus ▲▼/Move to…, Notes as leaves,
+search, text size. **Paged reads lift the 100-Note cap** with no Rules change.
+**Review caught the builder silently deleting v08.62's Back button and
+CHANGELOG entry** — its branch was cut before v08.62 and the file rewritten
+wholesale; both restored. Also fixed: a backtick inside the stub's template
+literal that broke every browser suite, and a missing `startAfter` in the
+emulator suite's import rewrite (30/30 against the live rules).
+**Lesson: diff a builder's branch against CURRENT `main` for deletions, not
+just the base it was cut from.**)
+
+**Previous milestone: v08.62 on `main`** (25 Sep 2026 — the Owner: *"There's
 no go back button to exit from Mapping view."* `journey-map.html` gains
 `#backLink`: `history.back()` when the reader came from a page of this app,
 otherwise its plain href to Quran Study. 40px, both languages, outside `#app`

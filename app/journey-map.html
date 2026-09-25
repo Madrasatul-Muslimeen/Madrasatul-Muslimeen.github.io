@@ -32,6 +32,14 @@
      -- and roughly the same shape -- as this app's own "View as" chips
      elsewhere, sized as real tap targets (>=36px) at every phone width. -- */
   #viewToggle { display: flex; gap: 0.3rem; margin: 1rem 0; flex-wrap: wrap; }
+  /* The Owner, 25 Sep 2026: "There's no go back button to exit from Mapping
+     view." The dock's Mapping tab (v08.61) opens this as a separate page, so
+     the reader needs a way back that does not depend on the browser's own
+     back control, which a phone app shell may hide. */
+  #backLink { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 40px;
+    padding: 0 0.9rem; margin: 0.6rem 0 0; border: 1px solid #c9d3e6; border-radius: 999px;
+    background: #fff; color: #1f3a6e; font-weight: 600; text-decoration: none; }
+  #backLink:focus-visible { outline: 2px solid #1f3a6e; outline-offset: 2px; }
   .view-toggle-btn {
     flex: 1 1 8rem; min-height: 36px; padding: 0.4rem 0.5rem; font-size: 0.85rem;
     border-radius: 999px; border: 1px solid #1F3A6E; background: #fff; color: #1F3A6E;
@@ -162,6 +170,8 @@
     <div id="navBar"></div>
   </nav>
 
+  <a id="backLink" href="quranrevival.html"><span aria-hidden="true">←</span> <span>Back</span></a>
+
   <div id="app" style="display:none;">
     <div id="contextBar">
       <label>Tenant
@@ -211,6 +221,17 @@
     } from "./js/journey-map-service.js";
 
     translateStatic();
+
+    // Back: return to wherever the reader came from inside this app (the
+    // dock's Mapping tab, the Note view's ⋯ menu, Home ▾), so they land on
+    // the same screen and position. A direct visit, a bookmark or a link
+    // from outside has nothing of ours to go back to, so the plain href to
+    // Quran Study stands.
+    document.getElementById("backLink").addEventListener("click", (e) => {
+      let sameOrigin = false;
+      try { sameOrigin = !!document.referrer && new URL(document.referrer).origin === location.origin; } catch { sameOrigin = false; }
+      if (sameOrigin && history.length > 1) { e.preventDefault(); history.back(); }
+    });
 
     // ADR-010 §3's closed set, mirrored rather than imported directly from
     // journey-map-contract.js -- this screen goes through journey-map-

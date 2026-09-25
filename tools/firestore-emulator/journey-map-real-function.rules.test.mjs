@@ -96,7 +96,7 @@ const envelopeDataUrl = toDataUrl(envelopeSource);
 
 let noteFoundationSource = fs.readFileSync(path.join(root, "app/js/note-foundation.js"), "utf8");
 noteFoundationSource = rewriteGstaticImport(noteFoundationSource,
-  `import { collection, doc, getDoc, getDocs, limit, orderBy, query, where } from "${firestorePackageUrl}";`,
+  `import { collection, doc, getDoc, getDocs, limit, orderBy, query, startAfter, where } from "${firestorePackageUrl}";`,
   "note-foundation.js");
 noteFoundationSource = rewriteSpecifier(noteFoundationSource, "./collections.js", realFileUrl("collections.js"), "note-foundation.js");
 noteFoundationSource = rewriteSpecifier(noteFoundationSource, "./journey-map-contract.js", realFileUrl("journey-map-contract.js"), "note-foundation.js");
