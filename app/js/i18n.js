@@ -35,11 +35,55 @@
 // I2: no Firebase, no DOM ownership beyond the one explicit call.
 
 import { getAppLang } from "./prefs.js";
-import { BN } from "./i18n/bn.js";
-import { SURAH_NAMES_BN } from "./i18n/surah-names-bn.js";
-import { ASMA_NAMES_BN } from "./i18n/asma-names-bn.js";
 
-const CATALOGUES = { bn: BN };
+// LOAD SPEED (25 Sep 2026, issue #272) -- bn.js is ~63KB compressed (the
+// Bangla catalogue plus its two name tables) and used to be a plain static
+// import, so every English reader's first page load fetched and parsed it
+// too, for nothing. It is loaded on demand now, memoized so a second call
+// never re-fetches it.
+const CATALOGUES = {};
+let SURAH_NAMES_BN = {};
+let ASMA_NAMES_BN = {};
+let bnLoadPromise = null;
+
+function loadBangla() {
+  if (!bnLoadPromise) {
+    bnLoadPromise = Promise.all([
+      import("./i18n/bn.js"),
+      import("./i18n/surah-names-bn.js"),
+      import("./i18n/asma-names-bn.js"),
+    ]).then(([bn, surah, asma]) => {
+      CATALOGUES.bn = bn.BN;
+      SURAH_NAMES_BN = surah.SURAH_NAMES_BN;
+      ASMA_NAMES_BN = asma.ASMA_NAMES_BN;
+    });
+  }
+  return bnLoadPromise;
+}
+
+// The startup case: a top-level await here means an English reader's import
+// of this module never even evaluates the dynamic import() calls above --
+// nothing is fetched, t() stays synchronous exactly as before -- while a
+// Bangla reader's page genuinely cannot finish loading THIS module (and so
+// cannot reach its own first translateStatic() call, which always comes
+// straight after importing from here) until the catalogue is in hand. No
+// flash of English, and no per-page change needed for the 35 pages that
+// take the default "reload on language change" handler (prefs.js's
+// reloadOnAppLangChange) -- a reload re-runs this exact check.
+//
+// The one page that does NOT reload on a language switch --
+// quranrevival.html's own in-place applyAppLangChange() -- awaits
+// ensureCatalogueReady() below before its own translateStatic() call,
+// because by the time someone switches language at runtime this module has
+// already finished loading in English.
+if (getAppLang() === "bn") await loadBangla();
+
+/** Resolves once the current language's catalogue is ready -- a no-op,
+ *  already-resolved promise in English. Only needed by a page that changes
+ *  language WITHOUT reloading; see the header above. */
+export function ensureCatalogueReady() {
+  return getAppLang() === "bn" ? loadBangla() : Promise.resolve();
+}
 
 /** Split "Track|verb" into its lookup key and the plain English fallback. */
 function fallbackOf(key) {

@@ -386,8 +386,31 @@ function unchangedSinceMain(relPath) {
   assert.equal(now, head, `${relPath} is NOT byte-identical to origin/main`);
 }
 
+// UPDATED IN PLACE, 25 Sep 2026 (issue #272, load speed). This used to
+// require app/js/version.js BYTE-IDENTICAL to main, which was really
+// checking two different things at once: the version VALUE (this round's own
+// concern) and the file's 580-odd lines of round-by-round history comments
+// (never this round's concern, and a real cost -- 40KB of comments in a
+// module every page imports before first paint). Issue #272 moved that
+// history to docs/governance/version-history.md and trimmed the comment to
+// two lines, EXPLICITLY leaving the APP_VERSION value untouched -- so the
+// check now asserts the one fact its own name describes, read out of the
+// real exported constant on each side rather than the file's raw bytes.
+function versionValue(relPath, ref) {
+  const src = ref
+    ? execFileSync("git", ["show", `${ref}:${relPath}`], { cwd: root, encoding: "utf8" })
+    : fs.readFileSync(path.join(root, relPath), "utf8");
+  const m = src.match(/APP_VERSION\s*=\s*"([\d.]+)"/);
+  assert.ok(m, `APP_VERSION not found in ${ref ? `${ref}:` : ""}${relPath}`);
+  return m[1];
+}
+
 check("app/js/version.js is untouched -- no version bump from this round", () => {
-  unchangedSinceMain("app/js/version.js");
+  assert.equal(
+    versionValue("app/js/version.js"),
+    versionValue("app/js/version.js", "origin/main"),
+    "app/js/version.js's own APP_VERSION value differs from origin/main"
+  );
 });
 
 // UPDATED IN PLACE, 24 Sep 2026. This check used to assert firestore.rules

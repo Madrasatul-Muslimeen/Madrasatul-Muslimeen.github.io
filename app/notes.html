@@ -135,6 +135,7 @@
     import { bootstrapContext, setActiveContext, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { translateStatic, t } from "./js/i18n.js";
+    import { registerServiceWorker } from "./js/sw-register.js";
     import { roleListLabel } from "./js/labels.js";
     import { unitKeyLabel } from "./js/unit-keys.js";
     import { sanitizeNoteHtml } from "./js/note-sanitize.js";
@@ -146,6 +147,7 @@
     import { createDawahPage } from "./js/dawah-data.js";
 
     translateStatic();
+    registerServiceWorker();
 
     // ---------------------------------------------------------------------
     // The one Study Unit this screen is scoped to (issue #195 -- "for the

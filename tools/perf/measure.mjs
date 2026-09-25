@@ -26,7 +26,20 @@
 // two reads fired one after the other count as two.
 //
 // Usage:  node tools/perf/measure.mjs [--latency 150] [--runs 3] [--label before]
-
+//         node tools/perf/measure.mjs --net fast4g --cpu 4 --latency 100
+//         node tools/perf/measure.mjs --net slow4g --cpu 4 --latency 150
+//
+// --net and --cpu (added for issue #272, 25 Sep 2026) are a SEPARATE, real
+// throttle from --latency above: --latency only ever delays the STUBBED
+// Firestore calls (see the header above and firebase-stub.mjs's __trip()).
+// It says nothing about how long the 71 real static files (HTML/JS/CSS,
+// served for real by serve.js over loopback) take to arrive -- and those are
+// most of what a first-ever open has to pay for. --net throttles the
+// browser's REAL network stack via CDP (Network.emulateNetworkConditions),
+// so those requests really do compete for a phone-sized pipe; --cpu throttles
+// script execution via CDP (Emulation.setCPUThrottlingRate), simulating a
+// slower phone processor parsing/running the same JS. Both are Chromium-only,
+// which is the only browser this harness ever launches.
 import { chromium, newContext, BASE } from "../i18n-verify/harness.mjs";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { SUBJECT_TEMPLATES, MODULE_TEMPLATES, APPROACH_TEMPLATES, TOPIC_TRACKABLE_TEMPLATES } from "../../app/js/catalogue-data.js";
@@ -41,16 +54,45 @@ function arg(name, fallback) {
   return i >= 0 ? args[i + 1] : fallback;
 }
 const LATENCY = Number(arg("latency", 150));
-// Phone conditions (added 25 Sep 2026, the Owner's "max 3 seconds"). --net
-// throttles every byte the page downloads (Chrome DevTools' own emulation);
-// --cpu slows the page's JavaScript by that factor (4 ~ a mid-range phone).
-// Without them this tool measures a fast desktop on a fast line.
-const NET = arg("net", "none");
-const CPU = Number(arg("cpu", 1));
-const NET_PROFILES = { slow4g: [150, 1.6e6 / 8, 750e3 / 8], fast4g: [60, 9e6 / 8, 3e6 / 8] };
 const RUNS = Number(arg("runs", 3));
 const LABEL = arg("label", "run");
 const ONLY = arg("only", null);
+const NET = arg("net", null); // null | "fast4g" | "slow4g"
+const CPU = Number(arg("cpu", 1));
+
+// Throughput figures are the commonly-cited "Fast 4G" / "Slow 4G" phone
+// profiles (kbps, converted to bytes/s below) -- deliberately not the
+// Chrome DevTools "Fast 3G"/"Slow 3G" presets, which this project's own
+// phone setups are faster than. Round-trip latency is NOT set here: it
+// reuses whatever --latency was given, so one number describes the
+// connection everywhere it is applied (the real static-asset requests AND
+// the stubbed Firestore calls), rather than two figures that could disagree.
+const NET_PROFILES_KBPS = {
+  fast4g: { download: 9000, upload: 9000 },
+  slow4g: { download: 1600, upload: 750 },
+};
+if (NET && !NET_PROFILES_KBPS[NET]) {
+  throw new Error(`--net must be "fast4g" or "slow4g", got "${NET}"`);
+}
+
+/** Applies real CDP network + CPU throttling to one page. A no-op (returns
+ *  null) when neither --net nor --cpu was asked for, so the default run
+ *  behaves exactly as it did before this flag existed. */
+async function throttle(ctx, page) {
+  if (!NET && CPU <= 1) return null;
+  const client = await ctx.newCDPSession(page);
+  if (NET) {
+    const profile = NET_PROFILES_KBPS[NET];
+    await client.send("Network.emulateNetworkConditions", {
+      offline: false,
+      downloadThroughput: (profile.download * 1000) / 8,
+      uploadThroughput: (profile.upload * 1000) / 8,
+      latency: LATENCY,
+    });
+  }
+  if (CPU > 1) await client.send("Emulation.setCPUThrottlingRate", { rate: CPU });
+  return client;
+}
 
 // "Usable" is per page: the moment the thing a person came for is on screen,
 // not merely the moment the shell paints. Each predicate runs in the page.
@@ -132,16 +174,8 @@ async function measureOnce(browser, page) {
   const p = await ctx.newPage();
   const errors = [];
   p.on("pageerror", (e) => errors.push(String(e)));
+  await throttle(ctx, p);
 
-  if (NET !== "none" || CPU > 1) {
-    const cdp = await ctx.newCDPSession(p);
-    const n = NET_PROFILES[NET];
-    if (n) {
-      await cdp.send("Network.enable");
-      await cdp.send("Network.emulateNetworkConditions", { offline: false, latency: n[0], downloadThroughput: n[1], uploadThroughput: n[2] });
-    }
-    if (CPU > 1) await cdp.send("Emulation.setCPUThrottlingRate", { rate: CPU });
-  }
   const t0 = Date.now();
   await p.goto(`${BASE}${page.path}`);
   // Two moments, not one. "Shell" is when the page stops saying
@@ -215,9 +249,76 @@ function summarise(page, results) {
   };
 }
 
+/**
+ * The second-open measurement the PR checklist asks for: one context (so the
+ * service worker it installs and the Cache Storage it fills both survive),
+ * two navigations of the same page. The FIRST navigation is what installs
+ * the worker; the SECOND is the one that matters -- with the cache warm, it
+ * should need no network request for any app file.
+ *
+ * `response.fromServiceWorker()` is Playwright's own way to tell "answered by
+ * the worker" apart from "answered by the network" -- a plain page reload
+ * without a worker would show every app-file response with this false.
+ */
+async function measureSecondOpen(browser, page) {
+  const ctx = await newContext(browser, { banner: false, viewport: { width: 390, height: 844 }, latencyMs: LATENCY, seedTemplates: SEEDED });
+  const first = await ctx.newPage();
+  await throttle(ctx, first);
+  await first.goto(`${BASE}${page.path}`);
+  await first.waitForFunction((fn) => new Function("return (" + fn + ")()")(), page.usable.toString(), { timeout: 40000 }).catch(() => {});
+  // Give the worker time to finish installing/activating and populating its
+  // cache in the background -- both happen after the page is already usable,
+  // by design (registration must never block first paint).
+  await first.evaluate(async () => {
+    if (!("serviceWorker" in navigator)) return "unsupported";
+    try {
+      await navigator.serviceWorker.ready;
+      return "ready";
+    } catch {
+      return "error";
+    }
+  });
+  await first.waitForTimeout(500);
+  await first.close();
+
+  const responses = [];
+  const second = await ctx.newPage();
+  await throttle(ctx, second);
+  second.on("response", (res) => responses.push(res));
+  const t0 = Date.now();
+  await second.goto(`${BASE}${page.path}`);
+  await second.waitForFunction((fn) => new Function("return (" + fn + ")()")(), page.usable.toString(), { timeout: 40000 }).catch(() => {});
+  const usableMs = Date.now() - t0;
+
+  const appFile = (url) => url.startsWith(`${BASE}/app/`);
+  const appResponses = responses.filter((r) => appFile(r.url()));
+  const fromWorker = appResponses.filter((r) => { try { return r.fromServiceWorker(); } catch { return false; } });
+  const fromNetwork = appResponses.filter((r) => !fromWorker.includes(r));
+
+  console.log(`\n=== ${page.name} -- second open, warm cache ===`);
+  console.log(`  time to usable       : ${usableMs} ms`);
+  console.log(`  app-file responses   : ${appResponses.length} total`);
+  console.log(`  served by the worker : ${fromWorker.length}`);
+  console.log(`  hit the network      : ${fromNetwork.length}${fromNetwork.length ? " -- " + fromNetwork.map((r) => r.url().replace(BASE, "")).join(", ") : ""}`);
+
+  await ctx.close();
+  return { page: page.name, usableMs, appResponses: appResponses.length, fromWorker: fromWorker.length, fromNetwork: fromNetwork.length };
+}
+
 // Chromium: use whatever this machine has. CHROMIUM_PATH overrides.
 const EXE = process.env.CHROMIUM_PATH || undefined;
 const browser = await chromium.launch(EXE ? { executablePath: EXE } : {});
+
+if (arg("warm", null) !== null) {
+  const page = PAGES.find((p) => (ONLY ? p.path.includes(ONLY) : true)) ?? PAGES[0];
+  const result = await measureSecondOpen(browser, page);
+  await browser.close();
+  mkdirSync("tools/perf/results", { recursive: true });
+  writeFileSync(`tools/perf/results/${LABEL}-warm.json`, JSON.stringify(result, null, 2));
+  console.log(`\nWritten to tools/perf/results/${LABEL}-warm.json`);
+  process.exit(0);
+}
+
 const out = [];
 for (const page of PAGES) {
   if (ONLY && !page.path.includes(ONLY)) continue;

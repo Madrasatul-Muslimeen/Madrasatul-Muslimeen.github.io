@@ -13,15 +13,29 @@ node tools/perf/measure.mjs --latency 150 --runs 3 --label before
 node tools/perf/new-tenant.mjs                    # seeding still works?
 ```
 
-Phone conditions (added 25 Sep 2026): `--net fast4g|slow4g` throttles every
-byte the page downloads, and `--cpu 4` slows its JavaScript like a mid-range
-phone. For example, `--net fast4g --cpu 4 --latency 100`. Without them this
-measures a fast desktop on a fast line. The local `serve.js` does not
-compress files, while GitHub Pages does, so a throttled local run overstates
-download time somewhat.
-
 `CHROMIUM_PATH` overrides the browser, same as the i18n-verify suites.
 Results are written to `tools/perf/results/<label>-<latency>ms.json`.
+
+## Real network + CPU throttling (issue #272, 25 Sep 2026)
+
+`--latency` (above) only ever delays the STUBBED Firestore calls -- it says
+nothing about the 71 real static files (HTML/JS/CSS) serve.js hands back over
+loopback, and those are most of what a first-ever open pays for. Two more
+flags apply REAL Chromium throttling (CDP) on top of it:
+
+```bash
+node tools/perf/measure.mjs --net fast4g --cpu 4 --latency 100
+node tools/perf/measure.mjs --net slow4g --cpu 4 --latency 150
+node tools/perf/measure.mjs --warm --only quranrevival     # second-open, cache warm
+```
+
+`--net` (`fast4g` | `slow4g`) throttles real download/upload throughput and
+reuses `--latency` as the connection's own round-trip time, so one number
+describes the connection everywhere it applies. `--cpu N` throttles script
+execution by that multiple (a phone-class processor). `--warm` runs the
+service worker's own second-open scenario instead of the usual sweep: one
+context, two navigations, reporting how many app-file responses on the
+second load were served by the worker versus the network.
 
 ## The one thing to understand before trusting any of it
 

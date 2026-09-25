@@ -83,7 +83,19 @@ export function setSelectedPersonId(personId) {
   setActiveContext({ ...ctx, selectedPersonId: personId ?? null });
 }
 
-/** Every tenant this login belongs to, with the roles held in each and that tenant's display name. */
+/**
+ * Every tenant this login belongs to, with the roles held in each, that
+ * tenant's display name, AND its raw document data (`tenantData`).
+ *
+ * LOAD SPEED (issue #272): the raw data rides along for free -- this
+ * function already reads the whole tenant document to build `tenantName`,
+ * it simply used to throw the rest away. Handing it back lets a caller who
+ * is about to pick ONE of these tenants as active (bootstrapContext() below,
+ * or a page's own onAuthStateChanged) reuse that document instead of
+ * issuing a second, identical `getDoc(tenants/{tenantId})` a round trip
+ * later -- the exact duplicate read this round removes from
+ * quranrevival.html's own loadContextData().
+ */
 export async function getMyMemberships(db, uid) {
   let snap;
   try {
@@ -104,11 +116,13 @@ export async function getMyMemberships(db, uid) {
         err.stepName = `read tenants/${m.tenantId}`;
         throw err;
       }
+      const tenantData = tenantSnap.exists() ? tenantSnap.data() : null;
       return {
         tenantId: m.tenantId,
         personId: m.personId,
         roles: m.roles,
-        tenantName: tenantSnap.exists() ? langText(tenantSnap.data().name, getAppLang(), m.tenantId) : m.tenantId,
+        tenantName: tenantData ? langText(tenantData.name, getAppLang(), m.tenantId) : m.tenantId,
+        tenantData,
       };
     })
   );
@@ -167,8 +181,14 @@ export function scopedRoster(roster, effRoles, myPersonId) {
  * Picks a starting context out of memberships ALREADY loaded -- no reads of
  * its own. Split out of initializeActiveContext() by the load-speed round so
  * the same choice can be made without paying for a second membership load.
+ *
+ * Exported (load speed, issue #272) so a page can fire getMyMemberships()
+ * and its own userIndex read TOGETHER, in parallel, rather than through
+ * bootstrapContext()'s fixed order below -- the two reads do not actually
+ * depend on each other; only this synchronous choice, made once both have
+ * resolved, needs both of their results.
  */
-function pickContext(memberships, defaultTenantId) {
+export function pickContext(memberships, defaultTenantId) {
   if (memberships.length === 0) return null;
 
   const existing = getActiveContext();
