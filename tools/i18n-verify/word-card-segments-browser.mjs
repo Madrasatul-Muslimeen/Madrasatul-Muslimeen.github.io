@@ -145,7 +145,10 @@ for (const lang of ["en", "bn"]) {
     // Re-enable for cleanliness / next iteration's localStorage assumption.
     await page.evaluate(() => { const cb = document.querySelector("[data-word-card-colour-toggle]"); if (cb && !cb.checked) { cb.checked = true; cb.dispatchEvent(new Event("change", { bubbles: true })); } });
 
-    check(`${lang}/${viewport.width}: no page errors`, errors.length === 0, JSON.stringify(errors));
+    // The sandbox proxy intercepts outside HTTPS (audio, fonts), which shows up
+    // as a failed resource load. That is environmental, not a page error.
+    const realErrors = errors.filter((e) => !/Failed to load resource: net::ERR_(TUNNEL_CONNECTION_FAILED|CERT_AUTHORITY_INVALID)/.test(e));
+    check(`${lang}/${viewport.width}: no page errors`, realErrors.length === 0, JSON.stringify(realErrors));
     await ctx.close();
   }
 }
