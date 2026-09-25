@@ -15,20 +15,21 @@ const root = path.resolve(process.argv[2] || process.cwd());
 let source = fs.readFileSync(path.join(root, "app/js/journey-map-service.js"), "utf8");
 source = source
   .replace(/import \{[\s\S]*?\} from "\.\/note-foundation\.js";/,
-    "const { NOTE_STATUS, getNotesByIds, listNoteFoldersForOwner, listNotePlacementsForFolder, listNotePlacementsForNote, listNotesForOwnerPage, listNotePlacementsForOwnerPage, moveNotePlacement, renameNoteFolder, reorderNoteFolder, reparentNoteFolder, retireNoteFolder, reorderNotePlacement } = globalThis.__jmFoundation;")
+    "const { NOTE_STATUS, getNotesByIds, listNoteFoldersForOwner, listNoteFoldersForOwnerPage, listNotePlacementsForFolder, listNotePlacementsForNote, listNotesForOwnerPage, listNotePlacementsForOwnerPage, moveNotePlacement, renameNoteFolder, reorderNoteFolder, reparentNoteFolder, retireNoteFolder, reorderNotePlacement } = globalThis.__jmFoundation;")
   .replace(/from "\.\/journey-map-contract\.js"/,
     `from "${pathToFileURL(path.join(root, "app/js/journey-map-contract.js")).href}"`);
 assert.ok(!/from "\.\//.test(source), "an import was not rewritten");
 
 const calls = { folderQuery: [], noteQuery: [], folders: [], notes: [], move: [],
                 rename: [], reorder: [], reparent: [], retire: [], reorderFiling: [],
-                notesPage: [], placementsPage: [] };
+                notesPage: [], placementsPage: [], foldersPage: [] };
 let placementRows = [], folderRows = [], noteRows = [];
 // Issue #259 -- separate, larger backing arrays for the two PAGED readers,
 // so K19+ below can seed "more than one page" without disturbing the
 // folderContents()/noteFilings() fixtures above, which assume an unpaged
-// single-shot read.
-let notesPageRows = [], placementsPageRows = [];
+// single-shot read. Issue #267 adds the same for folders --
+// listNoteFoldersForOwnerPage() is a THIRD, independent paged reader.
+let notesPageRows = [], placementsPageRows = [], foldersPageRows = [];
 function pageOf(all, { pageSize, after }) {
   const startIdx = after ? all.findIndex((r) => r.id === after.id) + 1 : 0;
   const slice = all.slice(startIdx, startIdx + pageSize);
@@ -41,6 +42,7 @@ globalThis.__jmFoundation = {
   listNotePlacementsForFolder: async (_db, a) => { calls.folderQuery.push(a); return placementRows.slice(0, a.maximum); },
   listNotePlacementsForNote:   async (_db, a) => { calls.noteQuery.push(a);   return placementRows.slice(0, a.maximum); },
   listNoteFoldersForOwner:     async (_db, a) => { calls.folders.push(a);     return folderRows; },
+  listNoteFoldersForOwnerPage: async (_db, a) => { calls.foldersPage.push(a); return pageOf(foldersPageRows, a); },
   getNotesByIds:               async (_db, t, ids) => { calls.notes.push({ t, ids }); return noteRows.filter((n) => ids.includes(n.noteId)); },
   listNotesForOwnerPage:       async (_db, a) => { calls.notesPage.push(a); return pageOf(notesPageRows, a); },
   listNotePlacementsForOwnerPage: async (_db, a) => { calls.placementsPage.push(a); return pageOf(placementsPageRows, a); },
@@ -64,12 +66,12 @@ globalThis.__jmFoundation = {
 function reset() {
   for (const k of Object.keys(calls)) calls[k].length = 0;
   placementRows = []; folderRows = []; noteRows = [];
-  notesPageRows = []; placementsPageRows = [];
+  notesPageRows = []; placementsPageRows = []; foldersPageRows = [];
 }
 
 const mod = await import(`data:text/javascript,${encodeURIComponent(source)}`);
 const { MAX_PLACEMENTS_PER_READ, folderContents, moveNoteToFolder, noteFilings, ownerFolderTree,
-        moveFolder, renameFolder, reorderFolder, retireFolder, reorderFiling,
+        ownerFolderTreePaged, moveFolder, renameFolder, reorderFolder, retireFolder, reorderFiling,
         loadAllOwnerNotes, loadAllOwnerPlacements, folderNoteCounts, folderMoveRefusal } = mod;
 
 let passed = 0;
@@ -139,8 +141,10 @@ await check("K8 a placement naming a folder that is gone is dropped, not thrown"
 
 // --- ownerFolderTree --------------------------------------------------------
 await check("K9 the tree comes back already walked safely, cycles reported", async () => {
-  reset(); folderRows = [folder("a"), folder("b", { parentFolderId: "a" }),
-                         folder("c", { parentFolderId: "d" }), folder("d", { parentFolderId: "c" })];
+  // v08.66 (#265): ownerFolderTree() pages now, so the rows go to the paged
+  // reader's backing array (each needs an `id` for the page cursor).
+  reset(); foldersPageRows = [folder("a"), folder("b", { parentFolderId: "a" }),
+                         folder("c", { parentFolderId: "d" }), folder("d", { parentFolderId: "c" })].map((f) => ({ id: f.folderId, ...f }));
   const { roots, cyclic } = await ownerFolderTree(db, own);
   assert.deepEqual(roots.map((r) => r.folderId), ["a"]);
   assert.deepEqual(cyclic.map((r) => r.folderId).sort(), ["c", "d"]);
@@ -287,6 +291,42 @@ await check("K25 folderMoveRefusal() forwards to the contract's folderTreeRefusa
   const folders = new Map([["a", folder("a")], ["b", folder("b")]]);
   assert.equal(folderMoveRefusal({ folders, ...own, folderId: "a", parentFolderId: "a" }), "self-parent");
   assert.equal(folderMoveRefusal({ folders, ...own, folderId: "a", parentFolderId: "b" }), null);
+});
+
+// --- issue #267: ownerFolderTreePaged() ------------------------------------
+// listNoteFoldersForOwner()/ownerFolderTree() are capped at the deployed
+// Rules' 100-folder ceiling with no truncation notice at all (the same class
+// of gap issue #259 already fixed for Notes and placements). The Owner's own
+// imported site has roughly 1,464 folders (issue #265) -- well past it.
+await check("K26 ownerFolderTreePaged() loops pages until exhausted, reports untruncated, and still walks the tree safely", async () => {
+  reset();
+  foldersPageRows = Array.from({ length: 250 }, (_, i) => ({ id: `f${i}`, folderId: `f${i}`, name: `f${i}`, parentFolderId: null, status: "active", semanticRole: "user", ...own }));
+  const { roots, truncated } = await ownerFolderTreePaged(db, own);
+  assert.equal(roots.length, 250, "expected all 250 folders across 3 pages");
+  assert.equal(truncated, false);
+  assert.equal(calls.foldersPage.length, 3, "expected exactly 3 page reads (100 + 100 + 50)");
+  assert.equal(calls.foldersPage[0].after, null);
+  assert.equal(calls.foldersPage[1].after.id, "f99");
+});
+await check("K27 ownerFolderTreePaged() reports truncated once the 50-page safety cap is hit, same as loadAllOwnerNotes()", async () => {
+  reset();
+  foldersPageRows = Array.from({ length: 200 }, () => ({ id: "dup", folderId: "dup", name: "dup", parentFolderId: null, status: "active", semanticRole: "user", ...own }));
+  const { truncated } = await ownerFolderTreePaged(db, own);
+  assert.equal(truncated, true);
+  assert.equal(calls.foldersPage.length, 50);
+});
+// K28 UPDATED IN PLACE, Architect review 25 Sep 2026: issue #267 was built
+// while ownerFolderTree() was still a single 100-capped read and asserted it
+// stayed so. Issue #265 (v08.66, merged first) deliberately made it page too,
+// so a person with more than 100 folders sees them all in every view. The
+// check now asserts that newer fact rather than the one #265 replaced.
+await check("K28 ownerFolderTree() pages too since v08.66 -- it reads every folder, active and beyond the first 100", async () => {
+  reset();
+  foldersPageRows = Array.from({ length: 150 }, (_, i) => ({ id: `p${i}`, folderId: `p${i}`, name: `p${i}`, parentFolderId: null, status: "active", semanticRole: "user", ...own }));
+  folderRows = [folder("a")];
+  const { roots } = await ownerFolderTree(db, own);
+  assert.equal(roots.length, 150, "ownerFolderTree() must read every page, not the single-shot capped read");
+  assert.equal(calls.folders.length, 0, "ownerFolderTree() must no longer use the single-shot listNoteFoldersForOwner()");
 });
 
 console.log(`\n${passed} passed`);

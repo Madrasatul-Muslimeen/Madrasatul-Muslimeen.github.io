@@ -121,6 +121,19 @@ export async function ownerFolderTree(db, { tenantId, ownerPersonId } = {}) {
 }
 
 /**
+ * Issue #267 -- the whole folder tree plus a `truncated` flag, for the one
+ * shared tree every Mapping My Journey view renders from. (When #267 was
+ * built `ownerFolderTree()` above still stopped at 100 folders; #265, merged
+ * first, made it page too. This one is kept because the page also needs to
+ * know whether the safety cap on pages was hit, so it can say so.)
+ */
+export async function ownerFolderTreePaged(db, { tenantId, ownerPersonId, pageSize = 100 } = {}) {
+  const { rows, truncated } = await loadAllPages((after) =>
+    listNoteFoldersForOwnerPage(db, { tenantId, ownerPersonId, pageSize, after }));
+  return { ...buildFolderTree(rows), truncated };
+}
+
+/**
  * Issue #259 -- the folder tree becomes an expandable, all-at-once view (not
  * a one-folder-at-a-time drill-down), so the screen needs its OWNER'S WHOLE
  * set of Notes and placements up front, never capped at 100/99. A bigger

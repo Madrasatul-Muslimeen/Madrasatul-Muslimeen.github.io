@@ -1,5 +1,8 @@
 import { chromium } from "playwright";
 import { stubFor } from "./firebase-stub.mjs";
+import { readFileSync } from "node:fs";
+
+const DOMPURIFY_SOURCE = readFileSync(new URL("./vendor/purify.min.js", import.meta.url), "utf8");
 
 export const BASE = "http://localhost:8080";
 
@@ -11,6 +14,14 @@ export async function newContext(browser, { banner = true, appLang = null, accou
   const stub = stubFor({ banner, accountLang, latencyMs, emptyTenant, seedTemplates, taglines, extraSeedJs });
   await ctx.route("https://www.gstatic.com/firebasejs/**", (route) =>
     route.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: stub })
+  );
+  // DOMPurify comes from a CDN in the real app. This sandbox's proxy breaks
+  // the browser's certificate check for outside hosts, so a page that renders
+  // Note bodies would refuse to (sanitize fails closed) and every such test
+  // would fail for a reason that never happens to the Owner. Serve the same
+  // library from a vendored copy instead (DOMPurify 3.4.16, Apache-2.0/MPL-2.0).
+  await ctx.route("https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js", (route) =>
+    route.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: DOMPURIFY_SOURCE })
   );
   await ctx.route("**/js/firebase-init.js", (route) =>
     route.fulfill({
