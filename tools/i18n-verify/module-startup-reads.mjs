@@ -10,6 +10,16 @@
 // document read once by hydrateMemberships() for the tenant picker's real
 // names, and again by loadContextData()'s own Promise.all).
 //
+// Speed part 6a (issue #285, 25 Sep 2026) adds Monitor and Catalogue to the
+// same pin. Monitor was five round trips in a row (roster+tenant, then
+// subjectTree, then trackables, then the report, then the Quran breakdown,
+// then the activity section); Catalogue was 8+ (three unconditional seeding
+// checks, three unconditional placement-repair checks each re-reading the
+// subject tree, then five more sequential loads -- the last, ladders, its
+// own N+1 of one round trip per ladder). Both now fire their independent
+// reads together and skip the seeding/repair checks entirely when what was
+// just read shows nothing missing.
+//
 // Run from the repository root with `node serve.js` running.
 import { chromium, newContext, BASE } from "./harness.mjs";
 import { SUBJECT_TEMPLATES, MODULE_TEMPLATES } from "../../app/js/catalogue-data.js";
@@ -70,6 +80,19 @@ const PAGES = [
       return !!app && app.style.display !== "none" && !!body && body.children.length > 0;
     },
   },
+  // Issue #285 (speed, part 6a) -- "usable" is the weekly/monthly report
+  // table, not the Quran breakdown or activity sections below it (both are
+  // scoped to a single student and can legitimately say "Pick a student
+  // first" without ever drawing a table).
+  {
+    path: "/app/monitor.html",
+    name: "Monitor",
+    usable: () => {
+      const app = document.getElementById("app");
+      const body = document.getElementById("reportBody");
+      return !!app && app.style.display !== "none" && !!body && !!body.querySelector("table");
+    },
+  },
 ];
 
 const browser = await chromium.launch();
@@ -99,5 +122,5 @@ for (const page of PAGES) {
 }
 
 await browser.close();
-console.log(`\n==== Module startup reads (Deen Study, Health, Asma ul Husna, Records): ${pass} passed, ${fail} failed ====`);
+console.log(`\n==== Module startup reads (Deen Study, Health, Asma ul Husna, Records, Monitor): ${pass} passed, ${fail} failed ====`);
 process.exit(fail ? 1 : 0);
