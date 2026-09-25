@@ -4315,7 +4315,7 @@
     import { langText, setLangText } from "./js/lang.js";
     import { roleListLabel, roleLabel } from "./js/labels.js";
     import { safeWrite, reportWriteFailure } from "./js/errors.js";
-    import { getMyMemberships, pickContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
+    import { getMyMembershipRoles, hydrateMemberships, pickContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { getTrackables, syncUnneditedTrackableNames, tenantOwnsSections } from "./js/catalogue.js";
     import { buildUnitKey, parseUnitKey, STATUSES, rukuIndexInSurah, statusLabelsById, statusLabel } from "./js/unit-keys.js";
     import { chunkKeyFor, getRecordsChunk, claimStatus, getSubjectConfirmationOverride, computeConfirmationRequired } from "./js/records.js";
@@ -6228,7 +6228,7 @@
       searchResults.replaceChildren(...found.results.map(searchHitButton));
     }
 
-    async function loadContextData(preloadedTenantData) {
+    async function loadContextData(hydratedMembershipsPromise) {
       const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
       // LOAD SPEED (Aug 2026): one wave, not three. The trackables read used
       // to happen twice -- once inside syncUnneditedTrackableNames() and
@@ -6237,26 +6237,42 @@
       // file, not Firestore, but it was also being waited for in turn.
       //
       // LOAD SPEED (issue #272): the tenant document itself is no longer a
-      // guaranteed fourth read in this wave. bootstrapContext() already
-      // fetched every membership's own tenant document one round trip ago
-      // (to build the tenant picker's names) -- the FIRST call into this
-      // function, right after sign-in, passes that document straight in
-      // (preloadedTenantData), so this wave skips re-reading a document
-      // this page already has. A tenant SWITCH (the picker's own change
-      // handler, below) calls this with no argument on purpose: the person
-      // is now looking at that tenant on purpose, so its document is read
-      // fresh rather than served from a membership list that could be
-      // stale by then.
-      const tenantDataPromise = preloadedTenantData !== undefined
-        ? Promise.resolve(preloadedTenantData)
+      // guaranteed fourth read in this wave -- issue #278 changed WHICH
+      // earlier read it rides in on, so this paragraph now describes the
+      // FIRST call differently than it used to. The first call into this
+      // function, right after sign-in, passes the in-flight
+      // hydrateMemberships() promise the sign-in wave already started
+      // alongside the roster/trackables reads below (see the comment on
+      // that call) -- so the active tenant's document is read in the SAME
+      // round trip as tenantPeople/trackables, not a round trip before them.
+      // A tenant SWITCH (the picker's own change handler, below) calls this
+      // with no argument on purpose: the person is now looking at that
+      // tenant on purpose, so its document is read fresh rather than served
+      // from a membership list that could be stale by then.
+      const tenantDataPromise = hydratedMembershipsPromise !== undefined
+        ? hydratedMembershipsPromise
         : getDoc(doc(db, TENANT.TENANTS, activeTenantId)).then((snap) => (snap.exists() ? snap.data() : null));
-      const [rosterSnap, tenantData, allTrackables, loadedSurahIndex] = await Promise.all([
+      const [rosterSnap, tenantDataResult, allTrackables, loadedSurahIndex] = await Promise.all([
         getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId))),
         tenantDataPromise,
         getTrackables(db, activeTenantId),
         getSurahIndex(),
       ]);
       roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      // On the FIRST call, `tenantDataResult` is the full hydrated membership
+      // list, not just this tenant's document -- `myMemberships` must be set
+      // from it HERE, before renderPersonSelectOptions()/renderBanner() below
+      // (which read it via currentPreview()), not later back in the sign-in
+      // wave: several functions this wave calls (canAdminCatalogueClientSide()
+      // among them, a few lines down) need the real roles/personId for this
+      // tenant, and until this assignment `myMemberships` is still `[]`.
+      let tenantData;
+      if (hydratedMembershipsPromise !== undefined) {
+        myMemberships = tenantDataResult;
+        tenantData = myMemberships.find((m) => m.tenantId === activeTenantId)?.tenantData ?? null;
+      } else {
+        tenantData = tenantDataResult;
+      }
       currentTenantDoc = tenantData;
       tenantWeekStartsOn = currentTenantDoc?.weekStartsOn ?? 6;
       renderPersonSelectOptions();
@@ -14560,8 +14576,14 @@
         // pickContext()'s own synchronous choice below -- the membership
         // query itself never needed it. Firing both reads together folds
         // what were two round trips into one.
-        const membershipsPromise = getMyMemberships(db, user.uid);
-        membershipsPromise.catch(() => {}); // see the real await below; this only stops a reload (adoptAppLangFromUserIndex) from logging it as unhandled.
+        //
+        // LOAD SPEED (issue #278): this now fires the ROLES-ONLY query
+        // (getMyMembershipRoles), not the full getMyMemberships() -- the
+        // tenant document read pickContext() never needed is fired
+        // separately, below, once it can ride alongside tenantPeople and
+        // trackables instead of gating them.
+        const membershipRolesPromise = getMyMembershipRoles(db, user.uid);
+        membershipRolesPromise.catch(() => {}); // see the real await below; this only stops a reload (adoptAppLangFromUserIndex) from logging it as unhandled.
 
         const userIndexSnap = await step("read your userIndex", () => getDoc(doc(db, TENANT.USER_INDEX, user.uid)));
         // v07.37: if this account has a language set on another device, take it
@@ -14572,27 +14594,49 @@
         // One membership load, not two: this page used to fetch its own
         // second copy, one round trip later, for the tenant picker -- now
         // it is the very list pickContext() itself chooses from.
-        const memberships = await step("load your tenant memberships", () => membershipsPromise);
-        const context = pickContext(memberships, defaultTenantId);
+        const membershipRoles = await step("load your tenant memberships", () => membershipRolesPromise);
+        // pickContext() only ever reads tenantId/personId/roles (never
+        // tenantName/tenantData), so the roles-only list is exactly what it
+        // needs -- picking the active tenant does not wait on a single
+        // tenant document.
+        const context = pickContext(membershipRoles, defaultTenantId);
         if (!context) {
           whoEl.innerHTML += noAccountMessageHtml();
           return;
         }
         activeTenantId = context.tenantId;
 
-        myMemberships = memberships;
-        tenantSelect.innerHTML = myMemberships
-          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
-          .join("");
-        renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], getActiveContext()?.viewAsRole ?? null);
+        // The tenant picker's real names, and loadContextData()'s own tenant
+        // document, both come from the SAME hydration call now -- fired
+        // here, alongside tenantPeople/trackables (inside loadContextData),
+        // rather than awaited before either. Until it resolves the picker
+        // shows each tenant's raw id as a placeholder label; renderTenantSelect()
+        // is called again the moment real names are in (a beat later, not a
+        // whole extra round trip), and never leaves a raw id showing once
+        // hydration has actually landed.
+        const hydratedMembershipsPromise = step("load tenant names", () => hydrateMemberships(db, membershipRoles));
+        hydratedMembershipsPromise.catch(() => {}); // real failure surfaces via the awaited copy inside loadContextData()/below.
+
+        function renderTenantSelect(memberships) {
+          tenantSelect.innerHTML = memberships
+            .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
+            .join("");
+        }
+        renderTenantSelect(membershipRoles.map((m) => ({ ...m, tenantName: m.tenantId })));
+        // Fresh roles, from the list just queried a moment ago -- not
+        // `context.roles`, which for an already-active tab can be
+        // whatever was stored in localStorage on a previous visit and may
+        // be stale if the person's role changed since (pickContext()'s own
+        // `stillValid` branch returns that stored copy as-is).
+        renderNav(membershipRoles.find((m) => m.tenantId === activeTenantId)?.roles ?? [], getActiveContext()?.viewAsRole ?? null);
 
         appEl.style.display = "flex"; // flex, not block: #app is the shell column (stage + dock) since shell round 7
-        // The active tenant's own document was already read a moment ago,
-        // above, to build the tenant picker's names -- handed straight in
-        // rather than read a second time (see loadContextData()'s own
-        // comment on why only THIS call passes it).
-        const activeTenantData = myMemberships.find((m) => m.tenantId === activeTenantId)?.tenantData ?? null;
-        await step("load context data", () => loadContextData(activeTenantData));
+        // loadContextData() itself sets `myMemberships` from this same
+        // promise, part-way through, as soon as it resolves -- several
+        // functions it calls (canAdminCatalogueClientSide() among them)
+        // need the real roles/personId for this tenant before it returns.
+        await step("load context data", () => loadContextData(hydratedMembershipsPromise));
+        renderTenantSelect(myMemberships);
         await step("open bookmark", openBookmarkFromQueryString);
         await step("open goto link", openGotoFromQueryString);
         // Last: "the app opens in the last settings/options in all view."

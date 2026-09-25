@@ -84,19 +84,17 @@ export function setSelectedPersonId(personId) {
 }
 
 /**
- * Every tenant this login belongs to, with the roles held in each, that
- * tenant's display name, AND its raw document data (`tenantData`).
+ * Just the roles-only shape -- { tenantId, personId, roles } -- one round
+ * trip (query tenantMemberUids), no per-membership tenant document reads.
  *
- * LOAD SPEED (issue #272): the raw data rides along for free -- this
- * function already reads the whole tenant document to build `tenantName`,
- * it simply used to throw the rest away. Handing it back lets a caller who
- * is about to pick ONE of these tenants as active (bootstrapContext() below,
- * or a page's own onAuthStateChanged) reuse that document instead of
- * issuing a second, identical `getDoc(tenants/{tenantId})` a round trip
- * later -- the exact duplicate read this round removes from
- * quranrevival.html's own loadContextData().
+ * LOAD SPEED (issue #278): split out of getMyMemberships() below because
+ * pickContext() only ever reads tenantId/personId/roles off a membership --
+ * it never touches tenantName/tenantData -- so the active tenant can be
+ * chosen straight off THIS, without waiting on a single tenant document to
+ * be hydrated first. A caller with no reason to split the two still gets
+ * the old all-in-one shape from getMyMemberships(), unchanged.
  */
-export async function getMyMemberships(db, uid) {
+export async function getMyMembershipRoles(db, uid) {
   let snap;
   try {
     const q = query(collection(db, TENANT.TENANT_MEMBER_UIDS), where("uid", "==", uid));
@@ -105,8 +103,16 @@ export async function getMyMemberships(db, uid) {
     err.stepName = "query tenantMemberUids by uid";
     throw err;
   }
-  const memberships = snap.docs.map((d) => d.data()); // { tenantId, uid, personId, roles }
+  return snap.docs.map((d) => d.data()); // { tenantId, uid, personId, roles }
+}
 
+/**
+ * Adds `tenantName`/`tenantData` to a roles-only membership list (one
+ * `getDoc(tenants/{tenantId})` per membership, all fired together -- the
+ * same one round trip this always cost, just no longer gating anything that
+ * does not itself need a tenant document).
+ */
+export async function hydrateMemberships(db, memberships) {
   return Promise.all(
     memberships.map(async (m) => {
       let tenantSnap;
@@ -126,6 +132,23 @@ export async function getMyMemberships(db, uid) {
       };
     })
   );
+}
+
+/**
+ * Every tenant this login belongs to, with the roles held in each, that
+ * tenant's display name, AND its raw document data (`tenantData`).
+ *
+ * LOAD SPEED (issue #278): now just the composition of the two functions
+ * above -- unchanged behaviour, unchanged round-trip count, for every one
+ * of the 22 pages that call this (via bootstrapContext()/
+ * initializeActiveContext()) with no reason to split the two. Only
+ * quranrevival.html's own sign-in wave calls getMyMembershipRoles() and
+ * hydrateMemberships() separately, so it can pick the active tenant and
+ * fire hydration alongside tenantPeople/trackables rather than before them
+ * -- see that page's own comment.
+ */
+export async function getMyMemberships(db, uid) {
+  return hydrateMemberships(db, await getMyMembershipRoles(db, uid));
 }
 
 /**
