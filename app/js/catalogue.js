@@ -316,8 +316,12 @@ export async function getTrackables(db, tenantId) {
  * 2026) into tenants that seeded before those keys existed, without
  * re-running the whole seed or touching anything else on the doc.
  */
-export async function syncUnneditedTrackableNames(db, tenantId, uid, { keepSectionNames = false } = {}) {
-  const existing = await getTrackables(db, tenantId);
+export async function syncUnneditedTrackableNames(db, tenantId, uid, { keepSectionNames = false, trackables = null } = {}) {
+  // Speed part 2 (issue #276): a caller that has JUST read this tenant's
+  // trackables passes them in, so this costs no second read of the same
+  // collection -- on Quran Study that repeat was the last of five startup
+  // round trips in a row. Without them it reads them itself, as before.
+  const existing = trackables ?? await getTrackables(db, tenantId);
   const byTemplateId = new Map(APPROACH_TEMPLATES.map((t) => [t.id, t]));
   const updates = [];
   for (const t of existing) {
