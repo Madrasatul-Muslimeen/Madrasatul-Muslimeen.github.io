@@ -69,13 +69,22 @@ const deployedFolders = matchBlock(deployed, "noteFolders");
 const candidateFolders = matchBlock(candidate, "noteFolders");
 assert.ok(deployedNotes.length > 400 && candidateNotes.length > 400, "a notes block parsed implausibly short");
 assert.ok(deployedFolders.length > 400 && candidateFolders.length > 400, "a noteFolders block parsed implausibly short");
-assert.ok(!deployedNotes.includes("importFieldsWellFormed"), "the DEPLOYED notes rules already mention importFieldsWellFormed -- re-read this suite");
+// Updated in place 25 Sep 2026 (Architect): the Owner PUBLISHED these rules
+// and firestore.rules was synced to them, so "the deployed blocks do not yet
+// mention the new helpers" became false for a correct reason. The suite's
+// real concern -- that it tests the candidate and not something else -- now
+// reads: either the live blocks predate the candidate (the old case), or they
+// ARE the candidate, byte for byte.
+const alreadyLive = deployedNotes.includes("importFieldsWellFormed") || deployedFolders.includes("folderImportFieldsWellFormed");
+if (alreadyLive) {
+  assert.equal(deployedNotes, candidateNotes, "the live notes block mentions the import helpers but is not the candidate's block");
+  assert.equal(deployedFolders, candidateFolders, "the live noteFolders block mentions the import helper but is not the candidate's block");
+}
 assert.ok(candidateNotes.includes("importFieldsWellFormed"), "the candidate notes block does not mention importFieldsWellFormed");
-assert.ok(!deployedFolders.includes("folderImportFieldsWellFormed"), "the DEPLOYED noteFolders rules already mention folderImportFieldsWellFormed -- re-read this suite");
 assert.ok(candidateFolders.includes("folderImportFieldsWellFormed"), "the candidate noteFolders block does not mention folderImportFieldsWellFormed");
 
 let assembled = deployed.replace(deployedNotes, candidateNotes);
-assert.notEqual(assembled, deployed, "the notes substitution did nothing -- this suite would be testing the deployed rules");
+if (!alreadyLive) assert.notEqual(assembled, deployed, "the notes substitution did nothing -- this suite would be testing the deployed rules");
 assembled = assembled.replace(deployedFolders, candidateFolders);
 assert.ok(assembled.includes("importFieldsWellFormed") && assembled.includes("folderImportFieldsWellFormed"),
   "the assembled ruleset lost one of the new helpers");

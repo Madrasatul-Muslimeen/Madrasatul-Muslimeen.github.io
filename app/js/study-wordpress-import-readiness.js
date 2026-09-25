@@ -55,22 +55,25 @@ export const WORDPRESS_IMPORT_READINESS_AUTHORITIES = Object.freeze(["master-arc
 /**
  * THE DECLARATION. This is the single place the answer lives.
  *
- * NOT YET ENABLED. The Rules candidate has not been published by the Owner,
- * and no deployment record exists to reference -- `ready: false` as a
- * literal, `decision: null`. The Architect flips this once the Owner
- * confirms the publish, under the same ceremony `study-wbw-total-
- * readiness.js` and `study-evidence-readiness.js` both already use.
+ * ENABLED 2026-09-25. The Owner published
+ * docs/governance/2026-09-25-wordpress-import-DEPLOYMENT-candidate.rules to
+ * study-monitoring and confirmed it ("Rules are published."); firestore.rules
+ * was synced to that exact file in the same change. The record is the
+ * reference below.
  */
 export const WORDPRESS_IMPORT_PERSISTENCE_DECLARATION = Object.freeze({
-  ready: false,
-  decision: null,
+  ready: true,
+  decision: Object.freeze({
+    by: "master-architect",
+    on: "2026-09-25",
+    reference: "docs/reports/2026-09-25-wordpress-import-enabled.md",
+  }),
   gate: "E1",
   note:
-    "The Rules candidate at docs/governance/2026-09-25-wordpress-import-rules-" +
-    "candidate.rules widens `notes` and `noteFolders` with optional import " +
-    "fields, but has not been published to study-monitoring. Until it is, " +
-    "the Import page's preview works (it writes nothing); the Import button " +
-    "stays disabled and says why.",
+    "The WordPress/Evernote import Rules (optional originalCreatedAt, " +
+    "originalModifiedAt and importSource on notes and noteFolders, frozen " +
+    "once written) are published to study-monitoring by the Owner, " +
+    "2026-09-25. The Import button is live for both importers.",
 });
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
