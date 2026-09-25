@@ -158,7 +158,14 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.61 on `main`** (25 Sep 2026 — the Owner:
+**Current milestone: v08.62 on `main`** (25 Sep 2026 — the Owner: *"There's
+no go back button to exit from Mapping view."* `journey-map.html` gains
+`#backLink`: `history.back()` when the reader came from a page of this app,
+otherwise its plain href to Quran Study. 40px, both languages, outside `#app`
+so it shows before sign-in resolves. New `journey-map-back.mjs` 38/0 in a real
+browser, fails with the change removed.)
+
+**Previous milestone: v08.61 on `main`** (25 Sep 2026 — the Owner:
 *"Folder should be built/accessible from the Mapping tab."* The dock's fourth
 tab, **Mapping My Journey**, a disabled "Coming later" placeholder since
 before Phase 6, now opens `journey-map.html#folders`; the Note view's ⋯ item

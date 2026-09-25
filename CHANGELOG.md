@@ -17948,3 +17948,19 @@ this sandbox (the documented, repeated environment gap), so `layout.mjs` and
 `navcheck.mjs` could not be run; the dock's geometry is unaffected by
 construction (above), and a real-phone check at 320/360/390/412/768/1100px in
 both languages is the recommended substitute.
+
+**v08.62 (25 Sep 2026).** **Mapping My Journey gets a Back button.** The
+Owner: *"There's no go back button to exit from Mapping view."* Since v08.61
+the dock's Mapping tab opens `app/journey-map.html` as its own page, and on a
+phone the browser's own back control may not be visible, so there was no way
+out except Home ▾. `#backLink` ("← Back" / "← পেছনে", reusing the existing
+`Back` translation) sits above the view toggle and outside `#app`, so it is
+there even before sign-in resolves. Pressing it goes back through history when
+the reader arrived from a page of this app (the dock tab, the Note view's ⋯
+menu, Home ▾), which returns them to the same screen; opened directly from a
+bookmark or shared link, its plain `href` takes them to Quran Study. New
+`tools/i18n-verify/journey-map-back.mjs`, **38/0** in a real browser at
+320/390/1100px in both languages: present, on screen, not covered (hit-tested
+with `elementFromPoint`), at least 40px tall, correct text, no sideways
+scroll, and pressing it returns to Quran Study, plus the direct-visit case.
+With the change removed the suite fails.

@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.61",
+    "version": "08.62",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -509,7 +509,7 @@
     {
       "version": "08.61",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Mapping My Journey's dock tab switched on (issue #257). #tabJourneyBtn in quranrevival.html, a disabled 'Coming later' placeholder since before Phase 6, now navigates to journey-map.html#folders; the Note view's ⋯ 'Mapping My Journey' item does the same. journey-map.html reads a plain #folders/#timeline/#path hash (anything else ignored; the remembered view wins only when no hash is present). Nothing added to the Quran Study startup path (I9). Checks inverted in place with reasons: journey-map-boundary 18/0, journey-map-screen 39/0, quran-boundary 31/0, behaviour.mjs 42p updated. layout.mjs and navcheck.mjs clean against main; tab tapped in a real browser in both languages opens the Folders view. Owner instruction: 'Folder should be built/accessible from the Mapping tab.'",
       "integration": {
         "authorizedOn": "2026-09-25",
@@ -517,10 +517,23 @@
         "method": "MERGE_PR",
         "reference": "https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/issues/257"
       }
+    },
+    {
+      "version": "08.62",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Mapping My Journey gains a Back button. The Owner: 'There's no go back button to exit from Mapping view.' #backLink on journey-map.html, above the view toggle and outside #app so it shows before sign-in resolves: history.back() when the reader came from a page of this app (the dock's Mapping tab, the Note view's ⋯ menu, Home ▾), otherwise its plain href to quranrevival.html. 40px tall, both languages ('← Back' / '← পেছনে', reusing the existing 'Back' key). New journey-map-back.mjs 38/0 in a real browser at 320/390/1100px, both languages, including a hit-test that nothing covers it; the suite fails with the change removed.",
+      "integration": {
+        "authorizedOn": "2026-09-25",
+        "integratedOn": "2026-09-25",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "08.62",
+  "nextUnallocated": "08.63",
   "nextUnallocatedNote": [
+    "v08.62 was allocated to the Mapping My Journey Back button, on the Owner's report, 2026-09-25.",
     "v08.61 was allocated to switching on the Mapping My Journey dock tab (issue #257), 2026-09-25.",
     "v08.60 was allocated to the Page-by-page last-line scroll fix (the residue of draft PR #37), 2026-09-24.",
     "v08.59 was allocated to MAP v4 Phase 7 P7-B, the Dawah screens, enabled the same day (issue #250), 2026-09-24.",
