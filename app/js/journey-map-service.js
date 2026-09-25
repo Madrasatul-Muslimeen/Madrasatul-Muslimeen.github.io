@@ -13,6 +13,7 @@ import {
   NOTE_STATUS,
   getNotesByIds,
   listNoteFoldersForOwner,
+  listNoteFoldersForOwnerPage,
   listNotePlacementsForFolder,
   listNotePlacementsForNote,
   listNotesForOwnerPage,
@@ -106,6 +107,25 @@ export async function noteFilings(db, {
  */
 export async function ownerFolderTree(db, { tenantId, ownerPersonId } = {}) {
   return buildFolderTree(await listNoteFoldersForOwner(db, { tenantId, ownerPersonId }));
+}
+
+/**
+ * Issue #267 -- `ownerFolderTree()` above is capped at the deployed Rules'
+ * 100-folder ceiling with no truncation notice, which the branching Path view
+ * cannot honestly build on: the Owner's own imported site has roughly 1,464
+ * folders (issue #265), and a Path that silently drew only the first 100
+ * would show a tree that is not the reader's own. This pages past the cap the
+ * same way `loadAllOwnerNotes()`/`loadAllOwnerPlacements()` already do, and
+ * reports truncation rather than ever spinning or lying about completeness.
+ *
+ * `journey-map.html` calls this one, not `ownerFolderTree()`, for the ONE
+ * shared tree every view (Folders, Timeline, Path) now renders from --
+ * `ownerFolderTree()` itself is left exactly as it was, unmodified.
+ */
+export async function ownerFolderTreePaged(db, { tenantId, ownerPersonId, pageSize = 100 } = {}) {
+  const { rows, truncated } = await loadAllPages((after) =>
+    listNoteFoldersForOwnerPage(db, { tenantId, ownerPersonId, pageSize, after }));
+  return { ...buildFolderTree(rows), truncated };
 }
 
 /**

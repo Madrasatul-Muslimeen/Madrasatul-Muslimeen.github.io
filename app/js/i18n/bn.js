@@ -2719,4 +2719,13 @@ export const BN = {
   "No pages have been shared with this Madrasah yet.": "এই মাদরাসার সাথে এখনো কোনো পাতা শেয়ার করা হয়নি।",
   "Make a printable page": "একটি প্রিন্টযোগ্য পাতা তৈরি করুন",
   "Removed.": "সরিয়ে ফেলা হয়েছে।",
+
+  // --- Mapping My Journey: Path view, branching with links (issue #267,
+  // Owner decision) -- each folder is a branch, a folder's own filed Notes
+  // are stops along it, and a Note filed in more than one folder carries a
+  // 🔗 badge linking every appearance.
+  "A Note filed in more than one folder shows a 🔗 badge — tap it to see every place it appears.":
+    "একাধিক ফোল্ডারে ফাইল করা একটি নোটে 🔗 ব্যাজ দেখা যায় — এটি কোথায় কোথায় আছে তা দেখতে ট্যাপ করুন।",
+  "In {count} places": "{count}টি জায়গায় আছে",
+  "+{count} more": "আরও {count}টি",
 };

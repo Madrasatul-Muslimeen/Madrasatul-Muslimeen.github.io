@@ -129,14 +129,50 @@
   .filter-chip[aria-pressed="true"] { background: #1F3A6E; color: #fff; }
   .timeline-day { margin: 1rem 0 0.3rem; font-size: 0.82rem; font-weight: 600; color: #888; border-bottom: 1px dashed #ddd; padding-bottom: 0.2rem; }
 
-  /* -- Option C: path -- */
-  #pathTrack { position: relative; margin: 1.2rem 0 1.2rem 0.7rem; padding-left: 1.4rem; border-left: 3px solid #B8862F; }
-  .path-stop { position: relative; margin: 0 0 1.1rem; }
-  .path-stop::before {
-    content: ""; position: absolute; left: -1.86rem; top: 0.2rem; width: 12px; height: 12px;
+  /* -- Option C: path -- a BRANCHING tree (issue #267, an Owner decision: "Path
+     view: branching with links"), replacing v08.37's own honest-first-pass
+     straight track. Each folder is a branch (drawn as a vertical left-border
+     trunk, the same visual idea as a code-review thread or a commit graph);
+     its own filed Notes are stops along it, oldest first; a Note filed in
+     more than one folder carries a 🔗 badge on every appearance, and tapping
+     one highlights every appearance and draws a connecting line between them.
+     #pathTree scrolls WITHIN ITSELF (never the whole page sideways) because a
+     tree eight levels deep (MAX_FOLDER_DEPTH) can run wider than a phone. */
+  #pathTree { position: relative; overflow-x: auto; max-width: 100%; }
+  .path-hint { font-size: 0.82rem; color: #666; margin: 0.4rem 0; }
+  .path-branch { margin: 0.3rem 0; }
+  .path-branch.system > .path-branch-head .path-branch-name { color: #B8862F; }
+  .path-branch-head { display: flex; align-items: center; gap: 0.4rem; padding: 0.2rem 0.3rem; cursor: pointer; min-height: 40px; }
+  .path-branch-toggle {
+    flex: 0 0 auto; width: 40px; height: 40px; padding: 0; font-size: 0.95rem; line-height: 1;
+    border: none; background: none; color: #1F3A6E; cursor: pointer;
+  }
+  .path-branch-toggle-leaf { visibility: hidden; }
+  .path-branch-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; font-weight: 600; color: #1F3A6E; }
+  .path-branch-count { font-size: 0.78rem; color: #888; }
+  /* The trunk/branch line itself -- every level of nesting adds one more,
+     which is what draws the "branching down" shape the issue asks for. */
+  .path-branch-body { margin-left: 1.1rem; padding-left: 1rem; border-left: 3px solid #B8862F; }
+  .path-branch-empty { font-size: 0.85rem; color: #888; padding: 0.2rem 0; }
+  .path-stops { position: relative; margin: 0.2rem 0; }
+  .path-stop { position: relative; margin: 0 0 0.7rem; padding-left: 0.9rem; }
+  .path-stop-marker {
+    position: absolute; left: -1.34rem; top: 0.3rem; width: 10px; height: 10px;
     border-radius: 50%; background: #B8862F; border: 2px solid #fff; box-shadow: 0 0 0 1px #B8862F;
   }
   .path-stop-date { font-size: 0.76rem; color: #888; }
+  .path-more-btn { min-height: 40px; margin: 0.2rem 0 0.6rem; }
+  .path-link-badge {
+    min-height: 40px; min-width: 40px; padding: 0.1rem 0.55rem; font-size: 0.8rem; border-radius: 999px;
+    border: 1px solid #B8862F; background: #fdf6ea; color: #7a5c1e; cursor: pointer;
+  }
+  .path-link-badge.active { background: #B8862F; color: #fff; }
+  .note-card.path-note-highlighted { border-color: #B8862F; border-width: 2px; box-shadow: 0 0 0 2px #B8862F; }
+  /* pointer-events: none -- the overlay must never steal a tap meant for a
+     stop or a branch toggle underneath it (the same hit-testable-below
+     Siyagah lesson the folder tree's own ⋯ menu already applies here). */
+  .path-link-lines { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 1; }
+  .path-link-lines line { stroke: #B8862F; stroke-width: 2; stroke-dasharray: 4 3; }
 
   /* -- shared note row/card, all three views -- */
   .note-card { border: 1px solid #ddd; border-radius: 0.6rem; padding: 0.7rem 0.85rem; margin: 0.6rem 0; background: #fff; }
@@ -215,7 +251,7 @@
     import { closeAllBarPalettes } from "./js/bar-palette.js";
     import { NOTE_STATUS, createNoteFolder, createNotePlacement } from "./js/note-foundation.js";
     import {
-      ownerFolderTree, folderContents, moveNoteToFolder,
+      ownerFolderTreePaged, folderContents, moveNoteToFolder,
       renameFolder, reorderFolder, moveFolder, retireFolder, reorderFiling,
       loadAllOwnerNotes, loadAllOwnerPlacements, folderNoteCounts, folderMoveRefusal,
     } from "./js/journey-map-service.js";
@@ -477,6 +513,11 @@
     let allPlacements = [];
     let notesTruncated = false;
     let placementsTruncated = false;
+    // Issue #267 -- ownerFolderTreePaged() pages past the same 100-folder
+    // Rules cap the single-shot folder reader alone was silently capped at
+    // (see journey-map-service.js's own comment) -- the Owner's own imported
+    // site has roughly 1,464 folders (issue #265), well past it.
+    let foldersTruncated = false;
     // Per-folder distinct-active-Note subtree counts (issue #259's own count
     // badge), recomputed alongside the tree on every refresh -- pure, no
     // extra read (journey-map-service.js's folderNoteCounts()).
@@ -581,11 +622,12 @@
         return;
       }
       const [tree, notesPage, placementsPage] = await Promise.all([
-        ownerFolderTree(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId }),
+        ownerFolderTreePaged(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId }),
         loadAllOwnerNotes(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId }),
         loadAllOwnerPlacements(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId }),
       ]);
       folderTree = tree;
+      foldersTruncated = tree.truncated;
       allNotes = notesPage.rows;
       notesTruncated = notesPage.truncated;
       allPlacements = placementsPage.rows;
@@ -615,7 +657,7 @@
     // is browsing/organising, not editing (editing a permanent Note is
     // notes.html's job, scoped to the Study Unit it was written about).
     // -------------------------------------------------------------------
-    function noteCardHtml(note, { fileControl = false } = {}) {
+    function noteCardHtml(note, { fileControl = false, extraHead = "" } = {}) {
       const retired = note.status === NOTE_STATUS.RETIRED;
       const title = note.title?.trim() || t("(untitled)");
       const open = expandedNoteIds.has(note.noteId);
@@ -623,6 +665,7 @@
         <div class="note-card-head" data-note-toggle>
           <span class="note-card-title">${escapeHtml(title)}</span>
           <span class="note-card-meta">${when(note.updatedAt)}</span>
+          ${extraHead}
         </div>
         <div class="note-body-preview${open ? " open" : ""}" data-note-body></div>
         <div class="note-actions" data-note-actions style="${open ? "" : "display:none"}">
@@ -828,7 +871,7 @@
       if (problems.length) {
         html += `<p class="warn">${escapeHtml(t("{count} folder(s) could not be shown safely and are not listed below — this needs administrator attention.", { count: problems.length }))}</p>`;
       }
-      if (notesTruncated || placementsTruncated) {
+      if (notesTruncated || placementsTruncated || foldersTruncated) {
         html += `<p id="truncatedMsg">${escapeHtml(t("Showing a large first batch only — there is more than could be loaded at once."))}</p>`;
       }
       html += folderToolbarHtml();
@@ -1493,38 +1536,245 @@
     }
 
     // =====================================================================
-    // OPTION C -- Path
+    // OPTION C -- Path: a BRANCHING tree with links (issue #267)
     // =====================================================================
-    // A HONEST FIRST PASS, per the issue's own instruction, not the full
-    // path metaphor the options doc describes. It renders every Note as a
-    // stop on one straight vertical track, oldest first (a journey read top
-    // to bottom), which is enough to compare against Folders and Timeline.
+    // Owner decision, 25 Sep 2026: "Path view: branching with links."
+    // Supersedes v08.37's own honest-first-pass straight track (kept above
+    // as history in CHANGELOG.md), whose own comment named exactly this gap:
+    // a Note filed in two folders cannot sit in two places on one straight
+    // line. The answer built here is the one the Owner chose -- each folder
+    // is its own branch (mergedRoots()/buildFolderTree(), the identical tree
+    // Folders already draws), a folder's own filed Notes are stops along it
+    // ordered oldest first, and a Note filed in more than one folder carries
+    // a 🔗 badge on every appearance; tapping one highlights every
+    // appearance and draws a connecting line between them.
     //
-    // WHAT THIS DOES NOT BUILD, stated rather than silently skipped: the
-    // options doc's own "named regions the path passes through" (Journey Map
-    // / Archive) and "side-trails" for a person's own folders. A Note can be
-    // filed in more than one folder at once (ADR-010 §5), so a single
-    // continuous path cannot honestly show "this stretch IS the Archive" --
-    // a Note filed in both the Archive and a side folder would need to sit
-    // in two places on one line at once. A real build of the region/
-    // side-trail version needs that resolved first (e.g. one path per
-    // region with cross-links, or a branching diagram rather than a single
-    // line) -- genuinely more design work than this round's honest-first-
-    // pass budget, exactly as the issue anticipated.
+    // SIZE (the issue's own #3): the Owner's imported site will carry
+    // roughly 1,464 folders and 1,091 Notes (issue #265). Branches below the
+    // top two levels start COLLAPSED (pathBranchExpanded()) and a folder's
+    // own stops beyond PATH_STOPS_PER_BRANCH are grouped as "+N more" --
+    // both session-only, never persisted, and both bounded so a tap only
+    // ever grows the rendered tree by what it reveals. pathStopIndex() is
+    // the one place that walks every placement, ONCE per render, O(P) --
+    // no layout step here is quadratic in the number of Notes.
+    const PATH_STOPS_PER_BRANCH = 20;
+    let pathForceExpanded = new Set();
+    let pathForceCollapsed = new Set();
+    let pathRevealedBranches = new Set(); // folderId -> its own "+N more" already revealed
+    let pathHighlightedNoteId = null;
+
+    /** Top two levels (0 and 1) start expanded; anything a reader has explicitly toggled wins over that default, in either direction. */
+    function pathBranchExpanded(key, depth) {
+      if (pathForceCollapsed.has(key)) return false;
+      if (pathForceExpanded.has(key)) return true;
+      return depth <= 1;
+    }
+    function togglePathBranch(key, depth) {
+      const now = pathBranchExpanded(key, depth);
+      if (now) { pathForceCollapsed.add(key); pathForceExpanded.delete(key); }
+      else { pathForceExpanded.add(key); pathForceCollapsed.delete(key); }
+      renderPathView();
+    }
+
+    /**
+     * ONE pass over allPlacements -- `byFolder`: folderId -> that folder's own
+     * active Notes (deduplicated by noteId, a Map so a stray duplicate
+     * placement cannot double a stop), sorted oldest-first afterwards;
+     * `foldersByNote`: noteId -> every folder it is filed in, in placement
+     * order. Mirrors folderContents()'s/notesInFolder()'s own two exclusions
+     * (a retired Note, or a placement naming one) so a Path stop is exactly
+     * what Folders would show for the same folder.
+     */
+    function pathStopIndex() {
+      const notesById = new Map(allNotes.map((n) => [n.noteId, n]));
+      const byFolder = new Map();
+      const foldersByNote = new Map();
+      for (const p of allPlacements) {
+        if (p.status !== NOTE_STATUS.ACTIVE) continue;
+        const note = notesById.get(p.noteId);
+        if (!note || note.status !== NOTE_STATUS.ACTIVE) continue;
+        if (!byFolder.has(p.folderId)) byFolder.set(p.folderId, new Map());
+        byFolder.get(p.folderId).set(note.noteId, note);
+        if (!foldersByNote.has(p.noteId)) foldersByNote.set(p.noteId, []);
+        const folders = foldersByNote.get(p.noteId);
+        if (!folders.includes(p.folderId)) folders.push(p.folderId);
+      }
+      const byFolderArrays = new Map();
+      for (const [folderId, notes] of byFolder) {
+        byFolderArrays.set(folderId, [...notes.values()].sort((a, b) => pathStopDate(a) - pathStopDate(b)));
+      }
+      return { byFolder: byFolderArrays, foldersByNote };
+    }
+    /** Issue #267's own instruction: originalCreatedAt when present (issue #265 adds it), otherwise createdAt. */
+    function pathStopDate(note) {
+      const ts = note.originalCreatedAt ?? note.createdAt;
+      return ts?.toMillis ? ts.toMillis() : 0;
+    }
+
+    /** Every branch a Note appears on, expanded and its own "+N more" revealed, so a highlighted stop always has somewhere real to draw a line to. */
+    function ensurePathVisible(noteId, index) {
+      for (const folderId of index.foldersByNote.get(noteId) ?? []) {
+        for (const ancestor of folderAncestorPath(folderId)) {
+          const key = expandKeyFor(ancestor);
+          pathForceExpanded.add(key); pathForceCollapsed.delete(key);
+        }
+        pathRevealedBranches.add(folderId);
+      }
+    }
+    function togglePathHighlight(noteId, index) {
+      if (pathHighlightedNoteId === noteId) { pathHighlightedNoteId = null; }
+      else { pathHighlightedNoteId = noteId; ensurePathVisible(noteId, index); }
+      renderPathView();
+    }
+    // Escape clears an open highlight -- wired once, at module load, guarded
+    // on the Path view actually being the one on screen (the same guard
+    // every other cross-view keyboard shortcut in this app would need).
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && currentView === "path" && pathHighlightedNoteId !== null) {
+        pathHighlightedNoteId = null;
+        renderPathView();
+      }
+    });
+
     function renderPathView() {
       if (allNotes.length === 0) {
         viewPath.innerHTML = `<p id="emptyMsg">${escapeHtml(t("Your path is empty so far — every Note you write will appear here as a new stop, oldest to newest."))}</p>`;
         return;
       }
-      const sorted = [...allNotes].sort((a, b) => (a.updatedAt?.toMillis?.() ?? 0) - (b.updatedAt?.toMillis?.() ?? 0));
-      viewPath.innerHTML = `<div id="pathTrack">${sorted.map((note) => {
-        const d = note.updatedAt?.toDate ? note.updatedAt.toDate() : null;
-        return `<div class="path-stop" data-note-id="${escapeHtml(note.noteId)}">
-          <div class="path-stop-date">${escapeHtml(d ? d.toLocaleDateString() : "")}</div>
-          ${noteCardHtml(note, { fileControl: true })}
-        </div>`;
-      }).join("")}</div>`;
-      wireNoteCards(viewPath, sorted);
+      const index = pathStopIndex();
+      const anyLinked = [...index.foldersByNote.values()].some((folders) => folders.length > 1);
+      let html = "";
+      if (foldersTruncated) {
+        html += `<p id="pathTruncatedMsg">${escapeHtml(t("Showing a large first batch only — there is more than could be loaded at once."))}</p>`;
+      }
+      if (anyLinked) {
+        html += `<p class="path-hint">${escapeHtml(t("A Note filed in more than one folder shows a 🔗 badge — tap it to see every place it appears."))}</p>`;
+      }
+      html += `<div id="pathTree" data-path-tree>${mergedRoots().map((f) => pathBranchHtml(f, 0, index)).join("")}</div>`;
+      viewPath.innerHTML = html;
+      wirePathTree(index);
+      if (pathHighlightedNoteId) applyPathHighlight(index);
+    }
+
+    /** One branch (folder), then -- if expanded -- its own child branches followed by its own stops, the same child-folders-then-leaves order the Folders tree already uses. */
+    function pathBranchHtml(f, depth, index) {
+      const childFolders = (f.children ?? []).slice().sort(byOrder);
+      const stops = index.byFolder.get(f.folderId) ?? [];
+      const key = expandKeyFor(f);
+      const expandable = childFolders.length > 0 || stops.length > 0;
+      const expanded = pathBranchExpanded(key, depth);
+      const toggle = expandable
+        ? `<button type="button" class="path-branch-toggle" data-path-branch-toggle="${escapeHtml(key)}" data-path-depth="${depth}" aria-expanded="${expanded}" aria-label="${expanded ? escapeHtml(t("Collapse")) : escapeHtml(t("Expand"))}">${expanded ? "▾" : "▶"}</button>`
+        : `<span class="path-branch-toggle path-branch-toggle-leaf" aria-hidden="true">▶</span>`;
+      const badge = stops.length > 0 ? `<span class="path-branch-count">${stops.length}</span>` : "";
+      let html = `<div class="path-branch${isSystemFolderRole(f.semanticRole) ? " system" : ""}" data-path-branch data-branch-key="${escapeHtml(key)}">
+        <div class="path-branch-head" data-path-branch-head>${toggle}<span class="path-branch-name">${escapeHtml(folderDisplayName(f))}</span>${badge}</div>`;
+      if (expanded) {
+        html += `<div class="path-branch-body">`;
+        if (!expandable) {
+          html += `<p class="path-branch-empty">${escapeHtml(emptyStateFor(f))}</p>`;
+        } else {
+          for (const child of childFolders) html += pathBranchHtml(child, depth + 1, index);
+          if (stops.length) html += pathStopsHtml(f, stops, index);
+        }
+        html += `</div>`;
+      }
+      html += `</div>`;
+      return html;
+    }
+
+    /** A folder's own stops, capped at PATH_STOPS_PER_BRANCH unless this exact folder's "+N more" was already tapped this session. */
+    function pathStopsHtml(f, stops, index) {
+      const revealed = pathRevealedBranches.has(f.folderId);
+      const shown = revealed ? stops : stops.slice(0, PATH_STOPS_PER_BRANCH);
+      const remaining = stops.length - shown.length;
+      let html = `<div class="path-stops" data-path-stops>${shown.map((note) => pathStopHtml(note, index)).join("")}</div>`;
+      if (remaining > 0) {
+        html += `<button type="button" class="secondary tiny path-more-btn" data-path-more="${escapeHtml(f.folderId)}">${escapeHtml(t("+{count} more", { count: remaining }))}</button>`;
+      }
+      return html;
+    }
+
+    /** One stop -- the shared noteCardHtml() component, exactly as Timeline renders it, with a 🔗 badge injected into its own head when this Note sits on more than one branch. */
+    function pathStopHtml(note, index) {
+      const ts = note.originalCreatedAt ?? note.createdAt;
+      const d = ts?.toDate ? ts.toDate() : null;
+      const folderCount = (index.foldersByNote.get(note.noteId) ?? []).length;
+      const linkLabel = t("In {count} places", { count: folderCount });
+      const badge = folderCount > 1
+        ? `<button type="button" class="path-link-badge" data-path-link-badge aria-label="${escapeHtml(linkLabel)}" title="${escapeHtml(linkLabel)}">🔗 ${folderCount}</button>`
+        : "";
+      return `<div class="path-stop" data-stop-note-id="${escapeHtml(note.noteId)}">
+        <div class="path-stop-marker"></div>
+        <div class="path-stop-date">${escapeHtml(d ? d.toLocaleDateString() : "")}</div>
+        ${noteCardHtml(note, { fileControl: true, extraHead: badge })}
+      </div>`;
+    }
+
+    function wirePathTree(index) {
+      const container = document.querySelector("[data-path-tree]");
+      if (!container) return;
+      container.querySelectorAll("[data-path-branch-toggle]").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          togglePathBranch(btn.dataset.pathBranchToggle, Number(btn.dataset.pathDepth));
+        });
+      });
+      container.querySelectorAll("[data-path-branch-head]").forEach((head) => {
+        head.addEventListener("click", (e) => {
+          if (e.target.closest(".path-branch-toggle")) return; // its own listener above already handled this tap
+          const toggleEl = head.querySelector("[data-path-branch-toggle]");
+          if (toggleEl) togglePathBranch(toggleEl.dataset.pathBranchToggle, Number(toggleEl.dataset.pathDepth));
+        });
+      });
+      container.querySelectorAll("[data-path-more]").forEach((btn) => {
+        btn.addEventListener("click", () => { pathRevealedBranches.add(btn.dataset.pathMore); renderPathView(); });
+      });
+      wireNoteCards(container, allNotes);
+      container.querySelectorAll("[data-path-link-badge]").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const noteId = btn.closest("[data-note-id]")?.dataset.noteId;
+          if (noteId) togglePathHighlight(noteId, index);
+        });
+      });
+    }
+
+    /**
+     * Highlights every rendered appearance of the highlighted Note (its
+     * ensurePathVisible() call already guaranteed each one is expanded and
+     * on screen) and draws a dashed line from the first appearance to every
+     * other one, as a small absolutely-positioned SVG overlay sized to the
+     * tree's own scrolled content -- pointer-events: none, so it can never
+     * steal a tap from a branch toggle or a stop underneath it.
+     */
+    function applyPathHighlight(index) {
+      const container = document.querySelector("[data-path-tree]");
+      if (!container || !pathHighlightedNoteId) return;
+      const matches = [...container.querySelectorAll(`.note-card[data-note-id="${CSS.escape(pathHighlightedNoteId)}"]`)];
+      matches.forEach((el) => el.classList.add("path-note-highlighted"));
+      container.querySelectorAll("[data-path-link-badge]").forEach((btn) => {
+        if (btn.closest("[data-note-id]")?.dataset.noteId === pathHighlightedNoteId) btn.classList.add("active");
+      });
+      if (matches.length < 2) return;
+      const containerRect = container.getBoundingClientRect();
+      const points = matches.map((el) => {
+        const r = el.getBoundingClientRect();
+        return { x: r.left - containerRect.left + r.width / 2, y: r.top - containerRect.top + r.height / 2 };
+      });
+      const svgNS = "http://www.w3.org/2000/svg";
+      const svg = document.createElementNS(svgNS, "svg");
+      svg.setAttribute("class", "path-link-lines");
+      svg.setAttribute("data-path-link-lines", "");
+      svg.setAttribute("width", String(container.scrollWidth));
+      svg.setAttribute("height", String(container.scrollHeight));
+      for (let i = 1; i < points.length; i++) {
+        const line = document.createElementNS(svgNS, "line");
+        line.setAttribute("x1", points[0].x); line.setAttribute("y1", points[0].y);
+        line.setAttribute("x2", points[i].x); line.setAttribute("y2", points[i].y);
+        svg.appendChild(line);
+      }
+      container.appendChild(svg);
     }
 
     // -----------------------------------------------------------------------

@@ -246,6 +246,37 @@ export async function listNoteFoldersForOwner(db, { tenantId, ownerPersonId, sta
 }
 
 /**
+ * Issue #267 -- the paged twin of `listNoteFoldersForOwner()` above, the same
+ * fix `listNotesForOwnerPage()`/`listNotePlacementsForOwnerPage()` already
+ * got in issue #259. `listNoteFoldersForOwner()`'s own single-shot `maximum`
+ * is still capped at the deployed Rules' 100-folder ceiling -- so the tree
+ * every Mapping My Journey view draws on (Folders, Timeline's filter chips,
+ * and issue #267's own branching Path) silently showed only the OWNER'S
+ * FIRST 100 folders, never more, with no truncation notice at all. The
+ * Owner's own imported site has roughly 1,464 folders (issue #265) -- more
+ * than fourteen times that cap. DELIBERATELY NO `orderBy`, the identical
+ * reasoning `listNotePlacementsForOwnerPage()` already states: equality
+ * filters only, so a page (plus a `startAfter` cursor on the implicit
+ * document-id order) is served from single-field indexes alone -- no new
+ * composite index candidate.
+ */
+export async function listNoteFoldersForOwnerPage(db, {
+  tenantId, ownerPersonId, status = NOTE_STATUS.ACTIVE, pageSize = 100, after = null,
+}) {
+  requirePageSize(pageSize);
+  const q = query(collection(db, TENANT.NOTE_FOLDERS),
+    where("tenantId", "==", requireToken("tenantId", tenantId)),
+    where("ownerPersonId", "==", requireToken("ownerPersonId", ownerPersonId)),
+    where("status", "==", status),
+    ...(after ? [startAfter(after)] : []),
+    limit(pageSize));
+  const snapshot = await getDocs(q);
+  const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  const next = snapshot.docs.length < pageSize ? null : snapshot.docs[snapshot.docs.length - 1];
+  return { rows, next };
+}
+
+/**
  * MAP Phase 6 (P6-B). This function used to validate `parentFolderId` NOT AT
  * ALL — no existence check, no tenant or owner check, no cycle check — where
  * its sibling `createNotePlacement()` did all three in a transaction. A folder
