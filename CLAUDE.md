@@ -158,7 +158,19 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.66 on `main`** (25 Sep 2026 — **the
+**Current milestone: v08.67 on `main`** (25 Sep 2026 — the Owner's
+decision *"Path view: branching with links"*, built (issue #267). Each
+folder is a branch, its Notes stops along it by original date; a Note filed
+in several folders shows on every branch with a 🔗 badge that highlights all
+its places and draws the lines between them. Collapsed below two levels,
+"+N more" past 20 stops; 1,500 folders / 1,100 Notes render in ~1.1s.
+Review fixed the view toggle wrapping "Path" onto its own line at phone
+width (v08.66's ⋯ menu), and **the harness now serves DOMPurify from a
+vendored copy** — the sandbox proxy breaks the CDN's certificate, so every
+test of a page that renders Note bodies had been failing for a reason the
+Owner never meets.)
+
+**Previous milestone: v08.66 on `main`** (25 Sep 2026 — **the
 mappingmyjourney.com importer is BUILT AND GATED** (issue #265). New
 `app/import-notes.html`, reached from Mapping My Journey's ⋯ menu: choose
 the WordPress export, see a preview, press Import. **Import stays off until

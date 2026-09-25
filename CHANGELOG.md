@@ -18383,3 +18383,22 @@ wordpress-import-screen 13/0, journey-map-real-function and
 note-foundation-real-function pass, rules-authorisation-executable 40/0,
 firestore-index-requirements 10/0. Not done: Bangla digits in the preview
 counts (shown as 1464, not ১৪৬৪).
+
+**v08.67 (25 Sep 2026).** Issue #267 — Mapping My Journey's Path view as
+branches with links, allocated by the MMSA Architect. The Builder's branch
+predated v08.66; merging `main` in conflicted in `note-foundation.js` (both
+rounds added `listNoteFoldersForOwnerPage`; one kept) and `journey-map.html`
+(the Note card now carries both `displayTimestamp()` and the Path's
+`extraHead` badge). Review fixes: `.view-toggle-btn` `flex: 1 1 0; min-width: 0`
+— with v08.66's ⋯ menu the 8rem basis pushed "Path" onto its own line below
+440px; measured one row, nothing cut, at 320/360/390/1100px in both languages.
+`tools/i18n-verify/harness.mjs` routes the jsdelivr DOMPurify URL to
+`tools/i18n-verify/vendor/purify.min.js` (3.4.16), because the sandbox proxy
+fails the browser's certificate check and sanitize fails closed.
+`journey-map-service.mjs` K9 seeds the paged reader and K28 is updated in
+place (it asserted `ownerFolderTree()` stayed a single capped read; v08.66
+made it page on purpose) — this suite had not been run for v08.66 and would
+have failed on `main`. Checks: journey-map-path 32/0 (the size fixture:
+1,500 folders, 1,100 Notes, ~1.1s), journey-map-screen 48/0, journey-map-back
+38/0, journey-map-service 28/0, journey-map-boundary 18/0,
+journey-map-real-function passes. Screenshot looked at, 390px.
