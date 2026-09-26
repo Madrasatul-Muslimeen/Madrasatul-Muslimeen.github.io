@@ -181,6 +181,49 @@ function relatedInfoHtml(related) {
 }
 
 /**
+ * Section C part 2, "Connected āyāt" (issue #318) -- ayah-related.js's own
+ * connectedThroughNotes() decides which āyāt and why; this only labels the
+ * studied marker in the reader's language and marks up each row. `studied`
+ * is `true` / `false` / `null` ("not checked" -- see that function's own
+ * comment for why a surah's records may genuinely be unknown here).
+ */
+function connectedStudiedLabel(studied) {
+  if (studied === true) return t("Studied");
+  if (studied === false) return t("Not studied yet");
+  return t("Not checked");
+}
+function connectedStudiedClass(studied) {
+  if (studied === true) return "is-studied";
+  if (studied === false) return "is-not-studied";
+  return "is-unchecked";
+}
+function connectedItemHtml(item) {
+  return `<button type="button" class="ayah-related-item ayah-connected-item" data-ayah-related-jump="${Number(item.surah)}:${Number(item.ayah)}">
+            <span class="ayah-related-ref">${escapeHtml(item.ref)}</span>
+            <span class="ayah-related-why">${escapeHtml(item.reason)}</span>
+            <span class="ayah-connected-studied ${connectedStudiedClass(item.studied)}">${escapeHtml(connectedStudiedLabel(item.studied))}</span>
+          </button>`;
+}
+/**
+ * `connected`:
+ *   null                 -> still loading
+ *   { error: true }      -> said in words, never a blank
+ *   { restricted: true } -> viewing someone else's own Notes and the
+ *                           deployed Rules do not let this reader see them
+ *                           (spec item 4) -- said in words, not silently
+ *                           hidden and not silently guessed empty.
+ *   { items: [...] }     -- each item { surah, ayah, ref, reason, studied }
+ */
+function connectedInfoHtml(connected) {
+  if (connected == null) return `<p class="ayah-status-empty">${escapeHtml(t("Finding connected āyāt…"))}</p>`;
+  if (connected.error) return `<p class="ayah-status-empty">${escapeHtml(t("Couldn't load connected āyāt just now."))}</p>`;
+  if (connected.restricted) return `<p class="ayah-status-empty">${escapeHtml(t("Connections are shown for your own Notes."))}</p>`;
+  const items = connected.items ?? [];
+  if (!items.length) return `<p class="ayah-status-empty">${escapeHtml(t("No connected āyāt found."))}</p>`;
+  return `<div class="ayah-related-list">${items.map(connectedItemHtml).join("")}</div>`;
+}
+
+/**
  * `isSelf` -- the same isSelfSelected() rule notes.html/journey-map.html
  * already use for their own write actions (isNoteOwner() in
  * firestore.rules is deliberately stricter than canRecordFor(): a Note is
@@ -197,6 +240,7 @@ export function renderAyahActionSheetHtml({
   unitKey, ref = "", hasNote = false, isBookmarked = false, isSelf = true,
   approachOptionsHtml = "", hasPosterNote = null,
   approachStatuses = [], wordStatus = null, hifzStatus = null, related = null,
+  connected = null,
 } = {}) {
   void hasNote; // kept for callers that already pass it (icon/wording decisions belong to isBookmarked/isSelf above, not this flag)
   const noteWhy = t("Only your own record can create or file a Note.");
@@ -233,9 +277,9 @@ export function renderAyahActionSheetHtml({
           <h4 class="ayah-status-heading">${escapeHtml(t("Related āyāt"))}</h4>
           ${relatedInfoHtml(related)}
         </div>
-        <div class="ayah-status-block">
+        <div class="ayah-status-block" data-ayah-sheet-connected>
           <h4 class="ayah-status-heading">${escapeHtml(t("Connected āyāt"))}</h4>
-          <p class="ayah-sheet-info-placeholder">${escapeHtml(t("Āyāt linked through your own Notes and folders — coming next"))}</p>
+          ${connectedInfoHtml(connected)}
         </div>
       </div>
     </div>`;

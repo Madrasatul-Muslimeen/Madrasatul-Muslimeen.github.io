@@ -2469,6 +2469,14 @@
   .ayah-related-item:hover, .ayah-related-item:focus-visible { background: #efe6c9; outline: 2px solid #1F3A6E; outline-offset: 1px; }
   .ayah-related-ref { font-weight: 600; font-size: 0.92rem; }
   .ayah-related-why { font-size: 0.78rem; color: #4a4a4a; overflow-wrap: anywhere; }
+  /* Ayah Card section C part 2 -- Connected āyāt (issue #318): the same
+     40px row, plus a studied marker in one of three explicit colours (never
+     colour alone -- the words themselves carry the state), each measured
+     >= 4.5:1 against the row's own #f6f2e4 background. */
+  .ayah-connected-studied { font-size: 0.74rem; font-weight: 600; }
+  .ayah-connected-studied.is-studied { color: #14532d; }
+  .ayah-connected-studied.is-not-studied { color: #6b4a00; }
+  .ayah-connected-studied.is-unchecked { color: #5b5b5b; font-weight: 500; font-style: italic; }
   .ayah-hifz-chip { display: inline-flex; align-items: center; min-height: 1.6rem; padding: 0.2rem 0.6rem; border-radius: 999px; color: #fff; font-size: 0.8rem; font-weight: 600; text-shadow: 0 0 2px rgba(0,0,0,0.35); }
   .ayah-sheet-info-placeholder { font-size: 0.8rem; color: #888; font-style: italic; margin: 0; }
   .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
@@ -4553,7 +4561,7 @@
     import { parseQuranWordOccurrenceId } from "./js/quran-word-identity.js";
     import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard, renderQuranWordCard, WORD_CARD_POS_SEGMENTS } from "./js/quran-word-card.js";
     import { occurrenceRefsFor, rootFormsFor, unpackWordIndexRef, loadWordIdentityIndex } from "./js/quran-word-index.js";
-    import { relatedBySharedWords, relatedThroughLists } from "./js/ayah-related.js";
+    import { relatedBySharedWords, relatedThroughLists, connectedThroughNotes } from "./js/ayah-related.js";
     import { wordSegmentsFor } from "./js/quran-word-segments.js";
     import { wordProgressAuthority, WBW_WORD_STATES, resolveWordProgress } from "./js/quran-word-progress.js";
     import { primeAyahProgress, getSurahProgress, wordProgressFor, setWordState, decideWordApproval, clearWordProgressCache } from "./js/quran-word-progress-data.js";
@@ -4578,8 +4586,8 @@
     import { renderAyahFolderPickerHtml, attachAyahFolderPickerHandlers } from "./js/ayah-folder-filing-renderer.js";
     import { planFolderFilings } from "./js/ayah-folder-filing-plan.js";
     import { createStudyNote, notesForStudyUnit } from "./js/study-note-service.js";
-    import { createNoteFolder, createNotePlacement, retireNotePlacement, NOTE_STATUS } from "./js/note-foundation.js";
-    import { ownerFolderTreePaged, noteFilings } from "./js/journey-map-service.js";
+    import { createNoteFolder, createNotePlacement, retireNotePlacement, NOTE_STATUS, listNoteSourcesForOwnerPage } from "./js/note-foundation.js";
+    import { ownerFolderTreePaged, noteFilings, folderContents } from "./js/journey-map-service.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     import {
@@ -5215,6 +5223,9 @@
     let currentTrackableId = null;
     let currentAyahNum = 1;
     let currentChunk = null;
+    // Which surah currentChunk was loaded FOR: getRecordsChunk() returns null
+    // both for "not loaded" and "loaded, no claims yet" (Architect review, #318).
+    let currentChunkLoadedFor = null;
     let quranWordCardState = createWordCardState();
     let quranWordCardContext = {};
     let quranWordCardRequest = 0;
@@ -5282,7 +5293,8 @@
     // read, the same "closed/reopened while awaiting" guard
     // openAyahFolderFiling() already uses.
     let ayahSheetWordStatus = null; // { known, total, words: [...] } | null
-    let ayahSheetRelated = null; // Ayah Card section C: null (loading) | { error } | { lists, shared }
+    let ayahSheetRelated = null; // Ayah Card section C part 1: null (loading) | { error } | { lists, shared }
+    let ayahSheetConnected = null; // Ayah Card section C part 2 (issue #318): null (loading) | { error } | { restricted } | { items }
     let ayahSheetHasPosterNote = null; // true | false | null (unresolved)
     // The "File in folder(s)…" overlay, opened FROM the sheet. Null means
     // closed. `noteId: null` with `notes.length > 1` means "more than one
@@ -6611,6 +6623,7 @@
       if (!selectedPersonId) return;
       const chunkKey = `surah_${currentSurahNum}`;
       currentChunk = await getRecordsChunk(db, activeTenantId, selectedPersonId, chunkKey);
+      currentChunkLoadedFor = `${selectedPersonId}::${chunkKey}`;
       // 28 Aug 2026: a claim made from the Note view (or the floating "Track
       // this unit" modal) used to leave exploreChunksBySurah -- Explore/QCR's
       // own once-per-"open" cache -- pointing at the OLD currentChunk object,
@@ -12418,6 +12431,7 @@
       ayahSheetUnitKey = null;
       ayahSheetWordStatus = null;
       ayahSheetHasPosterNote = null;
+      ayahSheetConnected = null;
       ayahActionSheetOverlayEl.classList.remove("open");
       ayahActionSheetMountEl.innerHTML = "";
     }
@@ -12604,6 +12618,7 @@
         wordStatus: ayahSheetWordStatus,
         hifzStatus: hifzStatusForAyah(surah, ayahNum),
         related: ayahSheetRelated,
+        connected: ayahSheetConnected,
       });
       // Keep the reader's place: the card re-renders as its data arrives
       // (Status, then Related), and each re-render used to jump to the top.
@@ -12693,6 +12708,169 @@
       renderAyahActionSheetNow();
     }
 
+    const CONNECTED_AYAH_KEY = /^ayah:(\d+):(\d+)$/;
+
+    /** Ayah Card section C part 2, "Connected āyāt" (issue #318) -- a
+        bounded, owner-scoped page loop over the SAME listNoteSourcesForOwnerPage()
+        the WordPress/Evernote importers already use for their own "already
+        there?" checks (wordpress-import-service.js/evernote-import-service.js's
+        own loadOwnedRows()) -- no new query shape. Capped, never reported
+        past the cap: a pathological account cannot turn opening a card into
+        an unbounded read, and the pure aggregator below only ever surfaces
+        ~12 results regardless of how many links it is handed. */
+    const CONNECTED_SOURCE_LINK_PAGE_CAP = 20; // 20 * 100 = 2,000 links
+    async function loadOwnerNoteSourceLinksBounded(tenantId, ownerPersonId) {
+      const rows = [];
+      let after = null;
+      for (let page = 0; page < CONNECTED_SOURCE_LINK_PAGE_CAP; page += 1) {
+        const { rows: pageRows, next } = await listNoteSourcesForOwnerPage(db, { tenantId, ownerPersonId, pageSize: 100, after });
+        rows.push(...pageRows);
+        if (!next) break;
+        after = next;
+      }
+      return rows;
+    }
+
+    /** "studied" (issue #318's own definition): the reader has a claimed or
+        confirmed Approach on that āyah -- ANY entry for that āyah's unit
+        key, any trackable, read from whichever surah chunk is ALREADY in
+        memory: the currently open surah (currentChunk, no extra read) or,
+        if the reader has opened Explore this session, its own per-surah
+        cache (exploreChunksBySurah). Any OTHER surah reports "not checked"
+        (null) rather than reading 114 chunks to answer one question (spec
+        item 2 -- the same restraint hifzStatusForAyah()/
+        approachStatusesForAyah() above already apply to THIS āyah). */
+    function studiedStatusForConnectedAyah(surahNum, ayahNum) {
+      const chunk = surahNum === currentSurahNum ? currentChunk : (exploreChunksBySurah?.get(surahNum) ?? null);
+      // Architect review: the open surah's chunk IS loaded even when it is
+      // null (no claims yet) -- that means "not studied", not "not checked".
+      if (!chunk) return surahNum === currentSurahNum && currentChunkLoadedFor === `${selectedPersonId}::surah_${surahNum}` ? false : null;
+      const prefix = `${buildUnitKey.ayah(surahNum, ayahNum)}::`;
+      const entries = chunk.entries ?? {};
+      return Object.keys(entries).some((k) => k.startsWith(prefix) && !!entries[k]?.claimedStatus && entries[k].claimedStatus !== "not_started");
+    }
+
+    /** Ayah Card section C part 2, "Connected āyāt" (issue #318) -- the
+        reader's OWN Notes and Mapping folders that connect this āyah to
+        others, marked studied or not (the Owner's decision, recorded on
+        issue #295 and docs/governance/2026-09-26-owner-decisions.md).
+        Loaded when the card opens, never at start-up (I9).
+
+        THROUGH A NOTE: notesForStudyUnit() gives the Notes already
+        anchored HERE (bounded, MAX_NOTES_PER_UNIT). Their OTHER anchors
+        are found by scanning the owner's whole noteSources set (bounded
+        above) for the SAME noteId -- there is no "source links for one
+        note" query in the data layer, so this reuses the one
+        already-existing owner-wide reader rather than adding a new query
+        shape.
+
+        THROUGH A FOLDER: noteFilings() (existing, scoped per noteId,
+        bounded) finds which folders file one of THOSE SAME notes;
+        folderContents() (existing, scoped per folder, bounded) finds what
+        ELSE is filed there. Whether that other Note anchors elsewhere is
+        answered from the SAME owner-wide noteSources scan built for the
+        "through a Note" case above -- one scan, reused for both, so this
+        never pages the owner's whole placements set (which, at the
+        Owner's own real import size, is thousands of rows) the way
+        Mapping My Journey's own full-tree load does.
+
+        canReadNoteOf() (firestore.rules) already authorises a guardian,
+        co-enrolled teacher, owner or prime to read a Note that is not
+        their own -- the same reach canRecordFor() gives elsewhere -- so
+        this is attempted for whoever is currently selected, never gated
+        on isSelf client-side; only a genuine denial produces the "shown
+        for your own Notes" message (spec item 4). */
+    async function ensureAyahSheetConnectedLoaded(unitKey, surahNum, ayahNum) {
+      let result;
+      try {
+        if (!activeTenantId || !selectedPersonId) {
+          result = { items: [] };
+        } else {
+          const tenantId = activeTenantId;
+          const ownerPersonId = selectedPersonId;
+          const [{ rows: homeRows }, allLinks] = await Promise.all([
+            notesForStudyUnit(db, { tenantId, ownerPersonId, unitKey }),
+            loadOwnerNoteSourceLinksBounded(tenantId, ownerPersonId),
+          ]);
+          const homeNoteIds = [...new Set(homeRows.map((row) => row.note.noteId))];
+          const titleByNoteId = new Map(homeRows.map((row) => [row.note.noteId, row.note.title?.trim() || t("(untitled Note)")]));
+          const linksByNoteId = new Map();
+          for (const link of allLinks) {
+            if (!linksByNoteId.has(link.noteId)) linksByNoteId.set(link.noteId, []);
+            linksByNoteId.get(link.noteId).push(link.sourceKey);
+          }
+
+          // Through a Note: each home note's OWN other anchors.
+          const noteLinks = [];
+          for (const noteId of homeNoteIds) {
+            for (const sourceKey of linksByNoteId.get(noteId) ?? []) {
+              if (sourceKey === unitKey) continue;
+              noteLinks.push({ sourceKey, label: titleByNoteId.get(noteId) });
+            }
+          }
+
+          // Through a folder: folders filing a home note, then whatever
+          // ELSE those folders file, resolved to ITS OWN other anchors via
+          // the same linksByNoteId map built above.
+          const folderLabelById = new Map();
+          await Promise.all(homeNoteIds.map(async (noteId) => {
+            let rows = [];
+            try { ({ rows } = await noteFilings(db, { tenantId, ownerPersonId, noteId })); } catch { rows = []; }
+            for (const { folder } of rows) {
+              if (folder && !folderLabelById.has(folder.folderId)) folderLabelById.set(folder.folderId, folder.name);
+            }
+          }));
+          const folderFilings = [];
+          const seenFolderConnection = new Set();
+          await Promise.all([...folderLabelById.entries()].map(async ([folderId, folderLabel]) => {
+            let rows = [];
+            try { ({ rows } = await folderContents(db, { tenantId, ownerPersonId, folderId })); } catch { rows = []; }
+            for (const { note: otherNote } of rows) {
+              // A home note's OWN other anchors are the "through a Note"
+              // case above; skipping it here keeps the two reasons distinct
+              // instead of reporting the identical anchor twice under two
+              // labels for one note filed in its own folder.
+              if (!otherNote || homeNoteIds.includes(otherNote.noteId)) continue;
+              for (const sourceKey of linksByNoteId.get(otherNote.noteId) ?? []) {
+                if (sourceKey === unitKey) continue;
+                const dedupeKey = `${folderId}::${sourceKey}`;
+                if (seenFolderConnection.has(dedupeKey)) continue;
+                seenFolderConnection.add(dedupeKey);
+                folderFilings.push({ sourceKey, label: folderLabel });
+              }
+            }
+          }));
+
+          const studiedKeys = {};
+          for (const { sourceKey } of [...noteLinks, ...folderFilings]) {
+            const m = CONNECTED_AYAH_KEY.exec(sourceKey);
+            if (!m) continue;
+            const key = `${m[1]}:${m[2]}`;
+            if (key in studiedKeys) continue;
+            const studied = studiedStatusForConnectedAyah(Number(m[1]), Number(m[2]));
+            if (studied !== null) studiedKeys[key] = studied;
+          }
+
+          const items = connectedThroughNotes({ surah: surahNum, ayah: ayahNum, noteLinks, folderFilings, studiedKeys }).map((c) => ({
+            ...c,
+            ref: relatedRefLabel(c.surah, c.ayah),
+            reason: c.via.map((v) => (v.kind === "note" ? t("Note: {title}", { title: v.label }) : t("Folder: {name}", { name: v.label }))).join(" · "),
+          }));
+          result = { items };
+        }
+      } catch (err) {
+        if (err?.code === "permission-denied") {
+          result = { restricted: true };
+        } else {
+          console.error(err);
+          result = { error: true };
+        }
+      }
+      if (ayahSheetUnitKey !== unitKey || !ayahActionSheetOverlayEl.classList.contains("open")) return;
+      ayahSheetConnected = result;
+      renderAyahActionSheetNow();
+    }
+
     function openAyahActionSheet(ayahKey) {
       const [surahStr, ayahStr] = ayahKey.split(":");
       const surahNum = Number(surahStr);
@@ -12702,9 +12880,11 @@
       ayahSheetWordStatus = null;
       ayahSheetHasPosterNote = null;
       ayahSheetRelated = null;
+      ayahSheetConnected = null;
       renderAyahActionSheetNow();
       ayahActionSheetOverlayEl.classList.add("open");
       ensureAyahSheetRelatedLoaded(unitKey, surahNum, ayahNum);
+      ensureAyahSheetConnectedLoaded(unitKey, surahNum, ayahNum);
       ensureAyahNoteDataLoaded().then(() => { if (ayahSheetUnitKey === unitKey) renderAyahActionSheetNow(); });
       ensureAyahSheetWordStatusLoaded(unitKey, surahNum, ayahNum);
       ensureAyahSheetPosterNoteLoaded(unitKey);
