@@ -5223,6 +5223,9 @@
     let currentTrackableId = null;
     let currentAyahNum = 1;
     let currentChunk = null;
+    // Which surah currentChunk was loaded FOR: getRecordsChunk() returns null
+    // both for "not loaded" and "loaded, no claims yet" (Architect review, #318).
+    let currentChunkLoadedFor = null;
     let quranWordCardState = createWordCardState();
     let quranWordCardContext = {};
     let quranWordCardRequest = 0;
@@ -6620,6 +6623,7 @@
       if (!selectedPersonId) return;
       const chunkKey = `surah_${currentSurahNum}`;
       currentChunk = await getRecordsChunk(db, activeTenantId, selectedPersonId, chunkKey);
+      currentChunkLoadedFor = `${selectedPersonId}::${chunkKey}`;
       // 28 Aug 2026: a claim made from the Note view (or the floating "Track
       // this unit" modal) used to leave exploreChunksBySurah -- Explore/QCR's
       // own once-per-"open" cache -- pointing at the OLD currentChunk object,
@@ -12738,7 +12742,9 @@
         approachStatusesForAyah() above already apply to THIS āyah). */
     function studiedStatusForConnectedAyah(surahNum, ayahNum) {
       const chunk = surahNum === currentSurahNum ? currentChunk : (exploreChunksBySurah?.get(surahNum) ?? null);
-      if (!chunk) return null;
+      // Architect review: the open surah's chunk IS loaded even when it is
+      // null (no claims yet) -- that means "not studied", not "not checked".
+      if (!chunk) return surahNum === currentSurahNum && currentChunkLoadedFor === `${selectedPersonId}::surah_${surahNum}` ? false : null;
       const prefix = `${buildUnitKey.ayah(surahNum, ayahNum)}::`;
       const entries = chunk.entries ?? {};
       return Object.keys(entries).some((k) => k.startsWith(prefix) && !!entries[k]?.claimedStatus && entries[k].claimedStatus !== "not_started");
