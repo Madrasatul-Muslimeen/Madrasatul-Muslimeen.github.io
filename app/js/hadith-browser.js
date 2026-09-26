@@ -12,7 +12,7 @@
 // `renderTrack()` therefore says so on screen, in the reader's own language,
 // every time.
 
-import { t } from "./i18n.js";
+import { t, num } from "./i18n.js";
 import { getAppLang } from "./prefs.js";
 import { STATUSES, statusLabel } from "./unit-keys.js";
 import {
@@ -24,6 +24,11 @@ import {
 } from "./hadith-corpus.js";
 import { SYNTHETIC_NOTICE, TAXONOMY_REVISION } from "./hadith-fixture-data.js";
 import { PANEL_TITLE, verifiedRegisterEntries, commentaryForOccurrence, renderPermission, NEVER_DO } from "./hadith-commentary.js";
+import {
+  HADEETHENC_LANGS, HADEETHENC_STRUCTURE_LANG,
+  loadHadeethEncCategories, childCategories, directHadithIds, resolveCategoryTitle,
+  loadHadithRecords, hadithArabicText, hadeethEncSourceUrl,
+} from "./hadeethenc-corpus.js";
 
 const CONTENT_LANG_LABELS = { ar: "العربية", en: "English", bn: "বাংলা" };
 
@@ -57,7 +62,12 @@ export function mountHadithBrowser(root, { mount = "standalone" } = {}) {
 
   function render() {
     root.textContent = "";
-    root.appendChild(syntheticBanner());
+    // The Collections landing now leads with REAL HadeethEnc text (#309), so
+    // the "not real narrations" notice there sits directly above the
+    // synthetic pilot list it describes (renderCollections), not above the
+    // real source. Every other view still shows only synthetic data, so it
+    // keeps the notice at the top.
+    if (!(state.view === "collections" && !state.editionId)) root.appendChild(syntheticBanner());
     root.appendChild(controls(state, render));
     const body = el("div", "hadith-body");
     body.id = "hadithBody";
@@ -250,11 +260,276 @@ function rawHeadingSpan(rawHeading) {
 // Source view -- collection -> book -> chapter -> occurrence, in source order
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// HadeethEnc -- the REAL corpus (issue #309, part 2 of #306). Browse root
+// categories -> sub-categories -> hadith list -> one hadith, over the
+// packaged files tools/hadith-data-pull/output/hadeethenc/ (I9: nothing
+// loads until this section actually mounts; a shard loads only when its
+// category is opened, via hadeethenc-corpus.js's own per-file cache).
+//
+// STUDY WIRING (Notes/bookmark/"Studied") IS DELIBERATELY NOT BUILT. The
+// issue asked for it through `buildUnitKey.hadith("hadeethenc", id)`, but
+// that call is an OWNER CONTROL GATE this repository already enforces
+// mechanically: tools/i18n-verify/hadith-gate-contracts.mjs's "C2" checks
+// assert, by NAME, that `buildUnitKey.hadith(...)` is applied by exactly one
+// pre-existing, non-Hadith-owned surface (app/records.html) and by nothing
+// else anywhere in app/ or app/js/ -- because the key it builds today is
+// NAME-keyed ("hadith:hadeethenc:<id>"), which the Hadith H1 register's own
+// section 5 already records as contradicting I5 ("units are keyed by
+// permanent ID, never by name"), and the Owner has not yet chosen between
+// that live shape and the proposed permanent edition/ordinal form. Adding a
+// second caller here would be this stream pre-empting that undecided
+// Owner Control Gate, which is exactly what C2 exists to catch -- so rather
+// than cross it (or dodge its filename-based half by naming this file
+// something that does not start with "hadith-"), every card says plainly,
+// in words, why Notes/bookmark/Studied are not offered yet.
+// ---------------------------------------------------------------------------
+
+const HADEETHENC_LANG_LABELS = { ar: "العربية", en: "English", bn: "বাংলা" };
+
+/** Loads ar (structure) + en + the reader's own content language's categories.json -- cheap (a few hundred KB total), and it is what lets a category's title/count fall back contentLang -> en -> ar without a second round trip mid-browse. */
+async function loadHadeethEncStructure(contentLang, opts) {
+  const langs = [...new Set([HADEETHENC_STRUCTURE_LANG, "en", contentLang])].filter((l) => HADEETHENC_LANGS.includes(l));
+  const entries = await Promise.all(langs.map(async (l) => [l, await loadHadeethEncCategories(l, opts).catch(() => null)]));
+  return Object.fromEntries(entries);
+}
+
+function hadeethEncCrumbs(state, localRefresh) {
+  // A DELIBERATELY DIFFERENT class from the synthetic Collections
+  // breadcrumb's own `.hadith-crumb`/`.hadith-crumb-current` (styled
+  // identically in hadith.css) -- the two breadcrumbs are mutually exclusive
+  // in the DOM today (this one only renders while `!state.editionId`, the
+  // other only while it is set), but hadith-source-navigation-browser.mjs
+  // clicks the BARE `.hadith-crumb` class by name; sharing it would make
+  // that click ambiguous the moment the two ever coexist.
+  const bar = el("nav", "hadith-crumbs");
+  bar.dataset.hadeethencCrumbs = "true";
+  const add = (label, onClick) => {
+    if (onClick) {
+      const b = el("button", "hadeethenc-crumb", label);
+      b.addEventListener("click", onClick);
+      bar.appendChild(b);
+    } else {
+      const cur = el("span", "hadeethenc-crumb-current", label);
+      cur.setAttribute("aria-current", "page");
+      bar.appendChild(cur);
+    }
+  };
+  add(t("HadeethEnc"), () => { state.hc.path = []; state.hc.hadithId = null; localRefresh(); });
+  const path = state.hc.path;
+  path.forEach((catId, i) => {
+    const title = resolveCategoryTitle(state.hc.catsByLang, catId, state.contentLang)?.title ?? catId;
+    const isLast = i === path.length - 1 && !state.hc.hadithId;
+    add(title, isLast ? null : () => { state.hc.path = path.slice(0, i + 1); state.hc.hadithId = null; localRefresh(); });
+  });
+  return bar;
+}
+
+function hadeethEncCategoryRow(catId, catsByLang, contentLang, onOpen) {
+  const resolved = resolveCategoryTitle(catsByLang, catId, contentLang);
+  const row = el("button", "hadith-row");
+  row.dataset.hadeethencCategory = catId;
+  row.appendChild(el("span", "hadith-row-name", resolved?.title ?? catId));
+  const meta = resolved?.count != null ? num(resolved.count) : "";
+  row.appendChild(el("span", "hadith-row-meta", meta));
+  if (resolved?.isFallback) {
+    const fb = el("span", "hadith-fallback");
+    fb.dataset.hadeethencCategoryFallback = resolved.lang;
+    fb.textContent = t("Not available in your language here — showing {lang}.", { lang: HADEETHENC_LANG_LABELS[resolved.lang] ?? resolved.lang });
+    row.appendChild(fb);
+  }
+  row.addEventListener("click", onOpen);
+  return row;
+}
+
+function hadeethEncHadithRow(id, resolvedRecord, onOpen) {
+  const { record, lang, isFallback, requestedLang } = resolvedRecord;
+  const row = el("button", "hadith-row");
+  row.dataset.hadeethencHadith = id;
+  row.appendChild(el("span", "hadith-row-name", record.title ?? id));
+  if (isFallback) {
+    const fb = el("span", "hadith-fallback");
+    fb.dataset.hadeethencHadithFallback = lang;
+    fb.textContent = t("Not available in {reqLang} — showing {lang}.", {
+      reqLang: HADEETHENC_LANG_LABELS[requestedLang] ?? requestedLang, lang: HADEETHENC_LANG_LABELS[lang] ?? lang,
+    });
+    row.appendChild(fb);
+  }
+  row.addEventListener("click", onOpen);
+  return row;
+}
+
+/** Renders every closed-set/array/string shape `words_meanings` might carry, without ever fabricating or reordering it. */
+function hadeethEncWordsMeanings(wordsMeanings) {
+  const box = el("div", "hadeethenc-words-meanings");
+  if (!wordsMeanings) return box;
+  if (Array.isArray(wordsMeanings)) {
+    for (const item of wordsMeanings) box.appendChild(el("p", null, typeof item === "string" ? item : JSON.stringify(item)));
+  } else if (typeof wordsMeanings === "object") {
+    for (const [word, meaning] of Object.entries(wordsMeanings)) box.appendChild(el("p", null, `${word} — ${meaning}`));
+  } else {
+    box.appendChild(el("p", null, String(wordsMeanings)));
+  }
+  return box;
+}
+
+function hadeethEncCard(id, resolvedRecord, state, localRefresh) {
+  const { record, lang, isFallback, requestedLang } = resolvedRecord;
+  const card = el("article", "hadith-card");
+  card.dataset.hadeethencCard = id;
+
+  const back = el("button", "hadeethenc-crumb", t("← Back to the list"));
+  back.dataset.hadeethencBack = "true";
+  back.addEventListener("click", () => { state.hc.hadithId = null; localRefresh(); });
+  card.appendChild(back);
+
+  if (record.title) card.appendChild(el("h3", "hadith-row-name", record.title));
+
+  const ar = el("p", "hadith-arabic", hadithArabicText(record, lang) ?? "");
+  ar.lang = "ar"; ar.dir = "rtl";
+  card.appendChild(ar);
+
+  if (lang !== "ar") {
+    // A genuine fallback (contentLang -> en), not just "this is the source
+    // language" -- shown alongside the translation it actually landed on.
+    const block = el("div", "hadith-translation");
+    if (isFallback) {
+      const warn = el("p", "hadith-fallback");
+      warn.dataset.hadeethencFallback = requestedLang;
+      warn.textContent = t("No {lang} translation for this hadith. Showing {shown}.",
+        { lang: HADEETHENC_LANG_LABELS[requestedLang] ?? requestedLang, shown: HADEETHENC_LANG_LABELS[lang] ?? lang });
+      block.appendChild(warn);
+    }
+    block.appendChild(el("p", "hadith-translation-text", record.hadeeth ?? ""));
+    card.appendChild(block);
+  } else if (isFallback) {
+    // Fell all the way back to Arabic -- requestedLang has no translation at
+    // all (not even English's), so there is no translation block to show
+    // beside the notice, unlike the case above.
+    const warn = el("p", "hadith-fallback");
+    warn.dataset.hadeethencFallback = requestedLang;
+    warn.textContent = t("No {lang} translation for this hadith. Showing the Arabic source only.",
+      { lang: HADEETHENC_LANG_LABELS[requestedLang] ?? requestedLang });
+    card.appendChild(warn);
+  }
+
+  if (record.grade) card.appendChild(el("p", "hadith-attribution", t("Grade: {grade}", { grade: record.grade })));
+  if (record.attribution) card.appendChild(el("p", "hadith-attribution", record.attribution));
+
+  const hasMore = record.explanation || (record.hints && record.hints.length) || record.words_meanings;
+  if (hasMore) {
+    const details = document.createElement("details");
+    details.className = "hadeethenc-explanation";
+    const summary = document.createElement("summary");
+    summary.textContent = t("Show explanation");
+    summary.dataset.hadeethencExplanationToggle = "true";
+    details.appendChild(summary);
+    if (record.explanation) details.appendChild(el("p", null, record.explanation));
+    if (record.hints && record.hints.length) {
+      const ul = document.createElement("ul");
+      ul.dataset.hadeethencHints = String(record.hints.length);
+      for (const hint of record.hints) ul.appendChild(el("li", null, hint));
+      details.appendChild(ul);
+    }
+    if (record.words_meanings) details.appendChild(hadeethEncWordsMeanings(record.words_meanings));
+    card.appendChild(details);
+  }
+
+  const src = document.createElement("a");
+  src.className = "hadith-view-source";
+  src.dataset.hadeethencSourceLink = id;
+  src.href = hadeethEncSourceUrl(lang, id);
+  src.target = "_blank";
+  src.rel = "noopener noreferrer";
+  src.textContent = t("Source: HadeethEnc.com");
+  card.appendChild(src);
+
+  // Notes/bookmark/"Studied" -- see the section header comment above. A
+  // control that explains itself beats one that is silently absent.
+  const gate = el("p", "hadith-not-saved");
+  gate.dataset.hadeethencStudyGate = "true";
+  gate.textContent = t("Notes, bookmarking and marking this hadith as studied are not enabled yet — they need a decision about how a hadith is permanently identified, which the Owner has not made yet.");
+  card.appendChild(gate);
+
+  return card;
+}
+
+async function renderHadeethEncBody(body, state, localRefresh, opts) {
+  const contentLang = state.contentLang;
+  const catsByLang = await loadHadeethEncStructure(contentLang, opts);
+  state.hc.catsByLang = catsByLang;
+  const arCats = catsByLang[HADEETHENC_STRUCTURE_LANG];
+  if (!arCats) throw new Error("HadeethEnc structure (Arabic) could not be loaded.");
+
+  body.textContent = "";
+  body.appendChild(hadeethEncCrumbs(state, localRefresh));
+
+  if (state.hc.hadithId) {
+    const map = await loadHadithRecords([state.hc.hadithId], contentLang, opts);
+    const resolved = map.get(String(state.hc.hadithId));
+    body.appendChild(hadeethEncCard(state.hc.hadithId, resolved, state, localRefresh));
+    return;
+  }
+
+  const currentId = state.hc.path.at(-1) ?? null;
+  const children = currentId == null ? arCats.roots : childCategories(arCats, currentId);
+  const list = el("div", "hadith-list");
+  for (const child of children) {
+    list.appendChild(hadeethEncCategoryRow(String(child.id), catsByLang, contentLang, () => {
+      state.hc.path = [...state.hc.path, String(child.id)];
+      localRefresh();
+    }));
+  }
+  body.appendChild(list);
+
+  if (currentId != null) {
+    const direct = directHadithIds(arCats, currentId);
+    if (direct.length) {
+      const recordMap = await loadHadithRecords(direct, contentLang, opts);
+      const hadithList = el("div", "hadith-occurrences");
+      hadithList.dataset.hadeethencHadithList = String(direct.length);
+      for (const id of direct) {
+        const resolved = recordMap.get(String(id));
+        if (!resolved) continue;
+        hadithList.appendChild(hadeethEncHadithRow(id, resolved, () => { state.hc.hadithId = String(id); localRefresh(); }));
+      }
+      body.appendChild(hadithList);
+    } else if (!children.length) {
+      body.appendChild(el("p", "hadith-note", t("Nothing here yet.")));
+    }
+  }
+}
+
+function renderHadeethEncSource(state) {
+  const section = el("section", "hadeethenc-section");
+  section.id = "hadeethencSection";
+  section.appendChild(el("h2", null, t("HadeethEnc — Encyclopedia of Translated Hadiths")));
+  const body = el("div", "hadeethenc-body");
+  section.appendChild(body);
+
+  if (!state.hc) state.hc = { path: [], hadithId: null, catsByLang: {} };
+
+  function localRefresh() {
+    body.textContent = "";
+    body.appendChild(el("p", "hadith-note", t("Loading…")));
+    renderHadeethEncBody(body, state, localRefresh).catch((err) => {
+      body.textContent = "";
+      const p = el("p", "hadith-note", String(err?.message ?? err));
+      p.dataset.hadeethencError = "true";
+      body.appendChild(p);
+    });
+  }
+  localRefresh();
+  return section;
+}
+
 function renderCollections(body, state, render) {
   const uiLang = getAppLang();
 
   if (!state.editionId) {
-    body.appendChild(el("h2", null, t("Collections")));
+    body.appendChild(renderHadeethEncSource(state));
+    body.appendChild(el("h2", null, t("Synthetic pilot collections")));
+    body.appendChild(syntheticBanner());
     const list = el("div", "hadith-list");
     for (const c of listCollections()) {
       for (const e of c.editions) {

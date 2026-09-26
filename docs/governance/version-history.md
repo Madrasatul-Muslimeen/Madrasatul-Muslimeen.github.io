@@ -610,3 +610,4 @@ total). Allocated by the MMSA Architect.
 08.81: tap a word with Tajweed colours on (issue #294). Allocated by the MMSA Architect.
 08.82: Ayah Card Related āyāt; Asma classification rename fix; lemma progress data layer (#301). Allocated by the MMSA Architect.
 08.83: the Word Card's whole-Qur'an numbers and the gated lemma-wide 'Mark this word known everywhere' (issue #303). Allocated by the MMSA Architect.
+08.84: HadeethEnc browsing in the Hadith module (issue #309) and Dictionary Word (lemma) progress switched on. Allocated by the MMSA Architect.

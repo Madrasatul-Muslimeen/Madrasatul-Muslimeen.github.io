@@ -124,7 +124,31 @@
   .qr-badge { font-size: 0.75rem; background: var(--hadith-ink); color: #fff; padding: 0.1rem 0.45rem; border-radius: 0.6rem; }
   .qr-mount-note { font-size: 0.8rem; color: var(--hadith-muted); margin: 0.3rem 0 0; }
 
+  /* ---- HadeethEnc (issue #309) -- the real corpus ---- */
+  .hadeethenc-section { margin-bottom: 1.2rem; padding-bottom: 1rem; border-bottom: 2px solid var(--hadith-rule); }
+  .hadeethenc-body { margin-top: 0.4rem; }
+  .hadeethenc-explanation { border: 1px solid var(--hadith-rule); border-radius: 0.4rem; padding: 0.3rem 0.7rem; margin: 0.6rem 0; }
+  .hadeethenc-explanation summary { min-height: 40px; display: flex; align-items: center; cursor: pointer; font-weight: 600; color: var(--hadith-ink); }
+  .hadeethenc-explanation p, .hadeethenc-explanation ul { font-size: 0.9rem; margin: 0.4rem 0; }
+  .hadeethenc-words-meanings p { font-size: 0.88rem; margin: 0.2rem 0; }
+  /* Styled identically to .hadith-crumb/.hadith-crumb-current -- a separate
+     class so hadith-source-navigation-browser.mjs's bare `.hadith-crumb`
+     click can never become ambiguous (see hadith-browser.js's own comment). */
+  .hadeethenc-crumb { background: none; border: none; color: var(--hadith-ink); text-decoration: underline; cursor: pointer; font: inherit; padding: 0.2rem; min-height: 40px; }
+  .hadeethenc-crumb-current { font-weight: 600; }
+
   @media (max-width: 380px) {
     .hadith-tab { padding: 0.4rem 0.6rem; font-size: 0.84rem; }
     .hadith-arabic { font-size: 1.7em; }
   }
+
+/* Architect review, #309: the HadeethEnc "Source" link reused the gold
+   .hadith-view-source colour, measured 3.18:1 on the card's cream and 24.6px
+   tall. It is the attribution the grant requires, so it must be readable and
+   tappable: a darker gold (>= 4.5:1) and a 40px target. */
+[data-hadeethenc-card] a.hadith-view-source {
+  color: #7a5a12;
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+}

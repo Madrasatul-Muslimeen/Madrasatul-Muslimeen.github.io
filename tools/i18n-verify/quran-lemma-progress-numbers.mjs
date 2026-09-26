@@ -34,11 +34,20 @@ function check(label, fn) {
 // closed, and every malformed shape stays closed too.
 // ===========================================================================
 
-check("the standing declaration is NOT ready -- the burden of proof is on enablement, not on this file", () => {
-  assert.equal(LEMMA_PROGRESS_PERSISTENCE_DECLARATION.ready, false);
-  assert.equal(LEMMA_PROGRESS_PERSISTENCE_DECLARATION.decision, null);
-  assert.equal(isLemmaProgressPersistenceReady(), false);
-  assert.equal(lemmaProgressUnavailableReason(), REASON_LEMMA_PROGRESS_NOT_DEPLOYED);
+// UPDATED IN PLACE, 26 Sep 2026: this asserted the declaration was CLOSED,
+// true until the Owner published the rules ("Lemma progress rules are
+// live.") and the Master Architect recorded the governed decision. The real
+// file's state genuinely changed; every malformed-shape refusal below is
+// asserted exactly as strictly as before.
+check("the standing declaration is OPEN by a governed decision whose record exists", () => {
+  assert.equal(LEMMA_PROGRESS_PERSISTENCE_DECLARATION.ready, true);
+  const d = LEMMA_PROGRESS_PERSISTENCE_DECLARATION.decision;
+  assert.equal(d.by, "master-architect");
+  assert.match(d.on, /^\d{4}-\d{2}-\d{2}$/);
+  assert.ok(fs.existsSync(d.reference), `the decision's record ${d.reference} does not exist`);
+  assert.equal(isLemmaProgressPersistenceReady(), true);
+  assert.equal(lemmaProgressUnavailableReason(), null);
+  assert.equal(lemmaProgressUnavailableReason({ ready: false, decision: null }), REASON_LEMMA_PROGRESS_NOT_DEPLOYED);
 });
 
 check("a bare flip of `ready` with no decision does NOT enable it, and reports the DIFFERENT reason", () => {

@@ -56,12 +56,12 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   depth: "Arabic in Depth",
   meaningUnavailableEn: "Meaning unavailable",
   meaningUnavailableBn: "অর্থ পাওয়া যায়নি",
-  lemma: "Lemma",
+  lemma: "Dictionary Word",
   root: "Root",
   partOfSpeech: "Part of speech",
   unknown: "Unknown",
   rootOccurrences: "{count} root-linked occurrences",
-  lemmaOccurrences: "{count} lemma-linked occurrences",
+  lemmaOccurrences: "{count} occurrences of this Dictionary Word",
   derivedForms: "Derived forms of this root",
   rootFormsSummary: "{total} occurrences in {forms} derived forms",
   formOccurrences: "{count} occurrences",
@@ -91,7 +91,7 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   backToWordTitle: "Back to the word you came from",
   visitingFrom: "Visiting from {ref}",
   rootUnavailable: "Root unavailable in the approved dataset",
-  lemmaUnavailable: "Lemma unavailable in the approved dataset",
+  lemmaUnavailable: "Dictionary Word unavailable in the approved dataset",
   loadingOccurrences: "Loading occurrences…",
   occurrencesUnavailable: "Occurrence list unavailable: {error}",
   semanticRangeMissing: "Semantic range not yet supplied",
@@ -529,7 +529,7 @@ function formOccurrenceList(form, context, text, formatNumber) {
 }
 
 /**
- * The Basic tab's own "{count} lemma-linked occurrences" line, EXPANDABLE.
+ * The Basic tab's own "{count} occurrences of this Dictionary Word" line, EXPANDABLE.
  *
  * Before this round the line was plain text: the exact same dictionary-form
  * occurrences the "Derived forms" list already counts (one of its rows is

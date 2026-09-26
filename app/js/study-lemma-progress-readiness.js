@@ -55,19 +55,25 @@ export const LEMMA_PROGRESS_READINESS_AUTHORITIES = Object.freeze(["master-archi
 /**
  * THE DECLARATION. This is the single place the answer lives.
  *
- * NOT YET ENABLED. `ready: false` as a literal -- the burden of proof is on
- * enablement, not on this file.
+ * ENABLED 26 Sep 2026. The Owner published
+ * docs/governance/2026-09-26-lemma-progress-DEPLOYMENT-candidate.rules to
+ * study-monitoring ("Lemma progress rules are live."), firestore.rules was
+ * synced to that exact file, and the Master Architect recorded the decision
+ * below. The predicate still refuses every malformed shape exactly as before.
  */
 export const LEMMA_PROGRESS_PERSISTENCE_DECLARATION = Object.freeze({
-  ready: false,
-  decision: null,
+  ready: true,
+  decision: Object.freeze({
+    by: "master-architect",
+    on: "2026-09-26",
+    reference: "docs/reports/2026-09-26-lemma-progress-enabled.md",
+  }),
   gate: "E1",
   note:
     "The lemma-level word progress Rules (quranLemmaProgress, " +
-    "quranLemmaApprovals, quranLemmaOccurrenceCounters) are a CANDIDATE only " +
-    "-- docs/governance/2026-09-26-lemma-progress-DEPLOYMENT-candidate.rules. " +
-    "Not published to study-monitoring. No lemma collection is read or " +
-    "written while this reads false.",
+    "quranLemmaApprovals, quranLemmaOccurrenceCounters) are published to " +
+    "study-monitoring (Owner, 26 Sep 2026); firestore.rules is synced to " +
+    "docs/governance/2026-09-26-lemma-progress-DEPLOYMENT-candidate.rules.",
 });
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;

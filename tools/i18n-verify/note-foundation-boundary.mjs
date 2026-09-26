@@ -114,12 +114,16 @@ check("Foundation data layer has no legacy fallback or dual write",
 // a filing) and nothing else -- every other Note Foundation access from
 // that page goes through study-note-service.js's own already-accepted
 // createStudyNote()/notesForStudyUnit() instead.
-check("the Quran shell's own DIRECT note-foundation.js import is exactly createNoteFolder/createNotePlacement/retireNotePlacement (issue #286)",
+// UPDATED IN PLACE, 26 Sep 2026 (Architect): the shell also imports
+// NOTE_STATUS, a frozen constant (the status vocabulary) with no Firestore
+// access, so the "exactly these writers" rule still holds -- no new function
+// was admitted. It had been red on main since the Ayah Card round added it.
+check("the Quran shell's own DIRECT note-foundation.js import is exactly createNoteFolder/createNotePlacement/retireNotePlacement plus the NOTE_STATUS constant (issue #286)",
   (() => {
     const m = quranShell.match(/import\s*\{([^}]*)\}\s*from\s*["'`]\.\/js\/note-foundation\.js["'`]/);
     if (!m) return false;
     const names = m[1].split(",").map((s) => s.trim()).filter(Boolean).sort();
-    return names.join(",") === ["createNoteFolder", "createNotePlacement", "retireNotePlacement"].sort().join(",");
+    return names.join(",") === ["NOTE_STATUS", "createNoteFolder", "createNotePlacement", "retireNotePlacement"].sort().join(",");
   })());
 // DEPLOYED, 22 Sep 2026 -- confirmed by the Owner in the Firebase Console,
 // via a later, separately-audited candidate (the Phase 3-6 assembly), not by
