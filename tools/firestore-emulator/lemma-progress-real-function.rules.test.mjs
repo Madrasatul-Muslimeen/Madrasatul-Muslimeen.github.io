@@ -135,7 +135,8 @@ test("real quran-lemma-progress-data.js functions against the real assembled DEP
 
     const confirm = await decideLemmaWordApproval(p1, {
       tenantId: T, personId: "p2", lemmaId: LEMMA_A, review: "confirmed",
-      actorPersonId: "p1", actorUid: "uid-p1", nowIso: "2026-09-26T10:01:00.000Z",
+      actorPersonId: "p1", actorUid: "uid-p1", isSupervisor: true, confirmationRequired: true,
+      nowIso: "2026-09-26T10:01:00.000Z",
     });
     assert.deepEqual(confirm, { changed: true, writes: 1, docId: `${T}__p2__wbw__${LEMMA_A}` });
     step("confirm: decideLemmaWordApproval() succeeds for the guardian");
