@@ -2892,4 +2892,21 @@ export const BN = {
     "আপনি এটি দেখতে পারেন, তবে শুধু সংশ্লিষ্ট ব্যক্তির নিজের রেকর্ড থেকেই এটি বুকমার্ক করা বা অধ্যয়ন করা হয়েছে বলে চিহ্নিত করা যাবে।", // ?
   "Notes, bookmarking and Studied could not be loaded right now.":
     "নোট, বুকমার্ক এবং অধ্যয়ন করা হয়েছে এই মুহূর্তে লোড করা গেল না।", // ?
+  // OpenITI -- 11 real Arabic hadith collections in Collections (issue #316, part 2 of #314).
+  "OpenITI — Arabic Hadith collections": "OpenITI — আরবি হাদীস সংকলনসমূহ", // ?
+  "OpenITI": "OpenITI", // ?
+  "Notes, bookmarking and marking a hadith or passage as studied are not enabled here yet — the Owner has only decided this for HadeethEnc so far.":
+    "নোট, বুকমার্ক এবং কোনো হাদীস বা অংশ অধ্যয়ন করা হয়েছে বলে চিহ্নিত করা এখানে এখনো চালু করা হয়নি — মালিক এখন পর্যন্ত শুধু HadeethEnc-এর জন্য এই সিদ্ধান্ত নিয়েছেন।", // ?
+  "{n} hadith": "{n}টি হাদীস", // ?
+  "{n} passages (this edition has no hadith numbers)": "{n}টি অংশ (এই সংস্করণে হাদীস নম্বর নেই)", // ?
+  "This edition has no hadith numbers to jump to.": "এই সংস্করণে যাওয়ার জন্য কোনো হাদীস নম্বর নেই।", // ?
+  "Go to hadith number": "হাদীস নম্বরে যান", // ?
+  "Go": "যান", // ?
+  "No chapter found for hadith number {n}.": "{n} নম্বর হাদীসের জন্য কোনো অধ্যায় পাওয়া যায়নি।", // ?
+  "(untitled)": "(শিরোনামহীন)", // ?
+  "Show more ({remaining} more)": "আরও দেখুন (আরও {remaining}টি)", // ?
+  "Hadith {n}": "হাদীস {n}", // ?
+  "Passage {n} (position in this edition, not the book's own number)": "অংশ {n} (এই সংস্করণে অবস্থান, বইয়ের নিজস্ব নম্বর নয়)", // ?
+  "Editor's note": "সম্পাদকের নোট", // ?
+  "Source: OpenITI (CC BY-NC-SA 4.0)": "সূত্র: OpenITI (CC BY-NC-SA 4.0)", // ?
 };
