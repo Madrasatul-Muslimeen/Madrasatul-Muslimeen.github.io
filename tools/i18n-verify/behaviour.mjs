@@ -1586,6 +1586,12 @@ console.log("\n=== 29. Shell round 17: the reading screen ===");
     return document.body.classList.contains("immersive-read");
   });
   check("29d pressing a button inside the reading does not exit Full screen", stillFull);
+  // Updated in place (issue #295): the first enabled button in #readScroll is
+  // now the āyah number badge, which opens the Ayah Card -- correct, and the
+  // check above still holds. Close whatever that press opened, so the ⤢ loop
+  // below is not clicking through the card's overlay.
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(200);
 
   // Back out of Full screen the only way there is -- the ⤢ button (fix round:
   // the tap that used to do this is gone). Round 22 made it a THREE-state
