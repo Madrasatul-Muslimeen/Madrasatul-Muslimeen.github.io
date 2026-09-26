@@ -2856,4 +2856,9 @@ export const BN = {
   "Asma: {name}": "আসমা: {name}",
   "1 shared rare word": "১টি বিরল শব্দ মিল",
   "{count} shared rare words": "{count}টি বিরল শব্দ মিল",
+  // Asma classification rename fix (26 Sep 2026).
+  "▸ Open this classification": "▸ এই শ্রেণিবিভাগ খুলুন",
+  "Rename classification “{name}”": "শ্রেণিবিভাগ “{name}”-এর নাম পরিবর্তন করুন",
+  "Archive classification “{name}”": "শ্রেণিবিভাগ “{name}” সংরক্ষণাগারে রাখুন",
+  "Restore classification “{name}”": "শ্রেণিবিভাগ “{name}” ফিরিয়ে আনুন",
 };

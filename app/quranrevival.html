@@ -1420,6 +1420,8 @@
     #asmaXLevelBar { gap: 0.15rem; padding-left: 0.3rem; padding-right: 0.3rem; }
     #asmaXLevelBar > select { font-size: 0.6rem; }
   }
+  /* The classification the ⋯ menu's ✎C/🗄C/+ act on -- marked, so the reader can see it. */
+  #asmaXLevelBar select.asmax-class-current { outline: 2px solid #c9a227; outline-offset: 1px; font-weight: 600; }
   #asmaXLevelManageActions { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
   /* Same pre-existing `[hidden]` trap as #qcrLevelManageActions above -- see
      that rule's own note. */
@@ -9153,11 +9155,24 @@
         sel.dataset.asmaxClassSelect = cls.key;
         const clsTitle = langText(cls.title, getAppLang()) + (cls.status === "archived" ? ` (${t("Archived")})` : "");
         sel.setAttribute("aria-label", clsTitle);
-        sel.innerHTML = collOptionsHtml(asmaXCollectionsOfKind(cls.key), clsTitle, asmaXKind === cls.key ? asmaXGroupId : null);
+        // The Owner's report (26 Sep 2026): "Renaming/editing ... only works
+        // for 'Group' even after selecting from other drop-down." Choosing
+        // the dropdown's first line -- the classification's own name, the
+        // one already on show -- fires no change event, and a classification
+        // with no lists yet has nothing else to choose, so it could never
+        // become the current one and ✎C/🗄C/+ kept acting on Group. Every
+        // dropdown now carries an explicit "Open this classification" line
+        // (a real value, so choosing it always fires), and the current
+        // classification's dropdown is marked.
+        sel.innerHTML = collOptionsHtml(asmaXCollectionsOfKind(cls.key), clsTitle, asmaXKind === cls.key ? asmaXGroupId : null)
+          .replace("</option>", `</option><option value="__open__">${escapeHtml(t("▸ Open this classification"))}</option>`);
+        const isCurrent = asmaXKind === cls.key;
+        sel.classList.toggle("asmax-class-current", isCurrent);
+        if (isCurrent) sel.setAttribute("aria-current", "true");
         sel.addEventListener("change", () => {
           asmaXKind = cls.key;
           asmaXNumber = null;
-          if (sel.value) { asmaXGroupId = sel.value; asmaXLevel = "names"; }
+          if (sel.value && sel.value !== "__open__") { asmaXGroupId = sel.value; asmaXLevel = "names"; }
           else { asmaXGroupId = null; asmaXLevel = "groups"; }
           renderAsmaXPanel();
         });
@@ -9202,7 +9217,12 @@
         const currentCls = (asmaXClassifications ?? []).find((c) => c.key === asmaXKind);
         const clsArchived = currentCls?.status === "archived";
         asmaXArchiveClassBtn.textContent = clsArchived ? "↺C" : "🗄C";
-        asmaXArchiveClassBtn.title = clsArchived ? t("Restore classification") : t("Archive classification");
+        // Name the classification each button will act on, so the reader
+        // can see it is the one they chose (the marked dropdown).
+        const clsName = currentCls ? langText(currentCls.title, getAppLang()) : "";
+        asmaXRenameClassBtn.title = t("Rename classification “{name}”", { name: clsName });
+        asmaXRenameClassBtn.setAttribute("aria-label", asmaXRenameClassBtn.title);
+        asmaXArchiveClassBtn.title = clsArchived ? t("Restore classification “{name}”", { name: clsName }) : t("Archive classification “{name}”", { name: clsName });
         asmaXArchiveClassBtn.setAttribute("aria-label", asmaXArchiveClassBtn.title);
         asmaXArchiveClassBtn.classList.toggle("danger", !clsArchived);
         asmaXArchiveClassBtn.disabled = !currentCls;
