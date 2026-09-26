@@ -4560,8 +4560,16 @@
     import { computeArabicCoverage, occurrenceIdsForAyah, occurrenceIdsForAyahRange, occurrenceIdsForSurah } from "./js/quran-word-coverage.js";
     // Issue #206 -- the whole-Qur'an/Juz running word counter.
     import { QURAN_TOTAL_WORD_COUNT, knownDelta, juzForSurahAyah, wordTotalRatio, percentRounded } from "./js/quran-word-total.js";
-    import { getWordTotals, recordWordTotalDelta } from "./js/quran-word-total-data.js";
+    import { getWordTotals, recordWordTotalDelta, recordWordTotalDeltaAcrossJuz } from "./js/quran-word-total-data.js";
     import { isWbwTotalPersistenceReady } from "./js/study-wbw-total-readiness.js";
+    // Issue #303 -- lemma-level word progress ("mark this word known
+    // everywhere"), gated separately (see study-lemma-progress-readiness.js).
+    import { lemmaProgressAuthority, effectiveOccurrenceState, lemmaKnownDeltaByJuz, groupOccurrenceRefsByJuz, overlayLemmaKnownness } from "./js/quran-lemma-progress.js";
+    import {
+      primeLemmaProgress, lemmaProgressFor, claimLemmaWordState, decideLemmaWordApproval,
+      clearLemmaProgressCache, getLemmaOccurrenceCounts, bumpLemmaOccurrenceCounter,
+    } from "./js/quran-lemma-progress-data.js";
+    import { isLemmaProgressPersistenceReady } from "./js/study-lemma-progress-readiness.js";
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah, scrollToAyahIfRendered } from "./js/hifz-renderer.js";
     // Issue #286 -- the "This āyah" action sheet (Mushaf marker tap, Word
     // Card "This āyah ⋯") and its one new action, filing this reader's own
@@ -5211,6 +5219,13 @@
     let quranWordCardContext = {};
     let quranWordCardRequest = 0;
     let quranWordCardTrigger = null;
+    /** Issue #303 -- the whole-Qur'an total, this word's lemma progress and
+     *  the "if you learn this word" delta. Kept separate from
+     *  quranWordCardContext because it hydrates on its own async path
+     *  (hydrateWordCardLemmaExtras) alongside hydrateWordProgress, not as
+     *  part of the occurrence-list hydrate. */
+    let quranWordCardLemmaContext = {};
+    let quranWordCardLemmaRequestId = 0;
     /** v08.20 -- set ONLY while the reader followed a Basic-Arabic occurrence
      *  link out of a word, and cleared the moment they go back or close the
      *  card. It holds the word they came FROM plus the study context to
@@ -7950,7 +7965,9 @@
           : occurrenceIdsForSurah(surahData);
         if (!scope) throw new Error(t("Arabic word coverage isn't available at this granularity — open a Surah or a Ruku' to see it."));
         const confirmationRequired = !!wordProgressConfirmRequired;
-        const views = new Map(scope.map((occ) => [occ, wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: occ, confirmationRequired })]));
+        await primeLemmaProgressForOccurrenceScope(surahData, scope, tenantId, subjectPersonId);
+        const rawViews = new Map(scope.map((occ) => [occ, wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: occ, confirmationRequired })]));
+        const views = effectiveViewsForScope(surahData, scope, rawViews, tenantId, subjectPersonId, confirmationRequired);
         figure = computeArabicCoverage({ scopeOccurrenceIds: scope, views, label: `${requestedLevel}:${requestedSurah}` });
       } catch (error) {
         reportWriteFailure(error, { what: "read Arabic word coverage", surah: requestedSurah }); // I15
@@ -8487,7 +8504,9 @@
         ({ truncated } = await getSurahProgress(db, { tenantId, personId: subjectPersonId, surah: surahNum }));
         const scope = occurrenceIdsForSurah(surahData);
         const confirmationRequired = !!wordProgressConfirmRequired;
-        const views = new Map(scope.map((occ) => [occ, wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: occ, confirmationRequired })]));
+        await primeLemmaProgressForOccurrenceScope(surahData, scope, tenantId, subjectPersonId);
+        const rawViews = new Map(scope.map((occ) => [occ, wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: occ, confirmationRequired })]));
+        const views = effectiveViewsForScope(surahData, scope, rawViews, tenantId, subjectPersonId, confirmationRequired);
         figure = computeArabicCoverage({ scopeOccurrenceIds: scope, views, label: `wbw-surah:${surahNum}` });
 
         const rukuRanges = new Map();
@@ -11021,7 +11040,62 @@
         progressNotAllowed: t("You are not able to record Arabic progress for this person."),
         coverage: t("{known} of {total} words known in this ayah"),
         coverageIncomplete: t("{unknown} not loaded yet"),
+        // Issue #303 -- the whole-Qur'an running total and "mark this word
+        // known everywhere".
+        wholeQuranKnown: t("Known {known} of {total} words"),
+        wholeQuranPercent: t("{percent}% of the Qur'an"),
+        learnWordDelta: t("If you learn this word: +{words} words (+{percent}%)"),
+        learnWordDeltaThisOccurrenceOnly: t("If you learn this word here: +{words} word (+{percent}%) — this occurrence only"),
+        markLemmaKnownEverywhere: t("Mark this word known everywhere"),
       };
+    }
+
+    /**
+     * Issue #303 -- "an occurrence counts as known if it is known itself OR
+     * its lemma is" (effectiveOccurrenceState()), applied everywhere
+     * computeArabicCoverage() is asked a question: the Word Card's own ayah
+     * coverage, the Ayah Card's "Known X of Y", the Surah/Ruku' coverage
+     * caption and Explore's Word by Word tab. `chapter` is whichever surah
+     * object the scope's occurrence ids belong to (currentSurahData for the
+     * Word Card/Ayah Card, a fetched surahData for Explore, which may name a
+     * DIFFERENT surah than the one currently open in Read/Note view).
+     *
+     * primeLemmaProgressForOccurrenceScope() is ASYNC (it may read two
+     * documents per not-yet-cached lemma) and must be awaited before the
+     * scope is rendered; effectiveViewsForScope() is SYNCHRONOUS and reads
+     * only what is already cached, which is what lets
+     * wordProgressContext() below stay synchronous -- it relies on
+     * hydrateWordCardLemmaExtras() having primed the ayah's lemmas already.
+     * A lemma not yet primed is silently left as its raw occurrence view
+     * (never downgraded), so this can never turn a known occurrence unknown.
+     */
+    async function primeLemmaProgressForOccurrenceScope(chapter, occurrenceIds, tenantId, personId) {
+      if (!isLemmaProgressPersistenceReady() || !chapter?.ayahs) return;
+      const lemmaIds = new Set();
+      for (const occ of occurrenceIds) {
+        let ref;
+        try { ref = parseQuranWordOccurrenceId(occ); } catch { continue; }
+        const ayah = chapter.ayahs.find((a) => a.ayah === ref.ayah);
+        const word = ayah?.words?.find((w) => w.position === ref.position);
+        if (word?.morphology?.lemma) lemmaIds.add(word.morphology.lemma);
+      }
+      if (!lemmaIds.size) return;
+      await Promise.all([...lemmaIds].map((lemmaId) => primeLemmaProgress(db, { tenantId, personId, lemmaId })));
+    }
+
+    function effectiveViewsForScope(chapter, occurrenceIds, rawViews, tenantId, personId, confirmationRequired) {
+      if (!isLemmaProgressPersistenceReady() || !chapter?.ayahs) return rawViews;
+      const lemmaViewByOccurrenceId = new Map();
+      for (const occ of occurrenceIds) {
+        let ref;
+        try { ref = parseQuranWordOccurrenceId(occ); } catch { continue; }
+        const ayah = chapter.ayahs.find((a) => a.ayah === ref.ayah);
+        const word = ayah?.words?.find((w) => w.position === ref.position);
+        const lemmaId = word?.morphology?.lemma;
+        if (!lemmaId) continue;
+        lemmaViewByOccurrenceId.set(occ, lemmaProgressFor({ tenantId, personId, lemmaId, confirmationRequired }));
+      }
+      return overlayLemmaKnownness(rawViews, lemmaViewByOccurrenceId);
     }
 
     /** The progress, authority and ayah coverage the card renders. Synchronous -- everything it needs is already cached by the time it runs. */
@@ -11034,7 +11108,8 @@
       let coverage = null;
       try {
         const scope = occurrenceIdsForAyah(currentSurahData, ref.ayah);
-        const views = new Map(scope.map((occ) => [occ, wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: occ, confirmationRequired })]));
+        const rawViews = new Map(scope.map((occ) => [occ, wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: occ, confirmationRequired })]));
+        const views = effectiveViewsForScope(currentSurahData, scope, rawViews, tenantId, subjectPersonId, confirmationRequired);
         coverage = computeArabicCoverage({ scopeOccurrenceIds: scope, views, label: `ayah:${ref.surah}:${ref.ayah}` });
       } catch { coverage = null; }
       return { progress: { ...progress, loading: wordProgressBusy && !progress.loaded }, authority, coverage };
@@ -11060,6 +11135,102 @@
       } finally {
         wordProgressBusy = false;
       }
+      if (quranWordCardState.open && quranWordCardState.occurrenceId === requestedId) renderPersistentWordCard();
+    }
+
+    /**
+     * Issue #303 -- the whole-Qur'an total, this word's lemma progress and
+     * the "if you learn this word" delta. Called alongside
+     * hydrateWordProgress() everywhere that reads it. Every read here is
+     * independently gated: the whole-Qur'an total by
+     * isWbwTotalPersistenceReady() (already-enabled, unrelated feature), the
+     * lemma progress and counter reads by isLemmaProgressPersistenceReady()
+     * -- while THAT gate is closed, nothing beyond the already-loaded lemma
+     * occurrence count is used, and the delta line falls back to counting
+     * only this one occurrence, exactly as the issue requires.
+     */
+    async function hydrateWordCardLemmaExtras() {
+      const { tenantId, subjectPersonId, actorPersonId, isSupervisor } = wordProgressActor();
+      const requestId = ++quranWordCardLemmaRequestId;
+      if (!tenantId || !subjectPersonId || !quranWordCardState.occurrenceId) { quranWordCardLemmaContext = {}; return; }
+      let ref;
+      try { ref = parseQuranWordOccurrenceId(quranWordCardState.occurrenceId); } catch { return; }
+      const requestedId = quranWordCardState.occurrenceId;
+      const ayah = currentSurahData?.ayahs.find((a) => a.ayah === ref.ayah);
+      const word = ayah?.words?.find((w) => w.position === ref.position);
+      const lemmaId = word?.morphology?.lemma || null;
+      const confirmationRequired = !!wordProgressConfirmRequired;
+
+      let wholeQuranTotal = null;
+      if (isWbwTotalPersistenceReady()) {
+        try { wholeQuranTotal = await getWordTotals(db, { tenantId, personId: subjectPersonId }); } catch { wholeQuranTotal = null; }
+      }
+      if (requestId !== quranWordCardLemmaRequestId) return; // superseded mid-read
+
+      if (!lemmaId) { quranWordCardLemmaContext = { wholeQuranTotal }; if (quranWordCardState.occurrenceId === requestedId) renderPersistentWordCard(); return; }
+
+      let lemmaProgress = null, lemmaAuthority = null;
+      if (isLemmaProgressPersistenceReady()) {
+        try {
+          await primeLemmaProgress(db, { tenantId, personId: subjectPersonId, lemmaId });
+          lemmaProgress = lemmaProgressFor({ tenantId, personId: subjectPersonId, lemmaId, confirmationRequired });
+          lemmaAuthority = lemmaProgressAuthority({ actorPersonId, subjectPersonId, isSupervisor, confirmationRequired });
+          // Prime every OTHER word's lemma in this ayah too, so
+          // wordProgressContext()'s own synchronous "Known X of Y words
+          // known in this ayah" coverage (effectiveViewsForScope) reads
+          // freshly-cached data on the very next render, not just this one
+          // word's own lemma.
+          const ayahScope = occurrenceIdsForAyah(currentSurahData, ref.ayah);
+          await primeLemmaProgressForOccurrenceScope(currentSurahData, ayahScope, tenantId, subjectPersonId);
+        } catch (error) {
+          reportWriteFailure(error, { what: "read lemma-wide word progress", lemmaId });
+        }
+      }
+      if (requestId !== quranWordCardLemmaRequestId) return;
+
+      // Architect review (#303): read the lemma's occurrences straight from
+      // the (cached) lemma index. quranWordCardContext.lemmaOccurrences is
+      // filled by hydrateWordCardOccurrences(), a separate async load that
+      // was usually still in flight here -- so the count read 0 and the
+      // "if you learn this word" line never appeared.
+      let lemmaRefs = quranWordCardContext.lemmaOccurrences ?? null;
+      if (!lemmaRefs) {
+        try { lemmaRefs = await occurrenceRefsFor("lemma", lemmaId); } catch { lemmaRefs = []; }
+        if (requestId !== quranWordCardLemmaRequestId) return;
+      }
+      const occurrenceCount = lemmaRefs.length;
+      let learnDelta = null;
+      if (occurrenceCount && !lemmaProgress?.countsAsKnown) {
+        let computed = null;
+        if (isLemmaProgressPersistenceReady()) {
+          try {
+            if (!juzIndexData) juzIndexData = await getJuzIndex();
+            const refs = lemmaRefs;
+            const counts = await getLemmaOccurrenceCounts(db, {
+              tenantId, personId: subjectPersonId, lemmaId, refs, juzIndex: juzIndexData,
+              confirmationRequired, actorUid: auth.currentUser?.uid,
+            });
+            if (counts) {
+              let already = 0;
+              for (const [juz, total] of counts.occurrenceCountByJuz) already += Math.min(total, counts.alreadyKnownByJuz.get(juz) ?? 0);
+              const words = Math.max(0, occurrenceCount - already);
+              computed = { words, percent: percentRounded(words, QURAN_TOTAL_WORD_COUNT), thisOccurrenceOnly: false };
+            }
+          } catch (error) {
+            reportWriteFailure(error, { what: "count this lemma's known occurrences", lemmaId });
+          }
+        }
+        if (!computed) {
+          // The gate is closed, or the counter could not be read -- count
+          // only THIS occurrence, per issue #303's own explicit instruction.
+          const thisKnown = !!wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: requestedId, confirmationRequired }).countsAsKnown;
+          const words = thisKnown ? 0 : 1;
+          computed = { words, percent: percentRounded(words, QURAN_TOTAL_WORD_COUNT), thisOccurrenceOnly: true };
+        }
+        learnDelta = computed;
+      }
+      if (requestId !== quranWordCardLemmaRequestId) return;
+      quranWordCardLemmaContext = { wholeQuranTotal, lemmaProgress, lemmaAuthority, learnDelta };
       if (quranWordCardState.open && quranWordCardState.occurrenceId === requestedId) renderPersistentWordCard();
     }
 
@@ -11104,6 +11275,34 @@
       );
     }
 
+    /**
+     * Issue #303 -- cheap maintenance of the bounded per-lemma counter from
+     * an ORDINARY occurrence-level tap (never "Mark this word known
+     * everywhere" itself, which moves its own counter as part of seeding/
+     * reading it in runLemmaProgressAction()). `beforeKnown` is `null`
+     * whenever the LEMMA gate is closed -- independent of the whole-Qur'an
+     * total's own gate, which is why this takes its own snapshot rather than
+     * reusing applyWordTotalCounterDelta()'s.
+     */
+    async function applyLemmaOccurrenceCounterDelta({ tenantId, personId, occurrenceId, confirmationRequired, beforeKnown }) {
+      if (beforeKnown === null) return;
+      const afterKnown = wordProgressFor({ tenantId, personId, occurrenceId, confirmationRequired }).countsAsKnown;
+      const delta = knownDelta(beforeKnown, afterKnown);
+      if (!delta) return;
+      const ref = parseQuranWordOccurrenceId(occurrenceId);
+      const ayah = currentSurahData?.ayahs.find((a) => a.ayah === ref.ayah);
+      const word = ayah?.words?.find((w) => w.position === ref.position);
+      const lemmaId = word?.morphology?.lemma;
+      if (!lemmaId) return;
+      if (!juzIndexData) juzIndexData = await getJuzIndex();
+      const juz = juzForSurahAyah(juzIndexData, ref.surah, ref.ayah);
+      if (juz == null) return;
+      await safeWrite(
+        () => bumpLemmaOccurrenceCounter(db, { tenantId, personId, lemmaId, juz, delta }),
+        { what: "update this word's lemma-wide known count", occurrenceId }
+      );
+    }
+
     async function runWordProgressAction(action) {
       const { tenantId, subjectPersonId, actorPersonId, isSupervisor } = wordProgressActor();
       if (!tenantId || !subjectPersonId || !actorPersonId || !quranWordCardState.occurrenceId) return;
@@ -11114,6 +11313,12 @@
       };
       // Issue #206 -- snapshotted BEFORE either write below changes it.
       const beforeKnown = wordProgressCountsAsKnownNow(tenantId, subjectPersonId, common.occurrenceId, confirmationRequired);
+      // Issue #303 -- a SEPARATE snapshot, gated by the lemma feature's own
+      // readiness rather than the whole-Qur'an total's, since the two
+      // features are switched on independently.
+      const beforeKnownForLemma = isLemmaProgressPersistenceReady()
+        ? wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired }).countsAsKnown
+        : null;
       // I15 throughout: safeWrite() is this app's own "a failed write must
       // reach the user" wrapper, and it is what every other write on this
       // page already goes through.
@@ -11154,12 +11359,89 @@
           );
         }
         await applyWordTotalCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown });
+        await applyLemmaOccurrenceCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown: beforeKnownForLemma });
       } else {
         const note = action.review === "returned" ? (window.prompt(t("What should they look at again?")) ?? null) : null;
         await safeWrite(() => decideWordApproval(db, { ...common, review: action.review, note }),
           { what: "decide Arabic word progress", occurrenceId: common.occurrenceId });
         await applyWordTotalCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown });
+        await applyLemmaOccurrenceCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown: beforeKnownForLemma });
       }
+      // Issue #303 -- the "if you learn this word" delta and the whole-Qur'an
+      // figure can both have moved (this occurrence's own known-ness is part
+      // of what they read); refresh them alongside the card's own re-render.
+      await hydrateWordCardLemmaExtras();
+      renderPersistentWordCard();
+    }
+
+    /**
+     * Issue #303 -- "Mark this word known everywhere". The lemma-wide twin
+     * of runWordProgressAction() above: same claim/confirm shape, on
+     * quranLemmaProgress/quranLemmaApprovals rather than the occurrence
+     * lanes. The control that calls this is not even rendered while
+     * isLemmaProgressPersistenceReady() is false (lemmaEverywhereBlock()
+     * returns nothing then) -- the early return below is defensive only.
+     */
+    async function runLemmaProgressAction(action) {
+      const { tenantId, subjectPersonId, actorPersonId, isSupervisor } = wordProgressActor();
+      if (!tenantId || !subjectPersonId || !actorPersonId || !quranWordCardState.occurrenceId) return;
+      if (!isLemmaProgressPersistenceReady()) return;
+      let ref;
+      try { ref = parseQuranWordOccurrenceId(quranWordCardState.occurrenceId); } catch { return; }
+      const ayah = currentSurahData?.ayahs.find((a) => a.ayah === ref.ayah);
+      const word = ayah?.words?.find((w) => w.position === ref.position);
+      const lemmaId = word?.morphology?.lemma;
+      if (!lemmaId) return;
+      const confirmationRequired = !!wordProgressConfirmRequired;
+      const common = { tenantId, personId: subjectPersonId, lemmaId, actorPersonId, actorUid: auth.currentUser?.uid, isSupervisor, confirmationRequired };
+
+      // Snapshotted BEFORE either write below changes it -- the running
+      // total must move by exactly the LEMMA's own known-ness transition,
+      // never assumed from which button was pressed.
+      const wasLemmaKnown = !!lemmaProgressFor({ tenantId, personId: subjectPersonId, lemmaId, confirmationRequired }).countsAsKnown;
+
+      if (action.kind === "state") {
+        await safeWrite(() => claimLemmaWordState(db, { ...common, state: action.state }),
+          { what: "mark this word known everywhere", lemmaId });
+      } else {
+        const note = action.review === "returned" ? (window.prompt(t("What should they look at again?")) ?? null) : null;
+        await safeWrite(() => decideLemmaWordApproval(db, { ...common, review: action.review, note }),
+          { what: "approve this word known everywhere", lemmaId });
+      }
+      const isLemmaKnown = !!lemmaProgressFor({ tenantId, personId: subjectPersonId, lemmaId, confirmationRequired }).countsAsKnown;
+
+      // Issue #303 -- move the running whole-Qur'an total across every juz
+      // this lemma spans, in ONE document write, but only when the lemma's
+      // OWN known-ness actually changed (a re-save of the same state, or a
+      // claim that still awaits confirmation, moves nothing).
+      if (isWbwTotalPersistenceReady() && wasLemmaKnown !== isLemmaKnown) {
+        try {
+          // Architect review: the Word Card's own lemma list may still be
+          // loading -- an empty list made the delta 0 and the total never
+          // moved. Read the lemma's occurrences from the cached index.
+          const refs = quranWordCardContext.lemmaOccurrences ?? await occurrenceRefsFor("lemma", lemmaId);
+          if (!juzIndexData) juzIndexData = await getJuzIndex();
+          const counts = await getLemmaOccurrenceCounts(db, {
+            tenantId, personId: subjectPersonId, lemmaId, refs, juzIndex: juzIndexData,
+            confirmationRequired, actorUid: auth.currentUser?.uid,
+          });
+          if (counts) {
+            const deltaByJuz = lemmaKnownDeltaByJuz({
+              occurrenceCountByJuz: counts.occurrenceCountByJuz, alreadyKnownByJuz: counts.alreadyKnownByJuz,
+              wasLemmaKnown, isLemmaKnown,
+            });
+            if (!juzWordTotalsData) juzWordTotalsData = await getJuzWordTotalsIndex();
+            await safeWrite(
+              () => recordWordTotalDeltaAcrossJuz(db, { tenantId, personId: subjectPersonId, deltaByJuz, actorUid: auth.currentUser?.uid, juzWordTotals: juzWordTotalsData.byJuz }),
+              { what: "update the whole-Qur'an word total for this lemma", lemmaId }
+            );
+          }
+        } catch (error) {
+          reportWriteFailure(error, { what: "update the whole-Qur'an word total for this lemma", lemmaId });
+        }
+      }
+
+      await hydrateWordCardLemmaExtras();
       renderPersistentWordCard();
     }
 
@@ -11209,7 +11491,7 @@
       wordCardMountEls().forEach((m) => { if (m !== mount) { m.hidden = true; const c = m.querySelector("[data-word-card-content]"); if (c) c.innerHTML = ""; } });
       mount.hidden = false;
       const content = mount.querySelector("[data-word-card-content]") ?? mount;
-      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, ...wordProgressContext(ref), hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: getColourWordParts() }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: getColourWordParts() }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
       if (focusSelector) (mount.querySelector(focusSelector)?.disabled ? mount.querySelector("[data-word-card-close]") : mount.querySelector(focusSelector))?.focus({ preventScroll: true });
     }
 
@@ -11540,10 +11822,12 @@
       // lemmaOccurrences, which resolves inside that call).
       quranWordCardRestoreLemmaExpanded = !!restore?.lemmaExpanded;
       quranWordCardContext = {};
+      quranWordCardLemmaContext = {};
       renderPersistentWordCard();
       activeWordCardMount()?.querySelector("[data-word-card-close]")?.focus({ preventScroll: true });
       hydrateWordCardOccurrences();
       hydrateWordProgress();
+      hydrateWordCardLemmaExtras();
     }
 
     /**
@@ -11605,10 +11889,12 @@
       quranWordCardExpandedForm = null;
       quranWordCardState = openWordCard(quranWordCardState, occurrenceId);
       quranWordCardContext = {};
+      quranWordCardLemmaContext = {};
       renderPersistentWordCard();
       activeWordCardMount()?.querySelector("[data-word-card-close]")?.focus({ preventScroll: true });
       hydrateWordCardOccurrences();
       hydrateWordProgress();
+      hydrateWordCardLemmaExtras();
     }
 
     // v08.20 -- the Read view and the Note view share ONE set of handlers.
@@ -11660,11 +11946,16 @@
       if (progressState) { runWordProgressAction({ kind: "state", state: progressState.dataset.wordProgressState }); return; }
       const progressDecide = event.target.closest("[data-word-progress-decide]");
       if (progressDecide) { runWordProgressAction({ kind: "decide", review: progressDecide.dataset.wordProgressDecide }); return; }
+      // Issue #303 -- "Mark this word known everywhere", the lemma-wide twin.
+      const lemmaProgressState = event.target.closest("[data-lemma-progress-state]");
+      if (lemmaProgressState) { runLemmaProgressAction({ kind: "state", state: lemmaProgressState.dataset.lemmaProgressState }); return; }
+      const lemmaProgressDecide = event.target.closest("[data-lemma-progress-decide]");
+      if (lemmaProgressDecide) { runLemmaProgressAction({ kind: "decide", review: lemmaProgressDecide.dataset.lemmaProgressDecide }); return; }
       const level = event.target.closest("[data-word-card-level]");
       if (level) { quranWordCardState = selectWordCardLevel(quranWordCardState, level.dataset.wordCardLevel); renderPersistentWordCard(); return; }
       if (event.target.closest("[data-word-card-close]")) { quranWordCardRequest++; quranWordCardOrigin = null; renderWordCardReturnBar(); quranWordCardState = closeWordCard(quranWordCardState); renderPersistentWordCard(); if (quranWordCardTrigger?.isConnected) quranWordCardTrigger.focus({ preventScroll: true }); return; }
       const move = event.target.closest("[data-word-card-move]");
-      if (move) { quranWordCardState = moveWordCard(quranWordCardState, wordCardOccurrenceIds(), move.dataset.wordCardMove); quranWordCardContext = {}; renderPersistentWordCard(); hydrateWordCardOccurrences(); hydrateWordProgress(); }
+      if (move) { quranWordCardState = moveWordCard(quranWordCardState, wordCardOccurrenceIds(), move.dataset.wordCardMove); quranWordCardContext = {}; quranWordCardLemmaContext = {}; renderPersistentWordCard(); hydrateWordCardOccurrences(); hydrateWordProgress(); hydrateWordCardLemmaExtras(); }
     });
     // Issue #263 -- the "Colour word parts" switch is a per-device
     // preference (prefs.js), not word-card state, so it survives Prev/Next
@@ -12177,6 +12468,10 @@
       try {
         await wordProgressConfirmationRequired(tenantId, subjectPersonId);
         await primeAyahProgress(db, { tenantId, personId: subjectPersonId, surah: surahNum, ayah: ayahNum });
+        // Issue #303 -- "an occurrence counts as known if it is known itself
+        // OR its lemma is", applied to the Ayah Card's own "Known X of Y
+        // words" and its per-word marks.
+        await primeLemmaProgressForOccurrenceScope(currentSurahData, occurrenceIdsForAyah(currentSurahData, ayahNum), tenantId, subjectPersonId);
       } catch (error) {
         reportWriteFailure(error, { what: "read Arabic word progress", surah: surahNum, ayah: ayahNum });
       }
@@ -12186,12 +12481,19 @@
       const confirmationRequired = !!wordProgressConfirmRequired;
       const words = ayahObj.words.map((w) => {
         const occurrenceId = `quran-word-occurrence:v1:${surahNum}:${ayahNum}:${w.position}`;
-        return { position: w.position, arabic: w.arabic, occurrenceId, known: !!wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId, confirmationRequired }).countsAsKnown };
+        const occView = wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId, confirmationRequired });
+        const lemmaId = w.morphology?.lemma;
+        const lemmaView = lemmaId && isLemmaProgressPersistenceReady()
+          ? lemmaProgressFor({ tenantId, personId: subjectPersonId, lemmaId, confirmationRequired })
+          : null;
+        const known = lemmaView ? effectiveOccurrenceState(occView, lemmaView).countsAsKnown : !!occView.countsAsKnown;
+        return { position: w.position, arabic: w.arabic, occurrenceId, known };
       });
       let coverage = null;
       try {
         const scope = occurrenceIdsForAyah(currentSurahData, ayahNum);
-        const views = new Map(scope.map((occ) => [occ, wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: occ, confirmationRequired })]));
+        const rawViews = new Map(scope.map((occ) => [occ, wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: occ, confirmationRequired })]));
+        const views = effectiveViewsForScope(currentSurahData, scope, rawViews, tenantId, subjectPersonId, confirmationRequired);
         coverage = computeArabicCoverage({ scopeOccurrenceIds: scope, views, label: `ayah:${surahNum}:${ayahNum}` });
       } catch { coverage = null; }
       ayahSheetWordStatus = { known: coverage?.known ?? words.filter((w) => w.known).length, total: coverage?.total ?? words.length, words };

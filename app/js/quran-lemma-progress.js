@@ -292,6 +292,31 @@ export function effectiveOccurrenceState(occurrenceState, lemmaState) {
 }
 
 /**
+ * Issue #303 -- overlays effectiveOccurrenceState()'s countsAsKnown onto an
+ * already-resolved coverage view Map, so quran-word-coverage.js's
+ * computeArabicCoverage() (which decides known/awaitingReview/returned/
+ * learning/notStarted purely off `view.countsAsKnown`/`view.awaitingReview`/
+ * `view.review`/`view.state`) reports a lemma-known occurrence as known
+ * without needing to know anything about lemmas itself. `lemmaViewByOccurrenceId`
+ * is a Map/object of occurrenceId -> resolved lemma progress view (from
+ * getLemmaProgress/lemmaProgressFor); an occurrence with no entry (its lemma
+ * was never read, or the gate is closed) is left completely unmodified --
+ * this NEVER downgrades a view, only ever adds occurrences to "known" that a
+ * pure occurrence read would have missed.
+ */
+export function overlayLemmaKnownness(occurrenceViews, lemmaViewByOccurrenceId) {
+  const source = occurrenceViews instanceof Map ? occurrenceViews : new Map(Object.entries(occurrenceViews ?? {}));
+  const lemmaLookup = lemmaViewByOccurrenceId instanceof Map ? lemmaViewByOccurrenceId : new Map(Object.entries(lemmaViewByOccurrenceId ?? {}));
+  const merged = new Map();
+  for (const [id, view] of source) {
+    const lemmaView = lemmaLookup.get(id);
+    if (!view || !lemmaView) { merged.set(id, view); continue; }
+    merged.set(id, { ...view, countsAsKnown: effectiveOccurrenceState(view, lemmaView).countsAsKnown });
+  }
+  return merged;
+}
+
+/**
  * The whole-Qur'an running-known-count delta produced when a lemma moves
  * into or out of "known" (a claim/decision transition resolved through
  * resolveLemmaProgress() above). `occurrenceCount` is how many occurrences
@@ -319,4 +344,109 @@ export function lemmaKnownDelta({ occurrenceCount, alreadyKnownIndividually, was
   if (wasLemmaKnown === isLemmaKnown) return 0;
   const affected = occurrenceCount - alreadyKnownIndividually;
   return isLemmaKnown ? affected : -affected;
+}
+
+// ---------------------------------------------------------------------------
+// Issue #303 -- the bounded-cost counter. countIndividuallyKnownOccurrences()
+// in quran-lemma-progress-data.js is honest, not cheap: up to 4,366 reads for
+// the single most frequent lemma. That cost is unavoidable the FIRST time a
+// person's individually-known count for a lemma is needed, but it must never
+// recur on every claim/confirm -- the target this issue sets is at most 5
+// document reads per action.
+//
+// The persisted counter is bucketed BY JUZ, not a single integer, and that is
+// the whole trick: a lemma's occurrences span AT MOST 30 juz (there are only
+// 30), so the counter document never grows past 30 small entries regardless
+// of how many thousands of occurrences the lemma has. That is what lets the
+// running whole-Qur'an total's per-Juz breakdown (quranWordTotals.byJuz) move
+// correctly when a whole LEMMA is claimed known, not just when one occurrence
+// is -- a lemma spanning many juz needs a delta PER JUZ, and this is where
+// that per-juz delta comes from, computed from data already read once and
+// then cheaply maintained, never recomputed by re-walking every occurrence.
+//
+// Which juz each occurrence belongs to is STATIC data (juzForSurahAyah() over
+// the already-loaded juz index) -- grouping by juz costs no Firestore read at
+// all, only CPU over data the Word Card has already fetched.
+// ---------------------------------------------------------------------------
+
+export const LEMMA_COUNTER_CONTRACT = "quran-lemma-occurrence-counter:v1";
+
+/** Same identity shape as lemmaProgressDocId() -- one counter per (tenant, person, level, lemma). */
+export function lemmaCounterDocId({ tenantId, personId, level = "wbw", lemmaId } = {}) {
+  safeIdSegment(tenantId, "tenantId");
+  safeIdSegment(personId, "personId");
+  requireImplementedLevel(level);
+  safeLemmaId(lemmaId);
+  return `${tenantId}__${personId}__${level}__${lemmaId}`;
+}
+
+export function parseLemmaCounterDocId(docId) {
+  return parseLemmaProgressDocId(docId);
+}
+
+/** The full seeded document a person's first-ever counted lemma creates. `byJuz` starts empty: nothing is known individually until a walk says otherwise. */
+export function emptyLemmaCounterDocument({ tenantId, personId, level = "wbw", lemmaId } = {}) {
+  const parsed = { tenantId: safeIdSegment(tenantId, "tenantId"), personId: safeIdSegment(personId, "personId"), level: requireImplementedLevel(level), lemmaId: safeLemmaId(lemmaId) };
+  return { contractVersion: LEMMA_COUNTER_CONTRACT, ...parsed, individuallyKnownByJuz: {} };
+}
+
+export function decodeLemmaCounterDocument(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  if (raw.contractVersion && raw.contractVersion !== LEMMA_COUNTER_CONTRACT) {
+    throw new RangeError(`Unsupported lemma occurrence counter contract: ${raw.contractVersion}.`);
+  }
+  const byJuz = {};
+  for (const [juz, count] of Object.entries(raw.individuallyKnownByJuz ?? {})) {
+    if (/^([1-9]|[12]\d|30)$/.test(juz) && Number.isInteger(count) && count >= 0) byJuz[juz] = count;
+  }
+  return { ...raw, individuallyKnownByJuz: byJuz };
+}
+
+/** How many of this lemma's occurrences count as individually known, in total, across every juz the counter has ever recorded -- what lemmaKnownDelta()'s alreadyKnownIndividually parameter needs. */
+export function lemmaCounterTotalKnown(counterDocument) {
+  return Object.values(counterDocument?.individuallyKnownByJuz ?? {}).reduce((sum, n) => sum + Number(n || 0), 0);
+}
+
+/**
+ * Groups a lemma's occurrence refs by juz, using the app's own already-loaded
+ * juz index (juzForSurahAyah, quran-word-total.js) -- zero Firestore reads,
+ * pure arithmetic over data the page has already fetched for other reasons.
+ * A ref this juz index cannot place (a malformed/incomplete index) is
+ * skipped rather than mis-credited to the wrong juz, mirroring
+ * juzForSurahAyah()'s own refusal to guess.
+ */
+export function groupOccurrenceRefsByJuz(refs, juzIndex, juzForSurahAyahFn) {
+  if (!Array.isArray(refs)) throw new TypeError("refs must be an array.");
+  if (typeof juzForSurahAyahFn !== "function") throw new TypeError("juzForSurahAyahFn is required.");
+  const byJuz = new Map();
+  for (const ref of refs) {
+    const juz = juzForSurahAyahFn(juzIndex, ref.surah, ref.ayah);
+    if (juz == null) continue;
+    byJuz.set(juz, (byJuz.get(juz) ?? 0) + 1);
+  }
+  return byJuz;
+}
+
+/**
+ * The per-juz delta lemmaKnownDelta() implies, decomposed across the juz a
+ * lemma's occurrences actually touch -- what recordWordTotalDeltaAcrossJuz()
+ * (quran-word-total-data.js) needs to move quranWordTotals.byJuz correctly
+ * for a whole-lemma claim/confirm, not just a single occurrence.
+ *
+ * `occurrenceCountByJuz` and `alreadyKnownByJuz` are both Map(juz -> count),
+ * the first total occurrences of this lemma in that juz (static, from
+ * groupOccurrenceRefsByJuz), the second how many of those already count as
+ * known on their own account (from the persisted counter). Returns
+ * Map(juz -> delta), omitting any juz whose delta is exactly zero.
+ */
+export function lemmaKnownDeltaByJuz({ occurrenceCountByJuz, alreadyKnownByJuz, wasLemmaKnown, isLemmaKnown } = {}) {
+  if (!(occurrenceCountByJuz instanceof Map)) throw new TypeError("occurrenceCountByJuz must be a Map.");
+  if (wasLemmaKnown === isLemmaKnown) return new Map();
+  const out = new Map();
+  for (const [juz, occurrenceCount] of occurrenceCountByJuz) {
+    const alreadyKnownIndividually = Math.min(Number(alreadyKnownByJuz?.get?.(juz) ?? 0), occurrenceCount);
+    const delta = lemmaKnownDelta({ occurrenceCount, alreadyKnownIndividually, wasLemmaKnown, isLemmaKnown });
+    if (delta) out.set(juz, delta);
+  }
+  return out;
 }
