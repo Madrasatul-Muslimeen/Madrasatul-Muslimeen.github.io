@@ -139,7 +139,6 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   // closed, or while this word's lemma-wide state cannot be read: the card
   // must never claim a whole-lemma figure it has not actually computed.
   learnWordDeltaThisOccurrenceOnly: "If you learn this word here: +{words} word (+{percent}%) — this occurrence only",
-  markLemmaKnownEverywhere: "Mark this word known everywhere",
 });
 
 function escapeHtml(value) {
@@ -276,41 +275,6 @@ function learnDeltaLine(learnDelta, text, formatNumber) {
   return `<p class="word-progress-learn-delta">${escapeHtml(line)}</p>`;
 }
 
-/**
- * Issue #303 -- "Mark this word known everywhere", the lemma-wide twin of
- * the occurrence progress buttons above. Reuses the identical three-state +
- * confirm/send-back shape, on separate `data-lemma-progress-*` hooks so the
- * page can tell the two actions apart. `lemmaProgress === null` means the
- * lemma gate is closed (or this word has no lemma) -- the WHOLE control is
- * absent then, not merely disabled, per issue #303's own instruction that
- * nothing about this action is offered while the gate is shut.
- */
-function lemmaEverywhereBlock(lemmaProgress, lemmaAuthority, text) {
-  if (!lemmaProgress) return "";
-  const stateLabel = { not_started: text.stateNotStarted, learning: text.stateLearning, achieved: text.stateAchieved };
-  const stateButton = (state) => `<button type="button" data-lemma-progress-state="${state}" aria-pressed="${lemmaProgress.state === state}"${lemmaAuthority?.mayClaim ? "" : " disabled"}>${escapeHtml(stateLabel[state])}</button>`;
-  const reviewLine = lemmaProgress.awaitingReview
-    ? text.awaitingReview
-    : lemmaProgress.review === "confirmed"
-      ? text.reviewConfirmed
-      : lemmaProgress.review === "returned"
-        ? (lemmaProgress.returnNote ? String(text.reviewReturned).replace("{note}", lemmaProgress.returnNote) : text.reviewReturnedNoNote)
-        : null;
-  const decisions = lemmaAuthority?.mayDecide && lemmaProgress.state === "achieved"
-    ? `<div class="word-progress-decide">
-        <button type="button" data-lemma-progress-decide="confirmed">${escapeHtml(text.confirm)}</button>
-        <button type="button" data-lemma-progress-decide="returned">${escapeHtml(text.sendBack)}</button>
-      </div>`
-    : "";
-  return `<div class="word-card-lemma-progress" data-lemma-progress>
-    <h3 class="word-progress-heading">${escapeHtml(text.markLemmaKnownEverywhere)}</h3>
-    <div class="word-progress-states" role="group" aria-label="${escapeHtml(text.markLemmaKnownEverywhere)}">${stateButton("not_started")}${stateButton("learning")}${stateButton("achieved")}</div>
-    ${reviewLine ? `<p class="word-progress-state" data-lemma-progress-review>${escapeHtml(reviewLine)}</p>` : ""}
-    ${lemmaAuthority && !lemmaAuthority.mayClaim ? `<p class="word-progress-state" data-lemma-progress-blocked>${escapeHtml(text.progressNotAllowed)}</p>` : ""}
-    ${decisions}
-  </div>`;
-}
-
 function progressBlock(progress, authority, coverage, text, formatNumber, wbw = {}) {
   if (!progress) return "";
   if (progress.loaded === false) {
@@ -336,6 +300,10 @@ function progressBlock(progress, authority, coverage, text, formatNumber, wbw = 
         coverage.complete ? "" : ` <span class="word-progress-incomplete">${escapeHtml(String(text.coverageIncomplete).replace("{unknown}", formatNumber(coverage.unknown)))}</span>`
       }</p>`
     : "";
+  // Issue #322 -- the second row ("Mark this word known everywhere",
+  // issue #303) is gone: the buttons above now drive the lemma-wide claim
+  // too (mirrored by the page's own runWordProgressAction()), so there is no
+  // longer a second control offering the same decision twice.
   return `<div class="word-card-progress" data-word-progress>
     <h3 class="word-progress-heading">${escapeHtml(text.progressHeading)}</h3>
     <div class="word-progress-states" role="group" aria-label="${escapeHtml(text.progressHeading)}">${stateButton("not_started")}${stateButton("learning")}${stateButton("achieved")}</div>
@@ -346,7 +314,6 @@ function progressBlock(progress, authority, coverage, text, formatNumber, wbw = 
     ${wholeQuranKnownLines(wbw.wholeQuranTotal, text, formatNumber)}
     ${wbw.thisWordShareHtml ?? ""}
     ${learnDeltaLine(wbw.learnDelta, text, formatNumber)}
-    ${lemmaEverywhereBlock(wbw.lemmaProgress, wbw.lemmaAuthority, text)}
   </div>`;
 }
 

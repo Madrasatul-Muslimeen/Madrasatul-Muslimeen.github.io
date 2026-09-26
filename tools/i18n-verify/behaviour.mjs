@@ -2481,8 +2481,11 @@ const readRef = readingRef; // round 22: #readRef is retired, see readingRef abo
   // a red check in the very row this round edits would mask a real regression.
   // v08.30 -- #readCompleteBtn and its out-of-flow announcer #readCompleteMsg
   // joined the row after Bookmark (MAP Phase 4 P4-D1).
+  // v08.89 (issue #322) -- #mushafPageRef, the Mushaf view's own "Surah ·
+  // āyāt" reference, leads the row; it is [hidden] outside Mushaf view, so the
+  // controls a reader sees here are unchanged. Updated in place, reason recorded.
   check("33a the read bar is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · Reading complete · ⋮ slot",
-        bar.ids.join() === "prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot",
+        bar.ids.join() === "mushafPageRef,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot",
         JSON.stringify(bar.ids));
   check("33a the '◂ Mastery Wheel' button is gone (the Read tab does it)", bar.noBack);
   check("33a the separate Pause button is gone", bar.noSeparatePause);
@@ -3218,8 +3221,9 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
   // pair happens to be visible for the current unit type. The multi-student
   // round added Bookmark right before the ⋮ slot.
   // v08.30 -- see the 33a note: Reading complete and its announcer joined.
+  // v08.89 -- see the 33a note: #mushafPageRef leads the row (hidden outside Mushaf).
   check("37a the row is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · Reading complete · ⋮ slot",
-        m.barKids.join() === "prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot", JSON.stringify(m.barKids));
+        m.barKids.join() === "mushafPageRef,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot", JSON.stringify(m.barKids));
   // `space-between` would leave large, uneven gaps between controls, which
   // is exactly how a stale `space-between` survived this round's first
   // attempt -- checking the gaps directly catches that regardless of how

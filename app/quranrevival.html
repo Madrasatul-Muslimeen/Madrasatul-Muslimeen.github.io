@@ -1695,6 +1695,16 @@
      always has one thing that reads as words. */
   #readBar .qr-ico { font-size: 0.95rem; line-height: 1; padding: 0.3rem 0.5rem; flex: 0 0 auto; }
   #readBar button[disabled] { opacity: 0.45; }
+  /* Issue #322 -- Mushaf's own "Surah · āyāt" reference. flex:1 1 auto with
+     min-width:0 is what lets it shrink and ellipsis-truncate rather than
+     wrap or force #readBar's own icon buttons (all flex:0 0 auto) off the
+     row -- the standing lesson against nowrap+ellipsis on a fixed width;
+     here the width itself is never fixed, only the overflow behaviour is. */
+  #mushafPageRef {
+    flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; font-size: 0.78rem; color: #444; margin-right: auto;
+  }
+  #mushafPageRef[hidden] { display: none; }
   /* v08.31 -- the Phase 4 ✓ while evidence persistence is NOT ready (E1 closed).
      `aria-disabled`, NOT `disabled`, and the difference is the whole point: a
      `disabled` button cannot be focused or pressed, so a reader gets no way to
@@ -1877,7 +1887,11 @@
      control on screen at all and no way back. Everything else in the bar
      still goes; the button stays, faint and out of the way, exactly the rule
      the Note view's own full-screen button has followed since round 30. */
-  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar > *:not(#hideChromeBtn) { display: none; }
+  /* Issue #322 -- #mushafPageRef stays visible too: the whole point of Mushaf's
+     top-bar reference is to still say which Surah/āyāt this is in the BARE
+     full-screen state, where the strip is otherwise empty apart from the
+     full-screen icon. */
+  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar > *:not(#hideChromeBtn):not(#mushafPageRef) { display: none; }
   body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar {
     border-bottom: none; padding: 0; gap: 0;
   }
@@ -2102,12 +2116,44 @@
     border: 1px solid #B8862F; border-radius: 0.35rem; background: #B8862F; color: #fff; cursor: pointer;
   }
 
+  /* Issue #322 -- below 900px the card is a FULL-SCREEN SHEET, not the
+     docked strip it was Phase 2 through v08.88: the Owner's own report, "open
+     the entire card across the screen instead of making it scroll while the
+     upper part of the Mushaf doesn't needed in the view." `:not([hidden])`
+     rather than the bare id -- the base (mobile-first) rule above already
+     covers the hidden state at every width, so this only ever needs to say
+     what changes while the card is actually open. `inset:0` covers the whole
+     viewport, so nothing of the Mushaf/reading screen is visible above or
+     around it; `header` is `position: sticky; top: 0` so the close button,
+     the word and the ◀ ▶ move controls stay on screen while `.word-card-content`
+     -- the one thing below it that scrolls -- carries the rest. z-index 900
+     matches this app's own existing full-screen-overlay tier (the Asma
+     poster), safely above #dock (60) and every popup (55), and safely below
+     the ayah action sheet (960) and the Edit/Attach overlays (950) that may
+     still open ON TOP of an open Word Card. */
+  @media (max-width: 899.98px) {
+    #quranWordCardMount:not([hidden]), #quranWordCardMountNote:not([hidden]) {
+      position: fixed; inset: 0; z-index: 900; max-height: none;
+      display: flex; flex-direction: column; padding: 0; border-top: none;
+      background: #fffdf6;
+    }
+    #quranWordCardMount .word-card-content, #quranWordCardMountNote .word-card-content {
+      flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0;
+    }
+    #quranWordCardMount .quran-word-card, #quranWordCardMountNote .quran-word-card {
+      max-width: none; margin: 0; min-height: 100%; box-shadow: none; border: none;
+    }
+    #quranWordCardMount .quran-word-card header, #quranWordCardMountNote .quran-word-card header {
+      position: sticky; top: 0; z-index: 1; background: #fffdf6;
+    }
+  }
+
   /* v08.20 -- on a desktop the card floats as its own small window, the same
      treatment #noteView/#wheelPopupView/#exploreView already get and at the
      same 900px breakpoint, so "popup on desktop, docked strip on touch" stays
      one rule for the whole app rather than a second one just for this card.
-     Below 900px NONE of this applies and the card is the docked strip it has
-     been since Phase 2.
+     Below 900px the card is the full-screen sheet just above (issue #322) --
+     it was the docked strip from Phase 2 through v08.88.
 
      Issue #113 -- z-index was 60, TIED with #dock's own z-index:60, where
      #noteView/#wheelPopupView/#exploreView all deliberately use 55, one
@@ -3481,6 +3527,18 @@
              total is written ("Ayah 1 of 286"), which the buttons moving up
              does not replace. -->
         <div id="readBar">
+          <!-- Issue #322 -- Mushaf view's own top-bar reference: which surah
+               the current printed page belongs to and the āyāt shown on it.
+               Empty and hidden outside Mushaf view (updateMushafPageRef()
+               below); visible even in full screen's BARE state, which is why
+               the fs-hide-readbar/fs-hide-transport rule above names it
+               alongside #hideChromeBtn rather than hiding it with the rest of
+               the bar. flex:1 1 auto + min-width:0 (its own CSS) is what lets
+               a long surah name/āyah range ellipsis-truncate on a narrow
+               phone instead of wrapping or pushing the full-screen icon off
+               the row -- the same shrink-to-fit shape #readPickers already
+               uses for its selects. -->
+          <span id="mushafPageRef" class="mushaf-page-ref" hidden></span>
           <button type="button" class="secondary qr-ico" id="prevUnitBtn" aria-label="Previous" title="Previous">⏮</button>
           <button type="button" class="secondary qr-ico" id="prevAyahBtn" aria-label="Previous āyah" title="Previous āyah">◂</button>
           <button type="button" class="secondary qr-ico" id="nextAyahBtn" aria-label="Next āyah" title="Next āyah">▸</button>
@@ -4581,7 +4639,7 @@
       clearLemmaProgressCache, getLemmaOccurrenceCounts, bumpLemmaOccurrenceCounter,
     } from "./js/quran-lemma-progress-data.js";
     import { isLemmaProgressPersistenceReady } from "./js/study-lemma-progress-readiness.js";
-    import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah, scrollToAyahIfRendered } from "./js/hifz-renderer.js";
+    import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah, scrollToAyahIfRendered, mushafPageAyahGroups } from "./js/hifz-renderer.js";
     // Issue #286 -- the "This āyah" action sheet (Mushaf marker tap, Word
     // Card "This āyah ⋯") and its one new action, filing this reader's own
     // Note on the āyah into Mapping My Journey folder(s).
@@ -4836,6 +4894,7 @@
     const mushafNote = document.getElementById("mushafNote");
     const singleAyahNavRow = document.getElementById("singleAyahNavRow");
     const pageViewContainer = document.getElementById("pageViewContainer");
+    const mushafPageRef = document.getElementById("mushafPageRef"); // issue #322 -- Mushaf's own top-bar Surah/āyāt reference
     const wayModalOverlay = document.getElementById("wayModalOverlay");
     const wayModalMount = document.getElementById("wayModalMount");
 
@@ -11056,13 +11115,11 @@
         progressNotAllowed: t("You are not able to record Arabic progress for this person."),
         coverage: t("{known} of {total} words known in this ayah"),
         coverageIncomplete: t("{unknown} not loaded yet"),
-        // Issue #303 -- the whole-Qur'an running total and "mark this word
-        // known everywhere".
+        // Issue #303 -- the whole-Qur'an running total.
         wholeQuranKnown: t("Known {known} of {total} words"),
         wholeQuranPercent: t("{percent}% of the Qur'an"),
         learnWordDelta: t("If you learn this word: +{words} words (+{percent}%)"),
         learnWordDeltaThisOccurrenceOnly: t("If you learn this word here: +{words} word (+{percent}%) — this occurrence only"),
-        markLemmaKnownEverywhere: t("Mark this word known everywhere"),
       };
     }
 
@@ -11318,16 +11375,23 @@
 
     /**
      * Issue #303 -- cheap maintenance of the bounded per-lemma counter from
-     * an ORDINARY occurrence-level tap (never "Mark this word known
-     * everywhere" itself, which moves its own counter as part of seeding/
-     * reading it in runLemmaProgressAction()). `beforeKnown` is `null`
-     * whenever the LEMMA gate is closed -- independent of the whole-Qur'an
-     * total's own gate, which is why this takes its own snapshot rather than
-     * reusing applyWordTotalCounterDelta()'s.
+     * an ORDINARY occurrence-level tap. `beforeKnown` is `null` whenever the
+     * LEMMA gate is closed -- independent of the whole-Qur'an total's own
+     * gate, which is why this takes its own snapshot rather than reusing
+     * applyWordTotalCounterDelta()'s.
+     *
+     * Issue #322 -- `afterKnown` is now an optional EXPLICIT override; when
+     * omitted it is read live exactly as before. runWordProgressAction()'s
+     * own lemma-mirroring call passes `true` explicitly for the first of its
+     * two calls -- see that call site's own comment for why forcing this
+     * occurrence to read as "already individually known" for the DURATION of
+     * the lemma-wide mirror, then correcting it to the real final state
+     * afterward, is what keeps a single press from being credited (or
+     * debited) twice.
      */
-    async function applyLemmaOccurrenceCounterDelta({ tenantId, personId, occurrenceId, confirmationRequired, beforeKnown }) {
+    async function applyLemmaOccurrenceCounterDelta({ tenantId, personId, occurrenceId, confirmationRequired, beforeKnown, afterKnown }) {
       if (beforeKnown === null) return;
-      const afterKnown = wordProgressFor({ tenantId, personId, occurrenceId, confirmationRequired }).countsAsKnown;
+      if (afterKnown === undefined) afterKnown = wordProgressFor({ tenantId, personId, occurrenceId, confirmationRequired }).countsAsKnown;
       const delta = knownDelta(beforeKnown, afterKnown);
       if (!delta) return;
       const ref = parseQuranWordOccurrenceId(occurrenceId);
@@ -11342,6 +11406,56 @@
         () => bumpLemmaOccurrenceCounter(db, { tenantId, personId, lemmaId, juz, delta }),
         { what: "update this word's lemma-wide known count", occurrenceId }
       );
+    }
+
+    /**
+     * Issue #322 -- runs the lemma-wide mirror runWordProgressAction() now
+     * makes on every WbW state/decide action, and keeps the bounded
+     * individually-known counter (quranLemmaOccurrenceCounters) moving
+     * exactly once for the occurrence that triggered it, in EITHER
+     * direction. `beforeKnownForLemma` is `null` whenever the lemma gate is
+     * closed (or this isn't a WbW action) -- exactly like
+     * applyLemmaOccurrenceCounterDelta()'s own null check, which is what
+     * makes doing nothing here the correct, silent behaviour in that case.
+     *
+     * THE ORDERING IS THE WHOLE POINT, worked out on paper before writing
+     * this rather than assumed: the obvious approach -- bump the counter to
+     * this occurrence's REAL new state, then let the lemma-wide delta
+     * (runLemmaProgressAction() -> recordWordTotalDeltaAcrossJuz(), reading
+     * quranLemmaOccurrenceCounters via getLemmaOccurrenceCounts()) read it --
+     * is only correct going UP. Pressing Achieved for the first time: the
+     * counter is bumped to "known" before the mirror runs, so the mirror's
+     * own across-juz delta correctly EXCLUDES this occurrence (it is already
+     * credited, directly, by applyWordTotalCounterDelta in the caller) --
+     * the total moves by exactly the lemma's full occurrence count, this
+     * occurrence counted once. But pressing a LOWER state on an
+     * already-known-everywhere word inverts that: bumping the counter DOWN
+     * to this occurrence's real new state before the mirror runs would make
+     * the mirror's own removal ALSO catch this occurrence (now reading as
+     * "not already known", the very bucket the removal targets) -- a real
+     * double-decrement of the occurrence that triggered it. The fix is
+     * symmetric either way: force this occurrence to read as "already
+     * known" (afterKnown: true) for the DURATION of the mirror -- a genuine
+     * no-op bump going up, a deliberately-DEFERRED one going down -- then
+     * correct the counter to the real final state once the mirror has read
+     * it.
+     *
+     * A claim still AWAITING CONFIRMATION never enters the dance at all: its
+     * own countsAsKnown does not move (the Activity != Mastery lock this
+     * codebase already enforces for occurrence progress applies to the
+     * lemma lane too, via the identical resolveWordProgress()), so there is
+     * nothing to force and nothing to correct -- forcing one anyway would
+     * write the bounded counter up and immediately back down for an action
+     * that has not really changed anyone's known-ness, which is exactly the
+     * needless second write this whole design exists to avoid.
+     */
+    async function mirrorLemmaProgress(action, { tenantId, personId, occurrenceId, confirmationRequired, beforeKnownForLemma }) {
+      if (beforeKnownForLemma === null) return;
+      const afterKnown = wordProgressFor({ tenantId, personId, occurrenceId, confirmationRequired }).countsAsKnown;
+      if (afterKnown === beforeKnownForLemma) { await runLemmaProgressAction(action); return; }
+      await applyLemmaOccurrenceCounterDelta({ tenantId, personId, occurrenceId, confirmationRequired, beforeKnown: beforeKnownForLemma, afterKnown: true });
+      await runLemmaProgressAction(action);
+      await applyLemmaOccurrenceCounterDelta({ tenantId, personId, occurrenceId, confirmationRequired, beforeKnown: true, afterKnown });
     }
 
     async function runWordProgressAction(action) {
@@ -11372,6 +11486,17 @@
       const beforeKnownForLemma = level === "wbw" && isLemmaProgressPersistenceReady()
         ? wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired }).countsAsKnown
         : null;
+      // Architect review of issue #322 -- which presses touch the Dictionary
+      // Word. Only "Achieved" (mark it known everywhere) or undoing THIS
+      // occurrence's own Achieved may move the lemma claim; pressing Learning
+      // or Not started on some other, untouched form of a word already known
+      // everywhere must not un-know the whole Dictionary Word. A decide
+      // action mirrors only when the claim being decided is an Achieved one.
+      const beforeStateForLemma = beforeKnownForLemma === null ? null
+        : wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired }).state;
+      const mirrorsLemma = beforeKnownForLemma !== null && (action.kind === "state"
+        ? action.state === "achieved" || beforeStateForLemma === "achieved"
+        : beforeStateForLemma === "achieved");
       // I15 throughout: safeWrite() is this app's own "a failed write must
       // reach the user" wrapper, and it is what every other write on this
       // page already goes through.
@@ -11416,7 +11541,22 @@
             );
           }
           await applyWordTotalCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown });
-          await applyLemmaOccurrenceCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown: beforeKnownForLemma });
+          // Issue #322 -- "Achieved" on Word progress now IS "mark this word
+          // known everywhere": the Owner's own words, "this is only a double
+          // work... the achieved on word progress should automatically count
+          // this word known everywhere." Mirrors Learning and Not started too
+          // (the issue's own instruction), so the occurrence and lemma lanes
+          // can never disagree -- see the PR description for the one real risk
+          // this was found to carry: a later Learning/Not-started press on a
+          // DIFFERENT, previously-untouched occurrence of an already-known
+          // lemma downgrades the WHOLE Dictionary Word, not just that one
+          // occurrence. Built as asked; flagged rather than silently narrowed.
+          if (mirrorsLemma) {
+            await mirrorLemmaProgress({ kind: "state", state: action.state },
+              { tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnownForLemma });
+          } else {
+            await applyLemmaOccurrenceCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown: beforeKnownForLemma });
+          }
         }
       } else {
         const note = action.review === "returned" ? (window.prompt(t("What should they look at again?")) ?? null) : null;
@@ -11424,7 +11564,15 @@
           { what: "decide Arabic word progress", occurrenceId: common.occurrenceId });
         if (level === "wbw") {
           await applyWordTotalCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown });
-          await applyLemmaOccurrenceCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown: beforeKnownForLemma });
+          // Issue #322 -- a supervisor's confirm/return mirrors onto the
+          // lemma too, reusing the SAME note already gathered above rather
+          // than prompting a second time.
+          if (mirrorsLemma) {
+            await mirrorLemmaProgress({ kind: "decide", review: action.review, note },
+              { tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnownForLemma });
+          } else {
+            await applyLemmaOccurrenceCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown: beforeKnownForLemma });
+          }
         }
       }
       // Issue #303 -- the "if you learn this word" delta and the whole-Qur'an
@@ -11435,12 +11583,17 @@
     }
 
     /**
-     * Issue #303 -- "Mark this word known everywhere". The lemma-wide twin
-     * of runWordProgressAction() above: same claim/confirm shape, on
-     * quranLemmaProgress/quranLemmaApprovals rather than the occurrence
-     * lanes. The control that calls this is not even rendered while
-     * isLemmaProgressPersistenceReady() is false (lemmaEverywhereBlock()
-     * returns nothing then) -- the early return below is defensive only.
+     * The lemma-wide twin of runWordProgressAction() above: same claim/
+     * confirm shape, on quranLemmaProgress/quranLemmaApprovals rather than
+     * the occurrence lanes. Originally issue #303's own dedicated "Mark this
+     * word known everywhere" row; issue #322 removed that second row from the
+     * card and made this an internal helper runWordProgressAction() calls to
+     * MIRROR its own occurrence-level action onto the lemma -- so this no
+     * longer gathers its own "send back" note (the caller already has one,
+     * gathered once) and no longer re-renders the card itself (the caller's
+     * own single hydrate+render at its tail covers both writes). Nothing else
+     * calls this now; the early returns below (no gate, no lemma) stay
+     * exactly as strict as when a direct UI control could reach them.
      */
     async function runLemmaProgressAction(action) {
       const { tenantId, subjectPersonId, actorPersonId, isSupervisor } = wordProgressActor();
@@ -11464,7 +11617,9 @@
         await safeWrite(() => claimLemmaWordState(db, { ...common, state: action.state }),
           { what: "mark this word known everywhere", lemmaId });
       } else {
-        const note = action.review === "returned" ? (window.prompt(t("What should they look at again?")) ?? null) : null;
+        // Issue #322 -- the note is the CALLER's (gathered once, for the
+        // occurrence decide action above); this never prompts a second time.
+        const note = action.review === "returned" ? (action.note ?? null) : null;
         await safeWrite(() => decideLemmaWordApproval(db, { ...common, review: action.review, note }),
           { what: "approve this word known everywhere", lemmaId });
       }
@@ -11500,9 +11655,9 @@
           reportWriteFailure(error, { what: "update the whole-Qur'an word total for this lemma", lemmaId });
         }
       }
-
-      await hydrateWordCardLemmaExtras();
-      renderPersistentWordCard();
+      // Issue #322 -- no hydrate/render here: the caller (runWordProgressAction)
+      // does exactly one of each, after both the occurrence and lemma writes
+      // this function may have made.
     }
 
     /** v08.20 -- the Word Card now has TWO homes, the Read view's and the Note
@@ -12006,11 +12161,9 @@
       if (progressState) { runWordProgressAction({ kind: "state", state: progressState.dataset.wordProgressState }); return; }
       const progressDecide = event.target.closest("[data-word-progress-decide]");
       if (progressDecide) { runWordProgressAction({ kind: "decide", review: progressDecide.dataset.wordProgressDecide }); return; }
-      // Issue #303 -- "Mark this word known everywhere", the lemma-wide twin.
-      const lemmaProgressState = event.target.closest("[data-lemma-progress-state]");
-      if (lemmaProgressState) { runLemmaProgressAction({ kind: "state", state: lemmaProgressState.dataset.lemmaProgressState }); return; }
-      const lemmaProgressDecide = event.target.closest("[data-lemma-progress-decide]");
-      if (lemmaProgressDecide) { runLemmaProgressAction({ kind: "decide", review: lemmaProgressDecide.dataset.lemmaProgressDecide }); return; }
+      // Issue #322 -- the "Mark this word known everywhere" row is gone;
+      // runWordProgressAction() itself now mirrors the lemma, so there is no
+      // longer a separate [data-lemma-progress-*] control to click here.
       const level = event.target.closest("[data-word-card-level]");
       // Issue #320 -- switching to Basic Arabic/Arabic in Depth primes that
       // level's own progress (a cache miss on first visit; a no-op once
@@ -12093,8 +12246,12 @@
             highlight,
             (surahNum) => surahIndex.find((s) => s.surahNumber === surahNum)?.nameArabic ?? null
           );
+          // Issue #322 -- the top-bar reference names whichever real page is
+          // now in view, and starts watching for a swipe/scroll to another one.
+          wireMushafPageRefScroll();
         } catch (err) {
           pageViewContainer.innerHTML = `<p style="color:#a33;">${t("Couldn't load Mushaf page data ({reason}).", { reason: err.message })}</p>`;
+          if (mushafPageRef) { mushafPageRef.hidden = true; mushafPageRef.textContent = ""; }
         }
         return;
       }
@@ -12265,6 +12422,90 @@
       // Mark the starting row straight away rather than waiting for a first
       // scroll -- otherwise nothing is highlighted until the reader moves.
       updateFlowInView();
+    }
+
+    // -----------------------------------------------------------------------
+    // Issue #322 -- Mushaf view's own top-bar reference ("Ibrahim · 1-5", or
+    // "Al-Baqarah 286 · Al-Imran 1-9" when a page spans two surahs). Reads
+    // the SAME per-page layout data hifz-renderer.js already fetched (I9: no
+    // new startup read, no new fetch at all -- ensureMushafData() has always
+    // been awaited before a Mushaf page is drawn) and reuses flowScrollRoot()
+    // -- the identical "which element genuinely scrolls" answer
+    // updateFlowInView() above already relies on -- so the two mechanisms can
+    // never disagree about what the reader is looking at.
+    // -----------------------------------------------------------------------
+
+    /** One surah's own name+range, or (2+ surahs on one page) each joined by
+        " · " -- see the issue's own two worked examples. A single surah is
+        "Name · range" (the dot separates the surah's identity from its
+        numbers); several surahs are "Name range · Name range" (the dot now
+        separates the surahs themselves, each already self-naming its own
+        numbers). */
+    function formatMushafPageRef(groups) {
+      const rangeText = (g) => g.firstAyah === g.lastAyah ? num(g.firstAyah) : `${num(g.firstAyah)}–${num(g.lastAyah)}`;
+      const nameFor = (surah) => {
+        const meta = surahIndex.find((s) => s.surahNumber === surah);
+        return surahName(surah, meta?.nameEnglish);
+      };
+      if (groups.length <= 1) {
+        const g = groups[0];
+        return `${nameFor(g.surah)} · ${rangeText(g)}`;
+      }
+      return groups.map((g) => `${nameFor(g.surah)} ${rangeText(g)}`).join(" · ");
+    }
+
+    /** Safe to call at any time -- hides/empties the reference outside Mushaf
+        view or when nothing is rendered yet, and never throws on a page the
+        packaged Mushaf data doesn't recognise. */
+    function updateMushafPageRef() {
+      if (!mushafPageRef) return;
+      if (!mushafToggle.checked || getComputedStyle(pageViewContainer).display === "none") {
+        mushafPageRef.hidden = true; mushafPageRef.textContent = ""; return;
+      }
+      const pages = [...pageViewContainer.querySelectorAll(".hifz-page[data-mushaf-page]")];
+      if (!pages.length) { mushafPageRef.hidden = true; mushafPageRef.textContent = ""; return; }
+      let best = pages[0];
+      if (pages.length > 1) {
+        const root = flowScrollRoot();
+        if (root) {
+          const view = root.getBoundingClientRect();
+          let bestOverlap = -1;
+          for (const p of pages) {
+            const r = p.getBoundingClientRect();
+            const w = Math.min(r.right, view.right) - Math.max(r.left, view.left);
+            const h = Math.min(r.bottom, view.bottom) - Math.max(r.top, view.top);
+            const overlap = Math.max(0, w) * Math.max(0, h);
+            if (overlap > bestOverlap) { bestOverlap = overlap; best = p; }
+          }
+        }
+      }
+      const groups = mushafPageAyahGroups(Number(best.dataset.mushafPage));
+      if (!groups.length) { mushafPageRef.hidden = true; mushafPageRef.textContent = ""; return; }
+      mushafPageRef.hidden = false;
+      mushafPageRef.textContent = formatMushafPageRef(groups);
+    }
+
+    let mushafPageRefHandler = null;
+
+    /** Wires the reference to update as the reader swipes/scrolls between
+        real Mushaf pages -- the same debounced-scroll shape
+        wireFlowInViewHighlight() already uses, kept separate because it
+        watches a different thing (.hifz-page, not .page-flow-ayah) and must
+        keep working even when only one page is rendered (that highlight
+        deliberately does nothing below two rows). Call after a Mushaf render
+        settles; safe to call repeatedly -- it always re-attaches cleanly. */
+    function wireMushafPageRefScroll() {
+      if (mushafPageRefHandler) pageViewContainer.removeEventListener("scroll", mushafPageRefHandler);
+      mushafPageRefHandler = null;
+      updateMushafPageRef();
+      if (getComputedStyle(pageViewContainer).display === "none") return;
+      let pending = false;
+      mushafPageRefHandler = () => {
+        if (pending) return;
+        pending = true;
+        requestAnimationFrame(() => { pending = false; updateMushafPageRef(); });
+      };
+      pageViewContainer.addEventListener("scroll", mushafPageRefHandler, { passive: true });
     }
 
     /** The flow view's own "next/previous āyah", for the scroll and swipe
@@ -15059,6 +15300,15 @@
       ayahSelectControl.style.display = unitRendersWhole() ? "none" : "";
       ayahPanels.style.display = usesFlow ? "none" : "";
       pageViewContainer.style.display = usesFlow ? "" : "none";
+      // Issue #322 -- Mushaf's own top-bar reference is Mushaf-only; leaving
+      // Mushaf (or a flow that isn't Mushaf at all) clears it here rather than
+      // waiting for the next scroll, and drops the swipe-listener the last
+      // Mushaf render attached. renderFlowView()'s own Mushaf branch re-wires
+      // it (wireMushafPageRefScroll()) whenever isMushaf is true.
+      if (!isMushaf) {
+        if (mushafPageRefHandler) { pageViewContainer.removeEventListener("scroll", mushafPageRefHandler); mushafPageRefHandler = null; }
+        if (mushafPageRef) { mushafPageRef.hidden = true; mushafPageRef.textContent = ""; }
+      }
 
       const trackable = currentTrackable();
       // Shell round 19 -- the owner's standing rule: an Approach is one way of
