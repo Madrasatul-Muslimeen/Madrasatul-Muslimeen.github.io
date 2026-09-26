@@ -1028,6 +1028,77 @@ service cloud.firestore {
       // No delete (I4/D6). A superseded decision is kept in history.
     }
 
+    // =====================================================================
+    // Issue #303 -- the bounded-cost counter behind lemma-level word
+    // progress (quranLemmaOccurrenceCounters). Assembled 26 Sep 2026 into
+    // THIS file alongside quranLemmaProgress/quranLemmaApprovals above,
+    // unmodified everywhere else, as this same assembled file. STATUS:
+    // CANDIDATE. NOT DEPLOYED.
+    //
+    // WHY THIS EXISTS: app/js/quran-lemma-progress-data.js's own honest full
+    // walk (countIndividuallyKnownOccurrences()) can cost up to 4,366 reads
+    // for the single most frequent lemma -- far past a single tap's budget.
+    // This collection is what makes a lemma claim/confirm affordable: one
+    // small document per (tenant, person, level, lemma), holding how many
+    // of that lemma's occurrences already count as known on their own
+    // account, BUCKETED BY JUZ (at most 30 entries -- there are only 30 juz
+    // -- regardless of how many thousands of occurrences the lemma has).
+    // Seeded once from the full walk, then maintained by cheap ±1
+    // increments from ordinary occurrence-level taps. See that module's own
+    // header for the read-cost accounting.
+    //
+    // Every helper this needs (signedIn, myUid, isPlatformAdmin,
+    // canRecordFor) already exists above and is reused exactly as deployed.
+    // =====================================================================
+
+    // Identity fields are write-once, the same reasoning
+    // lemmaLaneIdentityUnchanged() already applies: a valid writer for THIS
+    // person must never repoint the document at another tenant, person,
+    // level or lemma.
+    function lemmaCounterIdentityUnchanged() {
+      return resource != null
+          && request.resource.data.tenantId == resource.data.tenantId
+          && request.resource.data.personId == resource.data.personId
+          && request.resource.data.level    == resource.data.level
+          && request.resource.data.lemmaId  == resource.data.lemmaId;
+    }
+
+    // A created counter must say what it is and start from a real map --
+    // the per-juz values themselves are not constrained here (the map may
+    // start empty, or seeded straight from a real walk); what matters is
+    // that it IS a map, never a client-invented scalar.
+    function isLemmaCounterCreate() {
+      return request.resource.data.get('contractVersion', '') == 'quran-lemma-occurrence-counter:v1'
+          && request.resource.data.get('level', '') == 'wbw'
+          && request.resource.data.lemmaId is string
+          && request.resource.data.lemmaId.size() > 0
+          && request.resource.data.lemmaId.size() <= 400
+          && request.resource.data.individuallyKnownByJuz is map;
+    }
+
+    match /quranLemmaOccurrenceCounters/{counterKey} {
+      allow read: if isPlatformAdmin();
+      // Same S8-class allowance quranLemmaProgress already makes: the
+      // client reads this document before deciding create-vs-update, and a
+      // nonexistent document has no data to expose.
+      allow read: if signedIn() && !exists(/databases/$(database)/documents/quranLemmaOccurrenceCounters/$(counterKey));
+      allow read: if canRecordFor(resource.data.tenantId, resource.data.personId);
+
+      allow create: if canRecordFor(request.resource.data.tenantId, request.resource.data.personId)
+                    && isLemmaCounterCreate();
+      // Only individuallyKnownByJuz (its per-juz integer entries) and the
+      // envelope's own updatedAt may move on update -- never the identity
+      // fields, never a whole-document overwrite. One writer set
+      // (canRecordFor, not split by supervisor) because BOTH the lemma
+      // claim/confirm path and ordinary occurrence-level taps maintain this
+      // counter, and both are already authorised by canRecordFor at their
+      // own collection.
+      allow update: if resource != null
+                    && canRecordFor(resource.data.tenantId, resource.data.personId)
+                    && lemmaCounterIdentityUnchanged()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['individuallyKnownByJuz', 'updatedAt']);
+      // No delete (I4/D6). The counter only ever moves; it is never reset.
+    }
 
     // =====================================================================
     // Phase 3 — Tracking core (Layer 2: records, activity, domains)

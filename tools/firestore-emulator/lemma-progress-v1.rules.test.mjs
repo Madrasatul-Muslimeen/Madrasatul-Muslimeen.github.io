@@ -39,15 +39,15 @@ if (againstDeployment) {
   // collections, so the integrity guards are the opposite ones: it must
   // carry the whole live ruleset, and it must add to firestore.rules rather
   // than replace it.
-  for (const required of ["quranLemmaProgress", "quranLemmaApprovals", "quranWordProgress", "tenantInvites"]) {
+  for (const required of ["quranLemmaProgress", "quranLemmaApprovals", "quranLemmaOccurrenceCounters", "quranWordProgress", "tenantInvites"]) {
     assert.ok(matchBlocks.includes(required), `the deployment candidate is missing match /${required}/`);
   }
   const production = fs.readFileSync(path.resolve(here, "../../firestore.rules"), "utf8").split("\n");
   const missing = production.filter((line) => line.trim() && !candidate.includes(line));
   assert.deepEqual(missing, [], `the deployment candidate DROPS ${missing.length} production line(s) -- it would remove live rules`);
 } else {
-  assert.deepEqual(matchBlocks.sort(), ["quranLemmaApprovals", "quranLemmaProgress"],
-    `the candidate must govern exactly the two issue #301 collections, saw: ${matchBlocks.join(",")}`);
+  assert.deepEqual(matchBlocks.sort(), ["quranLemmaApprovals", "quranLemmaOccurrenceCounters", "quranLemmaProgress"],
+    `the candidate must govern exactly the three issue #301/#303 collections, saw: ${matchBlocks.join(",")}`);
   assert.ok(!/match \/tenantInvites\//.test(candidate),
     "the candidate must not be a copy of the deployed production rules");
 }
@@ -161,6 +161,32 @@ test("candidate lemma-progress Rules: isolated allow/deny cases, mutation-paired
     await assertSucceeds(updateDoc(doc(t9, "quranLemmaApprovals", LEMMA("p2", "لَمَّا")), { review: "confirmed", byPersonId: "t9", at: "u" }));
     await assertFails(deleteDoc(doc(p1, "quranLemmaProgress", LEMMA("p1", "كَتَبَ"))));
     await assertSucceeds(updateDoc(doc(p1, "quranLemmaProgress", LEMMA("p1", "كَتَبَ")), { state: "achieved", at: "t", byPersonId: "p1" }));
+
+    // --- 7. Issue #303: the bounded-cost counter (quranLemmaOccurrenceCounters) ---
+    const COUNTER = LEMMA("p2", "بَعْدَ");
+    const counterDoc = (overrides = {}) => ({
+      contractVersion: "quran-lemma-occurrence-counter:v1",
+      tenantId: T, personId: "p2", level: "wbw", lemmaId: "بَعْدَ",
+      individuallyKnownByJuz: {},
+      ...ENVELOPE, ...overrides,
+    });
+    // canRecordFor(), not split by supervisor: the learner themself, their
+    // guardian, and their co-enrolled teacher may all create/update it.
+    await assertSucceeds(setDoc(doc(p2, "quranLemmaOccurrenceCounters", COUNTER), counterDoc()));
+    await assertSucceeds(updateDoc(doc(p1, "quranLemmaOccurrenceCounters", COUNTER), { individuallyKnownByJuz: { "1": 2 } }));
+    await assertSucceeds(updateDoc(doc(t9, "quranLemmaOccurrenceCounters", COUNTER), { individuallyKnownByJuz: { "1": 3 } }));
+    // PAIRED DENIAL: an unrelated child cannot touch it.
+    await assertFails(updateDoc(doc(p3, "quranLemmaOccurrenceCounters", COUNTER), { individuallyKnownByJuz: { "1": 4 } }));
+    // Identity is write-once, same as every other lane document here.
+    await assertFails(updateDoc(doc(p2, "quranLemmaOccurrenceCounters", COUNTER), { lemmaId: "قَالَ" }));
+    await assertFails(updateDoc(doc(p2, "quranLemmaOccurrenceCounters", COUNTER), { tenantId: "t2" }));
+    // Only individuallyKnownByJuz (and updatedAt) may move -- not an
+    // arbitrary new field, and not a whole-document overwrite.
+    await assertFails(updateDoc(doc(p2, "quranLemmaOccurrenceCounters", COUNTER), { contractVersion: "quran-lemma-occurrence-counter:v2" }));
+    // A create must be a real map, not a client-invented scalar.
+    await assertFails(setDoc(doc(p2, "quranLemmaOccurrenceCounters", LEMMA("p2", "فَإِنَّ")), { ...counterDoc({ lemmaId: "فَإِنَّ" }), individuallyKnownByJuz: 3 }));
+    // No delete (I4/D6).
+    await assertFails(deleteDoc(doc(p2, "quranLemmaOccurrenceCounters", COUNTER)));
   } finally {
     await env.cleanup();
   }

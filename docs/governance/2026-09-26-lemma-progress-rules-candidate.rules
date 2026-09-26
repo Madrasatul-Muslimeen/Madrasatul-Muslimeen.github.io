@@ -191,5 +191,46 @@ service cloud.firestore {
                     && lemmaLaneIdentityUnchanged();
       // No delete (I4/D6). A superseded decision is kept in history.
     }
+
+    // =====================================================================
+    // Issue #303 -- the bounded-cost counter (quranLemmaOccurrenceCounters).
+    // See app/js/quran-lemma-progress-data.js's own header for why this
+    // exists: the honest full walk above can cost up to 4,366 reads for the
+    // single most frequent lemma, so a small counter document -- one per
+    // (tenant, person, level, lemma), holding an individually-known count
+    // BUCKETED BY JUZ, at most 30 entries -- is seeded from that walk once
+    // and then maintained by cheap ±1 increments.
+    // =====================================================================
+
+    function lemmaCounterIdentityUnchanged() {
+      return resource != null
+          && request.resource.data.tenantId == resource.data.tenantId
+          && request.resource.data.personId == resource.data.personId
+          && request.resource.data.level    == resource.data.level
+          && request.resource.data.lemmaId  == resource.data.lemmaId;
+    }
+
+    function isLemmaCounterCreate() {
+      return request.resource.data.get('contractVersion', '') == 'quran-lemma-occurrence-counter:v1'
+          && request.resource.data.get('level', '') == 'wbw'
+          && request.resource.data.lemmaId is string
+          && request.resource.data.lemmaId.size() > 0
+          && request.resource.data.lemmaId.size() <= 400
+          && request.resource.data.individuallyKnownByJuz is map;
+    }
+
+    match /quranLemmaOccurrenceCounters/{counterKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if signedIn() && !exists(/databases/$(database)/documents/quranLemmaOccurrenceCounters/$(counterKey));
+      allow read: if canRecordFor(resource.data.tenantId, resource.data.personId);
+
+      allow create: if canRecordFor(request.resource.data.tenantId, request.resource.data.personId)
+                    && isLemmaCounterCreate();
+      allow update: if resource != null
+                    && canRecordFor(resource.data.tenantId, resource.data.personId)
+                    && lemmaCounterIdentityUnchanged()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['individuallyKnownByJuz', 'updatedAt']);
+      // No delete (I4/D6). The counter only ever moves; it is never reset.
+    }
   }
 }

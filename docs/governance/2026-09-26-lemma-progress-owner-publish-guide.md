@@ -7,11 +7,23 @@ inflection — as known, and it is confirmed once, every occurrence of that
 lemma will count as known.
 
 **What this does NOT do:** publishing this Rules file does not switch
-anything on for a reader. This round only builds the data layer and these
-Rules; no page in the app calls it yet. The screen that actually lets you
-mark a lemma known, and the Word Card showing the new counts, are the
-**next** round. Publishing now simply means that round does not also have to
-wait on you.
+anything on for a reader by itself. The Word Card, "Mark this word known
+everywhere" and the new whole-Qur'an numbers (issue #303) are already
+built against this candidate — but `app/js/study-lemma-progress-readiness.js`
+still reads `ready: false`, so nothing reads or writes any of the three
+collections below until BOTH this is published AND a separate governed
+decision flips that gate, the same two-step shape every other Firestore
+change in this project uses (see the wbw-total-counter enablement for the
+precedent).
+
+**26 Sep 2026 — a third collection was added:** `quranLemmaOccurrenceCounters`,
+the bounded-cost answer to "how many of this lemma's occurrences are already
+known individually", so marking a lemma known does not have to re-walk
+every one of its occurrences on every tap. See
+`app/js/quran-lemma-progress-data.js`'s own header for the design. The file
+below is the whole-file paste, regenerated to include it; if you already
+published the 26 Sep version that had only two collections, re-copy and
+re-paste this file — it is still purely additive over the live rules.
 
 ## Steps
 
@@ -30,13 +42,14 @@ wait on you.
 
 That file is today's live rules (the same ones already covering everything
 through the WordPress/Evernote importers, v08.79) plus **only additions**:
-two new collections, `quranLemmaProgress` (a learner's own lemma claim) and
-`quranLemmaApprovals` (a supervisor's confirmation of it) — the same
-two-lane split the already-deployed `quranWordProgress`/`quranWordApprovals`
-use, for the identical reason (a Firestore rule cannot cheaply check which
-key of a map someone touched, so a learner's claim and a supervisor's
-decision live in their own documents). Every line of the live file is still
-there, unchanged, and nothing existing was touched.
+`quranLemmaProgress` (a learner's own lemma claim) and `quranLemmaApprovals`
+(a supervisor's confirmation of it) — the same two-lane split the
+already-deployed `quranWordProgress`/`quranWordApprovals` use, for the
+identical reason (a Firestore rule cannot cheaply check which key of a map
+someone touched, so a learner's claim and a supervisor's decision live in
+their own documents) — plus `quranLemmaOccurrenceCounters`, the bounded-cost
+counter above. Every line of the live file is still there, unchanged, and
+nothing existing was touched.
 
 The emulator suites check that the file is exactly the ruleset they tested:
 
