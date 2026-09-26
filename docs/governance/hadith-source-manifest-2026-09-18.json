@@ -74,35 +74,39 @@
         "ar"
       ],
       "establishedFacts": [
-        "Publishes a versioned, machine-readable corpus of Islamicate texts with metadata."
+        "Publishes a versioned, machine-readable corpus of Islamicate texts with metadata.",
+        "Release 2025.1.9 (Zenodo record 17767721, doi:10.5281/zenodo.3082463), licence CC BY-NC-SA 4.0, measured 26 Sep 2026.",
+        "It holds 1,472 primary Arabic texts tagged _HADITH (about 1.16 GB), including Sahih al-Bukhari, Sahih Muslim, the Sunan of Abu Dawud, al-Tirmidhi, al-Nasa'i and Ibn Majah, al-Muwatta' and the Musnad of Ahmad.",
+        "Texts are Arabic only, in OpenITI mARkdown: chapters marked '### |', numbered hadith '# N'. No translations and no grades."
       ],
       "outstandingQuestions": [
-        "Whether relevant Hadith or commentary editions exist in it at all.",
-        "Per-edition quality, completeness and segmentation.",
-        "Item-specific reuse terms — an open repository does not make every item reusable.",
-        "Whether stable Hadith numbering mappings are present."
+        "Hosting for the full 1.16 GB Hadith subset: too large for the GitHub Pages site; only a selected set of major books is imported now.",
+        "Per-book segmentation into individual hadith (the '# N' convention varies by book) -- a parsing round, not a rights question.",
+        "Stable mapping from OpenITI numbering to the commonly cited numbering of each book."
       ],
-      "rightsStatus": "blocked",
+      "rightsStatus": "embed-cleared",
       "rightsEvidence": {
-        "grant": null,
-        "grantDate": null,
-        "grantedBy": null,
-        "conditions": null
+        "grant": "OpenITI corpus licence CC BY-NC-SA 4.0 (release 2025.1.9), accepted by the Owner.",
+        "grantDate": "2026-09-26",
+        "grantedBy": "owner",
+        "conditions": "Non-commercial use only; attribute OpenITI (Romanov & Seydi, OpenITI, Zenodo, doi:10.5281/zenodo.3082463) and the edition's own source; anything derived from the text is shared under the same licence (CC BY-NC-SA 4.0). Text stored unmodified.",
+        "reference": "docs/governance/2026-09-26-owner-decisions.md"
       },
       "permissions": {
-        "mayStoreText": false,
-        "mayDisplayText": false,
-        "mayIndexText": false,
-        "mayRedistribute": false,
-        "mayUseOffline": false,
-        "mayStoreLocator": false,
-        "mayLinkOut": false
+        "mayStoreText": true,
+        "mayDisplayText": true,
+        "mayIndexText": true,
+        "mayRedistribute": true,
+        "mayUseOffline": true,
+        "mayStoreLocator": true,
+        "mayLinkOut": true
       },
       "attributionRequired": true,
-      "reviewStatus": "not-started",
-      "reviewer": null,
-      "reviewDate": null,
-      "usedFor": "Candidate for a future audited import. Not an approved source."
+      "reviewStatus": "approved",
+      "reviewer": "owner",
+      "reviewDate": "2026-09-26",
+      "usedFor": "Arabic full text of the major Hadith books, imported verbatim from OpenITI (row 8 of the 26 Sep owner decisions).",
+      "redistributionConditions": "Non-commercial, attributed to OpenITI with the release DOI, share-alike under CC BY-NC-SA 4.0; the stored text is the release file unmodified (SHA-256 recorded at pull time)."
     },
     {
       "sourceId": "hadeethenc",
@@ -192,9 +196,10 @@
   "importAuthorisation": {
     "textImportAuthorisedForAnySource": true,
     "approvedSources": [
-      "hadeethenc"
+      "hadeethenc",
+      "openiti-release"
     ],
-    "approvedSourcesNote": "A DIFFERENT, source-level mechanism from approvedCollections/approvedEditions below — HadeethEnc is a single curated encyclopedia, not one of the classical editions those two lists gate the commentary-occurrence-id-minting rule for (see the H1 guard's own 'no commentary row claims a narration occurrence' check). Owner grant, 2026-09-26 (docs/governance/2026-09-26-owner-decisions.md, row 5): 'Do b' — real HadeethEnc text, unmodified and attributed.",
+    "approvedSourcesNote": "A DIFFERENT, source-level mechanism from approvedCollections/approvedEditions below — HadeethEnc is a single curated encyclopedia, not one of the classical editions those two lists gate the commentary-occurrence-id-minting rule for (see the H1 guard's own 'no commentary row claims a narration occurrence' check). Owner grant, 2026-09-26 (docs/governance/2026-09-26-owner-decisions.md, row 5): 'Do b' — real HadeethEnc text, unmodified and attributed. Owner grant, 2026-09-26 (row 8): OpenITI accepted under CC BY-NC-SA 4.0 -- Arabic full text of the major Hadith books, unmodified, attributed, non-commercial.",
     "approvedCollections": [],
     "approvedEditions": [],
     "consequence": "hadeethenc is cleared for real, unmodified, attributed text import (approvedSources above). Every OTHER source stays blocked or link-only, and no classical edition is approved for the commentary-binding mechanism (approvedCollections/approvedEditions stay empty) — so the Collections tab's book/chapter model and the Islamweb/Sunnah.com commentary pilot still run on SYNTHETIC FIXTURES. This is not a limitation to work around; it is the source approval gate holding, exactly as the Master Plan requires, for every source that has not itself been granted."
