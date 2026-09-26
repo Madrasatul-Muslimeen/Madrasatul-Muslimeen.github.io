@@ -181,7 +181,7 @@ console.log(`\n=== gate FORCED OPEN: claim at basic and depth, independent of wb
 
   await page.click('#quranWordCardMount [data-word-progress-state="achieved"]');
   await page.waitForTimeout(500);
-  const basicWrite = lastWrite(page, "basic");
+  const basicWrite = await lastWrite(page, "basic");
   check("[forced-open] claiming Basic wrote to the basic lane", basicWrite?.id?.endsWith("__basic__1_1") === true, JSON.stringify(basicWrite?.id));
 
   const basicAfter = await readProgressBlock(page);
@@ -192,7 +192,7 @@ console.log(`\n=== gate FORCED OPEN: claim at basic and depth, independent of wb
   check("[forced-open] Depth's own state is not_started too -- claiming Basic did not leak into Depth", depthBefore?.pressed === "not_started", JSON.stringify(depthBefore));
   await page.click('#quranWordCardMount [data-word-progress-state="learning"]');
   await page.waitForTimeout(500);
-  const depthWrite = lastWrite(page, "depth");
+  const depthWrite = await lastWrite(page, "depth");
   check("[forced-open] claiming Depth wrote to the depth lane, not the basic one", depthWrite?.id?.endsWith("__depth__1_1") === true, JSON.stringify(depthWrite?.id));
 
   await selectTab(page, "wbw");
@@ -219,7 +219,7 @@ console.log(`\n=== gate FORCED OPEN, bn, 1100x900 ===`);
   check("[bn forced-open] the Basic tab offers controls", before?.onScreen === true, JSON.stringify(before));
   await page.click('#quranWordCardMount [data-word-progress-state="achieved"]');
   await page.waitForTimeout(500);
-  const write = lastWrite(page, "basic");
+  const write = await lastWrite(page, "basic");
   check("[bn forced-open] claiming Basic wrote to the basic lane", write?.id?.endsWith("__basic__1_1") === true, JSON.stringify(write?.id));
   const bangla = /[ঀ-৿]/;
   const buttonTexts = await page.evaluate(() => [...document.querySelectorAll('#quranWordCardMount [data-word-progress-state]')].map((el) => el.textContent.trim()));
