@@ -116,3 +116,46 @@ export async function recordWordTotalDelta(db, { tenantId, personId, juz, delta,
   cache.delete(`${tenantId}|${personId}`);
   return { attempted: true, changed: true };
 }
+
+/**
+ * Issue #303 -- move the counter for SEVERAL juz at once, in ONE document
+ * update, for the "Mark this word known everywhere" action: a lemma's
+ * occurrences can span up to 30 juz, and recomputing/moving each one with
+ * its own separate write would be up to 30 writes for a single tap. Instead
+ * every affected juz's `byJuz.<n>.known` field, plus the whole-Qur'an
+ * `known` field, are named in ONE updateDocument() call -- Firestore bills
+ * and applies that as one write no matter how many fields it touches.
+ *
+ * `deltaByJuz` is a Map(juz -> delta), typically
+ * quran-lemma-progress.js's own lemmaKnownDeltaByJuz() output. A juz whose
+ * delta is 0 must already be absent from the Map (the caller's job); this
+ * function does not filter zeros itself, since increment(0) is a wasted
+ * field write, not a correctness bug, but callers should not rely on it.
+ */
+export async function recordWordTotalDeltaAcrossJuz(db, { tenantId, personId, deltaByJuz, actorUid, juzWordTotals } = {}) {
+  if (!isWbwTotalPersistenceReady()) return { attempted: false, changed: false };
+  if (!(deltaByJuz instanceof Map) || deltaByJuz.size === 0) return { attempted: false, changed: false };
+  const totalDelta = [...deltaByJuz.values()].reduce((sum, d) => sum + d, 0);
+  if (!totalDelta) return { attempted: false, changed: false };
+
+  const docId = wordTotalDocId({ tenantId, personId });
+  const ref = doc(db, TENANT.QURAN_WORD_TOTALS, docId);
+  const snap = await getDoc(ref);
+
+  if (!snap.exists()) {
+    const seed = emptyWordTotalsDocument({ tenantId, personId, juzWordTotals });
+    seed.known = Math.max(0, totalDelta);
+    for (const [juz, delta] of deltaByJuz) {
+      const juzKey = String(juz);
+      const seeded = Math.max(0, delta);
+      seed.byJuz[juzKey] = { ...seed.byJuz[juzKey], known: seeded };
+    }
+    await createDocument(db, TENANT.QURAN_WORD_TOTALS, docId, seed, actorUid);
+  } else {
+    const update = { known: increment(totalDelta) };
+    for (const [juz, delta] of deltaByJuz) update[`byJuz.${juz}.known`] = increment(delta);
+    await updateDocument(db, TENANT.QURAN_WORD_TOTALS, docId, update);
+  }
+  cache.delete(`${tenantId}|${personId}`);
+  return { attempted: true, changed: true };
+}
