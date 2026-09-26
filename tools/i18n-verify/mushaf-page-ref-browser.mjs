@@ -65,6 +65,9 @@ async function installSyntheticMushafFixture(ctx) {
   // faithful to what a real reader's browser experiences, not a shortcut.
   await ctx.route(`${MUSHAF_FONT_BASE}**`, (route) => route.abort("failed"));
   await ctx.route(SURAH_HEADER_FONT_URL, (route) => route.abort("failed"));
+  // Architect review: those two deliberate aborts print "Failed to load
+  // resource: net::ERR_FAILED" to the console, so the "no page errors"
+  // checks exclude exactly that text -- the suite's own doing, not the app's.
 }
 
 async function enterReadView(page) {
@@ -159,7 +162,7 @@ for (const [width, height] of [[320, 640], [360, 740], [390, 844], [412, 915], [
       !!p20 && (!p20.lineHeight || p20.rect.height <= p20.lineHeight * 1.6), JSON.stringify(p20));
     check(`[${lang} ${width}] and the exit icon still stays on screen`, p20?.exitOnScreen === true, JSON.stringify(p20));
 
-    check(`[${lang} ${width}] no page errors`, errors.filter((e) => !/CERT|archive\.org|api\.quran/.test(e)).length === 0, JSON.stringify(errors.slice(0, 3)));
+    check(`[${lang} ${width}] no page errors`, errors.filter((e) => !/CERT|archive\.org|api\.quran|net::ERR_FAILED/.test(e)).length === 0, JSON.stringify(errors.slice(0, 3)));
     await ctx.close();
   }
 }
@@ -213,7 +216,7 @@ console.log(`\n=== Mushaf page ref: swipe updates the text; visible in full scre
     bare.refDisplay !== "none" && bare.refHidden === false, JSON.stringify(bare));
   check("[full screen] and the exit icon is (as ever) still on screen too", bare.exitBtnDisplay !== "none", JSON.stringify(bare));
 
-  check("[swipe/full-screen] no page errors", errors.filter((e) => !/CERT|archive\.org|api\.quran/.test(e)).length === 0, JSON.stringify(errors.slice(0, 3)));
+  check("[swipe/full-screen] no page errors", errors.filter((e) => !/CERT|archive\.org|api\.quran|net::ERR_FAILED/.test(e)).length === 0, JSON.stringify(errors.slice(0, 3)));
   await ctx.close();
 }
 

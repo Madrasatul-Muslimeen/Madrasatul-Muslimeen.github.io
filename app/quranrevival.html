@@ -11486,6 +11486,17 @@
       const beforeKnownForLemma = level === "wbw" && isLemmaProgressPersistenceReady()
         ? wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired }).countsAsKnown
         : null;
+      // Architect review of issue #322 -- which presses touch the Dictionary
+      // Word. Only "Achieved" (mark it known everywhere) or undoing THIS
+      // occurrence's own Achieved may move the lemma claim; pressing Learning
+      // or Not started on some other, untouched form of a word already known
+      // everywhere must not un-know the whole Dictionary Word. A decide
+      // action mirrors only when the claim being decided is an Achieved one.
+      const beforeStateForLemma = beforeKnownForLemma === null ? null
+        : wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired }).state;
+      const mirrorsLemma = beforeKnownForLemma !== null && (action.kind === "state"
+        ? action.state === "achieved" || beforeStateForLemma === "achieved"
+        : beforeStateForLemma === "achieved");
       // I15 throughout: safeWrite() is this app's own "a failed write must
       // reach the user" wrapper, and it is what every other write on this
       // page already goes through.
@@ -11540,8 +11551,12 @@
           // DIFFERENT, previously-untouched occurrence of an already-known
           // lemma downgrades the WHOLE Dictionary Word, not just that one
           // occurrence. Built as asked; flagged rather than silently narrowed.
-          await mirrorLemmaProgress({ kind: "state", state: action.state },
-            { tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnownForLemma });
+          if (mirrorsLemma) {
+            await mirrorLemmaProgress({ kind: "state", state: action.state },
+              { tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnownForLemma });
+          } else {
+            await applyLemmaOccurrenceCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown: beforeKnownForLemma });
+          }
         }
       } else {
         const note = action.review === "returned" ? (window.prompt(t("What should they look at again?")) ?? null) : null;
@@ -11552,8 +11567,12 @@
           // Issue #322 -- a supervisor's confirm/return mirrors onto the
           // lemma too, reusing the SAME note already gathered above rather
           // than prompting a second time.
-          await mirrorLemmaProgress({ kind: "decide", review: action.review, note },
-            { tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnownForLemma });
+          if (mirrorsLemma) {
+            await mirrorLemmaProgress({ kind: "decide", review: action.review, note },
+              { tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnownForLemma });
+          } else {
+            await applyLemmaOccurrenceCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown: beforeKnownForLemma });
+          }
         }
       }
       // Issue #303 -- the "if you learn this word" delta and the whole-Qur'an

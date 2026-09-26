@@ -48,8 +48,15 @@ async function enterReadWithWbw(page) {
   await page.evaluate(() => {
     const t = document.getElementById("wbwShowToggle");
     if (t && !t.checked) { t.checked = true; t.dispatchEvent(new Event("change", { bubbles: true })); }
+    // Architect review: the Read screen opens on 1:1 in Single Ayah mode, so
+    // 1:2's words are not on screen until ayah 2 is chosen -- without this the
+    // suite clicked an element that did not exist.
+    const a = document.getElementById("ayahSelect");
+    if (a && a.value !== "2") { a.value = "2"; a.dispatchEvent(new Event("change", { bubbles: true })); }
   });
-  await page.waitForTimeout(600);
+  await page.waitForTimeout(800);
+  const present = await page.evaluate(() => !!document.querySelector('[data-word-occurrence$=":1:2:2"]'));
+  if (!present) throw new Error("precondition: Al-Fatihah 1:2 word 2 is not on screen -- the suite would read nothing");
 }
 
 async function openWord(page, position) {
@@ -164,6 +171,52 @@ console.log(`\n=== supervisor confirm confirms both lanes; the counter moves exa
     counterWritesAfterConfirm.length === 1, JSON.stringify(counterWritesAfterConfirm));
 
   check("[confirm] no page errors", errors.filter((e) => !/CERT|archive\.org|api\.quran/.test(e)).length === 0, JSON.stringify(errors.slice(0, 3)));
+  await ctx.close();
+}
+
+// Architect review of #322: only Achieved -- or undoing THIS occurrence's own
+// Achieved -- may move the Dictionary Word. Pressing Learning on a different,
+// untouched form of an already-known word must NOT un-know the whole word.
+// 1:2:2 and 1:1:2 are both Allah (the same lemma), checked below.
+console.log(`\n=== a lower state on ANOTHER form leaves the Dictionary Word alone ===`);
+{
+  const lemmaOf = (a, p) => s1.ayahs.find((x) => x.ayah === a).words.find((w) => w.position === p).morphology.lemma;
+  if (lemmaOf(1, 2) !== LEMMA_ID) throw new Error("fixture assumption broke: 1:1:2 and 1:2:2 no longer share a lemma");
+  const ctx = await newContext(browser, { appLang: "en", viewport: { width: 390, height: 844 } });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await enterReadWithWbw(page);
+  const lemmaWrites = () => page.evaluate(() => (window.__stubWriteData || []).filter((w) => w.col === "quranLemmaProgress"));
+  const goAyah = async (n) => {
+    await page.evaluate((v) => { const a = document.getElementById("ayahSelect"); a.value = String(v); a.dispatchEvent(new Event("change", { bubbles: true })); }, n);
+    await page.waitForTimeout(800);
+  };
+  const openAt = async (a, p) => {
+    await page.evaluate(([a, p]) => document.querySelector(`[data-word-occurrence$=":1:${a}:${p}"]`)?.click(), [a, p]);
+    await page.waitForFunction(() => {
+      const b = document.querySelector("#quranWordCardMount [data-word-progress]");
+      return !!b && !/Loading|লোড হচ্ছে/.test(b.querySelector(".word-progress-state")?.textContent ?? "");
+    }, null, { timeout: 6000 }).catch(() => {});
+    await page.waitForTimeout(300);
+  };
+  const press = async (state) => { await page.click(`#quranWordCardMount [data-word-progress-state="${state}"]`); await page.waitForTimeout(500); };
+  const close = async () => { await page.click("#quranWordCardMount [data-word-card-close]").catch(() => {}); await page.waitForTimeout(200); };
+
+  await openAt(2, 2); await press("achieved"); await close();
+  const afterAchieved = (await lemmaWrites()).length;
+  check("[other-form] Achieved on 1:2:2 wrote the lemma lane", afterAchieved >= 1, String(afterAchieved));
+
+  await goAyah(1); await openAt(1, 2); await press("learning"); await close();
+  const afterOther = await lemmaWrites();
+  check("[other-form] Learning on 1:1:2 (same Dictionary Word, never Achieved) wrote NOTHING to the lemma lane",
+    afterOther.length === afterAchieved, JSON.stringify({ before: afterAchieved, after: afterOther.length }));
+  const occ = await page.evaluate(() => (window.__stubWriteData || []).filter((w) => w.col === "quranWordProgress").at(-1));
+  check("[other-form] ...while that occurrence's own Learning was saved", /__wbw__1_1$/.test(occ?.id ?? ""), JSON.stringify(occ?.id));
+
+  await goAyah(2); await openAt(2, 2); await press("learning");
+  const afterUndo = await lemmaWrites();
+  check("[undo] Learning on 1:2:2, which WAS Achieved, does update the Dictionary Word",
+    afterUndo.length === afterAchieved + 1 && JSON.stringify(afterUndo.at(-1)).includes("learning"), JSON.stringify(afterUndo.at(-1)));
+  check("[other-form] no page errors", errors.filter((e) => !/ERR_CERT_AUTHORITY_INVALID/.test(e)).length === 0, JSON.stringify(errors));
   await ctx.close();
 }
 

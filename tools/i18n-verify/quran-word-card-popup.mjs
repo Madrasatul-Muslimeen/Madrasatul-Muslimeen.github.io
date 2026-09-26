@@ -202,7 +202,14 @@ for (const width of [390, 412]) {
   const { page } = await openPage(ctx, "/app/quranrevival.html");
   await openFixtureWord(page);
   const rect = await mountRect(page);
-  check(`${width}px: card is NOT a floating fixed window`, rect.position !== "fixed", JSON.stringify(rect));
+  // Updated in place for issue #322 (Architect review): below 900px the card
+  // is now deliberately a FULL-SCREEN sheet (position:fixed, inset 0), not
+  // the docked strip this check was written for. What must still hold is that
+  // it is not the movable popup WINDOW: it fills the viewport exactly and
+  // carries no dragged geometry (the next check).
+  check(`${width}px: card is the full-screen sheet, not a floating movable window`,
+        rect.position === "fixed" && Math.abs(rect.top) <= 1 && Math.abs(rect.left) <= 1 && Math.abs(rect.width - width) <= 2 && Math.abs(rect.height - 844) <= 2,
+        JSON.stringify(rect));
   const inlineStyle = await page.evaluate(() => document.getElementById("quranWordCardMount").getAttribute("style") || "");
   check(`${width}px: no inline width/height/top/left leaked from a wider session`,
         !/(^|;)\s*(width|height|top|left)\s*:/.test(inlineStyle), inlineStyle);

@@ -132,8 +132,13 @@ console.log(`\n=== header stays pinned while scrolling; close restores scroll po
   });
   await page.waitForTimeout(200);
   const headerAfter = await page.evaluate(() => document.querySelector("#quranWordCardMount .quran-word-card header")?.getBoundingClientRect().top);
-  check("[close] the header did not move while the card's own body scrolled",
-    typeof headerBefore === "number" && typeof headerAfter === "number" && Math.abs(headerAfter - headerBefore) <= 1,
+  // Architect review: a sticky header starts below the card's own 10.4px top
+  // padding and slides up to the sheet's top edge as the body scrolls, then
+  // stays there -- that is what "pinned" means. So the check is that it is
+  // still on screen at the top (0 <= top <= where it started), not that it
+  // never moved a pixel; the screenshot at 320/390 confirms it.
+  check("[close] the header stays pinned on screen while the card's own body scrolled",
+    typeof headerBefore === "number" && typeof headerAfter === "number" && headerAfter >= -1 && headerAfter <= headerBefore + 1,
     JSON.stringify({ headerBefore, headerAfter }));
 
   await page.click("[data-word-card-close]");
