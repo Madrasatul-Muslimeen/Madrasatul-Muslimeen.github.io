@@ -171,10 +171,25 @@ check("Status B.3 Hifz: shows the caller's own status colour and label; null say
   assert.ok(none.includes("No Hifz Approach set up yet."));
 });
 
-check("Status part C is present, empty and translated -- a placeholder, not a built feature", () => {
-  const html = renderAyahActionSheetHtml({ unitKey: "ayah:1:1" });
-  assert.ok(html.includes("data-ayah-sheet-info"), "the Info (C) section is missing entirely");
-  assert.ok(html.includes("Related and connected āyāt — coming next"));
+// Updated in place (Ayah Card section C part 1): Related āyāt is built now;
+// Connected āyāt is still the marked placeholder.
+check("Part C (Info): Related āyāt says it is loading, then lists real jump buttons; Connected stays a placeholder", () => {
+  const loading = renderAyahActionSheetHtml({ unitKey: "ayah:1:1" });
+  assert.ok(loading.includes("data-ayah-sheet-info"), "the Info (C) section is missing entirely");
+  assert.ok(loading.includes("Finding related āyāt…"), "a null `related` must say it is loading, never render blank");
+  assert.ok(loading.includes("Āyāt linked through your own Notes and folders — coming next"));
+  const filled = renderAyahActionSheetHtml({ unitKey: "ayah:2:255", related: {
+    lists: [{ surah: 3, ayah: 2, ref: "3:2", reason: "QCR: Tawhid" }],
+    shared: [{ surah: 20, ayah: 110, ref: "20:110", reason: "4 shared words" }],
+  } });
+  assert.ok(filled.includes('data-ayah-related-jump="3:2"') && filled.includes('data-ayah-related-jump="20:110"'));
+  assert.ok(filled.includes("QCR: Tawhid") && filled.includes("4 shared words"));
+  const empty = renderAyahActionSheetHtml({ unitKey: "ayah:1:1", related: { lists: [], shared: [] } });
+  assert.ok(empty.includes("No related āyāt found."));
+  const failed = renderAyahActionSheetHtml({ unitKey: "ayah:1:1", related: { error: true } });
+  assert.ok(failed.includes("Couldn't load related āyāt just now."));
+  const hostile = renderAyahActionSheetHtml({ unitKey: "ayah:1:1", related: { lists: [], shared: [{ surah: 1, ayah: 2, ref: "<img onerror=x>", reason: "<b>" }] } });
+  assert.ok(!hostile.includes("<img") && !hostile.includes("<b>"), "labels must be escaped");
 });
 
 // --- 2. THE SHEET'S CALLBACKS -----------------------------------------------

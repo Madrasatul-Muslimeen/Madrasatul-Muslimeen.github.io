@@ -1420,6 +1420,8 @@
     #asmaXLevelBar { gap: 0.15rem; padding-left: 0.3rem; padding-right: 0.3rem; }
     #asmaXLevelBar > select { font-size: 0.6rem; }
   }
+  /* The classification the ⋯ menu's ✎C/🗄C/+ act on -- marked, so the reader can see it. */
+  #asmaXLevelBar select.asmax-class-current { outline: 2px solid #c9a227; outline-offset: 1px; font-weight: 600; }
   #asmaXLevelManageActions { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
   /* Same pre-existing `[hidden]` trap as #qcrLevelManageActions above -- see
      that rule's own note. */
@@ -2459,6 +2461,14 @@
      white text, which printed these words white on cream (invisible). */
   .ayah-wbw-chip { min-width: 40px; min-height: 40px; padding: 0.2rem 0.5rem; color: #1F3A6E; background: #f6f2e4; border: 1px solid #d8c68a; border-radius: 0.35rem; font-size: 1rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
   .ayah-wbw-chip.is-known { color: #14532d; background: #e3f3ea; border: 2px solid #3fae74; }
+  /* Ayah Card section C -- Related āyāt: one full-width row per āyah, a
+     real button (>= 40px), explicit colours on the card's light surface. */
+  .ayah-related-sub { margin: 0.5rem 0 0.25rem; font-size: 0.78rem; color: #5b5b5b; }
+  .ayah-related-list { display: flex; flex-direction: column; gap: 0.3rem; }
+  .ayah-related-item { display: flex; flex-direction: column; align-items: flex-start; gap: 0.1rem; width: 100%; min-height: 40px; padding: 0.35rem 0.6rem; text-align: start; color: #1F3A6E; background: #f6f2e4; border: 1px solid #e3d6ab; border-radius: 0.4rem; cursor: pointer; font: inherit; }
+  .ayah-related-item:hover, .ayah-related-item:focus-visible { background: #efe6c9; outline: 2px solid #1F3A6E; outline-offset: 1px; }
+  .ayah-related-ref { font-weight: 600; font-size: 0.92rem; }
+  .ayah-related-why { font-size: 0.78rem; color: #4a4a4a; overflow-wrap: anywhere; }
   .ayah-hifz-chip { display: inline-flex; align-items: center; min-height: 1.6rem; padding: 0.2rem 0.6rem; border-radius: 999px; color: #fff; font-size: 0.8rem; font-weight: 600; text-shadow: 0 0 2px rgba(0,0,0,0.35); }
   .ayah-sheet-info-placeholder { font-size: 0.8rem; color: #888; font-style: italic; margin: 0; }
   .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
@@ -4542,7 +4552,8 @@
     import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootPanel, renderDerivativesPanel, renderTranslationPanel, tajweedRawToSafeHtml, digitsForLang, stripLeadingBismillah, splitPlainArabicWords, arabicWordButtonHtml, tajweedWordButtonsHtml } from "./js/ayah-renderer.js";
     import { parseQuranWordOccurrenceId } from "./js/quran-word-identity.js";
     import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard, renderQuranWordCard, WORD_CARD_POS_SEGMENTS } from "./js/quran-word-card.js";
-    import { occurrenceRefsFor, rootFormsFor, unpackWordIndexRef } from "./js/quran-word-index.js";
+    import { occurrenceRefsFor, rootFormsFor, unpackWordIndexRef, loadWordIdentityIndex } from "./js/quran-word-index.js";
+    import { relatedBySharedWords, relatedThroughLists } from "./js/ayah-related.js";
     import { wordSegmentsFor } from "./js/quran-word-segments.js";
     import { wordProgressAuthority, WBW_WORD_STATES, resolveWordProgress } from "./js/quran-word-progress.js";
     import { primeAyahProgress, getSurahProgress, wordProgressFor, setWordState, decideWordApproval, clearWordProgressCache } from "./js/quran-word-progress-data.js";
@@ -5256,6 +5267,7 @@
     // read, the same "closed/reopened while awaiting" guard
     // openAyahFolderFiling() already uses.
     let ayahSheetWordStatus = null; // { known, total, words: [...] } | null
+    let ayahSheetRelated = null; // Ayah Card section C: null (loading) | { error } | { lists, shared }
     let ayahSheetHasPosterNote = null; // true | false | null (unresolved)
     // The "File in folder(s)…" overlay, opened FROM the sheet. Null means
     // closed. `noteId: null` with `notes.length > 1` means "more than one
@@ -9143,11 +9155,24 @@
         sel.dataset.asmaxClassSelect = cls.key;
         const clsTitle = langText(cls.title, getAppLang()) + (cls.status === "archived" ? ` (${t("Archived")})` : "");
         sel.setAttribute("aria-label", clsTitle);
-        sel.innerHTML = collOptionsHtml(asmaXCollectionsOfKind(cls.key), clsTitle, asmaXKind === cls.key ? asmaXGroupId : null);
+        // The Owner's report (26 Sep 2026): "Renaming/editing ... only works
+        // for 'Group' even after selecting from other drop-down." Choosing
+        // the dropdown's first line -- the classification's own name, the
+        // one already on show -- fires no change event, and a classification
+        // with no lists yet has nothing else to choose, so it could never
+        // become the current one and ✎C/🗄C/+ kept acting on Group. Every
+        // dropdown now carries an explicit "Open this classification" line
+        // (a real value, so choosing it always fires), and the current
+        // classification's dropdown is marked.
+        sel.innerHTML = collOptionsHtml(asmaXCollectionsOfKind(cls.key), clsTitle, asmaXKind === cls.key ? asmaXGroupId : null)
+          .replace("</option>", `</option><option value="__open__">${escapeHtml(t("▸ Open this classification"))}</option>`);
+        const isCurrent = asmaXKind === cls.key;
+        sel.classList.toggle("asmax-class-current", isCurrent);
+        if (isCurrent) sel.setAttribute("aria-current", "true");
         sel.addEventListener("change", () => {
           asmaXKind = cls.key;
           asmaXNumber = null;
-          if (sel.value) { asmaXGroupId = sel.value; asmaXLevel = "names"; }
+          if (sel.value && sel.value !== "__open__") { asmaXGroupId = sel.value; asmaXLevel = "names"; }
           else { asmaXGroupId = null; asmaXLevel = "groups"; }
           renderAsmaXPanel();
         });
@@ -9192,7 +9217,12 @@
         const currentCls = (asmaXClassifications ?? []).find((c) => c.key === asmaXKind);
         const clsArchived = currentCls?.status === "archived";
         asmaXArchiveClassBtn.textContent = clsArchived ? "↺C" : "🗄C";
-        asmaXArchiveClassBtn.title = clsArchived ? t("Restore classification") : t("Archive classification");
+        // Name the classification each button will act on, so the reader
+        // can see it is the one they chose (the marked dropdown).
+        const clsName = currentCls ? langText(currentCls.title, getAppLang()) : "";
+        asmaXRenameClassBtn.title = t("Rename classification “{name}”", { name: clsName });
+        asmaXRenameClassBtn.setAttribute("aria-label", asmaXRenameClassBtn.title);
+        asmaXArchiveClassBtn.title = clsArchived ? t("Restore classification “{name}”", { name: clsName }) : t("Archive classification “{name}”", { name: clsName });
         asmaXArchiveClassBtn.setAttribute("aria-label", asmaXArchiveClassBtn.title);
         asmaXArchiveClassBtn.classList.toggle("danger", !clsArchived);
         asmaXArchiveClassBtn.disabled = !currentCls;
@@ -12259,6 +12289,7 @@
       // attachAyahActionSheetHandlers' own comment) resets
       // ayahSheetHasPosterNote back to null for the next open.
       const hasPosterNoteAtRenderTime = ayahSheetHasPosterNote;
+      const keepScroll = ayahActionSheetMountEl.querySelector("[data-ayah-sheet]")?.scrollTop ?? 0;
       ayahActionSheetMountEl.innerHTML = renderAyahActionSheetHtml({
         unitKey: ayahSheetUnitKey,
         ref: ayahRefLabel(surah, ayahNum),
@@ -12270,8 +12301,13 @@
         approachStatuses: approachStatusesForAyah(surah, ayahNum),
         wordStatus: ayahSheetWordStatus,
         hifzStatus: hifzStatusForAyah(surah, ayahNum),
+        related: ayahSheetRelated,
       });
+      // Keep the reader's place: the card re-renders as its data arrives
+      // (Status, then Related), and each re-render used to jump to the top.
+      if (keepScroll) { const el = ayahActionSheetMountEl.querySelector("[data-ayah-sheet]"); if (el) el.scrollTop = keepScroll; }
       attachAyahActionSheetHandlers(ayahActionSheetMountEl, {
+        onRelatedJump: (s, a) => navigateToAyah(s, a, stageView === "note" ? "note" : "read"),
         onClose: closeAyahActionSheet,
         onBookmark: (unitKey) => toggleAyahBookmark(unitKey),
         onNote: (unitKey) => openNoteView(unitKey),
@@ -12314,6 +12350,47 @@
         badge before the Arabic, in Read and Note view alike (the same
         plain shape again). All three are normalised to the one real unit
         key here. */
+    /** Ayah Card section C, "Related āyāt" -- loaded when the card opens,
+        never at start-up (I9): the lemma index the Word Card already uses
+        (cached after its first load) plus this madrasah's QCR and Asma
+        documents (one read each, cached). ayah-related.js decides what is
+        related; this only labels it in the reader's language. */
+    function relatedRefLabel(s, a) {
+      const meta = surahIndex.find((x) => x.surahNumber === s);
+      return `${surahName(s, meta?.nameEnglish)} ${num(s)}:${num(a)}`;
+    }
+    async function ensureAyahSheetRelatedLoaded(unitKey, surahNum, ayahNum) {
+      let result;
+      try {
+        const [lemmaIndex] = await Promise.all([
+          loadWordIdentityIndex("lemma"),
+          ensureQcrDataLoaded().catch(() => null),
+          ensureAsmaXDataLoaded().catch(() => null),
+        ]);
+        const qcr = (qcrCollections ?? []).map((c) => ({ id: c.id, name: langText(c.title, getAppLang(), c.id), status: c.status, items: c.items }));
+        const asmaEntries = (asmaXCollections ? asmaXAllNameEntries() : []).map((e) => ({
+          number: e.number, name: asmaEntryDisplayName(e), citations: e.ref ? parseAsmaRef(e.ref) : [],
+        }));
+        const lists = relatedThroughLists({ surah: surahNum, ayah: ayahNum, qcrCollections: qcr, asmaEntries }).map((r) => ({
+          ...r,
+          ref: relatedRefLabel(r.surah, r.ayah),
+          reason: r.via.map((v) => (v.kind === "qcr" ? t("QCR: {name}", { name: v.label }) : t("Asma: {name}", { name: v.label }))).join(" · "),
+        }));
+        const shared = relatedBySharedWords(lemmaIndex.values, surahNum, ayahNum).map((r) => ({
+          ...r,
+          ref: relatedRefLabel(r.surah, r.ayah),
+          reason: r.sharedCount === 1 ? t("1 shared rare word") : t("{count} shared rare words", { count: num(r.sharedCount) }),
+        }));
+        result = { lists, shared };
+      } catch (err) {
+        console.error(err);
+        result = { error: true };
+      }
+      if (ayahSheetUnitKey !== unitKey || !ayahActionSheetOverlayEl.classList.contains("open")) return;
+      ayahSheetRelated = result;
+      renderAyahActionSheetNow();
+    }
+
     function openAyahActionSheet(ayahKey) {
       const [surahStr, ayahStr] = ayahKey.split(":");
       const surahNum = Number(surahStr);
@@ -12322,8 +12399,10 @@
       ayahSheetUnitKey = unitKey;
       ayahSheetWordStatus = null;
       ayahSheetHasPosterNote = null;
+      ayahSheetRelated = null;
       renderAyahActionSheetNow();
       ayahActionSheetOverlayEl.classList.add("open");
+      ensureAyahSheetRelatedLoaded(unitKey, surahNum, ayahNum);
       ensureAyahNoteDataLoaded().then(() => { if (ayahSheetUnitKey === unitKey) renderAyahActionSheetNow(); });
       ensureAyahSheetWordStatusLoaded(unitKey, surahNum, ayahNum);
       ensureAyahSheetPosterNoteLoaded(unitKey);

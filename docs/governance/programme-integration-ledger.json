@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.81",
+    "version": "08.82",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -749,8 +749,20 @@
     {
       "version": "08.81",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "With Tajweed colours on, the flowing Arabic in Read and Note view is split into tappable words without changing any letter's colour (6,233 of 6,236 ayat; 3 keep the single block). Issue #294.",
+      "integration": {
+        "authorizedOn": "2026-09-25",
+        "integratedOn": "2026-09-25",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "08.82",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Ayah Card section C part 1: Related āyāt (shared rarer words + same QCR collection/Asma Name). Asma: renaming/archiving works for every classification (Open this classification line, current one marked). Lemma-level word progress data layer and Rules candidate (issue #301), uninvoked.",
       "integration": {
         "authorizedOn": "2026-09-25",
         "integratedOn": "2026-09-25",
@@ -759,8 +771,9 @@
       }
     }
   ],
-  "nextUnallocated": "08.82",
+  "nextUnallocated": "08.83",
   "nextUnallocatedNote": [
+    "v08.82 was allocated to Ayah Card Related āyāt; Asma classification rename fix; lemma progress data layer (#301), 2026-09-25.",
     "v08.81 was allocated to tap a word with Tajweed colours on (issue #294), 2026-09-25.",
     "v08.80 was allocated to Ayah Card part 1 (issue #295), 2026-09-25.",
     "v08.79 was allocated to WordPress/Evernote import switched on, 2026-09-25.",
