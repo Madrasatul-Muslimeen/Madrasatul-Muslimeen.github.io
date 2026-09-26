@@ -58,9 +58,16 @@ check("every file's bytes and SHA-256 equal the manifest (unmodified since the p
   assert.deepEqual(bad, [], bad.join(" | "));
 });
 
-check("the folder holds exactly the manifest's files, nothing else", () => {
-  const onDisk = fs.readdirSync(DIR).filter((f) => f !== "manifest.json").sort();
+// Updated for issue #314: "split" is a new subdirectory, tools/hadith-data-pull/
+// openiti-split.mjs's own output (book -> chapter -> hadith), read from these
+// same unmodified .txt files and never written to by anything in this file's
+// own check above -- it sits BESIDE the manifest's files, not among them, so
+// it is named and excluded here rather than making this check pass vacuously
+// for any future addition.
+check("the folder holds exactly the manifest's files, plus the known 'split' output directory", () => {
+  const onDisk = fs.readdirSync(DIR).filter((f) => f !== "manifest.json" && f !== "split").sort();
   assert.deepEqual(onDisk, manifest.files.map((f) => f.file).sort());
+  assert.ok(fs.statSync(path.join(DIR, "split")).isDirectory());
 });
 
 check("the manifest carries the licence, the release DOI and the Owner's grant", () => {
