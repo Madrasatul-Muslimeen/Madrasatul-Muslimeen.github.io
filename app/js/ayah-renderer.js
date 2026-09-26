@@ -124,11 +124,131 @@ export function splitPlainArabicWords(rawText, words) {
     never a hardcoded English fallback). The CSS reset for this button lives
     in the stylesheet (`button.ayah-word-clickable`), not here. */
 export function arabicWordButtonHtml(segmentText, word, surahNumber, ayahNum, langs) {
+  return wordButtonHtml(escapeHtml(segmentText), word, surahNumber, ayahNum, langs);
+}
+
+/** The same button around ALREADY-SAFE inner HTML, or -- `inline: true`,
+    the tajweed branch -- a focusable INLINE span with role="button". A real
+    <button> always lays out as an inline-block, which changes how the
+    Qur'an font sets the marks at a word's edge: measured on 2:2 in Bangla at
+    390px, the āyah-end number was pushed onto a second line. A span stays
+    part of the line exactly as the unsplit text was; Enter/Space opens it
+    the same as a click (wired once in quranrevival.html). */
+function wordButtonHtml(innerHtml, word, surahNumber, ayahNum, langs, { inline = false } = {}) {
   const occurrenceId = `quran-word-occurrence:v1:${surahNumber}:${ayahNum}:${word.position}`;
   const spokenGloss = langs?.map((l) => word.translation?.[l]).find(Boolean)
     || word.translation?.en || word.translation?.bn || t("Quran word");
   const accessibleName = escapeHtml(`${word.arabic} — ${spokenGloss}`);
-  return `<button type="button" class="ayah-word-clickable" data-word-occurrence="${occurrenceId}" data-surah="${surahNumber}" data-ayah="${ayahNum}" data-position="${word.position}" aria-label="${accessibleName}">${escapeHtml(segmentText)}</button>`;
+  const attrs = `class="ayah-word-clickable" data-word-occurrence="${occurrenceId}" data-surah="${surahNumber}" data-ayah="${ayahNum}" data-position="${word.position}" aria-label="${accessibleName}"`;
+  return inline
+    ? `<span role="button" tabindex="0" ${attrs}>${innerHtml}</span>`
+    : `<button type="button" ${attrs}>${innerHtml}</button>`;
+}
+
+// Issue #294 -- TAJWEED, SPLIT INTO TAPPABLE WORDS WITHOUT LOSING ANY COLOUR.
+//
+// The pulled tajweed markup colours across word boundaries (2:2's
+// `<tajweed class=idgham_wo_ghunnah>دًى ل</tajweed>` runs from the end of one
+// word into the next) and nests (2:190's madda_obligatory holds a slnt), so
+// the old reasoning was that there is no safe place to split. There is: read
+// the markup into LETTERS, each carrying the stack of classes open around
+// it, split the letters at the spaces, and rebuild each word's spans from
+// its own letters -- a span that crossed a word break is simply closed at
+// the break and reopened, with the same class, at the start of the next
+// word. Every letter keeps exactly the colour it had. Measured over the whole
+// corpus (tools/i18n-verify/tajweed-word-split.mjs): 6,233 of 6,236 āyāt
+// split, the letter-by-letter class sequence identical to the unsplit
+// rendering in every one; the other 3 keep today's single block.
+
+/** Raw tajweed markup -> [{ ch, stack }], `stack` the open classes outermost
+    first ("tajweed-x", "tajweed-end"). null on markup it does not recognise
+    or that does not balance, so a caller falls back rather than guesses. */
+export function tajweedChars(raw) {
+  const out = [];
+  const stack = [];
+  let i = 0;
+  while (i < raw.length) {
+    if (raw[i] === "<") {
+      const close = raw.indexOf(">", i);
+      if (close < 0) return null;
+      const tag = raw.slice(i, close + 1);
+      const m = /^<tajweed class=([a-zA-Z_]+)>$/.exec(tag);
+      if (m) stack.push(`tajweed-${m[1]}`);
+      else if (tag === "<span class=end>") stack.push("tajweed-end");
+      else if (tag === "</tajweed>" || tag === "</span>") { if (!stack.length) return null; stack.pop(); }
+      else return null;
+      i = close + 1;
+      continue;
+    }
+    const ch = String.fromCodePoint(raw.codePointAt(i));
+    out.push({ ch, stack: stack.slice() });
+    i += ch.length;
+  }
+  return stack.length ? null : out;
+}
+
+/** Letters -> HTML, opening/closing only the classes that change between
+    neighbours, so nesting is reproduced exactly. */
+function tajweedLettersHtml(letters) {
+  let html = "";
+  let open = [];
+  for (const c of letters) {
+    let k = 0;
+    while (k < open.length && k < c.stack.length && open[k] === c.stack[k]) k++;
+    html += "</span>".repeat(open.length - k);
+    for (const cls of c.stack.slice(k)) html += `<span class="${cls}">`;
+    open = c.stack;
+    html += escapeHtml(c.ch);
+  }
+  return html + "</span>".repeat(open.length);
+}
+
+const SPACE_LETTER = Object.freeze({ ch: " ", stack: Object.freeze([]) });
+
+/** Split tajweed markup into one HTML string per word (same count as
+    `wordCount`, with the same stand-alone-mark merging splitPlainArabicWords()
+    uses) plus the trailing āyah-end number. null when the words cannot be
+    matched one-to-one -- the caller then renders the unsplit block. */
+export function splitTajweedWords(raw, wordCount) {
+  const letters = tajweedChars(raw ?? "");
+  if (!letters) return null;
+  const groups = [];
+  let cur = [];
+  for (const c of letters) {
+    if (c.ch === " ") { if (cur.length) groups.push(cur); cur = []; }
+    else cur.push(c);
+  }
+  if (cur.length) groups.push(cur);
+  let tail = [];
+  while (groups.length && groups[groups.length - 1].every((c) => c.stack.includes("tajweed-end"))) {
+    tail = groups.pop().concat(tail.length ? [SPACE_LETTER, ...tail] : []);
+  }
+  const merged = [];
+  let leading = [];
+  for (const g of groups) {
+    const text = g.map((c) => c.ch).join("");
+    if (QURANIC_MARK_ONLY.test(text)) {
+      if (merged.length) merged[merged.length - 1] = merged[merged.length - 1].concat([SPACE_LETTER], g);
+      else leading = leading.concat(g, [SPACE_LETTER]);
+    } else if (leading.length) {
+      merged.push(leading.concat(g));
+      leading = [];
+    } else {
+      merged.push(g);
+    }
+  }
+  if (leading.length || merged.length !== wordCount) return null;
+  return { words: merged.map(tajweedLettersHtml), tail: tajweedLettersHtml(tail) };
+}
+
+/** The tajweed āyah as one tappable word per word (inline spans, see
+    wordButtonHtml()), or null to fall back. */
+export function tajweedWordButtonsHtml(ayah, surahNumber, langs) {
+  if (!ayah?.tajweedText || !ayah.words?.length || !Number.isInteger(surahNumber)) return null;
+  const split = splitTajweedWords(ayah.tajweedText, ayah.words.length);
+  if (!split) return null;
+  const words = split.words.map((html, i) => wordButtonHtml(html, ayah.words[i], surahNumber, ayah.ayah, langs, { inline: true })).join(" ");
+  return split.tail ? `${words} ${split.tail}` : words;
 }
 
 /** Panel: the Arabic script itself, plain or tajweed-colour-coded (F-049 toggle).
@@ -141,25 +261,21 @@ export function arabicWordButtonHtml(segmentText, word, surahNumber, ayahNum, la
     the PLAIN branch (tajweed off) renders one <button> per word instead of
     one escaped block, each carrying the click target the shared
     readView/noteView listener already recognises (openWordCard() needs no
-    new code at all). The TAJWEED branch is deliberately left as one block,
-    investigated and NOT split: tajweed colouring in the pulled data
-    routinely spans a word boundary (idgham/ikhfa/iqlab -- an assimilation
-    rule colours the last letter of one word together with the first of the
-    next, e.g. surah 2:2's own
-    `<tajweed class=idgham_wo_ghunnah>دًى ل</tajweed>` -- measured across the
-    whole corpus, on ~65% of all ayahs), so there is no space to safely split
-    ON without either cutting a `<tajweed>` span in half (corrupting the
-    markup and silently losing colour on whichever letter lands on the wrong
-    side) or merging words together in a way this data cannot disambiguate.
-    That needs a PER-WORD tajweed dataset that does not exist here. The
-    separate Word-by-Word panel is unaffected by this toggle at all (it
-    never used tajweed markup to begin with) and stays tappable either
-    way. */
+    new code at all). The
+    TAJWEED branch was left as one block until issue #294, because its
+    colouring spans word boundaries; tajweedWordButtonsHtml() above now
+    splits it letter by letter without changing any letter's colour, and the
+    single block remains only as the fall-back for the 3 āyāt it cannot
+    match. The separate Word-by-Word panel never used tajweed markup and
+    stays tappable either way. */
 export function renderArabicPanel(ayah, { tajweedOn, wordCardInteractive, surahNumber, langs } = {}) {
   const clickable = wordCardInteractive && Number.isInteger(surahNumber) && !!ayah.words?.length;
   let body;
   if (tajweedOn && ayah.tajweedText) {
-    body = tajweedRawToSafeHtml(ayah.tajweedText);
+    // Issue #294 -- tappable words with Tajweed on too; the unsplit block
+    // stays as the fall-back for the few āyāt that cannot be matched.
+    body = (clickable ? tajweedWordButtonsHtml(ayah, surahNumber, langs) : null)
+      ?? tajweedRawToSafeHtml(ayah.tajweedText);
   } else {
     // Fix round -- ayah 1's own text is stripped of its embedded Bismillah
     // prefix here, since the decorative heading above (bismillahHtmlFor())

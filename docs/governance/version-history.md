@@ -607,3 +607,4 @@ total). Allocated by the MMSA Architect.
 08.78: phone width: no sideways scroll (issue #293). Allocated by the MMSA Architect.
 08.79: WordPress/Evernote import switched on. Allocated by the MMSA Architect.
 08.80: Ayah Card part 1 (issue #295). Allocated by the MMSA Architect.
+08.81: tap a word with Tajweed colours on (issue #294). Allocated by the MMSA Architect.
