@@ -624,6 +624,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
       ${formsSection(layers, context, text, formatNumber, { expandable: false })}
       ${context.occurrencesLoading ? `<p>${escapeHtml(text.loadingOccurrences)}</p>` : ""}
       ${context.occurrencesError ? `<p role="status">${escapeHtml(String(text.occurrencesUnavailable).replace("{error}", context.occurrencesError))}</p>` : ""}
+      ${progressBlock(context.progress, context.authority, null, text, formatNumber)}
     </div>`;
   }
   const dictionaryUrl = safeDictionaryUrl(context.dictionaryUrl);
@@ -632,11 +633,16 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
     : `<span>${escapeHtml(text.dictionaryUnavailable)}</span>`;
   // v08.21 -- the occurrence section comes FIRST, then the dictionary and the
   // rest of Depth's existing detail, which is the owner's own ordering.
+  // Issue #320 -- claim/confirm controls (progressBlock) are shared with the
+  // WbW panel above, but WITHOUT coverage or any of the WbW-only extras
+  // (whole-Qur'an total, lemma-wide claim): those stay scoped to WbW, per the
+  // issue's own point 4.
   return `<div role="tabpanel" data-word-card-panel="depth">
     ${formsSection(layers, context, text, formatNumber, { expandable: true })}
     <div class="word-card-depth-rest">
       <p>${escapeHtml(context.semanticRange || text.semanticRangeMissing)}</p>${dictionaryLink}
     </div>
+    ${progressBlock(context.progress, context.authority, null, text, formatNumber)}
   </div>`;
 }
 

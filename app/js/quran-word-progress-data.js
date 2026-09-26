@@ -36,6 +36,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
 import { createDocument, updateDocument } from "./envelope.js";
+import { isWordLevelsPersistenceReady } from "./study-word-levels-readiness.js";
 import {
   WORD_PROGRESS_CONTRACT,
   MAX_WORDS_PER_AYAH,
@@ -58,6 +59,23 @@ const LANE_COLLECTION = Object.freeze({
   learner: TENANT.QURAN_WORD_PROGRESS,
   supervisor: TENANT.QURAN_WORD_APPROVALS,
 });
+
+// Issue #320 -- `wbw` has been deployed and operational since MAP Phase 3;
+// `basic` and `depth` are new and stay behind their own Owner Control Gate
+// until the Rules candidate that admits them is published (see
+// study-word-levels-readiness.js's own header). Every entry point below calls
+// this FIRST -- before any cache lookup or Firestore call -- so a closed gate
+// refuses the call outright rather than reaching the database and being
+// denied there.
+const LEVELS_ALWAYS_READY = Object.freeze(["wbw"]);
+
+function requireLevelPersistenceReady(level) {
+  requireImplementedLevel(level);
+  if (!LEVELS_ALWAYS_READY.includes(level) && !isWordLevelsPersistenceReady()) {
+    throw new RangeError(`Arabic level "${level}" is not yet available: its Firestore Rules have not been deployed.`);
+  }
+  return level;
+}
 
 /**
  * A surah-scoped read is capped so a coverage call can never turn into an
@@ -116,7 +134,7 @@ async function fetchLane(db, lane, laneId) {
  * synchronously through wordProgressFor(), so a renderer never has to be async.
  */
 export async function primeAyahProgress(db, { tenantId, personId, level = "wbw", surah, ayah } = {}) {
-  requireImplementedLevel(level);
+  requireLevelPersistenceReady(level);
   const scope = { tenantId, personId, level, surah };
   const store = cacheFor(scope);
   if (store.wholeSurahLoaded) return { fetched: 0, cached: true };
@@ -139,7 +157,7 @@ export async function primeAyahProgress(db, { tenantId, personId, level = "wbw",
  * incomplete rather than print a percentage computed from a short read.
  */
 export async function getSurahProgress(db, { tenantId, personId, level = "wbw", surah, force = false } = {}) {
-  requireImplementedLevel(level);
+  requireLevelPersistenceReady(level);
   const scope = { tenantId, personId, level, surah };
   const store = cacheFor(scope);
   if (store.wholeSurahLoaded && !force) return { fetched: 0, cached: true, truncated: false };

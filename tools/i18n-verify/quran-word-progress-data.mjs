@@ -18,7 +18,16 @@ source = source
     "const { doc, getDoc, collection, query, where, getDocs } = globalThis.__wpFirestore;")
   .replace(/import \{ TENANT \} from "\.\/collections\.js";/, "const { TENANT } = globalThis.__wpCollections;")
   .replace(/import \{ createDocument, updateDocument \} from "\.\/envelope\.js";/, "const { createDocument, updateDocument } = globalThis.__wpEnvelope;")
+  // Issue #320 -- the Basic/Depth gate. This suite is about the data
+  // layer's OWN behaviour under the gate open/closed, not about the real
+  // declaration's shape (that lives in its own governed-decision predicate,
+  // exercised the same way study-lemma-progress-readiness.js's malformed-
+  // shape checks are), so it is swapped for a plain flag this suite controls
+  // directly -- the same technique used below for reset()'s own globals.
+  .replace(/import \{ isWordLevelsPersistenceReady \} from "\.\/study-word-levels-readiness\.js";/,
+    "const isWordLevelsPersistenceReady = () => globalThis.__wpWordLevelsGateOpen === true;")
   .replace(/from "\.\/quran-word-progress\.js"/, `from "${pathToFileURL(path.join(root, "app/js/quran-word-progress.js")).href}"`);
+globalThis.__wpWordLevelsGateOpen = false;
 
 const TENANT = Object.freeze({ QURAN_WORD_PROGRESS: "quranWordProgress", QURAN_WORD_APPROVALS: "quranWordApprovals" });
 
@@ -280,10 +289,59 @@ await check("the superseded confirmation is kept in the stored document (I4)", (
   assert.equal(sup.h[0].r, "c");
 });
 
-// --- 8. Deferred levels and bad input --------------------------------------
+// --- 8. Issue #320's own gate, and bad input --------------------------------
+// UPDATED, issue #320: the state model now IMPLEMENTS basic/depth (the Owner
+// settled their claim unit as the same word occurrence WbW uses), so the
+// refusal below moved from the state model to this module's OWN, separate
+// deployment gate -- REFUSED while it is closed, ACCEPTED once it is open.
+// wbw is unaffected either way: it has been deployed since MAP Phase 3.
 fresh();
-await check("Basic Arabic progress cannot be written through the data layer either", async () =>
-  assert.rejects(data.setWordState(DB, { ...SELF, level: "basic", occurrenceId: OCC(1, 1, 1), state: "achieved", nowIso: "2026-09-13T10:00:00.000Z" }), /deferred/));
+await check("Basic Arabic progress is refused while its gate is closed, and nothing is written", async () => {
+  globalThis.__wpWordLevelsGateOpen = false;
+  await assert.rejects(
+    data.setWordState(DB, { ...SELF, level: "basic", occurrenceId: OCC(1, 1, 1), state: "achieved", nowIso: "2026-09-13T10:00:00.000Z" }),
+    /not yet available/);
+  assert.equal(store.size, 0);
+  assert.equal(counters.gets, 0, "the gate refuses before any read");
+});
+await check("Arabic in Depth progress is refused while its gate is closed, and nothing is written", async () => {
+  await assert.rejects(
+    data.setWordState(DB, { ...SELF, level: "depth", occurrenceId: OCC(1, 1, 1), state: "achieved", nowIso: "2026-09-13T10:00:00.000Z" }),
+    /not yet available/);
+  assert.equal(store.size, 0);
+});
+await check("wbw is completely unaffected by the basic/depth gate", async () => {
+  const out = await data.setWordState(DB, { ...SELF, occurrenceId: OCC(1, 1, 2), state: "learning", nowIso: "2026-09-13T10:00:00.000Z" });
+  assert.equal(out.changed, true);
+});
+await check("Basic Arabic progress is ACCEPTED once its gate is open", async () => {
+  fresh();
+  globalThis.__wpWordLevelsGateOpen = true;
+  const out = await data.setWordState(DB, { ...SELF, level: "basic", occurrenceId: OCC(1, 1, 1), state: "achieved", nowIso: "2026-09-13T10:00:00.000Z" });
+  assert.deepEqual(out, { changed: true, writes: 1, laneId: "t1__p1__basic__1_1", position: 1 });
+  assert.ok(store.has("quranWordProgress/t1__p1__basic__1_1"));
+});
+await check("Arabic in Depth progress is ACCEPTED once its gate is open, and independent of Basic's own lane", async () => {
+  const out = await data.setWordState(DB, { ...SELF, level: "depth", occurrenceId: OCC(1, 1, 1), state: "learning", nowIso: "2026-09-13T10:00:01.000Z" });
+  assert.deepEqual(out, { changed: true, writes: 1, laneId: "t1__p1__depth__1_1", position: 1 });
+  assert.equal(data.wordProgressFor({ tenantId: "t1", personId: "p1", level: "basic", occurrenceId: OCC(1, 1, 1) }).state, "achieved",
+    "the basic claim just made is untouched by the depth claim on the same word");
+  assert.equal(data.wordProgressFor({ tenantId: "t1", personId: "p1", level: "depth", occurrenceId: OCC(1, 1, 1) }).state, "learning");
+});
+await check("a wbw claim on the same word stays independent of both basic and depth (all three levels never collide)", async () => {
+  await data.setWordState(DB, { ...SELF, occurrenceId: OCC(1, 1, 1), state: "achieved", nowIso: "2026-09-13T10:00:02.000Z" });
+  assert.equal(data.wordProgressFor({ tenantId: "t1", personId: "p1", occurrenceId: OCC(1, 1, 1) }).state, "achieved");
+  assert.equal(data.wordProgressFor({ tenantId: "t1", personId: "p1", level: "basic", occurrenceId: OCC(1, 1, 1) }).state, "achieved");
+  assert.equal(data.wordProgressFor({ tenantId: "t1", personId: "p1", level: "depth", occurrenceId: OCC(1, 1, 1) }).state, "learning");
+});
+await check("an unknown level is refused whatever the gate reads", async () => {
+  globalThis.__wpWordLevelsGateOpen = false;
+  await assert.rejects(data.setWordState(DB, { ...SELF, level: "grammar", occurrenceId: OCC(1, 1, 1), state: "achieved" }), /Unknown Arabic level/);
+  globalThis.__wpWordLevelsGateOpen = true;
+  await assert.rejects(data.setWordState(DB, { ...SELF, level: "grammar", occurrenceId: OCC(1, 1, 1), state: "achieved" }), /Unknown Arabic level/);
+});
+globalThis.__wpWordLevelsGateOpen = false;
+fresh();
 await check("a v2 occurrence id is refused before any write", async () => {
   await assert.rejects(data.setWordState(DB, { ...SELF, occurrenceId: "quran-word-occurrence:v2:1:1:1", state: "achieved", nowIso: "2026-09-13T10:00:00.000Z" }), /Unsupported/);
   assert.equal(store.size, 0);

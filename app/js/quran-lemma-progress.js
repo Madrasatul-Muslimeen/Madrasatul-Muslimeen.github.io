@@ -40,8 +40,6 @@
 
 import {
   ARABIC_LEVELS,
-  IMPLEMENTED_ARABIC_LEVELS,
-  requireImplementedLevel,
   WBW_WORD_STATES,
   WBW_REVIEW_STATES,
   MAX_RETAINED_DECISIONS,
@@ -54,8 +52,6 @@ import {
 
 export {
   ARABIC_LEVELS,
-  IMPLEMENTED_ARABIC_LEVELS,
-  requireImplementedLevel,
   WBW_WORD_STATES,
   WBW_REVIEW_STATES,
   MAX_RETAINED_DECISIONS,
@@ -66,6 +62,31 @@ export {
   decideApproval as decideLemmaApproval,
   wordProgressAuthority as lemmaProgressAuthority,
 };
+
+/**
+ * `IMPLEMENTED_ARABIC_LEVELS`/`requireImplementedLevel` are DELIBERATELY NOT
+ * re-exported from quran-word-progress.js any more, as of issue #320. Until
+ * then the two really were the same list: only `wbw` was implemented at
+ * EITHER granularity, so re-exporting cost nothing. Issue #320 settled the
+ * claim unit for Basic Arabic/Arabic in Depth at the OCCURRENCE level only
+ * (the Owner's own words: "Because it's in WbW" -- the same unit as WbW) --
+ * it said nothing about the LEMMA-wide mechanism this file owns, which is a
+ * different question (issue #301/#303's own DEF item) and stays exactly as
+ * undecided as before. So this list is now LEMMA'S OWN, independent of
+ * quran-word-progress.js's now-wider one, and a future occurrence-level
+ * change can never silently loosen what a lemma-wide claim may do.
+ */
+export const IMPLEMENTED_ARABIC_LEVELS = Object.freeze(["wbw"]);
+
+export function requireImplementedLevel(level) {
+  if (!ARABIC_LEVELS.includes(level)) throw new TypeError(`Unknown Arabic level: ${level}.`);
+  if (!IMPLEMENTED_ARABIC_LEVELS.includes(level)) {
+    // DEFERRED means stop, never guess. Basic/Depth have no approved
+    // LEMMA-WIDE claim unit -- see the header comment above.
+    throw new RangeError(`Arabic level "${level}" has no approved lemma-wide claim unit; its progress model is deferred.`);
+  }
+  return level;
+}
 
 export const LEMMA_PROGRESS_CONTRACT = "quran-lemma-progress:v1";
 export const LEMMA_PROGRESS_LANES = Object.freeze(["learner", "supervisor"]);

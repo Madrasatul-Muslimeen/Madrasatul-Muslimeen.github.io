@@ -39,17 +39,34 @@ check("not_applicable is deliberately not a word state", () =>
 check("review states mirror records.js confirmState", () =>
   assert.deepEqual(WBW_REVIEW_STATES, ["pending", "confirmed", "returned"]));
 
-// --- 2. LOCK: Arabic levels stay independent, Basic/Depth stay deferred ----
+// --- 2. LOCK: Arabic levels stay independent -------------------------------
+// UPDATED, issue #320: the Owner's decision (docs/governance/2026-09-26-
+// owner-decisions.md, row 4) -- "Claiming for basic n Depth is per word.
+// (Because It's in WbW)" -- settled Basic Arabic and Arabic in Depth as the
+// same claim unit WbW already uses, so the STATE MODEL now implements all
+// three. (Persistence for basic/depth is a SEPARATE, still-closed gate --
+// see study-word-levels-readiness.js and quran-word-progress-data.js -- this
+// file is only about what the state model itself permits.) The five checks
+// below used to assert the opposite; they are updated in place, with the
+// reason recorded, rather than deleted, so a future level named in
+// ARABIC_LEVELS ahead of its own claim unit is still caught by the same
+// mechanism (see the new "a genuinely future level" check below).
 check("all three Arabic levels are named", () => assert.deepEqual(ARABIC_LEVELS, ["wbw", "basic", "depth"]));
-check("only WbW is implemented", () => assert.deepEqual(IMPLEMENTED_ARABIC_LEVELS, ["wbw"]));
-check("Basic Arabic progress is REFUSED, not silently stored as WbW", () =>
-  assert.throws(() => requireImplementedLevel("basic"), /deferred/));
-check("Arabic in Depth progress is REFUSED too", () =>
-  assert.throws(() => requireImplementedLevel("depth"), /deferred/));
-check("an unknown level is rejected before the deferral check", () =>
+check("all three are implemented -- issue #320 settled Basic/Depth's claim unit", () =>
+  assert.deepEqual(IMPLEMENTED_ARABIC_LEVELS, ["wbw", "basic", "depth"]));
+check("Basic Arabic progress is ACCEPTED by the state model, not refused", () =>
+  assert.equal(requireImplementedLevel("basic"), "basic"));
+check("Arabic in Depth progress is ACCEPTED too", () =>
+  assert.equal(requireImplementedLevel("depth"), "depth"));
+check("an unknown level is still rejected", () =>
   assert.throws(() => requireImplementedLevel("grammar"), /Unknown Arabic level/));
-check("a lane id carries its level, so a later level cannot collide with v1", () =>
-  assert.equal(wordProgressLaneId(LANE), "t1__p1__wbw__2_282"));
+check("a genuinely future level (not in ARABIC_LEVELS at all) is refused, not silently accepted", () =>
+  assert.throws(() => requireImplementedLevel("advanced-morphology"), /Unknown Arabic level/));
+check("a lane id carries its level, so wbw/basic/depth can never collide", () => {
+  assert.equal(wordProgressLaneId(LANE), "t1__p1__wbw__2_282");
+  assert.equal(wordProgressLaneId({ ...LANE, level: "basic" }), "t1__p1__basic__2_282");
+  assert.equal(wordProgressLaneId({ ...LANE, level: "depth" }), "t1__p1__depth__2_282");
+});
 
 // --- 3. LOCK: Activity != Mastery -----------------------------------------
 // The `async` here was the exact defect the runner's own guard now refuses:
