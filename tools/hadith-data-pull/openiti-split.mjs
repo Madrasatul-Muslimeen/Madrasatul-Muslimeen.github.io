@@ -108,8 +108,18 @@ function shardChapter(chapterId, hadiths) {
 
 function splitOneBook(bookMeta, numberingStyle, rawText) {
   const { hadiths: parsed, warnings } = parseOpenitiBook(rawText, numberingStyle);
+  // Architect review: `n` is the passage's 1-based position in the book (the
+  // full id is `openiti:<versionUri>:<n>`), `kind` is "hadith" |
+  // "chapter-text" | "editorial", and the chapter path is stored once per
+  // shard (`paths`) with each record pointing at it by index (`p`) -- it had
+  // been repeated on every record, 11 MB of the output.
   const withIds = parsed.map((h, i) => ({
     id: `openiti:${bookMeta.version_uri}:${i + 1}`,
+    n: i + 1,
+    // A book with no hadith numbers is split by PARAGRAPH, and a paragraph is
+    // not a hadith (al-Nawawi's Forty: 138 paragraphs, 42 hadith), so those
+    // are "passage", never "hadith", and the book reports no hadith count.
+    kind: numberingStyle === "sequential" ? "passage" : (h.kind ?? "hadith"),
     number: h.number,
     chapterPath: h.chapterPath,
     text: h.text,
@@ -124,13 +134,23 @@ function splitOneBook(bookMeta, numberingStyle, rawText) {
   for (const ch of chapters) {
     const shards = shardChapter(ch.id, ch.hadiths);
     for (const shard of shards) {
-      fs.writeFileSync(path.join(outDir, shard.file), JSON.stringify({ hadiths: shard.hadiths }));
+      const paths = [];
+      const pathIndex = new Map();
+      const records = shard.hadiths.map((h) => {
+        const key = JSON.stringify(h.chapterPath);
+        if (!pathIndex.has(key)) { pathIndex.set(key, paths.length); paths.push(h.chapterPath); }
+        const r = { n: h.n, kind: h.kind, number: h.number, p: pathIndex.get(key), text: h.text };
+        if (h.pageRefs.length) r.pageRefs = h.pageRefs;
+        return r;
+      });
+      fs.writeFileSync(path.join(outDir, shard.file), JSON.stringify({ paths, hadiths: records }));
     }
     const numbers = ch.hadiths.map((h) => h.number).filter((n) => n != null);
     chapterIndex.push({
       id: ch.id,
       title: ch.title,
-      hadithCount: ch.hadiths.length,
+      passageCount: ch.hadiths.length,
+      hadithCount: numberingStyle === "sequential" ? null : ch.hadiths.filter((h) => h.kind === "hadith").length,
       firstNumber: numbers.length ? numbers[0] : null,
       lastNumber: numbers.length ? numbers[numbers.length - 1] : null,
       shardFiles: shards.map((s) => s.file),
@@ -155,7 +175,9 @@ function splitOneBook(bookMeta, numberingStyle, rawText) {
     creditLine: "Source: OpenITI (CC BY-NC-SA 4.0)",
     numbering: numberingStyle === "sequential" ? "sequential-by-paragraph" : "book-number",
     joiningRule: JOINING_RULE,
-    hadithCount: withIds.length,
+    passageCount: withIds.length,
+    hadithCount: numberingStyle === "sequential" ? null : withIds.filter((h) => h.kind === "hadith").length,
+    passageKinds: { hadith: "a narration", passage: "a paragraph of a book that carries no hadith numbers (Muslim, al-Nawawi's Forty) -- not necessarily one whole hadith", "chapter-text": "the book's own words between a heading and its first narration", editorial: "the edition editor's notes (Muwatta' only)" },
     shardSize: SHARD_SIZE,
     chapters: chapterIndex,
   };
@@ -165,7 +187,7 @@ function splitOneBook(bookMeta, numberingStyle, rawText) {
   // this file by eye.
   fs.writeFileSync(path.join(outDir, "index.json"), JSON.stringify(index));
 
-  return { hadithCount: withIds.length, chapterCount: chapters.length, warnings };
+  return { hadithCount: withIds.filter((h) => h.kind === "hadith").length, passageCount: withIds.length, chapterCount: chapters.length, warnings };
 }
 
 function dirSizeBytes(dir) {
@@ -179,6 +201,10 @@ function dirSizeBytes(dir) {
 
 function main() {
   const manifest = JSON.parse(fs.readFileSync(path.join(RELEASE_DIR, "manifest.json"), "utf8"));
+  // Architect review: start from an empty folder -- shard names depend on
+  // chapter counts, so a re-run otherwise leaves the previous run's files
+  // beside the new ones (measured: 101,826 records on disk for 79,527).
+  fs.rmSync(SPLIT_DIR, { recursive: true, force: true });
   fs.mkdirSync(SPLIT_DIR, { recursive: true });
 
   let totalHadiths = 0;
@@ -186,9 +212,9 @@ function main() {
     const style = NUMBERING_STYLE[bookMeta.version_uri];
     if (!style) throw new Error(`No numbering style configured for ${bookMeta.version_uri}`);
     const rawText = fs.readFileSync(path.join(RELEASE_DIR, bookMeta.file), "utf8");
-    const { hadithCount, chapterCount, warnings } = splitOneBook(bookMeta, style, rawText);
+    const { hadithCount, passageCount, chapterCount, warnings } = splitOneBook(bookMeta, style, rawText);
     totalHadiths += hadithCount;
-    console.log(`  ${bookMeta.title_en}: ${hadithCount} hadith, ${chapterCount} chapters, ${warnings.length} warnings`);
+    console.log(`  ${bookMeta.title_en}: ${hadithCount} hadith (${passageCount} passages), ${chapterCount} chapters, ${warnings.length} warnings`);
     if (warnings.length) console.log(`    ${warnings.slice(0, 5).join(" | ")}`);
   }
 

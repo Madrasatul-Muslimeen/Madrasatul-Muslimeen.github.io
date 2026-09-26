@@ -55,6 +55,39 @@ function writtenWords(hadiths) {
   return hadiths.flatMap((h) => h.text.split(" ").filter(Boolean));
 }
 
+/** Raw words (non-heading lines, markers stripped, digit-only and glued
+ *  number prefixes removed) that the split holds FEWER times than the raw
+ *  file does. Reads the .txt directly; shares no code with the parser. */
+function rawWordDeficit(rawText, hadiths, dir, index) {
+  const norm = (w) => w.replace(/^[\d/]+-/, "");
+  const words = (s) => s.replace(/@QB@|@QE@/g, " ").replace(/PageV\d+P\d+/g, " ").replace(/\bms\d+\b/g, " ")
+    .split(/\s+/).map(norm).filter((w) => w && !/^[\d/]+-?$/.test(w) && /[\u0600-\u06FFA-Za-z]/.test(w));
+  const lines = rawText.split(/\r?\n/);
+  const start = lines.findIndex((l) => l.trim() === "#META#Header#End#") + 1;
+  const need = new Map();
+  let inHeading = false;
+  for (const line of lines.slice(start)) {
+    // Headings ("### |..." and the flat "# | N ..." form) survive as chapter
+    // titles, not passage text; this check is about PROSE.
+    if (/^### /.test(line) || /^# \| /.test(line)) { inHeading = true; continue; }
+    if (/^~~/.test(line) && inHeading) continue;
+    inHeading = false;
+    for (const w of words(line.replace(/^(# |~~|#$)/, ""))) need.set(w, (need.get(w) ?? 0) + 1);
+  }
+  const have = new Map();
+  const add = (s) => { for (const w of words(s)) have.set(w, (have.get(w) ?? 0) + 1); };
+  // A hadith number is stored apart from its text; where the source ran it
+  // straight into punctuation ("# 9936، 9937 - ...", "# 11073/ب - ..."),
+  // re-attach it so the source's own word is compared, character for character.
+  for (const h of hadiths) add(h.kind === "hadith" && h.number != null && /^[،/]/.test(h.text) ? `${h.number}${h.text}` : h.text);
+  for (const ch of index.chapters) for (const file of ch.shardFiles) {
+    for (const p of JSON.parse(fs.readFileSync(path.join(dir, file), "utf8")).paths ?? []) add(p.join(" "));
+  }
+  const out = [];
+  for (const [w, n] of need) if ((have.get(w) ?? 0) < n) out.push(`${w} x${n - (have.get(w) ?? 0)}`);
+  return out;
+}
+
 for (const f of manifest.files) {
   const style = NUMBERING_STYLE[f.version_uri];
   const rawText = fs.readFileSync(path.join(RELEASE_DIR, f.file), "utf8");
@@ -74,23 +107,39 @@ for (const f of manifest.files) {
     assert.notDeepEqual(mutated, expected);
   });
 
-  check(`${f.title_en}: index.json's hadithCount matches what is on disk`, () => {
-    assert.equal(hadiths.length, index.hadithCount);
-    const chapterSum = index.chapters.reduce((n, c) => n + c.hadithCount, 0);
-    assert.equal(chapterSum, index.hadithCount);
+  // UPDATED IN PLACE, 26 Sep 2026 (Architect review): records now carry
+  // `n` (1-based position) and `kind`, and counts are split into passages
+  // (every record) and hadith (kind "hadith"; null for a book split by
+  // paragraph).
+  check(`${f.title_en}: index.json's passage and hadith counts match what is on disk`, () => {
+    assert.equal(hadiths.length, index.passageCount);
+    assert.equal(index.chapters.reduce((n, c) => n + c.passageCount, 0), index.passageCount);
+    const h = hadiths.filter((x) => x.kind === "hadith").length;
+    assert.equal(index.hadithCount, style === "sequential" ? null : h);
     for (const ch of index.chapters) {
       const shardTotal = ch.shardFiles.reduce((n, file) => {
         const shard = JSON.parse(fs.readFileSync(path.join(dir, file), "utf8"));
         return n + shard.hadiths.length;
       }, 0);
-      assert.equal(shardTotal, ch.hadithCount, `chapter ${ch.id}`);
-      assert.equal(ch.hadithPositions.length, ch.hadithCount, `chapter ${ch.id}`);
+      assert.equal(shardTotal, ch.passageCount, `chapter ${ch.id}`);
+      assert.equal(ch.hadithPositions.length, ch.passageCount, `chapter ${ch.id}`);
     }
   });
 
-  check(`${f.title_en}: every hadith id is unique`, () => {
-    const ids = hadiths.map((h) => h.id);
-    assert.equal(new Set(ids).size, ids.length);
+  check(`${f.title_en}: every passage position is unique and runs 1..N in order`, () => {
+    hadiths.forEach((x, i) => assert.equal(x.n, i + 1, `position ${i + 1}`));
+  });
+
+  // INDEPENDENT of openiti-markdown.mjs (the check above compares the output
+  // with a fresh run of the SAME parser, so a word the parser drops is
+  // missing from both sides -- which is exactly how 9,090 Muwatta'
+  // paragraphs went unnoticed). This reads the raw file on its own terms:
+  // every word on a non-heading line, markers stripped, must appear in the
+  // split at least as often (chapter titles count, since a few "# N باب"
+  // paragraphs become titles).
+  check(`${f.title_en}: INDEPENDENT -- every word of the raw text is in the split (nothing dropped)`, () => {
+    const deficit = rawWordDeficit(rawText, hadiths, dir, index);
+    assert.deepEqual(deficit.slice(0, 5), [], `${deficit.length} word(s) short, e.g. ${deficit.slice(0, 5).join(" | ")}`);
   });
 
   // NOT asserted as strictly/monotonically increasing -- measured against
@@ -141,14 +190,28 @@ for (const f of manifest.files) {
 
 check("Bukhari's hadith 1 is numbered 1 and begins «حدثنا الحميدي»", () => {
   const { hadiths } = loadBook("0256Bukhari.Sahih.JK000110-ara1");
-  assert.equal(hadiths[0].number, 1);
-  assert.ok(hadiths[0].text.startsWith("حدثنا الحميدي"), hadiths[0].text.slice(0, 40));
+  const first = hadiths.find((h) => h.kind === "hadith");
+  assert.equal(first.number, 1);
+  assert.ok(first.text.startsWith("حدثنا الحميدي"), first.text.slice(0, 40));
+});
+
+check("POSITIVE CONTROL -- the independent check refuses a split missing one paragraph", () => {
+  const f = manifest.files.find((x) => x.version_uri.startsWith("0256Bukhari"));
+  const rawText = fs.readFileSync(path.join(RELEASE_DIR, f.file), "utf8");
+  const { index, hadiths, dir } = loadBook(f.version_uri);
+  assert.deepEqual(rawWordDeficit(rawText, hadiths, dir, index), []);
+  const i = hadiths.findIndex((h) => h.kind === "chapter-text" && h.text.split(" ").length > 20);
+  const dropped = hadiths.filter((_, k) => k !== i);
+  assert.ok(rawWordDeficit(rawText, dropped, dir, index).length > 0, "dropping a chapter-text passage must be caught");
 });
 
 check("sequential-by-paragraph books are labelled as such and never claim the book's own traditional number", () => {
   for (const versionUri of ["0261Muslim.Sahih.Shamela0001727-ara1", "0676Nawawi.ArbacunaNawawiyya.Shamela0012836-ara1"]) {
     const { index } = loadBook(versionUri);
     assert.equal(index.numbering, "sequential-by-paragraph");
+    assert.equal(index.hadithCount, null, "a book split by paragraph must not claim a hadith count");
+    const { hadiths } = loadBook(versionUri);
+    assert.ok(hadiths.every((h) => h.kind === "passage"), "its records are passages, never 'hadith'");
   }
 });
 

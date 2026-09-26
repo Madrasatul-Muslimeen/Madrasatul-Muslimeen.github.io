@@ -79,7 +79,18 @@ function unwrapParens(s) {
 
 const HEADING_RE = /^### (\|{1,3})\s?(.*)$/;
 const FLAT_HEADING_RE = /^# \| (\d+)\s?(.*)$/;
-const INLINE_NUMBER_RE = /^# (\d+)\s?(.*)$/;
+// Architect review: Musnad Ahmad also opens 173 narrations as "# * 14 - ..."
+// -- the star marks the additions ('zawa'id) of Ahmad's son 'Abdullah, each
+// numbered in the book's own sequence. They were being folded into the
+// preceding hadith; the optional "* " makes each its own record. The star
+// and its dash are left in the text (never removed).
+// The number must NOT run straight into a letter: "# 278ه، ..." is a DATE
+// opening a paragraph, and taking "278" as a hadith number split the word
+// "278ه،" in two (Architect review, found by the independent word check).
+// A space, "-", "،" (a combined hadith, "# 9936، 9937 - ...") or "/" (a
+// sub-numbered one, "# 11073/ب - ...") may follow; that suffix stays in the
+// text, so no character is lost.
+const INLINE_NUMBER_RE = /^# (\* )?(\d+)(?=[\s\-،/]|$)\s?(.*)$/;
 const CONTINUATION_RE = /^~~(.*)$/;
 // Measured: most paragraph-opens are "# text", but a few source lines carry
 // no space at all before the payload (e.g. Bukhari "#@QB@ ..."), and some are
@@ -137,9 +148,11 @@ export function parseTriplePipeNumber(rest) {
  * material, not hadith content -- prepending either to hadith 1 (an earlier
  * draft did exactly this, to avoid dropping any word) would satisfy "nothing
  * is dropped" at the cost of failing the one check the issue names by name.
- * So this text is discarded here, exactly like heading text is, and
- * `bodyWords()` (the verify suite's own independent re-derivation) discards
- * it on the same terms, so the round-trip check compares like with like.
+ * CORRECTED (Architect review, 26 Sep 2026): this text used to be discarded,
+ * which silently dropped thousands of paragraphs. It is now kept as its own
+ * passage (`kind: "chapter-text"`, `number: null`) -- still never
+ * prepended to hadith 1 -- and tools/i18n-verify/openiti-split.mjs checks
+ * the output against the raw file INDEPENDENTLY of this parser.
  */
 export function parseOpenitiBook(rawText, numberingStyle) {
   const lines = rawText.split(/\r?\n/);
@@ -157,14 +170,31 @@ export function parseOpenitiBook(rawText, numberingStyle) {
   // started -- closeOpenHeading() finalizes it into headingStack the moment
   // any other line type appears.
   let openHeading = null; // { depth, parts: string[] }
+  const pendingRefs = []; // page refs seen while nothing is open
 
   function activeChapterPath() {
     return headingStack.filter((h) => h != null);
   }
 
-  /** No-op while no hadith is open -- see the module/function header comments on why chapter/book front matter is discarded rather than prepended. */
+  /**
+   * Architect review (26 Sep 2026): text with no hadith open used to be
+   * DISCARDED here -- measured, that dropped 9,090 Muwatta' paragraphs
+   * (Malik's own rulings among them), 712 in Bukhari (its chapter notes with
+   * their Qur'an verses), 1,224 in Musnad Ahmad and every book's
+   * introduction, while the round-trip check passed because it compared the
+   * output with this same parser. Such text is now KEPT as its own passage,
+   * never prepended to a hadith (so Bukhari's hadith 1 still begins
+   * «حدثنا الحميدي»): `number: null`, `kind: "chapter-text"`, or
+   * `kind: "editorial"` inside the Muwatta' editor's section below.
+   */
   function append(raw) {
-    if (!currentHadith) return;
+    if (!currentHadith) {
+      if (!stripMarkers(raw)) {
+        pendingRefs.push(...extractPageRefs(raw));
+        return;
+      }
+      currentHadith = { number: null, kind: suppressHadithStart ? "editorial" : "chapter-text", chapterPath: activeChapterPath(), textParts: [], pageRefs: pendingRefs.splice(0) };
+    }
     const stripped = stripMarkers(raw);
     const refs = extractPageRefs(raw);
     if (stripped) currentHadith.textParts.push(stripped);
@@ -174,6 +204,7 @@ export function parseOpenitiBook(rawText, numberingStyle) {
   function finalizeHadith(h) {
     return {
       number: h.number,
+      kind: h.kind ?? "hadith",
       chapterPath: h.chapterPath,
       text: h.textParts.filter(Boolean).join(" ").replace(/\s+/g, " ").trim(),
       pageRefs: h.pageRefs,
@@ -200,9 +231,14 @@ export function parseOpenitiBook(rawText, numberingStyle) {
   let suppressHadithStart = false;
 
   function startHadith(number) {
-    if (suppressHadithStart) return;
     flush();
-    currentHadith = { number, chapterPath: activeChapterPath(), textParts: [], pageRefs: [] };
+    if (suppressHadithStart) {
+      // The Muwatta' editor's numbered lists are not narrations: kept as
+      // editorial passages, never as numbered hadith.
+      currentHadith = { number: null, kind: "editorial", chapterPath: activeChapterPath(), textParts: [], pageRefs: pendingRefs.splice(0) };
+      return;
+    }
+    currentHadith = { number, chapterPath: activeChapterPath(), textParts: [], pageRefs: pendingRefs.splice(0) };
   }
 
   function closeOpenHeading() {
@@ -268,15 +304,15 @@ export function parseOpenitiBook(rawText, numberingStyle) {
         // the MARKER-STRIPPED text -- one of the six has its own inline
         // milestone marker sitting between the number and "باب" ("# 372
         // ms1348 باب ..."), which a plain startsWith would miss.
-        if (/^باب(?:\s|$)/.test(stripMarkers(numMatch[2] ?? ""))) {
+        if (/^باب(?:\s|$)/.test(stripMarkers(numMatch[3] ?? ""))) {
           closeOpenHeading();
           flush();
           openHeading = { depth: 2, parts: [line.replace(/^# /, "")] };
           continue;
         }
         closeOpenHeading();
-        startHadith(Number(numMatch[1]));
-        append(numMatch[2] ?? "");
+        startHadith(Number(numMatch[2]));
+        append(`${numMatch[1] ? "* " : ""}${numMatch[3] ?? ""}`);
         continue;
       }
     }
