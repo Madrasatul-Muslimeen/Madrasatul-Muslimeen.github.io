@@ -29,6 +29,10 @@ import {
   loadHadeethEncCategories, childCategories, directHadithIds, resolveCategoryTitle,
   loadHadithRecords, hadithArabicText, hadeethEncSourceUrl,
 } from "./hadeethenc-corpus.js";
+import {
+  OPENITI_CREDIT_URL,
+  loadAllOpenitiBookIndexes, loadOpenitiChapter, chapterForHadithNumber,
+} from "./openiti-corpus.js";
 
 const CONTENT_LANG_LABELS = { ar: "العربية", en: "English", bn: "বাংলা" };
 
@@ -157,7 +161,12 @@ function focusCollectionsLanding() {
   // edition was just chosen, so there is no deeper "current" yet). Only the
   // very top level -- no edition chosen at all -- has no breadcrumb; there
   // the "Collections" heading is the one landing element every render has.
-  const landing = body.querySelector(".hadith-crumbs > :last-child") || body.querySelector("h2");
+  // Architect review (#316): the HadeethEnc and OpenITI sources render their
+  // own breadcrumb bars on the same page, so "the last crumb" must be the
+  // synthetic collection's own bar -- otherwise returning to the top level
+  // landed focus inside the OpenITI section.
+  const SYNTHETIC_CRUMBS = ".hadith-crumbs:not([data-hadeethenc-crumbs]):not([data-openiti-crumbs])";
+  const landing = body.querySelector(`${SYNTHETIC_CRUMBS} > :last-child`) || body.querySelector("h2");
   if (!landing) return;
   if (!landing.hasAttribute("tabindex")) landing.setAttribute("tabindex", "-1");
   landing.focus({ preventScroll: true });
@@ -669,11 +678,267 @@ function renderHadeethEncSource(state) {
   return section;
 }
 
+// ---------------------------------------------------------------------------
+// OpenITI -- 11 real, untranslated Arabic hadith collections (issue #316,
+// part 2 of #314). Book -> chapter -> passage, over the packaged files
+// tools/hadith-data-pull/output/openiti-release/ (I9: nothing loads until
+// this section mounts; see openiti-corpus.js's own header comment for
+// exactly what loads at each step). This corpus carries no translation of
+// its own -- every book/chapter/passage is Arabic-only, so unlike HadeethEnc
+// there is no content-language fallback here; state.contentLang is not
+// consulted.
+//
+// NOT BUILT THIS ROUND, DELIBERATELY (issue #316 point 6): Notes, bookmark
+// and "Studied". Owner decision 7 (see hadith-browser.js's own HadeethEnc
+// section comment above) covers `hadith:hadeethenc:<id>` only -- a permanent
+// key for an OpenITI passage is proposed in this round's own PR description
+// (`hadith:openiti:<versionUri>:<n>`, mirroring buildUnitKey.hadith's
+// `hadith:${collectionName}:${number}` shape with the versionUri:n pair
+// standing in for `number`), not decided or built here.
+// ---------------------------------------------------------------------------
+
+const OPENITI_CHAPTER_PAGE = 100;
+
+function renderOpenitiSource(state) {
+  const section = el("section", "openiti-section");
+  section.id = "openitiSection";
+  section.appendChild(el("h2", null, t("OpenITI — Arabic Hadith collections")));
+  section.appendChild(el("p", "openiti-study-soon",
+    t("Notes, bookmarking and marking a hadith or passage as studied are not enabled here yet — the Owner has only decided this for HadeethEnc so far.")));
+  const body = el("div", "openiti-body");
+  section.appendChild(body);
+
+  if (!state.oi) state.oi = { bookUri: null, chapterId: null, books: null, showAllChapters: false };
+
+  function localRefresh() {
+    body.textContent = "";
+    body.appendChild(el("p", "hadith-note", t("Loading…")));
+    renderOpenitiBody(body, state.oi, localRefresh).catch((err) => {
+      body.textContent = "";
+      const p = el("p", "hadith-note", String(err?.message ?? err));
+      p.dataset.openitiError = "true";
+      body.appendChild(p);
+    });
+  }
+  localRefresh();
+  return section;
+}
+
+async function renderOpenitiBody(body, oi, localRefresh) {
+  if (!oi.books) oi.books = await loadAllOpenitiBookIndexes();
+
+  body.textContent = "";
+  body.appendChild(openitiCrumbs(oi, localRefresh));
+
+  if (!oi.bookUri) {
+    renderOpenitiBookList(body, oi, localRefresh);
+    return;
+  }
+
+  const found = oi.books.find(([uri]) => uri === oi.bookUri);
+  if (!found) { body.appendChild(el("p", "hadith-note", t("Nothing here yet."))); return; }
+  const [versionUri, index] = found;
+
+  if (!oi.chapterId) {
+    renderOpenitiChapterList(body, oi, index, localRefresh);
+    return;
+  }
+
+  const chapter = index.chapters.find((c) => c.id === oi.chapterId);
+  if (!chapter) { body.appendChild(el("p", "hadith-note", t("Nothing here yet."))); return; }
+  body.appendChild(el("p", "hadith-note", t("Loading…")));
+  const { hadiths } = await loadOpenitiChapter(versionUri, chapter);
+  body.lastChild.remove();
+  renderOpenitiPassages(body, hadiths);
+}
+
+/**
+ * Architect review (#316): a chapter title is shown TIDIED, never stored
+ * tidied -- the split data keeps the source's heading as written. Twenty of
+ * 5,191 source headings carry an unbalanced bracket ("( 5 كتاب الغسل") or an
+ * inline "\\ 390 \\" cross-reference; those marks are dropped for display
+ * only, and an empty title reads "(untitled)" rather than a file id.
+ */
+function openitiDisplayTitle(title) {
+  let s = String(title ?? "").replace(/\\\s*\d+\s*\\/g, " ").replace(/\s+/g, " ").trim();
+  const opens = (s.match(/\(/g) || []).length, closes = (s.match(/\)/g) || []).length;
+  if (opens > closes) s = s.replace(/^\(\s*/, "");
+  if (closes > opens) s = s.replace(/\s*\)$/, "");
+  return s || t("(untitled)");
+}
+
+/** "PageV01P013" -> "Vol. 1, p. 13" (the source's own page marker, made readable). */
+function openitiPageRef(ref) {
+  const m = /^PageV(\d+)P(\d+)$/.exec(ref);
+  return m ? t("Vol. {v}, p. {p}", { v: num(Number(m[1])), p: num(Number(m[2])) }) : ref;
+}
+
+function openitiCrumbs(oi, localRefresh) {
+  const bar = el("nav", "hadith-crumbs");
+  bar.dataset.openitiCrumbs = "true";
+  const add = (label, onClick) => {
+    if (onClick) {
+      const b = el("button", "openiti-crumb", label);
+      b.addEventListener("click", onClick);
+      bar.appendChild(b);
+    } else {
+      const cur = el("span", "openiti-crumb-current", label);
+      cur.setAttribute("aria-current", "page");
+      bar.appendChild(cur);
+    }
+  };
+  add(t("OpenITI"), () => { oi.bookUri = null; oi.chapterId = null; oi.showAllChapters = false; localRefresh(); });
+  const found = oi.bookUri ? oi.books.find(([uri]) => uri === oi.bookUri) : null;
+  if (found) {
+    const [, index] = found;
+    add(index.titleEn, oi.chapterId ? () => { oi.chapterId = null; localRefresh(); } : null);
+    if (oi.chapterId) {
+      const chapter = index.chapters.find((c) => c.id === oi.chapterId);
+      add(openitiDisplayTitle(chapter?.title), null);
+    }
+  }
+  return bar;
+}
+
+function renderOpenitiBookList(body, oi, localRefresh) {
+  const list = el("div", "hadith-list");
+  for (const [versionUri, index] of oi.books) {
+    const row = el("button", "hadith-row");
+    row.dataset.openitiBook = versionUri;
+    const nameWrap = el("span", "hadith-row-name");
+    const ar = el("span", "openiti-title-ar", index.titleAr);
+    ar.lang = "ar"; ar.dir = "rtl";
+    nameWrap.appendChild(ar);
+    nameWrap.appendChild(document.createTextNode(` — ${index.titleEn}`));
+    row.appendChild(nameWrap);
+    const count = index.numbering === "sequential-by-paragraph"
+      ? t("{n} passages (this edition has no hadith numbers)", { n: num(index.passageCount) })
+      : t("{n} hadith", { n: num(index.hadithCount) });
+    row.appendChild(el("span", "hadith-row-meta", count));
+    row.addEventListener("click", () => { oi.bookUri = versionUri; oi.chapterId = null; oi.showAllChapters = false; localRefresh(); });
+    list.appendChild(row);
+  }
+  body.appendChild(list);
+}
+
+function renderOpenitiChapterList(body, oi, index, localRefresh) {
+  const goBox = el("div", "openiti-goto");
+  if (index.numbering === "sequential-by-paragraph") {
+    // A control that can never work is worse than none -- say so instead
+    // (this repository's own standing rule: a control that opens and
+    // explains itself beats a control that is silently absent or broken).
+    goBox.appendChild(el("p", "hadith-note", t("This edition has no hadith numbers to jump to.")));
+  } else {
+    const inputLabel = el("label", "openiti-goto-label");
+    inputLabel.appendChild(el("span", null, t("Go to hadith number")));
+    const input = el("input", "openiti-goto-input");
+    input.type = "number";
+    input.min = "1";
+    input.inputMode = "numeric";
+    input.dataset.openitiGotoInput = "true";
+    input.setAttribute("aria-label", t("Go to hadith number"));
+    inputLabel.appendChild(input);
+    goBox.appendChild(inputLabel);
+    const goBtn = el("button", "openiti-goto-btn", t("Go"));
+    goBtn.type = "button";
+    goBtn.dataset.openitiGotoBtn = "true";
+    goBox.appendChild(goBtn);
+    const goMsg = el("p", "hadith-note openiti-goto-msg");
+    goMsg.dataset.openitiGotoMsg = "true";
+    goMsg.setAttribute("role", "status");
+    const doGo = () => {
+      const chapter = chapterForHadithNumber(index, input.value);
+      if (!chapter) {
+        goMsg.textContent = t("No chapter found for hadith number {n}.", { n: num(input.value) });
+        return;
+      }
+      oi.chapterId = chapter.id;
+      localRefresh();
+    };
+    goBtn.addEventListener("click", doGo);
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); doGo(); } });
+    goBox.appendChild(goMsg);
+  }
+  body.appendChild(goBox);
+
+  const shown = oi.showAllChapters ? index.chapters.length : Math.min(OPENITI_CHAPTER_PAGE, index.chapters.length);
+  const list = el("div", "hadith-list");
+  list.dataset.openitiChapterList = String(shown);
+  for (const c of index.chapters.slice(0, shown)) {
+    const row = el("button", "hadith-row");
+    row.dataset.openitiChapter = c.id;
+    row.appendChild(openitiArabicRowName(openitiDisplayTitle(c.title)));
+    if (c.firstNumber != null) {
+      row.appendChild(el("span", "hadith-row-meta", `${num(c.firstNumber)}–${num(c.lastNumber)}`));
+    }
+    row.addEventListener("click", () => { oi.chapterId = c.id; localRefresh(); });
+    list.appendChild(row);
+  }
+  body.appendChild(list);
+
+  if (!oi.showAllChapters && index.chapters.length > OPENITI_CHAPTER_PAGE) {
+    const more = el("button", "openiti-show-more", t("Show more ({remaining} more)", { remaining: num(index.chapters.length - OPENITI_CHAPTER_PAGE) }));
+    more.type = "button";
+    more.dataset.openitiShowMore = "true";
+    more.addEventListener("click", () => { oi.showAllChapters = true; localRefresh(); });
+    body.appendChild(more);
+  }
+}
+
+function openitiArabicRowName(text) {
+  const span = el("span", "hadith-row-name openiti-row-name-ar", text);
+  span.lang = "ar"; span.dir = "rtl";
+  return span;
+}
+
+function renderOpenitiPassages(body, hadiths) {
+  if (!hadiths.length) { body.appendChild(el("p", "hadith-note", t("Nothing here yet."))); return; }
+  const list = el("div", "hadith-occurrences");
+  for (const h of hadiths) list.appendChild(openitiPassageCard(h));
+  body.appendChild(list);
+}
+
+function openitiPassageCard(h) {
+  const card = el("article", "hadith-card openiti-passage");
+  card.dataset.openitiPassage = String(h.n);
+  card.dataset.openitiKind = h.kind;
+
+  if (h.kind === "hadith") {
+    card.appendChild(el("p", "hadith-card-head", t("Hadith {n}", { n: num(h.number) })));
+  } else if (h.kind === "passage") {
+    card.appendChild(el("p", "hadith-card-head", t("Passage {n} (position in this edition, not the book's own number)", { n: num(h.number) })));
+  } else if (h.kind === "editorial") {
+    card.appendChild(el("p", "hadith-card-head openiti-editorial-label", t("Editor's note")));
+  } else if (h.kind === "chapter-text") {
+    card.classList.add("openiti-chapter-text");
+  }
+
+  const text = el("p", "hadith-arabic", h.text);
+  text.lang = "ar"; text.dir = "rtl";
+  card.appendChild(text);
+
+  if (h.pageRefs && h.pageRefs.length) {
+    card.appendChild(el("p", "hadith-availability openiti-page-refs", h.pageRefs.map(openitiPageRef).join(" · ")));
+  }
+
+  const credit = document.createElement("a");
+  credit.className = "hadith-view-source openiti-credit";
+  credit.dataset.openitiCredit = String(h.n);
+  credit.href = OPENITI_CREDIT_URL;
+  credit.target = "_blank";
+  credit.rel = "noopener noreferrer";
+  credit.textContent = t("Source: OpenITI (CC BY-NC-SA 4.0)");
+  card.appendChild(credit);
+
+  return card;
+}
+
 function renderCollections(body, state, render) {
   const uiLang = getAppLang();
 
   if (!state.editionId) {
     body.appendChild(renderHadeethEncSource(state));
+    body.appendChild(renderOpenitiSource(state));
     body.appendChild(el("h2", null, t("Synthetic pilot collections")));
     body.appendChild(syntheticBanner());
     const list = el("div", "hadith-list");

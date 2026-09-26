@@ -612,3 +612,4 @@ total). Allocated by the MMSA Architect.
 08.83: the Word Card's whole-Qur'an numbers and the gated lemma-wide 'Mark this word known everywhere' (issue #303). Allocated by the MMSA Architect.
 08.84: HadeethEnc browsing in the Hadith module (issue #309) and Dictionary Word (lemma) progress switched on. Allocated by the MMSA Architect.
 08.85: Notes, bookmark and Studied on HadeethEnc hadiths (issue #311). Allocated by the MMSA Architect.
+08.86: OpenITI Arabic Hadith collections browsable in the Hadith module (issues #314/#316). Allocated by the MMSA Architect.

@@ -153,6 +153,45 @@
   min-height: 40px;
 }
 
+/* ---- OpenITI (issue #316) -- 11 real, untranslated Arabic hadith
+   collections, book -> chapter -> passage. Styled to match the HadeethEnc
+   surface directly above it (same row/card/crumb shapes), since both sit in
+   the same Collections landing. ---- */
+.openiti-section { margin-bottom: 1.2rem; padding-bottom: 1rem; border-bottom: 2px solid var(--hadith-rule); }
+.openiti-body { margin-top: 0.4rem; }
+.openiti-study-soon { font-size: 0.85rem; color: var(--hadith-muted); font-style: italic; margin: 0.3rem 0 0.8rem; }
+.openiti-crumb { background: none; border: none; color: var(--hadith-ink); text-decoration: underline; cursor: pointer; font: inherit; padding: 0.2rem; min-height: 40px; }
+.openiti-crumb-current { font-weight: 600; }
+.openiti-title-ar { font-size: 1.05em; }
+/* A chapter row's own name IS its Arabic heading -- unlike the synthetic
+   pilot's translated .hadith-row-name, there is no separate English title to
+   sit beside it, so this modifier gives the shared class its own
+   direction/alignment rather than changing .hadith-row-name for every caller. */
+.openiti-row-name-ar { direction: rtl; text-align: right; }
+.openiti-goto { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin: 0.6rem 0; }
+.openiti-goto-label { display: flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; }
+.openiti-goto-input { min-height: 40px; min-width: 0; width: 7rem; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); }
+.openiti-goto-btn { min-height: 40px; padding: 0.4rem 0.9rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); background: #fff; cursor: pointer; font-weight: 600; }
+.openiti-goto-msg { margin: 0.2rem 0; }
+.openiti-show-more { min-height: 40px; padding: 0.4rem 0.9rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); background: #fff; cursor: pointer; font-weight: 600; margin: 0.5rem 0; }
+.openiti-editorial-label { color: #7d5a00; font-weight: 700; }
+.openiti-page-refs { font-size: 0.75rem; }
+/* chapter-text -- the book's own words, visually quieter, no number (issue
+   #316 point 3). Only the Arabic text itself is toned down; the card keeps
+   its normal background so the credit link's own measured contrast/tap
+   target (below) is unaffected by a card-level background change. */
+.openiti-chapter-text .hadith-arabic { font-style: italic; color: var(--hadith-muted); }
+
+/* The OpenITI credit link, same measured fix as HadeethEnc's own "Source"
+   link (see the block above): the default .hadith-view-source gold measures
+   short of 4.5:1 on this card's cream background. */
+[data-openiti-passage] a.hadith-view-source {
+  color: #7a5a12;
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+}
+
 /* ---- HadeethEnc study actions (issue #311) -- Note/bookmark/Studied ---- */
 .hadeethenc-study-actions { margin-top: 0.8rem; padding-top: 0.7rem; border-top: 1px dashed var(--hadith-rule); }
 .hadeethenc-study-row { display: flex; flex-wrap: wrap; gap: 0.7rem; align-items: flex-start; }
