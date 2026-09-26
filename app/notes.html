@@ -162,6 +162,14 @@
     const params = new URLSearchParams(location.search);
     const unitKey = params.get("unit");
     const unitLabelParam = params.get("label");
+    // Issue #295 -- the Ayah Card's own "Make a poster" action already
+    // checked, before ever sending the reader here, that an active Note
+    // exists for this unit. `dawah=1` finishes the SAME "Make a printable
+    // page" flow the reader would otherwise press by hand on the card this
+    // page renders below -- once, on the first real load, never again on a
+    // later refreshView() (editing, retiring…).
+    const autoDawahRequested = params.get("dawah") === "1";
+    let autoDawahAttempted = false;
 
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");
@@ -408,6 +416,10 @@
         unitBanner.innerHTML = `${escapeHtml(t("This screen could not read Notes for that unit."))} (${escapeHtml(err.message)})`;
       }
       renderNotesList();
+      if (autoDawahRequested && !autoDawahAttempted) {
+        autoDawahAttempted = true;
+        maybeAutoMakeDawahPage();
+      }
     }
 
     // -----------------------------------------------------------------------
@@ -559,6 +571,20 @@
       );
       if (!outcome.ok) return;
       location.href = "dawah.html";
+    }
+
+    // Issue #295 -- see autoDawahRequested's own comment above. Reuses
+    // makeDawahPage() unchanged: no second write path, no different
+    // gating. Silently does nothing if the reader turns out not to have an
+    // active Note here after all (a stale link, or someone else's) -- the
+    // Ayah Card's own check already covers the ordinary case, and this
+    // page's existing empty-state markup covers the reader landing here
+    // directly with nothing to poster-ize.
+    function maybeAutoMakeDawahPage() {
+      if (!isSelfSelected()) return;
+      const target = currentRows.find((r) => r.note.status !== NOTE_STATUS.RETIRED);
+      if (!target) return;
+      makeDawahPage(target.note);
     }
 
     async function retireNote(note) {

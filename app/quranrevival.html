@@ -1929,6 +1929,20 @@
      the same edge Arabic reading starts from. */
   .ayah-num-row { display: flex; justify-content: flex-end; margin: 0.3rem 0 0.1rem; }
   .ayah-num-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 1.5rem; height: 1.5rem; padding: 0 0.4rem; border-radius: 999px; background: #f0ead9; color: #8a6d1f; font-size: 0.78rem; font-weight: 700; border: 1px solid #d8c68a; }
+  /* Issue #295 -- the badge is a real <button> (the Ayah Card's third entry
+     point) now, in Read and Note view alike. `font`/`cursor` are the only
+     things a native <button> needs reset here -- everything else the badge
+     needs (size, colour, border, radius) is already the shared rule above.
+     A 40x40 invisible hit area rides on `::after` (`position: absolute`, so
+     it never joins any layout calculation -- proven by layout.mjs/reading.mjs
+     staying byte-identical) rather than growing the badge's own visible box,
+     because THIS badge's row (`.ayah-num-row`) has no OTHER content sharing
+     it: growing the box would grow the row, which the spec explicitly rules
+     out ("do not change the row's measured layout"). */
+  button.ayah-num-badge { font: inherit; cursor: pointer; position: relative; }
+  button.ayah-num-badge::after { content: ""; position: absolute; top: 50%; left: 50%; width: 2.5rem; height: 2.5rem; transform: translate(-50%, -50%); }
+  button.ayah-num-badge:hover, button.ayah-num-badge:focus-visible { background: #e7dcb8; outline: none; }
+  button.ayah-num-badge:focus-visible { box-shadow: 0 0 0 2px #1F3A6E; }
   /* Issue #189 -- word-tap in the normal flowing Arabic (`.ayah-arabic` in
      Read view, `.note-arabic` in Note view). Every button property that
      would change how the text LOOKS or WRAPS is reset to nothing, so a word
@@ -2359,13 +2373,20 @@
      marker gets its OWN, bigger version just below (issue #286 -- it used
      to be skipped entirely, see AYAH_WORD_MERGES). */
   .hifz-word[data-word-occurrence] { cursor: pointer; padding: 0.3em 0.12em; margin: -0.3em -0.12em; }
+  /* Architect review, #295: the āyah marker's 40px tap area may overlap the
+     word beside it -- a word tap is the primary action, so words sit above
+     the marker's padding and the marker only takes taps on its own glyph
+     and the empty space around it. */
+  .hifz-word[data-word-occurrence]:not([data-ayah-marker]) { position: relative; z-index: 1; }
   /* Issue #286 -- the round ayah-end print number opens the "This āyah"
      action sheet. It is a small glyph, so it gets a bigger version of the
      same margin-cancels-padding trick above -- >=40px of tappable area at
      every measured phone width (34px/6.07cqw base font -- 0.6em padding a
      side is >=20px even at the smallest rendered size this app measures),
      with its outer box, and so the line's own justification, unchanged. */
-  .hifz-word[data-ayah-marker] { cursor: pointer; padding: 0.6em; margin: -0.6em; }
+  /* A Mushaf page's font shrinks with the phone, so 0.6em alone left the
+     marker's tap area 33px wide at 320px -- max() keeps it at least 40px. */
+  .hifz-word[data-ayah-marker] { cursor: pointer; padding: max(0.6em, 14px); margin: calc(-1 * max(0.6em, 14px)); }
   /* Round 28 -- a real background band on the ayah being recited, the owner's
      ask. box-shadow rather than padding on purpose: each word is a flex item,
      so padding would change the line's width and fight the justification that
@@ -2393,11 +2414,50 @@
   .ayah-sheet-handle { width: 36px; height: 4px; background: #ddd; border-radius: 999px; margin: 0.3rem auto 0.6rem; }
   .ayah-sheet-header { display: flex; align-items: center; justify-content: space-between; padding: 0 0.2rem 0.4rem; border-bottom: 1px solid #eee; margin-bottom: 0.3rem; }
   .ayah-sheet-ref { font-size: 0.9rem; color: #1F3A6E; font-weight: 600; }
-  .ayah-sheet-close { background: none; border: none; color: #666; font-size: 1.5rem; line-height: 1; padding: 0.2rem 0.5rem; cursor: pointer; }
+  .ayah-sheet-close { background: none; border: none; color: #666; font-size: 1.5rem; line-height: 1; min-width: 40px; min-height: 40px; padding: 0.2rem 0.5rem; cursor: pointer; }
   .ayah-sheet .qm-item { min-height: 40px; font-size: 0.88rem; }
   .ayah-sheet .qm-item.is-disabled { opacity: 0.5; cursor: default; }
   .ayah-sheet .qm-item.is-disabled:hover { background: none; }
   .ayah-sheet-hint { font-size: 0.74rem; color: #888; margin: -0.1rem 0.5rem 0.35rem; }
+  /* Issue #295 -- the two new actions. "Take an Approach" is a real
+     <select>, sized and reset exactly like every other control in this
+     sheet (40px, same font). "Make a poster"'s own inline "Take Note"
+     offer is a plain text-styled button INSIDE the hint paragraph, so it
+     reads as part of the sentence rather than a second, competing action
+     row -- min-height still 40px, the same tap-target floor as everything
+     else here, achieved with padding rather than a fixed box so it can sit
+     inline with the sentence around it. */
+  .ayah-sheet-select-item { display: flex; flex-direction: column; gap: 0.3rem; padding: 0.4rem 0.6rem; }
+  .ayah-sheet-select-label { font-size: 0.88rem; color: #1b1b16; }
+  /* CLAUDE.md's own standing lesson: a <select>'s intrinsic width is its
+     LONGEST option, which then runs off a narrow phone the moment a real
+     tenant's Approach name is longer than the harness's own short fixture
+     names ("Reading (with Tajweed)" is the exact real-tenant case this
+     lesson is named after). `width: 100%` + `min-width: 0` pins it to the
+     sheet's own content width regardless of option length. */
+  .ayah-sheet-approach-select { display: block; width: 100%; min-width: 0; box-sizing: border-box; min-height: 40px; font: inherit; font-size: 0.88rem; padding: 0.3rem 0.5rem; border: 1px solid #d8c68a; border-radius: 0.35rem; background: #fff8e6; color: #1b1b16; }
+  .ayah-sheet-hint-btn { display: inline-block; min-height: 40px; padding: 0.3rem 0.6rem; margin: 0.1rem 0; background: none; border: 1px solid #1F3A6E; border-radius: 0.35rem; color: #1F3A6E; font: inherit; font-size: 0.74rem; font-weight: 600; cursor: pointer; }
+  /* Issue #295 -- Status part B, below the Actions. Its own scroll region
+     is the SAME `.ayah-sheet` (already `overflow-y: auto`) -- no second
+     scroll container, so a phone's bottom sheet still scrolls as one
+     surface as the spec requires. */
+  .ayah-sheet-status { border-top: 1px solid #eee; margin-top: 0.4rem; padding-top: 0.5rem; }
+  .ayah-sheet-section-title { font-size: 0.82rem; color: #1F3A6E; margin: 0 0.2rem 0.4rem; }
+  .ayah-status-block { margin: 0 0.2rem 0.9rem; }
+  .ayah-status-heading { font-size: 0.76rem; color: #8a6d1f; text-transform: uppercase; letter-spacing: 0.02em; margin: 0 0 0.3rem; }
+  .ayah-status-empty { font-size: 0.8rem; color: #888; margin: 0; }
+  .ayah-approach-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 0.4rem; }
+  .ayah-approach-dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .ayah-sheet-wheel-btn { width: auto; }
+  .ayah-wbw-count { font-size: 0.82rem; color: #1b1b16; margin: 0 0 0.4rem; }
+  .ayah-wbw-row { display: flex; flex-wrap: wrap; gap: 0.4rem; direction: rtl; }
+  /* Architect review, #295: an explicit colour -- the app's button rule is
+     white text, which printed these words white on cream (invisible). */
+  .ayah-wbw-chip { min-width: 40px; min-height: 40px; padding: 0.2rem 0.5rem; color: #1F3A6E; background: #f6f2e4; border: 1px solid #d8c68a; border-radius: 0.35rem; font-size: 1rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+  .ayah-wbw-chip.is-known { color: #14532d; background: #e3f3ea; border: 2px solid #3fae74; }
+  .ayah-hifz-chip { display: inline-flex; align-items: center; min-height: 1.6rem; padding: 0.2rem 0.6rem; border-radius: 999px; color: #fff; font-size: 0.8rem; font-weight: 600; text-shadow: 0 0 2px rgba(0,0,0,0.35); }
+  .ayah-sheet-info-placeholder { font-size: 0.8rem; color: #888; font-style: italic; margin: 0; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
   @media (min-width: 900px) {
     .ayah-sheet {
       left: auto; right: 1.4rem; bottom: auto; top: 4.5rem; border-radius: 12px;
@@ -4495,7 +4555,7 @@
     import { renderAyahFolderPickerHtml, attachAyahFolderPickerHandlers } from "./js/ayah-folder-filing-renderer.js";
     import { planFolderFilings } from "./js/ayah-folder-filing-plan.js";
     import { createStudyNote, notesForStudyUnit } from "./js/study-note-service.js";
-    import { createNoteFolder, createNotePlacement, retireNotePlacement } from "./js/note-foundation.js";
+    import { createNoteFolder, createNotePlacement, retireNotePlacement, NOTE_STATUS } from "./js/note-foundation.js";
     import { ownerFolderTreePaged, noteFilings } from "./js/journey-map-service.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { mountBookmarkMenu } from "./js/bookmark-nav.js";
@@ -4538,7 +4598,7 @@
     // -- each respects its own Every time/Once a day/Once a week preference
     // independently, same as when they were two separate page loads.
     showBootSplash(() => showQuranSplash());
-    import { renderWheelLegend, renderScopedWheel, attachScopedWheelClickHandler, renderWheelSidebar, attachWheelSidebarClickHandler, wrapWheelLabel, wordTotalRampColor } from "./js/mastery-wheel.js";
+    import { renderWheelLegend, renderScopedWheel, attachScopedWheelClickHandler, renderWheelSidebar, attachWheelSidebarClickHandler, wrapWheelLabel, wordTotalRampColor, STATUS_COLORS } from "./js/mastery-wheel.js";
     import {
       renderGuideTab, renderTrackTab, renderBreakdownTab, renderCoverageTab,
       renderWayModalShell, attachWayModalHandlers, renderWayEmbed, attachWayEmbedHandlers,
@@ -5183,6 +5243,16 @@
     // doesn't reopen it.
     let ayahSheetUnitKey = null;
     let ayahSheetPendingQcrOpen = false;
+    // Issue #295 -- the Ayah Card's Status part B, read-on-first-use exactly
+    // like ayahNoteDataLoadedFor above: null while unresolved (rendered as
+    // "loading"/silent, never guessed), reset to null on every open so a
+    // stale ayah's figures can never flash under a new one before its own
+    // read lands. Keyed implicitly by ayahSheetUnitKey -- every setter below
+    // checks ayahSheetUnitKey is still the same unit before applying what it
+    // read, the same "closed/reopened while awaiting" guard
+    // openAyahFolderFiling() already uses.
+    let ayahSheetWordStatus = null; // { known, total, words: [...] } | null
+    let ayahSheetHasPosterNote = null; // true | false | null (unresolved)
     // The "File in folder(s)…" overlay, opened FROM the sheet. Null means
     // closed. `noteId: null` with `notes.length > 1` means "more than one
     // Note already exists on this āyah -- ask which one" (spec item 3); with
@@ -5331,6 +5401,10 @@
     let asmaXChunkPersonId = null; // which person asmaXChunk was fetched for
     const ASMA_SUBJECT_ID = "asma_ul_husna";
     const ASMA_TRACKABLE_ID = "studied_asma";
+    // Issue #295 -- the Ayah Card's Status B.3 ("Hifz"). A permanent,
+    // seed-time id (catalogue-data.js), stable even if the tenant renamed the
+    // Approach (I5) -- never re-derived from a trackable's current name.
+    const HIFZ_TRACKABLE_ID = "approach_02";
 
     // Phase 5 -- drill playback state (persisted across renderAudioControls()
     // rebuilds, same pattern as currentReciterId/loopIsOn above).
@@ -11479,6 +11553,30 @@
       // forms index lands -- see its own comment for why it belongs there.
     }
 
+    /** Opening a word directly is a fresh start: any "visiting from" trail
+        from an earlier occurrence hop is over. Extracted (issue #295) so
+        the Ayah Card's own Word by Word chips can open the same Word Card
+        the shared readView/noteView listener below already does -- the
+        card's own mount lives OUTSIDE readView/noteView (a sibling
+        overlay), so that listener alone can never see a tap inside it.
+        `triggerEl` is whatever DOM element the tap came from, so closing
+        the card can return focus to it (`null` from the Ayah Card, whose
+        own trigger is gone by the time the Word Card opens -- the sheet
+        that held it has already been removed, per attachAyahActionSheetHandlers'
+        own "close first" rule). */
+    function openWordCardForOccurrenceId(occurrenceId, triggerEl = null) {
+      quranWordCardTrigger = triggerEl;
+      quranWordCardOrigin = null;
+      renderWordCardReturnBar();
+      quranWordCardExpandedForm = null;
+      quranWordCardState = openWordCard(quranWordCardState, occurrenceId);
+      quranWordCardContext = {};
+      renderPersistentWordCard();
+      activeWordCardMount()?.querySelector("[data-word-card-close]")?.focus({ preventScroll: true });
+      hydrateWordCardOccurrences();
+      hydrateWordProgress();
+    }
+
     // v08.20 -- the Read view and the Note view share ONE set of handlers.
     // Neither is named inside them: every lookup goes through
     // activeWordCardMount(), so the card behaves identically in both.
@@ -11486,12 +11584,15 @@
     document.getElementById(viewId).addEventListener("click", (event) => {
       if (!(event.target instanceof Element)) return;
       const occurrence = event.target.closest("[data-word-occurrence]");
-      // Opening a word directly is a fresh start: any "visiting from" trail
-      // from an earlier occurrence hop is over.
-      if (occurrence) { quranWordCardTrigger = occurrence; quranWordCardOrigin = null; renderWordCardReturnBar(); quranWordCardExpandedForm = null; quranWordCardState = openWordCard(quranWordCardState, occurrence.dataset.wordOccurrence); quranWordCardContext = {}; renderPersistentWordCard(); activeWordCardMount()?.querySelector("[data-word-card-close]")?.focus({ preventScroll: true }); hydrateWordCardOccurrences(); hydrateWordProgress(); return; }
+      if (occurrence) { openWordCardForOccurrenceId(occurrence.dataset.wordOccurrence, occurrence); return; }
       // Issue #286 -- (a) the Mushaf page's own round ayah-end marker.
       const ayahMarker = event.target.closest("[data-ayah-marker]");
       if (ayahMarker) { openAyahActionSheet(ayahMarker.dataset.ayahMarker); return; }
+      // Issue #295 -- (c) the number badge before the Arabic, in both the
+      // normal flowing Read view (ayah-renderer.js's renderArabicPanel) and
+      // the Note view's own locally-built Arabic block.
+      const ayahNumBadge = event.target.closest("[data-ayah-num-badge]");
+      if (ayahNumBadge) { openAyahActionSheet(ayahNumBadge.dataset.ayahNumBadge); return; }
       // Issue #286 -- (b) the Word Card's own "This āyah ⋯" button.
       const wordCardAyahAction = event.target.closest("[data-word-card-ayah-action]");
       if (wordCardAyahAction) { openAyahActionSheet(wordCardAyahAction.dataset.wordCardAyahAction); return; }
@@ -11980,20 +12081,181 @@
 
     function closeAyahActionSheet() {
       ayahSheetUnitKey = null;
+      ayahSheetWordStatus = null;
+      ayahSheetHasPosterNote = null;
       ayahActionSheetOverlayEl.classList.remove("open");
       ayahActionSheetMountEl.innerHTML = "";
+    }
+
+    /** Status B.1, "Approach" (issue #295) -- every Approach's own claim on
+        THIS exact āyah, the same axis approachStatusesForCurrentUnit() reads
+        for the wheel, just pinned to a fixed ayah key instead of whatever
+        unit is currently selected. Reads currentChunk only -- an Ayah Card
+        can only ever open on an āyah inside the surah already loaded, so its
+        claims are already in memory (no new read). */
+    function approachStatusesForAyah(surahNum, ayahNum) {
+      if (surahNum !== currentSurahNum) return [];
+      const unitKey = buildUnitKey.ayah(surahNum, ayahNum);
+      const entries = currentChunk?.entries ?? {};
+      return quranTrackables.map((trackable) => {
+        const statusId = entries[`${unitKey}::${trackable.id}`]?.claimedStatus ?? "not_started";
+        return {
+          id: trackable.id,
+          name: langText(trackable.name, getAppLang(), trackable.id),
+          statusId,
+          color: STATUS_COLORS[statusId] ?? STATUS_COLORS.not_started,
+          label: statusLabel(statusId),
+        };
+      });
+    }
+
+    /** Status B.3, "Hifz" (issue #295) -- this āyah's status on Approach 2,
+        "Hifz / Memorising" (HIFZ_TRACKABLE_ID). null when the tenant has no
+        such Approach any more (e.g. archived) -- said in words rather than
+        guessed. Same no-new-read reasoning as approachStatusesForAyah(). */
+    function hifzStatusForAyah(surahNum, ayahNum) {
+      if (surahNum !== currentSurahNum) return null;
+      if (!quranTrackables.some((tr) => tr.id === HIFZ_TRACKABLE_ID)) return null;
+      const unitKey = buildUnitKey.ayah(surahNum, ayahNum);
+      const statusId = currentChunk?.entries?.[`${unitKey}::${HIFZ_TRACKABLE_ID}`]?.claimedStatus ?? "not_started";
+      return { statusId, label: statusLabel(statusId), color: STATUS_COLORS[statusId] ?? STATUS_COLORS.not_started };
+    }
+
+    /** Status B.2, "Word by Word" (issue #295) -- read-on-first-use, exactly
+        like the Word Card's own hydrateWordProgress()/wordProgressContext():
+        rendered once from whatever is already cached (possibly "unknown"),
+        then re-read for real and re-rendered. "Known" is EXACTLY
+        countsAsKnown/computeArabicCoverage()'s own definition -- no second
+        one invented here. */
+    async function ensureAyahSheetWordStatusLoaded(unitKey, surahNum, ayahNum) {
+      const { tenantId, subjectPersonId } = wordProgressActor();
+      if (!tenantId || !subjectPersonId || surahNum !== currentSurahNum) return;
+      try {
+        await wordProgressConfirmationRequired(tenantId, subjectPersonId);
+        await primeAyahProgress(db, { tenantId, personId: subjectPersonId, surah: surahNum, ayah: ayahNum });
+      } catch (error) {
+        reportWriteFailure(error, { what: "read Arabic word progress", surah: surahNum, ayah: ayahNum });
+      }
+      if (ayahSheetUnitKey !== unitKey) return; // closed/reopened while awaiting -- the same guard openAyahFolderFiling() uses
+      const ayahObj = currentSurahData?.ayahs?.find((a) => a.ayah === ayahNum);
+      if (!ayahObj?.words?.length) { ayahSheetWordStatus = { known: 0, total: 0, words: [] }; renderAyahActionSheetNow(); return; }
+      const confirmationRequired = !!wordProgressConfirmRequired;
+      const words = ayahObj.words.map((w) => {
+        const occurrenceId = `quran-word-occurrence:v1:${surahNum}:${ayahNum}:${w.position}`;
+        return { position: w.position, arabic: w.arabic, occurrenceId, known: !!wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId, confirmationRequired }).countsAsKnown };
+      });
+      let coverage = null;
+      try {
+        const scope = occurrenceIdsForAyah(currentSurahData, ayahNum);
+        const views = new Map(scope.map((occ) => [occ, wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: occ, confirmationRequired })]));
+        coverage = computeArabicCoverage({ scopeOccurrenceIds: scope, views, label: `ayah:${surahNum}:${ayahNum}` });
+      } catch { coverage = null; }
+      ayahSheetWordStatus = { known: coverage?.known ?? words.filter((w) => w.known).length, total: coverage?.total ?? words.length, words };
+      renderAyahActionSheetNow();
+    }
+
+    /** "Make a poster" (issue #295) -- read-on-first-use whether an active
+        Note Foundation Note already exists for this āyah: the exact same
+        notesForStudyUnit() existence check "File in folder(s)…" already
+        performs on ITS OWN open (spec item 3), reused rather than
+        re-invented, just triggered when the whole card opens instead of
+        only when that one action's own sub-dialog does. */
+    async function ensureAyahSheetPosterNoteLoaded(unitKey) {
+      if (!selectedPersonId) { ayahSheetHasPosterNote = false; if (ayahSheetUnitKey === unitKey) renderAyahActionSheetNow(); return; }
+      try {
+        const { rows } = await notesForStudyUnit(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, unitKey });
+        ayahSheetHasPosterNote = rows.some((row) => row.note.status !== NOTE_STATUS.RETIRED);
+      } catch {
+        ayahSheetHasPosterNote = false;
+      }
+      if (ayahSheetUnitKey === unitKey) renderAyahActionSheetNow();
+    }
+
+    /** "See on the wheel" (issue #295) -- switches the canonical Study Unit
+        controls to Ayah/this ayah THROUGH their own real change events (so
+        their own existing handlers stay the only code that decides
+        anything, the same rule the "Choose a Unit" capsule's mirrors
+        already follow), then switches the stage back to the wheel. */
+    function focusWheelOnAyah(ayahNum) {
+      if (unitTypeSelect.value !== "ayah") { unitTypeSelect.value = "ayah"; unitTypeSelect.dispatchEvent(new Event("change")); }
+      if (Number(ayahSelect.value) !== ayahNum) { ayahSelect.value = String(ayahNum); ayahSelect.dispatchEvent(new Event("change")); }
+      setStageView("wheel");
+      wheelContainer?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    /** "Take an Approach" (issue #295) -- claims `approachId` for THIS āyah
+        for whoever is currently selected on the page, through records.js'
+        own claimStatus() -- the identical write path the Note view's own
+        Track tab (wireApproachEmbed()) already uses, never a second one.
+        Defaults the claim to "learning" -- the natural first rung above
+        "not started" for "I am taking this Approach up", since the Ayah
+        Card offers no separate status picker of its own (spec: "choosing
+        one claims that Approach"). Follows the SAME permission rule as the
+        Track tab's own single-assignee path (canRecordFor(), enforced
+        server-side) -- selectedPersonId is already whoever the page's own
+        roster-scoped picker chose, so no extra client-side gate is needed
+        here either. */
+    async function takeApproachForAyah(unitKey, approachId) {
+      if (!auth.currentUser || !selectedPersonId) return;
+      const outcome = await safeWrite(
+        () => claimStatus(db, {
+          tenantId: activeTenantId,
+          personId: selectedPersonId,
+          subjectId: "quran",
+          unitKey,
+          trackableId: approachId,
+          statusId: "learning",
+          notes: "",
+          domainIds: [],
+          claimedByPersonId: currentActingPersonId(),
+          claimedByUid: auth.currentUser.uid,
+        }),
+        { collection: "records", action: "claimStatus" }
+      );
+      if (!outcome.ok) return;
+      await logActivity(db, {
+        tenantId: activeTenantId, personId: selectedPersonId, date: new Date(),
+        weekStartsOn: tenantWeekStartsOn, subjectId: "quran", unitKey,
+        trackableId: approachId, action: "claimed", uid: auth.currentUser.uid,
+        viaProgramId: programBySubjectId.get("quran") ?? null,
+      });
+      await refreshChunkAndWheel(); // ayah/range/surah/ruku all chunk to surah_N -- always true for an Ayah Card's own unit key
+      if (stageView === "note" && noteScope) renderNoteViewNow();
+    }
+
+    /** "Make a poster" (issue #295) -- opens notes.html's existing "Make a
+        printable page" (Dawah) flow for this āyah's Note (dawah=1, wired up
+        in notes.html itself) -- never a second write path. No active Note
+        yet: say so and offer the same Take Note step "Note & more…" already
+        uses (openNoteView()). `hasPosterNote` is passed in by the caller
+        (captured at render time, BEFORE onClose wipes ayahSheetHasPosterNote
+        back to null) rather than read off that module variable here. */
+    function openAyahPoster(unitKey, hasPosterNote) {
+      if (hasPosterNote === false) { openNoteView(unitKey); return; }
+      const { surah, ayah: ayahNum } = parseAyahUnitKey(unitKey);
+      const ref = ayahRefLabel(surah, ayahNum);
+      location.href = `notes.html?unit=${encodeURIComponent(unitKey)}&label=${encodeURIComponent(ref)}&dawah=1`;
     }
 
     function renderAyahActionSheetNow() {
       if (!ayahSheetUnitKey) return;
       const { surah, ayah: ayahNum } = parseAyahUnitKey(ayahSheetUnitKey);
       const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: ayahSheetUnitKey });
+      // Captured now, before onClose (which always fires first -- see
+      // attachAyahActionSheetHandlers' own comment) resets
+      // ayahSheetHasPosterNote back to null for the next open.
+      const hasPosterNoteAtRenderTime = ayahSheetHasPosterNote;
       ayahActionSheetMountEl.innerHTML = renderAyahActionSheetHtml({
         unitKey: ayahSheetUnitKey,
         ref: ayahRefLabel(surah, ayahNum),
         hasNote: ayahHasNote(ayahNotesDoc, ayahSheetUnitKey),
         isBookmarked,
         isSelf: isSelfSelectedForAyahActions(),
+        approachOptionsHtml: buildTrackableOptionsHtml(),
+        hasPosterNote: hasPosterNoteAtRenderTime,
+        approachStatuses: approachStatusesForAyah(surah, ayahNum),
+        wordStatus: ayahSheetWordStatus,
+        hifzStatus: hifzStatusForAyah(surah, ayahNum),
       });
       attachAyahActionSheetHandlers(ayahActionSheetMountEl, {
         onClose: closeAyahActionSheet,
@@ -12023,6 +12285,10 @@
           const langs = ["ar", getAppLang() === "bn" ? "bn" : "en"];
           await shareText(buildAyahText(unitKey, langs), unitKey);
         },
+        onTakeApproach: (unitKey, approachId) => takeApproachForAyah(unitKey, approachId),
+        onPoster: (unitKey) => openAyahPoster(unitKey, hasPosterNoteAtRenderTime),
+        onSeeOnWheel: () => focusWheelOnAyah(ayahNum),
+        onWordTap: (occurrenceId) => openWordCardForOccurrenceId(occurrenceId),
       });
     }
 
@@ -12030,15 +12296,23 @@
         (`span.dataset.ayahMarker`, hifz-renderer.js's own plain
         "surah:ayah" ayahKey shape). Entry point (b): the Word Card's
         "This āyah ⋯" button (`${chapter.surahNumber}:${ayah.ayah}`,
-        the identical plain shape). Both are normalised to the one real
-        unit key here. */
+        the identical plain shape). Entry point (c), issue #295: the number
+        badge before the Arabic, in Read and Note view alike (the same
+        plain shape again). All three are normalised to the one real unit
+        key here. */
     function openAyahActionSheet(ayahKey) {
       const [surahStr, ayahStr] = ayahKey.split(":");
-      const unitKey = buildUnitKey.ayah(Number(surahStr), Number(ayahStr));
+      const surahNum = Number(surahStr);
+      const ayahNum = Number(ayahStr);
+      const unitKey = buildUnitKey.ayah(surahNum, ayahNum);
       ayahSheetUnitKey = unitKey;
+      ayahSheetWordStatus = null;
+      ayahSheetHasPosterNote = null;
       renderAyahActionSheetNow();
       ayahActionSheetOverlayEl.classList.add("open");
       ensureAyahNoteDataLoaded().then(() => { if (ayahSheetUnitKey === unitKey) renderAyahActionSheetNow(); });
+      ensureAyahSheetWordStatusLoaded(unitKey, surahNum, ayahNum);
+      ensureAyahSheetPosterNoteLoaded(unitKey);
     }
 
     ayahActionSheetOverlayEl.addEventListener("click", (e) => { if (e.target === ayahActionSheetOverlayEl) closeAyahActionSheet(); });
@@ -13042,7 +13316,12 @@
           // renderArabicPanel()'s own rule (a block's number in that block's
           // own script). This screen builds its Arabic locally rather than
           // calling that renderer, so it needs the same call here.
-          return `<div class="ayah-num-row"><span class="ayah-num-badge">${digitsForLang(a.ayah, "ar")}</span></div><div class="note-arabic" dir="rtl" lang="ar">${body}</div>`;
+          // Issue #295 -- the Ayah Card's third entry point: the number
+          // badge is a real <button> here too, the same
+          // data-ayah-num-badge="surah:ayah" shape ayah-renderer.js's own
+          // renderArabicPanel() now stamps for the Read screen.
+          const numBadge = `<button type="button" class="ayah-num-badge" data-ayah-num-badge="${currentSurahNum}:${a.ayah}" aria-label="${escapeHtml(t("This āyah"))}">${digitsForLang(a.ayah, "ar")}</button>`;
+          return `<div class="ayah-num-row">${numBadge}</div><div class="note-arabic" dir="rtl" lang="ar">${body}</div>`;
         };
         const translationLineHtml = (ayahNum, text, lang) => {
           if (!text) return "";

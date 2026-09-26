@@ -2825,4 +2825,22 @@ export const BN = {
   "Couldn't load this Note's folders.": "এই নোটের ফোল্ডার লোড করা যায়নি।",
   "Some folders couldn't be saved -- please try again.":
     "কিছু ফোল্ডার সংরক্ষণ করা যায়নি — দয়া করে আবার চেষ্টা করুন।",
+
+  // Ayah Card, part 1 (issue #295, 25 Sep 2026) -- growing the "This āyah"
+  // sheet above into Actions (A) + Status (B); "Approach"/"Word by Word"/
+  // "No Approaches yet."/"No word-by-word data for this ayah." already
+  // exist above and are reused as-is.
+  "Take an Approach": "একটি পদ্ধতি গ্রহণ করুন",
+  "Choose an Approach…": "একটি পদ্ধতি বেছে নিন…",
+  "Make a poster": "একটি পোস্টার তৈরি করুন",
+  "You don't have a Note on this āyah yet.": "এই আয়াতে আপনার এখনো কোনো নোট নেই।",
+  "Take Note": "নোট নিন",
+  "Status of this āyah": "এই আয়াতের অবস্থা",
+  "See on the wheel": "চাকায় দেখুন",
+  "Known {known} of {total} words": "{total}-এর মধ্যে {known}টি শব্দ জানা",
+  "known": "জানা",
+  "Hifz": "হিফজ",
+  "No Hifz Approach set up yet.": "হিফজ পদ্ধতি এখনো সেট আপ করা হয়নি।",
+  "Related āyāt": "সম্পর্কিত আয়াত",
+  "Related and connected āyāt — coming next": "সম্পর্কিত ও সংযুক্ত আয়াত — শীঘ্রই আসছে",
 };

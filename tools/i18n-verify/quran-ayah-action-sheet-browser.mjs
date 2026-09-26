@@ -19,6 +19,14 @@
 // and driven through several round trips, which this round's own budget did
 // not stretch to verifying blind, unrunnable in this sandbox. Flagged as
 // the next incremental push, not silently skipped.
+//
+// ISSUE #295 ("Ayah Card, part 1") ADDED, same "written here, not run here"
+// caveat: the 320/360 viewports (the layout rule now covers all four widths
+// the round is measured at, not just 390/1100), a 40px-minimum sweep over
+// every button in the card, and a whole new scenario at the bottom of this
+// file covering the third entry point (the number badge, Read AND Note
+// view), Take an Approach's real claimStatus() write, and the two Status B
+// figures that need real seeded data (Word by Word known count, Hifz).
 import { chromium, newContext, openPage } from "./harness.mjs";
 
 let pass = 0, fail = 0;
@@ -95,7 +103,17 @@ async function openMushafSurah2(page) {
   await page.waitForTimeout(400);
 }
 
-for (const viewport of [{ width: 390, height: 844, label: "mobile 390x844" }, { width: 1100, height: 800, label: "desktop 1100x800" }]) {
+// Issue #295 widened this list from [390, 1100] to the four widths the
+// Ayah Card round itself is measured at -- the Status part this round adds
+// is real extra height inside the same bottom sheet/popover, so the
+// smallest phones this project measures (320/360) need their own proof,
+// not an inference from 390.
+for (const viewport of [
+  { width: 320, height: 640, label: "phone 320x640" },
+  { width: 360, height: 740, label: "phone 360x740" },
+  { width: 390, height: 844, label: "mobile 390x844" },
+  { width: 1100, height: 800, label: "desktop 1100x800" },
+]) {
   for (const lang of ["en", "bn"]) {
     console.log(`\n=== "This āyah" action sheet, appLang=${lang}, ${viewport.label} ===`);
     const ctx = await newContext(browser, { appLang: lang, viewport: { width: viewport.width, height: viewport.height } });
@@ -138,8 +156,24 @@ for (const viewport of [{ width: 390, height: 844, label: "mobile 390x844" }, { 
       });
       check(`${lang} ${viewport.label} tapping the marker opens the sheet, scoped to ayah:2:71`, sheetOpen);
 
-      const noSidewaysScroll = await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1);
-      check(`${lang} ${viewport.label} the open sheet causes no sideways page scroll`, noSidewaysScroll);
+      // Issue #295's own layout rule, read literally: scrollWidth === innerWidth
+      // (not merely "no more than a rounding pixel over") and every BUTTON in
+      // the whole card (Actions + the new Status part) at least 40x40 -- the
+      // Approach dots and the Hifz chip are deliberately excluded, neither is
+      // a <button>.
+      const noSidewaysScroll = await page.evaluate(() => document.documentElement.scrollWidth === window.innerWidth);
+      check(`${lang} ${viewport.label} the open sheet causes no sideways page scroll (scrollWidth === innerWidth)`, noSidewaysScroll);
+
+      const tinyButtons = await page.evaluate(() => {
+        const sheet = document.querySelector("[data-ayah-sheet]");
+        if (!sheet) return null;
+        return [...sheet.querySelectorAll("button")]
+          .map((b) => ({ label: b.textContent.trim().slice(0, 24) || b.getAttribute("aria-label") || b.className, rect: b.getBoundingClientRect() }))
+          .filter((b) => b.rect.width > 0 && b.rect.height > 0) // a hidden/zero-size button (none expected here) is a different defect, not this one
+          .filter((b) => b.rect.width < 40 || b.rect.height < 40)
+          .map((b) => `${b.label} ${Math.round(b.rect.width)}x${Math.round(b.rect.height)}`);
+      });
+      check(`${lang} ${viewport.label} every button in the card is at least 40x40`, Array.isArray(tinyButtons) && tinyButtons.length === 0, JSON.stringify(tinyButtons));
 
       // Escape closes it.
       await page.keyboard.press("Escape");
@@ -177,6 +211,158 @@ for (const viewport of [{ width: 390, height: 844, label: "mobile 390x844" }, { 
   }
 }
 
+// =============================================================================
+// Issue #295 -- the Ayah Card. The third entry point (the number badge, Read
+// AND Note view -- NOT the Mushaf marker, already covered above), Take an
+// Approach's real write, the two new Status B figures that need real seeded
+// data (Word by Word known count, Hifz), and a Word by Word chip still
+// opening the Word Card. Surah 1 ayah 1 (Al-Fatiha's Bismillah, 4 real
+// words) -- the SAME ayah/word-count quran-word-progress-rendered.mjs
+// already uses, rather than re-deriving a fresh figure this suite would
+// have to trust blind. Run once, English, 390px -- the viewport/language
+// MATRIX for the sheet's own layout is the loop above; this section proves
+// the new BEHAVIOUR, not a second copy of the layout sweep.
+// =============================================================================
+
+const CARD_SEED = `
+// A Hifz trackable at the REAL production id (catalogue-data.js's
+// approach_02) -- the shared fixture's own default Hifz-equivalent is
+// "memorise" (a harness id, not production's), so HIFZ_TRACKABLE_ID needs
+// one added under its real id for this scenario to mean anything.
+DATA.trackables.push({
+  _id: TENANT_ID + "__approach_02", tenantId: TENANT_ID, subjectId: "quran",
+  order: 99, status: "active", name: lang("Hifz / Memorising", "হিফজ / মুখস্থকরণ"),
+  groupName: lang("Preservation", "সংরক্ষণ"),
+  guide: { what: lang("What it is", "এটি কী"), how: lang("How to do it", "কীভাবে করবেন"), measure: lang("How to measure", "কীভাবে মাপবেন") },
+  panels: ["text"],
+});
+DATA.records = [{
+  _id: TENANT_ID + "__p1__surah_1", tenantId: TENANT_ID, personId: "p1",
+  entries: {
+    "ayah:1:1::memorise": { unitType: "ayah", subjectId: "quran", trackableId: "memorise", claimedStatus: "achieved", confirmedStatus: "achieved", confirmState: "confirmed" },
+    "ayah:1:1::approach_02": { unitType: "ayah", subjectId: "quran", trackableId: "approach_02", claimedStatus: "practising", confirmedStatus: "practising", confirmState: "confirmed" },
+  },
+}];
+DATA.quranWordProgress = [{
+  _id: TENANT_ID + "__p1__wbw__1_1", contractVersion: "quran-word-progress:v1",
+  identityContract: "quran-word-occurrence:v1", lane: "learner",
+  tenantId: TENANT_ID, personId: "p1", level: "wbw", surah: 1, ayah: 1,
+  entries: { "1": { s: "a", at: "2026-09-25T10:00:00.000Z", by: "p1" }, "2": { s: "a", at: "2026-09-25T10:00:00.000Z", by: "p1" } },
+}];
+DATA.quranWordApprovals = [];
+`;
+
+async function enterReadSurah1(page) {
+  const reachable = await page.evaluate(() => {
+    const b = document.getElementById("tabReadBtn");
+    return !!b && b.getBoundingClientRect().width > 0;
+  });
+  if (!reachable) { await clickSafely(page, "#tabStudyBtn"); await page.waitForTimeout(150); }
+  await clickSafely(page, "#tabReadBtn");
+  await page.waitForTimeout(600);
+}
+
+console.log(`\n=== Ayah Card -- number badge, Take an Approach, Status B (issue #295) ===`);
+{
+  const ctx = await newContext(browser, { appLang: "en", viewport: { width: 390, height: 844 }, extraSeedJs: CARD_SEED });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await enterReadSurah1(page);
+
+  // --- entry point (c), Read view: tap the number badge ---
+  const badge = await page.$('#readView [data-ayah-num-badge="1:1"]');
+  check("the Read view's own ayah-number badge exists for 1:1, as a real element", !!badge);
+  if (badge) {
+    const tag = await badge.evaluate((el) => el.tagName);
+    check("the number badge is a real <button> element", tag === "BUTTON", tag);
+    await clickSafely(page, '#readView [data-ayah-num-badge="1:1"]');
+    await page.waitForTimeout(400);
+    const opened = await page.evaluate(() => document.querySelector("[data-ayah-sheet]")?.dataset.unitKey === "ayah:1:1");
+    check("tapping the Read view's number badge opens the card for ayah:1:1", opened);
+  }
+
+  // --- Status B.1 Approach: the two seeded statuses show as coloured dots ---
+  const dots = await page.evaluate(() => [...document.querySelectorAll(".ayah-approach-dot")].map((d) => d.getAttribute("style")));
+  check("Status B.1 renders one dot per active Approach (10 default + the seeded Hifz)", dots.length === 11, String(dots.length));
+  check("Status B.1's seeded 'achieved' status (memorise) is coloured with STATUS_COLORS.achieved", dots.some((s) => s?.includes("#5b84c4")), JSON.stringify(dots));
+
+  // --- Status B.3 Hifz: the seeded 'practising' status shows, by name ---
+  const hifzText = await page.evaluate(() => document.querySelector(".ayah-hifz-chip")?.textContent.trim());
+  check("Status B.3 Hifz shows the seeded approach_02 status ('Practising')", hifzText === "Practising", hifzText);
+
+  // --- Status B.2 Word by Word: 2 of 4 known, matching the seed independently ---
+  await page.waitForFunction(() => /Known \d+ of \d+ words/.test(document.querySelector(".ayah-wbw-count")?.textContent ?? ""), null, { timeout: 4000 }).catch(() => {});
+  const wbwCount = await page.evaluate(() => document.querySelector(".ayah-wbw-count")?.textContent.trim());
+  check("Status B.2 reads 'Known 2 of 4 words', matching the seeded lane independently (not the app's own arithmetic)", wbwCount === "Known 2 of 4 words", wbwCount);
+  const knownChips = await page.evaluate(() => document.querySelectorAll(".ayah-wbw-chip.is-known").length);
+  check("exactly 2 chips carry is-known, the same 2 the count line reports", knownChips === 2, String(knownChips));
+  // Architect review: the chips first shipped with no colour of their own and
+  // inherited the app's WHITE button text -- invisible on cream, while every
+  // other assertion here passed. Measure the rendered contrast of both kinds.
+  const chipContrast = await page.evaluate(() => {
+    const lum = (c) => { const [r, g, b] = c.match(/\d+/g).slice(0, 3).map(Number).map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+    const ratio = (el) => { const cs = getComputedStyle(el); const a = lum(cs.color), b = lum(cs.backgroundColor); return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05); };
+    return [...document.querySelectorAll(".ayah-wbw-chip")].map(ratio);
+  });
+  check("every Word by Word chip's text is readable: contrast at least 4.5:1 against its own background",
+    chipContrast.length > 0 && chipContrast.every((r) => r >= 4.5), JSON.stringify(chipContrast.map((r) => r.toFixed(2))));
+
+  // --- tapping a Word by Word chip still opens the Word Card ---
+  await clickSafely(page, ".ayah-wbw-row .ayah-wbw-chip:not(.is-known)");
+  await page.waitForTimeout(500);
+  const wordCardFromChip = await page.evaluate(() =>
+    !!document.querySelector("#quranWordCardMount .quran-word-card") && !document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"));
+  check("tapping a Word by Word chip closes the card and opens the Word Card for that word", wordCardFromChip);
+
+  // --- Take an Approach: writes through the SAME claimStatus() the Track tab uses ---
+  await clickSafely(page, '#readView [data-ayah-num-badge="1:1"]');
+  await page.waitForTimeout(400);
+  await page.evaluate(() => {
+    const sel = document.querySelector("[data-ayah-sheet-approach-select]");
+    sel.value = "recite";
+    sel.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.waitForTimeout(400);
+  const claimWrite = await page.evaluate(() => (window.__stubWriteData || []).filter((w) => w.col === "records").at(-1));
+  check("Take an Approach wrote to the records collection", claimWrite?.col === "records", JSON.stringify(claimWrite));
+  check("the write touches exactly this āyah's own entry for the chosen Approach (dot-path, not the whole map)",
+    !!claimWrite && Object.keys(claimWrite.data ?? {}).includes("entries.ayah:1:1::recite"), JSON.stringify(claimWrite?.data && Object.keys(claimWrite.data)));
+  const writtenEntry = claimWrite?.data?.["entries.ayah:1:1::recite"];
+  check("the claim is recorded as 'learning' -- the Ayah Card's own single-step default", writtenEntry?.claimedStatus === "learning", JSON.stringify(writtenEntry));
+  // Architect review: choosing an Approach closes the card (the claim is the
+  // whole action), so there is no pull-down left to reset -- assert that
+  // instead of reading a select that no longer exists.
+  const afterPick = await page.evaluate(() => ({
+    open: !!document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"),
+    select: document.querySelector("[data-ayah-sheet-approach-select]")?.value ?? null,
+  }));
+  check("after choosing an Approach the card closes -- no lingering 'still selected' pull-down", !afterPick.open && afterPick.select === null, JSON.stringify(afterPick));
+  const sheetClosedAfterClaim = await page.evaluate(() => !document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"));
+  check("choosing an Approach closes the card (same 'close first' rule every other action follows)", sheetClosedAfterClaim);
+
+  // --- entry point (c), Note view: the same number badge, built locally there ---
+  // Note lives inside the Study menu; open it first (CLAUDE.md: a control
+  // moved into a menu still RESOLVES but is 0x0 until the menu opens).
+  const noteReachable = await page.evaluate(() => (document.getElementById("tabNoteBtn")?.getBoundingClientRect().width ?? 0) > 0);
+  if (!noteReachable) { await page.click("#tabStudyBtn"); await page.waitForTimeout(150); }
+  await page.click("#tabNoteBtn");
+  await page.waitForTimeout(1200);
+  const noteBadge = await page.$('#noteView [data-ayah-num-badge="1:1"]');
+  check("the Note view's own locally-built number badge exists for 1:1, as a real element", !!noteBadge);
+  if (noteBadge) {
+    const tag = await noteBadge.evaluate((el) => el.tagName);
+    check("the Note view's number badge is a real <button> element too", tag === "BUTTON", tag);
+    await clickSafely(page, '#noteView [data-ayah-num-badge="1:1"]');
+    await page.waitForTimeout(400);
+    const openedFromNote = await page.evaluate(() => document.querySelector("[data-ayah-sheet]")?.dataset.unitKey === "ayah:1:1");
+    check("tapping the Note view's number badge opens the card for ayah:1:1", openedFromNote);
+  }
+
+  const real = errors.filter((e) => !/Failed to load resource: net::ERR_(TUNNEL_CONNECTION_FAILED|CERT_AUTHORITY_INVALID|FAILED)/.test(e));
+  check("no unexpected page errors across the whole Ayah Card scenario", real.length === 0, real.join("; "));
+
+  await page.close();
+}
+
 await browser.close();
-console.log(`\n==== "This āyah" action sheet -- Mushaf marker + Word Card entry points (issue #286): ${pass} passed, ${fail} failed ====`);
+console.log(`\n==== "This āyah" action sheet / Ayah Card -- entry points, Take an Approach, Status B (issues #286, #295): ${pass} passed, ${fail} failed ====`);
 process.exit(fail ? 1 : 0);
