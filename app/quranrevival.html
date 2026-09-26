@@ -1951,6 +1951,10 @@
      `reading.mjs`/`layout.mjs`, not just eyeballed here. */
   button.ayah-word-clickable { background: none; border: none; margin: 0; padding: 0; font: inherit; color: inherit; text-align: inherit; line-height: inherit; cursor: pointer; display: inline; }
   button.ayah-word-clickable:hover, button.ayah-word-clickable:focus-visible { background: rgba(31,58,110,0.14); border-radius: 0.2rem; outline: none; }
+  /* Issue #294 -- the tajweed words are inline spans (role=button), so they
+     sit in the line exactly as the unsplit text did; same look on hover/focus. */
+  span.ayah-word-clickable { cursor: pointer; }
+  span.ayah-word-clickable:hover, span.ayah-word-clickable:focus-visible { background: rgba(31,58,110,0.14); border-radius: 0.2rem; outline: none; }
   /* Fix round -- Bismillah before ayah 1 of a surah (except Surah 9, which
      traditionally carries none), on both the Read and Note screens --
      previously it only ever appeared inside the landing wheel's own hub. */
@@ -4535,7 +4539,7 @@
     // Shell round 14 -- word/phrase search. Importing the module costs
     // nothing at load: it fetches its index only when a search actually runs.
     import { searchQuran } from "./js/quran-search.js";
-    import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootPanel, renderDerivativesPanel, renderTranslationPanel, tajweedRawToSafeHtml, digitsForLang, stripLeadingBismillah, splitPlainArabicWords, arabicWordButtonHtml } from "./js/ayah-renderer.js";
+    import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootPanel, renderDerivativesPanel, renderTranslationPanel, tajweedRawToSafeHtml, digitsForLang, stripLeadingBismillah, splitPlainArabicWords, arabicWordButtonHtml, tajweedWordButtonsHtml } from "./js/ayah-renderer.js";
     import { parseQuranWordOccurrenceId } from "./js/quran-word-identity.js";
     import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard, renderQuranWordCard, WORD_CARD_POS_SEGMENTS } from "./js/quran-word-card.js";
     import { occurrenceRefsFor, rootFormsFor, unpackWordIndexRef } from "./js/quran-word-index.js";
@@ -11581,6 +11585,16 @@
     // Neither is named inside them: every lookup goes through
     // activeWordCardMount(), so the card behaves identically in both.
     ["readView", "noteView"].forEach((viewId) => {
+    // Issue #294 -- the tajweed words are focusable inline spans with
+    // role="button" (a real <button> would reflow the Qur'an text); Enter and
+    // Space open them exactly as a click does, as a native button would.
+    document.getElementById(viewId).addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      const word = event.target instanceof Element ? event.target.closest('span[role="button"][data-word-occurrence]') : null;
+      if (!word) return;
+      event.preventDefault();
+      word.click();
+    });
     document.getElementById(viewId).addEventListener("click", (event) => {
       if (!(event.target instanceof Element)) return;
       const occurrence = event.target.closest("[data-word-occurrence]");
@@ -13295,16 +13309,16 @@
         // Issue #189 -- same per-word tap-to-open-Word-Card treatment as
         // Read view's renderArabicPanel() (ayah-renderer.js), built locally
         // for the same reason the rest of this block is: this screen reads
-        // plain ayah objects, not that renderer's own panel functions. The
-        // Tajweed branch is untouched/unsplit for the same measured reason
-        // recorded on renderArabicPanel() itself -- tajweed colouring
-        // routinely spans a word boundary in the pulled data, so there is no
-        // safe split point without a per-word tajweed dataset that doesn't
-        // exist.
+        // plain ayah objects, not that renderer's own panel functions. Since
+        // issue #294 the Tajweed branch is split into words too, without
+        // losing any colour -- see tajweedWordButtonsHtml().
         const arabicOneAyahHtml = (a) => {
           let body;
           if (tajweedToggle.checked && a.tajweedText) {
-            body = tajweedRawToSafeHtml(a.tajweedText);
+            // Issue #294 -- tappable words with Tajweed on (see
+            // tajweedWordButtonsHtml() in ayah-renderer.js); the unsplit
+            // block remains the fall-back.
+            body = tajweedWordButtonsHtml(a, currentSurahNum, translationLangs()) ?? tajweedRawToSafeHtml(a.tajweedText);
           } else {
             const plainSource = a.ayah === 1 ? stripLeadingBismillah(a.uthmaniText) : a.uthmaniText;
             const segments = a.words?.length ? splitPlainArabicWords(plainSource, a.words) : null;
