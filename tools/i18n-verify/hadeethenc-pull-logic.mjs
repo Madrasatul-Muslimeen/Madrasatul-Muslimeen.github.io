@@ -14,7 +14,7 @@
 // Run from the REPOSITORY ROOT.
 import assert from "node:assert/strict";
 import {
-  contentHash, normaliseLanguageList, descendantsOf,
+  contentHash, arabicText, normaliseLanguageList, descendantsOf,
 } from "../hadith-data-pull/hadeethenc-pull.mjs";
 
 let passed = 0, failed = 0;
@@ -121,9 +121,26 @@ check("contentHash: changing the matn text changes the hash -- 'unmodified' is c
   assert.notEqual(contentHash(SAMPLE_RECORD), contentHash(mutated));
 });
 
-check("contentHash: a field this script does not store (e.g. a server-side timestamp) does NOT change the hash", () => {
-  const withExtra = { ...SAMPLE_RECORD, contentHash: "irrelevant", fetchedFromServerAt: "2026-09-26T00:00:00Z" };
-  assert.equal(contentHash(SAMPLE_RECORD), contentHash(withExtra));
+// UPDATED IN PLACE, 26 Sep 2026 (Architect review): this used to assert that a
+// field outside a hand-picked list did NOT change the hash. Measured against
+// the live API, most of a record's text lives in fields that list never
+// named (hadeeth_ar, explanation_ar, hints_ar, attribution_ar...), so they
+// were stored unprotected. The hash covers every field now; only
+// `contentHash` itself is excluded.
+check("contentHash: EVERY returned field is covered -- editing an _ar field changes the hash", () => {
+  const withAr = { ...SAMPLE_RECORD, hadeeth_ar: "متن" };
+  assert.notEqual(contentHash(withAr), contentHash({ ...withAr, hadeeth_ar: "متن!" }));
+  assert.notEqual(contentHash(SAMPLE_RECORD), contentHash(withAr), "adding a field is a change too");
+});
+
+check("contentHash: the stored contentHash field itself is excluded (so a record can carry its own hash)", () => {
+  assert.equal(contentHash(SAMPLE_RECORD), contentHash({ ...SAMPLE_RECORD, contentHash: "irrelevant" }));
+});
+
+check("arabicText: the Arabic matn is `hadeeth` in the ar pull and `hadeeth_ar` in a translated pull", () => {
+  assert.equal(arabicText({ hadeeth: "عن", hadeeth_ar: "x" }, "ar"), "عن");
+  assert.equal(arabicText({ hadeeth: "From", hadeeth_ar: "عن" }, "en"), "عن");
+  assert.equal(arabicText({ hadeeth: "From" }, "bn"), null, "never falls back to the translation");
 });
 
 check("contentHash: field ORDER in the source object does not change the hash -- canonical, not incidental", () => {

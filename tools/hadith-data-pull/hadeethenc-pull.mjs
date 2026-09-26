@@ -53,7 +53,9 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const OUT_DIR = path.join(__dirname, "output", "hadeethenc");
+// Raw, as the API returned it, and NOT committed (.gitignore): hadeethenc-package.mjs
+// turns it into the committed, app-loaded tools/hadith-data-pull/output/hadeethenc.
+const OUT_DIR = path.join(__dirname, "raw-pull", "hadeethenc");
 const MANIFEST_PATH = path.join(OUT_DIR, "manifest.json");
 
 const API_BASE = "https://hadeethenc.com/api/v1";
@@ -69,7 +71,8 @@ const REQUESTED_LANGS = (() => {
   return arg.slice("--langs=".length).split(",").map((s) => s.trim()).filter(Boolean);
 })();
 
-const REQUEST_DELAY_MS = 250; // be a polite API citizen; this is a one-time pull, not a live dependency.
+const REQUEST_DELAY_MS = 120;
+const CONCURRENCY = 4; // be a polite API citizen; this is a one-time pull, not a live dependency.
 const MAX_RETRIES = 4;
 const SIZE_WARNING_BYTES = 40 * 1024 * 1024; // ~40 MB, per the issue's own instruction to stop and say so.
 
@@ -110,21 +113,24 @@ async function fetchJson(url, attempt = 1) {
   }
 }
 
-/** SHA-256 over the canonical JSON of exactly the content fields this script stores -- the same shape hashed at pull time and re-hashed by the integrity check. */
+/**
+ * SHA-256 over the canonical JSON of the WHOLE record exactly as the API
+ * returned it (keys sorted, `contentHash` itself excluded). Measured against
+ * the live API on 26 Sep 2026: a detail record carries more fields than the
+ * API documentation names (hadeeth_intro, hadeeth_ar, explanation_ar,
+ * hints_ar, words_meanings_ar, attribution_ar, grade_ar, translations), so
+ * hashing a hand-picked subset would leave most of the stored text
+ * unprotected. Every field is covered now.
+ */
 export function contentHash(record) {
-  const canonical = JSON.stringify({
-    id: record.id,
-    title: record.title,
-    hadeeth: record.hadeeth,
-    attribution: record.attribution,
-    grade: record.grade,
-    explanation: record.explanation,
-    hints: record.hints,
-    words_meanings: record.words_meanings,
-    reference: record.reference,
-    categories: record.categories,
-  });
+  const keys = Object.keys(record).filter((k) => k !== "contentHash").sort();
+  const canonical = JSON.stringify(keys.map((k) => [k, record[k]]));
   return crypto.createHash("sha256").update(canonical, "utf8").digest("hex");
+}
+
+/** The Arabic matn of a record: `hadeeth` in the ar pull, `hadeeth_ar` in every translated pull (measured). */
+export function arabicText(record, lang) {
+  return lang === "ar" ? record.hadeeth : (record.hadeeth_ar ?? null);
 }
 
 // ---------------------------------------------------------------------------
@@ -165,26 +171,39 @@ async function pullCategoryRoots(lang) {
   return fetchJson(`${API_BASE}/categories/roots/?language=${lang}`);
 }
 
-/** Every hadith id/title summary filed directly under one category, paginated. */
-async function pullHadithSummariesForCategory(lang, categoryId) {
-  const results = [];
-  let page = 1;
-  for (;;) {
-    const batch = await fetchJson(`${API_BASE}/hadeeths/list/?language=${lang}&category_id=${categoryId}&page=${page}`);
-    const rows = Array.isArray(batch) ? batch : (batch?.data ?? batch?.results ?? null);
-    if (!Array.isArray(rows)) {
+/**
+ * Every hadith id filed under one category, paginated. Measured shape:
+ * `{ data: [{id, title, translations}], meta: { current_page, last_page,
+ * total_items, per_page } }`, and `per_page=100` is honoured. A category's
+ * list includes its sub-categories' hadiths (a root's total_items equals its
+ * hadeeths_count), and the meta total is asserted so a short read fails.
+ */
+async function pullHadithIdsForCategory(lang, categoryId) {
+  const ids = [];
+  let total = null;
+  for (let page = 1; ; page += 1) {
+    const batch = await fetchJson(`${API_BASE}/hadeeths/list/?language=${lang}&category_id=${categoryId}&page=${page}&per_page=100`);
+    if (!Array.isArray(batch?.data) || !batch.meta) {
       throw new Error(`/hadeeths/list/ for category ${categoryId} (${lang}) page ${page} returned an unrecognised shape`);
     }
-    results.push(...rows);
-    if (rows.length === 0) break;
-    // Stop when a short page is returned -- the common REST pagination
-    // signal. If the API instead always returns a full page and needs an
-    // explicit "last page" flag, this will simply request one extra empty
-    // page and stop there instead; harmless, just one wasted request.
-    if (rows.length < 20) break;
-    page += 1;
+    ids.push(...batch.data.map((r) => String(r.id)));
+    total = Number(batch.meta.total_items);
+    if (page >= Number(batch.meta.last_page) || batch.data.length === 0) break;
   }
-  return results;
+  if (total !== null && ids.length !== total) {
+    throw new Error(`category ${categoryId} (${lang}): read ${ids.length} ids, API says ${total}`);
+  }
+  return ids;
+}
+
+/** Run `fn` over `items` with a small, fixed number of workers (polite, but not an hour per language). */
+async function mapLimited(items, limit, fn) {
+  const out = new Array(items.length);
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) { const i = next++; out[i] = await fn(items[i], i); }
+  }));
+  return out;
 }
 
 /** The full record for one hadith id, in one language. */
@@ -220,45 +239,44 @@ async function pullOneLanguage(lang) {
   console.log(`\n=== ${lang} ===`);
   const [flat, roots] = await Promise.all([pullCategoriesFlat(lang), pullCategoryRoots(lang)]);
   console.log(`  ${flat.length} categories, ${roots.length} roots`);
-
   fs.mkdirSync(path.join(OUT_DIR, lang), { recursive: true });
-  fs.writeFileSync(
-    path.join(OUT_DIR, lang, "categories.json"),
-    JSON.stringify({ language: lang, categories: flat, roots }, null, 2),
-  );
+
+  // Which hadiths each category holds (its own and its sub-categories').
+  const categoryHadithIds = {};
+  await mapLimited(flat, CONCURRENCY, async (c) => { categoryHadithIds[c.id] = await pullHadithIdsForCategory(lang, c.id); });
+
+  // Each hadith is stored ONCE per language, in the file of the first root
+  // (in the API's own root order) that holds it; `hadithFile` says where.
+  const hadithFile = {};
+  const rootIds = new Map();
+  for (const root of roots) {
+    const mine = categoryHadithIds[root.id].filter((id) => !(id in hadithFile));
+    for (const id of mine) hadithFile[id] = `${lang}/root-${root.id}.json`;
+    rootIds.set(root.id, mine);
+  }
+  const allIds = Object.keys(hadithFile);
+  let done = 0;
+  const details = new Map();
+  await mapLimited(allIds, CONCURRENCY, async (id) => {
+    const detail = await pullHadithDetail(lang, id);
+    if (String(detail?.id) !== id) throw new Error(`hadeeths/one ${id} (${lang}) returned id ${detail?.id}`);
+    details.set(id, { ...detail, contentHash: contentHash(detail) });
+    if (++done % 250 === 0) console.log(`    ${done}/${allIds.length}`);
+  });
 
   const rootSummaries = [];
-  const seenHadithIds = new Set(); // one hadith can sit under more than one category; pulled once per language.
-
   for (const root of roots) {
-    const rootId = root.id;
-    const categoryIds = descendantsOf(rootId, flat);
-    console.log(`  root ${rootId} (${root.title ?? ""}) -- ${categoryIds.length} categories`);
-
-    const idsInThisRoot = new Set();
-    for (const catId of categoryIds) {
-      const summaries = await pullHadithSummariesForCategory(lang, catId);
-      for (const s of summaries) idsInThisRoot.add(s.id);
-    }
-
-    const hadiths = [];
-    for (const id of idsInThisRoot) {
-      if (seenHadithIds.has(id)) continue; // already pulled under an earlier root this language
-      seenHadithIds.add(id);
-      const detail = await pullHadithDetail(lang, id);
-      hadiths.push({ ...detail, contentHash: contentHash(detail) });
-    }
-
-    const fileName = `root-${rootId}.json`;
-    fs.writeFileSync(
-      path.join(OUT_DIR, lang, fileName),
-      JSON.stringify({ language: lang, rootCategoryId: rootId, rootCategoryTitle: root.title ?? null, hadiths }, null, 2),
-    );
+    const hadiths = rootIds.get(root.id).map((id) => details.get(id));
+    const fileName = `root-${root.id}.json`;
+    fs.writeFileSync(path.join(OUT_DIR, lang, fileName),
+      JSON.stringify({ language: lang, rootCategoryId: root.id, rootCategoryTitle: root.title ?? null, hadiths }));
     console.log(`  wrote ${fileName}: ${hadiths.length} hadiths`);
-    rootSummaries.push({ rootCategoryId: rootId, rootCategoryTitle: root.title ?? null, file: `${lang}/${fileName}`, hadithCount: hadiths.length });
+    rootSummaries.push({ rootCategoryId: root.id, rootCategoryTitle: root.title ?? null, file: `${lang}/${fileName}`, hadithCount: hadiths.length });
   }
+  fs.writeFileSync(path.join(OUT_DIR, lang, "categories.json"),
+    JSON.stringify({ language: lang, categories: flat, roots, categoryHadithIds, hadithFile }));
 
-  return { language: lang, categoriesCount: flat.length, rootsCount: roots.length, hadithCount: seenHadithIds.size, roots: rootSummaries };
+  return { language: lang, categoriesCount: flat.length, rootsCount: roots.length, hadithCount: allIds.length, roots: rootSummaries };
 }
 
 function dirSizeBytes(dir) {

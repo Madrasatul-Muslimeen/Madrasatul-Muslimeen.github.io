@@ -34,7 +34,8 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import process from "node:process";
-import { contentHash } from "../hadith-data-pull/hadeethenc-pull.mjs";
+import { contentHash, arabicText } from "../hadith-data-pull/hadeethenc-pull.mjs";
+import { rehydrate } from "../hadith-data-pull/hadeethenc-package.mjs";
 
 const root = path.resolve(process.argv[2] || process.cwd());
 const OUT_DIR = path.join(root, "tools", "hadith-data-pull", "output", "hadeethenc");
@@ -62,7 +63,7 @@ export function manifestCountRefusal(manifest, rootFiles) {
   const bad = [];
   for (const lang of manifest.perLanguage ?? []) {
     let sumForLang = 0;
-    for (const r of lang.roots ?? []) {
+    for (const r of lang.files ?? lang.roots ?? []) {
       const file = rootFiles.get(r.file);
       if (!file) { bad.push(`manifest names ${r.file} but it was not read`); continue; }
       if (file.hadiths.length !== r.hadithCount) {
@@ -71,7 +72,7 @@ export function manifestCountRefusal(manifest, rootFiles) {
       sumForLang += file.hadiths.length;
     }
     if (sumForLang !== lang.hadithCount) {
-      bad.push(`${lang.language}: manifest's own hadithCount (${lang.hadithCount}) does not equal the sum of its roots (${sumForLang})`);
+      bad.push(`${lang.language}: manifest's own hadithCount (${lang.hadithCount}) does not equal the sum of its files (${sumForLang})`);
     }
   }
   return bad;
@@ -91,11 +92,16 @@ export function contentHashRefusal(hadiths, fileLabel) {
 }
 
 /** Does every hadith carry the minimum a reader-facing card needs? */
-export function requiredFieldsRefusal(hadiths, fileLabel) {
+// UPDATED IN PLACE, 26 Sep 2026: "Arabic text" is `hadeeth` only in the ar
+// pull; in en/bn `hadeeth` is the translation and the Arabic is `hadeeth_ar`
+// (measured). Checking `hadeeth` alone would have passed an English record
+// with no Arabic at all.
+export function requiredFieldsRefusal(hadiths, fileLabel, lang = "ar") {
   const bad = [];
   for (const h of hadiths) {
     if (h.id === undefined || h.id === null) bad.push(`${fileLabel}: a hadith is missing its id`);
-    if (!h.hadeeth || typeof h.hadeeth !== "string" || !h.hadeeth.trim()) bad.push(`${fileLabel}#${h.id}: missing Arabic hadith text ("hadeeth")`);
+    const ar = arabicText(h, lang);
+    if (!ar || typeof ar !== "string" || !/[\u0600-\u06FF]/.test(ar)) bad.push(`${fileLabel}#${h.id}: missing Arabic hadith text`);
     if (!h.attribution || typeof h.attribution !== "string" || !h.attribution.trim()) bad.push(`${fileLabel}#${h.id}: missing attribution`);
   }
   return bad;
@@ -140,6 +146,9 @@ check("POSITIVE CONTROL -- requiredFieldsRefusal() can actually refuse", () => {
   assert.ok(requiredFieldsRefusal([{ ...sound, hadeeth: "" }], "test").some((r) => r.includes("Arabic hadith text")));
   assert.ok(requiredFieldsRefusal([{ ...sound, attribution: null }], "test").some((r) => r.includes("attribution")));
   assert.ok(requiredFieldsRefusal([{ ...sound, id: undefined }], "test").some((r) => r.includes("missing its id")));
+  // A translated record whose Arabic is missing must be refused even though `hadeeth` (the translation) is present.
+  assert.ok(requiredFieldsRefusal([{ id: 2, hadeeth: "From Abu Musa", attribution: "Agreed upon" }], "test", "en").some((r) => r.includes("Arabic hadith text")));
+  assert.deepEqual(requiredFieldsRefusal([{ id: 2, hadeeth: "From Abu Musa", hadeeth_ar: "عن أبي موسى", attribution: "Agreed upon" }], "test", "en"), []);
 });
 
 check("the rights register genuinely names hadeethenc as approved, before this suite trusts anything about its corpus", () => {
@@ -163,11 +172,35 @@ if (!fs.existsSync(MANIFEST_PATH)) {
   const manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf8"));
   const rootFiles = new Map();
   for (const lang of manifest.perLanguage ?? []) {
-    for (const r of lang.roots ?? []) {
+    for (const r of lang.files ?? []) {
       const p = path.join(OUT_DIR, r.file);
       if (fs.existsSync(p)) rootFiles.set(r.file, JSON.parse(fs.readFileSync(p, "utf8")));
     }
   }
+  // UPDATED 26 Sep 2026 (Architect review): en/bn files store each Arabic
+  // field once (hadeethenc-package.mjs). The hash was taken over the WHOLE
+  // API record, so every record is rebuilt from the ar record first and the
+  // rebuilt record is what is hashed -- a byte lost in the dedup fails here.
+  const arById = new Map();
+  for (const [file, data] of rootFiles) if (data.language === "ar") for (const h of data.hadiths) arById.set(String(h.id), h);
+  for (const [file, data] of rootFiles) {
+    if (data.language === "ar") continue;
+    data.hadiths = data.hadiths.map((h) => {
+      const omitted = data.arabicFromArRecord?.[h.id];
+      if (omitted && !arById.has(String(h.id))) throw new Error(`${file}#${h.id}: Arabic fields omitted but no ar record exists`);
+      return rehydrate(h, omitted, arById.get(String(h.id)));
+    });
+  }
+
+  check("POSITIVE CONTROL -- dropping one omitted field's listing breaks that record's hash (the rebuild is really checked)", () => {
+    const [file, data] = [...rootFiles].find(([, d]) => d.language !== "ar" && Object.keys(d.arabicFromArRecord ?? {}).length);
+    const raw = JSON.parse(fs.readFileSync(path.join(OUT_DIR, file), "utf8"));
+    const id = Object.keys(raw.arabicFromArRecord)[0];
+    const h = raw.hadiths.find((x) => String(x.id) === id);
+    const partial = rehydrate(h, raw.arabicFromArRecord[id].slice(1), arById.get(id));
+    assert.ok(contentHashRefusal([partial], file).length === 1, "a record missing one Arabic field must fail its hash");
+    assert.deepEqual(contentHashRefusal([data.hadiths.find((x) => String(x.id) === id)], file), [], "the full rebuild passes");
+  });
 
   check("REAL CORPUS -- the manifest's own counts match the files on disk", () => {
     const offenders = manifestCountRefusal(manifest, rootFiles);
@@ -182,7 +215,23 @@ if (!fs.existsSync(MANIFEST_PATH)) {
 
   check("REAL CORPUS -- every hadith has an id, Arabic text and attribution", () => {
     const offenders = [];
-    for (const [file, data] of rootFiles) offenders.push(...requiredFieldsRefusal(data.hadiths ?? [], file));
+    for (const [file, data] of rootFiles) offenders.push(...requiredFieldsRefusal(data.hadiths ?? [], file, data.language));
+    assert.deepEqual(offenders, [], offenders.slice(0, 10).join(" | "));
+  });
+
+  check("REAL CORPUS -- every hadith a category lists is stored, in the file hadithFile names, exactly once per language", () => {
+    const offenders = [];
+    for (const lang of manifest.perLanguage ?? []) {
+      const cats = JSON.parse(fs.readFileSync(path.join(OUT_DIR, lang.language, "categories.json"), "utf8"));
+      const stored = new Map();
+      for (const r of lang.files) for (const h of rootFiles.get(r.file)?.hadiths ?? []) {
+        if (stored.has(String(h.id))) offenders.push(`${lang.language}#${h.id} stored twice`);
+        stored.set(String(h.id), r.file);
+      }
+      for (const [cat, ids] of Object.entries(cats.categoryHadithIds)) for (const id of ids) {
+        if (stored.get(id) !== cats.hadithFile[id]) offenders.push(`${lang.language} category ${cat} lists ${id}, stored in ${stored.get(id)}, hadithFile says ${cats.hadithFile[id]}`);
+      }
+    }
     assert.deepEqual(offenders, [], offenders.slice(0, 10).join(" | "));
   });
 
