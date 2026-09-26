@@ -1,0 +1,140 @@
+{
+  "manifestVersion": "openiti-pull:v1",
+  "sourceId": "openiti-release",
+  "pulledAt": "2026-09-26T07:21:31.706Z",
+  "release": {
+    "version": "2025.1.9",
+    "zenodoRecord": "17767721",
+    "doi": "10.5281/zenodo.3082463",
+    "licence": "CC BY-NC-SA 4.0",
+    "citation": "Romanov, Maxim, and Masoumeh Seydi. \"OpenITI: A Machine-Readable Corpus of Islamicate Texts.\" Zenodo. doi:10.5281/zenodo.3082463"
+  },
+  "grant": "docs/governance/2026-09-26-owner-decisions.md (row 8)",
+  "files": [
+    {
+      "version_uri": "0179MalikIbnAnas.Muwatta.Shamela0028107-ara1",
+      "local_path": "data/0179MalikIbnAnas/0179MalikIbnAnas.Muwatta/0179MalikIbnAnas.Muwatta.Shamela0028107-ara1.completed",
+      "title_ar": "الموطأ",
+      "title_en": "al-Muwatta'",
+      "author_ar": "مالك بن أنس",
+      "file": "0179MalikIbnAnas.Muwatta.Shamela0028107-ara1.txt",
+      "url": "https://raw.githubusercontent.com/OpenITI/0200AH/master/data/0179MalikIbnAnas/0179MalikIbnAnas.Muwatta/0179MalikIbnAnas.Muwatta.Shamela0028107-ara1.completed",
+      "bytes": 2400174,
+      "sha256": "1304b951c657f5f69b66051fd9d60be0faafed9d47a9c49da650c7ae629ca34b"
+    },
+    {
+      "version_uri": "0241IbnHanbal.Musnad.Shamela0025794-ara1",
+      "local_path": "data/0241IbnHanbal/0241IbnHanbal.Musnad/0241IbnHanbal.Musnad.Shamela0025794-ara1.mARkdown",
+      "title_ar": "مسند أحمد",
+      "title_en": "Musnad Ahmad",
+      "author_ar": "أحمد بن حنبل",
+      "file": "0241IbnHanbal.Musnad.Shamela0025794-ara1.txt",
+      "url": "https://raw.githubusercontent.com/OpenITI/0250AH/master/data/0241IbnHanbal/0241IbnHanbal.Musnad/0241IbnHanbal.Musnad.Shamela0025794-ara1.mARkdown",
+      "bytes": 15695392,
+      "sha256": "00ee0f74327d83af587153983d04ad45367fea42338566c82e871df30c2ceaa6"
+    },
+    {
+      "version_uri": "0255CabdAllahDarimi.Sunan.JK000842-ara1",
+      "local_path": "data/0255CabdAllahDarimi/0255CabdAllahDarimi.Sunan/0255CabdAllahDarimi.Sunan.JK000842-ara1",
+      "title_ar": "سنن الدارمي",
+      "title_en": "Sunan al-Darimi",
+      "author_ar": "عبد الله الدارمي",
+      "file": "0255CabdAllahDarimi.Sunan.JK000842-ara1.txt",
+      "url": "https://raw.githubusercontent.com/OpenITI/0275AH/master/data/0255CabdAllahDarimi/0255CabdAllahDarimi.Sunan/0255CabdAllahDarimi.Sunan.JK000842-ara1",
+      "bytes": 1574728,
+      "sha256": "9018a1a6cb4301d4e085c0f35a248cc0e0b4d88b4deed8ab2ee92995a5c8b248"
+    },
+    {
+      "version_uri": "0256Bukhari.Sahih.JK000110-ara1",
+      "local_path": "data/0256Bukhari/0256Bukhari.Sahih/0256Bukhari.Sahih.JK000110-ara1.completed",
+      "title_ar": "صحيح البخاري",
+      "title_en": "Sahih al-Bukhari",
+      "author_ar": "البخاري",
+      "file": "0256Bukhari.Sahih.JK000110-ara1.txt",
+      "url": "https://raw.githubusercontent.com/OpenITI/0275AH/master/data/0256Bukhari/0256Bukhari.Sahih/0256Bukhari.Sahih.JK000110-ara1.completed",
+      "bytes": 5524762,
+      "sha256": "69e95684acfde24171d29dd7ba43ff2c8f9b54ade5e3ab0a73899c06671082b7"
+    },
+    {
+      "version_uri": "0261Muslim.Sahih.Shamela0001727-ara1",
+      "local_path": "data/0261Muslim/0261Muslim.Sahih/0261Muslim.Sahih.Shamela0001727-ara1.mARkdown",
+      "title_ar": "صحيح مسلم",
+      "title_en": "Sahih Muslim",
+      "author_ar": "مسلم",
+      "file": "0261Muslim.Sahih.Shamela0001727-ara1.txt",
+      "url": "https://raw.githubusercontent.com/OpenITI/0275AH/master/data/0261Muslim/0261Muslim.Sahih/0261Muslim.Sahih.Shamela0001727-ara1.mARkdown",
+      "bytes": 4933663,
+      "sha256": "8126f063f53504b68d6e9e133cec049c10acf498c501f5f4897013efc1e56d9e"
+    },
+    {
+      "version_uri": "0273IbnMaja.Sunan.JK000141-ara1",
+      "local_path": "data/0273IbnMaja/0273IbnMaja.Sunan/0273IbnMaja.Sunan.JK000141-ara1",
+      "title_ar": "سنن ابن ماجه",
+      "title_en": "Sunan Ibn Majah",
+      "author_ar": "ابن ماجه",
+      "file": "0273IbnMaja.Sunan.JK000141-ara1.txt",
+      "url": "https://raw.githubusercontent.com/OpenITI/0275AH/master/data/0273IbnMaja/0273IbnMaja.Sunan/0273IbnMaja.Sunan.JK000141-ara1",
+      "bytes": 2289442,
+      "sha256": "657694d7a863460a53339a429399b54ad0a7c4c564e53e50d847aaab401290f2"
+    },
+    {
+      "version_uri": "0275AbuDawudSijistani.Sunan.JK000142-ara1",
+      "local_path": "data/0275AbuDawudSijistani/0275AbuDawudSijistani.Sunan/0275AbuDawudSijistani.Sunan.JK000142-ara1",
+      "title_ar": "سنن أبي داود",
+      "title_en": "Sunan Abi Dawud",
+      "author_ar": "أبو داود السجستاني",
+      "file": "0275AbuDawudSijistani.Sunan.JK000142-ara1.txt",
+      "url": "https://raw.githubusercontent.com/OpenITI/0275AH/master/data/0275AbuDawudSijistani/0275AbuDawudSijistani.Sunan/0275AbuDawudSijistani.Sunan.JK000142-ara1",
+      "bytes": 3123002,
+      "sha256": "94d6fe547384efd2f8b369879775f617cb6283053482dc672ff04fbb5454292e"
+    },
+    {
+      "version_uri": "0279Tirmidhi.Sunan.JK000140-ara1",
+      "local_path": "data/0279Tirmidhi/0279Tirmidhi.Sunan/0279Tirmidhi.Sunan.JK000140-ara1.completed",
+      "title_ar": "جامع الترمذي",
+      "title_en": "Jami' al-Tirmidhi",
+      "author_ar": "الترمذي",
+      "file": "0279Tirmidhi.Sunan.JK000140-ara1.txt",
+      "url": "https://raw.githubusercontent.com/OpenITI/0300AH/master/data/0279Tirmidhi/0279Tirmidhi.Sunan/0279Tirmidhi.Sunan.JK000140-ara1.completed",
+      "bytes": 3482486,
+      "sha256": "5bc99d3d942ceaa729a83c11389016d940ae11fb0b641a4e012c743f9e44b647"
+    },
+    {
+      "version_uri": "0303Nasai.SunanSughra.JK000130-ara1",
+      "local_path": "data/0303Nasai/0303Nasai.SunanSughra/0303Nasai.SunanSughra.JK000130-ara1.mARkdown",
+      "title_ar": "سنن النسائي",
+      "title_en": "Sunan al-Nasa'i",
+      "author_ar": "النسائي",
+      "file": "0303Nasai.SunanSughra.JK000130-ara1.txt",
+      "url": "https://raw.githubusercontent.com/OpenITI/0325AH/master/data/0303Nasai/0303Nasai.SunanSughra/0303Nasai.SunanSughra.JK000130-ara1.mARkdown",
+      "bytes": 3246511,
+      "sha256": "5afdd931303a85babd351afd72063cad455327b13263f16c5de2f6df5f30a4d1"
+    },
+    {
+      "version_uri": "0676Nawawi.ArbacunaNawawiyya.Shamela0012836-ara1",
+      "local_path": "data/0676Nawawi/0676Nawawi.ArbacunaNawawiyya/0676Nawawi.ArbacunaNawawiyya.Shamela0012836-ara1.mARkdown",
+      "title_ar": "الأربعون النووية",
+      "title_en": "al-Nawawi's Forty",
+      "author_ar": "النووي",
+      "file": "0676Nawawi.ArbacunaNawawiyya.Shamela0012836-ara1.txt",
+      "url": "https://raw.githubusercontent.com/OpenITI/0700AH/master/data/0676Nawawi/0676Nawawi.ArbacunaNawawiyya/0676Nawawi.ArbacunaNawawiyya.Shamela0012836-ara1.mARkdown",
+      "bytes": 36708,
+      "sha256": "bd24252bb5baa7175e504fc36536c62b9d797a662c1965a7ed520c8d79ba7431"
+    },
+    {
+      "version_uri": "0676Nawawi.RiyadSalihin.Shamela0012014-ara1",
+      "local_path": "data/0676Nawawi/0676Nawawi.RiyadSalihin/0676Nawawi.RiyadSalihin.Shamela0012014-ara1.mARkdown",
+      "title_ar": "رياض الصالحين",
+      "title_en": "Riyad al-Salihin",
+      "author_ar": "النووي",
+      "file": "0676Nawawi.RiyadSalihin.Shamela0012014-ara1.txt",
+      "url": "https://raw.githubusercontent.com/OpenITI/0700AH/master/data/0676Nawawi/0676Nawawi.RiyadSalihin/0676Nawawi.RiyadSalihin.Shamela0012014-ara1.mARkdown",
+      "bytes": 1198023,
+      "sha256": "568d7787f83eb14f9141d3b01a1e998ccf104857fef3b9b47c789a338ed51e81"
+    }
+  ],
+  "totals": {
+    "files": 11,
+    "bytes": 43504891
+  }
+}
