@@ -4564,7 +4564,7 @@
     import { isWbwTotalPersistenceReady } from "./js/study-wbw-total-readiness.js";
     // Issue #303 -- lemma-level word progress ("mark this word known
     // everywhere"), gated separately (see study-lemma-progress-readiness.js).
-    import { lemmaProgressAuthority, effectiveOccurrenceState, lemmaKnownDeltaByJuz, groupOccurrenceRefsByJuz } from "./js/quran-lemma-progress.js";
+    import { lemmaProgressAuthority, effectiveOccurrenceState, lemmaKnownDeltaByJuz, groupOccurrenceRefsByJuz, overlayLemmaKnownness } from "./js/quran-lemma-progress.js";
     import {
       primeLemmaProgress, lemmaProgressFor, claimLemmaWordState, decideLemmaWordApproval,
       clearLemmaProgressCache, getLemmaOccurrenceCounts, bumpLemmaOccurrenceCounter,
@@ -11188,14 +11188,24 @@
       }
       if (requestId !== quranWordCardLemmaRequestId) return;
 
-      const occurrenceCount = Number(quranWordCardContext.lemmaOccurrenceCount ?? quranWordCardContext.lemmaOccurrences?.length ?? 0);
+      // Architect review (#303): read the lemma's occurrences straight from
+      // the (cached) lemma index. quranWordCardContext.lemmaOccurrences is
+      // filled by hydrateWordCardOccurrences(), a separate async load that
+      // was usually still in flight here -- so the count read 0 and the
+      // "if you learn this word" line never appeared.
+      let lemmaRefs = quranWordCardContext.lemmaOccurrences ?? null;
+      if (!lemmaRefs) {
+        try { lemmaRefs = await occurrenceRefsFor("lemma", lemmaId); } catch { lemmaRefs = []; }
+        if (requestId !== quranWordCardLemmaRequestId) return;
+      }
+      const occurrenceCount = lemmaRefs.length;
       let learnDelta = null;
       if (occurrenceCount && !lemmaProgress?.countsAsKnown) {
         let computed = null;
         if (isLemmaProgressPersistenceReady()) {
           try {
             if (!juzIndexData) juzIndexData = await getJuzIndex();
-            const refs = quranWordCardContext.lemmaOccurrences ?? [];
+            const refs = lemmaRefs;
             const counts = await getLemmaOccurrenceCounts(db, {
               tenantId, personId: subjectPersonId, lemmaId, refs, juzIndex: juzIndexData,
               confirmationRequired, actorUid: auth.currentUser?.uid,
@@ -11406,7 +11416,10 @@
       // claim that still awaits confirmation, moves nothing).
       if (isWbwTotalPersistenceReady() && wasLemmaKnown !== isLemmaKnown) {
         try {
-          const refs = quranWordCardContext.lemmaOccurrences ?? [];
+          // Architect review: the Word Card's own lemma list may still be
+          // loading -- an empty list made the delta 0 and the total never
+          // moved. Read the lemma's occurrences from the cached index.
+          const refs = quranWordCardContext.lemmaOccurrences ?? await occurrenceRefsFor("lemma", lemmaId);
           if (!juzIndexData) juzIndexData = await getJuzIndex();
           const counts = await getLemmaOccurrenceCounts(db, {
             tenantId, personId: subjectPersonId, lemmaId, refs, juzIndex: juzIndexData,

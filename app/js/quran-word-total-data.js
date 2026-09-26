@@ -151,11 +151,22 @@ export async function recordWordTotalDeltaAcrossJuz(db, { tenantId, personId, de
       seed.byJuz[juzKey] = { ...seed.byJuz[juzKey], known: seeded };
     }
     await createDocument(db, TENANT.QURAN_WORD_TOTALS, docId, seed, actorUid);
+    cache.set(`${tenantId}|${personId}`, seed);
   } else {
     const update = { known: increment(totalDelta) };
     for (const [juz, delta] of deltaByJuz) update[`byJuz.${juz}.known`] = increment(delta);
     await updateDocument(db, TENANT.QURAN_WORD_TOTALS, docId, update);
+    // Architect review (#303): patch the copy just read by the same deltas
+    // the write applied, rather than dropping it and re-reading -- one read
+    // fewer, and the Word Card shows the new total at once (the standing
+    // lesson: patch the in-memory copy after a successful write).
+    const base = snap.data();
+    const byJuz = { ...(base.byJuz ?? {}) };
+    for (const [juz, delta] of deltaByJuz) {
+      const key = String(juz);
+      byJuz[key] = { ...(byJuz[key] ?? {}), known: Number(byJuz[key]?.known ?? 0) + delta };
+    }
+    cache.set(`${tenantId}|${personId}`, { ...base, known: Number(base.known ?? 0) + totalDelta, byJuz });
   }
-  cache.delete(`${tenantId}|${personId}`);
   return { attempted: true, changed: true };
 }

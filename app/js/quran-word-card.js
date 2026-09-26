@@ -247,9 +247,13 @@ export function segmentedGlossHtml(gloss, segments) {
  */
 function wholeQuranKnownLines(wholeQuranTotal, text, formatNumber) {
   if (!wholeQuranTotal) return "";
+  // Thousands grouped here only ("77,429"; Bangla keeps its own digits via
+  // formatNumber) -- i18n's num() is shared with years and references,
+  // which must never gain a separator.
+  const grouped = (n) => Number(n ?? 0).toLocaleString("en-US");
   const known = String(text.wholeQuranKnown)
-    .replace("{known}", formatNumber(wholeQuranTotal.known))
-    .replace("{total}", formatNumber(wholeQuranTotal.total));
+    .replace("{known}", formatNumber(grouped(wholeQuranTotal.known)))
+    .replace("{total}", formatNumber(grouped(wholeQuranTotal.total)));
   const percent = percentRounded(wholeQuranTotal.known, wholeQuranTotal.total);
   const percentLine = String(text.wholeQuranPercent).replace("{percent}", formatNumber(percent));
   return `<p class="word-progress-whole-quran">${escapeHtml(known)}</p>` +

@@ -84,14 +84,23 @@ const envelopeDataUrl = toDataUrl(envelopeSource);
 
 let dataSource = fs.readFileSync(path.join(root, "app/js/quran-lemma-progress-data.js"), "utf8");
 dataSource = rewriteGstaticImport(dataSource,
-  `import { doc, getDoc } from "${firestorePackageUrl}";`,
+  `import { doc, getDoc, getDocs, collection, query, where } from "${firestorePackageUrl}";`,
   "quran-lemma-progress-data.js");
 dataSource = rewriteSpecifier(dataSource, "./collections.js", realFileUrl("collections.js"), "quran-lemma-progress-data.js");
 dataSource = rewriteSpecifier(dataSource, "./envelope.js", envelopeDataUrl, "quran-lemma-progress-data.js");
 dataSource = rewriteSpecifier(dataSource, "./quran-word-progress.js", realFileUrl("quran-word-progress.js"), "quran-lemma-progress-data.js");
 dataSource = rewriteSpecifier(dataSource, "./quran-word-index.js", realFileUrl("quran-word-index.js"), "quran-lemma-progress-data.js");
 dataSource = rewriteSpecifier(dataSource, "./quran-lemma-progress.js", realFileUrl("quran-lemma-progress.js"), "quran-lemma-progress-data.js");
-dataSource = rewriteSpecifier(dataSource, "./study-lemma-progress-readiness.js", realFileUrl("study-lemma-progress-readiness.js"), "quran-lemma-progress-data.js");
+// Architect review (#303): the gated functions take NO override parameter --
+// a bypass any caller could pass would undo the gate's enforcement by
+// inability. This suite is about the write functions against the Rules, so
+// it loads an OPEN copy of the gate module in place of the real one (the
+// real module's `ready: false` is asserted by quran-lemma-progress-numbers).
+const openGateUrl = `data:text/javascript;base64,${Buffer.from(
+  "export function isLemmaProgressPersistenceReady() { return true; }\n" +
+  "export function lemmaProgressUnavailableReason() { return null; }\n"
+).toString("base64")}`;
+dataSource = rewriteSpecifier(dataSource, "./study-lemma-progress-readiness.js", openGateUrl, "quran-lemma-progress-data.js");
 dataSource = rewriteSpecifier(dataSource, "./quran-word-total.js", realFileUrl("quran-word-total.js"), "quran-lemma-progress-data.js");
 
 const {
@@ -116,11 +125,12 @@ const FORCE_OPEN = Object.freeze({
   ready: true,
   decision: Object.freeze({ by: "master-architect", on: "2026-09-26", reference: "test-forced-open" }),
 });
-const claimLemmaWordState = (db, args) => realClaimLemmaWordState(db, { ...args, readinessDeclaration: FORCE_OPEN });
-const decideLemmaWordApproval = (db, args) => realDecideLemmaWordApproval(db, { ...args, readinessDeclaration: FORCE_OPEN });
-const getLemmaProgress = (db, args) => realGetLemmaProgress(db, { ...args, readinessDeclaration: FORCE_OPEN });
-const getLemmaOccurrenceCounts = (db, args) => realGetLemmaOccurrenceCounts(db, { ...args, readinessDeclaration: FORCE_OPEN });
-const bumpLemmaOccurrenceCounter = (db, args) => realBumpLemmaOccurrenceCounter(db, { ...args, readinessDeclaration: FORCE_OPEN });
+void FORCE_OPEN; // kept for readers of the comment above; the open gate is the module swap
+const claimLemmaWordState = realClaimLemmaWordState;
+const decideLemmaWordApproval = realDecideLemmaWordApproval;
+const getLemmaProgress = realGetLemmaProgress;
+const getLemmaOccurrenceCounts = realGetLemmaOccurrenceCounts;
+const bumpLemmaOccurrenceCounter = realBumpLemmaOccurrenceCounter;
 
 let totalDataSource = fs.readFileSync(path.join(root, "app/js/quran-word-total-data.js"), "utf8");
 totalDataSource = rewriteGstaticImport(totalDataSource,
@@ -151,13 +161,19 @@ const FAKE_JUZ_INDEX = [
 // (surah 3) -- encoded surah*1e6 + ayah*1e3 + position, matching the real
 // packaged index's own documented encoding.
 const LEMMA_B = "قَرَأَ";
+// Architect review: a COMMON lemma -- 60 distinct ayahs, above
+// SEED_PER_AYAH_MAX -- so seeding takes the person's-own-lane-documents path
+// (one equality query per lane) instead of two reads per ayah. It is what
+// proves the deployed Rules really allow that list query.
+const LEMMA_C = "عَلِمَ";
+const LEMMA_C_REFS_RAW = Array.from({ length: 60 }, (_, i) => 2_000_000 + (i + 1) * 1000 + 1);
 const LEMMA_B_REFS_RAW = [2_001_001, 2_002_001, 3_005_002];
 const fakeFetchImpl = async () => ({
   ok: true,
   json: async () => ({
     identityContract: "quran-word-occurrence:v1",
     encoding: "surah*1000000+ayah*1000+position",
-    values: { [LEMMA_B]: LEMMA_B_REFS_RAW },
+    values: { [LEMMA_B]: LEMMA_B_REFS_RAW, [LEMMA_C]: LEMMA_C_REFS_RAW },
   }),
 });
 const LEMMA_B_REFS = LEMMA_B_REFS_RAW.map(unpackWordIndexRef);
@@ -326,6 +342,31 @@ test("real quran-lemma-progress-data.js functions against the real assembled DEP
     });
     assert.equal(secondAsk.seededJustNow, false);
     step("counter: a second ask reads the persisted counter and never re-walks the corpus");
+
+    // Architect review -- the common-lemma seed path. p2 has one real
+    // occurrence-level claim on 2:10 word 1 (an occurrence of LEMMA_C),
+    // written as the occurrence data layer writes it; seeding must find it
+    // through the person's own lane documents, under the real Rules.
+    const wordProgress = await import(realFileUrl("quran-word-progress.js"));
+    const laneIdC = wordProgress.wordProgressLaneId({ tenantId: T, personId: "p2", level: "wbw", surah: 2, ayah: 10 });
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const update = wordProgress.laneFieldUpdate({ lane: "learner", position: 1, entry: { state: "achieved", at: "2026-09-26T09:00:00.000Z", byPersonId: "p2" } });
+      const [[path, value]] = Object.entries(update);
+      await setDoc(doc(ctx.firestore(), "quranWordProgress", laneIdC), {
+        contractVersion: wordProgress.WORD_PROGRESS_CONTRACT, identityContract: "quran-word-occurrence:v1", lane: "learner",
+        tenantId: T, personId: "p2", level: "wbw", surah: 2, ayah: 10,
+        entries: { [path.replace(/^entries\./, "")]: value },
+        schemaVersion: 1, createdAt: new Date(), updatedAt: new Date(), createdBy: "uid-p2",
+      });
+    });
+    const countsC = await getLemmaOccurrenceCounts(p2, {
+      tenantId: T, personId: "p2", lemmaId: LEMMA_C, refs: LEMMA_C_REFS_RAW.map(unpackWordIndexRef), juzIndex: FAKE_JUZ_INDEX,
+      confirmationRequired: false, actorUid: "uid-p2", fetchImpl: fakeFetchImpl,
+    });
+    assert.equal(countsC.seededJustNow, true);
+    const knownC = [...countsC.alreadyKnownByJuz.values()].reduce((a, b) => a + b, 0);
+    assert.equal(knownC, 1, "the one individually-known occurrence of the common lemma must be found through the person's own lane documents");
+    step("counter: a COMMON lemma (60 ayahs) seeds from the person's own lane documents -- the list query the Rules allow -- and finds the known occurrence");
 
     // Cheap maintenance from an ORDINARY occurrence-level tap: 1 read, 1
     // write, moves only its own juz's own bucket.

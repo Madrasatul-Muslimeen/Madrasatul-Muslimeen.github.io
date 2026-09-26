@@ -46,8 +46,12 @@
 //     first time this session) + 1 (counter doc) + 1 (quranWordTotals doc)
 //     = 4 document reads. Within the ≤5 target.
 //   - lemma claim/confirm, counter NOT yet seeded (first time ever for this
-//     person+lemma): additionally the one honest full walk, disclosed above,
-//     paid once.
+//     person+lemma): additionally one seeding pass, paid once. Architect
+//     review: for a lemma in at most SEED_PER_AYAH_MAX (50) ayahs that is 2
+//     reads per ayah (<= 100); for a commoner lemma it is ONE equality query
+//     per lane over the person's own lane documents -- as many reads as
+//     āyāt the learner has recorded progress on, whatever the lemma's
+//     frequency (it was up to 4,366 for "من").
 //   - an ordinary single-occurrence tap, gate open, countsAsKnown transitions:
 //     +1 read (the counter doc, to decide whether it exists) and 0 or 1
 //     write -- never the full walk.
@@ -56,6 +60,10 @@
 import {
   doc,
   getDoc,
+  getDocs,
+  collection,
+  query,
+  where,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
 import { createDocument, updateDocument } from "./envelope.js";
@@ -341,14 +349,28 @@ export async function countIndividuallyKnownOccurrences(db, {
   // own juz index already supports, zero extra reads) -- so seeding the
   // bounded counter costs nothing beyond the walk this function already had
   // to make, rather than a second pass over the same data later.
+  // Architect review (#303): the per-ayah walk costs 2 reads per distinct
+  // ayah -- 4,366 for "من", and the most common words are exactly the ones a
+  // learner marks first. Above SEED_PER_AYAH_MAX ayahs, read the PERSON'S OWN
+  // lane documents instead (one equality query per lane): the cost is then
+  // how much this learner has studied, not how common the word is.
+  const laneEntries = ayahGroups.length > SEED_PER_AYAH_MAX
+    ? await personLaneEntries(db, { tenantId, personId, level })
+    : null;
   const perAyah = await Promise.all(ayahGroups.map(async ({ surah, ayah, positions }) => {
     const laneId = wordProgressLaneId({ tenantId, personId, level, surah, ayah });
-    const [learnerSnap, supervisorSnap] = await Promise.all([
-      getDoc(doc(db, OCCURRENCE_LANE_COLLECTION.learner, laneId)),
-      getDoc(doc(db, OCCURRENCE_LANE_COLLECTION.supervisor, laneId)),
-    ]);
-    const learnerEntries = learnerSnap.exists() ? (learnerSnap.data().entries ?? {}) : {};
-    const supervisorEntries = supervisorSnap.exists() ? (supervisorSnap.data().entries ?? {}) : {};
+    let learnerEntries, supervisorEntries;
+    if (laneEntries) {
+      learnerEntries = laneEntries.learner.get(laneId) ?? {};
+      supervisorEntries = laneEntries.supervisor.get(laneId) ?? {};
+    } else {
+      const [learnerSnap, supervisorSnap] = await Promise.all([
+        getDoc(doc(db, OCCURRENCE_LANE_COLLECTION.learner, laneId)),
+        getDoc(doc(db, OCCURRENCE_LANE_COLLECTION.supervisor, laneId)),
+      ]);
+      learnerEntries = learnerSnap.exists() ? (learnerSnap.data().entries ?? {}) : {};
+      supervisorEntries = supervisorSnap.exists() ? (supervisorSnap.data().entries ?? {}) : {};
+    }
     let known = 0;
     for (const position of positions) {
       const key = wordProgressEntryKey(position);
@@ -373,7 +395,32 @@ export async function countIndividuallyKnownOccurrences(db, {
     alreadyKnownIndividually: perAyah.reduce((sum, { known }) => sum + known, 0),
     alreadyKnownByJuz,
     ayahsRead: ayahGroups.length,
+    documentsRead: laneEntries ? laneEntries.documentsRead : ayahGroups.length * 2,
   };
+}
+
+/** Above this many distinct ayahs, seeding reads the person's own lane
+    documents rather than two documents per ayah (100 reads at most below it). */
+export const SEED_PER_AYAH_MAX = 50;
+
+/** Every occurrence-progress lane document this person has at this level,
+    both lanes, keyed by lane id -> its `entries`. Equality-only queries on
+    the self-describing fields every lane document carries (tenantId,
+    personId, level -- written on create, never changed), which the deployed
+    `allow read: if canRecordFor(resource.data.tenantId, resource.data.personId)`
+    authorises as a list; no composite index is needed for equality filters. */
+async function personLaneEntries(db, { tenantId, personId, level }) {
+  const read = async (lane) => {
+    const snap = await getDocs(query(
+      collection(db, OCCURRENCE_LANE_COLLECTION[lane]),
+      where("tenantId", "==", tenantId),
+      where("personId", "==", personId),
+      where("level", "==", level),
+    ));
+    return { map: new Map(snap.docs.map((d) => [d.id, d.data().entries ?? {}])), count: snap.docs.length };
+  };
+  const [learner, supervisor] = await Promise.all([read("learner"), read("supervisor")]);
+  return { learner: learner.map, supervisor: supervisor.map, documentsRead: learner.count + supervisor.count };
 }
 
 // ---------------------------------------------------------------------------
