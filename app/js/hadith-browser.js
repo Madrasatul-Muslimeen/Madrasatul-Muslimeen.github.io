@@ -161,7 +161,12 @@ function focusCollectionsLanding() {
   // edition was just chosen, so there is no deeper "current" yet). Only the
   // very top level -- no edition chosen at all -- has no breadcrumb; there
   // the "Collections" heading is the one landing element every render has.
-  const landing = body.querySelector(".hadith-crumbs > :last-child") || body.querySelector("h2");
+  // Architect review (#316): the HadeethEnc and OpenITI sources render their
+  // own breadcrumb bars on the same page, so "the last crumb" must be the
+  // synthetic collection's own bar -- otherwise returning to the top level
+  // landed focus inside the OpenITI section.
+  const SYNTHETIC_CRUMBS = ".hadith-crumbs:not([data-hadeethenc-crumbs]):not([data-openiti-crumbs])";
+  const landing = body.querySelector(`${SYNTHETIC_CRUMBS} > :last-child`) || body.querySelector("h2");
   if (!landing) return;
   if (!landing.hasAttribute("tabindex")) landing.setAttribute("tabindex", "-1");
   landing.focus({ preventScroll: true });
