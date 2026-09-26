@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.87",
+    "version": "08.88",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -821,8 +821,20 @@
     {
       "version": "08.87",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Ayah Card shows the āyāt the reader's own Notes and Mapping folders connect to this one, each marked studied, not studied yet, or not checked.",
+      "integration": {
+        "authorizedOn": "2026-09-26",
+        "integratedOn": "2026-09-26",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "08.88",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Basic/Depth word-occurrence claims built behind study-word-levels-readiness.js (ready:false); Rules candidate docs/governance/2026-09-26-word-levels-DEPLOYMENT-candidate.rules awaits the Owner.",
       "integration": {
         "authorizedOn": "2026-09-26",
         "integratedOn": "2026-09-26",
@@ -831,8 +843,9 @@
       }
     }
   ],
-  "nextUnallocated": "08.88",
+  "nextUnallocated": "08.89",
   "nextUnallocatedNote": [
+    "v08.88 was allocated to Basic Arabic / Arabic in Depth per-word claims, built and gated (issue #320), 2026-09-26.",
     "v08.87 was allocated to Ayah Card section C part 2: Connected āyāt (issue #318), 2026-09-26.",
     "v08.86 was allocated to OpenITI Arabic Hadith collections browsable in the Hadith module (issues #314/#316), 2026-09-26.",
     "v08.85 was allocated to Notes, bookmark and Studied on HadeethEnc hadiths (issue #311), 2026-09-26.",

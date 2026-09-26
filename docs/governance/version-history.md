@@ -614,3 +614,4 @@ total). Allocated by the MMSA Architect.
 08.85: Notes, bookmark and Studied on HadeethEnc hadiths (issue #311). Allocated by the MMSA Architect.
 08.86: OpenITI Arabic Hadith collections browsable in the Hadith module (issues #314/#316). Allocated by the MMSA Architect.
 08.87: Ayah Card section C part 2: Connected āyāt (issue #318). Allocated by the MMSA Architect.
+08.88: Basic Arabic / Arabic in Depth per-word claims, built and gated (issue #320). Allocated by the MMSA Architect.
