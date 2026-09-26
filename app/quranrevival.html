@@ -5246,7 +5246,7 @@
      *  surah's own data to read the word AS WRITTEN there. The cap is stated
      *  on screen ("Showing the first N of M") rather than silently applied. */
     const WORD_FORM_OCCURRENCE_LIMIT = 50;
-    /** Whether the Basic tab's OWN "{count} lemma-linked occurrences" line is
+    /** Whether the Basic tab's OWN "{count} occurrences of this Dictionary Word" line is
      *  expanded to its own resolved list. Kept outside quranWordCardContext for
      *  the same reason quranWordCardExpandedForm is: the context is replaced
      *  wholesale on every hydrate. It always starts collapsed for a genuinely
@@ -10937,12 +10937,12 @@
         depth: t("Arabic in Depth"),
         meaningUnavailableEn: "Meaning unavailable",
         meaningUnavailableBn: "অর্থ পাওয়া যায়নি",
-        lemma: t("Lemma"),
+        lemma: t("Dictionary Word"),
         root: t("Root"),
         partOfSpeech: t("Part of speech"),
         unknown: t("Unknown"),
         rootOccurrences: t("{count} root-linked occurrences"),
-        lemmaOccurrences: t("{count} lemma-linked occurrences"),
+        lemmaOccurrences: t("{count} occurrences of this Dictionary Word"),
         derivedForms: t("Derived forms of this root"),
         rootFormsSummary: t("{total} occurrences in {forms} derived forms"),
         formOccurrences: t("{count} occurrences"),
@@ -10970,7 +10970,7 @@
         backToWordTitle: t("Back to the word you came from"),
         visitingFrom: t("Visiting from {ref}"),
         rootUnavailable: t("Root unavailable in the approved dataset"),
-        lemmaUnavailable: t("Lemma unavailable in the approved dataset"),
+        lemmaUnavailable: t("Dictionary Word unavailable in the approved dataset"),
         loadingOccurrences: t("Loading occurrences…"),
         occurrencesUnavailable: t("Occurrence list unavailable: {error}"),
         semanticRangeMissing: t("Semantic range not yet supplied"),
@@ -11208,7 +11208,7 @@
             const refs = lemmaRefs;
             const counts = await getLemmaOccurrenceCounts(db, {
               tenantId, personId: subjectPersonId, lemmaId, refs, juzIndex: juzIndexData,
-              confirmationRequired, actorUid: auth.currentUser?.uid,
+              confirmationRequired, actorUid: auth.currentUser?.uid, persist: false,
             });
             if (counts) {
               let already = 0;
@@ -11594,7 +11594,7 @@
     }
 
     /**
-     * The Basic tab's OWN "{count} lemma-linked occurrences" line, expanded.
+     * The Basic tab's OWN "{count} occurrences of this Dictionary Word" line, expanded.
      *
      * `quranWordCardContext.lemmaOccurrences` is already resolved by
      * hydrateWordCardOccurrences() -- one word's own lemma, not the whole

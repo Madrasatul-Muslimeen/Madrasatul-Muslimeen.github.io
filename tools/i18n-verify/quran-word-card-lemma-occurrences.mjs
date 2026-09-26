@@ -1,4 +1,4 @@
-// Word Card -- the Basic tab's own "{count} lemma-linked occurrences" line,
+// Word Card -- the Basic tab's own "{count} occurrences of this Dictionary Word" line,
 // made expandable. RENDERED acceptance QA, in a real browser, following this
 // project's own established practice for a focused un-checked-in script
 // (see quran-word-card-rendered.mjs, whose fixture -- surah 2, āyah 71, word

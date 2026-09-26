@@ -62,7 +62,12 @@ export function mountHadithBrowser(root, { mount = "standalone" } = {}) {
 
   function render() {
     root.textContent = "";
-    root.appendChild(syntheticBanner());
+    // The Collections landing now leads with REAL HadeethEnc text (#309), so
+    // the "not real narrations" notice there sits directly above the
+    // synthetic pilot list it describes (renderCollections), not above the
+    // real source. Every other view still shows only synthetic data, so it
+    // keeps the notice at the top.
+    if (!(state.view === "collections" && !state.editionId)) root.appendChild(syntheticBanner());
     root.appendChild(controls(state, render));
     const body = el("div", "hadith-body");
     body.id = "hadithBody";
@@ -524,6 +529,7 @@ function renderCollections(body, state, render) {
   if (!state.editionId) {
     body.appendChild(renderHadeethEncSource(state));
     body.appendChild(el("h2", null, t("Synthetic pilot collections")));
+    body.appendChild(syntheticBanner());
     const list = el("div", "hadith-list");
     for (const c of listCollections()) {
       for (const e of c.editions) {

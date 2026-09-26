@@ -429,6 +429,7 @@ check("app/js/version.js is untouched -- no version bump from this round", () =>
 const PUBLISHED_DEPLOYMENTS = [
   "docs/governance/phase7-dawah-DEPLOYMENT-candidate-2026-09-24.rules",
   "docs/governance/2026-09-25-wordpress-import-DEPLOYMENT-candidate.rules",
+  "docs/governance/2026-09-26-lemma-progress-DEPLOYMENT-candidate.rules",
 ];
 function dawahBlock(text) {
   const start = text.indexOf("match /dawahPages/");

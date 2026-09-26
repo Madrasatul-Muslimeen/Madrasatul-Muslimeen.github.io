@@ -229,7 +229,7 @@ export async function claimLemmaWordState(db, {
   }
   const authority = lemmaProgressAuthority({ actorPersonId, subjectPersonId: personId, isSupervisor, confirmationRequired });
   if (!authority.mayClaim) {
-    throw new Error("You are not able to record this lemma's progress for this person.");
+    throw new Error("You are not able to record this Dictionary Word's progress for this person.");
   }
   const docId = lemmaProgressDocId({ tenantId, personId, level, lemmaId });
   const store = cacheFor({ tenantId, personId, level });
@@ -277,7 +277,7 @@ export async function decideLemmaWordApproval(db, {
   }
   const authority = lemmaProgressAuthority({ actorPersonId, subjectPersonId: personId, isSupervisor, confirmationRequired });
   if (!authority.mayDecide) {
-    throw new Error("You are not able to approve this lemma's progress for this person.");
+    throw new Error("You are not able to approve this Dictionary Word's progress for this person.");
   }
   const docId = lemmaProgressDocId({ tenantId, personId, level, lemmaId });
   const store = cacheFor({ tenantId, personId, level });
@@ -446,6 +446,7 @@ async function fetchLemmaCounterDoc(db, docId) {
  */
 export async function getLemmaOccurrenceCounts(db, {
   tenantId, personId, level = "wbw", lemmaId, refs, juzIndex, confirmationRequired = false, actorUid, fetchImpl,
+  persist = true,
 } = {}) {
   if (!isLemmaProgressPersistenceReady()) return null;
   requireImplementedLevel(level);
@@ -458,6 +459,12 @@ export async function getLemmaOccurrenceCounts(db, {
   // Not seeded yet -- the one honest full walk, disclosed in this file's own
   // header, paid ONCE for this (person, lemma) and never again.
   const walked = await countIndividuallyKnownOccurrences(db, { tenantId, personId, level, lemmaId, confirmationRequired, fetchImpl, juzIndex });
+  // Architect review, 26 Sep 2026: merely VIEWING a Word Card must never
+  // write. The counter is a cache, and a viewer who may read this person but
+  // not record for them would see a permission error for opening a card.
+  // The view path passes persist:false and gets the walked answer unsaved;
+  // the first lemma-level claim/confirm (a recorder, by definition) seeds it.
+  if (!persist) return { occurrenceCountByJuz, alreadyKnownByJuz: walked.alreadyKnownByJuz, seededJustNow: false };
   const seed = emptyLemmaCounterDocument({ tenantId, personId, level, lemmaId });
   for (const [juz, count] of walked.alreadyKnownByJuz) seed.individuallyKnownByJuz[String(juz)] = count;
   await createDocument(db, COUNTER_COLLECTION, docId, seed, actorUid);

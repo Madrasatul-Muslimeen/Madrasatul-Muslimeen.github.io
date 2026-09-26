@@ -166,18 +166,26 @@ function readCoverageNumbers(coverageText) {
 }
 
 // ===========================================================================
-// GATE CLOSED (the real, current state of this repository).
+// THE REAL GATE, AS COMMITTED. UPDATED IN PLACE, 26 Sep 2026: this block
+// proved the GATE-CLOSED behaviour while study-lemma-progress-readiness.js
+// read `ready: false`. The Owner published the rules and the gate is open by
+// governed decision, so the same page is now asserted OPEN: lemma documents
+// are read, Number 4 counts the Dictionary Word's real total, the control is
+// offered -- and (Architect review) merely viewing still writes NOTHING.
 // ===========================================================================
 for (const [width, height] of [[390, 844], [1100, 900]]) {
   for (const lang of ["en", "bn"]) {
-    console.log(`\n=== gate closed, ${width}x${height}, appLang=${lang} ===`);
+    console.log(`\n=== real gate (open), ${width}x${height}, appLang=${lang} ===`);
     const ctx = await newLemmaContext(browser, { appLang: lang, viewport: { width, height }, extraSeedJs: SEED_TOTALS }, { forceGateOpen: false });
     const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
     await enterReadWithWbw(page);
     await openWordAt(page, 1);
+    await page.waitForTimeout(1200);
 
     const lemmaReads = await page.evaluate(() => (window.__fsLog || []).filter((r) => /quranLemma/.test(r.col || "")).length);
-    check(`[${lang} ${width}] gate closed: ZERO lemma collection reads`, lemmaReads === 0, String(lemmaReads));
+    check(`[${lang} ${width}] gate open: the lemma collections are read`, lemmaReads > 0, String(lemmaReads));
+    const viewWrites = await page.evaluate(() => (window.__fsLog || []).filter((r) => /setDoc|updateDoc|batchCommit|txCommit/.test(r.kind)).length);
+    check(`[${lang} ${width}] merely viewing the Word Card writes NOTHING (no counter seeded on view)`, viewWrites === 0, String(viewWrites));
 
     const card = await readLemmaCard(page);
     check(`[${lang} ${width}] Number 1 -- whole-Qur'an known line renders`, !!card?.wholeQuranLine, JSON.stringify(card));
@@ -185,9 +193,9 @@ for (const [width, height] of [[390, 844], [1100, 900]]) {
     check(`[${lang} ${width}] Number 2 -- whole-Qur'an percent line renders`, !!card?.wholeQuranPercentLine, JSON.stringify(card));
     check(`[${lang} ${width}] Number 3 -- this word's own share-of-Qur'an line renders (unaffected by the lemma gate)`, !!card?.shareOfQuranLine, JSON.stringify(card));
     check(`[${lang} ${width}] Number 3 -- names this lemma's real occurrence count`, toWestern(card?.shareOfQuranLine ?? "").includes(String(LEMMA_OCCURRENCE_COUNT)), card?.shareOfQuranLine);
-    check(`[${lang} ${width}] Number 4 -- learn-delta line renders even while the gate is closed`, !!card?.learnDeltaLine, JSON.stringify(card));
-    check(`[${lang} ${width}] Number 4 -- gate closed counts only THIS occurrence (1), never the lemma's real total`, toWestern(card?.learnDeltaLine ?? "").includes("1") && !toWestern(card?.learnDeltaLine ?? "").includes(String(LEMMA_OCCURRENCE_COUNT)), card?.learnDeltaLine);
-    check(`[${lang} ${width}] "Mark this word known everywhere" is ENTIRELY ABSENT, not merely disabled`, card?.markControlPresent === false, JSON.stringify(card?.lemmaButtons));
+    check(`[${lang} ${width}] Number 4 -- learn-delta line renders`, !!card?.learnDeltaLine, JSON.stringify(card));
+    check(`[${lang} ${width}] Number 4 -- gate open counts the Dictionary Word's real total (${LEMMA_OCCURRENCE_COUNT}), not just this occurrence`, toWestern(card?.learnDeltaLine ?? "").includes(String(LEMMA_OCCURRENCE_COUNT)), card?.learnDeltaLine);
+    check(`[${lang} ${width}] "Mark this word known everywhere" is offered`, card?.markControlPresent === true, JSON.stringify(card?.lemmaButtons));
 
     check(`[${lang} ${width}] no page errors`, errors.filter((e) => !/CERT|archive\.org|api\.quran/.test(e)).length === 0, JSON.stringify(errors.slice(0, 3)));
     await ctx.close();

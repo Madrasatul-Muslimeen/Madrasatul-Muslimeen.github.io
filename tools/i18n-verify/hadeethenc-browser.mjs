@@ -80,14 +80,17 @@ async function runAtWidth(width) {
   console.log(`\n===== hadeethenc-browser (${LANG}, ${width}px) =====`);
   const browser = await chromium.launch(EXE ? { executablePath: EXE } : {});
   const ctx = await newContext(browser, { appLang: LANG, viewport: { width, height: 900 } });
-  const { page, errors } = await openPage(ctx, "/app/hadith-collections.html");
-  const settle = () => page.waitForTimeout(150);
-
+  // Architect review, 26 Sep 2026: the listener used to be attached to the
+  // PAGE after openPage() returned, so a categories.json fetched during load
+  // was never seen and "opening Collections fetches categories.json" failed
+  // on a correct page. Attached to the CONTEXT before anything loads now.
   const corpusRequests = [];
-  page.on("request", (req) => {
+  ctx.on("request", (req) => {
     const url = req.url();
     if (url.includes("/tools/hadith-data-pull/output/hadeethenc/")) corpusRequests.push(url);
   });
+  const { page, errors } = await openPage(ctx, "/app/hadith-collections.html");
+  const settle = () => page.waitForTimeout(150);
 
   await page.click('[data-hadith-tab="collections"]');
   await settle();
@@ -188,6 +191,11 @@ async function runAtWidth(width) {
 
   // --- The Bangla-fallback case: id 2933 exists in ar/en but not bn. ------
   if (LANG === "bn") {
+    // Architect review: the reader is still inside category 3 here, so the
+    // root categories are not on screen; go back to the top first, the way
+    // a reader would -- the "HadeethEnc" breadcrumb.
+    await page.click('[data-hadeethenc-crumbs] .hadeethenc-crumb >> nth=0');
+    await settle();
     await page.click('[data-hadeethenc-category="4"]');
     await settle();
     await page.click('[data-hadeethenc-category="128"]');
@@ -210,6 +218,39 @@ async function runAtWidth(width) {
     check("hadith 2933's shown translation, having fallen back, equals the packaged EN record's own `hadeeth`, verbatim -- never fabricated",
       card2933.translation === REC_2933_EN.hadeeth);
   }
+
+  // --- Architect review: the Source link is the attribution the grant
+  // requires, so it must be readable (>= 4.5:1 on its own background) and a
+  // real tap target (>= 40px). Measured 3.18:1 / 24.6px before the fix. ----
+  if (!(await page.$("[data-hadeethenc-card] a.hadith-view-source"))) {
+    await page.click('[data-hadeethenc-crumbs] .hadeethenc-crumb >> nth=0'); await settle();
+    await page.click('[data-hadeethenc-category="3"]'); await settle();
+    await page.click('[data-hadeethenc-hadith="4563"]'); await settle();
+  }
+  const src = await page.evaluate(() => {
+    const a = document.querySelector("[data-hadeethenc-card] a.hadith-view-source");
+    if (!a) return null;
+    let bg = a, c; while (bg && (c = getComputedStyle(bg).backgroundColor) === "rgba(0, 0, 0, 0)") bg = bg.parentElement;
+    const lum = (s) => { const [r, g, b] = s.match(/\d+/g).slice(0, 3).map(Number).map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+    const A = lum(getComputedStyle(a).color), B = lum(c);
+    return { ratio: (Math.max(A, B) + 0.05) / (Math.min(A, B) + 0.05), h: a.getBoundingClientRect().height };
+  });
+  check(`the Source link is readable (contrast ${src?.ratio.toFixed(2)} >= 4.5)`, !!src && src.ratio >= 4.5);
+  check(`the Source link is a real tap target (${src?.h}px >= 40)`, !!src && src.h >= 40);
+
+  // --- The "not real narrations" notice must not sit above the REAL source:
+  // on the Collections landing it belongs to the synthetic pilot list. -----
+  await page.click('[data-hadeethenc-crumbs] .hadeethenc-crumb >> nth=0');
+  await settle();
+  const bannerPos = await page.evaluate(() => {
+    const banners = document.querySelectorAll("#hadithSyntheticBanner");
+    const hs = [...document.querySelectorAll("#hadithBody h2")];
+    const b = banners[0];
+    const pos = (x) => x.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING;
+    return { count: banners.length, afterRealHeading: !!(b && hs[0] && pos(hs[0])), afterPilotHeading: !!(b && hs.at(-1) && pos(hs.at(-1))) };
+  });
+  check("the synthetic notice appears once on the Collections landing, below the real HadeethEnc heading, under the pilot list's own heading",
+    bannerPos.count === 1 && bannerPos.afterRealHeading && bannerPos.afterPilotHeading);
 
   // --- No sideways scroll at this width. -----------------------------------
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

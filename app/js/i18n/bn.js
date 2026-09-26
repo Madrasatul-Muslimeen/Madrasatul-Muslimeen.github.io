@@ -2289,12 +2289,12 @@ export const BN = {
   "WbW": "শব্দে শব্দে",
   "Basic Arabic": "প্রাথমিক আরবি",
   "Arabic in Depth": "গভীরে আরবি",
-  "Lemma": "মূল রূপ",
+  "Dictionary Word": "অভিধানের শব্দ",
   "Root": "ধাতু",
   "Part of speech": "পদ",
   "Unknown": "অজানা",
   "{count} root-linked occurrences": "ধাতু-সম্পর্কিত {count}টি ব্যবহার",
-  "{count} lemma-linked occurrences": "মূল রূপ-সম্পর্কিত {count}টি ব্যবহার",
+  "{count} occurrences of this Dictionary Word": "এই অভিধানের শব্দের {count}টি ব্যবহার",
   "Derived forms of this root": "এই ধাতু থেকে উৎপন্ন রূপসমূহ",
   // Issue #206 -- the Word Card's own occurrence-share line.
   "Appears {count} times in the Qur'an — {percent}% of all words": "কুরআনে {count} বার এসেছে — সকল শব্দের {percent}%",
@@ -2419,7 +2419,7 @@ export const BN = {
   "Back to the word you came from": "আপনি যে শব্দ থেকে এসেছেন সেখানে ফিরে যান",
   "Visiting from {ref}": "{ref} থেকে এসেছেন",
   "Root unavailable in the approved dataset": "অনুমোদিত তথ্যভাণ্ডারে ধাতু পাওয়া যায়নি",
-  "Lemma unavailable in the approved dataset": "অনুমোদিত তথ্যভাণ্ডারে মূল রূপ পাওয়া যায়নি",
+  "Dictionary Word unavailable in the approved dataset": "অনুমোদিত তথ্যভাণ্ডারে অভিধানের শব্দ পাওয়া যায়নি",
   "Loading occurrences…": "ব্যবহারসমূহ লোড হচ্ছে…",
   "Occurrence list unavailable: {error}": "ব্যবহারের তালিকা পাওয়া যায়নি: {error}",
   "Semantic range not yet supplied": "অর্থের পরিধি এখনো দেওয়া হয়নি",
@@ -2871,6 +2871,8 @@ export const BN = {
   // HadeethEnc corpus browsing (issue #309).
   "HadeethEnc": "HadeethEnc", // ?
   "HadeethEnc — Encyclopedia of Translated Hadiths": "HadeethEnc — অনুবাদিত হাদীসের বিশ্বকোষ", // ?
+  "HadeethEnc hadiths are real, published text. Everything marked Synthetic is invented for development.":
+    "HadeethEnc-এর হাদিসগুলো প্রকৃত, প্রকাশিত পাঠ। \"কৃত্রিম\" চিহ্নিত সবকিছু উন্নয়নের জন্য বানানো।",
   "Synthetic pilot collections": "কৃত্রিম পাইলট সংকলনসমূহ", // ?
   "Not available in your language here — showing {lang}.": "আপনার ভাষায় এখানে পাওয়া যাচ্ছে না — {lang} দেখানো হচ্ছে।",
   "Not available in {reqLang} — showing {lang}.": "{reqLang}-এ পাওয়া যাচ্ছে না — {lang} দেখানো হচ্ছে।",

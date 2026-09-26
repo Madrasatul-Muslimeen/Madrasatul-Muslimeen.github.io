@@ -141,3 +141,14 @@
     .hadith-tab { padding: 0.4rem 0.6rem; font-size: 0.84rem; }
     .hadith-arabic { font-size: 1.7em; }
   }
+
+/* Architect review, #309: the HadeethEnc "Source" link reused the gold
+   .hadith-view-source colour, measured 3.18:1 on the card's cream and 24.6px
+   tall. It is the attribution the grant requires, so it must be readable and
+   tappable: a darker gold (>= 4.5:1) and a 40px target. */
+[data-hadeethenc-card] a.hadith-view-source {
+  color: #7a5a12;
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+}
