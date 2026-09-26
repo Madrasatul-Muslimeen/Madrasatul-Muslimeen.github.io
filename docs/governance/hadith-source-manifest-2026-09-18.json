@@ -115,34 +115,38 @@
         "bn"
       ],
       "establishedFacts": [
-        "Provides translated hadith and explanatory material."
+        "Provides translated hadith and explanatory material.",
+        "Published API v1 terms, quoted verbatim: \"No modification, addition, or deletion of the content. Clearly referring to the publisher and the source (HadeethEnc.com).\"",
+        "It is a curated encyclopedia organised by topic, in Arabic, English, Bangla and other languages, each hadith carrying an explanation — not a rendering of complete classical books."
       ],
       "outstandingQuestions": [
-        "Accessible reuse terms.",
-        "Coverage against the collections this project would pilot.",
-        "Whether it carries original-collection text or only selections — it is not a full original-collection corpus."
+        "Exact language coverage once pulled — whether the API genuinely lists 'bn' alongside 'ar'/'en' (to be confirmed by tools/hadith-data-pull/hadeethenc-pull.mjs's own run, not assumed here).",
+        "Whether HadeethEnc's own hadith/category ids are stable across API versions.",
+        "Complete original-collection text (e.g. the whole of Sahih al-Bukhari in Arabic) is a SEPARATE question, routed to OpenITI — its licence could not be read from this sandbox (egress blocked) and is still to be confirmed (docs/governance/2026-09-26-owner-decisions.md, row 5) before any OpenITI text is used."
       ],
-      "rightsStatus": "blocked",
+      "rightsStatus": "embed-cleared",
       "rightsEvidence": {
-        "grant": null,
-        "grantDate": null,
-        "grantedBy": null,
-        "conditions": null
+        "grant": "HadeethEnc API v1 terms permit storing, displaying, indexing and offline use of the content, unmodified and attributed.",
+        "grantDate": "2026-09-26",
+        "grantedBy": "owner",
+        "conditions": "No modification, addition, or deletion of the content. Clearly referring to the publisher and the source (HadeethEnc.com).",
+        "reference": "docs/governance/2026-09-26-owner-decisions.md"
       },
       "permissions": {
-        "mayStoreText": false,
-        "mayDisplayText": false,
-        "mayIndexText": false,
-        "mayRedistribute": false,
-        "mayUseOffline": false,
-        "mayStoreLocator": false,
-        "mayLinkOut": false
+        "mayStoreText": true,
+        "mayDisplayText": true,
+        "mayIndexText": true,
+        "mayRedistribute": true,
+        "mayUseOffline": true,
+        "mayStoreLocator": true,
+        "mayLinkOut": true
       },
+      "redistributionConditions": "Unmodified and attributed only — the same two conditions as the grant itself. Never trimmed, normalised, re-punctuated, auto-corrected or merged; every hadith shown carries a visible, linked \"Source: HadeethEnc.com\" credit.",
       "attributionRequired": true,
-      "reviewStatus": "not-started",
-      "reviewer": null,
-      "reviewDate": null,
-      "usedFor": "Candidate supplementary translations and explanations, subject to terms and coverage checks."
+      "reviewStatus": "approved",
+      "reviewer": "owner",
+      "reviewDate": "2026-09-26",
+      "usedFor": "Production corpus for the Hadith module's HadeethEnc source (issue #306): real, unmodified, attributed hadith text, browsed by HadeethEnc's own topic tree."
     },
     {
       "sourceId": "islamweb-library",
@@ -186,9 +190,13 @@
     }
   ],
   "importAuthorisation": {
-    "textImportAuthorisedForAnySource": false,
+    "textImportAuthorisedForAnySource": true,
+    "approvedSources": [
+      "hadeethenc"
+    ],
+    "approvedSourcesNote": "A DIFFERENT, source-level mechanism from approvedCollections/approvedEditions below — HadeethEnc is a single curated encyclopedia, not one of the classical editions those two lists gate the commentary-occurrence-id-minting rule for (see the H1 guard's own 'no commentary row claims a narration occurrence' check). Owner grant, 2026-09-26 (docs/governance/2026-09-26-owner-decisions.md, row 5): 'Do b' — real HadeethEnc text, unmodified and attributed.",
     "approvedCollections": [],
     "approvedEditions": [],
-    "consequence": "Zero sources are cleared for text import. Every H2 pilot surface must therefore run on clearly-labelled SYNTHETIC FIXTURES. This is not a limitation to work around; it is the source approval gate holding, exactly as the Master Plan requires."
+    "consequence": "hadeethenc is cleared for real, unmodified, attributed text import (approvedSources above). Every OTHER source stays blocked or link-only, and no classical edition is approved for the commentary-binding mechanism (approvedCollections/approvedEditions stay empty) — so the Collections tab's book/chapter model and the Islamweb/Sunnah.com commentary pilot still run on SYNTHETIC FIXTURES. This is not a limitation to work around; it is the source approval gate holding, exactly as the Master Plan requires, for every source that has not itself been granted."
   }
 }

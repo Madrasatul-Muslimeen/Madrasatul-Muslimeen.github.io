@@ -31,3 +31,7 @@ tools/perf/results/
 
 # Firestore emulator run log, regenerated on every run
 tools/firestore-emulator/*.log
+
+# Raw HadeethEnc pull (41 MB, Arabic repeated per language); the packaged
+# form under output/hadeethenc is what is committed and loaded.
+tools/hadith-data-pull/raw-pull/hadeethenc/

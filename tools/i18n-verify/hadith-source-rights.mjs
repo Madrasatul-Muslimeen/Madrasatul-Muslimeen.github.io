@@ -125,13 +125,80 @@ check("every source is sound against the rights rule", () => {
   assert.deepEqual(offenders, [], offenders.join(" | "));
 });
 
-check("no text import is authorised for any source", () => {
-  assert.equal(SOURCES.importAuthorisation.textImportAuthorisedForAnySource, false);
+/**
+ * Text import is authorised ONLY for sources named in `approvedSources`, and
+ * ONLY when each one is genuinely embed-cleared with a recorded grant.
+ *
+ * Updated in place, 26 Sep 2026 (issue #306): this check used to assert flatly
+ * that NO source may store text, because none ever had been approved. The
+ * Owner's decision "Do b" (docs/governance/2026-09-26-owner-decisions.md, row
+ * 5) approved HadeethEnc specifically, so "no source may store text" became
+ * false the moment that grant was recorded -- the same class of drift this
+ * file's own rightsRefusal() already guards per-source. The rule is not
+ * weakened: it is now "authorisation must be NAMED, and a named source must
+ * actually be sound" -- extracted into a pure function so a synthetic mutation
+ * can prove it still refuses (i) a source storing text while unnamed, and
+ * (ii) a named source that is not actually embed-cleared with a grant.
+ * `approvedCollections`/`approvedEditions` are UNCHANGED and stay empty --
+ * that pair gates a DIFFERENT mechanism (minting a commentary row's
+ * `narration_occurrence_id` against an approved CLASSICAL EDITION), which no
+ * source has been granted and this round does not touch.
+ */
+function importAuthorisationRefusal(sources, importAuthorisation) {
+  const bad = [];
+  const approved = Array.isArray(importAuthorisation.approvedSources) ? importAuthorisation.approvedSources : null;
+  if (!approved) return ["approvedSources is not an array"];
+
+  if (importAuthorisation.textImportAuthorisedForAnySource !== (approved.length > 0)) {
+    bad.push("textImportAuthorisedForAnySource must equal (approvedSources.length > 0)");
+  }
+  const byId = new Map(sources.map((s) => [s.sourceId, s]));
+  for (const id of approved) {
+    const s = byId.get(id);
+    if (!s) { bad.push(`approvedSources names unknown source "${id}"`); continue; }
+    if (s.rightsStatus !== "embed-cleared" || !s.rightsEvidence?.grant) {
+      bad.push(`${id} is in approvedSources but is not embed-cleared with a recorded grant`);
+    }
+    if (s.permissions.mayStoreText !== true) {
+      bad.push(`${id} is in approvedSources but permissions.mayStoreText is not true`);
+    }
+  }
+  for (const s of sources) {
+    if (s.permissions.mayStoreText && !approved.includes(s.sourceId)) {
+      bad.push(`${s.sourceId} may store text but is not named in approvedSources`);
+    }
+  }
+  return bad;
+}
+
+check("POSITIVE CONTROL -- importAuthorisationRefusal() can actually refuse", () => {
+  const granted = { sourceId: "x", rightsStatus: "embed-cleared", rightsEvidence: { grant: "t" }, permissions: { mayStoreText: true } };
+  const sound = { textImportAuthorisedForAnySource: true, approvedSources: ["x"] };
+  assert.deepEqual(importAuthorisationRefusal([granted], sound), [], "a genuinely granted, named source must pass");
+
+  const unnamedStorer = { ...granted, sourceId: "y" };
+  assert.ok(importAuthorisationRefusal([granted, unnamedStorer], sound)
+    .some((r) => r.includes("y") && r.includes("not named")),
+    "a source storing text while unnamed must be refused");
+
+  const ungrantedButNamed = { sourceId: "z", rightsStatus: "blocked", rightsEvidence: { grant: null }, permissions: { mayStoreText: false } };
+  assert.ok(importAuthorisationRefusal([ungrantedButNamed], { textImportAuthorisedForAnySource: true, approvedSources: ["z"] })
+    .some((r) => r.includes("z") && r.includes("not embed-cleared")),
+    "a named source that is not actually embed-cleared/granted must be refused");
+
+  assert.ok(importAuthorisationRefusal([granted], { textImportAuthorisedForAnySource: false, approvedSources: ["x"] })
+    .some((r) => r.includes("must equal")),
+    "the flag and the list disagreeing must be refused");
+});
+
+check("text import is authorised only for sources named in approvedSources, each genuinely granted", () => {
+  const offenders = importAuthorisationRefusal(SOURCES.sources, SOURCES.importAuthorisation);
+  assert.deepEqual(offenders, [], offenders.join(" | "));
+});
+
+check("the classical-edition commentary-binding mechanism is untouched by any source-level grant", () => {
   assert.deepEqual(SOURCES.importAuthorisation.approvedCollections, []);
   assert.deepEqual(SOURCES.importAuthorisation.approvedEditions, []);
-  const storing = SOURCES.sources.filter((s) => s.permissions.mayStoreText);
-  assert.deepEqual(storing.map((s) => s.sourceId), [],
-    "a source may not store text while no edition is approved");
 });
 
 check("every source records what is still unknown about it", () => {
@@ -207,15 +274,38 @@ check("the display contract never lets an explanation pass as the Hadith's own w
     "while link-only, the panel renders a citation and a link -- never the text");
 });
 
-check("no Hadith corpus has appeared in the tree while no edition is approved", () => {
-  if (SOURCES.importAuthorisation.approvedEditions.length > 0) return;
-  const forbidden = [
-    path.join(root, "tools", "hadith-data-pull", "output"),
-    path.join(root, "app", "hadith-corpus"),
-  ];
-  const present = forbidden.filter((p) => fs.existsSync(p));
-  assert.deepEqual(present.map((p) => path.relative(root, p)), [],
-    "a corpus cannot legitimately exist before an edition is approved");
+/**
+ * Updated in place, 26 Sep 2026 (issue #306): this used to guard
+ * `tools/hadith-data-pull/output` outright, because nothing was approved at
+ * all. `approvedSources` (above) is a genuine, separate route to the SAME
+ * corpus location now that HadeethEnc is granted, so the check is narrowed to
+ * naming exactly which subfolder a grant makes legitimate, rather than
+ * dropped: `output/hadeethenc/` may exist once "hadeethenc" is in
+ * `approvedSources`; any OTHER subfolder of `output/` still requires its own
+ * source's own grant, and `app/hadith-corpus` stays forbidden outright -- no
+ * source's grant authorises a second, undocumented corpus location.
+ */
+check("no Hadith corpus subfolder exists without its own source's grant", () => {
+  const approved = new Set(SOURCES.importAuthorisation.approvedSources ?? []);
+  const outputDir = path.join(root, "tools", "hadith-data-pull", "output");
+  const offenders = [];
+  if (fs.existsSync(outputDir)) {
+    for (const entry of fs.readdirSync(outputDir)) {
+      if (!approved.has(entry)) offenders.push(path.join("tools", "hadith-data-pull", "output", entry));
+    }
+  }
+  if (fs.existsSync(path.join(root, "app", "hadith-corpus"))) {
+    offenders.push("app/hadith-corpus");
+  }
+  assert.deepEqual(offenders, [],
+    `a corpus subfolder cannot legitimately exist before its OWN source is in approvedSources: ${offenders.join(", ")}`);
+});
+
+check("POSITIVE CONTROL -- an unapproved corpus subfolder would be refused", () => {
+  const approved = new Set(["hadeethenc"]);
+  const present = ["hadeethenc", "sunnah-com"];
+  const offenders = present.filter((e) => !approved.has(e));
+  assert.deepEqual(offenders, ["sunnah-com"], "an unapproved subfolder must be named as an offender");
 });
 
 check("the schema document and the manifests still agree on the vocabulary", () => {

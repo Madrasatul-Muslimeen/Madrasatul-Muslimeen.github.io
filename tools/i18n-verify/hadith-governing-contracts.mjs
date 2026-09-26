@@ -185,13 +185,26 @@ check("RIGHTS -- the RETIRED term 'licensed' never reappears as a state in Hadit
   }
 });
 
-check("RIGHTS -- no source is cleared, so the whole display contract is still exercised at link-only", () => {
-  // The document's embed-cleared branch is unreachable today, and saying so is
-  // the honest state rather than implying the app has been proven against it.
-  assert.equal(SOURCES.importAuthorisation.textImportAuthorisedForAnySource, false);
-  assert.deepEqual(SOURCES.importAuthorisation.approvedEditions, []);
-  const cleared = (SOURCES.sources || []).filter((s) => s.rightsStatus === "embed-cleared");
-  assert.deepEqual(cleared, [], `a source is embed-cleared: ${cleared.map((s) => s.sourceId).join(", ")}`);
+/**
+ * Updated in place, 26 Sep 2026 (issue #306): this used to assert flatly that
+ * NO source anywhere is embed-cleared, as the proof that the commentary
+ * display contract's embed-cleared branch was untested. That flat claim is
+ * now false -- the Owner's "Do b" decision (docs/governance/
+ * 2026-09-26-owner-decisions.md, row 5) cleared HadeethEnc for real text. But
+ * HadeethEnc plays NO PART in this display contract: `verifiedRegisterEntries()`
+ * and `renderPermission()` are the Islamweb/Ibn-Hajar-al-Nawawi COMMENTARY
+ * register (schema §H1's classical-edition mechanism), which HadeethEnc's
+ * source-level grant does not touch -- `approvedEditions` stays `[]` and every
+ * commentary register entry is still `link-only`, asserted below by NAME
+ * rather than by the now-false "nothing anywhere is cleared".
+ */
+check("RIGHTS -- the COMMENTARY register's own sources stay link-only, so its display contract is still exercised there", () => {
+  assert.deepEqual(SOURCES.importAuthorisation.approvedEditions, [],
+    "the classical-edition commentary-binding mechanism must stay unauthorised");
+  const commentarySourceIds = new Set(COMMENTARY.matches.map((m) => m.source_id));
+  const cleared = (SOURCES.sources || []).filter(
+    (s) => commentarySourceIds.has(s.sourceId) && s.rightsStatus === "embed-cleared");
+  assert.deepEqual(cleared, [], `a commentary-register source is embed-cleared: ${cleared.map((s) => s.sourceId).join(", ")}`);
   for (const e of verifiedRegisterEntries()) {
     assert.equal(e.rights_status, "link-only", `entry ${e.commentary_match_id} is not link-only`);
   }
