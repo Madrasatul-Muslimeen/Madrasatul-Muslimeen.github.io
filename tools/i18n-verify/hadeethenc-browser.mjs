@@ -21,12 +21,12 @@
 // stable across a re-pull, only against the corpus this repository holds
 // today.
 //
-// STUDY WIRING (Notes/bookmark/"Studied") IS NOT TESTED HERE BECAUSE IT WAS
-// NOT BUILT -- see hadith-browser.js's own header comment on the section:
-// applying `buildUnitKey.hadith(...)` from here would cross the Owner
-// Control Gate `hadith-gate-contracts.mjs` already enforces (C2). This
-// suite instead proves the GATE explanation is what a reader sees, and that
-// no write is attempted.
+// STUDY WIRING (Notes/bookmark/"Studied") IS NOW TESTED HERE (issue #311,
+// Owner decision 7 -- see hadith-browser.js's own header comment on the
+// section). This page now carries a minimal session bootstrap (sign-in,
+// tenant/person pickers) purely so the HadeethEnc card's own actions have
+// someone to act for; see hadith-collections.html's own comment on why that
+// bootstrap is a SEPARATE script from the corpus-mounting one.
 //
 // FIXTURES: this round did not hide the synthetic pilot's OWN Collections
 // browsing (editions/books/chapters), Topics, Search or Explore tabs --
@@ -171,12 +171,55 @@ async function runAtWidth(width) {
   check("hadith 4563 (which the corpus gives no explanation/hints/word-meanings) renders no empty explanation toggle",
     hasExplanationDetails === Boolean(REC_4563_EN.explanation || REC_4563_AR.explanation || (REC_4563_EN.hints && REC_4563_EN.hints.length)));
 
-  // --- Study wiring is DELIBERATELY gated -- see the header comment. ------
-  const gateText = await page.evaluate(() => document.querySelector('[data-hadeethenc-card="4563"] [data-hadeethenc-study-gate]')?.textContent);
-  check("the card explains, in words, why Notes/bookmark/Studied are not offered (a control that explains itself, not a silent absence)",
-    !!gateText && gateText.length > 20);
-  check("no Note/bookmark/claim control exists on the card at all (nothing half-wired)",
-    await page.evaluate(() => !document.querySelector('[data-hadeethenc-card="4563"] [data-note-id], [data-hadeethenc-card="4563"] [data-hadith-track]')));
+  // --- Study wiring is BUILT now (issue #311, Owner decision 7) -- proven by
+  // real writes below, not merely by a control existing on screen. ---------
+  await page.waitForSelector('[data-hadeethenc-card="4563"] [data-hadeethenc-bookmark][aria-disabled="false"]', { timeout: 5000 }).catch(() => {});
+  const actionsPresent = await page.evaluate(() => ({
+    noteLink: !!document.querySelector('[data-hadeethenc-card="4563"] [data-hadeethenc-note-link]'),
+    bookmarkBtn: !!document.querySelector('[data-hadeethenc-card="4563"] [data-hadeethenc-bookmark]'),
+    studiedSelect: !!document.querySelector('[data-hadeethenc-card="4563"] [data-hadeethenc-studied]'),
+  }));
+  check("the card offers a Note link, a Bookmark button and a Studied select (issue #311)",
+    actionsPresent.noteLink && actionsPresent.bookmarkBtn && actionsPresent.studiedSelect);
+
+  const noteHref = await page.evaluate(() => document.querySelector('[data-hadeethenc-note-link="4563"]')?.getAttribute("href"));
+  check("the Note link carries the HadeethEnc unit key (hadith:hadeethenc:4563), the shape Owner decision 7 chose",
+    noteHref?.includes(encodeURIComponent("hadith:hadeethenc:4563")) || noteHref?.includes("hadith:hadeethenc:4563"));
+
+  // --- Bookmark: a real write, proven via __fsLog, and it round-trips on
+  // reopen (the star reads the just-written state back, not merely optimism). ---
+  await page.click('[data-hadeethenc-bookmark="4563"]');
+  await settle();
+  const bookmarkWrite = await page.evaluate(() => {
+    const rec = [...(window.__fsLog ?? [])].reverse().find((r) => r.col === "bookmarks");
+    return { logged: !!rec, btnText: document.querySelector('[data-hadeethenc-bookmark="4563"]')?.textContent ?? "" };
+  });
+  check("bookmarking hadith 4563 writes to the bookmarks collection (__fsLog)", bookmarkWrite.logged);
+  check("the bookmark button now reads as bookmarked (★ / Remove bookmark)", /★|Remove bookmark|বুকমার্ক সরান/.test(bookmarkWrite.btnText));
+
+  // Reopen: leave the card and come back -- the star must still read bookmarked.
+  await page.click('[data-hadeethenc-back]');
+  await settle();
+  await page.click('[data-hadeethenc-hadith="4563"]');
+  await settle();
+  await page.waitForSelector('[data-hadeethenc-card="4563"] [data-hadeethenc-bookmark][aria-disabled="false"]', { timeout: 5000 }).catch(() => {});
+  const bookmarkAfterReopen = await page.evaluate(() => document.querySelector('[data-hadeethenc-card="4563"] [data-hadeethenc-bookmark]')?.textContent ?? "");
+  check("reopening hadith 4563 shows the SAVED bookmark state, not a fresh default",
+    /★|Remove bookmark|বুকমার্ক সরান/.test(bookmarkAfterReopen));
+
+  // --- Studied: claiming a status writes to records, and reopening shows it. ---
+  await page.selectOption('[data-hadeethenc-studied="4563"]', "achieved");
+  await settle();
+  const claimWrite = await page.evaluate(() => [...(window.__fsLog ?? [])].reverse().some((r) => r.col === "records"));
+  check("claiming hadith 4563 as Studied writes to the records collection (__fsLog)", claimWrite);
+
+  await page.click('[data-hadeethenc-back]');
+  await settle();
+  await page.click('[data-hadeethenc-hadith="4563"]');
+  await settle();
+  await page.waitForSelector('[data-hadeethenc-card="4563"] [data-hadeethenc-studied]', { timeout: 5000 }).catch(() => {});
+  const studiedAfterReopen = await page.evaluate(() => document.querySelector('[data-hadeethenc-card="4563"] [data-hadeethenc-studied]')?.value);
+  check('reopening hadith 4563 shows the SAVED Studied status ("achieved"), not "Not tracked"', studiedAfterReopen === "achieved");
 
   // --- Back to the list, and no page error anywhere in this run. ----------
   await page.click('[data-hadeethenc-back]');
@@ -238,6 +281,28 @@ async function runAtWidth(width) {
   check(`the Source link is readable (contrast ${src?.ratio.toFixed(2)} >= 4.5)`, !!src && src.ratio >= 4.5);
   check(`the Source link is a real tap target (${src?.h}px >= 40)`, !!src && src.h >= 40);
 
+  // --- The study action controls (issue #311) are readable and tappable too. ---
+  const studyMetrics = await page.evaluate(() => {
+    const lum = (s) => { const [r, g, b] = s.match(/\d+/g).slice(0, 3).map(Number).map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+    const contrastOf = (el) => {
+      if (!el) return null;
+      let bg = el, c; while (bg && (c = getComputedStyle(bg).backgroundColor) === "rgba(0, 0, 0, 0)") bg = bg.parentElement;
+      const A = lum(getComputedStyle(el).color), B = lum(c || "rgb(255,255,255)");
+      return (Math.max(A, B) + 0.05) / (Math.min(A, B) + 0.05);
+    };
+    const els = {
+      note: document.querySelector('[data-hadeethenc-card="4563"] [data-hadeethenc-note-link]'),
+      bookmark: document.querySelector('[data-hadeethenc-card="4563"] [data-hadeethenc-bookmark]'),
+      studied: document.querySelector('[data-hadeethenc-card="4563"] [data-hadeethenc-studied]'),
+    };
+    return Object.fromEntries(Object.entries(els).map(([k, el]) => [k, el ? { h: el.getBoundingClientRect().height, contrast: contrastOf(el) } : null]));
+  });
+  for (const key of ["note", "bookmark", "studied"]) {
+    const m = studyMetrics[key];
+    check(`the ${key} control is a real tap target (${m?.h}px >= 40)`, !!m && m.h >= 40);
+    check(`the ${key} control is readable (contrast ${m?.contrast?.toFixed(2)} >= 4.5)`, !!m && m.contrast >= 4.5);
+  }
+
   // --- The "not real narrations" notice must not sit above the REAL source:
   // on the Collections landing it belongs to the synthetic pilot list. -----
   await page.click('[data-hadeethenc-crumbs] .hadeethenc-crumb >> nth=0');
@@ -262,8 +327,81 @@ async function runAtWidth(width) {
   await browser.close();
 }
 
+// ---------------------------------------------------------------------------
+// A view-only viewer: someone who can SEE the roster but may not RECORD for
+// the selected person -- the one combination this codebase's own fixture
+// (an owner/prime signed in, seeing only their own child) can never
+// reproduce on its own, since owner/prime bypasses every other check. This
+// downgrades the signed-in login to a bare "teacher" (no owner/prime), who
+// shares no enrolment with "p2" at all -- exactly the documented,
+// pre-existing gap CLAUDE.md's own "second open access-control question"
+// names (a teacher's client-side standing is narrower than canRecordFor()
+// grants tenant-wide). Selecting p2 must show every action disabled, with a
+// reason, and never write.
+// ---------------------------------------------------------------------------
+const VIEW_ONLY_SEED = `
+DATA.tenantMemberUids[0].roles = ["teacher"];
+DATA.tenantPeople[0].roles = ["teacher"];
+`;
+
+async function runViewOnlyCheck(lang) {
+  console.log(`\n===== hadeethenc-browser view-only (${lang}) =====`);
+  const browser = await chromium.launch(EXE ? { executablePath: EXE } : {});
+  const ctx = await newContext(browser, { appLang: lang, viewport: { width: 390, height: 900 }, extraSeedJs: VIEW_ONLY_SEED });
+  const { page, errors } = await openPage(ctx, "/app/hadith-collections.html");
+  const settle = () => page.waitForTimeout(200);
+
+  await page.click('[data-hadith-tab="collections"]');
+  await settle();
+  await page.click('[data-hadeethenc-category="3"]');
+  await settle();
+  await page.click('[data-hadeethenc-hadith="4563"]');
+  await settle();
+  await page.waitForSelector('[data-hadeethenc-card="4563"] [data-hadeethenc-bookmark]', { timeout: 5000 }).catch(() => {});
+
+  // Switch to p2 -- a bare teacher, co-enrolled with nobody in this fixture.
+  await page.waitForSelector("#personSelect option[value=\"p2\"]", { timeout: 5000 }).catch(() => {});
+  await page.selectOption("#personSelect", "p2");
+  await settle();
+  await page.waitForFunction(
+    () => document.querySelector('[data-hadeethenc-card="4563"] [data-hadeethenc-bookmark]')?.getAttribute("aria-disabled") === "true",
+    null, { timeout: 5000 }
+  ).catch(() => {});
+
+  const logBefore = await page.evaluate(() => (window.__fsLog ?? []).length);
+
+  const state = await page.evaluate(() => {
+    const card = document.querySelector('[data-hadeethenc-card="4563"]');
+    return {
+      bookmarkDisabled: card?.querySelector('[data-hadeethenc-bookmark]')?.getAttribute("aria-disabled"),
+      studiedDisabled: card?.querySelector('[data-hadeethenc-studied]')?.disabled,
+      reasonShown: !!card?.querySelector(".hadeethenc-study-reason"),
+    };
+  });
+  check("viewing p2 as a non-co-enrolled teacher: the Bookmark button is aria-disabled (never native disabled -- it still explains itself)",
+    state.bookmarkDisabled === "true");
+  check("viewing p2 as a non-co-enrolled teacher: the Studied select is disabled", state.studiedDisabled === true);
+  check("viewing p2 as a non-co-enrolled teacher: a reason is shown in words, not a silent absence", state.reasonShown);
+
+  // A click on the dimmed bookmark button must never write.
+  await page.click('[data-hadeethenc-bookmark="4563"]', { force: true });
+  await settle();
+  const newBookmarkWrites = await page.evaluate(
+    (n) => (window.__fsLog ?? []).slice(n).some((r) => r.col === "bookmarks"),
+    logBefore
+  );
+  check("clicking the disabled Bookmark control writes nothing to bookmarks (never an error, never a silent write either)",
+    !newBookmarkWrites);
+  check("no page error was raised (a disabled control never throws)", errors.length === 0);
+  if (errors.length) console.log("--- page errors ---\n", errors.join("\n"));
+
+  await browser.close();
+}
+
 await runAtWidth(390);
 await runAtWidth(1100);
+await runViewOnlyCheck("en");
+await runViewOnlyCheck("bn");
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

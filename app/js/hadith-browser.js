@@ -47,7 +47,7 @@ function langText(map, lang) {
   return map[lang] ?? map.en ?? map.ar ?? "";
 }
 
-export function mountHadithBrowser(root, { mount = "standalone" } = {}) {
+export function mountHadithBrowser(root, { mount = "standalone", initialHadeethEncId = null } = {}) {
   const state = {
     view: "collections",
     contentLang: getAppLang() === "bn" ? "bn" : "en",
@@ -59,6 +59,13 @@ export function mountHadithBrowser(root, { mount = "standalone" } = {}) {
     focusOccurrenceId: null,
     mount,
   };
+  // Issue #311 -- a bookmark's own resume value ("hadith:hadeethenc:<id>")
+  // reopens directly on that hadith, bypassing the category browse path.
+  // renderHadeethEncSource() only ever seeds state.hc when it is still
+  // unset, so this survives that lazy init untouched.
+  if (initialHadeethEncId) {
+    state.hc = { path: [], hadithId: String(initialHadeethEncId), catsByLang: {} };
+  }
 
   function render() {
     root.textContent = "";
@@ -267,22 +274,21 @@ function rawHeadingSpan(rawHeading) {
 // loads until this section actually mounts; a shard loads only when its
 // category is opened, via hadeethenc-corpus.js's own per-file cache).
 //
-// STUDY WIRING (Notes/bookmark/"Studied") IS DELIBERATELY NOT BUILT. The
-// issue asked for it through `buildUnitKey.hadith("hadeethenc", id)`, but
-// that call is an OWNER CONTROL GATE this repository already enforces
-// mechanically: tools/i18n-verify/hadith-gate-contracts.mjs's "C2" checks
-// assert, by NAME, that `buildUnitKey.hadith(...)` is applied by exactly one
-// pre-existing, non-Hadith-owned surface (app/records.html) and by nothing
-// else anywhere in app/ or app/js/ -- because the key it builds today is
-// NAME-keyed ("hadith:hadeethenc:<id>"), which the Hadith H1 register's own
-// section 5 already records as contradicting I5 ("units are keyed by
-// permanent ID, never by name"), and the Owner has not yet chosen between
-// that live shape and the proposed permanent edition/ordinal form. Adding a
-// second caller here would be this stream pre-empting that undecided
-// Owner Control Gate, which is exactly what C2 exists to catch -- so rather
-// than cross it (or dodge its filename-based half by naming this file
-// something that does not start with "hadith-"), every card says plainly,
-// in words, why Notes/bookmark/Studied are not offered yet.
+// STUDY WIRING (Notes/bookmark/"Studied") IS NOW BUILT, FOR HADEETHENC ONLY
+// (issue #311). Gate C2 asked whether a HadeethEnc hadith's permanent unit
+// key should be name-keyed (`hadith:hadeethenc:<id>`) or a proposed
+// permanent edition/ordinal form; the Owner decided it (owner-decisions row
+// 7, "Use HadeethEnc number"): `hadith:hadeethenc:<id>`, built with
+// `buildUnitKey.hadith("hadeethenc", id)`. That decision covers HadeethEnc
+// ONLY -- the legacy name-keyed form app/records.html builds for the
+// synthetic pilot editions is untouched, and
+// tools/i18n-verify/hadith-gate-contracts.mjs's C2 check now admits exactly
+// one new caller (hadith-study-actions.js) and only when its first argument
+// is the literal "hadeethenc"; a hadith-owned file naming any OTHER edition
+// still fails it. The three actions are built in hadith-study-actions.js,
+// loaded lazily (`import()`) so this file stays Firebase-free at its own
+// core -- a Firebase/CDN failure disables the study actions, never the
+// Collections/Topics/Search/Explore browsing around them.
 // ---------------------------------------------------------------------------
 
 const HADEETHENC_LANG_LABELS = { ar: "العربية", en: "English", bn: "বাংলা" };
@@ -444,14 +450,154 @@ function hadeethEncCard(id, resolvedRecord, state, localRefresh) {
   src.textContent = t("Source: HadeethEnc.com");
   card.appendChild(src);
 
-  // Notes/bookmark/"Studied" -- see the section header comment above. A
-  // control that explains itself beats one that is silently absent.
-  const gate = el("p", "hadith-not-saved");
-  gate.dataset.hadeethencStudyGate = "true";
-  gate.textContent = t("Notes, bookmarking and marking this hadith as studied are not enabled yet — they need a decision about how a hadith is permanently identified, which the Owner has not made yet.");
-  card.appendChild(gate);
+  // Notes/bookmark/"Studied" -- see the section header comment above.
+  const studyBox = el("div", "hadeethenc-study-actions");
+  studyBox.dataset.hadeethencStudyActions = String(id);
+  card.appendChild(studyBox);
+  renderHadeethEncStudyActions(studyBox, id, record.title ?? "");
 
   return card;
+}
+
+// ---------------------------------------------------------------------------
+// HadeethEnc study actions (issue #311) -- Notes/bookmark/"Studied", built on
+// hadith-study-actions.js, loaded lazily so a Firebase/CDN failure disables
+// only these three actions rather than the whole corpus (see the section
+// header comment above). A control that explains itself beats one that is
+// silently absent: every disabled state below says why, in words, rather
+// than hiding the control (this project's own standing rule).
+// ---------------------------------------------------------------------------
+
+let hadithStudyActionsPromise = null;
+function loadHadithStudyActions() {
+  if (!hadithStudyActionsPromise) hadithStudyActionsPromise = import("./hadith-study-actions.js");
+  return hadithStudyActionsPromise;
+}
+
+async function renderHadeethEncStudyActions(container, id, title) {
+  container.textContent = "";
+  container.appendChild(el("p", "hadith-note", t("Loading…")));
+
+  let actions;
+  try {
+    actions = await loadHadithStudyActions();
+  } catch {
+    container.textContent = "";
+    container.appendChild(el("p", "hadeethenc-study-reason", t("Notes, bookmarking and Studied could not be loaded right now.")));
+    return;
+  }
+
+  let session = null;
+  try {
+    session = await actions.getHadeethEncSession();
+  } catch {
+    session = null;
+  }
+
+  container.textContent = "";
+  if (!session) {
+    container.appendChild(el("p", "hadeethenc-study-reason", t("Sign in and choose who you're studying as to use Notes, bookmarking and Studied.")));
+    return;
+  }
+
+  const row = el("div", "hadeethenc-study-row");
+  container.appendChild(row);
+
+  // --- Note: a link into notes.html, which already does the real work. ----
+  const noteItem = el("div", "hadeethenc-study-item");
+  const noteLink = document.createElement("a");
+  noteLink.className = "hadeethenc-study-btn";
+  noteLink.href = actions.noteHrefFor(id, title);
+  noteLink.dataset.hadeethencNoteLink = String(id);
+  noteLink.textContent = `📝 ${t("My Notes")}`;
+  noteLink.setAttribute("aria-disabled", session.isSelf ? "false" : "true");
+  if (!session.isSelf) {
+    noteLink.addEventListener("click", (e) => e.preventDefault());
+  }
+  noteItem.appendChild(noteLink);
+  if (!session.isSelf) {
+    noteItem.appendChild(el("p", "hadeethenc-study-reason", t("Only your own record can create or file a Note.")));
+  } else {
+    try {
+      const count = await actions.noteCountFor(session, id);
+      if (count > 0) noteItem.appendChild(el("p", "hadith-note", t("{count} Note(s) on this hadith", { count })));
+    } catch {
+      // A read-side hiccup here is not worth surfacing (I15's rethrow is for
+      // WRITES) -- the link itself still opens notes.html either way.
+    }
+  }
+  row.appendChild(noteItem);
+
+  // --- Bookmark and Studied, both gated on the broader canRecordFor(). -----
+  const bookmarkItem = el("div", "hadeethenc-study-item");
+  const bookmarkBtn = el("button", "hadeethenc-study-btn");
+  bookmarkBtn.type = "button";
+  bookmarkBtn.dataset.hadeethencBookmark = String(id);
+  bookmarkItem.appendChild(bookmarkBtn);
+  row.appendChild(bookmarkItem);
+
+  const studiedItem = el("div", "hadeethenc-study-item");
+  studiedItem.appendChild(el("span", "hadeethenc-study-label", t("Studied")));
+  const studiedSelect = el("select", "hadeethenc-study-select");
+  studiedSelect.dataset.hadeethencStudied = String(id);
+  studiedSelect.setAttribute("aria-label", t("Studied"));
+  const placeholder = el("option", null, t("Not tracked"));
+  placeholder.value = "";
+  studiedSelect.appendChild(placeholder);
+  for (const s of STATUSES) {
+    const o = el("option", null, statusLabel(s.id));
+    o.value = s.id;
+    studiedSelect.appendChild(o);
+  }
+  studiedItem.appendChild(studiedSelect);
+  row.appendChild(studiedItem);
+
+  if (!session.canRecordFor) {
+    bookmarkBtn.textContent = `🔖 ${t("Bookmark this")}`;
+    bookmarkBtn.setAttribute("aria-disabled", "true");
+    studiedSelect.disabled = true;
+    row.appendChild(el("p", "hadeethenc-study-reason", t("You can view this, but only the person's own record can bookmark or mark it as studied.")));
+    return;
+  }
+
+  let bookmarked = false;
+  let studiedStatusId = null;
+  try {
+    [bookmarked, studiedStatusId] = await Promise.all([
+      actions.isHadeethEncBookmarked(session, id),
+      actions.hadeethEncStudiedStatus(session, id),
+    ]);
+  } catch (err) {
+    row.appendChild(el("p", "hadeethenc-study-reason", String(err?.message ?? err)));
+  }
+
+  function refreshBookmarkBtn() {
+    bookmarkBtn.textContent = bookmarked ? `★ ${t("Remove bookmark")}` : `🔖 ${t("Bookmark this")}`;
+    bookmarkBtn.setAttribute("aria-disabled", "false");
+  }
+  refreshBookmarkBtn();
+  bookmarkBtn.addEventListener("click", async () => {
+    if (bookmarkBtn.getAttribute("aria-disabled") === "true") return;
+    bookmarkBtn.setAttribute("aria-disabled", "true");
+    try {
+      bookmarked = await actions.toggleHadeethEncBookmark(session, id, title || String(id));
+    } catch (err) {
+      row.appendChild(el("p", "hadeethenc-study-reason", String(err?.message ?? err)));
+    }
+    refreshBookmarkBtn();
+  });
+
+  studiedSelect.value = studiedStatusId ?? "";
+  studiedSelect.addEventListener("change", async () => {
+    if (!studiedSelect.value) return;
+    studiedSelect.disabled = true;
+    try {
+      await actions.claimHadeethEncStudied(session, id, studiedSelect.value);
+    } catch (err) {
+      row.appendChild(el("p", "hadeethenc-study-reason", String(err?.message ?? err)));
+    }
+    studiedSelect.disabled = false;
+  });
 }
 
 async function renderHadeethEncBody(body, state, localRefresh, opts) {

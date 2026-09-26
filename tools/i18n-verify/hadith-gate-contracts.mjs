@@ -107,7 +107,60 @@ check("C2 -- the 6-digit ordinal bound is EXACT, and an import past it must fail
   assert.ok(!re.test("hadith::00001"), "an empty edition id is accepted");
 });
 
-check("C2 -- the undecided key is applied by ONE pre-existing PLATFORM surface, and no Hadith file", () => {
+// Owner decision 7 (26 Sep 2026, docs/governance/2026-09-26-owner-decisions.md
+// row 7, issue #311): Gate C2 is DECIDED for HadeethEnc only -- a HadeethEnc
+// hadith is `hadith:hadeethenc:<id>`. `app/js/hadith-study-actions.js` is the
+// ONE hadith-owned file authorised to build it, and ONLY when the first
+// argument is the literal "hadeethenc" -- every other edition, and every
+// other hadith-owned file, is still undecided and must still fail. Pulled out
+// as a pure function so the mutation check below can prove it refuses a
+// "bukhari" call without needing a second real file on disk.
+const EXPECTED_PLATFORM_CALLERS = ["app/records.html"];
+const AUTHORIZED_HADEETHENC_CALLER = "app/js/hadith-study-actions.js";
+
+function evaluateHadithKeyCallers(callsByFile) {
+  const callers = [...callsByFile.keys()];
+  const hadithOwned = callers.filter((c) => /(^|\/)hadith-/.test(c));
+  const violations = [];
+
+  const unauthorizedHadithOwned = hadithOwned.filter((c) => c !== AUTHORIZED_HADEETHENC_CALLER);
+  if (unauthorizedHadithOwned.length) {
+    violations.push(`a HADITH-owned file other than ${AUTHORIZED_HADEETHENC_CALLER} applies the undecided unit key: ${unauthorizedHadithOwned.join(", ")}`);
+  }
+
+  if (callsByFile.has(AUTHORIZED_HADEETHENC_CALLER)) {
+    const notHadeethenc = callsByFile.get(AUTHORIZED_HADEETHENC_CALLER).filter((a) => a !== "hadeethenc");
+    if (notHadeethenc.length) {
+      violations.push(`${AUTHORIZED_HADEETHENC_CALLER} builds a hadith key for something other than the literal "hadeethenc": ${JSON.stringify(notHadeethenc)} -- Owner decision 7 covers HadeethEnc only`);
+    }
+  }
+
+  const unexpected = callers.filter((c) => !EXPECTED_PLATFORM_CALLERS.includes(c) && c !== AUTHORIZED_HADEETHENC_CALLER);
+  if (unexpected.length) {
+    violations.push(`a new surface builds hadith unit keys: ${unexpected.join(", ")} -- every caller of an undecided permanent key must be deliberate`);
+  }
+
+  return violations;
+}
+
+/** Every `buildUnitKey.hadith(...)` call site under app/js and app, keyed by "dir/file", each entry the plain-string first argument of one call (or `null` when it isn't a plain string literal -- that can never equal "hadeethenc" either, so it fails exactly like a wrong edition would). */
+function scanHadithKeyCallers() {
+  const callsByFile = new Map();
+  for (const dir of ["app/js", "app"]) {
+    const base = path.join(root, dir);
+    if (!fs.existsSync(base)) continue;
+    for (const f of fs.readdirSync(base)) {
+      if (!/\.(js|html)$/.test(f)) continue;
+      const src = fs.readFileSync(path.join(base, f), "utf8");
+      const code = src.replace(/\/\*[\s\S]*?\*\//g, "").split("\n").filter((l) => !l.trim().startsWith("//")).join("\n");
+      const matches = [...code.matchAll(/buildUnitKey\s*\.\s*hadith\s*\(\s*(?:(["'])([^"']*)\1)?/g)];
+      if (matches.length) callsByFile.set(`${dir}/${f}`, matches.map((m) => m[2] ?? null));
+    }
+  }
+  return callsByFile;
+}
+
+check("C2 -- the undecided key is applied by the pre-existing PLATFORM surface, and by HadeethEnc's own authorised caller only", () => {
   // This check first asserted that NOBODY builds a hadith key. That was WRONG,
   // and the failure is the tranche's most useful finding: `app/records.html`
   // has a generic unit-key switch covering every unit type, hadith included
@@ -117,28 +170,33 @@ check("C2 -- the undecided key is applied by ONE pre-existing PLATFORM surface, 
   // latent one waiting on a decision.
   //
   // The invariant worth holding is therefore not "nobody calls it" but "only
-  // the platform surface that already did". A Hadith-owned file starting to
-  // apply the undecided key would be the Hadith stream pre-empting an Owner
-  // Control Gate, and that is what this fails on.
-  const EXPECTED_PLATFORM_CALLERS = ["app/records.html"];
-  const callers = [];
-  for (const dir of ["app/js", "app"]) {
-    const base = path.join(root, dir);
-    if (!fs.existsSync(base)) continue;
-    for (const f of fs.readdirSync(base)) {
-      if (!/\.(js|html)$/.test(f)) continue;
-      const src = fs.readFileSync(path.join(base, f), "utf8");
-      const code = src.replace(/\/\*[\s\S]*?\*\//g, "").split("\n").filter((l) => !l.trim().startsWith("//")).join("\n");
-      if (/buildUnitKey\s*\.\s*hadith\s*\(/.test(code)) callers.push(`${dir}/${f}`);
-    }
+  // the platform surface that already did, plus HadeethEnc's own authorised
+  // caller, and only for the literal HadeethEnc gets built for.
+  const callsByFile = scanHadithKeyCallers();
+  const violations = evaluateHadithKeyCallers(callsByFile);
+  assert.deepEqual(violations, [], violations.join(" | "));
+  for (const platformCaller of EXPECTED_PLATFORM_CALLERS) {
+    assert.ok(callsByFile.has(platformCaller), `the recorded platform caller is missing: ${platformCaller}`);
   }
-  const hadithOwned = callers.filter((c) => /(^|\/)hadith-/.test(c));
-  assert.deepEqual(hadithOwned, [], `a HADITH-owned file now applies the undecided unit key: ${hadithOwned.join(", ")}`);
-  const unexpected = callers.filter((c) => !EXPECTED_PLATFORM_CALLERS.includes(c));
-  assert.deepEqual(unexpected, [],
-    `a new surface builds hadith unit keys: ${unexpected.join(", ")} -- every caller of an undecided permanent key must be deliberate`);
-  assert.deepEqual(callers, EXPECTED_PLATFORM_CALLERS,
-    `the recorded platform caller has changed: expected ${EXPECTED_PLATFORM_CALLERS.join(", ")}, found ${callers.join(", ") || "none"}`);
+});
+
+check("C2 -- MUTATION: a hadith-owned file naming any edition other than \"hadeethenc\" is refused", () => {
+  // Proves evaluateHadithKeyCallers() itself refuses the exact shape this
+  // round's own instruction named ("a call with 'bukhari' in the new file
+  // must fail") -- without needing a second real file on disk to do it.
+  const clean = new Map([[AUTHORIZED_HADEETHENC_CALLER, ["hadeethenc"]], ...EXPECTED_PLATFORM_CALLERS.map((c) => [c, ["bukhari"]])]);
+  assert.deepEqual(evaluateHadithKeyCallers(clean), [], "the authorised shape itself was rejected -- the guard is not a check, it is a blanket refusal");
+
+  const mutated = new Map(clean);
+  mutated.set(AUTHORIZED_HADEETHENC_CALLER, ["hadeethenc", "bukhari"]);
+  const violations = evaluateHadithKeyCallers(mutated);
+  assert.ok(violations.length > 0, "a \"bukhari\" call inside the authorised HadeethEnc caller was not refused");
+  assert.ok(violations.some((v) => v.includes("hadeethenc")), `the refusal does not name the actual defect: ${violations.join(" | ")}`);
+
+  const secondHadithOwnedFile = new Map(clean);
+  secondHadithOwnedFile.set("app/js/hadith-other-surface.js", ["hadeethenc"]);
+  assert.ok(evaluateHadithKeyCallers(secondHadithOwnedFile).length > 0,
+    "a SECOND hadith-owned file calling buildUnitKey.hadith(\"hadeethenc\", ...) was not refused -- only hadith-study-actions.js is authorised");
 });
 
 // ---------------------------------------------------------------------------
@@ -186,14 +244,25 @@ check("APPROACH -- the seed still binds every Approach to Quran, which is the re
   assert.ok(/moduleId:\s*"quranrevival"/.test(src), "the catalogue seed no longer hardcodes moduleId: \"quranrevival\"");
 });
 
-check("APPROACH -- the Hadith module still claims no Approach and no trackable of its own", () => {
+check("APPROACH -- the Hadith module still claims no APPROACH of its own, and only its one authorised caller claims the GENERIC studied_hadith trackable", () => {
   // Read off the module's own source, so a future surface cannot quietly start
-  // naming one.
+  // naming one. Owner decision 7 (issue #311) authorised exactly ONE
+  // hadith-owned file to call records.js's claimStatus() for the module's
+  // PRE-EXISTING, GENERIC studied_hadith trackable (unchanged since before
+  // this decision -- see the APPROACH check just above, still passing) --
+  // that legitimately means writing the literal strings "studied_hadith" and
+  // "trackableId" (a claimStatus() argument name). It does NOT touch the
+  // Approach refusal: "approach_" and "APPROACH_TEMPLATES" stay forbidden in
+  // EVERY hadith-owned file, this one included.
+  const AUTHORIZED_STUDIED_CALLER = path.basename(AUTHORIZED_HADEETHENC_CALLER);
   for (const f of fs.readdirSync(path.join(root, "app", "js")).filter((n) => /^hadith-.*\.js$/.test(n))) {
     const src = fs.readFileSync(path.join(root, "app", "js", f), "utf8");
     const code = src.replace(/\/\*[\s\S]*?\*\//g, "").split("\n").filter((l) => !l.trim().startsWith("//")).join("\n");
-    for (const forbidden of ["approach_", "studied_hadith", "trackableId", "APPROACH_TEMPLATES"]) {
-      assert.ok(!code.includes(forbidden), `app/js/${f} names ${forbidden}`);
+    const forbidden = f === AUTHORIZED_STUDIED_CALLER
+      ? ["approach_", "APPROACH_TEMPLATES"]
+      : ["approach_", "studied_hadith", "trackableId", "APPROACH_TEMPLATES"];
+    for (const term of forbidden) {
+      assert.ok(!code.includes(term), `app/js/${f} names ${term}`);
     }
   }
 });
