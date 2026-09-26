@@ -4565,6 +4565,9 @@
     import { wordSegmentsFor } from "./js/quran-word-segments.js";
     import { wordProgressAuthority, WBW_WORD_STATES, resolveWordProgress } from "./js/quran-word-progress.js";
     import { primeAyahProgress, getSurahProgress, wordProgressFor, setWordState, decideWordApproval, clearWordProgressCache } from "./js/quran-word-progress-data.js";
+    // Issue #320 -- Basic Arabic / Arabic in Depth word-occurrence progress,
+    // gated separately from WbW (see study-word-levels-readiness.js).
+    import { isWordLevelsPersistenceReady } from "./js/study-word-levels-readiness.js";
     import { computeArabicCoverage, occurrenceIdsForAyah, occurrenceIdsForAyahRange, occurrenceIdsForSurah } from "./js/quran-word-coverage.js";
     // Issue #206 -- the whole-Qur'an/Juz running word counter.
     import { QURAN_TOTAL_WORD_COUNT, knownDelta, juzForSurahAyah, wordTotalRatio, percentRounded } from "./js/quran-word-total.js";
@@ -11111,34 +11114,59 @@
       return overlayLemmaKnownness(rawViews, lemmaViewByOccurrenceId);
     }
 
-    /** The progress, authority and ayah coverage the card renders. Synchronous -- everything it needs is already cached by the time it runs. */
+    /**
+     * The progress, authority and ayah coverage the card renders. Synchronous
+     * -- everything it needs is already cached by the time it runs.
+     *
+     * Issue #320 -- reads `quranWordCardState.level` rather than a hardcoded
+     * "wbw", so whichever tab is open (WbW, Basic Arabic, Arabic in Depth)
+     * gets that level's OWN progress and authority. While the Basic/Depth
+     * gate (isWordLevelsPersistenceReady()) is closed, this returns
+     * `progress: null` for those two levels -- progressBlock() renders
+     * nothing for a null progress, which is what makes "no claim controls
+     * while the gate is closed" true without the renderer needing to know
+     * about the gate at all. Coverage stays WbW-only (issue #320's own
+     * point 4): a per-ayah "known X of Y" figure for Basic/Depth is a later
+     * decision, not a trivial extension of this one.
+     */
     function wordProgressContext(ref) {
       const { tenantId, subjectPersonId, actorPersonId, isSupervisor } = wordProgressActor();
       if (!tenantId || !subjectPersonId || !actorPersonId) return {};
+      const level = quranWordCardState.level;
+      if (level !== "wbw" && !isWordLevelsPersistenceReady()) return { progress: null, authority: null, coverage: null };
       const confirmationRequired = !!wordProgressConfirmRequired;
-      const progress = wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: quranWordCardState.occurrenceId, confirmationRequired });
+      const progress = wordProgressFor({ tenantId, personId: subjectPersonId, level, occurrenceId: quranWordCardState.occurrenceId, confirmationRequired });
       const authority = wordProgressAuthority({ actorPersonId, subjectPersonId, isSupervisor, confirmationRequired });
       let coverage = null;
-      try {
-        const scope = occurrenceIdsForAyah(currentSurahData, ref.ayah);
-        const rawViews = new Map(scope.map((occ) => [occ, wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: occ, confirmationRequired })]));
-        const views = effectiveViewsForScope(currentSurahData, scope, rawViews, tenantId, subjectPersonId, confirmationRequired);
-        coverage = computeArabicCoverage({ scopeOccurrenceIds: scope, views, label: `ayah:${ref.surah}:${ref.ayah}` });
-      } catch { coverage = null; }
+      if (level === "wbw") {
+        try {
+          const scope = occurrenceIdsForAyah(currentSurahData, ref.ayah);
+          const rawViews = new Map(scope.map((occ) => [occ, wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: occ, confirmationRequired })]));
+          const views = effectiveViewsForScope(currentSurahData, scope, rawViews, tenantId, subjectPersonId, confirmationRequired);
+          coverage = computeArabicCoverage({ scopeOccurrenceIds: scope, views, label: `ayah:${ref.surah}:${ref.ayah}` });
+        } catch { coverage = null; }
+      }
       return { progress: { ...progress, loading: wordProgressBusy && !progress.loaded }, authority, coverage };
     }
 
-    /** Read this ayah's two lanes, then re-render. Called on open and on move, never at startup. */
+    /**
+     * Read this ayah's two lanes for the CURRENTLY OPEN level, then re-render.
+     * Called on open, on move, and on switching the Word Card's own level tab.
+     * Issue #320 -- with the Basic/Depth gate closed, this reads nothing at
+     * all for those two levels (I9-style discipline: no controls, no reads).
+     */
     async function hydrateWordProgress() {
       const { tenantId, subjectPersonId } = wordProgressActor();
       if (!tenantId || !subjectPersonId || !quranWordCardState.occurrenceId) return;
+      const level = quranWordCardState.level;
+      if (level !== "wbw" && !isWordLevelsPersistenceReady()) return;
       let ref;
       try { ref = parseQuranWordOccurrenceId(quranWordCardState.occurrenceId); } catch { return; }
       const requestedId = quranWordCardState.occurrenceId;
       wordProgressBusy = true;
       try {
         await wordProgressConfirmationRequired(tenantId, subjectPersonId);
-        await primeAyahProgress(db, { tenantId, personId: subjectPersonId, surah: ref.surah, ayah: ref.ayah });
+        await primeAyahProgress(db, { tenantId, personId: subjectPersonId, level, surah: ref.surah, ayah: ref.ayah });
       } catch (error) {
         // I15: a failed read must reach the reader, never console alone. This
         // is the app's own failure surface, the same one every write here
@@ -11319,17 +11347,29 @@
     async function runWordProgressAction(action) {
       const { tenantId, subjectPersonId, actorPersonId, isSupervisor } = wordProgressActor();
       if (!tenantId || !subjectPersonId || !actorPersonId || !quranWordCardState.occurrenceId) return;
+      const level = quranWordCardState.level;
+      // Issue #320 -- the Basic/Depth tabs offer no controls while their gate
+      // is closed, so this only ever fires for real; this is defence in depth,
+      // the same discipline setWordState()/decideWordApproval() already apply
+      // at the data layer.
+      if (level !== "wbw" && !isWordLevelsPersistenceReady()) return;
       const confirmationRequired = !!wordProgressConfirmRequired;
       const common = {
-        tenantId, personId: subjectPersonId, occurrenceId: quranWordCardState.occurrenceId,
+        tenantId, personId: subjectPersonId, level, occurrenceId: quranWordCardState.occurrenceId,
         actorPersonId, actorUid: auth.currentUser?.uid, isSupervisor, confirmationRequired,
       };
-      // Issue #206 -- snapshotted BEFORE either write below changes it.
-      const beforeKnown = wordProgressCountsAsKnownNow(tenantId, subjectPersonId, common.occurrenceId, confirmationRequired);
+      // Issue #206/#303/#320 -- the whole-Qur'an/lemma counters and MAP
+      // Phase 4's wbw.engaged Activity evidence stay scoped to WbW itself
+      // (issue #320's own point 4): a Basic Arabic or Arabic in Depth claim is
+      // independent progress on the SAME word, not word-by-word study or
+      // whole-Qur'an coverage, so neither snapshot is even taken for them.
+      const beforeKnown = level === "wbw"
+        ? wordProgressCountsAsKnownNow(tenantId, subjectPersonId, common.occurrenceId, confirmationRequired)
+        : null;
       // Issue #303 -- a SEPARATE snapshot, gated by the lemma feature's own
       // readiness rather than the whole-Qur'an total's, since the two
       // features are switched on independently.
-      const beforeKnownForLemma = isLemmaProgressPersistenceReady()
+      const beforeKnownForLemma = level === "wbw" && isLemmaProgressPersistenceReady()
         ? wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired }).countsAsKnown
         : null;
       // I15 throughout: safeWrite() is this app's own "a failed write must
@@ -11360,25 +11400,32 @@
         // them Activity is off on every single word tap would be noise. The ✓
         // on #readBar is the one surface that says it, because it is the one
         // that invites a press.
-        if (studyEvidencePersistenceReady()) {
-          const wbwRef = parseQuranWordOccurrenceId(common.occurrenceId);
-          await safeWrite(
-            () => recordStudyEvidence(db, wbwEngagementArgs({
-              tenantId, personId: subjectPersonId,
-              surah: wbwRef.surah, ayah: wbwRef.ayah,
-              at: new Date(), weekStartsOn: tenantWeekStartsOn,
-            }), { uid: auth.currentUser?.uid }),
-            { collection: "activity", action: "wbwEngaged" }
-          );
+        //
+        // Issue #320 -- a Basic Arabic/Arabic in Depth claim skips all of this
+        // (see the level check above): it is not word-by-word study.
+        if (level === "wbw") {
+          if (studyEvidencePersistenceReady()) {
+            const wbwRef = parseQuranWordOccurrenceId(common.occurrenceId);
+            await safeWrite(
+              () => recordStudyEvidence(db, wbwEngagementArgs({
+                tenantId, personId: subjectPersonId,
+                surah: wbwRef.surah, ayah: wbwRef.ayah,
+                at: new Date(), weekStartsOn: tenantWeekStartsOn,
+              }), { uid: auth.currentUser?.uid }),
+              { collection: "activity", action: "wbwEngaged" }
+            );
+          }
+          await applyWordTotalCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown });
+          await applyLemmaOccurrenceCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown: beforeKnownForLemma });
         }
-        await applyWordTotalCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown });
-        await applyLemmaOccurrenceCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown: beforeKnownForLemma });
       } else {
         const note = action.review === "returned" ? (window.prompt(t("What should they look at again?")) ?? null) : null;
         await safeWrite(() => decideWordApproval(db, { ...common, review: action.review, note }),
           { what: "decide Arabic word progress", occurrenceId: common.occurrenceId });
-        await applyWordTotalCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown });
-        await applyLemmaOccurrenceCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown: beforeKnownForLemma });
+        if (level === "wbw") {
+          await applyWordTotalCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown });
+          await applyLemmaOccurrenceCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown: beforeKnownForLemma });
+        }
       }
       // Issue #303 -- the "if you learn this word" delta and the whole-Qur'an
       // figure can both have moved (this occurrence's own known-ness is part
@@ -11965,7 +12012,11 @@
       const lemmaProgressDecide = event.target.closest("[data-lemma-progress-decide]");
       if (lemmaProgressDecide) { runLemmaProgressAction({ kind: "decide", review: lemmaProgressDecide.dataset.lemmaProgressDecide }); return; }
       const level = event.target.closest("[data-word-card-level]");
-      if (level) { quranWordCardState = selectWordCardLevel(quranWordCardState, level.dataset.wordCardLevel); renderPersistentWordCard(); return; }
+      // Issue #320 -- switching to Basic Arabic/Arabic in Depth primes that
+      // level's own progress (a cache miss on first visit; a no-op once
+      // primed, exactly like re-opening the WbW tab). Gated internally by
+      // hydrateWordProgress() itself.
+      if (level) { quranWordCardState = selectWordCardLevel(quranWordCardState, level.dataset.wordCardLevel); renderPersistentWordCard(); hydrateWordProgress(); return; }
       if (event.target.closest("[data-word-card-close]")) { quranWordCardRequest++; quranWordCardOrigin = null; renderWordCardReturnBar(); quranWordCardState = closeWordCard(quranWordCardState); renderPersistentWordCard(); if (quranWordCardTrigger?.isConnected) quranWordCardTrigger.focus({ preventScroll: true }); return; }
       const move = event.target.closest("[data-word-card-move]");
       if (move) { quranWordCardState = moveWordCard(quranWordCardState, wordCardOccurrenceIds(), move.dataset.wordCardMove); quranWordCardContext = {}; quranWordCardLemmaContext = {}; renderPersistentWordCard(); hydrateWordCardOccurrences(); hydrateWordProgress(); hydrateWordCardLemmaExtras(); }
