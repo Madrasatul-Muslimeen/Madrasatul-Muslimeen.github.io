@@ -2901,9 +2901,10 @@ export const BN = {
   "{n} passages (this edition has no hadith numbers)": "{n}টি অংশ (এই সংস্করণে হাদীস নম্বর নেই)", // ?
   "This edition has no hadith numbers to jump to.": "এই সংস্করণে যাওয়ার জন্য কোনো হাদীস নম্বর নেই।", // ?
   "Go to hadith number": "হাদীস নম্বরে যান", // ?
-  "Go": "যান", // ?
+  // "Go" and "(untitled)" already exist above with the same translation --
+  // not repeated here (a duplicate object key would just be an unreachable
+  // no-op, since it carries the identical value).
   "No chapter found for hadith number {n}.": "{n} নম্বর হাদীসের জন্য কোনো অধ্যায় পাওয়া যায়নি।", // ?
-  "(untitled)": "(শিরোনামহীন)", // ?
   "Show more ({remaining} more)": "আরও দেখুন (আরও {remaining}টি)", // ?
   "Hadith {n}": "হাদীস {n}", // ?
   "Passage {n} (position in this edition, not the book's own number)": "অংশ {n} (এই সংস্করণে অবস্থান, বইয়ের নিজস্ব নম্বর নয়)", // ?
