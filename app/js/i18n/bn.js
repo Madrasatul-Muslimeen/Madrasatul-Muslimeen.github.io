@@ -2873,6 +2873,7 @@ export const BN = {
   "HadeethEnc — Encyclopedia of Translated Hadiths": "HadeethEnc — অনুবাদিত হাদীসের বিশ্বকোষ", // ?
   "HadeethEnc hadiths are real, published text. Everything marked Synthetic is invented for development.":
     "HadeethEnc-এর হাদিসগুলো প্রকৃত, প্রকাশিত পাঠ। \"কৃত্রিম\" চিহ্নিত সবকিছু উন্নয়নের জন্য বানানো।",
+  "Vol. {v}, p. {p}": "খণ্ড {v}, পৃ. {p}",
   "Synthetic pilot collections": "কৃত্রিম পাইলট সংকলনসমূহ", // ?
   "Not available in your language here — showing {lang}.": "আপনার ভাষায় এখানে পাওয়া যাচ্ছে না — {lang} দেখানো হচ্ছে।",
   "Not available in {reqLang} — showing {lang}.": "{reqLang}-এ পাওয়া যাচ্ছে না — {lang} দেখানো হচ্ছে।",

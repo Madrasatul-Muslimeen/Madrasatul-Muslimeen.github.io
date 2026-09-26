@@ -747,6 +747,27 @@ async function renderOpenitiBody(body, oi, localRefresh) {
   renderOpenitiPassages(body, hadiths);
 }
 
+/**
+ * Architect review (#316): a chapter title is shown TIDIED, never stored
+ * tidied -- the split data keeps the source's heading as written. Twenty of
+ * 5,191 source headings carry an unbalanced bracket ("( 5 كتاب الغسل") or an
+ * inline "\\ 390 \\" cross-reference; those marks are dropped for display
+ * only, and an empty title reads "(untitled)" rather than a file id.
+ */
+function openitiDisplayTitle(title) {
+  let s = String(title ?? "").replace(/\\\s*\d+\s*\\/g, " ").replace(/\s+/g, " ").trim();
+  const opens = (s.match(/\(/g) || []).length, closes = (s.match(/\)/g) || []).length;
+  if (opens > closes) s = s.replace(/^\(\s*/, "");
+  if (closes > opens) s = s.replace(/\s*\)$/, "");
+  return s || t("(untitled)");
+}
+
+/** "PageV01P013" -> "Vol. 1, p. 13" (the source's own page marker, made readable). */
+function openitiPageRef(ref) {
+  const m = /^PageV(\d+)P(\d+)$/.exec(ref);
+  return m ? t("Vol. {v}, p. {p}", { v: num(Number(m[1])), p: num(Number(m[2])) }) : ref;
+}
+
 function openitiCrumbs(oi, localRefresh) {
   const bar = el("nav", "hadith-crumbs");
   bar.dataset.openitiCrumbs = "true";
@@ -768,7 +789,7 @@ function openitiCrumbs(oi, localRefresh) {
     add(index.titleEn, oi.chapterId ? () => { oi.chapterId = null; localRefresh(); } : null);
     if (oi.chapterId) {
       const chapter = index.chapters.find((c) => c.id === oi.chapterId);
-      add(chapter?.title || oi.chapterId, null);
+      add(openitiDisplayTitle(chapter?.title), null);
     }
   }
   return bar;
@@ -841,7 +862,7 @@ function renderOpenitiChapterList(body, oi, index, localRefresh) {
   for (const c of index.chapters.slice(0, shown)) {
     const row = el("button", "hadith-row");
     row.dataset.openitiChapter = c.id;
-    row.appendChild(openitiArabicRowName(c.title || t("(untitled)")));
+    row.appendChild(openitiArabicRowName(openitiDisplayTitle(c.title)));
     if (c.firstNumber != null) {
       row.appendChild(el("span", "hadith-row-meta", `${num(c.firstNumber)}–${num(c.lastNumber)}`));
     }
@@ -892,7 +913,7 @@ function openitiPassageCard(h) {
   card.appendChild(text);
 
   if (h.pageRefs && h.pageRefs.length) {
-    card.appendChild(el("p", "hadith-availability openiti-page-refs", h.pageRefs.join(", ")));
+    card.appendChild(el("p", "hadith-availability openiti-page-refs", h.pageRefs.map(openitiPageRef).join(" · ")));
   }
 
   const credit = document.createElement("a");
