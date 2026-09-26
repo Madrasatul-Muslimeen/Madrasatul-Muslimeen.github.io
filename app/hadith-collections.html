@@ -14,6 +14,10 @@
   h1 { font-size: 1.35rem; margin: 0.6rem 0; }
   h2 { font-size: 1.1rem; margin: 1.4rem 0 0.6rem; }
   h3 { font-size: 0.98rem; margin: 1.1rem 0 0.4rem; color: var(--hadith-muted); }
+  #who { margin: 0.6rem 0; font-size: 0.9rem; color: var(--hadith-muted); }
+  #contextBar { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin: 0.6rem 0 1rem; font-size: 0.9rem; }
+  #contextBar label { margin: 0; }
+  #contextBar select { min-height: 40px; padding: 0.3rem 0.4rem; border: 1px solid var(--hadith-rule); border-radius: 0.35rem; }
 </style>
 </head>
 <body>
@@ -29,7 +33,114 @@
   <h1 id="hadithPageTitle"></h1>
   <p class="hadith-note" id="hadithPilotNote"></p>
 
+  <!-- Issue #311 -- a minimal session, just enough for the HadeethEnc card's
+       own Note/bookmark/Studied actions (hadith-study-actions.js) to have a
+       tenant/person to act for. Deliberately NOT topic-study.js's full
+       machinery (no catalogue tree, no records chunk of its own) -- this
+       page has no topic browser to drive, only the corpus. Kept in its own
+       script, separate from the corpus-mounting one below, for the same
+       reason hadith-study.html's own two scripts are separate: a Firebase
+       failure here must disable only the study actions, never the
+       Collections/Topics/Search/Explore browsing itself. -->
+  <div id="who">Checking sign-in…</div>
+  <div id="contextBar" style="display:none;">
+    <label>Tenant
+      <select id="tenantSelect"></select>
+    </label>
+    <label>Person
+      <select id="personSelect"></select>
+    </label>
+  </div>
+
   <main id="hadithRoot"></main>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-init.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getDocs, collection, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { TENANT } from "./js/collections.js";
+    import { langText } from "./js/lang.js";
+    import { getAppLang } from "./js/prefs.js";
+    import { t } from "./js/i18n.js";
+    import {
+      getMyMembershipRoles, hydrateMemberships, pickContext, setActiveContext,
+      getSelectedPersonId, setSelectedPersonId, effectiveRoles, scopedRoster,
+    } from "./js/session-context.js";
+
+    const whoEl = document.getElementById("who");
+    const contextBar = document.getElementById("contextBar");
+    const tenantSelect = document.getElementById("tenantSelect");
+    const personSelect = document.getElementById("personSelect");
+
+    let activeTenantId = null;
+    let myMemberships = [];
+
+    function refreshCorpusActions() {
+      // window.__hadithCorpus is set by the corpus-mounting script below,
+      // once it has actually mounted -- a no-op if that hasn't happened yet
+      // (or failed), which is the correct behaviour either way.
+      window.__hadithCorpus?.render?.();
+    }
+
+    async function loadRoster() {
+      const membership = myMemberships.find((m) => m.tenantId === activeTenantId);
+      const rosterSnap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId)));
+      const fullRoster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((p) => p.status !== "archived");
+      // Same scoping every other Person picker in the app applies (session-
+      // context.js's own scopedRoster()) -- a plain guardian/student must not
+      // see a roster wider than they would anywhere else in the app, even
+      // though the actions themselves are separately gated by canRecordFor.
+      const effRoles = effectiveRoles(membership?.roles ?? [], null);
+      const roster = scopedRoster(fullRoster, effRoles, membership?.personId ?? null);
+      const stored = getSelectedPersonId();
+      const candidate = roster.some((p) => p.id === stored) ? stored
+        : (roster.some((p) => p.id === membership?.personId) ? membership.personId : (roster[0]?.id ?? null));
+      personSelect.innerHTML = roster
+        .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
+        .join("");
+      if (candidate) personSelect.value = candidate;
+    }
+
+    async function loadContextData(hydratedMembershipsPromise) {
+      myMemberships = await (hydratedMembershipsPromise ?? Promise.resolve(myMemberships));
+      tenantSelect.innerHTML = myMemberships
+        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName ?? m.tenantId}</option>`)
+        .join("");
+      await loadRoster();
+      contextBar.style.display = "flex";
+      refreshCorpusActions();
+    }
+
+    tenantSelect.addEventListener("change", async () => {
+      const chosen = myMemberships.find((m) => m.tenantId === tenantSelect.value);
+      if (!chosen) return;
+      activeTenantId = chosen.tenantId;
+      setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
+      await loadRoster();
+      refreshCorpusActions();
+    });
+    personSelect.addEventListener("change", () => {
+      setSelectedPersonId(personSelect.value);
+      refreshCorpusActions();
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        whoEl.textContent = t("Not signed in.");
+        return;
+      }
+      try {
+        const membershipRoles = await getMyMembershipRoles(db, user.uid);
+        const context = pickContext(membershipRoles, null);
+        if (!context) { whoEl.textContent = t("Not signed in."); return; }
+        activeTenantId = context.tenantId;
+        whoEl.textContent = t("Signed in as {email}", { email: user.email });
+        await loadContextData(hydrateMemberships(db, membershipRoles));
+      } catch (err) {
+        whoEl.textContent += ` — ${err.message}`;
+      }
+    });
+  </script>
 
   <script type="module">
     import { mountHadithBrowser } from "./js/hadith-browser.js";
@@ -50,7 +161,11 @@
 
     translateStatic();
     registerServiceWorker();
-    mountHadithBrowser(document.getElementById("hadithRoot"), { mount });
+    // Issue #311 -- exposed on `window` so the (deliberately separate,
+    // Firebase-touching) session bootstrap script above can ask the corpus
+    // to re-render its own study actions after a tenant/person change,
+    // without either script importing the other.
+    window.__hadithCorpus = mountHadithBrowser(document.getElementById("hadithRoot"), { mount });
   </script>
 </body>
 </html>

@@ -183,7 +183,26 @@
     document.getElementById("hadithCorpusNote").textContent =
       t("Browse the collections, books and chapters. Every narration below is invented for development and is not a hadith.");
     try {
-      mountHadithBrowser(document.getElementById("hadithCorpusRoot"), { mount: "hadith-module" });
+      // Issue #311 -- a HadeethEnc bookmark's own resume value
+      // ("hadith:hadeethenc:<id>") reopens this exact hadith. bookmarks.html
+      // already builds `${page}?resume=${position}` for every module the
+      // same way; topic-study.js (mounted separately above) reads the same
+      // param for its own topic tree and silently ignores an id that
+      // doesn't resolve there, so the two readers coexist without conflict.
+      const resumeParam = new URLSearchParams(location.search).get("resume");
+      const HADEETHENC_RESUME_PREFIX = "hadith:hadeethenc:";
+      const initialHadeethEncId = resumeParam?.startsWith(HADEETHENC_RESUME_PREFIX)
+        ? resumeParam.slice(HADEETHENC_RESUME_PREFIX.length) || null
+        : null;
+      const corpus = mountHadithBrowser(document.getElementById("hadithCorpusRoot"), { mount: "hadith-module", initialHadeethEncId });
+      // The corpus's own study actions (Note/bookmark/Studied, issue #311)
+      // read the signed-in session fresh on every render, but nothing tells
+      // them to RE-render when the page's Tenant/Person pickers change --
+      // those belong to initTopicStudyPage() above, a separate script by
+      // design (see this block's own header comment). A second listener on
+      // the same elements costs nothing and touches no shared module.
+      document.getElementById("tenantSelect")?.addEventListener("change", () => corpus.render());
+      document.getElementById("personSelect")?.addEventListener("change", () => corpus.render());
     } catch (err) {
       // I15: a failure reaches the reader rather than only the console.
       const root = document.getElementById("hadithCorpusRoot");

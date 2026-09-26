@@ -152,3 +152,20 @@
   align-items: center;
   min-height: 40px;
 }
+
+/* ---- HadeethEnc study actions (issue #311) -- Note/bookmark/Studied ---- */
+.hadeethenc-study-actions { margin-top: 0.8rem; padding-top: 0.7rem; border-top: 1px dashed var(--hadith-rule); }
+.hadeethenc-study-row { display: flex; flex-wrap: wrap; gap: 0.7rem; align-items: flex-start; }
+.hadeethenc-study-item { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
+.hadeethenc-study-btn {
+  display: inline-flex; align-items: center; min-height: 40px; padding: 0.4rem 0.8rem;
+  border: 1px solid var(--hadith-rule); border-radius: 0.4rem; background: #fff;
+  color: var(--hadith-ink); font-size: 0.88rem; font-weight: 600; cursor: pointer;
+  text-decoration: none;
+}
+a.hadeethenc-study-btn[aria-disabled="true"], button.hadeethenc-study-btn[aria-disabled="true"] {
+  opacity: 0.5; cursor: default;
+}
+.hadeethenc-study-label { font-size: 0.82rem; font-weight: 600; color: var(--hadith-ink); }
+.hadeethenc-study-select { min-height: 40px; min-width: 0; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); }
+.hadeethenc-study-reason { flex-basis: 100%; font-size: 0.8rem; color: #7d1f1e; margin: 0.1rem 0 0; font-weight: 600; }

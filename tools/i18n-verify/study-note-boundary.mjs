@@ -71,12 +71,22 @@ function everyAppSource() {
 }
 
 // --- 1. UNINVOKED ----------------------------------------------------------
-/** Local `./x.js` imports of one module. */
+/**
+ * Local `./x.js` imports of one module -- static AND dynamic. Issue #311's
+ * `hadith-browser.js` reaches `hadith-study-actions.js` through a dynamic
+ * `import("./hadith-study-actions.js")` (deliberate -- see that file's own
+ * header on why: it keeps the corpus Firebase-free at its core), and the
+ * static-only regex here could not see it, which would have let this walker
+ * under-report real reachability -- the exact class of blind spot this
+ * whole suite exists to catch, just one level removed. `import\s*\(` covers
+ * the dynamic form; the two static forms are unchanged.
+ */
 function localImportsOf(file) {
   const text = fs.readFileSync(file, "utf8");
   return [
     ...[...text.matchAll(/from\s*["'`]\.\/([A-Za-z0-9._-]+\.js)["'`]/g)].map((m) => m[1]),
     ...[...text.matchAll(/import\s*["'`]\.\/([A-Za-z0-9._-]+\.js)["'`]/g)].map((m) => m[1]),
+    ...[...text.matchAll(/import\s*\(\s*["'`]\.\/([A-Za-z0-9._-]+\.js)["'`]\s*\)/g)].map((m) => m[1]),
   ];
 }
 /** The modules one page loads directly. */
@@ -124,7 +134,17 @@ check("POSITIVE CONTROL: the reachability walker really does find a wired module
 // the same functions, not a copy), to reuse the reader's own existing Note
 // on this āyah or create one before filing it into Mapping My Journey
 // folders. The claim narrows to "exactly these two pages", not back to one.
-const KNOWN_WIRED_PAGES = ["app/notes.html", "app/quranrevival.html"];
+//
+// UPDATED for issue #311 (26 Sep 2026), reason recorded rather than the
+// check weakened: `app/hadith-collections.html` and `app/hadith-study.html`
+// both mount `hadith-browser.js`, which reaches `study-note-service.js`'s
+// read-only `notesForStudyUnit()` through the new, dynamically-imported
+// `hadith-study-actions.js` (Owner decision 7 -- a HadeethEnc hadith's own
+// "My Notes" count). Two pages join because the corpus mounts identically
+// on both (see hadith-browser.js's own header comment); neither writes a
+// Note directly -- creation is still only ever notes.html's own, unchanged
+// `createStudyNote()` call, reached the same way it always was.
+const KNOWN_WIRED_PAGES = ["app/notes.html", "app/quranrevival.html", "app/hadith-collections.html", "app/hadith-study.html"];
 
 check("EXACTLY the audited pages reach the service, and nothing else does, by any chain of any length", () => {
   const reachable = chainsToTarget("study-note-service.js");
@@ -134,13 +154,37 @@ check("EXACTLY the audited pages reach the service, and nothing else does, by an
 });
 
 check("the binding is reached ONLY through the service -- never directly by any page", () => {
+  // Issue #311's two hadith pages reach the service (and so the binding)
+  // through TWO extra hops (hadith-browser.js -> hadith-study-actions.js)
+  // that notes.html/quranrevival.html don't have -- both import the service
+  // directly. A single exact-string template can no longer describe every
+  // wired page's own chain, so this asserts the two facts that actually
+  // matter, generalised over any chain length: every chain ends in
+  // "-> study-note-service.js -> study-note-binding.js" (never a direct
+  // page -> binding import, skipping the service), and the SET of pages
+  // reaching the binding is exactly the known-wired set -- the same
+  // narrower claim as the service check just above.
   const reachable = chainsToTarget("study-note-binding.js").sort();
-  const expected = KNOWN_WIRED_PAGES.map((page) => `${page} -> study-note-service.js -> study-note-binding.js`).sort();
-  assert.deepEqual(reachable, expected,
-    `unexpected reachability for study-note-binding.js: ${reachable.join(" | ")}`);
+  const pages = reachable.map((r) => r.split(" -> ")[0]).sort();
+  assert.deepEqual(pages, [...KNOWN_WIRED_PAGES].sort(),
+    `unexpected page(s) reaching study-note-binding.js: ${reachable.join(" | ")}`);
+  for (const chain of reachable) {
+    assert.ok(chain.endsWith(" -> study-note-service.js -> study-note-binding.js"),
+      `a page reaches the binding NOT through the service: ${chain}`);
+  }
 });
 
-check("no app source imports the binding or the service, except the audited pages importing the service", () => {
+// This is a DIRECT, literal-import scan -- distinct from KNOWN_WIRED_PAGES
+// above, which is about which PAGES reach the service by any chain length.
+// notes.html/quranrevival.html import study-note-service.js directly, so
+// for them the two lists happen to look the same; issue #311's two hadith
+// pages do NOT import it directly at all -- they reach it only through
+// hadith-browser.js's dynamic import of hadith-study-actions.js, which is
+// what actually, literally imports the service. That file is the one new
+// entry here, not the two pages.
+const KNOWN_DIRECT_SERVICE_IMPORTERS = ["app/notes.html", "app/quranrevival.html", "app/js/hadith-study-actions.js"];
+
+check("no app source imports the binding or the service, except the audited direct importers", () => {
   const importers = [];
   for (const file of everyAppSource()) {
     if (GUARDED.some((g) => file.endsWith(path.join("js", g)))) continue;
@@ -156,7 +200,7 @@ check("no app source imports the binding or the service, except the audited page
       }
     }
   }
-  const expected = KNOWN_WIRED_PAGES.map((page) => `${page} -> study-note-service.js`).sort();
+  const expected = KNOWN_DIRECT_SERVICE_IMPORTERS.map((file) => `${file} -> study-note-service.js`).sort();
   assert.deepEqual(importers.sort(), expected,
     `unexpected importer set for the service/binding: ${JSON.stringify(importers)}`);
 });

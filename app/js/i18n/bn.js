@@ -2884,4 +2884,12 @@ export const BN = {
   "Source: HadeethEnc.com": "সূত্র: HadeethEnc.com",
   "Notes, bookmarking and marking this hadith as studied are not enabled yet — they need a decision about how a hadith is permanently identified, which the Owner has not made yet.":
     "নোট, বুকমার্ক এবং এই হাদীসটি অধ্যয়ন করা হয়েছে বলে চিহ্নিত করা এখনো চালু করা হয়নি — একটি হাদীসকে স্থায়ীভাবে কীভাবে চিহ্নিত করা হবে তা নিয়ে একটি সিদ্ধান্ত প্রয়োজন, যা মালিক এখনো নেননি।", // ?
+  // HadeethEnc study actions (issue #311, Owner decision 7): Notes/bookmark/Studied.
+  "{count} Note(s) on this hadith": "এই হাদীসে {count}টি নোট",
+  "Sign in and choose who you're studying as to use Notes, bookmarking and Studied.":
+    "নোট, বুকমার্ক এবং অধ্যয়ন করা হয়েছে ব্যবহার করতে সাইন ইন করুন এবং কার হয়ে অধ্যয়ন করছেন তা বেছে নিন।", // ?
+  "You can view this, but only the person's own record can bookmark or mark it as studied.":
+    "আপনি এটি দেখতে পারেন, তবে শুধু সংশ্লিষ্ট ব্যক্তির নিজের রেকর্ড থেকেই এটি বুকমার্ক করা বা অধ্যয়ন করা হয়েছে বলে চিহ্নিত করা যাবে।", // ?
+  "Notes, bookmarking and Studied could not be loaded right now.":
+    "নোট, বুকমার্ক এবং অধ্যয়ন করা হয়েছে এই মুহূর্তে লোড করা গেল না।", // ?
 };

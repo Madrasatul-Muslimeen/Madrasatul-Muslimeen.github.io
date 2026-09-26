@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.84",
+    "version": "08.85",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -785,8 +785,20 @@
     {
       "version": "08.84",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "HadeethEnc corpus browsable in Hadith Collections (issue #309); Dictionary Word progress gate opened after the Owner published its rules; viewing a Word Card never writes.",
+      "integration": {
+        "authorizedOn": "2026-09-26",
+        "integratedOn": "2026-09-26",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "08.85",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "HadeethEnc hadith cards gain Note, Bookmark and Studied, keyed hadith:hadeethenc:<id> (Owner decision 7); bookmarked hadith reopens directly.",
       "integration": {
         "authorizedOn": "2026-09-26",
         "integratedOn": "2026-09-26",
@@ -795,8 +807,9 @@
       }
     }
   ],
-  "nextUnallocated": "08.85",
+  "nextUnallocated": "08.86",
   "nextUnallocatedNote": [
+    "v08.85 was allocated to Notes, bookmark and Studied on HadeethEnc hadiths (issue #311), 2026-09-26.",
     "v08.84 was allocated to HadeethEnc browsing in the Hadith module (issue #309) and Dictionary Word (lemma) progress switched on, 2026-09-26.",
     "v08.83 was allocated to the Word Card's whole-Qur'an numbers and the gated lemma-wide 'Mark this word known everywhere' (issue #303), 2026-09-26.",
     "v08.82 was allocated to Ayah Card Related āyāt; Asma classification rename fix; lemma progress data layer (#301), 2026-09-25.",
