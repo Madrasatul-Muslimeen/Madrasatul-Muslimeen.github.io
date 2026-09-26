@@ -265,7 +265,9 @@ async function runAtWidth(width) {
   // --- Architect review: the Source link is the attribution the grant
   // requires, so it must be readable (>= 4.5:1 on its own background) and a
   // real tap target (>= 40px). Measured 3.18:1 / 24.6px before the fix. ----
-  if (!(await page.$("[data-hadeethenc-card] a.hadith-view-source"))) {
+  // Open hadith 4563 specifically: in Bangla the 2933 fallback card is the one
+  // open here, and the #311 control measurements below name 4563.
+  if (!(await page.$('[data-hadeethenc-card="4563"] a.hadith-view-source'))) {
     await page.click('[data-hadeethenc-crumbs] .hadeethenc-crumb >> nth=0'); await settle();
     await page.click('[data-hadeethenc-category="3"]'); await settle();
     await page.click('[data-hadeethenc-hadith="4563"]'); await settle();

@@ -7,6 +7,7 @@
 // both closed vocabularies really refuse the words that are NOT in them, and
 // that every unit type buildUnitKey can produce is either bound or refused,
 // with none silently missing.
+import fs from "node:fs";
 import assert from "node:assert/strict";
 import { buildUnitKey } from "../../app/js/unit-keys.js";
 import {
@@ -78,8 +79,17 @@ check("A8 relationshipKind accepts exactly origin and reference", () => {
     assert.throws(() => studyNoteSource({ unitKey: "ayah:1:1", relationshipKind: bad }), /relationshipKind/);
   }
 });
-check("A9 provenanceKind accepts exactly the two ADR-009 names", () => {
-  assert.deepEqual([...PROVENANCE_KINDS], ["study-note", "promoted-ayah-note"]);
+// UPDATED IN PLACE, 26 Sep 2026 (Architect): ADR-009 was amended by issue
+// #265 (the WordPress importer, v08.66) to add `imported`, and this check
+// had been failing on main since, still expecting two names. It now reads
+// the vocabulary's words back out of the ADR itself, so the list and the
+// document cannot drift apart silently again.
+check("A9 provenanceKind accepts exactly the ADR-009 names (study-note, promoted-ayah-note, imported)", () => {
+  assert.deepEqual([...PROVENANCE_KINDS], ["study-note", "promoted-ayah-note", "imported"]);
+  const adrDir = "docs/governance/adr";
+  const adr = fs.readdirSync(adrDir).find((f) => /ADR-009/.test(f));
+  const adrText = fs.readFileSync(`${adrDir}/${adr}`, "utf8");
+  for (const k of PROVENANCE_KINDS) assert.ok(adrText.includes(`\`${k}\``), `ADR-009 no longer names \`${k}\``);
   for (const ok of PROVENANCE_KINDS) {
     assert.equal(studyNoteSource({ unitKey: "ayah:1:1", provenanceKind: ok }).provenanceKind, ok);
   }

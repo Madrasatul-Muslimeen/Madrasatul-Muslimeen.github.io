@@ -105,7 +105,7 @@ export async function getHadeethEncSession() {
   const isSelf = personId === myPersonId;
   const effRoles = effectiveRoles(ctx.roles ?? [], ctx.viewAsRole ?? null);
   const canRecordFor = isSelf || (await canRecordForSelected(ctx.tenantId, effRoles, myPersonId, personId));
-  return { uid, tenantId: ctx.tenantId, personId, isSelf, canRecordFor };
+  return { uid, tenantId: ctx.tenantId, personId, myPersonId, isSelf, canRecordFor };
 }
 
 // ---------------------------------------------------------------------------
@@ -140,24 +140,40 @@ export async function noteCountFor(session, id) {
 // bookmark must reopen the Hadith page on this hadith").
 // ---------------------------------------------------------------------------
 
-export async function isHadeethEncBookmarked(session, id) {
+// Architect review (#311): what this page has just SAVED is remembered here
+// and preferred over a re-read, so reopening a card shows the saved state
+// at once (the standing rule: patch the in-memory copy after a successful
+// write rather than trust the next read). Keyed per person, so switching
+// the selected person never shows another person's state.
+const savedBookmarks = new Map(); // `${tenant}__${person}__${unitKey}` -> bookmark object | null
+const savedStudied = new Map();   // same key -> claimed status id
+const memoKey = (session, unitKey) => `${session.tenantId}__${session.personId}__${unitKey}`;
+
+async function findHadeethEncBookmark(session, unitKey) {
+  const k = memoKey(session, unitKey);
+  if (savedBookmarks.has(k)) return savedBookmarks.get(k);
   const bookmarksDoc = await getBookmarks(db, session.tenantId, session.personId);
-  return !!findSavedBookmark(bookmarksDoc, { moduleId: HADITH_MODULE_ID, subjectId: BOOKMARK_SUBJECT_ID, position: hadeethEncUnitKey(id) });
+  return findSavedBookmark(bookmarksDoc, { moduleId: HADITH_MODULE_ID, subjectId: BOOKMARK_SUBJECT_ID, position: unitKey }) ?? null;
+}
+
+export async function isHadeethEncBookmarked(session, id) {
+  return !!(await findHadeethEncBookmark(session, hadeethEncUnitKey(id)));
 }
 
 /** Toggles the bookmark and returns the new state (true = now bookmarked). */
 export async function toggleHadeethEncBookmark(session, id, name) {
   const unitKey = hadeethEncUnitKey(id);
-  const bookmarksDoc = await getBookmarks(db, session.tenantId, session.personId);
-  const existing = findSavedBookmark(bookmarksDoc, { moduleId: HADITH_MODULE_ID, subjectId: BOOKMARK_SUBJECT_ID, position: unitKey });
+  const existing = await findHadeethEncBookmark(session, unitKey);
   if (existing) {
     await removeSavedBookmark(db, session.tenantId, session.personId, existing.id);
+    savedBookmarks.set(memoKey(session, unitKey), null);
     return false;
   }
-  await saveBookmark(db, {
+  const saved = await saveBookmark(db, {
     tenantId: session.tenantId, personId: session.personId, moduleId: HADITH_MODULE_ID,
     subjectId: BOOKMARK_SUBJECT_ID, name, position: unitKey, uid: session.uid,
   });
+  savedBookmarks.set(memoKey(session, unitKey), saved);
   return true;
 }
 
@@ -173,6 +189,7 @@ export async function toggleHadeethEncBookmark(session, id, name) {
 
 export async function hadeethEncStudiedStatus(session, id) {
   const unitKey = hadeethEncUnitKey(id);
+  if (savedStudied.has(memoKey(session, unitKey))) return savedStudied.get(memoKey(session, unitKey));
   const chunkKey = chunkKeyFor(unitKey, HADITH_ROOT_SUBJECT_ID);
   const chunk = await getRecordsChunk(db, session.tenantId, session.personId, chunkKey);
   const entry = chunk?.entries?.[`${unitKey}::${STUDIED_TRACKABLE_ID}`] ?? null;
@@ -181,9 +198,14 @@ export async function hadeethEncStudiedStatus(session, id) {
 
 export async function claimHadeethEncStudied(session, id, statusId) {
   const unitKey = hadeethEncUnitKey(id);
-  return claimStatus(db, {
+  const result = await claimStatus(db, {
     tenantId: session.tenantId, personId: session.personId, subjectId: HADITH_ROOT_SUBJECT_ID,
     unitKey, trackableId: STUDIED_TRACKABLE_ID, statusId, notes: "", domainIds: [],
-    claimedByPersonId: session.personId, claimedByUid: session.uid,
+    // Architect review: the CLAIMANT is the person acting, not the person
+    // being recorded for -- topic-study.js uses currentActingPersonId() the
+    // same way. A teacher's claim must not read as the student's own.
+    claimedByPersonId: session.myPersonId ?? session.personId, claimedByUid: session.uid,
   });
+  savedStudied.set(memoKey(session, unitKey), statusId);
+  return result;
 }
