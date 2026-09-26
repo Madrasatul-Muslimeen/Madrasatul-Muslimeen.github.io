@@ -12820,7 +12820,11 @@
             let rows = [];
             try { ({ rows } = await folderContents(db, { tenantId, ownerPersonId, folderId })); } catch { rows = []; }
             for (const { note: otherNote } of rows) {
-              if (!otherNote) continue;
+              // A home note's OWN other anchors are the "through a Note"
+              // case above; skipping it here keeps the two reasons distinct
+              // instead of reporting the identical anchor twice under two
+              // labels for one note filed in its own folder.
+              if (!otherNote || homeNoteIds.includes(otherNote.noteId)) continue;
               for (const sourceKey of linksByNoteId.get(otherNote.noteId) ?? []) {
                 if (sourceKey === unitKey) continue;
                 const dedupeKey = `${folderId}::${sourceKey}`;

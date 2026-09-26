@@ -171,13 +171,11 @@ check("Status B.3 Hifz: shows the caller's own status colour and label; null say
   assert.ok(none.includes("No Hifz Approach set up yet."));
 });
 
-// Updated in place (Ayah Card section C part 1): Related āyāt is built now;
-// Connected āyāt is still the marked placeholder.
-check("Part C (Info): Related āyāt says it is loading, then lists real jump buttons; Connected stays a placeholder", () => {
+// Updated in place (Ayah Card section C part 1): Related āyāt is built now.
+check("Part C (Info): Related āyāt says it is loading, then lists real jump buttons", () => {
   const loading = renderAyahActionSheetHtml({ unitKey: "ayah:1:1" });
   assert.ok(loading.includes("data-ayah-sheet-info"), "the Info (C) section is missing entirely");
   assert.ok(loading.includes("Finding related āyāt…"), "a null `related` must say it is loading, never render blank");
-  assert.ok(loading.includes("Āyāt linked through your own Notes and folders — coming next"));
   const filled = renderAyahActionSheetHtml({ unitKey: "ayah:2:255", related: {
     lists: [{ surah: 3, ayah: 2, ref: "3:2", reason: "QCR: Tawhid" }],
     shared: [{ surah: 20, ayah: 110, ref: "20:110", reason: "4 shared words" }],
@@ -189,6 +187,36 @@ check("Part C (Info): Related āyāt says it is loading, then lists real jump bu
   const failed = renderAyahActionSheetHtml({ unitKey: "ayah:1:1", related: { error: true } });
   assert.ok(failed.includes("Couldn't load related āyāt just now."));
   const hostile = renderAyahActionSheetHtml({ unitKey: "ayah:1:1", related: { lists: [], shared: [{ surah: 1, ayah: 2, ref: "<img onerror=x>", reason: "<b>" }] } });
+  assert.ok(!hostile.includes("<img") && !hostile.includes("<b>"), "labels must be escaped");
+});
+
+// Updated in place (issue #318, Ayah Card section C part 2): Connected āyāt
+// is built now, replacing the earlier marked placeholder this check used to
+// assert stayed on screen -- it never should again.
+check("Part C (Info): Connected āyāt says it is loading, then lists real jump buttons with a studied marker", () => {
+  const loading = renderAyahActionSheetHtml({ unitKey: "ayah:1:1" });
+  assert.ok(loading.includes("data-ayah-sheet-connected"), "the Connected block is missing entirely");
+  assert.ok(loading.includes("Finding connected āyāt…"), "a null `connected` must say it is loading, never render blank");
+  assert.ok(!loading.includes("coming next"), "the old 'coming next' placeholder must be gone");
+  const filled = renderAyahActionSheetHtml({ unitKey: "ayah:2:255", connected: {
+    items: [
+      { surah: 2, ayah: 256, ref: "2:256", reason: "Note: My reflection", studied: false },
+      { surah: 3, ayah: 2, ref: "3:2", reason: "Folder: Tafsir folder", studied: true },
+      { surah: 20, ayah: 110, ref: "20:110", reason: "Note: Old note", studied: null },
+    ],
+  } });
+  assert.ok(filled.includes('data-ayah-related-jump="2:256"') && filled.includes('data-ayah-related-jump="3:2"') && filled.includes('data-ayah-related-jump="20:110"'));
+  assert.ok(filled.includes("Note: My reflection") && filled.includes("Folder: Tafsir folder"));
+  assert.ok(filled.includes("Not studied yet"), "studied: false must say so in words");
+  assert.ok(filled.includes(">Studied<"), "studied: true must say so in words");
+  assert.ok(filled.includes("Not checked"), "studied: null must say 'not checked', never guessed either way");
+  const empty = renderAyahActionSheetHtml({ unitKey: "ayah:1:1", connected: { items: [] } });
+  assert.ok(empty.includes("No connected āyāt found."));
+  const failed = renderAyahActionSheetHtml({ unitKey: "ayah:1:1", connected: { error: true } });
+  assert.ok(failed.includes("Couldn't load connected āyāt just now."));
+  const restricted = renderAyahActionSheetHtml({ unitKey: "ayah:1:1", connected: { restricted: true } });
+  assert.ok(restricted.includes("Connections are shown for your own Notes."));
+  const hostile = renderAyahActionSheetHtml({ unitKey: "ayah:1:1", connected: { items: [{ surah: 1, ayah: 2, ref: "<img onerror=x>", reason: "<b>", studied: null }] } });
   assert.ok(!hostile.includes("<img") && !hostile.includes("<b>"), "labels must be escaped");
 });
 
