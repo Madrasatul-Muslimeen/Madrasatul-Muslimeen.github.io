@@ -1,0 +1,195 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =====================================================================
+    // Issue #301 -- CANDIDATE Rules for lemma-level word progress.
+    //
+    // STATUS: CANDIDATE. NOT DEPLOYED. NOT MERGED INTO firestore.rules.
+    // Deploying Rules is an Owner Control Gate; this file exists so the
+    // shape can be reasoned about and EXECUTED against the emulator before
+    // anyone is asked to approve it.
+    //
+    // This is a SELF-CONTAINED extract: it carries only the helpers these
+    // two collections need, reproduced from the deployed rules unchanged,
+    // so the emulator can run it in isolation. It is deliberately NOT a
+    // copy of the whole production file, and it must never be deployed as
+    // one -- docs/governance/2026-09-26-lemma-progress-DEPLOYMENT-
+    // candidate.rules is the whole-file paste.
+    //
+    // THE OWNER'S RULE: "Knowing a word should mark all the same words, and
+    // all its forms as known as well." Owner decision (25 Sep 2026,
+    // recorded by the Architect): "all its forms" means the same LEMMA --
+    // the same dictionary word in any inflection -- never the whole root
+    // family, and never merely identical spelling. Confirm once for all:
+    // the learner marks the lemma once and a supervisor confirms it once;
+    // every occurrence of that lemma then counts as known. This candidate
+    // is the two collections that record that claim and that confirmation.
+    // It changes nothing about how an OCCURRENCE'S OWN claim/approval works
+    // -- quranWordProgress/quranWordApprovals, already deployed, are
+    // untouched, and combining the two is app/js/quran-lemma-progress.js's
+    // own effectiveOccurrenceState(), a read-time projection, never a
+    // rewrite of either document.
+    //
+    // WHY TWO COLLECTIONS, mirroring quranWordProgress/quranWordApprovals
+    // EXACTLY, and for the identical reason: a Firestore rule cannot
+    // cheaply prove that every changed key of an arbitrarily-keyed map was
+    // written by someone entitled to write THAT key. So a learner's own
+    // lemma claim and a supervisor's lemma decision live in DIFFERENT
+    // documents, each belonging to exactly one (person, role) pair, and
+    // document-level authority is both sufficient and exact.
+    //
+    // WHY ONE DOCUMENT IS ONE LEMMA, unlike quranWordProgress/
+    // quranWordApprovals bundling a whole ayah's words into one document.
+    // An ayah is a small, bounded group; a lemma has no such natural
+    // bundle -- its occurrences are scattered across the whole Qur'an
+    // (measured against the real packaged lemmas-index.json: 74,122
+    // occurrences across 4,832 lemmas, the most frequent, "من", occurring
+    // 3,229 times across 2,183 distinct ayahs -- see
+    // app/js/quran-lemma-progress.js's own header). Bundling by any single
+    // grouping would just move the sparsity problem elsewhere, so a
+    // document is one lemma: a fixed handful of fields, never a map that
+    // grows, which keeps every rule below at a fixed evaluation cost
+    // regardless of how many ayahs a lemma touches -- the same property
+    // that kept the Phase 3 word-progress candidate away from the
+    // 1000-expression budget that sank the Phase 4 Activity candidate.
+    //
+    // WHAT IS DELIBERATELY NOT ENFORCED HERE, stated rather than hidden:
+    // the same accepted trust boundary quranWordProgress/quranWordApprovals
+    // already carry. What the rules do enforce is who may write the
+    // document at all, and that its identity fields can never be repointed
+    // at another tenant, person, level or lemma.
+    // =====================================================================
+
+    function signedIn() { return request.auth != null; }
+    function myUid() { return request.auth.uid; }
+
+    function tenantPersonRef(personId) { return /databases/$(database)/documents/tenantPeople/$(personId); }
+    function memberUidRef(tenantId)    { return /databases/$(database)/documents/tenantMemberUids/$(tenantId + '__' + myUid()); }
+    function teacherStudentLinkRef(tenantId, teacherPersonId, studentPersonId) {
+      return /databases/$(database)/documents/teacherStudentLinks/$(tenantId + '__' + teacherPersonId + '__' + studentPersonId);
+    }
+
+    function hasRoleIn(tenantId, role) {
+      return signedIn() && exists(memberUidRef(tenantId))
+          && role in get(memberUidRef(tenantId)).data.get('roles', []);
+    }
+    function myPersonIdIn(tenantId) {
+      return signedIn() && exists(memberUidRef(tenantId))
+           ? get(memberUidRef(tenantId)).data.get('personId', null) : null;
+    }
+    function isPlatformAdmin() {
+      return signedIn()
+          && exists(/databases/$(database)/documents/userIndex/$(myUid()))
+          && get(/databases/$(database)/documents/userIndex/$(myUid())).data.get('platformAdmin', false) == true;
+    }
+    function isOwnerIn(tenantId)    { return hasRoleIn(tenantId, 'owner'); }
+    function isPrimeIn(tenantId)    { return hasRoleIn(tenantId, 'prime'); }
+    function isTeacherIn(tenantId)  { return hasRoleIn(tenantId, 'teacher'); }
+    function isGuardianIn(tenantId) { return hasRoleIn(tenantId, 'guardian'); }
+    function canAdminIdentity(tenantId) { return isOwnerIn(tenantId) || isPrimeIn(tenantId) || isPlatformAdmin(); }
+    function isGuardianOf(tenantId, childPersonId) {
+      return isGuardianIn(tenantId)
+          && exists(tenantPersonRef(childPersonId))
+          && get(tenantPersonRef(childPersonId)).data.get('managedByPersonId', null) == myPersonIdIn(tenantId);
+    }
+    function isCoEnrolledTeacherOf(tenantId, studentPersonId) {
+      return signedIn() && myPersonIdIn(tenantId) != null
+          && exists(teacherStudentLinkRef(tenantId, myPersonIdIn(tenantId), studentPersonId))
+          && get(teacherStudentLinkRef(tenantId, myPersonIdIn(tenantId), studentPersonId)).data.get('active', false) == true;
+    }
+    function isSelfPerson(personId) {
+      return signedIn() && exists(tenantPersonRef(personId))
+          && get(tenantPersonRef(personId)).data.get('authUid', null) == myUid();
+    }
+
+    // Reproduced UNCHANGED from the deployed rules.
+    function canRecordFor(tenantId, personId) {
+      return canAdminIdentity(tenantId)
+          || (isTeacherIn(tenantId) && isCoEnrolledTeacherOf(tenantId, personId))
+          || isGuardianOf(tenantId, personId)
+          || isSelfPerson(personId);
+    }
+
+    // Reproduced UNCHANGED from the deployed rules (the same helper
+    // quranWordApprovals already uses): canRecordFor MINUS isSelfPerson.
+    // "Someone who may act for this person and is not this person." Nobody
+    // signs off their own claim.
+    function canSuperviseRecordFor(tenantId, personId) {
+      return canAdminIdentity(tenantId)
+          || (isTeacherIn(tenantId) && isCoEnrolledTeacherOf(tenantId, personId))
+          || isGuardianOf(tenantId, personId);
+    }
+
+    // Identity fields are write-once. A learner may change WHAT a lemma's
+    // state is; nobody may repoint the document at another tenant, another
+    // person, another level, another lemma or the other lane -- which is
+    // what would let a valid writer smuggle a write into someone else's
+    // data. `resource != null` guards the same S8-class evaluation-error
+    // trap wordLaneIdentityUnchanged() already documents for
+    // quranWordProgress: Firestore evaluates every matching allow clause,
+    // so a create request also runs this update clause, where `resource`
+    // is null and `resource.data.tenantId` would throw without the guard.
+    function lemmaLaneIdentityUnchanged() {
+      return resource != null
+          && request.resource.data.tenantId == resource.data.tenantId
+          && request.resource.data.personId == resource.data.personId
+          && request.resource.data.level    == resource.data.level
+          && request.resource.data.lemmaId  == resource.data.lemmaId
+          && request.resource.data.lane     == resource.data.lane;
+    }
+
+    // A created lane must say what it is, and only `wbw` may be written --
+    // the same deferral quranWordProgress's isWordLaneCreate() already
+    // enforces at the database, applied to a lemma id rather than a
+    // surah/ayah pair. The size bound matches app/js/quran-lemma-
+    // progress.js's own safeLemmaId() (400 characters is generous headroom
+    // over the real packaged corpus's longest lemma, 15 characters).
+    function isLemmaLaneCreate(lane) {
+      return request.resource.data.get('contractVersion', '') == 'quran-lemma-progress:v1'
+          && request.resource.data.get('lane', '') == lane
+          && request.resource.data.get('level', '') == 'wbw'
+          && request.resource.data.lemmaId is string
+          && request.resource.data.lemmaId.size() > 0
+          && request.resource.data.lemmaId.size() <= 400;
+    }
+
+    // ---------------------------------------------------------------------
+    // The learner's own lemma claims.
+    // ---------------------------------------------------------------------
+    match /quranLemmaProgress/{lemmaKey} {
+      allow read: if isPlatformAdmin();
+      // Same S8-class allowance quranWordProgress already makes: the client
+      // reads a lane before deciding create-vs-update, and a nonexistent
+      // document has no data to expose.
+      allow read: if signedIn() && !exists(/databases/$(database)/documents/quranLemmaProgress/$(lemmaKey));
+      allow read: if canRecordFor(resource.data.tenantId, resource.data.personId);
+
+      allow create: if canRecordFor(request.resource.data.tenantId, request.resource.data.personId)
+                    && isLemmaLaneCreate('learner');
+      allow update: if resource != null
+                    && canRecordFor(resource.data.tenantId, resource.data.personId)
+                    && lemmaLaneIdentityUnchanged();
+      // No delete (I4/D6). Un-claiming a lemma writes not_started, a real state.
+    }
+
+    // ---------------------------------------------------------------------
+    // A supervisor's lemma decisions. THE LEARNER MAY READ THIS AND NEVER
+    // WRITE IT.
+    // ---------------------------------------------------------------------
+    match /quranLemmaApprovals/{lemmaKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if signedIn() && !exists(/databases/$(database)/documents/quranLemmaApprovals/$(lemmaKey));
+      // A learner SEES their own approvals -- being told your work was sent
+      // back is the point of sending it back.
+      allow read: if canRecordFor(resource.data.tenantId, resource.data.personId);
+
+      allow create: if canSuperviseRecordFor(request.resource.data.tenantId, request.resource.data.personId)
+                    && isLemmaLaneCreate('supervisor');
+      allow update: if resource != null
+                    && canSuperviseRecordFor(resource.data.tenantId, resource.data.personId)
+                    && lemmaLaneIdentityUnchanged();
+      // No delete (I4/D6). A superseded decision is kept in history.
+    }
+  }
+}
