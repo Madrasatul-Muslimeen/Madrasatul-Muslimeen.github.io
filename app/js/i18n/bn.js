@@ -2868,4 +2868,18 @@ export const BN = {
   "Rename classification “{name}”": "শ্রেণিবিভাগ “{name}”-এর নাম পরিবর্তন করুন",
   "Archive classification “{name}”": "শ্রেণিবিভাগ “{name}” সংরক্ষণাগারে রাখুন",
   "Restore classification “{name}”": "শ্রেণিবিভাগ “{name}” ফিরিয়ে আনুন",
+  // HadeethEnc corpus browsing (issue #309).
+  "HadeethEnc": "HadeethEnc", // ?
+  "HadeethEnc — Encyclopedia of Translated Hadiths": "HadeethEnc — অনুবাদিত হাদীসের বিশ্বকোষ", // ?
+  "Synthetic pilot collections": "কৃত্রিম পাইলট সংকলনসমূহ", // ?
+  "Not available in your language here — showing {lang}.": "আপনার ভাষায় এখানে পাওয়া যাচ্ছে না — {lang} দেখানো হচ্ছে।",
+  "Not available in {reqLang} — showing {lang}.": "{reqLang}-এ পাওয়া যাচ্ছে না — {lang} দেখানো হচ্ছে।",
+  "No {lang} translation for this hadith. Showing {shown}.": "এই হাদীসের কোনো {lang} অনুবাদ নেই। {shown} দেখানো হচ্ছে।",
+  "No {lang} translation for this hadith. Showing the Arabic source only.": "এই হাদীসের কোনো {lang} অনুবাদ নেই। শুধু আরবি মূল লেখা দেখানো হচ্ছে।",
+  "Grade: {grade}": "গ্রেড: {grade}",
+  "Show explanation": "ব্যাখ্যা দেখুন",
+  "← Back to the list": "← তালিকায় ফিরুন",
+  "Source: HadeethEnc.com": "সূত্র: HadeethEnc.com",
+  "Notes, bookmarking and marking this hadith as studied are not enabled yet — they need a decision about how a hadith is permanently identified, which the Owner has not made yet.":
+    "নোট, বুকমার্ক এবং এই হাদীসটি অধ্যয়ন করা হয়েছে বলে চিহ্নিত করা এখনো চালু করা হয়নি — একটি হাদীসকে স্থায়ীভাবে কীভাবে চিহ্নিত করা হবে তা নিয়ে একটি সিদ্ধান্ত প্রয়োজন, যা মালিক এখনো নেননি।", // ?
 };
