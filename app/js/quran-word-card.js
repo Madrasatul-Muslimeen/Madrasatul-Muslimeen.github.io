@@ -128,6 +128,18 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   segmentLegendPerson: "person",
   segmentLegendDeterminer: "determiner",
   segmentLegendStem: "stem",
+  // Issue #303 -- the whole-Qur'an running total (reuses quranWordTotals,
+  // already gated and switched on since v08.53), and the lemma-level "mark
+  // known everywhere" action (gated separately -- see
+  // study-lemma-progress-readiness.js).
+  wholeQuranKnown: "Known {known} of {total} words",
+  wholeQuranPercent: "{percent}% of the Qur'an",
+  learnWordDelta: "If you learn this word: +{words} words (+{percent}%)",
+  // "This occurrence only" -- shown while the lemma feature's own gate is
+  // closed, or while this word's lemma-wide state cannot be read: the card
+  // must never claim a whole-lemma figure it has not actually computed.
+  learnWordDeltaThisOccurrenceOnly: "If you learn this word here: +{words} word (+{percent}%) — this occurrence only",
+  markLemmaKnownEverywhere: "Mark this word known everywhere",
 });
 
 function escapeHtml(value) {
@@ -226,7 +238,76 @@ export function segmentedGlossHtml(gloss, segments) {
  * there is genuinely no decision to make, so nothing is withheld and nothing
  * needs explaining.
  */
-function progressBlock(progress, authority, coverage, text, formatNumber) {
+/**
+ * Issue #303 -- the whole-Qur'an running total, read straight off
+ * quranWordTotals (getWordTotals(), already gated by
+ * study-wbw-total-readiness.js and switched on since v08.53 -- no new gate).
+ * `null` while that gate is closed or nothing has been counted yet for this
+ * person; the caller shows nothing rather than a fabricated 0.
+ */
+function wholeQuranKnownLines(wholeQuranTotal, text, formatNumber) {
+  if (!wholeQuranTotal) return "";
+  const known = String(text.wholeQuranKnown)
+    .replace("{known}", formatNumber(wholeQuranTotal.known))
+    .replace("{total}", formatNumber(wholeQuranTotal.total));
+  const percent = percentRounded(wholeQuranTotal.known, wholeQuranTotal.total);
+  const percentLine = String(text.wholeQuranPercent).replace("{percent}", formatNumber(percent));
+  return `<p class="word-progress-whole-quran">${escapeHtml(known)}</p>` +
+    `<p class="word-progress-whole-quran-percent">${escapeHtml(percentLine)}</p>`;
+}
+
+/**
+ * Issue #303 -- "if you learn this word: +W words (+P%)". `learnDelta` is
+ * `null` when the lemma is already known everywhere (nothing left to gain)
+ * or this word carries no lemma at all; `thisOccurrenceOnly` distinguishes
+ * the honest fallback (the lemma gate is closed, or this occurrence's lemma
+ * figure could not be read) from the real whole-lemma figure.
+ */
+function learnDeltaLine(learnDelta, text, formatNumber) {
+  if (!learnDelta || !learnDelta.words) return "";
+  const template = learnDelta.thisOccurrenceOnly ? text.learnWordDeltaThisOccurrenceOnly : text.learnWordDelta;
+  const line = String(template)
+    .replace("{words}", formatNumber(learnDelta.words))
+    .replace("{percent}", formatNumber(learnDelta.percent));
+  return `<p class="word-progress-learn-delta">${escapeHtml(line)}</p>`;
+}
+
+/**
+ * Issue #303 -- "Mark this word known everywhere", the lemma-wide twin of
+ * the occurrence progress buttons above. Reuses the identical three-state +
+ * confirm/send-back shape, on separate `data-lemma-progress-*` hooks so the
+ * page can tell the two actions apart. `lemmaProgress === null` means the
+ * lemma gate is closed (or this word has no lemma) -- the WHOLE control is
+ * absent then, not merely disabled, per issue #303's own instruction that
+ * nothing about this action is offered while the gate is shut.
+ */
+function lemmaEverywhereBlock(lemmaProgress, lemmaAuthority, text) {
+  if (!lemmaProgress) return "";
+  const stateLabel = { not_started: text.stateNotStarted, learning: text.stateLearning, achieved: text.stateAchieved };
+  const stateButton = (state) => `<button type="button" data-lemma-progress-state="${state}" aria-pressed="${lemmaProgress.state === state}"${lemmaAuthority?.mayClaim ? "" : " disabled"}>${escapeHtml(stateLabel[state])}</button>`;
+  const reviewLine = lemmaProgress.awaitingReview
+    ? text.awaitingReview
+    : lemmaProgress.review === "confirmed"
+      ? text.reviewConfirmed
+      : lemmaProgress.review === "returned"
+        ? (lemmaProgress.returnNote ? String(text.reviewReturned).replace("{note}", lemmaProgress.returnNote) : text.reviewReturnedNoNote)
+        : null;
+  const decisions = lemmaAuthority?.mayDecide && lemmaProgress.state === "achieved"
+    ? `<div class="word-progress-decide">
+        <button type="button" data-lemma-progress-decide="confirmed">${escapeHtml(text.confirm)}</button>
+        <button type="button" data-lemma-progress-decide="returned">${escapeHtml(text.sendBack)}</button>
+      </div>`
+    : "";
+  return `<div class="word-card-lemma-progress" data-lemma-progress>
+    <h3 class="word-progress-heading">${escapeHtml(text.markLemmaKnownEverywhere)}</h3>
+    <div class="word-progress-states" role="group" aria-label="${escapeHtml(text.markLemmaKnownEverywhere)}">${stateButton("not_started")}${stateButton("learning")}${stateButton("achieved")}</div>
+    ${reviewLine ? `<p class="word-progress-state" data-lemma-progress-review>${escapeHtml(reviewLine)}</p>` : ""}
+    ${lemmaAuthority && !lemmaAuthority.mayClaim ? `<p class="word-progress-state" data-lemma-progress-blocked>${escapeHtml(text.progressNotAllowed)}</p>` : ""}
+    ${decisions}
+  </div>`;
+}
+
+function progressBlock(progress, authority, coverage, text, formatNumber, wbw = {}) {
   if (!progress) return "";
   if (progress.loaded === false) {
     return `<div class="word-card-progress" data-word-progress><p class="word-progress-state">${escapeHtml(progress.loading ? text.progressLoading : text.progressUnknown)}</p></div>`;
@@ -258,6 +339,10 @@ function progressBlock(progress, authority, coverage, text, formatNumber) {
     ${authority && !authority.mayClaim ? `<p class="word-progress-state" data-word-progress-blocked>${escapeHtml(text.progressNotAllowed)}</p>` : ""}
     ${decisions}
     ${coverageLine}
+    ${wholeQuranKnownLines(wbw.wholeQuranTotal, text, formatNumber)}
+    ${wbw.thisWordShareHtml ?? ""}
+    ${learnDeltaLine(wbw.learnDelta, text, formatNumber)}
+    ${lemmaEverywhereBlock(wbw.lemmaProgress, wbw.lemmaAuthority, text)}
   </div>`;
 }
 
@@ -510,7 +595,13 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
       <p class="word-card-meaning word-card-meaning-en" lang="en">${enGlossHtml}</p>
       <p class="word-card-meaning word-card-meaning-bn" lang="bn">${escapeHtml(word.translation?.bn || text.meaningUnavailableBn)}</p>
       ${word.transliteration ? `<p class="word-card-transliteration">${escapeHtml(word.transliteration)}</p>` : ""}
-      ${progressBlock(context.progress, context.authority, context.coverage, text, formatNumber)}
+      ${progressBlock(context.progress, context.authority, context.coverage, text, formatNumber, {
+        wholeQuranTotal: context.wholeQuranTotal,
+        thisWordShareHtml: layers.lemma ? wordShareOfQuranLine(context, text, formatNumber) : "",
+        learnDelta: context.learnDelta,
+        lemmaProgress: context.lemmaProgress,
+        lemmaAuthority: context.lemmaAuthority,
+      })}
     </div>`;
   }
   if (level === "basic") {

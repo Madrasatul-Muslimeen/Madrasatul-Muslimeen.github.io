@@ -1,16 +1,22 @@
 // Issue #301 -- the boundary guard around lemma-level word progress.
-//
-// This round builds ONLY the data layer and the Rules candidate: "no page
-// imports it" is the whole safety case that makes it safe to add two new
-// Firestore collections with no version bump and no product decision about
-// what a reader sees. That claim is about WIRING, and no functional test can
-// see wiring -- a suite that only calls the exported functions would pass
-// just as happily once a page started calling them for real. So this walks
-// the import graph from every app/*.html page, exactly the technique
-// study-note-boundary.mjs and study-approach-contract-boundary.mjs already
-// use, with the same POSITIVE CONTROL: without proof the walker can find a
-// module that IS wired (records.js), a broken regex would make every chain
-// come back empty and every "nothing reaches it" case below would pass
+// UPDATED for issue #303, reason recorded rather than the suite silently
+// dropped or weakened: #301 built ONLY the data layer and the Rules
+// candidate, and "no page imports it" was the whole safety case for adding
+// two new Firestore collections with no version bump and no product
+// decision about what a reader sees. #303 is exactly the round that wires
+// it in -- the Word Card's whole-Qur'an numbers, "Mark this word known
+// everywhere", and effectiveOccurrenceState() applied to every "known"
+// figure the app shows. The claim this suite makes is narrowed, not
+// removed: EXACTLY app/quranrevival.html may reach the guarded pair, by any
+// chain of any length, and no other page may. That claim is still about
+// WIRING, and no functional test can see wiring -- a suite that only calls
+// the exported functions would pass just as happily if a SECOND page also
+// started calling them without anyone noticing. So this still walks the
+// import graph from every app/*.html page, exactly the technique
+// study-note-boundary.mjs and study-approach-contract-boundary.mjs use, with
+// the same POSITIVE CONTROL: without proof the walker can find a module
+// that IS wired (records.js), a broken regex would make every chain come
+// back empty and the "only this one page reaches it" case below would pass
 // vacuously.
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -87,28 +93,37 @@ function chainsToTarget(target) {
 }
 
 // ===========================================================================
-// 1. UNREACHABLE, by any chain of any length -- with a positive control.
+// 1. REACHABLE BY EXACTLY ONE PAGE, by any chain of any length -- with a
+// positive control. Issue #303 wired the pair into app/quranrevival.html
+// (the Word Card's whole-Qur'an numbers and "Mark this word known
+// everywhere"); the invariant this suite protects is narrower now -- not
+// "unreachable", but "reachable from nowhere else".
 // ===========================================================================
+
+const AUTHORISED_PAGE = "quranrevival.html";
 
 check("POSITIVE CONTROL: the reachability walker really does find a wired module", () => {
   const control = chainsToTarget("records.js");
   assert.ok(control.length > 0, "the walker found no page importing records.js -- it is not working");
 });
 
-check("NO app/*.html page reaches quran-lemma-progress.js, by any chain of any length", () => {
+check("quran-lemma-progress.js is reached by EXACTLY app/quranrevival.html, by any chain of any length", () => {
   const reachable = chainsToTarget("quran-lemma-progress.js");
-  assert.deepEqual(reachable, [], `unexpected page(s) reaching quran-lemma-progress.js: ${reachable.join(" | ")}`);
+  const pages = reachable.map((chain) => chain.split(" -> ")[0].replace("app/", ""));
+  assert.deepEqual(pages, [AUTHORISED_PAGE], `unexpected page(s) reaching quran-lemma-progress.js: ${reachable.join(" | ")}`);
 });
 
-check("NO app/*.html page reaches quran-lemma-progress-data.js, by any chain of any length", () => {
+check("quran-lemma-progress-data.js is reached by EXACTLY app/quranrevival.html, by any chain of any length", () => {
   const reachable = chainsToTarget("quran-lemma-progress-data.js");
-  assert.deepEqual(reachable, [], `unexpected page(s) reaching quran-lemma-progress-data.js: ${reachable.join(" | ")}`);
+  const pages = reachable.map((chain) => chain.split(" -> ")[0].replace("app/", ""));
+  assert.deepEqual(pages, [AUTHORISED_PAGE], `unexpected page(s) reaching quran-lemma-progress-data.js: ${reachable.join(" | ")}`);
 });
 
-check("no app source imports either module directly, outside the guarded pair itself", () => {
+check("no app source imports either module directly, outside the guarded pair itself and the one authorised page", () => {
   const importers = [];
   for (const file of everyAppSource()) {
     if (GUARDED.some((g) => file.endsWith(path.join("js", g)))) continue;
+    if (file.endsWith(AUTHORISED_PAGE)) continue;
     const text = fs.readFileSync(file, "utf8");
     const rel = path.relative(root, file).split(path.sep).join("/");
     for (const guarded of GUARDED) {

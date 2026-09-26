@@ -1212,6 +1212,13 @@ export const BN = {
   "You are not able to record Arabic progress for this person.": "এই ব্যক্তির আরবি অগ্রগতি রেকর্ড করার অনুমতি আপনার নেই।",
   "{known} of {total} words known in this ayah": "এই আয়াতের {total}টি শব্দের মধ্যে {known}টি জানা",
   "{unknown} not loaded yet": "{unknown}টি এখনও লোড হয়নি",
+  // Issue #303 -- the whole-Qur'an running total and "mark this word known
+  // everywhere" on the Word Card.
+  "Known {known} of {total} words": "মোট {total}টি শব্দের মধ্যে {known}টি জানা",
+  "{percent}% of the Qur'an": "কুরআনের {percent}%",
+  "If you learn this word: +{words} words (+{percent}%)": "এই শব্দটি শিখলে: +{words}টি শব্দ (+{percent}%)",
+  "If you learn this word here: +{words} word (+{percent}%) — this occurrence only": "এখানে এই শব্দটি শিখলে: +{words}টি শব্দ (+{percent}%) — শুধু এই ব্যবহারের জন্য",
+  "Mark this word known everywhere": "এই শব্দটি সর্বত্র জানা হিসেবে চিহ্নিত করুন",
   "What should they look at again?": "তাকে আবার কী দেখতে হবে?",
   "Confirm": "নিশ্চিত করুন",
   "Return": "ফেরত পাঠান",
