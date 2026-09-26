@@ -21,11 +21,17 @@
 //    Approach wheel keeps reading `records`, untouched.
 //
 // 3. "Arabic progress remains independent across WbW, Basic Arabic and
-//    Arabic in Depth". Every stored entry therefore names its LEVEL. Only
-//    `wbw` is implemented -- the Basic/Depth claim unit is a DEFERRED
-//    decision (MAP v4 s6 DEF, DDR), so this module REFUSES to write one
-//    rather than inventing its semantics. The field exists so that adding a
-//    level later is additive and can never reinterpret a v1 record.
+//    Arabic in Depth". Every stored entry therefore names its LEVEL. All
+//    three levels are implemented as of issue #320: the Owner's own decision
+//    (docs/governance/2026-09-26-owner-decisions.md, row 4) -- "Claiming for
+//    basic n Depth is per word. (Because It's in WbW)" -- settled the DEFERRED
+//    claim unit (MAP v4 s6 DEF, DDR) as the same word OCCURRENCE WbW already
+//    uses. Each level's documents are keyed independently (the level is its
+//    own key segment), so a claim at one level never reads or writes another.
+//    Persistence for `basic`/`depth` is gated separately -- see
+//    study-word-levels-readiness.js and quran-word-progress-data.js -- so a
+//    level being IMPLEMENTED here (a permanent state-model fact) is distinct
+//    from it being DEPLOYED (a governed decision, still pending).
 //
 // I6 is the fourth lock and the subtle one: a confirmation is frozen when
 // marked and never recalculated. Here that is STRUCTURAL, not procedural: a
@@ -41,13 +47,15 @@ import { parseQuranWordOccurrenceId, quranWordOccurrenceId } from "./quran-word-
 export const WORD_PROGRESS_CONTRACT = "quran-word-progress:v1";
 
 /**
- * The Arabic learning levels the Word Card shows. `wbw` is the only one this
- * contract may store: see lock 3 above. `basic` and `depth` are listed so a
- * caller can ask about them and be told "deferred" rather than silently get
- * a wbw answer.
+ * The Arabic learning levels the Word Card shows. Issue #320 (Owner decision,
+ * 26 Sep 2026): all three are the same claim unit -- a word occurrence -- so
+ * all three are implemented here. `ARABIC_LEVELS` and `IMPLEMENTED_ARABIC_LEVELS`
+ * are kept as two separate exports rather than collapsed into one, so a
+ * FUTURE level can still be named and asked about before its own claim unit
+ * is decided, exactly as `basic`/`depth` were until this issue.
  */
 export const ARABIC_LEVELS = Object.freeze(["wbw", "basic", "depth"]);
-export const IMPLEMENTED_ARABIC_LEVELS = Object.freeze(["wbw"]);
+export const IMPLEMENTED_ARABIC_LEVELS = Object.freeze(["wbw", "basic", "depth"]);
 
 /**
  * A word's own ramp, deliberately three rungs and not the six of STATUSES.
@@ -119,7 +127,9 @@ function requireIsoInstant(value, label) {
 export function requireImplementedLevel(level) {
   if (!ARABIC_LEVELS.includes(level)) throw new TypeError(`Unknown Arabic level: ${level}.`);
   if (!IMPLEMENTED_ARABIC_LEVELS.includes(level)) {
-    // DEFERRED means stop, never guess. Basic/Depth have no agreed claim unit.
+    // DEFERRED means stop, never guess. Kept for any FUTURE level named in
+    // ARABIC_LEVELS ahead of its own claim unit being decided (the exact
+    // shape basic/depth were in until issue #320 settled them).
     throw new RangeError(`Arabic level "${level}" has no approved claim unit; its progress model is deferred.`);
   }
   return level;
