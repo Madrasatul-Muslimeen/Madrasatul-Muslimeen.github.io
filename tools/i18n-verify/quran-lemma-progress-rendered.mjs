@@ -1,19 +1,34 @@
 // Issue #303 -- RENDERED acceptance QA for the Word Card's whole-Qur'an/
-// lemma numbers and "Mark this word known everywhere", in a real browser,
-// in both languages, at the two widths the issue names (390/1100).
+// lemma numbers, in a real browser, in both languages, at the two widths the
+// issue named (390/1100).
+//
+// UPDATED IN PLACE FOR ISSUE #322, reason recorded: the Owner's report --
+// "user don't need to double click to confirm 'mark the word known
+// everywhere', this is only a double work" -- removed the dedicated "Mark
+// this word known everywhere" row (`lemmaEverywhereBlock()`,
+// `[data-lemma-progress-*]`) entirely. The Word progress buttons
+// (`[data-word-progress-state]`) now drive BOTH lanes: setting an
+// occurrence's state mirrors the same state onto its Dictionary Word's own
+// lemma-wide claim, and a supervisor confirm/return mirrors too. Every check
+// below that used to click the second row's own control now clicks the
+// FIRST row instead and asserts the SAME lemma-wide effect follows from it;
+// the "the LEMMA-WIDE button now shows achieved" check is gone outright (no
+// such button exists any more) and a new check asserts the row itself is
+// absent from the DOM.
 //
 // Everything below is read off the RENDERED page -- real text, real writes
 // (via __stubWriteData) and real reads (via __fsLog) -- never off the
 // source and never off `.hidden`.
 //
-// THE GATE: app/js/study-lemma-progress-readiness.js reads `ready: false` in
-// this repository right now (an Owner Control Gate, not yet enabled). Most
-// of this suite proves the GATE-CLOSED behaviour against the real file.
-// "With the gate forced open" cases route a REPLACEMENT copy of that one
-// module in (ctx.route(), the same interception technique harness.mjs
-// already uses for the Firestore SDK itself) -- identical exports, `ready:
-// true` with a well-formed decision -- so the claim/confirm path can be
-// exercised without waiting for a real governed enablement. Nothing else is
+// THE GATE: app/js/study-lemma-progress-readiness.js reads `ready: true` in
+// this repository (the Owner published the Rules 26 Sep 2026 -- see that
+// file's own header). The first block below proves the real, open-gate
+// behaviour against the real file. "With the gate forced open" cases ALSO
+// route a REPLACEMENT copy of that one module in (ctx.route(), the same
+// interception technique harness.mjs already uses for the Firestore SDK
+// itself) -- identical exports, `ready: true` with a well-formed decision --
+// so the claim/confirm path is exercised a second way, decoupled from
+// whatever the real declaration says on a future run. Nothing else is
 // faked: the real quran-lemma-progress.js/-data.js run underneath, against
 // the same in-memory Firebase stub every other suite here uses.
 import { chromium, newContext, openPage } from "./harness.mjs";
@@ -151,9 +166,8 @@ function readLemmaCard(page) {
       wholeQuranPercentLine: b.querySelector(".word-progress-whole-quran-percent")?.textContent?.trim() ?? null,
       shareOfQuranLine: b.querySelector(".word-card-share-of-quran")?.textContent?.trim() ?? null,
       learnDeltaLine: b.querySelector(".word-progress-learn-delta")?.textContent?.trim() ?? null,
-      markControlPresent: !!b.querySelector("[data-lemma-progress]"),
-      lemmaButtons: [...b.querySelectorAll("[data-lemma-progress-state]")].map((el) => el.dataset.lemmaProgressState),
-      lemmaStatePressed: [...b.querySelectorAll("[data-lemma-progress-state]")].find((el) => el.getAttribute("aria-pressed") === "true")?.dataset.lemmaProgressState ?? null,
+      // Issue #322 -- the second row is gone; this is now an ABSENCE check.
+      secondRowPresent: !!b.querySelector("[data-lemma-progress], [data-lemma-progress-state]"),
       coverage: b.querySelector(".word-progress-coverage")?.textContent?.trim() ?? null,
       occurrenceStatePressed: [...b.querySelectorAll("[data-word-progress-state]")].find((el) => el.getAttribute("aria-pressed") === "true")?.dataset.wordProgressState ?? null,
     };
@@ -170,8 +184,13 @@ function readCoverageNumbers(coverageText) {
 // proved the GATE-CLOSED behaviour while study-lemma-progress-readiness.js
 // read `ready: false`. The Owner published the rules and the gate is open by
 // governed decision, so the same page is now asserted OPEN: lemma documents
-// are read, Number 4 counts the Dictionary Word's real total, the control is
-// offered -- and (Architect review) merely viewing still writes NOTHING.
+// are read, Number 4 counts the Dictionary Word's real total -- and
+// (Architect review) merely viewing still writes NOTHING.
+//
+// UPDATED IN PLACE AGAIN FOR ISSUE #322, reason recorded: "the control is
+// offered" USED to mean the second row; that row is gone, so this now
+// asserts its ABSENCE instead -- the Word progress buttons are what drive
+// the lemma-wide claim now, proved by the FORCED-OPEN block below.
 // ===========================================================================
 for (const [width, height] of [[390, 844], [1100, 900]]) {
   for (const lang of ["en", "bn"]) {
@@ -195,7 +214,7 @@ for (const [width, height] of [[390, 844], [1100, 900]]) {
     check(`[${lang} ${width}] Number 3 -- names this lemma's real occurrence count`, toWestern(card?.shareOfQuranLine ?? "").includes(String(LEMMA_OCCURRENCE_COUNT)), card?.shareOfQuranLine);
     check(`[${lang} ${width}] Number 4 -- learn-delta line renders`, !!card?.learnDeltaLine, JSON.stringify(card));
     check(`[${lang} ${width}] Number 4 -- gate open counts the Dictionary Word's real total (${LEMMA_OCCURRENCE_COUNT}), not just this occurrence`, toWestern(card?.learnDeltaLine ?? "").includes(String(LEMMA_OCCURRENCE_COUNT)), card?.learnDeltaLine);
-    check(`[${lang} ${width}] "Mark this word known everywhere" is offered`, card?.markControlPresent === true, JSON.stringify(card?.lemmaButtons));
+    check(`[${lang} ${width}] issue #322 -- no second "Mark this word known everywhere" row in the DOM`, card?.secondRowPresent === false, JSON.stringify(card));
 
     check(`[${lang} ${width}] no page errors`, errors.filter((e) => !/CERT|archive\.org|api\.quran/.test(e)).length === 0, JSON.stringify(errors.slice(0, 3)));
     await ctx.close();
@@ -203,10 +222,24 @@ for (const [width, height] of [[390, 844], [1100, 900]]) {
 }
 
 // ===========================================================================
-// GATE FORCED OPEN -- claim/confirm works, and marking one occurrence known
-// updates ANOTHER occurrence of the same lemma on screen.
+// GATE FORCED OPEN -- pressing "Achieved" on the WORD PROGRESS buttons (the
+// only control now) mirrors the claim onto the lemma, and marking one
+// occurrence known updates ANOTHER occurrence of the same lemma on screen.
+//
+// UPDATED IN PLACE FOR ISSUE #322, reason recorded: this block used to click
+// a separate `[data-lemma-progress-state="achieved"]` button and prove the
+// occurrence's OWN claim was left untouched by it. That control is gone --
+// the Word progress "Achieved" button is now the ONLY way to reach this
+// path, and it writes BOTH lanes in one press, so the assertion inverts: the
+// occurrence claim is no longer "untouched", it is the write that started
+// the whole mirror. Every other assertion in this block (the shared-lemma
+// write, the learn-delta disappearing, the whole-Qur'an total moving by the
+// lemma's FULL count rather than double-counting the pressed occurrence, and
+// word 3's cross-occurrence proof) is unchanged in substance, because the
+// underlying counter mechanics (quran-lemma-progress-data.js) were not
+// touched by issue #322 -- only which UI action reaches them.
 // ===========================================================================
-console.log(`\n=== gate FORCED OPEN: claim, then another occurrence of the same lemma updates ===`);
+console.log(`\n=== gate FORCED OPEN: pressing Achieved mirrors onto the lemma, and another occurrence of the same lemma updates ===`);
 {
   const ctx = await newLemmaContext(browser, { appLang: "en", viewport: { width: 390, height: 844 }, extraSeedJs: SEED_TOTALS }, { forceGateOpen: true });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
@@ -216,29 +249,33 @@ console.log(`\n=== gate FORCED OPEN: claim, then another occurrence of the same 
   // NOT_STARTED before word 1 is ever touched.
   await openWordAt(page, 3);
   const before = await readLemmaCard(page);
-  check("[forced-open] before any claim: the control IS offered", before?.markControlPresent === true, JSON.stringify(before));
-  check("[forced-open] before any claim: three lemma-wide state buttons", before?.lemmaButtons.length === 3, JSON.stringify(before?.lemmaButtons));
+  check("[forced-open] before any claim: no second row, only the Word progress buttons", before?.secondRowPresent === false, JSON.stringify(before));
+  check("[forced-open] before any claim: word 3 itself reads not_started", before?.occurrenceStatePressed === "not_started", JSON.stringify(before));
   const coverageBefore = readCoverageNumbers(before?.coverage);
   check("[forced-open] before any claim: 0 of 4 known in this ayah", coverageBefore[0] === 0 && coverageBefore[1] === 4, JSON.stringify(coverageBefore));
 
-  // Now open word 1 ("إِيَّاكَ") -- the SAME lemma -- and claim it known
-  // everywhere.
+  // Now open word 1 ("إِيَّاكَ") -- the SAME lemma -- and press ACHIEVED on
+  // the Word progress buttons. Issue #322: this one press is now the only
+  // route to "known everywhere".
   await openWordAt(page, 1);
-  await page.click('#quranWordCardMount [data-lemma-progress-state="achieved"]');
+  await page.click('#quranWordCardMount [data-word-progress-state="achieved"]');
   await page.waitForTimeout(600);
+
+  const occurrenceWrite = await page.evaluate(() => (window.__stubWriteData || []).filter((w) => w.col === "quranWordProgress").at(-1));
+  check("[forced-open] the press wrote word 1's own OCCURRENCE lane",
+    occurrenceWrite?.col === "quranWordProgress" && /__wbw__1_5$/.test(occurrenceWrite?.id ?? ""), JSON.stringify(occurrenceWrite?.id));
 
   const claimWrite = await page.evaluate(() => (window.__stubWriteData || []).filter((w) => w.col === "quranLemmaProgress").at(-1));
   const expectedSuffix = `__wbw__${word1.morphology.lemma}`;
-  check("[forced-open] the claim wrote to quranLemmaProgress, keyed by the shared lemma",
+  check("[forced-open] the SAME press also wrote to quranLemmaProgress, keyed by the shared lemma (the mirror)",
     claimWrite?.col === "quranLemmaProgress" && (claimWrite?.id ?? "").endsWith(expectedSuffix), JSON.stringify({ id: claimWrite?.id, expectedSuffix }));
 
   const afterClaimOnWord1 = await readLemmaCard(page);
-  check("[forced-open] after claiming: the LEMMA-WIDE button now shows achieved", afterClaimOnWord1?.lemmaStatePressed === "achieved", JSON.stringify(afterClaimOnWord1));
-  check("[forced-open] after claiming: word 1's own OCCURRENCE claim is untouched (still not_started) -- the lemma action never writes the occurrence lane",
-    afterClaimOnWord1?.occurrenceStatePressed === "not_started", JSON.stringify(afterClaimOnWord1));
-  check("[forced-open] after claiming: the learn-delta line is GONE (nothing left to gain)", !afterClaimOnWord1?.learnDeltaLine, afterClaimOnWord1?.learnDeltaLine);
+  check("[forced-open] after pressing: word 1's own OCCURRENCE button shows achieved -- the press that started the mirror",
+    afterClaimOnWord1?.occurrenceStatePressed === "achieved", JSON.stringify(afterClaimOnWord1));
+  check("[forced-open] after pressing: the learn-delta line is GONE (nothing left to gain)", !afterClaimOnWord1?.learnDeltaLine, afterClaimOnWord1?.learnDeltaLine);
   const totalAfter = toWestern(afterClaimOnWord1?.wholeQuranLine ?? "").match(/\d+/g)?.map(Number) ?? [];
-  check("[forced-open] the whole-Qur'an total moved by the LEMMA'S full occurrence count, not just 1",
+  check("[forced-open] the whole-Qur'an total moved by the LEMMA'S full occurrence count, not double-counting word 1",
     totalAfter.includes(SEEDED_KNOWN + LEMMA_OCCURRENCE_COUNT), JSON.stringify({ totalAfter, expected: SEEDED_KNOWN + LEMMA_OCCURRENCE_COUNT }));
 
   // --- THE CROSS-OCCURRENCE PROOF: word 3, never itself touched, now
@@ -252,6 +289,42 @@ console.log(`\n=== gate FORCED OPEN: claim, then another occurrence of the same 
     coverageAfter[0] === 2 && coverageAfter[1] === 4, JSON.stringify(coverageAfter));
 
   check("[forced-open] no page errors", errors.filter((e) => !/CERT|archive\.org|api\.quran/.test(e)).length === 0, JSON.stringify(errors.slice(0, 3)));
+  await ctx.close();
+}
+
+// ===========================================================================
+// GATE FORCED OPEN -- mirroring downward. Issue #322's own instruction:
+// "Mirror Learning and Not started too, so the two can never disagree." A
+// press of a LOWER state after the lemma is already known everywhere
+// revokes it -- proven here on the SAME word (word 1), not merely asserted.
+// ===========================================================================
+console.log(`\n=== gate FORCED OPEN: pressing a lower state mirrors DOWN too ===`);
+{
+  const ctx = await newLemmaContext(browser, { appLang: "en", viewport: { width: 390, height: 844 }, extraSeedJs: SEED_TOTALS }, { forceGateOpen: true });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await enterReadWithWbw(page);
+  await openWordAt(page, 1);
+  await page.click('#quranWordCardMount [data-word-progress-state="achieved"]');
+  await page.waitForTimeout(600);
+  const known = await readLemmaCard(page);
+  check("[forced-open, downward] word 1 reads achieved before the downward press", known?.occurrenceStatePressed === "achieved", JSON.stringify(known));
+
+  await page.click('#quranWordCardMount [data-word-progress-state="learning"]');
+  await page.waitForTimeout(600);
+  const lastLemmaWrite = await page.evaluate(() => (window.__stubWriteData || []).filter((w) => w.col === "quranLemmaProgress").at(-1));
+  check("[forced-open, downward] the SAME press mirrored 'learning' onto the lemma lane too",
+    lastLemmaWrite?.col === "quranLemmaProgress" && lastLemmaWrite?.data?.state === "learning", JSON.stringify(lastLemmaWrite?.data));
+
+  const afterDowngrade = await readLemmaCard(page);
+  check("[forced-open, downward] word 1's own button now shows learning", afterDowngrade?.occurrenceStatePressed === "learning", JSON.stringify(afterDowngrade));
+  // Word 3 shares word 1's lemma and was never itself touched -- with the
+  // lemma no longer known everywhere, it reverts to unknown too.
+  await openWordAt(page, 3);
+  const coverageAfterDowngrade = readCoverageNumbers((await readLemmaCard(page))?.coverage);
+  check("[forced-open, downward] CROSS-OCCURRENCE: word 3 is no longer counted known now the lemma was downgraded (0 of 4)",
+    coverageAfterDowngrade[0] === 0 && coverageAfterDowngrade[1] === 4, JSON.stringify(coverageAfterDowngrade));
+
+  check("[forced-open, downward] no page errors", errors.filter((e) => !/CERT|archive\.org|api\.quran/.test(e)).length === 0, JSON.stringify(errors.slice(0, 3)));
   await ctx.close();
 }
 

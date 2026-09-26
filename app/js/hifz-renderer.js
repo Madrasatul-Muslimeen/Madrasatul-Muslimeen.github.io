@@ -123,6 +123,36 @@ export function getMushafPagesForKeys(ayahKeys) {
   return Array.from(pageSet).sort((a, b) => a - b);
 }
 
+/**
+ * Issue #322 -- which surah(s) a real Mushaf page belongs to, and the āyah
+ * range shown for each, in reading order (top to bottom of the page). A page
+ * that opens mid-surah and closes on the next carries two groups; one is the
+ * ordinary case. Walks the SAME per-page layout `renderPage()` already draws
+ * (no separate index, no extra fetch) -- call after ensureMushafData()
+ * resolves. Returns `[]` for an unknown page number.
+ */
+export function mushafPageAyahGroups(pageNum) {
+  const pageData = mushafData?.[String(pageNum)];
+  if (!pageData) return [];
+  const groups = [];
+  let current = null;
+  for (const line of pageData) {
+    if (line.type !== "ayah" || !line.words) continue;
+    for (const w of line.words) {
+      const [surahStr, ayahStr] = w.loc.split(":");
+      const surah = Number(surahStr), ayah = Number(ayahStr);
+      if (!current || current.surah !== surah) {
+        current = { surah, firstAyah: ayah, lastAyah: ayah };
+        groups.push(current);
+      } else {
+        if (ayah < current.firstAyah) current.firstAyah = ayah;
+        if (ayah > current.lastAyah) current.lastAyah = ayah;
+      }
+    }
+  }
+  return groups;
+}
+
 const fontPromises = new Map();
 let headerFontPromise = null;
 // One observer per rendered page, disconnected when the pages are replaced --
@@ -309,6 +339,9 @@ async function renderPage(pageNum, highlightSet, container, surahArabicName, myG
   if (myGeneration !== renderGeneration) return; // same reasoning, the second possible await point
   const pageEl = document.createElement("div");
   pageEl.className = "hifz-page";
+  // Issue #322 -- the top-bar page reference reads this back to know which
+  // real Mushaf page is currently in view (see mushafPageAyahGroups() below).
+  pageEl.dataset.mushafPage = String(pageNum);
   pageEl.style.fontFamily = `'hifz-p${pageNum}'`;
   const numEl = document.createElement("div");
   numEl.className = "hifz-page-num";
