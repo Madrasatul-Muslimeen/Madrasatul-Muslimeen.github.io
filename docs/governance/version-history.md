@@ -606,3 +606,4 @@ total). Allocated by the MMSA Architect.
 08.77: speed part 7 (issue #291). Allocated by the MMSA Architect.
 08.78: phone width: no sideways scroll (issue #293). Allocated by the MMSA Architect.
 08.79: WordPress/Evernote import switched on. Allocated by the MMSA Architect.
+08.80: Ayah Card part 1 (issue #295). Allocated by the MMSA Architect.
