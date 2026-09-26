@@ -2843,4 +2843,17 @@ export const BN = {
   "No Hifz Approach set up yet.": "হিফজ পদ্ধতি এখনো সেট আপ করা হয়নি।",
   "Related āyāt": "সম্পর্কিত আয়াত",
   "Related and connected āyāt — coming next": "সম্পর্কিত ও সংযুক্ত আয়াত — শীঘ্রই আসছে",
+  // Ayah Card section C part 1 -- Related āyāt.
+  "Info": "তথ্য",
+  "Finding related āyāt…": "সম্পর্কিত আয়াত খোঁজা হচ্ছে…",
+  "Couldn't load related āyāt just now.": "এই মুহূর্তে সম্পর্কিত আয়াত আনা গেল না।",
+  "No related āyāt found.": "কোনো সম্পর্কিত আয়াত পাওয়া যায়নি।",
+  "In the same QCR collection or Asma Name": "একই QCR সংকলন বা আসমা নামে",
+  "Share this āyah's rarer words": "এই আয়াতের বিরল শব্দগুলো যেখানে আছে",
+  "Connected āyāt": "সংযুক্ত আয়াত",
+  "Āyāt linked through your own Notes and folders — coming next": "আপনার নিজের নোট ও ফোল্ডারের মাধ্যমে যুক্ত আয়াত — শীঘ্রই আসছে",
+  "QCR: {name}": "QCR: {name}",
+  "Asma: {name}": "আসমা: {name}",
+  "1 shared rare word": "১টি বিরল শব্দ মিল",
+  "{count} shared rare words": "{count}টি বিরল শব্দ মিল",
 };

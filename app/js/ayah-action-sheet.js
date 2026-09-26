@@ -155,6 +155,32 @@ function hifzStatusHtml(hifzStatus) {
 }
 
 /**
+ * Section C, "Related āyāt" (ayah-related.js decides what is related; the
+ * caller labels each item in the reader's language). `related`:
+ *   null                         -> still loading
+ *   { error: true }              -> said in words, never a blank
+ *   { lists: [...], shared: [...] } -- each item { surah, ayah, ref, reason }
+ * Every item is a real button jumping to that āyah.
+ */
+function relatedItemHtml(item) {
+  return `<button type="button" class="ayah-related-item" data-ayah-related-jump="${Number(item.surah)}:${Number(item.ayah)}">
+            <span class="ayah-related-ref">${escapeHtml(item.ref)}</span>
+            <span class="ayah-related-why">${escapeHtml(item.reason)}</span>
+          </button>`;
+}
+function relatedInfoHtml(related) {
+  if (related == null) return `<p class="ayah-status-empty">${escapeHtml(t("Finding related āyāt…"))}</p>`;
+  if (related.error) return `<p class="ayah-status-empty">${escapeHtml(t("Couldn't load related āyāt just now."))}</p>`;
+  const lists = related.lists ?? [];
+  const shared = related.shared ?? [];
+  if (!lists.length && !shared.length) return `<p class="ayah-status-empty">${escapeHtml(t("No related āyāt found."))}</p>`;
+  const part = (title, items) => items.length
+    ? `<p class="ayah-related-sub">${escapeHtml(title)}</p><div class="ayah-related-list">${items.map(relatedItemHtml).join("")}</div>`
+    : "";
+  return part(t("In the same QCR collection or Asma Name"), lists) + part(t("Share this āyah's rarer words"), shared);
+}
+
+/**
  * `isSelf` -- the same isSelfSelected() rule notes.html/journey-map.html
  * already use for their own write actions (isNoteOwner() in
  * firestore.rules is deliberately stricter than canRecordFor(): a Note is
@@ -170,7 +196,7 @@ function hifzStatusHtml(hifzStatus) {
 export function renderAyahActionSheetHtml({
   unitKey, ref = "", hasNote = false, isBookmarked = false, isSelf = true,
   approachOptionsHtml = "", hasPosterNote = null,
-  approachStatuses = [], wordStatus = null, hifzStatus = null,
+  approachStatuses = [], wordStatus = null, hifzStatus = null, related = null,
 } = {}) {
   void hasNote; // kept for callers that already pass it (icon/wording decisions belong to isBookmarked/isSelf above, not this flag)
   const noteWhy = t("Only your own record can create or file a Note.");
@@ -200,9 +226,16 @@ export function renderAyahActionSheetHtml({
           <h4 class="ayah-status-heading">${escapeHtml(t("Hifz"))}</h4>
           ${hifzStatusHtml(hifzStatus)}
         </div>
-        <div class="ayah-status-block ayah-status-info" data-ayah-sheet-info>
+      </div>
+      <div class="ayah-sheet-status ayah-sheet-info" data-ayah-sheet-info>
+        <h3 class="ayah-sheet-section-title">${escapeHtml(t("Info"))}</h3>
+        <div class="ayah-status-block" data-ayah-sheet-related>
           <h4 class="ayah-status-heading">${escapeHtml(t("Related āyāt"))}</h4>
-          <p class="ayah-sheet-info-placeholder">${escapeHtml(t("Related and connected āyāt — coming next"))}</p>
+          ${relatedInfoHtml(related)}
+        </div>
+        <div class="ayah-status-block">
+          <h4 class="ayah-status-heading">${escapeHtml(t("Connected āyāt"))}</h4>
+          <p class="ayah-sheet-info-placeholder">${escapeHtml(t("Āyāt linked through your own Notes and folders — coming next"))}</p>
         </div>
       </div>
     </div>`;
@@ -212,7 +245,8 @@ export function renderAyahActionSheetHtml({
  * `callbacks`: onBookmark(unitKey), onNote(unitKey), onAsma(unitKey),
  * onQcr(unitKey), onFileInFolder(unitKey), onPlay(unitKey), onCopy(unitKey),
  * onShare(unitKey), onTakeApproach(unitKey, approachId), onPoster(unitKey),
- * onSeeOnWheel(unitKey), onWordTap(occurrenceId), onClose(). Every action
+ * onSeeOnWheel(unitKey), onWordTap(occurrenceId), onRelatedJump(surah, ayah),
+ * onClose(). Every action
  * callback fires onClose() FIRST -- several of them (Bookmark, Note, Asma,
  * QCR, File in folder, Take an Approach, Make a poster, See on the wheel,
  * a word tap) trigger a re-render of whatever's underneath the sheet, and
@@ -234,6 +268,13 @@ export function attachAyahActionSheetHandlers(container, callbacks = {}) {
     });
   };
   sheet.querySelector("[data-ayah-sheet-close]")?.addEventListener("click", () => callbacks.onClose?.());
+  sheet.querySelectorAll("[data-ayah-related-jump]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const [s, a] = btn.dataset.ayahRelatedJump.split(":").map(Number);
+      callbacks.onClose?.();
+      callbacks.onRelatedJump?.(s, a);
+    });
+  });
   sheet.querySelector("[data-ayah-sheet-bookmark]")?.addEventListener("click", () => fire(callbacks.onBookmark));
   fireUnlessDisabled(sheet.querySelector("[data-ayah-sheet-note]"), callbacks.onNote);
   sheet.querySelector("[data-ayah-sheet-asma]")?.addEventListener("click", () => fire(callbacks.onAsma));
