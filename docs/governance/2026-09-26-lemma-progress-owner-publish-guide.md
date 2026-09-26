@@ -1,0 +1,58 @@
+# Publishing the lemma-progress Rules: one paste
+
+Issue #301. This is what makes *"Knowing a word should mark all the same
+words, and all its forms as known as well"* possible: when you (or a
+teacher/guardian) mark a word's **lemma** — the same dictionary word in any
+inflection — as known, and it is confirmed once, every occurrence of that
+lemma will count as known.
+
+**What this does NOT do:** publishing this Rules file does not switch
+anything on for a reader. This round only builds the data layer and these
+Rules; no page in the app calls it yet. The screen that actually lets you
+mark a lemma known, and the Word Card showing the new counts, are the
+**next** round. Publishing now simply means that round does not also have to
+wait on you.
+
+## Steps
+
+1. Open this file in the repository and copy **all** of it:
+   `docs/governance/2026-09-26-lemma-progress-DEPLOYMENT-candidate.rules`
+   (on GitHub: open the file, then press the **Copy raw file** button at the
+   top right of the file).
+2. Open the [Firebase Console](https://console.firebase.google.com/), your
+   `study-monitoring` project, **Firestore Database → Rules**.
+3. Click inside the rules box, select everything (Ctrl+A), and paste
+   (Ctrl+V), replacing it all.
+4. Click **Publish**.
+5. Tell the Architect: **"Lemma progress rules are live."**
+
+## Why a whole-file paste is safe
+
+That file is today's live rules (the same ones already covering everything
+through the WordPress/Evernote importers, v08.79) plus **only additions**:
+two new collections, `quranLemmaProgress` (a learner's own lemma claim) and
+`quranLemmaApprovals` (a supervisor's confirmation of it) — the same
+two-lane split the already-deployed `quranWordProgress`/`quranWordApprovals`
+use, for the identical reason (a Firestore rule cannot cheaply check which
+key of a map someone touched, so a learner's claim and a supervisor's
+decision live in their own documents). Every line of the live file is still
+there, unchanged, and nothing existing was touched.
+
+The emulator suites check that the file is exactly the ruleset they tested:
+
+- `tools/firestore-emulator/lemma-progress-real-function.rules.test.mjs`
+  runs the real data-layer functions (claim, confirm) against it.
+- `tools/firestore-emulator/lemma-progress-v1.rules.test.mjs` has the
+  isolated allow/deny and mutation-paired cases, and can also be pointed at
+  this exact assembled file.
+
+## What it authorises, in one paragraph
+
+Only the learner (or whoever may record for them — a guardian, a
+co-enrolled teacher, or a tenant admin) may write their own
+`quranLemmaProgress` claim. Only a **supervisor** — the same set minus the
+learner themself — may write `quranLemmaApprovals`; nobody signs off their
+own claim. The learner can always *see* a decision made about their own
+work. Nothing may repoint a document at another tenant, person, level or
+lemma once created, and nothing is ever deleted — an "un-claim" writes a
+real `not_started` state, the same as everywhere else in this app.
