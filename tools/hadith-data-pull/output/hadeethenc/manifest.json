@@ -1,0 +1,851 @@
+{
+  "manifestVersion": "hadeethenc-package:v1",
+  "sourceId": "hadeethenc",
+  "pulledAt": "2026-09-26T03:02:30.256Z",
+  "packagedAt": "2026-09-26T03:04:13.481Z",
+  "apiBase": "https://hadeethenc.com/api/v1",
+  "termsQuotation": "No modification, addition, or deletion of the content. Clearly referring to the publisher and the source (HadeethEnc.com).",
+  "languagesAvailableFromApi": [
+    "ar",
+    "en",
+    "ur",
+    "es",
+    "id",
+    "ug",
+    "bn",
+    "fr",
+    "tr",
+    "ru",
+    "bs",
+    "si",
+    "hi",
+    "zh",
+    "fa",
+    "vi",
+    "tl",
+    "ku",
+    "ha",
+    "pt",
+    "ml",
+    "te",
+    "sw",
+    "ta",
+    "my",
+    "th",
+    "de",
+    "ja",
+    "ps",
+    "as",
+    "sq",
+    "sv",
+    "am",
+    "nl",
+    "gu",
+    "ky",
+    "ne",
+    "yo",
+    "lt",
+    "prs",
+    "sr",
+    "so",
+    "tg",
+    "rw",
+    "ro",
+    "hu",
+    "cs",
+    "mos",
+    "mg",
+    "ff",
+    "it",
+    "om",
+    "kn",
+    "wo",
+    "bg",
+    "az",
+    "el",
+    "ak",
+    "uz",
+    "uk",
+    "ka",
+    "ln",
+    "mk",
+    "km",
+    "bm",
+    "pa",
+    "mr",
+    "da",
+    "rn",
+    "yao",
+    "kmr",
+    "ms"
+  ],
+  "languagesPulled": [
+    "ar",
+    "en",
+    "bn"
+  ],
+  "shardMax": 250,
+  "arabicStoredOnce": {
+    "omittedFields": 27196,
+    "keptBecauseDifferent": 5
+  },
+  "perLanguage": [
+    {
+      "language": "ar",
+      "categoriesCount": 493,
+      "rootsCount": 7,
+      "hadithCount": 3574,
+      "files": [
+        {
+          "file": "ar/cat-1.json",
+          "hadithCount": 197
+        },
+        {
+          "file": "ar/cat-2.json",
+          "hadithCount": 16
+        },
+        {
+          "file": "ar/cat-59.json",
+          "hadithCount": 152
+        },
+        {
+          "file": "ar/cat-60.json",
+          "hadithCount": 36
+        },
+        {
+          "file": "ar/cat-61.json",
+          "hadithCount": 1
+        },
+        {
+          "file": "ar/cat-62.json",
+          "hadithCount": 88
+        },
+        {
+          "file": "ar/cat-63.json",
+          "hadithCount": 158
+        },
+        {
+          "file": "ar/cat-64.json",
+          "hadithCount": 34
+        },
+        {
+          "file": "ar/cat-65.json",
+          "hadithCount": 91
+        },
+        {
+          "file": "ar/cat-66.json",
+          "hadithCount": 74
+        },
+        {
+          "file": "ar/cat-67.json",
+          "hadithCount": 26
+        },
+        {
+          "file": "ar/cat-68.json",
+          "hadithCount": 15
+        },
+        {
+          "file": "ar/cat-69.json",
+          "hadithCount": 1
+        },
+        {
+          "file": "ar/cat-70.json",
+          "hadithCount": 1
+        },
+        {
+          "file": "ar/cat-71.json",
+          "hadithCount": 3
+        },
+        {
+          "file": "ar/cat-3.json",
+          "hadithCount": 1
+        },
+        {
+          "file": "ar/cat-133.json",
+          "hadithCount": 157
+        },
+        {
+          "file": "ar/cat-456.json",
+          "hadithCount": 9
+        },
+        {
+          "file": "ar/cat-457.json",
+          "hadithCount": 22
+        },
+        {
+          "file": "ar/cat-458.json",
+          "hadithCount": 29
+        },
+        {
+          "file": "ar/cat-459.json",
+          "hadithCount": 7
+        },
+        {
+          "file": "ar/cat-460.json",
+          "hadithCount": 36
+        },
+        {
+          "file": "ar/cat-461.json",
+          "hadithCount": 3
+        },
+        {
+          "file": "ar/cat-462.json",
+          "hadithCount": 1
+        },
+        {
+          "file": "ar/cat-463.json",
+          "hadithCount": 43
+        },
+        {
+          "file": "ar/cat-464.json",
+          "hadithCount": 65
+        },
+        {
+          "file": "ar/cat-465.json",
+          "hadithCount": 26
+        },
+        {
+          "file": "ar/cat-466.json",
+          "hadithCount": 3
+        },
+        {
+          "file": "ar/cat-467.json",
+          "hadithCount": 12
+        },
+        {
+          "file": "ar/cat-468.json",
+          "hadithCount": 19
+        },
+        {
+          "file": "ar/cat-469.json",
+          "hadithCount": 22
+        },
+        {
+          "file": "ar/cat-470.json",
+          "hadithCount": 26
+        },
+        {
+          "file": "ar/cat-471.json",
+          "hadithCount": 23
+        },
+        {
+          "file": "ar/cat-472.json",
+          "hadithCount": 25
+        },
+        {
+          "file": "ar/cat-473.json",
+          "hadithCount": 80
+        },
+        {
+          "file": "ar/cat-476.json",
+          "hadithCount": 5
+        },
+        {
+          "file": "ar/cat-487.json",
+          "hadithCount": 5
+        },
+        {
+          "file": "ar/cat-488.json",
+          "hadithCount": 7
+        },
+        {
+          "file": "ar/cat-725.json",
+          "hadithCount": 36
+        },
+        {
+          "file": "ar/cat-134.json",
+          "hadithCount": 1
+        },
+        {
+          "file": "ar/cat-135.json",
+          "hadithCount": 58
+        },
+        {
+          "file": "ar/cat-136.json",
+          "hadithCount": 67
+        },
+        {
+          "file": "ar/cat-137.json",
+          "hadithCount": 87
+        },
+        {
+          "file": "ar/cat-138.json",
+          "hadithCount": 118
+        },
+        {
+          "file": "ar/cat-139.json",
+          "hadithCount": 106
+        },
+        {
+          "file": "ar/cat-122.json",
+          "hadithCount": 166
+        },
+        {
+          "file": "ar/cat-123.json",
+          "hadithCount": 9
+        },
+        {
+          "file": "ar/cat-124.json",
+          "hadithCount": 225
+        },
+        {
+          "file": "ar/cat-125.json",
+          "hadithCount": 41
+        },
+        {
+          "file": "ar/cat-126.json",
+          "hadithCount": 62
+        },
+        {
+          "file": "ar/cat-127.json",
+          "hadithCount": 22
+        },
+        {
+          "file": "ar/cat-128.json",
+          "hadithCount": 38
+        },
+        {
+          "file": "ar/cat-129.json",
+          "hadithCount": 19
+        },
+        {
+          "file": "ar/cat-132.json",
+          "hadithCount": 10
+        },
+        {
+          "file": "ar/cat-265.json",
+          "hadithCount": 125
+        },
+        {
+          "file": "ar/cat-266.json",
+          "hadithCount": 103
+        },
+        {
+          "file": "ar/cat-267.json",
+          "hadithCount": 224
+        },
+        {
+          "file": "ar/cat-268.json",
+          "hadithCount": 114
+        },
+        {
+          "file": "ar/cat-269.json",
+          "hadithCount": 159
+        },
+        {
+          "file": "ar/cat-5.json",
+          "hadithCount": 2
+        },
+        {
+          "file": "ar/cat-6.json",
+          "hadithCount": 79
+        },
+        {
+          "file": "ar/cat-7.json",
+          "hadithCount": 184
+        }
+      ]
+    },
+    {
+      "language": "en",
+      "categoriesCount": 452,
+      "rootsCount": 7,
+      "hadithCount": 2328,
+      "files": [
+        {
+          "file": "en/cat-1.json",
+          "hadithCount": 81
+        },
+        {
+          "file": "en/cat-2.json",
+          "hadithCount": 10
+        },
+        {
+          "file": "en/cat-59.json",
+          "hadithCount": 136
+        },
+        {
+          "file": "en/cat-60.json",
+          "hadithCount": 28
+        },
+        {
+          "file": "en/cat-61.json",
+          "hadithCount": 1
+        },
+        {
+          "file": "en/cat-62.json",
+          "hadithCount": 44
+        },
+        {
+          "file": "en/cat-63.json",
+          "hadithCount": 89
+        },
+        {
+          "file": "en/cat-64.json",
+          "hadithCount": 23
+        },
+        {
+          "file": "en/cat-65.json",
+          "hadithCount": 68
+        },
+        {
+          "file": "en/cat-66.json",
+          "hadithCount": 27
+        },
+        {
+          "file": "en/cat-67.json",
+          "hadithCount": 15
+        },
+        {
+          "file": "en/cat-68.json",
+          "hadithCount": 14
+        },
+        {
+          "file": "en/cat-69.json",
+          "hadithCount": 1
+        },
+        {
+          "file": "en/cat-71.json",
+          "hadithCount": 1
+        },
+        {
+          "file": "en/cat-3.json",
+          "hadithCount": 1
+        },
+        {
+          "file": "en/cat-133.json",
+          "hadithCount": 130
+        },
+        {
+          "file": "en/cat-456.json",
+          "hadithCount": 5
+        },
+        {
+          "file": "en/cat-457.json",
+          "hadithCount": 14
+        },
+        {
+          "file": "en/cat-458.json",
+          "hadithCount": 19
+        },
+        {
+          "file": "en/cat-459.json",
+          "hadithCount": 5
+        },
+        {
+          "file": "en/cat-460.json",
+          "hadithCount": 26
+        },
+        {
+          "file": "en/cat-461.json",
+          "hadithCount": 3
+        },
+        {
+          "file": "en/cat-462.json",
+          "hadithCount": 1
+        },
+        {
+          "file": "en/cat-463.json",
+          "hadithCount": 16
+        },
+        {
+          "file": "en/cat-464.json",
+          "hadithCount": 47
+        },
+        {
+          "file": "en/cat-465.json",
+          "hadithCount": 18
+        },
+        {
+          "file": "en/cat-466.json",
+          "hadithCount": 2
+        },
+        {
+          "file": "en/cat-467.json",
+          "hadithCount": 7
+        },
+        {
+          "file": "en/cat-468.json",
+          "hadithCount": 16
+        },
+        {
+          "file": "en/cat-469.json",
+          "hadithCount": 14
+        },
+        {
+          "file": "en/cat-470.json",
+          "hadithCount": 24
+        },
+        {
+          "file": "en/cat-471.json",
+          "hadithCount": 8
+        },
+        {
+          "file": "en/cat-472.json",
+          "hadithCount": 11
+        },
+        {
+          "file": "en/cat-473.json",
+          "hadithCount": 55
+        },
+        {
+          "file": "en/cat-476.json",
+          "hadithCount": 3
+        },
+        {
+          "file": "en/cat-487.json",
+          "hadithCount": 4
+        },
+        {
+          "file": "en/cat-488.json",
+          "hadithCount": 2
+        },
+        {
+          "file": "en/cat-725.json",
+          "hadithCount": 24
+        },
+        {
+          "file": "en/cat-135.json",
+          "hadithCount": 26
+        },
+        {
+          "file": "en/cat-136.json",
+          "hadithCount": 35
+        },
+        {
+          "file": "en/cat-137.json",
+          "hadithCount": 52
+        },
+        {
+          "file": "en/cat-138.json",
+          "hadithCount": 59
+        },
+        {
+          "file": "en/cat-139.json",
+          "hadithCount": 73
+        },
+        {
+          "file": "en/cat-122.json",
+          "hadithCount": 94
+        },
+        {
+          "file": "en/cat-123.json",
+          "hadithCount": 6
+        },
+        {
+          "file": "en/cat-124.json",
+          "hadithCount": 156
+        },
+        {
+          "file": "en/cat-125.json",
+          "hadithCount": 18
+        },
+        {
+          "file": "en/cat-126.json",
+          "hadithCount": 34
+        },
+        {
+          "file": "en/cat-127.json",
+          "hadithCount": 18
+        },
+        {
+          "file": "en/cat-128.json",
+          "hadithCount": 36
+        },
+        {
+          "file": "en/cat-129.json",
+          "hadithCount": 13
+        },
+        {
+          "file": "en/cat-132.json",
+          "hadithCount": 8
+        },
+        {
+          "file": "en/cat-265.json",
+          "hadithCount": 105
+        },
+        {
+          "file": "en/cat-266.json",
+          "hadithCount": 92
+        },
+        {
+          "file": "en/cat-267.json",
+          "hadithCount": 138
+        },
+        {
+          "file": "en/cat-268.json",
+          "hadithCount": 84
+        },
+        {
+          "file": "en/cat-269.json",
+          "hadithCount": 120
+        },
+        {
+          "file": "en/cat-5.json",
+          "hadithCount": 2
+        },
+        {
+          "file": "en/cat-6.json",
+          "hadithCount": 62
+        },
+        {
+          "file": "en/cat-7.json",
+          "hadithCount": 104
+        }
+      ]
+    },
+    {
+      "language": "bn",
+      "categoriesCount": 414,
+      "rootsCount": 7,
+      "hadithCount": 1925,
+      "files": [
+        {
+          "file": "bn/cat-1.json",
+          "hadithCount": 58
+        },
+        {
+          "file": "bn/cat-2.json",
+          "hadithCount": 9
+        },
+        {
+          "file": "bn/cat-59.json",
+          "hadithCount": 133
+        },
+        {
+          "file": "bn/cat-60.json",
+          "hadithCount": 13
+        },
+        {
+          "file": "bn/cat-61.json",
+          "hadithCount": 1
+        },
+        {
+          "file": "bn/cat-62.json",
+          "hadithCount": 27
+        },
+        {
+          "file": "bn/cat-63.json",
+          "hadithCount": 83
+        },
+        {
+          "file": "bn/cat-64.json",
+          "hadithCount": 22
+        },
+        {
+          "file": "bn/cat-65.json",
+          "hadithCount": 63
+        },
+        {
+          "file": "bn/cat-66.json",
+          "hadithCount": 19
+        },
+        {
+          "file": "bn/cat-67.json",
+          "hadithCount": 10
+        },
+        {
+          "file": "bn/cat-68.json",
+          "hadithCount": 10
+        },
+        {
+          "file": "bn/cat-69.json",
+          "hadithCount": 1
+        },
+        {
+          "file": "bn/cat-71.json",
+          "hadithCount": 1
+        },
+        {
+          "file": "bn/cat-3.json",
+          "hadithCount": 1
+        },
+        {
+          "file": "bn/cat-133.json",
+          "hadithCount": 114
+        },
+        {
+          "file": "bn/cat-456.json",
+          "hadithCount": 5
+        },
+        {
+          "file": "bn/cat-457.json",
+          "hadithCount": 13
+        },
+        {
+          "file": "bn/cat-458.json",
+          "hadithCount": 17
+        },
+        {
+          "file": "bn/cat-459.json",
+          "hadithCount": 5
+        },
+        {
+          "file": "bn/cat-460.json",
+          "hadithCount": 23
+        },
+        {
+          "file": "bn/cat-461.json",
+          "hadithCount": 3
+        },
+        {
+          "file": "bn/cat-462.json",
+          "hadithCount": 1
+        },
+        {
+          "file": "bn/cat-463.json",
+          "hadithCount": 15
+        },
+        {
+          "file": "bn/cat-464.json",
+          "hadithCount": 44
+        },
+        {
+          "file": "bn/cat-465.json",
+          "hadithCount": 18
+        },
+        {
+          "file": "bn/cat-466.json",
+          "hadithCount": 2
+        },
+        {
+          "file": "bn/cat-467.json",
+          "hadithCount": 6
+        },
+        {
+          "file": "bn/cat-468.json",
+          "hadithCount": 13
+        },
+        {
+          "file": "bn/cat-469.json",
+          "hadithCount": 14
+        },
+        {
+          "file": "bn/cat-470.json",
+          "hadithCount": 21
+        },
+        {
+          "file": "bn/cat-471.json",
+          "hadithCount": 8
+        },
+        {
+          "file": "bn/cat-472.json",
+          "hadithCount": 10
+        },
+        {
+          "file": "bn/cat-473.json",
+          "hadithCount": 49
+        },
+        {
+          "file": "bn/cat-476.json",
+          "hadithCount": 3
+        },
+        {
+          "file": "bn/cat-487.json",
+          "hadithCount": 4
+        },
+        {
+          "file": "bn/cat-488.json",
+          "hadithCount": 2
+        },
+        {
+          "file": "bn/cat-725.json",
+          "hadithCount": 22
+        },
+        {
+          "file": "bn/cat-135.json",
+          "hadithCount": 24
+        },
+        {
+          "file": "bn/cat-136.json",
+          "hadithCount": 33
+        },
+        {
+          "file": "bn/cat-137.json",
+          "hadithCount": 49
+        },
+        {
+          "file": "bn/cat-138.json",
+          "hadithCount": 49
+        },
+        {
+          "file": "bn/cat-139.json",
+          "hadithCount": 57
+        },
+        {
+          "file": "bn/cat-122.json",
+          "hadithCount": 77
+        },
+        {
+          "file": "bn/cat-123.json",
+          "hadithCount": 1
+        },
+        {
+          "file": "bn/cat-124.json",
+          "hadithCount": 81
+        },
+        {
+          "file": "bn/cat-125.json",
+          "hadithCount": 13
+        },
+        {
+          "file": "bn/cat-126.json",
+          "hadithCount": 19
+        },
+        {
+          "file": "bn/cat-127.json",
+          "hadithCount": 6
+        },
+        {
+          "file": "bn/cat-128.json",
+          "hadithCount": 14
+        },
+        {
+          "file": "bn/cat-129.json",
+          "hadithCount": 6
+        },
+        {
+          "file": "bn/cat-132.json",
+          "hadithCount": 8
+        },
+        {
+          "file": "bn/cat-265.json",
+          "hadithCount": 99
+        },
+        {
+          "file": "bn/cat-266.json",
+          "hadithCount": 88
+        },
+        {
+          "file": "bn/cat-267.json",
+          "hadithCount": 118
+        },
+        {
+          "file": "bn/cat-268.json",
+          "hadithCount": 82
+        },
+        {
+          "file": "bn/cat-269.json",
+          "hadithCount": 110
+        },
+        {
+          "file": "bn/cat-5.json",
+          "hadithCount": 2
+        },
+        {
+          "file": "bn/cat-6.json",
+          "hadithCount": 57
+        },
+        {
+          "file": "bn/cat-7.json",
+          "hadithCount": 69
+        }
+      ]
+    }
+  ],
+  "totals": {
+    "hadithRecordsAcrossAllLanguages": 7827,
+    "outputBytes": 31303744
+  },
+  "sizeWarning": null
+}
