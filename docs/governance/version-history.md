@@ -616,3 +616,4 @@ total). Allocated by the MMSA Architect.
 08.87: Ayah Card section C part 2: Connected āyāt (issue #318). Allocated by the MMSA Architect.
 08.88: Basic Arabic / Arabic in Depth per-word claims, built and gated (issue #320). Allocated by the MMSA Architect.
 08.89: Mushaf top bar Surah · āyāt; Achieved marks the Dictionary Word known; full-screen Word Card on phones (issue #322). Allocated by the MMSA Architect.
+08.90: Mushaf view: take an Approach with four stages per āyah and per page (issue #325). Allocated by the MMSA Architect.
