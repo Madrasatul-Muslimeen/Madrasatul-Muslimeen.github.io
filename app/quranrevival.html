@@ -2508,6 +2508,16 @@
      Tajweed is on, covering both fonts with one credit. */
   .hifz-tajweed-credit { font-size: 10px; color: #8a7c55; text-align: center; margin-top: 2px; }
   .hifz-tajweed-credit a { color: #1F3A6E; }
+  /* Architect review, 27 Sep 2026: .hifz-page carries the page's GLYPH font
+     as its font-family, and the page's own words inherit it on purpose. The
+     label row, the credit and the error lines are ordinary text and must not
+     -- the QPC V4 Tajweed font maps a space to a zero-width glyph, so with
+     Tajweed on they read "Page1", "Tajweedcolours" and
+     "QuranfontsprovidedbyQuranFoundation" (seen in a real-font screenshot;
+     the suite's stand-in font could not show it). The label ink is darkened
+     for 11px text on the page cream (#8a7c55 is about 3.9:1). */
+  .hifz-page-header, .hifz-tajweed-credit, .hifz-page .hifz-line-error { font-family: 'Inter', system-ui, sans-serif; }
+  .hifz-tajweed-toggle { color: #5a4a2a; }
   .hifz-line { display: flex; flex-wrap: nowrap; direction: rtl; gap: 0.12em; padding: 0.15em 0; font-size: 34px; font-size: 6.07cqw; line-height: 2.05; }
   .hifz-line.centered { justify-content: center; }
   .hifz-line:not(.centered) { width: fit-content; max-width: 100%; margin-left: auto; margin-right: 0; }
@@ -12763,9 +12773,22 @@
               // Issue #332 Part B -- one shared preference; any one page's own
               // toggle moves it for every page, remembered for next time.
               tajweedOn: getMushafTajweedFontOn(),
-              onToggleTajweed: (nextOn) => {
+              onToggleTajweed: async (nextOn) => {
+                // Architect review, 27 Sep 2026: the re-render rebuilt every
+                // page and left the reader on the unit's FIRST page -- toggled
+                // on page 53 of Aal-i-Imraan, they landed back on page 50.
+                // Remember the page in view (the top-bar reference already
+                // tracks it) and return to it once the new pages are drawn.
+                const keepPage = mushafPageRef?.dataset.page ?? null;
                 setMushafTajweedFontOn(nextOn);
                 renderStudyScreen();
+                if (!keepPage) return;
+                try { await flowRenderPromise; } catch { /* renderFlowView() reports its own failure on-screen. */ }
+                const target = pageViewContainer.querySelector(`.hifz-page[data-mushaf-page="${keepPage}"]`);
+                if (target) {
+                  target.scrollIntoView({ inline: "start", block: "nearest", behavior: "instant" });
+                  updateMushafPageRef();
+                }
               },
             }
           );

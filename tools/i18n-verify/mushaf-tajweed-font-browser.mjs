@@ -270,6 +270,56 @@ for (const lang of ["en", "bn"]) {
 }
 
 // =============================================================================
+// 3b. Architect review, 27 Sep 2026 -- two defects found by LOOKING at a real
+// Tajweed page, neither visible to the stand-in font above:
+//  (a) toggling on a later page re-rendered the Mushaf and left the reader on
+//      the unit's FIRST page (page 53 of Aal-i-Imraan -> page 50);
+//  (b) the label row and credit inherited the page's glyph font, whose space
+//      is zero-width, so they read "Page1" / "Tajweedcolours".
+// =============================================================================
+{
+  const lang = "en";
+  console.log(`\n=== Mushaf Tajweed toggle -- stays on the page, labels keep a text font, appLang=${lang} ===`);
+  const ctx = await newContext(browser, { appLang: lang, viewport: { width: 390, height: 844 } });
+  await installMushafFixture(ctx);
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await openMushafSurah3(page);
+  check("precondition: both synthetic Mushaf pages rendered", await waitForBothPages(page));
+  const inView = () => page.evaluate(() => {
+    const c = document.getElementById("pageViewContainer"); const cr = c.getBoundingClientRect();
+    let best = null, bw = 0;
+    for (const p of c.querySelectorAll(".hifz-page")) {
+      const r = p.getBoundingClientRect();
+      const a = Math.max(0, Math.min(r.right, cr.right) - Math.max(r.left, cr.left)) * Math.max(0, Math.min(r.bottom, cr.bottom) - Math.max(r.top, cr.top));
+      if (a > bw) { bw = a; best = p; }
+    }
+    return best?.dataset.mushafPage ?? null;
+  });
+  const first = await inView();
+  await page.evaluate(() => [...document.querySelectorAll(".hifz-page")][1].scrollIntoView({ inline: "start", block: "nearest", behavior: "instant" }));
+  await page.waitForTimeout(400);
+  const second = await inView();
+  check("precondition: the reader is on the SECOND page before toggling", second && second !== first, `first=${first} second=${second}`);
+  await page.evaluate((pg) => {
+    const cb = document.querySelector(`.hifz-page[data-mushaf-page="${pg}"] .hifz-tajweed-toggle input[type=checkbox]`);
+    cb.checked = true; cb.dispatchEvent(new Event("change", { bubbles: true }));
+  }, second);
+  await page.waitForFunction((pg) => {
+    const c = document.getElementById("pageViewContainer"); const cr = c.getBoundingClientRect();
+    const el = c.querySelector(`.hifz-page[data-mushaf-page="${pg}"]`);
+    if (!el || !el.style.fontFamily.includes("tajweed")) return false;
+    const r = el.getBoundingClientRect();
+    return r.left >= cr.left - 5 && r.right <= cr.right + 5;
+  }, second, { timeout: 5000 }).catch(() => {});
+  check("after toggling on the second page, the reader is still on it (not sent back to the first)", (await inView()) === second, `in view: ${await inView()}, expected ${second}`);
+  const fonts = await page.evaluate(() => [...document.querySelectorAll(".hifz-page-header, .hifz-tajweed-credit")].map((el) => getComputedStyle(el).fontFamily));
+  check("the label row and credit use a text font, never the page's glyph font",
+    fonts.length > 0 && fonts.every((f) => !/hifz-/.test(f)), JSON.stringify(fonts));
+  check("no unexpected page errors", realErrors(errors).length === 0, realErrors(errors).join("; "));
+  await ctx.close();
+}
+
+// =============================================================================
 // 4. A failed Tajweed font load shows the message and keeps the plain page.
 // =============================================================================
 {
