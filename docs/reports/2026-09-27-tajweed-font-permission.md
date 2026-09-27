@@ -68,9 +68,10 @@ So point 3 above is now satisfied. Keeping the Quran Foundation fonts on the
 phone for offline reading is **permitted**, with the credit kept. Two limits
 still apply:
 - the files are never offered separately;
-- the general content-caching limit of one week in the Developer Terms is read
-  as not applying to fonts, which have their own clause. If QF ever says
-  otherwise, the offline copy will be refreshed at least weekly.
+- to stay inside the Developer Terms' general limit on keeping QF content
+  longer than one week, the offline copy is refreshed at least weekly. That
+  limit may not apply to fonts, which have their own clause, but the refresh
+  costs little and removes the question.
 
 This is a follow-up to issue #332, which as dispatched keeps the fonts out of
 `app/sw.js`. Offline caching is to be added once #332 is merged, not changed
