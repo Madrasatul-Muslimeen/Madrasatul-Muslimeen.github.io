@@ -2954,6 +2954,16 @@ export const BN = {
   "Loading your status…": "আপনার অবস্থা লোড হচ্ছে…", // ?
   "Close My Status": "মাই স্ট্যাটাস বন্ধ করুন", // ?
 
+  // Issue #341 -- My Status: an Approach opens as its own card (part 1),
+  // "By unit" Juz/Surah/Ruku'/Hizb figures (part 2), and the slices/rows
+  // that jump straight to Explore (part 3). "Juz"/"Surah"/"Ruku'"/"Hizb"/
+  // "Close"/"Choose an Approach" already exist above and are reused as-is.
+  "By unit": "একক অনুযায়ী", // ?
+  "Achieved + Mastered: {n} of {total} · Started: {m}": "অর্জিত + দক্ষ: {total}টির মধ্যে {n}টি · শুরু হয়েছে: {m}টি", // ?
+  "{n} of {total} words ({percent}%)": "{total}টির মধ্যে {n}টি শব্দ ({percent}%)", // ?
+  "Surah and Ruku' figures for Word by Word are in Explore's Word by Word tab.":
+    "ওয়ার্ড বাই ওয়ার্ডের সূরা ও রুকু'র হিসাব এক্সপ্লোরের ওয়ার্ড বাই ওয়ার্ড ট্যাবে পাওয়া যাবে।", // ?
+
   // Issue #332 -- Mushaf fonts from Quran Foundation (Part A) and the
   // per-page Tajweed colours toggle (Part B).
   "Couldn't display this page's letters (its font didn't load).": "এই পৃষ্ঠার অক্ষরগুলো দেখানো যায়নি (ফন্ট লোড হয়নি)।", // ?
