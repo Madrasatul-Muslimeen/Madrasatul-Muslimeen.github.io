@@ -46,3 +46,10 @@ other modules would show in it, and then for a plan for a family of apps
 | # | Question | Owner's answer | What it means |
 |---|---|---|---|
 | 12 | Where the app-store effort goes first. | **"While we keep doing as we have been, but emphasize on QR and Asma for app store."** | Website work carries on as before. For the app stores, **QuranRevival and Asma ul Husna come first**, ahead of Hadith, Dua, Health and the rest in the family plan. Open, asked the same day: whether Asma ul Husna goes **inside** the QuranRevival app (it is already woven into the Quran screens: Explore's Asma panel, the Ayah Card's "Asma ul Husna Name(s)", posters) or ships as its **own** app straight after it. Until answered, decision 10's "Asma stays on the website" is read as superseded for Asma only. |
+| 13 | Who publishes the apps. | **"AAAsApps publishes all apps."** | Every store app (QuranRevival and the rest of the family) is published under **AAAsApps**. |
+| 14 | App names. | **"Will choose individual names when it is time."** | No naming pattern is fixed now; each app's name is chosen when its store step comes. |
+| 15 | Where Asma ul Husna goes (decision 12's open question). | **"AU fits inside the QR, of course but how can we make it standalone as well, legitimately?"** | Asma ul Husna is **inside the QuranRevival app**. A standalone Asma app is wanted as well, if it can be made legitimately; the Architect's answer (a distinct purpose and features of its own, sharing the account, not duplicating Quran reading) is to be confirmed before it is planned. |
+| 16 | When store preparation starts. | **"Store prep starts After finalizing the QR, lot of fixes needed there."** | Store work waits until QuranRevival is finalised on the website. The Owner will send fixes (My Status, taking an Approach from every view, and others) first; those come before any store step. |
+
+The Owner also asked for an operating prompt for ChatGPT as advisor-reviewer:
+`docs/governance/advisor-chatgpt-operating-prompt.md`.
