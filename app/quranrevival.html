@@ -2495,6 +2495,29 @@
      The owner's "the right side is cut off ... it should be like the left". */
   .hifz-page { background: #fbf6e9; color: #1b1b16; border-radius: 10px; padding: 18px 16px; width: 100%; max-width: 560px; margin: 0 auto 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.18); container-type: inline-size; box-sizing: border-box; }
   .hifz-page-num { font-size: 11px; color: #8a7c55; text-align: center; margin-bottom: 10px; letter-spacing: 0.05em; }
+  /* Issue #332 Part B -- the per-page Tajweed toggle sits beside "Page N"
+     (Owner decision 1: not a new bar), so both share one row now; the
+     bottom margin moves from .hifz-page-num itself onto the row. */
+  .hifz-page-header { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 10px; }
+  .hifz-page-header .hifz-page-num { margin-bottom: 0; }
+  .hifz-tajweed-toggle { display: inline-flex; align-items: center; gap: 0.3rem; min-height: 40px; padding: 0.1rem 0.4rem; font-size: 11px; color: #8a7c55; cursor: pointer; }
+  .hifz-tajweed-toggle input[type="checkbox"] { width: 1.1rem; height: 1.1rem; accent-color: #1F3A6E; cursor: pointer; flex-shrink: 0; }
+  .hifz-tajweed-toggle.is-disabled { opacity: 0.6; cursor: default; }
+  .hifz-tajweed-toggle.is-disabled input[type="checkbox"] { cursor: default; }
+  /* Owner decision 9 / the permission report's own point 2 -- shown while
+     Tajweed is on, covering both fonts with one credit. */
+  .hifz-tajweed-credit { font-size: 10px; color: #8a7c55; text-align: center; margin-top: 2px; }
+  .hifz-tajweed-credit a { color: #1F3A6E; }
+  /* Architect review, 27 Sep 2026: .hifz-page carries the page's GLYPH font
+     as its font-family, and the page's own words inherit it on purpose. The
+     label row, the credit and the error lines are ordinary text and must not
+     -- the QPC V4 Tajweed font maps a space to a zero-width glyph, so with
+     Tajweed on they read "Page1", "Tajweedcolours" and
+     "QuranfontsprovidedbyQuranFoundation" (seen in a real-font screenshot;
+     the suite's stand-in font could not show it). The label ink is darkened
+     for 11px text on the page cream (#8a7c55 is about 3.9:1). */
+  .hifz-page-header, .hifz-tajweed-credit, .hifz-page .hifz-line-error { font-family: 'Inter', system-ui, sans-serif; }
+  .hifz-tajweed-toggle { color: #5a4a2a; }
   .hifz-line { display: flex; flex-wrap: nowrap; direction: rtl; gap: 0.12em; padding: 0.15em 0; font-size: 34px; font-size: 6.07cqw; line-height: 2.05; }
   .hifz-line.centered { justify-content: center; }
   .hifz-line:not(.centered) { width: fit-content; max-width: 100%; margin-left: auto; margin-right: 0; }
@@ -4842,6 +4865,7 @@
       getExploreJuzView, setExploreJuzView,
       getExploreQuranView, setExploreQuranView,
       getColourWordParts, setColourWordParts,
+      getMushafTajweedFontOn, setMushafTajweedFontOn,
     } from "./js/prefs.js";
     import { wireWheelResize } from "./js/wheel-resize.js";
     import { renderTextSizeButtonHtml } from "./js/text-size.js";
@@ -12744,7 +12768,29 @@
             pageViewContainer,
             pages,
             highlight,
-            (surahNum) => surahIndex.find((s) => s.surahNumber === surahNum)?.nameArabic ?? null
+            (surahNum) => surahIndex.find((s) => s.surahNumber === surahNum)?.nameArabic ?? null,
+            {
+              // Issue #332 Part B -- one shared preference; any one page's own
+              // toggle moves it for every page, remembered for next time.
+              tajweedOn: getMushafTajweedFontOn(),
+              onToggleTajweed: async (nextOn) => {
+                // Architect review, 27 Sep 2026: the re-render rebuilt every
+                // page and left the reader on the unit's FIRST page -- toggled
+                // on page 53 of Aal-i-Imraan, they landed back on page 50.
+                // Remember the page in view (the top-bar reference already
+                // tracks it) and return to it once the new pages are drawn.
+                const keepPage = mushafPageRef?.dataset.page ?? null;
+                setMushafTajweedFontOn(nextOn);
+                renderStudyScreen();
+                if (!keepPage) return;
+                try { await flowRenderPromise; } catch { /* renderFlowView() reports its own failure on-screen. */ }
+                const target = pageViewContainer.querySelector(`.hifz-page[data-mushaf-page="${keepPage}"]`);
+                if (target) {
+                  target.scrollIntoView({ inline: "start", block: "nearest", behavior: "instant" });
+                  updateMushafPageRef();
+                }
+              },
+            }
           );
           // Issue #322 -- the top-bar reference names whichever real page is
           // now in view, and starts watching for a swipe/scroll to another one.

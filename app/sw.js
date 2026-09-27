@@ -28,10 +28,20 @@ const CACHEABLE_PATH_PREFIXES = [
   "/app/",
   // The Qur'an data this app reads at study time (surah text, indexes, word
   // data) is same-origin but lives outside /app/ -- see quran-data.js's own
-  // BASE_URL comment for why. Everything the Mushaf itself needs (its JSON,
-  // its fonts) is fetched from raw.githubusercontent.com instead, which the
-  // origin check below already excludes -- "off-site" per the issue, and
-  // this worker never touches it.
+  // BASE_URL comment for why. Everything the Mushaf itself needs (its page
+  // layout JSON, the surah-header font) is fetched from
+  // raw.githubusercontent.com, and its per-page glyph fonts -- plain and,
+  // since issue #332, Tajweed -- from verses.quran.foundation instead, both
+  // of which the origin check below already excludes -- "off-site" per the
+  // issue, and this worker never touches either. Not merely incidental: as
+  // issue #332 was dispatched, Quran Foundation's terms conditioned caching
+  // these fonts on holding a Developer Console account, which the Owner had
+  // not yet confirmed (docs/reports/2026-09-27-tajweed-font-permission.md).
+  // The Owner has since confirmed one exists -- the SAME report's own
+  // "Update, 27 Sep 2026" -- so offline caching of these fonts is now
+  // permitted (weekly-refreshed, credit kept), but that update's own last
+  // line is explicit: it is a follow-up, added once #332 merges, "not
+  // changed mid-round". So this worker still excludes both hosts for now.
   "/tools/quran-data-pull/output/",
 ];
 

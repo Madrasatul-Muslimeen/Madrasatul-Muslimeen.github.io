@@ -89,7 +89,11 @@ async function clickSafely(page, selector, attempts = 4) {
 }
 
 const MUSHAF_JSON_URL = "https://raw.githubusercontent.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/main/mushaf/mushaf-madani-v2.json";
-const MUSHAF_FONT_BASE = "https://raw.githubusercontent.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/main/mushaf/fonts/";
+// Issue #332 Part A -- was raw.githubusercontent.com/.../mushaf/fonts/;
+// updated to match hifz-renderer.js's own MUSHAF_FONT_BASE, now the Quran
+// Foundation v2 CDN (the files are byte-identical -- see
+// docs/reports/2026-09-27-tajweed-font-permission.md).
+const MUSHAF_FONT_BASE = "https://verses.quran.foundation/fonts/quran/hafs/v2/woff2/";
 const SURAH_HEADER_FONT_URL = "https://raw.githubusercontent.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/main/mushaf/QCF_SurahHeader_COLOR-Regular.woff2";
 const RECITER_AUDIO_BASE = "https://archive.org/download/abdullah-ali-basfar.ayahbyayah/";
 

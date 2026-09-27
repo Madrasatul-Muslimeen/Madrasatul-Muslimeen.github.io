@@ -3790,7 +3790,12 @@ async function mushafCtx(opts = {}) {
   // A real, loadable woff2 in place of the page's own glyph font: without one
   // that resolves, hifz-renderer.js skips justification entirely and these
   // checks would measure nothing. See fixtures/README.md.
-  for (const pattern of ["**/mushaf/fonts/p*.woff2", "**/QCF_SurahHeader_COLOR-Regular.woff2"]) {
+  // Issue #332 Part A -- was "**/mushaf/fonts/p*.woff2" (raw.githubusercontent.com);
+  // hifz-renderer.js's own MUSHAF_FONT_BASE now points at the Quran
+  // Foundation v2 CDN (the files are byte-identical -- see
+  // docs/reports/2026-09-27-tajweed-font-permission.md), so the route this
+  // suite intercepts has to match the new URL shape instead.
+  for (const pattern of ["**/hafs/v2/woff2/p*.woff2", "**/QCF_SurahHeader_COLOR-Regular.woff2"]) {
     await ctx.route(pattern, (r) => r.fulfill({ status: 200, contentType: "font/woff2", body: STAND_IN_FONT }));
   }
   return ctx;
