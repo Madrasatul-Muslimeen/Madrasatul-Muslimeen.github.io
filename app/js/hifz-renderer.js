@@ -11,11 +11,15 @@
 // reverse index) is carried over verbatim from index.html's own proven
 // renderHifzView, because it already works correctly there.
 //
-// Data source: the same 604-page layout + word-glyph JSON (mushaf-madani-v2.json,
-// sourced from QUL — qul.tarteel.ai) and per-page QCF V2 font files already
-// hosted, live, no auth needed, in the madrasatul-muslimeen.github.io repo —
-// the same site the beta build itself is mirrored to. Nothing new to host,
-// nothing to sign up for.
+// Data source: the 604-page layout + word-glyph JSON (mushaf-madani-v2.json,
+// sourced from QUL — qul.tarteel.ai) is still hosted, live, no auth needed,
+// in the madrasatul-muslimeen.github.io repo. The per-page glyph fonts
+// themselves are NOT (issue #332, Part A) — the files that used to be
+// committed at mushaf/fonts/ turned out to be byte-identical to Quran
+// Foundation's own official CDN copies (checked for pages 1, 255 and 604;
+// see docs/reports/2026-09-27-tajweed-font-permission.md), so the plain
+// (QCF V2) page fonts are now loaded from that CDN at runtime instead.
+// mushaf/fonts/ itself is NOT deleted — legacy-v07/ still loads it (I4).
 //
 // Fetched lazily, once per session — never bundled, per the load-speed
 // contract (Architecture s8: "Screensaver, About, resources: on first use").
@@ -23,7 +27,12 @@
 import { t } from "./i18n.js";
 
 const MUSHAF_JSON_URL = "https://raw.githubusercontent.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/main/mushaf/mushaf-madani-v2.json";
-const MUSHAF_FONT_BASE = "https://raw.githubusercontent.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/main/mushaf/fonts/";
+// Issue #332 Part A -- was raw.githubusercontent.com/.../mushaf/fonts/ (the
+// files this repo committed under mushaf/fonts/, kept for legacy-v07/ only).
+// Quran Foundation's own documented CDN serves the identical bytes; see the
+// permission report cited above for the byte-identity check and the terms
+// this route is required by (no bundling without a developer account).
+const MUSHAF_FONT_BASE = "https://verses.quran.foundation/fonts/quran/hafs/v2/woff2/";
 const SURAH_HEADER_FONT_URL = "https://raw.githubusercontent.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/main/mushaf/QCF_SurahHeader_COLOR-Regular.woff2";
 
 // One ligature character per surah (1-114) — QUL's own "Surah header font"
