@@ -386,8 +386,20 @@ export function renderScopedWheel(items, { size = 360, centerArabic, centerRef, 
           .join("");
         bodyText = `<text class="wheel-seg-label" x="${p.x}" y="${p.y}" text-anchor="middle" transform="rotate(${rot} ${p.x} ${p.y})" style="pointer-events:none">${tspans}</text>`;
       }
+      // Opt-in (issue #328, Architect review): `progress` 0..1 fills the slice
+      // outward from the hub in `progressFill`, so a slice reads as "how much
+      // of it is done". A flat colour ramp could not show 3% against 0% --
+      // every slice looked the same navy. Any progress above zero gets a
+      // visible sliver (6% of the slice's depth) so it is never invisible.
+      let progressPath = "";
+      const progress = Number(entry.progress);
+      if (Number.isFinite(progress) && progress > 0) {
+        const depth = Math.max(0.06, Math.min(1, progress));
+        const rTo = rInner + (rOuter - rInner) * depth;
+        progressPath = `<path class="wheel-seg-progress" d="${segmentPath(cx, cy, rInner, rTo, start, end)}" fill="${entry.progressFill ?? STATUS_COLORS.mastered}" style="pointer-events:none"></path>`;
+      }
       return `<path class="wheel-seg" data-key="${entry.key}" d="${segmentPath(cx, cy, rInner, rOuter, start, end)}" fill="${fill}"><title>${entry.title}</title></path>
-      ${numText}${bodyText}`;
+      ${progressPath}${numText}${bodyText}`;
     })
     .join("");
 

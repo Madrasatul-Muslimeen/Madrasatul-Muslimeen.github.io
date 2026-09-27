@@ -436,6 +436,22 @@
      is untouched, per the owner's own scope call this round. */
   @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cormorant+Garamond:wght@400;500;600;700&display=swap');
   .wheel-heading { font-family: 'Cormorant Garamond', serif; font-weight: 600; color: #C9A24B; margin-bottom: 0.4rem; }
+  /* "My Status" on the heading line (phones) -- see the markup's comment. A
+     36px tap target whose negative vertical margin keeps the heading's own
+     line height (36px - 2x9px = the heading's own 18px, measured), so the
+     button costs the landing page no height at all. */
+  .wheel-heading { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+  .my-status-head-btn {
+    flex: 0 0 auto; min-height: 36px; margin: -9px 0; padding: 0.25rem 0.85rem;
+    border: none; border-radius: 999px; cursor: pointer;
+    background: linear-gradient(180deg, #ecd49a, #C9A24B); color: #221904;
+    font-family: 'Inter', sans-serif; font-weight: 800; font-size: 0.8rem; line-height: 1.2;
+  }
+  #myStatusWideBtn { display: none; }
+  @media (min-width: 900px) {
+    .my-status-head-btn { display: none; }
+    #myStatusWideBtn { display: inline-flex; }
+  }
   .wheel-box {
     display: flex; gap: 1.75rem; flex-wrap: wrap; align-items: flex-start;
     background: radial-gradient(ellipse at top, #2a3a57 0%, #1B2A41 55%, #121b2c 100%);
@@ -2199,6 +2215,66 @@
     #quranWordCardMount .quran-word-card header, #quranWordCardMountNote .quran-word-card header { cursor: move; touch-action: none; }
     #quranWordCardMount .quran-word-card, #quranWordCardMountNote .quran-word-card { max-width: none; box-shadow: none; border: none; }
   }
+
+  /* Issue #328 -- "My Status", the whole-Qur'an wheel. Same full-screen
+     shape as the Word Card (issue #322/v08.89): below 900px a full-screen
+     sheet with a sticky header (close button stays reachable, the body
+     scrolls); at >=900px a centred, fixed-size window rather than the
+     docked strip. Deliberately NOT draggable/resizable like the Word
+     Card's own desktop popup (initPopupWindow()) -- this is a read-only
+     report opened from one button, not a working surface a reader repositions
+     while doing something else, so the extra machinery buys nothing here. */
+  #myStatusMount[hidden] { display: none !important; }
+  #myStatusMount { position: fixed; inset: 0; z-index: 900; display: flex; flex-direction: column; background: rgba(19,25,42,0.55); padding: 0; }
+  .my-status-card { background: #fffdf6; display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
+  .my-status-card header {
+    position: sticky; top: 0; z-index: 1; background: #1F3A6E; color: #fff;
+    display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.6rem 0.8rem;
+  }
+  .my-status-card header h2 { margin: 0; font-size: 1.05rem; }
+  .my-status-close-btn {
+    flex: 0 0 auto; width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center;
+    padding: 0; font-size: 1.25rem; line-height: 1; border: 1px solid rgba(255,255,255,0.5); border-radius: 0.35rem;
+    background: transparent; color: #fff; cursor: pointer;
+  }
+  .my-status-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0.8rem; }
+  @media (min-width: 900px) {
+    #myStatusMount { align-items: center; justify-content: center; }
+    .my-status-card {
+      width: min(52rem, 92vw); max-height: 85vh; border-radius: 0.65rem; overflow: hidden;
+      box-shadow: 0 1rem 3rem rgba(0,0,0,0.35); flex: 0 1 auto;
+    }
+    .my-status-card header { border-radius: 0.65rem 0.65rem 0 0; }
+  }
+  .my-status-loading { padding: 1.2rem; text-align: center; color: #5a4a2a; }
+  .my-status-wheel-row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; justify-content: center; }
+  .my-status-list { flex: 1 1 16rem; min-width: 14rem; list-style: none; margin: 0; padding: 0; }
+  .my-status-list li { border-top: 1px solid #ece3c9; }
+  .my-status-list li:first-child { border-top: 0; }
+  /* Architect review, 27 Sep 2026: name above figure, not side by side -- at
+     390px the long figure squeezed names like "Hifz / Memorising" to three
+     lines of one word each. A thin bar under each row repeats the share. */
+  .my-status-row-btn {
+    display: flex; flex-direction: column; align-items: stretch; gap: 0.15rem; width: 100%; min-height: 44px;
+    padding: 0.45rem 0.3rem; background: none; border: 0; text-align: left; cursor: pointer; color: inherit; font: inherit;
+  }
+  .my-status-row-btn:hover { background: #faf6e8; }
+  .my-status-row-name { font-size: 0.9rem; font-weight: 600; color: #1F3A6E; }
+  .my-status-row-figure { font-size: 0.8rem; color: #5a4a2a; }
+  .my-status-row-bar { display: block; height: 5px; border-radius: 3px; background: #e8dfc6; overflow: hidden; }
+  .my-status-row-bar > span { display: block; height: 100%; background: #3fae74; }
+  /* The wheel's outside numbers are cream for the dark landing page; this
+     sheet is cream, so they need the page's own dark ink here. */
+  .my-status-card .wheel-seg-num { fill: #5a4a2a; font-size: 9px; }
+  .my-status-detail { margin-top: 0.8rem; padding-top: 0.7rem; border-top: 1px solid #ece3c9; }
+  .my-status-detail h3 { margin: 0 0 0.3rem; font-size: 0.98rem; color: #1F3A6E; }
+  .my-status-stage-list { list-style: none; margin: 0.4rem 0; padding: 0; font-size: 0.85rem; }
+  .my-status-stage-list li { display: flex; justify-content: space-between; gap: 0.5rem; padding: 0.15rem 0; }
+  .my-status-whole-line { font-size: 0.82rem; color: #5a4a2a; margin: 0.4rem 0; }
+  .my-status-explore-btn {
+    margin-top: 0.5rem; min-height: 40px; padding: 0.3rem 0.8rem; font-size: 0.85rem;
+    border: 1px solid #B8862F; border-radius: 0.35rem; background: #B8862F; color: #fff; cursor: pointer;
+  }
   .quran-word-card { max-width: 42rem; margin: 0 auto; border: 1px solid #d8c68a; border-radius: 0.65rem; background: #fffdf6; padding: 0.65rem; box-shadow: 0 -0.2rem 1rem rgba(0,0,0,0.08); }
   .quran-word-card header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; text-align: center; }
   /* Previous / next / close. Square, fixed, never shrinking, so the three read
@@ -3321,7 +3397,15 @@
             <button type="button" id="wheelPopupMaximizeBtn" title="Maximize" aria-pressed="false">⬜</button>
           </div>
         </div>
-        <h2 class="wheel-heading">Mastery Wheel</h2>
+        <h2 class="wheel-heading"><span>Mastery Wheel</span>
+          <!-- Architect review, 27 Sep 2026: on a phone the capsule row cannot
+               hold a third pill -- it wrapped and cost an Approach row at
+               390x844, 390x700 and 360x640 (layout.mjs). The heading's own
+               line has room, so "My Status" sits here below 900px and in the
+               capsule row (#myStatusWideBtn) above it, where this heading is
+               hidden by the popup's own title bar. -->
+          <button type="button" id="myStatusBtn" class="my-status-head-btn">My Status</button>
+        </h2>
         <div id="wheelSection" class="wheel-box">
         <div class="wheel-col">
           <!-- The wheel's own one-time intro: a plain invitation over the
@@ -3386,6 +3470,16 @@
                 <p class="bar-palette-note" id="wheelUnitNowLine"></p>
               </div>
             </span>
+            <!-- Issue #328 -- "My Status" (Owner decisions 6-8, 27 Sep 2026):
+                 a card telling a person their status on the whole Qur'an, by
+                 Approach. A third capsule, same family as the two above --
+                 no new bar -- opening a full-screen sheet below 900px and a
+                 centred window at >=900px (the Word Card's own v08.89/#322
+                 pattern). Nothing is read until this is pressed (I9); see
+                 openMyStatus(). -->
+            <button type="button" id="myStatusWideBtn" class="wheel-intro-capsule wheel-unit-capsule">
+              <span class="wheel-unit-capsule-word">My Status</span>
+            </button>
           </div>
           <div id="wheelStageWrap" class="wheel-stage-wrap wheel-veiled">
             <!-- 2 Sep 2026 -- "enable all wheels ... to be expandable from
@@ -4572,6 +4666,20 @@
     <div id="ayahActionSheetMount"></div>
   </div>
 
+  <!-- Issue #328 -- "My Status", opened by the landing page's own "My
+       Status" capsule beside "Choose a Unit". Mount only --
+       renderMyStatusNow() rebuilds the whole body on every open/re-open,
+       the same pattern the sheet above already uses. -->
+  <div id="myStatusMount" hidden data-keep-note-popovers>
+    <div id="myStatusCard" class="my-status-card">
+      <header>
+        <h2 id="myStatusTitle">My Status</h2>
+        <button type="button" id="myStatusCloseBtn" class="my-status-close-btn">&times;</button>
+      </header>
+      <div id="myStatusBody" class="my-status-body"></div>
+    </div>
+  </div>
+
   <!-- Issue #286 -- "File in folder(s)…", opened FROM the sheet above.
        Files this reader's own Note on the āyah (creating one if none
        exists yet) into whichever Mapping My Journey folder(s) are ticked. -->
@@ -4622,7 +4730,7 @@
     import { getMyMembershipRoles, hydrateMemberships, pickContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { getTrackables, syncUnneditedTrackableNames, tenantOwnsSections } from "./js/catalogue.js";
     import { buildUnitKey, parseUnitKey, STATUSES, rukuIndexInSurah, statusLabelsById, statusLabel } from "./js/unit-keys.js";
-    import { chunkKeyFor, getRecordsChunk, claimStatus, getSubjectConfirmationOverride, computeConfirmationRequired } from "./js/records.js";
+    import { chunkKeyFor, getRecordsChunk, claimStatus, getSubjectConfirmationOverride, computeConfirmationRequired, listAllRecordsForPerson } from "./js/records.js";
     import { weekKeyFor, logActivity } from "./js/activity.js";
     // MAP Phase 4 (P4-D) -- Study interactions to ADR-008 Activity evidence.
     // Evidence goes to its own subcollection; nothing here touches the legacy
@@ -4696,6 +4804,12 @@
     import { QURAN_TOTAL_WORD_COUNT, knownDelta, juzForSurahAyah, wordTotalRatio, percentRounded } from "./js/quran-word-total.js";
     import { getWordTotals, recordWordTotalDelta, recordWordTotalDeltaAcrossJuz } from "./js/quran-word-total-data.js";
     import { isWbwTotalPersistenceReady } from "./js/study-wbw-total-readiness.js";
+    // Issue #328 -- the per-Approach "counts for each ayah inside" setting
+    // and the whole-Qur'an counting core Explore and "My Status" share.
+    import {
+      QURAN_TOTAL_AYAH_COUNT, WBW_TRACKABLE_ID, countsForEachAyah, effectiveStatus, poolStatus,
+      spanForUnitKey, tallyWideClaimsByUnitType, summarizeApproachAyahCoverage, achievedOrMasteredRatio,
+    } from "./js/approach-coverage.js";
     // Issue #303 -- lemma-level word progress ("mark this word known
     // everywhere"), gated separately (see study-lemma-progress-readiness.js).
     import { lemmaProgressAuthority, effectiveOccurrenceState, lemmaKnownDeltaByJuz, groupOccurrenceRefsByJuz, overlayLemmaKnownness } from "./js/quran-lemma-progress.js";
@@ -4908,6 +5022,11 @@
       // language change is not one of the strip's own changes.
       redrawTaglineStrip();
       renderStudyScreen();
+      // Issue #328 -- "My Status" is JS-rendered too, so it needs the same
+      // explicit redraw the tagline strip above already gets, but only
+      // while it is actually open (I9 -- never read data on a language
+      // switch alone).
+      if (myStatusMountEl && !myStatusMountEl.hidden) renderMyStatusNow();
     }
     const tenantSelect = document.getElementById("tenantSelect");
     const personSelect = document.getElementById("personSelect");
@@ -5062,6 +5181,11 @@
     const wheelUnitNumLabel = document.getElementById("wheelUnitNumLabel");
     const wheelUnitRangeRow = document.getElementById("wheelUnitRangeRow");
     const wheelUnitNowLine = document.getElementById("wheelUnitNowLine");
+    // Issue #328 -- "My Status".
+    const myStatusBtn = document.getElementById("myStatusBtn");
+    const myStatusMountEl = document.getElementById("myStatusMount");
+    const myStatusCloseBtn = document.getElementById("myStatusCloseBtn");
+    const myStatusBodyEl = document.getElementById("myStatusBody");
     const wheelStageWrapEl = document.getElementById("wheelStageWrap");
     const wheelCtaBtn = document.getElementById("wheelCtaBtn");
     const wheelHubPickers = document.getElementById("wheelHubPickers");
@@ -7711,20 +7835,21 @@
 
     const RAMP_ORDER = STATUSES.filter((s) => s.onRamp).map((s) => s.id); // not_started .. mastered, in ramp order
 
-    /** "Weakest link" pooled status across every ayah a coverage range covers, for one trackable, reading from the shared exploreChunksBySurah loaded once per Explore open. Ayahs never claimed count as not_started (matches ayahStatusesForCurrentTrackable's own default). Not Applicable ayahs are excluded from the pool entirely (I7), not counted as a low score. Returns null if nothing at all is countable yet -- the caller falls back to a direct claim at that level in that case. */
+    /** "Weakest link" pooled status across every ayah a coverage range covers, for one trackable, reading from the shared exploreChunksBySurah loaded once per Explore open. Ayahs never claimed count as not_started (matches ayahStatusesForCurrentTrackable's own default). Not Applicable ayahs are excluded from the pool entirely (I7), not counted as a low score. Returns null if nothing at all is countable yet -- the caller falls back to a direct claim at that level in that case.
+     *
+     * Issue #328 (Owner decision 6) -- for a No Approach ("counts only as a
+     * claim on that whole unit, never for its ayat"), pooling from ayah-level
+     * claims never happens at all: this returns null immediately, so every
+     * call site's own `pooled ?? direct` fallback reads that wider level's
+     * OWN claim instead, exactly as decision 6 asks for. Delegates to
+     * approach-coverage.js's own poolStatus() -- the same pooling core the
+     * whole-Qur'an "My Status" Juz strip calls, so the two screens' numbers
+     * cannot silently disagree (Owner decision 7). */
     function poolCoverageStatus(coverage, trackableId) {
-      let worstIdx = null;
-      let anyCounted = false;
-      for (const { surah, from, to } of coverage) {
-        for (let a = from; a <= to; a++) {
-          const statusId = effectiveAyahStatus(surah, a, trackableId);
-          if (statusId === "not_applicable") continue;
-          anyCounted = true;
-          const idx = RAMP_ORDER.indexOf(statusId);
-          if (worstIdx === null || idx < worstIdx) worstIdx = idx;
-        }
-      }
-      return anyCounted ? RAMP_ORDER[worstIdx] : null;
+      const trackable = quranTrackables.find((t) => t.id === trackableId);
+      const ownStatus = (surah, ayah) =>
+        exploreChunksBySurah.get(surah)?.entries?.[`${buildUnitKey.ayah(surah, ayah)}::${trackableId}`]?.claimedStatus ?? "not_started";
+      return poolStatus(coverage, { ownStatus, spans: exploreWiderSpans.get(trackableId), trackable });
     }
 
     /**
@@ -7750,21 +7875,20 @@
      * Nothing is recalculated or rewritten -- I6 holds, this reads claims and
      * never touches them -- and no Firestore read was added: every span below
      * comes from chunks openExplore() has already loaded (I9).
+     *
+     * Issue #328 (Owner decision 6) -- the floor is applied only when this
+     * Approach's own "counts for each ayah inside" setting is Yes; for No,
+     * "an ayah shows only its own claim", so exploreWiderSpans is never
+     * consulted at all. The rule itself (own + spans + the Yes/No gate) is
+     * approach-coverage.js's own effectiveStatus() -- the same function the
+     * whole-Qur'an "My Status" wheel calls, so the two screens cannot
+     * silently disagree about what a claim means (Owner decision 7).
      */
     function effectiveAyahStatus(surah, ayah, trackableId) {
       const entries = exploreChunksBySurah.get(surah)?.entries ?? {};
       const own = entries[`${buildUnitKey.ayah(surah, ayah)}::${trackableId}`]?.claimedStatus ?? "not_started";
-      if (own === "not_applicable") return own;
-      let bestIdx = RAMP_ORDER.indexOf(own);
-      const apply = (spans) => {
-        for (const span of spans ?? []) {
-          if (span.surah !== surah || ayah < span.from || ayah > span.to) continue;
-          const idx = RAMP_ORDER.indexOf(span.statusId);
-          if (idx > bestIdx) bestIdx = idx;
-        }
-      };
-      apply(exploreWiderSpans.get(trackableId));
-      return bestIdx < 0 ? own : RAMP_ORDER[bestIdx];
+      const trackable = quranTrackables.find((t) => t.id === trackableId);
+      return effectiveStatus({ own, spans: exploreWiderSpans.get(trackableId), surah, ayah, trackable });
     }
 
     /**
@@ -7815,45 +7939,18 @@
         if (!exploreWiderSpans.has(trackableId)) exploreWiderSpans.set(trackableId, []);
         exploreWiderSpans.get(trackableId).push(span);
       };
-      const spansForKey = (unitKey) => {
-        const parts = unitKey.split(":");
-        if (parts[0] === "surah") {
-          const n = Number(parts[1]);
-          const count = surahIndex.find((x) => x.surahNumber === n)?.ayahCount;
-          return count ? [{ surah: n, from: 1, to: count }] : [];
-        }
-        if (parts[0] === "range") {
-          const n = Number(parts[1]);
-          const [from, to] = String(parts[2] ?? "").split("-").map(Number);
-          return from && to ? [{ surah: n, from, to }] : [];
-        }
-        if (parts[0] === "juz") {
-          const j = juzIndexData?.find((x) => x.juz === Number(parts[1]));
-          return j ? ayahCoverage(j.startSurah, j.startAyah, j.endSurah, j.endAyah) : [];
-        }
-        if (parts[0] === "page") {
-          // page:<edition>:<n>
-          const pg = pageIndexData?.find((x) => x.page === Number(parts[2]));
-          return pg ? ayahCoverage(pg.startSurah, pg.startAyah, pg.endSurah, pg.endAyah) : [];
-        }
-        if (parts[0] === "ruku") {
-          const n = Number(parts[1]);
-          const r = rukuRangesBySurah.get(n)?.get(Number(parts[2]));
-          return r ? [{ surah: n, from: r.from, to: r.to }] : [];
-        }
-        if (parts[0] === "hizb") {
-          const h = hizbIndex?.find((x) => x.hizb === Number(parts[1]));
-          return h ? ayahCoverage(h.startSurah, h.startAyah, h.endSurah, h.endAyah) : [];
-        }
-        return [];
-      };
+      // Issue #328 -- spanForUnitKey() is approach-coverage.js's own shared
+      // resolver, so the whole-Qur'an "My Status" counter (part 3) resolves
+      // a wider claim's extent identically to Explore rather than
+      // re-deriving it a second way that could quietly drift apart.
+      const spanLookups = { surahIndex, juzIndexData, pageIndexData, rukuRangesBySurah, hizbIndex };
       const scan = (chunk) => {
         for (const [key, entry] of Object.entries(chunk?.entries ?? {})) {
           const [unitKey, trackableId] = key.split("::");
           if (!trackableId || !unitKey || unitKey.startsWith("ayah:")) continue;
           const statusId = entry?.claimedStatus;
           if (!statusId || statusId === "not_started" || RAMP_ORDER.indexOf(statusId) < 0) continue;
-          for (const sp of spansForKey(unitKey)) push(trackableId, { ...sp, statusId });
+          for (const sp of spanForUnitKey(unitKey, spanLookups)) push(trackableId, { ...sp, statusId });
         }
       };
       for (const chunk of exploreChunksBySurah.values()) scan(chunk);
@@ -8060,6 +8157,326 @@
     function wheelRingOption() {
       return isWbwTotalPersistenceReady() ? { ratio: wholeQuranWordTotalRatio() } : null;
     }
+
+    // -----------------------------------------------------------------------
+    // Issue #328 -- "My Status", the whole-Qur'an wheel (Owner decisions
+    // 6-8, 27 Sep 2026). A second capsule beside "Choose a Unit"; nothing is
+    // read until it is pressed (I9), and the result is cached for the
+    // session, keyed by (tenant, person) -- see clearMyStatusCache().
+    // -----------------------------------------------------------------------
+
+    let myStatusCache = null; // { key, summaries: Map(trackableId -> summary), directWideStatusByTrackable: Map(trackableId -> Map(unitKey -> statusId)), ownAyahByTrackable, wideSpansByTrackable, wordTotals }
+    let myStatusOpenTrackableId = null; // which Approach's detail is expanded, or null
+    let myStatusLoading = false;
+
+    function myStatusCacheKey() {
+      const { tenantId, subjectPersonId } = wordProgressActor();
+      return tenantId && subjectPersonId ? `${tenantId}|${subjectPersonId}` : null;
+    }
+
+    /** Called wherever this app already clears a per-person cache on a
+     *  tenant/person switch (see the call site below) -- a stale "My Status"
+     *  for the PREVIOUS person is exactly the class of bug D10 exists to
+     *  prevent. */
+    function clearMyStatusCache() {
+      myStatusCache = null;
+      myStatusOpenTrackableId = null;
+    }
+
+    /**
+     * Everything "My Status" needs to compute every Approach's whole-Qur'an
+     * tally, read ONLY when the sheet is opened. `listAllRecordsForPerson()`
+     * is ONE query across the whole records collection for this person --
+     * not Explore's own per-surah chunk reads -- so opening this costs one
+     * round trip regardless of how many surahs carry a claim. Ruku'/Hizb
+     * boundary data is fetched only for the surahs/claims that actually need
+     * it, the same bounded-cost shape buildExploreWiderSpans() already uses.
+     */
+    async function loadMyStatusData() {
+      const key = myStatusCacheKey();
+      if (!key) return null;
+      if (myStatusCache?.key === key) return myStatusCache;
+
+      const { tenantId, subjectPersonId } = wordProgressActor();
+      const [allEntries, wordTotals] = await Promise.all([
+        listAllRecordsForPerson(db, tenantId, subjectPersonId),
+        isWbwTotalPersistenceReady() ? getWordTotals(db, { tenantId, personId: subjectPersonId }) : Promise.resolve(null),
+      ]);
+      if (!juzIndexData) juzIndexData = await getJuzIndex();
+      if (!pageIndexData) pageIndexData = await getPageIndex();
+
+      const byTrackable = new Map();
+      for (const e of allEntries) {
+        const [unitKey, trackableId] = String(e.entryKey ?? "").split("::");
+        if (!trackableId || !unitKey) continue;
+        if (!byTrackable.has(trackableId)) byTrackable.set(trackableId, []);
+        byTrackable.get(trackableId).push({ unitKey, statusId: e.claimedStatus });
+      }
+
+      const rukuSurahs = new Set();
+      let needsHizb = false;
+      for (const list of byTrackable.values()) {
+        for (const { unitKey } of list) {
+          const parts = unitKey.split(":");
+          if (parts[0] === "ruku") rukuSurahs.add(Number(parts[1]));
+          else if (parts[0] === "hizb") needsHizb = true;
+        }
+      }
+      const hizbIndex = needsHizb ? await getHizbIndex() : null;
+      const rukuRangesBySurah = new Map();
+      await Promise.all([...rukuSurahs].filter(Boolean).map(async (n) => {
+        const data = await getSurah(n);
+        const ranges = new Map();
+        for (const a of data.ayahs) {
+          const idx = rukuIndexInSurah(data.ayahs, a.ruku);
+          const g = ranges.get(idx) ?? { from: a.ayah, to: a.ayah };
+          g.from = Math.min(g.from, a.ayah);
+          g.to = Math.max(g.to, a.ayah);
+          ranges.set(idx, g);
+        }
+        rukuRangesBySurah.set(n, ranges);
+      }));
+
+      const spanLookups = { surahIndex, juzIndexData, pageIndexData, rukuRangesBySurah, hizbIndex };
+      const surahAyahCounts = surahIndex.map((s) => ({ surahNumber: s.surahNumber, ayahCount: s.ayahCount }));
+
+      const summaries = new Map();
+      const ownAyahByTrackable = new Map();
+      const wideSpansByTrackable = new Map();
+      const directWideStatusByTrackable = new Map();
+      for (const trackable of quranTrackables) {
+        const list = byTrackable.get(trackable.id) ?? [];
+        const ownAyahStatusesBySurahAyah = new Map();
+        const wideEntries = [];
+        const wideSpans = [];
+        const directWideStatus = new Map();
+        for (const { unitKey, statusId } of list) {
+          const parts = unitKey.split(":");
+          if (parts[0] === "ayah") {
+            ownAyahStatusesBySurahAyah.set(`${parts[1]}:${parts[2]}`, statusId);
+            continue;
+          }
+          wideEntries.push({ unitType: parts[0], statusId });
+          directWideStatus.set(unitKey, statusId);
+          if (!statusId || statusId === "not_started" || RAMP_ORDER.indexOf(statusId) < 0) continue;
+          for (const sp of spanForUnitKey(unitKey, spanLookups)) wideSpans.push({ ...sp, statusId });
+        }
+        const wideClaimsByUnitType = tallyWideClaimsByUnitType(wideEntries);
+        summaries.set(trackable.id, summarizeApproachAyahCoverage({
+          trackable, surahAyahCounts, ownAyahStatusesBySurahAyah, wideSpans, wideClaimsByUnitType,
+        }));
+        ownAyahByTrackable.set(trackable.id, ownAyahStatusesBySurahAyah);
+        wideSpansByTrackable.set(trackable.id, wideSpans);
+        directWideStatusByTrackable.set(trackable.id, directWideStatus);
+      }
+
+      myStatusCache = { key, summaries, ownAyahByTrackable, wideSpansByTrackable, directWideStatusByTrackable, wordTotals };
+      return myStatusCache;
+    }
+
+    /** This Approach's own 30-Juz strip -- the exact same poolStatus() pooling
+     *  core Explore's own poolCoverageStatus() calls, sourced from My
+     *  Status's own whole-person maps rather than Explore's per-surah
+     *  chunks, so for the same person and Approach the two can never
+     *  disagree (Owner decision 7). */
+    function myStatusJuzItems(trackableId, cache) {
+      const trackable = quranTrackables.find((t) => t.id === trackableId);
+      const ownAyahStatuses = cache.ownAyahByTrackable.get(trackableId);
+      const wideSpans = cache.wideSpansByTrackable.get(trackableId);
+      const directWideStatus = cache.directWideStatusByTrackable.get(trackableId);
+      const labelsById = statusLabelsById();
+      return (juzIndexData ?? []).map((j) => {
+        const coverage = ayahCoverage(j.startSurah, j.startAyah, j.endSurah, j.endAyah);
+        const ownStatus = (surah, ayah) => ownAyahStatuses?.get(`${surah}:${ayah}`) ?? "not_started";
+        const pooled = poolStatus(coverage, { ownStatus, spans: wideSpans, trackable });
+        const statusId = pooled ?? (directWideStatus?.get(buildUnitKey.juz(j.juz)) ?? "not_started");
+        const label = t("Juz {juz}", { juz: num(j.juz) });
+        return { key: j.juz, number: num(j.juz), statusId, label, title: segTitle(label, statusId, labelsById) };
+      });
+    }
+
+    /** This Approach's own headline ratio, for the wheel slice's fill --
+     *  Achieved + Mastered (Owner decision 8), except Word-by-Word, whose
+     *  headline is real words known out of 77,429, never the generic ayah
+     *  tally (part 3's own instruction). */
+    function myStatusRatio(trackableId, summary, wordTotals) {
+      if (trackableId === WBW_TRACKABLE_ID) {
+        return wordTotalRatio(Number(wordTotals?.known ?? 0), Number(wordTotals?.total ?? QURAN_TOTAL_WORD_COUNT));
+      }
+      return achievedOrMasteredRatio(summary);
+    }
+
+    function myStatusHeadlineText(trackableId, summary, wordTotals) {
+      if (trackableId === WBW_TRACKABLE_ID) {
+        const known = Number(wordTotals?.known ?? 0);
+        const total = Number(wordTotals?.total ?? QURAN_TOTAL_WORD_COUNT);
+        return t("Words known: {n} of {total} ({percent}%)", { n: num(known), total: num(total), percent: num(percentRounded(known, total)) });
+      }
+      const n = summary?.achievedOrMastered ?? 0;
+      const total = summary?.countedTotal ?? 0;
+      return t("Achieved + Mastered: {n} of {total} āyāt ({percent}%)", { n: num(n), total: num(total), percent: num(percentRounded(n, total)) });
+    }
+
+    const MY_STATUS_WHOLE_LABELS = {
+      surah: "{n} Surahs", range: "{n} Ranges", juz: "{n} Juz",
+      ruku: "{n} Ruku's", hizb: "{n} Hizb", page: "{n} Pages",
+    };
+    // Architect review: "1 Surahs" read wrong -- one of each takes the singular.
+    const MY_STATUS_WHOLE_LABELS_ONE = {
+      surah: "{n} Surah", range: "{n} Range", juz: "{n} Juz",
+      ruku: "{n} Ruku'", hizb: "{n} Hizb", page: "{n} Page",
+    };
+
+    /** "3 Surahs, 1 Juz" -- the No-Approach "studied as a whole" line (Owner
+     *  decision 6's own worked example). `null` when there is nothing to say. */
+    function myStatusStudiedAsWholeLine(studiedAsWhole) {
+      const parts = Object.entries(studiedAsWhole ?? {})
+        .filter(([, n]) => n > 0)
+        .map(([unitType, n]) => t((n === 1 ? MY_STATUS_WHOLE_LABELS_ONE : MY_STATUS_WHOLE_LABELS)[unitType] ?? "{n} {unitType}", { n: num(n), unitType }));
+      return parts.length ? parts.join(", ") : null;
+    }
+
+    /** The wheel + list body, before any Approach is expanded. */
+    function renderMyStatusOverview(cache) {
+      const items = quranTrackables.map((trackable) => {
+        const summary = cache.summaries.get(trackable.id);
+        const ratio = myStatusRatio(trackable.id, summary, cache.wordTotals);
+        const name = langText(trackable.name, getAppLang(), trackable.id);
+        // A single flat colour proportional to the Achieved+Mastered share --
+        // the same gold-to-navy ramp the WbW Juz wheel already reads by
+        // (wordTotalRampColor -- its own two endpoints, not invented
+        // colours), so "more of this slice filled in" always means "more
+        // known/achieved" everywhere in this app.
+        // Architect review, 27 Sep 2026: a flat ramp colour made 0% and 3%
+        // look identical on screen, so each slice now FILLS outward from the
+        // hub by its Achieved + Mastered share (renderScopedWheel's opt-in
+        // `progress`), on the Not-started navy.
+        return { key: trackable.id, number: trackable.order != null ? num(trackable.order) : "", statusId: "not_started", fill: STATUS_COLORS.not_started, progress: ratio, progressFill: STATUS_COLORS.mastered, label: name, title: `${name} — ${num(percentRounded(ratio, 1))}%` };
+      });
+      const wheelHtml = renderScopedWheel(items, { centerLabel: t("My Status"), centerSub: t("Whole Quran") });
+      const rows = quranTrackables.map((trackable) => {
+        const summary = cache.summaries.get(trackable.id);
+        const headline = myStatusHeadlineText(trackable.id, summary, cache.wordTotals);
+        const name = langText(trackable.name, getAppLang(), trackable.id);
+        const pct = Math.max(0, Math.min(100, myStatusRatio(trackable.id, summary, cache.wordTotals) * 100));
+        return `<li><button type="button" class="my-status-row-btn" data-my-status-open="${trackable.id}">
+          <span class="my-status-row-name">${escapeHtml(name)}</span>
+          <span class="my-status-row-figure">${escapeHtml(headline)}</span>
+          <span class="my-status-row-bar" aria-hidden="true"><span style="width:${pct > 0 ? Math.max(pct, 1.5) : 0}%"></span></span>
+        </button></li>`;
+      }).join("");
+      return `<p class="my-status-whole-line">${t("Know your status on the whole Qur'an, by Approach.")}</p>
+      <div class="my-status-wheel-row">
+        <div id="myStatusOverviewWheel">${wheelHtml}</div>
+        <ul class="my-status-list">${rows}</ul>
+      </div>`;
+    }
+
+    /** One Approach's own detail: stage counts, the 30-Juz strip, the
+     *  "studied as a whole" line (No only), and "See in Explore". */
+    function renderMyStatusDetail(trackableId, cache) {
+      const trackable = quranTrackables.find((t) => t.id === trackableId);
+      if (!trackable) return "";
+      const summary = cache.summaries.get(trackableId);
+      const name = langText(trackable.name, getAppLang(), trackableId);
+      const labelsById = statusLabelsById();
+      const stageRows = STATUSES.filter((s) => s.onRamp).map((s) =>
+        `<li><span>${labelsById[s.id]}</span><span>${num(summary?.counts?.[s.id] ?? 0)}</span></li>`
+      ).join("");
+      const wholeLine = summary?.studiedAsWhole ? myStatusStudiedAsWholeLine(summary.studiedAsWhole) : null;
+      const juzItems = myStatusJuzItems(trackableId, cache);
+      const juzWheelHtml = renderScopedWheel(juzItems, { size: 260, centerLabel: name });
+      return `<div class="my-status-detail" id="myStatusDetailBody">
+        <h3>${escapeHtml(name)}</h3>
+        <p>${escapeHtml(myStatusHeadlineText(trackableId, summary, cache.wordTotals))}</p>
+        <ul class="my-status-stage-list">${stageRows}</ul>
+        ${wholeLine ? `<p class="my-status-whole-line">${t("studied as a whole")}: ${escapeHtml(wholeLine)}</p>` : ""}
+        <div id="myStatusJuzWheel">${juzWheelHtml}</div>
+        <button type="button" class="my-status-explore-btn" id="myStatusSeeInExploreBtn" data-trackable-id="${trackableId}">${t("See in Explore")}</button>
+      </div>`;
+    }
+
+    function renderMyStatusNow() {
+      if (myStatusLoading) {
+        myStatusBodyEl.innerHTML = `<p class="my-status-loading">${t("Loading your status…")}</p>`;
+        return;
+      }
+      const cache = myStatusCache;
+      if (!cache) {
+        myStatusBodyEl.innerHTML = `<p class="my-status-loading">${t("Not yet available.")}</p>`;
+        return;
+      }
+      myStatusBodyEl.innerHTML = renderMyStatusOverview(cache)
+        + (myStatusOpenTrackableId ? renderMyStatusDetail(myStatusOpenTrackableId, cache) : "");
+
+      myStatusBodyEl.querySelectorAll("[data-my-status-open]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const id = btn.dataset.myStatusOpen;
+          myStatusOpenTrackableId = myStatusOpenTrackableId === id ? null : id;
+          renderMyStatusNow();
+          if (myStatusOpenTrackableId) {
+            document.getElementById("myStatusDetailBody")?.scrollIntoView({ block: "nearest" });
+          }
+        });
+      });
+      // The overview wheel's own segments jump straight to that Approach's
+      // detail, same as every other Explore/Approach wheel's click handler.
+      // The Juz-strip wheel (inside the detail panel, if open) is a report,
+      // not a picker, so it carries no click handler.
+      const overviewWheelEl = document.getElementById("myStatusOverviewWheel");
+      if (overviewWheelEl) {
+        attachScopedWheelClickHandler(overviewWheelEl, (key) => {
+          myStatusOpenTrackableId = key;
+          renderMyStatusNow();
+        });
+      }
+      const exploreBtn = document.getElementById("myStatusSeeInExploreBtn");
+      exploreBtn?.addEventListener("click", async () => {
+        // changeCurrentTrackable() is the one place that owns switching the
+        // shared "current Approach" -- every other reader of it (Study
+        // options, the Note view, the QCR/Approach wheels) stays in sync.
+        changeCurrentTrackable(exploreBtn.dataset.trackableId);
+        closeMyStatus();
+        await openExploreOnQuranLevel();
+      });
+    }
+
+    /** Opens Explore, scoped to the "quran" level, on whichever Approach was
+     *  just chosen -- the exact same open sequence tabExploreBtn's own click
+     *  handler runs, so "See in Explore" is not a second, parallel way in. */
+    async function openExploreOnQuranLevel() {
+      closeAllPanels();
+      setStageView("explore");
+      await openExplore();
+    }
+
+    async function openMyStatus() {
+      myStatusMountEl.hidden = false;
+      myStatusLoading = true;
+      renderMyStatusNow();
+      try {
+        await loadMyStatusData();
+      } catch (error) {
+        reportWriteFailure(error, { what: "load your whole-Qur'an status" }); // I15
+      } finally {
+        myStatusLoading = false;
+        renderMyStatusNow();
+      }
+    }
+
+    function closeMyStatus() {
+      myStatusMountEl.hidden = true;
+      myStatusOpenTrackableId = null;
+    }
+
+    if (myStatusCloseBtn) myStatusCloseBtn.setAttribute("aria-label", t("Close My Status"));
+    myStatusBtn?.addEventListener("click", openMyStatus);
+    document.getElementById("myStatusWideBtn")?.addEventListener("click", openMyStatus);
+    myStatusCloseBtn?.addEventListener("click", closeMyStatus);
+    myStatusMountEl?.addEventListener("click", (e) => { if (e.target === myStatusMountEl) closeMyStatus(); });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && myStatusMountEl && !myStatusMountEl.hidden) closeMyStatus();
+    });
 
     // -----------------------------------------------------------------------
     // MAP Phase 3 -- Arabic word coverage in Explore.
@@ -10566,13 +10983,16 @@
       if (!trackable) return "not_started";
       const { unitType, parts } = parseUnitKey(unitKey);
       const surahNum = Number(parts[0]);
+      const rangeEntries = exploreChunksBySurah?.get(surahNum)?.entries ?? {};
       if (unitType === "range") {
         const [from, to] = parts[1].split("-").map(Number);
-        return poolCoverageStatus([{ surah: surahNum, from, to }], trackable.id) ?? "not_started";
+        // Issue #328 -- poolCoverageStatus() now returns null outright for a
+        // No Approach (Owner decision 6), the same "read the level's own
+        // direct claim instead" fallback every Explore wedge already uses.
+        return poolCoverageStatus([{ surah: surahNum, from, to }], trackable.id)
+          ?? (rangeEntries[`${unitKey}::${trackable.id}`]?.claimedStatus ?? "not_started");
       }
-      const ayahNum = Number(parts[1]);
-      const entries = exploreChunksBySurah?.get(surahNum)?.entries ?? {};
-      return entries[`${unitKey}::${trackable.id}`]?.claimedStatus ?? "not_started";
+      return rangeEntries[`${unitKey}::${trackable.id}`]?.claimedStatus ?? "not_started";
     }
 
     /** Every ACTIVE collection that already lists this unit key -- the Note
@@ -16309,6 +16729,10 @@
       clearWordProgressCache();
       wordProgressConfirmFor = null;
       wordProgressConfirmRequired = null;
+      // Issue #328 -- "My Status" is cached per (tenant, person); a
+      // different acting person must never see the previous one's tally
+      // (D10, the same reason every line above this one exists).
+      clearMyStatusCache();
       await refreshChunkAndWheel();
       await refreshProgramMap();
       // A different acting person has their own notes/bookmarks -- the cache

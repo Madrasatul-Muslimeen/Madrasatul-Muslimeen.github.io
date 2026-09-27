@@ -2926,4 +2926,31 @@ export const BN = {
   // "Choose an Approach…", "Not started"/"Learning"/"Practising"/"Achieved",
   // "Status", "Close" -- already exists above and is reused as-is.
   "This page": "এই পৃষ্ঠা",
+
+  // Issue #328 -- the per-Approach "counts for each ayah inside" setting
+  // (Owner decision 6, 27 Sep 2026) on catalogue.html, and the "My Status"
+  // whole-Qur'an wheel on the Quran Study landing page.
+  "No": "না",
+  "Counts for each āyah inside": "প্রতিটি আয়াতের জন্য গণনা হয় কিনা", // ?
+  "Counts for each āyah inside: when Yes, claiming a Surah, Juz, Ruku', Hizb, page or Range for this Approach counts for every āyah inside it too, in Explore and in My Status. When No, only an āyah's own claim counts for that āyah — a claim on the whole unit is kept and shown separately as \"studied as a whole\".":
+    "প্রতিটি আয়াতের জন্য গণনা হয়: হ্যাঁ হলে, এই অ্যাপ্রোচের জন্য কোনো সূরা, জুয, রুকু', হিজব, পৃষ্ঠা বা রেঞ্জ দাবি করলে তা ভেতরের প্রতিটি আয়াতের জন্যও গণনা হয়, এক্সপ্লোর এবং মাই স্ট্যাটাস উভয় জায়গায়। না হলে, শুধু আয়াতের নিজস্ব দাবিই সেই আয়াতের জন্য গণনা হয় — পুরো ইউনিটের দাবি রাখা থাকে এবং আলাদাভাবে \"সম্পূর্ণভাবে অধ্যয়ন করা হয়েছে\" হিসেবে দেখানো হয়।", // ?
+  "My Status": "আমার অবস্থা", // ?
+  "Know your status on the whole Qur'an, by Approach.": "সম্পূর্ণ কুরআনে, প্রতিটি অ্যাপ্রোচ অনুযায়ী, নিজের অবস্থা জানুন।", // ?
+  "See in Explore": "এক্সপ্লোরে দেখুন", // ?
+  "studied as a whole": "সম্পূর্ণভাবে অধ্যয়ন করা হয়েছে", // ?
+  "{n} Surahs": "{n}টি সূরা", // ?
+  "{n} Ranges": "{n}টি রেঞ্জ", // ?
+  "{n} Juz": "{n}টি জুয", // ?
+  "{n} Ruku's": "{n}টি রুকু'", // ?
+  "{n} Hizb": "{n}টি হিজব", // ?
+  "{n} Pages": "{n}টি পৃষ্ঠা", // ?
+  "{n} Surah": "{n}টি সূরা", // ?
+  "{n} Range": "{n}টি রেঞ্জ", // ?
+  "{n} Ruku'": "{n}টি রুকু'", // ?
+  "{n} Page": "{n}টি পৃষ্ঠা", // ?
+  "Achieved + Mastered: {n} of {total} āyāt ({percent}%)": "অর্জিত + দক্ষ: {total}টির মধ্যে {n}টি আয়াত ({percent}%)", // ?
+  "Words known: {n} of {total} ({percent}%)": "জানা শব্দ: {total}টির মধ্যে {n}টি ({percent}%)", // ?
+  "Not yet available.": "এখনো উপলব্ধ নয়।", // ?
+  "Loading your status…": "আপনার অবস্থা লোড হচ্ছে…", // ?
+  "Close My Status": "মাই স্ট্যাটাস বন্ধ করুন", // ?
 };

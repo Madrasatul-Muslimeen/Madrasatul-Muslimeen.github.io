@@ -123,8 +123,9 @@
     <label style="display:inline-flex; align-items:center; gap:0.4rem; font-weight:400;">
       <input type="checkbox" id="showArchivedTrackables" /> Show removed Approaches
     </label>
+    <p class="readonly-note" id="countsForEachAyahIntro">Counts for each āyah inside: when Yes, claiming a Surah, Juz, Ruku', Hizb, page or Range for this Approach counts for every āyah inside it too, in Explore and in My Status. When No, only an āyah's own claim counts for that āyah — a claim on the whole unit is kept and shown separately as "studied as a whole".</p>
     <table>
-      <thead><tr><th>#</th><th>Approach</th><th>Status</th><th>Guide</th><th id="trkActionsHead" style="display:none;">Edit</th></tr></thead>
+      <thead><tr><th>#</th><th>Approach</th><th>Status</th><th>Counts for each āyah inside</th><th>Guide</th><th id="trkActionsHead" style="display:none;">Edit</th></tr></thead>
       <tbody id="trackablesBody"></tbody>
     </table>
 
@@ -195,6 +196,7 @@
       setSubjectStatus,
       setTrackableStatus,
       reorderTrackables,
+      setApproachCountsForEachAyah,
       sectionsFromTenantDoc,
       tenantOwnsSections,
       getTenantDoc,
@@ -210,6 +212,7 @@
       ensureLdogReparented,
     } from "./js/catalogue.js";
     import { SECTION_NAMES } from "./js/catalogue-data.js";
+    import { countsForEachAyah } from "./js/approach-coverage.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
 import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     import { translateStatic, t, num } from "./js/i18n.js";
@@ -1021,7 +1024,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         .join("");
       const noSection = sectionOf(row) === null
         ? `<option value="" selected>${t("(not set)")}</option>` : "";
-      return `<tr id="trk-row-${row.id}"><td colspan="5" style="background:#fafbfd;">
+      return `<tr id="trk-row-${row.id}"><td colspan="6" style="background:#fafbfd;">
         ${bilingualField("trkNameInput", t("Approach name"), row.name)}
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(13rem, 1fr)); gap:0.6rem; margin-top:0.8rem;">
           <div>
@@ -1056,10 +1059,23 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       const actionCell = canEdit
         ? `<td>${moveButtons}<button class="small secondary editTrkBtn" data-id="${row.id}">${t("Edit")}</button> ${removeBtn}</td>`
         : "";
+      // Issue #328 -- module-specific "Studied" trackables are out of scope
+      // for this setting (they are always read as No, per
+      // countsForEachAyah()'s own default) and get plain text, never a
+      // control that would suggest editing them does anything. Only a real
+      // Approach (row.subjectId === "quran") gets the editable Yes/No.
+      const yes = countsForEachAyah(row);
+      const countsCell = row.subjectId === "quran" && canEdit
+        ? `<td><select class="small trkCountsForEachAyahSelect" data-id="${row.id}">
+            <option value="yes" ${yes ? "selected" : ""}>${t("Yes")}</option>
+            <option value="no" ${!yes ? "selected" : ""}>${t("No")}</option>
+          </select></td>`
+        : `<td>${row.subjectId === "quran" ? (yes ? t("Yes") : t("No")) : t("No")}</td>`;
       return `<tr id="trk-row-${row.id}">
         <td>${num(row.order)}</td>
         <td>${langText(row.name, getAppLang(), row.id)}</td>
         <td>${approachStatusLabel(row.status)}</td>
+        ${countsCell}
         <td>
           <button class="small secondary guideBtn" data-id="${row.id}">${t("Guide")}</button>
           <div class="guideBox" id="guide-${row.id}" style="display:none;">
@@ -1129,7 +1145,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         section name repeated down a column on every row. The heading carries
         colspan across the whole row and is what tells the two groups apart. */
     function sectionHeadingHtml(sec, count) {
-      return `<tr class="trk-section-heading"><td colspan="5" style="padding-top:1rem; border-bottom:none;">
+      return `<tr class="trk-section-heading"><td colspan="6" style="padding-top:1rem; border-bottom:none;">
         <strong style="font-size:0.95rem;">${langText(sec.name, getAppLang(), t("Section {n}", { n: num(sec.n) }))}</strong>
         <span style="color:#777; font-weight:400;"> — ${t("{n} Approaches", { n: num(count) })}</span>
       </td></tr>`;
@@ -1153,7 +1169,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     function renderTrackables() {
       const others = visibleOtherTrackables();
       const separator = others.length
-        ? `<tr class="trk-other-separator"><td colspan="5" style="padding-top:1.1rem; border-bottom:none; color:#555; font-size:0.85rem;">
+        ? `<tr class="trk-other-separator"><td colspan="6" style="padding-top:1.1rem; border-bottom:none; color:#555; font-size:0.85rem;">
              <strong>${t("Other trackables")}</strong> — ${t("one per module, outside the 30 Approaches. Editable, but they have no position among the Approaches.")}
            </td></tr>`
         : "";
@@ -1178,7 +1194,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
           byOwnName.get(key).rows.push(row);
         }
         for (const { label, rows } of byOwnName.values()) {
-          grouped += `<tr class="trk-section-heading"><td colspan="5" style="padding-top:1rem; border-bottom:none;">
+          grouped += `<tr class="trk-section-heading"><td colspan="6" style="padding-top:1rem; border-bottom:none;">
               <strong style="font-size:0.95rem;">${label || t("(not set)")}</strong>
               <span style="color:#777; font-weight:400;"> — ${t("{n} Approaches", { n: num(rows.length) })}</span>
             </td></tr>` + rows.map(trackableRowHtml).join("");
@@ -1190,6 +1206,33 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         btn.addEventListener("click", () => {
           const box = document.getElementById(`guide-${btn.dataset.id}`);
           box.style.display = box.style.display === "none" ? "block" : "none";
+        });
+      });
+
+      // Issue #328 -- moving this Yes/No is a plain updateDoc
+      // (setApproachCountsForEachAyah()), never editCatalogueNode(), so it
+      // never stamps `edited:true` on the Approach's name sync. I15: a
+      // failed write is shown, and the select is put back to what the
+      // database actually holds rather than left showing the choice that
+      // did not save.
+      trackablesBody.querySelectorAll(".trkCountsForEachAyahSelect").forEach((sel) => {
+        const before = sel.value;
+        sel.addEventListener("change", async () => {
+          const row = trackableList.find((x) => x.id === sel.dataset.id);
+          const value = sel.value === "yes";
+          sel.disabled = true;
+          const outcome = await safeWrite(
+            () => setApproachCountsForEachAyah(db, activeTenantId, sel.dataset.id, value),
+            { collection: "trackables", action: "setCountsForEachAyah", id: sel.dataset.id }
+          );
+          if (!outcome.ok) {
+            alert(outcome.entry.message);
+            sel.value = before;
+            sel.disabled = false;
+            return;
+          }
+          if (row) row.countsForEachAyah = value;
+          sel.disabled = false;
         });
       });
 
