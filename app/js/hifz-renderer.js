@@ -32,8 +32,8 @@ const MUSHAF_JSON_URL = "https://raw.githubusercontent.com/Madrasatul-Muslimeen/
 // Issue #332 Part A -- was raw.githubusercontent.com/.../mushaf/fonts/ (the
 // files this repo committed under mushaf/fonts/, kept for legacy-v07/ only).
 // Quran Foundation's own documented CDN serves the identical bytes; see the
-// permission report cited above for the byte-identity check and the terms
-// this route is required by (no bundling without a developer account).
+// permission report cited above for the byte-identity check. Loaded from the
+// CDN, per the issue's own instruction -- not re-bundled into this repo.
 const MUSHAF_FONT_BASE = "https://verses.quran.foundation/fonts/quran/hafs/v2/woff2/";
 // Issue #332 Part B -- the Tajweed-colours per-page toggle. Same per-page
 // glyph codes as the plain font above (only the font-family changes); loaded

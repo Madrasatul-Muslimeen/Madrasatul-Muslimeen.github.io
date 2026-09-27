@@ -33,10 +33,15 @@ const CACHEABLE_PATH_PREFIXES = [
   // raw.githubusercontent.com, and its per-page glyph fonts -- plain and,
   // since issue #332, Tajweed -- from verses.quran.foundation instead, both
   // of which the origin check below already excludes -- "off-site" per the
-  // issue, and this worker never touches either (the Tajweed font's own
-  // licence forbids caching it without a Quran Foundation developer
-  // account -- docs/reports/2026-09-27-tajweed-font-permission.md -- so this
-  // is not merely incidental).
+  // issue, and this worker never touches either. Not merely incidental: as
+  // issue #332 was dispatched, Quran Foundation's terms conditioned caching
+  // these fonts on holding a Developer Console account, which the Owner had
+  // not yet confirmed (docs/reports/2026-09-27-tajweed-font-permission.md).
+  // The Owner has since confirmed one exists -- the SAME report's own
+  // "Update, 27 Sep 2026" -- so offline caching of these fonts is now
+  // permitted (weekly-refreshed, credit kept), but that update's own last
+  // line is explicit: it is a follow-up, added once #332 merges, "not
+  // changed mid-round". So this worker still excludes both hosts for now.
   "/tools/quran-data-pull/output/",
 ];
 
