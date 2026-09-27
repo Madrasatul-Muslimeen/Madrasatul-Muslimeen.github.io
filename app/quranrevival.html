@@ -13115,7 +13115,7 @@
     function openPageApproachCard(pageNum) {
       closeAyahActionSheet();
       pageApproachCardPageNum = pageNum;
-      pageApproachCardSelectedApproachId = null;
+      pageApproachCardSelectedApproachId = mushafRingApproachId; // same reason as openAyahActionSheet()
       renderPageApproachCardNow();
       ayahActionSheetOverlayEl.classList.add("open");
     }
@@ -13434,7 +13434,9 @@
       ayahSheetHasPosterNote = null;
       ayahSheetRelated = null;
       ayahSheetConnected = null;
-      ayahSheetSelectedApproachId = null;
+      // Architect review of #325: open on the Approach last chosen on either
+      // card, so moving from one āyah to the next needs no re-picking.
+      ayahSheetSelectedApproachId = mushafRingApproachId;
       renderAyahActionSheetNow();
       ayahActionSheetOverlayEl.classList.add("open");
       ensureAyahSheetRelatedLoaded(unitKey, surahNum, ayahNum);
