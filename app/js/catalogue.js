@@ -576,6 +576,23 @@ export async function reorderTrackables(db, tenantId, orderedIds, current, uid) 
   return { updatedCount: updates.length };
 }
 
+/**
+ * Issue #328 -- the per-Approach "counts for each ayah inside" setting
+ * (Owner decision 6, 27 Sep 2026), a plain updateDoc like reorderTrackables()
+ * above, deliberately NOT editCatalogueNode(): that function stamps
+ * `edited: true`, which would freeze this Approach's name sync
+ * (syncUnneditedTrackableNames()) the moment its Yes/No setting is moved --
+ * a setting flip is not the tenant claiming authorship of the Approach's
+ * WORDING. Writes exactly `countsForEachAyah` (+ updatedAt, stamped by
+ * updateDocument() itself) and nothing else -- the live `trackables` update
+ * rule is `canAdminCatalogue` with no `hasOnly`, so no Rules change is
+ * needed for this field. Gated client-side by canAdminCatalogueClientSide()
+ * (owner/prime only), the same as every other catalogue edit.
+ */
+export async function setApproachCountsForEachAyah(db, tenantId, trackableId, value) {
+  return updateDocument(db, TENANT.TRACKABLES, `${tenantId}__${trackableId}`, { countsForEachAyah: !!value });
+}
+
 // ---------------------------------------------------------------------------
 // The 7 Approach sections, made the tenant's own (v08.02).
 //
