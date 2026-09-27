@@ -102,9 +102,11 @@ async function waitForWheelReady(page) {
 
 function readButtonLayout(page) {
   return page.evaluate(() => {
-    // Architect review: below 900px "My Status" sits on the heading line
-    // (#myStatusBtn); at >=900px in the capsule row (#myStatusWideBtn).
-    // Whichever is displayed is the one a reader can press.
+    // UPDATED IN PLACE, 27 Sep 2026, reason recorded: the heading's own
+    // #myStatusBtn is gone -- the Owner asked for equal capsules, and the
+    // landing page now scrolls on a phone, so #myStatusWideBtn is the one
+    // "My Status" button at every width. Both ids are still looked up so the
+    // check keeps finding whichever one is really displayed.
     const btn = ["myStatusBtn", "myStatusWideBtn"].map((id) => document.getElementById(id))
       .find((el) => el && getComputedStyle(el).display !== "none" && el.getBoundingClientRect().width > 0);
     const rect = btn ? btn.getBoundingClientRect() : null;
@@ -155,7 +157,7 @@ async function runScenarios(lang) {
   const before = await page.evaluate(() => window.__fsLog.filter((r) => r.col === "records" && r.kind === "getDocs").length);
   check(`[${lang}] I9: no records QUERY before "My Status" is pressed (measured ${before})`, before === 0);
 
-  await clickSafely(page, "#myStatusBtn");
+  await clickSafely(page, "#myStatusWideBtn"); // updated in place 27 Sep 2026 -- see readButtonLayout()
   await page.waitForFunction(() => {
     const body = document.getElementById("myStatusBody");
     return !!body && body.querySelectorAll(".my-status-row-btn").length > 0;

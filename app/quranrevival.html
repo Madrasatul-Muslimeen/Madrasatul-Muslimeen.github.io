@@ -447,11 +447,9 @@
     background: linear-gradient(180deg, #ecd49a, #C9A24B); color: #221904;
     font-family: 'Inter', sans-serif; font-weight: 800; font-size: 0.8rem; line-height: 1.2;
   }
-  #myStatusWideBtn { display: none; }
-  @media (min-width: 900px) {
-    .my-status-head-btn { display: none; }
-    #myStatusWideBtn { display: inline-flex; }
-  }
+  /* 27 Sep 2026: #myStatusWideBtn is the one "My Status" button at every
+     width now, in the equal-capsule stack below (the heading's own button is
+     gone). */
   .wheel-box {
     display: flex; gap: 1.75rem; flex-wrap: wrap; align-items: flex-start;
     background: radial-gradient(ellipse at top, #2a3a57 0%, #1B2A41 55%, #121b2c 100%);
@@ -574,6 +572,70 @@
     .wheel-intro-capsule { font-size: 0.67rem; padding: 0.25rem 0.55rem; }
     .wheel-unit-capsule { padding: 0.25rem 0.5rem; }
   }
+  /* 27 Sep 2026, owner: "The width of the capsules are different. make them
+     similar (like the width of the 'approach the Quran...')." One grid whose
+     columns are all as wide as the widest capsule (the caption), every
+     capsule the same 36px tall. On a phone they stack, one per line --
+     measured: at 390px the caption alone is 231px, so two of that width
+     cannot share a line -- and the page scrolls now, so the stack costs the
+     Approaches list nothing it cannot scroll to. */
+  .wheel-intro-settled {
+    display: grid; grid-auto-flow: row; grid-template-columns: minmax(0, max-content);
+    justify-content: center; justify-items: stretch; gap: 0.35rem;
+  }
+  .wheel-intro-settled > .wheel-intro-capsule,
+  .wheel-intro-settled > .wheel-unit-wrap,
+  .wheel-intro-settled .wheel-unit-wrap > .wheel-unit-capsule {
+    width: 100%; box-sizing: border-box;
+  }
+  .wheel-intro-settled > .wheel-intro-capsule {
+    display: inline-flex; align-items: center; justify-content: center; min-height: 36px; text-align: center;
+  }
+  .wheel-intro-settled .wheel-unit-wrap { display: block; }
+  /* Stacked at every width, measured: at 1100px a row of three capsules as
+     wide as the caption (231px each) does not fit the wheel's column, and
+     squeezing them to equal thirds wrapped the caption onto two lines. */
+
+  /* 27 Sep 2026, owner: "Enable the entire screen to move up on up scrolling,
+     so that the approaches list will appear in the full screen. (currently
+     the wheel remain static)". Below 721px, and ONLY while the Approach view
+     is the stage (body.landing-view, set by setStageView()), the page itself
+     scrolls: the header, the wheel and the list all move up together and the
+     list takes its natural height, so a reader can bring every Approach up
+     to fill the screen. The dock stays pinned to the bottom (position:
+     sticky, unchanged). Every other view keeps the fixed-height,
+     non-scrolling body it was measured against. */
+  @media (max-width: 720px) {
+    body.landing-view { height: auto; min-height: 100vh; min-height: 100dvh; overflow: visible; }
+    body.landing-view #app { flex: 1 0 auto; }
+    body.landing-view #stage,
+    body.landing-view #wheelPopupView,
+    body.landing-view #wheelSection { flex: 0 0 auto; }
+    body.landing-view #wheelSection .wheel-sidebar { height: auto; }
+    body.landing-view #wheelSection .ways-list { flex: 0 0 auto; overflow: visible; max-height: none; }
+  }
+
+  /* The wheel look behind "Study Quran" (see #wheelLookSwitch). "dark" is the
+     long-standing veil above; "light" is a light-grey veil; "colour" lifts
+     the veil and shows the status colours at full strength. */
+  .wheel-veiled[data-look="light"] #wheelContainer svg { filter: blur(1.5px) grayscale(1) brightness(1.9); }
+  .wheel-veiled[data-look="colour"] #wheelContainer svg { filter: none; }
+  .wheel-look-switch { display: flex; align-items: center; justify-content: center; gap: 0.3rem; flex-wrap: wrap; margin-top: 0.15rem; }
+  .wheel-look-label { font-family: 'Inter', sans-serif; font-size: 0.72rem; font-weight: 600; color: #8fa0c2; }
+  .wheel-look-btn {
+    min-height: 36px; min-width: 3.6rem; padding: 0.25rem 0.7rem; box-sizing: border-box;
+    border: 1px solid #3a4a6e; border-radius: 999px; background: transparent; color: #cdd8ee;
+    font-family: 'Inter', sans-serif; font-size: 0.76rem; font-weight: 700; cursor: pointer;
+  }
+  .wheel-look-btn[aria-pressed="true"] { background: #C9A24B; border-color: #C9A24B; color: #221904; }
+
+  /* The chosen unit's name in the hub (see renderWheelHubUnit()). */
+  .wheel-hub-unit {
+    margin: 0.1rem 0 0; max-width: 100%; text-align: center; color: #ecd49a;
+    font-family: 'Inter', sans-serif; font-weight: 800; line-height: 1.2;
+    font-size: calc(var(--hub-select-size, 10px) * 1.35);
+  }
+  .wheel-hub-unit[hidden] { display: none; }
   .wheel-cta-btn {
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 4;
     display: flex; flex-direction: column; align-items: center; gap: 0.15rem;
@@ -3420,15 +3482,13 @@
             <button type="button" id="wheelPopupMaximizeBtn" title="Maximize" aria-pressed="false">⬜</button>
           </div>
         </div>
-        <h2 class="wheel-heading"><span>Mastery Wheel</span>
-          <!-- Architect review, 27 Sep 2026: on a phone the capsule row cannot
-               hold a third pill -- it wrapped and cost an Approach row at
-               390x844, 390x700 and 360x640 (layout.mjs). The heading's own
-               line has room, so "My Status" sits here below 900px and in the
-               capsule row (#myStatusWideBtn) above it, where this heading is
-               hidden by the popup's own title bar. -->
-          <button type="button" id="myStatusBtn" class="my-status-head-btn">My Status</button>
-        </h2>
+        <h2 class="wheel-heading"><span>Mastery Wheel</span></h2>
+        <!-- 27 Sep 2026, owner: "The width of the capsules are different.
+             make them similar (like the width of the 'approach the Quran...')."
+             The heading's own "My Status" button (v08.92, there only to save a
+             row while the landing page could not scroll) is gone: the page
+             scrolls on a phone now, so "My Status" joins the other two in one
+             stack of equal capsules (#myStatusWideBtn, every width). -->
         <div id="wheelSection" class="wheel-box">
         <div class="wheel-col">
           <!-- The wheel's own one-time intro: a plain invitation over the
@@ -3533,7 +3593,7 @@
                  in their final position. -->
             <button type="button" id="wheelCtaBtn" class="wheel-cta-btn" hidden>
               <span class="wheel-cta-line1">Study Quran</span>
-              <span class="wheel-cta-line2">ONE Ayah a Day</span>
+              <span class="wheel-cta-line2" id="wheelCtaLine2">ONE Ayah a Day</span>
             </button>
             <!-- In-hub Surah/Ayah pickers -- a MIRROR of Study options' own
                  controls (same shape as #readPickers, shell round 22): each
@@ -3570,6 +3630,11 @@
               <p id="wheelHubBismillah" class="wheel-hub-arabic" dir="rtl" lang="ar">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
               <select id="wheelHubSurahSelect" class="wheel-hub-surah" aria-label="Surah"></select>
               <select id="wheelHubAyahSelect" class="wheel-hub-ayah" aria-label="Ayah"></select>
+              <!-- 27 Sep 2026, owner: "When user choose a unit from the 'choose
+                   a unit' that unit name should appear in the center of the
+                   wheel." Shown for every unit but a single āyah (where the
+                   Ayah picker already names it); see renderWheelHubUnit(). -->
+              <p id="wheelHubUnitLabel" class="wheel-hub-unit" hidden></p>
             </div>
             <!-- Phase 2 (v07.83), built on the room the round above reserved:
                  a purely decorative open Qur'an, glowing/radiating light,
@@ -3615,6 +3680,16 @@
             </div>
           </div>
           <div id="wheelLegendContainer"></div>
+          <!-- 27 Sep 2026, owner: "Enable an option for the user to choose the
+               wheel dark greyed (as it is now) at the background or light
+               greyed or full color of the status." How the wheel looks behind
+               the "Study Quran" button; remembered per browser (prefs.js). -->
+          <div id="wheelLookSwitch" class="wheel-look-switch" role="group" aria-label="Wheel look">
+            <span class="wheel-look-label">Wheel</span>
+            <button type="button" class="wheel-look-btn" data-wheel-look="dark" aria-pressed="false">Dark</button>
+            <button type="button" class="wheel-look-btn" data-wheel-look="light" aria-pressed="false">Light</button>
+            <button type="button" class="wheel-look-btn" data-wheel-look="colour" aria-pressed="false">Colour</button>
+          </div>
         </div>
         <!-- 2 Sep 2026 -- "enable the list blocks expandable/shrinkable/
              collapsible as well everywhere" -- see the shared .list-splitter
@@ -4864,6 +4939,7 @@
       getQuranLastSession, setQuranLastSession,
       getExploreJuzView, setExploreJuzView,
       getExploreQuranView, setExploreQuranView,
+      getWheelLook, setWheelLook,
       getColourWordParts, setColourWordParts,
       getMushafTajweedFontOn, setMushafTajweedFontOn,
     } from "./js/prefs.js";
@@ -5206,7 +5282,6 @@
     const wheelUnitRangeRow = document.getElementById("wheelUnitRangeRow");
     const wheelUnitNowLine = document.getElementById("wheelUnitNowLine");
     // Issue #328 -- "My Status".
-    const myStatusBtn = document.getElementById("myStatusBtn");
     const myStatusMountEl = document.getElementById("myStatusMount");
     const myStatusCloseBtn = document.getElementById("myStatusCloseBtn");
     const myStatusBodyEl = document.getElementById("myStatusBody");
@@ -7128,8 +7203,65 @@
 
       syncWheelHubPickers();
       syncWheelUnitPalette();
+      renderWheelHubUnit();
       layoutWheelHub();
     }
+
+    // 27 Sep 2026, owner: "When user choose a unit from the 'choose a unit'
+    // that unit name should appear in the center of the wheel." For a single
+    // āyah the hub's own Surah/Ayah pickers already name it, so nothing
+    // changes. For every other unit the Ayah picker gives way to the unit's
+    // own name, and for a Juz/Hizb/Page -- which no single surah defines --
+    // the Surah picker does too. Before "Study Quran" is tapped, the button's
+    // own second line names the unit instead of "ONE Ayah a Day".
+    function wheelHubUnitText() {
+      if (!currentSurahData || currentUnitType === "ayah") return null;
+      const meta = surahIndex?.find((x) => x.surahNumber === currentSurahNum);
+      const name = surahName(currentSurahNum, meta?.nameEnglish);
+      const info = currentUnitInfo();
+      if (currentUnitType === "surah") return { hub: t("Whole Surah"), cta: name };
+      if (currentUnitType === "range") {
+        const from = Math.min(rangeFrom, rangeTo), to = Math.max(rangeFrom, rangeTo);
+        const span = t("Āyāt {from}–{to}", { from: num(from), to: num(to) });
+        return { hub: span, cta: `${name} · ${span}` };
+      }
+      if (currentUnitType === "ruku") {
+        const ayah = currentSurahData.ayahs.find((a) => a.ayah === currentAyahNum);
+        const ruku = t("Ruku' {n}", { n: num(rukuIndexInSurah(currentSurahData.ayahs, ayah.ruku)) });
+        return { hub: ruku, cta: `${name} · ${ruku}` };
+      }
+      // Juz / Hizb / Page: currentUnitInfo()'s own label is already the name.
+      return { hub: info.label, cta: info.label, wholeQuran: true };
+    }
+
+    function renderWheelHubUnit() {
+      const text = wheelHubUnitText();
+      const unitLabelEl = document.getElementById("wheelHubUnitLabel");
+      const ayahSel = document.getElementById("wheelHubAyahSelect");
+      const surahSel = document.getElementById("wheelHubSurahSelect");
+      const ctaLine2 = document.getElementById("wheelCtaLine2");
+      if (unitLabelEl) {
+        unitLabelEl.hidden = !text;
+        unitLabelEl.textContent = text ? text.hub : "";
+      }
+      if (ayahSel) ayahSel.hidden = !!text;
+      if (surahSel) surahSel.hidden = !!text?.wholeQuran;
+      if (ctaLine2) ctaLine2.textContent = text ? text.cta : t("ONE Ayah a Day");
+    }
+
+    // 27 Sep 2026 -- the wheel's look behind "Study Quran" (prefs.js).
+    const wheelLookSwitchEl = document.getElementById("wheelLookSwitch");
+    function applyWheelLook() {
+      const look = getWheelLook();
+      wheelStageWrapEl.dataset.look = look;
+      wheelLookSwitchEl?.querySelectorAll("[data-wheel-look]").forEach((btn) => {
+        btn.setAttribute("aria-pressed", btn.dataset.wheelLook === look ? "true" : "false");
+      });
+    }
+    wheelLookSwitchEl?.querySelectorAll("[data-wheel-look]").forEach((btn) => {
+      btn.addEventListener("click", () => { setWheelLook(btn.dataset.wheelLook); applyWheelLook(); });
+    });
+    applyWheelLook();
 
     /** Shared by the canonical Study-options Approach picker (trackableSelect)
         and the Ayah Note screen's own Approach toggle (round 32) -- whichever
@@ -7478,6 +7610,8 @@
     // applies exactly as before.
     // -----------------------------------------------------------------------
     let stageView = "wheel";
+    // The page opens on the Approach view -- see setStageView() for the class.
+    document.body.classList.add("landing-view");
 
     // Enhancement round -- "note" used to be reached only from inside
     // #readView's own ⋮ quick menu or a wheel-slice click, with no dock tab
@@ -7492,6 +7626,12 @@
       const noting = view === "note";
       const exploring = view === "explore";
       const onWheel = view === "wheel";
+      // 27 Sep 2026: the Approach view is the one screen whose page scrolls on
+      // a phone (see body.landing-view in the CSS). Leaving it puts the page
+      // back at the top, so the fixed-height views never open part-scrolled.
+      const wasLanding = document.body.classList.contains("landing-view");
+      document.body.classList.toggle("landing-view", onWheel);
+      if (wasLanding && !onWheel) window.scrollTo(0, 0);
       // 2 Sep 2026: the heading and #wheelSection are one #wheelPopupView
       // now (see its own markup comment) -- one hidden toggle covers both,
       // same as every other stage view.
@@ -8494,7 +8634,6 @@
     }
 
     if (myStatusCloseBtn) myStatusCloseBtn.setAttribute("aria-label", t("Close My Status"));
-    myStatusBtn?.addEventListener("click", openMyStatus);
     document.getElementById("myStatusWideBtn")?.addEventListener("click", openMyStatus);
     myStatusCloseBtn?.addEventListener("click", closeMyStatus);
     myStatusMountEl?.addEventListener("click", (e) => { if (e.target === myStatusMountEl) closeMyStatus(); });
