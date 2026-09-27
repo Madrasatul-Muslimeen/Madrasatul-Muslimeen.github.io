@@ -30,18 +30,12 @@ const CACHEABLE_PATH_PREFIXES = [
   // data) is same-origin but lives outside /app/ -- see quran-data.js's own
   // BASE_URL comment for why. Everything the Mushaf itself needs (its page
   // layout JSON, the surah-header font) is fetched from
-  // raw.githubusercontent.com, and its per-page glyph fonts -- plain and,
-  // since issue #332, Tajweed -- from verses.quran.foundation instead, both
-  // of which the origin check below already excludes -- "off-site" per the
-  // issue, and this worker never touches either. Not merely incidental: as
-  // issue #332 was dispatched, Quran Foundation's terms conditioned caching
-  // these fonts on holding a Developer Console account, which the Owner had
-  // not yet confirmed (docs/reports/2026-09-27-tajweed-font-permission.md).
-  // The Owner has since confirmed one exists -- the SAME report's own
-  // "Update, 27 Sep 2026" -- so offline caching of these fonts is now
-  // permitted (weekly-refreshed, credit kept), but that update's own last
-  // line is explicit: it is a follow-up, added once #332 merges, "not
-  // changed mid-round". So this worker still excludes both hosts for now.
+  // raw.githubusercontent.com, which the origin check below already
+  // excludes -- "off-site" per issue #332, and this worker never touches it.
+  // The per-page glyph fonts -- plain and, since issue #332, Tajweed -- are
+  // fetched from verses.quran.foundation instead, and issue #335 gives THAT
+  // host its own separate handling below (a dedicated cache, opened pages
+  // only, weekly-refreshed) rather than joining this same-origin list.
   "/tools/quran-data-pull/output/",
 ];
 
@@ -58,6 +52,104 @@ function isCacheable(request) {
   // CSS, fonts and the Quran data's own JSON, never a document a reader's
   // own actions changed.
   return /\.(?:html|js|mjs|css|json|woff2?|ttf|otf|png|jpe?g|svg|webp)$/i.test(url.pathname);
+}
+
+// ---------------------------------------------------------------------------
+// Quran Foundation Mushaf page fonts, offline (issue #335, a follow-up to
+// #332 -- see docs/reports/2026-09-27-tajweed-font-permission.md's own
+// "Update, 27 Sep 2026": the Owner holds a Quran Foundation Developer
+// Console account, so keeping these files on the phone is now permitted, on
+// two conditions the code below exists to satisfy -- never offered
+// separately, and refreshed at least weekly.
+//
+// A DIFFERENT cache from CACHE_NAME, deliberately: that cache is versioned by
+// APP_VERSION and its old generation is deleted every time the app updates
+// (the "activate" handler below), which is correct for app files but would
+// throw away a multi-megabyte font over a version bump that touched nothing
+// about the Mushaf at all. This cache's own name is versioned separately, so
+// it is untouched by an app update and only cleared if THIS format changes.
+//
+// Nothing here is pre-downloaded (I9) -- a page number's font is fetched (and
+// so cached) only the first time a reader actually opens that page with that
+// style (plain or Tajweed) on screen; hifz-renderer.js is what decides when
+// to ask for one, this worker only ever answers a request that was made.
+const QF_FONT_CACHE_NAME = "mm-qf-fonts-v1";
+const QF_FONT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const QF_FONT_ORIGIN = "https://verses.quran.foundation";
+// Exactly the two paths hifz-renderer.js's own MUSHAF_FONT_BASE/
+// TAJWEED_FONT_BASE constants fetch from -- kept as a literal list rather
+// than importing those constants, because this worker must not depend on the
+// app's own JS graph (I2's "modules never call each other" applies to this
+// file too: a worker is its own thing, not a third module of the page it
+// serves). Nothing else on this host is ever matched, so nothing else is
+// ever stored, whatever else this host happens to serve.
+const QF_FONT_PATH_PREFIXES = [
+  "/fonts/quran/hafs/v2/woff2/",
+  "/fonts/quran/hafs/v4/colrv1/woff2/",
+];
+const QF_CACHED_AT_HEADER = "x-mm-cached-at";
+
+function isQuranFoundationFont(request) {
+  if (request.method !== "GET") return false;
+  let url;
+  try { url = new URL(request.url); } catch { return false; }
+  if (url.origin !== QF_FONT_ORIGIN) return false;
+  return QF_FONT_PATH_PREFIXES.some((p) => url.pathname.startsWith(p));
+}
+
+function cachedAtMs(response) {
+  const raw = response.headers.get(QF_CACHED_AT_HEADER);
+  const n = raw ? Number(raw) : NaN;
+  return Number.isFinite(n) ? n : 0;
+}
+
+// The Cache API stores a Response as given -- it carries no "when was this
+// put here" of its own, so the storage time is stamped as a response header
+// instead (readable back by cachedAtMs() above). A 206 (partial content) is
+// still `.ok`, and Chrome refuses to store one via cache.put() at all -- so
+// only a genuine whole-file 200 is ever kept, exactly the shape every font
+// request here actually returns.
+async function stampAndStore(cache, request, response) {
+  if (!response || response.status !== 200) return;
+  const headers = new Headers(response.headers);
+  headers.set(QF_CACHED_AT_HEADER, String(Date.now()));
+  const body = await response.arrayBuffer();
+  await cache.put(request, new Response(body, { status: response.status, statusText: response.statusText, headers }));
+}
+
+// Cache-first, refresh-if-stale: a kept copy answers immediately, whatever
+// its age, because "when the network fails, serve the kept copy" (the
+// issue's own rule) has to hold even for a copy that is overdue for a
+// refresh. Staleness only decides whether a background re-fetch also
+// happens, via event.waitUntil() so it can finish after respondWith()
+// settles -- the same shape the app-file handler below already uses.
+async function handleQuranFoundationFont(event) {
+  const { request } = event;
+  const cache = await caches.open(QF_FONT_CACHE_NAME);
+  const cached = await cache.match(request);
+
+  if (cached) {
+    if (Date.now() - cachedAtMs(cached) > QF_FONT_MAX_AGE_MS) {
+      event.waitUntil(
+        fetch(request).then((response) => stampAndStore(cache, request, response)).catch(() => null)
+      );
+    }
+    return cached;
+  }
+
+  // Never opened before: nothing to serve from the cache, so this one genuine
+  // network fetch decides both the response AND whether anything is kept.
+  // AWAITED rather than fired via waitUntil -- respondWith()'s own promise
+  // (this function) already keeps the worker alive until it settles, and
+  // awaiting means a request for the SAME font a moment later reliably sees
+  // it already in the cache, rather than racing this write.
+  try {
+    const response = await fetch(request);
+    if (response && response.ok) await stampAndStore(cache, request, response.clone());
+    return response;
+  } catch {
+    return Response.error();
+  }
 }
 
 self.addEventListener("install", () => {
@@ -99,7 +191,18 @@ self.addEventListener("activate", (event) => {
     (async () => {
       const names = await caches.keys();
       await Promise.all(
-        names.filter((n) => n.startsWith("mm-app-") && n !== CACHE_NAME).map((n) => caches.delete(n))
+        names
+          .filter((n) =>
+            (n.startsWith("mm-app-") && n !== CACHE_NAME) ||
+            // The font cache is versioned separately from CACHE_NAME
+            // precisely so an ordinary app update does NOT reach this
+            // filter (see the cache's own comment above) -- this only
+            // fires if the font-cache format itself is ever bumped to a
+            // new "mm-qf-fonts-vN" name, the one case it should still be
+            // cleaned up rather than left to grow forever.
+            (n.startsWith("mm-qf-fonts-") && n !== QF_FONT_CACHE_NAME)
+          )
+          .map((n) => caches.delete(n))
       );
       await self.clients.claim();
     })()
@@ -108,6 +211,12 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
+
+  if (isQuranFoundationFont(request)) {
+    event.respondWith(handleQuranFoundationFont(event));
+    return;
+  }
+
   if (!isCacheable(request)) return; // let the browser (and this app's own
   // Firebase/Firestore calls) proceed exactly as if no worker existed.
 

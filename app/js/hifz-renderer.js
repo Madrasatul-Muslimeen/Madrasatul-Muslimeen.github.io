@@ -34,13 +34,18 @@ const MUSHAF_JSON_URL = "https://raw.githubusercontent.com/Madrasatul-Muslimeen/
 // Quran Foundation's own documented CDN serves the identical bytes; see the
 // permission report cited above for the byte-identity check. Loaded from the
 // CDN, per the issue's own instruction -- not re-bundled into this repo.
+// Since issue #335, app/sw.js keeps a page's own font here for offline use
+// once it has actually been opened, in its own cache separate from the app
+// files, refreshed at least weekly -- see that worker's own comment for why;
+// nothing here changed to make that possible, it is purely a network-layer
+// concern of the worker's.
 const MUSHAF_FONT_BASE = "https://verses.quran.foundation/fonts/quran/hafs/v2/woff2/";
 // Issue #332 Part B -- the Tajweed-colours per-page toggle. Same per-page
 // glyph codes as the plain font above (only the font-family changes); loaded
-// only once a reader actually turns the toggle on (I9), never cached by
-// app/sw.js (a different origin, already outside that worker's own
-// same-origin check) and never copied into this repository (the permission
-// report's own binding rule 1).
+// only once a reader actually turns the toggle on (I9). Kept offline by
+// app/sw.js under the same issue #335 treatment as the plain font above --
+// never copied into this repository itself (the permission report's own
+// binding rule 1).
 const TAJWEED_FONT_BASE = "https://verses.quran.foundation/fonts/quran/hafs/v4/colrv1/woff2/";
 const SURAH_HEADER_FONT_URL = "https://raw.githubusercontent.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/main/mushaf/QCF_SurahHeader_COLOR-Regular.woff2";
 // Both binding rule 2 (the permission report) and the Owner's own decision 9
