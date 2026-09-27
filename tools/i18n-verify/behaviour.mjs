@@ -1877,7 +1877,10 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
     // (several unnamed <button>s of its own) inside #readQuickMenuSlot, a
     // DIRECT child of #readBar; `#readBar button` would count those
     // too and this check is about the eight named controls specifically.
-    buttons: [...document.querySelectorAll("#readBar > button")].map((b) => b.id),
+    // v08.90 (issue #325) -- #mushafPageRef is a <button> now, the Mushaf
+    // view's own page reference (hidden outside Mushaf); it is not one of the
+    // reading controls this list records. Updated in place, reason recorded.
+    buttons: [...document.querySelectorAll("#readBar > button")].filter((b) => b.id !== "mushafPageRef").map((b) => b.id),
     noWholeSurah: !document.getElementById("readPlaySurahBtn"),
     playLabel: document.getElementById("readPlayBtn").getAttribute("aria-label") || "",
     // Round 25 retired the reciter caption -- its only job was naming which
@@ -1929,7 +1932,7 @@ console.log("\n=== 30l. Round 18's own controls in Bangla ===");
   // Direct children only -- see the enhancement-round comment at 30j above
   // (eight now -- prevAyahBtn/nextAyahBtn joined this row, and the
   // multi-student round's own readBookmarkBtn joined it too).
-  const t18 = await page.evaluate(() => [...document.querySelectorAll("#readBar > button")].map((b) => b.getAttribute("aria-label") || ""));
+  const t18 = await page.evaluate(() => [...document.querySelectorAll("#readBar > button")].filter((b) => b.id !== "mushafPageRef").map((b) => b.getAttribute("aria-label") || "")); // v08.90 -- see 30j: #mushafPageRef excluded
   // v08.30 -- ten now: #readCompleteBtn joined the row. Its own Bangla name is
   // the I11 evidence for this tranche's four new keys.
   check("30l every reading-screen control is NAMED in Bangla",
