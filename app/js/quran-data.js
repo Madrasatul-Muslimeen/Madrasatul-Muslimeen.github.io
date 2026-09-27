@@ -22,6 +22,7 @@ let surahIndexPromise = null;
 let juzIndexPromise = null;
 let pageIndexPromise = null;
 let hizbIndexPromise = null;
+let rukuIndexPromise = null;
 
 function surahFileUrl(surahNumber) {
   const padded = String(surahNumber).padStart(3, "0");
@@ -167,6 +168,30 @@ export async function getHizbIndex() {
     });
   }
   return hizbIndexPromise;
+}
+
+/**
+ * Issue #341 -- "My Status"'s "By unit" Ruku' row. 556 entries, {ruku, surah,
+ * fromAyah, toAyah} -- `ruku` is the GLOBAL sequential number the real pulled
+ * per-ayah `ruku` field carries (Surah 1 = ruku 1, Surah 2 starts at ruku 2,
+ * ...), not the per-surah-relative one buildUnitKey.ruku expects (see
+ * unit-keys.js's own rukuIndexInSurah()/localRukuIndexFromTable()). Computed
+ * once from the real data by tools/quran-data-pull/build-ruku-index.js,
+ * never hand-typed -- same discipline, and same shape, as getJuzIndex()/
+ * getPageIndex()/getHizbIndex() above. Tiny (556 rows); loaded on first use,
+ * never on the startup path (I9) -- only when My Status is actually opened.
+ */
+export async function getRukuIndex() {
+  if (!rukuIndexPromise) {
+    rukuIndexPromise = fetch(`${BASE_URL}/ruku-index.json`).then((res) => {
+      if (!res.ok) throw new Error(`Couldn't load the ruku index (HTTP ${res.status}).`);
+      return res.json();
+    }).catch((err) => {
+      rukuIndexPromise = null;
+      throw err;
+    });
+  }
+  return rukuIndexPromise;
 }
 
 let juzWordTotalsPromise = null;
