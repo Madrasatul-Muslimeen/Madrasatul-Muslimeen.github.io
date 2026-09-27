@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.90",
+    "version": "08.91",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -857,8 +857,20 @@
     {
       "version": "08.90",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Owner decisions 27 Sep: Ayah Card four-stage ladder, This page card on the page unit only, marker rings, no new bar.",
+      "integration": {
+        "authorizedOn": "2026-09-27",
+        "integratedOn": "2026-09-27",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "08.91",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Mushaf view's Surah banner drawn at readable size (24cqw)",
       "integration": {
         "authorizedOn": "2026-09-27",
         "integratedOn": "2026-09-27",
@@ -867,8 +879,9 @@
       }
     }
   ],
-  "nextUnallocated": "08.91",
+  "nextUnallocated": "08.92",
   "nextUnallocatedNote": [
+    "v08.91 was allocated to the readable Mushaf Surah banner, 2026-09-27.",
     "v08.90 was allocated to Mushaf view: take an Approach with four stages per āyah and per page (issue #325), 2026-09-27.",
     "v08.89 was allocated to Mushaf top bar Surah · āyāt; Achieved marks the Dictionary Word known; full-screen Word Card on phones (issue #322), 2026-09-27.",
     "v08.88 was allocated to Basic Arabic / Arabic in Depth per-word claims, built and gated (issue #320), 2026-09-26.",
