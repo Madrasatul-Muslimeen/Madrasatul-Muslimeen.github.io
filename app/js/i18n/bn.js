@@ -2919,4 +2919,11 @@ export const BN = {
   "Passage {n} (position in this edition, not the book's own number)": "অংশ {n} (এই সংস্করণে অবস্থান, বইয়ের নিজস্ব নম্বর নয়)", // ?
   "Editor's note": "সম্পাদকের নোট", // ?
   "Source: OpenITI (CC BY-NC-SA 4.0)": "সূত্র: OpenITI (CC BY-NC-SA 4.0)", // ?
+
+  // Issue #325 -- the Mushaf top-bar reference becomes a button opening the
+  // "This page" card (Owner decision 3: the page as one unit). Every other
+  // string the card needs -- "Page {page}", "Take an Approach",
+  // "Choose an Approach…", "Not started"/"Learning"/"Practising"/"Achieved",
+  // "Status", "Close" -- already exists above and is reused as-is.
+  "This page": "এই পৃষ্ঠা",
 };

@@ -105,13 +105,20 @@ function readPageRef(page) {
   return page.evaluate(() => {
     const el = document.getElementById("mushafPageRef");
     if (!el) return null;
+    // Architect review of #325 (updated in place): the reference is now a
+    // 40px-tall BUTTON, so its own box is taller than one line by design.
+    // "Fits one line" is measured on its text span, which is nowrap.
+    const textEl = el.querySelector(".mushaf-page-ref-text") || el;
     const r = el.getBoundingClientRect();
+    const tr = textEl.getBoundingClientRect();
     const exit = document.getElementById("hideChromeBtn")?.getBoundingClientRect();
     return {
       hidden: el.hidden,
       text: el.textContent ?? "",
+      tagName: el.tagName,
       rect: { top: r.top, left: r.left, right: r.right, bottom: r.bottom, height: r.height, width: r.width },
-      lineHeight: parseFloat(getComputedStyle(el).lineHeight) || null,
+      textHeight: tr.height,
+      lineHeight: parseFloat(getComputedStyle(textEl).lineHeight) || null,
       exitOnScreen: !!exit && exit.right <= innerWidth && exit.left >= 0,
       docScrollWidth: document.documentElement.scrollWidth,
       innerWidth,
@@ -134,6 +141,12 @@ for (const [width, height] of [[320, 640], [360, 740], [390, 844], [412, 915], [
     await openMushafOnSurah(page, 14);
     const p10 = await readPageRef(page);
     check(`[${lang} ${width}] the reference is not hidden in Mushaf view`, p10 && p10.hidden === false, JSON.stringify(p10));
+    // Issue #325 -- updated in place, reason recorded: #mushafPageRef is now
+    // a real <button> (opens the "This page" card) rather than a plain
+    // <span>. Its own text/fit/exit-icon/no-scroll assertions below are
+    // unaffected -- textContent still reads the same reference text (with a
+    // trailing, decorative ▾ appended), just via a different element.
+    check(`[${lang} ${width}] #mushafPageRef is now a real <button>`, p10?.tagName === "BUTTON", p10?.tagName);
     if (lang === "bn") {
       check(`[bn ${width}] the surah name is really in Bangla`, bangla.test(p10?.text ?? ""), p10?.text);
       check(`[bn ${width}] the āyah numbers are Bengali digits`, banglaDigits.test(p10?.text ?? "") && !/[0-9]/.test(p10?.text ?? ""), p10?.text);
@@ -142,7 +155,7 @@ for (const [width, height] of [[320, 640], [360, 740], [390, 844], [412, 915], [
       check(`[en ${width}] the āyah range reads 1-5`, /1.*5|5.*1/.test(p10?.text ?? "") && /[–-]/.test(p10?.text ?? ""), p10?.text);
     }
     check(`[${lang} ${width}] fits on ONE line (rect height <= ~1.6x its own line-height)`,
-      !!p10 && (!p10.lineHeight || p10.rect.height <= p10.lineHeight * 1.6), JSON.stringify(p10));
+      !!p10 && (!p10.lineHeight || p10.textHeight <= p10.lineHeight * 1.6), JSON.stringify(p10));
     check(`[${lang} ${width}] the exit full-screen icon stays fully on screen`, p10?.exitOnScreen === true, JSON.stringify(p10));
     check(`[${lang} ${width}] no sideways page scroll`, (p10?.docScrollWidth ?? Infinity) <= (p10?.innerWidth ?? 0) + 1, JSON.stringify(p10));
 
@@ -159,7 +172,7 @@ for (const [width, height] of [[320, 640], [360, 740], [390, 844], [412, 915], [
         /286/.test(p20?.text ?? "") && /1.*9|9.*1/.test(p20?.text ?? ""), p20?.text);
     }
     check(`[${lang} ${width}] the two-surah page ALSO fits one line`,
-      !!p20 && (!p20.lineHeight || p20.rect.height <= p20.lineHeight * 1.6), JSON.stringify(p20));
+      !!p20 && (!p20.lineHeight || p20.textHeight <= p20.lineHeight * 1.6), JSON.stringify(p20));
     check(`[${lang} ${width}] and the exit icon still stays on screen`, p20?.exitOnScreen === true, JSON.stringify(p20));
 
     check(`[${lang} ${width}] no page errors`, errors.filter((e) => !/CERT|archive\.org|api\.quran|net::ERR_FAILED/.test(e)).length === 0, JSON.stringify(errors.slice(0, 3)));
@@ -194,6 +207,23 @@ console.log(`\n=== Mushaf page ref: swipe updates the text; visible in full scre
   check("[swipe] after scrolling to the second page, the reference updates to its OWN range (6-52)",
     /6.*52|52.*6/.test(after?.text ?? ""), after?.text);
   check("[swipe] and it no longer reads the first page's range", !/^Ibrahim · 1[^0-9]/.test(after?.text ?? ""), after?.text);
+
+  // Issue #325 -- a light smoke check that tapping the reference (now a real
+  // button) opens the "This page" card; the exhaustive write/claim coverage
+  // for that card lives in its own dedicated suite
+  // (mushaf-approach-cards-browser.mjs), not duplicated here.
+  await page.click("#mushafPageRef");
+  await page.waitForTimeout(300);
+  const pageCardOpen = await page.evaluate(() => {
+    const overlay = document.getElementById("ayahActionSheetOverlay");
+    const card = document.querySelector("[data-page-approach-card]");
+    return !!overlay?.classList.contains("open") && !!card;
+  });
+  check("[tap] tapping the top-bar reference opens the This page card", pageCardOpen);
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(200);
+  const closedAgain = await page.evaluate(() => !document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"));
+  check("[tap] Escape closes the This page card, back to plain Mushaf view", closedAgain);
 
   // Full screen's BARE state: two presses of the same cycle button reach it
   // (NORMAL -> READING -> BARE), per app/quranrevival.html's own

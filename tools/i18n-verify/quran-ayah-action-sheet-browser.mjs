@@ -313,31 +313,72 @@ console.log(`\n=== Ayah Card -- number badge, Take an Approach, Status B (issue 
     !!document.querySelector("#quranWordCardMount .quran-word-card") && !document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"));
   check("tapping a Word by Word chip closes the card and opens the Word Card for that word", wordCardFromChip);
 
-  // --- Take an Approach: writes through the SAME claimStatus() the Track tab uses ---
+  // Architect review of #325: since v08.89 the Word Card opens full screen
+  // below 900px and covers the reading screen, so close it before tapping
+  // the āyah badge behind it (this suite was red on main for that reason).
+  await page.click("#quranWordCardMount [data-word-card-close]").catch(() => {});
+  await page.waitForTimeout(300);
+
+  // --- Issue #325 -- updated in place, reason recorded: choosing an
+  // Approach no longer claims Learning and closes the card. It reveals a
+  // four-stage row instead; pressing a stage writes through the SAME
+  // claimStatus() the Track tab uses, and the card stays open afterwards so
+  // more than one stage can be tried without reopening it. ---
   await clickSafely(page, '#readView [data-ayah-num-badge="1:1"]');
   await page.waitForTimeout(400);
   await page.evaluate(() => {
-    const sel = document.querySelector("[data-ayah-sheet-approach-select]");
+    const sel = document.querySelector("[data-approach-stage-select]");
     sel.value = "recite";
     sel.dispatchEvent(new Event("change", { bubbles: true }));
   });
-  await page.waitForTimeout(400);
-  const claimWrite = await page.evaluate(() => (window.__stubWriteData || []).filter((w) => w.col === "records").at(-1));
-  check("Take an Approach wrote to the records collection", claimWrite?.col === "records", JSON.stringify(claimWrite));
-  check("the write touches exactly this āyah's own entry for the chosen Approach (dot-path, not the whole map)",
-    !!claimWrite && Object.keys(claimWrite.data ?? {}).includes("entries.ayah:1:1::recite"), JSON.stringify(claimWrite?.data && Object.keys(claimWrite.data)));
-  const writtenEntry = claimWrite?.data?.["entries.ayah:1:1::recite"];
-  check("the claim is recorded as 'learning' -- the Ayah Card's own single-step default", writtenEntry?.claimedStatus === "learning", JSON.stringify(writtenEntry));
-  // Architect review: choosing an Approach closes the card (the claim is the
-  // whole action), so there is no pull-down left to reset -- assert that
-  // instead of reading a select that no longer exists.
+  await page.waitForTimeout(300);
   const afterPick = await page.evaluate(() => ({
     open: !!document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"),
-    select: document.querySelector("[data-ayah-sheet-approach-select]")?.value ?? null,
+    stageButtons: [...document.querySelectorAll("[data-approach-stage-btn]")].map((b) => b.dataset.approachStageBtn),
+    writesSoFar: (window.__stubWriteData || []).filter((w) => w.col === "records").length,
   }));
-  check("after choosing an Approach the card closes -- no lingering 'still selected' pull-down", !afterPick.open && afterPick.select === null, JSON.stringify(afterPick));
-  const sheetClosedAfterClaim = await page.evaluate(() => !document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"));
-  check("choosing an Approach closes the card (same 'close first' rule every other action follows)", sheetClosedAfterClaim);
+  check("picking an Approach does NOT close the card", afterPick.open === true, JSON.stringify(afterPick));
+  check("picking an Approach reveals exactly the four stage buttons, in order", JSON.stringify(afterPick.stageButtons) === JSON.stringify(["not_started", "learning", "practising", "achieved"]), JSON.stringify(afterPick.stageButtons));
+  check("picking an Approach writes NOTHING by itself", afterPick.writesSoFar === 0, JSON.stringify(afterPick));
+
+  await clickSafely(page, '[data-approach-stage-btn="practising"]');
+  await page.waitForTimeout(400);
+  const claimWrite = await page.evaluate(() => (window.__stubWriteData || []).filter((w) => w.col === "records").at(-1));
+  check("pressing a stage button wrote to the records collection", claimWrite?.col === "records", JSON.stringify(claimWrite));
+  check("the write touches exactly this āyah's own entry for the chosen Approach (dot-path, not the whole map)",
+    !!claimWrite && Object.keys(claimWrite.data ?? {}).includes("entries.ayah:1:1::recite"), JSON.stringify(claimWrite?.data && Object.keys(claimWrite.data)));
+  check("no page: unit key was ever written by the Ayah Card", !Object.keys(claimWrite?.data ?? {}).some((k) => k.startsWith("entries.page:")), JSON.stringify(claimWrite?.data && Object.keys(claimWrite.data)));
+  const writtenEntry = claimWrite?.data?.["entries.ayah:1:1::recite"];
+  check("the claim is recorded as 'practising' -- the stage actually pressed, not a fixed default", writtenEntry?.claimedStatus === "practising", JSON.stringify(writtenEntry));
+
+  const afterStage = await page.evaluate(() => ({
+    open: !!document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"),
+    pressed: [...document.querySelectorAll("[data-approach-stage-btn]")].map((b) => [b.dataset.approachStageBtn, b.getAttribute("aria-pressed")]),
+  }));
+  check("pressing a stage button does NOT close the card either", afterStage.open === true, JSON.stringify(afterStage));
+  check("the just-pressed 'practising' button now shows aria-pressed=true, the other three false",
+    JSON.stringify(afterStage.pressed) === JSON.stringify([["not_started", "false"], ["learning", "false"], ["practising", "true"], ["achieved", "false"]]),
+    JSON.stringify(afterStage.pressed));
+
+  // --- Reopening the card (closed, then the same āyah opened again) shows
+  // the saved state once the same Approach is re-picked. ---
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(200);
+  await clickSafely(page, '#readView [data-ayah-num-badge="1:1"]');
+  await page.waitForTimeout(400);
+  await page.evaluate(() => {
+    const sel = document.querySelector("[data-approach-stage-select]");
+    sel.value = "recite";
+    sel.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await page.waitForTimeout(300);
+  const reopened = await page.evaluate(() =>
+    [...document.querySelectorAll("[data-approach-stage-btn]")].map((b) => [b.dataset.approachStageBtn, b.getAttribute("aria-pressed")]));
+  check("reopening the card and re-picking the same Approach shows 'practising' pressed -- the saved state, not a reset placeholder",
+    JSON.stringify(reopened) === JSON.stringify([["not_started", "false"], ["learning", "false"], ["practising", "true"], ["achieved", "false"]]),
+    JSON.stringify(reopened));
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(200);
 
   // --- entry point (c), Note view: the same number badge, built locally there ---
   // Note lives inside the Study menu; open it first (CLAUDE.md: a control

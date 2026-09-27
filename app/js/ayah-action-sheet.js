@@ -29,6 +29,7 @@
 // below; nothing about the two existing entry points changes.
 
 import { t, num } from "./i18n.js";
+import { statusLabel } from "./unit-keys.js";
 
 function escapeHtml(s) {
   return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -40,29 +41,97 @@ function actionItemHtml({ attr, icon, label, disabled = false, hint = "" }) {
         ${hint ? `<p class="ayah-sheet-hint">${escapeHtml(hint)}</p>` : ""}`;
 }
 
+// Issue #325 -- all four stages, not a one-shot "choosing claims Learning".
+// The Owner's own decision (docs/governance/2026-09-27-owner-decisions.md,
+// #5: "Keep all 4 stage"). Mastered sits off this row on purpose -- it is
+// never a status a person CLAIMS, only one confirmEntry() (the data layer's
+// own confirm step, elsewhere entirely) can reach, same as the wheel's own
+// ramp treats it.
+export const APPROACH_STAGE_IDS = Object.freeze(["not_started", "learning", "practising", "achieved"]);
+
+function approachStageButtonsHtml(currentStatusId) {
+  const buttons = APPROACH_STAGE_IDS
+    .map((id) => `<button type="button" class="approach-stage-btn" data-approach-stage-btn="${id}" aria-pressed="${id === currentStatusId}">${escapeHtml(statusLabel(id))}</button>`)
+    .join("");
+  return `<div class="approach-stage-row" role="group" aria-label="${escapeHtml(t("Status"))}">${buttons}</div>`;
+}
+
+/** Marks the one <option> whose value is `selectedId` as selected, without asking the caller's buildTrackableOptionsHtml() to know anything about this file's own selection state (I2 -- one source of truth for what Approaches exist, this file only marks which one is picked). A value that isn't present (an archived Approach, a stale id) is left unmarked rather than thrown on. */
+function withSelectedOption(optionsHtml, selectedId) {
+  if (!selectedId) return optionsHtml;
+  const marker = `<option value="${selectedId}">`;
+  const idx = optionsHtml.indexOf(marker);
+  if (idx === -1) return optionsHtml;
+  return optionsHtml.slice(0, idx) + `<option value="${selectedId}" selected>` + optionsHtml.slice(idx + marker.length);
+}
+
 /**
- * "Take an Approach" (issue #295) -- `approachOptionsHtml` is whatever
- * <option>/<optgroup> markup the caller's own buildTrackableOptionsHtml()
- * already builds for the canonical Approach picker (this tenant's active
- * Approaches, section order, reader's language) -- I2 reuse, not a second
- * source of truth for what Approaches exist. Choosing a real option fires
- * once; the caller resets the select back to its own placeholder afterwards
- * (see attachAyahActionSheetHandlers below) so the same pull-down can be
- * used again without looking like it is still set to whatever was last
- * picked. Never gated on isSelf -- claiming an Approach follows the
- * broader canRecordFor() rule (a teacher/guardian may claim for whoever is
+ * "Take an Approach" (issue #295), grown into the full four-stage picker
+ * (issue #325) -- `approachOptionsHtml` is whatever <option>/<optgroup>
+ * markup the caller's own buildTrackableOptionsHtml() already builds for the
+ * canonical Approach picker (this tenant's active Approaches, section order,
+ * reader's language) -- I2 reuse, not a second source of truth for what
+ * Approaches exist. Choosing an Approach no longer claims anything by
+ * itself (the old one-shot "choosing claims Learning" -- spec: "Replace the
+ * old one-shot Learning behaviour"); it only reveals the four stage buttons
+ * below it, one of them already pressed for whatever this unit's current
+ * claim is. Pressing a stage button is the only thing that writes. Never
+ * gated on isSelf -- claiming an Approach follows the broader
+ * canRecordFor() rule (a teacher/guardian may claim for whoever is
  * currently selected on the page, D10), and the caller only ever opens this
- * sheet for a person already legitimate to record for.
+ * card for a person already legitimate to record for.
+ *
+ * Exported (and `selectId` made overridable) so the Mushaf "This page" card
+ * (issue #325 point 2, page-approach-card.js) can reuse the identical
+ * picker+stage-row markup and wiring for its OWN, separate unit key --
+ * one claim mechanism, two entry points, never a second one invented for
+ * the page card.
  */
-function takeApproachItemHtml(approachOptionsHtml) {
+export function renderApproachStagePickerHtml({
+  approachOptionsHtml = "", selectedApproachId = null, selectedApproachStatusId = "not_started",
+  selectId = "ayahSheetApproachSelect",
+} = {}) {
+  const stageRowHtml = selectedApproachId ? approachStageButtonsHtml(selectedApproachStatusId) : "";
   return `
         <div class="ayah-sheet-item ayah-sheet-select-item">
-          <label class="ayah-sheet-select-label" for="ayahSheetApproachSelect">🎯 ${escapeHtml(t("Take an Approach"))}</label>
-          <select class="ayah-sheet-approach-select" id="ayahSheetApproachSelect" data-ayah-sheet-approach-select aria-label="${escapeHtml(t("Take an Approach"))}">
-            <option value="" selected disabled hidden>${escapeHtml(t("Choose an Approach…"))}</option>
-            ${approachOptionsHtml}
+          <label class="ayah-sheet-select-label" for="${selectId}">🎯 ${escapeHtml(t("Take an Approach"))}</label>
+          <select class="ayah-sheet-approach-select" id="${selectId}" data-approach-stage-select aria-label="${escapeHtml(t("Take an Approach"))}">
+            <option value="" ${selectedApproachId ? "" : "selected"} disabled hidden>${escapeHtml(t("Choose an Approach…"))}</option>
+            ${withSelectedOption(approachOptionsHtml, selectedApproachId)}
           </select>
+          ${stageRowHtml}
         </div>`;
+}
+
+/**
+ * Wires the Approach select (a change picks which Approach's stage row shows
+ * -- never a write) and the four stage buttons (a click IS the write) on
+ * whatever root element contains a renderApproachStagePickerHtml() block.
+ * Shared verbatim by the Ayah Card sheet below and page-approach-card.js's
+ * own attach function -- I2, one wiring, two callers.
+ */
+export function wireApproachStagePicker(rootEl, { onApproachPicked, onStageChoice } = {}) {
+  const select = rootEl.querySelector("[data-approach-stage-select]");
+  if (!select) return;
+  select.addEventListener("change", () => {
+    const approachId = select.value;
+    if (!approachId) return;
+    onApproachPicked?.(approachId);
+  });
+  // Deliberately data-approach-stage-BTN, not just "-stage": the pure-node
+  // boundary suite's own DOM stand-in finds elements by a substring regex
+  // over the raw HTML, not a real attribute-selector engine, so
+  // "data-approach-stage" would also match inside
+  // "data-approach-stage-select"'s own attribute name. A real browser's
+  // querySelectorAll would not have this problem, but naming the two
+  // attributes so neither is a prefix of the other costs nothing here.
+  rootEl.querySelectorAll("[data-approach-stage-btn]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const approachId = select.value;
+      if (!approachId) return;
+      onStageChoice?.(approachId, btn.dataset.approachStageBtn);
+    });
+  });
 }
 
 /**
@@ -88,11 +157,11 @@ function makePosterItemHtml(hasPosterNote) {
     actionItemHtml(); "Take an Approach"/"Make a poster" carry their own
     shape (a pull-down; a conditional hint) and render through their own
     small functions above, but still take exactly one slot in this list. */
-function actionDefs({ isBookmarked, isSelf, noteWhy, approachOptionsHtml, hasPosterNote }) {
+function actionDefs({ isBookmarked, isSelf, noteWhy, approachOptionsHtml, selectedApproachId, selectedApproachStatusId, hasPosterNote }) {
   return [
     { render: () => actionItemHtml({ attr: "data-ayah-sheet-bookmark", icon: isBookmarked ? "★" : "🔖", label: isBookmarked ? t("Remove bookmark") : t("Bookmark this āyah") }) },
     { render: () => actionItemHtml({ attr: "data-ayah-sheet-note", icon: "📝", label: t("Note & more…"), disabled: !isSelf, hint: isSelf ? "" : noteWhy }) },
-    { render: () => takeApproachItemHtml(approachOptionsHtml) },
+    { render: () => renderApproachStagePickerHtml({ approachOptionsHtml, selectedApproachId, selectedApproachStatusId }) },
     { render: () => makePosterItemHtml(hasPosterNote) },
     { divider: true },
     { render: () => actionItemHtml({ attr: "data-ayah-sheet-asma", icon: "✦", label: t("Asma ul Husna Name(s)…") }) },
@@ -238,13 +307,13 @@ function connectedInfoHtml(connected) {
  */
 export function renderAyahActionSheetHtml({
   unitKey, ref = "", hasNote = false, isBookmarked = false, isSelf = true,
-  approachOptionsHtml = "", hasPosterNote = null,
+  approachOptionsHtml = "", selectedApproachId = null, selectedApproachStatusId = "not_started", hasPosterNote = null,
   approachStatuses = [], wordStatus = null, hifzStatus = null, related = null,
   connected = null,
 } = {}) {
   void hasNote; // kept for callers that already pass it (icon/wording decisions belong to isBookmarked/isSelf above, not this flag)
   const noteWhy = t("Only your own record can create or file a Note.");
-  const actionsHtml = actionDefs({ isBookmarked, isSelf, noteWhy, approachOptionsHtml, hasPosterNote })
+  const actionsHtml = actionDefs({ isBookmarked, isSelf, noteWhy, approachOptionsHtml, selectedApproachId, selectedApproachStatusId, hasPosterNote })
     .map((def) => (def.divider ? `<div class="qm-divider"></div>` : def.render()))
     .join("");
   return `
@@ -288,16 +357,21 @@ export function renderAyahActionSheetHtml({
 /**
  * `callbacks`: onBookmark(unitKey), onNote(unitKey), onAsma(unitKey),
  * onQcr(unitKey), onFileInFolder(unitKey), onPlay(unitKey), onCopy(unitKey),
- * onShare(unitKey), onTakeApproach(unitKey, approachId), onPoster(unitKey),
+ * onShare(unitKey), onApproachPicked(unitKey, approachId),
+ * onStageChoice(unitKey, approachId, statusId), onPoster(unitKey),
  * onSeeOnWheel(unitKey), onWordTap(occurrenceId), onRelatedJump(surah, ayah),
  * onClose(). Every action
  * callback fires onClose() FIRST -- several of them (Bookmark, Note, Asma,
- * QCR, File in folder, Take an Approach, Make a poster, See on the wheel,
- * a word tap) trigger a re-render of whatever's underneath the sheet, and
- * closing first means that re-render never has to fight this file for a
- * DOM node it is about to remove. A dimmed (`aria-disabled="true"`) item
- * never fires its callback -- the explanation beside it is the whole of
- * what it does.
+ * QCR, File in folder, Make a poster, See on the wheel, a word tap) trigger
+ * a re-render of whatever's underneath the sheet, and closing first means
+ * that re-render never has to fight this file for a DOM node it is about to
+ * remove. A dimmed (`aria-disabled="true"`) item never fires its callback --
+ * the explanation beside it is the whole of what it does.
+ *
+ * Issue #325 -- onApproachPicked/onStageChoice are the two exceptions: they
+ * do NOT close the sheet (the whole point is trying more than one stage
+ * without reopening the card), so they are wired straight to
+ * wireApproachStagePicker() below rather than through fire().
  */
 export function attachAyahActionSheetHandlers(container, callbacks = {}) {
   const sheet = container.querySelector("[data-ayah-sheet]");
@@ -327,18 +401,14 @@ export function attachAyahActionSheetHandlers(container, callbacks = {}) {
   sheet.querySelector("[data-ayah-sheet-play]")?.addEventListener("click", () => fire(callbacks.onPlay));
   sheet.querySelector("[data-ayah-sheet-copy]")?.addEventListener("click", () => fire(callbacks.onCopy));
   sheet.querySelector("[data-ayah-sheet-share]")?.addEventListener("click", () => fire(callbacks.onShare));
-  // "Take an Approach" -- a pull-down, not a button, so it needs the value
-  // that was just chosen, not merely a click. Reset to the placeholder
-  // afterwards (a real browser <select> only -- the pure-node boundary
-  // suite's own DOM stand-in does not model assignment) so the same control
-  // reads as "choose one" again rather than stuck on the last pick.
-  const approachSelect = sheet.querySelector("[data-ayah-sheet-approach-select]");
-  approachSelect?.addEventListener("change", () => {
-    const approachId = approachSelect.value;
-    if (!approachId) return;
-    callbacks.onClose?.();
-    callbacks.onTakeApproach?.(unitKey, approachId);
-    if (approachSelect.isConnected) approachSelect.value = "";
+  // Issue #325 -- "Take an Approach" grown into the full four-stage picker.
+  // Neither the select nor a stage button closes the sheet (see this
+  // function's own doc comment above) -- the caller re-renders the sheet in
+  // place after a stage write lands, so the just-pressed button shows as
+  // pressed without the card ever disappearing.
+  wireApproachStagePicker(sheet, {
+    onApproachPicked: (approachId) => callbacks.onApproachPicked?.(unitKey, approachId),
+    onStageChoice: (approachId, statusId) => callbacks.onStageChoice?.(unitKey, approachId, statusId),
   });
   sheet.querySelector("[data-ayah-sheet-poster]")?.addEventListener("click", () => fire(callbacks.onPoster));
   // The poster hint's own "Take Note" button shares data-ayah-sheet-note

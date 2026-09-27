@@ -88,24 +88,63 @@ check("File in folder(s) always explains itself, whether that is what it does or
 
 // --- 1b. ISSUE #295 -- THE AYAH CARD'S TWO NEW ACTIONS ----------------------
 
+// Issue #325 -- updated in place, reason recorded: "Take an Approach" no
+// longer claims Learning the instant an Approach is picked (the old
+// checks below asserted exactly that one-shot shape). Choosing an Approach
+// now only reveals a four-stage row (Not started/Learning/Practising/
+// Achieved); the attribute the select carries also changed, from
+// data-ayah-sheet-approach-select to the shared, reusable
+// data-approach-stage-select (see wireApproachStagePicker()'s own comment
+// on why the picker itself was pulled out into a function the "This page"
+// card reuses verbatim rather than growing a second one).
 check("Take an Approach renders a real <select> carrying exactly the caller's own optionsHtml, never gated on isSelf", () => {
   const optionsHtml = `<option value="approach_02">Hifz / Memorising</option>`;
   const self = renderAyahActionSheetHtml({ unitKey: "ayah:1:1", isSelf: true, approachOptionsHtml: optionsHtml });
   const other = renderAyahActionSheetHtml({ unitKey: "ayah:1:1", isSelf: false, approachOptionsHtml: optionsHtml });
   for (const html of [self, other]) {
-    assert.ok(html.includes("data-ayah-sheet-approach-select"), "the Approach pull-down is missing");
-    assert.ok(/<select[^>]*data-ayah-sheet-approach-select[^>]*>/.test(html), "the Approach pull-down is not a real <select>");
+    assert.ok(html.includes("data-approach-stage-select"), "the Approach pull-down is missing");
+    assert.ok(/<select[^>]*data-approach-stage-select[^>]*>/.test(html), "the Approach pull-down is not a real <select>");
     assert.ok(html.includes(optionsHtml), "the pull-down does not carry the caller's own Approach options");
-    assert.ok(!/data-ayah-sheet-approach-select[^>]*aria-disabled/.test(html), "the Approach pull-down must never be gated on isSelf");
+    assert.ok(!/data-approach-stage-select[^>]*aria-disabled/.test(html), "the Approach pull-down must never be gated on isSelf");
   }
 });
 
 check("Take an Approach's own placeholder option is unselectable (empty value) and comes before any real Approach", () => {
   const html = renderAyahActionSheetHtml({ unitKey: "ayah:1:1", approachOptionsHtml: `<option value="approach_02">Hifz</option>` });
-  const selectHtml = html.match(/<select[^>]*data-ayah-sheet-approach-select[\s\S]*?<\/select>/)[0];
+  const selectHtml = html.match(/<select[^>]*data-approach-stage-select[\s\S]*?<\/select>/)[0];
   const placeholderIdx = selectHtml.indexOf('value=""');
   const realIdx = selectHtml.indexOf('value="approach_02"');
   assert.ok(placeholderIdx !== -1 && realIdx !== -1 && placeholderIdx < realIdx, "the placeholder option must come first and stay unselectable");
+});
+
+check("issue #325 -- no Approach picked yet: no stage row is drawn at all", () => {
+  const html = renderAyahActionSheetHtml({ unitKey: "ayah:1:1", approachOptionsHtml: `<option value="approach_02">Hifz</option>` });
+  assert.ok(!html.includes("approach-stage-row"), "a stage row appeared with no Approach selected");
+  assert.ok(!html.includes("data-approach-stage-btn"), "a stage button appeared with no Approach selected");
+});
+
+check("issue #325 -- an Approach IS picked: all four stages render, the current one pressed, the rest not", () => {
+  const html = renderAyahActionSheetHtml({
+    unitKey: "ayah:1:1", approachOptionsHtml: `<option value="approach_02">Hifz</option>`,
+    selectedApproachId: "approach_02", selectedApproachStatusId: "practising",
+  });
+  for (const id of ["not_started", "learning", "practising", "achieved"]) {
+    assert.ok(html.includes(`data-approach-stage-btn="${id}"`), `missing the ${id} stage button`);
+  }
+  assert.ok(!html.includes("Mastered"), "Mastered must never appear as a claimable stage");
+  const pressed = [...html.matchAll(/data-approach-stage-btn="([a-z_]+)" aria-pressed="(true|false)"/g)];
+  assert.equal(pressed.length, 4, "expected exactly four stage buttons");
+  for (const [, id, val] of pressed) assert.equal(val, id === "practising" ? "true" : "false", `${id} carries the wrong aria-pressed`);
+});
+
+check("issue #325 -- the picked Approach's own <option> carries selected, so the select shows it rather than the placeholder", () => {
+  const html = renderAyahActionSheetHtml({
+    unitKey: "ayah:1:1", approachOptionsHtml: `<option value="approach_01">Reading</option><option value="approach_02">Hifz</option>`,
+    selectedApproachId: "approach_02", selectedApproachStatusId: "not_started",
+  });
+  assert.ok(html.includes('<option value="approach_02" selected>'), "the picked Approach's own option is not marked selected");
+  assert.ok(!html.includes('<option value="approach_01" selected>'), "the WRONG option was marked selected");
+  assert.ok(/<option value="" [^>]*selected[^>]*disabled/.test(html) === false, "the placeholder must not be selected once a real Approach is picked");
 });
 
 check("Make a poster: hasPosterNote=false shows the sheet's own hint and a Take Note offer; true/null (unresolved) shows neither", () => {
@@ -306,32 +345,68 @@ check("a dimmed (aria-disabled) item never fires its callback", () => {
   assert.equal(fired, false, "a gated item's callback fired anyway");
 });
 
-// --- 2b. ISSUE #295 -- THE NEW CALLBACKS ------------------------------------
+// --- 2b. ISSUE #295/#325 -- THE APPROACH PICKER'S CALLBACKS ----------------
+// Updated in place, reason recorded: onTakeApproach (a single callback that
+// both claimed AND closed the sheet) is gone, replaced by onApproachPicked
+// (picking -- never closes, never writes) and onStageChoice (pressing a
+// stage button -- the only thing that writes, and it ALSO never closes the
+// sheet, since the whole point of issue #325 is trying more than one stage
+// without reopening the card).
 
-check("choosing a real Approach fires onTakeApproach(unitKey, approachId) with onClose first, then resets the pull-down", () => {
+check("choosing an Approach fires onApproachPicked(unitKey, approachId) and does NOT close the sheet (issue #325: picking is not claiming)", () => {
   const html = renderAyahActionSheetHtml({ unitKey: "ayah:2:255", approachOptionsHtml: `<option value="approach_02">Hifz</option>` });
   const container = fakeContainer(html);
   const order = [];
   attachAyahActionSheetHandlers(container, {
     onClose: () => order.push("close"),
-    onTakeApproach: (uk, id) => order.push(`take:${uk}:${id}`),
+    onApproachPicked: (uk, id) => order.push(`pick:${uk}:${id}`),
   });
-  const select = container.querySelector("[data-ayah-sheet]").querySelector("[data-ayah-sheet-approach-select]");
+  const select = container.querySelector("[data-ayah-sheet]").querySelector("[data-approach-stage-select]");
   select.value = "approach_02";
   select._fire();
-  assert.deepEqual(order, ["close", "take:ayah:2:255:approach_02"], "close must fire before onTakeApproach");
-  assert.equal(select.value, "", "the pull-down must reset to its own placeholder after firing");
+  assert.deepEqual(order, ["pick:ayah:2:255:approach_02"], "picking an Approach must fire onApproachPicked and must not fire onClose");
 });
 
 check("choosing the pull-down's own empty placeholder value fires nothing", () => {
   const html = renderAyahActionSheetHtml({ unitKey: "ayah:1:1", approachOptionsHtml: `<option value="approach_02">Hifz</option>` });
   const container = fakeContainer(html);
   let fired = false;
-  attachAyahActionSheetHandlers(container, { onTakeApproach: () => { fired = true; } });
-  const select = container.querySelector("[data-ayah-sheet]").querySelector("[data-ayah-sheet-approach-select]");
+  attachAyahActionSheetHandlers(container, { onApproachPicked: () => { fired = true; } });
+  const select = container.querySelector("[data-ayah-sheet]").querySelector("[data-approach-stage-select]");
   select.value = "";
   select._fire();
-  assert.equal(fired, false, "the placeholder value must never fire a claim");
+  assert.equal(fired, false, "the placeholder value must never fire a pick");
+});
+
+check("issue #325 -- pressing a stage button fires onStageChoice(unitKey, approachId, statusId) for the CURRENTLY selected Approach, and does NOT close the sheet", () => {
+  const html = renderAyahActionSheetHtml({
+    unitKey: "ayah:2:255", approachOptionsHtml: `<option value="approach_02">Hifz</option>`,
+    selectedApproachId: "approach_02", selectedApproachStatusId: "not_started",
+  });
+  const container = fakeContainer(html);
+  const order = [];
+  attachAyahActionSheetHandlers(container, {
+    onClose: () => order.push("close"),
+    onStageChoice: (uk, id, statusId) => order.push(`stage:${uk}:${id}:${statusId}`),
+  });
+  const sheet = container.querySelector("[data-ayah-sheet]");
+  const select = sheet.querySelector("[data-approach-stage-select]");
+  // The fake stand-in never parses a rendered <option selected> into .value
+  // itself (see elementFromTag's own comment) -- a real <select> would
+  // already read "approach_02" here, which is exactly what the markup-level
+  // check above ("the picked Approach's own <option> carries selected")
+  // proves independently.
+  select.value = "approach_02";
+  const buttons = sheet.querySelectorAll("[data-approach-stage-btn]");
+  const btn = buttons.find((b) => b.getAttribute("data-approach-stage-btn") === "practising");
+  assert.ok(btn, "the Practising stage button was not found");
+  btn._fire();
+  assert.deepEqual(order, ["stage:ayah:2:255:approach_02:practising"], "a stage press must fire onStageChoice and must not fire onClose");
+});
+
+check("issue #325 -- pressing a stage button with no Approach picked fires nothing (the select's own empty value guards it)", () => {
+  const html = renderAyahActionSheetHtml({ unitKey: "ayah:1:1", approachOptionsHtml: `<option value="approach_02">Hifz</option>` });
+  assert.ok(!html.includes("data-approach-stage-btn"), "precondition: no stage row should even render with nothing picked");
 });
 
 check("Make a poster and See on the wheel both fire with onClose first", () => {
@@ -550,30 +625,58 @@ check("the number badge is a <button>, not a <span>, wherever it is clickable --
 // place -- both call sites' own field lists, extracted independently and
 // compared as sets rather than assumed to match by eye.
 
+// Issue #325 -- claimApproachStatus() writes `statusId` as a bare shorthand
+// property (the parameter is already named `statusId`), which the old
+// colon-only regex below could not see at all -- found by this very check
+// going unproven-red the moment the field existed under a different spelling
+// than the extraction expected. Splitting on top-level commas instead (every
+// field in a claimStatus(db, {...}) call is a flat, one-level-deep object
+// literal -- no field's own VALUE ever contains a literal comma, checked by
+// eye against every call site this function is used on) sees both shorthand
+// and colon-style fields alike.
 function claimStatusFieldsAfter(text, anchorFnName) {
   const fnStart = text.indexOf(`function ${anchorFnName}`);
   assert.ok(fnStart !== -1, `${anchorFnName} not found`);
   const callStart = text.indexOf("claimStatus(db, {", fnStart);
   assert.ok(callStart !== -1, `${anchorFnName} does not call claimStatus(db, {...})`);
+  const bodyStart = callStart + "claimStatus(db, {".length;
   const callEnd = text.indexOf("})", callStart);
-  const body = text.slice(callStart, callEnd);
-  return [...body.matchAll(/(\w+):/g)].map((m) => m[1]).sort();
+  const body = text.slice(bodyStart, callEnd);
+  return body.split(",").map((seg) => seg.trim()).filter(Boolean).map((seg) => seg.split(":")[0].trim()).sort();
 }
 
-check("takeApproachForAyah() and wireApproachEmbed() (the Track tab's own claim button) call claimStatus() with the identical field set", () => {
+// Issue #325 -- updated in place, reason recorded: takeApproachForAyah() no
+// longer calls claimStatus(db, {...}) directly -- both it and the new
+// takeApproachForPage() (the "This page" card's own stage press) go through
+// one shared claimApproachStatus() helper instead, so THAT function is now
+// the one to compare against the Track tab's own claim button.
+check("claimApproachStatus() (shared by the Ayah Card and the This page card) and wireApproachEmbed() (the Track tab's own claim button) call claimStatus() with the identical field set", () => {
   const text = read("app/quranrevival.html");
-  const ayahCardFields = claimStatusFieldsAfter(text, "takeApproachForAyah");
+  const sharedFields = claimStatusFieldsAfter(text, "claimApproachStatus");
   const trackTabFields = claimStatusFieldsAfter(text, "wireApproachEmbed");
-  assert.deepEqual(ayahCardFields, trackTabFields, "the two claimStatus() calls no longer pass the same fields -- a second write path may have been introduced");
+  assert.deepEqual(sharedFields, trackTabFields, "the two claimStatus() calls no longer pass the same fields -- a second write path may have been introduced");
 });
 
-check("takeApproachForAyah() imports no write function of its own -- claimStatus/safeWrite/logActivity are the page's single existing imports, not re-declared", () => {
+check("takeApproachForAyah() and takeApproachForPage() both write through the shared claimApproachStatus() helper, never a second write path of their own", () => {
   const text = read("app/quranrevival.html");
   assert.ok(/import\s*\{[^}]*\bclaimStatus\b[^}]*\}\s*from\s*"\.\/js\/records\.js"/.test(text), "claimStatus is not imported from records.js");
-  const fnStart = text.indexOf("function takeApproachForAyah");
+  for (const fnName of ["takeApproachForAyah", "takeApproachForPage"]) {
+    const fnStart = text.indexOf(`function ${fnName}`);
+    assert.ok(fnStart !== -1, `${fnName} not found`);
+    const fnEnd = text.indexOf("\n    }", fnStart);
+    const body = text.slice(fnStart, fnEnd);
+    assert.ok(/claimApproachStatus\(/.test(body), `${fnName} does not call the shared claimApproachStatus()`);
+    assert.ok(!/claimStatus\(db,/.test(body), `${fnName} calls claimStatus() directly instead of going through claimApproachStatus()`);
+    assert.ok(!/firebasejs|setDoc\(|updateDoc\(/.test(body), `${fnName} talks to Firestore directly instead of going through records.js`);
+  }
+});
+
+check("takeApproachForPage() claims the PAGE unit key only -- it never builds or writes an ayah: unit key (Owner decision 4: 'keep Ayah has it's separate approach')", () => {
+  const text = read("app/quranrevival.html");
+  const fnStart = text.indexOf("function takeApproachForPage");
   const fnEnd = text.indexOf("\n    }", fnStart);
   const body = text.slice(fnStart, fnEnd);
-  assert.ok(!/firebasejs|setDoc\(|updateDoc\(/.test(body), "takeApproachForAyah talks to Firestore directly instead of going through records.js's claimStatus()");
+  assert.ok(!/buildUnitKey\.ayah/.test(body), "takeApproachForPage() must never build an ayah: unit key");
 });
 
 console.log(`\n==== "This āyah" action sheet + folder filing (issue #286): ${passed} passed, ${failed} failed ====`);
