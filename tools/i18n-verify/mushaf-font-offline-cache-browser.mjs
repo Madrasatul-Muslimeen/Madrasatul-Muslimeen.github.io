@@ -44,6 +44,14 @@ import fs from "node:fs";
 let pass = 0, fail = 0;
 const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
 
+// Architect review, 27 Sep 2026: the assumption named in the header was
+// WRONG as written. In Playwright 1.56 a context route does NOT see a
+// request the service worker itself makes unless this flag is set -- the
+// worker's fetch went straight to the real network (hits = 0) and, in a
+// sandbox that cannot reach the CDN, every case failed with "Failed to
+// fetch". Set here, before launch, so the suite needs nothing from whoever
+// runs it.
+process.env.PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS = "1";
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
 const VIEWPORT = { width: 390, height: 844 };
 const ABOUT_PATH = "/app/about.html"; // sign-in-optional; the worker's own behaviour doesn't depend on which page asked for it
@@ -63,6 +71,18 @@ const STAND_IN_FONT = fs.readFileSync(new URL("../../app/fonts/notonaskh.woff2",
 async function waitForController(page, timeoutMs = 8000) {
   return page.waitForFunction(() => !!navigator.serviceWorker?.controller, null, { timeout: timeoutMs })
     .then(() => true).catch(() => false);
+}
+
+async function waitForFunction(page, fn, timeoutMs = 8000) {
+  // A page-side predicate that returns a promise is ALWAYS truthy to
+  // Playwright's own page.waitForFunction, so it would resolve at once.
+  // Poll the awaited result here instead.
+  const end = Date.now() + timeoutMs;
+  while (Date.now() < end) {
+    if (await page.evaluate(fn)) return true;
+    await page.waitForTimeout(100);
+  }
+  return false;
 }
 
 /** Reads every cache this worker owns, keyed by cache name, for direct
@@ -160,7 +180,13 @@ async function seedFontCache(page, url, ageMs) {
   const staleUrl = `${PLAIN_FONT_BASE}p1.woff2`;
   const freshUrl = `${PLAIN_FONT_BASE}p2.woff2`;
   let staleHits = 0, freshHits = 0;
-  await ctx.route(staleUrl, (route) => { staleHits++; route.fulfill({ status: 200, contentType: "font/woff2", body: STAND_IN_FONT }); });
+  // Architect review: the refetch is slowed to 1.5s so "answered without
+  // waiting on the network" is measured as TIME. The original check read the
+  // hit counter right after the fetch resolved, and the background refresh
+  // (started in the same tick, correctly) had usually already reached the
+  // route -- a race the check lost, not a defect in the worker.
+  const SLOW_MS = 1500;
+  await ctx.route(staleUrl, async (route) => { staleHits++; await new Promise((r) => setTimeout(r, SLOW_MS)); route.fulfill({ status: 200, contentType: "font/woff2", body: STAND_IN_FONT }).catch(() => {}); });
   await ctx.route(freshUrl, (route) => { freshHits++; route.fulfill({ status: 200, contentType: "font/woff2", body: STAND_IN_FONT }); });
   const { page } = await openPage(ctx, ABOUT_PATH);
   check("precondition: the page is controlled by the worker", await waitForController(page));
@@ -168,13 +194,19 @@ async function seedFontCache(page, url, ageMs) {
   await seedFontCache(page, staleUrl, QF_FONT_MAX_AGE_MS + 60 * 60 * 1000); // 7 days + 1 hour
   await seedFontCache(page, freshUrl, QF_FONT_MAX_AGE_MS - 60 * 60 * 1000); // 7 days - 1 hour
 
-  const staleStatus = await page.evaluate((u) => fetch(u).then((r) => r.status), staleUrl);
-  const freshStatus = await page.evaluate((u) => fetch(u).then((r) => r.status), freshUrl);
+  const timed = (u) => page.evaluate(async (u) => { const t = performance.now(); const s = await fetch(u).then((r) => r.status); return { s, ms: performance.now() - t }; }, u);
+  const staleAns = await timed(staleUrl);
+  const freshAns = await timed(freshUrl);
+  const staleStatus = staleAns.s, freshStatus = freshAns.s;
   check("a request for a stale-but-kept copy is still answered immediately", staleStatus === 200, String(staleStatus));
   check("a request for a fresh copy is answered immediately too", freshStatus === 200, String(freshStatus));
-  check("neither answer waited on the network -- the background refresh (if any) hasn't run yet", staleHits === 0 && freshHits === 0, `stale=${staleHits} fresh=${freshHits}`);
+  check("neither answer waited on the network -- the stale copy came back well inside the 1.5s refetch", staleAns.ms < SLOW_MS / 2 && freshAns.ms < SLOW_MS / 2, `stale=${Math.round(staleAns.ms)}ms fresh=${Math.round(freshAns.ms)}ms`);
 
-  await page.waitForTimeout(1000); // let event.waitUntil's background refresh settle
+  // Wait for the STATE -- the refreshed entry's own stamp -- not a guess.
+  await waitForFunction(page, `(async () => {
+    const res = await (await caches.open("mm-qf-fonts-v1")).match(${JSON.stringify(staleUrl)});
+    return Date.now() - Number(res?.headers.get("x-mm-cached-at")) < 60000;
+  })()`);
   check("the STALE copy triggered exactly one background refetch", staleHits === 1, String(staleHits));
   check("the FRESH copy triggered no refetch at all", freshHits === 0, String(freshHits));
 
@@ -214,11 +246,9 @@ async function seedFontCache(page, url, ageMs) {
   // (the "warm" message only lands once navigator.serviceWorker.ready
   // resolves), the same pattern service-worker.mjs's own waitForCached()
   // uses, rather than a guessed fixed pause.
-  await page.waitForFunction((path) => {
-    return caches.keys().then((names) => Promise.all(
+  await waitForFunction(page, `caches.keys().then((names) => Promise.all(
       names.filter((n) => n.startsWith("mm-app-")).map((n) => caches.open(n).then((c) => c.keys()))
-    )).then((lists) => lists.some((keys) => keys.some((r) => r.url.endsWith(path))));
-  }, ABOUT_PATH, { timeout: 8000 }).catch(() => {});
+    )).then((lists) => lists.some((keys) => keys.some((r) => r.url.endsWith(${JSON.stringify(ABOUT_PATH)}))))`);
   const caches2 = await allCaches(page);
   const appCacheUrls = Object.entries(caches2).filter(([n]) => n.startsWith("mm-app-")).flatMap(([, urls]) => urls);
   check("the app's own mm-app-* cache still fills as before -- this page's own URL is in it", appCacheUrls.some((u) => u.endsWith(ABOUT_PATH)), JSON.stringify(caches2));
@@ -292,6 +322,13 @@ async function seedFontCache(page, url, ageMs) {
     await page.waitForFunction(() =>
       [...document.querySelectorAll(".hifz-page")].every((p) => p.style.fontFamily.includes("tajweed")),
       null, { timeout: 5000 }).catch(() => {});
+    // Architect review: page 51's Tajweed font is fetched about a second
+    // after page 50's (as it nears the screen), so the request count was
+    // read before it existed. Wait for BOTH fonts to be in the kept cache.
+    await waitForFunction(page, `(async () => {
+      const keys = await (await caches.open("mm-qf-fonts-v1")).keys();
+      return [50, 51].every((n) => keys.some((r) => r.url === ${JSON.stringify(TAJWEED_FONT_BASE)} + "p" + n + ".woff2"));
+    })()`, 10000);
     const onlineFamilies = await page.evaluate(() => [...document.querySelectorAll(".hifz-page")].map((p) => p.style.fontFamily));
     check("online: both pages drew in their Tajweed family", onlineFamilies.every((f) => /hifz-tajweed-p/.test(f)), JSON.stringify(onlineFamilies));
     check("...costing exactly one Tajweed font request per page (2)", tajweedHits === 2, String(tajweedHits));

@@ -38,6 +38,11 @@ import fs from "node:fs";
 let pass = 0, fail = 0;
 const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
 
+// Architect review, 27 Sep 2026 (#335): without this flag a context route
+// does not see a request the service worker makes, so section 5's font
+// fetch went to the real network and nothing was ever kept -- see
+// mushaf-font-offline-cache-browser.mjs's own note.
+process.env.PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS = "1";
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
 
 // Copied from app/js/hifz-renderer.js's own module-level constants -- the
