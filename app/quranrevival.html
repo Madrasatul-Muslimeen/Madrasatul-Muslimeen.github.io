@@ -13025,12 +13025,28 @@
         without reopening the card) and repaints the Mushaf markers' rings,
         since this Approach is now "the Approach last chosen on either
         card" (point 4). */
+    /** Carries a just-saved claim into an in-memory records chunk. */
+    function patchClaimedEntry(chunk, unitKey, approachId, statusId) {
+      chunk.entries = chunk.entries ?? {};
+      const key = `${unitKey}::${approachId}`;
+      chunk.entries[key] = { ...(chunk.entries[key] ?? {}), trackableId: approachId, claimedStatus: statusId };
+    }
+
     async function takeApproachForAyah(unitKey, approachId, statusId) {
       const outcome = await claimApproachStatus(unitKey, approachId, statusId);
       if (!outcome.ok) return;
       ayahSheetSelectedApproachId = approachId;
       mushafRingApproachId = approachId;
       await refreshChunkAndWheel(); // ayah/range/surah/ruku all chunk to surah_N -- always true for an Ayah Card's own unit key
+      // Architect review of #325: the value just written is carried into the
+      // in-memory chunk too, so the card and the rings never depend on a
+      // read-after-write landing (the harness stub never mutates its data,
+      // and a slow network could briefly return the old entry).
+      if (Number(unitKey.split(":")[1]) === currentSurahNum) {
+        if (!currentChunk) currentChunk = { entries: {} };
+        patchClaimedEntry(currentChunk, unitKey, approachId, statusId);
+        renderWheel();
+      }
       if (stageView === "note" && noteScope) renderNoteViewNow();
       if (ayahSheetUnitKey === unitKey) renderAyahActionSheetNow();
       applyMushafMarkerRings();
@@ -13049,6 +13065,8 @@
       pageApproachCardSelectedApproachId = approachId;
       mushafRingApproachId = approachId;
       await ensureQuranSubjectChunk({ force: true });
+      if (!quranSubjectChunk) quranSubjectChunk = { entries: {} };
+      patchClaimedEntry(quranSubjectChunk, unitKey, approachId, statusId); // same reason as takeApproachForAyah()
       renderWheel();
       if (pageApproachCardPageNum != null) renderPageApproachCardNow();
       applyMushafMarkerRings();

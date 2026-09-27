@@ -131,7 +131,8 @@ function readLayout(page) {
     const marker = document.querySelector('[data-ayah-marker="3:55"]');
     const markerBox = marker ? marker.getBoundingClientRect() : null;
     return {
-      refFitsOneLine: !refRect || !ref ? null : refRect.height <= (parseFloat(getComputedStyle(ref).lineHeight) || refRect.height) * 1.6,
+      // Architect review: measured on the nowrap text span, not the 40px button.
+      refFitsOneLine: (() => { const tx = ref?.querySelector(".mushaf-page-ref-text"); if (!tx) return null; const h = tx.getBoundingClientRect().height; return h <= (parseFloat(getComputedStyle(tx).lineHeight) || h) * 1.6; })(),
       scrollWidth: document.documentElement.scrollWidth,
       innerWidth: window.innerWidth,
       exitOnScreen: !!exit && exit.right <= window.innerWidth && exit.left >= 0,

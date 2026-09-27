@@ -105,14 +105,20 @@ function readPageRef(page) {
   return page.evaluate(() => {
     const el = document.getElementById("mushafPageRef");
     if (!el) return null;
+    // Architect review of #325 (updated in place): the reference is now a
+    // 40px-tall BUTTON, so its own box is taller than one line by design.
+    // "Fits one line" is measured on its text span, which is nowrap.
+    const textEl = el.querySelector(".mushaf-page-ref-text") || el;
     const r = el.getBoundingClientRect();
+    const tr = textEl.getBoundingClientRect();
     const exit = document.getElementById("hideChromeBtn")?.getBoundingClientRect();
     return {
       hidden: el.hidden,
       text: el.textContent ?? "",
       tagName: el.tagName,
       rect: { top: r.top, left: r.left, right: r.right, bottom: r.bottom, height: r.height, width: r.width },
-      lineHeight: parseFloat(getComputedStyle(el).lineHeight) || null,
+      textHeight: tr.height,
+      lineHeight: parseFloat(getComputedStyle(textEl).lineHeight) || null,
       exitOnScreen: !!exit && exit.right <= innerWidth && exit.left >= 0,
       docScrollWidth: document.documentElement.scrollWidth,
       innerWidth,
@@ -149,7 +155,7 @@ for (const [width, height] of [[320, 640], [360, 740], [390, 844], [412, 915], [
       check(`[en ${width}] the āyah range reads 1-5`, /1.*5|5.*1/.test(p10?.text ?? "") && /[–-]/.test(p10?.text ?? ""), p10?.text);
     }
     check(`[${lang} ${width}] fits on ONE line (rect height <= ~1.6x its own line-height)`,
-      !!p10 && (!p10.lineHeight || p10.rect.height <= p10.lineHeight * 1.6), JSON.stringify(p10));
+      !!p10 && (!p10.lineHeight || p10.textHeight <= p10.lineHeight * 1.6), JSON.stringify(p10));
     check(`[${lang} ${width}] the exit full-screen icon stays fully on screen`, p10?.exitOnScreen === true, JSON.stringify(p10));
     check(`[${lang} ${width}] no sideways page scroll`, (p10?.docScrollWidth ?? Infinity) <= (p10?.innerWidth ?? 0) + 1, JSON.stringify(p10));
 
@@ -166,7 +172,7 @@ for (const [width, height] of [[320, 640], [360, 740], [390, 844], [412, 915], [
         /286/.test(p20?.text ?? "") && /1.*9|9.*1/.test(p20?.text ?? ""), p20?.text);
     }
     check(`[${lang} ${width}] the two-surah page ALSO fits one line`,
-      !!p20 && (!p20.lineHeight || p20.rect.height <= p20.lineHeight * 1.6), JSON.stringify(p20));
+      !!p20 && (!p20.lineHeight || p20.textHeight <= p20.lineHeight * 1.6), JSON.stringify(p20));
     check(`[${lang} ${width}] and the exit icon still stays on screen`, p20?.exitOnScreen === true, JSON.stringify(p20));
 
     check(`[${lang} ${width}] no page errors`, errors.filter((e) => !/CERT|archive\.org|api\.quran|net::ERR_FAILED/.test(e)).length === 0, JSON.stringify(errors.slice(0, 3)));

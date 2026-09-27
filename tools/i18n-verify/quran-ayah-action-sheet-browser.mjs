@@ -313,6 +313,12 @@ console.log(`\n=== Ayah Card -- number badge, Take an Approach, Status B (issue 
     !!document.querySelector("#quranWordCardMount .quran-word-card") && !document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"));
   check("tapping a Word by Word chip closes the card and opens the Word Card for that word", wordCardFromChip);
 
+  // Architect review of #325: since v08.89 the Word Card opens full screen
+  // below 900px and covers the reading screen, so close it before tapping
+  // the āyah badge behind it (this suite was red on main for that reason).
+  await page.click("#quranWordCardMount [data-word-card-close]").catch(() => {});
+  await page.waitForTimeout(300);
+
   // --- Issue #325 -- updated in place, reason recorded: choosing an
   // Approach no longer claims Learning and closes the card. It reveals a
   // four-stage row instead; pressing a stage writes through the SAME
