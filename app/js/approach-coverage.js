@@ -147,6 +147,43 @@ export function spanForUnitKey(unitKey, lookups = {}) {
 }
 
 /**
+ * The "weakest link" pooled status across every ayah a coverage range
+ * covers, for one trackable -- Explore's own poolCoverageStatus() AND the
+ * whole-Qur'an "My Status" Juz strip BOTH call this rather than each
+ * re-deriving the pool, which is what makes "the status Juz strip must
+ * equal Explore's Juz colouring" (Owner decision 7) provable rather than
+ * merely hoped for. Returns null when nothing at all is countable yet (every
+ * ayah Not Applicable, or the Approach is No -- see below) -- the caller
+ * falls back to a direct claim on the wider unit itself in that case,
+ * exactly as every Explore wedge already does.
+ *
+ * Issue #328 (Owner decision 6) -- for a No Approach, pooling from
+ * ayah-level claims never happens at all: this returns null immediately,
+ * "counts only as a claim on that whole unit, never for its ayat".
+ *
+ * `ownStatus(surah, ayah)`: a function reading one ayah's own claimedStatus
+ * ("not_started" default) -- abstracts over WHERE the claim actually lives
+ * (Explore's per-surah chunks, or My Status's own whole-person map), so the
+ * pooling rule itself never has to know or care.
+ */
+export function poolStatus(coverage, { ownStatus, spans, trackable } = {}) {
+  if (!countsForEachAyah(trackable)) return null;
+  let worstIdx = null;
+  let anyCounted = false;
+  for (const { surah, from, to } of coverage ?? []) {
+    for (let ayah = from; ayah <= to; ayah++) {
+      const own = ownStatus ? ownStatus(surah, ayah) : "not_started";
+      const statusId = effectiveStatus({ own, spans, surah, ayah, trackable });
+      if (statusId === "not_applicable") continue;
+      anyCounted = true;
+      const idx = RAMP_ORDER.indexOf(statusId);
+      if (worstIdx === null || idx < worstIdx) worstIdx = idx;
+    }
+  }
+  return anyCounted ? RAMP_ORDER[worstIdx] : null;
+}
+
+/**
  * How many distinct wider-than-ayah claims (any real onRamp status, Not
  * Applicable excluded -- I7) this trackable carries, grouped by unit type --
  * the No-Approach "studied as a whole" line (e.g. "3 Surahs, 1 Juz"). Only
@@ -160,7 +197,11 @@ export function spanForUnitKey(unitKey, lookups = {}) {
 export function tallyWideClaimsByUnitType(wideEntries) {
   const counts = {};
   for (const { unitType, statusId } of wideEntries ?? []) {
-    if (!unitType || statusId === "not_applicable" || RAMP_ORDER.indexOf(statusId) < 0) continue;
+    // Same three-part exclusion buildExploreWiderSpans() uses for a floor:
+    // no unit type, Not Applicable (I7), or "not_started" -- a claim nobody
+    // has actually moved off its default is not something "studied as a
+    // whole" should report -- and anything RAMP_ORDER does not recognise.
+    if (!unitType || !statusId || statusId === "not_applicable" || statusId === "not_started" || RAMP_ORDER.indexOf(statusId) < 0) continue;
     counts[unitType] = (counts[unitType] ?? 0) + 1;
   }
   return counts;
