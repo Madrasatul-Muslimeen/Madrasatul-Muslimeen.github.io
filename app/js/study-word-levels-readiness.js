@@ -58,20 +58,26 @@ export const WORD_LEVELS_READINESS_AUTHORITIES = Object.freeze(["master-architec
 /**
  * THE DECLARATION. This is the single place the answer lives.
  *
- * NOT YET ENABLED. `ready: false` until the Owner publishes
+ * ENABLED, 27 Sep 2026. The Owner published
  * docs/governance/2026-09-26-word-levels-DEPLOYMENT-candidate.rules to
- * study-monitoring and the Master Architect records a governed decision here,
- * the same two-step shape every other Firestore change in this project uses.
+ * study-monitoring and said "Word levels rules are live."; firestore.rules is
+ * synced to that file. Governed decision recorded in
+ * docs/reports/2026-09-27-word-levels-enabled.md.
  */
 export const WORD_LEVELS_PERSISTENCE_DECLARATION = Object.freeze({
-  ready: false,
-  decision: null,
+  ready: true,
+  decision: Object.freeze({
+    by: "master-architect",
+    on: "2026-09-27",
+    reference: "docs/reports/2026-09-27-word-levels-enabled.md",
+  }),
   gate: "E1",
   note:
     "Basic Arabic / Arabic in Depth word-occurrence progress (issue #320) is " +
-    "built and gated. The Rules candidate that admits the two levels is at " +
-    "docs/governance/2026-09-26-word-levels-DEPLOYMENT-candidate.rules and has " +
-    "not been published. wbw progress is unaffected by this gate.",
+    "live: the Rules admitting level basic/depth are published to " +
+    "study-monitoring (Owner, 27 Sep 2026) and firestore.rules is synced to " +
+    "docs/governance/2026-09-26-word-levels-DEPLOYMENT-candidate.rules. " +
+    "wbw progress is unaffected by this gate.",
 });
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;

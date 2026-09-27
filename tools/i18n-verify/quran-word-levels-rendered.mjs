@@ -56,8 +56,25 @@ export function wordLevelsUnavailableReason(declaration = WORD_LEVELS_PERSISTENC
 }
 `;
 
-async function newWordLevelsContext(browser, opts, { forceGateOpen = false } = {}) {
+// UPDATED IN PLACE, 27 Sep 2026, reason recorded: the Owner published the
+// word-levels Rules ("Word levels rules are live.") and the REAL gate now reads
+// ready: true (docs/reports/2026-09-27-word-levels-enabled.md). The closed-gate
+// section below used to run against the real file; it now routes this CLOSED
+// copy in instead, so the closed behaviour stays proven exactly as strictly,
+// and a separate section asserts the real, committed gate is open.
+const FORCED_CLOSED_READINESS_SOURCE = FORCED_OPEN_READINESS_SOURCE
+  .replace("ready: true,", "ready: false,")
+  .replace(/decision: Object\.freeze\(\{[^}]*\}\),/, "decision: null,");
+if (!/ready: false,/.test(FORCED_CLOSED_READINESS_SOURCE) || !/decision: null,/.test(FORCED_CLOSED_READINESS_SOURCE)) {
+  throw new Error("could not build the forced-closed readiness copy");
+}
+
+async function newWordLevelsContext(browser, opts, { forceGateOpen = false, forceGateClosed = false } = {}) {
   const ctx = await newContext(browser, opts);
+  if (forceGateClosed) {
+    await ctx.route("**/js/study-word-levels-readiness.js", (route) =>
+      route.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: FORCED_CLOSED_READINESS_SOURCE }));
+  }
   if (forceGateOpen) {
     await ctx.route("**/js/study-word-levels-readiness.js", (route) =>
       route.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: FORCED_OPEN_READINESS_SOURCE }));
@@ -126,13 +143,14 @@ function lastWrite(page, level) {
 }
 
 // ===========================================================================
-// THE REAL GATE, AS COMMITTED: basic/depth show no controls, and nothing is
-// ever read for either level. WbW itself is completely unaffected.
+// THE GATE CLOSED (a routed closed copy -- see FORCED_CLOSED_READINESS_SOURCE):
+// basic/depth show no controls, and nothing is ever read for either level.
+// WbW itself is completely unaffected.
 // ===========================================================================
 for (const [width, height] of [[390, 844], [1100, 900]]) {
   for (const lang of ["en", "bn"]) {
-    console.log(`\n=== real gate (closed), ${width}x${height}, appLang=${lang} ===`);
-    const ctx = await newWordLevelsContext(browser, { appLang: lang, viewport: { width, height }, extraSeedJs: SEED }, { forceGateOpen: false });
+    console.log(`\n=== gate closed (routed copy), ${width}x${height}, appLang=${lang} ===`);
+    const ctx = await newWordLevelsContext(browser, { appLang: lang, viewport: { width, height }, extraSeedJs: SEED }, { forceGateClosed: true });
     const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
     await enterReadWithWbw(page);
     await openWord(page, 2);
@@ -225,6 +243,28 @@ console.log(`\n=== gate FORCED OPEN, bn, 1100x900 ===`);
   const buttonTexts = await page.evaluate(() => [...document.querySelectorAll('#quranWordCardMount [data-word-progress-state]')].map((el) => el.textContent.trim()));
   check("[bn forced-open] the claim buttons are in Bangla, same shared labels as WbW", buttonTexts.every((t) => bangla.test(t)), JSON.stringify(buttonTexts));
   check("[bn forced-open] no page errors", errors.filter((e) => !/CERT|archive\.org|api\.quran/.test(e)).length === 0, JSON.stringify(errors.slice(0, 3)));
+  await ctx.close();
+}
+
+// ===========================================================================
+// THE REAL GATE, AS COMMITTED (27 Sep 2026): open. No routed copy -- the real
+// study-word-levels-readiness.js is served, and the Basic tab offers its
+// controls.
+// ===========================================================================
+{
+  console.log("\n=== real gate (open, as committed), 390x844, appLang=en ===");
+  const ctx = await newWordLevelsContext(browser, { appLang: "en", viewport: { width: 390, height: 844 }, extraSeedJs: SEED });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  const realSrc = await page.evaluate(() => fetch("js/study-word-levels-readiness.js").then((r) => r.text()));
+  check("the committed gate declares ready: true with a governed decision", /ready: true,/.test(realSrc) && /reference: "docs\/reports\/2026-09-27-word-levels-enabled\.md"/.test(realSrc));
+  await enterReadWithWbw(page);
+  await openWord(page, 2);
+  await selectTab(page, "basic");
+  const basicBlock = await readProgressBlock(page);
+  check("real gate open: the Basic tab offers Not started / Learning / Achieved", Array.isArray(basicBlock?.buttons) && basicBlock.buttons.length === 3, JSON.stringify(basicBlock));
+  await selectTab(page, "depth");
+  const depthBlock = await readProgressBlock(page);
+  check("real gate open: the Arabic in Depth tab offers its three stages too", Array.isArray(depthBlock?.buttons) && depthBlock.buttons.length === 3, JSON.stringify(depthBlock));
   await ctx.close();
 }
 
