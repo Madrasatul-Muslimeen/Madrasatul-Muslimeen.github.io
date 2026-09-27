@@ -808,14 +808,16 @@ service cloud.firestore {
           && request.resource.data.lane     == resource.data.lane;
     }
 
-    // A created lane must say what it is, and only `wbw` may be written:
-    // Basic Arabic and Arabic in Depth have no approved claim unit, so the
-    // deferral is enforced at the database, not only in the client.
+    // A created lane must say what it is. Issue #320 -- the Owner's decision
+    // (docs/governance/2026-09-26-owner-decisions.md, row 4) settled Basic
+    // Arabic and Arabic in Depth as the same claim unit WbW already uses (a
+    // word occurrence), so all three levels may now be written; an unknown
+    // level is still refused, and nothing about `wbw`'s own shape changed.
     function isWordLaneCreate(lane) {
       return request.resource.data.get('contractVersion', '') == 'quran-word-progress:v1'
           && request.resource.data.get('identityContract', '') == 'quran-word-occurrence:v1'
           && request.resource.data.get('lane', '') == lane
-          && request.resource.data.get('level', '') == 'wbw'
+          && request.resource.data.get('level', '') in ['wbw', 'basic', 'depth']
           && request.resource.data.surah is int && request.resource.data.surah >= 1 && request.resource.data.surah <= 114
           && request.resource.data.ayah  is int && request.resource.data.ayah  >= 1 && request.resource.data.ayah  <= 286;
     }

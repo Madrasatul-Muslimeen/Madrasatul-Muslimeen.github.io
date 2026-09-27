@@ -84,6 +84,17 @@ const prodFns = topLevelFunctions(production);
 // two checks that assert a fact about THIS round's deployment specifically,
 // not by anything checking the extracts against current reality.
 const productionAtSync = readAtRef(AUDITED_DEPLOYMENT_REF, "firestore.rules");
+// UPDATED IN PLACE, 27 Sep 2026, reason recorded: the two helper-comparison
+// checks below compared against LIVE firestore.rules. The word-levels
+// deployment (Owner, 27 Sep 2026: "Word levels rules are live.") legitimately
+// widened one production helper, isWordLaneCreate, to admit level basic/depth,
+// so both checks began reporting a divergence that says nothing about whether
+// THIS round's candidate and extracts were faithful. Both now read the
+// helpers as they were at AUDITED_DEPLOYMENT_REF -- the same principle this
+// file already applies to "drops no production line" and the byte-identity
+// check. Neither is weakened: each still fails on any helper that differs
+// from the production it was written against.
+const prodFnsAtSync = topLevelFunctions(productionAtSync);
 
 check("POSITIVE CONTROL: the function comparator really reads bodies", () => {
   assert.ok(prodFns.size > 30, `only ${prodFns.size} top-level helpers found in firestore.rules`);
@@ -109,8 +120,8 @@ check("the deployment candidate defines no top-level helper twice", () => {
 check("the deployment candidate never REDEFINES a production helper differently", () => {
   const offenders = [];
   for (const [name, bodies] of topLevelFunctions(candidate)) {
-    if (!prodFns.has(name)) continue;
-    if (!prodFns.get(name).includes(bodies[0])) offenders.push(name);
+    if (!prodFnsAtSync.has(name)) continue;
+    if (!prodFnsAtSync.get(name).includes(bodies[0])) offenders.push(name);
   }
   assert.deepEqual(offenders, [],
     `the candidate carries a DIFFERENT implementation of: ${offenders.join(", ")}`);
@@ -172,8 +183,8 @@ check("the extracts' divergence from production is EXACTLY the audited four", ()
   const found = new Set();
   for (const rel of EXTRACTS) {
     for (const [name, bodies] of topLevelFunctions(read(rel))) {
-      if (!prodFns.has(name)) continue;
-      if (!prodFns.get(name).includes(bodies[0])) found.add(name);
+      if (!prodFnsAtSync.has(name)) continue;
+      if (!prodFnsAtSync.get(name).includes(bodies[0])) found.add(name);
     }
   }
   assert.deepEqual([...found].sort(), KNOWN,

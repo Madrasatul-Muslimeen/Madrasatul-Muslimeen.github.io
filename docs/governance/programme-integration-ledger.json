@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.94",
+    "version": "08.95",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -834,7 +834,7 @@
       "version": "08.88",
       "owner": "quran",
       "status": "RELEASED",
-      "note": "Basic/Depth word-occurrence claims built behind study-word-levels-readiness.js (ready:false); Rules candidate docs/governance/2026-09-26-word-levels-DEPLOYMENT-candidate.rules awaits the Owner.",
+      "note": "Basic/Depth word-occurrence claims built behind study-word-levels-readiness.js; Rules candidate docs/governance/2026-09-26-word-levels-DEPLOYMENT-candidate.rules published by the Owner 27 Sep 2026 and synced to firestore.rules; gate opened by governed decision (docs/reports/2026-09-27-word-levels-enabled.md).",
       "integration": {
         "authorizedOn": "2026-09-26",
         "integratedOn": "2026-09-26",
@@ -905,8 +905,20 @@
     {
       "version": "08.94",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Quran Foundation Mushaf page fonts (plain and Tajweed) kept on the phone for offline reading in their own weekly-refreshed cache; issue #335.",
+      "integration": {
+        "authorizedOn": "2026-09-27",
+        "integratedOn": "2026-09-27",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "08.95",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Basic/Depth per-word Learning/Achieved claims (issue #320) switched on after the Owner published the word-levels Rules.",
       "integration": {
         "authorizedOn": "2026-09-27",
         "integratedOn": "2026-09-27",
@@ -915,8 +927,9 @@
       }
     }
   ],
-  "nextUnallocated": "08.95",
+  "nextUnallocated": "08.96",
   "nextUnallocatedNote": [
+    "v08.95 was allocated to Basic Arabic and Arabic in Depth word progress switched on, 2026-09-27.",
     "v08.94 was allocated to Mushaf fonts kept offline (issue #335), 2026-09-27.",
     "v08.93 was allocated to Mushaf fonts from Quran Foundation and the Tajweed colours toggle, 2026-09-27.",
     "v08.92 was allocated to My Status and the per-Approach whole-unit setting, 2026-09-27.",
