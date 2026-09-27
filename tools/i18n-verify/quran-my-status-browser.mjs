@@ -81,8 +81,13 @@ async function clickSafely(page, selector, attempts = 4) {
 /** The headline's own leading count, in whichever script it was rendered
  *  (num() prints Bengali digits in Bangla) -- reading it back as a plain
  *  JS number is what lets one assertion work in both languages. */
+// Architect review, 27 Sep 2026: the headline's own COUNT, not merely its first
+// number. Bangla puts the total first ("{total}টির মধ্যে {n}টি আয়াত"), so the
+// first number in a Bangla headline is 6,236 whatever the count is -- the NO
+// Approach read "6236" and failed for a reason in the test, not the app.
 function firstNumberIn(text) {
-  const m = String(text ?? "").match(/[0-9০-৯]+/);
+  const str = String(text ?? "");
+  const m = str.match(/([0-9০-৯]+)টি আয়াত/)?.slice(1) ?? str.match(/:\s*([0-9০-৯]+)/)?.slice(1) ?? str.match(/[0-9০-৯]+/);
   if (!m) return null;
   const westernized = m[0].replace(/[০-৯]/g, (d) => "০১২৩৪৫৬৭৮৯".indexOf(d));
   return Number(westernized);
@@ -97,7 +102,11 @@ async function waitForWheelReady(page) {
 
 function readButtonLayout(page) {
   return page.evaluate(() => {
-    const btn = document.getElementById("myStatusBtn");
+    // Architect review: below 900px "My Status" sits on the heading line
+    // (#myStatusBtn); at >=900px in the capsule row (#myStatusWideBtn).
+    // Whichever is displayed is the one a reader can press.
+    const btn = ["myStatusBtn", "myStatusWideBtn"].map((id) => document.getElementById(id))
+      .find((el) => el && getComputedStyle(el).display !== "none" && el.getBoundingClientRect().width > 0);
     const rect = btn ? btn.getBoundingClientRect() : null;
     return {
       present: !!btn,
@@ -165,8 +174,17 @@ async function runScenarios(lang) {
   check(`[${lang}] the sheet covers the whole viewport below 900px`, sheetRect.width >= 389 && sheetRect.height >= 843 && sheetRect.top === 0 && sheetRect.left === 0, JSON.stringify(sheetRect));
 
   // ---- 4. Slice/row counts agree with the seeded fixture. ----
-  const rowCount = await page.evaluate(() => document.querySelectorAll(".my-status-row-btn").length);
-  check(`[${lang}] the overview lists all 30 Approaches`, rowCount === 30, `measured ${rowCount}`);
+  // Architect review, 27 Sep 2026: the harness fixture carries 10 invented
+  // Quran trackables on top of the 30 seeded templates, and the landing wheel
+  // lists all 40 too -- "My Status" shows the same list the wheel does. So the
+  // check is that every one of the REAL 30 is listed, and the list matches the
+  // wheel's own count, not a hardcoded 30.
+  const rowIds = await page.evaluate(() => [...document.querySelectorAll(".my-status-row-btn")].map((b) => b.dataset.myStatusOpen));
+  const real30 = APPROACH_TEMPLATES.map((a) => a.id);
+  const missing = real30.filter((id) => !rowIds.includes(id));
+  check(`[${lang}] the overview lists all 30 real Approaches`, missing.length === 0, `missing ${missing.join(",")}`);
+  const wheelCount = await page.evaluate(() => document.querySelectorAll("#wheelSection .way-row").length);
+  check(`[${lang}] the overview lists the same Approaches as the landing wheel`, wheelCount > 0 && rowIds.length === wheelCount, `status ${rowIds.length} vs wheel ${wheelCount}`);
 
   const yesRowText = await page.evaluate((id) => {
     const btn = document.querySelector(`[data-my-status-open="${id}"]`);
@@ -187,8 +205,13 @@ async function runScenarios(lang) {
   // ayah tally.
   await clickSafely(page, `[data-my-status-open="${NO_ID}"]`);
   await page.waitForTimeout(200);
-  const noDetailText = await page.evaluate(() => document.getElementById("myStatusDetailBody")?.textContent ?? "");
-  check(`[${lang}] the NO Approach's detail names "studied as a whole"`, noDetailText.includes("studied as a whole") || noDetailText.length > 0, noDetailText.slice(0, 200));
+  // Architect review, 27 Sep 2026: this read `... || noDetailText.length > 0`,
+  // which passes for ANY detail text at all -- the cannot-fail `A || B` shape
+  // CLAUDE.md warns about. It now reads the detail's own "studied as a whole"
+  // line and requires the seeded Surah in it, in either language.
+  const wholeLine = await page.evaluate(() => document.querySelector("#myStatusDetailBody .my-status-whole-line")?.textContent ?? "");
+  const wholePhrase = lang === "bn" ? "সম্পূর্ণভাবে অধ্যয়ন করা হয়েছে" : "studied as a whole";
+  check(`[${lang}] the NO Approach's detail names "studied as a whole" with its one Surah`, wholeLine.includes(wholePhrase) && /[1১]/.test(wholeLine), `line="${wholeLine}"`);
 
   // ---- 5. "See in Explore" opens Explore on the same Approach. ----
   await clickSafely(page, "#myStatusSeeInExploreBtn");

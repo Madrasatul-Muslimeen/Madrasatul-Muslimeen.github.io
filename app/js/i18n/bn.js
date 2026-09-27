@@ -2944,6 +2944,10 @@ export const BN = {
   "{n} Ruku's": "{n}টি রুকু'", // ?
   "{n} Hizb": "{n}টি হিজব", // ?
   "{n} Pages": "{n}টি পৃষ্ঠা", // ?
+  "{n} Surah": "{n}টি সূরা", // ?
+  "{n} Range": "{n}টি রেঞ্জ", // ?
+  "{n} Ruku'": "{n}টি রুকু'", // ?
+  "{n} Page": "{n}টি পৃষ্ঠা", // ?
   "Achieved + Mastered: {n} of {total} āyāt ({percent}%)": "অর্জিত + দক্ষ: {total}টির মধ্যে {n}টি আয়াত ({percent}%)", // ?
   "Words known: {n} of {total} ({percent}%)": "জানা শব্দ: {total}টির মধ্যে {n}টি ({percent}%)", // ?
   "Not yet available.": "এখনো উপলব্ধ নয়।", // ?
