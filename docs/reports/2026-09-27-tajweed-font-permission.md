@@ -56,3 +56,22 @@ The QCF V2 fonts already in `mushaf/fonts/` (added 22 Jul 2026) name themselves
 pre-release build. The same V2 files are served by Quran Foundation's CDN
 (`.../hafs/v2/woff2/p{PAGE}.woff2`). Whether to switch to that source and add
 the credit is a separate question for a later round.
+
+## Update, 27 Sep 2026 — the Owner has a Developer Console account
+The Owner confirmed they already hold an active Quran Foundation Developer
+Console account (screenshot of the console, signed in). **No "app" was created,
+and none is needed.** The Developer Terms condition font caching and bundling
+on an active account plus the credit; an app/OAuth client is only for QF's
+content and user APIs, which MMSA does not call.
+
+So point 3 above is now satisfied. Keeping the Quran Foundation fonts on the
+phone for offline reading is **permitted**, with the credit kept. Two limits
+still apply:
+- the files are never offered separately;
+- the general content-caching limit of one week in the Developer Terms is read
+  as not applying to fonts, which have their own clause. If QF ever says
+  otherwise, the offline copy will be refreshed at least weekly.
+
+This is a follow-up to issue #332, which as dispatched keeps the fonts out of
+`app/sw.js`. Offline caching is to be added once #332 is merged, not changed
+mid-round.
