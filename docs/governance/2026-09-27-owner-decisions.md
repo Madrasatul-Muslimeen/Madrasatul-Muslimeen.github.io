@@ -30,3 +30,15 @@ The Owner answered:
 | 7 | Must Explore and the status card agree? | **"Explore n status both should be in agreement."** | Both read the same setting and the same counting rule. |
 | 8 | What does the headline count? | **"count Achieved + Mastered."** | The status headline for an Approach is āyāt at Achieved or Mastered, out of 6,236 (Word-by-Word in words, out of 77,429). |
 | 9 | Tajweed colours in Mushaf view? | **"keep both. Each page has toggle to move views from regular to T color."** | Plain Mushaf stays the default; a per-page toggle switches to Tajweed colours. Built only after the font licence is confirmed. |
+
+## Later the same day — the app-store plan and the family of apps
+
+The Owner asked for a plan to publish QuranRevival as a standalone store app
+(https://claude.ai/artifact/EELE2T8Y9p8US8yUM5gPD5), then asked whether the
+other modules would show in it, and then for a plan for a family of apps
+(https://claude.ai/artifact/4UuzykL459QwizXUUseJUp). The Owner answered:
+
+| # | Question | Owner's answer | What it means |
+|---|---|---|---|
+| 10 | In a standalone QuranRevival store app, do the other modules show? (store plan, decision 3) | **"Agreed, record it as decision 3 in the plan."** | The store app is **Quran-only**. Other modules do not appear at all, not even locked or greyed out; they stay on the MMSA website. Notes the person made in another module show read-only with a link to where they open. A guardian may record a child's Qur'an progress in the app; Classes, Homework, Monitor and People stay on the website. One "More from Madrasatul Muslimeen" link on About. |
+| 11 | How the apps are organised. | **"Make a plan for building three distinctive setup. Quran, Hadith, Dua (new), Health (and all other modules) as standalone for apps. But they all combined as MMSA (both in Website and app, finally when we will declare and use this as the Madrasah app. But for now … MMSA remains only as site. And later we will combine all Deen module (Quran, Hadith, Dua, etc) in a combined app."** | Three levels, all from one code and one Firebase project (D1): **(1)** one app per subject, QuranRevival first, then each other module (Hadith, a new Dua module, Health and the rest) only when it passes the readiness check; **(2)** later, a combined Deen app (Quran, Hadith, Dua and the other Deen modules); **(3)** MMSA with every module and the Madrasah tools, **website only for now**, an app only when the Owner declares it the Madrasah app. A module is built on the website first; an app is a recipe naming its modules. **Dua is a new module**, not yet built. Open questions (publisher, naming pattern, where Asma ul Husna goes, order after Quran, Dua text sources, the Deen app's contents) are listed in the plan and asked when each step comes near. |
