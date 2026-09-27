@@ -271,14 +271,23 @@ test("real quran-word-progress-data.js functions against the real assembled DEPL
     });
     step("I6: a fresh basic claim instant is not covered by the earlier decision, proven through a real round trip against the real Rules");
 
-    // --- 7. The gate as committed today (ready: false) still refuses basic/
-    // depth even against this exact assembled candidate -- proven with a
-    // SEPARATE module instance carrying the REAL, unswapped gate file. ------
-    await assert.rejects(setWordStateRealGate(p2, {
+    // --- 7. The gate AS COMMITTED. UPDATED IN PLACE, 27 Sep 2026, reason
+    // recorded: this used to assert that the real, committed gate (then
+    // ready: false) still REFUSED basic against these Rules. The Owner
+    // published the Rules ("Word levels rules are live.") and the gate was
+    // opened by governed decision (docs/reports/2026-09-27-word-levels-
+    // enabled.md), so the real, unswapped module must now ALLOW the save, and
+    // the save must really land in the basic lane. ----------------------------
+    await setWordStateRealGate(p2, {
       tenantId: T, personId: "p2", level: "basic", occurrenceId: OCC(4, 1, 1),
       actorPersonId: "p2", actorUid: "uid-p2", state: "achieved",
-    }), /not yet available/, "the real, committed study-word-levels-readiness.js must still refuse basic even against the real published-shape Rules");
-    step("the real (unswapped) gate module, as committed today, refuses basic/depth even though the Rules would allow it -- the app-side gate is what is actually withholding this feature");
+    });
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const snap = await getDoc(doc(ctx.firestore(), "quranWordProgress", "t1__p2__basic__4_1"));
+      assert.ok(snap.exists(), "the real committed gate must now let a basic claim through to the basic lane");
+      assert.equal(snap.data().level, "basic");
+    });
+    step("the real (unswapped) gate module, as committed now (open), lets a basic claim through the real Rules into its own lane");
 
     console.log(`\n==== word-levels-real-function: ${n} assertions through the REAL functions against the REAL assembled DEPLOYMENT candidate ====`);
   } finally {
