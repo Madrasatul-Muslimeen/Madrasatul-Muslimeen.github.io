@@ -4690,6 +4690,12 @@
     import { QURAN_TOTAL_WORD_COUNT, knownDelta, juzForSurahAyah, wordTotalRatio, percentRounded } from "./js/quran-word-total.js";
     import { getWordTotals, recordWordTotalDelta, recordWordTotalDeltaAcrossJuz } from "./js/quran-word-total-data.js";
     import { isWbwTotalPersistenceReady } from "./js/study-wbw-total-readiness.js";
+    // Issue #328 -- the per-Approach "counts for each ayah inside" setting
+    // and the whole-Qur'an counting core Explore and "My Status" share.
+    import {
+      QURAN_TOTAL_AYAH_COUNT, WBW_TRACKABLE_ID, countsForEachAyah, effectiveStatus,
+      spanForUnitKey, tallyWideClaimsByUnitType, summarizeApproachAyahCoverage, achievedOrMasteredRatio,
+    } from "./js/approach-coverage.js";
     // Issue #303 -- lemma-level word progress ("mark this word known
     // everywhere"), gated separately (see study-lemma-progress-readiness.js).
     import { lemmaProgressAuthority, effectiveOccurrenceState, lemmaKnownDeltaByJuz, groupOccurrenceRefsByJuz, overlayLemmaKnownness } from "./js/quran-lemma-progress.js";
@@ -7705,8 +7711,15 @@
 
     const RAMP_ORDER = STATUSES.filter((s) => s.onRamp).map((s) => s.id); // not_started .. mastered, in ramp order
 
-    /** "Weakest link" pooled status across every ayah a coverage range covers, for one trackable, reading from the shared exploreChunksBySurah loaded once per Explore open. Ayahs never claimed count as not_started (matches ayahStatusesForCurrentTrackable's own default). Not Applicable ayahs are excluded from the pool entirely (I7), not counted as a low score. Returns null if nothing at all is countable yet -- the caller falls back to a direct claim at that level in that case. */
+    /** "Weakest link" pooled status across every ayah a coverage range covers, for one trackable, reading from the shared exploreChunksBySurah loaded once per Explore open. Ayahs never claimed count as not_started (matches ayahStatusesForCurrentTrackable's own default). Not Applicable ayahs are excluded from the pool entirely (I7), not counted as a low score. Returns null if nothing at all is countable yet -- the caller falls back to a direct claim at that level in that case.
+     *
+     * Issue #328 (Owner decision 6) -- for a No Approach ("counts only as a
+     * claim on that whole unit, never for its ayat"), pooling from ayah-level
+     * claims never happens at all: this returns null immediately, so every
+     * call site's own `pooled ?? direct` fallback reads that wider level's
+     * OWN claim instead, exactly as decision 6 asks for. */
     function poolCoverageStatus(coverage, trackableId) {
+      if (!countsForEachAyah(quranTrackables.find((t) => t.id === trackableId))) return null;
       let worstIdx = null;
       let anyCounted = false;
       for (const { surah, from, to } of coverage) {
@@ -7744,21 +7757,20 @@
      * Nothing is recalculated or rewritten -- I6 holds, this reads claims and
      * never touches them -- and no Firestore read was added: every span below
      * comes from chunks openExplore() has already loaded (I9).
+     *
+     * Issue #328 (Owner decision 6) -- the floor is applied only when this
+     * Approach's own "counts for each ayah inside" setting is Yes; for No,
+     * "an ayah shows only its own claim", so exploreWiderSpans is never
+     * consulted at all. The rule itself (own + spans + the Yes/No gate) is
+     * approach-coverage.js's own effectiveStatus() -- the same function the
+     * whole-Qur'an "My Status" wheel calls, so the two screens cannot
+     * silently disagree about what a claim means (Owner decision 7).
      */
     function effectiveAyahStatus(surah, ayah, trackableId) {
       const entries = exploreChunksBySurah.get(surah)?.entries ?? {};
       const own = entries[`${buildUnitKey.ayah(surah, ayah)}::${trackableId}`]?.claimedStatus ?? "not_started";
-      if (own === "not_applicable") return own;
-      let bestIdx = RAMP_ORDER.indexOf(own);
-      const apply = (spans) => {
-        for (const span of spans ?? []) {
-          if (span.surah !== surah || ayah < span.from || ayah > span.to) continue;
-          const idx = RAMP_ORDER.indexOf(span.statusId);
-          if (idx > bestIdx) bestIdx = idx;
-        }
-      };
-      apply(exploreWiderSpans.get(trackableId));
-      return bestIdx < 0 ? own : RAMP_ORDER[bestIdx];
+      const trackable = quranTrackables.find((t) => t.id === trackableId);
+      return effectiveStatus({ own, spans: exploreWiderSpans.get(trackableId), surah, ayah, trackable });
     }
 
     /**
@@ -7809,45 +7821,18 @@
         if (!exploreWiderSpans.has(trackableId)) exploreWiderSpans.set(trackableId, []);
         exploreWiderSpans.get(trackableId).push(span);
       };
-      const spansForKey = (unitKey) => {
-        const parts = unitKey.split(":");
-        if (parts[0] === "surah") {
-          const n = Number(parts[1]);
-          const count = surahIndex.find((x) => x.surahNumber === n)?.ayahCount;
-          return count ? [{ surah: n, from: 1, to: count }] : [];
-        }
-        if (parts[0] === "range") {
-          const n = Number(parts[1]);
-          const [from, to] = String(parts[2] ?? "").split("-").map(Number);
-          return from && to ? [{ surah: n, from, to }] : [];
-        }
-        if (parts[0] === "juz") {
-          const j = juzIndexData?.find((x) => x.juz === Number(parts[1]));
-          return j ? ayahCoverage(j.startSurah, j.startAyah, j.endSurah, j.endAyah) : [];
-        }
-        if (parts[0] === "page") {
-          // page:<edition>:<n>
-          const pg = pageIndexData?.find((x) => x.page === Number(parts[2]));
-          return pg ? ayahCoverage(pg.startSurah, pg.startAyah, pg.endSurah, pg.endAyah) : [];
-        }
-        if (parts[0] === "ruku") {
-          const n = Number(parts[1]);
-          const r = rukuRangesBySurah.get(n)?.get(Number(parts[2]));
-          return r ? [{ surah: n, from: r.from, to: r.to }] : [];
-        }
-        if (parts[0] === "hizb") {
-          const h = hizbIndex?.find((x) => x.hizb === Number(parts[1]));
-          return h ? ayahCoverage(h.startSurah, h.startAyah, h.endSurah, h.endAyah) : [];
-        }
-        return [];
-      };
+      // Issue #328 -- spanForUnitKey() is approach-coverage.js's own shared
+      // resolver, so the whole-Qur'an "My Status" counter (part 3) resolves
+      // a wider claim's extent identically to Explore rather than
+      // re-deriving it a second way that could quietly drift apart.
+      const spanLookups = { surahIndex, juzIndexData, pageIndexData, rukuRangesBySurah, hizbIndex };
       const scan = (chunk) => {
         for (const [key, entry] of Object.entries(chunk?.entries ?? {})) {
           const [unitKey, trackableId] = key.split("::");
           if (!trackableId || !unitKey || unitKey.startsWith("ayah:")) continue;
           const statusId = entry?.claimedStatus;
           if (!statusId || statusId === "not_started" || RAMP_ORDER.indexOf(statusId) < 0) continue;
-          for (const sp of spansForKey(unitKey)) push(trackableId, { ...sp, statusId });
+          for (const sp of spanForUnitKey(unitKey, spanLookups)) push(trackableId, { ...sp, statusId });
         }
       };
       for (const chunk of exploreChunksBySurah.values()) scan(chunk);
@@ -10560,13 +10545,16 @@
       if (!trackable) return "not_started";
       const { unitType, parts } = parseUnitKey(unitKey);
       const surahNum = Number(parts[0]);
+      const rangeEntries = exploreChunksBySurah?.get(surahNum)?.entries ?? {};
       if (unitType === "range") {
         const [from, to] = parts[1].split("-").map(Number);
-        return poolCoverageStatus([{ surah: surahNum, from, to }], trackable.id) ?? "not_started";
+        // Issue #328 -- poolCoverageStatus() now returns null outright for a
+        // No Approach (Owner decision 6), the same "read the level's own
+        // direct claim instead" fallback every Explore wedge already uses.
+        return poolCoverageStatus([{ surah: surahNum, from, to }], trackable.id)
+          ?? (rangeEntries[`${unitKey}::${trackable.id}`]?.claimedStatus ?? "not_started");
       }
-      const ayahNum = Number(parts[1]);
-      const entries = exploreChunksBySurah?.get(surahNum)?.entries ?? {};
-      return entries[`${unitKey}::${trackable.id}`]?.claimedStatus ?? "not_started";
+      return rangeEntries[`${unitKey}::${trackable.id}`]?.claimedStatus ?? "not_started";
     }
 
     /** Every ACTIVE collection that already lists this unit key -- the Note
