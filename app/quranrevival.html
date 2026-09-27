@@ -1700,11 +1700,23 @@
      wrap or force #readBar's own icon buttons (all flex:0 0 auto) off the
      row -- the standing lesson against nowrap+ellipsis on a fixed width;
      here the width itself is never fixed, only the overflow behaviour is. */
+  /* Issue #325 -- now a real <button> (opens the "This page" card), so the
+     UA's own button chrome (border/background/padding) is reset here and
+     the ≥40px tap target this project's own standing lesson requires is a
+     min-height, not a guess. The ellipsis truncation moves to the inner
+     text span (.mushaf-page-ref-text) because the caret span must stay
+     visible and un-truncated beside it -- the button itself is still the
+     one flex:1 1 auto/min-width:0 item that lets the WHOLE row shrink to
+     fit, unchanged from before. */
   #mushafPageRef {
-    flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
-    white-space: nowrap; font-size: 0.78rem; color: #444; margin-right: auto;
+    flex: 1 1 auto; min-width: 0; margin-right: auto;
+    display: flex; align-items: center; gap: 0.2rem; min-height: 40px;
+    padding: 0.3rem 0.3rem 0.3rem 0; font: inherit; font-size: 0.78rem; color: #444;
+    background: none; border: none; text-align: left; cursor: pointer;
   }
   #mushafPageRef[hidden] { display: none; }
+  .mushaf-page-ref-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .mushaf-page-ref-caret { flex: 0 0 auto; font-size: 0.65rem; color: #8a7c55; }
   /* v08.31 -- the Phase 4 ✓ while evidence persistence is NOT ready (E1 closed).
      `aria-disabled`, NOT `disabled`, and the difference is the whole point: a
      `disabled` button cannot be focused or pressed, so a reader gets no way to
@@ -2438,7 +2450,19 @@
      with its outer box, and so the line's own justification, unchanged. */
   /* A Mushaf page's font shrinks with the phone, so 0.6em alone left the
      marker's tap area 33px wide at 320px -- max() keeps it at least 40px. */
-  .hifz-word[data-ayah-marker] { cursor: pointer; padding: max(0.6em, 14px); margin: calc(-1 * max(0.6em, 14px)); }
+  .hifz-word[data-ayah-marker] { cursor: pointer; --ayah-marker-pad: max(0.6em, 14px); padding: var(--ayah-marker-pad); margin: calc(-1 * var(--ayah-marker-pad)); }
+  /* Issue #325 point 4 -- a thin ring on the marker for the Approach last
+     chosen on either card. outline (not box-shadow) with a negative
+     outline-offset pulled in by the marker's own tap-area padding, so the
+     ring hugs the printed glyph itself rather than the much bigger 40px tap
+     zone around it; the tap zone (padding/margin above) is completely
+     unchanged. Every colour is measured >=3:1 against .hifz-page's #fbf6e9
+     background (applyMushafMarkerRings() in quranrevival.html). */
+  .hifz-word[data-ayah-marker].hifz-ayah-marker-ring {
+    outline: 2px solid var(--ayah-marker-ring-color, transparent);
+    outline-offset: calc(-1 * var(--ayah-marker-pad) + 2px);
+    border-radius: 50%;
+  }
   /* Round 28 -- a real background band on the ayah being recited, the owner's
      ask. box-shadow rather than padding on purpose: each word is a flex item,
      so padding would change the line's width and fight the justification that
@@ -2488,6 +2512,24 @@
      lesson is named after). `width: 100%` + `min-width: 0` pins it to the
      sheet's own content width regardless of option length. */
   .ayah-sheet-approach-select { display: block; width: 100%; min-width: 0; box-sizing: border-box; min-height: 40px; font: inherit; font-size: 0.88rem; padding: 0.3rem 0.5rem; border: 1px solid #d8c68a; border-radius: 0.35rem; background: #fff8e6; color: #1b1b16; }
+  /* Issue #325 -- the four-stage picker shared by the Ayah Card and the
+     "This page" card. flex-wrap so four labels (the longest, "Practising",
+     measured against the sheet's own narrowest phone width) never force the
+     sheet to scroll sideways -- they wrap to a second row of two instead,
+     each still >=40px tall. aria-pressed carries the pressed state; colour
+     alone is never the only signal (the label text is the real state). */
+  .approach-stage-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+  .approach-stage-btn {
+    flex: 1 1 calc(50% - 0.2rem); min-width: 6rem; min-height: 40px; padding: 0.3rem 0.5rem;
+    font: inherit; font-size: 0.82rem; color: #1F3A6E; background: #f6f2e4;
+    border: 1px solid #d8c68a; border-radius: 0.35rem; cursor: pointer;
+  }
+  .approach-stage-btn[aria-pressed="true"] { color: #fff; background: #1F3A6E; border-color: #1F3A6E; font-weight: 600; }
+  /* The "This page" card mounts into the SAME overlay/sheet the Ayah Card
+     uses (.ayah-sheet), so it inherits the bottom-sheet/900px-popover split
+     for free -- this rule only trims the body padding .ayah-sheet-body never
+     needed before now that it holds nothing but the picker. */
+  .page-approach-card .ayah-sheet-body { padding: 0.2rem 0.3rem 0.4rem; }
   .ayah-sheet-hint-btn { display: inline-block; min-height: 40px; padding: 0.3rem 0.6rem; margin: 0.1rem 0; background: none; border: 1px solid #1F3A6E; border-radius: 0.35rem; color: #1F3A6E; font: inherit; font-size: 0.74rem; font-weight: 600; cursor: pointer; }
   /* Issue #295 -- Status part B, below the Actions. Its own scroll region
      is the SAME `.ayah-sheet` (already `overflow-y: auto`) -- no second
@@ -3538,7 +3580,12 @@
                phone instead of wrapping or pushing the full-screen icon off
                the row -- the same shrink-to-fit shape #readPickers already
                uses for its selects. -->
-          <span id="mushafPageRef" class="mushaf-page-ref" hidden></span>
+          <!-- Issue #325 -- a real button now: tapping it opens the "This
+               page" card (Owner decision 3, a page-as-one-unit claim).
+               Content is built in JS (updateMushafPageRef()) as a text span
+               plus a decorative ▾, same shape readTextSizeSlot uses for a
+               JS-filled slot. -->
+          <button type="button" id="mushafPageRef" class="mushaf-page-ref" hidden></button>
           <button type="button" class="secondary qr-ico" id="prevUnitBtn" aria-label="Previous" title="Previous">⏮</button>
           <button type="button" class="secondary qr-ico" id="prevAyahBtn" aria-label="Previous āyah" title="Previous āyah">◂</button>
           <button type="button" class="secondary qr-ico" id="nextAyahBtn" aria-label="Next āyah" title="Next āyah">▸</button>
@@ -4644,6 +4691,7 @@
     // Card "This āyah ⋯") and its one new action, filing this reader's own
     // Note on the āyah into Mapping My Journey folder(s).
     import { renderAyahActionSheetHtml, attachAyahActionSheetHandlers } from "./js/ayah-action-sheet.js";
+    import { renderPageApproachCardHtml, attachPageApproachCardHandlers } from "./js/page-approach-card.js";
     import { renderAyahFolderPickerHtml, attachAyahFolderPickerHandlers } from "./js/ayah-folder-filing-renderer.js";
     import { planFolderFilings } from "./js/ayah-folder-filing-plan.js";
     import { createStudyNote, notesForStudyUnit } from "./js/study-note-service.js";
@@ -5346,6 +5394,20 @@
     // doesn't reopen it.
     let ayahSheetUnitKey = null;
     let ayahSheetPendingQcrOpen = false;
+    // Issue #325 -- which Approach's four-stage row is currently showing on
+    // the open Ayah Card. Null means the select still reads its own
+    // placeholder and no stage row is drawn. Reset on every open/close so a
+    // stale Approach never carries over to a different āyah.
+    let ayahSheetSelectedApproachId = null;
+    // Issue #325 point 2 -- the "This page" card, mounted into this SAME
+    // ayahActionSheetOverlay/Mount (mutually exclusive with the Ayah Card by
+    // construction -- opening either one closes the other first). Null page
+    // number means the card is closed.
+    let pageApproachCardPageNum = null;
+    let pageApproachCardSelectedApproachId = null;
+    // Issue #325 point 4 -- "the Approach last chosen on either card",
+    // shared by both, starting unset (no rings) until a real choice is made.
+    let mushafRingApproachId = null;
     // Issue #295 -- the Ayah Card's Status part B, read-on-first-use exactly
     // like ayahNoteDataLoadedFor above: null while unresolved (rendered as
     // "loading"/silent, never guessed), reset to null on every open so a
@@ -12249,9 +12311,14 @@
           // Issue #322 -- the top-bar reference names whichever real page is
           // now in view, and starts watching for a swipe/scroll to another one.
           wireMushafPageRefScroll();
+          // Issue #325 point 4 -- paint the markers' rings once, right after
+          // the real page(s) land; no re-paint needed on scroll (the markers
+          // already on screen don't change their own claim as the reader
+          // swipes between them).
+          applyMushafMarkerRings();
         } catch (err) {
           pageViewContainer.innerHTML = `<p style="color:#a33;">${t("Couldn't load Mushaf page data ({reason}).", { reason: err.message })}</p>`;
-          if (mushafPageRef) { mushafPageRef.hidden = true; mushafPageRef.textContent = ""; }
+          if (mushafPageRef) clearMushafPageRef();
         }
         return;
       }
@@ -12457,13 +12524,23 @@
     /** Safe to call at any time -- hides/empties the reference outside Mushaf
         view or when nothing is rendered yet, and never throws on a page the
         packaged Mushaf data doesn't recognise. */
+    /** Issue #325 -- clears both the visible content and the page number the
+        click handler reads, so a hidden/empty button can never open a stale
+        "This page" card. */
+    function clearMushafPageRef() {
+      mushafPageRef.hidden = true;
+      mushafPageRef.innerHTML = "";
+      mushafPageRef.removeAttribute("aria-label");
+      delete mushafPageRef.dataset.page;
+    }
+
     function updateMushafPageRef() {
       if (!mushafPageRef) return;
       if (!mushafToggle.checked || getComputedStyle(pageViewContainer).display === "none") {
-        mushafPageRef.hidden = true; mushafPageRef.textContent = ""; return;
+        clearMushafPageRef(); return;
       }
       const pages = [...pageViewContainer.querySelectorAll(".hifz-page[data-mushaf-page]")];
-      if (!pages.length) { mushafPageRef.hidden = true; mushafPageRef.textContent = ""; return; }
+      if (!pages.length) { clearMushafPageRef(); return; }
       let best = pages[0];
       if (pages.length > 1) {
         const root = flowScrollRoot();
@@ -12479,10 +12556,18 @@
           }
         }
       }
-      const groups = mushafPageAyahGroups(Number(best.dataset.mushafPage));
-      if (!groups.length) { mushafPageRef.hidden = true; mushafPageRef.textContent = ""; return; }
+      const pageNum = Number(best.dataset.mushafPage);
+      const groups = mushafPageAyahGroups(pageNum);
+      if (!groups.length) { clearMushafPageRef(); return; }
       mushafPageRef.hidden = false;
-      mushafPageRef.textContent = formatMushafPageRef(groups);
+      mushafPageRef.dataset.page = String(pageNum);
+      const refText = formatMushafPageRef(groups);
+      // Issue #325 -- now a real button opening the "This page" card: a
+      // visible ▾ (decorative -- aria-hidden) plus a proper accessible name,
+      // rather than letting a screen reader read "▾" as a literal character.
+      mushafPageRef.setAttribute("aria-label", `${refText} — ${t("This page")}`);
+      mushafPageRef.title = refText;
+      mushafPageRef.innerHTML = `<span class="mushaf-page-ref-text">${escapeHtml(refText)}</span><span class="mushaf-page-ref-caret" aria-hidden="true">▾</span>`;
     }
 
     let mushafPageRefHandler = null;
@@ -12506,6 +12591,43 @@
         requestAnimationFrame(() => { pending = false; updateMushafPageRef(); });
       };
       pageViewContainer.addEventListener("scroll", mushafPageRefHandler, { passive: true });
+    }
+
+    // Issue #325 point 4 -- Learning amber / Practising blue / Achieved
+    // green, deliberately its OWN small palette rather than mastery-wheel.js's
+    // STATUS_COLORS (whose "achieved" is blue and "practising" is gold --
+    // right for the wheel's own ramp, wrong for the Owner's literal colour
+    // words here). Each measured >=3:1 against .hifz-page's own #fbf6e9
+    // background: learning 4.54:1, practising 10.30:1, achieved 8.44:1.
+    const MUSHAF_RING_COLORS = Object.freeze({
+      learning: "#8a6d1f", practising: "#1F3A6E", achieved: "#14532d",
+    });
+
+    /** Issue #325 point 4 -- colours every āyah-end marker currently on
+        screen with a ring for its status on `mushafRingApproachId` (null =
+        no Approach chosen on either card yet = no rings at all). Reads
+        currentChunk only -- the surah chunk the Mushaf page already needed
+        to render its own dimming/highlight, no new read (a marker whose
+        āyah belongs to a NEIGHBOURING surah sharing this page boundary is
+        left unrung rather than triggering a second read it wasn't asked
+        for). Safe to call whenever the marker set might be stale: it always
+        starts by clearing every marker's own ring state. */
+    function applyMushafMarkerRings() {
+      if (!pageViewContainer) return;
+      const markers = pageViewContainer.querySelectorAll("[data-ayah-marker]");
+      markers.forEach((marker) => {
+        marker.classList.remove("hifz-ayah-marker-ring");
+        marker.style.removeProperty("--ayah-marker-ring-color");
+        if (!mushafRingApproachId) return;
+        const [surahStr, ayahStr] = marker.dataset.ayahMarker.split(":");
+        const surahNum = Number(surahStr), ayahNum = Number(ayahStr);
+        if (surahNum !== currentSurahNum) return;
+        const statusId = currentChunk?.entries?.[`${buildUnitKey.ayah(surahNum, ayahNum)}::${mushafRingApproachId}`]?.claimedStatus ?? "not_started";
+        const color = MUSHAF_RING_COLORS[statusId];
+        if (!color) return; // not_started (and not_applicable/mastered, which claimApproachStatus() never writes here) -- no ring
+        marker.classList.add("hifz-ayah-marker-ring");
+        marker.style.setProperty("--ayah-marker-ring-color", color);
+      });
     }
 
     /** The flow view's own "next/previous āyah", for the scroll and swipe
@@ -12724,6 +12846,16 @@
       ayahSheetWordStatus = null;
       ayahSheetHasPosterNote = null;
       ayahSheetConnected = null;
+      ayahSheetSelectedApproachId = null;
+      ayahActionSheetOverlayEl.classList.remove("open");
+      ayahActionSheetMountEl.innerHTML = "";
+    }
+
+    /** Issue #325 point 2 -- the "This page" card's own close, mirroring
+        closeAyahActionSheet() exactly (same shared overlay/mount). */
+    function closePageApproachCard() {
+      pageApproachCardPageNum = null;
+      pageApproachCardSelectedApproachId = null;
       ayahActionSheetOverlayEl.classList.remove("open");
       ayahActionSheetMountEl.innerHTML = "";
     }
@@ -12835,20 +12967,21 @@
       wheelContainer?.scrollIntoView({ behavior: "smooth", block: "center" });
     }
 
-    /** "Take an Approach" (issue #295) -- claims `approachId` for THIS āyah
+    /** Issue #325 -- the one write both the Ayah Card and the "This page"
+        card make: claims `statusId` (one of the four stages) for `unitKey`
         for whoever is currently selected on the page, through records.js'
         own claimStatus() -- the identical write path the Note view's own
         Track tab (wireApproachEmbed()) already uses, never a second one.
-        Defaults the claim to "learning" -- the natural first rung above
-        "not started" for "I am taking this Approach up", since the Ayah
-        Card offers no separate status picker of its own (spec: "choosing
-        one claims that Approach"). Follows the SAME permission rule as the
-        Track tab's own single-assignee path (canRecordFor(), enforced
-        server-side) -- selectedPersonId is already whoever the page's own
-        roster-scoped picker chose, so no extra client-side gate is needed
-        here either. */
-    async function takeApproachForAyah(unitKey, approachId) {
-      if (!auth.currentUser || !selectedPersonId) return;
+        Follows the SAME permission rule as the Track tab's own
+        single-assignee path (canRecordFor(), enforced server-side) --
+        selectedPersonId is already whoever the page's own roster-scoped
+        picker chose, so no extra client-side gate is needed here either.
+        Returns the safeWrite() outcome; each caller decides its own refresh
+        (an āyah claim chunks to surah_N, a page claim to subject_quran --
+        see chunkKeyFor()/D3 in the Owner decisions doc: "keep Ayah has it's
+        separate approach"). */
+    async function claimApproachStatus(unitKey, approachId, statusId) {
+      if (!auth.currentUser || !selectedPersonId) return { ok: false };
       const outcome = await safeWrite(
         () => claimStatus(db, {
           tenantId: activeTenantId,
@@ -12856,7 +12989,7 @@
           subjectId: "quran",
           unitKey,
           trackableId: approachId,
-          statusId: "learning",
+          statusId,
           notes: "",
           domainIds: [],
           claimedByPersonId: currentActingPersonId(),
@@ -12864,15 +12997,97 @@
         }),
         { collection: "records", action: "claimStatus" }
       );
-      if (!outcome.ok) return;
+      if (!outcome.ok) return outcome;
       await logActivity(db, {
         tenantId: activeTenantId, personId: selectedPersonId, date: new Date(),
         weekStartsOn: tenantWeekStartsOn, subjectId: "quran", unitKey,
         trackableId: approachId, action: "claimed", uid: auth.currentUser.uid,
         viaProgramId: programBySubjectId.get("quran") ?? null,
       });
+      return outcome;
+    }
+
+    /** Ayah Card stage press (issue #325, formerly the one-shot
+        takeApproachForAyah()). Re-renders the sheet IN PLACE afterwards
+        (never closes it -- the whole point is trying more than one stage
+        without reopening the card) and repaints the Mushaf markers' rings,
+        since this Approach is now "the Approach last chosen on either
+        card" (point 4). */
+    async function takeApproachForAyah(unitKey, approachId, statusId) {
+      const outcome = await claimApproachStatus(unitKey, approachId, statusId);
+      if (!outcome.ok) return;
+      ayahSheetSelectedApproachId = approachId;
+      mushafRingApproachId = approachId;
       await refreshChunkAndWheel(); // ayah/range/surah/ruku all chunk to surah_N -- always true for an Ayah Card's own unit key
       if (stageView === "note" && noteScope) renderNoteViewNow();
+      if (ayahSheetUnitKey === unitKey) renderAyahActionSheetNow();
+      applyMushafMarkerRings();
+    }
+
+    /** "This page" card stage press (issue #325 point 2) -- the SAME write
+        (claimApproachStatus()), on the page's own unit key, which
+        chunkKeyFor() resolves to subject_quran exactly as the existing
+        Study Unit "Page" already does (v07.139) -- never surah_N, and never
+        any āyah key (decision 4: a page claim writes nothing about the
+        āyāt on it). Mirrors wireApproachEmbed()'s own subject_quran branch:
+        force-refetch the one subject-wide chunk, then redraw the wheel. */
+    async function takeApproachForPage(unitKey, approachId, statusId) {
+      const outcome = await claimApproachStatus(unitKey, approachId, statusId);
+      if (!outcome.ok) return;
+      pageApproachCardSelectedApproachId = approachId;
+      mushafRingApproachId = approachId;
+      await ensureQuranSubjectChunk({ force: true });
+      renderWheel();
+      if (pageApproachCardPageNum != null) renderPageApproachCardNow();
+      applyMushafMarkerRings();
+    }
+
+    /** Issue #325 point 2 -- renders the "This page" card into the SAME
+        mount the Ayah Card uses. I9: the subject_quran chunk is asked for
+        only once the card actually opens (ensureUnitChunkThen(), the same
+        fetch-once-then-redraw helper "Track this unit"'s own Juz/Page path
+        already uses) -- never on any startup path, and never a second read
+        once it is cached for this person. */
+    function renderPageApproachCardNow() {
+      if (pageApproachCardPageNum == null) return;
+      const groups = mushafPageAyahGroups(pageApproachCardPageNum);
+      const ref = groups.length ? formatMushafPageRef(groups) : "";
+      const unitKey = buildUnitKey.page(PAGE_EDITION, pageApproachCardPageNum);
+      const info = { chunkKey: "subject_quran" };
+      const chunk = chunkForUnitInfo(info);
+      const selectedApproachStatusId = pageApproachCardSelectedApproachId
+        ? (chunk?.entries?.[`${unitKey}::${pageApproachCardSelectedApproachId}`]?.claimedStatus ?? "not_started")
+        : "not_started";
+      ayahActionSheetMountEl.innerHTML = renderPageApproachCardHtml({
+        pageLabel: t("Page {page}", { page: num(pageApproachCardPageNum) }),
+        ref,
+        approachOptionsHtml: buildTrackableOptionsHtml(),
+        selectedApproachId: pageApproachCardSelectedApproachId,
+        selectedApproachStatusId,
+      });
+      attachPageApproachCardHandlers(ayahActionSheetMountEl, {
+        onClose: closePageApproachCard,
+        onApproachPicked: (approachId) => {
+          pageApproachCardSelectedApproachId = approachId;
+          mushafRingApproachId = approachId;
+          renderPageApproachCardNow();
+          applyMushafMarkerRings();
+        },
+        onStageChoice: (approachId, statusId) => takeApproachForPage(unitKey, approachId, statusId),
+      });
+      ensureUnitChunkThen(info, renderPageApproachCardNow);
+    }
+
+    /** Issue #325 point 2 -- opens the "This page" card for the Mushaf page
+        currently named in the top-bar reference. Closes the Ayah Card first
+        (mutually exclusive: same shared mount) -- see closeAyahActionSheet()
+        and closePageApproachCard() above. */
+    function openPageApproachCard(pageNum) {
+      closeAyahActionSheet();
+      pageApproachCardPageNum = pageNum;
+      pageApproachCardSelectedApproachId = null;
+      renderPageApproachCardNow();
+      ayahActionSheetOverlayEl.classList.add("open");
     }
 
     /** "Make a poster" (issue #295) -- opens notes.html's existing "Make a
@@ -12897,6 +13112,13 @@
       // attachAyahActionSheetHandlers' own comment) resets
       // ayahSheetHasPosterNote back to null for the next open.
       const hasPosterNoteAtRenderTime = ayahSheetHasPosterNote;
+      // Issue #325 -- which stage button (if any) reads as pressed for
+      // whichever Approach is currently picked in this sheet. Same guard
+      // approachStatusesForAyah() already uses: currentChunk only holds
+      // currentSurahNum's own claims (no new read).
+      const selectedApproachStatusId = ayahSheetSelectedApproachId && surah === currentSurahNum
+        ? (currentChunk?.entries?.[`${ayahSheetUnitKey}::${ayahSheetSelectedApproachId}`]?.claimedStatus ?? "not_started")
+        : "not_started";
       const keepScroll = ayahActionSheetMountEl.querySelector("[data-ayah-sheet]")?.scrollTop ?? 0;
       ayahActionSheetMountEl.innerHTML = renderAyahActionSheetHtml({
         unitKey: ayahSheetUnitKey,
@@ -12905,6 +13127,8 @@
         isBookmarked,
         isSelf: isSelfSelectedForAyahActions(),
         approachOptionsHtml: buildTrackableOptionsHtml(),
+        selectedApproachId: ayahSheetSelectedApproachId,
+        selectedApproachStatusId,
         hasPosterNote: hasPosterNoteAtRenderTime,
         approachStatuses: approachStatusesForAyah(surah, ayahNum),
         wordStatus: ayahSheetWordStatus,
@@ -12944,7 +13168,13 @@
           const langs = ["ar", getAppLang() === "bn" ? "bn" : "en"];
           await shareText(buildAyahText(unitKey, langs), unitKey);
         },
-        onTakeApproach: (unitKey, approachId) => takeApproachForAyah(unitKey, approachId),
+        onApproachPicked: (unitKey, approachId) => {
+          ayahSheetSelectedApproachId = approachId;
+          mushafRingApproachId = approachId;
+          renderAyahActionSheetNow();
+          applyMushafMarkerRings();
+        },
+        onStageChoice: (unitKey, approachId, statusId) => takeApproachForAyah(unitKey, approachId, statusId),
         onPoster: (unitKey) => openAyahPoster(unitKey, hasPosterNoteAtRenderTime),
         onSeeOnWheel: () => focusWheelOnAyah(ayahNum),
         onWordTap: (occurrenceId) => openWordCardForOccurrenceId(occurrenceId),
@@ -13164,6 +13394,7 @@
     }
 
     function openAyahActionSheet(ayahKey) {
+      closePageApproachCard(); // issue #325 -- mutually exclusive: same shared mount
       const [surahStr, ayahStr] = ayahKey.split(":");
       const surahNum = Number(surahStr);
       const ayahNum = Number(ayahStr);
@@ -13173,6 +13404,7 @@
       ayahSheetHasPosterNote = null;
       ayahSheetRelated = null;
       ayahSheetConnected = null;
+      ayahSheetSelectedApproachId = null;
       renderAyahActionSheetNow();
       ayahActionSheetOverlayEl.classList.add("open");
       ensureAyahSheetRelatedLoaded(unitKey, surahNum, ayahNum);
@@ -13182,9 +13414,17 @@
       ensureAyahSheetPosterNoteLoaded(unitKey);
     }
 
-    ayahActionSheetOverlayEl.addEventListener("click", (e) => { if (e.target === ayahActionSheetOverlayEl) closeAyahActionSheet(); });
+    /** Issue #325 -- the Ayah Card and the "This page" card share one
+        overlay/mount, so "close whatever is open" has to know which one
+        that is rather than always closing the Ayah Card. */
+    function closeWhicheverCardIsOpen() {
+      if (pageApproachCardPageNum != null) closePageApproachCard();
+      else closeAyahActionSheet();
+    }
+
+    ayahActionSheetOverlayEl.addEventListener("click", (e) => { if (e.target === ayahActionSheetOverlayEl) closeWhicheverCardIsOpen(); });
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && ayahActionSheetOverlayEl.classList.contains("open")) closeAyahActionSheet();
+      if (e.key === "Escape" && ayahActionSheetOverlayEl.classList.contains("open")) closeWhicheverCardIsOpen();
     });
 
     // ===================== Issue #286 -- "File in folder(s)…" =====================
@@ -15307,7 +15547,7 @@
       // it (wireMushafPageRefScroll()) whenever isMushaf is true.
       if (!isMushaf) {
         if (mushafPageRefHandler) { pageViewContainer.removeEventListener("scroll", mushafPageRefHandler); mushafPageRefHandler = null; }
-        if (mushafPageRef) { mushafPageRef.hidden = true; mushafPageRef.textContent = ""; }
+        if (mushafPageRef) clearMushafPageRef();
       }
 
       const trackable = currentTrackable();
@@ -15927,6 +16167,15 @@
 
     prevAyahBtn.addEventListener("click", () => { if (currentAyahNum > 1) { stopDrill(); currentAyahNum--; renderStudyScreen(); renderWheel(); } });
     nextAyahBtn.addEventListener("click", () => { if (currentAyahNum < currentSurahData.ayahCount) { stopDrill(); currentAyahNum++; renderStudyScreen(); renderWheel(); } });
+    // Issue #325 point 2 -- tapping the top-bar reference opens the "This
+    // page" card, claiming the printed page as one unit (Owner decision 3).
+    // dataset.page is stamped by updateMushafPageRef() only while a real
+    // page is on screen, so a hidden/empty button (outside Mushaf view)
+    // simply has nothing to read and does nothing.
+    mushafPageRef.addEventListener("click", () => {
+      const pageNum = Number(mushafPageRef.dataset.page);
+      if (Number.isFinite(pageNum)) openPageApproachCard(pageNum);
+    });
     ayahSelect.addEventListener("change", () => { stopDrill(); currentAyahNum = Number(ayahSelect.value); renderStudyScreen(); renderWheel(); });
     // Fix round -- "a choice of setting anywhere should work everywhere":
     // Study options' own Tajweed/Word by Word/Root/Derivatives ticks are
