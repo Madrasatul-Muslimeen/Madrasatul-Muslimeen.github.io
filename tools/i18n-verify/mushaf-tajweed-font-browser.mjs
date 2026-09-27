@@ -11,7 +11,14 @@
 // Its five points are what the checks below are proving:
 //   1/2. The Tajweed font is loaded from the CDN at runtime, one page at a
 //        time, only when the toggle is on -- never copied into this repo.
-//   3.   sw.js never stores a verses.quran.foundation request.
+//   3.   Point 3 UPDATED, 27 Sep 2026: caching these fonts is now
+//        permitted (the Owner holds a Quran Foundation Developer Console
+//        account) -- issue #335 turns it on. What this suite still proves
+//        (section 5, below) is the narrower, still-binding half: a kept
+//        font is NEVER in the app-files cache. The rest of #335's own
+//        contract (survives offline, refreshes past 7 days, an unopened
+//        page stays uncached) is proven in its own dedicated suite,
+//        mushaf-font-offline-cache-browser.mjs.
 //   4.   The credit is shown (about.html, and a line while Tajweed is on).
 //   5.   Plain stays the default.
 //
@@ -22,13 +29,20 @@
 //   Part B -- the toggle (present, >=40px), no Tajweed font request before
 //   it, exactly one per page shown after, word/marker taps still work,
 //   the preference persists, a failed font load shows a message and keeps
-//   the plain page, sw.js does not cache the CDN URL, the credit is shown.
+//   the plain page, a kept CDN font never lands in the app-files cache
+//   (issue #335 changed what "keeps" means here -- see point 3 above),
+//   the credit is shown.
 import { chromium, newContext, openPage, BASE } from "./harness.mjs";
 import fs from "node:fs";
 
 let pass = 0, fail = 0;
 const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
 
+// Architect review, 27 Sep 2026 (#335): without this flag a context route
+// does not see a request the service worker makes, so section 5's font
+// fetch went to the real network and nothing was ever kept -- see
+// mushaf-font-offline-cache-browser.mjs's own note.
+process.env.PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS = "1";
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
 
 // Copied from app/js/hifz-renderer.js's own module-level constants -- the
@@ -355,11 +369,27 @@ for (const lang of ["en", "bn"]) {
 }
 
 // =============================================================================
-// 5. app/sw.js never stores a verses.quran.foundation request.
+// 5. app/sw.js keeps a verses.quran.foundation font ONLY in its own
+//    dedicated cache, never in the app-files cache.
+//
+//    UPDATED IN PLACE, reason recorded: this check used to assert that
+//    sw.js stores NO verses.quran.foundation request at all -- true when
+//    #332 shipped, per the permission report's point 3 (caching needed a
+//    Quran Foundation Developer Console account the Owner had not yet
+//    confirmed). The SAME report's own "Update, 27 Sep 2026" records that
+//    the Owner does hold one, so issue #335 turns offline caching of these
+//    two font paths ON, deliberately, in a cache kept separate from the
+//    app files (mm-app-*) so an app update never throws a kept font away --
+//    see app/sw.js's own comment. The old assertion would now fail on
+//    correct, intended behaviour; the new one is the narrower claim that
+//    still has to hold: NEVER in the app-files cache. Full offline-serving
+//    behaviour (survives a network block, refreshes past 7 days, a page
+//    never opened stays uncached) is proven in its own dedicated suite,
+//    mushaf-font-offline-cache-browser.mjs.
 // =============================================================================
 {
   const lang = "en";
-  console.log(`\n=== Mushaf Tajweed toggle -- sw.js does not cache the CDN, appLang=${lang} ===`);
+  console.log(`\n=== Mushaf Tajweed toggle -- sw.js keeps the CDN font out of the app-files cache, appLang=${lang} ===`);
   const ctx = await newContext(browser, { appLang: lang, viewport: { width: 390, height: 844 }, allowServiceWorker: true });
   await installMushafFixture(ctx);
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
@@ -373,18 +403,22 @@ for (const lang of ["en", "bn"]) {
       cb.checked = true;
       cb.dispatchEvent(new Event("change", { bubbles: true }));
     });
-    await page.waitForTimeout(1500); // let the worker's own stale-while-revalidate settle if it were ever going to
-    const cachedUrls = await page.evaluate(async () => {
+    await page.waitForTimeout(1500); // let the worker's own background work settle
+    const byCache = await page.evaluate(async () => {
       const names = await caches.keys();
-      const urls = [];
+      const out = {};
       for (const n of names) {
         const cache = await caches.open(n);
-        for (const req of await cache.keys()) urls.push(req.url);
+        out[n] = (await cache.keys()).map((req) => req.url);
       }
-      return urls;
+      return out;
     });
-    const offSite = cachedUrls.filter((u) => u.startsWith("https://verses.quran.foundation/"));
-    check("no verses.quran.foundation URL (plain or Tajweed) was ever put in the app's own cache", offSite.length === 0, JSON.stringify(cachedUrls));
+    const appCacheUrls = Object.entries(byCache).filter(([n]) => n.startsWith("mm-app-")).flatMap(([, urls]) => urls);
+    const fontCacheUrls = Object.entries(byCache).filter(([n]) => n.startsWith("mm-qf-fonts-")).flatMap(([, urls]) => urls);
+    check("no verses.quran.foundation URL is ever in the app-files (mm-app-*) cache",
+      appCacheUrls.every((u) => !u.startsWith("https://verses.quran.foundation/")), JSON.stringify(byCache));
+    check("issue #335: the plain and Tajweed fonts just opened ARE kept, but only in their own dedicated cache",
+      fontCacheUrls.some((u) => u.startsWith("https://verses.quran.foundation/")), JSON.stringify(byCache));
   }
   const real = realErrors(errors);
   check("no unexpected page errors", real.length === 0, real.join("; "));

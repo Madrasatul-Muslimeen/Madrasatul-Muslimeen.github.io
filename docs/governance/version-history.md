@@ -620,3 +620,4 @@ total). Allocated by the MMSA Architect.
 08.91: the readable Mushaf Surah banner. Allocated by the MMSA Architect.
 08.92: My Status and the per-Approach whole-unit setting. Allocated by the MMSA Architect.
 08.93: Mushaf fonts from Quran Foundation and the Tajweed colours toggle. Allocated by the MMSA Architect.
+08.94: Mushaf fonts kept offline (issue #335). Allocated by the MMSA Architect.

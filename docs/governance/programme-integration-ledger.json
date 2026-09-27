@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.93",
+    "version": "08.94",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -893,8 +893,20 @@
     {
       "version": "08.93",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Mushaf page fonts from Quran Foundation's CDN; per-page Tajweed colours toggle (#332)",
+      "integration": {
+        "authorizedOn": "2026-09-27",
+        "integratedOn": "2026-09-27",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "08.94",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Quran Foundation Mushaf page fonts (plain and Tajweed) kept on the phone for offline reading in their own weekly-refreshed cache; issue #335.",
       "integration": {
         "authorizedOn": "2026-09-27",
         "integratedOn": "2026-09-27",
@@ -903,8 +915,9 @@
       }
     }
   ],
-  "nextUnallocated": "08.94",
+  "nextUnallocated": "08.95",
   "nextUnallocatedNote": [
+    "v08.94 was allocated to Mushaf fonts kept offline (issue #335), 2026-09-27.",
     "v08.93 was allocated to Mushaf fonts from Quran Foundation and the Tajweed colours toggle, 2026-09-27.",
     "v08.92 was allocated to My Status and the per-Approach whole-unit setting, 2026-09-27.",
     "v08.91 was allocated to the readable Mushaf Surah banner, 2026-09-27.",
