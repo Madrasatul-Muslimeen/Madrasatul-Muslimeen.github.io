@@ -25,6 +25,16 @@ const check = (name, ok, detail = "") => {
   else { fail++; console.log(`  FAIL  ${name}${detail ? "\n        " + detail : ""}`); }
 };
 
+// Issue #339: sw.js's fetch handler now makes its OWN fetch() call for the
+// Firebase SDK (www.gstatic.com/firebasejs/...) whenever a page it already
+// controls re-requests it -- test 2 below is exactly that case (a second
+// navigation, after the worker has claimed control). In Playwright 1.56 a
+// context route does NOT see a request the worker itself makes unless this
+// flag is set (see mushaf-font-offline-cache-browser.mjs's own Architect
+// review comment) -- without it that fetch would reach the real network
+// instead of harness.mjs's own gstatic stub route, breaking the page's
+// Firebase Auth import for a reason that has nothing to do with the worker.
+process.env.PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS = "1";
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
 const VIEWPORT = { width: 390, height: 844 };
 const PAGE_PATH = "/app/about.html"; // a plain, sign-in-optional page -- the worker's own behaviour does not depend on which page asked for it
@@ -120,7 +130,12 @@ async function waitForActivation(page) {
 
 // ---------------------------------------------------------------------------
 // 3. Firestore/gstatic (and anything else off this origin) is never cached
-//    by this worker, whatever a page happens to fetch.
+//    by this worker, whatever a page happens to fetch -- EXCEPT the one
+//    pinned Firebase SDK prefix issue #339 deliberately adds (see
+//    service-worker's own "mushaf-font-offline-cache-browser.mjs" sibling,
+//    mushaf-tajweed-font-browser.mjs and the new offline-boot suite for the
+//    positive proof that prefix really does get cached and reused offline;
+//    this check's job stays purely negative -- nothing UNEXPECTED joins it).
 // ---------------------------------------------------------------------------
 {
   const ctx = await newContext(browser, { banner: false, allowServiceWorker: true, viewport: VIEWPORT });
@@ -138,8 +153,10 @@ async function waitForActivation(page) {
     return urls;
   });
   const offOrigin = allCachedUrls.filter((u) => !u.startsWith(BASE));
-  check("nothing off this origin (Firestore, gstatic, jsdelivr, ...) was ever cached",
-    offOrigin.length === 0, offOrigin.join(", "));
+  const EXPECTED_EXT_PREFIX = "https://www.gstatic.com/firebasejs/10.12.2/";
+  const unexpected = offOrigin.filter((u) => !u.startsWith(EXPECTED_EXT_PREFIX));
+  check("the only off-origin URLs ever cached are the pinned Firebase SDK files (issue #339) -- nothing else (Firestore, jsdelivr, ...) is",
+    unexpected.length === 0, unexpected.join(", "));
   await ctx.close();
 }
 
