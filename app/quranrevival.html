@@ -2530,6 +2530,18 @@
      for free -- this rule only trims the body padding .ayah-sheet-body never
      needed before now that it holds nothing but the picker. */
   .page-approach-card .ayah-sheet-body { padding: 0.2rem 0.3rem 0.4rem; }
+  /* Issue #325 -- "in the same style as the Ayah Card and full screen below
+     900px": the Word Card's own recent full-screen-below-900px treatment
+     (v08.89), applied to this card specifically -- the base .ayah-sheet
+     rule above is an 82vh BOTTOM SHEET, which stays exactly right for the
+     Ayah Card (a long, scrolling Actions+Status+Info card), but this card
+     is short (one picker), so the newer full-screen shape reads better and
+     matches what the issue asks for by name. Scoped to max-width so it
+     never fights the shared `@media (min-width: 900px)` .ayah-sheet rule
+     just below, which both cards keep using unchanged on a wide screen. */
+  @media (max-width: 899.98px) {
+    .page-approach-card { top: 0; left: 0; right: 0; bottom: 0; max-height: 100vh; height: 100%; border-radius: 0; }
+  }
   .ayah-sheet-hint-btn { display: inline-block; min-height: 40px; padding: 0.3rem 0.6rem; margin: 0.1rem 0; background: none; border: 1px solid #1F3A6E; border-radius: 0.35rem; color: #1F3A6E; font: inherit; font-size: 0.74rem; font-weight: 600; cursor: pointer; }
   /* Issue #295 -- Status part B, below the Actions. Its own scroll region
      is the SAME `.ayah-sheet` (already `overflow-y: auto`) -- no second
@@ -12521,9 +12533,6 @@
       return groups.map((g) => `${nameFor(g.surah)} ${rangeText(g)}`).join(" · ");
     }
 
-    /** Safe to call at any time -- hides/empties the reference outside Mushaf
-        view or when nothing is rendered yet, and never throws on a page the
-        packaged Mushaf data doesn't recognise. */
     /** Issue #325 -- clears both the visible content and the page number the
         click handler reads, so a hidden/empty button can never open a stale
         "This page" card. */
@@ -12534,6 +12543,9 @@
       delete mushafPageRef.dataset.page;
     }
 
+    /** Safe to call at any time -- hides/empties the reference outside Mushaf
+        view or when nothing is rendered yet, and never throws on a page the
+        packaged Mushaf data doesn't recognise. */
     function updateMushafPageRef() {
       if (!mushafPageRef) return;
       if (!mushafToggle.checked || getComputedStyle(pageViewContainer).display === "none") {
