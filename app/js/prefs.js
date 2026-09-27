@@ -743,3 +743,34 @@ export function setColourWordParts(on) {
   writeStored(COLOUR_WORD_PARTS_KEY, cachedColourWordParts ? "1" : "0");
   return cachedColourWordParts;
 }
+
+// ---------------------------------------------------------------------------
+// Issue #332 -- whether the Mushaf page view draws its per-page glyph font in
+// Tajweed colours (the QPC V4 COLRv1 font) or plain (QPC V2, the default).
+// Same additive localStorage shape every other reading preference in this
+// app already uses: no new startup read (the Mushaf itself only renders on
+// demand), no collection, no firestore.rules change. OFF by default -- plain
+// stays the default, per the Owner's own decision 9
+// (docs/governance/2026-09-27-owner-decisions.md).
+// ---------------------------------------------------------------------------
+const MUSHAF_TAJWEED_FONT_KEY = "mm_mushaf_tajweed_font";
+
+function readMushafTajweedFontOn() {
+  try {
+    return localStorage.getItem(MUSHAF_TAJWEED_FONT_KEY) === "1"; // never set: off by default
+  } catch {
+    return false;
+  }
+}
+
+let cachedMushafTajweedFontOn = readMushafTajweedFontOn();
+
+export function getMushafTajweedFontOn() {
+  return cachedMushafTajweedFontOn;
+}
+
+export function setMushafTajweedFontOn(on) {
+  cachedMushafTajweedFontOn = !!on;
+  writeStored(MUSHAF_TAJWEED_FONT_KEY, cachedMushafTajweedFontOn ? "1" : "0");
+  return cachedMushafTajweedFontOn;
+}

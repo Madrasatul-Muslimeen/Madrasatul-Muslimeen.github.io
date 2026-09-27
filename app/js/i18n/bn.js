@@ -2953,4 +2953,11 @@ export const BN = {
   "Not yet available.": "এখনো উপলব্ধ নয়।", // ?
   "Loading your status…": "আপনার অবস্থা লোড হচ্ছে…", // ?
   "Close My Status": "মাই স্ট্যাটাস বন্ধ করুন", // ?
+
+  // Issue #332 -- Mushaf fonts from Quran Foundation (Part A) and the
+  // per-page Tajweed colours toggle (Part B).
+  "Couldn't display this page's letters (its font didn't load).": "এই পৃষ্ঠার অক্ষরগুলো দেখানো যায়নি (ফন্ট লোড হয়নি)।", // ?
+  "Tajweed colours (not supported on this browser)": "তাজবীদের রঙ (এই ব্রাউজারে সমর্থিত নয়)", // ?
+  "Tajweed colours couldn't load for this page — showing the plain page.": "এই পৃষ্ঠার জন্য তাজবীদের রঙ লোড হয়নি — সাধারণ পৃষ্ঠা দেখানো হচ্ছে।", // ?
+  "Quran fonts provided by Quran Foundation": "কুরআনের ফন্ট সরবরাহ করেছে Quran Foundation", // ?
 };

@@ -18,7 +18,9 @@
 // committed at mushaf/fonts/ turned out to be byte-identical to Quran
 // Foundation's own official CDN copies (checked for pages 1, 255 and 604;
 // see docs/reports/2026-09-27-tajweed-font-permission.md), so the plain
-// (QCF V2) page fonts are now loaded from that CDN at runtime instead.
+// (QCF V2) page fonts are now loaded from that CDN at runtime instead —
+// the same "load from the CDN, don't copy the files" treatment the Tajweed
+// (QPC V4 COLRv1) font below needs anyway, so both fonts follow one rule.
 // mushaf/fonts/ itself is NOT deleted — legacy-v07/ still loads it (I4).
 //
 // Fetched lazily, once per session — never bundled, per the load-speed
@@ -33,7 +35,17 @@ const MUSHAF_JSON_URL = "https://raw.githubusercontent.com/Madrasatul-Muslimeen/
 // permission report cited above for the byte-identity check and the terms
 // this route is required by (no bundling without a developer account).
 const MUSHAF_FONT_BASE = "https://verses.quran.foundation/fonts/quran/hafs/v2/woff2/";
+// Issue #332 Part B -- the Tajweed-colours per-page toggle. Same per-page
+// glyph codes as the plain font above (only the font-family changes); loaded
+// only once a reader actually turns the toggle on (I9), never cached by
+// app/sw.js (a different origin, already outside that worker's own
+// same-origin check) and never copied into this repository (the permission
+// report's own binding rule 1).
+const TAJWEED_FONT_BASE = "https://verses.quran.foundation/fonts/quran/hafs/v4/colrv1/woff2/";
 const SURAH_HEADER_FONT_URL = "https://raw.githubusercontent.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/main/mushaf/QCF_SurahHeader_COLOR-Regular.woff2";
+// Both binding rule 2 (the permission report) and the Owner's own decision 9
+// point at ONE credit covering both the plain and the Tajweed fonts.
+const QURAN_FOUNDATION_CREDIT_URL = "https://quran.foundation/";
 
 // One ligature character per surah (1-114) — QUL's own "Surah header font"
 // documentation table — each renders the full ornamental print banner
@@ -163,36 +175,98 @@ export function mushafPageAyahGroups(pageNum) {
 }
 
 const fontPromises = new Map();
+// Issue #332 Part B -- the Tajweed font, cached separately by page number.
+// Never populated unless the toggle is actually turned on (I9): nothing here
+// requests a page number that ensurePageTajweedFont() was never called for.
+const tajweedFontPromises = new Map();
 let headerFontPromise = null;
 // One observer per rendered page, disconnected when the pages are replaced --
 // otherwise every re-render would leave its own watcher running for ever.
 let pageObservers = [];
 
-function ensurePageFont(pageNum) {
-  if (fontPromises.has(pageNum)) return fontPromises.get(pageNum);
-  const family = `hifz-p${pageNum}`;
-  const url = `${MUSHAF_FONT_BASE}p${pageNum}.woff2`;
+// Both loaders return `{ ok, unconfirmed }` rather than a bare boolean:
+// `ok` is a CONFIRMED load (the family is safe to justify against and to
+// show without comment); `unconfirmed` is the older-browser FontFace-less
+// path, which cannot confirm one way or the other, and must never be shown
+// as a failure it never actually observed (I15 -- a message must be true).
+function loadGlyphFont(pageNum, family, url, cacheMap) {
+  if (cacheMap.has(pageNum)) return cacheMap.get(pageNum);
   let promise;
   if (typeof FontFace === "function" && document.fonts) {
     const face = new FontFace(family, `url('${url}')`);
     promise = face.load().then((loaded) => {
       document.fonts.add(loaded);
-      return true;
+      return { ok: true };
     }).catch((err) => {
-      console.warn(`Hifz font load failed for page ${pageNum}:`, err);
-      return false;
+      console.warn(`Hifz font load failed for '${family}':`, err);
+      return { ok: false };
     });
   } else {
     // Older-browser fallback without the FontFace API: inject @font-face
     // directly. Can't confirm load completion here, so line-justification
-    // (which needs accurate glyph widths) is skipped for this browser.
+    // (which needs accurate glyph widths) is skipped for this browser, and
+    // no failure message is shown -- there is no observed failure, only an
+    // unconfirmed one.
     const styleEl = document.createElement("style");
     styleEl.textContent = `@font-face{font-family:'${family}';src:url('${url}') format('woff2');font-display:swap;}`;
     document.head.appendChild(styleEl);
-    promise = Promise.resolve(false);
+    promise = Promise.resolve({ ok: false, unconfirmed: true });
   }
-  fontPromises.set(pageNum, promise);
+  cacheMap.set(pageNum, promise);
   return promise;
+}
+
+function ensurePageFont(pageNum) {
+  return loadGlyphFont(pageNum, `hifz-p${pageNum}`, `${MUSHAF_FONT_BASE}p${pageNum}.woff2`, fontPromises);
+}
+
+function ensurePageTajweedFont(pageNum) {
+  return loadGlyphFont(pageNum, `hifz-tajweed-p${pageNum}`, `${TAJWEED_FONT_BASE}p${pageNum}.woff2`, tajweedFontPromises);
+}
+
+// Issue #332 Part B -- whether this browser can actually RENDER a COLRv1
+// colour font, not merely whether one loads. `font-tech()` is the CSS Fonts
+// Module Level 4 feature query built for exactly this (progressive
+// enhancement on font technology support): it needs no network fetch at all,
+// so it is cheap, synchronous after the first call, and gives a real answer
+// for the browser's own rendering engine rather than for one specific font
+// file. Cached after the first read (the answer cannot change mid-session).
+// Older Safari/iPhone (the case the issue names) do not implement
+// `font-tech()` at all, which resolves to `false` here -- the same
+// conservative "hide it" outcome as a browser that understands the query and
+// genuinely lacks COLRv1, which is the safe direction to be wrong in.
+let colrV1Supported = null;
+export function mushafTajweedSupported() {
+  if (colrV1Supported === null) {
+    try {
+      colrV1Supported = typeof CSS !== "undefined" && typeof CSS.supports === "function"
+        && CSS.supports("font-tech(color-COLRv1)");
+    } catch {
+      colrV1Supported = false;
+    }
+  }
+  return colrV1Supported;
+}
+
+/** Decides which family a page actually draws in, trying the Tajweed font
+ *  first when asked for and falling back to plain on any failure -- the
+ *  reader keeps a readable Mushaf rather than losing the page outright.
+ *  `message` names which I15 notice (if any) renderPage() should show:
+ *  "tajweed-fallback" (Tajweed failed, plain is fine) or "plain-failed" (the
+ *  page genuinely can't be drawn). */
+async function resolvePageFont(pageNum, tajweedOn) {
+  const plainFamily = `hifz-p${pageNum}`;
+  if (tajweedOn && mushafTajweedSupported()) {
+    const tajweedFamily = `hifz-tajweed-p${pageNum}`;
+    const tajweedResult = await ensurePageTajweedFont(pageNum);
+    if (tajweedResult.ok) return { family: tajweedFamily, ready: true, message: null };
+    const plainResult = await ensurePageFont(pageNum);
+    const plainFailed = !plainResult.ok && !plainResult.unconfirmed;
+    return { family: plainFamily, ready: plainResult.ok, message: plainFailed ? "plain-failed" : "tajweed-fallback" };
+  }
+  const plainResult = await ensurePageFont(pageNum);
+  const plainFailed = !plainResult.ok && !plainResult.unconfirmed;
+  return { family: plainFamily, ready: plainResult.ok, message: plainFailed ? "plain-failed" : null };
 }
 
 function ensureHeaderFont() {
@@ -335,8 +409,67 @@ function renderWord(w, highlightSet) {
   return span;
 }
 
-async function renderPage(pageNum, highlightSet, container, surahArabicName, myGeneration) {
-  const fontReady = await ensurePageFont(pageNum);
+/**
+ * Issue #332 Part B -- the row carrying "Page N" and the per-page Tajweed
+ * toggle (Owner decision 1: beside the label, not a new bar). Every page
+ * gets its own toggle, all of them reflecting and moving the SAME one
+ * preference (prefs.js's mm_mushaf_tajweed_font) -- `onToggleTajweed`
+ * hands the new value up to whichever page re-renders the whole Mushaf
+ * view (I2: this file owns no persistence of its own; quranrevival.html
+ * does, exactly like every other reading preference here).
+ */
+function buildPageHeader(pageNum, tajweedOn, onToggleTajweed) {
+  const headerEl = document.createElement("div");
+  headerEl.className = "hifz-page-header";
+  const numEl = document.createElement("div");
+  numEl.className = "hifz-page-num";
+  numEl.textContent = `Page ${pageNum}`;
+  headerEl.appendChild(numEl);
+
+  const supported = mushafTajweedSupported();
+  const toggleLabel = document.createElement("label");
+  toggleLabel.className = "hifz-tajweed-toggle";
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.checked = !!tajweedOn;
+  const textSpan = document.createElement("span");
+  if (supported) {
+    textSpan.textContent = t("Tajweed colours");
+    checkbox.addEventListener("change", () => {
+      if (typeof onToggleTajweed === "function") onToggleTajweed(checkbox.checked);
+    });
+  } else {
+    // Owner decision 9 / the issue's own spec: hide OR disable, but always
+    // say why in words -- CLAUDE.md's own standing lesson prefers a control
+    // that explains itself over one that is simply gone.
+    checkbox.disabled = true;
+    toggleLabel.classList.add("is-disabled");
+    textSpan.textContent = t("Tajweed colours (not supported on this browser)");
+  }
+  toggleLabel.appendChild(checkbox);
+  toggleLabel.appendChild(textSpan);
+  headerEl.appendChild(toggleLabel);
+  return headerEl;
+}
+
+/** Owner decision 9 / the permission report's own point 2 -- ONE credit line
+ *  covering both fonts, shown while Tajweed is on (about.html carries the
+ *  other, reasonably-accessible copy). A real, tappable link, the same
+ *  pattern this app already uses for HadeethEnc/OpenITI source credits. */
+function buildTajweedCreditLine() {
+  const p = document.createElement("div");
+  p.className = "hifz-tajweed-credit";
+  const link = document.createElement("a");
+  link.href = QURAN_FOUNDATION_CREDIT_URL;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.textContent = t("Quran fonts provided by Quran Foundation");
+  p.appendChild(link);
+  return p;
+}
+
+async function renderPage(pageNum, highlightSet, container, surahArabicName, myGeneration, tajweedOn, onToggleTajweed) {
+  const fontInfo = await resolvePageFont(pageNum, tajweedOn);
   // Issue #113 -- a newer renderMushafPages() call started while this page's
   // own font load was in flight. Stop before touching wordRegistry OR the
   // container: both are shared with whichever call superseded this one, and
@@ -351,11 +484,24 @@ async function renderPage(pageNum, highlightSet, container, surahArabicName, myG
   // Issue #322 -- the top-bar page reference reads this back to know which
   // real Mushaf page is currently in view (see mushafPageAyahGroups() below).
   pageEl.dataset.mushafPage = String(pageNum);
-  pageEl.style.fontFamily = `'hifz-p${pageNum}'`;
-  const numEl = document.createElement("div");
-  numEl.className = "hifz-page-num";
-  numEl.textContent = `Page ${pageNum}`;
-  pageEl.appendChild(numEl);
+  pageEl.style.fontFamily = `'${fontInfo.family}'`;
+  pageEl.appendChild(buildPageHeader(pageNum, tajweedOn, onToggleTajweed));
+  if (fontInfo.message === "tajweed-fallback") {
+    const msg = document.createElement("div");
+    msg.className = "hifz-line-error";
+    msg.textContent = t("Tajweed colours couldn't load for this page — showing the plain page.");
+    pageEl.appendChild(msg);
+  } else if (fontInfo.message === "plain-failed") {
+    const msg = document.createElement("div");
+    msg.className = "hifz-line-error";
+    msg.textContent = t("Couldn't display this page's letters (its font didn't load).");
+    pageEl.appendChild(msg);
+  }
+  // Shown whenever the reader's own choice is Tajweed and this browser can
+  // draw it -- true regardless of whether THIS one page's own font happened
+  // to load, because the plain page it fell back to is also a Quran
+  // Foundation font since Part A.
+  if (tajweedOn && mushafTajweedSupported()) pageEl.appendChild(buildTajweedCreditLine());
   if (!pageData) {
     const err = document.createElement("div");
     err.className = "hifz-line-error";
@@ -394,7 +540,7 @@ async function renderPage(pageNum, highlightSet, container, surahArabicName, myG
   container.appendChild(pageEl);
   // Only justify once the real glyph font is confirmed loaded -- measuring
   // against a fallback font's metrics would produce the wrong scale.
-  if (fontReady) {
+  if (fontInfo.ready) {
     justifyPageLines(pageEl);
     watchPageWidth(pageEl); // ...and again whenever the page's width becomes known or changes
   }
@@ -407,8 +553,15 @@ async function renderPage(pageNum, highlightSet, container, surahArabicName, myG
  * ayah key in the surah, which only ever dims a neighbouring surah's
  * ayahs sharing a boundary page). `surahArabicName(surahNumber)` is an
  * optional lookup for the surah-header fallback label.
+ *
+ * `opts.tajweedOn` (issue #332 Part B) is the reader's own current
+ * preference, read by the caller from prefs.js; `opts.onToggleTajweed(next)`
+ * is called when any one page's own toggle is flipped, so the caller can
+ * persist the new value and re-render -- this file owns no persistence of
+ * its own (I2).
  */
-export async function renderMushafPages(container, pages, highlightSet, surahArabicName) {
+export async function renderMushafPages(container, pages, highlightSet, surahArabicName, opts = {}) {
+  const { tajweedOn = false, onToggleTajweed = null } = opts;
   const myGeneration = ++renderGeneration;
   container.innerHTML = "";
   pageObservers.forEach((ro) => ro.disconnect());
@@ -425,7 +578,7 @@ export async function renderMushafPages(container, pages, highlightSet, surahAra
     // be correct, but stopping here too avoids wasted font-load work for a
     // page whose result nobody will ever see.
     if (myGeneration !== renderGeneration) return;
-    await renderPage(p, highlightSet, container, surahArabicName, myGeneration);
+    await renderPage(p, highlightSet, container, surahArabicName, myGeneration, tajweedOn, onToggleTajweed);
   }
 }
 
