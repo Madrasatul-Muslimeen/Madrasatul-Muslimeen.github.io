@@ -44,13 +44,14 @@ function actionItemHtml({ attr, icon, label, disabled = false, hint = "" }) {
 // Issue #325 -- all four stages, not a one-shot "choosing claims Learning".
 // The Owner's own decision (docs/governance/2026-09-27-owner-decisions.md,
 // #5: "Keep all 4 stage"). Mastered sits off this row on purpose -- it is
-// never a status a person CLAIMS, only one records.js/confirmEntry() can
-// reach, same as the wheel's own ramp treats it.
+// never a status a person CLAIMS, only one confirmEntry() (the data layer's
+// own confirm step, elsewhere entirely) can reach, same as the wheel's own
+// ramp treats it.
 export const APPROACH_STAGE_IDS = Object.freeze(["not_started", "learning", "practising", "achieved"]);
 
 function approachStageButtonsHtml(currentStatusId) {
   const buttons = APPROACH_STAGE_IDS
-    .map((id) => `<button type="button" class="approach-stage-btn" data-approach-stage="${id}" aria-pressed="${id === currentStatusId}">${escapeHtml(statusLabel(id))}</button>`)
+    .map((id) => `<button type="button" class="approach-stage-btn" data-approach-stage-btn="${id}" aria-pressed="${id === currentStatusId}">${escapeHtml(statusLabel(id))}</button>`)
     .join("");
   return `<div class="approach-stage-row" role="group" aria-label="${escapeHtml(t("Status"))}">${buttons}</div>`;
 }
@@ -117,11 +118,18 @@ export function wireApproachStagePicker(rootEl, { onApproachPicked, onStageChoic
     if (!approachId) return;
     onApproachPicked?.(approachId);
   });
-  rootEl.querySelectorAll("[data-approach-stage]").forEach((btn) => {
+  // Deliberately data-approach-stage-BTN, not just "-stage": the pure-node
+  // boundary suite's own DOM stand-in finds elements by a substring regex
+  // over the raw HTML, not a real attribute-selector engine, so
+  // "data-approach-stage" would also match inside
+  // "data-approach-stage-select"'s own attribute name. A real browser's
+  // querySelectorAll would not have this problem, but naming the two
+  // attributes so neither is a prefix of the other costs nothing here.
+  rootEl.querySelectorAll("[data-approach-stage-btn]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const approachId = select.value;
       if (!approachId) return;
-      onStageChoice?.(approachId, btn.dataset.approachStage);
+      onStageChoice?.(approachId, btn.dataset.approachStageBtn);
     });
   });
 }

@@ -110,6 +110,7 @@ function readPageRef(page) {
     return {
       hidden: el.hidden,
       text: el.textContent ?? "",
+      tagName: el.tagName,
       rect: { top: r.top, left: r.left, right: r.right, bottom: r.bottom, height: r.height, width: r.width },
       lineHeight: parseFloat(getComputedStyle(el).lineHeight) || null,
       exitOnScreen: !!exit && exit.right <= innerWidth && exit.left >= 0,
@@ -134,6 +135,12 @@ for (const [width, height] of [[320, 640], [360, 740], [390, 844], [412, 915], [
     await openMushafOnSurah(page, 14);
     const p10 = await readPageRef(page);
     check(`[${lang} ${width}] the reference is not hidden in Mushaf view`, p10 && p10.hidden === false, JSON.stringify(p10));
+    // Issue #325 -- updated in place, reason recorded: #mushafPageRef is now
+    // a real <button> (opens the "This page" card) rather than a plain
+    // <span>. Its own text/fit/exit-icon/no-scroll assertions below are
+    // unaffected -- textContent still reads the same reference text (with a
+    // trailing, decorative ▾ appended), just via a different element.
+    check(`[${lang} ${width}] #mushafPageRef is now a real <button>`, p10?.tagName === "BUTTON", p10?.tagName);
     if (lang === "bn") {
       check(`[bn ${width}] the surah name is really in Bangla`, bangla.test(p10?.text ?? ""), p10?.text);
       check(`[bn ${width}] the āyah numbers are Bengali digits`, banglaDigits.test(p10?.text ?? "") && !/[0-9]/.test(p10?.text ?? ""), p10?.text);
@@ -194,6 +201,23 @@ console.log(`\n=== Mushaf page ref: swipe updates the text; visible in full scre
   check("[swipe] after scrolling to the second page, the reference updates to its OWN range (6-52)",
     /6.*52|52.*6/.test(after?.text ?? ""), after?.text);
   check("[swipe] and it no longer reads the first page's range", !/^Ibrahim · 1[^0-9]/.test(after?.text ?? ""), after?.text);
+
+  // Issue #325 -- a light smoke check that tapping the reference (now a real
+  // button) opens the "This page" card; the exhaustive write/claim coverage
+  // for that card lives in its own dedicated suite
+  // (mushaf-approach-cards-browser.mjs), not duplicated here.
+  await page.click("#mushafPageRef");
+  await page.waitForTimeout(300);
+  const pageCardOpen = await page.evaluate(() => {
+    const overlay = document.getElementById("ayahActionSheetOverlay");
+    const card = document.querySelector("[data-page-approach-card]");
+    return !!overlay?.classList.contains("open") && !!card;
+  });
+  check("[tap] tapping the top-bar reference opens the This page card", pageCardOpen);
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(200);
+  const closedAgain = await page.evaluate(() => !document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"));
+  check("[tap] Escape closes the This page card, back to plain Mushaf view", closedAgain);
 
   // Full screen's BARE state: two presses of the same cycle button reach it
   // (NORMAL -> READING -> BARE), per app/quranrevival.html's own
