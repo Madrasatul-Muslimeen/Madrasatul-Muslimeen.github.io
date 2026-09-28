@@ -437,7 +437,7 @@
      banner, study screen, Way modal, drill controls, Mushaf page view)
      is untouched, per the owner's own scope call this round. */
   @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cormorant+Garamond:wght@400;500;600;700&display=swap');
-  .wheel-heading { font-family: 'Cormorant Garamond', serif; font-weight: 600; color: #C9A24B; margin-bottom: 0.4rem; }
+  .wheel-heading { font-family: 'Cormorant Garamond', serif; font-weight: 600; color: var(--card-heading); margin-bottom: 0.4rem; }
   /* "My Status" on the heading line (phones) -- see the markup's comment. A
      36px tap target whose negative vertical margin keeps the heading's own
      line height (36px - 2x9px = the heading's own 18px, measured), so the
@@ -448,20 +448,26 @@
        edge sat 6px inside the wheel card's top edge (measured). */
     flex: 0 0 auto; min-height: 36px; margin: -9px 0 -2px; padding: 0.25rem 0.85rem;
     border: none; border-radius: 999px; cursor: pointer;
-    background: linear-gradient(180deg, #ecd49a, #C9A24B); color: #221904;
+    background: var(--card-button-bg); color: var(--card-button-text);
     font-family: 'Inter', sans-serif; font-weight: 800; font-size: 0.8rem; line-height: 1.2;
   }
   /* 27 Sep 2026: #myStatusWideBtn is the one "My Status" button at every
      width now, in the equal-capsule stack below (the heading's own button is
      gone). */
+  /* Issue #354 -- #wheelSection (the landing wheel card) and #explorePanel
+     both carry this class, so tokenising it here gives both the reader's
+     chosen card look in one move: Night keeps the exact colours this class
+     has always had (var(--card-*) resolves to them under
+     [data-card-look="night"]); Light shows today's cream-card scheme for
+     the first time. */
   .wheel-box {
     display: flex; gap: 1.75rem; flex-wrap: wrap; align-items: flex-start;
-    background: radial-gradient(ellipse at top, #2a3a57 0%, #1B2A41 55%, #121b2c 100%);
-    border: 1px solid rgba(201,162,75,0.3); border-radius: 14px; padding: 1.5rem;
-    color: #F2E8D5; font-family: 'Inter', sans-serif;
+    background: var(--card-bg);
+    border: 1px solid var(--card-line); border-radius: 14px; padding: 1.5rem;
+    color: var(--card-text); font-family: 'Inter', sans-serif;
   }
   .wheel-col { display: flex; flex-direction: column; align-items: center; gap: 0.8rem; flex: 1 1 320px; min-width: 0; }
-  .wheel-box .hint { color: #8fa0c2; font-size: 0.8rem; text-align: center; margin: 0; }
+  .wheel-box .hint { color: var(--card-text-muted); font-size: 0.8rem; text-align: center; margin: 0; }
   /* height:auto matters (shell round 7): renderMasteryWheel() emits width AND
      height attributes on the <svg>, so on a phone the width was being capped
      by max-width while the height stayed at its full attribute value -- the
@@ -501,7 +507,7 @@
   }
   .wheel-intro-capsule {
     display: inline-block; max-width: 100%;
-    background: linear-gradient(180deg, #ecd49a, #C9A24B); color: #221904;
+    background: var(--card-button-bg); color: var(--card-button-text);
     border-radius: 999px; padding: 0.3rem 0.95rem;
     font-family: 'Inter', sans-serif; font-weight: 800; font-size: 0.84rem; line-height: 1.3;
     box-shadow: 0 6px 16px -8px rgba(0,0,0,0.6);
@@ -637,13 +643,13 @@
   .wheel-veiled[data-look="light"] #wheelContainer svg { filter: blur(1.5px) grayscale(1) brightness(1.9); }
   .wheel-veiled[data-look="colour"] #wheelContainer svg { filter: none; }
   .wheel-look-switch { display: flex; align-items: center; justify-content: center; gap: 0.3rem; flex-wrap: wrap; margin-top: 0.15rem; }
-  .wheel-look-label { font-family: 'Inter', sans-serif; font-size: 0.72rem; font-weight: 600; color: #8fa0c2; }
+  .wheel-look-label { font-family: 'Inter', sans-serif; font-size: 0.72rem; font-weight: 600; color: var(--card-text-muted); }
   .wheel-look-btn {
     min-height: 36px; min-width: 3.6rem; padding: 0.25rem 0.7rem; box-sizing: border-box;
-    border: 1px solid #3a4a6e; border-radius: 999px; background: transparent; color: #cdd8ee;
+    border: 1px solid var(--card-line); border-radius: 999px; background: transparent; color: var(--card-text);
     font-family: 'Inter', sans-serif; font-size: 0.76rem; font-weight: 700; cursor: pointer;
   }
-  .wheel-look-btn[aria-pressed="true"] { background: #C9A24B; border-color: #C9A24B; color: #221904; }
+  .wheel-look-btn[aria-pressed="true"] { background: var(--card-button-pressed-bg); border-color: var(--card-button-pressed-bg); color: var(--card-button-pressed-text); }
   /* Issue #352 -- the Show toggle and the All-units ring key / data box. */
   .wheel-show-btn { min-height: 40px; min-width: 0; padding: 0.25rem 0.6rem; }
   /* Phones: one line, not two (measured: two lines cost the first screen
@@ -658,26 +664,26 @@
   #wheelSidebarContainer > .wheel-ring-panel,
   #exploreSidebarContainer > .wheel-ring-panel { flex: 0 0 auto; margin: 0 0 0.6rem; }
   .wheel-ring-key { display: grid; gap: 0.2rem; }
-  .wheel-ring-key-head, .wheel-ring-rule { font-size: 0.74rem; color: #8fa0c2; margin: 0; }
+  .wheel-ring-key-head, .wheel-ring-rule { font-size: 0.74rem; color: var(--card-text-muted); margin: 0; }
   .wheel-ring-row { display: grid; grid-template-columns: 1.2rem minmax(0, 1fr); gap: 0.5rem; align-items: baseline; font-size: 0.8rem; }
-  .wheel-ring-row b { color: #ecd49a; font-weight: 700; }
-  .wheel-ring-row span { color: #cdd8ee; overflow-wrap: anywhere; }
-  .wheel-ring-detail { background: #0f1a2e; border: 1px solid rgba(201,162,75,0.28); border-radius: 12px; padding: 0.7rem; }
-  .wheel-ring-detail h3 { margin: 0 0 0.15rem; font-size: 0.95rem; color: #ecd49a; font-family: 'Inter', sans-serif; }
+  .wheel-ring-row b { color: var(--card-heading); font-weight: 700; }
+  .wheel-ring-row span { color: var(--card-text); overflow-wrap: anywhere; }
+  .wheel-ring-detail { background: var(--card-bg-inset); border: 1px solid var(--card-line); border-radius: 12px; padding: 0.7rem; }
+  .wheel-ring-detail h3 { margin: 0 0 0.15rem; font-size: 0.95rem; color: var(--card-heading); font-family: 'Inter', sans-serif; }
   .wheel-ring-units { list-style: none; margin: 0.4rem 0 0; padding: 0; display: grid; gap: 0.35rem; }
-  .wheel-ring-units li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.5rem; align-items: center; font-size: 0.8rem; color: #F2E8D5; }
+  .wheel-ring-units li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.5rem; align-items: center; font-size: 0.8rem; color: var(--card-text); }
   .wheel-ring-units li .status-chip { font-size: 10px; padding: 3px 9px; border-radius: 10px; text-transform: uppercase; letter-spacing: .04em; font-weight: 600; white-space: nowrap; }
   .wheel-ring-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
   .wheel-ring-actions button {
-    flex: 1 1 8rem; min-height: 40px; border-radius: 10px; border: 1px solid #C9A24B; background: transparent;
-    color: #ecd49a; font: 700 0.8rem 'Inter', sans-serif; cursor: pointer; padding: 0.3rem 0.6rem;
+    flex: 1 1 8rem; min-height: 40px; border-radius: 10px; border: 1px solid var(--card-button-border); background: transparent;
+    color: var(--card-heading); font: 700 0.8rem 'Inter', sans-serif; cursor: pointer; padding: 0.3rem 0.6rem;
   }
-  .wheel-ring-actions button.primary { background: linear-gradient(180deg, #ecd49a, #C9A24B); color: #221904; }
-  .wheel-seg-no { fill: #9fb0cf; }
+  .wheel-ring-actions button.primary { background: var(--card-button-bg); color: var(--card-button-text); }
+  .wheel-seg-no { fill: var(--card-text-muted); }
 
   /* The chosen unit's name in the hub (see renderWheelHubUnit()). */
   .wheel-hub-unit {
-    margin: 0.1rem 0 0; max-width: 100%; text-align: center; color: #ecd49a;
+    margin: 0.1rem 0 0; max-width: 100%; text-align: center; color: var(--card-heading);
     font-family: 'Inter', sans-serif; font-weight: 800; line-height: 1.2;
     font-size: calc(var(--hub-select-size, 10px) * 1.35);
   }
@@ -685,7 +691,7 @@
   .wheel-cta-btn {
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 4;
     display: flex; flex-direction: column; align-items: center; gap: 0.15rem;
-    background: linear-gradient(180deg, #ecd49a, #C9A24B); color: #221904;
+    background: var(--card-button-bg); color: var(--card-button-text);
     border: none; border-radius: 999px; padding: 0.85rem 1.3rem; max-width: 78%;
     font-family: 'Inter', sans-serif; font-weight: 800; line-height: 1.25; text-align: center;
     cursor: pointer; box-shadow: 0 10px 24px -8px rgba(0,0,0,0.6);
@@ -742,8 +748,8 @@
   .wheel-hub-pickers select {
     box-sizing: border-box;
     font-size: var(--hub-select-size, 0.7rem); padding: 0.1rem 0.18rem; border-radius: 6px;
-    border: 1px solid rgba(201,162,75,0.55); background: rgba(8,14,26,0.85);
-    color: #F2E8D5; text-align: center; text-align-last: center;
+    border: 1px solid var(--card-line); background: var(--card-bg-inset);
+    color: var(--card-text); text-align: center; text-align-last: center;
     text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
   }
   /* A deliberate small inset ("the button frame should be little less
@@ -877,8 +883,8 @@
   }
 
   .wheel-seg { cursor: pointer; stroke: #0c1320; stroke-width: 1; transition: stroke .15s, stroke-width .15s; }
-  .wheel-seg:hover { stroke: #F2E8D5; stroke-width: 1.5; }
-  .wheel-seg-num { font-family: 'Inter', sans-serif; font-size: 8px; font-weight: 600; fill: #F2E8D5; }
+  .wheel-seg:hover { stroke: var(--card-text); stroke-width: 1.5; }
+  .wheel-seg-num { font-family: 'Inter', sans-serif; font-size: 8px; font-weight: 600; fill: var(--card-text); }
   /* Drag-reposition round (2 Sep 2026) -- mastery-wheel.js's own OPT-IN
      `sliceLines` extra, drawn inside the slice body for the Asma ul Husna
      Groups/Names wheels only (no other wheel in the app ever sets it). A
@@ -894,9 +900,9 @@
      apart from each other -- only the Asma ul Husna Names wheel's own first
      sliceLine gets it (mastery-wheel.js's `sliceArabicLines`); every other
      line, and every other wheel in the app, still uses the plain class. */
-  .wheel-seg-label { font-family: 'Inter', sans-serif; font-size: calc(9.1px * var(--asmax-wheel-label-scale, 1)); font-weight: 600; fill: #cdd8ee; }
+  .wheel-seg-label { font-family: 'Inter', sans-serif; font-size: calc(9.1px * var(--asmax-wheel-label-scale, 1)); font-weight: 600; fill: var(--card-text-muted); }
   .wheel-seg-label-ar { font-size: calc(9.1px * var(--asmax-wheel-ar-scale, 1.5)); }
-  .wheel-legend { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; font-size: 0.78rem; color: #cdd5e3; }
+  .wheel-legend { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; font-size: 0.78rem; color: var(--card-text-muted); }
   .legend-item { display: flex; align-items: center; gap: 0.4rem; }
   .legend-swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
 
@@ -906,7 +912,7 @@
   .way-row { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 9px; background: rgba(255,255,255,0.03); border: 1px solid transparent; cursor: pointer; transition: background .12s; }
   .way-row:hover { background: rgba(255,255,255,0.07); border-color: rgba(201,162,75,0.25); }
   .way-row .badge { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10.5px; font-weight: 700; flex-shrink: 0; color: #241a06; background: #C9A24B; }
-  .way-row .name { flex: 1; font-size: 13px; color: #dde3ee; }
+  .way-row .name { flex: 1; font-size: 13px; color: var(--card-text); }
   .way-row .status-chip { font-size: 10px; padding: 3px 9px; border-radius: 10px; text-transform: uppercase; letter-spacing: .04em; font-weight: 600; white-space: nowrap; }
   /* v08.02 -- the section heading above each group of Approaches. Kept
      deliberately small and tight: it is pure structure, and every pixel here
@@ -932,9 +938,9 @@
 
   /* Explore's drill-down trail (Phase 5 round 14) -- "Whole Quran › Juz 3 › Al Imran › Ruku' 2". */
   #exploreBreadcrumb { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; font-size: 0.78rem; }
-  .explore-crumb { background: transparent; border: none; color: #8fa0c2; padding: 2px 4px; font-size: 0.78rem; font-family: 'Inter', sans-serif; cursor: pointer; border-radius: 4px; }
-  .explore-crumb:hover { color: #F2E8D5; background: rgba(255,255,255,0.06); }
-  .explore-crumb.active { color: #C9A24B; font-weight: 600; cursor: default; }
+  .explore-crumb { background: transparent; border: none; color: var(--card-text-muted); padding: 2px 4px; font-size: 0.78rem; font-family: 'Inter', sans-serif; cursor: pointer; border-radius: 4px; }
+  .explore-crumb:hover { color: var(--card-text); background: rgba(255,255,255,0.06); }
+  .explore-crumb.active { color: var(--card-link); font-weight: 600; cursor: default; }
   .explore-crumb.active:hover { background: none; }
   .explore-crumb-sep { color: #556; opacity: 0.6; }
   /* 5 Sep 2026 -- the Juz level's Pages/Surahs switch. #id[hidden] outranks
@@ -944,13 +950,13 @@
      have each been bitten by it). */
   #exploreViewToggle { display: flex; align-items: center; gap: 6px; margin: 4px 0 2px; flex-wrap: wrap; }
   #exploreViewToggle[hidden] { display: none; }
-  .explore-view-label { color: #8fa0c2; font-size: 0.72rem; }
+  .explore-view-label { color: var(--card-text-muted); font-size: 0.72rem; }
   /* ~36px tall, per the standing lesson that a 26px control is too small for
      a finger; these are words rather than icons, so they take their own
      width rather than a fixed square. */
-  .explore-view-btn { min-height: 36px; padding: 0 10px; border-radius: 8px; border: 1px solid #2c3a58; background: rgba(255,255,255,0.04); color: #8fa0c2; font-family: 'Inter', sans-serif; font-size: 0.78rem; cursor: pointer; }
-  .explore-view-btn:hover { color: #F2E8D5; border-color: #3d517a; }
-  .explore-view-btn.on { background: rgba(201,162,75,0.16); border-color: #C9A24B; color: #C9A24B; font-weight: 600; }
+  .explore-view-btn { min-height: 36px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--card-line); background: rgba(255,255,255,0.04); color: var(--card-text-muted); font-family: 'Inter', sans-serif; font-size: 0.78rem; cursor: pointer; }
+  .explore-view-btn:hover { color: var(--card-text); border-color: var(--card-link); }
+  .explore-view-btn.on { background: rgba(201,162,75,0.16); border-color: var(--card-link); color: var(--card-link); font-weight: 600; }
   /* 5 Sep 2026, owner: "place the approach selector over the wheel ... place
      it like a capsule." Deliberately the SAME gold pill the landing page's
      own .wheel-intro-capsule already is -- that capsule was added on this
@@ -992,7 +998,7 @@
   .explore-approach-capsule {
     display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
     max-width: 100%; width: auto; border: none;
-    background: linear-gradient(180deg, #ecd49a, #C9A24B); color: #221904;
+    background: var(--card-button-bg); color: var(--card-button-text);
     border-radius: 999px; padding: 0.25rem 0.85rem;
     /* ~36px, per the standing lesson that a 26px control is too small for a
        finger. The whole pill is the tap target, wording included. */
@@ -2181,7 +2187,7 @@
      trap is a class/ID rule beating the UA's plain [hidden], and the rule
      right below sets display on the same ID. */
   #quranWordCardMount[hidden], #quranWordCardMountNote[hidden] { display: none !important; }
-  #quranWordCardMount, #quranWordCardMountNote { flex: 0 0 auto; max-height: min(45vh, 24rem); overflow-y: auto; padding: 0.5rem; background: rgba(255,255,255,0.97); border-top: 1px solid #d8c68a; }
+  #quranWordCardMount, #quranWordCardMountNote { flex: 0 0 auto; max-height: min(45vh, 24rem); overflow-y: auto; padding: 0.5rem; background: var(--card-bg); border-top: 1px solid var(--card-line); }
   /* MAP Phase 3. The progress block made the card taller, and MEASURED at
      320x640 the 45vh cap left it 49px short -- far enough that the three
      state buttons themselves were below the fold, so the control a reader
@@ -2204,19 +2210,19 @@
      clearing the bar. */
   .word-card-occurrence-link {
     min-height: 40px; padding: 0.35rem 0.6rem; font-size: 0.82rem; line-height: 1.2;
-    border: 1px solid #d8c68a; border-radius: 0.35rem; background: #fff; color: #1F3A6E; cursor: pointer;
+    border: 1px solid var(--card-line); border-radius: 0.35rem; background: var(--card-bg); color: var(--card-heading); cursor: pointer;
   }
-  .word-card-occurrence-link:hover { background: #f3ecd8; }
+  .word-card-occurrence-link:hover { background: var(--card-bg-inset); }
   /* v08.21 -- derived forms. The Arabic is deliberately much larger than the
      surrounding English: the card body runs at 0.9rem, so 1.5rem here is ~1.7x
      for a form and 1.35rem (~1.5x) for an occurrence, which is what makes the
      Arabic the thing the eye lands on rather than the counts around it. */
   .word-card-forms { margin: 0.6rem 0 0; }
-  .word-card-forms h4 { margin: 0 0 0.3rem; font-size: 0.88rem; color: #1F3A6E; }
-  .word-card-forms-summary { margin: 0 0 0.4rem; font-size: 0.85rem; color: #5a4a2a; }
-  .word-card-forms-note { margin: 0.35rem 0 0; font-size: 0.74rem; line-height: 1.35; color: #7a6a3c; }
+  .word-card-forms h4 { margin: 0 0 0.3rem; font-size: 0.88rem; color: var(--card-heading); }
+  .word-card-forms-summary { margin: 0 0 0.4rem; font-size: 0.85rem; color: var(--card-text); }
+  .word-card-forms-note { margin: 0.35rem 0 0; font-size: 0.74rem; line-height: 1.35; color: var(--card-text-muted); }
   .word-card-form-list { list-style: none; margin: 0; padding: 0; }
-  .word-card-form { border-top: 1px solid #ece3c9; }
+  .word-card-form { border-top: 1px solid var(--card-line); }
   .word-card-form:first-child { border-top: 0; }
   /* v08.22 -- only the toggle is a row container. v08.21 also gave this rule
      to the row's own LABEL span (`width: 100%` on `.word-card-form-n`), which
@@ -2234,7 +2240,7 @@
     display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start;
     gap: 0.5rem; min-height: 44px; padding: 0.35rem 0.2rem;
   }
-  .word-card-form-toggle:hover { background: #faf6e8; }
+  .word-card-form-toggle:hover { background: var(--card-bg-inset); }
   /* v08.22 -- [CATEGORY] [ARABIC] .......... [N occurrences].
      The category and the written form are ONE left-hand group sitting beside
      each other; the count alone goes to the far side, pushed there by its own
@@ -2243,21 +2249,21 @@
      whole card and put it nowhere near its own label. */
   .word-card-form-pos {
     flex: 0 1 auto; min-width: 0; display: flex; flex-direction: column;
-    font-size: 0.8rem; line-height: 1.25; color: #5a4a2a; overflow-wrap: anywhere;
+    font-size: 0.8rem; line-height: 1.25; color: var(--card-text); overflow-wrap: anywhere;
   }
   /* v08.23 -- the category name and its "+n" marker are ONE line. In v08.22
      the marker was a sibling of the name inside a column box, so it printed
      underneath it. */
   .word-card-form-pos-label { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem; }
-  .word-card-form-pos-en { font-size: 0.68rem; color: #8a7a4c; }
-  .word-card-form-pos-unknown { color: #8a7a4c; font-style: italic; }
-  .word-card-form-pos-more { flex: 0 0 auto; font-size: 0.66rem; color: #8a7a4c; }
+  .word-card-form-pos-en { font-size: 0.68rem; color: var(--card-text-muted); }
+  .word-card-form-pos-unknown { color: var(--card-text-muted); font-style: italic; }
+  .word-card-form-pos-more { flex: 0 0 auto; font-size: 0.66rem; color: var(--card-text-muted); }
   .word-card-form-arabic { flex: 0 0 auto; min-width: 0; font-size: 1.5rem; line-height: 1.7; }
   /* v08.23 -- NO auto margin. The count belongs to the same cluster as the
      category and the Arabic, one row gap away, and wraps with them. */
-  .word-card-form-count { flex: 0 0 auto; font-size: 0.78rem; color: #5a4a2a; white-space: nowrap; }
-  .word-card-pos-en { display: block; font-size: 0.7rem; color: #8a7a4c; }
-  .word-card-form-caret { flex: 0 0 auto; color: #7a6a3c; }
+  .word-card-form-count { flex: 0 0 auto; font-size: 0.78rem; color: var(--card-text); white-space: nowrap; }
+  .word-card-pos-en { display: block; font-size: 0.7rem; color: var(--card-text-muted); }
+  .word-card-form-caret { flex: 0 0 auto; color: var(--card-text-muted); }
   .word-card-form-occurrences { padding: 0 0 0.4rem 0.2rem; }
   .word-card-form-occurrences .word-card-occurrences { flex-direction: column; }
   /* v08.23 -- the occurrence rows sit directly under the form rows and had the
@@ -2265,8 +2271,8 @@
      the two lists read as one thing rather than two different alignments. */
   .word-card-occurrence-link { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 0.5rem; width: 100%; text-align: left; }
   .word-card-occurrence-arabic { flex: 0 0 auto; font-size: 1.35rem; line-height: 1.7; }
-  .word-card-occurrence-ref { flex: 0 0 auto; font-size: 0.76rem; color: #7a6a3c; }
-  .word-card-depth-rest { margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px solid #ece3c9; }
+  .word-card-occurrence-ref { flex: 0 0 auto; font-size: 0.76rem; color: var(--card-text-muted); }
+  .word-card-depth-rest { margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px solid var(--card-line); }
   @media (max-width: 380px) {
     .word-card-form-arabic { font-size: 1.3rem; }
     .word-card-occurrence-arabic { font-size: 1.2rem; }
@@ -2278,14 +2284,14 @@
   .word-card-return-btn {
     display: inline-flex; align-items: center; gap: 0.4rem;
     min-height: 40px; padding: 0.3rem 0.75rem;
-    background: #fdf8ea; border: 1px solid #d8c890; border-radius: 999px;
-    color: #1F3A6E; font: inherit; font-size: 0.85rem; cursor: pointer;
+    background: var(--card-bg-inset); border: 1px solid var(--card-line); border-radius: 999px;
+    color: var(--card-heading); font: inherit; font-size: 0.85rem; cursor: pointer;
   }
-  .word-card-return-btn:hover { background: #f3ecd8; }
-  .word-card-return-ref { font-size: 0.76rem; color: #7a6a3c; }
+  .word-card-return-btn:hover { filter: brightness(1.1); }
+  .word-card-return-ref { font-size: 0.76rem; color: var(--card-text-muted); }
 
   .word-card-origin { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; margin: 0.35rem 0 0; }
-  .word-card-origin span { font-size: 0.78rem; color: #7a6a3c; }
+  .word-card-origin span { font-size: 0.78rem; color: var(--card-text-muted); }
   .word-card-origin button {
     min-height: 36px; padding: 0.3rem 0.6rem; font-size: 0.82rem;
     border: 1px solid #B8862F; border-radius: 0.35rem; background: #B8862F; color: #fff; cursor: pointer;
@@ -2310,7 +2316,7 @@
     #quranWordCardMount:not([hidden]), #quranWordCardMountNote:not([hidden]) {
       position: fixed; inset: 0; z-index: 900; max-height: none;
       display: flex; flex-direction: column; padding: 0; border-top: none;
-      background: #fffdf6;
+      background: var(--card-bg);
     }
     #quranWordCardMount .word-card-content, #quranWordCardMountNote .word-card-content {
       flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0;
@@ -2319,7 +2325,7 @@
       max-width: none; margin: 0; min-height: 100%; box-shadow: none; border: none;
     }
     #quranWordCardMount .quran-word-card header, #quranWordCardMountNote .quran-word-card header {
-      position: sticky; top: 0; z-index: 1; background: #fffdf6;
+      position: sticky; top: 0; z-index: 1; background: var(--card-bg);
     }
   }
 
@@ -2348,8 +2354,8 @@
      bug) -- recorded, not built, see the dated report. */
   @media (min-width: 900px) {
     #quranWordCardMount, #quranWordCardMountNote {
-      position: fixed; z-index: 55; max-height: none; border: 1px solid #d8c68a; border-top: 1px solid #d8c68a;
-      border-radius: 0.6rem; box-shadow: 0 0.6rem 2rem rgba(0,0,0,0.28); display: flex; flex-direction: column;
+      position: fixed; z-index: 55; max-height: none; border: 1px solid var(--card-line); border-top: 1px solid var(--card-line);
+      border-radius: 0.6rem; box-shadow: var(--card-shadow); display: flex; flex-direction: column;
       /* The WINDOW must not scroll -- its content does (.word-card-content
          below). The base rule's overflow-y:auto would otherwise CLIP the
          resize handles, which sit deliberately 3px outside the box: that is
@@ -2373,7 +2379,7 @@
      while doing something else, so the extra machinery buys nothing here. */
   #myStatusMount[hidden] { display: none !important; }
   #myStatusMount { position: fixed; inset: 0; z-index: 900; display: flex; flex-direction: column; background: rgba(19,25,42,0.55); padding: 0; }
-  .my-status-card { background: #fffdf6; display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
+  .my-status-card { background: var(--card-bg); color: var(--card-text); display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
   .my-status-card header {
     position: sticky; top: 0; z-index: 1; background: #1F3A6E; color: #fff;
     display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.6rem 0.8rem;
@@ -2389,14 +2395,14 @@
     #myStatusMount { align-items: center; justify-content: center; }
     .my-status-card {
       width: min(52rem, 92vw); max-height: 85vh; border-radius: 0.65rem; overflow: hidden;
-      box-shadow: 0 1rem 3rem rgba(0,0,0,0.35); flex: 0 1 auto;
+      box-shadow: var(--card-shadow); flex: 0 1 auto;
     }
     .my-status-card header { border-radius: 0.65rem 0.65rem 0 0; }
   }
-  .my-status-loading { padding: 1.2rem; text-align: center; color: #5a4a2a; }
+  .my-status-loading { padding: 1.2rem; text-align: center; color: var(--card-text-muted); }
   .my-status-wheel-row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; justify-content: center; }
   .my-status-list { flex: 1 1 16rem; min-width: 14rem; list-style: none; margin: 0; padding: 0; }
-  .my-status-list li { border-top: 1px solid #ece3c9; }
+  .my-status-list li { border-top: 1px solid var(--card-line); }
   .my-status-list li:first-child { border-top: 0; }
   /* Architect review, 27 Sep 2026: name above figure, not side by side -- at
      390px the long figure squeezed names like "Hifz / Memorising" to three
@@ -2405,18 +2411,19 @@
     display: flex; flex-direction: column; align-items: stretch; gap: 0.15rem; width: 100%; min-height: 44px;
     padding: 0.45rem 0.3rem; background: none; border: 0; text-align: left; cursor: pointer; color: inherit; font: inherit;
   }
-  .my-status-row-btn:hover { background: #faf6e8; }
-  .my-status-row-name { font-size: 0.9rem; font-weight: 600; color: #1F3A6E; }
-  .my-status-row-figure { font-size: 0.8rem; color: #5a4a2a; }
-  .my-status-row-bar { display: block; height: 5px; border-radius: 3px; background: #e8dfc6; overflow: hidden; }
+  .my-status-row-btn:hover { background: var(--card-bg-inset); }
+  .my-status-row-name { font-size: 0.9rem; font-weight: 600; color: var(--card-heading); }
+  .my-status-row-figure { font-size: 0.8rem; color: var(--card-text-muted); }
+  .my-status-row-bar { display: block; height: 5px; border-radius: 3px; background: var(--card-bg-inset); overflow: hidden; }
   .my-status-row-bar > span { display: block; height: 100%; background: #3fae74; }
   /* The wheel's outside numbers are cream for the dark landing page; both
-     these cream sheets need the page's own dark ink here instead. */
-  .my-status-card .wheel-seg-num, .my-status-detail-card .wheel-seg-num { fill: #5a4a2a; font-size: 9px; }
-  .my-status-detail h3 { margin: 0 0 0.3rem; font-size: 0.98rem; color: #1F3A6E; }
+     these cream sheets need the page's own dark ink here instead -- and, per
+     issue #354, the card's own ink in Night rather than always dark. */
+  .my-status-card .wheel-seg-num, .my-status-detail-card .wheel-seg-num { fill: var(--card-text-muted); font-size: 9px; }
+  .my-status-detail h3 { margin: 0 0 0.3rem; font-size: 0.98rem; color: var(--card-heading); }
   .my-status-stage-list { list-style: none; margin: 0.4rem 0; padding: 0; font-size: 0.85rem; }
   .my-status-stage-list li { display: flex; justify-content: space-between; gap: 0.5rem; padding: 0.15rem 0; }
-  .my-status-whole-line { font-size: 0.82rem; color: #5a4a2a; margin: 0.4rem 0; }
+  .my-status-whole-line { font-size: 0.82rem; color: var(--card-text-muted); margin: 0.4rem 0; }
   .my-status-explore-btn {
     margin-top: 0.5rem; min-height: 40px; padding: 0.3rem 0.8rem; font-size: 0.85rem;
     border: 1px solid #B8862F; border-radius: 0.35rem; background: #B8862F; color: #fff; cursor: pointer;
@@ -2433,7 +2440,7 @@
      by NOT re-rendering the thing that must not move). */
   #myStatusDetailMount[hidden] { display: none !important; }
   #myStatusDetailMount { position: fixed; inset: 0; z-index: 910; display: flex; flex-direction: column; background: rgba(10,14,24,0.65); padding: 0; }
-  .my-status-detail-card { background: #fffdf6; display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
+  .my-status-detail-card { background: var(--card-bg); color: var(--card-text); display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
   .my-status-detail-card header {
     position: sticky; top: 0; z-index: 1; background: #1F3A6E; color: #fff;
     display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.6rem 0.8rem;
@@ -2447,13 +2454,16 @@
   .my-status-detail-select {
     width: 100%; min-width: 0; min-height: 40px; padding: 0.35rem 0.5rem; font-size: 0.85rem;
     border: 1px solid rgba(255,255,255,0.5); border-radius: 0.35rem; background: #fff; color: #1F3A6E;
+    /* Sits inside the header, which stays a fixed navy bar in both looks
+       (matching the note pop-up's own titlebar) -- so this select's own
+       white-on-navy chrome is untouched by card look. */
   }
   .my-status-detail-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0.8rem; }
   @media (min-width: 900px) {
     #myStatusDetailMount { align-items: center; justify-content: center; }
     .my-status-detail-card {
       width: min(48rem, 90vw); max-height: 85vh; border-radius: 0.65rem; overflow: hidden;
-      box-shadow: 0 1rem 3rem rgba(0,0,0,0.4); flex: 0 1 auto;
+      box-shadow: var(--card-shadow); flex: 0 1 auto;
     }
     .my-status-detail-card header { border-radius: 0.65rem 0.65rem 0 0; }
   }
@@ -2464,21 +2474,21 @@
      Explore level to jump to (Hizb) renders as a plain <div> carrying the
      same classes rather than a <button> -- "not a button" per the issue,
      not merely unclickable. */
-  .my-status-unit-section { margin-top: 0.8rem; padding-top: 0.7rem; border-top: 1px solid #ece3c9; }
-  .my-status-unit-section h4 { margin: 0 0 0.3rem; font-size: 0.88rem; color: #1F3A6E; }
+  .my-status-unit-section { margin-top: 0.8rem; padding-top: 0.7rem; border-top: 1px solid var(--card-line); }
+  .my-status-unit-section h4 { margin: 0 0 0.3rem; font-size: 0.88rem; color: var(--card-heading); }
   .my-status-unit-list { list-style: none; margin: 0; padding: 0; }
-  .my-status-unit-list li { border-top: 1px solid #ece3c9; }
+  .my-status-unit-list li { border-top: 1px solid var(--card-line); }
   .my-status-unit-list li:first-child { border-top: 0; }
   .my-status-row-btn.my-status-row-static { cursor: default; box-sizing: border-box; } /* a <div>, not a <button>: without border-box its padding made the Hizb bar ~10px wider than the other three (Architect review) */
   .my-status-row-btn.my-status-row-static:hover { background: none; }
-  .my-status-unit-note { font-size: 0.8rem; color: #5a4a2a; margin: 0.5rem 0 0; }
-  .quran-word-card { max-width: 42rem; margin: 0 auto; border: 1px solid #d8c68a; border-radius: 0.65rem; background: #fffdf6; padding: 0.65rem; box-shadow: 0 -0.2rem 1rem rgba(0,0,0,0.08); }
+  .my-status-unit-note { font-size: 0.8rem; color: var(--card-text-muted); margin: 0.5rem 0 0; }
+  .quran-word-card { max-width: 42rem; margin: 0 auto; border: 1px solid var(--card-line); border-radius: 0.65rem; background: var(--card-bg); color: var(--card-text); padding: 0.65rem; box-shadow: var(--card-shadow); }
   .quran-word-card header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; text-align: center; }
   /* Previous / next / close. Square, fixed, never shrinking, so the three read
      as one group rather than three sizes -- and 40px, not the 29px they were.
      flex-shrink: 0 keeps them intact when a long Arabic word squeezes the row;
      the middle column is what gives. */
-  .quran-word-card header button { flex: 0 0 auto; width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; padding: 0; font-size: 1.25rem; line-height: 1; border: 1px solid #d8c68a; border-radius: 0.35rem; background: #fff; color: #1F3A6E; cursor: pointer; }
+  .quran-word-card header button { flex: 0 0 auto; width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; padding: 0; font-size: 1.25rem; line-height: 1; border: 1px solid var(--card-line); border-radius: 0.35rem; background: var(--card-bg-inset); color: var(--card-heading); cursor: pointer; }
   .quran-word-card header button:disabled { opacity: 0.4; cursor: default; }
   .quran-word-card header > div { flex: 1 1 auto; min-width: 0; }
   .word-card-arabic { font-family: var(--quran-font); font-size: 2rem; line-height: 1.5; }
@@ -2519,8 +2529,8 @@
      was 29px, under the ~40px this project settled on, and is 40px at every
      width now. The two media queries are deliberately placed AFTER the base
      rule -- equal specificity, so source order is what makes them win. */
-  .quran-word-card [role="tab"] { flex: 1 1 auto; min-width: 0; min-height: 40px; padding: 0.5rem 0.8rem; font-size: 0.88rem; line-height: 1.2; white-space: nowrap; border: 1px solid #d8c68a; border-radius: 0.35rem; background: #fff; color: #1F3A6E; cursor: pointer; }
-  .quran-word-card [role="tab"][aria-selected="true"] { background: #1F3A6E; color: white; }
+  .quran-word-card [role="tab"] { flex: 1 1 auto; min-width: 0; min-height: 40px; padding: 0.5rem 0.8rem; font-size: 0.88rem; line-height: 1.2; white-space: nowrap; border: 1px solid var(--card-line); border-radius: 0.35rem; background: var(--card-bg-inset); color: var(--card-heading); cursor: pointer; }
+  .quran-word-card [role="tab"][aria-selected="true"] { background: var(--card-button-pressed-bg); color: var(--card-button-pressed-text); }
   @media (max-width: 380px) { .quran-word-card [role="tab"] { padding: 0.5rem 0.4rem; font-size: 0.82rem; } }
   @media (max-width: 340px) { .quran-word-card [role="tab"] { padding: 0.5rem 0.25rem; font-size: 0.75rem; } }
   /* MAP Phase 3 -- the WbW progress block. Every button here is a real
@@ -2558,20 +2568,20 @@
   .way-row.wbw-static-row:hover { background: rgba(255,255,255,0.03); border-color: transparent; }
   #wbwSurahDetail { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; width: 100%; }
   #wbwSurahDetail[hidden] { display: none; }
-  .word-card-progress { margin-top: 0.6rem; padding-top: 0.55rem; border-top: 1px solid #e8dcae; }
-  .word-progress-heading { margin: 0 0 0.35rem; font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: #5b4a20; }
+  .word-card-progress { margin-top: 0.6rem; padding-top: 0.55rem; border-top: 1px solid var(--card-line); }
+  .word-progress-heading { margin: 0 0 0.35rem; font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--card-text-muted); }
   .word-progress-states, .word-progress-decide { display: grid; gap: 0.35rem; }
   .word-progress-states { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .word-progress-decide { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 0.4rem; }
-  .word-card-progress button { min-height: 40px; min-width: 0; padding: 0.5rem 0.4rem; font-size: 0.85rem; line-height: 1.15; border: 1px solid #d8c68a; border-radius: 0.35rem; background: #fff; color: #1F3A6E; cursor: pointer; }
+  .word-card-progress button { min-height: 40px; min-width: 0; padding: 0.5rem 0.4rem; font-size: 0.85rem; line-height: 1.15; border: 1px solid var(--card-line); border-radius: 0.35rem; background: var(--card-bg-inset); color: var(--card-heading); cursor: pointer; }
   /* aria-pressed is the selected state, so the colour follows the attribute
      rather than a separate class the two could drift apart on. */
-  .word-card-progress button[aria-pressed="true"] { background: #1F3A6E; color: #fff; border-color: #1F3A6E; font-weight: 700; }
+  .word-card-progress button[aria-pressed="true"] { background: var(--card-button-pressed-bg); color: var(--card-button-pressed-text); border-color: var(--card-button-pressed-bg); font-weight: 700; }
   .word-card-progress button:disabled { opacity: 0.45; cursor: default; }
-  .word-progress-decide button { background: #1F3A6E; color: #fff; border-color: #1F3A6E; }
-  .word-progress-decide button[data-word-progress-decide="returned"] { background: #fff; color: #8a3b16; border-color: #d8a98a; }
+  .word-progress-decide button { background: var(--card-button-pressed-bg); color: var(--card-button-pressed-text); border-color: var(--card-button-pressed-bg); }
+  .word-progress-decide button[data-word-progress-decide="returned"] { background: var(--card-bg-inset); color: #8a3b16; border-color: #d8a98a; }
   .word-progress-state, .word-progress-coverage { margin: 0.4rem 0 0; font-size: 0.85rem; }
-  .word-progress-coverage { color: #5b4a20; }
+  .word-progress-coverage { color: var(--card-text-muted); }
   .word-progress-incomplete { color: #8a3b16; }
   @media (max-width: 380px) { .word-card-progress button { padding: 0.5rem 0.25rem; font-size: 0.78rem; } }
   @media (max-width: 340px) { .word-card-progress button { padding: 0.5rem 0.15rem; font-size: 0.72rem; } }
@@ -2776,19 +2786,28 @@
      Read/Note view quick menus' own item styling) for every action row. */
   #ayahActionSheetOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 960; }
   #ayahActionSheetOverlay.open { display: block; }
+  /* Issue #354 -- the Ayah Card (and, below, the "This page" card and the
+     Word/My Status cards) is the first surface in this codebase to carry
+     BOTH looks rather than only Night. `.qm-item`/`.qm-divider` are shared
+     with every quick-menu across the app (Read/Note's own ⋮, Bookmark…),
+     which stay light page chrome regardless of card look -- so their text
+     colour is overridden here, scoped to `.ayah-sheet`, rather than
+     touched at the shared rule. */
   .ayah-sheet {
     position: fixed; left: 0; right: 0; bottom: 0; max-height: 82vh; overflow-y: auto;
-    background: #fff; border-radius: 14px 14px 0 0; padding: 0.5rem 0.7rem 1rem;
-    box-shadow: 0 -6px 24px rgba(0,0,0,0.25); font-family: inherit;
+    background: var(--card-bg); border-radius: 14px 14px 0 0; padding: 0.5rem 0.7rem 1rem;
+    box-shadow: var(--card-shadow); font-family: inherit; color: var(--card-text);
   }
-  .ayah-sheet-handle { width: 36px; height: 4px; background: #ddd; border-radius: 999px; margin: 0.3rem auto 0.6rem; }
-  .ayah-sheet-header { display: flex; align-items: center; justify-content: space-between; padding: 0 0.2rem 0.4rem; border-bottom: 1px solid #eee; margin-bottom: 0.3rem; }
-  .ayah-sheet-ref { font-size: 0.9rem; color: #1F3A6E; font-weight: 600; }
-  .ayah-sheet-close { background: none; border: none; color: #666; font-size: 1.5rem; line-height: 1; min-width: 40px; min-height: 40px; padding: 0.2rem 0.5rem; cursor: pointer; }
-  .ayah-sheet .qm-item { min-height: 40px; font-size: 0.88rem; }
+  .ayah-sheet .qm-item { min-height: 40px; font-size: 0.88rem; color: var(--card-text); }
+  .ayah-sheet .qm-item:hover { background: var(--card-bg-inset); }
   .ayah-sheet .qm-item.is-disabled { opacity: 0.5; cursor: default; }
   .ayah-sheet .qm-item.is-disabled:hover { background: none; }
-  .ayah-sheet-hint { font-size: 0.74rem; color: #888; margin: -0.1rem 0.5rem 0.35rem; }
+  .ayah-sheet .qm-caret { color: var(--card-text-muted); }
+  .ayah-sheet-handle { width: 36px; height: 4px; background: var(--card-line); border-radius: 999px; margin: 0.3rem auto 0.6rem; }
+  .ayah-sheet-header { display: flex; align-items: center; justify-content: space-between; padding: 0 0.2rem 0.4rem; border-bottom: 1px solid var(--card-line); margin-bottom: 0.3rem; }
+  .ayah-sheet-ref { font-size: 0.9rem; color: var(--card-heading); font-weight: 600; }
+  .ayah-sheet-close { background: none; border: none; color: var(--card-text-muted); font-size: 1.5rem; line-height: 1; min-width: 40px; min-height: 40px; padding: 0.2rem 0.5rem; cursor: pointer; }
+  .ayah-sheet-hint { font-size: 0.74rem; color: var(--card-text-muted); margin: -0.1rem 0.5rem 0.35rem; }
   /* Issue #295 -- the two new actions. "Take an Approach" is a real
      <select>, sized and reset exactly like every other control in this
      sheet (40px, same font). "Make a poster"'s own inline "Take Note"
@@ -2798,14 +2817,14 @@
      else here, achieved with padding rather than a fixed box so it can sit
      inline with the sentence around it. */
   .ayah-sheet-select-item { display: flex; flex-direction: column; gap: 0.3rem; padding: 0.4rem 0.6rem; }
-  .ayah-sheet-select-label { font-size: 0.88rem; color: #1b1b16; }
+  .ayah-sheet-select-label { font-size: 0.88rem; color: var(--card-text); }
   /* CLAUDE.md's own standing lesson: a <select>'s intrinsic width is its
      LONGEST option, which then runs off a narrow phone the moment a real
      tenant's Approach name is longer than the harness's own short fixture
      names ("Reading (with Tajweed)" is the exact real-tenant case this
      lesson is named after). `width: 100%` + `min-width: 0` pins it to the
      sheet's own content width regardless of option length. */
-  .ayah-sheet-approach-select { display: block; width: 100%; min-width: 0; box-sizing: border-box; min-height: 40px; font: inherit; font-size: 0.88rem; padding: 0.3rem 0.5rem; border: 1px solid #d8c68a; border-radius: 0.35rem; background: #fff8e6; color: #1b1b16; }
+  .ayah-sheet-approach-select { display: block; width: 100%; min-width: 0; box-sizing: border-box; min-height: 40px; font: inherit; font-size: 0.88rem; padding: 0.3rem 0.5rem; border: 1px solid var(--card-line); border-radius: 0.35rem; background: var(--card-bg-inset); color: var(--card-text); }
   /* Issue #325 -- the four-stage picker shared by the Ayah Card and the
      "This page" card. flex-wrap so four labels (the longest, "Practising",
      measured against the sheet's own narrowest phone width) never force the
@@ -2815,10 +2834,10 @@
   .approach-stage-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
   .approach-stage-btn {
     flex: 1 1 calc(50% - 0.2rem); min-width: 6rem; min-height: 40px; padding: 0.3rem 0.5rem;
-    font: inherit; font-size: 0.82rem; color: #1F3A6E; background: #f6f2e4;
-    border: 1px solid #d8c68a; border-radius: 0.35rem; cursor: pointer;
+    font: inherit; font-size: 0.82rem; color: var(--card-button-border); background: var(--card-bg-inset);
+    border: 1px solid var(--card-line); border-radius: 0.35rem; cursor: pointer;
   }
-  .approach-stage-btn[aria-pressed="true"] { color: #fff; background: #1F3A6E; border-color: #1F3A6E; font-weight: 600; }
+  .approach-stage-btn[aria-pressed="true"] { color: var(--card-button-pressed-text); background: var(--card-button-pressed-bg); border-color: var(--card-button-pressed-bg); font-weight: 600; }
   /* The "This page" card mounts into the SAME overlay/sheet the Ayah Card
      uses (.ayah-sheet), so it inherits the bottom-sheet/900px-popover split
      for free -- this rule only trims the body padding .ayah-sheet-body never
@@ -2836,43 +2855,45 @@
   @media (max-width: 899.98px) {
     .page-approach-card { top: 0; left: 0; right: 0; bottom: 0; max-height: 100vh; height: 100%; border-radius: 0; }
   }
-  .ayah-sheet-hint-btn { display: inline-block; min-height: 40px; padding: 0.3rem 0.6rem; margin: 0.1rem 0; background: none; border: 1px solid #1F3A6E; border-radius: 0.35rem; color: #1F3A6E; font: inherit; font-size: 0.74rem; font-weight: 600; cursor: pointer; }
+  .ayah-sheet-hint-btn { display: inline-block; min-height: 40px; padding: 0.3rem 0.6rem; margin: 0.1rem 0; background: none; border: 1px solid var(--card-button-border); border-radius: 0.35rem; color: var(--card-button-border); font: inherit; font-size: 0.74rem; font-weight: 600; cursor: pointer; }
   /* Issue #295 -- Status part B, below the Actions. Its own scroll region
      is the SAME `.ayah-sheet` (already `overflow-y: auto`) -- no second
      scroll container, so a phone's bottom sheet still scrolls as one
      surface as the spec requires. */
-  .ayah-sheet-status { border-top: 1px solid #eee; margin-top: 0.4rem; padding-top: 0.5rem; }
-  .ayah-sheet-section-title { font-size: 0.82rem; color: #1F3A6E; margin: 0 0.2rem 0.4rem; }
+  .ayah-sheet-status { border-top: 1px solid var(--card-line); margin-top: 0.4rem; padding-top: 0.5rem; }
+  .ayah-sheet-section-title { font-size: 0.82rem; color: var(--card-heading); margin: 0 0.2rem 0.4rem; }
   .ayah-status-block { margin: 0 0.2rem 0.9rem; }
-  .ayah-status-heading { font-size: 0.76rem; color: #8a6d1f; text-transform: uppercase; letter-spacing: 0.02em; margin: 0 0 0.3rem; }
-  .ayah-status-empty { font-size: 0.8rem; color: #888; margin: 0; }
+  .ayah-status-heading { font-size: 0.76rem; color: var(--card-text-muted); text-transform: uppercase; letter-spacing: 0.02em; margin: 0 0 0.3rem; }
+  .ayah-status-empty { font-size: 0.8rem; color: var(--card-text-muted); margin: 0; }
   .ayah-approach-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 0.4rem; }
   .ayah-approach-dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
   .ayah-sheet-wheel-btn { width: auto; }
-  .ayah-wbw-count { font-size: 0.82rem; color: #1b1b16; margin: 0 0 0.4rem; }
+  .ayah-wbw-count { font-size: 0.82rem; color: var(--card-text); margin: 0 0 0.4rem; }
   .ayah-wbw-row { display: flex; flex-wrap: wrap; gap: 0.4rem; direction: rtl; }
   /* Architect review, #295: an explicit colour -- the app's button rule is
      white text, which printed these words white on cream (invisible). */
-  .ayah-wbw-chip { min-width: 40px; min-height: 40px; padding: 0.2rem 0.5rem; color: #1F3A6E; background: #f6f2e4; border: 1px solid #d8c68a; border-radius: 0.35rem; font-size: 1rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+  .ayah-wbw-chip { min-width: 40px; min-height: 40px; padding: 0.2rem 0.5rem; color: var(--card-button-border); background: var(--card-bg-inset); border: 1px solid var(--card-line); border-radius: 0.35rem; font-size: 1rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
   .ayah-wbw-chip.is-known { color: #14532d; background: #e3f3ea; border: 2px solid #3fae74; }
   /* Ayah Card section C -- Related āyāt: one full-width row per āyah, a
      real button (>= 40px), explicit colours on the card's light surface. */
-  .ayah-related-sub { margin: 0.5rem 0 0.25rem; font-size: 0.78rem; color: #5b5b5b; }
+  .ayah-related-sub { margin: 0.5rem 0 0.25rem; font-size: 0.78rem; color: var(--card-text-muted); }
   .ayah-related-list { display: flex; flex-direction: column; gap: 0.3rem; }
-  .ayah-related-item { display: flex; flex-direction: column; align-items: flex-start; gap: 0.1rem; width: 100%; min-height: 40px; padding: 0.35rem 0.6rem; text-align: start; color: #1F3A6E; background: #f6f2e4; border: 1px solid #e3d6ab; border-radius: 0.4rem; cursor: pointer; font: inherit; }
-  .ayah-related-item:hover, .ayah-related-item:focus-visible { background: #efe6c9; outline: 2px solid #1F3A6E; outline-offset: 1px; }
+  .ayah-related-item { display: flex; flex-direction: column; align-items: flex-start; gap: 0.1rem; width: 100%; min-height: 40px; padding: 0.35rem 0.6rem; text-align: start; color: var(--card-button-border); background: var(--card-bg-inset); border: 1px solid var(--card-line); border-radius: 0.4rem; cursor: pointer; font: inherit; }
+  .ayah-related-item:hover, .ayah-related-item:focus-visible { background: var(--card-bg-inset); filter: brightness(1.15); outline: 2px solid var(--card-button-border); outline-offset: 1px; }
   .ayah-related-ref { font-weight: 600; font-size: 0.92rem; }
-  .ayah-related-why { font-size: 0.78rem; color: #4a4a4a; overflow-wrap: anywhere; }
+  .ayah-related-why { font-size: 0.78rem; color: var(--card-text-muted); overflow-wrap: anywhere; }
   /* Ayah Card section C part 2 -- Connected āyāt (issue #318): the same
      40px row, plus a studied marker in one of three explicit colours (never
      colour alone -- the words themselves carry the state), each measured
-     >= 4.5:1 against the row's own #f6f2e4 background. */
+     >= 4.5:1 against the row's own #f6f2e4 background in Light. Night's own
+     versions (card-look.css) are re-picked against --card-bg-inset, not
+     derived from these -- CLAUDE.md's own "a palette belongs to a surface". */
   .ayah-connected-studied { font-size: 0.74rem; font-weight: 600; }
   .ayah-connected-studied.is-studied { color: #14532d; }
   .ayah-connected-studied.is-not-studied { color: #6b4a00; }
   .ayah-connected-studied.is-unchecked { color: #5b5b5b; font-weight: 500; font-style: italic; }
   .ayah-hifz-chip { display: inline-flex; align-items: center; min-height: 1.6rem; padding: 0.2rem 0.6rem; border-radius: 999px; color: #fff; font-size: 0.8rem; font-weight: 600; text-shadow: 0 0 2px rgba(0,0,0,0.35); }
-  .ayah-sheet-info-placeholder { font-size: 0.8rem; color: #888; font-style: italic; margin: 0; }
+  .ayah-sheet-info-placeholder { font-size: 0.8rem; color: var(--card-text-muted); font-style: italic; margin: 0; }
   .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 
   /* Issue #348 -- the ladder shared by the Ayah Card and the Unit Card:
@@ -2927,7 +2948,7 @@
   @media (min-width: 900px) {
     .ayah-sheet {
       left: auto; right: 1.4rem; bottom: auto; top: 4.5rem; border-radius: 12px;
-      width: min(22rem, 90vw); border: 1px solid #ddd; box-shadow: 0 12px 32px rgba(0,0,0,0.25);
+      width: min(22rem, 90vw); border: 1px solid var(--card-line); box-shadow: var(--card-shadow);
     }
   }
 
@@ -2940,23 +2961,23 @@
   #ayahFolderFilingOverlay.open { display: flex; }
   #ayahFolderFilingCard {
     width: min(94vw, 28rem); max-height: 85vh; overflow-y: auto;
-    background: #1B2A41; border: 1px solid rgba(201,162,75,0.35); border-radius: 12px;
-    padding: 1.1rem 1rem; color: #F2E8D5; font-family: 'Inter', sans-serif;
+    background: var(--card-bg-inset); border: 1px solid var(--card-line); border-radius: 12px;
+    padding: 1.1rem 1rem; color: var(--card-text); font-family: 'Inter', sans-serif;
   }
-  #ayahFolderFilingCard h3 { margin: 0 0 0.6rem; color: #C9A24B; font-family: 'Cormorant Garamond', serif; font-size: 1.15rem; }
+  #ayahFolderFilingCard h3 { margin: 0 0 0.6rem; color: var(--card-heading); font-family: 'Cormorant Garamond', serif; font-size: 1.15rem; }
   .ayah-folder-picker { display: flex; flex-direction: column; gap: 0.45rem; }
-  .ayah-folder-search { padding: 0.4rem 0.6rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.06); color: #F2E8D5; font-family: inherit; }
+  .ayah-folder-search { padding: 0.4rem 0.6rem; border-radius: 8px; border: 1px solid var(--card-line); background: rgba(255,255,255,0.06); color: var(--card-text); font-family: inherit; }
   .ayah-folder-tree { max-height: 38vh; overflow-y: auto; }
   .ayah-folder-row { display: flex; align-items: center; justify-content: space-between; min-height: 40px; }
   .ayah-folder-row-label { display: flex; align-items: center; gap: 0.5rem; flex: 1 1 auto; min-width: 0; cursor: pointer; }
   .ayah-folder-row-label span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .ayah-folder-new-here { flex: 0 0 auto; width: 32px; height: 32px; background: none; border: none; color: #C9A24B; font-size: 1.15rem; cursor: pointer; }
-  .ayah-folder-empty { color: #9aa7be; font-size: 0.84rem; }
-  .ayah-folder-new-root { align-self: flex-start; background: none; border: none; color: #C9A24B; padding: 0.4rem 0.1rem; cursor: pointer; font-family: inherit; }
+  .ayah-folder-new-here { flex: 0 0 auto; width: 32px; height: 32px; background: none; border: none; color: var(--card-link); font-size: 1.15rem; cursor: pointer; }
+  .ayah-folder-empty { color: var(--card-text-muted); font-size: 0.84rem; }
+  .ayah-folder-new-root { align-self: flex-start; background: none; border: none; color: var(--card-link); padding: 0.4rem 0.1rem; cursor: pointer; font-family: inherit; }
   .ayah-folder-new-form { display: flex; gap: 0.4rem; align-items: center; }
-  .ayah-folder-new-name { flex: 1 1 auto; min-width: 0; padding: 0.35rem 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.06); color: #F2E8D5; font-family: inherit; }
+  .ayah-folder-new-name { flex: 1 1 auto; min-width: 0; padding: 0.35rem 0.5rem; border-radius: 6px; border: 1px solid var(--card-line); background: rgba(255,255,255,0.06); color: var(--card-text); font-family: inherit; }
   .ayah-folder-actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 0.3rem; }
-  .ayah-folder-save { background: #C9A24B; color: #1B2A41; border: none; border-radius: 8px; padding: 0.5rem 1.1rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .ayah-folder-save { background: var(--card-button-bg); color: var(--card-button-text); border: none; border-radius: 8px; padding: 0.5rem 1.1rem; font-weight: 600; cursor: pointer; font-family: inherit; }
   .ayah-folder-note-picker { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.7rem; }
   .ayah-folder-note-picker label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
 
@@ -2965,10 +2986,10 @@
      the drag/resize and layout suites measure) is byte-for-byte unchanged. */
   .word-card-ayah-action-row { padding: 0 0.1rem 0.5rem; }
   .word-card-ayah-action-btn {
-    width: 100%; min-height: 40px; background: #fff8e6; border: 1px solid #d8c68a; border-radius: 0.4rem;
-    color: #7a5f1e; font-size: 0.85rem; font-family: inherit; cursor: pointer;
+    width: 100%; min-height: 40px; background: var(--card-bg-inset); border: 1px solid var(--card-line); border-radius: 0.4rem;
+    color: var(--card-button-border); font-size: 0.85rem; font-family: inherit; cursor: pointer;
   }
-  .word-card-ayah-action-btn:hover { background: #fdf0cc; }
+  .word-card-ayah-action-btn:hover { filter: brightness(1.1); }
   .hifz-surah-header { justify-content: center; background: rgba(201,162,75,0.14); border: 1px solid rgba(201,162,75,0.4); border-radius: 6px; font-size: 16px; font-size: 4.5cqw; font-family: system-ui, sans-serif; color: #7a5f1e; padding: 0.3em 0.6em; }
   /* 27 Sep 2026, Owner: the Surah banner was "very tiny". The banner glyph's
      advance is 3.3em (measured from the font), so at 6cqw it drew at ~20% of

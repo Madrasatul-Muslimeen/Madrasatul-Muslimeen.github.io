@@ -39,7 +39,11 @@
      --card-text-muted  secondary text: hints, captions, reference lines.
      --card-line         a divider/border inside the card (not the card's own
                          outer edge, which usually needs no line at all).
-     --card-heading      a section heading inside the card.
+     --card-heading      a section heading inside the card (Night reuses the
+                         gold most existing panel headings already carry --
+                         v08.101's own brighter #ecd49a is `.ways-group`'s
+                         own, more emphatic shade and stays exactly as it
+                         is, untokenised, rather than being folded in here).
      --card-link         a plain in-card link or crumb.
      --card-button-bg     a primary action button's resting fill.
      --card-button-text   that button's own text colour (Night needs DARK
@@ -66,7 +70,7 @@
   --card-text: #F2E8D5;
   --card-text-muted: #b9c2d4;
   --card-line: rgba(201, 162, 75, 0.35);
-  --card-heading: #ecd49a;
+  --card-heading: #C9A24B;
   --card-link: #C9A24B;
   --card-button-bg: linear-gradient(180deg, #ecd49a, #C9A24B);
   --card-button-text: #221904;
@@ -91,6 +95,32 @@
   --card-button-pressed-text: #fff;
   --card-shadow: 0 6px 18px rgba(20, 30, 55, 0.08);
 }
+
+/* The Ayah Card's own three "carries meaning" markers (CLAUDE.md's "a
+   palette belongs to a surface"): re-picked for Night rather than reused
+   from Light, because Light's own dark-on-cream colours (measured >= 4.5:1
+   against #f6f2e4) would be dark-on-dark and close to invisible against
+   --card-bg-inset. Every value below is its own light-on-dark re-pick, not
+   derived from the Light value. */
+[data-card-look="night"] .ayah-wbw-chip.is-known {
+  color: #8fe3ae;
+  background: rgba(63, 174, 116, 0.18);
+  border-color: #3fae74;
+}
+[data-card-look="night"] .ayah-connected-studied.is-studied { color: #7ddba0; }
+[data-card-look="night"] .ayah-connected-studied.is-not-studied { color: #e0b054; }
+[data-card-look="night"] .ayah-connected-studied.is-unchecked { color: var(--card-text-muted); }
+
+/* The Word Card's own word-part colours (issue #263) -- also "carries
+   meaning", also re-picked rather than reused: Light's four colours
+   (#1F3A6E/#B3261E/#1E6B3C/#6A3FA0) were chosen for contrast against a
+   near-white card and read as near-black against --card-bg-inset. Each
+   Night value below is the same hue, lightened for a dark surface, keeping
+   the four colours visually distinct from each other exactly as before. */
+[data-card-look="night"] .word-card-segment-particle { color: #9fc3f5; }
+[data-card-look="night"] .word-card-segment-person { color: #f2a29c; }
+[data-card-look="night"] .word-card-segment-stem { color: #86d9ab; }
+[data-card-look="night"] .word-card-segment-determiner { color: #c8a8ef; }
 
 /* Night, deliberately, per the issue: "In Night, the Note pop-up's writing
    area stays light for long writing." A textarea a reader writes long text
