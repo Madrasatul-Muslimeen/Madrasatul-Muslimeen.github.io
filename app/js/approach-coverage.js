@@ -258,6 +258,34 @@ export function summarizeApproachAyahCoverage({
   };
 }
 
+/**
+ * Issue #341 -- "My Status"'s "By unit" rows (Juz/Surah/Ruku'/Hizb): how many
+ * of a whole family of units (all 30 Juz, all 114 Surahs, all 556 Ruku's, all
+ * 60 Hizb) read Achieved+Mastered, and how many read Started (Learning or
+ * Practising), for one Approach -- Owner decision 7, so this is the SAME
+ * poolStatus() pooling core Explore's own wedges use, falling back to a
+ * direct claim on the whole unit exactly as myStatusJuzItems() already does
+ * for a Juz (poolStatus() returns null for a No Approach -- see its own doc
+ * comment).
+ *
+ * `units`: [{ key: unitKey, coverage: [{surah, from, to}, ...] }] -- one row
+ * per unit in the family, `coverage` in ayahCoverage()'s own output shape.
+ * `ownStatus`/`spans`/`trackable`: passed straight through to poolStatus().
+ * `directWideStatus`: Map(unitKey -> claimedStatus), the caller's own direct
+ * wide claims (myStatusCache's directWideStatusByTrackable, per trackable).
+ */
+export function summarizeUnitCoverage(units, { ownStatus, spans, trackable, directWideStatus } = {}) {
+  let achievedOrMastered = 0;
+  let started = 0;
+  for (const { key, coverage } of units ?? []) {
+    const pooled = poolStatus(coverage, { ownStatus, spans, trackable });
+    const statusId = pooled ?? (directWideStatus?.get(key) ?? "not_started");
+    if (statusId === "achieved" || statusId === "mastered") achievedOrMastered++;
+    else if (statusId === "learning" || statusId === "practising") started++;
+  }
+  return { achievedOrMastered, started, total: (units ?? []).length };
+}
+
 /** 0..1, never NaN/Infinity -- the wheel slice's own fill ratio for one Approach's summary: Achieved + Mastered out of everything counted (Owner decision 8: "count Achieved + Mastered"). WBW's own headline is words, not ayat -- callers must use quran-word-total.js's wordTotalRatio() for approach_04 instead of this, never this. */
 export function achievedOrMasteredRatio(summary) {
   const total = summary?.countedTotal ?? 0;

@@ -8,11 +8,14 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import { execFileSync } from "node:child_process";
 import {
   QURAN_TOTAL_AYAH_COUNT, WBW_TRACKABLE_ID, RAMP_ORDER, DEFAULT_YES_TRACKABLE_IDS,
   countsForEachAyah, floorStatus, effectiveStatus, ayahCoverage, spanForUnitKey,
   tallyWideClaimsByUnitType, summarizeApproachAyahCoverage, achievedOrMasteredRatio, poolStatus,
+  summarizeUnitCoverage,
 } from "../../app/js/approach-coverage.js";
+import { buildUnitKey, localRukuIndexFromTable } from "../../app/js/unit-keys.js";
 
 const root = path.resolve(process.argv[2] || process.cwd());
 
@@ -452,5 +455,140 @@ export async function other() {}`;
   assert.ok(threw, "the mutated body (carrying edited:true) should have failed the assertion above");
 });
 
-console.log(`\n==== Approach coverage (issue #328) pure suite: ${passed} passed, ${failed} failed ====`);
+// ===========================================================================
+// Issue #341 -- summarizeUnitCoverage(): "By unit"'s own Achieved+Mastered/
+// Started tally across a whole family of units (Juz/Surah/Ruku'/Hizb), built
+// on the SAME poolStatus() core as everything above -- Owner decision 7.
+// ===========================================================================
+
+check("summarizeUnitCoverage(): counts Achieved/Mastered as achieved, Learning/Practising as started, not_started as neither", () => {
+  const statuses = { "1:1": "achieved", "1:2": "mastered", "1:3": "learning", "1:4": "practising", "1:5": "not_started" };
+  const ownStatus = (surah, ayah) => statuses[`${surah}:${ayah}`] ?? "not_started";
+  const units = [1, 2, 3, 4, 5].map((ayah) => ({ key: `u${ayah}`, coverage: [{ surah: 1, from: ayah, to: ayah }] }));
+  const result = summarizeUnitCoverage(units, { ownStatus, spans: [], trackable: YES });
+  assert.deepEqual(result, { achievedOrMastered: 2, started: 2, total: 5 });
+});
+
+check("summarizeUnitCoverage(): a No Approach falls back to a direct claim on the whole unit (poolStatus() returns null)", () => {
+  const directWideStatus = new Map([["surah:2", "achieved"], ["surah:3", "learning"]]);
+  const units = [
+    { key: "surah:1", coverage: [{ surah: 1, from: 1, to: 3 }] },
+    { key: "surah:2", coverage: [{ surah: 2, from: 1, to: 4 }] },
+    { key: "surah:3", coverage: [{ surah: 3, from: 1, to: 2 }] },
+  ];
+  const result = summarizeUnitCoverage(units, { ownStatus: () => "mastered", spans: [], trackable: NO, directWideStatus });
+  // poolStatus() is null for every unit here (No Approach) -- only the
+  // direct claims move the tally; surah 1 has none and stays not_started.
+  assert.deepEqual(result, { achievedOrMastered: 1, started: 1, total: 3 });
+});
+
+check("summarizeUnitCoverage(): a Yes Approach's own claim floors a wider unit even without a matching direct claim", () => {
+  const units = [{ key: "juz:1", coverage: [{ surah: 1, from: 1, to: 3 }, { surah: 2, from: 1, to: 2 }] }];
+  const spans = [{ surah: 1, from: 1, to: 3, statusId: "achieved" }, { surah: 2, from: 1, to: 2, statusId: "achieved" }];
+  const result = summarizeUnitCoverage(units, { ownStatus: () => "not_started", spans, trackable: YES });
+  assert.deepEqual(result, { achievedOrMastered: 1, started: 0, total: 1 });
+});
+
+check("summarizeUnitCoverage(): no units at all is {0, 0, 0}, never an error", () => {
+  assert.deepEqual(summarizeUnitCoverage([], { ownStatus: () => "not_started", spans: [], trackable: YES }), { achievedOrMastered: 0, started: 0, total: 0 });
+  assert.deepEqual(summarizeUnitCoverage(undefined, { ownStatus: () => "not_started", spans: [], trackable: YES }), { achievedOrMastered: 0, started: 0, total: 0 });
+});
+
+check("MUTATION: summarizeUnitCoverage() genuinely reflects a moved claim -- flipping one unit's own status moves the tally", () => {
+  const build = (statusAt3) => {
+    const statuses = { "1:1": "achieved", "1:2": "achieved", "1:3": statusAt3 };
+    const ownStatus = (surah, ayah) => statuses[`${surah}:${ayah}`] ?? "not_started";
+    const units = [1, 2, 3].map((ayah) => ({ key: `u${ayah}`, coverage: [{ surah: 1, from: ayah, to: ayah }] }));
+    return summarizeUnitCoverage(units, { ownStatus, spans: [], trackable: YES });
+  };
+  const before = build("not_started");
+  const after = build("achieved");
+  assert.notEqual(before.achievedOrMastered, after.achievedOrMastered, "the mutation must actually move the count");
+  assert.equal(before.achievedOrMastered, 2);
+  assert.equal(after.achievedOrMastered, 3);
+});
+
+// ===========================================================================
+// Issue #341 -- localRukuIndexFromTable(): the per-surah-relative Ruku'
+// index (buildUnitKey.ruku's own numbering) derived from the packaged
+// GLOBAL boundary table, without ever loading a surah's full text.
+// ===========================================================================
+
+check("localRukuIndexFromTable(): the first ruku of a later surah restarts at 1", () => {
+  const table = [
+    { ruku: 1, surah: 1, fromAyah: 1, toAyah: 7 },
+    { ruku: 2, surah: 2, fromAyah: 1, toAyah: 7 },
+    { ruku: 3, surah: 2, fromAyah: 8, toAyah: 20 },
+    { ruku: 4, surah: 3, fromAyah: 1, toAyah: 10 },
+  ];
+  const map = localRukuIndexFromTable(table);
+  assert.equal(map.get(1), 1, "surah 1's only ruku is local index 1");
+  assert.equal(map.get(2), 1, "surah 2's FIRST ruku restarts at local index 1");
+  assert.equal(map.get(3), 2, "surah 2's second ruku is local index 2");
+  assert.equal(map.get(4), 1, "surah 3's first ruku restarts at local index 1");
+});
+
+check("localRukuIndexFromTable(): agrees with rukuIndexInSurah() on a real two-surah slice of the packaged data", () => {
+  const rukuIndex = JSON.parse(fs.readFileSync(path.join(root, "tools", "quran-data-pull", "output", "ruku-index.json"), "utf8"));
+  const map = localRukuIndexFromTable(rukuIndex);
+  // Surah 1 (al-Fatiha) is exactly one Ruku' -- ruku:1 -> local 1.
+  assert.equal(buildUnitKey.ruku(1, map.get(1)), "ruku:1:1");
+  // Surah 2 starts its own numbering at 1 too, at whatever its first global
+  // ruku happens to be -- read off the table itself rather than hardcoded.
+  const surah2First = rukuIndex.find((r) => r.surah === 2);
+  assert.equal(map.get(surah2First.ruku), 1);
+});
+
+check("localRukuIndexFromTable(): empty/undefined input is an empty map, never an error", () => {
+  assert.equal(localRukuIndexFromTable([]).size, 0);
+  assert.equal(localRukuIndexFromTable(undefined).size, 0);
+});
+
+// ===========================================================================
+// Issue #341 -- the packaged ruku-index.json itself: 556 rows, contiguous,
+// a Ruku' never crosses a surah, and it matches an INDEPENDENT
+// re-derivation from the real surah files (same discipline as
+// quran-word-total-boundary.mjs's own juz-word-totals.json check above).
+// ===========================================================================
+
+const RUKU_INDEX_PATH = path.join(root, "tools", "quran-data-pull", "output", "ruku-index.json");
+
+check("ruku-index.json: 556 rows, contiguous 1..556, ascending", () => {
+  const rows = JSON.parse(fs.readFileSync(RUKU_INDEX_PATH, "utf8"));
+  assert.equal(rows.length, 556);
+  rows.forEach((row, i) => assert.equal(row.ruku, i + 1, `row ${i} should be ruku ${i + 1}`));
+});
+
+check("ruku-index.json: matches an INDEPENDENT re-derivation from the real surah files, and no Ruku' crosses a surah", () => {
+  const packaged = JSON.parse(fs.readFileSync(RUKU_INDEX_PATH, "utf8"));
+  const surahsDir = path.join(root, "tools", "quran-data-pull", "output", "surahs");
+  const surahByRuku = new Map();
+  const firstAyah = new Map();
+  const lastAyah = new Map();
+  for (const file of fs.readdirSync(surahsDir).filter((f) => f.endsWith(".json"))) {
+    const data = JSON.parse(fs.readFileSync(path.join(surahsDir, file), "utf8"));
+    const surah = data.surahNumber ?? Number(file.match(/\d+/)[0]);
+    for (const a of data.ayahs) {
+      const priorSurah = surahByRuku.get(a.ruku);
+      assert.ok(priorSurah === undefined || priorSurah === surah, `ruku ${a.ruku} appears in both surah ${priorSurah} and surah ${surah}`);
+      surahByRuku.set(a.ruku, surah);
+      if (!firstAyah.has(a.ruku)) firstAyah.set(a.ruku, a.ayah);
+      lastAyah.set(a.ruku, a.ayah);
+    }
+  }
+  for (const row of packaged) {
+    assert.equal(row.surah, surahByRuku.get(row.ruku), `ruku ${row.ruku}'s packaged surah does not match a fresh scan`);
+    assert.equal(row.fromAyah, firstAyah.get(row.ruku), `ruku ${row.ruku}'s packaged fromAyah does not match a fresh scan`);
+    assert.equal(row.toAyah, lastAyah.get(row.ruku), `ruku ${row.ruku}'s packaged toAyah does not match a fresh scan`);
+  }
+});
+
+check("ruku-index.json: re-running build-ruku-index.js reproduces the file byte-for-byte", () => {
+  const before = fs.readFileSync(RUKU_INDEX_PATH, "utf8");
+  execFileSync(process.execPath, [path.join(root, "tools", "quran-data-pull", "build-ruku-index.js")], { stdio: "pipe" });
+  const after = fs.readFileSync(RUKU_INDEX_PATH, "utf8");
+  assert.equal(after, before, "re-running the builder produced a different file");
+});
+
+console.log(`\n==== Approach coverage (issue #328/#341) pure suite: ${passed} passed, ${failed} failed ====`);
 if (failed > 0) process.exit(1);
