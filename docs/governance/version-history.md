@@ -626,3 +626,4 @@ total). Allocated by the MMSA Architect.
 08.97: Landing page: scrolls on a phone, equal capsules, unit name in the wheel, wheel look. Allocated by the MMSA Architect.
 08.98: Notes offline, capsules on one row, Surah banner edge to edge, QF credit on About. Allocated by the MMSA Architect.
 08.99: My Status: Approach card, By unit, slices open Explore. Allocated by the MMSA Architect.
+08.100: tablet shows all three landing capsules on one row. Allocated by the MMSA Architect.

@@ -18593,3 +18593,9 @@ The Owner's four landing-page asks. Below 721px the Approach view's page scrolls
 - `ruku-index.json` (556 rows) + `getRukuIndex()`, loaded only when My Status opens.
 - Architect review: expected counts were computed by the function under test — replaced by an independent count pinned by hand, plus a comparison with Explore's own list; mutation-proven; Hizb row width fixed. Merge conflict: the Builder re-added a `#myStatusBtn` listener main already had, kept once.
 - Built by the Builder (branch `claude/issue-341-20260927-2305`, no PR opened); reviewed and allocated by the MMSA Architect.
+
+## v08.100 — 28 Sep 2026 — tablet: three landing capsules on one row
+
+- The first three-digit version (Owner decision 17).
+- Owner (tablet upright, ~600px): "Tab should show all three capsule in one row". My Status leaves the Mastery Wheel bar from 480px (was 721px): the three need 459px en / 380px bn, so from 480px they share one line, 36px each. Measured 412–768px in both languages; layout.mjs unchanged, phone-width 217/0, my-status 86/0.
+- Allocated by the MMSA Architect.
