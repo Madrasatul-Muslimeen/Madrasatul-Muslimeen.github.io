@@ -413,6 +413,61 @@ export function renderScopedWheel(items, { size = 360, centerArabic, centerRef, 
   </svg>`;
 }
 
+/**
+ * Issue #352 -- a wheel of concentric RINGS (decisions 21–24). `rings` is an
+ * array, innermost first, of arrays of arcs: [{ key, statusId, title, a0, a1,
+ * selected?, ringKind? }] with a0/a1 in degrees (0 = 12 o'clock, clockwise).
+ * The rings share the band renderScopedWheel's single ring uses (rInner =
+ * rOuter * 0.5), so the landing wheel's hub overlay sits exactly where it
+ * always has. Every arc is a `.wheel-seg` carrying its `data-key`, so
+ * attachScopedWheelClickHandler() works unchanged; `data-ring` says which
+ * ring was tapped. `numbers` ([{ angle, text }]) prints outside the outer
+ * ring the way renderScopedWheel prints its slice numbers.
+ */
+export function renderRingWheel(rings, { size = 360, centerArabic, centerRef, centerLabel, centerSub, ring = null, numbers = null } = {}) {
+  const cx = size / 2, cy = size / 2;
+  const ringMargin = ring ? 14 : 0;
+  const rOuter = size / 2 - 4 - ringMargin;
+  const rInner = rOuter * 0.5;
+  const labelOffset = Math.max(10, rOuter * 0.065);
+  const count = rings.length || 1;
+  const band = (rOuter - rInner) / count;
+  const radialGap = Math.min(0.8, band * 0.08);
+
+  const arcs = rings
+    .map((arcsInRing, k) => {
+      const r0 = rInner + k * band + (k === 0 ? 0 : radialGap);
+      const r1 = rInner + (k + 1) * band - (k === count - 1 ? 0 : radialGap);
+      return arcsInRing
+        .map((entry) => {
+          if (!(entry.a1 > entry.a0)) return "";
+          const fill = entry.fill ?? STATUS_COLORS[entry.statusId] ?? STATUS_COLORS.not_started;
+          const sel = entry.selected ? ` stroke="#ecd49a" stroke-width="1.8"` : "";
+          const kind = entry.ringKind ? ` data-ring-kind="${entry.ringKind}"` : "";
+          return `<path class="wheel-seg wheel-ring-seg" data-key="${entry.key}" data-ring="${k}"${kind} data-status="${entry.statusId}" d="${segmentPath(cx, cy, r0, r1, entry.a0, entry.a1)}" fill="${fill}"${sel}><title>${entry.title ?? ""}</title></path>`;
+        })
+        .join("");
+    })
+    .join("");
+
+  const nums = (numbers ?? [])
+    .map(({ angle, text }) => {
+      const lp = polarToCartesian(cx, cy, rOuter + labelOffset, angle);
+      return `<text class="wheel-seg-num" x="${lp.x}" y="${lp.y}" text-anchor="middle" transform="rotate(${ringNumberRotation(angle)} ${lp.x} ${lp.y})" style="pointer-events:none">${text}</text>`;
+    })
+    .join("");
+
+  const ringMarkup = ring ? renderWheelRing(cx, cy, rOuter + 4, rOuter + ringMargin - 2, ring.ratio) : "";
+
+  return `<svg class="mastery-wheel mastery-wheel-rings" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
+    <defs>${naHatchDefs()}</defs>
+    ${ringMarkup}
+    ${arcs}
+    ${nums}
+    ${centerLabelMarkup(cx, cy, rInner, { centerArabic, centerRef, centerLabel, centerSub })}
+  </svg>`;
+}
+
 /** Like attachWheelClickHandler, but for renderScopedWheel's generic segments — returns the segment's raw string key rather than assuming it's an ayah number. */
 export function attachScopedWheelClickHandler(containerEl, onSegmentClick) {
   containerEl.querySelectorAll(".wheel-seg").forEach((seg) => {
@@ -477,5 +532,13 @@ export function renderWheelSidebar(items, labelsById) {
 export function attachWheelSidebarClickHandler(containerEl, onRowClick) {
   containerEl.querySelectorAll(".way-row").forEach((row) => {
     row.addEventListener("click", () => onRowClick(row.dataset.key));
+  });
+}
+
+/** Issue #352 -- click handling for renderRingWheel(): the arc's own key and
+    which ring (0 = innermost) it sits in. */
+export function attachRingWheelClickHandler(containerEl, onArcClick) {
+  containerEl.querySelectorAll(".wheel-ring-seg").forEach((seg) => {
+    seg.addEventListener("click", () => onArcClick(seg.dataset.key, Number(seg.dataset.ring)));
   });
 }
