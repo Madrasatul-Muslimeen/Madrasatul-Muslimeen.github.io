@@ -3430,26 +3430,41 @@
   #notePopupBody { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
   #noteViewMount { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 
+  /* Issue #354 part 3 -- the Note pop-up FRAME: the outer box and the
+     title bar now follow the reader's card look, on the shared tokens
+     card-look.css defines. .note-popup-titlebar/-actions/-resize are
+     SHARED with #wheelPopupView/#exploreView (see the comment below), so
+     tokenising them here also fixes those two frames in the same edit.
+
+     THE SIDE PANE AND #noteViewMount DELIBERATELY STAY LIGHT, NOT
+     TOKENISED, in BOTH looks -- per the issue: "In Night, the Note
+     pop-up's writing area stays light for long writing." The side pane
+     previews the reader's OWN note text (.note-popup-row-arabic/-snippet/
+     -note), so it is part of "the writing area" for this purpose, not
+     window chrome -- switching its background dark while those rows kept
+     their light-on-cream text colours would make them unreadable, the
+     exact defect class the part 1-2 review already found and fixed
+     elsewhere (a surface moved without re-picking what sits on it). */
   @media (min-width: 900px) {
     #noteView {
       position: fixed; z-index: 55; /* below #dock's z-index:60 -- the dock stays reachable even if the popup's own geometry overlaps it */
-      background: #fff; border-radius: 0.6rem; overflow: hidden;
-      box-shadow: 0 20px 55px rgba(10,20,40,0.35); border: 1px solid rgba(20,40,80,0.15);
+      background: var(--card-bg); border-radius: 0.6rem; overflow: hidden;
+      box-shadow: var(--card-shadow); border: 1px solid var(--card-line);
     }
     .note-popup-titlebar {
       display: flex; align-items: center; gap: 0.4rem; flex: 0 0 auto;
-      background: #142c58; color: #fff; padding: 0.35rem 0.5rem; cursor: grab;
+      background: var(--card-bg-inset); color: var(--card-heading); padding: 0.35rem 0.5rem; cursor: grab;
       border-radius: 0.6rem 0.6rem 0 0; touch-action: none;
     }
     .note-popup-titlebar:active { cursor: grabbing; }
     .note-popup-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.86rem; font-weight: 600; }
     .note-popup-titlebar-actions { display: flex; gap: 0.25rem; flex: 0 0 auto; }
     .note-popup-titlebar-actions button {
-      background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.35); color: #fff;
+      background: var(--card-bg); border: 1px solid var(--card-line); color: var(--card-text);
       border-radius: 0.3rem; width: 1.7rem; height: 1.7rem; font-size: 0.8rem; cursor: pointer; padding: 0; line-height: 1;
     }
-    .note-popup-titlebar-actions button:hover { background: rgba(255,255,255,0.28); }
-    .note-popup-titlebar-actions button[aria-pressed="true"] { background: #B8862F; border-color: #B8862F; }
+    .note-popup-titlebar-actions button:hover { background: var(--card-bg-inset); }
+    .note-popup-titlebar-actions button[aria-pressed="true"] { background: var(--card-button-pressed-bg); border-color: var(--card-button-pressed-bg); color: var(--card-button-pressed-text); }
 
     #notePopupBody { flex-direction: row; }
     .note-popup-side {
@@ -3498,10 +3513,16 @@
      #wheelPopupView/#exploreView stay plain in-flow elements, pixel for
      pixel unchanged from before this round. */
   @media (min-width: 900px) {
+    /* Issue #354 part 3: this box background was still the literal Night
+       navy (#13192a) -- harmless while Night was the only look, a real
+       defect in Light (the wheel/Explore CONTENT was already moved onto
+       --card-bg in part 1-2, but this desktop-popup box was missed, so a
+       Light reader at >=900px got dark-on-light-content). var(--card-bg)
+       matches what the interior already reads. */
     #wheelPopupView {
       position: fixed; z-index: 55;
-      background: #13192a; border-radius: 0.6rem; overflow-y: auto;
-      box-shadow: 0 20px 55px rgba(10,20,40,0.35); border: 1px solid rgba(201,162,75,0.3);
+      background: var(--card-bg); border-radius: 0.6rem; overflow-y: auto;
+      box-shadow: var(--card-shadow); border: 1px solid var(--card-line);
     }
     /* The title bar replaces the plain heading once this is a real window --
        showing both would print "Mastery Wheel" twice, the same reasoning
@@ -3510,8 +3531,8 @@
 
     #exploreView {
       position: fixed; z-index: 55;
-      background: #13192a; border-radius: 0.6rem; overflow: hidden;
-      box-shadow: 0 20px 55px rgba(10,20,40,0.35); border: 1px solid rgba(201,162,75,0.3);
+      background: var(--card-bg); border-radius: 0.6rem; overflow: hidden;
+      box-shadow: var(--card-shadow); border: 1px solid var(--card-line);
       padding: 0 0.8rem 0.6rem;
     }
     /* #exploreBar already holds real controls (the palette buttons, the
@@ -3528,7 +3549,7 @@
     #exploreBar:active { cursor: grabbing; }
     .popup-title-label {
       display: inline-flex; align-items: center; flex: 1 1 auto; font-weight: 700;
-      color: #C9A24B; font-family: 'Cormorant Garamond', serif; font-size: 0.98rem; margin-right: 0.2rem;
+      color: var(--card-heading); font-family: 'Cormorant Garamond', serif; font-size: 0.98rem; margin-right: 0.2rem;
     }
     .explore-palette-row { flex: 0 0 auto; }
   }
@@ -4185,7 +4206,7 @@
             <div id="notePopupSideList" class="note-popup-side-list view-list"></div>
           </div>
           <div id="notePopupSplitter" class="note-popup-splitter" role="separator" aria-orientation="vertical" title="Drag to resize"></div>
-          <div id="noteViewMount"></div>
+          <div id="noteViewMount" class="card-look-write-surface"></div>
         </div>
         <!-- v08.20 -- the Note view's own Word Card. Deliberately a SIBLING
              of #notePopupBody, so it lives outside #noteViewMount: opening,
