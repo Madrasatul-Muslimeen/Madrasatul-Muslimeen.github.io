@@ -172,7 +172,9 @@ export function attachUnitCardHandlers(container, callbacks = {}) {
   const fireUnlessDisabled = (btn, fn) => {
     if (!btn) return;
     btn.addEventListener("click", () => {
-      if (btn.getAttribute("aria-disabled") === "true") return;
+      // A disabled press still answers in words (issue #348: "a press says in
+      // words that recording ... is coming"), without closing the card.
+      if (btn.getAttribute("aria-disabled") === "true") { callbacks.onMarkAsReadRefused?.(); return; }
       fire(fn);
     });
   };

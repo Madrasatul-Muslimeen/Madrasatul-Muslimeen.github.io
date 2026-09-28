@@ -6,7 +6,7 @@
 // the surah index -- is handed in by the caller, which already holds them
 // (the same tables approach-coverage.js's own spanForUnitKey() takes).
 
-import { t, num } from "./i18n.js";
+import { t, num, surahName } from "./i18n.js";
 import { parseUnitKey, buildUnitKey, localRukuIndexFromTable } from "./unit-keys.js";
 
 /** True when (surah, ayah) falls inside a boundary row's own
@@ -133,7 +133,7 @@ export function ladderRungsForAyah(surahNum, ayahNum, tables = {}, activeUnitTyp
   if (juzRow) rungs.push({ unitType: "juz", unitKey: buildUnitKey.juz(juzRow.juz), label: t("Juz {n}", { n: num(juzRow.juz) }) });
 
   const meta = surahIndex.find((s) => s.surahNumber === surahNum);
-  rungs.push({ unitType: "surah", unitKey: buildUnitKey.surah(surahNum), label: meta?.nameEnglish ?? t("Surah {n}", { n: num(surahNum) }) });
+  rungs.push({ unitType: "surah", unitKey: buildUnitKey.surah(surahNum), label: surahName(surahNum, meta?.nameEnglish) || t("Surah {n}", { n: num(surahNum) }) });
 
   return rungs.map((r) => ({ ...r, active: r.unitType === activeUnitType }));
 }

@@ -5,15 +5,12 @@
 // mushaf-approach-cards-browser.mjs (issue #325) and
 // quran-ayah-action-sheet-browser.mjs (issue #286/#295) already use.
 //
-// Written here, NOT run here -- this sandbox has no Playwright browser
-// binaries and no network access to install them (the same documented,
-// repeated environment gap CLAUDE.md records for every browser-driven
-// suite in this directory, and the reason mushaf-approach-cards-browser.mjs
-// carries the identical notice). The pure computation this round's new
-// modules (unit-markers.js, unit-resolve.js) depend on WAS independently
-// verified against the real packaged boundary data with plain `node`, not
-// a browser -- see this PR's own description for those numbers. The
-// Architect/CI should run this file for real before it is trusted.
+// Run by the Architect at review (28 Sep 2026) in a real browser: the
+// Builder's sandbox had no browser, and this suite crashed on its first real
+// run (the prompt's buttons sit on a page not yet scrolled to). Review also
+// replaced a count check that passed on any line containing a 2 and a 7,
+// and added hand-counted Yes-Approach cases (a Surah claim and a Juz claim
+// flooring the Ruku's āyāt), which the card had got wrong.
 //
 // SCOPE, against the issue's own "Prove it" list:
 //   1. Each entry point opens the right unit -- a flow-view marker, the
@@ -77,9 +74,44 @@ DATA.records.push(
     "ayah:2:5::memorise": { unitType: "ayah", subjectId: "quran", trackableId: "memorise", claimedStatus: "achieved", confirmedStatus: "achieved", confirmState: "confirmed" },
     "ayah:2:7::memorise": { unitType: "ayah", subjectId: "quran", trackableId: "memorise", claimedStatus: "learning", confirmedStatus: null, confirmState: "pending" },
   } },
-  { _id: TENANT_ID + "__p1__subject_quran", tenantId: TENANT_ID, personId: "p1", entries: {} }
+  { _id: TENANT_ID + "__p1__subject_quran", tenantId: TENANT_ID, personId: "p1", entries: {
+    "juz:1::tajweed": { unitType: "juz", subjectId: "quran", trackableId: "tajweed", claimedStatus: "achieved", confirmedStatus: null, confirmState: "pending" },
+  } }
 );
+// Review: two Yes Approaches (countsForEachAyah true), each with ONE wider
+// claim covering Ruku' 1 (2:1-7) -- "recite" by a Whole Surah 2 claim (in
+// surah_2), "tajweed" by a Juz 1 claim (in subject_quran). Hand count: every
+// āyah of Ruku' 1 is floored to Achieved -> 7 of 7 for each. And a No
+// Approach ("memorise") Whole Surah claim that must NOT floor anything.
+for (const id of ["recite", "tajweed"]) DATA.trackables.find((t) => t._id === TENANT_ID + "__" + id).countsForEachAyah = true;
+Object.assign(DATA.records.find((r) => r._id === TENANT_ID + "__p1__surah_2").entries, {
+  "surah:2::recite": { unitType: "surah", subjectId: "quran", trackableId: "recite", claimedStatus: "achieved", confirmedStatus: null, confirmState: "pending" },
+  "ayah:2:3::recite": { unitType: "ayah", subjectId: "quran", trackableId: "recite", claimedStatus: "learning", confirmedStatus: null, confirmState: "pending" },
+  "surah:2::memorise": { unitType: "surah", subjectId: "quran", trackableId: "memorise", claimedStatus: "achieved", confirmedStatus: null, confirmState: "pending" },
+});
 `;
+
+/** The digits in a line, in order, Bangla digits read as ASCII -- so a count
+    line is compared as numbers, in either language's word order. */
+function digitsIn(text) {
+  const ascii = String(text).replace(/[০-৯]/g, (d) => String("০১২৩৪৫৬৭৮৯".indexOf(d)));
+  return (ascii.match(/\d+/g) ?? []).map(Number);
+}
+/** "n of total" in the reader's own language: en "…: n of total", bn "{total} এর মধ্যে {n} …". */
+function readCount(text, lang) {
+  const d = digitsIn(text);
+  if (d.length !== 2) return null;
+  return lang === "bn" ? { n: d[1], total: d[0] } : { n: d[0], total: d[1] };
+}
+async function pickCardApproach(page, id) {
+  await page.evaluate((v) => {
+    const sel = document.querySelector("[data-approach-stage-select]");
+    sel.value = v;
+    sel.dispatchEvent(new Event("change", { bubbles: true }));
+  }, id);
+  await page.waitForTimeout(900);
+  return page.evaluate(() => document.querySelector("[data-unit-card] [data-unit-card-achieved-line]")?.textContent ?? "");
+}
 
 async function clickSafely(page, selector, attempts = 4) {
   let lastErr;
@@ -95,13 +127,10 @@ async function clickSafely(page, selector, attempts = 4) {
 /** Opens the Read screen, Surah 2 (Al-Baqara), a Range of āyāt 1-20 -- the
     same picker sequence every other Study-Unit suite here already uses. */
 async function openSurah2Range1to20(page) {
-  const reachable = await page.evaluate(() => {
-    const b = document.getElementById("tabReadBtn");
-    return !!b && b.getBoundingClientRect().width > 0;
-  });
-  if (!reachable) { await clickSafely(page, "#tabStudyBtn"); await page.waitForTimeout(150); }
-  await clickSafely(page, "#tabReadBtn");
-  await page.waitForTimeout(500);
+  // Review fix: pressing Read while the Read screen is already showing takes
+  // the reader back to the landing page, so only press it when it is not.
+  const alreadyReading = await page.evaluate(() => getComputedStyle(document.getElementById("readView")).display !== "none");
+  if (!alreadyReading) await openReadScreen(page);
   await page.evaluate(() => { const s = document.getElementById("surahSelect"); s.value = "2"; s.dispatchEvent(new Event("change", { bubbles: true })); });
   await page.waitForTimeout(2000);
   await page.evaluate(() => { const sel = document.getElementById("unitTypeSelect"); sel.value = "range"; sel.dispatchEvent(new Event("change", { bubbles: true })); });
@@ -111,6 +140,16 @@ async function openSurah2Range1to20(page) {
     const to = document.getElementById("rangeToSelect"); to.value = "20"; to.dispatchEvent(new Event("change", { bubbles: true }));
   });
   await page.waitForTimeout(1500);
+}
+
+async function openReadScreen(page) {
+  const reachable = await page.evaluate(() => {
+    const b = document.getElementById("tabReadBtn");
+    return !!b && b.getBoundingClientRect().width > 0;
+  });
+  if (!reachable) { await clickSafely(page, "#tabStudyBtn"); await page.waitForTimeout(150); }
+  await clickSafely(page, "#tabReadBtn");
+  await page.waitForTimeout(500);
 }
 
 function markerKeys(page) {
@@ -133,7 +172,13 @@ for (const [width, height] of [[320, 640], [390, 844], [1100, 900]]) {
     check(`[${lang} ${width}] the Page-2-ends, Ruku'-1-ends, Page-3-ends and Ruku'-2-ends markers are all present`,
       ["page:madani:2", "ruku:2:1", "page:madani:3", "ruku:2:2"].every((k) => keys.includes(k)), JSON.stringify(keys));
     check(`[${lang} ${width}] the tappable surah heading names surah:2`, keys.includes("surah:2"), JSON.stringify(keys));
-    const markerBoxes = await page.evaluate(() => [...document.querySelectorAll(".unit-flow-marker, .unit-flow-surah-heading")].map((el) => el.getBoundingClientRect()));
+    // Review: ON by default means a reader who has never chosen an Approach
+    // on any card still sees it, claiming for the Study-options Approach.
+    const fresh = await page.evaluate(() => ({ n: document.querySelectorAll("[data-end-of-unit-prompt]").length, approach: document.querySelector("[data-end-of-unit-approach]")?.textContent ?? "" }));
+    check(`[${lang} ${width}] a fresh reader sees the end-of-unit prompt once, naming the Study-options Approach`, fresh.n === 1 && /Memorise|মুখস্থ/.test(fresh.approach), JSON.stringify(fresh));
+    // Markers on the view being shown (the flow); the hidden one-āyah view
+    // keeps its own from before the Range was chosen, at 0x0.
+    const markerBoxes = await page.evaluate(() => [...document.querySelectorAll("#pageViewContainer .unit-flow-marker, #pageViewContainer .unit-flow-surah-heading")].map((el) => el.getBoundingClientRect()));
     check(`[${lang} ${width}] every marker/heading is a real >=40px-tall button`, markerBoxes.length > 0 && markerBoxes.every((r) => r.height >= 40), JSON.stringify(markerBoxes.map((r) => r.height)));
     const chipBox = await page.evaluate(() => document.getElementById("readUnitChip")?.getBoundingClientRect());
     check(`[${lang} ${width}] the Read-bar unit chip is on screen and not hidden`, !!chipBox && chipBox.width > 0, JSON.stringify(chipBox));
@@ -221,8 +266,23 @@ for (const lang of ["en", "bn"]) {
   // to prove: a No Approach's wider claim counts ONLY for the unit itself.
   await page.waitForTimeout(500); // the achieved-line loads async after the card's first paint
   const countLine = await page.evaluate(() => document.querySelector('[data-unit-card] [data-unit-card-achieved-line]')?.textContent ?? "");
-  check(`[${lang}] "Āyāt Achieved or Mastered" reads 2 of 7 -- the hand-counted āyah-level figure, unmoved by the Ruku's own No-Approach claim`,
-    /2/.test(countLine) && /7/.test(countLine), countLine);
+  const c1 = readCount(countLine, lang);
+  check(`[${lang}] "Āyāt Achieved or Mastered" reads exactly 2 of 7 -- hand-counted, unmoved by the No-Approach Ruku' and Surah claims`,
+    c1?.n === 2 && c1?.total === 7, countLine);
+  // Yes Approach, floored by a WHOLE SURAH claim held in surah_2 (and āyah 3's
+  // own "learning" floored up): hand count 7 of 7.
+  const reciteLine = await pickCardApproach(page, "recite");
+  const c2 = readCount(reciteLine, lang);
+  check(`[${lang}] a Yes Approach with a Whole Surah claim reads 7 of 7 on Ruku' 1 (wider claim counts, as in Explore)`, c2?.n === 7 && c2?.total === 7, reciteLine);
+  // Yes Approach, floored by a JUZ claim held in subject_quran: 7 of 7.
+  const tajweedLine = await pickCardApproach(page, "tajweed");
+  const c3 = readCount(tajweedLine, lang);
+  check(`[${lang}] a Yes Approach with a Juz 1 claim (subject_quran) reads 7 of 7 on Ruku' 1`, c3?.n === 7 && c3?.total === 7, tajweedLine);
+  // An Approach with no claims at all: 0 of 7.
+  const listenLine = await pickCardApproach(page, "listen");
+  const c4 = readCount(listenLine, lang);
+  check(`[${lang}] an Approach with no claims reads 0 of 7`, c4?.n === 0 && c4?.total === 7, listenLine);
+  await pickCardApproach(page, "memorise");
 
   // --- Inside chips jump to the right āyah --------------------------------
   const insideChipCount = await page.evaluate(() => document.querySelectorAll('[data-unit-card-inside-block] .unit-card-inside-chip').length);
@@ -238,6 +298,10 @@ for (const lang of ["en", "bn"]) {
   check(`[${lang}] the end-of-unit prompt appears exactly once, at the end of the Range`, promptCountOn === 1, String(promptCountOn));
   const promptText = await page.evaluate(() => document.querySelector(".end-of-unit-text")?.textContent ?? "");
   check(`[${lang}] the prompt names the unit ("Ayahs 1–20")`, promptText.length > 0, promptText);
+  // The prompt sits under the Range's last āyah, on a page the reader turns
+  // to; bring it on screen the way a reader would reach it, then press.
+  await page.evaluate(() => document.querySelector("[data-end-of-unit-prompt]")?.scrollIntoView({ block: "center", inline: "start" }));
+  await page.waitForTimeout(500);
   await clickSafely(page, '[data-end-of-unit-stage="achieved"]');
   await page.waitForTimeout(500);
   const savedText = await page.evaluate(() => document.querySelector(".end-of-unit-saved")?.textContent ?? "");
@@ -269,6 +333,45 @@ for (const lang of ["en", "bn"]) {
     return card ? { unitType: card.dataset.unitType, unitKey: card.dataset.unitKey } : null;
   });
   check(`[${lang}] tapping the Read-bar chip opens the Unit Card for the current Range (range:2:1-20)`, chipOpened?.unitKey === "range:2:1-20", JSON.stringify(chipOpened));
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(200);
+
+  // Review: a Ruku'/Juz/Hizb/Page is read ONE āyah at a time (not as a
+  // flow), so the markers and the prompt must appear on that view too, and
+  // the prompt only on the unit's REAL last āyah. Juz 2 is 2:142-252; Juz 3
+  // runs 2:253 to 3:92, so 2:286 is NOT its end.
+  const singleAyahState = async (unitType, unitNum, ayah) => {
+    await page.evaluate(([ty]) => { const sel = document.getElementById("unitTypeSelect"); sel.value = ty; sel.dispatchEvent(new Event("change", { bubbles: true })); }, [unitType]);
+    await page.waitForTimeout(600);
+    if (unitNum != null) {
+      await page.evaluate((n) => { const sel = document.getElementById("unitNumSelect"); sel.value = String(n); sel.dispatchEvent(new Event("change", { bubbles: true })); }, unitNum);
+      await page.waitForTimeout(1500);
+    }
+    await page.evaluate((a) => { const sel = document.getElementById("ayahSelect"); sel.value = String(a); sel.dispatchEvent(new Event("change", { bubbles: true })); }, ayah);
+    await page.waitForTimeout(1500);
+    return page.evaluate(() => {
+      const panels = document.getElementById("ayahPanels");
+      return {
+        shown: getComputedStyle(panels).display !== "none",
+        ayah: panels.dataset.ayahCollapsibleFor,
+        prompts: panels.querySelectorAll("[data-end-of-unit-prompt]").length,
+        markers: [...panels.querySelectorAll("[data-unit-marker]")].map((b) => b.dataset.unitMarker),
+      };
+    });
+  };
+  const j2end = await singleAyahState("juz", 2, 252);
+  check(`[${lang}] Juz 2, āyah 2:252 (its last): the one-āyah view shows the prompt once`, j2end.shown && j2end.ayah === "ayah:2:252" && j2end.prompts === 1, JSON.stringify(j2end));
+  const j2mid = await singleAyahState("juz", null, 251);
+  check(`[${lang}] Juz 2, āyah 2:251: no prompt`, j2mid.ayah === "ayah:2:251" && j2mid.prompts === 0, JSON.stringify(j2mid));
+  const j3 = await singleAyahState("juz", 3, 286);
+  check(`[${lang}] Juz 3, āyah 2:286 (not its end, which is 3:92): no prompt`, j3.ayah === "ayah:2:286" && j3.prompts === 0, JSON.stringify(j3));
+  check(`[${lang}] Juz 3's first āyah view carries its "Juz 3 begins" marker`, (await singleAyahState("juz", 3, 253)).markers.includes("juz:3"));
+  const r1 = await singleAyahState("ruku", 1, 7);
+  check(`[${lang}] Ruku' 1, āyah 2:7 (its last): the "Ruku' 1 ends" marker and the prompt`, r1.ayah === "ayah:2:7" && r1.markers.includes("ruku:2:1") && r1.prompts === 1, JSON.stringify(r1));
+  // The marker on the one-āyah view opens the Unit Card too.
+  await clickSafely(page, '#ayahPanels [data-unit-marker="ruku:2:1"]');
+  await page.waitForTimeout(400);
+  check(`[${lang}] the one-āyah view's Ruku' marker opens the Unit Card for ruku:2:1`, (await page.evaluate(() => document.querySelector("[data-unit-card]")?.dataset.unitKey)) === "ruku:2:1");
   await page.keyboard.press("Escape");
   await page.waitForTimeout(200);
 

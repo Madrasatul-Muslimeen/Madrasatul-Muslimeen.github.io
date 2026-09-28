@@ -3004,8 +3004,8 @@ export const BN = {
   "Play this unit": "এই ইউনিট চালান", // ?
   "Mark as read": "পঠিত হিসেবে চিহ্নিত করুন", // ?
   "Status of this unit": "এই ইউনিটের অবস্থা", // ?
-  "This Approach's claims count for each āyah inside.": "এই এপ্রোচের দাবি ভেতরের প্রতিটি আয়াতের জন্য গণনা হয়।", // ?
-  "This Approach's claims count for this unit as a whole.": "এই এপ্রোচের দাবি পুরো ইউনিট হিসেবে গণনা হয়।", // ?
+  "This Approach's claims count for each āyah inside.": "এই পদ্ধতির দাবি ভেতরের প্রতিটি আয়াতের জন্য গণনা হয়।", // ?
+  "This Approach's claims count for this unit as a whole.": "এই পদ্ধতির দাবি পুরো ইউনিট হিসেবে গণনা হয়।", // ?
   "Āyāt Achieved or Mastered: {n} of {total}": "{total} এর মধ্যে {n} আয়াত অর্জিত বা আয়ত্ত", // ?
   "See Explore's Word by Word tab for this unit.": "এই ইউনিটের জন্য এক্সপ্লোরের Word by Word ট্যাব দেখুন।", // ?
   "No word-by-word data for this unit.": "এই ইউনিটের জন্য word-by-word তথ্য নেই।", // ?
@@ -3019,4 +3019,6 @@ export const BN = {
   "End of {unit}. How did it go?": "{unit} শেষ। কেমন হলো?", // ?
   "Saved": "সংরক্ষিত হয়েছে", // ?
   "End-of-unit prompt": "ইউনিট-শেষের প্রম্পট", // ?
+  "Approach: {name}": "পদ্ধতি: {name}", // ?
+  "Surah {n}": "সূরা {n}",
 };

@@ -5392,6 +5392,7 @@
     // re-render (every Tajweed toggle, every unit change), firing
     // openUnitCard() once per accumulated listener on a single tap.
     wireUnitMarkers(pageViewContainer);
+    wireUnitMarkers(document.getElementById("ayahPanels")); // review: the one-āyah view carries markers too
     const mushafPageRef = document.getElementById("mushafPageRef"); // issue #322 -- Mushaf's own top-bar Surah/āyāt reference
     const wayModalOverlay = document.getElementById("wayModalOverlay");
     const wayModalMount = document.getElementById("wayModalMount");
@@ -6537,7 +6538,7 @@
     function unitChipText(info) {
       if (info.unitType === "surah") {
         const meta = surahIndex.find((s) => s.surahNumber === currentSurahNum);
-        return meta?.nameEnglish ?? info.label;
+        return surahName(currentSurahNum, meta?.nameEnglish) || info.label;
       }
       if (info.unitType === "range") {
         const from = Math.min(rangeFrom, rangeTo), to = Math.max(rangeFrom, rangeTo);
@@ -13615,9 +13616,17 @@
           // unit -- this branch never runs for one). Never shown with no
           // Approach chosen yet (nothing to claim against), and switched off
           // per-browser via Study options (getEndOfUnitPromptOn()).
-          const isLastAyah = ayah.ayah === toAyah;
-          const endOfUnitHtml = isLastAyah && getEndOfUnitPromptOn() && mushafRingApproachId
-            ? renderEndOfUnitPromptHtml({ unitLabel: unitChipText(currentUnitInfo()) })
+          // Review fix: the prompt used to need an Approach chosen on a card
+          // first (mushafRingApproachId starts null), so a reader who had
+          // never opened one never saw a prompt that is ON by default. It now
+          // falls back to the Study-options Approach (trackableSelect, the
+          // app's own "current Approach"), and it shows only at the unit's
+          // REAL last āyah -- a Juz/Hizb/Page crossing into the next surah
+          // is only partly drawn here, and its last drawn āyah is not its end.
+          const isLastAyah = ayah.ayah === toAyah && isAtUnitEnd(currentSurahNum, ayah.ayah, unitCardTables);
+          const promptApproachId = endOfUnitApproachId();
+          const endOfUnitHtml = isLastAyah && getEndOfUnitPromptOn() && promptApproachId
+            ? renderEndOfUnitPromptHtml({ unitLabel: unitChipText(currentUnitInfo()), approachName: endOfUnitApproachName(promptApproachId) })
             : "";
           const afterHtml = markers.after.map(unitFlowMarkerHtml).join("") + endOfUnitHtml;
           return `<div class="page-flow-ayah" data-ayah="${ayah.ayah}">${beforeHtml}<div class="ayah-quick-header">${renderQuickMenu(unitKey, {
@@ -13634,15 +13643,7 @@
         })
         .join("");
       attachAyahQuickMenus(pageViewContainer);
-      attachEndOfUnitPromptHandlers(pageViewContainer, {
-        onClose: () => { pageViewContainer.querySelector("[data-end-of-unit-prompt]")?.remove(); },
-        onStageChoice: async (statusId) => {
-          const savedOk = await takeApproachForCurrentUnit(mushafRingApproachId, statusId);
-          if (!savedOk) return;
-          const el = pageViewContainer.querySelector("[data-end-of-unit-prompt] .end-of-unit-saved");
-          if (el) el.textContent = t("Saved");
-        },
-      });
+      wireEndOfUnitPrompt(pageViewContainer);
       renderPersistentWordCard();
       // Fix round -- only mark an āyah as SOUNDING when something really is.
       // This used to run unconditionally, so a fresh flow always painted the
@@ -14344,6 +14345,68 @@
         the prompt never shows without one, see renderFlowView()'s own
         guard). Returns whether it landed, so the caller can show "Saved"
         only when it really did. */
+    /** The Approach the end-of-unit prompt claims for: the one last chosen on
+        a card, else the Study-options Approach (the app's current one). */
+    function endOfUnitApproachId() {
+      const id = mushafRingApproachId || trackableSelect.value || null;
+      return quranTrackables.some((tr) => tr.id === id) ? id : null;
+    }
+    function endOfUnitApproachName(id) {
+      const tr = quranTrackables.find((x) => x.id === id);
+      return tr ? langText(tr.name, getAppLang(), tr.id) : "";
+    }
+    /** True when (surah, ayah) is the chosen Study Unit's own last āyah. A
+        single-āyah unit is never an "end" here (the prompt never shows for
+        one). Needs the boundary tables only for Juz/Hizb/Page, which may end
+        in a later surah than the one drawn. */
+    function isAtUnitEnd(surah, ayah, tables) {
+      if (currentUnitType === "ayah") return false;
+      const info = currentUnitInfo();
+      if (info.unitType === "juz" || info.unitType === "hizb" || info.unitType === "page") {
+        const span = tables ? resolveUnitInfo(info.unitKey, tables) : null;
+        return !!span && span.toSurah === surah && span.toAyah === ayah;
+      }
+      return surah === currentSurahNum && ayah === currentUnitAyahBounds()[1];
+    }
+
+    /** The end-of-unit prompt's handlers, for whichever container drew it
+        (the flow, or the one-āyah view). */
+    function wireEndOfUnitPrompt(container) {
+      attachEndOfUnitPromptHandlers(container, {
+        onClose: () => { container.querySelector("[data-end-of-unit-prompt]")?.remove(); },
+        onStageChoice: async (statusId) => {
+          const savedOk = await takeApproachForCurrentUnit(endOfUnitApproachId(), statusId);
+          if (!savedOk) return;
+          const el = container.querySelector("[data-end-of-unit-prompt] .end-of-unit-saved");
+          if (el) el.textContent = t("Saved");
+        },
+      });
+    }
+
+    /** Review of issue #348 -- the one-āyah Read view (Single Ayah, Ruku',
+        Juz, Hizb, Page without Mushaf): the same boundary markers the flow
+        draws, for this āyah, and the end-of-unit prompt when it is the
+        unit's last āyah. The boundary tables load on first use (I9); a
+        render that has moved on by the time they land is left alone. */
+    let singleAyahDecorToken = 0;
+    async function decorateSingleAyahWithUnitBoundaries(surah, ayahNum) {
+      const token = ++singleAyahDecorToken;
+      let tables;
+      try { tables = await unitCardBoundaryTables(); } catch { return; }
+      if (token !== singleAyahDecorToken || surah !== currentSurahNum || ayahNum !== currentAyahNum) return;
+      if (ayahPanels.dataset.ayahCollapsibleFor !== buildUnitKey.ayah(surah, ayahNum)) return;
+      const markers = unitBoundaryMarkersInWindow(surah, ayahNum, ayahNum, tables);
+      const before = surahFlowHeadingHtml(surah, ayahNum) + markers.filter((m) => m.position === "before").map(unitFlowMarkerHtml).join("");
+      const promptApproachId = endOfUnitApproachId();
+      const prompt = getEndOfUnitPromptOn() && promptApproachId && isAtUnitEnd(surah, ayahNum, tables)
+        ? renderEndOfUnitPromptHtml({ unitLabel: unitChipText(currentUnitInfo()), approachName: endOfUnitApproachName(promptApproachId) })
+        : "";
+      const after = markers.filter((m) => m.position === "after").map(unitFlowMarkerHtml).join("") + prompt;
+      if (before) ayahPanels.insertAdjacentHTML("afterbegin", `<div class="unit-single-decor" data-unit-single-decor>${before}</div>`);
+      if (after) ayahPanels.insertAdjacentHTML("beforeend", `<div class="unit-single-decor" data-unit-single-decor>${after}</div>`);
+      if (prompt) wireEndOfUnitPrompt(ayahPanels);
+    }
+
     async function takeApproachForCurrentUnit(approachId, statusId) {
       const info = currentUnitInfo();
       const outcome = await claimApproachStatus(info.unitKey, approachId, statusId);
@@ -14466,14 +14529,37 @@
       return (surah, ayah) => unitCardChunkForSurah(surah)?.entries?.[`${buildUnitKey.ayah(surah, ayah)}::${approachId}`]?.claimedStatus ?? "not_started";
     }
 
-    /** This unit's OWN direct claim (its own unit key, in its own chunk) --
-        the floor every āyah inside it sits under for a Yes Approach (spec:
-        "Yes-Approach wider claims count"), the same relationship
-        floorStatus()/poolStatus() already give a wedge's own claim over the
-        āyāt inside it everywhere else in this app. */
-    function unitCardDirectStatus(info, approachId) {
-      const chunk = info.chunkKey === "subject_quran" ? quranSubjectChunk : unitCardChunkForSurah(info.fromSurah);
-      return chunk?.entries?.[`${info.unitKey}::${approachId}`]?.claimedStatus ?? "not_started";
+    /** Review fix -- every WIDER claim for this Approach that can touch the
+        unit, as spans, exactly the way Explore and My Status build theirs
+        (spanForUnitKey() over each non-āyah entry): the surah chunks the unit
+        covers (surah/range/ruku claims) and subject_quran (juz/hizb/page).
+        Built only from the unit's own claim, a Ruku' inside a Surah claimed
+        Achieved read 0 of 7 here while Explore showed it green. Loads
+        subject_quran on card open when not already held (I9: card open). */
+    async function unitCardWideSpans(approachId, surahs) {
+      const tables = await unitCardBoundaryTables();
+      if (selectedPersonId && !quranSubjectChunkReady()) { try { await ensureQuranSubjectChunk(); } catch { /* spans from surah chunks only */ } }
+      const localMap = localRukuIndexFromTable(tables.rukuRows);
+      const rukuRangesBySurah = new Map();
+      for (const row of tables.rukuRows) {
+        if (!rukuRangesBySurah.has(row.surah)) rukuRangesBySurah.set(row.surah, new Map());
+        rukuRangesBySurah.get(row.surah).set(localMap.get(row.ruku), { from: row.fromAyah, to: row.toAyah });
+      }
+      const lookups = { surahIndex, juzIndexData: tables.juzRows, pageIndexData: tables.pageRows, rukuRangesBySurah, hizbIndex: tables.hizbRows };
+      const chunks = [...surahs.map((sn) => unitCardChunkForSurah(sn)), quranSubjectChunk];
+      const spans = [];
+      for (const chunk of chunks) {
+        for (const [key, entry] of Object.entries(chunk?.entries ?? {})) {
+          const cut = key.lastIndexOf("::");
+          if (cut < 0 || key.slice(cut + 2) !== approachId) continue;
+          const unitKey = key.slice(0, cut);
+          if (unitKey.startsWith("ayah:")) continue;
+          const statusId = entry?.claimedStatus;
+          if (!statusId || statusId === "not_started" || RAMP_ORDER.indexOf(statusId) < 0) continue;
+          for (const sp of spanForUnitKey(unitKey, lookups)) spans.push({ ...sp, statusId });
+        }
+      }
+      return spans;
     }
 
     /** "Āyāt Achieved or Mastered: n of N" (spec) -- every āyah in the
@@ -14487,8 +14573,7 @@
       const coverage = ayahCoverage(info.fromSurah, info.fromAyah, info.toSurah, info.toAyah, surahIndex);
       const surahsNeeded = [...new Set(coverage.map((c) => c.surah))];
       await Promise.all(surahsNeeded.map((s) => ensureSurahChunkForUnitCard(s)));
-      const ownWideStatus = unitCardDirectStatus(info, approachId);
-      const spans = ownWideStatus !== "not_started" ? coverage.map((c) => ({ ...c, statusId: ownWideStatus })) : [];
+      const spans = await unitCardWideSpans(approachId, surahsNeeded);
       const ownStatus = unitCardOwnAyahStatus(approachId);
       let achievedOrMastered = 0;
       let countedTotal = 0;
@@ -14535,11 +14620,10 @@
       if (!approachId) return { title: "", items: [] };
       const trackable = quranTrackables.find((tr) => tr.id === approachId);
       const tables = await unitCardBoundaryTables();
-      const ownWideStatus = unitCardDirectStatus(info, approachId);
       const wholeCoverage = ayahCoverage(info.fromSurah, info.fromAyah, info.toSurah, info.toAyah, surahIndex);
-      const parentSpans = ownWideStatus !== "not_started" ? wholeCoverage.map((c) => ({ ...c, statusId: ownWideStatus })) : [];
       const surahsNeeded = [...new Set(wholeCoverage.map((c) => c.surah))];
       await Promise.all(surahsNeeded.map((s) => ensureSurahChunkForUnitCard(s)));
+      const parentSpans = await unitCardWideSpans(approachId, surahsNeeded);
       const ownStatus = unitCardOwnAyahStatus(approachId);
       const colorFor = (coverage, unitKey) => {
         const pooled = poolStatus(coverage, { ownStatus, spans: parentSpans, trackable });
@@ -14714,6 +14798,7 @@
         onBookmark: (unitKey) => unitCardToggleBookmark(unitKey, info.label),
         onPlay: () => playUnitCard(info),
         onMarkAsRead: (unitKey) => markUnitAsRead(unitKey),
+        onMarkAsReadRefused: () => { const why = unitCardMarkAsReadState(info).reason; if (why) showStudyNotice(why); },
         onInsideJump: (item) => {
           if (item.jump) { const [s, a] = item.jump.split(":").map(Number); navigateToAyah(s, a, "read"); return; }
           if (item.unitKey) openUnitCard(item.unitKey, unitCardOpenedFromAyah);
@@ -17379,6 +17464,10 @@
         // same as the Note view's own master toggle.
         ayahPanels.dataset.ayahCollapsibleFor = buildUnitKey.ayah(currentSurahNum, currentAyahNum);
         ayahPanels.classList.remove("collapsed");
+        // Review of issue #348 -- a Ruku'/Juz/Hizb/Page (and a Single Ayah)
+        // is read one āyah at a time here, not as a flow, so the boundary
+        // markers and the end-of-unit prompt belong on this view too.
+        decorateSingleAyahWithUnitBoundaries(currentSurahNum, currentAyahNum);
         // Round 31 -- the owner's own question: "why should the three dot
         // take space over the Ayah?" Mounted on #readBar instead of a
         // header row over the text (I2 -- ayah-renderer.js itself is

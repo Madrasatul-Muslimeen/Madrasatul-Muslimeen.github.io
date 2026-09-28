@@ -25,13 +25,14 @@ const STAGE_LABELS = Object.freeze({
  * can say "Saved" in words (spec: 'it saves ... and says "Saved" in words')
  * instead of just changing a button's own pressed state.
  */
-export function renderEndOfUnitPromptHtml({ unitLabel = "", saved = false } = {}) {
+export function renderEndOfUnitPromptHtml({ unitLabel = "", approachName = "", saved = false } = {}) {
   const buttons = STAGE_IDS
     .map((id) => `<button type="button" class="end-of-unit-btn" data-end-of-unit-stage="${id}">${escapeHtml(t(STAGE_LABELS[id]))}</button>`)
     .join("");
   return `
     <div class="end-of-unit-prompt" data-end-of-unit-prompt role="group" aria-label="${escapeHtml(t("End of {unit}. How did it go?", { unit: unitLabel }))}">
       <span class="end-of-unit-text">${escapeHtml(t("End of {unit}. How did it go?", { unit: unitLabel }))}</span>
+      ${approachName ? `<span class="end-of-unit-approach" data-end-of-unit-approach>${escapeHtml(t("Approach: {name}", { name: approachName }))}</span>` : ""}
       <div class="end-of-unit-btns">${buttons}</div>
       <span class="end-of-unit-saved" role="status" aria-live="polite">${saved ? escapeHtml(t("Saved")) : ""}</span>
       <button type="button" class="end-of-unit-close" data-end-of-unit-close aria-label="${escapeHtml(t("Close"))}">×</button>
