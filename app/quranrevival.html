@@ -1824,6 +1824,28 @@
   #mushafPageRef[hidden] { display: none; }
   .mushaf-page-ref-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .mushaf-page-ref-caret { flex: 0 0 auto; font-size: 0.65rem; color: #8a7c55; }
+  /* Issue #348, Owner decision 18 -- the gold unit chip. A FIXED max-width
+     (spec: "the chip's wording has a fixed maximum width and never
+     truncates silently") rather than #mushafPageRef's own flex-grow shape,
+     because the two never show at once (hidden in Mushaf view) and this one
+     shares the row with every icon button rather than owning it alone --
+     letting it grow would take space those buttons need. Text wraps INSIDE
+     the chip (spec: "it wraps inside itself") up to two lines rather than
+     ellipsis-truncating, since unitChipText() already picks the shortest
+     correct form (a bare number or a surah's own short name) and a second
+     line costs far less than losing a digit silently. Matches this row's
+     own existing icon-button height (26.8px, v08.31's own note) rather than
+     the ≥40px this project's other new controls use -- #readBar is already
+     the densest row in the app and every sibling button here is that same
+     size; a taller chip would cost more than this round could measure
+     without a real browser (see the PR notes for this issue). */
+  .read-unit-chip {
+    flex: 0 0 auto; max-width: 6.5rem; font: inherit; font-size: 0.74rem; font-weight: 600;
+    color: #7a5f1e; background: #fdf6e3; border: 1px solid #d8c68a; border-radius: 0.35rem;
+    padding: 0.3rem 0.5rem; cursor: pointer; line-height: 1.15;
+  }
+  .read-unit-chip[hidden] { display: none; }
+  .read-unit-chip-text { display: block; overflow-wrap: break-word; word-break: break-word; }
   /* v08.31 -- the Phase 4 ✓ while evidence persistence is NOT ready (E1 closed).
      `aria-disabled`, NOT `disabled`, and the difference is the whole point: a
      `disabled` button cannot be focused or pressed, so a reader gets no way to
@@ -2818,6 +2840,51 @@
   .ayah-hifz-chip { display: inline-flex; align-items: center; min-height: 1.6rem; padding: 0.2rem 0.6rem; border-radius: 999px; color: #fff; font-size: 0.8rem; font-weight: 600; text-shadow: 0 0 2px rgba(0,0,0,0.35); }
   .ayah-sheet-info-placeholder { font-size: 0.8rem; color: #888; font-style: italic; margin: 0; }
   .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+  /* Issue #348 -- the ladder shared by the Ayah Card and the Unit Card:
+     Āyah → Ruku' → Page → Hizb → Juz → Surah. Scrolls sideways inside
+     itself rather than wrapping (spec), so it never costs the card a
+     second line on a narrow phone -- the same choice the Approach picker's
+     own select row already makes. */
+  .unit-ladder { display: flex; gap: 0.3rem; overflow-x: auto; padding: 0.3rem 0.2rem 0.5rem; border-bottom: 1px solid #eee; margin-bottom: 0.3rem; -webkit-overflow-scrolling: touch; }
+  .unit-ladder-rung { flex: 0 0 auto; min-height: 40px; padding: 0.3rem 0.7rem; font: inherit; font-size: 0.8rem; color: #1F3A6E; background: #f6f2e4; border: 1px solid #e3d6ab; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+  .unit-ladder-rung.is-active { color: #fff; background: #1F3A6E; border-color: #1F3A6E; font-weight: 600; }
+
+  /* Issue #348 -- the Unit Card's own "counts for each āyah" line and the
+     Āyāt-Achieved/Word-by-Word count lines under Status. */
+  .unit-card-counts-line { font-size: 0.78rem; color: #6b5a20; margin: -0.1rem 0.5rem 0.4rem; font-style: italic; }
+  .unit-card-count-line { font-size: 0.82rem; color: #1b1b16; margin: 0; }
+
+  /* Issue #348 -- "Inside": a Surah's own Ruku's, a Ruku'/Page/Range's own
+     āyāt, a Hizb/Juz's own Surah pieces. Same >= 40px coloured chip idiom
+     as the Ayah Card's own Related-āyāt rows, laid out in a wrapping row
+     rather than a column since these chips are short (a number, or "Ruku'
+     N") rather than a whole sentence. */
+  .unit-card-inside { border-top: 1px solid #eee; margin-top: 0.4rem; padding: 0.5rem 0.2rem 0; }
+  .unit-card-inside-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .unit-card-inside-chip { min-width: 40px; min-height: 40px; padding: 0.2rem 0.6rem; color: #fff; text-shadow: 0 0 2px rgba(0,0,0,0.35); border: none; border-radius: 0.35rem; font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+
+  /* Issue #348 -- the boundary markers inside the flowing Read view
+     ("Juz N begins", "Ruku' N ends ع", "Page N ends") and the tappable
+     surah heading. Real >= 40px buttons, full width of the flow so they
+     read as a row break rather than crowd against the Arabic beside them. */
+  .unit-flow-marker { display: block; width: 100%; min-height: 40px; margin: 0.35rem 0; padding: 0.4rem 0.6rem; font: inherit; font-size: 0.82rem; font-weight: 600; color: #7a5f1e; background: rgba(201,162,75,0.14); border: 1px solid rgba(201,162,75,0.4); border-radius: 6px; cursor: pointer; text-align: center; }
+  .unit-flow-surah-heading { display: block; width: 100%; min-height: 40px; margin: 0.35rem 0; padding: 0.4rem 0.6rem; font: inherit; font-size: 0.95rem; font-weight: 700; color: #1F3A6E; background: #f6f2e4; border: 1px solid #e3d6ab; border-radius: 6px; cursor: pointer; text-align: center; }
+  /* The Mushaf surah banner is a real <button> now (issue #348) -- reset the
+     UA's own button chrome so the ornamental glyph's existing size/centring
+     (below) is completely unchanged; only cursor/appearance are new. */
+  button.hifz-surah-header { font: inherit; cursor: pointer; appearance: none; }
+
+  /* Issue #348, Owner decision 19 -- the end-of-unit prompt. Sits inline in
+     the flow (never a fixed overlay -- spec: "it never blocks reading"),
+     the same rounded-card idiom the Approach stage row uses so it reads as
+     part of this app rather than a foreign toast. */
+  .end-of-unit-prompt { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: 0.6rem 0; padding: 0.6rem 2.2rem 0.6rem 0.7rem; background: #fdf6e3; border: 1px solid #d8c68a; border-radius: 0.5rem; }
+  .end-of-unit-text { font-size: 0.85rem; color: #4a3c10; flex: 1 1 100%; }
+  .end-of-unit-btns { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .end-of-unit-btn { min-height: 40px; padding: 0.3rem 0.7rem; font: inherit; font-size: 0.8rem; color: #1F3A6E; background: #fff; border: 1px solid #1F3A6E; border-radius: 0.35rem; cursor: pointer; }
+  .end-of-unit-saved { font-size: 0.78rem; color: #14532d; font-weight: 600; }
+  .end-of-unit-close { position: absolute; top: 0.2rem; right: 0.2rem; min-width: 40px; min-height: 40px; background: none; border: none; font-size: 1.2rem; color: #6b5a20; cursor: pointer; }
   @media (min-width: 900px) {
     .ayah-sheet {
       left: auto; right: 1.4rem; bottom: auto; top: 4.5rem; border-radius: 12px;
@@ -3881,6 +3948,18 @@
                plus a decorative ▾, same shape readTextSizeSlot uses for a
                JS-filled slot. -->
           <button type="button" id="mushafPageRef" class="mushaf-page-ref" hidden></button>
+          <!-- Issue #348, Owner decision 18 -- a gold chip naming the chosen
+               Study Unit ("Ruku' 3", "Juz 1", "Al-Mulk"), opening its Unit
+               Card (an Ayah unit opens the Ayah Card instead). Hidden in
+               Mushaf view, which already carries #mushafPageRef in this same
+               flexible slot -- the two together would cost this row more
+               than either alone; a Mushaf-mode chip is left for a follow-up
+               round (see the PR notes for this issue). Content is built in
+               JS (updateReadUnitChip()) as a text span, same fixed-max-width
+               ellipsis shape #mushafPageRef's own text span already uses, so
+               a long label wraps inside itself rather than pushing the rest
+               of the row. -->
+          <button type="button" id="readUnitChip" class="read-unit-chip" hidden><span class="read-unit-chip-text"></span></button>
           <button type="button" class="secondary qr-ico" id="prevUnitBtn" aria-label="Previous" title="Previous">⏮</button>
           <button type="button" class="secondary qr-ico" id="prevAyahBtn" aria-label="Previous āyah" title="Previous āyah">◂</button>
           <button type="button" class="secondary qr-ico" id="nextAyahBtn" aria-label="Next āyah" title="Next āyah">▸</button>
@@ -4622,6 +4701,10 @@
                  right". On by default, because that is what they asked; the
                  tick is the way back for anyone who prefers scrolling. -->
             <label id="sidewaysControl"><input type="checkbox" id="sidewaysToggle" checked /> Page by page</label>
+            <!-- Issue #348, Owner decision 19 -- "End of Ruku' 3. How did it
+                 go?" is on by default; this is the way back for a reader who
+                 finds it intrusive. -->
+            <label id="endOfUnitPromptControl"><input type="checkbox" id="endOfUnitPromptToggle" checked /> End-of-unit prompt</label>
             <label id="trEnControl"><input type="checkbox" id="trEnToggle" checked /> English translation</label>
             <label id="trBnControl"><input type="checkbox" id="trBnToggle" /> বাংলা translation</label>
             <!-- Mushaf is the one choice that cannot share the screen: it is a
@@ -4945,6 +5028,7 @@
       createListeningSession, listeningCompletionArgs,
       wbwEngagementArgs,
       studyEvidencePersistenceReady, studyEvidencePersistenceReason,
+      unitTypeRecordsEvidence,
     } from "./js/study-event-wiring.js";
     import { getBookmarks, saveBookmark, removeSavedBookmark, updateSavedBookmarkFields, findSavedBookmark, createFolder, flattenFolderTree } from "./js/bookmarks.js";
     import { openBookmarkNamePopover } from "./js/bookmark-popover.js";
@@ -5004,7 +5088,7 @@
     // Issue #320 -- Basic Arabic / Arabic in Depth word-occurrence progress,
     // gated separately from WbW (see study-word-levels-readiness.js).
     import { isWordLevelsPersistenceReady } from "./js/study-word-levels-readiness.js";
-    import { computeArabicCoverage, occurrenceIdsForAyah, occurrenceIdsForAyahRange, occurrenceIdsForSurah } from "./js/quran-word-coverage.js";
+    import { computeArabicCoverage, occurrenceIdsForAyah, occurrenceIdsForAyahRange, occurrenceIdsForSurah, occurrenceIdsForUnit } from "./js/quran-word-coverage.js";
     // Issue #206 -- the whole-Qur'an/Juz running word counter.
     import { QURAN_TOTAL_WORD_COUNT, knownDelta, juzForSurahAyah, wordTotalRatio, percentRounded } from "./js/quran-word-total.js";
     import { getWordTotals, recordWordTotalDelta, recordWordTotalDeltaAcrossJuz } from "./js/quran-word-total-data.js";
@@ -5030,6 +5114,14 @@
     // Note on the āyah into Mapping My Journey folder(s).
     import { renderAyahActionSheetHtml, attachAyahActionSheetHandlers } from "./js/ayah-action-sheet.js";
     import { renderPageApproachCardHtml, attachPageApproachCardHandlers } from "./js/page-approach-card.js";
+    // Issue #348 -- the Unit Card (Ruku'/Page/Hizb/Juz/Surah/Range) and the
+    // ladder shared with the Ayah Card, both pure renderers reusing the same
+    // Approach four-stage picker and Approach-status strip as the cards above.
+    import { renderUnitCardHtml, attachUnitCardHandlers } from "./js/unit-card.js";
+    import { renderUnitLadderHtml } from "./js/unit-ladder.js";
+    import { resolveUnitInfo, ladderRungsForAyah } from "./js/unit-resolve.js";
+    import { unitBoundaryMarkersInWindow } from "./js/unit-markers.js";
+    import { renderEndOfUnitPromptHtml, attachEndOfUnitPromptHandlers } from "./js/end-of-unit-prompt.js";
     import { renderAyahFolderPickerHtml, attachAyahFolderPickerHandlers } from "./js/ayah-folder-filing-renderer.js";
     import { planFolderFilings } from "./js/ayah-folder-filing-plan.js";
     import { createStudyNote, notesForStudyUnit } from "./js/study-note-service.js";
@@ -5050,6 +5142,7 @@
       getWheelLook, setWheelLook,
       getColourWordParts, setColourWordParts,
       getMushafTajweedFontOn, setMushafTajweedFontOn,
+      getEndOfUnitPromptOn, setEndOfUnitPromptOn,
     } from "./js/prefs.js";
     import { wireWheelResize } from "./js/wheel-resize.js";
     import { renderTextSizeButtonHtml } from "./js/text-size.js";
@@ -5256,6 +5349,7 @@
     const derivativesToggle = document.getElementById("derivativesToggle");
     const derivativesControl = document.getElementById("derivativesControl");
     const sidewaysToggle = document.getElementById("sidewaysToggle");
+    const endOfUnitPromptToggle = document.getElementById("endOfUnitPromptToggle"); // issue #348, Owner decision 19
     const wbwShowControl = document.getElementById("wbwShowControl");
     const unitNumControl = document.getElementById("unitNumControl");
     const unitNumLabel = document.getElementById("unitNumLabel");
@@ -5289,6 +5383,15 @@
     const mushafNote = document.getElementById("mushafNote");
     const singleAyahNavRow = document.getElementById("singleAyahNavRow");
     const pageViewContainer = document.getElementById("pageViewContainer");
+    // Issue #348 -- ONE delegated [data-unit-marker] listener for the whole
+    // container's life (wireUnitMarkers() is defined, hoisted, further down
+    // this module). #pageViewContainer's own innerHTML is replaced on every
+    // render, but the container element itself never is, so this is wired
+    // exactly once rather than inside renderFlowView() -- attaching it there
+    // would stack a new listener on the same persistent element every
+    // re-render (every Tajweed toggle, every unit change), firing
+    // openUnitCard() once per accumulated listener on a single tap.
+    wireUnitMarkers(pageViewContainer);
     const mushafPageRef = document.getElementById("mushafPageRef"); // issue #322 -- Mushaf's own top-bar Surah/āyāt reference
     const wayModalOverlay = document.getElementById("wayModalOverlay");
     const wayModalMount = document.getElementById("wayModalMount");
@@ -5419,6 +5522,12 @@
     const readTextSizeSlot = document.getElementById("readTextSizeSlot");
     const hideChromeBtn = document.getElementById("hideChromeBtn");
     const readBookmarkBtn = document.getElementById("readBookmarkBtn");
+    const readUnitChip = document.getElementById("readUnitChip"); // issue #348, Owner decision 18
+    readUnitChip.addEventListener("click", () => {
+      const info = currentUnitInfo();
+      if (info.unitType === "ayah") { openAyahActionSheet(`${currentSurahNum}:${currentAyahNum}`); return; }
+      openUnitCard(info.unitKey, { surah: currentSurahNum, ayah: currentAyahNum });
+    });
     const prevUnitBtn = document.getElementById("prevUnitBtn");
     const nextUnitBtn = document.getElementById("nextUnitBtn");
     const quranFontSelect = document.getElementById("quranFontSelect");
@@ -5765,6 +5874,17 @@
     // Issue #325 point 4 -- "the Approach last chosen on either card",
     // shared by both, starting unset (no rings) until a real choice is made.
     let mushafRingApproachId = null;
+    // Issue #348 -- the Unit Card (Ruku'/Page/Hizb/Juz/Surah/Range), mounted
+    // into the SAME shared overlay/mount as the Ayah Card and "This page"
+    // card (mutually exclusive with both by construction). Null unit key
+    // means the card is closed. `unitCardOpenedFromAyah` is the (surah,ayah)
+    // the card was opened from/at -- what the ladder is built around --
+    // distinct from `unitCardUnitKey` itself, which may be a wider unit than
+    // any one āyah (e.g. the ladder for a Juz keeps naming the āyah the
+    // reader actually tapped a marker from, not the Juz's own first āyah).
+    let unitCardUnitKey = null;
+    let unitCardOpenedFromAyah = null; // { surah, ayah } | null
+    let unitCardSelectedApproachId = null;
     // Issue #295 -- the Ayah Card's Status part B, read-on-first-use exactly
     // like ayahNoteDataLoadedFor above: null while unresolved (rendered as
     // "loading"/silent, never guessed), reset to null on every open so a
@@ -6405,6 +6525,31 @@
       if (currentUnitType === "hizb") return Math.ceil(ayah.hizbQuarter / 4);
       if (currentUnitType === "page") return ayah.page;
       return null;
+    }
+
+    /** Issue #348, Owner decision 18 -- the gold Read-bar chip's own SHORT
+        text: the unit type plus its number ("Ruku' 3", "Juz 1", "Page 5"),
+        or the surah's own short name for a Whole Surah ("Al-Mulk") -- the
+        spec's own worked examples. Deliberately shorter than
+        currentUnitInfo().label (which spells out "Ruku' 3 of Surah 67
+        (ayahs 1-5)" -- too long for a fixed-width bar chip), and the
+        fallback the spec itself asks for when a wider one would not fit. */
+    function unitChipText(info) {
+      if (info.unitType === "surah") {
+        const meta = surahIndex.find((s) => s.surahNumber === currentSurahNum);
+        return meta?.nameEnglish ?? info.label;
+      }
+      if (info.unitType === "range") {
+        const from = Math.min(rangeFrom, rangeTo), to = Math.max(rangeFrom, rangeTo);
+        return t("Ayahs {from}–{to}", { from: num(from), to: num(to) });
+      }
+      if (info.unitType === "ayah") return t("Ayah {n}", { n: num(currentAyahNum) });
+      const n = currentUnitNumber();
+      if (info.unitType === "ruku") return t("Ruku' {n}", { n: num(n) });
+      if (info.unitType === "juz") return t("Juz {n}", { n: num(n) });
+      if (info.unitType === "hizb") return t("Hizb {n}", { n: num(n) });
+      if (info.unitType === "page") return t("Page {n}", { n: num(n) });
+      return info.label;
     }
 
     const UNIT_NUM_LABELS = { ruku: "Ruku' №", juz: "Juz №", hizb: "Hizb №", page: "Page №" };
@@ -13336,6 +13481,25 @@
         highlighted. Mushaf works for a SINGLE ayah too (the owner's own ask:
         a one-ayah memorising programme needs to see where that ayah sits on
         the page), because getMushafPagesForKeys() is happy with one key. */
+    /** Issue #348 -- one tappable marker for a Juz/Hizb/Ruku'/Page boundary
+        inside the flowing Read view, opening the Unit Card for the unit it
+        names. Real 40px button, both languages, never inside a
+        .page-flow-ayah block (wireFlowInViewHighlight()/markPlayingAyah()
+        both key off that class, so a marker sits BETWEEN blocks). */
+    function unitFlowMarkerHtml(marker) {
+      return `<button type="button" class="unit-flow-marker" data-unit-marker="${escapeHtml(marker.unitKey)}">${escapeHtml(marker.label)}</button>`;
+    }
+
+    /** Issue #348 -- the flowing Read view carries no surah heading at all
+        (bismillahHtmlFor() only ever draws the Bismillah); this is the
+        "add one small row" the spec asks for, drawn once at the surah's own
+        first āyah, tappable to open the Unit Card for the whole surah. */
+    function surahFlowHeadingHtml(surahNum, ayahNum) {
+      if (ayahNum !== 1) return "";
+      const meta = surahIndex.find((s) => s.surahNumber === surahNum);
+      return `<button type="button" class="unit-flow-surah-heading" data-unit-marker="${escapeHtml(buildUnitKey.surah(surahNum))}">${escapeHtml(surahName(surahNum, meta?.nameEnglish))}</button>`;
+    }
+
     async function renderFlowView(fromAyah, toAyah, panels, isMushaf) {
       const ayahKeys = [];
       for (let a = fromAyah; a <= toAyah; a++) ayahKeys.push(`${currentSurahNum}:${a}`);
@@ -13402,6 +13566,17 @@
       // ayah. Round 19 folded the old four-way "Page display" picker into the
       // ordinary Reading view ticks -- one set of choices, whatever the unit.
       const ayahs = currentSurahData.ayahs.filter((a) => a.ayah >= fromAyah && a.ayah <= toAyah);
+      // Issue #348 -- Juz/Hizb/Ruku'/Page boundary markers, resolved from
+      // the same small packaged tables the Unit Card itself reads (I9:
+      // cached after the first call anywhere in the app, no new fetch once
+      // My Status/Explore/an earlier marker render has loaded them).
+      const unitCardTables = await unitCardBoundaryTables();
+      const boundaryMarkers = unitBoundaryMarkersInWindow(currentSurahNum, fromAyah, toAyah, unitCardTables);
+      const markersByAyah = new Map();
+      for (const mk of boundaryMarkers) {
+        if (!markersByAyah.has(mk.ayahNum)) markersByAyah.set(mk.ayahNum, { before: [], after: [] });
+        markersByAyah.get(mk.ayahNum)[mk.position].push(mk);
+      }
       // data-ayah is what lets the recitation mark its place (round 27). A
       // Range or a Whole Surah draws every ayah at once, so nothing on screen
       // moved as the audio advanced -- the owner's "the Ayah playing should
@@ -13427,7 +13602,25 @@
           // canonical Study-options ticks); Collapse is per-āyah, which is
           // what the data-ayah-collapsible-for wrapper below is for -- one
           // āyah of a Range can be folded away without touching the rest.
-          return `<div class="page-flow-ayah" data-ayah="${ayah.ayah}"><div class="ayah-quick-header">${renderQuickMenu(unitKey, {
+          // Markers sit INSIDE this āyah's own .page-flow-ayah, never as a
+          // sibling div -- the same reason bismillahHtmlFor() is nested
+          // rather than a sibling (comment above): round 28's sideways-mode
+          // CSS treats every DIRECT CHILD of #pageViewContainer as its own
+          // full-width page, so a bare sibling marker would render as a
+          // blank extra page rather than an inline row.
+          const markers = markersByAyah.get(ayah.ayah) ?? { before: [], after: [] };
+          const beforeHtml = surahFlowHeadingHtml(currentSurahNum, ayah.ayah) + markers.before.map(unitFlowMarkerHtml).join("");
+          // Issue #348, Owner decision 19 -- the end-of-unit prompt, on the
+          // LAST āyah of whatever this flow is showing (never a single-āyah
+          // unit -- this branch never runs for one). Never shown with no
+          // Approach chosen yet (nothing to claim against), and switched off
+          // per-browser via Study options (getEndOfUnitPromptOn()).
+          const isLastAyah = ayah.ayah === toAyah;
+          const endOfUnitHtml = isLastAyah && getEndOfUnitPromptOn() && mushafRingApproachId
+            ? renderEndOfUnitPromptHtml({ unitLabel: unitChipText(currentUnitInfo()) })
+            : "";
+          const afterHtml = markers.after.map(unitFlowMarkerHtml).join("") + endOfUnitHtml;
+          return `<div class="page-flow-ayah" data-ayah="${ayah.ayah}">${beforeHtml}<div class="ayah-quick-header">${renderQuickMenu(unitKey, {
             hasNote: ayahHasNote(ayahNotesDoc, unitKey), isBookmarked,
             showTextTools: true,
             isWbwOn: wbwShowToggle.checked, isRootsOn: rootsToggle.checked, isDerivativesOn: derivativesToggle.checked,
@@ -13437,10 +13630,19 @@
             wbwLangs: wbwLangs(),
             wordCardInteractive: true,
             surahNumber: currentSurahNum,
-          })}</div></div>`;
+          })}</div>${afterHtml}</div>`;
         })
         .join("");
       attachAyahQuickMenus(pageViewContainer);
+      attachEndOfUnitPromptHandlers(pageViewContainer, {
+        onClose: () => { pageViewContainer.querySelector("[data-end-of-unit-prompt]")?.remove(); },
+        onStageChoice: async (statusId) => {
+          const savedOk = await takeApproachForCurrentUnit(mushafRingApproachId, statusId);
+          if (!savedOk) return;
+          const el = pageViewContainer.querySelector("[data-end-of-unit-prompt] .end-of-unit-saved");
+          if (el) el.textContent = t("Saved");
+        },
+      });
       renderPersistentWordCard();
       // Fix round -- only mark an āyah as SOUNDING when something really is.
       // This used to run unconditionally, so a fresh flow always painted the
@@ -14135,6 +14337,32 @@
       applyMushafMarkerRings();
     }
 
+    /** Issue #348, Owner decision 19 -- the end-of-unit prompt's own write:
+        the same claim path as every other stage press in this app, against
+        WHATEVER the Study Unit picker currently holds (currentUnitInfo()),
+        for the Approach last chosen on either card (mushafRingApproachId --
+        the prompt never shows without one, see renderFlowView()'s own
+        guard). Returns whether it landed, so the caller can show "Saved"
+        only when it really did. */
+    async function takeApproachForCurrentUnit(approachId, statusId) {
+      const info = currentUnitInfo();
+      const outcome = await claimApproachStatus(info.unitKey, approachId, statusId);
+      if (!outcome.ok) return false;
+      mushafRingApproachId = approachId;
+      if (info.chunkKey === "subject_quran") {
+        await ensureQuranSubjectChunk({ force: true });
+        if (!quranSubjectChunk) quranSubjectChunk = { entries: {} };
+        patchClaimedEntry(quranSubjectChunk, info.unitKey, approachId, statusId);
+      } else {
+        await refreshChunkAndWheel();
+        if (!currentChunk) currentChunk = { entries: {} };
+        patchClaimedEntry(currentChunk, info.unitKey, approachId, statusId);
+      }
+      renderWheel();
+      applyMushafMarkerRings();
+      return true;
+    }
+
     /** Issue #325 point 2 -- renders the "This page" card into the SAME
         mount the Ayah Card uses. I9: the subject_quran chunk is asked for
         only once the card actually opens (ensureUnitChunkThen(), the same
@@ -14183,6 +14411,379 @@
       ayahActionSheetOverlayEl.classList.add("open");
     }
 
+    // ===================== Issue #348 -- the Unit Card =====================
+    // Acting on and tracking a Ruku', Page, Hizb, Juz, Surah or Range from
+    // the Read view. Reuses claimApproachStatus()/chunkForUnitInfo()/
+    // ensureUnitChunkThen()/patchClaimedEntry() above exactly as the Ayah
+    // Card and "This page" card do -- one claim mechanism, a third entry
+    // point, never a second write path.
+
+    /** The four packaged boundary tables plus the surah index and page
+        edition -- what resolveUnitInfo()/ladderRungsForAyah()/
+        unitBoundaryMarkersInWindow() (all pure, unit-resolve.js/
+        unit-markers.js) need to turn a unit key into its own span, and an
+        āyah into the ladder of units around it. Loaded on first use (I9):
+        getJuzIndex()/getHizbIndex()/getPageIndex()/getRukuIndex() are the
+        SAME lazy, cached singletons "My Status" and Explore already use, so
+        this never re-fetches once any of those screens (or an earlier Unit
+        Card open) has already loaded them. */
+    let unitCardTablesCache = null;
+    async function unitCardBoundaryTables() {
+      if (unitCardTablesCache) return unitCardTablesCache;
+      const [juzRows, hizbRows, pageRows, rukuRows] = await Promise.all([
+        getJuzIndex(), getHizbIndex(), getPageIndex(), getRukuIndex(),
+      ]);
+      unitCardTablesCache = { juzRows, hizbRows, pageRows, rukuRows, surahIndex, pageEdition: PAGE_EDITION };
+      return unitCardTablesCache;
+    }
+
+    /** A Juz/Hizb/Page unit can span into a surah the reader is not
+        currently viewing (e.g. Juz 3 runs Surah 2:253 to Surah 3:92); this
+        is the one place the Unit Card reads a SECOND surah's own records
+        chunk, and only the one or two surahs a unit's own coverage
+        actually touches -- never the whole-Qur'an sweep "My Status"/
+        Explore perform. Cached per surah for the life of the page (a claim
+        write patches the cached chunk in place, the same as currentChunk
+        does elsewhere, so this never goes stale within one session). */
+    let unitCardChunksBySurah = new Map();
+    async function ensureSurahChunkForUnitCard(surahNum) {
+      if (surahNum === currentSurahNum) return currentChunk;
+      if (unitCardChunksBySurah.has(surahNum)) return unitCardChunksBySurah.get(surahNum);
+      if (!selectedPersonId) return null;
+      const chunk = await getRecordsChunk(db, activeTenantId, selectedPersonId, `surah_${surahNum}`);
+      unitCardChunksBySurah.set(surahNum, chunk);
+      return chunk;
+    }
+
+    function unitCardChunkForSurah(surahNum) {
+      return surahNum === currentSurahNum ? currentChunk : (unitCardChunksBySurah.get(surahNum) ?? null);
+    }
+
+    /** Reads one āyah's own claimed status for `approachId`, from whichever
+        surah chunk holds it (already loaded by the time this is called --
+        callers await ensureSurahChunkForUnitCard() for every surah first). */
+    function unitCardOwnAyahStatus(approachId) {
+      return (surah, ayah) => unitCardChunkForSurah(surah)?.entries?.[`${buildUnitKey.ayah(surah, ayah)}::${approachId}`]?.claimedStatus ?? "not_started";
+    }
+
+    /** This unit's OWN direct claim (its own unit key, in its own chunk) --
+        the floor every āyah inside it sits under for a Yes Approach (spec:
+        "Yes-Approach wider claims count"), the same relationship
+        floorStatus()/poolStatus() already give a wedge's own claim over the
+        āyāt inside it everywhere else in this app. */
+    function unitCardDirectStatus(info, approachId) {
+      const chunk = info.chunkKey === "subject_quran" ? quranSubjectChunk : unitCardChunkForSurah(info.fromSurah);
+      return chunk?.entries?.[`${info.unitKey}::${approachId}`]?.claimedStatus ?? "not_started";
+    }
+
+    /** "Āyāt Achieved or Mastered: n of N" (spec) -- every āyah in the
+        unit's own coverage, effectiveStatus() per āyah so a Yes Approach's
+        OWN wider claim floors every āyah inside it exactly as Explore's own
+        wedges would; a No Approach never floors (effectiveStatus()'s own
+        gate). Not Applicable is excluded from N, not counted as zero (I7). */
+    async function unitCardAchievedLine(info, approachId) {
+      if (!approachId) return "";
+      const trackable = quranTrackables.find((tr) => tr.id === approachId);
+      const coverage = ayahCoverage(info.fromSurah, info.fromAyah, info.toSurah, info.toAyah, surahIndex);
+      const surahsNeeded = [...new Set(coverage.map((c) => c.surah))];
+      await Promise.all(surahsNeeded.map((s) => ensureSurahChunkForUnitCard(s)));
+      const ownWideStatus = unitCardDirectStatus(info, approachId);
+      const spans = ownWideStatus !== "not_started" ? coverage.map((c) => ({ ...c, statusId: ownWideStatus })) : [];
+      const ownStatus = unitCardOwnAyahStatus(approachId);
+      let achievedOrMastered = 0;
+      let countedTotal = 0;
+      for (const { surah, from, to } of coverage) {
+        for (let ayah = from; ayah <= to; ayah++) {
+          const statusId = effectiveStatus({ own: ownStatus(surah, ayah), spans, surah, ayah, trackable });
+          if (statusId === "not_applicable") continue;
+          countedTotal += 1;
+          if (statusId === "achieved" || statusId === "mastered") achievedOrMastered += 1;
+        }
+      }
+      return t("Āyāt Achieved or Mastered: {n} of {total}", { n: num(achievedOrMastered), total: num(countedTotal) });
+    }
+
+    /** Word by Word known/total for this unit -- spec: "where the unit lies
+        within the loaded surah. Otherwise say it is in Explore's Word by
+        Word tab." occurrenceIdsForUnit() (quran-word-coverage.js) already
+        returns null for exactly the juz/hizb/page case (it spans surahs the
+        loaded chapter cannot answer for), so this defers to it rather than
+        re-deriving the same boundary. */
+    async function unitCardWordByWordLine(info) {
+      if (!currentSurahData || info.fromSurah !== currentSurahNum) return t("See Explore's Word by Word tab for this unit.");
+      const scope = occurrenceIdsForUnit(currentSurahData, info.unitKey);
+      if (!scope) return t("See Explore's Word by Word tab for this unit.");
+      if (!scope.length) return t("No word-by-word data for this unit.");
+      const { tenantId, subjectPersonId } = wordProgressActor();
+      if (!tenantId || !subjectPersonId) return "";
+      await wordProgressConfirmationRequired(tenantId, subjectPersonId);
+      await getSurahProgress(db, { tenantId, personId: subjectPersonId, surah: info.fromSurah });
+      const confirmationRequired = !!wordProgressConfirmRequired;
+      const views = new Map(scope.map((occ) => [occ, wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: occ, confirmationRequired })]));
+      const coverage = computeArabicCoverage({ scopeOccurrenceIds: scope, views });
+      return t("Known {known} of {total} words", { known: num(coverage.known), total: num(coverage.total) });
+    }
+
+    /** "Inside" (spec): a Surah's own Ruku's, a Ruku'/Page/Range's own āyāt,
+        a Hizb/Juz's own Surah pieces -- each item coloured by the CHOSEN
+        Approach's status, pooled with the SAME poolStatus() Explore/My
+        Status use (a Yes Approach pools from the āyāt inside; a No Approach
+        falls back to a direct claim on that piece's own unit key, or
+        "not started" for a piece that has none -- a Surah-piece of a Juz/
+        Hizb has no unit key of its own, so it is always pooled only). */
+    async function unitCardInsideItems(info, approachId) {
+      if (!approachId) return { title: "", items: [] };
+      const trackable = quranTrackables.find((tr) => tr.id === approachId);
+      const tables = await unitCardBoundaryTables();
+      const ownWideStatus = unitCardDirectStatus(info, approachId);
+      const wholeCoverage = ayahCoverage(info.fromSurah, info.fromAyah, info.toSurah, info.toAyah, surahIndex);
+      const parentSpans = ownWideStatus !== "not_started" ? wholeCoverage.map((c) => ({ ...c, statusId: ownWideStatus })) : [];
+      const surahsNeeded = [...new Set(wholeCoverage.map((c) => c.surah))];
+      await Promise.all(surahsNeeded.map((s) => ensureSurahChunkForUnitCard(s)));
+      const ownStatus = unitCardOwnAyahStatus(approachId);
+      const colorFor = (coverage, unitKey) => {
+        const pooled = poolStatus(coverage, { ownStatus, spans: parentSpans, trackable });
+        const statusId = pooled ?? (unitKey ? (unitCardChunkForSurah(coverage[0]?.surah)?.entries?.[`${unitKey}::${approachId}`]?.claimedStatus ?? "not_started") : "not_started");
+        return STATUS_COLORS[statusId] ?? STATUS_COLORS.not_started;
+      };
+
+      if (info.unitType === "surah") {
+        const localMap = localRukuIndexFromTable(tables.rukuRows);
+        const rows = tables.rukuRows.filter((r) => r.surah === info.fromSurah).sort((a, b) => a.ruku - b.ruku);
+        const items = rows.map((row) => {
+          const local = localMap.get(row.ruku) ?? row.ruku;
+          const coverage = [{ surah: info.fromSurah, from: row.fromAyah, to: row.toAyah }];
+          const unitKey = buildUnitKey.ruku(info.fromSurah, local);
+          return { label: t("Ruku' {n}", { n: num(local) }), color: colorFor(coverage, unitKey), unitKey, jump: `${info.fromSurah}:${row.fromAyah}` };
+        });
+        return { title: t("Ruku's"), items };
+      }
+      if (info.unitType === "ruku" || info.unitType === "page" || info.unitType === "range") {
+        const items = [];
+        for (const { surah, from, to } of wholeCoverage) {
+          for (let ayah = from; ayah <= to; ayah += 1) {
+            const coverage = [{ surah, from: ayah, to: ayah }];
+            items.push({ label: num(ayah), color: colorFor(coverage, buildUnitKey.ayah(surah, ayah)), unitKey: buildUnitKey.ayah(surah, ayah), jump: `${surah}:${ayah}` });
+          }
+        }
+        return { title: t("Ayahs"), items };
+      }
+      if (info.unitType === "hizb" || info.unitType === "juz") {
+        const items = wholeCoverage.map(({ surah, from, to }) => {
+          const meta = surahIndex.find((s) => s.surahNumber === surah);
+          const label = `${surahName(surah, meta?.nameEnglish)} ${from === to ? num(from) : `${num(from)}–${num(to)}`}`;
+          const coverage = [{ surah, from, to }];
+          return { label, color: colorFor(coverage, null), unitKey: null, jump: `${surah}:${from}` };
+        });
+        return { title: t("Surah pieces"), items };
+      }
+      return { title: "", items: [] };
+    }
+
+    /** "Mark as read" -- ADR-008 v1 only has an evidence shape for
+        āyah/range/surah (EVIDENCE_UNIT_TYPES, study-event-wiring.js); the
+        Unit Card never opens for a bare āyah, so only surah/range are ever
+        enabled here. Ruku'/Page say recording is coming; Hizb/Juz say it is
+        planned for later -- the spec's own wording, never a silent no-op. */
+    function unitCardMarkAsReadState(info) {
+      if (!info) return { enabled: false, reason: "" };
+      if (unitTypeRecordsEvidence(info.unitType)) return { enabled: studyEvidencePersistenceReady(), reason: studyEvidencePersistenceReady() ? "" : studyEvidenceUnavailableText(false) };
+      if (info.unitType === "ruku" || info.unitType === "page") return { enabled: false, reason: t("Recording a completed reading here is coming soon.") };
+      return { enabled: false, reason: t("Recording a completed reading here is planned for later.") };
+    }
+
+    async function markUnitAsRead(unitKey) {
+      const info = unitCardCurrentInfo;
+      if (!info || info.unitKey !== unitKey) return;
+      if (!unitTypeRecordsEvidence(info.unitType) || !studyEvidencePersistenceReady()) return;
+      const args = readingCompletionArgs({
+        tenantId: activeTenantId, personId: currentActingPersonId(), unitKey: info.unitKey, unitType: info.unitType,
+        translationLangs: getQuranTranslationLangs(), at: new Date(), weekStartsOn: tenantWeekStartsOn,
+      });
+      if (!args) return;
+      const r = await safeWrite(() => recordStudyEvidence(db, args, { uid: auth.currentUser.uid }), { collection: "activity", action: "readingCompleted" });
+      if (r.ok) showStudyNotice(t("Reading marked complete."));
+      else showStudyNotice(studyEvidenceUnavailableText(true));
+    }
+
+    /** "Play this unit" -- the existing drill player, from the unit's own
+        first āyah to its last. A Juz/Hizb/Page crossing a surah break plays
+        only the portion inside the surah already loaded (the player itself
+        is single-surah, same as every other Play control in this app) --
+        the rest is reachable by playing again after turning the page. */
+    function playUnitCard(info) {
+      unlockAudio();
+      warmSegmentedTimestamps();
+      const reciterIds = playbackReciterIds();
+      if (!reciterIds.length) { alert(t("Pick a reciter in Listening settings first.")); return; }
+      const toAyah = info.toSurah === info.fromSurah ? info.toAyah : (surahIndex.find((s) => s.surahNumber === info.fromSurah)?.ayahCount ?? info.fromAyah);
+      playDrill({ surahNum: info.fromSurah, fromAyah: info.fromAyah, toAyah, reciterIds, repeatCount: drillRepeatCount, mode: drillMode }).catch(reportPlayFailure);
+    }
+
+    /** Opening Notes/Bookmark on a wider unit needs currentAyahNum to sit
+        somewhere INSIDE that unit -- openNoteView()'s own noteScopeUnitInfo()
+        derives the actual unit from currentAyahNum for every type but
+        ayah/range (see that function's own comment). unitCardOpenedFromAyah
+        is always inside the unit the card is showing (it is the āyah the
+        card was opened from or the ladder's own current position), so
+        setting it first is what makes this reliable for a ladder rung that
+        is not the āyah currently on screen. */
+    function unitCardOpenNote(unitKey) {
+      if (unitCardOpenedFromAyah && unitCardOpenedFromAyah.surah === currentSurahNum) currentAyahNum = unitCardOpenedFromAyah.ayah;
+      openNoteView(unitKey);
+    }
+
+    function unitCardToggleBookmark(unitKey, label) {
+      toggleAyahBookmark(unitKey, label);
+    }
+
+    let unitCardCurrentInfo = null;
+
+    /** The one write both the Ayah Card and the Unit Card make for an
+        Approach claim -- claimApproachStatus() -- refreshing whichever
+        chunk this unit's own key lives in (surah_N or subject_quran,
+        chunkKeyFor()'s own rule, already resolved onto info.chunkKey by
+        resolveUnitInfo()). */
+    async function takeApproachForUnit(unitKey, approachId, statusId) {
+      const info = unitCardCurrentInfo;
+      if (!info || info.unitKey !== unitKey) return;
+      const outcome = await claimApproachStatus(unitKey, approachId, statusId);
+      if (!outcome.ok) return;
+      unitCardSelectedApproachId = approachId;
+      mushafRingApproachId = approachId;
+      if (info.chunkKey === "subject_quran") {
+        await ensureQuranSubjectChunk({ force: true });
+        if (!quranSubjectChunk) quranSubjectChunk = { entries: {} };
+        patchClaimedEntry(quranSubjectChunk, unitKey, approachId, statusId);
+      } else if (info.fromSurah === currentSurahNum) {
+        await refreshChunkAndWheel();
+        if (!currentChunk) currentChunk = { entries: {} };
+        patchClaimedEntry(currentChunk, unitKey, approachId, statusId);
+      }
+      renderWheel();
+      if (unitCardUnitKey === unitKey) renderUnitCardNow();
+      applyMushafMarkerRings();
+    }
+
+    /** Renders the Unit Card into the SAME shared mount the Ayah Card and
+        "This page" card use. I9: every extra read (the boundary tables, an
+        adjacent surah's chunk, Word-by-Word progress) is asked for only
+        once the card is actually open, never on any startup path. */
+    async function renderUnitCardNow() {
+      if (!unitCardUnitKey) return;
+      const tables = await unitCardBoundaryTables();
+      const info = resolveUnitInfo(unitCardUnitKey, tables);
+      if (!info) { closeUnitCard(); return; }
+      unitCardCurrentInfo = info;
+      const chunk = chunkForUnitInfo(info);
+      const trackable = quranTrackables.find((tr) => tr.id === unitCardSelectedApproachId) ?? null;
+      const selectedApproachStatusId = unitCardSelectedApproachId
+        ? (chunk?.entries?.[`${info.unitKey}::${unitCardSelectedApproachId}`]?.claimedStatus ?? "not_started")
+        : "not_started";
+      const approachStatuses = (chunk ? quranTrackables : []).map((tr) => {
+        const statusId = chunk?.entries?.[`${info.unitKey}::${tr.id}`]?.claimedStatus ?? "not_started";
+        return { id: tr.id, name: langText(tr.name, getAppLang(), tr.id), statusId, color: STATUS_COLORS[statusId] ?? STATUS_COLORS.not_started, label: statusLabel(statusId) };
+      });
+      const ladderRungs = unitCardOpenedFromAyah
+        ? ladderRungsForAyah(unitCardOpenedFromAyah.surah, unitCardOpenedFromAyah.ayah, tables, info.unitType)
+        : [];
+      const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: info.unitKey });
+      ayahActionSheetMountEl.innerHTML = renderUnitCardHtml({
+        unitType: info.unitType, unitKey: info.unitKey, unitLabel: info.label,
+        ladderHtml: renderUnitLadderHtml(ladderRungs),
+        approachOptionsHtml: buildTrackableOptionsHtml(),
+        selectedApproachId: unitCardSelectedApproachId,
+        selectedApproachStatusId,
+        countsForEachAyahYes: trackable ? countsForEachAyah(trackable) : null,
+        isBookmarked, bookmarkAvailable: true,
+        markAsRead: unitCardMarkAsReadState(info),
+        approachStatuses,
+        achievedLine: "", wbwLine: "",
+        insideTitle: "", insideItems: [],
+      });
+      attachUnitCardHandlers(ayahActionSheetMountEl, {
+        onClose: closeUnitCard,
+        onRung: (rungUnitKey) => {
+          const { unitType: rungType, parts } = parseUnitKey(rungUnitKey);
+          if (rungType === "ayah") { const [s, a] = parts.map(Number); openAyahActionSheet(`${s}:${a}`); return; }
+          openUnitCard(rungUnitKey, unitCardOpenedFromAyah);
+        },
+        onApproachPicked: (approachId) => { unitCardSelectedApproachId = approachId; mushafRingApproachId = approachId; renderUnitCardNow(); applyMushafMarkerRings(); },
+        onStageChoice: (approachId, statusId) => takeApproachForUnit(info.unitKey, approachId, statusId),
+        onNote: (unitKey) => unitCardOpenNote(unitKey),
+        onBookmark: (unitKey) => unitCardToggleBookmark(unitKey, info.label),
+        onPlay: () => playUnitCard(info),
+        onMarkAsRead: (unitKey) => markUnitAsRead(unitKey),
+        onInsideJump: (item) => {
+          if (item.jump) { const [s, a] = item.jump.split(":").map(Number); navigateToAyah(s, a, "read"); return; }
+          if (item.unitKey) openUnitCard(item.unitKey, unitCardOpenedFromAyah);
+        },
+      });
+      if (unitCardUnitKey !== info.unitKey) return; // closed/reopened while awaiting the tables above
+      ensureUnitChunkThen(info, renderUnitCardNow);
+      Promise.all([unitCardAchievedLine(info, unitCardSelectedApproachId), unitCardWordByWordLine(info)]).then(([achievedLine, wbwLine]) => {
+        if (unitCardUnitKey !== info.unitKey) return;
+        const el = ayahActionSheetMountEl.querySelector("[data-unit-card]");
+        if (!el) return;
+        const achEl = el.querySelector("[data-unit-card-achieved-line]");
+        if (achEl) achEl.textContent = achievedLine;
+        const wbwEl = el.querySelector("[data-unit-card-wbw-line]");
+        if (wbwEl) wbwEl.textContent = wbwLine;
+      });
+      unitCardInsideItems(info, unitCardSelectedApproachId).then(({ title, items }) => {
+        if (unitCardUnitKey !== info.unitKey) return;
+        const el = ayahActionSheetMountEl.querySelector("[data-unit-card]");
+        if (!el || !items.length) return;
+        el.insertAdjacentHTML("beforeend", `<div class="unit-card-inside" data-unit-card-inside-block><h4 class="ayah-status-heading">${escapeHtml(title)}</h4><div class="unit-card-inside-row">${items.map((it) => `<button type="button" class="unit-card-inside-chip" style="background:${it.color}" data-unit-card-inside="${escapeHtml(it.unitKey ?? "")}" data-unit-card-jump="${escapeHtml(it.jump ?? "")}">${escapeHtml(it.label)}</button>`).join("")}</div></div>`);
+        el.querySelectorAll("[data-unit-card-inside-block] .unit-card-inside-chip").forEach((chip) => {
+          chip.addEventListener("click", () => {
+            closeUnitCard();
+            const jump = chip.dataset.unitCardJump;
+            if (jump) { const [s, a] = jump.split(":").map(Number); navigateToAyah(s, a, "read"); return; }
+            const key = chip.dataset.unitCardInside;
+            if (key) openUnitCard(key, unitCardOpenedFromAyah);
+          });
+        });
+      });
+    }
+
+    /** Opens the Unit Card for `unitKey`. `openedFromAyah` -- `{ surah, ayah }`
+        -- is the āyah the ladder is built around; a ladder rung tap and an
+        "Inside" chip both carry it forward unchanged (spec: the ladder
+        follows the reader, not the unit currently on screen). Closes
+        whichever of the other two shared-mount cards is open first. */
+    function openUnitCard(unitKey, openedFromAyah = null) {
+      closeAyahActionSheet();
+      closePageApproachCard();
+      unitCardUnitKey = unitKey;
+      unitCardOpenedFromAyah = openedFromAyah;
+      unitCardSelectedApproachId = mushafRingApproachId;
+      renderUnitCardNow();
+      ayahActionSheetOverlayEl.classList.add("open");
+    }
+
+    function closeUnitCard() {
+      unitCardUnitKey = null;
+      unitCardOpenedFromAyah = null;
+      unitCardSelectedApproachId = null;
+      unitCardCurrentInfo = null;
+      ayahActionSheetOverlayEl.classList.remove("open");
+      ayahActionSheetMountEl.innerHTML = "";
+    }
+
+    /** Issue #348 -- one delegated listener for every `[data-unit-marker]`
+        button the flow view or the Mushaf surah banner draws (attached once
+        per container render, the same shape attachAyahQuickMenus() uses). */
+    function wireUnitMarkers(container) {
+      container.addEventListener("click", (e) => {
+        const btn = e.target?.closest?.("[data-unit-marker]");
+        if (!btn) return;
+        const unitKey = btn.dataset.unitMarker;
+        if (!unitKey) return;
+        openUnitCard(unitKey, { surah: currentSurahNum, ayah: currentAyahNum });
+      });
+    }
+
     /** "Make a poster" (issue #295) -- opens notes.html's existing "Make a
         printable page" (Dawah) flow for this āyah's Note (dawah=1, wired up
         in notes.html itself) -- never a second write path. No active Note
@@ -14213,6 +14814,20 @@
         ? (currentChunk?.entries?.[`${ayahSheetUnitKey}::${ayahSheetSelectedApproachId}`]?.claimedStatus ?? "not_started")
         : "not_started";
       const keepScroll = ayahActionSheetMountEl.querySelector("[data-ayah-sheet]")?.scrollTop ?? 0;
+      // Issue #348 -- the ladder at the card's own top. unitCardTablesCache
+      // is filled the first time ANYTHING in the app awaits
+      // unitCardBoundaryTables() (a marker render, an earlier Unit Card
+      // open, My Status, Explore); until then this card opens without a
+      // ladder and redraws itself once the tables land (same "read on
+      // first use, re-render when it lands" shape as ensureAyahSheetRelatedLoaded()
+      // just below -- never a second, blocking fetch synchronously here).
+      const ladderHtml = unitCardTablesCache
+        ? renderUnitLadderHtml(ladderRungsForAyah(surah, ayahNum, unitCardTablesCache, "ayah"))
+        : "";
+      if (!unitCardTablesCache) {
+        const openedFor = ayahSheetUnitKey;
+        unitCardBoundaryTables().then(() => { if (ayahSheetUnitKey === openedFor) renderAyahActionSheetNow(); });
+      }
       ayahActionSheetMountEl.innerHTML = renderAyahActionSheetHtml({
         unitKey: ayahSheetUnitKey,
         ref: ayahRefLabel(surah, ayahNum),
@@ -14228,6 +14843,7 @@
         hifzStatus: hifzStatusForAyah(surah, ayahNum),
         related: ayahSheetRelated,
         connected: ayahSheetConnected,
+        ladderHtml,
       });
       // Keep the reader's place: the card re-renders as its data arrives
       // (Status, then Related), and each re-render used to jump to the top.
@@ -14235,6 +14851,11 @@
       attachAyahActionSheetHandlers(ayahActionSheetMountEl, {
         onRelatedJump: (s, a) => navigateToAyah(s, a, stageView === "note" ? "note" : "read"),
         onClose: closeAyahActionSheet,
+        onRung: (rungUnitKey) => {
+          const { unitType: rungType } = parseUnitKey(rungUnitKey);
+          if (rungType === "ayah") return; // already the Ayah Card, tapping its own rung does nothing
+          openUnitCard(rungUnitKey, { surah, ayah: ayahNum });
+        },
         onBookmark: (unitKey) => toggleAyahBookmark(unitKey),
         onNote: (unitKey) => openNoteView(unitKey),
         onAsma: (unitKey) => {
@@ -14509,11 +15130,12 @@
       ensureAyahSheetPosterNoteLoaded(unitKey);
     }
 
-    /** Issue #325 -- the Ayah Card and the "This page" card share one
-        overlay/mount, so "close whatever is open" has to know which one
-        that is rather than always closing the Ayah Card. */
+    /** Issue #325/#348 -- the Ayah Card, "This page" card and Unit Card
+        share one overlay/mount, so "close whatever is open" has to know
+        which one that is rather than always closing the Ayah Card. */
     function closeWhicheverCardIsOpen() {
       if (pageApproachCardPageNum != null) closePageApproachCard();
+      else if (unitCardUnitKey != null) closeUnitCard();
       else closeAyahActionSheet();
     }
 
@@ -16685,6 +17307,18 @@
       readBookmarkBtn.setAttribute("aria-label", unitBmLabel);
       readBookmarkBtn.setAttribute("title", unitBmLabel);
 
+      // Issue #348, Owner decision 18 -- hidden in Mushaf view (see the
+      // button's own HTML comment for why); shown otherwise for every unit
+      // type, including a single Ayah, which opens the Ayah Card instead of
+      // the Unit Card (readUnitChip's own click handler decides that).
+      readUnitChip.hidden = isMushaf;
+      if (!isMushaf) {
+        const chipText = unitChipText(unitInfo);
+        readUnitChip.querySelector(".read-unit-chip-text").textContent = chipText;
+        readUnitChip.setAttribute("aria-label", t("Open {unit}", { unit: unitInfo.label }));
+        readUnitChip.title = unitInfo.label;
+      }
+
       // 30 Aug 2026 round -- "place a button on both READ and NOTE VIEW"
       // (may be placing it with the copy/share button). Owner/prime only --
       // it writes to asmaCollections/{tenantId}, the same Manage-mode write
@@ -17330,6 +17964,11 @@
     sidewaysToggle.addEventListener("change", () => {
       setSidewaysReading(sidewaysToggle.checked);
       applySidewaysReading();
+      renderStudyScreen();
+    });
+    endOfUnitPromptToggle.checked = getEndOfUnitPromptOn();
+    endOfUnitPromptToggle.addEventListener("change", () => {
+      setEndOfUnitPromptOn(endOfUnitPromptToggle.checked);
       renderStudyScreen();
     });
     wbwLangSelect.addEventListener("change", () => {
