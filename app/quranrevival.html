@@ -644,6 +644,13 @@
   .wheel-look-btn[aria-pressed="true"] { background: #C9A24B; border-color: #C9A24B; color: #221904; }
   /* Issue #352 -- the Show toggle and the All-units ring key / data box. */
   .wheel-show-btn { min-height: 40px; min-width: 0; padding: 0.25rem 0.6rem; }
+  /* Phones: one line, not two (measured: two lines cost the first screen
+     90px). The group keeps its aria-label; the visible "Show" word goes. */
+  @media (max-width: 720px) {
+    .wheel-show-switch { flex-wrap: nowrap; gap: 0.2rem; }
+    .wheel-show-switch .wheel-look-label { display: none; }
+    .wheel-show-btn { flex: 1 1 auto; padding: 0.2rem 0.3rem; font-size: 0.7rem; letter-spacing: -0.01em; }
+  }
   .wheel-ring-panel { align-self: stretch; display: grid; gap: 0.5rem; margin-top: 0.3rem; text-align: left; }
   .wheel-ring-panel[hidden] { display: none; }
   #wheelSidebarContainer > .wheel-ring-panel,
