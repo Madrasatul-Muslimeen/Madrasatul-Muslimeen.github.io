@@ -2334,9 +2334,10 @@
   .my-status-row-figure { font-size: 0.8rem; color: #5a4a2a; }
   .my-status-row-bar { display: block; height: 5px; border-radius: 3px; background: #e8dfc6; overflow: hidden; }
   .my-status-row-bar > span { display: block; height: 100%; background: #3fae74; }
-  /* The wheel's outside numbers are cream for the dark landing page; both
-     these cream sheets need the page's own dark ink here instead. */
-  .my-status-card .wheel-seg-num, .my-status-detail-card .wheel-seg-num { fill: #5a4a2a; font-size: 9px; }
+  /* The wheel's outside numbers are cream for the dark landing page; this
+     sheet is cream, so they need the page's own dark ink here. */
+  .my-status-card .wheel-seg-num { fill: #5a4a2a; font-size: 9px; }
+  .my-status-detail { margin-top: 0.8rem; padding-top: 0.7rem; border-top: 1px solid #ece3c9; }
   .my-status-detail h3 { margin: 0 0 0.3rem; font-size: 0.98rem; color: #1F3A6E; }
   .my-status-stage-list { list-style: none; margin: 0.4rem 0; padding: 0; font-size: 0.85rem; }
   .my-status-stage-list li { display: flex; justify-content: space-between; gap: 0.5rem; padding: 0.15rem 0; }
@@ -2345,57 +2346,6 @@
     margin-top: 0.5rem; min-height: 40px; padding: 0.3rem 0.8rem; font-size: 0.85rem;
     border: 1px solid #B8862F; border-radius: 0.35rem; background: #B8862F; color: #fff; cursor: pointer;
   }
-
-  /* Issue #341 -- an Approach's own detail is now a card ON TOP of the list
-     above (#myStatusMount/.my-status-card), not appended below it: same
-     full-screen-sheet-below-900px / centred-window-above-900px shape, one
-     step further out (z-index 910, above #myStatusMount's own 900) so it
-     reads as a card stacked on the sheet rather than replacing it. Nothing
-     in #myStatusBody is ever touched while this is open or closes, which is
-     what keeps the list's own scroll position exactly where it was
-     (CLAUDE.md's own measure-before-and-after: the requirement is provable
-     by NOT re-rendering the thing that must not move). */
-  #myStatusDetailMount[hidden] { display: none !important; }
-  #myStatusDetailMount { position: fixed; inset: 0; z-index: 910; display: flex; flex-direction: column; background: rgba(10,14,24,0.65); padding: 0; }
-  .my-status-detail-card { background: #fffdf6; display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
-  .my-status-detail-card header {
-    position: sticky; top: 0; z-index: 1; background: #1F3A6E; color: #fff;
-    display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.6rem 0.8rem;
-  }
-  /* Issue #341 -- "min-width: 0 down its chain": the header is a flex row and
-     a <select>'s intrinsic width is its LONGEST option (CLAUDE.md's own
-     standing lesson, earned on the v07.134 Approach capsule) -- without this
-     the select would refuse to shrink below that width and push the close
-     button off a narrow phone. */
-  .my-status-detail-select-wrap { flex: 1 1 auto; min-width: 0; }
-  .my-status-detail-select {
-    width: 100%; min-width: 0; min-height: 40px; padding: 0.35rem 0.5rem; font-size: 0.85rem;
-    border: 1px solid rgba(255,255,255,0.5); border-radius: 0.35rem; background: #fff; color: #1F3A6E;
-  }
-  .my-status-detail-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0.8rem; }
-  @media (min-width: 900px) {
-    #myStatusDetailMount { align-items: center; justify-content: center; }
-    .my-status-detail-card {
-      width: min(48rem, 90vw); max-height: 85vh; border-radius: 0.65rem; overflow: hidden;
-      box-shadow: 0 1rem 3rem rgba(0,0,0,0.4); flex: 0 1 auto;
-    }
-    .my-status-detail-card header { border-radius: 0.65rem 0.65rem 0 0; }
-  }
-
-  /* Issue #341 -- "By unit": Juz/Surah/Ruku'/Hizb rows, reusing .my-status-
-     row-btn/-name/-figure/-bar wholesale (same 44px row, same thin bar) so a
-     unit row looks exactly like an overview Approach row. A row with no
-     Explore level to jump to (Hizb) renders as a plain <div> carrying the
-     same classes rather than a <button> -- "not a button" per the issue,
-     not merely unclickable. */
-  .my-status-unit-section { margin-top: 0.8rem; padding-top: 0.7rem; border-top: 1px solid #ece3c9; }
-  .my-status-unit-section h4 { margin: 0 0 0.3rem; font-size: 0.88rem; color: #1F3A6E; }
-  .my-status-unit-list { list-style: none; margin: 0; padding: 0; }
-  .my-status-unit-list li { border-top: 1px solid #ece3c9; }
-  .my-status-unit-list li:first-child { border-top: 0; }
-  .my-status-row-btn.my-status-row-static { cursor: default; box-sizing: border-box; } /* a <div>, not a <button>: without border-box its padding made the Hizb bar ~10px wider than the other three (Architect review) */
-  .my-status-row-btn.my-status-row-static:hover { background: none; }
-  .my-status-unit-note { font-size: 0.8rem; color: #5a4a2a; margin: 0.5rem 0 0; }
   .quran-word-card { max-width: 42rem; margin: 0 auto; border: 1px solid #d8c68a; border-radius: 0.65rem; background: #fffdf6; padding: 0.65rem; box-shadow: 0 -0.2rem 1rem rgba(0,0,0,0.08); }
   .quran-word-card header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; text-align: center; }
   /* Previous / next / close. Square, fixed, never shrinking, so the three read
@@ -4831,14 +4781,8 @@
 
   <!-- Issue #328 -- "My Status", opened by the landing page's own "My
        Status" capsule beside "Choose a Unit". Mount only --
-       renderMyStatusOverviewNow() rebuilds the body on every open/re-open,
-       the same pattern the sheet above already uses.
-
-       Issue #341 -- an Approach's own detail is a SEPARATE card, stacked on
-       top of this one (#myStatusDetailMount, higher z-index -- see its own
-       CSS comment), rather than appended below #myStatusBody: opening or
-       closing it never touches #myStatusBody at all, which is what keeps
-       the list's own scroll position exactly where the reader left it. -->
+       renderMyStatusNow() rebuilds the whole body on every open/re-open,
+       the same pattern the sheet above already uses. -->
   <div id="myStatusMount" hidden data-keep-note-popovers>
     <div id="myStatusCard" class="my-status-card">
       <header>
@@ -4846,17 +4790,6 @@
         <button type="button" id="myStatusCloseBtn" class="my-status-close-btn">&times;</button>
       </header>
       <div id="myStatusBody" class="my-status-body"></div>
-    </div>
-    <div id="myStatusDetailMount" class="my-status-detail-mount" hidden>
-      <div id="myStatusDetailCard" class="my-status-detail-card">
-        <header>
-          <div class="my-status-detail-select-wrap">
-            <select id="myStatusDetailApproachSelect" class="my-status-detail-select"></select>
-          </div>
-          <button type="button" id="myStatusDetailCloseBtn" class="my-status-close-btn">&times;</button>
-        </header>
-        <div id="myStatusDetailBody" class="my-status-detail-body"></div>
-      </div>
     </div>
   </div>
 
@@ -4909,7 +4842,7 @@
     import { safeWrite, reportWriteFailure } from "./js/errors.js";
     import { getMyMembershipRoles, hydrateMemberships, pickContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { getTrackables, syncUnneditedTrackableNames, tenantOwnsSections } from "./js/catalogue.js";
-    import { buildUnitKey, parseUnitKey, STATUSES, rukuIndexInSurah, localRukuIndexFromTable, statusLabelsById, statusLabel } from "./js/unit-keys.js";
+    import { buildUnitKey, parseUnitKey, STATUSES, rukuIndexInSurah, statusLabelsById, statusLabel } from "./js/unit-keys.js";
     import { chunkKeyFor, getRecordsChunk, claimStatus, getSubjectConfirmationOverride, computeConfirmationRequired, listAllRecordsForPerson } from "./js/records.js";
     import { weekKeyFor, logActivity } from "./js/activity.js";
     // MAP Phase 4 (P4-D) -- Study interactions to ADR-008 Activity evidence.
@@ -4964,7 +4897,7 @@
     import { wireDragReorder } from "./js/drag-reorder.js";
     import { parseAsmaRef } from "./js/asma-ref-parser.js";
     import { listEnrollmentsForPerson, programSubjectMapFromEnrollments } from "./js/course-offers.js";
-    import { getSurah, getSurahIndex, getJuzIndex, getPageIndex, getHizbIndex, getRukuIndex, getJuzWordTotalsIndex, getSurahWordTotalsIndex } from "./js/quran-data.js";
+    import { getSurah, getSurahIndex, getJuzIndex, getPageIndex, getHizbIndex, getJuzWordTotalsIndex, getSurahWordTotalsIndex } from "./js/quran-data.js";
     // Shell round 14 -- word/phrase search. Importing the module costs
     // nothing at load: it fetches its index only when a search actually runs.
     import { searchQuran } from "./js/quran-search.js";
@@ -4989,7 +4922,6 @@
     import {
       QURAN_TOTAL_AYAH_COUNT, WBW_TRACKABLE_ID, countsForEachAyah, effectiveStatus, poolStatus,
       spanForUnitKey, tallyWideClaimsByUnitType, summarizeApproachAyahCoverage, achievedOrMasteredRatio,
-      summarizeUnitCoverage,
     } from "./js/approach-coverage.js";
     // Issue #303 -- lemma-level word progress ("mark this word known
     // everywhere"), gated separately (see study-lemma-progress-readiness.js).
@@ -5208,10 +5140,8 @@
       // Issue #328 -- "My Status" is JS-rendered too, so it needs the same
       // explicit redraw the tagline strip above already gets, but only
       // while it is actually open (I9 -- never read data on a language
-      // switch alone). Issue #341 -- its own detail card, if open, is a
-      // second JS-rendered surface that needs the same treatment.
-      if (myStatusMountEl && !myStatusMountEl.hidden) renderMyStatusOverviewNow();
-      if (myStatusDetailMountEl && !myStatusDetailMountEl.hidden) renderMyStatusDetailNow();
+      // switch alone).
+      if (myStatusMountEl && !myStatusMountEl.hidden) renderMyStatusNow();
     }
     const tenantSelect = document.getElementById("tenantSelect");
     const personSelect = document.getElementById("personSelect");
@@ -5370,11 +5300,6 @@
     const myStatusMountEl = document.getElementById("myStatusMount");
     const myStatusCloseBtn = document.getElementById("myStatusCloseBtn");
     const myStatusBodyEl = document.getElementById("myStatusBody");
-    // Issue #341 -- an Approach's own detail, as its own card on top.
-    const myStatusDetailMountEl = document.getElementById("myStatusDetailMount");
-    const myStatusDetailCloseBtn = document.getElementById("myStatusDetailCloseBtn");
-    const myStatusDetailBodyEl = document.getElementById("myStatusDetailBody");
-    const myStatusDetailApproachSelectEl = document.getElementById("myStatusDetailApproachSelect");
     const wheelStageWrapEl = document.getElementById("wheelStageWrap");
     const wheelCtaBtn = document.getElementById("wheelCtaBtn");
     const wheelHubPickers = document.getElementById("wheelHubPickers");
@@ -8420,15 +8345,8 @@
     // -----------------------------------------------------------------------
 
     let myStatusCache = null; // { key, summaries: Map(trackableId -> summary), directWideStatusByTrackable: Map(trackableId -> Map(unitKey -> statusId)), ownAyahByTrackable, wideSpansByTrackable, wordTotals }
-    let myStatusOpenTrackableId = null; // which Approach's own detail CARD is open, or null
+    let myStatusOpenTrackableId = null; // which Approach's detail is expanded, or null
     let myStatusLoading = false;
-    // Issue #341 -- "By unit". Both tiny (60 / 556 rows) and loaded once, the
-    // same lazy-on-first-My-Status-open shape as juzIndexData/pageIndexData
-    // above -- see loadMyStatusData()'s own comment on why they are loaded
-    // unconditionally here, unlike buildExploreWiderSpans()'s own copies.
-    let myStatusHizbIndexData = null;
-    let myStatusRukuIndexData = null;
-    let myStatusRukuUnitsCache = null; // derived {key, coverage} per Ruku', built once from myStatusRukuIndexData
 
     function myStatusCacheKey() {
       const { tenantId, subjectPersonId } = wordProgressActor();
@@ -8449,15 +8367,9 @@
      * tally, read ONLY when the sheet is opened. `listAllRecordsForPerson()`
      * is ONE query across the whole records collection for this person --
      * not Explore's own per-surah chunk reads -- so opening this costs one
-     * round trip regardless of how many surahs carry a claim.
-     *
-     * Issue #341 -- the Hizb and Ruku' boundary tables are now loaded
-     * UNCONDITIONALLY here, unlike buildExploreWiderSpans()'s own copies
-     * (deliberately untouched): the "By unit" section needs every Hizb's and
-     * every Ruku's own coverage for EVERY Approach's detail, not only when
-     * the person happens to have a wide claim of that shape. Both are tiny
-     * (60 / 556 rows) and cached by quran-data.js itself, so this costs
-     * nothing on a second My Status open.
+     * round trip regardless of how many surahs carry a claim. Ruku'/Hizb
+     * boundary data is fetched only for the surahs/claims that actually need
+     * it, the same bounded-cost shape buildExploreWiderSpans() already uses.
      */
     async function loadMyStatusData() {
       const key = myStatusCacheKey();
@@ -8471,10 +8383,6 @@
       ]);
       if (!juzIndexData) juzIndexData = await getJuzIndex();
       if (!pageIndexData) pageIndexData = await getPageIndex();
-      if (!myStatusHizbIndexData) myStatusHizbIndexData = await getHizbIndex();
-      if (!myStatusRukuIndexData) myStatusRukuIndexData = await getRukuIndex();
-      // Word-by-Word's own "By unit" per-Juz words-known list (part 2).
-      if (!juzWordTotalsData) juzWordTotalsData = await getJuzWordTotalsIndex();
 
       const byTrackable = new Map();
       for (const e of allEntries) {
@@ -8484,23 +8392,31 @@
         byTrackable.get(trackableId).push({ unitKey, statusId: e.claimedStatus });
       }
 
-      // Issue #341 -- a person's own Ruku' WIDE claims (a real ruku:S:idx
-      // claim, floored under effectiveStatus()) now resolve through the SAME
-      // boundary table the "By unit" row uses below, rather than fetching
-      // each claimed surah's full text just to re-derive the identical
-      // ranges: myStatusRukuIndexData already carries every ruku's own
-      // (surah, fromAyah, toAyah), computed from the same per-ayah `ruku`
-      // field a getSurah() fetch would have read. A real simplification the
-      // new index enables, not a second implementation of it.
-      const rukuLocalIndexByGlobal = localRukuIndexFromTable(myStatusRukuIndexData);
-      const rukuRangesBySurah = new Map();
-      for (const row of myStatusRukuIndexData ?? []) {
-        const localIdx = rukuLocalIndexByGlobal.get(row.ruku);
-        if (!rukuRangesBySurah.has(row.surah)) rukuRangesBySurah.set(row.surah, new Map());
-        rukuRangesBySurah.get(row.surah).set(localIdx, { from: row.fromAyah, to: row.toAyah });
+      const rukuSurahs = new Set();
+      let needsHizb = false;
+      for (const list of byTrackable.values()) {
+        for (const { unitKey } of list) {
+          const parts = unitKey.split(":");
+          if (parts[0] === "ruku") rukuSurahs.add(Number(parts[1]));
+          else if (parts[0] === "hizb") needsHizb = true;
+        }
       }
+      const hizbIndex = needsHizb ? await getHizbIndex() : null;
+      const rukuRangesBySurah = new Map();
+      await Promise.all([...rukuSurahs].filter(Boolean).map(async (n) => {
+        const data = await getSurah(n);
+        const ranges = new Map();
+        for (const a of data.ayahs) {
+          const idx = rukuIndexInSurah(data.ayahs, a.ruku);
+          const g = ranges.get(idx) ?? { from: a.ayah, to: a.ayah };
+          g.from = Math.min(g.from, a.ayah);
+          g.to = Math.max(g.to, a.ayah);
+          ranges.set(idx, g);
+        }
+        rukuRangesBySurah.set(n, ranges);
+      }));
 
-      const spanLookups = { surahIndex, juzIndexData, pageIndexData, rukuRangesBySurah, hizbIndex: myStatusHizbIndexData };
+      const spanLookups = { surahIndex, juzIndexData, pageIndexData, rukuRangesBySurah, hizbIndex };
       const surahAyahCounts = surahIndex.map((s) => ({ surahNumber: s.surahNumber, ayahCount: s.ayahCount }));
 
       const summaries = new Map();
@@ -8535,20 +8451,6 @@
 
       myStatusCache = { key, summaries, ownAyahByTrackable, wideSpansByTrackable, directWideStatusByTrackable, wordTotals };
       return myStatusCache;
-    }
-
-    /** Issue #341 -- all 556 Ruku's, as {key, coverage} (summarizeUnitCoverage()'s
-     *  own input shape), derived once from myStatusRukuIndexData -- the
-     *  buildUnitKey.ruku(surah, localIndex) each row needs comes from
-     *  localRukuIndexFromTable(), never a retyped/re-derived local index. */
-    function myStatusRukuUnitItems() {
-      if (myStatusRukuUnitsCache) return myStatusRukuUnitsCache;
-      const localIdx = localRukuIndexFromTable(myStatusRukuIndexData ?? []);
-      myStatusRukuUnitsCache = (myStatusRukuIndexData ?? []).map((row) => ({
-        key: buildUnitKey.ruku(row.surah, localIdx.get(row.ruku)),
-        coverage: [{ surah: row.surah, from: row.fromAyah, to: row.toAyah }],
-      }));
-      return myStatusRukuUnitsCache;
     }
 
     /** This Approach's own 30-Juz strip -- the exact same poolStatus() pooling
@@ -8649,80 +8551,9 @@
       </div>`;
     }
 
-    /**
-     * Issue #341 -- "By unit": Juz (of 30) / Surah (of 114) / Ruku' (of 556) /
-     * Hizb (of 60), each row's Achieved+Mastered/Started counts EXACTLY what
-     * Explore's own wedges would colour for that same unit (Owner decision
-     * 7) -- summarizeUnitCoverage() wraps the identical poolStatus() core,
-     * never a second rule that could quietly drift apart. Hizb carries no
-     * Explore level of its own, so its row alone is not a jump target.
-     */
-    function renderMyStatusUnitSectionHtml(trackableId, cache) {
-      if (trackableId === WBW_TRACKABLE_ID) return renderMyStatusWbwUnitSectionHtml(cache);
-      const trackable = quranTrackables.find((t) => t.id === trackableId);
-      const ownAyahStatuses = cache.ownAyahByTrackable.get(trackableId);
-      const wideSpans = cache.wideSpansByTrackable.get(trackableId);
-      const directWideStatus = cache.directWideStatusByTrackable.get(trackableId);
-      const ownStatus = (surah, ayah) => ownAyahStatuses?.get(`${surah}:${ayah}`) ?? "not_started";
-      const summarize = (units) => summarizeUnitCoverage(units, { ownStatus, spans: wideSpans, trackable, directWideStatus });
-
-      const juzUnits = (juzIndexData ?? []).map((j) => ({ key: buildUnitKey.juz(j.juz), coverage: ayahCoverage(j.startSurah, j.startAyah, j.endSurah, j.endAyah) }));
-      const surahUnits = surahIndex.map((s) => ({ key: buildUnitKey.surah(s.surahNumber), coverage: [{ surah: s.surahNumber, from: 1, to: s.ayahCount }] }));
-      const rukuUnits = myStatusRukuUnitItems();
-      const hizbUnits = (myStatusHizbIndexData ?? []).map((h) => ({ key: buildUnitKey.hizb(h.hizb), coverage: ayahCoverage(h.startSurah, h.startAyah, h.endSurah, h.endAyah) }));
-
-      const rows = [
-        { id: "juz", name: t("Juz"), summary: summarize(juzUnits), jump: true },
-        { id: "surah", name: t("Surah"), summary: summarize(surahUnits), jump: true },
-        { id: "ruku", name: t("Ruku'"), summary: summarize(rukuUnits), jump: true },
-        { id: "hizb", name: t("Hizb"), summary: summarize(hizbUnits), jump: false },
-      ];
-      const rowsHtml = rows.map((row) => {
-        const { achievedOrMastered, started, total } = row.summary;
-        const figure = t("Achieved + Mastered: {n} of {total} · Started: {m}", { n: num(achievedOrMastered), total: num(total), m: num(started) });
-        const pct = total > 0 ? Math.max(0, Math.min(100, (achievedOrMastered / total) * 100)) : 0;
-        const inner = `<span class="my-status-row-name">${escapeHtml(row.name)}</span>
-          <span class="my-status-row-figure">${escapeHtml(figure)}</span>
-          <span class="my-status-row-bar" aria-hidden="true"><span style="width:${pct > 0 ? Math.max(pct, 1.5) : 0}%"></span></span>`;
-        return row.jump
-          ? `<li><button type="button" class="my-status-row-btn" data-my-status-unit-jump="${row.id}">${inner}</button></li>`
-          : `<li><div class="my-status-row-btn my-status-row-static">${inner}</div></li>`;
-      }).join("");
-      return `<div class="my-status-unit-section">
-        <h4>${t("By unit")}</h4>
-        <ul class="my-status-unit-list">${rowsHtml}</ul>
-      </div>`;
-    }
-
-    /** Issue #341 -- Word-by-Word (approach_04) is counted in WORDS, so its
-     *  "By unit" section is the per-Juz words-known list it already has data
-     *  for (the same juzWordTotalsData/wordTotals every other WbW surface
-     *  reads) rather than the four ayah-shaped rows above -- Surah/Ruku'
-     *  figures for WbW live in Explore's own Word by Word tab instead. */
-    function renderMyStatusWbwUnitSectionHtml(cache) {
-      const rows = (juzWordTotalsData?.byJuz ?? []).map((row) => {
-        const known = Number(cache.wordTotals?.byJuz?.[String(row.juz)]?.known ?? 0);
-        const percent = percentRounded(known, row.totalWords);
-        const figure = t("{n} of {total} words ({percent}%)", { n: num(known), total: num(row.totalWords), percent: num(percent) });
-        const pct = row.totalWords > 0 ? Math.max(0, Math.min(100, (known / row.totalWords) * 100)) : 0;
-        return `<li><div class="my-status-row-btn my-status-row-static">
-          <span class="my-status-row-name">${escapeHtml(t("Juz {juz}", { juz: num(row.juz) }))}</span>
-          <span class="my-status-row-figure">${escapeHtml(figure)}</span>
-          <span class="my-status-row-bar" aria-hidden="true"><span style="width:${pct > 0 ? Math.max(pct, 1.5) : 0}%"></span></span>
-        </div></li>`;
-      }).join("");
-      return `<div class="my-status-unit-section">
-        <h4>${t("By unit")}</h4>
-        <ul class="my-status-unit-list">${rows}</ul>
-        <p class="my-status-unit-note">${t("Surah and Ruku' figures for Word by Word are in Explore's Word by Word tab.")}</p>
-      </div>`;
-    }
-
-    /** One Approach's own detail: stage counts, "By unit", the 30-Juz strip,
-     *  the "studied as a whole" line (No only), and "See in Explore". Pure
-     *  content -- the caller (renderMyStatusDetailNow()) sets this as
-     *  #myStatusDetailBody's own innerHTML; this never redeclares that id. */
-    function renderMyStatusDetailBodyHtml(trackableId, cache) {
+    /** One Approach's own detail: stage counts, the 30-Juz strip, the
+     *  "studied as a whole" line (No only), and "See in Explore". */
+    function renderMyStatusDetail(trackableId, cache) {
       const trackable = quranTrackables.find((t) => t.id === trackableId);
       if (!trackable) return "";
       const summary = cache.summaries.get(trackableId);
@@ -8734,21 +8565,17 @@
       const wholeLine = summary?.studiedAsWhole ? myStatusStudiedAsWholeLine(summary.studiedAsWhole) : null;
       const juzItems = myStatusJuzItems(trackableId, cache);
       const juzWheelHtml = renderScopedWheel(juzItems, { size: 260, centerLabel: name });
-      return `<div class="my-status-detail">
+      return `<div class="my-status-detail" id="myStatusDetailBody">
         <h3>${escapeHtml(name)}</h3>
         <p>${escapeHtml(myStatusHeadlineText(trackableId, summary, cache.wordTotals))}</p>
         <ul class="my-status-stage-list">${stageRows}</ul>
         ${wholeLine ? `<p class="my-status-whole-line">${t("studied as a whole")}: ${escapeHtml(wholeLine)}</p>` : ""}
-        ${renderMyStatusUnitSectionHtml(trackableId, cache)}
         <div id="myStatusJuzWheel">${juzWheelHtml}</div>
         <button type="button" class="my-status-explore-btn" id="myStatusSeeInExploreBtn" data-trackable-id="${trackableId}">${t("See in Explore")}</button>
       </div>`;
     }
 
-    /** The list+wheel body only -- never touches the detail card (issue #341:
-     *  opening/closing/switching the detail must never re-render this, which
-     *  is what keeps its own scroll position exactly where it was). */
-    function renderMyStatusOverviewNow() {
+    function renderMyStatusNow() {
       if (myStatusLoading) {
         myStatusBodyEl.innerHTML = `<p class="my-status-loading">${t("Loading your status…")}</p>`;
         return;
@@ -8758,51 +8585,30 @@
         myStatusBodyEl.innerHTML = `<p class="my-status-loading">${t("Not yet available.")}</p>`;
         return;
       }
-      myStatusBodyEl.innerHTML = renderMyStatusOverview(cache);
+      myStatusBodyEl.innerHTML = renderMyStatusOverview(cache)
+        + (myStatusOpenTrackableId ? renderMyStatusDetail(myStatusOpenTrackableId, cache) : "");
 
-      // Tapping a row or an overview wheel slice OPENS the detail card
-      // (issue #341) -- it no longer appends/toggles anything in this body.
       myStatusBodyEl.querySelectorAll("[data-my-status-open]").forEach((btn) => {
-        btn.addEventListener("click", () => openMyStatusDetail(btn.dataset.myStatusOpen));
+        btn.addEventListener("click", () => {
+          const id = btn.dataset.myStatusOpen;
+          myStatusOpenTrackableId = myStatusOpenTrackableId === id ? null : id;
+          renderMyStatusNow();
+          if (myStatusOpenTrackableId) {
+            document.getElementById("myStatusDetailBody")?.scrollIntoView({ block: "nearest" });
+          }
+        });
       });
+      // The overview wheel's own segments jump straight to that Approach's
+      // detail, same as every other Explore/Approach wheel's click handler.
+      // The Juz-strip wheel (inside the detail panel, if open) is a report,
+      // not a picker, so it carries no click handler.
       const overviewWheelEl = document.getElementById("myStatusOverviewWheel");
       if (overviewWheelEl) {
-        attachScopedWheelClickHandler(overviewWheelEl, (key) => openMyStatusDetail(key));
+        attachScopedWheelClickHandler(overviewWheelEl, (key) => {
+          myStatusOpenTrackableId = key;
+          renderMyStatusNow();
+        });
       }
-    }
-
-    /** Issue #341 -- redraws the currently-open Approach's own detail card in
-     *  place: on open, on switching Approach via the header pull-down, and
-     *  on a language change while it is open. Never touches #myStatusBody. */
-    function renderMyStatusDetailNow() {
-      const cache = myStatusCache;
-      const trackableId = myStatusOpenTrackableId;
-      if (!cache || !trackableId) return;
-      const trackable = quranTrackables.find((t) => t.id === trackableId);
-      if (!trackable) return;
-
-      // The pull-down: buildTrackableOptionsHtml() is the one source of
-      // truth every Approach picker in this app already shares (the
-      // canonical trackableSelect, the Note view's own note-approach-select)
-      // -- this is a MIRROR of it, not a second list.
-      myStatusDetailApproachSelectEl.innerHTML = buildTrackableOptionsHtml();
-      myStatusDetailApproachSelectEl.value = trackableId;
-      myStatusDetailApproachSelectEl.setAttribute("aria-label", t("Choose an Approach"));
-
-      myStatusDetailBodyEl.innerHTML = renderMyStatusDetailBodyHtml(trackableId, cache);
-
-      // The Juz-strip wheel is interactive now (issue #341 part 3): tapping
-      // a Juz makes it the current Approach, closes My Status and opens
-      // Explore drilled down to that exact Juz.
-      const juzWheelEl = document.getElementById("myStatusJuzWheel");
-      if (juzWheelEl) {
-        attachScopedWheelClickHandler(juzWheelEl, (key) => myStatusJuzSliceGoToExplore(Number(key)));
-      }
-      // The "By unit" Juz/Surah/Ruku' rows jump to Explore too (Hizb's own
-      // row carries no data-my-status-unit-jump at all -- it is not a button).
-      myStatusDetailBodyEl.querySelectorAll("[data-my-status-unit-jump]").forEach((btn) => {
-        btn.addEventListener("click", () => myStatusUnitRowGoToExplore(btn.dataset.myStatusUnitJump));
-      });
       const exploreBtn = document.getElementById("myStatusSeeInExploreBtn");
       exploreBtn?.addEventListener("click", async () => {
         // changeCurrentTrackable() is the one place that owns switching the
@@ -8823,77 +8629,26 @@
       await openExplore();
     }
 
-    /** Issue #341 part 3 -- a "By unit" Juz/Surah/Ruku' row: makes the open
-     *  Approach current, closes My Status, and opens Explore's Quran level
-     *  in the matching view (Juz view for the Juz row; Surahs view for
-     *  Surah AND Ruku' -- Ruku' has no top-level Explore view of its own,
-     *  so Surahs, the level it drills down FROM, is the closest real
-     *  target). setExploreQuranView() is the reader's own real Explore
-     *  preference, the SAME one the Explore panel's own Juz/Surahs switch
-     *  writes -- picking Surahs from here is exactly as if the reader had
-     *  switched it themselves inside Explore. */
-    async function myStatusUnitRowGoToExplore(kind) {
-      changeCurrentTrackable(myStatusOpenTrackableId);
-      closeMyStatus();
-      exploreQuranView = setExploreQuranView(kind === "juz" ? "juz" : "surah");
-      await openExploreOnQuranLevel();
-    }
-
-    /** Issue #341 part 3 -- a Juz-wheel slice inside an Approach's own
-     *  detail: makes that Approach current, closes My Status, and opens
-     *  Explore ALREADY DRILLED DOWN to that Juz -- the exact state
-     *  (exploreJuzNum, exploreLevel = "juz") a real tap on Explore's own
-     *  Juz-wheel slice sets, reusing openExploreOnQuranLevel()'s own open
-     *  sequence rather than a parallel path. */
-    async function myStatusJuzSliceGoToExplore(juzNum) {
-      changeCurrentTrackable(myStatusOpenTrackableId);
-      closeMyStatus();
-      await openExploreOnQuranLevel();
-      exploreJuzNum = juzNum;
-      exploreSurahNum = null;
-      exploreRukuIndex = null;
-      exploreLevel = "juz";
-      await renderExplore();
-    }
-
-    /** Issue #341 -- opens the detail card for one Approach, on top of the
-     *  list (never appending to or re-rendering #myStatusBody). */
-    function openMyStatusDetail(trackableId) {
-      myStatusOpenTrackableId = trackableId;
-      myStatusDetailMountEl.hidden = false;
-      renderMyStatusDetailNow();
-    }
-
-    /** Closes JUST the detail card, back to the list -- #myStatusBody is
-     *  never touched, so its own scroll position survives untouched. */
-    function closeMyStatusDetail() {
-      myStatusDetailMountEl.hidden = true;
-      myStatusOpenTrackableId = null;
-    }
-
     async function openMyStatus() {
       myStatusMountEl.hidden = false;
       myStatusLoading = true;
-      renderMyStatusOverviewNow();
+      renderMyStatusNow();
       try {
         await loadMyStatusData();
       } catch (error) {
         reportWriteFailure(error, { what: "load your whole-Qur'an status" }); // I15
       } finally {
         myStatusLoading = false;
-        renderMyStatusOverviewNow();
+        renderMyStatusNow();
       }
     }
 
-    /** Closes the WHOLE sheet, detail card included. */
     function closeMyStatus() {
       myStatusMountEl.hidden = true;
-      myStatusDetailMountEl.hidden = true;
       myStatusOpenTrackableId = null;
     }
 
     if (myStatusCloseBtn) myStatusCloseBtn.setAttribute("aria-label", t("Close My Status"));
-    if (myStatusDetailCloseBtn) myStatusDetailCloseBtn.setAttribute("aria-label", t("Close"));
     document.getElementById("myStatusWideBtn")?.addEventListener("click", openMyStatus);
     document.getElementById("myStatusBtn")?.addEventListener("click", openMyStatus);
     // 28 Sep 2026 -- see #wheelIntroBand's CSS. One node, moved (never
@@ -8913,21 +8668,8 @@
     })();
     myStatusCloseBtn?.addEventListener("click", closeMyStatus);
     myStatusMountEl?.addEventListener("click", (e) => { if (e.target === myStatusMountEl) closeMyStatus(); });
-    myStatusDetailCloseBtn?.addEventListener("click", closeMyStatusDetail);
-    // A tap on the DETAIL card's own backdrop closes only the detail --
-    // e.target is strictly the detail mount itself, never bubbling up to
-    // close the outer sheet the reader is meant to land back on.
-    myStatusDetailMountEl?.addEventListener("click", (e) => { if (e.target === myStatusDetailMountEl) closeMyStatusDetail(); });
-    myStatusDetailApproachSelectEl?.addEventListener("change", () => {
-      myStatusOpenTrackableId = myStatusDetailApproachSelectEl.value;
-      renderMyStatusDetailNow();
-    });
     document.addEventListener("keydown", (e) => {
-      if (e.key !== "Escape") return;
-      // The detail card, if open, is the innermost thing Escape closes --
-      // a second Escape then closes the sheet behind it.
-      if (myStatusDetailMountEl && !myStatusDetailMountEl.hidden) { closeMyStatusDetail(); return; }
-      if (myStatusMountEl && !myStatusMountEl.hidden) closeMyStatus();
+      if (e.key === "Escape" && myStatusMountEl && !myStatusMountEl.hidden) closeMyStatus();
     });
 
     // -----------------------------------------------------------------------

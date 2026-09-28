@@ -48,7 +48,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium, newContext, openPage } from "./harness.mjs";
 import { SUBJECT_TEMPLATES, MODULE_TEMPLATES, APPROACH_TEMPLATES, TOPIC_TRACKABLE_TEMPLATES } from "../../app/js/catalogue-data.js";
-import { summarizeUnitCoverage, ayahCoverage } from "../../app/js/approach-coverage.js";
+import { ayahCoverage } from "../../app/js/approach-coverage.js";
 import { buildUnitKey, localRukuIndexFromTable } from "../../app/js/unit-keys.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -154,18 +154,47 @@ const yesTrackable = { id: YES_ID };
 const noDirectWideStatus = new Map([["juz:1", "achieved"], ["surah:112", "achieved"]]);
 const noTrackable = { id: NO_ID };
 
+// ARCHITECT REVIEW, 28 Sep 2026: EXPECTED used to be computed by calling
+// summarizeUnitCoverage() -- the function under test -- so a defect in it
+// moved both sides and every count check still passed (the v08.86 lesson:
+// a check that compares the code with itself). It is now an INDEPENDENT
+// count: plain sets of the āyāt the seed makes Achieved / Learning for each
+// Approach, a unit reading Achieved only if every āyah in it is Achieved and
+// Started if every āyah is at least Learning, and a No Approach reading only
+// its direct whole-unit claims. No app function is called here.
+function ayahsOf(coverage) {
+  const out = [];
+  for (const { surah, from, to } of coverage) for (let a = from; a <= to; a++) out.push(`${surah}:${a}`);
+  return out;
+}
+const yesAchieved = new Set([...ayahsOf(coverageOf(juz1.startSurah, juz1.startAyah, juz1.endSurah, juz1.endAyah)), ...ayahsOf([{ surah: 3, from: 1, to: surah3AyahCount }])]);
+const yesLearning = new Set(["112:1", "112:2", "112:3", "112:4"]);
+function countYes(units) {
+  let achievedOrMastered = 0, started = 0;
+  for (const u of units) {
+    const all = ayahsOf(u.coverage);
+    if (all.every((k) => yesAchieved.has(k))) achievedOrMastered++;
+    else if (all.every((k) => yesAchieved.has(k) || yesLearning.has(k))) started++;
+  }
+  return { achievedOrMastered, started, total: units.length };
+}
+function countNo(units) {
+  const direct = new Set(["juz:1", "surah:112"]);
+  return { achievedOrMastered: units.filter((u) => direct.has(u.key)).length, started: 0, total: units.length };
+}
 const EXPECTED = {
-  yes: {
-    juz: summarizeUnitCoverage(juzUnitsFixture, { ownStatus: yesOwnStatus, spans: yesSpans, trackable: yesTrackable, directWideStatus: yesDirectWideStatus }),
-    surah: summarizeUnitCoverage(surahUnitsFixture, { ownStatus: yesOwnStatus, spans: yesSpans, trackable: yesTrackable, directWideStatus: yesDirectWideStatus }),
-    ruku: summarizeUnitCoverage(rukuUnitsFixture, { ownStatus: yesOwnStatus, spans: yesSpans, trackable: yesTrackable, directWideStatus: yesDirectWideStatus }),
-    hizb: summarizeUnitCoverage(hizbUnitsFixture, { ownStatus: yesOwnStatus, spans: yesSpans, trackable: yesTrackable, directWideStatus: yesDirectWideStatus }),
-  },
-  no: {
-    juz: summarizeUnitCoverage(juzUnitsFixture, { ownStatus: () => "not_started", spans: [], trackable: noTrackable, directWideStatus: noDirectWideStatus }),
-    surah: summarizeUnitCoverage(surahUnitsFixture, { ownStatus: () => "not_started", spans: [], trackable: noTrackable, directWideStatus: noDirectWideStatus }),
-  },
+  yes: { juz: countYes(juzUnitsFixture), surah: countYes(surahUnitsFixture), ruku: countYes(rukuUnitsFixture), hizb: countYes(hizbUnitsFixture) },
+  no: { juz: countNo(juzUnitsFixture), surah: countNo(surahUnitsFixture) },
 };
+// Pinned by hand as well, so a fixture drift cannot move the expectation
+// silently: Juz 1 + all of Aal-i-Imraan -> Juz 1, Surahs 1 and 3 (Al-Ikhlas
+// Started), Hizb 4 (Juz 1's two, plus Hizb 6 = 3:15-92 and Hizb 7 = 3:93-170,
+// both wholly inside Aal-i-Imraan), and Ruku' 37 (every Ruku' of Al-Fatiha,
+// Al-Baqarah up to 2:141 and Aal-i-Imraan; Al-Ikhlas's one Ruku' Started).
+if (EXPECTED.yes.juz.achievedOrMastered !== 1 || EXPECTED.yes.surah.achievedOrMastered !== 2 || EXPECTED.yes.surah.started !== 1
+    || EXPECTED.yes.hizb.achievedOrMastered !== 4 || EXPECTED.yes.ruku.achievedOrMastered !== 37 || EXPECTED.yes.ruku.started !== 1 || EXPECTED.no.juz.achievedOrMastered !== 1 || EXPECTED.no.surah.achievedOrMastered !== 1) {
+  throw new Error(`fixture expectation drifted: ${JSON.stringify(EXPECTED)}`);
+}
 console.log(`  [fixture] EXPECTED YES juz=${JSON.stringify(EXPECTED.yes.juz)} surah=${JSON.stringify(EXPECTED.yes.surah)} ruku=${JSON.stringify(EXPECTED.yes.ruku)} hizb=${JSON.stringify(EXPECTED.yes.hizb)}`);
 console.log(`  [fixture] EXPECTED NO juz=${JSON.stringify(EXPECTED.no.juz)} surah=${JSON.stringify(EXPECTED.no.surah)}`);
 
@@ -522,8 +551,49 @@ async function runJuzSliceScenario(lang) {
   await ctx.close();
 }
 
+// ARCHITECT REVIEW, 28 Sep 2026 -- decision 7 ("Explore and My Status must
+// always agree") compared against EXPLORE ITSELF, not a recomputation: tap
+// the card's Juz / Surah row, then count the units Explore's own list marks
+// Achieved/Mastered and Started (its `chip-<status>` class).
+async function runExploreAgreementScenario() {
+  const ctx = await newContext(browser, {
+    banner: false, viewport: { width: 1100, height: 844 }, appLang: "en",
+    seedTemplates: SEED_TEMPLATES, extraSeedJs: MY_STATUS_SEED,
+  });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  await waitForWheelReady(page);
+  for (const kind of ["juz", "surah"]) {
+    await clickSafely(page, "#tabApproachBtn"); // back from Explore after the first pass
+    await clickSafely(page, "#myStatusWideBtn");
+    await page.waitForFunction(() => document.getElementById("myStatusBody")?.querySelectorAll(".my-status-row-btn").length > 0, null, { timeout: 10000 });
+    await clickSafely(page, `[data-my-status-open="${YES_ID}"]`);
+    await page.waitForFunction(() => !document.getElementById("myStatusDetailMount").hidden, null, { timeout: 5000 });
+    const cardFigure = await page.evaluate((k) => document.querySelector(`[data-my-status-unit-jump="${k}"] .my-status-row-figure`)?.textContent ?? "", kind);
+    await clickSafely(page, `[data-my-status-unit-jump="${kind}"]`);
+    const want = kind === "juz" ? 30 : 114;
+    let counts = null;
+    for (let i = 0; i < 60; i++) {
+      counts = await page.evaluate(() => {
+        const chips = [...document.querySelectorAll("#exploreSidebarContainer .status-chip")];
+        const has = (c, ...names) => names.some((n) => c.classList.contains(`chip-${n}`));
+        return { rows: chips.length, done: chips.filter((c) => has(c, "achieved", "mastered")).length, started: chips.filter((c) => has(c, "learning", "practising")).length };
+      });
+      if (counts.rows === want) break;
+      await page.waitForTimeout(100);
+    }
+    const exp = EXPECTED.yes[kind];
+    check(`[en] ${kind}: Explore's own list has all ${want} units`, counts.rows === want, JSON.stringify(counts));
+    check(`[en] ${kind}: Explore colours ${exp.achievedOrMastered} Achieved/Mastered and ${exp.started} Started -- the same as the card`,
+      counts.done === exp.achievedOrMastered && counts.started === exp.started
+        && cardFigure === expectedUnitFigureText("en", counts.done, want, counts.started),
+      `explore=${JSON.stringify(counts)} card="${cardFigure}"`);
+  }
+  await ctx.close();
+}
+
 for (const lang of ["en", "bn"]) await runScenarios(lang);
 for (const lang of ["en", "bn"]) await runJuzSliceScenario(lang);
+await runExploreAgreementScenario();
 
 await browser.close();
 console.log(`\n==== "My Status" (issue #328/#341) browser suite: ${pass} passed, ${fail} failed ====`);
