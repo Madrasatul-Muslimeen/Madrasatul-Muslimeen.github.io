@@ -18576,3 +18576,11 @@ Review: `service-worker.mjs`'s `waitForCached` and "WAITS" checks used async `pa
 ## v08.97 — landing page: scrolls on a phone, equal capsules, unit name in the wheel, wheel look, 28 Sep 2026
 
 The Owner's four landing-page asks. Below 721px the Approach view's page scrolls (`body.landing-view`; the dock stays pinned; other views unchanged). The three gold capsules are one equal-width, equal-height stack; the heading's own My Status button is removed. A chosen unit is named in the wheel's centre (the Study Quran button's second line; the hub label after, replacing the Ayah picker, and the Surah picker for Juz/Hizb/Page). A Dark / Light / Colour switch sets how the wheel looks behind the Study Quran button, remembered per browser. New Bangla strings added. `layout.mjs` shows the intended phone change (fewer rows before scrolling), tablet/PC byte-identical; `behaviour` 987/6 baseline; `phone-width-overflow` 217/0; `quran-my-status-browser` 44/0 (updated in place).
+
+## v08.98 — 28 Sep 2026 — Notes offline, capsules on one row, Surah banner edge to edge
+
+- **Notes work offline.** DOMPurify is vendored at `app/vendor/purify.min.js` (3.4.16) and loaded by notes/dawah/journey-map instead of jsDelivr, which the service worker never keeps. `app-offline-boot-browser` case 5 (15/0, mutation fails 3; the case refuses the harness's local stand-in for the CDN URL). Three CDN checks updated in place (`note-sanitize-boundary`, `dawah-screen`, `journey-map-screen`); `dawah-boundary` gains the word-levels deployment file it missed at v08.95.
+- **Landing capsules.** Tablet/PC: the row moves into `#wheelIntroBand` above the card, three equal 36px capsules on one line (222px en, 170px bn). Phone: My Status on the Mastery Wheel bar's right edge, caption + Choose a Unit on one line. `layout.mjs` tablet/PC unchanged, phones +1–2 Approach rows on the first screen. `quran-my-status-browser` 46/0 (updated in place to press whichever button is displayed).
+- **Surah banner edge to edge.** 24cqw → 30cqw (99% of the text width).
+- **Quran Foundation credit on About only**, outside `#app`, with Bangla; the per-page line is gone. `mushaf-tajweed-font-browser` 96/0.
+- Allocated by the MMSA Architect.
