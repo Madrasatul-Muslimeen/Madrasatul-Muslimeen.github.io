@@ -261,6 +261,27 @@
 [data-card-look="light"] .asma-xref-chip.hadith { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.12); }
 [data-card-look="light"] .asmaX-attach-dual { color: #7a5a12; }
 
+/* ===========================================================================
+   Issue #354 part 3 -- Dawah cards (app/dawah.html, .page-card and its own
+   status pills/notice), and its own "not shared yet" warning box. The page
+   itself (body, heading, view-toggle, the plain buttons) stays light, per
+   "pages stay light" -- only the piece cards floating on it, and the one
+   notice box, follow the reader's look. Light needs no re-pick (this is the
+   page's own pre-existing literal colouring already); only Night is new. */
+[data-card-look="night"] .page-card { background: var(--card-bg-inset); border-color: var(--card-line); color: var(--card-text); }
+[data-card-look="night"] .page-card-title { color: var(--card-text); }
+[data-card-look="night"] .page-card-meta { color: var(--card-text-muted); }
+[data-card-look="night"] .status-group-heading { color: var(--card-text-muted); border-color: var(--card-line); }
+[data-card-look="night"] .warn { background: #3a2e08; border-color: #8a6a10; color: #e8c77a; }
+/* The status pills carry a real meaning each (draft/shared/retired/awaiting
+   approval), so every one is its own light-on-dark re-pick, not a shared
+   token -- the same reasoning as the Hadith warning banner above. */
+[data-card-look="night"] .page-status-pill { background: rgba(201,162,75,0.18); color: var(--card-heading); }
+[data-card-look="night"] .page-status-pill.status-shared { background: rgba(63,174,116,0.18); color: #8fe3ae; }
+[data-card-look="night"] .page-status-pill.status-retired { background: rgba(255,255,255,0.08); color: var(--card-text-muted); }
+[data-card-look="night"] .page-status-pill.status-awaiting-approval { background: #3a2e08; color: #e8c77a; }
+[data-card-look="night"] .page-returned-note { background: #3a1416; border-color: #c1615f; color: #f5b0ae; }
+
 /* The ⋯ bar palette (js/bar-palette.js): built as a fixed white card
    ("Light card on purpose... rather than putting a second colour language
    on one dropdown" -- its own CSS comment), the same starting point as
