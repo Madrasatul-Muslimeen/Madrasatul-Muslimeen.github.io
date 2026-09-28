@@ -474,6 +474,108 @@ async function checkContrast(page, label, selector, { minRatio = 4.5, gradientHo
   await ctx.close();
 }
 
+// ===========================================================================
+// 8. Architect review (v08.107): a WHOLE-SURFACE sweep. The checks above
+//    sample one element per surface; the review walked every visible text
+//    element and found Night defects none of them could see -- Commentary's
+//    scope line and Explore's "no progress is counted" line recoloured for a
+//    card while sitting on the white page (1.79:1, 2.02:1), the hadith
+//    reference/meta lines (2.95:1), the commentary "link only" warning
+//    (1.74:1), QCR's level badge (3.34:1) and a "Not started" chip on a
+//    hovered row (3.48:1). Every visible text element under each root is
+//    measured against its real background (gradient stops and translucent
+//    layers blended, the worst case taken); a background-less chain is the
+//    white page. Large text needs 3:1, the rest 4.5:1. The Note writing area
+//    (.card-look-write-surface) is the reader's own text and is skipped.
+//    PRE-EXISTING, not the card look's, baselined BY NAME and reported:
+//    .hadith-commentary-link in Light (#b8862f on white, hadith.css, 3.24).
+// ===========================================================================
+const SWEEP_ALL = (rootSel) => {
+  const parse = (s) => { const m = s && s.match(/rgba?\(([^)]+)\)/); if (!m) return null; const p = m[1].split(/[ ,\/]+/).filter(Boolean).map(Number); return [p[0],p[1],p[2],p[3]===undefined?1:p[3]]; };
+  const lum = ([r,g,b]) => { const l=c=>{c/=255;return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4)}; return 0.2126*l(r)+0.7152*l(g)+0.0722*l(b); };
+  const cr = (a,b) => { const x=lum(a),y=lum(b); return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05); };
+  const blend = (top, under) => [0,1,2].map(i => top[i]*top[3] + under[i]*(1-top[3]));
+  // returns list of candidate backgrounds (gradient -> several)
+  function bgs(node) {
+    if (!node) return [[255,255,255]];
+    const cs = getComputedStyle(node);
+    const img = cs.backgroundImage;
+    if (img && img.includes("gradient")) {
+      const stops = [...img.matchAll(/rgba?\([^)]+\)/g)].map(m => parse(m[0]));
+      const under = bgs(node.parentElement);
+      return stops.flatMap(s => under.map(u => blend(s, u)));
+    }
+    const c = parse(cs.backgroundColor);
+    if (c && c[3] > 0) {
+      if (c[3] >= 1) return [c.slice(0,3)];
+      return bgs(node.parentElement).map(u => blend(c, u));
+    }
+    return bgs(node.parentElement);
+  }
+  const out = [];
+  const roots = [...document.querySelectorAll(rootSel)];
+  for (const root of roots) for (const el of [root, ...root.querySelectorAll("*")]) {
+    if (["SCRIPT","STYLE","svg","SVG"].includes(el.tagName) || el.closest("svg")) continue;
+    const txt = [...el.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent.trim()).join("").trim();
+    const isCtl = ["SELECT","TEXTAREA"].includes(el.tagName) || (el.tagName === "INPUT" && !["checkbox","radio"].includes(el.type));
+    if (!txt && !isCtl) continue;
+    const r = el.getBoundingClientRect(); if (r.width < 1 || r.height < 1) continue;
+    const cs = getComputedStyle(el);
+    if (cs.visibility !== "visible") continue;
+    let op = 1; for (let n = el; n; n = n.parentElement) op *= Number(getComputedStyle(n).opacity);
+    if (op < 0.6) continue;
+    if (el.closest(".card-look-write-surface") || el.closest("[contenteditable]")) continue;
+    const fg = parse(cs.color); if (!fg) continue;
+    const list = bgs(el);
+    let worst = 99, wb = null;
+    for (const b of list) { const f = fg[3] < 1 ? blend(fg, b) : fg.slice(0,3); const v = cr(f, b); if (v < worst) { worst = v; wb = b; } }
+    const big = parseFloat(cs.fontSize) >= 24 || (parseFloat(cs.fontSize) >= 18.66 && Number(cs.fontWeight) >= 700);
+    const min = big ? 3 : 4.5;
+    if (worst < min) out.push(`${el.tagName.toLowerCase()}${el.id ? "#" + el.id : ""}.${[...el.classList].join(".")} "${(txt || el.value || "").slice(0, 30)}" ${cs.color} on rgb(${wb.map(Math.round)}) = ${worst.toFixed(2)}`);
+  }
+  return [...new Set(out)];
+};
+
+const SWEEP_BASELINE = [/^a\.hadith-commentary-link /];
+async function sweepCheck(page, label, rootSel) {
+  for (const look of ["night", "light"]) {
+    await setLook(page, look);
+    await page.waitForTimeout(100);
+    const found = await page.evaluate(SWEEP_ALL, rootSel);
+    const base = found.filter((f) => SWEEP_BASELINE.some((re) => re.test(f)));
+    const real = found.filter((f) => !base.includes(f));
+    if (base.length) console.log(`  note  ${label} [${look}]: pre-existing, baselined: ${base.join(" | ")}`);
+    check(`${label} [${look}]: every visible text element meets its contrast minimum`, real.length === 0, real.join(" | "));
+  }
+}
+for (const lang of ["en", "bn"]) {
+  const ctx = await newContext(browser, { appLang: lang, viewport: { width: 390, height: 844 } });
+  const { page } = await openPage(ctx, "/app/hadith-collections.html");
+  await clickSafely(page, '[data-hadith-tab="collections"]');
+  await page.waitForTimeout(200);
+  await sweepCheck(page, `${lang}: Hadith Collections`, "#hadithRoot");
+  for (const sel of ['[data-hadith-edition="synthetic-alpha-ar-v1"]', '[data-hadith-book="synthetic-alpha-b1"]', '[data-hadith-chapter="synthetic-alpha-b1-c1"]']) {
+    await clickSafely(page, sel); await page.waitForTimeout(150);
+  }
+  await sweepCheck(page, `${lang}: Hadith chapter`, "#hadithRoot");
+  for (const tab of ["topic", "search", "explore", "commentary"]) {
+    await clickSafely(page, `[data-hadith-tab="${tab}"]`); await page.waitForTimeout(250);
+    await sweepCheck(page, `${lang}: Hadith ${tab}`, "#hadithRoot");
+  }
+  await ctx.close();
+  const ctx2 = await newContext(browser, { appLang: lang, viewport: { width: 390, height: 844 } });
+  const { page: q } = await openPage(ctx2, "/app/quranrevival.html");
+  await clickSafely(q, "#tabExploreBtn");
+  await q.waitForFunction(() => !!document.querySelector("#exploreWheelContainer svg"), null, { timeout: 10000 });
+  await clickSafely(q, "#explorePaletteQcrBtn");
+  await q.waitForFunction(() => !document.getElementById("qcrPanel")?.hidden, null, { timeout: 10000 });
+  await q.waitForTimeout(300);
+  await sweepCheck(q, `${lang}: QCR panel`, "#qcrPanel");
+  const row = await q.$("#qcrListPane li button, #qcrList li");
+  if (row) { await row.click().catch(() => {}); await q.waitForTimeout(300); await sweepCheck(q, `${lang}: QCR collection`, "#qcrPanel"); }
+  await ctx2.close();
+}
+
 console.log(`\n==== Card look Night/Light, parts 3-4 (issue #354): ${pass} passed, ${fail} failed ====`);
 await browser.close();
 process.exit(fail ? 1 : 0);

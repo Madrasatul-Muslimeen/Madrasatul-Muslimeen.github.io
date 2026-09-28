@@ -152,7 +152,7 @@
 [data-card-look="light"] .wheel-resize-handle-corner { color: #7a5c1c; }
 /* Night: "Not started" read 4.33:1 against the card's lightest point (the
    top of its radial gradient) -- just short of 4.5. One step lighter. */
-[data-card-look="night"] .chip-not_started { color: #a4b3d1; }
+[data-card-look="night"] .chip-not_started { color: #c3cee3; }
 /* Explore's Arabic word-coverage line (MAP Phase 3) was picked for the dark
    panel -- gold #E8C77A read 1.63:1 on the Light card. Its Light re-picks. */
 [data-card-look="light"] .explore-arabic-coverage .eac-figure { color: #6b4f14; }
@@ -198,9 +198,7 @@
 [data-card-look="night"] .hadith-isnad,
 [data-card-look="night"] .hadith-attribution,
 [data-card-look="night"] .hadith-availability,
-[data-card-look="night"] .hadith-note,
 [data-card-look="night"] .hadith-topic-heading,
-[data-card-look="night"] .openiti-study-soon,
 [data-card-look="night"] .qr-mount-note { color: var(--card-text-muted); }
 [data-card-look="night"] .hadith-lang-select,
 [data-card-look="night"] .hadith-search-input,
@@ -217,6 +215,21 @@
    found and fixed elsewhere (light text on a light page). Per "pages stay
    light", it keeps its original --hadith-ink/--hadith-gold literal in
    both looks, unchanged by this round. */
+/* Review (Architect, v08.107): .hadith-note, .openiti-study-soon and
+   .hadith-unreviewed are used BOTH inside cards and directly on the light
+   page (Commentary's scope line, OpenITI's "coming" line, Explore's
+   "no progress is counted" line), so recolouring them everywhere put light
+   text on the white page (1.79:1, 2.02:1). Recoloured inside a card only. */
+[data-card-look="night"] :is(.hadith-card, .hadith-row, .hadith-commentary-card, .hadith-topic-meta) :is(.hadith-note, .openiti-study-soon) { color: var(--card-text-muted); }
+[data-card-look="night"] :is(.hadith-card, .hadith-row, .hadith-commentary-card, .hadith-topic-meta) .hadith-unreviewed { color: #f5a09c; }
+/* Muted meta lines inside a card kept the page's --hadith-muted grey,
+   2.95:1 on --card-bg-inset; the commentary "link only" warning kept its
+   dark red (!important in hadith.css), 1.74:1. */
+[data-card-look="night"] .hadith-card-head:not(.openiti-editorial-label),
+[data-card-look="night"] .hadith-card-ref,
+[data-card-look="night"] .hadith-commentary-card .hadith-commentary-review,
+[data-card-look="night"] .hadith-commentary-card .hadith-commentary-binding { color: var(--card-text-muted) !important; }
+[data-card-look="night"] .hadith-commentary-card .hadith-commentary-rights { color: #f5b0ae !important; }
 [data-card-look="night"] .hadith-card-id { background: var(--card-bg); color: var(--card-text-muted); }
 [data-card-look="night"] .hadith-card-focused { outline-color: var(--card-heading); }
 
@@ -230,7 +243,6 @@
 [data-card-look="night"] .hadith-fallback { background: #3a2e08; border-color: #8a6a10; color: #e8c77a; }
 [data-card-look="night"] .hadith-view-source { color: var(--card-heading); }
 [data-card-look="night"] .hadith-card-repeat.hadith-view-source,
-[data-card-look="night"] .hadith-unreviewed,
 [data-card-look="night"] .hadith-not-saved,
 [data-card-look="night"] .hadeethenc-study-reason { color: #f5a09c; }
 [data-card-look="night"] [data-hadeethenc-card] a.hadith-view-source,
@@ -302,3 +314,8 @@
 [data-card-look="night"] .bar-palette .qcr-archived-toggle { color: var(--card-text); }
 [data-card-look="night"] .bar-palette-divider { background: var(--card-line); }
 [data-card-look="night"] .bar-palette-note { color: var(--card-text-muted); }
+
+/* Review (Architect, v08.107): on the QCR panel's gradient the gold level
+   badge measured 3.34:1 and the "Not started" chip 3.48:1 on a row's
+   hover tint; both lifted for Night. */
+[data-card-look="night"] :is(#qcrListHeader, #asmaXListHeader) .qcr-level-badge { color: #ecd49a; }
