@@ -562,8 +562,13 @@ export function setExploreJuzView(id) {
 // 5 Sep 2026 (round 3) -- the same question one level up, on the owner's own
 // ask: the whole Qur'an subdivides into 30 Juz or into 114 Surahs, and they
 // wanted both offered. Same additive localStorage shape, same reasons.
+// Issue #342 -- a third reading, Hizb (60), added the same way: the Owner's
+// own follow-up to #341's My Status, whose Hizb row could open nothing
+// because Explore had no Hizb view. A reader who has already chosen Juz or
+// Surah keeps that choice untouched (readStored() only ever changes what
+// someone who has never chosen sees).
 const EXPLORE_QURAN_VIEW_KEY = "mm_explore_quran_view";
-const EXPLORE_QURAN_VIEW_IDS = ["juz", "surah"];
+const EXPLORE_QURAN_VIEW_IDS = ["juz", "surah", "hizb"];
 
 // 5 Sep 2026, owner, having used it: "The Surah view, It looks actually good!
 // So, make the Surah view as the default view on Explore, rather than Juzz."
@@ -571,7 +576,7 @@ const EXPLORE_QURAN_VIEW_IDS = ["juz", "surah"];
 // value always wins; this only changes what someone who has never chosen sees.
 let cachedExploreQuranView = readStored(EXPLORE_QURAN_VIEW_KEY, EXPLORE_QURAN_VIEW_IDS, "surah");
 
-/** "surah" (the default since 5 Sep 2026) or "juz". */
+/** "surah" (the default since 5 Sep 2026), "juz", or "hizb" (issue #342). */
 export function getExploreQuranView() {
   return cachedExploreQuranView;
 }
