@@ -1205,7 +1205,7 @@
      reference app's own ivory theme was a request about LAYOUT PROPORTIONS,
      not about switching this one screen to a different colour language than
      the rest of Quran Study. */
-  #qcrPanel { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; color: #F2E8D5; font-family: 'Inter', sans-serif; }
+  #qcrPanel { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; color: var(--card-text); font-family: 'Inter', sans-serif; }
   /* 4 Sep 2026 one-bar round -- `nowrap`, deliberately, where this bar used
      to wrap: with the buttons gone into the palette there are only ever
      three children (two selects and a 26px toggle), and `flex: 1 1 0` +
@@ -1214,8 +1214,8 @@
      guarantee at every width instead of a hope. */
   #qcrLevelBar {
     flex: 0 0 auto; display: flex; flex-wrap: nowrap; align-items: center; gap: 0.4rem;
-    padding: 0.6rem 0.7rem; background: #1B2A41; border-radius: 12px 12px 0 0;
-    border: 1px solid rgba(201,162,75,0.3); border-bottom: none;
+    padding: 0.6rem 0.7rem; background: var(--card-bg-inset); border-radius: 12px 12px 0 0;
+    border: 1px solid var(--card-line); border-bottom: none;
   }
   /* An EQUAL share each (`flex: 1 1 0`), deliberately, and it was measured
      both ways before being settled: sizing by content instead
@@ -1226,7 +1226,7 @@
      equal share is what actually keeps three fields legible. */
   #qcrLevelBar > select {
     flex: 1 1 0; min-width: 0; font-size: 0.82rem; padding: 0.35rem 0.4rem; border-radius: 6px;
-    border: 1px solid rgba(201,162,75,0.4); background: #13192a; color: #F2E8D5;
+    border: 1px solid var(--card-line); background: var(--card-bg-inset); color: var(--card-text);
   }
   #qcrLevelManageActions { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
   /* 4 Sep 2026, same-day fix -- a PRE-EXISTING bug, this codebase's own
@@ -1254,9 +1254,9 @@
     display: inline-flex; align-items: center; justify-content: center;
     cursor: pointer; flex-shrink: 0;
   }
-  .qcr-icon-btn:hover { border-color: #C9A24B; }
+  .qcr-icon-btn:hover { border-color: var(--card-heading); }
   .qcr-icon-btn.danger:hover { border-color: #d97a63; color: #ffb9a6; }
-  .qcr-archived-toggle { font-size: 11.5px; color: #9aa7be; display: flex; align-items: center; gap: 5px; cursor: pointer; white-space: nowrap; }
+  .qcr-archived-toggle { font-size: 11.5px; color: var(--card-text-muted); display: flex; align-items: center; gap: 5px; cursor: pointer; white-space: nowrap; }
   /* 5 Sep 2026 -- `.qcr-manage-toggle` retired with the Manage buttons
      themselves (Asma v07.130, QCR this round). Both bars' management
      actions are simply what the ⋯ palette holds now, so nothing carries
@@ -1307,7 +1307,7 @@
   .bar-palette #qcrLevelManageActions:not([hidden]),
   .bar-palette #asmaXLevelManageActions:not([hidden]) { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
   .bar-palette .qcr-archived-toggle { flex: 1 0 100%; font-size: 0.78rem; }
-  .bar-palette .qcr-icon-btn:hover { border-color: #C9A24B; }
+  .bar-palette .qcr-icon-btn:hover { border-color: var(--card-heading); }
   .bar-palette .qcr-archived-toggle { color: #555; }
   .bar-palette #qcrLevelManageActions,
   .bar-palette #asmaXLevelManageActions { margin-top: 0.45rem; }
@@ -1330,13 +1330,13 @@
      flex-direction:column-reverse is what flips it to wheel-first below. */
   #qcrMain {
     flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column-reverse; gap: 0;
-    background: radial-gradient(ellipse at top, #2a3a57 0%, #1B2A41 55%, #121b2c 100%);
-    border: 1px solid rgba(201,162,75,0.3); border-radius: 0 0 12px 12px; overflow: hidden;
+    background: var(--card-bg);
+    border: 1px solid var(--card-line); border-radius: 0 0 12px 12px; overflow: hidden;
   }
   #qcrListPane { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0.9rem; }
   #qcrWheelPane {
     flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 0.7rem;
-    padding: 1.1rem 0.9rem; border-top: 1px solid rgba(201,162,75,0.2);
+    padding: 1.1rem 0.9rem; border-top: 1px solid var(--card-line);
   }
   /* 28 Aug 2026: the Approach picker mirror. 4 Sep 2026: it moved off its
      own row above the wheel and into #qcrLevelBar, where the rule above
@@ -1344,7 +1344,7 @@
      still looks itself if it is ever mounted anywhere else. */
   .qcr-approach-select {
     font-size: 0.8rem; padding: 0.35rem 0.4rem; border-radius: 6px;
-    border: 1px solid rgba(201,162,75,0.4); background: #13192a; color: #F2E8D5;
+    border: 1px solid var(--card-line); background: var(--card-bg-inset); color: var(--card-text);
   }
   /* Owner's own report (27 Aug 2026): on a phone/tablet the wheel's own
      natural height ate nearly all of #qcrMain's bounded share, squeezing
@@ -1374,7 +1374,7 @@
   }
   @media (min-width: 900px) {
     #qcrMain { flex-direction: row; }
-    #qcrListPane { flex: 0 0 44%; max-width: 44%; border-right: 1px solid rgba(201,162,75,0.2); }
+    #qcrListPane { flex: 0 0 44%; max-width: 44%; border-right: 1px solid var(--card-line); }
     #qcrWheelPane { flex: 1 1 auto; min-height: 0; overflow-y: auto; border-top: none; justify-content: center; }
     /* Owner's own report: the wheel rendered at its native 360x360
        regardless of how much wider its own pane actually was (measured:
@@ -1452,7 +1452,7 @@
      correctly-angled glyph now (⤡ on the NW-SE diagonal, ⤢ on the NE-SW
      one) rather than becoming invisible the moment the disc went. */
   .wheel-resize-handle-corner {
-    width: 26px; height: 26px; color: #C9A24B;
+    width: 26px; height: 26px; color: var(--card-heading);
     display: flex; align-items: center; justify-content: center;
     font-size: 17px; line-height: 1; padding: 0;
     /* The corners sit over the wheel's own dark ground on the landing
@@ -1488,13 +1488,13 @@
   #wheelResizeWrap .wheel-resize-handle[data-wheel-resize="e"] { right: 2px; }
   #wheelResizeWrap .wheel-resize-handle[data-wheel-resize="w"] { left: 2px; }
   #qcrListHeader { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
-  #qcrListHeader .qcr-list-title { font-family: 'Cormorant Garamond', serif; font-weight: 600; color: #C9A24B; font-size: 1.1rem; }
-  #qcrListHeader .qcr-list-count { font-size: 0.78rem; color: #8fa0c2; }
-  #qcrListHeader .qcr-level-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: rgba(201,162,75,0.22); color: #C9A24B; white-space: nowrap; }
+  #qcrListHeader .qcr-list-title { font-family: 'Cormorant Garamond', serif; font-weight: 600; color: var(--card-heading); font-size: 1.1rem; }
+  #qcrListHeader .qcr-list-count { font-size: 0.78rem; color: var(--card-text-muted); }
+  #qcrListHeader .qcr-level-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: rgba(201,162,75,0.22); color: var(--card-heading); white-space: nowrap; }
 
   .way-row.qcr-way-row { flex-wrap: wrap; align-items: flex-start; cursor: default; }
   .way-row .way-click { display: flex; align-items: center; gap: 10px; flex: 1 1 auto; min-width: 0; cursor: pointer; background: none; border: none; padding: 0; text-align: left; font-family: inherit; }
-  .qcr-way-snippet { flex-basis: 100%; font-size: 11.5px; color: #9aa7be; margin: 3px 0 0 32px; line-height: 1.4; }
+  .qcr-way-snippet { flex-basis: 100%; font-size: 11.5px; color: var(--card-text-muted); margin: 3px 0 0 32px; line-height: 1.4; }
   .qcr-way-manage { flex-basis: 100%; display: flex; gap: 6px; align-items: center; margin: 6px 0 0 32px; }
   .qcr-way-manage select { font-size: 11px; padding: 2px 4px; border-radius: 5px; border: 1px solid #ddd; max-width: 9rem; }
 
@@ -1523,7 +1523,7 @@
      classification means 4 selects sharing the row instead of 3 (an equal
      quarter each) -- real new width demand this sandbox has no browser to
      measure (see this round's own PR note). */
-  #asmaXPanel { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; color: #F2E8D5; font-family: 'Inter', sans-serif; }
+  #asmaXPanel { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; color: var(--card-text); font-family: 'Inter', sans-serif; }
   /* 4 Sep 2026 one-bar round -- same treatment as #qcrLevelBar above, with
      three selects instead of two: `nowrap` plus `flex: 1 1 0` is what keeps
      Group/Names/Dual Names and the ⋯ toggle on ONE line at every width,
@@ -1533,13 +1533,13 @@
      were shortened to Group/Names/Dual Names in the same round. */
   #asmaXLevelBar {
     flex: 0 0 auto; display: flex; flex-wrap: nowrap; align-items: center; gap: 0.35rem;
-    padding: 0.6rem 0.7rem; background: #1B2A41; border-radius: 12px 12px 0 0;
-    border: 1px solid rgba(201,162,75,0.3); border-bottom: none;
+    padding: 0.6rem 0.7rem; background: var(--card-bg-inset); border-radius: 12px 12px 0 0;
+    border: 1px solid var(--card-line); border-bottom: none;
   }
   /* An equal third each, same reasoning as #qcrLevelBar's own rule above. */
   #asmaXLevelBar > select {
     flex: 1 1 0; min-width: 0; font-size: 0.78rem; padding: 0.35rem 0.3rem; border-radius: 6px;
-    border: 1px solid rgba(201,162,75,0.4); background: #13192a; color: #F2E8D5;
+    border: 1px solid var(--card-line); background: var(--card-bg-inset); color: var(--card-text);
   }
   /* Phones -- three fields, a button, and one bar. MEASURED, because a
      <select> ellipsises its own label silently and this project has been
@@ -1579,13 +1579,13 @@
      with an edge to run past. */
   #asmaXMain {
     flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column-reverse; gap: 0;
-    background: radial-gradient(ellipse at top, #2a3a57 0%, #1B2A41 55%, #121b2c 100%);
-    border: 1px solid rgba(201,162,75,0.3); border-radius: 0 0 12px 12px; overflow: hidden;
+    background: var(--card-bg);
+    border: 1px solid var(--card-line); border-radius: 0 0 12px 12px; overflow: hidden;
   }
   #asmaXListPane { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0.9rem; }
   #asmaXWheelPane {
     flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 0.7rem;
-    padding: 1.1rem 0.9rem; border-top: 1px solid rgba(201,162,75,0.2);
+    padding: 1.1rem 0.9rem; border-top: 1px solid var(--card-line);
   }
   @media (max-width: 899px) {
     #asmaXPanel { flex: 0 0 auto; min-height: 0; }
@@ -1597,14 +1597,14 @@
   @media (max-width: 899px) { #asmaXListPane .ways-list { overflow-y: visible; } }
   @media (min-width: 900px) {
     #asmaXMain { flex-direction: row; }
-    #asmaXListPane { flex: 0 0 44%; max-width: 44%; border-right: 1px solid rgba(201,162,75,0.2); }
+    #asmaXListPane { flex: 0 0 44%; max-width: 44%; border-right: 1px solid var(--card-line); }
     #asmaXWheelPane { flex: 1 1 auto; min-height: 0; overflow-y: auto; border-top: none; justify-content: center; }
     #asmaXWheelContainer { width: min(55vh, 480px); margin: 0 auto; }
     #asmaXWheelPane .mastery-wheel { width: 100%; max-width: none; height: auto; }
   }
   #asmaXListHeader { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
-  #asmaXListHeader .qcr-list-title { font-family: 'Cormorant Garamond', serif; font-weight: 600; color: #C9A24B; font-size: 1.1rem; }
-  #asmaXListHeader .qcr-list-count { font-size: 0.78rem; color: #8fa0c2; }
+  #asmaXListHeader .qcr-list-title { font-family: 'Cormorant Garamond', serif; font-weight: 600; color: var(--card-heading); font-size: 1.1rem; }
+  #asmaXListHeader .qcr-list-count { font-size: 0.78rem; color: var(--card-text-muted); }
 
   /* Names-level rows reuse asma-renderer.js's own renderAsmaCollectionListHtml()
      -- its "way-row"/"badge"/"name" classes already fall back to this dark
@@ -1619,16 +1619,16 @@
      Pointer-Events drag handle in this app (note-popup.js's own splitters,
      wheel-resize.js) carries it. */
   .asma-drag-handle {
-    cursor: grab; touch-action: none; background: transparent; border: none; color: #8fa0c2;
+    cursor: grab; touch-action: none; background: transparent; border: none; color: var(--card-text-muted);
     font-size: 16px; line-height: 1; padding: 4px 2px; flex: 0 0 auto; align-self: center;
   }
-  .asma-drag-handle:active { cursor: grabbing; color: #C9A24B; }
+  .asma-drag-handle:active { cursor: grabbing; color: var(--card-heading); }
   .way-row.drag-reorder-active { opacity: 0.55; }
   /* The owner's own "01.01.01"-style display-position number
      (asma-collections.js's own asmaPositionLabels()) -- a second, smaller
      badge next to the permanent "#N" one, which stays exactly what it
      always was (I5: still the real key everything else in the app reads). */
-  .asma-pos-label { font-size: 10px; color: #C9A24B; font-weight: 600; }
+  .asma-pos-label { font-size: 10px; color: var(--card-heading); font-weight: 600; }
   /* 30 Aug 2026 round -- the owner's own layout: name, then (Manage on)
      Move-to/Archive/Remove/Edit, then the status chip -- all ONE flex row
      ("in the same level to a name"), which wraps onto its own line on a
@@ -1644,15 +1644,15 @@
   .asma-way-manage { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .asma-way-move {
     font-size: 11px; padding: 3px 5px; border-radius: 6px; max-width: 8.5rem;
-    border: 1px solid rgba(201,162,75,0.4); background: #13192a; color: #F2E8D5;
+    border: 1px solid var(--card-line); background: var(--card-bg-inset); color: var(--card-text);
   }
   .asma-status-chip { color: white; padding: 3px 9px; border-radius: 10px; font-size: 10px; font-weight: 600; white-space: nowrap; margin-left: auto; }
   .asma-way-badges { display: flex; gap: 4px; margin: 4px 0 0 44px; flex-wrap: wrap; }
   .asma-item-badge { font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 999px; }
-  .asma-item-badge.beyond99 { background: rgba(201,162,75,0.22); color: #C9A24B; }
+  .asma-item-badge.beyond99 { background: rgba(201,162,75,0.22); color: var(--card-heading); }
   .asma-item-badge.phrase { background: rgba(91,132,196,0.22); color: #a9c3ec; }
   .asma-item-badge.weak { background: rgba(217,122,99,0.22); color: #ffb9a6; }
-  .asma-way-meaning { display: block; font-size: 11.5px; color: #9aa7be; margin: 3px 0 0 44px; line-height: 1.4; }
+  .asma-way-meaning { display: block; font-size: 11.5px; color: var(--card-text-muted); margin: 3px 0 0 44px; line-height: 1.4; }
 
   /* Classifications round -- 23 Sep 2026. "also in…" (a small row under a
      Names-level entry that is filed in some OTHER list too) and "Belongs
@@ -1661,20 +1661,20 @@
      above, gold to read as "navigate elsewhere" rather than the blue
      Qur'an-reference chips carry. */
   .asma-also-in-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin: 4px 0 0 44px; }
-  .asma-also-in-label { font-size: 10px; color: #8fa0c2; }
+  .asma-also-in-label { font-size: 10px; color: var(--card-text-muted); }
   .asma-also-in-chip {
     font-size: 10.5px; padding: 1px 8px; border-radius: 999px; font-family: inherit; cursor: pointer;
-    background: rgba(201,162,75,0.16); border: 1px solid rgba(201,162,75,0.4); color: #C9A24B;
+    background: rgba(201,162,75,0.16); border: 1px solid var(--card-line); color: var(--card-heading);
   }
-  .asma-also-in-chip:hover { background: rgba(201,162,75,0.3); }
+  .asma-also-in-chip:hover { background: var(--card-line); }
   .asma-belongs-block { margin: 0.6rem 0; }
-  .asma-belongs-label { font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase; color: #8fa0c2; margin-bottom: 6px; }
+  .asma-belongs-label { font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--card-text-muted); margin-bottom: 6px; }
   .asma-belongs-row { display: flex; gap: 6px; flex-wrap: wrap; }
   .asma-belongs-chip {
     font-size: 12.5px; padding: 5px 11px; border-radius: 999px; font-family: inherit; cursor: pointer;
-    background: rgba(201,162,75,0.16); border: 1px solid rgba(201,162,75,0.4); color: #C9A24B;
+    background: rgba(201,162,75,0.16); border: 1px solid var(--card-line); color: var(--card-heading);
   }
-  .asma-belongs-chip:hover { background: rgba(201,162,75,0.3); }
+  .asma-belongs-chip:hover { background: var(--card-line); }
 
   /* References level -- a short list of chips, not a third wheel (usually
      only 1-3 references per Name); reuses asma-renderer.js's own
@@ -1682,7 +1682,7 @@
      (asma-study.html's own copy of these classes is tuned for a light
      page and would read washed-out here). */
   .asma-xref-block { margin: 0.6rem 0; }
-  .asma-xref-label { font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase; color: #8fa0c2; margin-bottom: 6px; }
+  .asma-xref-label { font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--card-text-muted); margin-bottom: 6px; }
   .asma-xref-row { display: flex; gap: 6px; flex-wrap: wrap; }
   .asma-xref-chip {
     font-size: 12.5px; padding: 5px 11px; border-radius: 999px; display: inline-flex;
@@ -1690,11 +1690,11 @@
   }
   .asma-xref-chip.quran { background: rgba(91,132,196,0.2); border-color: rgba(91,132,196,0.5); color: #a9c3ec; cursor: pointer; }
   .asma-xref-chip.quran:hover { background: rgba(91,132,196,0.34); }
-  .asma-xref-chip.hadith { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.14); color: #9aa7be; }
-  #asmaXRefCard { background: #1B2A41; border: 1px solid rgba(201,162,75,0.25); border-radius: 10px; padding: 0.9rem 1rem; }
-  #asmaXRefCard .asma-ref-arabic { font-family: 'Amiri', serif; font-size: 1.9rem; color: #C9A24B; }
-  #asmaXRefCard .asma-ref-lat { font-style: italic; font-size: 0.98rem; color: #F2E8D5; margin-top: 2px; }
-  #asmaXRefCard .asma-ref-meaning { font-size: 0.84rem; color: #9aa7be; margin-top: 3px; }
+  .asma-xref-chip.hadith { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.14); color: var(--card-text-muted); }
+  #asmaXRefCard { background: var(--card-bg-inset); border: 1px solid var(--card-line); border-radius: 10px; padding: 0.9rem 1rem; }
+  #asmaXRefCard .asma-ref-arabic { font-family: 'Amiri', serif; font-size: 1.9rem; color: var(--card-heading); }
+  #asmaXRefCard .asma-ref-lat { font-style: italic; font-size: 0.98rem; color: var(--card-text); margin-top: 2px; }
+  #asmaXRefCard .asma-ref-meaning { font-size: 0.84rem; color: var(--card-text-muted); margin-top: 3px; }
   #asmaXRefCard .asma-ref-poster-btn { margin-top: 0.8rem; }
 
   /* The A4 poster overlay -- reuses Round 3's own asma-study.html card
@@ -1715,13 +1715,13 @@
   #asmaXEditOverlay.open, #asmaXAttachOverlay.open, #asmaXGroupsOverlay.open { display: flex; }
   #asmaXEditCard, #asmaXAttachCard, #asmaXGroupsCard {
     position: relative; width: min(94vw, 30rem); max-height: 85vh; overflow-y: auto;
-    background: #1B2A41; border: 1px solid rgba(201,162,75,0.35); border-radius: 12px;
-    padding: 1.2rem 1.1rem; color: #F2E8D5; font-family: 'Inter', sans-serif;
+    background: var(--card-bg-inset); border: 1px solid var(--card-line); border-radius: 12px;
+    padding: 1.2rem 1.1rem; color: var(--card-text); font-family: 'Inter', sans-serif;
   }
-  #asmaXEditCard h3, #asmaXAttachCard h3, #asmaXGroupsCard h3 { margin: 0 0.4rem 0.8rem 0; color: #C9A24B; font-family: 'Cormorant Garamond', serif; font-size: 1.25rem; }
+  #asmaXEditCard h3, #asmaXAttachCard h3, #asmaXGroupsCard h3 { margin: 0 0.4rem 0.8rem 0; color: var(--card-heading); font-family: 'Cormorant Garamond', serif; font-size: 1.25rem; }
   #asmaXEditCloseBtn, #asmaXAttachCloseBtn, #asmaXGroupsCloseBtn { position: absolute; top: 0.7rem; right: 0.7rem; }
   #asmaXEditBody { display: flex; flex-direction: column; gap: 0.6rem; }
-  #asmaXEditBody label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.78rem; color: #9aa7be; }
+  #asmaXEditBody label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.78rem; color: var(--card-text-muted); }
   /* 5 Sep 2026 -- the create form gained a "file it under" <select>, which
      had no rule of its own here and would otherwise have rendered as the
      browser's default control on a dark card. Sized with the inputs beside
@@ -1729,7 +1729,7 @@
      wider than the field it sits in. */
   #asmaXEditBody input[type="text"], #asmaXEditBody textarea, #asmaXEditBody select {
     font-size: 0.85rem; padding: 0.4rem 0.5rem; border-radius: 6px; width: 100%; box-sizing: border-box;
-    border: 1px solid rgba(201,162,75,0.4); background: #13192a; color: #F2E8D5; font-family: inherit;
+    border: 1px solid var(--card-line); background: var(--card-bg-inset); color: var(--card-text); font-family: inherit;
   }
   /* [hidden] on a flex label loses to the `display:flex` rule above it --
      the trap this codebase has been caught by six times. */
@@ -1737,13 +1737,13 @@
   #asmaXEditBody textarea { min-height: 3.4rem; resize: vertical; }
   #asmaXEditBody .asmaX-edit-check { flex-direction: row; align-items: center; gap: 0.4rem; }
   .asmaX-edit-actions { display: flex; gap: 0.6rem; margin-top: 1rem; }
-  #asmaXAttachRefLabel { display: block; font-size: 0.78rem; color: #9aa7be; margin-bottom: 0.25rem; }
+  #asmaXAttachRefLabel { display: block; font-size: 0.78rem; color: var(--card-text-muted); margin-bottom: 0.25rem; }
   #asmaXAttachRefInput, #asmaXAttachFilterInput {
     width: 100%; box-sizing: border-box; font-size: 0.85rem; padding: 0.4rem 0.5rem; border-radius: 6px;
-    border: 1px solid rgba(201,162,75,0.4); background: #13192a; color: #F2E8D5; font-family: inherit; margin-bottom: 0.6rem;
+    border: 1px solid var(--card-line); background: var(--card-bg-inset); color: var(--card-text); font-family: inherit; margin-bottom: 0.6rem;
   }
   #asmaXAttachNewNameBtn { width: 100%; box-sizing: border-box; margin-bottom: 0.6rem; font-size: 0.82rem; }
-  #asmaXAttachList, #asmaXGroupsList { max-height: 40vh; overflow-y: auto; border: 1px solid rgba(201,162,75,0.2); border-radius: 8px; padding: 0.4rem 0.6rem; }
+  #asmaXAttachList, #asmaXGroupsList { max-height: 40vh; overflow-y: auto; border: 1px solid var(--card-line); border-radius: 8px; padding: 0.4rem 0.6rem; }
   .asmaX-attach-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0; font-size: 0.82rem; border-bottom: 1px solid rgba(255,255,255,0.06); }
   /* 5 Sep 2026 -- attaching to a Dual Name. The name takes the slack so the
      "Dual" chip is never what gets squeezed, and the chip itself is
@@ -1757,7 +1757,7 @@
     flex: 0 0 auto; white-space: nowrap; font-size: 0.66rem; font-weight: 800;
     letter-spacing: 0.04em; text-transform: uppercase; padding: 0.1rem 0.4rem;
     border-radius: 999px; background: rgba(201,162,75,0.18); color: #E6C87A;
-    border: 1px solid rgba(201,162,75,0.4);
+    border: 1px solid var(--card-line);
   }
   /* The two create buttons are one pair, sized together -- never two
      different widths left to wrap where they fall (v07.129's own lesson).
@@ -1780,11 +1780,11 @@
   #asmaXAttachKindSelect {
     font-size: 0.8rem; padding: 0.4rem 0.5rem; border-radius: 6px; box-sizing: border-box;
     min-width: max-content;
-    border: 1px solid rgba(201,162,75,0.4); background: #13192a; color: #F2E8D5; font-family: inherit;
+    border: 1px solid var(--card-line); background: var(--card-bg-inset); color: var(--card-text); font-family: inherit;
   }
   .asmaX-attach-find #asmaXAttachFilterInput { margin-bottom: 0; }
   .asmaX-attach-row:last-child { border-bottom: none; }
-  .asmaX-attach-row .asmaX-attach-num { color: #8fa0c2; font-size: 0.72rem; min-width: 2rem; }
+  .asmaX-attach-row .asmaX-attach-num { color: var(--card-text-muted); font-size: 0.72rem; min-width: 2rem; }
   /* 4 Sep 2026 -- the Name screen's own "which groups is this Name in"
      picker (#asmaXGroupsOverlay). Reuses the attach overlay's own card and
      row look above verbatim; only the kind badge beside each collection
@@ -1792,8 +1792,8 @@
   /* Classifications round -- 23 Sep 2026: was two hardcoded colours, one
      per legal `kind`. Any number of classifications share one consistent
      colour now -- there is no fixed palette to assign a NEW one from. */
-  .asmaX-groups-kind { margin-left: auto; font-size: 0.66rem; font-weight: 600; padding: 1px 7px; border-radius: 999px; white-space: nowrap; background: rgba(201,162,75,0.22); color: #C9A24B; }
-  #asmaXGroupsIntro { font-size: 0.78rem; color: #9aa7be; margin: 0 0 0.6rem; }
+  .asmaX-groups-kind { margin-left: auto; font-size: 0.66rem; font-weight: 600; padding: 1px 7px; border-radius: 999px; white-space: nowrap; background: rgba(201,162,75,0.22); color: var(--card-heading); }
+  #asmaXGroupsIntro { font-size: 0.78rem; color: var(--card-text-muted); margin: 0 0 0.6rem; }
   .asma-poster {
     width: 300px; aspect-ratio: 210 / 297;
     background: radial-gradient(circle at 50% 8%, #164f4c 0%, #0b3a3a 55%, #072423 100%);
