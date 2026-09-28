@@ -801,3 +801,35 @@ export function setMushafTajweedFontOn(on) {
   writeStored(MUSHAF_TAJWEED_FONT_KEY, cachedMushafTajweedFontOn ? "1" : "0");
   return cachedMushafTajweedFontOn;
 }
+
+// ---------------------------------------------------------------------------
+// Issue #348 -- whether the end-of-unit prompt ("End of Ruku' 3. How did it
+// go?") appears after the last āyah of a Ruku'/Page/Hizb/Juz/Surah/Range
+// Study Unit. ON by default (decision 19, docs/governance/2026-09-27-owner-
+// decisions.md); a reader who finds it intrusive can switch it off in Study
+// options, the same additive localStorage shape every reading preference
+// here already uses.
+// ---------------------------------------------------------------------------
+const END_OF_UNIT_PROMPT_KEY = "mm_end_of_unit_prompt";
+
+function readEndOfUnitPromptOn() {
+  try {
+    const raw = localStorage.getItem(END_OF_UNIT_PROMPT_KEY);
+    if (raw === null) return true; // never set: on by default
+    return raw === "1";
+  } catch {
+    return true;
+  }
+}
+
+let cachedEndOfUnitPromptOn = readEndOfUnitPromptOn();
+
+export function getEndOfUnitPromptOn() {
+  return cachedEndOfUnitPromptOn;
+}
+
+export function setEndOfUnitPromptOn(on) {
+  cachedEndOfUnitPromptOn = !!on;
+  writeStored(END_OF_UNIT_PROMPT_KEY, cachedEndOfUnitPromptOn ? "1" : "0");
+  return cachedEndOfUnitPromptOn;
+}
