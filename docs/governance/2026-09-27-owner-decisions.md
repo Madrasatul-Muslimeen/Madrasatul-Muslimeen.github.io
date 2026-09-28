@@ -53,3 +53,9 @@ other modules would show in it, and then for a plan for a family of apps
 
 The Owner also asked for an operating prompt for ChatGPT as advisor-reviewer:
 `docs/governance/advisor-chatgpt-operating-prompt.md`.
+
+## 28 Sep 2026 — version numbering past v08.99
+
+| # | Question | Owner's words | Meaning |
+|---|---|---|---|
+| 17 | v08.99 is the last two-digit number in the 08 line. Open v09.00, or continue? | **"no. continue v08.100 and so on until a substantial changes in the app."** | The 08 line continues as **v08.100, v08.101, …**; v09.00 is kept for a substantial change to the app. The version checks accept a two- or three-digit minor and compare versions by number, not as text (so v08.100 comes after v08.99). |

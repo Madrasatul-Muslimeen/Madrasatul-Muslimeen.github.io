@@ -162,18 +162,22 @@ check("every version the brief names is also in CHANGELOG.md -- nothing lives on
   // having only ever lived here: a round leaving the brief is appended to
   // CHANGELOG.md FIRST, so trimming the brief can never destroy one.
   const current = read("app/js/version.js").match(/APP_VERSION\s*=\s*"([\d.]+)"/)[1];
-  const versions = new Set([...brief.matchAll(/\bv(0[78]\.\d{2})\b/g)].map((m) => m[1]));
+  const versions = new Set([...brief.matchAll(/\bv(0[78]\.\d{2,3})\b/g)].map((m) => m[1]));
   assert.ok(versions.size >= 10, `found only ${versions.size} version references; the scanner has stopped working`);
   // A version AHEAD of the current one is a forward reference ("the next
   // feature round is v08.03"), not a round that has gone missing.
-  const shipped = [...versions].filter((v) => v <= current);
+  // Numeric, not text: from v08.100 (Owner, 28 Sep 2026) "08.99" > "08.100"
+  // as strings, which would drop every shipped 08.xx from this check.
+  const vnum = (v) => v.split(".").map(Number);
+  const [curMaj, curMin] = vnum(current);
+  const shipped = [...versions].filter((v) => { const [a, b] = vnum(v); return a < curMaj || (a === curMaj && b <= curMin); });
   assert.ok(shipped.length >= 10, `only ${shipped.length} shipped versions named; the comparison has stopped working`);
   // CHANGELOG.md heads a multi-version round with a RANGE ("v08.05-v08.13"),
   // so a version inside one is covered without appearing literally. Expand the
   // ranges before looking for gaps, or seven false positives bury the two real
   // ones -- which is exactly what this check's own first run produced.
-  const covered = new Set([...changelog.matchAll(/v(\d\d\.\d\d)/g)].map((m) => m[1]));
-  for (const m of changelog.matchAll(/v(\d\d)\.(\d\d)[\u2013\u2014-]v?(\d\d)\.(\d\d)/g)) {
+  const covered = new Set([...changelog.matchAll(/v(\d\d\.\d{2,3})(?!\d)/g)].map((m) => m[1]));
+  for (const m of changelog.matchAll(/v(\d\d)\.(\d{2,3})[\u2013\u2014-]v?(\d\d)\.(\d{2,3})/g)) {
     const [, majA, minA, majB, minB] = m;
     if (majA !== majB) continue;
     for (let i = Number(minA); i <= Number(minB); i++) covered.add(`${majA}.${String(i).padStart(2, "0")}`);

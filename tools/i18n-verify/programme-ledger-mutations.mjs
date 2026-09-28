@@ -195,10 +195,11 @@ mutation("the brief predicts a merge number for the held branch", "C", (l, f) =>
 mutation("...and it is caught even when the number belongs to nobody yet", "C", (l, f) => {
   const s = heldStream(l);
   const [maj, min] = l.main.version.split(".").map(Number);
+  // padStart(2) keeps 08.05 two-digit and lets 08.99 + 1 read 08.100 (Owner, 28 Sep 2026).
   const unclaimed = `${String(maj).padStart(2, "0")}.${String(min + 1).padStart(2, "0")}`;
   assert.ok(!l.versionAllocations.some((a) => a.version === unclaimed), `fixture drift: ${unclaimed} is already allocated`);
   f.briefText += `\n\nAt merge \`${s.branchTip.slice(0, 7)}\` will take v${unclaimed}.\n`;
-}, /, ahead of main \(\d\d\.\d\d\) -- that is a forward allocation/);
+}, /, ahead of main \(\d\d\.\d{2,3}\) -- that is a forward allocation/);
 
 // ---- D: malformed / non-canonical version references ----------------------
 mutation("a ledger version is written in prose form", "D", (l) => {

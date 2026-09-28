@@ -2451,7 +2451,9 @@ or the opening one — no feature, no schema, no rule; see the "v07 closed and
 archived" entry below and the v08.00 entry in `CHANGELOG.md`.
 
 **Version numbering from here: `08` is this overhaul, and the last two digits
-bump on every new feature within it.** `app/js/version.js` is the single source
+bump on every new feature within it.** **Past v08.99 the line continues v08.100, v08.101, …
+(Owner decision 17, 28 Sep 2026) until a substantial change to the app opens
+v09.00; the version checks compare by number, not as text.** `app/js/version.js` is the single source
 of truth; nothing else hardcodes the string. Bump it and the milestone line at
 the top of this file together, every round.
 

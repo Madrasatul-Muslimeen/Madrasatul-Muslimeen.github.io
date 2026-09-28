@@ -975,9 +975,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.00",
+  "nextUnallocated": "08.100",
   "nextUnallocatedNote": [
-    "v08.99 is the last number the NN.NN form allows in the 08 line; 09.00 is recorded as the next free number, pending the Owner's word on whether the next feature opens v09 (2026-09-28).",
+    "Owner decision 17, 2026-09-28: after v08.99 the 08 line continues as v08.100, v08.101, ... until a substantial change to the app; the minor part may be two or three digits.",
     "v08.99 was allocated to My Status: Approach card, By unit, slices open Explore, 2026-09-28.",
     "v08.98 was allocated to Notes offline, capsules on one row, Surah banner edge to edge, QF credit on About, 2026-09-28.",
     "v08.97 was allocated to Landing page: scrolls on a phone, equal capsules, unit name in the wheel, wheel look, 2026-09-27.",
