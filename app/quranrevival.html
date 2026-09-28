@@ -8702,8 +8702,8 @@
      * Hizb (of 60), each row's Achieved+Mastered/Started counts EXACTLY what
      * Explore's own wedges would colour for that same unit (Owner decision
      * 7) -- summarizeUnitCoverage() wraps the identical poolStatus() core,
-     * never a second rule that could quietly drift apart. Hizb carries no
-     * Explore level of its own, so its row alone is not a jump target.
+     * never a second rule that could quietly drift apart. Issue #342 gave
+     * Hizb its own Explore level, so all four rows are jump targets now.
      */
     function renderMyStatusUnitSectionHtml(trackableId, cache) {
       if (trackableId === WBW_TRACKABLE_ID) return renderMyStatusWbwUnitSectionHtml(cache);
@@ -8723,7 +8723,7 @@
         { id: "juz", name: t("Juz"), summary: summarize(juzUnits), jump: true },
         { id: "surah", name: t("Surah"), summary: summarize(surahUnits), jump: true },
         { id: "ruku", name: t("Ruku'"), summary: summarize(rukuUnits), jump: true },
-        { id: "hizb", name: t("Hizb"), summary: summarize(hizbUnits), jump: false },
+        { id: "hizb", name: t("Hizb"), summary: summarize(hizbUnits), jump: true },
       ];
       const rowsHtml = rows.map((row) => {
         const { achievedOrMastered, started, total } = row.summary;
@@ -8846,8 +8846,8 @@
       if (juzWheelEl) {
         attachScopedWheelClickHandler(juzWheelEl, (key) => myStatusJuzSliceGoToExplore(Number(key)));
       }
-      // The "By unit" Juz/Surah/Ruku' rows jump to Explore too (Hizb's own
-      // row carries no data-my-status-unit-jump at all -- it is not a button).
+      // The "By unit" Juz/Surah/Ruku'/Hizb rows all jump to Explore (issue
+      // #342 gave Hizb its own Explore view, so it is a button too now).
       myStatusDetailBodyEl.querySelectorAll("[data-my-status-unit-jump]").forEach((btn) => {
         btn.addEventListener("click", () => myStatusUnitRowGoToExplore(btn.dataset.myStatusUnitJump));
       });
@@ -8871,19 +8871,20 @@
       await openExplore();
     }
 
-    /** Issue #341 part 3 -- a "By unit" Juz/Surah/Ruku' row: makes the open
-     *  Approach current, closes My Status, and opens Explore's Quran level
-     *  in the matching view (Juz view for the Juz row; Surahs view for
-     *  Surah AND Ruku' -- Ruku' has no top-level Explore view of its own,
-     *  so Surahs, the level it drills down FROM, is the closest real
-     *  target). setExploreQuranView() is the reader's own real Explore
-     *  preference, the SAME one the Explore panel's own Juz/Surahs switch
-     *  writes -- picking Surahs from here is exactly as if the reader had
-     *  switched it themselves inside Explore. */
+    /** Issue #341 part 3 -- a "By unit" Juz/Surah/Ruku'/Hizb row: makes the
+     *  open Approach current, closes My Status, and opens Explore's Quran
+     *  level in the matching view (Juz view for the Juz row; Surahs view for
+     *  Surah AND Ruku' -- Ruku' has no top-level Explore view of its own, so
+     *  Surahs, the level it drills down FROM, is the closest real target;
+     *  Hizb view for the Hizb row, issue #342, which gave Hizb its own
+     *  Explore level at last). setExploreQuranView() is the reader's own
+     *  real Explore preference, the SAME one the Explore panel's own
+     *  Juz/Surahs/Hizb switch writes -- picking a view from here is exactly
+     *  as if the reader had switched it themselves inside Explore. */
     async function myStatusUnitRowGoToExplore(kind) {
       changeCurrentTrackable(myStatusOpenTrackableId);
       closeMyStatus();
-      exploreQuranView = setExploreQuranView(kind === "juz" ? "juz" : "surah");
+      exploreQuranView = setExploreQuranView(kind === "juz" ? "juz" : kind === "hizb" ? "hizb" : "surah");
       await openExploreOnQuranLevel();
     }
 
