@@ -4,6 +4,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="stylesheet" href="./css/shell.css" />
+<link rel="stylesheet" href="./css/card-look.css" />
+  <script>(function(){try{document.documentElement.setAttribute('data-card-look',localStorage.getItem('mm_card_look')==='light'?'light':'night');}catch(e){document.documentElement.setAttribute('data-card-look','night');}})();</script>
 <title>QuranRevival — Phase 4/5</title>
 <style>
   /* Shell round 7 (12 Aug 2026) -- this page is now a real app shell rather
@@ -5207,6 +5209,7 @@
       getColourWordParts, setColourWordParts,
       getMushafTajweedFontOn, setMushafTajweedFontOn,
       getEndOfUnitPromptOn, setEndOfUnitPromptOn,
+      mountCardLookControl,
     } from "./js/prefs.js";
     import { wireWheelResize } from "./js/wheel-resize.js";
     import { renderTextSizeButtonHtml } from "./js/text-size.js";
@@ -5351,6 +5354,7 @@
       // code for the picker that used to sit in bar 1, and because reloading
       // the landing page would re-fire the boot and Quran-entry splashes.
       mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid, onChange: applyAppLangChange });
+      mountCardLookControl(navHomeExtra);
       // bookmarksDoc here loads LAZILY (ensureAyahNoteDataLoaded(), only once
       // the reading/note screen actually opens) -- unlike the other pages
       // that pass a plain getter, this one ensures that load happens first,
