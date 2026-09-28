@@ -220,6 +220,53 @@ for (const lang of ["en", "bn"]) {
   const activeRung = await page.evaluate(() => document.querySelector('.unit-ladder-rung[aria-current="true"]')?.dataset.unitLadderRung);
   check(`[${lang}] the Ruku' rung reads as the active one`, activeRung === "ruku:2:1", activeRung);
 
+  // --- Issue #349: "Mark as read" for Ruku'/Page, gated separately --------
+  // The reading-units gate ships closed (study-reading-units-readiness.js,
+  // ready: false), so Ruku'/Page must read disabled with the NEW, narrower
+  // explanation; Surah must read ENABLED (the general evidence gate has been
+  // open since 22 Sep 2026, and Surah never needed the new one); Hizb must
+  // keep the OLD, unrelated "planned for later" wording -- proving the two
+  // reasons are genuinely different sentences, not the same one reused.
+  const markAsReadState = () => page.evaluate(() => {
+    const btn = document.querySelector("[data-unit-card-mark-read]");
+    if (!btn) return null;
+    const hint = btn.nextElementSibling?.classList?.contains("ayah-sheet-hint") ? btn.nextElementSibling.textContent : "";
+    return { ariaDisabled: btn.getAttribute("aria-disabled"), hint };
+  });
+  const READING_UNITS_HINT = {
+    en: "Recording a Ruku' or Page as read is not switched on yet.",
+    bn: "রুকু' বা পৃষ্ঠা পড়া হয়েছে বলে রেকর্ড করা এখনও চালু হয়নি।",
+  };
+  const rukuMarkAsRead = await markAsReadState();
+  check(`[${lang}] Ruku' "Mark as read" is disabled while the reading-units gate is shut, in the reader's own language`,
+    rukuMarkAsRead?.ariaDisabled === "true" && rukuMarkAsRead?.hint === READING_UNITS_HINT[lang],
+    JSON.stringify(rukuMarkAsRead));
+
+  await clickSafely(page, '.unit-ladder-rung[data-unit-ladder-rung^="page:"]');
+  await page.waitForTimeout(300);
+  const pageMarkAsRead = await markAsReadState();
+  check(`[${lang}] Page "Mark as read" is ALSO disabled while the reading-units gate is shut, with the SAME reason as Ruku'`,
+    pageMarkAsRead?.ariaDisabled === "true" && pageMarkAsRead?.hint === rukuMarkAsRead?.hint,
+    JSON.stringify(pageMarkAsRead));
+
+  await clickSafely(page, '.unit-ladder-rung[data-unit-ladder-rung^="surah:"]');
+  await page.waitForTimeout(300);
+  const surahMarkAsRead = await markAsReadState();
+  check(`[${lang}] Surah "Mark as read" is UNAFFECTED -- still enabled, no hint (the reading-units gate never applies to it)`,
+    surahMarkAsRead?.ariaDisabled === "false" && surahMarkAsRead?.hint === "",
+    JSON.stringify(surahMarkAsRead));
+
+  await clickSafely(page, '.unit-ladder-rung[data-unit-ladder-rung^="hizb:"]');
+  await page.waitForTimeout(300);
+  const hizbMarkAsRead = await markAsReadState();
+  check(`[${lang}] Hizb "Mark as read" still reads the OLD "planned for later" wording, a DIFFERENT sentence from Ruku'/Page's new one`,
+    hizbMarkAsRead?.ariaDisabled === "true" && hizbMarkAsRead?.hint !== rukuMarkAsRead?.hint && hizbMarkAsRead?.hint.length > 0,
+    JSON.stringify({ hizbMarkAsRead, rukuHint: rukuMarkAsRead?.hint }));
+
+  // Back to the Ruku' rung before the existing flow below continues.
+  await clickSafely(page, '.unit-ladder-rung[data-unit-ladder-rung^="ruku:"]');
+  await page.waitForTimeout(300);
+
   // Tap the Juz rung -- moves to a DIFFERENT unit type (juz), chunkKey subject_quran.
   await clickSafely(page, '.unit-ladder-rung[data-unit-ladder-rung^="juz:"]');
   await page.waitForTimeout(300);

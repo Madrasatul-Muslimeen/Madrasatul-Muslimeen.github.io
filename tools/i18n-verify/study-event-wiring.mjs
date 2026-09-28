@@ -22,6 +22,12 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
+// The real pure identity module, imported directly rather than reimplemented
+// -- this file's own header rule ("the file under test is the file that
+// ships") applies to every real dependency study-event-wiring.js has, not
+// just the one this suite already rewrote.
+import { evidenceUnitType as realEvidenceUnitType } from "../../app/js/study-activity-evidence-id.js";
+import { isReadingUnitsPersistenceReady as realIsReadingUnitsPersistenceReady } from "../../app/js/study-reading-units-readiness.js";
 
 const root = path.resolve(process.argv[2] || process.cwd());
 let source = fs.readFileSync(path.join(root, "app/js/study-event-wiring.js"), "utf8");
@@ -29,8 +35,12 @@ source = source
   .replace(/import \{ weekKeyFor \} from "\.\/activity\.js";/, "const { weekKeyFor } = globalThis.__sewActivity;")
   .replace(/import \{ writeStudyActivityEvidence \} from "\.\/study-activity-evidence-store\.js";/,
            "const { writeStudyActivityEvidence } = globalThis.__sewStore;")
+  .replace(/import \{ evidenceUnitType \} from "\.\/study-activity-evidence-id\.js";/,
+           "const { evidenceUnitType } = globalThis.__sewEvidenceId;")
   .replace(/import \{[^}]*\} from "\.\/study-evidence-readiness\.js";/,
-           "const { isStudyEvidencePersistenceReady, studyEvidenceUnavailableReason } = globalThis.__sewReadiness;");
+           "const { isStudyEvidencePersistenceReady, studyEvidenceUnavailableReason } = globalThis.__sewReadiness;")
+  .replace(/import \{[^}]*\} from "\.\/study-reading-units-readiness\.js";/,
+           "const { isReadingUnitsPersistenceReady, readingUnitsUnavailableReason } = globalThis.__sewReadingUnits;");
 
 // AN UNREWRITTEN IMPORT IS A DEAD SUITE, NOT A FAILING ONE. A relative
 // specifier inside a `data:` module throws ERR_INVALID_URL at load, so every
@@ -65,8 +75,20 @@ globalThis.__sewReadiness = {
   isStudyEvidencePersistenceReady: () => persistenceReady,
   studyEvidenceUnavailableReason: () => (persistenceReady ? null : "evidence-rules-not-deployed"),
 };
+globalThis.__sewEvidenceId = { evidenceUnitType: realEvidenceUnitType };
+// Issue #349's own second gate. Defaults to false, matching the shipped
+// declaration in study-reading-units-readiness.js -- this is the one thing
+// the injected stub and the real module must agree on without either
+// importing the other, so a case below asserts the shipped default directly
+// against the real module before relying on this variable's own default.
+let readingUnitsReady = false;
+globalThis.__sewReadingUnits = {
+  isReadingUnitsPersistenceReady: () => readingUnitsReady,
+  readingUnitsUnavailableReason: () => (readingUnitsReady ? null : "reading-units-rules-not-deployed"),
+};
 const mod = await import(`data:text/javascript,${encodeURIComponent(source)}`);
-const { readingApproachId, readingCompletionArgs, recordStudyEvidence, unitTypeRecordsEvidence, utcDay,
+const { readingApproachId, readingCompletionArgs, recordStudyEvidence, unitTypeRecordsEvidence,
+        unitTypeNeedsReadingUnitsGate, utcDay,
         LISTENING_COMPLETION_RATIO, createListeningSession, listeningApproachId, listeningCompletionArgs,
         wbwEngagementArgs } = mod;
 
@@ -137,8 +159,8 @@ await check("range and surah units record evidence too", () => {
 });
 
 // --- units v1 has no evidence shape for -----------------------------------
-await check("juz, ruku, hizb and page record NOTHING, quietly", () => {
-  for (const [unitKey, unitType] of [["juz:3", "juz"], ["ruku:2:1", "ruku"], ["hizb:4", "hizb"], ["page:madani:5", "page"]]) {
+await check("juz and hizb record NOTHING, quietly -- v1 has no evidence shape for them", () => {
+  for (const [unitKey, unitType] of [["juz:3", "juz"], ["hizb:4", "hizb"]]) {
     assert.equal(readingCompletionArgs({ ...base, unitKey, unitType, translationLangs: [] }), null, unitType);
     assert.equal(unitTypeRecordsEvidence(unitType), false, unitType);
   }
@@ -148,6 +170,69 @@ await check("recording nothing writes nothing and reports it", async () => {
   const result = await recordStudyEvidence({}, null, { uid: "uid-p1" });
   assert.equal(result, null);
   assert.equal(writes.length, 0);
+});
+
+// --- issue #349 (ADR-008 Amendment 3): ruku/page join the accepted set,
+// gated a SECOND way ------------------------------------------------------
+//
+// UPDATED 2026-09-28, reason recorded rather than the old combined case
+// silently narrowed. Before this issue ruku/page sat in the SAME "v1 has no
+// evidence shape for it" bucket as juz/hizb; they now have a real identity
+// shape (study-activity-evidence-id.js's UNIT_KEY_SHAPES) but stay UNWRITTEN
+// until a second, narrower gate opens -- so they need their own cases,
+// distinct from both "juz/hizb, permanently refused" above and "ayah/range/
+// surah, gated once" below.
+await check("the shipped reading-units gate default is FALSE, read from the REAL module directly", () => {
+  // The stub's own default (readingUnitsReady = false, above) is not proof of
+  // anything about the file that ships -- realIsReadingUnitsPersistenceReady
+  // is the actual app/js/study-reading-units-readiness.js, statically
+  // imported, never rewritten by this suite's own source-string surgery.
+  assert.equal(realIsReadingUnitsPersistenceReady(), false,
+    "study-reading-units-readiness.js no longer defaults to false -- if this is deliberate, the enablement decision must be governed, see study-activity-evidence-boundary.mjs's own checks for the shape that requires");
+});
+await check("unitTypeNeedsReadingUnitsGate names exactly ruku and page", () => {
+  for (const t of ["ayah", "range", "surah"]) assert.equal(unitTypeNeedsReadingUnitsGate(t), false, t);
+  for (const t of ["ruku", "page"]) assert.equal(unitTypeNeedsReadingUnitsGate(t), true, t);
+  for (const t of ["juz", "hizb", "topic", "hadith", "name"]) assert.equal(unitTypeNeedsReadingUnitsGate(t), false, t);
+});
+await check("ruku and page now build REAL evidence arguments (issue #349)", () => {
+  for (const [unitKey, unitType] of [["ruku:2:1", "ruku"], ["page:madani:5", "page"]]) {
+    const a = readingCompletionArgs({ ...base, unitKey, unitType, translationLangs: [] });
+    assert.ok(a, `${unitType} should now build evidence arguments`);
+    assert.equal(a.unitKey, unitKey);
+    assert.equal(a.eventType, "reading.completed");
+    assert.equal(unitTypeRecordsEvidence(unitType), true, unitType);
+  }
+});
+await check("A SHUT READING-UNITS GATE STOPS RUKU'/PAGE EVEN WHEN THE GENERAL GATE IS OPEN (issue #349)", async () => {
+  writes.length = 0;
+  // persistenceReady (the general gate) is true by default here; readingUnitsReady
+  // (the new, narrower one) defaults false, matching the shipped declaration.
+  const args = readingCompletionArgs({ ...base, unitKey: "ruku:2:1", unitType: "ruku", translationLangs: [] });
+  assert.ok(args, "the fixture stopped producing eligible arguments -- this case would pass vacuously");
+  const result = await recordStudyEvidence({}, args, { uid: "uid-p1" });
+  assert.equal(writes.length, 0, "THE STORE WAS REACHED THROUGH A SHUT GATE");
+  assert.equal(result.blocked, true, "a refusal is not reported as a refusal");
+  assert.equal(result.written, false);
+  assert.equal(result.reason, "reading-units-rules-not-deployed", "the reading-units reason key does not reach the caller");
+});
+await check("OPENING BOTH GATES LETS A RUKU'/PAGE COMPLETION REACH THE STORE (issue #349)", async () => {
+  writes.length = 0;
+  readingUnitsReady = true;
+  try {
+    const args = readingCompletionArgs({ ...base, unitKey: "page:madani:5", unitType: "page", translationLangs: [] });
+    const result = await recordStudyEvidence({}, args, { uid: "uid-p1" });
+    assert.equal(writes.length, 1, "both gates open should let the write through");
+    assert.equal(result.written, true);
+  } finally { readingUnitsReady = false; }
+});
+await check("ayah/range/surah are UNAFFECTED by the reading-units gate (issue #349)", async () => {
+  writes.length = 0;
+  // readingUnitsReady stays false here -- ayah/range/surah must not need it.
+  const args = readingCompletionArgs({ ...base, translationLangs: [] });
+  const result = await recordStudyEvidence({}, args, { uid: "uid-p1" });
+  assert.equal(writes.length, 1, "an ayah completion was blocked by a gate that should not apply to it");
+  assert.equal(result.written, true);
 });
 
 // --- writing ---------------------------------------------------------------
