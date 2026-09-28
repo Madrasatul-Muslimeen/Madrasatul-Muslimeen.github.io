@@ -3032,4 +3032,26 @@ export const BN = {
   "Add Approach": "পদ্ধতি যোগ করুন", // ?
   "Choose a section.": "একটি বিভাগ বেছে নিন।", // ?
   "Added \"{name}\" to {section}.": "\"{name}\" {section}-এ যোগ হয়েছে।", // ?
+
+  // Issue #352 -- every unit on the wheel (Owner decisions 21-24).
+  "All units": "সব ইউনিট", // ?
+  "Āyah": "আয়াত",
+  "Rings, from the middle out": "বলয়গুলো, মাঝখান থেকে বাইরে", // ?
+  "Rule: Yes. A bigger unit takes the lowest status of its āyāt.": "নিয়ম: হ্যাঁ। বড় ইউনিট তার আয়াতগুলোর সবচেয়ে নিচের অবস্থা নেয়।", // ?
+  "Rule: No ○. Each unit shows only the claim made on it.": "নিয়ম: না ○। প্রতিটি ইউনিট শুধু তার নিজের ওপর করা দাবি দেখায়।", // ?
+  "Take this Approach": "এই পদ্ধতি গ্রহণ করুন", // ?
+  "Open in Explore": "এক্সপ্লোরে খুলুন", // ?
+  "{name} ({n} āyāt)": "{name} ({n} আয়াত)", // ?
+  "Ruku' {n} of {surah}": "{surah}-এর রুকু' {n}", // ?
+  "(part)": "(অংশ)", // ?
+  "This unit": "এই ইউনিট", // ?
+  "Āyāt started: {n}": "শুরু হওয়া আয়াত: {n}", // ?
+  "Study this āyah": "এই আয়াত অধ্যয়ন করুন", // ?
+  "{n} Juz, in the middle": "{n}টি জুয, মাঝখানে", // ?
+  "{n} Surahs, around them": "{n}টি সূরা, চারপাশে", // ?
+  "Hizb: {n} in this Juz": "হিযব: এই জুযে {n}টি", // ?
+  "Ruku': {n}, around them": "রুকু': {n}টি, চারপাশে", // ?
+  "Page: {n} printed pages": "পৃষ্ঠা: {n}টি ছাপা পৃষ্ঠা", // ?
+  "Ruku': {n}, in the middle": "রুকু': {n}টি, মাঝখানে", // ?
+  "Āyah: {n}, around them": "আয়াত: {n}টি, চারপাশে", // ?
 };

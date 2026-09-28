@@ -610,6 +610,26 @@ export function setWheelLook(id) {
   return cachedWheelLook;
 }
 
+// Issue #352 (Owner decisions 21, 22) -- what the landing Approach wheel
+// shows: "all" (six rings, Juz in the middle out to the āyah), one unit type
+// on its own ring, or "unit" -- the default, and exactly the wheel as it has
+// always been: the unit "Choose a Unit" holds. A per-browser habit.
+const WHEEL_SHOW_KEY = "mm_wheel_show";
+const WHEEL_SHOW_IDS = ["unit", "all", "juz", "surah", "hizb", "ruku", "page", "ayah"];
+let cachedWheelShow = readStored(WHEEL_SHOW_KEY, WHEEL_SHOW_IDS, "unit");
+
+/** "unit" (default), "all", or one of juz/surah/hizb/ruku/page/ayah. */
+export function getWheelShow() {
+  return cachedWheelShow;
+}
+
+export function setWheelShow(id) {
+  if (!WHEEL_SHOW_IDS.includes(id)) return cachedWheelShow;
+  cachedWheelShow = id;
+  writeStored(WHEEL_SHOW_KEY, id);
+  return cachedWheelShow;
+}
+
 // ---------------------------------------------------------------------------
 // 28 Aug 2026 -- the QCR (Ayah Collections) wheel is resizable by a drag
 // handle on its own corner, and the owner's own size sticks: "make the size
