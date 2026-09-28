@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.105",
+    "version": "08.106",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1037,8 +1037,20 @@
     {
       "version": "08.105",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Every unit on the wheel: landing Show toggle with six rings and a data box, Explore rings sized by text (issue #352, decisions 21-24).",
+      "integration": {
+        "authorizedOn": "2026-09-28",
+        "integratedOn": "2026-09-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "08.106",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Card look Night/Light: tokens, preference and five surfaces (issue #354 parts 1-2, PR #367 + review fixes).",
       "integration": {
         "authorizedOn": "2026-09-28",
         "integratedOn": "2026-09-28",
@@ -1047,8 +1059,9 @@
       }
     }
   ],
-  "nextUnallocated": "08.106",
+  "nextUnallocated": "08.107",
   "nextUnallocatedNote": [
+    "v08.106 was allocated to card look Night or Light, parts 1-2 (issue #354), 2026-09-28.",
     "v08.105 was allocated to every unit on the wheel (issue #352), 2026-09-28.",
     "v08.104 was allocated to Study activity recording fixed; add an Approach from Catalogue, 2026-09-28.",
     "v08.103 was allocated to the Unit Card (issue #348), 2026-09-28.",
