@@ -1,7 +1,7 @@
 # ADR-008 — Study-to-Approach Event Contract v1
 
-- **Status:** ACCEPTED — **AMENDED 2026-09-14** (see "Master Architect amendments" below)
-- **Date:** 2026-09-11; amended 2026-09-14
+- **Status:** ACCEPTED — **AMENDED 2026-09-14, AMENDED 2026-09-28** (see "Master Architect amendments" below)
+- **Date:** 2026-09-11; amended 2026-09-14; amended 2026-09-28
 - **Authority:** Owner approval of the Task 33 P4 decision package, amended by Master Architect review
 - **Contract identifier:** `study-approach-contract:v1`
 - **Context:** ADR-003 requires Activity and Mastery to remain separate. Reading, Listening, Journaling and WbW interactions already exist, but automatic effects were not centrally defined.
@@ -11,7 +11,7 @@
 
 | Event | Activity effect | Status/mastery effect |
 |---|---|---|
-| `reading.completed` | Append one `practised` Activity entry for each explicitly completed unit, mapped to Reading with Tajweed (`approach_01`) or Reading with Meaning (`approach_03`) by the active Study mode, deduplicated by person + event + unit + UTC date | None |
+| `reading.completed` | Append one `practised` Activity entry for each explicitly completed unit — Āyah, Range, Surah, or, since Amendment 3 (2026-09-28), Ruku' or Page — mapped to Reading with Tajweed (`approach_01`) or Reading with Meaning (`approach_03`) by the active Study mode, deduplicated by person + event + unit + UTC date | None |
 | `listening.completed` | Append one `practised` Activity entry after a user-started playback completes at least 80% of the selected bounded unit, mapped to Arabic-only (`approach_07`) or with-meaning (`approach_08`) by the active Study mode, deduplicated by person + event + unit + UTC date | None |
 | `journal.note-created` | Append one `practised` Journaling Activity entry for a newly committed Note | None |
 | `journal.note-revised` | Append at most one Journaling Activity entry per Note per UTC date after a committed revision | None |
@@ -101,3 +101,69 @@ evidence only and still grants no `achieved` or `mastered` status;
 `status.claimed` and `status.confirmed` remain the only two events that move
 Mastery state, and remain outside Study Activity evidence persistence
 entirely. ADR-003 is unaffected.
+
+## Master Architect amendment — 2026-09-28 (issue #349)
+
+### Amendment 3 — `reading.completed` accepts Ruku' and Page as Study Units
+
+**Authority.** Owner decision 20, 27 Sep 2026
+(`docs/governance/2026-09-27-owner-decisions.md`, row 20): *"'Mark as read'
+for Ruku', Page, Hizb and Juz? -- Ruku' and Page: yes. Hizb and Juz: later.
+Recording Activity for Ruku' and Page amends ADR-008 and needs a Rules
+change the Owner publishes; until then those buttons explain why they are
+off."*
+
+**What changed.** `reading.completed`'s accepted unit types widen from
+Āyah/Range/Surah to also include Ruku' and Page — the two unit types the
+Unit Card (issue #348) offers "Mark as read" for beyond a whole Surah.
+Nothing else about the event changes: the same Approach mapping
+(`approach_01`/`approach_03` by whether a translation is shown), the same
+UTC-day deduplication, the same `practised`/`masteryEffect: none` shape. No
+new event type is introduced — a Ruku'/Page completion is recorded as the
+same `reading.completed` event a Surah completion already is.
+
+**Why.** The Unit Card lets a reader act on a Ruku' or a Page the same way
+they already act on a Surah or a Range. v1's identity shapes only
+recognised three unit key patterns, so a Ruku'/Page completion had nowhere
+to be identified — the control said "coming soon" and wrote nothing
+(`unitCardMarkAsReadState()` in `app/quranrevival.html`). This amendment
+gives it a real identity to write to.
+
+**Encoding.** Two new unit key shapes are accepted, matching
+`buildUnitKey.ruku`/`buildUnitKey.page` exactly:
+
+```
+ruku:<surah 1-3 digits>:<ruku 1-3 digits>
+page:<edition, lowercase ASCII letters>:<page 1-3 digits>
+```
+
+No new event type, no new Approach mapping, no change to the five-slot id
+form (`eventType__trackableId__unitKey__noteSlot__dedupeScope`).
+
+**Enforcement.** Both the pure identity module
+(`app/js/study-activity-evidence-id.js`'s `UNIT_KEY_SHAPES`) and the
+deployed Firestore Rules' `unitIdentityOk()` gain the same two patterns —
+kept in sync by hand, the same way the original three patterns already
+were, and checked structurally by `tools/i18n-verify/study-activity-
+evidence-boundary.mjs`/`study-event-wiring.mjs`.
+
+**Gated separately from deployment, on purpose.** Recording stays off until
+the Owner publishes
+`docs/governance/2026-09-28-reading-ruku-page-DEPLOYMENT-candidate.rules` —
+a second, narrower gate (`app/js/study-reading-units-readiness.js`,
+`ready: false`) sits in front of Ruku'/Page specifically, on top of the
+general evidence-persistence gate that has been open since 22 Sep 2026.
+Āyah/Range/Surah completions are entirely unaffected by this new gate; only
+Ruku'/Page need both open. This mirrors the exact two-gate shape
+`study-word-levels-readiness.js` already uses for Basic Arabic/Arabic in
+Depth alongside the already-live Word-by-Word level.
+
+**Hizb and Juz remain out of scope**, per the Owner's own "later" — no unit
+key shape is added for them, and the Unit Card continues to say "planned
+for later" for those two.
+
+### Unchanged by Amendment 3
+
+Activity ≠ Mastery, as always. Amendments 1 and 2 (2026-09-14) are
+untouched by this one — the Note-identity and WbW āyah+day rules apply
+exactly as before to the events they govern.
