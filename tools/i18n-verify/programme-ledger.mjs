@@ -39,7 +39,8 @@ import process from "node:process";
 export const LEDGER_PATH = "docs/governance/programme-integration-ledger.json";
 
 /** The canonical MACHINE form of a version: exactly what app/js/version.js stores. */
-export const CANONICAL_VERSION = /^\d{2}\.\d{2}$/;
+// Owner decision, 28 Sep 2026: "continue v08.100 and so on until a substantial change in the app" -- the minor part may be two OR three digits.
+export const CANONICAL_VERSION = /^\d{2}\.\d{2,3}$/;
 /** The canonical PROSE form, and the exact shape brief-integrity.mjs scans for. */
 export const prosePattern = (v) => new RegExp(`\\bv${v.replace(".", "\\.")}\\b`);
 /**
@@ -149,7 +150,7 @@ export function runGuards(ledger, facts) {
   if (typeof facts.briefText !== "string" || facts.briefText.length < 10000) {
     fail("CONTROL", "CLAUDE.md was not read (or is implausibly short); guards C and D would pass vacuously");
   } else {
-    const seen = new Set([...facts.briefText.matchAll(/\bv(0[78]\.\d{2})\b/g)].map((m) => m[1]));
+    const seen = new Set([...facts.briefText.matchAll(/\bv(0[78]\.\d{2,3})\b/g)].map((m) => m[1]));
     if (seen.size < 10) fail("CONTROL", `only ${seen.size} v-prefixed versions found in the brief; the prose scanner has stopped working`);
     else pass("CONTROL", `prose scanner sees ${seen.size} v-prefixed versions in the brief`);
   }
@@ -289,7 +290,7 @@ export function runGuards(ledger, facts) {
         // `v` and `0`), so the two forms are matched separately rather than
         // cleverly. And the trailing guard is `(?!\.?\d)` for the reason given
         // on `barePattern`: a number ending a sentence is still a number.
-        for (const m of para.matchAll(/(?<![\d.])(\d{2}\.\d{2})(?!\.?\d)/g)) seen.add(m[1]);
+        for (const m of para.matchAll(/(?<![\d.])(\d{2}\.\d{2,3})(?!\.?\d)/g)) seen.add(m[1]);
         for (const v of seen) {
           if (!mainVersion || cmpVersion(v, mainVersion) <= 0) continue;   // history, not a prediction
           const owner = claimedBy.get(v);
@@ -308,7 +309,7 @@ export function runGuards(ledger, facts) {
   {
     for (const { where, value } of dataVersions(ledger)) {
       if (typeof value !== "string" || !CANONICAL_VERSION.test(value)) {
-        fail("D", `${where} = ${JSON.stringify(value)} is not the canonical machine form NN.NN`);
+        fail("D", `${where} = ${JSON.stringify(value)} is not the canonical machine form NN.NN (or NN.NNN from v08.100)`);
       }
     }
     // THE 08.28-versus-v08.28 PROBLEM, stated exactly. A version named in the

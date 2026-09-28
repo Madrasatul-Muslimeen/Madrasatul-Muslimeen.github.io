@@ -18584,3 +18584,12 @@ The Owner's four landing-page asks. Below 721px the Approach view's page scrolls
 - **Surah banner edge to edge.** 24cqw → 30cqw (99% of the text width).
 - **Quran Foundation credit on About only**, outside `#app`, with Bangla; the per-page line is gone. `mushaf-tajweed-font-browser` 96/0.
 - Allocated by the MMSA Architect.
+
+## v08.99 — 28 Sep 2026 — My Status: Approach card, By unit, slices open Explore (issue #341)
+
+- An Approach opens as its own card over My Status, with a pull-down of every Approach; the full name shows under it (the pull-down cuts the longest real name on phones).
+- By unit: Juz/Surah/Ruku'/Hizb, Achieved + Mastered and Started, via `summarizeUnitCoverage()` over the same `poolStatus()` Explore uses, falling back to a direct whole-unit claim for a No Approach. Word by Word shows its per-Juz words known instead.
+- The 30-Juz wheel and the Juz/Surah/Ruku' rows open Explore on that Approach (Hizb has no Explore level).
+- `ruku-index.json` (556 rows) + `getRukuIndex()`, loaded only when My Status opens.
+- Architect review: expected counts were computed by the function under test — replaced by an independent count pinned by hand, plus a comparison with Explore's own list; mutation-proven; Hizb row width fixed. Merge conflict: the Builder re-added a `#myStatusBtn` listener main already had, kept once.
+- Built by the Builder (branch `claude/issue-341-20260927-2305`, no PR opened); reviewed and allocated by the MMSA Architect.

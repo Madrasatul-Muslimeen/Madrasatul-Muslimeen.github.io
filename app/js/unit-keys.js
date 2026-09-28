@@ -55,6 +55,28 @@ export function rukuIndexInSurah(surahAyahs, globalRuku) {
   return firstRuku == null ? globalRuku : globalRuku - firstRuku + 1;
 }
 
+/**
+ * Issue #341 -- the same per-surah-relative conversion as rukuIndexInSurah()
+ * above, but from the packaged Ruku' boundary table (ruku-index.json /
+ * quran-data.js's getRukuIndex(), `[{ruku, surah, fromAyah, toAyah}]`,
+ * `ruku` GLOBAL) rather than from a loaded surah's own ayahs array -- so a
+ * caller that only has the small boundary table (never the full surah text)
+ * can still build the same buildUnitKey.ruku(surah, localIndex) a caller
+ * with the full text would. Returns a Map(globalRuku -> localIndex).
+ */
+export function localRukuIndexFromTable(rukuIndexRows) {
+  const firstBySurah = new Map();
+  for (const row of rukuIndexRows ?? []) {
+    const cur = firstBySurah.get(row.surah);
+    if (cur === undefined || row.ruku < cur) firstBySurah.set(row.surah, row.ruku);
+  }
+  const map = new Map();
+  for (const row of rukuIndexRows ?? []) {
+    map.set(row.ruku, row.ruku - firstBySurah.get(row.surah) + 1);
+  }
+  return map;
+}
+
 // ---------------------------------------------------------------------------
 // Reading a unit key out loud (full app translation, phase 4)
 // ---------------------------------------------------------------------------
