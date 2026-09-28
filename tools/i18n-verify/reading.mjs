@@ -115,7 +115,12 @@ for (const banner of [true, false]) {
     // The button is deliberately still on screen in the bare state -- it is
     // the only way out now, which is why hiding the whole read bar there had
     // to stop.
-    await page.click("#ayahPanels", { position: { x: 5, y: 5 } }).catch(() => {});
+    // Updated in place (v08.103, issue #348): the top-left corner of
+    // #ayahPanels now holds the Surah heading / "Juz N begins" markers, real
+    // buttons that open the Unit Card, so a tap there is no longer a tap on
+    // the READING. Tap the āyah's own Arabic text instead -- what this check
+    // has always meant.
+    await page.click("#ayahPanels .ayah-arabic", { position: { x: 5, y: 5 } }).catch(() => {});
     await page.waitForTimeout(300);
     const tapChanged = await page.evaluate(() => !document.body.classList.contains("immersive-read"));
     const fsBtnReachable = await page.evaluate(() => {

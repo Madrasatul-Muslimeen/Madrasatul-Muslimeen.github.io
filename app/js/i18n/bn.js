@@ -2986,4 +2986,39 @@ export const BN = {
   "Dark": "গাঢ়", // ?
   "Light": "হালকা", // ?
   "Colour": "রঙিন", // ?
+
+  // 28 Sep 2026 -- issue #348, the Unit Card: acting on and tracking a
+  // Ruku', Page, Hizb, Juz, Surah or Range from the Read view.
+  "Jump to a containing unit": "একটি অন্তর্ভুক্তকারী ইউনিটে যান", // ?
+  "Ayah {n}": "আয়াত {n}",
+  "Ayahs {from}–{to}": "আয়াত {from}–{to}",
+  "Juz {n}": "জুয {n}",
+  "Hizb {n}": "হিযব {n}",
+  "Page {n}": "পৃষ্ঠা {n}",
+  "Juz {n} begins": "জুয {n} শুরু", // ?
+  "Hizb {n} begins": "হিযব {n} শুরু", // ?
+  "Page {n} ends": "পৃষ্ঠা {n} শেষ", // ?
+  "Ruku' {n} ends": "রুকু' {n} শেষ", // ?
+  "Bookmark this unit": "এই ইউনিটটি বুকমার্ক করুন", // ?
+  "Note on this unit": "এই ইউনিটে নোট", // ?
+  "Play this unit": "এই ইউনিট চালান", // ?
+  "Mark as read": "পঠিত হিসেবে চিহ্নিত করুন", // ?
+  "Status of this unit": "এই ইউনিটের অবস্থা", // ?
+  "This Approach's claims count for each āyah inside.": "এই পদ্ধতির দাবি ভেতরের প্রতিটি আয়াতের জন্য গণনা হয়।", // ?
+  "This Approach's claims count for this unit as a whole.": "এই পদ্ধতির দাবি পুরো ইউনিট হিসেবে গণনা হয়।", // ?
+  "Āyāt Achieved or Mastered: {n} of {total}": "{total} এর মধ্যে {n} আয়াত অর্জিত বা আয়ত্ত", // ?
+  "See Explore's Word by Word tab for this unit.": "এই ইউনিটের জন্য এক্সপ্লোরের Word by Word ট্যাব দেখুন।", // ?
+  "No word-by-word data for this unit.": "এই ইউনিটের জন্য word-by-word তথ্য নেই।", // ?
+  "Ruku's": "রুকু'সমূহ", // ?
+  "Ayahs": "আয়াতসমূহ", // ?
+  "Surah pieces": "সূরার অংশ", // ?
+  "Recording a completed reading here is coming soon.": "এখানে পড়া সম্পন্ন রেকর্ড করার সুবিধা শীঘ্রই আসছে।", // ?
+  "Recording a completed reading here is planned for later.": "এখানে পড়া সম্পন্ন রেকর্ড করার সুবিধা পরে যুক্ত হবে।", // ?
+  "Reading marked complete.": "পড়া সম্পন্ন হিসেবে চিহ্নিত হয়েছে।", // ?
+  "Open {unit}": "{unit} খুলুন", // ?
+  "End of {unit}. How did it go?": "{unit} শেষ। কেমন হলো?", // ?
+  "Saved": "সংরক্ষিত হয়েছে", // ?
+  "End-of-unit prompt": "ইউনিট-শেষের প্রম্পট", // ?
+  "Approach: {name}": "পদ্ধতি: {name}", // ?
+  "Surah {n}": "সূরা {n}",
 };

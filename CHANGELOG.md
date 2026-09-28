@@ -18611,3 +18611,10 @@ The Owner's four landing-page asks. Below 721px the Approach view's page scrolls
 - The Quran level's switch is Juz · Surahs · Hizb; a 60-Hizb wheel pooled like the Juz wheel, with a direct-claim fallback for a No Approach; a Hizb level showing its Surah portions; My Status's Hizb row opens it.
 - Architect review: two faults in the new suite fixed (wrong assumed Approach; wrong wedge tapped), mutation-proven; My Status/Explore Hizb agreement added.
 - Built by the Builder (PR #359, branch `claude/issue-342-hizb`), reviewed and allocated by the MMSA Architect.
+
+## v08.103 — 28 Sep 2026 — the Unit Card (issue #348)
+
+- Owner decisions 18 and 19. A Unit Card for Ruku', Page, Hizb, Juz, Surah and Range in the Ayah Card's overlay: ladder, Take an Approach (same `claimStatus()` path), the Approach's Yes/No rule in words, Note/Bookmark/Play/Mark as read, 30-Approach strip, "Āyāt Achieved or Mastered: n of N", Word by Word, Inside chips. Opens from boundary markers in the text, the Mushaf surah banner, the Ayah Card's ladder and a gold Read-bar chip. End-of-unit prompt, on by default, switch in Study options.
+- Architect review fixed: prompt invisible to a new reader (no card Approach yet); prompt at a surah-crossing Juz's last drawn āyah; markers and prompt missing on the one-āyah view (Ruku'/Juz/Hizb/Page); counts ignored wider claims; boundary tables fetched on every app open (I9); card opened with no Approach and an empty strip; prompt switch inside `.reading-ticks`; stacked marker rows. Suite run for real (it crashed), exact counts in both languages, Yes-Approach cases added: 106/0, five mutations caught.
+- Measured: Read bar +33px at 412px English only; marker row ~47px above a unit's first āyah. Regression suites clean; behaviour #readBar lists and 29d updated in place.
+- Built by the Builder (PR #362, branch `claude/issue-348-unit-card`), reviewed and allocated by the MMSA Architect.

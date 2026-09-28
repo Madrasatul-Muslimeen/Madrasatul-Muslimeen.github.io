@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.102",
+    "version": "08.103",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1001,8 +1001,20 @@
     {
       "version": "08.102",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Explore gains a Hizb view (60 Hizb) at the Quran level and a Hizb level; My Status's Hizb row opens it (issue #342).",
+      "integration": {
+        "authorizedOn": "2026-09-28",
+        "integratedOn": "2026-09-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "08.103",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The Unit Card for Ruku'/Page/Hizb/Juz/Surah/Range from the Read view, with markers, Read-bar chip and end-of-unit prompt (Owner decisions 18, 19).",
       "integration": {
         "authorizedOn": "2026-09-28",
         "integratedOn": "2026-09-28",
@@ -1011,8 +1023,9 @@
       }
     }
   ],
-  "nextUnallocated": "08.103",
+  "nextUnallocated": "08.104",
   "nextUnallocatedNote": [
+    "v08.103 was allocated to the Unit Card (issue #348), 2026-09-28.",
     "v08.102 was allocated to Explore Hizb view, 2026-09-28.",
     "v08.101 was allocated to Approach list section names bright and bold, 2026-09-28.",
     "v08.100 was allocated to tablet shows all three landing capsules on one row, 2026-09-28.",

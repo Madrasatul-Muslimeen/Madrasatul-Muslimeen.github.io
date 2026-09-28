@@ -27,6 +27,7 @@
 // contract (Architecture s8: "Screensaver, About, resources: on first use").
 
 import { t } from "./i18n.js";
+import { buildUnitKey } from "./unit-keys.js";
 
 const MUSHAF_JSON_URL = "https://raw.githubusercontent.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/main/mushaf/mushaf-madani-v2.json";
 // Issue #332 Part A -- was raw.githubusercontent.com/.../mushaf/fonts/ (the
@@ -499,10 +500,19 @@ async function renderPage(pageNum, highlightSet, container, surahArabicName, myG
     return;
   }
   pageData.forEach((line) => {
-    const lineEl = document.createElement("div");
+    // Issue #348 -- the surah banner is a real <button> now (spec: "The
+    // Mushaf's surah banner becomes tappable"), not a plain <div>, so it
+    // opens the Unit Card for the whole surah on tap the same way every
+    // other real control on this page does. `hifz-line`/`hifz-surah-header`
+    // keep every existing style (button-reset rules in quranrevival.html's
+    // own CSS strip the default border/background/font so nothing about the
+    // ornamental glyph's own layout changes).
+    const lineEl = document.createElement(line.type === "surah_name" ? "button" : "div");
+    if (line.type === "surah_name") lineEl.type = "button";
     lineEl.className = `hifz-line${line.centered ? " centered" : ""}`;
     if (line.type === "surah_name") {
       lineEl.classList.add("hifz-surah-header");
+      lineEl.dataset.unitMarker = buildUnitKey.surah(Number(line.surah));
       const name = (typeof surahArabicName === "function" ? surahArabicName(Number(line.surah)) : null) || `سورة ${line.surah}`;
       lineEl.setAttribute("aria-label", name);
       if (headerFontReady) {
