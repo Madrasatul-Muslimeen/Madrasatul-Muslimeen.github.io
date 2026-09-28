@@ -83,3 +83,10 @@ The Architect's demo: https://claude.ai/artifact/EjaDZkJAtuBCKtgACFYTob (version
 | 24 | The data boxes. | **"I liked these stat/ data boxes (image) so much. enable these."** | Beside each wheel: the ring key ("Rings, from the middle out") and a box for what was tapped. On the landing wheel it lists that Approach unit by unit, with a way to Explore; in Explore it gives the unit's status and āyāt counts, with a way to open it. |
 
 The Owner also wrote: **"In fact I liked all color combination of the demo. Enable it for entire app."** That is recorded here and **not yet decided in detail**. Whether it replaces today's light pages or becomes a Light/Dark choice, and whether it is the "substantial change" that opens v09.00 (decision 17), is being put to the Owner.
+## 28 Sep 2026 — night cards on light pages
+
+The Architect's demo: https://claude.ai/artifact/Jx2ztJRnNA1Dc48BnAqr44 (the app's cards, pop-ups and info boxes in the wheel's night colours, on light pages).
+
+| # | Question | Owner's words | Meaning |
+|---|---|---|---|
+| 25 | Night cards on light pages: is this the look? | **"How about only in the wheel/ explorer and all cards/ info/ boxes in anywhere in the app?"**, then **"Ha ha, keep both as options to choose by the user!"** | Pages stay light. Cards, pop-ups, sheets, info boxes, the wheel and Explore get a **card look** the reader chooses: **Night** (the demo's colours) or **Light** (today's). It is remembered per browser, with the Language setting. **Night is the default** (the Architect's choice, as the look the Owner liked; the Owner may reverse it). The five status colours are the same in both. In Night, the Note pop-up's writing area stays light for long writing (the Architect's suggestion, not yet confirmed). |
