@@ -1894,8 +1894,11 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
   // completion, directly after Bookmark. UPDATED IN PLACE with the reason
   // rather than deleted or worked around: this list is the record of what the
   // row holds, and a round that adds a control owes it an update.
+  // v08.103 (issue #348, Owner decision 18) -- #readUnitChip, the gold chip
+  // naming the chosen Study Unit and opening its card, joined the row right
+  // after #mushafPageRef (hidden in Mushaf view). Updated in place, reason recorded.
   check("30j prev unit, prev āyah, next āyah, next unit, play, stop, full screen, bookmark and reading-complete are on the reading screen",
-        transport.visible && JSON.stringify(transport.buttons) === '["prevUnitBtn","prevAyahBtn","nextAyahBtn","nextUnitBtn","readPlayBtn","readStopBtn","hideChromeBtn","readBookmarkBtn","readCompleteBtn","readAttachAsmaBtn"]', JSON.stringify(transport));
+        transport.visible && JSON.stringify(transport.buttons) === '["readUnitChip","prevUnitBtn","prevAyahBtn","nextAyahBtn","nextUnitBtn","readPlayBtn","readStopBtn","hideChromeBtn","readBookmarkBtn","readCompleteBtn","readAttachAsmaBtn"]', JSON.stringify(transport));
   check("30j the separate 'Whole surah' button is gone (Play follows the unit)", transport.noWholeSurah);
   check("30j the merged button is named Play while nothing is playing",
         /Play|চালান/.test(transport.playLabel) && !/Pause|থামান/.test(transport.playLabel), transport.playLabel);
@@ -1938,8 +1941,10 @@ console.log("\n=== 30l. Round 18's own controls in Bangla ===");
   const t18 = await page.evaluate(() => [...document.querySelectorAll("#readBar > button")].filter((b) => b.id !== "mushafPageRef").map((b) => b.getAttribute("aria-label") || "")); // v08.90 -- see 30j: #mushafPageRef excluded
   // v08.30 -- ten now: #readCompleteBtn joined the row. Its own Bangla name is
   // the I11 evidence for this tranche's four new keys.
+  // v08.103 -- eleven: #readUnitChip joined the row (issue #348); its own
+  // Bangla name ("{unit} খুলুন") is part of the I11 evidence.
   check("30l every reading-screen control is NAMED in Bangla",
-        t18.length === 10 && t18.every((x) => BANGLA.test(x)), JSON.stringify(t18));
+        t18.length === 11 && t18.every((x) => BANGLA.test(x)), JSON.stringify(t18));
   await page.close();
   await ctx.close();
 }
@@ -2490,8 +2495,11 @@ const readRef = readingRef; // round 22: #readRef is retired, see readingRef abo
   // v08.89 (issue #322) -- #mushafPageRef, the Mushaf view's own "Surah ·
   // āyāt" reference, leads the row; it is [hidden] outside Mushaf view, so the
   // controls a reader sees here are unchanged. Updated in place, reason recorded.
+  // v08.103 (issue #348, Owner decision 18) -- #readUnitChip, the gold chip
+  // naming the chosen Study Unit and opening its card, joined the row right
+  // after #mushafPageRef (hidden in Mushaf view). Updated in place, reason recorded.
   check("33a the read bar is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · Reading complete · ⋮ slot",
-        bar.ids.join() === "mushafPageRef,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot",
+        bar.ids.join() === "mushafPageRef,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot",
         JSON.stringify(bar.ids));
   check("33a the '◂ Mastery Wheel' button is gone (the Read tab does it)", bar.noBack);
   check("33a the separate Pause button is gone", bar.noSeparatePause);
@@ -3228,8 +3236,11 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
   // round added Bookmark right before the ⋮ slot.
   // v08.30 -- see the 33a note: Reading complete and its announcer joined.
   // v08.89 -- see the 33a note: #mushafPageRef leads the row (hidden outside Mushaf).
+  // v08.103 (issue #348, Owner decision 18) -- #readUnitChip, the gold chip
+  // naming the chosen Study Unit and opening its card, joined the row right
+  // after #mushafPageRef (hidden in Mushaf view). Updated in place, reason recorded.
   check("37a the row is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · Reading complete · ⋮ slot",
-        m.barKids.join() === "mushafPageRef,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot", JSON.stringify(m.barKids));
+        m.barKids.join() === "mushafPageRef,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot", JSON.stringify(m.barKids));
   // `space-between` would leave large, uneven gaps between controls, which
   // is exactly how a stale `space-between` survived this round's first
   // attempt -- checking the gaps directly catches that regardless of how

@@ -1980,6 +1980,8 @@
   .loop-inline { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; font-weight: 400; white-space: nowrap; height: 1.85rem; margin: 0; }
   .reading-ticks label, .reciter-ticks label, .fs-ticks label { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.82rem; font-weight: 400; margin: 0; }
   .reading-ticks label[hidden] { display: none; }
+  .unit-prompt-ticks { display: flex; margin: 0 0 0.45rem; }
+  .unit-prompt-ticks label { display: inline-flex; align-items: center; gap: 0.3rem; min-height: 40px; font-size: 0.82rem; font-weight: 400; margin: 0; }
   /* A second heading INSIDE a card (shell round 21) -- quieter than the card's
      own <h4>, so "Full screen hides" reads as part of Reading view rather
      than as a card of its own. */
@@ -4706,10 +4708,6 @@
                  right". On by default, because that is what they asked; the
                  tick is the way back for anyone who prefers scrolling. -->
             <label id="sidewaysControl"><input type="checkbox" id="sidewaysToggle" checked /> Page by page</label>
-            <!-- Issue #348, Owner decision 19 -- "End of Ruku' 3. How did it
-                 go?" is on by default; this is the way back for a reader who
-                 finds it intrusive. -->
-            <label id="endOfUnitPromptControl"><input type="checkbox" id="endOfUnitPromptToggle" checked /> End-of-unit prompt</label>
             <label id="trEnControl"><input type="checkbox" id="trEnToggle" checked /> English translation</label>
             <label id="trBnControl"><input type="checkbox" id="trBnToggle" /> বাংলা translation</label>
             <!-- Mushaf is the one choice that cannot share the screen: it is a
@@ -4720,6 +4718,14 @@
                  memorising programme needs) and ticking it greys the other four
                  out rather than hiding them. -->
             <label id="mushafControl"><input type="checkbox" id="mushafToggle" /> Mushaf view</label>
+          </div>
+          <!-- Issue #348, Owner decision 19 -- "End of Ruku' 3. How did it go?"
+               is on by default; this is the way back for a reader who finds it
+               intrusive. Its OWN row and class, not .reading-ticks: that class
+               means "the reading choices" (checks count it, and Mushaf greys
+               every one of them), and this is not a way of drawing the text. -->
+          <div class="unit-prompt-ticks">
+            <label id="endOfUnitPromptControl"><input type="checkbox" id="endOfUnitPromptToggle" checked /> End-of-unit prompt</label>
           </div>
           <div class="row" id="wbwLangControl" style="display:none;">
             <div><label for="wbwLangSelect">Word by Word language</label><select id="wbwLangSelect">
@@ -7885,6 +7891,9 @@
     // applies exactly as before.
     // -----------------------------------------------------------------------
     let stageView = "wheel";
+    // Issue #348 -- the four boundary tables, cached (see unitCardBoundaryTables()).
+    // Declared here, before setStageView(), which reads it.
+    let unitCardTablesCache = null;
     // The page opens on the Approach view -- see setStageView() for the class.
     document.body.classList.add("landing-view");
 
@@ -7926,6 +7935,10 @@
       // three can leak into a screen the reader didn't ask to see hidden
       // chrome on.
       if (!reading) setImmersive(false);
+      // Issue #348 review (I9): the unit markers' tables load on first Read.
+      if (reading && !unitCardTablesCache) {
+        unitCardBoundaryTables().then(() => { if (stageView === "read") renderStudyScreen(); }).catch(() => {});
+      }
       if (!noting && noteFullscreenOn) { noteFullscreenOn = false; document.body.classList.remove("note-immersive"); }
       if (!exploring && exploreFullscreenOn) {
         exploreFullscreenOn = false;
@@ -13580,8 +13593,8 @@
       // the same small packaged tables the Unit Card itself reads (I9:
       // cached after the first call anywhere in the app, no new fetch once
       // My Status/Explore/an earlier marker render has loaded them).
-      const unitCardTables = await unitCardBoundaryTables();
-      const boundaryMarkers = unitBoundaryMarkersInWindow(currentSurahNum, fromAyah, toAyah, unitCardTables);
+      const unitCardTables = await unitBoundaryTablesForReadView();
+      const boundaryMarkers = unitCardTables ? unitBoundaryMarkersInWindow(currentSurahNum, fromAyah, toAyah, unitCardTables) : [];
       const markersByAyah = new Map();
       for (const mk of boundaryMarkers) {
         if (!markersByAyah.has(mk.ayahNum)) markersByAyah.set(mk.ayahNum, { before: [], after: [] });
@@ -14401,7 +14414,8 @@
     async function decorateSingleAyahWithUnitBoundaries(surah, ayahNum) {
       const token = ++singleAyahDecorToken;
       let tables;
-      try { tables = await unitCardBoundaryTables(); } catch { return; }
+      try { tables = await unitBoundaryTablesForReadView(); } catch { return; }
+      if (!tables) return;
       if (token !== singleAyahDecorToken || surah !== currentSurahNum || ayahNum !== currentAyahNum) return;
       if (ayahPanels.dataset.ayahCollapsibleFor !== buildUnitKey.ayah(surah, ayahNum)) return;
       const markers = unitBoundaryMarkersInWindow(surah, ayahNum, ayahNum, tables);
@@ -14499,7 +14513,6 @@
         SAME lazy, cached singletons "My Status" and Explore already use, so
         this never re-fetches once any of those screens (or an earlier Unit
         Card open) has already loaded them. */
-    let unitCardTablesCache = null;
     async function unitCardBoundaryTables() {
       if (unitCardTablesCache) return unitCardTablesCache;
       const [juzRows, hizbRows, pageRows, rukuRows] = await Promise.all([
@@ -14507,6 +14520,17 @@
       ]);
       unitCardTablesCache = { juzRows, hizbRows, pageRows, rukuRows, surahIndex, pageEdition: PAGE_EDITION };
       return unitCardTablesCache;
+    }
+
+    /** Review of issue #348 (I9) -- the Read view's markers need the four
+        boundary tables (~120 KB), and renderStudyScreen() also runs behind
+        the landing page, which fetched all four on every app open. They are
+        fetched only while the Read view is the stage (or once any card has
+        loaded them); setStageView() re-draws once when they land. */
+    async function unitBoundaryTablesForReadView() {
+      if (unitCardTablesCache) return unitCardTablesCache;
+      if (stageView !== "read") return null;
+      return unitCardBoundaryTables();
     }
 
     /** A Juz/Hizb/Page unit can span into a surah the reader is not
