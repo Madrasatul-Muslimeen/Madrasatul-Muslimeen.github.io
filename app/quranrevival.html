@@ -14764,7 +14764,9 @@
       const selectedApproachStatusId = unitCardSelectedApproachId
         ? (chunk?.entries?.[`${info.unitKey}::${unitCardSelectedApproachId}`]?.claimedStatus ?? "not_started")
         : "not_started";
-      const approachStatuses = (chunk ? quranTrackables : []).map((tr) => {
+      // Review: every Approach, "not started" where there is no claim yet --
+      // a person with no records for this surah yet is not "No Approaches".
+      const approachStatuses = quranTrackables.map((tr) => {
         const statusId = chunk?.entries?.[`${info.unitKey}::${tr.id}`]?.claimedStatus ?? "not_started";
         return { id: tr.id, name: langText(tr.name, getAppLang(), tr.id), statusId, color: STATUS_COLORS[statusId] ?? STATUS_COLORS.not_started, label: statusLabel(statusId) };
       });
@@ -14842,7 +14844,9 @@
       closePageApproachCard();
       unitCardUnitKey = unitKey;
       unitCardOpenedFromAyah = openedFromAyah;
-      unitCardSelectedApproachId = mushafRingApproachId;
+      // Review: open on the current Approach (last chosen on a card, else
+      // Study options), so the counts and Inside colours show at once.
+      unitCardSelectedApproachId = endOfUnitApproachId();
       renderUnitCardNow();
       ayahActionSheetOverlayEl.classList.add("open");
     }
