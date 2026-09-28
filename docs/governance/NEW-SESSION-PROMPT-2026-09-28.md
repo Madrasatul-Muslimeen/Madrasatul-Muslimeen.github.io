@@ -36,31 +36,34 @@ to try on my phone.
    - Then look at `list_triggers` to see what is pending. Leave "MMSA Task
      Bridge" alone.
 
-2. **Review #342 (Explore Hizb view).**
-   - **Check first whether it is already merged** (v08.102 on `main`, #342
-     closed). The old session was finishing it; if so, go straight to step 3.
+2. **Review #348 (the Unit Card). This is exactly where the old session
+   paused** (see section 0 of the handover).
+   - It was started at 06:24 UTC on 28 Sep, and its review is due at about
+     08:04 UTC.
+   - If the run is still going, schedule your own check-in for when it should
+     be done, beginning with the Active-Architect check.
    - Find its branch: `git fetch origin '+refs/heads/*:refs/remotes/origin/*'`,
-     then look for `claude/issue-342-*`. It may have opened no PR.
-   - If there is no branch and the run has finished, dispatch it again (step 3's
-     method). If the run is still going, schedule a check-in for when it should
-     be done.
+     then look for `claude/issue-348-*`. It may or may not have opened a PR.
+   - If there is no branch and the run has finished, dispatch it again with an
+     early-push note (step 3's method).
    - Review it by measurement:
-     - the new `explore-hizb-view-browser` suite, `explore-wbw-tab`,
-       `quran-my-status-browser`, `approach-coverage`, `layout.mjs`,
+     - its new `unit-card-browser` suite, plus `quran-ayah-action-sheet-browser`,
+       `mushaf-approach-cards-browser`, `mushaf-page-ref-browser`,
+       `tajweed-word-tap-browser`, `layout.mjs`, `reading.mjs`, `panel.mjs`,
        `phone-width-overflow`, `behaviour.mjs` and the governance suites;
      - both languages, 320–1100px;
+     - the Read-bar chip's cost, measured before and after;
      - look at the screenshots;
-     - check colours against seeded claims counted independently (never by the
-       function under test) and against Explore's own `chip-<status>` list;
-     - check that My Status's Hizb row equals Explore's Hizb list;
+     - check the Status counts against seeded claims counted independently (the
+       fixture opens on its own "memorise" Approach, so the test must choose
+       its Approach explicitly);
      - mutation-prove.
-   - Fix what is wrong, allocate the ledger's `nextUnallocated` (expected 08.102)
-     with `python3 tools/governance/allocate-version.py`, merge, and close #342.
+   - Fix what is wrong, allocate the ledger's `nextUnallocated` (08.103) with
+     `python3 tools/governance/allocate-version.py`, merge, and close #348.
    - Tell me what changed and what to try.
 
-3. **Start the next round, one at a time, in this order:** #348 (Unit Card) →
-   #349 (Mark as read for Ruku'/Page) → #352 (every unit on the wheel) → #354
-   (Night/Light cards).
+3. **Start the next round, one at a time, in this order:** #349 (Mark as read
+   for Ruku'/Page) → #352 (every unit on the wheel) → #354 (Night/Light cards).
    - Start each **only with `workflow_dispatch`**:
      `mcp__github__actions_run_trigger`, `run_workflow`, `claude.yml`, `ref: main`,
      `inputs: { issue_number, note }`.
@@ -72,7 +75,7 @@ to try on my phone.
    - Schedule the review about 100 minutes out with `send_later`, and write the
      full instructions into the check-in message, starting with the
      Active-Architect check from step 1.
-   - Review each round the same way as #342. Then allocate, merge, update the
+   - Review each round the same way as #348. Then allocate, merge, update the
      status board, tell me what to try, and start the next round.
 
 4. **After #349 merges**, tell me in plain steps to publish

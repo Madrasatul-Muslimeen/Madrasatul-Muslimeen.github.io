@@ -10,11 +10,29 @@ remote, never off this page.
 The prompt that starts the next session is
 `docs/governance/NEW-SESSION-PROMPT-2026-09-28.md`.
 
+## 0. THE EXACT PAUSE POINT — start here
+
+At **06:24 UTC, 28 Sep 2026** the old session stopped work at exactly this
+point:
+
+- **`main` is v08.102** (the Explore Hizb view, #342, merged at `7b4ab27`; #342
+  closed; the Builder's PR #359 closed as superseded). The ledger's
+  `nextUnallocated` is **08.103**.
+- **#348 (the Unit Card) was started by `workflow_dispatch` at 06:24 UTC.**
+  The Builder was told to push branch `claude/issue-348-unit-card` within its
+  first 10 turns and to push after every part.
+- **Its review is due at about 08:04 UTC.** That review is the new session's
+  first job, and the prompt's step 2 is it. It is **not** #342, which is done.
+- Nothing else is in flight. The queue after #348 is #349 → #352 → #354.
+- The old session also scheduled a guarded check-in for 08:04 UTC. It reads the
+  Active Architect line on #159 and **stands down** once the new session has
+  written its own id there. So write it first.
+
 ## 1. Where `main` is
 
-- **v08.101 on `main`** (28 Sep 2026) when this was written. Check it with
+- **v08.102 on `main`** (28 Sep 2026) at the pause point. Check it with
   `git show origin/main:app/js/version.js`.
-- The ledger's `nextUnallocated` is **08.102**.
+- The ledger's `nextUnallocated` is **08.103**.
 - **Numbering (Owner decision 17):** the 08 line continues v08.100, v08.101, …
   until a substantial change opens v09.00. The version checks accept a two- or
   three-digit minor and compare versions by number.
@@ -29,13 +47,14 @@ The prompt that starts the next session is
   | v08.99 | My Status Approach card, By unit, slices open Explore |
   | v08.100 | tablet capsules one row from 480px |
   | v08.101 | Approach list section names bright and bold |
+  | v08.102 | Explore Hizb view (#342) |
 
 ## 2. The Builder queue — one round at a time, in this order
 
 | # | Round | Owner decisions | State |
 |---|---|---|---|
-| **#342** | Explore Hizb view: a Juz · Surahs · Hizb switch, a 60-Hizb wheel, a Hizb level, My Status's Hizb row opening it | "Yes, add a Hizb view" | **Re-dispatched ~05:05 UTC 28 Sep** (second attempt; the first run, 36377682060, worked 186 turns and pushed nothing). Review it next. |
-| **#348** | Unit Card: act on/track Ruku', Page, Hizb, Juz, Surah, Range from the Read view; ladder; markers; Read-bar unit chip; end-of-unit prompt | 18, 19 | queued |
+| ~~#342~~ | Explore Hizb view | "Yes, add a Hizb view" | **Done, v08.102.** The first run pushed nothing; the second, told to push early, worked. |
+| **#348** | Unit Card: act on/track Ruku', Page, Hizb, Juz, Surah, Range from the Read view; ladder; markers; Read-bar unit chip; end-of-unit prompt | 18, 19 | **Building since 06:24 UTC. Review due ~08:04 UTC.** |
 | **#349** | Mark as read for Ruku' and Page: ADR-008 amendment, Rules DEPLOYMENT candidate, readiness gate `ready:false` | 20 | queued. **After it merges the Owner must publish the candidate rules**, then the Architect flips the gate by governed decision (the v08.95 word-levels pattern) |
 | **#352** | Every unit on the wheel: ring view (Juz, Surah, Hizb, Ruku', Page, Āyah from the middle out) on the landing wheel; Explore rings; data boxes | 21–24 | queued |
 | **#354** | Card look Night / Light (reader's choice, Night default; pages stay light; Note writing area light) | 25 (confirmed) | queued |
