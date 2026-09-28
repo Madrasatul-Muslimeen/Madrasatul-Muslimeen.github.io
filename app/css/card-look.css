@@ -202,17 +202,21 @@
 [data-card-look="night"] .hadith-topic-heading,
 [data-card-look="night"] .openiti-study-soon,
 [data-card-look="night"] .qr-mount-note { color: var(--card-text-muted); }
-[data-card-look="night"] .hadith-crumb,
-[data-card-look="night"] .hadeethenc-crumb,
-[data-card-look="night"] .openiti-crumb,
 [data-card-look="night"] .hadith-lang-select,
 [data-card-look="night"] .hadith-search-input,
 [data-card-look="night"] .hadith-track-select,
 [data-card-look="night"] .hadeethenc-study-select,
 [data-card-look="night"] .openiti-goto-input { color: var(--card-link); background: var(--card-bg-inset); border-color: var(--card-line); }
-[data-card-look="night"] .hadith-crumb-current,
-[data-card-look="night"] .hadeethenc-crumb-current,
-[data-card-look="night"] .openiti-crumb-current { color: var(--card-text); }
+/* .hadith-crumb/-current and its hadeethenc/openiti siblings are
+   DELIBERATELY NOT re-picked, found by this round's own measurement: the
+   breadcrumb `<nav>` (hadith-browser.js) carries no background of its own
+   and sits directly on the PAGE (traced: nav -> #hadithBody -> #hadithRoot
+   -> body, every one transparent) -- there is no enclosing card to give it
+   a dark surface. Colouring its TEXT for Night while its background stays
+   the light page would repeat the exact defect part 1-2's own review
+   found and fixed elsewhere (light text on a light page). Per "pages stay
+   light", it keeps its original --hadith-ink/--hadith-gold literal in
+   both looks, unchanged by this round. */
 [data-card-look="night"] .hadith-card-id { background: var(--card-bg); color: var(--card-text-muted); }
 [data-card-look="night"] .hadith-card-focused { outline-color: var(--card-heading); }
 
@@ -277,8 +281,15 @@
    approval), so every one is its own light-on-dark re-pick, not a shared
    token -- the same reasoning as the Hadith warning banner above. */
 [data-card-look="night"] .page-status-pill { background: rgba(201,162,75,0.18); color: var(--card-heading); }
-[data-card-look="night"] .page-status-pill.status-shared { background: rgba(63,174,116,0.18); color: #8fe3ae; }
-[data-card-look="night"] .page-status-pill.status-retired { background: rgba(255,255,255,0.08); color: var(--card-text-muted); }
+/* SOLID, not translucent (this round's own lesson, twice over already --
+   see the Ayah Card's known-word chip fix above): a rgba background is
+   measured as opaque by a contrast checker but painted as a blend by the
+   browser, so what is measured is not what is seen unless the value really
+   is solid. Both blended by hand against --card-bg-inset (#13192a) and then
+   proven by this suite's own measurement, the same method the review above
+   already used. */
+[data-card-look="night"] .page-status-pill.status-shared { background: #1b3437; color: #8fe3ae; }
+[data-card-look="night"] .page-status-pill.status-retired { background: #262b3b; color: #cdd5e3; }
 [data-card-look="night"] .page-status-pill.status-awaiting-approval { background: #3a2e08; color: #e8c77a; }
 [data-card-look="night"] .page-returned-note { background: #3a1416; border-color: #c1615f; color: #f5b0ae; }
 
