@@ -3043,4 +3043,15 @@ export const BN = {
   "Open in Explore": "এক্সপ্লোরে খুলুন", // ?
   "{name} ({n} āyāt)": "{name} ({n} আয়াত)", // ?
   "Ruku' {n} of {surah}": "{surah}-এর রুকু' {n}", // ?
+  "(part)": "(অংশ)", // ?
+  "This unit": "এই ইউনিট", // ?
+  "Āyāt started: {n}": "শুরু হওয়া আয়াত: {n}", // ?
+  "Study this āyah": "এই আয়াত অধ্যয়ন করুন", // ?
+  "{n} Juz, in the middle": "{n}টি জুয, মাঝখানে", // ?
+  "{n} Surahs, around them": "{n}টি সূরা, চারপাশে", // ?
+  "Hizb: {n} in this Juz": "হিযব: এই জুযে {n}টি", // ?
+  "Ruku': {n}, around them": "রুকু': {n}টি, চারপাশে", // ?
+  "Page: {n} printed pages": "পৃষ্ঠা: {n}টি ছাপা পৃষ্ঠা", // ?
+  "Ruku': {n}, in the middle": "রুকু': {n}টি, মাঝখানে", // ?
+  "Āyah: {n}, around them": "আয়াত: {n}টি, চারপাশে", // ?
 };

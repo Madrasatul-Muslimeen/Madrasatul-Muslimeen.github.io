@@ -444,7 +444,7 @@ export function renderRingWheel(rings, { size = 360, centerArabic, centerRef, ce
           const fill = entry.fill ?? STATUS_COLORS[entry.statusId] ?? STATUS_COLORS.not_started;
           const sel = entry.selected ? ` stroke="#ecd49a" stroke-width="1.8"` : "";
           const kind = entry.ringKind ? ` data-ring-kind="${entry.ringKind}"` : "";
-          return `<path class="wheel-seg wheel-ring-seg" data-key="${entry.key}" data-ring="${k}"${kind} data-status="${entry.statusId}" d="${segmentPath(cx, cy, r0, r1, entry.a0, entry.a1)}" fill="${fill}"${sel}><title>${entry.title ?? ""}</title></path>`;
+          return `<path class="wheel-seg wheel-ring-seg" data-key="${entry.key}" data-ring="${k}"${kind} data-status="${entry.statusId}" data-a0="${entry.a0.toFixed(3)}" data-a1="${entry.a1.toFixed(3)}" d="${segmentPath(cx, cy, r0, r1, entry.a0, entry.a1)}" fill="${fill}"${sel}><title>${entry.title ?? ""}</title></path>`;
         })
         .join("");
     })

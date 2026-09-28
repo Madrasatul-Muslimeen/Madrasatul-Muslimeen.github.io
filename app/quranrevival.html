@@ -646,7 +646,8 @@
   .wheel-show-btn { min-height: 40px; min-width: 0; padding: 0.25rem 0.6rem; }
   .wheel-ring-panel { align-self: stretch; display: grid; gap: 0.5rem; margin-top: 0.3rem; text-align: left; }
   .wheel-ring-panel[hidden] { display: none; }
-  #wheelSidebarContainer > .wheel-ring-panel { flex: 0 0 auto; margin: 0 0 0.6rem; }
+  #wheelSidebarContainer > .wheel-ring-panel,
+  #exploreSidebarContainer > .wheel-ring-panel { flex: 0 0 auto; margin: 0 0 0.6rem; }
   .wheel-ring-key { display: grid; gap: 0.2rem; }
   .wheel-ring-key-head, .wheel-ring-rule { font-size: 0.74rem; color: #8fa0c2; margin: 0; }
   .wheel-ring-row { display: grid; grid-template-columns: 1.2rem minmax(0, 1fr); gap: 0.5rem; align-items: baseline; font-size: 0.8rem; }
@@ -4294,6 +4295,10 @@
                 <div class="wheel-resize-handle" data-wheel-resize="w" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
               </div>
               <div id="exploreWheelLegendContainer"></div>
+              <!-- Issue #352: the ring key and the data box for the tapped unit.
+                   Below the wheel on a phone; at 900px and wider it moves to
+                   the top of the list, beside the wheel. -->
+              <div id="exploreRingPanel" class="wheel-ring-panel" hidden></div>
               <!-- MAP Phase 3. Arabic word coverage for the scope on screen.
                    Deliberately its own strip and NOT a second meaning poured
                    into the wheel's slice colours: those colour an Approach's
@@ -9534,6 +9539,7 @@
       // reading of the whole Qur'an, not a different kind of screen.
       if (exploreLevel === "quran" || exploreLevel === "juz" || exploreLevel === "hizb") await ensureWordTotalsForExplore();
       renderExploreArabicCoverage();
+      hideExploreRingPanel();
       if (exploreLevel === "quran") return renderExploreQuranLevel();
       if (exploreLevel === "juz") return renderExploreJuzLevel();
       if (exploreLevel === "hizb") return renderExploreHizbLevel();
@@ -9549,6 +9555,265 @@
     async function ensureHizbIndexData() {
       if (!hizbIndexData) hizbIndexData = await getHizbIndex();
       return hizbIndexData;
+    }
+
+    // -----------------------------------------------------------------------
+    // Issue #352 (Owner decisions 23, 24) -- Explore's rings. The whole
+    // Qur'an is Juz (middle) and Surah (around them); inside a Juz, Hizb,
+    // Ruku' and Page; inside a Surah, Ruku' and Āyah. Every ring is sized by
+    // TEXT (textWeigher(): each printed page weighs the same), and every
+    // arc's colour is the SAME status the list beside it shows for that unit
+    // (poolCoverageStatus() ?? the unit's direct claim), so the wheel and the
+    // list can never disagree. Tapping an arc shows it in the data box.
+    // -----------------------------------------------------------------------
+    const exploreRingPanelEl = document.getElementById("exploreRingPanel");
+    let exploreRingIdx = null;
+    let exploreRingWeigher = null;
+    let exploreRingPick = null; // { scope, ring, key }
+    let exploreRukuRows = null;
+
+    function exploreRingTools() {
+      if (!exploreRingIdx) exploreRingIdx = ayahIndexer(surahIndex);
+      if (!exploreRingWeigher && pageIndexData) exploreRingWeigher = textWeigher(pageIndexData, exploreRingIdx);
+      return { idx: exploreRingIdx, weigher: exploreRingWeigher };
+    }
+
+    async function ensureExploreRukuRows() {
+      if (!exploreRukuRows) exploreRukuRows = await getRukuIndex();
+      return exploreRukuRows;
+    }
+
+    function exploreRingScope() {
+      return `${exploreLevel}:${exploreJuzNum ?? ""}:${exploreSurahNum ?? ""}`;
+    }
+
+    /** A unit's own status for the current Approach -- the list's formula. */
+    function exploreUnitStatus(coverage, directKey, directChunk, trackableId) {
+      const pooled = poolCoverageStatus(coverage, trackableId);
+      if (pooled) return pooled;
+      if (!directKey) return "not_started";
+      return directChunk?.entries?.[`${directKey}::${trackableId}`]?.claimedStatus ?? "not_started";
+    }
+
+    /** "n of N āyāt Achieved or Mastered" and how many are started, over the
+        unit's own āyāt for a Yes Approach (Not Applicable excluded, I7). */
+    function exploreUnitCounts(coverage, trackableId) {
+      let done = 0, started = 0, total = 0;
+      for (const { surah, from, to } of coverage) {
+        for (let ayah = from; ayah <= to; ayah++) {
+          const st = effectiveAyahStatus(surah, ayah, trackableId);
+          if (st === "not_applicable") continue;
+          total += 1;
+          if (st === "achieved" || st === "mastered") done += 1;
+          else if (st === "learning" || st === "practising") started += 1;
+        }
+      }
+      return { done, started, total };
+    }
+
+    function exploreSpanText(coverage) {
+      const first = coverage[0], last = coverage[coverage.length - 1];
+      if (!first) return "";
+      if (first.surah === last.surah) return first.from === last.to ? `${num(first.surah)}:${num(first.from)}` : `${num(first.surah)}:${num(first.from)}–${num(last.to)}`;
+      return `${num(first.surah)}:${num(first.from)} – ${num(last.surah)}:${num(last.to)}`;
+    }
+
+    /**
+     * Draws a ring wheel into Explore and its data box. `rings`: innermost
+     * first, each { type, units: [{ key, a, b, statusId, label, coverage,
+     * part?, open?, openLabel? }] } with a/b global āyah indices. `levelUnit`
+     * is what the box shows before anything is tapped. `navigateRings` names
+     * the rings whose tap navigates straight away (the whole-Qur'an level).
+     */
+    function drawExploreRings({ rings, centerLabel, centerSub, ring, levelUnit, navigateRings = [] }) {
+      const trackable = currentTrackable();
+      const { weigher } = exploreRingTools();
+      const labels = statusLabelsById();
+      const scope = exploreRingScope();
+      const pick = exploreRingPick?.scope === scope ? exploreRingPick : null;
+      const laid = rings.map((r) => ({ ...r, units: weigher ? layoutRing(r.units, weigher) : r.units }));
+      const svgRings = laid.map((r) => r.units.map((u) => ({
+        key: u.key, statusId: u.statusId, ringKind: r.type, a0: u.a0, a1: u.a1,
+        selected: pick && pick.ring === r.type && String(pick.key) === String(u.key),
+        title: escapeHtml(segTitle(u.part ? `${u.label} ${t("(part)")}` : u.label, u.statusId, labels)),
+      })));
+      exploreWheelContainer.innerHTML = renderRingWheel(svgRings, { centerLabel, centerSub, ring });
+      attachRingWheelClickHandler(exploreWheelContainer, (key, k) => {
+        const r = laid[k];
+        const u = r?.units.find((x) => String(x.key) === String(key));
+        if (!u) return;
+        if (navigateRings.includes(r.type) && u.open) { exploreRingPick = null; u.open(); return; }
+        exploreRingPick = { scope, ring: r.type, key: u.key };
+        drawExploreRings({ rings, centerLabel, centerSub, ring, levelUnit, navigateRings });
+      });
+
+      const picked = pick ? laid.find((r) => r.type === pick.ring)?.units.find((u) => String(u.key) === String(pick.key)) : null;
+      const unit = picked ?? levelUnit;
+      const yes = countsForEachAyah(trackable);
+      const approachName = langText(trackable.name, getAppLang(), trackable.id);
+      const counts = yes && unit?.coverage ? exploreUnitCounts(unit.coverage, trackable.id) : null;
+      const keyRows = laid.map((r, k) => `<div class="wheel-ring-row" data-ring-type="${r.type}"><b>${escapeHtml(num(k + 1))}</b><span>${escapeHtml(r.keyText)}</span></div>`).join("");
+      const rows = [];
+      if (unit?.statusId) rows.push(`<li data-explore-unit-status="${unit.statusId}"><span>${escapeHtml(t("This unit"))}</span><span class="status-chip chip-${unit.statusId}">${escapeHtml(labels[unit.statusId] ?? unit.statusId)}</span></li>`);
+      if (counts) {
+        rows.push(`<li data-explore-unit-done><span>${escapeHtml(t("Āyāt Achieved or Mastered: {n} of {total}", { n: num(counts.done), total: num(counts.total) }))}</span><span></span></li>`);
+        rows.push(`<li data-explore-unit-started><span>${escapeHtml(t("Āyāt started: {n}", { n: num(counts.started) }))}</span><span></span></li>`);
+      } else {
+        rows.push(`<li><span>${escapeHtml(t("Rule: No ○. Each unit shows only the claim made on it."))}</span><span></span></li>`);
+      }
+      if (unit?.coverage?.length) rows.push(`<li><span>${escapeHtml(exploreSpanText(unit.coverage))}</span><span></span></li>`);
+      const html = `<div class="wheel-ring-key">
+          <p class="wheel-ring-key-head">${escapeHtml(t("Rings, from the middle out"))}</p>${keyRows}
+        </div>
+        <div class="wheel-ring-detail" id="exploreRingDetail" data-unit-key="${escapeHtml(String(unit?.key ?? ""))}">
+          <h3>${escapeHtml(unit?.label ?? "")}${unit?.part ? ` ${escapeHtml(t("(part)"))}` : ""}</h3>
+          <p class="wheel-ring-rule">${escapeHtml(approachName)}${yes ? "" : " ○"}</p>
+          <ul class="wheel-ring-units">${rows.join("")}</ul>
+          ${unit?.open ? `<div class="wheel-ring-actions"><button type="button" class="primary" data-explore-ring-open>${escapeHtml(unit.openLabel ?? t("Open"))}</button></div>` : ""}
+        </div>`;
+      let host;
+      if (wheelRingWideQuery.matches) {
+        exploreRingPanelEl.hidden = true;
+        exploreRingPanelEl.innerHTML = "";
+        exploreSidebarContainer.querySelector(":scope > .wheel-ring-panel")?.remove();
+        host = document.createElement("div");
+        host.className = "wheel-ring-panel";
+        exploreSidebarContainer.prepend(host);
+      } else {
+        host = exploreRingPanelEl;
+        host.hidden = false;
+      }
+      host.innerHTML = html;
+      host.querySelector("[data-explore-ring-open]")?.addEventListener("click", () => { exploreRingPick = null; unit.open(); });
+    }
+
+    function hideExploreRingPanel() {
+      if (exploreRingPanelEl) { exploreRingPanelEl.hidden = true; exploreRingPanelEl.innerHTML = ""; }
+    }
+
+    /** Whole Qur'an: Juz in the middle, the 114 Surahs around them. */
+    function exploreQuranRings(trackable) {
+      const { idx } = exploreRingTools();
+      const jumpToJuz = (n) => { exploreJuzNum = Number(n); exploreHizbNum = null; exploreSurahNum = null; exploreRukuIndex = null; exploreLevel = "juz"; renderExplore(); };
+      const juzUnits = juzIndexData.map((j) => {
+        const [a, b] = rowSpan(j, idx);
+        const coverage = ayahCoverage(j.startSurah, j.startAyah, j.endSurah, j.endAyah);
+        const statusId = exploreUnitStatus(coverage, buildUnitKey.juz(j.juz), exploreSubjectChunk, trackable.id);
+        return { key: j.juz, a, b, statusId, label: t("Juz {juz}", { juz: num(j.juz) }), coverage, open: () => jumpToJuz(j.juz) };
+      });
+      const jumpToSurah = (n) => { exploreSurahNum = Number(n); exploreRukuIndex = null; exploreLevel = "surah"; renderExplore(); };
+      const surahUnits = surahIndex.map((sx) => {
+        const coverage = [{ surah: sx.surahNumber, from: 1, to: sx.ayahCount }];
+        const statusId = exploreUnitStatus(coverage, buildUnitKey.surah(sx.surahNumber), exploreChunksBySurah.get(sx.surahNumber), trackable.id);
+        return { key: sx.surahNumber, a: idx.gi(sx.surahNumber, 1), b: idx.gi(sx.surahNumber, sx.ayahCount), statusId, label: `${num(sx.surahNumber)}. ${surahName(sx.surahNumber, sx.nameEnglish)}`, coverage, open: () => jumpToSurah(sx.surahNumber) };
+      });
+      const all = [{ surah: 1, from: 1, to: surahIndex[0].ayahCount }, ...surahIndex.slice(1).map((sx) => ({ surah: sx.surahNumber, from: 1, to: sx.ayahCount }))];
+      drawExploreRings({
+        rings: [
+          { type: "juz", units: juzUnits, keyText: t("{n} Juz, in the middle", { n: num(juzUnits.length) }) },
+          { type: "surah", units: surahUnits, keyText: t("{n} Surahs, around them", { n: num(surahUnits.length) }) },
+        ],
+        centerLabel: t("Whole Quran"), centerSub: langText(trackable.name, getAppLang(), trackable.id), ring: wheelRingOption(),
+        levelUnit: { key: "quran", label: t("Whole Quran"), statusId: null, coverage: all },
+        navigateRings: ["juz", "surah"],
+      });
+    }
+
+    /** Inside a Juz: Hizb, Ruku', Page -- each clipped to the Juz, "(part)"
+        where it crosses the edge; its colour is the whole unit's status, the
+        same one the Page list shows. */
+    async function exploreJuzRings(trackable, j) {
+      await ensureHizbIndexData();
+      const rukuRows = await ensureExploreRukuRows();
+      const { idx } = exploreRingTools();
+      const [A, B] = rowSpan(j, idx);
+      const juzCoverage = ayahCoverage(j.startSurah, j.startAyah, j.endSurah, j.endAyah);
+      const clipUnit = (row, extra) => {
+        const [a, b] = rowSpan(row, idx);
+        const c = clipSpan(a, b, A, B);
+        return c ? { ...extra, a: c.a, b: c.b, part: c.part } : null;
+      };
+      const hizb = hizbIndexData.map((h) => clipUnit(h, {
+        key: h.hizb, label: t("Hizb {hizb}", { hizb: num(h.hizb) }),
+        coverage: ayahCoverage(h.startSurah, h.startAyah, h.endSurah, h.endAyah),
+        statusId: exploreUnitStatus(ayahCoverage(h.startSurah, h.startAyah, h.endSurah, h.endAyah), buildUnitKey.hizb(h.hizb), exploreSubjectChunk, trackable.id),
+        open: () => { exploreHizbNum = h.hizb; exploreJuzNum = null; exploreSurahNum = null; exploreRukuIndex = null; exploreLevel = "hizb"; renderExplore(); },
+        openLabel: t("Open {unit}", { unit: t("Hizb {hizb}", { hizb: num(h.hizb) }) }),
+      })).filter(Boolean);
+      const localMap = localRukuIndexFromTable(rukuRows);
+      const ruku = rukuRows.map((r) => {
+        const local = localMap.get(r.ruku) ?? r.ruku;
+        const coverage = [{ surah: r.surah, from: r.fromAyah, to: r.toAyah }];
+        const meta = surahIndex.find((x) => x.surahNumber === r.surah);
+        const label = t("Ruku' {n} of {surah}", { n: num(local), surah: surahName(r.surah, meta?.nameEnglish) });
+        return clipUnit({ startSurah: r.surah, startAyah: r.fromAyah, endSurah: r.surah, endAyah: r.toAyah }, {
+          key: `${r.surah}:${local}`, label, coverage,
+          statusId: exploreUnitStatus(coverage, buildUnitKey.ruku(r.surah, local), exploreChunksBySurah.get(r.surah), trackable.id),
+          open: () => { exploreSurahNum = r.surah; exploreRukuIndex = local; exploreLevel = "ruku"; renderExplore(); },
+          openLabel: t("Open {unit}", { unit: label }),
+        });
+      }).filter(Boolean);
+      const pages = pageIndexData.map((p) => {
+        const coverage = ayahCoverage(p.startSurah, p.startAyah, p.endSurah, p.endAyah);
+        const label = t("Page {page}", { page: num(p.page) });
+        return clipUnit(p, {
+          key: p.page, label, coverage,
+          statusId: exploreUnitStatus(coverage, buildUnitKey.page(PAGE_EDITION, p.page), exploreSubjectChunk, trackable.id),
+          open: () => { exploreSurahNum = p.startSurah; exploreRukuIndex = null; exploreLevel = "surah"; renderExplore(); },
+          openLabel: t("Open {unit}", { unit: surahName(p.startSurah, surahIndex.find((x) => x.surahNumber === p.startSurah)?.nameEnglish) }),
+        });
+      }).filter(Boolean);
+      const juzLabel = t("Juz {juz}", { juz: num(j.juz) });
+      drawExploreRings({
+        rings: [
+          { type: "hizb", units: hizb, keyText: t("Hizb: {n} in this Juz", { n: num(hizb.length) }) },
+          { type: "ruku", units: ruku, keyText: t("Ruku': {n}, around them", { n: num(ruku.length) }) },
+          { type: "page", units: pages, keyText: t("Page: {n} printed pages", { n: num(pages.length) }) },
+        ],
+        centerLabel: juzLabel, centerSub: langText(trackable.name, getAppLang(), trackable.id), ring: wheelRingOption(),
+        levelUnit: { key: `juz:${j.juz}`, label: juzLabel, coverage: juzCoverage, statusId: exploreUnitStatus(juzCoverage, buildUnitKey.juz(j.juz), exploreSubjectChunk, trackable.id) },
+      });
+    }
+
+    /** Inside a Surah: its Ruku's in the middle and its āyāt around them. */
+    function exploreSurahRings(trackable, surahData, surahLabel) {
+      const { idx } = exploreRingTools();
+      const sn = exploreSurahNum;
+      const rukuRanges = new Map();
+      for (const a of surahData.ayahs) {
+        const k = rukuIndexInSurah(surahData.ayahs, a.ruku);
+        const g = rukuRanges.get(k) ?? { from: a.ayah, to: a.ayah };
+        g.from = Math.min(g.from, a.ayah); g.to = Math.max(g.to, a.ayah);
+        rukuRanges.set(k, g);
+      }
+      const chunk = exploreChunksBySurah.get(sn);
+      const ruku = [...rukuRanges.entries()].sort((x, y) => x[0] - y[0]).map(([k, r]) => {
+        const coverage = [{ surah: sn, from: r.from, to: r.to }];
+        const label = t("Ruku' {ruku}", { ruku: num(k) });
+        return {
+          key: k, a: idx.gi(sn, r.from), b: idx.gi(sn, r.to), label, coverage,
+          statusId: exploreUnitStatus(coverage, buildUnitKey.ruku(sn, k), chunk, trackable.id),
+          open: () => { exploreRukuIndex = k; exploreLevel = "ruku"; renderExplore(); },
+          openLabel: t("Open {unit}", { unit: label }),
+        };
+      });
+      const ayat = surahData.ayahs.map((a) => ({
+        key: a.ayah, a: idx.gi(sn, a.ayah), b: idx.gi(sn, a.ayah),
+        label: t("Ayah {ayah}", { ayah: num(a.ayah) }),
+        coverage: [{ surah: sn, from: a.ayah, to: a.ayah }],
+        statusId: effectiveAyahStatus(sn, a.ayah, trackable.id),
+        open: () => goToAyahFromExplore(sn, a.ayah),
+        openLabel: t("Study this āyah"),
+      }));
+      const coverage = [{ surah: sn, from: 1, to: surahData.ayahs.length }];
+      drawExploreRings({
+        rings: [
+          { type: "ruku", units: ruku, keyText: t("Ruku': {n}, in the middle", { n: num(ruku.length) }) },
+          { type: "ayah", units: ayat, keyText: t("Āyah: {n}, around them", { n: num(ayat.length) }) },
+        ],
+        centerLabel: surahLabel, centerSub: langText(trackable.name, getAppLang(), trackable.id),
+        levelUnit: { key: `surah:${sn}`, label: surahLabel, coverage, statusId: exploreUnitStatus(coverage, buildUnitKey.surah(sn), chunk, trackable.id) },
+      });
     }
 
     /** Level 1, three readings of the whole Qur'an -- 30 Juz (the default and
@@ -9591,12 +9856,14 @@
       // ONLY thing this function ever colours by. The gold ring stays
       // (wheelRingOption(), unchanged); Word-by-Word colouring lives in its
       // own tab now (renderWbwQuranLevel() below).
-      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Whole Quran"), centerSub: approachName, ring: wheelRingOption() });
-      attachScopedWheelClickHandler(exploreWheelContainer, jumpToJuz);
-
+      void approachName;
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
       exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
       attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToJuz);
+      // Issue #352 -- the Juz view's wheel is two rings now: the 30 Juz in
+      // the middle (the same colours as the list) and the 114 Surahs around
+      // them, both sized by text.
+      exploreQuranRings(trackable);
     }
 
     /**
@@ -9637,12 +9904,11 @@
       // stay Approach-coloured throughout (issue #261 moved Word-by-Word
       // colouring into its own tab, and it never applied to this 114-surah
       // reading in the first place -- no per-surah counter data existed).
-      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Whole Quran"), centerSub: approachName, ring: wheelRingOption() });
-      attachScopedWheelClickHandler(exploreWheelContainer, jumpToSurah);
-
+      void approachName;
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
       exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
       attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToSurah);
+      exploreQuranRings(trackable); // issue #352: Juz in the middle, Surahs around them
     }
 
     /**
@@ -9728,12 +9994,11 @@
       const approachName = langText(trackable.name, getAppLang(), trackable.id);
       const labelsById = statusLabelsById();
       for (const it of items) it.title = segTitle(it.label, it.statusId, labelsById);
-      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Juz {juz}", { juz: num(exploreJuzNum) }), centerSub: approachName, ring: wheelRingOption() });
-      attachScopedWheelClickHandler(exploreWheelContainer, jumpToSurahForPage);
-
+      void approachName;
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
       exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
       attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToSurahForPage);
+      await exploreJuzRings(trackable, j); // issue #352: Hizb, Ruku', Page
     }
 
     /** Level 2, Surahs: one segment per surah this Juz covers, read straight
@@ -9795,12 +10060,11 @@
       };
 
       const approachName = langText(trackable.name, getAppLang(), trackable.id);
-      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Juz {juz}", { juz: num(exploreJuzNum) }), centerSub: approachName, ring: wheelRingOption() });
-      attachScopedWheelClickHandler(exploreWheelContainer, jumpToSurah);
-
+      void approachName;
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
       exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
       attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToSurah);
+      await exploreJuzRings(trackable, j); // issue #352: Hizb, Ruku', Page
     }
 
     /**
@@ -9877,11 +10141,10 @@
           return { key: a.ayah, number: a.ayah, statusId, label, title: segTitle(label, statusId, labelsById) };
         });
         const jumpToStudy = (key) => goToAyahFromExplore(exploreSurahNum, Number(key));
-        exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: currentSurahName, centerSub: approachName });
-        attachScopedWheelClickHandler(exploreWheelContainer, jumpToStudy);
         exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
         exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
         attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToStudy);
+        exploreSurahRings(trackable, surahData, currentSurahName); // issue #352: Ruku', Āyah
         return;
       }
 
@@ -9908,11 +10171,11 @@
         exploreLevel = "ruku";
         renderExplore();
       };
-      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: currentSurahName, centerSub: approachName });
-      attachScopedWheelClickHandler(exploreWheelContainer, jumpToRuku);
+      void approachName;
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
       exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
       attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToRuku);
+      exploreSurahRings(trackable, surahData, currentSurahName); // issue #352: Ruku', Āyah
     }
 
     /** Level 4 (long surahs only): every ayah in one Ruku', direct per-ayah status, same shape as the Surah level's own short-surah branch. Click -> Study, via goToAyahFromExplore. */
