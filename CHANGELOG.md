@@ -18599,3 +18599,9 @@ The Owner's four landing-page asks. Below 721px the Approach view's page scrolls
 - The first three-digit version (Owner decision 17).
 - Owner (tablet upright, ~600px): "Tab should show all three capsule in one row". My Status leaves the Mastery Wheel bar from 480px (was 721px): the three need 459px en / 380px bn, so from 480px they share one line, 36px each. Measured 412–768px in both languages; layout.mjs unchanged, phone-width 217/0, my-status 86/0.
 - Allocated by the MMSA Architect.
+
+## v08.101 — 28 Sep 2026 — Approach list section names bright and bold
+
+- Owner: "Make the section names bright and bold." `.ways-group` #a08a52 → #ecd49a, 700 → 800, +2px at every size. No wrap or cut at 320–1100px in both languages; layout.mjs tablet/PC unchanged, phones 11px taller (page scrolls), same first-screen rows.
+- Process finding: an Architect comment can never start the Builder (`claude.yml` refuses comments carrying the Claude Code footer), so #342's start comment was skipped; it was re-started by `workflow_dispatch`.
+- Allocated by the MMSA Architect.
