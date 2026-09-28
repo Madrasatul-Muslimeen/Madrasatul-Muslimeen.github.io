@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.101",
+    "version": "08.102",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -989,8 +989,20 @@
     {
       "version": "08.101",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The Approach list's section names bright gold, extra bold and 2px larger.",
+      "integration": {
+        "authorizedOn": "2026-09-28",
+        "integratedOn": "2026-09-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "08.102",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Explore gains a Hizb view (60 Hizb) at the Quran level and a Hizb level; My Status's Hizb row opens it (issue #342).",
       "integration": {
         "authorizedOn": "2026-09-28",
         "integratedOn": "2026-09-28",
@@ -999,8 +1011,9 @@
       }
     }
   ],
-  "nextUnallocated": "08.102",
+  "nextUnallocated": "08.103",
   "nextUnallocatedNote": [
+    "v08.102 was allocated to Explore Hizb view, 2026-09-28.",
     "v08.101 was allocated to Approach list section names bright and bold, 2026-09-28.",
     "v08.100 was allocated to tablet shows all three landing capsules on one row, 2026-09-28.",
     "Owner decision 17, 2026-09-28: after v08.99 the 08 line continues as v08.100, v08.101, ... until a substantial change to the app; the minor part may be two or three digits.",

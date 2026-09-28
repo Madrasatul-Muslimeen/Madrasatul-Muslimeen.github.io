@@ -937,6 +937,18 @@
      rather than anything being cut. */
   .explore-head-row #exploreBreadcrumb { flex: 1 1 auto; min-width: 0; }
   .explore-head-row #exploreViewToggle { flex: 0 0 auto; margin: 0; }
+  /* Issue #342 -- a third button (Hizb) at the Quran level. Measured,
+     English, both together on the trail's own row: "Whole Quran" + Juz +
+     Surahs + Hizb needs more than the two-button pair ever did, and does not
+     fit beside the trail at 320-360px in either language. Rather than let it
+     wrap wherever it lands, the toggle takes a tidy line of its own below
+     380px -- same shape and same breakpoint as the wheel-intro capsules use
+     above for the same reason. Scoped to `.explore-view-toggle-triple`
+     (set only when the Quran level's spec offers Hizb) so the Juz level's
+     own two-button pair, which already fits, is untouched. */
+  @media (max-width: 380px) {
+    .explore-head-row .explore-view-toggle-triple { flex-basis: 100%; }
+  }
   /* The capsule row. min-width:0 all the way down is deliberate: the pill
      used to hold a <select>, whose intrinsic width is its LONGEST option, and
      that width travelled up the flex chain (min-width defaults to `auto`) and
@@ -4101,6 +4113,11 @@
                 <div id="exploreViewToggle" role="group" aria-label="Show" hidden>
                   <button type="button" class="explore-view-btn on" id="exploreViewPrimaryBtn" aria-pressed="true">Pages</button>
                   <button type="button" class="explore-view-btn" id="exploreViewSurahsBtn" data-view="surah" aria-pressed="false">Surahs</button>
+                  <!-- Issue #342 -- a third reading, Hizb, but only at the
+                       Quran level: the Juz level keeps its own Pages/Surahs
+                       pair. Hidden by default; syncExploreViewToggle() shows
+                       it only when the current level's spec offers it. -->
+                  <button type="button" class="explore-view-btn" id="exploreViewHizbBtn" data-view="hizb" aria-pressed="false" hidden>Hizb</button>
                 </div>
               </div>
               <!-- The Approach capsule. 5 Sep 2026 (2nd round), owner: "name
@@ -5425,6 +5442,7 @@
     const exploreViewToggle = document.getElementById("exploreViewToggle");
     const exploreViewPrimaryBtn = document.getElementById("exploreViewPrimaryBtn");
     const exploreViewSurahsBtn = document.getElementById("exploreViewSurahsBtn");
+    const exploreViewHizbBtn = document.getElementById("exploreViewHizbBtn"); // issue #342
     const exploreWheelResizeWrapEl = document.getElementById("exploreWheelResizeWrap");
     const exploreWheelResizeHandleEls = Array.from(exploreWheelResizeWrapEl.querySelectorAll(".wheel-resize-handle"));
     const exploreWheelContainer = document.getElementById("exploreWheelContainer");
@@ -5822,13 +5840,19 @@
     const SURAH_WHEEL_THRESHOLD = 30; // matches index.html's own confirmed threshold (index.html:5085)
     let juzIndexData = null; // loaded lazily on first Explore open
     let pageIndexData = null; // loaded lazily on first Explore open
+    // Issue #342 -- Explore's OWN copy of the Hizb boundary table, distinct
+    // from My Status's myStatusHizbIndexData (loaded unconditionally there
+    // for a different job): this one loads only when the Hizb view is
+    // actually opened (I9), since Juz stays the default and most opens never
+    // touch it. getHizbIndex() itself caches, so the two never fetch twice.
+    let hizbIndexData = null;
     let exploreChunksBySurah = null; // Map surahNum -> chunk, shared across every Explore level for one "open" -- loading it once at the Quran-wheel level covers every deeper level too (every surah belongs to some Juz), so drilling down never costs an extra Firestore read
     // Wider-unit claims (Whole Surah / Range / Ruku' / Juz / Page), flattened
     // to the ayah ranges they cover -- see effectiveAyahStatus() for the rule
     // and why this exists. Rebuilt with the chunks on every Explore open.
     let exploreWiderSpans = new Map();
     let exploreSubjectChunk = null; // subject_quran chunk -- Juz/Page direct-claim fallback, used when no ayah-level data exists yet to pool from
-    let exploreLevel = "quran"; // "quran" | "juz" | "surah" | "ruku"
+    let exploreLevel = "quran"; // "quran" | "juz" | "hizb" | "surah" | "ruku"
     // Which reading of a Juz its own level shows: "page" (what Explore has
     // always shown) or "surah". Remembered per browser, so unlike
     // exploreJuzNum/exploreSurahNum below it deliberately SURVIVES
@@ -5838,6 +5862,7 @@
     // same reason -- a habit, not a position.
     let exploreQuranView = getExploreQuranView();
     let exploreJuzNum = null;
+    let exploreHizbNum = null; // issue #342 -- Hizb's own drill-down position, mutually exclusive with exploreJuzNum (never both set)
     let exploreSurahNum = null;
     let exploreRukuIndex = null;
 
@@ -7675,6 +7700,7 @@
     async function openExplore() {
       exploreLevel = "quran";
       exploreJuzNum = null;
+      exploreHizbNum = null;
       exploreSurahNum = null;
       exploreRukuIndex = null;
       setExplorePalette("quran"); // Ayah Collections round: every fresh open lands on the Quran wheel, same "opening it resets the drill-down" rule this function already had -- QCR is an opt-in via the palette each time, not a remembered mode
@@ -8255,10 +8281,14 @@
       return `${label} — ${labelsById[statusId] ?? statusId}`;
     }
 
-    /** Clickable "Whole Quran › Juz N › Surah name › Ruku' N" trail, one crumb per level actually visited so far. Clicking an earlier crumb jumps back to that level and clears everything deeper than it -- the current level's own crumb is shown but not clickable. */
+    /** Clickable "Whole Quran › Juz N › Surah name › Ruku' N" trail, one crumb per level actually visited so far. Clicking an earlier crumb jumps back to that level and clears everything deeper than it -- the current level's own crumb is shown but not clickable.
+     *  Issue #342 -- a "Hizb N" crumb works the same way as "Juz N", and the
+     *  two are mutually exclusive (a drill-down path is either through Juz
+     *  or through Hizb, never both -- see exploreHizbNum's own comment). */
     function renderExploreBreadcrumb() {
       const crumbs = [{ label: t("Whole Quran"), level: "quran" }];
       if (exploreJuzNum != null) crumbs.push({ label: t("Juz {juz}", { juz: num(exploreJuzNum) }), level: "juz" });
+      if (exploreHizbNum != null) crumbs.push({ label: t("Hizb {hizb}", { hizb: num(exploreHizbNum) }), level: "hizb" });
       if (exploreSurahNum != null) {
         const found = surahIndex.find((s) => s.surahNumber === exploreSurahNum);
         const name = found ? surahName(found.surahNumber, found.nameEnglish) : t("Surah {surah}", { surah: num(exploreSurahNum) });
@@ -8273,8 +8303,9 @@
         if (btn.dataset.level === exploreLevel) return;
         btn.addEventListener("click", () => {
           const level = btn.dataset.level;
-          if (level === "quran") { exploreJuzNum = null; exploreSurahNum = null; exploreRukuIndex = null; }
+          if (level === "quran") { exploreJuzNum = null; exploreHizbNum = null; exploreSurahNum = null; exploreRukuIndex = null; }
           else if (level === "juz") { exploreSurahNum = null; exploreRukuIndex = null; }
+          else if (level === "hizb") { exploreSurahNum = null; exploreRukuIndex = null; }
           else if (level === "surah") { exploreRukuIndex = null; }
           exploreLevel = level;
           renderExplore();
@@ -8346,13 +8377,16 @@
       changeCurrentTrackable(btn.dataset.approachId);
     });
 
-    /** The one subdivision switch, per level: Juz|Surahs on the whole-Quran
-     *  wheel, Pages|Surahs inside a Juz, and put away below that (a surah
-     *  subdivides only into its ayahs or rukus, so there is nothing to ask).
-     *  It reads and writes whichever preference that level owns. */
+    /** The one subdivision switch, per level: Juz|Surahs|Hizb on the
+     *  whole-Quran wheel (issue #342 added the third), Pages|Surahs inside a
+     *  Juz, and put away below that (a surah subdivides only into its ayahs
+     *  or rukus, so there is nothing to ask). It reads and writes whichever
+     *  preference that level owns. `hizb: true` is what shows the third
+     *  button -- only the "quran" spec sets it, so the Juz level keeps
+     *  exactly its own Pages/Surahs pair, unchanged. */
     const EXPLORE_VIEW_LEVELS = {
-      quran: { primaryId: "juz", primaryLabel: "Juz", get: () => exploreQuranView },
-      juz: { primaryId: "page", primaryLabel: "Pages", get: () => exploreJuzView },
+      quran: { primaryId: "juz", primaryLabel: "Juz", get: () => exploreQuranView, hizb: true },
+      juz: { primaryId: "page", primaryLabel: "Pages", get: () => exploreJuzView, hizb: false },
     };
 
     function syncExploreViewToggle() {
@@ -8361,15 +8395,21 @@
       if (!spec) return;
       exploreViewPrimaryBtn.dataset.view = spec.primaryId;
       exploreViewPrimaryBtn.textContent = t(spec.primaryLabel);
+      exploreViewHizbBtn.hidden = !spec.hizb;
+      // The row needs its own line below 380px only when the third button is
+      // actually showing -- the Juz level's own two-button pair is untouched
+      // (see the CSS rule this class drives).
+      exploreViewToggle.classList.toggle("explore-view-toggle-triple", !!spec.hizb);
       const current = spec.get();
-      for (const btn of [exploreViewPrimaryBtn, exploreViewSurahsBtn]) {
+      const buttons = spec.hizb ? [exploreViewPrimaryBtn, exploreViewSurahsBtn, exploreViewHizbBtn] : [exploreViewPrimaryBtn, exploreViewSurahsBtn];
+      for (const btn of buttons) {
         const on = btn.dataset.view === current;
         btn.classList.toggle("on", on);
         btn.setAttribute("aria-pressed", on ? "true" : "false");
       }
     }
 
-    [exploreViewPrimaryBtn, exploreViewSurahsBtn].forEach((btn) => {
+    [exploreViewPrimaryBtn, exploreViewSurahsBtn, exploreViewHizbBtn].forEach((btn) => {
       btn.addEventListener("click", () => {
         const spec = EXPLORE_VIEW_LEVELS[exploreLevel];
         if (!spec) return;
@@ -8662,8 +8702,8 @@
      * Hizb (of 60), each row's Achieved+Mastered/Started counts EXACTLY what
      * Explore's own wedges would colour for that same unit (Owner decision
      * 7) -- summarizeUnitCoverage() wraps the identical poolStatus() core,
-     * never a second rule that could quietly drift apart. Hizb carries no
-     * Explore level of its own, so its row alone is not a jump target.
+     * never a second rule that could quietly drift apart. Issue #342 gave
+     * Hizb its own Explore level, so all four rows are jump targets now.
      */
     function renderMyStatusUnitSectionHtml(trackableId, cache) {
       if (trackableId === WBW_TRACKABLE_ID) return renderMyStatusWbwUnitSectionHtml(cache);
@@ -8683,7 +8723,7 @@
         { id: "juz", name: t("Juz"), summary: summarize(juzUnits), jump: true },
         { id: "surah", name: t("Surah"), summary: summarize(surahUnits), jump: true },
         { id: "ruku", name: t("Ruku'"), summary: summarize(rukuUnits), jump: true },
-        { id: "hizb", name: t("Hizb"), summary: summarize(hizbUnits), jump: false },
+        { id: "hizb", name: t("Hizb"), summary: summarize(hizbUnits), jump: true },
       ];
       const rowsHtml = rows.map((row) => {
         const { achievedOrMastered, started, total } = row.summary;
@@ -8806,8 +8846,8 @@
       if (juzWheelEl) {
         attachScopedWheelClickHandler(juzWheelEl, (key) => myStatusJuzSliceGoToExplore(Number(key)));
       }
-      // The "By unit" Juz/Surah/Ruku' rows jump to Explore too (Hizb's own
-      // row carries no data-my-status-unit-jump at all -- it is not a button).
+      // The "By unit" Juz/Surah/Ruku'/Hizb rows all jump to Explore (issue
+      // #342 gave Hizb its own Explore view, so it is a button too now).
       myStatusDetailBodyEl.querySelectorAll("[data-my-status-unit-jump]").forEach((btn) => {
         btn.addEventListener("click", () => myStatusUnitRowGoToExplore(btn.dataset.myStatusUnitJump));
       });
@@ -8831,19 +8871,20 @@
       await openExplore();
     }
 
-    /** Issue #341 part 3 -- a "By unit" Juz/Surah/Ruku' row: makes the open
-     *  Approach current, closes My Status, and opens Explore's Quran level
-     *  in the matching view (Juz view for the Juz row; Surahs view for
-     *  Surah AND Ruku' -- Ruku' has no top-level Explore view of its own,
-     *  so Surahs, the level it drills down FROM, is the closest real
-     *  target). setExploreQuranView() is the reader's own real Explore
-     *  preference, the SAME one the Explore panel's own Juz/Surahs switch
-     *  writes -- picking Surahs from here is exactly as if the reader had
-     *  switched it themselves inside Explore. */
+    /** Issue #341 part 3 -- a "By unit" Juz/Surah/Ruku'/Hizb row: makes the
+     *  open Approach current, closes My Status, and opens Explore's Quran
+     *  level in the matching view (Juz view for the Juz row; Surahs view for
+     *  Surah AND Ruku' -- Ruku' has no top-level Explore view of its own, so
+     *  Surahs, the level it drills down FROM, is the closest real target;
+     *  Hizb view for the Hizb row, issue #342, which gave Hizb its own
+     *  Explore level at last). setExploreQuranView() is the reader's own
+     *  real Explore preference, the SAME one the Explore panel's own
+     *  Juz/Surahs/Hizb switch writes -- picking a view from here is exactly
+     *  as if the reader had switched it themselves inside Explore. */
     async function myStatusUnitRowGoToExplore(kind) {
       changeCurrentTrackable(myStatusOpenTrackableId);
       closeMyStatus();
-      exploreQuranView = setExploreQuranView(kind === "juz" ? "juz" : "surah");
+      exploreQuranView = setExploreQuranView(kind === "juz" ? "juz" : kind === "hizb" ? "hizb" : "surah");
       await openExploreOnQuranLevel();
     }
 
@@ -9028,20 +9069,35 @@
       renderExploreBreadcrumb();
       renderExploreApproachList();
       syncExploreViewToggle();
-      // Issue #206 -- awaited BEFORE the wheel paints (quran/juz levels
+      // Issue #206 -- awaited BEFORE the wheel paints (quran/juz/hizb levels
       // only), so the ring is correct on the very first paint. While the
       // gate is closed this resolves with no Firestore call at all, so it
-      // costs nothing for anyone today.
-      if (exploreLevel === "quran" || exploreLevel === "juz") await ensureWordTotalsForExplore();
+      // costs nothing for anyone today. Issue #342 -- "hizb" joined this
+      // list the same way "juz" already had: it is a sibling top-level
+      // reading of the whole Qur'an, not a different kind of screen.
+      if (exploreLevel === "quran" || exploreLevel === "juz" || exploreLevel === "hizb") await ensureWordTotalsForExplore();
       renderExploreArabicCoverage();
       if (exploreLevel === "quran") return renderExploreQuranLevel();
       if (exploreLevel === "juz") return renderExploreJuzLevel();
+      if (exploreLevel === "hizb") return renderExploreHizbLevel();
       if (exploreLevel === "surah") return renderExploreSurahLevel();
       if (exploreLevel === "ruku") return renderExploreRukuLevel();
     }
 
-    /** Level 1, two readings of the whole Qur'an -- 30 Juz (the default and
-     *  what this wheel has always shown) or all 114 Surahs. */
+    /** Loads Explore's own Hizb boundary table on first use (I9) -- never on
+     *  the startup or Explore-open path, since Juz stays the default and
+     *  most opens never touch this. getHizbIndex() itself caches, so this
+     *  never re-fetches once loaded, however many times a reader switches
+     *  in and out of the Hizb view. */
+    async function ensureHizbIndexData() {
+      if (!hizbIndexData) hizbIndexData = await getHizbIndex();
+      return hizbIndexData;
+    }
+
+    /** Level 1, three readings of the whole Qur'an -- 30 Juz (the default and
+     *  what this wheel has always shown), all 114 Surahs, or 60 Hizb (issue
+     *  #342, the Owner's own follow-up to #341's My Status: its Hizb row
+     *  could open nothing, because Explore had no Hizb view). */
     async function renderExploreQuranLevel() {
       const trackable = currentTrackable();
       if (!trackable) {
@@ -9051,6 +9107,7 @@
         return;
       }
       if (exploreQuranView === "surah") return renderExploreQuranSurahsView(trackable);
+      if (exploreQuranView === "hizb") return renderExploreQuranHizbView(trackable);
       const items = juzIndexData.map((j) => {
         const coverage = ayahCoverage(j.startSurah, j.startAyah, j.endSurah, j.endAyah);
         const pooled = poolCoverageStatus(coverage, trackable.id);
@@ -9060,6 +9117,7 @@
 
       const jumpToJuz = (key) => {
         exploreJuzNum = Number(key);
+        exploreHizbNum = null; // mutually exclusive with the Hizb path (issue #342)
         exploreSurahNum = null;
         exploreRukuIndex = null;
         exploreLevel = "juz";
@@ -9128,6 +9186,48 @@
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
       exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
       attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToSurah);
+    }
+
+    /**
+     * Issue #342 -- Level 1, Hizb: the third reading of the whole Qur'an, 60
+     * wedges, one per Hizb. Pools exactly the way the Juz wedges do (same
+     * poolCoverageStatus() core, same fallback to a direct claim on the
+     * wider unit when pooling has nothing to answer from -- e.g. a "No"
+     * Approach's own `hizb:n` claim, Owner decision 6), over
+     * getHizbIndex()'s own {startSurah,startAyah,endSurah,endAyah} boundary
+     * rather than a second, hand-derived one. Loaded here, on first use
+     * (I9): most opens never touch this view, since Juz stays the default.
+     */
+    async function renderExploreQuranHizbView(trackable) {
+      await ensureHizbIndexData();
+      const labelsById = statusLabelsById();
+      const items = hizbIndexData.map((h) => {
+        const coverage = ayahCoverage(h.startSurah, h.startAyah, h.endSurah, h.endAyah);
+        const pooled = poolCoverageStatus(coverage, trackable.id);
+        const statusId = pooled ?? (exploreSubjectChunk?.entries?.[`${buildUnitKey.hizb(h.hizb)}::${trackable.id}`]?.claimedStatus ?? "not_started");
+        const label = t("Hizb {hizb}", { hizb: num(h.hizb) });
+        return { key: h.hizb, number: h.hizb, statusId, label, title: segTitle(label, statusId, labelsById) };
+      });
+
+      const jumpToHizb = (key) => {
+        exploreHizbNum = Number(key);
+        exploreJuzNum = null; // mutually exclusive with the Juz path -- see exploreHizbNum's own comment
+        exploreSurahNum = null;
+        exploreRukuIndex = null;
+        exploreLevel = "hizb";
+        renderExplore();
+      };
+
+      const approachName = langText(trackable.name, getAppLang(), trackable.id);
+      // Same "ring always visible once ready" rule as the Juz and 114-Surah
+      // readings above -- wedges stay Approach-coloured throughout, the ring
+      // is the only thing Word-by-Word ever draws on this wheel.
+      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Whole Quran"), centerSub: approachName, ring: wheelRingOption() });
+      attachScopedWheelClickHandler(exploreWheelContainer, jumpToHizb);
+
+      exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
+      exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
+      attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToHizb);
     }
 
     /** Level 2, two readings of the same Juz -- the owner's own ask, 5 Sep
@@ -9239,6 +9339,61 @@
 
       const approachName = langText(trackable.name, getAppLang(), trackable.id);
       exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Juz {juz}", { juz: num(exploreJuzNum) }), centerSub: approachName, ring: wheelRingOption() });
+      attachScopedWheelClickHandler(exploreWheelContainer, jumpToSurah);
+
+      exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
+      exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
+      attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToSurah);
+    }
+
+    /**
+     * Issue #342 -- Level 2 for the Hizb path: tapping a Hizb shows the
+     * Surah portions inside it, pooled exactly the way the Juz level's own
+     * Surahs view pools (renderExploreJuzSurahsView() above) -- a partial
+     * surah's COLOUR only counts the āyāt really inside this Hizb, while its
+     * CLICK opens the whole surah, which is what the Surah level has always
+     * meant. Unlike Juz, Hizb carries only this one reading (the issue asks
+     * for Surahs only, no Pages sub-view), so there is no view switch here.
+     */
+    async function renderExploreHizbLevel() {
+      const trackable = currentTrackable();
+      await ensureHizbIndexData();
+      const h = hizbIndexData?.find((x) => x.hizb === exploreHizbNum);
+      if (!trackable || !h) return;
+
+      const coverage = ayahCoverage(h.startSurah, h.startAyah, h.endSurah, h.endAyah);
+      const labelsById = statusLabelsById();
+
+      const items = coverage.map((c) => {
+        const found = surahIndex.find((s) => s.surahNumber === c.surah);
+        const name = found ? surahName(found.surahNumber, found.nameEnglish) : t("Surah {surah}", { surah: num(c.surah) });
+        const total = found?.ayahCount ?? c.to;
+        const whole = c.from === 1 && c.to >= total;
+        const pooled = poolCoverageStatus([c], trackable.id);
+        // Direct-claim fallback, exactly as the Juz level's own Surahs view
+        // has: used only when there is nothing ayah-level to pool from.
+        const entries = exploreChunksBySurah.get(c.surah)?.entries ?? {};
+        const directKey = whole ? buildUnitKey.surah(c.surah) : buildUnitKey.range(c.surah, c.from, c.to);
+        const statusId = pooled ?? (entries[`${directKey}::${trackable.id}`]?.claimedStatus ?? "not_started");
+        const part = whole ? "" : ` (${t("ayahs {from}–{to} in this Hizb", { from: num(c.from), to: num(c.to) })})`;
+        return {
+          key: c.surah,
+          number: c.surah,
+          statusId,
+          title: segTitle(`${name}${part}`, statusId, labelsById),
+          label: whole ? name : `${name} ${num(c.from)}–${num(c.to)}`,
+        };
+      });
+
+      const jumpToSurah = (key) => {
+        exploreSurahNum = Number(key);
+        exploreRukuIndex = null;
+        exploreLevel = "surah";
+        renderExplore();
+      };
+
+      const approachName = langText(trackable.name, getAppLang(), trackable.id);
+      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Hizb {hizb}", { hizb: num(exploreHizbNum) }), centerSub: approachName, ring: wheelRingOption() });
       attachScopedWheelClickHandler(exploreWheelContainer, jumpToSurah);
 
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);

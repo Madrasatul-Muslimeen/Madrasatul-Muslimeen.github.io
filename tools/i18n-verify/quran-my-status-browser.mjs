@@ -453,10 +453,13 @@ async function runScenarios(lang) {
   const yesJuzFigure = await readUnitRowFigure("juz");
   const yesSurahFigure = await readUnitRowFigure("surah");
   const yesRukuFigure = await readUnitRowFigure("ruku");
-  const yesHizbFigure = await page.evaluate(() => {
-    const rows = [...document.querySelectorAll("#myStatusDetailBody .my-status-row-static")];
-    return rows[0]?.querySelector(".my-status-row-figure")?.textContent ?? "";
-  });
+  // UPDATED IN PLACE, issue #342, reason recorded: this used to read the
+  // Hizb figure off the one `.my-status-row-static` row and assert Hizb had
+  // NO data-my-status-unit-jump at all, because Hizb had no Explore level to
+  // jump to. It has one now (Explore's own Hizb view, issue #342), so the
+  // row is a button exactly like Juz/Surah/Ruku', read through the same
+  // readUnitRowFigure() helper -- the pin is inverted, not removed.
+  const yesHizbFigure = await readUnitRowFigure("hizb");
   check(`[${lang}] By unit -- Juz: ${EXPECTED.yes.juz.achievedOrMastered} of ${EXPECTED.yes.juz.total}, Started ${EXPECTED.yes.juz.started} (YES Approach)`,
     yesJuzFigure === expectedUnitFigureText(lang, EXPECTED.yes.juz.achievedOrMastered, EXPECTED.yes.juz.total, EXPECTED.yes.juz.started),
     `got="${yesJuzFigure}"`);
@@ -466,11 +469,15 @@ async function runScenarios(lang) {
   check(`[${lang}] By unit -- Ruku': ${EXPECTED.yes.ruku.achievedOrMastered} of ${EXPECTED.yes.ruku.total}, Started ${EXPECTED.yes.ruku.started} (YES Approach)`,
     yesRukuFigure === expectedUnitFigureText(lang, EXPECTED.yes.ruku.achievedOrMastered, EXPECTED.yes.ruku.total, EXPECTED.yes.ruku.started),
     `got="${yesRukuFigure}"`);
-  check(`[${lang}] By unit -- Hizb: ${EXPECTED.yes.hizb.achievedOrMastered} of ${EXPECTED.yes.hizb.total} (YES Approach, its row is NOT a button)`,
+  check(`[${lang}] By unit -- Hizb: ${EXPECTED.yes.hizb.achievedOrMastered} of ${EXPECTED.yes.hizb.total} (YES Approach)`,
     yesHizbFigure === expectedUnitFigureText(lang, EXPECTED.yes.hizb.achievedOrMastered, EXPECTED.yes.hizb.total, EXPECTED.yes.hizb.started),
     `got="${yesHizbFigure}"`);
-  const hizbIsStatic = await page.evaluate(() => !document.querySelector('[data-my-status-unit-jump="hizb"]') && document.querySelectorAll("#myStatusDetailBody .my-status-row-static").length === 1);
-  check(`[${lang}] the Hizb row is not a button -- Hizb has no Explore level`, hizbIsStatic);
+  // MUTATION control: reverting issue #342's `jump: true` for Hizb back to
+  // `jump: false` makes this fail (0 static rows becomes 1, no element
+  // answers the selector) -- proving the check really distinguishes the two
+  // shapes rather than passing regardless.
+  const hizbIsButton = await page.evaluate(() => !!document.querySelector('[data-my-status-unit-jump="hizb"]') && document.querySelectorAll("#myStatusDetailBody .my-status-row-static").length === 0);
+  check(`[${lang}] the Hizb row is a button now -- issue #342 gave Hizb its own Explore level`, hizbIsButton);
 
   await clickSafely(page, "#myStatusDetailCloseBtn");
   await clickSafely(page, `[data-my-status-open="${NO_ID}"]`);
@@ -562,7 +569,7 @@ async function runExploreAgreementScenario() {
   });
   const { page } = await openPage(ctx, "/app/quranrevival.html");
   await waitForWheelReady(page);
-  for (const kind of ["juz", "surah"]) {
+  for (const kind of ["juz", "surah", "hizb"]) { // hizb added with #342: its row now opens Explore's Hizb view
     await clickSafely(page, "#tabApproachBtn"); // back from Explore after the first pass
     await clickSafely(page, "#myStatusWideBtn");
     await page.waitForFunction(() => document.getElementById("myStatusBody")?.querySelectorAll(".my-status-row-btn").length > 0, null, { timeout: 10000 });
@@ -570,7 +577,7 @@ async function runExploreAgreementScenario() {
     await page.waitForFunction(() => !document.getElementById("myStatusDetailMount").hidden, null, { timeout: 5000 });
     const cardFigure = await page.evaluate((k) => document.querySelector(`[data-my-status-unit-jump="${k}"] .my-status-row-figure`)?.textContent ?? "", kind);
     await clickSafely(page, `[data-my-status-unit-jump="${kind}"]`);
-    const want = kind === "juz" ? 30 : 114;
+    const want = { juz: 30, surah: 114, hizb: 60 }[kind];
     let counts = null;
     for (let i = 0; i < 60; i++) {
       counts = await page.evaluate(() => {

@@ -274,6 +274,10 @@ export const BN = {
   // than reusing "Page {page}"/"Surah {surah}" above.
   "Pages": "পৃষ্ঠাসমূহ", // ?
   "Surahs": "সূরাসমূহ", // ?
+  // Issue #342 -- Explore's Quran-level Hizb view, the same shape as the Juz
+  // level's own Surahs sub-view above. "Hizb" and "Hizb {hizb}" already
+  // existed (the Study Unit picker's own Hizb option).
+  "ayahs {from}–{to} in this Hizb": "এই হিযবে {from}–{to} নং আয়াত", // ?
   // The Explore wheel's own Approach capsule (5 Sep 2026) -- the owner's own
   // wording. The pill says only this; WHICH Approach is in force is read off
   // the wheel's hub.

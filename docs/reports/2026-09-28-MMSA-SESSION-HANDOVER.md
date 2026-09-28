@@ -133,14 +133,17 @@ Owner may reorder the queue; nothing else reorders it.
    "My subjects". Store preparation waits until QuranRevival is finalised
    (decision 16). A standalone Asma app is to be planned later (decision 15).
 
-## 7. Scheduled check-ins
+## 7. Scheduled check-ins, and never doing work twice
 
-- The old session holds `trig_019b5dJ74dKPE2PbHGHdpW3R` (fires 05:57 UTC 28 Sep,
-  the #342 review plus this handover). **A new session must delete it**
-  (`delete_trigger`), or the old session wakes and does the same work in
-  parallel. Then it creates its own check-in for whatever round is in flight.
-- `trig_01H22JkQJWS5HpziX7BKegS6`, "MMSA Task Bridge", is the older `/mmsa-task`
-  bridge. Leave it alone.
+- **One Architect at a time.** The status board #159 names the **Active
+  Architect session**. Every check-in, in any session, reads that line first.
+  If it names another session, the check-in does nothing, re-arms nothing, and
+  ends.
+- A new session takes over by writing its own session id there. **Nothing is
+  deleted**, and the Owner keeps the old session.
+- Old check-ins stand down by themselves once the line names someone else.
+- `trig_01H22JkQJWS5HpziX7BKegS6`, "MMSA Task Bridge", is the older
+  `/mmsa-task` bridge. Leave it alone.
 
 ## 8. Issues that are NOT the queue
 

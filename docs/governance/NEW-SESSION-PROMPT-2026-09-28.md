@@ -23,14 +23,22 @@ to try on my phone.
 
 **Then do these, in order, without asking me first:**
 
-1. **Take over the check-ins.** The old session scheduled
-   `trig_019b5dJ74dKPE2PbHGHdpW3R`. Delete it with `delete_trigger`, so the old
-   session does not wake and work in parallel. Also check `list_triggers` for
-   any other check-in the old session left; leave "MMSA Task Bridge" alone.
+1. **Take over as the active Architect. Do not delete anything, and do not
+   delete the old session.**
+   - Get your own session id with `get_session`.
+   - Write it into the **"Active Architect session"** line at the top of the
+     status board #159, with the time.
+   - From then on, the old session's check-ins read that line, see it is no
+     longer theirs, and stand down by themselves.
+   - **Every check-in message you schedule must begin with:** *"First read the
+     'Active Architect session' line on issue #159. If it does not name this
+     session, do nothing, re-arm nothing, and end."*
+   - Then look at `list_triggers` to see what is pending. Leave "MMSA Task
+     Bridge" alone.
 
 2. **Review #342 (Explore Hizb view).**
-   - It was re-dispatched at about 05:05 UTC on 28 Sep. The first run pushed
-     nothing.
+   - **Check first whether it is already merged** (v08.102 on `main`, #342
+     closed). The old session was finishing it; if so, go straight to step 3.
    - Find its branch: `git fetch origin '+refs/heads/*:refs/remotes/origin/*'`,
      then look for `claude/issue-342-*`. It may have opened no PR.
    - If there is no branch and the run has finished, dispatch it again (step 3's
@@ -62,7 +70,8 @@ to try on my phone.
    - Every note must say: create the branch and push within the first 10 turns,
      push after every part, and open the PR as soon as part 1 is pushed.
    - Schedule the review about 100 minutes out with `send_later`, and write the
-     full instructions into the check-in message.
+     full instructions into the check-in message, starting with the
+     Active-Architect check from step 1.
    - Review each round the same way as #342. Then allocate, merge, update the
      status board, tell me what to try, and start the next round.
 
