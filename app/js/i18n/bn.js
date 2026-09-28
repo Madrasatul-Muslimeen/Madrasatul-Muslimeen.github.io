@@ -2960,4 +2960,13 @@ export const BN = {
   "Tajweed colours (not supported on this browser)": "তাজবীদের রঙ (এই ব্রাউজারে সমর্থিত নয়)", // ?
   "Tajweed colours couldn't load for this page — showing the plain page.": "এই পৃষ্ঠার জন্য তাজবীদের রঙ লোড হয়নি — সাধারণ পৃষ্ঠা দেখানো হচ্ছে।", // ?
   "Quran fonts provided by Quran Foundation": "কুরআনের ফন্ট সরবরাহ করেছে Quran Foundation", // ?
+  // 27 Sep 2026 -- landing page: the chosen unit's name in the wheel's
+  // centre, and the wheel-look switch (Dark / Light / Colour).
+  "Āyāt {from}–{to}": "আয়াত {from}–{to}", // ?
+  "Ruku' {n}": "রুকু' {n}", // ?
+  "Wheel": "চাকা", // ?
+  "Wheel look": "চাকার রূপ", // ?
+  "Dark": "গাঢ়", // ?
+  "Light": "হালকা", // ?
+  "Colour": "রঙিন", // ?
 };

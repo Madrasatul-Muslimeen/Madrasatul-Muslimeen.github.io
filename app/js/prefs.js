@@ -583,6 +583,28 @@ export function setExploreQuranView(id) {
   return cachedExploreQuranView;
 }
 
+// 27 Sep 2026, owner: "Enable an option for the user to choose the wheel dark
+// greyed (as it is now) at the background or light greyed or full color of
+// the status." How the landing Mastery Wheel looks behind its "Study Quran"
+// button: "dark" (the veil it has always had, the default), "light" (a light
+// grey veil), or "colour" (no veil -- the status colours at full strength).
+// A per-browser habit, like the Explore views above.
+const WHEEL_LOOK_KEY = "mm_wheel_look";
+const WHEEL_LOOK_IDS = ["dark", "light", "colour"];
+let cachedWheelLook = readStored(WHEEL_LOOK_KEY, WHEEL_LOOK_IDS, "dark");
+
+/** "dark" (default), "light" or "colour". */
+export function getWheelLook() {
+  return cachedWheelLook;
+}
+
+export function setWheelLook(id) {
+  if (!WHEEL_LOOK_IDS.includes(id)) return cachedWheelLook;
+  cachedWheelLook = id;
+  writeStored(WHEEL_LOOK_KEY, id);
+  return cachedWheelLook;
+}
+
 // ---------------------------------------------------------------------------
 // 28 Aug 2026 -- the QCR (Ayah Collections) wheel is resizable by a drag
 // handle on its own corner, and the owner's own size sticks: "make the size
