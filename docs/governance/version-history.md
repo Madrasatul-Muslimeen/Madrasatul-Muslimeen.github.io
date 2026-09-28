@@ -631,3 +631,4 @@ total). Allocated by the MMSA Architect.
 08.102: Explore Hizb view. Allocated by the MMSA Architect.
 08.103: the Unit Card (issue #348). Allocated by the MMSA Architect.
 08.104: Study activity recording fixed; add an Approach from Catalogue. Allocated by the MMSA Architect.
+08.105: every unit on the wheel (issue #352). Allocated by the MMSA Architect.
