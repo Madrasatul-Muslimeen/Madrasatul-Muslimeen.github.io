@@ -600,7 +600,12 @@
   #wheelIntroBand .wheel-unit-wrap { display: block; }
   #wheelIntroBand .wheel-intro-capsule { font-size: 0.8rem; }
   .my-status-head-btn { display: none; }
-  @media (max-width: 720px) {
+  /* 28 Sep 2026, Owner (a tablet held upright, ~600px): "Tab should show all
+     three capsule in one row". 720px -> 479px: measured, the three capsules at
+     their natural widths need 459px (en) / 380px (bn) and the wheel column is
+     viewport - 13px on a single-column layout, so from 480px they share one
+     line in the column; below it My Status stays on the bar. */
+  @media (max-width: 479px) {
     .wheel-heading > .my-status-head-btn { display: inline-flex; align-items: center; }
     #myStatusWideBtn { display: none; }
   }
