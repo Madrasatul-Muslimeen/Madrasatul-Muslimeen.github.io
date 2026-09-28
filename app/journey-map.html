@@ -4,6 +4,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="stylesheet" href="./css/shell.css" />
+<link rel="stylesheet" href="./css/card-look.css" />
+  <script>(function(){try{document.documentElement.setAttribute('data-card-look',localStorage.getItem('mm_card_look')==='light'?'light':'night');}catch(e){document.documentElement.setAttribute('data-card-look','night');}})();</script>
 <title>QuranRevival — Mapping My Journey</title>
 <!-- MAP Phase 6 (P6-F, issue #199) -- a Note's bodyHtml is rendered as markup
      here too (the same read path notes.html already uses), so it goes
@@ -249,7 +251,7 @@
     import { doc, getDoc, getDocs, collection, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
     import { langText } from "./js/lang.js";
-    import { getAppLang } from "./js/prefs.js";
+    import { getAppLang, mountCardLookControl } from "./js/prefs.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { safeWrite, reportWriteFailure } from "./js/errors.js";
     import { bootstrapContext, setActiveContext, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
@@ -480,6 +482,7 @@
       navBar.innerHTML = renderNavBar(roles, viewAsRole);
       navHomeExtra.innerHTML = renderHomeExtras(roles);
       mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid });
+      mountCardLookControl(navHomeExtra);
     }
 
     signInBtn.addEventListener("click", () => {

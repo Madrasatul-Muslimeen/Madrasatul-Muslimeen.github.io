@@ -2989,6 +2989,10 @@ export const BN = {
   "Light": "হালকা", // ?
   "Colour": "রঙিন", // ?
 
+  // Issue #354 -- Card look: Night or Light, beside Language in Settings.
+  "Card look": "কার্ডের রূপ", // ?
+  "Night": "রাত", // ?
+
   // 28 Sep 2026 -- issue #348, the Unit Card: acting on and tracking a
   // Ruku', Page, Hizb, Juz, Surah or Range from the Read view.
   "Jump to a containing unit": "একটি অন্তর্ভুক্তকারী ইউনিটে যান", // ?

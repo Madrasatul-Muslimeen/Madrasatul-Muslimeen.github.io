@@ -1,0 +1,133 @@
+/* Issue #354 -- Card look: Night or Light, the reader's choice.
+   Owner decision 25 (docs/governance/2026-09-27-owner-decisions.md).
+
+   PAGES STAY LIGHT. This file colours only things that sit or open ON TOP
+   of a page -- cards, sheets, pop-ups, panels, info/notice boxes, bar
+   palettes. Nothing here touches body/page background.
+
+   Night is the demo's navy/gold/cream -- the same colours the landing wheel
+   card, Explore, QCR and Asma ul Husna panels have used since those rounds
+   shipped (#1B2A41/#13192a background, #C9A24B/#ecd49a gold, #F2E8D5 cream
+   text). Light is today's cream-card scheme (white/cream background, #1F3A6E
+   navy heading/link text, #1b1b16 body text) -- the look the Ayah Card, Word
+   Card and My Status sheet have always had.
+
+   Night is the DEFAULT (getCardLook() in js/prefs.js returns "night" when
+   nothing is stored) -- so [data-card-look] is written on <html> UNCONDITIONALLY
+   before first paint (see js/prefs.js applyCardLookBeforePaint() and each
+   page's own inline boot script), and :root here carries no bare fallback:
+   every card colour comes from one of the two attribute blocks below, never
+   from a third, unscoped source that could silently disagree with either.
+
+   THE FIVE STATUS COLOURS (STATUS_COLORS in mastery-wheel.js/way-modal.js/
+   topic-renderer.js/unit-card.js/asma-renderer.js/ayah-action-sheet.js) ARE
+   IDENTICAL IN BOTH LOOKS, per the issue -- they are not tokenised here and
+   must not be. A wheel segment, a status dot, a stage badge stays the exact
+   colour it has always been regardless of card look.
+
+   TOKEN MEANINGS (components use these, never a literal colour, so a later
+   card -- the Unit Card #348, the ring data boxes #352 -- gets the look
+   automatically the moment it is built with these instead of a hex value):
+
+     --card-bg          the card/panel/sheet's own background. May be a flat
+                         colour (Light) or a gradient (Night, matching the
+                         panels' existing radial-gradient) -- `background:
+                         var(--card-bg)` accepts either.
+     --card-bg-inset    a nested surface inside the card: a <select>, a
+                         hover row, a stage-picker button's resting fill.
+     --card-text        the card's own primary/body text colour.
+     --card-text-muted  secondary text: hints, captions, reference lines.
+     --card-line         a divider/border inside the card (not the card's own
+                         outer edge, which usually needs no line at all).
+     --card-heading      a section heading inside the card (Night reuses the
+                         gold most existing panel headings already carry --
+                         v08.101's own brighter #ecd49a is `.ways-group`'s
+                         own, more emphatic shade and stays exactly as it
+                         is, untokenised, rather than being folded in here).
+     --card-link         a plain in-card link or crumb.
+     --card-button-bg     a primary action button's resting fill.
+     --card-button-text   that button's own text colour (Night needs DARK
+                         text on the gold fill -- white-on-#C9A24B measures
+                         about 2:1, which is why this is its own token
+                         instead of reusing --card-text).
+     --card-button-border the same button's border/outline colour.
+     --card-button-pressed-bg    a toggle/segmented control's PRESSED
+                         (aria-pressed="true") fill -- e.g. a stage picker,
+                         a Night/Light/view switch itself.
+     --card-button-pressed-text  that pressed state's own text colour.
+     --card-shadow       the drop shadow a floating card/sheet casts.
+
+   Colours that carry MEANING beyond decoration (the Word Card's word-part
+   colours, links, gold-background chips, My Status's wheel number ink) are
+   NOT covered by these general tokens -- each is re-picked for Night in its
+   own component CSS, keeping its own palette (CLAUDE.md's standing lesson:
+   "a palette belongs to a surface"). This file only carries the shared,
+   general-purpose set every card needs regardless of what it shows. */
+
+[data-card-look="night"] {
+  --card-bg: radial-gradient(ellipse at top, #2a3a57 0%, #1B2A41 55%, #121b2c 100%);
+  --card-bg-inset: #13192a;
+  --card-text: #F2E8D5;
+  --card-text-muted: #b9c2d4;
+  --card-line: rgba(201, 162, 75, 0.35);
+  --card-heading: #C9A24B;
+  --card-link: #C9A24B;
+  --card-button-bg: linear-gradient(180deg, #ecd49a, #C9A24B);
+  --card-button-text: #221904;
+  --card-button-border: #C9A24B;
+  --card-button-pressed-bg: #C9A24B;
+  --card-button-pressed-text: #221904;
+  --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+[data-card-look="light"] {
+  --card-bg: #fff;
+  --card-bg-inset: #f6f2e4;
+  --card-text: #1b1b16;
+  --card-text-muted: #666;
+  --card-line: #eee;
+  --card-heading: #1F3A6E;
+  --card-link: #1F3A6E;
+  --card-button-bg: #1F3A6E;
+  --card-button-text: #fff;
+  --card-button-border: #1F3A6E;
+  --card-button-pressed-bg: #1F3A6E;
+  --card-button-pressed-text: #fff;
+  --card-shadow: 0 6px 18px rgba(20, 30, 55, 0.08);
+}
+
+/* The Ayah Card's own three "carries meaning" markers (CLAUDE.md's "a
+   palette belongs to a surface"): re-picked for Night rather than reused
+   from Light, because Light's own dark-on-cream colours (measured >= 4.5:1
+   against #f6f2e4) would be dark-on-dark and close to invisible against
+   --card-bg-inset. Every value below is its own light-on-dark re-pick, not
+   derived from the Light value. */
+[data-card-look="night"] .ayah-wbw-chip.is-known {
+  color: #8fe3ae;
+  background: rgba(63, 174, 116, 0.18);
+  border-color: #3fae74;
+}
+[data-card-look="night"] .ayah-connected-studied.is-studied { color: #7ddba0; }
+[data-card-look="night"] .ayah-connected-studied.is-not-studied { color: #e0b054; }
+[data-card-look="night"] .ayah-connected-studied.is-unchecked { color: var(--card-text-muted); }
+
+/* The Word Card's own word-part colours (issue #263) -- also "carries
+   meaning", also re-picked rather than reused: Light's four colours
+   (#1F3A6E/#B3261E/#1E6B3C/#6A3FA0) were chosen for contrast against a
+   near-white card and read as near-black against --card-bg-inset. Each
+   Night value below is the same hue, lightened for a dark surface, keeping
+   the four colours visually distinct from each other exactly as before. */
+[data-card-look="night"] .word-card-segment-particle { color: #9fc3f5; }
+[data-card-look="night"] .word-card-segment-person { color: #f2a29c; }
+[data-card-look="night"] .word-card-segment-stem { color: #86d9ab; }
+[data-card-look="night"] .word-card-segment-determiner { color: #c8a8ef; }
+
+/* Night, deliberately, per the issue: "In Night, the Note pop-up's writing
+   area stays light for long writing." A textarea a reader writes long text
+   into keeps a light, high-contrast surface regardless of card look --
+   components opt in with this class on the writing surface itself, rather
+   than this file guessing which element that is per page. */
+[data-card-look="night"] .card-look-write-surface {
+  background: #fffdf6;
+  color: #1b1b16;
+}

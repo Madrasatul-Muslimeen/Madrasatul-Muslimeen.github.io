@@ -4,6 +4,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="stylesheet" href="./css/shell.css" />
+<link rel="stylesheet" href="./css/card-look.css" />
+  <script>(function(){try{document.documentElement.setAttribute('data-card-look',localStorage.getItem('mm_card_look')==='light'?'light':'night');}catch(e){document.documentElement.setAttribute('data-card-look','night');}})();</script>
 <title>QuranRevival — Course Offers</title>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 52rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
@@ -102,7 +104,7 @@
     import { TENANT } from "./js/collections.js";
     import { langText } from "./js/lang.js";
     import { roleListLabel } from "./js/labels.js";
-    import { getAppLang } from "./js/prefs.js";
+    import { getAppLang, mountCardLookControl } from "./js/prefs.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { safeWrite } from "./js/errors.js";
     import {
@@ -143,6 +145,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       navBar.innerHTML = renderNavBar(roles, viewAsRole);
       navHomeExtra.innerHTML = renderHomeExtras(roles);
       mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid }); // v07.37 -- Settings -> Language, saved to the account so it follows this person to their other devices
+      mountCardLookControl(navHomeExtra);
       mountBookmarkMenu(navBar, { db, getTenantId: () => activeTenantId, getPersonId: () => myMemberships.find((m) => m.tenantId === activeTenantId)?.personId ?? null , getRoster: () => roster });
     }
     const tenantSelect = document.getElementById("tenantSelect");

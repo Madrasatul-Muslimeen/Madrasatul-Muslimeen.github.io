@@ -853,3 +853,96 @@ export function setEndOfUnitPromptOn(on) {
   writeStored(END_OF_UNIT_PROMPT_KEY, cachedEndOfUnitPromptOn ? "1" : "0");
   return cachedEndOfUnitPromptOn;
 }
+
+// ---------------------------------------------------------------------------
+// Issue #354 -- Card look: Night or Light, the reader's choice, for every
+// card, pop-up, info box, the wheel and Explore (Owner decision 25). Pages
+// stay light; this is only which look the things that sit ON TOP of a page
+// take. Night (the demo's navy/gold/cream) is the default -- absent means
+// "night", the same shape every other on/off preference here uses.
+//
+// APPLIED BEFORE FIRST PAINT, the same reason getAppLang()'s own header
+// explains: a network read cannot happen before first paint (I9), and
+// localStorage is synchronous. Unlike the language, which only changes which
+// STRINGS render (so a module-script-timed read is enough), the landing
+// wheel card is real, visible, coloured content on the very first frame --
+// so every page also carries a tiny synchronous (non-module) inline
+// <script> in <head>, before card-look.css, that sets
+// `data-card-look` on <html> straight from localStorage. This module's own
+// getCardLook()/setCardLook() are the single source of truth that script
+// mirrors; changing the look after load goes through setCardLook() below,
+// never by touching the attribute directly a second time.
+// ---------------------------------------------------------------------------
+const CARD_LOOK_KEY = "mm_card_look";
+const CARD_LOOK_IDS = ["night", "light"];
+
+function readCardLook() {
+  return readStored(CARD_LOOK_KEY, CARD_LOOK_IDS, "night");
+}
+
+let cachedCardLook = readCardLook();
+
+/** "night" (default) or "light". */
+export function getCardLook() {
+  return cachedCardLook;
+}
+
+/** Changes the stored preference AND the live `data-card-look` attribute, so
+ *  every open card re-reads its tokens immediately -- no reload, unlike the
+ *  app language (whose own reload is about re-rendering STRINGS, not about
+ *  a CSS attribute, which the browser already repaints on its own). */
+export function setCardLook(id) {
+  if (!CARD_LOOK_IDS.includes(id)) return cachedCardLook;
+  cachedCardLook = id;
+  writeStored(CARD_LOOK_KEY, id);
+  try {
+    document.documentElement.setAttribute("data-card-look", id);
+  } catch {
+    /* no document (shouldn't happen in this app) */
+  }
+  return cachedCardLook;
+}
+
+/** Call once, early, on any page that renders the Settings card-look
+ *  buttons -- keeps the in-memory value and the live attribute in step with
+ *  whatever the head boot script already applied (normally a no-op, since
+ *  both read the same localStorage key; it only matters the first time a
+ *  page is opened in a browser tab whose `<html>` attribute the boot script
+ *  could not reach for some reason). */
+export function applyCardLookBeforePaint() {
+  try {
+    document.documentElement.setAttribute("data-card-look", cachedCardLook);
+  } catch {
+    /* no document */
+  }
+}
+
+/**
+ * Wire the Card look control nav.js renders inside Home -> Settings,
+ * beside Language. Two buttons, not a <select> -- the issue's own spec --
+ * so nav.js stays a pure renderer (I2) and this function, like
+ * mountAppLangControl() above, is the only place that reads the stored
+ * value or attaches a handler.
+ *
+ * Deliberately does NOT reload the page: a card-look change only ever
+ * flips which CSS custom properties are live, and every element already
+ * reads them on every repaint -- there is nothing to re-render.
+ */
+export function mountCardLookControl(container) {
+  if (!container) return null;
+  const buttons = container.querySelectorAll("[data-card-look-btn]");
+  if (!buttons.length) return null;
+  const sync = () => {
+    buttons.forEach((btn) => {
+      btn.setAttribute("aria-pressed", btn.getAttribute("data-card-look-btn") === getCardLook() ? "true" : "false");
+    });
+  };
+  sync();
+  buttons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      setCardLook(btn.getAttribute("data-card-look-btn"));
+      sync();
+    });
+  });
+  return buttons;
+}

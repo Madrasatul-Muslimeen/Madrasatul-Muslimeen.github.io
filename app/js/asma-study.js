@@ -19,7 +19,7 @@ import { doc, getDoc, collection, query, where, getDocs } from "https://www.gsta
 import { TENANT } from "./collections.js";
 import { langText, setLangText } from "./lang.js";
 import { roleListLabel } from "./labels.js";
-import { getAppLang } from "./prefs.js";
+import { getAppLang, mountCardLookControl } from "./prefs.js";
 import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./lang-sync.js";
 import { t, num, asmaName, translateStatic } from "./i18n.js";
 import { safeWrite } from "./errors.js";
@@ -70,6 +70,7 @@ export function initAsmaStudyPage() {
     navBar.innerHTML = renderNavBar(roles, viewAsRole);
     navHomeExtra.innerHTML = renderHomeExtras(roles);
     mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid }); // v07.37 -- Settings -> Language, saved to the account so it follows this person to their other devices
+    mountCardLookControl(navHomeExtra);
     mountBookmarkMenu(navBar, { db, getTenantId: () => activeTenantId, getPersonId: () => selectedPersonId, getBookmarksDoc: () => bookmarksDoc, getRoster: () => roster });
   }
   // LOAD SPEED part 4 (issue #280): same helper as topic-study.js/

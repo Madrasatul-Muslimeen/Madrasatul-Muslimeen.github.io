@@ -102,8 +102,10 @@ const ADMIN_LINKS = [
 // label rather than repeating the category's own "Bookmark" heading.
 const BOOKMARK_LINKS = [{ href: "bookmarks.html", label: "Manage bookmarks…" }];
 // Settings: Language became real in shell round 13 (13 Aug 2026) -- see
-// renderSettings() below. Appearance is still a placeholder.
-const SETTINGS_PLACEHOLDERS = ["Appearance"];
+// renderSettings() below. "Appearance" was its placeholder; issue #354's
+// Card look (Night/Light) is the real control that placeholder was standing
+// in for, so it is gone rather than kept alongside a working replacement.
+const SETTINGS_PLACEHOLDERS = [];
 // Shell round 20: the moving tagline strip's own editing screen. Tenant
 // content, so owner/prime only -- see renderSettings().
 // Backup is deliberately NOT ownerPrimeOnly, unlike Taglines beside it: the
@@ -277,10 +279,27 @@ export function renderHomeExtras(roles = []) {
 // while this is how this tenant's own app presents itself. That is also where
 // LAYOUT-BACKLOG.md item 7 says "Edit banner" belongs when it gets a home, so
 // this group is now the natural place for it rather than an empty promise.
+// Issue #354 -- Card look sits beside Language, the same "Settings" group,
+// same reasoning: an all-modules, per-browser display choice. Two buttons
+// (not a <select> -- the issue's own spec), wired by
+// js/prefs.js's mountCardLookControl() the same way mountAppLangControl()
+// wires the Language select just above. Still a pure renderer (I2): no
+// state read, no handler attached here.
+function renderCardLookButtons() {
+  return `<div class="nav-setting nav-card-look">
+    <label>${t("Card look")}</label>
+    <div class="nav-card-look-btns">
+      <button type="button" data-card-look-btn="night">${t("Night")}</button>
+      <button type="button" data-card-look-btn="light">${t("Light")}</button>
+    </div>
+  </div>`;
+}
+
 function renderSettings(canAdmin = false) {
   const options = APP_LANGS.map((l) => `<option value="${l.id}">${l.label}</option>`).join("");
   return `<div class="nav-cat-group"><div class="nav-cat-group-label">${t("Settings")}</div>
     <div class="nav-setting"><label for="navAppLangSelect">${t("Language")}</label><select id="navAppLangSelect">${options}</select></div>
+    ${renderCardLookButtons()}
     ${renderLinks(SETTINGS_LINKS, location.pathname.split("/").pop(), canAdmin)}
     ${renderPlaceholders(SETTINGS_PLACEHOLDERS)}</div>`;
 }
