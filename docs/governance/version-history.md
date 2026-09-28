@@ -623,3 +623,4 @@ total). Allocated by the MMSA Architect.
 08.94: Mushaf fonts kept offline (issue #335). Allocated by the MMSA Architect.
 08.95: Basic Arabic and Arabic in Depth word progress switched on. Allocated by the MMSA Architect.
 08.96: The app opens with no internet (issue #339). Allocated by the MMSA Architect.
+08.97: Landing page: scrolls on a phone, equal capsules, unit name in the wheel, wheel look. Allocated by the MMSA Architect.
