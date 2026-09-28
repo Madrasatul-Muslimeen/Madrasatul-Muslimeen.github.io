@@ -1557,7 +1557,10 @@ console.log("\n=== 29. Shell round 17: the reading screen ===");
   // why hiding the whole read bar there had to stop.
   const dockShown = () => page.evaluate(() => getComputedStyle(document.getElementById("dock")).display !== "none");
   const dockBeforeTap = await dockShown();
-  await page.click("#ayahPanels", { position: { x: 5, y: 5 } });
+  // Updated in place (v08.103, issue #348): #ayahPanels' top-left corner now
+  // holds the Surah heading / unit markers, real buttons that open the Unit
+  // Card; "a tap on the text" means the āyah's own Arabic text.
+  await page.click("#ayahPanels .ayah-arabic", { position: { x: 5, y: 5 } });
   await page.waitForTimeout(300);
   check("29d a tap on the text no longer changes full screen", (await dockShown()) === dockBeforeTap);
   check("29d the full-screen button is still reachable while full screen is on",
