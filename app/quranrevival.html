@@ -5039,7 +5039,8 @@
       createListeningSession, listeningCompletionArgs,
       wbwEngagementArgs,
       studyEvidencePersistenceReady, studyEvidencePersistenceReason,
-      unitTypeRecordsEvidence,
+      unitTypeRecordsEvidence, unitTypeNeedsReadingUnitsGate,
+      readingUnitsPersistenceReady, readingUnitsPersistenceReason,
     } from "./js/study-event-wiring.js";
     import { getBookmarks, saveBookmark, removeSavedBookmark, updateSavedBookmarkFields, findSavedBookmark, createFolder, flattenFolderTree } from "./js/bookmarks.js";
     import { openBookmarkNamePopover } from "./js/bookmark-popover.js";
@@ -14697,15 +14698,25 @@
       return { title: "", items: [] };
     }
 
-    /** "Mark as read" -- ADR-008 v1 only has an evidence shape for
-        āyah/range/surah (EVIDENCE_UNIT_TYPES, study-event-wiring.js); the
-        Unit Card never opens for a bare āyah, so only surah/range are ever
-        enabled here. Ruku'/Page say recording is coming; Hizb/Juz say it is
-        planned for later -- the spec's own wording, never a silent no-op. */
+    /** "Mark as read" -- ADR-008 v1's evidence shape covers āyah/range/surah/
+        ruku/page (EVIDENCE_UNIT_TYPES, study-event-wiring.js; issue #349
+        widened it from ayah/range/surah to also take ruku and page); the
+        Unit Card never opens for a bare āyah, so surah/range/ruku/page are
+        the ones that ever reach here. Ruku'/Page need a SECOND gate on top
+        of the general one -- study-reading-units-readiness.js -- because the
+        Owner has not yet published the Rules candidate that admits them
+        (Owner decision 20: "Ruku' and Page: yes."). Hizb/Juz say recording
+        is planned for later -- the spec's own wording, never a silent
+        no-op ("Hizb and Juz: later."). */
     function unitCardMarkAsReadState(info) {
       if (!info) return { enabled: false, reason: "" };
-      if (unitTypeRecordsEvidence(info.unitType)) return { enabled: studyEvidencePersistenceReady(), reason: studyEvidencePersistenceReady() ? "" : studyEvidenceUnavailableText(false) };
-      if (info.unitType === "ruku" || info.unitType === "page") return { enabled: false, reason: t("Recording a completed reading here is coming soon.") };
+      if (unitTypeRecordsEvidence(info.unitType)) {
+        if (!studyEvidencePersistenceReady()) return { enabled: false, reason: studyEvidenceUnavailableText(false) };
+        if (unitTypeNeedsReadingUnitsGate(info.unitType) && !readingUnitsPersistenceReady()) {
+          return { enabled: false, reason: readingUnitsUnavailableText(false) };
+        }
+        return { enabled: true, reason: "" };
+      }
       return { enabled: false, reason: t("Recording a completed reading here is planned for later.") };
     }
 
@@ -14713,6 +14724,7 @@
       const info = unitCardCurrentInfo;
       if (!info || info.unitKey !== unitKey) return;
       if (!unitTypeRecordsEvidence(info.unitType) || !studyEvidencePersistenceReady()) return;
+      if (unitTypeNeedsReadingUnitsGate(info.unitType) && !readingUnitsPersistenceReady()) return;
       const args = readingCompletionArgs({
         tenantId: activeTenantId, personId: currentActingPersonId(), unitKey: info.unitKey, unitType: info.unitType,
         translationLangs: getQuranTranslationLangs(), at: new Date(), weekStartsOn: tenantWeekStartsOn,
@@ -17859,6 +17871,13 @@
       return long
         ? t("Recording study activity is not available yet. Nothing was saved and nothing was lost — this will be switched on once the database is ready.")
         : t("Recording study activity is not available yet.");
+    }
+
+    /** Issue #349's own second, narrower gate -- shown only for Ruku'/Page "mark as read" once the general gate above is already open but the Owner has not yet published the amendment admitting these two unit types. */
+    function readingUnitsUnavailableText(long) {
+      return long
+        ? t("Recording a Ruku' or Page as read is not switched on yet. It is built and waiting on a small Rules update from the Owner. Nothing was saved and nothing was lost.")
+        : t("Recording a Ruku' or Page as read is not switched on yet.");
     }
 
     /** Shows a neutral, dismissable notice. NOT errors.js's red banner: nothing failed, and saying "that save did not go through" about a write that was never attempted would be untrue. */
