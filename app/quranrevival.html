@@ -9424,7 +9424,7 @@
       const band = document.getElementById("wheelIntroBand");
       const col = document.querySelector("#wheelSection .wheel-col");
       if (!row || !band || !col) return;
-      const wide = window.matchMedia("(min-width: 900px)");
+      const wide = window.matchMedia("(min-width: 721px)");
       const place = () => {
         if (wide.matches) { if (row.parentElement !== band) band.appendChild(row); }
         else if (row.parentElement !== col) col.insertBefore(row, col.firstChild);
