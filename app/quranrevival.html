@@ -442,7 +442,9 @@
      button costs the landing page no height at all. */
   .wheel-heading { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
   .my-status-head-btn {
-    flex: 0 0 auto; min-height: 36px; margin: -9px 0; padding: 0.25rem 0.85rem;
+    /* bottom margin -9px -> -2px, 28 Sep 2026: at -9px the button's lower
+       edge sat 6px inside the wheel card's top edge (measured). */
+    flex: 0 0 auto; min-height: 36px; margin: -9px 0 -2px; padding: 0.25rem 0.85rem;
     border: none; border-radius: 999px; cursor: pointer;
     background: linear-gradient(180deg, #ecd49a, #C9A24B); color: #221904;
     font-family: 'Inter', sans-serif; font-weight: 800; font-size: 0.8rem; line-height: 1.2;
@@ -572,29 +574,36 @@
     .wheel-intro-capsule { font-size: 0.67rem; padding: 0.25rem 0.55rem; }
     .wheel-unit-capsule { padding: 0.25rem 0.5rem; }
   }
-  /* 27 Sep 2026, owner: "The width of the capsules are different. make them
-     similar (like the width of the 'approach the Quran...')." One grid whose
-     columns are all as wide as the widest capsule (the caption), every
-     capsule the same 36px tall. On a phone they stack, one per line --
-     measured: at 390px the caption alone is 231px, so two of that width
-     cannot share a line -- and the page scrolls now, so the stack costs the
-     Approaches list nothing it cannot scroll to. */
-  .wheel-intro-settled {
-    display: grid; grid-auto-flow: row; grid-template-columns: minmax(0, max-content);
-    justify-content: center; justify-items: stretch; gap: 0.35rem;
-  }
-  .wheel-intro-settled > .wheel-intro-capsule,
-  .wheel-intro-settled > .wheel-unit-wrap,
-  .wheel-intro-settled .wheel-unit-wrap > .wheel-unit-capsule {
-    width: 100%; box-sizing: border-box;
-  }
+  /* 28 Sep 2026, owner: "Place three capsule on one row in PC and Tab. I
+     think you can also fit this in the mobile too. If not Place My Status at
+     the Mastery Wheel Bar, in the right edge." Measured first: the wheel's
+     own column is 336-434px wide on tablet/PC, and three capsules as wide as
+     the caption need ~670px -- so on tablet/PC (>=721px) the row is moved
+     out of the column into #wheelIntroBand, a band across the top of the
+     whole wheel card, where three equal columns fit (placeWheelIntroRow()).
+     On a phone even the natural widths do not fit (459px against 377px at
+     390px), so "My Status" is the Mastery Wheel bar's own right-edge button
+     there (#myStatusBtn) and the caption and "Choose a Unit" share one line.
+     Every capsule is the same 36px tall at every width. */
   .wheel-intro-settled > .wheel-intro-capsule {
-    display: inline-flex; align-items: center; justify-content: center; min-height: 36px; text-align: center;
+    display: inline-flex; align-items: center; justify-content: center; min-height: 36px; box-sizing: border-box; text-align: center;
   }
-  .wheel-intro-settled .wheel-unit-wrap { display: block; }
-  /* Stacked at every width, measured: at 1100px a row of three capsules as
-     wide as the caption (231px each) does not fit the wheel's column, and
-     squeezing them to equal thirds wrapped the caption onto two lines. */
+  #wheelIntroBand { display: none; }
+  #wheelIntroBand:not(:empty) { display: block; flex: 0 0 auto; padding: 0.35rem 0 0.5rem; }
+  #wheelIntroBand > .wheel-intro-settled {
+    display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
+    width: max-content; max-width: 100%; margin: 0 auto; gap: 0.4rem; justify-items: stretch;
+  }
+  #wheelIntroBand > .wheel-intro-settled > .wheel-intro-capsule,
+  #wheelIntroBand > .wheel-intro-settled > .wheel-unit-wrap,
+  #wheelIntroBand .wheel-unit-wrap > .wheel-unit-capsule { width: 100%; box-sizing: border-box; }
+  #wheelIntroBand .wheel-unit-wrap { display: block; }
+  #wheelIntroBand .wheel-intro-capsule { font-size: 0.8rem; }
+  .my-status-head-btn { display: none; }
+  @media (max-width: 720px) {
+    .wheel-heading > .my-status-head-btn { display: inline-flex; align-items: center; }
+    #myStatusWideBtn { display: none; }
+  }
 
   /* 27 Sep 2026, owner: "Enable the entire screen to move up on up scrolling,
      so that the approaches list will appear in the full screen. (currently
@@ -2568,8 +2577,6 @@
   .hifz-tajweed-toggle.is-disabled input[type="checkbox"] { cursor: default; }
   /* Owner decision 9 / the permission report's own point 2 -- shown while
      Tajweed is on, covering both fonts with one credit. */
-  .hifz-tajweed-credit { font-size: 10px; color: #8a7c55; text-align: center; margin-top: 2px; }
-  .hifz-tajweed-credit a { color: #1F3A6E; }
   /* Architect review, 27 Sep 2026: .hifz-page carries the page's GLYPH font
      as its font-family, and the page's own words inherit it on purpose. The
      label row, the credit and the error lines are ordinary text and must not
@@ -2578,7 +2585,7 @@
      "QuranfontsprovidedbyQuranFoundation" (seen in a real-font screenshot;
      the suite's stand-in font could not show it). The label ink is darkened
      for 11px text on the page cream (#8a7c55 is about 3.9:1). */
-  .hifz-page-header, .hifz-tajweed-credit, .hifz-page .hifz-line-error { font-family: 'Inter', system-ui, sans-serif; }
+  .hifz-page-header, .hifz-page .hifz-line-error { font-family: 'Inter', system-ui, sans-serif; }
   .hifz-tajweed-toggle { color: #5a4a2a; }
   .hifz-line { display: flex; flex-wrap: nowrap; direction: rtl; gap: 0.12em; padding: 0.15em 0; font-size: 34px; font-size: 6.07cqw; line-height: 2.05; }
   .hifz-line.centered { justify-content: center; }
@@ -2793,7 +2800,9 @@
      like the printed Mushaf's own banner, and its name reads at about the
      Bismillah's size. line-height 1.1, not the page's 2.05, so the taller
      glyph costs ~44px of page height at 360px rather than ~140px. */
-  .hifz-surah-header.glyph-loaded { background: none; border: none; padding: 0.05em 0; font-size: 80px; font-size: 24cqw; line-height: 1.1; }
+  /* 28 Sep 2026, Owner: "make the Sura name width edge to edge". 24cqw ->
+     30cqw: 3.3em x 30cqw = 99% of the page's text width (measured below). */
+  .hifz-surah-header.glyph-loaded { background: none; border: none; padding: 0.05em 0; font-size: 100px; font-size: 30cqw; line-height: 1.1; }
   .hifz-basmallah { justify-content: center; font-size: 16px; font-size: 4.5cqw; }
   .hifz-line-error { font-size: 13px; color: #a33; text-align: center; }
   .page-flow-ayah { border-bottom: 1px solid #eee; padding-bottom: 0.6rem; margin-bottom: 0.6rem; }
@@ -3482,7 +3491,13 @@
             <button type="button" id="wheelPopupMaximizeBtn" title="Maximize" aria-pressed="false">⬜</button>
           </div>
         </div>
-        <h2 class="wheel-heading"><span>Mastery Wheel</span></h2>
+        <h2 class="wheel-heading"><span>Mastery Wheel</span><button type="button" id="myStatusBtn" class="my-status-head-btn">My Status</button></h2>
+        <!-- 28 Sep 2026: on tablet/PC (>=721px) the capsule row
+             (#wheelIntroSettled) is moved in here by placeWheelIntroRow(), so
+             its three capsules can share one row across the whole card; on a
+             phone it goes back to the top of the wheel column and "My Status"
+             is #myStatusBtn on the bar above, at its right edge. -->
+        <div id="wheelIntroBand"></div>
         <!-- 27 Sep 2026, owner: "The width of the capsules are different.
              make them similar (like the width of the 'approach the Quran...')."
              The heading's own "My Status" button (v08.92, there only to save a
@@ -8635,6 +8650,22 @@
 
     if (myStatusCloseBtn) myStatusCloseBtn.setAttribute("aria-label", t("Close My Status"));
     document.getElementById("myStatusWideBtn")?.addEventListener("click", openMyStatus);
+    document.getElementById("myStatusBtn")?.addEventListener("click", openMyStatus);
+    // 28 Sep 2026 -- see #wheelIntroBand's CSS. One node, moved (never
+    // copied), so the "Choose a Unit" palette and every listener go with it.
+    (function placeWheelIntroRow() {
+      const row = document.getElementById("wheelIntroSettled");
+      const band = document.getElementById("wheelIntroBand");
+      const col = document.querySelector("#wheelSection .wheel-col");
+      if (!row || !band || !col) return;
+      const wide = window.matchMedia("(min-width: 721px)");
+      const place = () => {
+        if (wide.matches) { if (row.parentElement !== band) band.appendChild(row); }
+        else if (row.parentElement !== col) col.insertBefore(row, col.firstChild);
+      };
+      place();
+      wide.addEventListener("change", place);
+    })();
     myStatusCloseBtn?.addEventListener("click", closeMyStatus);
     myStatusMountEl?.addEventListener("click", (e) => { if (e.target === myStatusMountEl) closeMyStatus(); });
     document.addEventListener("keydown", (e) => {

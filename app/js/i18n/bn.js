@@ -2960,6 +2960,9 @@ export const BN = {
   "Tajweed colours (not supported on this browser)": "তাজবীদের রঙ (এই ব্রাউজারে সমর্থিত নয়)", // ?
   "Tajweed colours couldn't load for this page — showing the plain page.": "এই পৃষ্ঠার জন্য তাজবীদের রঙ লোড হয়নি — সাধারণ পৃষ্ঠা দেখানো হচ্ছে।", // ?
   "Quran fonts provided by Quran Foundation": "কুরআনের ফন্ট সরবরাহ করেছে Quran Foundation", // ?
+  // 28 Sep 2026 -- about.html's Acknowledgements section, now shown to everyone.
+  "Acknowledgements": "কৃতজ্ঞতা",
+  "These fonts draw every page of the Mushaf view, plain and with Tajweed colours. The app loads them from Quran Foundation and keeps the pages you have opened on your phone, so you can read them offline.": "মুসহাফ ভিউয়ের প্রতিটি পৃষ্ঠা এই ফন্ট দিয়ে আঁকা হয়, সাধারণভাবে ও তাজবীদের রঙসহ। অ্যাপটি এগুলো Quran Foundation থেকে আনে এবং আপনার খোলা পৃষ্ঠাগুলো ফোনে রেখে দেয়, যাতে অফলাইনেও পড়তে পারেন।",
   // 27 Sep 2026 -- landing page: the chosen unit's name in the wheel's
   // centre, and the wheel-look switch (Dark / Light / Colour).
   "Āyāt {from}–{to}": "আয়াত {from}–{to}", // ?

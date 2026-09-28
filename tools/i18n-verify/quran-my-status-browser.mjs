@@ -102,6 +102,8 @@ async function waitForWheelReady(page) {
 
 function readButtonLayout(page) {
   return page.evaluate(() => {
+    // 28 Sep 2026: the heading's #myStatusBtn is back on phones (<=721px);
+    // #myStatusWideBtn is the tablet/PC one. Earlier note kept below.
     // UPDATED IN PLACE, 27 Sep 2026, reason recorded: the heading's own
     // #myStatusBtn is gone -- the Owner asked for equal capsules, and the
     // landing page now scrolls on a phone, so #myStatusWideBtn is the one
@@ -157,7 +159,13 @@ async function runScenarios(lang) {
   const before = await page.evaluate(() => window.__fsLog.filter((r) => r.col === "records" && r.kind === "getDocs").length);
   check(`[${lang}] I9: no records QUERY before "My Status" is pressed (measured ${before})`, before === 0);
 
-  await clickSafely(page, "#myStatusWideBtn"); // updated in place 27 Sep 2026 -- see readButtonLayout()
+  // Updated in place again 28 Sep 2026: on a phone (this scenario is 390px)
+  // "My Status" is the Mastery Wheel bar's #myStatusBtn once more; tablet/PC
+  // show #myStatusWideBtn in the one-row band. Press whichever is displayed.
+  const statusBtnId = await page.evaluate(() => ["myStatusBtn", "myStatusWideBtn"]
+    .find((id) => { const el = document.getElementById(id); return el && getComputedStyle(el).display !== "none" && el.getBoundingClientRect().width > 0; }));
+  check(`[${lang}] a "My Status" button is displayed (#myStatusBtn at 390px)`, statusBtnId === "myStatusBtn", String(statusBtnId));
+  await clickSafely(page, `#${statusBtnId}`);
   await page.waitForFunction(() => {
     const body = document.getElementById("myStatusBody");
     return !!body && body.querySelectorAll(".my-status-row-btn").length > 0;

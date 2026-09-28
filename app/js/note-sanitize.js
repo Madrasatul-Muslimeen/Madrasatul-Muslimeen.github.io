@@ -8,10 +8,11 @@
 // stored-XSS surface: one author's malicious `bodyHtml` would otherwise run
 // in every reader's browser, under their own session.
 //
-// DOMPurify is loaded from a CDN <script> tag in notes.html's own <head> --
-// this codebase has never vendored a third-party script before, so there is
-// no local copy to import as an ES module -- and is read off `window.DOMPurify`
-// here rather than imported. That is also what keeps NOTE_ALLOWED_TAGS/
+// DOMPurify is loaded by a plain <script> tag in each Note page's own <head>
+// -- since v08.98 from the app's own copy, app/vendor/purify.min.js, rather
+// than a CDN, so a Note's body still renders with no internet (the service
+// worker keeps same-origin files; it never keeps a CDN's) -- and is read off
+// `window.DOMPurify` here rather than imported. That is also what keeps NOTE_ALLOWED_TAGS/
 // NOTE_ALLOWED_ATTR testable in plain Node, with no DOM and no network access
 // at all: a check can assert the allow-list itself excludes every dangerous
 // tag/attribute without ever running a browser (see

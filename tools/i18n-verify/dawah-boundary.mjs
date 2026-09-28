@@ -430,6 +430,11 @@ const PUBLISHED_DEPLOYMENTS = [
   "docs/governance/phase7-dawah-DEPLOYMENT-candidate-2026-09-24.rules",
   "docs/governance/2026-09-25-wordpress-import-DEPLOYMENT-candidate.rules",
   "docs/governance/2026-09-26-lemma-progress-DEPLOYMENT-candidate.rules",
+  // Added 28 Sep 2026 (Architect): the Owner published the word-levels
+  // deployment ("Word levels rules are live.", v08.95), built on the
+  // lemma-progress file with one condition widened. Red since then because
+  // this list was not extended; the dawahPages-block half is unchanged.
+  "docs/governance/2026-09-26-word-levels-DEPLOYMENT-candidate.rules",
 ];
 function dawahBlock(text) {
   const start = text.indexOf("match /dawahPages/");

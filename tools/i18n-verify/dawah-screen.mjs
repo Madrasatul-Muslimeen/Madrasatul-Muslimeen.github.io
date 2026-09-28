@@ -145,12 +145,17 @@ check("MUTATION-PROVEN: replacing the canAct condition with a constant makes the
 });
 
 // --- 4. A PAGE'S BODY IS NEVER RENDERED UNSANITIZED -------------------------
-check("DOMPurify is loaded from the pinned CDN, as a plain <script> tag, in dawah.html's own <head>", () => {
+// UPDATED IN PLACE, 28 Sep 2026 (v08.98, Notes offline): DOMPurify is the
+// app's own copy now (app/vendor/purify.min.js), because the service worker
+// keeps same-origin files and never a CDN's -- loaded from jsDelivr, a Note
+// body could not render with no internet. Same intent: a plain <script> in
+// the page's own <head>, loaded before the page's module code.
+check("DOMPurify is loaded from the app's own vendored copy, as a plain <script> tag, in dawah.html's own <head>", () => {
   const headMatch = page.match(/<head>([\s\S]*?)<\/head>/);
   assert.ok(headMatch, "dawah.html has no <head> section");
   assert.ok(
-    /<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/dompurify@3\/dist\/purify\.min\.js"><\/script>/.test(headMatch[1]),
-    "the DOMPurify CDN <script> tag is missing from dawah.html's <head>"
+    /<script src="vendor\/purify\.min\.js"><\/script>/.test(headMatch[1]) && !/jsdelivr/.test(page),
+    "the vendored DOMPurify <script> tag is missing from dawah.html's <head>, or a CDN copy is still loaded"
   );
 });
 check("the render path never assigns bodyHtml to innerHTML except through sanitizeNoteHtml()", () => {

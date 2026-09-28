@@ -296,6 +296,51 @@ const realErrors = (errors) => errors.filter((e) => !/Failed to load resource: n
   await ctx.close();
 }
 
+// =============================================================================
+// 5. Notes offline (v08.98): DOMPurify is the app's own copy now, so the
+//    Note page can render a Note's body with no network. MUTATION TARGET:
+//    point notes.html back at the CDN and window.DOMPurify is undefined
+//    offline, so sanitizeNoteHtml() throws (it fails closed).
+// =============================================================================
+{
+  console.log("\n=== Offline -- notes.html can still sanitise and show a Note body ===");
+  const ctx = await newContext(browser, { allowServiceWorker: true, viewport: VIEWPORT, appLang: "en" });
+  const firstOpen = await openPage(ctx, "/app/notes.html");
+  await waitForController(firstOpen.page);
+  check("the vendored DOMPurify is in the app-files cache after one online open",
+    await waitForCacheState(firstOpen.page, async () => {
+      for (const n of await caches.keys()) {
+        if (!n.startsWith("mm-app-")) continue;
+        const keys = await (await caches.open(n)).keys();
+        if (keys.some((r) => r.url.endsWith("/app/vendor/purify.min.js"))) return true;
+      }
+      return false;
+    }));
+  await firstOpen.page.close();
+  // harness.mjs routes the jsDelivr DOMPurify URL to a local copy (the
+  // sandbox proxy breaks that CDN's certificate). Real offline has no such
+  // stand-in, so refuse it here -- otherwise a page still pointing at the CDN
+  // would pass this case for a reason the Owner's phone never has.
+  const CDN = "https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js";
+  await ctx.unroute(CDN);
+  await ctx.route(CDN, (route) => route.abort("internetdisconnected"));
+  await ctx.setOffline(true);
+  const { page } = await openPage(ctx, "/app/notes.html");
+  const result = await page.evaluate(async () => {
+    const hasPurify = typeof window.DOMPurify?.sanitize === "function";
+    let clean = null, err = null;
+    try {
+      const m = await import("/app/js/note-sanitize.js");
+      clean = m.sanitizeNoteHtml('<p>Bismillah<script>alert(1)</script><b>x</b></p>');
+    } catch (e) { err = String(e?.message || e); }
+    return { hasPurify, clean, err };
+  });
+  check("MUTATION TARGET: offline, window.DOMPurify is loaded on notes.html", result.hasPurify, JSON.stringify(result));
+  check("offline, a Note body is sanitised (script removed, formatting kept)",
+    !!result.clean && result.clean.includes("<b>x</b>") && !/script/i.test(result.clean), JSON.stringify(result));
+  await ctx.close();
+}
+
 console.log(`\n==== App offline boot (issue #339): ${pass} passed, ${fail} failed ====`);
 await browser.close();
 process.exit(fail === 0 ? 0 : 1);

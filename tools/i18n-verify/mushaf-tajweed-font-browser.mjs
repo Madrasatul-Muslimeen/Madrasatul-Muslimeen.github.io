@@ -206,8 +206,15 @@ for (const lang of ["en", "bn"]) {
   const toggles = await tajweedToggles(page);
   check(`[${lang}] every page's own toggle now reflects the one shared preference (checked)`, toggles.every((t) => t.checked === true), JSON.stringify(toggles));
 
-  const creditLink = await page.evaluate(() => !!document.querySelector(`a[href="${"https://quran.foundation/"}"]`));
-  check(`[${lang}] the "Quran fonts provided by Quran Foundation" credit is shown while Tajweed is on`, creditLink);
+  // INVERTED IN PLACE, 28 Sep 2026, reason recorded: the Owner moved the
+  // credit to about.html only ("How about we declare this in the about
+  // page?"); Quran Foundation's terms ask for a reasonably accessible place,
+  // which section 6 below proves. Positive control: the page itself drew.
+  const creditState = await page.evaluate(() => ({
+    pages: document.querySelectorAll(".hifz-page").length,
+    link: !!document.querySelector(`.hifz-page a[href="${"https://quran.foundation/"}"]`),
+  }));
+  check(`[${lang}] no credit line under a Tajweed page any more (it is on About)`, creditState.pages > 0 && !creditState.link, JSON.stringify(creditState));
 
   // Word tap still opens the Word Card, in Tajweed mode.
   await page.evaluate(() => { document.querySelector('.hifz-word[data-word-occurrence]')?.click(); });
@@ -326,8 +333,8 @@ for (const lang of ["en", "bn"]) {
     return r.left >= cr.left - 5 && r.right <= cr.right + 5;
   }, second, { timeout: 5000 }).catch(() => {});
   check("after toggling on the second page, the reader is still on it (not sent back to the first)", (await inView()) === second, `in view: ${await inView()}, expected ${second}`);
-  const fonts = await page.evaluate(() => [...document.querySelectorAll(".hifz-page-header, .hifz-tajweed-credit")].map((el) => getComputedStyle(el).fontFamily));
-  check("the label row and credit use a text font, never the page's glyph font",
+  const fonts = await page.evaluate(() => [...document.querySelectorAll(".hifz-page-header")].map((el) => getComputedStyle(el).fontFamily));
+  check("the label row uses a text font, never the page's glyph font",
     fonts.length > 0 && fonts.every((f) => !/hifz-/.test(f)), JSON.stringify(fonts));
   check("no unexpected page errors", realErrors(errors).length === 0, realErrors(errors).join("; "));
   await ctx.close();
@@ -434,6 +441,14 @@ for (const lang of ["en", "bn"]) {
   const { page, errors } = await openPage(ctx, "/app/about.html");
   const hasCredit = await page.evaluate(() => !!document.querySelector(`a[href="${"https://quran.foundation/"}"][target="_blank"]`));
   check(`[${lang}] about.html links to Quran Foundation with a real, tappable credit`, hasCredit);
+  // 28 Sep 2026: now the ONLY credit, so it must show before sign-in -- it
+  // sits outside #app. Visible and on screen, not merely in the DOM.
+  const shown = await page.evaluate(() => {
+    const a = document.querySelector(`.acknowledgements a[href="${"https://quran.foundation/"}"]`);
+    const r = a?.getBoundingClientRect();
+    return !!a && !a.closest("#app") && r.width > 0 && r.height > 0;
+  });
+  check(`[${lang}] the About credit is outside #app and really displayed`, shown);
   check(`[${lang}] no unexpected page errors`, realErrors(errors).length === 0, realErrors(errors).join("; "));
   await ctx.close();
 }

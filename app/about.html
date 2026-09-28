@@ -47,6 +47,18 @@
     <div id="navBar"></div>
   </nav>
 
+  <!-- Issue #332 / 28 Sep 2026, Owner: "declare this in the about page". One
+       credit covering both the plain (QCF V2) and Tajweed (QPC V4 COLRv1)
+       Mushaf page fonts. OUTSIDE #app on purpose, so it shows before sign-in
+       too: this is now the only place the app gives the credit (the line
+       under each Tajweed page is gone), and Quran Foundation's terms ask for
+       "a reasonably accessible place". -->
+  <section class="acknowledgements" aria-labelledby="ackHeading">
+    <h2 id="ackHeading">Acknowledgements</h2>
+    <p><a href="https://quran.foundation/" target="_blank" rel="noopener noreferrer">Quran fonts provided by Quran Foundation</a></p>
+    <p>These fonts draw every page of the Mushaf view, plain and with Tajweed colours. The app loads them from Quran Foundation and keeps the pages you have opened on your phone, so you can read them offline.</p>
+  </section>
+
   <div id="app" style="display:none;">
 
     <div id="versionLine" style="margin:1rem 0; font-size:0.95rem; color:#555;"></div>
@@ -63,11 +75,6 @@
       <tbody id="phaseRows"></tbody>
     </table>
 
-    <h2>Acknowledgements</h2>
-    <!-- Issue #332 -- one credit covering both the plain (QCF V2) and
-         Tajweed (QPC V4 COLRv1) Mushaf page fonts, per the permission
-         report's own binding rule 2 and Owner decision 9. -->
-    <p><a href="https://quran.foundation/" target="_blank" rel="noopener noreferrer">Quran fonts provided by Quran Foundation</a></p>
   </div>
 
   <script type="module">
