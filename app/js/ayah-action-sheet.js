@@ -30,6 +30,7 @@
 
 import { t, num } from "./i18n.js";
 import { statusLabel } from "./unit-keys.js";
+import { wireUnitLadder } from "./unit-ladder.js";
 
 function escapeHtml(s) {
   return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -361,7 +362,7 @@ export function renderAyahActionSheetHtml({
  * onShare(unitKey), onApproachPicked(unitKey, approachId),
  * onStageChoice(unitKey, approachId, statusId), onPoster(unitKey),
  * onSeeOnWheel(unitKey), onWordTap(occurrenceId), onRelatedJump(surah, ayah),
- * onClose(). Every action
+ * onRung(unitKey) (issue #348 -- the ladder), onClose(). Every action
  * callback fires onClose() FIRST -- several of them (Bookmark, Note, Asma,
  * QCR, File in folder, Make a poster, See on the wheel, a word tap) trigger
  * a re-render of whatever's underneath the sheet, and closing first means
@@ -387,6 +388,12 @@ export function attachAyahActionSheetHandlers(container, callbacks = {}) {
     });
   };
   sheet.querySelector("[data-ayah-sheet-close]")?.addEventListener("click", () => callbacks.onClose?.());
+  // Issue #348 -- the ladder at the card's own top (present only when the
+  // caller passed a ladderHtml; wireUnitLadder() itself is a no-op when
+  // there is no ".unit-ladder" in the markup). Does not close the sheet --
+  // the āyah rung's own callback decides whether tapping it should (the
+  // caller treats it as a no-op, since this IS the Ayah Card already).
+  wireUnitLadder(sheet, (rungUnitKey) => callbacks.onRung?.(rungUnitKey));
   sheet.querySelectorAll("[data-ayah-related-jump]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const [s, a] = btn.dataset.ayahRelatedJump.split(":").map(Number);
