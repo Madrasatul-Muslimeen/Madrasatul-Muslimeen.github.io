@@ -633,3 +633,4 @@ total). Allocated by the MMSA Architect.
 08.104: Study activity recording fixed; add an Approach from Catalogue. Allocated by the MMSA Architect.
 08.105: every unit on the wheel (issue #352). Allocated by the MMSA Architect.
 08.106: card look Night or Light, parts 1-2 (issue #354). Allocated by the MMSA Architect.
+08.107: card look parts 3-4, issue #354. Allocated by the MMSA Architect.

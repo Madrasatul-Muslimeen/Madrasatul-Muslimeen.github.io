@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.106",
+    "version": "08.107",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1049,8 +1049,20 @@
     {
       "version": "08.106",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Card look Night/Light: tokens, preference and five surfaces (issue #354 parts 1-2, PR #367 + review fixes).",
+      "integration": {
+        "authorizedOn": "2026-09-28",
+        "integratedOn": "2026-09-28",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "08.107",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Card look Night/Light on the Note frame, Hadith, QCR/Asma, bar palettes and Dawah; review contrast fixes.",
       "integration": {
         "authorizedOn": "2026-09-28",
         "integratedOn": "2026-09-28",
@@ -1059,8 +1071,9 @@
       }
     }
   ],
-  "nextUnallocated": "08.107",
+  "nextUnallocated": "08.108",
   "nextUnallocatedNote": [
+    "v08.107 was allocated to card look parts 3-4, issue #354, 2026-09-28.",
     "v08.106 was allocated to card look Night or Light, parts 1-2 (issue #354), 2026-09-28.",
     "v08.105 was allocated to every unit on the wheel (issue #352), 2026-09-28.",
     "v08.104 was allocated to Study activity recording fixed; add an Approach from Catalogue, 2026-09-28.",
