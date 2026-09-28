@@ -59,3 +59,14 @@ The Owner also asked for an operating prompt for ChatGPT as advisor-reviewer:
 | # | Question | Owner's words | Meaning |
 |---|---|---|---|
 | 17 | v08.99 is the last two-digit number in the 08 line. Open v09.00, or continue? | **"no. continue v08.100 and so on until a substantial changes in the app."** | The 08 line continues as **v08.100, v08.101, …**; v09.00 is kept for a substantial change to the app. The version checks accept a two- or three-digit minor and compare versions by number, not as text (so v08.100 comes after v08.99). |
+
+## 28 Sep 2026 — the Unit Card (acting on units bigger than an āyah)
+
+The Architect's proposal and working demo: https://claude.ai/artifact/SC8HePL1JDxtSG6hSggNfd
+(one Unit Card for Ruku', Page, Hizb, Juz, Surah and Range, opened from markers in the Read view and from a ladder on the Ayah Card; Take an Approach, Note, Bookmark, Play, Mark as read, Status, Inside). The Owner's answers:
+
+| # | Question | Owner's words | Meaning |
+|---|---|---|---|
+| 18 | A unit button on the Read bar? (The Architect suggested not for now: the bar already wraps on phones.) | **"yes"** | Build the gold unit chip on the Read bar, naming the chosen Study Unit and opening its Unit Card. Its cost to the Read bar is measured at every phone width and reported; the reading area must not lose more than it has to. |
+| 19 | The "End of Ruku' — how did it go?" prompt: on or off by default? | **"as you suggested"** | **On by default**, with a setting to turn it off. It appears once, after the last āyah of the chosen Study Unit, and never blocks reading. |
+| 20 | "Mark as read" for Ruku', Page, Hizb and Juz? | **"as suggested"** | **Ruku' and Page: yes. Hizb and Juz: later.** Recording Activity for Ruku' and Page amends ADR-008 and needs a Rules change the Owner publishes; until then those buttons explain why they are off. |
