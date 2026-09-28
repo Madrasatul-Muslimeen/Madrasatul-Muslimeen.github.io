@@ -67,13 +67,27 @@ const DANGEROUS_TAGS = ["script", "iframe", "object", "embed", "style", "a", "sv
 // wanting to allow it for one purpose.
 const DANGEROUS_ATTR_PATTERN = /^on|href|style|xlink/i;
 
-check("DOMPurify is loaded from the pinned CDN, as a plain <script> tag, in notes.html's own <head>", () => {
-  const headMatch = notesHtml.match(/<head>([\s\S]*?)<\/head>/);
-  assert.ok(headMatch, "notes.html has no <head> section");
-  assert.ok(
-    /<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/dompurify@3\/dist\/purify\.min\.js"><\/script>/.test(headMatch[1]),
-    "the DOMPurify CDN <script> tag is missing from notes.html's <head>"
-  );
+// UPDATED IN PLACE, 28 Sep 2026, reason recorded: DOMPurify used to load from
+// the jsdelivr CDN, so with no internet a Note's body was refused (sanitize
+// fails closed). The Owner asked for Notes to work offline, so the SAME pinned
+// library (3.4.16) is now served from the app itself (app/vendor/), which the
+// service worker keeps on the phone. The check is exactly as strict: a plain
+// <script> in the <head>, now the local copy, on every page that renders Notes,
+// and the copy really is the pinned version.
+const fsForVendor = await import("node:fs");
+for (const page of ["notes.html", "dawah.html", "journey-map.html"]) {
+  const html = fsForVendor.readFileSync(`app/${page}`, "utf8");
+  check(`DOMPurify is loaded from the app's own pinned copy, as a plain <script> tag, in ${page}'s <head>`, () => {
+    const headMatch = html.match(/<head>([\s\S]*?)<\/head>/);
+    assert.ok(headMatch, `${page} has no <head> section`);
+    assert.ok(/<script src="vendor\/purify\.min\.js"><\/script>/.test(headMatch[1]),
+      `the local DOMPurify <script> tag is missing from ${page}'s <head>`);
+    assert.ok(!/cdn\.jsdelivr\.net\/npm\/dompurify/.test(html), `${page} still loads DOMPurify from the CDN`);
+  });
+}
+check("the vendored DOMPurify is the pinned 3.4.16 build", () => {
+  const src = fsForVendor.readFileSync("app/vendor/purify.min.js", "utf8");
+  assert.ok(/@license DOMPurify 3\.4\.16 /.test(src.slice(0, 300)), "app/vendor/purify.min.js is not DOMPurify 3.4.16");
 });
 
 check("the render path never assigns bodyHtml to innerHTML except through sanitizeNoteHtml()", () => {
