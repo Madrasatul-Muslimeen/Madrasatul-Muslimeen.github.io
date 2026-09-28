@@ -37,10 +37,16 @@ let createSideEffect = null;           // simulate a racing writer landing first
 globalThis.__seCollections = { TENANT: Object.freeze({ ACTIVITY: "activity" }) };
 globalThis.__seFirestore = {
   doc: (_db, collectionPath, docId) => ({ key: `${collectionPath}/${docId}`, collectionPath, docId }),
+  // Architect review, 28 Sep 2026: modelled on the DEPLOYED rules, which
+  // this fake used not to be. The evidence read rule evaluates
+  // resource.data, so a read of a document that does not exist is DENIED,
+  // not "empty" -- the difference that let the real writer's read-first
+  // shape fail every event in production while this suite stayed green.
   getDoc: async (ref) => {
     counters.gets++;
     const row = store.get(ref.key);
-    return { id: ref.docId, exists: () => row !== undefined, data: () => row };
+    if (row === undefined) { const e = new Error("Missing or insufficient permissions."); e.code = "permission-denied"; throw e; }
+    return { id: ref.docId, exists: () => true, data: () => row };
   },
 };
 // P4-E -- the read side. `collection`/`query`/`limit` are recorded so the
@@ -67,6 +73,9 @@ globalThis.__seEnvelope = {
     counters.creates++;
     if (createSideEffect) { createSideEffect(); createSideEffect = null; }
     if (denyCreate) throw denyCreate;
+    // The deployed rules allow create only (never update), so a create on an
+    // id that already exists is denied -- modelled, as the real database does.
+    if (store.has(`${collectionPath}/${docId}`)) { const e = new Error("Missing or insufficient permissions."); e.code = "permission-denied"; throw e; }
     store.set(`${collectionPath}/${docId}`, { ...data, schemaVersion: 1, createdBy: uid });
   },
 };
@@ -133,19 +142,24 @@ await check("a retry writes nothing and reports written:false", async () => {
   assert.equal(second.written, false);
   assert.equal(second.eventId, first.eventId);
   assert.equal(store.size, 1);
-  assert.equal(counters.creates, 1, "the second attempt must not even try to write");
+  // UPDATED IN PLACE, 28 Sep 2026 (Architect review, live defect): a retry
+  // now ATTEMPTS the create -- reading first is what the deployed rules
+  // refuse -- and it is the database that refuses the duplicate. What is
+  // asserted is unchanged in substance: nothing new is stored, and it
+  // reports written:false rather than an error.
+  assert.equal(counters.creates, 2, "the retry attempts the create, and the database refuses it");
 });
 await check("ten retries still leave exactly one document", async () => {
   reset();
   for (let i = 0; i < 10; i++) await writeStudyActivityEvidence(db, ev());
   assert.equal(store.size, 1);
-  assert.equal(counters.creates, 1);
+  assert.equal(counters.creates, 10); // updated in place: each retry is a refused create (see above)
 });
 
 // --- A RACE IS ALSO A NO-OP, NOT AN ERROR ----------------------------------
 await check("a racing writer landing first is a no-op, not a failure", async () => {
   reset();
-  // Both readers saw "absent"; the other writer lands, then ours is denied.
+  // The other writer lands first, then ours is denied.
   createSideEffect = () => store.set(
     "activity/t1__p1__2026-09-13/evidence/reading.completed__approach_01__ayah:2:255__none__2026-09-14",
     { action: "practised" });
@@ -196,7 +210,7 @@ await check("MA-W a hundred words in one ayah on one day store ONE document", as
     await writeStudyActivityEvidence(db, ev({ eventType: "wbw.engaged", trackableId: "approach_04" }));
   }
   assert.equal(store.size, 1, "occurrence-level duplication must not multiply Activity evidence");
-  assert.equal(counters.creates, 1);
+  assert.equal(counters.creates, 100); // updated in place: each repeat is a create the database refuses
 });
 await check("MA-W a different ayah, and a different day, are separate evidence", async () => {
   reset();
@@ -232,13 +246,22 @@ await check("a mismatched event/Approach pair never reaches the database", async
 });
 
 // --- cost -------------------------------------------------------------------
-await check("a first write costs one read and one create; a retry costs one read", async () => {
+// Updated in place, 28 Sep 2026: a first write is now ONE create and NO read
+// (reading a missing row is what the deployed rules refuse); a retry is one
+// refused create plus one read of the row that is there.
+await check("a first write costs one create and no read; a retry costs one create and one read", async () => {
   reset();
   await writeStudyActivityEvidence(db, ev());
-  assert.deepEqual(counters, { gets: 1, creates: 1, queries: 0 });
+  assert.deepEqual(counters, { gets: 0, creates: 1, queries: 0 });
   await writeStudyActivityEvidence(db, ev());
-  assert.deepEqual(counters, { gets: 2, creates: 1, queries: 0 },
+  assert.deepEqual(counters, { gets: 1, creates: 2, queries: 0 },
     "writing must never query the subcollection -- the identity IS the id");
+});
+await check("LIVE-DEFECT GUARD: a new event is never read before it is created", async () => {
+  reset();
+  const r = await writeStudyActivityEvidence(db, ev({ unitKey: "ayah:1:1" }));
+  assert.equal(r.written, true);
+  assert.equal(counters.gets, 0, "a read of a missing row is denied by the deployed rules -- this is the v08.34-v08.103 defect");
 });
 
 // --- P4-E: the read side ----------------------------------------------------
