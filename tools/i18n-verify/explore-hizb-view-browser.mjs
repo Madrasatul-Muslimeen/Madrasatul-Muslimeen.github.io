@@ -169,6 +169,11 @@ async function runSwitchScenario(lang) {
   check(`[${lang}] the switch is shown at the Quran level, with THREE options`, !toggleState.hidden && toggleState.count === 3, JSON.stringify(toggleState));
 
   // The Juz level keeps exactly its own two-button pair -- unchanged.
+  // ARCHITECT REVIEW, 28 Sep 2026: the Quran level opens in Surahs view, so
+  // wedge 1 was Surah 1 (no switch at all) -- choose the Juz view first
+  // (#exploreViewPrimaryBtn is the Quran level's "Juz" choice).
+  await clickSafely(page, "#exploreViewPrimaryBtn");
+  await page.waitForFunction(() => document.querySelectorAll("#exploreWheelContainer .wheel-seg").length === 30, null, { timeout: 10000 });
   await page.evaluate(() => document.querySelector('#exploreWheelContainer .wheel-seg[data-key="1"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
   await page.waitForTimeout(600);
   const juzLevelToggle = await page.evaluate(() => {
@@ -210,8 +215,11 @@ async function runScenarios(lang) {
   const count = await wedgeCount(page);
   check(`[${lang}] the Hizb view has 60 wedges`, count === 60, String(count));
 
-  // ---- Colour check, YES Approach (default trackable -- Hifz is already
-  // current by default in the shared fixture). ----
+  // ---- Colour check, YES Approach. ARCHITECT REVIEW, 28 Sep 2026: the
+  // shared fixture opens on its own "memorise" trackable, NOT approach_02, so
+  // this read not_started for the right reason; choose Hifz explicitly. ----
+  await switchToApproach(page, YES_ID);
+  await page.waitForFunction(() => document.querySelectorAll("#exploreWheelContainer .wheel-seg").length === 60, null, { timeout: 10000 });
   const hizb1Status = await chipStatusFor(page, "1");
   const hizb2Status = await chipStatusFor(page, "2");
   const hizb3Status = await chipStatusFor(page, "3");

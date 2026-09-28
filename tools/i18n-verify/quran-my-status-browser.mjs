@@ -569,7 +569,7 @@ async function runExploreAgreementScenario() {
   });
   const { page } = await openPage(ctx, "/app/quranrevival.html");
   await waitForWheelReady(page);
-  for (const kind of ["juz", "surah"]) {
+  for (const kind of ["juz", "surah", "hizb"]) { // hizb added with #342: its row now opens Explore's Hizb view
     await clickSafely(page, "#tabApproachBtn"); // back from Explore after the first pass
     await clickSafely(page, "#myStatusWideBtn");
     await page.waitForFunction(() => document.getElementById("myStatusBody")?.querySelectorAll(".my-status-row-btn").length > 0, null, { timeout: 10000 });
@@ -577,7 +577,7 @@ async function runExploreAgreementScenario() {
     await page.waitForFunction(() => !document.getElementById("myStatusDetailMount").hidden, null, { timeout: 5000 });
     const cardFigure = await page.evaluate((k) => document.querySelector(`[data-my-status-unit-jump="${k}"] .my-status-row-figure`)?.textContent ?? "", kind);
     await clickSafely(page, `[data-my-status-unit-jump="${kind}"]`);
-    const want = kind === "juz" ? 30 : 114;
+    const want = { juz: 30, surah: 114, hizb: 60 }[kind];
     let counts = null;
     for (let i = 0; i < 60; i++) {
       counts = await page.evaluate(() => {
