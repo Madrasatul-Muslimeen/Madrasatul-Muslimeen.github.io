@@ -2577,8 +2577,6 @@
   .hifz-tajweed-toggle.is-disabled input[type="checkbox"] { cursor: default; }
   /* Owner decision 9 / the permission report's own point 2 -- shown while
      Tajweed is on, covering both fonts with one credit. */
-  .hifz-tajweed-credit { font-size: 10px; color: #8a7c55; text-align: center; margin-top: 2px; }
-  .hifz-tajweed-credit a { color: #1F3A6E; }
   /* Architect review, 27 Sep 2026: .hifz-page carries the page's GLYPH font
      as its font-family, and the page's own words inherit it on purpose. The
      label row, the credit and the error lines are ordinary text and must not
@@ -2587,7 +2585,7 @@
      "QuranfontsprovidedbyQuranFoundation" (seen in a real-font screenshot;
      the suite's stand-in font could not show it). The label ink is darkened
      for 11px text on the page cream (#8a7c55 is about 3.9:1). */
-  .hifz-page-header, .hifz-tajweed-credit, .hifz-page .hifz-line-error { font-family: 'Inter', system-ui, sans-serif; }
+  .hifz-page-header, .hifz-page .hifz-line-error { font-family: 'Inter', system-ui, sans-serif; }
   .hifz-tajweed-toggle { color: #5a4a2a; }
   .hifz-line { display: flex; flex-wrap: nowrap; direction: rtl; gap: 0.12em; padding: 0.15em 0; font-size: 34px; font-size: 6.07cqw; line-height: 2.05; }
   .hifz-line.centered { justify-content: center; }
@@ -2802,7 +2800,9 @@
      like the printed Mushaf's own banner, and its name reads at about the
      Bismillah's size. line-height 1.1, not the page's 2.05, so the taller
      glyph costs ~44px of page height at 360px rather than ~140px. */
-  .hifz-surah-header.glyph-loaded { background: none; border: none; padding: 0.05em 0; font-size: 80px; font-size: 24cqw; line-height: 1.1; }
+  /* 28 Sep 2026, Owner: "make the Sura name width edge to edge". 24cqw ->
+     30cqw: 3.3em x 30cqw = 99% of the page's text width (measured below). */
+  .hifz-surah-header.glyph-loaded { background: none; border: none; padding: 0.05em 0; font-size: 100px; font-size: 30cqw; line-height: 1.1; }
   .hifz-basmallah { justify-content: center; font-size: 16px; font-size: 4.5cqw; }
   .hifz-line-error { font-size: 13px; color: #a33; text-align: center; }
   .page-flow-ayah { border-bottom: 1px solid #eee; padding-bottom: 0.6rem; margin-bottom: 0.6rem; }

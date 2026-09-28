@@ -48,9 +48,6 @@ const MUSHAF_FONT_BASE = "https://verses.quran.foundation/fonts/quran/hafs/v2/wo
 // binding rule 1).
 const TAJWEED_FONT_BASE = "https://verses.quran.foundation/fonts/quran/hafs/v4/colrv1/woff2/";
 const SURAH_HEADER_FONT_URL = "https://raw.githubusercontent.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/main/mushaf/QCF_SurahHeader_COLOR-Regular.woff2";
-// Both binding rule 2 (the permission report) and the Owner's own decision 9
-// point at ONE credit covering both the plain and the Tajweed fonts.
-const QURAN_FOUNDATION_CREDIT_URL = "https://quran.foundation/";
 
 // One ligature character per surah (1-114) — QUL's own "Surah header font"
 // documentation table — each renders the full ornamental print banner
@@ -457,22 +454,6 @@ function buildPageHeader(pageNum, tajweedOn, onToggleTajweed) {
   return headerEl;
 }
 
-/** Owner decision 9 / the permission report's own point 2 -- ONE credit line
- *  covering both fonts, shown while Tajweed is on (about.html carries the
- *  other, reasonably-accessible copy). A real, tappable link, the same
- *  pattern this app already uses for HadeethEnc/OpenITI source credits. */
-function buildTajweedCreditLine() {
-  const p = document.createElement("div");
-  p.className = "hifz-tajweed-credit";
-  const link = document.createElement("a");
-  link.href = QURAN_FOUNDATION_CREDIT_URL;
-  link.target = "_blank";
-  link.rel = "noopener noreferrer";
-  link.textContent = t("Quran fonts provided by Quran Foundation");
-  p.appendChild(link);
-  return p;
-}
-
 async function renderPage(pageNum, highlightSet, container, surahArabicName, myGeneration, tajweedOn, onToggleTajweed) {
   const fontInfo = await resolvePageFont(pageNum, tajweedOn);
   // Issue #113 -- a newer renderMushafPages() call started while this page's
@@ -506,7 +487,9 @@ async function renderPage(pageNum, highlightSet, container, surahArabicName, myG
   // draw it -- true regardless of whether THIS one page's own font happened
   // to load, because the plain page it fell back to is also a Quran
   // Foundation font since Part A.
-  if (tajweedOn && mushafTajweedSupported()) pageEl.appendChild(buildTajweedCreditLine());
+  // 28 Sep 2026, Owner: the Quran Foundation credit lives on the About page
+  // only (their terms ask for "a reasonably accessible place"); the line
+  // that used to sit under every Tajweed page is gone.
   if (!pageData) {
     const err = document.createElement("div");
     err.className = "hifz-line-error";
