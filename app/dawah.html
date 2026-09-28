@@ -49,7 +49,10 @@
   .page-card { border: 1px solid #ddd; border-radius: 0.6rem; padding: 0.7rem 0.85rem; margin: 0.6rem 0; background: #fff; }
   .page-card-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
   .page-card-title { font-weight: 600; font-size: 0.96rem; flex: 1 1 auto; min-width: 8rem; }
-  .page-card-meta { font-size: 0.76rem; color: #888; }
+  /* #888 on white measured 3.54:1 (issue #354's own card-look-browser suite
+     found this pre-existing shortfall while proving the Night re-pick
+     beside it) -- #666 clears 4.5:1. */
+  .page-card-meta { font-size: 0.76rem; color: #666; }
   .page-status-pill { font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 999px; background: #eef2ff; color: #1F3A6E; }
   .page-status-pill.status-shared { background: #e5f5ea; color: #1a6b34; }
   .page-status-pill.status-retired { background: #f2e9e2; color: #7a5230; }
