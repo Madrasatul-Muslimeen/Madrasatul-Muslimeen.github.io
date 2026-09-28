@@ -55,9 +55,12 @@ function insideSectionHtml(title, items) {
 }
 
 /**
- * `markAsRead`: `{ enabled, reason }` -- enabled=true for Surah/Range
- * (ADR-008's own EVIDENCE_UNIT_TYPES), false with a words-said reason for
- * Ruku'/Page ("coming") and Hizb/Juz ("later"), per the issue's own wording.
+ * `markAsRead`: `{ enabled, reason }` -- enabled=true for Surah/Range/Ruku'/
+ * Page (ADR-008's own EVIDENCE_UNIT_TYPES, widened by issue #349's Amendment
+ * 3 to include Ruku'/Page), false with a words-said reason when a second,
+ * narrower gate keeps Ruku'/Page off pending the Owner's Rules publish, and
+ * false with "later" for Hizb/Juz, per the issue's own wording (Owner
+ * decision 20: "Ruku' and Page: yes. Hizb and Juz: later.").
  * `aria-disabled`, never the native `disabled` attribute -- this app's own
  * standing rule (CLAUDE.md): a truly disabled control cannot explain why.
  */

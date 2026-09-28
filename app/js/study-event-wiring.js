@@ -14,13 +14,28 @@
 
 import { weekKeyFor } from "./activity.js";
 import { writeStudyActivityEvidence } from "./study-activity-evidence-store.js";
+import { evidenceUnitType } from "./study-activity-evidence-id.js";
 import { isStudyEvidencePersistenceReady, studyEvidenceUnavailableReason } from "./study-evidence-readiness.js";
+import { isReadingUnitsPersistenceReady, readingUnitsUnavailableReason } from "./study-reading-units-readiness.js";
 
-/** The unit types ADR-008's evidence contract accepts (I5). A juz, ruku, hizb or page reading is real study, but v1 has no evidence shape for it, so it records nothing rather than guessing. */
-export const EVIDENCE_UNIT_TYPES = Object.freeze(["ayah", "range", "surah"]);
+/** The unit types ADR-008's evidence contract accepts (I5). A juz or hizb reading is real study, but v1 has no evidence shape for it, so it records nothing rather than guessing.
+ *
+ * UPDATED 2026-09-28 for issue #349 (ADR-008 Amendment 3): ruku and page
+ * joined this set, for the Unit Card's "Mark as read" (Owner decision 20).
+ * Their WRITE stays gated separately -- see unitTypeNeedsReadingUnitsGate()
+ * and recordStudyEvidence() below -- this set only says the identity shape is
+ * recognised, not that persisting it is switched on. */
+export const EVIDENCE_UNIT_TYPES = Object.freeze(["ayah", "range", "surah", "ruku", "page"]);
 
 export function unitTypeRecordsEvidence(unitType) {
   return EVIDENCE_UNIT_TYPES.includes(unitType);
+}
+
+/** The unit types issue #349's amendment covers, and which therefore need the SECOND, narrower gate (study-reading-units-readiness.js) in addition to the general evidence-persistence gate. Ayah/range/surah need only the general gate, exactly as before this issue. */
+export const READING_UNITS_GATED_TYPES = Object.freeze(["ruku", "page"]);
+
+export function unitTypeNeedsReadingUnitsGate(unitType) {
+  return READING_UNITS_GATED_TYPES.includes(unitType);
 }
 
 /** UTC calendar day for an instant. The evidence contract's day boundary is UTC, deliberately: a tenant-local day would make the same event's identity depend on where it was recorded. */
@@ -236,6 +251,15 @@ export async function recordStudyEvidence(db, args, { uid } = {}) {
   if (!isStudyEvidencePersistenceReady()) {
     return { written: false, blocked: true, reason: studyEvidenceUnavailableReason() };
   }
+  // Issue #349 -- a SECOND, narrower gate for Ruku'/Page completions only.
+  // ADR-008's identity shapes only just learned to accept those two unit
+  // types (Amendment 3); the Owner has not yet published the Rules candidate
+  // that admits them at the database. Every other unit type is unaffected --
+  // this returns before the store is reached, exactly like the gate above, so
+  // a Ruku'/Page press while this is shut can never even compose a write.
+  if (unitTypeNeedsReadingUnitsGate(evidenceUnitType(args.unitKey)) && !isReadingUnitsPersistenceReady()) {
+    return { written: false, blocked: true, reason: readingUnitsUnavailableReason() };
+  }
   return writeStudyActivityEvidence(db, { ...args, uid });
 }
 
@@ -247,4 +271,14 @@ export function studyEvidencePersistenceReady() {
 /** The stable reason key when it cannot, or null when it can. */
 export function studyEvidencePersistenceReason() {
   return studyEvidenceUnavailableReason();
+}
+
+/** Whether a Ruku'/Page "mark as read" completion can be persisted right now (issue #349's own gate, on top of the general one above). Re-exported for the same reason as studyEvidencePersistenceReady(). */
+export function readingUnitsPersistenceReady() {
+  return isReadingUnitsPersistenceReady();
+}
+
+/** The stable reason key when it cannot, or null when it can. */
+export function readingUnitsPersistenceReason() {
+  return readingUnitsUnavailableReason();
 }

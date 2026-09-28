@@ -629,6 +629,8 @@ export const BN = {
   // is the notice, which has room to say that nothing was lost.
   "Recording study activity is not available yet.": "স্টাডি কার্যক্রম রেকর্ড করা এখনও চালু হয়নি।",
   "Recording study activity is not available yet. Nothing was saved and nothing was lost — this will be switched on once the database is ready.": "স্টাডি কার্যক্রম রেকর্ড করা এখনও চালু হয়নি। কিছুই সংরক্ষণ করা হয়নি এবং কিছুই হারায়নি — ডেটাবেস প্রস্তুত হলে এটি চালু করা হবে।",
+  "Recording a Ruku' or Page as read is not switched on yet.": "রুকু' বা পৃষ্ঠা পড়া হয়েছে বলে রেকর্ড করা এখনও চালু হয়নি।",
+  "Recording a Ruku' or Page as read is not switched on yet. It is built and waiting on a small Rules update from the Owner. Nothing was saved and nothing was lost.": "রুকু' বা পৃষ্ঠা পড়া হয়েছে বলে রেকর্ড করা এখনও চালু হয়নি। এটি তৈরি হয়ে গেছে এবং মালিকের একটি ছোট Rules আপডেটের অপেক্ষায় আছে। কিছুই সংরক্ষণ করা হয়নি এবং কিছুই হারায়নি।",
   "Remove bookmark": "বুকমার্ক সরান",
   // Bookmark creation/update round -- the ⋯ menu's own action, only shown
   // once a bookmark opened this session is the one still open here.

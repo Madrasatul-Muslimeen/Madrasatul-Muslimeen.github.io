@@ -27,10 +27,23 @@
 //                  is why it is matched against the literal SET rather than a
 //                  pattern, so its own underscore can never be read as part of
 //                  a separator
-//   unitKey      — digits, colons and one hyphen (ayah/range/surah only)
+//   unitKey      — digits, colons, lowercase letters and one hyphen
+//                  (ayah/range/surah/ruku/page)
 //   noteSlot     — 32 hex characters, or the literal 'none'
 //   dedupeScope  — an ISO day, or the literal 'once'
 // So two different component tuples can never produce the same id.
+//
+// UPDATED 2026-09-28 for issue #349 (ADR-008 Amendment 3, Owner decision 20,
+// docs/governance/2026-09-27-owner-decisions.md row 20): ruku and page join
+// ayah/range/surah as unit types reading.completed may credit, for the Unit
+// Card's "Mark as read" on those two units. Hizb and juz stay refused -- the
+// Owner's own "later". Neither the event table (EVENT_APPROACHES) nor the
+// Approach mapping changes: a Ruku'/Page completion credits the same
+// approach_01/approach_03 pair a Surah completion already does. Persisting a
+// Ruku'/Page event still needs the Rules DEPLOYMENT candidate published AND a
+// second, narrower readiness gate open (app/js/study-reading-units-
+// readiness.js) -- this module only widens what ADR-008's IDENTITY shape
+// recognises, which is independent of whether writing is switched on.
 
 export const STUDY_ACTIVITY_EVIDENCE_CONTRACT = "study-approach-contract:v1";
 
@@ -52,6 +65,11 @@ const UNIT_KEY_SHAPES = Object.freeze({
   ayah: /^ayah:\d{1,3}:\d{1,3}$/,
   range: /^range:\d{1,3}:\d{1,3}-\d{1,3}$/,
   surah: /^surah:\d{1,3}$/,
+  // buildUnitKey.ruku(surah, localIndex) -- see app/js/unit-keys.js.
+  ruku: /^ruku:\d{1,3}:\d{1,3}$/,
+  // buildUnitKey.page(edition, pageNum) -- edition is the app's own constant
+  // PAGE_EDITION ("madani"), lowercase ASCII only, never user-supplied.
+  page: /^page:[a-z]+:\d{1,3}$/,
 });
 
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -66,7 +84,7 @@ function requireIsoDay(value, label) {
   return value;
 }
 
-/** The unit type a key declares, or null if the key is not one this contract accepts. `juz`, `ruku`, `page`, `hizb`, `topic`, `hadith` and `name` all return null — refused, not silently stored (I5). */
+/** The unit type a key declares, or null if the key is not one this contract accepts. `juz`, `hizb`, `topic`, `hadith` and `name` all return null — refused, not silently stored (I5). */
 export function evidenceUnitType(unitKey) {
   if (typeof unitKey !== "string") return null;
   for (const [unitType, shape] of Object.entries(UNIT_KEY_SHAPES)) {
@@ -108,7 +126,7 @@ export function evidenceApproachId(eventType, trackableId) {
 export function studyEvidenceId({ eventType, trackableId, unitKey, noteId, dateIso } = {}) {
   evidenceApproachId(eventType, trackableId);
   const unitType = evidenceUnitType(unitKey);
-  if (!unitType) throw new TypeError("Activity evidence requires an ayah, range or surah Study Unit key.");
+  if (!unitType) throw new TypeError("Activity evidence requires an ayah, range, surah, ruku' or page Study Unit key.");
   const journal = isJournalEvent(eventType);
   if (journal) {
     if (typeof noteId !== "string" || !NOTE_ID.test(noteId)) {
@@ -146,7 +164,7 @@ export function buildStudyEvidenceDocument({
   eventType, tenantId, personId, weekKey, dateIso, unitKey, trackableId, noteId,
 } = {}) {
   const unitType = evidenceUnitType(unitKey);
-  if (!unitType) throw new TypeError("Activity evidence requires an ayah, range or surah Study Unit key.");
+  if (!unitType) throw new TypeError("Activity evidence requires an ayah, range, surah, ruku' or page Study Unit key.");
   evidenceApproachId(eventType, trackableId);
   requireIsoDay(dateIso, "dateIso");
   requireIsoDay(weekKey, "weekKey");
