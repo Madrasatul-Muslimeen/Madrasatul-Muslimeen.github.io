@@ -18605,3 +18605,9 @@ The Owner's four landing-page asks. Below 721px the Approach view's page scrolls
 - Owner: "Make the section names bright and bold." `.ways-group` #a08a52 → #ecd49a, 700 → 800, +2px at every size. No wrap or cut at 320–1100px in both languages; layout.mjs tablet/PC unchanged, phones 11px taller (page scrolls), same first-screen rows.
 - Process finding: an Architect comment can never start the Builder (`claude.yml` refuses comments carrying the Claude Code footer), so #342's start comment was skipped; it was re-started by `workflow_dispatch`.
 - Allocated by the MMSA Architect.
+
+## v08.102 — 28 Sep 2026 — Explore Hizb view (issue #342)
+
+- The Quran level's switch is Juz · Surahs · Hizb; a 60-Hizb wheel pooled like the Juz wheel, with a direct-claim fallback for a No Approach; a Hizb level showing its Surah portions; My Status's Hizb row opens it.
+- Architect review: two faults in the new suite fixed (wrong assumed Approach; wrong wedge tapped), mutation-proven; My Status/Explore Hizb agreement added.
+- Built by the Builder (PR #359, branch `claude/issue-342-hizb`), reviewed and allocated by the MMSA Architect.
