@@ -50,15 +50,20 @@ export function evidenceCollectionPath(tenantId, personId, weekKey) {
  * failure. Treating every `permission-denied` as "already recorded" would hide
  * real failures from the user, which I15 forbids outright.
  *
- * So this reads first, and on a denial reads AGAIN before deciding:
+ * So this CREATES first, and only on a denial reads before deciding (it
+ * cannot read first: the deployed rules deny a read of a document that does
+ * not exist yet -- see the fix note in the function):
  *
- *   - document already there          -> no write attempted, `written: false`
- *   - write denied, document now there -> two writers raced; the event IS
- *                                         recorded, so `written: false`
- *   - write denied, still not there    -> a REAL failure. Rethrown, so it
- *                                         reaches the user (I15)
+ *   - created                          -> `written: true`
+ *   - write denied, document there     -> already recorded, or two writers
+ *                                         raced; the event IS recorded, so
+ *                                         `written: false`
+ *   - write denied, not there / the
+ *     read itself refused               -> a REAL failure. The original error
+ *                                         is rethrown, so it reaches the user
+ *                                         (I15)
  *
- * The extra read costs one document lookup per event and buys the only thing
+ * The read happens only on the rare denied path, and buys the only thing
  * that distinguishes "already done" from "not allowed".
  */
 export async function writeStudyActivityEvidence(db, {
@@ -72,15 +77,24 @@ export async function writeStudyActivityEvidence(db, {
   });
   const collectionPath = evidenceCollectionPath(tenantId, personId, weekKey);
 
-  const existing = await getDoc(doc(db, collectionPath, eventId));
-  if (existing.exists()) return { eventId, written: false };
-
+  // Architect review, 28 Sep 2026 -- LIVE DEFECT FIXED: this used to READ
+  // FIRST. The deployed read rule is `canRecordFor(resource.data.tenantId,
+  // resource.data.personId)`, and on a document that does not exist
+  // `resource` is null -- an evaluation error that DENIES the read. So the
+  // very first step of every new event threw permission-denied, and no
+  // evidence row was ever written in production (proven on the emulator
+  // against the live firestore.rules; the v08.56 Notes lesson, a third time).
+  // Now: CREATE first. Only when the create is refused, look again -- a
+  // document that exists is readable (resource is not null), so a retry or a
+  // raced writer still reads back as `written: false`; a missing one makes
+  // that read fail too, and the ORIGINAL error is rethrown (I15).
   try {
     await createDocument(db, collectionPath, eventId, data, uid);
     return { eventId, written: true };
   } catch (err) {
-    const raced = await getDoc(doc(db, collectionPath, eventId));
-    if (raced.exists()) return { eventId, written: false };
+    let already = false;
+    try { already = (await getDoc(doc(db, collectionPath, eventId))).exists(); } catch { already = false; }
+    if (already) return { eventId, written: false };
     throw err;
   }
 }

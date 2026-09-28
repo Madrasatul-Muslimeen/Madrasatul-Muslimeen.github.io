@@ -18618,3 +18618,10 @@ The Owner's four landing-page asks. Below 721px the Approach view's page scrolls
 - Architect review fixed: prompt invisible to a new reader (no card Approach yet); prompt at a surah-crossing Juz's last drawn āyah; markers and prompt missing on the one-āyah view (Ruku'/Juz/Hizb/Page); counts ignored wider claims; boundary tables fetched on every app open (I9); card opened with no Approach and an empty strip; prompt switch inside `.reading-ticks`; stacked marker rows. Suite run for real (it crashed), exact counts in both languages, Yes-Approach cases added: 106/0, five mutations caught.
 - Measured: Read bar +33px at 412px English only; marker row ~47px above a unit's first āyah. Regression suites clean; behaviour #readBar lists and 29d updated in place.
 - Built by the Builder (PR #362, branch `claude/issue-348-unit-card`), reviewed and allocated by the MMSA Architect.
+
+## v08.104 — 28 Sep 2026 — Study activity recording fixed; add an Approach from Catalogue
+
+- **Live defect fixed:** the Study activity evidence store read an event's document before creating it, and the deployed rules deny a read of a missing document, so no Mark-as-read, listening, Word-by-Word or Journaling evidence was ever saved since v08.34. It now creates first and reads only after a refused create. Proven on the emulator against the live rules; the store's suite fake now models the deployed rules, with a guard that fails on the old code.
+- **#349's missing proof:** `reading-units-real-function` emulator suite (13/13): Ruku'/Page completions written under the DEPLOYMENT candidate, refused under the live rules; Juz and mismatched units refused.
+- **Catalogue — Add an Approach** (Owner request): name (en/bn), Section, counts-for-each-āyah rule; `approach_NN` ids never reused; placed at the end of its section. `catalogue-add-approach-browser` 30/0.
+- Allocated by the MMSA Architect.

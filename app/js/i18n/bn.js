@@ -3023,4 +3023,13 @@ export const BN = {
   "End-of-unit prompt": "ইউনিট-শেষের প্রম্পট", // ?
   "Approach: {name}": "পদ্ধতি: {name}", // ?
   "Surah {n}": "সূরা {n}",
+
+  // 28 Sep 2026 -- the Owner's own new Approaches, from the Catalogue page.
+  "Add an Approach": "একটি পদ্ধতি যোগ করুন", // ?
+  "Name (English)": "নাম (ইংরেজি)", // ?
+  "Name (Bangla)": "নাম (বাংলা)", // ?
+  "It is added at the end of its section. You can move it, rename it and write its Guide with Edit.": "এটি তার বিভাগের শেষে যোগ হয়। Edit দিয়ে আপনি এটি সরাতে, নাম বদলাতে এবং এর নির্দেশিকা লিখতে পারবেন।", // ?
+  "Add Approach": "পদ্ধতি যোগ করুন", // ?
+  "Choose a section.": "একটি বিভাগ বেছে নিন।", // ?
+  "Added \"{name}\" to {section}.": "\"{name}\" {section}-এ যোগ হয়েছে।", // ?
 };
