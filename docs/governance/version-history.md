@@ -629,3 +629,4 @@ total). Allocated by the MMSA Architect.
 08.100: tablet shows all three landing capsules on one row. Allocated by the MMSA Architect.
 08.101: Approach list section names bright and bold. Allocated by the MMSA Architect.
 08.102: Explore Hizb view. Allocated by the MMSA Architect.
+08.103: the Unit Card (issue #348). Allocated by the MMSA Architect.
