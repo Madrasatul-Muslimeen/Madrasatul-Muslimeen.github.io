@@ -2868,6 +2868,11 @@
      ("Juz N begins", "Ruku' N ends ع", "Page N ends") and the tappable
      surah heading. Real >= 40px buttons, full width of the flow so they
      read as a row break rather than crowd against the Arabic beside them. */
+  /* Review: markers that fall at one āyah share ONE row (they wrap only when
+     the row is full) -- at 1:1 the Surah name, "Juz 1 begins" and "Hizb 1
+     begins" stacked as three 40px rows above the Fatiha. */
+  .unit-marker-row { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.35rem 0; }
+  .unit-marker-row > .unit-flow-marker, .unit-marker-row > .unit-flow-surah-heading { flex: 1 1 auto; width: auto; margin: 0; }
   .unit-flow-marker { display: block; width: 100%; min-height: 40px; margin: 0.35rem 0; padding: 0.4rem 0.6rem; font: inherit; font-size: 0.82rem; font-weight: 600; color: #7a5f1e; background: rgba(201,162,75,0.14); border: 1px solid rgba(201,162,75,0.4); border-radius: 6px; cursor: pointer; text-align: center; }
   .unit-flow-surah-heading { display: block; width: 100%; min-height: 40px; margin: 0.35rem 0; padding: 0.4rem 0.6rem; font: inherit; font-size: 0.95rem; font-weight: 700; color: #1F3A6E; background: #f6f2e4; border: 1px solid #e3d6ab; border-radius: 6px; cursor: pointer; text-align: center; }
   /* The Mushaf surah banner is a real <button> now (issue #348) -- reset the
@@ -13495,6 +13500,10 @@
         (bismillahHtmlFor() only ever draws the Bismillah); this is the
         "add one small row" the spec asks for, drawn once at the surah's own
         first āyah, tappable to open the Unit Card for the whole surah. */
+    function unitMarkerRowHtml(inner) {
+      return inner ? `<div class="unit-marker-row">${inner}</div>` : "";
+    }
+
     function surahFlowHeadingHtml(surahNum, ayahNum) {
       if (ayahNum !== 1) return "";
       const meta = surahIndex.find((s) => s.surahNumber === surahNum);
@@ -13610,7 +13619,7 @@
           // full-width page, so a bare sibling marker would render as a
           // blank extra page rather than an inline row.
           const markers = markersByAyah.get(ayah.ayah) ?? { before: [], after: [] };
-          const beforeHtml = surahFlowHeadingHtml(currentSurahNum, ayah.ayah) + markers.before.map(unitFlowMarkerHtml).join("");
+          const beforeHtml = unitMarkerRowHtml(surahFlowHeadingHtml(currentSurahNum, ayah.ayah) + markers.before.map(unitFlowMarkerHtml).join(""));
           // Issue #348, Owner decision 19 -- the end-of-unit prompt, on the
           // LAST āyah of whatever this flow is showing (never a single-āyah
           // unit -- this branch never runs for one). Never shown with no
@@ -13628,7 +13637,7 @@
           const endOfUnitHtml = isLastAyah && getEndOfUnitPromptOn() && promptApproachId
             ? renderEndOfUnitPromptHtml({ unitLabel: unitChipText(currentUnitInfo()), approachName: endOfUnitApproachName(promptApproachId) })
             : "";
-          const afterHtml = markers.after.map(unitFlowMarkerHtml).join("") + endOfUnitHtml;
+          const afterHtml = unitMarkerRowHtml(markers.after.map(unitFlowMarkerHtml).join("")) + endOfUnitHtml;
           return `<div class="page-flow-ayah" data-ayah="${ayah.ayah}">${beforeHtml}<div class="ayah-quick-header">${renderQuickMenu(unitKey, {
             hasNote: ayahHasNote(ayahNotesDoc, unitKey), isBookmarked,
             showTextTools: true,
@@ -14396,12 +14405,12 @@
       if (token !== singleAyahDecorToken || surah !== currentSurahNum || ayahNum !== currentAyahNum) return;
       if (ayahPanels.dataset.ayahCollapsibleFor !== buildUnitKey.ayah(surah, ayahNum)) return;
       const markers = unitBoundaryMarkersInWindow(surah, ayahNum, ayahNum, tables);
-      const before = surahFlowHeadingHtml(surah, ayahNum) + markers.filter((m) => m.position === "before").map(unitFlowMarkerHtml).join("");
+      const before = unitMarkerRowHtml(surahFlowHeadingHtml(surah, ayahNum) + markers.filter((m) => m.position === "before").map(unitFlowMarkerHtml).join(""));
       const promptApproachId = endOfUnitApproachId();
       const prompt = getEndOfUnitPromptOn() && promptApproachId && isAtUnitEnd(surah, ayahNum, tables)
         ? renderEndOfUnitPromptHtml({ unitLabel: unitChipText(currentUnitInfo()), approachName: endOfUnitApproachName(promptApproachId) })
         : "";
-      const after = markers.filter((m) => m.position === "after").map(unitFlowMarkerHtml).join("") + prompt;
+      const after = unitMarkerRowHtml(markers.filter((m) => m.position === "after").map(unitFlowMarkerHtml).join("")) + prompt;
       if (before) ayahPanels.insertAdjacentHTML("afterbegin", `<div class="unit-single-decor" data-unit-single-decor>${before}</div>`);
       if (after) ayahPanels.insertAdjacentHTML("beforeend", `<div class="unit-single-decor" data-unit-single-decor>${after}</div>`);
       if (prompt) wireEndOfUnitPrompt(ayahPanels);
