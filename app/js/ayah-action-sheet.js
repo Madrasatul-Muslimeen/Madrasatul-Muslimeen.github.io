@@ -35,7 +35,7 @@ function escapeHtml(s) {
   return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function actionItemHtml({ attr, icon, label, disabled = false, hint = "" }) {
+export function actionItemHtml({ attr, icon, label, disabled = false, hint = "" }) {
   return `
         <button type="button" class="qm-item ayah-sheet-item${disabled ? " is-disabled" : ""}" aria-disabled="${disabled ? "true" : "false"}" ${attr}>${icon} ${escapeHtml(label)}</button>
         ${hint ? `<p class="ayah-sheet-hint">${escapeHtml(hint)}</p>` : ""}`;
@@ -182,7 +182,7 @@ function actionDefs({ isBookmarked, isSelf, noteWhy, approachOptionsHtml, select
  * information from the visually-hidden summary line instead of 30
  * individually-announced dots.
  */
-function approachStatusRowHtml(approachStatuses) {
+export function approachStatusRowHtml(approachStatuses) {
   if (!approachStatuses?.length) return `<p class="ayah-status-empty">${escapeHtml(t("No Approaches yet."))}</p>`;
   const dots = approachStatuses
     .map((a) => `<span class="ayah-approach-dot" style="background:${a.color}" title="${escapeHtml(`${a.name} — ${a.label}`)}" aria-hidden="true"></span>`)
@@ -309,7 +309,7 @@ export function renderAyahActionSheetHtml({
   unitKey, ref = "", hasNote = false, isBookmarked = false, isSelf = true,
   approachOptionsHtml = "", selectedApproachId = null, selectedApproachStatusId = "not_started", hasPosterNote = null,
   approachStatuses = [], wordStatus = null, hifzStatus = null, related = null,
-  connected = null,
+  connected = null, ladderHtml = "",
 } = {}) {
   void hasNote; // kept for callers that already pass it (icon/wording decisions belong to isBookmarked/isSelf above, not this flag)
   const noteWhy = t("Only your own record can create or file a Note.");
@@ -319,6 +319,7 @@ export function renderAyahActionSheetHtml({
   return `
     <div class="ayah-sheet" data-ayah-sheet data-unit-key="${escapeHtml(unitKey)}" role="dialog" aria-modal="true" aria-label="${escapeHtml(ref || t("This āyah"))}">
       <div class="ayah-sheet-handle" aria-hidden="true"></div>
+      ${ladderHtml}
       <div class="ayah-sheet-header">
         <span class="ayah-sheet-ref">${escapeHtml(ref)}</span>
         <button type="button" class="ayah-sheet-close" data-ayah-sheet-close aria-label="${escapeHtml(t("Close"))}">×</button>
