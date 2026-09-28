@@ -547,6 +547,52 @@ export async function setTrackableStatus(db, tenantId, trackableId, status, uid)
 }
 
 /**
+ * The next free tenant-authored Approach id: `approach_NN`, one past the
+ * highest number this tenant already has (removed ones included, so a
+ * removed Approach's id -- and every claim keyed by it, I5 -- is never
+ * reused). Two digits like the platform's own 01-30, because
+ * study-note-binding.js accepts exactly `approach_\d{2}`; three digits from
+ * approach_100, which nothing here is near.
+ */
+export function nextApproachId(trackables) {
+  let max = 0;
+  for (const t of trackables ?? []) {
+    const m = /^approach_(\d+)$/.exec(t.id ?? "");
+    if (m) max = Math.max(max, Number(m[1]));
+  }
+  return `approach_${String(max + 1).padStart(2, "0")}`;
+}
+
+/**
+ * The owner's own new Approach (Owner request, 28 Sep 2026: "There's no
+ * option for adding new approach and assigning to a section").
+ * Same document shape the seed writes (ensureTenantCatalogueSeeded()),
+ * with sourceTemplateId null and edited true: it has no platform template,
+ * so syncUnneditedTrackableNames() never touches it. `order` is placed after
+ * everything; the caller renumbers so it lands at the END of its section.
+ * The live `trackables` create rule is canAdminCatalogue (owner/prime), no
+ * field restriction -- no Rules change.
+ */
+export async function createApproach(db, tenantId, { id, name, group, groupName, countsForEachAyah = false, order }, uid) {
+  await createDocument(db, TENANT.TRACKABLES, `${tenantId}__${id}`, {
+    tenantId,
+    moduleId: "quranrevival",
+    subjectId: "quran",
+    group,
+    groupName: groupName ?? null,
+    name,
+    guide: { what: { en: "", bn: "" }, how: { en: "", bn: "" }, measure: { en: "", bn: "" } },
+    panels: [],
+    order,
+    status: "active",
+    countsForEachAyah: !!countsForEachAyah,
+    sourceTemplateId: null,
+    edited: true,
+  }, uid);
+  return id;
+}
+
+/**
  * Renumbers the Approaches so `orderedIds` becomes their display order,
  * 1..n, writing `order` on the ones that actually moved and nothing else.
  *
