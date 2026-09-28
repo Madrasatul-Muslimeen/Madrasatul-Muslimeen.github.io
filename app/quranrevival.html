@@ -14725,9 +14725,9 @@
         if (unitCardUnitKey !== info.unitKey) return;
         const el = ayahActionSheetMountEl.querySelector("[data-unit-card]");
         if (!el) return;
-        const achEl = el.querySelector(".unit-card-count-line");
-        if (achEl && achievedLine) achEl.textContent = achievedLine;
-        const wbwEl = el.querySelectorAll(".unit-card-count-line")[1];
+        const achEl = el.querySelector("[data-unit-card-achieved-line]");
+        if (achEl) achEl.textContent = achievedLine;
+        const wbwEl = el.querySelector("[data-unit-card-wbw-line]");
         if (wbwEl) wbwEl.textContent = wbwLine;
       });
       unitCardInsideItems(info, unitCardSelectedApproachId).then(({ title, items }) => {
