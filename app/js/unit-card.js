@@ -144,10 +144,12 @@ export function renderUnitCardHtml({
           <h4 class="ayah-status-heading">${escapeHtml(t("Approach"))}</h4>
           ${approachStatusRowHtml(approachStatuses)}
         </div>
-        ${achievedLine ? `<div class="ayah-status-block"><p class="unit-card-count-line">${escapeHtml(achievedLine)}</p></div>` : ""}
+        <div class="ayah-status-block">
+          <p class="unit-card-count-line" data-unit-card-achieved-line>${escapeHtml(achievedLine)}</p>
+        </div>
         <div class="ayah-status-block">
           <h4 class="ayah-status-heading">${escapeHtml(t("Word by Word"))}</h4>
-          <p class="unit-card-count-line">${escapeHtml(wbwLine)}</p>
+          <p class="unit-card-count-line" data-unit-card-wbw-line>${escapeHtml(wbwLine)}</p>
         </div>
       </div>
       ${insideSectionHtml(insideTitle, insideItems)}
