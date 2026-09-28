@@ -70,3 +70,16 @@ The Architect's proposal and working demo: https://claude.ai/artifact/SC8HePL1JD
 | 18 | A unit button on the Read bar? (The Architect suggested not for now: the bar already wraps on phones.) | **"yes"** | Build the gold unit chip on the Read bar, naming the chosen Study Unit and opening its Unit Card. Its cost to the Read bar is measured at every phone width and reported; the reading area must not lose more than it has to. |
 | 19 | The "End of Ruku' — how did it go?" prompt: on or off by default? | **"as you suggested"** | **On by default**, with a setting to turn it off. It appears once, after the last āyah of the chosen Study Unit, and never blocks reading. |
 | 20 | "Mark as read" for Ruku', Page, Hizb and Juz? | **"as suggested"** | **Ruku' and Page: yes. Hizb and Juz: later.** Recording Activity for Ruku' and Page amends ADR-008 and needs a Rules change the Owner publishes; until then those buttons explain why they are off. |
+
+## 28 Sep 2026 — every unit on the wheel
+
+The Architect's demo: https://claude.ai/artifact/EjaDZkJAtuBCKtgACFYTob (version 2 carries these answers). Each Approach slice on the landing wheel becomes rings, one per unit holding the current āyah; Explore gets the same rings. The Owner's answers:
+
+| # | Question | Owner's words | Meaning |
+|---|---|---|---|
+| 21 | All units by default, or a choice? | **"one with choice in toggle as in the demo."** | One wheel with the demo's toggle: **All units**, or any single ring on its own (today's behaviour). The choice is remembered per browser. |
+| 22 | Ring order. | **"opposite, big to small, Juzz at the center, Then Surah, and so on."** | From the middle out: **Juz, Surah, Hizb, Ruku', Page, Āyah.** (The Architect placed Ruku' before Page; the Owner may swap them.) |
+| 23 | Explore rings. | **"Two rings at the entire Quran (Juzz and Surah), three inside a juzz (Ruku, Hijb, Page) and Surah to Ayah (if there is another/ next level of ring possible)"** | Whole Qur'an: **Juz** (middle) and **Surah**. Inside a Juz: **Hizb, Ruku', Page**. Inside a Surah: **Ruku', Āyah**. Every ring is sized by text (each printed page counts the same), so the Juz stay even and the Surahs line up with them. A unit crossing the edge shows only its part. |
+| 24 | The data boxes. | **"I liked these stat/ data boxes (image) so much. enable these."** | Beside each wheel: the ring key ("Rings, from the middle out") and a box for what was tapped. On the landing wheel it lists that Approach unit by unit, with a way to Explore; in Explore it gives the unit's status and āyāt counts, with a way to open it. |
+
+The Owner also wrote: **"In fact I liked all color combination of the demo. Enable it for entire app."** That is recorded here and **not yet decided in detail**. Whether it replaces today's light pages or becomes a Light/Dark choice, and whether it is the "substantial change" that opens v09.00 (decision 17), is being put to the Owner.
