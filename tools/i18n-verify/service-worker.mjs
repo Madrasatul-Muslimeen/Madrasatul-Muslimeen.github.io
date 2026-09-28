@@ -25,6 +25,16 @@ const check = (name, ok, detail = "") => {
   else { fail++; console.log(`  FAIL  ${name}${detail ? "\n        " + detail : ""}`); }
 };
 
+// Issue #339: sw.js's fetch handler now makes its OWN fetch() call for the
+// Firebase SDK (www.gstatic.com/firebasejs/...) whenever a page it already
+// controls re-requests it -- test 2 below is exactly that case (a second
+// navigation, after the worker has claimed control). In Playwright 1.56 a
+// context route does NOT see a request the worker itself makes unless this
+// flag is set (see mushaf-font-offline-cache-browser.mjs's own Architect
+// review comment) -- without it that fetch would reach the real network
+// instead of harness.mjs's own gstatic stub route, breaking the page's
+// Firebase Auth import for a reason that has nothing to do with the worker.
+process.env.PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS = "1";
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
 const VIEWPORT = { width: 390, height: 844 };
 const PAGE_PATH = "/app/about.html"; // a plain, sign-in-optional page -- the worker's own behaviour does not depend on which page asked for it
@@ -33,14 +43,26 @@ const PAGE_PATH = "/app/about.html"; // a plain, sign-in-optional page -- the wo
  *  worker what it loaded once the worker is ready), so poll rather than
  *  guess a fixed pause. */
 async function waitForCached(page, suffix, timeoutMs = 8000) {
-  return page.waitForFunction(async (sfx) => {
-    for (const n of await caches.keys()) {
-      if (!n.startsWith("mm-app-")) continue;
-      const keys = await (await caches.open(n)).keys();
-      if (keys.some((r) => r.url.endsWith(sfx))) return true;
-    }
-    return false;
-  }, suffix, { timeout: timeoutMs }).then(() => true).catch(() => false);
+  // Architect review, 27 Sep 2026 (#339): this used page.waitForFunction()
+  // with an ASYNC predicate. A pending promise is always truthy to
+  // Playwright, so it resolved at once and never waited -- "the page it just
+  // opened is itself in the cache" then failed intermittently whenever the
+  // warm message had not landed yet (seen once in three runs). Poll the
+  // awaited answer instead.
+  const end = Date.now() + timeoutMs;
+  while (Date.now() < end) {
+    const found = await page.evaluate(async (sfx) => {
+      for (const n of await caches.keys()) {
+        if (!n.startsWith("mm-app-")) continue;
+        const keys = await (await caches.open(n)).keys();
+        if (keys.some((r) => r.url.endsWith(sfx))) return true;
+      }
+      return false;
+    }, suffix);
+    if (found) return true;
+    await page.waitForTimeout(100);
+  }
+  return false;
 }
 
 async function waitForController(page, timeoutMs = 8000) {
@@ -120,7 +142,12 @@ async function waitForActivation(page) {
 
 // ---------------------------------------------------------------------------
 // 3. Firestore/gstatic (and anything else off this origin) is never cached
-//    by this worker, whatever a page happens to fetch.
+//    by this worker, whatever a page happens to fetch -- EXCEPT the one
+//    pinned Firebase SDK prefix issue #339 deliberately adds (see
+//    service-worker's own "mushaf-font-offline-cache-browser.mjs" sibling,
+//    mushaf-tajweed-font-browser.mjs and the new offline-boot suite for the
+//    positive proof that prefix really does get cached and reused offline;
+//    this check's job stays purely negative -- nothing UNEXPECTED joins it).
 // ---------------------------------------------------------------------------
 {
   const ctx = await newContext(browser, { banner: false, allowServiceWorker: true, viewport: VIEWPORT });
@@ -138,8 +165,10 @@ async function waitForActivation(page) {
     return urls;
   });
   const offOrigin = allCachedUrls.filter((u) => !u.startsWith(BASE));
-  check("nothing off this origin (Firestore, gstatic, jsdelivr, ...) was ever cached",
-    offOrigin.length === 0, offOrigin.join(", "));
+  const EXPECTED_EXT_PREFIX = "https://www.gstatic.com/firebasejs/10.12.2/";
+  const unexpected = offOrigin.filter((u) => !u.startsWith(EXPECTED_EXT_PREFIX));
+  check("the only off-origin URLs ever cached are the pinned Firebase SDK files (issue #339) -- nothing else (Firestore, jsdelivr, ...) is",
+    unexpected.length === 0, unexpected.join(", "));
   await ctx.close();
 }
 
@@ -169,8 +198,22 @@ async function waitForActivation(page) {
   try {
     fs.writeFileSync(versionPath, original.replace(/APP_VERSION = "[^"]+"/, 'APP_VERSION = "99.99"'));
     await page.evaluate(async () => { const r = await navigator.serviceWorker.getRegistration(); await r?.update(); });
-    const waiting = await page.waitForFunction(async () => !!(await navigator.serviceWorker.getRegistration())?.waiting, null, { timeout: 8000 })
-      .then(() => true).catch(() => false);
+    // Architect review, 27 Sep 2026 (#339): this was page.waitForFunction()
+    // with an async predicate, which is always truthy to Playwright -- the
+    // check could not fail. Poll the awaited answer instead.
+    let waiting = false;
+    for (const end = Date.now() + 8000; Date.now() < end && !waiting; ) {
+      waiting = await page.evaluate(async () => !!(await navigator.serviceWorker.getRegistration())?.waiting);
+      if (!waiting) await page.waitForTimeout(100);
+    }
+    // ...and is STILL waiting a second later: a worker that calls
+    // skipWaiting() at install passes through "waiting" for an instant and
+    // then takes over, which a single observation cannot tell apart (proven
+    // by that exact mutation passing the old form of this check).
+    if (waiting) {
+      await page.waitForTimeout(1000);
+      waiting = await page.evaluate(async () => !!(await navigator.serviceWorker.getRegistration())?.waiting);
+    }
     check("the new version downloads and WAITS instead of taking over the open page", waiting);
     const still = await page.evaluate(() => caches.keys());
     check("while it waits, the open page keeps its own version's files (no mixing)", still.includes(beforeName), JSON.stringify(still));
