@@ -286,20 +286,31 @@ for (const lang of ["en", "bn"]) {
   await ctx.close();
 }
 
-// ---- Wide screen: the data box sits beside the wheel -----------------------
-{
-  const ctx = await newContext(browser, { viewport: { width: 1100, height: 800 }, extraSeedJs: SEED });
+// ---- Tablet and PC: the data box sits beside the wheel, in the list --------
+// Review: at 768px the card does not scroll, and a box under the wheel was
+// cut off below the card's edge -- unreachable. From 721px it goes to the
+// top of the list, which scrolls.
+for (const w of [768, 1100]) {
+  const ctx = await newContext(browser, { viewport: { width: w, height: w === 768 ? 1024 : 800 }, extraSeedJs: SEED });
   const { page } = await openPage(ctx, "/app/quranrevival.html");
   await page.waitForSelector("#wheelContainer svg", { timeout: 20000 });
   await clearSplash(page);
   await page.click('[data-wheel-show="all"]');
   await page.waitForSelector("#wheelRingDetail", { timeout: 20000 });
-  const place = await page.evaluate(() => {
-    const d = document.getElementById("wheelRingDetail").getBoundingClientRect();
-    const w = document.getElementById("wheelContainer").getBoundingClientRect();
-    return { inList: !!document.querySelector("#wheelSidebarContainer #wheelRingDetail"), beside: d.right <= w.left + 1 || d.left >= w.right - 1, overflow: document.documentElement.scrollWidth - innerWidth };
-  });
-  check("[1100] the data box sits beside the wheel, at the top of the list", place.inList && place.beside && place.overflow <= 1, JSON.stringify(place));
+  const reach = (detailSel, listSel, wheelSel) => page.evaluate(([d, l, wh]) => {
+    const det = document.querySelector(d);
+    const list = document.querySelector(l);
+    det.scrollIntoView({ block: "nearest" });
+    const dr = det.getBoundingClientRect(), lr = list.getBoundingClientRect(), wr = document.querySelector(wh).getBoundingClientRect();
+    return { inList: list.contains(det), visible: dr.top >= lr.top - 1 && dr.top < lr.bottom, beside: dr.right <= wr.left + 1 || dr.left >= wr.right - 1, overflow: document.documentElement.scrollWidth - innerWidth };
+  }, [detailSel, listSel, wheelSel]);
+  const land = await reach("#wheelRingDetail", "#wheelSidebarContainer", "#wheelContainer");
+  check(`[${w}] landing: the data box sits beside the wheel, in the list, and can be scrolled to`, land.inList && land.visible && land.beside && land.overflow <= 1, JSON.stringify(land));
+  await page.click("#tabExploreBtn");
+  await page.waitForSelector("#exploreWheelContainer .wheel-ring-seg", { timeout: 30000 });
+  await page.waitForTimeout(400);
+  const exp = await reach("#exploreRingDetail", "#exploreSidebarContainer", "#exploreWheelContainer");
+  check(`[${w}] Explore: the data box sits beside the wheel, in the list, and can be scrolled to`, exp.inList && exp.visible && exp.beside && exp.overflow <= 1, JSON.stringify(exp));
   await ctx.close();
 }
 

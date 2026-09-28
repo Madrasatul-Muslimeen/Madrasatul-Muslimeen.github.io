@@ -3894,7 +3894,7 @@
             <button type="button" class="wheel-look-btn wheel-show-btn" data-wheel-show="ayah" aria-pressed="false">Āyah</button>
           </div>
           <!-- The ring key and data box on a phone (below the wheel, in the
-               scrolling page). At 900px and wider renderWheel() puts the same
+               scrolling page). At 721px and wider renderWheel() puts the same
                box at the top of the Approach list instead, beside the wheel. -->
           <div id="wheelRingPanel" class="wheel-ring-panel" hidden></div>
         </div>
@@ -4303,7 +4303,7 @@
               </div>
               <div id="exploreWheelLegendContainer"></div>
               <!-- Issue #352: the ring key and the data box for the tapped unit.
-                   Below the wheel on a phone; at 900px and wider it moves to
+                   Below the wheel on a phone; at 721px and wider it moves to
                    the top of the list, beside the wheel. -->
               <div id="exploreRingPanel" class="wheel-ring-panel" hidden></div>
               <!-- MAP Phase 3. Arabic word coverage for the scope on screen.
@@ -7558,7 +7558,10 @@
     // -----------------------------------------------------------------------
     const wheelShowSwitchEl = document.getElementById("wheelShowSwitch");
     const wheelRingPanelEl = document.getElementById("wheelRingPanel");
-    const wheelRingWideQuery = window.matchMedia("(min-width: 900px)");
+    // 721px, not 900: from 721 both the landing and Explore sit side by side
+    // in a card that does not scroll, so a box under the wheel was cut off
+    // (measured at 768px); beside the wheel, at the top of the list, it is not.
+    const wheelRingWideQuery = window.matchMedia("(min-width: 721px)");
     let wheelShowLastUnitType = null;
     let landingRingPickedId = null;
     let landingRingData = null; // { key, units, surahs, lookups }
@@ -7765,7 +7768,7 @@
     let landingRingPanelHtml = "";
 
     /** The ring key and data box: beside the wheel (top of the Approach list)
-        at 900px and wider, below the wheel on phones. */
+        at 721px and wider, below the wheel on phones. */
     function placeWheelRingPanel() {
       let host;
       if (wheelRingWideQuery.matches) {
@@ -9421,7 +9424,7 @@
       const band = document.getElementById("wheelIntroBand");
       const col = document.querySelector("#wheelSection .wheel-col");
       if (!row || !band || !col) return;
-      const wide = window.matchMedia("(min-width: 721px)");
+      const wide = window.matchMedia("(min-width: 900px)");
       const place = () => {
         if (wide.matches) { if (row.parentElement !== band) band.appendChild(row); }
         else if (row.parentElement !== col) col.insertBefore(row, col.firstChild);
