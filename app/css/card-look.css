@@ -104,7 +104,10 @@
    derived from the Light value. */
 [data-card-look="night"] .ayah-wbw-chip.is-known {
   color: #8fe3ae;
-  background: rgba(63, 174, 116, 0.18);
+  /* Solid: the same colour rgba(63,174,116,0.18) makes over --card-bg-inset
+     (#13192a), so what is measured is what is seen (review: a translucent
+     background measured as opaque green read 1.83:1). */
+  background: #1b3437;
   border-color: #3fae74;
 }
 [data-card-look="night"] .ayah-connected-studied.is-studied { color: #7ddba0; }
@@ -131,3 +134,27 @@
   background: #fffdf6;
   color: #1b1b16;
 }
+
+/* Review of PR #367 (28 Sep 2026): in Light the landing wheel card and
+   Explore turn white, but the Approach list kept its dark-surface colours --
+   measured, the section names (#ecd49a) at 1.45:1 on white and the status
+   chips at 2.4-2.6:1, unreadable. The same surface's own Light palette
+   ("a palette belongs to a surface"): dark text on light tints. The wheel's
+   five STATUS_COLORS are not touched; only the list's text chips are. */
+[data-card-look="light"] .ways-group { color: #1F3A6E; }
+[data-card-look="light"] .way-row { background: #f6f2e4; }
+[data-card-look="light"] .way-row:hover { background: #efe8d2; border-color: rgba(31, 58, 110, 0.25); }
+[data-card-look="light"] .chip-not_applicable { background: transparent; color: #555b66; border-color: rgba(0, 0, 0, 0.3); }
+[data-card-look="light"] .chip-not_started { background: #e6eaf1; color: #34405a; }
+[data-card-look="light"] .chip-learning { background: rgba(138, 106, 53, 0.16); color: #5e4418; }
+[data-card-look="light"] .chip-practising { background: rgba(201, 162, 75, 0.32); color: #4a3608; }
+[data-card-look="light"] .chip-achieved { background: rgba(91, 132, 196, 0.2); color: #1d3f78; }
+[data-card-look="light"] .wheel-resize-handle-corner { color: #7a5c1c; }
+/* Night: "Not started" read 4.33:1 against the card's lightest point (the
+   top of its radial gradient) -- just short of 4.5. One step lighter. */
+[data-card-look="night"] .chip-not_started { color: #a4b3d1; }
+/* Explore's Arabic word-coverage line (MAP Phase 3) was picked for the dark
+   panel -- gold #E8C77A read 1.63:1 on the Light card. Its Light re-picks. */
+[data-card-look="light"] .explore-arabic-coverage .eac-figure { color: #6b4f14; }
+[data-card-look="light"] .explore-arabic-coverage .eac-incomplete { color: #9a3b1c; }
+[data-card-look="light"] .explore-arabic-coverage .eac-unavailable { color: #555b66; }
