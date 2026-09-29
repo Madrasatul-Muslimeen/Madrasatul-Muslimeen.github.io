@@ -182,13 +182,17 @@ await check("recording nothing writes nothing and reports it", async () => {
 // until a second, narrower gate opens -- so they need their own cases,
 // distinct from both "juz/hizb, permanently refused" above and "ayah/range/
 // surah, gated once" below.
-await check("the shipped reading-units gate default is FALSE, read from the REAL module directly", () => {
+// UPDATED 29 Sep 2026: the Owner published the Ruku'/Page rules and the gate
+// was opened by governed decision (docs/reports/2026-09-29-reading-ruku-page-
+// enabled.md). The check now asserts the shipped gate is OPEN; the closed
+// behaviour is still proven below through the stub (readingUnitsReady = false).
+await check("the shipped reading-units gate is OPEN (governed decision, 29 Sep 2026), read from the REAL module directly", () => {
   // The stub's own default (readingUnitsReady = false, above) is not proof of
   // anything about the file that ships -- realIsReadingUnitsPersistenceReady
   // is the actual app/js/study-reading-units-readiness.js, statically
   // imported, never rewritten by this suite's own source-string surgery.
-  assert.equal(realIsReadingUnitsPersistenceReady(), false,
-    "study-reading-units-readiness.js no longer defaults to false -- if this is deliberate, the enablement decision must be governed, see study-activity-evidence-boundary.mjs's own checks for the shape that requires");
+  assert.equal(realIsReadingUnitsPersistenceReady(), true,
+    "study-reading-units-readiness.js is not open -- the 29 Sep 2026 governed decision has been lost or malformed");
 });
 await check("unitTypeNeedsReadingUnitsGate names exactly ruku and page", () => {
   for (const t of ["ayah", "range", "surah"]) assert.equal(unitTypeNeedsReadingUnitsGate(t), false, t);

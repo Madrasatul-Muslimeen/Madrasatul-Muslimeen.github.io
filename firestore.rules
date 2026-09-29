@@ -1225,6 +1225,18 @@ service cloud.firestore {
     // This block is an ADDITION ONLY: no rule above or below it is altered,
     // removed or weakened by it. The parent weekly document's own rule is
     // byte-for-byte unchanged.
+    //
+    // AMENDED 2026-09-28 (issue #349, ADR-008 Amendment 3, Owner decision 20,
+    // docs/governance/2026-09-27-owner-decisions.md row 20: "Ruku' and Page:
+    // yes. Hizb and Juz: later."). unitIdentityOk() below widens to accept
+    // ruku/page unit keys, for the Unit Card's "Mark as read" on those two
+    // units (issue #348). NOTHING ELSE in this block changes: the same five
+    // events, the same Approach pairs, the same dedupe/identity/hasOnly
+    // shape -- a Ruku'/Page completion is still exactly a reading.completed
+    // event crediting approach_01/approach_03, the same as a Surah
+    // completion. THIS FILE IS A CANDIDATE. It is NOT deployed until the
+    // Owner publishes it in the Firebase Console; see
+    // docs/governance/2026-09-28-reading-ruku-page-owner-publish-guide.md.
     // -------------------------------------------------------------------
     match /activity/{activityKey}/evidence/{eventId} {
 
@@ -1324,8 +1336,8 @@ service cloud.firestore {
             || (d().eventType == 'wbw.engaged'          && d().trackableId == 'approach_04');
       }
 
-      // Permanent Study Unit identity (I5), and only the three unit types
-      // ADR-008's evidence contract accepts: a juz/page/topic/hadith key is
+      // Permanent Study Unit identity (I5), and only the unit types
+      // ADR-008's evidence contract accepts: a juz/hizb/topic/hadith key is
       // refused at the database, matching the pure module's own behaviour.
       // None of these forms can contain '_', which is what makes the event
       // id unambiguous without a separate hygiene check.
@@ -1337,10 +1349,20 @@ service cloud.firestore {
       // real defect: a document could then store unitKey 'surah:2' while
       // declaring unitType 'ayah', and every report that filters by unitType
       // would mis-file it. Pairing them makes the check impossible to lose.
+      //
+      // AMENDED 2026-09-28 (issue #349, ADR-008 Amendment 3): ruku and page
+      // join ayah/range/surah, for the Unit Card's "Mark as read" on those
+      // two units (Owner decision 20). The ruku pattern matches
+      // buildUnitKey.ruku(surah, localIndex); the page pattern matches
+      // buildUnitKey.page(edition, pageNum) -- edition is the app's own
+      // constant PAGE_EDITION ("madani"), lowercase ASCII only, never
+      // user-supplied, so `[a-z]+` cannot admit anything containing '_'.
       function unitIdentityOk() {
         return (d().unitType == 'ayah'  && d().unitKey.matches('ayah:[0-9]{1,3}:[0-9]{1,3}'))
             || (d().unitType == 'range' && d().unitKey.matches('range:[0-9]{1,3}:[0-9]{1,3}-[0-9]{1,3}'))
-            || (d().unitType == 'surah' && d().unitKey.matches('surah:[0-9]{1,3}'));
+            || (d().unitType == 'surah' && d().unitKey.matches('surah:[0-9]{1,3}'))
+            || (d().unitType == 'ruku'  && d().unitKey.matches('ruku:[0-9]{1,3}:[0-9]{1,3}'))
+            || (d().unitType == 'page'  && d().unitKey.matches('page:[a-z]+:[0-9]{1,3}'));
       }
 
       // ADR-008's own deduplication boundaries: 'once' for a Note's creation

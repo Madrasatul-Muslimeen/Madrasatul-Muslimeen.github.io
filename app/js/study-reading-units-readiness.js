@@ -62,23 +62,24 @@ export const READING_UNITS_READINESS_AUTHORITIES = Object.freeze(["master-archit
 /**
  * THE DECLARATION. This is the single place the answer lives.
  *
- * NOT YET ENABLED. The Owner has not published
- * docs/governance/2026-09-28-reading-ruku-page-DEPLOYMENT-candidate.rules.
- * When they do, a governed decision is recorded the same way
- * docs/reports/2026-09-27-word-levels-enabled.md recorded the word-levels
- * one, and this declaration is updated to match -- never a bare flip.
+ * ENABLED 29 Sep 2026. The Owner published
+ * docs/governance/2026-09-28-reading-ruku-page-DEPLOYMENT-candidate.rules
+ * ("Ruku/Page rule published") and firestore.rules is synced to it. Governed
+ * decision recorded in docs/reports/2026-09-29-reading-ruku-page-enabled.md.
  */
 export const READING_UNITS_PERSISTENCE_DECLARATION = Object.freeze({
-  ready: false,
-  decision: null,
+  ready: true,
+  decision: Object.freeze({
+    by: "master-architect",
+    on: "2026-09-29",
+    reference: "docs/reports/2026-09-29-reading-ruku-page-enabled.md",
+  }),
   gate: "E1",
   note:
     "Mark as read for Ruku' and Page (issue #349, ADR-008 Amendment 3) is " +
-    "built and gated. It stays off until the Owner publishes " +
+    "enabled: the Owner published " +
     "docs/governance/2026-09-28-reading-ruku-page-DEPLOYMENT-candidate.rules " +
-    "in the Firebase Console and a governed decision records that it was " +
-    "done. The general evidence-persistence gate being open does not open " +
-    "this one -- the two are independent.",
+    "on 29 Sep 2026 and firestore.rules is synced to it.",
 });
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;

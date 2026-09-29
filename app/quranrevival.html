@@ -15331,9 +15331,12 @@
       return { enabled: false, reason: t("Recording a completed reading here is planned for later.") };
     }
 
-    async function markUnitAsRead(unitKey) {
-      const info = unitCardCurrentInfo;
-      if (!info || info.unitKey !== unitKey) return;
+    /** Takes the card's own resolved unit, NOT unitCardCurrentInfo: the card's
+        buttons close the card first (unit-card.js's fire()), and closing sets
+        unitCardCurrentInfo to null -- so reading it here returned early and
+        "Mark as read" never saved anything from v08.103 until v08.108. */
+    async function markUnitAsRead(info) {
+      if (!info?.unitKey) return;
       if (!unitTypeRecordsEvidence(info.unitType) || !studyEvidencePersistenceReady()) return;
       if (unitTypeNeedsReadingUnitsGate(info.unitType) && !readingUnitsPersistenceReady()) return;
       const args = readingCompletionArgs({
@@ -15455,7 +15458,7 @@
         onNote: (unitKey) => unitCardOpenNote(unitKey),
         onBookmark: (unitKey) => unitCardToggleBookmark(unitKey, info.label),
         onPlay: () => playUnitCard(info),
-        onMarkAsRead: (unitKey) => markUnitAsRead(unitKey),
+        onMarkAsRead: () => markUnitAsRead(info),
         onMarkAsReadRefused: () => { const why = unitCardMarkAsReadState(info).reason; if (why) showStudyNotice(why); },
         onInsideJump: (item) => {
           if (item.jump) { const [s, a] = item.jump.split(":").map(Number); navigateToAyah(s, a, "read"); return; }
