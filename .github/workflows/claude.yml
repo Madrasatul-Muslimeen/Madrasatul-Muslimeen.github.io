@@ -431,12 +431,23 @@ jobs:
           fi
           mkdir -p .builder-round
           echo ".builder-round/" >> .git/info/exclude
+          # --json, NOT --comments: outside a terminal `gh issue view --comments`
+          # prints ONLY the comments, so run 580 was handed an issue with no
+          # title and no body (223 bytes, the Builder said so and stopped).
+          issue_text=$(gh issue view "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --json title,body,comments \
+            --jq '"## " + .title + "\n\n" + (.body // "") + ([.comments[] | "\n\n---\n\n**Comment by " + .author.login + ":**\n\n" + .body] | join(""))')
+          # An empty specification is refused HERE, before the model is paid
+          # to discover it.
+          if [ "${#issue_text}" -lt 80 ]; then
+            echo "::error::Issue $ISSUE_NUMBER came back with only ${#issue_text} characters; refusing to start the Builder on an empty specification."
+            exit 1
+          fi
           {
             echo "# The round to build: issue $ISSUE_NUMBER"
             echo ""
             echo "This file is the issue, fetched by the workflow. It is the specification."
             echo ""
-            gh issue view "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --comments
+            printf '%s\n' "$issue_text"
             echo ""
             echo "## Architect note for this run (context only)"
             echo ""
