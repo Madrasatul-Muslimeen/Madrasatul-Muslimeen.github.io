@@ -803,6 +803,15 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   out at zero slack the moment a label fits, so it reports "fits" and never
   "fits with 30px to spare". Let the cells shrink-wrap (`flex: 0 0 auto`) and
   measure the row's natural width against what it has.
+- **THE READ VIEW CLIPS, IT DOES NOT SCROLL, so `scrollWidth` is blind there.**
+  `body.read-sideways` and `#readScroll` are `overflow-x: hidden`: a too-wide
+  Mushaf is silently CUT. #393's suite asserted `scrollWidth - clientWidth <= 0`
+  and stayed green through four deliberate breaks, including a container 36px
+  past a 768px screen. Measure containment (area inside `#readScroll`, the page
+  inside the area, every glyph inside its page), as
+  `mushaf-no-sideways-overflow-browser.mjs` now does, each check proven by its
+  own mutation. Before trusting any "no overflow" check, ask whether an
+  ancestor clips.
 - **A width list with a hole in it hides the defect living in the hole.**
   `navcheck.mjs` measured 320 then 360. **340px was truncating too** (73>70) and
   nothing had ever looked. 340 is in the list now. When a suite enumerates
