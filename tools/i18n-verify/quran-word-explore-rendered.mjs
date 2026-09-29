@@ -20,7 +20,21 @@ DATA.quranWordProgress = [{
              "3": { s: "l", at: "2026-09-13T10:00:00.000Z", by: "p1" } },
 }];
 DATA.quranWordApprovals = [];
+// v08.53 switched the whole-Qur'an counter ON, so Whole Quran and Juz now read
+// this ONE running-total document instead of declining. Seeded with distinct
+// numbers so a figure printed from the wrong field cannot pass by accident.
+DATA.quranWordTotals = [{
+  _id: TENANT_ID + "__p1", total: 77429, known: 5,
+  byJuz: { "1": { known: 3, totalWords: 2522 } },
+}];
 `;
+
+// A read of a word-progress LANE (one document per ayah) is what this suite's
+// "no scan" claim is about. quranWordTotals is the one running-counter
+// document and is a different, deliberately allowed read at the wide levels.
+const laneReads = (page) => page.evaluate(() => (window.__fsLog || []).filter((r) => /^quranWord(Progress|Approvals)$/.test(r.col || "")).length);
+const totalsReads = (page) => page.evaluate(() => (window.__fsLog || []).filter((r) => r.col === "quranWordTotals").length);
+const figureNums = (text) => (westernise(text).match(/[\d,]+/g) || []).map((x) => Number(x.replace(/,/g, "")));
 
 const westernise = (t) => (t || "").replace(/[০-৯]/g, (d) => String(d.charCodeAt(0) - 0x09E6));
 
@@ -84,13 +98,22 @@ for (const lang of ["en", "bn"]) {
   const atQuran = await strip(page);
   check(`[${lang}] the strip exists and is on screen at the Whole Quran level`,
     atQuran && !atQuran.hidden && atQuran.display !== "none" && atQuran.onScreen, JSON.stringify(atQuran));
-  check(`[${lang}] at Whole Quran it says the figure is NOT available, rather than guessing`,
-    atQuran?.hasUnavailable && !atQuran?.hasFigure, JSON.stringify(atQuran?.text));
+  // UPDATED in place (v08.53 enabled the counter; this used to assert the
+  // gated-off "not available" sentence). Whole Quran now prints the reader's
+  // running total from quranWordTotals: 5 known of 77,429 in the seed.
+  const quranNums = figureNums(atQuran?.text);
+  check(`[${lang}] at Whole Quran it prints the running total from the counter (5 of 77429), not a guess and not "unavailable"`,
+    atQuran?.hasFigure && !atQuran?.hasUnavailable && quranNums.includes(5) && quranNums.includes(77429), JSON.stringify(atQuran?.text));
   check(`[${lang}] and it is READABLE on Explore's dark panel (>=4.5:1)`,
     (atQuran?.contrast ?? 0) >= 4.5, `contrast ${atQuran?.contrast}:1`);
 
-  const readsAtQuran = await page.evaluate(() => (window.__fsLog || []).filter((r) => /quranWord/.test(r.col || "")).length);
-  check(`[${lang}] and it read NOTHING to say so -- no 12,000-document scan`, readsAtQuran === 0, String(readsAtQuran));
+  // UPDATED in place: it read nothing while gated off. Now it reads exactly
+  // ONE counter document -- and still no per-ayah lane document (the 12,000
+  // scan this check exists to forbid).
+  const readsAtQuran = await laneReads(page);
+  check(`[${lang}] and it read NO lane document -- no 12,000-document scan`, readsAtQuran === 0, String(readsAtQuran));
+  const totalsAtQuran = await totalsReads(page);
+  check(`[${lang}] the total came from exactly ONE quranWordTotals read`, totalsAtQuran === 1, String(totalsAtQuran));
 
   // NOTE ON NAVIGATION, corrected after a failing check: the Whole Quran
   // level opens on the 114-SURAH reading, not the 30-Juz one, so clicking
@@ -111,9 +134,12 @@ for (const lang of ["en", "bn"]) {
   const atJuz = await strip(page);
   check(`[${lang}] reached a Juz level through the view toggle (${switched}, crumb: ${juzCrumb})`,
     /Juz|জুয/i.test(juzCrumb ?? ""), String(juzCrumb));
-  check(`[${lang}] a Juz also declines, for the same reason`, atJuz?.hasUnavailable && !atJuz?.hasFigure, JSON.stringify(atJuz?.text));
-  const readsAtJuz = await page.evaluate(() => (window.__fsLog || []).filter((r) => /quranWord/.test(r.col || "")).length);
-  check(`[${lang}] still nothing read at the Juz level`, readsAtJuz === 0, String(readsAtJuz));
+  // UPDATED in place (v08.53): a Juz prints its own byJuz row, 3 of 2522.
+  const juzNums = figureNums(atJuz?.text);
+  check(`[${lang}] a Juz prints its own per-Juz figure (3 of 2522) from the counter`,
+    atJuz?.hasFigure && !atJuz?.hasUnavailable && juzNums.includes(3) && juzNums.includes(2522), JSON.stringify(atJuz?.text));
+  const readsAtJuz = await laneReads(page);
+  check(`[${lang}] still no lane document read at the Juz level`, readsAtJuz === 0, String(readsAtJuz));
 
   // Into a Surah from inside the Juz.
   const reached = await page.evaluate(() => {
@@ -122,11 +148,11 @@ for (const lang of ["en", "bn"]) {
     return true;
   });
   await page.waitForTimeout(900);
-  await page.evaluate(() => {
-    const btns = [...document.querySelectorAll("#exploreWheelContainer [data-key], #exploreWheelContainer [data-seg-key]")];
-    (btns.find((b) => (b.getAttribute("data-key") || b.getAttribute("data-seg-key")) === "1") ?? btns[0])
-      ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-  });
+  // UPDATED in place: inside a Juz the wheel is now concentric rings, and its
+  // first "data-key=1" path is not the drill target (the old click landed on it
+  // and stayed at "Juz 1", so the surah figure was never reached). The reader
+  // drills through the sidebar row for that surah.
+  await page.evaluate(() => document.querySelector('#exploreSidebarContainer [data-key="1"]')?.click());
   await page.waitForTimeout(1400);
   const level = await page.evaluate(() => document.querySelector("#exploreBreadcrumb .explore-crumb.active")?.textContent.trim() ?? null);
   const atSurah = await strip(page);
@@ -147,7 +173,8 @@ for (const lang of ["en", "bn"]) {
       !atSurah.hasIncomplete, atSurah.text);
     check(`[${lang}] the figure is READABLE on Explore's dark panel (>=4.5:1)`,
       atSurah.contrast >= 4.5, `contrast ${atSurah.contrast}:1 -- navy on navy is this suite's own recorded defect`);
-    const readsAtSurah = await page.evaluate(() => (window.__fsLog || []).filter((r) => /quranWord/.test(r.col || "")));
+    // The lane reads only, ignoring the counter document read on the way in.
+    const readsAtSurah = await page.evaluate(() => (window.__fsLog || []).filter((r) => /^quranWord(Progress|Approvals)$/.test(r.col || "")));
     check(`[${lang}] it cost exactly TWO queries, one per lane -- not two reads per ayah`,
       readsAtSurah.length === 2, JSON.stringify(readsAtSurah.map((r) => r.col)));
     check(`[${lang}] one query on each lane`,

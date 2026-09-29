@@ -1358,7 +1358,7 @@ console.log("\n=== 27. Shell round 14: the Study options bars, and Search ===");
   // sit beside Study Unit and Surah, on ONE line, with nothing truncated.
   await page.selectOption("#unitTypeSelect", "range");
   await page.waitForTimeout(500);
-  const range = await page.evaluate(() => {
+  const measureRange = () => page.evaluate(() => {
     const bar = document.querySelectorAll(".study-options-body > .opt-bar")[1];
     const cells = [...bar.children].filter((c) => c.getBoundingClientRect().height > 0);
     const rows = [];
@@ -1377,11 +1377,31 @@ console.log("\n=== 27. Shell round 14: the Study options bars, and Search ===");
       fromW: Math.round(document.getElementById("rangeFromSelect").getBoundingClientRect().width),
     };
   });
+  const range = await measureRange();
   check("27i with Range on, all four cells are Unit/Surah/From/To",
         JSON.stringify(range.ids) === '["unitTypeSelect","surahSelect","rangeFromSelect","rangeToSelect"]', JSON.stringify(range.ids));
-  check("27i ...on ONE line, not two", range.lines === 1, `${range.lines} line(s)`);
+  // UPDATED in place (was "...on ONE line, not two" at the 390px context
+  // this section runs in, and failed every run since v08.33 / ed6b760f,
+  // 22 Sep 2026). That round DELIBERATELY made this bar wrap below 481px:
+  // Surah needs 113px for its longest option and four cells cannot give it
+  // that on a phone, so Unit + Surah take 45% each and the number pickers
+  // (From/To) take a line of their own -- see the `@media (max-width: 480px)`
+  // comment beside `.opt-bar-units`. MEASURED for this update: exactly two
+  // lines at 320/360/390/480px, one line at 481/500/560/768/1280px, English
+  // and Bangla alike, nothing truncated at any of them. So the assertion is
+  // split by the breakpoint it actually describes: two tidy lines here
+  // (Unit+Surah, then From+To) and ONE line beyond it, below.
+  check("27i ...on TWO lines at 390px (the deliberate <=480px wrap), not one and not three", range.lines === 2, `${range.lines} line(s)`);
   check("27i ...with no label silently truncated", range.cutLabels.length === 0, JSON.stringify(range.cutLabels));
   check("27i ...and the ayah fields kept narrow", range.fromW < 80, `${range.fromW}px`);
+  // Above the breakpoint the original claim still stands, and is still checked.
+  await page.setViewportSize({ width: 768, height: 844 });
+  await page.waitForTimeout(400);
+  const rangeWide = await measureRange();
+  check("27i ...on ONE line, not two, above the 480px breakpoint (768px)", rangeWide.lines === 1, `${rangeWide.lines} line(s)`);
+  check("27i ...and still nothing truncated at 768px", rangeWide.cutLabels.length === 0, JSON.stringify(rangeWide.cutLabels));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(300);
   await page.selectOption("#unitTypeSelect", "ayah");
   await page.waitForTimeout(400);
 
