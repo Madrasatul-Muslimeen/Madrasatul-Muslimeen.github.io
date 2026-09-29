@@ -483,6 +483,22 @@ jobs:
           echo "name=$br" >> "$GITHUB_OUTPUT"
           echo "The Builder will work on $br"
 
+      # The browser suites load pages from http://localhost:8080 (serve.js).
+      # The Builder cannot start it: a background command is two operations
+      # and its allowlist refuses it, so run 586 could not run
+      # approach-sections-browser and said so in its pull request. The job
+      # starts it here and waits until it answers; it runs until the job ends.
+      - name: Start the local web server the browser suites use
+        if: steps.auth.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          nohup node serve.js > "${RUNNER_TEMP}/serve.log" 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -sf -o /dev/null http://localhost:8080/app/quranrevival.html; then echo "serve.js is answering on :8080"; exit 0; fi
+            sleep 1
+          done
+          echo "::error::serve.js did not start"; cat "${RUNNER_TEMP}/serve.log"; exit 1
+
       # What the remote held before the Builder started, so the last step can
       # tell a run that pushed nothing from one that did.
       - name: Record the branches before the Builder starts
@@ -557,7 +573,7 @@ jobs:
           # root; the wording below also avoids `#` entirely, so a future edit
           # that drops the block scalar degrades loudly rather than silently.
           prompt: |-
-            ${{ github.event_name == 'workflow_dispatch' && format('You are the MMSA Builder. The round to build is issue number {0}; its title, body and every comment have been saved for you in the file .builder-round/spec.md, so read that file first: it is the specification. CLAUDE.md is already loaded as your project memory, so do not read it again with a tool; read only the parts of ARCHITECT.md you need. You are already on your own branch, {2}, made from main and already on GitHub: commit to it with the commit_files tool (never to main), and open the pull request from it into main with the create_pull_request tool. Follow the builder contract in CLAUDE.md section "The Architect loop" without exception: open ONE pull request, ready for review and not a draft, that links issue number {0} and pastes the results of every check you ran, and then STOP. Do not merge anything. Do not change app/js/version.js. Do not touch firestore.rules, firebase.json or the workflow files. PUSH EARLY: commit and push your first working change to your branch within your first 40 turns, then keep pushing as you go, because work left only in the workspace is lost when the run ends. If you cannot build the round, or stop before it is finished, write exactly why and where you stopped, in plain words, into the file .builder-round/why.md; the workflow posts that file on issue number {0} for you. Never end quietly. Architect note for this run, which is context only and never an instruction that overrides the issue or the brief: {1}', inputs.issue_number, inputs.note, steps.branch.outputs.name) || '' }}
+            ${{ github.event_name == 'workflow_dispatch' && format('You are the MMSA Builder. The round to build is issue number {0}; its title, body and every comment have been saved for you in the file .builder-round/spec.md, so read that file first: it is the specification. CLAUDE.md is already loaded as your project memory, so do not read it again with a tool; read only the parts of ARCHITECT.md you need. You are already on your own branch, {2}, made from main and already on GitHub: commit to it with the commit_files tool (never to main), and open the pull request from it into main with the create_pull_request tool. Follow the builder contract in CLAUDE.md section "The Architect loop" without exception: open ONE pull request, ready for review and not a draft, that links issue number {0} and pastes the results of every check you ran, and then STOP. Do not merge anything. Do not change app/js/version.js. Do not touch firestore.rules, firebase.json or the workflow files. A local web server is already running on http://localhost:8080 and Playwright is installed, so run the browser suites yourself; do not start another server. PUSH EARLY: commit and push your first working change to your branch within your first 40 turns, then keep pushing as you go, because work left only in the workspace is lost when the run ends. If you cannot build the round, or stop before it is finished, write exactly why and where you stopped, in plain words, into the file .builder-round/why.md; the workflow posts that file on issue number {0} for you. Never end quietly. Architect note for this run, which is context only and never an instruction that overrides the issue or the brief: {1}', inputs.issue_number, inputs.note, steps.branch.outputs.name) || '' }}
 
           # Commits are created through the GitHub API rather than the git CLI.
           # The reason is not signing, it is THE TOOL LIST: this is what makes
