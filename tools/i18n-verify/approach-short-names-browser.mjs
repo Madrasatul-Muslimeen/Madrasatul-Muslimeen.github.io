@@ -43,6 +43,7 @@ for (const lang of ["en", "bn"]) {
   const { page, errors } = await openPage(ctx, "/app/catalogue.html");
   await page.waitForFunction(() => document.querySelectorAll("#trackablesBody tr").length > 0, null, { timeout: 15000 });
   await page.click('[data-cat-tab="approaches"]');
+  await page.click("#openAllSectionsBtn"); // #399: sections start collapsed; rows are clicked below
   const col = await page.evaluate(() => {
     const head = [...document.querySelectorAll("#trackablesBody")[0].closest("table").querySelectorAll("thead th")].map((th) => th.textContent.trim());
     const cell = (id) => document.querySelector(`#trk-row-${id} .trk-short-name`)?.textContent.trim();

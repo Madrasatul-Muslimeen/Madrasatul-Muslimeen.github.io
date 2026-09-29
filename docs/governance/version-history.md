@@ -642,3 +642,4 @@ total). Allocated by the MMSA Architect.
 08.113: the Catalogue in tabs; Approach numbers by position; ▲▼ fixed. Allocated by the MMSA Architect.
 08.114: Approach short names on the wheel. Allocated by the MMSA Architect.
 08.115: Word Card derived-form meanings (#396). Allocated by the MMSA Architect.
+08.116: Catalogue sections: move reaches the wheel, collapsible, draggable (#399). Allocated by the MMSA Architect.
