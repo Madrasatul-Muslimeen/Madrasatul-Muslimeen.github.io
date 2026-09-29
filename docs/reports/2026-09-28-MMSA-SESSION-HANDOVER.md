@@ -134,8 +134,13 @@ Owner may reorder the queue; nothing else reorders it.
     3:2:1's padded box, which the RTL neighbour 3:2:2 legitimately owns.
   - `quran-word-explore-rendered` fails 25/10 on `main` too; its checks predate
     the v08.53 counter.
-- **Known and recorded, not fixed:** a 3px sideways overflow on the Mushaf page
-  at 768px, which predates this session.
+- **The 3px Mushaf overflow at 768px is CLOSED (29 Sep 2026, #393):** it does
+  not reproduce with the real Mushaf layout and page fonts at any width.
+  **Beware:** the Read view CLIPS rather than scrolls (`body.read-sideways` and
+  `#readScroll` are `overflow-x: hidden`), so `scrollWidth` can never show an
+  overflow there. `mushaf-no-sideways-overflow-browser.mjs` measures
+  containment instead: area inside the reading area, page inside the area,
+  every glyph inside its page.
 - **The auto-mode permission check once blocked** reading
   `tools/i18n-verify/programme-ledger*.mjs`. The Owner then approved editing
   them ("yes, do").

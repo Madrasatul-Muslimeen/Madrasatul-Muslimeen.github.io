@@ -54,7 +54,37 @@ const measure = (page) => page.evaluate(() => {
     const r = el.getBoundingClientRect();
     if (r.width > 0 && r.right > cw + 0.5) offenders.push(`${el.tagName}#${el.id}.${String(el.className).slice(0, 40)} right=${r.right.toFixed(1)}`);
   }
+  // The Read view CLIPS rather than scrolls: body.read-sideways and #readScroll
+  // both carry overflow-x: hidden, so a too-wide Mushaf is CUT, and
+  // scrollWidth can never show it (a 36px-too-wide container measured over=0).
+  // So measure containment directly. The whole-surah view lays pages side by
+  // side in #pageViewContainer's own scroller, so words on other pages are
+  // legitimately off screen: the page being read is the one centred in view.
+  const box = (e) => { const r = e.getBoundingClientRect(); return { l: r.left, r: r.right }; };
+  const within = (inner, outer) => inner.l >= outer.l - 0.5 && inner.r <= outer.r + 0.5;
+  const rs = document.getElementById("readScroll"), pvc = document.getElementById("pageViewContainer");
+  const pages = [...document.querySelectorAll("#pageViewContainer .hifz-page")];
+  const pv = pvc ? box(pvc) : null, mid = pv ? (pv.l + pv.r) / 2 : 0;
+  const current = pages.map((pg) => ({ pg, b: box(pg) })).sort((x, y) =>
+    Math.abs((x.b.l + x.b.r) / 2 - mid) - Math.abs((y.b.l + y.b.r) / 2 - mid))[0];
+  // Every word's GLYPH (its box minus the invisible tap-area padding) inside
+  // its own page, on every page.
+  const wordsOut = [];
+  for (const pg of pages) {
+    const pb = box(pg);
+    for (const w of pg.querySelectorAll(".hifz-word")) {
+      const r = w.getBoundingClientRect(); if (!r.width) continue;
+      const cs = getComputedStyle(w);
+      const g = { l: r.left + parseFloat(cs.paddingLeft), r: r.right - parseFloat(cs.paddingRight) };
+      if (!within(g, pb)) wordsOut.push(`${w.getAttribute("data-word-occurrence") || w.textContent} ${g.l.toFixed(1)}-${g.r.toFixed(1)} page ${pb.l.toFixed(1)}-${pb.r.toFixed(1)}`);
+    }
+  }
   return {
+    areaInside: !!(rs && pv && within(pv, box(rs))),
+    pageInside: !!(current && pv && within(current.b, pv)),
+    boxes: { readScroll: rs && box(rs), pageView: pv, page: current && current.b },
+    wordsChecked: pages.reduce((n, pg) => n + pg.querySelectorAll(".hifz-word").length, 0),
+    wordsOut: wordsOut.slice(0, 5), wordsOutCount: wordsOut.length,
     over: document.documentElement.scrollWidth - cw,
     hasPage: !!document.querySelector("#pageViewContainer .hifz-page"),
     fontsLoaded: [...document.fonts].filter((f) => /^hifz-p\d+$/.test(f.family) && f.status === "loaded").length,
@@ -88,6 +118,9 @@ for (const SURAH of [2, 14]) for (const width of [320, 360, 390, 412, 600, 768, 
       check(`[s${SURAH} ${lang} ${width}] ${label}: a Mushaf page is really rendered (positive control)`, m.hasPage, JSON.stringify(m));
       check(`[s${SURAH} ${lang} ${width}] ${label}: the real Mushaf page fonts loaded (positive control)`, m.fontsLoaded > 0, JSON.stringify(m));
       check(`[s${SURAH} ${lang} ${width}] ${label}: no sideways overflow`, m.over <= 0, JSON.stringify(m));
+      check(`[s${SURAH} ${lang} ${width}] ${label}: the Mushaf area sits inside the visible reading area`, m.areaInside, JSON.stringify(m.boxes));
+      check(`[s${SURAH} ${lang} ${width}] ${label}: the page being read sits inside the Mushaf area`, m.pageInside, JSON.stringify(m.boxes));
+      check(`[s${SURAH} ${lang} ${width}] ${label}: every word's glyph sits inside its own page (${m.wordsChecked} words)`, m.wordsChecked > 0 && m.wordsOutCount === 0, `${m.wordsOutCount} out: ${JSON.stringify(m.wordsOut)}`);
     }
     await ctx.close();
   }
