@@ -64,6 +64,7 @@ async function press(page, selector) {
   console.log("\n=== ▲▼ inside a later section ===");
   const { ctx, page } = await openCatalogue("en", 1100);
   await page.click('[data-cat-tab="approaches"]');
+  await page.click("#openAllSectionsBtn"); // #399: sections start collapsed; these checks click rows inside them
   await press(page, '.trkDownBtn[data-id="translate"]');
   const down = await finalOrders(page);
   // Display order after ▼ on Translate, numbered 1..10:
@@ -77,6 +78,7 @@ async function press(page, selector) {
 {
   const { ctx, page } = await openCatalogue("en", 1100);
   await page.click('[data-cat-tab="approaches"]');
+  await page.click("#openAllSectionsBtn"); // #399
   await press(page, '.trkUpBtn[data-id="word_by_word"]');
   const up = await finalOrders(page);
   // After ▲ on Word by Word: translate 6, word_by_word 7, tafsir 8.
@@ -89,6 +91,7 @@ async function press(page, selector) {
 {
   const { ctx, page } = await openCatalogue("en", 1100);
   await page.click('[data-cat-tab="approaches"]');
+  await page.click("#openAllSectionsBtn"); // #399
   await press(page, '.trkDownBtn[data-id="recite"]');
   const s1 = await finalOrders(page);
   check("section 1 still works: ▼ on Recite gives Tajweed 2, Recite 3", s1.tajweed === 2 && s1.recite === 3, JSON.stringify(s1));
