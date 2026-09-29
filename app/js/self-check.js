@@ -218,16 +218,20 @@ export async function runSelfCheck(db, uid) {
     let trackables = [];
     try {
       trackables = await getTrackables(db, tenantId);
-      const groups = new Set(trackables.map((t) => t.group));
+      // v08.112: the count and the sections are the owner's to change now
+      // (v08.02 sections, v08.104 add an Approach), so "exactly 30 across 7"
+      // is no longer a fact to check -- only that the Quran Approaches exist.
+      const quran = trackables.filter((t) => t.subjectId === "quran" && t.status !== "archived");
+      const groups = new Set(quran.map((t) => t.group));
       results.push({
-        label: "trackables (the 30 Approaches)",
-        status: trackables.length === 30 && groups.size === 7 ? "ok" : "fail",
-        message: trackables.length === 30 && groups.size === 7
-          ? "Reachable, all 30 Approaches present across all 7 sections."
-          : `Reachable, but found ${trackables.length} Approaches across ${groups.size} sections (expected 30 across 7) — tell the admin.`,
+        label: "trackables (the Quran Approaches)",
+        status: quran.length > 0 ? "ok" : "fail",
+        message: quran.length > 0
+          ? `Reachable, ${quran.length} Quran Approaches across ${groups.size} sections.`
+          : "Reachable, but no Quran Approaches were found — tell the admin.",
       });
     } catch (err) {
-      results.push({ label: "trackables (the 30 Approaches)", status: "fail", message: reportWriteFailure(err, { collection: TENANT.TRACKABLES }).message });
+      results.push({ label: "trackables (the Quran Approaches)", status: "fail", message: reportWriteFailure(err, { collection: TENANT.TRACKABLES }).message });
     }
 
     // A real, additive test write against one already-owned Layer 1 row,

@@ -1402,8 +1402,8 @@ export const BN = {
   "QuranRevival — Classes": "কুরআনরিভাইভাল — ক্লাস",
   "Everyone in this madrasah: add a person, invite someone who signs in\n     themselves, and see who looks after whom.":
     "এই মাদরাসার সবাই: একজন ব্যক্তি যোগ করুন, কাউকে আমন্ত্রণ জানান যিনি নিজেই সাইন ইন করবেন, এবং কে কার দেখাশোনা করেন তা দেখুন।",
-  "Modules, the subject tree, the 30 Approaches, and ladders and levels —\n     the data every study screen reads from. Anyone in the madrasah can look;\n     only the owner and a prime can edit.":
-    "মডিউল, বিষয়ের তালিকা, ৩০টি পদ্ধতি এবং ধাপ ও স্তর — প্রতিটি অধ্যয়ন পর্দা যে তথ্য থেকে পড়ে। মাদরাসার যে কেউ দেখতে পারেন; কেবল মালিক ও প্রাইম সম্পাদনা করতে পারেন।",
+  "Modules, the subject tree, the Quran Approaches, and ladders and levels —\n     the data every study screen reads from. Anyone in the madrasah can look;\n     only the owner and a prime can edit.":
+    "মডিউল, বিষয়ের তালিকা, কুরআনের পদ্ধতিসমূহ এবং ধাপ ও স্তর — প্রতিটি অধ্যয়ন পর্দা যে তথ্য থেকে পড়ে। মাদরাসার যে কেউ দেখতে পারেন; কেবল মালিক ও প্রাইম সম্পাদনা করতে পারেন।",
   "A curriculum unit is WHAT to study, and it can span several subjects.\n     The plan below is WHEN — which term and week it falls in, for a class or\n     for one person. The two are kept apart, so moving a unit to a different\n     week never changes the unit itself. Resources and grades are managed\n     here too.":
     "পাঠ্যক্রমের একক হলো কী পড়তে হবে, এবং তা একাধিক বিষয়জুড়ে হতে পারে। নিচের পরিকল্পনা হলো কখন — কোন টার্ম ও সপ্তাহে, কোনো ক্লাসের বা একজন ব্যক্তির জন্য। দুটি আলাদা রাখা হয়েছে, তাই কোনো একককে অন্য সপ্তাহে সরালে এককটি নিজে বদলায় না। উপকরণ ও গ্রেডও এখান থেকেই পরিচালিত হয়।",
   "Create a class, then enrol students and teachers into it. A teacher\n     enrolled here can record and confirm progress for this class's students\n     — and only them. Class-wide bulk confirm clears every pending entry for\n     every actively-enrolled student in one go.":
@@ -1900,7 +1900,8 @@ export const BN = {
   // still sees them in Bangla. The owner is expected to rewrite these in
   // their own words -- and once they save their own list, these keys stop
   // being used at all.
-  "30 Approaches — one Ayah, thirty ways": "৩০টি পদ্ধতি — এক আয়াত, ত্রিশ উপায়", // ?
+  "30 Approaches — one Ayah, thirty ways": "৩০টি পদ্ধতি — এক আয়াত, ত্রিশ উপায়", // ? (kept: a tenant that saved its own taglines may still carry it)
+  "Quran Approaches — one Ayah, forty ways": "কুরআনের পদ্ধতি — এক আয়াত, চল্লিশ উপায়",
   "The 99 Names of Allah": "আল্লাহর ৯৯টি নাম",
   "Names & Attributes posters on archive.org": "archive.org-এ নাম ও গুণাবলির পোস্টার", // ?
   "Today's Hadith": "আজকের হাদীস",

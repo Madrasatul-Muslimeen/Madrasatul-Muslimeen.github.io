@@ -99,7 +99,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 // editable and retirable like any other line.
 export const DEFAULT_TAGLINES = Object.freeze([
   { id: "tl_seed_tagline", text: { en: "Reviving the Quran, abandoned." }, link: null, order: 10, status: "active", holdDays: 7, ayahRef: null },
-  { id: "tl_seed_approaches", text: { en: "30 Approaches — one Ayah, thirty ways" }, link: null, order: 20, status: "active", holdDays: 1, ayahRef: null },
+  { id: "tl_seed_approaches", text: { en: "Quran Approaches — one Ayah, forty ways" }, link: null, order: 20, status: "active", holdDays: 1, ayahRef: null },
   { id: "tl_seed_asma", text: { en: "The 99 Names of Allah" }, link: { url: "asma-study.html", target: "internal" }, order: 30, status: "active", holdDays: 1, ayahRef: null },
   { id: "tl_seed_posters", text: { en: "Names & Attributes posters on archive.org" }, link: { url: "https://archive.org/details/NamesAndAttributesOfAllah", target: "external" }, order: 40, status: "active", holdDays: 1, ayahRef: null },
   { id: "tl_seed_hadith", text: { en: "Today's Hadith" }, link: null, order: 50, status: "active", holdDays: 1, ayahRef: null },

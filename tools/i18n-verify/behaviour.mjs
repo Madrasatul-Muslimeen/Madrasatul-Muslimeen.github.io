@@ -5278,7 +5278,7 @@ console.log("\n=== 43. The wheel's one-time intro + in-hub Surah/Ayah pickers, a
     // The check is updated rather than worked around: what it describes
     // deliberately changed.
     capsuleShown: !document.getElementById("wheelIntroSettled").hidden
-                  && document.querySelector(".wheel-intro-capsule")?.textContent.trim() === "Approach the Quran in 30 ways",
+                  && document.querySelector(".wheel-intro-capsule")?.textContent.trim() === "Quran Approaches - 40 Ways", // v08.112: the Owner renamed it ("40 ways should reflect Everywhere"); updated in place
   }));
   check("43a the wheel starts covered by the intro button, hub pickers hidden, the capsule already showing above it",
         before.ctaVisible && before.hubHidden && before.veiled && before.capsuleShown, JSON.stringify(before));
