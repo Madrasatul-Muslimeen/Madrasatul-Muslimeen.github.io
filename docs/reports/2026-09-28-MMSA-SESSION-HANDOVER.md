@@ -153,9 +153,9 @@ Owner may reorder the queue; nothing else reorders it.
 2. **Optional:** set Settings → Actions → General → Workflow permissions to
    "Read and write" and allow Actions to create pull requests. The unattended
    Architect could then start rounds, and the Builder could open its own PRs.
-3. **Open small choices:**
-   - Ring order puts Ruku' before Page (decision 22); the Owner may swap them.
-   - Night as the default card look was the Architect's choice (decision 25).
+3. **Small choices, CLOSED 29 Sep 2026** ("yes, A and Night"): Ruku' stays
+   before Page on the wheel (decision 22), and Night stays the default card look
+   for a new reader (decision 25).
 4. **Parked** (from the status board): the store plan's remaining questions,
    asked once QuranRevival is finalised; Evernote pictures; Siyagah "My
    Notebooks" answers; the one-screen build for the first open; D14 timezone;
