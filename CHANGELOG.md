@@ -18784,3 +18784,14 @@ Built by the Builder (issue #400, PR #401); reviewed and allocated by the Archit
 ## v09.00 — not used
 
 The Owner opened the v09 line at **v09.01** (29 Sep 2026, decision 26 in `docs/governance/2026-09-27-owner-decisions.md`), so **v09.00 was never released**; this entry exists so the number is accounted for. The 08 line ends at **v08.117**. On the same day `app/` as released at **v08.103** was archived to **`legacy-v08/`** (reachable at `/legacy-v08/`), with its service-worker registration switched off so the archive can never reach the live app's worker; see `legacy-v08/README-ARCHIVE.txt`. `brief-integrity.mjs` now checks the archive file by file against commit 54f93098, and both version scanners (`brief-integrity`, `programme-ledger`) read v09 numbers.
+
+## v09.01 — 29 Sep 2026 — the v09 line opens; Home menu links the v08 archive
+
+The first version of the v09 line (Owner decision 26: the 40-Approach era is v09; `legacy-v08/` holds `app/` as released at v08.103; v09.00 unused).
+
+The Owner, with a screenshot of the Home menu: *"The number is not showing in the list"*: it offered *Legacy App - v06* and *v07*, but no v08.
+
+- **Home menu**: every page carrying the legacy links (26) now also offers **Legacy App - v08 ↗**, pointing to `/legacy-v08/index.html`, same markup and class; Bangla *পুরাতন অ্যাপ - v08 ↗* added to `bn.js`.
+- **`app/sw.js`**: `/legacy-v08/` is kept out of the live offline cache, like `/legacy/` and `/legacy-v07/`.
+- The archive itself is frozen and unchanged, so its own menu still lists v06 and v07 only.
+- **Checked**: menu rendered on the landing page, Catalogue and About, 390 and 1280px, English and Bangla: all three links shown, same width, right addresses, no page errors. navcheck fits at every width; phone-width 217/0; governance suites green.

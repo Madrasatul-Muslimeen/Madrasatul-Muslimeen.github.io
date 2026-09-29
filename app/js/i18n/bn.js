@@ -76,6 +76,7 @@ export const BN = {
   "Sign-in failed: {message}": "সাইন ইন ব্যর্থ হয়েছে: {message}",
   "Legacy App - v06 ↗": "পুরাতন অ্যাপ - v06 ↗",
   "Legacy App - v07 ↗": "পুরাতন অ্যাপ - v07 ↗",
+  "Legacy App - v08 ↗": "পুরাতন অ্যাপ - v08 ↗",
   "Previewing as: {role}": "যেভাবে দেখছেন: {role}",
   "Previewing as: {role} — change this on the People page":
     "যেভাবে দেখছেন: {role} — এটি ব্যক্তিবর্গ পাতা থেকে পরিবর্তন করুন",
