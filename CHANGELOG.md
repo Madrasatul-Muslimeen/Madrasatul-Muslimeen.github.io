@@ -18756,3 +18756,15 @@ Built by the Builder (issue #396, PR #398); reviewed and allocated by the Archit
 - **Card**: `formMeaning()` in `app/js/quran-word-card.js` renders the meaning between the Arabic and the count, in the reader's language, else the other language with its own `lang`; one CSS rule in `quranrevival.html`. Both Basic Arabic and Arabic in Depth.
 - **Review**: index reproducible from the script; hand-counts for root ش ك ر match; screenshots looked at; limit recorded (some meanings read as verse phrases).
 - **Checks**: form-meaning 21/0 and browser 288/0 (new), word-card-rendered 118/4 (same 4 as `main`), explore-rendered 37/0, phone-width 217/0, behaviour 1003/4 baseline.
+
+## v08.116 — 29 Sep 2026 — Catalogue sections: a move reaches the wheel; collapsible, draggable
+
+The Owner (29 Sep 2026, screenshots of Catalogue → Approaches and the landing wheel): *"Make the Section heading expandible/ collapsible (collapsible by default) and also make sections draggable up and down. Moving the section does not reflect in the wheel."*
+
+Built by the Builder (issue #399, run 621, branch `builder/issue-399-run-621`; no PR was opened, so the Architect reviewed the branch and opened one). Reviewed and allocated by the Architect.
+
+- **Bug, part 1**: a section ▲▼ (`moveSection()` in `app/catalogue.html`) only reordered the screen until *Save sections*; nothing said a move was unsaved, so it was lost on leaving. Now `moveSectionTo()` saves the order at once (stored names only), like an Approach move; unsaved name edits are labelled beside Save.
+- **Bug, part 2**: `saveApproachSections()` (`app/js/catalogue.js`) moved Approaches by `group` number only, while `groupApproachesBySection()` matches by number then name, so an Approach with no or a wrong `group` was left behind. It now resolves each Approach's section exactly as the display does, and returns what it wrote so the page patches its copy instead of re-reading.
+- **Collapsible headings**: closed by default (session-only; kept open across edits, adds, moves), ≥40px toggle with caret and count, Open all / Close all, the edited or moved Approach's section opens.
+- **Drag**: ⠿ handle in the Sections editor and on each list heading; Pointer Events (touch works); drop line; Escape and a no-op drop write nothing; owners only.
+- **Checks**: `catalogue-sections-browser` 126/0 (new; hand-written wheel orders, mouse and real touch drag). Architect's mutations: no name fallback → 124/2; a move that does not save → 111/15. catalogue-tabs 56/0, approach-sections 59/0, add-approach 30/0, short-names 70/0 (updated in place to open sections first), phone-width 217/0, behaviour 1003/4 baseline.
