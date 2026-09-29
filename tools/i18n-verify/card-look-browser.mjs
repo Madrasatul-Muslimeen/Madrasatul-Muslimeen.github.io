@@ -536,7 +536,10 @@ const SWEEP_ALL = (rootSel) => {
   return [...new Set(out)];
 };
 
-const SWEEP_BASELINE = [/^a\.hadith-commentary-link /];
+// v08.109: the three pre-existing shortfalls (Hadith commentary link in Light,
+// Dawah's empty-list line, the Note side pane's pressed button) are FIXED, so
+// the baseline is empty and each is swept below.
+const SWEEP_BASELINE = [];
 async function sweepCheck(page, label, rootSel) {
   for (const look of ["night", "light"]) {
     await setLook(page, look);
@@ -574,6 +577,28 @@ for (const lang of ["en", "bn"]) {
   const row = await q.$("#qcrListPane li button, #qcrList li");
   if (row) { await row.click().catch(() => {}); await q.waitForTimeout(300); await sweepCheck(q, `${lang}: QCR collection`, "#qcrPanel"); }
   await ctx2.close();
+}
+
+// v08.109: Dawah (its empty-list line) and the Note pop-up frame at desktop
+// width (its side pane's pressed button), swept in both looks and languages.
+for (const lang of ["en", "bn"]) {
+  const ctx = await newContext(browser, { appLang: lang, viewport: { width: 1100, height: 900 } });
+  const { page: d } = await openPage(ctx, "/app/dawah.html");
+  await d.waitForTimeout(600);
+  const hasEmpty = await d.evaluate(() => !!document.getElementById("emptyMsg"));
+  check(`${lang}: precondition -- Dawah shows its empty-list line`, hasEmpty);
+  // #app, not body: the closed site menu (#topNav) is in the DOM with real
+  // boxes but not on screen, and would be measured as if it were.
+  await sweepCheck(d, `${lang}: Dawah page`, "#app");
+  const { page: q } = await openPage(ctx, "/app/quranrevival.html");
+  const noteReachable = await q.evaluate(() => { const b = document.getElementById("tabNoteBtn"); return !!b && b.getBoundingClientRect().width > 0; });
+  if (!noteReachable) { await clickSafely(q, "#tabStudyBtn"); await q.waitForTimeout(150); }
+  await clickSafely(q, "#tabNoteBtn");
+  await q.waitForTimeout(500);
+  const pressed = await q.evaluate(() => !!document.querySelector('#noteView .note-popup-side-nav button[aria-pressed="true"]'));
+  check(`${lang}: precondition -- the Note pop-up's side pane has a pressed button`, pressed);
+  await sweepCheck(q, `${lang}: Note pop-up (1100px)`, "#noteView");
+  await ctx.close();
 }
 
 console.log(`\n==== Card look Night/Light, parts 3-4 (issue #354): ${pass} passed, ${fail} failed ====`);

@@ -112,7 +112,9 @@
   /* Sized to the card's own text, not to body size: at 16px the label needs
      345px and the card's CONTENT box is 327px, so it wrapped and orphaned the
      arrow. Tap target comes from padding, never from a 40px line-height. */
-  .hadith-commentary-link { display: inline-block; padding: 0.6rem 0; font-size: 0.9rem; line-height: 1.45; color: var(--hadith-gold); font-weight: 600; overflow-wrap: break-word; }
+  /* #7a5a14, not --hadith-gold (#b8862f): the gold measured 3.24:1 on the white
+     commentary card (v08.109); this darker gold is 6.4:1. */
+  .hadith-commentary-link { display: inline-block; padding: 0.6rem 0; font-size: 0.9rem; line-height: 1.45; color: #7a5a14; font-weight: 600; overflow-wrap: break-word; }
   .hadith-never-do { font-size: 0.82rem; color: var(--hadith-muted); background: #f6f7fa; border-radius: 0.5rem; padding: 0.7rem 0.9rem 0.7rem 1.8rem; }
   .hadith-note { font-size: 0.87rem; color: var(--hadith-muted); }
 
