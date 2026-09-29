@@ -635,3 +635,4 @@ total). Allocated by the MMSA Architect.
 08.106: card look Night or Light, parts 1-2 (issue #354). Allocated by the MMSA Architect.
 08.107: card look parts 3-4, issue #354. Allocated by the MMSA Architect.
 08.108: Ruku'/Page Mark as read on, Unit Card Mark as read fixed. Allocated by the MMSA Architect.
+08.109: three old readability shortfalls fixed. Allocated by the MMSA Architect.
