@@ -75,6 +75,16 @@ Owner may reorder the queue; nothing else reorders it.
     (HTTP 403): the repository's Settings → Actions → General → "Workflow
     permissions" is read-only. A session Architect's dispatch works, because the
     MCP tool acts as the Owner.
+- **UPDATED 29 Sep 2026 — the Builder is fixed (PRs #376, #378, #379, #381).**
+  The root cause of every "pushed nothing" run: a dispatched run could not
+  create a branch, and its commit tool writes to the branch fixed at start
+  (`CLAUDE_BRANCH`, else `main`). The workflow now fetches the issue into
+  `.builder-round/spec.md`, creates `builder/issue-N-run-R`, points the commit
+  tool at it, allows `create_pull_request`, installs Playwright where the suites
+  can import it and starts `serve.js`. A run that pushes nothing turns RED, and
+  the Builder's own explanation is posted on the issue. Proven: run 586 built
+  #377 on its own branch and opened PR #380 itself. The two points below are
+  kept as history; the workflow now does what they asked for.
 - **Tell the Builder to push early.** Every dispatch note must say: create the
   branch and push within the first 10 turns, push after every part, and open the
   PR as soon as part 1 is pushed. A run can "succeed" and push nothing (#342's
