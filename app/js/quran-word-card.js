@@ -413,6 +413,15 @@ function posCell(category, form, text, formatNumber) {
     `</span>`;
 }
 
+/** The form's meaning in the reader's language; the other language, correctly
+ *  tagged, when theirs is missing; nothing when neither exists. */
+function formMeaning(form, text) {
+  const own = text.formMeaningLang === "bn" ? "bn" : "en";
+  const lang = form.meaning?.[own] ? own : form.meaning?.[own === "bn" ? "en" : "bn"] ? (own === "bn" ? "en" : "bn") : "";
+  if (!lang) return "";
+  return `<span class="word-card-form-meaning" lang="${lang}">${escapeHtml(form.meaning[lang])}</span>`;
+}
+
 function formsSection(layers, context, text, formatNumber, { expandable }) {
   if (!layers.root) return "";
   const data = context.rootForms;
@@ -445,6 +454,7 @@ function formsSection(layers, context, text, formatNumber, { expandable }) {
     const occurrences = escapeHtml(String(text.formOccurrences).replace("{count}", formatNumber(form.count)));
     const head = posCell(form.pos, form, text, formatNumber) +
       `<span class="word-card-form-arabic" dir="rtl" lang="ar">${escapeHtml(form.lemma)}</span>` +
+      formMeaning(form, text) +
       `<span class="word-card-form-count">${occurrences}</span>`;
     if (!expandable) return `<li class="word-card-form">${head}</li>`;
     const open = context.expandedForm === form.lemma;
