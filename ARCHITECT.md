@@ -496,7 +496,15 @@ Every report follows one shape, and ends with **Done / Suggestions / Pending**:
       choice for the round that picks this up, not decided here. No urgency
       stated by the Owner; queued for whenever the Notes/Journey Map rounds
       free up.
-- [ ] **`workflow_dispatch` ("agent mode") appears structurally unable to
+- [x] **FIXED 29 Sep 2026 (PRs #376, #378, #379, #381, #382).** The real
+      cause was not the MCP server: a dispatched run created no branch, and
+      its commit tool writes to the branch fixed at start (`CLAUDE_BRANCH`,
+      else `main`). `claude.yml` now fetches the issue into
+      `.builder-round/spec.md`, creates `builder/issue-N-run-R`, points the
+      commit tool at it and fails a run that pushes nothing. Dispatch is now
+      the normal channel (#385, #389, #391, #393 all built this way). The
+      original entry is kept below as history.
+      *Was:* **`workflow_dispatch` ("agent mode") appears structurally unable to
       commit, on this workflow, regardless of task — strong evidence, not a
       guess, 22 Sep 2026.** Four real dispatch attempts across two unrelated
       issues, all genuinely triggered (`Trigger result: true`), all
