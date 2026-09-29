@@ -586,6 +586,22 @@ export function renderWheelSidebar(items, labelsById, options = {}) {
   // share a name, and an item with `emptyNote` is a section with NO
   // Approaches yet (one the owner has just added): its heading is drawn with
   // that note under it, and no row -- the note is not a `.way-row` either.
+  // 29 Sep 2026, Owner: the round badge carries the section's number (S1..),
+  // and the Approach count sits in a small SQUARE box at the END of the name.
+  // The last word and the box share one nowrap span, so a wrapped name never
+  // leaves the box alone on a line.
+  const groupHeading = (item, groupKey, isOpen) => {
+    const label = String(item.groupLabel);
+    const cut = label.trimEnd().lastIndexOf(" ");
+    const head = cut > 0 ? label.slice(0, cut + 1) : "";
+    const last = cut > 0 ? label.slice(cut + 1).trimEnd() : label;
+    const n = counts.get(groupKey) ?? 0;
+    const aria = options.countAriaLabel ? ` aria-label="${options.countAriaLabel(n)}"` : "";
+    const badge = item.groupNumber != null && options.formatBadge
+      ? `<span class="ways-sec-badge">${options.formatBadge(item.groupNumber)}</span>`
+      : "";
+    return `<div class="ways-group"><button type="button" class="ways-group-btn" data-group="${groupKey}" aria-expanded="${isOpen}"><span class="ways-caret" aria-hidden="true">${isOpen ? "▾" : "▸"}</span>${badge}<span class="ways-group-name">${head}<span class="ways-group-tail">${last}<span class="ways-count"${aria}>${countText(groupKey)}</span></span></span></button></div>`;
+  };
   let lastGroup = null;
   const rows = items
     .map((item) => {
@@ -596,7 +612,7 @@ export function renderWheelSidebar(items, labelsById, options = {}) {
       if (item.groupLabel && groupKey !== lastGroup) {
         lastGroup = groupKey;
         heading = grouped
-          ? `<div class="ways-group"><button type="button" class="ways-group-btn" data-group="${groupKey}" aria-expanded="${isOpen}"><span class="ways-caret" aria-hidden="true">${isOpen ? "▾" : "▸"}</span><span class="ways-count">${countText(groupKey)}</span><span class="ways-group-name">${item.groupLabel}</span></button></div>`
+          ? groupHeading(item, groupKey, isOpen)
           : `<div class="ways-group">${item.groupLabel}</div>`;
       }
       const hiddenAttr = grouped ? ` data-group="${groupKey}"${isOpen ? "" : " hidden"}` : "";

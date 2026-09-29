@@ -939,10 +939,17 @@
                     cursor: pointer; line-height: 1.2; }
   .ways-group-btn:hover { background: rgba(255,255,255,0.08); }
   .ways-caret { flex: 0 0 auto; width: 1em; color: #ecd49a; }
-  .ways-count { flex: 0 0 auto; min-width: 22px; height: 22px; padding: 0 5px; box-sizing: border-box; border-radius: 11px;
-                display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;
-                color: #241a06; background: #C9A24B; letter-spacing: 0; text-transform: none; }
-  .ways-group-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+  /* 29 Sep 2026, Owner: S1.. in the round badge (sized for two characters), the
+     count in a square box at the END of the name, and the section name in gold
+     so it is not mistaken for an Approach name. */
+  .ways-sec-badge { flex: 0 0 auto; min-width: 30px; height: 30px; padding: 0 4px; box-sizing: border-box; border-radius: 15px;
+                    display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;
+                    color: #241a06; background: #C9A24B; letter-spacing: 0; text-transform: none; white-space: nowrap; }
+  .ways-count { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 5px;
+                margin-inline-start: 6px; box-sizing: border-box; border-radius: 4px; vertical-align: middle;
+                border: 1px solid #C9A24B; color: #ecd49a; font-size: 11px; font-weight: 700; letter-spacing: 0; text-transform: none; }
+  .ways-group-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; color: #ecd49a; }
+  .ways-group-tail { white-space: nowrap; }
   .ways-toggle-all { align-self: flex-start; min-height: 40px; padding: 0 12px; background: none; border: 1px solid rgba(201,162,75,0.35);
                      border-radius: 9px; color: #ecd49a; font: inherit; font-size: 12.5px; cursor: pointer; }
   /* v08.110: a section with no Approaches yet (one the owner just added). */
@@ -7767,7 +7774,7 @@
         // survives a section being added, moved or renamed.
         const groupKey = sec.n != null ? `s${sec.n}` : `n${gi}:${groupLabel}`;
         if (sec.empty) {
-          sidebarItems.push({ groupKey, groupLabel: groupLabel || t("Section {n}", { n: num(sec.n) }), emptyNote: t("No Approaches in this section yet.") });
+          sidebarItems.push({ groupKey, groupNumber: sec.n, groupLabel: groupLabel || t("Section {n}", { n: num(sec.n) }), emptyNote: t("No Approaches in this section yet.") });
           return;
         }
         for (const { trackable, statusId } of sec.items) {
@@ -7776,6 +7783,7 @@
             number: num(approachNo(trackable)),
             label: langText(trackable.name, getAppLang(), trackable.id),
             groupKey,
+            groupNumber: sec.n,
             groupLabel,
             statusId,
           });
@@ -7787,6 +7795,8 @@
         openGroups: landingOpenSections,
         labels: sectionWords,
         formatCount: (n) => num(n),
+        formatBadge: (n) => t("S{n}", { n: num(n) }),
+        countAriaLabel: (n) => t("{n} Approaches", { n: num(n) }),
       });
       attachWheelSidebarClickHandler(wheelSidebarContainer, jumpToApproach);
       attachWheelSectionToggles(wheelSidebarContainer, landingOpenSections, sectionWords);
