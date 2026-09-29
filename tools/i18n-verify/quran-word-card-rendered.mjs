@@ -14,6 +14,41 @@ const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (f
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
 
+// UPDATED (issue #403): the old check asserted the card's raw bottom <= the
+// viewport height. Below 900px the card is a full-screen sheet whose body
+// (.word-card-content) is DESIGNED to scroll (overflow-y:auto; issue #322), so
+// the card's box is taller than the screen by design (bottom=865 on 844,
+// identical in EN/BN; measured 589/568, 661/640, 936/915 at the other phone
+// sizes -- always the sheet + the card's own 21px padding). What matters is
+// REACHABILITY: every control can be scrolled into the sheet's visible box and
+// is the element actually hit at its centre (elementFromPoint).
+async function controlsReachable(page) {
+  return page.evaluate(() => {
+    const c = document.querySelector(".quran-word-card"), sc = document.querySelector(".word-card-content");
+    if (!c || !sc) return null;
+    const cs = getComputedStyle(sc);
+    const ctrls = [...c.querySelectorAll("button, a[href], select, input")].filter((e) => e.getBoundingClientRect().width > 0);
+    const unreachable = [];
+    const userCanScroll = /auto|scroll/.test(cs.overflowY);
+    sc.scrollTop = 0;
+    for (const e of ctrls) {
+      // scrollIntoView() works even on overflow:hidden, which a finger cannot
+      // do -- so a control below the fold only counts as reachable when the
+      // sheet really is user-scrollable.
+      if (e.getBoundingClientRect().bottom > innerHeight && !userCanScroll) { unreachable.push("(clipped) " + (e.textContent || e.className).trim().slice(0, 20)); continue; }
+      e.scrollIntoView({ block: "center" });
+      const q = e.getBoundingClientRect(), x = q.left + q.width / 2, y = q.top + q.height / 2;
+      const hit = document.elementFromPoint(x, y);
+      if (!(x >= 0 && x <= innerWidth && y >= 0 && y <= innerHeight && hit && (e === hit || e.contains(hit) || hit.contains(e)))) {
+        unreachable.push((e.textContent || e.className).trim().slice(0, 20));
+      }
+    }
+    sc.scrollTop = 0;
+    const sr = sc.getBoundingClientRect();
+    return { n: ctrls.length, unreachable, oy: cs.overflowY, sheetTop: Math.round(sr.top), sheetBottom: Math.round(sr.bottom), vh: innerHeight };
+  });
+}
+
 async function enterReadWithWbw(page) {
   // Read moved inside the STUDY pillar menu.
   const reachable = await page.evaluate(() => {
@@ -72,8 +107,12 @@ for (const lang of ["en", "bn"]) {
         !!card && card.w > 0 && card.h > 0 && card.display !== "none" && card.visibility !== "hidden",
         JSON.stringify(card && { w: card.w, h: card.h, display: card.display }));
   check(`${lang} it is the word that was clicked`, card?.id === wantedId, `${card?.id} vs ${wantedId}`);
-  check(`${lang} it is fully inside the viewport`,
-        card && card.top >= 0 && card.bottom <= 844, `top=${card?.top} bottom=${card?.bottom}`);
+  const reach = await controlsReachable(page);
+  check(`${lang} every control in it is reachable on the screen`,
+        !!reach && reach.n >= 5 && reach.unreachable.length === 0, JSON.stringify(reach));
+  check(`${lang} the card starts at the top and its sheet fills the screen and scrolls`,
+        card && card.top >= 0 && reach && reach.sheetTop === 0 && reach.sheetBottom === reach.vh && reach.oy === "auto",
+        JSON.stringify({ top: card?.top, reach }));
   check(`${lang} real Arabic is drawn`, /[؀-ۿ]/.test(card?.arabic || ""), card?.arabic);
   check(`${lang} all three tabs are present`, card?.tabs.length === 3, JSON.stringify(card?.tabs));
   check(`${lang} WbW is the tab it opens on`, card?.panel === "wbw", card?.panel);
@@ -230,6 +269,9 @@ for (const lang of ["en", "bn"]) {
       }, width);
       check(`${lang} ${name} card is on screen, neither edge cut`,
             !!m && m.left >= 0 && m.right <= width, JSON.stringify(m && { left: m.left, right: m.right, vw: width }));
+      const rr = width < 900 ? await controlsReachable(page) : { n: 99, unreachable: [] };
+      check(`${lang} ${name} every control is reachable (scrolled into the sheet)`,
+            !!rr && rr.n >= 5 && rr.unreachable.length === 0, JSON.stringify(rr));
       check(`${lang} ${name} the page does not scroll sideways`, m && !m.docOverflow, JSON.stringify(m?.docOverflow));
       check(`${lang} ${name} the three tabs stay on one line`, m && m.tabRows === 1, `rows=${m?.tabRows}`);
       // ~40px is what this project settled on for anything a finger presses;
