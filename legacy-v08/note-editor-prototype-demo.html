@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Note editor — prototype (not live)</title>
+<style>
+  :root {
+    --gold: #B8862F;
+    --ink: #1F3A6E;
+    --muted: #6b6b6b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, sans-serif;
+    max-width: 48rem;
+    margin: 0 auto;
+    padding: 1rem 1rem 3rem;
+    color: #1a1a1a;
+    line-height: 1.45;
+  }
+  h1 { font-size: 1.3rem; margin: 0.6rem 0; }
+  h2 { font-size: 1.05rem; margin: 1.4rem 0 0.4rem; color: var(--ink); }
+  .banner {
+    background: #fff6e0;
+    border: 1px solid var(--gold);
+    border-radius: 0.5rem;
+    padding: 0.75rem 0.9rem;
+    font-size: 0.88rem;
+  }
+  .banner strong { display: block; margin-bottom: 0.25rem; }
+  .lang-toggle {
+    display: flex;
+    gap: 0.5rem;
+    margin: 0.9rem 0;
+    flex-wrap: wrap;
+  }
+  .lang-toggle button {
+    font: inherit;
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
+    min-height: 36px;
+    border-radius: 999px;
+    border: 1px solid var(--ink);
+    background: #fff;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .lang-toggle button[aria-pressed="true"] {
+    background: var(--ink);
+    color: #fff;
+  }
+  .card {
+    border: 1px solid #ddd;
+    border-radius: 0.6rem;
+    padding: 0.9rem;
+    margin: 0.7rem 0;
+  }
+  .card h3 {
+    margin: 0 0 0.5rem;
+    font-size: 0.95rem;
+  }
+  label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin: 0.5rem 0 0.15rem;
+  }
+  input[type="text"], textarea, select {
+    width: 100%;
+    font: inherit;
+    font-size: 0.92rem;
+    padding: 0.45rem 0.55rem;
+    border: 1px solid #ccc;
+    border-radius: 0.35rem;
+    background: #f7f7f7;
+    color: #444;
+  }
+  textarea { min-height: 4.5rem; resize: vertical; }
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+  .row > * { flex: 1 1 10rem; min-width: 0; }
+  .pill {
+    display: inline-block;
+    font-size: 0.72rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: var(--ink);
+    margin: 0.15rem 0.3rem 0.15rem 0;
+  }
+  button.action {
+    font: inherit;
+    font-size: 0.85rem;
+    padding: 0.5rem 0.9rem;
+    min-height: 36px;
+    border-radius: 0.4rem;
+    border: 1px solid #999;
+    background: #eee;
+    color: #555;
+    cursor: not-allowed;
+    margin: 0.3rem 0.4rem 0.3rem 0;
+  }
+  button.action:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .why {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 0.35rem;
+  }
+  .tree {
+    font-size: 0.88rem;
+  }
+  .tree ul { list-style: none; padding-left: 1.1rem; margin: 0.2rem 0; }
+  .tree li { margin: 0.2rem 0; }
+  .folder-system { color: var(--ink); font-weight: 600; }
+  .folder-user { color: #333; }
+  .note-chip {
+    display: inline-block;
+    font-size: 0.78rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 0.3rem;
+    background: #fdf1e6;
+    border: 1px dashed var(--gold);
+    margin-left: 0.4rem;
+  }
+  .relation-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    margin-top: 0.4rem;
+  }
+  .relation-table th, .relation-table td {
+    text-align: left;
+    padding: 0.3rem 0.4rem;
+    border-bottom: 1px solid #eee;
+    vertical-align: top;
+  }
+  [lang="bn"] { font-family: 'Noto Sans Bengali', system-ui, sans-serif; }
+  [data-lang-block] { display: none; }
+  [data-lang-block].lang-active { display: block; }
+  footer {
+    margin-top: 2rem;
+    font-size: 0.75rem;
+    color: var(--muted);
+    border-top: 1px solid #eee;
+    padding-top: 0.8rem;
+  }
+</style>
+</head>
+<body>
+  <div class="banner">
+    <strong>Prototype — not part of the live app.</strong>
+    This page is not linked from anywhere in <code>/app/</code>, imports no
+    Firestore or authentication module, and every control on it is disabled.
+    It exists to show the MAP Phase 5/6 (P5-D) Note editor and Mapping My
+    Journey filing surface a later, fully-built round would wire up, once the
+    Note Foundation and Journey Map Firestore Rules are deployed (E1).
+  </div>
+
+  <h1 id="pageTitle" data-lang-block data-lang="en" class="lang-active">Note editor — prototype</h1>
+  <h1 id="pageTitleBn" data-lang-block data-lang="bn" lang="bn">নোট সম্পাদক — প্রোটোটাইপ</h1>
+
+  <div class="lang-toggle" role="group" aria-label="Language">
+    <button type="button" id="btnEn" aria-pressed="true">English</button>
+    <button type="button" id="btnBn" aria-pressed="false">বাংলা</button>
+  </div>
+
+  <div data-lang-block data-lang="en" class="lang-active">
+    <p>This mock shows one Study Unit (an āyah) already bound as a Note's
+    <em>Origin</em>, the Note's own editable fields, a second Origin binding
+    being added, and where the Note is filed in Mapping My Journey — its
+    <em>Destination</em>, kept separate from its Origin by design (ADR-010
+    §2).</p>
+
+    <h2>1 · Study → Note</h2>
+    <div class="card">
+      <h3>Study Unit</h3>
+      <p><span class="pill">Ayah 2:255</span><span class="pill">Ayat al-Kursi</span></p>
+      <button class="action" disabled aria-disabled="true" data-explain="explainCreate">Create a Note about this āyah</button>
+      <p class="why" id="explainCreateText">Disabled — writes are refused until the Note Foundation Rules candidate is deployed (E1). No Firestore call is made by this button.</p>
+    </div>
+
+    <h2>2 · The Note</h2>
+    <div class="card">
+      <label for="titleField">Title</label>
+      <input type="text" id="titleField" value="Meaning of the Throne verse" disabled />
+      <label for="bodyField">Body</label>
+      <textarea id="bodyField" disabled>The greatest āyah in the Qur'an, on Allah's knowledge and sustaining power...</textarea>
+      <div class="row">
+        <div>
+          <label>Status</label>
+          <input type="text" value="Active" disabled />
+        </div>
+        <div>
+          <label>Owner</label>
+          <input type="text" value="This person, this tenant only" disabled />
+        </div>
+      </div>
+      <button class="action" disabled aria-disabled="true">Save revision</button>
+      <button class="action" disabled aria-disabled="true">Retire this Note</button>
+      <p class="why">Both disabled for the same reason as above. A retired Note also refuses a further Origin binding (PR #120) — that control would disable itself here too, once live.</p>
+    </div>
+
+    <h2>3 · Origin — what this Note is about</h2>
+    <div class="card">
+      <table class="relation-table">
+        <tr><th>Source</th><th>Relationship</th><th>Provenance</th></tr>
+        <tr><td>Ayah 2:255</td><td>origin</td><td>study-note</td></tr>
+      </table>
+      <label for="secondSource">Bind a further source (this Note stays the same Note — ADR-004)</label>
+      <select id="secondSource" disabled>
+        <option>Surah 2, Ruku' 33</option>
+        <option>Juz 3</option>
+      </select>
+      <button class="action" disabled aria-disabled="true">Add this source</button>
+      <p class="why">Demonstrates PR #120's <code>createNoteSource()</code> — a second active binding, never touching the Note or a placement.</p>
+    </div>
+
+    <h2>4 · Destination — Mapping My Journey filing</h2>
+    <div class="card tree">
+      <p>A folder tree is acyclic, own-owner, depth-bounded at 8 (ADR-010 §4). Two system folders exist per person, at most one each; everything else is a folder the person made and named.</p>
+      <ul>
+        <li class="folder-system">Personal Journey Map <span class="pill">journey-map</span></li>
+        <li class="folder-system">Reflection Archive <span class="pill">reflection-archive</span>
+          <ul>
+            <li class="folder-user">Tafsir highlights
+              <span class="note-chip">Meaning of the Throne verse</span>
+            </li>
+          </ul>
+        </li>
+        <li class="folder-user">Surah Al-Baqarah notes</li>
+      </ul>
+      <label for="moveTarget">Move this Note to a different folder</label>
+      <select id="moveTarget" disabled>
+        <option>Personal Journey Map</option>
+        <option>Surah Al-Baqarah notes</option>
+      </select>
+      <button class="action" disabled aria-disabled="true">Move</button>
+      <p class="why">A move retires one placement and creates another (ADR-010 §5) — never a rewrite of <code>folderId</code>, and never a change to the Note or its Origin bindings.</p>
+    </div>
+  </div>
+
+  <div data-lang-block data-lang="bn" lang="bn">
+    <p>এই মকআপে একটি স্টাডি ইউনিট (আয়াত) দেখানো হয়েছে, যা ইতিমধ্যে একটি নোটের
+    <em>উৎস (Origin)</em> হিসেবে যুক্ত করা আছে, নোটের নিজস্ব সম্পাদনাযোগ্য
+    ক্ষেত্রসমূহ, একটি দ্বিতীয় উৎস-সংযোগ যোগ করার ব্যবস্থা, এবং নোটটি Mapping
+    My Journey-তে কোথায় রাখা হয়েছে — অর্থাৎ এর <em>গন্তব্য (Destination)</em>,
+    যা নকশা অনুযায়ী উৎস থেকে সম্পূর্ণ পৃথক রাখা হয়েছে (ADR-010 §2)।</p>
+
+    <h2>১ · অধ্যয়ন → নোট</h2>
+    <div class="card">
+      <h3>স্টাডি ইউনিট</h3>
+      <p><span class="pill">আয়াত ২:২৫৫</span><span class="pill">আয়াতুল কুরসি</span></p>
+      <button class="action" disabled aria-disabled="true">এই আয়াত সম্পর্কে একটি নোট তৈরি করুন</button>
+      <p class="why">নিষ্ক্রিয় — নোট ফাউন্ডেশন Rules প্রার্থী স্থাপন (E1) না হওয়া পর্যন্ত কোনো লেখা প্রত্যাখ্যাত হবে। এই বোতাম কোনো Firestore কল করে না।</p>
+    </div>
+
+    <h2>২ · নোট</h2>
+    <div class="card">
+      <label>শিরোনাম</label>
+      <input type="text" value="আয়াতুল কুরসির অর্থ" disabled />
+      <label>বিষয়বস্তু</label>
+      <textarea disabled>কুরআনের সর্বশ্রেষ্ঠ আয়াত, আল্লাহর জ্ঞান ও ক্ষমতা সম্পর্কে...</textarea>
+      <div class="row">
+        <div>
+          <label>অবস্থা</label>
+          <input type="text" value="সক্রিয়" disabled />
+        </div>
+        <div>
+          <label>মালিক</label>
+          <input type="text" value="শুধুমাত্র এই ব্যক্তি, এই টেন্যান্ট" disabled />
+        </div>
+      </div>
+      <button class="action" disabled aria-disabled="true">সংশোধন সংরক্ষণ করুন</button>
+      <button class="action" disabled aria-disabled="true">এই নোট প্রত্যাহার করুন</button>
+      <p class="why">উপরের একই কারণে উভয়ই নিষ্ক্রিয়। একটি প্রত্যাহৃত নোটও একটি নতুন উৎস-সংযোগ প্রত্যাখ্যান করে (PR #120)।</p>
+    </div>
+
+    <h2>৩ · উৎস — এই নোটটি কী নিয়ে</h2>
+    <div class="card">
+      <table class="relation-table">
+        <tr><th>উৎস</th><th>সম্পর্ক</th><th>উৎপত্তি</th></tr>
+        <tr><td>আয়াত ২:২৫৫</td><td>origin</td><td>study-note</td></tr>
+      </table>
+      <label>আরেকটি উৎস যুক্ত করুন (এই নোটটি একই নোট থেকে যায় — ADR-004)</label>
+      <select disabled>
+        <option>সূরা ২, রুকু' ৩৩</option>
+        <option>জুয ৩</option>
+      </select>
+      <button class="action" disabled aria-disabled="true">এই উৎস যোগ করুন</button>
+      <p class="why">PR #120-এর <code>createNoteSource()</code> প্রদর্শন করে — একটি দ্বিতীয় সক্রিয় সংযোগ, নোট বা প্লেসমেন্টকে স্পর্শ না করেই।</p>
+    </div>
+
+    <h2>৪ · গন্তব্য — Mapping My Journey ফাইলিং</h2>
+    <div class="card tree">
+      <p>একটি ফোল্ডার গাছ চক্রহীন, নিজ-মালিকানাধীন, এবং সর্বোচ্চ ৮ স্তর গভীর (ADR-010 §৪)।</p>
+      <ul>
+        <li class="folder-system">ব্যক্তিগত যাত্রা মানচিত্র <span class="pill">journey-map</span></li>
+        <li class="folder-system">প্রতিফলন আর্কাইভ <span class="pill">reflection-archive</span>
+          <ul>
+            <li class="folder-user">তাফসীর হাইলাইটস
+              <span class="note-chip">আয়াতুল কুরসির অর্থ</span>
+            </li>
+          </ul>
+        </li>
+        <li class="folder-user">সূরা আল-বাকারা নোট</li>
+      </ul>
+      <label>এই নোটটি অন্য ফোল্ডারে সরান</label>
+      <select disabled>
+        <option>ব্যক্তিগত যাত্রা মানচিত্র</option>
+        <option>সূরা আল-বাকারা নোট</option>
+      </select>
+      <button class="action" disabled aria-disabled="true">সরান</button>
+      <p class="why">একটি স্থানান্তর একটি প্লেসমেন্ট প্রত্যাহার করে এবং আরেকটি তৈরি করে (ADR-010 §৫)।</p>
+    </div>
+  </div>
+
+  <footer>
+    Static mockup, English and Bangla text hand-written on this page only —
+    it does not read <code>app/js/i18n/bn.js</code> and is not counted by the
+    platform's translation-coverage sweep. Every field and button above is
+    <code>disabled</code> (never merely styled to look off); the two
+    language buttons are the only interactive elements, and they only
+    toggle which of the two static blocks above is visible.
+  </footer>
+
+  <script>
+    (function () {
+      var enBtn = document.getElementById("btnEn");
+      var bnBtn = document.getElementById("btnBn");
+      function show(lang) {
+        document.querySelectorAll("[data-lang-block]").forEach(function (el) {
+          el.classList.toggle("lang-active", el.getAttribute("data-lang") === lang);
+        });
+        enBtn.setAttribute("aria-pressed", String(lang === "en"));
+        bnBtn.setAttribute("aria-pressed", String(lang === "bn"));
+      }
+      enBtn.addEventListener("click", function () { show("en"); });
+      bnBtn.addEventListener("click", function () { show("bn"); });
+    })();
+  </script>
+</body>
+</html>

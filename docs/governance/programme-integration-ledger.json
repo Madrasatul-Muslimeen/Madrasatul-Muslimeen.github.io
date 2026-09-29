@@ -1191,8 +1191,9 @@
       }
     }
   ],
-  "nextUnallocated": "08.118",
+  "nextUnallocated": "09.01",
   "nextUnallocatedNote": [
+    "The v09 line opens at v09.01 (Owner, 29 Sep 2026, decision 26); v09.00 is deliberately not used. The 08 line ends at v08.117, and app/ as released at v08.103 is archived at legacy-v08/.",
     "v08.117 was allocated to Landing Approach list sections collapsed with a count (#400), 2026-09-29.",
     "v08.116 was allocated to Catalogue sections: move reaches the wheel, collapsible, draggable (#399), 2026-09-29.",
     "v08.115 was allocated to Word Card derived-form meanings (#396), 2026-09-29.",
