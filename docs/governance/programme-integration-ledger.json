@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.107",
+    "version": "08.108",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1061,7 +1061,7 @@
     {
       "version": "08.107",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Card look Night/Light on the Note frame, Hadith, QCR/Asma, bar palettes and Dawah; review contrast fixes.",
       "integration": {
         "authorizedOn": "2026-09-28",
@@ -1069,10 +1069,23 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "08.108",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Ruku'/Page reading rules synced and gate opened; Unit Card Mark as read now saves.",
+      "integration": {
+        "authorizedOn": "2026-09-29",
+        "integratedOn": "2026-09-29",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "08.108",
+  "nextUnallocated": "08.109",
   "nextUnallocatedNote": [
+    "v08.108 was allocated to Ruku'/Page Mark as read on, Unit Card Mark as read fixed, 2026-09-29.",
     "v08.107 was allocated to card look parts 3-4, issue #354, 2026-09-28.",
     "v08.106 was allocated to card look Night or Light, parts 1-2 (issue #354), 2026-09-28.",
     "v08.105 was allocated to every unit on the wheel (issue #352), 2026-09-28.",
