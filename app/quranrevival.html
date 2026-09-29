@@ -1868,7 +1868,11 @@
      their text, so the row never grows a second line. */
   #readBar:has(#readApproachCapsule:not([hidden])) #mushafPageRef { flex: 0 1 auto; margin-right: 0; }
   .read-approach-capsule {
-    flex: 1 1 auto; min-width: 0; margin-right: auto; max-width: 16rem;
+    /* flex-basis 0, not auto: a wrapping row decides line breaks by each
+       item's BASIS, so an auto basis (its full text) pushed #readBar to a
+       third line at 320/360px. At 0 it only takes what is left, down to
+       4.5rem, and ellipsis-truncates. */
+    flex: 1 1 0; min-width: 4.5rem; margin-right: auto; max-width: 16rem;
     display: flex; align-items: center; gap: 0.25rem; min-height: 34px;
     padding: 0.2rem 0.6rem; font: inherit; font-size: 0.74rem; font-weight: 600;
     color: #5e4418; background: #fdf6e3; border: 1px solid #d8c68a; border-radius: 999px; cursor: pointer;
@@ -2936,15 +2940,18 @@
 
   /* Issue #348 -- the Unit Card's own "counts for each āyah" line and the
      Āyāt-Achieved/Word-by-Word count lines under Status. */
-  .unit-card-counts-line { font-size: 0.78rem; color: #6b5a20; margin: -0.1rem 0.5rem 0.4rem; font-style: italic; }
-  .unit-card-count-line { font-size: 0.82rem; color: #1b1b16; margin: 0; }
+  /* Issue #370 review: these three still carried Light-only literals (#6b5a20,
+     #1b1b16, #eee) that the card look (v08.106/107) never reached -- dark
+     text on the Night card. On the shared tokens now. */
+  .unit-card-counts-line { font-size: 0.78rem; color: var(--card-text-muted); margin: -0.1rem 0.5rem 0.4rem; font-style: italic; }
+  .unit-card-count-line { font-size: 0.82rem; color: var(--card-text); margin: 0; }
 
   /* Issue #348 -- "Inside": a Surah's own Ruku's, a Ruku'/Page/Range's own
      āyāt, a Hizb/Juz's own Surah pieces. Same >= 40px coloured chip idiom
      as the Ayah Card's own Related-āyāt rows, laid out in a wrapping row
      rather than a column since these chips are short (a number, or "Ruku'
      N") rather than a whole sentence. */
-  .unit-card-inside { border-top: 1px solid #eee; margin-top: 0.4rem; padding: 0.5rem 0.2rem 0; }
+  .unit-card-inside { border-top: 1px solid var(--card-line); margin-top: 0.4rem; padding: 0.5rem 0.2rem 0; }
   .unit-card-inside-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .unit-card-inside-chip { min-width: 40px; min-height: 40px; padding: 0.2rem 0.6rem; color: #fff; text-shadow: 0 0 2px rgba(0,0,0,0.35); border: none; border-radius: 0.35rem; font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
 
