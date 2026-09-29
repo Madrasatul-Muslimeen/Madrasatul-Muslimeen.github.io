@@ -4,6 +4,7 @@ import { quranWordOccurrenceId } from "./quran-word-identity.js";
 
 const INDEX_FILES = Object.freeze({ root: "roots-index.json", lemma: "lemmas-index.json" });
 const LEMMA_POS_FILE = "lemma-pos-index.json";
+const LEMMA_MEANING_FILE = "lemma-meaning-index.json";
 const cache = new Map();
 
 export function unpackWordIndexRef(ref) {
@@ -84,6 +85,25 @@ async function loadLemmaPosIndex({ fetchImpl = fetch, baseUrl = "../tools/quran-
 }
 
 /**
+ * Lemma -> `{ en, bn }` meaning, from the word-by-word translations. Same
+ * on-demand boundary as the part-of-speech index (I9); built by the same script.
+ */
+const lemmaMeaningIndex = new Map();
+async function loadLemmaMeaningIndex({ fetchImpl = fetch, baseUrl = "../tools/quran-data-pull/output/" } = {}) {
+  const key = `${baseUrl}${LEMMA_MEANING_FILE}`;
+  if (!lemmaMeaningIndex.has(key)) lemmaMeaningIndex.set(key, (async () => {
+    const response = await fetchImpl(key);
+    if (!response.ok) throw new Error(`Could not load Quran lemma meaning index (${response.status}).`);
+    const data = await response.json();
+    if (data.identityContract !== "quran-word-occurrence:v1" || !data.values || typeof data.values !== "object" || Array.isArray(data.values)) {
+      throw new Error("Invalid Quran lemma meaning index format.");
+    }
+    return data;
+  })().catch((error) => { lemmaMeaningIndex.delete(key); throw error; }));
+  return lemmaMeaningIndex.get(key);
+}
+
+/**
  * v08.21 -- the derived word forms of one root, and nothing inferred.
  *
  * A "form" here is a LEMMA that shares this root. That relationship is read
@@ -116,9 +136,10 @@ export async function rootFormsFor(root, options) {
   if (!root) return { root: "", totalOccurrences: 0, formCount: 0, unclassified: 0, forms: [] };
   const index = await loadWordIdentityIndex("root", options);
   const refs = index.values?.[root] ?? [];
-  const [byOccurrence, posIndex] = await Promise.all([
+  const [byOccurrence, posIndex, meaningIndex] = await Promise.all([
     lemmaOccurrenceMap(options),
     loadLemmaPosIndex(options).catch(() => null),
+    loadLemmaMeaningIndex(options).catch(() => null),
   ]);
   const groups = new Map();
   let unclassified = 0;
@@ -138,10 +159,11 @@ export async function rootFormsFor(root, options) {
         pos: counts[0]?.[0] ?? "",
         posCounts: counts,
         posAmbiguous: counts.length > 1,
+        meaning: { en: meaningIndex?.values?.[lemma]?.en ?? "", bn: meaningIndex?.values?.[lemma]?.bn ?? "" },
       };
     })
     .sort((a, b) => b.count - a.count || (a.lemma < b.lemma ? -1 : a.lemma > b.lemma ? 1 : 0));
   return Object.freeze({ root, totalOccurrences: refs.length, formCount: forms.length, unclassified, forms });
 }
 
-export function clearWordIdentityIndexCache() { cache.clear(); lemmaByOccurrence.clear(); lemmaPosIndex.clear(); }
+export function clearWordIdentityIndexCache() { cache.clear(); lemmaByOccurrence.clear(); lemmaPosIndex.clear(); lemmaMeaningIndex.clear(); }
