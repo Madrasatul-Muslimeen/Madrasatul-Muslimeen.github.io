@@ -179,6 +179,7 @@ for (const lang of ["en", "bn"]) {
         barH: Math.round(bar.getBoundingClientRect().height),
         sameLine: Math.abs((r.top + r.height / 2) - (ref.top + ref.height / 2)) <= 4,
         shown: !c.hidden && r.width > 0, text: c.querySelector(".read-approach-capsule-text").textContent.trim(), w: r.width,
+        textFits: (() => { const t = c.querySelector(".read-approach-capsule-text"); return t.scrollWidth <= t.clientWidth + 1; })(),
         h: r.height, left: r.left, right: r.right, vw: innerWidth,
         spread: Math.max(...centres) - Math.min(...centres), n: kids.length,
         overflow: document.documentElement.scrollWidth - innerWidth,
@@ -190,8 +191,16 @@ for (const lang of ["en", "bn"]) {
     // (85px), one line from 768px (51px). The capsule must cost NOTHING.
     const MAIN_BAR_H = width < 700 ? 85 : 51;
     check(`[${lang} ${width}] the Read bar is exactly as tall as on main (${MAIN_BAR_H}px) -- the capsule adds no line`, m.barH === MAIN_BAR_H, JSON.stringify({ barH: m.barH, spread: m.spread }));
-    check(`[${lang} ${width}] the capsule shares a line with the page reference, at least 72px wide`, m.sameLine && m.w >= 72, JSON.stringify({ sameLine: m.sameLine, w: m.w }));
-    check(`[${lang} ${width}] the capsule is at least 34px tall`, m.h >= 34, String(m.h));
+    // From 700px (one line) it sits beside the page reference; below it, the
+    // bar is two lines anyway and the capsule starts the second, where it
+    // gets most of the width (beside the reference it had ~72px: "Cho…").
+    if (width >= 700) check(`[${lang} ${width}] the capsule shares a line with the page reference`, m.sameLine, JSON.stringify({ sameLine: m.sameLine, w: m.w }));
+    // From 390px the whole phrase shows; at 320/360 English it may end in
+    // "…" (its full text stays in title and aria-label), and it must still
+    // be at least 72px wide.
+    if (width >= 390 || lang === "bn") check(`[${lang} ${width}] the capsule shows its whole "${T[lang].choose}" (text not cut)`, m.textFits, JSON.stringify({ w: m.w, textFits: m.textFits }));
+    else check(`[${lang} ${width}] the capsule is at least 72px wide (its text may end in "…")`, m.w >= 72, JSON.stringify({ w: m.w }));
+    check(`[${lang} ${width}] the capsule is at least ${width < 700 ? 26 : 34}px tall (on a phone, the 26.8px of the icons beside it)`, m.h >= (width < 700 ? 26 : 34), String(m.h));
     check(`[${lang} ${width}] no sideways scroll`, m.overflow <= 1, String(m.overflow));
     await ctx.close();
   }

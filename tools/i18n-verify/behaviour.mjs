@@ -1883,7 +1883,9 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
     // v08.90 (issue #325) -- #mushafPageRef is a <button> now, the Mushaf
     // view's own page reference (hidden outside Mushaf); it is not one of the
     // reading controls this list records. Updated in place, reason recorded.
-    buttons: [...document.querySelectorAll("#readBar > button")].filter((b) => b.id !== "mushafPageRef").map((b) => b.id),
+    // v08.111 (issue #370) -- #readApproachCapsule, the Mushaf view's own
+    // "Choose an Approach" capsule, is excluded for the same reason.
+    buttons: [...document.querySelectorAll("#readBar > button")].filter((b) => b.id !== "mushafPageRef" && b.id !== "readApproachCapsule").map((b) => b.id),
     noWholeSurah: !document.getElementById("readPlaySurahBtn"),
     playLabel: document.getElementById("readPlayBtn").getAttribute("aria-label") || "",
     // Round 25 retired the reciter caption -- its only job was naming which
@@ -1938,7 +1940,7 @@ console.log("\n=== 30l. Round 18's own controls in Bangla ===");
   // Direct children only -- see the enhancement-round comment at 30j above
   // (eight now -- prevAyahBtn/nextAyahBtn joined this row, and the
   // multi-student round's own readBookmarkBtn joined it too).
-  const t18 = await page.evaluate(() => [...document.querySelectorAll("#readBar > button")].filter((b) => b.id !== "mushafPageRef").map((b) => b.getAttribute("aria-label") || "")); // v08.90 -- see 30j: #mushafPageRef excluded
+  const t18 = await page.evaluate(() => [...document.querySelectorAll("#readBar > button")].filter((b) => b.id !== "mushafPageRef" && b.id !== "readApproachCapsule").map((b) => b.getAttribute("aria-label") || "")); // v08.90 -- see 30j: #mushafPageRef excluded; v08.111 -- #readApproachCapsule too (Mushaf-only)
   // v08.30 -- ten now: #readCompleteBtn joined the row. Its own Bangla name is
   // the I11 evidence for this tranche's four new keys.
   // v08.103 -- eleven: #readUnitChip joined the row (issue #348); its own
@@ -2498,8 +2500,11 @@ const readRef = readingRef; // round 22: #readRef is retired, see readingRef abo
   // v08.103 (issue #348, Owner decision 18) -- #readUnitChip, the gold chip
   // naming the chosen Study Unit and opening its card, joined the row right
   // after #mushafPageRef (hidden in Mushaf view). Updated in place, reason recorded.
+  // v08.111 (issue #370, Global Approach Card) -- #readApproachCapsule, the
+  // "Choose an Approach" capsule, joined the row right after #mushafPageRef
+  // (Mushaf view only, hidden elsewhere). Updated in place, reason recorded.
   check("33a the read bar is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · Reading complete · ⋮ slot",
-        bar.ids.join() === "mushafPageRef,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot",
+        bar.ids.join() === "mushafPageRef,readApproachCapsule,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot",
         JSON.stringify(bar.ids));
   check("33a the '◂ Mastery Wheel' button is gone (the Read tab does it)", bar.noBack);
   check("33a the separate Pause button is gone", bar.noSeparatePause);
@@ -3239,8 +3244,9 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
   // v08.103 (issue #348, Owner decision 18) -- #readUnitChip, the gold chip
   // naming the chosen Study Unit and opening its card, joined the row right
   // after #mushafPageRef (hidden in Mushaf view). Updated in place, reason recorded.
+  // v08.111 (issue #370) -- #readApproachCapsule after #mushafPageRef; see 33a.
   check("37a the row is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · Reading complete · ⋮ slot",
-        m.barKids.join() === "mushafPageRef,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot", JSON.stringify(m.barKids));
+        m.barKids.join() === "mushafPageRef,readApproachCapsule,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot", JSON.stringify(m.barKids));
   // `space-between` would leave large, uneven gaps between controls, which
   // is exactly how a stale `space-between` survived this round's first
   // attempt -- checking the gaps directly catches that regardless of how

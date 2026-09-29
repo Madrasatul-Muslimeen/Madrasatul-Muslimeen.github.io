@@ -131,7 +131,11 @@ check("issue #325 -- an Approach IS picked: all four stages render, the current 
   for (const id of ["not_started", "learning", "practising", "achieved"]) {
     assert.ok(html.includes(`data-approach-stage-btn="${id}"`), `missing the ${id} stage button`);
   }
-  assert.ok(!html.includes("Mastered"), "Mastered must never appear as a claimable stage");
+  // UPDATED in place, issue #370 (Global Approach Card, Owner-approved): the
+  // card now SAYS "Mastered is confirmed by a teacher." under the stages, so
+  // the word itself appears; what must never appear is a Mastered BUTTON.
+  assert.ok(!html.includes('data-approach-stage-btn="mastered"'), "Mastered must never appear as a claimable stage");
+  assert.ok(html.includes("gac-mastered-note"), "the 'Mastered is confirmed by a teacher.' line is missing");
   const pressed = [...html.matchAll(/data-approach-stage-btn="([a-z_]+)" aria-pressed="(true|false)"/g)];
   assert.equal(pressed.length, 4, "expected exactly four stage buttons");
   for (const [, id, val] of pressed) assert.equal(val, id === "practising" ? "true" : "false", `${id} carries the wrong aria-pressed`);

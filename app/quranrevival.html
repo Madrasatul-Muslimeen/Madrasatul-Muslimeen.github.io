@@ -1878,6 +1878,16 @@
     color: #5e4418; background: #fdf6e3; border: 1px solid #d8c68a; border-radius: 999px; cursor: pointer;
   }
   .read-approach-capsule[hidden] { display: none; }
+  /* Below 700px #readBar is already two lines (measured on main); beside the
+     page reference the capsule got ~72px and read "Cho…". Ordered last, it
+     starts the second line, where the icons leave it most of the width. The
+     page reference then keeps its old stretch on the first line. */
+  @media (max-width: 699.98px) {
+    /* The icons beside it on this line are ~31px; at 34px it made the bar
+       7px taller than on main, so it takes their height here. */
+    .read-approach-capsule { order: 99; margin-right: 0; max-width: none; min-height: 0; height: 26.8px; box-sizing: border-box; padding: 0 0.6rem; line-height: 1; }
+    #readBar:has(#readApproachCapsule:not([hidden])) #mushafPageRef { flex: 1 1 auto; margin-right: auto; }
+  }
   .read-approach-capsule-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .read-approach-capsule-caret { flex: 0 0 auto; font-size: 0.65rem; }
   .mushaf-page-ref-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
