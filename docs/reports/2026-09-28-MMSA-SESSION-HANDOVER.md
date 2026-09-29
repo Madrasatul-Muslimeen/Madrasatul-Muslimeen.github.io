@@ -126,9 +126,12 @@ Owner may reorder the queue; nothing else reorders it.
   **Delete it afterwards, and never `git add -A app` while it exists.** It was
   committed by mistake once this session.
 - **Baselines:**
-  - `behaviour.mjs` is 984 pass / 9 fail or 987/6. The failures are all
-    environmental: 22g×3 archive.org is intermittent, plus 27i, 31e (TLS) and
-    40g×4.
+  - `behaviour.mjs` is **1000 pass / 3 fail** since 29 Sep 2026: only the
+    intermittent 22g×3 archive.org checks remain (31e TLS may also appear).
+    **27i and 40g×4 were stale tests, not environment**, and were fixed by the
+    Builder (#390, #392). 40g had been recorded as a "substitute-browser
+    hit-testing artefact"; measurement showed it tapped the corner of word
+    3:2:1's padded box, which the RTL neighbour 3:2:2 legitimately owns.
   - `quran-word-explore-rendered` fails 25/10 on `main` too; its checks predate
     the v08.53 counter.
 - **Known and recorded, not fixed:** a 3px sideways overflow on the Mushaf page
