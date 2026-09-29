@@ -383,9 +383,23 @@ export function arrayUnion(...v) { return v; }
 // stub never mutates its own DATA (this file's own standing lesson), so a
 // caller must not be able to mistake this for the post-increment value.
 export function increment(n) { return { __increment: n }; }
+// v08.110: a batch's writes are RECORDED on commit (into __stubWriteData, as
+// setDoc/updateDoc already are), so a suite can prove what a batched save
+// carried -- saveApproachSections() writes the tenant document and every
+// moved Approach in one batch, and before this nothing of it was visible.
+// DATA is still not mutated (this file's standing rule), and nothing is
+// recorded unless commit() is called.
 export function writeBatch() {
-  let n = 0;
-  return { set() { n++; }, update() { n++; }, async commit() { return __trip("batchCommit", "(batch of " + n + ")", null, function () {}); } };
+  const staged = [];
+  return {
+    set(ref, data) { staged.push(["set", ref, data]); },
+    update(ref, data) { staged.push(["update", ref, data]); },
+    async commit() {
+      return __trip("batchCommit", "(batch of " + staged.length + ")", null, function () {
+        staged.forEach(function (w) { __recordWriteData("batch-" + w[0], w[1], w[2]); });
+      });
+    },
+  };
 }
 
 // runTransaction -- added because app/js/envelope.js (the Note Foundation

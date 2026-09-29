@@ -923,6 +923,8 @@
   .ways-group { font-size: 11px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase;
                color: #ecd49a; padding: 5px 2px 0; line-height: 1.2; }
   .ways-group:first-child { padding-top: 0; }
+  /* v08.110: a section with no Approaches yet (one the owner just added). */
+  .ways-group-empty { font-size: 0.78rem; font-style: italic; color: var(--card-text-muted, #b9c2d4); padding: 2px 4px 6px; }
   /* Bengali carries matras above and below the line and has no capitals, so
      uppercasing does nothing and 8px is genuinely cramped -- read off the
      rendered page, not assumed. It gets its own size and drops the two Latin
@@ -5124,7 +5126,8 @@
     import { roleListLabel, roleLabel } from "./js/labels.js";
     import { safeWrite, reportWriteFailure } from "./js/errors.js";
     import { getMyMembershipRoles, hydrateMemberships, pickContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
-    import { getTrackables, syncUnneditedTrackableNames, tenantOwnsSections } from "./js/catalogue.js";
+    import { getTrackables, syncUnneditedTrackableNames, tenantOwnsSections, sectionsFromTenantDoc } from "./js/catalogue.js";
+    import { groupApproachesBySection } from "./js/approach-sections.js";
     import { buildUnitKey, parseUnitKey, STATUSES, rukuIndexInSurah, localRukuIndexFromTable, statusLabelsById, statusLabel } from "./js/unit-keys.js";
     import { chunkKeyFor, getRecordsChunk, claimStatus, getSubjectConfirmationOverride, computeConfirmationRequired, listAllRecordsForPerson } from "./js/records.js";
     import { weekKeyFor, logActivity } from "./js/activity.js";
@@ -7583,13 +7586,35 @@
       // v08.02, the owner's ask: the sidebar names its sections, the way the
       // Study-options picker and Explore's palette already do. The label comes
       // off the trackable's own denormalized groupName, so this costs no read.
-      const sidebarItems = approachStatuses.map(({ trackable, statusId }) => ({
-        key: trackable.id,
-        number: trackable.order ?? "",
-        label: langText(trackable.name, getAppLang(), trackable.id),
-        groupLabel: trackable.groupName ? langText(trackable.groupName, getAppLang(), "") : "",
-        statusId,
-      }));
+      //
+      // v08.110, the Owner: "When a Section is renamed or added it should be
+      // added and edited to the Approach list as well." The headings now come
+      // from the tenant's OWN section list (the tenant document this page
+      // already read -- no new read), in its order, and a section the owner
+      // has added shows even before any Approach is filed in it.
+      const sidebarItems = [];
+      const grouped = groupApproachesBySection(approachStatuses, sectionsFromTenantDoc(currentTenantDoc), {
+        includeEmpty: tenantOwnsSections(currentTenantDoc),
+        trackableOf: (x) => x.trackable,
+      });
+      grouped.forEach((sec, gi) => {
+        const groupLabel = langText(sec.name, getAppLang(), "");
+        const groupKey = `g${gi}`;
+        if (sec.empty) {
+          sidebarItems.push({ groupKey, groupLabel: groupLabel || t("Section {n}", { n: num(sec.n) }), emptyNote: t("No Approaches in this section yet.") });
+          return;
+        }
+        for (const { trackable, statusId } of sec.items) {
+          sidebarItems.push({
+            key: trackable.id,
+            number: trackable.order ?? "",
+            label: langText(trackable.name, getAppLang(), trackable.id),
+            groupKey,
+            groupLabel,
+            statusId,
+          });
+        }
+      });
       wheelSidebarContainer.innerHTML = renderWheelSidebar(sidebarItems, labelsById);
       attachWheelSidebarClickHandler(wheelSidebarContainer, jumpToApproach);
       if (show === "all") placeWheelRingPanel();

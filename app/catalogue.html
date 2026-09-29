@@ -112,7 +112,7 @@
     </fieldset>
 
     <h2>Approach Sections</h2>
-    <p class="readonly-note" id="sectionsIntro">The 7 groups the 30 Approaches are organised into. Renaming one here renames it everywhere it appears — this list, the Approach picker, Explore, and the Mastery Wheel's own sidebar.</p>
+    <p class="readonly-note" id="sectionsIntro">The groups the Approaches are organised into. Renaming or adding one here changes it everywhere it appears — the Approach list below, the Approach picker, Explore, and the Mastery Wheel's own list — once you press Save sections.</p>
     <table>
       <thead><tr><th>#</th><th>Section</th><th>Approaches</th><th id="secActionsHead" style="display:none;">Edit</th></tr></thead>
       <tbody id="sectionsBody"></tbody>
@@ -121,7 +121,21 @@
       <button id="addSectionBtn" class="secondary">Add a section</button>
     </div>
 
-    <h2>The 30 Approaches</h2>
+    <!-- v08.110, the Owner: "'Quran Approaches - 40 Ways' (number could be
+         changed, so make it editable)". Owner/Prime edit it with the pencil. -->
+    <h2 id="approachListHeading" style="display:flex; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+      <span id="approachListTitle" data-i18n-skip></span>
+      <button id="editApproachListTitleBtn" class="small secondary" type="button" style="display:none; min-height:40px;">✎ Edit heading</button>
+    </h2>
+    <div id="approachListTitleForm" hidden style="margin:0 0 0.8rem;">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(15rem, 1fr)); gap:0.5rem;">
+        <div><label for="approachListTitleEn">English</label><input id="approachListTitleEn" type="text" maxlength="80" style="width:100%; box-sizing:border-box;" /></div>
+        <div><label for="approachListTitleBn">Bangla</label><input id="approachListTitleBn" type="text" maxlength="80" style="width:100%; box-sizing:border-box;" /></div>
+      </div>
+      <button id="saveApproachListTitleBtn" type="button" style="margin-top:0.5rem;">Save heading</button>
+      <button id="cancelApproachListTitleBtn" type="button" class="secondary" style="margin-top:0.5rem;">Cancel</button>
+      <span id="approachListTitleMsg" role="status" style="margin-left:0.6rem; font-size:0.85rem; color:#555;"></span>
+    </div>
     <label style="display:inline-flex; align-items:center; gap:0.4rem; font-weight:400;">
       <input type="checkbox" id="showArchivedTrackables" /> Show removed Approaches
     </label>
@@ -219,6 +233,8 @@
       tenantOwnsSections,
       getTenantDoc,
       saveApproachSections,
+      approachListTitleFromTenantDoc,
+      saveApproachListTitle,
       setLadderStatus,
       setLevelStatus,
       createLadder,
@@ -309,8 +325,9 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     addSectionBtn.addEventListener("click", () => {
       // No `from`: nothing points at it yet, so it saves as a real but empty
       // section that Approaches can then be moved into from the editor below.
-      sections.push({ n: sections.length + 1, name: { en: "", bn: "" }, from: null });
+      sections.push({ n: Math.max(0, ...sections.map((x) => Number(x.n) || 0)) + 1, name: { en: "", bn: "" }, from: null });
       renderSections();
+      renderTrackables();
       sectionsBody.querySelector(`.secNameInput[data-i="${sections.length - 1}"][data-lang="en"]`)?.focus();
     });
     showArchivedLadders.addEventListener("change", loadLadders);
@@ -823,6 +840,9 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         el.addEventListener("input", () => {
           const sec = sections[Number(el.dataset.i)];
           sec.name = { ...(sec.name ?? {}), [el.dataset.lang]: el.value };
+          // v08.110: the Approach list below follows the name as it is
+          // typed (renderTrackables() never touches these inputs).
+          renderTrackables();
         });
       });
       sectionsBody.querySelectorAll(".secUpBtn").forEach((b) => {
@@ -853,14 +873,52 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       if (j < 0 || j >= sections.length) return;
       [sections[i], sections[j]] = [sections[j], sections[i]];
       renderSections();
+      renderTrackables();
     }
 
     // Speed part 6a (issue #285): same fetch/render split as the modules
     // table above. At startup this is fed the tenant document ALREADY read
     // by hydrateMemberships() for the tenant picker -- no second read of
     // the same document (the exact repeat issue #278 fixed elsewhere).
+    /** v08.110 -- the Approach list's editable heading. */
+    function renderApproachListTitle() {
+      // Unset: the Owner's own wording, translated like any other string.
+      const stored = tenantDoc?.approachListTitle;
+      const text = stored && (stored.en || stored.bn) ? langText(stored, getAppLang(), "") : t(approachListTitleFromTenantDoc(null).en);
+      document.getElementById("approachListTitle").textContent = text;
+      document.getElementById("editApproachListTitleBtn").style.display = canEdit ? "" : "none";
+    }
+    document.getElementById("editApproachListTitleBtn").addEventListener("click", () => {
+      const title = approachListTitleFromTenantDoc(tenantDoc);
+      document.getElementById("approachListTitleEn").value = title.en ?? "";
+      document.getElementById("approachListTitleBn").value = title.bn ?? "";
+      document.getElementById("approachListTitleMsg").textContent = "";
+      document.getElementById("approachListTitleForm").hidden = false;
+      document.getElementById("approachListTitleEn").focus();
+    });
+    document.getElementById("cancelApproachListTitleBtn").addEventListener("click", () => {
+      document.getElementById("approachListTitleForm").hidden = true;
+    });
+    document.getElementById("saveApproachListTitleBtn").addEventListener("click", async () => {
+      const msg = document.getElementById("approachListTitleMsg");
+      const title = { en: document.getElementById("approachListTitleEn").value, bn: document.getElementById("approachListTitleBn").value };
+      if (!title.en.trim() && !title.bn.trim()) { msg.textContent = t("The heading needs a name in at least one language."); return; }
+      msg.textContent = t("Saving…");
+      const outcome = await safeWrite(
+        () => saveApproachListTitle(db, activeTenantId, title, auth.currentUser.uid),
+        { collection: "tenants", action: "saveApproachListTitle", id: activeTenantId }
+      );
+      if (!outcome.ok) { msg.textContent = ""; alert(outcome.entry.message); return; }
+      const clean = {};
+      for (const l of ["en", "bn"]) if (title[l].trim()) clean[l] = title[l].trim();
+      tenantDoc = { ...(tenantDoc ?? {}), approachListTitle: clean };
+      renderApproachListTitle();
+      document.getElementById("approachListTitleForm").hidden = true;
+    });
+
     function applySections(tenantDocData) {
       tenantDoc = tenantDocData;
+      renderApproachListTitle();
       // `from` is the number each row currently HAS in the data; a row added
       // in this sitting has none until it is saved.
       sections = sectionsFromTenantDoc(tenantDoc).map((sec) => ({ ...sec, from: sec.n }));
@@ -1202,7 +1260,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       const others = visibleOtherTrackables();
       const separator = others.length
         ? `<tr class="trk-other-separator"><td colspan="6" style="padding-top:1.1rem; border-bottom:none; color:#555; font-size:0.85rem;">
-             <strong>${t("Other trackables")}</strong> — ${t("one per module, outside the 30 Approaches. Editable, but they have no position among the Approaches.")}
+             <strong>${t("Other trackables")}</strong> — ${t("one per module, outside the Approaches. Editable, but they have no position among the Approaches.")}
            </td></tr>`
         : "";
       // Grouped by section, in the sections' own order, with anything whose
@@ -1212,9 +1270,13 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       let grouped = "";
       for (const sec of sections) {
         const inSec = approaches.filter((row) => sectionOf(row) === sec.n);
-        if (!inSec.length) continue;
         inSec.forEach((row) => seen.add(row.id));
-        grouped += sectionHeadingHtml(sec, inSec.length) + inSec.map(trackableRowHtml).join("");
+        // v08.110: a section with no Approaches (one just added) is shown
+        // too, rather than skipped -- the Owner's "when a Section is ... added
+        // it should be added ... to the Approach list as well".
+        grouped += sectionHeadingHtml(sec, inSec.length) + (inSec.length
+          ? inSec.map(trackableRowHtml).join("")
+          : `<tr class="trk-section-empty"><td colspan="6" style="color:#555; font-style:italic;">${t("No Approaches in this section yet.")}${canEdit ? " " + t("Add one with the form below, or move one here with Edit.") : ""}</td></tr>`);
       }
       const orphans = approaches.filter((row) => !seen.has(row.id));
       if (orphans.length) {
