@@ -861,6 +861,14 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   or it is measuring a different control.
 - **A failing check is a wrong assertion surprisingly often.** Investigate
   before "fixing" the app; several rounds here have proved the test wrong.
+- **"Environmental" is a hypothesis until something MEASURED says so.**
+  behaviour 40g×4 was carried for weeks as "a substitute-browser hit-testing
+  artefact" and 27i as a layout quirk. Both were stale tests (#390, #392):
+  40g tapped the corner of word 3:2:1's padded box, which the RTL neighbour
+  3:2:2 paints over and rightly owns. `elementFromPoint` at the tap point
+  would have said so on day one. Before baselining a failure as environmental,
+  ask the page what is actually at the point, or show that the same check
+  passes somewhere the environment differs.
 - **A control can be perfectly correct and still unreadable.** v07.138's
   Save button was navy text on a navy background -- `#result a` (an ID rule)
   beat `.download-link` (a class), and every assertion passed because the

@@ -4218,7 +4218,11 @@ console.log("\n=== 40. Shell round 28: the Mushaf page ===");
       for (let y = pb.t + 1; y < pb.b - 1 && !pick; y += 0.5) {
         for (let x = pb.l + 1; x < pb.r - 1 && !pick; x += 0.5) {
           const p = { x, y };
-          if (inside(p, glyph) || nb.some((n) => inside(p, n))) continue;
+          // A 1px margin from every neighbour: hit-testing snaps to whole
+          // pixels, so a point 0.2px clear of 3:2:2's box (measured at 320px)
+          // still belongs to 3:2:2.
+          const grow = (r) => ({ l: r.l - 1, r: r.r + 1, t: r.t - 1, b: r.b + 1 });
+          if (inside(p, glyph) || nb.some((n) => inside(p, grow(n)))) continue;
           pick = p;
         }
       }
@@ -4237,6 +4241,8 @@ console.log("\n=== 40. Shell round 28: the Mushaf page ===");
           !!m.pick, JSON.stringify(m));
     // The hit-area tap, on this page. (An open Word Card shifts the layout,
     // so the glyph-centre control below runs on its own fresh page.)
+    check(`40g @${width}px the browser itself says the chosen point belongs to 3:2:1`,
+          m.pickOwner === wantedId, `${m.pickOwner} at ${JSON.stringify(m.pick)}`);
     if (m.pick) {
       await page.mouse.click(m.pick.x, m.pick.y);
       await page.waitForTimeout(500);
