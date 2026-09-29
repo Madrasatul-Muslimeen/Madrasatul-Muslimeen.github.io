@@ -319,3 +319,8 @@
    badge measured 3.34:1 and the "Not started" chip 3.48:1 on a row's
    hover tint; both lifted for Night. */
 [data-card-look="night"] :is(#qcrListHeader, #asmaXListHeader) .qcr-level-badge { color: #ecd49a; }
+
+/* v08.109: .hadith-commentary-link's base colour darkened to #7a5a14 for the
+   white card (was 3.24:1); on Night's dark card that would be 2.75:1, so Night
+   takes its own heading gold. */
+[data-card-look="night"] .hadith-commentary-link { color: var(--card-heading); }

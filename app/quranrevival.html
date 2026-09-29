@@ -3477,7 +3477,8 @@
     }
     .note-popup-side-nav button { background: #1F3A6E; color: #fff; border: none; border-radius: 0.3rem; width: 1.7rem; height: 1.7rem; cursor: pointer; font-size: 0.8rem; }
     .note-popup-side-nav button:disabled { opacity: 0.35; cursor: default; }
-    .note-popup-side-nav button[aria-pressed="true"] { background: #B8862F; }
+    /* #8a6420, not #B8862F: white on the lighter gold measured 3.24:1 (v08.109). */
+    .note-popup-side-nav button[aria-pressed="true"] { background: #8a6420; }
     #notePopupSideCount { font-size: 0.72rem; color: #7a6a3c; flex: 1 1 auto; text-align: center; }
     .note-popup-side-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0.35rem; }
     .note-popup-side-list .hint { font-size: 0.78rem; color: #888; padding: 0.4rem 0.3rem; margin: 0; }
