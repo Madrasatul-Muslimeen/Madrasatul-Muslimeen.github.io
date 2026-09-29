@@ -17,8 +17,8 @@ const CACHE_NAME = `mm-app-${APP_VERSION}`;
 
 // This worker's own registration scope is /app/ (registered from
 // /app/sw.js, and GitHub Pages sends no Service-Worker-Allowed header to
-// widen it), so it only ever controls pages under /app/ -- /legacy/ and
-// /legacy-v07/ are structurally outside its reach. But once a page it
+// widen it), so it only ever controls pages under /app/ -- /legacy/,
+// /legacy-v07/ and /legacy-v08/ are structurally outside its reach. But once a page it
 // controls fetches something, the fetch handler below sees EVERY request
 // that page makes, wherever the URL points -- scope limits which pages are
 // controlled, not which of their requests can be seen. So the path check
@@ -45,7 +45,7 @@ function isCacheable(request) {
   if (request.method !== "GET") return false;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return false;
-  if (url.pathname.startsWith("/legacy/") || url.pathname.startsWith("/legacy-v07/")) return false;
+  if (url.pathname.startsWith("/legacy/") || url.pathname.startsWith("/legacy-v07/") || url.pathname.startsWith("/legacy-v08/")) return false;
   if (!CACHEABLE_PATH_PREFIXES.some((p) => url.pathname.startsWith(p))) return false;
   // Firestore's OWN traffic -- every read, write and auth token exchange the
   // SDK makes once it's actually running, all *.googleapis.com -- never

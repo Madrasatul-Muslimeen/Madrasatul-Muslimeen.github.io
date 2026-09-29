@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.117",
+    "version": "09.01",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1181,8 +1181,20 @@
     {
       "version": "08.117",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The landing Approach list's sections start closed, each with its Approach count in front of the name; built by the Builder (#400, PR #401), reviewed by the Architect.",
+      "integration": {
+        "authorizedOn": "2026-09-29",
+        "integratedOn": "2026-09-29",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.01",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The first v09 release: every page's Home menu links Legacy App - v08, and the live offline cache excludes /legacy-v08/; allocated by the Architect.",
       "integration": {
         "authorizedOn": "2026-09-29",
         "integratedOn": "2026-09-29",
@@ -1191,8 +1203,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.01",
+  "nextUnallocated": "09.02",
   "nextUnallocatedNote": [
+    "v09.01 was allocated to the v09 line opens; Home menu links the v08 archive, 2026-09-29.",
     "The v09 line opens at v09.01 (Owner, 29 Sep 2026, decision 26); v09.00 is deliberately not used. The 08 line ends at v08.117, and app/ as released at v08.103 is archived at legacy-v08/.",
     "v08.117 was allocated to Landing Approach list sections collapsed with a count (#400), 2026-09-29.",
     "v08.116 was allocated to Catalogue sections: move reaches the wheel, collapsible, draggable (#399), 2026-09-29.",
