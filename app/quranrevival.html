@@ -884,6 +884,9 @@
 
   .wheel-seg { cursor: pointer; stroke: #0c1320; stroke-width: 1; transition: stroke .15s, stroke-width .15s; }
   .wheel-seg:hover { stroke: var(--card-text); stroke-width: 1.5; }
+  /* Issue #385 -- an Approach's short name along its slice: white with a dark
+     halo behind it, so it reads on every status colour in all three looks. */
+  .wheel-seg-name { font-family: 'Inter', sans-serif; font-weight: 700; fill: #fff; stroke: #0c1320; stroke-width: 2.2px; stroke-linejoin: round; paint-order: stroke fill; }
   .wheel-seg-num { font-family: 'Inter', sans-serif; font-size: 8px; font-weight: 600; fill: var(--card-text); }
   /* Drag-reposition round (2 Sep 2026) -- mastery-wheel.js's own OPT-IN
      `sliceLines` extra, drawn inside the slice body for the Asma ul Husna
@@ -3970,6 +3973,13 @@
             <button type="button" class="wheel-look-btn" data-wheel-look="light" aria-pressed="false">Light</button>
             <button type="button" class="wheel-look-btn" data-wheel-look="colour" aria-pressed="false">Colour</button>
           </div>
+          <!-- Issue #385: the Approach short names along the slices, on or off
+               (default on); remembered per browser (prefs.js getWheelNames). -->
+          <div id="wheelNamesSwitch" class="wheel-look-switch" role="group" aria-label="Approach names on the wheel">
+            <span class="wheel-look-label">Names</span>
+            <button type="button" class="wheel-look-btn" data-wheel-names="on" aria-pressed="false">On</button>
+            <button type="button" class="wheel-look-btn" data-wheel-names="off" aria-pressed="false">Off</button>
+          </div>
           <!-- Issue #352 (Owner decisions 21-24): what the wheel shows -- the
                unit "Choose a Unit" holds (as it always has), one unit type on
                its own ring, or All units as six rings. Remembered per browser
@@ -5263,6 +5273,7 @@
       spanForUnitKey, tallyWideClaimsByUnitType, summarizeApproachAyahCoverage, achievedOrMasteredRatio,
       summarizeUnitCoverage,
     } from "./js/approach-coverage.js";
+    import { approachShortName } from "./js/approach-short-name.js";
     // Issue #303 -- lemma-level word progress ("mark this word known
     // everywhere"), gated separately (see study-lemma-progress-readiness.js).
     import { lemmaProgressAuthority, effectiveOccurrenceState, lemmaKnownDeltaByJuz, groupOccurrenceRefsByJuz, overlayLemmaKnownness } from "./js/quran-lemma-progress.js";
@@ -5302,7 +5313,7 @@
       getQuranLastSession, setQuranLastSession,
       getExploreJuzView, setExploreJuzView,
       getExploreQuranView, setExploreQuranView,
-      getWheelLook, setWheelLook, getWheelShow, setWheelShow,
+      getWheelLook, setWheelLook, getWheelShow, setWheelShow, getWheelNames, setWheelNames,
       getColourWordParts, setColourWordParts,
       getMushafTajweedFontOn, setMushafTajweedFontOn,
       getEndOfUnitPromptOn, setEndOfUnitPromptOn,
@@ -7640,6 +7651,7 @@
       const items = approachStatuses.map(({ trackable, statusId }) => ({
         key: trackable.id,
         number: num(approachNo(trackable)),
+        shortLabel: wheelShortLabel(trackable),
         statusId,
         title: segTitle(langText(trackable.name, getAppLang(), trackable.id), statusId, wheelLabels),
       }));
@@ -7921,7 +7933,10 @@
         angle: i * anglePer + (anglePer - gap) / 2,
         text: `${num(approachNo(tr))}${countsForEachAyah(tr) ? "" : "○"}`,
       }));
-      wheelContainer.innerHTML = renderRingWheel(rings, { centerArabic: "", centerRef: "", numbers });
+      const names = getWheelNames()
+        ? quranTrackables.map((tr, i) => ({ angle: i * anglePer + (anglePer - gap) / 2, arcDeg: anglePer - gap, text: wheelShortLabel(tr) }))
+        : null;
+      wheelContainer.innerHTML = renderRingWheel(rings, { centerArabic: "", centerRef: "", numbers, names });
       attachRingWheelClickHandler(wheelContainer, (key) => { landingRingPickedId = key; renderWheel(); });
 
       const picked = quranTrackables.find((tr) => tr.id === landingRingPickedId);
@@ -8030,6 +8045,27 @@
       btn.addEventListener("click", () => { setWheelLook(btn.dataset.wheelLook); applyWheelLook(); });
     });
     applyWheelLook();
+
+    // Issue #385 -- Names On/Off. The short name printed along an Approach
+    // slice, or "" while Names is off (mastery-wheel.js prints nothing then).
+    function wheelShortLabel(trackable) {
+      return getWheelNames() ? approachShortName(trackable, getAppLang()) : "";
+    }
+    const wheelNamesSwitchEl = document.getElementById("wheelNamesSwitch");
+    function syncWheelNamesSwitch() {
+      const on = getWheelNames();
+      wheelNamesSwitchEl?.querySelectorAll("[data-wheel-names]").forEach((btn) => {
+        btn.setAttribute("aria-pressed", (btn.dataset.wheelNames === "on") === on ? "true" : "false");
+      });
+    }
+    wheelNamesSwitchEl?.querySelectorAll("[data-wheel-names]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        setWheelNames(btn.dataset.wheelNames === "on");
+        syncWheelNamesSwitch();
+        renderWheel(); // My Status and the pop-up read the setting when they draw
+      });
+    });
+    syncWheelNamesSwitch();
 
     /** Shared by the canonical Study-options Approach picker (trackableSelect)
         and the Ayah Note screen's own Approach toggle (round 32) -- whichever
@@ -9322,7 +9358,7 @@
         // look identical on screen, so each slice now FILLS outward from the
         // hub by its Achieved + Mastered share (renderScopedWheel's opt-in
         // `progress`), on the Not-started navy.
-        return { key: trackable.id, number: num(approachNo(trackable)), statusId: "not_started", fill: STATUS_COLORS.not_started, progress: ratio, progressFill: STATUS_COLORS.mastered, label: name, title: `${name} — ${num(percentRounded(ratio, 1))}%` };
+        return { key: trackable.id, number: num(approachNo(trackable)), shortLabel: wheelShortLabel(trackable), statusId: "not_started", fill: STATUS_COLORS.not_started, progress: ratio, progressFill: STATUS_COLORS.mastered, label: name, title: `${name} — ${num(percentRounded(ratio, 1))}%` };
       });
       const wheelHtml = renderScopedWheel(items, { centerLabel: t("My Status"), centerSub: t("Whole Quran") });
       const rows = quranTrackables.map((trackable) => {

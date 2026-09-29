@@ -219,6 +219,42 @@ const GENERIC_MEASURE = en(
   "This approach is about the practice itself -- a specific measure is not required to make progress here."
 );
 
+// Approach short names (issue #385) -- what prints along each slice of the
+// wheels. About 16 characters at most in English. Approach 1 is the Owner's
+// own example. A tenant's own `shortName` on its trackable overrides these.
+const APPROACH_SHORT_NAMES = {
+  approach_01: ["Reading Tajweed", "তাজবিদ তিলাওয়াত"],
+  approach_02: ["Hifz", "হিফজ"],
+  approach_03: ["Read + Meaning", "অর্থসহ পাঠ"],
+  approach_04: ["Word by Word", "শব্দে শব্দে"],
+  approach_05: ["Arabic Writing", "আরবি লিখন"],
+  approach_06: ["Grammar", "ব্যাকরণ"],
+  approach_07: ["Listen Arabic", "আরবি শ্রবণ"],
+  approach_08: ["Listen + Meaning", "অর্থসহ শ্রবণ"],
+  approach_09: ["Dua Memorising", "দোয়া মুখস্থ"],
+  approach_10: ["Journaling", "দিনলিপি"],
+  approach_11: ["Ruqyah", "রুকইয়াহ"],
+  approach_12: ["Calligraphy", "ক্যালিগ্রাফি"],
+  approach_13: ["Stories", "কাহিনি"],
+  approach_14: ["Observation", "পর্যবেক্ষণ"],
+  approach_15: ["Common Sense", "সাধারণ বিবেচনা"],
+  approach_16: ["Deriving Dua", "দোয়া উদ্ভাবন"],
+  approach_17: ["Names of Allah", "আল্লাহর নাম"],
+  approach_18: ["The Prophets", "নবীগণ"],
+  approach_19: ["Miracles", "মু'জিযা"],
+  approach_20: ["Tafakkur", "তাফাক্কুর"],
+  approach_21: ["Tadabbur", "তাদাব্বুর"],
+  approach_22: ["Tafaqquh", "তাফাক্কুহ"],
+  approach_23: ["Dhikr", "যিকর"],
+  approach_24: ["Fiqh to Ruling", "বিধানে রূপান্তর"],
+  approach_25: ["Judgment", "বিচার-বুদ্ধি"],
+  approach_26: ["Authority", "কর্তৃত্ব"],
+  approach_27: ["Discussion", "আলোচনা"],
+  approach_28: ["Living by it", "বাস্তবায়ন"],
+  approach_29: ["Da'wah", "দাওয়াহ"],
+  approach_30: ["Teaching", "শিক্ষাদান"],
+};
+
 export const APPROACH_TEMPLATES = [
   { id: "approach_01", order: 1, section: 1, name: nameLang("Reading (with Tajweed)", "তাজবিদসহ তিলাওয়াত"),
     guide: { what: en("Reciting the Arabic text accurately, applying the rules of tajweed."), how: en("Read aloud from the mushaf, applying each tajweed rule as it appears; use the audio and repeat/loop tools to match a reciter."), measure: en("How much of the assigned portion you can read correctly, with tajweed rules applied, without correction.") },
@@ -316,7 +352,11 @@ export const APPROACH_TEMPLATES = [
   { id: "approach_30", order: 30, section: 7, name: nameLang("Teaching Others", "অপরকে শিক্ষাদান"),
     guide: { what: en("Teaching what has been learned to someone else in a structured way."), how: en("Prepare a short explanation of the topic and teach it to another person."), measure: en("Whether the topic was taught, and whether the learner understood it.") },
     panels: ["notes", "checklist", "timer"] },
-].map((t) => ({ ...t, sectionName: SECTION_NAMES[t.section] }));
+].map((t) => ({
+  ...t,
+  sectionName: SECTION_NAMES[t.section],
+  shortName: { en: APPROACH_SHORT_NAMES[t.id][0], bn: APPROACH_SHORT_NAMES[t.id][1] },
+}));
 
 // ---------------------------------------------------------------------------
 // Topic-renderer trackables (Phase 6+). Quran's 30 Approaches work because

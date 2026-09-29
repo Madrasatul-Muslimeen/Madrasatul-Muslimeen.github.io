@@ -2999,6 +2999,13 @@ export const BN = {
   "Ruku' {n}": "রুকু' {n}", // ?
   "Wheel": "চাকা", // ?
   "Wheel look": "চাকার রূপ", // ?
+  "On": "চালু",
+  "Off": "বন্ধ",
+  "Approach names on the wheel": "চাকায় পদ্ধতির নাম",
+  "Short name": "সংক্ষিপ্ত নাম",
+  "Short name (shown on the wheel)": "সংক্ষিপ্ত নাম (চাকায় দেখানো হয়)",
+  "Short name (English, optional)": "সংক্ষিপ্ত নাম (ইংরেজি, ঐচ্ছিক)",
+  "Short name (Bangla, optional)": "সংক্ষিপ্ত নাম (বাংলা, ঐচ্ছিক)",
   "Dark": "গাঢ়", // ?
   "Light": "হালকা", // ?
   "Colour": "রঙিন", // ?

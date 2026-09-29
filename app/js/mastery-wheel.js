@@ -90,6 +90,41 @@ function ringNumberRotation(angleDeg) {
   return rot;
 }
 
+let sliceNameClipSeq = 0;
+
+/** Issue #385 -- an Approach's short name written ALONG a slice (radially),
+ *  centred in the band r0..r1, upright on both halves of the wheel. It can
+ *  never spill: the font is sized from the slice's own arc width at its inner
+ *  edge, the text is cut with an ellipsis to what the band's depth holds
+ *  (a character-width estimate -- Bangla is wider, so it gets a wider one),
+ *  and, when `clipD` (the slice's own path) is given, a clipPath of the slice
+ *  is the hard stop behind both. The halo (dark stroke behind white fill,
+ *  `paint-order: stroke`) keeps it readable on every status colour and in the
+ *  Dark, Light and Colour looks alike. */
+function sliceNameMarkup({ cx, cy, r0, r1, angle, arcDeg, text, clipD = null }) {
+  const label = String(text ?? "").trim();
+  if (!label) return "";
+  const arcWidth = r0 * (arcDeg * Math.PI / 180);
+  const fs = Math.max(4.5, Math.min(10, arcWidth * 0.62));
+  const bangla = /[ঀ-৿]/.test(label);
+  const charW = fs * (bangla ? 0.78 : 0.6);
+  const avail = Math.max(0, (r1 - r0) - 6);
+  const maxChars = Math.max(1, Math.floor(avail / charW));
+  const chars = Array.from(label);
+  const shown = chars.length > maxChars ? chars.slice(0, Math.max(1, maxChars - 1)).join("").trimEnd() + "…" : label;
+  const p = polarToCartesian(cx, cy, (r0 + r1) / 2, angle);
+  const rot = ringNumberRotation(angle);
+  let clipId = "";
+  let clipDef = "";
+  if (clipD) {
+    clipId = `wsn-clip-${++sliceNameClipSeq}`;
+    clipDef = `<clipPath id="${clipId}"><path d="${clipD}"/></clipPath>`;
+  }
+  const esc = shown.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  const txt = `<text class="wheel-seg-name" x="${p.x}" y="${p.y}" dy="0.35em" text-anchor="middle" font-size="${fs.toFixed(2)}" transform="rotate(${rot} ${p.x} ${p.y})" style="pointer-events:none">${esc}</text>`;
+  return clipId ? `${clipDef}<g clip-path="url(#${clipId})">${txt}</g>` : txt;
+}
+
 function naHatchDefs() {
   return `<pattern id="naHatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
     <rect width="6" height="6" fill="#1b2338"/>
@@ -398,8 +433,14 @@ export function renderScopedWheel(items, { size = 360, centerArabic, centerRef, 
         const rTo = rInner + (rOuter - rInner) * depth;
         progressPath = `<path class="wheel-seg-progress" d="${segmentPath(cx, cy, rInner, rTo, start, end)}" fill="${entry.progressFill ?? STATUS_COLORS.mastered}" style="pointer-events:none"></path>`;
       }
-      return `<path class="wheel-seg" data-key="${entry.key}" d="${segmentPath(cx, cy, rInner, rOuter, start, end)}" fill="${fill}"><title>${entry.title}</title></path>
-      ${progressPath}${numText}${bodyText}`;
+      // Issue #385 -- opt-in short name along the slice (callers pass
+      // `shortLabel` only while the Names toggle is on).
+      const sliceD = segmentPath(cx, cy, rInner, rOuter, start, end);
+      const nameText = entry.shortLabel
+        ? sliceNameMarkup({ cx, cy, r0: rInner, r1: rOuter, angle: mid, arcDeg: end - start, text: entry.shortLabel, clipD: sliceD })
+        : "";
+      return `<path class="wheel-seg" data-key="${entry.key}" d="${sliceD}" fill="${fill}"><title>${entry.title}</title></path>
+      ${progressPath}${numText}${bodyText}${nameText}`;
     })
     .join("");
 
@@ -424,7 +465,7 @@ export function renderScopedWheel(items, { size = 360, centerArabic, centerRef, 
  * ring was tapped. `numbers` ([{ angle, text }]) prints outside the outer
  * ring the way renderScopedWheel prints its slice numbers.
  */
-export function renderRingWheel(rings, { size = 360, centerArabic, centerRef, centerLabel, centerSub, ring = null, numbers = null } = {}) {
+export function renderRingWheel(rings, { size = 360, centerArabic, centerRef, centerLabel, centerSub, ring = null, numbers = null, names = null } = {}) {
   const cx = size / 2, cy = size / 2;
   const ringMargin = ring ? 14 : 0;
   const rOuter = size / 2 - 4 - ringMargin;
@@ -457,12 +498,19 @@ export function renderRingWheel(rings, { size = 360, centerArabic, centerRef, ce
     })
     .join("");
 
+  // Issue #385 -- `names` ([{ angle, arcDeg, text }]) writes each Approach's
+  // short name across the whole band of rings, halo'd so it reads over them.
+  const nameMarkup = (names ?? [])
+    .map(({ angle, arcDeg, text }) => sliceNameMarkup({ cx, cy, r0: rInner, r1: rOuter, angle, arcDeg, text }))
+    .join("");
+
   const ringMarkup = ring ? renderWheelRing(cx, cy, rOuter + 4, rOuter + ringMargin - 2, ring.ratio) : "";
 
   return `<svg class="mastery-wheel mastery-wheel-rings" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
     <defs>${naHatchDefs()}</defs>
     ${ringMarkup}
     ${arcs}
+    ${nameMarkup}
     ${nums}
     ${centerLabelMarkup(cx, cy, rInner, { centerArabic, centerRef, centerLabel, centerSub })}
   </svg>`;
