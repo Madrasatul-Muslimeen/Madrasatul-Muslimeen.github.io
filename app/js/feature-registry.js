@@ -48,7 +48,7 @@ export const FEATURES = Object.freeze([
   { id: "F-021", phase: 2, name: "Module registry (platform-wide, 7 modules)", status: "built" },
   { id: "F-022", phase: 2, name: "Subject tree + ancestorIds + subjectTemplates (platform master list)", status: "built" },
   { id: "F-023", phase: 2, name: "Subject copy-on-write (tenant seeding from templates, edited flag)", status: "built" },
-  { id: "F-024", phase: 2, name: "Trackables — the 30 Approaches in 7 sections, incl. Guide tab + panels", status: "built" },
+  { id: "F-024", phase: 2, name: "Trackables — the Quran Approaches in their sections, incl. Guide tab + panels", status: "built" },
   { id: "F-025", phase: 2, name: "Ladders + levels (schema + tenant-authored CRUD)", status: "built" },
   { id: "F-026", phase: 2, name: "Catalogue admin screen (catalogue.html) + Layer 1 security rules", status: "built" },
   { id: "F-027", phase: 2, name: "Self-check extended for Layer 1", status: "built" },

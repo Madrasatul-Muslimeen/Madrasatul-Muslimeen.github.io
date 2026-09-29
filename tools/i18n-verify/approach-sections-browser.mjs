@@ -52,6 +52,10 @@ for (const lang of ["en", "bn"]) {
   const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, viewport: { width: 390, height: 844 }, extraSeedJs: GROUPS });
   const { page, errors } = await openPage(ctx, "/app/catalogue.html");
   await page.waitForFunction(() => document.querySelectorAll("#trackablesBody tr").length > 0, null, { timeout: 15000 });
+  // 29 Sep 2026: the Catalogue is in tabs now (Modules, Subjects, Approaches,
+  // Ladders & levels), so the Approach controls this suite checks sit behind
+  // the Approaches tab. Updated in place: open that tab first.
+  await page.click('[data-cat-tab="approaches"]');
 
   const head = await page.evaluate(() => {
     const b = document.getElementById("editApproachListTitleBtn").getBoundingClientRect();

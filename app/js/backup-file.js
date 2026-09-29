@@ -362,7 +362,7 @@ export function buildBackupHtml(data) {
 
   ${section("approaches", t("Approaches"), (cat.trackables ?? []).length, table([t("Approach"), t("Id"), t("Subject"), t("Section"), t("Status")],
     [...(cat.trackables ?? [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((tr) => [
-      esc(nameOf(tr.name, tr.id)), esc(tr.id), esc(tr.subjectId ?? "—"), esc(nameOf(tr.section, "—")), esc(statusText(tr.status))])))}
+      esc(nameOf(tr.name, tr.id)), esc(tr.id), esc(tr.subjectId ?? "—"), esc(nameOf(tr.groupName ?? tr.section, "—")), esc(statusText(tr.status))])))}
 
   ${section("qcr", t("Āyah collections (QCR)"), qcr.length, qcr.map((c) => `
     <h3>${esc(nameOf(c.title, c.id))} <span class="count">${t("{n} āyāt", { n: num((c.items ?? []).length) })}${c.status === "archived" ? ` · ${t("archived")}` : ""}</span></h3>
