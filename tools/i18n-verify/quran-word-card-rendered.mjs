@@ -276,9 +276,14 @@ for (const [lang, width, height] of [["en", 1280, 900], ["bn", 1280, 900], ["en"
           // Same line only when the count's vertical CENTRE sits inside the
           // Arabic's box -- the row is align-items:center, so comparing tops
           // reports a false wrap on every single row.
-          const sameLine = ct && ar && mid(ct) >= ar.t && mid(ct) <= ar.b;
+          // UPDATED for the derived-form meaning: the count now follows the
+          // MEANING (which sits between the Arabic and the count), so the gap
+          // is measured from whichever item directly precedes the count.
+          const mean = q(".word-card-form-meaning");
+          const prev = mean || ar;
+          const sameLine = ct && prev && mid(ct) >= prev.t && mid(ct) <= prev.b;
           return {
-            gapArabicToCount: sameLine ? Math.round(ct.l - ar.r) : null,
+            gapArabicToCount: sameLine ? Math.round(ct.l - prev.r) : null,
             gapPosToArabic: pos && ar ? Math.round(ar.l - pos.r) : null,
             moreOnLabelLine: more && pos ? Math.abs(mid(more) - mid(pos)) < 10 : null,
             countWithinCard: ct ? ct.r <= card.right + 1 : true,
