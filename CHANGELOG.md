@@ -18712,3 +18712,13 @@ The Owner's four landing-page asks. Below 721px the Approach view's page scrolls
 - **Not built, recorded:**
   - The Approach strip is not tappable: its 12px dots cannot carry a 40px tap target.
   - The cards keep their existing headers, not the demo's kind/title/subtitle stack.
+
+## v08.112 — 29 Sep 2026 — "40 Ways" everywhere
+
+- The Owner: *"40 ways should reflect Everywhere."*
+- **Landing capsule**: "Approach the Quran in 30 ways" → the tenant's own Approach-list heading (`approachListTitle`, v08.110), default "Quran Approaches - 40 Ways" / "কুরআনের পদ্ধতি - ৪০টি উপায়". Read from the tenant document already fetched at startup — no new read (I9). Editing the heading on the Catalogue renames the capsule.
+- **Catalogue intro**: "the 30 Approaches" → "the Quran Approaches" (Bangla updated).
+- **Default tagline** (`taglines.js` seed): "Quran Approaches — one Ayah, forty ways", translated. A tenant that has saved its own tagline list keeps it; edit it in Taglines.
+- **Admin self-check**: no longer fails unless exactly 30 Approaches in 7 sections — the count and sections are the owner's to change (v08.02, v08.104). It now reports how many Quran Approaches exist.
+- **Checks**: `approach-sections-browser` 35 → 59/0 — the capsule's text at 320/390/1100px in both languages, default and a tenant's own heading, uncut, inside its row, no sideways scroll; removing the render call fails 6. `behaviour.mjs` 43a updated in place for the new wording (984/9, baseline). `layout.mjs` against `main`: NO LAYOUT REGRESSIONS. phone-width 217/0, My Status 88/0, card-look 96/0, catalogue-add-approach 30/0.
+- **Not changed**: the wheel draws one slice per Approach, so it shows 40 slices once 40 Approaches exist.

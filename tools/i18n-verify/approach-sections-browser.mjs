@@ -181,6 +181,36 @@ for (const lang of ["en", "bn"]) {
   await ctx.close();
 }
 
+// v08.112 -- the Owner: "40 ways should reflect Everywhere." The landing
+// capsule reads the same heading: the default in each language, and a
+// tenant's own saved heading once it has one. Checked at 320 and 390px,
+// where the capsule shares its line with "Choose a Unit".
+const OWN_TITLE = { en: "Quran Approaches - 41 Ways", bn: "কুরআনের পদ্ধতি - ৪১টি উপায়" };
+for (const lang of ["en", "bn"]) {
+  for (const own of [false, true]) {
+    for (const width of [320, 390, 1100]) {
+      const seed = own ? `DATA.tenants[0].approachListTitle = ${JSON.stringify(OWN_TITLE)};` : "";
+      const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, viewport: { width, height: 844 }, extraSeedJs: seed });
+      const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+      await page.waitForFunction(() => document.querySelectorAll(".ways-list .way-row").length > 0, null, { timeout: 15000 });
+      const cap = await page.evaluate(() => {
+        const el = document.getElementById("approachListCapsule");
+        const r = el.getBoundingClientRect();
+        const row = el.parentElement.getBoundingClientRect();
+        return { text: el.textContent.trim(), h: r.height, left: r.left, right: r.right, rowLeft: row.left, rowRight: row.right,
+                 overflow: document.documentElement.scrollWidth - innerWidth, cut: el.scrollWidth > el.clientWidth + 1 };
+      });
+      const want = own ? OWN_TITLE[lang] : DEFAULT_TITLE[lang];
+      check(`[${lang} ${width}px ${own ? "own heading" : "default"}] the landing capsule reads "${want}"`, cap.text === want, cap.text);
+      check(`[${lang} ${width}px ${own ? "own heading" : "default"}] ...uncut, inside its row, no sideways scroll`,
+        !cap.cut && cap.left >= cap.rowLeft - 1 && cap.right <= cap.rowRight + 1 && cap.overflow <= 1 && cap.h >= 36, JSON.stringify(cap));
+      const real = errors.filter((e) => !/Failed to load resource: net::ERR_/.test(e));
+      if (real.length) check(`[${lang} ${width}px] no page errors`, false, real.join("; "));
+      await ctx.close();
+    }
+  }
+}
+
 console.log(`\n==== Approach sections and heading (v08.110): ${pass} passed, ${fail} failed ====`);
 await browser.close();
 process.exit(fail ? 1 : 0);

@@ -3802,7 +3802,7 @@
                use, so outside-click, Escape and "only one drops down at a
                time" all come free (I2). -->
           <div id="wheelIntroSettled" class="wheel-intro-settled">
-            <span class="wheel-intro-capsule">Approach the Quran in 30 ways</span>
+            <span id="approachListCapsule" class="wheel-intro-capsule">Quran Approaches - 40 Ways</span>
             <span class="bar-palette-wrap wheel-unit-wrap" data-bar-palette-wrap="wheelUnit">
               <button type="button" id="wheelUnitBtn" class="wheel-intro-capsule wheel-unit-capsule bar-palette-toggle"
                       data-bar-palette-toggle="wheelUnit" aria-haspopup="true" aria-expanded="false">
@@ -5177,7 +5177,7 @@
     import { roleListLabel, roleLabel } from "./js/labels.js";
     import { safeWrite, reportWriteFailure } from "./js/errors.js";
     import { getMyMembershipRoles, hydrateMemberships, pickContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
-    import { getTrackables, syncUnneditedTrackableNames, tenantOwnsSections, sectionsFromTenantDoc } from "./js/catalogue.js";
+    import { getTrackables, syncUnneditedTrackableNames, tenantOwnsSections, sectionsFromTenantDoc, approachListTitleFromTenantDoc } from "./js/catalogue.js";
     import { groupApproachesBySection } from "./js/approach-sections.js";
     import { buildUnitKey, parseUnitKey, STATUSES, rukuIndexInSurah, localRukuIndexFromTable, statusLabelsById, statusLabel } from "./js/unit-keys.js";
     import { chunkKeyFor, getRecordsChunk, claimStatus, getSubjectConfirmationOverride, computeConfirmationRequired, listAllRecordsForPerson } from "./js/records.js";
@@ -5952,6 +5952,19 @@
     let noteApproachCardOpen = false;
     let tenantWeekStartsOn = 6;
     let currentTenantDoc = null;
+    // v08.112 -- the Owner: "40 ways should reflect Everywhere." The landing
+    // capsule reads the SAME heading the Catalogue's Approach list carries
+    // (v08.110's approachListTitle on the tenant document, already read -- no
+    // new read), so renaming it there renames it here. Until the tenant
+    // loads, the markup's default is translated by translateStatic() as usual.
+    function renderApproachListCapsule() {
+      const el = document.getElementById("approachListCapsule");
+      if (!el) return;
+      const stored = currentTenantDoc?.approachListTitle;
+      el.textContent = stored && (stored.en || stored.bn)
+        ? langText(stored, getAppLang(), stored.en || stored.bn)
+        : t(approachListTitleFromTenantDoc(null).en);
+    }
     // Follow-up round: Map(subjectId -> courseOffer contextId) for
     // selectedPersonId -- same mechanism topic-study.js/routine-study.js
     // already use (course-offers.js's programSubjectMapFromEnrollments()).
@@ -7357,6 +7370,7 @@
         tenantData = tenantDataResult;
       }
       currentTenantDoc = tenantData;
+      renderApproachListCapsule();
       tenantWeekStartsOn = currentTenantDoc?.weekStartsOn ?? 6;
       renderPersonSelectOptions();
       selectedPersonId = personSelect.value || null; // whichever person is actually visible/selected (round 11: may be scoped by an active "View as" preview)
