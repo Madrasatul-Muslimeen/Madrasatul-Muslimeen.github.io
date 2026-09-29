@@ -70,7 +70,7 @@ async function landingAfter(writes, width = 1100) {
     list: [...document.querySelectorAll(".ways-list .way-row .name")].map((e) => e.textContent.trim()),
     // #400 put a caret and a count badge into each landing heading; read the
     // NAME only (updated in place, 29 Sep 2026).
-    groups: [...document.querySelectorAll(".ways-list .ways-group")].map((e) => (e.querySelector(".ways-group-name") ?? e).textContent.trim()).join(","),
+    groups: [...document.querySelectorAll(".ways-list .ways-group")].map((e) => { const n = e.querySelector(".ways-group-name"); if (!n) return e.textContent.trim(); const c = n.cloneNode(true); c.querySelector(".ways-count")?.remove(); return c.textContent.trim(); }).join(","), // #407: the count box is inside the name now; read the name without it
   }));
   await ctx.close();
   return out;

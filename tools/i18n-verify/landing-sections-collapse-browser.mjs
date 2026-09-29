@@ -14,17 +14,22 @@ let pass = 0, fail = 0;
 const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
 
 // [section number, English name, Bangla name, Approaches in it] -- hand-counted.
+// Issue #407 (Owner, 29 Sep 2026): the seed is now the Owner's REAL eight section
+// names and counts, read off their screenshot (was invented names, counts
+// 6,5,7,4,5,6,4,3). The badge now shows the section NUMBER (S1..S8), the count
+// moved into a square box at the end of the name, so the old assertion
+// "badge == count" is replaced in place by the assertions further down.
 const SECTIONS = [
   [1, "Building Foundation / Learning Tools", "ভিত্তি গড়া / শেখার সরঞ্জাম", 6],
-  [2, "Engagement with the Text", "পাঠের সাথে সম্পৃক্ততা", 5],
-  [3, "Understanding of the Scholars", "আলেমদের বোঝাপড়া", 7],
-  [4, "Applied Threads Across Subjects", "বিষয়জুড়ে প্রয়োগের সূত্র", 4],
-  [5, "Reflection and Contemplation", "প্রতিফলন ও গভীর চিন্তা", 5],
-  [6, "Critical Reasoning: Judgement / Authority", "সমালোচনামূলক যুক্তি: বিচার / কর্তৃত্ব", 6],
-  [7, "Action and Living It Out", "আমল ও জীবনে বাস্তবায়ন", 4],
-  [8, "Sharing and Teaching Others", "অন্যকে শেখানো ও ভাগ করা", 3],
+  [2, "Engagement / Attachment", "সম্পৃক্ততা / সংযুক্তি", 7],
+  [3, "Critical Reasoning: Nazar / 'Aql", "সমালোচনামূলক যুক্তি: নজর / আকল", 3],
+  [4, "Critical Reasoning: Applied Threads", "সমালোচনামূলক যুক্তি: প্রয়োগের সূত্র", 4],
+  [5, "Critical Reasoning: Tafakkur / Tadabbur", "সমালোচনামূলক যুক্তি: তাফাক্কুর / তাদাব্বুর", 4],
+  [6, "Critical Reasoning: Judgement / Authority", "সমালোচনামূলক যুক্তি: বিচার / কর্তৃত্ব", 3],
+  [7, "Understanding of the Scholars", "আলেমদের বোঝাপড়া", 9],
+  [8, "A'mal / Application", "আমল / প্রয়োগ", 4],
 ];
-const TOTAL = 40; // 6+5+7+4+5+6+4+3, written out
+const TOTAL = 40; // 6+7+3+4+4+3+9+4, written out
 const BN_DIGITS = { 0: "০", 1: "১", 2: "২", 3: "৩", 4: "৪", 5: "৫", 6: "৬", 7: "৭", 8: "৮", 9: "৯" };
 const bnNum = (n) => String(n).replace(/\d/g, (d) => BN_DIGITS[d]);
 
@@ -61,14 +66,87 @@ const state = (page) => page.evaluate(() => {
   const list = document.querySelector("#wheelSidebarContainer .ways-list");
   const btns = [...list.querySelectorAll(".ways-group-btn")];
   return {
-    btns: btns.map((b) => ({ g: b.dataset.group, expanded: b.getAttribute("aria-expanded"), count: b.querySelector(".ways-count").textContent.trim(),
-                              name: b.querySelector(".ways-group-name").textContent.trim(), h: b.getBoundingClientRect().height, w: b.getBoundingClientRect().width })),
+    btns: btns.map((b) => {
+      const nameEl = b.querySelector(".ways-group-name");
+      const countEl = b.querySelector(".ways-count");
+      const clone = nameEl.cloneNode(true);
+      clone.querySelector(".ways-count").remove();
+      // geometry: Range rects over the name's own text (not the box's), the last
+      // word's rect, and the box's rect
+      const cr = countEl.getBoundingClientRect();
+      const rects = [];
+      const walker = document.createTreeWalker(nameEl, NodeFilter.SHOW_TEXT);
+      let lastWordRect = null;
+      for (let tn = walker.nextNode(); tn; tn = walker.nextNode()) {
+        if (countEl.contains(tn) || !tn.textContent.trim()) continue;
+        const r = document.createRange();
+        r.selectNodeContents(tn);
+        for (const x of r.getClientRects()) if (x.width > 0) rects.push(x);
+        lastWordRect = [...r.getClientRects()].filter((x) => x.width > 0).pop() || lastWordRect;
+      }
+      const badgeEl = b.querySelector(".ways-sec-badge");
+      const br = badgeEl && badgeEl.getBoundingClientRect();
+      return {
+        g: b.dataset.group, expanded: b.getAttribute("aria-expanded"),
+        count: countEl.textContent.trim(), countAria: countEl.getAttribute("aria-label"),
+        badge: badgeEl ? badgeEl.textContent.trim() : null,
+        badgeW: br ? br.width : 0, badgeH: br ? br.height : 0, badgeClip: badgeEl ? badgeEl.scrollWidth > badgeEl.clientWidth + 1 : null,
+        name: clone.textContent.trim(),
+        // the box is the LAST thing inside the name, and sits on the name's last line
+        boxLast: nameEl.lastElementChild.lastElementChild === countEl,
+        // last word is on the name's last line, the box's centre is inside that
+        // line's height, and the box starts at or after the last word's right edge
+        lastWordOnLastLine: Math.abs(lastWordRect.top - Math.max(...rects.map((x) => x.top))) < 3,
+        boxOnLastLine: cr.top + cr.height / 2 > lastWordRect.top && cr.top + cr.height / 2 < lastWordRect.bottom,
+        boxAfterText: cr.left >= lastWordRect.right - 1,
+        boxRadius: parseFloat(getComputedStyle(countEl).borderTopLeftRadius), boxH: cr.height, boxW: cr.width,
+        nameLines: new Set(rects.map((x) => Math.round(x.top))).size,
+        h: b.getBoundingClientRect().height, w: b.getBoundingClientRect().width,
+      };
+    }),
     shown: [...list.querySelectorAll(".way-row")].filter((r) => getComputedStyle(r).display !== "none").length,
     total: list.querySelectorAll(".way-row").length,
     openGroups: btns.filter((b) => b.getAttribute("aria-expanded") === "true").map((b) => b.dataset.group),
     listW: list.getBoundingClientRect().width,
   };
 });
+
+// WCAG contrast of the heading's section name (and count text) against what is
+// really painted behind it: hide the text, screenshot the heading, sample every
+// pixel of it, and take the WORST ratio against the text colour (the card is a
+// gradient, so one background colour would be a guess).
+const lum = ([r, g, b]) => { const f = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
+const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+const rgbOf = (s) => s.match(/\d+(\.\d+)?/g).slice(0, 3).map(Number);
+async function sectionColour(page) {
+  const btn = page.locator(".ways-group-btn").first();
+  const info = await page.evaluate(() => {
+    const b = document.querySelector(".ways-group-btn");
+    return { section: getComputedStyle(b.querySelector(".ways-group-name")).color, approach: getComputedStyle(document.querySelector(".way-row .name")).color,
+             box: getComputedStyle(b.querySelector(".ways-count")).color,
+             all: getComputedStyle(document.querySelector(".ways-toggle-all")).color };
+  });
+  // hide every glyph AND the box's border, so what is left is the paint behind the text
+  await page.addStyleTag({ content: ".ways-group-btn *, .ways-group-btn { color: transparent !important; } .ways-count { border-color: transparent !important; } .ways-toggle-all { color: transparent !important; border-color: transparent !important; }" });
+  const shot = async (sel, inset) => {
+    const r = await page.locator(sel).first().boundingBox();
+    const png = (await page.screenshot({ clip: { x: r.x + inset, y: r.y + inset, width: r.width - 2 * inset, height: r.height - 2 * inset } })).toString("base64");
+    return page.evaluate(async (b64) => {
+      const img = new Image(); img.src = "data:image/png;base64," + b64; await img.decode();
+      const c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
+      const g = c.getContext("2d"); g.drawImage(img, 0, 0);
+      const d = g.getImageData(0, 0, c.width, c.height).data; const out = [];
+      for (let i = 0; i < d.length; i += 4) out.push([d[i], d[i + 1], d[i + 2]]);
+      return out;
+    }, png);
+  };
+  const namePx = await shot(".ways-group-btn .ways-group-name", 0);
+  const boxPx = await shot(".ways-group-btn .ways-count", 2);
+  const allPx = await shot(".ways-toggle-all", 2);
+  await page.evaluate(() => { document.querySelectorAll("style").forEach((s) => s.textContent.startsWith(".ways-group-btn *, .ways-group-btn { color: transparent") && s.remove()); });
+  const worstOf = (col, px) => Math.min(...px.map((p) => ratio(rgbOf(col), p)));
+  return { section: info.section, approach: info.approach, worst: worstOf(info.section, namePx), boxWorst: worstOf(info.box, boxPx), allWorst: worstOf(info.all, allPx) };
+}
 
 for (const lang of ["en", "bn"]) {
   for (const width of [390, 1280]) {
@@ -87,8 +165,37 @@ for (const lang of ["en", "bn"]) {
     check(`${tag} collapsed on load: every section aria-expanded=false, no row displayed (computed)`,
       s.btns.every((b) => b.expanded === "false") && s.shown === 0, JSON.stringify(s));
     // 2. badge = hand count, then the real name; heading is a >=40px full-row button
-    check(`${tag} each badge equals the hand-counted number, in this language's digits`,
-      s.btns.every((b, i) => b.count === digits(SECTIONS[i][3])), JSON.stringify(s.btns.map((b) => b.count)));
+    // #407: the round badge is the section NUMBER (S1..S8 / বি১..বি৮); the count is in a square box.
+    const badgeText = (n) => (lang === "bn" ? "বি" + bnNum(n) : "S" + n);
+    check(`${tag} the round badges read S1..S8 (bn বি১..বি৮), written out by hand`,
+      JSON.stringify(s.btns.map((b) => b.badge)) === JSON.stringify(lang === "bn"
+        ? ["বি১", "বি২", "বি৩", "বি৪", "বি৫", "বি৬", "বি৭", "বি৮"]
+        : ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8"]), JSON.stringify(s.btns.map((b) => b.badge)));
+    check(`${tag} the badge is not squashed: >=28px wide, 30px tall, its text not clipped`,
+      s.btns.every((b) => b.badgeW >= 28 && b.badgeH >= 28 && b.badgeClip === false), JSON.stringify(s.btns.map((b) => [b.badgeW, b.badgeH, b.badgeClip])));
+    check(`${tag} each box holds the hand-counted number (6,7,3,4,4,3,9,4), in this language's digits`,
+      JSON.stringify(s.btns.map((b) => b.count)) === JSON.stringify(lang === "bn"
+        ? ["৬", "৭", "৩", "৪", "৪", "৩", "৯", "৪"] : ["6", "7", "3", "4", "4", "3", "9", "4"]), JSON.stringify(s.btns.map((b) => b.count)));
+    check(`${tag} each box is labelled ("6 Approaches" / "৬টি পদ্ধতি")`,
+      s.btns.every((b, i) => b.countAria === (lang === "bn" ? `${bnNum(SECTIONS[i][3])}টি পদ্ধতি` : `${SECTIONS[i][3]} Approaches`)), JSON.stringify(s.btns.map((b) => b.countAria)));
+    check(`${tag} the box is the last thing in the name, after the last word, on the name's last line`,
+      s.btns.every((b) => b.boxLast && b.lastWordOnLastLine && b.boxOnLastLine && b.boxAfterText), JSON.stringify(s.btns.map((b) => [b.boxLast, b.lastWordOnLastLine, b.boxOnLastLine, b.boxAfterText])));
+    check(`${tag} the box is SQUARE-cornered (radius under half its height), not round`,
+      s.btns.every((b) => b.boxRadius > 0 && b.boxRadius <= 6 && b.boxRadius < b.boxH / 2 - 2), JSON.stringify(s.btns.map((b) => [b.boxRadius, b.boxH])));
+    // colour: section name vs Approach name, measured, in both looks
+    for (const look of ["night", "light"]) {
+      await page.evaluate(async (l) => { (await import("/app/js/prefs.js")).setCardLook(l); }, look);
+      await page.waitForTimeout(200);
+      const c = await sectionColour(page);
+      check(`${tag} [${look}] section-name colour differs from the Approach-name colour`, c.section !== c.approach, JSON.stringify(c));
+      check(`${tag} [${look}] section name contrast >= 4.5:1 against the heading's real background (worst pixel ${c.worst.toFixed(2)})`, c.worst >= 4.5, JSON.stringify(c));
+      check(`${tag} [${look}] the count box text contrast >= 4.5:1 too (${c.boxWorst.toFixed(2)})`, c.boxWorst >= 4.5, JSON.stringify(c));
+      // Architect review of #407: the v08.117 Open all button kept the Night gold in Light (about 1.4:1 on white)
+      check(`${tag} [${look}] the Open all button text contrast >= 4.5:1 (${c.allWorst.toFixed(2)})`, c.allWorst >= 4.5, JSON.stringify(c));
+      if (width === 390 || width === 1280) await page.screenshot({ path: `/tmp/landing-sections-${lang}-${width}-${look}.png` });
+    }
+    await page.evaluate(async () => { (await import("/app/js/prefs.js")).setCardLook("night"); });
+    await page.waitForTimeout(200);
     check(`${tag} each heading reads the section's own name`, s.btns.every((b, i) => b.name === nameOf(i)), JSON.stringify(s.btns.map((b) => b.name)));
     check(`${tag} badges add up to the 40 Approaches`, SECTIONS.reduce((a, x) => a + x[3], 0) === TOTAL);
     check(`${tag} headings are >=40px tall and span the full list width`, s.btns.every((b) => b.h >= 40 && b.w >= s.listW - 8), JSON.stringify(s.btns.map((b) => [b.h, b.w, s.listW])));
@@ -96,7 +203,7 @@ for (const lang of ["en", "bn"]) {
     // 3. toggle opens and closes
     await page.click('.ways-group-btn[data-group="s3"]');
     s = await state(page);
-    check(`${tag} opening section 3 shows exactly its 7 rows and aria-expanded=true`, s.shown === 7 && JSON.stringify(s.openGroups) === '["s3"]', JSON.stringify([s.shown, s.openGroups]));
+    check(`${tag} opening section 3 shows exactly its 3 rows and aria-expanded=true`, s.shown === 3 && JSON.stringify(s.openGroups) === '["s3"]', JSON.stringify([s.shown, s.openGroups]));
     await page.click('.ways-group-btn[data-group="s3"]');
     s = await state(page);
     check(`${tag} tapping again closes it`, s.shown === 0 && s.openGroups.length === 0, JSON.stringify([s.shown, s.openGroups]));
@@ -110,12 +217,12 @@ for (const lang of ["en", "bn"]) {
     const redrawn = await page.evaluate(() => !document.querySelector("#wheelSidebarContainer .ways-list").dataset.marker);
     s = await state(page);
     check(`${tag} (positive control) the unit change really rebuilt the list`, redrawn);
-    check(`${tag} after the redraw sections 1 and 6 are STILL open, the rest closed, 12 rows shown`,
-      JSON.stringify(s.openGroups) === '["s1","s6"]' && s.shown === 12, JSON.stringify([s.openGroups, s.shown]));
+    check(`${tag} after the redraw sections 1 and 6 are STILL open, the rest closed, 9 rows shown`,
+      JSON.stringify(s.openGroups) === '["s1","s6"]' && s.shown === 9, JSON.stringify([s.openGroups, s.shown]));
     await setUnit(page, "ayah");
     await page.waitForTimeout(300);
     s = await state(page);
-    check(`${tag} ...and after switching back too`, JSON.stringify(s.openGroups) === '["s1","s6"]' && s.shown === 12, JSON.stringify([s.openGroups, s.shown]));
+    check(`${tag} ...and after switching back too`, JSON.stringify(s.openGroups) === '["s1","s6"]' && s.shown === 9, JSON.stringify([s.openGroups, s.shown]));
 
     // 5. Open all / Close all
     const allBtn = await page.evaluate(() => { const b = document.querySelector(".ways-toggle-all"); return { h: b.getBoundingClientRect().height, text: b.textContent.trim() }; });

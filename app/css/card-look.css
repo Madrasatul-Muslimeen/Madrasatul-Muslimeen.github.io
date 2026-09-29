@@ -142,6 +142,12 @@
    ("a palette belongs to a surface"): dark text on light tints. The wheel's
    five STATUS_COLORS are not touched; only the list's text chips are. */
 [data-card-look="light"] .ways-group { color: #1F3A6E; }
+/* 29 Sep 2026: the section name is gold in Night; in Light the same gold family,
+   darkened for a white surface (measured >= 4.5:1), and not the Approach text colour. */
+[data-card-look="light"] .ways-group-name { color: #7a5410; }
+[data-card-look="light"] .ways-count { color: #7a5410; border-color: #8a6a35; }
+/* The Open all / Close all button kept the Night gold in Light: 1.45:1 on white (measured). */
+[data-card-look="light"] .ways-toggle-all { color: #7a5410; border-color: #8a6a35; }
 [data-card-look="light"] .way-row { background: #f6f2e4; }
 [data-card-look="light"] .way-row:hover { background: #efe8d2; border-color: rgba(31, 58, 110, 0.25); }
 [data-card-look="light"] .chip-not_applicable { background: transparent; color: #555b66; border-color: rgba(0, 0, 0, 0.3); }
