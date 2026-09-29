@@ -685,6 +685,24 @@ export function tenantOwnsSections(tenantData) {
   return Array.isArray(tenantData?.approachSections) && tenantData.approachSections.length > 0;
 }
 
+/** v08.110 -- the Approach list's own heading, the Owner's (29 Sep 2026):
+    "'Quran Approaches - 40 Ways' (number could be changed, so make it
+    editable)". Stored as an additive `approachListTitle` {en, bn} on the
+    tenant document (owner/prime-writable, unrestricted on fields -- the same
+    home as `approachSections`); absent means the Owner's own wording. */
+export const DEFAULT_APPROACH_LIST_TITLE = Object.freeze({ en: "Quran Approaches - 40 Ways" });
+
+export function approachListTitleFromTenantDoc(tenantData) {
+  const stored = tenantData?.approachListTitle;
+  return stored && (stored.en || stored.bn) ? stored : DEFAULT_APPROACH_LIST_TITLE;
+}
+
+export async function saveApproachListTitle(db, tenantId, title, uid) {
+  const clean = {};
+  for (const l of ["en", "bn"]) if (typeof title?.[l] === "string" && title[l].trim()) clean[l] = title[l].trim();
+  return updateDocument(db, TENANT.TENANTS, tenantId, { approachListTitle: clean });
+}
+
 export async function getTenantDoc(db, tenantId) {
   const snap = await getDoc(doc(db, TENANT.TENANTS, tenantId));
   return snap.exists() ? snap.data() : null;

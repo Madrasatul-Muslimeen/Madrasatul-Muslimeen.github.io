@@ -510,14 +510,21 @@ export function renderWheelSidebar(items, labelsById) {
   // tools/i18n-verify/layout.mjs counts it to report how many Approach rows
   // are visible above the dock -- so giving a heading that class would inflate
   // every historical row measurement this project has recorded.
+  //
+  // v08.110 -- `groupKey` (optional) tells two sections apart even if they
+  // share a name, and an item with `emptyNote` is a section with NO
+  // Approaches yet (one the owner has just added): its heading is drawn with
+  // that note under it, and no row -- the note is not a `.way-row` either.
   let lastGroup = null;
   const rows = items
     .map((item) => {
       let heading = "";
-      if (item.groupLabel && item.groupLabel !== lastGroup) {
-        lastGroup = item.groupLabel;
+      const groupKey = item.groupKey ?? item.groupLabel;
+      if (item.groupLabel && groupKey !== lastGroup) {
+        lastGroup = groupKey;
         heading = `<div class="ways-group">${item.groupLabel}</div>`;
       }
+      if (item.emptyNote) return `${heading}<div class="ways-group-empty">${item.emptyNote}</div>`;
       return `${heading}<div class="way-row" data-key="${item.key}">
         <span class="badge">${item.number ?? item.key}</span>
         <span class="name">${item.label}</span>

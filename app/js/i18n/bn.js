@@ -1503,8 +1503,15 @@ export const BN = {
   // v08.02 -- the Approach Sections editor (catalogue.html) and the section
   // headings the Mastery Wheel's sidebar now carries.
   "Approach Sections": "পদ্ধতির বিভাগসমূহ",
-  "The 7 groups the 30 Approaches are organised into. Renaming one here renames it everywhere it appears — this list, the Approach picker, Explore, and the Mastery Wheel's own sidebar.":
-    "৩০টি পদ্ধতি যে ৭টি দলে সাজানো, সেগুলো। এখানে কোনো একটির নাম বদলালে যেখানেই এটি দেখা যায় সেখানেই বদলে যাবে — এই তালিকা, পদ্ধতি নির্বাচক, এক্সপ্লোর, এবং মাস্টারি হুইলের নিজস্ব পাশের তালিকা।",
+  "The groups the Approaches are organised into. Renaming or adding one here changes it everywhere it appears — the Approach list below, the Approach picker, Explore, and the Mastery Wheel's own list — once you press Save sections.":
+    "পদ্ধতিগুলো যে দলগুলোতে সাজানো, সেগুলো। এখানে কোনো একটির নাম বদলালে বা নতুন যোগ করলে, \"বিভাগগুলো সংরক্ষণ করুন\" চাপার পর যেখানেই এটি দেখা যায় সেখানেই বদলে যাবে — নিচের পদ্ধতির তালিকা, পদ্ধতি নির্বাচক, এক্সপ্লোর, এবং মাস্টারি হুইলের নিজস্ব তালিকা।",
+  // v08.110 -- the Approach list's editable heading, and empty sections.
+  "Quran Approaches - 40 Ways": "কুরআনের পদ্ধতি - ৪০টি উপায়",
+  "✎ Edit heading": "✎ শিরোনাম সম্পাদনা",
+  "Save heading": "শিরোনাম সংরক্ষণ করুন",
+  "The heading needs a name in at least one language.": "শিরোনামের অন্তত একটি ভাষায় নাম থাকা দরকার।",
+  "No Approaches in this section yet.": "এই বিভাগে এখনো কোনো পদ্ধতি নেই।",
+  "Add one with the form below, or move one here with Edit.": "নিচের ফর্ম দিয়ে একটি যোগ করুন, অথবা সম্পাদনা দিয়ে একটি এখানে সরিয়ে আনুন।",
   "Approaches": "পদ্ধতিসমূহ",
   "Add a section": "একটি বিভাগ যোগ করুন",
   "Position in section": "বিভাগের ভেতরে অবস্থান",
@@ -1514,8 +1521,8 @@ export const BN = {
   "A section needs a name in at least one language.":
     "একটি বিভাগের অন্তত একটি ভাষায় নাম থাকা দরকার।",
   "Other trackables": "অন্যান্য ট্র্যাকযোগ্য বিষয়",
-  "one per module, outside the 30 Approaches. Editable, but they have no position among the Approaches.":
-    "প্রতি মডিউলে একটি, ৩০টি পদ্ধতির বাইরে। সম্পাদনাযোগ্য, তবে পদ্ধতিগুলোর ক্রমে এদের কোনো অবস্থান নেই।",
+  "one per module, outside the Approaches. Editable, but they have no position among the Approaches.":
+    "প্রতি মডিউলে একটি, পদ্ধতিগুলোর বাইরে। সম্পাদনাযোগ্য, তবে পদ্ধতিগুলোর ক্রমে এদের কোনো অবস্থান নেই।",
   "Show removed Approaches": "সরানো পদ্ধতিগুলো দেখান",
   "Approach name": "পদ্ধতির নাম",
   "Guide — What": "নির্দেশিকা — কী",

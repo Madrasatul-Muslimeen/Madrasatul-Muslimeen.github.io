@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.109",
+    "version": "08.110",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1085,8 +1085,20 @@
     {
       "version": "08.109",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Hadith commentary link, Dawah empty line, Note side pane pressed button and menu Legacy links readable.",
+      "integration": {
+        "authorizedOn": "2026-09-29",
+        "integratedOn": "2026-09-29",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "08.110",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Editable Approach list heading; added and renamed sections shown in the Catalogue and landing lists.",
       "integration": {
         "authorizedOn": "2026-09-29",
         "integratedOn": "2026-09-29",
@@ -1095,8 +1107,9 @@
       }
     }
   ],
-  "nextUnallocated": "08.110",
+  "nextUnallocated": "08.111",
   "nextUnallocatedNote": [
+    "v08.110 was allocated to Approach list heading editable, sections reach every Approach list, 2026-09-29.",
     "v08.109 was allocated to three old readability shortfalls fixed, 2026-09-29.",
     "v08.108 was allocated to Ruku'/Page Mark as read on, Unit Card Mark as read fixed, 2026-09-29.",
     "v08.107 was allocated to card look parts 3-4, issue #354, 2026-09-28.",
