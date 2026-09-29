@@ -68,7 +68,9 @@ async function landingAfter(writes, width = 1100) {
     wheel: [...document.querySelectorAll(".wheel-seg-name")].map((e) => e.textContent.trim()),
     nums: [...document.querySelectorAll(".wheel-seg-num")].map((e) => e.textContent.trim()).join(","),
     list: [...document.querySelectorAll(".ways-list .way-row .name")].map((e) => e.textContent.trim()),
-    groups: [...document.querySelectorAll(".ways-list .ways-group")].map((e) => e.textContent.trim()).join(","),
+    // #400 put a caret and a count badge into each landing heading; read the
+    // NAME only (updated in place, 29 Sep 2026).
+    groups: [...document.querySelectorAll(".ways-list .ways-group")].map((e) => (e.querySelector(".ways-group-name") ?? e).textContent.trim()).join(","),
   }));
   await ctx.close();
   return out;

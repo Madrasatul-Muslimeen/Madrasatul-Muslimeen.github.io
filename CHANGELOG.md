@@ -18768,3 +18768,14 @@ Built by the Builder (issue #399, run 621, branch `builder/issue-399-run-621`; n
 - **Collapsible headings**: closed by default (session-only; kept open across edits, adds, moves), ≥40px toggle with caret and count, Open all / Close all, the edited or moved Approach's section opens.
 - **Drag**: ⠿ handle in the Sections editor and on each list heading; Pointer Events (touch works); drop line; Escape and a no-op drop write nothing; owners only.
 - **Checks**: `catalogue-sections-browser` 126/0 (new; hand-written wheel orders, mouse and real touch drag). Architect's mutations: no name fallback → 124/2; a move that does not save → 111/15. catalogue-tabs 56/0, approach-sections 59/0, add-approach 30/0, short-names 70/0 (updated in place to open sections first), phone-width 217/0, behaviour 1003/4 baseline.
+
+## v08.117 — 29 Sep 2026 — Landing Approach list: sections closed by default, count in front
+
+The Owner (29 Sep 2026, phone screenshot of the landing page): *"How about making the sections in Landing page load on collapsed by-default having expanding option. Then, approach numbers quantity is mention in front of the section names."*
+
+Built by the Builder (issue #400, PR #401); reviewed and allocated by the Architect.
+
+- **`app/js/mastery-wheel.js`**: `renderWheelSidebar(items, labelsById, { collapsible })`, opt-in, so Explore's sidebars are unchanged. New `setWheelSectionOpen`, `attachWheelSectionToggles`. Heading = ≥40px button, `aria-expanded`, caret, count badge (`num()`, Bangla digits), name.
+- **`app/quranrevival.html`**: `landingOpenSections` outside `renderWheel()`, so open sections survive every redraw; closed on each load; a wheel-slice tap opens its section; one Open all / Close all button.
+- **Review**: `layout.mjs` vs the `main` shim, only the intended flags (fewer visible rows, more room above the dock), heading and wheel unchanged; Light and Colour looks checked in both languages; `catalogue-sections-browser` updated in place to read the heading's name now that it carries a caret and count.
+- **Checks**: landing-sections-collapse 84/0 (new; 3 mutations), approach-sections 59/0, catalogue-sections 126/0, short-names 70/0, unit-rings 106/0, card-look 96/0, phone-width 217/0, behaviour 1003/4 baseline.
