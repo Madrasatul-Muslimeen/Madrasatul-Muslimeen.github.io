@@ -544,8 +544,6 @@ export const BN = {
   // --- The wheel's own one-time intro button + settled caption -----------
   "Study Quran": "কুরআন অধ্যয়ন করুন", // ?
   "ONE Ayah a Day": "প্রতিদিন একটি আয়াত", // ?
-  "Approach an Ayah in 30 ways": "একটি আয়াতকে ৩০ উপায়ে অধ্যয়ন করুন", // ?
-  "Approach the Quran in 30 ways": "কুরআনকে ৩০ উপায়ে অধ্যয়ন করুন", // ?
   // 6 Sep 2026 -- the capsule beside the caption, which is what makes every
   // Study Unit approachable from the Approach view rather than only an ayah.
   "Choose a Unit": "একটি একক বাছুন", // ?
