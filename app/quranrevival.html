@@ -2054,7 +2054,14 @@
   .opt-bar-listen { display: flex; flex-wrap: nowrap; gap: 0.35rem 0.4rem; align-items: end; margin: 0.35rem 0 0.1rem; }
   .opt-bar-listen > .opt-cell { flex: 1 1 0; }
   .opt-bar-listen > .opt-cell-num { flex: 0 0 3.6rem; }
-  .opt-bar-listen > .opt-cell-loop, .opt-bar-listen > .opt-cell-play { flex: 0 0 auto; }
+  .opt-bar-listen > .opt-cell-actions { flex: 0 0 auto; }
+  /* Loop, Read and Play are ONE cluster that never shrinks: the fields to its
+     left give way, the cluster does not. Below 480px it takes a line of its
+     own and the two buttons share it equally -- one deliberate breakpoint,
+     so nothing wraps wherever it happens to land. */
+  .opt-actions { display: flex; align-items: center; gap: 0.4rem; }
+  .opt-actions-spacer { margin: 0; }
+  .opt-act-btn { min-height: 40px; height: 40px; padding: 0.2rem 0.7rem; white-space: nowrap; flex: 0 0 auto; }
   /* MEASURED 22 Sep 2026, running panel.mjs in Bangla (it had only ever been
      run in English before -- a check that runs in one language measures one
      language): #drillModeSelect is the one cell here that actually absorbs
@@ -2066,6 +2073,9 @@
   @media (max-width: 480px) {
     .opt-bar-listen { flex-wrap: wrap; }
     .opt-bar-listen > .opt-cell-mode { flex: 1 1 auto; min-width: 8rem; }
+    .opt-bar-listen > .opt-cell-actions { flex: 1 1 100%; }
+    .opt-actions-spacer { display: none; }
+    .opt-actions .opt-act-btn { flex: 1 1 0; min-width: 0; }
   }
   .loop-inline { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; font-weight: 400; white-space: nowrap; height: 1.85rem; margin: 0; }
   .reading-ticks label, .reciter-ticks label, .fs-ticks label { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.82rem; font-weight: 400; margin: 0; }
@@ -8707,6 +8717,13 @@
       // against a 0-width container) -- renderWheel() lays it out for real
       // now that it is shown again, same as the new Approach tab does below.
       if (stageView === "read") { setStageView("wheel"); renderWheel(); return; }
+      openReadingScreen();
+    });
+
+    /** Close every drawer and show the Read view at the selected unit. The one
+        route into Read: the Study menu's Read item and Study options' own
+        Play / Read buttons all come through here, so they cannot drift. */
+    function openReadingScreen() {
       closeAllPanels();
       // Opening the reading screen is the last gesture before Play for anyone
       // who never opens Study options -- one of the places round 19 warms the
@@ -8742,7 +8759,7 @@
       // back. Now that Mushaf is a tick rather than a unit-type accident, this
       // applies to a single ayah's page too.
       if (mushafToggle.checked) setImmersive(true);
-    });
+    }
 
     tabStudyBtn.addEventListener("click", () => {
       const opening = studyPillarMenu.hidden;
@@ -18500,14 +18517,14 @@
         <div class="opt-bar opt-bar-listen">
           <div class="opt-cell opt-cell-num"><label for="drillRepeatSelect">${t("Repeat")}</label><select id="drillRepeatSelect">${[1, 2, 3, 5, 10].map((n) => `<option value="${n}">${num(n)}×</option>`).join("")}</select></div>
           <div class="opt-cell opt-cell-mode"><label for="drillModeSelect">${t("Mode")}</label><select id="drillModeSelect"><option value="each">${t("Each Ayah")}</option><option value="whole">${t("Whole Unit")}</option></select></div>
-          <div class="opt-cell opt-cell-loop"><label>&nbsp;</label><label class="loop-inline"><input type="checkbox" id="loopToggle" /> ${t("Loop")}</label></div>
-          <div class="opt-cell opt-cell-play"><label>&nbsp;</label><button type="button" class="opt-btn-inline" id="drillPlayBtn">▶ ${t("Play")}</button></div>
+          <div class="opt-cell opt-cell-actions"><label class="opt-actions-spacer">&nbsp;</label><div class="opt-actions"><label class="loop-inline"><input type="checkbox" id="loopToggle" /> ${t("Loop")}</label><button type="button" class="opt-btn-inline opt-act-btn" id="drillReadBtn">📖 ${t("Read")}</button><button type="button" class="opt-btn-inline opt-act-btn" id="drillPlayBtn">▶ ${t("Play")}</button></div></div>
         </div>`;
 
       const drillReciterChecks = document.getElementById("drillReciterChecks");
       const drillRepeatSelect = document.getElementById("drillRepeatSelect");
       const drillModeSelect = document.getElementById("drillModeSelect");
       const drillPlayBtn = document.getElementById("drillPlayBtn");
+      const drillReadBtn = document.getElementById("drillReadBtn");
       const loopToggle = document.getElementById("loopToggle");
 
       // This block is rebuilt on every ayah nav, so every persisted choice has
@@ -18540,7 +18557,15 @@
       // ticked reciter, the reading screen's played only the first) is exactly
       // what the owner hit as "Arabic and Bangla are both ticked but only
       // Arabic plays". There is one Play now, wherever it is pressed.
-      drillPlayBtn.addEventListener("click", () => playCurrentSelection());
+      //
+      // Play and Read both leave Study options for the view the reader chose
+      // (the same openReadingScreen() the Study menu's Read uses). Play then
+      // starts audio IN THE SAME CLICK: playCurrentSelection() calls
+      // unlockAudio() synchronously, and nothing here awaits before it.
+      // Read is for a reader who is not listening -- no reciter needs to be
+      // ticked, and audio already sounding is left alone.
+      drillPlayBtn.addEventListener("click", () => { openReadingScreen(); playCurrentSelection(); });
+      drillReadBtn.addEventListener("click", () => { openReadingScreen(); });
     }
 
     /** The ticked reciters, in ticked order, that can actually play ayah by
