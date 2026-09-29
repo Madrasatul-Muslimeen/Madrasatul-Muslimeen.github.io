@@ -637,3 +637,4 @@ total). Allocated by the MMSA Architect.
 08.108: Ruku'/Page Mark as read on, Unit Card Mark as read fixed. Allocated by the MMSA Architect.
 08.109: three old readability shortfalls fixed. Allocated by the MMSA Architect.
 08.110: Approach list heading editable, sections reach every Approach list. Allocated by the MMSA Architect.
+08.111: the Global Approach Card. Allocated by the MMSA Architect.
