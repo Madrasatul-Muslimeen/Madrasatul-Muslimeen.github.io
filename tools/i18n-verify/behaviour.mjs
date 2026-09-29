@@ -4192,18 +4192,80 @@ console.log("\n=== 40. Shell round 28: the Mushaf page ===");
 
     const target = page.locator('#pageViewContainer [data-word-occurrence$=":3:2:1"]');
     const wantedId = await target.getAttribute("data-word-occurrence");
-    const box = await target.boundingBox();
-    // 2px in from the top-left corner of the PADDED box -- inside the
-    // invisible hit-area this round adds, not inside the visible glyph,
-    // which (at these font sizes) sits well clear of the box's own edge.
-    await page.mouse.click(box.x + 2, box.y + 2);
-    await page.waitForTimeout(500);
-    const openedId = await page.evaluate(() => document.querySelector(".quran-word-card")?.getAttribute("data-occurrence-id"));
-    check(`40g @${width}px a tap at the padded hit-area's own edge still opens the right word`,
-          openedId === wantedId, `${openedId} vs ${wantedId}, box=${JSON.stringify(box)}`);
+    // MEASURED, not guessed. The padded boxes of neighbouring words OVERLAP
+    // (each word carries padding plus an equal negative margin), and in RTL
+    // text the LEFT neighbour (3:2:2) is later in the DOM so it paints over
+    // the overlap. The old tap point, box.x+2 / box.y+2, is the top-left
+    // corner of 3:2:1's padded box -- inside 3:2:2's box, so 3:2:2 owns it
+    // and the check reported "3:2:2 vs 3:2:1": the check tapped a neighbour's
+    // area, not a defect. So: find a point inside 3:2:1's padded box that
+    // lies outside every neighbour's padded box AND outside its own glyph.
+    const m = await page.evaluate(() => {
+      const t = document.querySelector('#pageViewContainer [data-word-occurrence$=":3:2:1"]');
+      const occ = (e) => e && e.closest("[data-word-occurrence]")?.getAttribute("data-word-occurrence");
+      const rect = (e) => { const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom }; };
+      const words = [...document.querySelectorAll("#pageViewContainer [data-word-occurrence]")].filter((w) => w !== t);
+      const nb = words.map((w) => ({ id: occ(w), ...rect(w) }));
+      const pb = rect(t);
+      // Glyph = the text's own ink box, without the padding.
+      const cs = getComputedStyle(t);
+      const pl = parseFloat(cs.paddingLeft), pr = parseFloat(cs.paddingRight), pt = parseFloat(cs.paddingTop), pbm = parseFloat(cs.paddingBottom);
+      const glyph = { l: pb.l + pl, r: pb.r - pr, t: pb.t + pt, b: pb.b - pbm };
+      const inside = (p, r) => p.x >= r.l && p.x <= r.r && p.y >= r.t && p.y <= r.b;
+      // Candidates: a grid over the padded box, 1px in from every edge.
+      let pick = null;
+      const overlaps = nb.filter((n) => n.l < pb.r && n.r > pb.l && n.t < pb.b && n.b > pb.t);
+      for (let y = pb.t + 1; y < pb.b - 1 && !pick; y += 0.5) {
+        for (let x = pb.l + 1; x < pb.r - 1 && !pick; x += 0.5) {
+          const p = { x, y };
+          if (inside(p, glyph) || nb.some((n) => inside(p, n))) continue;
+          pick = p;
+        }
+      }
+      const old = { x: pb.l + 2, y: pb.t + 2 };
+      return {
+        box: pb, glyph, pick,
+        overlaps: overlaps.map((n) => ({ id: n.id, l: +n.l.toFixed(1), r: +n.r.toFixed(1), t: +n.t.toFixed(1), b: +n.b.toFixed(1) })),
+        oldOwner: occ(document.elementFromPoint(old.x, old.y)),
+        pickOwner: pick && occ(document.elementFromPoint(pick.x, pick.y)),
+        glyphCentre: { x: (glyph.l + glyph.r) / 2, y: (glyph.t + glyph.b) / 2 },
+        centreOwner: occ(document.elementFromPoint((glyph.l + glyph.r) / 2, (glyph.t + glyph.b) / 2)),
+      };
+    });
+    console.log(`  MEASURED @${width}px ${JSON.stringify(m)}`);
+    check(`40g @${width}px a point exists inside 3:2:1's padded box, outside every neighbour's box and outside its own glyph`,
+          !!m.pick, JSON.stringify(m));
+    // The hit-area tap, on this page. (An open Word Card shifts the layout,
+    // so the glyph-centre control below runs on its own fresh page.)
+    if (m.pick) {
+      await page.mouse.click(m.pick.x, m.pick.y);
+      await page.waitForTimeout(500);
+      const openedId = await page.evaluate(() => document.querySelector(".quran-word-card")?.getAttribute("data-occurrence-id"));
+      check(`40g @${width}px a tap in the invisible hit-area alone (beyond the glyph, clear of neighbours) opens the right word`,
+            openedId === wantedId, `${openedId} vs ${wantedId}, tap=${JSON.stringify(m.pick)}`);
+    }
 
     await page.close();
     await ctx.close();
+
+    // Positive control: a tap on the visible glyph's own centre opens 3:2:1.
+    const ctx2 = await mushafCtx({ banner: false, viewport: { width, height: 844 } });
+    const { page: page2 } = await openPage(ctx2, "/app/quranrevival.html");
+    page2.on("dialog", (d) => d.dismiss().catch(() => {}));
+    await openMushaf(page2);
+    const gc = await page2.evaluate(() => {
+      const t = document.querySelector('#pageViewContainer [data-word-occurrence$=":3:2:1"]');
+      const r = t.getBoundingClientRect(), cs = getComputedStyle(t);
+      return { x: (r.left + parseFloat(cs.paddingLeft) + r.right - parseFloat(cs.paddingRight)) / 2,
+               y: (r.top + parseFloat(cs.paddingTop) + r.bottom - parseFloat(cs.paddingBottom)) / 2 };
+    });
+    await page2.mouse.click(gc.x, gc.y);
+    await page2.waitForTimeout(500);
+    const centreId = await page2.evaluate(() => document.querySelector(".quran-word-card")?.getAttribute("data-occurrence-id"));
+    check(`40g @${width}px a tap on the visible glyph's centre opens 3:2:1`,
+          centreId === wantedId, `${centreId} vs ${wantedId}`);
+    await page2.close();
+    await ctx2.close();
   }
 }
 
