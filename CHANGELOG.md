@@ -18678,3 +18678,37 @@ The Owner's four landing-page asks. Below 721px the Approach view's page scrolls
 - **Harness**: `firebase-stub.mjs`'s `writeBatch` now records its writes into `__stubWriteData` on commit (DATA still unmutated). Before this a batched save such as `saveApproachSections()` left no trace a suite could read.
 - Checks: new `approach-sections-browser.mjs` 35/0 in en and bn — heading default and edit (tenant write, both languages), an added section in the Approach table with its note, a live rename, Save writing 8 sections and the new name onto exactly section 1's three Approaches, the landing list's headings and counts hand-listed, the empty note's contrast over the card's gradient, and a fixture tenant with no section list unchanged. Mutations: no empty sections on landing 6 fail, Catalogue skipping empty sections 4, no live rename 4. layout NO REGRESSIONS, phone-width 217/0, catalogue-add-approach 30/0, card-look 96/0, My Status 88/0, behaviour 987/6 (baseline).
 - **Flagged, not changed**: the landing capsule still reads "Approach the Quran in 30 ways".
+
+## v08.111 — 29 Sep 2026 — the Global Approach Card (issue #370)
+
+- The Owner approved the Global Approach Card design (*"Approved."*). **Built by the Architect**: two dispatched Builder runs ended after 5 steps and pushed nothing.
+- **Full screen.** Below 900px the Ayah Card, the Unit Card and the "This page" card fill the screen, with the header pinned (`position: sticky`) while the body scrolls. From 900px they stay the floating panel.
+- **One Approach pull-down on all three cards** (`buildCardApproachOptionsHtml()`):
+  - grouped by the tenant's own sections (`groupApproachesBySection()`, v08.110);
+  - each option shows the Approach and its stage on the card's own unit, e.g. "Recite correctly · Learning";
+  - if that unit's records aren't loaded, the name alone is shown, never a guessed "Not started";
+  - the chosen Approach is named in full with its section above the pull-down (`cardApproachSummary()`);
+  - "Mastered is confirmed by a teacher." sits under the four stages.
+- **The "Choose an Approach" capsule** (`#readApproachCapsule`) on the Mushaf bar sits where `#mushafPageRef` used to stretch — the blank area the Owner marked.
+  - It names the last chosen Approach and its stage on the page, reading `subject_quran` only if it is already loaded (I9), and opens the page's card.
+  - From 700px it sits beside the reference.
+  - Below 700px the bar is already two lines on `main` (85px). The capsule is ordered to start the second line, at the icons' own 26.8px height.
+- **`#readBar`'s height is unchanged at 320–1100px in both languages**, measured against `origin/main`.
+  - Two earlier attempts were measured and undone: an auto flex-basis beside the reference forced a third line at 320/360px (+33px), and a 34px height added 7px.
+  - Its text shows in full from 390px. At 320/360px in English it may end in "…"; the full text is in `title` and `aria-label`.
+- **Found in review:** the Unit Card's count lines and rule line were still on Light-only literals (#1b1b16, #6b5a20, #eee), so in Night the text was dark on the dark card. They now use the card-look tokens.
+- **Checks:**
+  - New `global-approach-card-browser.mjs`: 144 passed, 0 failed. It covers:
+    - the capsule at six widths × two languages, with the bar height pinned to `main`'s measured 85/51px;
+    - the three cards opening full screen or floating;
+    - the section groups, the stage in each option, the named Approach and the Mastered line;
+    - a Learning press read back as `page:madani:50::recite = learning` in `subject_quran`, and the capsule then naming it;
+    - a whole-card contrast sweep of all three cards in both looks.
+  - Seven mutations were caught: auto basis 4, no stage in options 4, no full screen 4, capsule without stage 4, old Unit Card literal 4, no ordering 6, 34px on phones 8.
+- **Updated in place, reasons recorded:**
+  - `behaviour` 30j/30l/33a/37a: the capsule is a new Mushaf-only `#readBar` child.
+  - `ayah-action-sheet-boundary`: the word "Mastered" now appears; a Mastered button still must not.
+- **Regressions:** behaviour 986/7 (baseline). phone-width 217/0. Ayah Card 120/0. Unit Card 116/0. Mushaf cards 114/0. Page ref 129/0. Connected 49/0. Related 43/0. Tajweed font 96/0. Card look 96/0. Word Card full screen 63/0. Word Card Mushaf scroll 59/0. Layout: no regressions. Reading screen OK in both languages.
+- **Not built, recorded:**
+  - The Approach strip is not tappable: its 12px dots cannot carry a 40px tap target.
+  - The cards keep their existing headers, not the demo's kind/title/subtitle stack.
