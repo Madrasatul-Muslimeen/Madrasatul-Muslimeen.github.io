@@ -551,7 +551,27 @@ export function renderWheelLegend(labelsById) {
  * positional class name would silently break the moment status order ever
  * changes. Visually equivalent, just not literally the same class names.
  */
-export function renderWheelSidebar(items, labelsById) {
+export function renderWheelSidebar(items, labelsById, options = {}) {
+  // Issue #400 -- `options.collapsible` (OPT-IN, the landing list only; Explore's
+  // six sidebars call with no options and render as before). Each section's
+  // heading becomes a real button carrying a count badge, and that section's
+  // rows (and empty-note) carry `data-group` and are `hidden` unless its
+  // groupKey is in `options.openGroups` (a Set the caller owns, so the open
+  // state survives the caller re-rendering the whole list). The rows stay flat
+  // children of .ways-list on purpose: every existing suite reads them there.
+  const collapsible = !!options.collapsible;
+  const open = options.openGroups ?? new Set();
+  const words = options.labels ?? {};
+  const counts = new Map();
+  if (collapsible) {
+    for (const item of items) {
+      if (item.groupLabel && !item.emptyNote) {
+        const k = item.groupKey ?? item.groupLabel;
+        counts.set(k, (counts.get(k) ?? 0) + 1);
+      }
+    }
+  }
+  const countText = (k) => (options.formatCount ? options.formatCount(counts.get(k) ?? 0) : String(counts.get(k) ?? 0));
   // v08.02 -- an item may carry `groupLabel`, and a heading is emitted each
   // time it changes. OPT-IN on purpose: this renderer is shared with all six
   // of Explore's own sidebars (surahs, juz, pages, ruku', ayahs), which have
@@ -571,19 +591,80 @@ export function renderWheelSidebar(items, labelsById) {
     .map((item) => {
       let heading = "";
       const groupKey = item.groupKey ?? item.groupLabel;
+      const grouped = collapsible && !!item.groupLabel;
+      const isOpen = grouped && open.has(groupKey);
       if (item.groupLabel && groupKey !== lastGroup) {
         lastGroup = groupKey;
-        heading = `<div class="ways-group">${item.groupLabel}</div>`;
+        heading = grouped
+          ? `<div class="ways-group"><button type="button" class="ways-group-btn" data-group="${groupKey}" aria-expanded="${isOpen}"><span class="ways-caret" aria-hidden="true">${isOpen ? "▾" : "▸"}</span><span class="ways-count">${countText(groupKey)}</span><span class="ways-group-name">${item.groupLabel}</span></button></div>`
+          : `<div class="ways-group">${item.groupLabel}</div>`;
       }
-      if (item.emptyNote) return `${heading}<div class="ways-group-empty">${item.emptyNote}</div>`;
-      return `${heading}<div class="way-row" data-key="${item.key}">
+      const hiddenAttr = grouped ? ` data-group="${groupKey}"${isOpen ? "" : " hidden"}` : "";
+      if (item.emptyNote) return `${heading}<div class="ways-group-empty"${hiddenAttr}>${item.emptyNote}</div>`;
+      return `${heading}<div class="way-row" data-key="${item.key}"${hiddenAttr}>
         <span class="badge">${item.number ?? item.key}</span>
         <span class="name">${item.label}</span>
         <span class="status-chip chip-${item.statusId}">${labelsById[item.statusId] ?? item.statusId}</span>
       </div>`;
     })
     .join("");
-  return `<div class="ways-list">${rows}</div>`;
+  let toggleAll = "";
+  if (collapsible && words.openAll) {
+    const keys = [...new Set(items.filter((i) => i.groupLabel).map((i) => i.groupKey ?? i.groupLabel))];
+    const allOpen = keys.length > 0 && keys.every((k) => open.has(k));
+    toggleAll = keys.length
+      ? `<button type="button" class="ways-toggle-all" data-open-all="${allOpen ? "0" : "1"}">${allOpen ? words.closeAll : words.openAll}</button>`
+      : "";
+  }
+  return `<div class="ways-list">${toggleAll}${rows}</div>`;
+}
+
+/** Issue #400 -- show or hide one section of a collapsible list, in place. */
+export function setWheelSectionOpen(containerEl, groupKey, isOpen) {
+  containerEl.querySelectorAll("[data-group]").forEach((el) => {
+    if (el.dataset.group !== groupKey) return;
+    if (el.classList.contains("ways-group-btn")) {
+      el.setAttribute("aria-expanded", String(isOpen));
+      const caret = el.querySelector(".ways-caret");
+      if (caret) caret.textContent = isOpen ? "▾" : "▸";
+    } else el.hidden = !isOpen;
+  });
+}
+
+/** Issue #400 -- wires a collapsible list's heading buttons and its Open all /
+    Close all button. `openGroups` is the caller's Set (mutated here). */
+export function attachWheelSectionToggles(containerEl, openGroups, labels = {}) {
+  const keys = () => [...containerEl.querySelectorAll(".ways-group-btn")].map((b) => b.dataset.group);
+  const syncAll = () => {
+    const btn = containerEl.querySelector(".ways-toggle-all");
+    if (!btn) return;
+    const ks = keys();
+    const allOpen = ks.length > 0 && ks.every((k) => openGroups.has(k));
+    btn.dataset.openAll = allOpen ? "0" : "1";
+    btn.textContent = allOpen ? labels.closeAll : labels.openAll;
+  };
+  containerEl.querySelectorAll(".ways-group-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const k = btn.dataset.group;
+      const now = !openGroups.has(k);
+      if (now) openGroups.add(k);
+      else openGroups.delete(k);
+      setWheelSectionOpen(containerEl, k, now);
+      syncAll();
+    });
+  });
+  const all = containerEl.querySelector(".ways-toggle-all");
+  if (all) {
+    all.addEventListener("click", () => {
+      const now = all.dataset.openAll === "1";
+      for (const k of keys()) {
+        if (now) openGroups.add(k);
+        else openGroups.delete(k);
+        setWheelSectionOpen(containerEl, k, now);
+      }
+      syncAll();
+    });
+  }
 }
 
 /** Click handling for renderWheelSidebar's rows — same key contract as attachScopedWheelClickHandler (raw string key; caller converts to a number if it needs one, same as ayah rows do). */
