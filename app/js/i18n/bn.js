@@ -2939,6 +2939,8 @@ export const BN = {
   // "Choose an Approach…", "Not started"/"Learning"/"Practising"/"Achieved",
   // "Status", "Close" -- already exists above and is reused as-is.
   "This page": "এই পৃষ্ঠা",
+  // Issue #370 -- the Global Approach Card.
+  "Mastered is confirmed by a teacher.": "আয়ত্ত হয়েছে কিনা তা একজন শিক্ষক নিশ্চিত করেন।",
 
   // Issue #328 -- the per-Approach "counts for each ayah inside" setting
   // (Owner decision 6, 27 Sep 2026) on catalogue.html, and the "My Status"

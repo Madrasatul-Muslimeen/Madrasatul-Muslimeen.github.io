@@ -1862,6 +1862,20 @@
     background: none; border: none; text-align: left; cursor: pointer;
   }
   #mushafPageRef[hidden] { display: none; }
+  /* Issue #370 -- with the Approach capsule shown, the reference stops
+     stretching (its stretch WAS the blank area the Owner marked) and the
+     capsule takes the free space instead; both shrink and ellipsis-truncate
+     their text, so the row never grows a second line. */
+  #readBar:has(#readApproachCapsule:not([hidden])) #mushafPageRef { flex: 0 1 auto; margin-right: 0; }
+  .read-approach-capsule {
+    flex: 1 1 auto; min-width: 0; margin-right: auto; max-width: 16rem;
+    display: flex; align-items: center; gap: 0.25rem; min-height: 34px;
+    padding: 0.2rem 0.6rem; font: inherit; font-size: 0.74rem; font-weight: 600;
+    color: #5e4418; background: #fdf6e3; border: 1px solid #d8c68a; border-radius: 999px; cursor: pointer;
+  }
+  .read-approach-capsule[hidden] { display: none; }
+  .read-approach-capsule-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .read-approach-capsule-caret { flex: 0 0 auto; font-size: 0.65rem; }
   .mushaf-page-ref-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .mushaf-page-ref-caret { flex: 0 0 auto; font-size: 0.65rem; color: #8a7c55; }
   /* Issue #348, Owner decision 18 -- the gold unit chip. A FIXED max-width
@@ -2807,6 +2821,19 @@
   .ayah-sheet .qm-caret { color: var(--card-text-muted); }
   .ayah-sheet-handle { width: 36px; height: 4px; background: var(--card-line); border-radius: 999px; margin: 0.3rem auto 0.6rem; }
   .ayah-sheet-header { display: flex; align-items: center; justify-content: space-between; padding: 0 0.2rem 0.4rem; border-bottom: 1px solid var(--card-line); margin-bottom: 0.3rem; }
+  /* Issue #370 (Global Approach Card, Owner-approved 29 Sep 2026): below
+     900px every card in this shared shell -- Ayah, Unit, "This page" -- is
+     FULL SCREEN, the Owner's own mark on the design, with its header pinned
+     while the body scrolls. From 900px it keeps the floating panel below. */
+  @media (max-width: 899.98px) {
+    .ayah-sheet { top: 0; max-height: none; height: 100%; border-radius: 0; padding-top: 0; }
+    .ayah-sheet .ayah-sheet-handle { display: none; }
+    .ayah-sheet .ayah-sheet-header { position: sticky; top: 0; z-index: 2; background: var(--card-bg); padding-top: 0.5rem; }
+  }
+  .gac-approach-summary { margin: 0.1rem 0 0.35rem; display: flex; flex-direction: column; gap: 0.05rem; }
+  .gac-approach-name { font-weight: 700; font-size: 0.95rem; color: var(--card-text); overflow-wrap: anywhere; }
+  .gac-approach-section { font-size: 0.74rem; color: var(--card-text-muted); }
+  .gac-mastered-note { margin: 0.3rem 0 0; font-size: 0.76rem; color: var(--card-text-muted); }
   .ayah-sheet-ref { font-size: 0.9rem; color: var(--card-heading); font-weight: 600; }
   .ayah-sheet-close { background: none; border: none; color: var(--card-text-muted); font-size: 1.5rem; line-height: 1; min-width: 40px; min-height: 40px; padding: 0.2rem 0.5rem; cursor: pointer; }
   .ayah-sheet-hint { font-size: 0.74rem; color: var(--card-text-muted); margin: -0.1rem 0.5rem 0.35rem; }
@@ -4050,6 +4077,13 @@
                plus a decorative ▾, same shape readTextSizeSlot uses for a
                JS-filled slot. -->
           <button type="button" id="mushafPageRef" class="mushaf-page-ref" hidden></button>
+          <!-- Issue #370 (Global Approach Card, Owner-approved 29 Sep 2026) --
+               the "Choose an Approach" capsule. It takes the space
+               #mushafPageRef used to stretch into (the blank area the Owner
+               marked), names the chosen Approach and its stage on this page,
+               and opens the page's card. Mushaf view only, like the
+               reference beside it. -->
+          <button type="button" id="readApproachCapsule" class="read-approach-capsule" hidden><span class="read-approach-capsule-text"></span><span class="read-approach-capsule-caret" aria-hidden="true">▾</span></button>
           <!-- Issue #348, Owner decision 18 -- a gold chip naming the chosen
                Study Unit ("Ruku' 3", "Juz 1", "Al-Mulk"), opening its Unit
                Card (an Ayah unit opens the Ayah Card instead). Hidden in
@@ -5510,6 +5544,7 @@
     wireUnitMarkers(pageViewContainer);
     wireUnitMarkers(document.getElementById("ayahPanels")); // review: the one-āyah view carries markers too
     const mushafPageRef = document.getElementById("mushafPageRef"); // issue #322 -- Mushaf's own top-bar Surah/āyāt reference
+    const readApproachCapsule = document.getElementById("readApproachCapsule"); // issue #370 -- "Choose an Approach"
     const wayModalOverlay = document.getElementById("wayModalOverlay");
     const wayModalMount = document.getElementById("wayModalMount");
 
@@ -6287,6 +6322,37 @@
           return label ? `<optgroup label="${label}">${options}</optgroup>` : options;
         })
         .join("");
+    }
+
+    /** Issue #370 (Global Approach Card) -- the cards' own Approach pull-down:
+        grouped by the tenant's OWN sections (the same list the Catalogue and
+        the landing list use, v08.110), each Approach followed by its stage on
+        the unit the card is about. `statusOf(trackableId)` returns a status
+        id, or null when that unit's records are not loaded (the name alone
+        is shown then -- never a guessed "Not started"). The option VALUES
+        stay the plain trackable ids every card already reads. */
+    function buildCardApproachOptionsHtml(statusOf = () => null) {
+      if (!quranTrackables.length) return `<option value="">${t("(no Quran Approaches yet)")}</option>`;
+      const groups = groupApproachesBySection(quranTrackables, sectionsFromTenantDoc(currentTenantDoc));
+      return groups.map((sec) => {
+        const label = langText(sec.name, getAppLang(), "");
+        const options = sec.items.map((tr) => {
+          const statusId = statusOf(tr.id);
+          const name = langText(tr.name, getAppLang(), tr.id);
+          return `<option value="${escapeHtml(tr.id)}">${escapeHtml(statusId ? `${name} · ${statusLabel(statusId)}` : name)}</option>`;
+        }).join("");
+        return label ? `<optgroup label="${escapeHtml(label)}">${options}</optgroup>` : options;
+      }).join("");
+    }
+
+    /** Issue #370 -- the chosen Approach named in full, with its section, for
+        the line above the pull-down (a native pull-down cuts a long name on a
+        phone -- v08.99's own measurement). Null when none is chosen. */
+    function cardApproachSummary(approachId) {
+      const tr = quranTrackables.find((x) => x.id === approachId);
+      if (!tr) return null;
+      const sec = sectionsFromTenantDoc(currentTenantDoc).find((x) => Number(x.n) === Number(tr.group));
+      return { name: langText(tr.name, getAppLang(), tr.id), section: langText(sec?.name ?? tr.groupName, getAppLang(), "") };
     }
 
     /** The canonical Approach picker (Study options bar 4). Shares its options with the Ayah Note screen's own Approach toggle (round 32) via buildTrackableOptionsHtml() above -- one source of truth for what's offered, wherever it's offered. */
@@ -14462,7 +14528,31 @@
     /** Issue #325 -- clears both the visible content and the page number the
         click handler reads, so a hidden/empty button can never open a stale
         "This page" card. */
+    /** Issue #370 -- the capsule's label: "Choose an Approach" until one is
+        chosen on a card (mushafRingApproachId, the same "last chosen"
+        every card opens on), then that Approach's name and its stage on
+        the page named beside it. The stage is read from subject_quran only
+        once that document is loaded -- never fetched for the label (I9). */
+    function updateReadApproachCapsule() {
+      if (!readApproachCapsule) return;
+      const pageNum = Number(mushafPageRef?.dataset.page);
+      if (mushafPageRef?.hidden || !Number.isFinite(pageNum)) { readApproachCapsule.hidden = true; return; }
+      const trackable = quranTrackables.find((tr) => tr.id === mushafRingApproachId) ?? null;
+      let text = t("Choose an Approach");
+      if (trackable) {
+        const name = langText(trackable.name, getAppLang(), trackable.id);
+        const chunk = chunkForUnitInfo({ chunkKey: "subject_quran" });
+        const statusId = chunk ? (chunk.entries?.[`${buildUnitKey.page(PAGE_EDITION, pageNum)}::${trackable.id}`]?.claimedStatus ?? "not_started") : null;
+        text = statusId ? `${name} · ${statusLabel(statusId)}` : name;
+      }
+      readApproachCapsule.hidden = false;
+      readApproachCapsule.querySelector(".read-approach-capsule-text").textContent = text;
+      readApproachCapsule.title = text;
+      readApproachCapsule.setAttribute("aria-label", trackable ? `${text} — ${t("This page")}` : text);
+    }
+
     function clearMushafPageRef() {
+      if (readApproachCapsule) readApproachCapsule.hidden = true;
       mushafPageRef.hidden = true;
       mushafPageRef.innerHTML = "";
       mushafPageRef.removeAttribute("aria-label");
@@ -14506,6 +14596,7 @@
       mushafPageRef.setAttribute("aria-label", `${refText} — ${t("This page")}`);
       mushafPageRef.title = refText;
       mushafPageRef.innerHTML = `<span class="mushaf-page-ref-text">${escapeHtml(refText)}</span><span class="mushaf-page-ref-caret" aria-hidden="true">▾</span>`;
+      updateReadApproachCapsule();
     }
 
     let mushafPageRefHandler = null;
@@ -14566,6 +14657,7 @@
         marker.classList.add("hifz-ayah-marker-ring");
         marker.style.setProperty("--ayah-marker-ring-color", color);
       });
+      updateReadApproachCapsule(); // issue #370: the capsule names the same "last chosen" Approach
     }
 
     /** The flow view's own "next/previous āyah", for the scroll and swipe
@@ -15106,7 +15198,8 @@
       ayahActionSheetMountEl.innerHTML = renderPageApproachCardHtml({
         pageLabel: t("Page {page}", { page: num(pageApproachCardPageNum) }),
         ref,
-        approachOptionsHtml: buildTrackableOptionsHtml(),
+        approachOptionsHtml: buildCardApproachOptionsHtml((id) => (chunk ? (chunk.entries?.[`${unitKey}::${id}`]?.claimedStatus ?? "not_started") : null)),
+        approachSummary: cardApproachSummary(pageApproachCardSelectedApproachId),
         selectedApproachId: pageApproachCardSelectedApproachId,
         selectedApproachStatusId,
       });
@@ -15120,6 +15213,7 @@
         },
         onStageChoice: (approachId, statusId) => takeApproachForPage(unitKey, approachId, statusId),
       });
+      updateReadApproachCapsule(); // issue #370: a claim or a freshly loaded page chunk changes its stage
       ensureUnitChunkThen(info, renderPageApproachCardNow);
     }
 
@@ -15462,7 +15556,8 @@
       ayahActionSheetMountEl.innerHTML = renderUnitCardHtml({
         unitType: info.unitType, unitKey: info.unitKey, unitLabel: info.label,
         ladderHtml: renderUnitLadderHtml(ladderRungs),
-        approachOptionsHtml: buildTrackableOptionsHtml(),
+        approachOptionsHtml: buildCardApproachOptionsHtml((id) => (chunk ? (chunk.entries?.[`${info.unitKey}::${id}`]?.claimedStatus ?? "not_started") : null)),
+        approachSummary: cardApproachSummary(unitCardSelectedApproachId),
         selectedApproachId: unitCardSelectedApproachId,
         selectedApproachStatusId,
         countsForEachAyahYes: trackable ? countsForEachAyah(trackable) : null,
@@ -15608,7 +15703,11 @@
         hasNote: ayahHasNote(ayahNotesDoc, ayahSheetUnitKey),
         isBookmarked,
         isSelf: isSelfSelectedForAyahActions(),
-        approachOptionsHtml: buildTrackableOptionsHtml(),
+        approachOptionsHtml: (() => {
+          const known = new Map(approachStatusesForAyah(surah, ayahNum).map((a) => [a.id, a.statusId]));
+          return buildCardApproachOptionsHtml((id) => known.get(id) ?? null);
+        })(),
+        approachSummary: cardApproachSummary(ayahSheetSelectedApproachId),
         selectedApproachId: ayahSheetSelectedApproachId,
         selectedApproachStatusId,
         hasPosterNote: hasPosterNoteAtRenderTime,
@@ -18686,6 +18785,10 @@
     // dataset.page is stamped by updateMushafPageRef() only while a real
     // page is on screen, so a hidden/empty button (outside Mushaf view)
     // simply has nothing to read and does nothing.
+    readApproachCapsule?.addEventListener("click", () => {
+      const pageNum = Number(mushafPageRef.dataset.page);
+      if (Number.isFinite(pageNum)) openPageApproachCard(pageNum);
+    });
     mushafPageRef.addEventListener("click", () => {
       const pageNum = Number(mushafPageRef.dataset.page);
       if (Number.isFinite(pageNum)) openPageApproachCard(pageNum);

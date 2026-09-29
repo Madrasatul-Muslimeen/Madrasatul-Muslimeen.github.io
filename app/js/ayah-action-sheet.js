@@ -90,12 +90,22 @@ function withSelectedOption(optionsHtml, selectedId) {
  */
 export function renderApproachStagePickerHtml({
   approachOptionsHtml = "", selectedApproachId = null, selectedApproachStatusId = "not_started",
-  selectId = "ayahSheetApproachSelect",
+  selectId = "ayahSheetApproachSelect", approachSummary = null,
 } = {}) {
-  const stageRowHtml = selectedApproachId ? approachStageButtonsHtml(selectedApproachStatusId) : "";
+  // Issue #370 (Global Approach Card): "Mastered is confirmed by a teacher"
+  // under the four stages -- the fifth stage is never a button here.
+  const stageRowHtml = selectedApproachId
+    ? approachStageButtonsHtml(selectedApproachStatusId) + `<p class="gac-mastered-note">${escapeHtml(t("Mastered is confirmed by a teacher."))}</p>`
+    : "";
+  // Issue #370 -- the chosen Approach named in full with its section, above
+  // the pull-down (which a phone cuts on a long name).
+  const summaryHtml = approachSummary
+    ? `<p class="gac-approach-summary" data-gac-approach-summary><span class="gac-approach-name">${escapeHtml(approachSummary.name)}</span>${approachSummary.section ? `<span class="gac-approach-section">${escapeHtml(approachSummary.section)}</span>` : ""}</p>`
+    : "";
   return `
         <div class="ayah-sheet-item ayah-sheet-select-item">
           <label class="ayah-sheet-select-label" for="${selectId}">🎯 ${escapeHtml(t("Take an Approach"))}</label>
+          ${summaryHtml}
           <select class="ayah-sheet-approach-select" id="${selectId}" data-approach-stage-select aria-label="${escapeHtml(t("Take an Approach"))}">
             <option value="" ${selectedApproachId ? "" : "selected"} disabled hidden>${escapeHtml(t("Choose an Approach…"))}</option>
             ${withSelectedOption(approachOptionsHtml, selectedApproachId)}
@@ -158,11 +168,11 @@ function makePosterItemHtml(hasPosterNote) {
     actionItemHtml(); "Take an Approach"/"Make a poster" carry their own
     shape (a pull-down; a conditional hint) and render through their own
     small functions above, but still take exactly one slot in this list. */
-function actionDefs({ isBookmarked, isSelf, noteWhy, approachOptionsHtml, selectedApproachId, selectedApproachStatusId, hasPosterNote }) {
+function actionDefs({ isBookmarked, isSelf, noteWhy, approachOptionsHtml, selectedApproachId, selectedApproachStatusId, hasPosterNote, approachSummary }) {
   return [
     { render: () => actionItemHtml({ attr: "data-ayah-sheet-bookmark", icon: isBookmarked ? "★" : "🔖", label: isBookmarked ? t("Remove bookmark") : t("Bookmark this āyah") }) },
     { render: () => actionItemHtml({ attr: "data-ayah-sheet-note", icon: "📝", label: t("Note & more…"), disabled: !isSelf, hint: isSelf ? "" : noteWhy }) },
-    { render: () => renderApproachStagePickerHtml({ approachOptionsHtml, selectedApproachId, selectedApproachStatusId }) },
+    { render: () => renderApproachStagePickerHtml({ approachOptionsHtml, selectedApproachId, selectedApproachStatusId, approachSummary }) },
     { render: () => makePosterItemHtml(hasPosterNote) },
     { divider: true },
     { render: () => actionItemHtml({ attr: "data-ayah-sheet-asma", icon: "✦", label: t("Asma ul Husna Name(s)…") }) },
@@ -308,13 +318,13 @@ function connectedInfoHtml(connected) {
  */
 export function renderAyahActionSheetHtml({
   unitKey, ref = "", hasNote = false, isBookmarked = false, isSelf = true,
-  approachOptionsHtml = "", selectedApproachId = null, selectedApproachStatusId = "not_started", hasPosterNote = null,
+  approachOptionsHtml = "", selectedApproachId = null, selectedApproachStatusId = "not_started", hasPosterNote = null, approachSummary = null,
   approachStatuses = [], wordStatus = null, hifzStatus = null, related = null,
   connected = null, ladderHtml = "",
 } = {}) {
   void hasNote; // kept for callers that already pass it (icon/wording decisions belong to isBookmarked/isSelf above, not this flag)
   const noteWhy = t("Only your own record can create or file a Note.");
-  const actionsHtml = actionDefs({ isBookmarked, isSelf, noteWhy, approachOptionsHtml, selectedApproachId, selectedApproachStatusId, hasPosterNote })
+  const actionsHtml = actionDefs({ isBookmarked, isSelf, noteWhy, approachOptionsHtml, selectedApproachId, selectedApproachStatusId, hasPosterNote, approachSummary })
     .map((def) => (def.divider ? `<div class="qm-divider"></div>` : def.render()))
     .join("");
   return `
