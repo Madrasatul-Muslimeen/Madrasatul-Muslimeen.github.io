@@ -927,6 +927,24 @@
   .ways-group { font-size: 11px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase;
                color: #ecd49a; padding: 5px 2px 0; line-height: 1.2; }
   .ways-group:first-child { padding-top: 0; }
+  /* Issue #400: the landing list's section heading is a real button (>=40px,
+     full row width) with a caret and a round count badge. A class rule that
+     sets display beats the UA's [hidden], so the collapsed rows say so
+     explicitly. */
+  .way-row[hidden], .ways-group-empty[hidden] { display: none; }
+  .ways-group:has(> .ways-group-btn) { padding: 0; }
+  .ways-group-btn { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 40px; padding: 4px 6px;
+                    background: rgba(255,255,255,0.04); border: 1px solid rgba(201,162,75,0.22); border-radius: 9px;
+                    color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; text-align: start;
+                    cursor: pointer; line-height: 1.2; }
+  .ways-group-btn:hover { background: rgba(255,255,255,0.08); }
+  .ways-caret { flex: 0 0 auto; width: 1em; color: #ecd49a; }
+  .ways-count { flex: 0 0 auto; min-width: 22px; height: 22px; padding: 0 5px; box-sizing: border-box; border-radius: 11px;
+                display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;
+                color: #241a06; background: #C9A24B; letter-spacing: 0; text-transform: none; }
+  .ways-group-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+  .ways-toggle-all { align-self: flex-start; min-height: 40px; padding: 0 12px; background: none; border: 1px solid rgba(201,162,75,0.35);
+                     border-radius: 9px; color: #ecd49a; font: inherit; font-size: 12.5px; cursor: pointer; }
   /* v08.110: a section with no Approaches yet (one the owner just added). */
   .ways-group-empty { font-size: 0.78rem; font-style: italic; color: var(--card-text-muted, #b9c2d4); padding: 2px 4px 6px; }
   /* Bengali carries matras above and below the line and has no capitals, so
@@ -5347,7 +5365,7 @@
     // -- each respects its own Every time/Once a day/Once a week preference
     // independently, same as when they were two separate page loads.
     showBootSplash(() => showQuranSplash());
-    import { renderWheelLegend, renderScopedWheel, attachScopedWheelClickHandler, renderWheelSidebar, attachWheelSidebarClickHandler, wrapWheelLabel, wordTotalRampColor, STATUS_COLORS, renderRingWheel, attachRingWheelClickHandler } from "./js/mastery-wheel.js";
+    import { renderWheelLegend, renderScopedWheel, attachScopedWheelClickHandler, renderWheelSidebar, attachWheelSidebarClickHandler, attachWheelSectionToggles, setWheelSectionOpen, wrapWheelLabel, wordTotalRampColor, STATUS_COLORS, renderRingWheel, attachRingWheelClickHandler } from "./js/mastery-wheel.js";
     // Issue #352 -- "Every unit on the wheel" (Owner decisions 21-24).
     import { ayahIndexer, rowSpan, spanToCoverage, textWeigher, layoutRing, clipSpan, LANDING_RING_ORDER } from "./js/unit-rings.js";
     import {
@@ -7625,6 +7643,26 @@
         just currentTrackableId/currentChunk -- every place that changes the
         current ayah must call this too (see the ayah-nav buttons, the
         playback ayah-change handler, and Explore's jumpToJuz below). */
+    /** Issue #400 -- which sections of the landing Approach list are open.
+        Session only (never stored): every page load starts collapsed. Lives
+        OUTSIDE renderWheel() because that rebuilds the whole list on every
+        claim, unit change and redraw. */
+    const landingOpenSections = new Set();
+    function openLandingSectionFor(trackableKey) {
+      const row = [...wheelSidebarContainer.querySelectorAll(".way-row")].find((r) => r.dataset.key === trackableKey);
+      const g = row?.dataset.group;
+      if (!g) return;
+      landingOpenSections.add(g);
+      setWheelSectionOpen(wheelSidebarContainer, g, true);
+      const all = wheelSidebarContainer.querySelector(".ways-toggle-all");
+      if (all) {
+        const ks = [...wheelSidebarContainer.querySelectorAll(".ways-group-btn")].map((b) => b.dataset.group);
+        const allOpen = ks.every((k) => landingOpenSections.has(k));
+        all.dataset.openAll = allOpen ? "0" : "1";
+        all.textContent = allOpen ? t("Close all") : t("Open all");
+      }
+    }
+
     function renderWheel() {
       if (!quranTrackables.length || !currentSurahData) {
         wheelContainer.innerHTML = `<p style="color:#8fa0c2;">${t("No Approaches yet.")}</p>`;
@@ -7695,6 +7733,9 @@
       // understands every unit key shape, and the Track card inside it now
       // claims whatever scope it is opened on.
       const jumpToApproach = (key) => {
+        // Issue #400 -- the list's sections start collapsed: open this
+        // Approach's own section first so its row is really there to show.
+        openLandingSectionFor(key);
         currentTrackableId = key;
         trackableSelect.value = key;
         openNoteView(unitInfo.unitKey);
@@ -7720,7 +7761,10 @@
       });
       grouped.forEach((sec, gi) => {
         const groupLabel = langText(sec.name, getAppLang(), "");
-        const groupKey = `g${gi}`;
+        // Issue #400 -- the open set is keyed by section number (or by name
+        // for the unnumbered leftover groups), never by position, so it
+        // survives a section being added, moved or renamed.
+        const groupKey = sec.n != null ? `s${sec.n}` : `n${gi}:${groupLabel}`;
         if (sec.empty) {
           sidebarItems.push({ groupKey, groupLabel: groupLabel || t("Section {n}", { n: num(sec.n) }), emptyNote: t("No Approaches in this section yet.") });
           return;
@@ -7736,8 +7780,15 @@
           });
         }
       });
-      wheelSidebarContainer.innerHTML = renderWheelSidebar(sidebarItems, labelsById);
+      const sectionWords = { openAll: t("Open all"), closeAll: t("Close all") };
+      wheelSidebarContainer.innerHTML = renderWheelSidebar(sidebarItems, labelsById, {
+        collapsible: true,
+        openGroups: landingOpenSections,
+        labels: sectionWords,
+        formatCount: (n) => num(n),
+      });
       attachWheelSidebarClickHandler(wheelSidebarContainer, jumpToApproach);
+      attachWheelSectionToggles(wheelSidebarContainer, landingOpenSections, sectionWords);
       if (show === "all") placeWheelRingPanel();
 
       syncWheelHubPickers();
