@@ -150,7 +150,7 @@ export function runGuards(ledger, facts) {
   if (typeof facts.briefText !== "string" || facts.briefText.length < 10000) {
     fail("CONTROL", "CLAUDE.md was not read (or is implausibly short); guards C and D would pass vacuously");
   } else {
-    const seen = new Set([...facts.briefText.matchAll(/\bv(0[78]\.\d{2,3})\b/g)].map((m) => m[1]));
+    const seen = new Set([...facts.briefText.matchAll(/\bv(0[789]\.\d{2,3})\b/g)].map((m) => m[1]));
     if (seen.size < 10) fail("CONTROL", `only ${seen.size} v-prefixed versions found in the brief; the prose scanner has stopped working`);
     else pass("CONTROL", `prose scanner sees ${seen.size} v-prefixed versions in the brief`);
   }

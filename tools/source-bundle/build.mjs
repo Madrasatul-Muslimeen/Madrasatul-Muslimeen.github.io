@@ -5,7 +5,7 @@
  * Run from the repository root:   node tools/source-bundle/build.mjs
  *
  * What it includes and why is declared in SECTIONS below. It deliberately
- * does NOT include the two frozen archives (`legacy/`, `legacy-v07/`), the
+ * does NOT include the three frozen archives (`legacy/`, `legacy-v07/`, `legacy-v08/`), the
  * Qur'an data pull, the Mushaf images, the harness under `tools/`, or the
  * binary fonts — those are reference material or data, not application code.
  */
@@ -122,8 +122,9 @@ meta.introHtml = `
 
   <h2>What is deliberately not here</h2>
   <p>
-    The two frozen archives (<code>legacy/index.html</code>, the v06 single-file
-    app; <code>legacy-v07/</code>, frozen at v07.139) — both are reference-only
+    The three frozen archives (<code>legacy/index.html</code>, the v06 single-file
+    app; <code>legacy-v07/</code>, frozen at v07.139; <code>legacy-v08/</code>,
+    the v08.103 release) — all reference-only
     copies, not the live code. Also excluded: the Qur'an text data under
     <code>tools/quran-data-pull/output</code> and the 604 Mushaf page images
     (data, not code, and ~130 MB between them), the test harness under

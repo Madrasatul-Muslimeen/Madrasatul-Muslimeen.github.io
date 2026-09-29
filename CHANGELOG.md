@@ -18779,3 +18779,8 @@ Built by the Builder (issue #400, PR #401); reviewed and allocated by the Archit
 - **`app/quranrevival.html`**: `landingOpenSections` outside `renderWheel()`, so open sections survive every redraw; closed on each load; a wheel-slice tap opens its section; one Open all / Close all button.
 - **Review**: `layout.mjs` vs the `main` shim, only the intended flags (fewer visible rows, more room above the dock), heading and wheel unchanged; Light and Colour looks checked in both languages; `catalogue-sections-browser` updated in place to read the heading's name now that it carries a caret and count.
 - **Checks**: landing-sections-collapse 84/0 (new; 3 mutations), approach-sections 59/0, catalogue-sections 126/0, short-names 70/0, unit-rings 106/0, card-look 96/0, phone-width 217/0, behaviour 1003/4 baseline.
+
+
+## v09.00 — not used
+
+The Owner opened the v09 line at **v09.01** (29 Sep 2026, decision 26 in `docs/governance/2026-09-27-owner-decisions.md`), so **v09.00 was never released**; this entry exists so the number is accounted for. The 08 line ends at **v08.117**. On the same day `app/` as released at **v08.103** was archived to **`legacy-v08/`** (reachable at `/legacy-v08/`), with its service-worker registration switched off so the archive can never reach the live app's worker; see `legacy-v08/README-ARCHIVE.txt`. `brief-integrity.mjs` now checks the archive file by file against commit 54f93098, and both version scanners (`brief-integrity`, `programme-ledger`) read v09 numbers.

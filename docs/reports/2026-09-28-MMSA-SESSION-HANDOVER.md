@@ -34,7 +34,7 @@ point:
   `git show origin/main:app/js/version.js`.
 - The ledger's `nextUnallocated` is **08.103**.
 - **Numbering (Owner decision 17):** the 08 line continues v08.100, v08.101, …
-  until a substantial change opens v09.00. The version checks accept a two- or
+  until a substantial change opens v09.00. **Superseded 29 Sep 2026 (decision 26): the 08 line ends at v08.117, the next release is v09.01 (v09.00 unused), and `app/` as released at v08.103 is archived at `legacy-v08/`.** The version checks accept a two- or
   three-digit minor and compare versions by number.
 - Releases this session:
 
