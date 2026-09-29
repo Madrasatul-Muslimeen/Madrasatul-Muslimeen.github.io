@@ -11,12 +11,13 @@ Run from the repository root, on the branch that carries the round:
   SHORT      a few words for the ledger note and version-history.md
   NOTE       one sentence for the ledger allocation's note
   MILESTONE  the whole new "**Current milestone: vNN.NNN on `main`** (...)" paragraph
-             for CLAUDE.md; the old one is demoted to "Previous milestone"
+             for CLAUDE.md, ONE paragraph; the old one moves to
+             docs/governance/brief-history.md as "Previous milestone"
   CHANGELOG  the whole "## vNN.NNN — date — title" entry appended to CHANGELOG.md
 
 It updates, together: app/js/version.js, the Programme Integration Ledger
 (the old LIVE allocation becomes RELEASED), docs/governance/version-history.md,
-CLAUDE.md and CHANGELOG.md. Afterwards run brief-integrity, programme-ledger
+CLAUDE.md, docs/governance/brief-history.md and CHANGELOG.md. Afterwards run brief-integrity, programme-ledger
 and programme-ledger-mutations: before the merge, exactly the checks that read
 origin/main fail; after the merge all three must pass.
 
@@ -40,9 +41,20 @@ v=open('app/js/version.js').read()
 v=re.sub(r'export const APP_VERSION = "[\d.]+";',f'export const APP_VERSION = "{ver}";',v)
 open('app/js/version.js','w').write(v)
 open('docs/governance/version-history.md','a').write(f'{ver}: {short}. Allocated by the MMSA Architect.\n')
+# The outgoing milestone moves to docs/governance/brief-history.md (newest
+# first, straight after that file's header rule) instead of staying in CLAUDE.md
+# as "Previous milestone" -- since 29 Sep 2026, so the brief every session and
+# Builder run loads keeps only the current milestone and cannot grow back.
 c=open('CLAUDE.md').read()
 i=c.index('**Current milestone: v')
-c=c[:i]+milestone.strip()+'\n\n**Previous milestone: v'+c[i+len('**Current milestone: v'):]
+j=c.index('\n\n',i)
+outgoing=c[i:j]
+c=c[:i]+milestone.strip()+c[j:]
 open('CLAUDE.md','w').write(c)
+H='docs/governance/brief-history.md'
+h=open(H).read()
+k=h.index('\n---\n\n')+len('\n---\n\n')
+h=h[:k]+'**Previous milestone: v'+outgoing[len('**Current milestone: v'):]+'\n\n'+h[k:]
+open(H,'w').write(h)
 cl=open('CHANGELOG.md').read().rstrip('\n')+'\n\n'+changelog.strip()+'\n'
 open('CHANGELOG.md','w').write(cl)

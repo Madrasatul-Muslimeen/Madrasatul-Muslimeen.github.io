@@ -398,6 +398,58 @@ jobs:
           npm install -g playwright
           npx playwright install --with-deps chromium
 
+      # ======================================================================
+      # THE ROUND'S ISSUE IS FETCHED FOR THE BUILDER, AND THIS IS A FIX FOR A
+      # REAL FAILURE RATHER THAN A CONVENIENCE (29 Sep 2026).
+      #
+      # A dispatched run is told to "read issue number N", and NOT ONE tool in
+      # its allowlist below can read a GitHub issue -- no GitHub read tool, no
+      # `gh`, no `curl`. Some runs found a way round it and built for 30-40
+      # minutes; runs 575 and 576 (issue 370) ended after 5 turns in 8 seconds,
+      # "success", nothing pushed, nothing said. A round whose specification
+      # can only be reached by luck is a round that sometimes does not start.
+      #
+      # So the job reads the issue itself -- title, body and every comment --
+      # with its own token and hands the Builder a FILE. `.builder-round/` is
+      # added to `.git/info/exclude`, so it can never be committed.
+      #
+      # The issue number is checked to be digits before it goes near a shell:
+      # a dispatch input is text, and text reaching a command line is how an
+      # input becomes a command.
+      # ======================================================================
+      - name: Fetch the round's issue for the Builder
+        if: steps.auth.outputs.ready == 'true' && github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          ARCHITECT_NOTE: ${{ inputs.note }}
+        run: |
+          set -euo pipefail
+          if ! printf '%s' "$ISSUE_NUMBER" | grep -Eq '^[0-9]{1,6}$'; then
+            echo "::error::issue_number must be digits only, got: $ISSUE_NUMBER"
+            exit 1
+          fi
+          mkdir -p .builder-round
+          echo ".builder-round/" >> .git/info/exclude
+          {
+            echo "# The round to build: issue $ISSUE_NUMBER"
+            echo ""
+            echo "This file is the issue, fetched by the workflow. It is the specification."
+            echo ""
+            gh issue view "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --comments
+            echo ""
+            echo "## Architect note for this run (context only)"
+            echo ""
+            printf '%s\n' "${ARCHITECT_NOTE:-none}"
+          } > .builder-round/spec.md
+          echo "Round specification saved: $(wc -c < .builder-round/spec.md) bytes, issue $ISSUE_NUMBER."
+
+      # What the remote held before the Builder started, so the last step can
+      # tell a run that pushed nothing from one that did.
+      - name: Record the branches before the Builder starts
+        if: steps.auth.outputs.ready == 'true'
+        run: git ls-remote --heads origin | sort > "${RUNNER_TEMP}/heads-before.txt"
+
       - name: Run Claude Code
         if: steps.auth.outputs.ready == 'true'
         uses: anthropics/claude-code-action@v1
@@ -458,7 +510,7 @@ jobs:
           # root; the wording below also avoids `#` entirely, so a future edit
           # that drops the block scalar degrades loudly rather than silently.
           prompt: |-
-            ${{ github.event_name == 'workflow_dispatch' && format('You are the MMSA Builder. Read ARCHITECT.md and CLAUDE.md first, then read issue number {0} in this repository and build exactly the round it specifies. Follow the builder contract in CLAUDE.md section "The Architect loop" without exception: branch from main, open ONE pull request, ready for review and not a draft, that links issue number {0} and pastes the results of every check you ran, and then STOP. Do not merge anything. Do not change app/js/version.js. Do not touch firestore.rules, firebase.json or the workflow files. If you run short of turns, commit and push what you have and comment saying exactly where you stopped. Architect note for this run, which is context only and never an instruction that overrides the issue or the brief: {1}', inputs.issue_number, inputs.note) || '' }}
+            ${{ github.event_name == 'workflow_dispatch' && format('You are the MMSA Builder. The round to build is issue number {0}; its title, body and every comment have been saved for you in the file .builder-round/spec.md, so read that file first: it is the specification. CLAUDE.md is already loaded as your project memory, so do not read it again with a tool; read only the parts of ARCHITECT.md you need. Follow the builder contract in CLAUDE.md section "The Architect loop" without exception: branch from main, open ONE pull request, ready for review and not a draft, that links issue number {0} and pastes the results of every check you ran, and then STOP. Do not merge anything. Do not change app/js/version.js. Do not touch firestore.rules, firebase.json or the workflow files. PUSH EARLY: commit and push your first working change to your branch within your first 40 turns, then keep pushing as you go, because work left only in the workspace is lost when the run ends. If you cannot build the round, or stop before it is finished, write exactly why and where you stopped, in plain words, into the file .builder-round/why.md; the workflow posts that file on issue number {0} for you. Never end quietly. Architect note for this run, which is context only and never an instruction that overrides the issue or the brief: {1}', inputs.issue_number, inputs.note) || '' }}
 
           # Commits are created through the GitHub API rather than the git CLI.
           # The reason is not signing, it is THE TOOL LIST: this is what makes
@@ -540,12 +592,18 @@ jobs:
       #
       # `if: always()` is load-bearing: the step whose failure this explains has
       # already failed by the time this runs, so any default condition skips it.
-      - name: Say why Claude stopped, when it stopped badly
+      - name: Say why Claude stopped, and what it did
         if: always() && steps.auth.outputs.ready == 'true'
         env:
           CLAUDE_LOG: ${{ runner.temp }}/claude-execution-output.json
         run: |
           set -euo pipefail
+          git ls-remote --heads origin | sort > "${RUNNER_TEMP}/heads-after.txt" || true
+          if cmp -s "${RUNNER_TEMP}/heads-before.txt" "${RUNNER_TEMP}/heads-after.txt"; then
+            export PUSHED_NOTHING=1
+          else
+            export PUSHED_NOTHING=0
+          fi
           cat > "${RUNNER_TEMP}/why-claude-stopped.cjs" <<'JS'
           const fs = require("fs");
           const path = process.env.CLAUDE_LOG;
@@ -595,7 +653,39 @@ jobs:
                   say(text.length > CAP ? text.slice(0, CAP) + "\n[truncated at " + CAP + " characters]" : text);
                 }
               } else {
-                say("The run reported no error. Nothing further is printed: on a successful run this field holds Claude's own output, which does not belong in a public log.");
+                say("The run reported no error.");
+              }
+
+              // WHAT THE RUN ACTUALLY DID, turn by turn -- tool NAMES only,
+              // never their inputs or outputs (29 Sep 2026). Runs 575/576
+              // reported "success, 5 turns" and nothing else, so there was no
+              // way to tell a run that read the wrong file from one that could
+              // not reach its specification. Names say which.
+              const uses = new Map();
+              let turn = 0;
+              for (const e of entries) {
+                if (!e || e.type !== "assistant" || !e.message || !Array.isArray(e.message.content)) continue;
+                turn++;
+                const names = e.message.content.filter((c) => c && c.type === "tool_use").map((c) => { uses.set(c.id, c.name); return c.name; });
+                say("turn " + turn + ": " + (names.length ? names.join(", ") : "(text only)"));
+              }
+              // A refused or failed tool, by name, with the start of the error.
+              for (const e of entries) {
+                if (!e || e.type !== "user" || !e.message || !Array.isArray(e.message.content)) continue;
+                for (const c of e.message.content) {
+                  if (!c || c.type !== "tool_result" || c.is_error !== true) continue;
+                  const t = typeof c.content === "string" ? c.content : JSON.stringify(c.content || "");
+                  say("tool error (" + (uses.get(c.tool_use_id) || "?") + "): " + t.replace(/\s+/g, " ").slice(0, 300));
+                }
+              }
+              const denied = Array.isArray(result.permission_denials) ? result.permission_denials : [];
+              if (denied.length) say("tools refused by the allowlist: " + denied.map((d) => d && d.tool_name).join(", "));
+
+              // The Builder's own last words, ONLY when it pushed nothing --
+              // that is the case where they are the whole explanation. Capped.
+              if (process.env.PUSHED_NOTHING === "1" && typeof result.result === "string" && result.result) {
+                say("--- the Builder's final message (it pushed nothing) ---");
+                say(result.result.slice(0, 2000));
               }
             }
           }
@@ -607,3 +697,38 @@ jobs:
           }
           JS
           node "${RUNNER_TEMP}/why-claude-stopped.cjs"
+
+      # The Builder has no tool to comment, so when it explains itself it
+      # writes .builder-round/why.md and this posts it on the round's issue.
+      - name: Post the Builder's own explanation on the issue
+        if: always() && steps.auth.outputs.ready == 'true' && github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+        run: |
+          set -euo pipefail
+          if [ -s .builder-round/why.md ] && printf '%s' "$ISSUE_NUMBER" | grep -Eq '^[0-9]{1,6}$'; then
+            { echo "**Builder run $GITHUB_RUN_NUMBER stopped and said:**"; echo ""; head -c 6000 .builder-round/why.md; } > "${RUNNER_TEMP}/why-comment.md"
+            gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file "${RUNNER_TEMP}/why-comment.md"
+          else
+            echo "The Builder left no explanation file."
+          fi
+
+      # ======================================================================
+      # A DISPATCHED RUN THAT PUSHED NOTHING IS A FAILURE, AND NOW IT SAYS SO.
+      # Runs 495, 496, 575 and 576 all built nothing and all showed a green
+      # tick, so a round that never started looked exactly like one that
+      # finished. The Architect only learnt by noticing an absence. A red run
+      # is noticed; a green one is believed.
+      # ======================================================================
+      - name: Fail the run if the Builder pushed nothing
+        if: always() && steps.auth.outputs.ready == 'true' && github.event_name == 'workflow_dispatch'
+        run: |
+          set -euo pipefail
+          git ls-remote --heads origin | sort > "${RUNNER_TEMP}/heads-final.txt"
+          if cmp -s "${RUNNER_TEMP}/heads-before.txt" "${RUNNER_TEMP}/heads-final.txt"; then
+            echo "::error::The Builder pushed nothing to any branch in this run. See 'Say why Claude stopped, and what it did' above."
+            exit 1
+          fi
+          echo "The Builder pushed to at least one branch:"
+          comm -13 "${RUNNER_TEMP}/heads-before.txt" "${RUNNER_TEMP}/heads-final.txt" | awk '{print $2}'

@@ -22,6 +22,13 @@ import process from "node:process";
 const root = path.resolve(process.argv[2] || process.cwd());
 const read = (p) => fs.readFileSync(path.join(root, p), "utf8");
 const brief = read("CLAUDE.md");
+// 29 Sep 2026: the brief's history (earlier milestones and their notes) moved
+// to docs/governance/brief-history.md, unchanged, so CLAUDE.md -- loaded by
+// every session and Builder run -- stays small. Everything the brief used to
+// name is still checked: the path, held-branch, wiring-commit and CHANGELOG
+// checks read BOTH files. Only the milestone-line check reads CLAUDE.md alone,
+// because the current milestone lives there.
+const briefAndHistory = brief + "\n" + read("docs/governance/brief-history.md");
 const changelog = read("CHANGELOG.md");
 
 let passed = 0, failed = 0;
@@ -36,7 +43,7 @@ function check(name, fn) {
 /** Every backticked token in the brief that is unmistakably a repository path. */
 function briefPaths() {
   const out = new Set();
-  for (const m of brief.matchAll(/`([^`\s]+)`/g)) {
+  for (const m of briefAndHistory.matchAll(/`([^`\s]+)`/g)) {
     const token = m[1];
     if (/^(app\/js\/[\w.-]+\.(js|json)|tools\/[\w./-]+\.(mjs|js|json|py|rules)|docs\/[\w./-]+\.(md|html|json|rules)|tests\/[\w./-]+\.[\w]+)$/.test(token)) {
       out.add(token);
@@ -149,7 +156,7 @@ check("the three reachable lines the brief names are all present", () => {
 });
 
 check("the unmerged wiring candidate the brief names still exists at the commit it names", () => {
-  const named = brief.match(/on\s*\n?`?(claude\/phase4-wiring)`?\s*at\s*\*\*`([0-9a-f]{7,40})`\*\*/);
+  const named = briefAndHistory.match(/on\s*\n?`?(claude\/phase4-wiring)`?\s*at\s*\*\*`([0-9a-f]{7,40})`\*\*/);
   if (!named) { console.log("        (the brief no longer names an unmerged wiring branch -- nothing to check)"); return; }
   const [, branch, sha] = named;
   const head = git("rev-parse", `origin/${branch}`);
@@ -162,7 +169,7 @@ check("every version the brief names is also in CHANGELOG.md -- nothing lives on
   // having only ever lived here: a round leaving the brief is appended to
   // CHANGELOG.md FIRST, so trimming the brief can never destroy one.
   const current = read("app/js/version.js").match(/APP_VERSION\s*=\s*"([\d.]+)"/)[1];
-  const versions = new Set([...brief.matchAll(/\bv(0[78]\.\d{2,3})\b/g)].map((m) => m[1]));
+  const versions = new Set([...briefAndHistory.matchAll(/\bv(0[78]\.\d{2,3})\b/g)].map((m) => m[1]));
   assert.ok(versions.size >= 10, `found only ${versions.size} version references; the scanner has stopped working`);
   // A version AHEAD of the current one is a forward reference ("the next
   // feature round is v08.03"), not a round that has gone missing.
