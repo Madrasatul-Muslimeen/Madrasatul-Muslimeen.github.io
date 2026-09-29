@@ -483,6 +483,15 @@ Every report follows one shape, and ends with **Done / Suggestions / Pending**:
       `tenantSelect`, `surahSelect` and `unitTypeSelect` at English 320px. No
       single remedy fits all three. Recorded in `CLAUDE.md`; do not choose for
       them.
+- [ ] **Dictionary meanings for the Word Card's derived forms (Owner, 29 Sep
+      2026: "translations now, dictionary later").** #396 shows each form's
+      meaning as its most frequent tidied word-by-word gloss
+      (`lemma-meaning-index.json`), which sometimes reads like the verse ("the
+      grateful ones") rather than a dictionary entry ("thankful"). The later
+      job is RESEARCH FIRST: find an English and a Bangla lemma-meaning source
+      the project may lawfully use (licence recorded), measure its coverage of
+      the 4,832 lemmas, and bring the Owner the choice before building. Swapping
+      the source is then one index file; the Word Card reads `meaning.{en,bn}`.
 - [ ] **Surface Phase 4 Activity evidence somewhere a person can see it
       (22 Sep 2026, Owner's own "remind me this later" after v08.34).**
       `listStudyActivityEvidence()` (`app/js/study-activity-evidence-store.js`)
