@@ -406,7 +406,7 @@ console.log("\n=== 8. PHASE 2: the Quran module in Bangla ===");
   // mirrors it from the canonical control on every renderWheel(), whether or
   // not the intro's been tapped yet, so its options are already Bangla.
   const centre = await page.evaluate(() => ({
-    svgText: [...document.querySelectorAll("#wheelContainer svg text:not(.wheel-seg-num)")].map((t) => t.textContent.trim()).filter(Boolean),
+    svgText: [...document.querySelectorAll("#wheelContainer svg text:not(.wheel-seg-num):not(.wheel-seg-name)")].map((t) => t.textContent.trim()).filter(Boolean),
     hubSurah: document.getElementById("wheelHubSurahSelect")?.options[0]?.textContent,
   }));
   check("8c the wheel centre draws no ayah text of its own any more", centre.svgText.length === 0, JSON.stringify(centre.svgText));
@@ -465,7 +465,7 @@ console.log("\n=== 9. PHASE 2: English is still exactly English ===");
   const r = await page.evaluate(() => ({
     firstSurah: document.getElementById("surahSelect").options[0]?.textContent,
     position: document.getElementById("ayahPosition")?.textContent?.trim(),
-    centreText: [...document.querySelectorAll("#wheelContainer svg text:not(.wheel-seg-num)")].map((t) => t.textContent.trim()).filter(Boolean),
+    centreText: [...document.querySelectorAll("#wheelContainer svg text:not(.wheel-seg-num):not(.wheel-seg-name)")].map((t) => t.textContent.trim()).filter(Boolean),
     hubSurah: document.getElementById("wheelHubSurahSelect")?.options[0]?.textContent,
   }));
   check("9 surah picker still English with Western digits", r.firstSurah?.startsWith("1.") && !BANGLA.test(r.firstSurah), r.firstSurah);
@@ -5437,7 +5437,11 @@ console.log("\n=== 43i-o. The hub's own content: Ta'awwudh/Bismillah (both perma
     // .wheel-seg-num is the ring's own per-slice number labels (1, 2, 3…) --
     // real, unrelated text this check must not trip on; only the centre's
     // own text element(s) (centerArabic/centerRef) carry no class at all.
-    centerTexts: [...document.querySelectorAll("#wheelContainer svg text:not(.wheel-seg-num)")].map((t) => t.textContent.trim()).filter(Boolean),
+    // .wheel-seg-name (v08.114, issue #385) is each Approach's short name
+    // written along its own SLICE, not the centre -- excluded for the same
+    // reason, updated in place (it made 9 and 43k fail by counting slice
+    // names as centre text).
+    centerTexts: [...document.querySelectorAll("#wheelContainer svg text:not(.wheel-seg-num):not(.wheel-seg-name)")].map((t) => t.textContent.trim()).filter(Boolean),
   }));
   check("43k Ta'awwudh is shown, even with the longest ayah in the Qur'an selected", state.taawwudhShown && state.taawwudhText.includes("أَعُوذُ"), JSON.stringify(state));
   check("43k ...and so is Bismillah, permanently, not conditionally", state.bismillahShown && state.bismillahText.includes("بِسْمِ"), JSON.stringify(state));

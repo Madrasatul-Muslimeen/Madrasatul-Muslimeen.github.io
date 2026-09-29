@@ -573,7 +573,7 @@ export function nextApproachId(trackables) {
  * The live `trackables` create rule is canAdminCatalogue (owner/prime), no
  * field restriction -- no Rules change.
  */
-export async function createApproach(db, tenantId, { id, name, group, groupName, countsForEachAyah = false, order }, uid) {
+export async function createApproach(db, tenantId, { id, name, shortName = null, group, groupName, countsForEachAyah = false, order }, uid) {
   await createDocument(db, TENANT.TRACKABLES, `${tenantId}__${id}`, {
     tenantId,
     moduleId: "quranrevival",
@@ -581,6 +581,8 @@ export async function createApproach(db, tenantId, { id, name, group, groupName,
     group,
     groupName: groupName ?? null,
     name,
+    // Issue #385 -- optional; an Approach with none prints its full name.
+    ...(shortName && (shortName.en || shortName.bn) ? { shortName } : {}),
     guide: { what: { en: "", bn: "" }, how: { en: "", bn: "" }, measure: { en: "", bn: "" } },
     panels: [],
     order,

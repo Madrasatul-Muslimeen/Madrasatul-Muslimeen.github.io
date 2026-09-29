@@ -610,6 +610,23 @@ export function setWheelLook(id) {
   return cachedWheelLook;
 }
 
+// Issue #385 -- whether each Approach slice prints its short name along it,
+// on every wheel that draws Approach slices. "on" is the default.
+const WHEEL_NAMES_KEY = "mm_wheel_names";
+const WHEEL_NAMES_IDS = ["on", "off"];
+let cachedWheelNames = readStored(WHEEL_NAMES_KEY, WHEEL_NAMES_IDS, "on");
+
+/** true when slices print their short names (default). */
+export function getWheelNames() {
+  return cachedWheelNames === "on";
+}
+
+export function setWheelNames(on) {
+  cachedWheelNames = on ? "on" : "off";
+  writeStored(WHEEL_NAMES_KEY, cachedWheelNames);
+  return getWheelNames();
+}
+
 // Issue #352 (Owner decisions 21, 22) -- what the landing Approach wheel
 // shows: "all" (six rings, Juz in the middle out to the āyah), one unit type
 // on its own ring, or "unit" -- the default, and exactly the wheel as it has

@@ -204,7 +204,7 @@
     </label>
     <p class="readonly-note" id="countsForEachAyahIntro">Counts for each āyah inside: when Yes, claiming a Surah, Juz, Ruku', Hizb, page or Range for this Approach counts for every āyah inside it too, in Explore and in My Status. When No, only an āyah's own claim counts for that āyah — a claim on the whole unit is kept and shown separately as "studied as a whole".</p>
     <div class="table-wrap"><table>
-      <thead><tr><th>#</th><th>Approach</th><th>Status</th><th>Counts for each āyah inside</th><th>Guide</th><th id="trkActionsHead" style="display:none;">Edit</th></tr></thead>
+      <thead><tr><th>#</th><th>Approach</th><th>Short name</th><th>Status</th><th>Counts for each āyah inside</th><th>Guide</th><th id="trkActionsHead" style="display:none;">Edit</th></tr></thead>
       <tbody id="trackablesBody"></tbody>
     </table></div>
     <!-- Owner request, 28 Sep 2026: "There's no option for adding new approach
@@ -216,6 +216,8 @@
         <div><label for="newApproachNameBn">Name (Bangla)</label><input id="newApproachNameBn" type="text" style="width:100%; box-sizing:border-box;" /></div>
         <div><label for="newApproachSection">Section</label><select id="newApproachSection" style="width:100%;"></select></div>
         <div><label for="newApproachCounts">Counts for each āyah inside</label><select id="newApproachCounts" style="width:100%;"><option value="no">No</option><option value="yes">Yes</option></select></div>
+        <div><label for="newApproachShortEn">Short name (English, optional)</label><input id="newApproachShortEn" type="text" maxlength="24" style="width:100%; box-sizing:border-box;" /></div>
+        <div><label for="newApproachShortBn">Short name (Bangla, optional)</label><input id="newApproachShortBn" type="text" maxlength="24" style="width:100%; box-sizing:border-box;" /></div>
       </div>
       <p class="readonly-note" style="margin:0.5rem 0 0;">It is added at the end of its section. You can move it, rename it and write its Guide with Edit.</p>
       <button id="addApproachBtn" style="margin-top:0.7rem;">Add Approach</button>
@@ -308,6 +310,7 @@
     } from "./js/catalogue.js";
     import { SECTION_NAMES } from "./js/catalogue-data.js";
     import { countsForEachAyah } from "./js/approach-coverage.js";
+    import { approachShortName, approachShortNamePair } from "./js/approach-short-name.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
 import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     import { translateStatic, t, num } from "./js/i18n.js";
@@ -1192,8 +1195,9 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         .join("");
       const noSection = sectionOf(row) === null
         ? `<option value="" selected>${t("(not set)")}</option>` : "";
-      return `<tr id="trk-row-${row.id}"><td colspan="6" style="background:#fafbfd;">
+      return `<tr id="trk-row-${row.id}"><td colspan="7" style="background:#fafbfd;">
         ${bilingualField("trkNameInput", t("Approach name"), row.name)}
+        ${isApproach ? bilingualField("trkShortNameInput", t("Short name (shown on the wheel)"), approachShortNamePair(row)) : ""}
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(13rem, 1fr)); gap:0.6rem; margin-top:0.8rem;">
           <div>
             <strong style="font-size:0.88rem;">${t("Section")}</strong>
@@ -1242,6 +1246,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       return `<tr id="trk-row-${row.id}">
         <td>${row.subjectId === "quran" && row.status !== "archived" ? num(visibleTrackables().findIndex((x) => x.id === row.id) + 1) : ""}</td>
         <td>${langText(row.name, getAppLang(), row.id)}</td>
+        <td class="trk-short-name">${row.subjectId === "quran" ? esc(approachShortName(row, getAppLang())) : ""}</td>
         <td>${approachStatusLabel(row.status)}</td>
         ${countsCell}
         <td>
@@ -1313,7 +1318,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         section name repeated down a column on every row. The heading carries
         colspan across the whole row and is what tells the two groups apart. */
     function sectionHeadingHtml(sec, count) {
-      return `<tr class="trk-section-heading"><td colspan="6" style="padding-top:1rem; border-bottom:none;">
+      return `<tr class="trk-section-heading"><td colspan="7" style="padding-top:1rem; border-bottom:none;">
         <strong style="font-size:0.95rem;">${langText(sec.name, getAppLang(), t("Section {n}", { n: num(sec.n) }))}</strong>
         <span style="color:#777; font-weight:400;"> — ${t("{n} Approaches", { n: num(count) })}</span>
       </td></tr>`;
@@ -1350,7 +1355,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       fillNewApproachSections();
       const others = visibleOtherTrackables();
       const separator = others.length
-        ? `<tr class="trk-other-separator"><td colspan="6" style="padding-top:1.1rem; border-bottom:none; color:#555; font-size:0.85rem;">
+        ? `<tr class="trk-other-separator"><td colspan="7" style="padding-top:1.1rem; border-bottom:none; color:#555; font-size:0.85rem;">
              <strong>${t("Other trackables")}</strong> — ${t("one per module, outside the Approaches. Editable, but they have no position among the Approaches.")}
            </td></tr>`
         : "";
@@ -1367,7 +1372,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         // it should be added ... to the Approach list as well".
         grouped += sectionHeadingHtml(sec, inSec.length) + (inSec.length
           ? inSec.map(trackableRowHtml).join("")
-          : `<tr class="trk-section-empty"><td colspan="6" style="color:#555; font-style:italic;">${t("No Approaches in this section yet.")}${canEdit ? " " + t("Add one with the form below, or move one here with Edit.") : ""}</td></tr>`);
+          : `<tr class="trk-section-empty"><td colspan="7" style="color:#555; font-style:italic;">${t("No Approaches in this section yet.")}${canEdit ? " " + t("Add one with the form below, or move one here with Edit.") : ""}</td></tr>`);
       }
       const orphans = approaches.filter((row) => !seen.has(row.id));
       if (orphans.length) {
@@ -1379,7 +1384,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
           byOwnName.get(key).rows.push(row);
         }
         for (const { label, rows } of byOwnName.values()) {
-          grouped += `<tr class="trk-section-heading"><td colspan="6" style="padding-top:1rem; border-bottom:none;">
+          grouped += `<tr class="trk-section-heading"><td colspan="7" style="padding-top:1rem; border-bottom:none;">
               <strong style="font-size:0.95rem;">${label || t("(not set)")}</strong>
               <span style="color:#777; font-weight:400;"> — ${t("{n} Approaches", { n: num(rows.length) })}</span>
             </td></tr>` + rows.map(trackableRowHtml).join("");
@@ -1479,6 +1484,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
           const outcome = await safeWrite(
             () => editCatalogueNode(db, TENANT.TRACKABLES, activeTenantId, row.id, {
               name,
+              ...(tr.querySelector(".trkShortNameInput") ? { shortName: readPair("trkShortNameInput", row.shortName) } : {}),
               // group and groupName always move together -- a doc carrying
               // section 3's number and section 5's name is a screen that
               // lies, and groupName is what every reader actually prints.
@@ -1869,12 +1875,16 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       const name = {};
       if (en) name.en = en;
       if (bn) name.bn = bn;
+      const shortName = {
+        en: document.getElementById("newApproachShortEn").value.trim(),
+        bn: document.getElementById("newApproachShortBn").value.trim(),
+      };
       const id = nextApproachId(trackableList);
       const lastOrder = trackableList.reduce((m, r) => Math.max(m, Number(r.order) || 0), 0);
       btn.disabled = true;
       const outcome = await safeWrite(
         () => createApproach(db, activeTenantId, {
-          id, name, group, groupName: sectionNameFor(group) ?? null,
+          id, name, shortName, group, groupName: sectionNameFor(group) ?? null,
           countsForEachAyah: document.getElementById("newApproachCounts").value === "yes",
           order: lastOrder + 1,
         }, auth.currentUser.uid),
@@ -1884,6 +1894,8 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       if (!outcome.ok) { result.textContent = outcome.entry.message; return; }
       document.getElementById("newApproachNameEn").value = "";
       document.getElementById("newApproachNameBn").value = "";
+      document.getElementById("newApproachShortEn").value = "";
+      document.getElementById("newApproachShortBn").value = "";
       // Patch the list we hold rather than re-reading it (the saved row is
       // known exactly), then renumber so the new Approach sits at the end of
       // its OWN section and every section stays one contiguous block
@@ -1892,6 +1904,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       applyTrackables([...trackableList, {
         id, tenantId: activeTenantId, moduleId: "quranrevival", subjectId: "quran",
         group, groupName: sectionNameFor(group) ?? null, name,
+        ...(shortName.en || shortName.bn ? { shortName } : {}),
         guide: { what: {}, how: {}, measure: {} }, panels: [], order: lastOrder + 1,
         status: "active", countsForEachAyah: document.getElementById("newApproachCounts").value === "yes",
         sourceTemplateId: null, edited: true,

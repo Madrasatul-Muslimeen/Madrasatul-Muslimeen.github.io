@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "08.113",
+    "version": "08.114",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1133,8 +1133,20 @@
     {
       "version": "08.113",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Catalogue tabs and one-line row buttons; Approaches numbered 1..N by position everywhere; ▲▼ inside a later section fixed; pickers follow the tenant's sections; backup Section column; auto-credit removal warning.",
+      "integration": {
+        "authorizedOn": "2026-09-29",
+        "integratedOn": "2026-09-29",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "08.114",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Approach short names: a Catalogue column, written along the wheel slices, a Names toggle on the Wheel look row.",
       "integration": {
         "authorizedOn": "2026-09-29",
         "integratedOn": "2026-09-29",
@@ -1143,8 +1155,9 @@
       }
     }
   ],
-  "nextUnallocated": "08.114",
+  "nextUnallocated": "08.115",
   "nextUnallocatedNote": [
+    "v08.114 was allocated to Approach short names on the wheel, 2026-09-29.",
     "v08.113 was allocated to the Catalogue in tabs; Approach numbers by position; ▲▼ fixed, 2026-09-29.",
     "v08.112 was allocated to the Approach list heading everywhere, 2026-09-29.",
     "v08.111 was allocated to the Global Approach Card, 2026-09-29.",
