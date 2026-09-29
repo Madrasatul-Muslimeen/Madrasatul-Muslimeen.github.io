@@ -131,7 +131,10 @@ for (const lang of ["en", "bn"]) {
   const list = await page.evaluate(() => {
     const out = [];
     for (const el of document.querySelectorAll(".ways-list > *")) {
-      if (el.classList.contains("ways-group")) out.push({ h: el.textContent.trim(), rows: 0, empty: "" });
+      // Issue #400: the heading is a button (caret, count badge, name) and its
+      // rows start collapsed, so the NAME is read from .ways-group-name and rows
+      // are counted whether or not they are shown.
+      if (el.classList.contains("ways-group")) out.push({ h: (el.querySelector(".ways-group-name") || el).textContent.trim(), rows: 0, empty: "" });
       else if (el.classList.contains("way-row")) { if (out.length) out[out.length - 1].rows++; }
       else if (el.classList.contains("ways-group-empty")) { if (out.length) out[out.length - 1].empty = el.textContent.trim(); }
     }
@@ -179,7 +182,7 @@ for (const lang of ["en", "bn"]) {
   const ctx = await newContext(browser, { viewport: { width: 1100, height: 900 } });
   const { page } = await openPage(ctx, "/app/quranrevival.html");
   await page.waitForFunction(() => document.querySelectorAll(".ways-list .way-row").length > 0, null, { timeout: 15000 });
-  const n = await page.evaluate(() => ({ empty: document.querySelectorAll(".ways-group-empty").length, heads: [...document.querySelectorAll(".ways-list .ways-group")].map((h) => h.textContent.trim()) }));
+  const n = await page.evaluate(() => ({ empty: document.querySelectorAll(".ways-group-empty").length, heads: [...document.querySelectorAll(".ways-list .ways-group")].map((h) => (h.querySelector(".ways-group-name") || h).textContent.trim()) })); // #400: name only, not caret + count
   check(`[en] with no tenant section list, no empty section is shown and the headings are unchanged`,
     n.empty === 0 && JSON.stringify(n.heads) === JSON.stringify(["Preservation", "Engagement", "Understanding", "Reflection", "Action"]), JSON.stringify(n));
   await ctx.close();
