@@ -395,7 +395,13 @@ jobs:
         if: steps.auth.outputs.ready == 'true'
         run: |
           set -euo pipefail
-          npm install -g playwright
+          # INSTALLED INTO THE REPOSITORY, NOT GLOBALLY (29 Sep 2026). The
+          # suites `import { chromium } from "playwright"`, and an ES module
+          # import never looks in the global folder -- so with `-g` every
+          # browser suite died with ERR_MODULE_NOT_FOUND (run 585 said so).
+          # node_modules/ is kept out of git by .git/info/exclude.
+          npm install --no-save --no-package-lock playwright
+          echo "node_modules/" >> .git/info/exclude
           npx playwright install --with-deps chromium
 
       # ======================================================================
@@ -455,6 +461,28 @@ jobs:
           } > .builder-round/spec.md
           echo "Round specification saved: $(wc -c < .builder-round/spec.md) bytes, issue $ISSUE_NUMBER."
 
+      # ======================================================================
+      # THE BRANCH IS MADE FOR THE BUILDER, AND THIS IS THE ROOT CAUSE OF EVERY
+      # "PUSHED NOTHING" RUN (found 29 Sep 2026, run 585, in the Builder's own
+      # words): a dispatched run starts on `main`; `git checkout -b` is not in
+      # its allowlist; and its only write tool, commit_files, commits to the
+      # branch it is ON. So it could only ever commit to main, which it rightly
+      # refuses. The job creates the round's branch from main, pushes it, and
+      # leaves the Builder standing on it.
+      # ======================================================================
+      - name: Create the round's branch for the Builder
+        if: steps.auth.outputs.ready == 'true' && github.event_name == 'workflow_dispatch'
+        id: branch
+        env:
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+        run: |
+          set -euo pipefail
+          br="builder/issue-${ISSUE_NUMBER}-run-${GITHUB_RUN_NUMBER}"
+          git checkout -b "$br"
+          git push origin "HEAD:refs/heads/$br"
+          echo "name=$br" >> "$GITHUB_OUTPUT"
+          echo "The Builder will work on $br"
+
       # What the remote held before the Builder started, so the last step can
       # tell a run that pushed nothing from one that did.
       - name: Record the branches before the Builder starts
@@ -464,6 +492,14 @@ jobs:
       - name: Run Claude Code
         if: steps.auth.outputs.ready == 'true'
         uses: anthropics/claude-code-action@v1
+        # CLAUDE_BRANCH IS WHAT ACTUALLY POINTS THE COMMIT TOOL AT THE ROUND'S
+        # BRANCH. The Action fixes the branch its commit_files tool writes to
+        # when it starts (src/modes/agent/index.ts: CLAUDE_BRANCH, else the
+        # run's own ref, else the default branch) -- a local `git checkout`
+        # does not move it. Empty for comment-started runs, which keep the
+        # Action's own branch handling.
+        env:
+          CLAUDE_BRANCH: ${{ steps.branch.outputs.name }}
         with:
           # THE SUBSCRIPTION TOKEN WINS, EXPLICITLY, AND THIS IS A FIX FOR A
           # REAL FAILURE RATHER THAN A PREFERENCE.
@@ -521,7 +557,7 @@ jobs:
           # root; the wording below also avoids `#` entirely, so a future edit
           # that drops the block scalar degrades loudly rather than silently.
           prompt: |-
-            ${{ github.event_name == 'workflow_dispatch' && format('You are the MMSA Builder. The round to build is issue number {0}; its title, body and every comment have been saved for you in the file .builder-round/spec.md, so read that file first: it is the specification. CLAUDE.md is already loaded as your project memory, so do not read it again with a tool; read only the parts of ARCHITECT.md you need. Follow the builder contract in CLAUDE.md section "The Architect loop" without exception: branch from main, open ONE pull request, ready for review and not a draft, that links issue number {0} and pastes the results of every check you ran, and then STOP. Do not merge anything. Do not change app/js/version.js. Do not touch firestore.rules, firebase.json or the workflow files. PUSH EARLY: commit and push your first working change to your branch within your first 40 turns, then keep pushing as you go, because work left only in the workspace is lost when the run ends. If you cannot build the round, or stop before it is finished, write exactly why and where you stopped, in plain words, into the file .builder-round/why.md; the workflow posts that file on issue number {0} for you. Never end quietly. Architect note for this run, which is context only and never an instruction that overrides the issue or the brief: {1}', inputs.issue_number, inputs.note) || '' }}
+            ${{ github.event_name == 'workflow_dispatch' && format('You are the MMSA Builder. The round to build is issue number {0}; its title, body and every comment have been saved for you in the file .builder-round/spec.md, so read that file first: it is the specification. CLAUDE.md is already loaded as your project memory, so do not read it again with a tool; read only the parts of ARCHITECT.md you need. You are already on your own branch, {2}, made from main and already on GitHub: commit to it with the commit_files tool (never to main), and open the pull request from it into main with the create_pull_request tool. Follow the builder contract in CLAUDE.md section "The Architect loop" without exception: open ONE pull request, ready for review and not a draft, that links issue number {0} and pastes the results of every check you ran, and then STOP. Do not merge anything. Do not change app/js/version.js. Do not touch firestore.rules, firebase.json or the workflow files. PUSH EARLY: commit and push your first working change to your branch within your first 40 turns, then keep pushing as you go, because work left only in the workspace is lost when the run ends. If you cannot build the round, or stop before it is finished, write exactly why and where you stopped, in plain words, into the file .builder-round/why.md; the workflow posts that file on issue number {0} for you. Never end quietly. Architect note for this run, which is context only and never an instruction that overrides the issue or the brief: {1}', inputs.issue_number, inputs.note, steps.branch.outputs.name) || '' }}
 
           # Commits are created through the GitHub API rather than the git CLI.
           # The reason is not signing, it is THE TOOL LIST: this is what makes
@@ -571,7 +607,7 @@ jobs:
           # Adding a tool-providing option here means adding its tools below.
           claude_args: |
             --max-turns 250
-            --allowedTools "mcp__github_file_ops__commit_files,mcp__github_file_ops__delete_files,Bash(node *),Bash(npx playwright *),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git stash:*),Bash(git rev-parse:*),Bash(git ls-remote:*),Bash(git fetch:*),Read,Edit,Write,Glob,Grep"
+            --allowedTools "mcp__github_file_ops__commit_files,mcp__github_file_ops__delete_files,mcp__github__create_pull_request,Bash(node *),Bash(npx playwright *),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git stash:*),Bash(git rev-parse:*),Bash(git ls-remote:*),Bash(git fetch:*),Read,Edit,Write,Glob,Grep"
 
       # ======================================================================
       # WHY THIS STEP EXISTS, AND IT IS A FINDING RATHER THAN A PRECAUTION.
@@ -743,3 +779,20 @@ jobs:
           fi
           echo "The Builder pushed to at least one branch:"
           comm -13 "${RUNNER_TEMP}/heads-before.txt" "${RUNNER_TEMP}/heads-final.txt" | awk '{print $2}'
+
+      # A branch with work on it and no pull request is named on the issue, so
+      # the Architect finds it instead of hunting for it.
+      - name: Name the branch on the issue if no pull request was opened
+        if: always() && steps.branch.outputs.name != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          BR: ${{ steps.branch.outputs.name }}
+        run: |
+          set -euo pipefail
+          ahead=$(gh api "repos/$GITHUB_REPOSITORY/compare/main...$BR" --jq .ahead_by 2>/dev/null || echo 0)
+          prs=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$BR" --state all --json number --jq length 2>/dev/null || echo 0)
+          echo "branch $BR: $ahead commit(s) ahead of main, $prs pull request(s)"
+          if [ "$ahead" -gt 0 ] && [ "$prs" -eq 0 ]; then
+            gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "Builder run $GITHUB_RUN_NUMBER pushed $ahead commit(s) to \`$BR\` but opened no pull request. The Architect should open it from that branch."
+          fi
