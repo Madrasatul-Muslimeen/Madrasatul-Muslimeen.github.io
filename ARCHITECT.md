@@ -274,6 +274,13 @@ every session, alongside the status board.
   authority for a new feature, and it crosses no Owner Control Gate: a fix
   that would touch Rules, tenancy, live records or a version allocation stops
   at the same gates as anything else.
+- **Repairs to our own tooling are fixes too, and the Owner said so on 29 Sep
+  2026:** *"Yes, Fix the Builder (why do you have to wait and ask me when it's
+  a fixing job?)"*. When the Builder, a workflow, a test suite or a governance
+  tool is broken, diagnose it, fix it, prove it and report. Do not list it as
+  something waiting on the Owner. Ask only when the fix is a real choice that
+  costs the Owner something (money, a setting only they can change, or a
+  change to how the app behaves for readers).
 
 **A "not done" recorded in a round is backlog work nobody has written down.**
 Every round says what it did not do; saying it in a changelog entry files it
