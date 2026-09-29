@@ -18744,3 +18744,15 @@ The Owner's four landing-page asks. Below 721px the Approach view's page scrolls
 - **Names toggle** — one "Names" button at the end of the Wheel look row (Dark · Light · Colour · Names), on by default, remembered per browser (`getWheelNames()`/`setWheelNames()`, `mm_wheel_names`).
 - **Architect review** — (1) the Builder put Names On/Off on a row of its own and could not run `layout.mjs`; measured, that row pushed the Approach list 46px down and cost a row at 390/412px, so it is one toggle on the existing row: NO LAYOUT REGRESSIONS, the row stays one line at 320/360px in both languages; (2) Bangla slice names were set in Inter, which has no Bangla letters, at the Latin size — now the app's Bangla stack (Noto Sans Bengali, Nirmala UI, Kalpurush) and a slightly larger size, checked on a 40-slice wheel at 390px; (3) `behaviour.mjs` 8c/9/43k ("the wheel centre draws no ayah text") counted the new slice names as centre text — updated in place to exclude `.wheel-seg-name`.
 - **Checks** — `approach-short-names-browser` 70/0 (switch check updated in place for the single toggle; the Builder's mutations: an empty label fails 19, a dropped save fails 2), catalogue-tabs 56/0, approach-sections 59/0, catalogue-add-approach 30/0, unit-rings 106/0, My Status 88/0, card-look 96/0, phone-width 217/0, behaviour 984/9 (baseline), layout NO LAYOUT REGRESSIONS.
+
+## v08.115 — 29 Sep 2026 — Word Card: each derived form's meaning
+
+The Owner (29 Sep 2026, screenshot of the Word Card for تَشْكُرُونَ, 35:12:28): *"The different forms in Basic should mention meaning of those forms in respective language, then mention the occurances."* Owner decision: the app's own word-by-word translations now; a dictionary source later (Architect backlog).
+
+Built by the Builder (issue #396, PR #398); reviewed and allocated by the Architect.
+
+- **Data**: `lemma-meaning-index.json` built by `tools/quran-data-pull/build-word-identity-indexes.mjs` from each word's `translation.en`/`translation.bn`. Per lemma and language: tidy each gloss, count, take the most frequent; ties shortest then alphabetical; a missing language is omitted, never guessed. 380,177 bytes; manifest updated.
+- **Loading**: `loadLemmaMeaningIndex()` in `app/js/quran-word-index.js`, lazy like the part-of-speech index (I9). `rootFormsFor()` adds `meaning: {en, bn}`; a failed load leaves meanings empty.
+- **Card**: `formMeaning()` in `app/js/quran-word-card.js` renders the meaning between the Arabic and the count, in the reader's language, else the other language with its own `lang`; one CSS rule in `quranrevival.html`. Both Basic Arabic and Arabic in Depth.
+- **Review**: index reproducible from the script; hand-counts for root ش ك ر match; screenshots looked at; limit recorded (some meanings read as verse phrases).
+- **Checks**: form-meaning 21/0 and browser 288/0 (new), word-card-rendered 118/4 (same 4 as `main`), explore-rendered 37/0, phone-width 217/0, behaviour 1003/4 baseline.

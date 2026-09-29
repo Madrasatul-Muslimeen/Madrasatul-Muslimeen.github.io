@@ -2295,6 +2295,7 @@
   .word-card-form-arabic { flex: 0 0 auto; min-width: 0; font-size: 1.5rem; line-height: 1.7; }
   /* v08.23 -- NO auto margin. The count belongs to the same cluster as the
      category and the Arabic, one row gap away, and wraps with them. */
+  .word-card-form-meaning { flex: 0 1 auto; min-width: 0; font-size: 0.82rem; line-height: 1.3; color: var(--card-text); overflow-wrap: anywhere; }
   .word-card-form-count { flex: 0 0 auto; font-size: 0.78rem; color: var(--card-text); white-space: nowrap; }
   .word-card-pos-en { display: block; font-size: 0.7rem; color: var(--card-text-muted); }
   .word-card-form-caret { flex: 0 0 auto; color: var(--card-text-muted); }
@@ -13071,6 +13072,8 @@
         derivedForms: t("Derived forms of this root"),
         rootFormsSummary: t("{total} occurrences in {forms} derived forms"),
         formOccurrences: t("{count} occurrences"),
+        // The reader's app language, for the derived-form meaning ("en" | "bn").
+        formMeaningLang: getAppLang() === "bn" ? "bn" : "en",
         // v08.22 -- the grammatical categories the packaged data itself uses,
         // each put through this app's own catalogue. A category the catalogue
         // does not carry comes back unchanged and is printed as the source

@@ -641,3 +641,4 @@ total). Allocated by the MMSA Architect.
 08.112: the Approach list heading everywhere. Allocated by the MMSA Architect.
 08.113: the Catalogue in tabs; Approach numbers by position; ▲▼ fixed. Allocated by the MMSA Architect.
 08.114: Approach short names on the wheel. Allocated by the MMSA Architect.
+08.115: Word Card derived-form meanings (#396). Allocated by the MMSA Architect.
