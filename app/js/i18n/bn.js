@@ -1452,6 +1452,8 @@ export const BN = {
   "Expand": "খুলুন",
   "Collapse": "গুটিয়ে নিন",
   "Click to jump to this module's subjects below": "নিচে এই মডিউলের বিষয়গুলোতে যেতে ক্লিক করুন",
+  "Click to open this module's subjects": "এই মডিউলের বিষয়গুলো খুলতে ক্লিক করুন",
+  "Reading, listening, notes or Word by Word are credited to this Approach automatically; while it is removed, that credit is not shown anywhere.": "তিলাওয়াত, শোনা, নোট বা শব্দে শব্দে অধ্যয়ন এই পদ্ধতিতে স্বয়ংক্রিয়ভাবে যোগ হয়; এটি সরানো থাকলে সেই অগ্রগতি কোথাও দেখা যাবে না।",
   // The four study-screen renderers a module can use.
   "Ayah by ayah": "আয়াতভিত্তিক",
   "Routine": "রুটিন",
@@ -1535,6 +1537,8 @@ export const BN = {
     "তালিকা তৈরি হয়েছে: {subjects}টি বিষয় ও {approaches}টি পদ্ধতি।",
   "Catalogue is already set up.": "তালিকা আগে থেকেই তৈরি আছে।",
   "Could not set up the catalogue:": "তালিকা তৈরি করা যায়নি:",
+  "You're viewing as a role that cannot edit the catalogue (owner/prime only). Everything on this page is read-only for you.":
+    "আপনি এমন একটি ভূমিকায় দেখছেন যা ক্যাটালগ সম্পাদনা করতে পারে না (কেবল মালিক/প্রাইম)। এই পাতার সবকিছু আপনার জন্য শুধু দেখার।",
   "You're viewing as a role that cannot edit the catalogue (owner/prime\n      only). Everything above is read-only for you.":
     "আপনি এমন একটি ভূমিকায় দেখছেন যা তালিকা সম্পাদনা করতে পারে না (কেবল মালিক/প্রাইম পারেন)। উপরের সবকিছু আপনার জন্য কেবল পড়ার যোগ্য।",
 
@@ -2494,7 +2498,9 @@ export const BN = {
   "No per-person study data was read.": "কোনো ব্যক্তিভিত্তিক অধ্যয়নের তথ্য পড়া হয়নি।",
   "Study — claims, notes, bookmarks and the activity log": "অধ্যয়ন — দাবি, নোট, বুকমার্ক ও কার্যবিবরণী",
   "Subjects": "বিষয়সমূহ",
-  "Approaches": "অ্যাপ্রোচসমূহ",
+  // "Approaches" is translated once, above, as "পদ্ধতিসমূহ" -- the app's own
+  // word for an Approach. A second entry here ("অ্যাপ্রোচসমূহ") silently won
+  // (a later key replaces an earlier one), removed 29 Sep 2026.
   "Āyah collections (QCR)": "আয়াত সংগ্রহ (QCR)",
   "Asma ul Husna collections": "আসমাউল হুসনা সংগ্রহ",
   "Classes, course offers and curriculum": "ক্লাস, কোর্স অফার ও পাঠ্যক্রম",

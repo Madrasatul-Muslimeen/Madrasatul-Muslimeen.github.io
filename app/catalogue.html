@@ -8,7 +8,7 @@
   <script>(function(){try{document.documentElement.setAttribute('data-card-look',localStorage.getItem('mm_card_look')==='light'?'light':'night');}catch(e){document.documentElement.setAttribute('data-card-look','night');}})();</script>
 <title>QuranRevival — Catalogue</title>
 <style>
-  body { font-family: system-ui, sans-serif; max-width: 48rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
+  body { font-family: system-ui, sans-serif; max-width: 64rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
   h1 { font-size: 1.4rem; }
   h2 { font-size: 1.15rem; margin-top: 2.2rem; border-bottom: 1px solid #eee; padding-bottom: 0.3rem; }
   label { display: block; margin: 0.8rem 0 0.3rem; font-weight: 600; font-size: 0.92rem; }
@@ -42,6 +42,54 @@
   /* Issue #293 -- at phone width a wide table scrolls inside its own box
      instead of dragging the whole page sideways. Desktop is untouched. */
   @media (max-width: 600px) { table { display: block; overflow-x: auto; } }
+  /* Phones: slimmer cell padding, so a table whose action buttons stay on
+     one line still fits a 360px screen without scrolling sideways. */
+  @media (max-width: 600px) { th, td { padding: 0.35rem 0.3rem; } }
+
+  /* 29 Sep 2026, the Owner: "Organise the catalogue page ... (It's getting a
+     long tail)". One tab per kind of catalogue data; one panel shows at a
+     time. A tab is an ordinary toggle button (aria-pressed), not an ARIA tab
+     widget: each one swaps the whole working area, like Health's own view
+     switch (v08.46). */
+  .cat-tabs {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: #fff;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); gap: 0.35rem;
+    margin: 0.4rem 0 0.2rem; padding: 0.45rem 0; border-bottom: 1px solid #e3e7ef;
+  }
+  .cat-tabs button {
+    min-height: 40px; background: #fff; color: #1F3A6E; border: 1px solid #c9d2e3; border-radius: 0.5rem;
+    font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+  }
+  .cat-tabs button[aria-pressed="true"] { background: #1F3A6E; color: #fff; border-color: #1F3A6E; }
+  .cat-tab-count { font-size: 0.75rem; font-weight: 700; padding: 0.05rem 0.45rem; border-radius: 999px; background: #eef1f7; color: #1F3A6E; font-variant-numeric: tabular-nums; }
+  .cat-tabs button[aria-pressed="true"] .cat-tab-count { background: rgba(255,255,255,0.22); color: #fff; }
+  .cat-tab-count:empty { display: none; }
+  .cat-panel > h2:first-child, .cat-panel > :first-child { margin-top: 1rem; }
+  .cat-panel[hidden] { display: none; }
+
+  /* The Owner: "Why these are taking spaces? ... instead of placing
+     horizontally? Same is everywhere." Every row's buttons stay on ONE line;
+     the table scrolls inside its own box if a screen is too narrow for it. */
+  .row-actions { white-space: nowrap; }
+  .row-actions button { margin: 0.1rem 0; }
+  .table-wrap { overflow-x: auto; }
+
+  /* The section editor on a phone: a table this wide pushed its ▲▼ off the
+     right edge. Each section becomes a small card instead -- its number, both
+     name boxes full width, then its Approach count and ▲▼ on one line. */
+  @media (max-width: 600px) {
+    table.sections-table { display: block; overflow: visible; }
+    .sections-table thead { display: none; }
+    .sections-table tbody { display: block; }
+    .sections-table tr.sec-row { display: grid; grid-template-columns: 1.6rem 1fr auto; align-items: center; gap: 0.2rem 0.5rem; border-bottom: 1px solid #eee; padding: 0.45rem 0; }
+    .sections-table tr.sec-row td { border: none; padding: 0.1rem 0; }
+    .sections-table .sec-n { grid-row: 1 / span 2; align-self: start; font-weight: 700; }
+    .sections-table .sec-name { grid-column: 2 / 4; }
+    .sections-table .sec-count { grid-column: 2; font-size: 0.82rem; color: #555; }
+    .sections-table .sec-count::before { content: attr(data-label) ": "; }
+    .sections-table tr.sec-row .row-actions { grid-column: 3; justify-self: end; }
+    .sections-table tr:not(.sec-row) { display: block; }
+  }
 </style>
 </head>
 <body>
@@ -74,20 +122,33 @@
 
     <div id="seedStatus"></div>
 
+    <p class="readonly-note" id="readOnlyNote" style="display:none;">You're viewing as a role that cannot edit the catalogue (owner/prime only). Everything on this page is read-only for you.</p>
+
+    <div class="cat-tabs" id="catTabs" role="group" aria-label="Catalogue">
+      <button type="button" data-cat-tab="modules" aria-pressed="true"><span>Modules</span><span class="cat-tab-count" id="catCount-modules"></span></button>
+      <button type="button" data-cat-tab="subjects" aria-pressed="false"><span>Subjects</span><span class="cat-tab-count" id="catCount-subjects"></span></button>
+      <button type="button" data-cat-tab="approaches" aria-pressed="false"><span>Approaches</span><span class="cat-tab-count" id="catCount-approaches"></span></button>
+      <button type="button" data-cat-tab="ladders" aria-pressed="false"><span>Ladders &amp; levels</span><span class="cat-tab-count" id="catCount-ladders"></span></button>
+    </div>
+
+    <section class="cat-panel" id="catPanel-modules">
     <h2>Modules</h2>
-    <table>
+    <div class="table-wrap"><table>
       <thead><tr><th>Module</th><th>Renderer</th><th>Status</th><th id="moduleActionsHead" style="display:none;">Move</th></tr></thead>
       <tbody id="modulesBody"></tbody>
-    </table>
+    </table></div>
+    </section>
+
+    <section class="cat-panel" id="catPanel-subjects" hidden>
 
     <h2>Subject tree</h2>
     <label style="display:inline-flex; align-items:center; gap:0.4rem; font-weight:400;">
       <input type="checkbox" id="showArchivedSubjects" /> Show archived subjects
     </label>
-    <table>
+    <div class="table-wrap"><table>
       <thead><tr><th>Name</th><th>Gloss</th><th>Modules</th><th>Level (parent)</th><th>Status</th><th>Confirmation</th><th>Resource</th><th id="subjActionsHead" style="display:none;">Edit</th></tr></thead>
       <tbody id="subjectsBody"></tbody>
-    </table>
+    </table></div>
 
     <fieldset id="addSubjectBox" style="display:none;">
       <legend>Add a tenant-specific subject</legend>
@@ -110,13 +171,15 @@
       <button id="addSubjBtn" style="margin-top:0.8rem;">Add subject</button>
       <div id="addSubjResult" style="margin-top:0.5rem; font-size:0.88rem;"></div>
     </fieldset>
+    </section>
 
+    <section class="cat-panel" id="catPanel-approaches" hidden>
     <h2>Approach Sections</h2>
     <p class="readonly-note" id="sectionsIntro">The groups the Approaches are organised into. Renaming or adding one here changes it everywhere it appears — the Approach list below, the Approach picker, Explore, and the Mastery Wheel's own list — once you press Save sections.</p>
-    <table>
-      <thead><tr><th>#</th><th>Section</th><th>Approaches</th><th id="secActionsHead" style="display:none;">Edit</th></tr></thead>
+    <div class="table-wrap"><table class="sections-table">
+      <thead><tr><th style="width:2rem;">#</th><th>Section</th><th style="width:6.5rem;">Approaches</th><th id="secActionsHead" style="display:none; width:1%;">Edit</th></tr></thead>
       <tbody id="sectionsBody"></tbody>
-    </table>
+    </table></div>
     <div id="addSectionBox" style="display:none; margin-top:0.6rem;">
       <button id="addSectionBtn" class="secondary">Add a section</button>
     </div>
@@ -140,10 +203,10 @@
       <input type="checkbox" id="showArchivedTrackables" /> Show removed Approaches
     </label>
     <p class="readonly-note" id="countsForEachAyahIntro">Counts for each āyah inside: when Yes, claiming a Surah, Juz, Ruku', Hizb, page or Range for this Approach counts for every āyah inside it too, in Explore and in My Status. When No, only an āyah's own claim counts for that āyah — a claim on the whole unit is kept and shown separately as "studied as a whole".</p>
-    <table>
+    <div class="table-wrap"><table>
       <thead><tr><th>#</th><th>Approach</th><th>Status</th><th>Counts for each āyah inside</th><th>Guide</th><th id="trkActionsHead" style="display:none;">Edit</th></tr></thead>
       <tbody id="trackablesBody"></tbody>
-    </table>
+    </table></div>
     <!-- Owner request, 28 Sep 2026: "There's no option for adding new approach
          and assigning to a section." Owner/Prime only, like every editor here. -->
     <fieldset id="addApproachBox" style="display:none; margin-top:0.9rem;">
@@ -158,15 +221,17 @@
       <button id="addApproachBtn" style="margin-top:0.7rem;">Add Approach</button>
       <div id="addApproachResult" role="status" style="margin-top:0.5rem; font-size:0.88rem;"></div>
     </fieldset>
+    </section>
 
+    <section class="cat-panel" id="catPanel-ladders" hidden>
     <h2>Ladders &amp; levels</h2>
     <label style="display:inline-flex; align-items:center; gap:0.4rem; font-weight:400;">
       <input type="checkbox" id="showArchivedLadders" /> Show archived ladders/levels
     </label>
-    <table>
+    <div class="table-wrap"><table>
       <thead><tr><th>Ladder</th><th>Actions</th><th>Levels</th></tr></thead>
       <tbody id="laddersBody"></tbody>
-    </table>
+    </table></div>
 
     <fieldset id="addLadderBox" style="display:none;">
       <legend>Add a ladder</legend>
@@ -183,11 +248,7 @@
       <button id="addLevelBtn" style="margin-top:0.8rem;">Add level</button>
       <div id="ladderResult" style="margin-top:0.5rem; font-size:0.88rem;"></div>
     </fieldset>
-
-    <p class="readonly-note" id="readOnlyNote" style="display:none;">
-      You're viewing as a role that cannot edit the catalogue (owner/prime
-      only). Everything above is read-only for you.
-    </p>
+    </section>
   </div>
 
   <script type="module">
@@ -306,6 +367,33 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     let myMemberships = [];
     let canEdit = false;
     let subjectTree = [];
+
+    // ---- Tabs (29 Sep 2026). One panel at a time; the choice is kept per
+    // browser, and a plain #modules / #subjects / #approaches / #ladders in
+    // the address opens that tab. Wrapped in try/catch: a blocked storage
+    // must never stop the page opening.
+    const CAT_TABS = ["modules", "subjects", "approaches", "ladders"];
+    function showCatTab(name, { remember = true } = {}) {
+      if (!CAT_TABS.includes(name)) name = "modules";
+      for (const n of CAT_TABS) {
+        document.getElementById(`catPanel-${n}`).hidden = n !== name;
+        document.querySelector(`[data-cat-tab="${n}"]`).setAttribute("aria-pressed", String(n === name));
+      }
+      if (remember) { try { localStorage.setItem("mm_catalogue_tab", name); } catch (e) { /* not needed to work */ } }
+    }
+    document.querySelectorAll("[data-cat-tab]").forEach((btn) => {
+      btn.addEventListener("click", () => showCatTab(btn.dataset.catTab));
+    });
+    {
+      const fromHash = location.hash.replace("#", "");
+      let saved = null;
+      try { saved = localStorage.getItem("mm_catalogue_tab"); } catch (e) { saved = null; }
+      showCatTab(CAT_TABS.includes(fromHash) ? fromHash : (saved || "modules"), { remember: false });
+    }
+    function setCatCount(name, n) {
+      const el = document.getElementById(`catCount-${name}`);
+      if (el) el.textContent = n == null ? "" : num(n);
+    }
     // Owner ask (10 Aug 2026): clicking a module jumps to its subjects, and
     // the subject list is collapsible per-subject -- session-only state
     // (not persisted), a row is hidden if ANY of its ancestors is collapsed.
@@ -370,15 +458,16 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     // used by every post-mutation refresh -- e.g. after a module move).
     function renderModulesTable(modules) {
       moduleNameById = new Map(modules.map((m) => [m.id, langText(m.name, getAppLang(), m.id)]));
+      setCatCount("modules", modules.length);
       modulesBody.innerHTML = modules
         .map((m, i) => {
           const moveCell = canEdit
-            ? `<td>
+            ? `<td class="row-actions">
                 <button type="button" class="small secondary moduleMoveUpBtn" data-id="${m.id}" ${i === 0 ? "disabled" : ""} title="${t("Move up")}">▲</button>
                 <button type="button" class="small secondary moduleMoveDownBtn" data-id="${m.id}" ${i === modules.length - 1 ? "disabled" : ""} title="${t("Move down")}">▼</button>
               </td>`
             : "";
-          return `<tr class="module-row" data-module-id="${m.id}" title="${t("Click to jump to this module's subjects below")}">
+          return `<tr class="module-row" data-module-id="${m.id}" title="${t("Click to open this module's subjects")}">
             <td>${m.icon ?? ""} ${langText(m.name, getAppLang(), m.id)}</td><td>${rendererLabel(m.renderer)}</td><td>${entityStatusLabel(m.status)}</td>${moveCell}
           </tr>`;
         })
@@ -422,6 +511,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     function jumpToModuleSubjects(moduleId) {
       const rootNode = subjectTree.find((n) => (n.moduleIds ?? []).includes(moduleId) && !n.parentId);
       if (!rootNode) return;
+      showCatTab("subjects");
       if (collapsedSubjectIds.has(rootNode.id)) {
         collapsedSubjectIds.delete(rootNode.id);
         renderSubjects();
@@ -559,10 +649,10 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         const idx = siblings.findIndex((n) => n.id === node.id);
         moveButtons = `<button class="small secondary moveUpBtn" data-id="${node.id}" ${idx <= 0 ? "disabled" : ""} title="${t("Move up")}">▲</button>
           <button class="small secondary moveDownBtn" data-id="${node.id}" ${idx === -1 || idx >= siblings.length - 1 ? "disabled" : ""} title="${t("Move down")}">▼</button>
-          <button class="small secondary moveToBtn" data-id="${node.id}" title="${t("Move to a different parent")}">${t("Move to…")}</button><br/>`;
+          <button class="small secondary moveToBtn" data-id="${node.id}" title="${t("Move to a different parent")}">${t("Move to…")}</button>`;
       }
       const actionCell = canEdit
-        ? `<td>${moveButtons}<button class="small secondary editSubjBtn" data-id="${node.id}">${t("Edit")}</button> ${archiveBtn}</td>`
+        ? `<td class="row-actions">${moveButtons} <button class="small secondary editSubjBtn" data-id="${node.id}">${t("Edit")}</button> ${archiveBtn}</td>`
         : "";
       return `<tr id="subj-row-${node.id}">
         <td class="depth-${depthOf(node)}">${subjectToggleHtml(node)}${langText(node.name, getAppLang(), node.id)}</td>
@@ -580,6 +670,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     // table above.
     function applySubjectTree(tree) {
       subjectTree = tree;
+      setCatCount("subjects", tree.filter((n) => n.status !== "archived").length);
       if (!collapseInitialized) {
         collapsedSubjectIds = new Set(
           subjectTree.filter((n) => subjectTree.some((c) => c.parentId === n.id)).map((n) => n.id)
@@ -793,7 +884,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     function sectionRowHtml(sec, i) {
       const count = sec.from == null ? 0 : approachCountIn(sec.from);
       const actions = canEdit
-        ? `<td>
+        ? `<td class="row-actions">
              <button class="small secondary secUpBtn" data-i="${i}" ${i === 0 ? "disabled" : ""} title="${t("Move up")}">▲</button>
              <button class="small secondary secDownBtn" data-i="${i}" ${i === sections.length - 1 ? "disabled" : ""} title="${t("Move down")}">▼</button>
            </td>`
@@ -812,10 +903,10 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
              </div>
            </td>`
         : `<td>${langText(sec.name, getAppLang(), "")}</td>`;
-      return `<tr>
-        <td>${num(i + 1)}</td>
-        ${nameCell}
-        <td>${num(count)}</td>
+      return `<tr class="sec-row">
+        <td class="sec-n">${num(i + 1)}</td>
+        ${nameCell.replace("<td>", '<td class="sec-name">')}
+        <td class="sec-count" data-label="${esc(t("Approaches"))}">${num(count)}</td>
         ${actions}
       </tr>`;
     }
@@ -1131,10 +1222,10 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         const siblings = sectionSiblings(row);
         const idx = siblings.findIndex((x) => x.id === row.id);
         moveButtons = `<button class="small secondary trkUpBtn" data-id="${row.id}" ${idx <= 0 ? "disabled" : ""} title="${t("Move up")}">▲</button>
-          <button class="small secondary trkDownBtn" data-id="${row.id}" ${idx === -1 || idx >= siblings.length - 1 ? "disabled" : ""} title="${t("Move down")}">▼</button><br/>`;
+          <button class="small secondary trkDownBtn" data-id="${row.id}" ${idx === -1 || idx >= siblings.length - 1 ? "disabled" : ""} title="${t("Move down")}">▼</button>`;
       }
       const actionCell = canEdit
-        ? `<td>${moveButtons}<button class="small secondary editTrkBtn" data-id="${row.id}">${t("Edit")}</button> ${removeBtn}</td>`
+        ? `<td class="row-actions">${moveButtons} <button class="small secondary editTrkBtn" data-id="${row.id}">${t("Edit")}</button> ${removeBtn}</td>`
         : "";
       // Issue #328 -- module-specific "Studied" trackables are out of scope
       // for this setting (they are always read as No, per
@@ -1149,7 +1240,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
           </select></td>`
         : `<td>${row.subjectId === "quran" ? (yes ? t("Yes") : t("No")) : t("No")}</td>`;
       return `<tr id="trk-row-${row.id}">
-        <td>${num(row.order)}</td>
+        <td>${row.subjectId === "quran" && row.status !== "archived" ? num(visibleTrackables().findIndex((x) => x.id === row.id) + 1) : ""}</td>
         <td>${langText(row.name, getAppLang(), row.id)}</td>
         <td>${approachStatusLabel(row.status)}</td>
         ${countsCell}
@@ -1295,6 +1386,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         }
       }
       trackablesBody.innerHTML = grouped + separator + others.map(trackableRowHtml).join("");
+      setCatCount("approaches", approaches.length);
 
       trackablesBody.querySelectorAll(".guideBtn").forEach((btn) => {
         btn.addEventListener("click", () => {
@@ -1344,17 +1436,23 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         });
       });
 
+      // 29 Sep 2026, the Owner: "The up/ down move button of approaches
+      // inside a section doesn't work." moveTrackable() takes a position
+      // WITHIN the Approach's own section, and these handlers passed its
+      // position among ALL Approaches -- equal only in the first section, so
+      // in every later section the target fell outside the section and the
+      // move was silently skipped.
+      const stepWithinSection = (id, by) => {
+        const row = trackableList.find((x) => x.id === id);
+        if (!row) return;
+        const siblings = sectionSiblings(row);
+        moveTrackable(id, siblings.findIndex((x) => x.id === id) + by);
+      };
       trackablesBody.querySelectorAll(".trkUpBtn").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const visible = visibleTrackables();
-          moveTrackable(btn.dataset.id, visible.findIndex((x) => x.id === btn.dataset.id) - 1);
-        });
+        btn.addEventListener("click", () => stepWithinSection(btn.dataset.id, -1));
       });
       trackablesBody.querySelectorAll(".trkDownBtn").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const visible = visibleTrackables();
-          moveTrackable(btn.dataset.id, visible.findIndex((x) => x.id === btn.dataset.id) + 1);
-        });
+        btn.addEventListener("click", () => stepWithinSection(btn.dataset.id, +1));
       });
 
       trackablesBody.querySelectorAll(".saveTrkBtn").forEach((btn) => {
@@ -1415,8 +1513,16 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
           const row = trackableList.find((x) => x.id === btn.dataset.id);
           const nextStatus = btn.dataset.next;
           const name = langText(row.name, getAppLang(), row.id);
+          // Audit #384, item 5: six Approaches receive study credit
+          // AUTOMATICALLY by their permanent id (study-approach-contract.js:
+          // reading 01/03, Word by Word 04, listening 07/08, notes 10). The
+          // Owner is told before removing one, rather than finding out later.
+          const AUTO_CREDIT = ["approach_01", "approach_03", "approach_04", "approach_07", "approach_08", "approach_10"];
+          const autoNote = nextStatus === "archived" && AUTO_CREDIT.includes(row.id)
+            ? " " + t("Reading, listening, notes or Word by Word are credited to this Approach automatically; while it is removed, that credit is not shown anywhere.")
+            : "";
           const ask = nextStatus === "archived"
-            ? t("Remove \"{name}\"? It disappears from the Mastery Wheel and every list. Anything already claimed against it is kept, and you can restore it here at any time.", { name })
+            ? t("Remove \"{name}\"? It disappears from the Mastery Wheel and every list. Anything already claimed against it is kept, and you can restore it here at any time.", { name }) + autoNote
             : t("Restore \"{name}\"?", { name });
           if (!confirm(ask)) return;
 
@@ -1476,11 +1582,12 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
           : "";
         rows.push(`<tr>
           <td>${langText(ladder.name, getAppLang(), ladder.id)}${ladder.status === "archived" ? ` (${t("archived")})` : ""}</td>
-          <td>${ladderArchiveBtn}</td>
+          <td class="row-actions">${ladderArchiveBtn}</td>
           <td>${levelChips}</td>
         </tr>`);
       }
       laddersBody.innerHTML = rows.join("") || `<tr><td colspan="3">${t("No ladders yet.")}</td></tr>`;
+      setCatCount("ladders", allLadders.filter((l) => l.status !== "archived").length);
 
       laddersBody.querySelectorAll(".archiveLadderBtn").forEach((btn) => {
         btn.addEventListener("click", async () => {

@@ -5974,6 +5974,17 @@
     let programBySubjectId = new Map();
 
     let quranTrackables = [];
+    // 29 Sep 2026, the Owner: "Deleting/ moving an approach should auto
+    // correct the Approach numbers ... Look at the image markup wheel shows
+    // 42." An Approach's NUMBER on screen is its position in display order
+    // (the tenant's sections in their order, then each Approach's place in
+    // its section), 1..N -- never its stored \`order\`, which keeps gaps when
+    // an Approach is removed and is one past the highest when one is added.
+    // Every screen that numbers Approaches reads approachNo().
+    let approachNumberById = new Map();
+    function approachNo(trackable) {
+      return trackable ? (approachNumberById.get(trackable.id) ?? "") : "";
+    }
     let asmaTrackable = null; // studied_asma -- the same tenant-wide read quranTrackables already comes from (I9)
     let surahIndex = [];
     let currentSurahNum = 1;
@@ -6336,16 +6347,12 @@
       if (!quranTrackables.length) {
         return `<option value="">${t("(no Quran Approaches yet)")}</option>`;
       }
-      const bySection = new Map();
-      for (const item of quranTrackables) {
-        const key = item.group ?? 0;
-        if (!bySection.has(key)) bySection.set(key, { groupName: item.groupName, items: [] });
-        bySection.get(key).items.push(item);
-      }
-      return [...bySection.entries()]
-        .sort((a, b) => a[0] - b[0])
-        .map(([, { groupName, items }]) => {
-          const label = groupName ? langText(groupName, getAppLang()) : "";
+      // 29 Sep 2026 (audit #384, item 3): grouped by the tenant's OWN section
+      // list, like the landing list and the cards -- not by the stored
+      // \`group\` number and the first item's copied \`groupName\`.
+      return groupApproachesBySection(quranTrackables, sectionsFromTenantDoc(currentTenantDoc))
+        .map(({ name: groupName, items }) => {
+          const label = groupName ? escapeHtml(langText(groupName, getAppLang(), "")) : "";
           const options = items
             .map((item) => `<option value="${item.id}">${langText(item.name, getAppLang(), item.id)}</option>`)
             .join("");
@@ -7379,7 +7386,11 @@
       // tenant document this wave already fetches -- no extra read (I9).
       applyTaglineData(currentTenantDoc);
 
-      quranTrackables = allTrackables.filter((t) => t.subjectId === "quran" && t.status !== "archived");
+      quranTrackables = groupApproachesBySection(
+        allTrackables.filter((t) => t.subjectId === "quran" && t.status !== "archived"),
+        sectionsFromTenantDoc(currentTenantDoc)
+      ).flatMap((sec) => sec.items);
+      approachNumberById = new Map(quranTrackables.map((t, i) => [t.id, i + 1]));
       // Asma-in-Explore round -- studied_asma rides along on this SAME
       // already-fetched tenant-wide read (I9: no second Firestore call),
       // the exact trackable asma-study.js's own openWayModal() already
@@ -7628,7 +7639,7 @@
       const wheelLabels = statusLabelsById();
       const items = approachStatuses.map(({ trackable, statusId }) => ({
         key: trackable.id,
-        number: trackable.order ?? "",
+        number: num(approachNo(trackable)),
         statusId,
         title: segTitle(langText(trackable.name, getAppLang(), trackable.id), statusId, wheelLabels),
       }));
@@ -7704,7 +7715,7 @@
         for (const { trackable, statusId } of sec.items) {
           sidebarItems.push({
             key: trackable.id,
-            number: trackable.order ?? "",
+            number: num(approachNo(trackable)),
             label: langText(trackable.name, getAppLang(), trackable.id),
             groupKey,
             groupLabel,
@@ -7908,7 +7919,7 @@
       }));
       const numbers = quranTrackables.map((tr, i) => ({
         angle: i * anglePer + (anglePer - gap) / 2,
-        text: `${tr.order ?? ""}${countsForEachAyah(tr) ? "" : "○"}`,
+        text: `${num(approachNo(tr))}${countsForEachAyah(tr) ? "" : "○"}`,
       }));
       wheelContainer.innerHTML = renderRingWheel(rings, { centerArabic: "", centerRef: "", numbers });
       attachRingWheelClickHandler(wheelContainer, (key) => { landingRingPickedId = key; renderWheel(); });
@@ -7925,7 +7936,7 @@
           <p class="wheel-ring-key-head">${escapeHtml(t("Rings, from the middle out"))}</p>${keyRows}
         </div>
         <div class="wheel-ring-detail" id="wheelRingDetail" data-trackable-id="${picked?.id ?? ""}">
-          <h3>${escapeHtml(num(picked?.order ?? ""))}. ${escapeHtml(picked ? langText(picked.name, getAppLang(), picked.id) : "")}${yes ? "" : " ○"}</h3>
+          <h3>${escapeHtml(num(approachNo(picked)))}. ${escapeHtml(picked ? langText(picked.name, getAppLang(), picked.id) : "")}${yes ? "" : " ○"}</h3>
           <p class="wheel-ring-rule">${escapeHtml(yes ? t("Rule: Yes. A bigger unit takes the lowest status of its āyāt.") : t("Rule: No ○. Each unit shows only the claim made on it."))}</p>
           <ul class="wheel-ring-units">${unitRows}</ul>
           <div class="wheel-ring-actions">
@@ -8986,16 +8997,10 @@
         exploreApproachList.innerHTML = `<p class="bar-palette-note">${t("(no Quran Approaches yet)")}</p>`;
         return;
       }
-      const bySection = new Map();
-      for (const item of quranTrackables) {
-        const key = item.group ?? 0;
-        if (!bySection.has(key)) bySection.set(key, { groupName: item.groupName, items: [] });
-        bySection.get(key).items.push(item);
-      }
-      const html = [...bySection.entries()]
-        .sort((a, b) => a[0] - b[0])
-        .map(([, { groupName, items }]) => {
-          const label = groupName ? `<div class="explore-approach-group">${escapeHtml(langText(groupName, getAppLang()))}</div>` : "";
+      // 29 Sep 2026 (audit #384, item 3): the tenant's own section list.
+      const html = groupApproachesBySection(quranTrackables, sectionsFromTenantDoc(currentTenantDoc))
+        .map(({ name: groupName, items }) => {
+          const label = groupName && langText(groupName, getAppLang(), "") ? `<div class="explore-approach-group">${escapeHtml(langText(groupName, getAppLang()))}</div>` : "";
           const rows = items
             .map((item) => {
               const on = item.id === currentTrackableId;
@@ -9317,7 +9322,7 @@
         // look identical on screen, so each slice now FILLS outward from the
         // hub by its Achieved + Mastered share (renderScopedWheel's opt-in
         // `progress`), on the Not-started navy.
-        return { key: trackable.id, number: trackable.order != null ? num(trackable.order) : "", statusId: "not_started", fill: STATUS_COLORS.not_started, progress: ratio, progressFill: STATUS_COLORS.mastered, label: name, title: `${name} — ${num(percentRounded(ratio, 1))}%` };
+        return { key: trackable.id, number: num(approachNo(trackable)), statusId: "not_started", fill: STATUS_COLORS.not_started, progress: ratio, progressFill: STATUS_COLORS.mastered, label: name, title: `${name} — ${num(percentRounded(ratio, 1))}%` };
       });
       const wheelHtml = renderScopedWheel(items, { centerLabel: t("My Status"), centerSub: t("Whole Quran") });
       const rows = quranTrackables.map((trackable) => {

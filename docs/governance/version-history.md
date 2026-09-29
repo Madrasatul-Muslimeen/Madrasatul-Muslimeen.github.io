@@ -639,3 +639,4 @@ total). Allocated by the MMSA Architect.
 08.110: Approach list heading editable, sections reach every Approach list. Allocated by the MMSA Architect.
 08.111: the Global Approach Card. Allocated by the MMSA Architect.
 08.112: the Approach list heading everywhere. Allocated by the MMSA Architect.
+08.113: the Catalogue in tabs; Approach numbers by position; ▲▼ fixed. Allocated by the MMSA Architect.
