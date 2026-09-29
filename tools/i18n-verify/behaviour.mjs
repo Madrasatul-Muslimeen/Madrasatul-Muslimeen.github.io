@@ -1870,7 +1870,9 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
   check("30i the duplicate reciter picker is gone", listening.oldSelectGone);
   check("30i each reciter is named exactly once", listening.listCount > 0 && !listening.duplicated, JSON.stringify(listening));
   check("30i the duplicated play buttons are gone from the card",
-        listening.oldPlayGone && JSON.stringify(listening.playButtons) === '["drillPlayBtn"]', JSON.stringify(listening.playButtons));
+        listening.oldPlayGone && // #409: the card now also holds Read (open the view without sound); the point of
+        // this check -- ONE play button, no duplicate -- is unchanged.
+        JSON.stringify(listening.playButtons) === '["drillReadBtn","drillPlayBtn"]',JSON.stringify(listening.playButtons));
 
   // The transport itself, on the reading screen where the owner asked for it.
   await clickStudyPillarItem(page, "tabReadBtn");
