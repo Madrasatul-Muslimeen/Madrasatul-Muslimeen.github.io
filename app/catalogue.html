@@ -90,6 +90,23 @@
     .sections-table tr.sec-row .row-actions { grid-column: 3; justify-self: end; }
     .sections-table tr:not(.sec-row) { display: block; }
   }
+
+  /* Issue #399 -- collapsible, draggable sections. */
+  /* [hidden] is beaten by any rule that sets display; say it explicitly. */
+  #trackablesBody tr[hidden] { display: none; }
+  .trk-sec-head { display: flex; align-items: center; gap: 0.3rem; position: sticky; left: 0; width: min(100%, calc(100vw - 2.4rem)); box-sizing: border-box; }
+  .trk-sec-toggle { flex: 1 1 0; min-width: 0; min-height: 40px; display: flex; align-items: center; flex-wrap: wrap; gap: 0.2rem 0.4rem; text-align: left; background: transparent; color: inherit; border: none; padding: 0.2rem 0.3rem; font: inherit; cursor: pointer; }
+  .trk-sec-caret { flex: 0 0 auto; width: 1.1rem; text-align: center; color: #1F3A6E; }
+  .trk-sec-count { color: #777; font-weight: 400; }
+  .secDragHandle { flex: 0 0 auto; width: 40px; min-width: 40px; height: 40px; min-height: 40px; padding: 0; margin: 0.1rem 0; display: inline-flex; align-items: center; justify-content: center; font-size: 1.2rem; line-height: 1; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+  body.sec-dragging, body.sec-dragging * { cursor: grabbing !important; user-select: none; -webkit-user-select: none; }
+  tr.sec-drag-source { opacity: 0.45; }
+  tr.sec-drop-before { box-shadow: inset 0 4px 0 #1F3A6E; }
+  tr.sec-drop-after { box-shadow: inset 0 -4px 0 #1F3A6E; }
+  .sec-list-tools { display: inline-flex; gap: 0.4rem; flex-wrap: wrap; }
+  .sec-list-tools button { min-height: 40px; }
+  #sectionsDirtyNote { font-size: 0.85rem; color: #8a4b00; font-weight: 600; }
+  #sectionsDirtyNote:empty { display: none; }
 </style>
 </head>
 <body>
@@ -189,6 +206,10 @@
     <h2 id="approachListHeading" style="display:flex; align-items:center; flex-wrap:wrap; gap:0.5rem;">
       <span id="approachListTitle" data-i18n-skip></span>
       <button id="editApproachListTitleBtn" class="small secondary" type="button" style="display:none; min-height:40px;">✎ Edit heading</button>
+      <span class="sec-list-tools">
+        <button id="openAllSectionsBtn" class="small secondary" type="button">Open all</button>
+        <button id="closeAllSectionsBtn" class="small secondary" type="button">Close all</button>
+      </span>
     </h2>
     <div id="approachListTitleForm" hidden style="margin:0 0 0.8rem;">
       <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(15rem, 1fr)); gap:0.5rem;">
@@ -409,6 +430,14 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     // switch handler resets it so switching tenants gets its own fresh
     // collapsed start.
     let collapseInitialized = false;
+    // Issue #399 -- the Approach list's section headings start COLLAPSED, the
+    // same precedent as the subject list above. Held as the set of OPEN
+    // sections' keys, so an empty set IS the fresh, all-collapsed view; it is
+    // emptied on a tenant switch and never touched by an edit, add, remove or
+    // move. Session-only, not stored. A section's key is "n<number>" (its
+    // number in the data) or "new<k>" until it is first saved.
+    let openSectionKeys = new Set();
+    let newSectionCounter = 0;
 
     showArchivedSubjects.addEventListener("change", renderSubjects);
     showArchivedTrackables.addEventListener("change", () => { editingTrackableId = null; renderTrackables(); });
@@ -416,7 +445,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     addSectionBtn.addEventListener("click", () => {
       // No `from`: nothing points at it yet, so it saves as a real but empty
       // section that Approaches can then be moved into from the editor below.
-      sections.push({ n: Math.max(0, ...sections.map((x) => Number(x.n) || 0)) + 1, name: { en: "", bn: "" }, from: null });
+      sections.push({ n: Math.max(0, ...sections.map((x) => Number(x.n) || 0)) + 1, name: { en: "", bn: "" }, from: null, was: null, key: `new${++newSectionCounter}` });
       renderSections();
       renderTrackables();
       sectionsBody.querySelector(`.secNameInput[data-i="${sections.length - 1}"][data-lang="en"]`)?.focus();
@@ -888,6 +917,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       const count = sec.from == null ? 0 : approachCountIn(sec.from);
       const actions = canEdit
         ? `<td class="row-actions">
+             <button class="small secondary secDragHandle" type="button" data-scope="editor" data-i="${i}" aria-label="${esc(t("Drag to move this section"))}" title="${esc(t("Drag to move this section"))}">⠿</button>
              <button class="small secondary secUpBtn" data-i="${i}" ${i === 0 ? "disabled" : ""} title="${t("Move up")}">▲</button>
              <button class="small secondary secDownBtn" data-i="${i}" ${i === sections.length - 1 ? "disabled" : ""} title="${t("Move down")}">▼</button>
            </td>`
@@ -906,7 +936,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
              </div>
            </td>`
         : `<td>${langText(sec.name, getAppLang(), "")}</td>`;
-      return `<tr class="sec-row">
+      return `<tr class="sec-row" data-sec-i="${i}">
         <td class="sec-n">${num(i + 1)}</td>
         ${nameCell.replace("<td>", '<td class="sec-name">')}
         <td class="sec-count" data-label="${esc(t("Approaches"))}">${num(count)}</td>
@@ -923,9 +953,11 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
                <button id="saveSectionsBtn">${t("Save sections")}</button>
                <button id="revertSectionsBtn" class="secondary">${t("Cancel")}</button>
                <span id="sectionsMsg" style="margin-left:0.6rem; font-size:0.85rem; color:#555;"></span>
+               <div id="sectionsDirtyNote" role="status"></div>
              </td></tr>`
           : "");
       if (!canEdit) return;
+      refreshSectionsDirtyNote();
 
       // Typing is held in the working copy rather than re-rendering on every
       // keystroke -- a re-render would rebuild the inputs and throw away the
@@ -934,6 +966,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         el.addEventListener("input", () => {
           const sec = sections[Number(el.dataset.i)];
           sec.name = { ...(sec.name ?? {}), [el.dataset.lang]: el.value };
+          refreshSectionsDirtyNote();
           // v08.110: the Approach list below follows the name as it is
           // typed (renderTrackables() never touches these inputs).
           renderTrackables();
@@ -946,7 +979,21 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         b.addEventListener("click", () => moveSection(Number(b.dataset.i), 1));
       });
       document.getElementById("saveSectionsBtn").addEventListener("click", saveSections);
-      document.getElementById("revertSectionsBtn").addEventListener("click", () => { loadSections(); });
+      document.getElementById("revertSectionsBtn").addEventListener("click", () => { applySections(tenantDoc); renderTrackables(); });
+    }
+
+    /** Issue #399 -- a section MOVE saves at once, but a name typed into a
+        field does not: it waits for "Save sections", and this says so, right
+        beside that button, whenever any name differs from what is stored (or a
+        new section has not been saved yet). */
+    function sectionNameKey(n) { return `${n?.en ?? ""}\u0000${n?.bn ?? ""}`; }
+    function sectionsHaveUnsavedNames() {
+      return sections.some((sec) => sec.from == null || sectionNameKey(sec.name) !== sectionNameKey(sec.was));
+    }
+    function refreshSectionsDirtyNote() {
+      const note = document.getElementById("sectionsDirtyNote");
+      if (!note) return;
+      note.textContent = sectionsHaveUnsavedNames() ? t("Name changes not saved yet.") : "";
     }
 
     /** The Approach counts can only be right once the Approaches are loaded,
@@ -962,13 +1009,130 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       });
     }
 
-    function moveSection(i, delta) {
-      const j = i + delta;
-      if (j < 0 || j >= sections.length) return;
-      [sections[i], sections[j]] = [sections[j], sections[i]];
+    /** Issue #399 -- what a section save leaves behind. Once the write has
+        gone through, the copy held here is patched to match it (the stub, and
+        a slow read-back, would otherwise show the OLD numbers against the NEW
+        sections): each section takes its new number, the Approaches that
+        moved take their new group, and the open/closed state follows a
+        section to its new key. */
+    function afterSectionsSaved(list, result) {
+      const remap = new Map();
+      list.forEach((sec, k) => {
+        const key = `n${k + 1}`;
+        remap.set(sec.key, key);
+        sec.n = k + 1;
+        sec.from = k + 1;
+        sec.was = result.sections[k].name ?? null;
+        sec.key = key;
+      });
+      openSectionKeys = new Set([...openSectionKeys].map((k) => remap.get(k) ?? k));
+      for (const change of result.changes) {
+        const row = trackableList.find((x) => x.id === change.id);
+        if (row) { row.group = change.group; row.groupName = change.groupName; }
+      }
+      tenantDoc = { ...(tenantDoc ?? {}), approachSections: result.sections.map(({ n, name }) => ({ n, name })) };
+    }
+
+    let sectionMoveBusy = false;
+
+    /** Moves a whole section (with all its Approaches) to position `to` and
+        SAVES THE ORDER AT ONCE, like an Approach move -- using the stored
+        names, so a name typed but not yet saved stays in its field. */
+    async function moveSectionTo(from, to) {
+      if (!canEdit || sectionMoveBusy) return;
+      if (from === to || from < 0 || to < 0 || from >= sections.length || to >= sections.length) return;
+      const moved = sections.slice();
+      moved.splice(to, 0, moved.splice(from, 1)[0]);
+      const saved = moved.filter((sec) => sec.from != null);
+      const payload = saved.map((sec) => ({ n: sec.n, from: sec.from, was: sec.was, name: sec.was }));
+      sectionMoveBusy = true;
+      const msg = document.getElementById("sectionsMsg");
+      if (msg) msg.textContent = t("Saving…");
+      const outcome = await safeWrite(
+        () => saveApproachSections(db, activeTenantId, payload, trackableList, auth.currentUser.uid),
+        { collection: "tenants", action: "moveSection", id: activeTenantId }
+      );
+      sectionMoveBusy = false;
+      if (!outcome.ok) { if (msg) msg.textContent = ""; alert(outcome.entry.message); return; }
+      sections = moved;
+      afterSectionsSaved(saved, outcome.result);
       renderSections();
       renderTrackables();
+      const after = document.getElementById("sectionsMsg");
+      if (after) after.textContent = t("Order saved.");
     }
+
+    function moveSection(i, delta) { return moveSectionTo(i, i + delta); }
+
+    document.getElementById("openAllSectionsBtn").addEventListener("click", () => {
+      trackablesBody.querySelectorAll("tr.trk-section-heading").forEach((tr) => setSectionOpen(tr.dataset.secKey, true));
+    });
+    document.getElementById("closeAllSectionsBtn").addEventListener("click", () => {
+      trackablesBody.querySelectorAll("tr.trk-section-heading").forEach((tr) => setSectionOpen(tr.dataset.secKey, false));
+    });
+
+    // Issue #399 -- drag a whole section up or down, from its handle (⠿) in
+    // the Sections editor or on its heading in the Approach list. POINTER
+    // events, not the HTML5 drag-and-drop API, which never fires for a finger;
+    // the handle carries touch-action:none so the page does not scroll under
+    // the drag. Dropping saves at once (moveSectionTo). Escape, a cancelled
+    // pointer, or a drop back where it began writes nothing.
+    let sectionDrag = null;
+    const dragRows = (scope) => [...(scope === "list"
+      ? trackablesBody.querySelectorAll("tr.trk-section-heading[data-sec-i]")
+      : sectionsBody.querySelectorAll("tr.sec-row"))];
+    function clearDragMarks() {
+      document.body.classList.remove("sec-dragging");
+      document.querySelectorAll(".sec-drag-source, .sec-drop-before, .sec-drop-after")
+        .forEach((el) => el.classList.remove("sec-drag-source", "sec-drop-before", "sec-drop-after"));
+    }
+    /** Where a section dropped at height `y` would be inserted: before the
+        first row whose middle is below the pointer. */
+    function dragInsertIndex(rows, y) {
+      const at = rows.findIndex((tr) => { const r = tr.getBoundingClientRect(); return y < r.top + r.height / 2; });
+      return at === -1 ? rows.length : at;
+    }
+    function endSectionDrag(commit) {
+      const drag = sectionDrag;
+      sectionDrag = null;
+      clearDragMarks();
+      if (drag && commit && drag.to !== drag.from) moveSectionTo(drag.from, drag.to);
+    }
+    document.addEventListener("pointerdown", (e) => {
+      const handle = e.target.closest?.(".secDragHandle");
+      if (!handle || !canEdit || sectionMoveBusy) return;
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      const from = Number(handle.dataset.i);
+      sectionDrag = { scope: handle.dataset.scope, from, to: from, pointerId: e.pointerId };
+      try { handle.setPointerCapture(e.pointerId); } catch {}
+      document.body.classList.add("sec-dragging");
+      dragRows(sectionDrag.scope)[from]?.classList.add("sec-drag-source");
+      e.preventDefault();
+    });
+    document.addEventListener("pointermove", (e) => {
+      if (!sectionDrag || e.pointerId !== sectionDrag.pointerId) return;
+      const rows = dragRows(sectionDrag.scope);
+      const at = dragInsertIndex(rows, e.clientY);
+      // Inserting before row `at` after removing the dragged one.
+      sectionDrag.to = Math.min(rows.length - 1, at > sectionDrag.from ? at - 1 : at);
+      rows.forEach((tr) => tr.classList.remove("sec-drop-before", "sec-drop-after"));
+      if (at < rows.length) rows[at].classList.add("sec-drop-before");
+      else rows[rows.length - 1].classList.add("sec-drop-after");
+      // Keep a long page reachable: nudge the scroll near the top/bottom edge.
+      if (e.clientY < 60) window.scrollBy(0, -14);
+      else if (e.clientY > window.innerHeight - 60) window.scrollBy(0, 14);
+    });
+    document.addEventListener("pointerup", (e) => {
+      if (sectionDrag && e.pointerId === sectionDrag.pointerId) endSectionDrag(true);
+    });
+    document.addEventListener("pointercancel", (e) => {
+      if (sectionDrag && e.pointerId === sectionDrag.pointerId) endSectionDrag(false);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && sectionDrag) endSectionDrag(false);
+    });
+    // The handle's own click (a press without a drag) must not do anything else.
+    document.addEventListener("click", (e) => { if (e.target.closest?.(".secDragHandle")) e.preventDefault(); });
 
     // Speed part 6a (issue #285): same fetch/render split as the modules
     // table above. At startup this is fed the tenant document ALREADY read
@@ -1015,7 +1179,9 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       renderApproachListTitle();
       // `from` is the number each row currently HAS in the data; a row added
       // in this sitting has none until it is saved.
-      sections = sectionsFromTenantDoc(tenantDoc).map((sec) => ({ ...sec, from: sec.n }));
+      // `was` is the name as stored (what a still-unsaved edit is compared
+      // with), `key` what the Approach list's open/closed state hangs on.
+      sections = sectionsFromTenantDoc(tenantDoc).map((sec) => ({ ...sec, from: sec.n, was: sec.name ?? null, key: `n${sec.n}` }));
       renderSections();
     }
 
@@ -1037,9 +1203,11 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         { collection: "tenants", action: "saveSections", id: activeTenantId }
       );
       if (!outcome.ok) { msg.textContent = ""; alert(outcome.entry.message); btn.disabled = false; return; }
-      // The Approaches carry groupName, so their table has to be re-read too.
-      await loadTrackables();
-      await loadSections();
+      // The Approaches carry groupName, so their table follows: patched from
+      // what was just written rather than re-read.
+      afterSectionsSaved(sections, outcome.result);
+      renderSections();
+      renderTrackables();
       const saved = document.getElementById("sectionsMsg");
       if (saved) saved.textContent = t("Saved.");
     }
@@ -1317,12 +1485,48 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     /** v08.02, the owner's ask: one heading per section instead of the same
         section name repeated down a column on every row. The heading carries
         colspan across the whole row and is what tells the two groups apart. */
-    function sectionHeadingHtml(sec, count) {
-      return `<tr class="trk-section-heading"><td colspan="7" style="padding-top:1rem; border-bottom:none;">
-        <strong style="font-size:0.95rem;">${langText(sec.name, getAppLang(), t("Section {n}", { n: num(sec.n) }))}</strong>
-        <span style="color:#777; font-weight:400;"> — ${t("{n} Approaches", { n: num(count) })}</span>
+    /** Issue #399: the heading is a real button (aria-expanded, >=40px) that
+        shows or hides the section's rows; Owner/Prime also get a drag handle
+        (sections with a real place in the list only -- `index` null for
+        leftovers). Tap = toggle, drag from the handle = move. */
+    function sectionHeadingHtml(key, label, count, index, open) {
+      const handle = canEdit && index != null
+        ? `<button class="small secondary secDragHandle" type="button" data-scope="list" data-i="${index}" aria-label="${esc(t("Drag to move this section"))}" title="${esc(t("Drag to move this section"))}">⠿</button>`
+        : "";
+      return `<tr class="trk-section-heading" data-sec-key="${esc(key)}"${index != null ? ` data-sec-i="${index}"` : ""}><td colspan="7" style="padding-top:0.6rem; border-bottom:none;">
+        <div class="trk-sec-head">
+          ${handle}
+          <button class="trk-sec-toggle" type="button" data-sec-key="${esc(key)}" aria-expanded="${open}">
+            <span class="trk-sec-caret" aria-hidden="true">${open ? "▾" : "▸"}</span>
+            <strong style="font-size:0.95rem;">${label}</strong>
+            <span class="trk-sec-count"> — ${t("{n} Approaches", { n: num(count) })}</span>
+          </button>
+        </div>
       </td></tr>`;
     }
+
+    /** Puts a section's rows behind its heading: every <tr> of `html` is
+        tagged with the section key and hidden while the section is closed. */
+    function sectionRowsHtml(html, key, open) {
+      return html.replace(/<tr\b/g, `<tr data-sec-key="${esc(key)}"${open ? "" : " hidden"}`);
+    }
+
+    /** Opens/closes one section IN PLACE -- no re-render, so nothing else on
+        the list (an open Guide, a half-typed edit) is thrown away. */
+    function setSectionOpen(key, open) {
+      if (open) openSectionKeys.add(key); else openSectionKeys.delete(key);
+      trackablesBody.querySelectorAll("tr[data-sec-key]").forEach((tr) => {
+        if (tr.dataset.secKey !== key) return;
+        if (tr.classList.contains("trk-section-heading")) {
+          const btn = tr.querySelector(".trk-sec-toggle");
+          btn.setAttribute("aria-expanded", String(open));
+          btn.querySelector(".trk-sec-caret").textContent = open ? "▾" : "▸";
+        } else {
+          tr.hidden = !open;
+        }
+      });
+    }
+    const sectionKeyForNumber = (n) => sections.find((sec) => sec.n === n)?.key ?? null;
 
     /** Renumbers `order` to match display order, so each section is a
         contiguous block. Called after a move between sections; a no-op when
@@ -1364,16 +1568,20 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       const approaches = visibleTrackables();
       const seen = new Set();
       let grouped = "";
-      for (const sec of sections) {
+      sections.forEach((sec, index) => {
         const inSec = approaches.filter((row) => sectionOf(row) === sec.n);
         inSec.forEach((row) => seen.add(row.id));
+        // An Approach being edited always has its section open.
+        if (editingTrackableId && inSec.some((row) => row.id === editingTrackableId)) openSectionKeys.add(sec.key);
+        const open = openSectionKeys.has(sec.key);
         // v08.110: a section with no Approaches (one just added) is shown
         // too, rather than skipped -- the Owner's "when a Section is ... added
         // it should be added ... to the Approach list as well".
-        grouped += sectionHeadingHtml(sec, inSec.length) + (inSec.length
+        const label = langText(sec.name, getAppLang(), t("Section {n}", { n: num(sec.n) }));
+        grouped += sectionHeadingHtml(sec.key, label, inSec.length, index, open) + sectionRowsHtml(inSec.length
           ? inSec.map(trackableRowHtml).join("")
-          : `<tr class="trk-section-empty"><td colspan="7" style="color:#555; font-style:italic;">${t("No Approaches in this section yet.")}${canEdit ? " " + t("Add one with the form below, or move one here with Edit.") : ""}</td></tr>`);
-      }
+          : `<tr class="trk-section-empty"><td colspan="7" style="color:#555; font-style:italic;">${t("No Approaches in this section yet.")}${canEdit ? " " + t("Add one with the form below, or move one here with Edit.") : ""}</td></tr>`, sec.key, open);
+      });
       const orphans = approaches.filter((row) => !seen.has(row.id));
       if (orphans.length) {
         const byOwnName = new Map();
@@ -1384,14 +1592,19 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
           byOwnName.get(key).rows.push(row);
         }
         for (const { label, rows } of byOwnName.values()) {
-          grouped += `<tr class="trk-section-heading"><td colspan="7" style="padding-top:1rem; border-bottom:none;">
-              <strong style="font-size:0.95rem;">${label || t("(not set)")}</strong>
-              <span style="color:#777; font-weight:400;"> — ${t("{n} Approaches", { n: num(rows.length) })}</span>
-            </td></tr>` + rows.map(trackableRowHtml).join("");
+          const key = `orphan:${label}`;
+          if (editingTrackableId && rows.some((row) => row.id === editingTrackableId)) openSectionKeys.add(key);
+          const open = openSectionKeys.has(key);
+          grouped += sectionHeadingHtml(key, label || t("(not set)"), rows.length, null, open)
+            + sectionRowsHtml(rows.map(trackableRowHtml).join(""), key, open);
         }
       }
       trackablesBody.innerHTML = grouped + separator + others.map(trackableRowHtml).join("");
       setCatCount("approaches", approaches.length);
+
+      trackablesBody.querySelectorAll(".trk-sec-toggle").forEach((btn) => {
+        btn.addEventListener("click", () => setSectionOpen(btn.dataset.secKey, btn.getAttribute("aria-expanded") !== "true"));
+      });
 
       trackablesBody.querySelectorAll(".guideBtn").forEach((btn) => {
         btn.addEventListener("click", () => {
@@ -1501,6 +1714,8 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
           if (!outcome.ok) { alert(outcome.entry.message); btn.disabled = false; return; }
 
           editingTrackableId = null;
+          // Moving it to another section opens the section it lands in.
+          if (sectionChanged) { const k = sectionKeyForNumber(nextGroup); if (k) openSectionKeys.add(k); }
           await loadTrackables();
           // Position last, and only if it really changed: it is a separate,
           // order-only write (see reorderTrackables) and must not drag the
@@ -1852,6 +2067,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       activeTenantId = chosen.tenantId;
       setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
       collapseInitialized = false; // fresh view for this tenant -- back to all-collapsed
+      openSectionKeys = new Set(); // ...and the Approach list's sections too
       // myMemberships already carries every membership's own hydrated tenant
       // document (fetched once, at sign-in) -- no reason to fetch it again.
       await loadContextData();
@@ -1901,6 +2117,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       // its OWN section and every section stays one contiguous block
       // (approachesInDisplayOrder()); only the rows whose number changed are
       // written, and the same numbers are patched in here.
+      { const k = sectionKeyForNumber(group); if (k) openSectionKeys.add(k); } // show where it landed
       applyTrackables([...trackableList, {
         id, tenantId: activeTenantId, moduleId: "quranrevival", subjectId: "quran",
         group, groupName: sectionNameFor(group) ?? null, name,

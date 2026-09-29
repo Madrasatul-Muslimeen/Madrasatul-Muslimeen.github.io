@@ -735,9 +735,23 @@ export async function saveApproachSections(db, tenantId, sections, trackables, u
     data: { approachSections: renumbered.map(({ n, name }) => ({ n, name })) },
   }];
 
+  // An Approach's section is resolved EXACTLY as the display resolves it
+  // (groupApproachesBySection / catalogue.html sectionOf): the stored `group`
+  // number first, then its `groupName` against the sections' names. One whose
+  // number matches no section (or has none) is placed by name, so a move
+  // cannot leave it behind. `was` is a section's name as stored before this
+  // sitting's edits -- what a not-yet-renamed groupName still equals.
+  const nameOf = (tr) => tr.groupName ?? null;
+  const sameName = (a, b) => ["en", "bn"].some((l) => a?.[l] && a[l] === b?.[l]);
+  const targetFor = (tr) => {
+    const byNumber = byFrom.get(Number(tr.group));
+    if (byNumber) return byNumber;
+    return renumbered.find((s) => s.from != null && (sameName(nameOf(tr), s.was) || sameName(nameOf(tr), s.name)));
+  };
+
   for (const tr of trackables) {
     if (tr.subjectId !== "quran") continue;
-    const target = byFrom.get(Number(tr.group));
+    const target = targetFor(tr);
     if (!target) continue; // its section was not touched (or was removed from the list)
     const groupChanged = Number(tr.group) !== target.n;
     const nameChanged = JSON.stringify(tr.groupName ?? null) !== JSON.stringify(target.name ?? null);
@@ -750,7 +764,14 @@ export async function saveApproachSections(db, tenantId, sections, trackables, u
   }
 
   await commitUpdatesInChunks(db, updates, uid);
-  return { sectionCount: renumbered.length, trackablesTouched: updates.length - 1 };
+  // `sections` and `changes` are what was written, so a caller can patch the
+  // copy it holds instead of re-reading (issue #399).
+  return {
+    sectionCount: renumbered.length,
+    trackablesTouched: updates.length - 1,
+    sections: renumbered,
+    changes: updates.slice(1).map((u) => ({ id: u.docId.slice(tenantId.length + 2), ...u.data })),
+  };
 }
 
 export async function setLadderStatus(db, tenantId, ladderId, status, uid) {
