@@ -220,13 +220,12 @@ for (const lang of ["en", "bn"]) {
   const activeRung = await page.evaluate(() => document.querySelector('.unit-ladder-rung[aria-current="true"]')?.dataset.unitLadderRung);
   check(`[${lang}] the Ruku' rung reads as the active one`, activeRung === "ruku:2:1", activeRung);
 
-  // --- Issue #349: "Mark as read" for Ruku'/Page, gated separately --------
-  // The reading-units gate ships closed (study-reading-units-readiness.js,
-  // ready: false), so Ruku'/Page must read disabled with the NEW, narrower
-  // explanation; Surah must read ENABLED (the general evidence gate has been
-  // open since 22 Sep 2026, and Surah never needed the new one); Hizb must
-  // keep the OLD, unrelated "planned for later" wording -- proving the two
-  // reasons are genuinely different sentences, not the same one reused.
+  // --- Issue #349: "Mark as read" for Ruku'/Page --------------------------
+  // UPDATED 29 Sep 2026: the Owner published the Ruku'/Page rules and the
+  // reading-units gate is OPEN (docs/reports/2026-09-29-reading-ruku-page-
+  // enabled.md). Ruku'/Page now read ENABLED with no hint, and pressing
+  // Ruku''s writes one evidence document. The old "not switched on yet"
+  // sentence must no longer appear. Hizb keeps its own "planned for later".
   const markAsReadState = () => page.evaluate(() => {
     const btn = document.querySelector("[data-unit-card-mark-read]");
     if (!btn) return null;
@@ -238,15 +237,28 @@ for (const lang of ["en", "bn"]) {
     bn: "রুকু' বা পৃষ্ঠা পড়া হয়েছে বলে রেকর্ড করা এখনও চালু হয়নি।",
   };
   const rukuMarkAsRead = await markAsReadState();
-  check(`[${lang}] Ruku' "Mark as read" is disabled while the reading-units gate is shut, in the reader's own language`,
-    rukuMarkAsRead?.ariaDisabled === "true" && rukuMarkAsRead?.hint === READING_UNITS_HINT[lang],
+  check(`[${lang}] Ruku' "Mark as read" is ENABLED now the reading-units gate is open, with no hint`,
+    rukuMarkAsRead?.ariaDisabled === "false" && rukuMarkAsRead?.hint === "",
     JSON.stringify(rukuMarkAsRead));
+  const evBefore = await page.evaluate(() => (window.__fsLog || []).filter((e) => /\/evidence/.test(JSON.stringify(e)) && /ruku:2:1/.test(JSON.stringify(e))).length);
+  await clickSafely(page, "[data-unit-card-mark-read]");
+  await page.waitForTimeout(400);
+  const evAfter = await page.evaluate(() => (window.__fsLog || []).filter((e) => /\/evidence/.test(JSON.stringify(e)) && /ruku:2:1/.test(JSON.stringify(e))).length);
+  // This check is also the guard for a live defect found 29 Sep 2026: the
+  // card's buttons close the card first, closing cleared unitCardCurrentInfo,
+  // and markUnitAsRead() read that and returned -- so "Mark as read" never
+  // saved anything (Surah/Range included) from v08.103 until v08.108.
+  check(`[${lang}] pressing Ruku' "Mark as read" writes an evidence document for ruku:2:1`,
+    evAfter > evBefore, JSON.stringify({ evBefore, evAfter, tail: await page.evaluate(() => (window.__fsLog || []).slice(-4).map((e) => [e.kind, e.col, e.id])) }));
+  // The press closes the card (as every card action does); reopen it.
+  await clickSafely(page, '[data-unit-marker="ruku:2:1"]');
+  await page.waitForTimeout(300);
 
   await clickSafely(page, '.unit-ladder-rung[data-unit-ladder-rung^="page:"]');
   await page.waitForTimeout(300);
   const pageMarkAsRead = await markAsReadState();
-  check(`[${lang}] Page "Mark as read" is ALSO disabled while the reading-units gate is shut, with the SAME reason as Ruku'`,
-    pageMarkAsRead?.ariaDisabled === "true" && pageMarkAsRead?.hint === rukuMarkAsRead?.hint,
+  check(`[${lang}] Page "Mark as read" is ALSO enabled, with no hint`,
+    pageMarkAsRead?.ariaDisabled === "false" && pageMarkAsRead?.hint === "",
     JSON.stringify(pageMarkAsRead));
 
   await clickSafely(page, '.unit-ladder-rung[data-unit-ladder-rung^="surah:"]');
@@ -259,9 +271,9 @@ for (const lang of ["en", "bn"]) {
   await clickSafely(page, '.unit-ladder-rung[data-unit-ladder-rung^="hizb:"]');
   await page.waitForTimeout(300);
   const hizbMarkAsRead = await markAsReadState();
-  check(`[${lang}] Hizb "Mark as read" still reads the OLD "planned for later" wording, a DIFFERENT sentence from Ruku'/Page's new one`,
-    hizbMarkAsRead?.ariaDisabled === "true" && hizbMarkAsRead?.hint !== rukuMarkAsRead?.hint && hizbMarkAsRead?.hint.length > 0,
-    JSON.stringify({ hizbMarkAsRead, rukuHint: rukuMarkAsRead?.hint }));
+  check(`[${lang}] Hizb "Mark as read" still reads its OWN "planned for later" wording, not the retired Ruku'/Page sentence`,
+    hizbMarkAsRead?.ariaDisabled === "true" && hizbMarkAsRead?.hint !== READING_UNITS_HINT[lang] && hizbMarkAsRead?.hint.length > 0,
+    JSON.stringify({ hizbMarkAsRead }));
 
   // Back to the Ruku' rung before the existing flow below continues.
   await clickSafely(page, '.unit-ladder-rung[data-unit-ladder-rung^="ruku:"]');
