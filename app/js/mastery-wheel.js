@@ -105,8 +105,11 @@ function sliceNameMarkup({ cx, cy, r0, r1, angle, arcDeg, text, clipD = null }) 
   const label = String(text ?? "").trim();
   if (!label) return "";
   const arcWidth = r0 * (arcDeg * Math.PI / 180);
-  const fs = Math.max(4.5, Math.min(10, arcWidth * 0.62));
   const bangla = /[ঀ-৿]/.test(label);
+  // Bangla reads smaller than Latin at the same size (its letters sit lower
+  // in the em), so it gets a little more of the slice's width (Architect
+  // review of #385, measured on a 40-slice wheel at 390px).
+  const fs = Math.max(4.5, Math.min(bangla ? 11.5 : 10, arcWidth * (bangla ? 0.74 : 0.62)));
   const charW = fs * (bangla ? 0.78 : 0.6);
   const avail = Math.max(0, (r1 - r0) - 6);
   const maxChars = Math.max(1, Math.floor(avail / charW));

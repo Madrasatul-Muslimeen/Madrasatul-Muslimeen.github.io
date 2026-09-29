@@ -93,23 +93,29 @@ for (const lang of ["en", "bn"]) {
   const full = await page.evaluate(() => document.querySelector('#wheelContainer .wheel-seg[data-key="tajweed"] title')?.textContent || "");
   check(`[${lang}] a slice with none prints (a clipped form of) its full name`, on.some((n) => n.length > 1 && full.replace("…", "").includes(n.replace("…", ""))) , JSON.stringify({ on, full }));
 
+  // Architect review, 29 Sep 2026: the switch is ONE "Names" toggle on the
+  // Wheel look row (its own On/Off row cost the phone layout 46px and an
+  // Approach row). Updated in place: it must sit on the SAME line as the look
+  // buttons, and be pressed (on) by default.
   const sw = await page.evaluate(() => {
-    const btns = [...document.querySelectorAll("#wheelNamesSwitch [data-wheel-names]")];
-    return { n: btns.length, minH: Math.min(...btns.map((b) => b.getBoundingClientRect().height)), pressed: btns.filter((b) => b.getAttribute("aria-pressed") === "true").map((b) => b.dataset.wheelNames), overflow: document.documentElement.scrollWidth - innerWidth };
+    const b = document.getElementById("wheelNamesBtn");
+    const r = b.getBoundingClientRect();
+    const look = document.querySelector('#wheelLookSwitch [data-wheel-look="dark"]').getBoundingClientRect();
+    return { h: r.height, sameLine: Math.abs((r.top + r.height / 2) - (look.top + look.height / 2)) <= 2, pressed: b.getAttribute("aria-pressed"), overflow: document.documentElement.scrollWidth - innerWidth };
   });
-  check(`[${lang}] Names offers On and Off, >= 40px tall, On pressed by default`, sw.n === 2 && sw.minH >= 40 && sw.pressed.join() === "on", JSON.stringify(sw));
+  check(`[${lang}] Names is one toggle on the Wheel look line, >= 36px tall like its neighbours, on by default`, sw.sameLine && sw.h >= 36 && sw.pressed === "true", JSON.stringify(sw));
   check(`[${lang}] no sideways scroll at 390px`, sw.overflow <= 1, String(sw.overflow));
 
   await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((el) => el.remove()));
-  await page.click('#wheelNamesSwitch [data-wheel-names="off"]');
+  await page.click('#wheelNamesBtn');
   await page.waitForTimeout(200);
   check(`[${lang}] Off hides every name (numbers stay)`, (await names(page)).length === 0 && (await page.evaluate(() => document.querySelectorAll("#wheelContainer .wheel-seg-num").length)) === 10);
   await page.reload();
   await waitWheel(page);
-  const after = await page.evaluate(() => ({ pressed: [...document.querySelectorAll("#wheelNamesSwitch [aria-pressed=true]")].map((b) => b.dataset.wheelNames), stored: localStorage.getItem("mm_wheel_names") }));
-  check(`[${lang}] Off is remembered after a reload`, (await names(page)).length === 0 && after.pressed.join() === "off" && after.stored === "off", JSON.stringify(after));
+  const after = await page.evaluate(() => ({ pressed: document.getElementById("wheelNamesBtn").getAttribute("aria-pressed"), stored: localStorage.getItem("mm_wheel_names") }));
+  check(`[${lang}] Off is remembered after a reload`, (await names(page)).length === 0 && after.pressed === "false" && after.stored === "off", JSON.stringify(after));
   await page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((el) => el.remove()));
-  await page.click('#wheelNamesSwitch [data-wheel-names="on"]');
+  await page.click('#wheelNamesBtn');
   await page.waitForTimeout(200);
   check(`[${lang}] On shows them again`, (await names(page)).length === 10);
 

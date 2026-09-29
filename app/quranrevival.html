@@ -651,7 +651,7 @@
   }
   .wheel-look-btn[aria-pressed="true"] { background: var(--card-button-pressed-bg); border-color: var(--card-button-pressed-bg); color: var(--card-button-pressed-text); }
   /* Issue #352 -- the Show toggle and the All-units ring key / data box. */
-  #wheelNamesSwitch .wheel-look-btn { min-height: 40px; }
+  .wheel-names-btn { margin-left: 0.5rem; }
   .wheel-show-btn { min-height: 40px; min-width: 0; padding: 0.25rem 0.6rem; }
   /* Phones: one line, not two (measured: two lines cost the first screen
      90px). The group keeps its aria-label; the visible "Show" word goes. */
@@ -887,7 +887,7 @@
   .wheel-seg:hover { stroke: var(--card-text); stroke-width: 1.5; }
   /* Issue #385 -- an Approach's short name along its slice: white with a dark
      halo behind it, so it reads on every status colour in all three looks. */
-  .wheel-seg-name { font-family: 'Inter', sans-serif; font-weight: 700; fill: #fff; stroke: #0c1320; stroke-width: 2.2px; stroke-linejoin: round; paint-order: stroke fill; }
+  .wheel-seg-name { font-family: 'Inter', "Noto Sans Bengali", "Nirmala UI", "Kalpurush", sans-serif; font-weight: 700; fill: #fff; stroke: #0c1320; stroke-width: 2.2px; stroke-linejoin: round; paint-order: stroke fill; }
   .wheel-seg-num { font-family: 'Inter', sans-serif; font-size: 8px; font-weight: 600; fill: var(--card-text); }
   /* Drag-reposition round (2 Sep 2026) -- mastery-wheel.js's own OPT-IN
      `sliceLines` extra, drawn inside the slice body for the Asma ul Husna
@@ -3973,13 +3973,12 @@
             <button type="button" class="wheel-look-btn" data-wheel-look="dark" aria-pressed="false">Dark</button>
             <button type="button" class="wheel-look-btn" data-wheel-look="light" aria-pressed="false">Light</button>
             <button type="button" class="wheel-look-btn" data-wheel-look="colour" aria-pressed="false">Colour</button>
-          </div>
-          <!-- Issue #385: the Approach short names along the slices, on or off
-               (default on); remembered per browser (prefs.js getWheelNames). -->
-          <div id="wheelNamesSwitch" class="wheel-look-switch" role="group" aria-label="Approach names on the wheel">
-            <span class="wheel-look-label">Names</span>
-            <button type="button" class="wheel-look-btn" data-wheel-names="on" aria-pressed="false">On</button>
-            <button type="button" class="wheel-look-btn" data-wheel-names="off" aria-pressed="false">Off</button>
+            <!-- Issue #385: the Approach short names along the slices, on or
+                 off (default on), remembered per browser (prefs.js
+                 getWheelNames). ONE toggle on the Wheel look row, not a row of
+                 its own: measured, its own row pushed the Approach list 46px
+                 down and cost a row of it on 390/412px phones. -->
+            <button type="button" id="wheelNamesBtn" class="wheel-look-btn wheel-names-btn" aria-pressed="true" aria-label="Approach names on the wheel">Names</button>
           </div>
           <!-- Issue #352 (Owner decisions 21-24): what the wheel shows -- the
                unit "Choose a Unit" holds (as it always has), one unit type on
@@ -8052,19 +8051,14 @@
     function wheelShortLabel(trackable) {
       return getWheelNames() ? approachShortName(trackable, getAppLang()) : "";
     }
-    const wheelNamesSwitchEl = document.getElementById("wheelNamesSwitch");
+    const wheelNamesBtnEl = document.getElementById("wheelNamesBtn");
     function syncWheelNamesSwitch() {
-      const on = getWheelNames();
-      wheelNamesSwitchEl?.querySelectorAll("[data-wheel-names]").forEach((btn) => {
-        btn.setAttribute("aria-pressed", (btn.dataset.wheelNames === "on") === on ? "true" : "false");
-      });
+      wheelNamesBtnEl?.setAttribute("aria-pressed", getWheelNames() ? "true" : "false");
     }
-    wheelNamesSwitchEl?.querySelectorAll("[data-wheel-names]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        setWheelNames(btn.dataset.wheelNames === "on");
-        syncWheelNamesSwitch();
-        renderWheel(); // My Status and the pop-up read the setting when they draw
-      });
+    wheelNamesBtnEl?.addEventListener("click", () => {
+      setWheelNames(!getWheelNames());
+      syncWheelNamesSwitch();
+      renderWheel(); // My Status and the pop-up read the setting when they draw
     });
     syncWheelNamesSwitch();
 
