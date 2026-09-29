@@ -18795,3 +18795,15 @@ The Owner, with a screenshot of the Home menu: *"The number is not showing in th
 - **`app/sw.js`**: `/legacy-v08/` is kept out of the live offline cache, like `/legacy/` and `/legacy-v07/`.
 - The archive itself is frozen and unchanged, so its own menu still lists v06 and v07 only.
 - **Checked**: menu rendered on the landing page, Catalogue and About, 390 and 1280px, English and Bangla: all three links shown, same width, right addresses, no page errors. navcheck fits at every width; phone-width 217/0; governance suites green.
+
+## v09.02 — 29 Sep 2026 — Landing section headings: S1 badge, count box at the end, gold name
+
+The Owner (29 Sep 2026, marked-up screenshot): *"Write it as S1 (circle marked up, for Section 1) then at the end of the Section name write the approach numbers (6) in the square marked up box. And i think section text color should be distinctive with the approaches text color."*
+
+Built by the Builder (issue #407, PR #408); reviewed and allocated by the Architect.
+
+- **Badge**: the round badge shows the section label, *S1* … *S8* (Bangla *বি১* …, reader's digits).
+- **Count**: in a square-cornered box after the name's last word, on its last line; `aria-label` *6 Approaches* / *৬টি পদ্ধতি*.
+- **Colour**: the section name is gold, `#ecd49a` in Night and `#7a5410` in Light (card-look.css), distinct from the Approach names; ≥4.5:1 measured against the real background in both looks.
+- **Architect review fix**: the *Open all / Close all* button (v08.117) kept the Night gold in Light, measured 1.45:1 on white. The Light look now gives it the section gold; a pixel-measured contrast check was added and failed 4/4 before the fix.
+- **Checks**: landing-sections-collapse 136/0 (Builder mutations: badge shows the count, box at the start, colours equal), approach-sections 59/0, catalogue-sections 126/0 (updated in place to read the name without the box), card-look 96/0, phone-width 217/0, behaviour 1006/1 (31e TLS).
