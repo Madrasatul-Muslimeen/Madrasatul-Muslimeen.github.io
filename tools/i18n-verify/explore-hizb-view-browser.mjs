@@ -173,8 +173,13 @@ async function runSwitchScenario(lang) {
   // wedge 1 was Surah 1 (no switch at all) -- choose the Juz view first
   // (#exploreViewPrimaryBtn is the Quran level's "Juz" choice).
   await clickSafely(page, "#exploreViewPrimaryBtn");
-  await page.waitForFunction(() => document.querySelectorAll("#exploreWheelContainer .wheel-seg").length === 30, null, { timeout: 10000 });
-  await page.evaluate(() => document.querySelector('#exploreWheelContainer .wheel-seg[data-key="1"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+  // ARCHITECT, 30 Sep 2026: since v08.105 the Quran-level Juz view draws RINGS
+  // (30 Juz + 114 Surahs = 144 slices), so counting every .wheel-seg waited
+  // for a 30 that never came and the suite died here on `main`. Count the Juz
+  // ring itself, and tap Juz 1 on that ring, not whichever slice keyed "1"
+  // happens to come first.
+  await page.waitForFunction(() => document.querySelectorAll('#exploreWheelContainer .wheel-seg[data-ring-kind="juz"]').length === 30, null, { timeout: 10000 });
+  await page.evaluate(() => document.querySelector('#exploreWheelContainer .wheel-seg[data-ring-kind="juz"][data-key="1"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
   await page.waitForTimeout(600);
   const juzLevelToggle = await page.evaluate(() => {
     const wrap = document.getElementById("exploreViewToggle");

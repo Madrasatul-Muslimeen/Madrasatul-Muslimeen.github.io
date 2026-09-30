@@ -47,6 +47,14 @@ check("Basic Arabic lists every derived form, in order, with real counts", () =>
   assert.match(html, /8 occurrences/); assert.match(html, /3 occurrences/);
   assert.match(html, /12 occurrences in 2 derived forms/);
 });
+// 30 Sep 2026, Owner: "Move the derivatives above n counts below. (Derivatives are for learning, occurrences are just info)"
+check("Basic Arabic: the derived forms come BEFORE the occurrence counts", () => {
+  const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: { ...formsContext, rootOccurrenceCount: 381, lemmaOccurrenceCount: 4 } });
+  const forms = html.indexOf('class="word-card-forms"'), rootLine = html.indexOf("381 root-linked"), lemmaLine = html.indexOf("occurrences of this Dictionary Word"), share = html.indexOf("Appears ");
+  assert.ok(forms > 0 && rootLine > 0 && lemmaLine > 0 && share > 0, JSON.stringify({ forms, rootLine, lemmaLine, share }));
+  assert.ok(forms < rootLine && forms < lemmaLine && forms < share, JSON.stringify({ forms, rootLine, lemmaLine, share }));
+  assert.ok(html.indexOf("</dl>") < forms, "the forms still come after the word's own facts");
+});
 check("an unclassified remainder is reported, never hidden", () => {
   const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: formsContext });
   assert.match(html, /1 occurrences of this root are not assigned to a form/);
