@@ -367,6 +367,11 @@ async function runScenarios(lang) {
   // Scroll the LIST first, so "closing returns to the list exactly where the
   // reader was" is a real round trip, not a coincidence of starting at 0.
   await page.evaluate(() => { document.getElementById("myStatusBody").scrollTop = 40; });
+  // UPDATED IN PLACE, issue #425, reason recorded: the rows are taller now (six
+  // tiles), so Playwright's own scroll-into-view before the click moved the list
+  // a couple of pixels and the app was blamed. Bring the row into view FIRST,
+  // then measure, so only what the app itself does is compared.
+  await page.locator(`[data-my-status-open="${YES_ID}"]`).scrollIntoViewIfNeeded();
   const scrollBefore = await page.evaluate(() => document.getElementById("myStatusBody").scrollTop);
 
   await clickSafely(page, `[data-my-status-open="${YES_ID}"]`);
