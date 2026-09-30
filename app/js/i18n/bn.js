@@ -3104,4 +3104,20 @@ export const BN = {
   "Nothing matches.": "কিছু মেলেনি।",
   "{surah} {from}–{to}": "{surah} {from}–{to}",
   "{fromSurah} {from} → {toSurah} {to}": "{fromSurah} {from} → {toSurah} {to}",
+
+  // --- Writing sheet (issue #421): the Mushaf page as an A4 tracing sheet ---
+  "Writing sheet": "লিখন অনুশীলনের পাতা",
+  "Write": "লিখুন",
+  "Pen": "কলম",
+  "Eraser": "রাবার",
+  "Undo": "ফিরিয়ে নিন",
+  "Lighter": "আরও হালকা",
+  "Like the book": "বইয়ের মতো",
+  "Letter style": "অক্ষরের ধরন",
+  "Save picture": "ছবি সংরক্ষণ করুন",
+  "Print A4": "এ৪-এ প্রিন্ট করুন",
+  "Close without saving your writing?": "লেখা সংরক্ষণ না করেই বন্ধ করবেন?",
+  "Keep writing": "লিখতে থাকুন",
+  "Loading the writing sheet…": "লিখন অনুশীলনের পাতা লোড হচ্ছে…",
+  "Couldn't open the writing sheet.": "লিখন অনুশীলনের পাতা খোলা যায়নি।",
 };

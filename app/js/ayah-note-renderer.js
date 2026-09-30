@@ -436,6 +436,7 @@ export function renderNoteView({
         <button type="button" class="note-icon-btn" data-note-play title="${t("Play")}">▶</button>
         <button type="button" class="note-icon-btn${isBookmarked ? " active" : ""}" data-note-bookmark title="${isBookmarked ? t("Remove bookmark") : t("Bookmark this āyah")}">${isBookmarked ? "★" : "☆"}</button>
         <button type="button" class="note-icon-btn${isFullscreen ? " active" : ""}" data-note-fullscreen title="${t("Full screen")}" aria-pressed="${isFullscreen ? "true" : "false"}">⤢</button>
+        <button type="button" class="note-icon-btn" data-note-writing title="${t("Writing sheet")}" aria-label="${t("Writing sheet")}">✍</button>
         <!-- TOPIC bar round -- the 🗂 drawer is a real bar of dropdowns now:
              TOPIC (which classification system -- QCR today), then that
              topic's own row, Group/Attach/Yr Level, all pre-built by the
@@ -884,6 +885,7 @@ export function attachNoteViewHandlers(container, callbacks) {
   view.querySelector("[data-note-prev-ayah]")?.addEventListener("click", () => callbacks.onPrevAyah?.());
   view.querySelector("[data-note-next-ayah]")?.addEventListener("click", () => callbacks.onNextAyah?.());
   view.querySelector("[data-note-fullscreen]")?.addEventListener("click", () => callbacks.onToggleFullscreen?.());
+  view.querySelector("[data-note-writing]")?.addEventListener("click", () => callbacks.onWritingSheet?.());
   view.querySelector("[data-note-open-read]")?.addEventListener("click", () => callbacks.onOpenInReadView?.());
   view.querySelectorAll("[data-note-wide-open]").forEach((btn) => {
     btn.addEventListener("click", () => callbacks.onOpenWideNote?.(btn.dataset.noteWideOpen));

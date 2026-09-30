@@ -18883,3 +18883,15 @@ Found by the Architect in the Bangla screenshots while reviewing #419 (fix list 
 
 - **Fix**: the Mushaf page's own number read "Page 562" in Bangla; it now reads "পৃষ্ঠা ৫৬২". English unchanged.
 - **Checks**: read-contents 269/0 (new Bangla check; fails on the old code), behaviour 1003/4 (baseline 22g×3, 31e), governance 8/8.
+
+## v09.10 — 30 Sep 2026 — The Writing sheet (Arabic Writing practice)
+
+The Owner (30 Sep 2026), with a photo of a tracing Mushaf: *"when I study an Ayah and choose writing approach, the read or note view should have option to display that type of text in all types of unit."* Seven demo versions; decisions 30 and 32.
+
+Built by the Builder (issue #421); finished, reviewed and allocated by the Architect.
+
+- **Opens from**: ✍ Writing sheet in the Study menu (everyone, every width), and ✍ on the Read and Note bars wherever the bar can hold it without a new line.
+- **The sheet**: every Mushaf page of the chosen unit, A4-shaped, the printed lines and words never moved; ruled lines; dark āyah numbers.
+- **Three letter styles**: Light (thin outline), Lighter, Like the book (pale solid letters, as in the Owner's photo); remembered on the device.
+- **Write** with a finger or stylus (Pen, Eraser, Undo, Clear). **Save picture** puts the page with your writing in the phone's pictures; the app stores nothing. **Print A4** prints one Mushaf page per A4 sheet.
+- **Checks**: writing-sheet 124/0 (new; 5 Builder mutations, 1 re-proved by the Architect), read-quick-buttons 204/0, read-contents 269/0, mushaf-no-sideways-overflow 648/0, phone-width 217/0, navcheck fits, panel OK, behaviour 1006/1 (31e TLS baseline; 30j/30l/33a/37a updated in place), governance 8/8. Owner decisions 31 and 32 recorded.
