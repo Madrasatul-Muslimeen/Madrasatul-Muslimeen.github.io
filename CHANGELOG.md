@@ -18916,3 +18916,13 @@ Built by the Builder (PR #426); reviewed, merged with v09.11 and released by the
 - **Page** joins the card's By unit list.
 - **Wheel switch**: All units (six rings per slice, Juz in the middle to Āyah outside, with a key line) or one unit at a time.
 - **Checks**: quran-my-status 248/0 with hand-written figures (Juz 30 claim → Juz 1, Surah 37, Hizb 2, Ruku' 39, Page 23, Āyah 564; a dropped-page mutation fails at every width), approach-coverage 55/0, explore-wbw-tab 91/0, unit-rings 106/0, landing-sections-collapse 152/0, phone-width 217/0, behaviour 1006/1 (baseline 31e), governance 8/8.
+
+## v09.13 — 30 Sep 2026 — Read list counts, a prominent ⤢, Hide on the top line, line or dot at random
+
+Owner decisions 33–36. Built by the Architect.
+
+- **Read list tabs show their counts** (decision 33): Surah 114, Juz 30, Hizb 60, Page 604, Ruku' 556, under each tab name, in Bangla digits in Bangla. *"Mention the numbers count in each unit (beside or below the unit name, whichever looks elegant)"* — below, because five tabs share a phone row.
+- **Full-screen ⤢ everywhere** (decision 34): 36px square, gold border, bigger glyph on Read, Note and Explore; solid gold while full screen is on, never faded. 36px, not 40px: 40px made each bar 4px taller again.
+- **Writing sheet** (decision 35): Hide sits at the right-hand end of the top line at every width.
+- **Heading line** (decision 36): a line or a dot on both sides of Read, picked at random each time the page opens; the words share one baseline.
+- **Checks**: read-contents 396/0 (+82), writing-sheet 148/0 (+12); a mutation of each change fails 10 or 25; read-quick-buttons 204/0, wheel-slice-opens-track 96/0, landing-sections-collapse 152/0, quran-my-status 248/0, phone-width 217/0, behaviour 1003/4 (baseline 22g×3, 31e), governance 8/8.

@@ -85,7 +85,7 @@ for (const lang of ["en", "bn"]) {
         kysAfterCentred: R(head).width > 0 && kr.width > 0 ? kr.left > r.right && Math.abs((r.left - tr.right) - (kr.left - r.right)) <= 2 && Math.abs((kr.top + kr.height / 2) - (r.top + r.height / 2)) < 2 : null,
         gaps: [Math.round(r.left - tr.right), Math.round(kr.left - r.right)],
         titleOneLine: tr.height < 30,
-        sep: (() => { const cs = getComputedStyle(title.parentElement, "::after"); return { img: cs.backgroundImage, w: parseFloat(cs.width) || 0, op: cs.opacity, order: cs.order }; })(),
+        sep: (() => { const cs = getComputedStyle(title.parentElement, "::after"); return { img: cs.backgroundImage, w: parseFloat(cs.width) || 0, op: cs.opacity, order: cs.order, kind: document.documentElement.dataset.headSep }; })(),
         capTops: [...new Set(caps.map((e) => Math.round(R(e).top)))].length, capHeights: [...new Set(caps.map((e) => Math.round(R(e).height)))],
       };
     });
@@ -96,7 +96,10 @@ for (const lang of ["en", "bn"]) {
       check(`${tag}: heading Read sits on the title's line, to its right, inside the heading`, m.headOnTitleLine === true, JSON.stringify(m));
       if (width < 520) {
         check(`${tag}: Read sits in the middle of the gap, Know Your Status after it on the same line`, m.kysAfterCentred === true, JSON.stringify(m));
-        check(`${tag}: a | separator is drawn between Read and Know Your Status`, /linear-gradient/.test(m.sep.img) && m.sep.w >= 4 && m.sep.order === "3", JSON.stringify(m.sep));
+        // Updated in place, 30 Sep 2026 -- the Owner: "both dot/ line looks good to me.
+        // enable both appears randomly." The mark is a line or a dot (whichever this
+        // load picked); the section after this loop checks both, on both sides.
+        check(`${tag}: a separator is drawn between Read and Know Your Status`, (m.sep.kind === "dot" ? /radial-gradient/ : /linear-gradient/).test(m.sep.img) && m.sep.w >= 4 && m.sep.order === "3", JSON.stringify(m.sep));
         check(`${tag}: "Mastery Wheel" stays on one line`, m.titleOneLine === true, JSON.stringify(m));
       }
       check(`${tag}: heading Read is a 36px tap target`, m.h === 36, JSON.stringify(m));
@@ -108,6 +111,95 @@ for (const lang of ["en", "bn"]) {
     check(`${tag}: the capsule row is one line, every capsule 36px`, m.capTops === 1 && m.capHeights.length === 1 && m.capHeights[0] === 36, JSON.stringify(m));
     check(`${tag}: Read on screen, label not cut, no sideways scroll`, m.inView && !m.cut && !m.over, JSON.stringify(m));
     if (width === 390) check(`${lang}: label is "${lang === "bn" ? "পড়ুন" : "Read"}"`, m.label === (lang === "bn" ? "পড়ুন" : "Read"), m.label);
+    await ctx.close();
+  }
+}
+
+// ---- The heading's separators: a line or a dot on BOTH sides of Read, picked at
+// random per page load, and the three words on one baseline (Owner, 30 Sep 2026:
+// "it has to be aligned", then "both dot/ line looks good to me. enable both
+// appears randomly").
+for (const lang of ["en", "bn"]) {
+  for (const width of [320, 340, 360, 390, 412, 519]) {
+    const { ctx, page } = await start({ lang, width });
+    for (const kind of ["line", "dot"]) {
+      await page.evaluate((k) => document.documentElement.setAttribute("data-head-sep", k), kind);
+      const m = await page.evaluate(() => {
+        const h = document.querySelector(".wheel-heading"), title = h.querySelector(":scope > span");
+        const read = document.getElementById("readHeadBtn"), kys = document.getElementById("myStatusBtn");
+        const textBottom = (el) => { const r = document.createRange(); r.selectNodeContents(el); return r.getBoundingClientRect().bottom; };
+        const pe = (p) => { const cs = getComputedStyle(h, p); return { img: cs.backgroundImage, w: parseFloat(cs.width) || 0, order: cs.order, op: cs.opacity }; };
+        const R = (e) => e.getBoundingClientRect();
+        return { before: pe("::before"), after: pe("::after"), bottoms: [textBottom(title), textBottom(read), textBottom(kys)].map((x) => Math.round(x * 10) / 10),
+          order: R(title).right <= R(read).left && R(read).right <= R(kys).left, over: document.documentElement.scrollWidth > document.documentElement.clientWidth };
+      });
+      const tag = `${lang} ${width}px ${kind}`;
+      const re = kind === "dot" ? /radial-gradient/ : /linear-gradient/;
+      check(`${tag}: the same mark on both sides of Read`, re.test(m.before.img) && re.test(m.after.img) && m.before.img === m.after.img && m.before.w >= 6 && m.after.w >= 6 && m.before.order === "1" && m.after.order === "3", JSON.stringify(m));
+      check(`${tag}: Mastery Wheel, Read and Know Your Status sit on one baseline`, Math.max(...m.bottoms) - Math.min(...m.bottoms) <= 1, JSON.stringify(m.bottoms));
+      check(`${tag}: title, Read, Know Your Status in order on one line, no sideways scroll`, m.order && !m.over, JSON.stringify(m));
+      if (lang === "en" && width === 390) await page.screenshot({ path: `${process.env.SHOT_DIR || "/tmp"}/head-sep-${kind}-${lang}-${width}.png`, clip: { x: 0, y: 0, width, height: 160 } });
+    }
+    await ctx.close();
+  }
+}
+{
+  // Random per load: over 12 openings both kinds appear (chance of a false
+  // failure: 2 x 0.5^12, about 1 in 2,000), and nothing else is ever set.
+  const seen = new Set();
+  for (let i = 0; i < 12; i++) {
+    const { ctx, page } = await start({ width: 390 });
+    seen.add(await page.evaluate(() => document.documentElement.dataset.headSep));
+    await ctx.close();
+  }
+  check("over 12 page loads both the line and the dot appear, and nothing else", seen.size === 2 && seen.has("line") && seen.has("dot"), [...seen].join(","));
+}
+
+// ---- The full-screen ⤢ is prominent (Owner, 30 Sep 2026: "Make this button
+// (everywhere) prominent, noticeable, bigger", a desktop screenshot, the faint ⤢
+// circled beside Note View / Track / Approach). Expected by hand: a 36px square,
+// a 2px gold (#B8862F) border, glyph >= 20px; solid gold and NOT faded while the
+// screen is bare (it used to drop to 40%).
+for (const [lang, width] of [["en", 390], ["bn", 320], ["en", 1280]]) {
+  const { ctx, page } = await start({ lang, width });
+  await pick(page, "surah", 2);
+  const fs = () => page.evaluate(() => {
+    const b = document.getElementById("hideChromeBtn"), r = b.getBoundingClientRect(), cs = getComputedStyle(b);
+    return { w: Math.round(r.width), h: Math.round(r.height), border: cs.borderTopColor, bw: cs.borderTopWidth, fs: parseFloat(cs.fontSize), op: cs.opacity, bg: cs.backgroundColor, pressed: b.getAttribute("aria-pressed"), inView: r.left >= 0 && r.right <= innerWidth };
+  });
+  const bare = await fs();
+  const gold = "rgb(184, 134, 47)";
+  check(`[${lang} ${width}] bare screen: ⤢ is a 36px square, fully visible, solid gold`, bare.w === 36 && bare.h === 36 && bare.op === "1" && bare.bg === gold && bare.pressed === "true" && bare.inView, JSON.stringify(bare));
+  check(`[${lang} ${width}] ⤢ glyph is at least 20px (was 15px)`, bare.fs >= 20, JSON.stringify(bare));
+  // Press until the menus are back, then check the resting look.
+  for (let i = 0; i < 3 && (await fs()).pressed === "true"; i++) { await page.click("#hideChromeBtn"); await page.waitForTimeout(200); }
+  const rest = await fs();
+  check(`[${lang} ${width}] menus shown: ⤢ is a 36px square with a 2px gold border`, rest.pressed === "false" && rest.w === 36 && rest.h === 36 && rest.border === gold && rest.bw === "2px" && rest.op === "1", JSON.stringify(rest));
+  await ctx.close();
+}
+
+// ---- Tab counts: under the name, in the reader's digits, nothing cut (Owner, 30 Sep 2026)
+// Hand-written: 114 Surahs, 30 Juz, 60 Hizb, 604 Pages, 556 Ruku'.
+for (const lang of ["en", "bn"]) {
+  for (const width of [320, 360, 390, 768, 1280]) {
+    const { ctx, page } = await start({ lang, width });
+    await openList(page);
+    const m = await page.$$eval("#readContentsTabs .rc-tab", (els) => els.map((b) => {
+      const n = b.querySelector(".rc-tab-name"), c = b.querySelector(".rc-tab-count");
+      const nr = n?.getBoundingClientRect(), cr = c?.getBoundingClientRect(), br = b.getBoundingClientRect();
+      return { k: b.dataset.rcTab, count: c?.textContent.trim() ?? null, below: !!(nr && cr) && cr.top >= nr.bottom - 1,
+        centred: !!(nr && cr) && Math.abs((nr.left + nr.right) / 2 - (cr.left + cr.right) / 2) < 2,
+        cut: b.scrollWidth > b.clientWidth + 1 || (cr && (cr.left < br.left - 0.5 || cr.right > br.right + 0.5)), h: Math.round(br.height) };
+    }));
+    const tag = `${lang} ${width}px`;
+    const want = { surah: 114, juz: 30, hizb: 60, page: 604, ruku: 556 };
+    const digits = (v) => lang === "bn" ? String(v).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[d]) : String(v);
+    check(`${tag}: every tab shows its count in the reader's digits`, m.length === 5 && m.every((t) => t.count === digits(want[t.k])), JSON.stringify(m.map((t) => t.count)));
+    check(`${tag}: each count sits centred under its name`, m.every((t) => t.below && t.centred), JSON.stringify(m));
+    check(`${tag}: no tab or count is cut, and the tabs stay one row under 56px`, m.every((t) => !t.cut && t.h <= 56) && new Set(m.map((t) => t.h)).size === 1, JSON.stringify(m));
+    check(`${tag}: no sideways scroll`, await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth));
+    if (lang === "bn" && width === 320) await page.screenshot({ path: `${process.env.SHOT_DIR || "/tmp"}/rc-tabs-bn-320.png` });
+    if (lang === "en" && width === 390) await page.screenshot({ path: `${process.env.SHOT_DIR || "/tmp"}/rc-tabs-en-390.png` });
     await ctx.close();
   }
 }
@@ -126,13 +218,18 @@ for (const lang of ["en", "bn"]) {
 {
   const { ctx, page } = await start({});
   await openList(page);
-  const tabs = await page.$$eval("#readContentsTabs .rc-tab", (els) => els.map((e) => e.textContent.trim()));
+  // Updated in place, 30 Sep 2026: each tab now carries its count on a second
+  // line (the Owner: "Mention the numbers count in each unit"), so the name is
+  // read from .rc-tab-name rather than the whole button's text.
+  const tabs = await page.$$eval("#readContentsTabs .rc-tab .rc-tab-name", (els) => els.map((e) => e.textContent.trim()));
   check("five tabs in order", tabs.join("|") === "Surah|Juz|Hizb|Page|Ruku'", tabs.join("|"));
   const counts = {};
   for (const [k, expected] of [["surah", 114], ["juz", 30], ["hizb", 60], ["page", 604], ["ruku", 556]]) {
     await page.click(`[data-rc-tab="${k}"]`);
     counts[k] = await page.$$eval("#readContentsBody .rc-row", (e) => e.length);
     check(`${k} tab has ${expected} rows`, counts[k] === expected, String(counts[k]));
+    const shown = await page.$eval(`[data-rc-tab="${k}"] .rc-tab-count`, (e) => e.textContent.trim()).catch(() => null);
+    check(`${k} tab shows its count ${expected}, the same as its rows`, shown === String(expected) && counts[k] === expected, String(shown));
   }
   await page.click(`[data-rc-tab="surah"]`);
   const row1 = await page.$eval('.rc-row[data-rc-n="1"]', (e) => ({ text: e.innerText.replace(/\s+/g, " "), ar: e.querySelector(".rc-ar").textContent }));

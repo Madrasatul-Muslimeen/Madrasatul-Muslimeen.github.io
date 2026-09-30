@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.12",
+    "version": "09.13",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1325,8 +1325,20 @@
     {
       "version": "09.12",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "KYS: six unit tiles per Approach, Page row, All-units ring wheel with a unit switch.",
+      "integration": {
+        "authorizedOn": "2026-09-30",
+        "integratedOn": "2026-09-30",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.13",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Read-list tab counts; ⤢ 36px gold everywhere; Writing sheet Hide on the top line; heading line/dot at random.",
       "integration": {
         "authorizedOn": "2026-09-30",
         "integratedOn": "2026-09-30",
@@ -1335,8 +1347,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.13",
+  "nextUnallocated": "09.14",
   "nextUnallocatedNote": [
+    "v09.13 was allocated to Read list counts, a prominent full-screen button, Hide on the top line, line or dot at random, 2026-09-30.",
     "v09.12 was allocated to Know Your Status in every unit: six unit tiles, Page, All-units ring wheel, 2026-09-30.",
     "v09.11 was allocated to the Writing sheet toolbar: hide/show, and usable when zoomed, 2026-09-30.",
     "v09.10 was allocated to the Writing sheet (A4 tracing sheet, three letter styles, write/save/print), 2026-09-30.",
