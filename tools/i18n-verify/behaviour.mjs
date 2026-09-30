@@ -2528,12 +2528,12 @@ const readRef = readingRef; // round 22: #readRef is retired, see readingRef abo
   // v08.103 (issue #348, Owner decision 18) -- #readUnitChip, the gold chip
   // naming the chosen Study Unit and opening its card, joined the row right
   // after #mushafPageRef (hidden in Mushaf view). Updated in place, reason recorded.
-  // v08.111 (issue #370, Global Approach Card) -- #readApproachCapsule, the
+  // (Issue #428: #readApproachCapsule is now #readApproachBar, same slot.) v08.111 (issue #370, Global Approach Card) -- #readApproachCapsule, the
   // "Choose an Approach" capsule, joined the row right after #mushafPageRef
   // (Mushaf view only, hidden elsewhere). Updated in place, reason recorded.
   // v09.10 (issue #421) -- #readWritingBtn joined the bar after #readCompleteBtn; updated in place.
   check("33a the read bar is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · Reading complete · ⋮ slot",
-        bar.ids.join() === "mushafPageRef,readApproachCapsule,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readWritingBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot",
+        bar.ids.join() === "mushafPageRef,readApproachBar,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readWritingBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot",
         JSON.stringify(bar.ids));
   check("33a the '◂ Mastery Wheel' button is gone (the Read tab does it)", bar.noBack);
   check("33a the separate Pause button is gone", bar.noSeparatePause);
@@ -3273,10 +3273,10 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
   // v08.103 (issue #348, Owner decision 18) -- #readUnitChip, the gold chip
   // naming the chosen Study Unit and opening its card, joined the row right
   // after #mushafPageRef (hidden in Mushaf view). Updated in place, reason recorded.
-  // v08.111 (issue #370) -- #readApproachCapsule after #mushafPageRef; see 33a.
+  // v08.111 (issue #370) -- #readApproachCapsule after #mushafPageRef; see 33a. Updated in place by issue #428: the capsule became the #readApproachBar three-button bar, same slot.
   // v09.10 (issue #421) -- #readWritingBtn joined the bar after #readCompleteBtn; updated in place.
   check("37a the row is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · Reading complete · ⋮ slot",
-        m.barKids.join() === "mushafPageRef,readApproachCapsule,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readWritingBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot", JSON.stringify(m.barKids));
+        m.barKids.join() === "mushafPageRef,readApproachBar,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readWritingBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot", JSON.stringify(m.barKids));
   // `space-between` would leave large, uneven gaps between controls, which
   // is exactly how a stale `space-between` survived this round's first
   // attempt -- checking the gaps directly catches that regardless of how

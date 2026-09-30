@@ -2039,34 +2039,29 @@
     background: none; border: none; text-align: left; cursor: pointer;
   }
   #mushafPageRef[hidden] { display: none; }
-  /* Issue #370 -- with the Approach capsule shown, the reference stops
-     stretching (its stretch WAS the blank area the Owner marked) and the
-     capsule takes the free space instead; both shrink and ellipsis-truncate
-     their text, so the row never grows a second line. */
-  #readBar:has(#readApproachCapsule:not([hidden])) #mushafPageRef { flex: 0 1 auto; margin-right: 0; }
-  .read-approach-capsule {
-    /* flex-basis 0, not auto: a wrapping row decides line breaks by each
-       item's BASIS, so an auto basis (its full text) pushed #readBar to a
-       third line at 320/360px. At 0 it only takes what is left, down to
-       4.5rem, and ellipsis-truncates. */
-    flex: 1 1 0; min-width: 4.5rem; margin-right: auto; max-width: 16rem;
-    display: flex; align-items: center; gap: 0.25rem; min-height: 34px;
-    padding: 0.2rem 0.6rem; font: inherit; font-size: 0.74rem; font-weight: 600;
-    color: #5e4418; background: #fdf6e3; border: 1px solid #d8c68a; border-radius: 999px; cursor: pointer;
+  /* Owner decision 37 (issue #428) -- Take an Approach | Record Your Progress
+     | Know Your Status: one gold pill split into three equal buttons. It
+     replaces the #370 "Choose an Approach" capsule, as the last item of
+     #readBar on its own full-width line, and is reused under the Note view's
+     button bar (.is-note: a navy palette, because that surface is dark). */
+  .approach-bar {
+    order: 99; flex: 1 1 100%; min-width: 0; box-sizing: border-box;
+    display: flex; align-items: stretch; min-height: 38px; overflow: hidden;
+    background: #fdf6e3; border: 1.5px solid #d8c68a; border-radius: 999px;
   }
-  .read-approach-capsule[hidden] { display: none; }
-  /* Below 700px #readBar is already two lines (measured on main); beside the
-     page reference the capsule got ~72px and read "Cho…". Ordered last, it
-     starts the second line, where the icons leave it most of the width. The
-     page reference then keeps its old stretch on the first line. */
-  @media (max-width: 699.98px) {
-    /* The icons beside it on this line are ~31px; at 34px it made the bar
-       7px taller than on main, so it takes their height here. */
-    .read-approach-capsule { order: 99; margin-right: 0; max-width: none; min-height: 0; height: 26.8px; box-sizing: border-box; padding: 0 0.6rem; line-height: 1; }
-    #readBar:has(#readApproachCapsule:not([hidden])) #mushafPageRef { flex: 1 1 auto; margin-right: auto; }
+  .approach-bar .approach-bar-btn, #readBar .approach-bar .approach-bar-btn {
+    flex: 1 1 0; min-width: 0; min-height: 36px; margin: 0; padding: 0.25rem 0.5rem;
+    font: inherit; font-size: 0.78rem; font-weight: 700; line-height: 1.15;
+    white-space: normal; overflow-wrap: anywhere; text-align: center; cursor: pointer;
+    color: #5e4418; background: transparent; border: 0; border-radius: 0;
+    display: flex; align-items: center; justify-content: center;
   }
-  .read-approach-capsule-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-  .read-approach-capsule-caret { flex: 0 0 auto; font-size: 0.65rem; }
+  .approach-bar .approach-bar-btn + .approach-bar-btn { border-left: 1.5px solid #d8c68a; }
+  .approach-bar.is-note { order: 0; background: #1F3A6E; border-color: #d8c68a; margin: 0.4rem 0.6rem; flex: 0 0 auto; }
+  .approach-bar.is-note .approach-bar-btn { color: #fdf6e3; }
+  @media (max-width: 359.98px) {
+    .approach-bar .approach-bar-btn, #readBar .approach-bar .approach-bar-btn { padding: 0.25rem 0.2rem; font-size: 0.72rem; }
+  }
   .mushaf-page-ref-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .mushaf-page-ref-caret { flex: 0 0 auto; font-size: 0.65rem; color: #8a7c55; }
   /* Issue #348, Owner decision 18 -- the gold unit chip. A FIXED max-width
@@ -4418,7 +4413,11 @@
                marked), names the chosen Approach and its stage on this page,
                and opens the page's card. Mushaf view only, like the
                reference beside it. -->
-          <button type="button" id="readApproachCapsule" class="read-approach-capsule" hidden><span class="read-approach-capsule-text"></span><span class="read-approach-capsule-caret" aria-hidden="true">▾</span></button>
+          <div id="readApproachBar" class="approach-bar" role="group" aria-label="Approach, progress and status">
+            <button type="button" id="readBarTakeBtn" class="approach-bar-btn">Take an Approach</button>
+            <button type="button" id="readBarRecordBtn" class="approach-bar-btn">Record Your Progress</button>
+            <button type="button" id="readBarStatusBtn" class="approach-bar-btn">Know Your Status</button>
+          </div>
           <!-- Issue #348, Owner decision 18 -- a gold chip naming the chosen
                Study Unit ("Ruku' 3", "Juz 1", "Al-Mulk"), opening its Unit
                Card (an Ayah unit opens the Ayah Card instead). Hidden in
@@ -5941,7 +5940,7 @@
     wireUnitMarkers(pageViewContainer);
     wireUnitMarkers(document.getElementById("ayahPanels")); // review: the one-āyah view carries markers too
     const mushafPageRef = document.getElementById("mushafPageRef"); // issue #322 -- Mushaf's own top-bar Surah/āyāt reference
-    const readApproachCapsule = document.getElementById("readApproachCapsule"); // issue #370 -- "Choose an Approach"
+    const readBarRecordBtn = document.getElementById("readBarRecordBtn"); // issue #428
     const wayModalOverlay = document.getElementById("wayModalOverlay");
     const wayModalMount = document.getElementById("wayModalMount");
 
@@ -15428,9 +15427,13 @@
         the page named beside it. The stage is read from subject_quran only
         once that document is loaded -- never fetched for the label (I9). */
     function updateReadApproachCapsule() {
-      if (!readApproachCapsule) return;
+      // Owner decision 37 -- the capsule is gone; the chosen Approach and its
+      // stage on this page live on as the title / aria-label of the Record
+      // Your Progress button (Mushaf view only).
+      if (!readBarRecordBtn) return;
       const pageNum = Number(mushafPageRef?.dataset.page);
-      if (mushafPageRef?.hidden || !Number.isFinite(pageNum)) { readApproachCapsule.hidden = true; return; }
+      const label = t("Record Your Progress");
+      if (mushafPageRef?.hidden || !Number.isFinite(pageNum)) { readBarRecordBtn.title = label; readBarRecordBtn.setAttribute("aria-label", label); return; }
       const trackable = quranTrackables.find((tr) => tr.id === mushafRingApproachId) ?? null;
       let text = t("Choose an Approach");
       if (trackable) {
@@ -15439,14 +15442,11 @@
         const statusId = chunk ? (chunk.entries?.[`${buildUnitKey.page(PAGE_EDITION, pageNum)}::${trackable.id}`]?.claimedStatus ?? "not_started") : null;
         text = statusId ? `${name} · ${statusLabel(statusId)}` : name;
       }
-      readApproachCapsule.hidden = false;
-      readApproachCapsule.querySelector(".read-approach-capsule-text").textContent = text;
-      readApproachCapsule.title = text;
-      readApproachCapsule.setAttribute("aria-label", trackable ? `${text} — ${t("This page")}` : text);
+      readBarRecordBtn.title = text;
+      readBarRecordBtn.setAttribute("aria-label", trackable ? `${label} — ${text} — ${t("This page")}` : `${label} — ${text}`);
     }
 
     function clearMushafPageRef() {
-      if (readApproachCapsule) readApproachCapsule.hidden = true;
       mushafPageRef.hidden = true;
       mushafPageRef.innerHTML = "";
       mushafPageRef.removeAttribute("aria-label");
@@ -18347,6 +18347,15 @@
         onNextAyah: () => stepNoteAyah(1),
         onToggleFullscreen: toggleNoteFullscreen,
         onWritingSheet: () => openWritingSheetForCurrentUnit(),
+        onApproachBar: (which) => {
+          if (which === "take") openApproachWheel();
+          else if (which === "status") openMyStatus();
+          else {
+            noteApproachCardOpen = true;
+            renderNoteViewNow();
+            noteView.querySelector('[data-note-field="approach"]')?.scrollIntoView({ block: "nearest" });
+          }
+        },
         onToggleWbw: toggleNoteWbw,
         onToggleRoots: toggleNoteRoots,
         onToggleDerivatives: toggleNoteDerivatives,
@@ -19929,9 +19938,13 @@
     // dataset.page is stamped by updateMushafPageRef() only while a real
     // page is on screen, so a hidden/empty button (outside Mushaf view)
     // simply has nothing to read and does nothing.
-    readApproachCapsule?.addEventListener("click", () => {
+    document.getElementById("readBarTakeBtn")?.addEventListener("click", () => openApproachWheel());
+    document.getElementById("readBarStatusBtn")?.addEventListener("click", () => openMyStatus());
+    readBarRecordBtn?.addEventListener("click", () => {
+      // Mushaf view: the page on screen; text view: the chosen unit's card.
       const pageNum = Number(mushafPageRef.dataset.page);
-      if (Number.isFinite(pageNum)) openPageApproachCard(pageNum);
+      if (!mushafPageRef.hidden && Number.isFinite(pageNum)) openPageApproachCard(pageNum);
+      else openChosenUnitCard();
     });
     mushafPageRef.addEventListener("click", () => {
       const pageNum = Number(mushafPageRef.dataset.page);
