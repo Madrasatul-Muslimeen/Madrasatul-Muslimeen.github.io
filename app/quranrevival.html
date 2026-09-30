@@ -641,6 +641,29 @@
       padding: 0 0.1rem; border-radius: 6px; white-space: nowrap;
     }
     #myStatusWideBtn { display: none; }
+    .wheel-heading > #readHeadBtn + .my-status-head-btn { margin-inline-start: 0.35rem; }
+  }
+  /* 30 Sep 2026, Owner: "put Read beside Know Your Status on mobile". Read is a
+     heading-line link, in the heading's own face, pushed to the right edge --
+     beside Know Your Status on a phone. MEASURED: a fourth capsule does not fit
+     the capsule row in English until ~1000px (at 480-530 Know Your Status
+     wrapped to a second row; at 721-980 the Approach capsule's own text wrapped
+     to 43px beside 36px neighbours). So below 900px -- where the heading line
+     is shown; from 900px the wheel is a window whose title bar replaces it --
+     the capsule-row Read (#readContentsBtn) is hidden and the capsules stay
+     exactly as the Owner approved them (two on a phone, three on a tablet).
+     From 900px Read is the fourth capsule; at 900-999px the band's text is set
+     a touch smaller so all four keep one 36px line (measured). */
+  @media (min-width: 900px) and (max-width: 999px) {
+    #wheelIntroBand .wheel-intro-capsule { font-size: 0.7rem; }
+  }
+  @media (max-width: 899px) {
+    .wheel-heading > #readHeadBtn {
+      display: inline-flex; align-items: center; margin-inline-start: auto;
+      background: transparent; color: inherit; font-family: inherit; font-weight: inherit; font-size: inherit;
+      padding: 0 0.1rem; border-radius: 6px; white-space: nowrap;
+    }
+    #readContentsBtn { display: none; }
   }
 
   /* 27 Sep 2026, owner: "Enable the entire screen to move up on up scrolling,
@@ -3869,7 +3892,7 @@
             <button type="button" id="wheelPopupMaximizeBtn" title="Maximize" aria-pressed="false">⬜</button>
           </div>
         </div>
-        <h2 class="wheel-heading"><span>Mastery Wheel</span><button type="button" id="myStatusBtn" class="my-status-head-btn">Know Your Status</button></h2>
+        <h2 class="wheel-heading"><span>Mastery Wheel</span><button type="button" id="readHeadBtn" class="my-status-head-btn" aria-haspopup="dialog">Read</button><button type="button" id="myStatusBtn" class="my-status-head-btn">Know Your Status</button></h2>
         <!-- 28 Sep 2026: on tablet/PC (>=721px) the capsule row
              (#wheelIntroSettled) is moved in here by placeWheelIntroRow(), so
              its three capsules can share one row across the whole card; on a
@@ -9995,6 +10018,7 @@
     }
 
     document.getElementById("readContentsBtn")?.addEventListener("click", openReadContents);
+    document.getElementById("readHeadBtn")?.addEventListener("click", openReadContents);
     document.getElementById("readContentsCloseBtn")?.addEventListener("click", closeReadContents);
     readContentsMountEl?.addEventListener("click", (e) => { if (e.target === readContentsMountEl) closeReadContents(); });
     readContentsTabsEl?.addEventListener("click", (e) => {

@@ -34,8 +34,12 @@ const state = (page) => page.evaluate(() => ({
   played: window.__played,
   writes: (window.__fsLog || []).filter((x) => /set|add|update|delete|write|commit/i.test(x.kind || "")).length,
 }));
+// Architect, 30 Sep 2026 (Owner: "put Read beside Know Your Status on mobile"):
+// below 900px Read is the heading-line #readHeadBtn, from 900px the capsule
+// #readContentsBtn. Tap whichever one is showing.
+const readBtnSel = (page) => page.evaluate(() => ((document.getElementById("readHeadBtn")?.getBoundingClientRect().width ?? 0) > 0 ? "#readHeadBtn" : "#readContentsBtn"));
 const openList = async (page) => {
-  await page.click("#readContentsBtn");
+  await page.click(await readBtnSel(page));
   await page.waitForFunction(() => document.querySelectorAll("#readContentsBody .rc-row").length > 0);
 };
 const pick = async (page, tab, n) => {
@@ -47,18 +51,48 @@ const pick = async (page, tab, n) => {
   await page.waitForTimeout(300);
 };
 
-// ---- Button: present, same size as neighbours, nothing cut, no sideways scroll
+// ---- Button: where it sits, its look, nothing cut, no sideways scroll
+// Expected placement written by hand from the Owner's decision and the measured
+// fit (a fourth capsule does not fit the row in English below ~1000px, and from
+// 900px the heading line is replaced by the wheel window's title bar):
+//   < 480  heading line, right edge, immediately before Know Your Status
+//   480-899 heading line, right edge (Know Your Status is a capsule there)
+//   >= 900 the fourth capsule, one 36px row with the other three
 for (const lang of ["en", "bn"]) {
-  for (const width of [320, 340, 360, 390, 412, 480, 768, 1280]) {
+  for (const width of [320, 340, 360, 390, 412, 479, 480, 600, 768, 899, 900, 940, 1000, 1280]) {
     const { ctx, page } = await start({ lang, width });
     const m = await page.evaluate(() => {
-      const b = document.getElementById("readContentsBtn"), n = document.getElementById("wheelUnitBtn");
-      const rb = b.getBoundingClientRect(), rn = n.getBoundingClientRect();
+      // A missing button reads as "not shown" so the checks FAIL by name rather than crash.
+      const R = (e) => (e ? e.getBoundingClientRect() : { width: 0, height: 0, top: 0, left: 0, right: 0 });
+      const head = document.getElementById("readHeadBtn"), cap = document.getElementById("readContentsBtn");
+      const title = document.querySelector(".wheel-heading > span"), kys = document.getElementById("myStatusBtn");
       const de = document.documentElement;
-      return { w: rb.width, h: rb.height, nh: rn.height, cut: b.scrollWidth > b.clientWidth + 1, inView: rb.left >= 0 && rb.right <= innerWidth + 0.5, over: de.scrollWidth > de.clientWidth, label: b.textContent.trim() };
+      const style = (e) => ["fontFamily", "fontSize", "fontWeight", "color"].map((k) => getComputedStyle(e)[k]).join("|");
+      const caps = [...document.querySelectorAll("#wheelIntroSettled > .wheel-intro-capsule, #wheelIntroSettled > .wheel-unit-wrap > .wheel-unit-capsule, #wheelIntroSettled > .wheel-unit-capsule")].filter((e) => R(e).width > 0);
+      const shown = R(head).width > 0 ? head : cap;
+      const r = R(shown), tr = R(title), kr = R(kys), hr = R(title.parentElement);
+      return {
+        headShown: R(head).width > 0, capShown: R(cap).width > 0,
+        label: shown.textContent.trim(), h: Math.round(r.height), inView: r.left >= 0 && r.right <= innerWidth + 0.5,
+        cut: shown.scrollWidth > shown.clientWidth + 1, over: de.scrollWidth > de.clientWidth,
+        headStyleIsTitle: R(head).width > 0 ? style(head) === style(title) : null,
+        headOnTitleLine: R(head).width > 0 ? Math.abs((tr.top + tr.height / 2) - (r.top + r.height / 2)) < 4 && r.left > tr.right && r.right <= hr.right + 0.5 : null,
+        kysRightAfter: R(head).width > 0 && kr.width > 0 ? kr.left > r.right && kr.left - r.right < 24 && Math.abs(kr.top - r.top) < 2 : null,
+        capTops: [...new Set(caps.map((e) => Math.round(R(e).top)))].length, capHeights: [...new Set(caps.map((e) => Math.round(R(e).height)))],
+      };
     });
-    check(`${lang} ${width}px: Read button on screen, ${m.h}px tall, same as neighbour ${m.nh}px`, m.w > 0 && m.inView && Math.abs(m.h - m.nh) < 0.6, JSON.stringify(m));
-    check(`${lang} ${width}px: label not cut, no sideways scroll`, !m.cut && !m.over, JSON.stringify(m));
+    const tag = `${lang} ${width}px`;
+    if (width < 900) {
+      check(`${tag}: Read is on the heading line, not a capsule`, m.headShown && !m.capShown, JSON.stringify(m));
+      check(`${tag}: heading Read wears the heading's own face, size, weight and colour`, m.headStyleIsTitle === true, JSON.stringify(m));
+      check(`${tag}: heading Read sits on the title's line, to its right, inside the heading`, m.headOnTitleLine === true, JSON.stringify(m));
+      if (width < 480) check(`${tag}: Know Your Status comes right after Read on the same line`, m.kysRightAfter === true, JSON.stringify(m));
+      check(`${tag}: heading Read is a 36px tap target`, m.h === 36, JSON.stringify(m));
+    } else {
+      check(`${tag}: Read is the fourth capsule`, m.capShown && !m.headShown, JSON.stringify(m));
+      check(`${tag}: the four capsules share one row, all 36px`, m.capTops === 1 && m.capHeights.length === 1 && m.capHeights[0] === 36, JSON.stringify(m));
+    }
+    check(`${tag}: Read on screen, label not cut, no sideways scroll`, m.inView && !m.cut && !m.over, JSON.stringify(m));
     if (width === 390) check(`${lang}: label is "${lang === "bn" ? "পড়ুন" : "Read"}"`, m.label === (lang === "bn" ? "পড়ুন" : "Read"), m.label);
     await ctx.close();
   }
@@ -95,7 +129,7 @@ for (const lang of ["en", "bn"]) {
   check("search '112' leaves one row", (await page.$$eval("#readContentsBody .rc-row", (e) => e.length)) === 1);
   await page.keyboard.press("Escape");
   check("Escape closes the panel", await page.$eval("#readContentsMount", (e) => e.hidden));
-  await page.click("#readContentsBtn");
+  await page.click(await readBtnSel(page));
   await page.waitForTimeout(150);
   await page.click("#readContentsCloseBtn");
   check("the X closes the panel", await page.$eval("#readContentsMount", (e) => e.hidden));
