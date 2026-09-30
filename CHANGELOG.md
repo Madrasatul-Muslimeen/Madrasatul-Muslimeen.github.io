@@ -18876,3 +18876,10 @@ Built by the Builder (issue #419, PR #422); reviewed and allocated by the Archit
 - **Where**: below 600px, one slim row at the bottom (three equal buttons; the page is padded so no line hides under it; the ⤢ hint sits above it); from 600px, on the top line beside the page name.
 - **What they open**: Note View → the Note screen (as Study → Note); Track → the card for the chosen unit (as the Read bar's unit chip); Approach → the Mastery Wheel with its list (as the Approach tab). No audio, nothing saved by the buttons.
 - **Checks**: read-quick-buttons 204/0 (new, 4 mutations; the Architect re-proved the bottom-padding one), read-contents 268/0, wheel-slice-opens-track 96/0, study-options-play-read 62/0, study-presets 80/0, phone-width 217/0, mushaf-no-sideways-overflow 648/0, landing-sections-collapse 152/0, navcheck fits, panel OK, behaviour 1003/4 (baseline 22g×3, 31e), governance 8/8. Owner decision 30 (writing sheet) recorded.
+
+## v09.09 — 30 Sep 2026 — The Mushaf page number in Bangla
+
+Found by the Architect in the Bangla screenshots while reviewing #419 (fix list #172).
+
+- **Fix**: the Mushaf page's own number read "Page 562" in Bangla; it now reads "পৃষ্ঠা ৫৬২". English unchanged.
+- **Checks**: read-contents 269/0 (new Bangla check; fails on the old code), behaviour 1003/4 (baseline 22g×3, 31e), governance 8/8.
