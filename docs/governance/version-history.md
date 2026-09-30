@@ -651,3 +651,4 @@ total). Allocated by the MMSA Architect.
 09.05: Study options: named presets (#410). Allocated by the MMSA Architect.
 09.06: Read button: contents list into the Mushaf (#415). Allocated by the MMSA Architect.
 09.07: the phone heading line (Read centred, | separator) and a wheel slice opening its Track card. Allocated by the MMSA Architect.
+09.08: the Read page's Note View / Track / Approach buttons for readers from the Read list. Allocated by the MMSA Architect.

@@ -2526,7 +2526,7 @@ const readRef = readingRef; // round 22: #readRef is retired, see readingRef abo
   // "Choose an Approach" capsule, joined the row right after #mushafPageRef
   // (Mushaf view only, hidden elsewhere). Updated in place, reason recorded.
   check("33a the read bar is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · Reading complete · ⋮ slot",
-        bar.ids.join() === "mushafPageRef,readApproachCapsule,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot",
+        bar.ids.join() === "mushafPageRef,readApproachCapsule,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot",
         JSON.stringify(bar.ids));
   check("33a the '◂ Mastery Wheel' button is gone (the Read tab does it)", bar.noBack);
   check("33a the separate Pause button is gone", bar.noSeparatePause);
@@ -3268,7 +3268,7 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
   // after #mushafPageRef (hidden in Mushaf view). Updated in place, reason recorded.
   // v08.111 (issue #370) -- #readApproachCapsule after #mushafPageRef; see 33a.
   check("37a the row is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · Reading complete · ⋮ slot",
-        m.barKids.join() === "mushafPageRef,readApproachCapsule,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot", JSON.stringify(m.barKids));
+        m.barKids.join() === "mushafPageRef,readApproachCapsule,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot", JSON.stringify(m.barKids));
   // `space-between` would leave large, uneven gaps between controls, which
   // is exactly how a stale `space-between` survived this round's first
   // attempt -- checking the gaps directly catches that regardless of how

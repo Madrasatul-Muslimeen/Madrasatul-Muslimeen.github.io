@@ -18865,3 +18865,14 @@ Built by the Architect.
 - **Heading line (below 520px)**: *Mastery Wheel*, then **Read** exactly midway to **Know Your Status**, with a thin gold | midway between Read and Know Your Status. The bar beat the dot side by side. The title stays on one line at 320px in English (it wrapped on `main` too). 520px and up unchanged.
 - **Wheel slice / Approach row**: opens the Note view with that Approach's **Track card already open**, the tapped Approach chosen, scrolled into view. No second click. Reading the unit stays one tap away.
 - **Checks**: read-contents 268/0 (placement check updated in place; new checks fail 37 on the old code), wheel-slice-opens-track 96/0 (new; 48 fail on the old code), phone-width 217/0, landing-sections-collapse 152/0, quran-my-status 88/0, study-options-play-read 62/0, navcheck fits, behaviour 1003/4 (baseline 22g×3, 31e), governance 8/8 suites green. Owner decisions 27-29 recorded.
+
+## v09.08 — 30 Sep 2026 — Read page: Note View · Track · Approach for readers from the Read list
+
+The Owner (30 Sep 2026): *"we will later make a few simple buttons for these readers to read view (like your demo)"*; after the placement demo: *"Okay, placement is fine, go ahead."*
+
+Built by the Builder (issue #419, PR #422); reviewed and allocated by the Architect.
+
+- **Who sees them**: readers who opened the Mushaf from the Read contents list, on the bare full-screen page. Press ⤢ and the usual controls come back instead. Opening Read from the Study menu shows none.
+- **Where**: below 600px, one slim row at the bottom (three equal buttons; the page is padded so no line hides under it; the ⤢ hint sits above it); from 600px, on the top line beside the page name.
+- **What they open**: Note View → the Note screen (as Study → Note); Track → the card for the chosen unit (as the Read bar's unit chip); Approach → the Mastery Wheel with its list (as the Approach tab). No audio, nothing saved by the buttons.
+- **Checks**: read-quick-buttons 204/0 (new, 4 mutations; the Architect re-proved the bottom-padding one), read-contents 268/0, wheel-slice-opens-track 96/0, study-options-play-read 62/0, study-presets 80/0, phone-width 217/0, mushaf-no-sideways-overflow 648/0, landing-sections-collapse 152/0, navcheck fits, panel OK, behaviour 1003/4 (baseline 22g×3, 31e), governance 8/8. Owner decision 30 (writing sheet) recorded.

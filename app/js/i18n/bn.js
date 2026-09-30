@@ -1328,6 +1328,7 @@ export const BN = {
   // use of the mechanism i18n.js reserved for exactly this collision.
   "About|person": "কার সম্পর্কে",
   "Note": "নোট",
+  "Note View": "নোট ভিউ",
   "Save note": "নোট সংরক্ষণ করুন",
   "No notes yet.": "এখনো কোনো নোট নেই।",
   "Couldn't load notes:": "নোটগুলো লোড করা যায়নি:",

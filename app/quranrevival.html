@@ -2224,7 +2224,44 @@
      top-bar reference is to still say which Surah/āyāt this is in the BARE
      full-screen state, where the strip is otherwise empty apart from the
      full-screen icon. */
-  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar > *:not(#hideChromeBtn):not(#mushafPageRef) { display: none; }
+  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar > *:not(#hideChromeBtn):not(#mushafPageRef):not(#readQuickRow) { display: none; }
+  /* Issue #419 -- Note View / Track / Approach for readers who came in through
+     the Read contents list. Shown only when ALL of: opened from that list
+     (body.read-from-contents, set in openReadContentsRow and cleared by
+     setStageView when the stage leaves Read), and the bare full-screen state
+     (the same three classes the rule above keys on). Pressing the full-screen
+     button leaves the bare state and the row goes with it. */
+  #readQuickRow { display: none; gap: 0.4rem; flex: 0 0 auto; }
+  #readQuickRow[hidden] { display: none !important; }
+  body.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readQuickRow { display: flex; }
+  #readQuickRow .rq-btn {
+    flex: 0 0 auto; min-height: 36px; box-sizing: border-box; padding: 0 10px; margin: 0;
+    font: inherit; font-size: 0.82rem; font-weight: 600; line-height: 1; white-space: nowrap;
+    color: #5e4418; background: #fdf6e3; border: 1px solid #b8963a; border-radius: 999px; cursor: pointer;
+  }
+  /* 600px and up: on the top line, between the page reference and the
+     full-screen button (the reference's own margin-right:auto pushes the row to
+     the end, beside the button). */
+  @media (min-width: 600px) {
+    body.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readQuickRow { margin-left: auto; }
+  }
+  /* Below 600px: one slim row fixed to the bottom, three equal buttons, above
+     the dock when the reader's full-screen settings keep it (--rq-bottom is the
+     dock's measured height, set by positionReadQuickRow()). */
+  @media (max-width: 599.98px) {
+    body.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readQuickRow {
+      position: fixed; left: 0; right: 0; bottom: var(--rq-bottom, 0px); z-index: 65;
+      padding: 8px 0.5rem calc(8px + env(safe-area-inset-bottom, 0px)); background: #fff;
+      border-top: 1px solid #e3e8f2; box-sizing: border-box;
+    }
+    #readQuickRow .rq-btn { flex: 1 1 0; min-width: 0; }
+    body.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readScroll {
+      padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+    }
+    body.read-from-contents.immersive-read.fs-hide-readbar.fs-hide-transport #readHint {
+      bottom: calc(52px + env(safe-area-inset-bottom, 0px) + 0.75rem);
+    }
+  }
   body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar {
     border-bottom: none; padding: 0; gap: 0;
   }
@@ -4299,6 +4336,13 @@
           <button type="button" class="secondary qr-ico" id="nextUnitBtn" aria-label="Next" title="Next">⏭</button>
           <button type="button" class="secondary qr-ico" id="readPlayBtn" aria-label="Play" title="Play">▶</button>
           <button type="button" class="secondary qr-ico" id="readStopBtn" aria-label="Stop" title="Stop">■</button>
+          <!-- Issue #419 -- see the #readQuickRow CSS for when it shows. Each
+               button calls the same named function as the control it mirrors. -->
+          <div id="readQuickRow">
+            <button type="button" class="rq-btn" id="readQuickNoteBtn">Note View</button>
+            <button type="button" class="rq-btn" id="readQuickTrackBtn">Track</button>
+            <button type="button" class="rq-btn" id="readQuickApproachBtn">Approach</button>
+          </div>
           <button type="button" class="secondary qr-ico" id="hideChromeBtn" aria-label="Full screen" title="Full screen">⤢</button>
           <!-- Note-view enhancement round 3 -- "same resizing at the READ
                view too". Filled in by JS (renderTextSizeButtonHtml()) once
@@ -5913,11 +5957,14 @@
     const hideChromeBtn = document.getElementById("hideChromeBtn");
     const readBookmarkBtn = document.getElementById("readBookmarkBtn");
     const readUnitChip = document.getElementById("readUnitChip"); // issue #348, Owner decision 18
-    readUnitChip.addEventListener("click", () => {
+    /** The Unit Card for the chosen unit (the Ayah Card when it is one āyah).
+        Shared by the Read bar's unit chip and the Read contents list's Track button. */
+    function openChosenUnitCard() {
       const info = currentUnitInfo();
       if (info.unitType === "ayah") { openAyahActionSheet(`${currentSurahNum}:${currentAyahNum}`); return; }
       openUnitCard(info.unitKey, { surah: currentSurahNum, ayah: currentAyahNum });
-    });
+    }
+    readUnitChip.addEventListener("click", openChosenUnitCard);
     const prevUnitBtn = document.getElementById("prevUnitBtn");
     const nextUnitBtn = document.getElementById("nextUnitBtn");
     const quranFontSelect = document.getElementById("quranFontSelect");
@@ -8709,6 +8756,7 @@
       // three can leak into a screen the reader didn't ask to see hidden
       // chrome on.
       if (!reading) setImmersive(false);
+      if (!reading) document.body.classList.remove("read-from-contents"); // issue #419
       // Issue #348 review (I9): the unit markers' tables load on first Read.
       if (reading && !unitCardTablesCache) {
         unitCardBoundaryTables().then(() => { if (stageView === "read") renderStudyScreen(); }).catch(() => {});
@@ -8971,10 +9019,13 @@
     // audio-warming call here -- every Play button this screen has already
     // warms at the moment it is actually pressed (quickPlayAyah()), same as
     // every other route into this same screen.
-    tabNoteBtn.addEventListener("click", () => {
-      if (stageView === "note") { setStageView("wheel"); renderWheel(); return; } // same close idiom as Read/Approach
+    function openNoteForCurrentAyah() {
       closeAllPanels();
       openNoteView(buildUnitKey.ayah(currentSurahNum, currentAyahNum));
+    }
+    tabNoteBtn.addEventListener("click", () => {
+      if (stageView === "note") { setStageView("wheel"); renderWheel(); return; } // same close idiom as Read/Approach
+      openNoteForCurrentAyah();
     });
 
     // Enhancement round -- Approach as its own dock tab: the same Mastery
@@ -8982,12 +9033,19 @@
     // view, now also reachable directly from Read/Note/Explore. Nothing
     // about the wheel itself changes -- clicking a slice or a sidebar row
     // still hands off to Note exactly as today (jumpToApproach(), above).
-    tabApproachBtn.addEventListener("click", () => {
-      if (stageView === "wheel") return; // already showing -- nothing to toggle back to
+    function openApproachWheel() {
       closeAllPanels();
       setStageView("wheel");
       renderWheel(); // lay the hub out for real -- see the comment on tabReadBtn's own close branch
+    }
+    tabApproachBtn.addEventListener("click", () => {
+      if (stageView === "wheel") return; // already showing -- nothing to toggle back to
+      openApproachWheel();
     });
+    // Issue #419 -- the Read contents list's three quick buttons, same routes.
+    document.getElementById("readQuickNoteBtn").addEventListener("click", openNoteForCurrentAyah);
+    document.getElementById("readQuickTrackBtn").addEventListener("click", openChosenUnitCard);
+    document.getElementById("readQuickApproachBtn").addEventListener("click", openApproachWheel);
 
     // Ayah Collections round 2 -- Explore as a real #stage view, same
     // "tap the open tab to close it" idiom as Read/Note/Approach, replacing
@@ -10056,7 +10114,21 @@
         await goToUnitNumber(n);
       }
       openReadingScreen();
+      // Issue #419 -- set AFTER the stage is on Read (setStageView clears it on
+      // leaving Read), so only this route shows the three quick buttons.
+      document.body.classList.add("read-from-contents");
+      positionReadQuickRow();
     }
+
+    /** Below 600px the quick row sits above the dock when the dock is on
+        screen: publish the dock's height as --rq-bottom (0 when it is hidden). */
+    function positionReadQuickRow() {
+      const dockEl = document.getElementById("dock");
+      const shown = dockEl && dockEl.offsetParent !== null && !document.body.classList.contains("fs-hide-dock");
+      const h = shown ? Math.max(0, window.innerHeight - dockEl.getBoundingClientRect().top) : 0;
+      document.documentElement.style.setProperty("--rq-bottom", `${Math.round(h)}px`);
+    }
+    window.addEventListener("resize", positionReadQuickRow);
 
     document.getElementById("readContentsBtn")?.addEventListener("click", openReadContents);
     document.getElementById("readHeadBtn")?.addEventListener("click", openReadContents);
