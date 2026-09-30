@@ -34,10 +34,13 @@ to try on my phone.
    progress, and what waits on me (handover section 4).
 3. **Start the test server** (`node serve.js` from the repository root) before
    any browser suite. A fresh container does not have it running.
-4. **Ask me about the Simple Mushaf Reader demo** if I have not answered yet
-   (<https://claude.ai/artifact/V85N34YWdBJUk9M1StyaCf>, handover section 0):
-   is it the idea, where does it live, and do I want Bangla surah meanings.
-   When I answer, write it as one Builder issue, dispatch it, and review it.
+4. **Tell me the app is at v09.06 and the Builder queue is empty, and ask what
+   I want next.** The likely next job is mine to start: a few simple buttons in
+   the Read view for readers who come in through the new Read contents list
+   (like the demo's Note View / Track / Approach row,
+   <https://claude.ai/artifact/V85N34YWdBJUk9M1StyaCf>). When I ask for it, show
+   me a demo first and ask where the buttons go, then write one Builder issue.
+   Also remind me the 29 proposed Approach short names still wait on me.
 
 **How a round runs:**
 - Start it **only with `workflow_dispatch`**: `mcp__github__actions_run_trigger`,
