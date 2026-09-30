@@ -77,7 +77,15 @@ for (const lang of ["en", "bn"]) {
         cut: shown.scrollWidth > shown.clientWidth + 1, over: de.scrollWidth > de.clientWidth,
         headStyleIsTitle: R(head).width > 0 ? style(head) === style(title) : null,
         headOnTitleLine: R(head).width > 0 ? Math.abs((tr.top + tr.height / 2) - (r.top + r.height / 2)) < 4 && r.left > tr.right && r.right <= hr.right + 0.5 : null,
-        kysRightAfter: R(head).width > 0 && kr.width > 0 ? kr.left > r.right && kr.left - r.right < 24 && Math.abs(kr.top - r.top) < 2 : null,
+        // Updated in place, 30 Sep 2026 -- the Owner moved Read: "Place Read button in the
+        // middle of the gap ... put dot or a | like bar in between those buttons". Was:
+        // Know Your Status within 24px after Read. Now: Read centred between the title and
+        // Know Your Status (the two gaps within 2px), all three on one line, and a
+        // visible separator drawn midway between Read and Know Your Status.
+        kysAfterCentred: R(head).width > 0 && kr.width > 0 ? kr.left > r.right && Math.abs((r.left - tr.right) - (kr.left - r.right)) <= 2 && Math.abs((kr.top + kr.height / 2) - (r.top + r.height / 2)) < 2 : null,
+        gaps: [Math.round(r.left - tr.right), Math.round(kr.left - r.right)],
+        titleOneLine: tr.height < 30,
+        sep: (() => { const cs = getComputedStyle(title.parentElement, "::after"); return { img: cs.backgroundImage, w: parseFloat(cs.width) || 0, op: cs.opacity, order: cs.order }; })(),
         capTops: [...new Set(caps.map((e) => Math.round(R(e).top)))].length, capHeights: [...new Set(caps.map((e) => Math.round(R(e).height)))],
       };
     });
@@ -86,7 +94,11 @@ for (const lang of ["en", "bn"]) {
       check(`${tag}: Read is on the heading line, not a capsule`, m.headShown && !m.capShown, JSON.stringify(m));
       check(`${tag}: heading Read wears the heading's own face, size, weight and colour`, m.headStyleIsTitle === true, JSON.stringify(m));
       check(`${tag}: heading Read sits on the title's line, to its right, inside the heading`, m.headOnTitleLine === true, JSON.stringify(m));
-      if (width < 520) check(`${tag}: Know Your Status comes right after Read on the same line`, m.kysRightAfter === true, JSON.stringify(m));
+      if (width < 520) {
+        check(`${tag}: Read sits in the middle of the gap, Know Your Status after it on the same line`, m.kysAfterCentred === true, JSON.stringify(m));
+        check(`${tag}: a | separator is drawn between Read and Know Your Status`, /linear-gradient/.test(m.sep.img) && m.sep.w >= 4 && m.sep.order === "3", JSON.stringify(m.sep));
+        check(`${tag}: "Mastery Wheel" stays on one line`, m.titleOneLine === true, JSON.stringify(m));
+      }
       check(`${tag}: heading Read is a 36px tap target`, m.h === 36, JSON.stringify(m));
     } else {
       check(`${tag}: Read is the fourth capsule`, m.capShown && !m.headShown, JSON.stringify(m));
