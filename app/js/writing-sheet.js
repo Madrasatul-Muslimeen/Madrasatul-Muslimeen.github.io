@@ -331,11 +331,40 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
     const vv = window.visualViewport;
     const zoomed = !!vv && vv.scale > 1.01;
     root.classList.toggle("ws-zoomed", zoomed);
-    if (!zoomed) { chromeEl.style.transform = ""; chromeEl.style.width = ""; return; }
+    if (!zoomed) { chromeEl.style.transform = ""; chromeEl.style.width = ""; placeToggle(); return; }
     const w = toolsHidden ? "" : `${vv.width * vv.scale}px`;
     const x = toolsHidden ? vv.offsetLeft + vv.width - (chromeEl.offsetWidth / vv.scale) : vv.offsetLeft;
     chromeEl.style.width = w;
     chromeEl.style.transform = `translate(${x}px, ${vv.offsetTop}px) scale(${1 / vv.scale})`;
+    placeToggle();
+  }
+
+  // The Owner, 30 Sep 2026 (a phone photo, an arrow from "▴ Hide" on its own
+  // third line up to the empty end of the first): "Move the hide button to the
+  // upper line." Hide always goes on the TOP line, at its right-hand end. It
+  // tries, in order: last (everything fits one line, as on a PC), after
+  // Write…Clear, then straight after the title (a narrow phone, where
+  // Write…Clear itself wraps below the title), and keeps the first that
+  // lands on the title's own line. Measured, because what fits depends on
+  // the width and the language.
+  function placeToggle() {
+    if (toolsHidden) return;
+    const bar = $(".ws-toolbar");
+    const title = $(".ws-title");
+    const tg = $('[data-ws="tools"]');
+    const items = [...bar.children].filter((el) => el !== tg);
+    items.forEach((el, i) => { el.style.order = String(i * 10); });
+    const mid = (el) => el.offsetTop + el.offsetHeight / 2;
+    // Last first, then after each group in turn, back to straight after the
+    // title; keep the first where Hide is on the title's line AND nothing
+    // else follows it there (so it really is that line's right-hand end).
+    const orders = [1000, ...items.map((_, i) => i * 10 + 5).reverse()];
+    for (const order of orders) {
+      tg.style.order = String(order);
+      const line = mid(title);
+      if (Math.abs(mid(tg) - line) < 8 && !items.some((el) => Math.abs(mid(el) - line) < 8 && el.offsetLeft > tg.offsetLeft)) return;
+    }
+    tg.style.order = "1000";
   }
   let chromeFrame = 0;
   const onViewport = () => { cancelAnimationFrame(chromeFrame); chromeFrame = requestAnimationFrame(placeChrome); };

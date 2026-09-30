@@ -6,6 +6,10 @@
 <link rel="stylesheet" href="./css/shell.css" />
 <link rel="stylesheet" href="./css/card-look.css" />
   <script>(function(){try{document.documentElement.setAttribute('data-card-look',localStorage.getItem('mm_card_look')==='light'?'light':'night');}catch(e){document.documentElement.setAttribute('data-card-look','night');}})();</script>
+  <!-- 30 Sep 2026, Owner: "both dot/ line looks good to me. enable both appears
+       randomly." The phone heading's separators: a line or a dot, picked at
+       random each time the page opens (the CSS under .wheel-heading::before). -->
+  <script>document.documentElement.setAttribute('data-head-sep', Math.random() < 0.5 ? 'line' : 'dot');</script>
 <title>QuranRevival — Phase 4/5</title>
 <style>
   /* Shell round 7 (12 Aug 2026) -- this page is now a real app shell rather
@@ -654,14 +658,27 @@
        after Read draws the separator at its own centre, so the mark sits
        midway between Read and Know Your Status (it keeps at least 6px).
        The orders put the ::after box between Read and Know Your Status. */
-    .wheel-heading::before, .wheel-heading::after { content: ""; flex: 1 1 0; min-width: 0; align-self: stretch; }
-    .wheel-heading::before { order: 1; }
-    .wheel-heading > #readHeadBtn { order: 2; margin-inline-start: 0; }
-    .wheel-heading::after {
-      order: 3; min-width: 6px;
-      background: linear-gradient(currentColor, currentColor) center / 1.5px 0.95em no-repeat;
+    /* 30 Sep 2026, Owner (the two side by side, real screenshots): "both
+       dot/ line looks good to me. enable both appears randomly." So BOTH
+       gaps carry a mark, and each time the page opens it is a thin line or a
+       dot, picked at random (html[data-head-sep], set at the top of the
+       module script; the line is the default until it runs). The earlier
+       Owner report, "it has to be aligned", is why the words now share one
+       BASELINE rather than being centred box by box (the title's serif and
+       the buttons' boxes put "Mastery Wheel" lower than Read). */
+    .wheel-heading { align-items: baseline; }
+    .wheel-heading::before, .wheel-heading::after {
+      content: ""; flex: 1 1 0; min-width: 6px; align-self: baseline; height: 0.78em;
+      background: linear-gradient(currentColor, currentColor) center / 1.5px 100% no-repeat;
       opacity: 0.55;
     }
+    html[data-head-sep="dot"] .wheel-heading::before, html[data-head-sep="dot"] .wheel-heading::after {
+      min-width: 7px; opacity: 0.75;
+      background: radial-gradient(circle, currentColor 0 2.2px, transparent 2.7px) center 62% / 7px 7px no-repeat;
+    }
+    .wheel-heading::before { order: 1; }
+    .wheel-heading > #readHeadBtn { order: 2; margin-inline-start: 0; }
+    .wheel-heading::after { order: 3; }
     /* The bar, not a dot: looked at side by side at 320-412px, a 4px dot
        read as a stray speck. And the title keeps one line: at 320px in
        English it used to break "Mastery / Wheel" onto two lines (on main
@@ -1957,6 +1974,23 @@
      a line taller. A class with !important, because [hidden] loses to the
      buttons' own display rules (the [hidden] trap). */
   .bar-btn-nofit { display: none !important; }
+  /* 30 Sep 2026, Owner: "Make this button (everywhere) prominent, noticeable,
+     bigger." The full-screen ⤢ on Read, Note and Explore: one look, a 40px
+     square finger target (was ~30x27 with a 15px glyph), a 2px gold border
+     and a 1.4rem glyph. While full screen is ON it is solid gold with a white
+     glyph, at full strength (it used to fade to 40% in the bare Read state,
+     where it is the only button left). IDs and an attribute selector, so it
+     outranks #readBar button / #readBar .qr-ico / .note-icon-btn. */
+  #readBar #hideChromeBtn, #exploreBar #exploreFullscreenBtn, #noteView .note-icon-btn[data-note-fullscreen] {
+    box-sizing: border-box; width: 36px; height: 36px; min-width: 36px; padding: 0; margin: 0; flex: 0 0 auto;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; font-weight: 700; line-height: 1; border-radius: 0.5rem;
+    background: #fff; color: #1F3A6E; border: 2px solid #B8862F; opacity: 1;
+    box-shadow: 0 1px 4px rgba(19, 25, 42, 0.28); cursor: pointer;
+  }
+  #readBar #hideChromeBtn[aria-pressed="true"], #exploreBar #exploreFullscreenBtn.active, #noteView .note-icon-btn[data-note-fullscreen].active {
+    background: #B8862F; color: #fff; border-color: #B8862F;
+  }
   #readBar button[disabled] { opacity: 0.45; }
   /* Issue #322 -- Mushaf's own "Surah · āyāt" reference. flex:1 1 auto with
      min-width:0 is what lets it shrink and ellipsis-truncate rather than
@@ -2269,9 +2303,10 @@
   body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar {
     border-bottom: none; padding: 0; gap: 0;
   }
-  body.immersive-read.fs-hide-readbar.fs-hide-transport #hideChromeBtn {
-    opacity: 0.4; border-color: transparent; background: transparent;
-  }
+  /* 30 Sep 2026, Owner (a desktop screenshot, the faint ⤢ circled): "Make
+     this button (everywhere) prominent, noticeable, bigger." In the bare
+     state it is the ONLY way back to the menus, so it is no longer faded:
+     it turns solid gold (see the full-screen button block below). */
   /* Round 21 read "edge to edge" as applying to the TEXT and set this to 0,
      which put the Arabic hard against the glass -- diacritics and end-of-ayah
      marks on the edge, which is what the owner's phone screenshot showed.

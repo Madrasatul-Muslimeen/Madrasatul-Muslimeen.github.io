@@ -502,6 +502,33 @@ for (const lang of ["en", "bn"]) {
   await ctx.close();
 }
 
+// ================= Hide sits on the TOP line, at its right-hand end
+// Architect, 30 Sep 2026. The Owner (a phone photo, "▴ Hide" alone on a third
+// line, an arrow up to the empty end of the first): "Move the hide button to
+// the upper line. You should apply Common sense."
+for (const lang of ["en", "bn"]) {
+  for (const width of [320, 360, 400, 600, 900, 1280]) {
+    const { ctx, page } = await start({ lang, width, height: 800 });
+    await pick(page, "surah", 67);
+    await unbare(page);
+    await openSheet(page);
+    const m = await page.evaluate(() => {
+      const r = (s) => document.querySelector(s).getBoundingClientRect();
+      const t = r("#writingSheet .ws-title"), g = r('#writingSheet [data-ws="tools"]'), bar = r("#writingSheet .ws-toolbar");
+      const others = [...document.querySelectorAll('#writingSheet .ws-toolbar button:not([data-ws="tools"])')].map((b) => b.getBoundingClientRect());
+      const mid = (x) => (x.top + x.bottom) / 2;
+      return { onTitleLine: Math.abs(mid(t) - mid(g)) < 8, fromRight: Math.round(bar.right - g.right),
+        ownLine: !others.some((o) => Math.abs(mid(o) - mid(g)) < 8) && Math.abs(mid(t) - mid(g)) >= 8,
+        overlap: others.some((o) => o.left < g.right && o.right > g.left && o.top < g.bottom && o.bottom > g.top),
+        lines: new Set([...others, g, t].map((x) => Math.round(mid(x) / 10))).size };
+    });
+    const tag = `[${lang} ${width}]`;
+    check(`${tag} Hide is on the title's line, at the right-hand end, overlapping nothing`, m.onTitleLine && m.fromRight <= 10 && !m.overlap && !m.ownLine, JSON.stringify(m));
+    if (width === 400) await shot(page, `toolbar-hide-top-${lang}-${width}`);
+    await ctx.close();
+  }
+}
+
 console.log(`\nwriting-sheet-browser: ${pass} passed, ${fail} failed`);
 await browser.close();
 process.exit(fail ? 1 : 0);
