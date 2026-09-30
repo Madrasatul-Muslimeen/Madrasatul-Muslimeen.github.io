@@ -18895,3 +18895,13 @@ Built by the Builder (issue #421); finished, reviewed and allocated by the Archi
 - **Three letter styles**: Light (thin outline), Lighter, Like the book (pale solid letters, as in the Owner's photo); remembered on the device.
 - **Write** with a finger or stylus (Pen, Eraser, Undo, Clear). **Save picture** puts the page with your writing in the phone's pictures; the app stores nothing. **Print A4** prints one Mushaf page per A4 sheet.
 - **Checks**: writing-sheet 124/0 (new; 5 Builder mutations, 1 re-proved by the Architect), read-quick-buttons 204/0, read-contents 269/0, mushaf-no-sideways-overflow 648/0, phone-width 217/0, navcheck fits, panel OK, behaviour 1006/1 (31e TLS baseline; 30j/30l/33a/37a updated in place), governance 8/8. Owner decisions 31 and 32 recorded.
+
+## v09.11 — 30 Sep 2026 — Writing sheet: hide the toolbar, and keep it usable when zoomed
+
+The Owner (30 Sep 2026): *"Can you enable the button plate to hide n appear. Also enable them to be accessible when zoom in."*
+
+Built by the Architect.
+
+- **Hide / Tools**: ▴ Hide folds the toolbar away, leaving one ▾ Tools button in the top corner to bring it back; remembered on the device.
+- **Zoom**: while the page is pinch-zoomed, the toolbar follows the part of the page on screen and keeps its normal size, so no button slides off screen or grows.
+- **Checks**: writing-sheet 136/0 (+12; the zoom placement mutation fails 4), phone-width 217/0, behaviour 1003/4 (baseline), governance 8/8.

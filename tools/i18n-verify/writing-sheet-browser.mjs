@@ -465,6 +465,43 @@ for (const [lang, width] of [["bn", 320], ["en", 390], ["en", 1280]]) {
   await ctx.close();
 }
 
+// ================= the toolbar hides and comes back; it stays usable when zoomed
+// Architect, 30 Sep 2026. The Owner: "Can you enable the button plate to hide n
+// appear. Also enable them to be accessible when zoom in." Expected values by hand.
+for (const lang of ["en", "bn"]) {
+  const { ctx, page } = await start({ lang, width: 390, height: 844 });
+  await pick(page, "surah", 67);
+  await unbare(page);
+  await openSheet(page);
+  const tb = () => page.evaluate(() => {
+    const vv = visualViewport, c = document.querySelector("#writingSheet .ws-chrome").getBoundingClientRect();
+    const btns = [...document.querySelectorAll("#writingSheet .ws-toolbar button")].filter((b) => b.getBoundingClientRect().width > 0);
+    const tg = document.querySelector('#writingSheet [data-ws="tools"]');
+    return { shown: btns.length, toggle: tg.textContent.trim(), expanded: tg.getAttribute("aria-expanded"),
+      inView: c.left >= vv.offsetLeft - 0.5 && c.top >= vv.offsetTop - 0.5 && c.right <= vv.offsetLeft + vv.width + 0.5 && c.bottom <= vv.offsetTop + vv.height + 0.5,
+      minH: Math.min(...btns.map((b) => b.getBoundingClientRect().height * vv.scale)), scale: vv.scale };
+  });
+  const a = await tb();
+  check(`[${lang}] toolbar shown by default: 12 buttons, toggle reads ${lang === "bn" ? "▴ লুকান" : "▴ Hide"}`, a.shown === 12 && a.toggle === (lang === "bn" ? "▴ লুকান" : "▴ Hide") && a.expanded === "true", JSON.stringify(a));
+  await page.click('#writingSheet [data-ws="tools"]'); await page.waitForTimeout(150);
+  const b = await tb();
+  check(`[${lang}] Hide leaves only the Tools button, on screen`, b.shown === 1 && b.toggle === (lang === "bn" ? "▾ সরঞ্জাম" : "▾ Tools") && b.expanded === "false" && b.inView, JSON.stringify(b));
+  await closeSheet(page); await openSheet(page);
+  const c = await tb();
+  check(`[${lang}] the hidden choice is remembered when the sheet opens again`, c.shown === 1, JSON.stringify(c));
+  await page.click('#writingSheet [data-ws="tools"]'); await page.waitForTimeout(150);
+  check(`[${lang}] Tools brings all 12 buttons back`, (await tb()).shown === 12);
+  // Zoom the page 2.5x the way a pinch does, then move the view down the page.
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Emulation.setPageScaleFactor", { pageScaleFactor: 2.5 });
+  await page.mouse.wheel(0, 300); await page.waitForTimeout(400);
+  const z = await tb();
+  check(`[${lang}] zoomed 2.5x: the toolbar is inside the visible area`, z.scale > 2 && z.inView, JSON.stringify(z));
+  check(`[${lang}] zoomed 2.5x: every button still >= 39px tall on screen (not blown up, not shrunk)`, z.minH >= 39 && z.minH <= 48, JSON.stringify(z));
+  await cdp.send("Emulation.setPageScaleFactor", { pageScaleFactor: 1 });
+  await ctx.close();
+}
+
 console.log(`\nwriting-sheet-browser: ${pass} passed, ${fail} failed`);
 await browser.close();
 process.exit(fail ? 1 : 0);

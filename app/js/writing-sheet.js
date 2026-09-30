@@ -4,7 +4,9 @@
 //
 // I2: a renderer. Pages in, DOM out. It reads no records, writes no activity
 // and NEVER stores the writing: no Firestore, no localStorage, no IndexedDB.
-// The one thing it may remember is the letter style (`writingSheetShade`).
+// The two things it may remember are view choices, never the writing: the
+// letter style (`writingSheetShade`) and whether the toolbar is hidden
+// (`writingSheetTools`, the Owner's "hide n appear", 30 Sep 2026).
 // I9: nothing here is fetched or loaded until openWritingSheet() is called --
 // the caller imports this file dynamically, on the button press.
 //
@@ -24,6 +26,7 @@ import {
 } from "./hifz-renderer.js";
 
 const SHADE_KEY = "writingSheetShade";
+const TOOLS_KEY = "writingSheetTools";
 const SHADES = {
   light: { mode: "stroke", color: "#b4ab96" },
   lighter: { mode: "stroke", color: "#d6cfbf" },
@@ -54,6 +57,12 @@ function readShade() {
     if (v && SHADES[v]) return v;
   } catch { /* storage may be blocked */ }
   return "light";
+}
+function readToolsHidden() {
+  try { return localStorage.getItem(TOOLS_KEY) === "hidden"; } catch { return false; }
+}
+function saveToolsHidden(hidden) {
+  try { localStorage.setItem(TOOLS_KEY, hidden ? "hidden" : "shown"); } catch { /* this visit only */ }
 }
 function saveShade(v) {
   try { localStorage.setItem(SHADE_KEY, v); } catch { /* remembered for this visit only */ }
@@ -199,7 +208,15 @@ function measurer() {
 const CSS = `
 #writingSheet{position:fixed;inset:0;z-index:9500;background:#e9e4d6;display:flex;flex-direction:column;font-family:'Inter',system-ui,sans-serif;color:#1b1b16}
 #writingSheet[hidden]{display:none}
-#writingSheet .ws-toolbar{position:sticky;top:0;z-index:3;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:8px 8px;background:#1F3A6E;color:#fff;flex:0 0 auto}
+#writingSheet .ws-chrome{position:sticky;top:0;z-index:5;flex:0 0 auto}
+#writingSheet.ws-zoomed .ws-chrome{position:fixed;top:0;left:0;transform-origin:0 0}
+#writingSheet .ws-toggle{margin-left:auto}
+#writingSheet.ws-tools-hidden .ws-toolbar{background:transparent;pointer-events:none;padding:6px 8px}
+#writingSheet.ws-tools-hidden .ws-toolbar > :not(.ws-toggle){display:none}
+#writingSheet.ws-tools-hidden .ws-toggle{pointer-events:auto;background:#1F3A6E !important;border-color:#1F3A6E !important;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
+#writingSheet.ws-tools-hidden .ws-chrome{position:fixed;top:0;right:0;left:auto}
+#writingSheet.ws-tools-hidden.ws-zoomed .ws-chrome{right:auto}
+#writingSheet .ws-toolbar{position:relative;z-index:3;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:8px 8px;background:#1F3A6E;color:#fff;flex:0 0 auto}
 #writingSheet .ws-group{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 #writingSheet .ws-toolbar button{min-height:40px;min-width:40px;padding:0.3rem 0.7rem;border:1px solid rgba(255,255,255,0.35);border-radius:8px;background:rgba(255,255,255,0.12);color:#fff;font:inherit;font-size:0.9rem;line-height:1.1;white-space:nowrap;flex:0 0 auto;cursor:pointer}
 #writingSheet .ws-toolbar button:disabled{opacity:0.4;cursor:default}
@@ -211,7 +228,7 @@ const CSS = `
 #writingSheet .ws-ink{touch-action:pan-y pinch-zoom}
 #writingSheet.ws-writing .ws-ink{touch-action:none;cursor:crosshair}
 #writingSheet .ws-msg{position:absolute;inset:auto 0 50% 0;text-align:center;font-size:13px;color:#a33;padding:0 12px}
-#writingSheet .ws-confirm{position:sticky;top:0;z-index:4;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:10px 12px;background:#fff3cf;color:#4a3a10;border-bottom:2px solid #B8862F}
+#writingSheet .ws-confirm{position:relative;z-index:4;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:10px 12px;background:#fff3cf;color:#4a3a10;border-bottom:2px solid #B8862F}
 #writingSheet .ws-confirm[hidden]{display:none}
 #writingSheet .ws-confirm button{min-height:40px;padding:0.3rem 0.9rem;border-radius:8px;border:1px solid #B8862F;background:#fff;color:#4a3a10;font:inherit;cursor:pointer}
 #writingSheet .ws-print{display:none}
@@ -250,6 +267,7 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
   let shade = readShade();
   root.dataset.shade = shade;
   root.innerHTML = `<style>${CSS}</style>
+    <div class="ws-chrome" data-ws-chrome>
     <div class="ws-toolbar">
       <span class="ws-title">${t("Writing sheet")}</span>
       <div class="ws-group">
@@ -269,11 +287,13 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
         <button type="button" data-ws="print">${t("Print A4")}</button>
         <button type="button" data-ws="close" aria-label="${t("Close")}">✕ ${t("Close")}</button>
       </div>
+      <button type="button" class="ws-toggle" data-ws="tools" aria-expanded="true"></button>
     </div>
     <div class="ws-confirm" data-ws-confirm hidden>
       <span>${t("Close without saving your writing?")}</span>
       <button type="button" data-ws="close-anyway">${t("Close")}</button>
       <button type="button" data-ws="keep">${t("Keep writing")}</button>
+    </div>
     </div>
     <div class="ws-scroll" data-ws-scroll><p data-ws-loading style="text-align:center;color:#555">${t("Loading the writing sheet…")}</p></div>
     <div class="ws-print" data-ws-print aria-hidden="true"></div>`;
@@ -283,6 +303,8 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
   const printEl = $("[data-ws-print]");
   const confirmEl = $("[data-ws-confirm]");
 
+  const chromeEl = $("[data-ws-chrome]");
+  let toolsHidden = readToolsHidden();
   const st = { write: false, tool: "pen", pages: [], current: null, dirty: new Set(), drawing: null, destroyed: false };
   const measure = measurer();
 
@@ -292,12 +314,40 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
     root.querySelectorAll("[data-ws-tool]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.wsTool === st.tool)));
     root.querySelectorAll("[data-ws-shade]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.wsShade === shade)));
     root.dataset.shade = shade;
+    root.classList.toggle("ws-tools-hidden", toolsHidden);
+    const tg = $('[data-ws="tools"]');
+    tg.textContent = toolsHidden ? `▾ ${t("Tools")}` : `▴ ${t("Hide")}`;
+    tg.setAttribute("aria-expanded", String(!toolsHidden));
+    tg.setAttribute("aria-label", toolsHidden ? t("Show the tools") : t("Hide the tools"));
+    placeChrome();
   };
+
+  // The Owner, 30 Sep 2026: "enable them to be accessible when zoom in". A
+  // pinch-zoom enlarges the whole page, so a toolbar pinned to the page slides
+  // off screen and grows. While zoomed, pin the toolbar to the VISUAL viewport
+  // instead: move it to where the reader is looking and scale it back to its
+  // normal size, so every button stays on screen and finger-sized.
+  function placeChrome() {
+    const vv = window.visualViewport;
+    const zoomed = !!vv && vv.scale > 1.01;
+    root.classList.toggle("ws-zoomed", zoomed);
+    if (!zoomed) { chromeEl.style.transform = ""; chromeEl.style.width = ""; return; }
+    const w = toolsHidden ? "" : `${vv.width * vv.scale}px`;
+    const x = toolsHidden ? vv.offsetLeft + vv.width - (chromeEl.offsetWidth / vv.scale) : vv.offsetLeft;
+    chromeEl.style.width = w;
+    chromeEl.style.transform = `translate(${x}px, ${vv.offsetTop}px) scale(${1 / vv.scale})`;
+  }
+  let chromeFrame = 0;
+  const onViewport = () => { cancelAnimationFrame(chromeFrame); chromeFrame = requestAnimationFrame(placeChrome); };
+  window.visualViewport?.addEventListener("resize", onViewport);
+  window.visualViewport?.addEventListener("scroll", onViewport);
 
   function destroy() {
     st.destroyed = true;
     io?.disconnect();
     window.removeEventListener("resize", onResize);
+    window.visualViewport?.removeEventListener("resize", onViewport);
+    window.visualViewport?.removeEventListener("scroll", onViewport);
     window.removeEventListener("afterprint", clearPrint);
     document.removeEventListener("keydown", onKey);
     root.remove();
@@ -569,6 +619,7 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
       }
       switch (b.dataset.ws) {
         case "write": st.write = !st.write; paintToolbar(); break;
+        case "tools": toolsHidden = !toolsHidden; saveToolsHidden(toolsHidden); paintToolbar(); break;
         case "undo": {
           const p = st.current;
           if (p && p.strokes.length) { p.strokes.pop(); paintInk(p); if (!p.strokes.length) st.dirty.delete(p.n); }
