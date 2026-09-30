@@ -647,3 +647,4 @@ total). Allocated by the MMSA Architect.
 09.01: the v09 line opens; Home menu links the v08 archive. Allocated by the MMSA Architect.
 09.02: Landing section headings: S1 badge, count box, gold name (#407). Allocated by the MMSA Architect.
 09.03: S ring badge; Know Your Status; derived forms above the counts. Allocated by the MMSA Architect.
+09.04: Study options: Play opens the chosen view; new Read button (#409). Allocated by the MMSA Architect.
