@@ -18905,3 +18905,14 @@ Built by the Architect.
 - **Hide / Tools**: ▴ Hide folds the toolbar away, leaving one ▾ Tools button in the top corner to bring it back; remembered on the device.
 - **Zoom**: while the page is pinch-zoomed, the toolbar follows the part of the page on screen and keeps its normal size, so no button slides off screen or grows.
 - **Checks**: writing-sheet 136/0 (+12; the zoom placement mutation fails 4), phone-width 217/0, behaviour 1003/4 (baseline), governance 8/8.
+
+## v09.12 — 30 Sep 2026 — Know Your Status in every unit
+
+Issue #425, Owner decision 31. The Owner: *"My instructed for status was in terms of all units"*; *"The wheel should show all units together as well as it is now in the Approach wheel."*
+
+Built by the Builder (PR #426); reviewed, merged with v09.11 and released by the Architect.
+
+- **Six tiles per Approach**: Juz, Surah, Hizb, Ruku', Page, Āyah, each "done / total" with a bar. Three per row on phones, six from 620px. Word by Word keeps its words-known tile; whole-units-only Approaches say so in one line.
+- **Page** joins the card's By unit list.
+- **Wheel switch**: All units (six rings per slice, Juz in the middle to Āyah outside, with a key line) or one unit at a time.
+- **Checks**: quran-my-status 248/0 with hand-written figures (Juz 30 claim → Juz 1, Surah 37, Hizb 2, Ruku' 39, Page 23, Āyah 564; a dropped-page mutation fails at every width), approach-coverage 55/0, explore-wbw-tab 91/0, unit-rings 106/0, landing-sections-collapse 152/0, phone-width 217/0, behaviour 1006/1 (baseline 31e), governance 8/8.
