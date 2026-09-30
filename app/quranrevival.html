@@ -630,7 +630,12 @@
      their natural widths need 459px (en) / 380px (bn) and the wheel column is
      viewport - 13px on a single-column layout, so from 480px they share one
      line in the column; below it My Status stays on the bar. */
-  @media (max-width: 479px) {
+  /* 479px -> 519px, 30 Sep 2026, Owner: "fix the tablet wrap too". Measured
+     again with the three capsules: in English Know Your Status wrapped to a
+     second row at 480-505px (the 459px estimate above was too low); from 510px
+     all three share one line. So up to 519px Know Your Status stays on the
+     heading line, beside Read, and the capsule row keeps one line. */
+  @media (max-width: 519px) {
     .wheel-heading > .my-status-head-btn { display: inline-flex; align-items: center; }
     /* 30 Sep 2026, Owner (phone screenshot): "The status button should resemble
        the text of 'Mastery Wheel', as both are in the same level". So on a

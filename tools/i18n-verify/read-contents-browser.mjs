@@ -55,11 +55,11 @@ const pick = async (page, tab, n) => {
 // Expected placement written by hand from the Owner's decision and the measured
 // fit (a fourth capsule does not fit the row in English below ~1000px, and from
 // 900px the heading line is replaced by the wheel window's title bar):
-//   < 480  heading line, right edge, immediately before Know Your Status
-//   480-899 heading line, right edge (Know Your Status is a capsule there)
+//   < 520  heading line, right edge, immediately before Know Your Status
+//   520-899 heading line, right edge (Know Your Status is a capsule there)
 //   >= 900 the fourth capsule, one 36px row with the other three
 for (const lang of ["en", "bn"]) {
-  for (const width of [320, 340, 360, 390, 412, 479, 480, 600, 768, 899, 900, 940, 1000, 1280]) {
+  for (const width of [320, 340, 360, 390, 412, 479, 480, 500, 519, 520, 600, 768, 899, 900, 940, 1000, 1280]) {
     const { ctx, page } = await start({ lang, width });
     const m = await page.evaluate(() => {
       // A missing button reads as "not shown" so the checks FAIL by name rather than crash.
@@ -86,12 +86,14 @@ for (const lang of ["en", "bn"]) {
       check(`${tag}: Read is on the heading line, not a capsule`, m.headShown && !m.capShown, JSON.stringify(m));
       check(`${tag}: heading Read wears the heading's own face, size, weight and colour`, m.headStyleIsTitle === true, JSON.stringify(m));
       check(`${tag}: heading Read sits on the title's line, to its right, inside the heading`, m.headOnTitleLine === true, JSON.stringify(m));
-      if (width < 480) check(`${tag}: Know Your Status comes right after Read on the same line`, m.kysRightAfter === true, JSON.stringify(m));
+      if (width < 520) check(`${tag}: Know Your Status comes right after Read on the same line`, m.kysRightAfter === true, JSON.stringify(m));
       check(`${tag}: heading Read is a 36px tap target`, m.h === 36, JSON.stringify(m));
     } else {
       check(`${tag}: Read is the fourth capsule`, m.capShown && !m.headShown, JSON.stringify(m));
       check(`${tag}: the four capsules share one row, all 36px`, m.capTops === 1 && m.capHeights.length === 1 && m.capHeights[0] === 36, JSON.stringify(m));
     }
+    // Owner, 30 Sep 2026: "fix the tablet wrap too" -- the capsules never wrap, at any width.
+    check(`${tag}: the capsule row is one line, every capsule 36px`, m.capTops === 1 && m.capHeights.length === 1 && m.capHeights[0] === 36, JSON.stringify(m));
     check(`${tag}: Read on screen, label not cut, no sideways scroll`, m.inView && !m.cut && !m.over, JSON.stringify(m));
     if (width === 390) check(`${lang}: label is "${lang === "bn" ? "পড়ুন" : "Read"}"`, m.label === (lang === "bn" ? "পড়ুন" : "Read"), m.label);
     await ctx.close();
