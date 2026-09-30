@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.06",
+    "version": "09.07",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1253,8 +1253,20 @@
     {
       "version": "09.06",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "A landing Read button opens a Surah/Juz/Hizb/Page/Ruku' contents list that opens the existing Read view as a Mushaf page, with Bangla surah meanings; built by the Builder (#415, PR #416), Part 2 and review by the Architect.",
+      "integration": {
+        "authorizedOn": "2026-09-30",
+        "integratedOn": "2026-09-30",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.07",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Owner fixes from the phone: Read centred on the heading line with a | separator; a wheel slice opens its Track card unfolded.",
       "integration": {
         "authorizedOn": "2026-09-30",
         "integratedOn": "2026-09-30",
@@ -1263,8 +1275,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.07",
+  "nextUnallocated": "09.08",
   "nextUnallocatedNote": [
+    "v09.07 was allocated to the phone heading line (Read centred, | separator) and a wheel slice opening its Track card, 2026-09-30.",
     "v09.06 was allocated to Read button: contents list into the Mushaf (#415), 2026-09-30.",
     "v09.05 was allocated to Study options: named presets (#410), 2026-09-30.",
     "v09.04 was allocated to Study options: Play opens the chosen view; new Read button (#409), 2026-09-30.",
