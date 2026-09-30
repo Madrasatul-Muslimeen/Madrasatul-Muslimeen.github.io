@@ -18855,3 +18855,13 @@ Built by the Builder (issue #415, PR #416); Part 2 and review by the Architect.
 - **Picking a row** opens the existing Read view at that place as a full-screen Mushaf page, through the existing unit pickers and `openReadingScreen()`; no audio, no claim, no write. Juz/Hizb/Page/Ruku' tables load on first press only.
 - **Bangla meanings**: `build-surah-names-bn.js` adds `nameTranslationBn` to `surah-index.json` from api.quran.com; existing fields unchanged; the Bangla Surah tab shows them.
 - **Checks**: read-contents 232/0 (3 Builder mutations; Architect mutations on the Bangla words and the placement), landing-sections-collapse 152/0, study-options-play-read 62/0, study-presets 80/0, quran-my-status 88/0, phone-width 217/0, navcheck fits, panel OK, behaviour 1003/4 (baseline 22g×3, 31e). `landing-sections-collapse` updated in place by the Builder to scroll a heading into view before sampling its contrast (it guards against a heading sitting under the dock).
+
+## v09.07 — 30 Sep 2026 — Phone heading: Read in the middle with a | ; a wheel slice opens its Track card
+
+The Owner (30 Sep 2026, phone screenshot with a red dot at each spot): *"Place Read button in the middle of the gap. It may look elegant if you put dot or a | like bar in between those buttons, whichever looks nicer."* And: *"Clicking on the approach slice at the landing wheel brings here, asking for another click. Why not straight to the view it is meant for?"*
+
+Built by the Architect.
+
+- **Heading line (below 520px)**: *Mastery Wheel*, then **Read** exactly midway to **Know Your Status**, with a thin gold | midway between Read and Know Your Status. The bar beat the dot side by side. The title stays on one line at 320px in English (it wrapped on `main` too). 520px and up unchanged.
+- **Wheel slice / Approach row**: opens the Note view with that Approach's **Track card already open**, the tapped Approach chosen, scrolled into view. No second click. Reading the unit stays one tap away.
+- **Checks**: read-contents 268/0 (placement check updated in place; new checks fail 37 on the old code), wheel-slice-opens-track 96/0 (new; 48 fail on the old code), phone-width 217/0, landing-sections-collapse 152/0, quran-my-status 88/0, study-options-play-read 62/0, navcheck fits, behaviour 1003/4 (baseline 22g×3, 31e), governance 8/8 suites green. Owner decisions 27-29 recorded.
