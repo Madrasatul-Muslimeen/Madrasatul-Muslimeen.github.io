@@ -26,7 +26,7 @@
 // Fetched lazily, once per session — never bundled, per the load-speed
 // contract (Architecture s8: "Screensaver, About, resources: on first use").
 
-import { t } from "./i18n.js";
+import { t, num } from "./i18n.js";
 import { buildUnitKey } from "./unit-keys.js";
 
 const MUSHAF_JSON_URL = "https://raw.githubusercontent.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/main/mushaf/mushaf-madani-v2.json";
@@ -426,7 +426,9 @@ function buildPageHeader(pageNum, tajweedOn, onToggleTajweed) {
   headerEl.className = "hifz-page-header";
   const numEl = document.createElement("div");
   numEl.className = "hifz-page-num";
-  numEl.textContent = `Page ${pageNum}`;
+  // 30 Sep 2026 -- was the literal `Page ${pageNum}`, so a Bangla reader saw
+  // "Page 562"; the string and its Bangla were already in bn.js.
+  numEl.textContent = t("Page {page}", { page: num(pageNum) });
   headerEl.appendChild(numEl);
 
   const supported = mushafTajweedSupported();

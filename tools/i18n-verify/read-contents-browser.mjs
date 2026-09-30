@@ -189,6 +189,15 @@ for (const [tab, n, type, surah, num, label] of [
   check("Bangla Surah tab: Surah 1's meaning is the Bangla one (সূচনা)", meaning === "সূচনা", meaning);
   const meaning2 = await page.$eval('.rc-row[data-rc-n="2"] .rc-sub', (e) => e.textContent.trim());
   check("Bangla Surah tab: Surah 2's meaning is the Bangla one (বকনা-বাছুর)", meaning2 === "বকনা-বাছুর", meaning2);
+  // Architect, 30 Sep 2026: the Mushaf page's own number was the literal
+  // "Page 562" in Bangla too. Serve the layout data locally so the page
+  // really renders, open Surah 67 (page 562) and read the label. Expected
+  // words typed by hand.
+  await ctx.route("https://raw.githubusercontent.com/**/mushaf/**", (r) => r.fulfill({ path: r.request().url().split("/main/")[1] }));
+  await page.click('#readContentsBody .rc-row[data-rc-kind="surah"][data-rc-n="67"]');
+  await page.waitForFunction(() => document.querySelector(".hifz-page-num"), null, { timeout: 15000 }).catch(() => {});
+  const pageNum = await page.evaluate(() => document.querySelector(".hifz-page-num")?.textContent.trim() ?? "(no page drawn)");
+  check("Bangla Mushaf page number reads পৃষ্ঠা ৫৬২, not Page 562", pageNum === "পৃষ্ঠা ৫৬২", pageNum);
   await ctx.close();
 }
 
