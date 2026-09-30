@@ -646,3 +646,4 @@ total). Allocated by the MMSA Architect.
 08.117: Landing Approach list sections collapsed with a count (#400). Allocated by the MMSA Architect.
 09.01: the v09 line opens; Home menu links the v08 archive. Allocated by the MMSA Architect.
 09.02: Landing section headings: S1 badge, count box, gold name (#407). Allocated by the MMSA Architect.
+09.03: S ring badge; Know Your Status; derived forms above the counts. Allocated by the MMSA Architect.
