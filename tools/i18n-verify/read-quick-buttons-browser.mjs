@@ -124,6 +124,11 @@ for (const lang of ["en", "bn"]) {
   const { ctx, page } = await start({ width: 390 });
   await pick(page, "surah", 67);
   check("contents-list Read: buttons shown (control for the next checks)", await shown(page));
+  // [hidden] trap: the row's display rule must not beat the hidden attribute.
+  await page.evaluate(() => { document.getElementById("readQuickRow").hidden = true; });
+  check("[hidden] on the row really hides it (display rule does not beat it)", !(await shown(page)));
+  await page.evaluate(() => { document.getElementById("readQuickRow").hidden = false; });
+  check("...and clearing hidden shows it again (positive control)", await shown(page));
   await page.click("#hideChromeBtn");
   await page.waitForTimeout(300);
   check("pressing ⤢ hides the buttons", !(await shown(page)));
