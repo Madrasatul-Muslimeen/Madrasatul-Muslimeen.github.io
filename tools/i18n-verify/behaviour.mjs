@@ -1921,8 +1921,12 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
   // v08.103 (issue #348, Owner decision 18) -- #readUnitChip, the gold chip
   // naming the chosen Study Unit and opening its card, joined the row right
   // after #mushafPageRef (hidden in Mushaf view). Updated in place, reason recorded.
+  // v09.10 (issue #421) -- #readWritingBtn (✍ Writing sheet) joined the row
+  // after #readCompleteBtn; it is shown wherever it costs the bar no extra
+  // line (fitBarButton()), which it does at this suite's width. Updated in
+  // place, reason recorded.
   check("30j prev unit, prev āyah, next āyah, next unit, play, stop, full screen, bookmark and reading-complete are on the reading screen",
-        transport.visible && JSON.stringify(transport.buttons) === '["readUnitChip","prevUnitBtn","prevAyahBtn","nextAyahBtn","nextUnitBtn","readPlayBtn","readStopBtn","hideChromeBtn","readBookmarkBtn","readCompleteBtn","readAttachAsmaBtn"]', JSON.stringify(transport));
+        transport.visible && JSON.stringify(transport.buttons) === '["readUnitChip","prevUnitBtn","prevAyahBtn","nextAyahBtn","nextUnitBtn","readPlayBtn","readStopBtn","hideChromeBtn","readBookmarkBtn","readCompleteBtn","readWritingBtn","readAttachAsmaBtn"]', JSON.stringify(transport));
   check("30j the separate 'Whole surah' button is gone (Play follows the unit)", transport.noWholeSurah);
   check("30j the merged button is named Play while nothing is playing",
         /Play|চালান/.test(transport.playLabel) && !/Pause|থামান/.test(transport.playLabel), transport.playLabel);
@@ -1967,8 +1971,10 @@ console.log("\n=== 30l. Round 18's own controls in Bangla ===");
   // the I11 evidence for this tranche's four new keys.
   // v08.103 -- eleven: #readUnitChip joined the row (issue #348); its own
   // Bangla name ("{unit} খুলুন") is part of the I11 evidence.
+  // v09.10 -- twelve: #readWritingBtn joined the row (issue #421); its Bangla
+  // name "লিখন অনুশীলনের পাতা" is part of the I11 evidence.
   check("30l every reading-screen control is NAMED in Bangla",
-        t18.length === 11 && t18.every((x) => BANGLA.test(x)), JSON.stringify(t18));
+        t18.length === 12 && t18.every((x) => BANGLA.test(x)), JSON.stringify(t18));
   await page.close();
   await ctx.close();
 }
@@ -2525,8 +2531,9 @@ const readRef = readingRef; // round 22: #readRef is retired, see readingRef abo
   // v08.111 (issue #370, Global Approach Card) -- #readApproachCapsule, the
   // "Choose an Approach" capsule, joined the row right after #mushafPageRef
   // (Mushaf view only, hidden elsewhere). Updated in place, reason recorded.
+  // v09.10 (issue #421) -- #readWritingBtn joined the bar after #readCompleteBtn; updated in place.
   check("33a the read bar is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · Reading complete · ⋮ slot",
-        bar.ids.join() === "mushafPageRef,readApproachCapsule,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot",
+        bar.ids.join() === "mushafPageRef,readApproachCapsule,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readWritingBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot",
         JSON.stringify(bar.ids));
   check("33a the '◂ Mastery Wheel' button is gone (the Read tab does it)", bar.noBack);
   check("33a the separate Pause button is gone", bar.noSeparatePause);
@@ -3267,8 +3274,9 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
   // naming the chosen Study Unit and opening its card, joined the row right
   // after #mushafPageRef (hidden in Mushaf view). Updated in place, reason recorded.
   // v08.111 (issue #370) -- #readApproachCapsule after #mushafPageRef; see 33a.
+  // v09.10 (issue #421) -- #readWritingBtn joined the bar after #readCompleteBtn; updated in place.
   check("37a the row is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · Reading complete · ⋮ slot",
-        m.barKids.join() === "mushafPageRef,readApproachCapsule,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot", JSON.stringify(m.barKids));
+        m.barKids.join() === "mushafPageRef,readApproachCapsule,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readWritingBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot", JSON.stringify(m.barKids));
   // `space-between` would leave large, uneven gaps between controls, which
   // is exactly how a stale `space-between` survived this round's first
   // attempt -- checking the gaps directly catches that regardless of how
