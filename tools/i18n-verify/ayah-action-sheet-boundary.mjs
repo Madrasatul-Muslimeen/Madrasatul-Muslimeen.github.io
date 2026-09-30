@@ -136,6 +136,9 @@ check("issue #325 -- an Approach IS picked: all four stages render, the current 
   // the word itself appears; what must never appear is a Mastered BUTTON.
   assert.ok(!html.includes('data-approach-stage-btn="mastered"'), "Mastered must never appear as a claimable stage");
   assert.ok(html.includes("gac-mastered-note"), "the 'Mastered is confirmed by a teacher.' line is missing");
+  // Owner decision 39: the stage buttons carry their own title, before them.
+  assert.ok(/data-gac-record-title>✅ Record Your Progress</.test(html), "the 'Record Your Progress' title is missing");
+  assert.ok(html.indexOf("data-gac-record-title") < html.indexOf("data-approach-stage-btn="), "the title must come before the stage buttons");
   const pressed = [...html.matchAll(/data-approach-stage-btn="([a-z_]+)" aria-pressed="(true|false)"/g)];
   assert.equal(pressed.length, 4, "expected exactly four stage buttons");
   for (const [, id, val] of pressed) assert.equal(val, id === "practising" ? "true" : "false", `${id} carries the wrong aria-pressed`);

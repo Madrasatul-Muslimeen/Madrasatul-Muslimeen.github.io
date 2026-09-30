@@ -18926,3 +18926,13 @@ Owner decisions 33–36. Built by the Architect.
 - **Writing sheet** (decision 35): Hide sits at the right-hand end of the top line at every width.
 - **Heading line** (decision 36): a line or a dot on both sides of Read, picked at random each time the page opens; the words share one baseline.
 - **Checks**: read-contents 396/0 (+82), writing-sheet 148/0 (+12); a mutation of each change fails 10 or 25; read-quick-buttons 204/0, wheel-slice-opens-track 96/0, landing-sections-collapse 152/0, quran-my-status 248/0, phone-width 217/0, behaviour 1003/4 (baseline 22g×3, 31e), governance 8/8.
+
+## v09.14 — 30 Sep 2026 — Take an Approach | Record Your Progress | Know Your Status, Search, and a title for the stage buttons
+
+Owner decisions 37–39.
+
+- **The three-button bar** (decision 37; built by the Builder, #428, PR #430): Read view (text and Mushaf) and Note view. Take an Approach → the Approaches wheel; Record Your Progress → the page card in Mushaf view, the chosen unit's card in text view, the Track card in the Note view; Know Your Status → Know Your Status. It replaces the "Choose an Approach" capsule, whose text is kept as the Record button's title. **Architect's review:** the Read bar's dividers were missing (an id rule's `border: 0` beat them) — restored, and a check added that fails 28 without the fix.
+- **🔍 Search in the banner** (decision 38, option A): top right beside the title; opens Study options with the cursor in the search box ("2:255" or a word). Magnifier only below 360px.
+- **✅ Record Your Progress** (decision 39) titles the four stage buttons on the Ayah, Unit and Page cards, in the Take an Approach title's own face, with clear space above it.
+- **Also recorded:** v09.13's bigger ⤢ made the Mushaf bar 9px taller at 320px (the check is updated in place) and squeezed the old capsule's text; the capsule is gone in this release.
+- **Checks**: approach-record-status-bar 431/0, head-search 86/0, global-approach-card 89/0, ayah-action-sheet-boundary 53/0, read-contents 396/0, read-quick-buttons 204/0, writing-sheet 148/0, wheel-slice-opens-track 96/0, landing-sections-collapse 152/0, quran-my-status 248/0, phone-width 217/0, behaviour 1003/4 (baseline), governance 8/8.

@@ -157,3 +157,15 @@ Demo (the Read view, Mushaf, one bar split in three): shown in the session as re
 | # | Question | Owner's words | Meaning |
 |---|---|---|---|
 | 37 | "We should always make these buttons available wherever it applies to: Take/ Choose an Approach \| Track/ Record Your Progress \| Know Your Status. What do you suggest?" The Architect suggested Choose and Track (the app's existing words). | **"I choose 'Take an Approach' (Because user should take approaches, all, not choose this or that) And 'Record Your Progress' (This requests/ motivate to validate his study, not tracking it). Yes, show in both views."** | One bar of three buttons, **Take an Approach \| Record Your Progress \| Know Your Status**, in the Read view (text and Mushaf) and the Note view. Take an Approach opens the Approaches wheel and list; Record Your Progress opens the card that records the unit on screen (the page's card in Mushaf view, the chosen unit's card in text view, the āyah's Track card in the Note view); Know Your Status opens Know Your Status. The Owner's words are the labels, in place of the Architect's suggestion. |
+
+## 30 Sep 2026 — a visible Search on the landing page
+
+| # | Question | Owner's words | Meaning |
+|---|---|---|---|
+| 38 | "There should be a visible SEARCH button on the landing page. But where? With the wheel. Read, Status bar? Show me your a few suggestion." Four places were mocked in the real page: A top right of the banner, B on the wheel's heading line, C a search box under the heading, D inside the wheel. The Architect recommended A. | **"A, go ahead"** | A gold-bordered **🔍 Search** button at the right of the banner's title line (the magnifier alone below 360px, so it never costs a line). It opens Study options with the cursor in the existing search box, which takes "2:255" (goes there) or a word (searches the whole Qur'an). |
+
+## 30 Sep 2026 — a title for the stage buttons
+
+| # | Question | Owner's words | Meaning |
+|---|---|---|---|
+| 39 | (A photo of the Page card from the Mushaf/Read view, the gap between the Approach pull-down and the four stage buttons marked.) | **"As approach has the title. Give the title to record as well above the progress Tabs: (Icon) 'Record Your Progress'. Make it look elegant. Keep proper space. Then show"** | Every card that carries the four stage buttons (Ayah, Unit, Page) titles them **✅ Record Your Progress**, in the 🎯 Take an Approach title's own face, with clear space above it (23px from the pull-down) and close to its own buttons (6px). |

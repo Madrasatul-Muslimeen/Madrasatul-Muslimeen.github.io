@@ -94,8 +94,14 @@ export function renderApproachStagePickerHtml({
 } = {}) {
   // Issue #370 (Global Approach Card): "Mastered is confirmed by a teacher"
   // under the four stages -- the fifth stage is never a button here.
+  // Owner, 30 Sep 2026 (decision 39, a photo of the Page card with the gap
+  // above the stage buttons marked): "As approach has the title. Give the
+  // title to record as well above the progress Tabs: (Icon) 'Record Your
+  // Progress'. Make it look elegant. Keep proper space." Same face as the
+  // 🎯 Take an Approach title above it, with its own breathing room.
   const stageRowHtml = selectedApproachId
-    ? approachStageButtonsHtml(selectedApproachStatusId) + `<p class="gac-mastered-note">${escapeHtml(t("Mastered is confirmed by a teacher."))}</p>`
+    ? `<p class="ayah-sheet-select-label gac-record-title" data-gac-record-title>✅ ${escapeHtml(t("Record Your Progress"))}</p>`
+      + approachStageButtonsHtml(selectedApproachStatusId) + `<p class="gac-mastered-note">${escapeHtml(t("Mastered is confirmed by a teacher."))}</p>`
     : "";
   // Issue #370 -- the chosen Approach named in full with its section, above
   // the pull-down (which a phone cuts on a long name).
