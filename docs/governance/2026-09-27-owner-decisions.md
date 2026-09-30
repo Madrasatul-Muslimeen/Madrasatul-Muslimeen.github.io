@@ -141,3 +141,11 @@ The Owner, looking at Know Your Status on a phone: *"Can you confirm me about th
 | # | Question | Owner's words | Meaning |
 |---|---|---|---|
 | 33 | (A screenshot of the Read list's tabs, Surah circled.) | **"Mention the numbers count in each unit (beside or below the unit name, whichever looks elegant)"** | Each tab of the Read list carries its count on a quiet second line under its name: Surah 114 · Juz 30 · Hizb 60 · Page 604 · Ruku' 556, in the reader's digits. The Architect chose **below**: five tabs share a phone row, and "Ruku' 556" beside its name would be cut at 320px. The counts are read off the same lists the rows come from, never typed. |
+
+## 30 Sep 2026 — the full-screen button, the Writing sheet's Hide, the heading marks
+
+| # | Question | Owner's words | Meaning |
+|---|---|---|---|
+| 34 | (A desktop screenshot of the Read bar, the faint ⤢ circled.) | **"Make this button (everywhere) prominent, noticeable, bigger."** | The full-screen ⤢ on Read, Note and Explore is a 36px square with a 2px gold border and a 1.3rem glyph (was ~30x27, 15px); solid gold while full screen is on, and no longer faded to 40% in the bare Read state, where it is the only way back. 36px rather than 40px: measured, 40px made each bar 4px taller again for no gain in reach. |
+| 35 | (A phone photo of the Writing sheet, "▴ Hide" alone on a third line, an arrow to the empty end of the first.) | **"Move the hide button to the upper line. You should apply Common sense."** | Hide always sits at the right-hand end of the title's line, measured at runtime: last on the line when everything fits (PC), else after the last group that still fits beside the title, else straight after the title (a narrow phone). |
+| 36 | The heading line's separators, A (a line on both sides of Read) or B (a dot on both sides), shown as real screenshots. | **"both dot/ line looks good to me. enable both appears randomly."** | Both gaps carry a mark; each page load picks the line or the dot at random. The three words share one baseline (the earlier "it has to be aligned"). |
