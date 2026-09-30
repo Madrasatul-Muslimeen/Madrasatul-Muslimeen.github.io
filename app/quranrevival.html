@@ -646,7 +646,34 @@
       padding: 0 0.1rem; border-radius: 6px; white-space: nowrap;
     }
     #myStatusWideBtn { display: none; }
-    .wheel-heading > #readHeadBtn + .my-status-head-btn { margin-inline-start: 0.35rem; }
+    /* 30 Sep 2026, Owner (phone screenshot, a red dot marking each spot):
+       "Place Read button in the middle of the gap. It may look elegant if you
+       put dot or a | like bar in between those buttons". Two growing boxes
+       carry the free space, one each side of Read, so Read sits exactly in
+       the middle of the gap between the title and Know Your Status; the box
+       after Read draws the separator at its own centre, so the mark sits
+       midway between Read and Know Your Status (it keeps at least 6px).
+       The orders put the ::after box between Read and Know Your Status. */
+    .wheel-heading::before, .wheel-heading::after { content: ""; flex: 1 1 0; min-width: 0; align-self: stretch; }
+    .wheel-heading::before { order: 1; }
+    .wheel-heading > #readHeadBtn { order: 2; margin-inline-start: 0; }
+    .wheel-heading::after {
+      order: 3; min-width: 6px;
+      background: linear-gradient(currentColor, currentColor) center / 1.5px 0.95em no-repeat;
+      opacity: 0.55;
+    }
+    /* The bar, not a dot: looked at side by side at 320-412px, a 4px dot
+       read as a stray speck. And the title keeps one line: at 320px in
+       English it used to break "Mastery / Wheel" onto two lines (on main
+       too, before this change); a 0.25rem gap gives it the room. */
+    .wheel-heading { gap: 0.25rem; }
+    .wheel-heading > span { white-space: nowrap; }
+    .wheel-heading > #myStatusBtn { order: 4; }
+  }
+  /* At 320-359px in English the line is full (measured: the bar's 6px only
+     fits with the gaps at 0.1rem); Bangla has room to spare. */
+  @media (max-width: 359px) {
+    .wheel-heading { gap: 0.1rem; }
   }
   /* 30 Sep 2026, Owner: "put Read beside Know Your Status on mobile". Read is a
      heading-line link, in the heading's own face, pushed to the right edge --
@@ -7949,7 +7976,16 @@
         openLandingSectionFor(key);
         currentTrackableId = key;
         trackableSelect.value = key;
-        openNoteView(unitInfo.unitKey);
+        // 30 Sep 2026, Owner: "Clicking on the approach slice at the landing
+        // wheel brings here, asking for another click. Why not straight to the
+        // view it is meant for?" A slice (or list row) means THIS Approach on
+        // THIS unit, so its Track card opens already unfolded, the tapped
+        // Approach chosen, and scrolled into view -- no second click. Reading
+        // the unit stays one tap away ("Open in Read"), as before.
+        noteApproachCardOpen = true;
+        openNoteView(unitInfo.unitKey).then(() => {
+          noteView.querySelector('[data-note-field="approach"]')?.scrollIntoView({ block: "nearest" });
+        });
       };
       if (show !== "all") attachScopedWheelClickHandler(wheelContainer, jumpToApproach);
 

@@ -650,3 +650,4 @@ total). Allocated by the MMSA Architect.
 09.04: Study options: Play opens the chosen view; new Read button (#409). Allocated by the MMSA Architect.
 09.05: Study options: named presets (#410). Allocated by the MMSA Architect.
 09.06: Read button: contents list into the Mushaf (#415). Allocated by the MMSA Architect.
+09.07: the phone heading line (Read centred, | separator) and a wheel slice opening its Track card. Allocated by the MMSA Architect.

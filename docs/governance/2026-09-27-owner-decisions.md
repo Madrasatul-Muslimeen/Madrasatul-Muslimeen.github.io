@@ -98,3 +98,18 @@ The Architect's demo: https://claude.ai/artifact/Jx2ztJRnNA1Dc48BnAqr44 (the app
 | # | Question | Owner's words | Meaning |
 |---|---|---|---|
 | 26 | When did the 40 Approaches start, and should that open v09? | **"I think we should make that v09.01 ? Means, we should have 08.11? as the 3rd legacy app and store it like the previous ones. … make sure don't mess up with things"**, then, asked which build to freeze, **"v08.103"** | **`legacy-v08/`** is `app/` exactly as released at **v08.103** (commit 54f93098, the last build before *Add an Approach*), stored like `legacy-v07/`, with one documented change: its service-worker registration is switched off so it can never touch the live app's. **The next release is v09.01**; v09.00 is deliberately not used. Released numbers v08.104–v08.117 stay as they are (the ledger and CHANGELOG point at them). The 40 Approaches are tenant DATA, so the archive also shows 40, with the v08.103 screens. |
+
+## 30 Sep 2026 — buttons on the Read page for readers from the Read list
+
+The Architect's demo: https://claude.ai/artifact/BSZNHsskcZzu5fhKjfi7wj (issue #419).
+
+| # | Question | Owner's words | Meaning |
+|---|---|---|---|
+| 27 | Where Note View · Track · Approach sit on the bare Mushaf page, for readers who opened it from the Read contents list. | **"Okay, placement is fine, go ahead"** | Below 600px: one slim row fixed to the bottom, three equal buttons. From 600px: on the top line between the page reference and ⤢. Shown only for readers who came from the Read list, only in the bare full-screen state. Each opens an existing screen (Note View = Study menu's Note; Track = the unit's card; Approach = the Approach tab). |
+
+## 30 Sep 2026 — the phone heading line, and a wheel slice's destination
+
+| # | Question | Owner's words | Meaning |
+|---|---|---|---|
+| 28 | Where Read sits on the phone heading line. | **"Place Read button in the middle of the gap. It may look elegant if you put dot or a \| like bar in between those buttons, whichever looks nicer."** | Below 520px: *Mastery Wheel*, then Read exactly midway to *Know Your Status*, with a thin \| drawn midway between Read and Know Your Status. The Architect chose the bar over the dot after looking at both (a dot read as a stray speck). Released v09.07. |
+| 29 | What a tap on an Approach slice (or list row) opens. | **"Clicking on the approach slice at the landing wheel brings here, asking for another click. Why not straight to the view it is meant for?"** | The Note view opens with that Approach's Track card already unfolded, the tapped Approach chosen, and scrolled into view. Released v09.07. |
