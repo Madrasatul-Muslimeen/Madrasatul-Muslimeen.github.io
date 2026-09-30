@@ -1953,6 +1953,10 @@
      reciter's name is deliberately left as plain text beside them, so the row
      always has one thing that reads as words. */
   #readBar .qr-ico { font-size: 0.95rem; line-height: 1; padding: 0.3rem 0.5rem; flex: 0 0 auto; }
+  /* Issue #421: fitBarButton() adds this when the ✍ button would make its bar
+     a line taller. A class with !important, because [hidden] loses to the
+     buttons' own display rules (the [hidden] trap). */
+  .bar-btn-nofit { display: none !important; }
   #readBar button[disabled] { opacity: 0.45; }
   /* Issue #322 -- Mushaf's own "Surah · āyāt" reference. flex:1 1 auto with
      min-width:0 is what lets it shrink and ellipsis-truncate rather than
@@ -5240,6 +5244,11 @@
           <div id="studyPillarMenu" role="menu" aria-labelledby="tabStudyBtn" hidden>
             <button type="button" class="study-pillar-action" id="tabReadBtn" data-study-action="read" role="menuitem" aria-controls="readView">Read</button>
             <button type="button" class="study-pillar-action" id="tabNoteBtn" data-study-action="note" role="menuitem" aria-controls="noteView">Note</button>
+            <!-- Issue #421, Owner's answer 30 Sep 2026 ("Both"): the Writing sheet
+                 lives here for every reader at every width, and ALSO on the Read
+                 and Note bars wherever the bar can hold it without a new line
+                 (fitBarButton() below). -->
+            <button type="button" class="study-pillar-action" id="tabWritingBtn" data-study-action="writing" role="menuitem"><span aria-hidden="true">✍ </span>Writing sheet</button>
             <button type="button" class="study-pillar-action" id="tabStudyOptionsBtn" data-study-action="options" data-panel="panelStudyOptions" role="menuitem" aria-controls="panelStudyOptions" aria-expanded="false">Options</button>
           </div>
         </div>
@@ -9131,6 +9140,39 @@
       }
     }
     document.getElementById("readWritingBtn").addEventListener("click", openWritingSheetForCurrentUnit);
+    document.getElementById("tabWritingBtn").addEventListener("click", () => { openWritingSheetForCurrentUnit(); });
+
+    /** Issue #421, the Owner's "Both": an optional bar button is shown only
+        where it costs its bar no extra line. Measured, not guessed from a
+        width list -- what fits depends on the tenant's names, the language
+        and the admin-only buttons, so a fixed breakpoint would be wrong for
+        someone. Idempotent: showing and re-measuring gives the same answer,
+        so the ResizeObserver settles after one extra call. */
+    function fitBarButton(bar, btn) {
+      if (!bar || !btn) return;
+      btn.classList.add("bar-btn-nofit");
+      const without = bar.getBoundingClientRect().height;
+      btn.classList.remove("bar-btn-nofit");
+      if (!btn.getBoundingClientRect().width) return; // hidden by its own rules (bare full screen) -- nothing to decide
+      const withIt = bar.getBoundingClientRect().height;
+      btn.classList.toggle("bar-btn-nofit", withIt > without + 1);
+    }
+    const readWritingBtnEl = document.getElementById("readWritingBtn");
+    const readBarEl = document.getElementById("readBar");
+    const fitReadWriting = () => fitBarButton(readBarEl, readWritingBtnEl);
+    if (typeof ResizeObserver === "function") {
+      let fitting = false;
+      new ResizeObserver(() => { if (fitting) return; fitting = true; fitReadWriting(); requestAnimationFrame(() => { fitting = false; }); }).observe(readBarEl);
+    }
+    window.addEventListener("resize", fitReadWriting);
+    function fitNoteWriting() {
+      const bar = noteView.querySelector(".note-bar2");
+      fitBarButton(bar, bar?.querySelector("[data-note-writing]"));
+    }
+    window.addEventListener("resize", fitNoteWriting);
+    // renderNoteViewNow() rebuilds the whole Note view, bar included, so
+    // re-fit after every rebuild.
+    new MutationObserver(() => requestAnimationFrame(fitNoteWriting)).observe(noteView, { childList: true });
 
     // Fix round -- THE WHOLE-SCREEN TAP IS GONE, on both the reading screen
     // and the Note view. The owner's own words: "disable a single tapping for

@@ -402,9 +402,12 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
     drawWritingPage(ctx, info, layout, shade);
     info.drawn = true;
     const w = info.wrap;
-    w.dataset.lines = String(info.lines.length);
-    w.dataset.lineTypes = info.lines.map((l) => l.type).join(",");
-    w.dataset.wordsPerLine = info.lines.map((l) => (l.type === "ayah" && l.words ? l.words.length : 0)).join(",");
+    // Read back off the DRAWN layout, not off the data: a renderer that
+    // re-flowed words onto new lines would draw more lines than the data has,
+    // and only these attributes let a check see it.
+    w.dataset.lines = String(layout.lines.length);
+    w.dataset.lineTypes = layout.lines.map((l) => l.type).join(",");
+    w.dataset.wordsPerLine = layout.lines.map((l) => (l.type === "ayah" && l.words ? l.words.length : 0)).join(",");
     w.dataset.geom = JSON.stringify({ top: layout.top / layout.W, pitch: layout.pitch / layout.W, fs: layout.fs / layout.W });
     w.dataset.painted = shade;
     paintInk(info);
