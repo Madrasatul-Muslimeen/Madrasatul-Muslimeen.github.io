@@ -217,7 +217,7 @@ const CSS = `
 #writingSheet .ws-print{display:none}
 @media print{
   @page{size:A4;margin:10mm}
-  html,body{height:auto !important;overflow:visible !important;background:#fff !important}
+  html,body{height:auto !important;overflow:visible !important;background:#fff !important;margin:0 !important;padding:0 !important}
   body > *:not(#writingSheet){display:none !important}
   #writingSheet{position:static !important;display:block !important;background:#fff}
   #writingSheet .ws-toolbar,#writingSheet .ws-scroll,#writingSheet .ws-confirm{display:none !important}
