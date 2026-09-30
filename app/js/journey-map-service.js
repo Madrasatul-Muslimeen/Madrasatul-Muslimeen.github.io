@@ -11,7 +11,10 @@
 
 import {
   NOTE_STATUS,
+  commitFolderBatch,
+  createNotePlacement,
   getNotesByIds,
+  newNoteEntityId,
   listNoteFoldersForOwner,
   listNoteFoldersForOwnerPage,
   listNotePlacementsForFolder,
@@ -26,7 +29,7 @@ import {
   reparentNoteFolder,
   retireNoteFolder,
 } from "./note-foundation.js";
-import { buildFolderTree, folderTreeRefusal, notePlacement } from "./journey-map-contract.js";
+import { MAX_FOLDER_DEPTH, buildFolderTree, folderTreeRefusal, notePlacement } from "./journey-map-contract.js";
 import { entityIdShardRanges, docIdRangeFor } from "./journey-map-shard.js";
 
 /**
@@ -396,4 +399,321 @@ export async function retireFolder(db, { tenantId, ownerPersonId, folderId, acto
  */
 export async function reorderFiling(db, { tenantId, ownerPersonId, placementId, order, actorUid } = {}) {
   return reorderNotePlacement(db, { tenantId, ownerPersonId, placementId, order, actorUid });
+}
+
+// ---------------------------------------------------------------------------
+// Siyagah port round 1 -- Trash / Restore, the "still holds notes" refusal, and
+// Copy / Move for Notes and folders. DATA LAYER ONLY: no screen calls these yet.
+//
+// Nothing is ever deleted (I4, D6): Trash is `retired`, Restore is `active`.
+// MMSA is not Siyagah on sync -- every folder, placement and Note is its own
+// document -- so only §5.3's rule carries over: AN OPERATION ONLY EVER CHANGES
+// WHAT IT NAMES. Every write below names its documents and sends only `status`
+// (updates) or a complete new document (creates). Numbering stays derived
+// (decision 42.2): nothing is ever written into a name.
+//
+// HOW THE RULES SHAPE THE ORDER OF WRITES. `parentOneHopOk()` (folders) and
+// `bothEndsOk()` (placements) read with `get()`, which sees the state BEFORE a
+// batch commits -- not `getAfter()`. Two consequences, both handled here:
+//   * Within ONE batch, any order is fine for a status change: a child retired
+//     in the same batch as its parent still sees an active parent. ACROSS
+//     batches the parent must still be active, so Trash retires DEEPEST FIRST.
+//   * A create or a restore that names a parent changed in the SAME batch is
+//     denied (the parent is not yet active/existing). So Restore and Copy commit
+//     ONE DEPTH LEVEL PER BATCH, shallowest first, and Copy writes every folder
+//     before any placement (a placement's folder must already exist).
+// ---------------------------------------------------------------------------
+
+/** Firestore allows 500 writes per batch; 450 leaves headroom. */
+export const BATCH_CHUNK = 450;
+
+const REFUSAL = Object.freeze({
+  system: "System folders cannot be moved to Trash.",
+  systemCopy: "System folders cannot be copied.",
+  missing: "Folder does not exist.",
+  truncated: "There are too many folders or Notes to judge this safely. Nothing was changed.",
+  notInTrash: "Folder is not in Trash.",
+  alreadyFiled: "This note is already filed in that folder.",
+  notFiledThere: "This note is not filed in that folder.",
+  targetGone: "That folder does not exist or is in Trash.",
+});
+
+function noteCountRefusal(n) {
+  return `This folder still holds ${n} notes. Move or delete them first.`;
+}
+
+function chunked(rows, size = BATCH_CHUNK) {
+  const out = [];
+  for (let i = 0; i < rows.length; i += size) out.push(rows.slice(i, i + size));
+  return out;
+}
+
+/** Folder and every descendant in `byId`, with depth below `rootId` (root = 0). Visited-set bounded, so a corrupt cycle cannot spin. */
+function subtreeOf(byId, rootId) {
+  const children = new Map();
+  for (const f of byId.values()) {
+    const pid = f.parentFolderId ?? null;
+    if (pid === null) continue;
+    if (!children.has(pid)) children.set(pid, []);
+    children.get(pid).push(f.folderId);
+  }
+  const out = [];
+  const seen = new Set([rootId]);
+  let level = [rootId];
+  for (let depth = 0; level.length > 0; depth += 1) {
+    const next = [];
+    for (const id of level) {
+      if (byId.has(id)) out.push({ folder: byId.get(id), depth });
+      for (const child of children.get(id) ?? []) {
+        if (seen.has(child)) continue;
+        seen.add(child);
+        next.push(child);
+      }
+    }
+    level = next;
+  }
+  return out;
+}
+
+function nextOrder(rows) {
+  let max = -1;
+  for (const r of rows) if (Number.isInteger(r.order) && r.order > max) max = r.order;
+  return max + 1;
+}
+
+async function loadActiveState(db, own) {
+  const folders = await loadAllOwnerFolders(db, { ...own, status: NOTE_STATUS.ACTIVE });
+  const placements = await loadAllOwnerPlacements(db, { ...own, status: NOTE_STATUS.ACTIVE });
+  const notes = await loadAllOwnerNotes(db, { ...own, status: NOTE_STATUS.ACTIVE });
+  if (folders.truncated || placements.truncated || notes.truncated) throw new Error(REFUSAL.truncated);
+  return { folders: folders.rows, placements: placements.rows, notes: notes.rows };
+}
+
+/**
+ * Move a folder to Trash, with every active folder beneath it -- or refuse,
+ * BEFORE any write, when the subtree still holds an active Note through an
+ * active placement (M4). `n` is the distinct count `folderNoteCounts()` gives.
+ * A retired Note does not count. System folders are never trashed.
+ *
+ * Retires DEEPEST FIRST, chunked at 450 (see the header for why).
+ */
+export async function trashFolder(db, { tenantId, ownerPersonId, ownerUid = null, folderId, actorUid } = {}) {
+  const own = { tenantId, ownerPersonId };
+  const { folders, placements, notes } = await loadActiveState(db, own);
+  const byId = new Map(folders.map((f) => [f.folderId, f]));
+  const target = byId.get(folderId);
+  if (!target) throw new Error(REFUSAL.missing);
+  if ((target.semanticRole ?? "user") !== "user") throw new Error(REFUSAL.system);
+
+  const subtree = subtreeOf(byId, folderId);
+  const inSubtree = new Set(subtree.map((s) => s.folder.folderId));
+  // `folderNoteCounts()` walks `buildFolderTree()`, so a folder it cannot reach
+  // (orphaned or cyclic) is absent from it; the direct count below covers that
+  // case, and the larger of the two is used so neither can under-report.
+  const activeNoteIds = new Set(notes.filter((n) => n.status === NOTE_STATUS.ACTIVE).map((n) => n.noteId));
+  const direct = new Set(placements
+    .filter((p) => p.status === NOTE_STATUS.ACTIVE && inSubtree.has(p.folderId) && activeNoteIds.has(p.noteId))
+    .map((p) => p.noteId));
+  const n = Math.max(folderNoteCounts(folders, placements, notes)[folderId] ?? 0, direct.size);
+  if (n > 0) throw new Error(noteCountRefusal(n));
+
+  const ordered = subtree.slice().sort((a, b) => b.depth - a.depth).map((s) => s.folder.folderId);
+  for (const ids of chunked(ordered)) {
+    await commitFolderBatch(db, {
+      tenantId, ownerPersonId, ownerUid, actorUid,
+      folderStatus: ids.map((id) => ({ folderId: id, status: NOTE_STATUS.RETIRED })),
+    });
+  }
+  return { retired: ordered };
+}
+
+/**
+ * Restore a folder from Trash: the folder, every retired ancestor above it (so
+ * `parentOneHopOk()` passes), and its retired descendants. Refuses when the
+ * result would sit deeper than MAX_FOLDER_DEPTH, or an ancestor is gone.
+ * Commits one depth level per batch, shallowest first.
+ */
+export async function restoreFolder(db, { tenantId, ownerPersonId, ownerUid = null, folderId, actorUid } = {}) {
+  const own = { tenantId, ownerPersonId };
+  const active = await loadAllOwnerFolders(db, { ...own, status: NOTE_STATUS.ACTIVE });
+  const retired = await loadAllOwnerFolders(db, { ...own, status: NOTE_STATUS.RETIRED });
+  if (active.truncated || retired.truncated) throw new Error(REFUSAL.truncated);
+  const all = new Map([...active.rows, ...retired.rows].map((f) => [f.folderId, f]));
+  const target = all.get(folderId);
+  if (!target) throw new Error(REFUSAL.missing);
+  if (target.status !== NOTE_STATUS.RETIRED) throw new Error(REFUSAL.notInTrash);
+
+  // The chain upward, counting levels (target = 1). Retired ancestors come back
+  // too; the walk stops at the first active one. Bounded by the set size.
+  const ancestors = [];
+  let depthOfTarget = 1;
+  let cursor = target;
+  const seen = new Set([folderId]);
+  while ((cursor.parentFolderId ?? null) !== null) {
+    const parent = all.get(cursor.parentFolderId);
+    if (!parent) throw new Error("Folder parent refused: parent-missing");
+    if (seen.has(parent.folderId)) throw new Error("Folder parent refused: cycle");
+    seen.add(parent.folderId);
+    depthOfTarget += 1;
+    // Only the UNBROKEN run of retired ancestors is restored: an active parent ends the chain.
+    if (parent.status === NOTE_STATUS.RETIRED && ancestors.length === depthOfTarget - 2) ancestors.push(parent);
+    cursor = parent;
+  }
+  const below = subtreeOf(all, folderId).filter((s) => s.folder.status === NOTE_STATUS.RETIRED);
+  const height = Math.max(...below.map((s) => s.depth)) + 1;
+  if (depthOfTarget + height - 1 > MAX_FOLDER_DEPTH) throw new Error("Folder parent refused: too-deep");
+
+  // Levels, shallowest first: ancestors (top-most first), then the folder's own subtree by depth.
+  // An active folder sitting BETWEEN two retired ones is not touched, and does not break the chain.
+  const levels = ancestors.reverse().map((f) => [f.folderId]);
+  for (let d = 0; d < height; d += 1) {
+    levels.push(below.filter((s) => s.depth === d).map((s) => s.folder.folderId));
+  }
+  const restored = [];
+  for (const level of levels) {
+    for (const ids of chunked(level)) {
+      await commitFolderBatch(db, {
+        tenantId, ownerPersonId, ownerUid, actorUid,
+        folderStatus: ids.map((id) => ({ folderId: id, status: NOTE_STATUS.ACTIVE })),
+      });
+      restored.push(...ids);
+    }
+  }
+  return { restored };
+}
+
+/**
+ * The owner's Trash: retired folders and retired Notes, paged like
+ * `loadAllOwnerNotes()`, `truncated` reported when either hit the page cap.
+ * Both queries are equality-only (tenantId, ownerPersonId, status) -- the
+ * shape the paged readers already use -- so no composite index is needed.
+ */
+export async function loadOwnerTrash(db, { tenantId, ownerPersonId, pageSize = 100 } = {}) {
+  const folders = await loadAllOwnerFolders(db, { tenantId, ownerPersonId, status: NOTE_STATUS.RETIRED, pageSize });
+  const notes = await loadAllOwnerNotes(db, { tenantId, ownerPersonId, status: NOTE_STATUS.RETIRED, pageSize });
+  return { folders: folders.rows, notes: notes.rows, truncated: folders.truncated || notes.truncated };
+}
+
+async function requireActiveFolder(db, own, folderId) {
+  const folders = await loadAllOwnerFolders(db, { ...own, status: NOTE_STATUS.ACTIVE });
+  if (folders.truncated) throw new Error(REFUSAL.truncated);
+  const target = folders.rows.find((f) => f.folderId === folderId);
+  if (!target) throw new Error(REFUSAL.targetGone);
+  return target;
+}
+
+async function endOfFolder(db, { tenantId, ownerPersonId, folderId }) {
+  const rows = await listNotePlacementsForFolder(db, { tenantId, ownerPersonId, folderId, maximum: MAX_PLACEMENTS_PER_READ });
+  return nextOrder(rows);
+}
+
+/**
+ * Copy to…, for a Note: ONE Note in one more folder (M1) -- an active placement
+ * in the target, the existing ones kept. Never a second Note. A duplicate is
+ * refused in words.
+ */
+export async function copyNoteToFolder(db, {
+  tenantId, ownerPersonId, ownerUid = null, noteId, toFolderId, actorUid,
+} = {}) {
+  const own = { tenantId, ownerPersonId };
+  await requireActiveFolder(db, own, toFolderId);
+  const filed = await listNotePlacementsForNote(db, { ...own, noteId, maximum: MAX_PLACEMENTS_PER_READ });
+  if (filed.some((p) => p.folderId === toFolderId)) throw new Error(REFUSAL.alreadyFiled);
+  const order = await endOfFolder(db, { ...own, folderId: toFolderId });
+  return createNotePlacement(db, { tenantId, ownerPersonId, ownerUid, noteId, folderId: toFolderId, order, actorUid });
+}
+
+/**
+ * Move to…, for a Note. From a given folder it is the existing atomic
+ * retire-and-create. With NO current folder, every active placement the Note
+ * has is retired and one is created in the target, in one batch.
+ */
+export async function moveNote(db, {
+  tenantId, ownerPersonId, ownerUid = null, noteId, fromFolderId = null, toFolderId, actorUid,
+} = {}) {
+  const own = { tenantId, ownerPersonId };
+  await requireActiveFolder(db, own, toFolderId);
+  const filed = await listNotePlacementsForNote(db, { ...own, noteId, maximum: MAX_PLACEMENTS_PER_READ });
+  const order = await endOfFolder(db, { ...own, folderId: toFolderId });
+
+  if (fromFolderId !== null) {
+    const from = filed.find((p) => p.folderId === fromFolderId);
+    if (!from) throw new Error(REFUSAL.notFiledThere);
+    if (fromFolderId === toFolderId) throw new Error("A move must change folder.");
+    if (filed.some((p) => p.folderId === toFolderId)) throw new Error(REFUSAL.alreadyFiled);
+    return moveNoteToFolder(db, {
+      tenantId, ownerPersonId, ownerUid, noteId, fromPlacementId: from.placementId,
+      toFolderId, order, actorUid,
+    });
+  }
+
+  const already = filed.some((p) => p.folderId === toFolderId);
+  const others = filed.filter((p) => p.folderId !== toFolderId);
+  if (already && others.length === 0) throw new Error(REFUSAL.alreadyFiled);
+  const placementId = already ? null : newNoteEntityId();
+  await commitFolderBatch(db, {
+    tenantId, ownerPersonId, ownerUid, actorUid,
+    placementStatus: others.map((p) => ({ placementId: p.placementId, status: NOTE_STATUS.RETIRED })),
+    placementCreates: already ? [] : [{ placementId, noteId, folderId: toFolderId, order }],
+  });
+  return placementId;
+}
+
+/**
+ * Copy to…, for a folder: new folders with NEW ids for the folder and its whole
+ * active subtree, under `toParentFolderId` (null = top level), and the Notes
+ * LINKED -- one new placement in the matching new folder for each active
+ * placement in the source subtree. Note content is never duplicated.
+ *
+ * Refused: a copy into its own subtree, a system folder, and anything the
+ * contract's `folderTreeRefusal()` refuses (depth beyond 8 included).
+ * Folders are written first, one depth level per batch; placements after,
+ * chunked at 450 (a placement's folder must exist before the batch, see header).
+ */
+export async function copyFolder(db, {
+  tenantId, ownerPersonId, ownerUid = null, folderId, toParentFolderId = null, actorUid,
+} = {}) {
+  const own = { tenantId, ownerPersonId };
+  const { folders, placements, notes } = await loadActiveState(db, own);
+  const byId = new Map(folders.map((f) => [f.folderId, f]));
+  const source = byId.get(folderId);
+  if (!source) throw new Error(REFUSAL.missing);
+  if ((source.semanticRole ?? "user") !== "user") throw new Error(REFUSAL.systemCopy);
+
+  const subtree = subtreeOf(byId, folderId);
+  if (toParentFolderId !== null) {
+    if (subtree.some((s) => s.folder.folderId === toParentFolderId)) throw new Error("Folder parent refused: cycle");
+    // folderId is the SOURCE, so its subtree's height is counted, as for a move.
+    const refusal = folderTreeRefusal({ folders: byId, tenantId, ownerPersonId, folderId, parentFolderId: toParentFolderId });
+    if (refusal) throw new Error(`Folder parent refused: ${refusal}`);
+  }
+
+  const newIdOf = new Map(subtree.map((s) => [s.folder.folderId, newNoteEntityId()]));
+  const rootOrder = nextOrder(folders.filter((f) => (f.parentFolderId ?? null) === toParentFolderId));
+  const byDepth = [];
+  for (const { folder, depth } of subtree) {
+    (byDepth[depth] ??= []).push({
+      folderId: newIdOf.get(folder.folderId),
+      name: folder.name,
+      parentFolderId: depth === 0 ? toParentFolderId : newIdOf.get(folder.parentFolderId),
+      order: depth === 0 ? rootOrder : (Number.isInteger(folder.order) ? folder.order : 0),
+    });
+  }
+  for (const level of byDepth) {
+    for (const rows of chunked(level)) {
+      await commitFolderBatch(db, { tenantId, ownerPersonId, ownerUid, actorUid, folderCreates: rows });
+    }
+  }
+
+  const activeNoteIds = new Set(notes.filter((n) => n.status === NOTE_STATUS.ACTIVE).map((n) => n.noteId));
+  const links = placements
+    .filter((p) => p.status === NOTE_STATUS.ACTIVE && newIdOf.has(p.folderId) && activeNoteIds.has(p.noteId))
+    .map((p) => ({
+      placementId: newNoteEntityId(), noteId: p.noteId, folderId: newIdOf.get(p.folderId),
+      order: Number.isInteger(p.order) ? p.order : 0,
+    }));
+  for (const rows of chunked(links)) {
+    await commitFolderBatch(db, { tenantId, ownerPersonId, ownerUid, actorUid, placementCreates: rows });
+  }
+  return { rootFolderId: newIdOf.get(folderId), folders: newIdOf.size, placements: links.length };
 }

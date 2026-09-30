@@ -17,7 +17,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
 import { folderTreeRefusal, journeyFolder } from "./journey-map-contract.js";
-import { createDocument, runEnvelopeTransaction } from "./envelope.js";
+import { commitEnvelopeBatch, createDocument, runEnvelopeTransaction } from "./envelope.js";
 
 export const NOTE_STATUS = Object.freeze({ ACTIVE: "active", RETIRED: "retired" });
 export const NOTE_VISIBILITY = "private";
@@ -268,6 +268,105 @@ export async function retirePermanentNote(db, { tenantId, noteId, expectedRevisi
     transaction.update(TENANT.NOTES, noteDocId, { status: NOTE_STATUS.RETIRED, currentRevisionId: revisionId });
   });
   return revisionId;
+}
+
+/**
+ * Siyagah port round 1 -- Restore a Note from Trash. Trash IS `retired` (I4:
+ * nothing is deleted), so restoring is `status: "active"` again.
+ *
+ * WRITTEN WITH A NEW CHAINED REVISION, exactly as `retirePermanentNote()`
+ * is: the Rules' `committedRevisionMatches()` re-checks `currentRevisionId`
+ * on every update, so a status-only write could never chain from itself. Its
+ * placements are untouched -- retiring a Note never retired them (I4) -- so
+ * the Note reappears in every folder it was filed in.
+ */
+export async function restoreNote(db, { tenantId, noteId, expectedRevisionId, actorUid }) {
+  const noteDocId = noteFoundationDocId(tenantId, noteId);
+  requireToken("expectedRevisionId", expectedRevisionId);
+  const revisionId = newNoteEntityId();
+  await runEnvelopeTransaction(db, actorUid, async (transaction) => {
+    const snapshot = await transaction.get(TENANT.NOTES, noteDocId);
+    if (!snapshot.exists()) throw new Error("Note does not exist.");
+    const note = snapshot.data();
+    if (note.status !== NOTE_STATUS.RETIRED) throw new Error("Note is not in Trash.");
+    if (note.currentRevisionId !== expectedRevisionId) throw new Error("Stale Note revision.");
+
+    transaction.create(TENANT.NOTE_REVISIONS, noteFoundationDocId(tenantId, revisionId), {
+      revisionId,
+      noteId,
+      tenantId: note.tenantId,
+      ownerPersonId: note.ownerPersonId,
+      ownerUid: note.ownerUid ?? null,
+      previousRevisionId: expectedRevisionId,
+      title: note.title,
+      bodyHtml: note.bodyHtml,
+      revisionReason: "restored",
+      actorUid,
+    });
+    transaction.update(TENANT.NOTES, noteDocId, { status: NOTE_STATUS.ACTIVE, currentRevisionId: revisionId });
+  });
+  return revisionId;
+}
+
+/** The most writes one Firestore batch may carry is 500; callers chunk at 450 and this refuses anything above. */
+export const MAX_BATCH_WRITES = 500;
+
+/**
+ * Siyagah port round 1 -- several folder and placement writes as ONE atomic
+ * batch, through the envelope. The service chunks; this only validates and
+ * writes. Updates only ever send `status`, which the deployed Rules let a
+ * folder and a placement change.
+ *
+ * WHAT A BATCH MEANS FOR THE RULES. `parentOneHopOk()` and `bothEndsOk()` read
+ * with `get()`, which sees the state BEFORE the batch commits, not after. So
+ * inside one batch a new child cannot name a parent created in the same batch,
+ * and a restored child cannot name a parent restored in the same batch. The
+ * service therefore commits one DEPTH LEVEL per batch; this function does not
+ * and cannot reorder.
+ *
+ *   folderCreates:    [{ folderId, name, parentFolderId, order }]
+ *   folderStatus:     [{ folderId, status }]
+ *   placementCreates: [{ placementId, noteId, folderId, order }]
+ *   placementStatus:  [{ placementId, status }]
+ */
+export async function commitFolderBatch(db, {
+  tenantId, ownerPersonId, ownerUid = null, actorUid,
+  folderCreates = [], folderStatus = [], placementCreates = [], placementStatus = [],
+}) {
+  const owner = ownership({ tenantId, ownerPersonId, ownerUid });
+  const total = folderCreates.length + folderStatus.length + placementCreates.length + placementStatus.length;
+  if (total === 0) return 0;
+  if (total > MAX_BATCH_WRITES) throw new RangeError(`note-foundation: a batch may carry at most ${MAX_BATCH_WRITES} writes.`);
+  const statusOf = (value) => {
+    if (value !== NOTE_STATUS.ACTIVE && value !== NOTE_STATUS.RETIRED) throw new Error("status must be active or retired.");
+    return value;
+  };
+  const creates = [];
+  const updates = [];
+  for (const f of folderCreates) {
+    requireToken("folderId", f.folderId);
+    requireText("name", f.name);
+    journeyFolder({ tenantId, ownerPersonId, name: f.name, parentFolderId: f.parentFolderId ?? null, semanticRole: "user", order: f.order });
+    creates.push({ collectionName: TENANT.NOTE_FOLDERS, docId: noteFoundationDocId(tenantId, f.folderId), data: {
+      folderId: f.folderId, ...owner, name: f.name, parentFolderId: f.parentFolderId ?? null,
+      semanticRole: "user", order: f.order, status: NOTE_STATUS.ACTIVE,
+    } });
+  }
+  for (const p of placementCreates) {
+    requireToken("placementId", p.placementId);
+    creates.push({ collectionName: TENANT.NOTE_PLACEMENTS, docId: noteFoundationDocId(tenantId, p.placementId), data: {
+      placementId: p.placementId, ...relationBase(owner, p.noteId), folderId: requireToken("folderId", p.folderId),
+      order: p.order, status: NOTE_STATUS.ACTIVE,
+    } });
+  }
+  for (const f of folderStatus) {
+    updates.push({ collectionName: TENANT.NOTE_FOLDERS, docId: noteFoundationDocId(tenantId, f.folderId), data: { status: statusOf(f.status) } });
+  }
+  for (const p of placementStatus) {
+    updates.push({ collectionName: TENANT.NOTE_PLACEMENTS, docId: noteFoundationDocId(tenantId, p.placementId), data: { status: statusOf(p.status) } });
+  }
+  await commitEnvelopeBatch(db, { creates, updates }, actorUid);
+  return total;
 }
 
 /** One person's folders, for judging a tree. Equality-only and bounded, so it needs no composite index (P5-E). */

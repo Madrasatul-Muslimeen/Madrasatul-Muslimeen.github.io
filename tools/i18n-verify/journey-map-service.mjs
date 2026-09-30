@@ -15,7 +15,7 @@ const root = path.resolve(process.argv[2] || process.cwd());
 let source = fs.readFileSync(path.join(root, "app/js/journey-map-service.js"), "utf8");
 source = source
   .replace(/import \{[\s\S]*?\} from "\.\/note-foundation\.js";/,
-    "const { NOTE_STATUS, getNotesByIds, listNoteFoldersForOwner, listNoteFoldersForOwnerPage, listNotePlacementsForFolder, listNotePlacementsForNote, listNotesForOwnerPage, listNotesForOwnerIdPage, listNotePlacementsForOwnerPage, moveNotePlacement, renameNoteFolder, reorderNoteFolder, reparentNoteFolder, retireNoteFolder, reorderNotePlacement } = globalThis.__jmFoundation;")
+    "const { NOTE_STATUS, commitFolderBatch, createNotePlacement, newNoteEntityId, getNotesByIds, listNoteFoldersForOwner, listNoteFoldersForOwnerPage, listNotePlacementsForFolder, listNotePlacementsForNote, listNotesForOwnerPage, listNotesForOwnerIdPage, listNotePlacementsForOwnerPage, moveNotePlacement, renameNoteFolder, reorderNoteFolder, reparentNoteFolder, retireNoteFolder, reorderNotePlacement } = globalThis.__jmFoundation;")
   .replace(/from "\.\/journey-map-contract\.js"/,
     `from "${pathToFileURL(path.join(root, "app/js/journey-map-contract.js")).href}"`)
   // Issue #282 -- journey-map-service.js's own sharded loaders import the

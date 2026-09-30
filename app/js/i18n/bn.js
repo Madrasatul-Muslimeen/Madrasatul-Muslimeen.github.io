@@ -3129,6 +3129,13 @@ export const BN = {
   "Show the tools": "সরঞ্জাম দেখান",
   "Hide the tools": "সরঞ্জাম লুকান",
   "Keep writing": "লিখতে থাকুন",
+  "This folder still holds {n} notes. Move or delete them first.": "এই ফোল্ডারে এখনও {n}টি নোট আছে। আগে সেগুলো সরান বা মুছুন।",
+  "System folders cannot be moved to Trash.": "সিস্টেম ফোল্ডার ট্র্যাশে পাঠানো যায় না।",
+  "System folders cannot be copied.": "সিস্টেম ফোল্ডার কপি করা যায় না।",
+  "Folder is not in Trash.": "ফোল্ডারটি ট্র্যাশে নেই।",
+  "This note is already filed in that folder.": "এই নোটটি ইতিমধ্যে সেই ফোল্ডারে আছে।",
+  "This note is not filed in that folder.": "এই নোটটি সেই ফোল্ডারে নেই।",
+  "That folder does not exist or is in Trash.": "সেই ফোল্ডারটি নেই বা ট্র্যাশে আছে।",
   "Loading the writing sheet…": "লিখন অনুশীলনের পাতা লোড হচ্ছে…",
   "Couldn't open the writing sheet.": "লিখন অনুশীলনের পাতা খোলা যায়নি।",
 };
