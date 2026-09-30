@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.04",
+    "version": "09.05",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1229,8 +1229,20 @@
     {
       "version": "09.04",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Study options' Play opens the selected view and plays; a new Read button opens it without sound; built by the Builder (#409, PR #411), reviewed by the Architect.",
+      "integration": {
+        "authorizedOn": "2026-09-30",
+        "integratedOn": "2026-09-30",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.05",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Study options can save the current settings as named presets and restore them with one tap; built by the Builder (#410, PR #413), reviewed by the Architect.",
       "integration": {
         "authorizedOn": "2026-09-30",
         "integratedOn": "2026-09-30",
@@ -1239,8 +1251,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.05",
+  "nextUnallocated": "09.06",
   "nextUnallocatedNote": [
+    "v09.05 was allocated to Study options: named presets (#410), 2026-09-30.",
     "v09.04 was allocated to Study options: Play opens the chosen view; new Read button (#409), 2026-09-30.",
     "v09.03 was allocated to S ring badge; Know Your Status; derived forms above the counts, 2026-09-30.",
     "v09.02 was allocated to Landing section headings: S1 badge, count box, gold name (#407), 2026-09-29.",

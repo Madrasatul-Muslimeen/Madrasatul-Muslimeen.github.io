@@ -18829,3 +18829,16 @@ Built by the Builder (issue #409, PR #411); reviewed and allocated by the Archit
 - **📖 Read**: the same without sound; enabled with no reciter ticked; leaves audio already playing alone.
 - **Row**: Loop + Read + Play are one cluster that never shrinks; below 480px it takes its own line, two equal 40px buttons (fixes the Loop overlap).
 - **Checks**: study-options-play-read 62/0 (new, 3 mutations), phone-width 217/0, panel OK, behaviour 1003/4 baseline (30i, 38d, 38e updated in place). Architect looked at the row (bn 320, en 1280) and the opened view.
+
+## v09.05 — 30 Sep 2026 — Study options: named presets
+
+The Owner (29 Sep 2026): *"How about enabling bookmark button in the option (as a form of remember the setting user might want to reuse)"*, answered *"Named presets"*.
+
+Built by the Builder (issue #410, PR #413); reviewed and allocated by the Architect.
+
+- **Save**: ☆ Save these settings at the top of Study options; inline form with a name (default: the unit label) and *Keep this unit* (default on).
+- **Use**: presets as chips in Study options and as *Saved settings* in the Bookmark menu; one tap applies; applying never presses Play or Read.
+- **Manage**: ⋯ on a chip renames or removes it; remove is soft (`removed: true`).
+- **What is saved**: reading view ticks (Mushaf, page by page, Tajweed, WbW, Root, Derivatives), translation languages, WbW language, Arabic font, full-screen hides, end-of-unit prompt, Study Unit and optionally the unit itself, reciters, Repeat, Mode, Loop. Not the Approach.
+- **Storage**: additive `settingsPresets[]` on the existing bookmarks document; no Rules change (bookmarks need only `canRecordFor`); no startup read.
+- **Checks**: study-presets 80/0 (new, 3 mutations), study-options-play-read 62/0, rules-authorisation-executable 40/0, phone-width 217/0, panel OK, navcheck fits, behaviour 1003/4 (baseline 22g×3, 31e). Architect looked at the form and chips at 320 (bn), 390 and 1280 (en).
