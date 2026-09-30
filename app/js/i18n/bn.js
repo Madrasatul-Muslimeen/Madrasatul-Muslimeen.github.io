@@ -3094,4 +3094,13 @@ export const BN = {
   "Applied: {name}. Press Read or Play below.": "প্রয়োগ হয়েছে: {name}। নিচে পড়ুন বা চালান চাপুন।",
   "Rename or remove {name}": "{name} এর নাম বদলান বা সরান",
   "Pick a student first.": "আগে একজন শিক্ষার্থী বেছে নিন।",
+
+  // Issue #415 -- the Read contents list.
+  "{n} verses": "{n}টি আয়াত",
+  "Verses {from}–{to}": "আয়াত {from}–{to}",
+  "Pages {from}–{to}": "পৃষ্ঠা {from}–{to}",
+  "Search by name or number": "নাম বা নম্বর দিয়ে খুঁজুন",
+  "Nothing matches.": "কিছু মেলেনি।",
+  "{surah} {from}–{to}": "{surah} {from}–{to}",
+  "{fromSurah} {from} → {toSurah} {to}": "{fromSurah} {from} → {toSurah} {to}",
 };
