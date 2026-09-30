@@ -157,53 +157,19 @@ const T = {
 };
 
 async function waitCapsule(page) {
-  await page.waitForFunction(() => { const c = document.getElementById("readApproachCapsule"); return c && !c.hidden; }, null, { timeout: 12000 }).catch(() => {});
+  await page.waitForFunction(() => { const c = document.getElementById("readBarRecordBtn"); return !!c && c.getBoundingClientRect().width > 0 && Number.isFinite(Number(document.getElementById("mushafPageRef")?.dataset.page)); }, null, { timeout: 12000 }).catch(() => {});
 }
 
-// ---- 1. The capsule fits the bar at every width, both languages ---------------
-for (const lang of ["en", "bn"]) {
-  for (const width of [320, 360, 390, 412, 768, 1100]) {
-    const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, viewport: { width, height: 844 }, extraSeedJs: APPROACH_CARDS_SEED });
-    await installSyntheticMushafFixture(ctx);
-    const { page } = await openPage(ctx, "/app/quranrevival.html");
-    await openMushafSurah3(page);
-    await waitCapsule(page);
-    const m = await page.evaluate(() => {
-      const c = document.getElementById("readApproachCapsule");
-      const r = c.getBoundingClientRect();
-      const bar = document.getElementById("readBar");
-      const kids = [...bar.children].filter((el) => { const cs = getComputedStyle(el); const b = el.getBoundingClientRect(); return cs.display !== "none" && cs.position !== "absolute" && cs.position !== "fixed" && b.width > 0 && b.height > 0; });
-      const centres = kids.map((el) => { const b = el.getBoundingClientRect(); return b.top + b.height / 2; });
-      const ref = document.getElementById("mushafPageRef").getBoundingClientRect();
-      return {
-        barH: Math.round(bar.getBoundingClientRect().height),
-        sameLine: Math.abs((r.top + r.height / 2) - (ref.top + ref.height / 2)) <= 4,
-        shown: !c.hidden && r.width > 0, text: c.querySelector(".read-approach-capsule-text").textContent.trim(), w: r.width,
-        textFits: (() => { const t = c.querySelector(".read-approach-capsule-text"); return t.scrollWidth <= t.clientWidth + 1; })(),
-        h: r.height, left: r.left, right: r.right, vw: innerWidth,
-        spread: Math.max(...centres) - Math.min(...centres), n: kids.length,
-        overflow: document.documentElement.scrollWidth - innerWidth,
-      };
-    });
-    check(`[${lang} ${width}] the capsule is on the Mushaf bar and reads "${T[lang].choose}"`, m.shown && m.text === T[lang].choose && m.left >= 0 && m.right <= m.vw, JSON.stringify(m));
-    // #readBar in Mushaf view on `main` before this round, measured at
-    // origin/main 7aaa601f in both languages: already two lines on a phone
-    // (85px), one line from 768px (51px). The capsule must cost NOTHING.
-    const MAIN_BAR_H = width < 700 ? 85 : 51;
-    check(`[${lang} ${width}] the Read bar is exactly as tall as on main (${MAIN_BAR_H}px) -- the capsule adds no line`, m.barH === MAIN_BAR_H, JSON.stringify({ barH: m.barH, spread: m.spread }));
-    // From 700px (one line) it sits beside the page reference; below it, the
-    // bar is two lines anyway and the capsule starts the second, where it
-    // gets most of the width (beside the reference it had ~72px: "Cho…").
-    if (width >= 700) check(`[${lang} ${width}] the capsule shares a line with the page reference`, m.sameLine, JSON.stringify({ sameLine: m.sameLine, w: m.w }));
-    // From 390px the whole phrase shows; at 320/360 English it may end in
-    // "…" (its full text stays in title and aria-label), and it must still
-    // be at least 72px wide.
-    if (width >= 390 || lang === "bn") check(`[${lang} ${width}] the capsule shows its whole "${T[lang].choose}" (text not cut)`, m.textFits, JSON.stringify({ w: m.w, textFits: m.textFits }));
-    else check(`[${lang} ${width}] the capsule is at least 72px wide (its text may end in "…")`, m.w >= 72, JSON.stringify({ w: m.w }));
-    check(`[${lang} ${width}] the capsule is at least ${width < 700 ? 26 : 34}px tall (on a phone, the 26.8px of the icons beside it)`, m.h >= (width < 700 ? 26 : 34), String(m.h));
-    check(`[${lang} ${width}] no sideways scroll`, m.overflow <= 1, String(m.overflow));
-    await ctx.close();
-  }
+// ---- 1. (updated in place, issue #428) The #370 capsule was REPLACED by the three-button bar; its layout is proven in approach-record-status-bar-browser.mjs. Here: it is gone and the Record button carries its text.
+{
+  const ctx = await newContext(browser, { viewport: { width: 390, height: 844 }, extraSeedJs: APPROACH_CARDS_SEED });
+  await installSyntheticMushafFixture(ctx);
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  await openMushafSurah3(page);
+  await waitCapsule(page);
+  const m = await page.evaluate(() => ({ gone: !document.getElementById("readApproachCapsule"), title: document.getElementById("readBarRecordBtn")?.title }));
+  check("the capsule is gone and Record Your Progress carries 'Choose an Approach' as its title", m.gone && m.title === T.en.choose, JSON.stringify(m));
+  await ctx.close();
 }
 
 // ---- 2-4. The card, the pull-down, a claim, and the capsule after it ---------
@@ -215,7 +181,7 @@ for (const lang of ["en", "bn"]) {
     const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
     await openMushafSurah3(page);
     await waitCapsule(page);
-    await clickSafely(page, "#readApproachCapsule");
+    await clickSafely(page, "#readBarRecordBtn");
     await page.waitForFunction(() => !!document.querySelector("#pageApproachSelect"), null, { timeout: 8000 }).catch(() => {});
     const sheet = await page.evaluate(() => {
       const s = document.querySelector(".ayah-sheet"); if (!s) return null;
@@ -251,7 +217,7 @@ for (const lang of ["en", "bn"]) {
     const entry = write?.data?.["entries.page:madani:50::recite"];
     check(`[${lang} ${width}] pressing Learning writes the PAGE claim page:madani:50::recite = learning to subject_quran`,
       write?.id === "t1__p1__subject_quran" && entry?.claimedStatus === "learning", JSON.stringify(write && { id: write.id, keys: Object.keys(write.data ?? {}) }));
-    const cap = await page.evaluate(() => document.querySelector("#readApproachCapsule .read-approach-capsule-text")?.textContent.trim());
+    const cap = await page.evaluate(() => document.getElementById("readBarRecordBtn")?.title);
     const learning = await page.evaluate(() => [...document.querySelectorAll('[data-approach-stage-btn="learning"]')].map((b) => b.textContent.trim())[0]);
     check(`[${lang} ${width}] the capsule now names the Approach and its stage on this page`, cap === `${T[lang].recite} · ${learning}`, JSON.stringify({ cap, learning }));
 
