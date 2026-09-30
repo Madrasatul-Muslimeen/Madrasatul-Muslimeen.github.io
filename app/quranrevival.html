@@ -2528,6 +2528,15 @@
   .rc-side { font-size: 0.78rem; color: var(--card-text-muted); text-align: right; white-space: nowrap; }
   .rc-ar { font-family: 'Amiri', 'Scheherazade New', serif; font-size: 1.15rem; direction: rtl; text-align: right; white-space: nowrap; }
   .rc-empty { padding: 1rem; text-align: center; color: var(--card-text-muted); }
+  /* Phone: four columns leave the names one letter wide, so the verse count
+     drops under the Arabic name and the names keep the room. */
+  @media (max-width: 519px) {
+    .rc-row.rc-surah { grid-template-columns: 1.8rem minmax(0, 1fr) auto; }
+    .rc-surah .rc-num { grid-column: 1; grid-row: 1 / span 2; }
+    .rc-surah .rc-main { grid-column: 2; grid-row: 1 / span 2; }
+    .rc-surah .rc-ar { grid-column: 3; grid-row: 1; font-size: 1.05rem; }
+    .rc-surah .rc-side { grid-column: 3; grid-row: 2; }
+  }
   @media (min-width: 900px) {
     #readContentsMount { align-items: center; justify-content: center; }
     .rc-card { width: min(40rem, 92vw); max-height: 88vh; flex: 0 1 auto; border-radius: 0.65rem; overflow: hidden; box-shadow: var(--card-shadow); }
