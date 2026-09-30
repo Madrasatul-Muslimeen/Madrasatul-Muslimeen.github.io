@@ -163,3 +163,9 @@ Demo (the Read view, Mushaf, one bar split in three): shown in the session as re
 | # | Question | Owner's words | Meaning |
 |---|---|---|---|
 | 38 | "There should be a visible SEARCH button on the landing page. But where? With the wheel. Read, Status bar? Show me your a few suggestion." Four places were mocked in the real page: A top right of the banner, B on the wheel's heading line, C a search box under the heading, D inside the wheel. The Architect recommended A. | **"A, go ahead"** | A gold-bordered **🔍 Search** button at the right of the banner's title line (the magnifier alone below 360px, so it never costs a line). It opens Study options with the cursor in the existing search box, which takes "2:255" (goes there) or a word (searches the whole Qur'an). |
+
+## 30 Sep 2026 — a title for the stage buttons
+
+| # | Question | Owner's words | Meaning |
+|---|---|---|---|
+| 39 | (A photo of the Page card from the Mushaf/Read view, the gap between the Approach pull-down and the four stage buttons marked.) | **"As approach has the title. Give the title to record as well above the progress Tabs: (Icon) 'Record Your Progress'. Make it look elegant. Keep proper space. Then show"** | Every card that carries the four stage buttons (Ayah, Unit, Page) titles them **✅ Record Your Progress**, in the 🎯 Take an Approach title's own face, with clear space above it (23px from the pull-down) and close to its own buttons (6px). |
