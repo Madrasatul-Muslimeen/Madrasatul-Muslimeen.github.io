@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.13",
+    "version": "09.14",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1337,8 +1337,20 @@
     {
       "version": "09.13",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Read-list tab counts; ⤢ 36px gold everywhere; Writing sheet Hide on the top line; heading line/dot at random.",
+      "integration": {
+        "authorizedOn": "2026-09-30",
+        "integratedOn": "2026-09-30",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.14",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Three-button bar in Read and Note (#428); banner Search; stage buttons titled Record Your Progress.",
       "integration": {
         "authorizedOn": "2026-09-30",
         "integratedOn": "2026-09-30",
@@ -1347,8 +1359,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.14",
+  "nextUnallocated": "09.15",
   "nextUnallocatedNote": [
+    "v09.14 was allocated to Take an Approach | Record Your Progress | Know Your Status; Search in the banner; Record Your Progress title, 2026-09-30.",
     "v09.13 was allocated to Read list counts, a prominent full-screen button, Hide on the top line, line or dot at random, 2026-09-30.",
     "v09.12 was allocated to Know Your Status in every unit: six unit tiles, Page, All-units ring wheel, 2026-09-30.",
     "v09.11 was allocated to the Writing sheet toolbar: hide/show, and usable when zoomed, 2026-09-30.",
