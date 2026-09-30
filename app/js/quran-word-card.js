@@ -593,12 +593,15 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
     const posCellHtml = chain.name
       ? `${escapeHtml(chain.name)}${chain.en ? `<span class="word-card-pos-en" lang="en">${escapeHtml(chain.en)}</span>` : ""}`
       : escapeHtml(text.unknown);
+    // 30 Sep 2026, Owner: "Derivatives are for learning, occurrences are just
+    // info" -- so the derived forms come straight after the word's facts, and
+    // the occurrence counts sit below them.
     return `<div role="tabpanel" data-word-card-panel="basic">
       <dl><dt>${escapeHtml(text.lemma)}</dt><dd>${escapeHtml(layers.lemma || text.unknown)}</dd><dt>${escapeHtml(text.root)}</dt><dd>${escapeHtml(layers.root || text.unknown)}</dd><dt>${escapeHtml(text.partOfSpeech)}</dt><dd>${posCellHtml}</dd></dl>
+      ${formsSection(layers, context, text, formatNumber, { expandable: false })}
       <p>${layers.root ? count(text.rootOccurrences, Number(context.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0)) : escapeHtml(text.rootUnavailable)}</p>
       ${layers.lemma ? lemmaOccurrenceBlock(word, layers, context, text, formatNumber) : `<p>${escapeHtml(text.lemmaUnavailable)}</p>`}
       ${layers.lemma ? wordShareOfQuranLine(context, text, formatNumber) : ""}
-      ${formsSection(layers, context, text, formatNumber, { expandable: false })}
       ${context.occurrencesLoading ? `<p>${escapeHtml(text.loadingOccurrences)}</p>` : ""}
       ${context.occurrencesError ? `<p role="status">${escapeHtml(String(text.occurrencesUnavailable).replace("{error}", context.occurrencesError))}</p>` : ""}
       ${progressBlock(context.progress, context.authority, null, text, formatNumber)}

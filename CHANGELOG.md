@@ -18795,3 +18795,25 @@ The Owner, with a screenshot of the Home menu: *"The number is not showing in th
 - **`app/sw.js`**: `/legacy-v08/` is kept out of the live offline cache, like `/legacy/` and `/legacy-v07/`.
 - The archive itself is frozen and unchanged, so its own menu still lists v06 and v07 only.
 - **Checked**: menu rendered on the landing page, Catalogue and About, 390 and 1280px, English and Bangla: all three links shown, same width, right addresses, no page errors. navcheck fits at every width; phone-width 217/0; governance suites green.
+
+## v09.02 — 29 Sep 2026 — Landing section headings: S1 badge, count box at the end, gold name
+
+The Owner (29 Sep 2026, marked-up screenshot): *"Write it as S1 (circle marked up, for Section 1) then at the end of the Section name write the approach numbers (6) in the square marked up box. And i think section text color should be distinctive with the approaches text color."*
+
+Built by the Builder (issue #407, PR #408); reviewed and allocated by the Architect.
+
+- **Badge**: the round badge shows the section label, *S1* … *S8* (Bangla *বি১* …, reader's digits).
+- **Count**: in a square-cornered box after the name's last word, on its last line; `aria-label` *6 Approaches* / *৬টি পদ্ধতি*.
+- **Colour**: the section name is gold, `#ecd49a` in Night and `#7a5410` in Light (card-look.css), distinct from the Approach names; ≥4.5:1 measured against the real background in both looks.
+- **Architect review fix**: the *Open all / Close all* button (v08.117) kept the Night gold in Light, measured 1.45:1 on white. The Light look now gives it the section gold; a pixel-measured contrast check was added and failed 4/4 before the fix.
+- **Checks**: landing-sections-collapse 136/0 (Builder mutations: badge shows the count, box at the start, colours equal), approach-sections 59/0, catalogue-sections 126/0 (updated in place to read the name without the box), card-look 96/0, phone-width 217/0, behaviour 1006/1 (31e TLS).
+
+## v09.03 — 30 Sep 2026 — S ring badge; Know Your Status; derived forms above the counts
+
+Three Owner corrections from phone screenshots, made by the Architect.
+
+- **Section badge** (*"Either the S circles or the Approaches numbers circle should be distinctive in color, not the same."*): the landing list's S1 … badge is a hollow gold ring with gold lettering; the Approach number stays a filled gold disc. Light look: ring and lettering in the section gold (#7a5410 / #8a6a35).
+- **Know Your Status** (*"In Mob. The status button should resemble the text of 'Mastery Wheel' … rename the 'My Status' to 'Know Your Status' in all platforms."*): below 480px the heading-line button takes the heading's own font, weight, size and colour, no pill, 36px tall. Every visible "My Status" now reads "Know Your Status" (Bangla আপনার অবস্থা জানুন): heading button, capsule, sheet title, wheel centre, close label, and the Catalogue's "counts for each āyah inside" sentence. Ids and code names unchanged.
+- **Word Card, Basic Arabic** (*"Move the derivatives above n counts below. (Derivatives are for learning, occurrences are just info)"*): *Derived forms of this root* now comes straight after Dictionary Word / Root / Part of speech, with the root-linked, Dictionary-Word and share-of-Qur'an lines below it.
+- **Checks**: landing-sections-collapse 152/0 (ring vs disc and lettering contrast, both looks; the old badge fails 8), quran-word-card 38/0 (order check; the old order fails it), heading-line probe 320–479px, both languages and looks; quran-my-status 88/0, approach-short-names 70/0, catalogue-tabs 56/0, card-look 96/0, phone-width 217/0, lemma-occurrences 50/0, word-card-segments 40/0, quran-word-card-rendered 134/2 (TLS).
+- **Found, not caused here, fixed**: explore-hizb-view-browser died the same way on `main`, waiting for exactly 30 slices where Explore's Juz view has drawn rings (144) since v08.105. It now counts the Juz ring (`data-ring-kind="juz"`) and taps Juz 1 on that ring: 80/0. Also: quran-word-card-form-meaning 288/0.

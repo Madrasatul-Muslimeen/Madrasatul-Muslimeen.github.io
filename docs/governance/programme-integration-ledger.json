@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.01",
+    "version": "09.03",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1193,7 +1193,7 @@
     {
       "version": "09.01",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The first v09 release: every page's Home menu links Legacy App - v08, and the live offline cache excludes /legacy-v08/; allocated by the Architect.",
       "integration": {
         "authorizedOn": "2026-09-29",
@@ -1201,10 +1201,36 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "09.02",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Landing Approach section headings show S1..S8, the count in a square box at the end and a gold name; Light Open all button made readable; built by the Builder (#407, PR #408), reviewed by the Architect.",
+      "integration": {
+        "authorizedOn": "2026-09-29",
+        "integratedOn": "2026-09-29",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.03",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Owner corrections: hollow S ring badge, My Status renamed Know Your Status and styled as heading text on phones, Word Card derived forms above the counts; made by the Architect.",
+      "integration": {
+        "authorizedOn": "2026-09-30",
+        "integratedOn": "2026-09-30",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "09.02",
+  "nextUnallocated": "09.04",
   "nextUnallocatedNote": [
+    "v09.03 was allocated to S ring badge; Know Your Status; derived forms above the counts, 2026-09-30.",
+    "v09.02 was allocated to Landing section headings: S1 badge, count box, gold name (#407), 2026-09-29.",
     "v09.01 was allocated to the v09 line opens; Home menu links the v08 archive, 2026-09-29.",
     "The v09 line opens at v09.01 (Owner, 29 Sep 2026, decision 26); v09.00 is deliberately not used. The 08 line ends at v08.117, and app/ as released at v08.103 is archived at legacy-v08/.",
     "v08.117 was allocated to Landing Approach list sections collapsed with a count (#400), 2026-09-29.",
