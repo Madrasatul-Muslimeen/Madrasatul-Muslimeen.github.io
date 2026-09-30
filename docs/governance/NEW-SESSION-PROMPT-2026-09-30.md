@@ -34,13 +34,18 @@ to try on my phone.
    progress, and what waits on me (handover section 4).
 3. **Start the test server** (`node serve.js` from the repository root) before
    any browser suite. A fresh container does not have it running.
-4. **Tell me the app is at v09.06 and the Builder queue is empty, and ask what
-   I want next.** The likely next job is mine to start: a few simple buttons in
-   the Read view for readers who come in through the new Read contents list
-   (like the demo's Note View / Track / Approach row,
-   <https://claude.ai/artifact/V85N34YWdBJUk9M1StyaCf>). When I ask for it, show
-   me a demo first and ask where the buttons go, then write one Builder issue.
-   Also remind me the 29 proposed Approach short names still wait on me.
+4. **Start the next job yourself, without waiting for me to ask** (my words,
+   30 Sep 2026: *"don't make it wait for me to ask, whatever you supposed to
+   do, make it continue"*). The job is in handover section 0: a few simple
+   buttons in the Read view (Note View · Track · Approach) for readers who come
+   in through the Read contents list. Build a demo, send me its link, dispatch
+   the Builder round with the placement you recommend, and tell me what you
+   chose so I can change it. Remind me the 29 proposed Approach short names
+   still wait on me.
+5. **In general, keep work moving.** When a round merges and a next step is
+   already agreed or clearly follows, start it and tell me; stop only for a
+   real decision of mine (a Firestore Rules change, deleting anything, or a
+   choice between very different behaviours).
 
 **How a round runs:**
 - Start it **only with `workflow_dispatch`**: `mcp__github__actions_run_trigger`,

@@ -16,14 +16,32 @@ The prompt that starts the next session is
   and contents list, PR #416), was reviewed, reworked by the Architect as
   below, and merged as v09.06.
 - **Nothing is running and no check-ins are scheduled.**
-- **The next likely job is the Owner's, not yet asked for.** On 30 Sep they
-  said: *"we will later make a few simple buttons for these readers to read
-  view (like your demo)"*. That is: in the Read view, a few plain buttons for a
-  reader who came in through the contents list, like the demo's Note View /
-  Track / Approach row
-  (<https://claude.ai/artifact/V85N34YWdBJUk9M1StyaCf>). **Do not build it
-  until they ask**; when they do, show a demo first and ask where the buttons
-  go.
+- **THE NEXT JOB — START IT WITHOUT WAITING.** The Owner, 30 Sep 2026:
+  *"don't make it wait for me to ask, whatever you supposed to do, make it
+  continue."* So the next session starts the work below itself and tells the
+  Owner what it is doing; it does not ask first.
+  **The job: a few simple buttons in the Read view for a reader who came in
+  through the new Read contents list.** The Owner, 30 Sep: *"we will later
+  make a few simple buttons for these readers to read view (like your demo)"*
+  and *"reader will eventually come to original read and we want them to move
+  from there to other choices through other buttons."* The demo's row is
+  **Note View · Track · Approach**
+  (<https://claude.ai/artifact/V85N34YWdBJUk9M1StyaCf>).
+  **The order of work:**
+  1. Read how the Read view already reaches Note View, Track and Approach
+     (its bars, `setImmersive`, `openReadingScreen()`), and measure the
+     immersive Mushaf screen on a phone.
+  2. Build a demo artifact of the proposal with the app's real look, and send
+     the Owner the link: a plain row of those three buttons, shown when the Read
+     view was opened from the contents list. Choose the placement you
+     recommend, and say why in one line.
+  3. **Without waiting for an answer**, write one Builder issue with that
+     placement and dispatch it. The buttons must reuse the existing routes
+     (never a second Note View, tracker or Approach picker), start no audio,
+     and write nothing on their own.
+  4. If the Owner answers the demo while the round runs, adjust in review.
+  Placement is still the Owner's to change: say plainly in the report what
+  was chosen, so they can.
 
 ### How #415 ended up (so nobody undoes it)
 - **Decision A (Owner):** the contents list opens the EXISTING Read view as a
@@ -136,7 +154,7 @@ plus what changed:
 
 ## 4. Waiting on the Owner
 
-1. **The simple Read-view buttons** (section 0): only when they ask.
+1. **The simple Read-view buttons** (section 0): being built without waiting, per the Owner; they may still change the placement from the demo.
 2. **The 29 proposed Approach short names**, carried from the 28 Sep session.
    Still unanswered.
 3. From earlier, still standing: `tenantSelect` truncation (an Owner UI
