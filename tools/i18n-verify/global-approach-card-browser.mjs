@@ -189,7 +189,12 @@ for (const lang of ["en", "bn"]) {
     // #readBar in Mushaf view on `main` before this round, measured at
     // origin/main 7aaa601f in both languages: already two lines on a phone
     // (85px), one line from 768px (51px). The capsule must cost NOTHING.
-    const MAIN_BAR_H = width < 700 ? 85 : 51;
+    // UPDATED in place, 30 Sep 2026 (Owner decision 34, v09.13): the full-screen
+    // ⤢ is a 36px square now ("Make this button prominent, noticeable,
+    // bigger"), and at 320px it shares a line whose other buttons are ~27px
+    // tall, so that line is 9px taller: 94px, measured, in both languages.
+    // Every other width is unchanged. Still no extra LINE anywhere.
+    const MAIN_BAR_H = width < 360 ? 94 : width < 700 ? 85 : 51;
     check(`[${lang} ${width}] the Read bar is exactly as tall as on main (${MAIN_BAR_H}px) -- the capsule adds no line`, m.barH === MAIN_BAR_H, JSON.stringify({ barH: m.barH, spread: m.spread }));
     // From 700px (one line) it sits beside the page reference; below it, the
     // bar is two lines anyway and the capsule starts the second, where it
@@ -243,6 +248,23 @@ for (const lang of ["en", "bn"]) {
     check(`[${lang} ${width}] the chosen Approach is named in full with its section`, summary?.name === T[lang].recite && summary?.section === T[lang].preservation, JSON.stringify(summary));
     const note = await page.evaluate(() => document.querySelector(".gac-mastered-note")?.textContent.trim());
     check(`[${lang} ${width}] "Mastered is confirmed by a teacher." is shown under the stages`, note === T[lang].mastered, note);
+    // Owner decision 39, 30 Sep 2026: "Give the title to record as well above
+    // the progress Tabs: (Icon) 'Record Your Progress'. Make it look elegant.
+    // Keep proper space." Expected by hand: the words, the same face as the
+    // 🎯 Take an Approach title, clear space above (>= 16px from the pull-down)
+    // and close to its own buttons (<= 10px), with more space above than below.
+    const rec = await page.evaluate(() => {
+      const t = document.querySelector("[data-gac-record-title]"), sel = document.getElementById("pageApproachSelect"), row = document.querySelector(".approach-stage-row");
+      const lab = document.querySelector(".ayah-sheet-select-label:not([data-gac-record-title])");
+      if (!t || !sel || !row || !lab) return null;
+      const cs = (e) => getComputedStyle(e);
+      return { text: t.textContent.trim(), above: Math.round(t.getBoundingClientRect().top - sel.getBoundingClientRect().bottom),
+        below: Math.round(row.getBoundingClientRect().top - t.getBoundingClientRect().bottom),
+        sameFace: ["fontSize", "fontWeight", "color", "fontFamily"].every((k) => cs(t)[k] === cs(lab)[k]), beforeButtons: !!(t.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING) };
+    });
+    check(`[${lang} ${width}] "✅ ${lang === "bn" ? "আপনার অগ্রগতি লিপিবদ্ধ করুন" : "Record Your Progress"}" titles the stage buttons, in the Take an Approach title's own face`,
+      rec?.text === (lang === "bn" ? "✅ আপনার অগ্রগতি লিপিবদ্ধ করুন" : "✅ Record Your Progress") && rec.sameFace && rec.beforeButtons, JSON.stringify(rec));
+    check(`[${lang} ${width}] it has clear space above and sits close to its own buttons`, !!rec && rec.above >= 16 && rec.below <= 10 && rec.above > rec.below, JSON.stringify(rec));
 
     const before = await page.evaluate(() => (window.__stubWriteData || []).length);
     await clickSafely(page, '[data-approach-stage-btn="learning"]');
@@ -273,13 +295,13 @@ for (const lang of ["en", "bn"]) {
           }
           return [[255, 255, 255]];
         };
-        return [".gac-approach-name", ".gac-approach-section", ".gac-mastered-note"].map((sel) => {
+        return [".gac-approach-name", ".gac-approach-section", ".gac-mastered-note", ".gac-record-title"].map((sel) => {
           const el = document.querySelector(sel); if (!el) return [sel, null];
           const a = L(nums(getComputedStyle(el).color));
           return [sel, +Math.min(...bgsOf(el).map((bg) => { const b = L(bg); return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05); })).toFixed(2)];
         });
       });
-      check(`[${lang} ${width} ${look}] the name, section and Mastered lines are readable (>=4.5:1)`, ratios.every(([, r]) => r != null && r >= 4.5), JSON.stringify(ratios));
+      check(`[${lang} ${width} ${look}] the name, section, Mastered and Record Your Progress lines are readable (>=4.5:1)`, ratios.every(([, r]) => r != null && r >= 4.5), JSON.stringify(ratios));
     }
     const sweepCard = async (label) => {
       for (const look of ["night", "light"]) {

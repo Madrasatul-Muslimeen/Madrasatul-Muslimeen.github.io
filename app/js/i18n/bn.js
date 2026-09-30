@@ -2962,6 +2962,7 @@ export const BN = {
   "Counts for each āyah inside: when Yes, claiming a Surah, Juz, Ruku', Hizb, page or Range for this Approach counts for every āyah inside it too, in Explore and in Know Your Status. When No, only an āyah's own claim counts for that āyah — a claim on the whole unit is kept and shown separately as \"studied as a whole\".":
     "প্রতিটি আয়াতের জন্য গণনা হয়: হ্যাঁ হলে, এই অ্যাপ্রোচের জন্য কোনো সূরা, জুয, রুকু', হিজব, পৃষ্ঠা বা রেঞ্জ দাবি করলে তা ভেতরের প্রতিটি আয়াতের জন্যও গণনা হয়, এক্সপ্লোর এবং মাই স্ট্যাটাস উভয় জায়গায়। না হলে, শুধু আয়াতের নিজস্ব দাবিই সেই আয়াতের জন্য গণনা হয় — পুরো ইউনিটের দাবি রাখা থাকে এবং আলাদাভাবে \"সম্পূর্ণভাবে অধ্যয়ন করা হয়েছে\" হিসেবে দেখানো হয়।", // ?
   "Know Your Status": "আপনার অবস্থা জানুন", // ? (was "My Status", renamed by the Owner 30 Sep 2026)
+  "Record Your Progress": "আপনার অগ্রগতি লিপিবদ্ধ করুন", // ? (Owner decisions 37 and 39, 30 Sep 2026)
   "Know your status on the whole Qur'an, by Approach.": "সম্পূর্ণ কুরআনে, প্রতিটি অ্যাপ্রোচ অনুযায়ী, নিজের অবস্থা জানুন।", // ?
   "See in Explore": "এক্সপ্লোরে দেখুন", // ?
   "studied as a whole": "সম্পূর্ণভাবে অধ্যয়ন করা হয়েছে", // ?
