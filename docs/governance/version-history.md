@@ -656,3 +656,4 @@ total). Allocated by the MMSA Architect.
 09.10: the Writing sheet (A4 tracing sheet, three letter styles, write/save/print). Allocated by the MMSA Architect.
 09.11: the Writing sheet toolbar: hide/show, and usable when zoomed. Allocated by the MMSA Architect.
 09.12: Know Your Status in every unit: six unit tiles, Page, All-units ring wheel. Allocated by the MMSA Architect.
+09.13: Read list counts, a prominent full-screen button, Hide on the top line, line or dot at random. Allocated by the MMSA Architect.
