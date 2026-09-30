@@ -112,6 +112,32 @@ for (const lang of ["en", "bn"]) {
   }
 }
 
+// ---- Tab counts: under the name, in the reader's digits, nothing cut (Owner, 30 Sep 2026)
+// Hand-written: 114 Surahs, 30 Juz, 60 Hizb, 604 Pages, 556 Ruku'.
+for (const lang of ["en", "bn"]) {
+  for (const width of [320, 360, 390, 768, 1280]) {
+    const { ctx, page } = await start({ lang, width });
+    await openList(page);
+    const m = await page.$$eval("#readContentsTabs .rc-tab", (els) => els.map((b) => {
+      const n = b.querySelector(".rc-tab-name"), c = b.querySelector(".rc-tab-count");
+      const nr = n?.getBoundingClientRect(), cr = c?.getBoundingClientRect(), br = b.getBoundingClientRect();
+      return { k: b.dataset.rcTab, count: c?.textContent.trim() ?? null, below: !!(nr && cr) && cr.top >= nr.bottom - 1,
+        centred: !!(nr && cr) && Math.abs((nr.left + nr.right) / 2 - (cr.left + cr.right) / 2) < 2,
+        cut: b.scrollWidth > b.clientWidth + 1 || (cr && (cr.left < br.left - 0.5 || cr.right > br.right + 0.5)), h: Math.round(br.height) };
+    }));
+    const tag = `${lang} ${width}px`;
+    const want = { surah: 114, juz: 30, hizb: 60, page: 604, ruku: 556 };
+    const digits = (v) => lang === "bn" ? String(v).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[d]) : String(v);
+    check(`${tag}: every tab shows its count in the reader's digits`, m.length === 5 && m.every((t) => t.count === digits(want[t.k])), JSON.stringify(m.map((t) => t.count)));
+    check(`${tag}: each count sits centred under its name`, m.every((t) => t.below && t.centred), JSON.stringify(m));
+    check(`${tag}: no tab or count is cut, and the tabs stay one row under 56px`, m.every((t) => !t.cut && t.h <= 56) && new Set(m.map((t) => t.h)).size === 1, JSON.stringify(m));
+    check(`${tag}: no sideways scroll`, await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth));
+    if (lang === "bn" && width === 320) await page.screenshot({ path: `${process.env.SHOT_DIR || "/tmp"}/rc-tabs-bn-320.png` });
+    if (lang === "en" && width === 390) await page.screenshot({ path: `${process.env.SHOT_DIR || "/tmp"}/rc-tabs-en-390.png` });
+    await ctx.close();
+  }
+}
+
 // ---- I9: nothing fetched before the button is pressed
 {
   const { ctx, page, requests } = await start({});
@@ -126,13 +152,18 @@ for (const lang of ["en", "bn"]) {
 {
   const { ctx, page } = await start({});
   await openList(page);
-  const tabs = await page.$$eval("#readContentsTabs .rc-tab", (els) => els.map((e) => e.textContent.trim()));
+  // Updated in place, 30 Sep 2026: each tab now carries its count on a second
+  // line (the Owner: "Mention the numbers count in each unit"), so the name is
+  // read from .rc-tab-name rather than the whole button's text.
+  const tabs = await page.$$eval("#readContentsTabs .rc-tab .rc-tab-name", (els) => els.map((e) => e.textContent.trim()));
   check("five tabs in order", tabs.join("|") === "Surah|Juz|Hizb|Page|Ruku'", tabs.join("|"));
   const counts = {};
   for (const [k, expected] of [["surah", 114], ["juz", 30], ["hizb", 60], ["page", 604], ["ruku", 556]]) {
     await page.click(`[data-rc-tab="${k}"]`);
     counts[k] = await page.$$eval("#readContentsBody .rc-row", (e) => e.length);
     check(`${k} tab has ${expected} rows`, counts[k] === expected, String(counts[k]));
+    const shown = await page.$eval(`[data-rc-tab="${k}"] .rc-tab-count`, (e) => e.textContent.trim()).catch(() => null);
+    check(`${k} tab shows its count ${expected}, the same as its rows`, shown === String(expected) && counts[k] === expected, String(shown));
   }
   await page.click(`[data-rc-tab="surah"]`);
   const row1 = await page.$eval('.rc-row[data-rc-n="1"]', (e) => ({ text: e.innerText.replace(/\s+/g, " "), ar: e.querySelector(".rc-ar").textContent }));

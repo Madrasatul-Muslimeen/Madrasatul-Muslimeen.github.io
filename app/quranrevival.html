@@ -2608,6 +2608,11 @@
     color: var(--card-text-muted); font: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer; white-space: nowrap;
   }
   .rc-tab[aria-selected="true"] { color: var(--card-heading); border-bottom-color: #B8862F; }
+  /* The Owner (30 Sep 2026): each tab shows how many of that unit there are,
+     on a quiet second line under the name -- five tabs share a phone row, so
+     "beside" would cut "Ruku' 556" at 320px. */
+  .rc-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.15; }
+  .rc-tab-count { display: block; font-size: 0.72rem; font-weight: 500; opacity: 0.8; font-variant-numeric: tabular-nums; }
   .rc-search { margin: 0.5rem; padding: 0.45rem 0.6rem; font-size: 0.95rem; min-height: 40px; box-sizing: border-box; width: calc(100% - 1rem); border: 1px solid var(--card-line); border-radius: 0.35rem; background: var(--card-bg-inset); color: var(--card-text); }
   .rc-search[hidden] { display: none; }
   .rc-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 0.5rem 0.8rem; }
@@ -10294,8 +10299,14 @@
       document.getElementById("readContentsCloseBtn").setAttribute("aria-label", t("Close"));
       readContentsSearchEl.placeholder = t("Search by name or number");
       readContentsSearchEl.setAttribute("aria-label", t("Search by name or number"));
+      // How many of each unit, read off the same lists the rows come from.
+      const T = readContentsTables;
+      const counts = { surah: surahIndex.length, juz: T?.juz?.length, hizb: T?.hizb?.length, page: T?.page?.length, ruku: T?.ruku?.length };
       readContentsTabsEl.innerHTML = RC_TABS.map(([k, label]) =>
-        `<button type="button" role="tab" class="rc-tab" data-rc-tab="${k}" aria-selected="${k === readContentsTab}">${rcEsc(t(label))}</button>`).join("");
+        `<button type="button" role="tab" class="rc-tab" data-rc-tab="${k}" aria-selected="${k === readContentsTab}">` +
+        `<span class="rc-tab-name">${rcEsc(t(label))}</span>` +
+        (counts[k] ? `<span class="rc-tab-count" data-rc-count="${counts[k]}">${num(counts[k])}</span>` : "") +
+        `</button>`).join("");
       renderReadContentsBody();
     }
 

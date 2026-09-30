@@ -135,3 +135,9 @@ The Owner, looking at Know Your Status on a phone: *"Can you confirm me about th
 | # | Question | Owner's answer | Meaning |
 |---|---|---|---|
 | 32 | The ✍ button made the Read bar a line taller at 320px (Mushaf) and the Note bar a line taller at ~375–400px. Study menu, bars (accept taller), or both? | **"Both"** | **✍ Writing sheet** is a Study-menu item for every reader at every width, and the Read and Note bars show ✍ only where it costs the bar no extra line, measured in the app at runtime (what fits depends on names, language and admin-only buttons). |
+
+## 30 Sep 2026 — how many of each unit, on the Read list's tabs
+
+| # | Question | Owner's words | Meaning |
+|---|---|---|---|
+| 33 | (A screenshot of the Read list's tabs, Surah circled.) | **"Mention the numbers count in each unit (beside or below the unit name, whichever looks elegant)"** | Each tab of the Read list carries its count on a quiet second line under its name: Surah 114 · Juz 30 · Hizb 60 · Page 604 · Ruku' 556, in the reader's digits. The Architect chose **below**: five tabs share a phone row, and "Ruku' 556" beside its name would be cut at 320px. The counts are read off the same lists the rows come from, never typed. |
