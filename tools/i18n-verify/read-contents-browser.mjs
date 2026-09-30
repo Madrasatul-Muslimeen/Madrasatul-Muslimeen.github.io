@@ -1,0 +1,185 @@
+// Issue #415 -- the landing "Read" button and its contents list.
+//
+// Run from the repository root, with serve.js on :8080.
+// Expected values are written BY HAND (from the packaged index files), never
+// computed by the code under test.
+import { chromium, newContext, openPage } from "./harness.mjs";
+
+let pass = 0, fail = 0;
+const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
+
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
+
+async function start({ lang = "en", width = 390, height = 844 } = {}) {
+  const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width, height } });
+  await ctx.addInitScript(() => {
+    window.__played = 0;
+    const orig = HTMLMediaElement.prototype.play;
+    HTMLMediaElement.prototype.play = function (...a) { window.__played++; return orig.apply(this, a); };
+  });
+  await ctx.route("**/gtaf_bangla_timestamps.json", (r) => r.fulfill({ status: 200, contentType: "application/json", body: "{}" }));
+  await ctx.route("**/archive.org/**", (r) => r.abort());
+  const requests = [];
+  ctx.on("request", (r) => requests.push(r.url()));
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  return { ctx, page, requests };
+}
+const dataFetches = (reqs) => reqs.filter((u) => /\/(juz|hizb|page|ruku)-index\.json/.test(u));
+const state = (page) => page.evaluate(() => ({
+  type: document.getElementById("unitTypeSelect").value,
+  surah: document.getElementById("surahSelect").value,
+  num: document.getElementById("unitNumSelect").value,
+  mushaf: document.getElementById("mushafToggle").checked,
+  immersive: document.body.classList.contains("immersive-read"),
+  played: window.__played,
+  writes: (window.__fsLog || []).filter((x) => /set|add|update|delete|write|commit/i.test(x.kind || "")).length,
+}));
+// Architect, 30 Sep 2026 (Owner: "put Read beside Know Your Status on mobile"):
+// below 900px Read is the heading-line #readHeadBtn, from 900px the capsule
+// #readContentsBtn. Tap whichever one is showing.
+const readBtnSel = (page) => page.evaluate(() => ((document.getElementById("readHeadBtn")?.getBoundingClientRect().width ?? 0) > 0 ? "#readHeadBtn" : "#readContentsBtn"));
+const openList = async (page) => {
+  await page.click(await readBtnSel(page));
+  await page.waitForFunction(() => document.querySelectorAll("#readContentsBody .rc-row").length > 0);
+};
+const pick = async (page, tab, n) => {
+  await openList(page);
+  if (tab !== "surah") await page.click(`[data-rc-tab="${tab}"]`);
+  await page.waitForFunction((t) => document.querySelector(`#readContentsBody .rc-row[data-rc-kind="${t}"]`), tab);
+  await page.click(`#readContentsBody .rc-row[data-rc-kind="${tab}"][data-rc-n="${n}"]`);
+  await page.waitForFunction(() => document.body.classList.contains("immersive-read"));
+  await page.waitForTimeout(300);
+};
+
+// ---- Button: where it sits, its look, nothing cut, no sideways scroll
+// Expected placement written by hand from the Owner's decision and the measured
+// fit (a fourth capsule does not fit the row in English below ~1000px, and from
+// 900px the heading line is replaced by the wheel window's title bar):
+//   < 520  heading line, right edge, immediately before Know Your Status
+//   520-899 heading line, right edge (Know Your Status is a capsule there)
+//   >= 900 the fourth capsule, one 36px row with the other three
+for (const lang of ["en", "bn"]) {
+  for (const width of [320, 340, 360, 390, 412, 479, 480, 500, 519, 520, 600, 768, 899, 900, 940, 1000, 1280]) {
+    const { ctx, page } = await start({ lang, width });
+    const m = await page.evaluate(() => {
+      // A missing button reads as "not shown" so the checks FAIL by name rather than crash.
+      const R = (e) => (e ? e.getBoundingClientRect() : { width: 0, height: 0, top: 0, left: 0, right: 0 });
+      const head = document.getElementById("readHeadBtn"), cap = document.getElementById("readContentsBtn");
+      const title = document.querySelector(".wheel-heading > span"), kys = document.getElementById("myStatusBtn");
+      const de = document.documentElement;
+      const style = (e) => ["fontFamily", "fontSize", "fontWeight", "color"].map((k) => getComputedStyle(e)[k]).join("|");
+      const caps = [...document.querySelectorAll("#wheelIntroSettled > .wheel-intro-capsule, #wheelIntroSettled > .wheel-unit-wrap > .wheel-unit-capsule, #wheelIntroSettled > .wheel-unit-capsule")].filter((e) => R(e).width > 0);
+      const shown = R(head).width > 0 ? head : cap;
+      const r = R(shown), tr = R(title), kr = R(kys), hr = R(title.parentElement);
+      return {
+        headShown: R(head).width > 0, capShown: R(cap).width > 0,
+        label: shown.textContent.trim(), h: Math.round(r.height), inView: r.left >= 0 && r.right <= innerWidth + 0.5,
+        cut: shown.scrollWidth > shown.clientWidth + 1, over: de.scrollWidth > de.clientWidth,
+        headStyleIsTitle: R(head).width > 0 ? style(head) === style(title) : null,
+        headOnTitleLine: R(head).width > 0 ? Math.abs((tr.top + tr.height / 2) - (r.top + r.height / 2)) < 4 && r.left > tr.right && r.right <= hr.right + 0.5 : null,
+        kysRightAfter: R(head).width > 0 && kr.width > 0 ? kr.left > r.right && kr.left - r.right < 24 && Math.abs(kr.top - r.top) < 2 : null,
+        capTops: [...new Set(caps.map((e) => Math.round(R(e).top)))].length, capHeights: [...new Set(caps.map((e) => Math.round(R(e).height)))],
+      };
+    });
+    const tag = `${lang} ${width}px`;
+    if (width < 900) {
+      check(`${tag}: Read is on the heading line, not a capsule`, m.headShown && !m.capShown, JSON.stringify(m));
+      check(`${tag}: heading Read wears the heading's own face, size, weight and colour`, m.headStyleIsTitle === true, JSON.stringify(m));
+      check(`${tag}: heading Read sits on the title's line, to its right, inside the heading`, m.headOnTitleLine === true, JSON.stringify(m));
+      if (width < 520) check(`${tag}: Know Your Status comes right after Read on the same line`, m.kysRightAfter === true, JSON.stringify(m));
+      check(`${tag}: heading Read is a 36px tap target`, m.h === 36, JSON.stringify(m));
+    } else {
+      check(`${tag}: Read is the fourth capsule`, m.capShown && !m.headShown, JSON.stringify(m));
+      check(`${tag}: the four capsules share one row, all 36px`, m.capTops === 1 && m.capHeights.length === 1 && m.capHeights[0] === 36, JSON.stringify(m));
+    }
+    // Owner, 30 Sep 2026: "fix the tablet wrap too" -- the capsules never wrap, at any width.
+    check(`${tag}: the capsule row is one line, every capsule 36px`, m.capTops === 1 && m.capHeights.length === 1 && m.capHeights[0] === 36, JSON.stringify(m));
+    check(`${tag}: Read on screen, label not cut, no sideways scroll`, m.inView && !m.cut && !m.over, JSON.stringify(m));
+    if (width === 390) check(`${lang}: label is "${lang === "bn" ? "পড়ুন" : "Read"}"`, m.label === (lang === "bn" ? "পড়ুন" : "Read"), m.label);
+    await ctx.close();
+  }
+}
+
+// ---- I9: nothing fetched before the button is pressed
+{
+  const { ctx, page, requests } = await start({});
+  check("no juz/hizb/page/ruku file fetched before the button is pressed", dataFetches(requests).length === 0, dataFetches(requests).join(","));
+  await openList(page);
+  const got = dataFetches(requests).map((u) => u.match(/(juz|hizb|page|ruku)-index/)[1]).sort().join(",");
+  check("pressing it fetches the four tables", got === "hizb,juz,page,ruku", got);
+  await ctx.close();
+}
+
+// ---- Tabs, counts, Surah 1 row, Escape and close
+{
+  const { ctx, page } = await start({});
+  await openList(page);
+  const tabs = await page.$$eval("#readContentsTabs .rc-tab", (els) => els.map((e) => e.textContent.trim()));
+  check("five tabs in order", tabs.join("|") === "Surah|Juz|Hizb|Page|Ruku'", tabs.join("|"));
+  const counts = {};
+  for (const [k, expected] of [["surah", 114], ["juz", 30], ["hizb", 60], ["page", 604], ["ruku", 556]]) {
+    await page.click(`[data-rc-tab="${k}"]`);
+    counts[k] = await page.$$eval("#readContentsBody .rc-row", (e) => e.length);
+    check(`${k} tab has ${expected} rows`, counts[k] === expected, String(counts[k]));
+  }
+  await page.click(`[data-rc-tab="surah"]`);
+  const row1 = await page.$eval('.rc-row[data-rc-n="1"]', (e) => ({ text: e.innerText.replace(/\s+/g, " "), ar: e.querySelector(".rc-ar").textContent }));
+  check("Surah 1 reads Al-Faatiha / The Opening / 7 verses", /1 Al-Faatiha The Opening 7 verses/.test(row1.text) && row1.ar.includes("ٱلْفَاتِحَةِ"), row1.text);
+  await page.fill("#readContentsSearch", "cow");
+  check("search 'cow' leaves Al-Baqara only", (await page.$$eval("#readContentsBody .rc-row", (e) => e.length)) === 1);
+  await page.fill("#readContentsSearch", "112");
+  check("search '112' leaves one row", (await page.$$eval("#readContentsBody .rc-row", (e) => e.length)) === 1);
+  await page.keyboard.press("Escape");
+  check("Escape closes the panel", await page.$eval("#readContentsMount", (e) => e.hidden));
+  await page.click(await readBtnSel(page));
+  await page.waitForTimeout(150);
+  await page.click("#readContentsCloseBtn");
+  check("the X closes the panel", await page.$eval("#readContentsMount", (e) => e.hidden));
+  check("closing without picking changed no unit", (await state(page)).type === "ayah");
+  await ctx.close();
+}
+
+// ---- Picking rows
+{
+  const { ctx, page } = await start({});
+  await pick(page, "surah", 2);
+  let s = await state(page);
+  check("Surah 2: unit surah, surah 2, Mushaf on, immersive", s.type === "surah" && s.surah === "2" && s.mushaf && s.immersive, JSON.stringify(s));
+  check("Surah 2: no audio requested", s.played === 0, String(s.played));
+  check("Surah 2: no Firestore write", s.writes === 0, String(s.writes));
+  await ctx.close();
+}
+for (const [tab, n, type, surah, num, label] of [
+  ["page", 50, "page", "3", "50", "Page 50"],
+  ["juz", 30, "juz", "78", "30", "Juz 30"],
+  ["hizb", 1, "hizb", "1", "1", "Hizb 1"],
+  ["ruku", 10, "ruku", "2", "9", "Ruku' 10 (surah 2, 9th ruku there)"],
+]) {
+  const { ctx, page } = await start({});
+  await pick(page, tab, n);
+  const s = await state(page);
+  check(`${label} opens the right unit`, s.type === type && s.surah === surah && s.num === num && s.mushaf && s.immersive && s.played === 0 && s.writes === 0, JSON.stringify(s));
+  await ctx.close();
+}
+
+// ---- Bangla
+{
+  const { ctx, page } = await start({ lang: "bn" });
+  await openList(page);
+  const t = await page.$eval('.rc-row[data-rc-n="1"]', (e) => e.innerText.replace(/\s+/g, " "));
+  const hasBnMeaning = /[০-৯]/.test(t) && /টি আয়াত/.test(t);
+  check("Bangla Surah tab: Bengali digits and verse word", hasBnMeaning, t);
+  const meaning = await page.$eval('.rc-row[data-rc-n="1"] .rc-sub', (e) => e.textContent.trim());
+  // Architect, 30 Sep 2026: Part 2 landed (nameTranslationBn from api.quran.com),
+  // so the Bangla meaning is asserted exactly. "Present" alone passed with the
+  // English fallback too, so it could not tell whether the Bangla was used.
+  // Expected words typed by hand from the API response.
+  check("Bangla Surah tab: Surah 1's meaning is the Bangla one (সূচনা)", meaning === "সূচনা", meaning);
+  const meaning2 = await page.$eval('.rc-row[data-rc-n="2"] .rc-sub', (e) => e.textContent.trim());
+  check("Bangla Surah tab: Surah 2's meaning is the Bangla one (বকনা-বাছুর)", meaning2 === "বকনা-বাছুর", meaning2);
+  await ctx.close();
+}
+
+await browser.close();
+console.log(`\n${pass} passed, ${fail} failed`);
+process.exit(fail ? 1 : 0);

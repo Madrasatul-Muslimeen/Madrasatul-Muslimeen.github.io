@@ -630,7 +630,12 @@
      their natural widths need 459px (en) / 380px (bn) and the wheel column is
      viewport - 13px on a single-column layout, so from 480px they share one
      line in the column; below it My Status stays on the bar. */
-  @media (max-width: 479px) {
+  /* 479px -> 519px, 30 Sep 2026, Owner: "fix the tablet wrap too". Measured
+     again with the three capsules: in English Know Your Status wrapped to a
+     second row at 480-505px (the 459px estimate above was too low); from 510px
+     all three share one line. So up to 519px Know Your Status stays on the
+     heading line, beside Read, and the capsule row keeps one line. */
+  @media (max-width: 519px) {
     .wheel-heading > .my-status-head-btn { display: inline-flex; align-items: center; }
     /* 30 Sep 2026, Owner (phone screenshot): "The status button should resemble
        the text of 'Mastery Wheel', as both are in the same level". So on a
@@ -641,6 +646,29 @@
       padding: 0 0.1rem; border-radius: 6px; white-space: nowrap;
     }
     #myStatusWideBtn { display: none; }
+    .wheel-heading > #readHeadBtn + .my-status-head-btn { margin-inline-start: 0.35rem; }
+  }
+  /* 30 Sep 2026, Owner: "put Read beside Know Your Status on mobile". Read is a
+     heading-line link, in the heading's own face, pushed to the right edge --
+     beside Know Your Status on a phone. MEASURED: a fourth capsule does not fit
+     the capsule row in English until ~1000px (at 480-530 Know Your Status
+     wrapped to a second row; at 721-980 the Approach capsule's own text wrapped
+     to 43px beside 36px neighbours). So below 900px -- where the heading line
+     is shown; from 900px the wheel is a window whose title bar replaces it --
+     the capsule-row Read (#readContentsBtn) is hidden and the capsules stay
+     exactly as the Owner approved them (two on a phone, three on a tablet).
+     From 900px Read is the fourth capsule; at 900-999px the band's text is set
+     a touch smaller so all four keep one 36px line (measured). */
+  @media (min-width: 900px) and (max-width: 999px) {
+    #wheelIntroBand .wheel-intro-capsule { font-size: 0.7rem; }
+  }
+  @media (max-width: 899px) {
+    .wheel-heading > #readHeadBtn {
+      display: inline-flex; align-items: center; margin-inline-start: auto;
+      background: transparent; color: inherit; font-family: inherit; font-weight: inherit; font-size: inherit;
+      padding: 0 0.1rem; border-radius: 6px; white-space: nowrap;
+    }
+    #readContentsBtn { display: none; }
   }
 
   /* 27 Sep 2026, owner: "Enable the entire screen to move up on up scrolling,
@@ -2497,6 +2525,50 @@
     }
     .my-status-card header { border-radius: 0.65rem 0.65rem 0 0; }
   }
+  /* Issue #415 -- the Read contents list. Same sheet shape as My Status:
+     full screen on a phone, a centred reading-width window from 900px. */
+  #readContentsMount[hidden] { display: none !important; }
+  #readContentsMount { position: fixed; inset: 0; z-index: 900; display: flex; flex-direction: column; background: rgba(19,25,42,0.55); }
+  .rc-card { background: var(--card-bg); color: var(--card-text); display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; min-width: 0; }
+  .rc-card header {
+    background: #1F3A6E; color: #fff; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.6rem 0.8rem;
+  }
+  .rc-card header h2 { margin: 0; font-size: 1.05rem; }
+  .rc-tabs { display: flex; gap: 0.25rem; padding: 0.4rem 0.5rem 0; border-bottom: 1px solid var(--card-line); }
+  .rc-tab {
+    flex: 1 1 0; min-width: 0; min-height: 40px; padding: 0.25rem 0.2rem; border: 0; border-bottom: 3px solid transparent; background: none;
+    color: var(--card-text-muted); font: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer; white-space: nowrap;
+  }
+  .rc-tab[aria-selected="true"] { color: var(--card-heading); border-bottom-color: #B8862F; }
+  .rc-search { margin: 0.5rem; padding: 0.45rem 0.6rem; font-size: 0.95rem; min-height: 40px; box-sizing: border-box; width: calc(100% - 1rem); border: 1px solid var(--card-line); border-radius: 0.35rem; background: var(--card-bg-inset); color: var(--card-text); }
+  .rc-search[hidden] { display: none; }
+  .rc-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 0.5rem 0.8rem; }
+  .rc-row {
+    display: grid; grid-template-columns: 2.4rem minmax(0, 1fr) auto; gap: 0.15rem 0.6rem; align-items: center; width: 100%; min-height: 48px;
+    padding: 0.4rem 0.3rem; background: none; border: 0; border-top: 1px solid var(--card-line); text-align: left; color: inherit; font: inherit; cursor: pointer; box-sizing: border-box;
+  }
+  .rc-row:hover { background: var(--card-bg-inset); }
+  .rc-row.rc-surah { grid-template-columns: 2.4rem minmax(0, 1fr) auto auto; }
+  .rc-num { font-weight: 800; color: var(--card-heading); font-size: 0.95rem; }
+  .rc-main { min-width: 0; display: flex; flex-direction: column; }
+  .rc-name { font-weight: 700; font-size: 0.92rem; color: var(--card-heading); overflow-wrap: anywhere; }
+  .rc-sub { font-size: 0.78rem; color: var(--card-text-muted); overflow-wrap: anywhere; }
+  .rc-side { font-size: 0.78rem; color: var(--card-text-muted); text-align: right; white-space: nowrap; }
+  .rc-ar { font-family: 'Amiri', 'Scheherazade New', serif; font-size: 1.15rem; direction: rtl; text-align: right; white-space: nowrap; }
+  .rc-empty { padding: 1rem; text-align: center; color: var(--card-text-muted); }
+  /* Phone: four columns leave the names one letter wide, so the verse count
+     drops under the Arabic name and the names keep the room. */
+  @media (max-width: 519px) {
+    .rc-row.rc-surah { grid-template-columns: 1.8rem minmax(0, 1fr) auto; }
+    .rc-surah .rc-num { grid-column: 1; grid-row: 1 / span 2; }
+    .rc-surah .rc-main { grid-column: 2; grid-row: 1 / span 2; }
+    .rc-surah .rc-ar { grid-column: 3; grid-row: 1; font-size: 1.05rem; }
+    .rc-surah .rc-side { grid-column: 3; grid-row: 2; }
+  }
+  @media (min-width: 900px) {
+    #readContentsMount { align-items: center; justify-content: center; }
+    .rc-card { width: min(40rem, 92vw); max-height: 88vh; flex: 0 1 auto; border-radius: 0.65rem; overflow: hidden; box-shadow: var(--card-shadow); }
+  }
   .my-status-loading { padding: 1.2rem; text-align: center; color: var(--card-text-muted); }
   .my-status-wheel-row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; justify-content: center; }
   .my-status-list { flex: 1 1 16rem; min-width: 14rem; list-style: none; margin: 0; padding: 0; }
@@ -3825,7 +3897,7 @@
             <button type="button" id="wheelPopupMaximizeBtn" title="Maximize" aria-pressed="false">⬜</button>
           </div>
         </div>
-        <h2 class="wheel-heading"><span>Mastery Wheel</span><button type="button" id="myStatusBtn" class="my-status-head-btn">Know Your Status</button></h2>
+        <h2 class="wheel-heading"><span>Mastery Wheel</span><button type="button" id="readHeadBtn" class="my-status-head-btn" aria-haspopup="dialog">Read</button><button type="button" id="myStatusBtn" class="my-status-head-btn">Know Your Status</button></h2>
         <!-- 28 Sep 2026: on tablet/PC (>=721px) the capsule row
              (#wheelIntroSettled) is moved in here by placeWheelIntroRow(), so
              its three capsules can share one row across the whole card; on a
@@ -3909,6 +3981,12 @@
                  centred window at >=900px (the Word Card's own v08.89/#322
                  pattern). Nothing is read until this is pressed (I9); see
                  openMyStatus(). -->
+            <!-- Issue #415 -- "Read": a plain contents list (Surah / Juz / Hizb /
+                 Page / Ruku') that opens the EXISTING Read view. Nothing is
+                 fetched until it is pressed (I9). -->
+            <button type="button" id="readContentsBtn" class="wheel-intro-capsule wheel-unit-capsule" aria-haspopup="dialog">
+              <span class="wheel-unit-capsule-word">Read</span>
+            </button>
             <button type="button" id="myStatusWideBtn" class="wheel-intro-capsule wheel-unit-capsule">
               <span class="wheel-unit-capsule-word">Know Your Status</span>
             </button>
@@ -5223,6 +5301,21 @@
         </header>
         <div id="myStatusDetailBody" class="my-status-detail-body"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- Issue #415 -- the Read contents list. Rows are built on first open
+       (openReadContents()); picking one sets the unit through the same code
+       the Study options pickers use and opens the existing Read view. -->
+  <div id="readContentsMount" hidden data-keep-note-popovers>
+    <div id="readContentsCard" class="rc-card" role="dialog" aria-modal="true" aria-labelledby="readContentsTitle">
+      <header>
+        <h2 id="readContentsTitle">Read</h2>
+        <button type="button" id="readContentsCloseBtn" class="my-status-close-btn">&times;</button>
+      </header>
+      <div id="readContentsTabs" class="rc-tabs" role="tablist"></div>
+      <input type="search" id="readContentsSearch" class="rc-search" autocomplete="off" />
+      <div id="readContentsBody" class="rc-body"></div>
     </div>
   </div>
 
@@ -9787,6 +9880,166 @@
       // a second Escape then closes the sheet behind it.
       if (myStatusDetailMountEl && !myStatusDetailMountEl.hidden) { closeMyStatusDetail(); return; }
       if (myStatusMountEl && !myStatusMountEl.hidden) closeMyStatus();
+    });
+
+    // -----------------------------------------------------------------------
+    // Issue #415 -- the Read contents list: the ordinary Mushaf contents
+    // (Surah / Juz / Hizb / Page / Ruku'), one tap to read. It is NOT a reader:
+    // picking a row sets the Study Unit through the same code the Study
+    // options pickers use, turns the Mushaf tick on and calls
+    // openReadingScreen(). Reading only -- no audio, no claim, no write.
+    // Juz/Hizb/Page/Ruku' tables are fetched on first open, never at startup
+    // (I9); the surah table is already loaded for the surah picker.
+    // -----------------------------------------------------------------------
+    const readContentsMountEl = document.getElementById("readContentsMount");
+    const readContentsTabsEl = document.getElementById("readContentsTabs");
+    const readContentsBodyEl = document.getElementById("readContentsBody");
+    const readContentsSearchEl = document.getElementById("readContentsSearch");
+    const RC_TABS = [["surah", "Surah"], ["juz", "Juz"], ["hizb", "Hizb"], ["page", "Page"], ["ruku", "Ruku'"]];
+    let readContentsTab = "surah";
+    let readContentsTables = null; // { juz, hizb, page, ruku } once loaded
+    let readContentsLoading = null;
+
+    const rcEsc = (x) => String(x ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    function rcSurahName(n) {
+      return surahName(n, surahIndex.find((s) => s.surahNumber === n)?.nameEnglish);
+    }
+    const rcPoint = (s, a) => `${num(s)}:${num(a)}`;
+    function rcSpan(row) {
+      const a = row.startSurah, b = row.endSurah;
+      return a === b
+        ? t("{surah} {from}–{to}", { surah: rcSurahName(a), from: rcPoint(a, row.startAyah), to: rcPoint(b, row.endAyah) })
+        : t("{fromSurah} {from} → {toSurah} {to}", { fromSurah: rcSurahName(a), from: rcPoint(a, row.startAyah), toSurah: rcSurahName(b), to: rcPoint(b, row.endAyah) });
+    }
+    /** The row of a boundary table (sorted) that holds a given ayah: the last one starting at or before it. */
+    function rcHolder(rows, key, surah, ayah) {
+      let found = null;
+      for (const r of rows) {
+        if (r.startSurah < surah || (r.startSurah === surah && r.startAyah <= ayah)) found = r[key]; else break;
+      }
+      return found;
+    }
+    function rcRow(kind, n, cells, cls = "") {
+      return `<button type="button" class="rc-row ${cls}" data-rc-kind="${kind}" data-rc-n="${n}">${cells}</button>`;
+    }
+    const rcSimple = (n, main, side) =>
+      `<span class="rc-num">${num(n)}</span><span class="rc-main"><span class="rc-name">${rcEsc(main)}</span></span><span class="rc-side">${rcEsc(side)}</span>`;
+
+    function renderReadContentsBody() {
+      const kind = readContentsTab;
+      const isBn = getAppLang() === "bn";
+      const T = readContentsTables;
+      readContentsSearchEl.hidden = kind !== "surah";
+      let html = "";
+      if (kind === "surah") {
+        const q = parseNum(readContentsSearchEl.value).trim().toLowerCase();
+        const rows = surahIndex.filter((s) => {
+          if (!q) return true;
+          if (/^\d+$/.test(q)) return String(s.surahNumber) === q;
+          return [s.nameEnglish, s.nameTranslation, s.nameTranslationBn, s.nameArabic, rcSurahName(s.surahNumber)].some((x) => x && String(x).toLowerCase().includes(q));
+        });
+        html = rows.map((s) => rcRow("surah", s.surahNumber,
+          `<span class="rc-num">${num(s.surahNumber)}</span>` +
+          `<span class="rc-main"><span class="rc-name">${rcEsc(rcSurahName(s.surahNumber))}</span><span class="rc-sub">${rcEsc((isBn && s.nameTranslationBn) || s.nameTranslation || "")}</span></span>` +
+          `<span class="rc-side">${rcEsc(t("{n} verses", { n: num(s.ayahCount) }))}</span>` +
+          `<span class="rc-ar" lang="ar" dir="rtl">${rcEsc(s.nameArabic)}</span>`, "rc-surah")).join("");
+      } else if (kind === "juz") {
+        html = T.juz.map((r) => rcRow(kind, r.juz, rcSimple(r.juz, rcSpan(r), t("Pages {from}–{to}", { from: num(r.startPage), to: num(r.endPage) })))).join("");
+      } else if (kind === "hizb") {
+        html = T.hizb.map((r) => rcRow(kind, r.hizb, rcSimple(r.hizb, rcSpan(r), t("Juz {n}", { n: num(r.juz) })))).join("");
+      } else if (kind === "page") {
+        html = T.page.map((r) => rcRow(kind, r.page, rcSimple(r.page, rcSpan(r), t("Juz {n}", { n: num(rcHolder(T.juz, "juz", r.startSurah, r.startAyah)) })))).join("");
+      } else {
+        html = T.ruku.map((r) => rcRow(kind, r.ruku,
+          `<span class="rc-num">${num(r.ruku)}</span><span class="rc-main"><span class="rc-name">${rcEsc(rcSurahName(r.surah))}</span>` +
+          `<span class="rc-sub">${rcEsc(t("Verses {from}–{to}", { from: num(r.fromAyah), to: num(r.toAyah) }))}</span></span>` +
+          `<span class="rc-side">${rcEsc(t("Page {n}", { n: num(rcHolder(T.page, "page", r.surah, r.fromAyah)) }))}</span>`)).join("");
+      }
+      readContentsBodyEl.innerHTML = html || `<p class="rc-empty">${rcEsc(t("Nothing matches."))}</p>`;
+    }
+
+    function renderReadContents() {
+      document.getElementById("readContentsTitle").textContent = t("Read");
+      document.getElementById("readContentsCloseBtn").setAttribute("aria-label", t("Close"));
+      readContentsSearchEl.placeholder = t("Search by name or number");
+      readContentsSearchEl.setAttribute("aria-label", t("Search by name or number"));
+      readContentsTabsEl.innerHTML = RC_TABS.map(([k, label]) =>
+        `<button type="button" role="tab" class="rc-tab" data-rc-tab="${k}" aria-selected="${k === readContentsTab}">${rcEsc(t(label))}</button>`).join("");
+      renderReadContentsBody();
+    }
+
+    async function loadReadContentsTables() {
+      if (readContentsTables) return;
+      readContentsLoading ??= Promise.all([getJuzIndex(), getHizbIndex(), getPageIndex(), getRukuIndex()])
+        .then(([juz, hizb, page, ruku]) => { readContentsTables = { juz, hizb, page, ruku }; })
+        .finally(() => { readContentsLoading = null; });
+      await readContentsLoading;
+    }
+
+    async function openReadContents() {
+      readContentsMountEl.hidden = false;
+      readContentsBodyEl.innerHTML = `<p class="rc-empty">${rcEsc(t("Loading…"))}</p>`;
+      try {
+        await loadReadContentsTables();
+      } catch (error) {
+        readContentsMountEl.hidden = true;
+        reportWriteFailure(error, { what: "load the contents list" }); // I15
+        return;
+      }
+      renderReadContents();
+      document.getElementById("readContentsCloseBtn").focus();
+    }
+    function closeReadContents() { readContentsMountEl.hidden = true; }
+
+    /** Set the unit exactly as the Study options pickers do, then open Read. */
+    async function openReadContentsRow(kind, n) {
+      closeReadContents();
+      stopDrill();
+      mushafToggle.checked = true;
+      mushafToggle.dispatchEvent(new Event("change"));
+      const setType = (type) => { unitTypeSelect.value = type; unitTypeSelect.dispatchEvent(new Event("change")); };
+      const loadSurahNumber = async (surah) => {
+        if (surah === currentSurahNum) return;
+        currentSurahNum = surah;
+        surahSelect.value = String(surah);
+        await loadSurah();
+      };
+      if (kind === "surah") {
+        await loadSurahNumber(n);
+        currentAyahNum = 1;
+        if (ayahSelect.querySelector('option[value="1"]')) ayahSelect.value = "1";
+        setType("surah");
+      } else if (kind === "ruku") {
+        const row = readContentsTables.ruku.find((r) => r.ruku === n);
+        await loadSurahNumber(row.surah);
+        setType("ruku");
+        await goToUnitNumber(rukuIndexInSurah(currentSurahData.ayahs, n));
+      } else {
+        setType(kind);
+        await ensureUnitIndex(kind);
+        await goToUnitNumber(n);
+      }
+      openReadingScreen();
+    }
+
+    document.getElementById("readContentsBtn")?.addEventListener("click", openReadContents);
+    document.getElementById("readHeadBtn")?.addEventListener("click", openReadContents);
+    document.getElementById("readContentsCloseBtn")?.addEventListener("click", closeReadContents);
+    readContentsMountEl?.addEventListener("click", (e) => { if (e.target === readContentsMountEl) closeReadContents(); });
+    readContentsTabsEl?.addEventListener("click", (e) => {
+      const tab = e.target.closest("[data-rc-tab]");
+      if (!tab) return;
+      readContentsTab = tab.dataset.rcTab;
+      renderReadContents();
+      readContentsBodyEl.scrollTop = 0;
+    });
+    readContentsSearchEl?.addEventListener("input", renderReadContentsBody);
+    readContentsBodyEl?.addEventListener("click", (e) => {
+      const row = e.target.closest("[data-rc-kind]");
+      if (row) openReadContentsRow(row.dataset.rcKind, Number(row.dataset.rcN)).catch((error) => reportWriteFailure(error, { what: "open that place" }));
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && readContentsMountEl && !readContentsMountEl.hidden) closeReadContents();
     });
 
     // -----------------------------------------------------------------------

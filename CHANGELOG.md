@@ -18842,3 +18842,16 @@ Built by the Builder (issue #410, PR #413); reviewed and allocated by the Archit
 - **What is saved**: reading view ticks (Mushaf, page by page, Tajweed, WbW, Root, Derivatives), translation languages, WbW language, Arabic font, full-screen hides, end-of-unit prompt, Study Unit and optionally the unit itself, reciters, Repeat, Mode, Loop. Not the Approach.
 - **Storage**: additive `settingsPresets[]` on the existing bookmarks document; no Rules change (bookmarks need only `canRecordFor`); no startup read.
 - **Checks**: study-presets 80/0 (new, 3 mutations), study-options-play-read 62/0, rules-authorisation-executable 40/0, phone-width 217/0, panel OK, navcheck fits, behaviour 1003/4 (baseline 22g×3, 31e). Architect looked at the form and chips at 320 (bn), 390 and 1280 (en).
+
+## v09.06 — 30 Sep 2026 — Read button: a simple contents list into the Mushaf
+
+The Owner (30 Sep 2026): *"How about making it simple for a regular user? … they can choose a Surah, page, Juzz, Hijb, Ruku, it brings the Mushaf view. They just read it as traditional reading. Nothing fancy. In there we place the option to open it in Note View / Track and Approach."* After a demo: *"Go for A. Keep it read in both places"* and *"do Bangla as well whenever it's easy."*
+
+Built by the Builder (issue #415, PR #416); Part 2 and review by the Architect.
+
+- **Read button**: below 900px a heading-line link in the heading's own lettering (beside Know Your Status on a phone, the Owner's follow-up); from 900px the fourth capsule in the wheel window. Measured: four capsules did not fit in English until ~1000px, so tablets keep their three. The Study menu's Read is unchanged.
+- **Tablet wrap** (the Owner: *"fix the tablet wrap too"*): phone breakpoint 479px -> 519px; Know Your Status had wrapped to a second row at 480-505px English (pre-existing). The capsule row is now checked to be one 36px line at every width.
+- **Contents list**: Surah (number, name, meaning, Arabic name, verses, search), Juz, Hizb, Page (604), Ruku' (556).
+- **Picking a row** opens the existing Read view at that place as a full-screen Mushaf page, through the existing unit pickers and `openReadingScreen()`; no audio, no claim, no write. Juz/Hizb/Page/Ruku' tables load on first press only.
+- **Bangla meanings**: `build-surah-names-bn.js` adds `nameTranslationBn` to `surah-index.json` from api.quran.com; existing fields unchanged; the Bangla Surah tab shows them.
+- **Checks**: read-contents 232/0 (3 Builder mutations; Architect mutations on the Bangla words and the placement), landing-sections-collapse 152/0, study-options-play-read 62/0, study-presets 80/0, quran-my-status 88/0, phone-width 217/0, navcheck fits, panel OK, behaviour 1003/4 (baseline 22g×3, 31e). `landing-sections-collapse` updated in place by the Builder to scroll a heading into view before sampling its contrast (it guards against a heading sitting under the dock).

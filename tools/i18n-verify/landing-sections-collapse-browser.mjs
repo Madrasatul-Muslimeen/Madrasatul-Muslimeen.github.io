@@ -120,6 +120,11 @@ const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
 const rgbOf = (s) => s.match(/\d+(\.\d+)?/g).slice(0, 3).map(Number);
 async function sectionColour(page) {
   const btn = page.locator(".ways-group-btn").first();
+  // #415: the Read capsule adds a line on a 390px phone, which pushes the first
+  // heading down under the fixed dock, and a screenshot then samples the dock's
+  // white. Bring the heading to the middle of the screen before sampling it.
+  await page.evaluate(() => document.querySelector(".ways-group-btn").scrollIntoView({ block: "center" }));
+  await page.waitForTimeout(150);
   const info = await page.evaluate(() => {
     const b = document.querySelector(".ways-group-btn");
     return { section: getComputedStyle(b.querySelector(".ways-group-name")).color, approach: getComputedStyle(document.querySelector(".way-row .name")).color,
