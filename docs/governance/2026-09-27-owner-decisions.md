@@ -129,3 +129,9 @@ The Owner, looking at Know Your Status on a phone: *"Can you confirm me about th
 | # | Question | Owner's words | Meaning |
 |---|---|---|---|
 | 31 | Every unit in the main Know Your Status list? (units biggest first, Juz → Āyah; a unit counts when the whole unit is Achieved or Mastered, as Explore colours it; Page added everywhere, including the Approach card) | **"all yes, go ahead."** | Each Approach row shows six tiles: Juz /30 · Surah /114 · Hizb /60 · Ruku' /556 · Page /604 · Āyah /6236, Achieved + Mastered, the same pooling Explore uses (decision 7). Word-by-Word stays in words. Page joins the card's By unit rows. |
+
+## 30 Sep 2026 — where the ✍ Writing sheet button lives
+
+| # | Question | Owner's answer | Meaning |
+|---|---|---|---|
+| 32 | The ✍ button made the Read bar a line taller at 320px (Mushaf) and the Note bar a line taller at ~375–400px. Study menu, bars (accept taller), or both? | **"Both"** | **✍ Writing sheet** is a Study-menu item for every reader at every width, and the Read and Note bars show ✍ only where it costs the bar no extra line, measured in the app at runtime (what fits depends on names, language and admin-only buttons). |
