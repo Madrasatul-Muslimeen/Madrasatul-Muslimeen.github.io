@@ -1870,7 +1870,9 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
   check("30i the duplicate reciter picker is gone", listening.oldSelectGone);
   check("30i each reciter is named exactly once", listening.listCount > 0 && !listening.duplicated, JSON.stringify(listening));
   check("30i the duplicated play buttons are gone from the card",
-        listening.oldPlayGone && JSON.stringify(listening.playButtons) === '["drillPlayBtn"]', JSON.stringify(listening.playButtons));
+        listening.oldPlayGone && // #409: the card now also holds Read (open the view without sound); the point of
+        // this check -- ONE play button, no duplicate -- is unchanged.
+        JSON.stringify(listening.playButtons) === '["drillReadBtn","drillPlayBtn"]',JSON.stringify(listening.playButtons));
 
   // The transport itself, on the reading screen where the owner asked for it.
   await clickStudyPillarItem(page, "tabReadBtn");
@@ -3502,7 +3504,11 @@ console.log("\n=== 38. Shell round 26: listening ===");
   // that is the state in which the old code stopped it.
   const moved = await waitFor(page, () => Number(document.getElementById("ayahSelect").value) > 1, 15000);
   check("38d the recitation really advances ayah by ayah", moved, await ayahNow(page));
-  await clickStudyPillarItem(page, "tabReadBtn");
+  // #409: Play now opens the Read view itself, so the pillar's Read item would
+  // TOGGLE it closed. The owner's "moving from Study options to Read" is
+  // Study options' own Read button, which is what is pressed here.
+  await openStudyOptions(page);
+  await page.click("#drillReadBtn");
   await page.waitForTimeout(500);
   check("38d tapping Read mid-recitation keeps it playing",
         /Pause|থামান/.test(await playLabel(page)), await playLabel(page));
@@ -3543,7 +3549,9 @@ console.log("\n=== 38. Shell round 26: listening ===");
   const ended = await waitFor(page, () =>
     /Play|চালান/.test(document.getElementById("readPlayBtn").getAttribute("aria-label") || ""), 8000);
   check("38e the finished run leaves the button reading Play", ended, await playLabel(page));
-  await page.click("#drillPlayBtn");
+  // #409: the first Play left Study options for the reading view, so the second
+  // press is the reading screen's own Play (same playCurrentSelection()).
+  await page.click("#readPlayBtn");
   const restarted = await waitFor(page, () => document.getElementById("ayahSelect").value === "1", 5000);
   check("38e pressing Play again starts the unit over rather than running on",
         restarted, await ayahNow(page));

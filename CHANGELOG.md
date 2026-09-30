@@ -18817,3 +18817,15 @@ Three Owner corrections from phone screenshots, made by the Architect.
 - **Word Card, Basic Arabic** (*"Move the derivatives above n counts below. (Derivatives are for learning, occurrences are just info)"*): *Derived forms of this root* now comes straight after Dictionary Word / Root / Part of speech, with the root-linked, Dictionary-Word and share-of-Qur'an lines below it.
 - **Checks**: landing-sections-collapse 152/0 (ring vs disc and lettering contrast, both looks; the old badge fails 8), quran-word-card 38/0 (order check; the old order fails it), heading-line probe 320–479px, both languages and looks; quran-my-status 88/0, approach-short-names 70/0, catalogue-tabs 56/0, card-look 96/0, phone-width 217/0, lemma-occurrences 50/0, word-card-segments 40/0, quran-word-card-rendered 134/2 (TLS).
 - **Found, not caused here, fixed**: explore-hizb-view-browser died the same way on `main`, waiting for exactly 30 slices where Explore's Juz view has drawn rings (144) since v08.105. It now counts the Juz ring (`data-ring-kind="juz"`) and taps Juz 1 on that ring: 80/0. Also: quran-word-card-form-meaning 288/0.
+
+## v09.04 — 30 Sep 2026 — Study options: Play opens the chosen view; new Read button
+
+The Owner (29 Sep 2026): *"In the option, when play button is pressed, the selected view should appear, which is not happening now. Fix. … Should there be another button when user doesnt choose listening but reading, so that pressing that button would take user to the desired/ selected view?"*
+
+Built by the Builder (issue #409, PR #411); reviewed and allocated by the Architect.
+
+- **One route into Read**: `openReadingScreen()` (extracted unchanged from the Read tab) is used by the Study menu's Read item, Study options' Play, and the new Read button.
+- **▶ Play**: closes Options, opens the view at the selected unit and mode, and starts the recitation in the same tap.
+- **📖 Read**: the same without sound; enabled with no reciter ticked; leaves audio already playing alone.
+- **Row**: Loop + Read + Play are one cluster that never shrinks; below 480px it takes its own line, two equal 40px buttons (fixes the Loop overlap).
+- **Checks**: study-options-play-read 62/0 (new, 3 mutations), phone-width 217/0, panel OK, behaviour 1003/4 baseline (30i, 38d, 38e updated in place). Architect looked at the row (bn 320, en 1280) and the opened view.
