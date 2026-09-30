@@ -3117,6 +3117,11 @@ export const BN = {
   "Save picture": "ছবি সংরক্ষণ করুন",
   "Print A4": "এ৪-এ প্রিন্ট করুন",
   "Close without saving your writing?": "লেখা সংরক্ষণ না করেই বন্ধ করবেন?",
+  // 30 Sep 2026 -- the Writing sheet's hide/show toolbar button.
+  "Tools": "সরঞ্জাম",
+  "Hide": "লুকান",
+  "Show the tools": "সরঞ্জাম দেখান",
+  "Hide the tools": "সরঞ্জাম লুকান",
   "Keep writing": "লিখতে থাকুন",
   "Loading the writing sheet…": "লিখন অনুশীলনের পাতা লোড হচ্ছে…",
   "Couldn't open the writing sheet.": "লিখন অনুশীলনের পাতা খোলা যায়নি।",
