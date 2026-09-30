@@ -4374,6 +4374,10 @@
                bookmark button's own precedent, because it applies to every
                unit type and to flow views as well as a single āyah. -->
           <button type="button" class="secondary qr-ico" id="readCompleteBtn" aria-label="Mark this reading complete" title="Mark this reading complete">✓</button>
+          <!-- Issue #421 -- the Writing sheet: this unit's Mushaf pages as an A4
+               tracing sheet. Every reader, every unit type. Nothing is loaded
+               until it is pressed (the module is imported on the press). -->
+          <button type="button" class="secondary qr-ico" id="readWritingBtn" aria-label="Writing sheet" title="Writing sheet">✍</button>
           <!-- Announcement only. `position:absolute` with a 1px clip keeps it
                OUT of the layout entirely -- #readBar is this app's densest row
                and a message that took width could wrap it -- while still being
@@ -9086,6 +9090,47 @@
     exploreFullscreenBtn.addEventListener("click", toggleExploreFullscreen);
 
     hideChromeBtn.addEventListener("click", advanceReadChrome);
+
+    /** Issue #421 -- the ✍ button on the Read bar and the Note bar. Works out
+        every Mushaf page holding an āyah of the CURRENT Study Unit (any unit
+        type) and the unit's own āyah range, then opens the Writing sheet. The
+        module is imported HERE, on the press, so nothing about it (nor the
+        layout data, nor a page font) loads before then (I9). Juz and Hizb are
+        Quran-wide, so their pages and range come from the boundary tables
+        rather than from this surah alone. */
+    async function openWritingSheetForCurrentUnit() {
+      if (!currentSurahData) return;
+      try {
+        const info = currentUnitInfo();
+        await ensureMushafData();
+        let pages, range = null;
+        if (info.unitType === "page") {
+          pages = [currentUnitNumber()];
+        } else if (info.unitType === "juz" || info.unitType === "hizb") {
+          const rows = await ensureUnitIndex(info.unitType);
+          const row = rows.find((r) => r[info.unitType] === currentUnitNumber());
+          range = { from: [row.startSurah, row.startAyah], to: [row.endSurah, row.endAyah] };
+          const ends = getMushafPagesForKeys([`${row.startSurah}:${row.startAyah}`, `${row.endSurah}:${row.endAyah}`]);
+          pages = [];
+          for (let p = ends[0]; p <= ends[ends.length - 1]; p++) pages.push(p);
+        } else {
+          const [from, to] = currentUnitAyahBounds();
+          range = { from: [currentSurahNum, from], to: [currentSurahNum, to] };
+          const keys = [];
+          for (let a = from; a <= to; a++) keys.push(`${currentSurahNum}:${a}`);
+          pages = getMushafPagesForKeys(keys);
+        }
+        const { openWritingSheet } = await import("./js/writing-sheet.js");
+        await openWritingSheet({
+          pages, range,
+          surahArabicName: (n) => surahIndex.find((s) => s.surahNumber === n)?.nameArabic ?? null,
+        });
+      } catch (err) {
+        console.warn("Writing sheet failed to open:", err);
+        alert(t("Couldn't open the writing sheet."));
+      }
+    }
+    document.getElementById("readWritingBtn").addEventListener("click", openWritingSheetForCurrentUnit);
 
     // Fix round -- THE WHOLE-SCREEN TAP IS GONE, on both the reading screen
     // and the Note view. The owner's own words: "disable a single tapping for
@@ -18015,6 +18060,7 @@
         onPrevAyah: () => stepNoteAyah(-1),
         onNextAyah: () => stepNoteAyah(1),
         onToggleFullscreen: toggleNoteFullscreen,
+        onWritingSheet: () => openWritingSheetForCurrentUnit(),
         onToggleWbw: toggleNoteWbw,
         onToggleRoots: toggleNoteRoots,
         onToggleDerivatives: toggleNoteDerivatives,

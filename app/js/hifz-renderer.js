@@ -177,6 +177,36 @@ export function mushafPageAyahGroups(pageNum) {
   return groups;
 }
 
+// Issue #421 -- the Writing sheet (writing-sheet.js) draws the SAME printed
+// pages onto canvases. It reuses this file's layout data and font loaders
+// rather than copying them; these four exports are read-only windows onto what
+// is already here, and none of them fetches anything until it is called.
+/** One page's printed lines exactly as the JSON has them, or null. Call after ensureMushafData() resolves. */
+export function getMushafPageLines(pageNum) {
+  return mushafData?.[String(pageNum)] ?? null;
+}
+
+/** The position of an ayah's own end-marker glyph (its highest w.loc position), or 0. */
+export function getAyahEndMarkerPosition(ayahKey) {
+  return (ayahMaxWordPosition && ayahMaxWordPosition[ayahKey]) || 0;
+}
+
+/** Loads a page's QCF V2 font and resolves { family, ok }. */
+export async function loadMushafPageFont(pageNum) {
+  const r = await ensurePageFont(pageNum);
+  return { family: `hifz-p${pageNum}`, ok: !!r.ok };
+}
+
+/** The one ligature character that draws surah `n`'s print banner in the 'surah-header' font ('' if unknown). */
+export function surahHeaderGlyph(n) {
+  return SURAH_HEADER_GLYPHS[Number(n) - 1] || "";
+}
+
+/** Loads the surah-banner glyph font and resolves whether it is usable (family 'surah-header'). */
+export function loadSurahHeaderFont() {
+  return ensureHeaderFont();
+}
+
 const fontPromises = new Map();
 // Issue #332 Part B -- the Tajweed font, cached separately by page number.
 // Never populated unless the toggle is actually turned on (I9): nothing here
