@@ -124,10 +124,13 @@ async function sectionColour(page) {
     const b = document.querySelector(".ways-group-btn");
     return { section: getComputedStyle(b.querySelector(".ways-group-name")).color, approach: getComputedStyle(document.querySelector(".way-row .name")).color,
              box: getComputedStyle(b.querySelector(".ways-count")).color,
-             all: getComputedStyle(document.querySelector(".ways-toggle-all")).color };
+             all: getComputedStyle(document.querySelector(".ways-toggle-all")).color,
+             secBadge: getComputedStyle(b.querySelector(".ways-sec-badge")).color,
+             secBadgeBg: getComputedStyle(b.querySelector(".ways-sec-badge")).backgroundColor,
+             numBadgeBg: getComputedStyle(document.querySelector(".way-row .badge")).backgroundColor };
   });
   // hide every glyph AND the box's border, so what is left is the paint behind the text
-  await page.addStyleTag({ content: ".ways-group-btn *, .ways-group-btn { color: transparent !important; } .ways-count { border-color: transparent !important; } .ways-toggle-all { color: transparent !important; border-color: transparent !important; }" });
+  await page.addStyleTag({ content: ".ways-group-btn *, .ways-group-btn { color: transparent !important; } .ways-count { border-color: transparent !important; } .ways-toggle-all { color: transparent !important; border-color: transparent !important; } .ways-sec-badge { border-color: transparent !important; }" });
   const shot = async (sel, inset) => {
     const r = await page.locator(sel).first().boundingBox();
     const png = (await page.screenshot({ clip: { x: r.x + inset, y: r.y + inset, width: r.width - 2 * inset, height: r.height - 2 * inset } })).toString("base64");
@@ -143,9 +146,11 @@ async function sectionColour(page) {
   const namePx = await shot(".ways-group-btn .ways-group-name", 0);
   const boxPx = await shot(".ways-group-btn .ways-count", 2);
   const allPx = await shot(".ways-toggle-all", 2);
+  const secPx = await shot(".ways-group-btn .ways-sec-badge", 5);
   await page.evaluate(() => { document.querySelectorAll("style").forEach((s) => s.textContent.startsWith(".ways-group-btn *, .ways-group-btn { color: transparent") && s.remove()); });
   const worstOf = (col, px) => Math.min(...px.map((p) => ratio(rgbOf(col), p)));
-  return { section: info.section, approach: info.approach, worst: worstOf(info.section, namePx), boxWorst: worstOf(info.box, boxPx), allWorst: worstOf(info.all, allPx) };
+  return { section: info.section, approach: info.approach, worst: worstOf(info.section, namePx), boxWorst: worstOf(info.box, boxPx), allWorst: worstOf(info.all, allPx), secWorst: worstOf(info.secBadge, secPx),
+           secBadgeBg: info.secBadgeBg, numBadgeBg: info.numBadgeBg };
 }
 
 for (const lang of ["en", "bn"]) {
@@ -192,6 +197,10 @@ for (const lang of ["en", "bn"]) {
       check(`${tag} [${look}] the count box text contrast >= 4.5:1 too (${c.boxWorst.toFixed(2)})`, c.boxWorst >= 4.5, JSON.stringify(c));
       // Architect review of #407: the v08.117 Open all button kept the Night gold in Light (about 1.4:1 on white)
       check(`${tag} [${look}] the Open all button text contrast >= 4.5:1 (${c.allWorst.toFixed(2)})`, c.allWorst >= 4.5, JSON.stringify(c));
+      // Owner, 30 Sep 2026: "Either the S circles or the Approaches numbers circle should be distinctive in color, not the same."
+      check(`${tag} [${look}] the S badge is not filled like the Approach number disc (${c.secBadgeBg} vs ${c.numBadgeBg})`,
+        c.secBadgeBg !== c.numBadgeBg && c.numBadgeBg !== "rgba(0, 0, 0, 0)", JSON.stringify([c.secBadgeBg, c.numBadgeBg]));
+      check(`${tag} [${look}] the S badge lettering contrast >= 4.5:1 (${c.secWorst.toFixed(2)})`, c.secWorst >= 4.5, JSON.stringify(c));
       if (width === 390 || width === 1280) await page.screenshot({ path: `/tmp/landing-sections-${lang}-${width}-${look}.png` });
     }
     await page.evaluate(async () => { (await import("/app/js/prefs.js")).setCardLook("night"); });

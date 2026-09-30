@@ -615,6 +615,14 @@
      line in the column; below it My Status stays on the bar. */
   @media (max-width: 479px) {
     .wheel-heading > .my-status-head-btn { display: inline-flex; align-items: center; }
+    /* 30 Sep 2026, Owner (phone screenshot): "The status button should resemble
+       the text of 'Mastery Wheel', as both are in the same level". So on a
+       phone it wears the heading's own face, weight, size and colour -- no
+       pill -- and keeps its 36px tap height. */
+    .wheel-heading > .my-status-head-btn {
+      background: transparent; color: inherit; font-family: inherit; font-weight: inherit; font-size: inherit;
+      padding: 0 0.1rem; border-radius: 6px; white-space: nowrap;
+    }
     #myStatusWideBtn { display: none; }
   }
 
@@ -944,7 +952,10 @@
      so it is not mistaken for an Approach name. */
   .ways-sec-badge { flex: 0 0 auto; min-width: 30px; height: 30px; padding: 0 4px; box-sizing: border-box; border-radius: 15px;
                     display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;
-                    color: #241a06; background: #C9A24B; letter-spacing: 0; text-transform: none; white-space: nowrap; }
+                    color: #ecd49a; background: transparent; border: 2px solid #C9A24B; letter-spacing: 0; text-transform: none; white-space: nowrap; }
+  /* 30 Sep 2026, Owner: the S circle and the Approach number circle must not look
+     the same. The Approach number stays a FILLED gold disc; the section badge is a
+     hollow gold RING with gold lettering, in the section name's own colour. */
   .ways-count { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 5px;
                 margin-inline-start: 6px; box-sizing: border-box; border-radius: 4px; vertical-align: middle;
                 border: 1px solid #C9A24B; color: #ecd49a; font-size: 11px; font-weight: 700; letter-spacing: 0; text-transform: none; }
@@ -3787,7 +3798,7 @@
             <button type="button" id="wheelPopupMaximizeBtn" title="Maximize" aria-pressed="false">⬜</button>
           </div>
         </div>
-        <h2 class="wheel-heading"><span>Mastery Wheel</span><button type="button" id="myStatusBtn" class="my-status-head-btn">My Status</button></h2>
+        <h2 class="wheel-heading"><span>Mastery Wheel</span><button type="button" id="myStatusBtn" class="my-status-head-btn">Know Your Status</button></h2>
         <!-- 28 Sep 2026: on tablet/PC (>=721px) the capsule row
              (#wheelIntroSettled) is moved in here by placeWheelIntroRow(), so
              its three capsules can share one row across the whole card; on a
@@ -3872,7 +3883,7 @@
                  pattern). Nothing is read until this is pressed (I9); see
                  openMyStatus(). -->
             <button type="button" id="myStatusWideBtn" class="wheel-intro-capsule wheel-unit-capsule">
-              <span class="wheel-unit-capsule-word">My Status</span>
+              <span class="wheel-unit-capsule-word">Know Your Status</span>
             </button>
           </div>
           <div id="wheelStageWrap" class="wheel-stage-wrap wheel-veiled">
@@ -5148,7 +5159,7 @@
   <div id="myStatusMount" hidden data-keep-note-popovers>
     <div id="myStatusCard" class="my-status-card">
       <header>
-        <h2 id="myStatusTitle">My Status</h2>
+        <h2 id="myStatusTitle">Know Your Status</h2>
         <button type="button" id="myStatusCloseBtn" class="my-status-close-btn">&times;</button>
       </header>
       <div id="myStatusBody" class="my-status-body"></div>
@@ -9418,7 +9429,7 @@
         // `progress`), on the Not-started navy.
         return { key: trackable.id, number: num(approachNo(trackable)), shortLabel: wheelShortLabel(trackable), statusId: "not_started", fill: STATUS_COLORS.not_started, progress: ratio, progressFill: STATUS_COLORS.mastered, label: name, title: `${name} — ${num(percentRounded(ratio, 1))}%` };
       });
-      const wheelHtml = renderScopedWheel(items, { centerLabel: t("My Status"), centerSub: t("Whole Quran") });
+      const wheelHtml = renderScopedWheel(items, { centerLabel: t("Know Your Status"), centerSub: t("Whole Quran") });
       const rows = quranTrackables.map((trackable) => {
         const summary = cache.summaries.get(trackable.id);
         const headline = myStatusHeadlineText(trackable.id, summary, cache.wordTotals);
@@ -9681,7 +9692,7 @@
       myStatusOpenTrackableId = null;
     }
 
-    if (myStatusCloseBtn) myStatusCloseBtn.setAttribute("aria-label", t("Close My Status"));
+    if (myStatusCloseBtn) myStatusCloseBtn.setAttribute("aria-label", t("Close Know Your Status"));
     if (myStatusDetailCloseBtn) myStatusDetailCloseBtn.setAttribute("aria-label", t("Close"));
     document.getElementById("myStatusWideBtn")?.addEventListener("click", openMyStatus);
     document.getElementById("myStatusBtn")?.addEventListener("click", openMyStatus);
