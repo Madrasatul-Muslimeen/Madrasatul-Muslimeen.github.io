@@ -9172,7 +9172,10 @@
     window.addEventListener("resize", fitNoteWriting);
     // renderNoteViewNow() rebuilds the whole Note view, bar included, so
     // re-fit after every rebuild.
-    new MutationObserver(() => requestAnimationFrame(fitNoteWriting)).observe(noteView, { childList: true });
+    new MutationObserver(() => requestAnimationFrame(fitNoteWriting)).observe(noteView, { childList: true, subtree: true });
+    // The Note view is often rebuilt while still hidden (nothing measurable),
+    // so also re-fit whenever it changes size -- which includes appearing.
+    if (typeof ResizeObserver === "function") new ResizeObserver(() => fitNoteWriting()).observe(noteView);
 
     // Fix round -- THE WHOLE-SCREEN TAP IS GONE, on both the reading screen
     // and the Note view. The owner's own words: "disable a single tapping for
@@ -18219,6 +18222,7 @@
         noteApproachCardOpen = noteView.querySelector('[data-note-field="approach"] .note-field-body').style.display !== "none";
       });
       wireNotePickerBar();
+      fitNoteWriting(); // issue #421 -- the ✍ button only where the bar can hold it
       if (showApproach) wireApproachEmbed(info);
       wireAsmaXNoteFields(unitKey);
       // PC popup: title bar text + side pane, every render/nav step. A no-op

@@ -72,8 +72,13 @@ const setUnit = (page, o) => page.evaluate(async (o) => {
   if (o.from) { fire(document.getElementById("rangeFromSelect"), o.from); fire(document.getElementById("rangeToSelect"), o.to); await new Promise((r) => setTimeout(r, 300)); }
 }, o);
 const sheetPages = (page) => page.evaluate(() => [...document.querySelectorAll("#writingSheet .ws-page")].map((e) => Number(e.dataset.page)));
+// Updated in place, Architect, 30 Sep 2026 ("Both"): the bar's ✍ is shown only
+// where it fits, so open through it when it is on screen and through the Study
+// menu's ✍ Writing sheet otherwise -- both call the same function.
 const openSheet = async (page) => {
-  await page.click("#readWritingBtn");
+  const onBar = await page.evaluate(() => (document.getElementById("readWritingBtn")?.getBoundingClientRect().width ?? 0) > 0);
+  if (onBar) await page.click("#readWritingBtn");
+  else { await page.click("#tabStudyBtn"); await page.click("#tabWritingBtn"); }
   await page.waitForFunction(() => !!document.querySelector("#writingSheet .ws-page[data-painted]"), null, { timeout: 15000 });
   await page.waitForTimeout(250);
 };
@@ -393,7 +398,15 @@ for (const lang of ["en", "bn"]) {
     await unbare(page);
     await page.waitForTimeout(200);
     const r = await measureBar(page, "#readBar", "#readWritingBtn");
-    check(`[${lang} ${width}] Read bar has ✍, same height and same number of lines as without it`, r.withBtn.shown && r.withBtn.h === r.without.h && r.withBtn.lines === r.without.lines, JSON.stringify(r));
+    // Updated in place, Architect, 30 Sep 2026 -- the Owner's answer "Both":
+    // ✍ lives in the Study menu for everyone, and on the bar only where it
+    // costs the bar no extra line. So the rule is "the bar never grows", with
+    // a positive control that ✍ really is on the bar where there is room
+    // (at 768px and up), so a fit that always hid it could not pass.
+    check(`[${lang} ${width}] Read bar is never taller or longer with ✍ (shown only where it fits)`, r.withBtn.h === r.without.h && r.withBtn.lines === r.without.lines, JSON.stringify(r));
+    if (width >= 768) check(`[${lang} ${width}] positive control: ✍ is on the Read bar where there is room`, r.withBtn.shown, JSON.stringify(r));
+    const menuItem = await page.evaluate(() => { const b = document.getElementById("tabWritingBtn"); return b ? b.textContent.trim() : null; });
+    check(`[${lang} ${width}] the Study menu has ✍ Writing sheet`, lang === "bn" ? menuItem === "✍ লিখন অনুশীলনের পাতা" : menuItem === "✍ Writing sheet", menuItem);
     await page.evaluate(() => document.getElementById("readWritingBtn") && void 0);
     // Note view bar
     await page.evaluate(() => document.getElementById("tabStudyBtn").click());
@@ -404,8 +417,10 @@ for (const lang of ["en", "bn"]) {
     });
     await page.waitForFunction(() => !!document.querySelector("#noteView .note-bar2 [data-note-writing]"), null, { timeout: 5000 }).catch(() => {});
     if (noted && await page.evaluate(() => !!document.querySelector("#noteView .note-bar2 [data-note-writing]"))) {
+      await page.waitForTimeout(250); // the fit runs after the Note view's own rebuild
       const n = await measureBar(page, "#noteView .note-bar2", "#noteView [data-note-writing]");
-      check(`[${lang} ${width}] Note bar has ✍, same height and same number of lines as without it`, n.withBtn.shown && n.withBtn.h === n.without.h && n.withBtn.lines === n.without.lines, JSON.stringify(n));
+      check(`[${lang} ${width}] Note bar is never taller or longer with ✍ (shown only where it fits)`, n.withBtn.h === n.without.h && n.withBtn.lines === n.without.lines, JSON.stringify(n));
+      if (width >= 768) check(`[${lang} ${width}] positive control: ✍ is on the Note bar where there is room`, n.withBtn.shown, JSON.stringify(n));
     } else {
       check(`[${lang} ${width}] Note bar reachable (control)`, false, "note view did not open");
     }
