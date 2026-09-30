@@ -113,3 +113,11 @@ The Architect's demo: https://claude.ai/artifact/BSZNHsskcZzu5fhKjfi7wj (issue #
 |---|---|---|---|
 | 28 | Where Read sits on the phone heading line. | **"Place Read button in the middle of the gap. It may look elegant if you put dot or a \| like bar in between those buttons, whichever looks nicer."** | Below 520px: *Mastery Wheel*, then Read exactly midway to *Know Your Status*, with a thin \| drawn midway between Read and Know Your Status. The Architect chose the bar over the dot after looking at both (a dot read as a stray speck). Released v09.07. |
 | 29 | What a tap on an Approach slice (or list row) opens. | **"Clicking on the approach slice at the landing wheel brings here, asking for another click. Why not straight to the view it is meant for?"** | The Note view opens with that Approach's Track card already unfolded, the tapped Approach chosen, and scrolled into view. Released v09.07. |
+
+## 30 Sep 2026 — the writing sheet (issue #421)
+
+The Architect's demo, five versions: https://claude.ai/artifact/NADouD4uotBxcnEHCipqRE
+
+| # | Question | Owner's words | Meaning |
+|---|---|---|---|
+| 30 | A tracing view for the Arabic Writing Approach (a photo of a tracing Mushaf). | **"Unit should be all. Letters both combined. Space extra"**, then **"make outline more wider but thinner liner … Make it everywhere"**, then **"the size of the text cannot break the Mushaf structure/ placement of Ayat and words. Make every page printable in A4 size paper. … writing over the touch screen and user be able to save it in their phone (not in app)? … make the inside hollow with very thinner outline"**, then **"OK, go ahead with the writing sheet, but i think the text need to be more lighter."** | A ✍ Writing sheet button on the Read and Note views, for every reader and Approach and every unit. It opens the unit's real Mushaf pages (the printed 15 lines and words per line, never re-flowed; size scales the page), A4-shaped, hollow letters with a very thin light outline (#b4ab96), dark āyah numbers, ruled lines. Write with a finger or stylus; Save picture puts a PNG on the phone and nothing is stored in the app; Print A4 prints one Mushaf page per A4 sheet. |
