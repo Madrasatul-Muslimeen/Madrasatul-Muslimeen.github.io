@@ -134,7 +134,13 @@ for (const [tab, n, type, surah, num, label] of [
   const hasBnMeaning = /[০-৯]/.test(t) && /টি আয়াত/.test(t);
   check("Bangla Surah tab: Bengali digits and verse word", hasBnMeaning, t);
   const meaning = await page.$eval('.rc-row[data-rc-n="1"] .rc-sub', (e) => e.textContent.trim());
-  check("Bangla Surah tab meaning line is present (English fallback when nameTranslationBn is absent)", meaning.length > 0, meaning);
+  // Architect, 30 Sep 2026: Part 2 landed (nameTranslationBn from api.quran.com),
+  // so the Bangla meaning is asserted exactly. "Present" alone passed with the
+  // English fallback too, so it could not tell whether the Bangla was used.
+  // Expected words typed by hand from the API response.
+  check("Bangla Surah tab: Surah 1's meaning is the Bangla one (সূচনা)", meaning === "সূচনা", meaning);
+  const meaning2 = await page.$eval('.rc-row[data-rc-n="2"] .rc-sub', (e) => e.textContent.trim());
+  check("Bangla Surah tab: Surah 2's meaning is the Bangla one (বকনা-বাছুর)", meaning2 === "বকনা-বাছুর", meaning2);
   await ctx.close();
 }
 
