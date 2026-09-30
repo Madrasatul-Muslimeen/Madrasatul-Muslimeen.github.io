@@ -649,3 +649,4 @@ total). Allocated by the MMSA Architect.
 09.03: S ring badge; Know Your Status; derived forms above the counts. Allocated by the MMSA Architect.
 09.04: Study options: Play opens the chosen view; new Read button (#409). Allocated by the MMSA Architect.
 09.05: Study options: named presets (#410). Allocated by the MMSA Architect.
+09.06: Read button: contents list into the Mushaf (#415). Allocated by the MMSA Architect.
