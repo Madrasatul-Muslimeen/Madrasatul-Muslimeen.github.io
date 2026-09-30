@@ -505,6 +505,11 @@ export function renderNoteView({
           </div>
         </div>
       </div>
+      <div class="approach-bar is-note" data-note-approach-bar role="group" aria-label="${t("Approach, progress and status")}">
+        <button type="button" class="approach-bar-btn" data-note-ab="take">${t("Take an Approach")}</button>
+        <button type="button" class="approach-bar-btn" data-note-ab="record">${t("Record Your Progress")}</button>
+        <button type="button" class="approach-bar-btn" data-note-ab="status">${t("Know Your Status")}</button>
+      </div>
 
       <div class="note-palette" data-note-palette>
         <span class="note-palette-label">${t("Edit palette — formats the Notes field only")}</span>
@@ -886,6 +891,7 @@ export function attachNoteViewHandlers(container, callbacks) {
   view.querySelector("[data-note-next-ayah]")?.addEventListener("click", () => callbacks.onNextAyah?.());
   view.querySelector("[data-note-fullscreen]")?.addEventListener("click", () => callbacks.onToggleFullscreen?.());
   view.querySelector("[data-note-writing]")?.addEventListener("click", () => callbacks.onWritingSheet?.());
+  view.querySelectorAll("[data-note-ab]").forEach((b) => b.addEventListener("click", () => callbacks.onApproachBar?.(b.dataset.noteAb)));
   view.querySelector("[data-note-open-read]")?.addEventListener("click", () => callbacks.onOpenInReadView?.());
   view.querySelectorAll("[data-note-wide-open]").forEach((btn) => {
     btn.addEventListener("click", () => callbacks.onOpenWideNote?.(btn.dataset.noteWideOpen));
