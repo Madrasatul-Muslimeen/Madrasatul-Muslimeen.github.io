@@ -81,7 +81,7 @@ function rewriteGstaticImport(source, importLine, label) {
 }
 
 function rewriteSpecifier(source, specifier, replacementUrl, label) {
-  const pattern = new RegExp(`from "${specifier.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`);
+  const pattern = new RegExp(`from "${specifier.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`, "g"); // global: note-foundation.js imports ./envelope.js on two lines (#434)
   assert.match(source, pattern, `${label}: its "${specifier}" specifier moved -- update this loader`);
   return source.replace(pattern, `from "${replacementUrl}"`);
 }

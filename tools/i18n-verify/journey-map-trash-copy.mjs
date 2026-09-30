@@ -115,7 +115,9 @@ foundation = foundation
   .replace(/import \{[\s\S]*?\} from "https:\/\/www\.gstatic\.com[^"]*";/, "const { collection, doc, documentId, getDoc, getDocs, limit, orderBy, query, startAfter, where } = {};")
   .replace(/import \{ TENANT \} from "\.\/collections\.js";/, 'const TENANT = { NOTES: "notes", NOTE_REVISIONS: "noteRevisions", NOTE_FOLDERS: "noteFolders", NOTE_PLACEMENTS: "notePlacements" };')
   .replace(/import \{ folderTreeRefusal, journeyFolder \} from "\.\/journey-map-contract\.js";/, `import { folderTreeRefusal, journeyFolder } from "${contractUrl}";`)
-  .replace(/import \{[^}]*\} from "\.\/envelope\.js";/, "const { commitEnvelopeBatch, createDocument, runEnvelopeTransaction } = globalThis.__env;");
+  // two import lines today (the original is kept byte-identical for other suites)
+  .replace(/import \{ createDocument, runEnvelopeTransaction \} from "\.\/envelope\.js";/, "const { createDocument, runEnvelopeTransaction } = globalThis.__env;")
+  .replace(/import \{ commitEnvelopeBatch \} from "\.\/envelope\.js";/, "const { commitEnvelopeBatch } = globalThis.__env;");
 assert.ok(!/from "\.\//.test(foundation), "a foundation import was not rewritten");
 const docs = { notes: new Map(), revs: [] };
 globalThis.__env = {

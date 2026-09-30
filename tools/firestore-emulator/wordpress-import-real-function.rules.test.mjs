@@ -67,7 +67,7 @@ function gstatic(src, names, label) {
   return src.replace(GSTATIC, `import { ${names} } from "${fsPkg}";`);
 }
 function spec(src, from, to, label) {
-  const re = new RegExp(`from "${from.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`);
+  const re = new RegExp(`from "${from.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`, "g"); // global: note-foundation.js imports ./envelope.js on two lines (#434)
   assert.match(src, re, `${label}: "${from}" import moved -- update this loader`);
   return src.replace(re, `from "${to}"`);
 }
