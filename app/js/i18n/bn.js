@@ -3085,4 +3085,13 @@ export const BN = {
   "Page: {n} printed pages": "পৃষ্ঠা: {n}টি ছাপা পৃষ্ঠা", // ?
   "Ruku': {n}, in the middle": "রুকু': {n}টি, মাঝখানে", // ?
   "Āyah: {n}, around them": "আয়াত: {n}টি, চারপাশে", // ?
+  // Issue #410 -- saved Study-options settings (named presets).
+  "Save these settings": "এই সেটিংস সংরক্ষণ করুন",
+  "Name these settings": "এই সেটিংসের নাম দিন",
+  "Keep this unit": "এই একক রাখুন",
+  "Saved settings": "সংরক্ষিত সেটিংস",
+  "Saved: {name}": "সংরক্ষিত: {name}",
+  "Applied: {name}. Press Read or Play below.": "প্রয়োগ হয়েছে: {name}। নিচে পড়ুন বা চালান চাপুন।",
+  "Rename or remove {name}": "{name} এর নাম বদলান বা সরান",
+  "Pick a student first.": "আগে একজন শিক্ষার্থী বেছে নিন।",
 };

@@ -64,7 +64,7 @@
 
 import {
   getBookmarks, rootFolders, childFolders, bookmarksInFolder, unfiledBookmarks, groupBookmarksByPerson,
-  groupBookmarksByModule,
+  groupBookmarksByModule, livePresets,
 } from "./bookmarks.js";
 import { MODULE_PAGES, MODULE_LABELS } from "./continue-strip.js";
 import {
@@ -189,7 +189,7 @@ function controlsHtml() {
  * (about.html, taglines.html) leave it out and this file falls back to
  * fetching it, once, and only if someone actually selects person grouping.
  */
-export function mountBookmarkMenu(navBarEl, { db, getTenantId, getPersonId, getBookmarksDoc = null, getRoster = null }) {
+export function mountBookmarkMenu(navBarEl, { db, getTenantId, getPersonId, getBookmarksDoc = null, getRoster = null, onApplyPreset = null }) {
   const details = navBarEl.querySelector(".nav-cat-bookmark");
   const listEl = navBarEl.querySelector("#navBookmarkList");
   if (!details || !listEl) return;
@@ -212,9 +212,22 @@ export function mountBookmarkMenu(navBarEl, { db, getTenantId, getPersonId, getB
     }
   }
 
+  // Issue #410 -- a page that can APPLY a saved Study-options preset (only
+  // the Quran page today) passes onApplyPreset; every other page omits it and
+  // sees no such group. Rows are buttons, not links: applying a preset changes
+  // settings on the page the reader is already on.
+  function presetsHtml(bookmarksDoc, expanded) {
+    if (!onApplyPreset) return "";
+    const rows = livePresets(bookmarksDoc)
+      .map((p) => `<button type="button" class="nav-bm-link nav-bm-preset" data-bm-nav-preset="${escapeHtml(p.id)}">${escapeHtml(p.name)}</button>`)
+      .join("");
+    return groupHtml("☆", t("Saved settings"), rows, expanded);
+  }
+
   function render(bookmarksDoc, roster) {
     listEl.innerHTML =
       controlsHtml() +
+      presetsHtml(bookmarksDoc, getBookmarkMenuExpanded()) +
       renderBookmarkList(bookmarksDoc, {
         expanded: getBookmarkMenuExpanded(),
         groupBy: getBookmarkMenuGroupBy(),
@@ -238,6 +251,13 @@ export function mountBookmarkMenu(navBarEl, { db, getTenantId, getPersonId, getB
   // enable it to expand and vice versa" -- confirmed by reproducing the
   // dropdown genuinely closing without this, not assumed.
   function wireControls(bookmarksDoc, roster) {
+    listEl.querySelectorAll("[data-bm-nav-preset]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        details.open = false;
+        onApplyPreset?.(btn.dataset.bmNavPreset);
+      });
+    });
     listEl.querySelector("[data-bm-nav-expand-toggle]")?.addEventListener("click", (e) => {
       e.stopPropagation();
       setBookmarkMenuExpanded(!getBookmarkMenuExpanded());

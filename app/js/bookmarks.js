@@ -423,3 +423,52 @@ export async function setFolderRemoved(db, tenantId, personId, folderId, removed
   await updateDocument(db, TENANT.BOOKMARKS, docId, { folders });
   return true;
 }
+
+// ---------------------------------------------------------------------------
+// Issue #410 -- SAVED STUDY-OPTIONS PRESETS.
+//
+// The owner's ask: "enabling bookmark button in the option (as a form of
+// remember the setting user might want to reuse)", answered "named presets".
+// They live on the SAME bookmarks document as an additive field,
+//   settingsPresets[]{ id, name, savedAt, removed, settings }
+// so they follow the reader across devices and add no read (the document is
+// already the one bookmarks read). The bookmarks Rules allow `update` with no
+// hasOnly, so no Rules change is needed. Like saved[], a preset is never
+// deleted: "remove" sets removed:true (I4/D6). `settings` is free-form and
+// owned by the caller (quranrevival.html's capturePresetSettings()).
+
+/** The live presets, oldest first -- what the chips and the Bookmark menu show. */
+export function livePresets(bookmarksDoc) {
+  return (bookmarksDoc?.settingsPresets ?? []).filter((p) => !p.removed);
+}
+
+async function patchPresets(db, tenantId, personId, uid, patchFn) {
+  const docId = bookmarksDocId(tenantId, personId);
+  const snap = await getDoc(doc(db, TENANT.BOOKMARKS, docId));
+  const current = snap.exists() ? (snap.data().settingsPresets ?? []) : [];
+  const settingsPresets = patchFn(current);
+  if (snap.exists()) {
+    await updateDocument(db, TENANT.BOOKMARKS, docId, { settingsPresets, tenantId, personId });
+  } else {
+    await createDocument(db, TENANT.BOOKMARKS, docId, { tenantId, personId, resume: {}, saved: [], settingsPresets }, uid);
+  }
+  return settingsPresets;
+}
+
+/** Adds one preset; returns the whole preset object so the caller can append it in memory. */
+export async function saveSettingsPreset(db, { tenantId, personId, name, settings, uid }) {
+  const preset = { id: crypto.randomUUID(), name, savedAt: new Date().toISOString(), removed: false, settings };
+  await patchPresets(db, tenantId, personId, uid, (current) => [...current, preset]);
+  return preset;
+}
+
+export async function renameSettingsPreset(db, { tenantId, personId, presetId, name, uid }) {
+  await patchPresets(db, tenantId, personId, uid, (current) => current.map((p) => (p.id === presetId ? { ...p, name } : p)));
+  return true;
+}
+
+/** Soft-remove (I4/D6): flips removed:true on one preset, in place. */
+export async function removeSettingsPreset(db, { tenantId, personId, presetId, uid }) {
+  await patchPresets(db, tenantId, personId, uid, (current) => current.map((p) => (p.id === presetId ? { ...p, removed: true } : p)));
+  return true;
+}

@@ -396,6 +396,23 @@
   .opt-btn[aria-expanded="true"]::after { content: " \25B4"; font-size: 0.7em; color: #cfe0ff; }
   .opt-btn[aria-expanded="false"]::after { content: " \25BE"; font-size: 0.7em; color: #888; }
   .opt-btn-primary { background: #1F3A6E; color: white; border-color: #1F3A6E; }
+  /* Issue #410 -- saved settings. The Save button and the chips share a
+     wrapping row; every tap target is at least 40px tall, and a long preset
+     name wraps inside its chip rather than running off a 320px screen. */
+  .preset-bar { margin: 0 0 0.5rem; }
+  .preset-head { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+  .preset-bar .preset-save-btn { width: auto; min-height: 40px; padding: 0.3rem 0.8rem; max-width: 100%; }
+  .preset-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; min-width: 0; max-width: 100%; }
+  .preset-chip { display: inline-flex; align-items: stretch; max-width: 100%; min-width: 0; border: 1px solid #C9A24B; border-radius: 999px; background: #fffaf0; overflow: hidden; }
+  .preset-bar .preset-chip button { width: auto; border: 0; background: none; color: #1F3A6E; font-size: 0.82rem; font-weight: 700; min-height: 40px; padding: 0.2rem 0.7rem; min-width: 0; overflow-wrap: anywhere; text-align: left; }
+  .preset-bar .preset-chip .preset-chip-edit { flex: 0 0 auto; min-width: 40px; padding: 0.2rem 0.3rem; text-align: center; border-left: 1px solid #ecd9a8; }
+  .preset-form { margin: 0.4rem 0 0; display: grid; gap: 0.35rem; }
+  .preset-form[hidden] { display: none; }
+  .preset-form input[type="text"] { width: 100%; box-sizing: border-box; min-height: 40px; }
+  .preset-keep { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.82rem; font-weight: 400; margin: 0; }
+  .preset-form-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .preset-form-actions .opt-btn { width: auto; flex: 1 1 0; min-width: 6rem; min-height: 40px; }
+  .preset-form-actions .opt-btn[hidden] { display: none; }
   .opt-card { border: 1px solid #dde3ef; border-left: 3px solid #C9A24B; border-radius: 0.6rem; background: #fbfcfe; padding: 0.4rem 0.7rem 0.6rem; margin: 0 0 0.5rem; box-shadow: 0 6px 18px rgba(20,30,55,0.08); }
   .opt-card[hidden] { display: none; }
   .opt-card h4 { margin: 0.4rem 0 0.1rem; }
@@ -4782,6 +4799,28 @@
              Every control still keeps its own id and its own handler --
              moving them is this round, rewiring them is not. -->
 
+        <!-- Issue #410 -- saved settings (named presets), at the very top: the
+             way back to a setup the reader has used before is one tap on a
+             chip. Filled by renderPresets() (JS-rendered, so it is translated
+             at render time, not by translateStatic). -->
+        <div class="preset-bar" id="presetBar">
+          <div class="preset-head">
+            <button type="button" class="opt-btn preset-save-btn" id="presetSaveBtn"></button>
+            <div class="preset-chips" id="presetChips"></div>
+          </div>
+          <form class="preset-form" id="presetForm" hidden>
+            <label for="presetNameInput" id="presetNameLabel"></label>
+            <input type="text" id="presetNameInput" maxlength="60" autocomplete="off" />
+            <label class="preset-keep" id="presetKeepRow"><input type="checkbox" id="presetKeepUnit" checked /> <span id="presetKeepText"></span></label>
+            <div class="preset-form-actions">
+              <button type="submit" class="opt-btn opt-btn-primary" id="presetFormSave"></button>
+              <button type="button" class="opt-btn" id="presetFormRemove" hidden></button>
+              <button type="button" class="opt-btn" id="presetFormCancel"></button>
+            </div>
+          </form>
+          <p class="opt-note" id="presetMsg" role="status" hidden></p>
+        </div>
+
         <!-- Bar 1: WHO is studying. "User Role" and "Student" are the owner's
              own words for these two, replacing "Tenant" and "Person". The
              element ids are deliberately unchanged: tenantSelect really does
@@ -5251,7 +5290,7 @@
       unitTypeRecordsEvidence, unitTypeNeedsReadingUnitsGate,
       readingUnitsPersistenceReady, readingUnitsPersistenceReason,
     } from "./js/study-event-wiring.js";
-    import { getBookmarks, saveBookmark, removeSavedBookmark, updateSavedBookmarkFields, findSavedBookmark, createFolder, flattenFolderTree } from "./js/bookmarks.js";
+    import { getBookmarks, saveBookmark, removeSavedBookmark, updateSavedBookmarkFields, findSavedBookmark, createFolder, flattenFolderTree, livePresets, saveSettingsPreset, renameSettingsPreset, removeSettingsPreset } from "./js/bookmarks.js";
     import { openBookmarkNamePopover } from "./js/bookmark-popover.js";
     import { getAyahNotes, ayahNoteHtml, ayahHasNote, saveAyahNote, ensureAyahNotesWritable } from "./js/ayah-notes.js";
     import { renderQuickMenu, attachQuickMenuHandlers, renderNoteView, attachNoteViewHandlers, notesToPlainText, copyToClipboard, shareText } from "./js/ayah-note-renderer.js";
@@ -5520,6 +5559,8 @@
         db, getTenantId: () => activeTenantId, getPersonId: () => selectedPersonId,
         getBookmarksDoc: async () => { await ensureAyahNoteDataLoaded(); return bookmarksDoc; },
         getRoster: () => roster,
+        // Issue #410 -- "Saved settings" group; applying restores settings only.
+        onApplyPreset: (presetId) => applyPresetFromMenu(presetId),
       });
     }
 
@@ -5542,6 +5583,7 @@
       renderNav(lastRenderedRoles, lastRenderedViewAsRole);
       renderPersonSelectOptions();
       renderTrackableSelectOptions();
+      renderPresets(); // issue #410 -- JS-rendered labels
       renderBanner();
       // The strip's current line is JS-rendered, so translateStatic() above
       // cannot reach it (its WeakMap only holds nodes that were in the
@@ -16442,6 +16484,246 @@
       }
       if (position) await openNoteView(position);
     }
+
+    // -----------------------------------------------------------------------
+    // Issue #410 -- SAVED SETTINGS (named presets) for Study options.
+    //
+    // A preset is a reader's own setup -- the view, the unit, the reciters --
+    // saved under a name on the bookmarks document (bookmarks.js:
+    // settingsPresets[]) and restored with one tap. Applying a preset changes
+    // SETTINGS ONLY: it never presses Play or Read (the Read / Play buttons are
+    // right below the chips for exactly that). Every restored control goes
+    // through the same handler the control itself uses (a dispatched "change"),
+    // so nothing here is a second source of truth.
+    // -----------------------------------------------------------------------
+    const presetSaveBtn = document.getElementById("presetSaveBtn");
+    const presetChipsEl = document.getElementById("presetChips");
+    const presetForm = document.getElementById("presetForm");
+    const presetNameInput = document.getElementById("presetNameInput");
+    const presetKeepUnit = document.getElementById("presetKeepUnit");
+    const presetKeepRow = document.getElementById("presetKeepRow");
+    const presetFormRemove = document.getElementById("presetFormRemove");
+    const presetMsgEl = document.getElementById("presetMsg");
+    let presetFormMode = null; // null (closed) | { kind: "save" } | { kind: "rename", id }
+
+    /** Every Study-options choice that is a reader's setting, read off the real controls/state. Approach is deliberately NOT here: it decides what "Track" claims, not how the reader reads. */
+    function capturePresetSettings(keepUnit) {
+      const isRange = currentUnitType === "range";
+      return {
+        mushafOn: mushafToggle.checked,
+        sidewaysOn: getSidewaysReading(),
+        tajweedOn: tajweedToggle.checked,
+        wbwOn: wbwShowToggle.checked,
+        rootsOn: rootsToggle.checked,
+        derivativesOn: derivativesToggle.checked,
+        translationLangs: [...getQuranTranslationLangs()],
+        wbwLang: wbwLangSelect.value,
+        quranFont: getQuranFont(),
+        fullScreenHides: [...getFullScreenHides()],
+        endOfUnitPrompt: getEndOfUnitPromptOn(),
+        unitType: currentUnitType,
+        unit: keepUnit
+          ? { surahNum: currentSurahNum, ayahNum: currentAyahNum, rangeFrom: isRange ? rangeFrom : null, rangeTo: isRange ? rangeTo : null }
+          : null,
+        reciterIds: [...(drillSelectedReciterIds ?? [])],
+        repeat: drillRepeatCount,
+        mode: drillMode,
+        loop: loopIsOn,
+      };
+    }
+
+    /** Sets a checkbox and lets its OWN change handler do the rest -- only when it actually differs. */
+    function presetSetTick(el, on) {
+      if (typeof on !== "boolean" || el.checked === on) return;
+      el.checked = on;
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    async function applyPresetSettings(s) {
+      if (!s) return;
+      // 1. The unit. A kept unit goes through the bookmark restore (surah,
+      //    ayah, type, range); otherwise only the TYPE changes, on whatever
+      //    ayah is open, exactly as picking it from the select would.
+      if (s.unit) {
+        await applyQuranBookmarkSettings({ ...s.unit, unitType: s.unitType }, null);
+      } else if (s.unitType && s.unitType !== currentUnitType) {
+        unitTypeSelect.value = s.unitType;
+        unitTypeSelect.dispatchEvent(new Event("change"));
+      }
+      // 2. Listening -- before the view, so a Bangla reciter's "bring the
+      //    Bangla translation on" rule cannot override the preset's own ticks.
+      if (Array.isArray(s.reciterIds)) {
+        drillSelectedReciterIds = s.reciterIds.filter((id) => RECITERS[id] && reciterIsReady(id));
+        adoptFirstTickedReciter();
+      }
+      if ([1, 2, 3, 5, 10].includes(s.repeat)) drillRepeatCount = s.repeat;
+      if (s.mode === "each" || s.mode === "whole") drillMode = s.mode;
+      if (typeof s.loop === "boolean") { loopIsOn = s.loop; setLoop(loopIsOn); }
+      renderListeningControls();
+      // 3. The view.
+      presetSetTick(tajweedToggle, s.tajweedOn);
+      presetSetTick(wbwShowToggle, s.wbwOn);
+      presetSetTick(rootsToggle, s.rootsOn);
+      presetSetTick(derivativesToggle, s.derivativesOn);
+      presetSetTick(sidewaysToggle, s.sidewaysOn);
+      presetSetTick(endOfUnitPromptToggle, s.endOfUnitPrompt);
+      if (Array.isArray(s.translationLangs)) {
+        const wantEn = s.translationLangs.includes("en"), wantBn = s.translationLangs.includes("bn");
+        trEnToggle.checked = wantEn;
+        trBnToggle.checked = wantBn;
+        trEnToggle.dispatchEvent(new Event("change")); // applyTranslationTicks() reads both ticks
+      }
+      if (s.wbwLang && wbwLangSelect.querySelector(`option[value="${s.wbwLang}"]`)) {
+        wbwLangSelect.value = s.wbwLang;
+        wbwLangSelect.dispatchEvent(new Event("change"));
+      }
+      if (s.quranFont && quranFontSelect.querySelector(`option[value="${s.quranFont}"]`)) {
+        quranFontSelect.value = s.quranFont;
+        quranFontSelect.dispatchEvent(new Event("change"));
+      }
+      if (Array.isArray(s.fullScreenHides)) {
+        const boxes = [...fullScreenHidesBox.querySelectorAll("input[data-fs-hide]")];
+        boxes.forEach((box) => { box.checked = s.fullScreenHides.includes(box.dataset.fsHide); });
+        boxes[0]?.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      presetSetTick(mushafToggle, s.mushafOn); // last: Mushaf greys the other ticks, it does not reset them
+    }
+
+    function presetMsg(text) {
+      presetMsgEl.textContent = text || "";
+      presetMsgEl.hidden = !text;
+    }
+
+    function renderPresets() {
+      presetSaveBtn.textContent = `☆ ${t("Save these settings")}`;
+      document.getElementById("presetNameLabel").textContent = t("Name these settings");
+      document.getElementById("presetKeepText").textContent = t("Keep this unit");
+      document.getElementById("presetFormSave").textContent = t("Save");
+      document.getElementById("presetFormCancel").textContent = t("Cancel");
+      presetFormRemove.textContent = t("Remove");
+      presetChipsEl.replaceChildren(...livePresets(bookmarksDoc).map((p) => {
+        const chip = document.createElement("span");
+        chip.className = "preset-chip";
+        const apply = document.createElement("button");
+        apply.type = "button";
+        apply.dataset.presetApply = p.id;
+        apply.textContent = p.name;
+        const edit = document.createElement("button");
+        edit.type = "button";
+        edit.className = "preset-chip-edit";
+        edit.dataset.presetEdit = p.id;
+        edit.textContent = "⋯";
+        edit.setAttribute("aria-label", t("Rename or remove {name}", { name: p.name }));
+        chip.append(apply, edit);
+        return chip;
+      }));
+    }
+
+    async function refreshPresets() {
+      await ensureAyahNoteDataLoaded();
+      renderPresets();
+    }
+
+    function closePresetForm() {
+      presetFormMode = null;
+      presetForm.hidden = true;
+    }
+
+    function openPresetForm(mode) {
+      presetFormMode = mode;
+      const renaming = mode.kind === "rename";
+      const existing = renaming ? livePresets(bookmarksDoc).find((p) => p.id === mode.id) : null;
+      presetNameInput.value = renaming ? (existing?.name ?? "") : currentUnitInfo().label;
+      presetKeepRow.hidden = renaming;
+      presetFormRemove.hidden = !renaming;
+      presetForm.hidden = false;
+      presetNameInput.focus();
+      presetNameInput.select();
+    }
+
+    presetSaveBtn.addEventListener("click", () => {
+      presetMsg("");
+      if (!auth.currentUser || !selectedPersonId) { presetMsg(t("Pick a student first.")); return; }
+      if (presetFormMode?.kind === "save") { closePresetForm(); return; }
+      openPresetForm({ kind: "save" });
+    });
+    document.getElementById("presetFormCancel").addEventListener("click", closePresetForm);
+
+    presetForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const mode = presetFormMode;
+      if (!mode || !auth.currentUser || !selectedPersonId) return;
+      const name = presetNameInput.value.trim() || (mode.kind === "save" ? currentUnitInfo().label : "");
+      if (!name) return;
+      if (mode.kind === "save") {
+        const settings = capturePresetSettings(presetKeepUnit.checked);
+        const outcome = await safeWrite(
+          () => saveSettingsPreset(db, { tenantId: activeTenantId, personId: selectedPersonId, name, settings, uid: auth.currentUser.uid }),
+          { collection: TENANT.BOOKMARKS, action: "saveSettingsPreset" }
+        );
+        if (!outcome.ok) return; // safeWrite has already put the failure in front of the reader (I15)
+        // In-memory patch, not a re-fetch -- same reasoning as toggleAyahBookmark().
+        bookmarksDoc = { ...bookmarksDoc, settingsPresets: [...(bookmarksDoc.settingsPresets ?? []), outcome.result] };
+        presetMsg(t("Saved: {name}", { name }));
+      } else {
+        const outcome = await safeWrite(
+          () => renameSettingsPreset(db, { tenantId: activeTenantId, personId: selectedPersonId, presetId: mode.id, name, uid: auth.currentUser.uid }),
+          { collection: TENANT.BOOKMARKS, action: "renameSettingsPreset" }
+        );
+        if (!outcome.ok) return;
+        bookmarksDoc = { ...bookmarksDoc, settingsPresets: (bookmarksDoc.settingsPresets ?? []).map((p) => (p.id === mode.id ? { ...p, name } : p)) };
+        presetMsg("");
+      }
+      closePresetForm();
+      renderPresets();
+    });
+
+    presetFormRemove.addEventListener("click", async () => {
+      const mode = presetFormMode;
+      if (mode?.kind !== "rename" || !auth.currentUser || !selectedPersonId) return;
+      const outcome = await safeWrite(
+        () => removeSettingsPreset(db, { tenantId: activeTenantId, personId: selectedPersonId, presetId: mode.id, uid: auth.currentUser.uid }),
+        { collection: TENANT.BOOKMARKS, action: "removeSettingsPreset" }
+      );
+      if (!outcome.ok) return;
+      bookmarksDoc = { ...bookmarksDoc, settingsPresets: (bookmarksDoc.settingsPresets ?? []).map((p) => (p.id === mode.id ? { ...p, removed: true } : p)) };
+      closePresetForm();
+      presetMsg("");
+      renderPresets();
+    });
+
+    async function applyPresetById(presetId) {
+      const preset = livePresets(bookmarksDoc).find((p) => p.id === presetId);
+      if (!preset) return null;
+      await applyPresetSettings(preset.settings);
+      return preset;
+    }
+
+    presetChipsEl.addEventListener("click", async (e) => {
+      const applyBtn = e.target.closest("[data-preset-apply]");
+      const editBtn = e.target.closest("[data-preset-edit]");
+      if (editBtn) { presetMsg(""); openPresetForm({ kind: "rename", id: editBtn.dataset.presetEdit }); return; }
+      if (!applyBtn) return;
+      const preset = await applyPresetById(applyBtn.dataset.presetApply);
+      if (preset) presetMsg(t("Applied: {name}. Press Read or Play below.", { name: preset.name }));
+    });
+
+    /** From the Bookmark menu: apply, then bring up Study options, where Read and Play are -- the preset itself presses neither. */
+    async function applyPresetFromMenu(presetId) {
+      const preset = await applyPresetById(presetId);
+      if (!preset) return;
+      const panel = document.getElementById("panelStudyOptions");
+      if (panel.hidden) document.getElementById("tabStudyOptionsBtn").click();
+      presetMsg(t("Applied: {name}. Press Read or Play below.", { name: preset.name }));
+    }
+
+    document.getElementById("tabStudyOptionsBtn").addEventListener("click", () => { refreshPresets(); });
+    // Only while Study options is open: a person switch elsewhere must not start a bookmarks read of its own.
+    personSelect.addEventListener("change", () => {
+      closePresetForm(); presetMsg("");
+      if (!document.getElementById("panelStudyOptions").hidden) refreshPresets(); else renderPresets();
+    });
+    renderPresets();
 
     /** Item 2 ("prompt for naming it") + item 4 (capture the full study state, Quran only -- see captureQuranBookmarkSettings()'s own comment for why). Reachable from both the Note view's own star (bar 2) and the plain Read screen's ⋮ menu (item 3: "enable bookmark button at the READ screen as well") -- same function either way. */
     /** Re-renders whichever view actually shows this āyah's own ⋮ badge/star
