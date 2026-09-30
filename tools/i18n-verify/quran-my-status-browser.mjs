@@ -367,6 +367,11 @@ async function runScenarios(lang) {
   // Scroll the LIST first, so "closing returns to the list exactly where the
   // reader was" is a real round trip, not a coincidence of starting at 0.
   await page.evaluate(() => { document.getElementById("myStatusBody").scrollTop = 40; });
+  // UPDATED IN PLACE, issue #425, reason recorded: the rows are taller now (six
+  // tiles), so Playwright's own scroll-into-view before the click moved the list
+  // a couple of pixels and the app was blamed. Bring the row into view FIRST,
+  // then measure, so only what the app itself does is compared.
+  await page.locator(`[data-my-status-open="${YES_ID}"]`).scrollIntoViewIfNeeded();
   const scrollBefore = await page.evaluate(() => document.getElementById("myStatusBody").scrollTop);
 
   await clickSafely(page, `[data-my-status-open="${YES_ID}"]`);
@@ -476,8 +481,14 @@ async function runScenarios(lang) {
   // `jump: false` makes this fail (0 static rows becomes 1, no element
   // answers the selector) -- proving the check really distinguishes the two
   // shapes rather than passing regardless.
-  const hizbIsButton = await page.evaluate(() => !!document.querySelector('[data-my-status-unit-jump="hizb"]') && document.querySelectorAll("#myStatusDetailBody .my-status-row-static").length === 0);
-  check(`[${lang}] the Hizb row is a button now -- issue #342 gave Hizb its own Explore level`, hizbIsButton);
+  // UPDATED IN PLACE, issue #425, reason recorded: the card gained a Page row
+  // and Explore has no Page level, so exactly ONE static row now exists and it
+  // is Page. The pin is narrowed (Hizb is still a button; the only static row
+  // is Page), not removed.
+  const hizbIsButton = await page.evaluate(() => !!document.querySelector('[data-my-status-unit-jump="hizb"]')
+    && document.querySelectorAll("#myStatusDetailBody .my-status-row-static").length === 1
+    && !!document.querySelector('#myStatusDetailBody [data-my-status-unit-row="page"] .my-status-row-static'));
+  check(`[${lang}] the Hizb row is a button now -- issue #342 gave Hizb its own Explore level (only Page is a plain row)`, hizbIsButton);
 
   await clickSafely(page, "#myStatusDetailCloseBtn");
   await clickSafely(page, `[data-my-status-open="${NO_ID}"]`);
@@ -597,6 +608,151 @@ async function runExploreAgreementScenario() {
   }
   await ctx.close();
 }
+
+// =============================================================================
+// Issue #425 -- Know Your Status in EVERY unit: six tiles per Approach, Page in
+// the card, and the All-units ring wheel with its switch. Expected values are
+// written BY HAND (Juz 30 = 78:1 to 114:6 = 564 āyāt, 37 Surahs, 2 Hizb, 39
+// Ruku', 23 Pages), never computed by the code under test.
+// =============================================================================
+const Y2 = "approach_01"; // a "Yes" Approach
+const K425_SEED = `
+DATA.records.push(
+  { _id: TENANT_ID + "__p1__subject_quran", tenantId: TENANT_ID, personId: "p1", chunkKey: "subject_quran", entries: {
+    "juz:30::${Y2}": { unitType: "juz", subjectId: "quran", trackableId: "${Y2}",
+      claimedStatus: "achieved", claimedByPersonId: "p1", confirmedStatus: "achieved",
+      confirmState: "confirmed", domainIds: [], notes: "" },
+  } },
+  ${[112, 113, 114].map((n) => `{ _id: TENANT_ID + "__p1__surah_${n}", tenantId: TENANT_ID, personId: "p1", chunkKey: "surah_${n}", entries: {
+    "surah:${n}::${NO_ID}": { unitType: "surah", subjectId: "quran", trackableId: "${NO_ID}",
+      claimedStatus: "achieved", claimedByPersonId: "p1", confirmedStatus: "achieved",
+      confirmState: "confirmed", domainIds: [], notes: "" } } }`).join(",\n  ")}
+);
+`;
+const K425_Y2 = { juz: 1, surah: 37, hizb: 2, ruku: 39, page: 23, ayah: 564 };
+const K425_TOTALS = { juz: 30, surah: 114, hizb: 60, ruku: 556, page: 604, ayah: 6236 };
+const K425_NO = { juz: 0, surah: 3, hizb: 0, ruku: 0, page: 0, ayah: 0 };
+
+async function openKys(page, width) {
+  const id = width > 721 ? "myStatusWideBtn" : "myStatusBtn";
+  await clickSafely(page, `#${id}`);
+  await page.waitForFunction(() => document.querySelectorAll("#myStatusBody .ms-tile").length > 0, null, { timeout: 15000 });
+}
+const tileNs = (page, id) => page.evaluate((tid) => Object.fromEntries([...document.querySelectorAll(`[data-my-status-open="${tid}"] .ms-tile`)].map((t) => [t.dataset.unit, Number(t.dataset.n)])), id);
+
+async function runKnowYourStatusUnits(lang, width) {
+  const tag = `[k425 ${lang} ${width}px]`;
+  const ctx = await newContext(browser, { banner: false, viewport: { width, height: 900 }, appLang: lang, seedTemplates: SEED_TEMPLATES, extraSeedJs: K425_SEED });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  const pageIndexReads = [];
+  page.on("request", (r) => { if (/page-index\.json/.test(r.url())) pageIndexReads.push(r.url()); });
+  await waitForWheelReady(page);
+  const readsBefore = pageIndexReads.length;
+  await openKys(page, width);
+  if (width === 390 && lang === "en") {
+    check(`${tag} I9: page-index.json is not read before Know Your Status is opened, and is after (${readsBefore} -> ${pageIndexReads.length})`, readsBefore === 0 && pageIndexReads.length >= 1);
+  }
+
+  // Tiles: exact, hand-written values.
+  const yes = await tileNs(page, Y2);
+  check(`${tag} "Yes" Approach tiles read Juz 1 · Surah 37 · Hizb 2 · Ruku' 39 · Page 23 · Āyah 564`, JSON.stringify(yes) === JSON.stringify(K425_Y2), JSON.stringify(yes));
+  const order = await page.evaluate((tid) => [...document.querySelectorAll(`[data-my-status-open="${tid}"] .ms-tile`)].map((t) => t.dataset.unit).join(","), Y2);
+  check(`${tag} tiles run biggest first (Juz, Surah, Hizb, Ruku', Page, Āyah)`, order === "juz,surah,hizb,ruku,page,ayah", order);
+  const totals = await page.evaluate((tid) => Object.fromEntries([...document.querySelectorAll(`[data-my-status-open="${tid}"] .ms-tile`)].map((t) => [t.dataset.unit, Number(t.dataset.total)])), Y2);
+  check(`${tag} tile totals are /30 /114 /60 /556 /604 /6236`, JSON.stringify(totals) === JSON.stringify(K425_TOTALS), JSON.stringify(totals));
+  const no = await tileNs(page, NO_ID);
+  check(`${tag} "No" Approach with 3 whole Surahs: Surah 3, every other unit 0`, JSON.stringify(no) === JSON.stringify(K425_NO), JSON.stringify(no));
+  const noNote = await page.evaluate((tid) => !!document.querySelector(`[data-my-status-open="${tid}"] .ms-tile-note`), NO_ID);
+  const yesNote = await page.evaluate((tid) => !!document.querySelector(`[data-my-status-open="${tid}"] .ms-tile-note`), Y2);
+  check(`${tag} only the whole-units-only Approach carries the one-line note`, noNote && !yesNote);
+  const wbw = await page.evaluate(() => { const r = document.querySelector('[data-my-status-open="approach_04"]'); return { tiles: r.querySelectorAll(".ms-tile").length, unit: r.querySelector(".ms-tile")?.dataset.unit, note: !!r.querySelector(".ms-tile-note") }; });
+  check(`${tag} Word-by-Word keeps its one Words-known tile and its note`, wbw.tiles === 1 && wbw.unit === "words" && wbw.note, JSON.stringify(wbw));
+
+  // Layout: no cut text, no sideways scroll, 3 or 6 per row.
+  const lay = await page.evaluate((tid) => {
+    const body = document.getElementById("myStatusBody");
+    const tiles = [...document.querySelectorAll(`[data-my-status-open="${tid}"] .ms-tile`)];
+    const top0 = Math.round(tiles[0].getBoundingClientRect().top);
+    const perRow = tiles.filter((t) => Math.round(t.getBoundingClientRect().top) === top0).length;
+    const cut = [...document.querySelectorAll("#myStatusBody .ms-tile")].filter((t) => [...t.querySelectorAll(".ms-tile-fig, .ms-tile-name")].some((e) => e.scrollWidth > e.clientWidth + 0.5 || e.getBoundingClientRect().right > t.getBoundingClientRect().right + 0.5)).length;
+    return { perRow, cut, docOver: document.documentElement.scrollWidth - window.innerWidth, bodyOver: body.scrollWidth - body.clientWidth };
+  }, Y2);
+  check(`${tag} ${width < 620 ? 3 : 6} tiles per row`, lay.perRow === (width < 620 ? 3 : 6), JSON.stringify(lay));
+  check(`${tag} no tile text is cut`, lay.cut === 0, JSON.stringify(lay));
+  check(`${tag} no sideways scroll`, lay.docOver <= 2 && lay.bodyOver <= 1, JSON.stringify(lay));
+
+  if (width === 390 || width === 1100) {
+    // The wheel: default, slice lighting, switch.
+    const mode0 = await page.evaluate(() => ({ mode: document.getElementById("myStatusWheelBox").dataset.mode, pressed: document.querySelector('[data-kys-wheel-unit][aria-pressed="true"]')?.dataset.kysWheelUnit }));
+    check(`${tag} All units is the default`, mode0.mode === "all" && mode0.pressed === "all", JSON.stringify(mode0));
+    const ringsLit = (id) => page.evaluate((tid) => [...document.querySelectorAll(`#myStatusOverviewWheel .wheel-ring-seg[data-key="${tid}"]`)].filter((s) => s.dataset.status === "mastered").map((s) => s.dataset.ringKind).join(","), id);
+    check(`${tag} the "No" Approach's slice lights only the Surah ring`, (await ringsLit(NO_ID)) === "surah", await ringsLit(NO_ID));
+    check(`${tag} the "Yes" Approach's slice lights all six rings`, (await ringsLit(Y2)) === "juz,surah,hizb,ruku,page,ayah", await ringsLit(Y2));
+    const ringOrder = await page.evaluate(() => { const segs = [...document.querySelectorAll('#myStatusOverviewWheel .wheel-ring-seg[data-key="approach_01"]')]; return segs.sort((a, b) => Number(a.dataset.ring) - Number(b.dataset.ring)).map((s) => s.dataset.ringKind).join(","); });
+    check(`${tag} rings run Juz → Surah → Hizb → Ruku' → Page → Āyah from the middle out`, ringOrder === "juz,surah,hizb,ruku,page,ayah", ringOrder);
+    const keyLine = await page.evaluate(() => document.querySelector(".ms-ring-key")?.textContent ?? "");
+    check(`${tag} a key line names the ring order`, keyLine.includes("→") && keyLine.split("→").length === 6, keyLine);
+    // The centre wraps its words over tspans, so compare with all whitespace removed.
+    const centre = () => page.evaluate(() => (document.querySelector("#myStatusOverviewWheel svg .wheel-center, #myStatusOverviewWheel svg")?.textContent ?? "").replace(/\s+/g, ""));
+    const centreAll = await centre();
+    const sp = (s) => s.replace(/\s+/g, "");
+    check(`${tag} the centre reads Know Your Status and All units`, centreAll.includes(sp(lang === "bn" ? "আপনার অবস্থা জানুন" : "Know Your Status")) && centreAll.includes(sp(lang === "bn" ? "সব ইউনিট" : "All units")), centreAll.slice(-60));
+
+    // Āyah is 2, not 1: the harness's default fixture already gives its own invented
+    // "recite" Approach āyah claims in surah 1 (verified by probe: keys approach_01 + recite).
+    const expectedProgress = { juz: 1, surah: 2, hizb: 1, ruku: 1, page: 1, ayah: 2 };
+    const seen = new Set();
+    for (const unit of Object.keys(expectedProgress)) {
+      await page.click(`[data-kys-wheel-unit="${unit}"]`);
+      const st = await page.evaluate(() => ({ progress: document.querySelectorAll("#myStatusOverviewWheel .wheel-seg-progress").length, rings: document.querySelectorAll("#myStatusOverviewWheel .wheel-ring-seg").length, pressed: document.querySelector('[data-kys-wheel-unit][aria-pressed="true"]')?.dataset.kysWheelUnit, sig: [...document.querySelectorAll("#myStatusOverviewWheel .wheel-seg-progress")].map((p) => p.getAttribute("d")).join("|") }));
+      seen.add(st.sig);
+      check(`${tag} the ${unit} button shows ${expectedProgress[unit]} filled slice(s) and no rings`, st.pressed === unit && st.rings === 0 && st.progress === expectedProgress[unit], JSON.stringify({ ...st, sig: "" }));
+    }
+    // Hand-worked: shares are Juz 1/30, Hizb 2/60 and Page 23/604, all under the 6% sliver, so they draw
+    // alike; Ruku' 39/556, Surah 37/114 and Āyah 564/6236 each draw differently: 4 distinct fills.
+    check(`${tag} each unit button changes the fill (4 distinct fills across the six buttons)`, seen.size === 4, `distinct fills: ${seen.size}`);
+    const centreUnit = await centre();
+    check(`${tag} a single unit's centre reads "by …" (Āyah)`, centreUnit.includes(sp(lang === "bn" ? "আয়াত অনুযায়ী" : "by Āyah")), centreUnit.slice(-60));
+    const stored = await page.evaluate(() => localStorage.getItem("kysWheelUnit"));
+    check(`${tag} the choice is stored under kysWheelUnit`, stored === "ayah", String(stored));
+    await page.click('[data-kys-wheel-unit="surah"]');
+    await page.reload();
+    await waitForWheelReady(page);
+    await openKys(page, width);
+    const afterReload = await page.evaluate(() => document.querySelector('[data-kys-wheel-unit][aria-pressed="true"]')?.dataset.kysWheelUnit);
+    check(`${tag} the choice survives a reload`, afterReload === "surah", String(afterReload));
+    await page.click('[data-kys-wheel-unit="all"]');
+  }
+
+  if (width === 390) {
+    // The card: same numbers, plus the new Page row, in the new order.
+    await clickSafely(page, `[data-my-status-open="${Y2}"]`);
+    await page.waitForFunction(() => !document.getElementById("myStatusDetailMount").hidden, null, { timeout: 5000 });
+    const rows = await page.evaluate(() => [...document.querySelectorAll("#myStatusDetailBody .my-status-unit-list li")].map((li) => ({ name: li.querySelector(".my-status-row-name")?.textContent, fig: li.querySelector(".my-status-row-figure")?.textContent })));
+    const kinds = ["juz", "surah", "hizb", "ruku", "page"];
+    check(`${tag} the card's By unit has five rows: Juz, Surah, Hizb, Ruku', Page`, rows.length === 5, JSON.stringify(rows));
+    check(`${tag} the card's rows carry the same numbers as the tiles (incl. Page 23 of 604)`,
+      kinds.every((k, i) => rows[i]?.fig === expectedUnitFigureText(lang, K425_Y2[k], K425_TOTALS[k], 0)), JSON.stringify(rows));
+  }
+
+  if (width === 1100 && lang === "en") {
+    // Decision 7: the Surah tile equals what Explore colours.
+    await clickSafely(page, `[data-my-status-open="${Y2}"]`);
+    await page.waitForFunction(() => !document.getElementById("myStatusDetailMount").hidden, null, { timeout: 5000 });
+    await clickSafely(page, '[data-my-status-unit-jump="surah"]');
+    let done = -1;
+    for (let i = 0; i < 60; i++) {
+      const c = await page.evaluate(() => { const chips = [...document.querySelectorAll("#exploreSidebarContainer .status-chip")]; return { rows: chips.length, done: chips.filter((x) => x.classList.contains("chip-achieved") || x.classList.contains("chip-mastered")).length }; });
+      done = c.done;
+      if (c.rows === 114) break;
+      await page.waitForTimeout(100);
+    }
+    check(`${tag} Explore colours 37 Surahs Achieved/Mastered, the same as the Surah tile`, done === K425_Y2.surah, `explore=${done}`);
+  }
+  await ctx.close();
+}
+
+for (const lang of ["en", "bn"]) for (const width of [320, 360, 390, 412, 1100]) await runKnowYourStatusUnits(lang, width);
 
 for (const lang of ["en", "bn"]) await runScenarios(lang);
 for (const lang of ["en", "bn"]) await runJuzSliceScenario(lang);

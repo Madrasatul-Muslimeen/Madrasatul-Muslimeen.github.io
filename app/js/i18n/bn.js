@@ -2986,6 +2986,10 @@ export const BN = {
   // that jump straight to Explore (part 3). "Juz"/"Surah"/"Ruku'"/"Hizb"/
   // "Close"/"Choose an Approach" already exist above and are reused as-is.
   "By unit": "একক অনুযায়ী", // ?
+  // Issue #425 -- unit tiles and the wheel's unit switch.
+  "Words known": "জানা শব্দ", // ?
+  "by {unit}": "{unit} অনুযায়ী", // ?
+  "Counts whole units only: each tile is the units you claimed as a whole.": "শুধু পুরো ইউনিট গণনা হয়: প্রতিটি ঘর আপনার পুরো হিসেবে দাবি করা ইউনিট।", // ?
   "Achieved + Mastered: {n} of {total} · Started: {m}": "অর্জিত + দক্ষ: {total}টির মধ্যে {n}টি · শুরু হয়েছে: {m}টি", // ?
   "{n} of {total} words ({percent}%)": "{total}টির মধ্যে {n}টি শব্দ ({percent}%)", // ?
   "Surah and Ruku' figures for Word by Word are in Explore's Word by Word tab.":
