@@ -10,31 +10,44 @@ The prompt that starts the next session is
 
 ## 0. The exact pause point — start here
 
-- **`main` is at v09.05** (read it off `app/js/version.js` on `origin/main`;
+- **`main` is at v09.06** (read it off `app/js/version.js` on `origin/main`;
   do not trust this line if they differ).
-- **The Builder queue is EMPTY.** The last round, #410 (named presets, PR #413),
-  was reviewed and merged as v09.05.
-- **The Owner has one live demo to answer**:
-  **Simple Mushaf Reader**, <https://claude.ai/artifact/V85N34YWdBJUk9M1StyaCf>.
-  Their request (30 Sep): *"How about making it simple for a regular user? …
-  see the regular Mushaf structure contents in columns like: Surah Number,
-  Surah Name in English with meaning, Verse Numbers, and Surah Name in Arabic
-  … they can choose a Surah, page, Juzz, Hijb, Ruku, it brings the Mushaf view.
-  They just read it as traditional reading. Nothing fancy. In there we place the
-  option to open it in Note View / Track and Approach. Show me demo what you
-  understood."*
-  The demo embeds the real Qur'an text and all five lists. Three questions were
-  put to them and are **unanswered**:
-  1. Is this the idea?
-  2. Where does it live: the first screen of Quran Study, or a *Read* button
-     beside the Mastery Wheel?
-  3. Should the list carry Bangla surah meanings? The app's data has only
-     English (`nameTranslation` in `surah-index.json`), so Bangla means adding
-     data.
-  **When they answer, write it up as one Builder issue and dispatch it.** Do not
-  build it before they answer: placement is a product choice (Owner Control
-  Gate).
-- **No check-ins are scheduled.** Nothing is running.
+- **The Builder queue is EMPTY.** The last round, #415 (the landing Read button
+  and contents list, PR #416), was reviewed, reworked by the Architect as
+  below, and merged as v09.06.
+- **Nothing is running and no check-ins are scheduled.**
+- **The next likely job is the Owner's, not yet asked for.** On 30 Sep they
+  said: *"we will later make a few simple buttons for these readers to read
+  view (like your demo)"*. That is: in the Read view, a few plain buttons for a
+  reader who came in through the contents list, like the demo's Note View /
+  Track / Approach row
+  (<https://claude.ai/artifact/V85N34YWdBJUk9M1StyaCf>). **Do not build it
+  until they ask**; when they do, show a demo first and ask where the buttons
+  go.
+
+### How #415 ended up (so nobody undoes it)
+- **Decision A (Owner):** the contents list opens the EXISTING Read view as a
+  full-screen Mushaf page (unit pickers + Mushaf tick + `openReadingScreen()`).
+  There is no second reader. The Study menu's own **Read** stays: *"Keep it
+  read in both places"*.
+- **Placement (Owner: "put Read beside Know Your Status on mobile", then "fix
+  the tablet wrap too"), all measured:**
+  - below **520px**: heading line reads *Mastery Wheel … Read  Know Your
+    Status*, both links in the heading's own face (`#readHeadBtn`,
+    `#myStatusBtn`); capsule row = 2;
+  - **520–899px**: heading line has *Read* at the right edge; capsule row = the
+    3 the Owner approved (Approach, Choose a Unit, Know Your Status);
+  - **900px and up**: the wheel is a window whose title bar replaces the
+    heading, so Read is the 4th capsule (`#readContentsBtn`); band text 0.7rem
+    at 900–999px so all four keep one 36px line.
+  - Why: four capsules do not fit in English until ~1000px, and three do not
+    fit below 510px. `read-contents-browser.mjs` checks every band at 17
+    widths in both languages, including "the capsule row is one 36px line".
+- **Bangla surah meanings** came from api.quran.com via
+  `tools/quran-data-pull/build-surah-names-bn.js` (additive
+  `nameTranslationBn` in `surah-index.json`; every existing field identical).
+  The Builder's run could not reach the API; the Architect's sandbox could.
+  **Never hand-write them.**
 
 ## 1. Where `main` is, and how it got there this session
 
@@ -47,6 +60,7 @@ The prompt that starts the next session is
 | v09.03 | Hollow S ring vs filled Approach disc; **"My Status" renamed "Know Your Status"** everywhere (Bangla আপনার অবস্থা জানুন) and styled as heading text on phones; Word Card Basic Arabic shows *Derived forms* above the counts; `explore-hizb-view-browser` fixed (stale since v08.105's rings) | Architect |
 | v09.04 | Study options: **Play opens the chosen view; new Read button** (#409, PR #411) | Builder |
 | v09.05 | Study options: **named presets** (#410, PR #413) | Builder |
+| v09.06 | **Read button + contents list** (Surah/Juz/Hizb/Page/Ruku') opening the existing Read view as a Mushaf page; Bangla surah meanings; Read beside Know Your Status on phones; tablet capsule wrap fixed (#415, PR #416) | Builder + Architect |
 
 `firestore.rules` is unchanged this session. Nothing was deployed to Firestore.
 
@@ -88,6 +102,18 @@ plus what changed:
   from the repository root before any browser suite; a suite run without it
   dies with a bare `page.waitForFunction` timeout that looks like an app fault.
 - `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`.
+- **To stop test runs, match only real test processes**: `pgrep -f "^node
+  tools/i18n-verify"`. A pattern without `^` also matches the `bash -c` line of
+  your own command and kills your shell (exit 144). A `for` loop of suites
+  keeps going after its child is killed; stop the loop's `bash` parent
+  (`ps -o ppid= -p <pid>`).
+- **The Builder often cannot reach outside websites** (its `curl` needs an
+  approval nobody gives). If a round needs external data, the Architect can
+  usually fetch it from this sandbox, from a checked-in, re-runnable script.
+- **Show the Owner a demo before building anything new.** An HTML artifact with
+  the app's real data (e.g. the whole Qur'an text, ~1.4 MB) answered "is this
+  what you mean" in one step; `[hidden]` still needs its `display:none
+  !important` override inside the demo.
 - **Never write a wait loop as `while pgrep -f "<suite name>"`.** The loop's
   own shell command line contains that name, so it matches itself and never
   ends. This cost two stuck background jobs on 30 Sep. Wait on a PID, or on
@@ -110,7 +136,7 @@ plus what changed:
 
 ## 4. Waiting on the Owner
 
-1. **The Simple Mushaf Reader demo** (section 0): three questions.
+1. **The simple Read-view buttons** (section 0): only when they ask.
 2. **The 29 proposed Approach short names**, carried from the 28 Sep session.
    Still unanswered.
 3. From earlier, still standing: `tenantSelect` truncation (an Owner UI
@@ -123,6 +149,9 @@ plus what changed:
   Word Card → Basic Arabic shows Derived forms first.
 - v09.04: Study → Options → choose a unit → **Read** opens it; **Play** opens it
   and plays.
+- v09.06: on a phone the heading line shows *Read* beside *Know Your Status*;
+  tap **Read**, pick a surah, page, Juz, Hizb or Ruku' and the Mushaf opens
+  there; in Bangla the list shows Bangla meanings.
 - v09.05: Study → Options → **☆ Save these settings**, name it, then change
   something and tap the chip to get it back; the same presets appear in the
   Bookmark menu under *Saved settings*.

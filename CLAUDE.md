@@ -126,14 +126,17 @@ Read this first, every session. It is the standing brief.
 > **`docs/reports/2026-09-30-MMSA-SESSION-HANDOVER.md`** is the current
 > continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-09-30.md`**
 > is the prompt that starts a new session. Together they carry:
-> - where `main` is (v09.05 when written; read it off `version.js`);
-> - that **the Builder queue is empty**;
-> - the Owner's open **Simple Mushaf Reader** demo and its three unanswered
->   questions;
+> - where `main` is (v09.06 when written; read it off `version.js`);
+> - that **the Builder queue is empty**, and that the likely next job (simple
+>   Read-view buttons) waits on the Owner to ask;
+> - how the landing **Read** button is placed at each width, and why (so no
+>   round undoes it);
 > - how a round is started (`workflow_dispatch` only) and reviewed;
 > - this session's sandbox lessons: start `node serve.js` in a fresh
 >   container, never wait with `pgrep -f` on a name in your own command line,
->   give the slow form-meaning suite 25 minutes;
+>   give the slow form-meaning suite 25 minutes, stop tests with
+>   `pgrep -f "^node tools/i18n-verify"`, fetch external data yourself when
+>   the Builder cannot;
 > - what waits on the Owner.
 >
 > **The 28 Sep block below is kept as history**, superseded by it.
