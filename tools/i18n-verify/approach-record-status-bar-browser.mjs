@@ -88,6 +88,7 @@ const measure = (page, sel) => page.evaluate((sel) => {
     over: document.documentElement.scrollWidth - innerWidth,
     contrast: btns.map((b) => +ratio(rgb(getComputedStyle(b).color), bg).toFixed(2)),
     barBg: cs.backgroundColor, border: cs.borderTopColor,
+    dividers: btns.slice(1).map((b) => [parseFloat(getComputedStyle(b).borderLeftWidth), getComputedStyle(b).borderLeftStyle, getComputedStyle(b).borderLeftColor]),
   };
 }, sel);
 
@@ -100,6 +101,10 @@ function assertLayout(tag, lang, width, m) {
   check(`${tag}: every button at least 36px tall`, m.heights.every((h) => h >= 35.5), JSON.stringify(m.heights));
   check(`${tag}: inside the screen, no sideways scroll`, m.left >= -0.5 && m.right <= m.vw + 0.5 && m.over <= 0, JSON.stringify({ l: m.left, r: m.right, over: m.over }));
   check(`${tag}: label colour reads on its background (>=4.5:1)`, m.contrast.every((c) => c >= 4.5), JSON.stringify(m.contrast));
+  // Architect review, 30 Sep 2026: the issue asks for "a 1.5px gold divider
+  // between buttons". In the Read bar an id rule (border: 0) removed them and
+  // no check noticed; the screenshot did.
+  check(`${tag}: a 1.5px gold (#d8c68a) divider between each pair of buttons`, m.dividers.length === 2 && m.dividers.every(([w, st, c]) => w >= 1 && st === "solid" && c === "rgb(216, 198, 138)"), JSON.stringify(m.dividers));
 }
 
 // ---- 1. Layout, every width, both languages, three views
