@@ -144,7 +144,8 @@ console.log("\n=== Study options: saved settings (#410) ===");
   await page.fill("#presetNameInput", "No unit");
   await page.click("#presetFormSave");
   await page.waitForTimeout(400);
-  const p3 = (await lastPresets(page))?.[2];
+  // The stub never mutates its DATA, so this write re-reads the SEEDED document: the new preset is the last entry.
+  const p3 = (await lastPresets(page))?.at(-1);
   check("with 'Keep this unit' off the preset stores the unit TYPE and no unit", p3?.name === "No unit" && p3.settings.unit === null && p3.settings.unitType === "ayah", JSON.stringify(p3?.settings));
   await ctx.close();
 }
@@ -203,7 +204,7 @@ console.log("\n=== Study options: saved settings (#410) ===");
 {
   // ---- BOOKMARK MENU ---------------------------------------------------------
   const { ctx, page } = await start();
-  await page.click(".nav-cat-bookmark > summary");
+  await page.$eval(".nav-cat-bookmark > summary", (s) => s.click());
   await page.waitForTimeout(700);
   const menu = await page.evaluate(() => {
     const g = [...document.querySelectorAll("#navBookmarkList .nav-bm-folder")].find((d) => /Saved settings/.test(d.querySelector("summary").textContent));
@@ -254,7 +255,7 @@ console.log("\n=== Study options: saved settings (#410) ===");
   check("Bangla: the applied line is translated", await page.$eval("#presetMsg", (e) => /প্রয়োগ হয়েছে: Seeded night/.test(e.textContent)));
   await page.click("#presetSaveBtn");
   await page.click("#presetFormCancel");
-  await page.click(".nav-cat-bookmark > summary");
+  await page.$eval(".nav-cat-bookmark > summary", (s) => s.click());
   await page.waitForTimeout(600);
   check("Bangla: the Bookmark-menu group is translated", await page.$$eval("#navBookmarkList .nav-bm-folder > summary", (s) => s.some((e) => e.textContent.includes("সংরক্ষিত সেটিংস"))));
   await ctx.close();
@@ -279,7 +280,7 @@ console.log("\n=== Study options: saved settings (#410) ===");
     check(`${tag}: every tap target is at least 40px tall`, m.out.every((o) => o.h >= 39.5), JSON.stringify(m.out.filter((o) => o.h < 39.5)));
     check(`${tag}: the panel body does not scroll sideways`, m.overflowX <= 0, String(m.overflowX));
     // Bookmark menu rows
-    await page.click(".nav-cat-bookmark > summary");
+    await page.$eval(".nav-cat-bookmark > summary", (s) => s.click()); // a page-level overlay's resize handle sits over it at 1280px
     await page.waitForTimeout(600);
     await page.evaluate(() => document.querySelectorAll("#navBookmarkList .nav-bm-folder").forEach((d) => { d.open = true; }));
     const menu = await page.evaluate(() => {
