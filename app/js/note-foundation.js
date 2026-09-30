@@ -17,7 +17,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
 import { folderTreeRefusal, journeyFolder } from "./journey-map-contract.js";
-import { commitEnvelopeBatch, createDocument, runEnvelopeTransaction } from "./envelope.js";
+import { createDocument, runEnvelopeTransaction } from "./envelope.js";
+import { commitEnvelopeBatch } from "./envelope.js";
 
 export const NOTE_STATUS = Object.freeze({ ACTIVE: "active", RETIRED: "retired" });
 export const NOTE_VISIBILITY = "private";
