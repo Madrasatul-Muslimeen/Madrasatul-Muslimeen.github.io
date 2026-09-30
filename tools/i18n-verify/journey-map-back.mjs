@@ -28,7 +28,7 @@ for (const lang of ["en", "bn"]) {
       const r = el.getBoundingClientRect();
       const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
       const hit = document.elementFromPoint(cx, cy);
-      return { w: r.width, h: r.height, left: r.left, right: r.right, top: r.top, text: el.textContent.replace(/\s+/g, " ").trim(),
+      return { w: r.width, h: r.height, left: r.left, right: r.right, top: r.top, text: el.getAttribute("title"),
         onTop: !!hit && (hit === el || el.contains(hit)), overflow: document.documentElement.scrollWidth > innerWidth };
     });
     const tag = `${lang} ${width}px`;
@@ -37,8 +37,10 @@ for (const lang of ["en", "bn"]) {
     check(`${tag}: it is on screen, in the first screenful, and nothing covers it`,
       box.left >= 0 && box.right <= width && box.top >= 0 && box.top < 400 && box.onTop, JSON.stringify(box));
     check(`${tag}: it is a finger-sized target (at least 40px tall)`, box.h >= 40, `height ${box.h}`);
-    check(`${tag}: it reads in the page's language`,
-      lang === "en" ? box.text === "← Back" : box.text === "← পেছনে", `text "${box.text}"`);
+    // Decision 40: the button is a bare ← icon now, so its language lives in
+    // its title (and aria-label) rather than in visible text.
+    check(`${tag}: its title reads in the page's language`,
+      lang === "en" ? box.text === "Go back" : box.text === "ফিরে যান", `title "${box.text}"`);
     check(`${tag}: no sideways page scroll`, !box.overflow);
     await Promise.all([page.waitForURL(/quranrevival\.html/), page.click("#backLink")]);
     check(`${tag}: pressing it returns to Quran Study`, /quranrevival\.html/.test(page.url()), page.url());

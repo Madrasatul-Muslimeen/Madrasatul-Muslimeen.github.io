@@ -33,15 +33,18 @@
   /* -- the toggle: one small segmented control, three buttons, same purpose
      -- and roughly the same shape -- as this app's own "View as" chips
      elsewhere, sized as real tap targets (>=36px) at every phone width. -- */
-  #viewToggle { display: flex; gap: 0.3rem; margin: 1rem 0; flex-wrap: wrap; }
+  #viewToggle { display: flex; gap: 0.3rem; margin: 1rem 0; flex-wrap: nowrap; align-items: center; }
   /* The Owner, 25 Sep 2026: "There's no go back button to exit from Mapping
      view." The dock's Mapping tab (v08.61) opens this as a separate page, so
      the reader needs a way back that does not depend on the browser's own
      back control, which a phone app shell may hide. */
-  #backLink { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 40px;
-    padding: 0 0.9rem; margin: 0.6rem 0 0; border: 1px solid #c9d3e6; border-radius: 999px;
-    background: #fff; color: #1f3a6e; font-weight: 600; text-decoration: none; }
+  /* Owner decision 40: Back never takes a line of its own -- a 40px square
+     "←" as the first item of the view row. */
+  #backLink { flex: 0 0 40px; box-sizing: border-box; width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid #c9d3e6; border-radius: 999px; background: #fff; color: #1f3a6e; font-weight: 600; font-size: 1.1rem; text-decoration: none; }
   #backLink:focus-visible { outline: 2px solid #1f3a6e; outline-offset: 2px; }
+  #contextBar[hidden] { display: none; }
+  @media (max-width: 399.98px) { .view-toggle-btn { padding: 0.4rem 0.25rem; font-size: 0.8rem; } }
   .view-toggle-btn {
     /* flex-basis 0 so the three views share the row equally and the ⋯ menu
        (v08.66) stays on the same line; 8rem each pushed "Path" onto a line
@@ -212,8 +215,6 @@
     <div id="navBar"></div>
   </nav>
 
-  <a id="backLink" href="quranrevival.html"><span aria-hidden="true">←</span> <span>Back</span></a>
-
   <div id="app" style="display:none;">
     <div id="contextBar">
       <label>Tenant
@@ -228,6 +229,7 @@
     <p id="pageStatusMsg" class="note" style="display:none;"></p>
 
     <div id="viewToggle" role="group" aria-label="View">
+      <a id="backLink" href="quranrevival.html" title="Go back" aria-label="Go back"><span aria-hidden="true">←</span></a>
       <button type="button" class="view-toggle-btn" data-view="folders">Folders</button>
       <button type="button" class="view-toggle-btn" data-view="timeline">Timeline</button>
       <button type="button" class="view-toggle-btn" data-view="path">Path</button>
@@ -258,6 +260,7 @@
     import { bootstrapContext, setActiveContext, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { translateStatic, t } from "./js/i18n.js";
+    import { mountAccountCard } from "./js/account-card.js";
     import { registerServiceWorker } from "./js/sw-register.js";
     import { roleListLabel } from "./js/labels.js";
     import { sanitizeNoteHtml } from "./js/note-sanitize.js";
@@ -474,6 +477,16 @@
     const viewFolders = document.getElementById("viewFolders");
     const viewTimeline = document.getElementById("viewTimeline");
     const viewPath = document.getElementById("viewPath");
+
+    mountAccountCard({
+      tenantRow: tenantSelect.closest("label"),
+      personRow: personSelect.closest("label"),
+      contextBar: document.getElementById("contextBar"),
+      getSummary: () => {
+        const m = myMemberships.find((x) => x.tenantId === activeTenantId);
+        return { name: personSelect.selectedOptions[0]?.textContent, email: auth.currentUser?.email, tenantName: m?.tenantName, roles: m ? roleListLabel(m.roles) : "" };
+      },
+    });
 
     function escapeHtml(s) {
       return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");

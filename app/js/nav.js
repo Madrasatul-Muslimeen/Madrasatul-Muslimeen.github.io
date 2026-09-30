@@ -249,10 +249,11 @@ export function renderHomeExtras(roles = []) {
   const adminHtml = canAdmin
     ? `<div class="nav-cat-group"><div class="nav-cat-group-label">${t("Admin")}</div>${renderLinks(ADMIN_LINKS, currentFile, canAdmin)}</div>`
     : "";
+  const accountHtml = `<div class="nav-cat-group"><button type="button" class="nav-link nav-account-btn" data-open-account-card>👤 ${t("My account")}</button></div>`;
   const journeyHtml = `<div class="nav-cat-group">${renderLinks(JOURNEY_LINKS, currentFile, canAdmin)}</div>`;
   const dawahHtml = `<div class="nav-cat-group">${renderLinks(DAWAH_LINKS, currentFile, canAdmin)}</div>`;
   const aboutHtml = `<div class="nav-cat-group">${renderLinks(ABOUT_LINKS, currentFile, canAdmin)}</div>`;
-  return adminHtml + journeyHtml + dawahHtml + aboutHtml + renderSettings(canAdmin);
+  return accountHtml + adminHtml + journeyHtml + dawahHtml + aboutHtml + renderSettings(canAdmin);
 }
 
 // Shell round 13 (13 Aug 2026) -- Language is a real control now, not the

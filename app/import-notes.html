@@ -9,7 +9,11 @@
 <title>QuranRevival — Import Notes</title>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 46rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
-  h1 { font-size: 1.4rem; margin-bottom: 0.2rem; }
+  h1 { font-size: 1.4rem; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 0.5rem; }
+  #backLink { flex: 0 0 40px; box-sizing: border-box; width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid #c9d3e6; border-radius: 999px; background: #fff; color: #1f3a6e; font-weight: 600; font-size: 1.1rem; text-decoration: none; }
+  #backLink:focus-visible { outline: 2px solid #1f3a6e; outline-offset: 2px; }
+  #contextBar[hidden] { display: none; }
   h2 { font-size: 1.05rem; margin: 1.2rem 0 0.4rem; }
   p.intro { color: #555; font-size: 0.94rem; }
   #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
@@ -43,7 +47,7 @@
 </style>
 </head>
 <body>
-  <h1>Import Notes</h1>
+  <h1 id="pageTitle"><a id="backLink" href="journey-map.html#folders" title="Back to Mapping My Journey" aria-label="Back to Mapping My Journey"><span aria-hidden="true">←</span></a> <span>Import Notes</span></h1>
   <p class="intro">Bring Notes from another app into Mapping My Journey — folders and Notes, each linked to its āyah where its title or text names one. This never touches your existing folders or Notes, and never deletes anything.</p>
 
   <nav class="app-nav" id="topNav">
@@ -61,8 +65,6 @@
     </details>
     <div id="navBar"></div>
   </nav>
-
-  <a id="backLink" href="journey-map.html#folders"><span aria-hidden="true">←</span> <span>Back to Mapping My Journey</span></a>
 
   <div id="app" style="display:none;">
     <div id="contextBar">
@@ -140,6 +142,7 @@
     import { bootstrapContext, setActiveContext, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { translateStatic, t, num } from "./js/i18n.js";
+    import { mountAccountCard } from "./js/account-card.js";
     import { registerServiceWorker } from "./js/sw-register.js";
     import { roleListLabel } from "./js/labels.js";
     import { getSurahIndex } from "./js/quran-data.js";
@@ -180,6 +183,16 @@
     const progressLine = document.getElementById("progressLine");
     const resultLine = document.getElementById("resultLine");
     const refusalListEl = document.getElementById("refusalList");
+
+    mountAccountCard({
+      tenantRow: tenantSelect.closest("label"),
+      personRow: personSelect.closest("label"),
+      contextBar: document.getElementById("contextBar"),
+      getSummary: () => {
+        const m = myMemberships.find((x) => x.tenantId === activeTenantId);
+        return { name: personSelect.selectedOptions[0]?.textContent, email: auth.currentUser?.email, tenantName: m?.tenantName, roles: m ? roleListLabel(m.roles) : "" };
+      },
+    });
 
     function escapeHtml(s) {
       return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
