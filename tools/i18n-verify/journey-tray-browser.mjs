@@ -25,7 +25,9 @@ for (const lang of ["en", "bn"]) {
     await page.evaluate(() => { window.__marker = "kept"; });
     const url0 = page.url();
     await page.click("#tabJourneyBtn");
-    await page.waitForSelector("#journeyTray:not([hidden])");
+    const opened = await page.waitForSelector("#journeyTray:not([hidden])", { timeout: 5000 }).then(() => true, () => false);
+    check(`${tag}: no navigation: the URL is unchanged after the click and the tray appears`, opened && page.url() === url0, page.url());
+    if (!opened) { await ctx.close(); continue; }
     const frameEl = await page.$("#journeyTray iframe");
     const frame = await frameEl.contentFrame();
     await frame.waitForSelector("#viewToggle .view-toggle-btn", { state: "visible", timeout: 15000 });
@@ -90,6 +92,7 @@ for (const lang of ["en", "bn"]) {
       // handles: drag from the middle of each handle so the grab area is a real hit
       for (const h of Object.keys(expect)) {
         const before = await box(page, "#journeyTray");
+        if (!(await page.$(`.jt-h[data-h="${h}"]`))) { check(`${tag}: handle ${h} exists, so its resize works`, false, "handle missing"); continue; }
         const hb = await box(page, `.jt-h[data-h="${h}"]`);
         check(`${tag}: handle ${h} is at least 12px to grab`, Math.min(hb.w, hb.h) >= 12 || (h.length === 2 && Math.min(hb.w, hb.h) >= 12), JSON.stringify(hb));
         const cx = hb.x + hb.w / 2, cy = hb.y + hb.h / 2;
