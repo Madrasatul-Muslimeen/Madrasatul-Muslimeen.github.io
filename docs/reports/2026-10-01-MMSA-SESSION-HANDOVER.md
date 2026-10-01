@@ -19,26 +19,28 @@ Read the live state yourself, because it moves on after this was written:
 - the "Active Architect session" line on #159.
 
 **Updated 1 Oct 2026, ~07:50 UTC, by session `session_01M4Sbc1h94F7SgErzAzxq9n`:**
-- **`main` is at v09.20**: Siyagah round 4 (#446 → PR #448), a Note opening in read mode in the pane; dates in the reader's language. v09.19 before it was built by the Architect:
+- **`main` is at v09.21**: Siyagah round 5 (#450 → PR #451), edit a Note with autosave; the toolbar and Done pinned while editing (Architect review). v09.20 was Siyagah round 4 (#446 → PR #448), a Note opening in read mode in the pane; dates in the reader's language. v09.19 before it was built by the Architect:
   - decision 46 (option C): the two Mastery Wheel titles on the heading line, and Read / Choose a Unit / Know Your Status as one row under the wheel;
   - decision 47: Record Your Progress always on the Āyah card.
 - v09.18 before it was Siyagah round 3 plus the five-suite cleanup.
-- **Round 5 (#450, edit with autosave) is dispatched to the Builder** right after the v09.20 merge; it becomes v09.21.
+- **Round 6a (#452, Single and Multi pop-up windows in Mapping My Journey) is dispatched to the Builder** right after the v09.21 merge; it becomes v09.22. Round 6b (the same windows on `app/notes.html`) follows.
+- **The Wheel drawer demo is with the Owner** (https://claude.ai/artifact/EQAEavsgP1TFprRf8ZKQs4): the legend / Appearance / Units rows under one ⚙ Wheel button with three chips, and Read · Choose a Unit · Know Your Status above the bottom bar. Build it on their "go".
 - **The Asmaul Husna poster template is being built** from the Owner's design and spec (1 Oct):
   - banner الأَسْمَاءُ الْحُسْنَى, Amiri;
   - a Classification box: Group · Dual · Act or Essence · Unique or Shared, filled only from the Name's own lists;
   - references from project data only (Al-Witr: Bukhari 6410, not the image's 7392).
+  - **ON HOLD (decision 50): the Owner is not happy with the design; it must follow their image EXACTLY plus their modifications. Wait for their next fix before resuming.** Decisions 48 (Bukhari 6410 is fine for now) and 49 (Lord/God → Rabb/Allah always) apply when it resumes.
   - Its files (`app/js/asma-poster-template.js`, `tools/i18n-verify/asma-poster-template.mjs` 23/0) are built but untracked (listed in `.git/info/exclude` locally). Demo with the Owner: https://claude.ai/artifact/ToBqsf4h2f7ssYVgs5qzte. Open questions put to them: Bukhari 6410 vs 7392; "Lord/God" in descriptions vs spec 10.9; 33 canonical Names without a description; Arabic size vs the Classification box.
 - **Pre-existing on `main`**: approach-short-names "My Status's wheel prints the 10 names" (69/1), not yet investigated.
 - **Sandbox note:** a fresh container needs Playwright where the harness can find it: `mkdir -p /home/user/node_modules && ln -sf /opt/node-tools/node_modules/playwright /home/user/node_modules/ && ln -sf /opt/node-tools/node_modules/playwright-core /home/user/node_modules/`.
 
 **A new session at this point:**
 1. Writes its id into #159's Active line.
-2. Reviews round 5's PR (issue #450) when it opens. The review:
+2. Reviews round 6a's PR (issue #452) when it opens. The review:
    - run `journey-note-pane-browser`, `journey-folder-menus-browser` and the neighbours, plus the emulator suites;
    - look at the pane at 390px Bangla, 820px and 1280px English;
    - mutation-prove one check;
-   - allocate **v09.21**.
+   - allocate **v09.22**.
 3. Writes and dispatches round 5 (edit mode with autosave, decision 42.3, handover §4.4).
 
 ## 1. What this session released (v09.07 → v09.17)

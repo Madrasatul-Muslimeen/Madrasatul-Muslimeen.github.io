@@ -153,6 +153,9 @@ export function openJourneyTray() {
 
 export function closeJourneyTray() {
   if (!tray || tray.hidden) return;
+  // Siyagah round 5: the page inside is only hidden, never unloaded, so tell it to
+  // flush a pending Note edit (a revision) before it goes out of sight.
+  try { frame.contentWindow?.postMessage({ type: "mmsa-journey-flush" }, location.origin); } catch { /* not loaded */ }
   tray.hidden = true;
   // Fresh each time it opens, so the screen is never stale; the page underneath was never touched.
   frame.removeAttribute("src");

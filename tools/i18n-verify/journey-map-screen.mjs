@@ -118,7 +118,12 @@ check("every render of a Note's own body names sanitizeNoteHtml()", () => {
   const bodyHtmlReads = [...page.matchAll(/note\.bodyHtml/g)].length;
   const sanitizeCalls = [...page.matchAll(/sanitizeNoteHtml\(/g)].length;
   assert.ok(bodyHtmlReads >= 1, "expected at least one read of note.bodyHtml");
-  assert.equal(sanitizeCalls, bodyHtmlReads, "every bodyHtml read must be paired with a sanitizeNoteHtml() call");
+  // UPDATED IN PLACE for Siyagah round 5 (edit mode): the editor's normBody()
+  // sanitises twice (sanitise, let the browser re-serialise, sanitise again) so
+  // the SAME text always compares equal -- more sanitize calls than reads. The
+  // intent (no read goes unsanitised) is the pairing, so the count is now ">=";
+  // the check above still forbids any bodyHtml reaching innerHTML unsanitised.
+  assert.ok(sanitizeCalls >= bodyHtmlReads, "every bodyHtml read must be paired with a sanitizeNoteHtml() call");
 });
 
 // --- 4. WRITES ARE GATED TO THE NOTE'S OWN OWNER, THE SAME WAY THE RULES GATE THEM -
