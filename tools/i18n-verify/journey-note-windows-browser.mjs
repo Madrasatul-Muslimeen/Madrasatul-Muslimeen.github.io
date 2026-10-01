@@ -117,6 +117,10 @@ for (const lang of ["en", "bn"]) {
     await page.keyboard.press("Escape");
     await page.waitForFunction(() => !document.querySelector(".folder-picker"), null, { timeout: 5000 }).catch(() => null);
     if (await count(page, ".folder-picker")) await page.evaluate(() => document.querySelector(".folder-picker-overlay")?.click());
+    // Added by the Architect in review (1 Oct 2026): closed, the Details line shows
+    // no part of a folder chip (half a pill used to show under the date).
+    const chipPeek = await page.evaluate((sel) => { const d = document.querySelector(sel + " .nw-details"); const db = d.getBoundingClientRect(); return [...d.querySelectorAll(".note-pane-chips > *")].filter((c) => { const r = c.getBoundingClientRect(); return r.height > 0 && r.top < db.bottom && r.bottom > db.top; }).length; }, W("n1"));
+    check(`${tag}: the closed Details line shows no sliver of a folder chip`, chipPeek === 0, String(chipPeek));
     const detailsLabel = await page.textContent(`${W("n1")} [data-win-details]`);
     check(`${tag}: the Details line is closed to one line by default`, await page.evaluate((s) => { const d = document.querySelector(`${s} .nw-details`); return !d.classList.contains("open") && d.getBoundingClientRect().height <= 30; }, W("n1")));
     check(`${tag}: Details has its word${lang === "bn" ? " in Bangla" : ""}`, lang === "bn" ? hasBn(detailsLabel) : detailsLabel.includes("Details"), detailsLabel);

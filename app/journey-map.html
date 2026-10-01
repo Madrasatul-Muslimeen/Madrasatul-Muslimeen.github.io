@@ -277,6 +277,9 @@
   .nw-details .note-pane-meta { margin: 0 0 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .nw-details.open .note-pane-meta { white-space: normal; }
   .nw-details .note-pane-chips { margin: 0; }
+  /* Architect review of #453: closed, the Details line is the date alone --
+     the folder chips sat below its one-line clip, half a pill showing. */
+  .nw-details:not(.open) .note-pane-chips { display: none; }
   .nw-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; padding-bottom: 1rem; }
   .nw-view .pane-edit-toolbar { flex: 0 0 auto; }
   /* the eight resize handles' own geometry comes from js/float-window.js (handleCss), injected below */
