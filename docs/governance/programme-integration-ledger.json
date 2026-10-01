@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.15",
+    "version": "09.16",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1361,8 +1361,20 @@
     {
       "version": "09.15",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "My account + Back (#433), Siyagah round 1 data layer (#435), all-folder checks fix, Asma Explore poster.",
+      "integration": {
+        "authorizedOn": "2026-10-01",
+        "integratedOn": "2026-10-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.16",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "My account round 2 (#439), Study options Save on top + Search below, Writing sheet two rows + sideways pan.",
       "integration": {
         "authorizedOn": "2026-10-01",
         "integratedOn": "2026-10-01",
@@ -1371,8 +1383,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.16",
+  "nextUnallocated": "09.17",
   "nextUnallocatedNote": [
+    "v09.16 was allocated to My account on every page, Study options Save/Search order, Writing sheet in two rows, 2026-10-01.",
     "v09.15 was allocated to My account card, Back on the view row, Siyagah data layer, Asma Explore poster, folder checks past 100, 2026-10-01.",
     "v09.14 was allocated to Take an Approach | Record Your Progress | Know Your Status; Search in the banner; Record Your Progress title, 2026-09-30.",
     "v09.13 was allocated to Read list counts, a prominent full-screen button, Hide on the top line, line or dot at random, 2026-09-30.",

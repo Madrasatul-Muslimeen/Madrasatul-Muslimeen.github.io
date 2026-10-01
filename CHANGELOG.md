@@ -18947,3 +18947,12 @@ Owner decisions 40, 42, 43.
 - **Fixed — folder changes past the first 100 folders.** Creating a subfolder, moving a folder and removing a folder checked only the first 100 of an owner's folders (the Rules' page cap). With ~1,464 imported folders that refused real changes and could miss a folder's subfolders. They now read every folder in pages. Found by the Architect's first emulator run of this code (46/46 after the fix; it failed with `parent-missing` before).
 - **Asma ul Husna in Explore** (decision 43): Names after Group; the chosen Name's poster in the wheel's space.
 - **Checks**: account-card 315/0, journey-map-trash-copy 29/0, journey-map-real-function (emulator) 46/46, note-foundation-real-function green, journey-map-screen 48/0, journey-map-back 38/0, asma-explore-name-poster 36/0, head-search 86/0, approach-record-status-bar 431/0, phone-width 217/0, behaviour 1005/2 (sandbox TLS), governance 8/8. Four suites already red on `main` are recorded for a separate cleanup.
+
+## v09.16 — 1 Oct 2026 — My account on every page, Study options Save/Search order, Writing sheet in two rows
+
+Owner decisions 40 (round 2), 44, 45.
+
+- **👤 My account on the other 23 pages** (#437, PR #439, Builder): the page's Tenant picker moves into the account card; Person too on notes, records, monitor, bookmarks, homework and course-offers. The Student picker on study pages and in Quran Study options stays where it is (D10).
+- **Study options** (decision 44): *☆ Save these settings* on the title line; **Search** first in the body.
+- **Writing sheet on a phone** (decision 45): the title line, then two rows of buttons; letter style is one pick-list (Light · Lighter · Like the book); a zoomed sheet can now be moved left-right as well as up-down.
+- **Checks**: account-card 1235/0, study-presets 81/0, writing-sheet 180/0, head-search 86/0, journey-map-screen 48/0, session-context-two-tenant 14/0, hadeethenc 82/0, panel OK, phone-width 217/0, behaviour 1007/1 (31e: sandbox TLS), governance green. behaviour 27b/27i and study-presets' placement check were updated in place for the new order.

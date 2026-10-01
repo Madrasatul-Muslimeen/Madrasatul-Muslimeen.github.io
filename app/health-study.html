@@ -155,5 +155,10 @@
     registerServiceWorker();
     initRoutineStudyPage({ moduleId: "health", trackableId: "practised_health", rootSubjectId: "health" });
   </script>
+  <script type="module">
+    import { auth } from "./js/firebase-init.js";
+    import { mountPageAccountCard } from "./js/account-card.js";
+    mountPageAccountCard({ movePerson: false, getEmail: () => auth.currentUser?.email || "" });
+  </script>
 </body>
 </html>

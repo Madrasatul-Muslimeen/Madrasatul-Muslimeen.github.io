@@ -125,6 +125,10 @@ const stroke = async (page, pts) => {
   await page.waitForTimeout(80);
 };
 const clickWs = (page, sel) => page.evaluate((s) => document.querySelector(`#writingSheet ${s}`).click(), sel);
+// Updated in place, Architect, 1 Oct 2026: the three letter-style buttons became one
+// pick-list so the phone toolbar takes two rows ("Button needs to organise, make it 2 rows").
+// A real choice through the real control, as the reader makes it.
+const pickShade = (page, sh) => page.selectOption("#writingSheet [data-ws-shade-select]", sh);
 const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: `${SHOTS}/${name}.png` }); };
 
 // ================= pages per unit (hand-written expectations)
@@ -212,7 +216,7 @@ for (const width of [320, 1280]) {
   await openSheet(page);
   const res = {};
   for (const sh of ["light", "lighter", "book"]) {
-    await clickWs(page, `[data-ws-shade="${sh}"]`);
+    await pickShade(page, sh);
     await page.waitForFunction((s) => document.querySelector("#writingSheet .ws-page").dataset.painted === s, sh);
     await page.waitForTimeout(150);
     res[sh] = await pixels(page);
@@ -224,7 +228,7 @@ for (const width of [320, 1280]) {
   check("Lighter: letters are hollow (far fewer solid #dcd8cd pixels than the book style)", res.lighter.fill * 5 < res.book.fill, `lighter ${res.lighter.fill}`);
   check("a stroke pixel is lighter in Lighter than in Light", res.lighter.warmP5 > res.light.warmP5 + 8 && res.light.warmN > 500, `light ${res.light.warmP5} lighter ${res.lighter.warmP5} (n ${res.light.warmN})`);
   check("Light draws real outlines (positive control: darker than the paper)", res.light.nonPaper > 2000, `nonPaper ${res.light.nonPaper}`);
-  await clickWs(page, '[data-ws-shade="lighter"]');
+  await pickShade(page, "lighter");
   await page.waitForTimeout(100);
   check("the choice is stored under writingSheetShade", await page.evaluate(() => localStorage.getItem("writingSheetShade")) === "lighter");
   await page.reload({ waitUntil: "networkidle" });
@@ -243,7 +247,8 @@ for (const width of [320, 1280]) {
   await unbare(page);
   await openSheet(page);
   const ta = await page.evaluate(() => getComputedStyle(document.querySelector("#writingSheet .ws-ink")).touchAction);
-  check("Write off: touch-action lets the page scroll and zoom", /pan-y/.test(ta) && /pinch-zoom/.test(ta), ta);
+  // Updated in place (Owner, 1 Oct 2026: "Enable the page move right-left on zoom-in"): pan-x too.
+  check("Write off: touch-action lets the page scroll up-down AND left-right, and zoom", ta === "manipulation" || (/pan-x/.test(ta) && /pan-y/.test(ta) && /pinch-zoom/.test(ta)), ta);
   check("ink canvas starts empty (positive control)", (await inkPixels(page)) === 0);
   await stroke(page, [[0.2, 0.2], [0.6, 0.3], [0.8, 0.5]]);
   check("a stroke with Write OFF leaves the ink canvas empty", (await inkPixels(page)) === 0);
@@ -263,7 +268,7 @@ for (const width of [320, 1280]) {
   check("Undo again empties the ink canvas", (await inkPixels(page)) === 0);
   await stroke(page, [[0.2, 0.2], [0.6, 0.3]]);
   const beforeShade = await inkPixels(page);
-  await clickWs(page, '[data-ws-shade="book"]');
+  await pickShade(page, "book");
   await page.waitForTimeout(250);
   check("the ink survives a style change", (await inkPixels(page)) === beforeShade && beforeShade > 0, `${beforeShade} -> ${await inkPixels(page)}`);
   // eraser
@@ -446,9 +451,9 @@ for (const [lang, width] of [["bn", 320], ["en", 390], ["en", 1280]]) {
   console.log(`  INFO  [${lang} ${width}] toolbar height ${Math.round(tb.h)}px over ${tb.lines} line(s): ${tb.text}`);
   if (lang === "bn") check("[bn 320] toolbar wording is Bangla", /লিখুন/.test(tb.text) && /বইয়ের মতো/.test(tb.text), tb.text);
   await shot(page, `sheet-${lang}-${width}-light`);
-  await clickWs(page, '[data-ws-shade="lighter"]'); await page.waitForTimeout(250);
+  await pickShade(page, "lighter"); await page.waitForTimeout(250);
   await shot(page, `sheet-${lang}-${width}-lighter`);
-  await clickWs(page, '[data-ws-shade="book"]'); await page.waitForTimeout(250);
+  await pickShade(page, "book"); await page.waitForTimeout(250);
   await shot(page, `sheet-${lang}-${width}-book`);
   await ctx.close();
 }
@@ -475,14 +480,15 @@ for (const lang of ["en", "bn"]) {
   await openSheet(page);
   const tb = () => page.evaluate(() => {
     const vv = visualViewport, c = document.querySelector("#writingSheet .ws-chrome").getBoundingClientRect();
-    const btns = [...document.querySelectorAll("#writingSheet .ws-toolbar button")].filter((b) => b.getBoundingClientRect().width > 0);
+    // Controls, not just buttons (1 Oct 2026: the three letter-style buttons became one list, so 12 -> 10).
+    const btns = [...document.querySelectorAll("#writingSheet .ws-toolbar button, #writingSheet .ws-toolbar select")].filter((b) => b.getBoundingClientRect().width > 0);
     const tg = document.querySelector('#writingSheet [data-ws="tools"]');
     return { shown: btns.length, toggle: tg.textContent.trim(), expanded: tg.getAttribute("aria-expanded"),
       inView: c.left >= vv.offsetLeft - 0.5 && c.top >= vv.offsetTop - 0.5 && c.right <= vv.offsetLeft + vv.width + 0.5 && c.bottom <= vv.offsetTop + vv.height + 0.5,
       minH: Math.min(...btns.map((b) => b.getBoundingClientRect().height * vv.scale)), scale: vv.scale };
   });
   const a = await tb();
-  check(`[${lang}] toolbar shown by default: 12 buttons, toggle reads ${lang === "bn" ? "▴ লুকান" : "▴ Hide"}`, a.shown === 12 && a.toggle === (lang === "bn" ? "▴ লুকান" : "▴ Hide") && a.expanded === "true", JSON.stringify(a));
+  check(`[${lang}] toolbar shown by default: 10 controls, toggle reads ${lang === "bn" ? "▴ লুকান" : "▴ Hide"}`, a.shown === 10 && a.toggle === (lang === "bn" ? "▴ লুকান" : "▴ Hide") && a.expanded === "true", JSON.stringify(a));
   await page.click('#writingSheet [data-ws="tools"]'); await page.waitForTimeout(150);
   const b = await tb();
   check(`[${lang}] Hide leaves only the Tools button, on screen`, b.shown === 1 && b.toggle === (lang === "bn" ? "▾ সরঞ্জাম" : "▾ Tools") && b.expanded === "false" && b.inView, JSON.stringify(b));
@@ -490,7 +496,7 @@ for (const lang of ["en", "bn"]) {
   const c = await tb();
   check(`[${lang}] the hidden choice is remembered when the sheet opens again`, c.shown === 1, JSON.stringify(c));
   await page.click('#writingSheet [data-ws="tools"]'); await page.waitForTimeout(150);
-  check(`[${lang}] Tools brings all 12 buttons back`, (await tb()).shown === 12);
+  check(`[${lang}] Tools brings all 10 controls back`, (await tb()).shown === 10);
   // Zoom the page 2.5x the way a pinch does, then move the view down the page.
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("Emulation.setPageScaleFactor", { pageScaleFactor: 2.5 });
@@ -500,6 +506,42 @@ for (const lang of ["en", "bn"]) {
   check(`[${lang}] zoomed 2.5x: every button still >= 39px tall on screen (not blown up, not shrunk)`, z.minH >= 39 && z.minH <= 48, JSON.stringify(z));
   await cdp.send("Emulation.setPageScaleFactor", { pageScaleFactor: 1 });
   await ctx.close();
+}
+
+// ================= the phone toolbar: the title line, then TWO rows of buttons
+// Owner, 1 Oct 2026 (a phone photo of the zoomed sheet, buttons on three rows
+// under the title): "Button needs to organise, make it 2 rows." Expected by hand:
+// line 1 = Writing sheet, Close, Hide; line 2 = Write Pen Eraser Undo Clear;
+// line 3 = letter style, Save picture, Print A4. Nothing cut, all >= 40px tall.
+for (const lang of ["en", "bn"]) {
+  for (const width of [320, 360, 390, 412]) {
+    const { ctx, page } = await start({ lang, width, height: 800 });
+    await pick(page, "surah", 67);
+    await unbare(page);
+    await openSheet(page);
+    const m = await page.evaluate(() => {
+      const bar = document.querySelector("#writingSheet .ws-toolbar");
+      const els = [...bar.querySelectorAll(".ws-title, button, select")].filter((e) => e.getBoundingClientRect().width > 0);
+      const mid = (e) => { const r = e.getBoundingClientRect(); return Math.round((r.top + r.bottom) / 2 / 8); };
+      const lineOf = (sel) => mid(bar.querySelector(sel));
+      return {
+        lines: new Set(els.map(mid)).size,
+        title: lineOf(".ws-title"), close: lineOf('[data-ws="close"]'), hide: lineOf('[data-ws="tools"]'),
+        write: lineOf('[data-ws="write"]'), clear: lineOf('[data-ws="clear"]'),
+        shade: lineOf("[data-ws-shade-select]"), save: lineOf('[data-ws="save"]'), print: lineOf('[data-ws="print"]'),
+        cut: els.some((e) => e.tagName === "BUTTON" && e.scrollWidth > e.clientWidth + 1),
+        inside: els.every((e) => { const r = e.getBoundingClientRect(); return r.left >= -0.5 && r.right <= innerWidth + 0.5; }),
+        minH: Math.round(Math.min(...els.filter((e) => e.tagName !== "SPAN").map((e) => e.getBoundingClientRect().height))),
+      };
+    });
+    const tag = `[${lang} ${width}]`;
+    check(`${tag} phone toolbar: the title line, then two rows of buttons (3 lines in all)`, m.lines === 3, JSON.stringify(m));
+    check(`${tag} ...Close and Hide on the title's line`, m.close === m.title && m.hide === m.title, JSON.stringify(m));
+    check(`${tag} ...Write to Clear on one row, letter style + Save + Print on the next`, m.write === m.clear && m.write !== m.title && m.shade === m.save && m.save === m.print && m.shade !== m.write, JSON.stringify(m));
+    check(`${tag} ...nothing cut, all on screen, each >= 40px tall`, !m.cut && m.inside && m.minH >= 40, JSON.stringify(m));
+    if (width === 390) await shot(page, `toolbar-two-rows-${lang}-${width}`);
+    await ctx.close();
+  }
 }
 
 // ================= Hide sits on the TOP line, at its right-hand end

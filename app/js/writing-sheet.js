@@ -210,22 +210,28 @@ const CSS = `
 #writingSheet[hidden]{display:none}
 #writingSheet .ws-chrome{position:sticky;top:0;z-index:5;flex:0 0 auto}
 #writingSheet.ws-zoomed .ws-chrome{position:fixed;top:0;left:0;transform-origin:0 0}
-#writingSheet .ws-toggle{margin-left:auto}
+#writingSheet .ws-end{margin-left:auto;display:flex;gap:6px;align-items:center;flex:0 0 auto}
 #writingSheet.ws-tools-hidden .ws-toolbar{background:transparent;pointer-events:none;padding:6px 8px}
-#writingSheet.ws-tools-hidden .ws-toolbar > :not(.ws-toggle){display:none}
+#writingSheet.ws-tools-hidden .ws-toolbar > :not(.ws-end),#writingSheet.ws-tools-hidden .ws-end > :not(.ws-toggle){display:none}
 #writingSheet.ws-tools-hidden .ws-toggle{pointer-events:auto;background:#1F3A6E !important;border-color:#1F3A6E !important;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
 #writingSheet.ws-tools-hidden .ws-chrome{position:fixed;top:0;right:0;left:auto}
 #writingSheet.ws-tools-hidden.ws-zoomed .ws-chrome{right:auto}
 #writingSheet .ws-toolbar{position:relative;z-index:3;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:8px 8px;background:#1F3A6E;color:#fff;flex:0 0 auto}
 #writingSheet .ws-group{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 #writingSheet .ws-toolbar button{min-height:40px;min-width:40px;padding:0.3rem 0.7rem;border:1px solid rgba(255,255,255,0.35);border-radius:8px;background:rgba(255,255,255,0.12);color:#fff;font:inherit;font-size:0.9rem;line-height:1.1;white-space:nowrap;flex:0 0 auto;cursor:pointer}
+#writingSheet .ws-toolbar .ws-shade{min-height:40px;padding:0.3rem 1.6rem 0.3rem 0.7rem;border:1px solid rgba(255,255,255,0.35);border-radius:8px;background:rgba(255,255,255,0.12) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23fff'/%3E%3C/svg%3E") no-repeat right 0.55rem center;color:#fff;font:inherit;font-size:0.9rem;-webkit-appearance:none;appearance:none;cursor:pointer;flex:0 0 auto;max-width:100%}
+#writingSheet .ws-toolbar .ws-shade option{color:#1b1b16;background:#fff}
+/* Owner, 1 Oct 2026 (phone photo): "Button needs to organise, make it 2 rows." On a phone:
+   title line (Writing sheet, Close, Hide), then the drawing tools, then letter style + Save + Print. */
+@media (max-width:599.98px){#writingSheet .ws-toolbar{gap:6px 8px}#writingSheet .ws-group{gap:5px}#writingSheet .ws-toolbar button{padding:0.3rem 0.55rem;font-size:0.86rem}#writingSheet .ws-toolbar .ws-shade{font-size:0.86rem;padding-left:0.55rem}}
+@media (max-width:359.98px){#writingSheet .ws-toolbar{padding:8px 6px;gap:6px}#writingSheet .ws-toolbar button{padding:0.3rem 0.4rem;font-size:0.82rem}#writingSheet .ws-toolbar .ws-shade{font-size:0.82rem;padding:0.3rem 1.3rem 0.3rem 0.4rem;background-position:right 0.4rem center}#writingSheet .ws-group{gap:4px}}
 #writingSheet .ws-toolbar button:disabled{opacity:0.4;cursor:default}
 #writingSheet .ws-toolbar button[aria-pressed="true"],#writingSheet .ws-toolbar button[aria-checked="true"]{background:#B8862F;border-color:#B8862F}
 #writingSheet .ws-title{font-weight:600;font-size:0.95rem;margin-right:4px}
 #writingSheet .ws-scroll{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;padding:12px 8px 40px;-webkit-overflow-scrolling:touch}
 #writingSheet .ws-page{position:relative;margin:0 auto 14px;box-shadow:0 4px 16px rgba(0,0,0,0.22);background:${PAPER};max-width:820px}
 #writingSheet .ws-page canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
-#writingSheet .ws-ink{touch-action:pan-y pinch-zoom}
+#writingSheet .ws-ink{touch-action:pan-x pan-y pinch-zoom}
 #writingSheet.ws-writing .ws-ink{touch-action:none;cursor:crosshair}
 #writingSheet .ws-msg{position:absolute;inset:auto 0 50% 0;text-align:center;font-size:13px;color:#a33;padding:0 12px}
 #writingSheet .ws-confirm{position:relative;z-index:4;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:10px 12px;background:#fff3cf;color:#4a3a10;border-bottom:2px solid #B8862F}
@@ -277,17 +283,16 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
         <button type="button" data-ws="undo">${t("Undo")}</button>
         <button type="button" data-ws="clear">${t("Clear")}</button>
       </div>
-      <div class="ws-group" role="radiogroup" aria-label="${t("Letter style")}">
-        <button type="button" role="radio" data-ws-shade="light" aria-checked="false">${t("Light")}</button>
-        <button type="button" role="radio" data-ws-shade="lighter" aria-checked="false">${t("Lighter")}</button>
-        <button type="button" role="radio" data-ws-shade="book" aria-checked="false">${t("Like the book")}</button>
-      </div>
       <div class="ws-group">
+        <select class="ws-shade" data-ws-shade-select aria-label="${t("Letter style")}" title="${t("Letter style")}">
+          <option value="light">${t("Light")}</option>
+          <option value="lighter">${t("Lighter")}</option>
+          <option value="book">${t("Like the book")}</option>
+        </select>
         <button type="button" data-ws="save">${t("Save picture")}</button>
         <button type="button" data-ws="print">${t("Print A4")}</button>
-        <button type="button" data-ws="close" aria-label="${t("Close")}">✕ ${t("Close")}</button>
       </div>
-      <button type="button" class="ws-toggle" data-ws="tools" aria-expanded="true"></button>
+      <span class="ws-end" data-ws-end><button type="button" data-ws="close" aria-label="${t("Close")}">✕ ${t("Close")}</button><button type="button" class="ws-toggle" data-ws="tools" aria-expanded="true"></button></span>
     </div>
     <div class="ws-confirm" data-ws-confirm hidden>
       <span>${t("Close without saving your writing?")}</span>
@@ -312,7 +317,7 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
     root.classList.toggle("ws-writing", st.write);
     $('[data-ws="write"]').setAttribute("aria-pressed", String(st.write));
     root.querySelectorAll("[data-ws-tool]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.wsTool === st.tool)));
-    root.querySelectorAll("[data-ws-shade]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.wsShade === shade)));
+    $("[data-ws-shade-select]").value = shade;
     root.dataset.shade = shade;
     root.classList.toggle("ws-tools-hidden", toolsHidden);
     const tg = $('[data-ws="tools"]');
@@ -351,7 +356,7 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
     if (toolsHidden) return;
     const bar = $(".ws-toolbar");
     const title = $(".ws-title");
-    const tg = $('[data-ws="tools"]');
+    const tg = $("[data-ws-end]"); // Close + Hide travel together (Owner, 1 Oct 2026: two rows of buttons)
     const items = [...bar.children].filter((el) => el !== tg);
     items.forEach((el, i) => { el.style.order = String(i * 10); });
     const mid = (el) => el.offsetTop + el.offsetHeight / 2;
@@ -635,17 +640,16 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
 
   // ---- toolbar
   function wireToolbar() {
+    $("[data-ws-shade-select]").addEventListener("change", (e) => {
+      shade = e.target.value;
+      saveShade(shade);
+      paintToolbar();
+      st.pages.forEach((p) => { if (p.drawn) paintPage(p); });
+    });
     root.addEventListener("click", (e) => {
       const b = e.target.closest("button");
       if (!b || !root.contains(b)) return;
       if (b.dataset.wsTool) { st.tool = b.dataset.wsTool; paintToolbar(); return; }
-      if (b.dataset.wsShade) {
-        shade = b.dataset.wsShade;
-        saveShade(shade);
-        paintToolbar();
-        st.pages.forEach((p) => { if (p.drawn) paintPage(p); });
-        return;
-      }
       switch (b.dataset.ws) {
         case "write": st.write = !st.write; paintToolbar(); break;
         case "tools": toolsHidden = !toolsHidden; saveToolsHidden(toolsHidden); paintToolbar(); break;
