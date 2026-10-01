@@ -660,3 +660,4 @@ total). Allocated by the MMSA Architect.
 09.14: Take an Approach | Record Your Progress | Know Your Status; Search in the banner; Record Your Progress title. Allocated by the MMSA Architect.
 09.15: My account card, Back on the view row, Siyagah data layer, Asma Explore poster, folder checks past 100. Allocated by the MMSA Architect.
 09.16: My account on every page, Study options Save/Search order, Writing sheet in two rows. Allocated by the MMSA Architect.
+09.17: Mapping My Journey opens as a pop-up folder tray. Allocated by the MMSA Architect.

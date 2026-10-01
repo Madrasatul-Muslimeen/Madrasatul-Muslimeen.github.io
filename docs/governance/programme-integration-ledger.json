@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.16",
+    "version": "09.17",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1373,8 +1373,20 @@
     {
       "version": "09.16",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "My account round 2 (#439), Study options Save on top + Search below, Writing sheet two rows + sideways pan.",
+      "integration": {
+        "authorizedOn": "2026-10-01",
+        "integratedOn": "2026-10-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.17",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Siyagah round 2: the folder tray (#442).",
       "integration": {
         "authorizedOn": "2026-10-01",
         "integratedOn": "2026-10-01",
@@ -1383,8 +1395,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.17",
+  "nextUnallocated": "09.18",
   "nextUnallocatedNote": [
+    "v09.17 was allocated to Mapping My Journey opens as a pop-up folder tray, 2026-10-01.",
     "v09.16 was allocated to My account on every page, Study options Save/Search order, Writing sheet in two rows, 2026-10-01.",
     "v09.15 was allocated to My account card, Back on the view row, Siyagah data layer, Asma Explore poster, folder checks past 100, 2026-10-01.",
     "v09.14 was allocated to Take an Approach | Record Your Progress | Know Your Status; Search in the banner; Record Your Progress title, 2026-09-30.",

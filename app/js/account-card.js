@@ -18,6 +18,8 @@
 // re-renders its nav, so the click is delegated from the document rather than
 // bound to the button itself.
 import { t } from "./i18n.js";
+// Installs the delegated Mapping My Journey tray opener on every page that has the account card.
+import "./journey-tray.js";
 
 const STYLE_ID = "accountCardStyle";
 const CSS = `

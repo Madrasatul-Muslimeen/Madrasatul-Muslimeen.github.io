@@ -193,9 +193,17 @@
   .note-actions { margin-top: 0.5rem; display: flex; gap: 0.4rem; flex-wrap: wrap; }
   .folder-chip { display: inline-block; font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 999px; background: #eef2ff; color: #1F3A6E; margin: 0.1rem 0.2rem 0 0; }
   #truncatedMsg { color: #a3352b; font-size: 0.82rem; margin-top: 0.5rem; }
+  /* Embed mode: the page is the pop-up tray's body (journey-tray.js), which
+     supplies the title bar and close. Header, intro, nav and Back are the tray's
+     job; Folders | Timeline | Path stay as its tabs. */
+  html.embed h1, html.embed .intro, html.embed #topNav, html.embed #backLink, html.embed #accountCardOverlay { display: none !important; }
+  html.embed body { margin: 0; padding: 0.4rem 0.6rem; overflow-x: hidden; }
 </style>
 </head>
 <body>
+  <script>(function(){try{if(new URLSearchParams(location.search).get('embed')==='1')document.documentElement.classList.add('embed');}catch(e){}})();</script>
+  <script>/* In the tray, a link that leaves this screen (Import Notes, a note) opens as a full page, not inside the tray. */
+  document.addEventListener('click',function(e){if(!document.documentElement.classList.contains('embed'))return;var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;var h=a.getAttribute('href');if(!h||h.charAt(0)==='#'||/journey-map\.html/.test(h))return;a.setAttribute('target','_top');},true);</script>
   <h1>Mapping My Journey</h1>
   <p class="intro">Every permanent Note you've written, organised your way — folders, a timeline, or a path. Try all three; the app remembers which you picked.</p>
 
