@@ -121,7 +121,20 @@ Read this first, every session. It is the standing brief.
 > "do not translate" and is a different contract. **That contract is NOT
 > invented here**; the Stage B exclusion stands for this candidate.
 
-> ## ⇢ SESSION HANDOVER, 30 Sep 2026 — READ THIS SECOND
+> ## ⇢ SESSION HANDOVER, 1 Oct 2026 — READ THIS SECOND
+>
+> **`docs/reports/2026-10-01-MMSA-SESSION-HANDOVER.md`** is the current
+> continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-10-01.md`**
+> is the prompt that starts a new session. They carry the pause point (Builder
+> round #437, My account on the other 23 pages), the Siyagah six-round plan
+> (decisions 41–42; round 1 done), the Asma poster demo awaiting the Owner,
+> the four suites already red on `main`, and that **the Firestore emulator now
+> runs in this sandbox** (it found the 100-folder bug fixed in v09.15). The
+> 30 Sep handover's sections 2–3 (running a round; sandbox lessons) still hold.
+>
+> **The 30 Sep block below is kept as history**, superseded by it.
+>
+> ## ⇢ SESSION HANDOVER, 30 Sep 2026 (superseded 1 Oct 2026)
 >
 > **`docs/reports/2026-09-30-MMSA-SESSION-HANDOVER.md`** is the current
 > continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-09-30.md`**
