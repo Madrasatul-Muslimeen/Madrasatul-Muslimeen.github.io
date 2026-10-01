@@ -493,19 +493,18 @@
      is untouched, per the owner's own scope call this round. */
   @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cormorant+Garamond:wght@400;500;600;700&display=swap');
   .wheel-heading { font-family: 'Cormorant Garamond', serif; font-weight: 600; color: var(--card-heading); margin-bottom: 0.4rem; }
-  /* "My Status" on the heading line (phones) -- see the markup's comment. A
-     36px tap target whose negative vertical margin keeps the heading's own
-     line height (36px - 2x9px = the heading's own 18px, measured), so the
-     button costs the landing page no height at all. */
-  .wheel-heading { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
-  .my-status-head-btn {
-    /* bottom margin -9px -> -2px, 28 Sep 2026: at -9px the button's lower
-       edge sat 6px inside the wheel card's top edge (measured). */
-    flex: 0 0 auto; min-height: 36px; margin: -9px 0 -2px; padding: 0.25rem 0.85rem;
-    border: none; border-radius: 999px; cursor: pointer;
-    background: var(--card-button-bg); color: var(--card-button-text);
-    font-family: 'Inter', sans-serif; font-weight: 800; font-size: 0.8rem; line-height: 1.2;
-  }
+  /* Owner decision 46 -- the heading line holds the two TITLES only:
+     "Mastery Wheel" | separator | the Approach list's title, centred, one
+     line (fitWheelHeading() steps the size down until it fits). */
+  .wheel-heading { display: flex; align-items: baseline; justify-content: center; gap: 0.45rem; white-space: nowrap; overflow: hidden; }
+  .wheel-heading > span { flex: 0 0 auto; }
+  .wheel-heading.wheel-heading-wrapped { flex-wrap: wrap; white-space: normal; row-gap: 0; text-align: center; }
+  .wheel-heading.wheel-heading-wrapped > .wheel-title-sep { display: none; }
+  /* Decision 36 lives on in the one gap: a thin line, or a dot, at random
+     (html[data-head-sep], set at the top of the module script). */
+  .wheel-title-sep { align-self: center; width: 1.5px; height: 0.78em; background: currentColor; opacity: 0.55; }
+  html[data-head-sep="dot"] .wheel-title-sep { width: 5px; height: 5px; border-radius: 50%; opacity: 0.75; }
+  .note-popup-title .wheel-title-sep { display: inline-block; margin: 0 0.5rem; vertical-align: middle; }
   /* 27 Sep 2026: #myStatusWideBtn is the one "My Status" button at every
      width now, in the equal-capsule stack below (the heading's own button is
      gone). */
@@ -637,117 +636,21 @@
     .wheel-intro-capsule { font-size: 0.67rem; padding: 0.25rem 0.55rem; }
     .wheel-unit-capsule { padding: 0.25rem 0.5rem; }
   }
-  /* 28 Sep 2026, owner: "Place three capsule on one row in PC and Tab. I
-     think you can also fit this in the mobile too. If not Place My Status at
-     the Mastery Wheel Bar, in the right edge." Measured first: the wheel's
-     own column is 336-434px wide on tablet/PC, and three capsules as wide as
-     the caption need ~670px -- so on tablet/PC (>=721px) the row is moved
-     out of the column into #wheelIntroBand, a band across the top of the
-     whole wheel card, where three equal columns fit (placeWheelIntroRow()).
-     On a phone even the natural widths do not fit (459px against 377px at
-     390px), so "My Status" is the Mastery Wheel bar's own right-edge button
-     there (#myStatusBtn) and the caption and "Choose a Unit" share one line.
-     Every capsule is the same 36px tall at every width. */
+  /* Owner decision 46 (1 Oct 2026) -- one row of the three ACTION buttons
+     under the wheel, above its colour key, at every width: Read | Choose a
+     Unit | Know Your Status, each 36px tall. It replaces the 28-30 Sep
+     arrangement (titles and buttons mixed on two rows, the row moved into a
+     band across the card from 721px, Read and Know Your Status as links on
+     the heading line below 900px). Measured: the three need 335px in English
+     at 390px and fit one line from 340px up at the sizes below; the row may
+     wrap rather than cut anything at the very narrowest width. */
   .wheel-intro-settled > .wheel-intro-capsule {
     display: inline-flex; align-items: center; justify-content: center; min-height: 36px; box-sizing: border-box; text-align: center;
   }
-  #wheelIntroBand { display: none; }
-  #wheelIntroBand:not(:empty) { display: block; flex: 0 0 auto; padding: 0.35rem 0 0.5rem; }
-  #wheelIntroBand > .wheel-intro-settled {
-    display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
-    width: max-content; max-width: 100%; margin: 0 auto; gap: 0.4rem; justify-items: stretch;
-  }
-  #wheelIntroBand > .wheel-intro-settled > .wheel-intro-capsule,
-  #wheelIntroBand > .wheel-intro-settled > .wheel-unit-wrap,
-  #wheelIntroBand .wheel-unit-wrap > .wheel-unit-capsule { width: 100%; box-sizing: border-box; }
-  #wheelIntroBand .wheel-unit-wrap { display: block; }
-  #wheelIntroBand .wheel-intro-capsule { font-size: 0.8rem; }
-  .my-status-head-btn { display: none; }
-  /* 28 Sep 2026, Owner (a tablet held upright, ~600px): "Tab should show all
-     three capsule in one row". 720px -> 479px: measured, the three capsules at
-     their natural widths need 459px (en) / 380px (bn) and the wheel column is
-     viewport - 13px on a single-column layout, so from 480px they share one
-     line in the column; below it My Status stays on the bar. */
-  /* 479px -> 519px, 30 Sep 2026, Owner: "fix the tablet wrap too". Measured
-     again with the three capsules: in English Know Your Status wrapped to a
-     second row at 480-505px (the 459px estimate above was too low); from 510px
-     all three share one line. So up to 519px Know Your Status stays on the
-     heading line, beside Read, and the capsule row keeps one line. */
-  @media (max-width: 519px) {
-    .wheel-heading > .my-status-head-btn { display: inline-flex; align-items: center; }
-    /* 30 Sep 2026, Owner (phone screenshot): "The status button should resemble
-       the text of 'Mastery Wheel', as both are in the same level". So on a
-       phone it wears the heading's own face, weight, size and colour -- no
-       pill -- and keeps its 36px tap height. */
-    .wheel-heading > .my-status-head-btn {
-      background: transparent; color: inherit; font-family: inherit; font-weight: inherit; font-size: inherit;
-      padding: 0 0.1rem; border-radius: 6px; white-space: nowrap;
-    }
-    #myStatusWideBtn { display: none; }
-    /* 30 Sep 2026, Owner (phone screenshot, a red dot marking each spot):
-       "Place Read button in the middle of the gap. It may look elegant if you
-       put dot or a | like bar in between those buttons". Two growing boxes
-       carry the free space, one each side of Read, so Read sits exactly in
-       the middle of the gap between the title and Know Your Status; the box
-       after Read draws the separator at its own centre, so the mark sits
-       midway between Read and Know Your Status (it keeps at least 6px).
-       The orders put the ::after box between Read and Know Your Status. */
-    /* 30 Sep 2026, Owner (the two side by side, real screenshots): "both
-       dot/ line looks good to me. enable both appears randomly." So BOTH
-       gaps carry a mark, and each time the page opens it is a thin line or a
-       dot, picked at random (html[data-head-sep], set at the top of the
-       module script; the line is the default until it runs). The earlier
-       Owner report, "it has to be aligned", is why the words now share one
-       BASELINE rather than being centred box by box (the title's serif and
-       the buttons' boxes put "Mastery Wheel" lower than Read). */
-    .wheel-heading { align-items: baseline; }
-    .wheel-heading::before, .wheel-heading::after {
-      content: ""; flex: 1 1 0; min-width: 6px; align-self: baseline; height: 0.78em;
-      background: linear-gradient(currentColor, currentColor) center / 1.5px 100% no-repeat;
-      opacity: 0.55;
-    }
-    html[data-head-sep="dot"] .wheel-heading::before, html[data-head-sep="dot"] .wheel-heading::after {
-      min-width: 7px; opacity: 0.75;
-      background: radial-gradient(circle, currentColor 0 2.2px, transparent 2.7px) center 62% / 7px 7px no-repeat;
-    }
-    .wheel-heading::before { order: 1; }
-    .wheel-heading > #readHeadBtn { order: 2; margin-inline-start: 0; }
-    .wheel-heading::after { order: 3; }
-    /* The bar, not a dot: looked at side by side at 320-412px, a 4px dot
-       read as a stray speck. And the title keeps one line: at 320px in
-       English it used to break "Mastery / Wheel" onto two lines (on main
-       too, before this change); a 0.25rem gap gives it the room. */
-    .wheel-heading { gap: 0.25rem; }
-    .wheel-heading > span { white-space: nowrap; }
-    .wheel-heading > #myStatusBtn { order: 4; }
-  }
-  /* At 320-359px in English the line is full (measured: the bar's 6px only
-     fits with the gaps at 0.1rem); Bangla has room to spare. */
-  @media (max-width: 359px) {
-    .wheel-heading { gap: 0.1rem; }
-  }
-  /* 30 Sep 2026, Owner: "put Read beside Know Your Status on mobile". Read is a
-     heading-line link, in the heading's own face, pushed to the right edge --
-     beside Know Your Status on a phone. MEASURED: a fourth capsule does not fit
-     the capsule row in English until ~1000px (at 480-530 Know Your Status
-     wrapped to a second row; at 721-980 the Approach capsule's own text wrapped
-     to 43px beside 36px neighbours). So below 900px -- where the heading line
-     is shown; from 900px the wheel is a window whose title bar replaces it --
-     the capsule-row Read (#readContentsBtn) is hidden and the capsules stay
-     exactly as the Owner approved them (two on a phone, three on a tablet).
-     From 900px Read is the fourth capsule; at 900-999px the band's text is set
-     a touch smaller so all four keep one 36px line (measured). */
-  @media (min-width: 900px) and (max-width: 999px) {
-    #wheelIntroBand .wheel-intro-capsule { font-size: 0.7rem; }
-  }
-  @media (max-width: 899px) {
-    .wheel-heading > #readHeadBtn {
-      display: inline-flex; align-items: center; margin-inline-start: auto;
-      background: transparent; color: inherit; font-family: inherit; font-weight: inherit; font-size: inherit;
-      padding: 0 0.1rem; border-radius: 6px; white-space: nowrap;
-    }
-    #readContentsBtn { display: none; }
-  }
+  #wheelIntroSettled .wheel-unit-capsule-word { white-space: nowrap; }
+  /* The Choose a Unit list opens UPWARD now: the row sits low on the card,
+     and on a PC the wheel is a window whose bottom edge would cut it. */
+  #wheelIntroSettled .wheel-unit-palette { top: auto; bottom: 2.6rem; }
 
   /* 27 Sep 2026, owner: "Enable the entire screen to move up on up scrolling,
      so that the approaches list will appear in the full screen. (currently
@@ -4069,18 +3972,20 @@
            exactly like #noteView's own. -->
       <div id="wheelPopupView">
         <div id="wheelPopupTitleBar" class="note-popup-titlebar">
-          <span class="note-popup-title">Mastery Wheel</span>
+          <span class="note-popup-title"><span class="wheel-title-main">Mastery Wheel</span><span class="wheel-title-sep" aria-hidden="true"></span><span class="wheel-title-approach" data-approach-list-title>Quran Approaches - 40 Ways</span></span>
           <div class="note-popup-titlebar-actions">
             <button type="button" id="wheelPopupMaximizeBtn" title="Maximize" aria-pressed="false">⬜</button>
           </div>
         </div>
-        <h2 class="wheel-heading"><span>Mastery Wheel</span><button type="button" id="readHeadBtn" class="my-status-head-btn" aria-haspopup="dialog">Read</button><button type="button" id="myStatusBtn" class="my-status-head-btn">Know Your Status</button></h2>
-        <!-- 28 Sep 2026: on tablet/PC (>=721px) the capsule row
-             (#wheelIntroSettled) is moved in here by placeWheelIntroRow(), so
-             its three capsules can share one row across the whole card; on a
-             phone it goes back to the top of the wheel column and "My Status"
-             is #myStatusBtn on the bar above, at its right edge. -->
-        <div id="wheelIntroBand"></div>
+        <!-- Owner decision 46, 1 Oct 2026 (option C of a real-screenshot demo):
+             "Mastery Wheel n Approach the Quran in 40 Ways are not buttons.
+             Therefore they should be in the same row while Read, Choose a
+             unit and Know Your Status are buttons for actions, therefore,
+             should be in the same row." So this line carries the two TITLES
+             (fitted to one line by fitWheelHeading()), and the three action
+             buttons are one row under the wheel (#wheelIntroSettled). The
+             separator is decision 36's line-or-dot, picked at random. -->
+        <h2 class="wheel-heading"><span class="wheel-title-main">Mastery Wheel</span><span class="wheel-title-sep" aria-hidden="true"></span><span id="approachListCapsule" class="wheel-title-approach" data-approach-list-title>Quran Approaches - 40 Ways</span></h2>
         <!-- 27 Sep 2026, owner: "The width of the capsules are different.
              make them similar (like the width of the 'approach the Quran...')."
              The heading's own "My Status" button (v08.92, there only to save a
@@ -4118,56 +4023,11 @@
                The list opens through js/bar-palette.js -- the same
                one-delegated-listener popover Explore, QCR and Asma already
                use, so outside-click, Escape and "only one drops down at a
-               time" all come free (I2). -->
-          <div id="wheelIntroSettled" class="wheel-intro-settled">
-            <span id="approachListCapsule" class="wheel-intro-capsule">Quran Approaches - 40 Ways</span>
-            <span class="bar-palette-wrap wheel-unit-wrap" data-bar-palette-wrap="wheelUnit">
-              <button type="button" id="wheelUnitBtn" class="wheel-intro-capsule wheel-unit-capsule bar-palette-toggle"
-                      data-bar-palette-toggle="wheelUnit" aria-haspopup="true" aria-expanded="false">
-                <span class="wheel-unit-capsule-word">Choose a Unit</span>
-                <span class="wheel-unit-capsule-caret" aria-hidden="true">&#9662;</span>
-              </button>
-              <!-- Every control in here is a MIRROR of the canonical one in
-                   Study options (same shape as #readPickers and the hub's own
-                   Surah/Ayah pair): it copies that control's options and
-                   value and forwards a change straight back to it, so
-                   currentUnitType/goToUnitNumber() keep living in exactly one
-                   place and picking here is picking there. -->
-              <div class="bar-palette wheel-unit-palette" data-bar-palette="wheelUnit">
-                <div class="wheel-unit-row">
-                  <label for="wheelUnitTypeSelect">Study Unit</label>
-                  <select id="wheelUnitTypeSelect"></select>
-                </div>
-                <div class="wheel-unit-row" id="wheelUnitNumRow" hidden>
-                  <label for="wheelUnitNumSelect" id="wheelUnitNumLabel">Number</label>
-                  <select id="wheelUnitNumSelect"></select>
-                </div>
-                <div class="wheel-unit-row" id="wheelUnitRangeRow" hidden>
-                  <label for="wheelUnitFromSelect">From</label>
-                  <select id="wheelUnitFromSelect"></select>
-                  <label for="wheelUnitToSelect">To</label>
-                  <select id="wheelUnitToSelect"></select>
-                </div>
-                <p class="bar-palette-note" id="wheelUnitNowLine"></p>
-              </div>
-            </span>
-            <!-- Issue #328 -- "My Status" (Owner decisions 6-8, 27 Sep 2026):
-                 a card telling a person their status on the whole Qur'an, by
-                 Approach. A third capsule, same family as the two above --
-                 no new bar -- opening a full-screen sheet below 900px and a
-                 centred window at >=900px (the Word Card's own v08.89/#322
-                 pattern). Nothing is read until this is pressed (I9); see
-                 openMyStatus(). -->
-            <!-- Issue #415 -- "Read": a plain contents list (Surah / Juz / Hizb /
-                 Page / Ruku') that opens the EXISTING Read view. Nothing is
-                 fetched until it is pressed (I9). -->
-            <button type="button" id="readContentsBtn" class="wheel-intro-capsule wheel-unit-capsule" aria-haspopup="dialog">
-              <span class="wheel-unit-capsule-word">Read</span>
-            </button>
-            <button type="button" id="myStatusWideBtn" class="wheel-intro-capsule wheel-unit-capsule">
-              <span class="wheel-unit-capsule-word">Know Your Status</span>
-            </button>
-          </div>
+               time" all come free (I2).
+               Since Owner decision 46 (1 Oct 2026) this row sits UNDER the
+               wheel (see #wheelIntroSettled there), holds the three action
+               buttons only, and the Approach list's title moved to the
+               heading line. -->
           <div id="wheelStageWrap" class="wheel-stage-wrap wheel-veiled">
             <!-- 2 Sep 2026 -- "enable all wheels ... to be expandable from
                  any side": a drag-resize wrap around #wheelContainer alone
@@ -4282,6 +4142,57 @@
                 <path d="M 50 14 L 50 56" stroke="#8a6a24" stroke-width="1"/>
               </svg>
             </div>
+          </div>
+          <!-- Owner decision 46 -- the three ACTION buttons, one row under
+               the wheel and above its colour key, at every width: Read |
+               Choose a Unit | Know Your Status. -->
+          <div id="wheelIntroSettled" class="wheel-intro-settled">
+            <button type="button" id="readContentsBtn" class="wheel-intro-capsule wheel-unit-capsule" aria-haspopup="dialog">
+              <span class="wheel-unit-capsule-word">Read</span>
+            </button>
+            <span class="bar-palette-wrap wheel-unit-wrap" data-bar-palette-wrap="wheelUnit">
+              <button type="button" id="wheelUnitBtn" class="wheel-intro-capsule wheel-unit-capsule bar-palette-toggle"
+                      data-bar-palette-toggle="wheelUnit" aria-haspopup="true" aria-expanded="false">
+                <span class="wheel-unit-capsule-word">Choose a Unit</span>
+                <span class="wheel-unit-capsule-caret" aria-hidden="true">&#9662;</span>
+              </button>
+              <!-- Every control in here is a MIRROR of the canonical one in
+                   Study options (same shape as #readPickers and the hub's own
+                   Surah/Ayah pair): it copies that control's options and
+                   value and forwards a change straight back to it, so
+                   currentUnitType/goToUnitNumber() keep living in exactly one
+                   place and picking here is picking there. -->
+              <div class="bar-palette wheel-unit-palette" data-bar-palette="wheelUnit">
+                <div class="wheel-unit-row">
+                  <label for="wheelUnitTypeSelect">Study Unit</label>
+                  <select id="wheelUnitTypeSelect"></select>
+                </div>
+                <div class="wheel-unit-row" id="wheelUnitNumRow" hidden>
+                  <label for="wheelUnitNumSelect" id="wheelUnitNumLabel">Number</label>
+                  <select id="wheelUnitNumSelect"></select>
+                </div>
+                <div class="wheel-unit-row" id="wheelUnitRangeRow" hidden>
+                  <label for="wheelUnitFromSelect">From</label>
+                  <select id="wheelUnitFromSelect"></select>
+                  <label for="wheelUnitToSelect">To</label>
+                  <select id="wheelUnitToSelect"></select>
+                </div>
+                <p class="bar-palette-note" id="wheelUnitNowLine"></p>
+              </div>
+            </span>
+            <!-- Issue #328 -- "My Status" (Owner decisions 6-8, 27 Sep 2026):
+                 a card telling a person their status on the whole Qur'an, by
+                 Approach. A third capsule, same family as the two above --
+                 no new bar -- opening a full-screen sheet below 900px and a
+                 centred window at >=900px (the Word Card's own v08.89/#322
+                 pattern). Nothing is read until this is pressed (I9); see
+                 openMyStatus(). -->
+            <!-- Issue #415 -- "Read": a plain contents list (Surah / Juz / Hizb /
+                 Page / Ruku') that opens the EXISTING Read view. Nothing is
+                 fetched until it is pressed (I9). -->
+            <button type="button" id="myStatusWideBtn" class="wheel-intro-capsule wheel-unit-capsule">
+              <span class="wheel-unit-capsule-word">Know Your Status</span>
+            </button>
           </div>
           <div id="wheelLegendContainer"></div>
           <!-- 27 Sep 2026, owner: "Enable an option for the user to choose the
@@ -6370,13 +6281,37 @@
     // new read), so renaming it there renames it here. Until the tenant
     // loads, the markup's default is translated by translateStatic() as usual.
     function renderApproachListCapsule() {
-      const el = document.getElementById("approachListCapsule");
-      if (!el) return;
       const stored = currentTenantDoc?.approachListTitle;
-      el.textContent = stored && (stored.en || stored.bn)
+      const text = stored && (stored.en || stored.bn)
         ? langText(stored, getAppLang(), stored.en || stored.bn)
         : t(approachListTitleFromTenantDoc(null).en);
+      // Decision 46 -- the same title on the heading line and in the PC
+      // window's title bar.
+      document.querySelectorAll("[data-approach-list-title]").forEach((el) => { el.textContent = text; });
+      fitWheelHeading();
     }
+    /** Decision 46 -- "Mastery Wheel · <Approach list title>" keeps ONE line:
+        the type steps down from its own size until the line fits (never below
+        13px); only if it still cannot fit does it take two lines, without the
+        separator. Measured, not guessed: the title is the tenant's own and
+        its length differs by language. */
+    function fitWheelHeading() {
+      const h = document.querySelector(".wheel-heading");
+      if (!h || !h.getBoundingClientRect().width) return;
+      h.classList.remove("wheel-heading-wrapped");
+      h.style.fontSize = "";
+      let size = parseFloat(getComputedStyle(h).fontSize);
+      while (h.scrollWidth > h.clientWidth + 1 && size > 13) { size -= 0.5; h.style.fontSize = size + "px"; }
+      if (h.scrollWidth > h.clientWidth + 1) h.classList.add("wheel-heading-wrapped");
+    }
+    if (typeof ResizeObserver === "function") {
+      let fitW = 0;
+      new ResizeObserver((entries) => {
+        const w = Math.round(entries[0].contentRect.width);
+        if (w !== fitW) { fitW = w; fitWheelHeading(); }
+      }).observe(document.querySelector(".wheel-heading"));
+    }
+    document.fonts?.ready?.then(fitWheelHeading);
     // Follow-up round: Map(subjectId -> courseOffer contextId) for
     // selectedPersonId -- same mechanism topic-study.js/routine-study.js
     // already use (course-offers.js's programSubjectMapFromEnrollments()).
@@ -10288,22 +10223,9 @@
     if (myStatusCloseBtn) myStatusCloseBtn.setAttribute("aria-label", t("Close Know Your Status"));
     if (myStatusDetailCloseBtn) myStatusDetailCloseBtn.setAttribute("aria-label", t("Close"));
     document.getElementById("myStatusWideBtn")?.addEventListener("click", openMyStatus);
-    document.getElementById("myStatusBtn")?.addEventListener("click", openMyStatus);
-    // 28 Sep 2026 -- see #wheelIntroBand's CSS. One node, moved (never
-    // copied), so the "Choose a Unit" palette and every listener go with it.
-    (function placeWheelIntroRow() {
-      const row = document.getElementById("wheelIntroSettled");
-      const band = document.getElementById("wheelIntroBand");
-      const col = document.querySelector("#wheelSection .wheel-col");
-      if (!row || !band || !col) return;
-      const wide = window.matchMedia("(min-width: 721px)");
-      const place = () => {
-        if (wide.matches) { if (row.parentElement !== band) band.appendChild(row); }
-        else if (row.parentElement !== col) col.insertBefore(row, col.firstChild);
-      };
-      place();
-      wide.addEventListener("change", place);
-    })();
+    // Owner decision 46 -- the action row lives under the wheel at every
+    // width now, so the old placeWheelIntroRow() (which moved it into a band
+    // across the card from 721px) is gone.
     myStatusCloseBtn?.addEventListener("click", closeMyStatus);
     myStatusMountEl?.addEventListener("click", (e) => { if (e.target === myStatusMountEl) closeMyStatus(); });
     myStatusDetailCloseBtn?.addEventListener("click", closeMyStatusDetail);
@@ -10484,7 +10406,6 @@
     window.addEventListener("resize", positionReadQuickRow);
 
     document.getElementById("readContentsBtn")?.addEventListener("click", openReadContents);
-    document.getElementById("readHeadBtn")?.addEventListener("click", openReadContents);
     document.getElementById("readContentsCloseBtn")?.addEventListener("click", closeReadContents);
     readContentsMountEl?.addEventListener("click", (e) => { if (e.target === readContentsMountEl) closeReadContents(); });
     readContentsTabsEl?.addEventListener("click", (e) => {
