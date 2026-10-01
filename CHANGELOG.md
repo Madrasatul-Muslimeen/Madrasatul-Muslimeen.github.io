@@ -19000,3 +19000,14 @@ Siyagah port round 4 of 7; Owner decisions 41, 42.1, 42.4 (#446, PR #448, Builde
 - **The Note itself**: title, when it was created and last changed, a chip for every folder it is in (tap one to see that folder), and the text with each heading folding open and closed. What is folded is remembered on this device only.
 - **Dates in the reader's language**: Bangla digits for a Bangla reader, in the Note pane, the Timeline and the Path (found in review).
 - **Checks**: journey-note-pane 321/0 (mutations: the old preview-only title click, and the width read from the screen instead of the window, both fail), journey-folder-menus 144/0, journey-tray 227/0, journey-map-screen 46/0, journey-map-path 32/0, journey-map-back 38/0, journey-map-boundary 19/0, the other journey-map suites green, account-card 1235/0, phone-width 217/0, behaviour 1007/1 (31e: sandbox TLS), emulator journey-map-real-function and note-foundation-real-function green, governance 8/8.
+
+## v09.21 — 1 Oct 2026 — Edit a Note in the pane, with autosave
+
+Siyagah port round 5 of 7; Owner decision 42.3 (#450, PR #451, Builder run 708).
+
+- **✏️ Edit** on an open Note (your own Notes): the title and the text become editable in place, with Bold, Italic, Headings 1–3, bulleted and numbered lists and Undo. **✓ Done** returns to reading.
+- **Autosave, as decided**: what you type is kept on this device about every second; a saved version is written to your account after about 30 seconds without typing, and whenever you leave the Note — Done, ← Back, the previous/next arrows, another Note, a folder chip, closing the pop-up tray, switching away from the app on a phone, or closing the page. Nothing is written when nothing changed.
+- **Nothing is ever overwritten**: if the Note was changed on another device, your text stays on this device and the screen says so. If the save fails for another reason, it says "Not saved yet — will try again" and tries again. Opening a Note that still has unsaved text on this device offers **Restore my unsaved text** or **Discard it**.
+- **While editing, the toolbar and ✓ Done stay at the top of the screen** however far down a long Note you are (found in review).
+- Known: a Note's title cannot be left completely empty; it shows "Not saved yet" until a title is typed.
+- **Checks**: journey-note-edit 208/0 (mutations: no save on switching away; saving when nothing changed — both fail), journey-note-pane 321/0, journey-folder-menus 144/0, journey-tray 227/0, journey-map-screen 46/0, every journey-map suite green, account-card 1235/0, phone-width 217/0, behaviour 1007/1 (31e: sandbox TLS), emulator journey-map-real-function and note-foundation-real-function green, governance 8/8.
