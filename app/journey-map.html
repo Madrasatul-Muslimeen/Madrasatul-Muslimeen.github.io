@@ -93,8 +93,28 @@
   .folder-pin-flag { font-size: 0.85rem; }
   .folder-rename-input { flex: 1 1 auto; min-width: 0; font-weight: 600; color: #1F3A6E; font-size: calc(0.94rem * var(--tree-scale, 1)); }
   .folder-tree-empty, .folder-tree-file-btn { font-size: 0.85rem; color: #888; padding: 0.3rem 0; }
-  .folder-remove-confirm { background: #fff2f0; border: 1px solid #eab7ae; border-radius: 0.5rem; padding: 0.5rem 0.6rem; margin: 0.3rem 0 0.3rem 0; font-size: 0.85rem; }
-  .folder-remove-confirm p { margin: 0 0 0.4rem; }
+  /* Siyagah round 3 -- the destination picker (one chooser for Copy to… and
+     Move to…, notes and folders) and the Trash view. The picker is a fixed
+     overlay above everything this document draws; full screen at phone width. */
+  .folder-picker-overlay { position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; }
+  .folder-picker { background: #fff; color: #222; border-radius: 0.6rem; width: min(30rem, 94vw); max-height: 82vh; display: flex; flex-direction: column; gap: 0.5rem; padding: 0.8rem; box-sizing: border-box; outline: none; }
+  .folder-picker-title { margin: 0; font-size: 1.05rem; }
+  .folder-picker-msg { margin: 0; }
+  .folder-picker-list { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1 1 auto; min-height: 0; }
+  .folder-picker-row { display: flex; align-items: center; gap: 0.4rem; width: 100%; min-height: 44px; text-align: left; background: #fff; color: #1F3A6E; border: 1px solid #ddd; border-radius: 0.4rem; margin: 0 0 0.25rem; padding: 0.4rem 0.6rem; box-sizing: border-box; cursor: pointer; }
+  .folder-picker-row .folder-row-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+  .folder-picker-row.refused { opacity: 0.45; }
+  .folder-picker-actions { display: flex; justify-content: flex-end; }
+  @media (max-width: 600px) {
+    .folder-picker-overlay { align-items: stretch; }
+    .folder-picker { width: 100%; height: 100%; max-height: none; border-radius: 0; }
+  }
+  .trash-head { display: flex; align-items: center; gap: 0.6rem; }
+  .trash-title { margin: 0; font-size: 1.1rem; }
+  .trash-list { list-style: none; margin: 0.5rem 0; padding: 0; }
+  .trash-row { display: flex; align-items: center; gap: 0.6rem; border: 1px solid #ddd; border-radius: 0.5rem; background: #fff; padding: 0.5rem 0.6rem; margin-bottom: 0.35rem; min-height: 44px; }
+  .trash-row-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 0.1rem; overflow-wrap: anywhere; }
+  .trash-row button { flex: 0 0 auto; min-height: 40px; }
   /* P6-G/issue #259 -- every editing action (📍/✏️/▲/▼/Move to…/🗑) folds
      into ONE ⋯ menu, at every width (a stated simplification from the
      Owner's own Siyagah reference -- see folderRowHtml()'s own comment).
@@ -244,6 +264,7 @@
       <span class="bar-palette-wrap page-menu-wrap" data-bar-palette-wrap="pageMenu">
         <button type="button" class="folder-menu-btn bar-palette-toggle" data-bar-palette-toggle="pageMenu" aria-haspopup="true" aria-expanded="false" title="More" aria-label="More">⋯</button>
         <div class="bar-palette" data-bar-palette="pageMenu">
+          <button type="button" class="secondary tiny" id="openTrashBtn" style="display:block; width:100%; text-align:left; padding:0.32rem 0.7rem;">🗑 Trash</button>
           <a class="secondary tiny" href="import-notes.html" style="display:block; text-align:left; text-decoration:none; padding:0.32rem 0.7rem;">Import Notes…</a>
         </div>
       </span>
@@ -252,6 +273,7 @@
     <div id="viewFolders"></div>
     <div id="viewTimeline" style="display:none;"></div>
     <div id="viewPath" style="display:none;"></div>
+    <div id="viewTrash" style="display:none;"></div>
   </div>
 
   <script type="module">
@@ -273,10 +295,11 @@
     import { roleListLabel } from "./js/labels.js";
     import { sanitizeNoteHtml } from "./js/note-sanitize.js";
     import { closeAllBarPalettes } from "./js/bar-palette.js";
-    import { NOTE_STATUS, createNoteFolder, createNotePlacement } from "./js/note-foundation.js";
+    import { NOTE_STATUS, createNoteFolder, createNotePlacement, restoreNote } from "./js/note-foundation.js";
     import {
-      ownerFolderTreePagedSharded, folderContents, moveNoteToFolder,
-      renameFolder, reorderFolder, moveFolder, retireFolder, reorderFiling,
+      ownerFolderTreePagedSharded, folderContents,
+      renameFolder, reorderFolder, moveFolder, reorderFiling,
+      trashFolder, restoreFolder, loadOwnerTrash, copyNoteToFolder, moveNote, copyFolder,
       loadAllOwnerNotesSharded, loadAllOwnerPlacementsSharded, folderNoteCounts, folderMoveRefusal,
     } from "./js/journey-map-service.js";
 
@@ -444,6 +467,18 @@
       if (msg === "A retired folder cannot be reordered.") return t("That folder has already been removed, so it can't be reordered.");
       if (msg === "Folder does not exist.") return t("That folder could not be found — please refresh and try again.");
       if (msg === "A retired placement cannot be reordered.") return t("That Note has already been removed from this folder, so it can't be reordered.");
+      const holds = msg.match(/^This folder still holds (\d+) notes?\. Move or delete them first\.$/);
+      if (holds) return t("This folder still holds {n} notes. Move or delete them first.", { n: holds[1] });
+      if (msg === "This note is already filed in that folder.") return t("This note is already filed in that folder.");
+      if (msg === "This note is not filed in that folder.") return t("This note is not filed in that folder any more — please refresh and try again.");
+      if (msg === "That folder does not exist or is in Trash.") return t("That folder does not exist or is in Trash.");
+      if (msg === "System folders cannot be moved to Trash.") return t("Personal Journey Map and Reflection Archive can't be deleted.");
+      if (msg === "System folders cannot be copied.") return t("Personal Journey Map and Reflection Archive can't be copied.");
+      if (msg === "Folder is not in Trash.") return t("That folder is not in Trash.");
+      if (msg === "Note is not in Trash.") return t("That Note is not in Trash.");
+      if (msg === "Stale Note revision.") return t("That Note has changed — please refresh and try again.");
+      if (msg === "A move must change folder.") return t("A move must change folder.");
+      if (/^There are too many folders or Notes to judge this safely/.test(msg)) return t("There are too many folders or Notes to judge this safely. Nothing was changed.");
       if (msg === "Placement does not exist.") return t("That filing could not be found — please refresh and try again.");
       return null;
     }
@@ -485,6 +520,7 @@
     const viewFolders = document.getElementById("viewFolders");
     const viewTimeline = document.getElementById("viewTimeline");
     const viewPath = document.getElementById("viewPath");
+    const viewTrash = document.getElementById("viewTrash");
 
     mountAccountCard({
       tenantRow: tenantSelect.closest("label"),
@@ -632,6 +668,7 @@
       viewFolders.style.display = currentView === "folders" ? "block" : "none";
       viewTimeline.style.display = currentView === "timeline" ? "block" : "none";
       viewPath.style.display = currentView === "path" ? "block" : "none";
+      viewTrash.style.display = currentView === "trash" ? "block" : "none";
     }
     viewToggle.querySelectorAll(".view-toggle-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -723,6 +760,7 @@
     function renderCurrentView() {
       if (currentView === "folders") renderFoldersView();
       else if (currentView === "timeline") renderTimelineView();
+      else if (currentView === "trash") renderTrashView();
       else renderPathView();
     }
 
@@ -881,7 +919,6 @@
     // mid-drag.
     let newFolderTargetNode = null; // null = top level
     let folderSearchQuery = "";
-    let pendingRemoveKey = null;
     let inlineRenameKey = null;
     let dragFolderKey = null;
 
@@ -1063,29 +1100,19 @@
               <button type="button" class="secondary tiny" data-folder-rename>✏️ ${t("Rename")}</button>
               <button type="button" class="secondary tiny" data-folder-up ${upDisabled ? "disabled" : ""} aria-label="${escapeHtml(t("Move up"))}">▲ ${t("Move up")}</button>
               <button type="button" class="secondary tiny" data-folder-down ${downDisabled ? "disabled" : ""} aria-label="${escapeHtml(t("Move down"))}">▼ ${t("Move down")}</button>
+              <button type="button" class="secondary tiny" data-folder-copy>${t("Copy to…")}</button>
               <button type="button" class="secondary tiny" data-folder-move>${t("Move to…")}</button>
-              <button type="button" class="danger tiny" data-folder-remove>🗑 ${t("Remove")}</button>
+              <button type="button" class="danger tiny" data-folder-delete>🗑 ${t("Delete")}</button>
             </div>
           </span>`;
       }
-      const removeConfirm = pendingRemoveKey === key ? folderRemoveConfirmHtml(f) : "";
       const draggableAttr = editable ? ' draggable="true"' : "";
       return `<li class="folder-tree-item" data-depth="${depth}">
         <div class="folder-row${isSystemFolderRole(f.semanticRole) ? " system" : ""}" style="margin-left:${(depth * 1.1).toFixed(2)}rem"
              data-folder-role="${escapeHtml(f.semanticRole)}" data-folder-id="${escapeHtml(f.folderId ?? "")}"${draggableAttr}>
           ${toggle}${nameHtml}${badge}${pin}${menu}
         </div>
-        ${removeConfirm}
       </li>`;
-    }
-
-    /** In-page confirmation (never the browser's own confirm dialog) for retiring a folder, rendered as the row's own sibling block. Worded per I4: kept, not deleted; Notes untouched. */
-    function folderRemoveConfirmHtml(f) {
-      return `<div class="folder-remove-confirm" data-folder-remove-confirm>
-        <p>${escapeHtml(t('Remove "{name}"? It will be kept, not deleted — an administrator can restore it. Notes filed in it are untouched.', { name: folderDisplayName(f) }))}</p>
-        <button type="button" class="danger tiny" data-folder-remove-confirm-yes>${t("Remove")}</button>
-        <button type="button" class="secondary tiny" data-folder-remove-confirm-cancel>${t("Cancel")}</button>
-      </div>`;
     }
 
     /** A Note filed directly in an OPEN folder, as a leaf of the tree -- the same shared note-card/preview toggle every view uses (wireNoteCards() is reused for it), plus its own ▲▼/Move to… when the owner is looking at their own tree. A Note filed in two folders appears under both, independently (ADR-010 §5). */
@@ -1095,8 +1122,9 @@
       const controls = isSelfSelected() ? `
           <button type="button" class="secondary tiny note-order-btn" data-note-up ${idx <= 0 ? "disabled" : ""} aria-label="${escapeHtml(t("Move up"))}">▲</button>
           <button type="button" class="secondary tiny note-order-btn" data-note-down ${idx >= siblingRows.length - 1 ? "disabled" : ""} aria-label="${escapeHtml(t("Move down"))}">▼</button>
+          <button type="button" class="secondary tiny" data-note-copy>${t("Copy to…")}</button>
           <button type="button" class="secondary tiny" data-note-move>${t("Move to…")}</button>` : "";
-      return `<li class="folder-tree-item folder-tree-note" data-note-leaf data-note-id="${escapeHtml(note.noteId)}" data-placement-id="${escapeHtml(placement.placementId)}" style="margin-left:${(depth * 1.1).toFixed(2)}rem">
+      return `<li class="folder-tree-item folder-tree-note" data-note-leaf data-note-id="${escapeHtml(note.noteId)}" data-in-folder="${escapeHtml(placement.folderId)}" data-placement-id="${escapeHtml(placement.placementId)}" style="margin-left:${(depth * 1.1).toFixed(2)}rem">
         <div class="note-card">
           <div class="note-card-head" data-note-toggle>
             <span class="note-card-title">📄 ${escapeHtml(title)}</span>
@@ -1145,14 +1173,15 @@
           const siblings = siblingsOf(node);
           reorderFolderSwap(siblings, siblings.findIndex((s) => s.folderId === node.folderId), 1);
         });
+        row.querySelector("[data-folder-copy]")?.addEventListener("click", (e) => {
+          e.stopPropagation(); closeAllBarPalettes(null); copyFolderTo(node);
+        });
         row.querySelector("[data-folder-move]")?.addEventListener("click", (e) => {
-          e.stopPropagation(); closeAllBarPalettes(null); moveFolderPrompt(node);
+          e.stopPropagation(); closeAllBarPalettes(null); moveFolderTo(node);
         });
-        row.querySelector("[data-folder-remove]")?.addEventListener("click", (e) => {
-          e.stopPropagation(); closeAllBarPalettes(null); removeFolderPrompt(node);
+        row.querySelector("[data-folder-delete]")?.addEventListener("click", (e) => {
+          e.stopPropagation(); closeAllBarPalettes(null); deleteFolder(node);
         });
-        li?.querySelector("[data-folder-remove-confirm-yes]")?.addEventListener("click", () => confirmRemoveFolder(node));
-        li?.querySelector("[data-folder-remove-confirm-cancel]")?.addEventListener("click", () => { pendingRemoveKey = null; renderFoldersView(); });
 
         // Drag a row: top 28% = before, bottom 28% = after, middle 44% =
         // inside (Siyagah's own zones). Mouse/desktop only, per the issue's
@@ -1288,7 +1317,8 @@
         const idx = rows.findIndex((r) => r.placement.placementId === placementId);
         li.querySelector("[data-note-up]")?.addEventListener("click", () => reorderNoteInFolder(rows, idx, -1));
         li.querySelector("[data-note-down]")?.addEventListener("click", () => reorderNoteInFolder(rows, idx, 1));
-        li.querySelector("[data-note-move]")?.addEventListener("click", () => moveNoteDialog(note, placement, folderNode));
+        li.querySelector("[data-note-copy]")?.addEventListener("click", () => copyNoteTo(note, folderNode));
+        li.querySelector("[data-note-move]")?.addEventListener("click", () => moveNoteTo(note, folderNode));
       });
     }
 
@@ -1314,60 +1344,278 @@
       await refreshAll();
     }
 
-    /** Same prompt-a-folder-name-from-a-list shape as `openFileDialog()`/`moveNoteDialog()` -- system folders are excluded as a DESTINATION (they refuse a parent outright, per journeyFolder()'s own rule) and the folder can't be moved into itself. Any other refusal (a cycle, too deep) is only known once the write is attempted, and is surfaced in words by `runFolderWrite()`. Kept as a text prompt rather than rebuilt as a richer picker -- the issue's own "Keep ▲▼ and Move to… for every folder, reachable on a phone" names this control by its EXISTING behaviour. */
-    async function moveFolderPrompt(node) {
-      const TOP_LEVEL = t("(Top level)");
-      const flat = flattenFolders(mergedRoots()).filter(({ folder }) =>
-        folder.folderId !== node.folderId && !isSystemFolderRole(folder.semanticRole));
-      const choice = prompt(
-        t('Move folder "{name}" under which folder? Type the exact name shown, "{topLevel}" for the top level, or cancel.',
-          { name: folderDisplayName(node), topLevel: TOP_LEVEL })
-        + "\n" + TOP_LEVEL + "\n" + flat.map(({ folder, depth }) => `${"— ".repeat(depth)}${folderDisplayName(folder)}`).join("\n")
-      );
-      if (!choice) return;
-      let parentFolderId = null;
-      if (choice.trim().toLowerCase() !== TOP_LEVEL.trim().toLowerCase()) {
-        const match = flat.find(({ folder }) => folderDisplayName(folder).trim().toLowerCase() === choice.trim().toLowerCase());
-        if (!match) { showPageStatus(t("No folder matched that name — nothing moved.")); return; }
-        parentFolderId = match.folder.folderId;
-      }
-      const outcome = await runFolderWrite(
-        () => moveFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, folderId: node.folderId, parentFolderId, actorUid: auth.currentUser.uid }),
-        { collection: TENANT.NOTE_FOLDERS, action: "moveFolder" }
-      );
-      if (!outcome.ok) return;
-      showPageStatus(t('Folder "{name}" moved.', { name: folderDisplayName(node) }));
-      await refreshAll();
+    // Siyagah port round 3 (Owner decisions 41, 42.1, M4-M6): Copy to…, Move
+    // to…, Delete (to Trash) and the Trash view. Every write goes through
+    // journey-map-service.js (round 1, emulator-tested); this page writes
+    // nothing of its own.
+
+    function noteTitleOf(note) { return note.title?.trim() || t("(untitled)"); }
+
+    /** The tree flattened in display order with the SAME derived numbers the tree itself shows (renderFolderSubtree()'s own numbering). */
+    function pickerRows() {
+      const out = [];
+      const walk = (f, depth, numberPath) => {
+        out.push({ folder: f, depth, numberPath });
+        let childIndex = 0;
+        for (const child of (f.children ?? []).slice().sort(byOrder)) {
+          const childPath = numberPath ? `${numberPath}.${String(++childIndex).padStart(2, "0")}` : String(++childIndex).padStart(2, "0");
+          walk(child, depth + 1, childPath);
+        }
+      };
+      let userIndex = 0;
+      for (const f of mergedRoots()) walk(f, 0, isSystemFolderRole(f.semanticRole) ? null : String(++userIndex).padStart(2, "0"));
+      return out;
     }
 
     /**
-     * Retiring a folder with active children is refused by the Rules
-     * (`parentOneHopOk()`) -- checked here FIRST, against the tree already
-     * loaded (no extra read: `node.children` already reflects only ACTIVE
-     * folders, the same set the underlying retire writer itself checks), so
-     * the common case says so in words BEFORE any confirmation is even
-     * offered. Confirming happens on the page itself (issue #259) -- never
-     * the browser's own confirm dialog -- so this function only OPENS the
-     * confirmation; `confirmRemoveFolder()` below performs the actual write.
+     * The ONE destination chooser both menus reuse. Resolves with the chosen
+     * folder node, the string "top" (when `allowTop`), or null on Cancel/Esc.
+     * `refuse(node|null)` returns a sentence for a destination that may not be
+     * used (a folder's own subtree, a folder that already holds the Note): that
+     * row stays on screen, is marked aria-disabled, and tapping it says why in
+     * the picker instead of closing it. Full screen on a phone (CSS), and a
+     * fixed overlay above everything this document draws (§5.3).
      */
-    async function removeFolderPrompt(node) {
-      if ((node.children ?? []).length > 0) {
-        showPageStatus(t('"{name}" still has folders inside it — remove those first, then this one.', { name: folderDisplayName(node) }));
-        return;
-      }
-      pendingRemoveKey = expandKeyFor(node);
-      renderFoldersView();
+    function openFolderPicker({ title, allowTop = false, includeSystem = true, refuse = () => null }) {
+      return new Promise((resolve) => {
+        document.getElementById("folderPicker")?.remove();
+        const overlay = document.createElement("div");
+        overlay.id = "folderPicker";
+        overlay.className = "folder-picker-overlay";
+        overlay.innerHTML = `<div class="folder-picker" role="dialog" aria-modal="true" aria-labelledby="folderPickerTitle" tabindex="-1">
+          <h2 id="folderPickerTitle" class="folder-picker-title">${escapeHtml(title)}</h2>
+          <input type="text" class="folder-search-input" data-picker-search placeholder="${escapeHtml(t("Search folders and Notes…"))}" aria-label="${escapeHtml(t("Search folders and Notes…"))}" />
+          <p class="warn folder-picker-msg" data-picker-msg role="alert" style="display:none;"></p>
+          <ul class="folder-picker-list" data-picker-list></ul>
+          <div class="folder-picker-actions"><button type="button" class="secondary" data-picker-cancel>${escapeHtml(t("Cancel"))}</button></div>
+        </div>`;
+        document.body.appendChild(overlay);
+        const msgEl = overlay.querySelector("[data-picker-msg]");
+        const listEl = overlay.querySelector("[data-picker-list]");
+        const searchEl = overlay.querySelector("[data-picker-search]");
+        const onKey = (e) => { if (e.key === "Escape") finish(null); };
+        function finish(value) {
+          document.removeEventListener("keydown", onKey);
+          overlay.remove();
+          resolve(value);
+        }
+        const rows = pickerRows().filter(({ folder }) => includeSystem || !isSystemFolderRole(folder.semanticRole));
+        function renderList() {
+          const q = searchEl.value.trim().toLowerCase();
+          const shown = rows.filter(({ folder }) => !q || folderDisplayName(folder).toLowerCase().includes(q));
+          let html = "";
+          if (allowTop && !q) {
+            html += `<li><button type="button" class="folder-picker-row" data-pick="top"><span class="folder-row-name">${escapeHtml(t("(Top level)"))}</span></button></li>`;
+          }
+          html += shown.map(({ folder, depth, numberPath }) => {
+            const refused = refuse(folder);
+            const count = folder.folderId ? (folderCounts[folder.folderId] ?? 0) : 0;
+            return `<li><button type="button" class="folder-picker-row${refused ? " refused" : ""}" data-pick="${escapeHtml(expandKeyFor(folder))}" ${refused ? 'aria-disabled="true"' : ""} style="padding-left:${(0.6 + depth * 1.1).toFixed(2)}rem">
+              <span class="folder-row-name">${escapeHtml(numberedLabel(folder, numberPath))}</span>${count > 0 ? `<span class="folder-row-count">${count}</span>` : ""}
+            </button></li>`;
+          }).join("");
+          if (!html) html = `<li class="note">${escapeHtml(t('No folders or Notes match "{query}".', { query: searchEl.value.trim() }))}</li>`;
+          listEl.innerHTML = html;
+        }
+        renderList();
+        searchEl.addEventListener("input", () => { msgEl.style.display = "none"; renderList(); });
+        listEl.addEventListener("click", (e) => {
+          const btn = e.target.closest("[data-pick]");
+          if (!btn) return;
+          const key = btn.dataset.pick;
+          const chosen = key === "top" ? null : (findNodeByExpandKey(mergedRoots(), key) ?? null);
+          const refused = refuse(chosen);
+          if (refused) { msgEl.textContent = refused; msgEl.style.display = "block"; return; }
+          finish(key === "top" ? "top" : chosen);
+        });
+        overlay.querySelector("[data-picker-cancel]").addEventListener("click", () => finish(null));
+        overlay.addEventListener("click", (e) => { if (e.target === overlay) finish(null); });
+        document.addEventListener("keydown", onKey);
+        overlay.querySelector(".folder-picker").focus();
+      });
     }
-    async function confirmRemoveFolder(node) {
-      pendingRemoveKey = null;
+
+    /** The service's own refusal vocabulary for a folder move/copy, said before any write is attempted -- the destination's own subtree included. */
+    function folderDestinationRefusal(node, destination) {
+      if (destination !== null && !destination.folderId) return t("Personal Journey Map and Reflection Archive can't hold other folders inside them.");
+      const folders = new Map(rawFolderList(folderTree).map((f) => [f.folderId, f]));
+      const slug = folderMoveRefusal({ folders, tenantId: activeTenantId, ownerPersonId: selectedPersonId, folderId: node.folderId, parentFolderId: destination === null ? null : destination.folderId });
+      return slug ? (FOLDER_PARENT_REFUSAL_MESSAGES[slug]?.() ?? t("That move was refused.")) : null;
+    }
+    const placeLabel = (picked) => (picked === "top" ? t("(Top level)") : folderDisplayName(picked));
+
+    async function moveFolderTo(node) {
+      const picked = await openFolderPicker({
+        title: t('Move folder "{name}" to…', { name: folderDisplayName(node) }),
+        allowTop: true, includeSystem: false,
+        refuse: (dest) => folderDestinationRefusal(node, dest),
+      });
+      if (!picked) return;
       const outcome = await runFolderWrite(
-        () => retireFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, folderId: node.folderId, actorUid: auth.currentUser.uid }),
-        { collection: TENANT.NOTE_FOLDERS, action: "retireFolder" }
+        () => moveFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, folderId: node.folderId, parentFolderId: picked === "top" ? null : picked.folderId, actorUid: auth.currentUser.uid }),
+        { collection: TENANT.NOTE_FOLDERS, action: "moveFolder" }
       );
-      if (!outcome.ok) { renderFoldersView(); return; }
-      showPageStatus(t('Folder "{name}" removed.', { name: folderDisplayName(node) }));
+      if (!outcome.ok) return;
+      showPageStatus(t('Folder "{name}" moved to {place}.', { name: folderDisplayName(node), place: placeLabel(picked) }));
       await refreshAll();
     }
+
+    async function copyFolderTo(node) {
+      const picked = await openFolderPicker({
+        title: t('Copy folder "{name}" to…', { name: folderDisplayName(node) }),
+        allowTop: true, includeSystem: false,
+        refuse: (dest) => folderDestinationRefusal(node, dest),
+      });
+      if (!picked) return;
+      const outcome = await runFolderWrite(
+        () => copyFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, folderId: node.folderId, toParentFolderId: picked === "top" ? null : picked.folderId, actorUid: auth.currentUser.uid }),
+        { collection: TENANT.NOTE_FOLDERS, action: "copyFolder" }
+      );
+      if (!outcome.ok) return;
+      const { folders, placements } = outcome.result;
+      showPageStatus(t('Folder "{name}" copied to {place}: {folders} folder(s). Its {notes} Note filing(s) are linked, not duplicated — each Note is still one Note.', {
+        name: folderDisplayName(node), place: placeLabel(picked), folders, notes: placements,
+      }));
+      await refreshAll();
+    }
+
+    /** Delete = Trash (decision 42.1: never an erase). The service refuses, before any write, a folder whose subtree still holds Notes (M4); its own sentence is shown in words. */
+    async function deleteFolder(node) {
+      const outcome = await runFolderWrite(
+        () => trashFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, folderId: node.folderId, actorUid: auth.currentUser.uid }),
+        { collection: TENANT.NOTE_FOLDERS, action: "trashFolder" }
+      );
+      if (!outcome.ok) return;
+      showPageStatus(t('Folder "{name}" moved to Trash. Open 🗑 Trash from the ⋯ menu to restore it.', { name: folderDisplayName(node) }));
+      await refreshAll();
+    }
+
+    function activeFilingFolderIds(note) {
+      return new Set(allPlacements.filter((p) => p.noteId === note.noteId && p.status === NOTE_STATUS.ACTIVE).map((p) => p.folderId));
+    }
+
+    async function copyNoteTo(note) {
+      const filed = activeFilingFolderIds(note);
+      const picked = await openFolderPicker({
+        title: t('Copy "{title}" to…', { title: noteTitleOf(note) }),
+        refuse: (dest) => (dest?.folderId && filed.has(dest.folderId) ? t("This note is already filed in that folder.") : null),
+      });
+      if (!picked) return;
+      const toFolderId = await ensureRealFolder(picked);
+      if (!toFolderId) return;
+      const outcome = await runFolderWrite(
+        () => copyNoteToFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, noteId: note.noteId, toFolderId, actorUid: auth.currentUser.uid }),
+        { collection: TENANT.NOTE_PLACEMENTS, action: "copyNoteToFolder" }
+      );
+      if (!outcome.ok) return;
+      showPageStatus(t('"{title}" copied to {folder}. It now shows in both folders — still one Note, not a duplicate.', { title: noteTitleOf(note), folder: folderDisplayName(picked) }));
+      await refreshAll();
+    }
+
+    async function moveNoteTo(note, fromNode) {
+      const filed = activeFilingFolderIds(note);
+      const picked = await openFolderPicker({
+        title: t('Move "{title}" to…', { title: noteTitleOf(note) }),
+        refuse: (dest) => (dest?.folderId && filed.has(dest.folderId) ? t("This note is already filed in that folder.") : null),
+      });
+      if (!picked) return;
+      const toFolderId = await ensureRealFolder(picked);
+      if (!toFolderId) return;
+      const outcome = await runFolderWrite(
+        () => moveNote(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, noteId: note.noteId, fromFolderId: fromNode.folderId, toFolderId, actorUid: auth.currentUser.uid }),
+        { collection: TENANT.NOTE_PLACEMENTS, action: "moveNote" }
+      );
+      if (!outcome.ok) return;
+      showPageStatus(t('"{title}" moved to {folder}.', { title: noteTitleOf(note), folder: folderDisplayName(picked) }));
+      await refreshAll();
+    }
+
+    // -- 🗑 Trash: retired folders and Notes, each with Restore. No erase, no Empty Trash (decision 42.1). --
+    let trashRenderToken = 0;
+    let viewBeforeTrash = "folders";
+    function openTrash() {
+      if (currentView !== "trash") viewBeforeTrash = currentView;
+      currentView = "trash";
+      renderToggle();
+      renderCurrentView();
+    }
+    function closeTrash() {
+      currentView = VALID_VIEWS.includes(viewBeforeTrash) ? viewBeforeTrash : "folders";
+      renderToggle();
+      renderCurrentView();
+    }
+    async function renderTrashView() {
+      const token = ++trashRenderToken;
+      const head = `<div class="trash-head"><button type="button" class="secondary tiny" id="trashBackBtn">← ${escapeHtml(t("Back"))}</button><h2 class="trash-title">🗑 ${escapeHtml(t("Trash"))}</h2></div>
+        <p class="note">${escapeHtml(t("Nothing here is erased. Restore brings a folder or Note back where it was."))}</p>`;
+      viewTrash.innerHTML = head + `<p class="note" id="trashLoading">${escapeHtml(t("Loading Trash…"))}</p>`;
+      viewTrash.querySelector("#trashBackBtn").addEventListener("click", closeTrash);
+      if (!activeTenantId || !selectedPersonId) { viewTrash.querySelector("#trashLoading").textContent = t("Trash is empty."); return; }
+      let trash;
+      try {
+        trash = await loadOwnerTrash(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId });
+      } catch (err) {
+        console.error("[trash load]", err);
+        if (token === trashRenderToken) showPageStatus(t("Couldn't load Trash — please try again."));
+        return;
+      }
+      if (token !== trashRenderToken || currentView !== "trash") return;
+      const byId = new Map([...rawFolderList(folderTree), ...trash.folders].map((f) => [f.folderId, f]));
+      const placeOf = (folder) => {
+        const chain = [];
+        const seen = new Set([folder.folderId]);
+        let cursor = folder.parentFolderId ? byId.get(folder.parentFolderId) : null;
+        while (cursor && !seen.has(cursor.folderId)) { chain.unshift(folderDisplayName(cursor)); seen.add(cursor.folderId); cursor = cursor.parentFolderId ? byId.get(cursor.parentFolderId) : null; }
+        return chain.join(" › ") || t("(Top level)");
+      };
+      const noteFolderNames = (note) => {
+        const names = allPlacements.filter((p) => p.noteId === note.noteId).map((p) => byId.get(p.folderId)).filter(Boolean).map(folderDisplayName);
+        return names.length ? [...new Set(names)].join(", ") : t("(no folder)");
+      };
+      const restoreBtn = isSelfSelected() ? `<button type="button" class="secondary tiny" data-trash-restore>${escapeHtml(t("Restore"))}</button>` : "";
+      let html = head;
+      if (trash.folders.length === 0 && trash.notes.length === 0) {
+        html += `<p id="trashEmpty">${escapeHtml(t("Trash is empty."))}</p>`;
+      } else {
+        html += `<ul class="trash-list" data-trash-list>`;
+        for (const f of trash.folders) {
+          html += `<li class="trash-row" data-trash-folder-id="${escapeHtml(f.folderId)}"><div class="trash-row-text"><span class="folder-row-name">📁 ${escapeHtml(folderDisplayName(f))}</span><span class="note">${escapeHtml(t("Was in: {place}", { place: placeOf(f) }))} · ${escapeHtml(when(f.updatedAt))}</span></div>${restoreBtn}</li>`;
+        }
+        for (const n of trash.notes) {
+          html += `<li class="trash-row" data-trash-note-id="${escapeHtml(n.noteId)}"><div class="trash-row-text"><span class="folder-row-name">📄 ${escapeHtml(noteTitleOf(n))}</span><span class="note">${escapeHtml(t("Was in: {place}", { place: noteFolderNames(n) }))} · ${escapeHtml(when(n.updatedAt))}</span></div>${restoreBtn}</li>`;
+        }
+        html += `</ul>`;
+        if (trash.truncated) html += `<p class="note">${escapeHtml(t("Showing a large first batch only — there is more than could be loaded at once."))}</p>`;
+      }
+      viewTrash.innerHTML = html;
+      viewTrash.querySelector("#trashBackBtn").addEventListener("click", closeTrash);
+      viewTrash.querySelectorAll("[data-trash-folder-id]").forEach((li) => {
+        const folder = trash.folders.find((f) => f.folderId === li.dataset.trashFolderId);
+        li.querySelector("[data-trash-restore]")?.addEventListener("click", async () => {
+          const outcome = await runFolderWrite(
+            () => restoreFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, folderId: folder.folderId, actorUid: auth.currentUser.uid }),
+            { collection: TENANT.NOTE_FOLDERS, action: "restoreFolder" }
+          );
+          if (!outcome.ok) return;
+          showPageStatus(t('Folder "{name}" restored.', { name: folderDisplayName(folder) }));
+          await refreshAll();
+        });
+      });
+      viewTrash.querySelectorAll("[data-trash-note-id]").forEach((li) => {
+        const note = trash.notes.find((n) => n.noteId === li.dataset.trashNoteId);
+        li.querySelector("[data-trash-restore]")?.addEventListener("click", async () => {
+          const outcome = await runFolderWrite(
+            () => restoreNote(db, { tenantId: activeTenantId, noteId: note.noteId, expectedRevisionId: note.currentRevisionId, actorUid: auth.currentUser.uid }),
+            { collection: TENANT.NOTES, action: "restoreNote" }
+          );
+          if (!outcome.ok) return;
+          showPageStatus(t('"{title}" restored.', { title: noteTitleOf(note) }));
+          await refreshAll();
+        });
+      });
+    }
+    document.getElementById("openTrashBtn").textContent = `🗑 ${t("Trash")}`;
+    document.getElementById("openTrashBtn").addEventListener("click", () => { closeAllBarPalettes(null); openTrash(); });
 
     /**
      * ▲▼ move a folder among its siblings -- single-field updates, not a
@@ -1415,29 +1663,6 @@
       if (node.semanticRole === "journey-map") return t("Your Personal Journey Map is empty so far — Notes you file here will appear as your own journey through what you've studied.");
       if (node.semanticRole === "reflection-archive") return t("Your Reflection Archive is empty so far — file a Note here to keep it as a longer-term reflection, separate from your day-to-day journey.");
       return t("This folder is empty.");
-    }
-
-    async function moveNoteDialog(note, placement, fromNode) {
-      const flat = flattenFolders(mergedRoots()).filter(({ folder }) => !(folder.folderId ? folder.folderId === fromNode.folderId : folder.semanticRole === fromNode.semanticRole));
-      const choice = prompt(
-        t('Move "{title}" to which folder? Type the exact name shown, or cancel.', { title: note.title?.trim() || t("(untitled)") })
-        + "\n" + flat.map(({ folder, depth }) => `${"— ".repeat(depth)}${folderDisplayName(folder)}`).join("\n")
-      );
-      if (!choice) return;
-      const match = flat.find(({ folder }) => folderDisplayName(folder).trim().toLowerCase() === choice.trim().toLowerCase());
-      if (!match) { showPageStatus(t("No folder matched that name — nothing moved.")); return; }
-      const toFolderId = await ensureRealFolder(match.folder);
-      if (!toFolderId) return;
-      const outcome = await safeWrite(
-        () => moveNoteToFolder(db, {
-          tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid,
-          noteId: note.noteId, fromPlacementId: placement.placementId, toFolderId, actorUid: auth.currentUser.uid,
-        }),
-        { collection: TENANT.NOTE_PLACEMENTS, action: "moveNoteToFolder" }
-      );
-      if (!outcome.ok) return;
-      showPageStatus(t('"{title}" moved to {folder}.', { title: note.title?.trim() || t("(untitled)"), folder: folderDisplayName(match.folder) }));
-      await refreshAll();
     }
 
     // -- Toolbar: search (folders + Note titles, in the already-loaded data,

@@ -397,6 +397,20 @@ export function writeBatch() {
     async commit() {
       return __trip("batchCommit", "(batch of " + staged.length + ")", null, function () {
         staged.forEach(function (w) { __recordWriteData("batch-" + w[0], w[1], w[2]); });
+        // OPT-IN (a suite sets window.__stubApplyBatches before the page runs):
+        // apply the batch to DATA so a read after the write sees it, as real
+        // Firestore does. Off by default -- every existing suite keeps its
+        // never-mutated DATA. Added for journey-folder-menus-browser.mjs.
+        if (window.__stubApplyBatches) {
+          staged.forEach(function (w) {
+            var col = w[1] && w[1].__col, id = w[1] && w[1].__id;
+            if (!col || !id) return;
+            DATA[col] = DATA[col] || [];
+            var at = DATA[col].findIndex(function (d) { return d._id === id; });
+            if (w[0] === "set") { var row = Object.assign({ _id: id }, w[2]); if (at >= 0) DATA[col][at] = row; else DATA[col].push(row); }
+            else if (at >= 0) DATA[col][at] = Object.assign({}, DATA[col][at], w[2]);
+          });
+        }
       });
     },
   };
