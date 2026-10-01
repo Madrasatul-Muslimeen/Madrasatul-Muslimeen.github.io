@@ -259,6 +259,35 @@
   .pane-edit-toolbar.folded .tb-fold { display: none; }
   .pane-edit-toolbar:not(.folded) [data-tb-menu-wrap] { display: none; }
   .pane-edit-toolbar .bar-palette { right: auto; left: 0; width: 12rem; }
+  /* Siyagah round 6a -- Note pop-up windows. Menus inside a window must be above it (§5.3), so the window never clips: only its own scroll area does. */
+  .note-win { position: fixed; z-index: 1000; display: flex; flex-direction: column; box-sizing: border-box; background: #fff; color: #222; border: 1px solid #999; border-radius: 8px; box-shadow: 0 8px 30px rgba(0,0,0,0.35); outline: none; }
+  .note-win.sheet { inset: 0 0 var(--nw-switch, 0px) 0; width: auto; height: auto; border: 0; border-radius: 0; }
+  .note-win.sheet-hidden { display: none; }
+  .nw-bar { flex: 0 0 44px; display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; background: #1f3a6e; color: #fff; padding: 0 0 0 0.8rem; border-radius: 7px 7px 0 0; cursor: move; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .note-win.sheet .nw-bar { cursor: default; border-radius: 0; }
+  .nw-title { font-weight: 600; font-size: 1rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nw-close { flex: 0 0 auto; min-width: 44px; min-height: 44px; background: none; border: 0; color: #fff; font-size: 1.4rem; line-height: 1; cursor: pointer; }
+  .nw-view { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 0.3rem 0.6rem 0; }
+  .nw-view .note-pane-bar { flex: 0 0 auto; }
+  .nw-view [data-pane-back], .nw-view .note-pane-title { display: none; }
+  .nw-details-row { flex: 0 0 auto; display: flex; align-items: flex-start; gap: 0.4rem; margin: 0.2rem 0; }
+  .nw-details-btn { flex: 0 0 auto; min-height: 40px; white-space: nowrap; }
+  .nw-details { flex: 1 1 0; min-width: 0; max-height: 1.7rem; overflow: hidden; align-self: center; }
+  .nw-details.open { max-height: none; overflow: visible; }
+  .nw-details .note-pane-meta { margin: 0 0 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nw-details.open .note-pane-meta { white-space: normal; }
+  .nw-details .note-pane-chips { margin: 0; }
+  /* Architect review of #453: closed, the Details line is the date alone --
+     the folder chips sat below its one-line clip, half a pill showing. */
+  .nw-details:not(.open) .note-pane-chips { display: none; }
+  .nw-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; padding-bottom: 1rem; }
+  .nw-view .pane-edit-toolbar { flex: 0 0 auto; }
+  /* the eight resize handles' own geometry comes from js/float-window.js (handleCss), injected below */
+  .note-win.sheet .nw-h { display: none; }
+  body.jt-dragging .note-win { user-select: none; -webkit-user-select: none; }
+  .nw-switch { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5000; height: 56px; box-sizing: border-box; display: flex; gap: 0.4rem; align-items: center; padding: 0 0.4rem; background: #1f3a6e; }
+  .nw-switch-btn { flex: 1 1 0; min-width: 0; min-height: 40px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nw-switch-btn.active { outline: 2px solid #fff; font-weight: 600; }
   .pane-edit-body { min-height: 8rem; padding: 0.5rem; border: 1px solid #aab; border-radius: 0.4rem; outline: none; }
   .pane-edit-body:focus { border-color: #1F3A6E; box-shadow: 0 0 0 2px rgba(31,58,110,0.15); }
   .pane-edit-status { margin: 0.3rem 0; font-size: 0.8rem; color: #555; }
@@ -385,6 +414,7 @@
     import { roleListLabel } from "./js/labels.js";
     import { sanitizeNoteHtml } from "./js/note-sanitize.js";
     import { closeAllBarPalettes } from "./js/bar-palette.js";
+    import { HANDLES, handleCss, clampRect, startDrag } from "./js/float-window.js";
     import { NOTE_STATUS, createNoteFolder, createNotePlacement, restoreNote, retirePermanentNote, updatePermanentNoteContent } from "./js/note-foundation.js";
     import {
       ownerFolderTreePagedSharded, folderContents,
@@ -773,7 +803,7 @@
       pageStatusMsg.textContent = msg;
       pageStatusMsg.style.display = "block";
       // The pane replaces the list below 1200px; its failures must still reach the reader (I15).
-      if (typeof paneNoteId !== "undefined" && paneNoteId !== null) pageStatusMsg.scrollIntoView?.({ block: "nearest" });
+      if (typeof paneView !== "undefined" && paneView.noteId !== null) pageStatusMsg.scrollIntoView?.({ block: "nearest" });
     }
     function renderReadOnlyBanner() {
       if (isSelfSelected()) { readOnlyMsg.style.display = "none"; return; }
@@ -880,9 +910,10 @@
     function noteCardHtml(note, { fileControl = false, extraHead = "" } = {}) {
       const open = expandedNoteIds.has(note.noteId);
       const fileBtn = fileControl && isSelfSelected() ? `<button type="button" class="secondary tiny" data-note-file>${t("File in a folder…")}</button>` : "";
+      const winBtn = `<button type="button" class="secondary tiny" data-note-window>⧉ ${t("Open in window")}</button>`;
       return `<div class="note-card" data-note-id="${escapeHtml(note.noteId)}">
-        ${noteHeadHtml(note, { extraHead, hasActions: !!fileBtn })}
-        <div class="note-actions" data-note-actions style="${open ? "" : "display:none"}">${fileBtn}</div>
+        ${noteHeadHtml(note, { extraHead, hasActions: true })}
+        <div class="note-actions" data-note-actions style="${open ? "" : "display:none"}">${winBtn}${fileBtn}</div>
       </div>`;
     }
     // Issue #265 -- a WordPress-imported Note carries its REAL original date
@@ -907,7 +938,11 @@
         const noteId = card.dataset.noteId;
         const note = notes.find((n) => n.noteId === noteId);
         if (!note) return;
-        card.querySelector("[data-note-open]")?.addEventListener("click", (e) => openNotePane(noteId, e.currentTarget));
+        card.querySelector("[data-note-open]")?.addEventListener("click", (e) => {
+          if (e.ctrlKey || e.metaKey) { openNoteWindow(noteId, { fromEl: e.currentTarget }); return; } // Multi: its own window
+          openNotePane(noteId, e.currentTarget);
+        });
+        card.querySelector("[data-note-window]")?.addEventListener("click", (e) => openNoteWindow(noteId, { fromEl: e.currentTarget }));
         card.querySelector("[data-note-toggle]")?.addEventListener("click", (e) => {
           if (expandedNoteIds.has(noteId)) expandedNoteIds.delete(noteId); else expandedNoteIds.add(noteId);
           const shown = expandedNoteIds.has(noteId);
@@ -938,10 +973,6 @@
     const isEmbedded = document.documentElement.classList.contains("embed");
     const noteLayoutEl = document.getElementById("noteLayout");
     const notePaneEl = document.getElementById("notePane");
-    const paneBarEl = notePaneEl.querySelector("[data-pane-bar]");
-    let paneNoteId = null;       // the Note shown, or null when the pane is closed
-    let paneOrder = [];          // the Notes ‹ › walk, in the order of the list it was opened from
-    let paneFolderId = null;     // the folder the pane was opened from, when there is one (Move to… needs a "from")
     let paneListScroll = 0;      // the list's scroll position, put back by ← Back
     let pendingOpenNoteId = new URLSearchParams(location.search).get("note"); // "Open full page" from the tray
 
@@ -955,7 +986,7 @@
     }
 
     function applyNoteTier() {
-      const open = paneNoteId !== null;
+      const open = paneView.noteId !== null;
       const tier = noteLayoutTier();
       noteLayoutEl.classList.toggle("pane-open", open);
       noteLayoutEl.classList.toggle("tier-wide", tier === "wide");
@@ -1006,49 +1037,82 @@
       d.innerHTML = sanitizeNoteHtml(html || "");
       return sanitizeNoteHtml(d.innerHTML);
     }
-    const editTitleEl = notePaneEl.querySelector("[data-edit-title]");
-    const editToolbarEl = notePaneEl.querySelector("[data-edit-toolbar]");
-    const editStatusEl = notePaneEl.querySelector("[data-edit-status]");
-    const draftOfferEl = notePaneEl.querySelector("[data-draft-offer]");
-    const paneBodyEl = notePaneEl.querySelector("[data-pane-body]");
-    let ed = null; // the open edit session, or null
-
-    const editBodyEl = () => paneBodyEl.querySelector("[data-edit-body]");
-    function readEditor() {
-      const body = editBodyEl();
-      return { title: editTitleEl.value.trim(), bodyHtml: body ? normBody(body.innerHTML) : "" };
+    // -------------------------------------------------------------------
+    // Siyagah port round 6a (Owner decisions 42.4, M3): the SAME Note view is
+    // either the inline pane or a pop-up WINDOW. A "view" is one such surface
+    // -- its element, the Note it shows, its ‹ › order and its own edit
+    // session (`ed`). Every function below takes the view it works on, so the
+    // editor, autosave and menus are ONE implementation, never a second one.
+    // A Note is never live in two views (§4.6): see openNoteWindow().
+    // -------------------------------------------------------------------
+    const noteViewProto = notePaneEl.cloneNode(true); // pristine, before any render: a window is built from it
+    let viewSeq = 0;
+    function makeView(el, kind) {
+      const v = { el, kind, win: null, uid: kind === "pane" ? "" : `w${++viewSeq}`, noteId: null, order: [], folderId: null, ed: null };
+      v.barEl = el.querySelector("[data-pane-bar]");
+      v.editTitleEl = el.querySelector("[data-edit-title]");
+      v.editToolbarEl = el.querySelector("[data-edit-toolbar]");
+      v.editStatusEl = el.querySelector("[data-edit-status]");
+      v.draftOfferEl = el.querySelector("[data-draft-offer]");
+      v.bodyEl = el.querySelector("[data-pane-body]");
+      v.scrollEl = el.querySelector("[data-win-scroll]") || el;
+      if (v.uid) { // palette ids must be unique per surface (bar-palette.js closes "all but this id")
+        for (const w of el.querySelectorAll("[data-bar-palette-wrap]")) w.dataset.barPaletteWrap += v.uid;
+        for (const b of el.querySelectorAll("[data-bar-palette-toggle]")) b.dataset.barPaletteToggle += v.uid;
+        for (const p of el.querySelectorAll("[data-bar-palette]")) p.dataset.barPalette += v.uid;
+      }
+      el.addEventListener("input", (ev) => {
+        if (!ev.target.closest("[data-edit-title], [data-edit-body]")) return;
+        if (v.win && ev.target.matches("[data-edit-title]")) v.win.querySelector(".nw-title").textContent = ev.target.value.trim() || t("(untitled)");
+        onEditInput(v);
+      });
+      el.addEventListener("mousedown", (ev) => { if (ev.target.closest("[data-edit-toolbar] button")) ev.preventDefault(); });
+      el.addEventListener("click", (ev) => onViewClick(v, ev));
+      return v;
     }
-    function setEditStatus(kind) {
+    const paneView = makeView(notePaneEl, "pane");
+    notePaneEl.tabIndex = -1; // focusView() lands here when a Note already open in the pane is asked for again
+    const windowViews = []; // pop-up windows, back to front is `zOrder`
+    const allViews = () => [paneView, ...windowViews];
+    const viewShowing = (noteId) => allViews().find((x) => x.noteId === noteId);
+
+    const editBodyEl = (v) => v.bodyEl.querySelector("[data-edit-body]");
+    function readEditor(v) {
+      const body = editBodyEl(v);
+      return { title: v.editTitleEl.value.trim(), bodyHtml: body ? normBody(body.innerHTML) : "" };
+    }
+    function setEditStatus(v, kind) {
       const text = {
         device: t("Saved on this device"),
         saved: t("Saved"),
         unsaved: t("Not saved yet — will try again"),
         conflict: t("This Note changed on another device. Your text is kept on this device — copy it before reloading."),
       }[kind] || "";
-      editStatusEl.textContent = text;
-      editStatusEl.hidden = !text || !ed;
-      editStatusEl.classList.toggle("problem", kind === "unsaved" || kind === "conflict");
+      v.editStatusEl.textContent = text;
+      v.editStatusEl.hidden = !text || !v.ed;
+      v.editStatusEl.classList.toggle("problem", kind === "unsaved" || kind === "conflict");
     }
     function writeEditDraft(e, cur) {
+      const v = e.view;
       if (cur.title === e.baseTitle && cur.bodyHtml === e.baseBody) { clearDraft(e.noteId); return; }
       saveDraft(e.noteId, { title: cur.title, bodyHtml: cur.bodyHtml, baseRevisionId: e.baseRevisionId, at: Date.now() });
-      if (ed === e && !e.conflict && !e.failed) setEditStatus("device");
+      if (v.ed === e && !e.conflict && !e.failed) setEditStatus(v, "device");
     }
-    function onEditInput() {
-      const e = ed;
+    function onEditInput(v) {
+      const e = v.ed;
       if (!e) return;
-      if (!e.draftTimer) e.draftTimer = setTimeout(() => { e.draftTimer = null; if (ed === e) writeEditDraft(e, readEditor()); }, NOTE_DRAFT_MS);
+      if (!e.draftTimer) e.draftTimer = setTimeout(() => { e.draftTimer = null; if (v.ed === e) writeEditDraft(e, readEditor(v)); }, NOTE_DRAFT_MS);
       clearTimeout(e.idleTimer);
       e.idleTimer = setTimeout(() => flushEdit(e), NOTE_IDLE_MS);
     }
-    notePaneEl.addEventListener("input", (ev) => { if (ev.target.closest("[data-edit-title], [data-edit-body]")) onEditInput(); });
 
     /** Writes ONE revision when -- and only when -- something really changed since the baseline. `cur` is passed by a caller that has already torn the editor down. */
     async function flushEdit(e, cur) {
       if (!e) return;
+      const v = e.view;
       clearTimeout(e.idleTimer); e.idleTimer = null;
       clearTimeout(e.retryTimer); e.retryTimer = null;
-      cur = cur ?? (ed === e ? readEditor() : e.lastContent);
+      cur = cur ?? (v.ed === e ? readEditor(v) : e.lastContent);
       if (!cur) return;
       e.lastContent = cur;
       if (cur.title === e.baseTitle && cur.bodyHtml === e.baseBody) { clearDraft(e.noteId); return; }
@@ -1068,12 +1132,12 @@
         if (err?.message === "Stale Note revision.") {
           e.conflict = true;
           showPageStatus(t("This Note changed on another device. Your text is kept on this device — copy it before reloading."));
-          if (ed === e) setEditStatus("conflict");
+          if (v.ed === e) setEditStatus(v, "conflict");
         } else {
           console.error("[note autosave]", err);
           e.failed = true;
           showPageStatus(t("Not saved yet — will try again"));
-          if (ed === e) { setEditStatus("unsaved"); e.retryTimer = setTimeout(() => flushEdit(e), NOTE_RETRY_MS); }
+          if (v.ed === e) { setEditStatus(v, "unsaved"); e.retryTimer = setTimeout(() => flushEdit(e), NOTE_RETRY_MS); }
         }
         return;
       }
@@ -1083,52 +1147,52 @@
       if (note) {
         Object.assign(note, { title: cur.title, bodyHtml: cur.bodyHtml, currentRevisionId: newRevisionId, updatedAt: { toDate: () => new Date(), toMillis: () => Date.now() } });
       }
-      const latest = ed === e ? readEditor() : cur;
+      const latest = v.ed === e ? readEditor(v) : cur;
       if (latest.title === cur.title && latest.bodyHtml === cur.bodyHtml) clearDraft(e.noteId);
       else { writeEditDraft(e, latest); e.idleTimer = setTimeout(() => flushEdit(e), NOTE_IDLE_MS); }
-      if (ed === e) {
-        setEditStatus("saved");
-        notePaneEl.querySelector("[data-pane-meta]").textContent = paneMetaText(note);
+      if (v.ed === e) {
+        setEditStatus(v, "saved");
+        v.el.querySelector("[data-pane-meta]").textContent = paneMetaText(note);
       }
       renderCurrentView();
       if (e.again) { e.again = false; flushEdit(e); }
     }
     /** Every way out of the editor: detach the session, then flush it. Resolves with the session once the write has settled. */
-    async function endEdit() {
-      const e = ed;
+    async function endEdit(v) {
+      const e = v.ed;
       if (!e) return null;
-      const cur = readEditor();
-      ed = null;
+      const cur = readEditor(v);
+      v.ed = null;
       clearTimeout(e.draftTimer); e.draftTimer = null;
       await flushEdit(e, cur);
       return e;
     }
-    function flushActiveEdit() { if (ed) flushEdit(ed); }
+    function flushActiveEdit() { for (const v of allViews()) if (v.ed) flushEdit(v.ed); }
     // A phone that is backgrounded never runs a timer, so the way out is the event.
     document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flushActiveEdit(); });
     window.addEventListener("pagehide", flushActiveEdit);
     // The tray (journey-tray.js) hides this document without unloading it.
     window.addEventListener("message", (ev) => { if (ev.origin === location.origin && ev.data?.type === "mmsa-journey-flush") flushActiveEdit(); });
 
-    function renderEditToolbar() {
+    function renderEditToolbar(v) {
       const label = (k) => escapeHtml(t(k));
       const cmds = [["h1", "Heading 1", "H1"], ["h2", "Heading 2", "H2"], ["h3", "Heading 3", "H3"], ["ul", "Bullet list", "•"], ["ol", "Numbered list", "1."], ["undo", "Undo", "↶"]];
-      editToolbarEl.innerHTML = `
+      v.editToolbarEl.innerHTML = `
         <button type="button" class="secondary tb-btn" data-cmd="bold" aria-label="${label("Bold")}" title="${label("Bold")}"><b>B</b></button>
         <button type="button" class="secondary tb-btn" data-cmd="italic" aria-label="${label("Italic")}" title="${label("Italic")}"><i>I</i></button>
         ${cmds.map(([c, name, glyph]) => `<button type="button" class="secondary tb-btn tb-fold" data-cmd="${c}" aria-label="${label(name)}" title="${label(name)}">${glyph}</button>`).join("")}
-        <span class="bar-palette-wrap folder-menu-wrap" data-bar-palette-wrap="editTools" data-tb-menu-wrap>
-          <button type="button" class="folder-menu-btn bar-palette-toggle" data-bar-palette-toggle="editTools" aria-haspopup="true" aria-expanded="false" aria-label="${label("More")}">⋯</button>
-          <div class="bar-palette" data-bar-palette="editTools">${cmds.map(([c, name]) => `<button type="button" class="secondary tiny" data-cmd="${c}">${label(name)}</button>`).join("")}</div>
+        <span class="bar-palette-wrap folder-menu-wrap" data-bar-palette-wrap="editTools${v.uid}" data-tb-menu-wrap>
+          <button type="button" class="folder-menu-btn bar-palette-toggle" data-bar-palette-toggle="editTools${v.uid}" aria-haspopup="true" aria-expanded="false" aria-label="${label("More")}">⋯</button>
+          <div class="bar-palette" data-bar-palette="editTools${v.uid}">${cmds.map(([c, name]) => `<button type="button" class="secondary tiny" data-cmd="${c}">${label(name)}</button>`).join("")}</div>
         </span>`;
     }
-    function fitEditToolbar() {
-      if (editToolbarEl.hidden) return;
-      editToolbarEl.classList.remove("folded");
-      if (editToolbarEl.scrollWidth > editToolbarEl.clientWidth + 1) editToolbarEl.classList.add("folded");
+    function fitEditToolbar(v) {
+      if (v.editToolbarEl.hidden) return;
+      v.editToolbarEl.classList.remove("folded");
+      if (v.editToolbarEl.scrollWidth > v.editToolbarEl.clientWidth + 1) v.editToolbarEl.classList.add("folded");
     }
-    function runEditCommand(cmd) {
-      const body = editBodyEl();
+    function runEditCommand(v, cmd) {
+      const body = editBodyEl(v);
       if (!body) return;
       body.focus();
       if (/^h[123]$/.test(cmd)) {
@@ -1137,19 +1201,18 @@
       } else {
         document.execCommand({ bold: "bold", italic: "italic", ul: "insertUnorderedList", ol: "insertOrderedList", undo: "undo" }[cmd], false, null);
       }
-      onEditInput();
+      onEditInput(v);
     }
-    notePaneEl.addEventListener("mousedown", (ev) => { if (ev.target.closest("[data-edit-toolbar] button")) ev.preventDefault(); });
 
     /** Begin editing `note`; `draft` (a restored local draft) replaces the stored text in the editor but never the baseline it is compared with. */
-    function startEdit(note, draft = null) {
-      if (ed || !notesAndPlacementsLoaded) return;
-      ed = { noteId: note.noteId, baseRevisionId: note.currentRevisionId, baseTitle: (note.title ?? "").trim(), baseBody: normBody(note.bodyHtml) };
-      editTitleEl.value = draft ? draft.title : (note.title ?? "");
-      editTitleEl.hidden = false;
-      notePaneEl.querySelector("[data-pane-title]").hidden = true;
-      draftOfferEl.hidden = true;
-      paneBodyEl.replaceChildren();
+    function startEdit(v, note, draft = null) {
+      if (v.ed || !notesAndPlacementsLoaded) return;
+      v.ed = { view: v, noteId: note.noteId, baseRevisionId: note.currentRevisionId, baseTitle: (note.title ?? "").trim(), baseBody: normBody(note.bodyHtml) };
+      v.editTitleEl.value = draft ? draft.title : (note.title ?? "");
+      v.editTitleEl.hidden = false;
+      v.el.querySelector("[data-pane-title]").hidden = true;
+      v.draftOfferEl.hidden = true;
+      v.bodyEl.replaceChildren();
       const body = document.createElement("div");
       body.className = "pane-edit-body";
       body.contentEditable = "true";
@@ -1158,33 +1221,33 @@
       body.setAttribute("aria-multiline", "true");
       body.setAttribute("aria-label", t("Note text"));
       body.innerHTML = sanitizeNoteHtml(draft ? draft.bodyHtml : note.bodyHtml);
-      paneBodyEl.appendChild(body);
-      editTitleEl.setAttribute("aria-label", t("Note title"));
-      renderEditToolbar();
-      editToolbarEl.hidden = false;
-      notePaneEl.classList.add("pane-editing");
-      setEditStatus("");
-      renderPaneBar();
-      fitPaneBarTwice();
-      fitEditToolbar(); requestAnimationFrame(fitEditToolbar);
-      if (draft) { writeEditDraft(ed, readEditor()); onEditInput(); }
+      v.bodyEl.appendChild(body);
+      v.editTitleEl.setAttribute("aria-label", t("Note title"));
+      renderEditToolbar(v);
+      v.editToolbarEl.hidden = false;
+      v.el.classList.add("pane-editing");
+      setEditStatus(v, "");
+      renderPaneBar(v);
+      fitPaneBarTwice(v);
+      fitEditToolbar(v); requestAnimationFrame(() => fitEditToolbar(v));
+      if (draft) { writeEditDraft(v.ed, readEditor(v)); onEditInput(v); }
       body.focus();
     }
     /** Put the pane's title / toolbar / status back to read mode (renderNotePane calls this whenever no edit is open). */
-    function showReadChrome(note) {
-      editTitleEl.hidden = true;
-      notePaneEl.querySelector("[data-pane-title]").hidden = false;
-      editToolbarEl.hidden = true;
-      editStatusEl.hidden = true;
-      notePaneEl.classList.remove("pane-editing");
+    function showReadChrome(v, note) {
+      v.editTitleEl.hidden = true;
+      v.el.querySelector("[data-pane-title]").hidden = false;
+      v.editToolbarEl.hidden = true;
+      v.editStatusEl.hidden = true;
+      v.el.classList.remove("pane-editing");
       const draft = isSelfSelected() ? loadDraft(note.noteId) : null;
-      if (draft && draft.title.trim() === (note.title ?? "").trim() && draft.bodyHtml === normBody(note.bodyHtml)) { clearDraft(note.noteId); draftOfferEl.hidden = true; return; }
-      if (!draft) { draftOfferEl.hidden = true; return; }
+      if (draft && draft.title.trim() === (note.title ?? "").trim() && draft.bodyHtml === normBody(note.bodyHtml)) { clearDraft(note.noteId); v.draftOfferEl.hidden = true; return; }
+      if (!draft) { v.draftOfferEl.hidden = true; return; }
       const at = draft.at ? new Date(draft.at).toLocaleString(dateLocale()) : "";
-      draftOfferEl.innerHTML = `<div>${escapeHtml(t("You have unsaved text on this device, from {date}.", { date: at }))}</div>
+      v.draftOfferEl.innerHTML = `<div>${escapeHtml(t("You have unsaved text on this device, from {date}.", { date: at }))}</div>
         <div class="note-actions"><button type="button" class="tiny" data-draft-restore>${escapeHtml(t("Restore my unsaved text"))}</button>
         <button type="button" class="secondary tiny" data-draft-discard>${escapeHtml(t("Discard it"))}</button></div>`;
-      draftOfferEl.hidden = false;
+      v.draftOfferEl.hidden = false;
     }
     function paneMetaText(note) {
       const created = when(note.originalCreatedAt ?? note.createdAt), changed = when(note.updatedAt);
@@ -1196,20 +1259,25 @@
 
     function openNotePane(noteId, fromEl) {
       if (!allNotes.some((n) => n.noteId === noteId)) return;
-      if (ed && ed.noteId !== noteId) endEdit();
-      if (paneNoteId === null) paneListScroll = scroller().scrollTop;
-      paneOrder = fromEl ? paneOrderFrom(fromEl) : [noteId];
-      paneFolderId = fromEl ? paneFolderFrom(fromEl) : null;
-      paneNoteId = noteId;
+      const v = paneView;
+      const elsewhere = windowViews.find((w) => w.noteId === noteId); // never live in two views (§4.6)
+      if (elsewhere) { focusView(elsewhere); return; }
+      if (v.ed && v.ed.noteId !== noteId) endEdit(v);
+      if (v.noteId === null) paneListScroll = scroller().scrollTop;
+      v.order = fromEl ? paneOrderFrom(fromEl) : [noteId];
+      v.folderId = fromEl ? paneFolderFrom(fromEl) : null;
+      v.noteId = noteId;
       applyNoteTier();
-      renderNotePane();
+      renderNotePane(v);
       if (noteLayoutTier() === "narrow") scroller().scrollTop = 0;
     }
 
-    function closeNotePane({ restoreScroll = true } = {}) {
-      if (paneNoteId === null) return;
-      if (ed) endEdit(); // Back, a folder chip, Trash...: a pending change is flushed on the way out
-      paneNoteId = null;
+    /** Close the inline pane. `flush: false` is for a caller that has already flushed (pop-out). */
+    function closeNotePane({ restoreScroll = true, flush = true } = {}) {
+      const v = paneView;
+      if (v.noteId === null) return;
+      if (flush && v.ed) endEdit(v); // Back, a folder chip, Trash...: a pending change is flushed on the way out
+      v.noteId = null;
       closeAllBarPalettes(null);
       applyNoteTier();
       if (restoreScroll) {
@@ -1217,46 +1285,53 @@
         requestAnimationFrame(() => { scroller().scrollTop = paneListScroll; });
       }
     }
+    /** Close whichever surface `v` is. */
+    function closeView(v, opts) { if (v.kind === "pane") closeNotePane(opts); else closeNoteWindow(v); }
 
     /** The one-line header: measure, then fold -- never wrap, never cut (§4.2). ‹ › fold into the ⋯ menu first; if the Contents label is still too wide it shortens to ☰. Run twice by the caller (now, and in requestAnimationFrame). */
-    function fitPaneBar() {
-      if (paneNoteId === null) return;
-      paneBarEl.classList.remove("folded", "tight", "edit-folded");
-      if (paneBarEl.scrollWidth > paneBarEl.clientWidth + 1) paneBarEl.classList.add("folded");
-      if (paneBarEl.scrollWidth > paneBarEl.clientWidth + 1) paneBarEl.classList.add("tight");
+    function fitPaneBar(v) {
+      if (v.noteId === null) return;
+      v.barEl.classList.remove("folded", "tight", "edit-folded");
+      if (v.barEl.scrollWidth > v.barEl.clientWidth + 1) v.barEl.classList.add("folded");
+      if (v.barEl.scrollWidth > v.barEl.clientWidth + 1) v.barEl.classList.add("tight");
       // Round 5: ✏️ Edit / ✓ Done is the LAST thing to fold, into ⋯ with its word.
-      if (paneBarEl.scrollWidth > paneBarEl.clientWidth + 1) paneBarEl.classList.add("edit-folded");
+      if (v.barEl.scrollWidth > v.barEl.clientWidth + 1) v.barEl.classList.add("edit-folded");
     }
-    function fitPaneBarTwice() { fitPaneBar(); requestAnimationFrame(fitPaneBar); }
-    window.addEventListener("resize", () => { if (paneNoteId !== null) { applyNoteTier(); renderPaneBar(); fitPaneBarTwice(); fitEditToolbar(); } });
+    function fitPaneBarTwice(v) { fitPaneBar(v); requestAnimationFrame(() => fitPaneBar(v)); }
+    window.addEventListener("resize", () => {
+      applyNoteTier();
+      for (const v of allViews()) if (v.noteId !== null) { if (v.kind === "window") applyWindowGeometry(v); renderPaneBar(v); fitPaneBarTwice(v); fitEditToolbar(v); }
+      updateWindowSwitcher();
+    });
 
-    function paneNeighbours() {
-      const live = paneOrder.filter((id) => allNotes.some((n) => n.noteId === id && n.status !== NOTE_STATUS.RETIRED));
-      const i = live.indexOf(paneNoteId);
+    function paneNeighbours(v) {
+      const others = new Set(allViews().filter((x) => x !== v && x.noteId).map((x) => x.noteId)); // a Note open in another view is not a step target
+      const live = v.order.filter((id) => allNotes.some((n) => n.noteId === id && n.status !== NOTE_STATUS.RETIRED) && !others.has(id));
+      const i = live.indexOf(v.noteId);
       return { prev: i > 0 ? live[i - 1] : null, next: i >= 0 && i < live.length - 1 ? live[i + 1] : null };
     }
-    function paneFromFolderId(note) {
-      if (paneFolderId && allPlacements.some((p) => p.noteId === note.noteId && p.folderId === paneFolderId && p.status === NOTE_STATUS.ACTIVE)) return paneFolderId;
+    function paneFromFolderId(v, note) {
+      if (v.folderId && allPlacements.some((p) => p.noteId === note.noteId && p.folderId === v.folderId && p.status === NOTE_STATUS.ACTIVE)) return v.folderId;
       const filed = [...activeFilingFolderIds(note)];
       return filed.length === 1 ? filed[0] : null;
     }
 
     /** The bar's own labels, the ⋯ menu and the Contents button -- everything on the header row. Re-run on a resize because the Contents button depends on the tier. */
-    function renderPaneBar() {
-      const note = allNotes.find((n) => n.noteId === paneNoteId);
+    function renderPaneBar(v) {
+      const note = allNotes.find((n) => n.noteId === v.noteId);
       if (!note) return;
-      const { prev, next } = paneNeighbours();
+      const { prev, next } = paneNeighbours(v);
       const own = isSelfSelected();
-      const set = (sel, text) => { notePaneEl.querySelector(sel).textContent = text; };
+      const set = (sel, text) => { v.el.querySelector(sel).textContent = text; };
       set("[data-pane-back-label]", t("Back"));
       set("[data-pane-contents-label]", t("Contents"));
-      const prevBtn = notePaneEl.querySelector("[data-pane-prev]"), nextBtn = notePaneEl.querySelector("[data-pane-next]");
+      const prevBtn = v.el.querySelector("[data-pane-prev]"), nextBtn = v.el.querySelector("[data-pane-next]");
       prevBtn.disabled = !prev; nextBtn.disabled = !next;
       prevBtn.setAttribute("aria-label", t("Previous note")); prevBtn.title = t("Previous note");
       nextBtn.setAttribute("aria-label", t("Next note")); nextBtn.title = t("Next note");
-      const fromId = paneFromFolderId(note);
-      const editLabel = ed ? `✓ ${t("Done")}` : `✏️ ${t("Edit")}`;
-      const editToggle = notePaneEl.querySelector("[data-pane-edit-toggle]");
+      const fromId = paneFromFolderId(v, note);
+      const editLabel = v.ed ? `✓ ${t("Done")}` : `✏️ ${t("Edit")}`;
+      const editToggle = v.el.querySelector("[data-pane-edit-toggle]");
       editToggle.hidden = !own;
       editToggle.textContent = editLabel;
       let menu = `<button type="button" class="secondary tiny pane-fold-item" data-pane-prev ${prev ? "" : "disabled"}>‹ ${escapeHtml(t("Previous note"))}</button>
@@ -1267,21 +1342,22 @@
           <button type="button" class="secondary tiny" data-pane-move ${fromId ? "" : "disabled"}>${escapeHtml(t("Move to…"))}</button>
           <button type="button" class="danger tiny" data-pane-delete>🗑 ${escapeHtml(t("Delete"))}</button>`;
       }
+      if (v.kind === "pane") menu += `<button type="button" class="secondary tiny" data-pane-popout>⧉ ${escapeHtml(t("Pop out"))}</button>`;
       if (isEmbedded) menu += `<button type="button" class="secondary tiny" data-pane-fullpage>${escapeHtml(t("Open full page"))}</button>`;
-      const menuWrap = notePaneEl.querySelector("[data-pane-menu-wrap]");
+      const menuWrap = v.el.querySelector("[data-pane-menu-wrap]");
       menuWrap.hidden = !menu.trim();
-      notePaneEl.querySelector("[data-pane-menu]").innerHTML = menu;
-      notePaneEl.querySelector("[data-pane-menu-btn]").setAttribute("aria-label", t("More"));
-      const headings = [...notePaneEl.querySelectorAll(".note-sec")];
-      const showContents = headings.length >= 3 && noteLayoutTier() === "narrow";
-      notePaneEl.querySelector("[data-pane-contents-wrap]").hidden = !showContents;
-      notePaneEl.querySelector("[data-pane-contents-list]").innerHTML = headings.map((sec) =>
+      v.el.querySelector("[data-pane-menu]").innerHTML = menu;
+      v.el.querySelector("[data-pane-menu-btn]").setAttribute("aria-label", t("More"));
+      const headings = [...v.el.querySelectorAll(".note-sec")];
+      const showContents = headings.length >= 3 && (v.kind === "window" || noteLayoutTier() === "narrow");
+      v.el.querySelector("[data-pane-contents-wrap]").hidden = !showContents;
+      v.el.querySelector("[data-pane-contents-list]").innerHTML = headings.map((sec) =>
         `<button type="button" class="secondary tiny" data-pane-jump="${sec.dataset.secIndex}" style="padding-left:${(0.6 + (Number(sec.dataset.level) - 1) * 0.8).toFixed(1)}rem">${escapeHtml(sec.dataset.headingText)}</button>`).join("");
     }
 
     /** The sanitised body, with every H1-H4 turned into a collapsible section nested by level. Collapsed indexes come from (and go back to) localStorage, per Note. */
-    function buildPaneBody(note) {
-      const host = notePaneEl.querySelector("[data-pane-body]");
+    function buildPaneBody(v, note) {
+      const host = v.el.querySelector("[data-pane-body]");
       const tmp = document.createElement("div");
       tmp.innerHTML = sanitizeNoteHtml(note.bodyHtml || "");
       host.replaceChildren();
@@ -1321,53 +1397,54 @@
       }
     }
 
-    function renderNotePane({ keepScroll = false } = {}) {
-      const note = allNotes.find((n) => n.noteId === paneNoteId);
+    function renderNotePane(v, { keepScroll = false } = {}) {
+      const note = allNotes.find((n) => n.noteId === v.noteId);
       if (!note) return;
-      const before = notePaneEl.scrollTop;
-      notePaneEl.querySelector("[data-pane-title]").textContent = noteTitleOf(note);
-      notePaneEl.querySelector("[data-pane-meta]").textContent = paneMetaText(note);
+      const before = v.scrollEl.scrollTop;
+      v.el.querySelector("[data-pane-title]").textContent = noteTitleOf(note);
+      v.el.querySelector("[data-pane-meta]").textContent = paneMetaText(note);
       const chips = [...activeFilingFolderIds(note)].map((id) => findNodeByIdOrRole(mergedRoots(), id, null)).filter(Boolean);
-      notePaneEl.querySelector("[data-pane-chips]").innerHTML = chips.map((f) =>
+      v.el.querySelector("[data-pane-chips]").innerHTML = chips.map((f) =>
         `<button type="button" class="folder-chip" data-pane-chip="${escapeHtml(f.folderId)}">📁 ${escapeHtml(folderDisplayName(f))}</button>`).join("");
       // While an edit is open the editor IS the body: a re-render must never wipe the reader's typing.
-      if (!(ed && ed.noteId === note.noteId)) { showReadChrome(note); buildPaneBody(note); }
-      renderPaneBar();
-      fitPaneBarTwice();
-      if (keepScroll) notePaneEl.scrollTop = before;
+      if (!(v.ed && v.ed.noteId === note.noteId)) { showReadChrome(v, note); buildPaneBody(v, note); }
+      if (v.kind === "window") { v.win.querySelector(".nw-title").textContent = noteTitleOf(note); v.win.dataset.noteId = note.noteId; updateWindowSwitcher(); }
+      renderPaneBar(v);
+      fitPaneBarTwice(v);
+      if (keepScroll) v.scrollEl.scrollTop = before;
     }
 
-    function stepNotePane(direction) {
-      const { prev, next } = paneNeighbours();
+    function stepNotePane(v, direction) {
+      const { prev, next } = paneNeighbours(v);
       const target = direction < 0 ? prev : next;
       if (!target) return;
-      if (ed) endEdit();
-      paneNoteId = target;
-      renderNotePane();
-      if (noteLayoutTier() === "narrow") scroller().scrollTop = 0; else notePaneEl.scrollTop = 0;
+      if (v.ed) endEdit(v);
+      v.noteId = target;
+      renderNotePane(v);
+      if (v.kind === "pane" && noteLayoutTier() === "narrow") scroller().scrollTop = 0; else v.scrollEl.scrollTop = 0;
     }
 
     /** Delete = Trash (decision 42.1: never an erase). The Note's current revision is the guard: a stale one is refused in words by the existing mapping. */
-    async function deleteNoteFromPane(staleNote) {
-      await endEdit(); // a pending edit becomes a revision first, so the retire chains from it
+    async function deleteNoteFromPane(v, staleNote) {
+      await endEdit(v); // a pending edit becomes a revision first, so the retire chains from it
       const note = allNotes.find((n) => n.noteId === staleNote.noteId) ?? staleNote;
       const outcome = await runFolderWrite(
         () => retirePermanentNote(db, { tenantId: activeTenantId, noteId: note.noteId, expectedRevisionId: note.currentRevisionId, actorUid: auth.currentUser.uid }),
         { collection: TENANT.NOTES, action: "retirePermanentNote" }
       );
       if (!outcome.ok) return;
-      closeNotePane();
+      closeView(v);
       showPageStatus(t('"{title}" moved to Trash. Open 🗑 Trash from the ⋯ menu to restore it.', { title: noteTitleOf(note) }));
       await refreshAll();
     }
 
     /** A folder chip: close the pane and show that folder in the tree, its ancestors opened and the row scrolled into view. */
-    function revealFolderFromChip(folderId) {
+    function revealFolderFromChip(v, folderId) {
       for (const ancestor of folderAncestorPath(folderId)) expandedFolderIds.add(expandKeyFor(ancestor));
       saveExpandedIds();
       folderSearchQuery = "";
       currentView = "folders";
-      closeNotePane({ restoreScroll: false });
+      closeView(v, { restoreScroll: false });
       renderToggle();
       renderFoldersView();
       requestAnimationFrame(() => {
@@ -1375,27 +1452,29 @@
       });
     }
 
-    notePaneEl.addEventListener("click", async (e) => {
+    async function onViewClick(v, e) {
       const on = (sel) => e.target.closest(sel);
-      const note = allNotes.find((n) => n.noteId === paneNoteId);
+      const note = allNotes.find((n) => n.noteId === v.noteId);
       if (!note) return;
       if (on("[data-pane-edit-toggle]")) {
         closeAllBarPalettes(null);
-        if (!ed) { if (isSelfSelected()) startEdit(note); return; }
-        const done = await endEdit();
-        renderNotePane({ keepScroll: true });
+        if (!v.ed) { if (isSelfSelected()) startEdit(v, note); return; }
+        const done = await endEdit(v);
+        renderNotePane(v, { keepScroll: true });
         if (done?.conflict) await refreshAll(); // show what the other device wrote; the draft is offered back
         return;
       }
       const cmdBtn = on("[data-edit-toolbar] [data-cmd]");
-      if (cmdBtn) { closeAllBarPalettes(null); runEditCommand(cmdBtn.dataset.cmd); return; }
-      if (on("[data-draft-restore]")) { const d = loadDraft(note.noteId); if (d && isSelfSelected()) startEdit(note, d); return; }
-      if (on("[data-draft-discard]")) { clearDraft(note.noteId); draftOfferEl.hidden = true; return; }
+      if (cmdBtn) { closeAllBarPalettes(null); runEditCommand(v, cmdBtn.dataset.cmd); return; }
+      if (on("[data-draft-restore]")) { const d = loadDraft(note.noteId); if (d && isSelfSelected()) startEdit(v, note, d); return; }
+      if (on("[data-draft-discard]")) { clearDraft(note.noteId); v.draftOfferEl.hidden = true; return; }
       if (on("[data-pane-back]")) { closeNotePane(); return; }
-      if (on("[data-pane-prev]")) { closeAllBarPalettes(null); stepNotePane(-1); return; }
-      if (on("[data-pane-next]")) { closeAllBarPalettes(null); stepNotePane(1); return; }
+      if (on("[data-pane-prev]")) { closeAllBarPalettes(null); stepNotePane(v, -1); return; }
+      if (on("[data-pane-next]")) { closeAllBarPalettes(null); stepNotePane(v, 1); return; }
+      if (on("[data-win-details]")) { const d = v.win.querySelector(".nw-details"); const open = d.classList.toggle("open"); on("[data-win-details]").setAttribute("aria-expanded", String(open)); return; }
+      if (on("[data-pane-popout]")) { closeAllBarPalettes(null); popOutPane(note); return; }
       const chip = on("[data-pane-chip]");
-      if (chip) { revealFolderFromChip(chip.dataset.paneChip); return; }
+      if (chip) { revealFolderFromChip(v, chip.dataset.paneChip); return; }
       const toggle = on("[data-sec-toggle]");
       if (toggle) {
         const sec = toggle.closest(".note-sec");
@@ -1411,7 +1490,7 @@
       const jump = on("[data-pane-jump]");
       if (jump) {
         closeAllBarPalettes(null);
-        const sec = notePaneEl.querySelector(`.note-sec[data-sec-index="${CSS.escape(jump.dataset.paneJump)}"]`);
+        const sec = v.el.querySelector(`.note-sec[data-sec-index="${CSS.escape(jump.dataset.paneJump)}"]`);
         for (let up = sec?.parentElement?.closest(".note-sec"); up; up = up.parentElement?.closest(".note-sec")) {
           if (up.classList.contains("collapsed")) up.querySelector(":scope > .note-sec-h [data-sec-toggle]")?.click();
         }
@@ -1422,16 +1501,16 @@
       if (on("[data-pane-copy]")) { closeAllBarPalettes(null); copyNoteTo(note); return; }
       if (on("[data-pane-move]")) {
         closeAllBarPalettes(null);
-        const fromNode = findNodeByIdOrRole(mergedRoots(), paneFromFolderId(note), null);
+        const fromNode = findNodeByIdOrRole(mergedRoots(), paneFromFolderId(v, note), null);
         if (fromNode) moveNoteTo(note, fromNode);
         return;
       }
-      if (on("[data-pane-delete]")) { closeAllBarPalettes(null); deleteNoteFromPane(note); return; }
+      if (on("[data-pane-delete]")) { closeAllBarPalettes(null); deleteNoteFromPane(v, note); return; }
       if (on("[data-pane-fullpage]")) {
         closeAllBarPalettes(null);
         window.open(`journey-map.html?note=${encodeURIComponent(note.noteId)}#${currentView}`, "_top");
       }
-    });
+    }
 
     /** After every full load: keep an open pane honest (chips, ⋯ items), close it if its Note left (Trash, or gone), and open the Note a full-page link named. */
     function syncNotePane() {
@@ -1442,10 +1521,174 @@
           openNotePane(wanted, null);
         }
       }
-      if (paneNoteId === null) return;
-      const note = allNotes.find((n) => n.noteId === paneNoteId);
-      if (!note || note.status === NOTE_STATUS.RETIRED) { closeNotePane(); return; }
-      renderNotePane({ keepScroll: true });
+      for (const v of allViews()) {
+        if (v.noteId === null) continue;
+        const note = allNotes.find((n) => n.noteId === v.noteId);
+        if (!note || note.status === NOTE_STATUS.RETIRED) { closeView(v); continue; }
+        renderNotePane(v, { keepScroll: true });
+      }
+    }
+
+    // =====================================================================
+    // Siyagah port round 6a (Owner decisions 42.4, M3): Note POP-UP WINDOWS.
+    // Single: the pane's ⋯ → Pop out. Multi: a Note row's ▾ → Open in window,
+    // or Ctrl/⌘-click on a title. The window holds the SAME view (makeView) as
+    // the pane -- same bar, editor, autosave, menus. Shape by the DOCUMENT's
+    // width (one function, windowTier): below 640px a near-full-screen sheet
+    // (no drag; a bottom switcher when several are open), 640px and up a
+    // draggable, resizable window. Geometry is per device, in localStorage.
+    // =====================================================================
+    const WIN_KEY = "mmsa-journey-note-window";
+    const WIN_LIMITS = { minW: 320, minH: 360, bar: 44 };
+    const WIN_SHEET_BELOW = 640, WIN_OFFSET = 28, WIN_Z = 1000, WIN_SWITCH_H = 56;
+    const windowTier = () => (document.documentElement.clientWidth < WIN_SHEET_BELOW ? "sheet" : "float");
+    { const st = document.createElement("style"); st.textContent = handleCss("nw-h"); document.head.appendChild(st); }
+    let winOrder = []; // back to front
+    function loadWinRect() {
+      try { const r = JSON.parse(localStorage.getItem(WIN_KEY) || "null"); if (r && [r.x, r.y, r.w, r.h].every(Number.isFinite)) return r; } catch { /* unreadable: default */ }
+      return null;
+    }
+    function saveWinRect(r) { try { localStorage.setItem(WIN_KEY, JSON.stringify(r)); } catch { /* private mode */ } }
+    function defaultWinRect() {
+      const w = Math.min(520, window.innerWidth - 40), h = Math.min(620, window.innerHeight - 60);
+      return { x: Math.round((window.innerWidth - w) / 2), y: Math.round((window.innerHeight - h) / 2), w, h };
+    }
+    function applyWindowGeometry(v) {
+      const sheet = windowTier() === "sheet";
+      const top = winOrder[winOrder.length - 1] === v;
+      v.win.classList.toggle("sheet", sheet);
+      v.win.classList.toggle("sheet-hidden", sheet && !top);
+      v.win.style.zIndex = String(WIN_Z + winOrder.indexOf(v));
+      if (sheet) { for (const p of ["left", "top", "width", "height"]) v.win.style.removeProperty(p); return; }
+      v.rect = clampRect(v.rect, WIN_LIMITS);
+      Object.assign(v.win.style, { left: `${v.rect.x}px`, top: `${v.rect.y}px`, width: `${v.rect.w}px`, height: `${v.rect.h}px` });
+    }
+    function layoutWindows() {
+      for (const v of windowViews) applyWindowGeometry(v);
+      updateWindowSwitcher();
+    }
+    function bringToFront(v) {
+      if (winOrder[winOrder.length - 1] !== v) { winOrder = winOrder.filter((x) => x !== v); winOrder.push(v); layoutWindows(); }
+    }
+    function focusView(v) {
+      if (v.kind === "window") { bringToFront(v); v.win.focus({ preventScroll: true }); }
+      else { v.el.scrollIntoView?.({ block: "nearest" }); v.el.focus?.({ preventScroll: true }); }
+    }
+    /** The bottom switcher: only on a sheet, only with more than one window open. */
+    function updateWindowSwitcher() {
+      let nav = document.getElementById("noteWinSwitch");
+      const show = windowTier() === "sheet" && windowViews.length > 1;
+      document.documentElement.style.setProperty("--nw-switch", show ? `${WIN_SWITCH_H}px` : "0px");
+      if (!show) { nav?.remove(); return; }
+      if (!nav) {
+        nav = document.createElement("nav");
+        nav.id = "noteWinSwitch";
+        nav.className = "nw-switch";
+        nav.addEventListener("click", (e) => {
+          const b = e.target.closest("[data-win-switch]");
+          const v = b && windowViews.find((x) => x.uid === b.dataset.winSwitch);
+          if (v) focusView(v);
+        });
+        document.body.appendChild(nav);
+      }
+      nav.setAttribute("aria-label", t("Open notes"));
+      const top = winOrder[winOrder.length - 1];
+      nav.innerHTML = windowViews.map((v) => {
+        const note = allNotes.find((n) => n.noteId === v.noteId);
+        return `<button type="button" class="secondary nw-switch-btn${v === top ? " active" : ""}" data-win-switch="${escapeHtml(v.uid)}" aria-pressed="${v === top}">${escapeHtml(note ? noteTitleOf(note) : "")}</button>`;
+      }).join("");
+    }
+
+    /** Open `noteId` in its own window -- or, if that Note is already open anywhere, focus THAT one: a Note is never live in two editors (§4.6). */
+    function openNoteWindow(noteId, from = {}) {
+      const note = allNotes.find((n) => n.noteId === noteId);
+      if (!note || note.status === NOTE_STATUS.RETIRED) return null;
+      const existing = viewShowing(noteId);
+      if (existing) { focusView(existing); return existing; }
+      const win = document.createElement("div");
+      win.className = "note-win";
+      win.tabIndex = -1;
+      win.setAttribute("role", "dialog");
+      win.innerHTML = `<div class="nw-bar"><span class="nw-title"></span><button type="button" class="nw-close" data-win-close></button></div>`;
+      const closeBtn = win.querySelector("[data-win-close]");
+      closeBtn.textContent = "✕";
+      closeBtn.setAttribute("aria-label", t("Close"));
+      closeBtn.title = t("Close");
+      const section = noteViewProto.cloneNode(true);
+      section.removeAttribute("id");
+      section.hidden = false;
+      section.className = "nw-view";
+      const q = (sel) => section.querySelector(sel);
+      const detailsRow = document.createElement("div");
+      detailsRow.className = "nw-details-row";
+      const detailsBtn = document.createElement("button");
+      detailsBtn.type = "button";
+      detailsBtn.className = "secondary nw-details-btn";
+      detailsBtn.dataset.winDetails = "";
+      detailsBtn.setAttribute("aria-expanded", "false");
+      detailsBtn.textContent = `${t("Details")} ▾`;
+      const details = document.createElement("div");
+      details.className = "nw-details";
+      details.append(q("[data-pane-meta]"), q("[data-pane-chips]"));
+      detailsRow.append(detailsBtn, details);
+      const scroll = document.createElement("div");
+      scroll.className = "nw-scroll";
+      scroll.dataset.winScroll = "";
+      scroll.append(q("[data-pane-title]"), q("[data-edit-title]"), q("[data-draft-offer]"), q("[data-pane-body]"));
+      section.append(detailsRow, q("[data-edit-toolbar]"), q("[data-edit-status]"), scroll);
+      win.appendChild(section);
+      const v = makeView(section, "window");
+      v.win = win;
+      v.noteId = noteId;
+      v.order = from.order ?? (from.fromEl ? paneOrderFrom(from.fromEl) : [noteId]);
+      v.folderId = from.folderId ?? (from.fromEl ? paneFolderFrom(from.fromEl) : null);
+      const base = loadWinRect() ?? defaultWinRect();
+      const n = windowViews.length;
+      v.rect = clampRect({ ...base, x: base.x + WIN_OFFSET * n, y: base.y + WIN_OFFSET * n }, WIN_LIMITS);
+      const ctx = {
+        getRect: () => v.rect, setRect: (r) => { v.rect = r; applyWindowGeometry(v); }, locked: () => windowTier() === "sheet",
+        limits: WIN_LIMITS, onEnd: () => saveWinRect(v.rect), dragClass: "jt-dragging",
+      };
+      const bar = win.querySelector(".nw-bar");
+      bar.addEventListener("pointerdown", (e) => { if (!e.target.closest("[data-win-close]")) startDrag(e, "move", ctx); });
+      for (const h of HANDLES) {
+        const d = document.createElement("div");
+        d.className = "nw-h";
+        d.dataset.h = h;
+        d.addEventListener("pointerdown", (e) => startDrag(e, h, ctx));
+        win.appendChild(d);
+      }
+      win.addEventListener("pointerdown", () => bringToFront(v), true);
+      closeBtn.addEventListener("click", () => closeNoteWindow(v));
+      win.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape" || win.querySelector(".bar-palette.open")) return;
+        closeNoteWindow(v);
+      });
+      document.body.appendChild(win);
+      windowViews.push(v);
+      winOrder.push(v);
+      layoutWindows();
+      renderNotePane(v);
+      win.focus({ preventScroll: true });
+      return v;
+    }
+    /** Closing a window flushes its edit like every other way out. */
+    function closeNoteWindow(v) {
+      if (!windowViews.includes(v)) return;
+      if (v.ed) endEdit(v);
+      closeAllBarPalettes(null);
+      v.win.remove();
+      windowViews.splice(windowViews.indexOf(v), 1);
+      winOrder = winOrder.filter((x) => x !== v);
+      layoutWindows();
+    }
+    /** Single: the pane becomes a window. A pending edit is flushed FIRST (one revision, if changed), then the window opens. */
+    async function popOutPane(note) {
+      const v = paneView;
+      const order = v.order.slice(), folderId = v.folderId;
+      await endEdit(v);
+      closeNotePane({ flush: false });
+      openNoteWindow(note.noteId, { order, folderId });
     }
 
     /** Creates the real folder document for a still-virtual system role, once, the first time a write genuinely needs it to exist. */
@@ -1751,14 +1994,15 @@
     function noteLeafHtml(row, depth, siblingRows, idx) {
       const { note, placement } = row;
       const title = note.title?.trim() || t("(untitled)");
-      const controls = isSelfSelected() ? `
+      const winBtn = `<button type="button" class="secondary tiny" data-note-window>⧉ ${t("Open in window")}</button>`;
+      const controls = winBtn + (isSelfSelected() ? `
           <button type="button" class="secondary tiny note-order-btn" data-note-up ${idx <= 0 ? "disabled" : ""} aria-label="${escapeHtml(t("Move up"))}">▲</button>
           <button type="button" class="secondary tiny note-order-btn" data-note-down ${idx >= siblingRows.length - 1 ? "disabled" : ""} aria-label="${escapeHtml(t("Move down"))}">▼</button>
           <button type="button" class="secondary tiny" data-note-copy>${t("Copy to…")}</button>
-          <button type="button" class="secondary tiny" data-note-move>${t("Move to…")}</button>` : "";
+          <button type="button" class="secondary tiny" data-note-move>${t("Move to…")}</button>` : "");
       return `<li class="folder-tree-item folder-tree-note" data-note-leaf data-note-id="${escapeHtml(note.noteId)}" data-in-folder="${escapeHtml(placement.folderId)}" data-placement-id="${escapeHtml(placement.placementId)}" style="margin-left:${(depth * 1.1).toFixed(2)}rem">
         <div class="note-card">
-          ${noteHeadHtml(note, { hasActions: !!controls, titlePrefix: "📄 " })}
+          ${noteHeadHtml(note, { hasActions: true, titlePrefix: "📄 " })}
           <div class="note-actions" data-note-actions style="${expandedNoteIds.has(note.noteId) ? "" : "display:none"}">${controls}</div>
         </div>
       </li>`;

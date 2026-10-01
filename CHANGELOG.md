@@ -19019,3 +19019,14 @@ Owner report (a phone photo of Explore's "Track the Status of Approaches" list, 
 - **In the Night card look the list's Approach names are now cream on the dark panel** (they were near-black: 1.1:1), with the chosen one highlighted in gold. The "Study Unit" label inside Choose a Unit was faint too (2.35:1) and is now readable. The small gold section headings (Preservation, Engagement, …) were just under the readable level in both looks and are now above it.
 - **A new permanent check** opens every drop-down on the landing page and in Explore, in both card looks, at phone and PC width, and fails if any text in it reads below 4.5:1 against what is really behind it. It fails on the old colours (6 failures) and passes now (20/0).
 - **Checks**: palette-contrast 20/0, card-look 96/0, explore-hizb-view 80/0, global-approach-card 89/0, approach-sections 59/0, read-contents 250/0, phone-width 217/0, behaviour 1007/1 (31e: sandbox TLS), governance 8/8.
+
+## v09.23 — 1 Oct 2026 — Pop-up windows for Notes in Mapping My Journey
+
+Siyagah port round 6a; Owner decisions 42.4 and M3 (#452, PR #453, Builder run 711).
+
+- **Pop out**: in an open Note's ⋯ menu, ⧉ Pop out turns it into a window over the page (anything you were typing is saved first).
+- **Several Notes at once**: a Note's ▾ → ⧉ Open in window (or Ctrl/⌘-click its title) opens it in its own window; open as many as you like, tap one to bring it to the front. A Note already open is brought forward rather than opened twice, so it is never being edited in two places.
+- **Everything works inside a window**: reading, ‹ ›, ⋯ (Copy to…, Move to…, Delete), folder chips, folding headings, ☰ Contents, and ✏️ Edit with the same autosave.
+- **On a phone** a window fills the screen; with two or more open, a row at the bottom switches between them. **On a tablet or PC** windows can be dragged by the title bar and resized from any side or corner, and they open where you left them on that device.
+- **Found in review**: the closed Details line showed half of a folder chip under the date; it now shows the date alone until Details is opened.
+- **Checks**: journey-note-windows 254/0 (mutations: a second window for an already-open Note; popping out without saving first — both fail), journey-note-edit 208/0, journey-note-pane 321/0, journey-tray 227/0, every journey-map suite green, account-card 1235/0, phone-width 217/0, palette-contrast 20/0, behaviour 1004/4 (22g×3 archive.org, 31e TLS), emulator journey-map-real-function and note-foundation-real-function green, governance 8/8.

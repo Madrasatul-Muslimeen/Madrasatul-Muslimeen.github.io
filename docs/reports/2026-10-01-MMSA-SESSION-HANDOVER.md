@@ -19,11 +19,11 @@ Read the live state yourself, because it moves on after this was written:
 - the "Active Architect session" line on #159.
 
 **Updated 1 Oct 2026, ~07:50 UTC, by session `session_01M4Sbc1h94F7SgErzAzxq9n`:**
-- **`main` is at v09.22**: Explore's Approach list readable in the Night card look (Owner report; new `palette-contrast-browser` suite). v09.21 was Siyagah round 5 (#450 → PR #451), edit a Note with autosave; the toolbar and Done pinned while editing (Architect review). v09.20 was Siyagah round 4 (#446 → PR #448), a Note opening in read mode in the pane; dates in the reader's language. v09.19 before it was built by the Architect:
+- **`main` is at v09.23**: Siyagah round 6a (#452 → PR #453), Single and Multi Note windows in Mapping My Journey. v09.22 was Explore's Approach list readable in the Night card look (Owner report; new `palette-contrast-browser` suite). v09.21 was Siyagah round 5 (#450 → PR #451), edit a Note with autosave; the toolbar and Done pinned while editing (Architect review). v09.20 was Siyagah round 4 (#446 → PR #448), a Note opening in read mode in the pane; dates in the reader's language. v09.19 before it was built by the Architect:
   - decision 46 (option C): the two Mastery Wheel titles on the heading line, and Read / Choose a Unit / Know Your Status as one row under the wheel;
   - decision 47: Record Your Progress always on the Āyah card.
 - v09.18 before it was Siyagah round 3 plus the five-suite cleanup.
-- **Round 6a (#452 → PR #453, Single and Multi pop-up windows in Mapping My Journey) is in review**; it becomes v09.23. Round 6b (#454, the same windows on `app/notes.html`, writing through `reviseStudyNote`) is written and goes to the Builder after it.
+- **Round 6b (#454, the same windows on `app/notes.html`, writing through `reviseStudyNote`) is dispatched to the Builder** right after the v09.23 merge; it becomes v09.24. Round 7 (sections, colours, Tags) needs a Rules package the Owner publishes.
 - **The Wheel drawer is ON STANDBY (Owner: "Standby for Landing page decision")**. Demo (https://claude.ai/artifact/EQAEavsgP1TFprRf8ZKQs4): the legend / Appearance / Units rows under one ⚙ Wheel button with three chips, and Read · Choose a Unit · Know Your Status above the bottom bar. Build it on their "go".
 - **The Asmaul Husna poster template is being built** from the Owner's design and spec (1 Oct):
   - banner الأَسْمَاءُ الْحُسْنَى, Amiri;
@@ -36,11 +36,11 @@ Read the live state yourself, because it moves on after this was written:
 
 **A new session at this point:**
 1. Writes its id into #159's Active line.
-2. Reviews PR #453 (round 6a) if still open; then dispatches #454. The review:
+2. Reviews round 6b's PR (issue #454) when it opens. The review:
    - run `journey-note-pane-browser`, `journey-folder-menus-browser` and the neighbours, plus the emulator suites;
    - look at the pane at 390px Bangla, 820px and 1280px English;
    - mutation-prove one check;
-   - allocate **v09.23**.
+   - allocate **v09.24**.
 3. Writes and dispatches round 5 (edit mode with autosave, decision 42.3, handover §4.4).
 
 ## 1. What this session released (v09.07 → v09.17)

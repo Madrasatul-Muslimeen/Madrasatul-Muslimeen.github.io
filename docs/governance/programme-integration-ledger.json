@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.22",
+    "version": "09.23",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1445,8 +1445,20 @@
     {
       "version": "09.22",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Explore's Approach list and Choose a Unit labels readable in the Night card look (1.1:1 -> 4.5:1+); a permanent palette contrast suite.",
+      "integration": {
+        "authorizedOn": "2026-10-01",
+        "integratedOn": "2026-10-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.23",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Siyagah port round 6a: Note pop-up windows (Single and Multi), one view implementation, float-window.js shared with the tray.",
       "integration": {
         "authorizedOn": "2026-10-01",
         "integratedOn": "2026-10-01",
@@ -1455,8 +1467,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.23",
+  "nextUnallocated": "09.24",
   "nextUnallocatedNote": [
+    "v09.23 was allocated to Siyagah round 6a: Single and Multi pop-up windows for a Note in Mapping My Journey (#452, PR #453), 2026-10-01.",
     "v09.22 was allocated to Explore's Approach list readable in the Night card look; palette-contrast suite, 2026-10-01.",
     "v09.21 was allocated to Siyagah round 5: edit a Note in the pane with autosave (#450, PR #451), 2026-10-01.",
     "v09.20 was allocated to Siyagah round 4: a Note opens in read mode inside Mapping My Journey (#446, PR #448), 2026-10-01.",
