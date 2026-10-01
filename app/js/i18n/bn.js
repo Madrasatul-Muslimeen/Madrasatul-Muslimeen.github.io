@@ -3132,4 +3132,7 @@ export const BN = {
   "Keep writing": "লিখতে থাকুন",
   "Loading the writing sheet…": "লিখন অনুশীলনের পাতা লোড হচ্ছে…",
   "Couldn't open the writing sheet.": "লিখন অনুশীলনের পাতা খোলা যায়নি।",
+  "My account": "আমার অ্যাকাউন্ট",
+  "More account details will appear here later.": "অ্যাকাউন্টের আরও তথ্য পরে এখানে আসবে।",
+  "Go back": "ফিরে যান",
 };
