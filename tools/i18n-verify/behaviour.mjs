@@ -5387,8 +5387,14 @@ console.log("\n=== 43. The wheel's one-time intro + in-hub Surah/Ayah pickers, a
     // the veiled, not-yet-tapped one -- so it is visible from first paint.
     // The check is updated rather than worked around: what it describes
     // deliberately changed.
+    // UPDATED IN PLACE, 1 Oct 2026 (Owner decision 46): the Approach list's
+    // title is no longer the row's first capsule -- it is title text on the
+    // heading line beside "Mastery Wheel", and the row under the wheel holds
+    // the three action buttons. Still asserted: the title is on screen with
+    // its text, and the action row is shown, from first paint.
     capsuleShown: !document.getElementById("wheelIntroSettled").hidden
-                  && document.querySelector(".wheel-intro-capsule")?.textContent.trim() === "Quran Approaches - 40 Ways", // v08.112: the Owner renamed it ("40 ways should reflect Everywhere"); updated in place
+                  && document.getElementById("approachListCapsule")?.getBoundingClientRect().width > 0
+                  && document.getElementById("approachListCapsule")?.textContent.trim() === "Quran Approaches - 40 Ways", // v08.112: the Owner renamed it ("40 ways should reflect Everywhere"); updated in place
   }));
   check("43a the wheel starts covered by the intro button, hub pickers hidden, the capsule already showing above it",
         before.ctaVisible && before.hubHidden && before.veiled && before.capsuleShown, JSON.stringify(before));

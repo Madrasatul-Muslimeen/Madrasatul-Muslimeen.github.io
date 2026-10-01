@@ -208,3 +208,17 @@ The Owner supplied the Siyagah Architect's handover, stored verbatim at `docs/re
 | # | Question | Owner's words | Meaning |
 |---|---|---|---|
 | 45 | (A phone photo of the zoomed Writing sheet: the buttons on three rows under the title.) | **"Button needs to organise, make it 2 rows. Enable the page move right-left on zoom-in to go to a any part of the sheet. (It's now static on zoom in)"** | On a phone: the title line (Writing sheet · ✕ Close · ▴ Hide), then **✏ Write · Pen · Eraser · Undo · Clear**, then **letter style · Save picture · Print A4**. Measured: the three letter-style buttons plus Save and Print need ~430px, wider than any phone, so **Light · Lighter · Like the book became one pick-list** with the same three words; on a PC everything still sits on one line. The sheet now lets a finger pan **left-right as well as up-down** when zoomed (`touch-action` had allowed only up-down). While ✏ Write is on, a finger writes instead of moving the page, as before. |
+
+## 1 Oct 2026 — Mastery Wheel: titles on one row, action buttons on another
+
+Demo: https://claude.ai/artifact/MtMQwq6mdR5xmP8fVtfyib (three placements, real screenshots at phone and PC width, English and Bangla).
+
+| # | Question | Owner's words | Meaning |
+|---|---|---|---|
+| 46 | (A phone screenshot of the landing page.) "Mastery Wheel n Approach the Quran in 40 Ways are not buttons. Therefore they should be in the same row while Read, Choose a unit and Know Your Status are buttons for actions, therefore, should be in the same row. I won't mind which groups go where. Show me a demo placing the groups in alternative places." Shown: A (titles on top, buttons above the wheel), B (buttons on top, titles above the wheel), C (titles on top, buttons under the wheel). | **"Go with C."** | The heading line reads **Mastery Wheel · <the Approach list's title>** as plain title text, one line, its size stepped down to fit (never below 13px; two lines only if it still cannot fit). On a PC the same two titles are the wheel window's title bar. **Read · Choose a Unit ▾ · Know Your Status** are one row of gold buttons **under the wheel, above its colour key**, at every width. The heading's own Read and Know Your Status links are gone, and the row is no longer moved into a band across the card on tablet/PC. Decision 36's random line-or-dot stays, in the one gap between the two titles. The Choose a Unit list opens upward. |
+
+## 1 Oct 2026 — Record Your Progress on the Ayah Card
+
+| # | Question | Owner's words | Meaning |
+|---|---|---|---|
+| 47 | (A phone photo of the Ayah Card, the place under the Take an Approach pull-down marked.) | **"'Record Your Progress' (earlier know as Track) is missing in Ayah Card, should be here."** | ✅ Record Your Progress and its four stage buttons always show under Take an Approach. Until an Approach is chosen the stages are greyed and not pressable, and a line says "Choose an Approach above first, then tap your stage." Nothing is written until an Approach is chosen and a stage pressed. The Page card shares the same block. |

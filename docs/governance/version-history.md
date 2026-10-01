@@ -662,3 +662,4 @@ total). Allocated by the MMSA Architect.
 09.16: My account on every page, Study options Save/Search order, Writing sheet in two rows. Allocated by the MMSA Architect.
 09.17: Mapping My Journey opens as a pop-up folder tray. Allocated by the MMSA Architect.
 09.18: Siyagah round 3: folder and note Copy to/Move to, Delete to Trash, Trash with Restore (#443, PR #447). Allocated by the MMSA Architect.
+09.19: Mastery Wheel titles and action buttons on separate rows (decision 46); Record Your Progress always on the Ayah Card (decision 47). Allocated by the MMSA Architect.
