@@ -182,6 +182,23 @@ for (const lang of ["en", "bn"]) {
       const fw = w.find((x) => x.col === "noteFolders" && x.keys.includes("color"));
       check(`${tag}: folder colour + bold written (#C0392B, true)`, fw && fw.data.color === "#C0392B" && fw.data.bold === true && fw.keys.every((k) => ["color", "bold", "updatedAt"].includes(k)), JSON.stringify(fw));
       checkFieldSets(tag + " folder look", w);
+      // Architect review #458: Bold must be VISIBLE in the font actually drawn, not just a
+      // bigger computed number -- at the old plain weight (600) most system fonts already
+      // use their bold face, so 600 and 800 rendered identically. Draw the bold name's own
+      // text at a PLAIN folder's computed weight and require the widths to differ.
+      check(`${tag}: a bold folder name is drawn visibly bolder than a plain one`, await page.evaluate(() => {
+        const bold = document.querySelector('.folder-row[data-folder-id="fA"] [data-folder-name]');
+        const plain = document.querySelector('.folder-row[data-folder-id="fB"] [data-folder-name]');
+        if (!bold || !plain || !bold.classList.contains("is-bold") || plain.classList.contains("is-bold")) return false;
+        const probe = bold.cloneNode(true); probe.classList.remove("is-bold");
+        probe.style.cssText = "position:absolute;visibility:hidden;white-space:nowrap;flex:none;width:auto";
+        probe.style.fontWeight = getComputedStyle(plain).fontWeight;
+        const bProbe = bold.cloneNode(true); bProbe.style.cssText = probe.style.cssText; bProbe.style.fontWeight = getComputedStyle(bold).fontWeight;
+        bold.parentElement.append(probe, bProbe);
+        const diff = bProbe.getBoundingClientRect().width - probe.getBoundingClientRect().width;
+        probe.remove(); bProbe.remove();
+        return diff > 1;
+      }));
       const c1 = await contrast(page, '.folder-row[data-folder-id="fA"] [data-folder-name]');
       check(`${tag}: a coloured folder's name keeps 4.5:1 (${c1.toFixed(2)})`, c1 >= 4.5);
       await resetWrites(page);
