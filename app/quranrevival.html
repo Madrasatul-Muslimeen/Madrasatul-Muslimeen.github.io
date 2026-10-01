@@ -916,7 +916,7 @@
        and is reached by scrolling, as before. */
     body.landing-view #wheelSection .wheel-col { min-height: var(--landing-col-min, 0px); justify-content: center; }
     #wheelSection #wheelContainer { padding-bottom: calc(min(100vw, 100dvh - 420px) * 0.032 + 19px); }
-    #wheelSection .mastery-wheel { width: min(100%, calc(100dvh - 420px)); max-width: none; }
+    #wheelSection .mastery-wheel { width: min(100%, calc(100dvh - 420px), var(--landing-wheel-max, 100%)); max-width: none; }
     #wheelSection .wheel-legend { font-size: 0.68rem; gap: 4px 9px; }
     #wheelSection .legend-swatch { width: 9px; height: 9px; }
     #wheelPopupView > .wheel-heading { margin-top: 0; margin-bottom: 0.15rem; font-size: 1rem; }
@@ -6410,18 +6410,42 @@
         tagline and the language. */
     function fitLandingFirstScreen() {
       const col = document.querySelector("#wheelSection .wheel-col");
-      if (!col) return;
-      const dock = document.getElementById("dock");
-      const want = (innerWidth <= 720 && document.body.classList.contains("landing-view") && col.getBoundingClientRect().height)
-        ? Math.max(0, Math.round(innerHeight - (dock?.offsetHeight ?? 0) - (col.getBoundingClientRect().top + scrollY) + 8)) + "px"
-        : "0px";
+      const wheel = document.querySelector("#wheelSection .mastery-wheel");
+      const row = document.getElementById("wheelDrawerRow");
+      if (!col || !wheel || !row) return;
+      const phoneLanding = innerWidth <= 720 && document.body.classList.contains("landing-view") && col.getBoundingClientRect().height > 0;
+      if (!phoneLanding) {
+        col.style.removeProperty("--landing-col-min");
+        wheel.style.removeProperty("--landing-wheel-max");
+        return;
+      }
+      // Page coordinates: the dock is pinned to the bottom of the screen, so
+      // the fold is the screen height less the dock, whatever the scroll.
+      const fold = innerHeight - (document.getElementById("dock")?.offsetHeight ?? 0);
+      // A tall header (Bangla, a long tagline) can leave too little room:
+      // the wheel then shrinks just enough that the drawer row stays above
+      // the dock, rather than the row hiding behind it.
+      // Judged with the drawers CLOSED: an open drawer may push the row below
+      // the fold (the reader asked for it), and must never leave the wheel
+      // shrunk after it closes -- so the cap is recomputed from scratch.
+      wheel.style.removeProperty("--landing-wheel-max");
+      const panels = document.getElementById("wheelDrawerPanels");
+      const panelsH = panels && panels.getBoundingClientRect().height > 0 ? panels.getBoundingClientRect().height + parseFloat(getComputedStyle(col).rowGap || "0") : 0;
+      // Measured again after each step: the wheel's height does not shrink
+      // exactly one-for-one with its width, so up to three passes settle it.
+      for (let pass = 0; pass < 3; pass++) {
+        const over = row.getBoundingClientRect().bottom + scrollY - panelsH + 6 - fold;
+        if (over <= 1) break;
+        wheel.style.setProperty("--landing-wheel-max", Math.floor(wheel.getBoundingClientRect().width - over) + "px");
+      }
+      const want = Math.max(0, Math.round(fold - (col.getBoundingClientRect().top + scrollY) + 8)) + "px";
       if (col.style.getPropertyValue("--landing-col-min") !== want) col.style.setProperty("--landing-col-min", want);
     }
     if (typeof ResizeObserver === "function") {
       const fitRO = new ResizeObserver(() => fitLandingFirstScreen());
-      ["topNav", "taglineStrip", "dock", "wheelPopupView"].forEach((id) => { const el = document.getElementById(id); if (el) fitRO.observe(el); });
+      ["topNav", "taglineStrip", "dock", "wheelPopupView"].forEach((id) => { const el = document.getElementById(id); if (el) fitRO.observe(el, { box: "border-box" }); });
     }
-    addEventListener("resize", fitLandingFirstScreen);
+    addEventListener("resize", () => { document.querySelector("#wheelSection .mastery-wheel")?.style.removeProperty("--landing-wheel-max"); fitLandingFirstScreen(); });
     // Follow-up round: Map(subjectId -> courseOffer contextId) for
     // selectedPersonId -- same mechanism topic-study.js/routine-study.js
     // already use (course-offers.js's programSubjectMapFromEnrollments()).
