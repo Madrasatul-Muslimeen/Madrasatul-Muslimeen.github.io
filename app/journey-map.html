@@ -99,6 +99,9 @@
   .folder-picker-overlay { position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; }
   .folder-picker { background: #fff; color: #222; border-radius: 0.6rem; width: min(30rem, 94vw); max-height: 82vh; display: flex; flex-direction: column; gap: 0.5rem; padding: 0.8rem; box-sizing: border-box; outline: none; }
   .folder-picker-title { margin: 0; font-size: 1.05rem; }
+  /* The toolbar's .folder-search-input is `flex: 1 1 12rem` for a ROW; in this
+     column it became a 12rem-TALL box (seen at 390px, 1 Oct 2026). */
+  .folder-picker .folder-search-input { flex: 0 0 auto; min-height: 40px; }
   .folder-picker-msg { margin: 0; }
   .folder-picker-list { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1 1 auto; min-height: 0; }
   .folder-picker-row { display: flex; align-items: center; gap: 0.4rem; width: 100%; min-height: 44px; text-align: left; background: #fff; color: #1F3A6E; border: 1px solid #ddd; border-radius: 0.4rem; margin: 0 0 0.25rem; padding: 0.4rem 0.6rem; box-sizing: border-box; cursor: pointer; }
@@ -1572,6 +1575,9 @@
         const names = allPlacements.filter((p) => p.noteId === note.noteId).map((p) => byId.get(p.folderId)).filter(Boolean).map(folderDisplayName);
         return names.length ? [...new Set(names)].join(", ") : t("(no folder)");
       };
+      // The date only when there is one: a write still settling on the server
+      // has no readable time yet, and a bare " · " was printed for it.
+      const datePart = (ts) => { const d = when(ts); return d ? ` · ${escapeHtml(d)}` : ""; };
       const restoreBtn = isSelfSelected() ? `<button type="button" class="secondary tiny" data-trash-restore>${escapeHtml(t("Restore"))}</button>` : "";
       let html = head;
       if (trash.folders.length === 0 && trash.notes.length === 0) {
@@ -1579,10 +1585,10 @@
       } else {
         html += `<ul class="trash-list" data-trash-list>`;
         for (const f of trash.folders) {
-          html += `<li class="trash-row" data-trash-folder-id="${escapeHtml(f.folderId)}"><div class="trash-row-text"><span class="folder-row-name">📁 ${escapeHtml(folderDisplayName(f))}</span><span class="note">${escapeHtml(t("Was in: {place}", { place: placeOf(f) }))} · ${escapeHtml(when(f.updatedAt))}</span></div>${restoreBtn}</li>`;
+          html += `<li class="trash-row" data-trash-folder-id="${escapeHtml(f.folderId)}"><div class="trash-row-text"><span class="folder-row-name">📁 ${escapeHtml(folderDisplayName(f))}</span><span class="note">${escapeHtml(t("Was in: {place}", { place: placeOf(f) }))}${datePart(f.updatedAt)}</span></div>${restoreBtn}</li>`;
         }
         for (const n of trash.notes) {
-          html += `<li class="trash-row" data-trash-note-id="${escapeHtml(n.noteId)}"><div class="trash-row-text"><span class="folder-row-name">📄 ${escapeHtml(noteTitleOf(n))}</span><span class="note">${escapeHtml(t("Was in: {place}", { place: noteFolderNames(n) }))} · ${escapeHtml(when(n.updatedAt))}</span></div>${restoreBtn}</li>`;
+          html += `<li class="trash-row" data-trash-note-id="${escapeHtml(n.noteId)}"><div class="trash-row-text"><span class="folder-row-name">📄 ${escapeHtml(noteTitleOf(n))}</span><span class="note">${escapeHtml(t("Was in: {place}", { place: noteFolderNames(n) }))}${datePart(n.updatedAt)}</span></div>${restoreBtn}</li>`;
         }
         html += `</ul>`;
         if (trash.truncated) html += `<p class="note">${escapeHtml(t("Showing a large first batch only — there is more than could be loaded at once."))}</p>`;

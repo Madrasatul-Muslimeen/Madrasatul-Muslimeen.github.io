@@ -86,6 +86,10 @@ for (const lang of ["en", "bn"]) {
     check(`${tag}: the picker is the topmost element at its own centre`, topmost.inside, JSON.stringify(topmost));
     check(`${tag}: the picker is ${width < 600 ? "full-screen on a phone" : "a centred window, not full-screen"}`, width < 600 ? topmost.full : !topmost.full, JSON.stringify(topmost));
     check(`${tag}: the picker has no sideways scroll`, await noSideways(page));
+    // Added by the Architect in review (1 Oct 2026): the search box inherited the
+    // toolbar's `flex: 1 1 12rem` and stood ~190-245px TALL in the picker column.
+    const searchH = await page.evaluate(() => document.querySelector("#folderPicker [data-picker-search]").getBoundingClientRect().height);
+    check(`${tag}: the picker's search box is one line tall, not stretched`, searchH >= 30 && searchH <= 60, `height ${searchH}`);
     const pickerText = await page.textContent("#folderPicker");
     check(`${tag}: the picker shows the derived numbers and a Cancel`, /\(0?1\)/.test(pickerText) && (await page.$("#folderPicker [data-picker-cancel]")) !== null);
     await page.fill("#folderPicker [data-picker-search]", "gam");
@@ -152,6 +156,8 @@ for (const lang of ["en", "bn"]) {
     await page.waitForSelector("[data-trash-folder-id]", { timeout: 8000 });
     const trashText = await page.textContent("#viewTrash");
     check(`${tag}: Trash lists the folder with its old place`, (await page.$('[data-trash-folder-id="fE"]')) !== null && trashText.includes("Empty") && (lang === "bn" ? hasBn(trashText) : /Was in/.test(trashText)), trashText.slice(0, 200));
+    // Added by the Architect in review: no dangling separator when a row has no readable date.
+    check(`${tag}: a Trash row never ends in a dangling " · "`, await page.evaluate(() => [...document.querySelectorAll("#viewTrash .trash-row-text .note")].every((e) => !/·\s*$/.test(e.textContent))));
     check(`${tag}: Trash has no erase and no Empty Trash`, !/erase|empty trash|delete forever|permanent/i.test(await page.evaluate(() => [...document.querySelectorAll("#viewTrash button")].map((b) => b.textContent).join("|"))));
     check(`${tag}: Trash has no sideways scroll`, await noSideways(page));
     await page.click('[data-trash-folder-id="fE"] [data-trash-restore]');
