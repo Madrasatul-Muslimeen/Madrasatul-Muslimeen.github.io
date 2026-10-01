@@ -3930,6 +3930,14 @@
   body.note-immersive #globalBanner,
   body.note-immersive #topNav,
   body.note-immersive #dock { display: none; }
+  /* Issue #468 -- a deep link (?bookmark= / ?goto= / ?resume=) shows a plain
+     cover from first paint, so the reader never watches the landing page
+     assemble itself before the target opens. Visibility (not display) keeps
+     #app laid out, so the wheel/hub measuring code still works underneath. */
+  html.bm-opening #app, html.bm-opening #topNav, html.bm-opening #taglineStrip { visibility: hidden; }
+  #bmCover { display: none; }
+  html.bm-opening #bmCover { display: block; position: fixed; left: 0; right: 0; bottom: 0; top: 3rem; z-index: 19000; background-color: #fff; padding: 2rem 1rem; text-align: center; color: #1F3A6E; font-weight: 600; }
+  #bmNotFound { margin: 0.4rem 0; padding: 0.5rem 0.8rem; border-radius: 0.4rem; background: #fdf6e3; border: 1px solid #B8862F; color: #1F3A6E; font-size: 0.9rem; }
 </style>
 </head>
 <body>
@@ -3952,6 +3960,26 @@
        looks precisely as it did in v07.45. js/taglines.js then decides
        whose turn it is and, if that is a different line, moves to it ONCE
        -- see pickTagline(). -->
+  <div id="bmCover" role="status" aria-live="polite"><span id="bmCoverText">Opening your bookmark…</span></div>
+  <script>
+    // Issue #468 -- classic (non-module) script: runs before first paint.
+    (function () {
+      var q = new URLSearchParams(location.search);
+      if (!(q.get("bookmark") || q.get("goto") || q.get("resume"))) return;
+      var root = document.documentElement;
+      root.classList.add("bm-opening");
+      var cover = document.getElementById("bmCover");
+      var h1 = document.querySelector("body > h1");
+      if (cover && h1) cover.style.top = Math.ceil(h1.getBoundingClientRect().bottom) + "px";
+      window.__bmCoverDone = function (notFound) {
+        clearTimeout(window.__bmCoverTimer);
+        root.classList.remove("bm-opening");
+        if (notFound && window.__bmShowNotFound) window.__bmShowNotFound();
+      };
+      // Safety net: never leave a blank screen.
+      window.__bmCoverTimer = setTimeout(function () { window.__bmCoverDone(true); }, 10000);
+    })();
+  </script>
   <div class="app-tagline tagline-strip" id="taglineStrip"><span class="tagline-line">Reviving the Quran, abandoned.</span></div>
 
   <nav class="app-nav" id="topNav">
@@ -17111,6 +17139,9 @@
     /** Enhancement round -- the settings a Quran bookmark restores on reopen (item 4). Only what actually resets on a fresh load/session (checkbox state, unit type/position, Approach) -- device-wide reading prefs (translation languages, reciters, Arabic font) already come back on their own via prefs.js/localStorage, so capturing them here too would be redundant. */
     function captureQuranBookmarkSettings() {
       return {
+        // Issue #468 -- the view this was made from, so it reopens there.
+        // The Read view's place is the same unit/surah/ayah fields below.
+        view: stageView === "read" || stageView === "note" ? stageView : stageView === "wheel" ? "landing" : "study",
         unitType: currentUnitType,
         surahNum: currentSurahNum,
         ayahNum: currentAyahNum,
@@ -17133,6 +17164,7 @@
         canonical toggles -- those aren't scope-specific. */
     function captureNoteBookmarkSettings() {
       return {
+        view: "note", // issue #468
         unitType: noteScope.unitType,
         surahNum: currentSurahNum,
         ayahNum: noteScope.ayahNum,
@@ -17181,7 +17213,11 @@
         renderStudyScreen();
         renderWheel();
       }
-      if (position) await openNoteView(position);
+      // Issue #468 -- a bookmark opens in the view it was made in. No `view`
+      // (an older bookmark) keeps the Note view, exactly as before.
+      if (position && settings?.view === "read") openReadingScreen();
+      else if (position && (settings?.view === "study" || settings?.view === "landing")) { closeAllPanels(); setStageView("wheel"); renderWheel(); }
+      else if (position) await openNoteView(position);
     }
 
     // -----------------------------------------------------------------------
@@ -19123,11 +19159,26 @@
      * bookmarked spot must never silently switch who this page is acting
      * as.
      */
+    /** Issue #468 -- the bookmark could not be opened: drop the cover, leave the normal landing page, and say so. */
+    function bookmarkNotFound() {
+      window.__bmShowNotFound = () => {
+        if (document.getElementById("bmNotFound")) return;
+        const note = document.createElement("div");
+        note.id = "bmNotFound";
+        note.setAttribute("role", "status");
+        note.textContent = t("That bookmark could not be found.");
+        const stage = document.getElementById("stage");
+        stage?.parentNode?.insertBefore(note, stage);
+      };
+      if (window.__bmCoverDone) window.__bmCoverDone(true); else window.__bmShowNotFound();
+    }
+
     async function openBookmarkFromQueryString() {
       const params = new URLSearchParams(location.search);
       const bookmarkId = params.get("bookmark");
       const ownerPersonId = params.get("ownerPersonId");
-      if (!bookmarkId || !selectedPersonId) return;
+      if (!bookmarkId) return;
+      if (!selectedPersonId) { bookmarkNotFound(); return; }
       await ensureAyahNoteDataLoaded();
       let bookmark;
       if (ownerPersonId && ownerPersonId !== selectedPersonId) {
@@ -19136,7 +19187,7 @@
       } else {
         bookmark = (bookmarksDoc.saved ?? []).find((b) => b.id === bookmarkId && !b.removed);
       }
-      if (!bookmark || bookmark.moduleId !== "quranrevival") return;
+      if (!bookmark || bookmark.moduleId !== "quranrevival") { bookmarkNotFound(); return; }
       // Bookmark creation/update round -- only a bookmark actually living in
       // the CURRENTLY SELECTED person's own document can later be updated
       // from here (a cross-document "tagged for" open must never let this
@@ -19158,11 +19209,11 @@
       const raw = new URLSearchParams(location.search).get("goto");
       if (!raw) return;
       const parsed = parseJumpText(raw);
-      if (!parsed) return;
+      if (!parsed) { bookmarkNotFound(); return; }
       const surahMeta = surahIndex.find((s) => s.surahNumber === parsed.surah);
-      if (!surahMeta) return;
+      if (!surahMeta) { bookmarkNotFound(); return; }
       const { from, to } = parsed;
-      if (from < 1 || from > surahMeta.ayahCount || (to !== null && (to < 1 || to > surahMeta.ayahCount))) return;
+      if (from < 1 || from > surahMeta.ayahCount || (to !== null && (to < 1 || to > surahMeta.ayahCount))) { bookmarkNotFound(); return; }
       await goToReference(parsed.surah, from, to);
       await openNoteView(buildUnitKey.ayah(parsed.surah, from));
     }
@@ -20170,6 +20221,7 @@
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
+        window.__bmCoverDone?.(false);
         whoEl.textContent = t("Not signed in.");
         signInBtn.style.display = "inline-block";
         signOutBtn.style.display = "none";
@@ -20255,6 +20307,7 @@
         renderTenantSelect(myMemberships);
         await step("open bookmark", openBookmarkFromQueryString);
         await step("open goto link", openGotoFromQueryString);
+        window.__bmCoverDone?.(false); // issue #468 -- target is open; remove the cover in one step
         // Last: "the app opens in the last settings/options in all view."
         // After the deep links on purpose -- an explicit ?bookmark=/?goto=
         // link outranks a remembered place, and restoreLastSession() checks
@@ -20266,6 +20319,7 @@
       } catch (err) {
         whoEl.textContent += ` — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`;
         console.error(err);
+        window.__bmCoverDone?.(true);
       }
     });
 

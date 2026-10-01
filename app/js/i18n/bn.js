@@ -71,6 +71,8 @@ export const BN = {
   "Checking sign-in…": "সাইন-ইন যাচাই করা হচ্ছে…",
   "Sign in with Google": "গুগল দিয়ে সাইন ইন করুন",
   "Sign out": "সাইন আউট",
+  "Opening your bookmark…": "আপনার বুকমার্ক খোলা হচ্ছে…",
+  "That bookmark could not be found.": "সেই বুকমার্কটি পাওয়া যায়নি।",
   "Not signed in.": "সাইন ইন করা হয়নি।",
   "Signed in as {email}": "{email} হিসেবে সাইন ইন করা আছে",
   "Sign-in failed: {message}": "সাইন ইন ব্যর্থ হয়েছে: {message}",

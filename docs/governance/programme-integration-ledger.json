@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.29",
+    "version": "09.30",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1529,8 +1529,20 @@
     {
       "version": "09.29",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Landing drawers (decision 51) and a phone-only wheel nudge so the top numbers clear the dark card.",
+      "integration": {
+        "authorizedOn": "2026-10-01",
+        "integratedOn": "2026-10-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.30",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Deep-link cover from first paint and settings.view recorded and honoured on bookmark open.",
       "integration": {
         "authorizedOn": "2026-10-01",
         "integratedOn": "2026-10-01",
@@ -1539,8 +1551,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.30",
+  "nextUnallocated": "09.31",
   "nextUnallocatedNote": [
+    "v09.30 was allocated to Bookmarks open straight where they were made, 2026-10-01.",
     "v09.29 was allocated to Landing drawers: Wheel, Legend, Unit; phone wheel numbers no longer cut, 2026-10-01.",
     "v09.28 was allocated to Write-failure banner can be closed and names the failed save, 2026-10-01.",
     "v09.27 was allocated to Sections, folder colour/bold and Tags switched on (round 7 Rules published by the Owner), 2026-10-01.",
