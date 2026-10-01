@@ -321,6 +321,15 @@
 [data-card-look="night"] .bar-palette .qcr-archived-toggle { color: var(--card-text); }
 [data-card-look="night"] .bar-palette-divider { background: var(--card-line); }
 [data-card-look="night"] .bar-palette-note { color: var(--card-text-muted); }
+/* Owner, 1 Oct 2026 (a phone photo of Explore's "Track the Status of
+   Approaches" list, the names black on navy): the list's rows and the Choose a
+   Unit palette's labels carried light-card colours (#222, #555) into the night
+   palette -- measured 1.1:1 and 2.35:1. A palette belongs to its surface. */
+[data-card-look="night"] .explore-approach-opt { color: var(--card-text); }
+[data-card-look="night"] .explore-approach-opt:hover { background: var(--card-bg); }
+[data-card-look="night"] .explore-approach-opt[aria-selected="true"] { background: rgba(201,162,75,0.28); color: var(--card-text); }
+[data-card-look="night"] .explore-approach-group { color: #d4b56a; }
+[data-card-look="night"] .wheel-unit-row label { color: var(--card-text-muted); }
 
 /* Review (Architect, v08.107): on the QCR panel's gradient the gold level
    badge measured 3.34:1 and the "Not started" chip 3.48:1 on a row's
