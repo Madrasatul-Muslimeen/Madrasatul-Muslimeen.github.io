@@ -652,5 +652,10 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       await loadContextData();
     });
   </script>
+  <script type="module">
+    import { auth } from "./js/firebase-init.js";
+    import { mountPageAccountCard } from "./js/account-card.js";
+    mountPageAccountCard({ movePerson: true, getEmail: () => auth.currentUser?.email || "" });
+  </script>
 </body>
 </html>
