@@ -18936,3 +18936,14 @@ Owner decisions 37–39.
 - **✅ Record Your Progress** (decision 39) titles the four stage buttons on the Ayah, Unit and Page cards, in the Take an Approach title's own face, with clear space above it.
 - **Also recorded:** v09.13's bigger ⤢ made the Mushaf bar 9px taller at 320px (the check is updated in place) and squeezed the old capsule's text; the capsule is gone in this release.
 - **Checks**: approach-record-status-bar 431/0, head-search 86/0, global-approach-card 89/0, ayah-action-sheet-boundary 53/0, read-contents 396/0, read-quick-buttons 204/0, writing-sheet 148/0, wheel-slice-opens-track 96/0, landing-sections-collapse 152/0, quran-my-status 248/0, phone-width 217/0, behaviour 1003/4 (baseline), governance 8/8.
+
+## v09.15 — 1 Oct 2026 — My account, Back on the view row, Siyagah data layer, Asma Explore poster, folder checks past 100
+
+Owner decisions 40, 42, 43.
+
+- **👤 My account** under Home (#432, PR #433, Builder): a card with name, email, tenant, roles and the page's Tenant/Person pickers (moved, not rebuilt). Mapping My Journey and Import Notes; the other 23 pages are round 2.
+- **Back never takes a line of its own**: an "←" on the Folders | Timeline | Path row (Import Notes: the title line).
+- **Siyagah port round 1 — data layer** (#434, PR #435, Builder): Trash (refused while the subtree holds Notes), Restore, Trash list, Copy and Move for Notes and folders. No UI yet.
+- **Fixed — folder changes past the first 100 folders.** Creating a subfolder, moving a folder and removing a folder checked only the first 100 of an owner's folders (the Rules' page cap). With ~1,464 imported folders that refused real changes and could miss a folder's subfolders. They now read every folder in pages. Found by the Architect's first emulator run of this code (46/46 after the fix; it failed with `parent-missing` before).
+- **Asma ul Husna in Explore** (decision 43): Names after Group; the chosen Name's poster in the wheel's space.
+- **Checks**: account-card 315/0, journey-map-trash-copy 29/0, journey-map-real-function (emulator) 46/46, note-foundation-real-function green, journey-map-screen 48/0, journey-map-back 38/0, asma-explore-name-poster 36/0, head-search 86/0, approach-record-status-bar 431/0, phone-width 217/0, behaviour 1005/2 (sandbox TLS), governance 8/8. Four suites already red on `main` are recorded for a separate cleanup.

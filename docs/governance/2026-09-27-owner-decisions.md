@@ -169,3 +169,30 @@ Demo (the Read view, Mushaf, one bar split in three): shown in the session as re
 | # | Question | Owner's words | Meaning |
 |---|---|---|---|
 | 39 | (A photo of the Page card from the Mushaf/Read view, the gap between the Approach pull-down and the four stage buttons marked.) | **"As approach has the title. Give the title to record as well above the progress Tabs: (Icon) 'Record Your Progress'. Make it look elegant. Keep proper space. Then show"** | Every card that carries the four stage buttons (Ayah, Unit, Page) titles them **✅ Record Your Progress**, in the 🎯 Take an Approach title's own face, with clear space above it (23px from the pull-down) and close to its own buttons (6px). |
+
+## 30 Sep 2026 — Mapping My Journey: account info, Back, and the folder tray
+
+| # | Question | Owner's words | Meaning |
+|---|---|---|---|
+| 40 | (A phone photo of Mapping My Journey, the Back row and the Tenant/Person row circled.) | **"1. Tenant info should not be here. It should be under Home, under a new button with user account card info (build full thing later). 2. Can't allow back button takes a bar space. This is not a quality work from the builder, nor a quality job from you as an Architect."** | A **👤 My account** item under Home opens an account card holding the page's Tenant (and, where it has one, Person) picker — the same elements, moved. Back is never a line of its own: an "←" icon on a row that already exists. Round 1 (#432): Mapping My Journey and Import Notes; round 2: the other 23 pages carrying a Tenant picker. **Not moved:** the Quran page's Student picker in Study options, which is D10's fast "log for each child in turn" control; only its tenant ("User Role") picker moves. |
+| 41 | (Same message.) | **"3. Mapping is about the folders. Therefore, it should pop up the folder tray, draggable, resizable from all sides n corners with all the functions of the folders I originally instructed to have … I gave a detail prompt from 'Siyagah' notebook app's architect … Do you need it again? Also all notes once click should open in a note view with all its function enabled (i can give that also from Siyagah, if you need it)"** | **Waiting on the Owner's Siyagah references** (the folder dialog and the note view). Only issue #259's summary of the first survives in the repository; the original text is to be stored under `docs/reference/` when it arrives. v08.63 (#259) recorded two deviations from it — one ⋯ menu at every width instead of separate icons on a PC, and no touch drag — and it is a page, not a tray. |
+
+## 30 Sep 2026 — the Siyagah folder system and note pane (the Owner's handover v2)
+
+The Owner supplied the Siyagah Architect's handover, stored verbatim at `docs/reference/2026-09-30-siyagah-folder-and-note-pane-handover-v2.md` (its settled decisions M1–M6 are the Owner's). Asked: *"Enable this Folder and note features prompt from Siyagah, but confirms with me."* The Architect checked it against MMSA's code and deployed Rules and put seven points where the two differ.
+
+| # | Question | Owner's answer | Meaning |
+|---|---|---|---|
+| 42.1 | "Delete" can never erase in MMSA (I4, D6): Trash = retire, Restore = un-retire, no Empty Trash. | **"If trash items don't take data storage, i have no prob."** | Told honestly: they take a little (an empty folder a few hundred bytes; a note its text and revisions, a few KB each; 1,000 trashed notes ≈ a few MB of the plan's 1 GB). Built as Trash/Restore; a true erase, if ever wanted, is a separate admin-side tool (D6). |
+| 42.2 | Folder numbers derived from position (MMSA, v08.63) rather than written into names (Siyagah). | **"yes"** | Numbers stay derived and display-only; a move renumbers instantly with no renames. |
+| 42.3 | Autosave: typing kept on the device every second; a revision written after ~30 s idle and on every exit path (leave, close, background). | **"ok"** | As stated. |
+| 42.4 | "Pop-ups wherever a note is opened" means the permanent Notes (Mapping My Journey, Notes page), not the Quran āyah Note view. | **"right"** | As stated. |
+| 42.5 | Tags and Note Types (not in M1–M6; need a Rules change). | **"we need Tag only not 'type' here."** | **Tags are built; Note Types are not.** Tags join folder colour/bold and sections in the one Rules package the Owner publishes. |
+| 42.6 | Siyagah's Primary quick-capture inbox. | **"yes"** (leave it out) | Not built. |
+| 42.7 | The Mapping My Journey button opens the folder tray as a pop-up over the current screen (draggable, resizable from every side and corner; a full-screen sheet on a phone), with Timeline and Path as tabs inside it. | **"ok"** | As stated. |
+
+## 1 Oct 2026 — Asma ul Husna in Explore
+
+| # | Question | Owner's words | Meaning |
+|---|---|---|---|
+| 43 | (A screenshot of Explore → Asma ul Husna with one Name chosen: the Names pull-down last on the bar, and the wheel's space empty, saying "References don't need a wheel".) | **"Name column should move after 'Group'. Then, the Name poster should appear in the space marked on selection of individual name. (I am giving you a separate task for AH Names POSTER making)"** | The bar reads **Group · Names · Dual · …(every other classification) · ⋯**. With one Name chosen, its **poster** fills the wheel's space; a tap opens it full size. The poster is today's generated poster (`renderAsmaPosterHtml`); the Owner's separate poster-making task will change how it looks, not where it appears. |

@@ -18,6 +18,7 @@ import {
 import { TENANT } from "./collections.js";
 import { folderTreeRefusal, journeyFolder } from "./journey-map-contract.js";
 import { createDocument, runEnvelopeTransaction } from "./envelope.js";
+import { commitEnvelopeBatch } from "./envelope.js";
 
 export const NOTE_STATUS = Object.freeze({ ACTIVE: "active", RETIRED: "retired" });
 export const NOTE_VISIBILITY = "private";
@@ -270,6 +271,105 @@ export async function retirePermanentNote(db, { tenantId, noteId, expectedRevisi
   return revisionId;
 }
 
+/**
+ * Siyagah port round 1 -- Restore a Note from Trash. Trash IS `retired` (I4:
+ * nothing is deleted), so restoring is `status: "active"` again.
+ *
+ * WRITTEN WITH A NEW CHAINED REVISION, exactly as `retirePermanentNote()`
+ * is: the Rules' `committedRevisionMatches()` re-checks `currentRevisionId`
+ * on every update, so a status-only write could never chain from itself. Its
+ * placements are untouched -- retiring a Note never retired them (I4) -- so
+ * the Note reappears in every folder it was filed in.
+ */
+export async function restoreNote(db, { tenantId, noteId, expectedRevisionId, actorUid }) {
+  const noteDocId = noteFoundationDocId(tenantId, noteId);
+  requireToken("expectedRevisionId", expectedRevisionId);
+  const revisionId = newNoteEntityId();
+  await runEnvelopeTransaction(db, actorUid, async (transaction) => {
+    const snapshot = await transaction.get(TENANT.NOTES, noteDocId);
+    if (!snapshot.exists()) throw new Error("Note does not exist.");
+    const note = snapshot.data();
+    if (note.status !== NOTE_STATUS.RETIRED) throw new Error("Note is not in Trash.");
+    if (note.currentRevisionId !== expectedRevisionId) throw new Error("Stale Note revision.");
+
+    transaction.create(TENANT.NOTE_REVISIONS, noteFoundationDocId(tenantId, revisionId), {
+      revisionId,
+      noteId,
+      tenantId: note.tenantId,
+      ownerPersonId: note.ownerPersonId,
+      ownerUid: note.ownerUid ?? null,
+      previousRevisionId: expectedRevisionId,
+      title: note.title,
+      bodyHtml: note.bodyHtml,
+      revisionReason: "restored",
+      actorUid,
+    });
+    transaction.update(TENANT.NOTES, noteDocId, { status: NOTE_STATUS.ACTIVE, currentRevisionId: revisionId });
+  });
+  return revisionId;
+}
+
+/** The most writes one Firestore batch may carry is 500; callers chunk at 450 and this refuses anything above. */
+export const MAX_BATCH_WRITES = 500;
+
+/**
+ * Siyagah port round 1 -- several folder and placement writes as ONE atomic
+ * batch, through the envelope. The service chunks; this only validates and
+ * writes. Updates only ever send `status`, which the deployed Rules let a
+ * folder and a placement change.
+ *
+ * WHAT A BATCH MEANS FOR THE RULES. `parentOneHopOk()` and `bothEndsOk()` read
+ * with `get()`, which sees the state BEFORE the batch commits, not after. So
+ * inside one batch a new child cannot name a parent created in the same batch,
+ * and a restored child cannot name a parent restored in the same batch. The
+ * service therefore commits one DEPTH LEVEL per batch; this function does not
+ * and cannot reorder.
+ *
+ *   folderCreates:    [{ folderId, name, parentFolderId, order }]
+ *   folderStatus:     [{ folderId, status }]
+ *   placementCreates: [{ placementId, noteId, folderId, order }]
+ *   placementStatus:  [{ placementId, status }]
+ */
+export async function commitFolderBatch(db, {
+  tenantId, ownerPersonId, ownerUid = null, actorUid,
+  folderCreates = [], folderStatus = [], placementCreates = [], placementStatus = [],
+}) {
+  const owner = ownership({ tenantId, ownerPersonId, ownerUid });
+  const total = folderCreates.length + folderStatus.length + placementCreates.length + placementStatus.length;
+  if (total === 0) return 0;
+  if (total > MAX_BATCH_WRITES) throw new RangeError(`note-foundation: a batch may carry at most ${MAX_BATCH_WRITES} writes.`);
+  const statusOf = (value) => {
+    if (value !== NOTE_STATUS.ACTIVE && value !== NOTE_STATUS.RETIRED) throw new Error("status must be active or retired.");
+    return value;
+  };
+  const creates = [];
+  const updates = [];
+  for (const f of folderCreates) {
+    requireToken("folderId", f.folderId);
+    requireText("name", f.name);
+    journeyFolder({ tenantId, ownerPersonId, name: f.name, parentFolderId: f.parentFolderId ?? null, semanticRole: "user", order: f.order });
+    creates.push({ collectionName: TENANT.NOTE_FOLDERS, docId: noteFoundationDocId(tenantId, f.folderId), data: {
+      folderId: f.folderId, ...owner, name: f.name, parentFolderId: f.parentFolderId ?? null,
+      semanticRole: "user", order: f.order, status: NOTE_STATUS.ACTIVE,
+    } });
+  }
+  for (const p of placementCreates) {
+    requireToken("placementId", p.placementId);
+    creates.push({ collectionName: TENANT.NOTE_PLACEMENTS, docId: noteFoundationDocId(tenantId, p.placementId), data: {
+      placementId: p.placementId, ...relationBase(owner, p.noteId), folderId: requireToken("folderId", p.folderId),
+      order: p.order, status: NOTE_STATUS.ACTIVE,
+    } });
+  }
+  for (const f of folderStatus) {
+    updates.push({ collectionName: TENANT.NOTE_FOLDERS, docId: noteFoundationDocId(tenantId, f.folderId), data: { status: statusOf(f.status) } });
+  }
+  for (const p of placementStatus) {
+    updates.push({ collectionName: TENANT.NOTE_PLACEMENTS, docId: noteFoundationDocId(tenantId, p.placementId), data: { status: statusOf(p.status) } });
+  }
+  await commitEnvelopeBatch(db, { creates, updates }, actorUid);
+  return total;
+}
+
 /** One person's folders, for judging a tree. Equality-only and bounded, so it needs no composite index (P5-E). */
 // v08.58 -- `maximum` was 500, and the deployed Rules' `listIsBounded()`
 // refuses any list whose limit is above 100, so EVERY folder list was denied
@@ -313,6 +413,32 @@ export async function listNoteFoldersForOwnerPage(db, {
 }
 
 /**
+ * 1 Oct 2026, Architect's review of #435 (the emulator run it asked for): the
+ * folder checks below -- a create with a parent, a re-parent, and a retire's
+ * "still holds active folders" -- read `listNoteFoldersForOwner()`, which the
+ * Rules cap at 100. An owner with more folders (the Owner's own WordPress
+ * import is ~1,464) was judged against only the first 100: a real parent
+ * outside them read as `parent-missing`, a real folder as "does not exist",
+ * and -- the dangerous one -- a retire could miss active children past the
+ * first 100 and orphan them. These checks now read EVERY active folder in
+ * pages of 100, the same shape `loadAllOwnerFolders()` uses. A write must
+ * never be judged on a partial picture, so a run that hits the page cap
+ * throws rather than deciding on what it has.
+ */
+const MAX_FOLDER_PAGES = 50;
+export async function listAllActiveFoldersForOwner(db, { tenantId, ownerPersonId }) {
+  const all = [];
+  let after = null;
+  for (let pageNo = 0; pageNo < MAX_FOLDER_PAGES; pageNo++) {
+    const { rows, next } = await listNoteFoldersForOwnerPage(db, { tenantId, ownerPersonId, status: NOTE_STATUS.ACTIVE, pageSize: 100, after });
+    all.push(...rows);
+    if (!next) return all;
+    after = next;
+  }
+  throw new Error(`note-foundation: more than ${MAX_FOLDER_PAGES * 100} active folders; refusing to judge a folder change on a partial list.`);
+}
+
+/**
  * MAP Phase 6 (P6-B). This function used to validate `parentFolderId` NOT AT
  * ALL — no existence check, no tenant or owner check, no cycle check — where
  * its sibling `createNotePlacement()` did all three in a transaction. A folder
@@ -341,7 +467,7 @@ export async function createNoteFolder(db, {
   journeyFolder({ tenantId, ownerPersonId, name, parentFolderId, semanticRole, order });
 
   if (parentFolderId !== null) {
-    const folders = new Map((await listNoteFoldersForOwner(db, { tenantId, ownerPersonId }))
+    const folders = new Map((await listAllActiveFoldersForOwner(db, { tenantId, ownerPersonId }))
       .map((f) => [f.folderId, f]));
     const refusal = folderTreeRefusal({ folders, tenantId, ownerPersonId, folderId, parentFolderId });
     if (refusal) throw new Error(`Folder parent refused: ${refusal}`);
@@ -435,7 +561,7 @@ export async function reparentNoteFolder(db, {
   }
   if (parentFolderId === folderId) throw new Error("Folder parent refused: self-parent");
 
-  const folders = await listNoteFoldersForOwner(db, { tenantId, ownerPersonId });
+  const folders = await listAllActiveFoldersForOwner(db, { tenantId, ownerPersonId });
   const byId = new Map(folders.map((f) => [f.folderId, f]));
   const own = byId.get(folderId);
   if (!own) throw new Error("Folder does not exist.");
@@ -480,7 +606,7 @@ export async function reparentNoteFolder(db, {
  */
 export async function retireNoteFolder(db, { tenantId, ownerPersonId, folderId, actorUid }) {
   requireToken("folderId", folderId);
-  const children = (await listNoteFoldersForOwner(db, { tenantId, ownerPersonId }))
+  const children = (await listAllActiveFoldersForOwner(db, { tenantId, ownerPersonId }))
     .filter((f) => (f.parentFolderId ?? null) === folderId);
   if (children.length > 0) {
     // Named, not counted: a refusal a person cannot act on is a dead end.

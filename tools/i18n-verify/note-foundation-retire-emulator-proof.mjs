@@ -139,7 +139,9 @@ function rewriteNoteFoundationSource(source) {
     .replace(/import \{ folderTreeRefusal, journeyFolder \} from "\.\/journey-map-contract\.js";/,
       `import { folderTreeRefusal, journeyFolder } from "${journeyMapUrl}";`)
     .replace(/import \{ createDocument, runEnvelopeTransaction \} from "\.\/envelope\.js";/,
-      "const { createDocument, runEnvelopeTransaction } = globalThis.__nfEnvelopeReal;");
+      "const { createDocument, runEnvelopeTransaction } = globalThis.__nfEnvelopeReal;")
+    .replace(/import \{ commitEnvelopeBatch \} from "\.\/envelope\.js";/,
+      "const { commitEnvelopeBatch } = globalThis.__nfEnvelopeReal;");
 }
 
 // The FIXED module — read straight from the working tree, so this proof
@@ -155,6 +157,8 @@ const fixedFoundation = await loadRewritten("note-foundation.js (fixed)", fixedS
     `import { folderTreeRefusal, journeyFolder } from "${journeyMapUrl}";`],
   [/import \{ createDocument, runEnvelopeTransaction \} from "\.\/envelope\.js";/,
     "const { createDocument, runEnvelopeTransaction } = globalThis.__nfEnvelopeReal;"],
+  [/import \{ commitEnvelopeBatch \} from "\.\/envelope\.js";/,
+    "const { commitEnvelopeBatch } = globalThis.__nfEnvelopeReal;"],
 ]);
 
 // The PRE-FIX module — read from the exact commit PR #104 fixed, via `git
@@ -172,6 +176,8 @@ const preFixFoundation = await loadRewritten(`note-foundation.js (pre-fix @ ${PR
     `import { folderTreeRefusal, journeyFolder } from "${journeyMapUrl}";`],
   [/import \{ createDocument, runEnvelopeTransaction \} from "\.\/envelope\.js";/,
     "const { createDocument, runEnvelopeTransaction } = globalThis.__nfEnvelopeReal;"],
+  [/import \{ commitEnvelopeBatch \} from "\.\/envelope\.js";/,
+    "const { commitEnvelopeBatch } = globalThis.__nfEnvelopeReal;"],
 ]);
 
 const T = "t1";
