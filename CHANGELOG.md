@@ -19052,3 +19052,13 @@ Siyagah port round 7a; Owner decisions M2 and M3 (#458, PR #460, Builder run 719
 - **Switched off for now**: the new Firebase Rules must be published first. Until then the buttons are there and say so, and nothing is saved.
 - **Found in review**: Bold made no visible difference, because folder names were already drawn bold. Plain names are a little lighter now, so Bold stands out.
 - **Checks**: journey-sections 349/0 (Architect mutation: names back at the old weight fails the new Bold check 6/6), new emulator suite for the real section writers 21/0 against the candidate Rules (and refused by today's live Rules, as expected), rules-authorisation-executable 49/0, every journey-* suite green, notes-note-windows 218/0, account-card 1235/0, phone-width 217/0, palette-contrast 20/0, behaviour 1004/4 (22g×3 archive.org, 31e TLS), emulator siyagah-round7 75/75.
+
+## v09.26 — 1 Oct 2026 — Tags on Notes (built, switched off until the Rules are published)
+
+Siyagah port round 7b; Owner decision 42.5, Tags only (#461, PR #462, Builder run 723).
+
+- **Tags on a Note**: in an open Note (on Mapping My Journey or the Notes page, in the pane or a pop-up window), ⋯ → 🏷 Tags… lets you tick tags, search them, or make a new one. A Note's tags show as small chips under its title.
+- **Tags in the tray**: a Tags list below your folders shows how many Notes each tag has; tap a tag to see its Notes; its ⋯ lets you rename it, colour it or move it to Trash (Trash has Restore).
+- **Tagging never changes the Note itself** and is not saved as a new version of it.
+- **Switched off for now**, like sections and folder colours: the new Firebase Rules must be published first. Until then the buttons are there and say so, and nothing is saved.
+- **Checks**: journey-tags 363/0 (Architect mutation: re-tagging making a second link fails 12 checks), journey-sections 349/0, rules-authorisation-executable 56/0, every journey-* suite green, notes-note-windows 218/0, account-card 1235/0, phone-width 217/0, palette-contrast 20/0, behaviour 1004/4 (22g×3 archive.org, 31e TLS); emulator: round 7 Rules 75/75, real section writers 21/0, real tag writers 25/0.

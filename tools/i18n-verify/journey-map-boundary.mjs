@@ -499,7 +499,9 @@ check("no new Note collection has appeared", () => {
   assert.deepEqual(noteCollections,
     // UPDATED 1 Oct 2026 (Siyagah round 7a, #458): `noteSections` is the one deliberate addition -- a named group of
     // ROOT FOLDERS (ADR-010 Amendment 1), not a second kind of Note, and gated off until its Rules are published.
-    ["ayahNotes", "noteFolders", "notePlacements", "noteRevisions", "noteSections", "noteSources", "notes", "teachingNotes"].sort(),
+    // UPDATED 1 Oct 2026 (Siyagah round 7b, #461): `noteTags` and `noteTagLinks` -- Owner decision 42.5, Tags only, never Note
+    // Types: a name the owner puts on Notes and the link doing it. Neither is a Note, neither touches one, same gate.
+    ["ayahNotes", "noteFolders", "notePlacements", "noteRevisions", "noteSections", "noteSources", "noteTagLinks", "noteTags", "notes", "teachingNotes"].sort(),
     "the Note collection set has changed -- MMJ must read the Note Foundation, never define its own");
 });
 check("the accepted contract still names folders and placements as FOUNDATION collections", () => {

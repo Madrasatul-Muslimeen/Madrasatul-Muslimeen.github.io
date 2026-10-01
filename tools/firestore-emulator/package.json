@@ -18,7 +18,8 @@
     "evernote-import-real-function": "firebase emulators:exec --only firestore --project demo-quranrevival-evernote-import-real-function --config evernote-import-real-function.firebase.json \"node --test evernote-import-real-function.rules.test.mjs\"",
     "reading-units-real-function": "firebase emulators:exec --only firestore --project demo-quranrevival-reading-units-real-function --config reading-units-real-function.firebase.json \"node --test reading-units-real-function.rules.test.mjs\"",
     "siyagah-round7": "firebase emulators:exec --only firestore --project demo-quranrevival-siyagah-round7 --config siyagah-round7.firebase.json \"node --test siyagah-round7.rules.test.mjs\"",
-    "siyagah-sections-real-function": "firebase emulators:exec --only firestore --project demo-quranrevival-siyagah-sections-real-function --config siyagah-sections-real-function.firebase.json \"node --test siyagah-sections-real-function.rules.test.mjs\""
+    "siyagah-sections-real-function": "firebase emulators:exec --only firestore --project demo-quranrevival-siyagah-sections-real-function --config siyagah-sections-real-function.firebase.json \"node --test siyagah-sections-real-function.rules.test.mjs\"",
+    "siyagah-tags-real-function": "firebase emulators:exec --only firestore --project demo-quranrevival-siyagah-tags-real-function --config siyagah-tags-real-function.firebase.json \"node --test siyagah-tags-real-function.rules.test.mjs\""
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "5.0.2",

@@ -250,7 +250,11 @@ function dataLayerOtherUpdates(source, tenantKey) {
     }
   };
   for (const m of source.matchAll(new RegExp(String.raw`(?<!creates\.push\(\{ )collectionName:\s*TENANT\.${tenantKey}\s*,[^{]*data:\s*\{([^}]*)\}`, "g"))) take(m[1]);
-  if (tenantKey === "NOTE_SECTIONS") for (const m of source.matchAll(/\bfields:\s*\{([^}]*)\}/g)) take(m[1].replace(/\([^)]*\)/g, ""));
+  // The section helper's and the tag helper's `fields: { ... }` live in two different regions of the file (the round 7b marker splits them), so one collection's fields are never read as the other's.
+  const split = source.indexOf("Siyagah port round 7b");
+  if (split < 0) throw new Error("rules-authorisation-executable: the round 7b marker moved in note-foundation.js");
+  const region = tenantKey === "NOTE_SECTIONS" ? source.slice(0, split) : tenantKey === "NOTE_TAGS" ? source.slice(split) : null;
+  if (region) for (const m of region.matchAll(/\bfields:\s*\{([^}]*)\}/g)) take(m[1].replace(/\([^)]*\)/g, ""));
   return { fields, hits };
 }
 
@@ -439,6 +443,38 @@ for (const { name, rules, matchPath, identity, tenantKey } of COLLECTIONS) {
     check(`ROUND 7 BACKWARD: every field a writer writes to ${name} is one the candidate allows`, () => {
       const unauthorised = [...written].filter((f) => !mutable.has(f));
       assert.deepEqual(unauthorised, [], `a writer sends ${unauthorised.join(", ")} to ${name}, which the round 7 candidate refuses -- denied in production once published`);
+    });
+  }
+
+  check("POSITIVE CONTROL (round 7b): the parser reads the tag and tag-link update sets and the data layer's tag writes", () => {
+    assert.deepEqual([...authorisedUpdate(r7, "noteTags/", "tagIdentityUnchanged").mutable].sort(), ["color", "name", "status"]);
+    assert.deepEqual([...authorisedUpdate(r7, "noteTagLinks/", "tagLinkIdentityUnchanged").mutable].sort(), ["status"]);
+    assert.ok(wrote("NOTE_TAGS").hits >= 3 && wrote("NOTE_TAGS").fields.has("name") && wrote("NOTE_TAGS").fields.has("color") && wrote("NOTE_TAGS").fields.has("status"), `parsed ${[...wrote("NOTE_TAGS").fields]}`);
+    assert.ok(wrote("NOTE_TAG_LINKS").hits >= 2 && wrote("NOTE_TAG_LINKS").fields.has("status"), `parsed ${[...wrote("NOTE_TAG_LINKS").fields]}`);
+  });
+  for (const [name, matchPath, identity, tenantKey] of [
+    ["noteTags", "noteTags/", "tagIdentityUnchanged", "NOTE_TAGS"],
+    ["noteTagLinks", "noteTagLinks/", "tagLinkIdentityUnchanged", "NOTE_TAG_LINKS"],
+  ]) {
+    const mutable = authorisedUpdate(r7, matchPath, identity).mutable;
+    const { fields: written } = wrote(tenantKey);
+    check(`ROUND 7b FORWARD: every field the candidate lets ${name} update is written by some writer`, () => {
+      const unexecutable = [...mutable].filter((f) => !written.has(f));
+      assert.deepEqual(unexecutable, [], `the round 7 candidate authorises changing ${unexecutable.join(", ")} on ${name}, and no writer writes it`);
+    });
+    check(`ROUND 7b BACKWARD: every field a writer writes to ${name} is one the candidate allows`, () => {
+      const unauthorised = [...written].filter((f) => !mutable.has(f));
+      assert.deepEqual(unauthorised, [], `a writer sends ${unauthorised.join(", ")} to ${name}, which the round 7 candidate refuses`);
+    });
+    check(`ROUND 7b CREATE ${name}: carries every required field and nothing forbidden`, () => {
+      const helpers = spreadHelpers(dataLayer);
+      const { permitted, required } = authorisedCreate(r7, matchPath);
+      const payloads = dataLayerCreates(dataLayer, tenantKey, helpers);
+      assert.equal(payloads.length, 1, `expected one ${name} create, found ${payloads.length}`);
+      const withEnvelope = new Set([...payloads[0], ...ENVELOPE]);
+      // `color` is optional in the candidate (hasAll omits it) and the writer adds it conditionally.
+      assert.deepEqual([...required].filter((f) => !withEnvelope.has(f)), [], `the ${name} create omits a required field`);
+      assert.deepEqual([...payloads[0]].filter((f) => !permitted.has(f)), [], `the ${name} create sends a forbidden field`);
     });
   }
 

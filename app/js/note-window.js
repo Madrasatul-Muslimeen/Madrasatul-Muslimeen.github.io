@@ -97,6 +97,14 @@ const noteTitleOf = (note) => note.title?.trim() || t("(untitled)");
  *   refresh()          reload the page's data (after a conflict)
  *   chips(note)        [{ id, label }] folder chips ([] when the page has none)
  *   onChip(v, id)
+ *   tagging?           Siyagah round 7b (Tags; never Note Types). Absent = no Tags control.
+ *                      { ready()  true once the round 7 Rules are published (until then the picker
+ *                                 shows, says so, and writes nothing),
+ *                        tags()   [{ id, name, color }] the owner's active tags,
+ *                        noteTagIds(note)  the tag ids on a Note,
+ *                        tag(note, tagId) / untag(note, tagId)  -> Promise; the page writes,
+ *                        create(name) -> Promise<tagId>; throws Error(sentence) on a duplicate }
+ *                      Tagging is not a revision: nothing here touches the Note or Journaling.
  *   menuMid(v, note)   extra ⋯ items for the Note's owner, HTML
  *   menuEnd(v, note)   extra ⋯ items at the end, HTML
  *   onMenu(v, note, on)  handle a click on one of those items; true when handled
@@ -398,6 +406,7 @@ export function createNoteViews(host) {
     if (own) {
       menu = `<button type="button" class="secondary tiny pane-editfold-item" data-pane-edit-toggle>${escapeHtml(editLabel)}</button>` + menu;
       menu += host.menuMid?.(v, note) ?? "";
+      if (host.tagging) menu += `<button type="button" class="secondary tiny" data-pane-tags>🏷 ${escapeHtml(t("Tags…"))}</button>`;
     }
     if (v.kind === "pane") menu += `<button type="button" class="secondary tiny" data-pane-popout>⧉ ${escapeHtml(t("Pop out"))}</button>`;
     menu += host.menuEnd?.(v, note) ?? "";
@@ -410,6 +419,93 @@ export function createNoteViews(host) {
     v.el.querySelector("[data-pane-contents-wrap]").hidden = !showContents;
     v.el.querySelector("[data-pane-contents-list]").innerHTML = headings.map((sec) =>
       `<button type="button" class="secondary tiny" data-pane-jump="${sec.dataset.secIndex}" style="padding-left:${(0.6 + (Number(sec.dataset.level) - 1) * 0.8).toFixed(1)}rem">${escapeHtml(sec.dataset.headingText)}</button>`).join("");
+  }
+
+  // =====================================================================
+  // TAGS (Siyagah round 7b, Owner decision 42.5). The chips ride in the same
+  // Details container as the folder chips, so a closed Details line hides them
+  // as it hides those (no half-visible pill). The picker is ONE small dialog on
+  // the page, above every window: tick boxes, a search box, ＋ New tag. Ticking
+  // calls the page's tag/untag hook and nothing else.
+  // =====================================================================
+  function tagChipsHtml(note) {
+    if (!host.tagging) return "";
+    const ids = new Set(host.tagging.noteTagIds(note));
+    return host.tagging.tags().filter((g) => ids.has(g.id)).map((g) =>
+      `<span class="tag-chip" data-tag-chip="${escapeHtml(g.id)}"><span class="tag-dot" aria-hidden="true"${g.color ? ` style="background:${escapeHtml(g.color)}"` : ""}></span>🏷 ${escapeHtml(g.name)}</span>`).join("");
+  }
+  function rerenderNoteEverywhere(noteId) {
+    for (const x of allViews()) if (x.noteId === noteId) renderView(x, { keepScroll: true });
+  }
+  let tagPicker = null;
+  function closeTagPicker() { if (tagPicker) { tagPicker.el.remove(); tagPicker = null; } }
+  function openTagPicker(note) {
+    closeTagPicker();
+    const tg = host.tagging;
+    const el = document.createElement("div");
+    el.className = "tag-picker";
+    el.setAttribute("role", "dialog");
+    el.setAttribute("aria-modal", "true");
+    el.setAttribute("aria-label", t("Tags"));
+    el.innerHTML = `<div class="tag-picker-card">
+        <div class="tag-picker-head"><strong>🏷 ${escapeHtml(t("Tags"))}</strong><button type="button" class="secondary tag-picker-close" data-tag-close aria-label="${escapeHtml(t("Close"))}">✕</button></div>
+        <p class="note gate-note" data-tag-gate role="status" hidden>${escapeHtml(t("Tags switch on once the new Firebase Rules are published."))}</p>
+        <p class="tag-picker-msg" data-tag-msg role="status" hidden></p>
+        <input type="search" class="tag-picker-search" data-tag-search placeholder="${escapeHtml(t("Search tags"))}" aria-label="${escapeHtml(t("Search tags"))}">
+        <div class="tag-picker-list" data-tag-list></div>
+        <div class="tag-picker-new"><input type="text" maxlength="100" data-tag-new-name placeholder="${escapeHtml(t("New tag name"))}" aria-label="${escapeHtml(t("New tag name"))}"><button type="button" class="secondary" data-tag-new>＋ ${escapeHtml(t("New tag"))}</button></div>
+      </div>`;
+    document.body.appendChild(el);
+    tagPicker = { el, noteId: note.noteId };
+    const q = (sel) => el.querySelector(sel);
+    const msg = (text) => { const m = q("[data-tag-msg]"); m.textContent = text || ""; m.hidden = !text; };
+    const live = () => getNote(tagPicker?.noteId) ?? note;
+    const paint = () => {
+      const on = tg.ready();
+      q("[data-tag-gate]").hidden = on;
+      const needle = q("[data-tag-search]").value.trim().toLocaleLowerCase();
+      const ids = new Set(tg.noteTagIds(live()));
+      const rows = tg.tags().filter((g) => !needle || g.name.toLocaleLowerCase().includes(needle));
+      q("[data-tag-list]").innerHTML = rows.length
+        ? rows.map((g) => `<label class="tag-pick-row"><input type="checkbox" data-tag-pick="${escapeHtml(g.id)}" ${ids.has(g.id) ? "checked" : ""} ${on ? "" : "disabled"}><span class="tag-dot" aria-hidden="true"${g.color ? ` style="background:${escapeHtml(g.color)}"` : ""}></span><span class="tag-pick-name">${escapeHtml(g.name)}</span></label>`).join("")
+        : `<p class="note">${escapeHtml(needle ? t("No tag matches that search.") : t("You have no tags yet. Type a name below to make one."))}</p>`;
+      q("[data-tag-new-name]").disabled = !on;
+      q("[data-tag-new]").disabled = !on;
+    };
+    tagPicker.paint = paint;
+    const close = () => { closeTagPicker(); };
+    el.addEventListener("click", (e) => { if (e.target === el || e.target.closest("[data-tag-close]")) close(); });
+    el.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.stopPropagation(); close(); } });
+    q("[data-tag-search]").addEventListener("input", paint);
+    q("[data-tag-list]").addEventListener("change", async (e) => {
+      const box = e.target.closest("[data-tag-pick]");
+      if (!box || !tg.ready()) return;
+      msg("");
+      box.disabled = true;
+      try {
+        if (box.checked) await tg.tag(live(), box.dataset.tagPick); else await tg.untag(live(), box.dataset.tagPick);
+      } catch (err) { msg(err?.message || t("That did not save.")); }
+      rerenderNoteEverywhere(tagPicker?.noteId ?? note.noteId);
+      if (tagPicker) paint();
+    });
+    const create = async () => {
+      if (!tg.ready()) return;
+      const input = q("[data-tag-new-name]");
+      const name = input.value.trim();
+      if (!name) { msg(t("Type a name for the tag first.")); return; }
+      msg("");
+      try {
+        const id = await tg.create(name);
+        input.value = "";
+        if (id) await tg.tag(live(), id);
+      } catch (err) { msg(err?.message || t("That did not save.")); }
+      rerenderNoteEverywhere(tagPicker?.noteId ?? note.noteId);
+      if (tagPicker) paint();
+    };
+    q("[data-tag-new]").addEventListener("click", create);
+    q("[data-tag-new-name]").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); create(); } });
+    paint();
+    q(tg.ready() ? "[data-tag-search]" : "[data-tag-close]").focus();
   }
 
   /** The sanitised body, with every H1-H4 turned into a collapsible section nested by level. Collapsed indexes come from (and go back to) localStorage, per Note. */
@@ -461,7 +557,7 @@ export function createNoteViews(host) {
     v.el.querySelector("[data-pane-title]").textContent = noteTitleOf(note);
     v.el.querySelector("[data-pane-meta]").textContent = paneMetaText(note);
     v.el.querySelector("[data-pane-chips]").innerHTML = (host.chips?.(note) ?? []).map((f) =>
-      `<button type="button" class="folder-chip" data-pane-chip="${escapeHtml(f.id)}">📁 ${escapeHtml(f.label)}</button>`).join("");
+      `<button type="button" class="folder-chip" data-pane-chip="${escapeHtml(f.id)}">📁 ${escapeHtml(f.label)}</button>`).join("") + tagChipsHtml(note);
     // While an edit is open the editor IS the body: a re-render must never wipe the reader's typing.
     if (!(v.ed && v.ed.noteId === note.noteId)) { showReadChrome(v, note); buildBody(v, note); }
     if (v.kind === "window") { v.win.querySelector(".nw-title").textContent = noteTitleOf(note); v.win.dataset.noteId = note.noteId; updateWindowSwitcher(); }
@@ -501,6 +597,7 @@ export function createNoteViews(host) {
     if (on("[data-pane-next]")) { closeAllBarPalettes(null); step(v, 1); return; }
     if (on("[data-win-details]")) { const d = v.win.querySelector(".nw-details"); const open = d.classList.toggle("open"); on("[data-win-details]").setAttribute("aria-expanded", String(open)); return; }
     if (on("[data-pane-popout]")) { closeAllBarPalettes(null); popOutPane(note); return; }
+    if (on("[data-pane-tags]")) { closeAllBarPalettes(null); openTagPicker(note); return; }
     const chip = on("[data-pane-chip]");
     if (chip) { host.onChip?.(v, chip.dataset.paneChip); return; }
     const toggle = on("[data-sec-toggle]");
@@ -531,6 +628,8 @@ export function createNoteViews(host) {
 
   /** After every full load: close any view whose Note left (Trash, or gone) and keep the rest honest (chips, ⋯ items). */
   function sync() {
+    if (tagPicker && (!getNote(tagPicker.noteId) || host.isRetired(getNote(tagPicker.noteId)))) closeTagPicker();
+    else tagPicker?.paint?.();
     for (const v of allViews()) {
       if (v.noteId === null) continue;
       const note = getNote(v.noteId);

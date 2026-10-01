@@ -92,6 +92,18 @@
   .swatch.swatch-none { border-radius: 0.5rem; width: auto; min-width: 44px; padding: 0 0.7rem; background: #fff; color: #1F3A6E; font-size: 0.85rem; }
   .look-bold { display: flex; align-items: center; gap: 0.5rem; min-height: 44px; font-size: 0.95rem; }
   .look-bold input { width: 1.4rem; height: 1.4rem; }
+  /* Siyagah round 7b -- the Tags block (Owner decision 42.5). Rows and targets are 40px or more; the colour is a dot, never the name's text colour. */
+  .tags-block { margin-top: 1rem; }
+  .tags-title { margin: 0 0 0.3rem; font-size: 1rem; }
+  .tag-list { list-style: none; margin: 0; padding: 0; }
+  .tag-row { display: flex; align-items: center; gap: 0.4rem; min-height: 40px; }
+  .tag-row-main { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 0.4rem; min-height: 40px; padding: 0.2rem 0.55rem; background: #fff; border: 1px solid #ccd5e8; border-radius: 0.5rem; color: #1F3A6E; font: inherit; text-align: left; cursor: pointer; }
+  .tag-row-name { flex: 1 1 0; min-width: 0; overflow-wrap: anywhere; }
+  .tag-notes { list-style: none; margin: 0.2rem 0 0.4rem 1rem; padding: 0; }
+  .tag-notes .note-open-btn { min-height: 40px; text-align: left; }
+  .tag-new-form { display: flex; gap: 0.4rem; align-items: center; margin-top: 0.5rem; }
+  .tag-new-form input { flex: 1 1 0; min-width: 0; min-height: 40px; box-sizing: border-box; }
+  .tag-new-form button { flex: 0 0 auto; min-height: 40px; white-space: nowrap; }
   .gate-note { margin: 0.2rem 0; color: #7a4a00; background: #fff7e6; border: 1px solid #f0d9a8; border-radius: 0.4rem; padding: 0.4rem 0.6rem; font-size: 0.85rem; }
   .folder-picker-row.current { border-color: #1F3A6E; background: #eef2ff; }
   .folder-toggle {
@@ -353,6 +365,7 @@
       loadAllOwnerNotesSharded, loadAllOwnerPlacementsSharded, folderNoteCounts, folderMoveRefusal,
       loadAllOwnerSections, createSection, renameSection, reorderSection, setSectionLook,
       trashSection, restoreSection, setFolderLook, setFolderSection,
+      loadAllOwnerTags, loadAllOwnerTagLinks, createTag, renameTag, setTagLook, trashTag, restoreTag, tagNote, untagNote,
     } from "./js/journey-map-service.js";
     import { isSiyagahSectionsReady } from "./js/siyagah-sections-readiness.js";
 
@@ -639,6 +652,10 @@
     // gate is open -- against Rules that are not published the list is denied --
     // so with the gate shut this stays [] and nothing moves for anyone.
     let sections = [];
+    let tags = [];          // Siyagah round 7b: the owner's ACTIVE tags (never read while the gate is shut)
+    let tagLinks = [];      // ...and their ACTIVE links to Notes
+    let expandedTagId = null;
+    let tagRenameId = null;
     let allNotes = [];
     // Issue #259 -- Folders became an expandable TREE (every folder shown at
     // once, not a one-folder-at-a-time drill-down), so it needs the owner's
@@ -771,7 +788,7 @@
       const myRefresh = ++refreshToken;
       if (!activeTenantId || !selectedPersonId) {
         folderTree = { roots: [], orphaned: [], cyclic: [], tooDeep: [] };
-        sections = [];
+        sections = []; tags = []; tagLinks = [];
         allNotes = []; allPlacements = []; folderCounts = {};
         notesAndPlacementsLoaded = true;
         renderCurrentView();
@@ -798,11 +815,19 @@
         ? loadAllOwnerSections(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, status: NOTE_STATUS.ACTIVE })
           .then((r) => r.rows, (err) => { console.error("[sections load]", err); return []; })
         : Promise.resolve([]);
+      const tagsPromise = tagsReady()
+        ? Promise.all([
+          loadAllOwnerTags(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, status: NOTE_STATUS.ACTIVE }),
+          loadAllOwnerTagLinks(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, status: NOTE_STATUS.ACTIVE }),
+        ]).then(([a, b]) => ({ tags: a.rows, links: b.rows }), (err) => { console.error("[tags load]", err); return { tags: [], links: [] }; })
+        : Promise.resolve({ tags: [], links: [] });
       const tree = await ownerFolderTreePagedSharded(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId });
       const loadedSections = await sectionsPromise;
+      const loadedTags = await tagsPromise;
       if (myRefresh !== refreshToken) return; // superseded by a later refresh already
       folderTree = tree;
       sections = loadedSections.slice().sort(byOrder);
+      tags = loadedTags.tags; tagLinks = loadedTags.links;
       foldersTruncated = tree.truncated;
       // The tree is drawn HERE, before a single Note or placement has
       // arrived -- every folder count badge and the Timeline/Path views
@@ -939,6 +964,8 @@
 
     /** The row's own place in the list it was opened from, read off the rendered list so ‹ › walk exactly what the reader sees (a folder's own order; Timeline's or one Path branch's). */
     function paneOrderFrom(el) {
+      const tagList = el.closest("[data-tag-notes]");
+      if (tagList) return [...new Set([...tagList.querySelectorAll("[data-tag-note]")].map((n) => n.dataset.tagNote))];
       const leaf = el.closest("[data-note-leaf]");
       let scope, sel;
       if (leaf) { scope = viewFolders; sel = `[data-note-leaf][data-in-folder="${CSS.escape(leaf.dataset.inFolder)}"]`; }
@@ -999,6 +1026,22 @@
         if (on("[data-pane-delete]")) { deleteNoteFromPane(v, note); return true; }
         if (on("[data-pane-fullpage]")) { window.open(`journey-map.html?note=${encodeURIComponent(note.noteId)}#${currentView}`, "_top"); return true; }
         return false;
+      },
+      tagging: {
+        ready: () => tagsReady(),
+        tags: () => tags.map((g) => ({ id: g.tagId, name: g.name, color: safeColour(g.color) })).sort(byTagName),
+        noteTagIds: (note) => tagLinks.filter((l) => l.noteId === note.noteId).map((l) => l.tagId),
+        tag: (note, tagId) => tagWrite(async () => {
+          const linkId = await tagNote(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, noteId: note.noteId, tagId, actorUid: auth.currentUser.uid });
+          if (!tagLinks.some((l) => l.noteId === note.noteId && l.tagId === tagId)) tagLinks.push({ linkId, noteId: note.noteId, tagId, status: NOTE_STATUS.ACTIVE });
+          renderTagsAfterChange();
+        }, { collection: TENANT.NOTE_TAG_LINKS, action: "tagNote" }),
+        untag: (note, tagId) => tagWrite(async () => {
+          await untagNote(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, noteId: note.noteId, tagId, actorUid: auth.currentUser.uid });
+          tagLinks = tagLinks.filter((l) => !(l.noteId === note.noteId && l.tagId === tagId));
+          renderTagsAfterChange();
+        }, { collection: TENANT.NOTE_TAG_LINKS, action: "untagNote" }),
+        create: (name) => createTagChecked(name),
       },
       orderFrom: paneOrderFrom, folderFrom: paneFolderFrom,
       paneTier: noteLayoutTier, paneApply: () => applyNoteTier(), scroller,
@@ -1242,12 +1285,14 @@
       } else {
         html += `<ul class="folder-tree" data-folder-tree>${renderRootBlocks(roots)}</ul>`;
       }
+      html += tagsBlockHtml();
       html += folderFooterHtml();
       viewFolders.innerHTML = html;
       viewFolders.style.setProperty("--tree-scale", String(TEXT_SIZE_SCALES[treeTextSizeIndex]));
       wireFolderToolbar();
       if (query) wireFolderSearchResults(); else wireFolderTree();
       wireNewFolderForm();
+      wireTagsBlock();
     }
 
     /** One folder row, then (if expanded) its own child folders and the Notes filed directly in it -- a single flat, indented list rather than nested <ul>s, which keeps drag-and-drop and event delegation simple. */
@@ -1975,14 +2020,14 @@
     }
 
     /** One small chooser overlay, built like the folder picker so it is a dialog on a phone too. Resolves nothing: `wire` does the work. */
-    function openSiyagahDialog({ title, bodyHtml, wire }) {
+    function openSiyagahDialog({ title, bodyHtml, wire, gate = null }) {
       document.getElementById("siyagahDialog")?.remove();
       const overlay = document.createElement("div");
       overlay.id = "siyagahDialog";
       overlay.className = "folder-picker-overlay";
       overlay.innerHTML = `<div class="folder-picker" role="dialog" aria-modal="true" aria-labelledby="siyagahDialogTitle" tabindex="-1">
         <h2 id="siyagahDialogTitle" class="folder-picker-title">${escapeHtml(title)}</h2>
-        ${sectionsReady() ? "" : `<p class="note gate-note" data-sections-gate-note role="status">${escapeHtml(gateSentence())}</p>`}
+        ${sectionsReady() ? "" : `<p class="note gate-note" data-sections-gate-note role="status">${escapeHtml(gate ?? gateSentence())}</p>`}
         ${bodyHtml}
         <div class="folder-picker-actions"><button type="button" class="secondary" data-dialog-cancel>${escapeHtml(t("Cancel"))}</button></div>
       </div>`;
@@ -1997,7 +2042,7 @@
     }
 
     /** 🎨 Colour and bold: ~10 swatches plus None (each 40px or more) and a Bold toggle, applied together as ONE write. */
-    function openLookDialog({ title, color, bold, apply }) {
+    function openLookDialog({ title, color, bold, apply, showBold = true, gate = null }) {
       let chosen = color;
       let isBold = bold;
       const swatch = (hex, label) => `<button type="button" class="swatch" data-swatch="${hex}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}" aria-pressed="${chosen === hex}" style="background:${hex}"></button>`;
@@ -2007,12 +2052,12 @@
             ${SWATCHES.map(([hex, label]) => swatch(hex, label())).join("")}
             <button type="button" class="swatch swatch-none" data-swatch="" aria-pressed="${chosen === null}">${escapeHtml(t("None"))}</button>
           </div>
-          <label class="look-bold"><input type="checkbox" data-look-bold ${isBold ? "checked" : ""} /> <span>${escapeHtml(t("Bold"))}</span></label>
+          ${showBold ? `<label class="look-bold"><input type="checkbox" data-look-bold ${isBold ? "checked" : ""} /> <span>${escapeHtml(t("Bold"))}</span></label>` : ""}
           <div class="folder-picker-actions"><button type="button" data-look-apply>${escapeHtml(t("Apply"))}</button></div>`,
         wire: (overlay, close) => {
           const refresh = () => overlay.querySelectorAll("[data-swatch]").forEach((b) => b.setAttribute("aria-pressed", String((b.dataset.swatch || null) === chosen)));
           overlay.querySelectorAll("[data-swatch]").forEach((b) => b.addEventListener("click", () => { chosen = b.dataset.swatch || null; refresh(); }));
-          overlay.querySelector("[data-look-bold]").addEventListener("change", (e) => { isBold = e.target.checked; });
+          overlay.querySelector("[data-look-bold]")?.addEventListener("change", (e) => { isBold = e.target.checked; });
           overlay.querySelector("[data-look-apply]").addEventListener("click", async () => {
             const outcome = await apply({ color: chosen, bold: isBold });
             if (!outcome.ok) return;
@@ -2020,6 +2065,7 @@
             await refreshAll();
           });
         },
+        gate,
       });
     }
 
@@ -2044,6 +2090,172 @@
             // Through gatedWrite() like every other write: shut, it says the sentence (the note in this dialog already does) and the dialog stays open.
             if (await assignFolderToSection(node, b.dataset.sectionPick || null)) close();
           }));
+        },
+      });
+    }
+
+    // =====================================================================
+    // Siyagah port round 7b (issue #461; Owner decision 42.5) -- TAGS. Tags
+    // only: there are no Note Types. A Tags block sits below the sections and
+    // folders; the Note view's ⋯ → 🏷 Tags… ticks them (js/note-window.js).
+    // Same gate as sections (siyagah-sections-readiness.js; no second one):
+    // shut, every control shows, says so in words, and writes nothing. Tagging
+    // never touches the Note and never makes a revision.
+    // =====================================================================
+    function tagsReady() { return isSiyagahSectionsReady(); }
+    const tagGateSentence = () => t("Tags switch on once the new Firebase Rules are published.");
+    const byTagName = (a, b) => String(a.name ?? "").localeCompare(String(b.name ?? ""));
+    const sameTagName = (a, b) => String(a).trim().toLocaleLowerCase() === String(b).trim().toLocaleLowerCase();
+    const duplicateTagSentence = () => t("You already have a tag with that name.");
+    /** The one tag gate: shut, say so and write NOTHING; the picker's hooks throw so the picker can show it. */
+    async function tagWrite(writeFn, context) {
+      if (!tagsReady()) { showPageStatus(tagGateSentence()); throw new Error(tagGateSentence()); }
+      try { return await writeFn(); } catch (err) {
+        reportWriteFailure(err, context);
+        throw new Error(t("That did not save."));
+      }
+    }
+    async function tagGatedWrite(writeFn, context) {
+      if (!tagsReady()) { showPageStatus(tagGateSentence()); return { ok: false, gated: true }; }
+      return runFolderWrite(writeFn, context);
+    }
+    /** A new tag, refusing a duplicate name (any case) in a sentence BEFORE any write. Returns the new tagId. */
+    async function createTagChecked(name, color = null) {
+      const clean = String(name ?? "").trim();
+      if (tags.some((g) => sameTagName(g.name, clean))) throw new Error(duplicateTagSentence());
+      return tagWrite(async () => {
+        const tagId = await createTag(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, name: clean, color, actorUid: auth.currentUser.uid, existingTags: tags });
+        tags = [...tags, { tagId, name: clean, color, status: NOTE_STATUS.ACTIVE }];
+        renderTagsAfterChange();
+        return tagId;
+      }, { collection: TENANT.NOTE_TAGS, action: "createTag" });
+    }
+    function renderTagsAfterChange() {
+      if (currentView === "folders") renderFoldersView();
+    }
+    /** Notes carrying a tag: active links to Notes the page has (and that are not in Trash), by title. */
+    function notesWithTag(tagId) {
+      const ids = new Set(tagLinks.filter((l) => l.tagId === tagId).map((l) => l.noteId));
+      return allNotes.filter((n) => ids.has(n.noteId) && n.status !== NOTE_STATUS.RETIRED)
+        .sort((a, b) => noteTitleOf(a).localeCompare(noteTitleOf(b)));
+    }
+    function tagsBlockHtml() {
+      const editable = isSelfSelected();
+      const rows = tags.slice().sort(byTagName).map((g) => {
+        const open = expandedTagId === g.tagId;
+        const renaming = tagRenameId === g.tagId;
+        const notes = notesWithTag(g.tagId);
+        const count = notesAndPlacementsLoaded ? String(notes.length) : "…";
+        const menuId = `tagMenu-${escapeHtml(g.tagId)}`;
+        const nameHtml = renaming
+          ? `<input type="text" class="folder-rename-input" maxlength="100" data-tag-rename-input value="${escapeHtml(g.name ?? "")}" aria-label="${escapeHtml(t("Rename this tag"))}" />`
+          : `<button type="button" class="tag-row-main" data-tag-open aria-expanded="${open}">${dotHtml(g.color)}<span class="folder-row-name tag-row-name" data-tag-name>${escapeHtml(g.name || "")}</span><span class="folder-row-count" data-tag-count>${count}</span></button>`;
+        const menu = editable && !renaming ? `
+          <span class="bar-palette-wrap folder-menu-wrap" data-bar-palette-wrap="${menuId}">
+            <button type="button" class="folder-menu-btn bar-palette-toggle" data-bar-palette-toggle="${menuId}" aria-haspopup="true" aria-expanded="false" title="${escapeHtml(t("More"))}" aria-label="${escapeHtml(t("More"))}">⋯</button>
+            <div class="bar-palette folder-row-menu" data-bar-palette="${menuId}">
+              <button type="button" class="secondary tiny" data-tag-rename>✏️ ${t("Rename")}</button>
+              <button type="button" class="secondary tiny" data-tag-look>🎨 ${t("Colour")}</button>
+              <button type="button" class="danger tiny" data-tag-delete>🗑 ${t("Delete")}</button>
+            </div>
+          </span>` : "";
+        let list = "";
+        if (open) {
+          list = notes.length
+            ? `<ul class="tag-notes" data-tag-notes>${notes.map((n) => `<li><button type="button" class="note-card-title note-open-btn" data-tag-note="${escapeHtml(n.noteId)}">📄 ${escapeHtml(noteTitleOf(n))}</button></li>`).join("")}</ul>`
+            : `<p class="note tag-notes-empty">${escapeHtml(notesAndPlacementsLoaded ? t("No Notes carry this tag yet.") : t("Counting the Notes filed in each folder…"))}</p>`;
+        }
+        return `<li class="tag-item" data-tag-item="${escapeHtml(g.tagId)}"><div class="tag-row" data-tag-id="${escapeHtml(g.tagId)}">${nameHtml}${menu}</div>${list}</li>`;
+      }).join("");
+      const form = editable ? `<form class="tag-new-form" data-tag-new-form>
+          <input type="text" maxlength="100" data-tag-new-input placeholder="${escapeHtml(t("Tag name"))}" aria-label="${escapeHtml(t("Tag name"))}" />
+          <button type="submit" class="secondary" data-tag-new-btn>＋ ${t("New tag")}</button>
+        </form>` : "";
+      return `<section class="tags-block" data-tags-block>
+        <h3 class="tags-title">🏷 ${escapeHtml(t("Tags"))}</h3>
+        ${tagsReady() ? "" : `<p class="note gate-note" data-tags-gate-note role="status">${escapeHtml(tagGateSentence())}</p>`}
+        ${tags.length === 0 && tagsReady() ? `<p class="note" data-tags-empty>${escapeHtml(t("You have no tags yet. Type a name below to make one."))}</p>` : ""}
+        <ul class="tag-list" data-tag-list>${rows}</ul>
+        ${form}
+      </section>`;
+    }
+    function wireTagsBlock() {
+      const block = viewFolders.querySelector("[data-tags-block]");
+      if (!block) return;
+      block.querySelector("[data-tag-new-form]")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const input = block.querySelector("[data-tag-new-input]");
+        const name = input.value.trim();
+        if (!tagsReady()) { showPageStatus(tagGateSentence()); return; }
+        if (!name) { showPageStatus(t("Type a name for the tag first.")); return; }
+        try {
+          await createTagChecked(name);
+          showPageStatus(t('Tag "{name}" created.', { name }));
+        } catch (err) { showPageStatus(err.message); }
+      });
+      block.querySelectorAll("[data-tag-item]").forEach((li) => {
+        const tag = tags.find((g) => g.tagId === li.dataset.tagItem);
+        if (!tag) return;
+        li.querySelector("[data-tag-open]")?.addEventListener("click", () => {
+          expandedTagId = expandedTagId === tag.tagId ? null : tag.tagId;
+          renderFoldersView();
+        });
+        li.querySelectorAll("[data-tag-note]").forEach((b) => b.addEventListener("click", (e) => {
+          const noteId = b.dataset.tagNote;
+          if (e.ctrlKey || e.metaKey) { openNoteWindow(noteId, { fromEl: b }); return; }
+          openNotePane(noteId, b);
+        }));
+        const input = li.querySelector("[data-tag-rename-input]");
+        input?.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") { e.preventDefault(); commitTagRename(tag, e.target.value); }
+          else if (e.key === "Escape") { e.preventDefault(); tagRenameId = null; renderFoldersView(); }
+        });
+        input?.addEventListener("blur", (e) => commitTagRename(tag, e.target.value));
+        li.querySelector("[data-tag-rename]")?.addEventListener("click", () => {
+          closeAllBarPalettes(null);
+          if (!tagsReady()) { showPageStatus(tagGateSentence()); return; }
+          tagRenameId = tag.tagId; renderFoldersView();
+          const el = document.querySelector("[data-tag-rename-input]"); el?.focus(); el?.select();
+        });
+        li.querySelector("[data-tag-look]")?.addEventListener("click", () => {
+          closeAllBarPalettes(null);
+          openLookDialog({
+            title: t('Colour for tag "{name}"', { name: tag.name }), color: safeColour(tag.color), bold: false, showBold: false, gate: tagGateSentence(),
+            apply: async ({ color }) => tagGatedWrite(
+              () => setTagLook(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, tagId: tag.tagId, color, actorUid: auth.currentUser.uid }),
+              { collection: TENANT.NOTE_TAGS, action: "setTagLook" }),
+          });
+        });
+        li.querySelector("[data-tag-delete]")?.addEventListener("click", () => { closeAllBarPalettes(null); deleteTag(tag); });
+      });
+    }
+    async function commitTagRename(tag, rawName) {
+      if (tagRenameId !== tag.tagId) return;
+      const trimmed = (rawName ?? "").trim();
+      tagRenameId = null;
+      if (!trimmed || trimmed === tag.name) { renderFoldersView(); return; }
+      if (tagsReady() && tags.some((g) => g.tagId !== tag.tagId && sameTagName(g.name, trimmed))) { showPageStatus(duplicateTagSentence()); renderFoldersView(); return; }
+      const outcome = await tagGatedWrite(
+        () => renameTag(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, tagId: tag.tagId, name: trimmed, actorUid: auth.currentUser.uid }),
+        { collection: TENANT.NOTE_TAGS, action: "renameTag" });
+      if (outcome.ok) await refreshAll(); else renderFoldersView();
+    }
+    /** Delete = Trash. The confirm says the tag's links stay, so Restore brings it back with its Notes. */
+    function deleteTag(tag) {
+      openSiyagahDialog({
+        title: t('Delete tag "{name}"?', { name: tag.name }), gate: tagGateSentence(),
+        bodyHtml: `<p data-tag-confirm>${escapeHtml(t('Move tag "{name}" to Trash? Your Notes are not changed. Restore it later from 🗑 Trash and it comes back with its Notes.', { name: tag.name }))}</p>
+          <div class="folder-picker-actions"><button type="button" class="danger" data-tag-confirm-yes>🗑 ${escapeHtml(t("Delete"))}</button></div>`,
+        wire: (overlay, close) => {
+          overlay.querySelector("[data-tag-confirm-yes]").addEventListener("click", async () => {
+            const outcome = await tagGatedWrite(
+              () => trashTag(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, tagId: tag.tagId, actorUid: auth.currentUser.uid }),
+              { collection: TENANT.NOTE_TAGS, action: "trashTag" });
+            if (!outcome.ok) return;
+            close();
+            showPageStatus(t('Tag "{name}" moved to Trash.', { name: tag.name }));
+            await refreshAll();
+          });
         },
       });
     }
@@ -2083,6 +2295,11 @@
         try { trashSections = (await loadAllOwnerSections(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, status: NOTE_STATUS.RETIRED })).rows; }
         catch (err) { console.error("[trash sections load]", err); }
       }
+      let trashTags = [];
+      if (tagsReady()) {
+        try { trashTags = (await loadAllOwnerTags(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, status: NOTE_STATUS.RETIRED })).rows; }
+        catch (err) { console.error("[trash tags load]", err); }
+      }
       if (token !== trashRenderToken || currentView !== "trash") return;
       const byId =new Map([...rawFolderList(folderTree), ...trash.folders].map((f) => [f.folderId, f]));
       const placeOf = (folder) => {
@@ -2101,12 +2318,15 @@
       const datePart = (ts) => { const d = when(ts); return d ? ` · ${escapeHtml(d)}` : ""; };
       const restoreBtn = isSelfSelected() ? `<button type="button" class="secondary tiny" data-trash-restore>${escapeHtml(t("Restore"))}</button>` : "";
       let html = head;
-      if (trash.folders.length === 0 && trash.notes.length === 0 && trashSections.length === 0) {
+      if (trash.folders.length === 0 && trash.notes.length === 0 && trashSections.length === 0 && trashTags.length === 0) {
         html += `<p id="trashEmpty">${escapeHtml(t("Trash is empty."))}</p>`;
       } else {
         html += `<ul class="trash-list" data-trash-list>`;
         for (const s of trashSections) {
           html += `<li class="trash-row" data-trash-section-id="${escapeHtml(s.sectionId)}"><div class="trash-row-text"><span class="folder-row-name">🗂 ${escapeHtml(s.name || t("(untitled section)"))}</span><span class="note">${escapeHtml(t("Section — its folders stay in the unnamed block."))}${datePart(s.updatedAt)}</span></div>${restoreBtn}</li>`;
+        }
+        for (const g of trashTags) {
+          html += `<li class="trash-row" data-trash-tag-id="${escapeHtml(g.tagId)}"><div class="trash-row-text"><span class="folder-row-name">🏷 ${escapeHtml(g.name || "")}</span><span class="note">${escapeHtml(t("Tag — it comes back with its Notes."))}${datePart(g.updatedAt)}</span></div>${restoreBtn}</li>`;
         }
         for (const f of trash.folders) {
           html += `<li class="trash-row" data-trash-folder-id="${escapeHtml(f.folderId)}"><div class="trash-row-text"><span class="folder-row-name">📁 ${escapeHtml(folderDisplayName(f))}</span><span class="note">${escapeHtml(t("Was in: {place}", { place: placeOf(f) }))}${datePart(f.updatedAt)}</span></div>${restoreBtn}</li>`;
@@ -2127,6 +2347,17 @@
             { collection: TENANT.NOTE_SECTIONS, action: "restoreSection" });
           if (!outcome.ok) return;
           showPageStatus(t('Section "{name}" restored.', { name: section.name }));
+          await refreshAll();
+        });
+      });
+      viewTrash.querySelectorAll("[data-trash-tag-id]").forEach((li) => {
+        const tag = trashTags.find((g) => g.tagId === li.dataset.trashTagId);
+        li.querySelector("[data-trash-restore]")?.addEventListener("click", async () => {
+          const outcome = await tagGatedWrite(
+            () => restoreTag(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, tagId: tag.tagId, actorUid: auth.currentUser.uid }),
+            { collection: TENANT.NOTE_TAGS, action: "restoreTag" });
+          if (!outcome.ok) return;
+          showPageStatus(t('Tag "{name}" restored.', { name: tag.name }));
           await refreshAll();
         });
       });
