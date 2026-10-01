@@ -3015,6 +3015,7 @@ export const BN = {
   "Āyāt {from}–{to}": "আয়াত {from}–{to}", // ?
   "Ruku' {n}": "রুকু' {n}", // ?
   "Wheel": "চাকা", // ?
+  "Legend": "সংকেত", // drawer name
   "Wheel look": "চাকার রূপ", // ?
   "On": "চালু",
   "Off": "বন্ধ",

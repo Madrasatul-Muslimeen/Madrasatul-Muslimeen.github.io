@@ -676,6 +676,21 @@
      the veil and shows the status colours at full strength. */
   .wheel-veiled[data-look="light"] #wheelContainer svg { filter: blur(1.5px) grayscale(1) brightness(1.9); }
   .wheel-veiled[data-look="colour"] #wheelContainer svg { filter: none; }
+  /* Owner decision 51 -- the three landing drawers. [hidden] is beaten by any
+     display rule, so the closed state is spelled out. */
+  .wheel-drawer-panels { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+  .wheel-drawer-panels:not(:has(.wheel-drawer-panel:not([hidden]))) { display: none; }
+  .wheel-drawer-panel { display: flex; flex-direction: column; align-items: center; width: 100%; box-sizing: border-box; padding: 0.3rem; border: 1px solid var(--card-line); border-radius: 10px; }
+  .wheel-drawer-panel[hidden] { display: none; }
+  .wheel-drawer-row { display: flex; justify-content: center; gap: 0.35rem; }
+  .wheel-drawer-btn {
+    flex: 1 1 0; min-width: 0; min-height: 40px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
+    padding: 0.25rem 0.5rem; border: 1px solid var(--card-line); border-radius: 999px; background: transparent; color: var(--card-text);
+    font-family: 'Inter', sans-serif; font-size: 0.78rem; font-weight: 700; cursor: pointer;
+  }
+  .wheel-drawer-btn[aria-expanded="true"] { background: var(--card-button-pressed-bg); border-color: var(--card-button-pressed-bg); color: var(--card-button-pressed-text); }
+  .wheel-drawer-caret { display: inline-block; transition: transform 0.15s; }
+  .wheel-drawer-btn[aria-expanded="true"] .wheel-drawer-caret { transform: rotate(180deg); }
   .wheel-look-switch { display: flex; align-items: center; justify-content: center; gap: 0.3rem; flex-wrap: wrap; margin-top: 0.15rem; }
   .wheel-look-label { font-family: 'Inter', sans-serif; font-size: 0.72rem; font-weight: 600; color: var(--card-text-muted); }
   .wheel-look-btn {
@@ -873,6 +888,17 @@
        intrinsic 360px, ignoring the calc() entirely) rather than assumed. */
     #wheelSection #wheelResizeWrap { width: 100%; }
     #wheelSection #wheelContainer { width: 100%; display: flex; justify-content: center; }
+    /* Owner decision 51 (Architect review, measured): the slice numbers sit
+       OUTSIDE the wheel's own SVG box, about 3.2% of the wheel's width above
+       it, and on a phone that pushed the top numbers (39, 40, 1, 2) 2-6px
+       above the dark card's top edge, onto the white heading strip where
+       they vanish ("the numbers are cut"). The wheel is moved down by exactly
+       that overhang less what the card's own padding already gives, so the
+       highest number clears the card's top by ~4px at every phone width --
+       and no more ("only that much that numbers are not cut"). The wheel's
+       width here is min(100vw, 100dvh - 420px), the same expression as
+       .mastery-wheel below. Measured at 320/360/390/412 in landing-drawers. */
+    #wheelSection #wheelContainer { padding-top: max(0px, calc(min(100vw, 100dvh - 420px) * 0.032 - 2.4px)); }
     #wheelSection .mastery-wheel { width: min(100%, calc(100dvh - 420px)); max-width: none; }
     #wheelSection .wheel-legend { font-size: 0.68rem; gap: 4px 9px; }
     #wheelSection .legend-swatch { width: 9px; height: 9px; }
@@ -4222,13 +4248,17 @@
               <span class="wheel-unit-capsule-word">Know Your Status</span>
             </button>
           </div>
-          <div id="wheelLegendContainer"></div>
+          <!-- Owner decision 51 -- three drawers under the Read bar: Wheel |
+               Legend | Unit. The choices open ABOVE the drawer row (between it
+               and the Read bar); one at a time; closed on every load. The
+               elements inside are the original ones, moved -- not copies. -->
+          <div id="wheelDrawerPanels" class="wheel-drawer-panels">
+          <div class="wheel-drawer-panel" data-wheel-drawer-panel="wheel" hidden>
           <!-- 27 Sep 2026, owner: "Enable an option for the user to choose the
                wheel dark greyed (as it is now) at the background or light
                greyed or full color of the status." How the wheel looks behind
                the "Study Quran" button; remembered per browser (prefs.js). -->
           <div id="wheelLookSwitch" class="wheel-look-switch" role="group" aria-label="Wheel look">
-            <span class="wheel-look-label">Wheel</span>
             <button type="button" class="wheel-look-btn" data-wheel-look="dark" aria-pressed="false">Dark</button>
             <button type="button" class="wheel-look-btn" data-wheel-look="light" aria-pressed="false">Light</button>
             <button type="button" class="wheel-look-btn" data-wheel-look="colour" aria-pressed="false">Colour</button>
@@ -4239,12 +4269,16 @@
                  down and cost a row of it on 390/412px phones. -->
             <button type="button" id="wheelNamesBtn" class="wheel-look-btn wheel-names-btn" aria-pressed="true" aria-label="Approach names on the wheel">Names</button>
           </div>
+          </div>
+          <div class="wheel-drawer-panel" data-wheel-drawer-panel="legend" hidden>
+          <div id="wheelLegendContainer"></div>
+          </div>
+          <div class="wheel-drawer-panel" data-wheel-drawer-panel="unit" hidden>
           <!-- Issue #352 (Owner decisions 21-24): what the wheel shows -- the
                unit "Choose a Unit" holds (as it always has), one unit type on
                its own ring, or All units as six rings. Remembered per browser
                (prefs.js getWheelShow). -->
           <div id="wheelShowSwitch" class="wheel-look-switch wheel-show-switch" role="group" aria-label="Show">
-            <span class="wheel-look-label">Show</span>
             <button type="button" class="wheel-look-btn wheel-show-btn" data-wheel-show="all" aria-pressed="false">All units</button>
             <button type="button" class="wheel-look-btn wheel-show-btn" data-wheel-show="juz" aria-pressed="false">Juz</button>
             <button type="button" class="wheel-look-btn wheel-show-btn" data-wheel-show="surah" aria-pressed="false">Surah</button>
@@ -4252,6 +4286,13 @@
             <button type="button" class="wheel-look-btn wheel-show-btn" data-wheel-show="ruku" aria-pressed="false">Ruku'</button>
             <button type="button" class="wheel-look-btn wheel-show-btn" data-wheel-show="page" aria-pressed="false">Page</button>
             <button type="button" class="wheel-look-btn wheel-show-btn" data-wheel-show="ayah" aria-pressed="false">Āyah</button>
+          </div>
+          </div>
+          </div>
+          <div id="wheelDrawerRow" class="wheel-drawer-row">
+            <button type="button" class="wheel-drawer-btn" data-wheel-drawer="wheel" aria-expanded="false"><span>Wheel</span><span class="wheel-drawer-caret" aria-hidden="true">&#9652;</span></button>
+            <button type="button" class="wheel-drawer-btn" data-wheel-drawer="legend" aria-expanded="false"><span>Legend</span><span class="wheel-drawer-caret" aria-hidden="true">&#9652;</span></button>
+            <button type="button" class="wheel-drawer-btn" data-wheel-drawer="unit" aria-expanded="false"><span>Unit</span><span class="wheel-drawer-caret" aria-hidden="true">&#9652;</span></button>
           </div>
           <!-- The ring key and data box on a phone (below the wheel, in the
                scrolling page). At 721px and wider renderWheel() puts the same
@@ -8440,6 +8481,18 @@
       if (surahSel) surahSel.hidden = !!text?.wholeQuran;
       if (ctaLine2) ctaLine2.textContent = text ? text.cta : t("ONE Ayah a Day");
     }
+
+    // Owner decision 51 -- landing drawers: one open at a time, all closed on
+    // every load (nothing is remembered, by choice).
+    (function wireWheelDrawers() {
+      const btns = [...document.querySelectorAll("[data-wheel-drawer]")];
+      const panels = [...document.querySelectorAll("[data-wheel-drawer-panel]")];
+      btns.forEach((btn) => btn.addEventListener("click", () => {
+        const open = btn.getAttribute("aria-expanded") !== "true";
+        btns.forEach((b) => b.setAttribute("aria-expanded", b === btn && open ? "true" : "false"));
+        panels.forEach((p) => { p.hidden = !(open && p.dataset.wheelDrawerPanel === btn.dataset.wheelDrawer); });
+      }));
+    })();
 
     // 27 Sep 2026 -- the wheel's look behind "Study Quran" (prefs.js).
     const wheelLookSwitchEl = document.getElementById("wheelLookSwitch");

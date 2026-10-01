@@ -69,7 +69,7 @@ for (const lang of ["en", "bn"]) {
     const m = await page.evaluate(() => {
       const R = (e) => (e ? e.getBoundingClientRect() : { width: 0, height: 0, top: 0, bottom: 0, left: 0, right: 0 });
       const read = document.getElementById("readContentsBtn"), unit = document.getElementById("wheelUnitBtn"), kys = document.getElementById("myStatusWideBtn");
-      const row = document.getElementById("wheelIntroSettled"), wheel = document.querySelector("#wheelContainer svg"), legend = document.getElementById("wheelLegendContainer");
+      const row = document.getElementById("wheelIntroSettled"), wheel = document.querySelector("#wheelContainer svg"), legend = document.getElementById("wheelDrawerRow"); /* decision 51: the legend now lives in a closed drawer; the Read bar still sits above the drawer row */
       const h = document.querySelector(".wheel-heading"), popup = document.querySelector(".note-popup-title");
       const de = document.documentElement;
       const btns = [read, unit, kys];
