@@ -76,6 +76,24 @@
   .folder-row.drag-over-before { border-top: 3px solid #1F3A6E; }
   .folder-row.drag-over-after { border-bottom: 3px solid #1F3A6E; }
   .folder-row.drag-over-inside { background: #eef2ff; border-color: #1F3A6E; }
+  /* Siyagah round 7a: a section header sits above its folders; a colour is a DOT before the name (the name's own text colour never changes, so contrast holds). */
+  .section-header { display: flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.55rem; margin-top: 0.5rem; border-bottom: 2px solid #c9d3ea; background: #f3f6fd; border-radius: 0.5rem 0.5rem 0 0; cursor: pointer; min-height: 40px; }
+  .section-header.drag-over-inside { background: #eef2ff; border-color: #1F3A6E; }
+  .section-name { text-transform: none; }
+  .look-dot { flex: 0 0 auto; width: 0.85rem; height: 0.85rem; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,0.25); }
+  /* Review #458: a plain name is 500 and Bold is 800. At 600 (the old plain
+     weight) most system fonts already draw their bold face, so Bold changed
+     nothing on screen; measured 600 == 800 in the test browser. */
+  .folder-row-name.is-bold { font-weight: 800; }
+  .section-name.is-bold { font-weight: 900; }
+  .swatch-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.3rem 0; }
+  .swatch { width: 44px; height: 44px; min-width: 44px; padding: 0; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #888; cursor: pointer; box-sizing: border-box; }
+  .swatch[aria-pressed="true"] { box-shadow: 0 0 0 3px #1F3A6E; }
+  .swatch.swatch-none { border-radius: 0.5rem; width: auto; min-width: 44px; padding: 0 0.7rem; background: #fff; color: #1F3A6E; font-size: 0.85rem; }
+  .look-bold { display: flex; align-items: center; gap: 0.5rem; min-height: 44px; font-size: 0.95rem; }
+  .look-bold input { width: 1.4rem; height: 1.4rem; }
+  .gate-note { margin: 0.2rem 0; color: #7a4a00; background: #fff7e6; border: 1px solid #f0d9a8; border-radius: 0.4rem; padding: 0.4rem 0.6rem; font-size: 0.85rem; }
+  .folder-picker-row.current { border-color: #1F3A6E; background: #eef2ff; }
   .folder-toggle {
     flex: 0 0 auto; width: 28px; height: 28px; padding: 0; font-size: 0.85rem; line-height: 1;
     border: none; background: none; color: #1F3A6E; cursor: pointer;
@@ -88,7 +106,7 @@
      able to wrap onto several lines inside its own column rather than push
      the row wider than the screen or get cut with an ellipsis nobody can
      read the rest of. */
-  .folder-row-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; font-weight: 600; color: #1F3A6E; font-size: calc(0.94rem * var(--tree-scale, 1)); }
+  .folder-row-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; font-weight: 500; color: #1F3A6E; font-size: calc(0.94rem * var(--tree-scale, 1)); }
   .folder-row-count { font-size: calc(0.78rem * var(--tree-scale, 1)); color: #888; }
   .folder-pin-flag { font-size: 0.85rem; }
   .folder-rename-input { flex: 1 1 auto; min-width: 0; font-weight: 600; color: #1F3A6E; font-size: calc(0.94rem * var(--tree-scale, 1)); }
@@ -333,7 +351,10 @@
       renameFolder, reorderFolder, moveFolder, reorderFiling,
       trashFolder, restoreFolder, loadOwnerTrash, copyNoteToFolder, moveNote, copyFolder,
       loadAllOwnerNotesSharded, loadAllOwnerPlacementsSharded, folderNoteCounts, folderMoveRefusal,
+      loadAllOwnerSections, createSection, renameSection, reorderSection, setSectionLook,
+      trashSection, restoreSection, setFolderLook, setFolderSection,
     } from "./js/journey-map-service.js";
+    import { isSiyagahSectionsReady } from "./js/siyagah-sections-readiness.js";
 
     translateStatic();
     registerServiceWorker();
@@ -510,6 +531,12 @@
       if (msg === "Note is not in Trash.") return t("That Note is not in Trash.");
       if (msg === "Stale Note revision.") return t("That Note has changed — please refresh and try again.");
       if (msg === "A move must change folder.") return t("A move must change folder.");
+      if (msg === "Only your own folders can be put in a section.") return t("Only your own folders can be put in a section.");
+      if (msg === "Only a top-level folder can be put in a section.") return t("Only a top-level folder can be put in a section.");
+      if (msg === "Section does not exist.") return t("That section could not be found — please refresh and try again.");
+      if (msg === "A retired section cannot be changed.") return t("That section is in Trash, so it can't be changed.");
+      if (msg === "A retired folder cannot be changed.") return t("That folder has already been removed, so it can't be changed.");
+      if (msg === "Section name must be 1 to 200 characters.") return t("A section name must be between 1 and 200 characters.");
       if (/^There are too many folders or Notes to judge this safely/.test(msg)) return t("There are too many folders or Notes to judge this safely. Nothing was changed.");
       if (msg === "Placement does not exist.") return t("That filing could not be found — please refresh and try again.");
       return null;
@@ -608,6 +635,10 @@
     // Loaded once per refresh, shared by all three views over the SAME data
     // (the issue's own requirement -- one toggle, not three separate pages).
     let folderTree = { roots: [], orphaned: [], cyclic: [], tooDeep: [] };
+    // Siyagah round 7a: the owner's ACTIVE sections. Read ONLY when the readiness
+    // gate is open -- against Rules that are not published the list is denied --
+    // so with the gate shut this stays [] and nothing moves for anyone.
+    let sections = [];
     let allNotes = [];
     // Issue #259 -- Folders became an expandable TREE (every folder shown at
     // once, not a one-folder-at-a-time drill-down), so it needs the owner's
@@ -740,6 +771,7 @@
       const myRefresh = ++refreshToken;
       if (!activeTenantId || !selectedPersonId) {
         folderTree = { roots: [], orphaned: [], cyclic: [], tooDeep: [] };
+        sections = [];
         allNotes = []; allPlacements = []; folderCounts = {};
         notesAndPlacementsLoaded = true;
         renderCurrentView();
@@ -762,9 +794,15 @@
         loadAllOwnerPlacementsSharded(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId }),
       ]);
 
+      const sectionsPromise = sectionsReady()
+        ? loadAllOwnerSections(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, status: NOTE_STATUS.ACTIVE })
+          .then((r) => r.rows, (err) => { console.error("[sections load]", err); return []; })
+        : Promise.resolve([]);
       const tree = await ownerFolderTreePagedSharded(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId });
+      const loadedSections = await sectionsPromise;
       if (myRefresh !== refreshToken) return; // superseded by a later refresh already
       folderTree = tree;
+      sections = loadedSections.slice().sort(byOrder);
       foldersTruncated = tree.truncated;
       // The tree is drawn HERE, before a single Note or placement has
       // arrived -- every folder count badge and the Timeline/Path views
@@ -1149,7 +1187,8 @@
     /** The sibling set a folder reorders/drags within: its parent's own children (sorted), or the user-folder roots at the top level. System folders never take part (ADR-010 §3: neither renameable, moveable, reorderable nor removable). */
     function siblingsOf(node) {
       const parentId = node.parentFolderId ?? null;
-      if (parentId === null) return mergedRoots().filter((f) => !isSystemFolderRole(f.semanticRole));
+      // A root folder reorders among the roots of ITS OWN block (its section, or the unnamed one), so ▲▼ never swaps with a folder drawn somewhere else.
+      if (parentId === null) return mergedRoots().filter((f) => !isSystemFolderRole(f.semanticRole) && sectionIdOfRoot(f) === sectionIdOfRoot(node));
       const parent = findNodeByIdOrRole(mergedRoots(), parentId, null);
       return (parent?.children ?? []).slice().sort(byOrder);
     }
@@ -1201,11 +1240,7 @@
       if (query) {
         html += folderSearchResultsHtml(query);
       } else {
-        let userIndex = 0;
-        html += `<ul class="folder-tree" data-folder-tree>${roots.map((f) => {
-          const numberPath = isSystemFolderRole(f.semanticRole) ? null : String(++userIndex).padStart(2, "0");
-          return renderFolderSubtree(f, 0, numberPath);
-        }).join("")}</ul>`;
+        html += `<ul class="folder-tree" data-folder-tree>${renderRootBlocks(roots)}</ul>`;
       }
       html += folderFooterHtml();
       viewFolders.innerHTML = html;
@@ -1275,7 +1310,7 @@
       const pin = isPinnedTarget(f) ? `<span class="folder-pin-flag" title="${escapeHtml(t("New folders go here"))}">📍</span>` : "";
       const nameHtml = inlineRenameKey === key
         ? `<input type="text" class="folder-rename-input" data-folder-rename-input value="${escapeHtml(f.name ?? "")}" aria-label="${escapeHtml(t("Rename this folder"))}" />`
-        : `<span class="folder-row-name" data-folder-name>${escapeHtml(numberedLabel(f, numberPath))}</span>`;
+        : `${dotHtml(f.color)}<span class="folder-row-name${f.bold === true ? " is-bold" : ""}" data-folder-name>${escapeHtml(numberedLabel(f, numberPath))}</span>`;
       let menu = "";
       if (editable && inlineRenameKey !== key) {
         const siblings = siblingsOf(f);
@@ -1293,6 +1328,8 @@
               <button type="button" class="secondary tiny" data-folder-down ${downDisabled ? "disabled" : ""} aria-label="${escapeHtml(t("Move down"))}">▼ ${t("Move down")}</button>
               <button type="button" class="secondary tiny" data-folder-copy>${t("Copy to…")}</button>
               <button type="button" class="secondary tiny" data-folder-move>${t("Move to…")}</button>
+              <button type="button" class="secondary tiny" data-folder-look>🎨 ${t("Colour and bold")}</button>
+              ${(f.parentFolderId ?? null) === null ? `<button type="button" class="secondary tiny" data-folder-section>${t("Move to section")} ▶</button>` : ""}
               <button type="button" class="danger tiny" data-folder-delete>🗑 ${t("Delete")}</button>
             </div>
           </span>`;
@@ -1370,6 +1407,12 @@
         row.querySelector("[data-folder-delete]")?.addEventListener("click", (e) => {
           e.stopPropagation(); closeAllBarPalettes(null); deleteFolder(node);
         });
+        row.querySelector("[data-folder-look]")?.addEventListener("click", (e) => {
+          e.stopPropagation(); closeAllBarPalettes(null); openFolderLookDialog(node);
+        });
+        row.querySelector("[data-folder-section]")?.addEventListener("click", (e) => {
+          e.stopPropagation(); closeAllBarPalettes(null); openFolderSectionDialog(node);
+        });
 
         // Drag a row: top 28% = before, bottom 28% = after, middle 44% =
         // inside (Siyagah's own zones). Mouse/desktop only, per the issue's
@@ -1402,6 +1445,8 @@
           if (expandable(node)) toggleExpanded(node);
         });
       });
+
+      wireSectionHeaders(container);
 
       container.querySelectorAll("[data-file-into-folder]").forEach((fileLi) => {
         const folderId = fileLi.dataset.fileIntoFolder;
@@ -1442,6 +1487,11 @@
     async function performFolderDrop(draggedNode, targetNode, zone) {
       const newParentId = zone === "inside" ? targetNode.folderId : (targetNode.parentFolderId ?? null);
       const changingParent = (draggedNode.parentFolderId ?? null) !== newParentId;
+      // Dropping a ROOT folder before/after a root drawn in ANOTHER block (section) files it in that block first.
+      if (zone !== "inside" && !changingParent && (draggedNode.parentFolderId ?? null) === null
+          && !isSystemFolderRole(targetNode.semanticRole) && sectionIdOfRoot(draggedNode) !== sectionIdOfRoot(targetNode)) {
+        if (!(await assignFolderToSection(draggedNode, sectionIdOfRoot(targetNode)))) return;
+      }
       if (changingParent) {
         const folders = new Map(rawFolderList(folderTree).map((f) => [f.folderId, f]));
         const refusal = folderMoveRefusal({ folders, tenantId: activeTenantId, ownerPersonId: selectedPersonId, folderId: draggedNode.folderId, parentFolderId: newParentId });
@@ -1718,6 +1768,286 @@
       await refreshAll();
     }
 
+    // =====================================================================
+    // Siyagah port round 7a (issue #458; Owner decisions M2, M3) -- SECTIONS
+    // above folders, and a folder's colour + bold. Every control is SHOWN and
+    // writes nothing until siyagah-sections-readiness.js reads true (the round
+    // 7 Rules are not yet published): a control that opens and explains itself
+    // beats one that is missing. Every write goes through gatedWrite(), the one
+    // place that checks the gate, so there is no second path around it.
+    // =====================================================================
+    function sectionsReady() { return isSiyagahSectionsReady(); }
+    const gateSentence = () => t("Sections and folder colours switch on once the new Firebase Rules are published.");
+    /** The one gate: with it shut, say so in words and write NOTHING. */
+    async function gatedWrite(writeFn, context) {
+      if (!sectionsReady()) { showPageStatus(gateSentence()); return { ok: false, gated: true }; }
+      return runFolderWrite(writeFn, context);
+    }
+
+    const HEX_COLOUR = /^#[0-9A-Fa-f]{6}$/;
+    const safeColour = (c) => (typeof c === "string" && HEX_COLOUR.test(c) ? c : null);
+    /** About ten swatches, each a 40px+ target; the dot carries the colour, never the name's text colour (contrast). */
+    const SWATCHES = [
+      ["#C0392B", () => t("Red")], ["#D9731A", () => t("Orange")], ["#C99A00", () => t("Amber")],
+      ["#2E8B57", () => t("Green")], ["#1A8F8F", () => t("Teal")], ["#2F6FDE", () => t("Blue")],
+      ["#4B4FBF", () => t("Indigo")], ["#8E44AD", () => t("Purple")], ["#D6457F", () => t("Pink")],
+      ["#6B7280", () => t("Grey")],
+    ];
+    const dotHtml = (c) => (safeColour(c) ? `<span class="look-dot" data-look-dot style="background:${safeColour(c)}" aria-hidden="true"></span>` : "");
+
+    const COLLAPSED_SECTIONS_KEY = "mmsa-journey-sections-collapsed";
+    function loadCollapsedSections() {
+      try { return new Set(JSON.parse(localStorage.getItem(COLLAPSED_SECTIONS_KEY) || "[]")); } catch { return new Set(); }
+    }
+    let collapsedSectionIds = loadCollapsedSections();
+    function saveCollapsedSections() {
+      try { localStorage.setItem(COLLAPSED_SECTIONS_KEY, JSON.stringify([...collapsedSectionIds])); } catch { /* per device, never synced */ }
+    }
+    let sectionRenameId = null;
+    let dragSectionHint = false;
+
+    const activeSectionIds = () => new Set(sections.map((s) => s.sectionId));
+    /** A root user folder's section, or null (no section, or one that is no longer active -- it shows in the unnamed block). */
+    function sectionIdOfRoot(f) {
+      return !isSystemFolderRole(f.semanticRole) && (f.parentFolderId ?? null) === null && f.sectionId && activeSectionIds().has(f.sectionId) ? f.sectionId : null;
+    }
+
+    /** The roots in DISPLAY order -- the unnamed block, then each section's folders -- with the same derived numbers the tree has always shown. */
+    function renderRootBlocks(roots) {
+      const bySection = new Map(sections.map((s) => [s.sectionId, []]));
+      const unnamed = [];
+      for (const f of roots) {
+        const sid = sectionIdOfRoot(f);
+        if (sid) bySection.get(sid).push(f); else unnamed.push(f);
+      }
+      let userIndex = 0;
+      const numbers = new Map();
+      const number = (f) => { if (!isSystemFolderRole(f.semanticRole)) numbers.set(f, String(++userIndex).padStart(2, "0")); };
+      unnamed.forEach(number);
+      sections.forEach((s) => bySection.get(s.sectionId).forEach(number));
+      const draw = (f) => renderFolderSubtree(f, 0, numbers.get(f) ?? null);
+      let html = unnamed.map(draw).join("");
+      sections.forEach((s, idx) => {
+        const members = bySection.get(s.sectionId);
+        const open = !collapsedSectionIds.has(s.sectionId);
+        html += sectionHeaderHtml(s, idx, members.length, open);
+        if (open) html += members.map(draw).join("");
+      });
+      return html;
+    }
+
+    function sectionHeaderHtml(s, idx, memberCount, open) {
+      const editable = isSelfSelected();
+      const renaming = sectionRenameId === s.sectionId;
+      const nameHtml = renaming
+        ? `<input type="text" class="folder-rename-input" data-section-rename-input value="${escapeHtml(s.name ?? "")}" aria-label="${escapeHtml(t("Rename this section"))}" />`
+        : `<span class="folder-row-name section-name${s.bold === true ? " is-bold" : ""}" data-section-name>${escapeHtml(s.name || t("(untitled section)"))}</span>`;
+      const menuId = `sectionMenu-${escapeHtml(s.sectionId)}`;
+      const menu = editable && !renaming ? `
+        <span class="bar-palette-wrap folder-menu-wrap" data-bar-palette-wrap="${menuId}">
+          <button type="button" class="folder-menu-btn bar-palette-toggle" data-bar-palette-toggle="${menuId}" aria-haspopup="true" aria-expanded="false" title="${escapeHtml(t("More"))}" aria-label="${escapeHtml(t("More"))}">⋯</button>
+          <div class="bar-palette folder-row-menu" data-bar-palette="${menuId}">
+            <button type="button" class="secondary tiny" data-section-rename>✏️ ${t("Rename")}</button>
+            <button type="button" class="secondary tiny" data-section-look>🎨 ${t("Colour and bold")}</button>
+            <button type="button" class="secondary tiny" data-section-up ${idx <= 0 ? "disabled" : ""} aria-label="${escapeHtml(t("Move up"))}">▲ ${t("Move up")}</button>
+            <button type="button" class="secondary tiny" data-section-down ${idx >= sections.length - 1 ? "disabled" : ""} aria-label="${escapeHtml(t("Move down"))}">▼ ${t("Move down")}</button>
+            <button type="button" class="danger tiny" data-section-delete>🗑 ${t("Delete")}</button>
+          </div>
+        </span>` : "";
+      return `<li class="folder-tree-item section-item" data-section-item>
+        <div class="section-header" data-section-id="${escapeHtml(s.sectionId)}">
+          <button type="button" class="folder-toggle" data-section-toggle aria-expanded="${open}" aria-label="${escapeHtml(open ? t("Collapse") : t("Expand"))}">${open ? "▾" : "▶"}</button>
+          ${dotHtml(s.color)}${nameHtml}${memberCount > 0 ? `<span class="folder-row-count">${memberCount}</span>` : ""}${menu}
+        </div>
+      </li>`;
+    }
+
+    function wireSectionHeaders(container) {
+      container.querySelectorAll(".section-header").forEach((head) => {
+        const section = sections.find((s) => s.sectionId === head.dataset.sectionId);
+        if (!section) return;
+        const idx = sections.indexOf(section);
+        const toggle = () => {
+          if (collapsedSectionIds.has(section.sectionId)) collapsedSectionIds.delete(section.sectionId); else collapsedSectionIds.add(section.sectionId);
+          saveCollapsedSections();
+          renderFoldersView();
+        };
+        head.querySelector("[data-section-toggle]")?.addEventListener("click", (e) => { e.stopPropagation(); toggle(); });
+        head.addEventListener("click", (e) => { if (!e.target.closest(".folder-menu-wrap, .folder-rename-input, [data-section-toggle]")) toggle(); });
+        const input = head.querySelector("[data-section-rename-input]");
+        input?.addEventListener("click", (e) => e.stopPropagation());
+        input?.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") { e.preventDefault(); commitSectionRename(section, e.target.value); }
+          else if (e.key === "Escape") { e.preventDefault(); sectionRenameId = null; renderFoldersView(); }
+        });
+        input?.addEventListener("blur", (e) => commitSectionRename(section, e.target.value));
+        head.querySelector("[data-section-rename]")?.addEventListener("click", (e) => {
+          e.stopPropagation(); closeAllBarPalettes(null);
+          sectionRenameId = section.sectionId; renderFoldersView();
+          const el = document.querySelector("[data-section-rename-input]"); el?.focus(); el?.select();
+        });
+        head.querySelector("[data-section-look]")?.addEventListener("click", (e) => {
+          e.stopPropagation(); closeAllBarPalettes(null);
+          openLookDialog({
+            title: t('Colour and bold for section "{name}"', { name: section.name }), color: safeColour(section.color), bold: section.bold === true,
+            apply: async ({ color, bold }) => gatedWrite(
+              () => setSectionLook(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, sectionId: section.sectionId, color, bold, actorUid: auth.currentUser.uid }),
+              { collection: TENANT.NOTE_SECTIONS, action: "setSectionLook" }),
+          });
+        });
+        head.querySelector("[data-section-up]")?.addEventListener("click", (e) => { e.stopPropagation(); closeAllBarPalettes(null); reorderSectionSwap(idx, -1); });
+        head.querySelector("[data-section-down]")?.addEventListener("click", (e) => { e.stopPropagation(); closeAllBarPalettes(null); reorderSectionSwap(idx, 1); });
+        head.querySelector("[data-section-delete]")?.addEventListener("click", (e) => { e.stopPropagation(); closeAllBarPalettes(null); deleteSection(section); });
+
+        // Drop a ROOT folder on a section header: file it under that section (the same drag state the rows use).
+        head.addEventListener("dragover", (e) => { if (dragFolderKey == null) return; e.preventDefault(); clearDragIndicators(container); head.classList.add("drag-over-inside"); });
+        head.addEventListener("dragleave", () => head.classList.remove("drag-over-inside"));
+        head.addEventListener("drop", (e) => {
+          e.preventDefault();
+          clearDragIndicators(container);
+          const dragged = dragFolderKey ? findNodeByExpandKey(mergedRoots(), dragFolderKey) : null;
+          dragFolderKey = null;
+          if (dragged) assignFolderToSection(dragged, section.sectionId);
+        });
+      });
+    }
+
+    async function commitSectionRename(section, rawName) {
+      if (sectionRenameId !== section.sectionId) return;
+      const trimmed = (rawName ?? "").trim();
+      sectionRenameId = null;
+      if (!trimmed || trimmed === section.name) { renderFoldersView(); return; }
+      const outcome = await gatedWrite(
+        () => renameSection(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, sectionId: section.sectionId, name: trimmed, actorUid: auth.currentUser.uid }),
+        { collection: TENANT.NOTE_SECTIONS, action: "renameSection" });
+      if (outcome.ok) await refreshAll(); else renderFoldersView();
+    }
+
+    async function reorderSectionSwap(idx, direction) {
+      const other = idx + direction;
+      if (!sections[idx] || !sections[other]) return;
+      const writes = planReorder(sections.map((s) => ({ id: s.sectionId, order: s.order ?? 0 })), idx, direction);
+      for (const write of writes) {
+        const outcome = await gatedWrite(
+          () => reorderSection(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, sectionId: write.id, order: write.order, actorUid: auth.currentUser.uid }),
+          { collection: TENANT.NOTE_SECTIONS, action: "reorderSection" });
+        if (!outcome.ok) return;
+      }
+      await refreshAll();
+    }
+
+    /** Delete = Trash. The confirm says the folders come BACK TO THE UNNAMED BLOCK and never go to Trash with it. */
+    function deleteSection(section) {
+      // An in-page confirmation (this page never calls window.confirm).
+      openSiyagahDialog({
+        title: t('Delete section "{name}"?', { name: section.name }),
+        bodyHtml: `<p data-section-confirm>${escapeHtml(t('Move section "{name}" to Trash? Its folders are not deleted: they go back to the unnamed block above the sections. Restore it later from 🗑 Trash.', { name: section.name }))}</p>
+          <div class="folder-picker-actions"><button type="button" class="danger" data-section-confirm-yes>🗑 ${escapeHtml(t("Delete"))}</button></div>`,
+        wire: (overlay, close) => {
+          overlay.querySelector("[data-section-confirm-yes]").addEventListener("click", async () => {
+            const outcome = await gatedWrite(
+              () => trashSection(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, sectionId: section.sectionId, actorUid: auth.currentUser.uid }),
+              { collection: TENANT.NOTE_SECTIONS, action: "trashSection" });
+            if (!outcome.ok) return;
+            close();
+            showPageStatus(t('Section "{name}" moved to Trash. Its folders are back in the unnamed block.', { name: section.name }));
+            await refreshAll();
+          });
+        },
+      });
+    }
+
+    /** Put a ROOT user folder under a section (null = no section). A nested one is refused in words, before any write. */
+    async function assignFolderToSection(node, sectionId) {
+      if (!node.folderId || isSystemFolderRole(node.semanticRole)) { showPageStatus(t("Only your own folders can be put in a section.")); return false; }
+      if ((node.parentFolderId ?? null) !== null) { showPageStatus(t("Only a top-level folder can be put in a section.")); return false; }
+      if (sectionsReady() && (node.sectionId ?? null) === sectionId) return true; // already there; shut, it still explains itself below
+      const outcome = await gatedWrite(
+        () => setFolderSection(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, folderId: node.folderId, sectionId, actorUid: auth.currentUser.uid }),
+        { collection: TENANT.NOTE_FOLDERS, action: "setFolderSection" });
+      if (!outcome.ok) return false;
+      const target = sectionId ? sections.find((s) => s.sectionId === sectionId)?.name : null;
+      showPageStatus(target
+        ? t('Folder "{name}" moved to section "{section}".', { name: folderDisplayName(node), section: target })
+        : t('Folder "{name}" is no longer in a section.', { name: folderDisplayName(node) }));
+      await refreshAll();
+      return true;
+    }
+
+    /** One small chooser overlay, built like the folder picker so it is a dialog on a phone too. Resolves nothing: `wire` does the work. */
+    function openSiyagahDialog({ title, bodyHtml, wire }) {
+      document.getElementById("siyagahDialog")?.remove();
+      const overlay = document.createElement("div");
+      overlay.id = "siyagahDialog";
+      overlay.className = "folder-picker-overlay";
+      overlay.innerHTML = `<div class="folder-picker" role="dialog" aria-modal="true" aria-labelledby="siyagahDialogTitle" tabindex="-1">
+        <h2 id="siyagahDialogTitle" class="folder-picker-title">${escapeHtml(title)}</h2>
+        ${sectionsReady() ? "" : `<p class="note gate-note" data-sections-gate-note role="status">${escapeHtml(gateSentence())}</p>`}
+        ${bodyHtml}
+        <div class="folder-picker-actions"><button type="button" class="secondary" data-dialog-cancel>${escapeHtml(t("Cancel"))}</button></div>
+      </div>`;
+      document.body.appendChild(overlay);
+      const onKey = (e) => { if (e.key === "Escape") close(); };
+      function close() { document.removeEventListener("keydown", onKey); overlay.remove(); }
+      overlay.querySelector("[data-dialog-cancel]").addEventListener("click", close);
+      overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+      document.addEventListener("keydown", onKey);
+      wire(overlay, close);
+      overlay.querySelector(".folder-picker").focus();
+    }
+
+    /** 🎨 Colour and bold: ~10 swatches plus None (each 40px or more) and a Bold toggle, applied together as ONE write. */
+    function openLookDialog({ title, color, bold, apply }) {
+      let chosen = color;
+      let isBold = bold;
+      const swatch = (hex, label) => `<button type="button" class="swatch" data-swatch="${hex}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}" aria-pressed="${chosen === hex}" style="background:${hex}"></button>`;
+      openSiyagahDialog({
+        title,
+        bodyHtml: `<div class="swatch-grid" role="group" aria-label="${escapeHtml(t("Colour"))}">
+            ${SWATCHES.map(([hex, label]) => swatch(hex, label())).join("")}
+            <button type="button" class="swatch swatch-none" data-swatch="" aria-pressed="${chosen === null}">${escapeHtml(t("None"))}</button>
+          </div>
+          <label class="look-bold"><input type="checkbox" data-look-bold ${isBold ? "checked" : ""} /> <span>${escapeHtml(t("Bold"))}</span></label>
+          <div class="folder-picker-actions"><button type="button" data-look-apply>${escapeHtml(t("Apply"))}</button></div>`,
+        wire: (overlay, close) => {
+          const refresh = () => overlay.querySelectorAll("[data-swatch]").forEach((b) => b.setAttribute("aria-pressed", String((b.dataset.swatch || null) === chosen)));
+          overlay.querySelectorAll("[data-swatch]").forEach((b) => b.addEventListener("click", () => { chosen = b.dataset.swatch || null; refresh(); }));
+          overlay.querySelector("[data-look-bold]").addEventListener("change", (e) => { isBold = e.target.checked; });
+          overlay.querySelector("[data-look-apply]").addEventListener("click", async () => {
+            const outcome = await apply({ color: chosen, bold: isBold });
+            if (!outcome.ok) return;
+            close();
+            await refreshAll();
+          });
+        },
+      });
+    }
+
+    function openFolderLookDialog(node) {
+      openLookDialog({
+        title: t('Colour and bold for folder "{name}"', { name: folderDisplayName(node) }), color: safeColour(node.color), bold: node.bold === true,
+        apply: async ({ color, bold }) => gatedWrite(
+          () => setFolderLook(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, folderId: node.folderId, color, bold, actorUid: auth.currentUser.uid }),
+          { collection: TENANT.NOTE_FOLDERS, action: "setFolderLook" }),
+      });
+    }
+
+    /** Move to section ▶ -- the active sections and "No section". */
+    function openFolderSectionDialog(node) {
+      const current = node.sectionId ?? null;
+      const row = (id, label) => `<li><button type="button" class="folder-picker-row${current === id ? " current" : ""}" data-section-pick="${escapeHtml(id ?? "")}" aria-pressed="${current === id}"><span class="folder-row-name">${escapeHtml(label)}</span></button></li>`;
+      openSiyagahDialog({
+        title: t('Move folder "{name}" to a section', { name: folderDisplayName(node) }),
+        bodyHtml: `<ul class="folder-picker-list" data-section-picker>${row(null, t("No section"))}${sections.map((s) => row(s.sectionId, s.name)).join("")}</ul>`,
+        wire: (overlay, close) => {
+          overlay.querySelectorAll("[data-section-pick]").forEach((b) => b.addEventListener("click", async () => {
+            // Through gatedWrite() like every other write: shut, it says the sentence (the note in this dialog already does) and the dialog stays open.
+            if (await assignFolderToSection(node, b.dataset.sectionPick || null)) close();
+          }));
+        },
+      });
+    }
+
     // -- 🗑 Trash: retired folders and Notes, each with Restore, and nothing that erases (decision 42.1). --
     let trashRenderToken = 0;
     let viewBeforeTrash = "folders";
@@ -1747,8 +2077,14 @@
         if (token === trashRenderToken) showPageStatus(t("Couldn't load Trash — please try again."));
         return;
       }
+      // Retired SECTIONS are read only when the readiness gate is open (the list is denied by Rules not yet published).
+      let trashSections = [];
+      if (sectionsReady()) {
+        try { trashSections = (await loadAllOwnerSections(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, status: NOTE_STATUS.RETIRED })).rows; }
+        catch (err) { console.error("[trash sections load]", err); }
+      }
       if (token !== trashRenderToken || currentView !== "trash") return;
-      const byId = new Map([...rawFolderList(folderTree), ...trash.folders].map((f) => [f.folderId, f]));
+      const byId =new Map([...rawFolderList(folderTree), ...trash.folders].map((f) => [f.folderId, f]));
       const placeOf = (folder) => {
         const chain = [];
         const seen = new Set([folder.folderId]);
@@ -1765,10 +2101,13 @@
       const datePart = (ts) => { const d = when(ts); return d ? ` · ${escapeHtml(d)}` : ""; };
       const restoreBtn = isSelfSelected() ? `<button type="button" class="secondary tiny" data-trash-restore>${escapeHtml(t("Restore"))}</button>` : "";
       let html = head;
-      if (trash.folders.length === 0 && trash.notes.length === 0) {
+      if (trash.folders.length === 0 && trash.notes.length === 0 && trashSections.length === 0) {
         html += `<p id="trashEmpty">${escapeHtml(t("Trash is empty."))}</p>`;
       } else {
         html += `<ul class="trash-list" data-trash-list>`;
+        for (const s of trashSections) {
+          html += `<li class="trash-row" data-trash-section-id="${escapeHtml(s.sectionId)}"><div class="trash-row-text"><span class="folder-row-name">🗂 ${escapeHtml(s.name || t("(untitled section)"))}</span><span class="note">${escapeHtml(t("Section — its folders stay in the unnamed block."))}${datePart(s.updatedAt)}</span></div>${restoreBtn}</li>`;
+        }
         for (const f of trash.folders) {
           html += `<li class="trash-row" data-trash-folder-id="${escapeHtml(f.folderId)}"><div class="trash-row-text"><span class="folder-row-name">📁 ${escapeHtml(folderDisplayName(f))}</span><span class="note">${escapeHtml(t("Was in: {place}", { place: placeOf(f) }))}${datePart(f.updatedAt)}</span></div>${restoreBtn}</li>`;
         }
@@ -1780,6 +2119,17 @@
       }
       viewTrash.innerHTML = html;
       viewTrash.querySelector("#trashBackBtn").addEventListener("click", closeTrash);
+      viewTrash.querySelectorAll("[data-trash-section-id]").forEach((li) => {
+        const section = trashSections.find((s) => s.sectionId === li.dataset.trashSectionId);
+        li.querySelector("[data-trash-restore]")?.addEventListener("click", async () => {
+          const outcome = await gatedWrite(
+            () => restoreSection(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, sectionId: section.sectionId, actorUid: auth.currentUser.uid }),
+            { collection: TENANT.NOTE_SECTIONS, action: "restoreSection" });
+          if (!outcome.ok) return;
+          showPageStatus(t('Section "{name}" restored.', { name: section.name }));
+          await refreshAll();
+        });
+      });
       viewTrash.querySelectorAll("[data-trash-folder-id]").forEach((li) => {
         const folder = trash.folders.find((f) => f.folderId === li.dataset.trashFolderId);
         li.querySelector("[data-trash-restore]")?.addEventListener("click", async () => {
@@ -1955,6 +2305,7 @@
         <form id="newFolderForm">
           <input type="text" id="newFolderName" placeholder="${escapeHtml(t("Folder name"))}" />
           <button type="submit">${t("+ New folder")}</button>
+          <button type="button" id="newSectionBtn" class="secondary">${t("+ New section")}</button>
         </form>
       </div>`;
     }
@@ -1962,6 +2313,20 @@
       document.getElementById("clearFolderTarget")?.addEventListener("click", () => { newFolderTargetNode = null; renderFoldersView(); });
       const form = document.getElementById("newFolderForm");
       if (!form) return;
+      // ＋ New section takes its name from the same box. Shut, it says why and writes nothing (gatedWrite).
+      document.getElementById("newSectionBtn")?.addEventListener("click", async () => {
+        const name = document.getElementById("newFolderName").value.trim();
+        if (sectionsReady() && !name) { showPageStatus(t("Type a name for the section first.")); return; }
+        const outcome = await gatedWrite(
+          () => createSection(db, {
+            tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid,
+            name, order: nextOrder(sections), actorUid: auth.currentUser.uid,
+          }),
+          { collection: TENANT.NOTE_SECTIONS, action: "createSection" });
+        if (!outcome.ok) return;
+        showPageStatus(t('Section "{name}" created.', { name }));
+        await refreshAll();
+      });
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
         const name = document.getElementById("newFolderName").value.trim();

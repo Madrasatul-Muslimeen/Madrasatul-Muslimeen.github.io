@@ -223,6 +223,37 @@ function dataLayerUpdates(source, tenantKey) {
 const p4 = read(PHASE4), p5 = read(PHASE5), p6 = read(PHASE6);
 const dataLayer = read("app/js/note-foundation.js");
 
+// Siyagah round 7a (issue #458): `noteFolders` gains color/bold/sectionId and a
+// NEW `noteSections` collection appears, in a candidate that is NOT published.
+// The Phase 6 loop below keeps judging noteFolders against Phase 6 -- minus the
+// fields the round 7 candidate ADDS -- and the ROUND 7 block at the end judges
+// those, and noteSections, against the round 7 candidate, both directions.
+const ROUND7 = "docs/governance/2026-10-01-siyagah-round7-DEPLOYMENT-candidate.rules";
+const r7 = read(ROUND7);
+const r7FolderUpdate = authorisedUpdate(r7, "noteFolders/", "folderIdentityUnchanged");
+// `importSource` is in the shape list but the update rule pins it to the stored value inline
+// (not inside the identity helper this parser reads), so it is frozen: say so, and prove it.
+assert.ok(/d\(\)\.get\('importSource', null\) == resource\.data\.get\('importSource', null\)/.test(matchBlock(r7, "noteFolders/")),
+  "the round 7 candidate no longer pins importSource on a folder update");
+r7FolderUpdate.mutable.delete("importSource");
+const r7AddedFolderFields = new Set([...r7FolderUpdate.mutable].filter((f) => !authorisedUpdate(p6, "noteFolders/", "folderIdentityUnchanged").mutable.has(f)));
+
+/** `{ ... }` payloads of the batch form: `collectionName: TENANT.X, docId: ..., data: { ... }`, and the section helper's `fields: { ... }`. */
+function dataLayerOtherUpdates(source, tenantKey) {
+  const fields = new Set();
+  let hits = 0;
+  const take = (body) => {
+    hits++;
+    for (const f of body.split(",")) {
+      const bare = f.trim().split(":")[0].trim();
+      if (/^[A-Za-z][A-Za-z0-9]*$/.test(bare)) fields.add(bare);
+    }
+  };
+  for (const m of source.matchAll(new RegExp(String.raw`(?<!creates\.push\(\{ )collectionName:\s*TENANT\.${tenantKey}\s*,[^{]*data:\s*\{([^}]*)\}`, "g"))) take(m[1]);
+  if (tenantKey === "NOTE_SECTIONS") for (const m of source.matchAll(/\bfields:\s*\{([^}]*)\}/g)) take(m[1].replace(/\([^)]*\)/g, ""));
+  return { fields, hits };
+}
+
 const COLLECTIONS = [
   { name: "notes",           rules: p5, matchPath: "notes/",           identity: "noteIdentityUnchanged",      tenantKey: "NOTES" },
   { name: "noteRevisions",   rules: p5, matchPath: "noteRevisions/",   identity: null,                          tenantKey: "NOTE_REVISIONS" },
@@ -251,7 +282,9 @@ check("POSITIVE CONTROL: the parser really reads the data layer's update fields"
 // --- the two directions ----------------------------------------------------
 for (const { name, rules, matchPath, identity, tenantKey } of COLLECTIONS) {
   const { updateAllowed, mutable } = authorisedUpdate(rules, matchPath, identity);
-  const { fields: written } = dataLayerUpdates(dataLayer, tenantKey);
+  const { fields: writtenAll } = dataLayerUpdates(dataLayer, tenantKey);
+  // The round 7 fields are judged against the round 7 candidate, in the ROUND 7 block below.
+  const written = new Set([...writtenAll].filter((f) => name !== "noteFolders" || !r7AddedFolderFields.has(f)));
 
   if (!updateAllowed) {
     check(`${name} is create-only in the Rules, so the data layer must not update it`, () => {
@@ -370,6 +403,54 @@ for (const { name, rules, matchPath, identity, tenantKey } of COLLECTIONS) {
         `${name}: the file that would be PASTED authorises a different set of mutable fields than the extract every suite is run against`);
     });
   }
+}
+
+// --- ROUND 7 (Siyagah, issue #458): sections and folder look/section ---------
+{
+  const wrote = (tenantKey) => {
+    const a = dataLayerUpdates(dataLayer, tenantKey), b = dataLayerOtherUpdates(dataLayer, tenantKey);
+    return { fields: new Set([...a.fields, ...b.fields]), hits: a.hits + b.hits };
+  };
+  const journeyService = read("app/js/journey-map-service.js");
+  void journeyService;
+
+  check("POSITIVE CONTROL (round 7): the parser reads the round 7 candidate's added folder fields and the section update set", () => {
+    assert.deepEqual([...r7AddedFolderFields].sort(), ["bold", "color", "sectionId"], `parsed ${[...r7AddedFolderFields]}`);
+    const sections = authorisedUpdate(r7, "noteSections/", "sectionIdentityUnchanged");
+    assert.equal(sections.updateAllowed, true);
+    assert.deepEqual([...sections.mutable].sort(), ["bold", "color", "name", "order", "status"], `parsed ${[...sections.mutable]}`);
+  });
+  check("POSITIVE CONTROL (round 7): the parser reads the data layer's section and folder-look writes", () => {
+    assert.ok(wrote("NOTE_SECTIONS").hits >= 4, `section writes found: ${wrote("NOTE_SECTIONS").hits}`);
+    assert.ok(wrote("NOTE_SECTIONS").fields.has("name") && wrote("NOTE_SECTIONS").fields.has("status"), `parsed ${[...wrote("NOTE_SECTIONS").fields]}`);
+    assert.ok(wrote("NOTE_FOLDERS").fields.has("color") && wrote("NOTE_FOLDERS").fields.has("sectionId"));
+  });
+
+  for (const [name, matchPath, identity, tenantKey] of [
+    ["noteFolders", "noteFolders/", "folderIdentityUnchanged", "NOTE_FOLDERS"],
+    ["noteSections", "noteSections/", "sectionIdentityUnchanged", "NOTE_SECTIONS"],
+  ]) {
+    const mutable = name === "noteFolders" ? r7FolderUpdate.mutable : authorisedUpdate(r7, matchPath, identity).mutable;
+    const { fields: written } = wrote(tenantKey);
+    check(`ROUND 7 FORWARD: every field the candidate lets ${name} update is written by some writer`, () => {
+      const unexecutable = [...mutable].filter((f) => !written.has(f));
+      assert.deepEqual(unexecutable, [], `the round 7 candidate authorises changing ${unexecutable.join(", ")} on ${name}, and no writer writes it`);
+    });
+    check(`ROUND 7 BACKWARD: every field a writer writes to ${name} is one the candidate allows`, () => {
+      const unauthorised = [...written].filter((f) => !mutable.has(f));
+      assert.deepEqual(unauthorised, [], `a writer sends ${unauthorised.join(", ")} to ${name}, which the round 7 candidate refuses -- denied in production once published`);
+    });
+  }
+
+  check("ROUND 7 CREATE noteSections: carries every required field and nothing forbidden", () => {
+    const helpers = spreadHelpers(dataLayer);
+    const { permitted, required } = authorisedCreate(r7, "noteSections/");
+    const payloads = dataLayerCreates(dataLayer, "NOTE_SECTIONS", helpers);
+    assert.equal(payloads.length, 1, `expected one noteSections create, found ${payloads.length}`);
+    const withEnvelope = new Set([...payloads[0], ...ENVELOPE]);
+    assert.deepEqual([...required].filter((f) => !withEnvelope.has(f)), [], "the section create omits a required field");
+    assert.deepEqual([...payloads[0]].filter((f) => !permitted.has(f)), [], "the section create sends a forbidden field");
+  });
 }
 
 // --- Phase 4 evidence: create-only BY DESIGN, and it must stay so ----------

@@ -354,7 +354,17 @@ function __recordWriteData(kind, ref, data) {
 }
 
 export async function setDoc(ref, data) {
-  return __trip("setDoc", ref && ref.__col, ref && ref.__id, function () { __recordWriteData("set", ref, data); });
+  return __trip("setDoc", ref && ref.__col, ref && ref.__id, function () {
+    __recordWriteData("set", ref, data);
+    // OPT-IN, same flag as the batch path below (journey-sections-browser.mjs): a
+    // create is applied to DATA so a read after it sees the new document.
+    if (typeof window !== "undefined" && window.__stubApplyBatches && ref && ref.__col) {
+      DATA[ref.__col] = DATA[ref.__col] || [];
+      var row = Object.assign({ _id: ref.__id }, data);
+      var at = DATA[ref.__col].findIndex(function (d) { return d._id === ref.__id; });
+      if (at >= 0) DATA[ref.__col][at] = row; else DATA[ref.__col].push(row);
+    }
+  });
 }
 // Records what was written so a test can prove the save really happened and
 // carried the right field. A no-op before v07.37; the language sync is the
@@ -455,6 +465,9 @@ export async function runTransaction(db, callback) {
         ? Object.assign({ _id: id }, w.data)
         : Object.assign({}, at >= 0 ? DATA[col][at] : { _id: id }, w.data);
       if (at >= 0) DATA[col][at] = next; else DATA[col].push(next);
+      // Opt-in second channel with the VALUES (journey-sections-browser.mjs): the
+      // __stubWrites record below keeps only field names.
+      if (typeof window !== "undefined" && window.__stubRecordTxData) __recordWriteData("tx-" + w.op, w.ref, w.data);
       try {
         const prior = JSON.parse(sessionStorage.getItem("__stubWrites") || "[]");
         prior.push({ col: col, id: id, data: Object.keys(w.data || {}).sort(), tx: true, op: w.op });

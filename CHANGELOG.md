@@ -19041,3 +19041,14 @@ Siyagah port round 6b; Owner decisions 42.4 and M3 (#454, PR #456, Builder run 7
 - **Saving from a window still counts as Journaling**: every revision is written the same way the Notes page's own Save writes it, so your Journaling activity is recorded, and the page tells you so.
 - **One shared piece**: the Note view and windows now live in one file used by both pages, so a fix to one is a fix to both.
 - **Checks**: notes-note-windows 218/0 (Architect mutation: without the Journaling record, 12 checks fail), journey-note-windows 254/0, journey-note-edit 208/0, journey-note-pane 321/0, journey-tray 227/0, journey-folder-menus 144/0, every journey-map suite green, study-note-service 35/0, note-journal-evidence 18/0, account-card 1235/0, phone-width 217/0, palette-contrast 20/0, behaviour 1004/4 (22g×3 archive.org, 31e TLS), emulator journey-map-real-function and note-foundation-real-function green.
+
+## v09.25 — 1 Oct 2026 — Sections and folder colours (built, switched off until the Rules are published)
+
+Siyagah port round 7a; Owner decisions M2 and M3 (#458, PR #460, Builder run 719).
+
+- **Sections** above your folders: ＋ Section, a header you can fold, and a ⋯ menu to rename, colour, move up or down, or delete it (its folders go back to the top of the list, never to Trash).
+- **Folder colour and bold**: a folder's ⋯ → 🎨 Colour and bold; a coloured dot shows beside its name. A top-level folder's ⋯ → Move to section.
+- **Trash** shows deleted sections, with Restore.
+- **Switched off for now**: the new Firebase Rules must be published first. Until then the buttons are there and say so, and nothing is saved.
+- **Found in review**: Bold made no visible difference, because folder names were already drawn bold. Plain names are a little lighter now, so Bold stands out.
+- **Checks**: journey-sections 349/0 (Architect mutation: names back at the old weight fails the new Bold check 6/6), new emulator suite for the real section writers 21/0 against the candidate Rules (and refused by today's live Rules, as expected), rules-authorisation-executable 49/0, every journey-* suite green, notes-note-windows 218/0, account-card 1235/0, phone-width 217/0, palette-contrast 20/0, behaviour 1004/4 (22g×3 archive.org, 31e TLS), emulator siyagah-round7 75/75.
