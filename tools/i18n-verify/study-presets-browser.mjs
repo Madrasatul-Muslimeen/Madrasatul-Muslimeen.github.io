@@ -245,6 +245,13 @@ console.log("\n=== Study options: saved settings (#410) ===");
   });
   check("a failed save shows the write-failure banner", r.banner, JSON.stringify(r));
   check("a failed save adds no chip and records no write", same(r.chips, ["Seeded night"]) && r.wrote === 0, JSON.stringify(r));
+  // 1 Oct 2026 (Owner: "What's this shows up at the bottom?"): the banner says WHICH save failed, and can be closed.
+  const refText = await page.evaluate(() => document.querySelector("#qr-write-failure-banner [data-write-failure-ref]")?.textContent ?? "");
+  check("the banner names the save that failed (Ref: ...)", /^Ref: .+/.test(refText), refText);
+  const closeBox = await page.evaluate(() => { const r = document.querySelector("#qr-write-failure-banner [data-write-failure-close]")?.getBoundingClientRect(); return r ? { w: r.width, h: r.height } : null; });
+  check("the banner's close button is 44px", !!closeBox && closeBox.w >= 44 && closeBox.h >= 44, JSON.stringify(closeBox));
+  await page.click("#qr-write-failure-banner [data-write-failure-close]");
+  check("pressing ✕ closes the banner", await page.evaluate(() => getComputedStyle(document.getElementById("qr-write-failure-banner")).display === "none"));
   await ctx.close();
 }
 {
