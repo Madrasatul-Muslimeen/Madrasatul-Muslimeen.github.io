@@ -24,7 +24,7 @@ Read the live state yourself, because it moves on after this was written:
   - decision 47: Record Your Progress always on the Āyah card.
 - v09.18 before it was Siyagah round 3 plus the five-suite cleanup.
 - **Round 7's Rules package is on `main` (PR #457), NOT published.** `docs/governance/2026-10-01-siyagah-round7-DEPLOYMENT-candidate.rules` adds folder `color`/`bold`/`sectionId` and new `noteSections`, `noteTags`, `noteTagLinks`; ADR-010 Amendment 1; the Owner's guide `docs/governance/2026-10-01-siyagah-round7-owner-publish-guide.md`. Proof: `npm run siyagah-round7` (75 cases; 8 mutations each caught by its own case; run mutants with `MUTANT=1 RULES_FILE=...`); the real-function suites are green against it. **The Owner publishes; when they say "Round 7 rules are live":** sync `firestore.rules` to the candidate (commit tag `[already-deployed-manually]`), flip the readiness gate(s) with a dated reference, re-run `rules-authorisation-executable`.
-- **Waiting on the Owner: the landing-page drawers demo** (https://claude.ai/artifact/1dXrKwibEP1TUGARu892Fn): wheel moved down so its top numbers are not cut; the Read bar; then three drawer buttons Wheel (Dark, Light, Colour, Names) · Legend (the six colours) · Unit (All units … Āyah) above the Approach bar; drawer choices open above the drawer buttons (asked whether above or below). On their go, write the Builder round; it supersedes the 1 Oct Wheel-drawer demo.
+- **Landing drawers (decision 51, #465) are with the Builder** (dispatched ~19:45 UTC): Wheel · Legend · Unit drawer buttons under the Read bar, choices opening above them, the existing `#wheelLookSwitch`/`#wheelLegendContainer`/`#wheelShowSwitch` MOVED into them; the wheel moved down only enough that its numbers are not cut. Review it (new suite `landing-drawers-browser`; behaviour and the wheel suites updated in place), allocate v09.28.
 - **The Wheel drawer is ON STANDBY (Owner: "Standby for Landing page decision")**. Demo (https://claude.ai/artifact/EQAEavsgP1TFprRf8ZKQs4): the legend / Appearance / Units rows under one ⚙ Wheel button with three chips, and Read · Choose a Unit · Know Your Status above the bottom bar. Build it on their "go".
 - **The Asmaul Husna poster template is being built** from the Owner's design and spec (1 Oct):
   - banner الأَسْمَاءُ الْحُسْنَى, Amiri;
@@ -37,7 +37,7 @@ Read the live state yourself, because it moves on after this was written:
 
 **A new session at this point:**
 1. Writes its id into #159's Active line.
-2. Reads the Owner's answer on the drawers demo and writes the Builder round for it.
+2. Reviews #465's PR when it opens (open it from `builder/issue-465-run-*` if the Builder did not).
 
 ## 1. What this session released (v09.07 → v09.17)
 
