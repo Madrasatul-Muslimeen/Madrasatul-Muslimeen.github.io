@@ -45,7 +45,7 @@ Read the live state yourself, because it moves on after this was written:
    - allocate **v09.18**, merge and report.
 3. Writes and dispatches round 4 (note read mode, handover §4.1–4.3).
 
-## 1. What this session released (v09.07 → v09.15)
+## 1. What this session released (v09.07 → v09.17)
 
 Each version's full account is in `CHANGELOG.md`.
 
@@ -59,6 +59,8 @@ Each version's full account is in `CHANGELOG.md`.
 | v09.13 | Read list tab counts; ⤢ 36px and gold everywhere; Writing-sheet Hide on the top line; heading separators a line or a dot at random |
 | v09.14 | **Take an Approach \| Record Your Progress \| Know Your Status** bar in the Read and Note views (Builder #428 → #430); **🔍 Search** in the banner; ✅ *Record Your Progress* title over the stage buttons (decisions 37–39) |
 | v09.15 | **👤 My account** card + Back as "←" (Builder #432 → #433, Mapping My Journey and Import Notes); **Siyagah round 1, data layer** (Builder #434 → #435); **folder checks read past 100**, a live bug found by the Architect's first emulator run; Asma Explore: Names after Group, and the Name's poster in the wheel's space (decision 43) |
+| v09.16 | **👤 My account on every page** (Builder #437 → #439); Study options: Save on the title line, Search first (decision 44); Writing sheet on a phone: title line + two rows, letter style a pick-list, pans left-right when zoomed (decision 45) |
+| v09.17 | **Mapping My Journey opens as a pop-up folder tray**: draggable, 8 resize handles, full screen on a phone, Folders/Timeline/Path tabs (Siyagah round 2, Builder #440 → #442) |
 
 **The emulator works in this sandbox now.** Run `cd tools/firestore-emulator &&
 npm ci` once, then `npm run journey-map-real-function` etc. Java is present.
