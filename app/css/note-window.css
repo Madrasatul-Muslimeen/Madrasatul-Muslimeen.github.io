@@ -1,0 +1,92 @@
+/* The Note view and its pop-up windows (js/note-window.js), shared by
+   journey-map.html and notes.html (Siyagah port round 6b). Moved here from
+   journey-map.html's own <style> unchanged; the rules bound to that page's own
+   ids (#notePane, #noteLayout) stay there. */
+
+/* Base pieces the view uses, which notes.html's own stylesheet does not have.
+   journey-map.html keeps its own identical copies (its page menu uses them). */
+.folder-menu-wrap { position: relative; flex: 0 0 auto; }
+.folder-menu-btn {
+  width: 40px; height: 40px; padding: 0; font-size: 1.15rem; line-height: 1;
+  border-radius: 0.4rem; border: 1px solid #ccc; background: #fff; color: #1F3A6E; cursor: pointer;
+}
+.bar-palette {
+  display: none; position: absolute; top: 2.4rem; right: 0; z-index: 20;
+  background: #fff; border: 1px solid #ddd; border-radius: 0.5rem;
+  box-shadow: 0 10px 26px rgba(20,30,60,0.25);
+  width: 11rem; max-width: calc(100vw - 2rem); box-sizing: border-box;
+  padding: 0.5rem; flex-direction: column; gap: 0.3rem;
+}
+.bar-palette.open { display: flex; }
+.bar-palette button { width: 100%; text-align: left; }
+.folder-chip { display: inline-block; font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 999px; background: #eef2ff; color: #1F3A6E; margin: 0.1rem 0.2rem 0 0; }
+
+.note-pane-bar { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.4rem; min-height: 40px; }
+.note-pane-bar > * { flex: 0 0 auto; }
+.note-pane-bar > .pane-spacer { flex: 1 1 0; min-width: 0; }
+.pane-btn { min-height: 40px; min-width: 40px; white-space: nowrap; }
+.pane-menu-wrap[hidden] { display: none; }
+.note-pane-bar.folded [data-pane-prev], .note-pane-bar.folded [data-pane-next] { display: none; }
+.note-pane-bar.tight [data-pane-contents-label] { display: none; }
+[data-pane-menu] .pane-fold-item { display: none; }
+.note-pane-bar.folded [data-pane-menu] .pane-fold-item { display: block; }
+.pane-contents-menu { left: 0; right: auto; width: 15rem; max-height: 60vh; overflow-y: auto; }
+.note-pane-title { margin: 0.7rem 0 0.2rem; font-size: 1.25rem; overflow-wrap: anywhere; }
+.note-pane-meta { margin: 0 0 0.4rem; font-size: 0.8rem; color: #777; }
+.note-pane-chips { margin: 0 0 0.6rem; }
+.note-pane-chips .folder-chip { border: 1px solid #c9d3e6; cursor: pointer; font-size: 0.8rem; min-height: 32px; padding: 0.2rem 0.7rem; }
+.note-pane-body { line-height: 1.5; overflow-wrap: anywhere; }
+/* Siyagah round 5 -- edit mode (Owner decision 42.3). Edit is the LAST thing on the header row to fold into the menu. */
+.note-pane-bar.edit-folded > [data-pane-edit-toggle] { display: none; }
+[data-pane-menu] .pane-editfold-item { display: none; }
+.note-pane-bar.edit-folded [data-pane-menu] .pane-editfold-item { display: block; }
+.pane-edit-title { width: 100%; box-sizing: border-box; font: inherit; font-size: 1.15rem; font-weight: 600; min-height: 40px; margin: 0.7rem 0 0.2rem; padding: 0.3rem 0.5rem; border: 1px solid #aab; border-radius: 0.4rem; }
+.pane-edit-toolbar { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.3rem; margin: 0.4rem 0; }
+.pane-edit-toolbar > * { flex: 0 0 auto; }
+.pane-edit-toolbar .tb-btn { min-width: 40px; min-height: 40px; padding: 0 0.4rem; }
+.pane-edit-toolbar.folded .tb-fold { display: none; }
+.pane-edit-toolbar:not(.folded) [data-tb-menu-wrap] { display: none; }
+.pane-edit-toolbar .bar-palette { right: auto; left: 0; width: 12rem; }
+/* Siyagah round 6a -- Note pop-up windows. Menus inside a window must be above it (§5.3), so the window never clips: only its own scroll area does. */
+.note-win { position: fixed; z-index: 1000; display: flex; flex-direction: column; box-sizing: border-box; background: #fff; color: #222; border: 1px solid #999; border-radius: 8px; box-shadow: 0 8px 30px rgba(0,0,0,0.35); outline: none; }
+.note-win.sheet { inset: 0 0 var(--nw-switch, 0px) 0; width: auto; height: auto; border: 0; border-radius: 0; }
+.note-win.sheet-hidden { display: none; }
+.nw-bar { flex: 0 0 44px; display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; background: #1f3a6e; color: #fff; padding: 0 0 0 0.8rem; border-radius: 7px 7px 0 0; cursor: move; touch-action: none; user-select: none; -webkit-user-select: none; }
+.note-win.sheet .nw-bar { cursor: default; border-radius: 0; }
+.nw-title { font-weight: 600; font-size: 1rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nw-close { flex: 0 0 auto; min-width: 44px; min-height: 44px; background: none; border: 0; color: #fff; font-size: 1.4rem; line-height: 1; cursor: pointer; }
+.nw-view { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 0.3rem 0.6rem 0; }
+.nw-view .note-pane-bar { flex: 0 0 auto; }
+.nw-view [data-pane-back], .nw-view .note-pane-title { display: none; }
+.nw-details-row { flex: 0 0 auto; display: flex; align-items: flex-start; gap: 0.4rem; margin: 0.2rem 0; }
+.nw-details-btn { flex: 0 0 auto; min-height: 40px; white-space: nowrap; }
+.nw-details { flex: 1 1 0; min-width: 0; max-height: 1.7rem; overflow: hidden; align-self: center; }
+.nw-details.open { max-height: none; overflow: visible; }
+.nw-details .note-pane-meta { margin: 0 0 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nw-details.open .note-pane-meta { white-space: normal; }
+.nw-details .note-pane-chips { margin: 0; }
+/* Architect review of #453: closed, the Details line is the date alone --
+   the folder chips sat below its one-line clip, half a pill showing. */
+.nw-details:not(.open) .note-pane-chips { display: none; }
+.nw-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; padding-bottom: 1rem; }
+.nw-view .pane-edit-toolbar { flex: 0 0 auto; }
+/* the eight resize handles' own geometry comes from js/float-window.js (handleCss), injected by note-window.js */
+.note-win.sheet .nw-h { display: none; }
+body.jt-dragging .note-win { user-select: none; -webkit-user-select: none; }
+.nw-switch { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5000; height: 56px; box-sizing: border-box; display: flex; gap: 0.4rem; align-items: center; padding: 0 0.4rem; background: #1f3a6e; }
+.nw-switch-btn { flex: 1 1 0; min-width: 0; min-height: 40px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nw-switch-btn.active { outline: 2px solid #fff; font-weight: 600; }
+.pane-edit-body { min-height: 8rem; padding: 0.5rem; border: 1px solid #aab; border-radius: 0.4rem; outline: none; }
+.pane-edit-body:focus { border-color: #1F3A6E; box-shadow: 0 0 0 2px rgba(31,58,110,0.15); }
+.pane-edit-status { margin: 0.3rem 0; font-size: 0.8rem; color: #555; }
+.pane-edit-status.problem { color: #8a1c1c; font-weight: 600; }
+.pane-draft-offer { margin: 0.5rem 0; padding: 0.5rem 0.6rem; border: 1px solid #e0c37a; background: #fff8e1; border-radius: 0.5rem; font-size: 0.9rem; }
+.pane-draft-offer .note-actions { margin-top: 0.4rem; }
+.pane-draft-offer[hidden], .pane-edit-toolbar[hidden], .pane-edit-status[hidden], .pane-edit-title[hidden], .note-pane-title[hidden], [data-pane-edit-toggle][hidden] { display: none; }
+.note-pane-body img, .note-pane-body table { max-width: 100%; }
+.note-sec-h { margin: 0.6rem 0 0.2rem; font-size: 1.05rem; }
+.note-sec-toggle { display: flex; align-items: flex-start; gap: 0.4rem; width: 100%; min-height: 40px; background: none; border: none; color: #1F3A6E; font: inherit; font-weight: 700; text-align: left; padding: 0.2rem 0; cursor: pointer; }
+.note-sec-arrow { flex: 0 0 1.2rem; }
+.note-sec-text { min-width: 0; overflow-wrap: anywhere; }
+.note-sec .note-sec { margin-left: 0.8rem; }
+.note-sec.collapsed > .note-sec-body { display: none; }
