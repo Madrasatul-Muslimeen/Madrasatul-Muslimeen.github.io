@@ -202,3 +202,9 @@ The Owner supplied the Siyagah Architect's handover, stored verbatim at `docs/re
 | # | Question | Owner's words | Meaning |
 |---|---|---|---|
 | 44 | (A phone photo of Study options with two arrows: one from *☆ Save these settings* up to the title line, one from the Search box up to just below it.) | **"Options Card: Move save button to top And move search bar below it (see image mark up)"** | *☆ Save these settings* sits on the Study options title line, between the title and ×; the title line is sticky, so Save stays in reach while scrolling. **Search** (the box and its button, its message and its results card) is the first thing in the body, above User Role. Saved-setting chips and the naming form stay where they were, under Search. Below 390px the Save label wraps to two short lines rather than being cut or reworded (measured: it needs 169px; 131px is left at 320px). |
+
+## 1 Oct 2026 — Writing sheet on a phone: two rows, and move sideways when zoomed
+
+| # | Question | Owner's words | Meaning |
+|---|---|---|---|
+| 45 | (A phone photo of the zoomed Writing sheet: the buttons on three rows under the title.) | **"Button needs to organise, make it 2 rows. Enable the page move right-left on zoom-in to go to a any part of the sheet. (It's now static on zoom in)"** | On a phone: the title line (Writing sheet · ✕ Close · ▴ Hide), then **✏ Write · Pen · Eraser · Undo · Clear**, then **letter style · Save picture · Print A4**. Measured: the three letter-style buttons plus Save and Print need ~430px, wider than any phone, so **Light · Lighter · Like the book became one pick-list** with the same three words; on a PC everything still sits on one line. The sheet now lets a finger pan **left-right as well as up-down** when zoomed (`touch-action` had allowed only up-down). While ✏ Write is on, a finger writes instead of moving the page, as before. |
