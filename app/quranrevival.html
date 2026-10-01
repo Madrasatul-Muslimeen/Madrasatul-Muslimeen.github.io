@@ -888,6 +888,17 @@
        intrinsic 360px, ignoring the calc() entirely) rather than assumed. */
     #wheelSection #wheelResizeWrap { width: 100%; }
     #wheelSection #wheelContainer { width: 100%; display: flex; justify-content: center; }
+    /* Owner decision 51 (Architect review, measured): the slice numbers sit
+       OUTSIDE the wheel's own SVG box, about 3.2% of the wheel's width above
+       it, and on a phone that pushed the top numbers (39, 40, 1, 2) 2-6px
+       above the dark card's top edge, onto the white heading strip where
+       they vanish ("the numbers are cut"). The wheel is moved down by exactly
+       that overhang less what the card's own padding already gives, so the
+       highest number clears the card's top by ~4px at every phone width --
+       and no more ("only that much that numbers are not cut"). The wheel's
+       width here is min(100vw, 100dvh - 420px), the same expression as
+       .mastery-wheel below. Measured at 320/360/390/412 in landing-drawers. */
+    #wheelSection #wheelContainer { padding-top: max(0px, calc(min(100vw, 100dvh - 420px) * 0.032 - 2.4px)); }
     #wheelSection .mastery-wheel { width: min(100%, calc(100dvh - 420px)); max-width: none; }
     #wheelSection .wheel-legend { font-size: 0.68rem; gap: 4px 9px; }
     #wheelSection .legend-swatch { width: 9px; height: 9px; }

@@ -7,6 +7,12 @@
 //   node ... below   (mutation: choices below the drawer row; must FAIL "order")
 //   node ... two     (mutation: two drawers may be open; must FAIL "one at a time")
 import { chromium, newContext, openPage } from "./harness.mjs";
+// Architect review #467: the real catalogue's Approaches. The harness's default
+// fixture has 10, whose wheel prints no numbers near the top at all, so the
+// "numbers are cut" defect the Owner photographed (a 40-slice wheel) could not
+// show up here and the check passed against a wheel the Owner never sees.
+import { SUBJECT_TEMPLATES, MODULE_TEMPLATES, APPROACH_TEMPLATES, TOPIC_TRACKABLE_TEMPLATES } from "../../app/js/catalogue-data.js";
+const SEED_TEMPLATES = { SUBJECT_TEMPLATES, MODULE_TEMPLATES, APPROACH_TEMPLATES, TOPIC_TRACKABLE_TEMPLATES };
 
 let pass = 0, fail = 0;
 function check(name, ok, detail = "") {
@@ -17,7 +23,7 @@ const MUTATE = process.argv[2] || "";
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
 const clear = (page) => page.evaluate(() => document.querySelectorAll('[id*="splash"], .app-splash-overlay').forEach((el) => el.remove()));
 const open = async (lang, width, look) => {
-  const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, viewport: { width, height: width >= 768 ? 1000 : 844 } });
+  const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, viewport: { width, height: width >= 768 ? 1000 : 844 }, seedTemplates: SEED_TEMPLATES });
   if (look) await ctx.addInitScript((l) => { try { localStorage.setItem("mm_card_look", l); } catch {} }, look);
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   if (MUTATE === "two") {
@@ -102,14 +108,23 @@ for (const lang of ["en", "bn"]) {
       check(`${tag} the choices survive a reload; drawers start closed again`, closedAfter && after.look === "true" && after.show === "true", JSON.stringify(after));
     }
 
-    // Wheel numbers vs heading + list top
+    // Wheel numbers vs the CARD's top edge + list top.
+    // UPDATED IN PLACE (Architect review #467): the numbers are pale text on the
+    // dark card, so what cuts them is the card's top edge (#wheelSection), not
+    // the heading -- above that edge they sit on the white strip and vanish.
+    // The highest number must clear the card's top, by no more than ~6px
+    // (decision 51: "only that much that numbers are not cut").
     const g = await page.evaluate(() => {
-      const h = document.querySelector(".wheel-heading").getBoundingClientRect();
-      const top = Math.min(...[...document.querySelectorAll("#wheelContainer .wheel-seg-num")].map((e) => e.getBoundingClientRect().top));
-      return { gap: Math.round((top - h.bottom) * 10) / 10, listTop: Math.round(document.getElementById("wheelSidebarContainer").getBoundingClientRect().top * 10) / 10 };
+      const card = document.getElementById("wheelSection").getBoundingClientRect();
+      const nums = [...document.querySelectorAll("#wheelContainer .wheel-seg-num")];
+      const top = Math.min(...nums.map((e) => e.getBoundingClientRect().top));
+      return { n: nums.length, gap: Math.round((top - card.top) * 10) / 10, listTop: Math.round(document.getElementById("wheelSidebarContainer").getBoundingClientRect().top * 10) / 10 };
     });
     gaps[`${lang} ${width}`] = g;
-    if (width < 768) check(`${tag} the highest wheel number sits below the heading (gap ${g.gap}px, no extra offset added)`, g.gap >= 0 && g.gap <= 12, JSON.stringify(g));
+    if (width < 768) {
+      check(`${tag} the wheel carries the real catalogue's slices (positive control: ${g.n} numbers)`, g.n >= 30, JSON.stringify(g));
+      check(`${tag} the highest wheel number sits inside the dark card, 0-6px below its top (gap ${g.gap}px)`, g.gap >= 0 && g.gap <= 6, JSON.stringify(g));
+    }
     else check(`${tag} the Approach list top is measured (${g.listTop}px)`, g.listTop > 0);
     check(`${tag} no page errors`, errors.filter((e) => !/net::ERR_/.test(e)).length === 0, JSON.stringify(errors.slice(0, 2)));
     await ctx.close();
