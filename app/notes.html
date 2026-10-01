@@ -135,7 +135,7 @@
     import { langText } from "./js/lang.js";
     import { getAppLang, mountCardLookControl } from "./js/prefs.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
-    import { safeWrite } from "./js/errors.js";
+    import { safeWrite, reportWriteFailure } from "./js/errors.js";
     import { getMyMembershipRoles, hydrateMemberships, pickContext, setActiveContext, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { translateStatic, t } from "./js/i18n.js";
@@ -149,6 +149,8 @@
     } from "./js/study-note-service.js";
     import { NOTE_STATUS, listNoteRevisions } from "./js/note-foundation.js";
     import { isDawahReady } from "./js/dawah-readiness.js";
+    import { isSiyagahSectionsReady } from "./js/siyagah-sections-readiness.js";
+    import { loadAllOwnerTags, loadAllOwnerTagLinks, createTag, tagNote, untagNote } from "./js/journey-map-service.js";
     import { createDawahPage } from "./js/dawah-data.js";
 
     translateStatic();
@@ -411,9 +413,34 @@
       }
     }
 
+    // Siyagah round 7b (issue #461): Tags, through the SAME data layer as Mapping
+    // My Journey and behind the SAME gate (siyagah-sections-readiness.js). Shut,
+    // the Note view's ⋯ → 🏷 Tags… still opens, says so in words and writes
+    // nothing. Tagging is not a revision: no Journaling evidence is recorded.
+    let tags = [], tagLinks = [];
+    const tagsReady = () => isSiyagahSectionsReady();
+    const tagGateSentence = () => t("Tags switch on once the new Firebase Rules are published.");
+    async function loadTags() {
+      tags = []; tagLinks = [];
+      if (!tagsReady() || !activeTenantId || !selectedPersonId) return;
+      try {
+        const [a, b] = await Promise.all([
+          loadAllOwnerTags(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, status: NOTE_STATUS.ACTIVE }),
+          loadAllOwnerTagLinks(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, status: NOTE_STATUS.ACTIVE }),
+        ]);
+        tags = a.rows; tagLinks = b.rows;
+      } catch (err) { console.error("[tags load]", err); }
+    }
+    async function tagWrite(writeFn, context) {
+      if (!tagsReady()) { showPageStatus(tagGateSentence()); throw new Error(tagGateSentence()); }
+      try { return await writeFn(); } catch (err) { reportWriteFailure(err, context); throw new Error(t("That did not save.")); }
+    }
+    const safeTagColour = (c) => (typeof c === "string" && /^#[0-9A-Fa-f]{6}$/.test(c) ? c : null);
+
     async function refreshView() {
       renderUnitBanner();
       renderReadOnlyBanner();
+      await loadTags();
       if (!unitKey || !selectedPersonId) { currentRows = []; truncatedMsg.style.display = "none"; renderNotesList(); return; }
       try {
         const { rows, truncated } = await notesForStudyUnit(db, {
@@ -667,6 +694,28 @@
           await retireNote(cur, { confirmed: true });
         })();
         return true;
+      },
+      tagging: {
+        ready: () => tagsReady(),
+        tags: () => tags.map((g) => ({ id: g.tagId, name: g.name, color: safeTagColour(g.color) })).sort((a, b) => String(a.name).localeCompare(String(b.name))),
+        noteTagIds: (note) => tagLinks.filter((l) => l.noteId === note.noteId).map((l) => l.tagId),
+        tag: (note, tagId) => tagWrite(async () => {
+          const linkId = await tagNote(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, noteId: note.noteId, tagId, actorUid: auth.currentUser.uid });
+          if (!tagLinks.some((l) => l.noteId === note.noteId && l.tagId === tagId)) tagLinks.push({ linkId, noteId: note.noteId, tagId, status: NOTE_STATUS.ACTIVE });
+        }, { collection: TENANT.NOTE_TAG_LINKS, action: "tagNote" }),
+        untag: (note, tagId) => tagWrite(async () => {
+          await untagNote(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, noteId: note.noteId, tagId, actorUid: auth.currentUser.uid });
+          tagLinks = tagLinks.filter((l) => !(l.noteId === note.noteId && l.tagId === tagId));
+        }, { collection: TENANT.NOTE_TAG_LINKS, action: "untagNote" }),
+        create: async (name) => {
+          const clean = String(name ?? "").trim();
+          if (tags.some((g) => String(g.name).trim().toLocaleLowerCase() === clean.toLocaleLowerCase())) throw new Error(t("You already have a tag with that name."));
+          return tagWrite(async () => {
+            const tagId = await createTag(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, name: clean, actorUid: auth.currentUser.uid, existingTags: tags });
+            tags = [...tags, { tagId, name: clean, color: null, status: NOTE_STATUS.ACTIVE }];
+            return tagId;
+          }, { collection: TENANT.NOTE_TAGS, action: "createTag" });
+        },
       },
       orderFrom: (el) => [...notesContainer.querySelectorAll(".note-card[data-note-id]")].map((c) => c.dataset.noteId),
       folderFrom: () => null,

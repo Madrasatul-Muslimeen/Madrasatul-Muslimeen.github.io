@@ -776,6 +776,162 @@ export async function setNoteFolderSection(db, { tenantId, ownerPersonId, folder
   });
 }
 
+// ---------------------------------------------------------------------------
+// Siyagah port round 7b (issue #461; Owner decision 42.5: Tags only, never
+// Note Types). Written against the round 7 Rules CANDIDATE (not published);
+// the pages gate every call behind siyagah-sections-readiness.js. Payloads are
+// subsets of the candidate's `hasOnly` lists, and rules-authorisation-
+// executable.mjs checks that both ways. TAGGING NEVER TOUCHES THE NOTE
+// DOCUMENT and never creates a revision: a link is its own small document.
+// A link's noteId and tagId are frozen; untagging RETIRES it, tagging again
+// RESTORES it (a second link for the same Note+tag is never made). Nothing is
+// deleted (I4).
+// ---------------------------------------------------------------------------
+
+const TAG_NAME_MAX = 100;
+
+function requireTagName(name) {
+  requireText("name", name);
+  const trimmed = name.trim();
+  if (!trimmed || trimmed.length > TAG_NAME_MAX) throw new Error("Tag name must be 1 to 100 characters.");
+  return trimmed;
+}
+function sameTagName(a, b) {
+  return String(a).trim().toLocaleLowerCase() === String(b).trim().toLocaleLowerCase();
+}
+
+/** One person's tags, one page, equality-only (tenantId, ownerPersonId, status) -- no composite index (P5-E). */
+export async function listNoteTagsForOwnerPage(db, {
+  tenantId, ownerPersonId, status = NOTE_STATUS.ACTIVE, pageSize = 100, after = null,
+}) {
+  requirePageSize(pageSize);
+  const q = query(collection(db, TENANT.NOTE_TAGS),
+    where("tenantId", "==", requireToken("tenantId", tenantId)),
+    where("ownerPersonId", "==", requireToken("ownerPersonId", ownerPersonId)),
+    where("status", "==", status),
+    ...(after ? [startAfter(after)] : []),
+    limit(pageSize));
+  const snapshot = await getDocs(q);
+  const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  const next = snapshot.docs.length < pageSize ? null : snapshot.docs[snapshot.docs.length - 1];
+  return { rows, next };
+}
+
+/** One person's tag links, one page, equality-only (tenantId, ownerPersonId, status). */
+export async function listNoteTagLinksForOwnerPage(db, {
+  tenantId, ownerPersonId, status = NOTE_STATUS.ACTIVE, pageSize = 100, after = null,
+}) {
+  requirePageSize(pageSize);
+  const q = query(collection(db, TENANT.NOTE_TAG_LINKS),
+    where("tenantId", "==", requireToken("tenantId", tenantId)),
+    where("ownerPersonId", "==", requireToken("ownerPersonId", ownerPersonId)),
+    where("status", "==", status),
+    ...(after ? [startAfter(after)] : []),
+    limit(pageSize));
+  const snapshot = await getDocs(q);
+  const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  const next = snapshot.docs.length < pageSize ? null : snapshot.docs[snapshot.docs.length - 1];
+  return { rows, next };
+}
+
+/** Every link (any status) for ONE Note and ONE tag -- how tagging finds a retired link to restore. Equality-only. */
+async function findTagLinksFor(db, { tenantId, ownerPersonId, noteId, tagId }) {
+  const q = query(collection(db, TENANT.NOTE_TAG_LINKS),
+    where("tenantId", "==", requireToken("tenantId", tenantId)),
+    where("ownerPersonId", "==", requireToken("ownerPersonId", ownerPersonId)),
+    where("noteId", "==", requireToken("noteId", noteId)),
+    where("tagId", "==", requireToken("tagId", tagId)),
+    limit(100));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+}
+
+/**
+ * `existingTags` (optional, the caller's already-loaded tags) lets the
+ * duplicate-name check be made without a read; without it this reads the
+ * owner's active tags once.
+ */
+export async function createNoteTag(db, {
+  tenantId, ownerPersonId, ownerUid, name, color = null, tagId = newNoteEntityId(), actorUid, existingTags = null,
+}) {
+  const owner = ownership({ tenantId, ownerPersonId, ownerUid });
+  const clean = requireTagName(name);
+  requireColour(color);
+  let known = existingTags;
+  if (!known) known = (await listNoteTagsForOwnerPage(db, { tenantId, ownerPersonId })).rows;
+  if (known.some((t) => (t.status ?? NOTE_STATUS.ACTIVE) === NOTE_STATUS.ACTIVE && sameTagName(t.name, clean))) {
+    throw new Error("You already have a tag with that name.");
+  }
+  const data = { tagId, ...owner, name: clean, status: NOTE_STATUS.ACTIVE };
+  if (color !== null) data.color = color;
+  await createDocument(db, TENANT.NOTE_TAGS, noteFoundationDocId(tenantId, tagId), data, actorUid);
+  return tagId;
+}
+
+async function updateOwnTag(db, { tenantId, ownerPersonId, tagId, actorUid, fields, needsActive = true }) {
+  const docId = noteFoundationDocId(tenantId, requireToken("tagId", tagId));
+  await runEnvelopeTransaction(db, actorUid, async (transaction) => {
+    const snapshot = await transaction.get(TENANT.NOTE_TAGS, docId);
+    if (!snapshot.exists()) throw new Error("Tag does not exist.");
+    const tag = snapshot.data();
+    if (tag.tenantId !== tenantId || tag.ownerPersonId !== ownerPersonId) {
+      throw new Error("Cross-owner or cross-tenant tag refused.");
+    }
+    if (needsActive && tag.status !== NOTE_STATUS.ACTIVE) throw new Error("A retired tag cannot be changed.");
+    transaction.update(TENANT.NOTE_TAGS, docId, fields);
+  });
+}
+
+export function renameNoteTag(db, { tenantId, ownerPersonId, tagId, name, actorUid }) {
+  return updateOwnTag(db, { tenantId, ownerPersonId, tagId, actorUid, fields: { name: requireTagName(name) } });
+}
+export function setNoteTagLook(db, { tenantId, ownerPersonId, tagId, color, actorUid }) {
+  return updateOwnTag(db, { tenantId, ownerPersonId, tagId, actorUid, fields: { color: requireColour(color) } });
+}
+export function setNoteTagStatus(db, { tenantId, ownerPersonId, tagId, status, actorUid }) {
+  if (status !== NOTE_STATUS.ACTIVE && status !== NOTE_STATUS.RETIRED) throw new Error("status must be active or retired.");
+  return updateOwnTag(db, { tenantId, ownerPersonId, tagId, actorUid, fields: { status }, needsActive: false });
+}
+
+/**
+ * Put a tag on a Note. If a link for this Note+tag already exists and is
+ * retired, RESTORE it (same linkId); if active, do nothing; only otherwise
+ * create one. Returns the linkId. The Note document is never read or written.
+ */
+export async function tagNote(db, {
+  tenantId, ownerPersonId, ownerUid, noteId, tagId, linkId = newNoteEntityId(), actorUid,
+}) {
+  const owner = ownership({ tenantId, ownerPersonId, ownerUid });
+  const existing = await findTagLinksFor(db, { tenantId, ownerPersonId, noteId, tagId });
+  const active = existing.find((l) => l.status === NOTE_STATUS.ACTIVE);
+  if (active) return active.linkId;
+  const retired = existing.find((l) => l.status === NOTE_STATUS.RETIRED);
+  if (retired) {
+    const docId = noteFoundationDocId(tenantId, retired.linkId);
+    await runEnvelopeTransaction(db, actorUid, async (transaction) => {
+      transaction.update(TENANT.NOTE_TAG_LINKS, docId, { status: NOTE_STATUS.ACTIVE });
+    });
+    return retired.linkId;
+  }
+  await createDocument(db, TENANT.NOTE_TAG_LINKS, noteFoundationDocId(tenantId, linkId), {
+    linkId, ...owner, noteId: requireToken("noteId", noteId), tagId: requireToken("tagId", tagId), status: NOTE_STATUS.ACTIVE,
+  }, actorUid);
+  return linkId;
+}
+
+/** Take a tag off a Note: RETIRE the link (never delete it). A no-op when there is no active link. */
+export async function untagNote(db, { tenantId, ownerPersonId, noteId, tagId, actorUid }) {
+  const existing = await findTagLinksFor(db, { tenantId, ownerPersonId, noteId, tagId });
+  const active = existing.filter((l) => l.status === NOTE_STATUS.ACTIVE);
+  for (const link of active) {
+    const docId = noteFoundationDocId(tenantId, link.linkId);
+    await runEnvelopeTransaction(db, actorUid, async (transaction) => {
+      transaction.update(TENANT.NOTE_TAG_LINKS, docId, { status: NOTE_STATUS.RETIRED });
+    });
+  }
+  return active.length;
+}
+
 export async function createNotePlacement(db, {
   tenantId, ownerPersonId, ownerUid, noteId, folderId,
   order = 0, placementId = newNoteEntityId(), actorUid,

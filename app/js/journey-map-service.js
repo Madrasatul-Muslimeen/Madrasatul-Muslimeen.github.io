@@ -26,6 +26,14 @@ import {
   setNoteSectionLook,
   setNoteSectionStatus,
   commitSectionBatch,
+  listNoteTagsForOwnerPage,
+  listNoteTagLinksForOwnerPage,
+  createNoteTag,
+  renameNoteTag,
+  setNoteTagLook,
+  setNoteTagStatus,
+  tagNote as tagNoteRaw,
+  untagNote as untagNoteRaw,
   setNoteFolderLook,
   setNoteFolderSection,
   listNotesForOwnerPage,
@@ -797,4 +805,49 @@ export async function trashSection(db, { tenantId, ownerPersonId, sectionId, act
 /** Restore a section from Trash. Its former folders are NOT pulled back: they stay where Delete put them. */
 export async function restoreSection(db, { tenantId, ownerPersonId, sectionId, actorUid } = {}) {
   return setNoteSectionStatus(db, { tenantId, ownerPersonId, sectionId, status: NOTE_STATUS.ACTIVE, actorUid });
+}
+
+// ---------------------------------------------------------------------------
+// Siyagah port round 7b (issue #461; Owner decision 42.5) -- TAGS. Written
+// against the round 7 Rules CANDIDATE (not published); the PAGE gates every
+// call behind siyagah-sections-readiness.js. Equality-only reads, paged at 100,
+// no `orderBy`. Tagging never touches the Note and never makes a revision.
+// ---------------------------------------------------------------------------
+
+export async function loadAllOwnerTags(db, { tenantId, ownerPersonId, status, pageSize = 100 } = {}) {
+  return loadAllPages((after) => listNoteTagsForOwnerPage(db, { tenantId, ownerPersonId, status, pageSize, after }));
+}
+
+export async function loadAllOwnerTagLinks(db, { tenantId, ownerPersonId, status, pageSize = 100 } = {}) {
+  return loadAllPages((after) => listNoteTagLinksForOwnerPage(db, { tenantId, ownerPersonId, status, pageSize, after }));
+}
+
+export async function createTag(db, { tenantId, ownerPersonId, ownerUid = null, name, color = null, actorUid, existingTags = null } = {}) {
+  return createNoteTag(db, { tenantId, ownerPersonId, ownerUid, name, color, actorUid, existingTags });
+}
+
+export async function renameTag(db, { tenantId, ownerPersonId, tagId, name, actorUid } = {}) {
+  return renameNoteTag(db, { tenantId, ownerPersonId, tagId, name, actorUid });
+}
+
+export async function setTagLook(db, { tenantId, ownerPersonId, tagId, color, actorUid } = {}) {
+  return setNoteTagLook(db, { tenantId, ownerPersonId, tagId, color, actorUid });
+}
+
+/** Trash a tag. Its links stay exactly as they are; a retired tag simply stops showing. */
+export async function trashTag(db, { tenantId, ownerPersonId, tagId, actorUid } = {}) {
+  return setNoteTagStatus(db, { tenantId, ownerPersonId, tagId, status: NOTE_STATUS.RETIRED, actorUid });
+}
+
+/** Restore a tag from Trash; it comes back with its Notes. */
+export async function restoreTag(db, { tenantId, ownerPersonId, tagId, actorUid } = {}) {
+  return setNoteTagStatus(db, { tenantId, ownerPersonId, tagId, status: NOTE_STATUS.ACTIVE, actorUid });
+}
+
+export async function tagNote(db, { tenantId, ownerPersonId, ownerUid = null, noteId, tagId, actorUid } = {}) {
+  return tagNoteRaw(db, { tenantId, ownerPersonId, ownerUid, noteId, tagId, actorUid });
+}
+
+export async function untagNote(db, { tenantId, ownerPersonId, noteId, tagId, actorUid } = {}) {
+  return untagNoteRaw(db, { tenantId, ownerPersonId, noteId, tagId, actorUid });
 }
