@@ -223,7 +223,10 @@ function functionBody(source, name) {
 
 check("editing controls (rename/move/remove/reorder) are built by folderRowHtml() alone, never by the Timeline or Path renderers", () => {
   const rowHtml = functionBody(page, "folderRowHtml");
-  for (const marker of ["data-folder-rename", "data-folder-move", "data-folder-remove", "data-folder-up", "data-folder-down"]) {
+  // UPDATED for Siyagah round 3 (#443), reason recorded: the folder menu's
+  // Remove item was REPLACED by Delete (-> Trash, restorable), and Copy to…
+  // was added beside Move to….
+  for (const marker of ["data-folder-rename", "data-folder-copy", "data-folder-move", "data-folder-delete", "data-folder-up", "data-folder-down"]) {
     assert.ok(rowHtml.includes(marker), `folderRowHtml() no longer builds ${marker}`);
   }
   const timeline = functionBody(page, "renderTimelineView");
@@ -454,49 +457,31 @@ check("creating a new user folder computes its order from nextOrder() over the r
 // active-children precheck comes before the confirmation is ever opened.
 // MUTATION-PROVEN as before -- removing the precheck's own early return
 // still must make the ordering assertion fail.
-function retirePrecheckOrdered(source) {
-  const body = functionBody(source, "removeFolderPrompt");
-  const precheckAt = body.indexOf("children");
-  const openConfirmAt = body.indexOf("pendingRemoveKey");
-  if (precheckAt === -1 || openConfirmAt === -1) return false;
-  return precheckAt < openConfirmAt;
-}
-check("retiring a folder with active children is refused in words BEFORE the in-page Remove confirmation is even offered", () => {
-  assert.ok(retirePrecheckOrdered(page), "removeFolderPrompt() no longer checks for active children before opening the in-page confirmation");
-});
-check("MUTATION-PROVEN: removing the active-children precheck makes the ordering assertion above fail", () => {
-  const marker = "if ((node.children ?? []).length > 0) {";
-  const at = page.indexOf(marker);
-  assert.ok(at !== -1, "the active-children precheck's own guard clause is not where expected");
-  const blockEnd = page.indexOf("\n      }\n", at) + "\n      }\n".length;
-  const mutated = page.slice(0, at) + page.slice(blockEnd);
-  assert.notEqual(mutated, page, "the mutation did not change the source -- the precheck's own shape must have changed");
-  assert.ok(!retirePrecheckOrdered(mutated), "removing the precheck did not make the ordering check fail -- it is not proving what it claims to");
-});
-check("the retire confirmation is shown ON THE PAGE ITSELF, never via the browser's own confirm() dialog, uses the issue's own required wording -- \"Remove\" -- and states in words that the folder is kept, not deleted, and its Notes are untouched (I4)", () => {
-  assert.ok(!/\bconfirm\(/.test(page), "window.confirm() must not be called anywhere on this page -- issue #259 requires the confirmation to live on the page itself");
-  const body = functionBody(page, "folderRemoveConfirmHtml");
-  assert.ok(/t\("Remove"\)/.test(body), 'the in-page Remove confirmation must be worded "Remove"');
-  assert.ok(/kept, not deleted/.test(body), "the in-page Remove confirmation does not state in words that the folder is kept, not deleted");
-  assert.ok(/untouched/.test(body), "the in-page Remove confirmation does not state in words that filed Notes are untouched");
-  // MUTATION-PROVEN: the confirmation is DATA-DRIVEN (pendingRemoveKey), not
-  // decoration -- rendered only for the one folder whose Remove was pressed.
-  assert.ok(/pendingRemoveKey === key/.test(functionBody(page, "folderRowHtml")),
-    "folderRowHtml() no longer gates the confirmation panel on pendingRemoveKey -- it would render for every folder, or none, regardless of which Remove was pressed");
-});
-check("Remove never calls a Note-writing function -- only retireFolder() -- and the actual write happens ONLY once the reader presses the in-page confirmation's own button, never on removeFolderPrompt()'s own precheck pass", () => {
-  const promptBody = functionBody(page, "removeFolderPrompt");
-  assert.ok(!/retireFolder\(/.test(promptBody), "removeFolderPrompt() must not itself call retireFolder() -- that must wait for the reader's own confirmation");
-  for (const forbidden of ["createPermanentNote", "updatePermanentNoteContent", "retirePermanentNote", "createNotePlacement", "moveNotePlacement", "retireNotePlacement"]) {
-    assert.ok(!promptBody.includes(forbidden) , `removeFolderPrompt() must never touch a Note or a placement: found ${forbidden}`);
+//
+// UPDATED for Siyagah round 3 (#443), reason recorded: the folder menu's
+// Remove (retire, with an in-page confirmation and a client-side
+// active-children precheck) was REPLACED by Delete, which calls the service's
+// trashFolder(). The refusal rule moved with it: M4 -- a folder whose subtree
+// still holds Notes is refused, with the service's own sentence, before any
+// write -- lives in trashFolder(), and is exercised end to end (and
+// mutation-proven) by journey-folder-menus-browser.mjs, which clicks the real
+// Delete item. What this static suite can still say is where the call goes.
+check("Delete calls trashFolder() and never retireFolder(); the old Remove flow (retire, confirmation panel, pendingRemoveKey) is gone", () => {
+  const body = functionBody(page, "deleteFolder");
+  assert.ok(/trashFolder\(/.test(body), "deleteFolder() no longer calls trashFolder()");
+  assert.ok(!/retireFolder/.test(page), "retireFolder is still referenced on this page -- Delete replaced Remove (Trash is restorable, decision 42.1)");
+  for (const gone of ["pendingRemoveKey", "folderRemoveConfirmHtml", "data-folder-remove", "removeFolderPrompt", "confirmRemoveFolder"]) {
+    assert.ok(!page.includes(gone), `${gone} is still on the page -- Delete replaced Remove`);
   }
-  const confirmBody = functionBody(page, "confirmRemoveFolder");
-  assert.ok(/retireFolder\(/.test(confirmBody), "confirmRemoveFolder() no longer calls retireFolder()");
+  assert.ok(!/\bconfirm\(/.test(page), "window.confirm() must not be called anywhere on this page");
   for (const forbidden of ["createPermanentNote", "updatePermanentNoteContent", "retirePermanentNote", "createNotePlacement", "moveNotePlacement", "retireNotePlacement"]) {
-    assert.ok(!confirmBody.includes(forbidden), `confirmRemoveFolder() must never touch a Note or a placement: found ${forbidden}`);
+    assert.ok(!body.includes(forbidden), `deleteFolder() must never touch a Note or a placement: found ${forbidden}`);
   }
-  assert.ok(/data-folder-remove-confirm-yes\]"\)\?\.addEventListener\("click",\s*\(\)\s*=>\s*confirmRemoveFolder\(node\)\)/.test(functionBody(page, "wireFolderTree")),
-    "the in-page confirmation's own \"Remove\" button no longer calls confirmRemoveFolder() directly");
+});
+check("Trash has Restore only: no erase, no Empty Trash, and no Firestore delete anywhere on the page", () => {
+  const body = functionBody(page, "renderTrashView");
+  assert.ok(/restoreFolder\(/.test(body) && /restoreNote\(/.test(body) && /loadOwnerTrash\(/.test(body), "renderTrashView() no longer uses loadOwnerTrash/restoreFolder/restoreNote");
+  assert.ok(!/deleteDoc|Empty Trash|delete forever/i.test(page), "the page offers an erase or Empty Trash -- decision 42.1 forbids it");
 });
 // UPDATED for issue #259, reason recorded: "removeFolderPrompt" and
 // "renameFolderPrompt" no longer perform any write at all -- rename became
@@ -505,7 +490,8 @@ check("Remove never calls a Note-writing function -- only retireFolder() -- and 
 // confirmRemoveFolder() retires) -- so the refreshAll-after-a-real-write
 // claim now names the functions that actually write.
 check("reordering, moving, renaming and removing a folder each refresh from the real data afterwards, never just patch the DOM by hand", () => {
-  for (const fn of ["reorderFolderSwap", "moveFolderPrompt", "confirmRemoveFolder", "reorderNoteInFolder", "commitInlineRename"]) {
+  // UPDATED for Siyagah round 3 (#443): the writers are now these.
+  for (const fn of ["reorderFolderSwap", "moveFolderTo", "copyFolderTo", "deleteFolder", "copyNoteTo", "moveNoteTo", "reorderNoteInFolder", "commitInlineRename"]) {
     const body = functionBody(page, fn);
     assert.ok(/await refreshAll\(\);/.test(body), `${fn}() does not call refreshAll() after a successful write`);
   }
