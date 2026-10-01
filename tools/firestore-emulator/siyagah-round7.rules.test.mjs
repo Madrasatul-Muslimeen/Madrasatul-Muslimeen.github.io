@@ -40,7 +40,13 @@ if (!process.env.MUTANT) {
     let k = j; while (k < candLines.length && candLines[k] !== line) k++;
     if (k < candLines.length) j = k + 1; else missing.push(line);
   }
-  assert.deepEqual(missing, [...REWRITTEN, ...REWRITTEN], `live Rules lines missing from the candidate: ${JSON.stringify(missing)}`);
+  // UPDATED IN PLACE 1 Oct 2026: the Owner published this candidate and
+  // firestore.rules was synced to it, so the two files are now the SAME file.
+  // Before publication exactly the rewritten line was missing (twice); after
+  // it, nothing is. Either state passes; anything else (a live line lost from
+  // the candidate, or the two drifting apart after publication) fails.
+  const published = live.trimEnd() === candidate.trimEnd();
+  assert.deepEqual(missing, published ? [] : [...REWRITTEN, ...REWRITTEN], `live Rules lines missing from the candidate: ${JSON.stringify(missing)}`);
 }
 
 const T = "t1", T2 = "t2";

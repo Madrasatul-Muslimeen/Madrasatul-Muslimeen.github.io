@@ -19062,3 +19062,11 @@ Siyagah port round 7b; Owner decision 42.5, Tags only (#461, PR #462, Builder ru
 - **Tagging never changes the Note itself** and is not saved as a new version of it.
 - **Switched off for now**, like sections and folder colours: the new Firebase Rules must be published first. Until then the buttons are there and say so, and nothing is saved.
 - **Checks**: journey-tags 363/0 (Architect mutation: re-tagging making a second link fails 12 checks), journey-sections 349/0, rules-authorisation-executable 56/0, every journey-* suite green, notes-note-windows 218/0, account-card 1235/0, phone-width 217/0, palette-contrast 20/0, behaviour 1004/4 (22g×3 archive.org, 31e TLS); emulator: round 7 Rules 75/75, real section writers 21/0, real tag writers 25/0.
+
+## v09.27 — 1 Oct 2026 — Sections, folder colours and Tags switched on
+
+The Owner published the round 7 Firebase Rules ("Round 7 rules are live.").
+
+- **Now working in Mapping My Journey**: ＋ Section and section headers; a folder's 🎨 Colour and bold and Move to section; Tags on Notes (⋯ → 🏷 Tags… in any open Note, on Mapping My Journey and on My Notes) and the Tags list below your folders; deleted sections and tags in Trash with Restore.
+- `firestore.rules` now matches the published Rules exactly; the switch is recorded in `docs/reports/2026-10-01-siyagah-round7-enabled.md`.
+- **Checks** against the published Rules: journey-sections 349/0, journey-tags 363/0, rules-authorisation-executable 56/0, every journey-* suite green, account-card 1235/0, phone-width 217/0; emulator: round 7 Rules 75/75, real section writers 21/0, real tag writers 25/0, Mapping My Journey and Note Foundation real functions green.
