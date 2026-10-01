@@ -1206,10 +1206,13 @@ console.log("\n=== 27. Shell round 14: the Study options bars, and Search ===");
       [...bar.querySelectorAll("select, input, button")].map((el) => el.id)
     )
   );
-  check("27b bar 1 is User Role + Student", JSON.stringify(bars[0]) === '["tenantSelect","personSelect"]', JSON.stringify(bars[0]));
-  check("27b bar 2 is Study Unit + unit number + Surah + Ayah",
-        JSON.stringify(bars[1]) === '["unitTypeSelect","unitNumSelect","surahSelect","ayahSelect","rangeFromSelect","rangeToSelect"]', JSON.stringify(bars[1]));
-  check("27b bar 3 is one Search field and one Search button", JSON.stringify(bars[2]) === '["jumpInput","searchBtn"]', JSON.stringify(bars[2]));
+  // UPDATED in place (Owner decision 44, 1 Oct 2026: "move search bar below" the
+  // Save button, which went up onto the title line). Search is now bar 1 and the
+  // other bars each moved down one; the controls in each bar are unchanged.
+  check("27b bar 1 is one Search field and one Search button", JSON.stringify(bars[0]) === '["jumpInput","searchBtn"]', JSON.stringify(bars[0]));
+  check("27b bar 2 is User Role + Student", JSON.stringify(bars[1]) === '["tenantSelect","personSelect"]', JSON.stringify(bars[1]));
+  check("27b bar 3 is Study Unit + unit number + Surah + Ayah",
+        JSON.stringify(bars[2]) === '["unitTypeSelect","unitNumSelect","surahSelect","ayahSelect","rangeFromSelect","rangeToSelect"]', JSON.stringify(bars[2]));
   check("27b bar 4 is Approach + Track", JSON.stringify(bars[3]) === '["trackableSelect","trackUnitBtn"]', JSON.stringify(bars[3]));
   // Shell round 19: there is no fifth bar. Reading view (round 18) and
   // Listening (round 19) are both always-visible sections now, so neither
@@ -1359,7 +1362,7 @@ console.log("\n=== 27. Shell round 14: the Study options bars, and Search ===");
   await page.selectOption("#unitTypeSelect", "range");
   await page.waitForTimeout(500);
   const measureRange = () => page.evaluate(() => {
-    const bar = document.querySelectorAll(".study-options-body > .opt-bar")[1];
+    const bar = document.querySelector(".study-options-body > .opt-bar-units"); // by name, not position (decision 44 moved Search above it)
     const cells = [...bar.children].filter((c) => c.getBoundingClientRect().height > 0);
     const rows = [];
     for (const c of cells) {
