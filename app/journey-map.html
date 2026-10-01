@@ -1151,7 +1151,7 @@
       body.setAttribute("role", "textbox");
       body.setAttribute("aria-multiline", "true");
       body.setAttribute("aria-label", t("Note text"));
-      body.innerHTML = normBody(draft ? draft.bodyHtml : note.bodyHtml);
+      body.innerHTML = sanitizeNoteHtml(draft ? draft.bodyHtml : note.bodyHtml);
       paneBodyEl.appendChild(body);
       editTitleEl.setAttribute("aria-label", t("Note title"));
       renderEditToolbar();

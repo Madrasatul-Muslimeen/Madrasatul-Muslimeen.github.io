@@ -38,7 +38,8 @@ const revs = (page, id) => page.evaluate((i) => window.__DATA.noteRevisions.filt
 const draftOf = (page, id) => page.evaluate((i) => localStorage.getItem(`qr.journeyNoteDraft.${i}`), id);
 const noteRow = (page, id) => page.evaluate((i) => { const n = window.__DATA.notes.find((x) => x.noteId === i); return { title: n.title, rev: n.currentRevisionId, body: n.bodyHtml }; }, id);
 const until = (page, fn, arg) => page.waitForFunction(fn, arg, { timeout: 8000 });
-const waitRevs = (page, id, n) => until(page, ([i, c]) => window.__DATA.noteRevisions.filter((r) => r.noteId === i).length === c, [id, n]);
+// Never throws: a revision that does not arrive is a FAILED check (the count assertion that follows), not a crashed suite.
+const waitRevs = (page, id, n) => until(page, ([i, c]) => window.__DATA.noteRevisions.filter((r) => r.noteId === i).length === c, [id, n]).catch(() => null);
 const editStatus = (page) => page.evaluate(() => { const e = document.querySelector("[data-edit-status]"); return e && !e.hidden ? e.textContent : ""; });
 const pageStatus = (page) => page.evaluate(() => { const e = document.getElementById("pageStatusMsg"); return e && getComputedStyle(e).display !== "none" ? e.textContent : ""; });
 const noSideways = (page) => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
