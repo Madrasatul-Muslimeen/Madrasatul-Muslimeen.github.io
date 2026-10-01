@@ -498,6 +498,8 @@
      line (fitWheelHeading() steps the size down until it fits). */
   .wheel-heading { display: flex; align-items: baseline; justify-content: center; gap: 0.45rem; white-space: nowrap; overflow: hidden; }
   .wheel-heading > span { flex: 0 0 auto; }
+  .wheel-heading .wheel-title-main { font-weight: 500; }
+  .wheel-heading .wheel-title-approach { font-weight: 700; }
   .wheel-heading.wheel-heading-wrapped { flex-wrap: wrap; white-space: normal; row-gap: 0; text-align: center; }
   .wheel-heading.wheel-heading-wrapped > .wheel-title-sep { display: none; }
   /* Decision 36 lives on in the one gap: a thin line, or a dot, at random
@@ -684,7 +686,7 @@
   .wheel-drawer-panel[hidden] { display: none; }
   /* Owner, 1 Oct 2026 (the same photo, arrows drawn): Wheel to the left
      edge, Unit to the right, Legend in the middle. */
-  .wheel-drawer-row { display: flex; justify-content: space-between; gap: 0.35rem; align-self: stretch; box-sizing: border-box; padding: 0 0.75rem; }
+  .wheel-drawer-row { display: flex; justify-content: space-between; gap: 0.35rem; align-self: stretch; box-sizing: border-box; padding: 0; }
   .wheel-drawer-row .wheel-drawer-btn { flex: 0 0 auto; min-width: 5.5rem; }
   .wheel-drawer-btn {
     flex: 1 1 0; min-width: 0; min-height: 40px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
@@ -901,17 +903,28 @@
        and no more ("only that much that numbers are not cut"). The wheel's
        width here is min(100vw, 100dvh - 420px), the same expression as
        .mastery-wheel below. Measured at 320/360/390/412 in landing-drawers. */
-    #wheelSection #wheelContainer { padding-top: max(0px, calc(min(100vw, 100dvh - 420px) * 0.032 - 2.4px)); }
+    #wheelSection #wheelContainer { padding-top: calc(min(100vw, 100dvh - 420px) * 0.032 + 7px); }
     /* Owner, 1 Oct 2026 (a phone photo, the capsule bar over 19-23): "The
        capsule cut the numbers at the bottom. Fix. Keep a elegantly looking
        distance. We got space Below." The bottom numbers overhang the SVG by
        the same ~3.2% of the wheel's width as the top ones; this clears them
        and leaves ~12px before Read | Choose a Unit | Know Your Status. */
-    #wheelSection #wheelContainer { padding-bottom: calc(min(100vw, 100dvh - 420px) * 0.032 + 9px); }
+    /* Owner, 1 Oct 2026: "Open all button should not be visible on the
+       screen visible area." The wheel column fills the first screen down to
+       the dock (fitLandingFirstScreen() sets --landing-col-min), the wheel
+       group centred in it, so the Approach list begins just below the fold
+       and is reached by scrolling, as before. */
+    body.landing-view #wheelSection .wheel-col { min-height: var(--landing-col-min, 0px); justify-content: center; }
+    #wheelSection #wheelContainer { padding-bottom: calc(min(100vw, 100dvh - 420px) * 0.032 + 19px); }
     #wheelSection .mastery-wheel { width: min(100%, calc(100dvh - 420px)); max-width: none; }
     #wheelSection .wheel-legend { font-size: 0.68rem; gap: 4px 9px; }
     #wheelSection .legend-swatch { width: 9px; height: 9px; }
     #wheelPopupView > .wheel-heading { margin-top: 0; margin-bottom: 0.15rem; font-size: 1rem; }
+    /* Owner, 1 Oct 2026 (demo round): "Make the Master wheel bar little
+       wider and HIGHLIGHT the 'Approach....40 Ways' bold." A larger line
+       with more air above and below; fitWheelHeading() still steps it down
+       if a long tenant title would not fit. */
+    #wheelPopupView > .wheel-heading { font-size: 1.15rem; padding: 0.35rem 0 0.45rem; margin-bottom: 0; }
     /* Tighter rows on a phone -- same 13px name, just less padding around it,
        which buys roughly one extra visible Approach per screen. */
     #wheelSection .ways-list { gap: 4px; }
@@ -6390,6 +6403,25 @@
       }).observe(document.querySelector(".wheel-heading"));
     }
     document.fonts?.ready?.then(fitWheelHeading);
+    /** Owner, 1 Oct 2026 -- below 721px the landing's first screen ends at
+        the dock: the wheel column is made tall enough that the Approach list
+        (and its Open all button) starts just past the bottom of the visible
+        area. Measured, never guessed: the header's height changes with the
+        tagline and the language. */
+    function fitLandingFirstScreen() {
+      const col = document.querySelector("#wheelSection .wheel-col");
+      if (!col) return;
+      const dock = document.getElementById("dock");
+      const want = (innerWidth <= 720 && document.body.classList.contains("landing-view") && col.getBoundingClientRect().height)
+        ? Math.max(0, Math.round(innerHeight - (dock?.offsetHeight ?? 0) - (col.getBoundingClientRect().top + scrollY) + 8)) + "px"
+        : "0px";
+      if (col.style.getPropertyValue("--landing-col-min") !== want) col.style.setProperty("--landing-col-min", want);
+    }
+    if (typeof ResizeObserver === "function") {
+      const fitRO = new ResizeObserver(() => fitLandingFirstScreen());
+      ["topNav", "taglineStrip", "dock", "wheelPopupView"].forEach((id) => { const el = document.getElementById(id); if (el) fitRO.observe(el); });
+    }
+    addEventListener("resize", fitLandingFirstScreen);
     // Follow-up round: Map(subjectId -> courseOffer contextId) for
     // selectedPersonId -- same mechanism topic-study.js/routine-study.js
     // already use (course-offers.js's programSubjectMapFromEnrollments()).
