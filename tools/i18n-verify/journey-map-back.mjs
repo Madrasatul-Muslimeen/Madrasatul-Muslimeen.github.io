@@ -20,7 +20,9 @@ for (const lang of ["en", "bn"]) {
     const ctx = await newContext(browser, { appLang: lang, viewport: { width, height: 800 } });
     // Arrive the way a reader does: from Quran Study, through the dock tab.
     const { page } = await openPage(ctx, "/app/quranrevival.html");
-    await Promise.all([page.waitForURL(/journey-map\.html#folders/), page.click("#tabJourneyBtn")]);
+    // Siyagah round 2: the dock tab opens the tray now, so arrive on the full page by
+    // navigating from Quran Study (the same referrer a plain link gives).
+    await Promise.all([page.waitForURL(/journey-map\.html#folders/), page.evaluate(() => { location.href = "journey-map.html#folders"; })]);
     await page.waitForTimeout(400);
     const box = await page.evaluate(() => {
       const el = document.getElementById("backLink");

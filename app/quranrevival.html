@@ -9208,7 +9208,10 @@
     // Folders view (the issue's own ask) via the hash journey-map.html's
     // own viewFromHash() reads.
     tabJourneyBtn.addEventListener("click", () => {
-      window.location.href = "journey-map.html#folders";
+      // Owner decisions 41/42.7: opens the folder tray over this screen. The
+      // plain navigation stays as the fallback if the module cannot load.
+      import("./js/journey-tray.js").then((m) => m.openJourneyTray())
+        .catch(() => { window.location.href = "journey-map.html#folders"; });
     });
 
     /** Explore's own full screen -- two states, a separate mechanism from
