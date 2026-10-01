@@ -190,3 +190,9 @@ The Owner supplied the Siyagah Architect's handover, stored verbatim at `docs/re
 | 42.5 | Tags and Note Types (not in M1–M6; need a Rules change). | **"we need Tag only not 'type' here."** | **Tags are built; Note Types are not.** Tags join folder colour/bold and sections in the one Rules package the Owner publishes. |
 | 42.6 | Siyagah's Primary quick-capture inbox. | **"yes"** (leave it out) | Not built. |
 | 42.7 | The Mapping My Journey button opens the folder tray as a pop-up over the current screen (draggable, resizable from every side and corner; a full-screen sheet on a phone), with Timeline and Path as tabs inside it. | **"ok"** | As stated. |
+
+## 1 Oct 2026 — Asma ul Husna in Explore
+
+| # | Question | Owner's words | Meaning |
+|---|---|---|---|
+| 43 | (A screenshot of Explore → Asma ul Husna with one Name chosen: the Names pull-down last on the bar, and the wheel's space empty, saying "References don't need a wheel".) | **"Name column should move after 'Group'. Then, the Name poster should appear in the space marked on selection of individual name. (I am giving you a separate task for AH Names POSTER making)"** | The bar reads **Group · Names · Dual · …(every other classification) · ⋯**. With one Name chosen, its **poster** fills the wheel's space; a tap opens it full size. The poster is today's generated poster (`renderAsmaPosterHtml`); the Owner's separate poster-making task will change how it looks, not where it appears. |
