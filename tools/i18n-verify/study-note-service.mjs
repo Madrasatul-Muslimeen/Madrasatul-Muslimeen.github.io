@@ -110,7 +110,15 @@ wiringSource = wiringSource
   .replace(/import \{ writeStudyActivityEvidence \} from "\.\/study-activity-evidence-store\.js";/,
     "const { writeStudyActivityEvidence } = globalThis.__snsStore;")
   .replace(/import \{[^}]*\} from "\.\/study-evidence-readiness\.js";/,
-    "const { isStudyEvidencePersistenceReady, studyEvidenceUnavailableReason } = globalThis.__snsReadiness;");
+    "const { isStudyEvidencePersistenceReady, studyEvidenceUnavailableReason } = globalThis.__snsReadiness;")
+  // UPDATED IN PLACE, 1 Oct 2026 (Architect cleanup, handover 2c): v08.106/107
+  // added two imports to study-event-wiring.js that this loader never learned,
+  // so the leftover guard below threw before a single case ran. Both modules
+  // import nothing at all, so they are loaded REAL, by absolute file URL --
+  // not replaced by a stand-in that could quietly stop matching them. The
+  // leftover guard is unchanged and still refuses any other relative import.
+  .replace(/from "\.\/(study-activity-evidence-id|study-reading-units-readiness)\.js";/g,
+    (_, name) => `from "${new URL(`../../app/js/${name}.js`, import.meta.url).href}";`);
 for (const leftover of [/from "\.\//, /gstatic\.com/]) {
   assert.ok(!leftover.test(wiringSource), `a wiring import was not rewritten: ${leftover}`);
 }
