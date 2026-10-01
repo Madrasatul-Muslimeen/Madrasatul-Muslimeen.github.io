@@ -862,9 +862,10 @@ export async function createNoteTag(db, {
   if (known.some((t) => (t.status ?? NOTE_STATUS.ACTIVE) === NOTE_STATUS.ACTIVE && sameTagName(t.name, clean))) {
     throw new Error("You already have a tag with that name.");
   }
-  const data = { tagId, ...owner, name: clean, status: NOTE_STATUS.ACTIVE };
-  if (color !== null) data.color = color;
-  await createDocument(db, TENANT.NOTE_TAGS, noteFoundationDocId(tenantId, tagId), data, actorUid);
+  // `color` is optional in the candidate (not in hasAll): sent only when chosen.
+  await createDocument(db, TENANT.NOTE_TAGS, noteFoundationDocId(tenantId, tagId), {
+    tagId, ...owner, name: clean, status: NOTE_STATUS.ACTIVE, ...(color !== null ? { color } : {}),
+  }, actorUid);
   return tagId;
 }
 
