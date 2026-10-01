@@ -147,10 +147,9 @@
     import {
       createStudyNote, reviseStudyNote, retireStudyNote, notesForStudyUnit, recordJournalEvidence,
     } from "./js/study-note-service.js";
-    import { NOTE_STATUS, listNoteRevisions } from "./js/note-foundation.js";
+    import { NOTE_STATUS, listNoteRevisions, listNoteTagsForOwnerPage, listNoteTagLinksForOwnerPage, createNoteTag as createTag, tagNote, untagNote } from "./js/note-foundation.js";
     import { isDawahReady } from "./js/dawah-readiness.js";
     import { isSiyagahSectionsReady } from "./js/siyagah-sections-readiness.js";
-    import { loadAllOwnerTags, loadAllOwnerTagLinks, createTag, tagNote, untagNote } from "./js/journey-map-service.js";
     import { createDawahPage } from "./js/dawah-data.js";
 
     translateStatic();
@@ -413,22 +412,31 @@
       }
     }
 
-    // Siyagah round 7b (issue #461): Tags, through the SAME data layer as Mapping
+    // Siyagah round 7b (issue #461): Tags, through the SAME data layer (note-foundation.js) as Mapping
     // My Journey and behind the SAME gate (siyagah-sections-readiness.js). Shut,
     // the Note view's ⋯ → 🏷 Tags… still opens, says so in words and writes
     // nothing. Tagging is not a revision: no Journaling evidence is recorded.
     let tags = [], tagLinks = [];
     const tagsReady = () => isSiyagahSectionsReady();
     const tagGateSentence = () => t("Tags switch on once the new Firebase Rules are published.");
+    async function allPages(fetchPage) {
+      const rows = [];
+      for (let after = null, guard = 0; guard < 100; guard++) {
+        const page = await fetchPage(after);
+        rows.push(...page.rows);
+        if (!page.next) break;
+        after = page.next;
+      }
+      return rows;
+    }
     async function loadTags() {
       tags = []; tagLinks = [];
       if (!tagsReady() || !activeTenantId || !selectedPersonId) return;
       try {
-        const [a, b] = await Promise.all([
-          loadAllOwnerTags(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, status: NOTE_STATUS.ACTIVE }),
-          loadAllOwnerTagLinks(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, status: NOTE_STATUS.ACTIVE }),
+        [tags, tagLinks] = await Promise.all([
+          allPages((after) => listNoteTagsForOwnerPage(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, status: NOTE_STATUS.ACTIVE, after })),
+          allPages((after) => listNoteTagLinksForOwnerPage(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, status: NOTE_STATUS.ACTIVE, after })),
         ]);
-        tags = a.rows; tagLinks = b.rows;
       } catch (err) { console.error("[tags load]", err); }
     }
     async function tagWrite(writeFn, context) {
