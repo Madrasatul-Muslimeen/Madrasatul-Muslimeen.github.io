@@ -123,11 +123,12 @@ check("Take an Approach's own placeholder option is unselectable (empty value) a
 // exactly what hid the Record step. Now the title and the four stages always
 // render; with nothing picked every stage is disabled, none is pressed, and a
 // line says to choose an Approach first.
-check("no Approach picked yet: ✅ Record Your Progress and all four stages show, every stage disabled and none pressed, with a line saying to choose an Approach first", () => {
+// UPDATED IN PLACE, Owner 1 Oct 2026: Not Applicable always shows, so a student's row (the default, canConfirm false) has five.
+check("no Approach picked yet: ✅ Record Your Progress and all five stages show (the four, then Not Applicable), every stage disabled and none pressed, with a line saying to choose an Approach first", () => {
   const html = renderAyahActionSheetHtml({ unitKey: "ayah:1:1", approachOptionsHtml: `<option value="approach_02">Hifz</option>` });
   assert.ok(html.includes("data-gac-record-title"), "the Record Your Progress title is missing with no Approach selected");
   const btns = html.match(/<button[^>]*data-approach-stage-btn="[^"]*"[^>]*>/g) || [];
-  assert.equal(btns.length, 4, `expected 4 stage buttons, found ${btns.length}`);
+  assert.equal(btns.length, 5, `expected 5 stage buttons, found ${btns.length}`);
   for (const b of btns) {
     assert.ok(/\sdisabled[\s>]/.test(b), `a stage button is pressable with no Approach chosen: ${b}`);
     assert.ok(/aria-pressed="false"/.test(b), `a stage shows as pressed with no Approach chosen: ${b}`);
@@ -135,25 +136,37 @@ check("no Approach picked yet: ✅ Record Your Progress and all four stages show
   assert.ok(html.includes("data-gac-record-needs-approach"), "no line tells the reader to choose an Approach first");
 });
 
-check("issue #325 -- an Approach IS picked: all four stages render, the current one pressed, the rest not", () => {
+check("issue #325 -- an Approach IS picked (a student's card): the four stages and Not Applicable render, the current one pressed, the rest not", () => {
   const html = renderAyahActionSheetHtml({
     unitKey: "ayah:1:1", approachOptionsHtml: `<option value="approach_02">Hifz</option>`,
     selectedApproachId: "approach_02", selectedApproachStatusId: "practising",
   });
-  for (const id of ["not_started", "learning", "practising", "achieved"]) {
+  for (const id of ["not_started", "learning", "practising", "achieved", "not_applicable"]) {
     assert.ok(html.includes(`data-approach-stage-btn="${id}"`), `missing the ${id} stage button`);
   }
   // UPDATED in place, issue #370 (Global Approach Card, Owner-approved): the
   // card now SAYS "Mastered is confirmed by a teacher." under the stages, so
   // the word itself appears; what must never appear is a Mastered BUTTON.
-  assert.ok(!html.includes('data-approach-stage-btn="mastered"'), "Mastered must never appear as a claimable stage");
+  assert.ok(!html.includes('data-approach-stage-btn="mastered"'), "a student's card must not offer Mastered as a button");
   assert.ok(html.includes("gac-mastered-note"), "the 'Mastered is confirmed by a teacher.' line is missing");
   // Owner decision 39: the stage buttons carry their own title, before them.
   assert.ok(/data-gac-record-title>✅ Record Your Progress</.test(html), "the 'Record Your Progress' title is missing");
   assert.ok(html.indexOf("data-gac-record-title") < html.indexOf("data-approach-stage-btn="), "the title must come before the stage buttons");
   const pressed = [...html.matchAll(/data-approach-stage-btn="([a-z_]+)" aria-pressed="(true|false)"/g)];
-  assert.equal(pressed.length, 4, "expected exactly four stage buttons");
+  assert.equal(pressed.length, 5, "expected exactly five stage buttons");
   for (const [, id, val] of pressed) assert.equal(val, id === "practising" ? "true" : "false", `${id} carries the wrong aria-pressed`);
+});
+
+// Owner, 1 Oct 2026: "'Mastered' should appear for the user, the note about
+// Mastered availability criteria should only appear to a student account."
+check("canConfirm (owner, prime, teacher, guardian, self-learner): six stages in order, Mastered among them, and NO teacher note", () => {
+  const html = renderAyahActionSheetHtml({
+    unitKey: "ayah:1:1", approachOptionsHtml: `<option value="approach_02">Hifz</option>`,
+    selectedApproachId: "approach_02", selectedApproachStatusId: "mastered", canConfirm: true,
+  });
+  const ids = [...html.matchAll(/data-approach-stage-btn="([a-z_]+)" aria-pressed="(true|false)"/g)].map((m) => [m[1], m[2]]);
+  assert.deepEqual(ids, [["not_started", "false"], ["learning", "false"], ["practising", "false"], ["achieved", "false"], ["mastered", "true"], ["not_applicable", "false"]]);
+  assert.ok(!html.includes("gac-mastered-note"), "the teacher note must not show to someone who can mark Mastered");
 });
 
 check("issue #325 -- the picked Approach's own <option> carries selected, so the select shows it rather than the placeholder", () => {

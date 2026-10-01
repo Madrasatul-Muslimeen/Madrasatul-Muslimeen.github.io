@@ -682,7 +682,10 @@
   .wheel-drawer-panels:not(:has(.wheel-drawer-panel:not([hidden]))) { display: none; }
   .wheel-drawer-panel { display: flex; flex-direction: column; align-items: center; width: 100%; box-sizing: border-box; padding: 0.3rem; border: 1px solid var(--card-line); border-radius: 10px; }
   .wheel-drawer-panel[hidden] { display: none; }
-  .wheel-drawer-row { display: flex; justify-content: center; gap: 0.35rem; }
+  /* Owner, 1 Oct 2026 (the same photo, arrows drawn): Wheel to the left
+     edge, Unit to the right, Legend in the middle. */
+  .wheel-drawer-row { display: flex; justify-content: space-between; gap: 0.35rem; align-self: stretch; box-sizing: border-box; padding: 0 0.75rem; }
+  .wheel-drawer-row .wheel-drawer-btn { flex: 0 0 auto; min-width: 5.5rem; }
   .wheel-drawer-btn {
     flex: 1 1 0; min-width: 0; min-height: 40px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
     padding: 0.25rem 0.5rem; border: 1px solid var(--card-line); border-radius: 999px; background: transparent; color: var(--card-text);
@@ -899,6 +902,12 @@
        width here is min(100vw, 100dvh - 420px), the same expression as
        .mastery-wheel below. Measured at 320/360/390/412 in landing-drawers. */
     #wheelSection #wheelContainer { padding-top: max(0px, calc(min(100vw, 100dvh - 420px) * 0.032 - 2.4px)); }
+    /* Owner, 1 Oct 2026 (a phone photo, the capsule bar over 19-23): "The
+       capsule cut the numbers at the bottom. Fix. Keep a elegantly looking
+       distance. We got space Below." The bottom numbers overhang the SVG by
+       the same ~3.2% of the wheel's width as the top ones; this clears them
+       and leaves ~12px before Read | Choose a Unit | Know Your Status. */
+    #wheelSection #wheelContainer { padding-bottom: calc(min(100vw, 100dvh - 420px) * 0.032 + 9px); }
     #wheelSection .mastery-wheel { width: min(100%, calc(100dvh - 420px)); max-width: none; }
     #wheelSection .wheel-legend { font-size: 0.68rem; gap: 4px 9px; }
     #wheelSection .legend-swatch { width: 9px; height: 9px; }
@@ -6704,6 +6713,19 @@
       const realRoles = membership?.roles ?? [];
       const viewAsRole = context?.viewAsRole ?? null;
       return { viewAsRole, effRoles: effectiveRoles(realRoles, viewAsRole), myPersonId: membership?.personId ?? null };
+    }
+
+    /** Owner, 1 Oct 2026: "'Mastered' should appear for the user, the note
+        about Mastered availability criteria should only appear to a student
+        account." The signed-in account can mark Mastered unless it is a
+        student account: a student role and none of owner/prime/teacher/
+        guardian (the same split computeConfirmationRequired() makes). Read off
+        currentPreview().effRoles, so "View as Student" shows the student's
+        card -- and a stale preview narrows it like every other control. */
+    function viewerCanConfirmProgress() {
+      const { effRoles } = currentPreview();
+      if (effRoles.some((r) => r === "owner" || r === "prime" || r === "teacher" || r === "guardian")) return true;
+      return !effRoles.includes("student");
     }
 
     function canAdminCatalogueClientSide() {
@@ -16129,6 +16151,7 @@
         ref,
         approachOptionsHtml: buildCardApproachOptionsHtml((id) => (chunk ? (chunk.entries?.[`${unitKey}::${id}`]?.claimedStatus ?? "not_started") : null)),
         approachSummary: cardApproachSummary(pageApproachCardSelectedApproachId),
+        canConfirm: viewerCanConfirmProgress(),
         selectedApproachId: pageApproachCardSelectedApproachId,
         selectedApproachStatusId,
       });
@@ -16487,6 +16510,7 @@
         ladderHtml: renderUnitLadderHtml(ladderRungs),
         approachOptionsHtml: buildCardApproachOptionsHtml((id) => (chunk ? (chunk.entries?.[`${info.unitKey}::${id}`]?.claimedStatus ?? "not_started") : null)),
         approachSummary: cardApproachSummary(unitCardSelectedApproachId),
+        canConfirm: viewerCanConfirmProgress(),
         selectedApproachId: unitCardSelectedApproachId,
         selectedApproachStatusId,
         countsForEachAyahYes: trackable ? countsForEachAyah(trackable) : null,
@@ -16637,6 +16661,7 @@
           return buildCardApproachOptionsHtml((id) => known.get(id) ?? null);
         })(),
         approachSummary: cardApproachSummary(ayahSheetSelectedApproachId),
+        canConfirm: viewerCanConfirmProgress(),
         selectedApproachId: ayahSheetSelectedApproachId,
         selectedApproachStatusId,
         hasPosterNote: hasPosterNoteAtRenderTime,

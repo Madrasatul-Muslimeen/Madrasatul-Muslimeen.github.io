@@ -114,7 +114,7 @@ function countsForEachAyahLineHtml(countsForEachAyahYes) {
 export function renderUnitCardHtml({
   unitType, unitKey, unitLabel = "", ref = "",
   ladderHtml = "",
-  approachOptionsHtml = "", selectedApproachId = null, selectedApproachStatusId = "not_started", approachSummary = null,
+  approachOptionsHtml = "", selectedApproachId = null, selectedApproachStatusId = "not_started", approachSummary = null, canConfirm = false,
   countsForEachAyahYes = null,
   isBookmarked = false, bookmarkAvailable = true,
   markAsRead = { enabled: false, reason: "" },
@@ -137,7 +137,7 @@ export function renderUnitCardHtml({
         <button type="button" class="ayah-sheet-close" data-unit-card-close aria-label="${escapeHtml(t("Close"))}">×</button>
       </div>
       <div class="ayah-sheet-body">
-        ${renderApproachStagePickerHtml({ approachOptionsHtml, selectedApproachId, selectedApproachStatusId, selectId: "unitCardApproachSelect", approachSummary })}
+        ${renderApproachStagePickerHtml({ approachOptionsHtml, selectedApproachId, selectedApproachStatusId, selectId: "unitCardApproachSelect", approachSummary, canConfirm })}
         ${countsForEachAyahLineHtml(countsForEachAyahYes)}
         ${actionsHtml}
       </div>

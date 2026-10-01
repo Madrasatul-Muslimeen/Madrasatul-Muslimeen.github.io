@@ -118,12 +118,24 @@ for (const lang of ["en", "bn"]) {
       const card = document.getElementById("wheelSection").getBoundingClientRect();
       const nums = [...document.querySelectorAll("#wheelContainer .wheel-seg-num")];
       const top = Math.min(...nums.map((e) => e.getBoundingClientRect().top));
-      return { n: nums.length, gap: Math.round((top - card.top) * 10) / 10, listTop: Math.round(document.getElementById("wheelSidebarContainer").getBoundingClientRect().top * 10) / 10 };
+      // Owner, 1 Oct 2026: "The capsule cut the numbers at the bottom. Fix.
+      // Keep a elegantly looking distance." -- the lowest number against the
+      // top of Read | Choose a Unit | Know Your Status.
+      const bottom = Math.max(...nums.map((e) => e.getBoundingClientRect().bottom));
+      const bar = document.getElementById("wheelIntroSettled").getBoundingClientRect();
+      // "Place those wheel buttons as marked up": Wheel to the left edge, Unit to the right.
+      const btns = [...document.querySelectorAll("#wheelDrawerRow .wheel-drawer-btn")].map((b) => b.getBoundingClientRect());
+      return { n: nums.length, gap: Math.round((top - card.top) * 10) / 10, bottomGap: Math.round((bar.top - bottom) * 10) / 10,
+        leftInset: Math.round(btns[0].left - card.left), rightInset: Math.round(card.right - btns[2].right),
+        legendOff: Math.round(Math.abs((btns[1].left + btns[1].right) / 2 - (card.left + card.right) / 2)),
+        listTop: Math.round(document.getElementById("wheelSidebarContainer").getBoundingClientRect().top * 10) / 10 };
     });
     gaps[`${lang} ${width}`] = g;
     if (width < 768) {
       check(`${tag} the wheel carries the real catalogue's slices (positive control: ${g.n} numbers)`, g.n >= 30, JSON.stringify(g));
       check(`${tag} the highest wheel number sits inside the dark card, 0-6px below its top (gap ${g.gap}px)`, g.gap >= 0 && g.gap <= 6, JSON.stringify(g));
+      check(`${tag} the lowest wheel number clears the capsule bar by an even 8-18px (gap ${g.bottomGap}px)`, g.bottomGap >= 8 && g.bottomGap <= 18, JSON.stringify(g));
+      check(`${tag} Wheel sits at the left edge, Unit at the right (insets ${g.leftInset}/${g.rightInset}px), Legend centred`, g.leftInset <= 24 && g.rightInset <= 24 && g.leftInset >= 8 && g.rightInset >= 8 && g.legendOff <= 3, JSON.stringify(g));
     }
     else check(`${tag} the Approach list top is measured (${g.listTop}px)`, g.listTop > 0);
     check(`${tag} no page errors`, errors.filter((e) => !/net::ERR_/.test(e)).length === 0, JSON.stringify(errors.slice(0, 2)));

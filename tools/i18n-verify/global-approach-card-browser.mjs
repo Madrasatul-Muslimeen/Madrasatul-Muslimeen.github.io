@@ -207,8 +207,15 @@ for (const lang of ["en", "bn"]) {
       return s ? { name: s.querySelector(".gac-approach-name")?.textContent.trim(), section: s.querySelector(".gac-approach-section")?.textContent.trim() } : null;
     });
     check(`[${lang} ${width}] the chosen Approach is named in full with its section`, summary?.name === T[lang].recite && summary?.section === T[lang].preservation, JSON.stringify(summary));
-    const note = await page.evaluate(() => document.querySelector(".gac-mastered-note")?.textContent.trim());
-    check(`[${lang} ${width}] "Mastered is confirmed by a teacher." is shown under the stages`, note === T[lang].mastered, note);
+    // UPDATED IN PLACE (Owner, 1 Oct 2026: "Record has N/A tab missing. Fix.
+    // Also 'Mastered' should appear for the user, the note about Mastered
+    // availability criteria should only appear to a student account."). The
+    // harness signs in as the OWNER, so the stage row now carries Mastered and
+    // Not Applicable and the teacher note is absent; the student side is
+    // proven in section 5 below.
+    const stageView = await page.evaluate(() => ({ ids: [...document.querySelectorAll(".ayah-sheet [data-approach-stage-btn]")].map((b) => b.dataset.approachStageBtn), note: document.querySelector(".gac-mastered-note")?.textContent.trim() ?? null }));
+    check(`[${lang} ${width}] an owner sees six stages -- the four, then Mastered and Not Applicable -- and no teacher note`,
+      JSON.stringify(stageView.ids) === JSON.stringify(["not_started", "learning", "practising", "achieved", "mastered", "not_applicable"]) && stageView.note === null, JSON.stringify(stageView));
     // Owner decision 39, 30 Sep 2026: "Give the title to record as well above
     // the progress Tabs: (Icon) 'Record Your Progress'. Make it look elegant.
     // Keep proper space." Expected by hand: the words, the same face as the
@@ -256,13 +263,13 @@ for (const lang of ["en", "bn"]) {
           }
           return [[255, 255, 255]];
         };
-        return [".gac-approach-name", ".gac-approach-section", ".gac-mastered-note", ".gac-record-title"].map((sel) => {
+        return [".gac-approach-name", ".gac-approach-section", ".gac-record-title"].map((sel) => {
           const el = document.querySelector(sel); if (!el) return [sel, null];
           const a = L(nums(getComputedStyle(el).color));
           return [sel, +Math.min(...bgsOf(el).map((bg) => { const b = L(bg); return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05); })).toFixed(2)];
         });
       });
-      check(`[${lang} ${width} ${look}] the name, section, Mastered and Record Your Progress lines are readable (>=4.5:1)`, ratios.every(([, r]) => r != null && r >= 4.5), JSON.stringify(ratios));
+      check(`[${lang} ${width} ${look}] the name, section and Record Your Progress lines are readable (>=4.5:1)`, ratios.every(([, r]) => r != null && r >= 4.5), JSON.stringify(ratios));
     }
     const sweepCard = async (label) => {
       for (const look of ["night", "light"]) {
@@ -299,16 +306,61 @@ for (const lang of ["en", "bn"]) {
     const unitSheet = await page.evaluate(() => {
       const s = document.querySelector(".ayah-sheet.unit-card"); if (!s) return null;
       const r = s.getBoundingClientRect();
-      return { top: r.top, height: r.height, vh: innerHeight, width: r.width, vw: innerWidth, summary: s.querySelector("[data-gac-approach-summary] .gac-approach-name")?.textContent.trim(), note: s.querySelector(".gac-mastered-note")?.textContent.trim() };
+      return { top: r.top, height: r.height, vh: innerHeight, width: r.width, vw: innerWidth, summary: s.querySelector("[data-gac-approach-summary] .gac-approach-name")?.textContent.trim(), stages: [...s.querySelectorAll("[data-approach-stage-btn]")].map((b) => b.dataset.approachStageBtn).join(","), note: s.querySelector(".gac-mastered-note")?.textContent.trim() ?? null };
     });
     if (width < 900) check(`[${lang} ${width}] the Unit Card is full screen too`, !!unitSheet && unitSheet.top <= 1 && unitSheet.height >= unitSheet.vh - 2, JSON.stringify(unitSheet));
-    check(`[${lang} ${width}] the Unit Card carries the same named Approach and Mastered line`, unitSheet?.summary === T[lang].recite && unitSheet?.note === T[lang].mastered, JSON.stringify(unitSheet));
+    check(`[${lang} ${width}] the Unit Card (Read view → Track) carries the same named Approach, Mastered and Not Applicable, and no teacher note (owner)`, unitSheet?.summary === T[lang].recite && unitSheet?.stages === "not_started,learning,practising,achieved,mastered,not_applicable" && unitSheet?.note === null, JSON.stringify(unitSheet));
     await sweepCard("the Unit Card");
 
     const real = errors.filter((e) => !/Failed to load resource|net::ERR_/.test(e));
     check(`[${lang} ${width}] no page errors`, real.length === 0, real.join("; "));
     await ctx.close();
   }
+}
+
+// ---- 5. A STUDENT account (Owner, 1 Oct 2026): N/A shows, Mastered does not,
+// and "Mastered is confirmed by a teacher." does -- on the page card, the Ayah
+// Card and the Unit Card. Reached through "View as Student", which is exactly
+// what currentPreview() reads; the positive control is section 2's owner row.
+for (const lang of ["en", "bn"]) {
+  const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, viewport: { width: 390, height: 844 }, extraSeedJs: APPROACH_CARDS_SEED });
+  await installSyntheticMushafFixture(ctx);
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  await page.evaluate(() => { const c = JSON.parse(localStorage.getItem("qr.sessionContext") || "null"); if (c) { c.viewAsRole = "student"; localStorage.setItem("qr.sessionContext", JSON.stringify(c)); } });
+  await page.reload();
+  await page.waitForTimeout(800);
+  const preview = await page.evaluate(() => JSON.parse(localStorage.getItem("qr.sessionContext") || "null")?.viewAsRole ?? null);
+  check(`[${lang} student] the preview is really on (positive control)`, preview === "student", String(preview));
+  await openMushafSurah3(page);
+  await waitCapsule(page);
+  await clickSafely(page, "#readBarRecordBtn");
+  await page.waitForFunction(() => !!document.querySelector("#pageApproachSelect"), null, { timeout: 8000 }).catch(() => {});
+  await page.selectOption("#pageApproachSelect", "recite");
+  await page.waitForTimeout(500);
+  const read = () => page.evaluate(() => {
+    const s = document.querySelector(".ayah-sheet"); if (!s) return null;
+    const note = s.querySelector(".gac-mastered-note");
+    const box = note?.getBoundingClientRect();
+    return { stages: [...s.querySelectorAll("[data-approach-stage-btn]")].map((b) => b.dataset.approachStageBtn).join(","), note: note?.textContent.trim() ?? null, noteShown: !!box && box.height > 0 };
+  });
+  const pg = await read();
+  check(`[${lang} student] the page card: four stages and Not Applicable, no Mastered, and the teacher note shown`,
+    pg?.stages === "not_started,learning,practising,achieved,not_applicable" && pg?.note === T[lang].mastered && pg?.noteShown, JSON.stringify(pg));
+  await page.evaluate(() => document.getElementById("ayahActionSheetOverlay")?.click());
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(300);
+  await clickSafely(page, '[data-ayah-marker="3:55"]');
+  await page.waitForFunction(() => !!document.querySelector(".ayah-sheet:not(.page-approach-card):not(.unit-card)"), null, { timeout: 8000 }).catch(() => {});
+  await page.waitForTimeout(300);
+  const ay = await read();
+  check(`[${lang} student] the Ayah Card: the same five, and the teacher note`, ay?.stages === "not_started,learning,practising,achieved,not_applicable" && ay?.note === T[lang].mastered, JSON.stringify(ay));
+  await page.waitForFunction(() => !!document.querySelector('.unit-ladder-rung[data-unit-ladder-rung^="ruku:"]'), null, { timeout: 8000 }).catch(() => {});
+  await clickSafely(page, '.unit-ladder-rung[data-unit-ladder-rung^="ruku:"]');
+  await page.waitForFunction(() => !!document.querySelector(".ayah-sheet.unit-card"), null, { timeout: 8000 }).catch(() => {});
+  await page.waitForTimeout(300);
+  const un = await read();
+  check(`[${lang} student] the Unit Card: the same five, and the teacher note`, un?.stages === "not_started,learning,practising,achieved,not_applicable" && un?.note === T[lang].mastered, JSON.stringify(un));
+  await ctx.close();
 }
 
 console.log(`\n==== Global Approach Card (issue #370): ${pass} passed, ${fail} failed ====`);

@@ -342,7 +342,8 @@ console.log(`\n=== Ayah Card -- number badge, Take an Approach, Status B (issue 
     writesSoFar: (window.__stubWriteData || []).filter((w) => w.col === "records").length,
   }));
   check("picking an Approach does NOT close the card", afterPick.open === true, JSON.stringify(afterPick));
-  check("picking an Approach reveals exactly the four stage buttons, in order", JSON.stringify(afterPick.stageButtons) === JSON.stringify(["not_started", "learning", "practising", "achieved"]), JSON.stringify(afterPick.stageButtons));
+  // UPDATED IN PLACE, Owner 1 Oct 2026: the harness signs in as the owner, who now also sees Mastered and Not Applicable.
+  check("picking an Approach reveals exactly the six stage buttons (owner), in order", JSON.stringify(afterPick.stageButtons) === JSON.stringify(["not_started", "learning", "practising", "achieved", "mastered", "not_applicable"]), JSON.stringify(afterPick.stageButtons));
   check("picking an Approach writes NOTHING by itself", afterPick.writesSoFar === 0, JSON.stringify(afterPick));
 
   await clickSafely(page, '[data-approach-stage-btn="practising"]');
@@ -360,8 +361,8 @@ console.log(`\n=== Ayah Card -- number badge, Take an Approach, Status B (issue 
     pressed: [...document.querySelectorAll("[data-approach-stage-btn]")].map((b) => [b.dataset.approachStageBtn, b.getAttribute("aria-pressed")]),
   }));
   check("pressing a stage button does NOT close the card either", afterStage.open === true, JSON.stringify(afterStage));
-  check("the just-pressed 'practising' button now shows aria-pressed=true, the other three false",
-    JSON.stringify(afterStage.pressed) === JSON.stringify([["not_started", "false"], ["learning", "false"], ["practising", "true"], ["achieved", "false"]]),
+  check("the just-pressed 'practising' button now shows aria-pressed=true, the other five false",
+    JSON.stringify(afterStage.pressed) === JSON.stringify([["not_started", "false"], ["learning", "false"], ["practising", "true"], ["achieved", "false"], ["mastered", "false"], ["not_applicable", "false"]]),
     JSON.stringify(afterStage.pressed));
 
   // --- Reopening the card (closed, then the same āyah opened again) shows
@@ -379,7 +380,7 @@ console.log(`\n=== Ayah Card -- number badge, Take an Approach, Status B (issue 
   const reopened = await page.evaluate(() =>
     [...document.querySelectorAll("[data-approach-stage-btn]")].map((b) => [b.dataset.approachStageBtn, b.getAttribute("aria-pressed")]));
   check("reopening the card and re-picking the same Approach shows 'practising' pressed -- the saved state, not a reset placeholder",
-    JSON.stringify(reopened) === JSON.stringify([["not_started", "false"], ["learning", "false"], ["practising", "true"], ["achieved", "false"]]),
+    JSON.stringify(reopened) === JSON.stringify([["not_started", "false"], ["learning", "false"], ["practising", "true"], ["achieved", "false"], ["mastered", "false"], ["not_applicable", "false"]]),
     JSON.stringify(reopened));
   await page.keyboard.press("Escape");
   await page.waitForTimeout(200);
