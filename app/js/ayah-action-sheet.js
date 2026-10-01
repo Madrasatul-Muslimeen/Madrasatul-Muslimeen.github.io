@@ -50,8 +50,23 @@ export function actionItemHtml({ attr, icon, label, disabled = false, hint = "" 
 // ramp treats it.
 export const APPROACH_STAGE_IDS = Object.freeze(["not_started", "learning", "practising", "achieved"]);
 
-function approachStageButtonsHtml(currentStatusId, disabled = false) {
-  const buttons = APPROACH_STAGE_IDS
+// Owner, 1 Oct 2026 (a photo of the Read view's Track panel): "Record has N/A
+// tab missing. Fix. Also 'Mastered' should appear for the user, the note about
+// Mastered availability criteria should only appear to a student account."
+// So Not Applicable always shows (I7: it is excluded from totals, never
+// counted as zero), and Mastered shows to anyone whose own claim is not
+// waiting on a teacher -- owner, prime, teacher, guardian, or a self-learner
+// with no student role. A student sees the four stages, N/A and the
+// "confirmed by a teacher" note instead. claimStatus() already accepts all
+// six statuses and decides confirmation itself, so this is markup only.
+export function approachStageIdsFor(canConfirm) {
+  return canConfirm
+    ? [...APPROACH_STAGE_IDS, "mastered", "not_applicable"]
+    : [...APPROACH_STAGE_IDS, "not_applicable"];
+}
+
+function approachStageButtonsHtml(currentStatusId, disabled = false, canConfirm = false) {
+  const buttons = approachStageIdsFor(canConfirm)
     .map((id) => `<button type="button" class="approach-stage-btn" data-approach-stage-btn="${id}" aria-pressed="${!disabled && id === currentStatusId}"${disabled ? " disabled" : ""}>${escapeHtml(statusLabel(id))}</button>`)
     .join("");
   return `<div class="approach-stage-row" role="group" aria-label="${escapeHtml(t("Status"))}">${buttons}</div>`;
@@ -90,7 +105,7 @@ function withSelectedOption(optionsHtml, selectedId) {
  */
 export function renderApproachStagePickerHtml({
   approachOptionsHtml = "", selectedApproachId = null, selectedApproachStatusId = "not_started",
-  selectId = "ayahSheetApproachSelect", approachSummary = null,
+  selectId = "ayahSheetApproachSelect", approachSummary = null, canConfirm = false,
 } = {}) {
   // Issue #370 (Global Approach Card): "Mastered is confirmed by a teacher"
   // under the four stages -- the fifth stage is never a button here.
@@ -110,9 +125,10 @@ export function renderApproachStagePickerHtml({
   const recordTitleHtml = `<p class="ayah-sheet-select-label gac-record-title" data-gac-record-title>✅ ${escapeHtml(t("Record Your Progress"))}</p>`;
   const stageRowHtml = selectedApproachId
     ? recordTitleHtml
-      + approachStageButtonsHtml(selectedApproachStatusId) + `<p class="gac-mastered-note">${escapeHtml(t("Mastered is confirmed by a teacher."))}</p>`
+      + approachStageButtonsHtml(selectedApproachStatusId, false, canConfirm)
+      + (canConfirm ? "" : `<p class="gac-mastered-note">${escapeHtml(t("Mastered is confirmed by a teacher."))}</p>`)
     : recordTitleHtml
-      + approachStageButtonsHtml(null, true) + `<p class="gac-mastered-note" data-gac-record-needs-approach>${escapeHtml(t("Choose an Approach above first, then tap your stage."))}</p>`;
+      + approachStageButtonsHtml(null, true, canConfirm) + `<p class="gac-mastered-note" data-gac-record-needs-approach>${escapeHtml(t("Choose an Approach above first, then tap your stage."))}</p>`;
   // Issue #370 -- the chosen Approach named in full with its section, above
   // the pull-down (which a phone cuts on a long name).
   const summaryHtml = approachSummary
@@ -184,11 +200,11 @@ function makePosterItemHtml(hasPosterNote) {
     actionItemHtml(); "Take an Approach"/"Make a poster" carry their own
     shape (a pull-down; a conditional hint) and render through their own
     small functions above, but still take exactly one slot in this list. */
-function actionDefs({ isBookmarked, isSelf, noteWhy, approachOptionsHtml, selectedApproachId, selectedApproachStatusId, hasPosterNote, approachSummary }) {
+function actionDefs({ isBookmarked, isSelf, noteWhy, approachOptionsHtml, selectedApproachId, selectedApproachStatusId, hasPosterNote, approachSummary, canConfirm }) {
   return [
     { render: () => actionItemHtml({ attr: "data-ayah-sheet-bookmark", icon: isBookmarked ? "★" : "🔖", label: isBookmarked ? t("Remove bookmark") : t("Bookmark this āyah") }) },
     { render: () => actionItemHtml({ attr: "data-ayah-sheet-note", icon: "📝", label: t("Note & more…"), disabled: !isSelf, hint: isSelf ? "" : noteWhy }) },
-    { render: () => renderApproachStagePickerHtml({ approachOptionsHtml, selectedApproachId, selectedApproachStatusId, approachSummary }) },
+    { render: () => renderApproachStagePickerHtml({ approachOptionsHtml, selectedApproachId, selectedApproachStatusId, approachSummary, canConfirm }) },
     { render: () => makePosterItemHtml(hasPosterNote) },
     { divider: true },
     { render: () => actionItemHtml({ attr: "data-ayah-sheet-asma", icon: "✦", label: t("Asma ul Husna Name(s)…") }) },
@@ -334,13 +350,13 @@ function connectedInfoHtml(connected) {
  */
 export function renderAyahActionSheetHtml({
   unitKey, ref = "", hasNote = false, isBookmarked = false, isSelf = true,
-  approachOptionsHtml = "", selectedApproachId = null, selectedApproachStatusId = "not_started", hasPosterNote = null, approachSummary = null,
+  approachOptionsHtml = "", selectedApproachId = null, selectedApproachStatusId = "not_started", hasPosterNote = null, approachSummary = null, canConfirm = false,
   approachStatuses = [], wordStatus = null, hifzStatus = null, related = null,
   connected = null, ladderHtml = "",
 } = {}) {
   void hasNote; // kept for callers that already pass it (icon/wording decisions belong to isBookmarked/isSelf above, not this flag)
   const noteWhy = t("Only your own record can create or file a Note.");
-  const actionsHtml = actionDefs({ isBookmarked, isSelf, noteWhy, approachOptionsHtml, selectedApproachId, selectedApproachStatusId, hasPosterNote, approachSummary })
+  const actionsHtml = actionDefs({ isBookmarked, isSelf, noteWhy, approachOptionsHtml, selectedApproachId, selectedApproachStatusId, hasPosterNote, approachSummary, canConfirm })
     .map((def) => (def.divider ? `<div class="qm-divider"></div>` : def.render()))
     .join("");
   return `

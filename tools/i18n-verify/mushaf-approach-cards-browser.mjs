@@ -262,8 +262,9 @@ for (const lang of ["en", "bn"]) {
   await page.waitForTimeout(300);
   const reopened = await page.evaluate(() =>
     [...document.querySelectorAll("[data-approach-stage-btn]")].map((b) => [b.dataset.approachStageBtn, b.getAttribute("aria-pressed")]));
+  // UPDATED IN PLACE, Owner 1 Oct 2026: the harness signs in as the owner, who now also sees Mastered and Not Applicable.
   check(`[${lang}] reopening the card and re-picking the same Approach shows 'practising' pressed -- the saved state`,
-    JSON.stringify(reopened) === JSON.stringify([["not_started", "false"], ["learning", "false"], ["practising", "true"], ["achieved", "false"]]),
+    JSON.stringify(reopened) === JSON.stringify([["not_started", "false"], ["learning", "false"], ["practising", "true"], ["achieved", "false"], ["mastered", "false"], ["not_applicable", "false"]]),
     JSON.stringify(reopened));
   await page.keyboard.press("Escape");
   await page.waitForTimeout(200);

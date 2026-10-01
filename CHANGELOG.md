@@ -19095,3 +19095,11 @@ From the Owner's report: opening a bookmark showed a broken landing page, then t
 - A bookmark now remembers the view it was made in (Read view, Note view or the landing page) and reopens there. Older bookmarks open the Note view as before.
 - A bookmark that can no longer be found leaves the normal landing page with a short sentence saying so.
 - **Checks**: bookmark-open-browser 38/0 (every frame watched; two mutations proven), landing-drawers 252/0, study-presets 84/0, read-contents 250/0, phone-width-overflow 217/0, behaviour 1007/1 (31e TLS).
+
+## v09.31 — 1 Oct 2026 — N/A and Mastered in Record Your Progress; the wheel's bottom numbers no longer cut
+
+From two of the Owner's phone photos.
+
+- **Record Your Progress** (Read view → Track, the Āyah card and the Page card) now offers **N/A** to everyone, and **Mastered** to the owner, prime, teachers, guardians and self-learners. "Mastered is confirmed by a teacher." shows only to a student account.
+- **Landing page:** the Read / Choose a Unit / Know Your Status bar sits a calm ~12px below the wheel's lowest numbers on a phone, instead of covering them. The Wheel button sits at the left edge, Unit at the right, Legend in the middle.
+- **Checks**: global-approach-card 97/0 (student view added, mutation-proven), landing-drawers 264/0 (both new facts mutation-proven), ayah-action-sheet-boundary 54/0, mushaf-approach-cards 114/0, quran-ayah-action-sheet 120/0, unit-card 116/0, phone-width-overflow 217/0, behaviour 1004/4 (22g×3 archive.org, 31e TLS).

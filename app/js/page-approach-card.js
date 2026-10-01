@@ -34,7 +34,7 @@ function escapeHtml(s) {
  */
 export function renderPageApproachCardHtml({
   pageLabel = "", ref = "",
-  approachOptionsHtml = "", selectedApproachId = null, selectedApproachStatusId = "not_started", approachSummary = null,
+  approachOptionsHtml = "", selectedApproachId = null, selectedApproachStatusId = "not_started", approachSummary = null, canConfirm = false,
 } = {}) {
   return `
     <div class="ayah-sheet page-approach-card" data-page-approach-card role="dialog" aria-modal="true" aria-label="${escapeHtml(pageLabel)}">
@@ -44,7 +44,7 @@ export function renderPageApproachCardHtml({
         <button type="button" class="ayah-sheet-close" data-page-approach-close aria-label="${escapeHtml(t("Close"))}">×</button>
       </div>
       <div class="ayah-sheet-body">
-        ${renderApproachStagePickerHtml({ approachOptionsHtml, selectedApproachId, selectedApproachStatusId, selectId: "pageApproachSelect", approachSummary })}
+        ${renderApproachStagePickerHtml({ approachOptionsHtml, selectedApproachId, selectedApproachStatusId, selectId: "pageApproachSelect", approachSummary, canConfirm })}
       </div>
     </div>`;
 }
