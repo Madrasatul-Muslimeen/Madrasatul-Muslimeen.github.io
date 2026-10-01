@@ -666,3 +666,4 @@ total). Allocated by the MMSA Architect.
 09.20: Siyagah round 4: a Note opens in read mode inside Mapping My Journey (#446, PR #448). Allocated by the MMSA Architect.
 09.21: Siyagah round 5: edit a Note in the pane with autosave (#450, PR #451). Allocated by the MMSA Architect.
 09.22: Explore's Approach list readable in the Night card look; palette-contrast suite. Allocated by the MMSA Architect.
+09.23: Siyagah round 6a: Single and Multi pop-up windows for a Note in Mapping My Journey (#452, PR #453). Allocated by the MMSA Architect.
