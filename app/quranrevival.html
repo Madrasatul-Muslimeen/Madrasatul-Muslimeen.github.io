@@ -3005,6 +3005,11 @@
   .hifz-line:not(.centered) { width: fit-content; max-width: 100%; margin-left: auto; margin-right: 0; }
   .hifz-word { white-space: nowrap; }
   .hifz-word.dim { opacity: 0.32; }
+  /* Issue #472 -- a known word (itself, or its dictionary word) wears a very
+     light background tint. Background only: colour, size and position are
+     untouched. :not(.playing) keeps the playing highlight clearly stronger. */
+  .hifz-word.is-known-word:not(.playing), button.wbw-word-clickable.is-known-word, .ayah-word-clickable.is-known-word { background-color: rgba(46,125,50,0.13); border-radius: 0.25em; }
+  [data-card-look="night"] .hifz-word.is-known-word:not(.playing), [data-card-look="night"] button.wbw-word-clickable.is-known-word, [data-card-look="night"] .ayah-word-clickable.is-known-word { background-color: rgba(129,199,132,0.16); }
   /* Issue #188 -- a bigger invisible TAP zone, not a bigger visible word.
      Mushaf words sit only 0.12em apart (the line's own `gap`, print-accurate
      and not to be widened -- see the .playing comment just below), measured
@@ -14004,6 +14009,83 @@
     // explicit press by a person.
     // -----------------------------------------------------------------------
 
+    /**
+     * Issue #472 -- very light "known" mark on every word on screen whose
+     * occurrence counts as known (itself, or its dictionary word: owner
+     * decision A, same lemma). Reuses the Explore pipeline exactly and writes
+     * nothing. Never runs on the landing page: only a visible Read/Note view
+     * with real word elements triggers a read. A superseded call (the reader
+     * moved on, or switched person) paints nothing.
+     */
+    let knownWordMarksRequest = 0;
+    const KNOWN_WORD_SELECTOR = ".hifz-word[data-word-occurrence], .wbw-word-clickable[data-word-occurrence], .ayah-word-clickable[data-word-occurrence]";
+    function knownWordElements() {
+      return ["readView", "noteView"].map((id) => document.getElementById(id)).filter((r) => r && !r.hidden)
+        .flatMap((r) => [...r.querySelectorAll(KNOWN_WORD_SELECTOR)]);
+    }
+    function setKnownWordMark(el, known) {
+      if (el.classList.contains("is-known-word") === known) return;
+      el.classList.toggle("is-known-word", known);
+      if (known) {
+        el.dataset.knownBaseName = el.getAttribute("aria-label") ?? el.textContent.trim();
+        el.setAttribute("aria-label", `${el.dataset.knownBaseName} — ${t("known")}`);
+      } else {
+        if (el.dataset.knownBaseName !== undefined) {
+          if (el.dataset.knownBaseName) el.setAttribute("aria-label", el.dataset.knownBaseName);
+          else el.removeAttribute("aria-label");
+        }
+        delete el.dataset.knownBaseName;
+      }
+    }
+    function clearKnownWordMarks() {
+      knownWordMarksRequest++;
+      document.querySelectorAll(".is-known-word[data-word-occurrence]").forEach((el) => setKnownWordMark(el, false));
+    }
+    async function refreshKnownWordMarks() {
+      const requestId = ++knownWordMarksRequest;
+      const { tenantId, subjectPersonId } = wordProgressActor();
+      const initial = knownWordElements();
+      if (!initial.length) return;
+      if (!tenantId || !subjectPersonId) { initial.forEach((el) => setKnownWordMark(el, false)); return; }
+      try {
+        const bySurah = new Map();
+        for (const el of initial) {
+          let ref;
+          try { ref = parseQuranWordOccurrenceId(el.dataset.wordOccurrence); } catch { continue; }
+          if (!bySurah.has(ref.surah)) bySurah.set(ref.surah, new Set());
+          bySurah.get(ref.surah).add(el.dataset.wordOccurrence);
+        }
+        const confirmationRequired = !!(await wordProgressConfirmationRequired(tenantId, subjectPersonId));
+        const known = new Set();
+        for (const [surahNum, ids] of bySurah) {
+          const surahData = await getSurah(surahNum);
+          await getSurahProgress(db, { tenantId, personId: subjectPersonId, surah: surahNum });
+          const scope = [...ids];
+          await primeLemmaProgressForOccurrenceScope(surahData, scope, tenantId, subjectPersonId);
+          if (requestId !== knownWordMarksRequest) return;
+          const rawViews = new Map(scope.map((occ) => [occ, wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: occ, confirmationRequired })]));
+          const views = effectiveViewsForScope(surahData, scope, rawViews, tenantId, subjectPersonId, confirmationRequired);
+          for (const occ of scope) if (views.get(occ)?.countsAsKnown) known.add(occ);
+        }
+        if (requestId !== knownWordMarksRequest) return;
+        // Re-query: the page may have re-rendered while the reads landed.
+        for (const el of knownWordElements()) setKnownWordMark(el, known.has(el.dataset.wordOccurrence));
+      } catch (error) {
+        console.warn("known-word marks unavailable", error); // decoration only: never a write, never blocks reading
+      }
+    }
+    let knownWordMarksTimer = null;
+    function scheduleKnownWordMarks() {
+      clearTimeout(knownWordMarksTimer);
+      knownWordMarksTimer = setTimeout(refreshKnownWordMarks, 60);
+    }
+    for (const id of ["readView", "noteView"]) {
+      const root = document.getElementById(id);
+      if (root) new MutationObserver((records) => {
+        if (records.some((r) => [...r.addedNodes].some((n) => n.nodeType === 1))) scheduleKnownWordMarks();
+      }).observe(root, { childList: true, subtree: true });
+    }
+
     /** Who the progress belongs to, and who is recording it. */
     function wordProgressActor() {
       const { effRoles, myPersonId } = currentPreview();
@@ -14513,6 +14595,7 @@
       // of what they read); refresh them alongside the card's own re-render.
       await hydrateWordCardLemmaExtras();
       renderPersistentWordCard();
+      refreshKnownWordMarks(); // issue #472 -- marks follow the just-written state, no reload
     }
 
     /**
@@ -20133,6 +20216,8 @@
       clearWordProgressCache();
       wordProgressConfirmFor = null;
       wordProgressConfirmRequired = null;
+      clearKnownWordMarks(); // issue #472 -- the previous person's marks must not outlive the switch
+      scheduleKnownWordMarks();
       // Issue #328 -- "My Status" is cached per (tenant, person); a
       // different acting person must never see the previous one's tally
       // (D10, the same reason every line above this one exists).
