@@ -584,7 +584,7 @@ export async function reparentNoteFolder(db, {
     const { docId, folder } = await loadOwnFolder(transaction, tenantId, ownerPersonId, folderId);
     if (folder.status !== NOTE_STATUS.ACTIVE) throw new Error("A retired folder cannot be re-parented.");
     if ((folder.parentFolderId ?? null) === parentFolderId) throw new Error("A move must change parent.");
-    const change = { parentFolderId };
+    const sectionChange = {};
     // Siyagah round 7a (Owner decision M2). Only a ROOT USER folder carries a
     // `sectionId`, and the candidate Rules refuse a nested folder that keeps
     // one -- so nesting a sectioned folder CLEARS it IN THE SAME WRITE.
@@ -592,15 +592,15 @@ export async function reparentNoteFolder(db, {
     // it came from (its root ancestor's). Nothing extra is written when no
     // section is involved, so a person who never makes a section sees no change.
     if (parentFolderId !== null && (folder.sectionId ?? null) !== null) {
-      change.sectionId = null;
+      sectionChange.sectionId = null;
     } else if (parentFolderId === null) {
       let root = byId.get(folder.parentFolderId ?? null) ?? null;
       for (let hops = 0; root && (root.parentFolderId ?? null) !== null && hops < 64; hops += 1) {
         root = byId.get(root.parentFolderId) ?? null;
       }
-      if (root && (root.sectionId ?? null) !== null) change.sectionId = root.sectionId;
+      if (root && (root.sectionId ?? null) !== null) sectionChange.sectionId = root.sectionId;
     }
-    transaction.update(TENANT.NOTE_FOLDERS, docId, change);
+    transaction.update(TENANT.NOTE_FOLDERS, docId, { parentFolderId, ...sectionChange });
   });
 }
 
