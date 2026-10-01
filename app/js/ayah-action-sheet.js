@@ -50,9 +50,9 @@ export function actionItemHtml({ attr, icon, label, disabled = false, hint = "" 
 // ramp treats it.
 export const APPROACH_STAGE_IDS = Object.freeze(["not_started", "learning", "practising", "achieved"]);
 
-function approachStageButtonsHtml(currentStatusId) {
+function approachStageButtonsHtml(currentStatusId, disabled = false) {
   const buttons = APPROACH_STAGE_IDS
-    .map((id) => `<button type="button" class="approach-stage-btn" data-approach-stage-btn="${id}" aria-pressed="${id === currentStatusId}">${escapeHtml(statusLabel(id))}</button>`)
+    .map((id) => `<button type="button" class="approach-stage-btn" data-approach-stage-btn="${id}" aria-pressed="${!disabled && id === currentStatusId}"${disabled ? " disabled" : ""}>${escapeHtml(statusLabel(id))}</button>`)
     .join("");
   return `<div class="approach-stage-row" role="group" aria-label="${escapeHtml(t("Status"))}">${buttons}</div>`;
 }
@@ -99,10 +99,20 @@ export function renderApproachStagePickerHtml({
   // title to record as well above the progress Tabs: (Icon) 'Record Your
   // Progress'. Make it look elegant. Keep proper space." Same face as the
   // 🎯 Take an Approach title above it, with its own breathing room.
+  // Owner, 1 Oct 2026 (a photo of the Ayah Card with the place under the
+  // pull-down marked): "'Record Your Progress' (earlier known as Track) is
+  // missing in Ayah Card, should be here." It was rendered only AFTER an
+  // Approach was chosen, so a card opened with none chosen had no Record step
+  // at all. The title and the four stages now always show; with no Approach
+  // chosen the stages are disabled and a line says what to do first. Nothing
+  // is written until an Approach is chosen and a stage is pressed (the click
+  // handler below still refuses an empty select).
+  const recordTitleHtml = `<p class="ayah-sheet-select-label gac-record-title" data-gac-record-title>✅ ${escapeHtml(t("Record Your Progress"))}</p>`;
   const stageRowHtml = selectedApproachId
-    ? `<p class="ayah-sheet-select-label gac-record-title" data-gac-record-title>✅ ${escapeHtml(t("Record Your Progress"))}</p>`
+    ? recordTitleHtml
       + approachStageButtonsHtml(selectedApproachStatusId) + `<p class="gac-mastered-note">${escapeHtml(t("Mastered is confirmed by a teacher."))}</p>`
-    : "";
+    : recordTitleHtml
+      + approachStageButtonsHtml(null, true) + `<p class="gac-mastered-note" data-gac-record-needs-approach>${escapeHtml(t("Choose an Approach above first, then tap your stage."))}</p>`;
   // Issue #370 -- the chosen Approach named in full with its section, above
   // the pull-down (which a phone cuts on a long name).
   const summaryHtml = approachSummary

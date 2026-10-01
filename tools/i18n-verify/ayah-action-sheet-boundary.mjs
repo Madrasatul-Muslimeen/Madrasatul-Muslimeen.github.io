@@ -117,10 +117,22 @@ check("Take an Approach's own placeholder option is unselectable (empty value) a
   assert.ok(placeholderIdx !== -1 && realIdx !== -1 && placeholderIdx < realIdx, "the placeholder option must come first and stay unselectable");
 });
 
-check("issue #325 -- no Approach picked yet: no stage row is drawn at all", () => {
+// UPDATED IN PLACE, 1 Oct 2026 (Owner, a photo of the Ayah Card: "'Record
+// Your Progress' (earlier known as Track) is missing in Ayah Card, should be
+// here"). This used to assert NO stage row before an Approach is picked --
+// exactly what hid the Record step. Now the title and the four stages always
+// render; with nothing picked every stage is disabled, none is pressed, and a
+// line says to choose an Approach first.
+check("no Approach picked yet: ✅ Record Your Progress and all four stages show, every stage disabled and none pressed, with a line saying to choose an Approach first", () => {
   const html = renderAyahActionSheetHtml({ unitKey: "ayah:1:1", approachOptionsHtml: `<option value="approach_02">Hifz</option>` });
-  assert.ok(!html.includes("approach-stage-row"), "a stage row appeared with no Approach selected");
-  assert.ok(!html.includes("data-approach-stage-btn"), "a stage button appeared with no Approach selected");
+  assert.ok(html.includes("data-gac-record-title"), "the Record Your Progress title is missing with no Approach selected");
+  const btns = html.match(/<button[^>]*data-approach-stage-btn="[^"]*"[^>]*>/g) || [];
+  assert.equal(btns.length, 4, `expected 4 stage buttons, found ${btns.length}`);
+  for (const b of btns) {
+    assert.ok(/\sdisabled[\s>]/.test(b), `a stage button is pressable with no Approach chosen: ${b}`);
+    assert.ok(/aria-pressed="false"/.test(b), `a stage shows as pressed with no Approach chosen: ${b}`);
+  }
+  assert.ok(html.includes("data-gac-record-needs-approach"), "no line tells the reader to choose an Approach first");
 });
 
 check("issue #325 -- an Approach IS picked: all four stages render, the current one pressed, the rest not", () => {
@@ -411,9 +423,22 @@ check("issue #325 -- pressing a stage button fires onStageChoice(unitKey, approa
   assert.deepEqual(order, ["stage:ayah:2:255:approach_02:practising"], "a stage press must fire onStageChoice and must not fire onClose");
 });
 
+// UPDATED IN PLACE, 1 Oct 2026: the stages now render with nothing picked
+// (see above), so this presses one for real instead of asserting there is
+// none -- the empty select must still stop any write.
 check("issue #325 -- pressing a stage button with no Approach picked fires nothing (the select's own empty value guards it)", () => {
   const html = renderAyahActionSheetHtml({ unitKey: "ayah:1:1", approachOptionsHtml: `<option value="approach_02">Hifz</option>` });
-  assert.ok(!html.includes("data-approach-stage-btn"), "precondition: no stage row should even render with nothing picked");
+  const container = fakeContainer(html);
+  const order = [];
+  attachAyahActionSheetHandlers(container, {
+    onClose: () => order.push("close"),
+    onStageChoice: (uk, id, statusId) => order.push(`stage:${uk}:${id}:${statusId}`),
+  });
+  const sheet = container.querySelector("[data-ayah-sheet]");
+  const btn = sheet.querySelectorAll("[data-approach-stage-btn]").find((b) => b.getAttribute("data-approach-stage-btn") === "learning");
+  assert.ok(btn, "precondition: the Learning stage button now renders with nothing picked");
+  btn._fire();
+  assert.deepEqual(order, [], "a stage press with no Approach chosen must write nothing");
 });
 
 check("Make a poster and See on the wheel both fire with onClose first", () => {

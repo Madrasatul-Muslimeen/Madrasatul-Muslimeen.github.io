@@ -3195,6 +3195,8 @@
     font: inherit; font-size: 0.82rem; color: var(--card-button-border); background: var(--card-bg-inset);
     border: 1px solid var(--card-line); border-radius: 0.35rem; cursor: pointer;
   }
+  /* Owner, 1 Oct 2026: the four stages always show; greyed and not pressable until an Approach is chosen. */
+  .approach-stage-btn:disabled { opacity: 0.45; cursor: not-allowed; }
   .approach-stage-btn[aria-pressed="true"] { color: var(--card-button-pressed-text); background: var(--card-button-pressed-bg); border-color: var(--card-button-pressed-bg); font-weight: 600; }
   /* The "This page" card mounts into the SAME overlay/sheet the Ayah Card
      uses (.ayah-sheet), so it inherits the bottom-sheet/900px-popover split
