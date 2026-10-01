@@ -193,8 +193,9 @@ for (const lang of ["en", "bn"]) {
 
 // v08.112 -- the Owner: "40 ways should reflect Everywhere." The landing
 // capsule reads the same heading: the default in each language, and a
-// tenant's own saved heading once it has one. Checked at 320 and 390px,
-// where the capsule shares its line with "Choose a Unit".
+// tenant's own saved heading once it has one. Checked at 320 and 390px
+// (the heading line, beside "Mastery Wheel", decision 46) and 1100px (the
+// wheel window's title bar).
 const OWN_TITLE = { en: "Quran Approaches - 41 Ways", bn: "কুরআনের পদ্ধতি - ৪১টি উপায়" };
 for (const lang of ["en", "bn"]) {
   for (const own of [false, true]) {
@@ -203,17 +204,24 @@ for (const lang of ["en", "bn"]) {
       const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, viewport: { width, height: 844 }, extraSeedJs: seed });
       const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
       await page.waitForFunction(() => document.querySelectorAll(".ways-list .way-row").length > 0, null, { timeout: 15000 });
+      // UPDATED IN PLACE, 1 Oct 2026 (Owner decision 46): the Approach list's
+      // title is no longer a 36px capsule beside "Choose a Unit" -- it is title
+      // text on the heading line beside "Mastery Wheel" (below 900px), and the
+      // same text in the wheel window's title bar (from 900px). Whichever copy
+      // is on screen is read; it must still be the tenant's heading, uncut,
+      // inside its line, with no sideways scroll.
       const cap = await page.evaluate(() => {
-        const el = document.getElementById("approachListCapsule");
+        const el = [...document.querySelectorAll("[data-approach-list-title]")].find((e) => e.getBoundingClientRect().width > 0) || document.getElementById("approachListCapsule");
         const r = el.getBoundingClientRect();
-        const row = el.parentElement.getBoundingClientRect();
+        const line = el.parentElement;
+        const row = line.getBoundingClientRect();
         return { text: el.textContent.trim(), h: r.height, left: r.left, right: r.right, rowLeft: row.left, rowRight: row.right,
-                 overflow: document.documentElement.scrollWidth - innerWidth, cut: el.scrollWidth > el.clientWidth + 1 };
+                 overflow: document.documentElement.scrollWidth - innerWidth, cut: el.scrollWidth > el.clientWidth + 1 || line.scrollWidth > line.clientWidth + 1 };
       });
       const want = own ? OWN_TITLE[lang] : DEFAULT_TITLE[lang];
       check(`[${lang} ${width}px ${own ? "own heading" : "default"}] the landing capsule reads "${want}"`, cap.text === want, cap.text);
       check(`[${lang} ${width}px ${own ? "own heading" : "default"}] ...uncut, inside its row, no sideways scroll`,
-        !cap.cut && cap.left >= cap.rowLeft - 1 && cap.right <= cap.rowRight + 1 && cap.overflow <= 1 && cap.h >= 36, JSON.stringify(cap));
+        !cap.cut && cap.left >= cap.rowLeft - 1 && cap.right <= cap.rowRight + 1 && cap.overflow <= 1 && cap.h > 10, JSON.stringify(cap));
       const real = errors.filter((e) => !/Failed to load resource: net::ERR_/.test(e));
       if (real.length) check(`[${lang} ${width}px] no page errors`, false, real.join("; "));
       await ctx.close();

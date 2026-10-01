@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.18",
+    "version": "09.19",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1397,8 +1397,20 @@
     {
       "version": "09.18",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Siyagah port round 3: Copy to/Move to for folders and notes, Delete to Trash with the notes refusal, Trash with Restore; plus the cleanup of five suites red on main.",
+      "integration": {
+        "authorizedOn": "2026-10-01",
+        "integratedOn": "2026-10-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.19",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Decision 46 (option C): the two titles on the heading line, Read / Choose a Unit / Know Your Status as one row under the wheel; decision 47: Record Your Progress always on the Ayah Card.",
       "integration": {
         "authorizedOn": "2026-10-01",
         "integratedOn": "2026-10-01",
@@ -1407,8 +1419,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.19",
+  "nextUnallocated": "09.20",
   "nextUnallocatedNote": [
+    "v09.19 was allocated to Mastery Wheel titles and action buttons on separate rows (decision 46); Record Your Progress always on the Ayah Card (decision 47), 2026-10-01.",
     "v09.18 was allocated to Siyagah round 3: folder and note Copy to/Move to, Delete to Trash, Trash with Restore (#443, PR #447), 2026-10-01.",
     "v09.17 was allocated to Mapping My Journey opens as a pop-up folder tray, 2026-10-01.",
     "v09.16 was allocated to My account on every page, Study options Save/Search order, Writing sheet in two rows, 2026-10-01.",

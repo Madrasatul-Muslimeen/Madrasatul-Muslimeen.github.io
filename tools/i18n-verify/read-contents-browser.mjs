@@ -34,10 +34,10 @@ const state = (page) => page.evaluate(() => ({
   played: window.__played,
   writes: (window.__fsLog || []).filter((x) => /set|add|update|delete|write|commit/i.test(x.kind || "")).length,
 }));
-// Architect, 30 Sep 2026 (Owner: "put Read beside Know Your Status on mobile"):
-// below 900px Read is the heading-line #readHeadBtn, from 900px the capsule
-// #readContentsBtn. Tap whichever one is showing.
-const readBtnSel = (page) => page.evaluate(() => ((document.getElementById("readHeadBtn")?.getBoundingClientRect().width ?? 0) > 0 ? "#readHeadBtn" : "#readContentsBtn"));
+// UPDATED IN PLACE, 1 Oct 2026 (Owner decision 46): Read is the capsule
+// #readContentsBtn at every width, in the action row under the wheel. The
+// heading-line #readHeadBtn is gone.
+const readBtnSel = async () => "#readContentsBtn";
 const openList = async (page) => {
   await page.click(await readBtnSel(page));
   await page.waitForFunction(() => document.querySelectorAll("#readContentsBody .rc-row").length > 0);
@@ -51,94 +51,74 @@ const pick = async (page, tab, n) => {
   await page.waitForTimeout(300);
 };
 
-// ---- Button: where it sits, its look, nothing cut, no sideways scroll
-// Expected placement written by hand from the Owner's decision and the measured
-// fit (a fourth capsule does not fit the row in English below ~1000px, and from
-// 900px the heading line is replaced by the wheel window's title bar):
-//   < 520  heading line, right edge, immediately before Know Your Status
-//   520-899 heading line, right edge (Know Your Status is a capsule there)
-//   >= 900 the fourth capsule, one 36px row with the other three
+// ---- UPDATED IN PLACE, 1 Oct 2026 -- Owner decision 46 (option C of a
+// real-screenshot demo): "Mastery Wheel n Approach the Quran in 40 Ways are not
+// buttons. Therefore they should be in the same row while Read, Choose a unit
+// and Know Your Status are buttons for actions, therefore, should be in the
+// same row." ... "Go with C." These checks used to assert the 30 Sep
+// arrangement (Read as a heading-line link beside Know Your Status below
+// 900px, a fourth capsule from 900px). Expected now, written by hand from the
+// decision, at EVERY width:
+//   the heading line (below 900px; from 900px the window's title bar) carries
+//   the two titles only, on one line, with the line-or-dot between them;
+//   Read | Choose a Unit | Know Your Status are one row of 36px capsules, in
+//   that order, under the wheel and above its colour key.
 for (const lang of ["en", "bn"]) {
-  for (const width of [320, 340, 360, 390, 412, 479, 480, 500, 519, 520, 600, 768, 899, 900, 940, 1000, 1280]) {
+  for (const width of [320, 340, 360, 390, 412, 519, 520, 600, 768, 899, 900, 1000, 1280]) {
     const { ctx, page } = await start({ lang, width });
     const m = await page.evaluate(() => {
-      // A missing button reads as "not shown" so the checks FAIL by name rather than crash.
-      const R = (e) => (e ? e.getBoundingClientRect() : { width: 0, height: 0, top: 0, left: 0, right: 0 });
-      const head = document.getElementById("readHeadBtn"), cap = document.getElementById("readContentsBtn");
-      const title = document.querySelector(".wheel-heading > span"), kys = document.getElementById("myStatusBtn");
+      const R = (e) => (e ? e.getBoundingClientRect() : { width: 0, height: 0, top: 0, bottom: 0, left: 0, right: 0 });
+      const read = document.getElementById("readContentsBtn"), unit = document.getElementById("wheelUnitBtn"), kys = document.getElementById("myStatusWideBtn");
+      const row = document.getElementById("wheelIntroSettled"), wheel = document.querySelector("#wheelContainer svg"), legend = document.getElementById("wheelLegendContainer");
+      const h = document.querySelector(".wheel-heading"), popup = document.querySelector(".note-popup-title");
       const de = document.documentElement;
-      const style = (e) => ["fontFamily", "fontSize", "fontWeight", "color"].map((k) => getComputedStyle(e)[k]).join("|");
-      const caps = [...document.querySelectorAll("#wheelIntroSettled > .wheel-intro-capsule, #wheelIntroSettled > .wheel-unit-wrap > .wheel-unit-capsule, #wheelIntroSettled > .wheel-unit-capsule")].filter((e) => R(e).width > 0);
-      const shown = R(head).width > 0 ? head : cap;
-      const r = R(shown), tr = R(title), kr = R(kys), hr = R(title.parentElement);
+      const btns = [read, unit, kys];
+      const titleBox = R(h).width > 0 ? h : popup;
+      const main = titleBox.querySelector(".wheel-title-main"), appr = titleBox.querySelector("[data-approach-list-title]"), sep = titleBox.querySelector(".wheel-title-sep");
       return {
-        headShown: R(head).width > 0, capShown: R(cap).width > 0,
-        label: shown.textContent.trim(), h: Math.round(r.height), inView: r.left >= 0 && r.right <= innerWidth + 0.5,
-        cut: shown.scrollWidth > shown.clientWidth + 1, over: de.scrollWidth > de.clientWidth,
-        headStyleIsTitle: R(head).width > 0 ? style(head) === style(title) : null,
-        headOnTitleLine: R(head).width > 0 ? Math.abs((tr.top + tr.height / 2) - (r.top + r.height / 2)) < 4 && r.left > tr.right && r.right <= hr.right + 0.5 : null,
-        // Updated in place, 30 Sep 2026 -- the Owner moved Read: "Place Read button in the
-        // middle of the gap ... put dot or a | like bar in between those buttons". Was:
-        // Know Your Status within 24px after Read. Now: Read centred between the title and
-        // Know Your Status (the two gaps within 2px), all three on one line, and a
-        // visible separator drawn midway between Read and Know Your Status.
-        kysAfterCentred: R(head).width > 0 && kr.width > 0 ? kr.left > r.right && Math.abs((r.left - tr.right) - (kr.left - r.right)) <= 2 && Math.abs((kr.top + kr.height / 2) - (r.top + r.height / 2)) < 2 : null,
-        gaps: [Math.round(r.left - tr.right), Math.round(kr.left - r.right)],
-        titleOneLine: tr.height < 30,
-        sep: (() => { const cs = getComputedStyle(title.parentElement, "::after"); return { img: cs.backgroundImage, w: parseFloat(cs.width) || 0, op: cs.opacity, order: cs.order, kind: document.documentElement.dataset.headSep }; })(),
-        capTops: [...new Set(caps.map((e) => Math.round(R(e).top)))].length, capHeights: [...new Set(caps.map((e) => Math.round(R(e).height)))],
+        shown: btns.map((b) => R(b).width > 0), heights: btns.map((b) => Math.round(R(b).height)),
+        tops: [...new Set(btns.map((b) => Math.round(R(b).top)))].length,
+        order: R(read).right <= R(unit).left + 0.5 && R(unit).right <= R(kys).left + 0.5,
+        inRow: btns.every((b) => row.contains(b)),
+        underWheel: R(row).top >= R(wheel).bottom - 1, aboveLegend: R(row).bottom <= R(legend).top + 1,
+        cut: btns.some((b) => b.scrollWidth > b.clientWidth + 1), inView: btns.every((b) => R(b).left >= 0 && R(b).right <= innerWidth + 0.5),
+        over: de.scrollWidth > de.clientWidth,
+        headButtons: h.querySelectorAll("button").length,
+        titleWhere: R(h).width > 0 ? "heading" : "window",
+        titleText: [main?.textContent.trim(), appr?.textContent.trim()],
+        titleOneLine: R(main).height > 0 && Math.abs(R(main).top - R(appr).top) < 6 && !h.classList.contains("wheel-heading-wrapped"),
+        sepBetween: R(sep).width > 0 && R(sep).left >= R(main).right - 0.5 && R(sep).right <= R(appr).left + 0.5,
+        titleCut: titleBox.scrollWidth > titleBox.clientWidth + 1,
+        label: read.textContent.trim(),
       };
     });
     const tag = `${lang} ${width}px`;
-    if (width < 900) {
-      check(`${tag}: Read is on the heading line, not a capsule`, m.headShown && !m.capShown, JSON.stringify(m));
-      check(`${tag}: heading Read wears the heading's own face, size, weight and colour`, m.headStyleIsTitle === true, JSON.stringify(m));
-      check(`${tag}: heading Read sits on the title's line, to its right, inside the heading`, m.headOnTitleLine === true, JSON.stringify(m));
-      if (width < 520) {
-        check(`${tag}: Read sits in the middle of the gap, Know Your Status after it on the same line`, m.kysAfterCentred === true, JSON.stringify(m));
-        // Updated in place, 30 Sep 2026 -- the Owner: "both dot/ line looks good to me.
-        // enable both appears randomly." The mark is a line or a dot (whichever this
-        // load picked); the section after this loop checks both, on both sides.
-        check(`${tag}: a separator is drawn between Read and Know Your Status`, (m.sep.kind === "dot" ? /radial-gradient/ : /linear-gradient/).test(m.sep.img) && m.sep.w >= 4 && m.sep.order === "3", JSON.stringify(m.sep));
-        check(`${tag}: "Mastery Wheel" stays on one line`, m.titleOneLine === true, JSON.stringify(m));
-      }
-      check(`${tag}: heading Read is a 36px tap target`, m.h === 36, JSON.stringify(m));
-    } else {
-      check(`${tag}: Read is the fourth capsule`, m.capShown && !m.headShown, JSON.stringify(m));
-      check(`${tag}: the four capsules share one row, all 36px`, m.capTops === 1 && m.capHeights.length === 1 && m.capHeights[0] === 36, JSON.stringify(m));
-    }
-    // Owner, 30 Sep 2026: "fix the tablet wrap too" -- the capsules never wrap, at any width.
-    check(`${tag}: the capsule row is one line, every capsule 36px`, m.capTops === 1 && m.capHeights.length === 1 && m.capHeights[0] === 36, JSON.stringify(m));
-    check(`${tag}: Read on screen, label not cut, no sideways scroll`, m.inView && !m.cut && !m.over, JSON.stringify(m));
+    check(`${tag}: Read, Choose a Unit and Know Your Status are all shown, in that order, in the one action row`, m.shown.every(Boolean) && m.order && m.inRow, JSON.stringify(m));
+    check(`${tag}: the action row is one line of 36px buttons`, m.tops === 1 && m.heights.every((x) => x === 36), JSON.stringify(m));
+    check(`${tag}: the action row sits under the wheel and above its colour key`, m.underWheel && m.aboveLegend, JSON.stringify(m));
+    check(`${tag}: no button is cut or off screen, and no sideways scroll`, !m.cut && m.inView && !m.over, JSON.stringify(m));
+    check(`${tag}: the heading line holds no buttons`, m.headButtons === 0, JSON.stringify(m));
+    check(`${tag}: the two titles are together on one line (${width < 900 ? "heading line" : "window title bar"}), separator between them, nothing cut`,
+      m.titleWhere === (width < 900 ? "heading" : "window") && m.titleText.every((x) => x && x.length > 3) && m.titleOneLine && m.sepBetween && !m.titleCut, JSON.stringify(m));
     if (width === 390) check(`${lang}: label is "${lang === "bn" ? "পড়ুন" : "Read"}"`, m.label === (lang === "bn" ? "পড়ুন" : "Read"), m.label);
     await ctx.close();
   }
 }
 
-// ---- The heading's separators: a line or a dot on BOTH sides of Read, picked at
-// random per page load, and the three words on one baseline (Owner, 30 Sep 2026:
-// "it has to be aligned", then "both dot/ line looks good to me. enable both
-// appears randomly").
+// ---- The separator between the two titles: a thin line or a dot, picked at
+// random per page load (decision 36, carried into decision 46's one gap).
 for (const lang of ["en", "bn"]) {
-  for (const width of [320, 340, 360, 390, 412, 519]) {
+  for (const width of [320, 390, 820]) {
     const { ctx, page } = await start({ lang, width });
     for (const kind of ["line", "dot"]) {
       await page.evaluate((k) => document.documentElement.setAttribute("data-head-sep", k), kind);
       const m = await page.evaluate(() => {
-        const h = document.querySelector(".wheel-heading"), title = h.querySelector(":scope > span");
-        const read = document.getElementById("readHeadBtn"), kys = document.getElementById("myStatusBtn");
-        const textBottom = (el) => { const r = document.createRange(); r.selectNodeContents(el); return r.getBoundingClientRect().bottom; };
-        const pe = (p) => { const cs = getComputedStyle(h, p); return { img: cs.backgroundImage, w: parseFloat(cs.width) || 0, order: cs.order, op: cs.opacity }; };
-        const R = (e) => e.getBoundingClientRect();
-        return { before: pe("::before"), after: pe("::after"), bottoms: [textBottom(title), textBottom(read), textBottom(kys)].map((x) => Math.round(x * 10) / 10),
-          order: R(title).right <= R(read).left && R(read).right <= R(kys).left, over: document.documentElement.scrollWidth > document.documentElement.clientWidth };
+        const e = document.querySelector(".wheel-heading .wheel-title-sep"), r = e.getBoundingClientRect(), cs = getComputedStyle(e);
+        return { w: Math.round(r.width * 10) / 10, h: Math.round(r.height * 10) / 10, radius: cs.borderTopLeftRadius, op: cs.opacity, bg: cs.backgroundColor };
       });
       const tag = `${lang} ${width}px ${kind}`;
-      const re = kind === "dot" ? /radial-gradient/ : /linear-gradient/;
-      check(`${tag}: the same mark on both sides of Read`, re.test(m.before.img) && re.test(m.after.img) && m.before.img === m.after.img && m.before.w >= 6 && m.after.w >= 6 && m.before.order === "1" && m.after.order === "3", JSON.stringify(m));
-      check(`${tag}: Mastery Wheel, Read and Know Your Status sit on one baseline`, Math.max(...m.bottoms) - Math.min(...m.bottoms) <= 1, JSON.stringify(m.bottoms));
-      check(`${tag}: title, Read, Know Your Status in order on one line, no sideways scroll`, m.order && !m.over, JSON.stringify(m));
-      if (lang === "en" && width === 390) await page.screenshot({ path: `${process.env.SHOT_DIR || "/tmp"}/head-sep-${kind}-${lang}-${width}.png`, clip: { x: 0, y: 0, width, height: 160 } });
+      check(`${tag}: the separator is drawn as a ${kind}`, kind === "line" ? m.w > 0 && m.w <= 2 && m.h >= 8 : m.w >= 4 && m.w <= 7 && m.radius === "50%", JSON.stringify(m));
+      if (lang === "en" && width === 390) await page.screenshot({ path: `${process.env.SHOT_DIR || "/tmp"}/head-sep-${kind}-${lang}-${width}.png`, clip: { x: 0, y: 0, width, height: 200 } });
     }
     await ctx.close();
   }

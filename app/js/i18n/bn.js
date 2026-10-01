@@ -2956,6 +2956,7 @@ export const BN = {
   "This page": "এই পৃষ্ঠা",
   // Issue #370 -- the Global Approach Card.
   "Mastered is confirmed by a teacher.": "আয়ত্ত হয়েছে কিনা তা একজন শিক্ষক নিশ্চিত করেন।",
+  "Choose an Approach above first, then tap your stage.": "প্রথমে ওপরে একটি পদ্ধতি বেছে নিন, তারপর আপনার ধাপে চাপুন।",
 
   // Issue #328 -- the per-Approach "counts for each ayah inside" setting
   // (Owner decision 6, 27 Sep 2026) on catalogue.html, and the "My Status"
