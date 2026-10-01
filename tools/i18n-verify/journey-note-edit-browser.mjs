@@ -254,5 +254,28 @@ for (const lang of ["en", "bn"]) {
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);
+// Added by the Architect in review (1 Oct 2026): while editing a LONG Note, the
+// header row (with Done) and the formatting toolbar stay on screen. Measured
+// before the fix: typing at the end left the toolbar 48-67px and Done 200-245px
+// above the top of the screen at every width.
+for (const [lang, width] of [["bn", 390], ["en", 1280]]) {
+  const LONG_SEED = SEED.split("filler(2)").join("filler(14)");
+  const ctx = await newContext(browser, { appLang: lang, viewport: { width, height: 760 }, extraSeedJs: LONG_SEED });
+  await ctx.addInitScript(() => { try { localStorage.setItem("qr.journeyMapExpanded", JSON.stringify(["fA"])); } catch {} });
+  const { page } = await openPage(ctx, "/app/journey-map.html#folders");
+  await page.waitForFunction(() => document.querySelectorAll("[data-note-leaf]").length >= 4 && !document.querySelector("[data-folder-count-loading]"), null, { timeout: 15000 });
+  await startEditing(page, "n1");
+  await typeAtEnd(page, " end");
+  await page.waitForTimeout(300);
+  const m = await page.evaluate(() => {
+    const inView = (el) => { const r = el.getBoundingClientRect(); return r.height > 0 && r.top >= -1 && r.bottom <= innerHeight + 1; };
+    const done = document.querySelector("[data-pane-bar] > [data-pane-edit-toggle]:not([hidden])") || document.querySelector("[data-pane-menu-btn]");
+    const scrolled = (document.scrollingElement.scrollTop || 0) + (document.getElementById("notePane").scrollTop || 0);
+    return { toolbar: inView(document.querySelector("[data-edit-toolbar]")), done: !!done && inView(done), scrolled };
+  });
+  check(`${lang} ${width}px: typing at the end of a long Note keeps the formatting toolbar and the header (Done / ⋯) on screen`, m.scrolled > 200 && m.toolbar && m.done, JSON.stringify(m));
+  await ctx.close();
+}
+
 await browser.close();
 process.exit(fail ? 1 : 0);

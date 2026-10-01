@@ -247,6 +247,12 @@
   [data-pane-menu] .pane-editfold-item { display: none; }
   .note-pane-bar.edit-folded [data-pane-menu] .pane-editfold-item { display: block; }
   .pane-edit-title { width: 100%; box-sizing: border-box; font: inherit; font-size: 1.15rem; font-weight: 600; min-height: 40px; margin: 0.7rem 0 0.2rem; padding: 0.3rem 0.5rem; border: 1px solid #aab; border-radius: 0.4rem; }
+  /* Architect review of #451 (1 Oct 2026): while editing, the header row (with
+     ✓ Done) and the formatting toolbar stay pinned at the top of the pane's
+     scroll -- measured before this, typing in a long Note left the toolbar
+     48-67px and Done 200-245px above the screen at every width. */
+  #notePane.pane-editing .note-pane-bar { position: sticky; top: 0; z-index: 6; background: #fff; box-shadow: 0 -0.5rem 0 #fff; }
+  #notePane.pane-editing .pane-edit-toolbar { position: sticky; top: 40px; z-index: 5; background: #fff; padding: 0.15rem 0; box-shadow: 0 -0.4rem 0 #fff; }
   .pane-edit-toolbar { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.3rem; margin: 0.4rem 0; }
   .pane-edit-toolbar > * { flex: 0 0 auto; }
   .pane-edit-toolbar .tb-btn { min-width: 40px; min-height: 40px; padding: 0 0.4rem; }
@@ -1156,6 +1162,7 @@
       editTitleEl.setAttribute("aria-label", t("Note title"));
       renderEditToolbar();
       editToolbarEl.hidden = false;
+      notePaneEl.classList.add("pane-editing");
       setEditStatus("");
       renderPaneBar();
       fitPaneBarTwice();
@@ -1169,6 +1176,7 @@
       notePaneEl.querySelector("[data-pane-title]").hidden = false;
       editToolbarEl.hidden = true;
       editStatusEl.hidden = true;
+      notePaneEl.classList.remove("pane-editing");
       const draft = isSelfSelected() ? loadDraft(note.noteId) : null;
       if (draft && draft.title.trim() === (note.title ?? "").trim() && draft.bodyHtml === normBody(note.bodyHtml)) { clearDraft(note.noteId); draftOfferEl.hidden = true; return; }
       if (!draft) { draftOfferEl.hidden = true; return; }
