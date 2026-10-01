@@ -3174,4 +3174,13 @@ export const BN = {
   "(no folder)": "(কোনো ফোল্ডার নেই)",
   "Folder \"{name}\" restored.": "ফোল্ডার \"{name}\" ফিরিয়ে আনা হয়েছে।",
   "\"{title}\" restored.": "\"{title}\" ফিরিয়ে আনা হয়েছে।",
+  // Siyagah round 4 -- the Note pane
+  "Contents": "সূচিপত্র",
+  "Previous note": "আগের নোট",
+  "Next note": "পরের নোট",
+  "Open full page": "পূর্ণ পৃষ্ঠায় খুলুন",
+  "Created {date}": "তৈরি: {date}",
+  "Last changed {date}": "সর্বশেষ বদল: {date}",
+  "(untitled section)": "(শিরোনামহীন অংশ)",
+  "\"{title}\" moved to Trash. Open 🗑 Trash from the ⋯ menu to restore it.": "\"{title}\" ট্র্যাশে গেছে। ফিরিয়ে আনতে ⋯ মেনু থেকে 🗑 ট্র্যাশ খুলুন।",
 };

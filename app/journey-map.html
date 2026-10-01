@@ -215,6 +215,40 @@
   .note-body-preview p { margin: 0.3rem 0; }
   .note-actions { margin-top: 0.5rem; display: flex; gap: 0.4rem; flex-wrap: wrap; }
   .folder-chip { display: inline-block; font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 999px; background: #eef2ff; color: #1F3A6E; margin: 0.1rem 0.2rem 0 0; }
+  /* Siyagah round 4 -- the Note pane (read mode). Below 1200px (the DOCUMENT's
+     width, so the tray's iframe counts, not the screen) the pane REPLACES the
+     list; at 1200px and up the two sit side by side. */
+  .note-open-btn { background: none; border: none; color: #1F3A6E; text-align: left; padding: 0.3rem 0; min-height: 40px; cursor: pointer; font-family: inherit; overflow-wrap: anywhere; }
+  .note-more-btn { min-width: 40px; min-height: 40px; }
+  #notePane[hidden] { display: none; }
+  #notePane { min-width: 0; box-sizing: border-box; border: 1px solid #ddd; border-radius: 0.6rem; background: #fff; padding: 0.5rem 0.7rem 1rem; margin-top: 0.6rem; }
+  #noteLayout.pane-open.tier-narrow #listPane { display: none; }
+  #noteLayout.pane-open.tier-wide { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 1rem; align-items: start; }
+  #noteLayout.pane-open.tier-wide #notePane { position: sticky; top: 0.5rem; max-height: calc(100vh - 1rem); overflow-y: auto; margin-top: 1rem; }
+  body.note-pane-wide { max-width: 84rem; }
+  .note-pane-bar { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.4rem; min-height: 40px; }
+  .note-pane-bar > * { flex: 0 0 auto; }
+  .note-pane-bar > .pane-spacer { flex: 1 1 0; min-width: 0; }
+  .pane-btn { min-height: 40px; min-width: 40px; white-space: nowrap; }
+  .pane-menu-wrap[hidden] { display: none; }
+  #noteLayout.tier-wide [data-pane-back] { display: none; }
+  .note-pane-bar.folded [data-pane-prev], .note-pane-bar.folded [data-pane-next] { display: none; }
+  .note-pane-bar.tight [data-pane-contents-label] { display: none; }
+  [data-pane-menu] .pane-fold-item { display: none; }
+  .note-pane-bar.folded [data-pane-menu] .pane-fold-item { display: block; }
+  .pane-contents-menu { left: 0; right: auto; width: 15rem; max-height: 60vh; overflow-y: auto; }
+  .note-pane-title { margin: 0.7rem 0 0.2rem; font-size: 1.25rem; overflow-wrap: anywhere; }
+  .note-pane-meta { margin: 0 0 0.4rem; font-size: 0.8rem; color: #777; }
+  .note-pane-chips { margin: 0 0 0.6rem; }
+  .note-pane-chips .folder-chip { border: 1px solid #c9d3e6; cursor: pointer; font-size: 0.8rem; min-height: 32px; padding: 0.2rem 0.7rem; }
+  .note-pane-body { line-height: 1.5; overflow-wrap: anywhere; }
+  .note-pane-body img, .note-pane-body table { max-width: 100%; }
+  .note-sec-h { margin: 0.6rem 0 0.2rem; font-size: 1.05rem; }
+  .note-sec-toggle { display: flex; align-items: flex-start; gap: 0.4rem; width: 100%; min-height: 40px; background: none; border: none; color: #1F3A6E; font: inherit; font-weight: 700; text-align: left; padding: 0.2rem 0; cursor: pointer; }
+  .note-sec-arrow { flex: 0 0 1.2rem; }
+  .note-sec-text { min-width: 0; overflow-wrap: anywhere; }
+  .note-sec .note-sec { margin-left: 0.8rem; }
+  .note-sec.collapsed > .note-sec-body { display: none; }
   #truncatedMsg { color: #a3352b; font-size: 0.82rem; margin-top: 0.5rem; }
   /* Embed mode: the page is the pop-up tray's body (journey-tray.js), which
      supplies the title bar and close. Header, intro, nav and Back are the tray's
@@ -259,6 +293,8 @@
     <div id="readOnlyMsg" class="note" style="display:none;"></div>
     <p id="pageStatusMsg" class="note" style="display:none;"></p>
 
+    <div id="noteLayout">
+    <div id="listPane">
     <div id="viewToggle" role="group" aria-label="View">
       <a id="backLink" href="quranrevival.html" title="Go back" aria-label="Go back"><span aria-hidden="true">←</span></a>
       <button type="button" class="view-toggle-btn" data-view="folders">Folders</button>
@@ -277,6 +313,28 @@
     <div id="viewTimeline" style="display:none;"></div>
     <div id="viewPath" style="display:none;"></div>
     <div id="viewTrash" style="display:none;"></div>
+    </div>
+    <section id="notePane" aria-label="Note" hidden>
+      <div class="note-pane-bar" data-pane-bar>
+        <button type="button" class="secondary pane-btn" data-pane-back>← <span data-pane-back-label>Back</span></button>
+        <button type="button" class="secondary pane-btn pane-nav" data-pane-prev>‹</button>
+        <button type="button" class="secondary pane-btn pane-nav" data-pane-next>›</button>
+        <span class="bar-palette-wrap pane-menu-wrap" data-bar-palette-wrap="paneContents" data-pane-contents-wrap hidden>
+          <button type="button" class="secondary pane-btn bar-palette-toggle" data-bar-palette-toggle="paneContents" aria-haspopup="true" aria-expanded="false" data-pane-contents-btn>☰ <span data-pane-contents-label>Contents</span></button>
+          <div class="bar-palette pane-contents-menu" data-bar-palette="paneContents" data-pane-contents-list></div>
+        </span>
+        <span class="pane-spacer"></span>
+        <span class="bar-palette-wrap folder-menu-wrap" data-bar-palette-wrap="paneMenu" data-pane-menu-wrap>
+          <button type="button" class="folder-menu-btn bar-palette-toggle" data-bar-palette-toggle="paneMenu" aria-haspopup="true" aria-expanded="false" data-pane-menu-btn>⋯</button>
+          <div class="bar-palette" data-bar-palette="paneMenu" data-pane-menu></div>
+        </span>
+      </div>
+      <h2 class="note-pane-title" data-pane-title></h2>
+      <p class="note-pane-meta" data-pane-meta></p>
+      <div class="note-pane-chips" data-pane-chips></div>
+      <div class="note-pane-body" data-pane-body></div>
+    </section>
+    </div>
   </div>
 
   <script type="module">
@@ -298,7 +356,7 @@
     import { roleListLabel } from "./js/labels.js";
     import { sanitizeNoteHtml } from "./js/note-sanitize.js";
     import { closeAllBarPalettes } from "./js/bar-palette.js";
-    import { NOTE_STATUS, createNoteFolder, createNotePlacement, restoreNote } from "./js/note-foundation.js";
+    import { NOTE_STATUS, createNoteFolder, createNotePlacement, restoreNote, retirePermanentNote } from "./js/note-foundation.js";
     import {
       ownerFolderTreePagedSharded, folderContents,
       renameFolder, reorderFolder, moveFolder, reorderFiling,
@@ -685,6 +743,8 @@
     function showPageStatus(msg) {
       pageStatusMsg.textContent = msg;
       pageStatusMsg.style.display = "block";
+      // The pane replaces the list below 1200px; its failures must still reach the reader (I15).
+      if (typeof paneNoteId !== "undefined" && paneNoteId !== null) pageStatusMsg.scrollIntoView?.({ block: "nearest" });
     }
     function renderReadOnlyBanner() {
       if (isSelfSelected()) { readOnlyMsg.style.display = "none"; return; }
@@ -750,6 +810,7 @@
       folderCounts = folderNoteCounts(rawFolderList(folderTree), allPlacements, allNotes);
       notesAndPlacementsLoaded = true;
       renderCurrentView();
+      syncNotePane();
     }
 
     /** Every real folder document behind `folderTree` (roots + orphaned + cyclic + tooDeep), flattened for folderNoteCounts() -- never the page's OWN virtual system-folder placeholders (mergedRoots()), which folderId: null would collide against inside buildFolderTree()'s own id-keyed map. */
@@ -774,20 +835,25 @@
     // is browsing/organising, not editing (editing a permanent Note is
     // notes.html's job, scoped to the Study Unit it was written about).
     // -------------------------------------------------------------------
-    function noteCardHtml(note, { fileControl = false, extraHead = "" } = {}) {
-      const retired = note.status === NOTE_STATUS.RETIRED;
+    /** The one head every Note row wears (Folders leaf, Timeline card, Path stop): the TITLE opens the Note pane (Siyagah round 4); a small ▾ button, shown only when the row has actions, reveals the row's own controls. */
+    function noteHeadHtml(note, { extraHead = "", hasActions = false, titlePrefix = "" } = {}) {
       const title = note.title?.trim() || t("(untitled)");
       const open = expandedNoteIds.has(note.noteId);
-      return `<div class="note-card" data-note-id="${escapeHtml(note.noteId)}">
-        <div class="note-card-head" data-note-toggle>
-          <span class="note-card-title">${escapeHtml(title)}</span>
+      const more = hasActions
+        ? `<button type="button" class="secondary tiny note-more-btn" data-note-toggle aria-expanded="${open}" aria-label="${escapeHtml(t("More"))}" title="${escapeHtml(t("More"))}">▾</button>`
+        : "";
+      return `<div class="note-card-head">
+          <button type="button" class="note-card-title note-open-btn" data-note-open>${titlePrefix}${escapeHtml(title)}</button>
           <span class="note-card-meta">${when(displayTimestamp(note))}</span>
-          ${extraHead}
-        </div>
-        <div class="note-body-preview${open ? " open" : ""}" data-note-body></div>
-        <div class="note-actions" data-note-actions style="${open ? "" : "display:none"}">
-          ${fileControl && isSelfSelected() ? `<button type="button" class="secondary tiny" data-note-file>${t("File in a folder…")}</button>` : ""}
-        </div>
+          ${extraHead}${more}
+        </div>`;
+    }
+    function noteCardHtml(note, { fileControl = false, extraHead = "" } = {}) {
+      const open = expandedNoteIds.has(note.noteId);
+      const fileBtn = fileControl && isSelfSelected() ? `<button type="button" class="secondary tiny" data-note-file>${t("File in a folder…")}</button>` : "";
+      return `<div class="note-card" data-note-id="${escapeHtml(note.noteId)}">
+        ${noteHeadHtml(note, { extraHead, hasActions: !!fileBtn })}
+        <div class="note-actions" data-note-actions style="${open ? "" : "display:none"}">${fileBtn}</div>
       </div>`;
     }
     // Issue #265 -- a WordPress-imported Note carries its REAL original date
@@ -799,24 +865,322 @@
     function displayTimestamp(note) {
       return note?.originalCreatedAt ?? note?.updatedAt;
     }
+    // Architect review of #448, 1 Oct 2026: dates follow the reader's language
+    // (a Bangla reader saw "8/1/2026, 9:00:00 AM" in the Note pane, Timeline
+    // and Path). undefined keeps the device's own locale for English.
+    function dateLocale() { return getAppLang() === "bn" ? "bn-BD" : undefined; }
     function when(ts) {
       const d = ts?.toDate ? ts.toDate() : null;
-      return d ? d.toLocaleString() : "";
+      return d ? d.toLocaleString(dateLocale()) : "";
     }
     function wireNoteCards(container, notes) {
       container.querySelectorAll("[data-note-id]").forEach((card) => {
         const noteId = card.dataset.noteId;
         const note = notes.find((n) => n.noteId === noteId);
         if (!note) return;
-        card.querySelector("[data-note-toggle]").addEventListener("click", () => {
+        card.querySelector("[data-note-open]")?.addEventListener("click", (e) => openNotePane(noteId, e.currentTarget));
+        card.querySelector("[data-note-toggle]")?.addEventListener("click", (e) => {
           if (expandedNoteIds.has(noteId)) expandedNoteIds.delete(noteId); else expandedNoteIds.add(noteId);
-          card.querySelector("[data-note-body]").classList.toggle("open");
-          card.querySelector("[data-note-actions]").style.display = expandedNoteIds.has(noteId) ? "" : "none";
-          if (expandedNoteIds.has(noteId)) card.querySelector("[data-note-body]").innerHTML = sanitizeNoteHtml(note.bodyHtml || "");
+          const shown = expandedNoteIds.has(noteId);
+          card.querySelector("[data-note-actions]").style.display = shown ? "" : "none";
+          e.currentTarget.setAttribute("aria-expanded", String(shown));
         });
-        if (expandedNoteIds.has(noteId)) card.querySelector("[data-note-body]").innerHTML = sanitizeNoteHtml(note.bodyHtml || "");
         card.querySelector("[data-note-file]")?.addEventListener("click", () => openFileDialog(note));
       });
+    }
+
+    // =====================================================================
+    // Siyagah port round 4 (Owner decisions 41, 42.1, 42.4): the NOTE PANE,
+    // read mode. A click on a Note's title (Folders, Timeline or Path) opens
+    // it inside this same document -- so it works in the tray and on the full
+    // page alike, and is never a new page. Collapsed sections are UI state in
+    // localStorage, never Firestore (handover §1.5; noteShapeOk() has no
+    // field for it). Editing is round 5.
+    // =====================================================================
+    const NOTE_PANE_WIDE_FROM = 1200;
+    /**
+     * THE one place the width decision is made (handover §4.1, §5.4): the
+     * DOCUMENT's own width, never the screen's -- the tray is an iframe
+     * usually narrower than 1200px on a screen far wider than that.
+     */
+    function noteLayoutTier() {
+      return document.documentElement.clientWidth >= NOTE_PANE_WIDE_FROM ? "wide" : "narrow";
+    }
+    const isEmbedded = document.documentElement.classList.contains("embed");
+    const noteLayoutEl = document.getElementById("noteLayout");
+    const notePaneEl = document.getElementById("notePane");
+    const paneBarEl = notePaneEl.querySelector("[data-pane-bar]");
+    let paneNoteId = null;       // the Note shown, or null when the pane is closed
+    let paneOrder = [];          // the Notes ‹ › walk, in the order of the list it was opened from
+    let paneFolderId = null;     // the folder the pane was opened from, when there is one (Move to… needs a "from")
+    let paneListScroll = 0;      // the list's scroll position, put back by ← Back
+    let pendingOpenNoteId = new URLSearchParams(location.search).get("note"); // "Open full page" from the tray
+
+    const scroller = () => document.scrollingElement || document.documentElement;
+    const COLLAPSE_KEY = (noteId) => `qr.journeyNoteCollapsed.${noteId}`;
+    function loadCollapsed(noteId) {
+      try { const v = JSON.parse(localStorage.getItem(COLLAPSE_KEY(noteId)) || "[]"); return new Set(Array.isArray(v) ? v : []); } catch { return new Set(); }
+    }
+    function saveCollapsed(noteId, set) {
+      try { localStorage.setItem(COLLAPSE_KEY(noteId), JSON.stringify([...set])); } catch { /* private browsing -- the choice just doesn't stick */ }
+    }
+
+    function applyNoteTier() {
+      const open = paneNoteId !== null;
+      const tier = noteLayoutTier();
+      noteLayoutEl.classList.toggle("pane-open", open);
+      noteLayoutEl.classList.toggle("tier-wide", tier === "wide");
+      noteLayoutEl.classList.toggle("tier-narrow", tier === "narrow");
+      document.body.classList.toggle("note-pane-wide", open && tier === "wide" && !isEmbedded);
+      notePaneEl.hidden = !open;
+    }
+
+    /** The row's own place in the list it was opened from, read off the rendered list so ‹ › walk exactly what the reader sees (a folder's own order; Timeline's or one Path branch's). */
+    function paneOrderFrom(el) {
+      const leaf = el.closest("[data-note-leaf]");
+      let scope, sel;
+      if (leaf) { scope = viewFolders; sel = `[data-note-leaf][data-in-folder="${CSS.escape(leaf.dataset.inFolder)}"]`; }
+      else { scope = el.closest("[data-path-stops]") || el.closest("#viewTimeline, #viewPath") || document; sel = ".note-card[data-note-id]"; }
+      return [...new Set([...scope.querySelectorAll(sel)].map((n) => n.dataset.noteId))];
+    }
+    function paneFolderFrom(el) {
+      const leaf = el.closest("[data-note-leaf]");
+      if (leaf) return leaf.dataset.inFolder;
+      const key = el.closest("[data-path-branch]")?.dataset.branchKey;
+      return key ? (findNodeByExpandKey(mergedRoots(), key)?.folderId ?? null) : null;
+    }
+
+    function openNotePane(noteId, fromEl) {
+      if (!allNotes.some((n) => n.noteId === noteId)) return;
+      if (paneNoteId === null) paneListScroll = scroller().scrollTop;
+      paneOrder = fromEl ? paneOrderFrom(fromEl) : [noteId];
+      paneFolderId = fromEl ? paneFolderFrom(fromEl) : null;
+      paneNoteId = noteId;
+      applyNoteTier();
+      renderNotePane();
+      if (noteLayoutTier() === "narrow") scroller().scrollTop = 0;
+    }
+
+    function closeNotePane({ restoreScroll = true } = {}) {
+      if (paneNoteId === null) return;
+      paneNoteId = null;
+      closeAllBarPalettes(null);
+      applyNoteTier();
+      if (restoreScroll) {
+        scroller().scrollTop = paneListScroll;
+        requestAnimationFrame(() => { scroller().scrollTop = paneListScroll; });
+      }
+    }
+
+    /** The one-line header: measure, then fold -- never wrap, never cut (§4.2). ‹ › fold into the ⋯ menu first; if the Contents label is still too wide it shortens to ☰. Run twice by the caller (now, and in requestAnimationFrame). */
+    function fitPaneBar() {
+      if (paneNoteId === null) return;
+      paneBarEl.classList.remove("folded", "tight");
+      if (paneBarEl.scrollWidth > paneBarEl.clientWidth + 1) paneBarEl.classList.add("folded");
+      if (paneBarEl.scrollWidth > paneBarEl.clientWidth + 1) paneBarEl.classList.add("tight");
+    }
+    function fitPaneBarTwice() { fitPaneBar(); requestAnimationFrame(fitPaneBar); }
+    window.addEventListener("resize", () => { if (paneNoteId !== null) { applyNoteTier(); renderPaneBar(); fitPaneBarTwice(); } });
+
+    function paneNeighbours() {
+      const live = paneOrder.filter((id) => allNotes.some((n) => n.noteId === id && n.status !== NOTE_STATUS.RETIRED));
+      const i = live.indexOf(paneNoteId);
+      return { prev: i > 0 ? live[i - 1] : null, next: i >= 0 && i < live.length - 1 ? live[i + 1] : null };
+    }
+    function paneFromFolderId(note) {
+      if (paneFolderId && allPlacements.some((p) => p.noteId === note.noteId && p.folderId === paneFolderId && p.status === NOTE_STATUS.ACTIVE)) return paneFolderId;
+      const filed = [...activeFilingFolderIds(note)];
+      return filed.length === 1 ? filed[0] : null;
+    }
+
+    /** The bar's own labels, the ⋯ menu and the Contents button -- everything on the header row. Re-run on a resize because the Contents button depends on the tier. */
+    function renderPaneBar() {
+      const note = allNotes.find((n) => n.noteId === paneNoteId);
+      if (!note) return;
+      const { prev, next } = paneNeighbours();
+      const own = isSelfSelected();
+      const set = (sel, text) => { notePaneEl.querySelector(sel).textContent = text; };
+      set("[data-pane-back-label]", t("Back"));
+      set("[data-pane-contents-label]", t("Contents"));
+      const prevBtn = notePaneEl.querySelector("[data-pane-prev]"), nextBtn = notePaneEl.querySelector("[data-pane-next]");
+      prevBtn.disabled = !prev; nextBtn.disabled = !next;
+      prevBtn.setAttribute("aria-label", t("Previous note")); prevBtn.title = t("Previous note");
+      nextBtn.setAttribute("aria-label", t("Next note")); nextBtn.title = t("Next note");
+      const fromId = paneFromFolderId(note);
+      let menu = `<button type="button" class="secondary tiny pane-fold-item" data-pane-prev ${prev ? "" : "disabled"}>‹ ${escapeHtml(t("Previous note"))}</button>
+        <button type="button" class="secondary tiny pane-fold-item" data-pane-next ${next ? "" : "disabled"}>${escapeHtml(t("Next note"))} ›</button>`;
+      if (own) {
+        menu += `<button type="button" class="secondary tiny" data-pane-copy>${escapeHtml(t("Copy to…"))}</button>
+          <button type="button" class="secondary tiny" data-pane-move ${fromId ? "" : "disabled"}>${escapeHtml(t("Move to…"))}</button>
+          <button type="button" class="danger tiny" data-pane-delete>🗑 ${escapeHtml(t("Delete"))}</button>`;
+      }
+      if (isEmbedded) menu += `<button type="button" class="secondary tiny" data-pane-fullpage>${escapeHtml(t("Open full page"))}</button>`;
+      const menuWrap = notePaneEl.querySelector("[data-pane-menu-wrap]");
+      menuWrap.hidden = !menu.trim();
+      notePaneEl.querySelector("[data-pane-menu]").innerHTML = menu;
+      notePaneEl.querySelector("[data-pane-menu-btn]").setAttribute("aria-label", t("More"));
+      const headings = [...notePaneEl.querySelectorAll(".note-sec")];
+      const showContents = headings.length >= 3 && noteLayoutTier() === "narrow";
+      notePaneEl.querySelector("[data-pane-contents-wrap]").hidden = !showContents;
+      notePaneEl.querySelector("[data-pane-contents-list]").innerHTML = headings.map((sec) =>
+        `<button type="button" class="secondary tiny" data-pane-jump="${sec.dataset.secIndex}" style="padding-left:${(0.6 + (Number(sec.dataset.level) - 1) * 0.8).toFixed(1)}rem">${escapeHtml(sec.dataset.headingText)}</button>`).join("");
+    }
+
+    /** The sanitised body, with every H1-H4 turned into a collapsible section nested by level. Collapsed indexes come from (and go back to) localStorage, per Note. */
+    function buildPaneBody(note) {
+      const host = notePaneEl.querySelector("[data-pane-body]");
+      const tmp = document.createElement("div");
+      tmp.innerHTML = sanitizeNoteHtml(note.bodyHtml || "");
+      host.replaceChildren();
+      const collapsed = loadCollapsed(note.noteId);
+      const stack = [{ level: 0, el: host }];
+      let index = 0;
+      for (const node of [...tmp.childNodes]) {
+        if (node.nodeType === 1 && /^H[1-4]$/.test(node.tagName)) {
+          const level = Number(node.tagName[1]);
+          while (stack.length > 1 && stack[stack.length - 1].level >= level) stack.pop();
+          const sec = document.createElement("section");
+          sec.className = "note-sec";
+          sec.dataset.secIndex = String(index);
+          sec.dataset.level = String(level);
+          sec.dataset.headingText = node.textContent.trim() || t("(untitled section)");
+          const isCollapsed = collapsed.has(index);
+          if (isCollapsed) sec.classList.add("collapsed");
+          const h = document.createElement(node.tagName.toLowerCase());
+          h.className = "note-sec-h";
+          const btn = document.createElement("button");
+          btn.type = "button"; btn.className = "note-sec-toggle"; btn.dataset.secToggle = String(index);
+          btn.setAttribute("aria-expanded", String(!isCollapsed));
+          const arrow = document.createElement("span"); arrow.className = "note-sec-arrow"; arrow.setAttribute("aria-hidden", "true"); arrow.textContent = isCollapsed ? "▶" : "▾";
+          const text = document.createElement("span"); text.className = "note-sec-text";
+          while (node.firstChild) text.appendChild(node.firstChild);
+          if (!text.textContent.trim()) text.textContent = sec.dataset.headingText;
+          btn.append(arrow, text);
+          h.appendChild(btn);
+          const body = document.createElement("div"); body.className = "note-sec-body";
+          sec.append(h, body);
+          stack[stack.length - 1].el.appendChild(sec);
+          stack.push({ level, el: body });
+          index++;
+        } else {
+          stack[stack.length - 1].el.appendChild(node);
+        }
+      }
+    }
+
+    function renderNotePane({ keepScroll = false } = {}) {
+      const note = allNotes.find((n) => n.noteId === paneNoteId);
+      if (!note) return;
+      const before = notePaneEl.scrollTop;
+      notePaneEl.querySelector("[data-pane-title]").textContent = noteTitleOf(note);
+      const created = when(note.originalCreatedAt ?? note.createdAt), changed = when(note.updatedAt);
+      notePaneEl.querySelector("[data-pane-meta]").textContent = [
+        created ? t("Created {date}", { date: created }) : "",
+        changed ? t("Last changed {date}", { date: changed }) : "",
+      ].filter(Boolean).join(" · ");
+      const chips = [...activeFilingFolderIds(note)].map((id) => findNodeByIdOrRole(mergedRoots(), id, null)).filter(Boolean);
+      notePaneEl.querySelector("[data-pane-chips]").innerHTML = chips.map((f) =>
+        `<button type="button" class="folder-chip" data-pane-chip="${escapeHtml(f.folderId)}">📁 ${escapeHtml(folderDisplayName(f))}</button>`).join("");
+      buildPaneBody(note);
+      renderPaneBar();
+      fitPaneBarTwice();
+      if (keepScroll) notePaneEl.scrollTop = before;
+    }
+
+    function stepNotePane(direction) {
+      const { prev, next } = paneNeighbours();
+      const target = direction < 0 ? prev : next;
+      if (!target) return;
+      paneNoteId = target;
+      renderNotePane();
+      if (noteLayoutTier() === "narrow") scroller().scrollTop = 0; else notePaneEl.scrollTop = 0;
+    }
+
+    /** Delete = Trash (decision 42.1: never an erase). The Note's current revision is the guard: a stale one is refused in words by the existing mapping. */
+    async function deleteNoteFromPane(note) {
+      const outcome = await runFolderWrite(
+        () => retirePermanentNote(db, { tenantId: activeTenantId, noteId: note.noteId, expectedRevisionId: note.currentRevisionId, actorUid: auth.currentUser.uid }),
+        { collection: TENANT.NOTES, action: "retirePermanentNote" }
+      );
+      if (!outcome.ok) return;
+      closeNotePane();
+      showPageStatus(t('"{title}" moved to Trash. Open 🗑 Trash from the ⋯ menu to restore it.', { title: noteTitleOf(note) }));
+      await refreshAll();
+    }
+
+    /** A folder chip: close the pane and show that folder in the tree, its ancestors opened and the row scrolled into view. */
+    function revealFolderFromChip(folderId) {
+      for (const ancestor of folderAncestorPath(folderId)) expandedFolderIds.add(expandKeyFor(ancestor));
+      saveExpandedIds();
+      folderSearchQuery = "";
+      currentView = "folders";
+      closeNotePane({ restoreScroll: false });
+      renderToggle();
+      renderFoldersView();
+      requestAnimationFrame(() => {
+        document.querySelector(`.folder-row[data-folder-id="${CSS.escape(folderId)}"]`)?.scrollIntoView({ block: "center" });
+      });
+    }
+
+    notePaneEl.addEventListener("click", (e) => {
+      const on = (sel) => e.target.closest(sel);
+      const note = allNotes.find((n) => n.noteId === paneNoteId);
+      if (!note) return;
+      if (on("[data-pane-back]")) { closeNotePane(); return; }
+      if (on("[data-pane-prev]")) { closeAllBarPalettes(null); stepNotePane(-1); return; }
+      if (on("[data-pane-next]")) { closeAllBarPalettes(null); stepNotePane(1); return; }
+      const chip = on("[data-pane-chip]");
+      if (chip) { revealFolderFromChip(chip.dataset.paneChip); return; }
+      const toggle = on("[data-sec-toggle]");
+      if (toggle) {
+        const sec = toggle.closest(".note-sec");
+        const nowCollapsed = !sec.classList.contains("collapsed");
+        sec.classList.toggle("collapsed", nowCollapsed);
+        toggle.setAttribute("aria-expanded", String(!nowCollapsed));
+        toggle.querySelector(".note-sec-arrow").textContent = nowCollapsed ? "▶" : "▾";
+        const set = loadCollapsed(note.noteId);
+        if (nowCollapsed) set.add(Number(sec.dataset.secIndex)); else set.delete(Number(sec.dataset.secIndex));
+        saveCollapsed(note.noteId, set);
+        return;
+      }
+      const jump = on("[data-pane-jump]");
+      if (jump) {
+        closeAllBarPalettes(null);
+        const sec = notePaneEl.querySelector(`.note-sec[data-sec-index="${CSS.escape(jump.dataset.paneJump)}"]`);
+        for (let up = sec?.parentElement?.closest(".note-sec"); up; up = up.parentElement?.closest(".note-sec")) {
+          if (up.classList.contains("collapsed")) up.querySelector(":scope > .note-sec-h [data-sec-toggle]")?.click();
+        }
+        if (sec?.classList.contains("collapsed")) sec.querySelector(":scope > .note-sec-h [data-sec-toggle]")?.click();
+        sec?.scrollIntoView({ block: "start" });
+        return;
+      }
+      if (on("[data-pane-copy]")) { closeAllBarPalettes(null); copyNoteTo(note); return; }
+      if (on("[data-pane-move]")) {
+        closeAllBarPalettes(null);
+        const fromNode = findNodeByIdOrRole(mergedRoots(), paneFromFolderId(note), null);
+        if (fromNode) moveNoteTo(note, fromNode);
+        return;
+      }
+      if (on("[data-pane-delete]")) { closeAllBarPalettes(null); deleteNoteFromPane(note); return; }
+      if (on("[data-pane-fullpage]")) {
+        closeAllBarPalettes(null);
+        window.open(`journey-map.html?note=${encodeURIComponent(note.noteId)}#${currentView}`, "_top");
+      }
+    });
+
+    /** After every full load: keep an open pane honest (chips, ⋯ items), close it if its Note left (Trash, or gone), and open the Note a full-page link named. */
+    function syncNotePane() {
+      if (pendingOpenNoteId) {
+        const wanted = pendingOpenNoteId;
+        if (allNotes.some((n) => n.noteId === wanted && n.status !== NOTE_STATUS.RETIRED)) {
+          pendingOpenNoteId = null;
+          openNotePane(wanted, null);
+        }
+      }
+      if (paneNoteId === null) return;
+      const note = allNotes.find((n) => n.noteId === paneNoteId);
+      if (!note || note.status === NOTE_STATUS.RETIRED) { closeNotePane(); return; }
+      renderNotePane({ keepScroll: true });
     }
 
     /** Creates the real folder document for a still-virtual system role, once, the first time a write genuinely needs it to exist. */
@@ -1129,12 +1493,8 @@
           <button type="button" class="secondary tiny" data-note-move>${t("Move to…")}</button>` : "";
       return `<li class="folder-tree-item folder-tree-note" data-note-leaf data-note-id="${escapeHtml(note.noteId)}" data-in-folder="${escapeHtml(placement.folderId)}" data-placement-id="${escapeHtml(placement.placementId)}" style="margin-left:${(depth * 1.1).toFixed(2)}rem">
         <div class="note-card">
-          <div class="note-card-head" data-note-toggle>
-            <span class="note-card-title">📄 ${escapeHtml(title)}</span>
-            <span class="note-card-meta">${when(displayTimestamp(note))}</span>
-          </div>
-          <div class="note-body-preview" data-note-body></div>
-          <div class="note-actions" data-note-actions style="display:none">${controls}</div>
+          ${noteHeadHtml(note, { hasActions: !!controls, titlePrefix: "📄 " })}
+          <div class="note-actions" data-note-actions style="${expandedNoteIds.has(note.noteId) ? "" : "display:none"}">${controls}</div>
         </div>
       </li>`;
     }
@@ -1869,7 +2229,7 @@
       for (const note of sorted) {
         const d = displayTimestamp(note)?.toDate ? displayTimestamp(note).toDate() : null;
         const dayKey = d ? d.toDateString() : t("Unknown date");
-        if (dayKey !== lastDay) { html += `<div class="timeline-day">${escapeHtml(d ? d.toLocaleDateString() : t("Unknown date"))}</div>`; lastDay = dayKey; }
+        if (dayKey !== lastDay) { html += `<div class="timeline-day">${escapeHtml(d ? d.toLocaleDateString(dateLocale()) : t("Unknown date"))}</div>`; lastDay = dayKey; }
         html += noteCardHtml(note, { fileControl: true });
       }
       body.innerHTML = html;
@@ -2061,7 +2421,7 @@
         : "";
       return `<div class="path-stop" data-stop-note-id="${escapeHtml(note.noteId)}">
         <div class="path-stop-marker"></div>
-        <div class="path-stop-date">${escapeHtml(d ? d.toLocaleDateString() : "")}</div>
+        <div class="path-stop-date">${escapeHtml(d ? d.toLocaleDateString(dateLocale()) : "")}</div>
         ${noteCardHtml(note, { fileControl: true, extraHead: badge })}
       </div>`;
     }

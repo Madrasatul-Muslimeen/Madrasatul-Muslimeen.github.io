@@ -102,15 +102,13 @@ DATA.notePlacements = ${JSON.stringify(placements)};
   }
 
   // --- tapping a Note opens it exactly as Timeline does ---------------------
-  const firstMany = page.locator('[data-path-tree] .note-card[data-note-id="n-many-0"] [data-note-toggle]');
-  await firstMany.click();
-  await page.waitForTimeout(150);
-  check("tapping a stop's Note opens it -- the shared note-card preview, same as Timeline",
-    (await page.locator('[data-path-tree] .note-card[data-note-id="n-many-0"] .note-body-preview.open').count()) === 1);
-
-  // --- a hit-test on a stop: it is really the topmost element there ---------
+  // Siyagah round 4: the title now opens the NOTE PANE (the in-place preview is gone),
+  // so this check is updated in place -- it asserts the pane opens on that Note.
+  const firstMany = page.locator('[data-path-tree] .note-card[data-note-id="n-many-0"] [data-note-open]');
+  // --- a hit-test on a stop (done first: an open pane hides the list below 1200px) ---
+  await firstMany.scrollIntoViewIfNeeded();
   const hit = await page.evaluate(() => {
-    const el = document.querySelector('[data-path-tree] .note-card[data-note-id="n-many-0"] [data-note-toggle]');
+    const el = document.querySelector('[data-path-tree] .note-card[data-note-id="n-many-0"] [data-note-open]');
     if (!el) return null;
     const r = el.getBoundingClientRect();
     const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
@@ -118,6 +116,12 @@ DATA.notePlacements = ${JSON.stringify(placements)};
     return { onTop: !!found && (found === el || el.contains(found)) };
   });
   check("a hit-test on a stop lands on the stop itself, not something covering it", !!hit && hit.onTop, JSON.stringify(hit));
+  await firstMany.click();
+  await page.waitForTimeout(150);
+  check("tapping a stop's Note opens it -- in the Note pane, same as Timeline",
+    await page.evaluate(() => !document.getElementById("notePane").hidden && document.querySelector("[data-pane-title]").textContent.length > 0));
+  if (await page.locator("[data-pane-back]").isVisible()) await page.click("[data-pane-back]");
+  await page.waitForTimeout(150);
 
   // --- link badge: highlight + connecting line, tap-again and Escape clear --
   const badge = page.locator('[data-path-tree] .note-card[data-note-id="n-shared"] [data-path-link-badge]').first();

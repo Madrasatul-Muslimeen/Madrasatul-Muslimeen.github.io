@@ -19,26 +19,26 @@ Read the live state yourself, because it moves on after this was written:
 - the "Active Architect session" line on #159.
 
 **Updated 1 Oct 2026, ~07:50 UTC, by session `session_01M4Sbc1h94F7SgErzAzxq9n`:**
-- **`main` is at v09.19**, built by the Architect:
+- **`main` is at v09.20**: Siyagah round 4 (#446 → PR #448), a Note opening in read mode in the pane; dates in the reader's language. v09.19 before it was built by the Architect:
   - decision 46 (option C): the two Mastery Wheel titles on the heading line, and Read / Choose a Unit / Know Your Status as one row under the wheel;
   - decision 47: Record Your Progress always on the Āyah card.
 - v09.18 before it was Siyagah round 3 plus the five-suite cleanup.
-- **PR #448 (Siyagah round 4, note read pane) is open and being reviewed**; it becomes v09.20.
+- **Round 5 (#450, edit with autosave) is dispatched to the Builder** right after the v09.20 merge; it becomes v09.21.
 - **The Asmaul Husna poster template is being built** from the Owner's design and spec (1 Oct):
   - banner الأَسْمَاءُ الْحُسْنَى, Amiri;
   - a Classification box: Group · Dual · Act or Essence · Unique or Shared, filled only from the Name's own lists;
   - references from project data only (Al-Witr: Bukhari 6410, not the image's 7392).
-  - Its files (`app/js/asma-poster-template.js` and its suite) are untracked work in progress; a demo goes to the Owner before it is wired into Explore.
+  - Its files (`app/js/asma-poster-template.js`, `tools/i18n-verify/asma-poster-template.mjs` 23/0) are built but untracked (listed in `.git/info/exclude` locally). Demo with the Owner: https://claude.ai/artifact/ToBqsf4h2f7ssYVgs5qzte. Open questions put to them: Bukhari 6410 vs 7392; "Lord/God" in descriptions vs spec 10.9; 33 canonical Names without a description; Arabic size vs the Classification box.
 - **Pre-existing on `main`**: approach-short-names "My Status's wheel prints the 10 names" (69/1), not yet investigated.
 - **Sandbox note:** a fresh container needs Playwright where the harness can find it: `mkdir -p /home/user/node_modules && ln -sf /opt/node-tools/node_modules/playwright /home/user/node_modules/ && ln -sf /opt/node-tools/node_modules/playwright-core /home/user/node_modules/`.
 
 **A new session at this point:**
 1. Writes its id into #159's Active line.
-2. Reviews PR #448 (round 4) if still open. The review:
+2. Reviews round 5's PR (issue #450) when it opens. The review:
    - run `journey-note-pane-browser`, `journey-folder-menus-browser` and the neighbours, plus the emulator suites;
    - look at the pane at 390px Bangla, 820px and 1280px English;
    - mutation-prove one check;
-   - allocate **v09.20**.
+   - allocate **v09.21**.
 3. Writes and dispatches round 5 (edit mode with autosave, decision 42.3, handover §4.4).
 
 ## 1. What this session released (v09.07 → v09.17)
