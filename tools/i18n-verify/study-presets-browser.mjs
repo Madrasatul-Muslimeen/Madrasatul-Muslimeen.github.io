@@ -112,8 +112,16 @@ console.log("\n=== Study options: saved settings (#410) ===");
     return { text: b.textContent.trim(), h: r.height, top: r.top };
   });
   check("the Save button says ☆ Save these settings and is at least 40px tall", btn.text === "☆ Save these settings" && btn.h >= 40, JSON.stringify(btn));
-  check("the button is above the first picker (top of Study options)", await page.evaluate(() =>
-    document.getElementById("presetSaveBtn").getBoundingClientRect().top < document.getElementById("tenantSelect").getBoundingClientRect().top));
+  // Owner, 1 Oct 2026: Save moved up onto the panel's own (sticky) title line and
+  // Search came right below it. Updated in place: measured with the panel scrolled
+  // to its top, because a sticky title stays on screen while a picker scrolls past it.
+  const order = await page.evaluate(() => {
+    document.getElementById("panelStudyOptions").scrollTop = 0;
+    const top = (id) => document.getElementById(id).getBoundingClientRect().top;
+    return { inHead: !!document.querySelector("#panelStudyOptions > .qr-panel-head #presetSaveBtn"), save: top("presetSaveBtn"), search: top("jumpInput"), tenant: top("tenantSelect") };
+  });
+  check("the Save button sits on the Study options title line", order.inHead, JSON.stringify(order));
+  check("top to bottom: Save, then Search, then the first picker", order.save < order.search && order.search < order.tenant, JSON.stringify(order));
 
   await page.click("#presetSaveBtn");
   const form = await page.evaluate(() => ({ shown: !document.getElementById("presetForm").hidden, name: document.getElementById("presetNameInput").value, keep: document.getElementById("presetKeepUnit").checked }));

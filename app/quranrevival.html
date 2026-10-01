@@ -281,6 +281,13 @@
     padding: 0.55rem 0 0.4rem; margin-bottom: 0.3rem;
     border-bottom: 1px solid #eef1f7; font-weight: 700; font-size: 0.9rem; color: #1F3A6E;
   }
+  .qr-panel-head-actions { display: flex; align-items: center; gap: 0.5rem; margin-left: auto; min-width: 0; }
+  .qr-panel-head .preset-save-btn { width: auto; min-height: 40px; padding: 0.3rem 0.75rem; font-size: 0.85rem; white-space: nowrap; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .qr-panel-head .qr-panel-x { flex: 0 0 auto; }
+  /* Below 390px the title line cannot hold the whole label on one line (measured:
+     it needs 169px, 131px is left at 320px), so it wraps to two short lines
+     rather than being cut or reworded. */
+  @media (max-width: 389.98px) { .qr-panel-head .preset-save-btn { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.12; font-size: 0.8rem; padding: 0.2rem 0.6rem; text-align: center; } }
   .qr-panel-x { background: #f2f5fa; color: #667; border: none; border-radius: 50%; width: 26px; height: 26px; font-size: 15px; line-height: 1; padding: 0; }
   .qr-panel h2 { margin-top: 1rem; }
   .study-options-body .row:first-child { margin-top: 0; }
@@ -5038,7 +5045,7 @@
          the tabs stay reachable to switch or close. -->
     <div id="dock">
       <div id="panelStudyOptions" class="qr-panel" hidden>
-        <div class="qr-panel-head">Study options <button type="button" class="qr-panel-x" data-close-panel aria-label="Close">&times;</button></div>
+        <div class="qr-panel-head">Study options <span class="qr-panel-head-actions"><button type="button" class="opt-btn preset-save-btn" id="presetSaveBtn"></button><button type="button" class="qr-panel-x" data-close-panel aria-label="Close">&times;</button></span></div>
         <div class="study-options-body">
         <!-- Shell round 11 (13 Aug 2026) -- the owner's own three-bar layout,
              from their mockup. The controls are grouped by WHAT KIND of choice
@@ -5060,13 +5067,42 @@
              Every control still keeps its own id and its own handler --
              moving them is this round, rewiring them is not. -->
 
+        <!-- Owner, 1 Oct 2026 (photo mark-up): "Move save button to top, and move
+             search bar below it." Save these settings now sits on the panel's
+             own title line (sticky, so it stays in reach while scrolling), and
+             Search is the first thing in the body. Ids and handlers unchanged. -->
+        <!-- Bar 3: FINDING it. ONE field and ONE button, both called Search
+             (the owner's follow-up: the field was already doing both jobs, so
+             a separate "Go" button and a "Go to" title beside a "Search"
+             button were three names for two things).
+             The button is smart, not two buttons in a trenchcoat: a reference
+             -- "2:255", "2:255-260", a bare "2" -- jumps straight there, and
+             anything else is a word or phrase and gets searched. A mistyped
+             reference still says so rather than searching for nonsense. -->
+        <div class="opt-bar opt-bar-1">
+          <div class="opt-cell"><label for="jumpInput">Search</label>
+            <div class="opt-jump">
+              <input type="text" id="jumpInput" placeholder="2:255 or a word" autocomplete="off" spellcheck="false" />
+              <button type="button" id="searchBtn" aria-controls="searchCard" aria-expanded="false">Search</button>
+            </div>
+          </div>
+        </div>
+        <p class="opt-msg" id="jumpMsg" hidden></p>
+
+        <!-- Search results. Same card idiom as Reading view and Listening
+             settings, and it obeys the same one-open-at-a-time rule. -->
+        <div class="opt-card" id="searchCard" hidden>
+          <h4>Search the Qur'an</h4>
+          <p class="opt-note" id="searchStatus"></p>
+          <div class="search-results" id="searchResults"></div>
+        </div>
+
         <!-- Issue #410 -- saved settings (named presets), at the very top: the
              way back to a setup the reader has used before is one tap on a
              chip. Filled by renderPresets() (JS-rendered, so it is translated
              at render time, not by translateStatic). -->
         <div class="preset-bar" id="presetBar">
           <div class="preset-head">
-            <button type="button" class="opt-btn preset-save-btn" id="presetSaveBtn"></button>
             <div class="preset-chips" id="presetChips"></div>
           </div>
           <form class="preset-form" id="presetForm" hidden>
@@ -5132,32 +5168,6 @@
              The owner's own rule for a unit spanning several surahs: name the
              TOP and the BOTTOM only, never the ones in between. -->
         <div id="unitSpanReadout" hidden></div>
-
-        <!-- Bar 3: FINDING it. ONE field and ONE button, both called Search
-             (the owner's follow-up: the field was already doing both jobs, so
-             a separate "Go" button and a "Go to" title beside a "Search"
-             button were three names for two things).
-             The button is smart, not two buttons in a trenchcoat: a reference
-             -- "2:255", "2:255-260", a bare "2" -- jumps straight there, and
-             anything else is a word or phrase and gets searched. A mistyped
-             reference still says so rather than searching for nonsense. -->
-        <div class="opt-bar opt-bar-1">
-          <div class="opt-cell"><label for="jumpInput">Search</label>
-            <div class="opt-jump">
-              <input type="text" id="jumpInput" placeholder="2:255 or a word" autocomplete="off" spellcheck="false" />
-              <button type="button" id="searchBtn" aria-controls="searchCard" aria-expanded="false">Search</button>
-            </div>
-          </div>
-        </div>
-        <p class="opt-msg" id="jumpMsg" hidden></p>
-
-        <!-- Search results. Same card idiom as Reading view and Listening
-             settings, and it obeys the same one-open-at-a-time rule. -->
-        <div class="opt-card" id="searchCard" hidden>
-          <h4>Search the Qur'an</h4>
-          <p class="opt-note" id="searchStatus"></p>
-          <div class="search-results" id="searchResults"></div>
-        </div>
 
         <!-- Bar 4: CLAIMING it. The owner's ask: Approach comes down out of
              bar 1 to sit beside the button that claims with it, since the two

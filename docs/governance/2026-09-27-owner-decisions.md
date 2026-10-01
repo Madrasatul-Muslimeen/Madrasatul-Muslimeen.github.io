@@ -196,3 +196,9 @@ The Owner supplied the Siyagah Architect's handover, stored verbatim at `docs/re
 | # | Question | Owner's words | Meaning |
 |---|---|---|---|
 | 43 | (A screenshot of Explore → Asma ul Husna with one Name chosen: the Names pull-down last on the bar, and the wheel's space empty, saying "References don't need a wheel".) | **"Name column should move after 'Group'. Then, the Name poster should appear in the space marked on selection of individual name. (I am giving you a separate task for AH Names POSTER making)"** | The bar reads **Group · Names · Dual · …(every other classification) · ⋯**. With one Name chosen, its **poster** fills the wheel's space; a tap opens it full size. The poster is today's generated poster (`renderAsmaPosterHtml`); the Owner's separate poster-making task will change how it looks, not where it appears. |
+
+## 1 Oct 2026 — Study options: Save at the top, Search below it
+
+| # | Question | Owner's words | Meaning |
+|---|---|---|---|
+| 44 | (A phone photo of Study options with two arrows: one from *☆ Save these settings* up to the title line, one from the Search box up to just below it.) | **"Options Card: Move save button to top And move search bar below it (see image mark up)"** | *☆ Save these settings* sits on the Study options title line, between the title and ×; the title line is sticky, so Save stays in reach while scrolling. **Search** (the box and its button, its message and its results card) is the first thing in the body, above User Role. Saved-setting chips and the naming form stay where they were, under Search. Below 390px the Save label wraps to two short lines rather than being cut or reworded (measured: it needs 169px; 131px is left at 320px). |
