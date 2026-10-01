@@ -24,16 +24,26 @@
 /** Who may declare deployment readiness. Closed: a module cannot authorise itself. */
 export const SIYAGAH_SECTIONS_READINESS_AUTHORITIES = Object.freeze(["master-architect"]);
 
-/** THE DECLARATION. This is the single place the answer lives. */
+/**
+ * THE DECLARATION. This is the single place the answer lives.
+ *
+ * ENABLED 2026-10-01. The Owner published
+ * docs/governance/2026-10-01-siyagah-round7-DEPLOYMENT-candidate.rules to
+ * study-monitoring and confirmed it ("Round 7 rules are live."); firestore.rules
+ * was synced to that exact file in the same change. The record is the
+ * reference below.
+ */
 export const SIYAGAH_SECTIONS_DECLARATION = Object.freeze({
-  ready: false,
-  decision: null,
+  ready: true,
+  decision: Object.freeze({
+    by: "master-architect",
+    on: "2026-10-01",
+    reference: "docs/reports/2026-10-01-siyagah-round7-enabled.md",
+  }),
   gate: "E1",
   note:
-    "Sections (noteSections) and a folder's colour, bold and section need the " +
-    "round 7 Rules, drafted in docs/governance/2026-10-01-siyagah-round7-" +
-    "DEPLOYMENT-candidate.rules and NOT yet published to study-monitoring by " +
-    "the Owner. Until then every control shows and writes nothing.",
+    "Sections (noteSections), a folder's colour, bold and section, and Tags " +
+    "(noteTags, noteTagLinks) are authorised by the published round 7 Rules.",
 });
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;

@@ -41,6 +41,20 @@ export function isSiyagahSectionsReady() { return true; }
 export function siyagahSectionsUnavailableReason() { return null; }
 `;
 
+// UPDATED IN PLACE 1 Oct 2026 (Owner: "Round 7 rules are live."): the shipped
+// readiness file now says ready, so the gate-off cases can no longer use it as
+// shipped. They route this CLOSED copy through the same ctx.route() seam the
+// gate-on cases use, so the "shows, explains itself, writes nothing" contract
+// stays tested for any future time the gate is shut.
+const READY_CLOSED = `
+export const SIYAGAH_SECTIONS_READINESS_AUTHORITIES = Object.freeze(["master-architect"]);
+export const SIYAGAH_SECTIONS_DECLARATION = Object.freeze({ ready: false, decision: null, gate: "E1", note: "test seam: closed" });
+export function isSiyagahSectionsReady() { return false; }
+export const REASON_SIYAGAH_SECTIONS_NOT_DEPLOYED = "siyagah-sections-rules-not-deployed";
+export const REASON_SIYAGAH_SECTIONS_DECISION_INCOMPLETE = "siyagah-sections-readiness-decision-incomplete";
+export function siyagahSectionsUnavailableReason() { return REASON_SIYAGAH_SECTIONS_NOT_DEPLOYED; }
+`;
+
 const SEED = `
 (function () {
   window.__stubApplyBatches = true; window.__stubRecordTxData = true;
@@ -303,10 +317,11 @@ for (const lang of ["en", "bn"]) {
       await ctx.close();
     }
 
-    // =============================== GATE OFF (the shipped file) ===============================
+    // =============================== GATE OFF (a CLOSED copy routed in; the shipped file is open since 1 Oct 2026) ===============================
     {
       const tag = `OFF ${lang} ${width}px`;
       const ctx = await newContext(browser, { appLang: lang, viewport: { width, height: 900 }, extraSeedJs: SEED });
+      await ctx.route("**/js/siyagah-sections-readiness.js", (route) => route.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: READY_CLOSED }));
       await ctx.addInitScript(() => { try { localStorage.setItem("qr.journeyMapExpanded", JSON.stringify(["fA", "fB", "fBk"])); } catch {} });
       const { page, errors } = await openPage(ctx, "/app/journey-map.html#folders");
       await waitTree(page);

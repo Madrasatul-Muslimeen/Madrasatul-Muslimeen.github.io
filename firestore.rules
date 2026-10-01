@@ -1997,6 +1997,7 @@ service cloud.firestore {
         return d().keys().hasOnly([
                  'folderId', 'tenantId', 'ownerPersonId', 'ownerUid', 'name',
                  'parentFolderId', 'semanticRole', 'order', 'status', 'importSource',
+                 'color', 'bold', 'sectionId',
                  'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
                ])
             && d().keys().hasAll([
@@ -2006,6 +2007,7 @@ service cloud.firestore {
                ])
             && ownershipWellFormed()
             && folderImportFieldsWellFormed()
+            && looksWellFormed()
             && d().folderId is string && d().folderId.size() > 0
             && folderKey == d().tenantId + '__' + d().folderId
             && d().name is string && d().name.size() > 0
@@ -2017,6 +2019,41 @@ service cloud.firestore {
       }
 
       function isSystemRole(role) { return role == 'journey-map' || role == 'reflection-archive'; }
+
+      // --- SIYAGAH ROUND 7 (Owner decisions M2, M3, 42.5), NEW -------------
+      // A folder's LOOK: an optional colour (#RRGGBB) and an optional bold.
+      // Absent and null both mean "none", so every folder written before
+      // this round stays valid untouched.
+      function looksWellFormed() {
+        return (d().get('color', null) == null
+                || (d().color is string && d().color.matches('^#[0-9A-Fa-f]{6}$')))
+            && (d().get('bold', null) == null || d().bold is bool);
+      }
+
+      function sectionRef(sectionId) {
+        return /databases/$(database)/documents/noteSections/$(d().tenantId + '__' + sectionId);
+      }
+
+      // A folder's SECTION (M2: sections sit above folders). Only a ROOT
+      // USER folder carries one; a nested folder inherits its root's, and a
+      // system folder (the Map, the Archive) is never filed under a section.
+      // The section must be real and the owner's own. It must be ACTIVE only
+      // when the folder is being (re)assigned to it: a folder whose section
+      // was later retired keeps working (rename, reorder, colour) until the
+      // owner moves it, rather than being frozen by a sibling's retirement.
+      function sectionAssignmentOk() {
+        return d().get('sectionId', null) == null
+            ? true
+            : (d().sectionId is string && d().sectionId.size() > 0
+               && d().parentFolderId == null
+               && d().semanticRole == 'user'
+               && exists(sectionRef(d().sectionId))
+               && get(sectionRef(d().sectionId)).data.tenantId == d().tenantId
+               && get(sectionRef(d().sectionId)).data.ownerPersonId == d().ownerPersonId
+               && ((resource != null && resource.data.get('sectionId', null) == d().sectionId)
+                   || get(sectionRef(d().sectionId)).data.status == 'active'));
+      }
+      // --- end SIYAGAH ROUND 7 ---------------------------------------------
 
       // ADR-010 §3: a system folder IS the root of its own meaning. It is
       // neither nested nor nestable, or the Archive could be hidden inside a
@@ -2057,14 +2094,16 @@ service cloud.firestore {
                     && createdByStampedOnCreate()
                     && isNoteOwner(d().tenantId, d().ownerPersonId)
                     && d().status == 'active'
-                    && parentOneHopOk();
+                    && parentOneHopOk()
+                    && sectionAssignmentOk();
 
       allow update: if folderShapeOk()
                     && folderIdentityUnchanged()
                     && createdByFrozen()
                     && d().get('importSource', null) == resource.data.get('importSource', null)
                     && isNoteOwner(d().tenantId, d().ownerPersonId)
-                    && parentOneHopOk();
+                    && parentOneHopOk()
+                    && sectionAssignmentOk();
 
       allow delete: if false;   // I4/D6 — retire, never destroy
     }
@@ -2148,6 +2187,165 @@ service cloud.firestore {
       allow delete: if false;   // I4/D6 — retire, never destroy
     }
 
+
+    // =====================================================================
+    // SIYAGAH ROUND 7 (Owner decisions M2, M3, 42.5; 1 Oct 2026) -- sections,
+    // tags and tag links. ADDED ONLY, beside the noteFolders change above:
+    // nothing else in this file differs from the deployed firestore.rules.
+    // The same shape as noteFolders/notePlacements (ADR-010): the owner
+    // alone writes, the owner's readers read, identity is write-once, and
+    // nothing is ever deleted -- a section, a tag or a tag link is RETIRED
+    // (I4/D6). Note Types are deliberately absent (decision 42.5: "Tag only").
+    // A Note document itself is NOT touched: tags live in their own links,
+    // so the Note Foundation's revision chain (ADR-004/009) is unchanged.
+    // =====================================================================
+
+    // A named group of root folders, above them in the tray (M2).
+    match /noteSections/{sectionKey} {
+      function sectionShapeOk() {
+        return d().keys().hasOnly([
+                 'sectionId', 'tenantId', 'ownerPersonId', 'ownerUid',
+                 'name', 'order', 'status', 'color', 'bold',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll([
+                 'sectionId', 'tenantId', 'ownerPersonId', 'name', 'order', 'status',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && ownershipWellFormed()
+            && d().sectionId is string && d().sectionId.size() > 0
+            && sectionKey == d().tenantId + '__' + d().sectionId
+            && d().name is string && d().name.size() > 0 && d().name.size() <= 200
+            && d().order is int
+            && (d().status == 'active' || d().status == 'retired')
+            && (d().get('color', null) == null
+                || (d().color is string && d().color.matches('^#[0-9A-Fa-f]{6}$')))
+            && (d().get('bold', null) == null || d().bold is bool);
+      }
+      function sectionIdentityUnchanged() {
+        return resource != null
+            && d().tenantId      == resource.data.tenantId
+            && d().ownerPersonId == resource.data.ownerPersonId
+            && d().get('ownerUid', null) == resource.data.get('ownerUid', null)
+            && d().sectionId     == resource.data.sectionId
+            && d().createdBy     == resource.data.createdBy;
+      }
+
+      allow get: if canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+      allow list: if listIsBounded() && canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+      allow create: if sectionShapeOk()
+                    && d().createdBy == myUid()
+                    && d().status == 'active'
+                    && isNoteOwner(d().tenantId, d().ownerPersonId);
+      allow update: if sectionShapeOk()
+                    && sectionIdentityUnchanged()
+                    && isNoteOwner(d().tenantId, d().ownerPersonId);
+      allow delete: if false;   // I4/D6 — retire, never destroy
+    }
+
+    // A tag: a name (and an optional colour) the owner can put on any Note.
+    match /noteTags/{tagKey} {
+      function tagShapeOk() {
+        return d().keys().hasOnly([
+                 'tagId', 'tenantId', 'ownerPersonId', 'ownerUid',
+                 'name', 'color', 'status',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll([
+                 'tagId', 'tenantId', 'ownerPersonId', 'name', 'status',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && ownershipWellFormed()
+            && d().tagId is string && d().tagId.size() > 0
+            && tagKey == d().tenantId + '__' + d().tagId
+            && d().name is string && d().name.size() > 0 && d().name.size() <= 100
+            && (d().status == 'active' || d().status == 'retired')
+            && (d().get('color', null) == null
+                || (d().color is string && d().color.matches('^#[0-9A-Fa-f]{6}$')));
+      }
+      function tagIdentityUnchanged() {
+        return resource != null
+            && d().tenantId      == resource.data.tenantId
+            && d().ownerPersonId == resource.data.ownerPersonId
+            && d().get('ownerUid', null) == resource.data.get('ownerUid', null)
+            && d().tagId         == resource.data.tagId
+            && d().createdBy     == resource.data.createdBy;
+      }
+
+      allow get: if canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+      allow list: if listIsBounded() && canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+      allow create: if tagShapeOk()
+                    && d().createdBy == myUid()
+                    && d().status == 'active'
+                    && isNoteOwner(d().tenantId, d().ownerPersonId);
+      allow update: if tagShapeOk()
+                    && tagIdentityUnchanged()
+                    && isNoteOwner(d().tenantId, d().ownerPersonId);
+      allow delete: if false;   // I4/D6 — retire, never destroy
+    }
+
+    // One Note carrying one tag. Like a placement (ADR-010 §5): noteId and
+    // tagId are frozen, so a link is never repointed -- untagging RETIRES the
+    // link and tagging again creates (or restores) one. Both ends must be
+    // real, the owner's own and active when a link is created or restored.
+    match /noteTagLinks/{linkKey} {
+      function linkNoteRef(noteId) {
+        return /databases/$(database)/documents/notes/$(d().tenantId + '__' + noteId);
+      }
+      function linkTagRef(tagId) {
+        return /databases/$(database)/documents/noteTags/$(d().tenantId + '__' + tagId);
+      }
+      function tagLinkShapeOk() {
+        return d().keys().hasOnly([
+                 'linkId', 'tenantId', 'ownerPersonId', 'ownerUid',
+                 'noteId', 'tagId', 'status',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll([
+                 'linkId', 'tenantId', 'ownerPersonId', 'noteId', 'tagId', 'status',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && ownershipWellFormed()
+            && d().linkId is string && d().linkId.size() > 0
+            && linkKey == d().tenantId + '__' + d().linkId
+            && d().noteId is string && d().noteId.size() > 0
+            && d().tagId is string && d().tagId.size() > 0
+            && (d().status == 'active' || d().status == 'retired');
+      }
+      function tagLinkEndsOk() {
+        return exists(linkNoteRef(d().noteId))
+            && get(linkNoteRef(d().noteId)).data.tenantId == d().tenantId
+            && get(linkNoteRef(d().noteId)).data.ownerPersonId == d().ownerPersonId
+            && get(linkNoteRef(d().noteId)).data.status == 'active'
+            && exists(linkTagRef(d().tagId))
+            && get(linkTagRef(d().tagId)).data.tenantId == d().tenantId
+            && get(linkTagRef(d().tagId)).data.ownerPersonId == d().ownerPersonId
+            && get(linkTagRef(d().tagId)).data.status == 'active';
+      }
+      function tagLinkIdentityUnchanged() {
+        return resource != null
+            && d().tenantId      == resource.data.tenantId
+            && d().ownerPersonId == resource.data.ownerPersonId
+            && d().get('ownerUid', null) == resource.data.get('ownerUid', null)
+            && d().linkId        == resource.data.linkId
+            && d().noteId        == resource.data.noteId
+            && d().tagId         == resource.data.tagId
+            && d().createdBy     == resource.data.createdBy;
+      }
+
+      allow get: if canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+      allow list: if listIsBounded() && canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+      allow create: if tagLinkShapeOk()
+                    && d().createdBy == myUid()
+                    && d().status == 'active'
+                    && isNoteOwner(d().tenantId, d().ownerPersonId)
+                    && tagLinkEndsOk();
+      allow update: if tagLinkShapeOk()
+                    && tagLinkIdentityUnchanged()
+                    && isNoteOwner(d().tenantId, d().ownerPersonId)
+                    && (d().status == 'retired' || tagLinkEndsOk());
+      allow delete: if false;   // I4/D6 — retire, never destroy
+    }
 
     // =====================================================================
     // MAP v4 Phase 7 (P7-A) -- Dawah printable pages, ADR-011. ADDED ONLY:
