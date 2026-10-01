@@ -133,3 +133,45 @@ never changes its identity).
 
 Delete the module. Nothing imports it, no document has been written under this
 contract, and no existing document changes shape.
+
+## Amendment 1 — Sections, folder looks and Tags (Siyagah round 7, 1 Oct 2026)
+
+**Authority.** Owner decisions M2 ("sections sit above folders"), M3 (folder
+colours required), 42.5 ("we need Tag only, not 'type'") in
+`docs/governance/2026-09-27-owner-decisions.md`. The Owner publishes the Rules;
+the Architect never deploys.
+
+**What it adds, all additive, nothing existing changes shape:**
+
+1. **`noteFolders` gains three optional fields.** `color` (`#RRGGBB` or
+   absent/null), `bold` (bool or absent/null), and `sectionId`. Only a **root
+   `user` folder** may carry a `sectionId`; a nested folder inherits its root's
+   section, and a system folder (§3) is never filed under one — so the Map and
+   the Archive stay roots of their own meaning. The section must be the
+   owner's own, and **active when a folder is (re)assigned to it**; a folder
+   already in a section that is later retired keeps working until moved.
+2. **`noteSections`** (new): `{tenantId}__{sectionId}`, a named, ordered,
+   optionally coloured/bold group of root folders. Same ownership, read and
+   retire-never-delete model as `noteFolders`.
+3. **`noteTags`** (new): `{tenantId}__{tagId}`, a name and an optional colour.
+4. **`noteTagLinks`** (new): one Note carrying one tag. **The Note document is
+   not touched** — a tag is a link beside the Note, like a placement (§5), so
+   the Note Foundation's revision chain (ADR-004, ADR-009) is unchanged and
+   tagging never stamps a revision. `noteId` and `tagId` are frozen: untagging
+   retires the link, tagging again restores it, and a restore needs both ends
+   active.
+5. **Note Types are deliberately absent.** No `type`/`kind` field exists on any
+   of these documents, and the Rules refuse one.
+
+**Rejected alternative: a `tags[]` array on the Note.** It would put a
+mutable, non-revisioned field on the one document whose every change is a
+revision, and an array cannot be retired one element at a time (I4).
+
+**No composite index is needed.** Every list is equality-only on
+`tenantId`, `ownerPersonId`, `status` with a `limit`, the same shape folder
+lists already use in production.
+
+**Proof.** `tools/firestore-emulator/siyagah-round7.rules.test.mjs` runs the
+deployment candidate (`docs/governance/2026-10-01-siyagah-round7-DEPLOYMENT-candidate.rules`)
+in the emulator: 75 cases, every denial paired with an allow differing in one
+fact, every denial a clean `false`; mutation-proven rule by rule.
