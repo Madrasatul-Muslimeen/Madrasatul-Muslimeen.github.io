@@ -52,9 +52,24 @@ assert.ok(rules.includes("importFieldsWellFormed") && rules.includes("folderImpo
   "the candidate blocks were not substituted -- this suite would be testing the deployed rules");
 // The Owner pastes ONE whole file. It must be exactly the ruleset tested here.
 const DEPLOYMENT_FILE = "docs/governance/2026-09-25-wordpress-import-DEPLOYMENT-candidate.rules";
-if (process.env.WRITE_DEPLOYMENT_FILE) fs.writeFileSync(path.join(root, DEPLOYMENT_FILE), rules);
-assert.equal(fs.readFileSync(path.join(root, DEPLOYMENT_FILE), "utf8"), rules,
-  `${DEPLOYMENT_FILE} is not exactly firestore.rules with the candidate's two blocks -- regenerate it with WRITE_DEPLOYMENT_FILE=1`);
+// UPDATED IN PLACE, 1 Oct 2026 (Architect cleanup, handover 2c). This compared
+// the assembled ruleset with the 25 Sep DEPLOYMENT file -- right until the Owner
+// published it, then wrong for a correct reason: three later Owner-published
+// whole files (lemma-progress, word-levels, Ruku'/Page) changed OTHER blocks of
+// firestore.rules, so "firestore.rules + the candidate's two blocks" can never
+// again equal that historical file. Regenerating it (WRITE_DEPLOYMENT_FILE)
+// would rewrite the record of what was published, so that path is gone. What
+// still holds, and is checked: the candidate's notes/noteFolders blocks are
+// byte-identical to BOTH the live firestore.rules and the published 25 Sep file,
+// so the ruleset this suite runs IS the live one.
+{
+  const published = fs.readFileSync(path.join(root, DEPLOYMENT_FILE), "utf8");
+  for (const name of ["notes", "noteFolders"]) {
+    assert.equal(matchBlock(deployed, name), matchBlock(candidate, name), `the live firestore.rules ${name} block is not the candidate's`);
+    assert.equal(matchBlock(published, name), matchBlock(candidate, name), `the published ${DEPLOYMENT_FILE} ${name} block is not the candidate's`);
+  }
+  assert.equal(rules, deployed, "the assembled ruleset differs from the live firestore.rules");
+}
 
 // --- load the real modules, every relative import rewritten -----------------
 const GSTATIC = /import\s*\{[\s\S]*?\}\s*from\s*"https:\/\/www\.gstatic\.com\/firebasejs\/10\.12\.2\/firebase-firestore\.js";/;
