@@ -222,3 +222,13 @@ Demo: https://claude.ai/artifact/MtMQwq6mdR5xmP8fVtfyib (three placements, real 
 | # | Question | Owner's words | Meaning |
 |---|---|---|---|
 | 47 | (A phone photo of the Ayah Card, the place under the Take an Approach pull-down marked.) | **"'Record Your Progress' (earlier know as Track) is missing in Ayah Card, should be here."** | ✅ Record Your Progress and its four stage buttons always show under Take an Approach. Until an Approach is chosen the stages are greyed and not pressable, and a line says "Choose an Approach above first, then tap your stage." Nothing is written until an Approach is chosen and a stage pressed. The Page card shares the same block. |
+
+## 1 Oct 2026 — Asmaul Husna poster: references, wording, and the design
+
+Demo: https://claude.ai/artifact/ToBqsf4h2f7ssYVgs5qzte (the template built from the Owner's image and build spec).
+
+| # | Question | Owner's words | Meaning |
+|---|---|---|---|
+| 48 | Al-Witr's Hadith: the project's reference list says Bukhari 6410; the Owner's image says 7392. | **"Bukhari 6410 is fine, we will confirm ref later (it is editable anyway)"** | The poster shows the reference list's value (6410). References are confirmed later by the Owner and stay editable. |
+| 49 | Some descriptions and meanings say "Lord" or "God"; the build spec (§10.9) says Allah, not God; Rabb, not Lord. | **"change Lord/God to Rabb/Allah always."** | In the poster's wording, always **Rabb** for "Lord" and **Allah** for "God". To apply when the poster work resumes, listing every changed sentence for the Owner (a lower-case "god" meaning "a deity" needs reading in context, not a blind replace). |
+| 50 | (The template demo.) | **"I am not happy with AH poster template design yet. Keep this task pending. I wanted exactly like the image plus modif i gave you. But your design is different. So, have to fix that first. I have new fix coming next"** | The poster task is **on hold**. When it resumes, the design must follow the Owner's image **exactly**, plus their modifications: the banner الأَسْمَاءُ الْحُسْنَى and the Classification box (decision 47's sibling ask). The current template (`app/js/asma-poster-template.js`, untracked) is not approved and is not wired into the app. |

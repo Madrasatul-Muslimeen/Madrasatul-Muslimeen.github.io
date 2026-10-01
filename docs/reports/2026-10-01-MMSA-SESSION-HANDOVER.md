@@ -28,6 +28,7 @@ Read the live state yourself, because it moves on after this was written:
   - banner الأَسْمَاءُ الْحُسْنَى, Amiri;
   - a Classification box: Group · Dual · Act or Essence · Unique or Shared, filled only from the Name's own lists;
   - references from project data only (Al-Witr: Bukhari 6410, not the image's 7392).
+  - **ON HOLD (decision 50): the Owner is not happy with the design; it must follow their image EXACTLY plus their modifications. Wait for their next fix before resuming.** Decisions 48 (Bukhari 6410 is fine for now) and 49 (Lord/God → Rabb/Allah always) apply when it resumes.
   - Its files (`app/js/asma-poster-template.js`, `tools/i18n-verify/asma-poster-template.mjs` 23/0) are built but untracked (listed in `.git/info/exclude` locally). Demo with the Owner: https://claude.ai/artifact/ToBqsf4h2f7ssYVgs5qzte. Open questions put to them: Bukhari 6410 vs 7392; "Lord/God" in descriptions vs spec 10.9; 33 canonical Names without a description; Arabic size vs the Classification box.
 - **Pre-existing on `main`**: approach-short-names "My Status's wheel prints the 10 names" (69/1), not yet investigated.
 - **Sandbox note:** a fresh container needs Playwright where the harness can find it: `mkdir -p /home/user/node_modules && ln -sf /opt/node-tools/node_modules/playwright /home/user/node_modules/ && ln -sf /opt/node-tools/node_modules/playwright-core /home/user/node_modules/`.
