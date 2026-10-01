@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.24",
+    "version": "09.25",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1469,8 +1469,20 @@
     {
       "version": "09.24",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Siyagah port round 6b: the same Note windows on notes.html via one shared module (note-window.js), revisions through reviseStudyNote.",
+      "integration": {
+        "authorizedOn": "2026-10-01",
+        "integratedOn": "2026-10-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.25",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Siyagah port round 7a: sections and folder colour/bold, gated off until the Owner publishes the round 7 Rules.",
       "integration": {
         "authorizedOn": "2026-10-01",
         "integratedOn": "2026-10-01",
@@ -1479,8 +1491,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.25",
+  "nextUnallocated": "09.26",
   "nextUnallocatedNote": [
+    "v09.25 was allocated to Siyagah round 7a: sections and folder colour/bold behind a readiness gate (#458, PR #460), 2026-10-01.",
     "v09.24 was allocated to Siyagah round 6b: Single and Multi pop-up windows for a Note on the Notes page (#454, PR #456), 2026-10-01.",
     "v09.23 was allocated to Siyagah round 6a: Single and Multi pop-up windows for a Note in Mapping My Journey (#452, PR #453), 2026-10-01.",
     "v09.22 was allocated to Explore's Approach list readable in the Night card look; palette-contrast suite, 2026-10-01.",

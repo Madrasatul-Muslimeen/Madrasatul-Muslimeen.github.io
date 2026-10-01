@@ -18,13 +18,13 @@ Read the live state yourself, because it moves on after this was written:
 - the Builder from `list_workflow_runs` on `claude.yml`;
 - the "Active Architect session" line on #159.
 
-**Updated 1 Oct 2026, ~15:45 UTC, by session `session_01M4Sbc1h94F7SgErzAzxq9n`:**
-- **`main` is at v09.24**: Siyagah round 6b (#454 → PR #456), the same Note windows on the Notes page through ONE shared module `app/js/note-window.js` (revisions there go through `reviseStudyNote`, so Journaling evidence is recorded). v09.23 was Siyagah round 6a (#452 → PR #453), Single and Multi Note windows in Mapping My Journey. v09.22 was Explore's Approach list readable in the Night card look (Owner report; new `palette-contrast-browser` suite). v09.21 was Siyagah round 5 (#450 → PR #451), edit a Note with autosave; the toolbar and Done pinned while editing (Architect review). v09.20 was Siyagah round 4 (#446 → PR #448), a Note opening in read mode in the pane; dates in the reader's language. v09.19 before it was built by the Architect:
+**Updated 1 Oct 2026, ~16:45 UTC, by session `session_01M4Sbc1h94F7SgErzAzxq9n`:**
+- **`main` is at v09.25**: Siyagah round 7a (#458 → PR #460), sections and folder colour/bold, **built and switched off** behind `app/js/siyagah-sections-readiness.js` (`ready: false`) until the Owner publishes the round 7 Rules; review made Bold visible (plain names weight 500) and added `npm run siyagah-sections-real-function`. v09.24 was Siyagah round 6b (#454 → PR #456), the same Note windows on the Notes page through ONE shared module `app/js/note-window.js` (revisions there go through `reviseStudyNote`, so Journaling evidence is recorded). v09.23 was Siyagah round 6a (#452 → PR #453), Single and Multi Note windows in Mapping My Journey. v09.22 was Explore's Approach list readable in the Night card look (Owner report; new `palette-contrast-browser` suite). v09.21 was Siyagah round 5 (#450 → PR #451), edit a Note with autosave; the toolbar and Done pinned while editing (Architect review). v09.20 was Siyagah round 4 (#446 → PR #448), a Note opening in read mode in the pane; dates in the reader's language. v09.19 before it was built by the Architect:
   - decision 46 (option C): the two Mastery Wheel titles on the heading line, and Read / Choose a Unit / Know Your Status as one row under the wheel;
   - decision 47: Record Your Progress always on the Āyah card.
 - v09.18 before it was Siyagah round 3 plus the five-suite cleanup.
 - **Round 7's Rules package is on `main` (PR #457), NOT published.** `docs/governance/2026-10-01-siyagah-round7-DEPLOYMENT-candidate.rules` adds folder `color`/`bold`/`sectionId` and new `noteSections`, `noteTags`, `noteTagLinks`; ADR-010 Amendment 1; the Owner's guide `docs/governance/2026-10-01-siyagah-round7-owner-publish-guide.md`. Proof: `npm run siyagah-round7` (75 cases; 8 mutations each caught by its own case; run mutants with `MUTANT=1 RULES_FILE=...`); the real-function suites are green against it. **The Owner publishes; when they say "Round 7 rules are live":** sync `firestore.rules` to the candidate (commit tag `[already-deployed-manually]`), flip the readiness gate(s) with a dated reference, re-run `rules-authorisation-executable`.
-- **Round 7a (#458, sections and folder colour/bold behind `siyagah-sections-readiness.js`, ready:false) is dispatched to the Builder** (~15:20 UTC). Review it, allocate v09.25. Then write 7b: Tags (tray Tags block, 🏷 in the Note view's Details line and ⋯, on both pages through note-window.js), same gate pattern.
+- **Round 7b (Tags) is next**: write the issue and dispatch it (tray Tags block; 🏷 chips in the Note view's Details line and a ⋯ Tags item on both pages through `note-window.js`; `noteTags`/`noteTagLinks` writers; its own readiness gate or the same one; real-function emulator cases like round 7a's).
 - **The Wheel drawer is ON STANDBY (Owner: "Standby for Landing page decision")**. Demo (https://claude.ai/artifact/EQAEavsgP1TFprRf8ZKQs4): the legend / Appearance / Units rows under one ⚙ Wheel button with three chips, and Read · Choose a Unit · Know Your Status above the bottom bar. Build it on their "go".
 - **The Asmaul Husna poster template is being built** from the Owner's design and spec (1 Oct):
   - banner الأَسْمَاءُ الْحُسْنَى, Amiri;
@@ -37,7 +37,7 @@ Read the live state yourself, because it moves on after this was written:
 
 **A new session at this point:**
 1. Writes its id into #159's Active line.
-2. Reviews round 7a's PR (issue #458) when it opens; then writes and dispatches 7b (Tags).
+2. Reviews round 7b's PR when it opens (or writes and dispatches it if not yet done); when the Owner says "Round 7 rules are live", syncs `firestore.rules` to the candidate and flips the gate(s).
 
 ## 1. What this session released (v09.07 → v09.17)
 

@@ -668,3 +668,4 @@ total). Allocated by the MMSA Architect.
 09.22: Explore's Approach list readable in the Night card look; palette-contrast suite. Allocated by the MMSA Architect.
 09.23: Siyagah round 6a: Single and Multi pop-up windows for a Note in Mapping My Journey (#452, PR #453). Allocated by the MMSA Architect.
 09.24: Siyagah round 6b: Single and Multi pop-up windows for a Note on the Notes page (#454, PR #456). Allocated by the MMSA Architect.
+09.25: Siyagah round 7a: sections and folder colour/bold behind a readiness gate (#458, PR #460). Allocated by the MMSA Architect.
