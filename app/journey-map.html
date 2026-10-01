@@ -1948,7 +1948,7 @@
     async function assignFolderToSection(node, sectionId) {
       if (!node.folderId || isSystemFolderRole(node.semanticRole)) { showPageStatus(t("Only your own folders can be put in a section.")); return false; }
       if ((node.parentFolderId ?? null) !== null) { showPageStatus(t("Only a top-level folder can be put in a section.")); return false; }
-      if ((node.sectionId ?? null) === sectionId) return true;
+      if (sectionsReady() && (node.sectionId ?? null) === sectionId) return true; // already there; shut, it still explains itself below
       const outcome = await gatedWrite(
         () => setFolderSection(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, folderId: node.folderId, sectionId, actorUid: auth.currentUser.uid }),
         { collection: TENANT.NOTE_FOLDERS, action: "setFolderSection" });
