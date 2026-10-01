@@ -18,26 +18,32 @@ Read the live state yourself, because it moves on after this was written:
 - the Builder from `list_workflow_runs` on `claude.yml`;
 - the "Active Architect session" line on #159.
 
-**Updated 1 Oct 2026, 02:55 UTC:**
-- **`main` is at v09.16**: My account on every page (#439), Study options with Save on
-  the title line and Search first (decision 44), and the Writing sheet in two rows that
-  moves sideways when zoomed (decision 45).
-- **The Builder is running #440**, Siyagah round 2: Mapping My Journey opens as a
-  pop-up folder tray. It was dispatched at 02:52 UTC on v09.16.
-- **A review check-in is armed** (`trig_01FaEjcRarupe4RPB21ezNbt`, 04:03 UTC). It
+**Updated 1 Oct 2026, 04:31 UTC:**
+- **`main` is at v09.17**: Mapping My Journey opens as a pop-up folder tray (#442,
+  Siyagah round 2). v09.16 before it added My account on every page, the Study
+  options order and the two-row Writing sheet.
+- **The Builder is running #443**, Siyagah round 3: Copy to… / Move to… for folders
+  and notes, Delete to Trash, and Trash with Restore. It was dispatched at 04:31 UTC
+  on v09.17.
+- **A review check-in is armed** (`trig_01BCzWCkdqGqKNPV5dKnDhN1`, 05:41 UTC). It
   fires into the old session only, and does nothing unless #159's Active line still
   names that session.
 
-**This is a good change-over point.** A new session:
+**A new session at this point:**
 1. Writes its id into #159's Active line. That disarms the old check-in.
-2. Schedules its own review of #440 for about 04:05 UTC. The review:
-   - merge `origin/main` into `builder/issue-440-run-*` and check for deletions;
+2. Schedules its own review of #443 for about 05:45 UTC. The review:
+   - merge `origin/main` and check for deletions;
+   - run `journey-folder-menus-browser`;
+   - run the emulator suites `journey-map-real-function` and
+     `note-foundation-real-function`;
    - run `journey-tray-browser`, `journey-map-screen`, `journey-map-back`,
-     `account-card-browser`, `phone-width-overflow`, `behaviour` and governance;
-   - look at the tray at 390px Bangla, 820px and 1280px English;
+     `account-card-browser`, `rules-authorisation-executable`,
+     `phone-width-overflow`, `behaviour` and governance;
+   - look at the menus, the picker and Trash in the tray at 390px Bangla and
+     1280px English;
    - mutation-prove one check;
-   - allocate **v09.17**, merge and report.
-3. Writes and dispatches Siyagah round 3 (section 2a).
+   - allocate **v09.18**, merge and report.
+3. Writes and dispatches round 4 (note read mode, handover §4.1–4.3).
 
 ## 1. What this session released (v09.07 → v09.15)
 
@@ -79,11 +85,11 @@ The rounds:
 1. ✅ **Data layer** (v09.15): `trashFolder`, `restoreFolder`, `restoreNote`,
    `loadOwnerTrash`, `copyNoteToFolder`, `moveNote`, `copyFolder`,
    `commitFolderBatch`.
-2. **Folder tray pop-up** (#440, running). The Mapping My Journey button opens
+2. ✅ **Folder tray pop-up** (v09.17, #442). The Mapping My Journey button opens
    the existing screen in a pop-up over the current page (`journey-map.html?embed=1`
    in a window): draggable, eight resize handles, a full-screen sheet below 600px, and
    Folders, Timeline and Path as tabs.
-3. **Folder menus with round 1's functions.** Copy to… and Move to… for folders and
+3. **Folder menus with round 1's functions** (#443, running). Copy to… and Move to… for folders and
    notes; Delete goes to Trash, with the refusal message when the folder holds notes;
    a Trash view with Restore. Drag and drop per handover §2.2 if it fits.
 4. **Note read mode**: a click on a note opens it with all its functions.
