@@ -18,32 +18,20 @@ Read the live state yourself, because it moves on after this was written:
 - the Builder from `list_workflow_runs` on `claude.yml`;
 - the "Active Architect session" line on #159.
 
-**Updated 1 Oct 2026, 04:31 UTC:**
-- **`main` is at v09.17**: Mapping My Journey opens as a pop-up folder tray (#442,
-  Siyagah round 2). v09.16 before it added My account on every page, the Study
-  options order and the two-row Writing sheet.
-- **The Builder is running #443**, Siyagah round 3: Copy to… / Move to… for folders
-  and notes, Delete to Trash, and Trash with Restore. It was dispatched at 04:31 UTC
-  on v09.17.
-- **A review check-in is armed** (`trig_01BCzWCkdqGqKNPV5dKnDhN1`, 05:41 UTC). It
-  fires into the old session only, and does nothing unless #159's Active line still
-  names that session.
+**Updated 1 Oct 2026, ~06:30 UTC, by session `session_01M4Sbc1h94F7SgErzAzxq9n`** (took over at 05:40 UTC; #159's Active line names it):
+- **`main` is at v09.18**: Siyagah round 3. The folder menus have Copy to… / Move to… / Delete to Trash, the note rows have Copy to… / Move to…, and there is a Trash view with Restore (#443 → PR #447). Builder run 699 pushed but opened no PR. The Architect opened it, fixed two layout defects found by looking at 390px Bangla, and released it.
+- **The cleanup in §2c is done.** All five suites are green again (note-foundation-boundary, dawah-boundary, study-note-service, and the wordpress and evernote emulator suites).
+- **The Builder has #446**, Siyagah round 4: a note opens in read mode inside the tray. It was dispatched straight after the v09.18 merge, and a review check-in is armed about 70 minutes later.
+- **Sandbox note:** a fresh container needs Playwright where the harness can find it: `mkdir -p /home/user/node_modules && ln -sf /opt/node-tools/node_modules/playwright /home/user/node_modules/ && ln -sf /opt/node-tools/node_modules/playwright-core /home/user/node_modules/`. Without it, every browser suite dies with `ERR_MODULE_NOT_FOUND`.
 
 **A new session at this point:**
-1. Writes its id into #159's Active line. That disarms the old check-in.
-2. Schedules its own review of #443 for about 05:45 UTC. The review:
-   - merge `origin/main` and check for deletions;
-   - run `journey-folder-menus-browser`;
-   - run the emulator suites `journey-map-real-function` and
-     `note-foundation-real-function`;
-   - run `journey-tray-browser`, `journey-map-screen`, `journey-map-back`,
-     `account-card-browser`, `rules-authorisation-executable`,
-     `phone-width-overflow`, `behaviour` and governance;
-   - look at the menus, the picker and Trash in the tray at 390px Bangla and
-     1280px English;
+1. Writes its id into #159's Active line.
+2. Reviews #446's PR (or its `builder/issue-446-*` branch). The review:
+   - run `journey-note-pane-browser`, `journey-folder-menus-browser` and the neighbours, plus the emulator suites;
+   - look at the pane at 390px Bangla, 820px and 1280px English;
    - mutation-prove one check;
-   - allocate **v09.18**, merge and report.
-3. Writes and dispatches round 4 (note read mode, handover §4.1–4.3).
+   - allocate **v09.19**.
+3. Writes and dispatches round 5 (edit mode with autosave, decision 42.3, handover §4.4).
 
 ## 1. What this session released (v09.07 → v09.17)
 
@@ -91,7 +79,7 @@ The rounds:
    the existing screen in a pop-up over the current page (`journey-map.html?embed=1`
    in a window): draggable, eight resize handles, a full-screen sheet below 600px, and
    Folders, Timeline and Path as tabs.
-3. **Folder menus with round 1's functions** (#443, running). Copy to… and Move to… for folders and
+3. ✅ **Folder menus with round 1's functions** (v09.18, #443 → PR #447). Copy to… and Move to… for folders and
    notes; Delete goes to Trash, with the refusal message when the folder holds notes;
    a Trash view with Restore. Drag and drop per handover §2.2 if it fits.
 4. **Note read mode**: a click on a note opens it with all its functions.
