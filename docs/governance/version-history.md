@@ -671,3 +671,4 @@ total). Allocated by the MMSA Architect.
 09.25: Siyagah round 7a: sections and folder colour/bold behind a readiness gate (#458, PR #460). Allocated by the MMSA Architect.
 09.26: Siyagah round 7b: Tags on Notes behind the readiness gate (#461, PR #462). Allocated by the MMSA Architect.
 09.27: Sections, folder colour/bold and Tags switched on (round 7 Rules published by the Owner). Allocated by the MMSA Architect.
+09.28: Write-failure banner can be closed and names the failed save. Allocated by the MMSA Architect.

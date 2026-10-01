@@ -19070,3 +19070,11 @@ The Owner published the round 7 Firebase Rules ("Round 7 rules are live.").
 - **Now working in Mapping My Journey**: ＋ Section and section headers; a folder's 🎨 Colour and bold and Move to section; Tags on Notes (⋯ → 🏷 Tags… in any open Note, on Mapping My Journey and on My Notes) and the Tags list below your folders; deleted sections and tags in Trash with Restore.
 - `firestore.rules` now matches the published Rules exactly; the switch is recorded in `docs/reports/2026-10-01-siyagah-round7-enabled.md`.
 - **Checks** against the published Rules: journey-sections 349/0, journey-tags 363/0, rules-authorisation-executable 56/0, every journey-* suite green, account-card 1235/0, phone-width 217/0; emulator: round 7 Rules 75/75, real section writers 21/0, real tag writers 25/0, Mapping My Journey and Note Foundation real functions green.
+
+## v09.28 — 1 Oct 2026 — The save-failed notice can be closed and says which save failed
+
+From the Owner's phone report ("What's this shows up at the bottom?").
+
+- The pink "That save was blocked…" notice now has a ✕ to close it, and a small "Ref:" line naming which save failed, so a screenshot tells the Architect exactly what happened.
+- The report itself (a refused save after pressing Achieved on the Word card) was checked: today's Rules publish removed nothing, and every save the Word card makes was accepted by the live Rules in the emulator, so it could not be reproduced yet.
+- **Checks**: study-presets 84/0 (three new checks, one mutation-proven), behaviour 1004/4 (22g×3 archive.org, 31e TLS).
