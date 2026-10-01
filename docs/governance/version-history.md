@@ -673,3 +673,4 @@ total). Allocated by the MMSA Architect.
 09.27: Sections, folder colour/bold and Tags switched on (round 7 Rules published by the Owner). Allocated by the MMSA Architect.
 09.28: Write-failure banner can be closed and names the failed save. Allocated by the MMSA Architect.
 09.29: Landing drawers: Wheel, Legend, Unit; phone wheel numbers no longer cut. Allocated by the MMSA Architect.
+09.30: Bookmarks open straight where they were made. Allocated by the MMSA Architect.

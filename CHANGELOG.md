@@ -19086,3 +19086,12 @@ From the Owner's phone screenshot (decision 51).
 - Three buttons sit above the Approach bar: **Wheel** (its look: Dark, Light …), **Legend** (the colour key) and **Unit** (what the wheel shows). Pressing one opens its drawer; only one is open at a time.
 - On a phone the wheel moves down just enough that its top numbers are no longer cut by the edge of the dark card. Tablet and desktop are unchanged.
 - **Checks**: landing-drawers 252/0 (now uses the real 30-Approach wheel; the fix mutation-proven 6/6), read-contents 250/0, unit-rings 106/0, approach-sections 59/0, quran-my-status 248/0, palette-contrast 20/0, phone-width-overflow 217/0, behaviour 1004/4 (22g×3 archive.org, 31e TLS).
+
+## v09.30 — 1 Oct 2026 — A bookmark opens straight where it was made
+
+From the Owner's report: opening a bookmark showed a broken landing page, then the wheel twice, then the view.
+
+- While a bookmark (or a jump link) opens, the page shows only "Opening your bookmark…", then the bookmarked place, with nothing in between.
+- A bookmark now remembers the view it was made in (Read view, Note view or the landing page) and reopens there. Older bookmarks open the Note view as before.
+- A bookmark that can no longer be found leaves the normal landing page with a short sentence saying so.
+- **Checks**: bookmark-open-browser 38/0 (every frame watched; two mutations proven), landing-drawers 252/0, study-presets 84/0, read-contents 250/0, phone-width-overflow 217/0, behaviour 1007/1 (31e TLS).
