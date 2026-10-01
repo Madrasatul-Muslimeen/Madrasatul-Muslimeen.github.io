@@ -17,6 +17,10 @@ source = source
     "const { TENANT } = globalThis.__nfCollections;")
   .replace(/import \{ createDocument, runEnvelopeTransaction \} from "\.\/envelope\.js";/,
     "const { createDocument, runEnvelopeTransaction } = globalThis.__nfEnvelope;")
+  // Siyagah round 1 (#434): the batch writer is a SECOND import line, so the
+  // original line above stays byte-identical. No case here calls it.
+  .replace(/import \{ commitEnvelopeBatch \} from "\.\/envelope\.js";/,
+    "const { commitEnvelopeBatch } = globalThis.__nfEnvelope;")
   // P6-B: the data layer now validates a folder's parent against ADR-010. That
   // module is PURE, so it is resolved to its real file rather than stubbed --
   // a data: URL cannot resolve a relative specifier, which is what broke this

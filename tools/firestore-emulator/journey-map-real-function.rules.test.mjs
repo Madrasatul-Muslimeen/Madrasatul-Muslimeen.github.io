@@ -84,7 +84,7 @@ function rewriteGstaticImport(source, importLine, label) {
 }
 
 function rewriteSpecifier(source, specifier, replacementUrl, label) {
-  const pattern = new RegExp(`from "${specifier.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`);
+  const pattern = new RegExp(`from "${specifier.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`, "g"); // global: note-foundation.js imports ./envelope.js on two lines (#434)
   assert.match(source, pattern, `${label}: its "${specifier}" specifier moved -- update this loader`);
   return source.replace(pattern, `from "${replacementUrl}"`);
 }
@@ -118,6 +118,8 @@ const {
   listNotesForOwnerPage,
   listNotePlacementsForOwnerPage,
   noteFoundationDocId,
+  retirePermanentNote,
+  restoreNote,
 } = await import(noteFoundationDataUrl);
 
 let journeyMapServiceSource = fs.readFileSync(path.join(root, "app/js/journey-map-service.js"), "utf8");
@@ -143,6 +145,12 @@ const {
   loadAllOwnerNotesSharded,
   loadAllOwnerPlacementsSharded,
   ownerFolderTreePagedSharded,
+  trashFolder,
+  restoreFolder,
+  loadOwnerTrash,
+  copyNoteToFolder,
+  moveNote,
+  copyFolder,
 } = await import(toDataUrl(journeyMapServiceSource));
 
 // Two cheap positive controls: the loaders really did load the real modules,
@@ -615,6 +623,78 @@ test("real journey-map-service.js / note-foundation.js functions against the rea
     } catch (e) { capError = e; }
     assert.ok(capError instanceof RangeError, "pageSize: 101 must throw a RangeError, not reach the database at all");
     n++; seen.add("PAGE-SIZE-CAP-REAL"); console.log("  PASS  PAGE-SIZE-CAP-REAL  pageSize above 100 throws before any request is made");
+
+    // --- Siyagah port round 1 (#434): Trash / Restore / Copy / Move ----------
+    // The REAL new functions against the REAL firestore.rules. A fresh set of
+    // ids, so nothing above interferes. (Written where the emulator could not
+    // be run in the Builder's sandbox -- the Architect runs it.)
+    const me = { tenantId: T, ownerPersonId: "p1", ownerUid: "uid-p1", actorUid: "uid-p1" };
+    const mkFolder = (folderId, parentFolderId = null, order = 0) =>
+      createNoteFolder(p1, { ...me, name: folderId, parentFolderId, folderId, order });
+    await mkFolder("tc-root"); await mkFolder("tc-mid", "tc-root"); await mkFolder("tc-leaf", "tc-mid");
+
+    // TRASH-EMPTY-TREE-REAL: a whole empty tree, deepest first, through the Rules.
+    await ok("TRASH-EMPTY-TREE-REAL", "trashFolder() retires an empty tree (3 folders) in deepest-first order",
+      trashFolder(p1, { ...me, folderId: "tc-root" }));
+    for (const id of ["tc-root", "tc-mid", "tc-leaf"]) {
+      assert.equal((await getDoc(doc(p1, "noteFolders", nk(T, id)))).data().status, "retired");
+    }
+
+    // RESTORE-CHILD-RETIRED-PARENT-REAL: restore the leaf; the retired chain
+    // comes back parent-first, one batch per level (the Rules read the parent
+    // with get(), i.e. BEFORE the batch).
+    await ok("RESTORE-CHILD-RETIRED-PARENT-REAL", "restoreFolder() on a child whose parent is retired restores the chain",
+      restoreFolder(p1, { ...me, folderId: "tc-leaf" }));
+    for (const id of ["tc-root", "tc-mid", "tc-leaf"]) {
+      assert.equal((await getDoc(doc(p1, "noteFolders", nk(T, id)))).data().status, "active");
+    }
+
+    // TRASH-REFUSAL-REAL: a Note inside the subtree refuses, with the words, and writes nothing.
+    await createPermanentNote(p1, { ...me, title: "tc note", bodyHtml: "<p>x</p>", noteId: "tc-note", revisionId: "tc-note-r1" });
+    await createNotePlacement(p1, { ...me, noteId: "tc-note", folderId: "tc-leaf", placementId: "tc-pl-1", order: 0 });
+    let refusalError = null;
+    try { await trashFolder(p1, { ...me, folderId: "tc-root" }); } catch (e) { refusalError = e; }
+    assert.equal(refusalError?.message, "This folder still holds 1 notes. Move or delete them first.");
+    assert.equal((await getDoc(doc(p1, "noteFolders", nk(T, "tc-root")))).data().status, "active", "the refusal wrote nothing");
+    n++; seen.add("TRASH-REFUSAL-REAL"); console.log("  PASS  TRASH-REFUSAL-REAL  a subtree holding a Note is refused in words, before any write");
+
+    // COPY-FOLDER-LINKS-REAL: new folders, the placement LINKED, one Note.
+    const copied = await (async () => {
+      const p = copyFolder(p1, { ...me, folderId: "tc-root", toParentFolderId: null });
+      await ok("COPY-FOLDER-LINKS-REAL", "copyFolder() creates the subtree afresh and links the Note", p);
+      return p;
+    })();
+    assert.equal(copied.folders, 3); assert.equal(copied.placements, 1);
+    const linked = await listNotePlacementsForNote(p1, { tenantId: T, ownerPersonId: "p1", noteId: "tc-note" });
+    assert.equal(linked.length, 2, "one Note, now filed in two places");
+
+    // COPY-NOTE / MOVE-NOTE through the Rules.
+    await mkFolder("tc-other");
+    await ok("COPY-NOTE-REAL", "copyNoteToFolder() adds a second filing", copyNoteToFolder(p1, { ...me, noteId: "tc-note", toFolderId: "tc-other" }));
+    await no("COPY-NOTE-DUPLICATE-REAL", "a duplicate filing is refused before any write", copyNoteToFolder(p1, { ...me, noteId: "tc-note", toFolderId: "tc-other" }));
+    await ok("MOVE-NOTE-NO-CURRENT-REAL", "moveNote() with no current folder gathers every filing into one",
+      moveNote(p1, { ...me, noteId: "tc-note", toFolderId: "tc-leaf" }));
+    const gathered = await listNotePlacementsForNote(p1, { tenantId: T, ownerPersonId: "p1", noteId: "tc-note" });
+    assert.deepEqual(gathered.map((p) => p.folderId), ["tc-leaf"]);
+
+    // RESTORE-NOTE-REVISION-REAL: retire then restore, the revision chain intact.
+    const noteSnap = await getDoc(doc(p1, "notes", nk(T, "tc-note")));
+    const retiredRev = await retirePermanentNote(p1, { tenantId: T, noteId: "tc-note", expectedRevisionId: noteSnap.data().currentRevisionId, actorUid: "uid-p1" });
+    await ok("RESTORE-NOTE-REVISION-REAL", "restoreNote() chains a new revision and sets the Note active again",
+      restoreNote(p1, { tenantId: T, noteId: "tc-note", expectedRevisionId: retiredRev, actorUid: "uid-p1" }));
+    const restoredNote = (await getDoc(doc(p1, "notes", nk(T, "tc-note")))).data();
+    assert.equal(restoredNote.status, "active");
+    assert.notEqual(restoredNote.currentRevisionId, retiredRev);
+    const trashNow = await loadOwnerTrash(p1, { tenantId: T, ownerPersonId: "p1" });
+    assert.ok(!trashNow.notes.some((x) => x.noteId === "tc-note"), "the restored Note left the Trash");
+
+    // ISO-TRASH-CROSS-OWNER-REAL: another owner (same tenant, p2) may neither
+    // trash, nor copy, nor read p1's Trash.
+    await no("ISO-TRASH-READ-REAL", "another person's loadOwnerTrash() is refused", loadOwnerTrash(p2, { tenantId: T, ownerPersonId: "p1" }));
+    await no("ISO-TRASH-FOLDER-REAL", "another person cannot trash p1's folder",
+      trashFolder(p2, { tenantId: T, ownerPersonId: "p1", ownerUid: "uid-p1", actorUid: "uid-p2", folderId: "tc-other" }));
+    await no("ISO-COPY-FOLDER-REAL", "another person cannot copy p1's folder",
+      copyFolder(p2, { tenantId: T, ownerPersonId: "p1", ownerUid: "uid-p1", actorUid: "uid-p2", folderId: "tc-other" }));
 
     if (KNOWN_LIVE_DEFECT.length > 0) {
       console.log(`\n!!!! KNOWN_LIVE_DEFECT: ${KNOWN_LIVE_DEFECT.join("; ")}`);
