@@ -38,18 +38,17 @@ keep reports short, and tell me exactly what to try on my phone.
    - open PRs;
    - the latest `claude.yml` runs.
    Then follow the matching case in handover section 0:
-   - if Builder round #437 (My account on the other 23 pages) is still open,
-     review and merge it as the next version;
-   - if a Siyagah round is running, schedule its review.
+   - if a Builder round (#440, the folder tray, or later) is open or running,
+     schedule or do its review, then merge it as the next version.
 3. **Start the test server** (`node serve.js` from the repository root, started
    detached) before any browser suite. For anything that writes Firestore, also
    run the emulator suites (`cd tools/firestore-emulator && npm ci`, then
    `npm run <suite>`).
 4. **Keep the Builder busy, one round at a time**, in this order:
-   - the Siyagah rounds 2 to 5 (handover 2a);
+   - the Siyagah rounds 3 to 6 (handover 2a);
    - the Asma poster build, once I approve the demo
      (https://claude.ai/artifact/1ozA3sdfGYdgB3zUZCdihK);
-   - then Siyagah round 6.
+   - then Siyagah round 7.
 
    When a round merges and the next one is agreed, dispatch it and tell me. Do
    not wait for me to ask (my words: *"don't make it wait for me to ask …
@@ -58,7 +57,7 @@ keep reports short, and tell me exactly what to try on my phone.
    - clean up the four suites already red on `main` (handover 2c);
    - keep #159 current.
 6. **Stop only for a real decision of mine**:
-   - a Firestore Rules change (Siyagah round 6 and maybe the poster edits): build
+   - a Firestore Rules change (Siyagah round 7 and maybe the poster edits): build
      it, prove it in the emulator and give me a click-by-click guide, but I
      publish it;
    - deleting anything;
