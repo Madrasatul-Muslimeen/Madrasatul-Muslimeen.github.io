@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="stylesheet" href="./css/shell.css" />
 <link rel="stylesheet" href="./css/card-look.css" />
+<link rel="stylesheet" href="./css/note-window.css" />
   <script>(function(){try{document.documentElement.setAttribute('data-card-look',localStorage.getItem('mm_card_look')==='light'?'light':'night');}catch(e){document.documentElement.setAttribute('data-card-look','night');}})();</script>
 <title>QuranRevival — My Notes</title>
 <!-- MAP Phase 5 (P5-D, issue #195) -- a Note's bodyHtml is rendered as markup
@@ -142,6 +143,7 @@
     import { roleListLabel } from "./js/labels.js";
     import { unitKeyLabel } from "./js/unit-keys.js";
     import { sanitizeNoteHtml } from "./js/note-sanitize.js";
+    import { createNoteViews } from "./js/note-window.js";
     import {
       createStudyNote, reviseStudyNote, retireStudyNote, notesForStudyUnit, recordJournalEvidence,
     } from "./js/study-note-service.js";
@@ -342,7 +344,7 @@
       const canEdit = isSelfSelected() && !retired;
       return `<div class="note-card${retired ? " retired" : ""}" data-note-id="${escapeHtml(note.noteId)}">
         <div class="note-card-head">
-          <span class="note-card-title">${escapeHtml(title)}</span>
+          <span class="note-card-title" data-note-title>${escapeHtml(title)}</span>
           <span class="note-status-pill${retired ? " retired" : ""}">${retired ? t("Removed") : t("Active")}</span>
         </div>
         <div class="note-card-meta">${t("Revision")}: ${escapeHtml(note.currentRevisionId)}</div>
@@ -350,6 +352,7 @@
         <div class="note-body-preview" data-note-body></div>
         <div class="note-actions">
           ${canEdit ? `<button type="button" class="secondary tiny" data-note-edit>${t("Edit")}</button>` : ""}
+          ${retired ? "" : `<button type="button" class="secondary tiny" data-note-window>⧉ ${t("Open in window")}</button>`}
           <button type="button" class="secondary tiny" data-note-history-toggle>${openHistoryFor.has(note.noteId) ? t("Hide history") : t("Show history")}</button>
           ${canEdit ? `<button type="button" class="secondary tiny" data-note-dawah aria-disabled="${isDawahReady() ? "false" : "true"}">${t("Make a printable page")}</button>` : ""}
           ${canEdit ? `<button type="button" class="danger tiny" data-note-retire>${t("Remove")}</button>` : ""}
@@ -379,7 +382,13 @@
         const row = currentRows.find((r) => r.note.noteId === noteId);
         if (!row) return;
         card.querySelector("[data-note-body]").innerHTML = noteBodyPreviewHtml(row.note);
-        card.querySelector("[data-note-edit]")?.addEventListener("click", () => openEditForm(row.note));
+        card.querySelector("[data-note-edit]")?.addEventListener("click", () => {
+          const inWindow = noteViews.viewShowing(noteId); // never live in two editors: focus the window instead
+          if (inWindow) { noteViews.focusView(inWindow); return; }
+          openEditForm(row.note);
+        });
+        card.querySelector("[data-note-window]")?.addEventListener("click", () => openNoteInWindow(noteId));
+        card.querySelector("[data-note-title]")?.addEventListener("click", (e) => { if (e.ctrlKey || e.metaKey) openNoteInWindow(noteId); });
         card.querySelector("[data-note-dawah]")?.addEventListener("click", () => makeDawahPage(row.note));
         card.querySelector("[data-note-retire]")?.addEventListener("click", () => retireNote(row.note));
         card.querySelector("[data-note-history-toggle]")?.addEventListener("click", async () => {
@@ -420,6 +429,7 @@
         unitBanner.innerHTML = `${escapeHtml(t("This screen could not read Notes for that unit."))} (${escapeHtml(err.message)})`;
       }
       renderNotesList();
+      noteViews.sync(); // a window whose Note was removed closes; the rest show what was just loaded
       if (autoDawahRequested && !autoDawahAttempted) {
         autoDawahAttempted = true;
         maybeAutoMakeDawahPage();
@@ -530,10 +540,12 @@
         <div class="note-actions">
           <button type="button" data-edit-save>${t("Save revision")}</button>
           <button type="button" class="secondary" data-edit-cancel>${t("Cancel")}</button>
+          <button type="button" class="secondary" data-edit-popout>⧉ ${t("Pop out")}</button>
         </div>`;
       wireToolbar(body.querySelector("[data-edit-toolbar]"), body.querySelector("[data-edit-body]"));
       body.querySelector("[data-edit-cancel]").addEventListener("click", () => { editingNoteId = null; renderNotesList(); });
-      body.querySelector("[data-edit-save]").addEventListener("click", async () => {
+      // The inline form's own Save: always one revision through reviseStudyNote().
+      async function saveInline() {
         const newTitle = body.querySelector("[data-edit-title]").value.trim();
         const newBody = body.querySelector("[data-edit-body]").innerHTML.trim();
         const outcome = await safeWrite(
@@ -544,11 +556,21 @@
           }),
           { collection: TENANT.NOTES, action: "reviseStudyNote" }
         );
-        if (!outcome.ok) return;
+        if (!outcome.ok) return false;
         showPageStatus(t("Saved as a new revision ({revisionId}).", { revisionId: outcome.result.commit.revisionId }));
         await afterCreateOrRevise(outcome.result.evidence);
         editingNoteId = null;
         await refreshView();
+        return true;
+      }
+      body.querySelector("[data-edit-save]").addEventListener("click", saveInline);
+      // Pop out: the Note moves into a window. A typed change is written FIRST (one revision, only if something changed).
+      body.querySelector("[data-edit-popout]").addEventListener("click", async () => {
+        const norm = (html) => { const d = document.createElement("div"); d.innerHTML = sanitizeNoteHtml(html || ""); return d.innerHTML.trim(); };
+        const changed = body.querySelector("[data-edit-title]").value.trim() !== (note.title ?? "").trim()
+          || norm(body.querySelector("[data-edit-body]").innerHTML) !== norm(note.bodyHtml);
+        if (changed) { if (!(await saveInline())) return; } else { editingNoteId = null; renderNotesList(); }
+        noteViews.openWindow(note.noteId);
       });
     }
 
@@ -591,8 +613,9 @@
       makeDawahPage(target.note);
     }
 
-    async function retireNote(note) {
-      if (!confirm(t('Remove "{title}"? This keeps its full history — it can be restored by an administrator, and is never destroyed.', { title: note.title?.trim() || t("(untitled)") }))) return;
+    const confirmRetire = (note) => confirm(t('Remove "{title}"? This keeps its full history — it can be restored by an administrator, and is never destroyed.', { title: note.title?.trim() || t("(untitled)") }));
+    async function retireNote(note, { confirmed = false } = {}) {
+      if (!confirmed && !confirmRetire(note)) return;
       const outcome = await safeWrite(
         () => retireStudyNote(db, {
           tenantId: activeTenantId, noteId: note.noteId, expectedRevisionId: note.currentRevisionId,
@@ -602,6 +625,60 @@
       );
       if (!outcome.ok) return;
       await refreshView();
+    }
+
+    // -----------------------------------------------------------------------
+    // Siyagah port round 6b (Owner decisions 42.4, M3): Note POP-UP WINDOWS,
+    // the SAME view and window implementation Mapping My Journey uses
+    // (js/note-window.js). What is this page's own: every revision a window
+    // makes is written through reviseStudyNote() -- never straight to
+    // updatePermanentNoteContent() -- so the Journaling evidence is recorded
+    // exactly as the inline form's Save records it.
+    // -----------------------------------------------------------------------
+    const dateLocale = () => (getAppLang() === "bn" ? "bn-BD" : undefined);
+    const noteViews = createNoteViews({
+      winKey: "mmsa-notes-note-window",
+      notes: () => currentRows.map((r) => r.note),
+      ready: () => true,
+      canEdit: () => isSelfSelected(),
+      isRetired: (n) => n.status === NOTE_STATUS.RETIRED,
+      when: (ts) => { const d = ts?.toDate ? ts.toDate() : null; return d ? d.toLocaleString(dateLocale()) : ""; },
+      dateLocale,
+      revise: async ({ note, expectedRevisionId, title, bodyHtml }) => {
+        const result = await reviseStudyNote(db, {
+          tenantId: activeTenantId, personId: selectedPersonId, noteId: note.noteId, unitKey,
+          expectedRevisionId, title, bodyHtml,
+          actorUid: auth.currentUser.uid, weekStartsOn: currentTenantDoc?.weekStartsOn ?? 6,
+        });
+        try { await afterCreateOrRevise(result.evidence); }
+        catch (err) { console.error("[journal evidence]", err); showPageStatus(t("Saved. Journaling activity was not recorded ({reason}).", { reason: err?.message ?? "" })); }
+        return result.commit.revisionId;
+      },
+      afterRevise: () => { if (!editingNoteId) renderNotesList(); },
+      status: showPageStatus,
+      refresh: () => refreshView(),
+      menuMid: () => `<button type="button" class="danger tiny" data-pane-delete>🗑 ${escapeHtml(t("Delete"))}</button>`,
+      onMenu: (v, note, on) => {
+        if (!on("[data-pane-delete]")) return false;
+        (async () => {
+          if (!confirmRetire(note)) return;
+          await noteViews.endEdit(v); // a pending edit becomes a revision first, so the retire chains from it
+          const cur = currentRows.find((r) => r.note.noteId === note.noteId)?.note ?? note;
+          await retireNote(cur, { confirmed: true });
+        })();
+        return true;
+      },
+      orderFrom: (el) => [...notesContainer.querySelectorAll(".note-card[data-note-id]")].map((c) => c.dataset.noteId),
+      folderFrom: () => null,
+      paneTier: () => "narrow", paneApply: () => {}, scroller: () => document.scrollingElement,
+    });
+    /** Open a Note in a window -- or, if it is already open (in the inline form or a window), focus THAT: never two editors. */
+    function openNoteInWindow(noteId) {
+      if (editingNoteId === noteId) {
+        const body = notesContainer.querySelector(`[data-note-id="${CSS.escape(noteId)}"] [data-edit-body]`);
+        if (body) { body.scrollIntoView?.({ block: "center" }); body.focus(); return; }
+      }
+      noteViews.openWindow(noteId, { fromEl: notesContainer });
     }
 
     // -----------------------------------------------------------------------
