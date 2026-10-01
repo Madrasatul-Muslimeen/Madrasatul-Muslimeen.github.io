@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.27",
+    "version": "09.28",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1505,8 +1505,20 @@
     {
       "version": "09.27",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Siyagah round 7 switched on: firestore.rules synced to the published round 7 Rules; readiness gate open.",
+      "integration": {
+        "authorizedOn": "2026-10-01",
+        "integratedOn": "2026-10-01",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.28",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Write-failure banner: 44px close button and an untranslated Ref line naming the save that failed.",
       "integration": {
         "authorizedOn": "2026-10-01",
         "integratedOn": "2026-10-01",
@@ -1515,8 +1527,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.28",
+  "nextUnallocated": "09.29",
   "nextUnallocatedNote": [
+    "v09.28 was allocated to Write-failure banner can be closed and names the failed save, 2026-10-01.",
     "v09.27 was allocated to Sections, folder colour/bold and Tags switched on (round 7 Rules published by the Owner), 2026-10-01.",
     "v09.26 was allocated to Siyagah round 7b: Tags on Notes behind the readiness gate (#461, PR #462), 2026-10-01.",
     "v09.25 was allocated to Siyagah round 7a: sections and folder colour/bold behind a readiness gate (#458, PR #460), 2026-10-01.",

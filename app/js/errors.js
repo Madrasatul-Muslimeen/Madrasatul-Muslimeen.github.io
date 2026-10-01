@@ -73,7 +73,46 @@ function surfaceToUser(entry) {
       "padding:0.75rem 1rem;font-family:system-ui,sans-serif;font-size:0.95rem;z-index:9999;";
     document.body.appendChild(banner);
   }
-  banner.textContent = entry.message;
+  // 1 Oct 2026 (Owner, from a phone: "What's this shows up at the bottom?"):
+  // the banner could not be closed and did not say WHICH save failed, so the
+  // Owner could neither dismiss it nor tell the Architect what had happened.
+  // It now names the save in a short reference line -- left untranslated on
+  // purpose, like the error code, because it is a diagnostic for whoever is
+  // helping -- and carries a 44px close button. The message itself is still
+  // the first and only translated sentence.
+  banner.textContent = "";
+  banner.style.display = "flex";
+  banner.style.alignItems = "flex-start";
+  banner.style.gap = "0.75rem";
+  const text = document.createElement("div");
+  text.style.flex = "1 1 auto";
+  text.style.minWidth = "0";
+  const msg = document.createElement("div");
+  msg.textContent = entry.message;
+  text.appendChild(msg);
+  const ref = failureReference(entry);
+  if (ref) {
+    const refEl = document.createElement("div");
+    refEl.setAttribute("data-write-failure-ref", "");
+    refEl.style.cssText = "font-size:0.78rem;opacity:0.8;margin-top:0.25rem;overflow-wrap:anywhere;";
+    refEl.textContent = `Ref: ${ref}`;
+    text.appendChild(refEl);
+  }
+  const close = document.createElement("button");
+  close.type = "button";
+  close.setAttribute("data-write-failure-close", "");
+  close.setAttribute("aria-label", t("Close"));
+  close.textContent = "\u2715";
+  close.style.cssText = "flex:0 0 auto;width:44px;height:44px;border:1px solid #c58a91;border-radius:8px;background:#fff;color:#58151c;font-size:1.1rem;cursor:pointer;";
+  close.addEventListener("click", () => { banner.style.display = "none"; });
+  banner.append(text, close);
+}
+
+/** A short, language-neutral name for the save that failed, from its context, plus the error code. */
+function failureReference(entry) {
+  const c = entry.context || {};
+  const what = c.what || [c.collection, c.action].filter(Boolean).join("/");
+  return [what, entry.code].filter(Boolean).join(" · ");
 }
 
 /**
