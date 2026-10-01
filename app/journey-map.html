@@ -1405,7 +1405,7 @@
         `<button type="button" class="folder-chip" data-pane-chip="${escapeHtml(f.folderId)}">📁 ${escapeHtml(folderDisplayName(f))}</button>`).join("");
       // While an edit is open the editor IS the body: a re-render must never wipe the reader's typing.
       if (!(v.ed && v.ed.noteId === note.noteId)) { showReadChrome(v, note); buildPaneBody(v, note); }
-      if (v.kind === "window") v.win.querySelector(".nw-title").textContent = noteTitleOf(note);
+      if (v.kind === "window") { v.win.querySelector(".nw-title").textContent = noteTitleOf(note); v.win.dataset.noteId = note.noteId; updateWindowSwitcher(); }
       renderPaneBar(v);
       fitPaneBarTwice(v);
       if (keepScroll) v.scrollEl.scrollTop = before;
