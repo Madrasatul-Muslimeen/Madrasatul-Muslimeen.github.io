@@ -665,3 +665,4 @@ total). Allocated by the MMSA Architect.
 09.19: Mastery Wheel titles and action buttons on separate rows (decision 46); Record Your Progress always on the Ayah Card (decision 47). Allocated by the MMSA Architect.
 09.20: Siyagah round 4: a Note opens in read mode inside Mapping My Journey (#446, PR #448). Allocated by the MMSA Architect.
 09.21: Siyagah round 5: edit a Note in the pane with autosave (#450, PR #451). Allocated by the MMSA Architect.
+09.22: Explore's Approach list readable in the Night card look; palette-contrast suite. Allocated by the MMSA Architect.

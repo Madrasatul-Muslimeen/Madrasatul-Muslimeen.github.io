@@ -19011,3 +19011,11 @@ Siyagah port round 5 of 7; Owner decision 42.3 (#450, PR #451, Builder run 708).
 - **While editing, the toolbar and ✓ Done stay at the top of the screen** however far down a long Note you are (found in review).
 - Known: a Note's title cannot be left completely empty; it shows "Not saved yet" until a title is typed.
 - **Checks**: journey-note-edit 208/0 (mutations: no save on switching away; saving when nothing changed — both fail), journey-note-pane 321/0, journey-folder-menus 144/0, journey-tray 227/0, journey-map-screen 46/0, every journey-map suite green, account-card 1235/0, phone-width 217/0, behaviour 1007/1 (31e: sandbox TLS), emulator journey-map-real-function and note-foundation-real-function green, governance 8/8.
+
+## v09.22 — 1 Oct 2026 — Explore's Approach list readable in the Night look
+
+Owner report (a phone photo of Explore's "Track the Status of Approaches" list, the names black on navy). Built by the Architect.
+
+- **In the Night card look the list's Approach names are now cream on the dark panel** (they were near-black: 1.1:1), with the chosen one highlighted in gold. The "Study Unit" label inside Choose a Unit was faint too (2.35:1) and is now readable. The small gold section headings (Preservation, Engagement, …) were just under the readable level in both looks and are now above it.
+- **A new permanent check** opens every drop-down on the landing page and in Explore, in both card looks, at phone and PC width, and fails if any text in it reads below 4.5:1 against what is really behind it. It fails on the old colours (6 failures) and passes now (20/0).
+- **Checks**: palette-contrast 20/0, card-look 96/0, explore-hizb-view 80/0, global-approach-card 89/0, approach-sections 59/0, read-contents 250/0, phone-width 217/0, behaviour 1007/1 (31e: sandbox TLS), governance 8/8.
