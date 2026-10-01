@@ -81,6 +81,9 @@
   .section-header.drag-over-inside { background: #eef2ff; border-color: #1F3A6E; }
   .section-name { text-transform: none; }
   .look-dot { flex: 0 0 auto; width: 0.85rem; height: 0.85rem; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,0.25); }
+  /* Review #458: a plain name is 500 and Bold is 800. At 600 (the old plain
+     weight) most system fonts already draw their bold face, so Bold changed
+     nothing on screen; measured 600 == 800 in the test browser. */
   .folder-row-name.is-bold { font-weight: 800; }
   .section-name.is-bold { font-weight: 900; }
   .swatch-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.3rem 0; }
@@ -103,7 +106,7 @@
      able to wrap onto several lines inside its own column rather than push
      the row wider than the screen or get cut with an ellipsis nobody can
      read the rest of. */
-  .folder-row-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; font-weight: 600; color: #1F3A6E; font-size: calc(0.94rem * var(--tree-scale, 1)); }
+  .folder-row-name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; font-weight: 500; color: #1F3A6E; font-size: calc(0.94rem * var(--tree-scale, 1)); }
   .folder-row-count { font-size: calc(0.78rem * var(--tree-scale, 1)); color: #888; }
   .folder-pin-flag { font-size: 0.85rem; }
   .folder-rename-input { flex: 1 1 auto; min-width: 0; font-weight: 600; color: #1F3A6E; font-size: calc(0.94rem * var(--tree-scale, 1)); }
