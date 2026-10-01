@@ -23,7 +23,8 @@ Read the live state yourself, because it moves on after this was written:
   - decision 46 (option C): the two Mastery Wheel titles on the heading line, and Read / Choose a Unit / Know Your Status as one row under the wheel;
   - decision 47: Record Your Progress always on the Āyah card.
 - v09.18 before it was Siyagah round 3 plus the five-suite cleanup.
-- **Round 6b is merged (v09.24). Round 7 is next** (sections, folder colour and bold, Tags only, never Note Types): it needs a Rules change. The Architect writes the Rules package, proves it in the emulator, and gives the Owner a click-by-click Firebase Console guide; **the Owner publishes, never the Architect.** The Builder round that uses the new fields goes after that.
+- **Round 7's Rules package is on `main` (PR #457), NOT published.** `docs/governance/2026-10-01-siyagah-round7-DEPLOYMENT-candidate.rules` adds folder `color`/`bold`/`sectionId` and new `noteSections`, `noteTags`, `noteTagLinks`; ADR-010 Amendment 1; the Owner's guide `docs/governance/2026-10-01-siyagah-round7-owner-publish-guide.md`. Proof: `npm run siyagah-round7` (75 cases; 8 mutations each caught by its own case; run mutants with `MUTANT=1 RULES_FILE=...`); the real-function suites are green against it. **The Owner publishes; when they say "Round 7 rules are live":** sync `firestore.rules` to the candidate (commit tag `[already-deployed-manually]`), flip the readiness gate(s) with a dated reference, re-run `rules-authorisation-executable`.
+- **Round 7a (#458, sections and folder colour/bold behind `siyagah-sections-readiness.js`, ready:false) is dispatched to the Builder** (~15:20 UTC). Review it, allocate v09.25. Then write 7b: Tags (tray Tags block, 🏷 in the Note view's Details line and ⋯, on both pages through note-window.js), same gate pattern.
 - **The Wheel drawer is ON STANDBY (Owner: "Standby for Landing page decision")**. Demo (https://claude.ai/artifact/EQAEavsgP1TFprRf8ZKQs4): the legend / Appearance / Units rows under one ⚙ Wheel button with three chips, and Read · Choose a Unit · Know Your Status above the bottom bar. Build it on their "go".
 - **The Asmaul Husna poster template is being built** from the Owner's design and spec (1 Oct):
   - banner الأَسْمَاءُ الْحُسْنَى, Amiri;
@@ -36,7 +37,7 @@ Read the live state yourself, because it moves on after this was written:
 
 **A new session at this point:**
 1. Writes its id into #159's Active line.
-2. Plans Siyagah round 7: the Rules package (emulator-proven) and the Owner's Console guide first, then the Builder issue.
+2. Reviews round 7a's PR (issue #458) when it opens; then writes and dispatches 7b (Tags).
 
 ## 1. What this session released (v09.07 → v09.17)
 
