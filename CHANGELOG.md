@@ -19030,3 +19030,14 @@ Siyagah port round 6a; Owner decisions 42.4 and M3 (#452, PR #453, Builder run 7
 - **On a phone** a window fills the screen; with two or more open, a row at the bottom switches between them. **On a tablet or PC** windows can be dragged by the title bar and resized from any side or corner, and they open where you left them on that device.
 - **Found in review**: the closed Details line showed half of a folder chip under the date; it now shows the date alone until Details is opened.
 - **Checks**: journey-note-windows 254/0 (mutations: a second window for an already-open Note; popping out without saving first — both fail), journey-note-edit 208/0, journey-note-pane 321/0, journey-tray 227/0, every journey-map suite green, account-card 1235/0, phone-width 217/0, palette-contrast 20/0, behaviour 1004/4 (22g×3 archive.org, 31e TLS), emulator journey-map-real-function and note-foundation-real-function green, governance 8/8.
+
+## v09.24 — 1 Oct 2026 — Pop-up windows for Notes on the Notes page
+
+Siyagah port round 6b; Owner decisions 42.4 and M3 (#454, PR #456, Builder run 715).
+
+- **Open in window** on every Note on the Notes page (or Ctrl/⌘-click its title): the Note opens in its own window, the same windows Mapping My Journey has. Several can be open; on a phone each fills the screen with a switcher at the bottom.
+- **Pop out** while editing a Note: whatever was typed is saved first, then the Note moves into a window.
+- **Never in two places**: Edit on a Note already open in a window brings that window forward, and the other way round.
+- **Saving from a window still counts as Journaling**: every revision is written the same way the Notes page's own Save writes it, so your Journaling activity is recorded, and the page tells you so.
+- **One shared piece**: the Note view and windows now live in one file used by both pages, so a fix to one is a fix to both.
+- **Checks**: notes-note-windows 218/0 (Architect mutation: without the Journaling record, 12 checks fail), journey-note-windows 254/0, journey-note-edit 208/0, journey-note-pane 321/0, journey-tray 227/0, journey-folder-menus 144/0, every journey-map suite green, study-note-service 35/0, note-journal-evidence 18/0, account-card 1235/0, phone-width 217/0, palette-contrast 20/0, behaviour 1004/4 (22g×3 archive.org, 31e TLS), emulator journey-map-real-function and note-foundation-real-function green.

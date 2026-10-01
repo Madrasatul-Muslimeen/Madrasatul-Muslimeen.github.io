@@ -115,8 +115,13 @@ check("the render path never assigns bodyHtml to innerHTML except through saniti
   assert.deepEqual(offending, [], `unsanitized bodyHtml reaches innerHTML: ${JSON.stringify(offending)}`);
 });
 check("every render of a Note's own body names sanitizeNoteHtml()", () => {
-  const bodyHtmlReads = [...page.matchAll(/note\.bodyHtml/g)].length;
-  const sanitizeCalls = [...page.matchAll(/sanitizeNoteHtml\(/g)].length;
+  // UPDATED IN PLACE for Siyagah round 6b: the Note view's rendering moved out of
+  // this page into js/note-window.js (shared with notes.html), so the body reads
+  // and their sanitising now live there. The page and the module are scanned together.
+  const viewSource = fs.readFileSync(path.join(root, "app/js/note-window.js"), "utf8");
+  const scanned = page + "\n" + viewSource;
+  const bodyHtmlReads = [...scanned.matchAll(/note\.bodyHtml/g)].length;
+  const sanitizeCalls = [...scanned.matchAll(/sanitizeNoteHtml\(/g)].length;
   assert.ok(bodyHtmlReads >= 1, "expected at least one read of note.bodyHtml");
   // UPDATED IN PLACE for Siyagah round 5 (edit mode): the editor's normBody()
   // sanitises twice (sanitise, let the browser re-serialise, sanitise again) so
