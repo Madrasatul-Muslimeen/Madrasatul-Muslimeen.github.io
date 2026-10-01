@@ -126,7 +126,7 @@ Read this first, every session. It is the standing brief.
 > **`docs/reports/2026-10-01-MMSA-SESSION-HANDOVER.md`** is the current
 > continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-10-01.md`**
 > is the prompt that starts a new session. They carry the pause point (Builder
-> round #440, the Mapping My Journey folder tray), the Siyagah seven-round plan
+> round #443, Siyagah round 3: folder menus and Trash), the Siyagah seven-round plan
 > (decisions 41–42; round 1 done), the Asma poster demo awaiting the Owner,
 > the four suites already red on `main`, and that **the Firestore emulator now
 > runs in this sandbox** (it found the 100-folder bug fixed in v09.15). The
