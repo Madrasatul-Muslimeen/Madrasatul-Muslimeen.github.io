@@ -435,6 +435,12 @@ const PUBLISHED_DEPLOYMENTS = [
   // lemma-progress file with one condition widened. Red since then because
   // this list was not extended; the dawahPages-block half is unchanged.
   "docs/governance/2026-09-26-word-levels-DEPLOYMENT-candidate.rules",
+  // Added 1 Oct 2026 (Architect cleanup, handover 2c): the Owner published the
+  // Ruku'/Page reading rules ("Ruku/Page rule published", v08.107, report
+  // docs/reports/2026-09-29-reading-ruku-page-enabled.md), built on word-levels
+  // with only unitIdentityOk() widened. Red since then for the same reason as
+  // the 28 Sep entry above; the dawahPages-block half is unchanged.
+  "docs/governance/2026-09-28-reading-ruku-page-DEPLOYMENT-candidate.rules",
 ];
 function dawahBlock(text) {
   const start = text.indexOf("match /dawahPages/");

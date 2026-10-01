@@ -18965,3 +18965,17 @@ Siyagah port round 2 of 7; Owner decisions 41, 42.7 (#440, PR #442, Builder).
 - **Folders | Timeline | Path** are its tabs; everything in them works as before.
 - A note or Import Notes opened from inside it opens as a full page for now (round 4 changes note opening).
 - **Checks**: journey-tray 227/0 (mutations fail), journey-map-screen 48/0, journey-map-back 38/0, account-card 1235/0, phone-width 217/0, behaviour 1004/4 (sandbox network), governance green.
+
+## v09.18 — 1 Oct 2026 — Folder menus: Copy to…, Move to…, Delete to Trash, and Trash with Restore
+
+Siyagah port round 3 of 7; Owner decisions 41, 42.1, M4–M6 (#443, PR #447, Builder run 699; the Architect opened the PR and finished the review).
+
+- **Folder ⋯ menu** in Mapping My Journey (full page and tray): **Copy to…** copies the folder and its subfolders; its notes are linked, not duplicated, and the confirmation says so. **Move to…** now uses a picker instead of typing a name. **Delete** sends an empty folder (and its empty subfolders) to Trash.
+  - **Replaced:** the old *Remove* item (retire with a "kept, not deleted" confirmation) is gone.
+  - A folder that still holds notes is refused before anything is written: *"This folder still holds {n} notes. Move or delete them first."*
+- **Note rows**: **Copy to…** (the note now also shows in the other folder, still one note) and **Move to…**.
+- **One destination picker** for all four: the folder tree with its numbers, a search box, folders that cannot be chosen say why, Cancel. Full screen on a phone.
+- **🗑 Trash** (⋯ beside the Folders | Timeline | Path tabs): trashed folders and notes with where they were; **Restore** brings them back. Nothing is ever erased; there is no Empty Trash.
+- **Found in review by looking** (390px Bangla): the picker's search box was ~245px tall; an undated Trash row ended in " · ". Both fixed, each with a check that fails on the old code.
+- **Cleanup of five suites red on `main`**: note-foundation-boundary (admits the read-only `listNoteSourcesForOwnerPage` by name), dawah-boundary (the published Ruku'/Page rules file joins the published list), study-note-service (its loader resolves the two pure imports v08.106/107 added), and the wordpress/evernote emulator suites (the import blocks are checked against the live and the published files instead of a superseded whole file).
+- **Checks**: journey-folder-menus 144/0 (mutations: Delete without the notes check fails 2; the two review fixes fail 8 when undone), journey-tray 227/0, journey-map-screen 45/0, journey-map-back 38/0, journey-map-boundary 19/0, account-card 1235/0, phone-width 217/0, behaviour 1007/1 (31e: sandbox TLS), emulator journey-map-real-function, note-foundation-real-function, wordpress-import, wordpress-import-real-function and evernote-import-real-function green, governance 8/8.

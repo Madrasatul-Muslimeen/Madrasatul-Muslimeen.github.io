@@ -282,7 +282,10 @@ check("app/journey-map.html only ever names the Phase 6 data-layer functions it 
 // no Phase 6 folder/placement function at all; the service-reachability
 // check earlier in this file already proves journey-map.html is the only
 // page that reaches journey-map-service.js in the first place).
-const FOLDER_EDITING_SERVICE_WRAPPERS = ["renameFolder", "reorderFolder", "moveFolder", "retireFolder", "reorderFiling"];
+// UPDATED for Siyagah round 3 (#443), reason recorded: retireFolder is no
+// longer called by the page -- Delete (trashFolder) replaced Remove -- and the
+// round-1 functions the new menus use are listed beside the P6-G ones.
+const FOLDER_EDITING_SERVICE_WRAPPERS = ["renameFolder", "reorderFolder", "moveFolder", "reorderFiling", "trashFolder", "restoreFolder", "loadOwnerTrash", "copyNoteToFolder", "moveNote", "copyFolder"];
 check("app/journey-map.html now wires every folder-editing service wrapper (P6-G), and imports each by name", () => {
   const text = fs.readFileSync(path.join(root, "app/journey-map.html"), "utf8");
   const used = FOLDER_EDITING_SERVICE_WRAPPERS.filter((fn) => text.includes(fn));

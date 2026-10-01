@@ -661,3 +661,4 @@ total). Allocated by the MMSA Architect.
 09.15: My account card, Back on the view row, Siyagah data layer, Asma Explore poster, folder checks past 100. Allocated by the MMSA Architect.
 09.16: My account on every page, Study options Save/Search order, Writing sheet in two rows. Allocated by the MMSA Architect.
 09.17: Mapping My Journey opens as a pop-up folder tray. Allocated by the MMSA Architect.
+09.18: Siyagah round 3: folder and note Copy to/Move to, Delete to Trash, Trash with Restore (#443, PR #447). Allocated by the MMSA Architect.
