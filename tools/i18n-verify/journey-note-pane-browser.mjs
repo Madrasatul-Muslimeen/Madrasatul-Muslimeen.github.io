@@ -127,7 +127,9 @@ for (const lang of ["en", "bn"]) {
 
     // ---- Body: meta row, folder chips, headings ---------------------------------------
     const meta = await page.textContent("[data-pane-meta]");
-    check(`${tag}: the meta row shows the created and last-changed dates${lang === "bn" ? " in Bangla words" : ""}`, /\d/.test(meta) && (lang === "bn" ? hasBn(meta) : /Created/.test(meta) && /Last changed/.test(meta)), meta);
+    // UPDATED IN PLACE by the Architect (review, 1 Oct 2026): a Bangla reader's
+    // dates now carry Bangla digits, which \d does not match.
+    check(`${tag}: the meta row shows the created and last-changed dates${lang === "bn" ? " in Bangla words" : ""}`, /[0-9০-৯]/.test(meta) && (lang === "bn" ? hasBn(meta) : /Created/.test(meta) && /Last changed/.test(meta)), meta);
     const chips = await page.$$eval("[data-pane-chip]", (c) => c.map((x) => x.dataset.paneChip).sort());
     check(`${tag}: one folder chip for every active folder the Note is filed in`, JSON.stringify(chips) === '["fA","fB"]', JSON.stringify(chips));
     check(`${tag}: four headings become four collapsible sections, nested by level`, await page.evaluate(() => {
@@ -319,6 +321,20 @@ for (const lang of ["en", "bn"]) {
     await ctx.close();
   }
 }
+// Added by the Architect in review (1 Oct 2026): the pane's dates are in the
+// reader's language -- Bangla digits for a Bangla reader, no Latin digits.
+{
+  const ctx = await newContext(browser, { appLang: "bn", viewport: { width: 390, height: 860 }, extraSeedJs: SEED });
+  await ctx.addInitScript(() => { try { localStorage.setItem("qr.journeyMapExpanded", JSON.stringify(["fA","fB","fBk","fG","fD"])); } catch {} });
+  const { page } = await openPage(ctx, "/app/journey-map.html#folders");
+  await waitTree(page);
+  await page.click(leafTitle("n1", "fA"));
+  await settle(page);
+  const meta = await page.textContent("[data-pane-meta]");
+  check("bn 390px: the Note pane's dates use Bangla digits, with no Latin digit left", /[০-৯]/.test(meta) && !/[0-9]/.test(meta), meta);
+  await ctx.close();
+}
+
 await browser.close();
 console.log(`\njourney-note-pane-browser: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

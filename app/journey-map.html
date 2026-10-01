@@ -865,9 +865,13 @@
     function displayTimestamp(note) {
       return note?.originalCreatedAt ?? note?.updatedAt;
     }
+    // Architect review of #448, 1 Oct 2026: dates follow the reader's language
+    // (a Bangla reader saw "8/1/2026, 9:00:00 AM" in the Note pane, Timeline
+    // and Path). undefined keeps the device's own locale for English.
+    function dateLocale() { return getAppLang() === "bn" ? "bn-BD" : undefined; }
     function when(ts) {
       const d = ts?.toDate ? ts.toDate() : null;
-      return d ? d.toLocaleString() : "";
+      return d ? d.toLocaleString(dateLocale()) : "";
     }
     function wireNoteCards(container, notes) {
       container.querySelectorAll("[data-note-id]").forEach((card) => {
@@ -2225,7 +2229,7 @@
       for (const note of sorted) {
         const d = displayTimestamp(note)?.toDate ? displayTimestamp(note).toDate() : null;
         const dayKey = d ? d.toDateString() : t("Unknown date");
-        if (dayKey !== lastDay) { html += `<div class="timeline-day">${escapeHtml(d ? d.toLocaleDateString() : t("Unknown date"))}</div>`; lastDay = dayKey; }
+        if (dayKey !== lastDay) { html += `<div class="timeline-day">${escapeHtml(d ? d.toLocaleDateString(dateLocale()) : t("Unknown date"))}</div>`; lastDay = dayKey; }
         html += noteCardHtml(note, { fileControl: true });
       }
       body.innerHTML = html;
@@ -2417,7 +2421,7 @@
         : "";
       return `<div class="path-stop" data-stop-note-id="${escapeHtml(note.noteId)}">
         <div class="path-stop-marker"></div>
-        <div class="path-stop-date">${escapeHtml(d ? d.toLocaleDateString() : "")}</div>
+        <div class="path-stop-date">${escapeHtml(d ? d.toLocaleDateString(dateLocale()) : "")}</div>
         ${noteCardHtml(note, { fileControl: true, extraHead: badge })}
       </div>`;
     }
