@@ -18956,3 +18956,12 @@ Owner decisions 40 (round 2), 44, 45.
 - **Study options** (decision 44): *☆ Save these settings* on the title line; **Search** first in the body.
 - **Writing sheet on a phone** (decision 45): the title line, then two rows of buttons; letter style is one pick-list (Light · Lighter · Like the book); a zoomed sheet can now be moved left-right as well as up-down.
 - **Checks**: account-card 1235/0, study-presets 81/0, writing-sheet 180/0, head-search 86/0, journey-map-screen 48/0, session-context-two-tenant 14/0, hadeethenc 82/0, panel OK, phone-width 217/0, behaviour 1007/1 (31e: sandbox TLS), governance green. behaviour 27b/27i and study-presets' placement check were updated in place for the new order.
+
+## v09.17 — 1 Oct 2026 — Mapping My Journey opens as a pop-up folder tray
+
+Siyagah port round 2 of 7; Owner decisions 41, 42.7 (#440, PR #442, Builder).
+
+- **The Mapping My Journey button opens a window over the current screen** instead of leaving it: drag it by its title bar, resize it from any side or corner, close it with ✕ or Esc. It remembers where you left it on this device. On a phone it fills the screen.
+- **Folders | Timeline | Path** are its tabs; everything in them works as before.
+- A note or Import Notes opened from inside it opens as a full page for now (round 4 changes note opening).
+- **Checks**: journey-tray 227/0 (mutations fail), journey-map-screen 48/0, journey-map-back 38/0, account-card 1235/0, phone-width 217/0, behaviour 1004/4 (sandbox network), governance green.
