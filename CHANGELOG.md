@@ -19078,3 +19078,11 @@ From the Owner's phone report ("What's this shows up at the bottom?").
 - The pink "That save was blocked…" notice now has a ✕ to close it, and a small "Ref:" line naming which save failed, so a screenshot tells the Architect exactly what happened.
 - The report itself (a refused save after pressing Achieved on the Word card) was checked: today's Rules publish removed nothing, and every save the Word card makes was accepted by the live Rules in the emulator, so it could not be reproduced yet.
 - **Checks**: study-presets 84/0 (three new checks, one mutation-proven), behaviour 1004/4 (22g×3 archive.org, 31e TLS).
+
+## v09.29 — 1 Oct 2026 — Wheel, Legend and Unit drawers on the landing page; wheel numbers no longer cut on a phone
+
+From the Owner's phone screenshot (decision 51).
+
+- Three buttons sit above the Approach bar: **Wheel** (its look: Dark, Light …), **Legend** (the colour key) and **Unit** (what the wheel shows). Pressing one opens its drawer; only one is open at a time.
+- On a phone the wheel moves down just enough that its top numbers are no longer cut by the edge of the dark card. Tablet and desktop are unchanged.
+- **Checks**: landing-drawers 252/0 (now uses the real 30-Approach wheel; the fix mutation-proven 6/6), read-contents 250/0, unit-rings 106/0, approach-sections 59/0, quran-my-status 248/0, palette-contrast 20/0, phone-width-overflow 217/0, behaviour 1004/4 (22g×3 archive.org, 31e TLS).
