@@ -1934,14 +1934,24 @@
     }
 
     /** Delete = Trash. The confirm says the folders come BACK TO THE UNNAMED BLOCK and never go to Trash with it. */
-    async function deleteSection(section) {
-      if (!window.confirm(t('Move section "{name}" to Trash? Its folders are not deleted: they go back to the unnamed block above the sections. Restore it later from 🗑 Trash.', { name: section.name }))) return;
-      const outcome = await gatedWrite(
-        () => trashSection(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, sectionId: section.sectionId, actorUid: auth.currentUser.uid }),
-        { collection: TENANT.NOTE_SECTIONS, action: "trashSection" });
-      if (!outcome.ok) return;
-      showPageStatus(t('Section "{name}" moved to Trash. Its folders are back in the unnamed block.', { name: section.name }));
-      await refreshAll();
+    function deleteSection(section) {
+      // An in-page confirmation (this page never calls window.confirm).
+      openSiyagahDialog({
+        title: t('Delete section "{name}"?', { name: section.name }),
+        bodyHtml: `<p data-section-confirm>${escapeHtml(t('Move section "{name}" to Trash? Its folders are not deleted: they go back to the unnamed block above the sections. Restore it later from 🗑 Trash.', { name: section.name }))}</p>
+          <div class="folder-picker-actions"><button type="button" class="danger" data-section-confirm-yes>🗑 ${escapeHtml(t("Delete"))}</button></div>`,
+        wire: (overlay, close) => {
+          overlay.querySelector("[data-section-confirm-yes]").addEventListener("click", async () => {
+            const outcome = await gatedWrite(
+              () => trashSection(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, sectionId: section.sectionId, actorUid: auth.currentUser.uid }),
+              { collection: TENANT.NOTE_SECTIONS, action: "trashSection" });
+            if (!outcome.ok) return;
+            close();
+            showPageStatus(t('Section "{name}" moved to Trash. Its folders are back in the unnamed block.', { name: section.name }));
+            await refreshAll();
+          });
+        },
+      });
     }
 
     /** Put a ROOT user folder under a section (null = no section). A nested one is refused in words, before any write. */

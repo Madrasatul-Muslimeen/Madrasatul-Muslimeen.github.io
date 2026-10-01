@@ -3224,6 +3224,7 @@ export const BN = {
   "Section \"{name}\" restored.": "সেকশন \"{name}\" ফিরিয়ে আনা হয়েছে।",
   "Folder \"{name}\" moved to section \"{section}\".": "ফোল্ডার \"{name}\" সেকশন \"{section}\"-এ সরানো হয়েছে।",
   "Folder \"{name}\" is no longer in a section.": "ফোল্ডার \"{name}\" আর কোনো সেকশনে নেই।",
+  "Delete section \"{name}\"?": "সেকশন \"{name}\" মুছবেন?",
   "Type a name for the section first.": "আগে সেকশনের একটি নাম লিখুন।",
   "Section — its folders stay in the unnamed block.": "সেকশন — এর ফোল্ডার নামহীন অংশেই থাকে।",
   "Only your own folders can be put in a section.": "শুধু আপনার নিজের ফোল্ডার সেকশনে রাখা যায়।",

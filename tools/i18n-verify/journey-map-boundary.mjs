@@ -387,6 +387,13 @@ const NOTE_FOUNDATION_PINNED_SIGNATURE_WIDENING = Array(2).fill(
 // children past the first 100. Each of those three reads is REPLACED by the
 // paged `listAllActiveFoldersForOwner()` -- the same folders, all of them,
 // never fewer. Exactly these three lines, in this order.
+// UPDATED 1 Oct 2026 for Siyagah round 7a (issue #458), reason recorded rather
+// than the check weakened. `reparentNoteFolder()`'s one write line is REPLACED:
+// nesting a sectioned folder must clear its `sectionId` IN THE SAME WRITE (the
+// round 7 candidate Rules refuse a nested folder that keeps one), so the write
+// became `{ parentFolderId, ...sectionChange }`. With no section involved the
+// payload is byte-identical to before.
+const NOTE_FOUNDATION_PINNED_REPARENT = "-    transaction.update(TENANT.NOTE_FOLDERS, docId, { parentFolderId });";
 const NOTE_FOUNDATION_PINNED_ALL_FOLDERS = [
   "-    const folders = new Map((await listNoteFoldersForOwner(db, { tenantId, ownerPersonId }))",
   "-  const folders = await listNoteFoldersForOwner(db, { tenantId, ownerPersonId });",
@@ -416,6 +423,8 @@ check("existing user notes untouched; the data layer changed by INSERTION ONLY, 
     NOTE_FOUNDATION_PINNED_SIGNATURE_WIDENING,
     [NOTE_FOUNDATION_PINNED_REMOVAL, ...NOTE_FOUNDATION_PINNED_SIGNATURE_WIDENING],
     NOTE_FOUNDATION_PINNED_ALL_FOLDERS,
+    [NOTE_FOUNDATION_PINNED_REPARENT],
+    [NOTE_FOUNDATION_PINNED_REPARENT, ...NOTE_FOUNDATION_PINNED_ALL_FOLDERS],
   ];
   assert.ok(allowedRemovals.some((allowed) => JSON.stringify(removedLines) === JSON.stringify(allowed)),
     `note-foundation.js removed line(s) do not match any pinned exception (or the now-equally-valid empty case) -- an existing behaviour may have been reshaped: ${JSON.stringify(removedLines)}`);
@@ -488,7 +497,9 @@ check("no new Note collection has appeared", () => {
   const text = fs.readFileSync(path.join(appJs, "collections.js"), "utf8");
   const noteCollections = [...text.matchAll(/^\s*[A-Z_]+:\s*"(\w*[Nn]ote\w*)"/gm)].map((m) => m[1]).sort();
   assert.deepEqual(noteCollections,
-    ["ayahNotes", "noteFolders", "notePlacements", "noteRevisions", "noteSources", "notes", "teachingNotes"].sort(),
+    // UPDATED 1 Oct 2026 (Siyagah round 7a, #458): `noteSections` is the one deliberate addition -- a named group of
+    // ROOT FOLDERS (ADR-010 Amendment 1), not a second kind of Note, and gated off until its Rules are published.
+    ["ayahNotes", "noteFolders", "notePlacements", "noteRevisions", "noteSections", "noteSources", "notes", "teachingNotes"].sort(),
     "the Note collection set has changed -- MMJ must read the Note Foundation, never define its own");
 });
 check("the accepted contract still names folders and placements as FOUNDATION collections", () => {

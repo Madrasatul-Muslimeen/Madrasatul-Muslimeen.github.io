@@ -117,7 +117,6 @@ for (const lang of ["en", "bn"]) {
       await ctx.addInitScript(() => { try { localStorage.setItem("qr.journeyMapExpanded", JSON.stringify(["fA", "fB", "fBk"])); } catch {} });
       const { page, errors } = await openPage(ctx, "/app/journey-map.html#folders");
       await waitTree(page);
-      page.on("dialog", (d) => d.accept());
 
       check(`${tag}: nothing moves for an Owner with no section (no header, same folders)`, (await page.$$(".section-header")).length === 0 && (await rowOrder(page)).length === 5);
 
@@ -257,11 +256,11 @@ for (const lang of ["en", "bn"]) {
       await folderMenu(page, "fB", "section");
       await page.click(`#siyagahDialog li:nth-child(2) [data-section-pick]`);
       await page.waitForFunction(() => document.querySelector('li[data-section-item] + li .folder-row[data-folder-id="fB"]'));
-      let confirmText = "";
-      page.removeAllListeners("dialog");
-      page.on("dialog", (d) => { confirmText = d.message(); d.accept(); });
       await resetWrites(page);
       await sectionMenu(page, "Home", "delete");
+      await page.waitForSelector("#siyagahDialog [data-section-confirm]");
+      const confirmText = await page.textContent("#siyagahDialog [data-section-confirm]");
+      await page.click("#siyagahDialog [data-section-confirm-yes]");
       await page.waitForFunction(() => ![...document.querySelectorAll(".section-header [data-section-name]")].some((e) => e.textContent === "Home"));
       w = await writes(page);
       check(`${tag}: the confirm says the folders go back to the unnamed block, not to Trash`, lang === "bn" ? hasBn(confirmText) : /not deleted/.test(confirmText) && /unnamed block/.test(confirmText), confirmText);

@@ -168,7 +168,10 @@ check("every render of a Note's own body names sanitizeNoteHtml()", () => {
 // to 3000 to comfortably clear that. The gate itself did not move or weaken;
 // only the text between it and what it protects grew.
 check("every write-triggering control is gated behind isSelfSelected(), at every occurrence", () => {
-  const WINDOW = 3000;
+  // UPDATED 1 Oct 2026 (Siyagah round 7a, #458): folderRowHtml() now draws a colour dot and bold class
+  // in its name markup, between the same `editable = isSelfSelected() && …` gate and that row's menu text;
+  // measured directly, the window widens to 3600. The gate did not move or weaken.
+  const WINDOW = 3600;
   for (const marker of ['id="newFolderForm"', 't("+ File a Note here…")', 't("Move to…")']) {
     let idx = -1, found = 0;
     while ((idx = page.indexOf(marker, idx + 1)) !== -1) {
@@ -600,8 +603,14 @@ check("numbering is DERIVED at render time only -- never written into the stored
 });
 check("the two system folders are never numbered, and always come first", () => {
   const renderBody = functionBody(page, "renderFoldersView");
-  assert.ok(/isSystemFolderRole\(f\.semanticRole\) \? null :/.test(renderBody),
+  // UPDATED 1 Oct 2026 (Siyagah round 7a, #458): the root numbering moved from renderFoldersView() into
+  // renderRootBlocks() (the unnamed block, then each section). Same rule, same check, read where it now lives.
+  const blocksBody = functionBody(page, "renderRootBlocks");
+  assert.ok(/renderRootBlocks\(roots\)/.test(renderBody), "renderFoldersView() no longer draws the roots through renderRootBlocks()");
+  assert.ok(/if \(!isSystemFolderRole\(f\.semanticRole\)\) numbers\.set/.test(blocksBody),
     "root-level numbering no longer skips the two system folders");
+  assert.ok(/unnamed\.forEach\(number\)/.test(blocksBody) && /let html = unnamed\.map\(draw\)/.test(blocksBody),
+    "the unnamed block (which holds the system folders) no longer comes first");
   assert.ok(/const roots = mergedRoots\(\);/.test(renderBody), "renderFoldersView() no longer reads mergedRoots(), whose own systemNodes-first ordering keeps the two system folders first");
 });
 
