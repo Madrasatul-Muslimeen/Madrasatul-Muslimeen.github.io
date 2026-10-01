@@ -125,3 +125,50 @@ export function mountAccountCard({ tenantRow, personRow = null, getSummary = () 
   });
   return { open, close: shut, overlay };
 }
+
+// ---- Round 2: the same card on every other page that carried #tenantSelect ----
+//
+// One call per page, from a small module script at the foot of the page. It
+// finds the page's existing rows by id and hands them to mountAccountCard().
+// `movePerson` is the Owner-decision-40 split: a VIEWING page's person picker
+// says "whose data am I looking at" and moves into the card with Tenant; a
+// STUDY page's person/student picker is D10's fast "record for each child in
+// turn" control and stays exactly where it is.
+function rowOf(select) {
+  if (!select) return null;
+  return select.closest("label") || select.closest(".opt-cell") || select.closest("div");
+}
+
+// A few pages (Hadith Collections, the migration tool) never had a Home menu.
+// Give them the smallest possible one so "Home -> My account" is true there too.
+function ensureHomeMenu() {
+  // The page's own nav renders its Home menu (and the My account button, via
+  // renderHomeExtras) after sign-in, so test for the MENU, not the button.
+  if (document.querySelector("details.nav-cat-home, #navHomeExtra")) return;
+  const details = el("details", { class: "nav-cat nav-cat-home", id: "accountHomeMenu", style: "margin:0.6rem 0;" });
+  details.appendChild(el("summary", { style: "cursor:pointer; font-weight:600;" }, t("Home")));
+  const box = el("div", { class: "nav-cat-links", style: "padding:0.4rem 0;" });
+  box.appendChild(el("button", { type: "button", class: "nav-link nav-account-btn", "data-open-account-card": "", style: "min-height:40px;" }, `👤 ${t("My account")}`));
+  details.appendChild(box);
+  document.body.insertBefore(details, document.body.firstChild);
+}
+
+export function mountPageAccountCard({ movePerson = false, getEmail = () => "" } = {}) {
+  const tenantSelect = document.getElementById("tenantSelect");
+  const personSelect = document.getElementById("personSelect");
+  const contextBar = document.getElementById("contextBar");
+  ensureHomeMenu();
+  const card = mountAccountCard({
+    tenantRow: rowOf(tenantSelect),
+    personRow: movePerson ? rowOf(personSelect) : null,
+    contextBar,
+    getSummary: () => ({
+      name: movePerson ? personSelect?.selectedOptions[0]?.textContent : "",
+      email: getEmail(),
+      tenantName: tenantSelect?.selectedOptions[0]?.textContent,
+    }),
+  });
+  // `hidden` alone loses to a bar's own inline/class `display:flex` (the [hidden] trap).
+  if (contextBar && contextBar.hidden) contextBar.style.setProperty("display", "none", "important");
+  return card;
+}

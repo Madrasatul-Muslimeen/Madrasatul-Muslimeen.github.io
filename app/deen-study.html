@@ -150,5 +150,10 @@
     registerServiceWorker();
     initTopicStudyPage({ moduleId: "deen", trackableId: "studied_deen", rootSubjectId: "deen_study" });
   </script>
+  <script type="module">
+    import { auth } from "./js/firebase-init.js";
+    import { mountPageAccountCard } from "./js/account-card.js";
+    mountPageAccountCard({ movePerson: false, getEmail: () => auth.currentUser?.email || "" });
+  </script>
 </body>
 </html>

@@ -118,10 +118,10 @@ console.log("\n=== Study options: saved settings (#410) ===");
   const order = await page.evaluate(() => {
     document.getElementById("panelStudyOptions").scrollTop = 0;
     const top = (id) => document.getElementById(id).getBoundingClientRect().top;
-    return { inHead: !!document.querySelector("#panelStudyOptions > .qr-panel-head #presetSaveBtn"), save: top("presetSaveBtn"), search: top("jumpInput"), tenant: top("tenantSelect") };
+    return { inHead: !!document.querySelector("#panelStudyOptions > .qr-panel-head #presetSaveBtn"), save: top("presetSaveBtn"), search: top("jumpInput"), picker: top("personSelect") }; // Student: User Role lives in My account since decision 40
   });
   check("the Save button sits on the Study options title line", order.inHead, JSON.stringify(order));
-  check("top to bottom: Save, then Search, then the first picker", order.save < order.search && order.search < order.tenant, JSON.stringify(order));
+  check("top to bottom: Save, then Search, then the first picker", order.save < order.search && order.search < order.picker, JSON.stringify(order));
 
   await page.click("#presetSaveBtn");
   const form = await page.evaluate(() => ({ shown: !document.getElementById("presetForm").hidden, name: document.getElementById("presetNameInput").value, keep: document.getElementById("presetKeepUnit").checked }));

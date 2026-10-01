@@ -1206,11 +1206,14 @@ console.log("\n=== 27. Shell round 14: the Study options bars, and Search ===");
       [...bar.querySelectorAll("select, input, button")].map((el) => el.id)
     )
   );
-  // UPDATED in place (Owner decision 44, 1 Oct 2026: "move search bar below" the
-  // Save button, which went up onto the title line). Search is now bar 1 and the
-  // other bars each moved down one; the controls in each bar are unchanged.
+  // UPDATED in place twice on 1 Oct 2026. Decision 44: Search moved up to bar 1,
+  // under the Save button on the title line. Decision 40, round 2: User Role
+  // (#tenantSelect) moved into Home -> My account; Student stays (D10, the fast
+  // record-for-each-child control).
   check("27b bar 1 is one Search field and one Search button", JSON.stringify(bars[0]) === '["jumpInput","searchBtn"]', JSON.stringify(bars[0]));
-  check("27b bar 2 is User Role + Student", JSON.stringify(bars[1]) === '["tenantSelect","personSelect"]', JSON.stringify(bars[1]));
+  check("27b bar 2 is Student alone (User Role moved into the My account card)", JSON.stringify(bars[1]) === '["personSelect"]', JSON.stringify(bars[1]));
+  check("27b User Role (#tenantSelect) lives in the My account card, not in Study options",
+        await page.evaluate(() => !!document.querySelector("#accountCardOverlay #tenantSelect") && !document.querySelector(".study-options-body #tenantSelect")));
   check("27b bar 3 is Study Unit + unit number + Surah + Ayah",
         JSON.stringify(bars[2]) === '["unitTypeSelect","unitNumSelect","surahSelect","ayahSelect","rangeFromSelect","rangeToSelect"]', JSON.stringify(bars[2]));
   check("27b bar 4 is Approach + Track", JSON.stringify(bars[3]) === '["trackableSelect","trackUnitBtn"]', JSON.stringify(bars[3]));

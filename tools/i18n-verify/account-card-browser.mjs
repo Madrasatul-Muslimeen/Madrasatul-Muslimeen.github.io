@@ -1,4 +1,4 @@
-// Owner decision 40, round 1 -- Home -> 👤 My account card, and Back never
+// Owner decision 40, rounds 1 and 2 (round 2: the other 23 pages, last section) -- Home -> 👤 My account card, and Back never
 // taking a line of its own, on Mapping My Journey and Import Notes.
 //
 // Run from the repository root with `node serve.js` running.
@@ -12,7 +12,10 @@ function check(name, ok, detail = "") {
 }
 const SHOTS = process.argv[2] || process.env.SHOTS || "";
 const WIDTHS = [320, 340, 360, 390, 412, 768, 1280];
-const PAGES = [
+// ONLY_ROUND2=1 skips the round-1 sections (used for the fast mutation runs).
+// Usage: node account-card-browser.mjs [shotsDir] [round2 [mutation]]
+const ONLY_ROUND2 = process.argv[3] === "round2" || !!process.env.ONLY_ROUND2;
+const PAGES = ONLY_ROUND2 ? [] : [
   { file: "journey-map", title: "h1", backTitle: { en: "Go back", bn: "ফিরে যান" } },
   { file: "import-notes", title: "h1", backTitle: { en: "Back to Mapping My Journey", bn: "Mapping My Journey-তে ফিরে যান" } },
 ];
@@ -158,7 +161,7 @@ for (const pg of PAGES) {
 }
 
 // ---- Changing Person / Tenant inside the card does what the old row did ---
-{
+if (!ONLY_ROUND2) {
   const ctx = await newContext(browser, { viewport: { width: 390, height: 800 } });
   const { page } = await openPage(ctx, "/app/journey-map.html");
   await page.waitForSelector("#app", { state: "visible", timeout: 8000 }).catch(() => {});
@@ -182,7 +185,7 @@ for (const pg of PAGES) {
   check("journey-map: the Tenant picker in the card still fires the page's own change handler and reloads its people", t2.n === 1 && t2.rows === 2, JSON.stringify(t2));
   await ctx.close();
 }
-{
+if (!ONLY_ROUND2) {
   const ctx = await newContext(browser, { viewport: { width: 390, height: 800 } });
   const { page } = await openPage(ctx, "/app/import-notes.html");
   await page.waitForSelector("#app", { state: "visible", timeout: 8000 }).catch(() => {});
@@ -194,6 +197,124 @@ for (const pg of PAGES) {
   const r = await page.evaluate(() => ({ msg: getComputedStyle(document.getElementById("readOnlyMsg")).display, text: document.getElementById("readOnlyMsg").textContent }));
   check("import-notes: choosing Maryam in the card shows the 'only into your own journey' notice", r.msg !== "none" && r.text.length > 0, JSON.stringify(r));
   await ctx.close();
+}
+
+// ---- Round 2: the other 23 pages ----------------------------------------
+// Viewing pages move Tenant AND Person into the card; study pages move Tenant
+// only (D10: the Person/Student picker is the fast "record for each child in
+// turn" control and stays where it is). Tenant-only pages have no Person.
+const VIEWING = ["notes", "records", "monitor", "bookmarks", "homework", "course-offers"];
+const STUDY = ["quranrevival", "arabic-study", "asma-study", "deen-study", "general-study", "hadith-collections", "hadith-study", "health-study", "ldog-study", "life-skill", "naturelife-study"];
+const TENANT_ONLY = ["catalogue", "classes", "curriculum", "dawah", "migrate", "people"];
+const ROUND2 = [...VIEWING, ...STUDY, ...TENANT_ONLY];
+// MUTATE=quran-role leaves quranrevival's User Role cell on the page;
+// MUTATE=study-student moves arabic-study's Student picker into the card.
+const MUTATE = process.argv[4] || process.env.MUTATE || "";
+
+async function reveal(page, file) {
+  // quranrevival keeps its pickers inside Study options.
+  if (file !== "quranrevival") return;
+  if (await page.evaluate(() => { const p = document.getElementById("panelStudyOptions"); return !!p && p.getBoundingClientRect().height > 0; })) return;
+  await page.evaluate(() => {
+    const b = document.getElementById("tabStudyOptionsBtn");
+    if (!b || b.getBoundingClientRect().width === 0) document.getElementById("tabStudyBtn")?.click();
+  });
+  await page.waitForTimeout(150);
+  await page.click("#tabStudyOptionsBtn").catch(() => {});
+  await page.waitForTimeout(250);
+}
+
+for (const file of ROUND2) {
+  const kind = VIEWING.includes(file) ? "viewing" : STUDY.includes(file) ? "study" : "tenant";
+  for (const lang of ["en", "bn"]) {
+    for (const width of [390, 1280]) {
+      const tag = `${file} (${kind}) ${lang} ${width}px`;
+      const ctx = await newContext(browser, { appLang: lang, viewport: { width, height: 800 } });
+      const { page } = await openPage(ctx, `/app/${file}.html`);
+      await page.waitForSelector("#app", { state: "visible", timeout: 8000 }).catch(() => {});
+      await page.waitForTimeout(700);
+      if (MUTATE === "quran-role" && file === "quranrevival") await page.evaluate(() => { document.querySelector(".opt-bar-2").appendChild(document.getElementById("tenantSelect").closest(".opt-cell")); });
+      if (MUTATE === "study-student" && file === "arabic-study") await page.evaluate(() => { document.getElementById("accountCardPickers").appendChild(document.getElementById("personSelect").closest("label")); });
+      await reveal(page, file);
+
+      const m = await page.evaluate(() => {
+        const R = (e) => e.getBoundingClientRect();
+        const vis = (e) => { if (!e) return false; const r = R(e); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== "hidden"; };
+        const ts = document.getElementById("tenantSelect"), ps = document.getElementById("personSelect");
+        const cb = document.getElementById("contextBar");
+        return {
+          tenantVisible: vis(ts), tenantInCard: !!ts?.closest("#accountCardOverlay"),
+          personExists: !!ps, personVisible: vis(ps), personInCard: !!ps?.closest("#accountCardOverlay"),
+          barDisplay: cb ? getComputedStyle(cb).display : "(no bar)",
+          barHasPicker: !!cb?.querySelector("select"),
+          overflow: document.documentElement.scrollWidth - innerWidth,
+        };
+      });
+      check(`${tag}: no Tenant picker is visible on the page itself`, !m.tenantVisible, JSON.stringify(m));
+      if (kind === "viewing") {
+        check(`${tag}: Person picker moved into the card too`, m.personInCard && !m.personVisible, JSON.stringify(m));
+      } else if (kind === "study") {
+        check(`${tag}: Person/Student picker stays on the page, visible, not in the card`, m.personExists && m.personVisible && !m.personInCard, JSON.stringify(m));
+      }
+      if (kind !== "study") check(`${tag}: an emptied bar takes no space (${m.barDisplay})`, m.barDisplay === "none" || m.barDisplay === "(no bar)" || m.barHasPicker, JSON.stringify(m));
+      check(`${tag}: no sideways scroll`, m.overflow <= 0, `overflow ${m.overflow}`);
+
+      // Home -> My account. Exactly ONE Home menu (a first version added a second on pages whose nav renders after sign-in).
+      check(`${tag}: exactly one Home menu and one My account button`,
+        await page.evaluate(() => document.querySelectorAll("details.nav-cat-home").length === 1 && document.querySelectorAll("[data-open-account-card]").length === 1));
+      await page.evaluate(() => { const d = document.querySelector("details.nav-cat-home"); if (d) d.open = true; });
+      const btn = await page.evaluate(() => { const b = document.querySelector("[data-open-account-card]"); return { text: b?.textContent.trim(), w: b?.getBoundingClientRect().width }; });
+      check(`${tag}: Home has 👤 My account`, btn.text === (lang === "en" ? "👤 My account" : "👤 আমার অ্যাকাউন্ট") && btn.w > 0, JSON.stringify(btn));
+      await page.click("[data-open-account-card]");
+      const c = await page.evaluate(() => {
+        const ov = document.getElementById("accountCardOverlay"), ts = document.getElementById("tenantSelect"), ps = document.getElementById("personSelect");
+        return {
+          open: getComputedStyle(ov).display !== "none", tenantIn: !!ts && ov.contains(ts), personIn: !!ps && ov.contains(ps),
+          tenantShown: ts.getBoundingClientRect().width > 0, facts: ov.querySelector("#accountCardFacts").textContent,
+          overflow: document.documentElement.scrollWidth - innerWidth,
+        };
+      });
+      check(`${tag}: the card opens and holds #tenantSelect (same element)`, c.open && c.tenantIn && c.tenantShown, JSON.stringify(c));
+      check(`${tag}: the card names the signed-in email`, /@/.test(c.facts), c.facts);
+      check(`${tag}: no sideways scroll with the card open`, c.overflow <= 0, `overflow ${c.overflow}`);
+      if (kind === "viewing") check(`${tag}: #personSelect is in the open card`, c.personIn);
+      if (SHOTS && (file === "quranrevival" || file === "notes") && ((lang === "bn" && width === 390) || (lang === "en" && width === 1280))) {
+        await page.screenshot({ path: `${SHOTS}/r2-${file}-${lang}-${width}-card.png` });
+      }
+
+      // Tenant change in the card: the page's own handler runs and the page still works.
+      await page.evaluate(() => { window.__tc = 0; document.getElementById("tenantSelect").addEventListener("change", () => window.__tc++); });
+      const tv = await page.evaluate(() => document.getElementById("tenantSelect").value);
+      await page.selectOption("#tenantSelect", tv);
+      await page.waitForTimeout(600);
+      const t2 = await page.evaluate(() => {
+        const ts = document.getElementById("tenantSelect"), ps = document.getElementById("personSelect");
+        return { fired: window.__tc, same: ts.value, rows: ps ? ps.options.length : -1, shown: ts.selectedOptions[0]?.textContent || "" };
+      });
+      check(`${tag}: changing tenant in the card fires the page's handler, the page keeps its people (${t2.rows})`, t2.fired === 1 && t2.same === tv && (kind === "tenant" || t2.rows >= 1) && /Madrasatul|মাদরাসাতুল/.test(t2.shown), JSON.stringify(t2));
+      await page.keyboard.press("Escape");
+
+      if (kind === "study" && width === 1280) {
+        // D10: choosing another child in turn still records for that child.
+        await reveal(page, file);
+        const opts = await page.evaluate(() => [...document.getElementById("personSelect").options].map((o) => o.value));
+        check(`${tag}: lists at least two people to switch between`, opts.length >= 2, JSON.stringify(opts));
+        if (opts.length >= 2) {
+          const other = opts[1];
+          await page.selectOption("#personSelect", other);
+          await page.waitForTimeout(600);
+          const r = await page.evaluate((other) => {
+            const ps = document.getElementById("personSelect");
+            const stored = Object.values(localStorage).some((v) => typeof v === "string" && v.includes(`"selectedPersonId":"${other}"`));
+            const b = ps.getBoundingClientRect();
+            return { value: ps.value, shown: ps.selectedOptions[0]?.textContent, visible: b.width > 0 && b.height > 0, stored };
+          }, other);
+          check(`${tag}: choosing ${r.shown} on the page records that person as the one studying (visible + stored)`, r.value === other && r.visible && r.stored, JSON.stringify(r));
+        }
+      }
+      await ctx.close();
+    }
+  }
 }
 
 await browser.close();
