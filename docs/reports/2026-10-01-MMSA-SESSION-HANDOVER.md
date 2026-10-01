@@ -18,39 +18,26 @@ Read the live state yourself, because it moves on after this was written:
 - the Builder from `list_workflow_runs` on `claude.yml`;
 - the "Active Architect session" line on #159.
 
-**When this was written (1 Oct 2026, 01:10 UTC):**
-- **`main` is at v09.15.**
-- **The Builder is running #437**: run 692, dispatched 00:58 UTC on v09.15.
-  The job is 👤 My account on the other 23 pages (Owner decision 40, round 2 of 2):
-  - **Tenant** moves into the account card on every page.
-  - **Person** moves only on notes, records, monitor, bookmarks, homework and
-    course-offers.
-  - The **Student/Person pickers on the study pages and in Quran Study
-    options stay where they are.** That is D10's fast "log for each child in
-    turn" control. Only Quran's tenant ("User Role") picker moves.
-- **A review check-in is armed** (`trig_01BieAzafAe8SX1rQgJwdvtA`, 02:04 UTC). It
-  fires into the old session only, and does nothing unless #159's Active line
-  still names that session.
+**Updated 1 Oct 2026, 02:55 UTC:**
+- **`main` is at v09.16**: My account on every page (#439), Study options with Save on
+  the title line and Search first (decision 44), and the Writing sheet in two rows that
+  moves sideways when zoomed (decision 45).
+- **The Builder is running #440**, Siyagah round 2: Mapping My Journey opens as a
+  pop-up folder tray. It was dispatched at 02:52 UTC on v09.16.
+- **A review check-in is armed** (`trig_01FaEjcRarupe4RPB21ezNbt`, 04:03 UTC). It
+  fires into the old session only, and does nothing unless #159's Active line still
+  names that session.
 
-**Recommended change-over point:** right after #437 is merged as v09.16 and
-Siyagah round 2 has been dispatched. The old session will say so to the Owner
-when it gets there. A new session starting then has one Builder round to
-review and nothing half-done of its own.
-
-**What the new session does first, by case:**
-- **#437 still open** (you started early): write your id into #159's Active line
-  first. That disarms the old check-in. Then do the review it describes:
-  1. Merge `origin/main` into `builder/issue-437-run-*` locally and check for
-     deletions (especially `bn.js` and `CHANGELOG.md`).
-  2. Run `account-card-browser`, `phone-width-overflow`, `journey-map-screen`,
-     `head-search-browser`, `behaviour` and the 8 governance suites.
-  3. Look at notes and quranrevival (Study options open) at 390px in Bangla and
-     1280px in English.
-  4. Mutation-prove one check.
-  5. Allocate **v09.16**, merge, update #159 and report.
-  6. Then dispatch Siyagah round 2.
-- **#437 merged and Siyagah round 2 running:** take over #159 and schedule its
-  review about 70 minutes after its dispatch time.
+**This is a good change-over point.** A new session:
+1. Writes its id into #159's Active line. That disarms the old check-in.
+2. Schedules its own review of #440 for about 04:05 UTC. The review:
+   - merge `origin/main` into `builder/issue-440-run-*` and check for deletions;
+   - run `journey-tray-browser`, `journey-map-screen`, `journey-map-back`,
+     `account-card-browser`, `phone-width-overflow`, `behaviour` and governance;
+   - look at the tray at 390px Bangla, 820px and 1280px English;
+   - mutation-prove one check;
+   - allocate **v09.17**, merge and report.
+3. Writes and dispatches Siyagah round 3 (section 2a).
 
 ## 1. What this session released (v09.07 → v09.15)
 
@@ -74,7 +61,7 @@ stub suite could see. **Use it for every round that writes Firestore.**
 
 ## 2. The planned work, in order
 
-### 2a. Siyagah folder and note pane: six rounds (decisions 41, 42.1–42.7)
+### 2a. Siyagah folder and note pane: seven rounds (decisions 41, 42.1–42.7)
 The Owner's handover is stored word for word at
 `docs/reference/2026-09-30-siyagah-folder-and-note-pane-handover-v2.md`. The
 Owner's answers are in the owner-decisions file, items 42.1–42.7:
@@ -92,17 +79,17 @@ The rounds:
 1. ✅ **Data layer** (v09.15): `trashFolder`, `restoreFolder`, `restoreNote`,
    `loadOwnerTrash`, `copyNoteToFolder`, `moveNote`, `copyFolder`,
    `commitFolderBatch`.
-2. **Folder tray pop-up.** The Mapping My Journey button opens it over the
-   current screen:
-   - draggable, and resizable from every side and corner;
-   - a full-screen sheet on a phone;
-   - Folders, Timeline and Path as tabs;
-   - every folder function from the handover, using round 1's functions.
-   Write the issue from the handover's folder section and dispatch it after #437.
-3. **Note read mode**: a click on a note opens it with all its functions.
-4. **Edit mode with autosave** (42.3).
-5. **Single and Multi pop-ups** (42.4).
-6. **Sections, folder colour/bold, and Tags.** These need a **Rules change**:
+2. **Folder tray pop-up** (#440, running). The Mapping My Journey button opens
+   the existing screen in a pop-up over the current page (`journey-map.html?embed=1`
+   in a window): draggable, eight resize handles, a full-screen sheet below 600px, and
+   Folders, Timeline and Path as tabs.
+3. **Folder menus with round 1's functions.** Copy to… and Move to… for folders and
+   notes; Delete goes to Trash, with the refusal message when the folder holds notes;
+   a Trash view with Restore. Drag and drop per handover §2.2 if it fits.
+4. **Note read mode**: a click on a note opens it with all its functions.
+5. **Edit mode with autosave** (42.3).
+6. **Single and Multi pop-ups** (42.4).
+7. **Sections, folder colour/bold, and Tags.** These need a **Rules change**:
    `noteFolders`' `hasOnly` allows no `color`, `sectionId` or `bold`. That is an
    Owner Control Gate. Build the Rules package, prove it in the emulator, and
    write the Owner a click-by-click Firebase Console guide. **The Owner
