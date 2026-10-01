@@ -155,6 +155,11 @@ await check("K7 every folder holding one Note comes back (many-to-many, ADR-010 
   reset();
   placementRows = [pl("p1", { folderId: "fb" }), pl("p2", { folderId: "fa" })];
   folderRows = [folder("fa", { name: "Alpha" }), folder("fb", { name: "Beta" })];
+  // UPDATED in place, 1 Oct 2026: noteFilings() now reads EVERY active folder
+  // through the paged reader (loadAllOwnerFolders), not the 100-capped
+  // listNoteFoldersForOwner() -- a Note filed in a folder past the first 100
+  // used to show fewer filings. So the fixture serves the paged reader too.
+  foldersPageRows = folderRows;
   const { rows } = await noteFilings(db, { ...own, noteId: "n1" });
   assert.deepEqual(rows.map((r) => r.folder.folderId), ["fa", "fb"], "sorted by name, client-side");
 });

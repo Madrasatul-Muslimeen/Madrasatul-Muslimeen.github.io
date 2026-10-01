@@ -277,6 +277,17 @@ const NOTE_FOUNDATION_PINNED_REMOVAL =
 // same shape the retire-line exception above already covers.
 const NOTE_FOUNDATION_PINNED_SIGNATURE_WIDENING = Array(2).fill(
   "-  tenantId, ownerPersonId, status = NOTE_STATUS.ACTIVE, pageSize = 100, after = null,");
+// UPDATED 1 Oct 2026, reason recorded rather than the check weakened -- the
+// same three lines, for the same reason, as journey-map-boundary.mjs's twin
+// guard: createNoteFolder()/reparentNoteFolder()/retireNoteFolder() now judge
+// against EVERY active folder (listAllActiveFoldersForOwner(), paged) instead
+// of the 100-capped listNoteFoldersForOwner(), found by the Architect's
+// emulator run of #435 against an owner with more than 100 folders.
+const NOTE_FOUNDATION_PINNED_ALL_FOLDERS = [
+  "-    const folders = new Map((await listNoteFoldersForOwner(db, { tenantId, ownerPersonId }))",
+  "-  const folders = await listNoteFoldersForOwner(db, { tenantId, ownerPersonId });",
+  "-  const children = (await listNoteFoldersForOwner(db, { tenantId, ownerPersonId }))",
+];
 check("app/js/note-foundation.js changed by INSERTION ONLY, except the pinned lines this round and an earlier one each REPLACED for a stated reason", () => {
   // UPDATED 2026-09-15 (P5-E) and again 2026-09-20 (see above), with the
   // reason recorded rather than the check deleted. P5-E adds the read side
@@ -305,6 +316,7 @@ check("app/js/note-foundation.js changed by INSERTION ONLY, except the pinned li
     [NOTE_FOUNDATION_PINNED_REMOVAL],
     NOTE_FOUNDATION_PINNED_SIGNATURE_WIDENING,
     [NOTE_FOUNDATION_PINNED_REMOVAL, ...NOTE_FOUNDATION_PINNED_SIGNATURE_WIDENING],
+    NOTE_FOUNDATION_PINNED_ALL_FOLDERS,
   ];
   assert.ok(allowedRemovals.some((allowed) => JSON.stringify(removedLines) === JSON.stringify(allowed)),
     `note-foundation.js removed line(s) do not match any pinned exception (or the now-equally-valid empty case) -- an existing behaviour may have been reshaped: ${JSON.stringify(removedLines)}`);

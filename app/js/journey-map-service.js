@@ -91,7 +91,10 @@ export async function noteFilings(db, {
   const truncated = placements.length > maximum;
   const kept = placements.slice(0, maximum);
 
-  const folders = await listNoteFoldersForOwner(db, { tenantId, ownerPersonId });
+  // 1 Oct 2026: every active folder, not the first 100 (see
+  // listAllActiveFoldersForOwner() in note-foundation.js) -- a Note filed in a
+  // folder past the first 100 silently showed fewer filings.
+  const { rows: folders } = await loadAllOwnerFolders(db, { tenantId, ownerPersonId, status: NOTE_STATUS.ACTIVE });
   const byId = new Map(folders.map((folder) => [folder.folderId, folder]));
 
   const rows = kept

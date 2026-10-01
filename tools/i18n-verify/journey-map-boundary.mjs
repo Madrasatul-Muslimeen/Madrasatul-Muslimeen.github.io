@@ -375,6 +375,20 @@ const NOTE_FOUNDATION_PINNED_REMOVAL =
 // pinned exception is the SAME line appearing twice, not two different ones.
 const NOTE_FOUNDATION_PINNED_SIGNATURE_WIDENING = Array(2).fill(
   "-  tenantId, ownerPersonId, status = NOTE_STATUS.ACTIVE, pageSize = 100, after = null,");
+// UPDATED 1 Oct 2026, reason recorded rather than the check weakened. The
+// Architect's emulator run of #435 found the folder checks in
+// createNoteFolder() (a parent), reparentNoteFolder() and retireNoteFolder()
+// judged a folder change against `listNoteFoldersForOwner()`, which the Rules
+// cap at 100: with the Owner's ~1,464 imported folders a real parent read as
+// `parent-missing`, a real folder as missing, and a retire could miss active
+// children past the first 100. Each of those three reads is REPLACED by the
+// paged `listAllActiveFoldersForOwner()` -- the same folders, all of them,
+// never fewer. Exactly these three lines, in this order.
+const NOTE_FOUNDATION_PINNED_ALL_FOLDERS = [
+  "-    const folders = new Map((await listNoteFoldersForOwner(db, { tenantId, ownerPersonId }))",
+  "-  const folders = await listNoteFoldersForOwner(db, { tenantId, ownerPersonId });",
+  "-  const children = (await listNoteFoldersForOwner(db, { tenantId, ownerPersonId }))",
+];
 check("existing user notes untouched; the data layer changed by INSERTION ONLY, except the pinned lines this round and an earlier one each REPLACED for a stated reason", () => {
   // UPDATED 2026-09-15 (P6-B): the data layer now validates a folder's parent,
   // so byte-identity is no longer the right claim -- "nothing removed or
@@ -398,6 +412,7 @@ check("existing user notes untouched; the data layer changed by INSERTION ONLY, 
     [NOTE_FOUNDATION_PINNED_REMOVAL],
     NOTE_FOUNDATION_PINNED_SIGNATURE_WIDENING,
     [NOTE_FOUNDATION_PINNED_REMOVAL, ...NOTE_FOUNDATION_PINNED_SIGNATURE_WIDENING],
+    NOTE_FOUNDATION_PINNED_ALL_FOLDERS,
   ];
   assert.ok(allowedRemovals.some((allowed) => JSON.stringify(removedLines) === JSON.stringify(allowed)),
     `note-foundation.js removed line(s) do not match any pinned exception (or the now-equally-valid empty case) -- an existing behaviour may have been reshaped: ${JSON.stringify(removedLines)}`);

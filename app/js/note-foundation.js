@@ -413,6 +413,32 @@ export async function listNoteFoldersForOwnerPage(db, {
 }
 
 /**
+ * 1 Oct 2026, Architect's review of #435 (the emulator run it asked for): the
+ * folder checks below -- a create with a parent, a re-parent, and a retire's
+ * "still holds active folders" -- read `listNoteFoldersForOwner()`, which the
+ * Rules cap at 100. An owner with more folders (the Owner's own WordPress
+ * import is ~1,464) was judged against only the first 100: a real parent
+ * outside them read as `parent-missing`, a real folder as "does not exist",
+ * and -- the dangerous one -- a retire could miss active children past the
+ * first 100 and orphan them. These checks now read EVERY active folder in
+ * pages of 100, the same shape `loadAllOwnerFolders()` uses. A write must
+ * never be judged on a partial picture, so a run that hits the page cap
+ * throws rather than deciding on what it has.
+ */
+const MAX_FOLDER_PAGES = 50;
+export async function listAllActiveFoldersForOwner(db, { tenantId, ownerPersonId }) {
+  const all = [];
+  let after = null;
+  for (let pageNo = 0; pageNo < MAX_FOLDER_PAGES; pageNo++) {
+    const { rows, next } = await listNoteFoldersForOwnerPage(db, { tenantId, ownerPersonId, status: NOTE_STATUS.ACTIVE, pageSize: 100, after });
+    all.push(...rows);
+    if (!next) return all;
+    after = next;
+  }
+  throw new Error(`note-foundation: more than ${MAX_FOLDER_PAGES * 100} active folders; refusing to judge a folder change on a partial list.`);
+}
+
+/**
  * MAP Phase 6 (P6-B). This function used to validate `parentFolderId` NOT AT
  * ALL — no existence check, no tenant or owner check, no cycle check — where
  * its sibling `createNotePlacement()` did all three in a transaction. A folder
@@ -441,7 +467,7 @@ export async function createNoteFolder(db, {
   journeyFolder({ tenantId, ownerPersonId, name, parentFolderId, semanticRole, order });
 
   if (parentFolderId !== null) {
-    const folders = new Map((await listNoteFoldersForOwner(db, { tenantId, ownerPersonId }))
+    const folders = new Map((await listAllActiveFoldersForOwner(db, { tenantId, ownerPersonId }))
       .map((f) => [f.folderId, f]));
     const refusal = folderTreeRefusal({ folders, tenantId, ownerPersonId, folderId, parentFolderId });
     if (refusal) throw new Error(`Folder parent refused: ${refusal}`);
@@ -535,7 +561,7 @@ export async function reparentNoteFolder(db, {
   }
   if (parentFolderId === folderId) throw new Error("Folder parent refused: self-parent");
 
-  const folders = await listNoteFoldersForOwner(db, { tenantId, ownerPersonId });
+  const folders = await listAllActiveFoldersForOwner(db, { tenantId, ownerPersonId });
   const byId = new Map(folders.map((f) => [f.folderId, f]));
   const own = byId.get(folderId);
   if (!own) throw new Error("Folder does not exist.");
@@ -580,7 +606,7 @@ export async function reparentNoteFolder(db, {
  */
 export async function retireNoteFolder(db, { tenantId, ownerPersonId, folderId, actorUid }) {
   requireToken("folderId", folderId);
-  const children = (await listNoteFoldersForOwner(db, { tenantId, ownerPersonId }))
+  const children = (await listAllActiveFoldersForOwner(db, { tenantId, ownerPersonId }))
     .filter((f) => (f.parentFolderId ?? null) === folderId);
   if (children.length > 0) {
     // Named, not counted: a refusal a person cannot act on is a dead end.
