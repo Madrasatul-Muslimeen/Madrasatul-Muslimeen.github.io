@@ -1206,7 +1206,13 @@ console.log("\n=== 27. Shell round 14: the Study options bars, and Search ===");
       [...bar.querySelectorAll("select, input, button")].map((el) => el.id)
     )
   );
-  check("27b bar 1 is User Role + Student", JSON.stringify(bars[0]) === '["tenantSelect","personSelect"]', JSON.stringify(bars[0]));
+  // Owner decision 40, round 2: User Role (#tenantSelect) moved into Home -> My
+  // account; the Student picker stays (D10: the fast record-for-each-child
+  // control). Updated in place: the bar is now Student alone, and the User Role
+  // cell is asserted to live in the card.
+  check("27b bar 1 is Student alone (User Role moved into the My account card)", JSON.stringify(bars[0]) === '["personSelect"]', JSON.stringify(bars[0]));
+  check("27b User Role (#tenantSelect) lives in the My account card, not in Study options",
+        await page.evaluate(() => !!document.querySelector("#accountCardOverlay #tenantSelect") && !document.querySelector(".study-options-body #tenantSelect")));
   check("27b bar 2 is Study Unit + unit number + Surah + Ayah",
         JSON.stringify(bars[1]) === '["unitTypeSelect","unitNumSelect","surahSelect","ayahSelect","rangeFromSelect","rangeToSelect"]', JSON.stringify(bars[1]));
   check("27b bar 3 is one Search field and one Search button", JSON.stringify(bars[2]) === '["jumpInput","searchBtn"]', JSON.stringify(bars[2]));

@@ -142,7 +142,9 @@ function rowOf(select) {
 // A few pages (Hadith Collections, the migration tool) never had a Home menu.
 // Give them the smallest possible one so "Home -> My account" is true there too.
 function ensureHomeMenu() {
-  if (document.querySelector("[data-open-account-card]")) return;
+  // The page's own nav renders its Home menu (and the My account button, via
+  // renderHomeExtras) after sign-in, so test for the MENU, not the button.
+  if (document.querySelector("details.nav-cat-home, #navHomeExtra")) return;
   const details = el("details", { class: "nav-cat nav-cat-home", id: "accountHomeMenu", style: "margin:0.6rem 0;" });
   details.appendChild(el("summary", { style: "cursor:pointer; font-weight:600;" }, t("Home")));
   const box = el("div", { class: "nav-cat-links", style: "padding:0.4rem 0;" });

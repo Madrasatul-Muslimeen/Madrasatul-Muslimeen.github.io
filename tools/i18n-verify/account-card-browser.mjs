@@ -12,7 +12,10 @@ function check(name, ok, detail = "") {
 }
 const SHOTS = process.argv[2] || process.env.SHOTS || "";
 const WIDTHS = [320, 340, 360, 390, 412, 768, 1280];
-const PAGES = [
+// ONLY_ROUND2=1 skips the round-1 sections (used for the fast mutation runs).
+// Usage: node account-card-browser.mjs [shotsDir] [round2 [mutation]]
+const ONLY_ROUND2 = process.argv[3] === "round2" || !!process.env.ONLY_ROUND2;
+const PAGES = ONLY_ROUND2 ? [] : [
   { file: "journey-map", title: "h1", backTitle: { en: "Go back", bn: "ফিরে যান" } },
   { file: "import-notes", title: "h1", backTitle: { en: "Back to Mapping My Journey", bn: "Mapping My Journey-তে ফিরে যান" } },
 ];
@@ -158,7 +161,7 @@ for (const pg of PAGES) {
 }
 
 // ---- Changing Person / Tenant inside the card does what the old row did ---
-{
+if (!ONLY_ROUND2) {
   const ctx = await newContext(browser, { viewport: { width: 390, height: 800 } });
   const { page } = await openPage(ctx, "/app/journey-map.html");
   await page.waitForSelector("#app", { state: "visible", timeout: 8000 }).catch(() => {});
@@ -182,7 +185,7 @@ for (const pg of PAGES) {
   check("journey-map: the Tenant picker in the card still fires the page's own change handler and reloads its people", t2.n === 1 && t2.rows === 2, JSON.stringify(t2));
   await ctx.close();
 }
-{
+if (!ONLY_ROUND2) {
   const ctx = await newContext(browser, { viewport: { width: 390, height: 800 } });
   const { page } = await openPage(ctx, "/app/import-notes.html");
   await page.waitForSelector("#app", { state: "visible", timeout: 8000 }).catch(() => {});
@@ -206,11 +209,12 @@ const TENANT_ONLY = ["catalogue", "classes", "curriculum", "dawah", "migrate", "
 const ROUND2 = [...VIEWING, ...STUDY, ...TENANT_ONLY];
 // MUTATE=quran-role leaves quranrevival's User Role cell on the page;
 // MUTATE=study-student moves arabic-study's Student picker into the card.
-const MUTATE = process.env.MUTATE || "";
+const MUTATE = process.argv[4] || process.env.MUTATE || "";
 
 async function reveal(page, file) {
   // quranrevival keeps its pickers inside Study options.
   if (file !== "quranrevival") return;
+  if (await page.evaluate(() => { const p = document.getElementById("panelStudyOptions"); return !!p && p.getBoundingClientRect().height > 0; })) return;
   await page.evaluate(() => {
     const b = document.getElementById("tabStudyOptionsBtn");
     if (!b || b.getBoundingClientRect().width === 0) document.getElementById("tabStudyBtn")?.click();
@@ -255,7 +259,9 @@ for (const file of ROUND2) {
       if (kind !== "study") check(`${tag}: an emptied bar takes no space (${m.barDisplay})`, m.barDisplay === "none" || m.barDisplay === "(no bar)" || m.barHasPicker, JSON.stringify(m));
       check(`${tag}: no sideways scroll`, m.overflow <= 0, `overflow ${m.overflow}`);
 
-      // Home -> My account.
+      // Home -> My account. Exactly ONE Home menu (a first version added a second on pages whose nav renders after sign-in).
+      check(`${tag}: exactly one Home menu and one My account button`,
+        await page.evaluate(() => document.querySelectorAll("details.nav-cat-home").length === 1 && document.querySelectorAll("[data-open-account-card]").length === 1));
       await page.evaluate(() => { const d = document.querySelector("details.nav-cat-home"); if (d) d.open = true; });
       const btn = await page.evaluate(() => { const b = document.querySelector("[data-open-account-card]"); return { text: b?.textContent.trim(), w: b?.getBoundingClientRect().width }; });
       check(`${tag}: Home has 👤 My account`, btn.text === (lang === "en" ? "👤 My account" : "👤 আমার অ্যাকাউন্ট") && btn.w > 0, JSON.stringify(btn));
