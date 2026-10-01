@@ -584,7 +584,23 @@ export async function reparentNoteFolder(db, {
     const { docId, folder } = await loadOwnFolder(transaction, tenantId, ownerPersonId, folderId);
     if (folder.status !== NOTE_STATUS.ACTIVE) throw new Error("A retired folder cannot be re-parented.");
     if ((folder.parentFolderId ?? null) === parentFolderId) throw new Error("A move must change parent.");
-    transaction.update(TENANT.NOTE_FOLDERS, docId, { parentFolderId });
+    const change = { parentFolderId };
+    // Siyagah round 7a (Owner decision M2). Only a ROOT USER folder carries a
+    // `sectionId`, and the candidate Rules refuse a nested folder that keeps
+    // one -- so nesting a sectioned folder CLEARS it IN THE SAME WRITE.
+    // Lifting a nested folder to the top puts it in the section of the place
+    // it came from (its root ancestor's). Nothing extra is written when no
+    // section is involved, so a person who never makes a section sees no change.
+    if (parentFolderId !== null && (folder.sectionId ?? null) !== null) {
+      change.sectionId = null;
+    } else if (parentFolderId === null) {
+      let root = byId.get(folder.parentFolderId ?? null) ?? null;
+      for (let hops = 0; root && (root.parentFolderId ?? null) !== null && hops < 64; hops += 1) {
+        root = byId.get(root.parentFolderId) ?? null;
+      }
+      if (root && (root.sectionId ?? null) !== null) change.sectionId = root.sectionId;
+    }
+    transaction.update(TENANT.NOTE_FOLDERS, docId, change);
   });
 }
 
@@ -616,6 +632,147 @@ export async function retireNoteFolder(db, { tenantId, ownerPersonId, folderId, 
     const { docId, folder } = await loadOwnFolder(transaction, tenantId, ownerPersonId, folderId);
     if (folder.status !== NOTE_STATUS.ACTIVE) throw new Error("Folder is already retired.");
     transaction.update(TENANT.NOTE_FOLDERS, docId, { status: NOTE_STATUS.RETIRED });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Siyagah port round 7a (issue #458; Owner decisions M2, M3) -- SECTIONS and a
+// folder's LOOK. Written against the round 7 Rules CANDIDATE, which is NOT
+// published: the page gates every call behind siyagah-sections-readiness.js.
+// Every payload below is a subset of the candidate's `hasOnly` list for its
+// collection, and rules-authorisation-executable.mjs checks that both ways.
+// Nothing is deleted (I4): a section is retired, never removed.
+// ---------------------------------------------------------------------------
+
+const HEX_COLOUR = /^#[0-9A-Fa-f]{6}$/;
+const SECTION_NAME_MAX = 200;
+
+function requireColour(colour) {
+  if (colour !== null && !(typeof colour === "string" && HEX_COLOUR.test(colour))) {
+    throw new TypeError("note-foundation: colour must be #RRGGBB or null.");
+  }
+  return colour;
+}
+function requireBold(bold) {
+  if (typeof bold !== "boolean") throw new TypeError("note-foundation: bold must be true or false.");
+  return bold;
+}
+function requireSectionName(name) {
+  requireText("name", name);
+  const trimmed = name.trim();
+  if (!trimmed || trimmed.length > SECTION_NAME_MAX) throw new Error("Section name must be 1 to 200 characters.");
+  return trimmed;
+}
+
+/** One person's sections, one page, equality-only (tenantId, ownerPersonId, status) -- no composite index (P5-E). */
+export async function listNoteSectionsForOwnerPage(db, {
+  tenantId, ownerPersonId, status = NOTE_STATUS.ACTIVE, pageSize = 100, after = null,
+}) {
+  requirePageSize(pageSize);
+  const q = query(collection(db, TENANT.NOTE_SECTIONS),
+    where("tenantId", "==", requireToken("tenantId", tenantId)),
+    where("ownerPersonId", "==", requireToken("ownerPersonId", ownerPersonId)),
+    where("status", "==", status),
+    ...(after ? [startAfter(after)] : []),
+    limit(pageSize));
+  const snapshot = await getDocs(q);
+  const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  const next = snapshot.docs.length < pageSize ? null : snapshot.docs[snapshot.docs.length - 1];
+  return { rows, next };
+}
+
+export async function createNoteSection(db, {
+  tenantId, ownerPersonId, ownerUid, name, order = 0, sectionId = newNoteEntityId(), actorUid,
+}) {
+  const owner = ownership({ tenantId, ownerPersonId, ownerUid });
+  if (!Number.isInteger(order)) throw new TypeError("note-foundation: order must be an integer.");
+  await createDocument(db, TENANT.NOTE_SECTIONS, noteFoundationDocId(tenantId, sectionId), {
+    sectionId, ...owner, name: requireSectionName(name), order, status: NOTE_STATUS.ACTIVE,
+  }, actorUid);
+  return sectionId;
+}
+
+/** Shared by the section updates: load the owner's own section, refuse a cross-owner one, send ONLY `fields`. */
+async function updateOwnSection(db, { tenantId, ownerPersonId, sectionId, actorUid, fields, needsActive = true }) {
+  const docId = noteFoundationDocId(tenantId, requireToken("sectionId", sectionId));
+  await runEnvelopeTransaction(db, actorUid, async (transaction) => {
+    const snapshot = await transaction.get(TENANT.NOTE_SECTIONS, docId);
+    if (!snapshot.exists()) throw new Error("Section does not exist.");
+    const section = snapshot.data();
+    if (section.tenantId !== tenantId || section.ownerPersonId !== ownerPersonId) {
+      throw new Error("Cross-owner or cross-tenant section refused.");
+    }
+    if (needsActive && section.status !== NOTE_STATUS.ACTIVE) throw new Error("A retired section cannot be changed.");
+    transaction.update(TENANT.NOTE_SECTIONS, docId, fields);
+  });
+}
+
+export function renameNoteSection(db, { tenantId, ownerPersonId, sectionId, name, actorUid }) {
+  return updateOwnSection(db, { tenantId, ownerPersonId, sectionId, actorUid, fields: { name: requireSectionName(name) } });
+}
+export function reorderNoteSection(db, { tenantId, ownerPersonId, sectionId, order, actorUid }) {
+  if (!Number.isInteger(order)) throw new TypeError("note-foundation: order must be an integer.");
+  return updateOwnSection(db, { tenantId, ownerPersonId, sectionId, actorUid, fields: { order } });
+}
+export function setNoteSectionLook(db, { tenantId, ownerPersonId, sectionId, color, bold, actorUid }) {
+  return updateOwnSection(db, { tenantId, ownerPersonId, sectionId, actorUid, fields: { color: requireColour(color), bold: requireBold(bold) } });
+}
+export function setNoteSectionStatus(db, { tenantId, ownerPersonId, sectionId, status, actorUid }) {
+  if (status !== NOTE_STATUS.ACTIVE && status !== NOTE_STATUS.RETIRED) throw new Error("status must be active or retired.");
+  return updateOwnSection(db, { tenantId, ownerPersonId, sectionId, actorUid, fields: { status }, needsActive: false });
+}
+
+/**
+ * One atomic batch of section-side updates: folders moved OUT of a section
+ * (`sectionId: null`) and sections retired or restored. A Section's deletion
+ * uses it so its folders return to the unnamed block in the same commit that
+ * retires it.
+ */
+export async function commitSectionBatch(db, { actorUid, tenantId, folderSection = [], sectionStatus = [] }) {
+  const total = folderSection.length + sectionStatus.length;
+  if (total === 0) return 0;
+  if (total > MAX_BATCH_WRITES) throw new RangeError(`note-foundation: a batch may carry at most ${MAX_BATCH_WRITES} writes.`);
+  const updates = [
+    ...folderSection.map((f) => ({ collectionName: TENANT.NOTE_FOLDERS, docId: noteFoundationDocId(tenantId, f.folderId), data: { sectionId: f.sectionId } })),
+    ...sectionStatus.map((s) => {
+      if (s.status !== NOTE_STATUS.ACTIVE && s.status !== NOTE_STATUS.RETIRED) throw new Error("status must be active or retired.");
+      return { collectionName: TENANT.NOTE_SECTIONS, docId: noteFoundationDocId(tenantId, s.sectionId), data: { status: s.status } };
+    }),
+  ];
+  await commitEnvelopeBatch(db, { updates }, actorUid);
+  return total;
+}
+
+/** A folder's LOOK: `color` is #RRGGBB or null (None), `bold` a boolean. Only these two fields are sent. */
+export async function setNoteFolderLook(db, { tenantId, ownerPersonId, folderId, color, bold, actorUid }) {
+  requireColour(color);
+  requireBold(bold);
+  await runEnvelopeTransaction(db, actorUid, async (transaction) => {
+    const { docId, folder } = await loadOwnFolder(transaction, tenantId, ownerPersonId, folderId);
+    if (folder.status !== NOTE_STATUS.ACTIVE) throw new Error("A retired folder cannot be changed.");
+    transaction.update(TENANT.NOTE_FOLDERS, docId, { color, bold });
+  });
+}
+
+/**
+ * Put a ROOT USER folder in a section (or `null` = no section). A nested or
+ * system folder is refused here, in a sentence, as the Rules refuse it too.
+ */
+export async function setNoteFolderSection(db, { tenantId, ownerPersonId, folderId, sectionId, actorUid }) {
+  if (sectionId !== null) requireToken("sectionId", sectionId);
+  await runEnvelopeTransaction(db, actorUid, async (transaction) => {
+    const { docId, folder } = await loadOwnFolder(transaction, tenantId, ownerPersonId, folderId);
+    if (folder.status !== NOTE_STATUS.ACTIVE) throw new Error("A retired folder cannot be changed.");
+    if ((folder.semanticRole ?? "user") !== "user") throw new Error("Only your own folders can be put in a section.");
+    if ((folder.parentFolderId ?? null) !== null) throw new Error("Only a top-level folder can be put in a section.");
+    if (sectionId !== null) {
+      const snapshot = await transaction.get(TENANT.NOTE_SECTIONS, noteFoundationDocId(tenantId, sectionId));
+      if (!snapshot.exists()) throw new Error("Section does not exist.");
+      const section = snapshot.data();
+      if (section.tenantId !== tenantId || section.ownerPersonId !== ownerPersonId) throw new Error("Cross-owner or cross-tenant section refused.");
+      if (section.status !== NOTE_STATUS.ACTIVE) throw new Error("A retired section cannot be changed.");
+    }
+    transaction.update(TENANT.NOTE_FOLDERS, docId, { sectionId });
   });
 }
 

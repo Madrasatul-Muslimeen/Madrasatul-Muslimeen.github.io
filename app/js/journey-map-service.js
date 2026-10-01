@@ -19,6 +19,15 @@ import {
   listNoteFoldersForOwnerPage,
   listNotePlacementsForFolder,
   listNotePlacementsForNote,
+  listNoteSectionsForOwnerPage,
+  createNoteSection,
+  renameNoteSection,
+  reorderNoteSection,
+  setNoteSectionLook,
+  setNoteSectionStatus,
+  commitSectionBatch,
+  setNoteFolderLook,
+  setNoteFolderSection,
   listNotesForOwnerPage,
   listNotesForOwnerIdPage,
   listNotePlacementsForOwnerPage,
@@ -719,4 +728,73 @@ export async function copyFolder(db, {
     await commitFolderBatch(db, { tenantId, ownerPersonId, ownerUid, actorUid, placementCreates: rows });
   }
   return { rootFolderId: newIdOf.get(folderId), folders: newIdOf.size, placements: links.length };
+}
+
+// ---------------------------------------------------------------------------
+// Siyagah port round 7a (issue #458; Owner decisions M2, M3) -- SECTIONS and a
+// folder's colour + bold. Written against the round 7 Rules CANDIDATE (not
+// published); the PAGE gates every call behind siyagah-sections-readiness.js,
+// so nothing here runs against a project that would deny it. Thin on purpose,
+// like the folder wrappers above: the rules live in note-foundation.js.
+//
+// Sections are read EQUALITY-ONLY (tenantId, ownerPersonId, status), capped at
+// 100 a page and paged -- no `orderBy`, so no composite index. The page sorts
+// by `order` itself.
+// ---------------------------------------------------------------------------
+
+export async function loadAllOwnerSections(db, { tenantId, ownerPersonId, status, pageSize = 100 } = {}) {
+  return loadAllPages((after) => listNoteSectionsForOwnerPage(db, { tenantId, ownerPersonId, status, pageSize, after }));
+}
+
+export async function setFolderLook(db, { tenantId, ownerPersonId, folderId, color, bold, actorUid } = {}) {
+  return setNoteFolderLook(db, { tenantId, ownerPersonId, folderId, color, bold, actorUid });
+}
+
+/** Root USER folders only. A nested or system folder is refused in a sentence by the data layer, and by the Rules. */
+export async function setFolderSection(db, { tenantId, ownerPersonId, folderId, sectionId, actorUid } = {}) {
+  return setNoteFolderSection(db, { tenantId, ownerPersonId, folderId, sectionId: sectionId ?? null, actorUid });
+}
+
+export async function createSection(db, { tenantId, ownerPersonId, ownerUid = null, name, order = 0, actorUid } = {}) {
+  return createNoteSection(db, { tenantId, ownerPersonId, ownerUid, name, order, actorUid });
+}
+
+export async function renameSection(db, { tenantId, ownerPersonId, sectionId, name, actorUid } = {}) {
+  return renameNoteSection(db, { tenantId, ownerPersonId, sectionId, name, actorUid });
+}
+
+export async function reorderSection(db, { tenantId, ownerPersonId, sectionId, order, actorUid } = {}) {
+  return reorderNoteSection(db, { tenantId, ownerPersonId, sectionId, order, actorUid });
+}
+
+export async function setSectionLook(db, { tenantId, ownerPersonId, sectionId, color, bold, actorUid } = {}) {
+  return setNoteSectionLook(db, { tenantId, ownerPersonId, sectionId, color, bold, actorUid });
+}
+
+/**
+ * Delete a section = Trash it (status `retired`; nothing is erased, I4). Its
+ * root folders go BACK TO THE UNNAMED BLOCK (`sectionId: null`) -- they never
+ * go to Trash with it -- and that happens in the SAME atomic commit as the
+ * retirement, so a half-done delete cannot strand a folder under a retired
+ * section. Chunked at 450; the section's own retirement rides the last chunk.
+ */
+export async function trashSection(db, { tenantId, ownerPersonId, sectionId, actorUid } = {}) {
+  const folders = await loadAllOwnerFolders(db, { tenantId, ownerPersonId, status: NOTE_STATUS.ACTIVE });
+  if (folders.truncated) throw new Error(REFUSAL.truncated);
+  const members = folders.rows.filter((f) => (f.sectionId ?? null) === sectionId).map((f) => f.folderId);
+  const chunks = chunked(members, BATCH_CHUNK - 1);
+  if (chunks.length === 0) chunks.push([]);
+  for (let i = 0; i < chunks.length; i += 1) {
+    await commitSectionBatch(db, {
+      tenantId, actorUid,
+      folderSection: chunks[i].map((folderId) => ({ folderId, sectionId: null })),
+      sectionStatus: i === chunks.length - 1 ? [{ sectionId, status: NOTE_STATUS.RETIRED }] : [],
+    });
+  }
+  return { released: members };
+}
+
+/** Restore a section from Trash. Its former folders are NOT pulled back: they stay where Delete put them. */
+export async function restoreSection(db, { tenantId, ownerPersonId, sectionId, actorUid } = {}) {
+  return setNoteSectionStatus(db, { tenantId, ownerPersonId, sectionId, status: NOTE_STATUS.ACTIVE, actorUid });
 }

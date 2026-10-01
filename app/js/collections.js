@@ -76,6 +76,7 @@ export const TENANT = Object.freeze({
   NOTE_SOURCES: "noteSources",
   NOTE_FOLDERS: "noteFolders",
   NOTE_PLACEMENTS: "notePlacements",
+  NOTE_SECTIONS: "noteSections", // Siyagah round 7a (issue #458): a named group of root folders. CANDIDATE Rules only (docs/governance/2026-10-01-siyagah-round7-DEPLOYMENT-candidate.rules); every control is gated by app/js/siyagah-sections-readiness.js.
   NOTE_REVISIONS: "noteRevisions",
   DAWAH_PAGES: "dawahPages", // MAP v4 Phase 7 (P7-A): one printable page per (tenant, page), derived from a pinned Note revision (ADR-011). Unruled and uninvoked this round -- see app/js/dawah-contract.js and app/js/dawah-data.js.
   DOMAINS: "domains", // Phase 3 addition (D12): tenant-authored tag registry backing records.entries.domainIds[] — the Architecture doc names the domainIds field but never lists a domains collection. Same "not in the original doc, added to support a named field" shape as D9's tenantMemberUids/inviteTokens. Mirrors ladders: tenant-authored, no platform seed, freeform tags (legacy app's "Domains are optional & user-defined").
