@@ -3183,4 +3183,13 @@ export const BN = {
   "Last changed {date}": "সর্বশেষ বদল: {date}",
   "(untitled section)": "(শিরোনামহীন অংশ)",
   "\"{title}\" moved to Trash. Open 🗑 Trash from the ⋯ menu to restore it.": "\"{title}\" ট্র্যাশে গেছে। ফিরিয়ে আনতে ⋯ মেনু থেকে 🗑 ট্র্যাশ খুলুন।",
+  "Done": "সম্পন্ন",
+  "Saved on this device": "এই ডিভাইসে সংরক্ষিত",
+  "Not saved yet — will try again": "এখনও সংরক্ষিত হয়নি — আবার চেষ্টা করা হবে",
+  "This Note changed on another device. Your text is kept on this device — copy it before reloading.": "এই নোটটি অন্য ডিভাইসে বদলেছে। আপনার লেখা এই ডিভাইসে রাখা আছে — পেজ রিলোড করার আগে এটি কপি করে নিন।",
+  "You have unsaved text on this device, from {date}.": "এই ডিভাইসে {date} তারিখের একটি অসংরক্ষিত লেখা আছে।",
+  "Restore my unsaved text": "আমার অসংরক্ষিত লেখা ফিরিয়ে আনুন",
+  "Discard it": "ফেলে দিন",
+  "Note text": "নোটের লেখা",
+  "Note title": "নোটের শিরোনাম",
 };
