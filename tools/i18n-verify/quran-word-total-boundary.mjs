@@ -412,7 +412,14 @@ check("renderExploreQuranLevel()'s Approach-mode wedge computation is unconditio
     assert.ok(!body.includes(goneToken), `renderExploreQuranLevel() still contains ${goneToken} -- the Word-by-Word overlay was supposed to move to its own tab, not merely be re-gated`);
   }
   // The ring stays -- issue #261 kept it exactly as issue #206 built it.
-  assert.ok(body.includes("ring: wheelRingOption()"), "the gold ring option is gone -- it was supposed to stay on the Quran tab");
+  // UPDATED IN PLACE, 2 Oct 2026: issue #352 moved the Juz view's wheel into
+  // exploreQuranRings() (two rings), which renderExploreQuranLevel() calls;
+  // the gold ring option travelled with it. So the ring is looked for in that
+  // helper, and the call to it is required -- dropping either still fails.
+  const ringsStart = html.indexOf("function exploreQuranRings(");
+  const ringsBody = ringsStart > -1 ? html.slice(ringsStart, html.indexOf("\n    async function exploreJuzRings", ringsStart)) : "";
+  assert.ok(body.includes("ring: wheelRingOption()") || (body.includes("exploreQuranRings(trackable)") && ringsBody.includes("ring: wheelRingOption()")),
+    "the gold ring option is gone -- it was supposed to stay on the Quran tab");
   assert.ok(body.includes("renderWheelLegend(labelsById)"), "the legend is no longer rendered unconditionally");
 });
 
