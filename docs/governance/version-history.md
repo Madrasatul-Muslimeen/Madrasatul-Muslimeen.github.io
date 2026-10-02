@@ -682,3 +682,5 @@ total). Allocated by the MMSA Architect.
 09.36: Surah list button in the Read view. Allocated by the MMSA Architect.
 09.37: PC wheel numbers clear the capsule bar. Allocated by the MMSA Architect.
 09.38: You know on the Word card; Status first on the Ayah card. Allocated by the MMSA Architect.
+09.39: Long taglines scroll sideways. Allocated by the MMSA Architect.
+09.40: Al-Fatihah optional count. Allocated by the MMSA Architect.

@@ -8,6 +8,7 @@
 
 import { t, num } from "./i18n.js";
 import { posLabel } from "./labels.js";
+import { badgeNumber } from "./fatiha-count.js";
 
 /** Escapes then re-expands only the exact tajweed tags quran.com emits — never trusts raw HTML beyond that whitelist. */
 export function tajweedRawToSafeHtml(raw) {
@@ -304,10 +305,15 @@ export function renderArabicPanel(ayah, { tajweedOn, wordCardInteractive, surahN
   // on the wrong āyah. Sized and positioned in CSS exactly as the old
   // `<span>` was -- turning it into a button changes nothing about the
   // row's own measured layout.
-  const numBadge = clickable
-    ? `<button type="button" class="ayah-num-badge" data-ayah-num-badge="${surahNumber}:${ayah.ayah}" aria-label="${escapeHtml(t("This āyah"))}">${digitsForLang(ayah.ayah, "ar")}</button>`
-    : `<span class="ayah-num-badge">${digitsForLang(ayah.ayah, "ar")}</span>`;
-  return `<div class="ayah-num-row">${numBadge}</div><div class="ayah-arabic" dir="rtl" lang="ar">${body}</div>`;
+  // Issue #482 -- Al-Fātiḥah's display count: an expanded ayah carries
+  // `displayAyah` (null = the unnumbered Bismillah). The badge's data
+  // attribute stays the INTERNAL "surah:ayah" so the Āyah card still opens.
+  const shown = badgeNumber(ayah);
+  const numBadge = shown == null ? ""
+    : clickable
+      ? `<button type="button" class="ayah-num-badge" data-ayah-num-badge="${surahNumber}:${ayah.ayah}"${ayah.half ? ' data-ayah-split-half="' + ayah.half + '"' : ""} aria-label="${escapeHtml(t("This āyah"))}">${digitsForLang(shown, "ar")}</button>`
+      : `<span class="ayah-num-badge">${digitsForLang(shown, "ar")}</span>`;
+  return `${numBadge ? `<div class="ayah-num-row">${numBadge}</div>` : ""}<div class="ayah-arabic" dir="rtl" lang="ar">${body}</div>`;
 }
 
 /** Panel: translation text, in whichever language(s) are asked for (F-060 —
@@ -320,7 +326,9 @@ export function renderTranslationPanel(ayah, langs = ["en"]) {
       const text = ayah.translations?.[lang];
       if (!text) return "";
       const cls = lang === "bn" ? "ayah-translation ayah-translation-bn" : "ayah-translation";
-      return `<div class="ayah-num-row"><span class="ayah-num-badge">${digitsForLang(ayah.ayah, lang)}</span></div><div class="${cls}" ${lang === "bn" ? 'lang="bn"' : ""}>${escapeHtml(text)}</div>`;
+      const shown = badgeNumber(ayah);
+      const badge = shown == null ? "" : `<div class="ayah-num-row"><span class="ayah-num-badge">${digitsForLang(shown, lang)}</span></div>`;
+      return `${badge}<div class="${cls}" ${lang === "bn" ? 'lang="bn"' : ""}>${escapeHtml(text)}</div>`;
     })
     .join("");
 }

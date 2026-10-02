@@ -1948,6 +1948,11 @@ export const BN = {
   "Movement": "চলন",
   "Change after (seconds)": "কত সেকেন্ড পরে বদলাবে",
   "Pause while held": "চেপে ধরে রাখলে থেমে থাকবে",
+  "Scroll long lines": "লম্বা লাইন পাশে সরবে",
+  "Scroll speed": "সরার গতি",
+  "Slow": "ধীর",
+  "Medium": "মাঝারি",
+  "Fast": "দ্রুত",
   "The line changes at most once each time the app is opened — it is not a carousel. \"Change after\" is how long the line already on screen stays before the next one takes over.":
     "অ্যাপ একবার খোলার সময় লাইনটি সর্বোচ্চ একবার বদলায় — এটি ঘুরতে থাকা তালিকা নয়। “কত সেকেন্ড পরে বদলাবে” মানে পর্দায় থাকা লাইনটি পরেরটির আগে কতক্ষণ থাকবে।",
   "Show the movement": "চলন দেখুন",
@@ -3081,6 +3086,12 @@ export const BN = {
   "End of {unit}. How did it go?": "{unit} শেষ। কেমন হলো?", // ?
   "Saved": "সংরক্ষিত হয়েছে", // ?
   "End-of-unit prompt": "ইউনিট-শেষের প্রম্পট", // ?
+  // The label wraps the Arabic word in a data-i18n-skip span (a text node
+  // holding two scripts is never translated), so it is three pieces.
+  "Al-Fātiḥah: Bismillah unnumbered (": "আল-ফাতিহা: বিসমিল্লাহ নম্বরবিহীন (",
+  "is āyah 1)": "হলো আয়াত ১)",
+  "Bismillah": "বিসমিল্লাহ",
+  "Surah {surah} — Bismillah": "সূরা {surah} — বিসমিল্লাহ",
   "Approach: {name}": "পদ্ধতি: {name}", // ?
   "Surah {n}": "সূরা {n}",
 

@@ -73,6 +73,8 @@ export const TAGLINE_SETTING_DEFAULTS = Object.freeze({
   motion: "flip",
   changeAfterSeconds: 6,
   pauseOnHold: true,
+  scroll: true,
+  scrollSpeed: 4,
 });
 
 /** How long a line holds the strip before the next one gets a turn. Days,
@@ -127,12 +129,17 @@ export function isUsingDefaultTaglines(tenantDoc) {
 export function taglineSettingsFrom(tenantDoc) {
   const s = tenantDoc?.taglineSettings ?? {};
   const seconds = Number(s.changeAfterSeconds);
+  const speed = s.scrollSpeed === null || s.scrollSpeed === "" ? NaN : Number(s.scrollSpeed);
   return {
     motion: MOTION_IDS.includes(s.motion) ? s.motion : TAGLINE_SETTING_DEFAULTS.motion,
     // Clamped rather than trusted: a hand-edited 0 would flip the line the
     // instant the page painted, which is not a "change" anyone would see.
     changeAfterSeconds: Number.isFinite(seconds) && seconds >= 2 && seconds <= 60 ? Math.round(seconds) : TAGLINE_SETTING_DEFAULTS.changeAfterSeconds,
     pauseOnHold: s.pauseOnHold !== false,
+    // Issue 479: a long line scrolls sideways. A missing or non-boolean value
+    // means on; a speed outside 1-10 (or not a number) means the default 4.
+    scroll: s.scroll !== false,
+    scrollSpeed: Number.isFinite(speed) && speed >= 1 && speed <= 10 ? Math.round(speed) : TAGLINE_SETTING_DEFAULTS.scrollSpeed,
   };
 }
 

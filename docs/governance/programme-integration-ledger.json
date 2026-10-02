@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.38",
+    "version": "09.40",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1637,8 +1637,32 @@
     {
       "version": "09.38",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Word card: 'You know X of Y words of the Qur'an', bold; Āyah card opens on Status of this āyah; same-meaning root groups data.",
+      "integration": {
+        "authorizedOn": "2026-10-02",
+        "integratedOn": "2026-10-02",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.39",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Taglines: a long line scrolls sideways; on/off and a 1-10 speed on the Taglines page.",
+      "integration": {
+        "authorizedOn": "2026-10-02",
+        "integratedOn": "2026-10-02",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.40",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Al-Fātiḥah: optional count (Bismillah unnumbered, ٱلْحَمْدُ as 1, غَيْرِ opens 7), display only, on by default.",
       "integration": {
         "authorizedOn": "2026-10-02",
         "integratedOn": "2026-10-02",
@@ -1647,8 +1671,10 @@
       }
     }
   ],
-  "nextUnallocated": "09.39",
+  "nextUnallocated": "09.41",
   "nextUnallocatedNote": [
+    "v09.40 was allocated to Al-Fatihah optional count, 2026-10-02.",
+    "v09.39 was allocated to Long taglines scroll sideways, 2026-10-02.",
     "v09.38 was allocated to You know on the Word card; Status first on the Ayah card, 2026-10-02.",
     "v09.37 was allocated to PC wheel numbers clear the capsule bar, 2026-10-02.",
     "v09.36 was allocated to Surah list button in the Read view, 2026-10-02.",
