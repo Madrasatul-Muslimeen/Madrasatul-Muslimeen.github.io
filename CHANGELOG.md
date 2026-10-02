@@ -19112,3 +19112,12 @@ From the Owner's phone photo, shown as a demo first and approved.
 - More room above the wheel's top numbers and below its bottom ones; Wheel and Unit sit at the very edges.
 - The first screen now ends at the bottom bar: the Approach list (and Open all) starts just below it and comes up with a scroll. When a tall header leaves too little room, the wheel shrinks just enough to keep its buttons visible.
 - **Checks**: landing-drawers 271/0 (two new behaviours, each mutation-proven), phone-width-overflow 217/0, account-card 1235/0, behaviour 1007/1 (31e TLS).
+
+## v09.33 — 2 Oct 2026 — Known words are lightly marked on the Mushaf page and in Word by Word
+
+From the Owner's request; decision 52 ("A, on both Mushaf page and WbW").
+
+- Every word the selected person knows gets a very light background tint, on the Mushaf page and in Word by Word. Knowing a word marks every place the same dictionary word appears. A word still waiting for a teacher's confirmation is not marked.
+- The marks appear just after the page shows, update straight after pressing Achieved on the Word card, and change when you switch the person.
+- Fixed on the way: a first "Achieved" after a whole-surah read could fail to show on the Word card.
+- **Checks**: known-word-marks 122/0 (three mutations proven), achieved-mirror 73/0, read-contents 250/0, phone-width-overflow 217/0, behaviour 1004/4 (22g×3 archive.org, 31e TLS).
