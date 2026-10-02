@@ -123,6 +123,12 @@ export const BN = {
   "Edit": "সম্পাদনা",
   "Archive": "সংরক্ষণাগারে রাখুন", // ?
   "Loading…": "লোড হচ্ছে…",
+  "Loading your study…": "আপনার পড়াশোনা লোড হচ্ছে…",
+  "Still loading… The internet connection is slow, or the database is not answering yet.": "এখনো লোড হচ্ছে… ইন্টারনেট সংযোগ ধীর, অথবা ডেটাবেস এখনো সাড়া দিচ্ছে না।",
+  "You are signed out.": "আপনি সাইন আউট অবস্থায় আছেন।",
+  "This Google account is not a member of any madrasah yet.": "এই গুগল অ্যাকাউন্টটি এখনো কোনো মাদ্রাসার সদস্য নয়।",
+  "The app could not finish loading: {detail}": "অ্যাপটি লোড শেষ করতে পারেনি: {detail}",
+  "Reload": "আবার লোড করুন",
   "Person": "ব্যক্তি",
   "Tenant": "প্রতিষ্ঠান", // ?
   // The owner's own word for the tenant picker on the Quran screen, where its

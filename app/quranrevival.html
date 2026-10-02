@@ -4012,6 +4012,11 @@
      assemble itself before the target opens. Visibility (not display) keeps
      #app laid out, so the wheel/hub measuring code still works underneath. */
   html.bm-opening #app, html.bm-opening #topNav, html.bm-opening #taglineStrip { visibility: hidden; }
+  #bootStatus { margin: 2.5rem 1rem; text-align: center; color: #1F3A6E; font-weight: 600; }
+  #bootStatus[hidden] { display: none; }
+  #bootStatus p { margin: 0 0 1rem; line-height: 1.5; }
+  #bootStatus button { min-height: 40px; margin: 0 0.3rem; }
+  html.bm-opening #bootStatus { visibility: hidden; }
   #bmCover { display: none; }
   html.bm-opening #bmCover { display: block; position: fixed; left: 0; right: 0; bottom: 0; top: 3rem; z-index: 19000; background-color: #fff; padding: 2rem 1rem; text-align: center; color: #1F3A6E; font-weight: 600; }
   #bmNotFound { margin: 0.4rem 0; padding: 0.5rem 0.8rem; border-radius: 0.4rem; background: #fdf6e3; border: 1px solid #B8862F; color: #1F3A6E; font-size: 0.9rem; }
@@ -4074,6 +4079,16 @@
     </details>
     <div id="navBar"></div>
   </nav>
+
+  <!-- Owner, 2 Oct 2026 (a phone photo of a blank landing page): while the
+       app waits for the database, is signed out, or fails a start-up step,
+       it says so here instead of showing an empty page. Hidden the moment
+       the app itself appears. -->
+  <div id="bootStatus" role="status" aria-live="polite">
+    <p id="bootStatusText">Loading your study…</p>
+    <button type="button" id="bootStatusSignIn" hidden>Sign in with Google</button>
+    <button type="button" id="bootStatusReload" class="secondary" hidden>Reload</button>
+  </div>
 
   <div id="app" style="display:none;">
     <div id="globalBanner" style="display:none;">
@@ -5874,6 +5889,29 @@
     const signInBtn = document.getElementById("signInBtn");
     const signOutBtn = document.getElementById("signOutBtn");
     const appEl = document.getElementById("app");
+    // Owner, 2 Oct 2026: never an empty page. The box under the menu says
+    // what the app is waiting for (the database, a sign-in, or a failed
+    // step) until the app itself appears, then hides for good.
+    const bootStatusEl = document.getElementById("bootStatus");
+    let bootSettled = false;
+    function setBootStatus(kind, detail = "") {
+      if (!bootStatusEl) return;
+      if (kind === "done") { bootSettled = true; bootStatusEl.hidden = true; return; }
+      if (kind !== "slow") bootSettled = true;
+      const text = {
+        slow: t("Still loading… The internet connection is slow, or the database is not answering yet."),
+        signedOut: t("You are signed out."),
+        noAccount: t("This Google account is not a member of any madrasah yet."),
+        failed: t("The app could not finish loading: {detail}", { detail }),
+      }[kind] ?? t("Loading your study…");
+      bootStatusEl.hidden = false;
+      document.getElementById("bootStatusText").textContent = text;
+      document.getElementById("bootStatusSignIn").hidden = kind !== "signedOut";
+      document.getElementById("bootStatusReload").hidden = !(kind === "slow" || kind === "failed");
+    }
+    document.getElementById("bootStatusSignIn")?.addEventListener("click", () => document.getElementById("signInBtn")?.click());
+    document.getElementById("bootStatusReload")?.addEventListener("click", () => location.reload());
+    setTimeout(() => { if (!bootSettled) setBootStatus("slow"); }, 12000);
     const navBar = document.getElementById("navBar");
     const navHomeExtra = document.getElementById("navHomeExtra");
     // Full translation, phase 1: the nav's own labels are translated at
@@ -20646,6 +20684,7 @@
         signInBtn.style.display = "inline-block";
         signOutBtn.style.display = "none";
         appEl.style.display = "none";
+        setBootStatus("signedOut");
         return;
       }
       whoEl.textContent = t("Signed in as {email}", { email: user.email });
@@ -20690,6 +20729,7 @@
         const context = pickContext(membershipRoles, defaultTenantId);
         if (!context) {
           whoEl.innerHTML += noAccountMessageHtml();
+          setBootStatus("noAccount");
           return;
         }
         activeTenantId = context.tenantId;
@@ -20719,6 +20759,7 @@
         renderNav(membershipRoles.find((m) => m.tenantId === activeTenantId)?.roles ?? [], getActiveContext()?.viewAsRole ?? null);
 
         appEl.style.display = "flex"; // flex, not block: #app is the shell column (stage + dock) since shell round 7
+        setBootStatus("done");
         // loadContextData() itself sets `myMemberships` from this same
         // promise, part-way through, as soon as it resolves -- several
         // functions it calls (canAdminCatalogueClientSide() among them)
@@ -20738,6 +20779,10 @@
         lastSessionReady = true;
       } catch (err) {
         whoEl.textContent += ` — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`;
+        // I15: the failure used to be written only inside the Home menu,
+        // where a blank page gave no hint of it. Say it on the page too --
+        // unless the app is already on screen (a late step failing).
+        if (appEl.style.display === "none") setBootStatus("failed", `${err.stepName ?? "unknown step"} — ${err.code ?? ""} ${err.message}`.trim());
         console.error(err);
         window.__bmCoverDone?.(true);
       }
