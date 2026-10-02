@@ -153,6 +153,8 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   // closed, or while this word's lemma-wide state cannot be read: the card
   // must never claim a whole-lemma figure it has not actually computed.
   learnWordDeltaThisOccurrenceOnly: "If you learn this word here: +{words} word (+{percent}%) — this occurrence only",
+  // Decision 56 -- known only through another word of the same root AND meaning.
+  knownThroughSameMeaning: "Known through {word} (same meaning)",
 });
 
 function escapeHtml(value) {
@@ -285,6 +287,13 @@ function wholeQuranKnownLines(wholeQuranTotal, text, formatNumber) {
  * the honest fallback (the lemma gate is closed, or this occurrence's lemma
  * figure could not be read) from the real whole-lemma figure.
  */
+function knownThroughLine(lemma, text) {
+  if (!lemma) return "";
+  const arabic = `<span dir="rtl" lang="ar">${escapeHtml(lemma)}</span>`;
+  const line = escapeHtml(String(text.knownThroughSameMeaning)).replace("{word}", () => arabic);
+  return `<p class="word-progress-known-through" data-word-known-through>${line}</p>`;
+}
+
 function learnDeltaLine(learnDelta, text, formatNumber) {
   if (!learnDelta || !learnDelta.words) return "";
   const template = learnDelta.thisOccurrenceOnly ? text.learnWordDeltaThisOccurrenceOnly : text.learnWordDelta;
@@ -643,6 +652,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
         lemmaProgress: context.lemmaProgress,
         lemmaAuthority: context.lemmaAuthority,
       })}
+      ${knownThroughLine(context.knownViaGroupLemma, text)}
     </div>`;
   }
   if (level === "basic") {

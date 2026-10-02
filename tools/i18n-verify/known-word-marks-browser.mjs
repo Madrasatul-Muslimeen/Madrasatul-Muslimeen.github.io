@@ -179,8 +179,11 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) for (const loo
     await page.click('#quranWordCardMount [data-word-progress-state="achieved"]');
     await settle(page, ".hifz-word", 5);
     const after = await marked(page, ".hifz-word");
-    check(`${tag} Achieved on 1:1:3 marks it AND its same-lemma 1:3:1, without reload`,
-      same(after, [...P1_MUSHAF, occ(1, 3), occ(3, 1)].sort()) && await page.evaluate(() => window.__noReload === "kept"), JSON.stringify(after));
+    // UPDATED IN PLACE, 2 Oct 2026 (decision 56, #484): a word of the same
+    // root AND the same meaning now counts as known too, so ar-Raḥmān (1:1:3,
+    // 1:3:1) also marks ar-Raḥīm (1:1:4, 1:3:2). Expected list hand-written.
+    check(`${tag} Achieved on 1:1:3 marks it, its same-lemma 1:3:1 AND its same-meaning ar-Raḥīm 1:1:4 and 1:3:2, without reload`,
+      same(after, [...P1_MUSHAF, occ(1, 3), occ(3, 1), occ(1, 4), occ(3, 2)].sort()) && await page.evaluate(() => window.__noReload === "kept"), JSON.stringify(after));
     const writes = await page.evaluate(() => (window.__stubWriteData || []).map((x) => x.col));
     check(`${tag} the only writes are the Word card's own claim (word, lemma, counters, evidence) -- none from the marks`,
       writes.length > 0 && writes.every((c) => /^quran(Word|Lemma)|^activity\//.test(c)), JSON.stringify(writes));
@@ -194,7 +197,8 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) for (const loo
       same(await marked(page, ".hifz-word"), []), JSON.stringify(await marked(page, ".hifz-word")));
     await page.evaluate(() => { const s = document.getElementById("personSelect"); s.value = "p1"; s.dispatchEvent(new Event("change", { bubbles: true })); });
     await settle(page, ".hifz-word", 5);
-    check(`${tag} switching back to p1 brings p1's marks back`, (await marked(page, ".hifz-word")).length === 5, JSON.stringify(await marked(page, ".hifz-word")));
+    // UPDATED IN PLACE (decision 56): 5 -> 7, the two ar-Raḥīm words above.
+    check(`${tag} switching back to p1 brings p1's marks back`, (await marked(page, ".hifz-word")).length === 7, JSON.stringify(await marked(page, ".hifz-word")));
   }
 
   check(`${tag} no page errors`, errors.filter((e) => !/CERT|archive\.org|api\.quran|ERR_FAILED|fonts?/i.test(e)).length === 0, JSON.stringify(errors.slice(0, 3)));

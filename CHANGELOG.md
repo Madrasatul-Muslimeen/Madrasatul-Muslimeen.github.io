@@ -19180,3 +19180,13 @@ Owner's request (decision 55; #482, PR #486).
 - With the new setting (on by default, in Study options), Al-Fātiḥah is counted with the Bismillah unnumbered, ٱلْحَمْدُ as āyah 1, and āyah 7 starting at غَيْرِ. The Mushaf page, the Read and Note views, the āyah picker, Go to and the Word card all follow it. Turn it off to see today's numbering.
 - Nothing stored changes: progress, notes and bookmarks keep the standard numbering underneath, so switching back and forth loses nothing.
 - **Checks**: fatiha-count 35/0 and fatiha-count-browser 112/0 (mutation-proven), behaviour 1007/1 (31e TLS) and 15 other suites green.
+
+## v09.41 — 2 Oct 2026 — Same root, same meaning: ar-Raḥmān marks ar-Raḥīm
+
+Owner's request (decision 56; #484, PR #487).
+
+- When you know a word, every word of the same root **with the same meaning** now counts as known too: knowing ar-Raḥmān marks ar-Raḥīm, raḥmah and the other mercy words, but not arḥām (wombs). The groups were reviewed by hand, root by root.
+- It shows in the light known-word marks (Mushaf page and Word by Word), the Word card's "N of M words known in this āyah", Explore and the Āyah card. The Word card says "Known through ٱلرَّحْمَٰن (same meaning)".
+- A claim still waiting for a teacher does not spread. Nothing is saved for the other words.
+- Not yet: the stored "You know X of 77,429 words" total still counts dictionary words only (a decision for the Owner).
+- **Checks**: known-meaning-groups 66/0 and known-word-marks 122/0 (both mutation-proven), behaviour 1007/1 (31e TLS) and 9 other suites green.

@@ -5698,6 +5698,7 @@
     import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootPanel, renderDerivativesPanel, renderTranslationPanel, tajweedRawToSafeHtml, digitsForLang, stripLeadingBismillah, splitPlainArabicWords, arabicWordButtonHtml, tajweedWordButtonsHtml } from "./js/ayah-renderer.js";
     import { parseQuranWordOccurrenceId } from "./js/quran-word-identity.js";
     import { loadLemmaDictionary, lemmaDictionaryEntry } from "./js/lemma-dictionary.js";
+    import { loadLemmaMeaningGroups, sameMeaningLemmas } from "./js/lemma-meaning-groups.js";
     import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard, renderQuranWordCard, WORD_CARD_POS_SEGMENTS } from "./js/quran-word-card.js";
     import { occurrenceRefsFor, rootFormsFor, unpackWordIndexRef, loadWordIdentityIndex } from "./js/quran-word-index.js";
     import { relatedBySharedWords, relatedThroughLists, connectedThroughNotes } from "./js/ayah-related.js";
@@ -14378,6 +14379,7 @@
         }),
         learnWordDelta: t("If you learn this word: +{words} words (+{percent}%)"),
         learnWordDeltaThisOccurrenceOnly: t("If you learn this word here: +{words} word (+{percent}%) — this occurrence only"),
+        knownThroughSameMeaning: t("Known through {word} (same meaning)"),
       };
     }
 
@@ -14411,7 +14413,33 @@
         if (word?.morphology?.lemma) lemmaIds.add(word.morphology.lemma);
       }
       if (!lemmaIds.size) return;
-      await Promise.all([...lemmaIds].map((lemmaId) => primeLemmaProgress(db, { tenantId, personId, lemmaId })));
+      // Decision 56 -- a word of the same root AND meaning also counts, so the
+      // group-mates' lemma progress is read too (read-only; nothing is written
+      // for them). The groups file is fetched here, on first use, never at startup.
+      try { await loadLemmaMeaningGroups(); } catch (error) { console.warn("meaning groups unavailable", error); }
+      const toPrime = new Set();
+      for (const lemmaId of lemmaIds) for (const mate of sameMeaningLemmas(lemmaId)) toPrime.add(mate);
+      await Promise.all([...toPrime].map((lemmaId) => primeLemmaProgress(db, { tenantId, personId, lemmaId })));
+    }
+
+    /**
+     * Decision 56 -- the lemma's own view, upgraded to countsAsKnown when
+     * ANOTHER lemma of its meaning group counts as known. `knownViaGroupLemma`
+     * names that other lemma (absent when the lemma is known itself, or not at
+     * all). countsAsKnown already honours the confirmation rule, so a claim
+     * still awaiting a teacher spreads to nobody. Synchronous: reads only what
+     * primeLemmaProgressForOccurrenceScope() cached. Never written anywhere.
+     */
+    function lemmaViewWithGroup({ tenantId, personId, lemmaId, confirmationRequired }) {
+      const own = lemmaProgressFor({ tenantId, personId, lemmaId, confirmationRequired });
+      if (own.countsAsKnown) return own;
+      for (const mate of sameMeaningLemmas(lemmaId)) {
+        if (mate === lemmaId) continue;
+        if (lemmaProgressFor({ tenantId, personId, lemmaId: mate, confirmationRequired }).countsAsKnown) {
+          return { ...own, countsAsKnown: true, knownViaGroupLemma: mate };
+        }
+      }
+      return own;
     }
 
     function effectiveViewsForScope(chapter, occurrenceIds, rawViews, tenantId, personId, confirmationRequired) {
@@ -14424,7 +14452,7 @@
         const word = ayah?.words?.find((w) => w.position === ref.position);
         const lemmaId = word?.morphology?.lemma;
         if (!lemmaId) continue;
-        lemmaViewByOccurrenceId.set(occ, lemmaProgressFor({ tenantId, personId, lemmaId, confirmationRequired }));
+        lemmaViewByOccurrenceId.set(occ, lemmaViewWithGroup({ tenantId, personId, lemmaId, confirmationRequired }));
       }
       return overlayLemmaKnownness(rawViews, lemmaViewByOccurrenceId);
     }
@@ -14525,7 +14553,7 @@
 
       if (!lemmaId) { quranWordCardLemmaContext = { wholeQuranTotal }; if (quranWordCardState.occurrenceId === requestedId) renderPersistentWordCard(); return; }
 
-      let lemmaProgress = null, lemmaAuthority = null;
+      let lemmaProgress = null, lemmaAuthority = null, knownViaGroupLemma = null;
       if (isLemmaProgressPersistenceReady()) {
         try {
           await primeLemmaProgress(db, { tenantId, personId: subjectPersonId, lemmaId });
@@ -14538,6 +14566,14 @@
           // word's own lemma.
           const ayahScope = occurrenceIdsForAyah(currentSurahData, ref.ayah);
           await primeLemmaProgressForOccurrenceScope(currentSurahData, ayahScope, tenantId, subjectPersonId);
+          // Decision 56 -- known only through a same-meaning word: say so.
+          // Display only; this word's own buttons keep showing its own state.
+          if (!lemmaProgress.countsAsKnown) {
+            const grouped = lemmaViewWithGroup({ tenantId, personId: subjectPersonId, lemmaId, confirmationRequired });
+            if (grouped.knownViaGroupLemma && !wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: requestedId, confirmationRequired }).countsAsKnown) {
+              knownViaGroupLemma = grouped.knownViaGroupLemma;
+            }
+          }
         } catch (error) {
           reportWriteFailure(error, { what: "read lemma-wide word progress", lemmaId });
         }
@@ -14586,7 +14622,7 @@
         learnDelta = computed;
       }
       if (requestId !== quranWordCardLemmaRequestId) return;
-      quranWordCardLemmaContext = { wholeQuranTotal, lemmaProgress, lemmaAuthority, learnDelta };
+      quranWordCardLemmaContext = { wholeQuranTotal, lemmaProgress, lemmaAuthority, learnDelta, knownViaGroupLemma };
       if (quranWordCardState.open && quranWordCardState.occurrenceId === requestedId) renderPersistentWordCard();
     }
 
@@ -16233,7 +16269,7 @@
         const occView = wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId, confirmationRequired });
         const lemmaId = w.morphology?.lemma;
         const lemmaView = lemmaId && isLemmaProgressPersistenceReady()
-          ? lemmaProgressFor({ tenantId, personId: subjectPersonId, lemmaId, confirmationRequired })
+          ? lemmaViewWithGroup({ tenantId, personId: subjectPersonId, lemmaId, confirmationRequired })
           : null;
         const known = lemmaView ? effectiveOccurrenceState(occView, lemmaView).countsAsKnown : !!occView.countsAsKnown;
         return { position: w.position, arabic: w.arabic, occurrenceId, known };
