@@ -28,6 +28,7 @@
 
 import { t, num } from "./i18n.js";
 import { buildUnitKey } from "./unit-keys.js";
+import { FATIHA_SPLIT_AFTER_WORD } from "./fatiha-count.js";
 
 const MUSHAF_JSON_URL = "https://raw.githubusercontent.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/main/mushaf/mushaf-madani-v2.json";
 // Issue #332 Part A -- was raw.githubusercontent.com/.../mushaf/fonts/ (the
@@ -530,8 +531,10 @@ function fatihaPageLines(lines) {
       if (isMarker && ayah === 1) continue; // Bismillah: no number
       if (isMarker && ayah >= 2 && ayah <= 6) words.push({ ...w, g: markerGlyph[ayah - 1] });
       else words.push(w);
-      if (s === "1" && ayah === 7 && Number(p) === 4) {
-        words.push({ loc: "1:7:4", g: markerGlyph[6], fatihaSplitMarker: true });
+      // Architect review: the split point is read from fatiha-count.js, the
+      // one place it is decided, so the page and the Read view cannot drift.
+      if (s === "1" && ayah === 7 && Number(p) === FATIHA_SPLIT_AFTER_WORD) {
+        words.push({ loc: `1:7:${FATIHA_SPLIT_AFTER_WORD}`, g: markerGlyph[6], fatihaSplitMarker: true });
       }
     }
     return { ...line, words };

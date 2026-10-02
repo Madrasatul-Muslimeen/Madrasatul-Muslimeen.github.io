@@ -19172,3 +19172,11 @@ Owner's request (#479, PR #480).
 - On the Taglines page: **Scroll long lines** (on or off) and **Scroll speed** (1–10, Slow · Medium · Fast). The preview follows the slider as you drag it.
 - Someone whose phone asks for less movement sees the line still, as before.
 - **Checks**: tagline-scroll 67/0 (mutation-proven), landing-drawers 274/0, phone-width-overflow 217/0, behaviour 1004/4 (sandbox-only).
+
+## v09.40 — 2 Oct 2026 — Al-Fātiḥah's optional count
+
+Owner's request (decision 55; #482, PR #486).
+
+- With the new setting (on by default, in Study options), Al-Fātiḥah is counted with the Bismillah unnumbered, ٱلْحَمْدُ as āyah 1, and āyah 7 starting at غَيْرِ. The Mushaf page, the Read and Note views, the āyah picker, Go to and the Word card all follow it. Turn it off to see today's numbering.
+- Nothing stored changes: progress, notes and bookmarks keep the standard numbering underneath, so switching back and forth loses nothing.
+- **Checks**: fatiha-count 35/0 and fatiha-count-browser 112/0 (mutation-proven), behaviour 1007/1 (31e TLS) and 15 other suites green.
