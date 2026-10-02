@@ -685,3 +685,4 @@ total). Allocated by the MMSA Architect.
 09.39: Long taglines scroll sideways. Allocated by the MMSA Architect.
 09.40: Al-Fatihah optional count. Allocated by the MMSA Architect.
 09.41: Same root same meaning counts as known. Allocated by the MMSA Architect.
+09.42: Never a blank landing page; WbW same word only. Allocated by the MMSA Architect.

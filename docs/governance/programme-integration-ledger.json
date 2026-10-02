@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.41",
+    "version": "09.42",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1673,8 +1673,20 @@
     {
       "version": "09.41",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Known words: same root and same meaning counts as known (ar-Raḥmān marks ar-Raḥīm); the stored total unchanged.",
+      "integration": {
+        "authorizedOn": "2026-10-02",
+        "integratedOn": "2026-10-02",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.42",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Landing: says Loading / still loading / signed out / failed step instead of a blank page; WbW counts the same word only (decision 58).",
       "integration": {
         "authorizedOn": "2026-10-02",
         "integratedOn": "2026-10-02",
@@ -1683,8 +1695,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.42",
+  "nextUnallocated": "09.43",
   "nextUnallocatedNote": [
+    "v09.42 was allocated to Never a blank landing page; WbW same word only, 2026-10-02.",
     "v09.41 was allocated to Same root same meaning counts as known, 2026-10-02.",
     "v09.40 was allocated to Al-Fatihah optional count, 2026-10-02.",
     "v09.39 was allocated to Long taglines scroll sideways, 2026-10-02.",
