@@ -5652,7 +5652,7 @@
     import { searchQuran } from "./js/quran-search.js";
     import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootPanel, renderDerivativesPanel, renderTranslationPanel, tajweedRawToSafeHtml, digitsForLang, stripLeadingBismillah, splitPlainArabicWords, arabicWordButtonHtml, tajweedWordButtonsHtml } from "./js/ayah-renderer.js";
     import { parseQuranWordOccurrenceId } from "./js/quran-word-identity.js";
-    import { loadLemmaDictionary } from "./js/lemma-dictionary.js";
+    import { loadLemmaDictionary, lemmaDictionaryEntry } from "./js/lemma-dictionary.js";
     import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard, renderQuranWordCard, WORD_CARD_POS_SEGMENTS } from "./js/quran-word-card.js";
     import { occurrenceRefsFor, rootFormsFor, unpackWordIndexRef, loadWordIdentityIndex } from "./js/quran-word-index.js";
     import { relatedBySharedWords, relatedThroughLists, connectedThroughNotes } from "./js/ayah-related.js";
@@ -6511,8 +6511,7 @@
     let lemmaDictionaryLoading = false;
     function wordCardDictionaryContext(word) {
       if (!lemmaDictionary) return {};
-      const lemma = word.morphology?.lemma;
-      return { dictionary: { entry: (lemma && Object.prototype.hasOwnProperty.call(lemmaDictionary.entries ?? {}, lemma)) ? lemmaDictionary.entries[lemma] : null } };
+      return { dictionary: { entry: lemmaDictionaryEntry(lemmaDictionary, word.morphology?.lemma) } };
     }
     function ensureLemmaDictionary() {
       if (lemmaDictionary || lemmaDictionaryLoading) return;
