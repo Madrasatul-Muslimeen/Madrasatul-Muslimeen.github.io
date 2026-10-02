@@ -102,6 +102,11 @@ const openGateUrl = `data:text/javascript;base64,${Buffer.from(
 ).toString("base64")}`;
 dataSource = rewriteSpecifier(dataSource, "./study-lemma-progress-readiness.js", openGateUrl, "quran-lemma-progress-data.js");
 dataSource = rewriteSpecifier(dataSource, "./quran-word-total.js", realFileUrl("quran-word-total.js"), "quran-lemma-progress-data.js");
+// Decision 58 (#492) added the Basic/Depth gate import to both data modules;
+// this loader had not been told, so the suite stopped loading at all. The REAL
+// gate is loaded (open since 2 Oct 2026, the Owner: "Basic and Depth rules are
+// live"), so the WbW cases below run exactly as the app runs them.
+dataSource = rewriteSpecifier(dataSource, "./study-lemma-levels-readiness.js", realFileUrl("study-lemma-levels-readiness.js"), "quran-lemma-progress-data.js");
 
 const {
   claimLemmaWordState: realClaimLemmaWordState,
@@ -140,6 +145,7 @@ totalDataSource = rewriteSpecifier(totalDataSource, "./collections.js", realFile
 totalDataSource = rewriteSpecifier(totalDataSource, "./envelope.js", envelopeDataUrl, "quran-word-total-data.js");
 totalDataSource = rewriteSpecifier(totalDataSource, "./study-wbw-total-readiness.js", realFileUrl("study-wbw-total-readiness.js"), "quran-word-total-data.js");
 totalDataSource = rewriteSpecifier(totalDataSource, "./quran-word-total.js", realFileUrl("quran-word-total.js"), "quran-word-total-data.js");
+totalDataSource = rewriteSpecifier(totalDataSource, "./study-lemma-levels-readiness.js", realFileUrl("study-lemma-levels-readiness.js"), "quran-word-total-data.js");
 const { recordWordTotalDeltaAcrossJuz, getWordTotals } = await import(toDataUrl(totalDataSource));
 
 // A cheap positive control: the loader really did load the real modules, not

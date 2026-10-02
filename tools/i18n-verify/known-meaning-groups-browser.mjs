@@ -121,7 +121,12 @@ for (const [width, height] of [[390, 844], [1280, 900]]) {
     // to BASIC Achieved, which has no lemma-wide claim until the Owner
     // publishes its Rules. So a WbW claim on ٱلرَّحْمَٰن must NOT mark ٱلرَّحِيم,
     // and the groups file is not even fetched while nothing can spread.
-    check(`${tag} the groups file is NOT fetched while only WbW has a lemma-wide claim`, fetched.length === 0, JSON.stringify(fetched));
+    // UPDATED IN PLACE again, 2 Oct 2026 -- the Owner published the Basic/Depth
+    // Rules ("Basic and Depth rules are live") and the gate is open, so the
+    // Read page now needs the groups file to find each word's Basic claim
+    // (primeLemmaProgressForOccurrenceScope). It is fetched on that first use
+    // -- never on the landing page (asserted above) -- and exactly ONCE.
+    check(`${tag} the groups file is fetched once, on first use in the Read view (Basic is live)`, fetched.length === 1, JSON.stringify(fetched));
     check(`${tag} Achieved on ٱلرَّحْمَٰن marks itself`, await waitMark(page, 1, 1, 3, true));
     await page.waitForTimeout(600);
     check(`${tag} ... but NOT ٱلرَّحِيم at 1:1:4 (WbW counts the same word only)`, (await occ(page, 1, 1, 4)).marked === false);

@@ -983,7 +983,11 @@ service cloud.firestore {
           && request.resource.data.lane     == resource.data.lane;
     }
 
-    // A created lane must say what it is, and only `wbw` may be written --
+    // 2 Oct 2026 (decision 58): Basic and Depth get their own lemma-wide
+    // claims too (Basic spreads to same root + same meaning, Depth to the
+    // whole root), so `basic` and `depth` may now be written; any other level
+    // is still refused.
+    // A created lane must say what it is (until 2 Oct 2026 only `wbw` could be written) --
     // the same deferral quranWordProgress's isWordLaneCreate() already
     // enforces, applied to a lemma id rather than a surah/ayah pair. 400
     // characters is generous headroom over the real packaged corpus's
@@ -991,7 +995,7 @@ service cloud.firestore {
     function isLemmaLaneCreate(lane) {
       return request.resource.data.get('contractVersion', '') == 'quran-lemma-progress:v1'
           && request.resource.data.get('lane', '') == lane
-          && request.resource.data.get('level', '') == 'wbw'
+          && request.resource.data.get('level', '') in ['wbw', 'basic', 'depth']
           && request.resource.data.lemmaId is string
           && request.resource.data.lemmaId.size() > 0
           && request.resource.data.lemmaId.size() <= 400;
@@ -1071,7 +1075,7 @@ service cloud.firestore {
     // that it IS a map, never a client-invented scalar.
     function isLemmaCounterCreate() {
       return request.resource.data.get('contractVersion', '') == 'quran-lemma-occurrence-counter:v1'
-          && request.resource.data.get('level', '') == 'wbw'
+          && request.resource.data.get('level', '') in ['wbw', 'basic', 'depth']
           && request.resource.data.lemmaId is string
           && request.resource.data.lemmaId.size() > 0
           && request.resource.data.lemmaId.size() <= 400
