@@ -144,6 +144,9 @@
   .tagline-line.tagline-in-slide { animation: taglineSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) backwards; }
   @keyframes taglineSlideOut { to { transform: translateY(-100%); opacity: 0; } }
   @keyframes taglineSlideIn { from { transform: translateY(100%); opacity: 0; } }
+  /* Issue 479: a line wider than the strip scrolls (js/tagline-scroll.js). */
+  .tagline-line.tagline-scrolling { text-overflow: clip; }
+  .tagline-line.tagline-scrolling .tagline-track { display: inline-block; will-change: transform; }
   /* Someone who has asked their system for less movement gets the new line
      without the animation -- never a strip that silently stops working. */
   @media (prefers-reduced-motion: reduce) {
@@ -5771,6 +5774,7 @@
       taglinesFrom, taglineSettingsFrom, taglineText, pickTagline,
       readTaglineState, writeTaglineState, TAGLINE_SETTING_DEFAULTS,
     } from "./js/taglines.js";
+    import { attachTaglineScroll } from "./js/tagline-scroll.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { showBootSplash, showQuranSplash } from "./js/splash.js";
     import { APP_VERSION } from "./js/version.js";
@@ -7016,6 +7020,19 @@
     let taglinePendingLine = null;
     let taglinePendingTimer = null;
     let taglineHeld = false;
+    let taglineScroller = null; // issue 479: the scroll running on the line now on screen, if any
+
+    /** (Re)start the sideways scroll on the line that is on screen. Safe to
+     *  call again: it cancels the previous run first. */
+    function rescanTaglineScroll() {
+      if (!taglineStripEl) return;
+      taglineScroller?.stop();
+      taglineScroller = null;
+      const el = taglineStripEl.querySelector(".tagline-line:not(.tagline-leaving)");
+      if (!el) return;
+      taglineScroller = attachTaglineScroll(el, { enabled: taglineSettings.scroll, speed: taglineSettings.scrollSpeed });
+      if (taglineHeld && taglineSettings.pauseOnHold) taglineScroller.pause();
+    }
 
     function buildTaglineEl(line) {
       const hasLink = !!line.link?.url;
@@ -7078,11 +7095,19 @@
         }
       }
       taglineShownId = line.id;
+      rescanTaglineScroll();
     }
 
     function runPendingTaglineChange() {
       taglinePendingTimer = null;
       if (!taglinePendingLine) return;
+      // A scrolling line is not taken away mid-read: wait for the end of its
+      // first full pass if the normal change time came earlier.
+      const passLeft = taglineScroller?.firstPassRemainingMs() ?? 0;
+      if (passLeft > 0) {
+        taglinePendingTimer = setTimeout(runPendingTaglineChange, passLeft + 50);
+        return;
+      }
       // Held under a finger: the whole point of the pause is that a line can
       // be read, or its link tapped, without moving away mid-reach.
       if (taglineHeld) {
@@ -7132,6 +7157,7 @@
       // place of an identical one would look like a glitch, not a change.
       if (!taglineShownId && shownText === targetText) {
         taglineShownId = pick.current.id;
+        rescanTaglineScroll();
         return;
       }
       scheduleTaglineChange(pick.current, pick.forAyah ? 0 : taglineSettings.changeAfterSeconds);
@@ -7150,6 +7176,7 @@
       taglineSettings = taglineSettingsFrom(tenantDoc);
       taglineStripEl?.setAttribute("data-motion", taglineSettings.motion);
       refreshTaglineStrip();
+      rescanTaglineScroll(); // the on/off and speed may have just arrived
     }
 
     if (taglineStripEl) {
@@ -7157,8 +7184,16 @@
         taglineStripEl.addEventListener(ev, () => {
           if (!taglineSettings.pauseOnHold) return;
           taglineHeld = held;
+          if (held) taglineScroller?.pause(); else taglineScroller?.resume();
         });
       }
+      // The strip's width changes with the window and when web fonts land.
+      let taglineScrollResizeTimer = null;
+      window.addEventListener("resize", () => {
+        clearTimeout(taglineScrollResizeTimer);
+        taglineScrollResizeTimer = setTimeout(rescanTaglineScroll, 200);
+      });
+      document.fonts?.ready?.then(rescanTaglineScroll);
     }
 
     // -----------------------------------------------------------------------
