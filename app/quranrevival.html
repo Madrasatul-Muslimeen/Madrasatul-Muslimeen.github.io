@@ -3167,6 +3167,8 @@
   /* Owner, 1 Oct 2026: the four stages always show; greyed and not pressable until an Approach is chosen. */
   .approach-stage-btn:disabled { opacity: 0.45; cursor: not-allowed; }
   .approach-stage-btn[aria-pressed="true"] { color: var(--card-button-pressed-text); background: var(--card-button-pressed-bg); border-color: var(--card-button-pressed-bg); font-weight: 600; }
+  /* Owner, 2 Oct 2026: the pressed stage wears its wheel-legend colour (stageColourStyle() in ayah-action-sheet.js sets the three variables from STATUS_COLORS). */
+  .approach-stage-btn[aria-pressed="true"][data-approach-stage-btn] { color: var(--stage-fg, var(--card-button-pressed-text)); background: var(--stage-bg, var(--card-button-pressed-bg)); border-color: var(--stage-edge, var(--card-button-pressed-bg)); }
   /* The "This page" card mounts into the SAME overlay/sheet the Ayah Card
      uses (.ayah-sheet), so it inherits the bottom-sheet/900px-popover split
      for free -- this rule only trims the body padding .ayah-sheet-body never

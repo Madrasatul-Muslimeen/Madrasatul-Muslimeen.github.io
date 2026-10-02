@@ -31,6 +31,7 @@
 import { t, num } from "./i18n.js";
 import { statusLabel } from "./unit-keys.js";
 import { wireUnitLadder } from "./unit-ladder.js";
+import { STATUS_COLORS } from "./mastery-wheel.js";
 
 function escapeHtml(s) {
   return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -65,9 +66,25 @@ export function approachStageIdsFor(canConfirm) {
     : [...APPROACH_STAGE_IDS, "not_applicable"];
 }
 
+// Owner, 2 Oct 2026 (a photo of Record Your Progress with Learning pressed in
+// gold): "Make the color of selected progress as the color of legend in
+// wheel." The pressed button takes its stage's colour from STATUS_COLORS --
+// the same table the wheel and its legend paint from, so the two cannot drift
+// -- with the text colour that reads on it (measured: white on Not started
+// 10.5:1, Learning 5.0:1, N/A; dark on Practising 7.4:1, Achieved 4.7:1,
+// Mastered 6.4:1). N/A uses the legend's own stripe.
+const STAGE_TEXT_DARK = new Set(["practising", "achieved", "mastered"]);
+const NA_STRIPE = "repeating-linear-gradient(45deg,#1b2338 0 3px,rgba(201,162,75,0.55) 3px 4px)";
+export function stageColourStyle(id) {
+  const bg = id === "not_applicable" ? NA_STRIPE : STATUS_COLORS[id];
+  if (!bg) return "";
+  const edge = id === "not_applicable" ? "#C9A24B" : STATUS_COLORS[id];
+  return `--stage-bg:${bg};--stage-edge:${edge};--stage-fg:${STAGE_TEXT_DARK.has(id) ? "#111827" : "#ffffff"}`;
+}
+
 function approachStageButtonsHtml(currentStatusId, disabled = false, canConfirm = false) {
   const buttons = approachStageIdsFor(canConfirm)
-    .map((id) => `<button type="button" class="approach-stage-btn" data-approach-stage-btn="${id}" aria-pressed="${!disabled && id === currentStatusId}"${disabled ? " disabled" : ""}>${escapeHtml(statusLabel(id))}</button>`)
+    .map((id) => `<button type="button" class="approach-stage-btn" data-approach-stage-btn="${id}" aria-pressed="${!disabled && id === currentStatusId}" style="${stageColourStyle(id)}"${disabled ? " disabled" : ""}>${escapeHtml(statusLabel(id))}</button>`)
     .join("");
   return `<div class="approach-stage-row" role="group" aria-label="${escapeHtml(t("Status"))}">${buttons}</div>`;
 }

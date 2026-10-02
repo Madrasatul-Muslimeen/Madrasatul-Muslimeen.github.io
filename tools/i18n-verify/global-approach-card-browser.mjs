@@ -318,6 +318,40 @@ for (const lang of ["en", "bn"]) {
   }
 }
 
+// ---- 6. Owner, 2 Oct 2026: "Make the color of selected progress as the color
+// of legend in wheel." Each stage, pressed, wears its legend colour. The hex
+// values are typed here by hand from the legend (mastery-wheel.js STATUS_COLORS
+// as approved), NOT read through the code under test, and the text must read
+// on it (>= 4.5:1). N/A wears the legend's stripe.
+{
+  const LEGEND = { not_started: "rgb(51, 63, 92)", learning: "rgb(138, 106, 53)", practising: "rgb(201, 162, 75)", achieved: "rgb(91, 132, 196)", mastered: "rgb(63, 174, 116)" };
+  const SHOTS = process.env.STAGE_SHOTS || "";
+  const ctx = await newContext(browser, { viewport: { width: 390, height: 844 }, extraSeedJs: APPROACH_CARDS_SEED });
+  await installSyntheticMushafFixture(ctx);
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  await openMushafSurah3(page);
+  await waitCapsule(page);
+  await clickSafely(page, "#readBarRecordBtn");
+  await page.waitForFunction(() => !!document.querySelector("#pageApproachSelect"), null, { timeout: 8000 }).catch(() => {});
+  await page.selectOption("#pageApproachSelect", "recite");
+  await page.waitForTimeout(400);
+  for (const id of ["not_started", "learning", "practising", "achieved", "mastered", "not_applicable"]) {
+    await clickSafely(page, `.ayah-sheet [data-approach-stage-btn="${id}"]`);
+    await page.waitForFunction((i) => document.querySelector(`.ayah-sheet [data-approach-stage-btn="${i}"]`)?.getAttribute("aria-pressed") === "true", id, { timeout: 5000 }).catch(() => {});
+    const got = await page.evaluate((i) => {
+      const b = document.querySelector(`.ayah-sheet [data-approach-stage-btn="${i}"]`); const cs = getComputedStyle(b);
+      const nums = (c) => (c.match(/[\d.]+/g) || []).map(Number);
+      const lum = ([r, g, bb]) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(bb); };
+      const fg = lum(nums(cs.color)), bg = lum(nums(cs.backgroundColor));
+      return { pressed: b.getAttribute("aria-pressed"), bg: cs.backgroundColor, img: cs.backgroundImage, ratio: +(((Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05)).toFixed(2)) };
+    }, id);
+    if (id === "not_applicable") check(`pressed N/A wears the legend's stripe`, got.pressed === "true" && /repeating-linear-gradient/.test(got.img), JSON.stringify(got));
+    else check(`pressed ${id} wears its legend colour ${LEGEND[id]} with readable text (${got.ratio}:1)`, got.pressed === "true" && got.bg === LEGEND[id] && got.ratio >= 4.5, JSON.stringify(got));
+    if (SHOTS) { await page.evaluate(() => document.querySelector(".ayah-sheet .approach-stage-row")?.scrollIntoView({ block: "center" })); await page.screenshot({ path: `${SHOTS}/stage-${id}.png` }); }
+  }
+  await ctx.close();
+}
+
 // ---- 5. A STUDENT account (Owner, 1 Oct 2026): N/A shows, Mastered does not,
 // and "Mastered is confirmed by a teacher." does -- on the page card, the Ayah
 // Card and the Unit Card. Reached through "View as Student", which is exactly
