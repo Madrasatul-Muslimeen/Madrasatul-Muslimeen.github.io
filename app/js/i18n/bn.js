@@ -3085,6 +3085,12 @@ export const BN = {
   "End of {unit}. How did it go?": "{unit} শেষ। কেমন হলো?", // ?
   "Saved": "সংরক্ষিত হয়েছে", // ?
   "End-of-unit prompt": "ইউনিট-শেষের প্রম্পট", // ?
+  // The label wraps the Arabic word in a data-i18n-skip span (a text node
+  // holding two scripts is never translated), so it is three pieces.
+  "Al-Fātiḥah: Bismillah unnumbered (": "আল-ফাতিহা: বিসমিল্লাহ নম্বরবিহীন (",
+  "is āyah 1)": "হলো আয়াত ১)",
+  "Bismillah": "বিসমিল্লাহ",
+  "Surah {surah} — Bismillah": "সূরা {surah} — বিসমিল্লাহ",
   "Approach: {name}": "পদ্ধতি: {name}", // ?
   "Surah {n}": "সূরা {n}",
 

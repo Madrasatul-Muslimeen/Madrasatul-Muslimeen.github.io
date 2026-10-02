@@ -840,6 +840,34 @@ export function setMushafTajweedFontOn(on) {
 }
 
 // ---------------------------------------------------------------------------
+// Issue #482 -- Al-Fātiḥah's DISPLAY count: Bismillah unnumbered, ٱلْحَمْدُ as
+// āyah 1, غَيْرِ opening āyah 7. A per-device reading setting, ON by default
+// (Owner, 2 Oct 2026: "split is right, default on"). Display only -- no stored
+// key changes and no Firestore write; see fatiha-count.js.
+// ---------------------------------------------------------------------------
+const FATIHA_COUNT_KEY = "mm_fatiha_bismillah_unnumbered";
+
+function readFatihaBismillahUnnumbered() {
+  try {
+    return localStorage.getItem(FATIHA_COUNT_KEY) !== "0"; // never set: on by default
+  } catch {
+    return true;
+  }
+}
+
+let cachedFatihaBismillahUnnumbered = readFatihaBismillahUnnumbered();
+
+export function getFatihaBismillahUnnumbered() {
+  return cachedFatihaBismillahUnnumbered;
+}
+
+export function setFatihaBismillahUnnumbered(on) {
+  cachedFatihaBismillahUnnumbered = !!on;
+  writeStored(FATIHA_COUNT_KEY, cachedFatihaBismillahUnnumbered ? "1" : "0");
+  return cachedFatihaBismillahUnnumbered;
+}
+
+// ---------------------------------------------------------------------------
 // Issue #348 -- whether the end-of-unit prompt ("End of Ruku' 3. How did it
 // go?") appears after the last āyah of a Ruku'/Page/Hizb/Juz/Surah/Range
 // Study Unit. ON by default (decision 19, docs/governance/2026-09-27-owner-

@@ -389,7 +389,10 @@ console.log("\n=== 8. PHASE 2: the Quran module in Bangla ===");
 
   // Ayah picker + position readout.
   const ayah = await page.evaluate(() => ({
-    firstOpt: document.getElementById("ayahSelect").options[0]?.textContent,
+    // UPDATED IN PLACE, issue #482: on Al-Fātiḥah the first option is now the
+    // word "Bismillah" (the Bismillah is unnumbered by default), so the
+    // numeral check reads the SECOND option, which is still a number.
+    firstOpt: document.getElementById("ayahSelect").options[1]?.textContent,
     firstVal: document.getElementById("ayahSelect").options[0]?.value,
     position: document.getElementById("ayahPosition")?.textContent?.trim(),
   }));
@@ -2081,7 +2084,9 @@ console.log("\n=== 31. Shell round 19: no Approach blocks anything ===");
     position: document.getElementById("ayahPosition").textContent.trim(),
   }));
   check("31d a Ruku' still reads ayah by ayah, with Previous/Next",
-        ruku.navVisible && /Ayah \d+ of/.test(ruku.position), JSON.stringify(ruku));
+        // UPDATED IN PLACE, issue #482: this runs on Al-Fātiḥah's first ayah,
+        // which reads "Bismillah" (unnumbered) under the default display count.
+        ruku.navVisible && /Ayah \d+ of|— Bismillah/.test(ruku.position), JSON.stringify(ruku));
 
   check("31e no page errors", errors.length === 0, errors.slice(0, 2).join(" | "));
   await page.close();

@@ -28,6 +28,7 @@
 
 import { t, num } from "./i18n.js";
 import { buildUnitKey } from "./unit-keys.js";
+import { FATIHA_SPLIT_AFTER_WORD } from "./fatiha-count.js";
 
 const MUSHAF_JSON_URL = "https://raw.githubusercontent.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/main/mushaf/mushaf-madani-v2.json";
 // Issue #332 Part A -- was raw.githubusercontent.com/.../mushaf/fonts/ (the
@@ -411,6 +412,18 @@ let renderGeneration = 0;
 function renderWord(w, highlightSet) {
   const span = document.createElement("span");
   span.className = "hifz-word";
+  if (w.fatihaSplitMarker) {
+    // Issue #482 -- the inserted ⑥ after 1:7:4. It opens the same Āyah card
+    // as the end of 1:7 (data-ayah-marker stays the internal "1:7").
+    span.textContent = w.g;
+    span.classList.add("hifz-ayah-marker");
+    span.dataset.ayahMarker = "1:7";
+    span.dataset.ayahSplitPoint = "1";
+    if (highlightSet && !highlightSet.has("1:7")) span.classList.add("dim");
+    if (!wordRegistry.has("1:7")) wordRegistry.set("1:7", []);
+    wordRegistry.get("1:7").push(span);
+    return span;
+  }
   const loc = w.loc.split(":");
   const [surahStr, ayahStr, posStr] = loc;
   const ayahKey = `${surahStr}:${ayahStr}`;
@@ -487,7 +500,48 @@ function buildPageHeader(pageNum, tajweedOn, onToggleTajweed) {
   return headerEl;
 }
 
-async function renderPage(pageNum, highlightSet, container, surahArabicName, myGeneration, tajweedOn, onToggleTajweed) {
+/**
+ * Issue #482 -- Al-Fātiḥah's DISPLAY count on Mushaf page 1 (setting on).
+ * Only the glyph of each āyah-end marker is reassigned and one marker is
+ * inserted; every stored loc / occurrence id / data-ayah-marker stays the
+ * internal one. The printed markers are the page font's own ①..⑦ glyphs, so:
+ *   internal 1:1 marker  -> hidden (the Bismillah is unnumbered)
+ *   internal 1:2..1:6    -> the glyph of the marker one lower (①..⑤)
+ *   after word 1:7:4     -> NEW marker with the glyph of ⑥ (internal 1:6's own)
+ *   internal 1:7 end     -> unchanged (⑦)
+ * Returns the line list to draw (a copy; the loaded page data is untouched).
+ */
+function fatihaPageLines(lines) {
+  const maxPos = (a) => ayahMaxWordPosition && ayahMaxWordPosition["1:" + a];
+  const markerGlyph = {};
+  for (const line of lines) {
+    for (const w of line.words || []) {
+      const [s, a, p] = w.loc.split(":");
+      if (s === "1" && Number(p) === maxPos(a)) markerGlyph[Number(a)] = w.g;
+    }
+  }
+  if (!markerGlyph[1] || !markerGlyph[6]) return lines; // not the page we expect -- draw it as stored
+  return lines.map((line) => {
+    if (!line.words) return line;
+    const words = [];
+    for (const w of line.words) {
+      const [s, a, p] = w.loc.split(":");
+      const ayah = Number(a);
+      const isMarker = s === "1" && Number(p) === maxPos(a);
+      if (isMarker && ayah === 1) continue; // Bismillah: no number
+      if (isMarker && ayah >= 2 && ayah <= 6) words.push({ ...w, g: markerGlyph[ayah - 1] });
+      else words.push(w);
+      // Architect review: the split point is read from fatiha-count.js, the
+      // one place it is decided, so the page and the Read view cannot drift.
+      if (s === "1" && ayah === 7 && Number(p) === FATIHA_SPLIT_AFTER_WORD) {
+        words.push({ loc: `1:7:${FATIHA_SPLIT_AFTER_WORD}`, g: markerGlyph[6], fatihaSplitMarker: true });
+      }
+    }
+    return { ...line, words };
+  });
+}
+
+async function renderPage(pageNum, highlightSet, container, surahArabicName, myGeneration, tajweedOn, onToggleTajweed, fatihaCount = false) {
   const fontInfo = await resolvePageFont(pageNum, tajweedOn);
   // Issue #113 -- a newer renderMushafPages() call started while this page's
   // own font load was in flight. Stop before touching wordRegistry OR the
@@ -531,7 +585,8 @@ async function renderPage(pageNum, highlightSet, container, surahArabicName, myG
     container.appendChild(pageEl);
     return;
   }
-  pageData.forEach((line) => {
+  const drawLines = fatihaCount && pageNum === 1 ? fatihaPageLines(pageData) : pageData;
+  drawLines.forEach((line) => {
     // Issue #348 -- the surah banner is a real <button> now (spec: "The
     // Mushaf's surah banner becomes tappable"), not a plain <div>, so it
     // opens the Unit Card for the whole surah on tap the same way every
@@ -591,7 +646,7 @@ async function renderPage(pageNum, highlightSet, container, surahArabicName, myG
  * its own (I2).
  */
 export async function renderMushafPages(container, pages, highlightSet, surahArabicName, opts = {}) {
-  const { tajweedOn = false, onToggleTajweed = null } = opts;
+  const { tajweedOn = false, onToggleTajweed = null, fatihaCount = false } = opts;
   const myGeneration = ++renderGeneration;
   container.innerHTML = "";
   pageObservers.forEach((ro) => ro.disconnect());
@@ -608,7 +663,7 @@ export async function renderMushafPages(container, pages, highlightSet, surahAra
     // be correct, but stopping here too avoids wasted font-load work for a
     // page whose result nobody will ever see.
     if (myGeneration !== renderGeneration) return;
-    await renderPage(p, highlightSet, container, surahArabicName, myGeneration, tajweedOn, onToggleTajweed);
+    await renderPage(p, highlightSet, container, surahArabicName, myGeneration, tajweedOn, onToggleTajweed, fatihaCount);
   }
 }
 
