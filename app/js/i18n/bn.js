@@ -123,6 +123,12 @@ export const BN = {
   "Edit": "সম্পাদনা",
   "Archive": "সংরক্ষণাগারে রাখুন", // ?
   "Loading…": "লোড হচ্ছে…",
+  "Loading your study…": "আপনার পড়াশোনা লোড হচ্ছে…",
+  "Still loading… The internet connection is slow, or the database is not answering yet.": "এখনো লোড হচ্ছে… ইন্টারনেট সংযোগ ধীর, অথবা ডেটাবেস এখনো সাড়া দিচ্ছে না।",
+  "You are signed out.": "আপনি সাইন আউট অবস্থায় আছেন।",
+  "This Google account is not a member of any madrasah yet.": "এই গুগল অ্যাকাউন্টটি এখনো কোনো মাদ্রাসার সদস্য নয়।",
+  "The app could not finish loading: {detail}": "অ্যাপটি লোড শেষ করতে পারেনি: {detail}",
+  "Reload": "আবার লোড করুন",
   "Person": "ব্যক্তি",
   "Tenant": "প্রতিষ্ঠান", // ?
   // The owner's own word for the tenant picker on the Quran screen, where its
@@ -1229,7 +1235,8 @@ export const BN = {
   "Knows {percent}% of the words of the Qur'an": "কুরআনের {percent}% শব্দ জানা",
   "If you learn this word: +{words} words (+{percent}%)": "এই শব্দটি শিখলে: +{words}টি শব্দ (+{percent}%)",
   "If you learn this word here: +{words} word (+{percent}%) — this occurrence only": "এখানে এই শব্দটি শিখলে: +{words}টি শব্দ (+{percent}%) — শুধু এই ব্যবহারের জন্য",
-  "Mark this word known everywhere": "এই শব্দটি সর্বত্র জানা হিসেবে চিহ্নিত করুন",
+  "Known through {word} (same meaning)": "{word}-এর মাধ্যমে জানা (একই অর্থ)",
+  "Mark this word known everywhere":"এই শব্দটি সর্বত্র জানা হিসেবে চিহ্নিত করুন",
   "What should they look at again?": "তাকে আবার কী দেখতে হবে?",
   "Confirm": "নিশ্চিত করুন",
   "Return": "ফেরত পাঠান",

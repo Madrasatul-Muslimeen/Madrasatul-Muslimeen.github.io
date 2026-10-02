@@ -179,7 +179,11 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) for (const loo
     await page.click('#quranWordCardMount [data-word-progress-state="achieved"]');
     await settle(page, ".hifz-word", 5);
     const after = await marked(page, ".hifz-word");
-    check(`${tag} Achieved on 1:1:3 marks it AND its same-lemma 1:3:1, without reload`,
+    // UPDATED IN PLACE TWICE, 2 Oct 2026: decision 56 had ar-Raḥmān also
+    // mark ar-Raḥīm; decision 58 corrected it the same day -- WbW Achieved
+    // counts the SAME word only (same root, same meaning is Basic's). So the
+    // expected list is back to the same lemma only. Hand-written.
+    check(`${tag} Achieved on 1:1:3 marks it AND its same-lemma 1:3:1 only (never ar-Raḥīm from WbW), without reload`,
       same(after, [...P1_MUSHAF, occ(1, 3), occ(3, 1)].sort()) && await page.evaluate(() => window.__noReload === "kept"), JSON.stringify(after));
     const writes = await page.evaluate(() => (window.__stubWriteData || []).map((x) => x.col));
     check(`${tag} the only writes are the Word card's own claim (word, lemma, counters, evidence) -- none from the marks`,
@@ -194,6 +198,7 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) for (const loo
       same(await marked(page, ".hifz-word"), []), JSON.stringify(await marked(page, ".hifz-word")));
     await page.evaluate(() => { const s = document.getElementById("personSelect"); s.value = "p1"; s.dispatchEvent(new Event("change", { bubbles: true })); });
     await settle(page, ".hifz-word", 5);
+    // UPDATED IN PLACE TWICE (decisions 56 then 58): back to 5 -- WbW spreads to the same lemma only.
     check(`${tag} switching back to p1 brings p1's marks back`, (await marked(page, ".hifz-word")).length === 5, JSON.stringify(await marked(page, ".hifz-word")));
   }
 

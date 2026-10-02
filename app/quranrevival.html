@@ -4012,6 +4012,11 @@
      assemble itself before the target opens. Visibility (not display) keeps
      #app laid out, so the wheel/hub measuring code still works underneath. */
   html.bm-opening #app, html.bm-opening #topNav, html.bm-opening #taglineStrip { visibility: hidden; }
+  #bootStatus { margin: 2.5rem 1rem; text-align: center; color: #1F3A6E; font-weight: 600; }
+  #bootStatus[hidden] { display: none; }
+  #bootStatus p { margin: 0 0 1rem; line-height: 1.5; }
+  #bootStatus button { min-height: 40px; margin: 0 0.3rem; }
+  html.bm-opening #bootStatus { visibility: hidden; }
   #bmCover { display: none; }
   html.bm-opening #bmCover { display: block; position: fixed; left: 0; right: 0; bottom: 0; top: 3rem; z-index: 19000; background-color: #fff; padding: 2rem 1rem; text-align: center; color: #1F3A6E; font-weight: 600; }
   #bmNotFound { margin: 0.4rem 0; padding: 0.5rem 0.8rem; border-radius: 0.4rem; background: #fdf6e3; border: 1px solid #B8862F; color: #1F3A6E; font-size: 0.9rem; }
@@ -4074,6 +4079,16 @@
     </details>
     <div id="navBar"></div>
   </nav>
+
+  <!-- Owner, 2 Oct 2026 (a phone photo of a blank landing page): while the
+       app waits for the database, is signed out, or fails a start-up step,
+       it says so here instead of showing an empty page. Hidden the moment
+       the app itself appears. -->
+  <div id="bootStatus" role="status" aria-live="polite">
+    <p id="bootStatusText">Loading your study…</p>
+    <button type="button" id="bootStatusSignIn" hidden>Sign in with Google</button>
+    <button type="button" id="bootStatusReload" class="secondary" hidden>Reload</button>
+  </div>
 
   <div id="app" style="display:none;">
     <div id="globalBanner" style="display:none;">
@@ -5698,6 +5713,7 @@
     import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootPanel, renderDerivativesPanel, renderTranslationPanel, tajweedRawToSafeHtml, digitsForLang, stripLeadingBismillah, splitPlainArabicWords, arabicWordButtonHtml, tajweedWordButtonsHtml } from "./js/ayah-renderer.js";
     import { parseQuranWordOccurrenceId } from "./js/quran-word-identity.js";
     import { loadLemmaDictionary, lemmaDictionaryEntry } from "./js/lemma-dictionary.js";
+    import { loadLemmaMeaningGroups, sameMeaningLemmas } from "./js/lemma-meaning-groups.js";
     import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard, renderQuranWordCard, WORD_CARD_POS_SEGMENTS } from "./js/quran-word-card.js";
     import { occurrenceRefsFor, rootFormsFor, unpackWordIndexRef, loadWordIdentityIndex } from "./js/quran-word-index.js";
     import { relatedBySharedWords, relatedThroughLists, connectedThroughNotes } from "./js/ayah-related.js";
@@ -5722,7 +5738,7 @@
     import { approachShortName } from "./js/approach-short-name.js";
     // Issue #303 -- lemma-level word progress ("mark this word known
     // everywhere"), gated separately (see study-lemma-progress-readiness.js).
-    import { lemmaProgressAuthority, effectiveOccurrenceState, lemmaKnownDeltaByJuz, groupOccurrenceRefsByJuz, overlayLemmaKnownness } from "./js/quran-lemma-progress.js";
+    import { lemmaProgressAuthority, effectiveOccurrenceState, lemmaKnownDeltaByJuz, groupOccurrenceRefsByJuz, overlayLemmaKnownness, IMPLEMENTED_ARABIC_LEVELS as LEMMA_CLAIM_LEVELS } from "./js/quran-lemma-progress.js";
     import {
       primeLemmaProgress, lemmaProgressFor, claimLemmaWordState, decideLemmaWordApproval,
       clearLemmaProgressCache, getLemmaOccurrenceCounts, bumpLemmaOccurrenceCounter,
@@ -5873,6 +5889,29 @@
     const signInBtn = document.getElementById("signInBtn");
     const signOutBtn = document.getElementById("signOutBtn");
     const appEl = document.getElementById("app");
+    // Owner, 2 Oct 2026: never an empty page. The box under the menu says
+    // what the app is waiting for (the database, a sign-in, or a failed
+    // step) until the app itself appears, then hides for good.
+    const bootStatusEl = document.getElementById("bootStatus");
+    let bootSettled = false;
+    function setBootStatus(kind, detail = "") {
+      if (!bootStatusEl) return;
+      if (kind === "done") { bootSettled = true; bootStatusEl.hidden = true; return; }
+      if (kind !== "slow") bootSettled = true;
+      const text = {
+        slow: t("Still loading… The internet connection is slow, or the database is not answering yet."),
+        signedOut: t("You are signed out."),
+        noAccount: t("This Google account is not a member of any madrasah yet."),
+        failed: t("The app could not finish loading: {detail}", { detail }),
+      }[kind] ?? t("Loading your study…");
+      bootStatusEl.hidden = false;
+      document.getElementById("bootStatusText").textContent = text;
+      document.getElementById("bootStatusSignIn").hidden = kind !== "signedOut";
+      document.getElementById("bootStatusReload").hidden = !(kind === "slow" || kind === "failed");
+    }
+    document.getElementById("bootStatusSignIn")?.addEventListener("click", () => document.getElementById("signInBtn")?.click());
+    document.getElementById("bootStatusReload")?.addEventListener("click", () => location.reload());
+    setTimeout(() => { if (!bootSettled) setBootStatus("slow"); }, 12000);
     const navBar = document.getElementById("navBar");
     const navHomeExtra = document.getElementById("navHomeExtra");
     // Full translation, phase 1: the nav's own labels are translated at
@@ -14388,6 +14427,7 @@
         }),
         learnWordDelta: t("If you learn this word: +{words} words (+{percent}%)"),
         learnWordDeltaThisOccurrenceOnly: t("If you learn this word here: +{words} word (+{percent}%) — this occurrence only"),
+        knownThroughSameMeaning: t("Known through {word} (same meaning)"),
       };
     }
 
@@ -14422,6 +14462,41 @@
       }
       if (!lemmaIds.size) return;
       await Promise.all([...lemmaIds].map((lemmaId) => primeLemmaProgress(db, { tenantId, personId, lemmaId })));
+      // Decision 58 (2 Oct 2026, correcting 56): WbW Achieved counts the SAME
+      // word only. "Same root AND same meaning" belongs to BASIC Achieved, so
+      // the group-mates are read at the basic level -- and only once Basic has
+      // a lemma-wide claim at all (it needs Rules the Owner publishes; until
+      // then nothing spreads and nothing extra is read). The groups file is
+      // fetched here, on first use, never at startup.
+      if (!meaningGroupsLive()) return;
+      try { await loadLemmaMeaningGroups(); } catch (error) { console.warn("meaning groups unavailable", error); }
+      const toPrime = new Set();
+      for (const lemmaId of lemmaIds) for (const mate of sameMeaningLemmas(lemmaId)) toPrime.add(mate);
+      await Promise.all([...toPrime].map((lemmaId) => primeLemmaProgress(db, { tenantId, personId, level: MEANING_GROUP_LEVEL, lemmaId })));
+    }
+
+    /** Decision 58 -- the level whose Achieved spreads to same-root, same-meaning words. */
+    const MEANING_GROUP_LEVEL = "basic";
+    function meaningGroupsLive() { return LEMMA_CLAIM_LEVELS.includes(MEANING_GROUP_LEVEL); }
+
+    /**
+     * Decision 56 -- the lemma's own view, upgraded to countsAsKnown when
+     * ANOTHER lemma of its meaning group counts as known. `knownViaGroupLemma`
+     * names that other lemma (absent when the lemma is known itself, or not at
+     * all). countsAsKnown already honours the confirmation rule, so a claim
+     * still awaiting a teacher spreads to nobody. Synchronous: reads only what
+     * primeLemmaProgressForOccurrenceScope() cached. Never written anywhere.
+     */
+    function lemmaViewWithGroup({ tenantId, personId, lemmaId, confirmationRequired }) {
+      const own = lemmaProgressFor({ tenantId, personId, lemmaId, confirmationRequired });
+      if (own.countsAsKnown || !meaningGroupsLive()) return own;
+      // Decision 58: only a BASIC claim on a same-meaning word spreads.
+      for (const mate of sameMeaningLemmas(lemmaId)) {
+        if (lemmaProgressFor({ tenantId, personId, level: MEANING_GROUP_LEVEL, lemmaId: mate, confirmationRequired }).countsAsKnown) {
+          return { ...own, countsAsKnown: true, ...(mate === lemmaId ? {} : { knownViaGroupLemma: mate }) };
+        }
+      }
+      return own;
     }
 
     function effectiveViewsForScope(chapter, occurrenceIds, rawViews, tenantId, personId, confirmationRequired) {
@@ -14434,7 +14509,7 @@
         const word = ayah?.words?.find((w) => w.position === ref.position);
         const lemmaId = word?.morphology?.lemma;
         if (!lemmaId) continue;
-        lemmaViewByOccurrenceId.set(occ, lemmaProgressFor({ tenantId, personId, lemmaId, confirmationRequired }));
+        lemmaViewByOccurrenceId.set(occ, lemmaViewWithGroup({ tenantId, personId, lemmaId, confirmationRequired }));
       }
       return overlayLemmaKnownness(rawViews, lemmaViewByOccurrenceId);
     }
@@ -14535,7 +14610,7 @@
 
       if (!lemmaId) { quranWordCardLemmaContext = { wholeQuranTotal }; if (quranWordCardState.occurrenceId === requestedId) renderPersistentWordCard(); return; }
 
-      let lemmaProgress = null, lemmaAuthority = null;
+      let lemmaProgress = null, lemmaAuthority = null, knownViaGroupLemma = null;
       if (isLemmaProgressPersistenceReady()) {
         try {
           await primeLemmaProgress(db, { tenantId, personId: subjectPersonId, lemmaId });
@@ -14548,6 +14623,14 @@
           // word's own lemma.
           const ayahScope = occurrenceIdsForAyah(currentSurahData, ref.ayah);
           await primeLemmaProgressForOccurrenceScope(currentSurahData, ayahScope, tenantId, subjectPersonId);
+          // Decision 56 -- known only through a same-meaning word: say so.
+          // Display only; this word's own buttons keep showing its own state.
+          if (!lemmaProgress.countsAsKnown) {
+            const grouped = lemmaViewWithGroup({ tenantId, personId: subjectPersonId, lemmaId, confirmationRequired });
+            if (grouped.knownViaGroupLemma && !wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: requestedId, confirmationRequired }).countsAsKnown) {
+              knownViaGroupLemma = grouped.knownViaGroupLemma;
+            }
+          }
         } catch (error) {
           reportWriteFailure(error, { what: "read lemma-wide word progress", lemmaId });
         }
@@ -14596,7 +14679,7 @@
         learnDelta = computed;
       }
       if (requestId !== quranWordCardLemmaRequestId) return;
-      quranWordCardLemmaContext = { wholeQuranTotal, lemmaProgress, lemmaAuthority, learnDelta };
+      quranWordCardLemmaContext = { wholeQuranTotal, lemmaProgress, lemmaAuthority, learnDelta, knownViaGroupLemma };
       if (quranWordCardState.open && quranWordCardState.occurrenceId === requestedId) renderPersistentWordCard();
     }
 
@@ -16243,7 +16326,7 @@
         const occView = wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId, confirmationRequired });
         const lemmaId = w.morphology?.lemma;
         const lemmaView = lemmaId && isLemmaProgressPersistenceReady()
-          ? lemmaProgressFor({ tenantId, personId: subjectPersonId, lemmaId, confirmationRequired })
+          ? lemmaViewWithGroup({ tenantId, personId: subjectPersonId, lemmaId, confirmationRequired })
           : null;
         const known = lemmaView ? effectiveOccurrenceState(occView, lemmaView).countsAsKnown : !!occView.countsAsKnown;
         return { position: w.position, arabic: w.arabic, occurrenceId, known };
@@ -20611,6 +20694,7 @@
         signInBtn.style.display = "inline-block";
         signOutBtn.style.display = "none";
         appEl.style.display = "none";
+        setBootStatus("signedOut");
         return;
       }
       whoEl.textContent = t("Signed in as {email}", { email: user.email });
@@ -20655,6 +20739,7 @@
         const context = pickContext(membershipRoles, defaultTenantId);
         if (!context) {
           whoEl.innerHTML += noAccountMessageHtml();
+          setBootStatus("noAccount");
           return;
         }
         activeTenantId = context.tenantId;
@@ -20684,6 +20769,7 @@
         renderNav(membershipRoles.find((m) => m.tenantId === activeTenantId)?.roles ?? [], getActiveContext()?.viewAsRole ?? null);
 
         appEl.style.display = "flex"; // flex, not block: #app is the shell column (stage + dock) since shell round 7
+        setBootStatus("done");
         // loadContextData() itself sets `myMemberships` from this same
         // promise, part-way through, as soon as it resolves -- several
         // functions it calls (canAdminCatalogueClientSide() among them)
@@ -20703,6 +20789,10 @@
         lastSessionReady = true;
       } catch (err) {
         whoEl.textContent += ` — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`;
+        // I15: the failure used to be written only inside the Home menu,
+        // where a blank page gave no hint of it. Say it on the page too --
+        // unless the app is already on screen (a late step failing).
+        if (appEl.style.display === "none") setBootStatus("failed", `${err.stepName ?? "unknown step"} — ${err.code ?? ""} ${err.message}`.trim());
         console.error(err);
         window.__bmCoverDone?.(true);
       }
