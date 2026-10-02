@@ -36,6 +36,20 @@ export const REASON_LEMMA_LEVELS_DECISION_INCOMPLETE = "y";
 export function lemmaLevelsUnavailableReason() { return null; }
 `;
 
+// UPDATED IN PLACE 2 Oct 2026 (Owner: "Basic and Depth rules are live"): the
+// shipped readiness file now says ready, so the gate-off case can no longer
+// use it as shipped. It routes this CLOSED copy through the same ctx.route()
+// seam, so "closed means exactly v09.42" stays tested for any future time the
+// gate is shut.
+const CLOSED_GATE = `
+export const LEMMA_LEVELS_READINESS_AUTHORITIES = Object.freeze(["master-architect"]);
+export const LEMMA_LEVELS_PERSISTENCE_DECLARATION = Object.freeze({ ready: false, decision: null, gate: "E1", note: "test seam: closed" });
+export function isLemmaLevelsPersistenceReady() { return false; }
+export const REASON_LEMMA_LEVELS_NOT_DEPLOYED = "lemma-levels-rules-not-deployed";
+export const REASON_LEMMA_LEVELS_DECISION_INCOMPLETE = "lemma-levels-readiness-decision-incomplete";
+export function lemmaLevelsUnavailableReason() { return REASON_LEMMA_LEVELS_NOT_DEPLOYED; }
+`;
+
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
 
 async function patchModule(ctx, glob, from, to) {
@@ -52,7 +66,7 @@ async function patchModule(ctx, glob, from, to) {
 
 async function newCtx(lang, width, height, { open = true } = {}) {
   const ctx = await newContext(browser, { appLang: lang, viewport: { width, height } });
-  if (open) await ctx.route("**/js/study-lemma-levels-readiness.js", (r) => r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: OPEN_GATE }));
+  await ctx.route("**/js/study-lemma-levels-readiness.js", (r) => r.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: open ? OPEN_GATE : CLOSED_GATE }));
   if (MUTATE === "basicroot") await patchModule(ctx, "**/js/quran-lemma-levels.js", 'return lemma ? (groupOf(lemma) || lemma) : null;', "return root || null;");
   if (MUTATE === "depthgroup") await patchModule(ctx, "**/js/quran-lemma-levels.js", "return root || null;\n}", "return lemma ? (groupOf(lemma) || lemma) : null;\n}");
   if (MUTATE === "wbwgroup") await patchModule(ctx, "**/js/quran-lemma-levels.js", 'if (level === "wbw") return lemma || null;', 'if (level === "wbw") return lemma ? (groupOf(lemma) || lemma) : null;');

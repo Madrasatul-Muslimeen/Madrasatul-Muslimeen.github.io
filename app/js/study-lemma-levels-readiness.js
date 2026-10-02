@@ -32,15 +32,23 @@
 /** Who may declare deployment readiness. Closed: a module cannot authorise itself. */
 export const LEMMA_LEVELS_READINESS_AUTHORITIES = Object.freeze(["master-architect"]);
 
-/** THE DECLARATION. The single place the answer lives. NOT READY: the Owner has not yet published the Rules. */
+/** THE DECLARATION. The single place the answer lives. READY since 2 Oct 2026:
+    the Owner published docs/governance/2026-10-02-lemma-levels-DEPLOYMENT-candidate.rules
+    and confirmed it in their own words ("Basic and Depth rules are live");
+    firestore.rules was synced to it in the same change. Until then this read
+    `ready: false, decision: null`. */
 export const LEMMA_LEVELS_PERSISTENCE_DECLARATION = Object.freeze({
-  ready: false,
-  decision: null,
+  ready: true,
+  decision: Object.freeze({
+    by: "master-architect",
+    on: "2026-10-02",
+    reference: "docs/reports/2026-10-02-lemma-levels-enabled.md",
+  }),
   gate: "E1",
   note:
     "Basic / Depth lemma-wide claims and per-level totals (decision 58, issue #490) " +
-    "are built but switched off until the Owner publishes " +
-    "docs/governance/2026-10-02-lemma-levels-DEPLOYMENT-candidate.rules.",
+    "are switched on: the Owner published " +
+    "docs/governance/2026-10-02-lemma-levels-DEPLOYMENT-candidate.rules on 2 Oct 2026.",
 });
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
