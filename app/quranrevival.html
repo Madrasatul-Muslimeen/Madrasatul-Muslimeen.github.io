@@ -17740,6 +17740,24 @@
       };
     }
 
+    /** The owner, 2 Oct 2026: "Bookmark must open to the exact screen ...
+        where it was bookmarked." A bookmark with no `view` (made before
+        issue #468) or a Note-view one, on a unit the Note view cannot show
+        the text of -- a Page, Juz, Hizb, Ruku' or a surah longer than one
+        Mushaf page (noteScopeShowAyatText()'s own rule) -- used to land on
+        the "read it on the Read screen" stand-in, one tap short of the text.
+        That text lives in the Read view, so the bookmark opens there.
+        Called after the bookmark's surah has been loaded, so the surah test
+        reads the right surah. */
+    function bookmarkNeedsReadView(settings, position) {
+      if (settings?.view && settings.view !== "note") return false;
+      let unitType = settings?.unitType;
+      try { unitType = parseUnitKey(position).unitType || unitType; } catch { /* keep settings' own */ }
+      if (unitType === "ayah" || unitType === "range") return false;
+      if (unitType === "surah") return new Set((currentSurahData?.ayahs ?? []).map((a) => a.page)).size > 1;
+      return !!unitType;
+    }
+
     /** The other half of captureQuranBookmarkSettings() -- restores every field it captured, then lands on the bookmarked āyah's own Note screen (item 6: "open the same place where the bookmark was created from"). Silently tolerant of a settings object from before this round (null, or missing fields) -- every field is optional and simply left alone. */
     async function applyQuranBookmarkSettings(settings, position) {
       if (settings) {
@@ -17775,8 +17793,9 @@
         renderWheel();
       }
       // Issue #468 -- a bookmark opens in the view it was made in. No `view`
-      // (an older bookmark) keeps the Note view, exactly as before.
-      if (position && settings?.view === "read") openReadingScreen();
+      // (an older bookmark) keeps the Note view, exactly as before -- unless
+      // the Note view could not show the bookmarked text at all.
+      if (position && (settings?.view === "read" || bookmarkNeedsReadView(settings, position))) openReadingScreen();
       else if (position && (settings?.view === "study" || settings?.view === "landing")) { closeAllPanels(); setStageView("wheel"); renderWheel(); }
       else if (position) await openNoteView(position);
     }
