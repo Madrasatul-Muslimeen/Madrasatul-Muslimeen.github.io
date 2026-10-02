@@ -5284,6 +5284,9 @@
                means "the reading choices" (checks count it, and Mushaf greys
                every one of them), and this is not a way of drawing the text. -->
           <div class="unit-prompt-ticks">
+            <label id="fatihaCountControl"><input type="checkbox" id="fatihaCountToggle" checked /> Al-Fātiḥah: Bismillah unnumbered (ٱلْحَمْدُ is āyah 1)</label>
+          </div>
+          <div class="unit-prompt-ticks">
             <label id="endOfUnitPromptControl"><input type="checkbox" id="endOfUnitPromptToggle" checked /> End-of-unit prompt</label>
           </div>
           <div class="row" id="wbwLangControl" style="display:none;">
@@ -5737,8 +5740,10 @@
       getColourWordParts, setColourWordParts,
       getMushafTajweedFontOn, setMushafTajweedFontOn,
       getEndOfUnitPromptOn, setEndOfUnitPromptOn,
+      getFatihaBismillahUnnumbered, setFatihaBismillahUnnumbered,
       mountCardLookControl,
     } from "./js/prefs.js";
+    import { fatihaCountApplies, displayAyahLabel, displayAyahRef, displayWordRef, internalForDisplayedAyah, displayAyahCount, displayForInternalAyah, expandAyahsForDisplay, badgeNumber } from "./js/fatiha-count.js";
     import { wireWheelResize } from "./js/wheel-resize.js";
     import { renderTextSizeButtonHtml } from "./js/text-size.js";
     import { renderAsmaWheelTextRowsHtml, onAsmaWheelTextScaleChange, getAsmaWheelLabelScale } from "./js/asma-wheel-text.js";
@@ -5955,6 +5960,7 @@
     const derivativesToggle = document.getElementById("derivativesToggle");
     const derivativesControl = document.getElementById("derivativesControl");
     const sidewaysToggle = document.getElementById("sidewaysToggle");
+    const fatihaCountToggle = document.getElementById("fatihaCountToggle"); // issue #482
     const endOfUnitPromptToggle = document.getElementById("endOfUnitPromptToggle"); // issue #348, Owner decision 19
     const wbwShowControl = document.getElementById("wbwShowControl");
     const unitNumControl = document.getElementById("unitNumControl");
@@ -7212,7 +7218,7 @@
       if (currentUnitType === "page") {
         return { unitType: "page", unitKey: buildUnitKey.page(PAGE_EDITION, ayah.page), chunkKey: "subject_quran", label: t("Page {page}", { page: num(ayah.page) }) };
       }
-      return { unitType: "ayah", unitKey: buildUnitKey.ayah(currentSurahNum, currentAyahNum), chunkKey: surahChunkKey, label: t("Surah {surah}, Ayah {ayah}", { surah: num(currentSurahNum), ayah: num(currentAyahNum) }) };
+      return { unitType: "ayah", unitKey: buildUnitKey.ayah(currentSurahNum, currentAyahNum), chunkKey: surahChunkKey, label: t("Surah {surah}, Ayah {ayah}", { surah: num(currentSurahNum), ayah: ayahLabelFor(currentSurahNum, currentAyahNum) }) };
     }
 
     function renderUnitLabel() {
@@ -7313,7 +7319,7 @@
         const from = Math.min(rangeFrom, rangeTo), to = Math.max(rangeFrom, rangeTo);
         return t("Ayahs {from}–{to}", { from: num(from), to: num(to) });
       }
-      if (info.unitType === "ayah") return t("Ayah {n}", { n: num(currentAyahNum) });
+      if (info.unitType === "ayah") return t("Ayah {n}", { n: ayahLabelFor(currentSurahNum, currentAyahNum) });
       const n = currentUnitNumber();
       if (info.unitType === "ruku") return t("Ruku' {n}", { n: num(n) });
       if (info.unitType === "juz") return t("Juz {n}", { n: num(n) });
@@ -7743,9 +7749,24 @@
         showJumpMessage(t("There is no Surah {surah}. Surah numbers run 1–114.", { surah: num(parsed.surah) }));
         return;
       }
-      const lastAyah = surahMeta.ayahCount;
-      const from = parsed.from;
-      const to = parsed.to;
+      // Issue #482 -- a TYPED reference is in the reader's own count ("1:1" is
+      // ٱلْحَمْدُ when the Al-Fātiḥah setting is on); it is translated to the
+      // stored (internal) number here. ?goto= links are built from stored
+      // references and are never translated.
+      let lastAyah = surahMeta.ayahCount;
+      let from = parsed.from;
+      let to = parsed.to;
+      if (fatihaCountApplies(parsed.surah, fatihaOn())) {
+        lastAyah = displayAyahCount(parsed.surah, lastAyah);
+        const f = internalForDisplayedAyah(parsed.surah, from, true);
+        const e = to === null ? null : internalForDisplayedAyah(parsed.surah, to, true);
+        if (!f || (to !== null && !e)) {
+          showJumpMessage(t("Surah {surah} has {count} ayahs.", { surah: num(parsed.surah), count: num(lastAyah) }));
+          return;
+        }
+        from = f.ayah;
+        to = e ? e.ayah : null;
+      }
       if (from < 1 || from > lastAyah || (to !== null && (to < 1 || to > lastAyah))) {
         showJumpMessage(t("Surah {surah} has {count} ayahs.", { surah: num(parsed.surah), count: num(lastAyah) }));
         return;
@@ -8002,6 +8023,40 @@
       }
     }
 
+    // Issue #482 -- Al-Fātiḥah's display count. VALUES stay internal; only the
+    // labels change ("Bismillah", 1..5, "6–7"). Everything below that prints a
+    // number for a reader goes through these four helpers.
+    function fatihaOn() { return getFatihaBismillahUnnumbered(); }
+    function ayahLabelFor(surah, ayah) {
+      if (!fatihaCountApplies(surah, fatihaOn())) return num(ayah);
+      const d = displayForInternalAyah(surah, ayah, true);
+      if (d.kind === "bismillah") return t("Bismillah");
+      if (d.kind === "span") return `${num(d.from)}–${num(d.to)}`;
+      return num(d.number);
+    }
+    function ayahRefFor(surah, ayah) {
+      if (!fatihaCountApplies(surah, fatihaOn())) return `${surah}:${ayah}`;
+      const d = displayForInternalAyah(surah, ayah, true);
+      return d.kind === "bismillah" ? t("Bismillah") : `${surah}:${d.kind === "span" ? "6–7" : d.number}`;
+    }
+    function wordRefFor(surah, ayah, position) {
+      return displayWordRef(surah, ayah, position, fatihaOn(), t("Bismillah"));
+    }
+    function fillAyahSelect() {
+      if (!currentSurahData) return;
+      ayahSelect.innerHTML = Array.from({ length: currentSurahData.ayahCount }, (_, i) => i + 1)
+        .map((n) => `<option value="${n}">${ayahLabelFor(currentSurahNum, n)}</option>`)
+        .join("");
+    }
+    /** A stored ayah as the reader's own count draws it: one entry, or two for
+        Al-Fātiḥah's internal 1:7 (see fatiha-count.js). */
+    function displayParts(ayah) {
+      return expandAyahsForDisplay(currentSurahNum, [ayah], fatihaOn());
+    }
+    function layoutAParts(ayah, panels, opts) {
+      return displayParts(ayah).map((a) => renderLayoutA(a, panels, opts)).join("");
+    }
+
     async function loadSurah() {
       quranWordCardRequest++;
       quranWordCardState = closeWordCard(quranWordCardState);
@@ -8011,9 +8066,7 @@
       // Owner ask (10 Aug 2026): Prev/Next alone made jumping to, say, ayah
       // 200 of a 286-ayah surah impractical -- a direct Ayah picker next to
       // Surah, same shape as the range unit's own From/To ayah selects.
-      ayahSelect.innerHTML = Array.from({ length: currentSurahData.ayahCount }, (_, i) => i + 1)
-        .map((n) => `<option value="${n}">${num(n)}</option>`)
-        .join("");
+      fillAyahSelect();
       // Owner round-2 ask: "Arabic should be playing first." Reset ONLY on
       // an actual surah change -- ayah navigation and tajweed/language
       // toggles still leave the reciter choice alone (that's the Phase 4
@@ -10800,11 +10853,16 @@
       let done = 0, started = 0, total = 0;
       for (const { surah, from, to } of coverage) {
         for (let ayah = from; ayah <= to; ayah++) {
+          // Issue #482 -- Al-Fātiḥah's display count: internal 1:1 (the
+          // Bismillah) is not counted; internal 1:7 is two displayed āyāt
+          // sharing one record, so it counts twice. The total stays 7.
+          let weight = 1;
+          if (fatihaCountApplies(surah, fatihaOn())) { if (ayah === 1) continue; if (ayah === 7) weight = 2; }
           const st = effectiveAyahStatus(surah, ayah, trackableId);
           if (st === "not_applicable") continue;
-          total += 1;
-          if (st === "achieved" || st === "mastered") done += 1;
-          else if (st === "learning" || st === "practising") started += 1;
+          total += weight;
+          if (st === "achieved" || st === "mastered") done += weight;
+          else if (st === "learning" || st === "practising") started += weight;
         }
       }
       return { done, started, total };
@@ -10998,7 +11056,7 @@
       });
       const ayat = surahData.ayahs.map((a) => ({
         key: a.ayah, a: idx.gi(sn, a.ayah), b: idx.gi(sn, a.ayah),
-        label: t("Ayah {ayah}", { ayah: num(a.ayah) }),
+        label: t("Ayah {ayah}", { ayah: ayahLabelFor(sn, a.ayah) }),
         coverage: [{ surah: sn, from: a.ayah, to: a.ayah }],
         statusId: effectiveAyahStatus(sn, a.ayah, trackable.id),
         open: () => goToAyahFromExplore(sn, a.ayah),
@@ -11336,7 +11394,7 @@
       if (surahData.ayahCount <= SURAH_WHEEL_THRESHOLD) {
         const items = surahData.ayahs.map((a) => {
           const statusId = effectiveAyahStatus(exploreSurahNum, a.ayah, trackable.id);
-          const label = t("Ayah {ayah}", { ayah: num(a.ayah) });
+          const label = t("Ayah {ayah}", { ayah: ayahLabelFor(exploreSurahNum, a.ayah) });
           return { key: a.ayah, number: a.ayah, statusId, label, title: segTitle(label, statusId, labelsById) };
         });
         const jumpToStudy = (key) => goToAyahFromExplore(exploreSurahNum, Number(key));
@@ -11386,7 +11444,7 @@
       const entries = exploreChunksBySurah.get(exploreSurahNum)?.entries ?? {};
       const items = ayahsInRuku.map((a) => {
         const statusId = effectiveAyahStatus(exploreSurahNum, a.ayah, trackable.id);
-        return { key: a.ayah, number: a.ayah, statusId, label: t("Ayah {ayah}", { ayah: num(a.ayah) }) };
+        return { key: a.ayah, number: a.ayah, statusId, label: t("Ayah {ayah}", { ayah: ayahLabelFor(exploreSurahNum, a.ayah) }) };
       });
       const exploreSurah = surahIndex.find((s) => s.surahNumber === exploreSurahNum);
       const currentSurahName = exploreSurah ? surahName(exploreSurah.surahNumber, exploreSurah.nameEnglish) : t("Surah {surah}", { surah: num(exploreSurahNum) });
@@ -13507,7 +13565,7 @@
         refLabel = `${num(surahNum)}:${num(from)}–${num(to)}`;
       } else {
         ayahNum = Number(parts[1]);
-        refLabel = `${num(surahNum)}:${num(ayahNum)}`;
+        refLabel = `${num(surahNum)}:${ayahLabelFor(surahNum, ayahNum)}`;
       }
       const surahData = qcrSurahDataByNum.get(surahNum);
       const ayah = surahData?.ayahs?.find((a) => a.ayah === ayahNum);
@@ -14845,7 +14903,7 @@
       mount.hidden = false;
       const content = mount.querySelector("[data-word-card-content]") ?? mount;
       if (quranWordCardState.level === "depth") ensureLemmaDictionary();
-      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, ...wordCardDictionaryContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: getColourWordParts() }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, ...wordCardDictionaryContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: getColourWordParts(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
       if (focusSelector) (mount.querySelector(focusSelector)?.disabled ? mount.querySelector("[data-word-card-close]") : mount.querySelector(focusSelector))?.focus({ preventScroll: true });
     }
 
@@ -15411,6 +15469,7 @@
               // Issue #332 Part B -- one shared preference; any one page's own
               // toggle moves it for every page, remembered for next time.
               tajweedOn: getMushafTajweedFontOn(),
+              fatihaCount: fatihaOn(),
               onToggleTajweed: async (nextOn) => {
                 // Architect review, 27 Sep 2026: the re-render rebuilt every
                 // page and left the reader on the unit's FIRST page -- toggled
@@ -15515,7 +15574,7 @@
             hasNote: ayahHasNote(ayahNotesDoc, unitKey), isBookmarked,
             showTextTools: true,
             isWbwOn: wbwShowToggle.checked, isRootsOn: rootsToggle.checked, isDerivativesOn: derivativesToggle.checked,
-          })}</div><div class="ayah-flow-body" data-ayah-collapsible-for="${unitKey}">${bismillahHtmlFor(currentSurahNum, ayah.ayah)}${renderLayoutA(ayah, panels, {
+          })}</div><div class="ayah-flow-body" data-ayah-collapsible-for="${unitKey}">${bismillahHtmlFor(currentSurahNum, ayah.ayah)}${layoutAParts(ayah, panels, {
             tajweedOn: tajweedToggle.checked,
             langs: translationLangs(),
             wbwLangs: wbwLangs(),
@@ -15947,9 +16006,11 @@
     // one place in the file that skipped it, which is why the reference
     // read "Quran 1:1 — Surah " with nothing after it: an English-mode
     // surahName() with no englishName argument returns "".
-    function ayahRefLabel(surahNum, ayahNum) {
+    function ayahRefLabel(surahNum, ayahNum, { internal = false } = {}) {
       const meta = surahIndex.find((s) => s.surahNumber === surahNum);
-      return t("Quran {surah}:{ayah} — Surah {name}", { surah: num(surahNum), ayah: num(ayahNum), name: surahName(surahNum, meta?.nameEnglish) });
+      // Issue #482 -- the label is what a reader SEES, so it follows their count
+      // (1:7 reads "1:6–7"); `internal` is for a caller that parses it back.
+      return t("Quran {surah}:{ayah} — Surah {name}", { surah: num(surahNum), ayah: internal ? num(ayahNum) : ayahLabelFor(surahNum, ayahNum), name: surahName(surahNum, meta?.nameEnglish) });
     }
 
     /** Both docs are one small document each -- loaded once per acting person, not per ayah. Re-renders the reading screen when the fetch lands so quick-menu badges/checkboxes pick up real hasNote/isBookmarked state instead of staying at their empty defaults. */
@@ -16504,8 +16565,11 @@
         for (let ayah = from; ayah <= to; ayah++) {
           const statusId = effectiveStatus({ own: ownStatus(surah, ayah), spans, surah, ayah, trackable });
           if (statusId === "not_applicable") continue;
-          countedTotal += 1;
-          if (statusId === "achieved" || statusId === "mastered") achievedOrMastered += 1;
+          // Issue #482 -- same display weighting as exploreUnitCounts().
+          let weight = 1;
+          if (fatihaCountApplies(surah, fatihaOn())) { if (ayah === 1) continue; if (ayah === 7) weight = 2; }
+          countedTotal += weight;
+          if (statusId === "achieved" || statusId === "mastered") achievedOrMastered += weight;
         }
       }
       return t("Āyāt Achieved or Mastered: {n} of {total}", { n: num(achievedOrMastered), total: num(countedTotal) });
@@ -16570,7 +16634,7 @@
         for (const { surah, from, to } of wholeCoverage) {
           for (let ayah = from; ayah <= to; ayah += 1) {
             const coverage = [{ surah, from: ayah, to: ayah }];
-            items.push({ label: num(ayah), color: colorFor(coverage, buildUnitKey.ayah(surah, ayah)), unitKey: buildUnitKey.ayah(surah, ayah), jump: `${surah}:${ayah}` });
+            items.push({ label: ayahLabelFor(surah, ayah), color: colorFor(coverage, buildUnitKey.ayah(surah, ayah)), unitKey: buildUnitKey.ayah(surah, ayah), jump: `${surah}:${ayah}` });
           }
         }
         return { title: t("Ayahs"), items };
@@ -16893,7 +16957,7 @@
         onNote: (unitKey) => openNoteView(unitKey),
         onAsma: (unitKey) => {
           const { surah: s, ayah: a } = parseAyahUnitKey(unitKey);
-          openAsmaXAttachPopover({ prefillRef: ayahRefLabel(s, a) });
+          openAsmaXAttachPopover({ prefillRef: ayahRefLabel(s, a, { internal: true }) });
         },
         onQcr: (unitKey) => {
           // Navigate into the existing Note view's own QCR 🗂 drawer rather
@@ -18374,7 +18438,7 @@
       let derivativesHtml = "";
       const ayahDisplayMode = getAyahDisplayMode();
       if (showAyatText) {
-        const inScope = currentSurahData.ayahs.filter((a) => a.ayah >= info.fromAyah && a.ayah <= info.toAyah);
+        const inScope = expandAyahsForDisplay(currentSurahNum, currentSurahData.ayahs.filter((a) => a.ayah >= info.fromAyah && a.ayah <= info.toAyah), fatihaOn());
         textBlocks = {
           arabicText: inScope.map((a) => a.uthmaniText).join("  "),
           englishText: inScope.map((a) => a.translations?.en).filter(Boolean).join(" "),
@@ -18425,13 +18489,14 @@
           // badge is a real <button> here too, the same
           // data-ayah-num-badge="surah:ayah" shape ayah-renderer.js's own
           // renderArabicPanel() now stamps for the Read screen.
-          const numBadge = `<button type="button" class="ayah-num-badge" data-ayah-num-badge="${currentSurahNum}:${a.ayah}" aria-label="${escapeHtml(t("This āyah"))}">${digitsForLang(a.ayah, "ar")}</button>`;
-          return `<div class="ayah-num-row">${numBadge}</div><div class="note-arabic" dir="rtl" lang="ar">${body}</div>`;
+          const shownNum = badgeNumber(a);
+          const numBadge = shownNum == null ? "" : `<button type="button" class="ayah-num-badge" data-ayah-num-badge="${currentSurahNum}:${a.ayah}" aria-label="${escapeHtml(t("This āyah"))}">${digitsForLang(shownNum, "ar")}</button>`;
+          return `${numBadge ? `<div class="ayah-num-row">${numBadge}</div>` : ""}<div class="note-arabic" dir="rtl" lang="ar">${body}</div>`;
         };
         const translationLineHtml = (ayahNum, text, lang) => {
           if (!text) return "";
           const cls = lang === "bn" ? "note-bangla" : "note-english";
-          return `<div class="ayah-num-row"><span class="ayah-num-badge">${digitsForLang(ayahNum, lang)}</span></div><div class="${cls}"${lang === "bn" ? ' lang="bn"' : ""}>${escapeHtml(text)}</div>`;
+          return `${ayahNum == null ? "" : `<div class="ayah-num-row"><span class="ayah-num-badge">${digitsForLang(ayahNum, lang)}</span></div>`}<div class="${cls}"${lang === "bn" ? ' lang="bn"' : ""}>${escapeHtml(text)}</div>`;
         };
         // Fix round -- "an option to choose one from both, in both READ and
         // NOTE view": BY LANGUAGE keeps the three separate collapsible
@@ -18441,11 +18506,11 @@
         // Bangla together and repeats that, ayah after ayah, matching what
         // the Read screen's own flow view has always done.
         if (ayahDisplayMode === "byAyah") {
-          ayahByAyahHtml = inScope.map((a) => `<div class="note-ayah-block">${arabicOneAyahHtml(a)}${translationLineHtml(a.ayah, a.translations?.en, "en")}${translationLineHtml(a.ayah, a.translations?.bn, "bn")}</div>`).join("");
+          ayahByAyahHtml = inScope.map((a) => `<div class="note-ayah-block">${arabicOneAyahHtml(a)}${translationLineHtml(badgeNumber(a), a.translations?.en, "en")}${translationLineHtml(badgeNumber(a), a.translations?.bn, "bn")}</div>`).join("");
         } else {
           arabicHtml = inScope.map(arabicOneAyahHtml).join("");
-          englishHtml = inScope.map((a) => translationLineHtml(a.ayah, a.translations?.en, "en")).join("");
-          banglaHtml = inScope.map((a) => translationLineHtml(a.ayah, a.translations?.bn, "bn")).join("");
+          englishHtml = inScope.map((a) => translationLineHtml(badgeNumber(a), a.translations?.en, "en")).join("");
+          banglaHtml = inScope.map((a) => translationLineHtml(badgeNumber(a), a.translations?.bn, "bn")).join("");
         }
         bismillahHtml = bismillahHtmlFor(currentSurahNum, info.fromAyah);
 
@@ -18455,7 +18520,7 @@
         // only decides HOW MUCH to draw, never whether the choice is on.
         const perAyahPanels = (panelFn) => inScope
           .map((a) => (inScope.length > 1
-            ? `<div class="ayah-num-row"><span class="ayah-num-badge">${num(a.ayah)}</span></div>${panelFn(a)}`
+            ? (badgeNumber(a) == null ? panelFn(a) : `<div class="ayah-num-row"><span class="ayah-num-badge">${num(badgeNumber(a))}</span></div>${panelFn(a)}`)
             : panelFn(a)))
           .join("");
         // v08.20 -- the Note view's own Word by Word is interactive now, the
@@ -18814,7 +18879,7 @@
         const ayahNum = Number(parts[1]);
         const meta = surahIndex.find((s) => s.surahNumber === surahNum);
         sName = meta ? surahName(surahNum, meta.nameEnglish) : "";
-        refLabel = `${num(surahNum)}:${num(ayahNum)}`;
+        refLabel = `${num(surahNum)}:${ayahLabelFor(surahNum, ayahNum)}`;
         const ayah = currentSurahData?.ayahs?.find((a) => a.ayah === ayahNum);
         const full = ayah?.translations?.en ?? "";
         snippet = full.length > 90 ? `${full.slice(0, 90).trim()}…` : full;
@@ -19667,11 +19732,11 @@
       } else {
         const ayah = currentSurahData.ayahs.find((a) => a.ayah === currentAyahNum);
         if (!ayah) return;
-        ayahPosition.textContent = t("Surah {surah} — Ayah {ayah} of {total}", { surah: num(currentSurahNum), ayah: num(currentAyahNum), total: num(currentSurahData.ayahCount) });
+        ayahPosition.textContent = t("Surah {surah} — Ayah {ayah} of {total}", { surah: num(currentSurahNum), ayah: ayahLabelFor(currentSurahNum, currentAyahNum), total: num(displayAyahCount(currentSurahNum, currentSurahData.ayahCount)) });
         ayahSelect.value = String(currentAyahNum);
         prevAyahBtn.disabled = currentAyahNum <= 1;
         nextAyahBtn.disabled = currentAyahNum >= currentSurahData.ayahCount;
-        ayahPanels.innerHTML = bismillahHtmlFor(currentSurahNum, currentAyahNum) + renderLayoutA(ayah, panels, {
+        ayahPanels.innerHTML = bismillahHtmlFor(currentSurahNum, currentAyahNum) + layoutAParts(ayah, panels, {
           tajweedOn: tajweedToggle.checked,
           langs: translationLangs(),
           wbwLangs: wbwLangs(),
@@ -20299,6 +20364,18 @@
       setSidewaysReading(sidewaysToggle.checked);
       applySidewaysReading();
       renderStudyScreen();
+    });
+    fatihaCountToggle.checked = getFatihaBismillahUnnumbered();
+    fatihaCountToggle.addEventListener("change", () => {
+      // A LIVE re-render, not a reload: the picker's labels, the Read/Note/
+      // Mushaf views and the position line are all rebuilt from the stored
+      // (unchanged) keys.
+      setFatihaBismillahUnnumbered(fatihaCountToggle.checked);
+      const keep = currentAyahNum;
+      fillAyahSelect();
+      ayahSelect.value = String(keep);
+      renderStudyScreen();
+      renderWheel();
     });
     endOfUnitPromptToggle.checked = getEndOfUnitPromptOn();
     endOfUnitPromptToggle.addEventListener("change", () => {

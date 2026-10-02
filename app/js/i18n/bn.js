@@ -3076,6 +3076,8 @@ export const BN = {
   "End of {unit}. How did it go?": "{unit} শেষ। কেমন হলো?", // ?
   "Saved": "সংরক্ষিত হয়েছে", // ?
   "End-of-unit prompt": "ইউনিট-শেষের প্রম্পট", // ?
+  "Al-Fātiḥah: Bismillah unnumbered (ٱلْحَمْدُ is āyah 1)": "আল-ফাতিহা: বিসমিল্লাহ নম্বরবিহীন (ٱلْحَمْدُ হলো আয়াত ১)",
+  "Bismillah": "বিসমিল্লাহ",
   "Approach: {name}": "পদ্ধতি: {name}", // ?
   "Surah {n}": "সূরা {n}",
 
