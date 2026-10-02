@@ -1539,6 +1539,16 @@
      only unlocks it (max-width:100% is the safety net against a stored
      size wider than a since-narrowed screen). */
   .wheel-resize-wrap { position: relative; }
+  /* Owner, 2 Oct 2026 (a PC photo, the window maximised and the wheel dragged
+     large: the Read · Choose a Unit · Know Your Status bar over 20-22): "In
+     pc, the numbers gets cut. Fix it." The slice numbers overhang the wheel by
+     ~3.2% of ITS width, so a fixed gap that clears a 360px wheel fails a 760px
+     one (measured -7.5px). A percentage padding resolves against the resize
+     wrap, which is exactly the wheel's width, so the gap below the lowest
+     number stays ~14px at any size. Phones keep their own rule (<=720px). */
+  @media (min-width: 721px) {
+    #wheelSection #wheelContainer { padding-bottom: max(0px, calc(3.2% - 2px)); }
+  }
   .wheel-resize-wrap.wheel-resized { max-width: 100% !important; margin: 0 auto !important; }
   /* The wheel's own container div, not only the SVG inside it, needs the
      override -- an ordinary (non-replaced) div's own explicit width always
