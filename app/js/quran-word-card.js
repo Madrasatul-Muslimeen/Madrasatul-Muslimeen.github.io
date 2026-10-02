@@ -146,8 +146,8 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   // already gated and switched on since v08.53), and the lemma-level "mark
   // known everywhere" action (gated separately -- see
   // study-lemma-progress-readiness.js).
-  wholeQuranKnown: "Known {known} of {total} words",
-  wholeQuranPercent: "{percent}% of the Qur'an",
+  wholeQuranKnown: "You know {known} of {total} words of the Qur'an",
+  wholeQuranPercent: "You know {percent}% of the words of the Qur'an",
   learnWordDelta: "If you learn this word: +{words} words (+{percent}%)",
   // "This occurrence only" -- shown while the lemma feature's own gate is
   // closed, or while this word's lemma-wide state cannot be read: the card
@@ -264,13 +264,18 @@ function wholeQuranKnownLines(wholeQuranTotal, text, formatNumber) {
   // formatNumber) -- i18n's num() is shared with years and references,
   // which must never gain a separator.
   const grouped = (n) => Number(n ?? 0).toLocaleString("en-US");
-  const known = String(text.wholeQuranKnown)
-    .replace("{known}", formatNumber(grouped(wholeQuranTotal.known)))
-    .replace("{total}", formatNumber(grouped(wholeQuranTotal.total)));
+  // Owner, 2 Oct 2026: "Make these eye-catching, bold ... 'You know ... of
+  // .... words of the Quran'". The numbers are wrapped AFTER escaping the
+  // sentence, so a translation can place them anywhere in its own order.
+  const big = (v) => `<strong class="word-progress-whole-quran-num">${escapeHtml(v)}</strong>`;
+  const known = escapeHtml(String(text.wholeQuranKnown))
+    .replace("{known}", big(formatNumber(grouped(wholeQuranTotal.known))))
+    .replace("{total}", big(formatNumber(grouped(wholeQuranTotal.total))));
   const percent = percentRounded(wholeQuranTotal.known, wholeQuranTotal.total);
-  const percentLine = String(text.wholeQuranPercent).replace("{percent}", formatNumber(percent));
-  return `<p class="word-progress-whole-quran">${escapeHtml(known)}</p>` +
-    `<p class="word-progress-whole-quran-percent">${escapeHtml(percentLine)}</p>`;
+  const percentLine = escapeHtml(String(text.wholeQuranPercent)).replace("{percent}", big(formatNumber(percent)));
+  return `<div class="word-progress-whole-quran-box">` +
+    `<p class="word-progress-whole-quran">${known}</p>` +
+    `<p class="word-progress-whole-quran-percent">${percentLine}</p></div>`;
 }
 
 /**

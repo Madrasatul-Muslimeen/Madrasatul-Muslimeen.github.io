@@ -169,6 +169,15 @@ function readLemmaCard(page) {
       // Issue #322 -- the second row is gone; this is now an ABSENCE check.
       secondRowPresent: !!b.querySelector("[data-lemma-progress], [data-lemma-progress-state]"),
       coverage: b.querySelector(".word-progress-coverage")?.textContent?.trim() ?? null,
+      // Owner, 2 Oct 2026: the total is "eye-catching, bold" -- read off the
+      // RENDERED style, never the class name.
+      wholeQuranStyle: (() => {
+        const box = b.querySelector(".word-progress-whole-quran-box");
+        const nums = box ? [...box.querySelectorAll(".word-progress-whole-quran-num")] : [];
+        if (!box || !nums.length) return null;
+        const p = getComputedStyle(box.querySelector("p")), n = getComputedStyle(nums[0]);
+        return { numCount: nums.length, lineWeight: Number(p.fontWeight), lineSize: parseFloat(p.fontSize), numWeight: Number(n.fontWeight), numSize: parseFloat(n.fontSize), numColor: n.color, lineColor: p.color, boxBg: getComputedStyle(box).backgroundColor };
+      })(),
       occurrenceStatePressed: [...b.querySelectorAll("[data-word-progress-state]")].find((el) => el.getAttribute("aria-pressed") === "true")?.dataset.wordProgressState ?? null,
     };
   });
@@ -210,6 +219,16 @@ for (const [width, height] of [[390, 844], [1100, 900]]) {
     check(`[${lang} ${width}] Number 1 -- whole-Qur'an known line renders`, !!card?.wholeQuranLine, JSON.stringify(card));
     check(`[${lang} ${width}] Number 1 -- names the seeded known count`, (card?.wholeQuranLine ?? "").includes(String(SEEDED_KNOWN)) || toWestern(card?.wholeQuranLine ?? "").includes(String(SEEDED_KNOWN)), card?.wholeQuranLine);
     check(`[${lang} ${width}] Number 2 -- whole-Qur'an percent line renders`, !!card?.wholeQuranPercentLine, JSON.stringify(card));
+    // Owner, 2 Oct 2026: "Make these eye-catching, bold, make the wordings,
+    // 'You know ... of .... words of the Quran'". Expected words hand-written.
+    const YOU = { en: ["You know ", " of ", " words of the Qur'an"], bn: ["আপনি কুরআনের ", "টি শব্দের মধ্যে ", "টি জানেন"] }[lang];
+    const YOU_PCT = { en: ["You know ", "% of the words of the Qur'an"], bn: ["আপনি কুরআনের ", "% শব্দ জানেন"] }[lang];
+    check(`[${lang} ${width}] the total reads "${YOU.join("…")}"`, YOU.every((w) => (card?.wholeQuranLine ?? "").includes(w)), card?.wholeQuranLine);
+    check(`[${lang} ${width}] the percent reads "${YOU_PCT.join("…")}"`, YOU_PCT.every((w) => (card?.wholeQuranPercentLine ?? "").includes(w)), card?.wholeQuranPercentLine);
+    const st = card?.wholeQuranStyle;
+    check(`[${lang} ${width}] both lines are bold (weight >= 700) and the three numbers bigger and heavier still`,
+      !!st && st.numCount === 3 && st.lineWeight >= 700 && st.numWeight >= 800 && st.numSize >= st.lineSize * 1.15, JSON.stringify(st));
+    check(`[${lang} ${width}] the numbers stand out in the card's accent colour, unlike the sentence`, !!st && st.numColor !== st.lineColor, JSON.stringify(st));
     check(`[${lang} ${width}] Number 3 -- this word's own share-of-Qur'an line renders (unaffected by the lemma gate)`, !!card?.shareOfQuranLine, JSON.stringify(card));
     check(`[${lang} ${width}] Number 3 -- names this lemma's real occurrence count`, toWestern(card?.shareOfQuranLine ?? "").includes(String(LEMMA_OCCURRENCE_COUNT)), card?.shareOfQuranLine);
     check(`[${lang} ${width}] Number 4 -- learn-delta line renders`, !!card?.learnDeltaLine, JSON.stringify(card));

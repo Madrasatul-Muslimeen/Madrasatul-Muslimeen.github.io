@@ -1223,6 +1223,10 @@ export const BN = {
   // everywhere" on the Word Card.
   "Known {known} of {total} words": "মোট {total}টি শব্দের মধ্যে {known}টি জানা",
   "{percent}% of the Qur'an": "কুরআনের {percent}%",
+  "You know {known} of {total} words of the Qur'an": "আপনি কুরআনের {total}টি শব্দের মধ্যে {known}টি জানেন",
+  "You know {percent}% of the words of the Qur'an": "আপনি কুরআনের {percent}% শব্দ জানেন",
+  "Knows {known} of {total} words of the Qur'an": "কুরআনের {total}টি শব্দের মধ্যে {known}টি জানা",
+  "Knows {percent}% of the words of the Qur'an": "কুরআনের {percent}% শব্দ জানা",
   "If you learn this word: +{words} words (+{percent}%)": "এই শব্দটি শিখলে: +{words}টি শব্দ (+{percent}%)",
   "If you learn this word here: +{words} word (+{percent}%) — this occurrence only": "এখানে এই শব্দটি শিখলে: +{words}টি শব্দ (+{percent}%) — শুধু এই ব্যবহারের জন্য",
   "Mark this word known everywhere": "এই শব্দটি সর্বত্র জানা হিসেবে চিহ্নিত করুন",
@@ -2882,6 +2886,7 @@ export const BN = {
   "Take an Approach": "একটি পদ্ধতি গ্রহণ করুন",
   "Record Your Progress": "আপনার অগ্রগতি লিপিবদ্ধ করুন",
   "Record": "লিপিবদ্ধ করুন",
+  "Surah list": "সূরার তালিকা",
   "Tap the poster to see it full size.": "পোস্টারটি বড় করে দেখতে ট্যাপ করুন।", // ? (Owner decision 43, 1 Oct 2026)
   "Approach, progress and status": "পদ্ধতি, অগ্রগতি ও অবস্থা",
   "Choose an Approach…": "একটি পদ্ধতি বেছে নিন…",
