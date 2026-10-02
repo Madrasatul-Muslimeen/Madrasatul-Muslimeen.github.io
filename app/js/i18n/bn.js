@@ -1943,6 +1943,11 @@ export const BN = {
   "Movement": "চলন",
   "Change after (seconds)": "কত সেকেন্ড পরে বদলাবে",
   "Pause while held": "চেপে ধরে রাখলে থেমে থাকবে",
+  "Scroll long lines": "লম্বা লাইন পাশে সরবে",
+  "Scroll speed": "সরার গতি",
+  "Slow": "ধীর",
+  "Medium": "মাঝারি",
+  "Fast": "দ্রুত",
   "The line changes at most once each time the app is opened — it is not a carousel. \"Change after\" is how long the line already on screen stays before the next one takes over.":
     "অ্যাপ একবার খোলার সময় লাইনটি সর্বোচ্চ একবার বদলায় — এটি ঘুরতে থাকা তালিকা নয়। “কত সেকেন্ড পরে বদলাবে” মানে পর্দায় থাকা লাইনটি পরেরটির আগে কতক্ষণ থাকবে।",
   "Show the movement": "চলন দেখুন",
