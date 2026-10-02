@@ -48,8 +48,9 @@ const audioWrites = (page) => page.evaluate(() => ({
   writes: (window.__fsLog || []).filter((x) => /set|add|update|delete|write|commit/i.test(x.kind || "")).length,
 }));
 
-const EN = ["Note View", "Track", "Approach"];
-const BN = ["নোট ভিউ", "চিহ্নিত করুন", "পদ্ধতি"];
+// UPDATED IN PLACE (Owner, 2 Oct 2026): "Track (pls name it as Record)".
+const EN = ["Note View", "Record", "Approach"];
+const BN = ["নোট ভিউ", "লিপিবদ্ধ করুন", "পদ্ধতি"];
 
 // ---- placement, both languages
 const measure = (page) => page.evaluate(() => {

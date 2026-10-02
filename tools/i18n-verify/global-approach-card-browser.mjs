@@ -201,7 +201,11 @@ for (const lang of ["en", "bn"]) {
     await page.selectOption("#pageApproachSelect", "recite");
     await page.waitForTimeout(500);
     const opt = await page.evaluate(() => document.querySelector('#pageApproachSelect option[value="recite"]')?.textContent.trim());
-    check(`[${lang} ${width}] each Approach shows its stage on this page ("${T[lang].recite} · …")`, !!opt && opt.startsWith(T[lang].recite + " · "), opt);
+    // UPDATED IN PLACE (Owner, 2 Oct 2026: "written 'Not Started' with
+    // approaches names, why? Fix."): an Approach not started on this page
+    // shows its name alone; real progress is still written after it (checked
+    // after the claim in section 6).
+    check(`[${lang} ${width}] an Approach not started on this page shows its name alone (no "· Not started")`, opt === T[lang].recite, opt);
     const summary = await page.evaluate(() => {
       const s = document.querySelector("[data-gac-approach-summary]");
       return s ? { name: s.querySelector(".gac-approach-name")?.textContent.trim(), section: s.querySelector(".gac-approach-section")?.textContent.trim() } : null;
@@ -345,6 +349,9 @@ for (const lang of ["en", "bn"]) {
       const fg = lum(nums(cs.color)), bg = lum(nums(cs.backgroundColor));
       return { pressed: b.getAttribute("aria-pressed"), bg: cs.backgroundColor, img: cs.backgroundImage, ratio: +(((Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05)).toFixed(2)) };
     }, id);
+    const optText = await page.evaluate(() => document.querySelector('#pageApproachSelect option[value="recite"]')?.textContent.trim());
+    if (id === "not_started") check(`after pressing Not started the option is the name alone`, optText === "Recite correctly", optText);
+    else check(`after pressing ${id} the option says so ("Recite correctly · …")`, /^Recite correctly · \S/.test(optText || ""), optText);
     if (id === "not_applicable") check(`pressed N/A wears the legend's stripe`, got.pressed === "true" && /repeating-linear-gradient/.test(got.img), JSON.stringify(got));
     else check(`pressed ${id} wears its legend colour ${LEGEND[id]} with readable text (${got.ratio}:1)`, got.pressed === "true" && got.bg === LEGEND[id] && got.ratio >= 4.5, JSON.stringify(got));
     if (SHOTS) { await page.evaluate(() => document.querySelector(".ayah-sheet .approach-stage-row")?.scrollIntoView({ block: "center" })); await page.screenshot({ path: `${SHOTS}/stage-${id}.png` }); }

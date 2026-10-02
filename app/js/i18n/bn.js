@@ -2876,6 +2876,7 @@ export const BN = {
   // exist above and are reused as-is.
   "Take an Approach": "একটি পদ্ধতি গ্রহণ করুন",
   "Record Your Progress": "আপনার অগ্রগতি লিপিবদ্ধ করুন",
+  "Record": "লিপিবদ্ধ করুন",
   "Tap the poster to see it full size.": "পোস্টারটি বড় করে দেখতে ট্যাপ করুন।", // ? (Owner decision 43, 1 Oct 2026)
   "Approach, progress and status": "পদ্ধতি, অগ্রগতি ও অবস্থা",
   "Choose an Approach…": "একটি পদ্ধতি বেছে নিন…",
