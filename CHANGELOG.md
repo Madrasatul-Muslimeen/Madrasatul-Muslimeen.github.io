@@ -19147,3 +19147,10 @@ Owner's request, after an approved demo.
 
 - When you open a surah (or a Juz, Hizb, Page or Ruku') from Read → list, a ☰ Surah list button appears at the top left of the Read view. Pressing it reopens the list on the tab you last used. On a narrow phone it is just the ☰.
 - **Checks**: read-list-button 72/0 (mutation-proven), behaviour 1007/1 (31e TLS), read-quick-buttons 204/0, read-contents 250/0, phone-width-overflow 217/0.
+
+## v09.37 — 2 Oct 2026 — The PC wheel's bottom numbers clear the capsule bar
+
+Owner's report, from a PC screenshot.
+
+- On a PC, when the wheel was made large, the bar below it cut the bottom numbers. The gap now grows with the wheel, so the numbers stay clear at every size (about 15px of space).
+- **Checks**: landing-drawers 274/0 (mutation-proven), phone-width-overflow 217/0, unit-rings 106/0, behaviour 1004/4 (22g×3 archive.org, 31e TLS).
