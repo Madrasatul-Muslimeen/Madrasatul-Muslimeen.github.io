@@ -680,3 +680,4 @@ total). Allocated by the MMSA Architect.
 09.34: Dictionary box on the Word card. Allocated by the MMSA Architect.
 09.35: Stage buttons in legend colours; no Not started suffix; Track renamed Record. Allocated by the MMSA Architect.
 09.36: Surah list button in the Read view. Allocated by the MMSA Architect.
+09.37: PC wheel numbers clear the capsule bar. Allocated by the MMSA Architect.
