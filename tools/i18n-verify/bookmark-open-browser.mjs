@@ -19,8 +19,14 @@
 //     surah longer than one page -- opens the Read view at that place, never
 //     the "read it on the Read screen" stand-in. A one-page surah's Note
 //     bookmark still opens the Note view, where its text IS shown.
-// Three mutations prove the checks can fail: (a) no cover, (b) settings.view
-// ignored, (c) the Note-view-cannot-show test removed.
+//   - (2 Oct 2026, the owner: "With exact settings i meant") a bookmark opens
+//     with the reading settings it was made with -- translations, WbW
+//     language, Arabic font, page-by-page, and how far the Read view's menus
+//     were hidden -- even when the device has since changed them; and a
+//     bookmark made in the Read view records them.
+// Four mutations prove the checks can fail: (a) no cover, (b) settings.view
+// ignored, (c) the Note-view-cannot-show test removed, (d) the bookmark's
+// reading settings not applied.
 import { chromium, newContext, openPage } from "./harness.mjs";
 
 let pass = 0, fail = 0;
@@ -40,6 +46,9 @@ const seedJs = `
       settings: { view: "note", unitType: "page", surahNum: 14, ayahNum: 13, trackableId: "tafsir", mushafOn: false }, createdAt: "2026-01-05T00:00:00.000Z" },
     { id: "bmSurahLong", programId: "none", moduleId: "quranrevival", subjectId: "quran", name: "Long surah", position: "surah:14", folderId: null, removed: false,
       settings: { view: "note", unitType: "surah", surahNum: 14, ayahNum: 1, trackableId: "tafsir", mushafOn: false }, createdAt: "2026-01-06T00:00:00.000Z" },
+    { id: "bmExact", programId: "none", moduleId: "quranrevival", subjectId: "quran", name: "Exact", position: "ayah:3:10", folderId: null, removed: false,
+      settings: { view: "read", unitType: "ayah", surahNum: 3, ayahNum: 10, trackableId: "tafsir", mushafOn: false, readChrome: 1,
+        reading: { translationLangs: ["bn"], wbwLang: "both", quranFont: "amiriquran", sidewaysOn: false, repeat: 3, mode: "each", loop: false } }, createdAt: "2026-01-08T00:00:00.000Z" },
     { id: "bmSurahShort", programId: "none", moduleId: "quranrevival", subjectId: "quran", name: "Short surah", position: "surah:112", folderId: null, removed: false,
       settings: { view: "note", unitType: "surah", surahNum: 112, ayahNum: 1, trackableId: "tafsir", mushafOn: false }, createdAt: "2026-01-07T00:00:00.000Z" }
   );
@@ -95,6 +104,12 @@ async function run({ lang, width, query, mutate = null }) {
     unitNum: document.getElementById("unitNumSelect")?.value,
     standIn: !!document.querySelector("#noteView:not([hidden]) [data-note-open-read]"),
     readText: (document.getElementById("readScroll")?.innerText ?? "").length,
+    trEn: document.getElementById("trEnToggle")?.checked,
+    trBn: document.getElementById("trBnToggle")?.checked,
+    wbwLang: document.getElementById("wbwLangSelect")?.value,
+    font: document.getElementById("quranFontSelect")?.value,
+    sideways: document.getElementById("sidewaysToggle")?.checked,
+    immersive: document.body.classList.contains("immersive-read"),
     notFound: document.getElementById("bmNotFound")?.textContent ?? null,
     coverText: document.getElementById("bmCoverText")?.textContent ?? null,
   }));
@@ -138,6 +153,14 @@ for (const width of [390, 1280]) {
     const ss = await run({ lang, width, query: "?bookmark=bmSurahShort" });
     check(`${tag} Note-view bookmark on a one-page surah (112) still opens the Note view, with its text`, ss.noteOpen && !ss.readOpen && !ss.standIn && ss.surah === "112", JSON.stringify(ss));
 
+    // The device starts on the defaults (English translation, Scheherazade,
+    // page by page, menus shown); the bookmark says otherwise.
+    const ex = await run({ lang, width, query: "?bookmark=bmExact" });
+    check(`${tag} exact settings: the bookmark's translations come back (বাংলা on, English off)`, ex.readOpen && ex.trBn === true && ex.trEn === false, JSON.stringify(ex));
+    check(`${tag} exact settings: WbW language "both", Arabic font Amiri Quran, page by page off`, ex.wbwLang === "both" && ex.font === "amiriquran" && ex.sideways === false, JSON.stringify(ex));
+    check(`${tag} exact settings: the Read view opens with its menus hidden, as it was made`, ex.immersive === true, JSON.stringify(ex));
+    check(`${tag} exact settings: still at 3:10 in the Read view`, ex.readOpen && !ex.noteOpen && ex.surah === "3" && ex.ayah === "10", JSON.stringify(ex));
+
     const gt = await run({ lang, width, query: "?goto=2:255" });
     check(`${tag} ?goto= opens the Note view with no landing flash`, noFlash(gt, "note") && gt.noteOpen && !gt.coverOn, JSON.stringify(gt));
 
@@ -169,6 +192,11 @@ console.log("\n=== creating a bookmark in the Read view records settings.view ==
   const made = saved.find((b) => b.name === "Made in Read");
   check("a bookmark made in the Read view is written with settings.view === \"read\"", made?.settings?.view === "read", JSON.stringify(made));
   check("...and carries the place it reopens at (surah, ayah, unit)", made?.settings?.surahNum === 1 && made?.settings?.ayahNum === 1 && made?.settings?.unitType === "ayah", JSON.stringify(made?.settings));
+  // Defaults on this fresh device: English translation, Scheherazade, page by page.
+  check("...and records its reading settings (translations, font, WbW language, page by page, menus)",
+    JSON.stringify(made?.settings?.reading?.translationLangs) === JSON.stringify(["en"]) && made?.settings?.reading?.quranFont === "scheherazade"
+      && made?.settings?.reading?.wbwLang === "auto" && made?.settings?.reading?.sidewaysOn === true && made?.settings?.readChrome === 0
+      && !("unit" in (made?.settings?.reading ?? {})) && !("unitType" in (made?.settings?.reading ?? {})), JSON.stringify(made?.settings));
   await page.close();
   await ctx.close();
 }
@@ -183,6 +211,9 @@ console.log("\n=== mutation proofs (each must make its check FAIL) ===");
   check("mutation (b) settings.view ignored -> the Read-view check FAILS", !(m.readOpen && !m.noteOpen), JSON.stringify(m));
   // (c) never send a Note-unshowable bookmark to the Read view: the old Page 257 bookmark lands on the stand-in.
   const c = await run({ lang: "en", width: 390, query: "?bookmark=bmPageOld", mutate: (b) => b.replace('if (settings?.view && settings.view !== "note") return false;', "return false;") });
+  // (d) the bookmark's reading settings are not applied: the device's own stay.
+  const d = await run({ lang: "en", width: 390, query: "?bookmark=bmExact", mutate: (b) => b.replace("await applyPresetSettings({ ...settings.reading, unit: null, unitType: null });", "") });
+  check("mutation (d) reading settings not applied -> the exact-settings check FAILS", !(d.trBn === true && d.trEn === false && d.font === "amiriquran"), JSON.stringify(d));
   check("mutation (c) Note-view-cannot-show test removed -> the Page 257 check FAILS", !(c.readOpen && !c.noteOpen && !c.standIn) && c.standIn, JSON.stringify(c));
 }
 

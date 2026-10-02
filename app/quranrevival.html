@@ -17714,7 +17714,22 @@
         rootsOn: rootsToggle.checked,
         derivativesOn: derivativesToggle.checked,
         mushafOn: mushafToggle.checked,
+        ...bookmarkReadingExtras(),
       };
+    }
+
+    /** The owner, 2 Oct 2026: a bookmark opens "with exact settings" -- not
+        only the screen and the ticks above, but every reading choice that was
+        on when it was made: translations, WbW language, Arabic font, sideways,
+        what Full screen hides, the reciters, repeat, mode, loop, and how far
+        the Read view's menus were hidden. It reuses the Saved settings
+        capture (issue #410) so the two can never disagree about what "a
+        reader's settings" are; the unit is left out because the bookmark's
+        own fields above already carry it (and a Note-view bookmark's unit is
+        its Note scope, not the Read view's). */
+    function bookmarkReadingExtras() {
+      const { unit, unitType, ...reading } = capturePresetSettings(false);
+      return { reading, readChrome: stageView === "read" ? readChromeState : 0 };
     }
 
     /** Note view's own equivalent -- reads noteScope instead of the
@@ -17737,6 +17752,7 @@
         rootsOn: rootsToggle.checked,
         derivativesOn: derivativesToggle.checked,
         mushafOn: mushafToggle.checked,
+        ...bookmarkReadingExtras(),
       };
     }
 
@@ -17788,6 +17804,13 @@
           currentTrackableId = settings.trackableId;
           trackableSelect.value = settings.trackableId;
         }
+        // The bookmark's own reading settings (2 Oct 2026, "exact settings")
+        // -- only when a real bookmark is opened. The last-session restore and
+        // a Saved setting also come through here with no position, and must
+        // not re-apply device settings on every boot.
+        if (position && settings.reading && typeof settings.reading === "object") {
+          await applyPresetSettings({ ...settings.reading, unit: null, unitType: null });
+        }
         updateUnitControlsVisibility();
         renderStudyScreen();
         renderWheel();
@@ -17795,7 +17818,13 @@
       // Issue #468 -- a bookmark opens in the view it was made in. No `view`
       // (an older bookmark) keeps the Note view, exactly as before -- unless
       // the Note view could not show the bookmarked text at all.
-      if (position && (settings?.view === "read" || bookmarkNeedsReadView(settings, position))) openReadingScreen();
+      if (position && (settings?.view === "read" || bookmarkNeedsReadView(settings, position))) {
+        openReadingScreen();
+        // How far the menus were hidden when it was made (0 shown, 1 full
+        // screen, 2 hide everything) -- openReadingScreen() picks its own
+        // default from the Mushaf tick, so the saved state wins after it.
+        if (typeof settings?.readChrome === "number" && readChromeStates().includes(settings.readChrome)) setReadChrome(settings.readChrome);
+      }
       else if (position && (settings?.view === "study" || settings?.view === "landing")) { closeAllPanels(); setStageView("wheel"); renderWheel(); }
       else if (position) await openNoteView(position);
     }
