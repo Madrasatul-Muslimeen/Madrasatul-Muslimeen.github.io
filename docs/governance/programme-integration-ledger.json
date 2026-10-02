@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.34",
+    "version": "09.35",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1589,8 +1589,20 @@
     {
       "version": "09.34",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Word card Arabic in Depth: Wiktionary meaning (likely/fixed pills), the āyah's meaning, Quranic Corpus and Lane/Hans Wehr links.",
+      "integration": {
+        "authorizedOn": "2026-10-02",
+        "integratedOn": "2026-10-02",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.35",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Pressed stage in its STATUS_COLORS legend colour; pull-down writes real progress only; quick-row Track reads Record.",
       "integration": {
         "authorizedOn": "2026-10-02",
         "integratedOn": "2026-10-02",
@@ -1599,8 +1611,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.35",
+  "nextUnallocated": "09.36",
   "nextUnallocatedNote": [
+    "v09.35 was allocated to Stage buttons in legend colours; no Not started suffix; Track renamed Record, 2026-10-02.",
     "v09.34 was allocated to Dictionary box on the Word card, 2026-10-02.",
     "v09.33 was allocated to Known words lightly marked on the Mushaf page and in WbW, 2026-10-02.",
     "v09.32 was allocated to Elegant landing page on a phone, 2026-10-02.",

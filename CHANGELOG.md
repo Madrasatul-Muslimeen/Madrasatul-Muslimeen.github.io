@@ -19131,3 +19131,12 @@ Decision 54, after a demo the Owner approved.
 - On a Bangla page the labels are Bangla; the Bangla dictionary meaning will be added once its publisher gives permission.
 - The dictionary loads only when Arabic in Depth is first opened, so nothing else is slower.
 - **Checks**: word-card-dictionary 277/0 (three mutations proven), known-word-marks 122/0, read-contents 250/0, phone-width-overflow 217/0, behaviour 1004/4 (22g×3 archive.org, 31e TLS).
+
+## v09.35 — 2 Oct 2026 — Stage buttons in the legend's colours; no more "Not started" in the Approach list; Track is now Record
+
+From two of the Owner's phone photos.
+
+- In Record Your Progress the selected stage now has its wheel-legend colour (Learning bronze, Practising gold, Achieved blue, Mastered green, Not started slate, N/A striped), always with readable text.
+- The Approach pull-down no longer writes "· Not started" after every name; real progress (Learning, Achieved, …) is still shown.
+- The Read view's quick button "Track" is now "Record".
+- **Checks**: global-approach-card 109/0 (two mutations proven), read-quick-buttons 204/0, behaviour 1007/1 (31e TLS).
