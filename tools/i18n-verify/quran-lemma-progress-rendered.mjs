@@ -226,8 +226,12 @@ for (const [width, height] of [[390, 844], [1100, 900]]) {
     check(`[${lang} ${width}] the total reads "${YOU.join("…")}"`, YOU.every((w) => (card?.wholeQuranLine ?? "").includes(w)), card?.wholeQuranLine);
     check(`[${lang} ${width}] the percent reads "${YOU_PCT.join("…")}"`, YOU_PCT.every((w) => (card?.wholeQuranPercentLine ?? "").includes(w)), card?.wholeQuranPercentLine);
     const st = card?.wholeQuranStyle;
-    check(`[${lang} ${width}] both lines are bold (weight >= 700) and the three numbers bigger and heavier still`,
-      !!st && st.numCount === 3 && st.lineWeight >= 700 && st.numWeight >= 800 && st.numSize >= st.lineSize * 1.15, JSON.stringify(st));
+    // UPDATED IN PLACE, 2 Oct 2026 -- the Owner published the Basic/Depth Rules
+    // and that gate is open, so the box carries ONE pair of lines PER LEVEL
+    // (decision 58: WbW, Basic, Depth), three numbers each: 3 x 3 = 9. The
+    // per-level wording is proved in lemma-levels-browser.mjs.
+    check(`[${lang} ${width}] both lines are bold (weight >= 700) and the numbers (three per level, three levels) bigger and heavier still`,
+      !!st && st.numCount === 9 && st.lineWeight >= 700 && st.numWeight >= 800 && st.numSize >= st.lineSize * 1.15, JSON.stringify(st));
     check(`[${lang} ${width}] the numbers stand out in the card's accent colour, unlike the sentence`, !!st && st.numColor !== st.lineColor, JSON.stringify(st));
     check(`[${lang} ${width}] Number 3 -- this word's own share-of-Qur'an line renders (unaffected by the lemma gate)`, !!card?.shareOfQuranLine, JSON.stringify(card));
     check(`[${lang} ${width}] Number 3 -- names this lemma's real occurrence count`, toWestern(card?.shareOfQuranLine ?? "").includes(String(LEMMA_OCCURRENCE_COUNT)), card?.shareOfQuranLine);
