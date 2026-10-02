@@ -19732,7 +19732,9 @@
       } else {
         const ayah = currentSurahData.ayahs.find((a) => a.ayah === currentAyahNum);
         if (!ayah) return;
-        ayahPosition.textContent = t("Surah {surah} — Ayah {ayah} of {total}", { surah: num(currentSurahNum), ayah: ayahLabelFor(currentSurahNum, currentAyahNum), total: num(displayAyahCount(currentSurahNum, currentSurahData.ayahCount)) });
+        ayahPosition.textContent = fatihaCountApplies(currentSurahNum, fatihaOn()) && currentAyahNum === 1
+          ? t("Surah {surah} — Bismillah", { surah: num(currentSurahNum) })
+          : t("Surah {surah} — Ayah {ayah} of {total}", { surah: num(currentSurahNum), ayah: ayahLabelFor(currentSurahNum, currentAyahNum), total: num(displayAyahCount(currentSurahNum, currentSurahData.ayahCount)) });
         ayahSelect.value = String(currentAyahNum);
         prevAyahBtn.disabled = currentAyahNum <= 1;
         nextAyahBtn.disabled = currentAyahNum >= currentSurahData.ayahCount;

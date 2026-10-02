@@ -3081,6 +3081,7 @@ export const BN = {
   "Al-Fātiḥah: Bismillah unnumbered (": "আল-ফাতিহা: বিসমিল্লাহ নম্বরবিহীন (",
   "is āyah 1)": "হলো আয়াত ১)",
   "Bismillah": "বিসমিল্লাহ",
+  "Surah {surah} — Bismillah": "সূরা {surah} — বিসমিল্লাহ",
   "Approach: {name}": "পদ্ধতি: {name}", // ?
   "Surah {n}": "সূরা {n}",
 

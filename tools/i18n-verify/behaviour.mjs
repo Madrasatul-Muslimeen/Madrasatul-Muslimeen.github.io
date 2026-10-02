@@ -2084,7 +2084,9 @@ console.log("\n=== 31. Shell round 19: no Approach blocks anything ===");
     position: document.getElementById("ayahPosition").textContent.trim(),
   }));
   check("31d a Ruku' still reads ayah by ayah, with Previous/Next",
-        ruku.navVisible && /Ayah \d+ of/.test(ruku.position), JSON.stringify(ruku));
+        // UPDATED IN PLACE, issue #482: this runs on Al-Fātiḥah's first ayah,
+        // which reads "Bismillah" (unnumbered) under the default display count.
+        ruku.navVisible && /Ayah \d+ of|— Bismillah/.test(ruku.position), JSON.stringify(ruku));
 
   check("31e no page errors", errors.length === 0, errors.slice(0, 2).join(" | "));
   await page.close();
