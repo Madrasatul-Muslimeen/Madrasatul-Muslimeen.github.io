@@ -14,6 +14,22 @@
 
 Fill in everything in `[square brackets]` before sending.
 
+## Where to send them (looked up 1 Oct 2026; check before sending)
+
+**Letter 2, Quran Foundation: `developers@quran.com`** (high confidence).
+- It is the address the Developer Terms give for licensing questions (https://api-docs.quran.foundation/legal/developer-terms/).
+- The developer FAQ gives it for storing content and for partnerships (https://api-docs.quran.foundation/docs/tutorials/faq/).
+- The terms forbid storing their content for more than a week without express permission. That is exactly what this letter asks for.
+- General fallback: the Quran Foundation, 2918 Avenue I – Unit #5345, Brooklyn, NY 11210. `info@quran.foundation` appeared only in a search snippet and was not confirmed on their site.
+
+**Letter 1, Bangla dictionary.**
+- The book is *কুরআনীয় অভিধান* (Quraniyo Obhidhan) by Muhammad Abu Hena and Muhammad Yahya. It is published by the **Academy of Quran Studies (AQS)**, Dhaka (3rd edition, 2018).
+- **Best first step: message AQS on Facebook** (https://www.facebook.com/myaqs) and ask it to confirm its email address and who holds the rights. The rights may be the authors' (or their heirs'), not the publisher's.
+- Phone, from a directory copy of that page: +880 1711-262923 or +880 1974-403592.
+- `info.aqsbd@gmail.com` appeared only in a search summary and is **unverified**.
+- Their website `aqsbd.org` did not load.
+- Postal: 149 East Raja Bazar, Dhaka 1215.
+
 ---
 
 ## Letter 1 — Bangla Qur'an dictionary (Abu Hena & Mohammad Yeahia, or their publisher)
