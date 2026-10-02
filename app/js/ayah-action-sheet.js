@@ -365,6 +365,9 @@ function connectedInfoHtml(connected) {
  * action (Bookmark/Asma/QCR/Play/Copy/Share/Take an Approach/Make a
  * poster) is unaffected by isSelf -- see each one's own comment above.
  */
+// Owner, 2 Oct 2026 (a phone photo of the Āyah card): "Take this to the
+// top". Status of this āyah comes first, straight under the header, then the
+// actions (Play, Copy, Share, ...), then Info.
 export function renderAyahActionSheetHtml({
   unitKey, ref = "", hasNote = false, isBookmarked = false, isSelf = true,
   approachOptionsHtml = "", selectedApproachId = null, selectedApproachStatusId = "not_started", hasPosterNote = null, approachSummary = null, canConfirm = false,
@@ -384,7 +387,6 @@ export function renderAyahActionSheetHtml({
         <span class="ayah-sheet-ref">${escapeHtml(ref)}</span>
         <button type="button" class="ayah-sheet-close" data-ayah-sheet-close aria-label="${escapeHtml(t("Close"))}">×</button>
       </div>
-      <div class="ayah-sheet-body">${actionsHtml}</div>
       <div class="ayah-sheet-status" data-ayah-sheet-status>
         <h3 class="ayah-sheet-section-title">${escapeHtml(t("Status of this āyah"))}</h3>
         <div class="ayah-status-block">
@@ -401,6 +403,7 @@ export function renderAyahActionSheetHtml({
           ${hifzStatusHtml(hifzStatus)}
         </div>
       </div>
+      <div class="ayah-sheet-body">${actionsHtml}</div>
       <div class="ayah-sheet-status ayah-sheet-info" data-ayah-sheet-info>
         <h3 class="ayah-sheet-section-title">${escapeHtml(t("Info"))}</h3>
         <div class="ayah-status-block" data-ayah-sheet-related>
