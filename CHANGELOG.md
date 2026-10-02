@@ -19228,3 +19228,12 @@ Owner, 2 Oct 2026: "With exact settings i meant."
 - A bookmark now remembers every reading setting it was made with: translations, Word by Word language, Arabic font, page by page, what Full screen hides, reciters, repeat, mode, loop, and whether the Read view's menus were hidden. Opening it brings them all back.
 - Older bookmarks open as before. Startup is unchanged.
 - **Checks**: bookmark-open-browser 77/0 (new cases and two mutations), study-presets 84/0, boot-status 24/0, behaviour 1004/4 (sandbox-only).
+
+## v09.47 — 2 Oct 2026 — Basic and Depth word progress switched on
+
+Owner, 2 Oct 2026: "Basic and Depth rules are live."
+
+- **Basic** Achieved now marks every word of the same root with the same meaning (e.g. Achieved on فَلْيَتَوَكَّلِ also marks ٱلْمُتَوَكِّلُونَ; ar-Raḥmān marks ar-Raḥīm, not arḥām). **Depth** Achieved marks every word of the root. **WbW** stays the same word.
+- The Word card shows "You know …" once per level.
+- `firestore.rules` now matches what the Owner published; the gate that held this back is open.
+- **Checks**: 15 suites (see the milestone), three updated in place; behaviour 1004/4 (sandbox-only).
