@@ -2908,6 +2908,11 @@
   .word-progress-state, .word-progress-coverage { margin: 0.4rem 0 0; font-size: 0.85rem; }
   .word-progress-coverage { color: var(--card-text-muted); }
   .word-progress-incomplete { color: #8a3b16; }
+  /* Owner, 2 Oct 2026: the whole-Qur'an total, eye-catching and bold. */
+  .word-progress-whole-quran-box { margin: 0.6rem 0 0.2rem; padding: 0.55rem 0.75rem; border: 1px solid var(--card-line); border-left: 4px solid var(--card-heading); border-radius: 0.45rem; background: var(--card-bg-inset); }
+  .word-progress-whole-quran-box p { margin: 0; font-size: 0.98rem; font-weight: 700; line-height: 1.45; color: var(--card-text); }
+  .word-progress-whole-quran-box p + p { margin-top: 0.2rem; }
+  .word-progress-whole-quran-num { font-size: 1.22rem; font-weight: 800; color: var(--card-heading); letter-spacing: 0.01em; }
   @media (max-width: 380px) { .word-card-progress button { padding: 0.5rem 0.25rem; font-size: 0.78rem; } }
   @media (max-width: 340px) { .word-card-progress button { padding: 0.5rem 0.15rem; font-size: 0.72rem; } }
   .quran-word-card dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 0.75rem; }
@@ -14263,8 +14268,16 @@
         coverage: t("{known} of {total} words known in this ayah"),
         coverageIncomplete: t("{unknown} not loaded yet"),
         // Issue #303 -- the whole-Qur'an running total.
-        wholeQuranKnown: t("Known {known} of {total} words"),
-        wholeQuranPercent: t("{percent}% of the Qur'an"),
+        // Owner, 2 Oct 2026: "You know ... of .... words of the Quran". A
+        // teacher or guardian looking at someone else's card gets the same
+        // sentence without "You", which would name the wrong person.
+        ...(wordProgressActor().isSupervisor ? {
+          wholeQuranKnown: t("Knows {known} of {total} words of the Qur'an"),
+          wholeQuranPercent: t("Knows {percent}% of the words of the Qur'an"),
+        } : {
+          wholeQuranKnown: t("You know {known} of {total} words of the Qur'an"),
+          wholeQuranPercent: t("You know {percent}% of the words of the Qur'an"),
+        }),
         learnWordDelta: t("If you learn this word: +{words} words (+{percent}%)"),
         learnWordDeltaThisOccurrenceOnly: t("If you learn this word here: +{words} word (+{percent}%) — this occurrence only"),
       };
