@@ -114,6 +114,9 @@ for (const lang of ["en", "bn"]) {
     // the heading -- above that edge they sit on the white strip and vanish.
     // The highest number must clear the card's top, by no more than ~6px
     // (decision 51: "only that much that numbers are not cut").
+    // The first screen is judged with the drawers closed (the reload test above leaves one open).
+    await page.evaluate(() => document.querySelectorAll('#wheelDrawerRow [aria-expanded="true"]').forEach((b) => b.click()));
+    await page.waitForTimeout(250);
     const g = await page.evaluate(() => {
       const card = document.getElementById("wheelSection").getBoundingClientRect();
       const nums = [...document.querySelectorAll("#wheelContainer .wheel-seg-num")];
@@ -127,20 +130,50 @@ for (const lang of ["en", "bn"]) {
       const btns = [...document.querySelectorAll("#wheelDrawerRow .wheel-drawer-btn")].map((b) => b.getBoundingClientRect());
       return { n: nums.length, gap: Math.round((top - card.top) * 10) / 10, bottomGap: Math.round((bar.top - bottom) * 10) / 10,
         leftInset: Math.round(btns[0].left - card.left), rightInset: Math.round(card.right - btns[2].right),
+        // Owner, 1 Oct 2026 (demo approved, "go"): the first screen ends at the
+        // dock -- Open all starts below it, the drawer row is above it.
+        // Page coordinates (an earlier step may have scrolled): the fold is the
+        // screen height less the pinned dock.
+        openAllTop: Math.round(document.querySelector("#wheelSection .ways-toggle-all").getBoundingClientRect().top + scrollY),
+        rowBottom: Math.round(document.getElementById("wheelDrawerRow").getBoundingClientRect().bottom + scrollY),
+        dockTop: Math.round(innerHeight - document.getElementById("dock").offsetHeight),
         legendOff: Math.round(Math.abs((btns[1].left + btns[1].right) / 2 - (card.left + card.right) / 2)),
         listTop: Math.round(document.getElementById("wheelSidebarContainer").getBoundingClientRect().top * 10) / 10 };
     });
     gaps[`${lang} ${width}`] = g;
     if (width < 768) {
       check(`${tag} the wheel carries the real catalogue's slices (positive control: ${g.n} numbers)`, g.n >= 30, JSON.stringify(g));
-      check(`${tag} the highest wheel number sits inside the dark card, 0-6px below its top (gap ${g.gap}px)`, g.gap >= 0 && g.gap <= 6, JSON.stringify(g));
-      check(`${tag} the lowest wheel number clears the capsule bar by an even 8-18px (gap ${g.bottomGap}px)`, g.bottomGap >= 8 && g.bottomGap <= 18, JSON.stringify(g));
-      check(`${tag} Wheel sits at the left edge, Unit at the right (insets ${g.leftInset}/${g.rightInset}px), Legend centred`, g.leftInset <= 24 && g.rightInset <= 24 && g.leftInset >= 8 && g.rightInset >= 8 && g.legendOff <= 3, JSON.stringify(g));
+      // UPDATED IN PLACE (Owner, 1 Oct 2026, demo approved): "Move down the
+      // wheel little more. Keep little more gap from the bar to the wheel
+      // number" (was 0-6px); "Move the Read buttons bar little more away from
+      // the wheel" (was 8-18px); "Place the Wheel and Unit button at the
+      // extreme edges" (was 8-24px in).
+      check(`${tag} the highest wheel number sits well inside the dark card, at least 15px below its top (gap ${g.gap}px; spare height on a tall screen adds to it)`, g.gap >= 15, JSON.stringify(g));
+      check(`${tag} the lowest wheel number clears the capsule bar by 18-28px (gap ${g.bottomGap}px)`, g.bottomGap >= 18 && g.bottomGap <= 28, JSON.stringify(g));
+      check(`${tag} Wheel sits at the extreme left edge, Unit at the extreme right (insets ${g.leftInset}/${g.rightInset}px), Legend centred`, g.leftInset <= 10 && g.rightInset <= 10 && g.leftInset >= 2 && g.rightInset >= 2 && g.legendOff <= 3, JSON.stringify(g));
+      check(`${tag} the first screen ends at the dock: the drawer row is above it, Open all below it (row ${g.rowBottom}, dock ${g.dockTop}, Open all ${g.openAllTop})`, g.rowBottom <= g.dockTop && g.openAllTop >= g.dockTop, JSON.stringify(g));
     }
     else check(`${tag} the Approach list top is measured (${g.listTop}px)`, g.listTop > 0);
     check(`${tag} no page errors`, errors.filter((e) => !/net::ERR_/.test(e)).length === 0, JSON.stringify(errors.slice(0, 2)));
     await ctx.close();
   }
+}
+// Owner, 1 Oct 2026: a tall header (a long tagline, Bangla) on a short screen
+// must not hide the drawer row behind the dock -- the wheel shrinks instead.
+{
+  const ctx = await newContext(browser, { viewport: { width: 390, height: 700 }, seedTemplates: SEED_TEMPLATES });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  await page.waitForSelector("#wheelContainer .wheel-seg-num", { timeout: 20000 });
+  await clear(page);
+  const before = await page.evaluate(() => Math.round(document.querySelector("#wheelSection .mastery-wheel").getBoundingClientRect().width));
+  // The tagline itself is one line with an ellipsis, so make the strip 80px
+  // taller directly -- the header growth a wrapped Bangla heading can cause.
+  await page.evaluate(() => { const t = document.getElementById("taglineStrip"); t.style.height = (t.getBoundingClientRect().height + 80) + "px"; });
+  await page.waitForTimeout(400);
+  const sq = await page.evaluate(() => ({ wheel: Math.round(document.querySelector("#wheelSection .mastery-wheel").getBoundingClientRect().width),
+    row: Math.round(document.getElementById("wheelDrawerRow").getBoundingClientRect().bottom + scrollY), fold: innerHeight - document.getElementById("dock").offsetHeight }));
+  check(`[squeeze 390x700] a taller header shrinks the wheel (${before} -> ${sq.wheel}px) so the drawer row stays above the dock (row ${sq.row}, fold ${sq.fold})`, sq.wheel < before && sq.row <= sq.fold, JSON.stringify({ before, ...sq }));
+  await ctx.close();
 }
 console.log("gaps/list tops:", JSON.stringify(gaps));
 
