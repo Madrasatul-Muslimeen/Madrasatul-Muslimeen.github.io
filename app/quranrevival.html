@@ -2663,6 +2663,9 @@
     background: #1F3A6E; color: #fff; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.6rem 0.8rem;
   }
   .rc-card header h2 { margin: 0; font-size: 1.05rem; }
+  .rc-header-actions { display: inline-flex; align-items: center; gap: 0.5rem; flex: 0 0 auto; }
+  .rc-home-btn { flex: 0 0 auto; min-height: 40px; padding: 0 0.8rem; display: inline-flex; align-items: center; gap: 0.35rem; font: inherit; font-size: 0.95rem; font-weight: 700; border: 1px solid rgba(255,255,255,0.5); border-radius: 0.35rem; background: transparent; color: #fff; cursor: pointer; white-space: nowrap; }
+  .rc-home-btn span[aria-hidden] { font-size: 1.15rem; line-height: 1; }
   .rc-tabs { display: flex; gap: 0.25rem; padding: 0.4rem 0.5rem 0; border-bottom: 1px solid var(--card-line); }
   .rc-tab {
     flex: 1 1 0; min-width: 0; min-height: 40px; padding: 0.25rem 0.2rem; border: 0; border-bottom: 3px solid transparent; background: none;
@@ -5591,7 +5594,12 @@
     <div id="readContentsCard" class="rc-card" role="dialog" aria-modal="true" aria-labelledby="readContentsTitle">
       <header>
         <h2 id="readContentsTitle">Read</h2>
-        <button type="button" id="readContentsCloseBtn" class="my-status-close-btn">&times;</button>
+        <!-- Owner, 2 Oct 2026 (a phone photo of this list): "Enable a way to
+             move to home (page landing) from here." -->
+        <span class="rc-header-actions">
+          <button type="button" id="readContentsHomeBtn" class="rc-home-btn"><span aria-hidden="true">⌂</span> <span class="rc-home-word">Home</span></button>
+          <button type="button" id="readContentsCloseBtn" class="my-status-close-btn">&times;</button>
+        </span>
       </header>
       <div id="readContentsTabs" class="rc-tabs" role="tablist"></div>
       <input type="search" id="readContentsSearch" class="rc-search" autocomplete="off" />
@@ -7946,7 +7954,7 @@
       // lives. Without it a result read "2:45" -- a bare number, in an app
       // whose whole point this round is finding things you cannot number.
       const meta = surahIndex.find((s) => s.surahNumber === hit.surah);
-      ref.textContent = `${surahName(hit.surah, meta?.nameEnglish)} — ${num(hit.surah)}:${num(hit.ayah)}`;
+      ref.textContent = `${surahName(hit.surah, meta?.nameEnglish)} — ${searchRefFor(hit.surah, hit.ayah)}`;
       const snip = document.createElement("span");
       snip.className = "snip";
       // Arabic reads right to left, and its own line-height and face; the
@@ -8132,6 +8140,15 @@
       if (!fatihaCountApplies(surah, fatihaOn())) return `${surah}:${ayah}`;
       const d = displayForInternalAyah(surah, ayah, true);
       return d.kind === "bismillah" ? t("Bismillah") : `${surah}:${d.kind === "span" ? "6–7" : d.number}`;
+    }
+    /** The number a wheel/sidebar badge prints: nothing for the Bismillah, "6–7" for internal 1:7. */
+    function ayahBadgeFor(surah, ayah) {
+      return fatihaCountApplies(surah, fatihaOn()) && ayah === 1 ? "" : ayahLabelFor(surah, ayah);
+    }
+    /** A search chip's reference: "1:6–7", or the word Bismillah for internal 1:1. */
+    function searchRefFor(surah, ayah) {
+      if (!fatihaCountApplies(surah, fatihaOn())) return `${num(surah)}:${num(ayah)}`;
+      return ayah === 1 ? t("Bismillah") : `${num(surah)}:${ayahLabelFor(surah, ayah)}`;
     }
     function wordRefFor(surah, ayah, position) {
       return displayWordRef(surah, ayah, position, fatihaOn(), t("Bismillah"));
@@ -9998,7 +10015,8 @@
 
     function myStatusCacheKey() {
       const { tenantId, subjectPersonId } = wordProgressActor();
-      return tenantId && subjectPersonId ? `${tenantId}|${subjectPersonId}` : null;
+      // Issue #488: the Al-Fātiḥah count setting changes the totals, so it is part of the key.
+      return tenantId && subjectPersonId ? `${tenantId}|${subjectPersonId}|${fatihaOn() ? 1 : 0}` : null;
     }
 
     /** Called wherever this app already clears a per-person cache on a
@@ -10092,7 +10110,7 @@
         }
         const wideClaimsByUnitType = tallyWideClaimsByUnitType(wideEntries);
         summaries.set(trackable.id, summarizeApproachAyahCoverage({
-          trackable, surahAyahCounts, ownAyahStatusesBySurahAyah, wideSpans, wideClaimsByUnitType,
+          trackable, surahAyahCounts, ownAyahStatusesBySurahAyah, wideSpans, wideClaimsByUnitType, fatihaOn: fatihaOn(),
         }));
         ownAyahByTrackable.set(trackable.id, ownAyahStatusesBySurahAyah);
         wideSpansByTrackable.set(trackable.id, wideSpans);
@@ -10686,6 +10704,7 @@
     function renderReadContents() {
       document.getElementById("readContentsTitle").textContent = t("Read");
       document.getElementById("readContentsCloseBtn").setAttribute("aria-label", t("Close"));
+      document.getElementById("readContentsHomeBtn").setAttribute("aria-label", t("Home"));
       readContentsSearchEl.placeholder = t("Search by name or number");
       readContentsSearchEl.setAttribute("aria-label", t("Search by name or number"));
       // How many of each unit, read off the same lists the rows come from.
@@ -10770,6 +10789,8 @@
     document.getElementById("readContentsBtn")?.addEventListener("click", openReadContents);
     document.getElementById("readListBtn")?.addEventListener("click", openReadContents);
     document.getElementById("readContentsCloseBtn")?.addEventListener("click", closeReadContents);
+    // Owner, 2 Oct 2026: straight from the list to the landing page.
+    document.getElementById("readContentsHomeBtn")?.addEventListener("click", () => { closeReadContents(); openApproachWheel(); });
     readContentsMountEl?.addEventListener("click", (e) => { if (e.target === readContentsMountEl) closeReadContents(); });
     readContentsTabsEl?.addEventListener("click", (e) => {
       const tab = e.target.closest("[data-rc-tab]");
@@ -11489,7 +11510,7 @@
         const items = surahData.ayahs.map((a) => {
           const statusId = effectiveAyahStatus(exploreSurahNum, a.ayah, trackable.id);
           const label = t("Ayah {ayah}", { ayah: ayahLabelFor(exploreSurahNum, a.ayah) });
-          return { key: a.ayah, number: a.ayah, statusId, label, title: segTitle(label, statusId, labelsById) };
+          return { key: a.ayah, number: ayahBadgeFor(exploreSurahNum, a.ayah), statusId, label, title: segTitle(label, statusId, labelsById) };
         });
         const jumpToStudy = (key) => goToAyahFromExplore(exploreSurahNum, Number(key));
         exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
@@ -11538,7 +11559,7 @@
       const entries = exploreChunksBySurah.get(exploreSurahNum)?.entries ?? {};
       const items = ayahsInRuku.map((a) => {
         const statusId = effectiveAyahStatus(exploreSurahNum, a.ayah, trackable.id);
-        return { key: a.ayah, number: a.ayah, statusId, label: t("Ayah {ayah}", { ayah: ayahLabelFor(exploreSurahNum, a.ayah) }) };
+        return { key: a.ayah, number: ayahBadgeFor(exploreSurahNum, a.ayah), statusId, label: t("Ayah {ayah}", { ayah: ayahLabelFor(exploreSurahNum, a.ayah) }) };
       });
       const exploreSurah = surahIndex.find((s) => s.surahNumber === exploreSurahNum);
       const currentSurahName = exploreSurah ? surahName(exploreSurah.surahNumber, exploreSurah.nameEnglish) : t("Surah {surah}", { surah: num(exploreSurahNum) });

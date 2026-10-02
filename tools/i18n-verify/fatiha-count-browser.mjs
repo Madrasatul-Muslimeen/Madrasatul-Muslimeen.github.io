@@ -185,6 +185,73 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
   await ctx.close();
 }
 
+// ===== Part 2 (issue #488): My Status totals, Explore wheel badges, search chips
+const westernise = (s) => String(s ?? "").replace(/[০-৯]/g, (d) => "০১২৩৪৫৬৭৮৯".indexOf(d));
+const ONLY_1_7 = `{ const d = DATA.records.find((r) => r.chunkKey === "surah_1");
+  d.entries = { "ayah:1:7::recite": { unitType: "ayah", subjectId: "quran", trackableId: "recite",
+    claimedStatus: "achieved", claimedByPersonId: "p1", confirmedStatus: "achieved", confirmState: "confirmed", domainIds: [], notes: "" } }; }`;
+const runSearch = (page) => page.evaluate(() => { const i = document.getElementById("jumpInput"); i.value = "evoked"; i.dispatchEvent(new Event("input", { bubbles: true })); document.getElementById("searchBtn").click(); });
+const flip =(page, on) => page.evaluate((o) => { const c = document.getElementById("fatihaCountToggle"); c.checked = o; c.dispatchEvent(new Event("change", { bubbles: true })); }, on);
+
+for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
+  const tag = `[#488 ${lang} ${width}]`;
+  console.log(`\n=== Part 2 ${tag} ===`);
+  // ---- My Status: only internal 1:7 achieved => 2 achieved with the count on, 1 with it off.
+  {
+    const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width, height: width >= 768 ? 1000 : 844 }, extraSeedJs: ONLY_1_7 });
+    await ctx.route("**/archive.org/**", (r) => r.abort());
+    const { page } = await openPage(ctx, "/app/quranrevival.html");
+    await page.waitForFunction(() => !!document.querySelector("#wheelContainer svg"), null, { timeout: 30000 });
+    const headline = async () => {
+      await page.evaluate(() => { document.querySelectorAll('[id*="splash"], .mm-splash-overlay').forEach((el) => el.remove()); });
+      await page.click("#myStatusWideBtn");
+      await page.waitForSelector('#myStatusBody [data-my-status-open="recite"] .my-status-row-figure', { timeout: 10000 });
+      const out = await page.evaluate(() => ({
+        text: document.querySelector('[data-my-status-open="recite"] .my-status-row-figure').textContent.trim(),
+        tile: document.querySelector('[data-my-status-open="recite"] .ms-tile[data-unit="ayah"]')?.dataset.n,
+      }));
+      await page.click("#myStatusCloseBtn"); await page.waitForTimeout(300);
+      return out;
+    };
+    const on = await headline();
+    check(`${tag} My Status: internal 1:7 alone reads 2 achieved (the count is on)`, westernise(on.text).match(/\d+/g).includes("2") && on.tile === "2" && !westernise(on.text).startsWith("Achieved + Mastered: 1 "), JSON.stringify(on));
+    await flip(page, false); await page.waitForTimeout(600);
+    const off = await headline();
+    check(`${tag} My Status: with the count off the same record reads 1 achieved`, off.tile === "1" && /(^|[^\d])1([^\d]|$)/.test(westernise(off.text).slice(0, 40)), JSON.stringify(off));
+    await ctx.close();
+  }
+  // ---- Explore wheel badges for surah 1, and the search chip.
+  {
+    const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width, height: width >= 768 ? 1000 : 844 } });
+    await ctx.route("**/archive.org/**", (r) => r.abort());
+    const { page } = await openPage(ctx, "/app/quranrevival.html");
+    await page.evaluate(() => { const s = document.getElementById("trackableSelect"); s.value = "tajweed"; s.dispatchEvent(new Event("change")); });
+    await page.click("#tabExploreBtn");
+    await page.waitForSelector('#exploreWheelContainer .wheel-ring-seg[data-ring-kind="surah"]', { timeout: 30000 });
+    await page.click('#exploreWheelContainer .wheel-ring-seg[data-ring-kind="surah"][data-key="1"]', { force: true });
+    await page.waitForSelector('#exploreWheelContainer .wheel-ring-seg[data-ring-kind="ayah"]', { timeout: 20000 });
+    await page.waitForTimeout(500);
+    const badges = () => page.evaluate(() => [...document.querySelectorAll("#exploreSidebarContainer .way-row")].map((r) => [r.dataset.key, r.querySelector(".badge").textContent.trim()]));
+    const wantOn = lang === "en" ? ["", "1", "2", "3", "4", "5", "6–7"] : ["", "১", "২", "৩", "৪", "৫", "৬–৭"];
+    const b = await badges();
+    check(`${tag} Explore Al-Fātiḥah badges read (none), 1–5, 6–7`, JSON.stringify(b.map((x) => x[1])) === JSON.stringify(wantOn), JSON.stringify(b));
+    check(`${tag} Explore: the Bismillah row shows no "1" and keys stay internal 1..7`, b[0][1] === "" && JSON.stringify(b.map((x) => x[0])) === JSON.stringify(["1", "2", "3", "4", "5", "6", "7"]), JSON.stringify(b));
+    // ---- Search chip (the card is opened by the Search button)
+    await page.click("#tabStudyBtn"); await page.waitForTimeout(400);
+    await runSearch(page);
+    await page.waitForFunction(() => document.querySelectorAll(".search-hit").length > 0, null, { timeout: 15000 }).catch(() => {});
+    const refs = await page.evaluate(() => [...document.querySelectorAll(".search-hit .ref")].map((e) => e.textContent.trim()));
+    const wantRef = lang === "en" ? "1:6–7" : "১:৬–৭";
+    check(`${tag} a search chip for internal 1:7 reads ${wantRef}`, refs.some((r) => r.endsWith(wantRef)), JSON.stringify(refs));
+    await flip(page, false); await page.waitForTimeout(500);
+    await runSearch(page);
+    await page.waitForFunction(() => document.querySelectorAll(".search-hit").length > 0, null, { timeout: 15000 }).catch(() => {});
+    const refsOff = await page.evaluate(() => [...document.querySelectorAll(".search-hit .ref")].map((e) => e.textContent.trim()));
+    check(`${tag} off: the same chip reads the plain 1:7`, refsOff.some((r) => r.endsWith(lang === "en" ? "1:7" : "১:৭")) && !refsOff.some((r) => /[6৬]–/.test(r)), JSON.stringify(refsOff));
+    await ctx.close();
+  }
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 await browser.close();
 process.exit(fail ? 1 : 0);
