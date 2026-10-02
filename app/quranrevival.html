@@ -3219,6 +3219,11 @@
      scroll container, so a phone's bottom sheet still scrolls as one
      surface as the spec requires. */
   .ayah-sheet-status { border-top: 1px solid var(--card-line); margin-top: 0.4rem; padding-top: 0.5rem; }
+  /* Owner, 2 Oct 2026: "Take this to the top" -- Status of this āyah sits
+     straight under the header (its own line is the header's), and the
+     actions below it take the dividing line instead. */
+  .ayah-sheet-header + .ayah-sheet-status[data-ayah-sheet-status] { border-top: 0; margin-top: 0; padding-top: 0.15rem; }
+  .ayah-sheet-status[data-ayah-sheet-status] + .ayah-sheet-body { border-top: 1px solid var(--card-line); margin-top: 0.4rem; padding-top: 0.3rem; }
   .ayah-sheet-section-title { font-size: 0.82rem; color: var(--card-heading); margin: 0 0.2rem 0.4rem; }
   .ayah-status-block { margin: 0 0.2rem 0.9rem; }
   .ayah-status-heading { font-size: 0.76rem; color: var(--card-text-muted); text-transform: uppercase; letter-spacing: 0.02em; margin: 0 0 0.3rem; }

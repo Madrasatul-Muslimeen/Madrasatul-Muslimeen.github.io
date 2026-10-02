@@ -179,6 +179,30 @@ for (const viewport of [
       });
       check(`${lang} ${viewport.label} every button in the card is at least 40x40`, Array.isArray(tinyButtons) && tinyButtons.length === 0, JSON.stringify(tinyButtons));
 
+      // Owner, 2 Oct 2026 (a phone photo of the Āyah card, the Status part
+      // circled): "Take this to the top". Read off the RENDERED boxes: Status
+      // sits straight under the header and above Play/Copy/Share, and the
+      // first thing a reader sees on opening is its heading.
+      const order = await page.evaluate(() => {
+        const sheet = document.querySelector("[data-ayah-sheet]");
+        const box = (el) => el?.getBoundingClientRect();
+        const header = box(sheet?.querySelector(".ayah-sheet-header"));
+        const status = box(sheet?.querySelector("[data-ayah-sheet-status]"));
+        const play = box(sheet?.querySelector("[data-ayah-sheet-play]"));
+        const title = sheet?.querySelector("[data-ayah-sheet-status] .ayah-sheet-section-title");
+        const tb = box(title);
+        const scroller = sheet;
+        const sb = box(scroller);
+        return header && status && play && tb ? {
+          gapUnderHeader: Math.round(status.top - header.bottom), statusAbovePlay: status.bottom <= play.top + 1,
+          titleVisible: tb.top >= sb.top && tb.bottom <= Math.min(sb.bottom, innerHeight), titleText: title.textContent.trim(),
+        } : null;
+      });
+      check(`${lang} ${viewport.label} "Status of this āyah" sits straight under the header (gap ${order?.gapUnderHeader}px)`, !!order && order.gapUnderHeader >= 0 && order.gapUnderHeader <= 12, JSON.stringify(order));
+      check(`${lang} ${viewport.label} ...above Play this āyah`, !!order && order.statusAbovePlay, JSON.stringify(order));
+      check(`${lang} ${viewport.label} ...and its heading is in view the moment the card opens ("${{ en: "Status of this āyah", bn: order?.titleText }[lang]}")`,
+        !!order && order.titleVisible && (lang !== "en" || order.titleText === "Status of this āyah"), JSON.stringify(order));
+
       // Escape closes it.
       await page.keyboard.press("Escape");
       await page.waitForTimeout(200);
