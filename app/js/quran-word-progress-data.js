@@ -301,10 +301,17 @@ export async function setWordState(db, {
   // real read-after-write without a round trip -- so the cache is patched from
   // the value that was actually written. That is also the better production
   // behaviour: no re-read, and the screen cannot show a stale state.
-  entriesFor(store, "learner", ayah).set(key, next.learner);
-  store.learner.set(ayah, entriesFor(store, "learner", ayah));
-  entriesFor(store, "supervisor", ayah).set(key, next.supervisor);
-  store.supervisor.set(ayah, entriesFor(store, "supervisor", ayah));
+  // Issue #472 -- entriesFor() answers a FRESH Map for an ayah with no lane
+  // document yet, so the old `entriesFor(...).set(...)` then `store.set(ayah,
+  // entriesFor(...))` patched a throwaway and lost the claim. That stayed
+  // hidden while primeAyahProgress() always registered the ayah first; a
+  // surah-wide read (getSurahProgress) leaves empty ayahs unregistered.
+  const learnerMap = entriesFor(store, "learner", ayah);
+  learnerMap.set(key, next.learner);
+  store.learner.set(ayah, learnerMap);
+  const supervisorMap = entriesFor(store, "supervisor", ayah);
+  supervisorMap.set(key, next.supervisor);
+  store.supervisor.set(ayah, supervisorMap);
   return { changed: true, writes, laneId, position };
 }
 
@@ -329,7 +336,8 @@ export async function decideWordApproval(db, {
     review, byPersonId: actorPersonId, atIso: nowIso ?? new Date().toISOString(), note,
   });
   await writeLaneEntry(db, { lane: "supervisor", laneId, position, entry: next.supervisor, actorUid });
-  entriesFor(store, "supervisor", ayah).set(key, next.supervisor);
-  store.supervisor.set(ayah, entriesFor(store, "supervisor", ayah));
+  const supervisorMap = entriesFor(store, "supervisor", ayah); // see setWordState: register the map, do not patch a throwaway
+  supervisorMap.set(key, next.supervisor);
+  store.supervisor.set(ayah, supervisorMap);
   return { changed: true, writes: 1, laneId, position };
 }

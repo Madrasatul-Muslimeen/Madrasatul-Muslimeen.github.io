@@ -676,3 +676,4 @@ total). Allocated by the MMSA Architect.
 09.30: Bookmarks open straight where they were made. Allocated by the MMSA Architect.
 09.31: N/A and Mastered in Record Your Progress; wheel bottom numbers clear. Allocated by the MMSA Architect.
 09.32: Elegant landing page on a phone. Allocated by the MMSA Architect.
+09.33: Known words lightly marked on the Mushaf page and in WbW. Allocated by the MMSA Architect.
