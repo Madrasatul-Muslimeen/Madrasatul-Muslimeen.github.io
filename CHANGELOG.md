@@ -19140,3 +19140,10 @@ From two of the Owner's phone photos.
 - The Approach pull-down no longer writes "· Not started" after every name; real progress (Learning, Achieved, …) is still shown.
 - The Read view's quick button "Track" is now "Record".
 - **Checks**: global-approach-card 109/0 (two mutations proven), read-quick-buttons 204/0, behaviour 1007/1 (31e TLS).
+
+## v09.36 — 2 Oct 2026 — A ☰ Surah list button in the Read view
+
+Owner's request, after an approved demo.
+
+- When you open a surah (or a Juz, Hizb, Page or Ruku') from Read → list, a ☰ Surah list button appears at the top left of the Read view. Pressing it reopens the list on the tab you last used. On a narrow phone it is just the ☰.
+- **Checks**: read-list-button 72/0 (mutation-proven), behaviour 1007/1 (31e TLS), read-quick-buttons 204/0, read-contents 250/0, phone-width-overflow 217/0.
