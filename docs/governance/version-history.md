@@ -687,3 +687,4 @@ total). Allocated by the MMSA Architect.
 09.41: Same root same meaning counts as known. Allocated by the MMSA Architect.
 09.42: Never a blank landing page; WbW same word only. Allocated by the MMSA Architect.
 09.43: Fatihah count everywhere; Home from the Surah list. Allocated by the MMSA Architect.
+09.44: Basic and Depth word progress (switched off). Allocated by the MMSA Architect.

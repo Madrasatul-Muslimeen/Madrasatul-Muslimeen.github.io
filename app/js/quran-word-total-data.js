@@ -49,11 +49,23 @@ import { TENANT } from "./collections.js";
 import { createDocument, updateDocument } from "./envelope.js";
 import { isWbwTotalPersistenceReady } from "./study-wbw-total-readiness.js";
 import { emptyWordTotalsDocument, wordTotalDocId } from "./quran-word-total.js";
+import { isLemmaLevelsPersistenceReady } from "./study-lemma-levels-readiness.js";
 
-// Per (tenant, person), like quran-word-progress-data.js's own cache -- so
-// switching student in a roster dropdown (D10) cannot show the previous
-// child's counter.
+// Per (tenant, person, level), like quran-word-progress-data.js's own cache --
+// so switching student in a roster dropdown (D10) cannot show the previous
+// child's counter, and the three levels' totals can never be mistaken for one.
 const cache = new Map();
+const cacheKey = (tenantId, personId, level) => `${tenantId}|${personId}|${level}`;
+
+/**
+ * Decision 58 (#490) -- WbW's total keeps its own gate untouched; the Basic
+ * and Depth totals additionally need the lemma-levels gate, so with that gate
+ * closed no basic/depth totals document is ever read or written.
+ */
+export function totalsLevelReady(level) {
+  if (!isWbwTotalPersistenceReady()) return false;
+  return level === "wbw" || isLemmaLevelsPersistenceReady();
+}
 
 export function clearWordTotalCache() {
   cache.clear();
@@ -66,11 +78,12 @@ export function clearWordTotalCache() {
  * distinction the rest of this codebase already draws between "unknown" and
  * "zero" (quran-word-coverage.js's own stated rule).
  */
-export async function getWordTotals(db, { tenantId, personId } = {}) {
+export async function getWordTotals(db, { tenantId, personId, level = "wbw" } = {}) {
   if (!isWbwTotalPersistenceReady()) return null;
-  const key = `${tenantId}|${personId}`;
+  if (!totalsLevelReady(level)) return null;
+  const key = cacheKey(tenantId, personId, level);
   if (cache.has(key)) return cache.get(key);
-  const snap = await getDoc(doc(db, TENANT.QURAN_WORD_TOTALS, wordTotalDocId({ tenantId, personId })));
+  const snap = await getDoc(doc(db, TENANT.QURAN_WORD_TOTALS, wordTotalDocId({ tenantId, personId, level })));
   const data = snap.exists() ? snap.data() : null;
   cache.set(key, data);
   return data;
@@ -86,17 +99,18 @@ export async function getWordTotals(db, { tenantId, personId } = {}) {
  * document is created -- an existing document already carries its own
  * seeded `byJuz` map and is updated in place.
  */
-export async function recordWordTotalDelta(db, { tenantId, personId, juz, delta, actorUid, juzWordTotals } = {}) {
+export async function recordWordTotalDelta(db, { tenantId, personId, juz, delta, actorUid, juzWordTotals, level = "wbw" } = {}) {
   if (!isWbwTotalPersistenceReady()) return { attempted: false, changed: false };
-  if (!delta) return { attempted: false, changed: false };
+  if (!totalsLevelReady(level)) return { attempted: false, changed: false };
+  if (!delta)return { attempted: false, changed: false };
   if (!Number.isInteger(juz) || juz < 1 || juz > 30) throw new TypeError("juz must be an integer from 1 to 30.");
 
-  const docId = wordTotalDocId({ tenantId, personId });
+  const docId = wordTotalDocId({ tenantId, personId, level });
   const ref = doc(db, TENANT.QURAN_WORD_TOTALS, docId);
   const snap = await getDoc(ref);
 
   if (!snap.exists()) {
-    const seed = emptyWordTotalsDocument({ tenantId, personId, juzWordTotals });
+    const seed = emptyWordTotalsDocument({ tenantId, personId, juzWordTotals, level });
     const juzKey = String(juz);
     seed.known = Math.max(0, delta);
     seed.byJuz[juzKey] = { ...seed.byJuz[juzKey], known: Math.max(0, delta) };
@@ -113,7 +127,7 @@ export async function recordWordTotalDelta(db, { tenantId, personId, juz, delta,
   // discipline quran-word-progress-data.js applies by patching instead
   // (patching isn't safe here: increment() applies server-side, so this
   // process does not know the resulting total without a fresh read).
-  cache.delete(`${tenantId}|${personId}`);
+  cache.delete(cacheKey(tenantId, personId, level));
   return { attempted: true, changed: true };
 }
 
@@ -132,18 +146,19 @@ export async function recordWordTotalDelta(db, { tenantId, personId, juz, delta,
  * function does not filter zeros itself, since increment(0) is a wasted
  * field write, not a correctness bug, but callers should not rely on it.
  */
-export async function recordWordTotalDeltaAcrossJuz(db, { tenantId, personId, deltaByJuz, actorUid, juzWordTotals } = {}) {
+export async function recordWordTotalDeltaAcrossJuz(db, { tenantId, personId, deltaByJuz, actorUid, juzWordTotals, level = "wbw" } = {}) {
   if (!isWbwTotalPersistenceReady()) return { attempted: false, changed: false };
+  if (!totalsLevelReady(level)) return { attempted: false, changed: false };
   if (!(deltaByJuz instanceof Map) || deltaByJuz.size === 0) return { attempted: false, changed: false };
   const totalDelta = [...deltaByJuz.values()].reduce((sum, d) => sum + d, 0);
   if (!totalDelta) return { attempted: false, changed: false };
 
-  const docId = wordTotalDocId({ tenantId, personId });
+  const docId = wordTotalDocId({ tenantId, personId, level });
   const ref = doc(db, TENANT.QURAN_WORD_TOTALS, docId);
   const snap = await getDoc(ref);
 
   if (!snap.exists()) {
-    const seed = emptyWordTotalsDocument({ tenantId, personId, juzWordTotals });
+    const seed = emptyWordTotalsDocument({ tenantId, personId, juzWordTotals, level });
     seed.known = Math.max(0, totalDelta);
     for (const [juz, delta] of deltaByJuz) {
       const juzKey = String(juz);
@@ -151,7 +166,7 @@ export async function recordWordTotalDeltaAcrossJuz(db, { tenantId, personId, de
       seed.byJuz[juzKey] = { ...seed.byJuz[juzKey], known: seeded };
     }
     await createDocument(db, TENANT.QURAN_WORD_TOTALS, docId, seed, actorUid);
-    cache.set(`${tenantId}|${personId}`, seed);
+    cache.set(cacheKey(tenantId, personId, level), seed);
   } else {
     const update = { known: increment(totalDelta) };
     for (const [juz, delta] of deltaByJuz) update[`byJuz.${juz}.known`] = increment(delta);
@@ -166,7 +181,7 @@ export async function recordWordTotalDeltaAcrossJuz(db, { tenantId, personId, de
       const key = String(juz);
       byJuz[key] = { ...(byJuz[key] ?? {}), known: Number(byJuz[key]?.known ?? 0) + delta };
     }
-    cache.set(`${tenantId}|${personId}`, { ...base, known: Number(base.known ?? 0) + totalDelta, byJuz });
+    cache.set(cacheKey(tenantId, personId, level), { ...base, known: Number(base.known ?? 0) + totalDelta, byJuz });
   }
   return { attempted: true, changed: true };
 }

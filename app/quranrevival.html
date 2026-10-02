@@ -5721,7 +5721,10 @@
     import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootPanel, renderDerivativesPanel, renderTranslationPanel, tajweedRawToSafeHtml, digitsForLang, stripLeadingBismillah, splitPlainArabicWords, arabicWordButtonHtml, tajweedWordButtonsHtml } from "./js/ayah-renderer.js";
     import { parseQuranWordOccurrenceId } from "./js/quran-word-identity.js";
     import { loadLemmaDictionary, lemmaDictionaryEntry } from "./js/lemma-dictionary.js";
-    import { loadLemmaMeaningGroups, sameMeaningLemmas } from "./js/lemma-meaning-groups.js";
+    import { loadLemmaMeaningGroups, sameMeaningLemmas, meaningGroupOf } from "./js/lemma-meaning-groups.js";
+    // Decision 58 (#490) -- Basic/Depth lemma-wide claims, behind their own gate (ready:false).
+    import { isLemmaLevelsPersistenceReady } from "./js/study-lemma-levels-readiness.js";
+    import { claimKeyFor, LEMMA_WIDE_LEVELS } from "./js/quran-lemma-levels.js";
     import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard, renderQuranWordCard, WORD_CARD_POS_SEGMENTS } from "./js/quran-word-card.js";
     import { occurrenceRefsFor, rootFormsFor, unpackWordIndexRef, loadWordIdentityIndex } from "./js/quran-word-index.js";
     import { relatedBySharedWords, relatedThroughLists, connectedThroughNotes } from "./js/ayah-related.js";
@@ -5746,7 +5749,7 @@
     import { approachShortName } from "./js/approach-short-name.js";
     // Issue #303 -- lemma-level word progress ("mark this word known
     // everywhere"), gated separately (see study-lemma-progress-readiness.js).
-    import { lemmaProgressAuthority, effectiveOccurrenceState, lemmaKnownDeltaByJuz, groupOccurrenceRefsByJuz, overlayLemmaKnownness, IMPLEMENTED_ARABIC_LEVELS as LEMMA_CLAIM_LEVELS } from "./js/quran-lemma-progress.js";
+    import { lemmaProgressAuthority, effectiveOccurrenceState, lemmaKnownDeltaByJuz, groupOccurrenceRefsByJuz, overlayLemmaKnownness } from "./js/quran-lemma-progress.js";
     import {
       primeLemmaProgress, lemmaProgressFor, claimLemmaWordState, decideLemmaWordApproval,
       clearLemmaProgressCache, getLemmaOccurrenceCounts, bumpLemmaOccurrenceCounter,
@@ -14439,6 +14442,19 @@
         learnWordDelta: t("If you learn this word: +{words} words (+{percent}%)"),
         learnWordDeltaThisOccurrenceOnly: t("If you learn this word here: +{words} word (+{percent}%) — this occurrence only"),
         knownThroughSameMeaning: t("Known through {word} (same meaning)"),
+        // Decision 58 (#490) -- one "You know" line per level, shown only once Basic/Depth are live.
+        ...(wordProgressActor().isSupervisor ? {
+          wholeQuranKnownLevel: t("Knows ({level}) {known} of {total} words of the Qur'an"),
+          wholeQuranPercentLevel: t("Knows ({level}) {percent}% of the words of the Qur'an"),
+        } : {
+          wholeQuranKnownLevel: t("You know ({level}) {known} of {total} words of the Qur'an"),
+          wholeQuranPercentLevel: t("You know ({level}) {percent}% of the words of the Qur'an"),
+        }),
+        levelNameWbw: t("WbW"),
+        levelNameBasic: t("Basic"),
+        levelNameDepth: t("Depth"),
+        knownThroughBasicGroup: t("Known through its meaning group (Basic: same meaning)"),
+        knownThroughDepthRoot: t("Known through the root {root} (Depth: same root)"),
       };
     }
 
@@ -14464,31 +14480,42 @@
     async function primeLemmaProgressForOccurrenceScope(chapter, occurrenceIds, tenantId, personId) {
       if (!isLemmaProgressPersistenceReady() || !chapter?.ayahs) return;
       const lemmaIds = new Set();
+      const rootIds = new Set();
       for (const occ of occurrenceIds) {
         let ref;
         try { ref = parseQuranWordOccurrenceId(occ); } catch { continue; }
         const ayah = chapter.ayahs.find((a) => a.ayah === ref.ayah);
         const word = ayah?.words?.find((w) => w.position === ref.position);
         if (word?.morphology?.lemma) lemmaIds.add(word.morphology.lemma);
+        if (word?.morphology?.root) rootIds.add(word.morphology.root);
       }
       if (!lemmaIds.size) return;
       await Promise.all([...lemmaIds].map((lemmaId) => primeLemmaProgress(db, { tenantId, personId, lemmaId })));
       // Decision 58 (2 Oct 2026, correcting 56): WbW Achieved counts the SAME
-      // word only. "Same root AND same meaning" belongs to BASIC Achieved, so
-      // the group-mates are read at the basic level -- and only once Basic has
-      // a lemma-wide claim at all (it needs Rules the Owner publishes; until
-      // then nothing spreads and nothing extra is read). The groups file is
-      // fetched here, on first use, never at startup.
+      // word only. "Same root AND same meaning" belongs to BASIC Achieved
+      // (claim keyed by the meaning group) and "the whole root" to DEPTH
+      // Achieved (claim keyed by the root) -- one document each, so priming
+      // costs one lane pair per distinct group/root on screen, never one per
+      // group-mate. Only once those levels have a lemma-wide claim at all (it
+      // needs Rules the Owner publishes; until then nothing spreads and
+      // nothing extra is read). The groups file is fetched here, on first
+      // use, never at startup.
       if (!meaningGroupsLive()) return;
       try { await loadLemmaMeaningGroups(); } catch (error) { console.warn("meaning groups unavailable", error); }
-      const toPrime = new Set();
-      for (const lemmaId of lemmaIds) for (const mate of sameMeaningLemmas(lemmaId)) toPrime.add(mate);
-      await Promise.all([...toPrime].map((lemmaId) => primeLemmaProgress(db, { tenantId, personId, level: MEANING_GROUP_LEVEL, lemmaId })));
+      const basicKeys = new Set();
+      for (const lemmaId of lemmaIds) basicKeys.add(claimKeyFor(MEANING_GROUP_LEVEL, { lemma: lemmaId }, meaningGroupOf));
+      await Promise.all([
+        ...[...basicKeys].map((lemmaId) => primeLemmaProgress(db, { tenantId, personId, level: MEANING_GROUP_LEVEL, lemmaId })),
+        ...[...rootIds].map((lemmaId) => primeLemmaProgress(db, { tenantId, personId, level: ROOT_LEVEL, lemmaId })),
+      ]);
     }
 
     /** Decision 58 -- the level whose Achieved spreads to same-root, same-meaning words. */
     const MEANING_GROUP_LEVEL = "basic";
-    function meaningGroupsLive() { return LEMMA_CLAIM_LEVELS.includes(MEANING_GROUP_LEVEL); }
+    /** Decision 58 -- the level whose Achieved spreads to every word of the root. */
+    const ROOT_LEVEL = "depth";
+    /** True once Basic/Depth lemma-wide claims exist: the lemma gate AND the lemma-levels gate are both open. */
+    function meaningGroupsLive() { return isLemmaProgressPersistenceReady() && isLemmaLevelsPersistenceReady(); }
 
     /**
      * Decision 56 -- the lemma's own view, upgraded to countsAsKnown when
@@ -14498,14 +14525,20 @@
      * still awaiting a teacher spreads to nobody. Synchronous: reads only what
      * primeLemmaProgressForOccurrenceScope() cached. Never written anywhere.
      */
-    function lemmaViewWithGroup({ tenantId, personId, lemmaId, confirmationRequired }) {
+    function lemmaViewWithGroup({ tenantId, personId, lemmaId, root, confirmationRequired }) {
       const own = lemmaProgressFor({ tenantId, personId, lemmaId, confirmationRequired });
       if (own.countsAsKnown || !meaningGroupsLive()) return own;
-      // Decision 58: only a BASIC claim on a same-meaning word spreads.
-      for (const mate of sameMeaningLemmas(lemmaId)) {
-        if (lemmaProgressFor({ tenantId, personId, level: MEANING_GROUP_LEVEL, lemmaId: mate, confirmationRequired }).countsAsKnown) {
-          return { ...own, countsAsKnown: true, ...(mate === lemmaId ? {} : { knownViaGroupLemma: mate }) };
-        }
+      // Decision 58: a word is known if ANY level makes it known. WbW is the
+      // word's own claim (above); a BASIC claim on its meaning group, or a
+      // DEPTH claim on its root, spreads to it. A claim still awaiting a
+      // teacher has countsAsKnown false, so it spreads to nobody.
+      const basicKey = claimKeyFor(MEANING_GROUP_LEVEL, { lemma: lemmaId }, meaningGroupOf);
+      if (lemmaProgressFor({ tenantId, personId, level: MEANING_GROUP_LEVEL, lemmaId: basicKey, confirmationRequired }).countsAsKnown) {
+        return { ...own, countsAsKnown: true, knownViaLevel: { level: MEANING_GROUP_LEVEL, key: basicKey } };
+      }
+      const rootKey = claimKeyFor(ROOT_LEVEL, { root });
+      if (rootKey && lemmaProgressFor({ tenantId, personId, level: ROOT_LEVEL, lemmaId: rootKey, confirmationRequired }).countsAsKnown) {
+        return { ...own, countsAsKnown: true, knownViaLevel: { level: ROOT_LEVEL, key: rootKey } };
       }
       return own;
     }
@@ -14520,7 +14553,7 @@
         const word = ayah?.words?.find((w) => w.position === ref.position);
         const lemmaId = word?.morphology?.lemma;
         if (!lemmaId) continue;
-        lemmaViewByOccurrenceId.set(occ, lemmaViewWithGroup({ tenantId, personId, lemmaId, confirmationRequired }));
+        lemmaViewByOccurrenceId.set(occ, lemmaViewWithGroup({ tenantId, personId, lemmaId, root: word?.morphology?.root, confirmationRequired }));
       }
       return overlayLemmaKnownness(rawViews, lemmaViewByOccurrenceId);
     }
@@ -14617,11 +14650,30 @@
       if (isWbwTotalPersistenceReady()) {
         try { wholeQuranTotal = await getWordTotals(db, { tenantId, personId: subjectPersonId }); } catch { wholeQuranTotal = null; }
       }
+      // Decision 58 (#490) -- one total PER LEVEL, read only once Basic/Depth
+      // are live (2 extra single-document reads on a Word card open, on first
+      // use of the card; zero while the gate is closed). A level with no
+      // document yet has counted nothing: zero, not "unknown".
+      let levelTotals;
+      if (meaningGroupsLive() && isWbwTotalPersistenceReady()) {
+        try {
+          const [basicT, depthT] = await Promise.all([
+            getWordTotals(db, { tenantId, personId: subjectPersonId, level: "basic" }),
+            getWordTotals(db, { tenantId, personId: subjectPersonId, level: "depth" }),
+          ]);
+          const zero = { known: 0, total: QURAN_TOTAL_WORD_COUNT };
+          levelTotals = [
+            { level: "wbw", total: wholeQuranTotal ?? zero },
+            { level: "basic", total: basicT ?? zero },
+            { level: "depth", total: depthT ?? zero },
+          ];
+        } catch { levelTotals = undefined; }
+      }
       if (requestId !== quranWordCardLemmaRequestId) return; // superseded mid-read
 
-      if (!lemmaId) { quranWordCardLemmaContext = { wholeQuranTotal }; if (quranWordCardState.occurrenceId === requestedId) renderPersistentWordCard(); return; }
+      if (!lemmaId) { quranWordCardLemmaContext = { wholeQuranTotal, levelTotals }; if (quranWordCardState.occurrenceId === requestedId) renderPersistentWordCard(); return; }
 
-      let lemmaProgress = null, lemmaAuthority = null, knownViaGroupLemma = null;
+      let lemmaProgress = null, lemmaAuthority = null, knownViaLevel = null;
       if (isLemmaProgressPersistenceReady()) {
         try {
           await primeLemmaProgress(db, { tenantId, personId: subjectPersonId, lemmaId });
@@ -14637,9 +14689,9 @@
           // Decision 56 -- known only through a same-meaning word: say so.
           // Display only; this word's own buttons keep showing its own state.
           if (!lemmaProgress.countsAsKnown) {
-            const grouped = lemmaViewWithGroup({ tenantId, personId: subjectPersonId, lemmaId, confirmationRequired });
-            if (grouped.knownViaGroupLemma && !wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: requestedId, confirmationRequired }).countsAsKnown) {
-              knownViaGroupLemma = grouped.knownViaGroupLemma;
+            const grouped = lemmaViewWithGroup({ tenantId, personId: subjectPersonId, lemmaId, root: word?.morphology?.root, confirmationRequired });
+            if (grouped.knownViaLevel && !wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: requestedId, confirmationRequired }).countsAsKnown) {
+              knownViaLevel = grouped.knownViaLevel;
             }
           }
         } catch (error) {
@@ -14690,7 +14742,7 @@
         learnDelta = computed;
       }
       if (requestId !== quranWordCardLemmaRequestId) return;
-      quranWordCardLemmaContext = { wholeQuranTotal, lemmaProgress, lemmaAuthority, learnDelta, knownViaGroupLemma };
+      quranWordCardLemmaContext = { wholeQuranTotal, levelTotals, lemmaProgress, lemmaAuthority, learnDelta, knownViaLevel };
       if (quranWordCardState.open && quranWordCardState.occurrenceId === requestedId) renderPersistentWordCard();
     }
 
@@ -14701,10 +14753,46 @@
      * `null` while the gate is closed, which the caller treats as "there is
      * nothing to record" rather than "nothing changed".
      */
-    function wordProgressCountsAsKnownNow(tenantId, personId, occurrenceId, confirmationRequired) {
-      return isWbwTotalPersistenceReady()
-        ? wordProgressFor({ tenantId, personId, occurrenceId, confirmationRequired }).countsAsKnown
+    function wordProgressCountsAsKnownNow(tenantId, personId, occurrenceId, confirmationRequired, level = "wbw") {
+      return levelTotalLive(level)
+        ? wordProgressFor({ tenantId, personId, level, occurrenceId, confirmationRequired }).countsAsKnown
         : null;
+    }
+
+    /** Decision 58 (#490) -- is this level's per-level total live? WbW's own gate as before; Basic/Depth also need the lemma-levels gate. */
+    function levelTotalLive(level) { return isWbwTotalPersistenceReady() && (level === "wbw" || meaningGroupsLive()); }
+    /** Is this level's LEMMA-WIDE claim live? WbW: the lemma gate; Basic/Depth: the lemma-levels gate too. */
+    function levelWideLive(level) { return level === "wbw" ? isLemmaProgressPersistenceReady() : meaningGroupsLive(); }
+
+    /** The word under an occurrence id in the open surah, or null. */
+    function wordOfOccurrence(occurrenceId) {
+      let ref;
+      try { ref = parseQuranWordOccurrenceId(occurrenceId); } catch { return null; }
+      return currentSurahData?.ayahs.find((a) => a.ayah === ref.ayah)?.words?.find((w) => w.position === ref.position) ?? null;
+    }
+
+    /**
+     * Decision 58 -- the claim key that covers this word at `level` (the lemma
+     * for WbW, its meaning group for Basic, its root for Depth). The Basic key
+     * needs the groups file, so callers await ensureMeaningGroups() first.
+     */
+    function claimKeyOfWord(level, word) {
+      return claimKeyFor(level, { lemma: word?.morphology?.lemma, root: word?.morphology?.root }, meaningGroupOf);
+    }
+    async function ensureMeaningGroups() {
+      try { await loadLemmaMeaningGroups(); } catch (error) { console.warn("meaning groups unavailable", error); }
+    }
+
+    /** Every occurrence a lemma-wide claim at `level` covers (unpacked refs): the word's own lemma, its meaning group, or its root. */
+    async function spreadRefsFor(level, word) {
+      const lemmaId = word?.morphology?.lemma;
+      if (level === "depth") return occurrenceRefsFor("root", word?.morphology?.root);
+      if (level === "basic") {
+        await ensureMeaningGroups();
+        const lists = await Promise.all(sameMeaningLemmas(lemmaId).map((lemma) => occurrenceRefsFor("lemma", lemma)));
+        return lists.flat();
+      }
+      return occurrenceRefsFor("lemma", lemmaId);
     }
 
     /**
@@ -14719,9 +14807,9 @@
      * whole function returns immediately, before any of that, whenever
      * `beforeKnown` is null (the gate is closed).
      */
-    async function applyWordTotalCounterDelta({ tenantId, personId, occurrenceId, confirmationRequired, beforeKnown }) {
+    async function applyWordTotalCounterDelta({ tenantId, personId, occurrenceId, confirmationRequired, beforeKnown, level = "wbw" }) {
       if (beforeKnown === null) return;
-      const afterKnown = wordProgressFor({ tenantId, personId, occurrenceId, confirmationRequired }).countsAsKnown;
+      const afterKnown = wordProgressFor({ tenantId, personId, level, occurrenceId, confirmationRequired }).countsAsKnown;
       const delta = knownDelta(beforeKnown, afterKnown);
       if (!delta) return;
       const ref = parseQuranWordOccurrenceId(occurrenceId);
@@ -14730,7 +14818,7 @@
       if (juz == null) return; // a malformed/incomplete index refuses rather than mis-crediting a Juz
       if (!juzWordTotalsData) juzWordTotalsData = await getJuzWordTotalsIndex();
       await safeWrite(
-        () => recordWordTotalDelta(db, { tenantId, personId, juz, delta, actorUid: auth.currentUser?.uid, juzWordTotals: juzWordTotalsData.byJuz }),
+        () => recordWordTotalDelta(db, { tenantId, personId, juz, delta, level, actorUid: auth.currentUser?.uid, juzWordTotals: juzWordTotalsData.byJuz }),
         { what: "update the whole-Qur'an word total", occurrenceId }
       );
     }
@@ -14751,21 +14839,22 @@
      * afterward, is what keeps a single press from being credited (or
      * debited) twice.
      */
-    async function applyLemmaOccurrenceCounterDelta({ tenantId, personId, occurrenceId, confirmationRequired, beforeKnown, afterKnown }) {
+    async function applyLemmaOccurrenceCounterDelta({ tenantId, personId, occurrenceId, confirmationRequired, beforeKnown, afterKnown, level = "wbw" }) {
       if (beforeKnown === null) return;
-      if (afterKnown === undefined) afterKnown = wordProgressFor({ tenantId, personId, occurrenceId, confirmationRequired }).countsAsKnown;
+      if (afterKnown === undefined) afterKnown = wordProgressFor({ tenantId, personId, level, occurrenceId, confirmationRequired }).countsAsKnown;
       const delta = knownDelta(beforeKnown, afterKnown);
       if (!delta) return;
       const ref = parseQuranWordOccurrenceId(occurrenceId);
       const ayah = currentSurahData?.ayahs.find((a) => a.ayah === ref.ayah);
       const word = ayah?.words?.find((w) => w.position === ref.position);
-      const lemmaId = word?.morphology?.lemma;
+      if (level === "basic") await ensureMeaningGroups();
+      const lemmaId = claimKeyOfWord(level, word);
       if (!lemmaId) return;
       if (!juzIndexData) juzIndexData = await getJuzIndex();
       const juz = juzForSurahAyah(juzIndexData, ref.surah, ref.ayah);
       if (juz == null) return;
       await safeWrite(
-        () => bumpLemmaOccurrenceCounter(db, { tenantId, personId, lemmaId, juz, delta }),
+        () => bumpLemmaOccurrenceCounter(db, { tenantId, personId, level, lemmaId, juz, delta }),
         { what: "update this word's lemma-wide known count", occurrenceId }
       );
     }
@@ -14811,13 +14900,13 @@
      * that has not really changed anyone's known-ness, which is exactly the
      * needless second write this whole design exists to avoid.
      */
-    async function mirrorLemmaProgress(action, { tenantId, personId, occurrenceId, confirmationRequired, beforeKnownForLemma }) {
+    async function mirrorLemmaProgress(action, { tenantId, personId, occurrenceId, confirmationRequired, beforeKnownForLemma, level = "wbw" }) {
       if (beforeKnownForLemma === null) return;
-      const afterKnown = wordProgressFor({ tenantId, personId, occurrenceId, confirmationRequired }).countsAsKnown;
-      if (afterKnown === beforeKnownForLemma) { await runLemmaProgressAction(action); return; }
-      await applyLemmaOccurrenceCounterDelta({ tenantId, personId, occurrenceId, confirmationRequired, beforeKnown: beforeKnownForLemma, afterKnown: true });
-      await runLemmaProgressAction(action);
-      await applyLemmaOccurrenceCounterDelta({ tenantId, personId, occurrenceId, confirmationRequired, beforeKnown: true, afterKnown });
+      const afterKnown = wordProgressFor({ tenantId, personId, level, occurrenceId, confirmationRequired }).countsAsKnown;
+      if (afterKnown === beforeKnownForLemma) { await runLemmaProgressAction(action, level); return; }
+      await applyLemmaOccurrenceCounterDelta({ tenantId, personId, occurrenceId, confirmationRequired, beforeKnown: beforeKnownForLemma, afterKnown: true, level });
+      await runLemmaProgressAction(action, level);
+      await applyLemmaOccurrenceCounterDelta({ tenantId, personId, occurrenceId, confirmationRequired, beforeKnown: true, afterKnown, level });
     }
 
     async function runWordProgressAction(action) {
@@ -14839,14 +14928,16 @@
       // (issue #320's own point 4): a Basic Arabic or Arabic in Depth claim is
       // independent progress on the SAME word, not word-by-word study or
       // whole-Qur'an coverage, so neither snapshot is even taken for them.
-      const beforeKnown = level === "wbw"
-        ? wordProgressCountsAsKnownNow(tenantId, subjectPersonId, common.occurrenceId, confirmationRequired)
-        : null;
+      // Decision 58 (#490): Basic/Depth now have their own per-level totals and
+      // lemma-wide claims, but ONLY once the lemma-levels gate is open --
+      // levelTotalLive()/levelWideLive() are false for them until then, so the
+      // snapshots stay null and every call below is a no-op, as at v09.42.
+      const beforeKnown = wordProgressCountsAsKnownNow(tenantId, subjectPersonId, common.occurrenceId, confirmationRequired, level);
       // Issue #303 -- a SEPARATE snapshot, gated by the lemma feature's own
       // readiness rather than the whole-Qur'an total's, since the two
       // features are switched on independently.
-      const beforeKnownForLemma = level === "wbw" && isLemmaProgressPersistenceReady()
-        ? wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired }).countsAsKnown
+      const beforeKnownForLemma = levelWideLive(level)
+        ? wordProgressFor({ tenantId, personId: subjectPersonId, level, occurrenceId: common.occurrenceId, confirmationRequired }).countsAsKnown
         : null;
       // Architect review of issue #322 -- which presses touch the Dictionary
       // Word. Only "Achieved" (mark it known everywhere) or undoing THIS
@@ -14855,7 +14946,7 @@
       // everywhere must not un-know the whole Dictionary Word. A decide
       // action mirrors only when the claim being decided is an Achieved one.
       const beforeStateForLemma = beforeKnownForLemma === null ? null
-        : wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired }).state;
+        : wordProgressFor({ tenantId, personId: subjectPersonId, level, occurrenceId: common.occurrenceId, confirmationRequired }).state;
       const mirrorsLemma = beforeKnownForLemma !== null && (action.kind === "state"
         ? action.state === "achieved" || beforeStateForLemma === "achieved"
         : beforeStateForLemma === "achieved");
@@ -14902,39 +14993,39 @@
               { collection: "activity", action: "wbwEngaged" }
             );
           }
-          await applyWordTotalCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown });
-          // Issue #322 -- "Achieved" on Word progress now IS "mark this word
-          // known everywhere": the Owner's own words, "this is only a double
-          // work... the achieved on word progress should automatically count
-          // this word known everywhere." Mirrors Learning and Not started too
-          // (the issue's own instruction), so the occurrence and lemma lanes
-          // can never disagree -- see the PR description for the one real risk
-          // this was found to carry: a later Learning/Not-started press on a
-          // DIFFERENT, previously-untouched occurrence of an already-known
-          // lemma downgrades the WHOLE Dictionary Word, not just that one
-          // occurrence. Built as asked; flagged rather than silently narrowed.
-          if (mirrorsLemma) {
-            await mirrorLemmaProgress({ kind: "state", state: action.state },
-              { tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnownForLemma });
-          } else {
-            await applyLemmaOccurrenceCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown: beforeKnownForLemma });
-          }
+        }
+        // Issue #322 -- "Achieved" on Word progress now IS "mark this word
+        // known everywhere": the Owner's own words, "this is only a double
+        // work... the achieved on word progress should automatically count
+        // this word known everywhere." Mirrors Learning and Not started too
+        // (the issue's own instruction), so the occurrence and lemma lanes
+        // can never disagree -- see the PR description for the one real risk
+        // this was found to carry: a later Learning/Not-started press on a
+        // DIFFERENT, previously-untouched occurrence of an already-known
+        // lemma downgrades the WHOLE Dictionary Word, not just that one
+        // occurrence. Built as asked; flagged rather than silently narrowed.
+        // Decision 58 (#490): the same applies at Basic (claim keyed by the
+        // meaning group) and Depth (keyed by the root) once their gate is open.
+        await applyWordTotalCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown, level });
+        if (mirrorsLemma) {
+          await mirrorLemmaProgress({ kind: "state", state: action.state },
+            { tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnownForLemma, level });
+        } else {
+          await applyLemmaOccurrenceCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown: beforeKnownForLemma, level });
         }
       } else {
         const note = action.review === "returned" ? (window.prompt(t("What should they look at again?")) ?? null) : null;
         await safeWrite(() => decideWordApproval(db, { ...common, review: action.review, note }),
           { what: "decide Arabic word progress", occurrenceId: common.occurrenceId });
-        if (level === "wbw") {
-          await applyWordTotalCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown });
-          // Issue #322 -- a supervisor's confirm/return mirrors onto the
-          // lemma too, reusing the SAME note already gathered above rather
-          // than prompting a second time.
-          if (mirrorsLemma) {
-            await mirrorLemmaProgress({ kind: "decide", review: action.review, note },
-              { tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnownForLemma });
-          } else {
-            await applyLemmaOccurrenceCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown: beforeKnownForLemma });
-          }
+        await applyWordTotalCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown, level });
+        // Issue #322 -- a supervisor's confirm/return mirrors onto the
+        // lemma too, reusing the SAME note already gathered above rather
+        // than prompting a second time. (Decision 58: at its own level.)
+        if (mirrorsLemma) {
+          await mirrorLemmaProgress({ kind: "decide", review: action.review, note },
+            { tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnownForLemma, level });
+        } else {
+          await applyLemmaOccurrenceCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown: beforeKnownForLemma, level });
         }
       }
       // Issue #303 -- the "if you learn this word" delta and the whole-Qur'an
@@ -14958,23 +15049,28 @@
      * calls this now; the early returns below (no gate, no lemma) stay
      * exactly as strict as when a direct UI control could reach them.
      */
-    async function runLemmaProgressAction(action) {
+    async function runLemmaProgressAction(action, level = "wbw") {
       const { tenantId, subjectPersonId, actorPersonId, isSupervisor } = wordProgressActor();
       if (!tenantId || !subjectPersonId || !actorPersonId || !quranWordCardState.occurrenceId) return;
-      if (!isLemmaProgressPersistenceReady()) return;
+      if (!levelWideLive(level)) return;
       let ref;
       try { ref = parseQuranWordOccurrenceId(quranWordCardState.occurrenceId); } catch { return; }
       const ayah = currentSurahData?.ayahs.find((a) => a.ayah === ref.ayah);
       const word = ayah?.words?.find((w) => w.position === ref.position);
-      const lemmaId = word?.morphology?.lemma;
+      // Decision 58 (#490): the claim is keyed per level -- the lemma (WbW),
+      // the meaning group (Basic) or the root (Depth) -- so ONE document
+      // covers the whole spread and nothing is written for a group-mate or
+      // root-mate. The Basic key needs the groups file (first use).
+      if (level === "basic") await ensureMeaningGroups();
+      const lemmaId = claimKeyOfWord(level, word);
       if (!lemmaId) return;
       const confirmationRequired = !!wordProgressConfirmRequired;
-      const common = { tenantId, personId: subjectPersonId, lemmaId, actorPersonId, actorUid: auth.currentUser?.uid, isSupervisor, confirmationRequired };
+      const common = { tenantId, personId: subjectPersonId, level, lemmaId, actorPersonId, actorUid: auth.currentUser?.uid, isSupervisor, confirmationRequired };
 
       // Snapshotted BEFORE either write below changes it -- the running
       // total must move by exactly the LEMMA's own known-ness transition,
       // never assumed from which button was pressed.
-      const wasLemmaKnown = !!lemmaProgressFor({ tenantId, personId: subjectPersonId, lemmaId, confirmationRequired }).countsAsKnown;
+      const wasLemmaKnown = !!lemmaProgressFor({ tenantId, personId: subjectPersonId, level, lemmaId, confirmationRequired }).countsAsKnown;
 
       if (action.kind === "state") {
         await safeWrite(() => claimLemmaWordState(db, { ...common, state: action.state }),
@@ -14986,21 +15082,24 @@
         await safeWrite(() => decideLemmaWordApproval(db, { ...common, review: action.review, note }),
           { what: "approve this word known everywhere", lemmaId });
       }
-      const isLemmaKnown = !!lemmaProgressFor({ tenantId, personId: subjectPersonId, lemmaId, confirmationRequired }).countsAsKnown;
+      const isLemmaKnown = !!lemmaProgressFor({ tenantId, personId: subjectPersonId, level, lemmaId, confirmationRequired }).countsAsKnown;
 
       // Issue #303 -- move the running whole-Qur'an total across every juz
       // this lemma spans, in ONE document write, but only when the lemma's
       // OWN known-ness actually changed (a re-save of the same state, or a
       // claim that still awaits confirmation, moves nothing).
-      if (isWbwTotalPersistenceReady() && wasLemmaKnown !== isLemmaKnown) {
+      if (levelTotalLive(level) && wasLemmaKnown !== isLemmaKnown) {
         try {
           // Architect review: the Word Card's own lemma list may still be
           // loading -- an empty list made the delta 0 and the total never
           // moved. Read the lemma's occurrences from the cached index.
-          const refs = quranWordCardContext.lemmaOccurrences ?? await occurrenceRefsFor("lemma", lemmaId);
+          // Decision 58: at Basic/Depth the spread is the meaning group / the root.
+          const refs = level === "wbw"
+            ? (quranWordCardContext.lemmaOccurrences ?? await occurrenceRefsFor("lemma", lemmaId))
+            : await spreadRefsFor(level, word);
           if (!juzIndexData) juzIndexData = await getJuzIndex();
           const counts = await getLemmaOccurrenceCounts(db, {
-            tenantId, personId: subjectPersonId, lemmaId, refs, juzIndex: juzIndexData,
+            tenantId, personId: subjectPersonId, level, lemmaId, refs, juzIndex: juzIndexData,
             confirmationRequired, actorUid: auth.currentUser?.uid,
           });
           if (counts) {
@@ -15010,7 +15109,7 @@
             });
             if (!juzWordTotalsData) juzWordTotalsData = await getJuzWordTotalsIndex();
             await safeWrite(
-              () => recordWordTotalDeltaAcrossJuz(db, { tenantId, personId: subjectPersonId, deltaByJuz, actorUid: auth.currentUser?.uid, juzWordTotals: juzWordTotalsData.byJuz }),
+              () => recordWordTotalDeltaAcrossJuz(db, { tenantId, personId: subjectPersonId, level, deltaByJuz, actorUid: auth.currentUser?.uid, juzWordTotals: juzWordTotalsData.byJuz }),
               { what: "update the whole-Qur'an word total for this lemma", lemmaId }
             );
           }
@@ -16337,7 +16436,7 @@
         const occView = wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId, confirmationRequired });
         const lemmaId = w.morphology?.lemma;
         const lemmaView = lemmaId && isLemmaProgressPersistenceReady()
-          ? lemmaViewWithGroup({ tenantId, personId: subjectPersonId, lemmaId, confirmationRequired })
+          ? lemmaViewWithGroup({ tenantId, personId: subjectPersonId, lemmaId, root: w.morphology?.root, confirmationRequired })
           : null;
         const known = lemmaView ? effectiveOccurrenceState(occView, lemmaView).countsAsKnown : !!occView.countsAsKnown;
         return { position: w.position, arabic: w.arabic, occurrenceId, known };

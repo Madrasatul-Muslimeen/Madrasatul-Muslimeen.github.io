@@ -155,6 +155,14 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   learnWordDeltaThisOccurrenceOnly: "If you learn this word here: +{words} word (+{percent}%) — this occurrence only",
   // Decision 56 -- known only through another word of the same root AND meaning.
   knownThroughSameMeaning: "Known through {word} (same meaning)",
+  // Decision 58 (#490) -- one "You know" line per level, and the level that makes a word known.
+  wholeQuranKnownLevel: "You know ({level}) {known} of {total} words of the Qur'an",
+  wholeQuranPercentLevel: "You know ({level}) {percent}% of the words of the Qur'an",
+  levelNameWbw: "WbW",
+  levelNameBasic: "Basic",
+  levelNameDepth: "Depth",
+  knownThroughBasicGroup: "Known through its meaning group (Basic: same meaning)",
+  knownThroughDepthRoot: "Known through the root {root} (Depth: same root)",
 });
 
 function escapeHtml(value) {
@@ -260,7 +268,26 @@ export function segmentedGlossHtml(gloss, segments) {
  * `null` while that gate is closed or nothing has been counted yet for this
  * person; the caller shows nothing rather than a fabricated 0.
  */
-function wholeQuranKnownLines(wholeQuranTotal, text, formatNumber) {
+function wholeQuranKnownLines(wholeQuranTotal, text, formatNumber, levelTotals) {
+  // Decision 58 (#490): once Basic/Depth lemma-wide claims are live the page
+  // hands over one total PER LEVEL and the box carries one pair of lines per
+  // level. Without `levelTotals` (the gate is closed) nothing below changes.
+  if (Array.isArray(levelTotals) && levelTotals.length) {
+    const grouped = (n) => Number(n ?? 0).toLocaleString("en-US");
+    const big = (v) => `<strong class="word-progress-whole-quran-num">${escapeHtml(v)}</strong>`;
+    const names = { wbw: text.levelNameWbw, basic: text.levelNameBasic, depth: text.levelNameDepth };
+    const rows = levelTotals.map(({ level, total }) => {
+      const name = String(names[level] ?? level);
+      const known = escapeHtml(String(text.wholeQuranKnownLevel)).replace("{level}", () => escapeHtml(name))
+        .replace("{known}", big(formatNumber(grouped(total.known))))
+        .replace("{total}", big(formatNumber(grouped(total.total))));
+      const percent = escapeHtml(String(text.wholeQuranPercentLevel)).replace("{level}", () => escapeHtml(name))
+        .replace("{percent}", big(formatNumber(percentRounded(total.known, total.total))));
+      return `<p class="word-progress-whole-quran" data-whole-quran-level="${escapeHtml(level)}">${known}</p>` +
+        `<p class="word-progress-whole-quran-percent" data-whole-quran-level-percent="${escapeHtml(level)}">${percent}</p>`;
+    });
+    return `<div class="word-progress-whole-quran-box">${rows.join("")}</div>`;
+  }
   if (!wholeQuranTotal) return "";
   // Thousands grouped here only ("77,429"; Bangla keeps its own digits via
   // formatNumber) -- i18n's num() is shared with years and references,
@@ -292,6 +319,22 @@ function knownThroughLine(lemma, text) {
   const arabic = `<span dir="rtl" lang="ar">${escapeHtml(lemma)}</span>`;
   const line = escapeHtml(String(text.knownThroughSameMeaning)).replace("{word}", () => arabic);
   return `<p class="word-progress-known-through" data-word-known-through>${line}</p>`;
+}
+
+/**
+ * Decision 58 (#490) -- known only through a Basic claim on the word's meaning
+ * group, or a Depth claim on its root. `via` is `{ level, key }`; the claim key
+ * of a Depth claim IS the root, so it is named; a Basic claim is keyed by the
+ * group id, which is not a word, so the line names the group in words.
+ */
+function knownThroughLevelLine(via, text) {
+  if (!via) return "";
+  if (via.level === "depth") {
+    const root = `<span dir="rtl" lang="ar">${escapeHtml(via.key)}</span>`;
+    const line = escapeHtml(String(text.knownThroughDepthRoot)).replace("{root}", () => root);
+    return `<p class="word-progress-known-through" data-word-known-through data-known-through-level="depth">${line}</p>`;
+  }
+  return `<p class="word-progress-known-through" data-word-known-through data-known-through-level="basic">${escapeHtml(String(text.knownThroughBasicGroup))}</p>`;
 }
 
 function learnDeltaLine(learnDelta, text, formatNumber) {
@@ -339,7 +382,7 @@ function progressBlock(progress, authority, coverage, text, formatNumber, wbw = 
     ${authority && !authority.mayClaim ? `<p class="word-progress-state" data-word-progress-blocked>${escapeHtml(text.progressNotAllowed)}</p>` : ""}
     ${decisions}
     ${coverageLine}
-    ${wholeQuranKnownLines(wbw.wholeQuranTotal, text, formatNumber)}
+    ${wholeQuranKnownLines(wbw.wholeQuranTotal, text, formatNumber, wbw.levelTotals)}
     ${wbw.thisWordShareHtml ?? ""}
     ${learnDeltaLine(wbw.learnDelta, text, formatNumber)}
   </div>`;
@@ -651,8 +694,10 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
         learnDelta: context.learnDelta,
         lemmaProgress: context.lemmaProgress,
         lemmaAuthority: context.lemmaAuthority,
+        levelTotals: context.levelTotals,
       })}
       ${knownThroughLine(context.knownViaGroupLemma, text)}
+      ${knownThroughLevelLine(context.knownViaLevel, text)}
     </div>`;
   }
   if (level === "basic") {
@@ -674,7 +719,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
       ${layers.lemma ? wordShareOfQuranLine(context, text, formatNumber) : ""}
       ${context.occurrencesLoading ? `<p>${escapeHtml(text.loadingOccurrences)}</p>` : ""}
       ${context.occurrencesError ? `<p role="status">${escapeHtml(String(text.occurrencesUnavailable).replace("{error}", context.occurrencesError))}</p>` : ""}
-      ${progressBlock(context.progress, context.authority, null, text, formatNumber)}
+      ${progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals })}
     </div>`;
   }
   // v08.21 -- the occurrence section comes FIRST, then the dictionary and the
@@ -686,7 +731,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
   return `<div role="tabpanel" data-word-card-panel="depth">
     ${dictionaryBox(word, context, text)}
     ${formsSection(layers, context, text, formatNumber, { expandable: true })}
-    ${progressBlock(context.progress, context.authority, null, text, formatNumber)}
+    ${progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals })}
   </div>`;
 }
 

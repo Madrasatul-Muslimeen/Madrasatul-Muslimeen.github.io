@@ -32,8 +32,13 @@ function safeIdSegment(value, label) {
 }
 
 /** One document per person, mirroring activity's own `{tenantId}__{personId}__{weekKey}` shape minus the week -- this counter has no week axis. */
-export function wordTotalDocId({ tenantId, personId } = {}) {
-  return `${safeIdSegment(tenantId, "tenantId")}__${safeIdSegment(personId, "personId")}`;
+export function wordTotalDocId({ tenantId, personId, level = "wbw" } = {}) {
+  const base = `${safeIdSegment(tenantId, "tenantId")}__${safeIdSegment(personId, "personId")}`;
+  // Decision 58 (#490): one document per (tenant, person, LEVEL). WbW keeps
+  // the id it has always had (I5); basic/depth append their level.
+  if (level === "wbw") return base;
+  if (level !== "basic" && level !== "depth") throw new TypeError(`Unknown Arabic level: ${level}.`);
+  return `${base}__${level}`;
 }
 
 /**
@@ -75,11 +80,13 @@ export function buildJuzTotalsMap(juzWordTotals) {
 }
 
 /** The full seeded document a person's first-ever counted word creates. */
-export function emptyWordTotalsDocument({ tenantId, personId, juzWordTotals } = {}) {
+export function emptyWordTotalsDocument({ tenantId, personId, juzWordTotals, level = "wbw" } = {}) {
   return {
     contractVersion: QURAN_WORD_TOTAL_CONTRACT,
     tenantId: safeIdSegment(tenantId, "tenantId"),
     personId: safeIdSegment(personId, "personId"),
+    // WbW's document has never carried `level`; only the new ones do (#490).
+    ...(level === "wbw" ? {} : { level }),
     total: QURAN_TOTAL_WORD_COUNT,
     known: 0,
     byJuz: buildJuzTotalsMap(juzWordTotals),
