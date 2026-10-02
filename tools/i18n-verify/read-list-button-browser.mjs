@@ -74,8 +74,12 @@ for (const lang of ["en", "bn"]) for (const width of [320, 390, 1280]) {
   if (width < 360) check(`${tag} below 360px it is the ☰ alone (square)`, b.word === null && b.w === 36, JSON.stringify(b));
   else check(`${tag} it reads "☰ ${LABEL[lang]}"`, b.word === LABEL[lang], JSON.stringify(b));
 
-  // Press it: the list, on the tab last used. Go to a Juz first.
-  await openList(page, "#readListBtn");
+  // Press it: the list, on the tab last used. Go to a Juz first. A press that
+  // opens nothing must FAIL by name, not stop the suite on a timeout.
+  await page.click("#readListBtn");
+  const opened = await page.waitForFunction(() => !document.getElementById("readContentsMount")?.hidden && document.querySelectorAll("#readContentsBody .rc-row").length > 0, null, { timeout: 5000 }).then(() => true, () => false);
+  check(`${tag} pressing it opens the list`, opened);
+  if (!opened) { await ctx.close(); continue; }
   const tab1 = await page.evaluate(() => document.querySelector('[data-rc-tab][aria-selected="true"]')?.dataset.rcTab);
   check(`${tag} pressing it opens the list, on the Surah tab it was opened from`, tab1 === "surah", tab1);
   await pickRow(page, "juz", 30);
