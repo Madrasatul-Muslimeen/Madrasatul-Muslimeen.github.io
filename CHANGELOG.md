@@ -19204,3 +19204,11 @@ Owner's reports (a blank landing page; the three learning levels, decision 58).
 - With the Al-Fātiḥah count on, **My Status** counts Al-Fātiḥah as seven āyāt from ٱلْحَمْدُ (āyah 7 counts for both 6 and 7), **Explore**'s āyah badges read 1–5 and "6–7" with none on the Bismillah, and **search** shows "1:6–7" (#488, PR #489).
 - The **Surah list** has a **⌂ Home** button beside the ✕: one tap back to the landing page (Owner's request).
 - **Checks**: read-list-home 30/0 (new), fatiha-count 136/0 (both mutation-proven), quran-my-status 248/0, behaviour 1004/4 (sandbox-only).
+
+## v09.44 — 2 Oct 2026 — Basic and Depth word progress (switched off until the Rules are published)
+
+Owner's decision 58 (#490, PR #492).
+
+- Built and waiting: **Basic** Achieved will count every word of the same root with the same meaning (ar-Raḥmān marks ar-Raḥīm, not arḥām); **Depth** Achieved every word of the root; **WbW** stays the same word. The Word card will show one "You know" line per level and say which level made a word known.
+- Switched off until the Owner publishes the prepared Rules; nothing changes on screen today.
+- **Checks**: lemma-levels 240/0 (new, mutation-proven), behaviour 1004/4 (sandbox-only) and 14 other suites green.
