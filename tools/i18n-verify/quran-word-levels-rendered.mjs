@@ -195,7 +195,12 @@ console.log(`\n=== gate FORCED OPEN: claim at basic and depth, independent of wb
   const basicBefore = await readProgressBlock(page);
   check("[forced-open] before any claim: the Basic tab DOES offer controls", basicBefore?.onScreen === true, JSON.stringify(basicBefore));
   check("[forced-open] before any claim: Basic's own state is not_started (independent of the seeded wbw achieved)", basicBefore?.pressed === "not_started", JSON.stringify(basicBefore));
-  check("[forced-open] Basic shows no coverage line and no whole-Qur'an total (WbW-only extras)", !basicBefore?.coverage && !basicBefore?.wholeQuranLine, JSON.stringify(basicBefore));
+  // UPDATED IN PLACE, 2 Oct 2026 -- decision 58 (#492) gives every level its
+  // own "You know" line and passes the per-level totals into the Basic and
+  // Depth tabs too; the Owner published those Rules and the gate is open. So
+  // Basic still has NO coverage line (WbW-only), but its box is the
+  // PER-LEVEL one, labelled by level, never the old single WbW-only total.
+  check("[forced-open] Basic shows no coverage line, and its total is the per-level box (labelled \"(WbW)\")", !basicBefore?.coverage && /\(WbW\)/.test(basicBefore?.wholeQuranLine ?? ""), JSON.stringify(basicBefore));
 
   await page.click('#quranWordCardMount [data-word-progress-state="achieved"]');
   await page.waitForTimeout(500);
