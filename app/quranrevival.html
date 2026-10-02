@@ -3167,6 +3167,8 @@
   /* Owner, 1 Oct 2026: the four stages always show; greyed and not pressable until an Approach is chosen. */
   .approach-stage-btn:disabled { opacity: 0.45; cursor: not-allowed; }
   .approach-stage-btn[aria-pressed="true"] { color: var(--card-button-pressed-text); background: var(--card-button-pressed-bg); border-color: var(--card-button-pressed-bg); font-weight: 600; }
+  /* Owner, 2 Oct 2026: the pressed stage wears its wheel-legend colour (stageColourStyle() in ayah-action-sheet.js sets the three variables from STATUS_COLORS). */
+  .approach-stage-btn[aria-pressed="true"][data-approach-stage-btn] { color: var(--stage-fg, var(--card-button-pressed-text)); background: var(--stage-bg, var(--card-button-pressed-bg)); border-color: var(--stage-edge, var(--card-button-pressed-bg)); }
   /* The "This page" card mounts into the SAME overlay/sheet the Ayah Card
      uses (.ayah-sheet), so it inherits the bottom-sheet/900px-popover split
      for free -- this rule only trims the body padding .ayah-sheet-body never
@@ -4477,7 +4479,7 @@
                button calls the same named function as the control it mirrors. -->
           <div id="readQuickRow">
             <button type="button" class="rq-btn" id="readQuickNoteBtn">Note View</button>
-            <button type="button" class="rq-btn" id="readQuickTrackBtn">Track</button>
+            <button type="button" class="rq-btn" id="readQuickTrackBtn">Record</button>
             <button type="button" class="rq-btn" id="readQuickApproachBtn">Approach</button>
           </div>
           <button type="button" class="secondary qr-ico" id="hideChromeBtn" aria-label="Full screen" title="Full screen">⤢</button>
@@ -6903,7 +6905,11 @@
         const options = sec.items.map((tr) => {
           const statusId = statusOf(tr.id);
           const name = langText(tr.name, getAppLang(), tr.id);
-          return `<option value="${escapeHtml(tr.id)}">${escapeHtml(statusId ? `${name} · ${statusLabel(statusId)}` : name)}</option>`;
+          // Owner, 2 Oct 2026 (a photo of this list, every "Not started" circled):
+          // "written 'Not Started' with approaches names, why? Fix." Only real
+          // progress is written after a name; Not started says nothing.
+          const shown = statusId && statusId !== "not_started";
+          return `<option value="${escapeHtml(tr.id)}">${escapeHtml(shown ? `${name} · ${statusLabel(statusId)}` : name)}</option>`;
         }).join("");
         return label ? `<optgroup label="${escapeHtml(label)}">${options}</optgroup>` : options;
       }).join("");
