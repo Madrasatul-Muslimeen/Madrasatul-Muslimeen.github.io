@@ -106,6 +106,27 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
   check(`${tag} the word's STORED occurrence id is still internal`, await page.evaluate(() => document.querySelector(".quran-word-card")?.dataset.occurrenceId === "quran-word-occurrence:v1:1:7:1"));
   await page.evaluate(() => document.querySelector("[data-word-card-close]")?.click());
 
+  // ---- Progress: pressing Achieved on displayed 7 writes INTERNAL 1:7; displayed 6 shows it too
+  const openHalf = async (half) => {
+    await page.evaluate((h) => document.querySelector(`#pageViewContainer [data-ayah-split-half="${h}"]`)?.click(), half);
+    await page.waitForFunction(() => document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), null, { timeout: 5000 }).catch(() => {});
+    await page.waitForTimeout(400);
+  };
+  await openHalf("b");
+  await page.evaluate(() => { const sel = document.querySelector("[data-approach-stage-select]"); sel.value = "recite"; sel.dispatchEvent(new Event("change", { bubbles: true })); });
+  await page.waitForTimeout(300);
+  await page.evaluate(() => document.querySelector('[data-approach-stage-btn="achieved"]')?.click());
+  await page.waitForTimeout(500);
+  const claim = await page.evaluate(() => (window.__stubWriteData || []).filter((w) => w.col === "records").at(-1));
+  check(`${tag} Achieved on displayed 7 writes entries["ayah:1:7::recite"]`, !!claim && Object.keys(claim.data ?? {}).includes("entries.ayah:1:7::recite") && claim.data["entries.ayah:1:7::recite"].claimedStatus === "achieved", JSON.stringify(claim && Object.keys(claim.data ?? {})));
+  await page.keyboard.press("Escape"); await page.waitForTimeout(300);
+  await openHalf("a");
+  await page.evaluate(() => { const sel = document.querySelector("[data-approach-stage-select]"); sel.value = "recite"; sel.dispatchEvent(new Event("change", { bubbles: true })); });
+  await page.waitForTimeout(300);
+  const pressed6 = await page.evaluate(() => document.querySelector('[data-approach-stage-btn="achieved"]')?.getAttribute("aria-pressed"));
+  check(`${tag} displayed 6 shows Achieved too (one shared record)`, pressed6 === "true", String(pressed6));
+  await page.keyboard.press("Escape"); await page.waitForTimeout(300);
+
   // ---- Mushaf page 1
   await setMushaf(page, true);
   await page.waitForFunction(() => !!document.querySelector("#pageViewContainer .hifz-page"), null, { timeout: 8000 }).catch(() => {});
@@ -144,8 +165,12 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
 
   // ---- No stored key changes: every write path/field uses internal keys only
   const all = await writes(page);
-  const bad = all.filter((w) => /ayah:1:0|ayah:1:8/.test(JSON.stringify(w)));
-  check(`${tag} no write so far carries a displayed-only key (ayah:1:0 / ayah:1:8)`, bad.length === 0, JSON.stringify(bad));
+  // Every written key naming a surah-1 ayah must be an internal one (1..7),
+  // and the only one this run ever claimed is 1:7 -- a remapped write would
+  // name 1:6 (displayed-7's neighbour) or 1:0/1:8.
+  const keysWritten = [...new Set(JSON.stringify(all).match(/ayah:1:\d+/g) ?? [])];
+  const bad = keysWritten.filter((k) => k !== "ayah:1:7");
+  check(`${tag} every written key naming Al-Fātiḥah is the internal ayah:1:7 and nothing else`, bad.length === 0 && keysWritten.length >= 1, JSON.stringify({ keysWritten, n: all.length }));
 
   // ---- Setting OFF: today's behaviour exactly
   await page.evaluate(() => { const c = document.getElementById("fatihaCountToggle"); c.checked = false; c.dispatchEvent(new Event("change", { bubbles: true })); });

@@ -269,6 +269,11 @@ async function enterReadSurah1(page) {
 console.log(`\n=== Ayah Card -- number badge, Take an Approach, Status B (issue #295) ===`);
 {
   const ctx = await newContext(browser, { appLang: "en", viewport: { width: 390, height: 844 }, extraSeedJs: CARD_SEED });
+  // UPDATED IN PLACE, issue #482: this scenario taps the number badge of 1:1,
+  // which is unnumbered under Al-Fātiḥah's new default display count. It is a
+  // scenario about the Ayah Card, not about the count, so it runs with that
+  // reading setting OFF (today's numbering); fatiha-count-browser covers ON.
+  await ctx.addInitScript(() => localStorage.setItem("mm_fatiha_bismillah_unnumbered", "0"));
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   await enterReadSurah1(page);
 
