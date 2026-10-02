@@ -2663,6 +2663,9 @@
     background: #1F3A6E; color: #fff; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.6rem 0.8rem;
   }
   .rc-card header h2 { margin: 0; font-size: 1.05rem; }
+  .rc-header-actions { display: inline-flex; align-items: center; gap: 0.5rem; flex: 0 0 auto; }
+  .rc-home-btn { flex: 0 0 auto; min-height: 40px; padding: 0 0.8rem; display: inline-flex; align-items: center; gap: 0.35rem; font: inherit; font-size: 0.95rem; font-weight: 700; border: 1px solid rgba(255,255,255,0.5); border-radius: 0.35rem; background: transparent; color: #fff; cursor: pointer; white-space: nowrap; }
+  .rc-home-btn span[aria-hidden] { font-size: 1.15rem; line-height: 1; }
   .rc-tabs { display: flex; gap: 0.25rem; padding: 0.4rem 0.5rem 0; border-bottom: 1px solid var(--card-line); }
   .rc-tab {
     flex: 1 1 0; min-width: 0; min-height: 40px; padding: 0.25rem 0.2rem; border: 0; border-bottom: 3px solid transparent; background: none;
@@ -5591,7 +5594,12 @@
     <div id="readContentsCard" class="rc-card" role="dialog" aria-modal="true" aria-labelledby="readContentsTitle">
       <header>
         <h2 id="readContentsTitle">Read</h2>
-        <button type="button" id="readContentsCloseBtn" class="my-status-close-btn">&times;</button>
+        <!-- Owner, 2 Oct 2026 (a phone photo of this list): "Enable a way to
+             move to home (page landing) from here." -->
+        <span class="rc-header-actions">
+          <button type="button" id="readContentsHomeBtn" class="rc-home-btn"><span aria-hidden="true">⌂</span> <span class="rc-home-word">Home</span></button>
+          <button type="button" id="readContentsCloseBtn" class="my-status-close-btn">&times;</button>
+        </span>
       </header>
       <div id="readContentsTabs" class="rc-tabs" role="tablist"></div>
       <input type="search" id="readContentsSearch" class="rc-search" autocomplete="off" />
@@ -10696,6 +10704,7 @@
     function renderReadContents() {
       document.getElementById("readContentsTitle").textContent = t("Read");
       document.getElementById("readContentsCloseBtn").setAttribute("aria-label", t("Close"));
+      document.getElementById("readContentsHomeBtn").setAttribute("aria-label", t("Home"));
       readContentsSearchEl.placeholder = t("Search by name or number");
       readContentsSearchEl.setAttribute("aria-label", t("Search by name or number"));
       // How many of each unit, read off the same lists the rows come from.
@@ -10780,6 +10789,8 @@
     document.getElementById("readContentsBtn")?.addEventListener("click", openReadContents);
     document.getElementById("readListBtn")?.addEventListener("click", openReadContents);
     document.getElementById("readContentsCloseBtn")?.addEventListener("click", closeReadContents);
+    // Owner, 2 Oct 2026: straight from the list to the landing page.
+    document.getElementById("readContentsHomeBtn")?.addEventListener("click", () => { closeReadContents(); openApproachWheel(); });
     readContentsMountEl?.addEventListener("click", (e) => { if (e.target === readContentsMountEl) closeReadContents(); });
     readContentsTabsEl?.addEventListener("click", (e) => {
       const tab = e.target.closest("[data-rc-tab]");
