@@ -3,6 +3,7 @@
 
 import { quranWordOccurrenceId, wordIdentityLayers } from "./quran-word-identity.js";
 import { QURAN_TOTAL_WORD_COUNT, percentRounded } from "./quran-word-total.js";
+import { arabicToBuckwalter } from "./buckwalter.js";
 
 export const WORD_CARD_LEVELS = Object.freeze(["wbw", "basic", "depth"]);
 
@@ -94,9 +95,22 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   lemmaUnavailable: "Dictionary Word unavailable in the approved dataset",
   loadingOccurrences: "Loading occurrences…",
   occurrencesUnavailable: "Occurrence list unavailable: {error}",
-  semanticRangeMissing: "Semantic range not yet supplied",
-  openDictionary: "Open dictionary source",
-  dictionaryUnavailable: "Dictionary source unavailable",
+  // 2 Oct 2026 (#476) -- the Depth tab's Dictionary box. semanticRangeMissing /
+  // openDictionary / dictionaryUnavailable and context.dictionaryUrl are GONE:
+  // nothing else used them.
+  dictionaryHeading: "Dictionary",
+  dictionaryMeaning: "Dictionary meaning",
+  inThisAyah: "In this āyah (word by word)",
+  likelyMatch: "likely match",
+  fixedByUs: "fixed by us",
+  noDictionaryMeaning: "No dictionary meaning yet for this word.",
+  banglaDictionaryPending: "Bangla dictionary meaning: will be added once permission is given",
+  quranicCorpus: "Quranic Corpus ↗",
+  laneHansWehr: "Lane · Hans Wehr ↗",
+  creditMeaning: "Meaning:",
+  creditWiktionary: "Wiktionary",
+  creditWiktionaryLicence: "(CC BY-SA 4.0), adapted.",
+  linksOpenOther: "Links open other websites.",
   // MAP Phase 3 -- the WbW progress block. Every one of these is a string a
   // reader sees, so every one is overridable (I11).
   progressHeading: "Word progress",
@@ -145,7 +159,7 @@ function escapeHtml(value) {
   return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-function safeDictionaryUrl(value) {
+function safeHttpsUrl(value) {
   if (typeof value !== "string") return null;
   try {
     const url = new URL(value);
@@ -559,6 +573,44 @@ function tabButton(level, selected, label) {
   return `<button type="button" role="tab" data-word-card-level="${level}" aria-selected="${selected}" tabindex="${selected ? "0" : "-1"}">${escapeHtml(label)}</button>`;
 }
 
+/**
+ * 2 Oct 2026 (#476) -- the Depth tab's Dictionary box. `context.dictionary` is
+ * `{ entry }` once the (first-use) dictionary file has loaded -- `entry` being
+ * that lemma's `{ m, c, u? }` or null -- and absent until then, when the meaning
+ * line is left out rather than guessed. Pure: the page fetches, this prints.
+ * The meaning is English on both pages (lang="en"); links appear only for a
+ * word that has a root.
+ */
+function dictionaryBox(word, context, text) {
+  const dict = context.dictionary;
+  const entry = dict?.entry ?? null;
+  let meaningHtml = "";
+  if (dict) {
+    meaningHtml = entry
+      ? `<p class="word-card-dict-meaning"><span lang="en" data-word-card-dict-meaning>${escapeHtml(entry.m)}</span>${entry.c === "medium" ? `<span class="word-card-dict-pill" data-word-card-dict-pill="likely">${escapeHtml(text.likelyMatch)}</span>` : ""}${entry.c === "fixed" ? `<span class="word-card-dict-pill" data-word-card-dict-pill="fixed">${escapeHtml(text.fixedByUs)}</span>` : ""}</p>`
+      : `<p class="word-card-dict-none" data-word-card-dict-none>${escapeHtml(text.noDictionaryMeaning)}</p>`;
+  }
+  const bn = text.formMeaningLang === "bn";
+  const wbw = (bn ? word.translation?.bn : word.translation?.en) || (bn ? text.meaningUnavailableBn : text.meaningUnavailableEn);
+  const root = word.morphology?.root;
+  const links = root
+    ? `<div class="word-card-dict-links"><a class="word-card-dict-link" data-word-card-dict-link="corpus" href="https://corpus.quran.com/qurandictionary.jsp?q=${encodeURIComponent(arabicToBuckwalter(root))}" target="_blank" rel="noopener noreferrer">${escapeHtml(text.quranicCorpus)}</a><a class="word-card-dict-link" data-word-card-dict-link="ejtaal" href="https://ejtaal.net/aa/#q=${encodeURIComponent(root)}" target="_blank" rel="noopener noreferrer">${escapeHtml(text.laneHansWehr)}</a></div>`
+    : "";
+  const wiktionaryUrl = entry && entry.c !== "fixed" ? safeHttpsUrl(entry.u) : null;
+  const credit = entry && entry.c !== "fixed"
+    ? `${escapeHtml(text.creditMeaning)} ${wiktionaryUrl ? `<a href="${escapeHtml(wiktionaryUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(text.creditWiktionary)}</a>` : escapeHtml(text.creditWiktionary)} ${escapeHtml(text.creditWiktionaryLicence)} ${escapeHtml(text.linksOpenOther)}`
+    : escapeHtml(text.linksOpenOther);
+  return `<div class="word-card-dictionary" data-word-card-dictionary>
+    <h4>📖 ${escapeHtml(text.dictionaryHeading)}</h4>
+    <div class="word-card-dict-label">${escapeHtml(text.dictionaryMeaning)}</div>${meaningHtml}
+    <div class="word-card-dict-label">${escapeHtml(text.inThisAyah)}</div>
+    <p class="word-card-dict-wbw" lang="${bn ? "bn" : "en"}">${escapeHtml(wbw)}</p>
+    ${bn ? `<p class="word-card-dict-pending" data-word-card-dict-pending>${escapeHtml(text.banglaDictionaryPending)}</p>` : ""}
+    ${links}
+    <p class="word-card-dict-credit">${credit}</p>
+  </div>`;
+}
+
 function levelPanel(level, word, layers, context, text, formatNumber) {
   if (level === "wbw") {
     // Deliberately bilingual: WbW shows the English and Bangla gloss together
@@ -607,10 +659,6 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
       ${progressBlock(context.progress, context.authority, null, text, formatNumber)}
     </div>`;
   }
-  const dictionaryUrl = safeDictionaryUrl(context.dictionaryUrl);
-  const dictionaryLink = dictionaryUrl
-    ? `<a href="${escapeHtml(dictionaryUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(text.openDictionary)}</a>`
-    : `<span>${escapeHtml(text.dictionaryUnavailable)}</span>`;
   // v08.21 -- the occurrence section comes FIRST, then the dictionary and the
   // rest of Depth's existing detail, which is the owner's own ordering.
   // Issue #320 -- claim/confirm controls (progressBlock) are shared with the
@@ -618,10 +666,8 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
   // (whole-Qur'an total, lemma-wide claim): those stay scoped to WbW, per the
   // issue's own point 4.
   return `<div role="tabpanel" data-word-card-panel="depth">
+    ${dictionaryBox(word, context, text)}
     ${formsSection(layers, context, text, formatNumber, { expandable: true })}
-    <div class="word-card-depth-rest">
-      <p>${escapeHtml(context.semanticRange || text.semanticRangeMissing)}</p>${dictionaryLink}
-    </div>
     ${progressBlock(context.progress, context.authority, null, text, formatNumber)}
   </div>`;
 }

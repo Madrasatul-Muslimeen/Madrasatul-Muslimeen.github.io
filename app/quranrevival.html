@@ -2489,7 +2489,20 @@
   .word-card-occurrence-link { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 0.5rem; width: 100%; text-align: left; }
   .word-card-occurrence-arabic { flex: 0 0 auto; font-size: 1.35rem; line-height: 1.7; }
   .word-card-occurrence-ref { flex: 0 0 auto; font-size: 0.76rem; color: var(--card-text-muted); }
-  .word-card-depth-rest { margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px solid var(--card-line); }
+  /* #476 -- the Depth tab's Dictionary box. Card tokens only, so it follows
+     Night and Light; pills are bordered in the heading colour (>= 3:1). */
+  .word-card-dictionary { margin-top: 0.6rem; padding: 0.6rem 0.7rem; background: var(--card-bg-inset); border: 1px solid var(--card-line); border-radius: 12px; color: var(--card-text); }
+  .word-card-dictionary h4 { margin: 0 0 0.3rem; font-size: 0.95rem; color: var(--card-heading); font-family: 'Inter', sans-serif; }
+  .word-card-dict-label { font-size: 0.72rem; color: var(--card-text-muted); margin-top: 0.4rem; }
+  .word-card-dictionary p { margin: 0.1rem 0 0; }
+  .word-card-dict-meaning { font-size: 1.05rem; font-weight: 600; overflow-wrap: anywhere; }
+  .word-card-dict-wbw { font-size: 0.95rem; overflow-wrap: anywhere; }
+  .word-card-dict-none, .word-card-dict-pending, .word-card-dict-credit { font-size: 0.78rem; color: var(--card-text-muted); }
+  .word-card-dict-credit { margin-top: 0.5rem !important; }
+  .word-card-dict-credit a { color: var(--card-link); }
+  .word-card-dict-pill { display: inline-block; margin-left: 0.5rem; padding: 0.05rem 0.5rem; font-size: 0.7rem; font-weight: 600; color: var(--card-text); border: 1px solid var(--card-heading); border-radius: 999px; vertical-align: middle; }
+  .word-card-dict-links { display: flex; gap: 0.5rem; margin-top: 0.6rem; }
+  .word-card-dict-link { flex: 1 1 0; min-width: 0; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-height: 40px; padding: 0 0.5rem; text-align: center; font-size: 0.82rem; font-weight: 600; color: var(--card-heading); border: 1px solid var(--card-heading); border-radius: 999px; text-decoration: none; }
   @media (max-width: 380px) {
     .word-card-form-arabic { font-size: 1.3rem; }
     .word-card-occurrence-arabic { font-size: 1.2rem; }
@@ -5639,6 +5652,7 @@
     import { searchQuran } from "./js/quran-search.js";
     import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootPanel, renderDerivativesPanel, renderTranslationPanel, tajweedRawToSafeHtml, digitsForLang, stripLeadingBismillah, splitPlainArabicWords, arabicWordButtonHtml, tajweedWordButtonsHtml } from "./js/ayah-renderer.js";
     import { parseQuranWordOccurrenceId } from "./js/quran-word-identity.js";
+    import { loadLemmaDictionary, lemmaDictionaryEntry } from "./js/lemma-dictionary.js";
     import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard, renderQuranWordCard, WORD_CARD_POS_SEGMENTS } from "./js/quran-word-card.js";
     import { occurrenceRefsFor, rootFormsFor, unpackWordIndexRef, loadWordIdentityIndex } from "./js/quran-word-index.js";
     import { relatedBySharedWords, relatedThroughLists, connectedThroughNotes } from "./js/ayah-related.js";
@@ -6491,6 +6505,20 @@
      *  (hydrateWordCardLemmaExtras) alongside hydrateWordProgress, not as
      *  part of the occurrence-list hydrate. */
     let quranWordCardLemmaContext = {};
+    // #476 -- the Dictionary box's data, fetched the FIRST time a Depth tab is
+    // drawn (never at startup) and then held in memory.
+    let lemmaDictionary = null;
+    let lemmaDictionaryLoading = false;
+    function wordCardDictionaryContext(word) {
+      if (!lemmaDictionary) return {};
+      return { dictionary: { entry: lemmaDictionaryEntry(lemmaDictionary, word.morphology?.lemma) } };
+    }
+    function ensureLemmaDictionary() {
+      if (lemmaDictionary || lemmaDictionaryLoading) return;
+      lemmaDictionaryLoading = true;
+      loadLemmaDictionary().then((d) => { lemmaDictionary = d; }).catch((e) => console.warn("dictionary unavailable", e))
+        .finally(() => { lemmaDictionaryLoading = false; if (lemmaDictionary && quranWordCardState.open && quranWordCardState.level === "depth") renderPersistentWordCard(); });
+    }
     let quranWordCardLemmaRequestId = 0;
     /** v08.20 -- set ONLY while the reader followed a Basic-Arabic occurrence
      *  link out of a word, and cleared the moment they go back or close the
@@ -14042,9 +14070,19 @@
         lemmaUnavailable: t("Dictionary Word unavailable in the approved dataset"),
         loadingOccurrences: t("Loading occurrences…"),
         occurrencesUnavailable: t("Occurrence list unavailable: {error}"),
-        semanticRangeMissing: t("Semantic range not yet supplied"),
-        openDictionary: t("Open dictionary source"),
-        dictionaryUnavailable: t("Dictionary source unavailable"),
+        dictionaryHeading: t("Dictionary"),
+        dictionaryMeaning: t("Dictionary meaning"),
+        inThisAyah: t("In this āyah (word by word)"),
+        likelyMatch: t("likely match"),
+        fixedByUs: t("fixed by us"),
+        noDictionaryMeaning: t("No dictionary meaning yet for this word."),
+        banglaDictionaryPending: t("Bangla dictionary meaning: will be added once permission is given"),
+        quranicCorpus: t("Quranic Corpus ↗"),
+        laneHansWehr: t("Lane · Hans Wehr ↗"),
+        creditMeaning: t("Meaning:"),
+        creditWiktionary: t("Wiktionary"),
+        creditWiktionaryLicence: t("(CC BY-SA 4.0), adapted."),
+        linksOpenOther: t("Links open other websites."),
         // Issue #206 -- the Word Card's own occurrence-share line.
         wordShareOfQuran: t("Appears {count} times in the Qur'an — {percent}% of all words"),
         // Issue #263 -- word-part colouring switch + legend.
@@ -14782,7 +14820,8 @@
       wordCardMountEls().forEach((m) => { if (m !== mount) { m.hidden = true; const c = m.querySelector("[data-word-card-content]"); if (c) c.innerHTML = ""; } });
       mount.hidden = false;
       const content = mount.querySelector("[data-word-card-content]") ?? mount;
-      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: getColourWordParts() }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      if (quranWordCardState.level === "depth") ensureLemmaDictionary();
+      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, ...wordCardDictionaryContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: getColourWordParts() }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
       if (focusSelector) (mount.querySelector(focusSelector)?.disabled ? mount.querySelector("[data-word-card-close]") : mount.querySelector(focusSelector))?.focus({ preventScroll: true });
     }
 

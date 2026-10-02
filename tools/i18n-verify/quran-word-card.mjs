@@ -111,15 +111,15 @@ check("Depth lists the same forms and expands one of them", () => {
   assert.match(html, /data-word-occurrence-goto="1:1:1"/);
   assert.match(html, /Showing the first 1 of 8 occurrences/); // the cap is stated
 });
-check("Depth puts the occurrence section before the dictionary detail", () => {
+check("Depth puts the Dictionary box ABOVE the derived forms (#476; it was the other way round before)", () => {
   const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "depth"), chapter, ayah, word, context: formsContext });
-  assert.ok(html.indexOf("word-card-forms") < html.indexOf("word-card-depth-rest"));
-  assert.match(html, /Dictionary source unavailable/); // preserved, not dropped
+  assert.ok(html.indexOf("data-word-card-dictionary") > -1);
+  assert.ok(html.indexOf("data-word-card-dictionary") < html.indexOf("word-card-forms"));
 });
 check("missing root is reported honestly", () => { const noRoot = { ...word, morphology: { pos: "Particle" } }; const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word: noRoot }); assert.match(html, /Root unavailable/); });
-check("Depth never invents dictionary or semantic data", () => { const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "depth"), chapter, ayah, word }); assert.match(html, /Semantic range not yet supplied/); assert.match(html, /Dictionary source unavailable/); });
-check("supplied HTTPS dictionary links encode unsafe URL characters", () => { const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "depth"), chapter, ayah, word, context: { dictionaryUrl: 'https://example.test/?q="x"' } }); assert.match(html, /q=%22x%22/); assert.match(html, /noopener noreferrer/); });
-check("non-HTTPS dictionary URL is never linked", () => { const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "depth"), chapter, ayah, word, context: { dictionaryUrl: 'javascript:alert(1)' } }); assert.doesNotMatch(html, /href=/); assert.match(html, /Dictionary source unavailable/); });
+check("Depth never invents a dictionary meaning before the dictionary has loaded (#476)", () => { const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "depth"), chapter, ayah, word }); assert.match(html, /data-word-card-dictionary/); assert.doesNotMatch(html, /data-word-card-dict-meaning|data-word-card-dict-none/); assert.doesNotMatch(html, /Semantic range|Dictionary source unavailable/); });
+check("the Wiktionary credit link encodes unsafe URL characters (#476)", () => { const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "depth"), chapter, ayah, word, context: { dictionary: { entry: { m: "x", c: "high", u: 'https://example.test/?q="x"' } } } }); assert.match(html, /q=%22x%22/); assert.match(html, /noopener noreferrer/); });
+check("a non-HTTPS Wiktionary url is never linked (#476)", () => { const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "depth"), chapter, ayah, word, context: { dictionary: { entry: { m: "x", c: "high", u: 'javascript:alert(1)' } } } }); assert.doesNotMatch(html, /javascript:/); });
 check("previous and next move within the supplied occurrence order", () => { const ids = [id, quranWordOccurrenceId(1, 1, 2)]; assert.equal(moveWordCard(openWordCard(createWordCardState(), id), ids, "next").occurrenceId, ids[1]); assert.equal(moveWordCard(openWordCard(createWordCardState(), ids[1]), ids, "previous").occurrenceId, id); });
 check("navigation stops safely at a boundary", () => { const state = openWordCard(createWordCardState(), id); assert.equal(moveWordCard(state, [id], "previous"), state); });
 check("mismatched card data is rejected", () => assert.throws(() => renderQuranWordCard({ state: openWordCard(createWordCardState(), quranWordOccurrenceId(1, 1, 2)), chapter, ayah, word })));
@@ -140,9 +140,7 @@ check("every printed string follows the supplied language", () => {
     lemmaUnavailable: "অনুমোদিত তথ্যভাণ্ডারে মূল রূপ পাওয়া যায়নি",
     loadingOccurrences: "ব্যবহারসমূহ লোড হচ্ছে…",
     occurrencesUnavailable: "ব্যবহারের তালিকা পাওয়া যায়নি: {error}",
-    semanticRangeMissing: "অর্থের পরিধি এখনো দেওয়া হয়নি",
-    openDictionary: "অভিধানের উৎস খুলুন",
-    dictionaryUnavailable: "অভিধানের উৎস পাওয়া যায়নি",
+    dictionaryHeading: "অভিধান",
   };
   const open = openWordCard(createWordCardState(), id);
   const basic = renderQuranWordCard({ state: selectWordCardLevel(open, "basic"), chapter, ayah, word, context: { rootOccurrenceCount: 381 }, labels: bn });
@@ -150,7 +148,7 @@ check("every printed string follows the supplied language", () => {
   assert.match(basic, /মূল রূপ/);
   assert.doesNotMatch(basic, /Lemma|Part of speech|root-linked/);
   const depth = renderQuranWordCard({ state: selectWordCardLevel(open, "depth"), chapter, ayah, word, labels: bn });
-  assert.match(depth, /অর্থের পরিধি এখনো দেওয়া হয়নি/);
+  assert.match(depth, /অভিধান/);
   assert.doesNotMatch(depth, /Semantic range|Dictionary source unavailable/);
   const shell = renderQuranWordCard({ state: open, chapter, ayah, word, labels: bn });
   assert.match(shell, /aria-label="কুরআন শব্দ কার্ড"/);
@@ -183,7 +181,7 @@ check("the page really hands the card its reader's language", () => {
   // Each label must come from t(), not a literal typed at the call site.
   const body = page.slice(page.indexOf("function wordCardLabels()"));
   const block = body.slice(0, body.indexOf("\n    }"));
-  ["Quran word card", "Basic Arabic", "Arabic in Depth", "Open dictionary source"]
+  ["Quran word card", "Basic Arabic", "Arabic in Depth", "Dictionary meaning"]
     .forEach((k) => assert.ok(block.includes(`t("${k}")`), `${k} is not translated at the call site`));
 });
 
