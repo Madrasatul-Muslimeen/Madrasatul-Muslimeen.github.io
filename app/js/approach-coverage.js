@@ -13,6 +13,7 @@
 // re-deriving the rule a second time.
 
 import { STATUSES } from "./unit-keys.js";
+import { displayCount, FATIHA_SURAH } from "./fatiha-count.js";
 
 export const QURAN_TOTAL_AYAH_COUNT = 6236;
 export const WBW_TRACKABLE_ID = "approach_04";
@@ -231,14 +232,28 @@ export function summarizeApproachAyahCoverage({
   ownAyahStatusesBySurahAyah,
   wideSpans,
   wideClaimsByUnitType,
+  fatihaOn = false,
 } = {}) {
   const yes = countsForEachAyah(trackable);
   const counts = { not_started: 0, learning: 0, practising: 0, achieved: 0, mastered: 0 };
   let excludedNotApplicable = 0;
   for (const { surahNumber, ayahCount } of surahAyahCounts ?? []) {
-    for (let ayah = 1; ayah <= ayahCount; ayah++) {
+    const statusOf = (ayah) => {
       const own = ownAyahStatusesBySurahAyah?.get(`${surahNumber}:${ayah}`) ?? "not_started";
-      const statusId = effectiveStatus({ own, spans: wideSpans, surah: surahNumber, ayah, trackable });
+      return effectiveStatus({ own, spans: wideSpans, surah: surahNumber, ayah, trackable });
+    };
+    if (fatihaOn && surahNumber === FATIHA_SURAH) {
+      // Issue #488 -- Al-Fātiḥah's display count: internal 1:1 is not counted
+      // and internal 1:7 counts for both 6 and 7 (displayCount() owns that).
+      for (const id of [...Object.keys(counts), "not_applicable"]) {
+        const n = displayCount(surahNumber, ayahCount, true, (a) => statusOf(a) === id).count;
+        if (id === "not_applicable") excludedNotApplicable += n;
+        else counts[id] += n;
+      }
+      continue;
+    }
+    for (let ayah = 1; ayah <= ayahCount; ayah++) {
+      const statusId = statusOf(ayah);
       if (statusId === "not_applicable") { excludedNotApplicable++; continue; }
       counts[statusId] = (counts[statusId] ?? 0) + 1;
     }

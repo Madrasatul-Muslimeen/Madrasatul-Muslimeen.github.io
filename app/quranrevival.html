@@ -7907,7 +7907,7 @@
       // lives. Without it a result read "2:45" -- a bare number, in an app
       // whose whole point this round is finding things you cannot number.
       const meta = surahIndex.find((s) => s.surahNumber === hit.surah);
-      ref.textContent = `${surahName(hit.surah, meta?.nameEnglish)} — ${num(hit.surah)}:${num(hit.ayah)}`;
+      ref.textContent = `${surahName(hit.surah, meta?.nameEnglish)} — ${searchRefFor(hit.surah, hit.ayah)}`;
       const snip = document.createElement("span");
       snip.className = "snip";
       // Arabic reads right to left, and its own line-height and face; the
@@ -8093,6 +8093,15 @@
       if (!fatihaCountApplies(surah, fatihaOn())) return `${surah}:${ayah}`;
       const d = displayForInternalAyah(surah, ayah, true);
       return d.kind === "bismillah" ? t("Bismillah") : `${surah}:${d.kind === "span" ? "6–7" : d.number}`;
+    }
+    /** The number a wheel/sidebar badge prints: nothing for the Bismillah, "6–7" for internal 1:7. */
+    function ayahBadgeFor(surah, ayah) {
+      return fatihaCountApplies(surah, fatihaOn()) && ayah === 1 ? "" : ayahLabelFor(surah, ayah);
+    }
+    /** A search chip's reference: "1:6–7", or the word Bismillah for internal 1:1. */
+    function searchRefFor(surah, ayah) {
+      if (!fatihaCountApplies(surah, fatihaOn())) return `${num(surah)}:${num(ayah)}`;
+      return ayah === 1 ? t("Bismillah") : `${num(surah)}:${ayahLabelFor(surah, ayah)}`;
     }
     function wordRefFor(surah, ayah, position) {
       return displayWordRef(surah, ayah, position, fatihaOn(), t("Bismillah"));
@@ -9959,7 +9968,8 @@
 
     function myStatusCacheKey() {
       const { tenantId, subjectPersonId } = wordProgressActor();
-      return tenantId && subjectPersonId ? `${tenantId}|${subjectPersonId}` : null;
+      // Issue #488: the Al-Fātiḥah count setting changes the totals, so it is part of the key.
+      return tenantId && subjectPersonId ? `${tenantId}|${subjectPersonId}|${fatihaOn() ? 1 : 0}` : null;
     }
 
     /** Called wherever this app already clears a per-person cache on a
@@ -10053,7 +10063,7 @@
         }
         const wideClaimsByUnitType = tallyWideClaimsByUnitType(wideEntries);
         summaries.set(trackable.id, summarizeApproachAyahCoverage({
-          trackable, surahAyahCounts, ownAyahStatusesBySurahAyah, wideSpans, wideClaimsByUnitType,
+          trackable, surahAyahCounts, ownAyahStatusesBySurahAyah, wideSpans, wideClaimsByUnitType, fatihaOn: fatihaOn(),
         }));
         ownAyahByTrackable.set(trackable.id, ownAyahStatusesBySurahAyah);
         wideSpansByTrackable.set(trackable.id, wideSpans);
@@ -11450,7 +11460,7 @@
         const items = surahData.ayahs.map((a) => {
           const statusId = effectiveAyahStatus(exploreSurahNum, a.ayah, trackable.id);
           const label = t("Ayah {ayah}", { ayah: ayahLabelFor(exploreSurahNum, a.ayah) });
-          return { key: a.ayah, number: a.ayah, statusId, label, title: segTitle(label, statusId, labelsById) };
+          return { key: a.ayah, number: ayahBadgeFor(exploreSurahNum, a.ayah), statusId, label, title: segTitle(label, statusId, labelsById) };
         });
         const jumpToStudy = (key) => goToAyahFromExplore(exploreSurahNum, Number(key));
         exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
@@ -11499,7 +11509,7 @@
       const entries = exploreChunksBySurah.get(exploreSurahNum)?.entries ?? {};
       const items = ayahsInRuku.map((a) => {
         const statusId = effectiveAyahStatus(exploreSurahNum, a.ayah, trackable.id);
-        return { key: a.ayah, number: a.ayah, statusId, label: t("Ayah {ayah}", { ayah: ayahLabelFor(exploreSurahNum, a.ayah) }) };
+        return { key: a.ayah, number: ayahBadgeFor(exploreSurahNum, a.ayah), statusId, label: t("Ayah {ayah}", { ayah: ayahLabelFor(exploreSurahNum, a.ayah) }) };
       });
       const exploreSurah = surahIndex.find((s) => s.surahNumber === exploreSurahNum);
       const currentSurahName = exploreSurah ? surahName(exploreSurah.surahNumber, exploreSurah.nameEnglish) : t("Surah {surah}", { surah: num(exploreSurahNum) });
