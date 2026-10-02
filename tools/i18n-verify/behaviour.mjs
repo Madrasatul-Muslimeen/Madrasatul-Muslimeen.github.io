@@ -389,7 +389,10 @@ console.log("\n=== 8. PHASE 2: the Quran module in Bangla ===");
 
   // Ayah picker + position readout.
   const ayah = await page.evaluate(() => ({
-    firstOpt: document.getElementById("ayahSelect").options[0]?.textContent,
+    // UPDATED IN PLACE, issue #482: on Al-Fātiḥah the first option is now the
+    // word "Bismillah" (the Bismillah is unnumbered by default), so the
+    // numeral check reads the SECOND option, which is still a number.
+    firstOpt: document.getElementById("ayahSelect").options[1]?.textContent,
     firstVal: document.getElementById("ayahSelect").options[0]?.value,
     position: document.getElementById("ayahPosition")?.textContent?.trim(),
   }));
