@@ -2250,7 +2250,19 @@
      top-bar reference is to still say which Surah/āyāt this is in the BARE
      full-screen state, where the strip is otherwise empty apart from the
      full-screen icon. */
-  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar > *:not(#hideChromeBtn):not(#mushafPageRef):not(#readQuickRow) { display: none; }
+  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar > *:not(#hideChromeBtn):not(#mushafPageRef):not(#readQuickRow):not(#readListBtn) { display: none; }
+  /* Owner, 2 Oct 2026 -- "☰ Surah list", the way back from a Read view opened
+     from the list. Same face as the ⤢ button beside it (36px, gold border);
+     only on that route, full screen or not. Below 360px it is the ☰ alone. */
+  #readBar #readListBtn { display: none; }
+  body.read-from-contents #readBar #readListBtn {
+    box-sizing: border-box; height: 36px; min-width: 36px; padding: 0 0.7rem; margin: 0 auto 0 0; flex: 0 0 auto; order: -1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+    font-size: 0.9rem; font-weight: 700; line-height: 1; border-radius: 0.5rem; white-space: nowrap;
+    background: #fff; color: #1F3A6E; border: 2px solid #B8862F; box-shadow: 0 1px 4px rgba(19, 25, 42, 0.28); cursor: pointer;
+  }
+  body.read-from-contents #readBar #readListBtn > span[aria-hidden] { font-size: 1.1rem; }
+  @media (max-width: 359px) { body.read-from-contents #readBar #readListBtn { padding: 0; width: 36px; } #readListBtn .read-list-word { display: none; } }
   /* Issue #419 -- Note View / Track / Approach for readers who came in through
      the Read contents list. Shown only when ALL of: opened from that list
      (body.read-from-contents, set in openReadContentsRow and cleared by
@@ -4445,6 +4457,11 @@
                Content is built in JS (updateMushafPageRef()) as a text span
                plus a decorative ▾, same shape readTextSizeSlot uses for a
                JS-filled slot. -->
+          <!-- Owner, 2 Oct 2026 ("Read>Surah List>Surah>Read View. What's the way
+               from read view to Surah list? Make one." -- demo approved, "go"):
+               back to the list this Read view was opened from, on the tab last
+               used. Shown only on that route (body.read-from-contents). -->
+          <button type="button" id="readListBtn" class="read-list-btn" aria-label="Surah list"><span aria-hidden="true">☰</span><span class="read-list-word">Surah list</span></button>
           <button type="button" id="mushafPageRef" class="mushaf-page-ref" hidden></button>
           <!-- Issue #370 (Global Approach Card, Owner-approved 29 Sep 2026) --
                the "Choose an Approach" capsule. It takes the space
@@ -10604,6 +10621,7 @@
     window.addEventListener("resize", positionReadQuickRow);
 
     document.getElementById("readContentsBtn")?.addEventListener("click", openReadContents);
+    document.getElementById("readListBtn")?.addEventListener("click", openReadContents);
     document.getElementById("readContentsCloseBtn")?.addEventListener("click", closeReadContents);
     readContentsMountEl?.addEventListener("click", (e) => { if (e.target === readContentsMountEl) closeReadContents(); });
     readContentsTabsEl?.addEventListener("click", (e) => {
