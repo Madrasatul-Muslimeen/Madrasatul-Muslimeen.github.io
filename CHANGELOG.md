@@ -19212,3 +19212,11 @@ Owner's decision 58 (#490, PR #492).
 - Built and waiting: **Basic** Achieved will count every word of the same root with the same meaning (ar-Raḥmān marks ar-Raḥīm, not arḥām); **Depth** Achieved every word of the root; **WbW** stays the same word. The Word card will show one "You know" line per level and say which level made a word known.
 - Switched off until the Owner publishes the prepared Rules; nothing changes on screen today.
 - **Checks**: lemma-levels 240/0 (new, mutation-proven), behaviour 1004/4 (sandbox-only) and 14 other suites green.
+
+## v09.45 — 2 Oct 2026 — Bookmarks open where their text is
+
+Owner, 2 Oct 2026: "Bookmark must open to the exact screen and with exact screen where it was bookmarked."
+
+- An older bookmark, or one made in the Note view, on a Page, Juz, Hizb, Ruku' or a surah longer than one page now opens the **Read view** at its place (e.g. Page 257 opens on Mushaf page 257), not the "read it on the Read screen" stand-in.
+- Āyah, Range and one-page-surah bookmarks open as before.
+- **Checks**: bookmark-open-browser 59/0 (new cases and mutation), behaviour 1007/1 (sandbox-only), read-list-home, boot-status, stub-parity green.

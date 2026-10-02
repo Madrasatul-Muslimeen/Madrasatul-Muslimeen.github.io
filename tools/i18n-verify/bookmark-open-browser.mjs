@@ -13,8 +13,14 @@
 //   - a missing bookmark: landing page + a sentence, no endless cover.
 //   - ?goto= opens without flashes too.
 //   - creating a bookmark in the Read view writes settings.view === "read".
-// Two mutations prove the checks can fail: (a) no cover, (b) settings.view
-// ignored.
+//   - (2 Oct 2026, the owner: "Bookmark must open to the exact screen ...
+//     where it was bookmarked") an old bookmark (no `view`) or a Note-view
+//     one on a unit whose text the Note view cannot show -- Page 257, or a
+//     surah longer than one page -- opens the Read view at that place, never
+//     the "read it on the Read screen" stand-in. A one-page surah's Note
+//     bookmark still opens the Note view, where its text IS shown.
+// Three mutations prove the checks can fail: (a) no cover, (b) settings.view
+// ignored, (c) the Note-view-cannot-show test removed.
 import { chromium, newContext, openPage } from "./harness.mjs";
 
 let pass = 0, fail = 0;
@@ -27,7 +33,15 @@ const seedJs = `
     { id: "bmRead", programId: "none", moduleId: "quranrevival", subjectId: "quran", name: "Read spot", position: "ayah:3:10", folderId: null, removed: false,
       settings: { view: "read", unitType: "ayah", surahNum: 3, ayahNum: 10, trackableId: "tafsir", mushafOn: false }, createdAt: "2026-01-02T00:00:00.000Z" },
     { id: "bmNote", programId: "none", moduleId: "quranrevival", subjectId: "quran", name: "Note spot", position: "ayah:2:255", folderId: null, removed: false,
-      settings: { view: "note", unitType: "ayah", surahNum: 2, ayahNum: 255, trackableId: "tafsir", mushafOn: false }, createdAt: "2026-01-03T00:00:00.000Z" }
+      settings: { view: "note", unitType: "ayah", surahNum: 2, ayahNum: 255, trackableId: "tafsir", mushafOn: false }, createdAt: "2026-01-03T00:00:00.000Z" },
+    { id: "bmPageOld", programId: "none", moduleId: "quranrevival", subjectId: "quran", name: "Old page", position: "page:madani:257", folderId: null, removed: false,
+      settings: { unitType: "page", surahNum: 14, ayahNum: 11, trackableId: "tafsir", mushafOn: false }, createdAt: "2026-01-04T00:00:00.000Z" },
+    { id: "bmPageNote", programId: "none", moduleId: "quranrevival", subjectId: "quran", name: "Note page", position: "page:madani:257", folderId: null, removed: false,
+      settings: { view: "note", unitType: "page", surahNum: 14, ayahNum: 13, trackableId: "tafsir", mushafOn: false }, createdAt: "2026-01-05T00:00:00.000Z" },
+    { id: "bmSurahLong", programId: "none", moduleId: "quranrevival", subjectId: "quran", name: "Long surah", position: "surah:14", folderId: null, removed: false,
+      settings: { view: "note", unitType: "surah", surahNum: 14, ayahNum: 1, trackableId: "tafsir", mushafOn: false }, createdAt: "2026-01-06T00:00:00.000Z" },
+    { id: "bmSurahShort", programId: "none", moduleId: "quranrevival", subjectId: "quran", name: "Short surah", position: "surah:112", folderId: null, removed: false,
+      settings: { view: "note", unitType: "surah", surahNum: 112, ayahNum: 1, trackableId: "tafsir", mushafOn: false }, createdAt: "2026-01-07T00:00:00.000Z" }
   );
 `;
 
@@ -77,6 +91,10 @@ async function run({ lang, width, query, mutate = null }) {
     noteOpen: document.getElementById("noteView")?.hidden === false,
     surah: document.getElementById("surahSelect")?.value,
     ayah: document.getElementById("ayahSelect")?.value,
+    unitType: document.getElementById("unitTypeSelect")?.value,
+    unitNum: document.getElementById("unitNumSelect")?.value,
+    standIn: !!document.querySelector("#noteView:not([hidden]) [data-note-open-read]"),
+    readText: (document.getElementById("readScroll")?.innerText ?? "").length,
     notFound: document.getElementById("bmNotFound")?.textContent ?? null,
     coverText: document.getElementById("bmCoverText")?.textContent ?? null,
   }));
@@ -104,6 +122,21 @@ for (const width of [390, 1280]) {
 
     const old = await run({ lang, width, query: "?bookmark=bm1" });
     check(`${tag} old bookmark (no view) opens the Note view, no flashes`, noFlash(old, "note") && old.noteOpen && old.surah === "2" && old.ayah === "255", JSON.stringify(old));
+
+    const pg = await run({ lang, width, query: "?bookmark=bmPageOld" });
+    check(`${tag} old Page 257 bookmark (no view) opens the Read view at page 257, not the stand-in`,
+      pg.readOpen && !pg.noteOpen && !pg.standIn && pg.surah === "14" && pg.unitType === "page" && pg.unitNum === "257" && pg.ayah === "11" && pg.readText > 50, JSON.stringify(pg));
+    check(`${tag} ...with no landing wheel and no Note view on the way`, pg.seen.wheel === 0 && pg.seen.note === 0 && pg.seen.cover > 0, JSON.stringify(pg.seen));
+
+    const pn = await run({ lang, width, query: "?bookmark=bmPageNote" });
+    check(`${tag} Note-view Page 257 bookmark opens the Read view at page 257 (the Note view cannot show a page)`,
+      pn.readOpen && !pn.noteOpen && !pn.standIn && pn.surah === "14" && pn.unitNum === "257", JSON.stringify(pn));
+
+    const sl = await run({ lang, width, query: "?bookmark=bmSurahLong" });
+    check(`${tag} Note-view bookmark on a many-page surah (14) opens the Read view`, sl.readOpen && !sl.noteOpen && !sl.standIn && sl.surah === "14" && sl.unitType === "surah", JSON.stringify(sl));
+
+    const ss = await run({ lang, width, query: "?bookmark=bmSurahShort" });
+    check(`${tag} Note-view bookmark on a one-page surah (112) still opens the Note view, with its text`, ss.noteOpen && !ss.readOpen && !ss.standIn && ss.surah === "112", JSON.stringify(ss));
 
     const gt = await run({ lang, width, query: "?goto=2:255" });
     check(`${tag} ?goto= opens the Note view with no landing flash`, noFlash(gt, "note") && gt.noteOpen && !gt.coverOn, JSON.stringify(gt));
@@ -148,6 +181,9 @@ console.log("\n=== mutation proofs (each must make its check FAIL) ===");
   // (b) ignore settings.view: the Read bookmark opens the Note view.
   const m = await run({ lang: "en", width: 390, query: "?bookmark=bmRead", mutate: (b) => b.replace('settings?.view === "read"', "false") });
   check("mutation (b) settings.view ignored -> the Read-view check FAILS", !(m.readOpen && !m.noteOpen), JSON.stringify(m));
+  // (c) never send a Note-unshowable bookmark to the Read view: the old Page 257 bookmark lands on the stand-in.
+  const c = await run({ lang: "en", width: 390, query: "?bookmark=bmPageOld", mutate: (b) => b.replace('if (settings?.view && settings.view !== "note") return false;', "return false;") });
+  check("mutation (c) Note-view-cannot-show test removed -> the Page 257 check FAILS", !(c.readOpen && !c.noteOpen && !c.standIn) && c.standIn, JSON.stringify(c));
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);
