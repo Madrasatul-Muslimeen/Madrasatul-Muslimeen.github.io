@@ -19198,3 +19198,9 @@ Owner's reports (a blank landing page; the three learning levels, decision 58).
 - While the app waits for the database it now says **"Loading your study…"**; after 12 seconds **"Still loading…"** with a **Reload** button. Signed out, it says so with a **Sign in** button on the page. If a start-up step fails, the page says which one, with Reload. Before, all three looked like an empty page.
 - **WbW Achieved counts the same word only** again: ar-Raḥmān no longer marks ar-Raḥīm from WbW. "Same root, same meaning" belongs to Basic, and "the whole root" to Depth; both come once the Owner publishes the prepared Rules.
 - **Checks**: boot-status 24/0 (new, mutation-proven), known-meaning-groups 66/0 and known-word-marks 122/0 (updated in place, mutation-proven), behaviour 1004/4 (sandbox-only), phone-width-overflow 217/0.
+
+## v09.43 — 2 Oct 2026 — Al-Fātiḥah count everywhere; Home from the Surah list
+
+- With the Al-Fātiḥah count on, **My Status** counts Al-Fātiḥah as seven āyāt from ٱلْحَمْدُ (āyah 7 counts for both 6 and 7), **Explore**'s āyah badges read 1–5 and "6–7" with none on the Bismillah, and **search** shows "1:6–7" (#488, PR #489).
+- The **Surah list** has a **⌂ Home** button beside the ✕: one tap back to the landing page (Owner's request).
+- **Checks**: read-list-home 30/0 (new), fatiha-count 136/0 (both mutation-proven), quran-my-status 248/0, behaviour 1004/4 (sandbox-only).
