@@ -116,18 +116,25 @@ for (const [width, height] of [[390, 844], [1280, 900]]) {
     await openWord(page, 1, 1, 3);
     await page.click('#quranWordCardMount [data-word-progress-state="achieved"]');
     await page.waitForTimeout(900);
-    check(`${tag} the groups file was fetched once the Read page needed it`, fetched.length >= 1);
+    // UPDATED IN PLACE, 2 Oct 2026 -- decision 58 corrects decision 56: WbW
+    // Achieved counts the SAME word only; same root AND same meaning belongs
+    // to BASIC Achieved, which has no lemma-wide claim until the Owner
+    // publishes its Rules. So a WbW claim on ٱلرَّحْمَٰن must NOT mark ٱلرَّحِيم,
+    // and the groups file is not even fetched while nothing can spread.
+    check(`${tag} the groups file is NOT fetched while only WbW has a lemma-wide claim`, fetched.length === 0, JSON.stringify(fetched));
     check(`${tag} Achieved on ٱلرَّحْمَٰن marks itself`, await waitMark(page, 1, 1, 3, true));
-    check(`${tag} ... and marks ٱلرَّحِيم at 1:1:4 (same root, same meaning)`, await waitMark(page, 1, 1, 4, true));
+    await page.waitForTimeout(600);
+    check(`${tag} ... but NOT ٱلرَّحِيم at 1:1:4 (WbW counts the same word only)`, (await occ(page, 1, 1, 4)).marked === false);
 
     await goTo(page, 1, 3);
-    check(`${tag} ... and ٱلرَّحِيم at 1:3:2`, await waitMark(page, 1, 3, 2, true));
+    check(`${tag} ... it marks the same word ٱلرَّحْمَٰن at 1:3:1`, await waitMark(page, 1, 3, 1, true));
+    check(`${tag} ... and NOT ٱلرَّحِيم at 1:3:2`, (await occ(page, 1, 3, 2)).marked === false);
     await page.screenshot({ path: `.builder-round/shot-fatiha-${lang}-${width}.png` });
 
     await openWord(page, 1, 3, 2);
     const card = await readCard(page);
-    check(`${tag} the Word card on ٱلرَّحِيم says it is known through another word`, !!card.through && (lang === "en" ? card.through.startsWith(THROUGH.en) : card.through.includes(THROUGH.bn)), JSON.stringify(card));
-    check(`${tag} ... naming ٱلرَّحْمَٰن`, (card.throughArabic ?? "").normalize("NFC") === RAHMAN.normalize("NFC"), JSON.stringify(card));
+    // UPDATED IN PLACE (decision 58): no "Known through" line from a WbW claim.
+    check(`${tag} the Word card on ٱلرَّحِيم has NO "Known through" line (a WbW claim does not spread)`, card.through === null, JSON.stringify(card));
     check(`${tag} ... while its own buttons still read not started`, card.pressed === "not_started", JSON.stringify(card));
 
     const writes = await page.evaluate(() => (window.__stubWriteData || []).map((w) => ({ col: w.col, id: w.id })));

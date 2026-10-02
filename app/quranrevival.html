@@ -5723,7 +5723,7 @@
     import { approachShortName } from "./js/approach-short-name.js";
     // Issue #303 -- lemma-level word progress ("mark this word known
     // everywhere"), gated separately (see study-lemma-progress-readiness.js).
-    import { lemmaProgressAuthority, effectiveOccurrenceState, lemmaKnownDeltaByJuz, groupOccurrenceRefsByJuz, overlayLemmaKnownness } from "./js/quran-lemma-progress.js";
+    import { lemmaProgressAuthority, effectiveOccurrenceState, lemmaKnownDeltaByJuz, groupOccurrenceRefsByJuz, overlayLemmaKnownness, IMPLEMENTED_ARABIC_LEVELS as LEMMA_CLAIM_LEVELS } from "./js/quran-lemma-progress.js";
     import {
       primeLemmaProgress, lemmaProgressFor, claimLemmaWordState, decideLemmaWordApproval,
       clearLemmaProgressCache, getLemmaOccurrenceCounts, bumpLemmaOccurrenceCounter,
@@ -14413,14 +14413,23 @@
         if (word?.morphology?.lemma) lemmaIds.add(word.morphology.lemma);
       }
       if (!lemmaIds.size) return;
-      // Decision 56 -- a word of the same root AND meaning also counts, so the
-      // group-mates' lemma progress is read too (read-only; nothing is written
-      // for them). The groups file is fetched here, on first use, never at startup.
+      await Promise.all([...lemmaIds].map((lemmaId) => primeLemmaProgress(db, { tenantId, personId, lemmaId })));
+      // Decision 58 (2 Oct 2026, correcting 56): WbW Achieved counts the SAME
+      // word only. "Same root AND same meaning" belongs to BASIC Achieved, so
+      // the group-mates are read at the basic level -- and only once Basic has
+      // a lemma-wide claim at all (it needs Rules the Owner publishes; until
+      // then nothing spreads and nothing extra is read). The groups file is
+      // fetched here, on first use, never at startup.
+      if (!meaningGroupsLive()) return;
       try { await loadLemmaMeaningGroups(); } catch (error) { console.warn("meaning groups unavailable", error); }
       const toPrime = new Set();
       for (const lemmaId of lemmaIds) for (const mate of sameMeaningLemmas(lemmaId)) toPrime.add(mate);
-      await Promise.all([...toPrime].map((lemmaId) => primeLemmaProgress(db, { tenantId, personId, lemmaId })));
+      await Promise.all([...toPrime].map((lemmaId) => primeLemmaProgress(db, { tenantId, personId, level: MEANING_GROUP_LEVEL, lemmaId })));
     }
+
+    /** Decision 58 -- the level whose Achieved spreads to same-root, same-meaning words. */
+    const MEANING_GROUP_LEVEL = "basic";
+    function meaningGroupsLive() { return LEMMA_CLAIM_LEVELS.includes(MEANING_GROUP_LEVEL); }
 
     /**
      * Decision 56 -- the lemma's own view, upgraded to countsAsKnown when
@@ -14432,11 +14441,11 @@
      */
     function lemmaViewWithGroup({ tenantId, personId, lemmaId, confirmationRequired }) {
       const own = lemmaProgressFor({ tenantId, personId, lemmaId, confirmationRequired });
-      if (own.countsAsKnown) return own;
+      if (own.countsAsKnown || !meaningGroupsLive()) return own;
+      // Decision 58: only a BASIC claim on a same-meaning word spreads.
       for (const mate of sameMeaningLemmas(lemmaId)) {
-        if (mate === lemmaId) continue;
-        if (lemmaProgressFor({ tenantId, personId, lemmaId: mate, confirmationRequired }).countsAsKnown) {
-          return { ...own, countsAsKnown: true, knownViaGroupLemma: mate };
+        if (lemmaProgressFor({ tenantId, personId, level: MEANING_GROUP_LEVEL, lemmaId: mate, confirmationRequired }).countsAsKnown) {
+          return { ...own, countsAsKnown: true, ...(mate === lemmaId ? {} : { knownViaGroupLemma: mate }) };
         }
       }
       return own;
