@@ -79,6 +79,7 @@ export function clearWordTotalCache() {
  * "zero" (quran-word-coverage.js's own stated rule).
  */
 export async function getWordTotals(db, { tenantId, personId, level = "wbw" } = {}) {
+  if (!isWbwTotalPersistenceReady()) return null;
   if (!totalsLevelReady(level)) return null;
   const key = cacheKey(tenantId, personId, level);
   if (cache.has(key)) return cache.get(key);
@@ -99,8 +100,9 @@ export async function getWordTotals(db, { tenantId, personId, level = "wbw" } = 
  * seeded `byJuz` map and is updated in place.
  */
 export async function recordWordTotalDelta(db, { tenantId, personId, juz, delta, actorUid, juzWordTotals, level = "wbw" } = {}) {
+  if (!isWbwTotalPersistenceReady()) return { attempted: false, changed: false };
   if (!totalsLevelReady(level)) return { attempted: false, changed: false };
-  if (!delta) return { attempted: false, changed: false };
+  if (!delta)return { attempted: false, changed: false };
   if (!Number.isInteger(juz) || juz < 1 || juz > 30) throw new TypeError("juz must be an integer from 1 to 30.");
 
   const docId = wordTotalDocId({ tenantId, personId, level });
@@ -145,6 +147,7 @@ export async function recordWordTotalDelta(db, { tenantId, personId, juz, delta,
  * field write, not a correctness bug, but callers should not rely on it.
  */
 export async function recordWordTotalDeltaAcrossJuz(db, { tenantId, personId, deltaByJuz, actorUid, juzWordTotals, level = "wbw" } = {}) {
+  if (!isWbwTotalPersistenceReady()) return { attempted: false, changed: false };
   if (!totalsLevelReady(level)) return { attempted: false, changed: false };
   if (!(deltaByJuz instanceof Map) || deltaByJuz.size === 0) return { attempted: false, changed: false };
   const totalDelta = [...deltaByJuz.values()].reduce((sum, d) => sum + d, 0);
