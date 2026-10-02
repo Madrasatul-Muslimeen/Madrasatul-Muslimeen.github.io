@@ -68,6 +68,17 @@ import {
 import { TENANT } from "./collections.js";
 import { createDocument, updateDocument } from "./envelope.js";
 import { isLemmaProgressPersistenceReady } from "./study-lemma-progress-readiness.js";
+import { isLemmaLevelsPersistenceReady } from "./study-lemma-levels-readiness.js";
+
+/**
+ * Decision 58 -- the gate for ONE level. `wbw` needs only the lemma gate, so
+ * with the lemma-levels gate closed every function here behaves exactly as it
+ * did at v09.42; `basic`/`depth` additionally need isLemmaLevelsPersistenceReady().
+ */
+export function lemmaLevelReady(level) {
+  if (!isLemmaProgressPersistenceReady()) return false;
+  return level === "wbw" || isLemmaLevelsPersistenceReady();
+}
 import {
   wordProgressLaneId,
   wordProgressEntryKey,
@@ -148,9 +159,9 @@ async function fetchLemmaLane(db, lane, docId) {
  * discipline: nothing here reads Firestore until the gate is open).
  */
 export async function primeLemmaProgress(db, { tenantId, personId, level = "wbw", lemmaId } = {}) {
-  if (!isLemmaProgressPersistenceReady()) return { fetched: 0, cached: false };
+  if (!lemmaLevelReady(level)) return { fetched: 0, cached: false };
   requireImplementedLevel(level);
-  const docId = lemmaProgressDocId({ tenantId, personId, level, lemmaId });
+  const docId = lemmaProgressDocId({ tenantId, personId, level, lemmaId, wide: true });
   const store = cacheFor({ tenantId, personId, level });
   if (store.has(lemmaId)) return { fetched: 0, cached: true };
   const [learner, supervisor] = await Promise.all([
@@ -182,9 +193,9 @@ export function lemmaProgressFor({ tenantId, personId, level = "wbw", lemmaId, c
  * use internally.
  */
 export async function getLemmaProgress(db, { tenantId, personId, level = "wbw", lemmaId, confirmationRequired = false } = {}) {
-  if (!isLemmaProgressPersistenceReady()) return null;
+  if (!lemmaLevelReady(level)) return null;
   await primeLemmaProgress(db, { tenantId, personId, level, lemmaId });
-  const docId = lemmaProgressDocId({ tenantId, personId, level, lemmaId });
+  const docId = lemmaProgressDocId({ tenantId, personId, level, lemmaId, wide: true });
   return Object.freeze({ ...lemmaProgressFor({ tenantId, personId, level, lemmaId, confirmationRequired }), docId });
 }
 
@@ -201,7 +212,7 @@ async function writeLemmaLane(db, { lane, docId, entry, actorUid }) {
   if (snap.exists()) {
     await updateDocument(db, collectionName, docId, fields);
   } else {
-    const parsed = parseLemmaProgressDocId(docId);
+    const parsed = parseLemmaProgressDocId(docId, { wide: true });
     await createDocument(db, collectionName, docId, {
       contractVersion: "quran-lemma-progress:v1",
       lane,
@@ -224,14 +235,14 @@ export async function claimLemmaWordState(db, {
   tenantId, personId, level = "wbw", lemmaId, state,
   actorPersonId, actorUid, isSupervisor = false, confirmationRequired = false, nowIso,
 } = {}) {
-  if (!isLemmaProgressPersistenceReady()) {
+  if (!lemmaLevelReady(level)) {
     throw new Error("Marking a word known everywhere is not enabled yet.");
   }
   const authority = lemmaProgressAuthority({ actorPersonId, subjectPersonId: personId, isSupervisor, confirmationRequired });
   if (!authority.mayClaim) {
     throw new Error("You are not able to record this Dictionary Word's progress for this person.");
   }
-  const docId = lemmaProgressDocId({ tenantId, personId, level, lemmaId });
+  const docId = lemmaProgressDocId({ tenantId, personId, level, lemmaId, wide: true });
   const store = cacheFor({ tenantId, personId, level });
   if (!store.has(lemmaId)) {
     const [learner, supervisor] = await Promise.all([
@@ -272,14 +283,14 @@ export async function decideLemmaWordApproval(db, {
   tenantId, personId, level = "wbw", lemmaId, review, note = null,
   actorPersonId, actorUid, isSupervisor = false, confirmationRequired = true, nowIso,
 } = {}) {
-  if (!isLemmaProgressPersistenceReady()) {
+  if (!lemmaLevelReady(level)) {
     throw new Error("Approving a word known everywhere is not enabled yet.");
   }
   const authority = lemmaProgressAuthority({ actorPersonId, subjectPersonId: personId, isSupervisor, confirmationRequired });
   if (!authority.mayDecide) {
     throw new Error("You are not able to approve this Dictionary Word's progress for this person.");
   }
-  const docId = lemmaProgressDocId({ tenantId, personId, level, lemmaId });
+  const docId = lemmaProgressDocId({ tenantId, personId, level, lemmaId, wide: true });
   const store = cacheFor({ tenantId, personId, level });
   if (!store.has(lemmaId)) {
     const [learner, supervisor] = await Promise.all([
@@ -329,15 +340,21 @@ export async function decideLemmaWordApproval(db, {
  * computable and to state its true cost.
  */
 export async function countIndividuallyKnownOccurrences(db, {
-  tenantId, personId, level = "wbw", lemmaId, confirmationRequired = false, fetchImpl, juzIndex,
+  tenantId, personId, level = "wbw", lemmaId, confirmationRequired = false, fetchImpl, juzIndex, unpackedRefs,
 } = {}) {
   requireImplementedLevel(level);
-  const index = await loadWordIdentityIndex("lemma", fetchImpl ? { fetchImpl } : undefined);
-  const refs = index.values?.[lemmaId] ?? [];
+  // Decision 58: a Basic/Depth claim covers a SPREAD of occurrences (a meaning
+  // group, a root), so the caller hands over its already-unpacked refs.
+  let refs;
+  if (unpackedRefs) refs = unpackedRefs;
+  else {
+    const index = await loadWordIdentityIndex("lemma", fetchImpl ? { fetchImpl } : undefined);
+    refs = (index.values?.[lemmaId] ?? []).map(unpackWordIndexRef);
+  }
 
   const byAyah = new Map();
   for (const ref of refs) {
-    const { surah, ayah, position } = unpackWordIndexRef(ref);
+    const { surah, ayah, position } = ref;
     const key = `${surah}_${ayah}`;
     if (!byAyah.has(key)) byAyah.set(key, { surah, ayah, positions: [] });
     byAyah.get(key).positions.push(position);
@@ -448,9 +465,9 @@ export async function getLemmaOccurrenceCounts(db, {
   tenantId, personId, level = "wbw", lemmaId, refs, juzIndex, confirmationRequired = false, actorUid, fetchImpl,
   persist = true,
 } = {}) {
-  if (!isLemmaProgressPersistenceReady()) return null;
+  if (!lemmaLevelReady(level)) return null;
   requireImplementedLevel(level);
-  const docId = lemmaCounterDocId({ tenantId, personId, level, lemmaId });
+  const docId = lemmaCounterDocId({ tenantId, personId, level, lemmaId, wide: true });
   const existing = await fetchLemmaCounterDoc(db, docId);
   const occurrenceCountByJuz = groupOccurrenceRefsByJuz(refs ?? [], juzIndex, juzForSurahAyah);
   if (existing) {
@@ -458,14 +475,14 @@ export async function getLemmaOccurrenceCounts(db, {
   }
   // Not seeded yet -- the one honest full walk, disclosed in this file's own
   // header, paid ONCE for this (person, lemma) and never again.
-  const walked = await countIndividuallyKnownOccurrences(db, { tenantId, personId, level, lemmaId, confirmationRequired, fetchImpl, juzIndex });
+  const walked = await countIndividuallyKnownOccurrences(db, { tenantId, personId, level, lemmaId, confirmationRequired, fetchImpl, juzIndex, unpackedRefs: level === "wbw" ? undefined : (refs ?? []) });
   // Architect review, 26 Sep 2026: merely VIEWING a Word Card must never
   // write. The counter is a cache, and a viewer who may read this person but
   // not record for them would see a permission error for opening a card.
   // The view path passes persist:false and gets the walked answer unsaved;
   // the first lemma-level claim/confirm (a recorder, by definition) seeds it.
   if (!persist) return { occurrenceCountByJuz, alreadyKnownByJuz: walked.alreadyKnownByJuz, seededJustNow: false };
-  const seed = emptyLemmaCounterDocument({ tenantId, personId, level, lemmaId });
+  const seed = emptyLemmaCounterDocument({ tenantId, personId, level, lemmaId, wide: true });
   for (const [juz, count] of walked.alreadyKnownByJuz) seed.individuallyKnownByJuz[String(juz)] = count;
   await createDocument(db, COUNTER_COLLECTION, docId, seed, actorUid);
   return { occurrenceCountByJuz, alreadyKnownByJuz: walked.alreadyKnownByJuz, seededJustNow: true };
@@ -480,10 +497,10 @@ export async function getLemmaOccurrenceCounts(db, {
  * while the gate is closed (I9) or when delta is 0.
  */
 export async function bumpLemmaOccurrenceCounter(db, { tenantId, personId, level = "wbw", lemmaId, juz, delta } = {}) {
-  if (!isLemmaProgressPersistenceReady()) return { attempted: false, changed: false };
+  if (!lemmaLevelReady(level)) return { attempted: false, changed: false };
   if (!delta || juz == null) return { attempted: false, changed: false };
   requireImplementedLevel(level);
-  const docId = lemmaCounterDocId({ tenantId, personId, level, lemmaId });
+  const docId = lemmaCounterDocId({ tenantId, personId, level, lemmaId, wide: true });
   const existing = await fetchLemmaCounterDoc(db, docId);
   if (!existing) return { attempted: true, changed: false, reason: "not-seeded" };
   const current = Number(existing.individuallyKnownByJuz[String(juz)] ?? 0);

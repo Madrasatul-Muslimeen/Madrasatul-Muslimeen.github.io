@@ -78,7 +78,11 @@ export {
  */
 export const IMPLEMENTED_ARABIC_LEVELS = Object.freeze(["wbw"]);
 
-export function requireImplementedLevel(level) {
+export function requireImplementedLevel(level, { wide = false } = {}) {
+  // Decision 58: `wide` is passed ONLY by the data layer, after the
+  // lemma-levels gate (study-lemma-levels-readiness.js) said yes. Without it
+  // nothing here changes: basic/depth still throw.
+  if (wide && ARABIC_LEVELS.includes(level)) return level;
   if (!ARABIC_LEVELS.includes(level)) throw new TypeError(`Unknown Arabic level: ${level}.`);
   if (!IMPLEMENTED_ARABIC_LEVELS.includes(level)) {
     // DEFERRED means stop, never guess. Basic/Depth have no approved
@@ -149,10 +153,10 @@ export function safeLemmaId(value) {
 // header above for why there is no ayah-style bundle here.
 // ---------------------------------------------------------------------------
 
-export function lemmaProgressDocId({ tenantId, personId, level = "wbw", lemmaId } = {}) {
+export function lemmaProgressDocId({ tenantId, personId, level = "wbw", lemmaId, wide = false } = {}) {
   safeIdSegment(tenantId, "tenantId");
   safeIdSegment(personId, "personId");
-  requireImplementedLevel(level);
+  requireImplementedLevel(level, { wide });
   safeLemmaId(lemmaId);
   return `${tenantId}__${personId}__${level}__${lemmaId}`;
 }
@@ -164,11 +168,11 @@ export function lemmaProgressDocId({ tenantId, personId, level = "wbw", lemmaId 
  * "__" separators and taking everything after the third as the lemma id is
  * unambiguous.
  */
-export function parseLemmaProgressDocId(docId) {
+export function parseLemmaProgressDocId(docId, { wide = false } = {}) {
   if (typeof docId !== "string") throw new TypeError("lemma progress doc id must be a string.");
   const match = /^([^_/]+(?:_[^_/]+)*)__([^_/]+(?:_[^_/]+)*)__([a-z]+)__([\s\S]+)$/.exec(docId);
   if (!match) throw new TypeError("lemma progress doc id has an invalid shape.");
-  const level = requireImplementedLevel(match[3]);
+  const level = requireImplementedLevel(match[3], { wide });
   const lemmaId = safeLemmaId(match[4]);
   return { tenantId: match[1], personId: match[2], level, lemmaId };
 }
@@ -393,21 +397,21 @@ export function lemmaKnownDelta({ occurrenceCount, alreadyKnownIndividually, was
 export const LEMMA_COUNTER_CONTRACT = "quran-lemma-occurrence-counter:v1";
 
 /** Same identity shape as lemmaProgressDocId() -- one counter per (tenant, person, level, lemma). */
-export function lemmaCounterDocId({ tenantId, personId, level = "wbw", lemmaId } = {}) {
+export function lemmaCounterDocId({ tenantId, personId, level = "wbw", lemmaId, wide = false } = {}) {
   safeIdSegment(tenantId, "tenantId");
   safeIdSegment(personId, "personId");
-  requireImplementedLevel(level);
+  requireImplementedLevel(level, { wide });
   safeLemmaId(lemmaId);
   return `${tenantId}__${personId}__${level}__${lemmaId}`;
 }
 
-export function parseLemmaCounterDocId(docId) {
-  return parseLemmaProgressDocId(docId);
+export function parseLemmaCounterDocId(docId, opts) {
+  return parseLemmaProgressDocId(docId, opts);
 }
 
 /** The full seeded document a person's first-ever counted lemma creates. `byJuz` starts empty: nothing is known individually until a walk says otherwise. */
-export function emptyLemmaCounterDocument({ tenantId, personId, level = "wbw", lemmaId } = {}) {
-  const parsed = { tenantId: safeIdSegment(tenantId, "tenantId"), personId: safeIdSegment(personId, "personId"), level: requireImplementedLevel(level), lemmaId: safeLemmaId(lemmaId) };
+export function emptyLemmaCounterDocument({ tenantId, personId, level = "wbw", lemmaId, wide = false } = {}) {
+  const parsed = { tenantId: safeIdSegment(tenantId, "tenantId"), personId: safeIdSegment(personId, "personId"), level: requireImplementedLevel(level, { wide }),lemmaId: safeLemmaId(lemmaId) };
   return { contractVersion: LEMMA_COUNTER_CONTRACT, ...parsed, individuallyKnownByJuz: {} };
 }
 
