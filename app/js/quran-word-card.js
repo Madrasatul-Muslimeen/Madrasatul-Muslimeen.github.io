@@ -507,9 +507,12 @@ function occurrenceListMarkup(items, total, error, fallbackArabic, text, formatN
     : "";
   const rows = items.map((o) => {
     const ref = `${o.surah}:${o.ayah}:${o.position}`;
-    return `<li><button type="button" class="word-card-occurrence-link" data-word-occurrence-goto="${escapeHtml(ref)}" aria-label="${escapeHtml(String(text.goToOccurrence).replace("{ref}", ref))}">` +
+    // Issue #482 -- what is SHOWN may be a display count (Al-Fātiḥah); the
+    // goto attribute above stays the internal reference.
+    const shown = typeof text.displayRef === "function" ? text.displayRef(o.surah, o.ayah, o.position) : ref;
+    return `<li><button type="button" class="word-card-occurrence-link" data-word-occurrence-goto="${escapeHtml(ref)}" aria-label="${escapeHtml(String(text.goToOccurrence).replace("{ref}", shown))}">` +
       `<span class="word-card-occurrence-arabic" dir="rtl" lang="ar">${escapeHtml(o.arabic || fallbackArabic)}</span>` +
-      `<span class="word-card-occurrence-ref">${escapeHtml(ref)}</span></button></li>`;
+      `<span class="word-card-occurrence-ref">${escapeHtml(shown)}</span></button></li>`;
   }).join("");
   return `<div class="word-card-form-occurrences"><ol class="word-card-occurrences">${rows}</ol>${truncated}</div>`;
 }
@@ -731,7 +734,7 @@ export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, 
   // I11: every user-visible string here is overridable, so the page can hand
   // the card its reader's own language. The English values are the fallback
   // for a caller that supplies nothing, never the only thing a reader can get.
-  const text = { ...WORD_CARD_DEFAULT_LABELS, ...labels };
+  const text = { ...WORD_CARD_DEFAULT_LABELS, ...labels, displayRef: context.displayRef };
   // Issue #263 -- on demand, per word: `context.wordSegments` is only ever
   // set once the caller has loaded that surah's segment file (quran-word-
   // segments.js); a word with no exact alignment, or before it has loaded,
@@ -740,7 +743,7 @@ export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, 
   const arabicHtml = showSegmentColour ? segmentedArabicHtml(layers.surfaceToken, context.wordSegments) : escapeHtml(layers.surfaceToken);
   return `<section class="quran-word-card" role="region" aria-label="${escapeHtml(text.cardRegion)}" data-occurrence-id="${escapeHtml(occurrenceId)}">
     <header><button type="button" data-word-card-move="previous" aria-label="${escapeHtml(text.previous)}"${context.hasPrevious ? "" : " disabled"}>‹</button>
-      <div><div class="word-card-arabic" dir="rtl" lang="ar">${arabicHtml}</div><div class="word-card-reference">${chapter.surahNumber}:${ayah.ayah}:${word.position}</div></div>
+      <div><div class="word-card-arabic" dir="rtl" lang="ar">${arabicHtml}</div><div class="word-card-reference">${typeof context.displayRef === "function" ? escapeHtml(context.displayRef(chapter.surahNumber, ayah.ayah, word.position)) : `${chapter.surahNumber}:${ayah.ayah}:${word.position}`}</div></div>
       <button type="button" data-word-card-move="next" aria-label="${escapeHtml(text.next)}"${context.hasNext ? "" : " disabled"}>›</button>
       <button type="button" data-word-card-close aria-label="${escapeHtml(text.close)}">×</button></header>
     <div class="word-card-ayah-action-row">
