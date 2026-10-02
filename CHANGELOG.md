@@ -19103,3 +19103,12 @@ From two of the Owner's phone photos.
 - **Record Your Progress** (Read view → Track, the Āyah card and the Page card) now offers **N/A** to everyone, and **Mastered** to the owner, prime, teachers, guardians and self-learners. "Mastered is confirmed by a teacher." shows only to a student account.
 - **Landing page:** the Read / Choose a Unit / Know Your Status bar sits a calm ~12px below the wheel's lowest numbers on a phone, instead of covering them. The Wheel button sits at the left edge, Unit at the right, Legend in the middle.
 - **Checks**: global-approach-card 97/0 (student view added, mutation-proven), landing-drawers 264/0 (both new facts mutation-proven), ayah-action-sheet-boundary 54/0, mushaf-approach-cards 114/0, quran-ayah-action-sheet 120/0, unit-card 116/0, phone-width-overflow 217/0, behaviour 1004/4 (22g×3 archive.org, 31e TLS).
+
+## v09.32 — 2 Oct 2026 — A more elegant landing page on a phone
+
+From the Owner's phone photo, shown as a demo first and approved.
+
+- The Mastery Wheel heading line is larger, with the Approach title in bold.
+- More room above the wheel's top numbers and below its bottom ones; Wheel and Unit sit at the very edges.
+- The first screen now ends at the bottom bar: the Approach list (and Open all) starts just below it and comes up with a scroll. When a tall header leaves too little room, the wheel shrinks just enough to keep its buttons visible.
+- **Checks**: landing-drawers 271/0 (two new behaviours, each mutation-proven), phone-width-overflow 217/0, account-card 1235/0, behaviour 1007/1 (31e TLS).
