@@ -19190,3 +19190,11 @@ Owner's request (decision 56; #484, PR #487).
 - A claim still waiting for a teacher does not spread. Nothing is saved for the other words.
 - Not yet: the stored "You know X of 77,429 words" total still counts dictionary words only (a decision for the Owner).
 - **Checks**: known-meaning-groups 66/0 and known-word-marks 122/0 (both mutation-proven), behaviour 1007/1 (31e TLS) and 9 other suites green.
+
+## v09.42 — 2 Oct 2026 — Never a blank landing page; WbW counts the same word only
+
+Owner's reports (a blank landing page; the three learning levels, decision 58).
+
+- While the app waits for the database it now says **"Loading your study…"**; after 12 seconds **"Still loading…"** with a **Reload** button. Signed out, it says so with a **Sign in** button on the page. If a start-up step fails, the page says which one, with Reload. Before, all three looked like an empty page.
+- **WbW Achieved counts the same word only** again: ar-Raḥmān no longer marks ar-Raḥīm from WbW. "Same root, same meaning" belongs to Basic, and "the whole root" to Depth; both come once the Owner publishes the prepared Rules.
+- **Checks**: boot-status 24/0 (new, mutation-proven), known-meaning-groups 66/0 and known-word-marks 122/0 (updated in place, mutation-proven), behaviour 1004/4 (sandbox-only), phone-width-overflow 217/0.
