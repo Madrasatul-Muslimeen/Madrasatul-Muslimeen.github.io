@@ -14105,8 +14105,12 @@
       if (wordProgressConfirmFor === `${tenantId}|${personId}`) return wordProgressConfirmRequired;
       const override = await getSubjectConfirmationOverride(db, tenantId, "quran");
       const required = await computeConfirmationRequired(db, tenantId, personId, override);
-      wordProgressConfirmFor = `${tenantId}|${personId}`;
-      wordProgressConfirmRequired = required;
+      // Issue #472 -- a call that straddled a roster switch must not write the
+      // PREVIOUS person's answer over the new person's (the cache is one value).
+      if (personId === selectedPersonId) {
+        wordProgressConfirmFor = `${tenantId}|${personId}`;
+        wordProgressConfirmRequired = required;
+      }
       return required;
     }
 
@@ -20217,7 +20221,6 @@
       wordProgressConfirmFor = null;
       wordProgressConfirmRequired = null;
       clearKnownWordMarks(); // issue #472 -- the previous person's marks must not outlive the switch
-      scheduleKnownWordMarks();
       // Issue #328 -- "My Status" is cached per (tenant, person); a
       // different acting person must never see the previous one's tally
       // (D10, the same reason every line above this one exists).
@@ -20230,6 +20233,7 @@
       // reusing the previous person's.
       ayahNoteDataLoadedFor = null;
       if (stageView === "read" || stageView === "note") ensureAyahNoteDataLoaded();
+      scheduleKnownWordMarks(); // issue #472 -- after the switch has settled, for the new person
     });
 
     // ---------------------------------------------------------------------

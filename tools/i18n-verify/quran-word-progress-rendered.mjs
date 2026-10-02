@@ -65,9 +65,15 @@ for (const lang of ["en", "bn"]) {
   check(`[${lang}] no word-progress read on the landing path (I9)`, startupReads === 0, `saw ${startupReads}`);
 
   await enterReadWithWbw(page);
+  // UPDATED IN PLACE (issue #472): opening Read now reads the on-screen
+  // surah's lanes once (a two-query chunk, no per-ayah document) so the
+  // known-word marks can be drawn. That is the deliberate change; what must
+  // still hold is that it is exactly that chunk and nothing per-word, and the
+  // landing-path check above is untouched.
   const afterRead = await page.evaluate(() =>
-    (window.__fsLog || []).filter((r) => /quranWord/.test(r.col || "")).length);
-  check(`[${lang}] still none merely from opening Read`, afterRead === 0, `saw ${afterRead}`);
+    (window.__fsLog || []).filter((r) => /quranWord/.test(r.col || "")).map((r) => `${r.col}:${r.id ?? ""}`));
+  check(`[${lang}] opening Read reads only the surah's lane chunk (one query per lane), no per-ayah document`,
+    afterRead.length === 2 && afterRead.every((x) => /^quranWord(Progress|Approvals):$/.test(x)), JSON.stringify(afterRead));
 
   // --- The block appears, and reads a SEEDED state -------------------------
   await openWord(page, 2);
