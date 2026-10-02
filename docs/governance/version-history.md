@@ -677,3 +677,4 @@ total). Allocated by the MMSA Architect.
 09.31: N/A and Mastered in Record Your Progress; wheel bottom numbers clear. Allocated by the MMSA Architect.
 09.32: Elegant landing page on a phone. Allocated by the MMSA Architect.
 09.33: Known words lightly marked on the Mushaf page and in WbW. Allocated by the MMSA Architect.
+09.34: Dictionary box on the Word card. Allocated by the MMSA Architect.

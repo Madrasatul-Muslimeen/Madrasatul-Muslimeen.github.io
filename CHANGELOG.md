@@ -19121,3 +19121,13 @@ From the Owner's request; decision 52 ("A, on both Mushaf page and WbW").
 - The marks appear just after the page shows, update straight after pressing Achieved on the Word card, and change when you switch the person.
 - Fixed on the way: a first "Achieved" after a whole-surah read could fail to show on the Word card.
 - **Checks**: known-word-marks 122/0 (three mutations proven), achieved-mirror 73/0, read-contents 250/0, phone-width-overflow 217/0, behaviour 1004/4 (22g×3 archive.org, 31e TLS).
+
+## v09.34 — 2 Oct 2026 — A Dictionary box on the Word card (Arabic in Depth)
+
+Decision 54, after a demo the Owner approved.
+
+- Opening "Arabic in Depth" now shows a 📖 Dictionary box: the word's dictionary meaning (from Wiktionary; "likely match" when the match is less certain, "fixed by us" for Allah, Rabb and ilāh), the meaning the word has in this āyah, and buttons to the Quranic Corpus and to Lane's Lexicon / Hans Wehr for the word's root.
+- Allah, never "God"; Rabb, never "Lord", in every meaning.
+- On a Bangla page the labels are Bangla; the Bangla dictionary meaning will be added once its publisher gives permission.
+- The dictionary loads only when Arabic in Depth is first opened, so nothing else is slower.
+- **Checks**: word-card-dictionary 277/0 (three mutations proven), known-word-marks 122/0, read-contents 250/0, phone-width-overflow 217/0, behaviour 1004/4 (22g×3 archive.org, 31e TLS).
