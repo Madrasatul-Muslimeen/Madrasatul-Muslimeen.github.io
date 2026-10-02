@@ -19220,3 +19220,11 @@ Owner, 2 Oct 2026: "Bookmark must open to the exact screen and with exact screen
 - An older bookmark, or one made in the Note view, on a Page, Juz, Hizb, Ruku' or a surah longer than one page now opens the **Read view** at its place (e.g. Page 257 opens on Mushaf page 257), not the "read it on the Read screen" stand-in.
 - Āyah, Range and one-page-surah bookmarks open as before.
 - **Checks**: bookmark-open-browser 59/0 (new cases and mutation), behaviour 1007/1 (sandbox-only), read-list-home, boot-status, stub-parity green.
+
+## v09.46 — 2 Oct 2026 — Bookmarks reopen with their exact settings
+
+Owner, 2 Oct 2026: "With exact settings i meant."
+
+- A bookmark now remembers every reading setting it was made with: translations, Word by Word language, Arabic font, page by page, what Full screen hides, reciters, repeat, mode, loop, and whether the Read view's menus were hidden. Opening it brings them all back.
+- Older bookmarks open as before. Startup is unchanged.
+- **Checks**: bookmark-open-browser 77/0 (new cases and two mutations), study-presets 84/0, boot-status 24/0, behaviour 1004/4 (sandbox-only).
