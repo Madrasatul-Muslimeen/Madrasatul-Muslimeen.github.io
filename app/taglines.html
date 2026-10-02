@@ -61,6 +61,9 @@
   .tagline-line.tagline-in-slide { animation: taglineSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) backwards; }
   @keyframes taglineSlideOut { to { transform: translateY(-100%); opacity: 0; } }
   @keyframes taglineSlideIn { from { transform: translateY(100%); opacity: 0; } }
+  /* Issue 479: a line wider than the strip scrolls (js/tagline-scroll.js). */
+  .tagline-line.tagline-scrolling { text-overflow: clip; }
+  .tagline-line.tagline-scrolling .tagline-track { display: inline-block; will-change: transform; }
   @media (prefers-reduced-motion: reduce) { .tagline-line { animation-duration: 0.001s !important; } }
 </style>
 </head>
@@ -103,6 +106,15 @@
         <div>
           <label for="pauseOnHoldToggle">Pause while held</label>
           <input type="checkbox" id="pauseOnHoldToggle" style="width:auto;" />
+        </div>
+        <div>
+          <label for="scrollToggle">Scroll long lines</label>
+          <input type="checkbox" id="scrollToggle" style="width:auto;" />
+        </div>
+        <div>
+          <label for="scrollSpeedInput">Scroll speed</label>
+          <input type="range" id="scrollSpeedInput" min="1" max="10" step="1" style="width:100%;" />
+          <span id="scrollSpeedLabel" class="note"></span>
         </div>
       </div>
       <p class="note">The line changes at most once each time the app is opened — it is not a carousel. "Change after" is how long the line already on screen stays before the next one takes over.</p>
@@ -179,6 +191,7 @@
       isUsingDefaultTaglines, addTagline, updateTagline, setTaglineStatus, moveTagline,
       normalizeAyahRef, activeTaglines,
     } from "./js/taglines.js";
+    import { attachTaglineScroll } from "./js/tagline-scroll.js";
 
     translateStatic();
     registerServiceWorker();
@@ -199,6 +212,24 @@
     const changeAfterInput = document.getElementById("changeAfterInput");
     const pauseOnHoldToggle = document.getElementById("pauseOnHoldToggle");
     const previewStrip = document.getElementById("previewStrip");
+    const scrollToggle = document.getElementById("scrollToggle");
+    const scrollSpeedInput = document.getElementById("scrollSpeedInput");
+    const scrollSpeedLabel = document.getElementById("scrollSpeedLabel");
+    let previewScroller = null;
+
+    function renderScrollSpeedLabel() {
+      const n = Number(scrollSpeedInput.value);
+      const word = n <= 2 ? t("Slow") : n >= 9 ? t("Fast") : n >= 4 && n <= 6 ? t("Medium") : "";
+      scrollSpeedLabel.textContent = word ? `${word} · ${num(n)}` : num(n);
+      scrollSpeedInput.disabled = !scrollToggle.checked;
+    }
+
+    function restartPreviewScroll() {
+      previewScroller?.stop();
+      previewScroller = null;
+      const el = previewStrip.querySelector(".tagline-line:not(.tagline-leaving)");
+      if (el) previewScroller = attachTaglineScroll(el, { enabled: settings.scroll, speed: settings.scrollSpeed });
+    }
 
     let activeTenantId = null;
     // No person picker on this page (tenant content, not per-person) --
@@ -250,6 +281,9 @@
       fillSelect(document.getElementById("newHold"), TAGLINE_HOLDS, 1);
       changeAfterInput.value = settings.changeAfterSeconds;
       pauseOnHoldToggle.checked = settings.pauseOnHold;
+      scrollToggle.checked = settings.scroll;
+      scrollSpeedInput.value = settings.scrollSpeed;
+      renderScrollSpeedLabel();
       previewStrip.setAttribute("data-motion", settings.motion);
     }
 
@@ -413,6 +447,7 @@
           setTimeout(() => old.remove(), 800);
         } else old.remove();
       }
+      restartPreviewScroll();
     }
 
     document.getElementById("previewBtn").addEventListener("click", () => {
@@ -433,6 +468,20 @@
       settings = { ...settings, pauseOnHold: pauseOnHoldToggle.checked };
       markDirty();
     });
+    scrollToggle.addEventListener("change", () => {
+      settings = { ...settings, scroll: scrollToggle.checked };
+      renderScrollSpeedLabel();
+      restartPreviewScroll();
+      markDirty();
+    });
+    // "input", not "change": the preview follows the slider while it is dragged.
+    scrollSpeedInput.addEventListener("input", () => {
+      settings = { ...settings, scrollSpeed: Number(scrollSpeedInput.value) };
+      renderScrollSpeedLabel();
+      restartPreviewScroll();
+      markDirty();
+    });
+    window.addEventListener("resize", () => restartPreviewScroll());
 
     document.getElementById("addBtn").addEventListener("click", () => {
       const text = document.getElementById("newText").value.trim();

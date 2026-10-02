@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.36",
+    "version": "09.39",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1613,8 +1613,44 @@
     {
       "version": "09.36",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Read view: a ☰ Surah list button back to the list it was opened from, on the tab last used.",
+      "integration": {
+        "authorizedOn": "2026-10-02",
+        "integratedOn": "2026-10-02",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.37",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "PC: the gap under the wheel scales with the wheel, so the bottom numbers are never cut.",
+      "integration": {
+        "authorizedOn": "2026-10-02",
+        "integratedOn": "2026-10-02",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.38",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Word card: 'You know X of Y words of the Qur'an', bold; Āyah card opens on Status of this āyah; same-meaning root groups data.",
+      "integration": {
+        "authorizedOn": "2026-10-02",
+        "integratedOn": "2026-10-02",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.39",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Taglines: a long line scrolls sideways; on/off and a 1-10 speed on the Taglines page.",
       "integration": {
         "authorizedOn": "2026-10-02",
         "integratedOn": "2026-10-02",
@@ -1623,8 +1659,11 @@
       }
     }
   ],
-  "nextUnallocated": "09.37",
+  "nextUnallocated": "09.40",
   "nextUnallocatedNote": [
+    "v09.39 was allocated to Long taglines scroll sideways, 2026-10-02.",
+    "v09.38 was allocated to You know on the Word card; Status first on the Ayah card, 2026-10-02.",
+    "v09.37 was allocated to PC wheel numbers clear the capsule bar, 2026-10-02.",
     "v09.36 was allocated to Surah list button in the Read view, 2026-10-02.",
     "v09.35 was allocated to Stage buttons in legend colours; no Not started suffix; Track renamed Record, 2026-10-02.",
     "v09.34 was allocated to Dictionary box on the Word card, 2026-10-02.",

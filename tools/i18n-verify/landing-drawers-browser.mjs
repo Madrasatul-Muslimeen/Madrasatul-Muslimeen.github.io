@@ -175,6 +175,24 @@ for (const lang of ["en", "bn"]) {
   check(`[squeeze 390x700] a taller header shrinks the wheel (${before} -> ${sq.wheel}px) so the drawer row stays above the dock (row ${sq.row}, fold ${sq.fold})`, sq.wheel < before && sq.row <= sq.fold, JSON.stringify({ before, ...sq }));
   await ctx.close();
 }
+// Owner, 2 Oct 2026 (a PC photo, the window maximised, the wheel dragged
+// large): "In pc, the numbers gets cut." The overhang grows with the wheel, so
+// the gap is measured at three wheel sizes in a maximised window.
+for (const size of [0, 560, 760]) {
+  const ctx = await newContext(browser, { viewport: { width: 1640, height: 1200 }, seedTemplates: SEED_TEMPLATES });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  await page.waitForSelector("#wheelContainer .wheel-seg-num", { timeout: 20000 });
+  await clear(page);
+  await page.click("#wheelPopupMaximizeBtn"); await page.waitForTimeout(600);
+  if (size) { await page.evaluate((px) => { const w = document.getElementById("wheelResizeWrap"); w.classList.add("wheel-resized"); w.style.width = px + "px"; }, size); await page.waitForTimeout(500); }
+  const pc = await page.evaluate(() => {
+    const nums = [...document.querySelectorAll("#wheelContainer .wheel-seg-num")].map((e) => e.getBoundingClientRect());
+    const bar = document.getElementById("wheelIntroSettled").getBoundingClientRect();
+    return { n: nums.length, wheel: Math.round(document.querySelector("#wheelContainer svg").getBoundingClientRect().width), gap: Math.round((bar.top - Math.max(...nums.map((r) => r.bottom))) * 10) / 10 };
+  });
+  check(`[PC maximised, wheel ${pc.wheel}px] the lowest number clears the capsule bar by 8-20px (gap ${pc.gap}px)`, pc.n >= 30 && pc.gap >= 8 && pc.gap <= 20 && (!size || pc.wheel === size), JSON.stringify(pc));
+  await ctx.close();
+}
 console.log("gaps/list tops:", JSON.stringify(gaps));
 
 // Contrast, both card looks, with each drawer open

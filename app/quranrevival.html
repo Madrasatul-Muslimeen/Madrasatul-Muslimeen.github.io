@@ -144,6 +144,9 @@
   .tagline-line.tagline-in-slide { animation: taglineSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) backwards; }
   @keyframes taglineSlideOut { to { transform: translateY(-100%); opacity: 0; } }
   @keyframes taglineSlideIn { from { transform: translateY(100%); opacity: 0; } }
+  /* Issue 479: a line wider than the strip scrolls (js/tagline-scroll.js). */
+  .tagline-line.tagline-scrolling { text-overflow: clip; }
+  .tagline-line.tagline-scrolling .tagline-track { display: inline-block; will-change: transform; }
   /* Someone who has asked their system for less movement gets the new line
      without the animation -- never a strip that silently stops working. */
   @media (prefers-reduced-motion: reduce) {
@@ -1539,6 +1542,16 @@
      only unlocks it (max-width:100% is the safety net against a stored
      size wider than a since-narrowed screen). */
   .wheel-resize-wrap { position: relative; }
+  /* Owner, 2 Oct 2026 (a PC photo, the window maximised and the wheel dragged
+     large: the Read · Choose a Unit · Know Your Status bar over 20-22): "In
+     pc, the numbers gets cut. Fix it." The slice numbers overhang the wheel by
+     ~3.2% of ITS width, so a fixed gap that clears a 360px wheel fails a 760px
+     one (measured -7.5px). A percentage padding resolves against the resize
+     wrap, which is exactly the wheel's width, so the gap below the lowest
+     number stays ~14px at any size. Phones keep their own rule (<=720px). */
+  @media (min-width: 721px) {
+    #wheelSection #wheelContainer { padding-bottom: max(0px, calc(3.2% - 2px)); }
+  }
   .wheel-resize-wrap.wheel-resized { max-width: 100% !important; margin: 0 auto !important; }
   /* The wheel's own container div, not only the SVG inside it, needs the
      override -- an ordinary (non-replaced) div's own explicit width always
@@ -2898,6 +2911,11 @@
   .word-progress-state, .word-progress-coverage { margin: 0.4rem 0 0; font-size: 0.85rem; }
   .word-progress-coverage { color: var(--card-text-muted); }
   .word-progress-incomplete { color: #8a3b16; }
+  /* Owner, 2 Oct 2026: the whole-Qur'an total, eye-catching and bold. */
+  .word-progress-whole-quran-box { margin: 0.6rem 0 0.2rem; padding: 0.55rem 0.75rem; border: 1px solid var(--card-line); border-left: 4px solid var(--card-heading); border-radius: 0.45rem; background: var(--card-bg-inset); }
+  .word-progress-whole-quran-box p { margin: 0; font-size: 0.98rem; font-weight: 700; line-height: 1.45; color: var(--card-text); }
+  .word-progress-whole-quran-box p + p { margin-top: 0.2rem; }
+  .word-progress-whole-quran-num { font-size: 1.22rem; font-weight: 800; color: var(--card-heading); letter-spacing: 0.01em; }
   @media (max-width: 380px) { .word-card-progress button { padding: 0.5rem 0.25rem; font-size: 0.78rem; } }
   @media (max-width: 340px) { .word-card-progress button { padding: 0.5rem 0.15rem; font-size: 0.72rem; } }
   .quran-word-card dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 0.75rem; }
@@ -3204,6 +3222,11 @@
      scroll container, so a phone's bottom sheet still scrolls as one
      surface as the spec requires. */
   .ayah-sheet-status { border-top: 1px solid var(--card-line); margin-top: 0.4rem; padding-top: 0.5rem; }
+  /* Owner, 2 Oct 2026: "Take this to the top" -- Status of this āyah sits
+     straight under the header (its own line is the header's), and the
+     actions below it take the dividing line instead. */
+  .ayah-sheet-header + .ayah-sheet-status[data-ayah-sheet-status] { border-top: 0; margin-top: 0; padding-top: 0.15rem; }
+  .ayah-sheet-status[data-ayah-sheet-status] + .ayah-sheet-body { border-top: 1px solid var(--card-line); margin-top: 0.4rem; padding-top: 0.3rem; }
   .ayah-sheet-section-title { font-size: 0.82rem; color: var(--card-heading); margin: 0 0.2rem 0.4rem; }
   .ayah-status-block { margin: 0 0.2rem 0.9rem; }
   .ayah-status-heading { font-size: 0.76rem; color: var(--card-text-muted); text-transform: uppercase; letter-spacing: 0.02em; margin: 0 0 0.3rem; }
@@ -5756,6 +5779,7 @@
       taglinesFrom, taglineSettingsFrom, taglineText, pickTagline,
       readTaglineState, writeTaglineState, TAGLINE_SETTING_DEFAULTS,
     } from "./js/taglines.js";
+    import { attachTaglineScroll } from "./js/tagline-scroll.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { showBootSplash, showQuranSplash } from "./js/splash.js";
     import { APP_VERSION } from "./js/version.js";
@@ -7002,6 +7026,19 @@
     let taglinePendingLine = null;
     let taglinePendingTimer = null;
     let taglineHeld = false;
+    let taglineScroller = null; // issue 479: the scroll running on the line now on screen, if any
+
+    /** (Re)start the sideways scroll on the line that is on screen. Safe to
+     *  call again: it cancels the previous run first. */
+    function rescanTaglineScroll() {
+      if (!taglineStripEl) return;
+      taglineScroller?.stop();
+      taglineScroller = null;
+      const el = taglineStripEl.querySelector(".tagline-line:not(.tagline-leaving)");
+      if (!el) return;
+      taglineScroller = attachTaglineScroll(el, { enabled: taglineSettings.scroll, speed: taglineSettings.scrollSpeed });
+      if (taglineHeld && taglineSettings.pauseOnHold) taglineScroller.pause();
+    }
 
     function buildTaglineEl(line) {
       const hasLink = !!line.link?.url;
@@ -7064,11 +7101,19 @@
         }
       }
       taglineShownId = line.id;
+      rescanTaglineScroll();
     }
 
     function runPendingTaglineChange() {
       taglinePendingTimer = null;
       if (!taglinePendingLine) return;
+      // A scrolling line is not taken away mid-read: wait for the end of its
+      // first full pass if the normal change time came earlier.
+      const passLeft = taglineScroller?.firstPassRemainingMs() ?? 0;
+      if (passLeft > 0) {
+        taglinePendingTimer = setTimeout(runPendingTaglineChange, passLeft + 50);
+        return;
+      }
       // Held under a finger: the whole point of the pause is that a line can
       // be read, or its link tapped, without moving away mid-reach.
       if (taglineHeld) {
@@ -7118,6 +7163,7 @@
       // place of an identical one would look like a glitch, not a change.
       if (!taglineShownId && shownText === targetText) {
         taglineShownId = pick.current.id;
+        rescanTaglineScroll();
         return;
       }
       scheduleTaglineChange(pick.current, pick.forAyah ? 0 : taglineSettings.changeAfterSeconds);
@@ -7136,6 +7182,7 @@
       taglineSettings = taglineSettingsFrom(tenantDoc);
       taglineStripEl?.setAttribute("data-motion", taglineSettings.motion);
       refreshTaglineStrip();
+      rescanTaglineScroll(); // the on/off and speed may have just arrived
     }
 
     if (taglineStripEl) {
@@ -7143,8 +7190,16 @@
         taglineStripEl.addEventListener(ev, () => {
           if (!taglineSettings.pauseOnHold) return;
           taglineHeld = held;
+          if (held) taglineScroller?.pause(); else taglineScroller?.resume();
         });
       }
+      // The strip's width changes with the window and when web fonts land.
+      let taglineScrollResizeTimer = null;
+      window.addEventListener("resize", () => {
+        clearTimeout(taglineScrollResizeTimer);
+        taglineScrollResizeTimer = setTimeout(rescanTaglineScroll, 200);
+      });
+      document.fonts?.ready?.then(rescanTaglineScroll);
     }
 
     // -----------------------------------------------------------------------
@@ -14311,8 +14366,16 @@
         coverage: t("{known} of {total} words known in this ayah"),
         coverageIncomplete: t("{unknown} not loaded yet"),
         // Issue #303 -- the whole-Qur'an running total.
-        wholeQuranKnown: t("Known {known} of {total} words"),
-        wholeQuranPercent: t("{percent}% of the Qur'an"),
+        // Owner, 2 Oct 2026: "You know ... of .... words of the Quran". A
+        // teacher or guardian looking at someone else's card gets the same
+        // sentence without "You", which would name the wrong person.
+        ...(wordProgressActor().isSupervisor ? {
+          wholeQuranKnown: t("Knows {known} of {total} words of the Qur'an"),
+          wholeQuranPercent: t("Knows {percent}% of the words of the Qur'an"),
+        } : {
+          wholeQuranKnown: t("You know {known} of {total} words of the Qur'an"),
+          wholeQuranPercent: t("You know {percent}% of the words of the Qur'an"),
+        }),
         learnWordDelta: t("If you learn this word: +{words} words (+{percent}%)"),
         learnWordDeltaThisOccurrenceOnly: t("If you learn this word here: +{words} word (+{percent}%) — this occurrence only"),
       };

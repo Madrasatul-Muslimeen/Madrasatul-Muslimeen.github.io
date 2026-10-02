@@ -1223,6 +1223,10 @@ export const BN = {
   // everywhere" on the Word Card.
   "Known {known} of {total} words": "মোট {total}টি শব্দের মধ্যে {known}টি জানা",
   "{percent}% of the Qur'an": "কুরআনের {percent}%",
+  "You know {known} of {total} words of the Qur'an": "আপনি কুরআনের {total}টি শব্দের মধ্যে {known}টি জানেন",
+  "You know {percent}% of the words of the Qur'an": "আপনি কুরআনের {percent}% শব্দ জানেন",
+  "Knows {known} of {total} words of the Qur'an": "কুরআনের {total}টি শব্দের মধ্যে {known}টি জানা",
+  "Knows {percent}% of the words of the Qur'an": "কুরআনের {percent}% শব্দ জানা",
   "If you learn this word: +{words} words (+{percent}%)": "এই শব্দটি শিখলে: +{words}টি শব্দ (+{percent}%)",
   "If you learn this word here: +{words} word (+{percent}%) — this occurrence only": "এখানে এই শব্দটি শিখলে: +{words}টি শব্দ (+{percent}%) — শুধু এই ব্যবহারের জন্য",
   "Mark this word known everywhere": "এই শব্দটি সর্বত্র জানা হিসেবে চিহ্নিত করুন",
@@ -1943,6 +1947,11 @@ export const BN = {
   "Movement": "চলন",
   "Change after (seconds)": "কত সেকেন্ড পরে বদলাবে",
   "Pause while held": "চেপে ধরে রাখলে থেমে থাকবে",
+  "Scroll long lines": "লম্বা লাইন পাশে সরবে",
+  "Scroll speed": "সরার গতি",
+  "Slow": "ধীর",
+  "Medium": "মাঝারি",
+  "Fast": "দ্রুত",
   "The line changes at most once each time the app is opened — it is not a carousel. \"Change after\" is how long the line already on screen stays before the next one takes over.":
     "অ্যাপ একবার খোলার সময় লাইনটি সর্বোচ্চ একবার বদলায় — এটি ঘুরতে থাকা তালিকা নয়। “কত সেকেন্ড পরে বদলাবে” মানে পর্দায় থাকা লাইনটি পরেরটির আগে কতক্ষণ থাকবে।",
   "Show the movement": "চলন দেখুন",

@@ -19147,3 +19147,28 @@ Owner's request, after an approved demo.
 
 - When you open a surah (or a Juz, Hizb, Page or Ruku') from Read → list, a ☰ Surah list button appears at the top left of the Read view. Pressing it reopens the list on the tab you last used. On a narrow phone it is just the ☰.
 - **Checks**: read-list-button 72/0 (mutation-proven), behaviour 1007/1 (31e TLS), read-quick-buttons 204/0, read-contents 250/0, phone-width-overflow 217/0.
+
+## v09.37 — 2 Oct 2026 — The PC wheel's bottom numbers clear the capsule bar
+
+Owner's report, from a PC screenshot.
+
+- On a PC, when the wheel was made large, the bar below it cut the bottom numbers. The gap now grows with the wheel, so the numbers stay clear at every size (about 15px of space).
+- **Checks**: landing-drawers 274/0 (mutation-proven), phone-width-overflow 217/0, unit-rings 106/0, behaviour 1004/4 (22g×3 archive.org, 31e TLS).
+
+## v09.38 — 2 Oct 2026 — "You know …" on the Word card; Status first on the Āyah card
+
+Owner's requests, from two phone photos.
+
+- The Word card's whole-Qur'an total now reads **"You know 21,467 of 77,429 words of the Qur'an"** and **"You know 27.72% of the words of the Qur'an"**, bold, in a gold-edged box with the numbers larger and in gold (navy on the light card). A teacher or guardian looking at someone else's card reads "Knows …".
+- The Āyah card opens on **Status of this āyah** (Approach dots, Word by Word, Hifz), straight under the header; Play, Copy, Share and the rest follow.
+- Data for the next round: the same-meaning word groups of every root (decision 56), reviewed by hand. Not yet used by the app.
+- **Checks**: quran-lemma-progress-rendered 76/0 and quran-ayah-action-sheet-browser 144/0 (both mutation-proven), behaviour 1007/1 (31e TLS), phone-width-overflow 217/0.
+
+## v09.39 — 2 Oct 2026 — Long taglines scroll sideways
+
+Owner's request (#479, PR #480).
+
+- A tagline too long for the strip now slides sideways so it can be read whole, then starts again. Holding a finger on it pauses it. It never changes to the next line halfway through.
+- On the Taglines page: **Scroll long lines** (on or off) and **Scroll speed** (1–10, Slow · Medium · Fast). The preview follows the slider as you drag it.
+- Someone whose phone asks for less movement sees the line still, as before.
+- **Checks**: tagline-scroll 67/0 (mutation-proven), landing-drawers 274/0, phone-width-overflow 217/0, behaviour 1004/4 (sandbox-only).
