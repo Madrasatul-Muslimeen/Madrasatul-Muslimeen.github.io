@@ -529,7 +529,8 @@ function classicalSection(word, layers, ctx) {
   const mu = ctx.mufradat;
   const root = String(word.morphology?.root ?? "").replace(/\s/g, "");
   let entries = [];
-  if (!mu || mu.state === "idle" || mu.state === "loading") chip("needs", pick("chipMufradatLoading", lang), false);
+  if (!root) { /* a word with no root has no al-Mufradāt entry to look for, and no chip */ }
+  else if (!mu || mu.state === "idle" || mu.state === "loading") chip("needs", pick("chipMufradatLoading", lang), false);
   else if (mu.state === "failed") chip("needs", pick("chipMufradatFailed", lang), false);
   else {
     entries = (root && mu.value.book?.entries?.[root]) || [];

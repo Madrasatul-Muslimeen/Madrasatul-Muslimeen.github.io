@@ -17,7 +17,9 @@ const TITLES = {
 };
 const TAGS = { en: { data: "From the data", rule: "Grammar rule", needs: "Needs a source" }, bn: { data: "তথ্য থেকে", rule: "ব্যাকরণের নিয়ম", needs: "উৎস প্রয়োজন" } };
 // Hand-written: tagged lines per section for 2:102:35.
-const TAGGED = [3, 7, 1, 6, 3, 3]; // round 5 added the conjugation section (one tagged line)
+// Round 5 added the conjugation section (one tagged line). #533: with every section opened, Naḥw
+// carries the six old rows plus three Corpus lines (9) and Classical a fourth tag, the al-Mufradāt entry (4).
+const TAGGED = [3, 7, 1, 9, 3, 4];
 const FORM_V = { en: "Ta- in front of Form II", bn: "দ্বিতীয় রূপের আগে তা- যোগ হলে" };
 
 async function openWord(page, surah, ayah, pos) {
@@ -68,7 +70,8 @@ for (const lang of ["en", "bn"]) {
     await depth(page);
 
     const legend = await page.evaluate(() => [...document.querySelectorAll("[data-word-card-legend] [data-word-card-src]")].map((e) => [e.dataset.wordCardSrc, e.textContent]));
-    check(`${L}: legend names the three sources`, JSON.stringify(legend) === JSON.stringify([["data", TAGS[lang].data], ["rule", TAGS[lang].rule], ["needs", TAGS[lang].needs]]), JSON.stringify(legend));
+    // Decision 61 (#533) added the fourth tag, "From a book".
+    check(`${L}: legend names the four sources`, JSON.stringify(legend) === JSON.stringify([["data", TAGS[lang].data], ["rule", TAGS[lang].rule], ["needs", TAGS[lang].needs], ["book", lang === "bn" ? "বই থেকে" : "From a book"]]), JSON.stringify(legend));
     const secs = await secInfo(page);
     check(`${L}: six sections in order (round 5 added Verb Conjugation)`, JSON.stringify(secs.map((s) => s.key)) === JSON.stringify(SECTIONS) && JSON.stringify(secs.map((s) => s.title)) === JSON.stringify(TITLES[lang]), JSON.stringify(secs.map((s) => s.title)));
     check(`${L}: only the first section is open`, JSON.stringify(secs.map((s) => s.open)) === "[true,false,false,false,false,false]", JSON.stringify(secs.map((s) => s.open)));
@@ -116,14 +119,14 @@ for (const lang of ["en", "bn"]) {
 
     // Section 3
     const nahw = await page.evaluate(() => [...document.querySelectorAll("[data-word-card-irab]")].map((r) => ({ tag: r.dataset.wordCardIrab, t: r.innerText, cmp: r.dataset.wordCardCompare || "", mood: r.dataset.wordCardCompareMood || "" })));
-    check(`${L}: Naḥw has 6 rows`, nahw.length === 6, String(nahw.length));
+    check(`${L}: Naḥw has 9 rows (the 6 old ones, then the Corpus's sentence lines)`, nahw.length === 9, String(nahw.length));
     check(`${L}: a particle row (resumption) tagged data`, nahw[0]?.tag === "data" && nahw[0].t.includes(lang === "bn" ? "পুনরারম্ভ" : "Resumption particle") && nfc(nahw[0].t).includes(nfc("حَرْفُ اسْتِئْنَاف")), nahw[0]?.t);
     check(`${L}: verb row names ثبوت النون, tagged rule`, nahw.some((r) => r.tag === "rule" && nfc(r.t).includes(nfc("ثُبُوتُ النُّون"))), JSON.stringify(nahw.map((r) => r.t)));
     check(`${L}: doer-ending row`, nahw.some((r) => nfc(r.t).includes(nfc("ضَمِيرٌ مُتَّصِلٌ فِي مَحَلِّ رَفْعِ فَاعِل"))));
     const c29 = nahw.find((r) => r.cmp === "29"), c34 = nahw.find((r) => r.cmp === "34");
     check(`${L}: compare row for word 34 تَكْفُرْ as jussive`, c34 && c34.mood === "JUS" && nfc(c34.t).includes(nfc("تَكْفُرْ")), c34?.t);
     check(`${L}: compare row for word 29 as subjunctive`, c29 && c29.mood === "SUBJ", c29?.t);
-    check(`${L}: the last row is tagged Needs a source`, nahw[nahw.length - 1]?.tag === "needs");
+    check(`${L}: the old sixth row is still last of the old rows, and the rows after it are From the data (Corpus)`, nahw.slice(6).every((r) => r.tag === "data"), JSON.stringify(nahw.slice(5).map((r) => r.tag)));
 
     // Section 4
     const choice = await page.evaluate(() => ({
@@ -190,8 +193,9 @@ for (const lang of ["en", "bn"]) {
   await openWord(page, 2, 6, 1);
   await depth(page).catch(() => {});
   await page.evaluate(() => document.querySelectorAll("[data-word-card-sec]").forEach((d) => { d.open = true; }));
+  await page.waitForTimeout(1500); // #533: opening Naḥw now fetches its surah's treebank
   const p = await page.evaluate(() => ({ secs: document.querySelectorAll("[data-word-card-sec]").length, fam: !!document.querySelector("[data-word-card-fam]"), chips: document.querySelectorAll("[data-word-card-goto]").length, root: !!document.querySelector("[data-word-card-root-box]"), last: [...document.querySelectorAll('[data-word-card-irab]')].pop()?.dataset.wordCardIrab }));
-  check("particle with no root 2:6:1 -- five sections, no root lines, no errors", !p.root && p.secs === 5 && !p.fam && p.chips === 0 && p.last === "needs" && errors.length === 0, JSON.stringify({ ...p, errors }));
+  check("particle with no root 2:6:1 -- five sections, no root lines, no errors", !p.root && p.secs === 5 && !p.fam && p.chips === 0 && (p.last === "needs" || p.last === "data") && errors.length === 0, JSON.stringify({ ...p, errors }));
   await ctx.close();
 }
 
