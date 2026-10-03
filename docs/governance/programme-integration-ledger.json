@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.60",
+    "version": "09.61",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1901,8 +1901,20 @@
     {
       "version": "09.60",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Know Your Status's All-units ring wheel prints the Approach short names (#385's rule; #425 had drawn it without them); the Study options āyah picker widens for Al-Fātiḥah's Bismillah option; quran-word-card.mjs, approach-short-names and ayah-action-sheet-boundary green again.",
+      "integration": {
+        "authorizedOn": "2026-10-03",
+        "integratedOn": "2026-10-03",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.61",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Depth tab: Naḥw shows the Quranic Arabic Corpus treebank's relations for the word; Word Choice shows al-ʿAskarī's al-Furūq entries; Classical shows al-Rāghib's al-Mufradāt entry; each credited, loaded only when its section opens (#533).",
       "integration": {
         "authorizedOn": "2026-10-03",
         "integratedOn": "2026-10-03",
@@ -1911,8 +1923,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.61",
+  "nextUnallocated": "09.62",
   "nextUnallocatedNote": [
+    "v09.61 was allocated to the Word card's Needs-a-source lines filled from the Corpus treebank, al-Furūq and al-Mufradāt (decision 61), 2026-10-03.",
     "v09.60 was allocated to Approach names on Know Your Status's All-units wheel, the āyah picker's Bismillah, three red suites repaired, 2026-10-03.",
     "v09.59 was allocated to Tablet wheel: buttons on the screen's edges, 2026-10-03.",
     "v09.58 was allocated to Word card round 7: the two boxes on a computer, 2026-10-03.",

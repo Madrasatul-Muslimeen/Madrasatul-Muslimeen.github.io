@@ -924,6 +924,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
         lang: text.formMeaningLang === "bn" ? "bn" : "en", formatNumber, segments: context.wordSegments, rootForms: context.rootForms,
         lemmaForms: context.lemmaForms, verbForms: context.verbForms, verbFormsFailed: context.verbFormsFailed, dictionaryLookup: context.dictionaryLookup, ayahWords: context.ayahWords, ayahFeatures: context.ayahFeatures,
         ayahNumber: context.ayahNumber, surahNumber: context.surahNumber,
+        nahw: context.needsSource?.nahw, furuq: context.needsSource?.furuq, mufradat: context.needsSource?.mufradat,
         laneUrl: layers.root ? `https://ejtaal.net/aa/#q=${encodeURIComponent(layers.root)}` : null,
         dictionaryHtml: dictionaryBox(word, context, text),
         formsHtml: formsSection(layers, context, text, formatNumber, { expandable: true }),

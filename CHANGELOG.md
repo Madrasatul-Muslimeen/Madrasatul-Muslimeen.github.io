@@ -19367,3 +19367,15 @@ Architect fixes from the queue in the 3 Oct session prompt (items 2 and 3), no n
 - **Study options → Āyah:** with Al-Fātiḥah's count on (decision 55), the āyah picker's first choice is the word **Bismillah**, which the number-sized box cut at every screen width. For Al-Fātiḥah only, the box is now wide enough for it (English and Bangla); every other surah keeps the same box as before.
 - **Checks repaired** (each updated in place with its reason, each mutation-proven): `quran-word-card.mjs` 37/0 (the Basic checks now ask Depth, where round 3 moved the forms list, and the root reads "س م و" as the demo prints it); `ayah-action-sheet-boundary` 54/0 (round 6's search row and #482's Bismillah guard); `approach-short-names-browser` 70/0 (the real fix above).
 - **Measured**: panel.mjs 0 problems in English and in Bangla (was 32 in English); fatiha-count 136/0, fatiha-count-browser exit 0, quran-my-status-browser 248/0, phone-width-overflow 217/0, behaviour 1007/1 (sandbox-only 31e).
+
+## v09.61 — 3 Oct 2026 — The Word card's "Needs a source" lines, filled
+
+The Owner, decision 61: "No issue with permission, you can build." Issue #533; data in PRs #532 and #535.
+
+- **Arabic in Depth → Grammar in This Āyah** now says what the word does in its sentence, from the Quranic Arabic Corpus's sentence analysis: e.g. "عِلْمَ is the Subject of a special verb or particle (اسم كان) of لَا (word 3)", and what it takes in turn. The Corpus covers surahs 1–8, most of 9, and 59–114; for the others the line still says a source is needed. Credit and link: Quranic Arabic Corpus, GPL v3.
+- **Word Choice & Distinctions** shows how classical scholars told near-synonyms apart, from al-ʿAskarī's *al-Furūq al-Lughawiyya* (e.g. "الفرق بين العلم والمعرفة", pp. 80–81): the Arabic text with Show all, the first three entries and then "Show N more".
+- **Classical Arabic Usage** shows the root's entry in al-Rāghib's *al-Mufradāt* (e.g. علم, p. 580), with Show all.
+- Both books come from OpenITI under CC BY-NC-SA 4.0 and are credited with their editions and pages. The Arabic is shown as the book has it, with no translation.
+- A fourth source tag, **From a book**, joins From the data / Grammar rule / Needs a source.
+- Nothing loads until its section is opened.
+- **Checks**: word-card-needs-source-browser 93/0 (new), and ten other suites green; behaviour 1004/4 (sandbox-only).
