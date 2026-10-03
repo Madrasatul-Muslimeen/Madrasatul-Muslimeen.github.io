@@ -126,7 +126,7 @@ const TITLES = { root: "secRoot", sarf: "secSarf", conj: "secConj", nahw: "secNa
 
 function accordion(key, lang, open, body) {
   return `<details class="word-card-acc" data-word-card-sec="${key}"${open ? " open" : ""}>` +
-    `<summary><span class="word-card-acc-ico" aria-hidden="true">${ICONS[key]}</span><span class="word-card-acc-t">${esc(pick(TITLES[key], lang))}</span>${TITLES_AR[key] ? ` <span class="word-card-acc-ar" dir="rtl" lang="ar" data-word-card-acc-ar>· ${TITLES_AR[key]}</span>` : ""}</summary>` +
+    `<summary><span class="word-card-acc-ico" aria-hidden="true">${ICONS[key]}</span><span class="word-card-acc-t">${esc(pick(TITLES[key], lang))}</span>${TITLES_AR[key] ? `<span class="word-card-acc-ar" data-word-card-acc-ar><span class="word-card-acc-dot" aria-hidden="true">· </span><span dir="rtl" lang="ar">${TITLES_AR[key]}</span></span>` : ""}</summary>` +
     `<div class="word-card-acc-body">${body}</div></details>`;
 }
 
