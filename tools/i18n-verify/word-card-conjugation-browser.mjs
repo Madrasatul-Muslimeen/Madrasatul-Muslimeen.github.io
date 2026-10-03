@@ -66,8 +66,10 @@ const conj = (page) => page.evaluate(() => {
 });
 
 const BN = "০১২৩৪৫৬৭৮৯";
-for (const lang of ["en", "bn"]) {
-  for (const width of [320, 390, 1280]) {
+// --lang=en|bn and --width=N narrow a run (default: all six).
+const only = (name) => process.argv.find((a) => a.startsWith(`--${name}=`))?.split("=")[1];
+for (const lang of ["en", "bn"].filter((l) => !only("lang") || only("lang") === l)) {
+  for (const width of [320, 390, 1280].filter((w) => !only("width") || Number(only("width")) === w)) {
     const L = `${lang}/${width}`;
     console.log(`\n=== ${L} ===`);
     const ctx = await newContext(browser, { appLang: lang, viewport: { width, height: width > 600 ? 900 : 844 } });
@@ -110,6 +112,7 @@ for (const lang of ["en", "bn"]) {
     check(`${L}: past 3MS is تَعَلَّمَ`, nfc(T.past?.rows[0].form) === nfc("تَعَلَّمَ"), T.past?.rows[0].form);
     check(`${L}: command 2MS is تَعَلَّمْ`, nfc(T.imp?.rows[6].form) === nfc("تَعَلَّمْ"), T.imp?.rows[6].form);
     check(`${L}: command 3MS is ✕`, T.imp?.rows[0].none && T.imp.rows[0].form === null);
+    check(`${L}: the ✕ is red`, await page.evaluate(() => getComputedStyle(document.querySelector("[data-word-card-conj-none]")).color) === "rgb(198, 40, 40)");
     check(`${L}: command ✕ for all of 3rd and 1st person, forms for the six 2nd`, T.imp.rows.map((r) => (r.none ? "x" : "f")).join("") === "xxxxxxffffffxx", T.imp?.rows.map((r) => (r.none ? "x" : "f")).join(""));
     check(`${L}: .sep before "you" (row 7) and before "I" (row 13) only`, T.pres.rows.map((r, i) => (r.sep ? i : -1)).filter((i) => i >= 0).join() === "6,12");
     check(`${L}: pronouns in Arabic first row هُوَ, last نَحْنُ; English/Bangla small text`,
@@ -155,7 +158,7 @@ for (const lang of ["en", "bn"]) {
     check(`${L}: I9 -- still one request`, verbReq.length === 1, String(verbReq.length));
 
     // A passive verb: 2:102:? is not needed; use 2:183:2 كُتِبَ (passive).
-    await openWord(page, 2, 183, 2);
+    await openWord(page, 2, 4, 4);
     await depth(page);
     await page.waitForSelector('[data-word-card-sec="conj"]', { timeout: 5000 }).catch(() => {});
     await page.evaluate(() => { const s = document.querySelector('[data-word-card-sec="conj"]'); if (s) s.open = true; });
