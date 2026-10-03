@@ -29,10 +29,16 @@ do, make it continue"*).
    round is started and reviewed, and the sandbox lessons.
 5. `docs/governance/2026-09-27-owner-decisions.md`: my decisions, up to 61. They
    are settled. Do not ask me again.
-6. **Where the job stands (updated 3 Oct, ~14:10 UTC): the Word card rebuild is complete (rounds 1–7, v09.48–v09.58), and the next job is the "Needs a source" lines (decision 61; `docs/reports/2026-10-03-needs-a-source-candidates.md`). Handover section 0 has the detail.** The Word card brief is `docs/reference/2026-10-03-word-card-build-spec.md`. Then open
-   `docs/reference/2026-10-03-word-card-demo.html` and
-   `docs/reference/2026-10-03-word-card-search-demo.html` in a browser and look at
-   them at phone and PC width. **The real build must look like the demo.**
+6. **Where the job stands (updated 3 Oct, ~18:00 UTC): `main` is at v09.59.** The
+   Word card rebuild is complete (rounds 1–7, v09.48–v09.58), and v09.59 put the
+   tablet wheel's corner buttons on the screen's edges. **The next job is the
+   "Needs a source" lines** (decision 61: I said "No issue with permission, you
+   can build"); the sources are in
+   `docs/reports/2026-10-03-needs-a-source-candidates.md`. Handover section 0 has
+   the detail. The Word card brief is
+   `docs/reference/2026-10-03-word-card-build-spec.md` and its look is
+   `docs/reference/2026-10-03-word-card-demo.html`: anything new on the card
+   must match it.
 7. Issue #159 (the status board).
 
 ## Step 2. Take over, then read the live state
@@ -66,21 +72,14 @@ At every moment, exactly one of these is true. Do the matching step:
   comment, then finish the round yourself or dispatch it again with a note.
 - **Nothing is running and nothing is open:** dispatch the next round below.
 
-**The queue: the Word card rebuild, all three tabs** (my words: *"Go, build all
-three tabs together"*). It has 7 rounds, from spec §3. Write one issue per round,
-quoting the spec sections it covers, and dispatch them in order:
-1. **Data**: keep the Corpus features (Form, tense, person, mood, voice, prefix
-   type, participles, verbal nouns) in an on-demand file; the derived-form groups;
-   the Arabic part-name table and one sentence per verb Form, which you show me
-   once for review.
-2. **WbW tab and header**: the root box on every tab, the phone header fit, the
-   Root / Dictionary word / Form row, the meaning bar, the word-part boxes.
-3. **Basic tab**: the same row on top, then the derived-form cards in a fixed order.
-4. **Depth tab**: the sections with their source tags; Root & Word Family open.
-5. **Verb conjugation (تَصْرِيفُ الْفِعْل)**: the rule engine, the closed section,
-   and a whole-Qur'an check against the Corpus spelling.
-6. **Search 🔍.**
-7. **PC boxes**: Record your Progress and Know Your Status with the ring.
+**The queue, in order** (the seven Word card rounds are all done):
+1. **The "Needs a source" lines** on the Depth tab (decision 61). Build the data
+   yourself first from the named sources (a licence and a credit line for each;
+   never use a file with no named source), then one Builder round for the UI.
+2. **Fix the suites already red on `main`**, each found stale or real before it
+   is changed: `approach-short-names` 69/1, `quran-word-card.mjs` (a /سمو/
+   expectation), `ayah-action-sheet-boundary` 52/2.
+3. **The āyah picker cuts "Bismillah" at PC width.** Measure it, then fix it.
 
 You may build a round yourself instead of the Builder when that is faster; review
 it the same way. Anything new I send joins the queue where it fits. A new screen
@@ -88,9 +87,7 @@ or a new place for something gets a demo first.
 
 ## Step 4. Your own work while the Builder runs (never sit idle)
 
-- Investigate the one suite red on `main`: `quran-word-progress-rendered`,
-  "opening a word reads both lanes and no more" (handover §0). Fix the stale part
-  in place and record why.
+- Work on queue items 2 and 3 above.
 - Keep #159 current after every merge and dispatch.
 - Rewrite section 0 of the newest handover after every merge.
 - Remind me, once per report and in one line, of what waits on me (Step 7).
@@ -168,10 +165,11 @@ or a new place for something gets a demo first.
 
 ## Step 7. What waits on me (remind me in one line per report)
 
-1. The order of Basic's derived forms. Use the demo's order until I give mine.
-2. Your sentences per verb Form and the Arabic part names, for my review (round 1).
-3. Sources for the Depth lines marked "Needs a source", only when I want them.
-4. The two dictionary permission letters.
-5. The Asmaul Husna poster, on hold until I send fixes (decision 50).
+1. The two dictionary permission letters. I said "Later. Keep reminding."
+2. The Asmaul Husna poster, on hold until I send fixes (decision 50).
+
+(Already answered in decision 61, do not ask again: the part names and Form
+sentences are accepted, Basic's order stays, and you may build the Needs-a-source
+lines.)
 
 ---
