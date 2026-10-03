@@ -1616,6 +1616,37 @@
   #wheelResizeWrap .wheel-resize-handle[data-wheel-resize="s"] { bottom: 2px; }
   #wheelResizeWrap .wheel-resize-handle[data-wheel-resize="e"] { right: 2px; }
   #wheelResizeWrap .wheel-resize-handle[data-wheel-resize="w"] { left: 2px; }
+  /* Owner, 3 Oct 2026 (tablet photos with the corners marked; demo
+     https://claude.ai/artifact/EMZKfW6LKkxhFyoLpgE8Dh): "let the wheel fit to
+     the entire screen well n then, you place those buttons in the gaps". On a
+     tablet (581-720px; phones and the two-column layout are untouched) the
+     three action buttons and the three drawers leave their rows under the
+     wheel for the four corners around it (tabletWheelLayout() moves the very
+     same elements), so the wheel takes the screen's width, and one resize grip
+     under the wheel replaces the four corner arrows. Measured at 600px: the
+     wheel goes from 533 to 587px, every button clear of the ring. */
+  @media (min-width: 581px) and (max-width: 720px) {
+    body.tablet-wheel #wheelSection .mastery-wheel { width: min(100%, var(--landing-wheel-max, 100%)); }
+    body.tablet-wheel #wheelIntroSettled, body.tablet-wheel #wheelDrawerRow { display: none; }
+    body.tablet-wheel #wheelResizeWrap .wheel-resize-handle:not([data-wheel-resize="s"]) { display: none; }
+    body.tablet-wheel #wheelResizeWrap .wheel-resize-handle[data-wheel-resize="s"] { left: calc(50% - 30px); right: auto; width: 60px; height: 22px; bottom: 0; display: grid; place-items: center; }
+    body.tablet-wheel #wheelResizeWrap .wheel-resize-handle[data-wheel-resize="s"]::after { content: ""; width: 44px; height: 5px; border-radius: 3px; background: #C9A24B; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4); }
+    .tablet-corner { position: absolute; z-index: 5; display: grid; gap: 6px; justify-items: start; }
+    .tablet-corner-tl { top: 4px; left: 4px; }
+    .tablet-corner-tr { top: 4px; right: 4px; justify-items: end; }
+    .tablet-corner-bl { bottom: 4px; left: 4px; }
+    .tablet-corner-br { bottom: 4px; right: 4px; justify-items: end; }
+    .tablet-corner .wheel-intro-capsule { display: inline-flex; align-items: center; justify-content: center; min-height: 36px; box-sizing: border-box; white-space: nowrap; margin: 0; }
+    .tablet-corner .wheel-unit-capsule-word { white-space: nowrap; }
+    .tablet-corner-tl { gap: 5px; }
+    .tablet-corner-tl .wheel-drawer-btn { flex: none; width: 76px; min-height: 34px; height: 34px; padding: 0 0.4rem; }
+    /* In the top corner the drawers open DOWNWARD, over the wheel. */
+    .tablet-corner-tl .wheel-drawer-caret { transform: rotate(180deg); }
+    .tablet-corner-tl .wheel-drawer-btn[aria-expanded="true"] .wheel-drawer-caret { transform: none; }
+    .tablet-corner-tl .wheel-drawer-panels { position: absolute; top: calc(100% + 6px); left: 0; width: max-content; max-width: calc(100vw - 24px); z-index: 6; background: var(--card-bg); border-radius: 12px; box-shadow: var(--card-shadow); padding: 0.3rem; }
+    /* Choose a Unit's list opens upward from the bottom-left corner. */
+    .tablet-corner-bl .wheel-unit-palette { top: auto; bottom: 2.6rem; left: 0; right: auto; transform: none; }
+  }
   #qcrListHeader { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
   #qcrListHeader .qcr-list-title { font-family: 'Cormorant Garamond', serif; font-weight: 600; color: var(--card-heading); font-size: 1.1rem; }
   #qcrListHeader .qcr-list-count { font-size: 0.78rem; color: var(--card-text-muted); }
@@ -6740,7 +6771,9 @@
     function fitLandingFirstScreen() {
       const col = document.querySelector("#wheelSection .wheel-col");
       const wheel = document.querySelector("#wheelSection .mastery-wheel");
-      const row = document.getElementById("wheelDrawerRow");
+      // On a tablet the drawer row is gone (tabletWheelLayout()): the wheel's
+      // own box, holding the corner buttons, is what must end above the dock.
+      const row = document.body.classList.contains("tablet-wheel") ? document.getElementById("wheelResizeWrap") : document.getElementById("wheelDrawerRow");
       if (!col || !wheel || !row) return;
       const phoneLanding = innerWidth <= 720 && document.body.classList.contains("landing-view") && col.getBoundingClientRect().height > 0;
       if (!phoneLanding) {
@@ -9081,6 +9114,46 @@
         btns.forEach((b) => b.setAttribute("aria-expanded", b === btn && open ? "true" : "false"));
         panels.forEach((p) => { p.hidden = !(open && p.dataset.wheelDrawerPanel === btn.dataset.wheelDrawer); });
       }));
+    })();
+
+    // Owner, 3 Oct 2026 -- on a tablet (581-720px) the wheel takes the
+    // screen's width and its buttons move into the corners around it: Wheel /
+    // Legend / Unit (with their drawers) top left, Read top right, Choose a
+    // Unit bottom left, Know Your Status bottom right. The elements are MOVED,
+    // never copied, so every listener comes with them; outside the band each
+    // goes back to the exact place it came from.
+    (function tabletWheelLayout() {
+      const mq = matchMedia("(min-width: 581px) and (max-width: 720px)");
+      const wrap = document.getElementById("wheelResizeWrap");
+      if (!wrap) return;
+      const homes = new Map();
+      const corners = {};
+      const corner = (k) => corners[k] ??= Object.assign(document.createElement("div"), { className: `tablet-corner tablet-corner-${k}` });
+      const move = (el, k) => {
+        if (!el) return;
+        if (!homes.has(el)) { const ph = document.createComment("tablet-wheel home"); el.before(ph); homes.set(el, ph); }
+        corner(k).append(el);
+      };
+      function apply() {
+        const on = mq.matches;
+        if (on) {
+          document.querySelectorAll("#wheelDrawerRow [data-wheel-drawer], [data-tablet-home='drawer']").forEach((b) => { b.dataset.tabletHome = "drawer"; move(b, "tl"); });
+          move(document.getElementById("wheelDrawerPanels"), "tl");
+          move(document.getElementById("readContentsBtn"), "tr");
+          move(document.querySelector('[data-bar-palette-wrap="wheelUnit"]'), "bl");
+          move(document.getElementById("myStatusWideBtn"), "br");
+          for (const k of ["tl", "tr", "bl", "br"]) if (corners[k] && corners[k].parentElement !== wrap) wrap.append(corners[k]);
+        } else {
+          for (const [el, ph] of homes) ph.replaceWith(el);
+          homes.clear();
+          for (const k of Object.keys(corners)) corners[k].remove();
+        }
+        document.body.classList.toggle("tablet-wheel", on);
+        document.querySelector("#wheelSection .mastery-wheel")?.style.removeProperty("--landing-wheel-max");
+        fitLandingFirstScreen();
+      }
+      mq.addEventListener("change", apply);
+      apply();
     })();
 
     // 27 Sep 2026 -- the wheel's look behind "Study Quran" (prefs.js).
