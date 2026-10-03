@@ -35,8 +35,15 @@ for (const lang of ["en", "bn"]) {
   for (const width of [320, 390, 1280]) {
     console.log(`\n=== ${lang} ${width}px, 2:102:35 ===`);
     const ctx = await newContext(browser, { appLang: lang, viewport: { width, height: width > 600 ? 900 : 844 } });
+    const requested = [];
+    ctx.on("request", (r) => requested.push(r.url()));
     const { page } = await openPage(ctx, "/app/quranrevival.html");
+    // Architect review: I9 measured, not assumed -- the landing page fetches no
+    // features file; opening the word card does.
+    await page.waitForTimeout(800);
+    check(`${lang}/${width}: I9 -- the landing page fetches no word-features file`, !requested.some((u) => u.includes("/word-features/")), requested.filter((u) => u.includes("word-features")).join(" "));
     await openWord(page, 2, 102, 35);
+    check(`${lang}/${width}: opening the card fetches surah 2's features file`, requested.some((u) => u.endsWith("/word-features/surah_002.json")));
     if (process.argv.includes("--mutate-header")) await page.evaluate(() => document.querySelectorAll("[data-word-card-root-box]").forEach((e) => e.remove()));
     const L = `${lang}/${width}`;
 

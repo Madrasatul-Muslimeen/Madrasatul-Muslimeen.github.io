@@ -2845,23 +2845,35 @@
      .facts / .meaning / .parts). direction: rtl on the grids puts the first
      item on the right; the boxes themselves read left to right again. */
   .word-card-facts { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 0.5rem; direction: rtl; margin: 0.4rem 0; }
-  .word-card-fact { direction: ltr; background: var(--card-bg-inset); border-radius: 0.6rem; padding: 0.45rem 0.6rem; min-width: 0; overflow-wrap: anywhere; }
-  .word-card-fact small { display: block; font-size: 0.74rem; font-weight: 600; color: var(--card-muted, #5b6d66); }
+  /* Architect review of #507: the demo's facts and part boxes are LIGHT cards
+     (#f3f5f4, dark ink) on the dark card, with strong part colours. The first
+     build used the dark inset colour and the pale segment palette, which
+     measured fine and did not look like the demo the Owner approved. */
+  .word-card-fact { direction: ltr; background: #f3f5f4; color: #13241f; border-radius: 0.6rem; padding: 0.45rem 0.6rem; min-width: 0; overflow-wrap: anywhere; }
+  .word-card-fact small { display: block; font-size: 0.74rem; font-weight: 600; color: #4f6159; }
   .word-card-fact b { display: block; font-size: 1rem; font-weight: 800; }
   .word-card-fact b.word-card-fact-ar { font-family: var(--quran-font); font-size: 1.3rem; text-align: left; }
-  .word-card-fact-sub { font-family: var(--quran-font); font-size: 0.95rem; }
+  .word-card-fact-sub { font-family: var(--quran-font); font-size: 0.95rem; font-weight: 500; color: #2f4a41; }
+  .word-card-fact b:has(+ .word-card-fact-sub) { display: inline; }
+  .word-card-fact b + .word-card-fact-sub { display: inline-block; margin-left: 0.4rem; }
   @media (max-width: 520px) { .word-card-fact { padding: 0.4rem 0.4rem; } .word-card-fact b { font-size: 0.88rem; } .word-card-fact b.word-card-fact-ar { font-size: 1.05rem; } }
   .word-card-meaning-bar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1.1rem; border: 1px solid var(--card-line); border-radius: 0.4rem; padding: 0.5rem 0.75rem; background: var(--card-bg-inset); margin: 0.4rem 0; }
-  .word-card-meaning-bar > p { margin: 0; min-width: 0; font-size: 1.05rem; font-weight: 700; }
+  .word-card-meaning-bar > p { margin: 0; min-width: 0; font-size: 1.15rem; font-weight: 700; }
+  .word-card-meaning-bar > .word-card-transliteration { font-size: 0.95rem; }
   .word-card-meaning-bar > .word-card-transliteration { font-style: italic; font-weight: 600; }
   .word-card-parts { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 0.5rem; direction: rtl; margin: 0.4rem 0; }
   @media (max-width: 520px) { .word-card-parts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  .word-card-part { direction: ltr; background: var(--card-bg-inset); border-radius: 0.6rem; padding: 0.6rem 0.5rem 0.7rem; display: grid; gap: 0.2rem; align-content: start; text-align: center; min-width: 0; overflow-wrap: anywhere; }
-  .word-card-part-kind { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; color: var(--card-muted, #5b6d66); }
+  .word-card-part { direction: ltr; background: #f3f5f4; color: #13241f; border-radius: 0.6rem; padding: 0.6rem 0.5rem 0.7rem; display: grid; gap: 0.2rem; align-content: start; text-align: center; min-width: 0; overflow-wrap: anywhere; }
+  .word-card-part-kind { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; color: #4f6159; }
   .word-card-part-piece { font-family: var(--quran-font); font-size: 2rem; line-height: 1.35; }
   .word-card-part-arname { font-family: var(--quran-font); font-size: 1.05rem; font-weight: 700; }
-  .word-card-part-name { font-size: 0.95rem; line-height: 1.25; }
-  .word-card-part-meaning { font-size: 0.9rem; }
+  .word-card-part-name { font-size: 1rem; font-weight: 800; line-height: 1.25; }
+  .word-card-part-meaning { font-size: 0.92rem; color: #2f4a41; }
+  .quran-word-card .word-card-part .word-card-part-piece { color: #13241f; }
+  .quran-word-card .word-card-part .word-card-part-piece.word-card-segment-particle { color: #2a64b8; }
+  .quran-word-card .word-card-part .word-card-part-piece.word-card-segment-person { color: #c0443f; }
+  .quran-word-card .word-card-part .word-card-part-piece.word-card-segment-stem { color: #1d8a4e; }
+  .quran-word-card .word-card-part .word-card-part-piece.word-card-segment-determiner { color: #6A3FA0; }
   .word-card-arabic { font-family: var(--quran-font); font-size: 2rem; line-height: 1.5; }
   /* Issue #263 -- word-part colouring. Deliberately plain inline spans with
      nothing between them (no space, no other element) so Arabic contextual

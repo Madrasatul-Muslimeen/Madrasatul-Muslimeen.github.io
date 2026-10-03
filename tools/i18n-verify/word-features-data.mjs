@@ -204,7 +204,12 @@ check("no user-visible text says 'lemma' (decision 59: 'Dictionary word')", () =
   const strings = src.match(/"[^"\n]*"/g) || [];
   assert.deepEqual(strings.filter((s) => /lemma/i.test(s)), []);
 });
-check("I9: only the on-demand loader names the new files; no page or module imports the loader yet", () => {
+// UPDATED IN PLACE (round 2, #504/#507): round 2 wires the loader into the
+// Word card, as planned, so the importer set is now pinned to exactly that page
+// (a new importer must be audited deliberately). That the files are fetched only
+// when a card opens, never on the landing page, is asserted in a real browser
+// by word-card-wbw-rebuild-browser.mjs.
+check("I9: only the on-demand loader names the new files, and only quranrevival.html imports it", () => {
   const appDir = path.join(root, "app");
   const hits = [];
   const importers = [];
@@ -222,7 +227,7 @@ check("I9: only the on-demand loader names the new files; no page or module impo
   };
   walk(appDir);
   assert.deepEqual(hits, ["app/js/quran-word-features.js"]);
-  assert.deepEqual(importers, []);
+  assert.deepEqual(importers, ["app/quranrevival.html"]);
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);
