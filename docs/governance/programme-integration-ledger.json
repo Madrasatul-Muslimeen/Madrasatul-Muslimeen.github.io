@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.49",
+    "version": "09.50",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1769,8 +1769,20 @@
     {
       "version": "09.49",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The Word card's WbW tab and header: ROOT box, Root/Dictionary word/Form row, one-bar meaning, word-part boxes (decision 59, #504, PR #507).",
+      "integration": {
+        "authorizedOn": "2026-10-03",
+        "integratedOn": "2026-10-03",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.50",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The Word card's Basic tab: facts row and the derived forms as ordered cards (decision 59, #508, PR #510).",
       "integration": {
         "authorizedOn": "2026-10-03",
         "integratedOn": "2026-10-03",
@@ -1779,8 +1791,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.50",
+  "nextUnallocated": "09.51",
   "nextUnallocatedNote": [
+    "v09.50 was allocated to Word card rebuild round 3 (Basic tab), 2026-10-03.",
     "v09.49 was allocated to Word card rebuild round 2 (WbW tab and header), 2026-10-03.",
     "v09.48 was allocated to Word card rebuild round 1 (data), 2026-10-03.",
     "v09.47 was allocated to Basic and Depth word progress switched on, 2026-10-02.",
