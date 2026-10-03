@@ -5,6 +5,7 @@ import { quranWordOccurrenceId, wordIdentityLayers } from "./quran-word-identity
 import { QURAN_TOTAL_WORD_COUNT, percentRounded } from "./quran-word-total.js";
 import { arabicToBuckwalter } from "./buckwalter.js";
 import { partName, partMeaning, PART_KINDS, FORM_NAMES, STEM_NAMES, DERIV_NAMES, DERIVED_GROUP_LABELS, orderDerivedForms } from "./word-grammar-tables.js";
+import { depthSectionsHtml } from "./word-card-depth.js";
 
 export const WORD_CARD_LEVELS = Object.freeze(["wbw", "basic", "depth"]);
 
@@ -848,8 +849,17 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
   // (whole-Qur'an total, lemma-wide claim): those stay scoped to WbW, per the
   // issue's own point 4.
   return `<div role="tabpanel" data-word-card-panel="depth">
-    ${dictionaryBox(word, context, text)}
-    ${formsSection(layers, context, text, formatNumber, { expandable: true })}
+    ${depthSectionsHtml({
+      word, layers, features: context.wordFeatures ?? null, open: context.depthOpen ?? {},
+      ctx: {
+        lang: text.formMeaningLang === "bn" ? "bn" : "en", formatNumber, segments: context.wordSegments, rootForms: context.rootForms,
+        lemmaForms: context.lemmaForms, dictionaryLookup: context.dictionaryLookup, ayahWords: context.ayahWords, ayahFeatures: context.ayahFeatures,
+        ayahNumber: context.ayahNumber, surahNumber: context.surahNumber,
+        laneUrl: layers.root ? `https://ejtaal.net/aa/#q=${encodeURIComponent(layers.root)}` : null,
+        dictionaryHtml: dictionaryBox(word, context, text),
+        formsHtml: formsSection(layers, context, text, formatNumber, { expandable: true }),
+      },
+    })}
     ${progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals })}
   </div>`;
 }
@@ -914,6 +924,7 @@ export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, 
   // the card its reader's own language. The English values are the fallback
   // for a caller that supplies nothing, never the only thing a reader can get.
   const text = { ...WORD_CARD_DEFAULT_LABELS, ...labels, displayRef: context.displayRef };
+  context = { ...context, ayahWords: ayah.words, ayahNumber: ayah.ayah, surahNumber: chapter.surahNumber };
   // Issue #263 -- on demand, per word: `context.wordSegments` is only ever
   // set once the caller has loaded that surah's segment file (quran-word-
   // segments.js); a word with no exact alignment, or before it has loaded,
