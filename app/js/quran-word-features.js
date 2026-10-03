@@ -54,3 +54,20 @@ export async function lemmaFormFor(lemma, options) {
   const data = await loadLemmaForms(options);
   return data.values[lemma] ?? null;
 }
+
+/** Round 5 -- every Dictionary verb's root, Form, Form I vowels and counted
+ *  forms, for the Depth tab's Verb Conjugation section. Fetched only when a
+ *  verb's Depth tab is opened (I9), then cached. */
+export async function loadVerbForms({ fetchImpl = fetch, baseUrl = BASE } = {}) {
+  return load(`${baseUrl}verb-forms.json`, fetchImpl, (data) => {
+    if (data.contract !== "verb-forms:v1" || !data.values || typeof data.values !== "object") {
+      throw new Error("Invalid verb forms format.");
+    }
+  });
+}
+
+/** { r, f, pv?, sv?, n } for one Dictionary verb, or null. */
+export async function verbFormFor(lemma, options) {
+  const data = await loadVerbForms(options);
+  return data.values[lemma] ?? null;
+}

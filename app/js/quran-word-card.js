@@ -853,7 +853,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
       word, layers, features: context.wordFeatures ?? null, open: context.depthOpen ?? {},
       ctx: {
         lang: text.formMeaningLang === "bn" ? "bn" : "en", formatNumber, segments: context.wordSegments, rootForms: context.rootForms,
-        lemmaForms: context.lemmaForms, dictionaryLookup: context.dictionaryLookup, ayahWords: context.ayahWords, ayahFeatures: context.ayahFeatures,
+        lemmaForms: context.lemmaForms, verbForms: context.verbForms, verbFormsFailed: context.verbFormsFailed, dictionaryLookup: context.dictionaryLookup, ayahWords: context.ayahWords, ayahFeatures: context.ayahFeatures,
         ayahNumber: context.ayahNumber, surahNumber: context.surahNumber,
         laneUrl: layers.root ? `https://ejtaal.net/aa/#q=${encodeURIComponent(layers.root)}` : null,
         dictionaryHtml: dictionaryBox(word, context, text),

@@ -6,9 +6,10 @@
 //
 // Round 5 adds the Verb Conjugation section between Morphology and Naḥw.
 
-import { partName, FORM_NAMES, personFor, TENSE_NAMES, MOOD_NAMES, VOICE_NAMES, DERIV_NAMES, SOURCE_TAGS, orderDerivedForms, PART_NAMES } from "./word-grammar-tables.js";
+import { partName, FORM_NAMES, PERSONS, PGN_ALIASES, personFor, TENSE_NAMES, MOOD_NAMES, VOICE_NAMES, DERIV_NAMES, SOURCE_TAGS, orderDerivedForms, PART_NAMES } from "./word-grammar-tables.js";
 
 import { quranWordOccurrenceId } from "./quran-word-identity.js";
+import { conjugate, toArabic } from "./verb-conjugation.js";
 
 function esc(value) {
   return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -18,9 +19,25 @@ function esc(value) {
 const S = {
   secRoot: { en: "Root & Word Family", bn: "মূল ও শব্দ-পরিবার" },
   secSarf: { en: "Morphology (Ṣarf)", bn: "রূপতত্ত্ব (সার্ফ)" },
+  secConj: { en: "Verb Conjugation", bn: "ক্রিয়া-রূপান্তর" },
   secNahw: { en: "Grammar in This Āyah (Naḥw)", bn: "এই আয়াতের ব্যাকরণ (নাহু)" },
   secChoice: { en: "Word Choice & Distinctions", bn: "শব্দচয়ন ও পার্থক্য" },
   secClassical: { en: "Classical Arabic Usage", bn: "ধ্রুপদী আরবি ব্যবহার" },
+  conjRule: { en: "Form {n} of {root} for every person.", bn: "{root}-এর ফর্ম {n}, সব পুরুষের জন্য।" },
+  conjHelp: { en: "Endings in colour; the gold row is the one in this āyah; ✦ = found in the Qur'an.", bn: "শেষাংশ রঙিন; সোনালি সারিটি এই আয়াতের; ✦ = কুরআনে পাওয়া যায়।" },
+  conjPast: { en: "Past", bn: "অতীত" },
+  conjPresent: { en: "Present", bn: "বর্তমান" },
+  conjCommand: { en: "Command", bn: "আদেশ" },
+  conjTimes: { en: "✦ in the Qur'an: {n} times", bn: "✦ কুরআনে: {n} বার" },
+  conjHere: { en: "In this āyah: {ar} ({mood})", bn: "এই আয়াতে: {ar} ({mood})" },
+  conjPassive: { en: "This word is passive; the tables are active.", bn: "এই শব্দটি কর্মবাচ্য; ছকগুলো কর্তৃবাচ্য।" },
+  conjUnknownVowel: { en: "The Qur'an does not show this verb's vowel, so this table is not guessed.", bn: "কুরআনে এই ক্রিয়ার স্বরচিহ্ন দেখা যায় না, তাই এই ছকটি অনুমান করা হয়নি।" },
+  conjLoading: { en: "Loading the verb's forms…", bn: "ক্রিয়ার রূপগুলো লোড হচ্ছে…" },
+  conjFailed: { en: "The verb forms could not be loaded, so no table is shown.", bn: "ক্রিয়ার রূপগুলো লোড করা যায়নি, তাই কোনো ছক দেখানো হচ্ছে না।" },
+  conjNotListed: { en: "This verb is not in the packaged verb-forms list, so no table is shown. A form is never guessed.", bn: "এই ক্রিয়াটি প্যাকেজ করা ক্রিয়া-রূপের তালিকায় নেই, তাই কোনো ছক দেখানো হচ্ছে না। কোনো রূপ অনুমান করা হয় না।" },
+  conjWeak: { en: "This root has a weak letter (و or ي) or a hamza, so its table needs a source and comes in a later round. A form is never guessed.", bn: "এই মূলে দুর্বল অক্ষর (و বা ي) বা হামযা আছে, তাই এর ছকের জন্য উৎস লাগবে এবং এটি পরের ধাপে আসবে। কোনো রূপ অনুমান করা হয় না।" },
+  conjDoubled: { en: "This root's last two letters are the same (a doubled root), so its table needs a source and comes in a later round. A form is never guessed.", bn: "এই মূলের শেষ দুটি অক্ষর একই (দ্বিত্ব মূল), তাই এর ছকের জন্য উৎস লাগবে এবং এটি পরের ধাপে আসবে। কোনো রূপ অনুমান করা হয় না।" },
+  conjNotTri: { en: "This root is not three letters, so its table needs a source and comes in a later round. A form is never guessed.", bn: "এই মূল তিন অক্ষরের নয়, তাই এর ছকের জন্য উৎস লাগবে এবং এটি পরের ধাপে আসবে। কোনো রূপ অনুমান করা হয় না।" },
   rootMeans: { en: "The root means {m}", bn: "মূলটির অর্থ {m}" },
   rootCredit: { en: "(Wiktionary, CC BY-SA 4.0, adapted)", bn: "(উইকশনারি, CC BY-SA 4.0, অভিযোজিত)" },
   usedTimes: { en: "It is used {n} times in the Qur'an, in {f} forms.", bn: "কুরআনে এটি {f}টি রূপে {n} বার ব্যবহৃত হয়েছে।" },
@@ -101,9 +118,9 @@ function line(kind, lang, body, cls = "") {
   return `<div class="word-card-dline${cls ? ` ${cls}` : ""}" data-word-card-dline="${kind}">${sourceTagHtml(kind, lang)} ${body}</div>`;
 }
 
-const SECTIONS = ["root", "sarf", "nahw", "choice", "classical"];
-const ICONS = { root: "ر", sarf: "ص", nahw: "ن", choice: "≠", classical: "ل" };
-const TITLES = { root: "secRoot", sarf: "secSarf", nahw: "secNahw", choice: "secChoice", classical: "secClassical" };
+const SECTIONS = ["root", "sarf", "conj", "nahw", "choice", "classical"];
+const ICONS = { root: "ر", sarf: "ص", conj: "ت", nahw: "ن", choice: "≠", classical: "ل" };
+const TITLES = { root: "secRoot", sarf: "secSarf", conj: "secConj", nahw: "secNahw", choice: "secChoice", classical: "secClassical" };
 
 function accordion(key, lang, open, body) {
   return `<details class="word-card-acc" data-word-card-sec="${key}"${open ? " open" : ""}>` +
@@ -333,6 +350,67 @@ function classicalSection(word, layers, ctx) {
     `<p class="word-card-m3" data-word-card-classical-note>${esc(pick("noUnattributed", lang))}</p>`;
 }
 
+const CONJ_REASON = { "weak-or-hamzated": "conjWeak", doubled: "conjDoubled", "not-triliteral": "conjNotTri" };
+const CONJ_TENSE = { PERF: "past", IMPF: "pres", IMPV: "imp" };
+const CONJ_KEY = { past: "PERF", imp: "IMPV" };
+const CONJ_LEAD = { past: "الْمَاضِي", pres: "الْمُضَارِع", imp: "الْأَمْر" };
+
+/** One of the three tables: 14 rows in PERSONS order, the pronoun on the right
+ *  (the grid and the table are right-to-left, as in the demo). */
+function conjTable(kind, rows, heading, ctx, here, entry) {
+  const { lang, formatNumber } = ctx;
+  const head = rows.find((r) => r?.pgn === "3MS") ?? rows.find((r) => r?.pgn === "2MS");
+  const body = PERSONS.map((p, i) => {
+    const r = rows[i];
+    const sep = i === 6 || i === 12 ? " word-card-cj-sep" : "";
+    const pr = `<td class="word-card-cj-pr"><span class="word-card-ar" dir="rtl" lang="ar">${esc(p.ar)}</span><small>${esc(p[lang] ?? p.en)}</small></td>`;
+    if (!r) return `<tr class="word-card-cj-row${sep}" data-word-card-conj-pgn="${p.pgn}">${pr}<td class="word-card-cj-no" data-word-card-conj-none>✕</td></tr>`;
+    const isHere = !!here && here.kind === kind && here.pgn === p.pgn;
+    const count = entry?.n?.[kind === "pres" ? `IMPF.${p.pgn}.IND` : `${CONJ_KEY[kind]}.${p.pgn}`];
+    const q = count ? `<span class="word-card-cj-q" data-word-card-conj-count="${count}">${esc(fill(pick("conjTimes", lang), { n: formatNumber(count) }))}</span>` : "";
+    const mood = isHere && here.mood !== "IND"
+      ? `<span class="word-card-cj-mood" data-word-card-conj-mood>${esc(fill(pick("conjHere", lang), { ar: "\u0000", mood: S.moodWord[lang][here.mood] })).replace("\u0000", AR(here.word))}</span>` : "";
+    const vb = `<td class="word-card-cj-vb" data-word-card-conj-form="${esc(r.ar)}"><span class="word-card-cj-p">${esc(r.prefix)}</span><span class="word-card-cj-st">${esc(r.stem)}</span><span class="word-card-cj-e">${esc(r.ending)}</span>${q}${mood}</td>`;
+    return `<tr class="word-card-cj-row${sep}${isHere ? " word-card-cj-here" : ""}"${isHere ? " data-word-card-conj-here" : ""} data-word-card-conj-pgn="${p.pgn}">${pr}${vb}</tr>`;
+  }).join("");
+  return `<div class="word-card-cj word-card-cj-${kind}" data-word-card-conj-table="${kind}">` +
+    `<h4>${heading}</h4><div class="word-card-cj-lead" dir="rtl" lang="ar">${esc(CONJ_LEAD[kind])} (${esc(head?.ar ?? "")})</div>` +
+    `<table>${body}</table></div>`;
+}
+
+/** Verb Conjugation · تَصْرِيفُ الْفِعْل. Every form comes from the engine
+ *  (verb-conjugation.js) and is never guessed: a root it cannot do safely gets
+ *  one plain line saying why. */
+function conjSection(word, features, ctx) {
+  const { lang, formatNumber } = ctx;
+  const lemma = word.morphology?.lemma;
+  const need = (key) => line("needs", lang, esc(pick(key, lang)), "word-card-need");
+  if (!ctx.verbForms) return ctx.verbFormsFailed ? need("conjFailed") : `<p class="word-card-dnote" data-word-card-conj-loading>${esc(pick("conjLoading", lang))}</p>`;
+  const entry = lemma ? ctx.verbForms[lemma] : null;
+  if (!entry) return need("conjNotListed");
+  const result = conjugate({ root: entry.r, form: entry.f, pastVowel: entry.pv ?? null, presentVowel: entry.sv ?? null });
+  if (!result.supported) return need(CONJ_REASON[result.reason] ?? "conjWeak");
+  const rootAr = [...toArabic(entry.r)].join(" ");
+  const formLabel = lang === "bn" ? formatNumber(entry.f) : (FORM_NAMES[entry.f]?.roman ?? String(entry.f));
+  const out = [line("rule", lang, `${esc(fill(pick("conjRule", lang), { n: formLabel, root: "\u0000" })).replace("\u0000", AR(rootAr))} <span class="word-card-m">${esc(pick("conjHelp", lang))}</span>`)];
+  const kind = CONJ_TENSE[features.tense];
+  const here = kind && !features.pass
+    ? { kind, pgn: PGN_ALIASES[features.pgn] || features.pgn, mood: features.tense === "IMPF" ? features.mood || "IND" : "IND", word: word.arabic }
+    : null;
+  if (features.pass) out.push(`<p class="word-card-dnote" data-word-card-conj-passive>${esc(pick("conjPassive", lang))}</p>`);
+  // Only the present has a Dictionary meaning to give (the Dictionary word is the present form); the other two get none rather than an invented one.
+  const meaning = ctx.dictionaryLookup?.(lemma)?.m;
+  const h4 = (key, gloss) => `${esc(pick(key, lang))}${gloss ? ` <b lang="en">(${esc(gloss)})</b>` : ""}`;
+  const unknown = `<div class="word-card-cj word-card-cj-unknown" data-word-card-conj-unknown><p class="word-card-dnote">${esc(pick("conjUnknownVowel", lang))}</p></div>`;
+  const tables = [
+    result.pastKnown ? conjTable("past", result.past, h4("conjPast"), ctx, here, entry) : unknown,
+    result.presentKnown ? conjTable("pres", result.present, h4("conjPresent", meaning), ctx, here, entry) : unknown,
+    result.presentKnown ? conjTable("imp", result.command, h4("conjCommand"), ctx, here, entry) : unknown,
+  ];
+  out.push(`<div class="word-card-conj-wrap"><div class="word-card-conj" data-word-card-conj-grid>${tables.join("")}</div></div>`);
+  return out.join("");
+}
+
 function rootSection(word, layers, features, ctx) {
   const { lang, formatNumber } = ctx;
   const out = [];
@@ -377,12 +455,14 @@ function rootSection(word, layers, features, ctx) {
  */
 export function depthSectionsHtml({ word, layers, features, ctx, open = {} }) {
   const isOpen = (k) => (k in open ? !!open[k] : k === "root");
+  const showConj = !!features?.tense;
   const bodies = {
     root: rootSection(word, layers, features, ctx),
     sarf: sarfSection(word, layers, features, ctx),
+    conj: showConj ? conjSection(word, features, ctx) : "",
     nahw: nahwSection(word, layers, features, ctx),
     choice: choiceSection(word, layers, features, ctx),
     classical: classicalSection(word, layers, ctx),
   };
-  return depthLegendHtml(ctx.lang) + SECTIONS.map((k) => accordion(k, ctx.lang, isOpen(k), bodies[k])).join("");
+  return depthLegendHtml(ctx.lang) + SECTIONS.filter((k) => k !== "conj" || showConj).map((k) => accordion(k, ctx.lang, isOpen(k), bodies[k])).join("");
 }
