@@ -69,6 +69,22 @@ check("1:3 ٱلرَّحْمَٰنِ is an adjective of ٱللَّهِ (1:2:2), m
   assert.ok(hasEdge(g, "adj", nodeOf(g, "3:1", 0), allah));
   assert.ok(s1.words["2:2"].includes(s1.graphs.indexOf(g)), "the referenced word does not list the graph");
 });
+check("2:3:2 يُؤْمِنُونَ: the verb piece spans the app's segments 0–1 (person prefix + stem), the plural ending is segment 2", () => {
+  const g = graphsOf(s2, "3:2")[0];
+  const verb = g.n[nodeOf(g, "3:2", 0)], pron = g.n[nodeOf(g, "3:2", 1)];
+  assert.deepEqual([verb[3], verb[4]], ["V", [0, 2]]);
+  assert.deepEqual([pron[3], pron[4]], ["PRON", [2, 3]]);
+});
+check("1:2:1 ٱلْحَمْدُ: the determiner is the app's segment 0, so the noun piece is segment 1", () => {
+  const g = graphsOf(s1, "2:1")[0];
+  assert.deepEqual(g.n[nodeOf(g, "2:1", 0)].slice(3, 5), ["N", [1, 2]]);
+});
+check("gen's direction follows the data: the noun is the dependent, the preposition the head (gen(n3 - n2) in 1:1)", () => {
+  assert.equal(synManifest.relations.gen[2], "noun → preposition");
+  const g = graphsOf(s1, "1:1")[0];
+  const [r, d, h] = g.e.find((x) => x[0] === "gen");
+  assert.deepEqual([g.n[d][3], g.n[h][3]], ["N", "P"]);
+});
 check("coverage: surahs 1–9 and 59–114 have files; 10–58 have none (the treebank stops there)", () => {
   for (let s = 1; s <= 114; s++) {
     const exists = fs.existsSync(path.join(synDir, `surah_${String(s).padStart(3, "0")}.json`));
@@ -154,6 +170,17 @@ check("a heading the transcription ran into its first sentence is cut back: «ا
   assert.ok(e);
   assert.match(e.t, /^يقتضي أخذ شيء/);
 });
+check("a comparison of phrases keeps its heading whole: «الفرق بين العالم بالشيء والمحيط به», linked through its head noun عَالِم", () => {
+  const e = F.entries.find((x) => x.h === "الفرق بين العالم بالشيء والمحيط به");
+  assert.ok(e, "heading cut or missing");
+  assert.deepEqual(e.terms, ["العالم بالشيء", "المحيط به"]);
+  assert.ok(headsFor("عَٰلِم").includes(e.h));
+});
+check("a heading repeated at a page break is one entry, not two: «الأعلى وفوق» appears once, and its text is its own", () => {
+  const list = F.entries.filter((x) => x.h === "الفرق بين الأعلى وفوق");
+  assert.equal(list.length, 1);
+  assert.match(list[0].t, /^أن أعلى الشيء منه/);
+});
 check("every packaged entry is linked to some Dictionary word, and no term is left ambiguous unreviewed", () => {
   const linked = new Set(Object.values(F.lemmas).flat());
   assert.equal(linked.size, F.entries.length);
@@ -208,12 +235,23 @@ check("every entry quotes at least one āyah that contains a word of its root (r
     }
   }
 });
+check("a page-break fragment is not a root: حسب has no entry starting mid-word («ون الأحزاب …», the rest of يحسبون in حزب)", () => {
+  assert.ok(!(book(6)["حسب"] ?? []).some((e) => /^ون الأحزاب/.test(e.t)));
+  assert.ok(book(6)["حزب"].some((e) => /يحسبون الأحزاب/.test(e.t)), "the fragment was not glued back into حزب");
+});
+check("no citation in q points past its sūra's last āyah (the text keeps [الأنعام/ 194] as transcribed)", () => {
+  const counts = Object.fromEntries(readJson(path.join(out, "surah-index.json")).map((x) => [x.surahNumber, x.ayahCount]));
+  for (let b = 1; b <= 28; b++) for (const list of Object.values(book(b))) for (const e of list) for (const [su, a] of e.q) assert.ok(a >= 1 && a <= counts[su], `${e.h}: ${su}:${a}`);
+});
 check("no OpenITI markers, footnote callers or markup in any entry", () => {
   for (let b = 1; b <= 28; b++) for (const list of Object.values(book(b))) for (const e of list) assert.ok(!/PageV|\bms\d|<\/?span|«\d+»/.test(e.t), e.h);
 });
-check("coverage as measured on 3 Oct 2026: 1,476 of the Qur'an's 1,642 roots; every sūra name in a citation is known", () => {
+// Updated in place (3 Oct 2026, review of PR #532): 1,476 -> 1,472 when
+// page-break word fragments (حسب inside حزب's يحسبون, and three more) stopped
+// counting as roots of their own.
+check("coverage as measured on 3 Oct 2026: 1,472 of the Qur'an's 1,642 roots; every sūra name in a citation is known", () => {
   assert.equal(M.quranRoots, 1642);
-  assert.equal(M.rootsCovered, 1476);
+  assert.equal(M.rootsCovered, 1472);
   assert.deepEqual(M.unknownSurahNames, {});
 });
 check("licence and credit: CC BY-NC-SA 4.0, OpenITI's DOI, al-Dāwūdī's edition", () => {

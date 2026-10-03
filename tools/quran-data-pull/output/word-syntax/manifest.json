@@ -19,8 +19,8 @@
   "coveragePercent": 42.13,
   "unalignedWordNodes": 151,
   "nodesWithoutMorphologyPiece": 55,
-  "totalBytes": 2557986,
-  "maxBytes": 493320,
+  "totalBytes": 2886023,
+  "maxBytes": 555014,
   "relations": {
     "adj": [
       "صفة",
@@ -95,7 +95,7 @@
     "gen": [
       "جار ومجرور",
       "Preposition phrase",
-      "preposition → noun"
+      "noun → preposition"
     ],
     "link": [
       "متعلق",
@@ -281,7 +281,7 @@
       "corpusWords": 29,
       "wordsInGraphs": 29,
       "complete": true,
-      "bytes": 1975
+      "bytes": 2233
     },
     {
       "surah": 2,
@@ -289,7 +289,7 @@
       "corpusWords": 6116,
       "wordsInGraphs": 6116,
       "complete": true,
-      "bytes": 493320
+      "bytes": 555014
     },
     {
       "surah": 3,
@@ -297,7 +297,7 @@
       "corpusWords": 3481,
       "wordsInGraphs": 3481,
       "complete": true,
-      "bytes": 276364
+      "bytes": 311113
     },
     {
       "surah": 4,
@@ -305,7 +305,7 @@
       "corpusWords": 3747,
       "wordsInGraphs": 3747,
       "complete": true,
-      "bytes": 295296
+      "bytes": 333125
     },
     {
       "surah": 5,
@@ -313,7 +313,7 @@
       "corpusWords": 2804,
       "wordsInGraphs": 2804,
       "complete": true,
-      "bytes": 220271
+      "bytes": 248665
     },
     {
       "surah": 6,
@@ -321,7 +321,7 @@
       "corpusWords": 3050,
       "wordsInGraphs": 3050,
       "complete": true,
-      "bytes": 242303
+      "bytes": 272795
     },
     {
       "surah": 7,
@@ -329,7 +329,7 @@
       "corpusWords": 3320,
       "wordsInGraphs": 3320,
       "complete": true,
-      "bytes": 275015
+      "bytes": 310017
     },
     {
       "surah": 8,
@@ -337,7 +337,7 @@
       "corpusWords": 1233,
       "wordsInGraphs": 1233,
       "complete": true,
-      "bytes": 96893
+      "bytes": 109636
     },
     {
       "surah": 9,
@@ -345,7 +345,7 @@
       "corpusWords": 2498,
       "wordsInGraphs": 1722,
       "complete": false,
-      "bytes": 134695
+      "bytes": 152675
     },
     {
       "surah": 59,
@@ -353,7 +353,7 @@
       "corpusWords": 445,
       "wordsInGraphs": 445,
       "complete": true,
-      "bytes": 33369
+      "bytes": 37755
     },
     {
       "surah": 60,
@@ -361,7 +361,7 @@
       "corpusWords": 348,
       "wordsInGraphs": 348,
       "complete": true,
-      "bytes": 28178
+      "bytes": 32036
     },
     {
       "surah": 61,
@@ -369,7 +369,7 @@
       "corpusWords": 221,
       "wordsInGraphs": 221,
       "complete": true,
-      "bytes": 15984
+      "bytes": 18094
     },
     {
       "surah": 62,
@@ -377,7 +377,7 @@
       "corpusWords": 175,
       "wordsInGraphs": 175,
       "complete": true,
-      "bytes": 12653
+      "bytes": 14339
     },
     {
       "surah": 63,
@@ -385,7 +385,7 @@
       "corpusWords": 180,
       "wordsInGraphs": 180,
       "complete": true,
-      "bytes": 13899
+      "bytes": 15794
     },
     {
       "surah": 64,
@@ -393,7 +393,7 @@
       "corpusWords": 241,
       "wordsInGraphs": 241,
       "complete": true,
-      "bytes": 18301
+      "bytes": 20773
     },
     {
       "surah": 65,
@@ -401,7 +401,7 @@
       "corpusWords": 287,
       "wordsInGraphs": 287,
       "complete": true,
-      "bytes": 21469
+      "bytes": 24361
     },
     {
       "surah": 66,
@@ -409,7 +409,7 @@
       "corpusWords": 249,
       "wordsInGraphs": 249,
       "complete": true,
-      "bytes": 18162
+      "bytes": 20603
     },
     {
       "surah": 67,
@@ -417,7 +417,7 @@
       "corpusWords": 333,
       "wordsInGraphs": 333,
       "complete": true,
-      "bytes": 23597
+      "bytes": 26595
     },
     {
       "surah": 68,
@@ -425,7 +425,7 @@
       "corpusWords": 300,
       "wordsInGraphs": 300,
       "complete": true,
-      "bytes": 22224
+      "bytes": 25140
     },
     {
       "surah": 69,
@@ -433,7 +433,7 @@
       "corpusWords": 258,
       "wordsInGraphs": 258,
       "complete": true,
-      "bytes": 18543
+      "bytes": 21051
     },
     {
       "surah": 70,
@@ -441,7 +441,7 @@
       "corpusWords": 217,
       "wordsInGraphs": 217,
       "complete": true,
-      "bytes": 15786
+      "bytes": 17886
     },
     {
       "surah": 71,
@@ -449,7 +449,7 @@
       "corpusWords": 226,
       "wordsInGraphs": 226,
       "complete": true,
-      "bytes": 17442
+      "bytes": 19782
     },
     {
       "surah": 72,
@@ -457,7 +457,7 @@
       "corpusWords": 285,
       "wordsInGraphs": 285,
       "complete": true,
-      "bytes": 21517
+      "bytes": 24252
     },
     {
       "surah": 73,
@@ -465,7 +465,7 @@
       "corpusWords": 199,
       "wordsInGraphs": 199,
       "complete": true,
-      "bytes": 14232
+      "bytes": 16086
     },
     {
       "surah": 74,
@@ -473,7 +473,7 @@
       "corpusWords": 255,
       "wordsInGraphs": 255,
       "complete": true,
-      "bytes": 18179
+      "bytes": 20435
     },
     {
       "surah": 75,
@@ -481,7 +481,7 @@
       "corpusWords": 164,
       "wordsInGraphs": 164,
       "complete": true,
-      "bytes": 11381
+      "bytes": 12773
     },
     {
       "surah": 76,
@@ -489,7 +489,7 @@
       "corpusWords": 243,
       "wordsInGraphs": 243,
       "complete": true,
-      "bytes": 17322
+      "bytes": 19686
     },
     {
       "surah": 77,
@@ -497,7 +497,7 @@
       "corpusWords": 181,
       "wordsInGraphs": 181,
       "complete": true,
-      "bytes": 13186
+      "bytes": 14944
     },
     {
       "surah": 78,
@@ -505,7 +505,7 @@
       "corpusWords": 173,
       "wordsInGraphs": 173,
       "complete": true,
-      "bytes": 12455
+      "bytes": 14225
     },
     {
       "surah": 79,
@@ -513,7 +513,7 @@
       "corpusWords": 179,
       "wordsInGraphs": 179,
       "complete": true,
-      "bytes": 13348
+      "bytes": 15058
     },
     {
       "surah": 80,
@@ -521,7 +521,7 @@
       "corpusWords": 133,
       "wordsInGraphs": 133,
       "complete": true,
-      "bytes": 9977
+      "bytes": 11255
     },
     {
       "surah": 81,
@@ -529,7 +529,7 @@
       "corpusWords": 104,
       "wordsInGraphs": 104,
       "complete": true,
-      "bytes": 7420
+      "bytes": 8452
     },
     {
       "surah": 82,
@@ -537,7 +537,7 @@
       "corpusWords": 80,
       "wordsInGraphs": 80,
       "complete": true,
-      "bytes": 5686
+      "bytes": 6430
     },
     {
       "surah": 83,
@@ -545,7 +545,7 @@
       "corpusWords": 169,
       "wordsInGraphs": 169,
       "complete": true,
-      "bytes": 11539
+      "bytes": 13039
     },
     {
       "surah": 84,
@@ -553,7 +553,7 @@
       "corpusWords": 107,
       "wordsInGraphs": 107,
       "complete": true,
-      "bytes": 8211
+      "bytes": 9267
     },
     {
       "surah": 85,
@@ -561,7 +561,7 @@
       "corpusWords": 109,
       "wordsInGraphs": 109,
       "complete": true,
-      "bytes": 6912
+      "bytes": 7830
     },
     {
       "surah": 86,
@@ -569,7 +569,7 @@
       "corpusWords": 61,
       "wordsInGraphs": 61,
       "complete": true,
-      "bytes": 3984
+      "bytes": 4512
     },
     {
       "surah": 87,
@@ -577,7 +577,7 @@
       "corpusWords": 72,
       "wordsInGraphs": 72,
       "complete": true,
-      "bytes": 5275
+      "bytes": 5947
     },
     {
       "surah": 88,
@@ -585,7 +585,7 @@
       "corpusWords": 92,
       "wordsInGraphs": 92,
       "complete": true,
-      "bytes": 6031
+      "bytes": 6805
     },
     {
       "surah": 89,
@@ -593,7 +593,7 @@
       "corpusWords": 137,
       "wordsInGraphs": 137,
       "complete": true,
-      "bytes": 10049
+      "bytes": 11435
     },
     {
       "surah": 90,
@@ -601,7 +601,7 @@
       "corpusWords": 82,
       "wordsInGraphs": 82,
       "complete": true,
-      "bytes": 5490
+      "bytes": 6210
     },
     {
       "surah": 91,
@@ -609,7 +609,7 @@
       "corpusWords": 54,
       "wordsInGraphs": 54,
       "complete": true,
-      "bytes": 5012
+      "bytes": 5720
     },
     {
       "surah": 92,
@@ -617,7 +617,7 @@
       "corpusWords": 71,
       "wordsInGraphs": 71,
       "complete": true,
-      "bytes": 5934
+      "bytes": 6678
     },
     {
       "surah": 93,
@@ -625,7 +625,7 @@
       "corpusWords": 40,
       "wordsInGraphs": 40,
       "complete": true,
-      "bytes": 3328
+      "bytes": 3778
     },
     {
       "surah": 94,
@@ -633,7 +633,7 @@
       "corpusWords": 27,
       "wordsInGraphs": 27,
       "complete": true,
-      "bytes": 2106
+      "bytes": 2400
     },
     {
       "surah": 95,
@@ -641,7 +641,7 @@
       "corpusWords": 34,
       "wordsInGraphs": 34,
       "complete": true,
-      "bytes": 2164
+      "bytes": 2476
     },
     {
       "surah": 96,
@@ -649,7 +649,7 @@
       "corpusWords": 72,
       "wordsInGraphs": 72,
       "complete": true,
-      "bytes": 5576
+      "bytes": 6212
     },
     {
       "surah": 97,
@@ -657,7 +657,7 @@
       "corpusWords": 30,
       "wordsInGraphs": 30,
       "complete": true,
-      "bytes": 1803
+      "bytes": 2043
     },
     {
       "surah": 98,
@@ -665,7 +665,7 @@
       "corpusWords": 94,
       "wordsInGraphs": 94,
       "complete": true,
-      "bytes": 5954
+      "bytes": 6758
     },
     {
       "surah": 99,
@@ -673,7 +673,7 @@
       "corpusWords": 36,
       "wordsInGraphs": 36,
       "complete": true,
-      "bytes": 2605
+      "bytes": 2941
     },
     {
       "surah": 100,
@@ -681,7 +681,7 @@
       "corpusWords": 40,
       "wordsInGraphs": 40,
       "complete": true,
-      "bytes": 3054
+      "bytes": 3498
     },
     {
       "surah": 101,
@@ -689,7 +689,7 @@
       "corpusWords": 36,
       "wordsInGraphs": 36,
       "complete": true,
-      "bytes": 2428
+      "bytes": 2752
     },
     {
       "surah": 102,
@@ -697,7 +697,7 @@
       "corpusWords": 28,
       "wordsInGraphs": 28,
       "complete": true,
-      "bytes": 1871
+      "bytes": 2117
     },
     {
       "surah": 103,
@@ -705,7 +705,7 @@
       "corpusWords": 14,
       "wordsInGraphs": 14,
       "complete": true,
-      "bytes": 1176
+      "bytes": 1344
     },
     {
       "surah": 104,
@@ -713,7 +713,7 @@
       "corpusWords": 33,
       "wordsInGraphs": 33,
       "complete": true,
-      "bytes": 2379
+      "bytes": 2655
     },
     {
       "surah": 105,
@@ -721,7 +721,7 @@
       "corpusWords": 23,
       "wordsInGraphs": 23,
       "complete": true,
-      "bytes": 1831
+      "bytes": 2059
     },
     {
       "surah": 106,
@@ -729,7 +729,7 @@
       "corpusWords": 17,
       "wordsInGraphs": 17,
       "complete": true,
-      "bytes": 1378
+      "bytes": 1576
     },
     {
       "surah": 107,
@@ -737,7 +737,7 @@
       "corpusWords": 25,
       "wordsInGraphs": 25,
       "complete": true,
-      "bytes": 1833
+      "bytes": 2067
     },
     {
       "surah": 108,
@@ -745,7 +745,7 @@
       "corpusWords": 10,
       "wordsInGraphs": 10,
       "complete": true,
-      "bytes": 844
+      "bytes": 952
     },
     {
       "surah": 109,
@@ -753,7 +753,7 @@
       "corpusWords": 26,
       "wordsInGraphs": 26,
       "complete": true,
-      "bytes": 1801
+      "bytes": 2022
     },
     {
       "surah": 110,
@@ -761,7 +761,7 @@
       "corpusWords": 19,
       "wordsInGraphs": 19,
       "complete": true,
-      "bytes": 1359
+      "bytes": 1539
     },
     {
       "surah": 111,
@@ -769,7 +769,7 @@
       "corpusWords": 23,
       "wordsInGraphs": 23,
       "complete": true,
-      "bytes": 1541
+      "bytes": 1745
     },
     {
       "surah": 112,
@@ -777,7 +777,7 @@
       "corpusWords": 15,
       "wordsInGraphs": 15,
       "complete": true,
-      "bytes": 933
+      "bytes": 1041
     },
     {
       "surah": 113,
@@ -785,7 +785,7 @@
       "corpusWords": 23,
       "wordsInGraphs": 23,
       "complete": true,
-      "bytes": 1814
+      "bytes": 2030
     },
     {
       "surah": 114,
@@ -793,7 +793,7 @@
       "corpusWords": 20,
       "wordsInGraphs": 20,
       "complete": true,
-      "bytes": 1329
+      "bytes": 1497
     }
   ]
 }
