@@ -1,0 +1,147 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- The Word card search demo (https://claude.ai/artifact/JLpC4nuj4NRzqK7e63XA7x, 2 Oct 2026). Build target for the search round. -->
+<title>Word Card Search</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Noto+Sans:wght@400;600;700&display=swap">
+<style>
+/* Layout: one phone-width Word card, as in the app, with the proposed 🔍 in its header; notes beside it on a wide screen. Single dark look, matching the app's Word card. */
+:root {
+  --page: #0f1626; --card: #1b2944; --card2: #15203a; --edge: #3a4767;
+  --gold: #c9a24a; --gold-text: #e3c27a; --ink: #eef1f7; --muted: #a9b3c8; --rose: #f2a7a7;
+  --ar: "Amiri Quran", "Scheherazade New", serif; --ui: "Noto Sans", system-ui, sans-serif;
+  color-scheme: dark;
+}
+body { background: var(--page); color: var(--ink); font-family: var(--ui); }
+.wrap { padding-block: 20px 40px; padding-inline: 16px; max-width: 980px; margin: 0 auto; display: grid; gap: 24px; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); align-items: start; }
+@media (max-width: 760px) { .wrap { grid-template-columns: minmax(0, 1fr); } }
+h1 { font-size: 1.15rem; margin: 0 0 6px; text-wrap: balance; }
+.notes p, .notes li { color: var(--muted); line-height: 1.5; font-size: .92rem; }
+.notes strong { color: var(--ink); }
+.notes ol { padding-left: 1.2rem; display: grid; gap: 6px; }
+.tag { display: inline-block; font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: var(--gold-text); border: 1px solid var(--gold); border-radius: 4px; padding: 1px 6px; margin-bottom: 8px; }
+.card { background: linear-gradient(160deg, var(--card), var(--card2)); border: 2px solid #d33; border-radius: 6px; padding: 14px; display: grid; gap: 10px; }
+.head { display: grid; grid-template-columns: 40px 40px 1fr 40px 40px; gap: 6px; align-items: start; }
+.btn { width: 40px; height: 40px; border-radius: 6px; border: 1px solid var(--edge); background: #121b30; color: var(--gold-text); font-size: 1rem; cursor: pointer; display: grid; place-items: center; }
+.btn:focus-visible, .res:focus-visible, .place:focus-visible, input:focus-visible { outline: 2px solid var(--gold-text); outline-offset: 2px; }
+.btn.new { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(201,162,74,.35); }
+.btn[aria-pressed="true"] { background: var(--gold); color: #1b2944; }
+.word { text-align: center; }
+.word .ar { font-family: var(--ar); font-size: 2rem; color: var(--rose); line-height: 1.5; }
+.word .ref { font-weight: 700; font-size: .95rem; }
+.word .mean { color: var(--muted); font-size: .85rem; }
+.search { display: grid; gap: 8px; border: 1px solid var(--edge); border-radius: 6px; padding: 10px; background: #111a2e; }
+.search label { font-size: .82rem; color: var(--muted); }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
+input { min-width: 0; height: 40px; border-radius: 6px; border: 1px solid var(--edge); background: #0c1322; color: var(--ink); padding: 0 10px; font-size: 1rem; font-family: var(--ui), var(--ar); }
+.go { height: 40px; padding: 0 14px; border-radius: 6px; border: 0; background: var(--gold); color: #1b2944; font-weight: 700; cursor: pointer; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; font-size: .78rem; color: var(--muted); }
+.chips button { border: 1px dashed var(--edge); background: none; color: var(--gold-text); border-radius: 12px; padding: 2px 9px; cursor: pointer; font: inherit; }
+.status { font-size: .82rem; color: var(--muted); margin: 0; }
+.results { display: grid; gap: 6px; max-height: 300px; overflow: auto; }
+.res { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; text-align: left; border: 1px solid var(--edge); background: #16213a; color: var(--ink); border-radius: 6px; padding: 6px 10px; cursor: pointer; font: inherit; }
+.res .ar { font-family: var(--ar); font-size: 1.35rem; color: var(--rose); }
+.res .t { font-size: .82rem; color: var(--muted); min-width: 0; }
+.res .n { font-variant-numeric: tabular-nums; font-size: .8rem; color: var(--gold-text); white-space: nowrap; }
+.places { display: flex; flex-wrap: wrap; gap: 6px; }
+.place { border: 1px solid var(--edge); background: #16213a; color: var(--ink); border-radius: 6px; padding: 6px 10px; font-variant-numeric: tabular-nums; cursor: pointer; font: inherit; font-size: .85rem; }
+.place[aria-current="true"] { border-color: var(--gold); color: var(--gold-text); }
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.tabs span { border: 1px solid var(--edge); border-radius: 6px; text-align: center; padding: 9px 4px; font-size: .85rem; color: var(--gold-text); }
+.tabs span.on { background: var(--gold); color: #1b2944; }
+.this { border: 1px solid var(--edge); border-radius: 6px; text-align: center; padding: 9px; color: var(--gold-text); font-size: .88rem; }
+@media (prefers-reduced-motion: no-preference) { .search { animation: drop .15s ease-out; } @keyframes drop { from { transform: translateY(-4px); opacity: .6; } } }
+</style>
+
+<div class="wrap">
+  <div>
+    <div class="card" aria-label="Word card (demo)">
+      <div class="head">
+        <button class="btn" type="button" aria-label="Previous word">‹</button>
+        <button class="btn new" type="button" id="searchToggle" aria-pressed="true" aria-label="Search for a word">🔍</button>
+        <div class="word">
+          <div class="ar" id="cardAr">تَعْلَمُونَ</div>
+          <div class="ref" id="cardRef">2:42:8</div>
+          <div class="mean" id="cardMean">taʿlamūna · [you] know</div>
+        </div>
+        <button class="btn" type="button" aria-label="Next word">›</button>
+        <button class="btn" type="button" aria-label="Close">✕</button>
+      </div>
+
+      <div class="search" id="searchBox">
+        <label for="q">Find a word: type it in Arabic (with or without vowel marks), its meaning, or a place like 2:42:8</label>
+        <div class="row">
+          <input id="q" type="text" value="تعلمون" autocomplete="off" spellcheck="false" dir="auto">
+          <button class="go" type="button" id="go">Search</button>
+        </div>
+        <div class="chips">Try: <button type="button" data-try="تعلمون">تعلمون</button><button type="button" data-try="know">know</button><button type="button" data-try="2:30:28">2:30:28</button></div>
+        <p class="status" id="status"></p>
+        <div class="results" id="results"></div>
+        <div class="places" id="places"></div>
+      </div>
+
+      <div class="this">This āyah ⋯</div>
+      <div class="tabs"><span>WbW</span><span>Basic Arabic</span><span class="on">Arabic in Depth</span></div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <span class="tag">Demo for the Owner · not built yet</span>
+    <h1>A search button on the Word card</h1>
+    <p>Tap the gold-ringed <strong>🔍</strong> beside <strong>‹</strong>. A search row opens inside the card, under the word.</p>
+    <ol>
+      <li><strong>Type the word.</strong> Vowel marks are optional: <span dir="rtl">تعلمون</span> finds <span dir="rtl">تَعْلَمُونَ</span>. An English meaning (“know”) or a place (2:42:8) works too.</li>
+      <li><strong>See each exact form</strong> with how many times it is in the Qur'an. These numbers are real: <span dir="rtl">تَعْلَمُونَ</span> is in 53 places.</li>
+      <li><strong>Tap a form</strong> to list its places, then <strong>tap a place</strong>. The card changes to that exact word in that āyah, and ‹ › keep stepping through that āyah as now.</li>
+    </ol>
+    <p>The search reads the word list only when you press Search, so the card opens as fast as today.</p>
+    <p><strong>Say “go”</strong> to build it like this, or tell me what to change.</p>
+  </div>
+</div>
+
+<script>
+// Real figures from the app's own Qur'an word data (tools/quran-data-pull/output/surahs).
+const FORMS = [
+  { ar: "تَعْلَمُونَ", tr: "taʿlamūna", en: "[you] know", n: 53, places: ["2:22:23", "2:30:28", "2:42:8", "2:80:23", "2:151:17", "2:169:11", "2:184:32", "2:188:17"] },
+  { ar: "تُعَلِّمُونَ", tr: "tuʿallimūna", en: "teaching", n: 1, places: ["3:79:24"] },
+  { ar: "تَّعْلَمُونَ", tr: "taʿlamūna", en: "you know", n: 1, places: ["61:5:9"] },
+  { ar: "يَعْلَمُونَ", tr: "yaʿlamūna", en: "they know", n: 80, places: ["2:13:19", "2:75:19", "2:77:2", "2:78:4", "2:101:22", "2:102:74", "2:103:12", "2:113:20"] },
+  { ar: "يُعَلِّمُونَ", tr: "yuʿallimūna", en: "they teach", n: 1, places: ["2:102:14"] },
+];
+const $ = (id) => document.getElementById(id);
+const strip = (s) => s.replace(/[ً-ٰٟۖ-ۭـ]/g, "").replace(/ٱ/g, "ا");
+function show(form, place) {
+  $("cardAr").textContent = form.ar; $("cardRef").textContent = place; $("cardMean").textContent = `${form.tr} · ${form.en}`;
+}
+function listPlaces(form) {
+  $("places").replaceChildren(...form.places.map((p) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "place"; b.textContent = p;
+    b.addEventListener("click", () => { show(form, p); [...$("places").children].forEach((c) => c.setAttribute("aria-current", c === b)); });
+    return b;
+  }));
+  $("status").textContent = `${form.ar}: ${form.n} places${form.n > form.places.length ? ` (first ${form.places.length} shown in this demo)` : ""}. Tap one to open it.`;
+}
+function run() {
+  const q = $("q").value.trim();
+  $("places").replaceChildren();
+  let hits;
+  if (/^\d+:\d+:\d+$/.test(q)) {
+    hits = FORMS.filter((f) => f.places.includes(q));
+    if (hits[0]) { show(hits[0], q); $("results").replaceChildren(); $("status").textContent = `Opened ${q}.`; return; }
+  } else if (/[a-z]/i.test(q)) hits = FORMS.filter((f) => f.en.toLowerCase().includes(q.toLowerCase()));
+  else hits = FORMS.filter((f) => strip(f.ar) === strip(q));
+  $("status").textContent = hits.length ? `${hits.length} forms found. Tap one to see where it is.` : "No word found. Check the spelling, or try without vowel marks.";
+  $("results").replaceChildren(...hits.map((f) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "res";
+    b.innerHTML = `<span class="ar"></span><span class="t"></span><span class="n"></span>`;
+    b.querySelector(".ar").textContent = f.ar; b.querySelector(".t").textContent = `${f.tr} · ${f.en}`; b.querySelector(".n").textContent = `${f.n} ×`;
+    b.addEventListener("click", () => listPlaces(f));
+    return b;
+  }));
+}
+$("go").addEventListener("click", run);
+$("q").addEventListener("keydown", (e) => { if (e.key === "Enter") run(); });
+document.querySelectorAll("[data-try]").forEach((b) => b.addEventListener("click", () => { $("q").value = b.dataset.try; run(); }));
+$("searchToggle").addEventListener("click", (e) => { const on = e.currentTarget.getAttribute("aria-pressed") !== "true"; e.currentTarget.setAttribute("aria-pressed", on); $("searchBox").hidden = !on; });
+run();
+</script>

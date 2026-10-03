@@ -1,5 +1,7 @@
 # MMSA session handover — 1 Oct 2026
 
+> **SUPERSEDED 3 Oct 2026 by `2026-10-03-MMSA-SESSION-HANDOVER.md`.** Kept as history; do not work from it.
+
 Written by the MMSA Architect (session `session_01TditAxqj6JWtXDC3YVgvjQ`,
 active since 30 Sep 2026 06:20 UTC). **This supersedes
 `2026-09-30-MMSA-SESSION-HANDOVER.md`**, which stopped at v09.06. That file is

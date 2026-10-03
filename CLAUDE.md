@@ -121,7 +121,20 @@ Read this first, every session. It is the standing brief.
 > "do not translate" and is a different contract. **That contract is NOT
 > invented here**; the Stage B exclusion stands for this candidate.
 
-> ## ⇢ SESSION HANDOVER, 1 Oct 2026 — READ THIS SECOND
+> ## ⇢ SESSION HANDOVER, 3 Oct 2026 — READ THIS SECOND
+>
+> **`docs/reports/2026-10-03-MMSA-SESSION-HANDOVER.md`** is the current
+> continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-10-03.md`**
+> is the prompt that starts a new session. **The job is the Word card rebuild,
+> all three tabs** (the Owner: "Go, build all three tabs together"; decision 59):
+> the brief is `docs/reference/2026-10-03-word-card-build-spec.md` and the build
+> target, which the real app must match, is
+> `docs/reference/2026-10-03-word-card-demo.html`. Round 1 is data: keep the
+> Quranic Arabic Corpus features the pull currently drops.
+>
+> **The 1 Oct block below is kept as history**, superseded by it.
+>
+> ## ⇢ SESSION HANDOVER, 1 Oct 2026 (superseded 3 Oct 2026)
 >
 > **`docs/reports/2026-10-01-MMSA-SESSION-HANDOVER.md`** is the current
 > continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-10-01.md`**
@@ -211,7 +224,7 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.47 on `main`** (2 Oct 2026 — **Basic and Depth word progress SWITCHED ON (decision 58).** The Owner published `docs/governance/2026-10-02-lemma-levels-DEPLOYMENT-candidate.rules` and confirmed it ("Basic and Depth rules are live"); `firestore.rules` is synced to it (tag `[already-deployed-manually]`) and `app/js/study-lemma-levels-readiness.js` declares `ready: true` (master-architect, 2026-10-02, `docs/reports/2026-10-02-lemma-levels-enabled.md`). WbW Achieved marks the same word; Basic Achieved every word of the same root with the same meaning (claim keyed by the meaning group, e.g. `رحم:2`); Depth Achieved every word of the root; the Word card's bold box shows one pair of lines per level on every tab. The groups file is fetched on first Read use, never on the landing page. Checks: rules-authorisation-executable 56/0, emulator lemma-levels and lemma-progress-real-function pass against `firestore.rules` (the latter's loader repaired: it had stopped loading since #492), lemma-levels 240/0 (gate-off case now routes a CLOSED copy), known-meaning-groups 66/0, known-word-marks 122/0, quran-lemma-progress-rendered 76/0, quran-word-levels-rendered 41/0 (these three updated in place), lemma-progress boundary/model/numbers green, quran-word-total-boundary 31/0, quran-ayah-action-sheet 144/0, phone-width-overflow 217/0, quran-word-card-rendered 134/2 (TLS), behaviour 1004/4 (sandbox); shipped-gate probe: Basic Achieved on 1:1:3 shows 327 words at Basic. **Red on `main` before this and still red:** quran-word-progress-rendered "opening a word reads both lanes and no more" (en/bn), to investigate. **Word card changes are being collected, not built** (Owner: "wait until I finish all"): WbW demo https://claude.ai/artifact/4kUuxWFko5NRBLqu6trzFZ (search, bigger root on all tabs, word-part boxes, PC side boxes with a ring); Basic Arabic changes still coming. With the Owner: the Word card list; the two permission letters; the Asmaul Husna poster (on hold, decision 50).)
+**Current milestone: v09.47 on `main`** (2 Oct 2026 — **Basic and Depth word progress SWITCHED ON (decision 58).** The Owner published `docs/governance/2026-10-02-lemma-levels-DEPLOYMENT-candidate.rules` and confirmed it ("Basic and Depth rules are live"); `firestore.rules` is synced to it (tag `[already-deployed-manually]`) and `app/js/study-lemma-levels-readiness.js` declares `ready: true` (master-architect, 2026-10-02, `docs/reports/2026-10-02-lemma-levels-enabled.md`). WbW Achieved marks the same word; Basic Achieved every word of the same root with the same meaning (claim keyed by the meaning group, e.g. `رحم:2`); Depth Achieved every word of the root; the Word card's bold box shows one pair of lines per level on every tab. The groups file is fetched on first Read use, never on the landing page. Checks: rules-authorisation-executable 56/0, emulator lemma-levels and lemma-progress-real-function pass against `firestore.rules` (the latter's loader repaired: it had stopped loading since #492), lemma-levels 240/0 (gate-off case now routes a CLOSED copy), known-meaning-groups 66/0, known-word-marks 122/0, quran-lemma-progress-rendered 76/0, quran-word-levels-rendered 41/0 (these three updated in place), lemma-progress boundary/model/numbers green, quran-word-total-boundary 31/0, quran-ayah-action-sheet 144/0, phone-width-overflow 217/0, quran-word-card-rendered 134/2 (TLS), behaviour 1004/4 (sandbox); shipped-gate probe: Basic Achieved on 1:1:3 shows 327 words at Basic. **Red on `main` before this and still red:** quran-word-progress-rendered "opening a word reads both lanes and no more" (en/bn), to investigate. **Next: the Word card rebuild, all three tabs** (decision 59; brief `docs/reference/2026-10-03-word-card-build-spec.md`, target `docs/reference/2026-10-03-word-card-demo.html`). With the Owner: the Word card list; the two permission letters; the Asmaul Husna poster (on hold, decision 50).)
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration

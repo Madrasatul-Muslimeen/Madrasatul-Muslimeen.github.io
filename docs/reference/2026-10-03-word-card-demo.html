@@ -1,0 +1,514 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- The Owner-approved Word card demo (published as https://claude.ai/artifact/4kUuxWFko5NRBLqu6trzFZ, version 6, 3 Oct 2026). Kept here as the BUILD TARGET for the Word card rounds: the real build must look like this. Spec: docs/reference/2026-10-03-word-card-build-spec.md -->
+<title>Word Card WbW Plan</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Noto+Naskh+Arabic:wght@500;700&family=Noto+Sans:wght@400;600;700;800&family=Noto+Sans+Bengali:wght@500;700&display=swap">
+<style>
+/* Layout: the app's dark Word card; a Phone/PC switch shows both layouts. On PC two boxes sit on the right: Record your Progress and Know Your Status. */
+:root {
+  --page: #0e1525; --card: #1c2a46; --card2: #141e36; --edge: #3a4767; --well: #111a2e;
+  --gold: #c9a24a; --gold-text: #e3c27a; --ink: #eef1f7; --muted: #a9b3c8;
+  --particle: #8fb8f2; --person: #f2a7a7; --stem: #8fdcb0;
+  --ar: "Amiri Quran", "Noto Naskh Arabic", serif; --arui: "Noto Naskh Arabic", serif;
+  --ui: "Noto Sans", "Noto Sans Bengali", system-ui, sans-serif;
+  color-scheme: dark;
+}
+body { background: var(--page); color: var(--ink); font-family: var(--ui); }
+.top { padding-block: 16px 8px; padding-inline: 16px; max-width: 1180px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; justify-content: space-between; }
+.top h1 { font-size: 1.1rem; margin: 0; }
+.seg { display: inline-flex; border: 1px solid var(--edge); border-radius: 6px; overflow: hidden; }
+.seg button { background: none; border: 0; color: var(--gold-text); padding: 8px 14px; font: inherit; font-size: .85rem; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--gold); color: #1c2a46; font-weight: 700; }
+.stage { padding-block: 8px 32px; padding-inline: 16px; max-width: 1180px; margin: 0 auto; }
+.layout { display: grid; gap: 14px; margin: 0 auto; }
+.layout.phone { max-width: 420px; grid-template-columns: minmax(0, 1fr); }
+.layout.pc { grid-template-columns: minmax(0, 1fr) minmax(0, 330px); }
+@media (max-width: 760px) { .layout.pc { grid-template-columns: minmax(0, 1fr); } }
+.card, .side { background: linear-gradient(160deg, var(--card), var(--card2)); border: 1px solid var(--edge); border-radius: 8px; padding: 14px; display: grid; gap: 12px; align-content: start; min-width: 0; }
+.new { box-shadow: 0 0 0 2px var(--gold); border-radius: 8px; position: relative; }
+.badge { position: absolute; top: -9px; left: 8px; background: var(--gold); color: #1c2a46; font-size: .64rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; padding: 1px 6px; border-radius: 4px; z-index: 1; }
+.head { display: grid; grid-template-columns: 40px 40px minmax(0, 1fr) auto 40px 40px; gap: 5px; align-items: start; }
+.btn { width: 40px; height: 40px; border-radius: 6px; border: 1px solid var(--edge); background: #121b30; color: var(--gold-text); font-size: 1rem; cursor: pointer; display: grid; place-items: center; }
+.btn[aria-pressed="true"] { background: var(--gold); color: #1c2a46; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--gold-text); outline-offset: 2px; }
+.word { text-align: center; min-width: 0; }
+.word .ar { font-family: var(--ar); font-size: 2.1rem; line-height: 1.5; direction: rtl; }
+.word .ref { font-weight: 700; font-size: .95rem; }
+.root { border: 1px solid var(--edge); background: #e6f1ec; color: #12332a; border-radius: 8px; padding: 4px 10px 6px; text-align: center; min-width: 76px; }
+.root small { display: block; font-size: .62rem; letter-spacing: .12em; color: #3f6658; font-weight: 700; }
+.root span { font-family: var(--arui); font-size: 1.7rem; font-weight: 700; letter-spacing: .25em; line-height: 1.2; direction: rtl; display: block; padding-left: .25em; }
+.p { color: var(--particle); } .s { color: var(--stem); } .pe { color: var(--person); }
+.search { display: grid; gap: 8px; border: 1px solid var(--edge); border-radius: 6px; padding: 10px; background: var(--well); }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
+input { min-width: 0; height: 40px; border-radius: 6px; border: 1px solid var(--edge); background: #0c1322; color: var(--ink); padding: 0 10px; font-size: 1rem; font-family: var(--ui), var(--arui); }
+.go { height: 40px; padding: 0 14px; border-radius: 6px; border: 0; background: var(--gold); color: #1c2a46; font-weight: 700; cursor: pointer; font: inherit; }
+.hint { font-size: .8rem; color: var(--muted); margin: 0; }
+.this { border: 1px solid var(--edge); border-radius: 6px; text-align: center; padding: 9px; color: var(--gold-text); font-size: .88rem; }
+.tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.tabs button { border: 1px solid var(--edge); background: #121b30; border-radius: 6px; padding: 10px 4px; font: inherit; font-size: .85rem; color: var(--gold-text); cursor: pointer; }
+.tabs button[aria-pressed="true"] { background: var(--gold); color: #1c2a46; font-weight: 700; }
+.meaning .en { color: var(--stem); font-size: .95rem; }
+.meaning .bn { font-size: 1.05rem; }
+.meaning .tr { font-weight: 700; font-size: .9rem; }
+/* Owner, 2 Oct: no empty space beside the meaning -- the three lines sit on ONE bar, wrapping only when the screen is too narrow. */
+.meaning { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 18px; border: 1px solid var(--edge); border-radius: 6px; padding: 8px 12px; background: var(--well); }
+.meaning > div { min-width: 0; }
+.meaning .en, .meaning .bn { font-size: 1.15rem; font-weight: 700; }
+.meaning .tr { color: var(--muted); font-weight: 600; font-style: italic; }
+.parts { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 8px; direction: rtl; }
+.phone .parts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.part { direction: ltr; background: #f3f5f4; color: #13241f; border-radius: 10px; padding: 10px 10px 12px; display: grid; gap: 3px; align-content: start; text-align: center; min-width: 0; }
+.part .kind { font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; color: #5b6d66; font-weight: 700; }
+.part .piece { font-family: var(--ar); font-size: 2rem; line-height: 1.35; direction: rtl; }
+.part .arname { font-family: var(--arui); font-size: 1.05rem; font-weight: 700; direction: rtl; }
+.part .name { font-weight: 800; font-size: 1rem; line-height: 1.25; }
+.part .lang { font-size: .92rem; color: #2f4a41; font-family: var(--ui); }
+.part.k-particle .piece { color: #2a64b8; } .part.k-person .piece { color: #c0443f; } .part.k-stem .piece { color: #1d8a4e; }
+.hide { display: none !important; }
+.side h2 { font-size: 1rem; margin: 0; }
+.states { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.states button { border: 1px solid var(--edge); background: #121b30; color: var(--ink); border-radius: 6px; padding: 10px 4px; font: inherit; font-size: .85rem; cursor: pointer; }
+.states button[aria-pressed="true"] { background: var(--gold); color: #1c2a46; font-weight: 700; }
+.status-top { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: center; }
+.ring { width: 104px; height: 104px; }
+.ring text { font-family: var(--ui); }
+.known-box { border-left: 3px solid var(--gold); background: #131a2c; border-radius: 6px; padding: 8px 12px; display: grid; gap: 4px; }
+.known-box p { margin: 0; font-weight: 700; font-size: .92rem; }
+.known-box b { color: var(--gold-text); font-size: 1.15rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.lvl { color: var(--muted); font-weight: 600; font-size: .78rem; }
+.small { margin: 0; font-size: .86rem; color: var(--ink); }
+.small.m { color: var(--muted); }
+.notes { padding-block: 0 40px; padding-inline: 16px; max-width: 1180px; margin: 0 auto; display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.note { border: 1px solid var(--edge); border-radius: 8px; padding: 10px 12px; background: #121b30; }
+.note h3 { margin: 0 0 4px; font-size: .88rem; color: var(--gold-text); }
+.note p { margin: 0; font-size: .84rem; color: var(--muted); line-height: 1.45; }
+
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; direction: rtl; }
+.fact { direction: ltr; }
+.fact { background: #f3f5f4; color: #13241f; border-radius: 10px; padding: 8px 12px; min-width: 0; }
+.fact small { display: block; font-size: .74rem; color: #5b6d66; font-weight: 600; }
+.fact b { display: block; font-size: 1.05rem; font-weight: 800; }
+.fact .arv { font-family: var(--arui); font-size: 1.35rem; font-weight: 700; direction: rtl; text-align: left; }
+.fact .sub { font-family: var(--arui); font-size: .95rem; font-weight: 500; color: #2f4a41; margin-left: 4px; }
+.forms-head { padding: 6px 4px 0 30px; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; justify-content: space-between; }
+.forms-head h3 { margin: 0; font-size: 1rem; color: var(--gold-text); }
+.forms-head span { font-size: .85rem; color: var(--muted); }
+.chips { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; direction: rtl; }
+@media (max-width: 1000px) { .pc .chips { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.chip { direction: ltr; background: #f7f8f6; color: #13241f; border: 1px solid #d6ddd9; border-radius: 12px; padding: 8px 6px 9px; display: grid; gap: 2px; text-align: center; align-content: start; min-width: 0; }
+.chip.on { background: #fff4d6; border-color: var(--gold); box-shadow: 0 0 0 2px rgba(201,162,74,.45); }
+.chip .car { font-family: var(--ar); font-size: 1.6rem; line-height: 1.9; direction: rtl; }
+.chip .cm { font-size: .86rem; color: #33463f; line-height: 1.25; }
+.chip .cpos { font-size: .7rem; letter-spacing: .04em; color: #6b7c76; text-transform: uppercase; font-weight: 700; }
+.chip .cn { font-size: .78rem; font-weight: 800; color: #8a6a1f; font-variant-numeric: tabular-nums; }
+.phone .chips { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.phone .facts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.phone .fact { padding: 7px 8px; }
+.phone .fact b { font-size: .92rem; }
+
+/* Phone: six things share the header row, so it tightens (measured: the word ran under the search button at 420px). */
+.phone .head { grid-template-columns: 36px 36px minmax(0, 1fr) auto 36px 36px; gap: 4px; }
+.phone .head .btn { width: 36px; height: 36px; }
+.phone .word .ar { font-size: 1.55rem; }
+.phone .root { min-width: 0; padding: 2px 6px 4px; }
+.phone .root span { font-size: 1.2rem; letter-spacing: .15em; }
+.phone .root small { font-size: .55rem; }
+
+.grp { grid-column: 1 / -1; direction: rtl; text-align: right; font-size: .78rem; font-weight: 700; letter-spacing: .04em; color: var(--gold-text); border-bottom: 1px solid var(--edge); padding: 4px 2px 2px; margin-top: 2px; }
+.chips { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.chip .cgrp { font-size: .68rem; font-weight: 800; color: #1c2a46; background: #e3d3a6; border-radius: 4px; padding: 1px 4px; justify-self: center; max-width: 100%; }
+.chip.g-verb .cgrp { background: #cfe0f6; } .chip.g-masdar .cgrp { background: #d7efdf; } .chip.g-doer .cgrp { background: #f6dccf; }
+.chip.g-done .cgrp { background: #efd7ea; } .chip.g-intens .cgrp { background: #e3d3a6; } .chip.g-elative .cgrp { background: #f3e9b5; } .chip.g-noun .cgrp { background: #dde3e1; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px; font-size: .74rem; color: var(--muted); }
+.src { display: inline-block; font-size: .68rem; font-weight: 700; border-radius: 4px; padding: 1px 6px; vertical-align: middle; white-space: nowrap; }
+.src.d { background: #1f4d39; color: #bff0d3; } .src.r { background: #22406b; color: #cfe1ff; } .src.n { border: 1px dashed #8a93a8; color: #c5cbd8; }
+.acc { background: #f6f8f7; color: #13241f; border-radius: 10px; border: 1px solid #d6ddd9; }
+.acc > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 32px minmax(0, 1fr) 20px; gap: 10px; align-items: center; padding: 10px 12px; font-weight: 800; }
+.acc > summary::-webkit-details-marker { display: none; }
+.acc > summary::after { content: "⌄"; color: #5b6d66; font-size: 1.1rem; text-align: center; }
+.acc[open] > summary::after { content: "⌃"; }
+.acc .ico { width: 32px; height: 32px; border-radius: 8px; background: #dcefe6; display: grid; place-items: center; font-family: var(--arui); font-weight: 700; color: #1d6b4a; }
+.acc .body { padding: 2px 14px 14px; display: grid; gap: 9px; font-size: .9rem; line-height: 1.5; }
+.acc .ar { font-family: var(--arui); font-size: 1.12rem; font-weight: 700; direction: rtl; unicode-bidi: isolate; }
+.acc .m, .acc .m2, .acc .m3 { color: #5b6d66; } .acc .m3 { font-size: .78rem; margin: 0; } .acc .m2 { margin: 0; }
+.fam { font-family: var(--ar); font-size: 1.45rem; margin: 0; line-height: 1.8; }
+.fam b { font-family: var(--arui); }
+.ayahroot { display: flex; flex-wrap: wrap; gap: 6px; }
+.ar-chip { display: grid; text-align: center; border: 1px solid #d6ddd9; background: #fff; border-radius: 10px; padding: 4px 10px; }
+.ar-chip b { font-family: var(--ar); font-size: 1.3rem; font-weight: 400; line-height: 1.6; }
+.ar-chip small { direction: ltr; font-size: .72rem; color: #5b6d66; }
+.ar-chip.on { background: #fff4d6; border-color: var(--gold); }
+.links { display: flex; flex-wrap: wrap; gap: 8px; }
+.lk { border: 1px solid #b9c7c0; border-radius: 8px; padding: 5px 10px; font-weight: 700; font-size: .84rem; color: #1d6b4a; background: #fff; }
+.lk.dim { color: #8a948f; border-style: dashed; font-weight: 600; }
+.morph { border-collapse: collapse; width: 100%; }
+.morph th { text-align: left; font-size: .8rem; color: #5b6d66; padding: 5px 8px 5px 0; vertical-align: top; white-space: nowrap; }
+.morph td { padding: 5px 6px; border-top: 1px solid #e3e8e5; vertical-align: top; }
+.morph td:last-child { width: 1%; }
+.irab { border-left: 3px solid #b9c7c0; padding: 3px 0 3px 10px; }
+.irab.cmp { border-color: var(--gold); } .need { opacity: .85; } .irab.need { border-left-style: dashed; }
+.trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; direction: rtl; }
+.trio > div { direction: ltr; background: #fff; border: 1px solid #d6ddd9; border-radius: 10px; padding: 8px; text-align: center; display: grid; gap: 2px; }
+.trio > div.on { background: #fff4d6; border-color: var(--gold); }
+.trio small { color: #5b6d66; font-size: .78rem; }
+.chips2 { display: flex; flex-wrap: wrap; gap: 6px; }
+.c2 { border-radius: 14px; padding: 3px 10px; font-size: .8rem; border: 1px solid #c9d3ce; background: #eef2f0; }
+.c2.no { border-style: dashed; color: #6b7c76; }
+.phone .trio { grid-template-columns: minmax(0, 1fr); }
+.acc .morph td, .acc .morph td b, .acc .morph td .ar { color: #13241f; }
+.acc .src.n { border-color: #6b7c76; color: #3f504a; background: #fff; }
+.acc .need { opacity: 1; }
+
+.conj { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; direction: rtl; }
+.phone .conj { grid-template-columns: minmax(0, 1fr); }
+.cj { direction: ltr; border-radius: 10px; padding: 8px; display: grid; gap: 6px; align-content: start; }
+.cj.past { background: #fdeceb; } .cj.pres { background: #e8f2fc; } .cj.imp { background: #ecf7e6; }
+.cj h4 { margin: 0; font-size: .9rem; text-align: center; }
+.cj.past h4 { color: #b3261e; } .cj.pres h4 { color: #b3261e; } .cj.imp h4 { color: #b3261e; }
+.cj h4 b { color: #1b4fa8; }
+.cj .lead { text-align: center; font-family: var(--arui); font-size: 1rem; direction: rtl; }
+.cj table { border-collapse: collapse; width: 100%; direction: rtl; background: #fff; }
+.cj td { border: 1px solid #c9d3ce; padding: 3px 6px; vertical-align: middle; color: #13241f; }
+.cj td.pr { font-family: var(--arui); font-weight: 700; font-size: 1.05rem; width: 34%; }
+.cj td.pr small { display: block; font-family: var(--ui); font-weight: 500; font-size: .66rem; color: #6b7c76; direction: ltr; text-align: right; }
+.cj td.vb { font-family: var(--ar); font-size: 1.3rem; color: #1b4fa8; text-align: center; line-height: 1.7; }
+.cj td.vb .e { color: #c2410c; } .cj td.vb .p { color: #7c3aed; } .cj td.vb .st { color: #1b4fa8; }
+.cj td.no { text-align: center; color: #c62828; font-weight: 800; font-family: var(--ui); font-size: 1rem; }
+.cj tr.sep td { border-top: 3px solid #9aa9a2; }
+.cj tr.here td { background: #fff4d6; }
+.cj .q { direction: ltr; unicode-bidi: isolate; font-family: var(--ui); font-size: .64rem; font-weight: 800; color: #8a6a1f; display: block; line-height: 1.1; }
+</style>
+
+<div class="top">
+  <h1>Word card: WbW, Basic Arabic and Arabic in Depth</h1>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <div class="seg" role="group" aria-label="Screen"><button type="button" id="vPhone" aria-pressed="false">Phone</button><button type="button" id="vPc" aria-pressed="true">PC</button></div>
+    <div class="seg" role="group" aria-label="Your language"><button type="button" id="lEn" aria-pressed="true">English</button><button type="button" id="lBn" aria-pressed="false">বাংলা</button></div>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="layout pc" id="layout">
+    <div class="card">
+      <div class="head">
+        <button class="btn" type="button" aria-label="Previous word">‹</button>
+        <div class="new"><span class="badge">1</span><button class="btn" type="button" id="sBtn" aria-pressed="false" aria-label="Search for a word">🔍</button></div>
+        <div class="word">
+          <div class="ar"><span class="p">فَ</span><span class="pe">يَ</span><span class="s">تَعَلَّمُ</span><span class="pe">ونَ</span></div>
+          <div class="ref">2:102:35</div>
+        </div>
+        <div class="new"><span class="badge">2</span><div class="root"><small>ROOT</small><span>ع ل م</span></div></div>
+        <button class="btn" type="button" aria-label="Next word">›</button>
+        <button class="btn close-wide" type="button" aria-label="Close">✕</button>
+      </div>
+      <div class="search hide" id="sBox">
+        <div class="row"><input id="q" type="text" placeholder="An Arabic word, a meaning, or 2:42:8" dir="auto" autocomplete="off"><button class="go" type="button">Search</button></div>
+        <p class="hint">The full search is in the first demo: forms with their counts, then their places.</p>
+      </div>
+      <div class="this">This āyah ⋯</div>
+      <div class="tabs" role="group" aria-label="Level">
+        <button type="button" data-tab="wbw" aria-pressed="true">WbW</button>
+        <button type="button" data-tab="basic" aria-pressed="false">Basic Arabic</button>
+        <button type="button" data-tab="depth" aria-pressed="false">Arabic in Depth</button>
+      </div>
+
+      <div id="tabWbw" style="display:grid;gap:12px">
+        <div class="new"><span class="badge">6</span><div class="facts" data-facts></div></div>
+        <div class="meaning new"><span class="badge">3</span>
+          <div class="en">But they learn</div>
+          <div class="bn" lang="bn">তবুও তারা শিখে</div>
+          <div class="tr">fayataʿallamūna</div>
+        </div>
+        <div class="parts" id="parts" style="--n:4"></div>
+      </div>
+      <div id="tabBasic" class="hide" style="display:grid;gap:12px">
+        <div class="new"><span class="badge">6</span><div class="facts" data-facts></div></div>
+        <div class="new" style="display:grid;gap:8px;padding:2px"><span class="badge">7</span>
+          <div class="forms-head"><h3 id="formsTitle"></h3><span id="formsSum"></span></div>
+          <div class="chips" id="chips"></div>
+        </div>
+        <p class="small m" id="basicRest"></p>
+      </div>
+      <div id="tabOther" class="hide" style="display:grid;gap:10px">
+        <div class="legend"><span class="src d">From the data</span><span class="src r">Grammar rule</span><span class="src n">Needs a source</span></div>
+
+        <details class="acc" open>
+          <summary><span class="ico">ر</span><span class="t">Root &amp; Word Family</span></summary>
+          <div class="body">
+            <p class="fam" dir="rtl"><b>ع ل م</b> ← عَلِمَ · عَلَّمَ · يَتَعَلَّمُ · عِلْم · عَالِم · مَعْلُوم · عَلِيم · أَعْلَم · عَالَمِين</p>
+            <div class="line"><span class="src d">From the data</span> The root means <b>to know, to have knowledge, to be aware</b> <span class="m">(Wiktionary, CC BY-SA, as in the app's 📖 Dictionary)</span>. It is used <b>854 times</b> in the Qur'an, in <b>14 forms</b>.</div>
+            <div class="line"><span class="src d">From the data</span> <b>In this āyah, 6 words come from this root</b>. Tap one to open it:</div>
+            <div class="ayahroot" dir="rtl">
+              <span class="ar-chip"><b>يُعَلِّمُونَ</b><small>they teach · word 14</small></span>
+              <span class="ar-chip"><b>يُعَلِّمَانِ</b><small>they both teach · 25</small></span>
+              <span class="ar-chip on"><b>فَيَتَعَلَّمُونَ</b><small>but they learn · 35</small></span>
+              <span class="ar-chip"><b>وَيَتَعَلَّمُونَ</b><small>and they learn · 52</small></span>
+              <span class="ar-chip"><b>عَلِمُوا</b><small>they knew · 58</small></span>
+              <span class="ar-chip"><b>يَعْلَمُونَ</b><small>they know · 74</small></span>
+            </div>
+            <div class="links"><span class="lk">Quranic Corpus ↗</span><span class="lk">Lane · Hans Wehr ↗</span></div>
+          </div>
+        </details>
+
+        <details class="acc">
+          <summary><span class="ico">ص</span><span class="t">Morphology (Ṣarf)</span></summary>
+          <div class="body">
+            <table class="morph">
+              <tr><th>Pieces</th><td dir="rtl" class="ar">فَ + يَ + تَعَلَّم + ونَ</td><td><span class="src d">data</span></td></tr>
+              <tr><th>Form</th><td><b>Form V</b> · <span class="ar">تَفَعَّلَ</span></td><td><span class="src d">data</span></td></tr>
+              <tr><th>Tense</th><td><b>Present (imperfect)</b> · <span class="ar">الْمُضَارِع</span></td><td><span class="src d">data</span></td></tr>
+              <tr><th>Who</th><td><b>3rd person, masculine, plural</b> · <span class="ar">هُمْ</span></td><td><span class="src d">data</span></td></tr>
+              <tr><th>Voice</th><td><b>Active</b> · <span class="ar">مَبْنِيّ لِلْمَعْلُوم</span></td><td><span class="src d">data</span></td></tr>
+              <tr><th>Mood</th><td><b>Indicative</b> · <span class="ar">مَرْفُوع</span> (no other mood is marked)</td><td><span class="src r">rule</span></td></tr>
+              <tr><th>Its family in Form V</th><td>past <span class="ar">تَعَلَّمَ</span> · present <span class="ar">يَتَعَلَّمُ</span> · verbal noun <span class="ar">تَعَلُّم</span></td><td><span class="src r">rule</span></td></tr>
+            </table>
+          </div>
+        </details>
+
+        <details class="acc" id="conjAcc">
+          <summary><span class="ico">ت</span><span class="t">Verb Conjugation · <span class="ar">تَصْرِيفُ الْفِعْل</span></span></summary>
+          <div class="body">
+            <div class="line"><span class="src r">Grammar rule</span> Form V of <span class="ar">ع ل م</span> for every person. <span class="m">Endings in colour; the gold row is the one in this āyah; ✦ = found in the Qur'an.</span></div>
+            <div class="conj" id="conjGrid"></div>
+          </div>
+        </details>
+
+        <details class="acc">
+          <summary><span class="ico">ن</span><span class="t">Grammar in This Āyah (Naḥw)</span></summary>
+          <div class="body">
+            <div class="irab"><span class="ar">فَ</span> <b>Resumption particle</b> · <span class="ar">حَرْفُ اسْتِئْنَاف</span>: begins a new statement. <span class="src d">data</span></div>
+            <div class="irab"><span class="ar">يَتَعَلَّمُ</span> <b>Present-tense verb, indicative</b> · <span class="ar">فِعْلٌ مُضَارِعٌ مَرْفُوعٌ وَعَلَامَةُ رَفْعِهِ ثُبُوتُ النُّون</span>: its ending ن stays because it is one of the "five verbs". <span class="src r">rule</span></div>
+            <div class="irab"><span class="ar">وا</span> <b>Subject pronoun</b> · <span class="ar">ضَمِيرٌ مُتَّصِلٌ فِي مَحَلِّ رَفْعِ فَاعِل</span>: "they" are the ones learning. <span class="src r">rule</span></div>
+            <div class="irab cmp"><b>Compare, earlier in the same āyah:</b> <span class="ar">فَلَا تَكْفُرْ</span>: the verb is <b>jussive</b> (<span class="ar">مَجْزُوم</span>) after the forbidding <span class="ar">لَا</span>, so its ending is a sukūn. <span class="src d">data</span></div>
+            <div class="irab need"><b>What they learn</b> (the object, <span class="ar">مَا يُفَرِّقُونَ بِهِ</span>) and the full sentence analysis need the Corpus's sentence (syntax) data or an approved iʿrāb book. <span class="src n">needs a source</span></div>
+          </div>
+        </details>
+
+        <details class="acc">
+          <summary><span class="ico">≠</span><span class="t">Word Choice &amp; Distinctions</span></summary>
+          <div class="body">
+            <div class="line"><span class="src d">From the data</span> <b>This āyah uses three forms of the root side by side:</b></div>
+            <div class="trio">
+              <div><span class="ar">يُعَلِّمُونَ</span><b>Form II · teach</b><small>to make others know</small></div>
+              <div class="on"><span class="ar">يَتَعَلَّمُونَ</span><b>Form V · learn</b><small>to take knowledge on for oneself, step by step</small></div>
+              <div><span class="ar">عَلِمُوا</span><b>Form I · know</b><small>to have the knowledge</small></div>
+            </div>
+            <div class="line"><span class="src r">Grammar rule</span> Form V (<span class="ar">تَفَعَّلَ</span>) is the "self" side of Form II: what Form II does to others, Form V takes on oneself, often gradually or with effort. <span class="m">(Fixed text for each form; you review it once.)</span></div>
+            <div class="line need"><span class="src n">Needs a source</span> Distinctions between near-synonyms, e.g. <span class="ar">عِلْم</span> and <span class="ar">مَعْرِفَة</span>, need a recognised book such as al-ʿAskarī's <i>al-Furūq al-Lughawiyya</i> or al-Rāghib's <i>al-Mufradāt</i>.</div>
+          </div>
+        </details>
+
+        <details class="acc">
+          <summary><span class="ico">ل</span><span class="t">Classical Arabic Usage</span></summary>
+          <div class="body">
+            <p class="m2">Attested dictionary expressions, early prose or poetry will be shown with the Arabic quotation, translation, work, author and exact page/reference.</p>
+            <div class="chips2"><span class="c2 ok">Qur'anic usage: 854 times, 14 forms ✓</span><span class="c2 ok">Classical lexicon: Lane's Lexicon link ✓</span><span class="c2 no">Attested corpus example: needs a source</span></div>
+            <div class="links"><span class="lk">Lane's Lexicon ↗</span><span class="lk dim">Al-Mufradāt scan ↗ (needs a page index)</span></div>
+            <p class="m3">No unattributed example or generated quotation will be shown.</p>
+          </div>
+        </details>
+      </div>
+      <div id="phoneSide"></div>
+    </div>
+
+    <div id="sideCol" style="display:grid;gap:14px;align-content:start">
+      <div class="side new" id="recBox"><span class="badge">4</span>
+        <h2>Record your Progress</h2>
+        <p class="small m">WbW · 2:102 · word 35</p>
+        <div class="states" role="group" aria-label="Record your Progress">
+          <button type="button" aria-pressed="false">Not started</button><button type="button" aria-pressed="true">Learning</button><button type="button" aria-pressed="false">Achieved</button>
+        </div>
+      </div>
+      <div class="side new" id="statusBox"><span class="badge">5</span>
+        <h2>Know Your Status</h2>
+        <div class="status-top">
+          <svg class="ring" viewBox="0 0 120 120" role="img" aria-label="28.16% of the words of the Qur'an known">
+            <circle cx="60" cy="60" r="50" fill="none" stroke="#2c3858" stroke-width="12"/>
+            <circle cx="60" cy="60" r="50" fill="none" stroke="#c9a24a" stroke-width="12" stroke-linecap="round" stroke-dasharray="88.47 314.16" transform="rotate(-90 60 60)"/>
+            <text x="60" y="58" text-anchor="middle" font-size="21" font-weight="800" fill="#eef1f7">28.16%</text>
+            <text x="60" y="78" text-anchor="middle" font-size="10" fill="#a9b3c8">of the Qur'an</text>
+          </svg>
+          <p class="small"><b style="color:var(--gold-text)">23</b> of 74 words known in this āyah</p>
+        </div>
+        <div class="known-box">
+          <p>You know <b>21,805</b> of <b>77,429</b> words of the Qur'an</p>
+          <p>You know <b>28.16</b>% of the words of the Qur'an</p>
+        </div>
+        <p class="small">Appears 1 time in the Qur'an — 0% of all words</p>
+        <p class="small">If you learn this word: +1 word (+0%)</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="notes">
+  <div class="note"><h3>1 · 🔍 Search</h3><p>Beside ‹. Opens a search row in the card. Type the Arabic (vowels optional), a meaning, or 2:42:8; pick the exact form, then its place.</p></div>
+  <div class="note"><h3>2 · Root</h3><p>Bigger root letters in the header, left of ›, on all three tabs: tap Basic or Depth and it stays.</p></div>
+  <div class="note"><h3>3 · Meaning and word parts</h3><p>The meaning, the Bangla and the reading sit on one bar, so nothing is left empty beside them. Under it, one box per part, right to left as the word is written: the Arabic piece, its Arabic name, its name in your language, and what it means. Switch English/বাংলা above.</p></div>
+  <div class="note"><h3>4 and 5 · Two boxes on a PC</h3><p>Record your Progress and Know Your Status sit on the right. The ring shows how much of the Qur'an you know. On a phone they stay under the card, as now.</p></div>
+  <div class="note"><h3>6 · Root, Dictionary word, Form</h3><p>At the top of each tab, right to left: Root, then Dictionary word, then Form. The root stays in the header too. “Dictionary word”, never “lemma”. The Form (I to X) is not in the app’s data yet; I would add it from the Quranic Arabic Corpus, which records it.</p></div>
+  <div class="note"><h3>7 · Basic: derived forms, in order</h3><p>Suggested order, right to left: verbs (Form I, II, V…), the verbal noun, the one who does it, the one it is done to, intensive adjectives, the comparative, other nouns; most frequent first inside each. Under the three boxes: every word from the root as a card, the Arabic big, its meaning, its part of speech and how many times it occurs. This word’s own form is the gold one. These are the app’s real 14 forms of ع ل م (854 times).</p></div>
+  <div class="note"><h3>8 · Arabic in Depth: five sections</h3><p>Root &amp; Word Family opens by itself; the other four open with a tap. Each line says where it comes from: the data, a fixed grammar rule, or a source still needed. Nothing is made up.</p></div>
+  <div class="note"><h3>9 · Verb Conjugation (تَصْرِيفُ الْفِعْل)</h3><p>A closed section after Ṣarf. Past, Present and Command for all 14 persons, endings in colour, the āyah's own form in gold, and a ✦ on any form found in the Qur'an. On a phone the three tables stack.</p></div>
+  <div class="note"><h3>Real data</h3><p>Word, parts, meanings, root and the 74 words of 2:102 are from the app's data. The Arabic part names (حرف استئناف…) and the ring's position are new. The known counts are from your screenshot.</p></div>
+  <div class="note"><h3>Your answer</h3><p>Say “go” for this, or tell me what to change. Then I will build all three tabs together.</p></div>
+</div>
+
+<script>
+const PARTS = [
+  { kind: "particle", piece: "فَ", ar: "حَرْفُ اسْتِئْنَاف", name: { en: "Resumption particle", bn: "পুনরারম্ভ অব্যয়" }, kindName: { en: "Prefix", bn: "উপসর্গ" }, mean: { en: "but / then", bn: "তবুও" } },
+  { kind: "person", piece: "يَ", ar: "حَرْفُ الْمُضَارَعَة", name: { en: "Present-tense prefix", bn: "বর্তমান কালের উপসর্গ" }, kindName: { en: "Prefix", bn: "উপসর্গ" }, mean: { en: "they (doing it now)", bn: "তারা (এখন করে)" } },
+  { kind: "stem", piece: "تَعَلَّم", ar: "فِعْل · الْبَاب الْخَامِس", name: { en: "Verb stem (Form V)", bn: "ক্রিয়ার মূল অংশ (ফর্ম ৫)" }, kindName: { en: "Stem", bn: "মূল অংশ" }, mean: { en: "learn", bn: "শেখা" } },
+  { kind: "person", piece: "ونَ", ar: "وَاوُ الْجَمَاعَة", name: { en: "3rd person plural", bn: "নাম পুরুষ বহুবচন" }, kindName: { en: "Ending", bn: "শেষাংশ" }, mean: { en: "they (many)", bn: "তারা (বহু)" } },
+];
+let lang = "en", tab = "wbw", view = "pc";
+const FACTS = {
+  root: { en: "Root", bn: "ধাতু", v: "ع ل م", ar: true },
+  dict: { en: "Dictionary word", bn: "অভিধানের শব্দ", v: "يَتَعَلَّمُ", ar: true },
+  form: { en: "Form", bn: "রূপ", v: { en: "Form V", bn: "ফর্ম ৫" }, sub: "تَفَعَّلَ" },
+};
+// The app's own 14 derived forms of ع ل م (read off the live Basic tab), most frequent first.
+// The app's own 14 derived forms of ع ل م (read off the live Basic tab), in the SUGGESTED learning order:
+// verbs by form number, then the verbal noun, the doer, the one done-to, intensive adjectives, the comparative, other nouns.
+// Within a group: most frequent first.
+const GROUPS = {
+  verb: { en: "Verb", bn: "ক্রিয়া" },
+  masdar: { en: "Verbal noun", bn: "ক্রিয়াবাচক বিশেষ্য" },
+  doer: { en: "The one who does it", bn: "কর্তাবাচক" },
+  done: { en: "The one it is done to", bn: "কর্মবাচক" },
+  intens: { en: "Intensive adjectives", bn: "আধিক্যবাচক বিশেষণ" },
+  elative: { en: "Comparative", bn: "তুলনাবাচক" },
+  noun: { en: "Other nouns", bn: "অন্যান্য বিশেষ্য" },
+};
+const FORMS = [
+  ["verb", "عَلِمَ", "Verb · I", "ক্রিয়া · ১", "know", "জানেন", 382, true], ["verb", "عَلَّمَ", "Verb · II", "ক্রিয়া · ২", "He taught", "শিখিয়েছেন", 42], ["verb", "يَتَعَلَّمُ", "Verb · V", "ক্রিয়া · ৫", "they learn", "তারা শিখে", 2],
+  ["masdar", "عِلْم", "Noun", "বিশেষ্য", "knowledge", "জ্ঞান", 106],
+  ["doer", "عَٰلِم", "Noun", "বিশেষ্য", "Knower", "খুব অবহিত", 18],
+  ["done", "مَّعْلُوم", "Noun", "বিশেষ্য", "known", "নির্দিষ্ট", 11, true], ["done", "مَّعْلُومَٰت", "Adjective", "বিশেষণ", "known", "সুবিদিত", 2], ["done", "مُعَلَّم", "Noun", "বিশেষ্য", "One taught", "প্রশিক্ষণপ্রাপ্ত", 1],
+  ["intens", "عَلِيم", "Adjective", "বিশেষণ", "is All-Knower", "সর্বজ্ঞ", 163, true], ["intens", "عَلَّٰم", "Adjective", "বিশেষণ", "is All-Knower", "খুব জানেন", 3, true],
+  ["elative", "أَعْلَم", "Noun", "বিশেষ্য", "is most knowing", "খুব জানেন", 48, true],
+  ["noun", "عَٰلَمِين", "Noun", "বিশেষ্য", "of the worlds", "বিশ্বজগতের", 73], ["noun", "أَعْلَٰم", "Noun", "বিশেষ্য", "like mountains", "পাহাড়ের মতো", 2], ["noun", "عَلَٰمَٰت", "Noun", "বিশেষ্য", "landmarks", "পথনির্ণায়ক চিহ্নসমূহ", 1],
+];
+const BN_DIGITS = "০১২৩৪৫৬৭৮৯";
+const num = (n) => lang === "bn" ? String(n).replace(/\d/g, (d) => BN_DIGITS[d]) : String(n);
+function renderFacts() {
+  document.querySelectorAll("[data-facts]").forEach((box) => {
+    box.replaceChildren(...Object.values(FACTS).map((f) => {
+      const d = document.createElement("div"); d.className = "fact";
+      const v = typeof f.v === "string" ? f.v : f.v[lang];
+      d.innerHTML = `<small></small><b></b>`;
+      d.querySelector("small").textContent = f[lang];
+      const b = d.querySelector("b"); b.textContent = v; if (f.ar) b.className = "arv";
+      if (f.sub) { const s = document.createElement("span"); s.className = "sub"; s.textContent = f.sub; b.append(s); }
+      return d;
+    }));
+  });
+}
+function renderChips() {
+  $("formsTitle").textContent = lang === "bn" ? "এই ধাতু থেকে উৎপন্ন রূপসমূহ" : "Derived forms of this root";
+  $("formsSum").textContent = lang === "bn" ? `১৪টি রূপ · মোট ${num(854)} বার` : "14 forms · 854 times in all";
+  const out = [];
+  let last = null;
+  for (const [g, ar, pos, posBn, en, bn, n, more] of FORMS) {
+    const c = document.createElement("div"); c.className = "chip g-" + g + (ar === "يَتَعَلَّمُ" ? " on" : "");
+    c.innerHTML = '<span class="cgrp"></span><span class="cpos"></span><span class="car"></span><span class="cm"></span><span class="cn"></span>';
+    c.querySelector(".cgrp").textContent = GROUPS[g][lang];
+    c.querySelector(".cpos").textContent = (lang === "bn" ? posBn : pos) + (more ? " +1" : "");
+    c.querySelector(".car").textContent = ar;
+    c.querySelector(".cm").textContent = lang === "bn" ? bn : en;
+    c.querySelector(".cn").textContent = lang === "bn" ? num(n) + " বার" : n + "×";
+    out.push(c);
+  }
+  $("chips").replaceChildren(...out);
+  $("basicRest").textContent = lang === "bn" ? "এর নিচে আজকের মতোই: এই অভিধানের শব্দের ব্যবহারগুলো, ও রেকর্ড করার বোতাম।" : "Below this, as today: this dictionary word's own occurrences, and the record buttons.";
+}
+
+const $ = (id) => document.getElementById(id);
+function renderParts() {
+  $("parts").replaceChildren(...PARTS.map((p) => {
+    const d = document.createElement("div"); d.className = `part k-${p.kind}`;
+    d.innerHTML = `<span class="kind"></span><span class="piece"></span><span class="arname"></span><span class="name"></span><span class="lang"></span>`;
+    d.querySelector(".kind").textContent = p.kindName[lang];
+    d.querySelector(".piece").textContent = p.piece;
+    d.querySelector(".arname").textContent = p.ar;
+    d.querySelector(".name").textContent = p.name[lang];
+    d.querySelector(".lang").textContent = p.mean[lang];
+    if (lang === "bn") d.lang = "bn"; else d.removeAttribute("lang");
+    return d;
+  }));
+}
+function renderTab() {
+  document.querySelectorAll("[data-tab]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.tab === tab));
+  $("tabWbw").classList.toggle("hide", tab !== "wbw");
+  $("tabBasic").classList.toggle("hide", tab !== "basic");
+  $("tabOther").classList.toggle("hide", tab !== "depth");
+}
+function renderView() {
+  $("layout").className = `layout ${view}`;
+  $("vPhone").setAttribute("aria-pressed", view === "phone"); $("vPc").setAttribute("aria-pressed", view === "pc");
+  // On a phone the two boxes sit under the card, as today.
+  const dest = view === "phone" ? $("phoneSide") : $("sideCol");
+  dest.append($("recBox"), $("statusBox"));
+  $("phoneSide").style.display = view === "phone" ? "grid" : "none"; $("phoneSide").style.gap = "12px";
+  $("sideCol").style.display = view === "phone" ? "none" : "grid";
+}
+document.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => { tab = b.dataset.tab; renderTab(); }));
+$("lEn").addEventListener("click", () => { lang = "en"; $("lEn").setAttribute("aria-pressed", true); $("lBn").setAttribute("aria-pressed", false); renderParts(); renderFacts(); renderChips(); });
+$("lBn").addEventListener("click", () => { lang = "bn"; $("lBn").setAttribute("aria-pressed", true); $("lEn").setAttribute("aria-pressed", false); renderParts(); renderFacts(); renderChips(); });
+$("vPhone").addEventListener("click", () => { view = "phone"; renderView(); });
+$("vPc").addEventListener("click", () => { view = "pc"; renderView(); });
+$("sBtn").addEventListener("click", (e) => { const on = e.currentTarget.getAttribute("aria-pressed") !== "true"; e.currentTarget.setAttribute("aria-pressed", on); $("sBox").classList.toggle("hide", !on); });
+document.querySelectorAll(".states button").forEach((b) => b.addEventListener("click", () => document.querySelectorAll(".states button").forEach((x) => x.setAttribute("aria-pressed", x === b))));
+
+// Form V of ع ل م, conjugated by the regular rules for a sound root (no weak letters).
+// Each verb is [present-prefix, stem, ending]; prefix and ending are coloured.
+const PRON = [
+  ["هُوَ", "he"], ["هُمَا", "they two"], ["هُمْ", "they"], ["هِيَ", "she"], ["هُمَا", "they two (f)"], ["هُنَّ", "they (f)"],
+  ["أَنْتَ", "you"], ["أَنْتُمَا", "you two"], ["أَنْتُمْ", "you all"], ["أَنْتِ", "you (f)"], ["أَنْتُمَا", "you two (f)"], ["أَنْتُنَّ", "you all (f)"],
+  ["أَنَا", "I"], ["نَحْنُ", "we"],
+];
+const PAST = [["", "تَعَلَّم", "َ"], ["", "تَعَلَّم", "َا"], ["", "تَعَلَّم", "ُوا"], ["", "تَعَلَّم", "َتْ"], ["", "تَعَلَّم", "َتَا"], ["", "تَعَلَّم", "ْنَ"],
+  ["", "تَعَلَّم", "ْتَ"], ["", "تَعَلَّم", "ْتُمَا"], ["", "تَعَلَّم", "ْتُمْ"], ["", "تَعَلَّم", "ْتِ"], ["", "تَعَلَّم", "ْتُمَا"], ["", "تَعَلَّم", "ْتُنَّ"],
+  ["", "تَعَلَّم", "ْتُ"], ["", "تَعَلَّم", "ْنَا"]];
+const PRES = [["يَ", "تَعَلَّم", "ُ"], ["يَ", "تَعَلَّم", "َانِ"], ["يَ", "تَعَلَّم", "ُونَ"], ["تَ", "تَعَلَّم", "ُ"], ["تَ", "تَعَلَّم", "َانِ"], ["يَ", "تَعَلَّم", "ْنَ"],
+  ["تَ", "تَعَلَّم", "ُ"], ["تَ", "تَعَلَّم", "َانِ"], ["تَ", "تَعَلَّم", "ُونَ"], ["تَ", "تَعَلَّم", "ِينَ"], ["تَ", "تَعَلَّم", "َانِ"], ["تَ", "تَعَلَّم", "ْنَ"],
+  ["أَ", "تَعَلَّم", "ُ"], ["نَ", "تَعَلَّم", "ُ"]];
+const IMP = [null, null, null, null, null, null,
+  ["", "تَعَلَّم", "ْ"], ["", "تَعَلَّم", "َا"], ["", "تَعَلَّم", "ُوا"], ["", "تَعَلَّم", "ِي"], ["", "تَعَلَّم", "َا"], ["", "تَعَلَّم", "ْنَ"],
+  null, null];
+function conjTable(kind, title, en, lead, rows) {
+  const box = document.createElement("div"); box.className = "cj " + kind;
+  box.innerHTML = '<h4></h4><div class="lead"></div><table></table>';
+  box.querySelector("h4").innerHTML = title + ' <b>(' + en + ')</b>';
+  box.querySelector(".lead").textContent = lead;
+  const t = box.querySelector("table");
+  PRON.forEach(([ar, enp], i) => {
+    const tr = document.createElement("tr");
+    if (i === 6 || i === 12) tr.className = "sep";
+    if (kind === "pres" && i === 2) tr.classList.add("here");
+    const pr = document.createElement("td"); pr.className = "pr"; pr.innerHTML = '<span></span><small></small>';
+    pr.querySelector("span").textContent = ar; pr.querySelector("small").textContent = enp;
+    const vb = document.createElement("td");
+    const v = rows[i];
+    if (!v) { vb.className = "no"; vb.textContent = "✕"; }
+    else {
+      vb.className = "vb";
+      const [pre, stem, end] = v;
+      vb.innerHTML = '<span class="p"></span><span class="st"></span><span class="e"></span>';
+      vb.querySelector(".p").textContent = pre; vb.querySelector(".st").textContent = stem; vb.querySelector(".e").textContent = end;
+      if (kind === "pres" && i === 2) { const q = document.createElement("span"); q.className = "q"; q.textContent = "✦ in the Qur'an: 2 times"; vb.append(q); }
+    }
+    tr.append(pr, vb); t.append(tr);
+  });
+  return box;
+}
+function renderConj() {
+  document.getElementById("conjGrid").replaceChildren(
+    conjTable("past", "Past", "learned", "الْمَاضِي (تَعَلَّمَ)", PAST),
+    conjTable("pres", "Present", "learns", "الْمُضَارِع (يَتَعَلَّمُ)", PRES),
+    conjTable("imp", "Command", "learn!", "الْأَمْر (تَعَلَّمْ)", IMP));
+}
+renderConj(); renderParts(); renderFacts(); renderChips(); renderTab(); renderView();
+</script>
