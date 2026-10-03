@@ -54,10 +54,11 @@ const measure = () => {
     return ["rgb(255,255,255)"];
   };
   const contentBox = document.querySelector(".word-card-content").getBoundingClientRect();
-  const rows = [...document.querySelectorAll("[data-word-card-panel] .word-card-form")].map((li) => {
+  const rows = [...document.querySelectorAll("[data-word-card-panel] .word-card-form, [data-word-card-dcard]")].map((li) => {
     const liR = li.getBoundingClientRect();
     const box = (sel) => { const e = li.querySelector(sel); if (!e) return null; const r = e.getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom, sw: e.scrollWidth, cw: e.clientWidth, e }; };
-    const pos = box(".word-card-form-pos"), ar = box(".word-card-form-arabic"), me = box(".word-card-form-meaning"), ct = box(".word-card-form-count");
+    // UPDATED round 3 (#508): Basic prints cards, so the card classes count too.
+    const pos = box(".word-card-form-pos, .word-card-dcard-pos"), ar = box(".word-card-form-arabic, .word-card-dcard-ar"), me = box(".word-card-form-meaning"), ct = box(".word-card-form-count, .word-card-dcard-count");
     const items = [pos, ar, me, ct].filter(Boolean);
     let contrast = null;
     if (me) { const a = lum(getComputedStyle(me.e).color); contrast = Math.min(...bgsOf(me.e).map((bg) => { const b = lum(bg); return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05); })); }
