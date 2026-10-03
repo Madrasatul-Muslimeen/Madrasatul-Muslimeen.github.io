@@ -77,11 +77,30 @@ for (const lang of ["en", "bn"]) {
 
   // --- The block appears, and reads a SEEDED state -------------------------
   await openWord(page, 2);
-  const afterOpen = await page.evaluate(() =>
-    (window.__fsLog || []).filter((r) => /quranWord/.test(r.col || "")).map((r) => r.col));
+  // UPDATED IN PLACE (3 Oct 2026). This used to count every quranWord* read
+  // since page load and expected exactly one per lane, so it went red when
+  // #472 made opening Read load the surah's lane chunk (the two reads asserted
+  // just above) and when decision 58 gave the card one "You know" total per
+  // level. Measured on 1:1:2: after the open the log holds the three totals
+  // (one per level) and ONE query per lane, made by the "If you learn this
+  // word" line's walk (#303: for a common word it reads this person's own
+  // lane documents, one equality query per lane, instead of two per āyah).
+  // The word's own āyah lanes come from the chunk Read already loaded, so
+  // opening a word makes NO per-āyah lane document read. That is what is now
+  // asserted: no lane read by document id, at most one query per lane.
+  const afterOpenAll = await page.evaluate(() =>
+    (window.__fsLog || []).filter((r) => /quranWord/.test(r.col || "")).map((r) => ({ col: r.col, id: r.id ?? "" })));
+  const afterOpen = afterOpenAll.slice(afterRead.length);
+  const totals = afterOpen.filter((r) => r.col === "quranWordTotals").map((r) => r.id);
+  const laneReads = afterOpen.filter((r) => /^quranWord(Progress|Approvals)$/.test(r.col));
   check(`[${lang}] opening a word reads both lanes and no more`,
-    afterOpen.filter((c) => c === "quranWordProgress").length === 1 && afterOpen.filter((c) => c === "quranWordApprovals").length === 1,
+    laneReads.every((r) => r.id === "")
+      && laneReads.filter((r) => r.col === "quranWordProgress").length <= 1
+      && laneReads.filter((r) => r.col === "quranWordApprovals").length <= 1
+      && afterOpen.every((r) => /^quranWord(Progress|Approvals|Totals)$/.test(r.col)),
     JSON.stringify(afterOpen));
+  check(`[${lang}] the word's "You know" totals are one read per level (WbW, Basic, Depth), never more`,
+    totals.length === 3 && new Set(totals).size === 3, JSON.stringify(totals));
 
   const block = await page.evaluate(() => {
     const b = document.querySelector("#quranWordCardMount [data-word-progress]");
