@@ -20,14 +20,14 @@ Read the live state yourself, because it moves on after this was written:
 - `claude.yml` runs;
 - the "Active Architect session" line on #159.
 
-**Updated 3 Oct 2026, ~14:10 UTC, by session `session_01BRPbcWQzkbfVcsLgZFpEsJ`** (the Active Architect on #159 since 03:12 UTC). **This session is long: a new session should take over from here.**
+**Updated 3 Oct 2026, ~16:40 UTC (v09.58 released: Word card round 7, the PC boxes, so the seven-round rebuild is COMPLETE; the next job is the Needs-a-source lines; no Builder round is running and no check-in is scheduled), by session `session_01BRPbcWQzkbfVcsLgZFpEsJ`** (the Active Architect on #159 since 03:12 UTC). **This session is long: a new session should take over from here.**
 
-- **`main` is at v09.57.** Released today:
+- **`main` is at v09.58.** Released today (v09.58 = round 7, the PC boxes: two columns from a 62rem card, the Word card window's first size up to 1120px via `initPopupWindow` `defaultMaxWidth`; suite `word-card-pc-boxes-browser`):
   - **v09.48–v09.54:** Word card rounds 1–6 (data, WbW, Basic, Depth, Verb Conjugation, Search), plus v09.51 Mark words (decision 60).
   - **v09.55:** the Approach list shows each Approach's progress as a dot in its stage colour. It uses `openApproachList()` in `ayah-action-sheet.js`.
   - **v09.56:** the tablet landing (581–720px). The wheel takes the screen's width and its six buttons sit in the corners. It uses `tabletWheelLayout()` in `quranrevival.html`, with the suite `tablet-wheel-browser`.
   - **v09.57:** Practising is the Word card's 4th stage (code `p`, never known), and every pressed stage button takes its `STATUS_COLORS` colour (#520).
-- **In flight: Word card round 7, the PC boxes (#525).** It was dispatched ~14:07 UTC. The review check-in fires at ~15:23 UTC: the trigger belongs to this session, so a new session should re-arm its own.
+- **Word card round 7 (#525) is done: v09.58.** Nothing is in flight.
   - **Review it the same way:** a local branch merging `origin/main`, suites run from the repo root, screenshots beside the demo, one mutation, then allocate the version, merge, reset `claude/adoring-edison-cm28vf`, and run the 3 governance checks.
 - **Next job: the "Needs a source" lines (decision 61).**
   - The sources and their licences are in `docs/reports/2026-10-03-needs-a-source-candidates.md`:

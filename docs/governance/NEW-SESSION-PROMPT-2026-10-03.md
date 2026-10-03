@@ -29,7 +29,7 @@ do, make it continue"*).
    round is started and reviewed, and the sandbox lessons.
 5. `docs/governance/2026-09-27-owner-decisions.md`: my decisions, up to 61. They
    are settled. Do not ask me again.
-6. **Where the job stands (updated 3 Oct, ~14:10 UTC): Word card rounds 1–6 are released (v09.48–v09.54), round 7 (the PC boxes, #525) is with the Builder, and after it comes the "Needs a source" lines (decision 61; `docs/reports/2026-10-03-needs-a-source-candidates.md`). Handover section 0 has the detail.** The Word card brief is `docs/reference/2026-10-03-word-card-build-spec.md`. Then open
+6. **Where the job stands (updated 3 Oct, ~14:10 UTC): the Word card rebuild is complete (rounds 1–7, v09.48–v09.58), and the next job is the "Needs a source" lines (decision 61; `docs/reports/2026-10-03-needs-a-source-candidates.md`). Handover section 0 has the detail.** The Word card brief is `docs/reference/2026-10-03-word-card-build-spec.md`. Then open
    `docs/reference/2026-10-03-word-card-demo.html` and
    `docs/reference/2026-10-03-word-card-search-demo.html` in a browser and look at
    them at phone and PC width. **The real build must look like the demo.**
