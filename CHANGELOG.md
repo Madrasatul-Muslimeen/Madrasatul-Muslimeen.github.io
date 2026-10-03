@@ -19237,3 +19237,13 @@ Owner, 2 Oct 2026: "Basic and Depth rules are live."
 - The Word card shows "You know …" once per level.
 - `firestore.rules` now matches what the Owner published; the gate that held this back is open.
 - **Checks**: 15 suites (see the milestone), three updated in place; behaviour 1004/4 (sandbox-only).
+
+## v09.48 — 3 Oct 2026 — Word card rebuild, round 1: the data
+
+Owner, 3 Oct 2026 (decision 59): "Go, build all three tabs together." Round 1 of 7 (#501).
+
+- Nothing changes on screen yet. This round prepares what the new Word card will show.
+- For every word of the Qur'an, the app now has (in files read only when a Word card needs them): the name of each part of the word, the verb Form, tense, person, mood, voice, and whether it is a participle or a verbal noun. Source: the Quranic Arabic Corpus.
+- Every Dictionary word now has its place in Basic's derived-form cards (verb by Form, verbal noun, the one who does it, the one it is done to, intensive adjectives, comparative, other nouns), in the demo's order. The 14 forms of ع ل م group exactly as the approved demo shows.
+- The Arabic names of word parts (e.g. حَرْفُ اسْتِئْنَاف, وَاوُ الْجَمَاعَة) and one sentence per verb Form are written in English and Bangla, for the Owner's review.
+- **Checks**: word-features-data 26/0 (new, two mutations caught), the eight governance suites and stub-parity green.

@@ -691,3 +691,4 @@ total). Allocated by the MMSA Architect.
 09.45: Bookmarks open where their text is. Allocated by the MMSA Architect.
 09.46: Bookmarks reopen with their exact settings. Allocated by the MMSA Architect.
 09.47: Basic and Depth word progress switched on. Allocated by the MMSA Architect.
+09.48: Word card rebuild round 1 (data). Allocated by the MMSA Architect.

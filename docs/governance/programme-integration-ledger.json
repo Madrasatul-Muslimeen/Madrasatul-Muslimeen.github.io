@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.47",
+    "version": "09.48",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1745,7 +1745,7 @@
     {
       "version": "09.47",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The Owner published the Basic/Depth Rules; the gate is open and firestore.rules is synced.",
       "integration": {
         "authorizedOn": "2026-10-02",
@@ -1753,10 +1753,23 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "09.48",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The Word card rebuild's data: Corpus features on demand, derived-form groups, part names and Form sentences (decision 59, #501).",
+      "integration": {
+        "authorizedOn": "2026-10-03",
+        "integratedOn": "2026-10-03",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "09.48",
+  "nextUnallocated": "09.49",
   "nextUnallocatedNote": [
+    "v09.48 was allocated to Word card rebuild round 1 (data), 2026-10-03.",
     "v09.47 was allocated to Basic and Depth word progress switched on, 2026-10-02.",
     "v09.46 was allocated to Bookmarks reopen with their exact settings, 2026-10-02.",
     "v09.45 was allocated to Bookmarks open where their text is, 2026-10-02.",
