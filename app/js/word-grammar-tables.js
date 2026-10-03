@@ -201,21 +201,48 @@ export const FORM_NAMES = Object.freeze({
 /** The 14 persons, in the conjugation poster's order (spec §1, "Verb
  *  Conjugation"), keyed by the Corpus person-gender-number code. */
 export const PERSONS = Object.freeze([
-  { pgn: "3MS", ar: "هُوَ", en: "he", bn: "সে" },
-  { pgn: "3MD", ar: "هُمَا", en: "they two", bn: "তারা দুজন" },
-  { pgn: "3MP", ar: "هُمْ", en: "they", bn: "তারা" },
-  { pgn: "3FS", ar: "هِيَ", en: "she", bn: "সে (নারী)" },
-  { pgn: "3FD", ar: "هُمَا", en: "they two (f)", bn: "তারা দুজন (নারী)" },
-  { pgn: "3FP", ar: "هُنَّ", en: "they (f)", bn: "তারা (নারীরা)" },
-  { pgn: "2MS", ar: "أَنْتَ", en: "you", bn: "তুমি" },
-  { pgn: "2MD", ar: "أَنْتُمَا", en: "you two", bn: "তোমরা দুজন" },
-  { pgn: "2MP", ar: "أَنْتُمْ", en: "you all", bn: "তোমরা" },
-  { pgn: "2FS", ar: "أَنْتِ", en: "you (f)", bn: "তুমি (নারী)" },
-  { pgn: "2FD", ar: "أَنْتُمَا", en: "you two (f)", bn: "তোমরা দুজন (নারী)" },
-  { pgn: "2FP", ar: "أَنْتُنَّ", en: "you all (f)", bn: "তোমরা (নারীরা)" },
-  { pgn: "1S", ar: "أَنَا", en: "I", bn: "আমি" },
-  { pgn: "1P", ar: "نَحْنُ", en: "we", bn: "আমরা" },
+  { pgn: "3MS", ar: "هُوَ", en: "he", bn: "সে", obj: { en: "him", bn: "তাকে" }, poss: { en: "his", bn: "তার" } },
+  { pgn: "3MD", ar: "هُمَا", en: "they two", bn: "তারা দুজন", obj: { en: "them two", bn: "তাদের দুজনকে" }, poss: { en: "their (two)", bn: "তাদের দুজনের" } },
+  { pgn: "3MP", ar: "هُمْ", en: "they", bn: "তারা", obj: { en: "them", bn: "তাদেরকে" }, poss: { en: "their", bn: "তাদের" } },
+  { pgn: "3FS", ar: "هِيَ", en: "she", bn: "সে (নারী)", obj: { en: "her, it", bn: "তাকে" }, poss: { en: "her, its", bn: "তার" } },
+  { pgn: "3FD", ar: "هُمَا", en: "they two (f)", bn: "তারা দুজন (নারী)", obj: { en: "them two (f)", bn: "তাদের দুজনকে" }, poss: { en: "their (two, f)", bn: "তাদের দুজনের" } },
+  { pgn: "3FP", ar: "هُنَّ", en: "they (f)", bn: "তারা (নারীরা)", obj: { en: "them (f)", bn: "তাদেরকে" }, poss: { en: "their (f)", bn: "তাদের" } },
+  { pgn: "2MS", ar: "أَنْتَ", en: "you", bn: "তুমি", obj: { en: "you", bn: "তোমাকে" }, poss: { en: "your", bn: "তোমার" } },
+  { pgn: "2MD", ar: "أَنْتُمَا", en: "you two", bn: "তোমরা দুজন", obj: { en: "you two", bn: "তোমাদের দুজনকে" }, poss: { en: "your (two)", bn: "তোমাদের দুজনের" } },
+  { pgn: "2MP", ar: "أَنْتُمْ", en: "you all", bn: "তোমরা", obj: { en: "you all", bn: "তোমাদেরকে" }, poss: { en: "your (all)", bn: "তোমাদের" } },
+  { pgn: "2FS", ar: "أَنْتِ", en: "you (f)", bn: "তুমি (নারী)", obj: { en: "you (f)", bn: "তোমাকে" }, poss: { en: "your (f)", bn: "তোমার" } },
+  { pgn: "2FD", ar: "أَنْتُمَا", en: "you two (f)", bn: "তোমরা দুজন (নারী)", obj: { en: "you two (f)", bn: "তোমাদের দুজনকে" }, poss: { en: "your (two, f)", bn: "তোমাদের দুজনের" } },
+  { pgn: "2FP", ar: "أَنْتُنَّ", en: "you all (f)", bn: "তোমরা (নারীরা)", obj: { en: "you all (f)", bn: "তোমাদেরকে" }, poss: { en: "your (all, f)", bn: "তোমাদের" } },
+  { pgn: "1S", ar: "أَنَا", en: "I", bn: "আমি", obj: { en: "me", bn: "আমাকে" }, poss: { en: "my", bn: "আমার" } },
+  { pgn: "1P", ar: "نَحْنُ", en: "we", bn: "আমরা", obj: { en: "us", bn: "আমাদেরকে" }, poss: { en: "our", bn: "আমাদের" } },
 ]);
+/** What a part box says a person-carrying part means (spec §1, "Word-part
+ *  boxes"; the demo's "they (doing it now)", "they (many)"). `{p}` is the
+ *  person in the reader's language: the subject form for the present prefix
+ *  and doer endings, PERSONS[].obj for an object, PERSONS[].poss for a
+ *  possessive, and the object form after a preposition or particle. */
+export const PART_MEANING_TEMPLATES = Object.freeze({
+  "impf-prefix": { en: "{p} (doing it now)", bn: "{p} (এখন করে)", form: "subject" },
+  subj: { en: "{p} (the doer)", bn: "{p} (কর্তা)", form: "subject" },
+  "pron-obj": { en: "{p}", bn: "{p}", form: "obj" },
+  "pron-poss": { en: "{p}", bn: "{p}", form: "poss" },
+  "pron-prep": { en: "{p}", bn: "{p}", form: "obj" },
+  "pron-acc": { en: "{p}", bn: "{p}", form: "obj" },
+  "pron-attached": { en: "{p}", bn: "{p}", form: "obj" },
+});
+
+/** The meaning line for one part box, or null. `pgn` is the part's own
+ *  person from the data's `pp`; `lang` is "en" or "bn". */
+export function partMeaning(id, pgn, lang) {
+  const named = PART_NAMES[id]?.mean;
+  if (named) return named[lang] || named.en;
+  const t = PART_MEANING_TEMPLATES[id] || (String(id).startsWith("subj-") ? PART_MEANING_TEMPLATES.subj : null);
+  const person = pgn ? personFor(pgn) : null;
+  if (!t || !person) return null;
+  const p = t.form === "subject" ? person[lang] : person[t.form][lang];
+  return t[lang].replace("{p}", p);
+}
+
 /** The Corpus also writes a dual without gender (3D, 2D); read it as the
  *  masculine dual, which is the form both share. */
 export const PGN_ALIASES = Object.freeze({ "3D": "3MD", "2D": "2MD" });
