@@ -20,33 +20,29 @@ Read the live state yourself, because it moves on after this was written:
 - `claude.yml` runs;
 - the "Active Architect session" line on #159.
 
-**When written (3 Oct 2026, ~03:00 UTC):**
-- **`main` is at v09.47.** No pull request is open and the Builder is idle.
-- **The next job is the Word card rebuild**, all three tabs. The Owner said
-  **"Go, build all three tabs together."** The brief is
-  `docs/reference/2026-10-03-word-card-build-spec.md`, and the build target the
-  real app must match is `docs/reference/2026-10-03-word-card-demo.html` (plus
-  `…-word-card-search-demo.html`). The Owner's decision is 59 in
-  `docs/governance/2026-09-27-owner-decisions.md`. The spec's section 3 splits
-  the work into 7 rounds; write one Builder issue each and dispatch them in order.
-  **Round 1 is data**: keep the Quranic Arabic Corpus features that the pull
-  currently drops. The Owner's binding words: *"Make sure your real build is what
-  actually you demoed."* So screenshot the real build beside the demo every
-  round.
-- **This session's releases:**
-  - **v09.45:** a bookmark on a unit the Note view cannot show (a Page, Juz, Hizb,
-    Ruku' or many-page surah) opens the Read view (`bookmarkNeedsReadView()`).
-  - **v09.46:** a bookmark records and restores its exact reading settings
-    (`settings.reading` from `capturePresetSettings()`, and `settings.readChrome`),
-    applied only on a real bookmark open, never at boot.
-  - **v09.47:** Basic and Depth word progress **switched on**. The Owner published
-    the Rules ("Basic and Depth rules are live"); `firestore.rules` is synced; the
-    gate is `ready: true`; the record is
-    `docs/reports/2026-10-02-lemma-levels-enabled.md`.
-- **Red on `main`, to investigate:** `quran-word-progress-rendered`, "opening a
-  word reads both lanes and no more" (en/bn). It was red before v09.47. It sees
-  the lanes read twice and the extra totals reads; the two per-level totals reads
-  are by design (decision 58).
+**Updated 3 Oct 2026, ~04:00 UTC, by session `session_01BRPbcWQzkbfVcsLgZFpEsJ`** (the Active Architect on #159 since 03:12 UTC):
+- **`main` is at v09.48.** The Word card rebuild is under way, 7 rounds (spec §3).
+- **Round 1 (data), done: v09.48 (#501, PR #502), plus PR #503 (each part's person, `pp`, and `partMeaning()`).** It was built by the Architect, because it needed the Corpus file and Wiktionary.
+  - `tools/quran-data-pull/build-word-features.mjs` writes:
+    - `output/word-features/` (on demand);
+    - `output/lemma-forms.json` (Basic's groups).
+  - `tools/quran-data-pull/derived-forms-reviewed.json` holds the 135 reviewed verbal nouns and the not-comparative / not-intensive exclusions.
+  - `app/js/word-grammar-tables.js` holds the names, the Form sentences and `DERIVED_GROUP_ORDER`.
+  - `app/js/quran-word-features.js` is the loader.
+  - The suite is `word-features-data` (27/0).
+  - To re-run: fetch the Corpus file (handover §2), then `node tools/quran-data-pull/build-word-features.mjs <file>`.
+- **The review page for the Owner** (part names and Form sentences): https://claude.ai/artifact/N4Caa9YnBPqqWGFr3R89oS. It is generated from the tables file, so it shows what the app will print.
+- **Round 2 (WbW tab and header): issue #504**, dispatched to the Builder about 03:29 UTC. A review check-in is set for 04:30 UTC.
+  - The 🔍 button is left out until round 6.
+- **The red suite is fixed** (PR #505): `quran-word-progress-rendered` was stale. The extra reads were:
+  - the Read chunk (#472);
+  - one total per level (decision 58);
+  - the If-you-learn walk (#303).
+
+  It is now 80/3 (the 3 are sandbox TLS).
+- **Sandbox:** the browser suites need Playwright linked first:
+  `mkdir -p /home/user/node_modules && ln -sf /opt/node-tools/node_modules/playwright /home/user/node_modules/ && ln -sf /opt/node-tools/node_modules/playwright-core /home/user/node_modules/`
+- **Never put the Builder's mention phrase in an issue body.** An issue opened by `AAAsapp` that contains it starts a run.
 
 ## 1. What waits on the Owner (one line per report)
 
