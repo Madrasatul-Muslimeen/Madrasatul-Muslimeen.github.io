@@ -10,14 +10,14 @@ let pass = 0, fail = 0;
 const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
 const nfc = (s) => String(s).normalize("NFC");
-const SECTIONS = ["root", "sarf", "nahw", "choice", "classical"];
+const SECTIONS = ["root", "sarf", "conj", "nahw", "choice", "classical"];
 const TITLES = {
-  en: ["Root & Word Family", "Morphology (Ṣarf)", "Grammar in This Āyah (Naḥw)", "Word Choice & Distinctions", "Classical Arabic Usage"],
-  bn: ["মূল ও শব্দ-পরিবার", "রূপতত্ত্ব (সার্ফ)", "এই আয়াতের ব্যাকরণ (নাহু)", "শব্দচয়ন ও পার্থক্য", "ধ্রুপদী আরবি ব্যবহার"],
+  en: ["Root & Word Family", "Morphology (Ṣarf)", "Verb Conjugation", "Grammar in This Āyah (Naḥw)", "Word Choice & Distinctions", "Classical Arabic Usage"],
+  bn: ["মূল ও শব্দ-পরিবার", "রূপতত্ত্ব (সার্ফ)", "ক্রিয়া-রূপান্তর", "এই আয়াতের ব্যাকরণ (নাহু)", "শব্দচয়ন ও পার্থক্য", "ধ্রুপদী আরবি ব্যবহার"],
 };
 const TAGS = { en: { data: "From the data", rule: "Grammar rule", needs: "Needs a source" }, bn: { data: "তথ্য থেকে", rule: "ব্যাকরণের নিয়ম", needs: "উৎস প্রয়োজন" } };
 // Hand-written: tagged lines per section for 2:102:35.
-const TAGGED = [3, 7, 6, 3, 3];
+const TAGGED = [3, 7, 1, 6, 3, 3]; // round 5 added the conjugation section (one tagged line)
 const FORM_V = { en: "Ta- in front of Form II", bn: "দ্বিতীয় রূপের আগে তা- যোগ হলে" };
 
 async function openWord(page, surah, ayah, pos) {
@@ -70,8 +70,8 @@ for (const lang of ["en", "bn"]) {
     const legend = await page.evaluate(() => [...document.querySelectorAll("[data-word-card-legend] [data-word-card-src]")].map((e) => [e.dataset.wordCardSrc, e.textContent]));
     check(`${L}: legend names the three sources`, JSON.stringify(legend) === JSON.stringify([["data", TAGS[lang].data], ["rule", TAGS[lang].rule], ["needs", TAGS[lang].needs]]), JSON.stringify(legend));
     const secs = await secInfo(page);
-    check(`${L}: five sections in order`, JSON.stringify(secs.map((s) => s.key)) === JSON.stringify(SECTIONS) && JSON.stringify(secs.map((s) => s.title)) === JSON.stringify(TITLES[lang]), JSON.stringify(secs.map((s) => s.title)));
-    check(`${L}: only the first section is open`, JSON.stringify(secs.map((s) => s.open)) === "[true,false,false,false,false]", JSON.stringify(secs.map((s) => s.open)));
+    check(`${L}: six sections in order (round 5 added Verb Conjugation)`, JSON.stringify(secs.map((s) => s.key)) === JSON.stringify(SECTIONS) && JSON.stringify(secs.map((s) => s.title)) === JSON.stringify(TITLES[lang]), JSON.stringify(secs.map((s) => s.title)));
+    check(`${L}: only the first section is open`, JSON.stringify(secs.map((s) => s.open)) === "[true,false,false,false,false,false]", JSON.stringify(secs.map((s) => s.open)));
     check(`${L}: accordions are light (#f6f8f7)`, secs.every((s) => s.bg === "rgb(246, 248, 247)"), secs[0]?.bg);
 
     // Open the other four so every line can be read.
@@ -155,7 +155,7 @@ for (const lang of ["en", "bn"]) {
     await page.click('[data-word-card-move="previous"]');
     await page.waitForTimeout(1200);
     const after = await secInfo(page);
-    check(`${L}: Morphology stays open (and Root stays closed) after › and ‹`, JSON.stringify(after.map((s) => s.open)) === "[false,true,false,false,false]", JSON.stringify(after.map((s) => s.open)));
+    check(`${L}: Morphology stays open (and Root stays closed) after › and ‹`, JSON.stringify(after.map((s) => s.open)) === "[false,true,false,false,false,false]", JSON.stringify(after.map((s) => s.open)));
 
     // Tap a chip.
     await page.evaluate(() => { document.querySelector('[data-word-card-sec="root"]').open = true; });

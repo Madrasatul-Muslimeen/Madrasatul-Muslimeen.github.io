@@ -2917,6 +2917,32 @@
   .word-card-c2 { border-radius: 14px; padding: 3px 10px; font-size: 0.8rem; border: 1px solid #c9d3ce; background: #eef2f0; }
   .word-card-c2-no { border-style: dashed; color: #6b7c76; }
   @media (max-width: 520px) { .word-card-trio { grid-template-columns: minmax(0, 1fr); } .word-card-acc-body { padding: 2px 10px 12px; } }
+  /* The conjugation title carries its Arabic name too (Architect review of #515): a fourth summary column, sitting beside the title. */
+  .word-card-acc > summary:has(.word-card-acc-ar) { grid-template-columns: 32px auto minmax(0, 1fr) 20px; }
+  .word-card-acc-ar { justify-self: start; min-width: 0; font-weight: 700; }
+  .word-card-acc-ar > span[lang] { font-family: var(--quran-font); font-size: 1.05rem; }
+  @media (max-width: 520px) { .word-card-acc > summary:has(.word-card-acc-ar) { grid-template-columns: 32px minmax(0, 1fr) 20px; row-gap: 0; } .word-card-acc-ar { grid-column: 2; grid-row: 2; } .word-card-acc-dot { display: none; } .word-card-acc > summary:has(.word-card-acc-ar)::after { grid-column: 3; grid-row: 1; } }
+  .word-card-conj-wrap { container-type: inline-size; min-width: 0; }
+  .word-card-conj { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; direction: rtl; }
+  @container (max-width: 640px) { .word-card-conj { grid-template-columns: minmax(0, 1fr); } }
+  .word-card-cj { direction: ltr; border-radius: 10px; padding: 8px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+  .word-card-cj-past { background: #fdeceb; } .word-card-cj-pres { background: #e8f2fc; } .word-card-cj-imp { background: #ecf7e6; }
+  .word-card-cj h4 { margin: 0; font-size: 0.9rem; text-align: center; color: #b3261e; }
+  .word-card-cj h4 b { color: #1b4fa8; }
+  .word-card-cj-lead { text-align: center; font-family: var(--quran-font); font-size: 1rem; direction: rtl; }
+  .word-card-cj table { border-collapse: collapse; width: 100%; direction: rtl; background: #fff; }
+  .word-card-cj td { border: 1px solid #c9d3ce; padding: 3px 6px; vertical-align: middle; color: #13241f; }
+  .word-card-cj-pr { font-weight: 700; width: 34%; }
+  .word-card-cj-pr .word-card-ar { font-size: 1.05rem; }
+  .word-card-cj-pr small { display: block; font-size: 0.66rem; font-weight: 500; color: #5b6d66; direction: ltr; text-align: right; }
+  .word-card-cj-vb { font-family: var(--quran-font); font-size: 1.3rem; color: #1b4fa8; text-align: center; line-height: 1.7; }
+  .word-card-cj-e { color: #c2410c; } .word-card-cj-p { color: #7c3aed; } .word-card-cj-st { color: #1b4fa8; }
+  .word-card-cj td.word-card-cj-no { text-align: center; color: #c62828; font-weight: 800; font-size: 1rem; }
+  .word-card-cj-sep td { border-top: 3px solid #9aa9a2; }
+  .word-card-cj-here td { background: #fff4d6; }
+  .word-card-cj-q, .word-card-cj-mood { direction: ltr; unicode-bidi: isolate; font-family: inherit; font-size: 0.64rem; font-weight: 800; color: #8a6a1f; display: block; line-height: 1.2; }
+  .word-card-cj-mood { font-weight: 600; color: #5b4510; }
+  .word-card-cj-mood .word-card-ar { font-size: 0.9rem; }
   .word-card-meaning-bar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1.1rem; border: 1px solid var(--card-line); border-radius: 0.4rem; padding: 0.5rem 0.75rem; background: var(--card-bg-inset); margin: 0.4rem 0; }
   .word-card-meaning-bar > p { margin: 0; min-width: 0; font-size: 1.15rem; font-weight: 700; }
   .word-card-meaning-bar > .word-card-transliteration { font-size: 0.95rem; }
@@ -5865,7 +5891,7 @@
     import { occurrenceRefsFor, rootFormsFor, unpackWordIndexRef, loadWordIdentityIndex } from "./js/quran-word-index.js";
     import { relatedBySharedWords, relatedThroughLists, connectedThroughNotes } from "./js/ayah-related.js";
     import { wordSegmentsFor } from "./js/quran-word-segments.js";
-    import { wordFeaturesFor, loadLemmaForms, loadWordFeaturesForSurah } from "./js/quran-word-features.js";
+    import { wordFeaturesFor, loadLemmaForms, loadVerbForms, loadWordFeaturesForSurah } from "./js/quran-word-features.js";
     import { wordProgressAuthority, WBW_WORD_STATES, resolveWordProgress } from "./js/quran-word-progress.js";
     import { primeAyahProgress, getSurahProgress, wordProgressFor, setWordState, decideWordApproval, clearWordProgressCache } from "./js/quran-word-progress-data.js";
     // Issue #320 -- Basic Arabic / Arabic in Depth word-occurrence progress,
@@ -6759,6 +6785,16 @@
       lemmaFormsLoading = true;
       loadLemmaForms().then((d) => { lemmaFormsTable = d.values; }).catch((e) => console.warn("lemma forms unavailable", e))
         .finally(() => { lemmaFormsLoading = false; if (lemmaFormsTable && quranWordCardState.open && (quranWordCardState.level === "basic" || quranWordCardState.level === "depth")) renderPersistentWordCard(); });
+    }
+    // Round 5 -- the Verb Conjugation section's data, fetched the FIRST time a verb's Depth tab is drawn (I9).
+    let verbFormsTable = null;
+    let verbFormsLoading = false;
+    let verbFormsFailed = false;
+    function ensureVerbForms() {
+      if (verbFormsTable || verbFormsLoading || verbFormsFailed) return;
+      verbFormsLoading = true;
+      loadVerbForms().then((d) => { verbFormsTable = d.values; }).catch((e) => { verbFormsFailed = true; console.warn("verb forms unavailable", e); })
+        .finally(() => { verbFormsLoading = false; if (quranWordCardState.open && quranWordCardState.level === "depth") renderPersistentWordCard(); });
     }
     function ensureLemmaDictionary() {
       if (lemmaDictionary || lemmaDictionaryLoading) return;
@@ -15388,9 +15424,10 @@
       // page loads the same first-use file Depth does.
       if (quranWordCardState.level === "depth" || (quranWordCardState.level === "wbw" && getAppLang() !== "bn")) ensureLemmaDictionary();
       if (quranWordCardState.level === "basic" || quranWordCardState.level === "depth") ensureLemmaForms();
+      if (quranWordCardState.level === "depth" && quranWordCardContext.wordFeatures?.tense) ensureVerbForms();
       // Round 4 -- an accordion the reader opened or closed stays that way: read the open state off the DOM before it is replaced.
       content.querySelectorAll("details[data-word-card-sec]").forEach((d) => { wordCardDepthOpen[d.dataset.wordCardSec] = d.open; });
-      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, lemmaForms: lemmaFormsTable, depthOpen: wordCardDepthOpen, ...wordCardDictionaryContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: getColourWordParts(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, depthOpen: wordCardDepthOpen, ...wordCardDictionaryContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: getColourWordParts(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
       if (focusSelector) (mount.querySelector(focusSelector)?.disabled ? mount.querySelector("[data-word-card-close]") : mount.querySelector(focusSelector))?.focus({ preventScroll: true });
     }
 
