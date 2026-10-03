@@ -47,7 +47,7 @@ const S = {
   nParticle: { en: "{piece} {name}", bn: "{piece} {name}" },
   moodWord: { en: { IND: "indicative", SUBJ: "subjunctive", JUS: "jussive" }, bn: { IND: "মারফূ", SUBJ: "মানসূব", JUS: "মাজযূম" } },
   verbIs: { en: "Present-tense verb, {mood}", bn: "বর্তমান কালের ক্রিয়া, {mood}" },
-  signIs: { en: "its sign is {sign}", bn: "এর চিহ্ন {sign}" },
+  signIs: { en: "the sign: {sign}", bn: "চিহ্ন: {sign}" },
   signs: {
     IND: { en: "a ḍamma on the last letter", bn: "শেষ অক্ষরে পেশ" },
     SUBJ: { en: "a fatḥa on the last letter", bn: "শেষ অক্ষরে যবর" },
@@ -59,6 +59,15 @@ const S = {
     JUS: { en: "the ن is dropped, because the verb ends in a doer ending", bn: "ন বাদ পড়ে, কারণ ক্রিয়াটি কর্তার শেষাংশে শেষ হয়" },
   },
   doerEnding: { en: "the doer ending: the ones doing it ({person})", bn: "কর্তার শেষাংশ: যারা কাজটি করছে ({person})" },
+  // Architect review of #513: three built (mabnī) cases and two pronoun roles
+  // the first build named as if every present verb were declined and every
+  // ending a doer.
+  builtSukun: { en: "Present-tense verb, built on sukūn: it ends in the feminine-plural nūn", bn: "বর্তমান কালের ক্রিয়া, সাকিনের উপর গঠিত: এটি স্ত্রীবাচক বহুবচনের নূনে শেষ হয়" },
+  builtFath: { en: "Present-tense verb, built on fatḥa: it carries the emphatic nūn", bn: "বর্তমান কালের ক্রিয়া, যবরের উপর গঠিত: এতে জোরদানকারী নূন আছে" },
+  deputyDoer: { en: "Deputy-subject pronoun", bn: "নায়েবে ফায়েল সর্বনাম" },
+  deputyEnding: { en: "the verb is passive, so the ending stands in for the doer ({person})", bn: "ক্রিয়াটি কর্মবাচ্য, তাই শেষাংশটি কর্তার স্থান নেয় ({person})" },
+  kanaDoer: { en: "Pronoun: the subject of kāna (or one of its sisters)", bn: "সর্বনাম: কানা (বা তার সমগোত্রীয়)-র ইসম" },
+  kanaEnding: { en: "kāna and its sisters take a subject and a predicate, not a doer ({person})", bn: "কানা ও তার সমগোত্রীয় ক্রিয়ার কর্তা নয়, ইসম ও খবর থাকে ({person})" },
   compare: { en: "Compare, in the same āyah:", bn: "একই আয়াতে তুলনা করুন:" },
   compareLine: { en: "{ar} (word {n}): {mood}", bn: "{ar} (শব্দ {n}): {mood}" },
   iArab: { en: "What it does in the whole sentence (iʿrāb) needs the Corpus's sentence data or an approved iʿrāb book.", bn: "পুরো বাক্যে এর ভূমিকা (ইরাব) জানতে কর্পাসের বাক্য-তথ্য বা অনুমোদিত ইরাবের বই লাগবে।" },
@@ -183,6 +192,15 @@ function sarfSection(word, layers, features, ctx) {
 
 const DOER_ENDINGS = new Set(["subj-waw", "subj-alif", "subj-ya"]);
 
+// كَانَ and its sisters (أَخَوَاتُ كَانَ) by root and Form: كَانَ صَارَ ظَلَّ بَاتَ لَيْسَ
+// (مَا) زَالَ (مَا) دَامَ (Form I), أَصْبَحَ أَمْسَى أَضْحَى (Form IV).
+const KANA_ROOTS_I = new Set(["كون", "صير", "ظلل", "بيت", "ليس", "زول", "زيل", "دوم"]);
+const KANA_ROOTS_IV = new Set(["صبح", "مسي", "ضحي"]);
+export function isKanaFamily(root, form) {
+  const r = String(root ?? "").replace(/\s/g, "");
+  return (!form || form === 1) ? KANA_ROOTS_I.has(r) : form === 4 && KANA_ROOTS_IV.has(r);
+}
+
 function nahwSection(word, layers, features, ctx) {
   const { lang } = ctx;
   const out = [];
@@ -216,14 +234,31 @@ function nahwSection(word, layers, features, ctx) {
       JUS: { sign: doer ? " وَعَلَامَةُ جَزْمِهِ حَذْفُ النُّون" : " وَعَلَامَةُ جَزْمِهِ السُّكُون" },
     }[mood].sign;
     const base = { IND: "فِعْلٌ مُضَارِعٌ مَرْفُوعٌ", SUBJ: "فِعْلٌ مُضَارِعٌ مَنْصُوبٌ", JUS: "فِعْلٌ مُضَارِعٌ مَجْزُومٌ" }[mood];
-    const arabic = sign ? base + signAr : base;
-    const english = fill(pick("verbIs", lang), { mood: S.moodWord[lang][mood] });
-    irab("rule",
-      `${verbPiece}<b>${esc(english)}</b> · ${AR(arabic)}${sign ? `: ${esc(fill(pick("signIs", lang), { sign }))}` : ""}`);
+    // A present verb with the feminine-plural nūn is built on sukūn, and one
+    // carrying the emphatic nūn directly is built on fatḥa: neither is declined
+    // for mood, so neither has a sign of raf', naṣb or jazm.
+    if (parts.includes("subj-nun")) {
+      irab("rule", `${verbPiece}<b>${esc(pick("builtSukun", lang))}</b> · ${AR("فِعْلٌ مُضَارِعٌ مَبْنِيٌّ عَلَى السُّكُونِ لِاتِّصَالِهِ بِنُونِ النِّسْوَة")}`);
+    } else if (parts.includes("emph-n") && !doer) {
+      irab("rule", `${verbPiece}<b>${esc(pick("builtFath", lang))}</b> · ${AR("فِعْلٌ مُضَارِعٌ مَبْنِيٌّ عَلَى الْفَتْحِ لِاتِّصَالِهِ بِنُونِ التَّوْكِيد")}`);
+    } else {
+      const arabic = sign ? base + signAr : base;
+      const english = fill(pick("verbIs", lang), { mood: S.moodWord[lang][mood] });
+      irab("rule",
+        `${verbPiece}<b>${esc(english)}</b> · ${AR(arabic)}${sign ? `: ${esc(fill(pick("signIs", lang), { sign }))}` : ""}`);
+    }
     const doerAt = parts.findIndex((p) => DOER_ENDINGS.has(p) || p === "subj-nun" || p === "subj-ta" || p === "subj-na");
     if (doerAt >= 0) {
       const person = personWords(features.pp?.[doerAt] ?? features.pgn, lang);
-      irab("rule", `${aligned ? `${AR(pcs[doerAt])} ` : ""}<b>${esc(lang === "bn" ? "কর্তা সর্বনাম" : "Subject pronoun")}</b> · ${AR("ضَمِيرٌ مُتَّصِلٌ فِي مَحَلِّ رَفْعِ فَاعِل")}: ${esc(fill(pick("doerEnding", lang), { person: person ?? "" }))}`);
+      // The ending of a passive verb stands in for the doer (nāʾib fāʿil); on
+      // kāna and its sisters it is their subject (ism), never a doer.
+      const kana = isKanaFamily(layers.root, features.form);
+      const [label, role, gloss] = features.pass
+        ? [pick("deputyDoer", lang), "ضَمِيرٌ مُتَّصِلٌ فِي مَحَلِّ رَفْعِ نَائِبِ فَاعِل", "deputyEnding"]
+        : kana
+          ? [pick("kanaDoer", lang), "ضَمِيرٌ مُتَّصِلٌ فِي مَحَلِّ رَفْعِ اسْمِهَا", "kanaEnding"]
+          : [lang === "bn" ? "কর্তা সর্বনাম" : "Subject pronoun", "ضَمِيرٌ مُتَّصِلٌ فِي مَحَلِّ رَفْعِ فَاعِل", "doerEnding"];
+      irab("rule", `${aligned ? `${AR(pcs[doerAt])} ` : ""}<b>${esc(label)}</b> · ${AR(role)}: ${esc(fill(pick(gloss, lang), { person: person ?? "" }))}`);
     }
   }
   // The same-āyah comparison: every OTHER verb in this āyah carrying a different mood.
