@@ -1,0 +1,799 @@
+{
+  "schemaVersion": 1,
+  "contract": "word-syntax:v1",
+  "generatedFrom": "syntax.txt, the Quranic Arabic Corpus dependency treebank (kaisdukes/quranic-corpus-api), aligned with quranic-corpus-morphology-0.4.txt",
+  "source": {
+    "name": "Quranic Arabic Corpus, Syntactic Treebank",
+    "author": "Kais Dukes (University of Leeds); maintained by the quran.com team",
+    "url": "https://corpus.quran.com",
+    "licence": "GNU General Public License v3",
+    "licenceUrl": "https://corpus.quran.com/license.jsp",
+    "credit": "Sentence grammar: Quranic Arabic Corpus (corpus.quran.com), GPL v3",
+    "namesFrom": "https://corpus.quran.com/documentation/syntaxrelation.jsp and phrasetags.jsp"
+  },
+  "loadBoundary": "on-demand-only",
+  "surahsWithFiles": 65,
+  "totalGraphs": 7373,
+  "wordsInGraphs": 32617,
+  "totalQuranWords": 77429,
+  "coveragePercent": 42.13,
+  "unalignedWordNodes": 151,
+  "nodesWithoutMorphologyPiece": 55,
+  "totalBytes": 2557986,
+  "maxBytes": 493320,
+  "relations": {
+    "adj": [
+      "صفة",
+      "Adjective",
+      "adjective → noun"
+    ],
+    "poss": [
+      "مضاف إليه",
+      "Possessive construction",
+      "second noun → first noun"
+    ],
+    "pred": [
+      "مبتدأ وخبر",
+      "Predicate of a subject",
+      "predicate → subject"
+    ],
+    "app": [
+      "بدل",
+      "Apposition",
+      "second noun → first noun"
+    ],
+    "spec": [
+      "تمييز",
+      "Specification",
+      "second noun → first noun"
+    ],
+    "cpnd": [
+      "مركب",
+      "Compound",
+      "second number → first number"
+    ],
+    "subj": [
+      "فاعل",
+      "Subject of a verb",
+      "subject → verb"
+    ],
+    "pass": [
+      "نائب فاعل",
+      "Passive verb subject representative",
+      "subject representative → verb"
+    ],
+    "obj": [
+      "مفعول به",
+      "Object of a verb",
+      "object → verb"
+    ],
+    "subjx": [
+      "اسم كان",
+      "Subject of a special verb or particle",
+      "subject → verb or particle"
+    ],
+    "predx": [
+      "خبر كان",
+      "Predicate of a special verb or particle",
+      "predicate → verb or particle"
+    ],
+    "impv": [
+      "أمر",
+      "Imperative",
+      "imperfect verb → imperative particle"
+    ],
+    "imrs": [
+      "جواب أمر",
+      "Imperative result",
+      "result → imperative verb"
+    ],
+    "pro": [
+      "نهي",
+      "Prohibition",
+      "imperfect verb → prohibitive particle"
+    ],
+    "gen": [
+      "جار ومجرور",
+      "Preposition phrase",
+      "preposition → noun"
+    ],
+    "link": [
+      "متعلق",
+      "PP attachment",
+      "PP phrase → verb or noun"
+    ],
+    "conj": [
+      "معطوف",
+      "Coordinating conjunction",
+      "second phrase → first phrase"
+    ],
+    "sub": [
+      "صلة",
+      "Subordinate clause",
+      "subordinate clause → particle"
+    ],
+    "cond": [
+      "شرط",
+      "Condition",
+      "condition → conditional particle"
+    ],
+    "rslt": [
+      "جواب شرط",
+      "Result",
+      "result → conditional particle"
+    ],
+    "circ": [
+      "حال",
+      "Circumstantial accusative",
+      "accusative → verb"
+    ],
+    "cog": [
+      "مفعول مطلق",
+      "Cognate accusative",
+      "accusative → verb"
+    ],
+    "prp": [
+      "المفعول لأجله",
+      "Accusative of purpose",
+      "accusative → verb"
+    ],
+    "com": [
+      "المفعول معه",
+      "Comitative object",
+      "accusative → verb"
+    ],
+    "emph": [
+      "توكيد",
+      "Emphasis",
+      "verb → emphatic particle"
+    ],
+    "intg": [
+      "استفهام",
+      "Interrogation",
+      "verb → interrogative particle"
+    ],
+    "neg": [
+      "نفي",
+      "Negation",
+      "imperfect verb → negative particle"
+    ],
+    "fut": [
+      "استقبال",
+      "Future clause",
+      "imperfect verb → future particle"
+    ],
+    "voc": [
+      "منادي",
+      "Vocative",
+      "noun → vocative particle"
+    ],
+    "exp": [
+      "مستثني",
+      "Exceptive",
+      "noun → exceptive particle"
+    ],
+    "res": [
+      "حصر",
+      "Restriction",
+      "noun → restriction particle"
+    ],
+    "avr": [
+      "ردع",
+      "Aversion",
+      "dependent → aversion particle"
+    ],
+    "cert": [
+      "تحقيق",
+      "Certainty",
+      "dependent → particle of certainty"
+    ],
+    "ret": [
+      "اضراب",
+      "Retraction",
+      "dependent → retraction particle"
+    ],
+    "prev": [
+      "كاف",
+      "Preventive",
+      "preventive particle → accusative particle"
+    ],
+    "ans": [
+      "جواب",
+      "Answer",
+      "dependent → answer particle"
+    ],
+    "inc": [
+      "ابتداء",
+      "Inceptive",
+      "dependent → inceptive particle"
+    ],
+    "sur": [
+      "فجاءة",
+      "Surprise",
+      "dependent → surprise particle"
+    ],
+    "sup": [
+      "زائد",
+      "Supplemental",
+      "dependent → supplemental particle"
+    ],
+    "exh": [
+      "تحضيض",
+      "Exhortation",
+      "dependent → exhortation particle"
+    ],
+    "exl": [
+      "تفصيل",
+      "Explanation",
+      "dependent → explanation particle"
+    ],
+    "eq": [
+      "تسوية",
+      "Equalization",
+      "verb → equalization particle"
+    ],
+    "caus": [
+      "سببية",
+      "Cause",
+      "imperfect verb → particle of cause"
+    ],
+    "amd": [
+      "استدراك",
+      "Amendment",
+      "dependent → amendment particle"
+    ],
+    "int": [
+      "تفسير",
+      "Interpretation",
+      "dependent → particle of interpretation"
+    ]
+  },
+  "phrases": {
+    "S": [
+      "جملة",
+      "Sentence"
+    ],
+    "NS": [
+      "جملة اسمية",
+      "Nominal sentence"
+    ],
+    "VS": [
+      "جملة فعلية",
+      "Verbal sentence"
+    ],
+    "CS": [
+      "جملة شرطية",
+      "Conditional sentence"
+    ],
+    "PP": [
+      "جار ومجرور",
+      "Preposition phrase"
+    ],
+    "SC": [
+      "تأويل مصدر",
+      "Subordinate clause"
+    ]
+  },
+  "perSurah": [
+    {
+      "surah": 1,
+      "graphs": 8,
+      "corpusWords": 29,
+      "wordsInGraphs": 29,
+      "complete": true,
+      "bytes": 1975
+    },
+    {
+      "surah": 2,
+      "graphs": 1365,
+      "corpusWords": 6116,
+      "wordsInGraphs": 6116,
+      "complete": true,
+      "bytes": 493320
+    },
+    {
+      "surah": 3,
+      "graphs": 814,
+      "corpusWords": 3481,
+      "wordsInGraphs": 3481,
+      "complete": true,
+      "bytes": 276364
+    },
+    {
+      "surah": 4,
+      "graphs": 791,
+      "corpusWords": 3747,
+      "wordsInGraphs": 3747,
+      "complete": true,
+      "bytes": 295296
+    },
+    {
+      "surah": 5,
+      "graphs": 609,
+      "corpusWords": 2804,
+      "wordsInGraphs": 2804,
+      "complete": true,
+      "bytes": 220271
+    },
+    {
+      "surah": 6,
+      "graphs": 686,
+      "corpusWords": 3050,
+      "wordsInGraphs": 3050,
+      "complete": true,
+      "bytes": 242303
+    },
+    {
+      "surah": 7,
+      "graphs": 796,
+      "corpusWords": 3320,
+      "wordsInGraphs": 3320,
+      "complete": true,
+      "bytes": 275015
+    },
+    {
+      "surah": 8,
+      "graphs": 304,
+      "corpusWords": 1233,
+      "wordsInGraphs": 1233,
+      "complete": true,
+      "bytes": 96893
+    },
+    {
+      "surah": 9,
+      "graphs": 406,
+      "corpusWords": 2498,
+      "wordsInGraphs": 1722,
+      "complete": false,
+      "bytes": 134695
+    },
+    {
+      "surah": 59,
+      "graphs": 94,
+      "corpusWords": 445,
+      "wordsInGraphs": 445,
+      "complete": true,
+      "bytes": 33369
+    },
+    {
+      "surah": 60,
+      "graphs": 79,
+      "corpusWords": 348,
+      "wordsInGraphs": 348,
+      "complete": true,
+      "bytes": 28178
+    },
+    {
+      "surah": 61,
+      "graphs": 50,
+      "corpusWords": 221,
+      "wordsInGraphs": 221,
+      "complete": true,
+      "bytes": 15984
+    },
+    {
+      "surah": 62,
+      "graphs": 37,
+      "corpusWords": 175,
+      "wordsInGraphs": 175,
+      "complete": true,
+      "bytes": 12653
+    },
+    {
+      "surah": 63,
+      "graphs": 44,
+      "corpusWords": 180,
+      "wordsInGraphs": 180,
+      "complete": true,
+      "bytes": 13899
+    },
+    {
+      "surah": 64,
+      "graphs": 59,
+      "corpusWords": 241,
+      "wordsInGraphs": 241,
+      "complete": true,
+      "bytes": 18301
+    },
+    {
+      "surah": 65,
+      "graphs": 60,
+      "corpusWords": 287,
+      "wordsInGraphs": 287,
+      "complete": true,
+      "bytes": 21469
+    },
+    {
+      "surah": 66,
+      "graphs": 58,
+      "corpusWords": 249,
+      "wordsInGraphs": 249,
+      "complete": true,
+      "bytes": 18162
+    },
+    {
+      "surah": 67,
+      "graphs": 56,
+      "corpusWords": 333,
+      "wordsInGraphs": 333,
+      "complete": true,
+      "bytes": 23597
+    },
+    {
+      "surah": 68,
+      "graphs": 68,
+      "corpusWords": 300,
+      "wordsInGraphs": 300,
+      "complete": true,
+      "bytes": 22224
+    },
+    {
+      "surah": 69,
+      "graphs": 58,
+      "corpusWords": 258,
+      "wordsInGraphs": 258,
+      "complete": true,
+      "bytes": 18543
+    },
+    {
+      "surah": 70,
+      "graphs": 49,
+      "corpusWords": 217,
+      "wordsInGraphs": 217,
+      "complete": true,
+      "bytes": 15786
+    },
+    {
+      "surah": 71,
+      "graphs": 42,
+      "corpusWords": 226,
+      "wordsInGraphs": 226,
+      "complete": true,
+      "bytes": 17442
+    },
+    {
+      "surah": 72,
+      "graphs": 55,
+      "corpusWords": 285,
+      "wordsInGraphs": 285,
+      "complete": true,
+      "bytes": 21517
+    },
+    {
+      "surah": 73,
+      "graphs": 44,
+      "corpusWords": 199,
+      "wordsInGraphs": 199,
+      "complete": true,
+      "bytes": 14232
+    },
+    {
+      "surah": 74,
+      "graphs": 65,
+      "corpusWords": 255,
+      "wordsInGraphs": 255,
+      "complete": true,
+      "bytes": 18179
+    },
+    {
+      "surah": 75,
+      "graphs": 40,
+      "corpusWords": 164,
+      "wordsInGraphs": 164,
+      "complete": true,
+      "bytes": 11381
+    },
+    {
+      "surah": 76,
+      "graphs": 53,
+      "corpusWords": 243,
+      "wordsInGraphs": 243,
+      "complete": true,
+      "bytes": 17322
+    },
+    {
+      "surah": 77,
+      "graphs": 50,
+      "corpusWords": 181,
+      "wordsInGraphs": 181,
+      "complete": true,
+      "bytes": 13186
+    },
+    {
+      "surah": 78,
+      "graphs": 42,
+      "corpusWords": 173,
+      "wordsInGraphs": 173,
+      "complete": true,
+      "bytes": 12455
+    },
+    {
+      "surah": 79,
+      "graphs": 45,
+      "corpusWords": 179,
+      "wordsInGraphs": 179,
+      "complete": true,
+      "bytes": 13348
+    },
+    {
+      "surah": 80,
+      "graphs": 36,
+      "corpusWords": 133,
+      "wordsInGraphs": 133,
+      "complete": true,
+      "bytes": 9977
+    },
+    {
+      "surah": 81,
+      "graphs": 27,
+      "corpusWords": 104,
+      "wordsInGraphs": 104,
+      "complete": true,
+      "bytes": 7420
+    },
+    {
+      "surah": 82,
+      "graphs": 19,
+      "corpusWords": 80,
+      "wordsInGraphs": 80,
+      "complete": true,
+      "bytes": 5686
+    },
+    {
+      "surah": 83,
+      "graphs": 31,
+      "corpusWords": 169,
+      "wordsInGraphs": 169,
+      "complete": true,
+      "bytes": 11539
+    },
+    {
+      "surah": 84,
+      "graphs": 25,
+      "corpusWords": 107,
+      "wordsInGraphs": 107,
+      "complete": true,
+      "bytes": 8211
+    },
+    {
+      "surah": 85,
+      "graphs": 19,
+      "corpusWords": 109,
+      "wordsInGraphs": 109,
+      "complete": true,
+      "bytes": 6912
+    },
+    {
+      "surah": 86,
+      "graphs": 15,
+      "corpusWords": 61,
+      "wordsInGraphs": 61,
+      "complete": true,
+      "bytes": 3984
+    },
+    {
+      "surah": 87,
+      "graphs": 16,
+      "corpusWords": 72,
+      "wordsInGraphs": 72,
+      "complete": true,
+      "bytes": 5275
+    },
+    {
+      "surah": 88,
+      "graphs": 22,
+      "corpusWords": 92,
+      "wordsInGraphs": 92,
+      "complete": true,
+      "bytes": 6031
+    },
+    {
+      "surah": 89,
+      "graphs": 31,
+      "corpusWords": 137,
+      "wordsInGraphs": 137,
+      "complete": true,
+      "bytes": 10049
+    },
+    {
+      "surah": 90,
+      "graphs": 18,
+      "corpusWords": 82,
+      "wordsInGraphs": 82,
+      "complete": true,
+      "bytes": 5490
+    },
+    {
+      "surah": 91,
+      "graphs": 16,
+      "corpusWords": 54,
+      "wordsInGraphs": 54,
+      "complete": true,
+      "bytes": 5012
+    },
+    {
+      "surah": 92,
+      "graphs": 19,
+      "corpusWords": 71,
+      "wordsInGraphs": 71,
+      "complete": true,
+      "bytes": 5934
+    },
+    {
+      "surah": 93,
+      "graphs": 10,
+      "corpusWords": 40,
+      "wordsInGraphs": 40,
+      "complete": true,
+      "bytes": 3328
+    },
+    {
+      "surah": 94,
+      "graphs": 8,
+      "corpusWords": 27,
+      "wordsInGraphs": 27,
+      "complete": true,
+      "bytes": 2106
+    },
+    {
+      "surah": 95,
+      "graphs": 7,
+      "corpusWords": 34,
+      "wordsInGraphs": 34,
+      "complete": true,
+      "bytes": 2164
+    },
+    {
+      "surah": 96,
+      "graphs": 17,
+      "corpusWords": 72,
+      "wordsInGraphs": 72,
+      "complete": true,
+      "bytes": 5576
+    },
+    {
+      "surah": 97,
+      "graphs": 5,
+      "corpusWords": 30,
+      "wordsInGraphs": 30,
+      "complete": true,
+      "bytes": 1803
+    },
+    {
+      "surah": 98,
+      "graphs": 17,
+      "corpusWords": 94,
+      "wordsInGraphs": 94,
+      "complete": true,
+      "bytes": 5954
+    },
+    {
+      "surah": 99,
+      "graphs": 8,
+      "corpusWords": 36,
+      "wordsInGraphs": 36,
+      "complete": true,
+      "bytes": 2605
+    },
+    {
+      "surah": 100,
+      "graphs": 9,
+      "corpusWords": 40,
+      "wordsInGraphs": 40,
+      "complete": true,
+      "bytes": 3054
+    },
+    {
+      "surah": 101,
+      "graphs": 9,
+      "corpusWords": 36,
+      "wordsInGraphs": 36,
+      "complete": true,
+      "bytes": 2428
+    },
+    {
+      "surah": 102,
+      "graphs": 6,
+      "corpusWords": 28,
+      "wordsInGraphs": 28,
+      "complete": true,
+      "bytes": 1871
+    },
+    {
+      "surah": 103,
+      "graphs": 3,
+      "corpusWords": 14,
+      "wordsInGraphs": 14,
+      "complete": true,
+      "bytes": 1176
+    },
+    {
+      "surah": 104,
+      "graphs": 8,
+      "corpusWords": 33,
+      "wordsInGraphs": 33,
+      "complete": true,
+      "bytes": 2379
+    },
+    {
+      "surah": 105,
+      "graphs": 5,
+      "corpusWords": 23,
+      "wordsInGraphs": 23,
+      "complete": true,
+      "bytes": 1831
+    },
+    {
+      "surah": 106,
+      "graphs": 4,
+      "corpusWords": 17,
+      "wordsInGraphs": 17,
+      "complete": true,
+      "bytes": 1378
+    },
+    {
+      "surah": 107,
+      "graphs": 6,
+      "corpusWords": 25,
+      "wordsInGraphs": 25,
+      "complete": true,
+      "bytes": 1833
+    },
+    {
+      "surah": 108,
+      "graphs": 3,
+      "corpusWords": 10,
+      "wordsInGraphs": 10,
+      "complete": true,
+      "bytes": 844
+    },
+    {
+      "surah": 109,
+      "graphs": 5,
+      "corpusWords": 26,
+      "wordsInGraphs": 26,
+      "complete": true,
+      "bytes": 1801
+    },
+    {
+      "surah": 110,
+      "graphs": 4,
+      "corpusWords": 19,
+      "wordsInGraphs": 19,
+      "complete": true,
+      "bytes": 1359
+    },
+    {
+      "surah": 111,
+      "graphs": 4,
+      "corpusWords": 23,
+      "wordsInGraphs": 23,
+      "complete": true,
+      "bytes": 1541
+    },
+    {
+      "surah": 112,
+      "graphs": 4,
+      "corpusWords": 15,
+      "wordsInGraphs": 15,
+      "complete": true,
+      "bytes": 933
+    },
+    {
+      "surah": 113,
+      "graphs": 5,
+      "corpusWords": 23,
+      "wordsInGraphs": 23,
+      "complete": true,
+      "bytes": 1814
+    },
+    {
+      "surah": 114,
+      "graphs": 5,
+      "corpusWords": 20,
+      "wordsInGraphs": 20,
+      "complete": true,
+      "bytes": 1329
+    }
+  ]
+}
