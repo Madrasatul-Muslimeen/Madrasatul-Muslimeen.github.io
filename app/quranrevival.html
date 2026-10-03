@@ -2950,6 +2950,8 @@
   .word-card-book-h { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; min-width: 0; }
   .word-card-book-t { font-family: var(--quran-font); font-size: 1.05rem; line-height: 1.9; white-space: pre-line; overflow-wrap: anywhere; min-width: 0; max-width: 100%;
     display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: var(--lines, 3); overflow: hidden; text-align: right; }
+  .word-card-more-entries > summary { color: #1d6b4a; font-weight: 700; cursor: pointer; min-height: 40px; display: flex; align-items: center; text-decoration: underline; }
+  .word-card-more-entries[open] > summary { margin-bottom: 0.4rem; }
   .word-card-more-cb { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
   .word-card-more-cb:checked + .word-card-book-t { display: block; -webkit-line-clamp: unset; overflow: visible; }
   .word-card-more { justify-self: start; color: #1d6b4a; font-weight: 700; cursor: pointer; min-height: 32px; display: inline-flex; align-items: center; text-decoration: underline; }

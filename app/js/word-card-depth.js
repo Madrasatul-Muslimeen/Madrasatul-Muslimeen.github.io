@@ -110,6 +110,7 @@ const S = {
   formN: { en: "Form {n}", bn: "ফর্ম {n}" },
   synonyms: { en: "al-Furūq has no entry for this word.", bn: "আল-ফুরূকে এই শব্দের কোনো এন্ট্রি নেই।" },
   furuqRef: { en: "al-ʿAskarī, {work}, ed. Salīm, p. {p}", bn: "আল-আসকারি, {work}, সম্পাদনা: সালীম, পৃ. {p}" },
+  moreEntries: { en: "Show {n} more entries", bn: "আরও {n}টি এন্ট্রি দেখুন" },
   furuqWork: { en: "al-Furūq al-Lughawiyya", bn: "আল-ফুরূক আল-লুগাবিয়্যা" },
   mufRef: { en: "al-Rāghib al-Iṣfahānī, {work}, ed. al-Dāwūdī, p. {p}", bn: "আর-রাগিব আল-ইসফাহানি, {work}, সম্পাদনা: আদ-দাউদি, পৃ. {p}" },
   mufWork: { en: "al-Mufradāt", bn: "আল-মুফরাদাত" },
@@ -299,7 +300,10 @@ function grammarLines(word, features, pcs, ctx, push) {
   // The treebank counts a word's pieces with the determiner left out.
   const parts = features?.parts ?? [];
   const aligned = pcs && pcs.length === parts.length;
-  const pieceText = (piece) => {
+  const pieceText = (piece, seg) => {
+    // The data's own segment range (PR #535) is right even where a present
+    // verb's prefix splits off; the determiner-skipping count is the fallback.
+    if (pcs && Array.isArray(seg) && seg[1] <= pcs.length && seg[0] < seg[1]) return pcs.slice(seg[0], seg[1]).join("");
     if (!aligned) return word.arabic;
     const at = parts.map((p, i) => [p, i]).filter(([p]) => p !== "det").map(([, i]) => i)[piece];
     return at === undefined ? word.arabic : pcs[at];
@@ -345,7 +349,7 @@ function grammarLines(word, features, pcs, ctx, push) {
         }
       } else if (mineNode(dn)) {
         const sig = `d|${rel}|${dn[2]}|${describe(g, head)}`;
-        if (!seen.has(sig)) { seen.add(sig); asDependent.push({ rel, piece: dn[2], head: describe(g, head), headNode: hn }); }
+        if (!seen.has(sig)) { seen.add(sig); asDependent.push({ rel, piece: dn[2], seg: dn[4], head: describe(g, head), headNode: hn }); }
       } else if (mineNode(hn)) {
         const sig = `h|${rel}|${describe(g, dep)}`;
         if (!seen.has(sig)) { seen.add(sig); asHead.push({ rel, dep: describe(g, dep) }); }
@@ -357,7 +361,7 @@ function grammarLines(word, features, pcs, ctx, push) {
     const r = relName(d.rel);
     const tpl = pick(d.phrase ? (d.rel === "link" ? "gramInLink" : "gramIn") : d.rel === "link" ? "gramLink" : "gramDep", lang);
     const html = esc(fill(tpl, { p: "\u0000", rel: `\u0001${r.name}\u0002`, ar: "\u0003", head: "\u0004", phrase: "\u0005" }))
-      .replace("\u0000", AR(d.phrase ? word.arabic : pieceText(d.piece))).replace("\u0001", "<b>").replace("\u0002", "</b>").replace("\u0003", esc(r.ar)).replace("\u0004", d.head).replace("\u0005", d.phrase ?? "");
+      .replace("\u0000", AR(d.phrase ? word.arabic : pieceText(d.piece, d.seg))).replace("\u0001", "<b>").replace("\u0002", "</b>").replace("\u0003", `<bdi dir="rtl" lang="ar">${esc(r.ar)}</bdi>`).replace("\u0004", d.head).replace("\u0005", d.phrase ?? "");
     push(`<span data-word-card-gram-rel="${esc(d.rel)}">${html}</span>`, `dep`);
   }
   if (asHead.length) {
@@ -365,7 +369,7 @@ function grammarLines(word, features, pcs, ctx, push) {
     for (const h of asHead) {
       const r = relName(h.rel);
       const html = esc(fill(pick("gramTake", lang), { rel: `\u0001${r.name}\u0002`, ar: "\u0003", dep: "\u0004" }))
-        .replace("\u0001", "<b>").replace("\u0002", "</b>").replace("\u0003", esc(r.ar)).replace("\u0004", h.dep);
+        .replace("\u0001", "<b>").replace("\u0002", "</b>").replace("\u0003", `<bdi dir="rtl" lang="ar">${esc(r.ar)}</bdi>`).replace("\u0004", h.dep);
       push(`<span data-word-card-gram-take="${esc(h.rel)}">${html}</span>`, "take");
     }
   }
@@ -506,11 +510,16 @@ function choiceSection(word, layers, features, ctx) {
     const idx = word.morphology?.lemma ? fu.value.lemmas[word.morphology.lemma] : null;
     if (!idx?.length) out.push(line("needs", lang, esc(pick("synonyms", lang)), "word-card-need"));
     else {
-      for (const i of idx) {
-        const e = fu.value.entries[i];
-        if (!e) continue;
+      // Architect review: a common word links many entries (عِلْم has 19), so
+      // the first three show and the rest wait behind one "Show N more".
+      const entries = idx.map((i) => fu.value.entries[i]).filter(Boolean);
+      const html = entries.map((e) => {
         const ref = esc(fill(pick("furuqRef", lang), { work: "\u0000", p: pageRange(e.p, formatNumber) })).replace("\u0000", `<i>${esc(pick("furuqWork", lang))}</i>`);
-        out.push(bookEntryHtml({ heading: e.h, text: e.t, lines: 3, ref, lang, kind: "furuq" }));
+        return bookEntryHtml({ heading: e.h, text: e.t, lines: 3, ref, lang, kind: "furuq" });
+      });
+      out.push(...html.slice(0, 3));
+      if (html.length > 3) {
+        out.push(`<details class="word-card-more-entries" data-word-card-more-entries><summary>${esc(fill(pick("moreEntries", lang), { n: formatNumber(html.length - 3) }))}</summary>${html.slice(3).join("")}</details>`);
       }
       out.push(bookCreditHtml(lang, fu.value.source?.licenceUrl));
     }
