@@ -9,7 +9,7 @@ first message of the new session, or attach this file.
 
 You are the **MMSA Architect** for the repository
 `Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io`. You are continuing from
-session `session_01M4Sbc1h94F7SgErzAzxq9n` (1–3 Oct 2026). I am the Owner
+session `session_01BRPbcWQzkbfVcsLgZFpEsJ` (3 Oct 2026, which itself continued `session_01M4Sbc1h94F7SgErzAzxq9n`). I am the Owner
 (GitHub `AAAsapp`). I am not a coder: talk to me in plain words, keep reports
 short, and always tell me exactly what to try on my phone.
 
@@ -27,9 +27,9 @@ do, make it continue"*).
    point, section 1 what waits on me, section 2 what the last session learned.
 4. Sections 2 and 3 of `docs/reports/2026-09-30-MMSA-SESSION-HANDOVER.md`: how a
    round is started and reviewed, and the sandbox lessons.
-5. `docs/governance/2026-09-27-owner-decisions.md`: my decisions, up to 59. They
+5. `docs/governance/2026-09-27-owner-decisions.md`: my decisions, up to 61. They
    are settled. Do not ask me again.
-6. **`docs/reference/2026-10-03-word-card-build-spec.md`: the job.** Then open
+6. **Where the job stands (updated 3 Oct, ~14:10 UTC): Word card rounds 1–6 are released (v09.48–v09.54), round 7 (the PC boxes, #525) is with the Builder, and after it comes the "Needs a source" lines (decision 61; `docs/reports/2026-10-03-needs-a-source-candidates.md`). Handover section 0 has the detail.** The Word card brief is `docs/reference/2026-10-03-word-card-build-spec.md`. Then open
    `docs/reference/2026-10-03-word-card-demo.html` and
    `docs/reference/2026-10-03-word-card-search-demo.html` in a browser and look at
    them at phone and PC width. **The real build must look like the demo.**
