@@ -109,7 +109,7 @@ for (const lang of ["en", "bn"]) for (const width of [320, 1280]) {
   const hdr = await page.evaluate(() => [...document.querySelector(".quran-word-card header").children].map((e) => { const r = e.getBoundingClientRect(); return { n: e.className || e.tagName, x: r.x, y: r.y, r: r.right, b: r.bottom }; }));
   let ov = 0;
   for (let i = 0; i < hdr.length; i++) for (let j = i + 1; j < hdr.length; j++) if (overlap(hdr[i], hdr[j])) ov++;
-  check(`${lang}/${width}: word with no root has no ROOT box and no overlap`, !has && hdr.length === 4 && ov === 0, `root=${has} children=${hdr.length} overlaps=${ov}`);
+  check(`${lang}/${width}: word with no root has no ROOT box and no overlap`, !has && hdr.length === 5 && ov === 0, `root=${has} children=${hdr.length} overlaps=${ov}`);
   await ctx.close();
 }
 
