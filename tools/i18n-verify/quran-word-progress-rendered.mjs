@@ -8,6 +8,8 @@
 import { chromium, newContext, openPage } from "./harness.mjs";
 
 let pass = 0, fail = 0;
+// Four buttons: all on one row, or exactly two rows of two (decision 59, Practising).
+const neat = (tops) => { if (!tops || tops.length !== 4) return false; const u = [...new Set(tops)]; return u.length === 1 || (u.length === 2 && tops.filter((t) => t === u[0]).length === 2); };
 const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
@@ -122,11 +124,11 @@ for (const lang of ["en", "bn"]) {
     };
   });
   check(`[${lang}] the progress block really renders, on screen`, !!block && block.onScreen, JSON.stringify(block));
-  check(`[${lang}] three state buttons`, block?.buttons.length === 3, JSON.stringify(block?.buttons));
+  check(`[${lang}] four state buttons, in order`, JSON.stringify(block?.buttons.map((b) => b.state)) === '["not_started","learning","practising","achieved"]', JSON.stringify(block?.buttons));
   check(`[${lang}] every state button is a real finger target (>=40px)`,
     block?.buttons.every((b) => b.h >= 40 && b.w >= 40), JSON.stringify(block?.buttons.map((b) => [b.w, b.h])));
-  check(`[${lang}] the three buttons sit on ONE line`,
-    new Set(block?.buttons.map((b) => b.top)).size === 1, JSON.stringify(block?.buttons.map((b) => b.top)));
+  check(`[${lang}] the four buttons are one row, or a tidy 2 x 2 (never ragged)`,
+    neat(block?.buttons.map((b) => b.top)), JSON.stringify(block?.buttons.map((b) => b.top)));
 
   // The seeded state is `achieved` on word 2, and p1 needs no confirmation.
   const achieved = block?.buttons.find((b) => b.state === "achieved");
@@ -359,10 +361,10 @@ for (const lang of ["en", "bn"]) {
         statesReachableWithoutScrolling: states.getBoundingClientRect().bottom <= mr.bottom + 1,
       };
     });
-    const ok = m && m.buttons.length === 3 && new Set(m.buttons.map((b) => b.top)).size === 1
+    const ok = m && m.buttons.length === 4 && neat(m.buttons.map((b) => b.top))
       && m.buttons.every((b) => b.h >= 40) && m.inside && !m.buttons.some((b) => b.truncated)
       && m.statesReachableWithoutScrolling && m.overflow <= 0;
-    check(`[${lang}] ${w}x${h}: one line, >=40px, on screen, reachable, no label cut, no sideways scroll`, !!ok,
+    check(`[${lang}] ${w}x${h}: one row or 2x2, >=40px, on screen, reachable, no label cut, no sideways scroll`, !!ok,
       m ? `tops=${JSON.stringify(m.buttons.map((b) => b.top))} h=${JSON.stringify(m.buttons.map((b) => b.h))} cut=${JSON.stringify(m.buttons.filter((b) => b.truncated).map((b) => b.text))} inside=${m.inside} reachable=${m.statesReachableWithoutScrolling} overflowX=${m.overflow}` : "no block");
     await ctx.close();
   }

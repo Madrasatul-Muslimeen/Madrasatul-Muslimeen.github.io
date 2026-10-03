@@ -32,8 +32,8 @@ const LANE = { tenantId: "t1", personId: "p1", level: "wbw", surah: 2, ayah: 282
 
 // --- 1. Contract and vocabulary -------------------------------------------
 check("the contract is named and versioned", () => assert.equal(WORD_PROGRESS_CONTRACT, "quran-word-progress:v1"));
-check("a word's ramp is three rungs, not the Study Unit's six", () =>
-  assert.deepEqual(WBW_WORD_STATES, ["not_started", "learning", "achieved"]));
+check("a word's ramp is four rungs (Practising added, decision 59), not the Study Unit's six", () =>
+  assert.deepEqual(WBW_WORD_STATES, ["not_started", "learning", "practising", "achieved"]));
 check("not_applicable is deliberately not a word state", () =>
   assert.ok(!WBW_WORD_STATES.includes("not_applicable")));
 check("review states mirror records.js confirmState", () =>
@@ -271,6 +271,26 @@ check("a malformed stored entry decodes to not_started, never to a claim", () =>
   assert.equal(decodeLearnerEntry(null).state, "not_started");
   assert.equal(decodeSupervisorEntry({ r: "?" }).review, "pending");
 });
+// Decision 59 -- Practising, stored as "p". Expected values written by hand.
+check("practising round-trips through the stored code p", () => {
+  const doc = buildLaneDocument({ laneId: "t1__p1__wbw__2_5", lane: "learner", entries: { 3: { state: "practising", at: NOW, byPersonId: "p1" } } });
+  assert.equal(doc.entries["3"].s, "p");
+  assert.equal(decodeLaneDocument(doc).entries["3"].state, "practising");
+  assert.equal(laneFieldUpdate({ lane: "learner", position: 3, entry: { state: "practising", at: NOW, byPersonId: "p1" } })["entries.3"].s, "p");
+});
+check("an unknown stored code (a newer app's) reads as not_started and never throws", () => {
+  assert.equal(decodeLearnerEntry({ s: "z", at: NOW, by: "p1" }).state, "not_started");
+  assert.doesNotThrow(() => decodeLaneDocument({ lane: "learner", entries: { 1: { s: "zz" }, 2: { s: 7 } } }));
+});
+check("a Practising word is NOT known, with or without confirmation", () => {
+  const entry = { state: "practising", at: NOW, byPersonId: "p1" };
+  assert.equal(resolveWordProgress({ learner: entry, confirmationRequired: false }).countsAsKnown, false);
+  assert.equal(resolveWordProgress({ learner: entry, confirmationRequired: true }).countsAsKnown, false);
+  assert.equal(resolveWordProgress({ learner: entry, confirmationRequired: true }).awaitingReview, false);
+  assert.equal(resolveWordProgress({ learner: entry, confirmationRequired: true }).review, "none");
+});
+check("a supervisor cannot decide a Practising claim", () =>
+  assert.throws(() => decideApproval({ currentLearner: { state: "practising", at: NOW, byPersonId: "p1" }, review: "confirmed", byPersonId: "p9", atIso: LATER }), /no claim to decide/));
 check("a non-numeric entry key is dropped rather than decoded", () =>
   assert.deepEqual(Object.keys(decodeLaneDocument({ lane: "learner", entries: { 3: { s: "a" }, "__proto__x": { s: "a" } } }).entries), ["3"]));
 check("an encoded document round-trips through decode", () => {

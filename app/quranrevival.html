@@ -3062,12 +3062,16 @@
   .word-card-progress { margin-top: 0.6rem; padding-top: 0.55rem; border-top: 1px solid var(--card-line); }
   .word-progress-heading { margin: 0 0 0.35rem; font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--card-text-muted); }
   .word-progress-states, .word-progress-decide { display: grid; gap: 0.35rem; }
-  .word-progress-states { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .word-progress-states { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  /* Four labels do not fit one row on a narrow phone: a deliberate 2 x 2 grid, never a ragged wrap. */
+  @media (max-width: 400px) { .word-progress-states { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .word-progress-decide { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 0.4rem; }
   .word-card-progress button { min-height: 40px; min-width: 0; padding: 0.5rem 0.4rem; font-size: 0.85rem; line-height: 1.15; border: 1px solid var(--card-line); border-radius: 0.35rem; background: var(--card-bg-inset); color: var(--card-heading); cursor: pointer; }
   /* aria-pressed is the selected state, so the colour follows the attribute
      rather than a separate class the two could drift apart on. */
   .word-card-progress button[aria-pressed="true"] { background: var(--card-button-pressed-bg); color: var(--card-button-pressed-text); border-color: var(--card-button-pressed-bg); font-weight: 700; }
+  /* Owner, 3 Oct 2026: a pressed stage wears its wheel-legend colour (stageColourStyle() sets the variables). */
+  .word-progress-states button[aria-pressed="true"] { background: var(--stage-bg, var(--card-button-pressed-bg)); color: var(--stage-fg, var(--card-button-pressed-text)); border-color: var(--stage-edge, var(--card-button-pressed-bg)); }
   .word-card-progress button:disabled { opacity: 0.45; cursor: default; }
   .word-progress-decide button { background: var(--card-button-pressed-bg); color: var(--card-button-pressed-text); border-color: var(--card-button-pressed-bg); }
   .word-progress-decide button[data-word-progress-decide="returned"] { background: var(--card-bg-inset); color: #8a3b16; border-color: #d8a98a; }
@@ -14746,6 +14750,7 @@
         // differently on two screens.
         stateNotStarted: statusLabel("not_started"),
         stateLearning: statusLabel("learning"),
+        statePractising: statusLabel("practising"),
         stateAchieved: statusLabel("achieved"),
         awaitingReview: t("Waiting to be checked"),
         reviewConfirmed: t("Checked and confirmed"),

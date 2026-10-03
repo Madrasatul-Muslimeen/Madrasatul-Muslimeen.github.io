@@ -100,7 +100,7 @@ export function computeArabicCoverage({ scopeOccurrenceIds, views, label = null 
     if (view.countsAsKnown) { counts.known++; continue; }
     if (view.awaitingReview) { counts.awaitingReview++; continue; }
     if (view.review === "returned") { counts.returned++; continue; }
-    if (view.state === "learning") { counts.learning++; continue; }
+    if (view.state === "learning" || view.state === "practising") { counts.learning++; continue; }
     counts.notStarted++;
   }
   const total = scope.size;

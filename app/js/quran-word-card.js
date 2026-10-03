@@ -6,6 +6,7 @@ import { QURAN_TOTAL_WORD_COUNT, percentRounded } from "./quran-word-total.js";
 import { arabicToBuckwalter } from "./buckwalter.js";
 import { partName, partMeaning, PART_KINDS, FORM_NAMES, STEM_NAMES, DERIV_NAMES, DERIVED_GROUP_LABELS, orderDerivedForms } from "./word-grammar-tables.js";
 import { depthSectionsHtml } from "./word-card-depth.js";
+import { stageColourStyle } from "./ayah-action-sheet.js";
 
 export const WORD_CARD_LEVELS = Object.freeze(["wbw", "basic", "depth"]);
 
@@ -127,6 +128,7 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   progressHeading: "Word progress",
   stateNotStarted: "Not started",
   stateLearning: "Learning",
+  statePractising: "Practising",
   stateAchieved: "Achieved",
   awaitingReview: "Waiting to be checked",
   reviewConfirmed: "Checked and confirmed",
@@ -377,7 +379,7 @@ function progressBlock(progress, authority, coverage, text, formatNumber, wbw = 
   if (progress.loaded === false) {
     return `<div class="word-card-progress" data-word-progress><p class="word-progress-state">${escapeHtml(progress.loading ? text.progressLoading : text.progressUnknown)}</p></div>`;
   }
-  const stateLabel = { not_started: text.stateNotStarted, learning: text.stateLearning, achieved: text.stateAchieved };
+  const stateLabel = { not_started: text.stateNotStarted, learning: text.stateLearning, practising: text.statePractising, achieved: text.stateAchieved };
   const reviewLine = progress.awaitingReview
     ? text.awaitingReview
     : progress.review === "confirmed"
@@ -385,7 +387,7 @@ function progressBlock(progress, authority, coverage, text, formatNumber, wbw = 
       : progress.review === "returned"
         ? (progress.returnNote ? String(text.reviewReturned).replace("{note}", progress.returnNote) : text.reviewReturnedNoNote)
         : null;
-  const stateButton = (state) => `<button type="button" data-word-progress-state="${state}" aria-pressed="${progress.state === state}"${authority?.mayClaim ? "" : " disabled"}>${escapeHtml(stateLabel[state])}</button>`;
+  const stateButton = (state) => `<button type="button" data-word-progress-state="${state}" aria-pressed="${progress.state === state}" style="${stageColourStyle(state)}"${authority?.mayClaim ? "" : " disabled"}>${escapeHtml(stateLabel[state])}</button>`;
   const decisions = authority?.mayDecide && progress.state === "achieved"
     ? `<div class="word-progress-decide">
         <button type="button" data-word-progress-decide="confirmed">${escapeHtml(text.confirm)}</button>
@@ -403,7 +405,7 @@ function progressBlock(progress, authority, coverage, text, formatNumber, wbw = 
   // longer a second control offering the same decision twice.
   return `<div class="word-card-progress" data-word-progress>
     <h3 class="word-progress-heading">${escapeHtml(text.progressHeading)}</h3>
-    <div class="word-progress-states" role="group" aria-label="${escapeHtml(text.progressHeading)}">${stateButton("not_started")}${stateButton("learning")}${stateButton("achieved")}</div>
+    <div class="word-progress-states" role="group" aria-label="${escapeHtml(text.progressHeading)}">${stateButton("not_started")}${stateButton("learning")}${stateButton("practising")}${stateButton("achieved")}</div>
     ${reviewLine ? `<p class="word-progress-state" data-word-progress-review>${escapeHtml(reviewLine)}</p>` : ""}
     ${authority && !authority.mayClaim ? `<p class="word-progress-state" data-word-progress-blocked>${escapeHtml(text.progressNotAllowed)}</p>` : ""}
     ${decisions}
