@@ -20,8 +20,13 @@ Read the live state yourself, because it moves on after this was written:
 - `claude.yml` runs;
 - the "Active Architect session" line on #159.
 
-**Updated 3 Oct 2026, ~04:00 UTC, by session `session_01BRPbcWQzkbfVcsLgZFpEsJ`** (the Active Architect on #159 since 03:12 UTC):
-- **`main` is at v09.48.** The Word card rebuild is under way, 7 rounds (spec §3).
+**Updated 3 Oct 2026, ~05:15 UTC, by session `session_01BRPbcWQzkbfVcsLgZFpEsJ`** (the Active Architect on #159 since 03:12 UTC):
+- **`main` is at v09.49.** The Word card rebuild is under way, 7 rounds (spec §3).
+- **Round 2 (WbW tab and header), done: v09.49 (#504, PR #507).**
+  - The Builder's measurements passed, but the screenshot beside the demo showed dark boxes and pale colours. The Architect's review commit set the facts and part boxes to the demo's light cards and strong colours.
+  - **Always put the real card beside the demo.**
+  - `scratchpad/_shot-wbw.mjs` (not committed) took the shots; it reuses the suite's `openWord()`.
+- **Round 3 (Basic tab): issue #508**, dispatched about 05:12 UTC. Its review check-in is at 06:13 UTC.
 - **Round 1 (data), done: v09.48 (#501, PR #502), plus PR #503 (each part's person, `pp`, and `partMeaning()`).** It was built by the Architect, because it needed the Corpus file and Wiktionary.
   - `tools/quran-data-pull/build-word-features.mjs` writes:
     - `output/word-features/` (on demand);
@@ -32,8 +37,7 @@ Read the live state yourself, because it moves on after this was written:
   - The suite is `word-features-data` (27/0).
   - To re-run: fetch the Corpus file (handover §2), then `node tools/quran-data-pull/build-word-features.mjs <file>`.
 - **The review page for the Owner** (part names and Form sentences): https://claude.ai/artifact/N4Caa9YnBPqqWGFr3R89oS. It is generated from the tables file, so it shows what the app will print.
-- **Round 2 (WbW tab and header): issue #504**, dispatched to the Builder about 03:29 UTC. A review check-in is set for 04:30 UTC.
-  - The 🔍 button is left out until round 6.
+- The 🔍 button is left out until round 6.
 - **The red suite is fixed** (PR #505): `quran-word-progress-rendered` was stale. The extra reads were:
   - the Read chunk (#472);
   - one total per level (decision 58);
