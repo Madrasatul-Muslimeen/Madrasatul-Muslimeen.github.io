@@ -19358,3 +19358,12 @@ The Owner, 3 Oct 2026, with a tablet photo: "Place them on edges".
 - On a **tablet** (581–720 pixels wide), the six corner buttons (Wheel / Legend / Unit, Read, Choose a Unit, Know Your Status) now stand 4 pixels from the **screen's** edges, not the wheel's box. On the Owner's tablet they had sat about 40 pixels in, and Choose a Unit covered a number on the wheel.
 - Phones and computers look exactly as before.
 - **Checks**: tablet-wheel-browser 74/0 (with a new pushed-in case), read-contents 248/0, landing-drawers 274/0, phone-width-overflow 217/0, behaviour 1004/4 (sandbox: 22g×3, 31e).
+
+## v09.60 — 3 Oct 2026 — Approach names on Know Your Status's wheel; the āyah picker's Bismillah
+
+Architect fixes from the queue in the 3 Oct session prompt (items 2 and 3), no new authority needed.
+
+- **Know Your Status:** its wheel opens on **All units**, and that view now prints each Approach's short name along its slice, as the landing wheel does, while the Names switch is on. It had been drawn without them since All units was added (#425), against #385's rule that every Approach wheel shows the names.
+- **Study options → Āyah:** with Al-Fātiḥah's count on (decision 55), the āyah picker's first choice is the word **Bismillah**, which the number-sized box cut at every screen width. For Al-Fātiḥah only, the box is now wide enough for it (English and Bangla); every other surah keeps the same box as before.
+- **Checks repaired** (each updated in place with its reason, each mutation-proven): `quran-word-card.mjs` 37/0 (the Basic checks now ask Depth, where round 3 moved the forms list, and the root reads "س م و" as the demo prints it); `ayah-action-sheet-boundary` 54/0 (round 6's search row and #482's Bismillah guard); `approach-short-names-browser` 70/0 (the real fix above).
+- **Measured**: panel.mjs 0 problems in English and in Bangla (was 32 in English); fatiha-count 136/0, fatiha-count-browser exit 0, quran-my-status-browser 248/0, phone-width-overflow 217/0, behaviour 1007/1 (sandbox-only 31e).

@@ -422,6 +422,15 @@
      specificity (0,2,1), so source order is the only thing that makes this one
      win -- this page's own most-repeated CSS trap. */
   .opt-cell-num > select { padding-left: 0.1rem; padding-right: 0.1rem; }
+  /* 3 Oct 2026 -- the āyah picker cut "Bismillah" at every width (panel.mjs:
+     24px usable, 53px needed): with Al-Fātiḥah's count on (decision 55) its
+     first option is a WORD, not a number. Only then, the cell sizes to its
+     longest option; the surah picker beside it is showing "Al-Faatiha", the
+     shortest name it ever shows, so the row has the room. Every other surah
+     keeps the number-sized cell above, to the pixel. The id outranks
+     `.opt-cell-num`'s !important class rule only because both are !important
+     and this one is more specific. */
+  #ayahSelectControl.opt-cell-word { flex: 0 0 6rem !important; }
   /* One shared control height, so a text input and a <select> sitting in
      neighbouring columns line up instead of missing each other by 2px. */
   .opt-cell > select, .opt-cell input[type="text"], .opt-jump button { height: 1.85rem; }
@@ -8521,6 +8530,8 @@
       ayahSelect.innerHTML = Array.from({ length: currentSurahData.ayahCount }, (_, i) => i + 1)
         .map((n) => `<option value="${n}">${ayahLabelFor(currentSurahNum, n)}</option>`)
         .join("");
+      // A word option (Al-Fātiḥah's "Bismillah") needs a wider cell than a number.
+      document.getElementById("ayahSelectControl")?.classList.toggle("opt-cell-word", fatihaCountApplies(currentSurahNum, fatihaOn()));
     }
     /** A stored ayah as the reader's own count draws it: one entry, or two for
         Al-Fātiḥah's internal 1:7 (see fatiha-count.js). */
@@ -10728,7 +10739,13 @@
           };
         }));
         const numbers = quranTrackables.map((tr, i) => ({ angle: i * anglePer + (anglePer - gap) / 2, text: num(approachNo(tr)) }));
-        wheelHtml = renderRingWheel(rings, { centerLabel, centerSub, numbers });
+        // Issue #385: every wheel that draws Approach slices prints their short
+        // names while Names is on. The All-units view (#425) came later and was
+        // drawn without them; the same names line as the landing ring wheel.
+        const names = getWheelNames()
+          ? quranTrackables.map((tr, i) => ({ angle: i * anglePer + (anglePer - gap) / 2, arcDeg: anglePer - gap, text: wheelShortLabel(tr) }))
+          : null;
+        wheelHtml = renderRingWheel(rings, { centerLabel, centerSub, numbers, names });
       } else {
         const items = quranTrackables.map((trackable) => {
           const name = langText(trackable.name, getAppLang(), trackable.id);
