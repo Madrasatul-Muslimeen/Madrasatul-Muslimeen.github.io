@@ -94,6 +94,9 @@ for (const lang of ["en", "bn"].filter((l) => !only("lang") || only("lang") === 
     let c = await conj(page);
     check(`${L}: 2:102:35 has the section, third in order, closed`, c && !c.open && JSON.stringify(c.order.slice(0, 3)) === '["root","sarf","conj"]', JSON.stringify(c?.order));
     check(`${L}: icon ت and title`, c && c.ico === "ت" && c.title === (lang === "bn" ? "ক্রিয়া-রূপান্তর" : "Verb Conjugation"), c?.title);
+    // Architect review: the demo's title carries the Arabic name too.
+    const arTitle = await page.evaluate(() => document.querySelector('[data-word-card-sec="conj"] [data-word-card-acc-ar]')?.textContent ?? "");
+    check(`${L}: the title also says تَصْرِيفُ الْفِعْل`, nfc(arTitle).includes(nfc("تَصْرِيفُ الْفِعْل")), arTitle);
     await page.evaluate(() => { document.querySelector('[data-word-card-sec="conj"]').open = true; });
     await page.waitForTimeout(300);
     if (SHOTS) {
@@ -118,8 +121,9 @@ for (const lang of ["en", "bn"].filter((l) => !only("lang") || only("lang") === 
     check(`${L}: pronouns in Arabic first row هُوَ, last نَحْنُ; English/Bangla small text`,
       nfc(T.pres.rows[0].pr) === nfc("هُوَ") && nfc(T.pres.rows[13].pr) === nfc("نَحْنُ") && T.pres.rows[0].small === (lang === "bn" ? "সে" : "he") && T.pres.rows[13].small === (lang === "bn" ? "আমরা" : "we"), T.pres.rows[0].small);
     check(`${L}: leads show the 3MS form`, nfc(T.past.lead) === nfc("الْمَاضِي (تَعَلَّمَ)") && nfc(T.pres.lead) === nfc("الْمُضَارِع (يَتَعَلَّمُ)") && nfc(T.imp.lead) === nfc("الْأَمْر (تَعَلَّمْ)"), `${T.past.lead} | ${T.pres.lead} | ${T.imp.lead}`);
-    check(`${L}: present heading carries the Dictionary meaning in brackets; past and command do not invent one`,
-      /\(.+\)/.test(T.pres.h4) && !/\(/.test(T.past.h4) && !/\(/.test(T.imp.h4), `${T.past.h4} | ${T.pres.h4} | ${T.imp.h4}`);
+    // Architect review: this verb's meaning is "to learn (something)", which already has brackets, so it is set off with a dot.
+    check(`${L}: present heading carries the Dictionary meaning, never in nested brackets; past and command do not invent one`,
+      T.pres.h4.includes("to learn") && !/\([^)]*\(/.test(T.pres.h4) && !/\(/.test(T.past.h4) && !/\(/.test(T.imp.h4), `${T.past.h4} | ${T.pres.h4} | ${T.imp.h4}`);
     check(`${L}: prefix purple, ending orange`, p3mp?.pCol === "rgb(124, 58, 237)" && p3mp?.eCol === "rgb(194, 65, 12)", `${p3mp?.pCol} ${p3mp?.eCol}`);
     check(`${L}: first line names Form V and the spaced root ع ل م`, lang === "bn" ? c.text.includes("ফর্ম ৫") && c.text.includes("ع ل م") : c.text.includes("Form V of") && c.text.includes("ع ل م"), c.text.slice(0, 120));
     check(`${L}: first line is tagged as a grammar rule`, c.lines[0]?.[0] === "rule");
@@ -145,6 +149,7 @@ for (const lang of ["en", "bn"].filter((l) => !only("lang") || only("lang") === 
     const k = c?.tables.pres?.rows[6];
     check(`${L}: 2:102:34 present 2MS تَكْفُرُ is gold`, k && k.here && nfc(k.form) === nfc("تَكْفُرُ"), k?.form);
     check(`${L}: 2:102:34 names the jussive and the word's own form تَكْفُرْ`, k?.mood && nfc(k.mood).includes(nfc("تَكْفُرْ")) && k.mood.includes(lang === "bn" ? "মাজযূম" : "jussive"), k?.mood);
+    check(`${L}: 2:102:34's In-this-āyah form has no pause mark (the āyah text has تَكْفُرْ ۖ)`, k?.mood && !/[\u06D6-\u06ED]/.test(k.mood), k?.mood);
     check(`${L}: I9 -- still one request over two verbs`, verbReq.length === 1, String(verbReq.length));
 
     // 2:8:4 يَقُولُ -- weak root.
@@ -157,7 +162,7 @@ for (const lang of ["en", "bn"].filter((l) => !only("lang") || only("lang") === 
     check(`${L}: 2:8:4 says why, tagged needs-a-source`, c && c.lines.length === 1 && c.lines[0][0] === "needs" && c.lines[0][1].includes(lang === "bn" ? "দুর্বল অক্ষর" : "weak letter"), JSON.stringify(c?.lines));
     check(`${L}: I9 -- still one request`, verbReq.length === 1, String(verbReq.length));
 
-    // A passive verb: 2:102:? is not needed; use 2:183:2 كُتِبَ (passive).
+    // A passive verb: 2:4:4 أُنزِلَ.
     await openWord(page, 2, 4, 4);
     await depth(page);
     await page.waitForSelector('[data-word-card-sec="conj"]', { timeout: 5000 }).catch(() => {});
@@ -166,9 +171,9 @@ for (const lang of ["en", "bn"].filter((l) => !only("lang") || only("lang") === 
     c = await conj(page);
     if (c && c.passive) {
       const golds = Object.values(c.tables).flatMap((t) => t.rows).filter((r) => r.here).length;
-      check(`${L}: 2:183:2 (passive) has the note and no gold row`, golds === 0 && c.text.includes(lang === "bn" ? "কর্মবাচ্য" : "passive"), String(golds));
+      check(`${L}: 2:4:4 (passive) has the note and no gold row`, golds === 0 && c.text.includes(lang === "bn" ? "কর্মবাচ্য" : "passive"), String(golds));
     } else {
-      check(`${L}: 2:183:2 (passive) has the note and no gold row`, false, JSON.stringify(c && { passive: c.passive, lines: c.lines }));
+      check(`${L}: 2:4:4 (passive) has the note and no gold row`, false, JSON.stringify(c && { passive: c.passive, lines: c.lines }));
     }
     await ctx.close();
 

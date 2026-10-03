@@ -120,11 +120,13 @@ function line(kind, lang, body, cls = "") {
 
 const SECTIONS = ["root", "sarf", "conj", "nahw", "choice", "classical"];
 const ICONS = { root: "ر", sarf: "ص", conj: "ت", nahw: "ن", choice: "≠", classical: "ل" };
+// The demo names the conjugation section in Arabic too (#conjAcc).
+const TITLES_AR = { conj: "تَصْرِيفُ الْفِعْل" };
 const TITLES = { root: "secRoot", sarf: "secSarf", conj: "secConj", nahw: "secNahw", choice: "secChoice", classical: "secClassical" };
 
 function accordion(key, lang, open, body) {
   return `<details class="word-card-acc" data-word-card-sec="${key}"${open ? " open" : ""}>` +
-    `<summary><span class="word-card-acc-ico" aria-hidden="true">${ICONS[key]}</span><span class="word-card-acc-t">${esc(pick(TITLES[key], lang))}</span></summary>` +
+    `<summary><span class="word-card-acc-ico" aria-hidden="true">${ICONS[key]}</span><span class="word-card-acc-t">${esc(pick(TITLES[key], lang))}</span>${TITLES_AR[key] ? ` <span class="word-card-acc-ar" dir="rtl" lang="ar" data-word-card-acc-ar>· ${TITLES_AR[key]}</span>` : ""}</summary>` +
     `<div class="word-card-acc-body">${body}</div></details>`;
 }
 
@@ -395,12 +397,14 @@ function conjSection(word, features, ctx) {
   const out = [line("rule", lang, `${esc(fill(pick("conjRule", lang), { n: formLabel, root: "\u0000" })).replace("\u0000", AR(rootAr))} <span class="word-card-m">${esc(pick("conjHelp", lang))}</span>`)];
   const kind = CONJ_TENSE[features.tense];
   const here = kind && !features.pass
-    ? { kind, pgn: PGN_ALIASES[features.pgn] || features.pgn, mood: features.tense === "IMPF" ? features.mood || "IND" : "IND", word: word.arabic }
+    ? { kind, pgn: PGN_ALIASES[features.pgn] || features.pgn, mood: features.tense === "IMPF" ? features.mood || "IND" : "IND", word: String(word.arabic ?? "").replace(/^\u06DE\s*/, "").replace(/\s+[\u06D6-\u06ED]+/g, "").trim() }
     : null;
   if (features.pass) out.push(`<p class="word-card-dnote" data-word-card-conj-passive>${esc(pick("conjPassive", lang))}</p>`);
   // Only the present has a Dictionary meaning to give (the Dictionary word is the present form); the other two get none rather than an invented one.
   const meaning = ctx.dictionaryLookup?.(lemma)?.m;
-  const h4 = (key, gloss) => `${esc(pick(key, lang))}${gloss ? ` <b lang="en">(${esc(gloss)})</b>` : ""}`;
+  // A meaning that already carries brackets ("to learn (something)") is set off
+  // with a dot, so the heading never reads "Present (to learn (something))".
+  const h4 = (key, gloss) => `${esc(pick(key, lang))}${!gloss ? "" : /[()]/.test(gloss) ? ` <b lang="en">· ${esc(gloss)}</b>` : ` <b lang="en">(${esc(gloss)})</b>`}`;
   const unknown = `<div class="word-card-cj word-card-cj-unknown" data-word-card-conj-unknown><p class="word-card-dnote">${esc(pick("conjUnknownVowel", lang))}</p></div>`;
   const tables = [
     result.pastKnown ? conjTable("past", result.past, h4("conjPast"), ctx, here, entry) : unknown,
