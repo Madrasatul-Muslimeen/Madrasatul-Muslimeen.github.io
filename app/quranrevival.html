@@ -3133,6 +3133,15 @@
      untouched. :not(.playing) keeps the playing highlight clearly stronger. */
   .hifz-word.is-known-word:not(.playing), button.wbw-word-clickable.is-known-word, .ayah-word-clickable.is-known-word { background-color: rgba(46,125,50,0.13); border-radius: 0.25em; }
   [data-card-look="night"] .hifz-word.is-known-word:not(.playing), [data-card-look="night"] button.wbw-word-clickable.is-known-word, [data-card-look="night"] .ayah-word-clickable.is-known-word { background-color: rgba(129,199,132,0.16); }
+  /* Owner, 3 Oct 2026 -- the "Unknown" side of the Mark words switch: a light
+     amber, so a reader can always tell which of the two is showing. */
+  .hifz-word.is-unknown-word:not(.playing), button.wbw-word-clickable.is-unknown-word, .ayah-word-clickable.is-unknown-word { background-color: rgba(214,140,20,0.18); border-radius: 0.25em; }
+  [data-card-look="night"] .hifz-word.is-unknown-word:not(.playing), [data-card-look="night"] button.wbw-word-clickable.is-unknown-word, [data-card-look="night"] .ayah-word-clickable.is-unknown-word { background-color: rgba(255,193,94,0.20); }
+  .mark-words-row { display: grid; gap: 0.35rem; margin-top: 0.5rem; }
+  .mark-words-title { font-weight: 700; font-size: 0.9rem; }
+  .mark-words-seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.35rem; }
+  .mark-words-seg button { min-height: 40px; min-width: 0; padding: 0.25rem 0.3rem; border-radius: 6px; font-size: 0.85rem; overflow-wrap: anywhere; }
+  .mark-words-seg button[aria-pressed="true"] { background: var(--gold, #c9a24a); color: #1c2a46; border-color: var(--gold, #c9a24a); font-weight: 700; }
   /* Issue #188 -- a bigger invisible TAP zone, not a bigger visible word.
      Mushaf words sit only 0.12em apart (the line's own `gap`, print-accurate
      and not to be widened -- see the .playing comment just below), measured
@@ -5394,6 +5403,21 @@
           <div class="unit-prompt-ticks">
             <label id="endOfUnitPromptControl"><input type="checkbox" id="endOfUnitPromptToggle" checked /> End-of-unit prompt</label>
           </div>
+          <!-- Owner, 3 Oct 2026: "Enable a switch between known/unknown word
+               marking (whatever user chooses). Marked words should be always
+               less." Its own row and class, not .reading-ticks (that class
+               means the ways of drawing the text, and Mushaf greys them; the
+               marks show on the Mushaf too). Demo:
+               https://claude.ai/artifact/N6iuWKx4Rg5uNNy1RAr5kD -->
+          <div class="mark-words-row" id="markWordsControl">
+            <span class="mark-words-title" id="markWordsTitle">Mark words</span>
+            <div class="mark-words-seg" role="group" aria-labelledby="markWordsTitle">
+              <button type="button" data-mark-words-mode="fewer" aria-pressed="true">Fewer (auto)</button>
+              <button type="button" data-mark-words-mode="known" aria-pressed="false">Known</button>
+              <button type="button" data-mark-words-mode="unknown" aria-pressed="false">Unknown</button>
+            </div>
+            <p class="opt-note" id="markWordsNote" data-mark-words-note></p>
+          </div>
           <div class="row" id="wbwLangControl" style="display:none;">
             <div><label for="wbwLangSelect">Word by Word language</label><select id="wbwLangSelect">
               <option value="auto">Follow translation language</option>
@@ -5853,6 +5877,7 @@
       getExploreQuranView, setExploreQuranView,
       getWheelLook, setWheelLook, getWheelShow, setWheelShow, getWheelNames, setWheelNames,
       getColourWordParts, setColourWordParts,
+      getMarkWordsMode, setMarkWordsMode, markWordsShows,
       getMushafTajweedFontOn, setMushafTajweedFontOn,
       getEndOfUnitPromptOn, setEndOfUnitPromptOn,
       getFatihaBismillahUnnumbered, setFatihaBismillahUnnumbered,
@@ -14397,6 +14422,50 @@
       return ["readView", "noteView"].map((id) => document.getElementById(id)).filter((r) => r && !r.hidden)
         .flatMap((r) => [...r.querySelectorAll(KNOWN_WORD_SELECTOR)]);
     }
+    // Owner, 3 Oct 2026 -- the Mark words switch: the same reads, but the
+    // tint goes on the known words OR on the words still to learn.
+    function setUnknownWordMark(el, unknown) {
+      if (el.classList.contains("is-unknown-word") === unknown) return;
+      el.classList.toggle("is-unknown-word", unknown);
+      if (unknown) {
+        el.dataset.unknownBaseName = el.getAttribute("aria-label") ?? el.textContent.trim();
+        el.setAttribute("aria-label", `${el.dataset.unknownBaseName} — ${t("still to learn")}`);
+      } else {
+        if (el.dataset.unknownBaseName !== undefined) {
+          if (el.dataset.unknownBaseName) el.setAttribute("aria-label", el.dataset.unknownBaseName);
+          else el.removeAttribute("aria-label");
+        }
+        delete el.dataset.unknownBaseName;
+      }
+    }
+    /** The share of the Qur'an this person knows, 0–1: the best of the three
+     *  levels' "You know" totals (a word is marked known when ANY level makes
+     *  it known), or null when the totals cannot be read. Cached by
+     *  getWordTotals(), so this is at most three single-document reads, once,
+     *  and only when a Read or Note view is on screen (never at startup). */
+    async function knownShareForMarks(tenantId, personId) {
+      if (!isWbwTotalPersistenceReady()) return null;
+      try {
+        const levels = meaningGroupsLive() ? ["wbw", "basic", "depth"] : ["wbw"];
+        const totals = await Promise.all(levels.map((level) => getWordTotals(db, { tenantId, personId, level }).catch(() => null)));
+        const best = Math.max(0, ...totals.map((x) => Number(x?.known) || 0));
+        return best / QURAN_TOTAL_WORD_COUNT;
+      } catch { return null; }
+    }
+    function markWordsNoteText(mode, shows, share) {
+      if (mode === "known") return t("Always marks the words you know, in green.");
+      if (mode === "unknown") return t("Always marks the words you still have to learn, in amber.");
+      const pct = share == null ? "" : ` (${num((Math.round(share * 1000) / 10).toFixed(1))}%)`;
+      return (shows === "unknown"
+        ? t("Marks whichever is fewer: you know half or more of the Qur'an, so the words still to learn are marked, in amber.")
+        : t("Marks whichever is fewer: you know less than half of the Qur'an, so the words you know are marked, in green.")) + pct;
+    }
+    function renderMarkWordsControl(shows, share) {
+      const mode = getMarkWordsMode();
+      document.querySelectorAll("[data-mark-words-mode]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.markWordsMode === mode)));
+      const note = document.getElementById("markWordsNote");
+      if (note) note.textContent = markWordsNoteText(mode, shows ?? markWordsShows(mode, share), share);
+    }
     function setKnownWordMark(el, known) {
       if (el.classList.contains("is-known-word") === known) return;
       el.classList.toggle("is-known-word", known);
@@ -14414,13 +14483,14 @@
     function clearKnownWordMarks() {
       knownWordMarksRequest++;
       document.querySelectorAll(".is-known-word[data-word-occurrence]").forEach((el) => setKnownWordMark(el, false));
+      document.querySelectorAll(".is-unknown-word[data-word-occurrence]").forEach((el) => setUnknownWordMark(el, false));
     }
     async function refreshKnownWordMarks() {
       const requestId = ++knownWordMarksRequest;
       const { tenantId, subjectPersonId } = wordProgressActor();
       const initial = knownWordElements();
       if (!initial.length) return;
-      if (!tenantId || !subjectPersonId) { initial.forEach((el) => setKnownWordMark(el, false)); return; }
+      if (!tenantId || !subjectPersonId) { initial.forEach((el) => { setKnownWordMark(el, false); setUnknownWordMark(el, false); }); return; }
       try {
         const bySurah = new Map();
         for (const el of initial) {
@@ -14431,6 +14501,7 @@
         }
         const confirmationRequired = !!(await wordProgressConfirmationRequired(tenantId, subjectPersonId));
         const known = new Set();
+        const realWords = new Set();
         for (const [surahNum, ids] of bySurah) {
           const surahData = await getSurah(surahNum);
           await getSurahProgress(db, { tenantId, personId: subjectPersonId, surah: surahNum });
@@ -14440,10 +14511,26 @@
           const rawViews = new Map(scope.map((occ) => [occ, wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: occ, confirmationRequired })]));
           const views = effectiveViewsForScope(surahData, scope, rawViews, tenantId, subjectPersonId, confirmationRequired);
           for (const occ of scope) if (views.get(occ)?.countsAsKnown) known.add(occ);
+          // Only a real word of the surah may be marked "still to learn"
+          // (never an āyah-end marker or anything else carrying an id).
+          for (const occ of scope) {
+            try {
+              const r = parseQuranWordOccurrenceId(occ);
+              if (surahData?.ayahs?.find((a) => a.ayah === r.ayah)?.words?.some((w) => w.position === r.position)) realWords.add(occ);
+            } catch { /* not a word */ }
+          }
         }
+        const mode = getMarkWordsMode();
+        const share = mode === "fewer" ? await knownShareForMarks(tenantId, subjectPersonId) : null;
+        const shows = markWordsShows(mode, share);
         if (requestId !== knownWordMarksRequest) return;
+        renderMarkWordsControl(shows, share);
         // Re-query: the page may have re-rendered while the reads landed.
-        for (const el of knownWordElements()) setKnownWordMark(el, known.has(el.dataset.wordOccurrence));
+        for (const el of knownWordElements()) {
+          const isKnown = known.has(el.dataset.wordOccurrence);
+          setKnownWordMark(el, shows === "known" && isKnown);
+          setUnknownWordMark(el, shows === "unknown" && !isKnown && realWords.has(el.dataset.wordOccurrence));
+        }
       } catch (error) {
         console.warn("known-word marks unavailable", error); // decoration only: never a write, never blocks reading
       }
@@ -20779,6 +20866,12 @@
       renderStudyScreen();
       renderWheel();
     });
+    renderMarkWordsControl(null, null);
+    document.querySelectorAll("[data-mark-words-mode]").forEach((b) => b.addEventListener("click", () => {
+      setMarkWordsMode(b.dataset.markWordsMode);
+      renderMarkWordsControl(null, null);
+      scheduleKnownWordMarks();
+    }));
     endOfUnitPromptToggle.checked = getEndOfUnitPromptOn();
     endOfUnitPromptToggle.addEventListener("change", () => {
       setEndOfUnitPromptOn(endOfUnitPromptToggle.checked);
