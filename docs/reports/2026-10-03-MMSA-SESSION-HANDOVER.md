@@ -20,60 +20,46 @@ Read the live state yourself, because it moves on after this was written:
 - `claude.yml` runs;
 - the "Active Architect session" line on #159.
 
-**Updated 3 Oct 2026, ~13:00 UTC, by session `session_01BRPbcWQzkbfVcsLgZFpEsJ`** (the Active Architect on #159 since 03:12 UTC):
+**Updated 3 Oct 2026, ~14:10 UTC, by session `session_01BRPbcWQzkbfVcsLgZFpEsJ`** (the Active Architect on #159 since 03:12 UTC). **This session is long: a new session should take over from here.**
 
-- **`main` is at v09.54.**
-  - The Word card rebuild has 6 of 7 rounds done:
-    - **v09.48:** data;
-    - **v09.49:** WbW and header;
-    - **v09.50:** Basic;
-    - **v09.52:** Depth, with Naḥw corrected in review;
-    - **v09.53:** Verb Conjugation (#515), on the engine `app/js/verb-conjugation.js`;
-    - **v09.54:** Search 🔍 (#518), using `word-card-search.js` and `word-forms-index.json`.
-  - **v09.51:** Mark words (decision 60).
-- **In flight:**
-  - **#520, with the Builder (dispatched ~12:10 UTC):** Practising as a 4th Word card stage at all levels (stored code `p`, never counted as known). It also covers every pressed stage button across the app, coloured by `stageColourStyle()` (`ayah-action-sheet.js`, `STATUS_COLORS`). These are the Owner's two messages of 3 Oct. No Rules change is needed: `quranWordProgress` checks no state values. A review check-in fires ~13:30 UTC.
-  - **Branch `approach-list-dots`, built by the Architect, awaiting release as the next version:** the Approach pull-down on the Ayah card and the This page card opens the app's own list. Each Approach with progress gets a solid dot in its stage colour (`openApproachList()` in `ayah-action-sheet.js`; suite `approach-list-dots-browser` 66/0). The demo was https://claude.ai/artifact/5EebZvH59XThuJjuqYxALJ. The colours were changed to `STATUS_COLORS` so they match the stage buttons.
-    - **Lesson:** `withSelectedOption()` matched `<option value="id">` literally, so adding an attribute broke the chosen Approach. It now matches any attributes.
-    - **Lesson:** switching branches while a suite runs spoils the run. Use a `git worktree` for side edits.
-  - **Round 7 (PC boxes):** the issue is drafted in the scratchpad (`issue-r7.md`). Update it for 4 stage buttons and their colours, then dispatch after #520.
-  - **Tablet wheel demo**, for the Owner (https://claude.ai/artifact/EMZKfW6LKkxhFyoLpgE8Dh): at about 600px wide, the three gold buttons go to the corners, Wheel / Legend / Unit to the top-left, and one resize grip. The wheel grows from 533 to 587px. **Waits on the Owner's "go".**
-- **Decision 61:** the part names and Form sentences are accepted, the Basic order is kept, the "Needs a source" lines are to be built, and the letters come later (keep reminding).
-  - The candidate sources for those lines are in `docs/reports/2026-10-03-needs-a-source-candidates.md`:
-    - **the QAC syntax treebank:** GPL, 42% of words, surahs 1–9 (part) and 59–114;
-    - **OpenITI al-Furūq and al-Mufradāt:** CC BY-NC-SA 4.0 transcriptions of modern editions, credited, non-commercial, share-alike;
-    - **`irab.tsv`:** no named source, so **do not use**.
-  - **Not built yet.** Data first, by the Architect, then a Builder round for the UI.
-- **Pre-existing, to fix separately:**
-  - the āyah picker's "Bismillah" cut at desktop (panel.mjs);
-  - `ayah-action-sheet-boundary` 52/2, the same on `main`.
-- **How a review is done here:**
-  1. Merge `origin/main` into a local branch.
-  2. Run the suites into a log with their exit codes, from the repo root; check `curl localhost:8080` first.
-  3. Screenshot section by section beside the demo, and LOOK.
-  4. Check Arabic by hand.
-  5. Mutation-prove one check.
-  6. Push to the Builder branch, and open the PR if the Builder could not (401).
-  7. Run `allocate-version.py` from a scratchpad script.
-  8. Merge with `expectedHeadSha`.
-  9. Reset `claude/adoring-edison-cm28vf`.
-  10. Run the three governance checks. Before a merge, brief-integrity and ledger-mutations fail by design.
+- **`main` is at v09.57.** Released today:
+  - **v09.48–v09.54:** Word card rounds 1–6 (data, WbW, Basic, Depth, Verb Conjugation, Search), plus v09.51 Mark words (decision 60).
+  - **v09.55:** the Approach list shows each Approach's progress as a dot in its stage colour. It uses `openApproachList()` in `ayah-action-sheet.js`.
+  - **v09.56:** the tablet landing (581–720px). The wheel takes the screen's width and its six buttons sit in the corners. It uses `tabletWheelLayout()` in `quranrevival.html`, with the suite `tablet-wheel-browser`.
+  - **v09.57:** Practising is the Word card's 4th stage (code `p`, never known), and every pressed stage button takes its `STATUS_COLORS` colour (#520).
+- **In flight: Word card round 7, the PC boxes (#525).** It was dispatched ~14:07 UTC. The review check-in fires at ~15:23 UTC: the trigger belongs to this session, so a new session should re-arm its own.
+  - **Review it the same way:** a local branch merging `origin/main`, suites run from the repo root, screenshots beside the demo, one mutation, then allocate the version, merge, reset `claude/adoring-edison-cm28vf`, and run the 3 governance checks.
+- **Next job: the "Needs a source" lines (decision 61).**
+  - The sources and their licences are in `docs/reports/2026-10-03-needs-a-source-candidates.md`:
+    - **the QAC syntax treebank:** GPL, 42% of words; use it for sentence iʿrāb where covered, and keep "needs a source" elsewhere;
+    - **OpenITI al-Furūq:** near-synonym distinctions;
+    - **OpenITI al-Mufradāt:** classical meanings, with page numbers from the Dāwūdī edition.
+  - The OpenITI files are CC BY-NC-SA 4.0: credit Romanov & Seydi, doi:10.5281/zenodo.3082463, and the edition. They are non-commercial and share-alike, which suits this free app.
+  - **`irab.tsv`: no named source. Do not use.**
+  - **The order of work:** the Architect builds the data files first (a script under `tools/quran-data-pull/`, output loaded on demand), then a Builder round for the UI.
+- **Red on `main` before today, to fix separately (one small round):**
+  - approach-short-names 69/1 ("My Status's wheel prints the 10 names");
+  - `quran-word-card.mjs` (a /سمو/ expectation);
+  - ayah-action-sheet-boundary 52/2;
+  - the āyah picker's "Bismillah" cut at desktop widths (panel.mjs).
+- **Lessons from today:**
+  1. **A suite that reads files from the working tree is spoiled by switching branches mid-run.** Do side edits in a `git worktree`.
+  2. **`git checkout -B <branch>` resets a branch that has commits on it.** One commit was recovered from `git reflog show <branch>`.
+  3. **Adding an attribute to `<option>` broke `withSelectedOption()`**, which matched the option text literally. The existing suites caught it.
+  4. **A Builder suite that runs long must be run per language.** The combined run can hit the time limit with no total printed.
+  5. **The Builder often cannot open its PR (401).** The Architect opens it from the branch.
 - **Sandbox:**
-  - `serve.js` dies on container restart.
-  - Link Playwright first: `mkdir -p /home/user/node_modules && ln -sf /opt/node-tools/node_modules/playwright /home/user/node_modules/ && ln -sf /opt/node-tools/node_modules/playwright-core /home/user/node_modules/`.
+  - `serve.js` dies when the container restarts; check `curl localhost:8080` first.
+  - Link Playwright before the browser suites: `mkdir -p /home/user/node_modules && ln -sf /opt/node-tools/node_modules/playwright /home/user/node_modules/ && ln -sf /opt/node-tools/node_modules/playwright-core /home/user/node_modules/`.
+  - `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`.
 - **Never put the Builder's mention phrase in an issue body.**
 
 ## 1. What waits on the Owner (one line per report)
 
-1. **The order of Basic's derived forms.** The Owner will give it. Until then use
-   the demo's suggested order (spec §1).
-2. **One sentence per verb Form (I–X) and the Arabic part-name table.** Write them
-   in round 1 and show the Owner once for review.
-3. **Sources** for the Depth lines marked "Needs a source": an iʿrāb book,
-   near-synonym distinctions, classical quotations, the al-Mufradāt page index.
-   Only when the Owner wants them.
+Items 1–3 were answered on 3 Oct (decision 61): the Basic order is kept, the part names and Form sentences are accepted, and the "Needs a source" lines are to be built (see section 0).
+
 4. **The two dictionary permission letters**
-   (`docs/reports/2026-10-01-dictionary-permission-letters.md`).
+   (`docs/reports/2026-10-01-dictionary-permission-letters.md`): **"Later. Keep reminding."** The Bangla dictionary meanings wait with them (there is no digital copy).
 5. **The Asmaul Husna poster**: on hold until the Owner sends their fixes
    (decision 50).
 6. Only when they want them:
