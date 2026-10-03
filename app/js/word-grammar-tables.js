@@ -35,6 +35,24 @@ export const SOURCE_TAGS = Object.freeze({
   data: { en: "From the data", bn: "তথ্য থেকে" },
   rule: { en: "Grammar rule", bn: "ব্যাকরণের নিয়ম" },
   needs: { en: "Needs a source", bn: "উৎস প্রয়োজন" },
+  book: { en: "From a book", bn: "বই থেকে" },
+});
+
+/** Decision 61 -- the Bangla name of each Quranic Arabic Corpus relation and
+ *  phrase type (the Corpus's own Arabic and English names come in its
+ *  manifest; the card always keeps the Arabic beside the translation). */
+export const RELATION_BN = Object.freeze({
+  adj: "সিফাত (বিশেষণ)", poss: "মুযাফ ইলাইহি (সম্বন্ধপদ)", pred: "মুবতাদা ও খবর", app: "বদল", spec: "তামঈয (নির্দিষ্টকরণ)",
+  cpnd: "যৌগিক সংখ্যা", subj: "ফায়েল (ক্রিয়ার কর্তা)", pass: "নায়েবে ফায়েল (কর্মবাচ্যের কর্তা)", obj: "মাফউল বিহি (ক্রিয়ার কর্ম)",
+  subjx: "কানা ও তার সমগোত্রীয়ের ইসম", predx: "কানা ও তার সমগোত্রীয়ের খবর", impv: "আদেশ", imrs: "আদেশের জবাব", pro: "নিষেধ",
+  gen: "জার ও মাজরুর", link: "মুতাআল্লিক (সংযুক্তি)", conj: "মাতুফ (সংযোজিত)", sub: "সিলা (অধীন বাক্য)", cond: "শর্ত", rslt: "শর্তের জবাব",
+  circ: "হাল (অবস্থা)", cog: "মাফউল মুতলাক", prp: "মাফউল লিআজলিহি (উদ্দেশ্য)", com: "মাফউল মাআহু (সহযোগী কর্ম)", emph: "তাকিদ (জোর)",
+  intg: "প্রশ্ন", neg: "নেতিবাচক", fut: "ভবিষ্যৎ", voc: "সম্বোধন", exp: "ব্যতিক্রম", res: "সীমাবদ্ধকরণ", avr: "বারণ", cert: "নিশ্চয়তা",
+  ret: "প্রত্যাহার", prev: "বাধাদানকারী", ans: "উত্তর", inc: "সূচনা", sur: "আকস্মিকতা", sup: "অতিরিক্ত", exh: "উৎসাহদান", exl: "ব্যাখ্যা",
+  eq: "সমতা", caus: "কারণ", amd: "সংশোধন", int: "তাফসীর (ব্যাখ্যা)",
+});
+export const PHRASE_BN = Object.freeze({
+  S: "বাক্য", NS: "নামবাচক বাক্য", VS: "ক্রিয়াবাচক বাক্য", CS: "শর্তযুক্ত বাক্য", PP: "জার-মাজরুর বাক্যাংশ", SC: "মাসদারের সমতুল্য অধীন বাক্য",
 });
 export const SOURCE_OF_GROUPING = Object.freeze({ d: "data", w: "data", r: "rule" });
 
