@@ -161,11 +161,19 @@ check("the Qur'an counts are kept per form: يَتَعَلَّمُونَ (presen
   const v = Object.entries(VF).find(([k]) => k.normalize("NFC") === "يَتَعَلَّمُ".normalize("NFC"))[1];
   assert.equal(v.n["IMPF.3MP.IND"], 2);
 });
-check("I9: no app page or module imports the engine or names verb-forms.json yet", () => {
+// Round 5 wired the engine into the Depth tab on purpose, so this check was
+// updated in place (not deleted): it now pins the exact set of files that may
+// name the engine or the data file, and the one place the loader is called.
+check("I9: only the loader and the Depth section name the engine or verb-forms.json; the page loads it from one first-use function", () => {
   const hits = [];
   const walk = (d) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else if (/\.(js|html)$/.test(e.name) && e.name !== "verb-conjugation.js") { const t = fs.readFileSync(p, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, ""); if (/verb-conjugation\.js|verb-forms\.json|verb-occurrences-corpus/.test(t)) hits.push(path.relative(root, p)); } } };
   walk(path.join(root, "app"));
-  assert.deepEqual(hits, []);
+  assert.deepEqual(hits.sort(), ["app/js/quran-word-features.js", "app/js/word-card-depth.js"]);
+  const page = fs.readFileSync(path.join(root, "app/quranrevival.html"), "utf8");
+  assert.equal(page.match(/loadVerbForms\(\)/g).length, 1, "loadVerbForms() is called once");
+  assert.ok(/function ensureVerbForms\(\) \{[^}]*loadVerbForms\(\)/.test(page), "...inside ensureVerbForms");
+  assert.equal(page.match(/ensureVerbForms\(\);/g).length, 1, "ensureVerbForms is called once");
+  assert.ok(/level === "depth" && quranWordCardContext\.wordFeatures\?\.tense\) ensureVerbForms\(\);/.test(page), "...only for a verb on the Depth level");
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);
