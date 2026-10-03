@@ -20,7 +20,14 @@ Read the live state yourself, because it moves on after this was written:
 - `claude.yml` runs;
 - the "Active Architect session" line on #159.
 
-**Updated 3 Oct 2026, ~18:00 UTC (v09.59 released: the tablet wheel's corner buttons on the screen's edges, the Owner's "Place them on edges"; before it v09.58, Word card round 7, the PC boxes, so the seven-round rebuild is COMPLETE; the next job is the Needs-a-source lines; no Builder round is running and no check-in is scheduled), by session `session_01BRPbcWQzkbfVcsLgZFpEsJ`** (the Active Architect on #159 since 03:12 UTC). **This session is long: a new session should take over from here.**
+**Updated 3 Oct 2026, ~21:15 UTC, by session `session_012katd3VGiJEprbqxSEUTbf` (Active Architect on #159 since 20:08 UTC). Supersedes the ~18:00 paragraph below.**
+
+- **`main` is at v09.60** (PR #534): Know Your Status's All-units wheel prints the Approach names; the āyah picker fits "Bismillah" for Al-Fātiḥah (`#ayahSelectControl.opt-cell-word`); `quran-word-card.mjs` 37/0, `approach-short-names-browser` 70/0, `ayah-action-sheet-boundary` 54/0. **Queue items 2 and 3 are done.**
+- **Needs-a-source data is on `main`, no version** (PRs #532, #535): `output/word-syntax/` (Corpus treebank, GPL v3), `output/furuq-index.json` and `output/mufradat/` (OpenITI, CC BY-NC-SA 4.0). Report: `docs/reports/2026-10-03-needs-a-source-data.md`. Suite `needs-a-source-data` 35/0. A review bot's six findings on #532 were all real and are fixed in #535 (threads answered and resolved).
+- **Builder round #533 (the screen for those lines) is running** (run 790, branch `builder/issue-533-run-790`); a review check-in is set for 21:40 UTC. The issue carries a note that `main` moved (node `seg` at index 4).
+- A stray branch `data-review-532` (same commit as #535) could not be deleted from here (403); harmless.
+
+ (v09.59 released: the tablet wheel's corner buttons on the screen's edges, the Owner's "Place them on edges"; before it v09.58, Word card round 7, the PC boxes, so the seven-round rebuild is COMPLETE; the next job is the Needs-a-source lines; no Builder round is running and no check-in is scheduled), by session `session_01BRPbcWQzkbfVcsLgZFpEsJ`** (the Active Architect on #159 since 03:12 UTC). **This session is long: a new session should take over from here.**
 
 - **`main` is at v09.59.** v09.59 (PR #529): on a tablet the corner buttons stand 4px from the SCREEN's edges, measured by `tabletWheelLayout()` into `--tw-l`/`--tw-r` (suite `tablet-wheel-browser` 74/0, with a pushed-in case). Before it (v09.58 = round 7, the PC boxes: two columns from a 62rem card, the Word card window's first size up to 1120px via `initPopupWindow` `defaultMaxWidth`; suite `word-card-pc-boxes-browser`):
   - **v09.48–v09.54:** Word card rounds 1–6 (data, WbW, Basic, Depth, Verb Conjugation, Search), plus v09.51 Mark words (decision 60).

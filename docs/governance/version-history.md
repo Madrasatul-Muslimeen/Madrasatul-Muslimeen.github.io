@@ -703,3 +703,4 @@ total). Allocated by the MMSA Architect.
 09.57: Practising on the Word card; stage buttons in their colours. Allocated by the MMSA Architect.
 09.58: Word card round 7: the two boxes on a computer. Allocated by the MMSA Architect.
 09.59: Tablet wheel: buttons on the screen's edges. Allocated by the MMSA Architect.
+09.60: Approach names on Know Your Status's All-units wheel, the āyah picker's Bismillah, three red suites repaired. Allocated by the MMSA Architect.

@@ -20,8 +20,8 @@
 // Per surah file:
 //   graphs  [{ n: [node...], e: [[relation, dependentIndex, headIndex]...] }]
 //           node, by its first element:
-//             ["w", displayKey|null, piece, tag(, corpusKey)]   a word's piece
-//             ["r", displayKey|null, piece, tag(, corpusKey)]   the same, but a
+//             ["w", displayKey|null, piece, tag, seg(, corpusKey)]   a word's piece
+//             ["r", displayKey|null, piece, tag, seg(, corpusKey)]   the same, but a
 //                    REFERENCE to a word already met in an earlier graph
 //             (corpusKey "s:a:w" is added only when the word did not align,
 //             so the displayed key is null; no graph spans two surahs, which
@@ -33,8 +33,10 @@
 //           (ال) left out, which is how the treebank numbers them; `tag` is
 //           that segment's own part-of-speech tag from the morphology file
 //           (null for the 55 words whose treebank adds an elided piece the
-//           morphology does not have). The piece's spelling is NOT copied:
-//           the app already has each piece's offsets in output/word-segments.
+//           morphology does not have). `seg` is [from, to) in the app's own
+//           segment list for that word (output/word-segments, which splits
+//           off ال and a present-tense prefix), so a piece's spelling comes
+//           from there; null when the piece has no morphology row.
 //           Indices are 0-based positions in `n` (the file's n1 is index 0).
 //   words   { "ayah:position": [graph indices] } for every displayed word
 //           that appears in a graph (as a word or as a reference)
@@ -48,7 +50,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseMorphologyText, resolveWordKeyExact } from "./build-word-segments.mjs";
+import { parseMorphologyText, resolveWordKeyExact, expandRow } from "./build-word-segments.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SURAHS_DIR = path.join(__dirname, "output", "surahs");
@@ -75,7 +77,10 @@ export const RELATIONS = {
   impv: ["أمر", "Imperative", "imperfect verb → imperative particle"],
   imrs: ["جواب أمر", "Imperative result", "result → imperative verb"],
   pro: ["نهي", "Prohibition", "imperfect verb → prohibitive particle"],
-  gen: ["جار ومجرور", "Preposition phrase", "preposition → noun"],
+  // The documentation page prints gen's column as "preposition → noun", but the
+  // treebank's own edges put the NOUN as the dependent (gen(n3 - n2): n3 the
+  // noun, n2 the preposition), so the direction here follows the data.
+  gen: ["جار ومجرور", "Preposition phrase", "noun → preposition"],
   link: ["متعلق", "PP attachment", "PP phrase → verb or noun"],
   conj: ["معطوف", "Coordinating conjunction", "second phrase → first phrase"],
   sub: ["صلة", "Subordinate clause", "subordinate clause → particle"],
@@ -154,6 +159,18 @@ export function parseSyntaxText(text) {
   return graphs;
 }
 
+/** Where non-determiner piece `piece` of a word's rows falls in the
+ *  expandRow() segment list: [from, to). */
+export function segRange(rows, piece) {
+  let at = 0, k = 0;
+  for (const row of rows) {
+    const n = expandRow(row).length;
+    if (row.tag !== "DET") { if (k === piece) return [at, at + n]; k++; }
+    at += n;
+  }
+  return null;
+}
+
 /** The node names must be n1..nK in order, so the index is the number - 1. */
 function checkNumbering(g) {
   g.order.forEach((name, i) => { if (name !== `n${i + 1}`) throw new Error(`node ${name} out of order at ${i}`); });
@@ -212,7 +229,12 @@ async function main() {
         if (!row) missingPiece++;
         const shown = align[n.loc] ?? null;
         if (!shown && n.kind === "w") unaligned++;
-        return shown ? [n.kind, shown, n.piece, row?.tag ?? null] : [n.kind, null, n.piece, row?.tag ?? null, n.loc];
+        // The piece's place in the app's own segment list (output/word-segments,
+        // built with expandRow: the determiner is its own segment and a
+        // present-tense prefix splits off), as [from, to): null for an elided
+        // piece the morphology does not have.
+        const seg = row ? segRange(morph.idx[n.loc], n.piece) : null;
+        return shown ? [n.kind, shown, n.piece, row?.tag ?? null, seg] : [n.kind, null, n.piece, row?.tag ?? null, seg, n.loc];
       }
       if (n.kind === "p") {
         if (!PHRASES[n.tag]) unknown.add(`phrase:${n.tag}`);

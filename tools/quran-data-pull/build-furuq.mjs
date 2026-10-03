@@ -66,10 +66,18 @@ export function splitHeading(heading) {
   if (/^في\s/.test(m[1]) || /وما\s+(يجري|يقرب|يخالف)|وفي\s+الفرق/.test(m[2])) return null;
   const parts = m[2].split(/\s+و(?=\S)/).map((t) => t.replace(/^بين\s+/, "").trim()).filter(Boolean);
   let rest = "";
+  // A heading that runs into its entry does so at «أن …» or after more than
+  // three words; a real comparison of phrases («العالم بالشيء والمحيط به»,
+  // «القادر على الشيء والمالك له») is kept whole.
+  const runOnAt = m[2].search(/\sأن\s/);
+  if (runOnAt > 0) {
+    const cut = splitHeading(`${m[1]}${m[2].slice(0, runOnAt)}`);
+    if (cut) return { terms: cut.terms, rest: m[2].slice(runOnAt + 1).trim(), heading: cut.heading };
+  }
   const terms = parts.map((t, i) => {
     if (rest) return null;
     const words = t.split(/\s+/);
-    if (/^(ال|لل)/.test(words[0]) && words.length > 1) {
+    if (/^(ال|لل)/.test(words[0]) && words.length > 3) {
       rest = words.slice(1).join(" ") + (i < parts.length - 1 ? " و" + parts.slice(i + 1).join(" و") : "");
       return words[0];
     }
@@ -120,7 +128,18 @@ export function parseFuruq(text) {
     }
   }
   close();
-  return entries;
+  // A page break can repeat a heading: the transcription prints the NEXT
+  // heading over a copy of the previous entry's text, then the heading again
+  // with its own text (pp. 184–185: «الأعلى وفوق»). The first copy is dropped
+  // when the very next entry has the same heading and its text repeats the
+  // entry before it.
+  const plainText = (t) => t.replace(/[^\u0621-\u064A]/g, "");
+  return entries.filter((e, i) => {
+    const next = entries[i + 1], prev = entries[i - 1];
+    if (!next || !prev || next.h !== e.h) return true;
+    const head = plainText(e.t).slice(0, 20);
+    return !(head.length >= 12 && plainText(prev.t).includes(head));
+  });
 }
 
 // A term written with ال is a noun (a verb or a particle never takes the
@@ -159,6 +178,9 @@ export function resolveTerm(term, lookups, pos, reviewed = {}) {
   const said = term.match(/^قول(?:ك|نا|هم)\s+(\S+)$/);
   if (said) return resolveTerm(said[1], lookups, pos, reviewed);
   if (/^قول(?:ك|نا|هم)(\s|$)/.test(term)) return null;
+  // A phrase with ال (العالم بالشيء) names its first word, the head noun.
+  const words = term.trim().split(/\s+/);
+  if (words.length > 1 && /^(ال|لل)/.test(words[0])) return resolveTerm(words[0], lookups, pos, reviewed);
   const { byLemma, byLemmaLoose, byForm } = lookups;
   const withAl = /^\s*(ال|لل)/.test(term) && skeleton(term).length > 3;
   const k = stripAl(skeleton(term));
