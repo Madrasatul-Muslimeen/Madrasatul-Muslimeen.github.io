@@ -19275,3 +19275,16 @@ Owner, 3 Oct 2026 (decision 60): "Enable a switch between known/unknown word mar
 - **Fewer (auto)**, the default, marks whichever group is smaller: the known words while you know less than half of the Qur'an, then the words still to learn once you know half or more.
 - Your choice is remembered on this device. Nothing is saved to your records.
 - **Checks**: mark-words-mode-browser 48/0 (new), known-word-marks-browser 122/0, behaviour 1004/4 (sandbox-only) and 4 other suites green.
+
+## v09.52 — 3 Oct 2026 — Word card round 4: the Arabic in Depth tab
+
+Owner (decision 59): "Go, build all three tabs together." Issue #511, PR #513.
+
+- **Arabic in Depth** now opens with three source tags: From the data, Grammar rule, Needs a source. Every line carries one.
+- **Five sections that open and close**; only Root & Word Family is open at first, and a section stays as you left it when you move to the next word:
+  - **Root & Word Family**: the root's family, its meaning (Wiktionary, credited), how often it is used, the other words from this root in the same āyah (tap one to open it), and the dictionary links. Everything the old Depth tab showed is kept here.
+  - **Morphology (Ṣarf)**: the word's pieces, Form, tense, person, voice and mood, and for a regular verb its past, present and verbal noun.
+  - **Grammar in This Āyah (Naḥw)**: what each attached particle does, the verb's mood and its sign, what the ending is, and a comparison with differently-marked verbs in the same āyah.
+  - **Word Choice & Distinctions** and **Classical Arabic Usage**.
+- Review corrections: verbs ending in the feminine-plural nūn or the emphatic nūn are now called built (مَبْنِيّ), a passive verb's ending نَائِبُ فَاعِل, and the ending on كَانَ and its sisters their اسم.
+- **Checks**: word-card-depth-rebuild-browser 231/0 (new), word-card-depth-grammar 8/0 (new), behaviour 1004/4 (sandbox-only) and 8 other suites green.

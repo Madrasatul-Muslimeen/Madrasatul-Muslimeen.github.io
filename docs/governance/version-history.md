@@ -695,3 +695,4 @@ total). Allocated by the MMSA Architect.
 09.49: Word card rebuild round 2 (WbW tab and header). Allocated by the MMSA Architect.
 09.50: Word card rebuild round 3 (Basic tab). Allocated by the MMSA Architect.
 09.51: Mark known or unknown words (decision 60). Allocated by the MMSA Architect.
+09.52: Word card round 4: the Arabic in Depth tab. Allocated by the MMSA Architect.
