@@ -19350,3 +19350,11 @@ Owner (decision 59): "Go, build all three tabs together." Issue #525. This compl
 - The card opens a little wider on a big screen so that Depth's three verb tables still sit side by side; a size you have chosen yourself is kept.
 - On a phone, a tablet and a smaller computer screen the card is exactly as before.
 - **Checks**: word-card-pc-boxes-browser 148/0 in English and in Bangla (new), behaviour 1007/1 (sandbox-only) and 12 other suites green.
+
+## v09.59 — 3 Oct 2026 — Tablet wheel: buttons on the screen's edges
+
+The Owner, 3 Oct 2026, with a tablet photo: "Place them on edges".
+
+- On a **tablet** (581–720 pixels wide), the six corner buttons (Wheel / Legend / Unit, Read, Choose a Unit, Know Your Status) now stand 4 pixels from the **screen's** edges, not the wheel's box. On the Owner's tablet they had sat about 40 pixels in, and Choose a Unit covered a number on the wheel.
+- Phones and computers look exactly as before.
+- **Checks**: tablet-wheel-browser 74/0 (with a new pushed-in case), read-contents 248/0, landing-drawers 274/0, phone-width-overflow 217/0, behaviour 1004/4 (sandbox: 22g×3, 31e).
