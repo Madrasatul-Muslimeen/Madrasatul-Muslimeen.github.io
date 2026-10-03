@@ -19247,3 +19247,12 @@ Owner, 3 Oct 2026 (decision 59): "Go, build all three tabs together." Round 1 of
 - Every Dictionary word now has its place in Basic's derived-form cards (verb by Form, verbal noun, the one who does it, the one it is done to, intensive adjectives, comparative, other nouns), in the demo's order. The 14 forms of ع ل م group exactly as the approved demo shows.
 - The Arabic names of word parts (e.g. حَرْفُ اسْتِئْنَاف, وَاوُ الْجَمَاعَة) and one sentence per verb Form are written in English and Bangla, for the Owner's review.
 - **Checks**: word-features-data 26/0 (new, two mutations caught), the eight governance suites and stub-parity green.
+
+## v09.49 — 3 Oct 2026 — Word card rebuild, round 2: the WbW tab and the header
+
+Owner, 3 Oct 2026 (decision 59): "Go, build all three tabs together." Round 2 of 7 (#504, PR #507).
+
+- The Word card's top line now has a **ROOT box** (the root letters, on a light green card) on every tab, beside the word.
+- The **WbW** tab shows, under the tabs: **Root, Dictionary word and Form** in three boxes (right to left), the English and Bangla meaning and the transliteration on **one bar**, and **one box for each part of the word** (e.g. فَ resumption particle, يَ present-tense prefix, تَعَلَّمُ the verb, ونَ the plural doer ending), each with its Arabic name, its name in your language and what it means.
+- On a phone the top line tightens so nothing overlaps; the part boxes sit two per row.
+- **Checks**: word-card-wbw-rebuild-browser 136/0 (new), behaviour 1007/1 (sandbox-only) and 12 other suites green.
