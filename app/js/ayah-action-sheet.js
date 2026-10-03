@@ -92,10 +92,14 @@ function approachStageButtonsHtml(currentStatusId, disabled = false, canConfirm 
 /** Marks the one <option> whose value is `selectedId` as selected, without asking the caller's buildTrackableOptionsHtml() to know anything about this file's own selection state (I2 -- one source of truth for what Approaches exist, this file only marks which one is picked). A value that isn't present (an archived Approach, a stale id) is left unmarked rather than thrown on. */
 function withSelectedOption(optionsHtml, selectedId) {
   if (!selectedId) return optionsHtml;
-  const marker = `<option value="${selectedId}">`;
-  const idx = optionsHtml.indexOf(marker);
+  // Matches the option however many attributes follow its value (3 Oct 2026:
+  // each option now also carries data-approach-status for the coloured list).
+  const marker = `<option value="${selectedId}"`;
+  let idx = optionsHtml.indexOf(marker);
+  while (idx !== -1 && !/[\s>]/.test(optionsHtml[idx + marker.length] ?? "")) idx = optionsHtml.indexOf(marker, idx + 1);
   if (idx === -1) return optionsHtml;
-  return optionsHtml.slice(0, idx) + `<option value="${selectedId}" selected>` + optionsHtml.slice(idx + marker.length);
+  const at = idx + marker.length;
+  return optionsHtml.slice(0, at) + " selected" + optionsHtml.slice(at);
 }
 
 /**
@@ -155,10 +159,13 @@ export function renderApproachStagePickerHtml({
         <div class="ayah-sheet-item ayah-sheet-select-item">
           <label class="ayah-sheet-select-label" for="${selectId}">🎯 ${escapeHtml(t("Take an Approach"))}</label>
           ${summaryHtml}
+          <div class="gac-approach-pick">
           <select class="ayah-sheet-approach-select" id="${selectId}" data-approach-stage-select aria-label="${escapeHtml(t("Take an Approach"))}">
             <option value="" ${selectedApproachId ? "" : "selected"} disabled hidden>${escapeHtml(t("Choose an Approach…"))}</option>
             ${withSelectedOption(approachOptionsHtml, selectedApproachId)}
           </select>
+          <button type="button" class="gac-approach-pick-btn" data-approach-list-open tabindex="-1" aria-hidden="true"></button>
+          </div>
           ${stageRowHtml}
         </div>`;
 }
@@ -178,6 +185,12 @@ export function wireApproachStagePicker(rootEl, { onApproachPicked, onStageChoic
     if (!approachId) return;
     onApproachPicked?.(approachId);
   });
+  // Owner, 3 Oct 2026 ("this approach list should mark those which are
+  // already had some progress done ... make it with the color of the
+  // progress"): a phone's own pick-list cannot colour its dots, so a tap
+  // opens the app's own list instead. The <select> stays the source of the
+  // value (a keyboard still uses it), and a choice here is a plain change on it.
+  rootEl.querySelector("[data-approach-list-open]")?.addEventListener("click", () => openApproachList(select));
   // Deliberately data-approach-stage-BTN, not just "-stage": the pure-node
   // boundary suite's own DOM stand-in finds elements by a substring regex
   // over the raw HTML, not a real attribute-selector engine, so
@@ -192,6 +205,54 @@ export function wireApproachStagePicker(rootEl, { onApproachPicked, onStageChoic
       onStageChoice?.(approachId, btn.dataset.approachStageBtn);
     });
   });
+}
+
+/** The app's own Approach list: every option of `select`, grouped as its
+ *  optgroups are, each with a dot in its stage's colour (the same colours as
+ *  the stage buttons, STATUS_COLORS). Choosing one sets the select and fires
+ *  its change event -- the existing wiring does the rest; nothing is written. */
+export function openApproachList(select) {
+  document.querySelector("[data-approach-list]")?.remove();
+  const current = select.value;
+  const row = (opt) => {
+    const st = opt.dataset.approachStatus || "";
+    const colour = st && st !== "not_started" && st !== "not_applicable" ? STATUS_COLORS[st] : null;
+    const dot = colour ? ` style="--dot:${colour}"` : "";
+    return `<button type="button" class="gac-list-row" role="radio" aria-checked="${opt.value === current}" data-approach-list-pick="${escapeHtml(opt.value)}"${st ? ` data-approach-list-status="${escapeHtml(st)}"` : ""}>` +
+      `<span class="gac-list-name">${escapeHtml(opt.textContent)}</span><span class="gac-list-dot${colour ? " has-progress" : ""}"${dot} aria-hidden="true"></span></button>`;
+  };
+  const parts = [...select.children].map((el) => el.tagName === "OPTGROUP"
+    ? `<p class="gac-list-group">${escapeHtml(el.label)}</p>${[...el.children].map(row).join("")}`
+    : el.value ? row(el) : "").join("");
+  const legend = ["learning", "practising", "achieved", "mastered"]
+    .map((id) => `<span><i style="--dot:${STATUS_COLORS[id]}"></i>${escapeHtml(statusLabel(id))}</span>`).join("");
+  const wrap = document.createElement("div");
+  wrap.className = "gac-list-overlay";
+  wrap.setAttribute("data-approach-list", "");
+  // The card's colour tokens live under its [data-card-look]; the list sits on
+  // <body>, so it takes the look of the card it was opened from.
+  wrap.dataset.cardLook = select.closest("[data-card-look]")?.dataset.cardLook || "light";
+  wrap.innerHTML = `<div class="gac-list" role="radiogroup" aria-label="${escapeHtml(t("Take an Approach"))}">` +
+    `<div class="gac-list-head"><p>${escapeHtml(t("Take an Approach"))}</p><button type="button" class="gac-list-close" data-approach-list-close aria-label="${escapeHtml(t("Close"))}">✕</button></div>` +
+    `<div class="gac-list-body">${parts}</div><div class="gac-list-legend">${legend}</div></div>`;
+  const close = () => { wrap.remove(); document.removeEventListener("keydown", onKey, true); select.focus({ preventScroll: true }); };
+  const onKey = (e) => { if (e.key === "Escape") { e.stopPropagation(); close(); } };
+  wrap.addEventListener("click", (e) => {
+    const pick = e.target.closest("[data-approach-list-pick]");
+    if (pick) {
+      close();
+      if (select.value !== pick.dataset.approachListPick) {
+        select.value = pick.dataset.approachListPick;
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      return;
+    }
+    if (e.target === wrap || e.target.closest("[data-approach-list-close]")) close();
+  });
+  document.addEventListener("keydown", onKey, true);
+  document.body.append(wrap);
+  (wrap.querySelector('[aria-checked="true"]') ?? wrap.querySelector("[data-approach-list-pick]"))?.focus({ preventScroll: false });
+  return wrap;
 }
 
 /**
