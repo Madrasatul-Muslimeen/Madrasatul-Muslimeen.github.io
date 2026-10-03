@@ -19300,3 +19300,14 @@ Owner (decision 59): "Go, build all three tabs together." Issue #515.
 - Verbs whose root has a weak letter, a hamza or a doubled letter get a plain line instead of a table; a form is never guessed.
 - On a phone the three tables stack.
 - **Checks**: word-card-conjugation-browser 213/0 (new), behaviour 1004/4 (sandbox-only) and 9 other suites green.
+
+## v09.54 — 3 Oct 2026 — Word card round 6: Search 🔍
+
+Owner (decision 59): "Go, build all three tabs together." Issue #518, PR #519.
+
+- A **🔍** button sits beside ‹ at the top of the Word card. It opens a search row inside the card.
+- Type a word **in Arabic** (vowel marks are optional), **its meaning**, or **a place** such as 2:42:8.
+- You see each exact written form with how many times it is in the Qur'an (تَعْلَمُونَ: 54). Tap a form to see its places, then tap a place to open that word.
+- The search row stays open while you move with ‹ ›, and keeps what you typed.
+- The word list loads only when you press Search, so the card opens as fast as before.
+- **Checks**: word-card-search-browser 252/0 (new), word-forms-index-data 13/0 (new), behaviour 1004/4 (sandbox-only) and 8 other suites green.

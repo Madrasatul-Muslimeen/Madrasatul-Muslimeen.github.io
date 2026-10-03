@@ -2840,6 +2840,28 @@
   .word-card-root-box { flex: 0 0 auto; background: #e6f1ec; color: #12332a; border: 1px solid var(--card-line); border-radius: 0.5rem; padding: 0.2rem 0.6rem 0.3rem; text-align: center; min-width: 4.5rem; }
   .word-card-root-box small { display: block; font-size: 0.62rem; letter-spacing: 0.12em; color: #3f6658; font-weight: 700; line-height: 1.3; }
   .word-card-root-box span { display: block; font-family: var(--quran-font); font-size: 1.5rem; font-weight: 700; line-height: 1.3; white-space: nowrap; }
+  /* Round 6 -- the 🔍 tile (same square as ‹ ›, gold-ringed as in the demo's
+     .btn.new; pressed = filled) and the Search row it opens under the word. */
+  .quran-word-card header button.word-card-search-btn { border-color: #c9a24a; box-shadow: 0 0 0 2px rgba(201, 162, 74, 0.35); font-size: 1rem; }
+  .quran-word-card header button.word-card-search-btn[aria-pressed="true"] { background: #c9a24a; color: #1c2a46; }
+  /* Colours come from the card-look tokens, so the row reads on both the Night and the Light card. */
+  .word-card-search { display: grid; gap: 0.5rem; margin: 0.5rem 0; padding: 0.6rem; border: 1px solid var(--card-line); border-radius: 0.4rem; background-color: var(--card-bg-inset); color: var(--card-text); min-width: 0; }
+  .word-card-search label { font-size: 0.82rem; color: var(--card-text-muted); }
+  .word-card-search-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.4rem; }
+  .word-card-search-row input { min-width: 0; height: 40px; box-sizing: border-box; border: 1px solid var(--card-line); border-radius: 0.4rem; background-color: var(--card-bg-inset); color: var(--card-text); padding: 0 0.6rem; font-size: 1rem; }
+  .word-card-search-go { height: 40px; padding: 0 0.9rem; border: 0; border-radius: 0.4rem; background: #c9a24a; color: #1b2a41; font-weight: 700; font-size: 0.95rem; cursor: pointer; }
+  .word-card-search-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; font-size: 0.78rem; color: var(--card-text-muted); }
+  .word-card-search-chips button { border: 1px dashed var(--card-line); background: none; color: var(--card-link); border-radius: 0.8rem; padding: 0.15rem 0.6rem; cursor: pointer; font: inherit; }
+  .word-card-search-status { font-size: 0.82rem; color: var(--card-text-muted); margin: 0; min-height: 1.2em; }
+  .word-card-search-results { display: grid; gap: 0.4rem; max-height: 300px; overflow: auto; }
+  .word-card-search-res { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0.6rem; align-items: center; text-align: start; border: 1px solid var(--card-line); background-color: var(--card-bg-inset); color: var(--card-text); border-radius: 0.4rem; padding: 0.4rem 0.6rem; cursor: pointer; font: inherit; }
+  .word-card-search-res-ar { font-family: var(--quran-font); font-size: 1.35rem; color: var(--card-heading); }
+  .word-card-search-res-t { font-size: 0.82rem; color: var(--card-text-muted); min-width: 0; overflow-wrap: anywhere; }
+  .word-card-search-res-n { font-variant-numeric: tabular-nums; font-size: 0.8rem; color: var(--card-heading); white-space: nowrap; }
+  .word-card-search-places { display: flex; flex-wrap: wrap; gap: 0.4rem; max-height: 160px; overflow: auto; }
+  .word-card-search-place { border: 1px solid var(--card-line); background-color: var(--card-bg-inset); color: var(--card-text); border-radius: 0.4rem; padding: 0.4rem 0.6rem; font-variant-numeric: tabular-nums; cursor: pointer; font: inherit; font-size: 0.85rem; }
+  .word-card-search-place[aria-current="true"] { border-color: #c9a24a; background: #c9a24a; color: #1b2a41; font-weight: 700; }
+  .word-card-search button:focus-visible, .word-card-search input:focus-visible { outline: 2px solid var(--card-heading); outline-offset: 2px; }
   @media (max-width: 520px) {
     .quran-word-card header { gap: 0.25rem; }
     .quran-word-card header button { width: 36px; height: 36px; }
@@ -5891,7 +5913,8 @@
     import { occurrenceRefsFor, rootFormsFor, unpackWordIndexRef, loadWordIdentityIndex } from "./js/quran-word-index.js";
     import { relatedBySharedWords, relatedThroughLists, connectedThroughNotes } from "./js/ayah-related.js";
     import { wordSegmentsFor } from "./js/quran-word-segments.js";
-    import { wordFeaturesFor, loadLemmaForms, loadVerbForms, loadWordFeaturesForSurah } from "./js/quran-word-features.js";
+    import { wordFeaturesFor, loadLemmaForms, loadVerbForms, loadWordFeaturesForSurah, loadWordFormsIndex } from "./js/quran-word-features.js";
+    import { searchWordForms, placeFromId } from "./js/word-card-search.js";
     import { wordProgressAuthority, WBW_WORD_STATES, resolveWordProgress } from "./js/quran-word-progress.js";
     import { primeAyahProgress, getSurahProgress, wordProgressFor, setWordState, decideWordApproval, clearWordProgressCache } from "./js/quran-word-progress-data.js";
     // Issue #320 -- Basic Arabic / Arabic in Depth word-occurrence progress,
@@ -6795,6 +6818,61 @@
       verbFormsLoading = true;
       loadVerbForms().then((d) => { verbFormsTable = d.values; }).catch((e) => { verbFormsFailed = true; console.warn("verb forms unavailable", e); })
         .finally(() => { verbFormsLoading = false; if (quranWordCardState.open && quranWordCardState.level === "depth") renderPersistentWordCard(); });
+    }
+    // Round 6 -- the card's Search row. Its state survives ‹ › and every re-render;
+    // the word list (loadWordFormsIndex) is fetched only when Search is pressed (I9).
+    const wordCardSearch = { open: false, value: "", status: "", results: [], places: [], currentId: null };
+    // The Search strings live in the same two objects the card is handed.
+    const wordSearchText = () => ({ ...wordCardLabels(), ...wordProgressLabels() });
+    async function runWordCardSearch(value) {
+      const mount = activeWordCardMount();
+      wordCardSearch.value = value ?? mount?.querySelector("[data-word-card-search-input]")?.value ?? wordCardSearch.value;
+      const text = wordSearchText();
+      const fill = (template, vars) => Object.entries(vars).reduce((s, [k, v]) => s.replace(`{${k}}`, () => v), String(template));
+      wordCardSearch.results = []; wordCardSearch.places = [];
+      if (!wordCardSearch.value.trim()) { wordCardSearch.status = ""; renderPersistentWordCard(); return; }
+      wordCardSearch.status = text.searchLoading; renderPersistentWordCard();
+      let index;
+      try { index = await loadWordFormsIndex(); } catch (error) {
+        wordCardSearch.status = fill(text.searchUnavailable, { error: error.message }); renderPersistentWordCard(); return;
+      }
+      const found = searchWordForms(index, wordCardSearch.value, getAppLang() === "bn" ? "bn" : "en");
+      if (found.kind === "place") {
+        wordCardSearch.status = fill(text.searchOpened, { ref: wordRefFor(found.place.surah, found.place.ayah, found.place.position) });
+        openWordCardSearchPlace(found.id);
+        return;
+      }
+      if (found.kind === "forms") {
+        wordCardSearch.results = found.forms.map((r) => ({ ar: r[0], tr: r[1], en: r[2], bn: r[3], n: r[4].length, ids: r[4] }));
+        wordCardSearch.status = found.total > found.forms.length
+          ? fill(text.searchFoundMore, { k: num(found.forms.length), total: num(found.total) })
+          : fill(text.searchFound, { k: num(found.forms.length) });
+      } else {
+        wordCardSearch.status = found.unknownPlace
+          ? fill(text.searchUnknownPlace, { ref: wordRefFor(found.unknownPlace.surah, found.unknownPlace.ayah, found.unknownPlace.position) })
+          : text.searchNone;
+      }
+      renderPersistentWordCard();
+    }
+    function listWordCardSearchPlaces(i) {
+      const row = wordCardSearch.results[i];
+      if (!row) return;
+      wordCardSearch.places = row.ids.map((id) => ({ id, ...placeFromId(id) }));
+      wordCardSearch.status = String(wordSearchText().searchPlaces).replace("{form}", () => `⁨${row.ar}⁩`).replace("{n}", num(row.ids.length));
+      renderPersistentWordCard();
+    }
+    /** The same way the Root chips and ‹ › open a word; another surah goes through navigation first. */
+    async function openWordCardSearchPlace(id) {
+      const { surah, ayah, position } = placeFromId(id);
+      wordCardSearch.currentId = id;
+      if (surah !== currentSurahNum || !currentSurahData?.ayahs?.some((a) => a.ayah === ayah && a.words?.some((w) => w.position === position))) {
+        if (surah === currentSurahNum) { wordCardSearch.status = String(wordSearchText().searchUnknownPlace).replace("{ref}", wordRefFor(surah, ayah, position)); renderPersistentWordCard(); return; }
+        await openWordOccurrenceAt(surah, ayah, position, stageView === "note" ? "note" : "read");
+        return;
+      }
+      quranWordCardState = openWordCard(quranWordCardState, `quran-word-occurrence:v1:${surah}:${ayah}:${position}`);
+      quranWordCardContext = {}; quranWordCardLemmaContext = {};
+      renderPersistentWordCard(); hydrateWordCardOccurrences(); hydrateWordProgress(); hydrateWordCardLemmaExtras();
     }
     function ensureLemmaDictionary() {
       if (lemmaDictionary || lemmaDictionaryLoading) return;
@@ -14707,6 +14785,20 @@
         levelNameDepth: t("Depth"),
         knownThroughBasicGroup: t("Known through its meaning group (Basic: same meaning)"),
         knownThroughDepthRoot: t("Known through the root {root} (Depth: same root)"),
+        searchButton: t("Search for a word"),
+        searchLabel: t("Find a word: type it in Arabic (with or without vowel marks), its meaning, or a place like 2:42:8"),
+        searchGo: t("Search"),
+        searchTry: t("Try:"),
+        searchLoading: t("Loading the word list…"),
+        searchUnavailable: t("The word list could not be loaded: {error}"),
+        searchOpened: t("Opened {ref}."),
+        searchUnknownPlace: t("There is no word at {ref}."),
+        searchFound: t("{k} forms found. Tap one to see where it is."),
+        searchFoundMore: t("{total} forms match; the {k} most frequent are shown. Tap one to see where it is."),
+        searchNone: t("No word found. Check the spelling, or try without vowel marks."),
+        searchPlaces: t("{form}: {n} places. Tap one to open it."),
+        searchCount: t("{n} ×"),
+        searchPlacesLabel: t("Places of this form"),
       };
     }
 
@@ -15408,7 +15500,12 @@
               ? `[data-word-progress-decide="${focused.dataset.wordProgressDecide}"]`
               : focused?.hasAttribute("data-word-card-close")
                 ? "[data-word-card-close]"
-                : focused?.hasAttribute("data-word-card-colour-toggle") ? "[data-word-card-colour-toggle]" : null;
+                : focused?.hasAttribute("data-word-card-colour-toggle") ? "[data-word-card-colour-toggle]"
+                  : focused?.hasAttribute("data-word-card-search-toggle") ? "[data-word-card-search-toggle]"
+                    : focused?.hasAttribute("data-word-card-search-input") ? "[data-word-card-search-input]"
+                      : focused?.hasAttribute("data-word-card-search-go") ? "[data-word-card-search-go]"
+                        : focused?.dataset.wordCardSearchPlace ? `[data-word-card-search-place="${focused.dataset.wordCardSearchPlace}"]`
+                          : focused?.dataset.wordCardSearchForm ? `[data-word-card-search-form="${focused.dataset.wordCardSearchForm}"]` : null;
       let ref;
       try { ref = parseQuranWordOccurrenceId(quranWordCardState.occurrenceId); } catch { quranWordCardState = closeWordCard(quranWordCardState); clearWordCardMounts(); return; }
       if (ref.surah !== currentSurahNum) { clearWordCardMounts(); return; }
@@ -15427,7 +15524,10 @@
       if (quranWordCardState.level === "depth" && quranWordCardContext.wordFeatures?.tense) ensureVerbForms();
       // Round 4 -- an accordion the reader opened or closed stays that way: read the open state off the DOM before it is replaced.
       content.querySelectorAll("details[data-word-card-sec]").forEach((d) => { wordCardDepthOpen[d.dataset.wordCardSec] = d.open; });
-      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, depthOpen: wordCardDepthOpen, ...wordCardDictionaryContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: getColourWordParts(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      // Round 6 -- what was typed in the Search row stays, however often the card is redrawn.
+      const typed = content.querySelector("[data-word-card-search-input]");
+      if (typed) wordCardSearch.value = typed.value;
+      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, search: wordCardSearch, lemmaForms: lemmaFormsTable, verbForms: verbFormsTable, verbFormsFailed, depthOpen: wordCardDepthOpen, ...wordCardDictionaryContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: getColourWordParts(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
       if (focusSelector) (mount.querySelector(focusSelector)?.disabled ? mount.querySelector("[data-word-card-close]") : mount.querySelector(focusSelector))?.focus({ preventScroll: true });
     }
 
@@ -15866,6 +15966,21 @@
       // Issue #286 -- (b) the Word Card's own "This āyah ⋯" button.
       const wordCardAyahAction = event.target.closest("[data-word-card-ayah-action]");
       if (wordCardAyahAction) { openAyahActionSheet(wordCardAyahAction.dataset.wordCardAyahAction); return; }
+      // Round 6 -- the 🔍 Search row. Only Search / Enter / a Try chip fetch the word list.
+      const searchToggle = event.target.closest("[data-word-card-search-toggle]");
+      if (searchToggle) {
+        wordCardSearch.open = !wordCardSearch.open;
+        renderPersistentWordCard();
+        if (wordCardSearch.open) activeWordCardMount()?.querySelector("[data-word-card-search-input]")?.focus({ preventScroll: true });
+        return;
+      }
+      if (event.target.closest("[data-word-card-search-go]")) { runWordCardSearch(); return; }
+      const searchTry = event.target.closest("[data-word-card-search-try]");
+      if (searchTry) { runWordCardSearch(searchTry.dataset.wordCardSearchTry); return; }
+      const searchForm = event.target.closest("[data-word-card-search-form]");
+      if (searchForm) { listWordCardSearchPlaces(Number(searchForm.dataset.wordCardSearchForm)); return; }
+      const searchPlace = event.target.closest("[data-word-card-search-place]");
+      if (searchPlace) { openWordCardSearchPlace(Number(searchPlace.dataset.wordCardSearchPlace)); return; }
       const formToggle = event.target.closest("[data-word-form-toggle]");
       if (formToggle) {
         const lemma = formToggle.dataset.wordFormToggle;
@@ -15895,7 +16010,7 @@
       // primed, exactly like re-opening the WbW tab). Gated internally by
       // hydrateWordProgress() itself.
       if (level) { quranWordCardState = selectWordCardLevel(quranWordCardState, level.dataset.wordCardLevel); renderPersistentWordCard(); hydrateWordProgress(); return; }
-      if (event.target.closest("[data-word-card-close]")) { quranWordCardRequest++; quranWordCardOrigin = null; renderWordCardReturnBar(); quranWordCardState = closeWordCard(quranWordCardState); renderPersistentWordCard(); if (quranWordCardTrigger?.isConnected) quranWordCardTrigger.focus({ preventScroll: true }); return; }
+      if (event.target.closest("[data-word-card-close]")) { wordCardSearch.open = false; quranWordCardRequest++; quranWordCardOrigin = null; renderWordCardReturnBar(); quranWordCardState = closeWordCard(quranWordCardState); renderPersistentWordCard(); if (quranWordCardTrigger?.isConnected) quranWordCardTrigger.focus({ preventScroll: true }); return; }
       const chipGo = event.target.closest("[data-word-card-goto]");
       if (chipGo) { quranWordCardState = openWordCard(quranWordCardState, chipGo.dataset.wordCardGoto); quranWordCardContext = {}; quranWordCardLemmaContext = {}; renderPersistentWordCard(); hydrateWordCardOccurrences(); hydrateWordProgress(); hydrateWordCardLemmaExtras(); return; }
       const move = event.target.closest("[data-word-card-move]");
@@ -15914,6 +16029,7 @@
     });
     document.getElementById(viewId).addEventListener("keydown", (event) => {
       if (!quranWordCardState.open || !(event.target instanceof Element)) return;
+      if (event.key === "Enter" && event.target.closest("[data-word-card-search-input]")) { event.preventDefault(); runWordCardSearch(); return; }
       if (event.key === "Escape" && event.target.closest("[data-word-card-content]")) {
         event.preventDefault();
         activeWordCardMount()?.querySelector("[data-word-card-close]")?.click();

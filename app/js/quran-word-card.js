@@ -174,6 +174,21 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   levelNameDepth: "Depth",
   knownThroughBasicGroup: "Known through its meaning group (Basic: same meaning)",
   knownThroughDepthRoot: "Known through the root {root} (Depth: same root)",
+  // Round 6 -- the 🔍 Search row (spec "Search (in the header)").
+  searchButton: "Search for a word",
+  searchLabel: "Find a word: type it in Arabic (with or without vowel marks), its meaning, or a place like 2:42:8",
+  searchGo: "Search",
+  searchTry: "Try:",
+  searchLoading: "Loading the word list…",
+  searchUnavailable: "The word list could not be loaded: {error}",
+  searchOpened: "Opened {ref}.",
+  searchUnknownPlace: "There is no word at {ref}.",
+  searchFound: "{k} forms found. Tap one to see where it is.",
+  searchFoundMore: "{total} forms match; the {k} most frequent are shown. Tap one to see where it is.",
+  searchNone: "No word found. Check the spelling, or try without vowel marks.",
+  searchPlaces: "{form}: {n} places. Tap one to open it.",
+  searchCount: "{n} ×",
+  searchPlacesLabel: "Places of this form",
 });
 
 function escapeHtml(value) {
@@ -915,6 +930,36 @@ function segmentControlsHtml(segments, colourOn, text) {
   return `<div class="word-card-segment-controls">${toggle}<span class="word-card-segment-legend">${legend}</span></div>`;
 }
 
+/**
+ * Round 6 -- the Search row, under the header while 🔍 is pressed. Pure: the
+ * page owns `context.search` ({ value, status, results, places, currentId }),
+ * does the matching (word-card-search.js) and the one on-demand fetch.
+ * References and counts are printed in the reader's own digits.
+ */
+function searchRowHtml(search, text, formatNumber, refText) {
+  const lang = text.formMeaningLang === "bn" ? "bn" : "en";
+  const results = (search.results ?? []).map((r, i) => {
+    const mean = (lang === "bn" ? r.bn || r.en : r.en || r.bn) ?? "";
+    return `<button type="button" class="word-card-search-res" data-word-card-search-form="${i}"><span class="word-card-search-res-ar" dir="rtl" lang="ar">${escapeHtml(r.ar)}</span><span class="word-card-search-res-t">${escapeHtml([r.tr, mean].filter(Boolean).join(" · "))}</span><span class="word-card-search-res-n">${escapeHtml(String(text.searchCount).replace("{n}", formatNumber(r.n)))}</span></button>`;
+  }).join("");
+  const places = (search.places ?? []).map((p) =>
+    `<button type="button" class="word-card-search-place" data-word-card-search-place="${p.id}"${p.id === search.currentId ? ' aria-current="true"' : ""}>${escapeHtml(refText(p.surah, p.ayah, p.position))}</button>`).join("");
+  // The value tried is always plain digits (it is parsed); what the reader sees is their own.
+  const chip = (value, shown) => `<button type="button" data-word-card-search-try="${escapeHtml(value)}">${escapeHtml(shown)}</button>`;
+  const tryMeaning = lang === "bn" ? "জান" : "know";
+  return `<div class="word-card-search" role="search" data-word-card-search>
+    <label for="wordCardSearchInput">${escapeHtml(text.searchLabel)}</label>
+    <div class="word-card-search-row">
+      <input id="wordCardSearchInput" type="text" data-word-card-search-input value="${escapeHtml(search.value ?? "")}" autocomplete="off" spellcheck="false" dir="auto">
+      <button type="button" class="word-card-search-go" data-word-card-search-go>${escapeHtml(text.searchGo)}</button>
+    </div>
+    <div class="word-card-search-chips">${escapeHtml(text.searchTry)} ${chip("تعلمون", "تعلمون")}${chip(tryMeaning, tryMeaning)}${chip("2:30:28", refText(2, 30, 28))}</div>
+    <p class="word-card-search-status" role="status" data-word-card-search-status>${escapeHtml(search.status ?? "")}</p>
+    ${results ? `<div class="word-card-search-results" data-word-card-search-results>${results}</div>` : ""}
+    ${places ? `<div class="word-card-search-places" role="group" aria-label="${escapeHtml(text.searchPlacesLabel)}" data-word-card-search-places>${places}</div>` : ""}
+  </div>`;
+}
+
 export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, labels = {}, formatNumber = String } = {}) {
   if (!state?.open || !word) return "";
   const occurrenceId = quranWordOccurrenceId(chapter.surahNumber, ayah.ayah, word.position);
@@ -931,12 +976,16 @@ export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, 
   // simply has none, and the card renders exactly as it always did.
   const showSegmentColour = context.colourWordPartsEnabled && validSegments(context.wordSegments);
   const arabicHtml = showSegmentColour ? segmentedArabicHtml(layers.surfaceToken, context.wordSegments) : escapeHtml(layers.surfaceToken);
+  const refText = (s, a, w) => (typeof context.displayRef === "function" ? String(context.displayRef(s, a, w)) : `${s}:${a}:${w}`);
+  const searchOpen = !!context.search?.open;
   return `<section class="quran-word-card" role="region" aria-label="${escapeHtml(text.cardRegion)}" data-occurrence-id="${escapeHtml(occurrenceId)}">
     <header><button type="button" data-word-card-move="previous" aria-label="${escapeHtml(text.previous)}"${context.hasPrevious ? "" : " disabled"}>‹</button>
-      <div class="word-card-head-word"><div class="word-card-arabic" dir="rtl" lang="ar">${arabicHtml}</div><div class="word-card-reference">${typeof context.displayRef === "function" ? escapeHtml(context.displayRef(chapter.surahNumber, ayah.ayah, word.position)) : `${chapter.surahNumber}:${ayah.ayah}:${word.position}`}</div></div>
+      <button type="button" class="word-card-search-btn" data-word-card-search-toggle aria-pressed="${searchOpen}" aria-label="${escapeHtml(text.searchButton)}">🔍</button>
+      <div class="word-card-head-word"><div class="word-card-arabic" dir="rtl" lang="ar">${arabicHtml}</div><div class="word-card-reference">${escapeHtml(refText(chapter.surahNumber, ayah.ayah, word.position))}</div></div>
       ${layers.root ? `<div class="word-card-root-box" data-word-card-root-box><small>${escapeHtml(text.rootBoxLabel)}</small><span dir="rtl" lang="ar">${escapeHtml(spacedRoot(layers.root))}</span></div>` : ""}
       <button type="button" data-word-card-move="next" aria-label="${escapeHtml(text.next)}"${context.hasNext ? "" : " disabled"}>›</button>
       <button type="button" data-word-card-close aria-label="${escapeHtml(text.close)}">×</button></header>
+    ${searchOpen ? searchRowHtml(context.search, text, formatNumber, refText) : ""}
     <div class="word-card-ayah-action-row">
       <button type="button" class="word-card-ayah-action-btn" data-word-card-ayah-action="${chapter.surahNumber}:${ayah.ayah}">${escapeHtml(text.ayahActionsButton)}</button>
     </div>

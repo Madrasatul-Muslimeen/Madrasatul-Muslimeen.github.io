@@ -66,6 +66,17 @@ export async function loadVerbForms({ fetchImpl = fetch, baseUrl = BASE } = {}) 
   });
 }
 
+/** Round 6 -- every exact written form of every word, with its places, for the
+ *  card's Search. Fetched only when the reader presses Search (I9) -- never at
+ *  startup, never when the card or its 🔍 row merely opens -- then cached. */
+export async function loadWordFormsIndex({ fetchImpl = fetch, baseUrl = BASE } = {}) {
+  return load(`${baseUrl}word-forms-index.json`, fetchImpl, (data) => {
+    if (data.contract !== "word-forms-index:v1" || !Array.isArray(data.forms)) {
+      throw new Error("Invalid word forms index format.");
+    }
+  });
+}
+
 /** { r, f, pv?, sv?, n } for one Dictionary verb, or null. */
 export async function verbFormFor(lemma, options) {
   const data = await loadVerbForms(options);
