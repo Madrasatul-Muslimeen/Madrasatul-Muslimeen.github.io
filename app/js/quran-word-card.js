@@ -783,7 +783,7 @@ function dictionaryBox(word, context, text, formatNumber = String) {
   if (bnDict) {
     if (hasBnMeaning) {
       const rest = bnEntry.m.slice(1);
-      bnHtml = `<p class="word-card-dict-meaning" data-word-card-dict-bn><span lang="bn" data-word-card-dict-bn-meaning>${escapeHtml(bnEntry.m[0])}</span></p>`
+      bnHtml = `<p class="word-card-dict-meaning word-card-dict-bn-lead" data-word-card-dict-bn><span lang="bn" data-word-card-dict-bn-meaning>${escapeHtml(bnEntry.m[0])}</span></p>`
         + (rest.length
           ? `<details class="word-card-dict-more" data-word-card-dict-bn-more><summary>${escapeHtml(String(text.otherEntriesUnderSpelling).replace("{n}", formatNumber(rest.length)))}</summary><ul>${rest.map((m, i) => `<li><span lang="bn">${escapeHtml(m)}</span> <span class="word-card-dict-pg">(${pdfLink(bnEntry.p?.[i + 1])})</span></li>`).join("")}</ul></details>`
           : "");

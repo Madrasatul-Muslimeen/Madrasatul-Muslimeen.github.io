@@ -84,7 +84,7 @@ const box = (page) => page.evaluate(() => {
     corpus: corpus && { href: corpus.getAttribute("href"), target: corpus.getAttribute("target"), rel: corpus.getAttribute("rel"), rect: r(corpus) },
     ejtaal: ejtaal && { href: ejtaal.getAttribute("href"), target: ejtaal.getAttribute("target"), rel: ejtaal.getAttribute("rel"), rect: r(ejtaal) },
     credit: b.querySelector(".word-card-dict-credit")?.textContent ?? "",
-    wiktionary: b.querySelector(".word-card-dict-credit a")?.getAttribute("href") ?? null,
+    wiktionary: b.querySelector(".word-card-dict-credit a:not([data-word-card-dict-bn-page])")?.getAttribute("href") ?? null,
     labels: [...b.querySelectorAll(".word-card-dict-label")].map((e) => e.textContent),
     heading: b.querySelector("h4")?.textContent ?? "",
     aboveForms: (() => { const f = document.querySelector(".word-card-forms"); return !f || !!(b.compareDocumentPosition(f) & Node.DOCUMENT_POSITION_FOLLOWING); })(),
@@ -148,9 +148,11 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) for (const loo
   check(`${tag} 1:2:1 the box is above the derived forms`, h?.aboveForms === true);
   if (lang === "bn") {
     check(`${tag} bn the labels, heading and credit are Bangla`, h.labels.every((t) => BANGLA.test(t)) && BANGLA.test(h.heading) && BANGLA.test(h.credit), JSON.stringify([h.labels, h.heading]));
-    check(`${tag} bn the hand-written label texts`, h.labels[0] === "অভিধানের অর্থ (ইংরেজি)" && h.labels[1] === "এই আয়াতে (শব্দে শব্দে অর্থ)", JSON.stringify(h.labels));
-    check(`${tag} bn the permission line is present`, h.pending === "বাংলা অভিধানের অর্থ: অনুমতি পেলে যুক্ত হবে", h.pending);
-    check(`${tag} bn the meaning itself stays English`, !BANGLA.test(h.meaning));
+    // Decision 62 (#539): the Bangla meaning now leads under "অভিধানের অর্থ" and the
+    // old "will be added once permission is given" line is gone (see word-card-bangla-dictionary-browser.mjs).
+    check(`${tag} bn the hand-written label texts`, h.labels[0] === "অভিধানের অর্থ" && h.labels[1] === "এই আয়াতে (শব্দে শব্দে অর্থ)", JSON.stringify(h.labels));
+    check(`${tag} bn the old permission line is gone`, h.pending === null, h.pending);
+    check(`${tag} bn the English meaning itself stays English`, !BANGLA.test(h.meaning));
   } else {
     check(`${tag} en the labels read as written, and no Bangla permission line`, h.labels[0] === "Dictionary meaning" && h.labels[1] === "In this āyah (word by word)" && h.pending === null, JSON.stringify([h.labels, h.pending]));
   }

@@ -2581,7 +2581,9 @@
   .word-card-dict-wbw { font-size: 0.95rem; overflow-wrap: anywhere; }
   .word-card-dict-none, .word-card-dict-pending, .word-card-dict-credit { font-size: 0.78rem; color: var(--card-text-muted); }
   .word-card-dict-credit { margin-top: 0.5rem !important; }
-  .word-card-dict-meaning-en { font-size: 0.85rem; font-weight: 500; }
+  /* .quran-word-card p (0.9rem) outranks a lone class, so these two carry the extra class. */
+  .word-card-dictionary p.word-card-dict-bn-lead { font-size: 1.1rem; font-weight: 600; overflow-wrap: anywhere; }
+  .word-card-dictionary p.word-card-dict-meaning-en { font-size: 0.8rem; font-weight: 500; }
   .word-card-dict-more { font-size: 0.85rem; color: var(--card-text); margin: 0.2rem 0; }
   .word-card-dict-more summary { cursor: pointer; color: var(--card-heading); font-weight: 600; min-height: 32px; display: flex; align-items: center; }
   .word-card-dict-more ul { margin: 0.2rem 0 0; padding-left: 1.1rem; overflow-wrap: anywhere; }
