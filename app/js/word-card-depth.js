@@ -92,6 +92,8 @@ const S = {
   needFailed: { en: "This could not be loaded, so nothing is shown here. Reload the page to try again.", bn: "এটি লোড করা যায়নি, তাই এখানে কিছু দেখানো হচ্ছে না। আবার চেষ্টা করতে পাতাটি রিলোড করুন।" },
   gramDep: { en: "{p} is the {rel} ({ar}) of {head}", bn: "{p} হলো {head}-এর {rel} ({ar})" },
   gramLink: { en: "{p} is the {rel} ({ar}): attached to {head}", bn: "{p} হলো {rel} ({ar}): {head}-এর সাথে সংযুক্ত" },
+  gramIn: { en: "{p} is part of {phrase}, which is the {rel} ({ar}) of {head}", bn: "{p} {phrase}-এর অংশ, যা {head}-এর {rel} ({ar})" },
+  gramInLink: { en: "{p} is part of {phrase}, which is attached to {head}", bn: "{p} {phrase}-এর অংশ, যা {head}-এর সাথে সংযুক্ত" },
   gramTakes: { en: "In this sentence it takes:", bn: "এই বাক্যে এটি নেয়:" },
   gramTake: { en: "its {rel} ({ar}): {dep}", bn: "এর {rel} ({ar}): {dep}" },
   gramWord: { en: "{ar} (word {n})", bn: "{ar} (শব্দ {n})" },
@@ -333,7 +335,15 @@ function grammarLines(word, features, pcs, ctx, push) {
       const hn = g.n[head];
       if (!dn || !hn) continue;
       if (dn[0] === "r" && hn[0] === "r") continue;
-      if (mineNode(dn)) {
+      if (dn[0] === "p" && !mineNode(hn)) {
+        // A phrase this word sits inside, and what that phrase depends on.
+        const mine = g.n.findIndex((n) => mineNode(n));
+        const inside = g.n.some((n, i) => mineNode(n) && i >= dn[2] && i <= dn[3]);
+        if (mine >= 0 && inside) {
+          const sig = `p|${rel}|${dep}|${describe(g, head)}`;
+          if (!seen.has(sig)) { seen.add(sig); asDependent.push({ rel, phrase: describe(g, dep), head: describe(g, head) }); }
+        }
+      } else if (mineNode(dn)) {
         const sig = `d|${rel}|${dn[2]}|${describe(g, head)}`;
         if (!seen.has(sig)) { seen.add(sig); asDependent.push({ rel, piece: dn[2], head: describe(g, head), headNode: hn }); }
       } else if (mineNode(hn)) {
@@ -345,9 +355,9 @@ function grammarLines(word, features, pcs, ctx, push) {
   if (!asDependent.length && !asHead.length) return false;
   for (const d of asDependent) {
     const r = relName(d.rel);
-    const tpl = pick(d.rel === "link" ? "gramLink" : "gramDep", lang);
-    const html = esc(fill(tpl, { p: "\u0000", rel: `\u0001${r.name}\u0002`, ar: "\u0003", head: "\u0004" }))
-      .replace("\u0000", AR(pieceText(d.piece))).replace("\u0001", "<b>").replace("\u0002", "</b>").replace("\u0003", esc(r.ar)).replace("\u0004", d.head);
+    const tpl = pick(d.phrase ? (d.rel === "link" ? "gramInLink" : "gramIn") : d.rel === "link" ? "gramLink" : "gramDep", lang);
+    const html = esc(fill(tpl, { p: "\u0000", rel: `\u0001${r.name}\u0002`, ar: "\u0003", head: "\u0004", phrase: "\u0005" }))
+      .replace("\u0000", AR(d.phrase ? word.arabic : pieceText(d.piece))).replace("\u0001", "<b>").replace("\u0002", "</b>").replace("\u0003", esc(r.ar)).replace("\u0004", d.head).replace("\u0005", d.phrase ?? "");
     push(`<span data-word-card-gram-rel="${esc(d.rel)}">${html}</span>`, `dep`);
   }
   if (asHead.length) {
