@@ -43,12 +43,12 @@ console.log("\n1. The fixture word and its neighbours, hand-written from the Cor
 
 check("2:102:35 فَيَتَعَلَّمُونَ: resumption فَ, present prefix, Form V stem, plural doer ending; present, 3MP, indicative", () => {
   assert.deepEqual(s2.words["102:35"], {
-    parts: ["rem-f", "impf-prefix", "stem-V", "subj-waw"],
+    parts: ["rem-f", "impf-prefix", "stem-V", "subj-waw"], pp: [null, "3MP", null, "3MP"],
     pos: "V", tense: "IMPF", form: 5, pgn: "3MP", mood: "IND",
   });
 });
 check("2:102:34 تَكْفُرْ: jussive, 2MS, Form I (no form key)", () => {
-  assert.deepEqual(s2.words["102:34"], { parts: ["impf-prefix", "stem-V"], pos: "V", tense: "IMPF", pgn: "2MS", mood: "JUS" });
+  assert.deepEqual(s2.words["102:34"], { parts: ["impf-prefix", "stem-V"], pp: ["2MS", null], pos: "V", tense: "IMPF", pgn: "2MS", mood: "JUS" });
 });
 check("2:27:14 يُوصَلَ: passive, subjunctive", () => {
   assert.equal(s2.words["27:14"].pass, 1);
@@ -56,6 +56,7 @@ check("2:27:14 يُوصَلَ: passive, subjunctive", () => {
 });
 check("2:3:7 رَزَقْنَٰهُمْ: نَا is the doer (we), هُمْ the object", () => {
   assert.deepEqual(s2.words["3:7"].parts, ["stem-V", "subj-na", "pron-obj"]);
+  assert.deepEqual(s2.words["3:7"].pp, [null, "1P", "3MP"]);
 });
 check("2:6:9 تُنذِرْهُمْ: Form IV, and هُمْ is an object, not a doer", () => {
   assert.deepEqual(s2.words["6:9"].parts, ["impf-prefix", "stem-V", "pron-obj"]);
@@ -66,9 +67,11 @@ check("2:7:4 قُلُوبِهِمْ: the pronoun on a noun is possessive", () =>
 });
 check("1:7:4 عَلَيْهِمْ: the pronoun on a preposition", () => {
   assert.deepEqual(s1.words["7:4"].parts, ["stem-P", "pron-prep"]);
+  assert.deepEqual(s1.words["7:4"].pp, [null, "3MP"]);
 });
-check("1:4:1 مَٰلِكِ: an active participle", () => {
+check("1:4:1 مَٰلِكِ: an active participle, and no person on any part", () => {
   assert.equal(s1.words["4:1"].deriv, "AP");
+  assert.equal(s1.words["4:1"].pp, undefined);
 });
 check("the subject-or-object rule: a 3MS verb with a 3MS pronoun is an OBJECT (نَصَرَهُ)", () => {
   const rows = [
@@ -182,6 +185,14 @@ check("one sentence per verb Form I–XII, English and Bangla", () => {
 check("every one of the app's Dictionary words has a group, and nothing else does", () => {
   const li = Object.keys(JSON.parse(fs.readFileSync(path.join(out, "lemmas-index.json"), "utf8")).values).sort();
   assert.deepEqual(Object.keys(lemmaForms.values).sort(), li);
+});
+check("part-box meanings, hand-written from the demo: يَ 'they (doing it now)', a possessive 'their', فَ in Bangla", () => {
+  assert.equal(T.partMeaning("impf-prefix", "3MP", "en"), "they (doing it now)");
+  assert.equal(T.partMeaning("impf-prefix", "3MP", "bn"), "তারা (এখন করে)");
+  assert.equal(T.partMeaning("pron-poss", "3MP", "en"), "their");
+  assert.equal(T.partMeaning("pron-obj", "1P", "bn"), "আমাদেরকে");
+  assert.equal(T.partMeaning("rem-f", null, "bn"), "তবুও, তারপর");
+  assert.equal(T.partMeaning("stem-V", null, "en"), null);
 });
 check("the 14 persons in the poster's order, each with English and Bangla", () => {
   assert.deepEqual(T.PERSONS.map((p) => p.pgn), ["3MS", "3MD", "3MP", "3FS", "3FD", "3FP", "2MS", "2MD", "2MP", "2FS", "2FD", "2FP", "1S", "1P"]);

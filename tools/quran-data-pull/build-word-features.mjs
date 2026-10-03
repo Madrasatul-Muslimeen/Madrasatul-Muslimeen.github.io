@@ -18,6 +18,8 @@
 // guess.
 //
 // Per word (compact keys, all optional except `parts`):
+//   pp     the person each part speaks of (e.g. [null,"3MP",null,"3MP"]),
+//          parallel to `parts`; present only when one does
 //   parts  part ids, one per segment, in the SAME order and number as
 //          `expandRow()` gives (so they zip with word-segments offsets);
 //          names are in app/js/word-grammar-tables.js
@@ -165,10 +167,30 @@ export function allEmittablePartIds(stemTags) {
   ]);
 }
 
-/** The compact feature entry for one aligned word. */
+/** The person (person-gender-number) each part speaks of, parallel to
+ *  `partIdsForRows`: the present-tense prefix and a doer ending take the
+ *  verb's own person, an attached pronoun its own; everything else null. */
+export function partPersonsForRows(rows, ids) {
+  const stem = rows.find((r) => r.features.split("|")[0] === "STEM");
+  const sf = stem ? stemFeatures(stem.tag, stem.features) : {};
+  const prons = rows.filter((r) => r.features.split("|")[0] === "SUFFIX" && r.tag === "PRON")
+    .map((r) => (r.features.split("|").find((x) => x.startsWith("PRON:")) || "").slice(5) || null);
+  let k = 0;
+  return ids.map((id) => {
+    if (id === "impf-prefix") return sf.pgn || null;
+    if (id.startsWith("subj-") || id.startsWith("pron-")) return prons[k++] ?? null;
+    return null;
+  });
+}
+
+/** The compact feature entry for one aligned word. `pp` (part persons) is
+ *  present only when some part names a person. */
 export function featuresForRows(rows) {
   const stem = rows.find((r) => r.features.split("|")[0] === "STEM");
-  const entry = { parts: partIdsForRows(rows) };
+  const parts = partIdsForRows(rows);
+  const entry = { parts };
+  const pp = partPersonsForRows(rows, parts);
+  if (pp.some(Boolean)) entry.pp = pp;
   if (stem) Object.assign(entry, stemFeatures(stem.tag, stem.features));
   return entry;
 }
