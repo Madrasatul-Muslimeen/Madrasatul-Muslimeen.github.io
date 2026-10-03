@@ -701,3 +701,4 @@ total). Allocated by the MMSA Architect.
 09.55: The Approach list shows progress by colour. Allocated by the MMSA Architect.
 09.56: Tablet landing: a bigger wheel, buttons in the corners. Allocated by the MMSA Architect.
 09.57: Practising on the Word card; stage buttons in their colours. Allocated by the MMSA Architect.
+09.58: Word card round 7: the two boxes on a computer. Allocated by the MMSA Architect.
