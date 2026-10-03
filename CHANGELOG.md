@@ -19311,3 +19311,12 @@ Owner (decision 59): "Go, build all three tabs together." Issue #518, PR #519.
 - The search row stays open while you move with ‹ ›, and keeps what you typed.
 - The word list loads only when you press Search, so the card opens as fast as before.
 - **Checks**: word-card-search-browser 252/0 (new), word-forms-index-data 13/0 (new), behaviour 1004/4 (sandbox-only) and 8 other suites green.
+
+## v09.55 — 3 Oct 2026 — The Approach list shows progress by colour
+
+Owner, 3 Oct 2026: "this approach list should mark those which are already had some progress done ... make it with the color of the progress".
+
+- Tapping the Approach box on the Ayah card or the This page card now opens the app's own list instead of the phone's.
+- Every Approach you have progress on has a **dot in its stage's colour**, the same colours as the stage buttons: Learning brown, Practising gold, Achieved blue, Mastered green. The one you have chosen is ticked, and a colour key sits at the bottom.
+- Choosing from the list only picks the Approach; nothing is saved until you press a stage, as before.
+- **Checks**: approach-list-dots-browser 66/0 (new), behaviour 1004/4 (sandbox-only) and 8 other suites green.
