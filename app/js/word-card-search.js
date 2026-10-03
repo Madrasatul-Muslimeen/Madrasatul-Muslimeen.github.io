@@ -67,8 +67,11 @@ export function searchWordForms(index, query, lang = "en") {
     matches = rows.filter((r) => stripArabic(r[0]) === want);
     // Typed marks mean the reader meant that exact form: it goes first.
     if (HAS_MARKS.test(q)) {
-      const exact = matches.filter((r) => r[0] === q);
-      matches = [...rank(exact), ...rank(matches.filter((r) => r[0] !== q))];
+      // Compared in NFC: a keyboard may type shadda and its vowel in either order.
+      const typed = q.normalize("NFC");
+      const isExact = (r) => r[0].normalize("NFC") === typed;
+      const exact = matches.filter(isExact);
+      matches = [...rank(exact), ...rank(matches.filter((r) => !isExact(r)))];
       return finish(matches, true);
     }
   } else {

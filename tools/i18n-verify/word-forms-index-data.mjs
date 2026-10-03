@@ -44,5 +44,16 @@ check("occurrence total equals the manifest's occurrenceCount (77429)", () => {
 });
 check("occurrence ids are unique", () => { must(new Set(idx.forms.flatMap((r) => r[4])).size === 77429, "duplicate id"); });
 
+// Architect review of #519: an exact form typed with its shadda and vowel in
+// the other order (keyboards differ) still comes first.
+const S = await import(new URL("../../app/js/word-card-search.js", import.meta.url).href);
+check("typed تَّعْلَمُونَ with shadda and fatḥa swapped still puts that exact form first", () => {
+  const data = byForm.get(SHADDA_TAALAMUN)[0];
+  const swapped = data.replace(/([\u064E\u0651])([\u064E\u0651])/, "$2$1");
+  must(swapped !== data, "the probe did not swap anything");
+  const r = S.searchWordForms(idx, swapped, "en");
+  must(r.kind === "forms" && r.forms[0][0] === data, `first was ${r.forms?.[0]?.[0]}`);
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
