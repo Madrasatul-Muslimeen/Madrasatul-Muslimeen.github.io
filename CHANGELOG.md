@@ -19288,3 +19288,15 @@ Owner (decision 59): "Go, build all three tabs together." Issue #511, PR #513.
   - **Word Choice & Distinctions** and **Classical Arabic Usage**.
 - Review corrections: verbs ending in the feminine-plural nūn or the emphatic nūn are now called built (مَبْنِيّ), a passive verb's ending نَائِبُ فَاعِل, and the ending on كَانَ and its sisters their اسم.
 - **Checks**: word-card-depth-rebuild-browser 231/0 (new), word-card-depth-grammar 8/0 (new), behaviour 1004/4 (sandbox-only) and 8 other suites green.
+
+## v09.53 — 3 Oct 2026 — Word card round 5: Verb Conjugation
+
+Owner (decision 59): "Go, build all three tabs together." Issue #515.
+
+- **Arabic in Depth** has a new section for verbs, **Verb Conjugation · تَصْرِيفُ الْفِعْل**. It starts closed.
+- It shows the verb in the **Past**, **Present** and **Command** for all 14 persons (he, they two, they … I, we), with the endings in colour and ✕ where there is no command.
+- The row for the word you opened is **gold**. When the word is in another mood (for example jussive), a small line says which, with the word's own form.
+- **✦ "in the Qur'an: N times"** marks every form that is in the Qur'an.
+- Verbs whose root has a weak letter, a hamza or a doubled letter get a plain line instead of a table; a form is never guessed.
+- On a phone the three tables stack.
+- **Checks**: word-card-conjugation-browser 213/0 (new), behaviour 1004/4 (sandbox-only) and 9 other suites green.

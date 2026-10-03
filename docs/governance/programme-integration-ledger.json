@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.52",
+    "version": "09.53",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1805,8 +1805,20 @@
     {
       "version": "09.52",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Depth tab: source tags and five accordions (Root, Ṣarf, Naḥw, Word Choice, Classical Usage), Naḥw corrected in review (decision 59).",
+      "integration": {
+        "authorizedOn": "2026-10-03",
+        "integratedOn": "2026-10-03",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.53",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Depth tab: Verb Conjugation section (Past/Present/Command, 14 persons, gold row, Qur'an counts), on the merged engine (decision 59).",
       "integration": {
         "authorizedOn": "2026-10-03",
         "integratedOn": "2026-10-03",
@@ -1815,8 +1827,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.53",
+  "nextUnallocated": "09.54",
   "nextUnallocatedNote": [
+    "v09.53 was allocated to Word card round 5: Verb Conjugation, 2026-10-03.",
     "v09.52 was allocated to Word card round 4: the Arabic in Depth tab, 2026-10-03.",
     "v09.51 was allocated to Mark known or unknown words (decision 60), 2026-10-03.",
     "v09.50 was allocated to Word card rebuild round 3 (Basic tab), 2026-10-03.",
