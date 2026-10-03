@@ -2869,6 +2869,54 @@
   .word-card-fact b:has(+ .word-card-fact-sub) { display: inline; }
   .word-card-fact b + .word-card-fact-sub { display: inline-block; margin-left: 0.4rem; }
   @media (max-width: 520px) { .word-card-fact { padding: 0.4rem 0.4rem; } .word-card-fact b { font-size: 0.88rem; } .word-card-fact b.word-card-fact-ar { font-size: 1.05rem; } }
+  /* Round 4 (#511) -- Arabic in Depth: a legend and five LIGHT accordions (the demo's .acc), as the facts and part boxes are light on the dark card.
+     The old dictionary box and derived-forms list now sit INSIDE the first one, so the card palette is re-pointed to light ink there. */
+  [data-word-card-panel="depth"] { display: grid; gap: 0.6rem; margin-top: 0.4rem; min-width: 0; }
+  .word-card-legend { display: flex; flex-wrap: wrap; gap: 6px; font-size: 0.74rem; color: var(--card-text-muted); }
+  .word-card-src { display: inline-block; font-size: 0.68rem; font-weight: 700; border-radius: 4px; padding: 1px 6px; vertical-align: middle; white-space: nowrap; }
+  .word-card-src-data { background: #1f4d39; color: #bff0d3; }
+  .word-card-src-rule { background: #22406b; color: #cfe1ff; }
+  .word-card-src-needs { border: 1px dashed #8a93a8; color: #c5cbd8; }
+  .word-card-acc { background: #f6f8f7; color: #13241f; border-radius: 10px; border: 1px solid #d6ddd9; min-width: 0;
+    --card-text: #13241f; --card-text-muted: #5b6d66; --card-heading: #1d6b4a; --card-link: #1d6b4a; --card-bg-inset: #fff; --card-line: #d6ddd9; }
+  .word-card-acc > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 32px minmax(0, 1fr) 20px; gap: 10px; align-items: center; padding: 10px 12px; font-weight: 800; min-height: 44px; }
+  .word-card-acc > summary::-webkit-details-marker { display: none; }
+  .word-card-acc > summary::after { content: "⌄"; color: #5b6d66; font-size: 1.1rem; text-align: center; }
+  .word-card-acc[open] > summary::after { content: "⌃"; }
+  .word-card-acc-ico { width: 32px; height: 32px; border-radius: 8px; background: #dcefe6; display: grid; place-items: center; font-family: var(--quran-font); font-weight: 700; color: #1d6b4a; }
+  .word-card-acc-body { padding: 2px 14px 14px; display: grid; gap: 9px; font-size: 0.9rem; line-height: 1.5; min-width: 0; overflow-wrap: anywhere; }
+  .word-card-acc .word-card-src-needs { border-color: #6b7c76; color: #3f504a; background: #fff; }
+  .word-card-ar { font-family: var(--quran-font); font-size: 1.12rem; font-weight: 700; direction: rtl; unicode-bidi: isolate; }
+  .word-card-dline { margin: 0; }
+  .word-card-dline p, .word-card-fam { margin: 0; display: inline; }
+  .word-card-fam { font-family: var(--quran-font); font-size: 1.45rem; line-height: 1.8; margin-top: 0.15rem; }
+  .word-card-fam b { font-weight: 700; }
+  .word-card-m { color: #5b6d66; }
+  .word-card-m2, .word-card-m3 { margin: 0; color: #5b6d66; }
+  .word-card-m3 { font-size: 0.78rem; }
+  .word-card-ayahroot { display: flex; flex-wrap: wrap; gap: 6px; }
+  .word-card-ar-chip { display: grid; text-align: center; border: 1px solid #d6ddd9; background: #fff; color: #13241f; border-radius: 10px; padding: 4px 10px; font: inherit; cursor: pointer; min-height: 44px; }
+  .word-card-ar-chip b { font-family: var(--quran-font); font-size: 1.3rem; font-weight: 400; line-height: 1.6; }
+  .word-card-ar-chip small { direction: ltr; font-size: 0.72rem; color: #5b6d66; }
+  .word-card-ar-chip-on { background: #fff4d6; border-color: #c9a24a; }
+  .word-card-dlinks { display: flex; flex-wrap: wrap; gap: 8px; }
+  .word-card-dlink { border: 1px solid #b9c7c0; border-radius: 8px; padding: 5px 10px; font-weight: 700; font-size: 0.84rem; color: #1d6b4a; background: #fff; text-decoration: none; }
+  .word-card-morph { border-collapse: collapse; width: 100%; }
+  .word-card-morph th { text-align: left; font-size: 0.8rem; color: #5b6d66; padding: 5px 8px 5px 0; vertical-align: top; width: 28%; }
+  .word-card-morph td { padding: 5px 6px; border-top: 1px solid #e3e8e5; vertical-align: top; color: #13241f; }
+  .word-card-morph .word-card-ar { font-size: 1.12rem; }
+  .word-card-dnote { color: #5b6d66; font-size: 0.78rem; }
+  .word-card-irab { border-left: 3px solid #b9c7c0; padding: 3px 0 3px 10px; }
+  .word-card-irab-cmp { border-color: #c9a24a; }
+  .word-card-irab[data-word-card-irab="needs"], .word-card-dline.word-card-need { border-style: dashed; }
+  .word-card-irab-head { margin-top: 2px; }
+  .word-card-trio { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 8px; direction: rtl; }
+  .word-card-trio-cell { direction: ltr; background: #fff; border: 1px solid #d6ddd9; border-radius: 10px; padding: 8px; text-align: center; display: grid; gap: 2px; min-width: 0; }
+  .word-card-trio-on { background: #fff4d6; border-color: #c9a24a; }
+  .word-card-chips2 { display: flex; flex-wrap: wrap; gap: 6px; }
+  .word-card-c2 { border-radius: 14px; padding: 3px 10px; font-size: 0.8rem; border: 1px solid #c9d3ce; background: #eef2f0; }
+  .word-card-c2-no { border-style: dashed; color: #6b7c76; }
+  @media (max-width: 520px) { .word-card-trio { grid-template-columns: minmax(0, 1fr); } .word-card-acc-body { padding: 2px 10px 12px; } }
   .word-card-meaning-bar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1.1rem; border: 1px solid var(--card-line); border-radius: 0.4rem; padding: 0.5rem 0.75rem; background: var(--card-bg-inset); margin: 0.4rem 0; }
   .word-card-meaning-bar > p { margin: 0; min-width: 0; font-size: 1.15rem; font-weight: 700; }
   .word-card-meaning-bar > .word-card-transliteration { font-size: 0.95rem; }
@@ -5817,7 +5865,7 @@
     import { occurrenceRefsFor, rootFormsFor, unpackWordIndexRef, loadWordIdentityIndex } from "./js/quran-word-index.js";
     import { relatedBySharedWords, relatedThroughLists, connectedThroughNotes } from "./js/ayah-related.js";
     import { wordSegmentsFor } from "./js/quran-word-segments.js";
-    import { wordFeaturesFor, loadLemmaForms } from "./js/quran-word-features.js";
+    import { wordFeaturesFor, loadLemmaForms, loadWordFeaturesForSurah } from "./js/quran-word-features.js";
     import { wordProgressAuthority, WBW_WORD_STATES, resolveWordProgress } from "./js/quran-word-progress.js";
     import { primeAyahProgress, getSurahProgress, wordProgressFor, setWordState, decideWordApproval, clearWordProgressCache } from "./js/quran-word-progress-data.js";
     // Issue #320 -- Basic Arabic / Arabic in Depth word-occurrence progress,
@@ -6700,16 +6748,17 @@
     let lemmaDictionaryLoading = false;
     function wordCardDictionaryContext(word) {
       if (!lemmaDictionary) return {};
-      return { dictionary: { entry: lemmaDictionaryEntry(lemmaDictionary, word.morphology?.lemma) } };
+      return { dictionary: { entry: lemmaDictionaryEntry(lemmaDictionary, word.morphology?.lemma) }, dictionaryLookup: (lemma) => lemmaDictionaryEntry(lemmaDictionary, lemma) };
     }
     // Round 3 -- Basic's derived-form order data, fetched the FIRST time a Basic tab is drawn (I9).
     let lemmaFormsTable = null;
+    const wordCardDepthOpen = {};
     let lemmaFormsLoading = false;
     function ensureLemmaForms() {
       if (lemmaFormsTable || lemmaFormsLoading) return;
       lemmaFormsLoading = true;
       loadLemmaForms().then((d) => { lemmaFormsTable = d.values; }).catch((e) => console.warn("lemma forms unavailable", e))
-        .finally(() => { lemmaFormsLoading = false; if (lemmaFormsTable && quranWordCardState.open && quranWordCardState.level === "basic") renderPersistentWordCard(); });
+        .finally(() => { lemmaFormsLoading = false; if (lemmaFormsTable && quranWordCardState.open && (quranWordCardState.level === "basic" || quranWordCardState.level === "depth")) renderPersistentWordCard(); });
     }
     function ensureLemmaDictionary() {
       if (lemmaDictionary || lemmaDictionaryLoading) return;
@@ -15338,8 +15387,10 @@
       // The English WbW stem box also prints the dictionary meaning, so that
       // page loads the same first-use file Depth does.
       if (quranWordCardState.level === "depth" || (quranWordCardState.level === "wbw" && getAppLang() !== "bn")) ensureLemmaDictionary();
-      if (quranWordCardState.level === "basic") ensureLemmaForms();
-      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, lemmaForms: lemmaFormsTable, ...wordCardDictionaryContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: getColourWordParts(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      if (quranWordCardState.level === "basic" || quranWordCardState.level === "depth") ensureLemmaForms();
+      // Round 4 -- an accordion the reader opened or closed stays that way: read the open state off the DOM before it is replaced.
+      content.querySelectorAll("details[data-word-card-sec]").forEach((d) => { wordCardDepthOpen[d.dataset.wordCardSec] = d.open; });
+      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, lemmaForms: lemmaFormsTable, depthOpen: wordCardDepthOpen, ...wordCardDictionaryContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: getColourWordParts(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
       if (focusSelector) (mount.querySelector(focusSelector)?.disabled ? mount.querySelector("[data-word-card-close]") : mount.querySelector(focusSelector))?.focus({ preventScroll: true });
     }
 
@@ -15371,15 +15422,16 @@
         // here rather than joining the root/lemma `Promise.all` rejection.
         // Word card rebuild, round 2 -- the Corpus features load the same way
         // (one small file per surah, on demand, failure leaves no part boxes).
-        const [rootOccurrences, lemmaOccurrences, rootForms, wordSegments, wordFeatures] = await Promise.all([
+        const [rootOccurrences, lemmaOccurrences, rootForms, wordSegments, wordFeatures, surahFeatures] = await Promise.all([
           occurrenceRefsFor("root", word.morphology?.root),
           occurrenceRefsFor("lemma", word.morphology?.lemma),
           word.morphology?.root ? rootFormsFor(word.morphology.root) : null,
           wordSegmentsFor(ref.surah, ref.ayah, ref.position).catch(() => null),
           wordFeaturesFor(ref.surah, ref.ayah, ref.position).catch(() => null),
+          loadWordFeaturesForSurah(ref.surah).catch(() => null),
         ]);
         if (request !== quranWordCardRequest || !quranWordCardState.open || quranWordCardState.occurrenceId !== requestedId || currentSurahNum !== ref.surah) return;
-        quranWordCardContext = { rootOccurrences, lemmaOccurrences, rootForms, rootOccurrenceCount: rootOccurrences.length, lemmaOccurrenceCount: lemmaOccurrences.length, expandedForm: quranWordCardExpandedForm, lemmaExpanded: false, wordSegments, wordFeatures };
+        quranWordCardContext = { rootOccurrences, lemmaOccurrences, rootForms, rootOccurrenceCount: rootOccurrences.length, lemmaOccurrenceCount: lemmaOccurrences.length, expandedForm: quranWordCardExpandedForm, lemmaExpanded: false, wordSegments, wordFeatures, ayahFeatures: surahFeatures?.words ?? null };
       } catch (error) {
         if (request !== quranWordCardRequest || !quranWordCardState.open || quranWordCardState.occurrenceId !== requestedId || currentSurahNum !== ref.surah) return;
         quranWordCardContext = { occurrencesError: error.message };
@@ -15807,6 +15859,8 @@
       // hydrateWordProgress() itself.
       if (level) { quranWordCardState = selectWordCardLevel(quranWordCardState, level.dataset.wordCardLevel); renderPersistentWordCard(); hydrateWordProgress(); return; }
       if (event.target.closest("[data-word-card-close]")) { quranWordCardRequest++; quranWordCardOrigin = null; renderWordCardReturnBar(); quranWordCardState = closeWordCard(quranWordCardState); renderPersistentWordCard(); if (quranWordCardTrigger?.isConnected) quranWordCardTrigger.focus({ preventScroll: true }); return; }
+      const chipGo = event.target.closest("[data-word-card-goto]");
+      if (chipGo) { quranWordCardState = openWordCard(quranWordCardState, chipGo.dataset.wordCardGoto); quranWordCardContext = {}; quranWordCardLemmaContext = {}; renderPersistentWordCard(); hydrateWordCardOccurrences(); hydrateWordProgress(); hydrateWordCardLemmaExtras(); return; }
       const move = event.target.closest("[data-word-card-move]");
       if (move) { quranWordCardState = moveWordCard(quranWordCardState, wordCardOccurrenceIds(), move.dataset.wordCardMove); quranWordCardContext = {}; quranWordCardLemmaContext = {}; renderPersistentWordCard(); hydrateWordCardOccurrences(); hydrateWordProgress(); hydrateWordCardLemmaExtras(); }
     });
