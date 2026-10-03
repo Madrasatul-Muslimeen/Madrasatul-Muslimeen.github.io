@@ -61,7 +61,7 @@ export function surahNumberMap(surahIndex) {
 function surahKey(name) { return plain(name).replace(/ms\d+/g, "").replace(/ء/g, "").replace(/ؤ/g, "و").replace(/ئ/g, "ي").replace(/\s+/g, ""); }
 
 /** Every [Sūra/ n] citation in a text, as [surah, ayah]; unknown names are counted. */
-export function citations(text, surahMap, unknown) {
+export function citations(text, surahMap, unknown, ayahCounts = null) {
   const out = [];
   // [البقرة/ 133] and ranges [الدخان/ 43- 44] (every āyah of the range).
   for (const m of String(text).matchAll(/\[([^\]\/]{1,30})\/\s*(\d+)(?:\s*-\s*(\d+))?\s*\]/g)) {
@@ -69,7 +69,9 @@ export function citations(text, surahMap, unknown) {
     if (!s) { unknown?.set(m[1], (unknown.get(m[1]) ?? 0) + 1); continue; }
     const from = Number(m[2]);
     const to = m[3] && Number(m[3]) >= from && Number(m[3]) - from < 20 ? Number(m[3]) : from;
-    for (let a = from; a <= to; a++) out.push([s, a]);
+    // An āyah past the sūra's end (a transcription slip, e.g. [الأنعام/ 194])
+    // is left out of q; the text keeps it as transcribed.
+    for (let a = from; a <= to; a++) if (!ayahCounts || (a >= 1 && a <= ayahCounts[s])) out.push([s, a]);
   }
   return out;
 }
@@ -116,7 +118,9 @@ export function parseMufradat(text) {
 async function main() {
   const text = process.argv[2] ? fs.readFileSync(process.argv[2], "utf8") : await (await fetch(URL_)).text();
   const roots = JSON.parse(fs.readFileSync(path.join(OUT, "roots-index.json"), "utf8")).values;
-  const surahMap = surahNumberMap(JSON.parse(fs.readFileSync(path.join(OUT, "surah-index.json"), "utf8")));
+  const surahIndex = JSON.parse(fs.readFileSync(path.join(OUT, "surah-index.json"), "utf8"));
+  const surahMap = surahNumberMap(surahIndex);
+  const ayahCounts = Object.fromEntries(surahIndex.map((x) => [x.surahNumber, x.ayahCount]));
   // root -> Set("s:a") of the āyāt that contain a word of it
   const rootAyahs = new Map(Object.entries(roots).map(([r, occ]) => [r, new Set(occ.map((o) => `${Math.floor(o / 1e6)}:${Math.floor(o / 1e3) % 1000}`))]));
 
@@ -125,7 +129,7 @@ async function main() {
   const unknownSurahs = new Map();
   const entries = []; // { root, h, p, lines, book }
   let cur = null;
-  const rejected = { notARoot: 0, wrongBook: 0, noQuote: 0, unverifiedEntry: 0, lostQuote: 0 };
+  const rejected = { notARoot: 0, wrongBook: 0, fragment: 0, noQuote: 0, unverifiedEntry: 0, lostQuote: 0 };
 
   // Which heading starts an entry, in two passes. Pass 1 checks each heading
   // against its text up to the next root-like heading; pass 2 re-checks the
@@ -135,8 +139,14 @@ async function main() {
   // its root.
   const bookAt = [];
   { let b = -1; for (let i = 0; i < items.length; i++) { if (items[i].kind === "book") b = BOOKS.indexOf(items[i].text); bookAt[i] = b; } }
+  // A heading whose next line starts mid-word ("ون الأحزاب", the rest of
+  // يحسبون) is a page-break fragment, whatever āyah the text then quotes.
+  const COMMON2 = /^(في|من|عن|إن|أن|لا|ما|لم|لن|قد|هو|هي|أو|ثم|بل|كل|إذ|يا|له|به|لك|بك|ذا|كم|مع|هم|نا)[\s،,.:]/;
+  const startsMidWord = (t) => /^[\u0621-\u064A]{1,2}[\s،,.:]/.test(t) && !COMMON2.test(t);
+  const fragmentAt = new Set();
   const cands = items.map((it, i) => {
     if (it.kind !== "head" || i < firstBook) return null;
+    if (!it.bare && items[i + 1]?.kind === "line" && startsMidWord(items[i + 1].text)) { rejected.fragment++; fragmentAt.add(i); return null; }
     const all = rootCandidates(it.text).filter((r) => roots[r]);
     if (!all.length) { rejected.notARoot++; return null; }
     const inBook = all.filter((r) => r[0] === BOOK_LETTER[bookAt[i]]);
@@ -150,7 +160,7 @@ async function main() {
     return out.join(" ");
   };
   const decide = (i, text) => {
-    const quoted = citations(text, surahMap, null);
+    const quoted = citations(text, surahMap, null, ayahCounts);
     // Every candidate root the entry quotes: al-Rāghib sometimes treats two
     // roots under one headword (ساح: سوح and سيح), and quotes both.
     // When the headword spells one of them exactly (بدأ is بدا, not بدو), only that one.
@@ -187,8 +197,8 @@ async function main() {
       dropping = false;
       continue;
     }
-    if (it.kind === "head" && cands[i]) {
-      rejected.noQuote++;
+    if (it.kind === "head" && (cands[i] || fragmentAt.has(i))) {
+      if (cands[i]) rejected.noQuote++;
       const prev = cur?.lines[cur.lines.length - 1]?.text ?? "";
       const next = items[i + 1]?.kind === "line" ? items[i + 1].text : "";
       // A heading whose next line starts mid-word ("ك أنه", "مة،") is a
@@ -229,7 +239,7 @@ async function main() {
     const byRoot = {};
     for (const e of entries.filter((x) => x.book === b)) {
       const t = e.lines.reduce((acc, l) => acc + (l.para && acc ? "\n" : acc ? " " : "") + l.text, "").replace(/[ \t]+/g, " ").trim();
-      const entry = { h: e.h, p: e.p[0] === e.p[1] ? [e.p[0]] : e.p, t, q: citations(t, surahMap, unknownSurahs) };
+      const entry = { h: e.h, p: e.p[0] === e.p[1] ? [e.p[0]] : e.p, t, q: citations(t, surahMap, unknownSurahs, ayahCounts) };
       // The guarantee holds on the FINAL text: a root is filed only if this
       // text, as assembled, quotes an āyah containing it.
       for (const r of e.roots) {

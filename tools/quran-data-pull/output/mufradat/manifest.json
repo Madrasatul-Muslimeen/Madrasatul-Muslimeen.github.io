@@ -17,32 +17,33 @@
     "shareAlike": "This file is derived from the OpenITI text and is shared under the same licence, CC BY-NC-SA 4.0 (attribution, non-commercial, share-alike).",
     "credit": "al-Rāghib al-Iṣfahānī, al-Mufradāt, ed. al-Dāwūdī, p. {p}. Text: OpenITI (Romanov & Seydi), CC BY-NC-SA 4.0"
   },
-  "entryCount": 1481,
-  "rootsCovered": 1476,
+  "entryCount": 1474,
+  "rootsCovered": 1472,
   "quranRoots": 1642,
-  "coveragePercent": 89.89,
+  "coveragePercent": 89.65,
   "headingsRejected": {
-    "notARoot": 187,
+    "notARoot": 158,
     "wrongBook": 3,
-    "noQuote": 164,
-    "unverifiedEntry": 40,
+    "fragment": 105,
+    "noQuote": 95,
+    "unverifiedEntry": 38,
     "lostQuote": 2
   },
   "unknownSurahNames": {},
-  "totalBytes": 2175855,
-  "maxBytes": 152481,
+  "totalBytes": 2174918,
+  "maxBytes": 152440,
   "perBook": [
     {
       "book": 1,
       "letter": "ا",
       "roots": 54,
-      "bytes": 106726
+      "bytes": 106717
     },
     {
       "book": 2,
       "letter": "ب",
       "roots": 79,
-      "bytes": 141426
+      "bytes": 141406
     },
     {
       "book": 3,
@@ -60,13 +61,13 @@
       "book": 5,
       "letter": "ج",
       "roots": 62,
-      "bytes": 79235
+      "bytes": 79298
     },
     {
       "book": 6,
       "letter": "ح",
       "roots": 89,
-      "bytes": 140810
+      "bytes": 140772
     },
     {
       "book": 7,
@@ -78,13 +79,13 @@
       "book": 8,
       "letter": "د",
       "roots": 41,
-      "bytes": 47639
+      "bytes": 47604
     },
     {
       "book": 9,
       "letter": "ذ",
       "roots": 15,
-      "bytes": 24786
+      "bytes": 24784
     },
     {
       "book": 10,
@@ -95,26 +96,26 @@
     {
       "book": 11,
       "letter": "ز",
-      "roots": 33,
-      "bytes": 38536
+      "roots": 32,
+      "bytes": 38494
     },
     {
       "book": 12,
       "letter": "س",
-      "roots": 97,
-      "bytes": 138267
+      "roots": 96,
+      "bytes": 138377
     },
     {
       "book": 13,
       "letter": "ش",
       "roots": 60,
-      "bytes": 76525
+      "bytes": 76522
     },
     {
       "book": 14,
       "letter": "ص",
-      "roots": 55,
-      "bytes": 79952
+      "roots": 54,
+      "bytes": 79119
     },
     {
       "book": 15,
@@ -126,7 +127,7 @@
       "book": 16,
       "letter": "ط",
       "roots": 35,
-      "bytes": 51043
+      "bytes": 51041
     },
     {
       "book": 17,
@@ -138,7 +139,7 @@
       "book": 18,
       "letter": "ع",
       "roots": 97,
-      "bytes": 152481
+      "bytes": 152440
     },
     {
       "book": 19,
@@ -150,13 +151,13 @@
       "book": 20,
       "letter": "ف",
       "roots": 67,
-      "bytes": 81959
+      "bytes": 81956
     },
     {
       "book": 21,
       "letter": "ق",
-      "roots": 72,
-      "bytes": 124259
+      "roots": 71,
+      "bytes": 124207
     },
     {
       "book": 22,
@@ -168,37 +169,37 @@
       "book": 23,
       "letter": "ل",
       "roots": 48,
-      "bytes": 58407
+      "bytes": 58401
     },
     {
       "book": 24,
       "letter": "م",
       "roots": 56,
-      "bytes": 73287
+      "bytes": 73284
     },
     {
       "book": 25,
       "letter": "ن",
       "roots": 98,
-      "bytes": 127147
+      "bytes": 127144
     },
     {
       "book": 26,
       "letter": "ه",
       "roots": 33,
-      "bytes": 53719
+      "bytes": 53716
     },
     {
       "book": 27,
       "letter": "و",
       "roots": 72,
-      "bytes": 104277
+      "bytes": 104267
     },
     {
       "book": 28,
       "letter": "ي",
       "roots": 8,
-      "bytes": 22580
+      "bytes": 22575
     }
   ]
 }
