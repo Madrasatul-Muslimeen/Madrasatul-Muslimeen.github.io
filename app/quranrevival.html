@@ -6858,7 +6858,7 @@
       const row = wordCardSearch.results[i];
       if (!row) return;
       wordCardSearch.places = row.ids.map((id) => ({ id, ...placeFromId(id) }));
-      wordCardSearch.status = String(wordSearchText().searchPlaces).replace("{form}", () => row.ar).replace("{n}", num(row.ids.length));
+      wordCardSearch.status = String(wordSearchText().searchPlaces).replace("{form}", () => `⁨${row.ar}⁩`).replace("{n}", num(row.ids.length));
       renderPersistentWordCard();
     }
     /** The same way the Root chips and ‹ › open a word; another surah goes through navigation first. */

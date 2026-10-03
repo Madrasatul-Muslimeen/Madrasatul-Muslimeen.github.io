@@ -15,7 +15,8 @@ const nfc = (s) => String(s).normalize("NFC");
 const SHOTS = process.argv.includes("--shots");
 const only = (name) => process.argv.find((a) => a.startsWith(`--${name}=`))?.split("=")[1];
 const BN = "০১২৩৪৫৬৭৮৯";
-const bnDigits = (s) => String(s).replace(/\d/g, (d) => BN[d]);
+// Counts are in the reader's digits; a reference (s:a:w) is an identifier and stays plain, as the card's own reference does.
+const bnDigits = (s) => (String(s).includes(":") ? String(s) : String(s).replace(/\d/g, (d) => BN[d]));
 
 async function openWord(page, surah, ayah, pos) {
   await page.evaluate(() => document.querySelector("[data-word-card-close]")?.click());
@@ -161,7 +162,7 @@ for (const lang of ["en", "bn"].filter((l) => !only("lang") || only("lang") === 
     check(`${L}: meaning search -- at most 30 results, most frequent first`, res.length <= 30 && res.length > 0 && res.every((r, i) => i === 0 || true), String(res.length));
     const counts = res.map((r) => Number(String(r.n).replace(/[০-৯]/g, (d) => BN.indexOf(d)).replace(/[^\d]/g, "")));
     check(`${L}: results are ordered by count, high first`, counts.every((n, i) => i === 0 || counts[i - 1] >= n), counts.join());
-    if (res.length === 30) check(`${L}: more than 30 matches says how many`, /\d/.test(await status(page)) && (await status(page)).includes(lang === "bn" ? "সবচেয়ে বেশি ব্যবহৃত" : "most frequent"), await status(page));
+    if (res.length === 30) check(`${L}: more than 30 matches says how many`, /[\d০-৯]/.test(await status(page)) && (await status(page)).includes(lang === "bn" ? "সবচেয়ে বেশি ব্যবহৃত" : "most frequent"), await status(page));
 
     // No match
     await search(page, "zzzz");
