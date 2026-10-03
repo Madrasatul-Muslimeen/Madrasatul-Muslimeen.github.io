@@ -8,6 +8,8 @@
 import { chromium, newContext, openPage } from "./harness.mjs";
 
 let pass = 0, fail = 0;
+// Four buttons: all on one row, or exactly two rows of two (decision 59, Practising).
+const neat = (tops) => { if (!tops || tops.length !== 4) return false; const u = [...new Set(tops)]; return u.length === 1 || (u.length === 2 && tops.filter((t) => t === u[0]).length === 2); };
 const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
@@ -72,8 +74,16 @@ for (const lang of ["en", "bn"]) {
   // landing-path check above is untouched.
   const afterRead = await page.evaluate(() =>
     (window.__fsLog || []).filter((r) => /quranWord/.test(r.col || "")).map((r) => `${r.col}:${r.id ?? ""}`));
-  check(`[${lang}] opening Read reads only the surah's lane chunk (one query per lane), no per-ayah document`,
-    afterRead.length === 2 && afterRead.every((x) => /^quranWord(Progress|Approvals):$/.test(x)), JSON.stringify(afterRead));
+  // UPDATED IN PLACE again (v09.51, decision 60): Mark words' "Fewer (auto)"
+  // picks known or unknown words from how much of the Qur'an is known, so
+  // opening Read now also reads the three "You know" totals (one document per
+  // level). Still no per-āyah document, and nothing else.
+  const readLanes = afterRead.filter((x) => /^quranWord(Progress|Approvals):/.test(x));
+  const readTotals = afterRead.filter((x) => /^quranWordTotals:/.test(x));
+  check(`[${lang}] opening Read reads only the surah's lane chunk (one query per lane) and the three level totals, no per-ayah document`,
+    readLanes.length === 2 && readLanes.every((x) => /^quranWord(Progress|Approvals):$/.test(x))
+      && JSON.stringify(readTotals.sort()) === JSON.stringify(["quranWordTotals:t1__p1", "quranWordTotals:t1__p1__basic", "quranWordTotals:t1__p1__depth"])
+      && afterRead.length === 5, JSON.stringify(afterRead));
 
   // --- The block appears, and reads a SEEDED state -------------------------
   await openWord(page, 2);
@@ -99,8 +109,11 @@ for (const lang of ["en", "bn"]) {
       && laneReads.filter((r) => r.col === "quranWordApprovals").length <= 1
       && afterOpen.every((r) => /^quranWord(Progress|Approvals|Totals)$/.test(r.col)),
     JSON.stringify(afterOpen));
-  check(`[${lang}] the word's "You know" totals are one read per level (WbW, Basic, Depth), never more`,
-    totals.length === 3 && new Set(totals).size === 3, JSON.stringify(totals));
+  // Each level's total is read ONCE for the page (cached): Read already read
+  // all three (above), so opening the word reads none again.
+  const allTotals = afterOpenAll.filter((r) => r.col === "quranWordTotals").map((r) => r.id);
+  check(`[${lang}] the "You know" totals are one read per level (WbW, Basic, Depth) for the page, never more`,
+    allTotals.length === 3 && new Set(allTotals).size === 3 && totals.length === 0, JSON.stringify({ allTotals, onOpen: totals }));
 
   const block = await page.evaluate(() => {
     const b = document.querySelector("#quranWordCardMount [data-word-progress]");
@@ -122,11 +135,11 @@ for (const lang of ["en", "bn"]) {
     };
   });
   check(`[${lang}] the progress block really renders, on screen`, !!block && block.onScreen, JSON.stringify(block));
-  check(`[${lang}] three state buttons`, block?.buttons.length === 3, JSON.stringify(block?.buttons));
+  check(`[${lang}] four state buttons, in order`, JSON.stringify(block?.buttons.map((b) => b.state)) === '["not_started","learning","practising","achieved"]', JSON.stringify(block?.buttons));
   check(`[${lang}] every state button is a real finger target (>=40px)`,
     block?.buttons.every((b) => b.h >= 40 && b.w >= 40), JSON.stringify(block?.buttons.map((b) => [b.w, b.h])));
-  check(`[${lang}] the three buttons sit on ONE line`,
-    new Set(block?.buttons.map((b) => b.top)).size === 1, JSON.stringify(block?.buttons.map((b) => b.top)));
+  check(`[${lang}] the four buttons are one row, or a tidy 2 x 2 (never ragged)`,
+    neat(block?.buttons.map((b) => b.top)), JSON.stringify(block?.buttons.map((b) => b.top)));
 
   // The seeded state is `achieved` on word 2, and p1 needs no confirmation.
   const achieved = block?.buttons.find((b) => b.state === "achieved");
@@ -359,10 +372,10 @@ for (const lang of ["en", "bn"]) {
         statesReachableWithoutScrolling: states.getBoundingClientRect().bottom <= mr.bottom + 1,
       };
     });
-    const ok = m && m.buttons.length === 3 && new Set(m.buttons.map((b) => b.top)).size === 1
+    const ok = m && m.buttons.length === 4 && neat(m.buttons.map((b) => b.top))
       && m.buttons.every((b) => b.h >= 40) && m.inside && !m.buttons.some((b) => b.truncated)
       && m.statesReachableWithoutScrolling && m.overflow <= 0;
-    check(`[${lang}] ${w}x${h}: one line, >=40px, on screen, reachable, no label cut, no sideways scroll`, !!ok,
+    check(`[${lang}] ${w}x${h}: one row or 2x2, >=40px, on screen, reachable, no label cut, no sideways scroll`, !!ok,
       m ? `tops=${JSON.stringify(m.buttons.map((b) => b.top))} h=${JSON.stringify(m.buttons.map((b) => b.h))} cut=${JSON.stringify(m.buttons.filter((b) => b.truncated).map((b) => b.text))} inside=${m.inside} reachable=${m.statesReachableWithoutScrolling} overflowX=${m.overflow}` : "no block");
     await ctx.close();
   }

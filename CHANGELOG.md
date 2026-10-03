@@ -19330,3 +19330,13 @@ The Owner, 3 Oct 2026: "let the wheel fit to the entire screen well n then, you 
 - One gold grip under the wheel resizes it, instead of four corner arrows.
 - Phones and computers look exactly as before.
 - **Checks**: tablet-wheel-browser 56/0 (new), behaviour 1004/4 (sandbox-only) and 13 other suites green.
+
+## v09.57 — 3 Oct 2026 — Practising on the Word card; stage buttons in their colours
+
+The Owner, 3 Oct 2026: "Add Practising to the Word Card in all levels." and "enable everywhere in the app the progress record button gets their respective color when selected." Issue #520, PR #522.
+
+- The Word card's progress row has a fourth stage, **Practising**, between Learning and Achieved, on WbW, Basic and Depth.
+- Practising is still learning: it does not count as a known word anywhere (totals, the āyah count, Mark words), and only Achieved goes to a teacher for checking.
+- A pressed stage button now takes **its stage's colour** (the wheel's colours: Learning brown, Practising gold, Achieved blue), as the Approach cards already did.
+- On a narrow phone the four buttons sit in a neat 2 × 2 grid.
+- **Checks**: word-progress-practising-browser 458/0 (new), behaviour 1004/4 (sandbox-only) and 16 other suites green.

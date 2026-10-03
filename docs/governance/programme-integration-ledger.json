@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.56",
+    "version": "09.57",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1853,8 +1853,20 @@
     {
       "version": "09.56",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "On tablets (581-720px) the wheel takes the screen's width and its six buttons move into the corners; one resize grip (Owner, 3 Oct).",
+      "integration": {
+        "authorizedOn": "2026-10-03",
+        "integratedOn": "2026-10-03",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.57",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Word card fourth stage Practising (code p, never known) at all levels; pressed stage buttons in their wheel colours (Owner, 3 Oct; #520).",
       "integration": {
         "authorizedOn": "2026-10-03",
         "integratedOn": "2026-10-03",
@@ -1863,8 +1875,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.57",
+  "nextUnallocated": "09.58",
   "nextUnallocatedNote": [
+    "v09.57 was allocated to Practising on the Word card; stage buttons in their colours, 2026-10-03.",
     "v09.56 was allocated to Tablet landing: a bigger wheel, buttons in the corners, 2026-10-03.",
     "v09.55 was allocated to The Approach list shows progress by colour, 2026-10-03.",
     "v09.54 was allocated to Word card round 6: Search, 2026-10-03.",

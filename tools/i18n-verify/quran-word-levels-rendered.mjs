@@ -266,10 +266,10 @@ console.log(`\n=== gate FORCED OPEN, bn, 1100x900 ===`);
   await openWord(page, 2);
   await selectTab(page, "basic");
   const basicBlock = await readProgressBlock(page);
-  check("real gate open: the Basic tab offers Not started / Learning / Achieved", Array.isArray(basicBlock?.buttons) && basicBlock.buttons.length === 3, JSON.stringify(basicBlock));
+  check("real gate open: the Basic tab offers Not started / Learning / Practising / Achieved (decision 59)", Array.isArray(basicBlock?.buttons) && basicBlock.buttons.map((b) => b.state).join() === "not_started,learning,practising,achieved", JSON.stringify(basicBlock));
   await selectTab(page, "depth");
   const depthBlock = await readProgressBlock(page);
-  check("real gate open: the Arabic in Depth tab offers its three stages too", Array.isArray(depthBlock?.buttons) && depthBlock.buttons.length === 3, JSON.stringify(depthBlock));
+  check("real gate open: the Arabic in Depth tab offers its four stages too", Array.isArray(depthBlock?.buttons) && depthBlock.buttons.map((b) => b.state).join() === "not_started,learning,practising,achieved", JSON.stringify(depthBlock));
   await ctx.close();
 }
 

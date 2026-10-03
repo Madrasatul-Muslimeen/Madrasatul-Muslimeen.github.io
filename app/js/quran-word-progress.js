@@ -70,7 +70,7 @@ export const IMPLEMENTED_ARABIC_LEVELS = Object.freeze(["wbw", "basic", "depth"]
  * Admitting it would create an I7 denominator question with no real case
  * behind it.
  */
-export const WBW_WORD_STATES = Object.freeze(["not_started", "learning", "achieved"]);
+export const WBW_WORD_STATES = Object.freeze(["not_started", "learning", "practising", "achieved"]);
 
 /** Mirrors records.js confirmState exactly, for the same reason as above. */
 export const WBW_REVIEW_STATES = Object.freeze(["pending", "confirmed", "returned"]);
@@ -79,8 +79,8 @@ export const WBW_REVIEW_STATES = Object.freeze(["pending", "confirmed", "returne
  *  document must stay small (see the size guard below), and a one-character
  *  code is not a second vocabulary because this is the only place that maps
  *  it. A reader never sees these. */
-const STATE_TO_CODE = Object.freeze({ not_started: "n", learning: "l", achieved: "a" });
-const CODE_TO_STATE = Object.freeze({ n: "not_started", l: "learning", a: "achieved" });
+const STATE_TO_CODE = Object.freeze({ not_started: "n", learning: "l", practising: "p", achieved: "a" });
+const CODE_TO_STATE = Object.freeze({ n: "not_started", l: "learning", p: "practising", a: "achieved" });
 const REVIEW_TO_CODE = Object.freeze({ pending: "p", confirmed: "c", returned: "r" });
 const CODE_TO_REVIEW = Object.freeze({ p: "pending", c: "confirmed", r: "returned" });
 
