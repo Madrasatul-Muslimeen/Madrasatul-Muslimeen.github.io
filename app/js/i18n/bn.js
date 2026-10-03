@@ -2341,6 +2341,8 @@ export const BN = {
   "Dictionary word": "অভিধানের শব্দ",
   "Form": "রূপ",
   "Form {n}": "ফর্ম {n}",
+  "{n} forms · {total} times in all": "{n}টি রূপ · মোট {total} বার",
+  "{n}×": "{n} বার",
   "Root": "ধাতু",
   "Part of speech": "পদ",
   "Unknown": "অজানা",
