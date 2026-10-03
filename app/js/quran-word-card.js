@@ -4,6 +4,7 @@
 import { quranWordOccurrenceId, wordIdentityLayers } from "./quran-word-identity.js";
 import { QURAN_TOTAL_WORD_COUNT, percentRounded } from "./quran-word-total.js";
 import { arabicToBuckwalter } from "./buckwalter.js";
+import { partName, partMeaning, PART_KINDS, FORM_NAMES, STEM_NAMES, DERIV_NAMES } from "./word-grammar-tables.js";
 
 export const WORD_CARD_LEVELS = Object.freeze(["wbw", "basic", "depth"]);
 
@@ -59,6 +60,12 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   meaningUnavailableBn: "অর্থ পাওয়া যায়নি",
   lemma: "Dictionary Word",
   root: "Root",
+  // Word card rebuild, round 2 (decision 59). "Dictionary word", never the
+  // internal term; "ROOT" is the small label over the header's root letters.
+  rootBoxLabel: "ROOT",
+  factDictWord: "Dictionary word",
+  factForm: "Form",
+  formNumber: "Form {n}",
   partOfSpeech: "Part of speech",
   unknown: "Unknown",
   rootOccurrences: "{count} root-linked occurrences",
@@ -671,6 +678,73 @@ function dictionaryBox(word, context, text) {
   </div>`;
 }
 
+/** Root letters printed apart ("ع ل م"), however the data spells them. */
+function spacedRoot(root) {
+  return [...String(root)].filter((c) => !/\s/.test(c)).join(" ");
+}
+
+/**
+ * Word card rebuild, round 2 -- the facts row (Root, Dictionary word, Form).
+ * Exported so round 3 can print the same row on Basic. Right to left, Root
+ * first; a box whose value is not known is LEFT OUT, never invented.
+ * `features` is quran-word-features.js's record for this word, or null.
+ */
+export function wordFactsHtml(word, layers, features, text, formatNumber = String) {
+  const bn = text.formMeaningLang === "bn";
+  const lang = bn ? "bn" : "en";
+  const formLabel = (n) => String(text.formNumber).replace("{n}", bn ? formatNumber(n) : (FORM_NAMES[n]?.roman ?? String(n)));
+  const boxes = [];
+  if (layers.root) boxes.push({ key: "root", label: text.root, value: spacedRoot(layers.root), ar: true });
+  if (layers.lemma) boxes.push({ key: "dict", label: text.factDictWord, value: layers.lemma, ar: true });
+  if (features) {
+    const n = features.form > 0 && FORM_NAMES[features.form] ? features.form : 1;
+    if (features.deriv && DERIV_NAMES[features.deriv]) {
+      boxes.push({ key: "form", label: text.factForm, value: DERIV_NAMES[features.deriv][lang] + (features.form > 1 && FORM_NAMES[features.form] ? ` · ${formLabel(features.form)}` : "") });
+    } else if (features.pos === "V") {
+      boxes.push({ key: "form", label: text.factForm, value: formLabel(n), sub: FORM_NAMES[n].past });
+    } else if (STEM_NAMES[features.pos]) {
+      boxes.push({ key: "form", label: text.factForm, value: STEM_NAMES[features.pos][lang] });
+    }
+  }
+  if (!boxes.length) return "";
+  return `<div class="word-card-facts" style="--n:${boxes.length}" data-word-card-facts>${boxes.map((b) =>
+    `<div class="word-card-fact" data-word-card-fact="${b.key}"><small>${escapeHtml(b.label)}</small><b${b.ar ? ' class="word-card-fact-ar" dir="rtl" lang="ar"' : ""}>${escapeHtml(b.value)}</b>${b.sub ? `<span class="word-card-fact-sub" dir="rtl" lang="ar">${escapeHtml(b.sub)}</span>` : ""}</div>`).join("")}</div>`;
+}
+
+/**
+ * Word card rebuild, round 2 -- one box per word part, right to left as the
+ * word is written. Parts and segments zip by index; if they do not line up
+ * (about 0.4% of words have no features at all) NO boxes are shown.
+ */
+export function wordPartsHtml(word, layers, features, segments, context, text) {
+  if (!features || !Array.isArray(features.parts) || !validSegments(segments) || features.parts.length !== segments.length) return "";
+  const bn = text.formMeaningLang === "bn";
+  const lang = bn ? "bn" : "en";
+  const token = layers.surfaceToken;
+  const colour = !!context.colourWordPartsEnabled;
+  const boxes = segments.map((seg, i) => {
+    const id = features.parts[i];
+    const name = partName(id);
+    if (!name) return "";
+    const piece = escapeHtml(token.slice(seg.from, seg.to));
+    let arName = name.ar;
+    let meaning = null;
+    if (name.kind === "stem") {
+      if (id === "stem-V" && !features.deriv) {
+        const n = FORM_NAMES[features.form] ? features.form : 1;
+        arName = `${STEM_NAMES.V.ar} · ${FORM_NAMES[n].ordinalAr}`;
+      }
+      meaning = bn ? (word.translation?.bn || null) : (context.dictionary?.entry?.m || null);
+    } else {
+      meaning = partMeaning(id, features.pp?.[i] ?? null, lang);
+    }
+    const kind = PART_KINDS[name.kind]?.[lang] ?? "";
+    return `<div class="word-card-part" data-word-card-part="${escapeHtml(id)}"><small class="word-card-part-kind">${escapeHtml(kind)}</small><span class="word-card-part-piece${colour ? ` word-card-segment-${seg.role}` : ""}" dir="rtl" lang="ar">${piece}</span><span class="word-card-part-arname" dir="rtl" lang="ar">${escapeHtml(arName)}</span><b class="word-card-part-name">${escapeHtml(name[lang])}</b>${meaning ? `<span class="word-card-part-meaning" lang="${lang}">${escapeHtml(meaning)}</span>` : ""}</div>`;
+  });
+  if (boxes.some((b) => !b)) return "";
+  return `<div class="word-card-parts" style="--n:${boxes.length}" data-word-card-parts>${boxes.join("")}</div>`;
+}
+
 function levelPanel(level, word, layers, context, text, formatNumber) {
   if (level === "wbw") {
     // Deliberately bilingual: WbW shows the English and Bangla gloss together
@@ -685,9 +759,13 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
     const enGloss = word.translation?.en || text.meaningUnavailableEn;
     const enGlossHtml = showSegmentColour ? segmentedGlossHtml(enGloss, context.wordSegments) : escapeHtml(enGloss);
     return `<div role="tabpanel" data-word-card-panel="wbw">
-      <p class="word-card-meaning word-card-meaning-en" lang="en">${enGlossHtml}</p>
-      <p class="word-card-meaning word-card-meaning-bn" lang="bn">${escapeHtml(word.translation?.bn || text.meaningUnavailableBn)}</p>
-      ${word.transliteration ? `<p class="word-card-transliteration">${escapeHtml(word.transliteration)}</p>` : ""}
+      ${wordFactsHtml(word, layers, context.wordFeatures ?? null, text, formatNumber)}
+      <div class="word-card-meaning-bar" data-word-card-meaning-bar>
+        <p class="word-card-meaning word-card-meaning-en" lang="en">${enGlossHtml}</p>
+        <p class="word-card-meaning word-card-meaning-bn" lang="bn">${escapeHtml(word.translation?.bn || text.meaningUnavailableBn)}</p>
+        ${word.transliteration ? `<p class="word-card-transliteration">${escapeHtml(word.transliteration)}</p>` : ""}
+      </div>
+      ${wordPartsHtml(word, layers, context.wordFeatures ?? null, context.wordSegments, context, text)}
       ${progressBlock(context.progress, context.authority, context.coverage, text, formatNumber, {
         wholeQuranTotal: context.wholeQuranTotal,
         thisWordShareHtml: layers.lemma ? wordShareOfQuranLine(context, text, formatNumber) : "",
@@ -803,7 +881,8 @@ export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, 
   const arabicHtml = showSegmentColour ? segmentedArabicHtml(layers.surfaceToken, context.wordSegments) : escapeHtml(layers.surfaceToken);
   return `<section class="quran-word-card" role="region" aria-label="${escapeHtml(text.cardRegion)}" data-occurrence-id="${escapeHtml(occurrenceId)}">
     <header><button type="button" data-word-card-move="previous" aria-label="${escapeHtml(text.previous)}"${context.hasPrevious ? "" : " disabled"}>‹</button>
-      <div><div class="word-card-arabic" dir="rtl" lang="ar">${arabicHtml}</div><div class="word-card-reference">${typeof context.displayRef === "function" ? escapeHtml(context.displayRef(chapter.surahNumber, ayah.ayah, word.position)) : `${chapter.surahNumber}:${ayah.ayah}:${word.position}`}</div></div>
+      <div class="word-card-head-word"><div class="word-card-arabic" dir="rtl" lang="ar">${arabicHtml}</div><div class="word-card-reference">${typeof context.displayRef === "function" ? escapeHtml(context.displayRef(chapter.surahNumber, ayah.ayah, word.position)) : `${chapter.surahNumber}:${ayah.ayah}:${word.position}`}</div></div>
+      ${layers.root ? `<div class="word-card-root-box" data-word-card-root-box><small>${escapeHtml(text.rootBoxLabel)}</small><span dir="rtl" lang="ar">${escapeHtml(spacedRoot(layers.root))}</span></div>` : ""}
       <button type="button" data-word-card-move="next" aria-label="${escapeHtml(text.next)}"${context.hasNext ? "" : " disabled"}>›</button>
       <button type="button" data-word-card-close aria-label="${escapeHtml(text.close)}">×</button></header>
     <div class="word-card-ayah-action-row">

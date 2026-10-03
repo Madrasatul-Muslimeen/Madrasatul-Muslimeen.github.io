@@ -2814,14 +2814,66 @@
   .ms-ring-key { font-size: 0.72rem; color: var(--card-text-muted); margin: 0.3rem 0 0; }
   .my-status-unit-note { font-size: 0.8rem; color: var(--card-text-muted); margin: 0.5rem 0 0; }
   .quran-word-card { max-width: 42rem; margin: 0 auto; border: 1px solid var(--card-line); border-radius: 0.65rem; background: var(--card-bg); color: var(--card-text); padding: 0.65rem; box-shadow: var(--card-shadow); }
-  .quran-word-card header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; text-align: center; }
+  .quran-word-card header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; text-align: center; min-width: 0; }
   /* Previous / next / close. Square, fixed, never shrinking, so the three read
      as one group rather than three sizes -- and 40px, not the 29px they were.
      flex-shrink: 0 keeps them intact when a long Arabic word squeezes the row;
      the middle column is what gives. */
   .quran-word-card header button { flex: 0 0 auto; width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; padding: 0; font-size: 1.25rem; line-height: 1; border: 1px solid var(--card-line); border-radius: 0.35rem; background: var(--card-bg-inset); color: var(--card-heading); cursor: pointer; }
   .quran-word-card header button:disabled { opacity: 0.4; cursor: default; }
-  .quran-word-card header > div { flex: 1 1 auto; min-width: 0; }
+  .quran-word-card header > .word-card-head-word { flex: 1 1 0; min-width: 0; overflow: hidden; }
+  /* Round 2 -- the ROOT box (spec §1 Header; the demo's .root). Absent for a
+     word with no root, and the word cell then takes the space. A 40px slot
+     for the search button (round 6) can be added after the previous button. */
+  .word-card-root-box { flex: 0 0 auto; background: #e6f1ec; color: #12332a; border: 1px solid var(--card-line); border-radius: 0.5rem; padding: 0.2rem 0.6rem 0.3rem; text-align: center; min-width: 4.5rem; }
+  .word-card-root-box small { display: block; font-size: 0.62rem; letter-spacing: 0.12em; color: #3f6658; font-weight: 700; line-height: 1.3; }
+  .word-card-root-box span { display: block; font-family: var(--quran-font); font-size: 1.5rem; font-weight: 700; line-height: 1.3; white-space: nowrap; }
+  @media (max-width: 520px) {
+    .quran-word-card header { gap: 0.25rem; }
+    .quran-word-card header button { width: 36px; height: 36px; }
+    .word-card-root-box { min-width: 0; padding: 0.1rem 0.35rem 0.2rem; }
+    .word-card-root-box small { font-size: 0.55rem; }
+    .word-card-root-box span { font-size: 1.1rem; }
+    .quran-word-card .word-card-arabic { font-size: 1.55rem; }
+  }
+  @media (max-width: 340px) {
+    .word-card-root-box span { font-size: 0.95rem; }
+    .quran-word-card .word-card-arabic { font-size: 1.3rem; }
+  }
+  .word-card-arabic { font-family: var(--quran-font); font-size: 2rem; line-height: 1.5; }
+  /* Round 2 -- WbW facts row, meaning bar and word-part boxes (the demo's
+     .facts / .meaning / .parts). direction: rtl on the grids puts the first
+     item on the right; the boxes themselves read left to right again. */
+  .word-card-facts { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 0.5rem; direction: rtl; margin: 0.4rem 0; }
+  /* Architect review of #507: the demo's facts and part boxes are LIGHT cards
+     (#f3f5f4, dark ink) on the dark card, with strong part colours. The first
+     build used the dark inset colour and the pale segment palette, which
+     measured fine and did not look like the demo the Owner approved. */
+  .word-card-fact { direction: ltr; background: #f3f5f4; color: #13241f; border-radius: 0.6rem; padding: 0.45rem 0.6rem; min-width: 0; overflow-wrap: anywhere; }
+  .word-card-fact small { display: block; font-size: 0.74rem; font-weight: 600; color: #4f6159; }
+  .word-card-fact b { display: block; font-size: 1rem; font-weight: 800; }
+  .word-card-fact b.word-card-fact-ar { font-family: var(--quran-font); font-size: 1.3rem; text-align: left; }
+  .word-card-fact-sub { font-family: var(--quran-font); font-size: 0.95rem; font-weight: 500; color: #2f4a41; }
+  .word-card-fact b:has(+ .word-card-fact-sub) { display: inline; }
+  .word-card-fact b + .word-card-fact-sub { display: inline-block; margin-left: 0.4rem; }
+  @media (max-width: 520px) { .word-card-fact { padding: 0.4rem 0.4rem; } .word-card-fact b { font-size: 0.88rem; } .word-card-fact b.word-card-fact-ar { font-size: 1.05rem; } }
+  .word-card-meaning-bar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1.1rem; border: 1px solid var(--card-line); border-radius: 0.4rem; padding: 0.5rem 0.75rem; background: var(--card-bg-inset); margin: 0.4rem 0; }
+  .word-card-meaning-bar > p { margin: 0; min-width: 0; font-size: 1.15rem; font-weight: 700; }
+  .word-card-meaning-bar > .word-card-transliteration { font-size: 0.95rem; }
+  .word-card-meaning-bar > .word-card-transliteration { font-style: italic; font-weight: 600; }
+  .word-card-parts { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 0.5rem; direction: rtl; margin: 0.4rem 0; }
+  @media (max-width: 520px) { .word-card-parts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .word-card-part { direction: ltr; background: #f3f5f4; color: #13241f; border-radius: 0.6rem; padding: 0.6rem 0.5rem 0.7rem; display: grid; gap: 0.2rem; align-content: start; text-align: center; min-width: 0; overflow-wrap: anywhere; }
+  .word-card-part-kind { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; color: #4f6159; }
+  .word-card-part-piece { font-family: var(--quran-font); font-size: 2rem; line-height: 1.35; }
+  .word-card-part-arname { font-family: var(--quran-font); font-size: 1.05rem; font-weight: 700; }
+  .word-card-part-name { font-size: 1rem; font-weight: 800; line-height: 1.25; }
+  .word-card-part-meaning { font-size: 0.92rem; color: #2f4a41; }
+  .quran-word-card .word-card-part .word-card-part-piece { color: #13241f; }
+  .quran-word-card .word-card-part .word-card-part-piece.word-card-segment-particle { color: #2a64b8; }
+  .quran-word-card .word-card-part .word-card-part-piece.word-card-segment-person { color: #c0443f; }
+  .quran-word-card .word-card-part .word-card-part-piece.word-card-segment-stem { color: #1d8a4e; }
+  .quran-word-card .word-card-part .word-card-part-piece.word-card-segment-determiner { color: #6A3FA0; }
   .word-card-arabic { font-family: var(--quran-font); font-size: 2rem; line-height: 1.5; }
   /* Issue #263 -- word-part colouring. Deliberately plain inline spans with
      nothing between them (no space, no other element) so Arabic contextual
@@ -5729,6 +5781,7 @@
     import { occurrenceRefsFor, rootFormsFor, unpackWordIndexRef, loadWordIdentityIndex } from "./js/quran-word-index.js";
     import { relatedBySharedWords, relatedThroughLists, connectedThroughNotes } from "./js/ayah-related.js";
     import { wordSegmentsFor } from "./js/quran-word-segments.js";
+    import { wordFeaturesFor } from "./js/quran-word-features.js";
     import { wordProgressAuthority, WBW_WORD_STATES, resolveWordProgress } from "./js/quran-word-progress.js";
     import { primeAyahProgress, getSurahProgress, wordProgressFor, setWordState, decideWordApproval, clearWordProgressCache } from "./js/quran-word-progress-data.js";
     // Issue #320 -- Basic Arabic / Arabic in Depth word-occurrence progress,
@@ -6616,7 +6669,7 @@
       if (lemmaDictionary || lemmaDictionaryLoading) return;
       lemmaDictionaryLoading = true;
       loadLemmaDictionary().then((d) => { lemmaDictionary = d; }).catch((e) => console.warn("dictionary unavailable", e))
-        .finally(() => { lemmaDictionaryLoading = false; if (lemmaDictionary && quranWordCardState.open && quranWordCardState.level === "depth") renderPersistentWordCard(); });
+        .finally(() => { lemmaDictionaryLoading = false; if (lemmaDictionary && quranWordCardState.open && (quranWordCardState.level === "depth" || quranWordCardState.level === "wbw")) renderPersistentWordCard(); });
     }
     let quranWordCardLemmaRequestId = 0;
     /** v08.20 -- set ONLY while the reader followed a Basic-Arabic occurrence
@@ -14234,6 +14287,10 @@
         meaningUnavailableBn: "অর্থ পাওয়া যায়নি",
         lemma: t("Dictionary Word"),
         root: t("Root"),
+        rootBoxLabel: t("ROOT"),
+        factDictWord: t("Dictionary word"),
+        factForm: t("Form"),
+        formNumber: t("Form {n}"),
         partOfSpeech: t("Part of speech"),
         unknown: t("Unknown"),
         rootOccurrences: t("{count} root-linked occurrences"),
@@ -15168,7 +15225,9 @@
       wordCardMountEls().forEach((m) => { if (m !== mount) { m.hidden = true; const c = m.querySelector("[data-word-card-content]"); if (c) c.innerHTML = ""; } });
       mount.hidden = false;
       const content = mount.querySelector("[data-word-card-content]") ?? mount;
-      if (quranWordCardState.level === "depth") ensureLemmaDictionary();
+      // The English WbW stem box also prints the dictionary meaning, so that
+      // page loads the same first-use file Depth does.
+      if (quranWordCardState.level === "depth" || (quranWordCardState.level === "wbw" && getAppLang() !== "bn")) ensureLemmaDictionary();
       content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, ...wordCardDictionaryContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: getColourWordParts(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
       if (focusSelector) (mount.querySelector(focusSelector)?.disabled ? mount.querySelector("[data-word-card-close]") : mount.querySelector(focusSelector))?.focus({ preventScroll: true });
     }
@@ -15199,14 +15258,17 @@
         // word with no exact alignment) never breaks the rest of the card --
         // it just leaves the word uncoloured, so its own errors are caught
         // here rather than joining the root/lemma `Promise.all` rejection.
-        const [rootOccurrences, lemmaOccurrences, rootForms, wordSegments] = await Promise.all([
+        // Word card rebuild, round 2 -- the Corpus features load the same way
+        // (one small file per surah, on demand, failure leaves no part boxes).
+        const [rootOccurrences, lemmaOccurrences, rootForms, wordSegments, wordFeatures] = await Promise.all([
           occurrenceRefsFor("root", word.morphology?.root),
           occurrenceRefsFor("lemma", word.morphology?.lemma),
           word.morphology?.root ? rootFormsFor(word.morphology.root) : null,
           wordSegmentsFor(ref.surah, ref.ayah, ref.position).catch(() => null),
+          wordFeaturesFor(ref.surah, ref.ayah, ref.position).catch(() => null),
         ]);
         if (request !== quranWordCardRequest || !quranWordCardState.open || quranWordCardState.occurrenceId !== requestedId || currentSurahNum !== ref.surah) return;
-        quranWordCardContext = { rootOccurrences, lemmaOccurrences, rootForms, rootOccurrenceCount: rootOccurrences.length, lemmaOccurrenceCount: lemmaOccurrences.length, expandedForm: quranWordCardExpandedForm, lemmaExpanded: false, wordSegments };
+        quranWordCardContext = { rootOccurrences, lemmaOccurrences, rootForms, rootOccurrenceCount: rootOccurrences.length, lemmaOccurrenceCount: lemmaOccurrences.length, expandedForm: quranWordCardExpandedForm, lemmaExpanded: false, wordSegments, wordFeatures };
       } catch (error) {
         if (request !== quranWordCardRequest || !quranWordCardState.open || quranWordCardState.occurrenceId !== requestedId || currentSurahNum !== ref.surah) return;
         quranWordCardContext = { occurrencesError: error.message };
