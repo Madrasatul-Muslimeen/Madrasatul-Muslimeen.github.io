@@ -23,7 +23,10 @@ check("opening preserves permanent identity", () => assert.equal(openWordCard(cr
 check("WbW renders Arabic and both meanings", () => { const html = renderQuranWordCard({ state: openWordCard(createWordCardState(), id), chapter, ayah, word }); assert.match(html, /بِسْمِ/); assert.match(html, /In the name/); assert.match(html, /নামে/); });
 check("three level tabs are always present", () => { const html = renderQuranWordCard({ state: openWordCard(createWordCardState(), id), chapter, ayah, word }); assert.equal((html.match(/role="tab"/g) || []).length, 3); });
 check("level selection persists while occurrence stays open", () => { const state = selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"); assert.equal(state.level, "basic"); assert.equal(state.open, true); assert.equal(state.occurrenceId, id); });
-check("Basic Arabic keeps root and lemma separate", () => { const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: { rootOccurrenceCount: 381 } }); assert.match(html, /سمو/); assert.match(html, /ٱسْم/); assert.match(html, /381 root-linked/); });
+// Updated in place (3 Oct 2026): Word card round 3 (decision 59, the approved
+// demo) prints the root as spaced letters, "س م و", in the header's root box
+// and Basic's Root fact. The old /سمو/ described the pre-rebuild card.
+check("Basic Arabic keeps root and lemma separate", () => { const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: { rootOccurrenceCount: 381 } }); assert.match(html, /data-word-card-fact="root"><small>Root<\/small><b class="word-card-fact-ar" dir="rtl" lang="ar">س م و<\/b>/); assert.match(html, /ٱسْم/); assert.match(html, /381 root-linked/); });
 // UPDATED v08.21: Basic Arabic is the SUMMARY now -- the owner's own ask,
 // "Basic should show the summary only; move the detailed occurrence lists out
 // of Basic". So the assertion is inverted rather than dropped: Basic must list
@@ -40,8 +43,13 @@ const formsContext = { rootForms: { root: "سمو", totalOccurrences: 12, formCo
   { lemma: "ٱسْم", count: 8, refs: [], pos: "Noun", posCounts: [["Noun", 8]], posAmbiguous: false },
   { lemma: "سَمَآء", count: 3, refs: [], pos: "Noun", posCounts: [["Noun", 3]], posAmbiguous: false },
 ] } };
-check("Basic Arabic lists every derived form, in order, with real counts", () => {
-  const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: formsContext });
+// Updated in place (3 Oct 2026): Word card round 3 (#508, a4989724) replaced
+// Basic's forms list with ordered derived-form cards, and the full list with
+// its categories, remainder and "also recorded as" notes moved to Depth's
+// Root & Word Family section (formsSection, expandable). Same assertions,
+// asked of the tab that now carries the list.
+check("Depth's forms list (moved from Basic in round 3) lists every derived form, in order, with real counts", () => {
+  const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "depth"), chapter, ayah, word, context: formsContext });
   assert.equal((html.match(/word-card-form-arabic/g) || []).length, 2);
   assert.ok(html.indexOf("ٱسْم") < html.indexOf("سَمَآء"), "forms must render in the order given");
   assert.match(html, /8 occurrences/); assert.match(html, /3 occurrences/);
@@ -55,8 +63,13 @@ check("Basic Arabic: the derived forms come BEFORE the occurrence counts", () =>
   assert.ok(forms < rootLine && forms < lemmaLine && forms < share, JSON.stringify({ forms, rootLine, lemmaLine, share }));
   assert.ok(html.indexOf("</dl>") < forms, "the forms still come after the word's own facts");
 });
+// Updated in place (3 Oct 2026): Word card round 3 (#508, a4989724) replaced
+// Basic's forms list with ordered derived-form cards, and the full list with
+// its categories, remainder and "also recorded as" notes moved to Depth's
+// Root & Word Family section (formsSection, expandable). Same assertions,
+// asked of the tab that now carries the list.
 check("an unclassified remainder is reported, never hidden", () => {
-  const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: formsContext });
+  const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "depth"), chapter, ayah, word, context: formsContext });
   assert.match(html, /1 occurrences of this root are not assigned to a form/);
 });
 // UPDATED v08.22, with the reason. v08.21 asserted that NO category is shown,
@@ -67,14 +80,24 @@ check("an unclassified remainder is reported, never hidden", () => {
 // one. So the category IS available and the card must show it. The check is
 // inverted rather than deleted, and now also guards the thing that inverting
 // it puts at risk: two forms sharing a category must not be merged.
+// Updated in place (3 Oct 2026): Word card round 3 (#508, a4989724) replaced
+// Basic's forms list with ordered derived-form cards, and the full list with
+// its categories, remainder and "also recorded as" notes moved to Depth's
+// Root & Word Family section (formsSection, expandable). Same assertions,
+// asked of the tab that now carries the list.
 check("each form carries the category the source actually records", () => {
-  const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: formsContext });
+  const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "depth"), chapter, ayah, word, context: formsContext });
   assert.equal((html.match(/word-card-form-pos-name/g) || []).length, 2);
   assert.equal((html.match(/>Noun</g) || []).length, 2);
   assert.match(html, /Each form's category is the one the packaged grammatical analysis records/);
 });
+// Updated in place (3 Oct 2026): Word card round 3 (#508, a4989724) replaced
+// Basic's forms list with ordered derived-form cards, and the full list with
+// its categories, remainder and "also recorded as" notes moved to Depth's
+// Root & Word Family section (formsSection, expandable). Same assertions,
+// asked of the tab that now carries the list.
 check("two distinct written forms sharing a category stay two rows", () => {
-  const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: formsContext });
+  const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "depth"), chapter, ayah, word, context: formsContext });
   assert.equal((html.match(/word-card-form-arabic/g) || []).length, 2);
   assert.match(html, /ٱسْم/); assert.match(html, /سَمَآء/);
 });
@@ -92,16 +115,27 @@ check("a category the source does not record is said so, never guessed", () => {
   const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: ctx });
   assert.match(html, /Category not recorded/);
 });
+// Updated in place (3 Oct 2026): Word card round 3 (#508, a4989724) replaced
+// Basic's forms list with ordered derived-form cards, and the full list with
+// its categories, remainder and "also recorded as" notes moved to Depth's
+// Root & Word Family section (formsSection, expandable). Same assertions,
+// asked of the tab that now carries the list.
 check("a form with more than one recorded category is marked, not flattened", () => {
   const ctx = { rootForms: { root: "رحم", totalOccurrences: 5, formCount: 1, unclassified: 0, forms: [{ lemma: "رَّحِيم", count: 5, refs: [], pos: "Adjective", posCounts: [["Adjective", 4], ["Noun", 1]], posAmbiguous: true }] } };
-  const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: ctx });
+  const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "depth"), chapter, ayah, word, context: ctx });
   assert.match(html, /Adjective/);
   assert.match(html, /Also recorded as: Noun/);
   assert.match(html, /1 of these forms are recorded with more than one category/);
 });
-check("the Basic part-of-speech chain keeps every segment the source supplies", () => {
+// Updated in place (3 Oct 2026): round 3 (#508, the approved demo) replaced
+// Basic's part-of-speech chain ("Preposition + Noun") with the facts row
+// Root · Dictionary word (· Form for a verb); the word's pieces are WbW's part
+// boxes (word-card-wbw-rebuild-browser). The check now guards that row.
+check("Basic shows the demo's facts row: Root, then Dictionary word, both in Arabic", () => {
   const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: formsContext });
-  assert.match(html, /Preposition \+ Noun/);
+  const root = html.indexOf('data-word-card-fact="root"'), dict = html.indexOf('data-word-card-fact="dict"');
+  assert.ok(root > 0 && dict > root, JSON.stringify({ root, dict }));
+  assert.match(html, /data-word-card-fact="dict"><small>Dictionary word<\/small><b class="word-card-fact-ar" dir="rtl" lang="ar">ٱسْم<\/b>/);
 });
 check("Depth lists the same forms and expands one of them", () => {
   const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "depth"), chapter, ayah, word, context: { ...formsContext, expandedForm: "ٱسْم", formOccurrences: [{ surah: 1, ayah: 1, position: 1, arabic: "بِسْمِ" }], formOccurrencesTotal: 8 } });

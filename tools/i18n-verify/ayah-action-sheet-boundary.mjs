@@ -635,9 +635,12 @@ check("quranrevival.html's shared readView/noteView click handler opens the shee
 });
 
 check("the Word Card renders its own \"This āyah ⋯\" row OUTSIDE <header> -- the drag/resize and layout suites measure the header's own Prev/Arabic/Next/Close row and must see it byte-for-byte unchanged", () => {
+  // Updated in place (3 Oct 2026): Word card round 6 (#518) puts the 🔍 search
+  // row between </header> and this row, when Search is open. Both stay
+  // OUTSIDE the header, which is what this check guards.
   const text = read("app/js/quran-word-card.js");
-  assert.ok(/<\/header>\s*<div class="word-card-ayah-action-row">/.test(text),
-    "the ayah-action row is not a sibling placed immediately after </header>");
+  assert.ok(/<\/header>\s*(?:\$\{searchOpen \? searchRowHtml\([^}]*\) : ""\}\s*)?<div class="word-card-ayah-action-row">/.test(text),
+    "the ayah-action row is not a sibling placed after </header> (with at most the search row between)");
 });
 
 // --- 6b. ISSUE #295 -- THE THIRD ENTRY POINT: THE ĀYAH NUMBER BADGE --------
@@ -646,7 +649,10 @@ check("ayah-renderer.js's Arabic panel stamps the number badge as a real button,
   const text = read("app/js/ayah-renderer.js");
   assert.ok(/data-ayah-num-badge="\$\{surahNumber\}:\$\{ayah\.ayah\}"/.test(text),
     "the number badge is not stamped with the same plain surah:ayah shape the Mushaf marker/Word Card button use");
-  assert.ok(/const numBadge = clickable/.test(text), "the badge's own button-vs-span choice is not gated on the same `clickable` precondition the word buttons already require");
+  // Updated in place (3 Oct 2026): #482 (Al-Fātiḥah's display count) adds
+  // `shown == null ? ""` first, for the unnumbered Bismillah; the button-vs-
+  // span choice after it is still gated on `clickable`.
+  assert.ok(/const numBadge = (?:shown == null \? ""\s*:\s*)?clickable/.test(text), "the badge's own button-vs-span choice is not gated on the same `clickable` precondition the word buttons already require");
 });
 
 check("quranrevival.html's Note view stamps the same number-badge button locally, and both wire to openAyahActionSheet", () => {
