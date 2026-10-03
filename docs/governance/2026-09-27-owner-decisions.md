@@ -256,3 +256,11 @@ Demo: https://claude.ai/artifact/N6iuWKx4Rg5uNNy1RAr5kD (the switch in Study opt
 | # | Question | Owner's words | Meaning |
 |---|---|---|---|
 | 60 | (A phone screenshot of Yā Sīn on the Mushaf page with the light known-word marks.) | **"Enable a swith between known/ unknown word marking (whatever user chooses). Marked words should be always less. (When 50% is known user can choose what hua wants to mark, known words or unknown words."** | A **Mark words** switch in Study options → Reading view, its own row under the reading ticks: **Fewer (auto)** · **Known** · **Unknown**. Known words keep the light green tint; words still to learn get a light amber tint, so the two can always be told apart. **Fewer (auto)** is the default (the Architect's recommendation, shown in the demo; the Owner may change it): it marks the known words while less than half of the Qur'an is known and the words still to learn once half or more is, using the best of the WbW, Basic and Depth "You know" totals. Remembered on the device, like the other reading choices; it writes nothing to the database and reads nothing at startup. Āyah-end markers are never marked. |
+
+## 3 Oct 2026 — Answers to the waiting list
+
+The Architect's report listed, in order: (1) review the part names and Form sentences, (2) the order of Basic's word-family cards, (3) sources for the Depth lines marked "Needs a source", (4) the two dictionary permission letters, (5) the Asmaul Husna poster (on hold).
+
+| # | Question | Owner's words | Meaning |
+|---|---|---|---|
+| 61 | The four open items above. | **"Al Hamdulillah, keep going. 1. Keep going. Ma Shaa Allah! 2. Your order is okay. 3. No issue with permission, you can build. 4. Later. Keep reminding."** | (1) The part names and per-Form sentences (https://claude.ai/artifact/N4Caa9YnBPqqWGFr3R89oS) are accepted as they are. (2) Basic's derived-form order is the one built (`DERIVED_GROUP_ORDER`, the demo's). (3) Build the "Needs a source" lines from recognised sources (sentence iʿrāb, near-synonym distinctions, classical usage), each credited; the Architect checks each source's licence and says what it is before release. (4) The permission letters wait; the Architect keeps reminding. The Bangla dictionary meanings still have no digital source in the repository, so they wait with the letters. (5) The poster stays on hold (decision 50). |

@@ -3353,6 +3353,30 @@
      names ("Reading (with Tajweed)" is the exact real-tenant case this
      lesson is named after). `width: 100%` + `min-width: 0` pins it to the
      sheet's own content width regardless of option length. */
+  /* Owner, 3 Oct 2026: the Approach list marks progress by colour. A tap on
+     the pull-down opens the app's own list (ayah-action-sheet.js
+     openApproachList); the <select> underneath keeps the value and the keyboard. */
+  .gac-approach-pick { position: relative; }
+  .gac-approach-pick-btn { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; background: transparent; cursor: pointer; }
+  .gac-list-overlay { position: fixed; inset: 0; z-index: 980; background: rgba(0, 0, 0, 0.45); display: flex; align-items: flex-end; justify-content: center; padding: 0.75rem; box-sizing: border-box; }
+  @media (min-width: 700px) { .gac-list-overlay { align-items: center; } }
+  .gac-list { width: min(100%, 30rem); max-height: min(80vh, 40rem); display: flex; flex-direction: column; background: var(--card-bg); color: var(--card-text); border: 1px solid var(--card-line); border-radius: 1rem; box-shadow: var(--card-shadow); overflow: hidden; }
+  .gac-list-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.6rem 0.6rem 0.6rem 1rem; border-bottom: 1px solid var(--card-line); }
+  .gac-list-head p { margin: 0; font-weight: 700; color: var(--card-heading); }
+  .gac-list-close { width: 40px; height: 40px; flex-shrink: 0; border: 1px solid var(--card-line); border-radius: 0.5rem; background: var(--card-bg-inset); color: var(--card-text); font: inherit; cursor: pointer; }
+  .gac-list-body { overflow-y: auto; overscroll-behavior: contain; }
+  .gac-list-group { margin: 0; padding: 0.75rem 1rem 0.3rem; font-weight: 700; font-size: 0.85rem; color: var(--card-text-muted); }
+  .gac-list-row { display: grid; grid-template-columns: minmax(0, 1fr) 26px; gap: 0.75rem; align-items: center; width: 100%; min-height: 48px; text-align: left; border: 0; border-top: 1px solid var(--card-line); background: none; color: var(--card-text); font: inherit; font-size: 0.98rem; padding: 0.55rem 1rem 0.55rem 1.6rem; cursor: pointer; }
+  .gac-list-row:focus-visible { outline: 2px solid var(--card-heading); outline-offset: -2px; }
+  .gac-list-name { min-width: 0; overflow-wrap: anywhere; }
+  .gac-list-dot { width: 22px; height: 22px; border-radius: 50%; box-sizing: border-box; border: 2.5px solid var(--card-text-muted); display: grid; place-items: center; }
+  .gac-list-dot.has-progress { border-color: var(--dot); background: var(--dot); }
+  .gac-list-row[aria-checked="true"] .gac-list-dot::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--card-heading); }
+  .gac-list-row[aria-checked="true"] .gac-list-dot.has-progress::after { background: #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35); }
+  .gac-list-row[aria-checked="true"] .gac-list-dot:not(.has-progress) { border-color: var(--card-heading); }
+  .gac-list-legend { display: flex; flex-wrap: wrap; gap: 0.35rem 1rem; padding: 0.6rem 1rem; border-top: 1px solid var(--card-line); font-size: 0.82rem; color: var(--card-text-muted); }
+  .gac-list-legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+  .gac-list-legend i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--dot); background: var(--dot); }
   .ayah-sheet-approach-select { display: block; width: 100%; min-width: 0; box-sizing: border-box; min-height: 40px; font: inherit; font-size: 0.88rem; padding: 0.3rem 0.5rem; border: 1px solid var(--card-line); border-radius: 0.35rem; background: var(--card-bg-inset); color: var(--card-text); }
   /* Issue #325 -- the four-stage picker shared by the Ayah Card and the
      "This page" card. flex-wrap so four labels (the longest, "Practising",
@@ -7268,7 +7292,9 @@
           // "written 'Not Started' with approaches names, why? Fix." Only real
           // progress is written after a name; Not started says nothing.
           const shown = statusId && statusId !== "not_started";
-          return `<option value="${escapeHtml(tr.id)}">${escapeHtml(shown ? `${name} · ${statusLabel(statusId)}` : name)}</option>`;
+          // Owner, 3 Oct 2026: the Approach list marks progress by colour; the
+          // app's own list (ayah-action-sheet.js) reads the stage from here.
+          return `<option value="${escapeHtml(tr.id)}" data-approach-status="${escapeHtml(statusId ?? "")}">${escapeHtml(shown ? `${name} · ${statusLabel(statusId)}` : name)}</option>`;
         }).join("");
         return label ? `<optgroup label="${escapeHtml(label)}">${options}</optgroup>` : options;
       }).join("");
