@@ -126,6 +126,12 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   // MAP Phase 3 -- the WbW progress block. Every one of these is a string a
   // reader sees, so every one is overridable (I11).
   progressHeading: "Word progress",
+  recordHeading: "Record your Progress",
+  statusHeading: "Know Your Status",
+  wordNumberLabel: "word {n}",
+  ringLabel: "{percent} of the words of the Qur'an known",
+  ringUnknown: "Share of the words of the Qur'an known: not loaded yet",
+  ringCaption: "of the Qur'an",
   stateNotStarted: "Not started",
   stateLearning: "Learning",
   statePractising: "Practising",
@@ -403,17 +409,55 @@ function progressBlock(progress, authority, coverage, text, formatNumber, wbw = 
   // issue #303) is gone: the buttons above now drive the lemma-wide claim
   // too (mirrored by the page's own runWordProgressAction()), so there is no
   // longer a second control offering the same decision twice.
+  // Round 7 (#525) -- two boxes. On a phone they stack exactly as the one block
+  // did; on a wide card (a container query in quranrevival.html) they become
+  // the right-hand column. The PC-only parts (second heading, where-line, ring)
+  // are hidden by CSS below the breakpoint, so the phone card is unchanged.
+  const ring = wholeQuranRingHtml(wbw, text, formatNumber);
   return `<div class="word-card-progress" data-word-progress>
-    <h3 class="word-progress-heading">${escapeHtml(text.progressHeading)}</h3>
+    <div class="word-progress-rec" data-word-progress-rec>
+    <h3 class="word-progress-heading word-progress-heading-phone">${escapeHtml(text.progressHeading)}</h3>
+    <h3 class="word-progress-heading word-progress-heading-pc">${escapeHtml(text.recordHeading)}</h3>
+    ${wbw.where ? `<p class="word-progress-where">${escapeHtml(wbw.where)}</p>` : ""}
     <div class="word-progress-states" role="group" aria-label="${escapeHtml(text.progressHeading)}">${stateButton("not_started")}${stateButton("learning")}${stateButton("practising")}${stateButton("achieved")}</div>
     ${reviewLine ? `<p class="word-progress-state" data-word-progress-review>${escapeHtml(reviewLine)}</p>` : ""}
     ${authority && !authority.mayClaim ? `<p class="word-progress-state" data-word-progress-blocked>${escapeHtml(text.progressNotAllowed)}</p>` : ""}
     ${decisions}
-    ${coverageLine}
+    </div>
+    <div class="word-progress-status" data-word-progress-status>
+    <h3 class="word-progress-heading word-progress-heading-pc">${escapeHtml(text.statusHeading)}</h3>
+    <div class="word-progress-status-top">${ring}${coverageLine}</div>
     ${wholeQuranKnownLines(wbw.wholeQuranTotal, text, formatNumber, wbw.levelTotals)}
     ${wbw.thisWordShareHtml ?? ""}
     ${learnDeltaLine(wbw.learnDelta, text, formatNumber)}
+    </div>
   </div>`;
+}
+
+/**
+ * Round 7 (#525) -- the percentage ring: the % of the Qur'an's words known at
+ * the OPEN tab's level. Never a new count: it is the same known/total pair
+ * the "You know ..." line prints (levelTotals, or the WbW total on a page that
+ * has none). Unknown or still loading -> "—" and no arc, never 0%.
+ */
+function wholeQuranRingHtml(wbw, text, formatNumber) {
+  const level = wbw.level ?? "wbw";
+  const total = Array.isArray(wbw.levelTotals) && wbw.levelTotals.length
+    ? (wbw.levelTotals.find((row) => row.level === level)?.total ?? null)
+    : (level === "wbw" ? (wbw.wholeQuranTotal ?? null) : null);
+  const known = total && Number.isFinite(total.known) && Number.isFinite(total.total) && total.total > 0;
+  const R = 50, C = 2 * Math.PI * R;
+  const percent = known ? percentRounded(total.known, total.total) : null;
+  const shown = known ? `${formatNumber(percent.toFixed(2))}%` : "—";
+  const label = known ? String(text.ringLabel).replace("{percent}", shown) : String(text.ringUnknown);
+  const arc = known && percent > 0
+    ? `<circle class="word-progress-ring-arc" cx="60" cy="60" r="${R}" fill="none" stroke-width="12" stroke-linecap="round" stroke-dasharray="${((percent / 100) * C).toFixed(2)} ${C.toFixed(2)}" transform="rotate(-90 60 60)"/>`
+    : "";
+  return `<svg class="word-progress-ring" data-word-progress-ring viewBox="0 0 120 120" role="img" aria-label="${escapeHtml(label)}">
+    <circle class="word-progress-ring-track" cx="60" cy="60" r="${R}" fill="none" stroke-width="12"/>${arc}
+    <text class="word-progress-ring-num" x="60" y="58" text-anchor="middle" font-size="21" font-weight="800">${escapeHtml(shown)}</text>
+    <text class="word-progress-ring-cap" x="60" y="78" text-anchor="middle" font-size="10">${escapeHtml(text.ringCaption)}</text>
+  </svg>`;
 }
 
 function validLevel(level) {
@@ -810,6 +854,11 @@ export function wordPartsHtml(word, layers, features, segments, context, text) {
 }
 
 function levelPanel(level, word, layers, context, text, formatNumber) {
+  // Round 7 (#525) -- "WbW · 2:102 · word 35", the small line in Record your
+  // Progress. The reference stays in plain digits (an identifier); the word
+  // number is a count, in the reader's digits.
+  const levelNames = { wbw: text.levelNameWbw, basic: text.levelNameBasic, depth: text.levelNameDepth };
+  const where = `${levelNames[level] ?? level} · ${context.surahNumber}:${context.ayahNumber} · ${String(text.wordNumberLabel).replace("{n}", formatNumber(word.position))}`;
   if (level === "wbw") {
     // Deliberately bilingual: WbW shows the English and Bangla gloss together
     // whatever the reader's language, so each fallback stays in its own
@@ -822,7 +871,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
     const showSegmentColour = context.colourWordPartsEnabled && validSegments(context.wordSegments);
     const enGloss = word.translation?.en || text.meaningUnavailableEn;
     const enGlossHtml = showSegmentColour ? segmentedGlossHtml(enGloss, context.wordSegments) : escapeHtml(enGloss);
-    return `<div role="tabpanel" data-word-card-panel="wbw">
+    return `<div role="tabpanel" data-word-card-panel="wbw"><div class="word-card-main">
       ${wordFactsHtml(word, layers, context.wordFeatures ?? null, text, formatNumber)}
       <div class="word-card-meaning-bar" data-word-card-meaning-bar>
         <p class="word-card-meaning word-card-meaning-en" lang="en">${enGlossHtml}</p>
@@ -830,6 +879,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
         ${word.transliteration ? `<p class="word-card-transliteration">${escapeHtml(word.transliteration)}</p>` : ""}
       </div>
       ${wordPartsHtml(word, layers, context.wordFeatures ?? null, context.wordSegments, context, text)}
+      </div><div class="word-card-side">
       ${progressBlock(context.progress, context.authority, context.coverage, text, formatNumber, {
         wholeQuranTotal: context.wholeQuranTotal,
         thisWordShareHtml: layers.lemma ? wordShareOfQuranLine(context, text, formatNumber) : "",
@@ -837,10 +887,11 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
         lemmaProgress: context.lemmaProgress,
         lemmaAuthority: context.lemmaAuthority,
         levelTotals: context.levelTotals,
+        level, where,
       })}
       ${knownThroughLine(context.knownViaGroupLemma, text)}
       ${knownThroughLevelLine(context.knownViaLevel, text)}
-    </div>`;
+    </div></div>`;
   }
   if (level === "basic") {
     const count = (template, n) => escapeHtml(String(template).replace("{count}", formatNumber(n)));
@@ -848,7 +899,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
     // info" -- so the derived forms come straight after the word's facts, and
     // the occurrence counts sit below them. Round 3: the facts are the same
     // row WbW shows, and the forms are ordered cards.
-    return `<div role="tabpanel" data-word-card-panel="basic">
+    return `<div role="tabpanel" data-word-card-panel="basic"><div class="word-card-main">
       ${wordFactsHtml(word, layers, context.wordFeatures ?? null, text, formatNumber)}
       ${derivedCardsSection(layers, context, text, formatNumber)}
       <p>${layers.root ? count(text.rootOccurrences, Number(context.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0)) : escapeHtml(text.rootUnavailable)}</p>
@@ -856,8 +907,9 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
       ${layers.lemma ? wordShareOfQuranLine(context, text, formatNumber) : ""}
       ${context.occurrencesLoading ? `<p>${escapeHtml(text.loadingOccurrences)}</p>` : ""}
       ${context.occurrencesError ? `<p role="status">${escapeHtml(String(text.occurrencesUnavailable).replace("{error}", context.occurrencesError))}</p>` : ""}
-      ${progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals })}
-    </div>`;
+      </div><div class="word-card-side">
+      ${progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals, level, where })}
+    </div></div>`;
   }
   // v08.21 -- the occurrence section comes FIRST, then the dictionary and the
   // rest of Depth's existing detail, which is the owner's own ordering.
@@ -865,7 +917,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
   // WbW panel above, but WITHOUT coverage or any of the WbW-only extras
   // (whole-Qur'an total, lemma-wide claim): those stay scoped to WbW, per the
   // issue's own point 4.
-  return `<div role="tabpanel" data-word-card-panel="depth">
+  return `<div role="tabpanel" data-word-card-panel="depth"><div class="word-card-main">
     ${depthSectionsHtml({
       word, layers, features: context.wordFeatures ?? null, open: context.depthOpen ?? {},
       ctx: {
@@ -877,8 +929,9 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
         formsHtml: formsSection(layers, context, text, formatNumber, { expandable: true }),
       },
     })}
-    ${progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals })}
-  </div>`;
+    </div><div class="word-card-side">
+    ${progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals, level, where })}
+  </div></div>`;
 }
 
 /**
