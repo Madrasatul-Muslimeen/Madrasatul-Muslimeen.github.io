@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.50",
+    "version": "09.51",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1781,8 +1781,20 @@
     {
       "version": "09.50",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The Word card's Basic tab: facts row and the derived forms as ordered cards (decision 59, #508, PR #510).",
+      "integration": {
+        "authorizedOn": "2026-10-03",
+        "integratedOn": "2026-10-03",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.51",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Mark words switch: Fewer (auto) / Known / Unknown, amber tint for words still to learn (decision 60).",
       "integration": {
         "authorizedOn": "2026-10-03",
         "integratedOn": "2026-10-03",
@@ -1791,8 +1803,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.51",
+  "nextUnallocated": "09.52",
   "nextUnallocatedNote": [
+    "v09.51 was allocated to Mark known or unknown words (decision 60), 2026-10-03.",
     "v09.50 was allocated to Word card rebuild round 3 (Basic tab), 2026-10-03.",
     "v09.49 was allocated to Word card rebuild round 2 (WbW tab and header), 2026-10-03.",
     "v09.48 was allocated to Word card rebuild round 1 (data), 2026-10-03.",

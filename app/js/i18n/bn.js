@@ -3306,4 +3306,13 @@ export const BN = {
   'Tag "{name}" restored.': 'ট্যাগ "{name}" ফিরিয়ে আনা হয়েছে।',
   "Tag — it comes back with its Notes.": "ট্যাগ — এটি নোটসহ ফিরে আসে।",
   "No Notes carry this tag yet.": "এই ট্যাগে এখনো কোনো নোট নেই।",
+  // Owner, 3 Oct 2026 -- Mark words switch (Study options, Reading view).
+  "Mark words": "শব্দ চিহ্নিত করুন",
+  "Fewer (auto)": "যেগুলো কম (স্বয়ংক্রিয়)",
+  "Known": "জানা",
+  "still to learn": "শেখা বাকি",
+  "Always marks the words you know, in green.": "সবসময় জানা শব্দগুলো সবুজে চিহ্নিত হয়।",
+  "Always marks the words you still have to learn, in amber.": "সবসময় শেখা বাকি শব্দগুলো কমলা রঙে চিহ্নিত হয়।",
+  "Marks whichever is fewer: you know half or more of the Qur'an, so the words still to learn are marked, in amber.": "যেগুলো সংখ্যায় কম সেগুলো চিহ্নিত হয়: আপনি কুরআনের অর্ধেক বা তার বেশি শব্দ জানেন, তাই শেখা বাকি শব্দগুলো কমলা রঙে চিহ্নিত হচ্ছে।",
+  "Marks whichever is fewer: you know less than half of the Qur'an, so the words you know are marked, in green.": "যেগুলো সংখ্যায় কম সেগুলো চিহ্নিত হয়: আপনি কুরআনের অর্ধেকের কম শব্দ জানেন, তাই জানা শব্দগুলো সবুজে চিহ্নিত হচ্ছে।",
 };
