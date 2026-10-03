@@ -3126,14 +3126,16 @@
   .word-progress-ring-arc { stroke: var(--card-heading); }
   .word-progress-ring-num { fill: var(--card-text); font-family: inherit; }
   .word-progress-ring-cap { fill: var(--card-text-muted); font-family: inherit; }
-  /* 52rem, by measurement (#525): the card is 768 wide as a sheet at 768, 774 as a window at a 900px screen, 881 at 1024, 920 from 1280.
-     Two columns need the left one to stay >= ~500px (WbW part boxes, Depth's tables), which first happens at the 881px card. */
-  @container wordcard (min-width: 52rem) {
+  /* 62rem, by measurement (#525, Architect review): two columns only when the left one keeps >= 640px, the width Depth's three
+     conjugation tables need side by side. The window's first size is now up to 1120px (1101 at a 1280 screen); at 1024 the card
+     (881px) keeps today's single column, so no layout loses anything. */
+  @container wordcard (min-width: 62rem) {
     [data-word-card-panel] { display: grid; grid-template-columns: minmax(0, 1fr) 19rem; gap: 0.9rem; align-items: start; margin-top: 0.4rem; }
     .word-card-main { display: block; min-width: 0; }
     [data-word-card-panel="depth"] .word-card-main { display: grid; gap: 0.6rem; }
     .word-card-side { display: flex; flex-direction: column; gap: 0.75rem; min-width: 0; }
-    .word-card-progress { display: contents; }
+    /* Not display: contents -- the progress block must keep a box (quran-word-levels-rendered measures it). */
+    .word-card-progress { display: flex; flex-direction: column; gap: 0.75rem; margin: 0; padding: 0; border-top: 0; min-width: 0; }
     .word-progress-rec, .word-progress-status { min-width: 0; padding: 0.7rem 0.75rem; border: 1px solid var(--card-line); border-radius: 0.6rem; background: var(--card-bg-inset); }
     .word-progress-heading-phone { display: none; }
     .word-progress-heading-pc { display: block; margin: 0 0 0.3rem; font-size: 0.95rem; text-transform: none; letter-spacing: 0; color: var(--card-heading); }
@@ -12421,6 +12423,10 @@
         resizeHandleEls: [...mountEl.querySelectorAll("[data-note-resize]")],
         minWidth: 320,
         minHeight: 240,
+        // Round 7 (#525): a wider first size on a big screen, so the two PC
+        // boxes fit beside Depth's three conjugation tables (a remembered
+        // size the reader chose is still kept).
+        defaultMaxWidth: 1120,
       });
     });
 

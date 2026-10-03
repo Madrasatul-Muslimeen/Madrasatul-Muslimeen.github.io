@@ -93,7 +93,9 @@ const dumped = {};
 for (const lang of ["en", "bn"].filter((l) => !arg("lang") || arg("lang") === l)) {
   const digits = (s) => (lang === "bn" ? bnDigits(s) : s);
   // ---- wide: 1280 and 1440 -------------------------------------------------
-  for (const width of process.argv.includes("--narrow-only") ? [] : [1024, 1280, 1440]) {
+  // UPDATED IN PLACE (Architect review of #525): two columns only from a 62rem card, so Depth's three conjugation
+  // tables keep their side-by-side row; 1024 (an 881px card) keeps today's single column and is checked below.
+  for (const width of process.argv.includes("--narrow-only") ? [] : [1280, 1440]) {
     const L = `${lang}/${width}`;
     console.log(`\n=== ${L} ===`);
     const ctx = await newContext(browser, { appLang: lang, viewport: { width, height: 900 }, extraSeedJs: SEED });
@@ -155,8 +157,8 @@ for (const lang of ["en", "bn"].filter((l) => !arg("lang") || arg("lang") === l)
   }
 
   // ---- narrow: today's layout, boxes under the tab content ----------------
-  // 900 is the widest screen still below the breakpoint (the card is a 774px window there).
-  for (const width of [320, 390, 768, 900]) {
+  // 1024 is the widest default screen still below the breakpoint (an 881px card there).
+  for (const width of [320, 390, 768, 900, 1024]) {
     const L = `${lang}/${width}`;
     console.log(`\n=== ${L} ===`);
     const ctx = await newContext(browser, { appLang: lang, viewport: { width, height: width > 600 ? 1000 : 844 }, extraSeedJs: SEED });
