@@ -991,3 +991,41 @@ export function mountCardLookControl(container) {
   });
   return buttons;
 }
+
+// ---------------------------------------------------------------------------
+// Owner, 3 Oct 2026: "Enable a switch between known/unknown word marking
+// (whatever user chooses). Marked words should be always less." Which words
+// the Read and Note views tint: "fewer" (the default: known words while under
+// half of the Qur'an is known, the words still to learn once half or more is),
+// "known" or "unknown". Same per-device localStorage shape as every other
+// reading preference here; read at module load, so no startup network read.
+// ---------------------------------------------------------------------------
+const MARK_WORDS_MODE_KEY = "mm_mark_words_mode";
+export const MARK_WORDS_MODES = Object.freeze(["fewer", "known", "unknown"]);
+
+function readMarkWordsMode() {
+  try {
+    const raw = localStorage.getItem(MARK_WORDS_MODE_KEY);
+    return MARK_WORDS_MODES.includes(raw) ? raw : "fewer";
+  } catch {
+    return "fewer";
+  }
+}
+
+let cachedMarkWordsMode = readMarkWordsMode();
+
+export function getMarkWordsMode() {
+  return cachedMarkWordsMode;
+}
+
+export function setMarkWordsMode(mode) {
+  cachedMarkWordsMode = MARK_WORDS_MODES.includes(mode) ? mode : "fewer";
+  writeStored(MARK_WORDS_MODE_KEY, cachedMarkWordsMode);
+  return cachedMarkWordsMode;
+}
+
+/** Which words to tint, given the mode and the share of the Qur'an known (0–1, or null when not known yet). */
+export function markWordsShows(mode, knownShare) {
+  if (mode === "known" || mode === "unknown") return mode;
+  return typeof knownShare === "number" && knownShare >= 0.5 ? "unknown" : "known";
+}
