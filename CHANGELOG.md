@@ -19265,3 +19265,13 @@ Owner, 3 Oct 2026 (decision 59): "Go, build all three tabs together." Round 3 of
 - Under them, every word from the root is a **card**: what kind of form it is (verb, verbal noun, the one who does it, the one it is done to, intensive adjective, comparative, other nouns), the Arabic large, its meaning and how many times it is in the Qur'an. **This word's own form is the gold card.**
 - The cards are always in the same order, the demo's suggested one, until the Owner gives theirs: 7 per row on a PC, 3 on a phone, right to left.
 - **Checks**: word-card-basic-rebuild-browser 138/0 (new), behaviour 1007/1 (sandbox-only) and 15 other suites green.
+
+## v09.51 — 3 Oct 2026 — Mark known or unknown words
+
+Owner, 3 Oct 2026 (decision 60): "Enable a switch between known/unknown word marking (whatever user chooses). Marked words should be always less."
+
+- Study options → Reading view has a new **Mark words** switch: **Fewer (auto)**, **Known** or **Unknown**.
+- **Known** marks the words you know in light green (as before); **Unknown** marks the words you still have to learn in light amber.
+- **Fewer (auto)**, the default, marks whichever group is smaller: the known words while you know less than half of the Qur'an, then the words still to learn once you know half or more.
+- Your choice is remembered on this device. Nothing is saved to your records.
+- **Checks**: mark-words-mode-browser 48/0 (new), known-word-marks-browser 122/0, behaviour 1004/4 (sandbox-only) and 4 other suites green.
