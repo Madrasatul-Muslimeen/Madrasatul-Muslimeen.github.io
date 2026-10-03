@@ -19256,3 +19256,12 @@ Owner, 3 Oct 2026 (decision 59): "Go, build all three tabs together." Round 2 of
 - The **WbW** tab shows, under the tabs: **Root, Dictionary word and Form** in three boxes (right to left), the English and Bangla meaning and the transliteration on **one bar**, and **one box for each part of the word** (e.g. فَ resumption particle, يَ present-tense prefix, تَعَلَّمُ the verb, ونَ the plural doer ending), each with its Arabic name, its name in your language and what it means.
 - On a phone the top line tightens so nothing overlaps; the part boxes sit two per row.
 - **Checks**: word-card-wbw-rebuild-browser 136/0 (new), behaviour 1007/1 (sandbox-only) and 12 other suites green.
+
+## v09.50 — 3 Oct 2026 — Word card rebuild, round 3: the Basic tab
+
+Owner, 3 Oct 2026 (decision 59): "Go, build all three tabs together." Round 3 of 7 (#508, PR #510).
+
+- The **Basic Arabic** tab now opens with the same **Root, Dictionary word and Form** boxes as WbW.
+- Under them, every word from the root is a **card**: what kind of form it is (verb, verbal noun, the one who does it, the one it is done to, intensive adjective, comparative, other nouns), the Arabic large, its meaning and how many times it is in the Qur'an. **This word's own form is the gold card.**
+- The cards are always in the same order, the demo's suggested one, until the Owner gives theirs: 7 per row on a PC, 3 on a phone, right to left.
+- **Checks**: word-card-basic-rebuild-browser 138/0 (new), behaviour 1007/1 (sandbox-only) and 15 other suites green.

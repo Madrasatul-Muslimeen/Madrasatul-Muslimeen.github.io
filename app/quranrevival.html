@@ -2461,6 +2461,18 @@
   .word-card-forms { margin: 0.6rem 0 0; }
   .word-card-forms h4 { margin: 0 0 0.3rem; font-size: 0.88rem; color: var(--card-heading); }
   .word-card-forms-summary { margin: 0 0 0.4rem; font-size: 0.85rem; color: var(--card-text); }
+  .word-card-dcards { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0.5rem; direction: rtl; }
+  .word-card-dcard { direction: ltr; background: #f7f8f6; color: #13241f; border: 1px solid #d6ddd9; border-radius: 0.75rem; padding: 0.5rem 0.4rem 0.55rem; display: grid; gap: 0.12rem; text-align: center; align-content: start; min-width: 0; overflow-wrap: anywhere; }
+  .word-card-dcard-current { background: #fff4d6; border-color: #c9a24a; box-shadow: 0 0 0 2px rgba(201, 162, 74, 0.45); }
+  .word-card-dcard-group { font-size: 0.68rem; font-weight: 800; color: #1c2a46; background: #e3d3a6; border-radius: 0.25rem; padding: 0.05rem 0.25rem; justify-self: center; max-width: 100%; }
+  .word-card-dgroup-verb .word-card-dcard-group { background: #cfe0f6; } .word-card-dgroup-masdar .word-card-dcard-group { background: #d7efdf; } .word-card-dgroup-doer .word-card-dcard-group { background: #f6dccf; }
+  .word-card-dgroup-done .word-card-dcard-group { background: #efd7ea; } .word-card-dgroup-elative .word-card-dcard-group { background: #f3e9b5; } .word-card-dgroup-noun .word-card-dcard-group, .word-card-dgroup-other .word-card-dcard-group { background: #dde3e1; }
+  .word-card-dcard-pos { font-size: 0.7rem; letter-spacing: 0.04em; color: #6b7c76; font-weight: 700; }
+  .word-card-dcard-ar { font-family: var(--quran-font); font-size: 1.6rem; line-height: 1.9; direction: rtl; }
+  .word-card-dcard .word-card-form-meaning { font-size: 0.86rem; color: #33463f; line-height: 1.25; }
+  .word-card-dcard-count { font-size: 0.78rem; font-weight: 800; color: #8a6a1f; font-variant-numeric: tabular-nums; }
+  @media (max-width: 1000px) { .word-card-dcards { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  @media (max-width: 520px) { .word-card-dcards { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.4rem; } .word-card-dcard-ar { font-size: 1.35rem; } }
   .word-card-forms-note { margin: 0.35rem 0 0; font-size: 0.74rem; line-height: 1.35; color: var(--card-text-muted); }
   .word-card-form-list { list-style: none; margin: 0; padding: 0; }
   .word-card-form { border-top: 1px solid var(--card-line); }
@@ -5781,7 +5793,7 @@
     import { occurrenceRefsFor, rootFormsFor, unpackWordIndexRef, loadWordIdentityIndex } from "./js/quran-word-index.js";
     import { relatedBySharedWords, relatedThroughLists, connectedThroughNotes } from "./js/ayah-related.js";
     import { wordSegmentsFor } from "./js/quran-word-segments.js";
-    import { wordFeaturesFor } from "./js/quran-word-features.js";
+    import { wordFeaturesFor, loadLemmaForms } from "./js/quran-word-features.js";
     import { wordProgressAuthority, WBW_WORD_STATES, resolveWordProgress } from "./js/quran-word-progress.js";
     import { primeAyahProgress, getSurahProgress, wordProgressFor, setWordState, decideWordApproval, clearWordProgressCache } from "./js/quran-word-progress-data.js";
     // Issue #320 -- Basic Arabic / Arabic in Depth word-occurrence progress,
@@ -6664,6 +6676,15 @@
     function wordCardDictionaryContext(word) {
       if (!lemmaDictionary) return {};
       return { dictionary: { entry: lemmaDictionaryEntry(lemmaDictionary, word.morphology?.lemma) } };
+    }
+    // Round 3 -- Basic's derived-form order data, fetched the FIRST time a Basic tab is drawn (I9).
+    let lemmaFormsTable = null;
+    let lemmaFormsLoading = false;
+    function ensureLemmaForms() {
+      if (lemmaFormsTable || lemmaFormsLoading) return;
+      lemmaFormsLoading = true;
+      loadLemmaForms().then((d) => { lemmaFormsTable = d.values; }).catch((e) => console.warn("lemma forms unavailable", e))
+        .finally(() => { lemmaFormsLoading = false; if (lemmaFormsTable && quranWordCardState.open && quranWordCardState.level === "basic") renderPersistentWordCard(); });
     }
     function ensureLemmaDictionary() {
       if (lemmaDictionary || lemmaDictionaryLoading) return;
@@ -14298,6 +14319,8 @@
         derivedForms: t("Derived forms of this root"),
         rootFormsSummary: t("{total} occurrences in {forms} derived forms"),
         formOccurrences: t("{count} occurrences"),
+        derivedCardsSummary: t("{n} forms · {total} times in all"),
+        derivedCardCount: t("{n}×"),
         // The reader's app language, for the derived-form meaning ("en" | "bn").
         formMeaningLang: getAppLang() === "bn" ? "bn" : "en",
         // v08.22 -- the grammatical categories the packaged data itself uses,
@@ -15228,7 +15251,8 @@
       // The English WbW stem box also prints the dictionary meaning, so that
       // page loads the same first-use file Depth does.
       if (quranWordCardState.level === "depth" || (quranWordCardState.level === "wbw" && getAppLang() !== "bn")) ensureLemmaDictionary();
-      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, ...wordCardDictionaryContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: getColourWordParts(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      if (quranWordCardState.level === "basic") ensureLemmaForms();
+      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, lemmaForms: lemmaFormsTable, ...wordCardDictionaryContext(word), ...wordProgressContext(ref), ...quranWordCardLemmaContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0, colourWordPartsEnabled: getColourWordParts(), displayRef: wordRefFor }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
       if (focusSelector) (mount.querySelector(focusSelector)?.disabled ? mount.querySelector("[data-word-card-close]") : mount.querySelector(focusSelector))?.focus({ preventScroll: true });
     }
 

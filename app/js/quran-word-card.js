@@ -4,7 +4,7 @@
 import { quranWordOccurrenceId, wordIdentityLayers } from "./quran-word-identity.js";
 import { QURAN_TOTAL_WORD_COUNT, percentRounded } from "./quran-word-total.js";
 import { arabicToBuckwalter } from "./buckwalter.js";
-import { partName, partMeaning, PART_KINDS, FORM_NAMES, STEM_NAMES, DERIV_NAMES } from "./word-grammar-tables.js";
+import { partName, partMeaning, PART_KINDS, FORM_NAMES, STEM_NAMES, DERIV_NAMES, DERIVED_GROUP_LABELS, orderDerivedForms } from "./word-grammar-tables.js";
 
 export const WORD_CARD_LEVELS = Object.freeze(["wbw", "basic", "depth"]);
 
@@ -73,6 +73,9 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   derivedForms: "Derived forms of this root",
   rootFormsSummary: "{total} occurrences in {forms} derived forms",
   formOccurrences: "{count} occurrences",
+  // Round 3 -- Basic's derived-form cards.
+  derivedCardsSummary: "{n} forms · {total} times in all",
+  derivedCardCount: "{n}×",
   // v08.22 -- "Form {n}" and the note explaining that number are GONE. The
   // number was a list position and read on screen as the traditional Arabic
   // verb form (I, II, III...), which it never was. Each row now names the
@@ -554,6 +557,49 @@ function formsSection(layers, context, text, formatNumber, { expandable }) {
 }
 
 /**
+ * Word card rebuild, round 3 -- Basic's derived forms as ordered cards.
+ * `context.lemmaForms` is lemma-forms.json's `values` once it has loaded
+ * (first use of Basic, never at startup) and absent until then, when the cards
+ * print in the data's own order WITHOUT group tags rather than a blank space.
+ * The order is orderDerivedForms()'s alone; this function never sorts.
+ */
+function derivedCardsSection(layers, context, text, formatNumber) {
+  if (!layers.root) return "";
+  const data = context.rootForms;
+  if (context.rootFormsError || !data || !data.forms?.length) return formsSection(layers, context, text, formatNumber, { expandable: false });
+  const bn = text.formMeaningLang === "bn";
+  const lang = bn ? "bn" : "en";
+  const table = context.lemmaForms ?? null;
+  let forms = data.forms;
+  if (table) {
+    forms = orderDerivedForms(data.forms.map((f) => {
+      const e = table[f.lemma];
+      return { lemma: f.lemma, group: e ? e[0] : "other", form: e ? e[1] : 0, count: f.count, src: f };
+    })).map((x) => ({ ...x.src, group: x.group, formNo: x.form }));
+  }
+  const summary = String(text.derivedCardsSummary).replace("{n}", formatNumber(data.formCount ?? data.forms.length)).replace("{total}", formatNumber(data.totalOccurrences));
+  const cards = forms.map((f) => {
+    const { name } = f.pos ? posName(f.pos, text) : { name: text.formCategoryUnknown };
+    const formNo = f.group === "verb" && f.formNo > 0 && FORM_NAMES[f.formNo]
+      ? ` · ${bn ? formatNumber(f.formNo) : FORM_NAMES[f.formNo].roman}` : "";
+    const pos = `${name}${formNo}${f.posAmbiguous ? " +1" : ""}`;
+    const current = f.lemma === layers.lemma;
+    return `<div class="word-card-dcard${f.group ? ` word-card-dgroup-${f.group}` : ""}${current ? " word-card-dcard-current" : ""}"${current ? ' data-word-card-form-current aria-current="true"' : ""} data-word-card-dcard>` +
+      (f.group ? `<span class="word-card-dcard-group">${escapeHtml(DERIVED_GROUP_LABELS[f.group]?.[lang] ?? "")}</span>` : "") +
+      `<span class="word-card-dcard-pos">${escapeHtml(pos)}</span>` +
+      `<span class="word-card-dcard-ar" dir="rtl" lang="ar">${escapeHtml(f.lemma)}</span>` +
+      formMeaning(f, text) +
+      `<span class="word-card-dcard-count">${escapeHtml(String(text.derivedCardCount).replace("{n}", formatNumber(f.count)))}</span>` +
+      `</div>`;
+  }).join("");
+  return `<section class="word-card-forms" data-word-card-dcards>
+    <h4>${escapeHtml(text.derivedForms)}</h4>
+    <p class="word-card-forms-summary">${escapeHtml(summary)}</p>
+    <div class="word-card-dcards">${cards}</div>
+  </section>`;
+}
+
+/**
  * The shared list markup for a resolved set of occurrences: the exact
  * written word at each place, and its reference, each one a control that
  * opens that āyah. Used by BOTH a derived form's own occurrences (Depth) and
@@ -780,18 +826,13 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
   }
   if (level === "basic") {
     const count = (template, n) => escapeHtml(String(template).replace("{count}", formatNumber(n)));
-    // v08.22 -- the raw `pos` chain, named in the reader's own language a
-    // segment at a time, with the source's own English kept beside it.
-    const chain = word.morphology?.pos ? posChain(word.morphology.pos, text) : { name: "", en: "" };
-    const posCellHtml = chain.name
-      ? `${escapeHtml(chain.name)}${chain.en ? `<span class="word-card-pos-en" lang="en">${escapeHtml(chain.en)}</span>` : ""}`
-      : escapeHtml(text.unknown);
     // 30 Sep 2026, Owner: "Derivatives are for learning, occurrences are just
     // info" -- so the derived forms come straight after the word's facts, and
-    // the occurrence counts sit below them.
+    // the occurrence counts sit below them. Round 3: the facts are the same
+    // row WbW shows, and the forms are ordered cards.
     return `<div role="tabpanel" data-word-card-panel="basic">
-      <dl><dt>${escapeHtml(text.lemma)}</dt><dd>${escapeHtml(layers.lemma || text.unknown)}</dd><dt>${escapeHtml(text.root)}</dt><dd>${escapeHtml(layers.root || text.unknown)}</dd><dt>${escapeHtml(text.partOfSpeech)}</dt><dd>${posCellHtml}</dd></dl>
-      ${formsSection(layers, context, text, formatNumber, { expandable: false })}
+      ${wordFactsHtml(word, layers, context.wordFeatures ?? null, text, formatNumber)}
+      ${derivedCardsSection(layers, context, text, formatNumber)}
       <p>${layers.root ? count(text.rootOccurrences, Number(context.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0)) : escapeHtml(text.rootUnavailable)}</p>
       ${layers.lemma ? lemmaOccurrenceBlock(word, layers, context, text, formatNumber) : `<p>${escapeHtml(text.lemmaUnavailable)}</p>`}
       ${layers.lemma ? wordShareOfQuranLine(context, text, formatNumber) : ""}

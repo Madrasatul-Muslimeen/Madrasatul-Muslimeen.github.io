@@ -332,6 +332,15 @@ for (const [lang, width, height] of [["en", 1280, 900], ["bn", 1280, 900], ["en"
           };
         });
       });
+      if (tab === "basic") {
+        // UPDATED in round 3 (#508): Basic prints the derived forms as ordered
+        // cards, not rows, so the row-geometry checks below apply to Depth
+        // only; the cards' own geometry is word-card-basic-rebuild-browser's.
+        const cards = await page.evaluate(() => { const card = document.querySelector(".word-card-content").getBoundingClientRect(); const c = [...document.querySelectorAll("[data-word-card-dcard]")]; return { n: c.length, inside: c.every((e) => { const r = e.getBoundingClientRect(); return r.left >= card.left - 1 && r.right <= card.right + 1; }) }; });
+        check(`${lang} ${width}px basic forms render as cards`, cards.n > 0, `n=${cards.n}`);
+        check(`${lang} ${width}px basic cards stay inside the card`, cards.inside);
+        continue;
+      }
       check(`${lang} ${width}px ${tab} forms render`, rows.length > 0, `n=${rows.length}`);
       check(`${lang} ${width}px ${tab} the count sits beside the Arabic, not at the far edge`,
             rows.every((r) => r.gapArabicToCount === null || r.gapArabicToCount <= 24),
