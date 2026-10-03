@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.58",
+    "version": "09.59",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1877,8 +1877,20 @@
     {
       "version": "09.58",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Word card PC boxes: Record your Progress and Know Your Status with the per-level percentage ring; rebuild complete (decision 59, #525).",
+      "integration": {
+        "authorizedOn": "2026-10-03",
+        "integratedOn": "2026-10-03",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.59",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "On tablets the corner buttons stand 4px from the screen's edges, not the wheel's box (Owner, 3 Oct: \"Place them on edges\").",
       "integration": {
         "authorizedOn": "2026-10-03",
         "integratedOn": "2026-10-03",
@@ -1887,8 +1899,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.59",
+  "nextUnallocated": "09.60",
   "nextUnallocatedNote": [
+    "v09.59 was allocated to Tablet wheel: buttons on the screen's edges, 2026-10-03.",
     "v09.58 was allocated to Word card round 7: the two boxes on a computer, 2026-10-03.",
     "v09.57 was allocated to Practising on the Word card; stage buttons in their colours, 2026-10-03.",
     "v09.56 was allocated to Tablet landing: a bigger wheel, buttons in the corners, 2026-10-03.",

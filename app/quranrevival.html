@@ -1632,10 +1632,15 @@
     body.tablet-wheel #wheelResizeWrap .wheel-resize-handle[data-wheel-resize="s"] { left: calc(50% - 30px); right: auto; width: 60px; height: 22px; bottom: 0; display: grid; place-items: center; }
     body.tablet-wheel #wheelResizeWrap .wheel-resize-handle[data-wheel-resize="s"]::after { content: ""; width: 44px; height: 5px; border-radius: 3px; background: #C9A24B; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4); }
     .tablet-corner { position: absolute; z-index: 5; display: grid; gap: 6px; justify-items: start; }
-    .tablet-corner-tl { top: 4px; left: 4px; }
-    .tablet-corner-tr { top: 4px; right: 4px; justify-items: end; }
-    .tablet-corner-bl { bottom: 4px; left: 4px; }
-    .tablet-corner-br { bottom: 4px; right: 4px; justify-items: end; }
+    /* Owner, 3 Oct 2026: "Place them on edges". The corners are measured
+       against the SCREEN's edges, not the wheel's box: tabletWheelLayout()
+       writes the box's distance from each side of the screen into --tw-l /
+       --tw-r, so whatever padding sits around the wheel, the buttons stand
+       4px from the edge of the screen. */
+    .tablet-corner-tl { top: 4px; left: calc(4px - var(--tw-l, 0px)); }
+    .tablet-corner-tr { top: 4px; right: calc(4px - var(--tw-r, 0px)); justify-items: end; }
+    .tablet-corner-bl { bottom: 4px; left: calc(4px - var(--tw-l, 0px)); }
+    .tablet-corner-br { bottom: 4px; right: calc(4px - var(--tw-r, 0px)); justify-items: end; }
     .tablet-corner .wheel-intro-capsule { display: inline-flex; align-items: center; justify-content: center; min-height: 36px; box-sizing: border-box; white-space: nowrap; margin: 0; }
     .tablet-corner .wheel-unit-capsule-word { white-space: nowrap; }
     .tablet-corner-tl { gap: 5px; }
@@ -9168,6 +9173,14 @@
         if (!homes.has(el)) { const ph = document.createComment("tablet-wheel home"); el.before(ph); homes.set(el, ph); }
         corner(k).append(el);
       };
+      // How far the wheel's box stands in from each side of the screen (the
+      // CSS subtracts it, so the corners sit on the screen's own edges).
+      function edges() {
+        if (!mq.matches) { wrap.style.removeProperty("--tw-l"); wrap.style.removeProperty("--tw-r"); return; }
+        const r = wrap.getBoundingClientRect();
+        wrap.style.setProperty("--tw-l", `${Math.max(0, r.left)}px`);
+        wrap.style.setProperty("--tw-r", `${Math.max(0, document.documentElement.clientWidth - r.right)}px`);
+      }
       function apply() {
         const on = mq.matches;
         if (on) {
@@ -9185,8 +9198,11 @@
         document.body.classList.toggle("tablet-wheel", on);
         document.querySelector("#wheelSection .mastery-wheel")?.style.removeProperty("--landing-wheel-max");
         fitLandingFirstScreen();
+        edges();
       }
       mq.addEventListener("change", apply);
+      addEventListener("resize", edges);
+      if ("ResizeObserver" in window) new ResizeObserver(edges).observe(wrap);
       apply();
     })();
 
