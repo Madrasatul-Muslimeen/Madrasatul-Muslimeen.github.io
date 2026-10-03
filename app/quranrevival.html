@@ -2581,6 +2581,11 @@
   .word-card-dict-wbw { font-size: 0.95rem; overflow-wrap: anywhere; }
   .word-card-dict-none, .word-card-dict-pending, .word-card-dict-credit { font-size: 0.78rem; color: var(--card-text-muted); }
   .word-card-dict-credit { margin-top: 0.5rem !important; }
+  .word-card-dict-meaning-en { font-size: 0.85rem; font-weight: 500; }
+  .word-card-dict-more { font-size: 0.85rem; color: var(--card-text); margin: 0.2rem 0; }
+  .word-card-dict-more summary { cursor: pointer; color: var(--card-heading); font-weight: 600; min-height: 32px; display: flex; align-items: center; }
+  .word-card-dict-more ul { margin: 0.2rem 0 0; padding-left: 1.1rem; overflow-wrap: anywhere; }
+  .word-card-dict-pg a { color: var(--card-link); }
   .word-card-dict-credit a { color: var(--card-link); }
   .word-card-dict-pill { display: inline-block; margin-left: 0.5rem; padding: 0.05rem 0.5rem; font-size: 0.7rem; font-weight: 600; color: var(--card-text); border: 1px solid var(--card-heading); border-radius: 999px; vertical-align: middle; }
   .word-card-dict-links { display: flex; gap: 0.5rem; margin-top: 0.6rem; }
@@ -6022,7 +6027,7 @@
     import { searchQuran } from "./js/quran-search.js";
     import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootPanel, renderDerivativesPanel, renderTranslationPanel, tajweedRawToSafeHtml, digitsForLang, stripLeadingBismillah, splitPlainArabicWords, arabicWordButtonHtml, tajweedWordButtonsHtml } from "./js/ayah-renderer.js";
     import { parseQuranWordOccurrenceId } from "./js/quran-word-identity.js";
-    import { loadLemmaDictionary, lemmaDictionaryEntry } from "./js/lemma-dictionary.js";
+    import { loadLemmaDictionary, loadBanglaLemmaDictionary, lemmaDictionaryEntry } from "./js/lemma-dictionary.js";
     import { loadLemmaMeaningGroups, sameMeaningLemmas, meaningGroupOf } from "./js/lemma-meaning-groups.js";
     // Decision 58 (#490) -- Basic/Depth lemma-wide claims, behind their own gate (ready:false).
     import { isLemmaLevelsPersistenceReady } from "./js/study-lemma-levels-readiness.js";
@@ -6915,9 +6920,13 @@
     // drawn (never at startup) and then held in memory.
     let lemmaDictionary = null;
     let lemmaDictionaryLoading = false;
+    // Decision 62 (#539) -- the Bangla file, fetched on first Depth draw in Bangla only.
+    let lemmaDictionaryBn = null;
+    let lemmaDictionaryBnLoading = false;
     function wordCardDictionaryContext(word) {
-      if (!lemmaDictionary) return {};
-      return { dictionary: { entry: lemmaDictionaryEntry(lemmaDictionary, word.morphology?.lemma) }, dictionaryLookup: (lemma) => lemmaDictionaryEntry(lemmaDictionary, lemma) };
+      const bnCtx = lemmaDictionaryBn && getAppLang() === "bn" ? { dictionaryBn: { entry: lemmaDictionaryEntry(lemmaDictionaryBn, word.morphology?.lemma) } } : {};
+      if (!lemmaDictionary) return bnCtx;
+      return { ...bnCtx, dictionary: { entry: lemmaDictionaryEntry(lemmaDictionary, word.morphology?.lemma) }, dictionaryLookup: (lemma) => lemmaDictionaryEntry(lemmaDictionary, lemma) };
     }
     // Round 3 -- Basic's derived-form order data, fetched the FIRST time a Basic tab is drawn (I9).
     let lemmaFormsTable = null;
@@ -7026,6 +7035,12 @@
       lemmaDictionaryLoading = true;
       loadLemmaDictionary().then((d) => { lemmaDictionary = d; }).catch((e) => console.warn("dictionary unavailable", e))
         .finally(() => { lemmaDictionaryLoading = false; if (lemmaDictionary && quranWordCardState.open && (quranWordCardState.level === "depth" || quranWordCardState.level === "wbw")) renderPersistentWordCard(); });
+    }
+    function ensureBanglaLemmaDictionary() {
+      if (getAppLang() !== "bn" || lemmaDictionaryBn || lemmaDictionaryBnLoading) return;
+      lemmaDictionaryBnLoading = true;
+      loadBanglaLemmaDictionary().then((d) => { lemmaDictionaryBn = d; }).catch((e) => console.warn("Bangla dictionary unavailable", e))
+        .finally(() => { lemmaDictionaryBnLoading = false; if (lemmaDictionaryBn && quranWordCardState.open && quranWordCardState.level === "depth") renderPersistentWordCard(); });
     }
     let quranWordCardLemmaRequestId = 0;
     /** v08.20 -- set ONLY while the reader followed a Basic-Arabic occurrence
@@ -14757,6 +14772,10 @@
         fixedByUs: t("fixed by us"),
         noDictionaryMeaning: t("No dictionary meaning yet for this word."),
         banglaDictionaryPending: t("Bangla dictionary meaning: will be added once permission is given"),
+        dictionaryMeaningBn: t("Bangla dictionary meaning label"),
+        banglaMeaningNoMatch: t("No Bangla meaning has been matched for this word yet"),
+        otherEntriesUnderSpelling: t("Other entries under this spelling ({n})"),
+        creditBanglaBook: t("Bangla meaning credit: Quraniyo Obhidhan"),
         quranicCorpus: t("Quranic Corpus ↗"),
         laneHansWehr: t("Lane · Hans Wehr ↗"),
         creditMeaning: t("Meaning:"),
@@ -15739,6 +15758,7 @@
       // The English WbW stem box also prints the dictionary meaning, so that
       // page loads the same first-use file Depth does.
       if (quranWordCardState.level === "depth" || (quranWordCardState.level === "wbw" && getAppLang() !== "bn")) ensureLemmaDictionary();
+      if (quranWordCardState.level === "depth") ensureBanglaLemmaDictionary();
       if (quranWordCardState.level === "basic" || quranWordCardState.level === "depth") ensureLemmaForms();
       if (quranWordCardState.level === "depth" && quranWordCardContext.wordFeatures?.tense) ensureVerbForms();
       // Round 4 -- an accordion the reader opened or closed stays that way: read the open state off the DOM before it is replaced.

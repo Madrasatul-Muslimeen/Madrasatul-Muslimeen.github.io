@@ -31,6 +31,22 @@ export function lemmaDictionaryEntry(dict, lemma) {
   return indexFor(dict).get(String(lemma).normalize("NFC")) ?? null;
 }
 
+// Decision 62 (#539) -- the Bangla dictionary (AQS Quraniyo Obhidhan), same
+// first-use rule: fetched only when a Bangla reader opens Depth, never in English.
+// entries[lemma] = { m: [meaning, ...], p: [PDF page of each], t }.
+const BN_DICTIONARY_URL = "/tools/quran-data-pull/output/lemma-dictionary-bn.json";
+let bnPromise = null;
+
+export function loadBanglaLemmaDictionary() {
+  if (!bnPromise) {
+    bnPromise = fetch(BN_DICTIONARY_URL).then((res) => {
+      if (!res.ok) throw new Error(`Couldn't load the Bangla dictionary (HTTP ${res.status}).`);
+      return res.json();
+    }).catch((err) => { bnPromise = null; throw err; });
+  }
+  return bnPromise;
+}
+
 export function loadLemmaDictionary() {
   if (!promise) {
     promise = fetch(DICTIONARY_URL).then((res) => {
