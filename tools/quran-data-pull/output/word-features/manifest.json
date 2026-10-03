@@ -1,0 +1,696 @@
+{
+  "schemaVersion": 1,
+  "generatedFrom": "quranic-corpus-morphology-0.4.txt (Quranic Arabic Corpus, GPL)",
+  "loadBoundary": "on-demand-only",
+  "totalWords": 77429,
+  "totalAligned": 77148,
+  "coveragePercent": 99.64,
+  "totalBytes": 4465139,
+  "maxBytes": 358455,
+  "perSurah": [
+    {
+      "surah": 1,
+      "words": 29,
+      "aligned": 29,
+      "bytes": 1569
+    },
+    {
+      "surah": 2,
+      "words": 6116,
+      "aligned": 6093,
+      "bytes": 358455
+    },
+    {
+      "surah": 3,
+      "words": 3481,
+      "aligned": 3467,
+      "bytes": 202406
+    },
+    {
+      "surah": 4,
+      "words": 3747,
+      "aligned": 3736,
+      "bytes": 217148
+    },
+    {
+      "surah": 5,
+      "words": 2804,
+      "aligned": 2797,
+      "bytes": 161885
+    },
+    {
+      "surah": 6,
+      "words": 3050,
+      "aligned": 3035,
+      "bytes": 179783
+    },
+    {
+      "surah": 7,
+      "words": 3320,
+      "aligned": 3310,
+      "bytes": 198855
+    },
+    {
+      "surah": 8,
+      "words": 1233,
+      "aligned": 1232,
+      "bytes": 71898
+    },
+    {
+      "surah": 9,
+      "words": 2498,
+      "aligned": 2486,
+      "bytes": 146188
+    },
+    {
+      "surah": 10,
+      "words": 1833,
+      "aligned": 1826,
+      "bytes": 105471
+    },
+    {
+      "surah": 11,
+      "words": 1917,
+      "aligned": 1911,
+      "bytes": 108890
+    },
+    {
+      "surah": 12,
+      "words": 1777,
+      "aligned": 1768,
+      "bytes": 102234
+    },
+    {
+      "surah": 13,
+      "words": 853,
+      "aligned": 847,
+      "bytes": 48024
+    },
+    {
+      "surah": 14,
+      "words": 830,
+      "aligned": 827,
+      "bytes": 47173
+    },
+    {
+      "surah": 15,
+      "words": 655,
+      "aligned": 652,
+      "bytes": 37727
+    },
+    {
+      "surah": 16,
+      "words": 1844,
+      "aligned": 1830,
+      "bytes": 106415
+    },
+    {
+      "surah": 17,
+      "words": 1556,
+      "aligned": 1546,
+      "bytes": 89444
+    },
+    {
+      "surah": 18,
+      "words": 1579,
+      "aligned": 1577,
+      "bytes": 91406
+    },
+    {
+      "surah": 19,
+      "words": 961,
+      "aligned": 961,
+      "bytes": 54405
+    },
+    {
+      "surah": 20,
+      "words": 1335,
+      "aligned": 1331,
+      "bytes": 78651
+    },
+    {
+      "surah": 21,
+      "words": 1169,
+      "aligned": 1169,
+      "bytes": 68608
+    },
+    {
+      "surah": 22,
+      "words": 1274,
+      "aligned": 1272,
+      "bytes": 71727
+    },
+    {
+      "surah": 23,
+      "words": 1050,
+      "aligned": 1046,
+      "bytes": 60390
+    },
+    {
+      "surah": 24,
+      "words": 1316,
+      "aligned": 1308,
+      "bytes": 74793
+    },
+    {
+      "surah": 25,
+      "words": 893,
+      "aligned": 893,
+      "bytes": 51155
+    },
+    {
+      "surah": 26,
+      "words": 1318,
+      "aligned": 1306,
+      "bytes": 77198
+    },
+    {
+      "surah": 27,
+      "words": 1151,
+      "aligned": 1145,
+      "bytes": 66960
+    },
+    {
+      "surah": 28,
+      "words": 1430,
+      "aligned": 1426,
+      "bytes": 83437
+    },
+    {
+      "surah": 29,
+      "words": 976,
+      "aligned": 968,
+      "bytes": 57027
+    },
+    {
+      "surah": 30,
+      "words": 817,
+      "aligned": 809,
+      "bytes": 46808
+    },
+    {
+      "surah": 31,
+      "words": 546,
+      "aligned": 544,
+      "bytes": 29650
+    },
+    {
+      "surah": 32,
+      "words": 372,
+      "aligned": 370,
+      "bytes": 21642
+    },
+    {
+      "surah": 33,
+      "words": 1287,
+      "aligned": 1282,
+      "bytes": 73332
+    },
+    {
+      "surah": 34,
+      "words": 883,
+      "aligned": 878,
+      "bytes": 49441
+    },
+    {
+      "surah": 35,
+      "words": 775,
+      "aligned": 775,
+      "bytes": 43291
+    },
+    {
+      "surah": 36,
+      "words": 725,
+      "aligned": 725,
+      "bytes": 42982
+    },
+    {
+      "surah": 37,
+      "words": 860,
+      "aligned": 852,
+      "bytes": 49508
+    },
+    {
+      "surah": 38,
+      "words": 733,
+      "aligned": 731,
+      "bytes": 39876
+    },
+    {
+      "surah": 39,
+      "words": 1172,
+      "aligned": 1167,
+      "bytes": 66500
+    },
+    {
+      "surah": 40,
+      "words": 1219,
+      "aligned": 1215,
+      "bytes": 69199
+    },
+    {
+      "surah": 41,
+      "words": 794,
+      "aligned": 790,
+      "bytes": 45303
+    },
+    {
+      "surah": 42,
+      "words": 860,
+      "aligned": 857,
+      "bytes": 48089
+    },
+    {
+      "surah": 43,
+      "words": 830,
+      "aligned": 828,
+      "bytes": 48095
+    },
+    {
+      "surah": 44,
+      "words": 346,
+      "aligned": 345,
+      "bytes": 18793
+    },
+    {
+      "surah": 45,
+      "words": 488,
+      "aligned": 486,
+      "bytes": 27896
+    },
+    {
+      "surah": 46,
+      "words": 643,
+      "aligned": 642,
+      "bytes": 36974
+    },
+    {
+      "surah": 47,
+      "words": 539,
+      "aligned": 539,
+      "bytes": 32008
+    },
+    {
+      "surah": 48,
+      "words": 560,
+      "aligned": 560,
+      "bytes": 32871
+    },
+    {
+      "surah": 49,
+      "words": 347,
+      "aligned": 347,
+      "bytes": 19843
+    },
+    {
+      "surah": 50,
+      "words": 373,
+      "aligned": 373,
+      "bytes": 20008
+    },
+    {
+      "surah": 51,
+      "words": 360,
+      "aligned": 360,
+      "bytes": 20389
+    },
+    {
+      "surah": 52,
+      "words": 312,
+      "aligned": 312,
+      "bytes": 18101
+    },
+    {
+      "surah": 53,
+      "words": 360,
+      "aligned": 357,
+      "bytes": 19849
+    },
+    {
+      "surah": 54,
+      "words": 342,
+      "aligned": 342,
+      "bytes": 19040
+    },
+    {
+      "surah": 55,
+      "words": 351,
+      "aligned": 351,
+      "bytes": 20137
+    },
+    {
+      "surah": 56,
+      "words": 379,
+      "aligned": 375,
+      "bytes": 20827
+    },
+    {
+      "surah": 57,
+      "words": 574,
+      "aligned": 571,
+      "bytes": 32570
+    },
+    {
+      "surah": 58,
+      "words": 472,
+      "aligned": 471,
+      "bytes": 27002
+    },
+    {
+      "surah": 59,
+      "words": 445,
+      "aligned": 444,
+      "bytes": 24885
+    },
+    {
+      "surah": 60,
+      "words": 348,
+      "aligned": 346,
+      "bytes": 20723
+    },
+    {
+      "surah": 61,
+      "words": 221,
+      "aligned": 221,
+      "bytes": 12305
+    },
+    {
+      "surah": 62,
+      "words": 175,
+      "aligned": 175,
+      "bytes": 9847
+    },
+    {
+      "surah": 63,
+      "words": 180,
+      "aligned": 180,
+      "bytes": 10982
+    },
+    {
+      "surah": 64,
+      "words": 241,
+      "aligned": 241,
+      "bytes": 14082
+    },
+    {
+      "surah": 65,
+      "words": 287,
+      "aligned": 286,
+      "bytes": 16621
+    },
+    {
+      "surah": 66,
+      "words": 249,
+      "aligned": 249,
+      "bytes": 14001
+    },
+    {
+      "surah": 67,
+      "words": 333,
+      "aligned": 333,
+      "bytes": 18821
+    },
+    {
+      "surah": 68,
+      "words": 300,
+      "aligned": 299,
+      "bytes": 17806
+    },
+    {
+      "surah": 69,
+      "words": 258,
+      "aligned": 258,
+      "bytes": 14678
+    },
+    {
+      "surah": 70,
+      "words": 217,
+      "aligned": 217,
+      "bytes": 12212
+    },
+    {
+      "surah": 71,
+      "words": 226,
+      "aligned": 226,
+      "bytes": 13329
+    },
+    {
+      "surah": 72,
+      "words": 285,
+      "aligned": 284,
+      "bytes": 16128
+    },
+    {
+      "surah": 73,
+      "words": 199,
+      "aligned": 199,
+      "bytes": 10979
+    },
+    {
+      "surah": 74,
+      "words": 255,
+      "aligned": 253,
+      "bytes": 14826
+    },
+    {
+      "surah": 75,
+      "words": 164,
+      "aligned": 163,
+      "bytes": 9372
+    },
+    {
+      "surah": 76,
+      "words": 243,
+      "aligned": 243,
+      "bytes": 13614
+    },
+    {
+      "surah": 77,
+      "words": 181,
+      "aligned": 180,
+      "bytes": 10360
+    },
+    {
+      "surah": 78,
+      "words": 173,
+      "aligned": 173,
+      "bytes": 9597
+    },
+    {
+      "surah": 79,
+      "words": 179,
+      "aligned": 177,
+      "bytes": 10079
+    },
+    {
+      "surah": 80,
+      "words": 133,
+      "aligned": 133,
+      "bytes": 7706
+    },
+    {
+      "surah": 81,
+      "words": 104,
+      "aligned": 104,
+      "bytes": 5715
+    },
+    {
+      "surah": 82,
+      "words": 80,
+      "aligned": 80,
+      "bytes": 4406
+    },
+    {
+      "surah": 83,
+      "words": 169,
+      "aligned": 169,
+      "bytes": 9715
+    },
+    {
+      "surah": 84,
+      "words": 107,
+      "aligned": 107,
+      "bytes": 6296
+    },
+    {
+      "surah": 85,
+      "words": 109,
+      "aligned": 109,
+      "bytes": 5799
+    },
+    {
+      "surah": 86,
+      "words": 61,
+      "aligned": 61,
+      "bytes": 3329
+    },
+    {
+      "surah": 87,
+      "words": 72,
+      "aligned": 71,
+      "bytes": 4299
+    },
+    {
+      "surah": 88,
+      "words": 92,
+      "aligned": 92,
+      "bytes": 4995
+    },
+    {
+      "surah": 89,
+      "words": 137,
+      "aligned": 137,
+      "bytes": 7721
+    },
+    {
+      "surah": 90,
+      "words": 82,
+      "aligned": 82,
+      "bytes": 4409
+    },
+    {
+      "surah": 91,
+      "words": 54,
+      "aligned": 54,
+      "bytes": 3293
+    },
+    {
+      "surah": 92,
+      "words": 71,
+      "aligned": 70,
+      "bytes": 4356
+    },
+    {
+      "surah": 93,
+      "words": 40,
+      "aligned": 39,
+      "bytes": 2429
+    },
+    {
+      "surah": 94,
+      "words": 27,
+      "aligned": 27,
+      "bytes": 1529
+    },
+    {
+      "surah": 95,
+      "words": 34,
+      "aligned": 34,
+      "bytes": 1851
+    },
+    {
+      "surah": 96,
+      "words": 72,
+      "aligned": 72,
+      "bytes": 4319
+    },
+    {
+      "surah": 97,
+      "words": 30,
+      "aligned": 30,
+      "bytes": 1452
+    },
+    {
+      "surah": 98,
+      "words": 94,
+      "aligned": 94,
+      "bytes": 5024
+    },
+    {
+      "surah": 99,
+      "words": 36,
+      "aligned": 36,
+      "bytes": 2156
+    },
+    {
+      "surah": 100,
+      "words": 40,
+      "aligned": 40,
+      "bytes": 2142
+    },
+    {
+      "surah": 101,
+      "words": 36,
+      "aligned": 36,
+      "bytes": 1974
+    },
+    {
+      "surah": 102,
+      "words": 28,
+      "aligned": 28,
+      "bytes": 1705
+    },
+    {
+      "surah": 103,
+      "words": 14,
+      "aligned": 14,
+      "bytes": 855
+    },
+    {
+      "surah": 104,
+      "words": 33,
+      "aligned": 33,
+      "bytes": 1803
+    },
+    {
+      "surah": 105,
+      "words": 23,
+      "aligned": 23,
+      "bytes": 1328
+    },
+    {
+      "surah": 106,
+      "words": 17,
+      "aligned": 17,
+      "bytes": 961
+    },
+    {
+      "surah": 107,
+      "words": 25,
+      "aligned": 25,
+      "bytes": 1513
+    },
+    {
+      "surah": 108,
+      "words": 10,
+      "aligned": 10,
+      "bytes": 645
+    },
+    {
+      "surah": 109,
+      "words": 26,
+      "aligned": 26,
+      "bytes": 1545
+    },
+    {
+      "surah": 110,
+      "words": 19,
+      "aligned": 19,
+      "bytes": 1089
+    },
+    {
+      "surah": 111,
+      "words": 23,
+      "aligned": 23,
+      "bytes": 1171
+    },
+    {
+      "surah": 112,
+      "words": 15,
+      "aligned": 15,
+      "bytes": 882
+    },
+    {
+      "surah": 113,
+      "words": 23,
+      "aligned": 23,
+      "bytes": 1141
+    },
+    {
+      "surah": 114,
+      "words": 20,
+      "aligned": 20,
+      "bytes": 993
+    }
+  ]
+}
