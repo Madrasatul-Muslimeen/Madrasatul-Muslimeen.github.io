@@ -20,52 +20,48 @@ Read the live state yourself, because it moves on after this was written:
 - `claude.yml` runs;
 - the "Active Architect session" line on #159.
 
-**Updated 3 Oct 2026, ~08:20 UTC, by session `session_01BRPbcWQzkbfVcsLgZFpEsJ`** (the Active Architect on #159 since 03:12 UTC):
+**Updated 3 Oct 2026, ~13:00 UTC, by session `session_01BRPbcWQzkbfVcsLgZFpEsJ`** (the Active Architect on #159 since 03:12 UTC):
 
-- **`main` is at v09.52.** The Word card rebuild (7 rounds, spec §3) has 4 rounds done.
-  - **v09.48:** round 1, data (#501). Built by the Architect.
-    - `build-word-features.mjs` writes `output/word-features/` and `output/lemma-forms.json`.
-    - `derived-forms-reviewed.json` holds the reviewed lists.
-    - `word-grammar-tables.js` holds the names and Form sentences.
-    - `quran-word-features.js` is the loader.
-  - **v09.49:** round 2, the WbW tab and header (#504). Review restyled it to the demo's light cards.
-  - **v09.50:** round 3, the Basic tab (#508).
-  - **v09.51:** decision 60, the **Mark words** switch (Fewer (auto) / Known / Unknown).
-    - The code is `getMarkWordsMode()` / `setMarkWordsMode()` / `markWordsShows()` in `prefs.js`.
-    - The suite is `mark-words-mode-browser`.
-  - **v09.52:** round 4, the Depth tab (#511, PR #513). It lives in `app/js/word-card-depth.js`.
-    - Review corrected four Naḥw lines:
-      - built on sukūn with نون النسوة;
-      - built on fatḥa with نون التوكيد;
-      - نائب فاعل for a passive verb;
-      - اسمها on كان and its sisters (`isKanaFamily`).
-    - It added the pure suite `word-card-depth-grammar.mjs` (8/0), with the Arabic written by hand. Run it from the repo root.
-- **Round 5 (verb conjugation):**
-  - **The engine is merged** (PR #512), built by the Architect:
-    - `app/js/verb-conjugation.js` (sound roots, Forms I–X, active voice).
-    - `tools/quran-data-pull/build-verb-forms.mjs` writes `output/verb-forms.json` (on demand) and `output/verb-occurrences-corpus.json` (test only).
-    - `verb-conjugation-quran.mjs` (12/0) checks the engine against every active verb in the Qur'an. The exceptions are pinned by name.
-  - **The section is with the Builder: issue #515**, dispatched about 08:15 UTC. The review check-in fires at 09:16 UTC.
-- **Next:**
-  - round 6, Search 🔍 (`docs/reference/2026-10-03-word-card-search-demo.html`);
-  - round 7, the PC boxes with the ring;
-  - fix separately: the āyah picker's "Bismillah" option, which is cut at desktop widths (panel.mjs 32 problems, the same on `main` since v09.40).
+- **`main` is at v09.54.**
+  - The Word card rebuild has 6 of 7 rounds done:
+    - **v09.48:** data;
+    - **v09.49:** WbW and header;
+    - **v09.50:** Basic;
+    - **v09.52:** Depth, with Naḥw corrected in review;
+    - **v09.53:** Verb Conjugation (#515), on the engine `app/js/verb-conjugation.js`;
+    - **v09.54:** Search 🔍 (#518), using `word-card-search.js` and `word-forms-index.json`.
+  - **v09.51:** Mark words (decision 60).
+- **In flight:**
+  - **#520, with the Builder (dispatched ~12:10 UTC):** Practising as a 4th Word card stage at all levels (stored code `p`, never counted as known). It also covers every pressed stage button across the app, coloured by `stageColourStyle()` (`ayah-action-sheet.js`, `STATUS_COLORS`). These are the Owner's two messages of 3 Oct. No Rules change is needed: `quranWordProgress` checks no state values. A review check-in fires ~13:30 UTC.
+  - **Branch `approach-list-dots`, built by the Architect, awaiting release as the next version:** the Approach pull-down on the Ayah card and the This page card opens the app's own list. Each Approach with progress gets a solid dot in its stage colour (`openApproachList()` in `ayah-action-sheet.js`; suite `approach-list-dots-browser` 66/0). The demo was https://claude.ai/artifact/5EebZvH59XThuJjuqYxALJ. The colours were changed to `STATUS_COLORS` so they match the stage buttons.
+    - **Lesson:** `withSelectedOption()` matched `<option value="id">` literally, so adding an attribute broke the chosen Approach. It now matches any attributes.
+    - **Lesson:** switching branches while a suite runs spoils the run. Use a `git worktree` for side edits.
+  - **Round 7 (PC boxes):** the issue is drafted in the scratchpad (`issue-r7.md`). Update it for 4 stage buttons and their colours, then dispatch after #520.
+  - **Tablet wheel demo**, for the Owner (https://claude.ai/artifact/EMZKfW6LKkxhFyoLpgE8Dh): at about 600px wide, the three gold buttons go to the corners, Wheel / Legend / Unit to the top-left, and one resize grip. The wheel grows from 533 to 587px. **Waits on the Owner's "go".**
+- **Decision 61:** the part names and Form sentences are accepted, the Basic order is kept, the "Needs a source" lines are to be built, and the letters come later (keep reminding).
+  - The candidate sources for those lines are in `docs/reports/2026-10-03-needs-a-source-candidates.md`:
+    - **the QAC syntax treebank:** GPL, 42% of words, surahs 1–9 (part) and 59–114;
+    - **OpenITI al-Furūq and al-Mufradāt:** CC BY-NC-SA 4.0 transcriptions of modern editions, credited, non-commercial, share-alike;
+    - **`irab.tsv`:** no named source, so **do not use**.
+  - **Not built yet.** Data first, by the Architect, then a Builder round for the UI.
+- **Pre-existing, to fix separately:**
+  - the āyah picker's "Bismillah" cut at desktop (panel.mjs);
+  - `ayah-action-sheet-boundary` 52/2, the same on `main`.
 - **How a review is done here:**
   1. Merge `origin/main` into a local branch.
-  2. Run the suites into a log with their exit codes.
-  3. Screenshot the real card **beside the demo**. Shoot section by section, because the card's scroll container clips a whole-card shot (`scratchpad/_shot-*.mjs`; copy into `tools/i18n-verify/` to run, then remove).
-  4. Check the Arabic by hand.
+  2. Run the suites into a log with their exit codes, from the repo root; check `curl localhost:8080` first.
+  3. Screenshot section by section beside the demo, and LOOK.
+  4. Check Arabic by hand.
   5. Mutation-prove one check.
-  6. Push to the Builder branch.
+  6. Push to the Builder branch, and open the PR if the Builder could not (401).
   7. Run `allocate-version.py` from a scratchpad script.
   8. Merge with `expectedHeadSha`.
   9. Reset `claude/adoring-edison-cm28vf`.
-  10. Run the three governance checks. **Before** the merge, brief-integrity and ledger-mutations fail by design: the brief names a version that is not yet on `main`.
+  10. Run the three governance checks. Before a merge, brief-integrity and ledger-mutations fail by design.
 - **Sandbox:**
-  - `serve.js` dies when the container restarts. A suite run against a dead server exits 1 with no output, so check `curl localhost:8080` first.
-  - The browser suites need Playwright linked first:
-    `mkdir -p /home/user/node_modules && ln -sf /opt/node-tools/node_modules/playwright /home/user/node_modules/ && ln -sf /opt/node-tools/node_modules/playwright-core /home/user/node_modules/`
-- **Never put the Builder's mention phrase in an issue body.** An issue opened by `AAAsapp` that contains it starts a run.
+  - `serve.js` dies on container restart.
+  - Link Playwright first: `mkdir -p /home/user/node_modules && ln -sf /opt/node-tools/node_modules/playwright /home/user/node_modules/ && ln -sf /opt/node-tools/node_modules/playwright-core /home/user/node_modules/`.
+- **Never put the Builder's mention phrase in an issue body.**
 
 ## 1. What waits on the Owner (one line per report)
 
