@@ -704,3 +704,4 @@ total). Allocated by the MMSA Architect.
 09.58: Word card round 7: the two boxes on a computer. Allocated by the MMSA Architect.
 09.59: Tablet wheel: buttons on the screen's edges. Allocated by the MMSA Architect.
 09.60: Approach names on Know Your Status's All-units wheel, the āyah picker's Bismillah, three red suites repaired. Allocated by the MMSA Architect.
+09.61: the Word card's Needs-a-source lines filled from the Corpus treebank, al-Furūq and al-Mufradāt (decision 61). Allocated by the MMSA Architect.
