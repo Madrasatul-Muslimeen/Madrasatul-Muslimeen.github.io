@@ -1215,6 +1215,12 @@ export const BN = {
   "Pick a Student first.": "প্রথমে একজন শিক্ষার্থী বেছে নিন।",
   // MAP Phase 3 -- WbW word progress on the Quran Word Card.
   "Word progress": "শব্দের অগ্রগতি",
+  // Word card round 7 (#525) -- the two PC boxes and the percentage ring. "Know Your Status" is already translated further down.
+  "Record your Progress": "আপনার অগ্রগতি লিখুন",
+  "word {n}": "শব্দ {n}",
+  "{percent} of the words of the Qur'an known": "কুরআনের {percent} শব্দ জানা",
+  "Share of the words of the Qur'an known: not loaded yet": "কুরআনের কত শতাংশ শব্দ জানা: এখনও লোড হয়নি",
+  "of the Qur'an": "কুরআনের",
   "Waiting to be checked": "যাচাইয়ের অপেক্ষায়",
   "Checked and confirmed": "যাচাই করে নিশ্চিত করা হয়েছে",
   "Sent back: {note}": "ফেরত পাঠানো হয়েছে: {note}",

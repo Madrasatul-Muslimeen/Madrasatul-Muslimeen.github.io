@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.57",
+    "version": "09.58",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1865,8 +1865,20 @@
     {
       "version": "09.57",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Word card fourth stage Practising (code p, never known) at all levels; pressed stage buttons in their wheel colours (Owner, 3 Oct; #520).",
+      "integration": {
+        "authorizedOn": "2026-10-03",
+        "integratedOn": "2026-10-03",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.58",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Word card PC boxes: Record your Progress and Know Your Status with the per-level percentage ring; rebuild complete (decision 59, #525).",
       "integration": {
         "authorizedOn": "2026-10-03",
         "integratedOn": "2026-10-03",
@@ -1875,8 +1887,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.58",
+  "nextUnallocated": "09.59",
   "nextUnallocatedNote": [
+    "v09.58 was allocated to Word card round 7: the two boxes on a computer, 2026-10-03.",
     "v09.57 was allocated to Practising on the Word card; stage buttons in their colours, 2026-10-03.",
     "v09.56 was allocated to Tablet landing: a bigger wheel, buttons in the corners, 2026-10-03.",
     "v09.55 was allocated to The Approach list shows progress by colour, 2026-10-03.",

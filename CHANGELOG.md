@@ -19340,3 +19340,13 @@ The Owner, 3 Oct 2026: "Add Practising to the Word Card in all levels." and "ena
 - A pressed stage button now takes **its stage's colour** (the wheel's colours: Learning brown, Practising gold, Achieved blue), as the Approach cards already did.
 - On a narrow phone the four buttons sit in a neat 2 × 2 grid.
 - **Checks**: word-progress-practising-browser 458/0 (new), behaviour 1004/4 (sandbox-only) and 16 other suites green.
+
+## v09.58 — 3 Oct 2026 — Word card round 7: the two boxes on a computer
+
+Owner (decision 59): "Go, build all three tabs together." Issue #525. This completes the seven-round Word card rebuild.
+
+- On a computer the Word card shows two boxes on the right: **Record your Progress** (the four stage buttons, in their colours) and **Know Your Status**.
+- Know Your Status has a **ring** showing how much of the Qur'an you know at the level of the tab you are on (WbW, Basic or Depth), with the āyah's count beside it and the "You know …" lines below.
+- The card opens a little wider on a big screen so that Depth's three verb tables still sit side by side; a size you have chosen yourself is kept.
+- On a phone, a tablet and a smaller computer screen the card is exactly as before.
+- **Checks**: word-card-pc-boxes-browser 148/0 in English and in Bangla (new), behaviour 1007/1 (sandbox-only) and 12 other suites green.

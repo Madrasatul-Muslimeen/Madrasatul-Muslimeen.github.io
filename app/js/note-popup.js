@@ -81,8 +81,8 @@ function writeJson(key, value) {
   }
 }
 
-function defaultGeometry(minW = MIN_WIDTH, minH = MIN_HEIGHT) {
-  const width = Math.max(minW, Math.min(920, Math.round(window.innerWidth * 0.86)));
+function defaultGeometry(minW = MIN_WIDTH, minH = MIN_HEIGHT, maxW = 920) {
+  const width = Math.max(minW, Math.min(maxW, Math.round(window.innerWidth * 0.86)));
   const height = Math.max(minH, Math.min(720, Math.round(window.innerHeight * 0.82)));
   return {
     width, height,
@@ -101,13 +101,13 @@ function clampGeometry(g, minW = MIN_WIDTH, minH = MIN_HEIGHT) {
   return { width, height, top, left };
 }
 
-function loadGeometry(id, minW = MIN_WIDTH, minH = MIN_HEIGHT) {
+function loadGeometry(id, minW = MIN_WIDTH, minH = MIN_HEIGHT, maxW = 920) {
   const saved = readJson(geometryKeyFor(id));
   if (saved && Number.isFinite(saved.width) && Number.isFinite(saved.height)
       && Number.isFinite(saved.top) && Number.isFinite(saved.left)) {
     return clampGeometry(saved, minW, minH);
   }
-  return defaultGeometry(minW, minH);
+  return defaultGeometry(minW, minH, maxW);
 }
 function saveGeometry(g, id) { writeJson(geometryKeyFor(id), g); }
 
@@ -249,8 +249,8 @@ function clearGeometry(el) {
  * owner actually asked to drag by. Omitted, the whole handle drags, exactly
  * as the four stage views already do.
  */
-export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls = [], maximizeBtn, onMaximizeChange, minWidth = MIN_WIDTH, minHeight = MIN_HEIGHT, dragFromSelector = null } = {}) {
-  let geometry = loadGeometry(id, minWidth, minHeight);
+export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls = [], maximizeBtn, onMaximizeChange, minWidth = MIN_WIDTH, minHeight = MIN_HEIGHT, dragFromSelector = null, defaultMaxWidth = 920 } = {}) {
+  let geometry = loadGeometry(id, minWidth, minHeight, defaultMaxWidth);
   let wasPopupViewport = isPopupViewport();
   if (wasPopupViewport) applyGeometry(el, geometry); else clearGeometry(el);
   let maximized = false;
@@ -310,7 +310,7 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
 
   maximizeBtn?.addEventListener("click", () => {
     if (maximized) {
-      commit(preMaximizeGeometry ?? loadGeometry(id, minWidth, minHeight));
+      commit(preMaximizeGeometry ?? loadGeometry(id, minWidth, minHeight, defaultMaxWidth));
       maximized = false;
     } else {
       preMaximizeGeometry = { ...geometry };
