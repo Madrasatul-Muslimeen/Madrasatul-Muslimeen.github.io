@@ -699,3 +699,4 @@ total). Allocated by the MMSA Architect.
 09.53: Word card round 5: Verb Conjugation. Allocated by the MMSA Architect.
 09.54: Word card round 6: Search. Allocated by the MMSA Architect.
 09.55: The Approach list shows progress by colour. Allocated by the MMSA Architect.
+09.56: Tablet landing: a bigger wheel, buttons in the corners. Allocated by the MMSA Architect.
