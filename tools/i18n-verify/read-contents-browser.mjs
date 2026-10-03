@@ -93,9 +93,20 @@ for (const lang of ["en", "bn"]) {
       };
     });
     const tag = `${lang} ${width}px`;
+    // UPDATED IN PLACE (Owner, 3 Oct 2026, tablets: "let the wheel fit to the
+    // entire screen well n then, you place those buttons in the gaps"): from
+    // 581 to 720px the three buttons are in the wheel's corners, not a row --
+    // Read top right, Choose a Unit bottom left, Know Your Status bottom right
+    // (tablet-wheel-browser measures their places against the ring).
+    if (width > 580 && width <= 720) {
+      const corners = await page.evaluate(() => ["readContentsBtn", "wheelUnitBtn", "myStatusWideBtn"].map((id) => document.getElementById(id).closest(".tablet-corner")?.className.match(/tablet-corner-(\w+)/)?.[1] ?? null));
+      check(`${tag}: (tablet) Read, Choose a Unit and Know Your Status are all shown, in the top-right, bottom-left and bottom-right corners`, m.shown.every(Boolean) && JSON.stringify(corners) === '["tr","bl","br"]', JSON.stringify(corners));
+      check(`${tag}: (tablet) each is one line, 36px tall`, m.heights.every((x) => x === 36), JSON.stringify(m.heights));
+    } else {
     check(`${tag}: Read, Choose a Unit and Know Your Status are all shown, in that order, in the one action row`, m.shown.every(Boolean) && m.order && m.inRow, JSON.stringify(m));
     check(`${tag}: the action row is one line of 36px buttons`, m.tops === 1 && m.heights.every((x) => x === 36), JSON.stringify(m));
     check(`${tag}: the action row sits under the wheel and above its colour key`, m.underWheel && m.aboveLegend, JSON.stringify(m));
+    }
     check(`${tag}: no button is cut or off screen, and no sideways scroll`, !m.cut && m.inView && !m.over, JSON.stringify(m));
     check(`${tag}: the heading line holds no buttons`, m.headButtons === 0, JSON.stringify(m));
     check(`${tag}: the two titles are together on one line (${width < 900 ? "heading line" : "window title bar"}), separator between them, nothing cut`,
