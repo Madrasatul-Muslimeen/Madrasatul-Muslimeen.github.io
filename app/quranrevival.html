@@ -748,13 +748,6 @@
   .wheel-ring-actions button.primary { background: var(--card-button-bg); color: var(--card-button-text); }
   .wheel-seg-no { fill: var(--card-text-muted); }
 
-  /* The chosen unit's name in the hub (see renderWheelHubUnit()). */
-  .wheel-hub-unit {
-    margin: 0.1rem 0 0; max-width: 100%; text-align: center; color: var(--card-heading);
-    font-family: 'Inter', sans-serif; font-weight: 800; line-height: 1.2;
-    font-size: calc(var(--hub-select-size, 10px) * 1.35);
-  }
-  .wheel-hub-unit[hidden] { display: none; }
   .wheel-cta-btn {
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 4;
     display: flex; flex-direction: column; align-items: center; gap: 0.15rem;
@@ -766,82 +759,47 @@
   .wheel-cta-btn:hover { filter: brightness(1.06); }
   .wheel-cta-line1 { font-size: 0.98rem; }
   .wheel-cta-line2 { font-size: 0.8rem; }
-  /* Round after v07.81: Ta'awwudh curved over the top (an SVG line now, not
-     a straight paragraph -- see the markup below for why it stays wrapped
-     in a plain HTML element rather than living directly on the <svg>:
-     SVGElement has no native `.hidden` IDL reflection in browsers, and this
-     page's own veil/reveal logic reads/writes `.hidden` on these elements'
-     ids elsewhere), Bismillah/Surah/Ayah all bigger, Surah still above Ayah
-     (unchanged since v07.62/63). Width AND the block's own vertical anchor
-     are both set inline by layoutWheelHub(), never fixed here -- the safe
-     width/position depend on the wheel's own measured hub circle, which
-     only JS knows. */
+  /* The wheel's centre (decision 63, 4 Oct 2026) is a DISPLAY: the Owner's
+     calligraphy, the chosen unit in two lines, and an open Qur'an. Nothing in
+     it is a control, so none of it takes a tap -- a slice near the hub is
+     always the one that answers. #wheelHubPickers is laid exactly on the
+     measured hub circle by layoutWheelHub() (width/height set inline); every
+     child is placed as a percentage of that circle, never in pixels. */
   .wheel-hub-pickers {
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 3;
-    display: flex; flex-direction: column; align-items: center; gap: 0.12rem;
+    pointer-events: none; border-radius: 50%;
   }
-  /* The phase-2 graphic sits BELOW the pickers in stacking order (they can
-     legitimately sit close together on a tight hub) and never intercepts a
-     tap -- it's decoration, not a control. Its width/height/vertical offset
-     are all set inline by layoutWheelHub(), same as the pickers block. */
-  .wheel-hub-graphic {
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    z-index: 2; pointer-events: none;
+  .wheel-hub-pickers[hidden], .wheel-cta-btn[hidden], .wheel-hub-graphic[hidden] { display: none; }
+  /* The image's box is x 6.94%-94.86%, y 7.03%-46.13% of the ring's diameter. */
+  .wheel-hub-calligraphy {
+    position: absolute; left: 6.94%; top: 7.03%; width: 87.92%; height: 39.1%;
+    display: block; object-fit: fill; user-select: none;
   }
-  .wheel-hub-graphic svg { display: block; width: 100%; height: 100%; }
-  /* Both of the above set their own `display`, which -- exactly like
-     #wheelSection's own known trap (shell round 17) -- beats the UA's
-     [hidden] rule on its own. Without this, toggling the `hidden` attribute
-     from JS silently does nothing: the button never disappears and the
-     pickers never appear from underneath it. */
-  .wheel-cta-btn[hidden], .wheel-hub-pickers[hidden], .wheel-hub-graphic[hidden] { display: none; }
-  /* Ta'awwudh's curve: the SVG's own viewBox scales proportionally with the
-     wrapper's own width (the same width layoutWheelHub() already computes
-     for everything else), so it needs no separate JS-driven font-size --
-     it behaves like a vector graphic, not text with a CSS font-size. */
-  .wheel-hub-taawwudh { margin: 0; display: block; width: 100%; }
-  .wheel-hub-taawwudh svg { display: block; overflow: visible; }
-  .wheel-hub-taawwudh-text {
-    font-family: var(--quran-font, 'Amiri', serif);
-    fill: #fbf3df; font-size: 20px;
+  /* The chosen unit: top of line 1 at 51% of the diameter. Sizes are set by
+     layoutWheelHub() (--hub-unit-size / --hub-unit2-size). The disc is dark in
+     every look, so these colours are fixed rather than the card's. */
+  .wheel-hub-unit {
+    position: absolute; left: 50%; top: 51%; transform: translateX(-50%);
+    margin: 0; width: 90%; text-align: center; display: grid; gap: 1px;
+    font-family: 'Inter', sans-serif; line-height: 1.15;
   }
-  /* Font sizes for Bismillah/Surah/Ayah are set by layoutWheelHub() as CSS
-     custom properties on the wrapper (--hub-select-size/--hub-arabic-size),
-     scaled to the wheel's own measured hub circle -- fixed sizes here are
-     only the fallback for the first paint before that JS has run once. A
-     hub this small (as low as ~80px across on a phone) needs the TEXT to
-     shrink with it, not just the width: a fixed font size just wraps to
-     more lines and crowds the selects above/below it. */
-  .wheel-hub-pickers select {
-    box-sizing: border-box;
-    font-size: var(--hub-select-size, 0.7rem); padding: 0.1rem 0.18rem; border-radius: 6px;
-    border: 1px solid var(--card-line); background: var(--card-bg-inset);
-    color: var(--card-text); text-align: center; text-align-last: center;
-    text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
+  .wheel-hub-unit[hidden] { display: none; }
+  .wheel-hub-unit-1 {
+    font-size: var(--hub-unit-size, 11px); font-weight: 600; color: #f3e3b3; letter-spacing: .02em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  /* A deliberate small inset ("the button frame should be little less
-     wide") rather than stretching to the full computed safe width --
-     align-items:center on the wrapper centres it, since it's narrower than
-     the block itself. */
-  .wheel-hub-surah { width: 92%; }
-  /* Wide enough for three digits (286 is the widest ayah number in the
-     whole Qur'an) plus the dropdown arrow, and clearly readable -- widened
-     from the old 2.5em now that the text itself is bigger too. */
-  /* A percentage of the SAME block width Surah's own 92% is measured
-     against, not a fixed em value -- tried first as a fixed width, but a
-     select's "auto" content width for a 3-digit number barely shrinks with
-     font-size (measured: ~46px at both the smallest and largest font this
-     page ever uses), while Surah's own 92% genuinely can float down to the
-     block's MIN_SAFE_WIDTH floor on the tightest hubs -- a fixed Ayah
-     width could end up WIDER than Surah right there. Tying both to the
-     same base keeps Ayah reliably narrower than Surah by construction,
-     whatever width the fit above lands on. */
-  .wheel-hub-ayah { width: 78%; padding-left: 0.15em; padding-right: 0.15em; }
-  .wheel-hub-arabic {
-    margin: 0; width: 100%; text-align: center; direction: rtl;
-    font-family: var(--quran-font, 'Amiri', serif);
-    color: #fbf3df; line-height: 1.25; font-size: var(--hub-arabic-size, 0.8rem);
+  .wheel-hub-unit-2 {
+    font-size: var(--hub-unit2-size, 8.5px); font-weight: 500; color: #b4bfd4; line-height: 1.2;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
+  /* The open Qur'an sits at the bottom, under the label. */
+  .wheel-hub-graphic { position: absolute; left: 27%; right: 27%; bottom: 3.5%; pointer-events: none; }
+  .wheel-hub-graphic svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .mu-rays, .mu-glow { animation: muShine 5s ease-in-out infinite; }
+  .mu-spark path { animation: muTwinkle 3.2s ease-in-out infinite; }
+  @keyframes muTwinkle { 0%, 100% { opacity: .15; } 50% { opacity: 1; } }
+  @keyframes muShine { 0%, 100% { opacity: .75; } 50% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .mu-rays, .mu-glow, .mu-spark path { animation: none; } }
 
   /* Shell round 7: the landing wheel card stretches to fill the stage, and
      the approaches list -- not the dark background -- absorbs the leftover
@@ -4519,64 +4477,62 @@
                  circle empty on purpose: reserved for the phase-2
                  illuminated Qur'an graphic, not built this round. -->
             <div id="wheelHubPickers" class="wheel-hub-pickers" hidden>
-              <p id="wheelHubTaawwudh" class="wheel-hub-taawwudh" dir="rtl" lang="ar">
-                <svg viewBox="0 0 200 50" role="img" aria-label="أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَانِ الرَّجِيمِ" xmlns:xlink="http://www.w3.org/1999/xlink">
-                  <defs><path id="wheelHubArc" d="M 10,43 A 200,200 0 0 1 190,43" fill="none"/></defs>
-                  <text class="wheel-hub-taawwudh-text" direction="rtl" text-anchor="middle">
-                    <textPath href="#wheelHubArc" xlink:href="#wheelHubArc" startOffset="50%">أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَانِ الرَّجِيمِ</textPath>
-                  </text>
-                </svg>
+              <!-- Decision 63 (4 Oct 2026): the Owner's own calligraphy -- the
+                   Audhubillah on its arc with the Bismillah under it -- is one
+                   image, not typed Arabic. Placed by CSS as a percentage of the
+                   hub circle (x 6.94%-94.86%, y 7.03%-46.13%). -->
+              <img id="wheelHubCalligraphy" class="wheel-hub-calligraphy" src="img/wheel-hub-calligraphy.webp"
+                   width="720" height="320" lang="ar" decoding="async"
+                   alt="أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَانِ الرَّجِيمِ · بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ">
+              <!-- The chosen unit, in two lines, for EVERY unit including a
+                   single āyah (the Surah/Ayah pickers that used to name it now
+                   live in Choose a Unit); see renderWheelHubUnit(). -->
+              <p id="wheelHubUnitLabel" class="wheel-hub-unit" hidden>
+                <span id="wheelHubUnitLine1" class="wheel-hub-unit-1"></span>
+                <span id="wheelHubUnitLine2" class="wheel-hub-unit-2"></span>
               </p>
-              <p id="wheelHubBismillah" class="wheel-hub-arabic" dir="rtl" lang="ar">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
-              <select id="wheelHubSurahSelect" class="wheel-hub-surah" aria-label="Surah"></select>
-              <select id="wheelHubAyahSelect" class="wheel-hub-ayah" aria-label="Ayah"></select>
-              <!-- 27 Sep 2026, owner: "When user choose a unit from the 'choose
-                   a unit' that unit name should appear in the center of the
-                   wheel." Shown for every unit but a single āyah (where the
-                   Ayah picker already names it); see renderWheelHubUnit(). -->
-              <p id="wheelHubUnitLabel" class="wheel-hub-unit" hidden></p>
-            </div>
-            <!-- Phase 2 (v07.83), built on the room the round above reserved:
-                 a purely decorative open Qur'an, glowing/radiating light,
-                 filling whatever the pickers block above didn't need --
-                 never guessed, sized/positioned by layoutWheelHub() itself
-                 the same measured way as everything else in this hub.
-                 pointer-events:none -- it must never intercept a tap meant
-                 for a wheel slice underneath it. aria-hidden since it adds
-                 no information a screen reader needs beyond what the
-                 pickers above it already say. -->
-            <div id="wheelHubGraphic" class="wheel-hub-graphic" aria-hidden="true" hidden>
-              <svg viewBox="0 0 100 60" preserveAspectRatio="xMidYMid meet">
-                <defs>
-                  <radialGradient id="wheelHubGlow" cx="50%" cy="22%" r="60%">
-                    <stop offset="0%" stop-color="#F2E8D5" stop-opacity="0.55"/>
-                    <stop offset="45%" stop-color="#C9A24B" stop-opacity="0.22"/>
-                    <stop offset="100%" stop-color="#C9A24B" stop-opacity="0"/>
-                  </radialGradient>
-                </defs>
-                <ellipse cx="50" cy="16" rx="48" ry="24" fill="url(#wheelHubGlow)"/>
-                <!-- Solid filled wedges, not hairlines -- a 1px stroke
-                     vanishes once this whole graphic is scaled down to a
-                     few dozen px on a phone; a filled triangle stays a
-                     visible ray at any size this hub ever renders at. -->
-                <g fill="#C9A24B">
-                  <path d="M 50 1 L 52 9.5 L 48 9.5 Z"/>
-                  <path d="M 55.7 3.8 L 53 11.1 L 49.8 8.8 Z"/>
-                  <path d="M 44.3 3.8 L 47 11.1 L 50.2 8.8 Z"/>
-                  <path d="M 56.6 9.6 L 53.2 13.5 L 51.4 8.8 Z"/>
-                  <path d="M 43.4 9.6 L 46.8 13.5 L 48.6 8.8 Z"/>
-                </g>
-                <!-- The open Qur'an: a single peak at the spine with both
-                     wings sloping down and out from it (not curved petals
-                     meeting at a top-centre dip -- that read as a heart
-                     once scaled down this small, and a single unambiguous
-                     peak doesn't). -->
-                <g fill="#F2E8D5" stroke="#8a6a24" stroke-width="1.3" stroke-linejoin="round">
-                  <path d="M 50 14 L 10 26 L 14 50 L 50 56 Z"/>
-                  <path d="M 50 14 L 90 26 L 86 50 L 50 56 Z"/>
-                </g>
-                <path d="M 50 14 L 50 56" stroke="#8a6a24" stroke-width="1"/>
-              </svg>
+
+              <!-- The open Qur'an on its stand (the Owner-approved demo's own
+                   drawing): purely decorative, at the bottom of the centre,
+                   under the label. pointer-events:none -- it must never
+                   intercept a tap meant for a wheel slice; aria-hidden since
+                   it adds nothing a screen reader needs. -->
+              <div id="wheelHubGraphic" class="wheel-hub-graphic" aria-hidden="true" hidden>
+                <svg viewBox="0 -14 200 124" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <radialGradient id="mGlow" cx="50%" cy="60%" r="50%"><stop offset="0" stop-color="#fff8e1" stop-opacity=".9"/><stop offset=".3" stop-color="#f6dd99" stop-opacity=".45"/><stop offset=".7" stop-color="#c9a24b" stop-opacity=".12"/><stop offset="1" stop-color="#c9a24b" stop-opacity="0"/></radialGradient>
+                    <linearGradient id="mRay" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#fff4cc" stop-opacity=".85"/><stop offset=".6" stop-color="#f0d38b" stop-opacity=".25"/><stop offset="1" stop-color="#e9cd86" stop-opacity="0"/></linearGradient>
+                    <linearGradient id="mPageL" x1="0" x2="1"><stop offset="0" stop-color="#efe3c2"/><stop offset=".7" stop-color="#fdf8ea"/><stop offset="1" stop-color="#d8c69a"/></linearGradient>
+                    <linearGradient id="mPageR" x1="1" x2="0"><stop offset="0" stop-color="#efe3c2"/><stop offset=".7" stop-color="#fdf8ea"/><stop offset="1" stop-color="#d8c69a"/></linearGradient>
+                    <linearGradient id="mGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6e2a4"/><stop offset="1" stop-color="#b2873a"/></linearGradient>
+                    <linearGradient id="mWood" x1="0" x2="1"><stop offset="0" stop-color="#5a3518"/><stop offset=".5" stop-color="#9a6332"/><stop offset="1" stop-color="#5a3518"/></linearGradient>
+                  </defs>
+                  <ellipse class="mu-glow" cx="100" cy="58" rx="96" ry="56" fill="url(#mGlow)"/>
+                  <g class="mu-rays" fill="url(#mRay)"><polygon points="99.2,60 100.8,60 35.1,28.9 33.4,32.6" opacity="0.40"/><polygon points="99.2,60 100.8,60 53.1,25.8 51.9,27.7" opacity="0.50"/><polygon points="99.2,60 100.8,60 51.5,6.8 48.6,9.6" opacity="0.60"/><polygon points="99.2,60 100.8,60 69.4,10.8 67.5,12.0" opacity="0.70"/><polygon points="99.2,60 100.8,60 74.9,-7.5 71.2,-6.0" opacity="0.80"/><polygon points="99.2,60 100.8,60 90.0,2.9 87.8,3.3" opacity="0.90"/><polygon points="99.2,60 100.8,60 102.0,-12.0 98.0,-12.0" opacity="1.00"/><polygon points="99.2,60 100.8,60 112.2,3.3 110.0,2.9" opacity="0.90"/><polygon points="99.2,60 100.8,60 128.8,-6.0 125.1,-7.5" opacity="0.80"/><polygon points="99.2,60 100.8,60 132.5,12.0 130.6,10.8" opacity="0.70"/><polygon points="99.2,60 100.8,60 151.4,9.6 148.5,6.8" opacity="0.60"/><polygon points="99.2,60 100.8,60 148.1,27.7 146.9,25.8" opacity="0.50"/><polygon points="99.2,60 100.8,60 166.6,32.6 164.9,28.9" opacity="0.40"/></g>
+                  <g class="mu-spark" fill="#fff6d8">
+                    <path d="M50 24 l1.2 3 3 1.2 -3 1.2 -1.2 3 -1.2 -3 -3 -1.2 3 -1.2z"/>
+                    <path d="M150 22 l1 2.4 2.4 1 -2.4 1 -1 2.4 -1 -2.4 -2.4 -1 2.4 -1z" style="animation-delay:1.3s"/>
+                  </g>
+                  <!-- the stand (rehal): two carved leaves crossing under the spine -->
+                  <path d="M70 108 L100 80 L106 86 L80 110 Z" fill="url(#mWood)" stroke="#3e2410" stroke-width=".6"/>
+                  <path d="M130 108 L100 80 L94 86 L120 110 Z" fill="url(#mWood)" stroke="#3e2410" stroke-width=".6"/>
+                  <circle cx="100" cy="86" r="2.4" fill="#c9a24b"/>
+                  <!-- the binding, then the page block's edges, then the open pages -->
+                  <path d="M100 63 C 82 52, 54 49, 29 54 L 31 94 C 55 88, 80 91, 100 102 C 120 91, 145 88, 169 94 L 171 54 C 146 49, 118 52, 100 63 Z" fill="#14402f" stroke="url(#mGold)" stroke-width="1.4"/>
+                  <path d="M100 60 C 84 49, 58 46, 34 51 L 36 88 C 58 83, 82 86, 100 96 Z" transform="translate(0 3.2)" fill="#d9caa0"/><path d="M100 60 C 116 49, 142 46, 166 51 L 164 88 C 142 83, 118 86, 100 96 Z" transform="translate(0 3.2)" fill="#d9caa0"/>
+                  <path d="M100 60 C 84 49, 58 46, 34 51 L 36 88 C 58 83, 82 86, 100 96 Z" transform="translate(0 1.6)" fill="#e6d8b2"/><path d="M100 60 C 116 49, 142 46, 166 51 L 164 88 C 142 83, 118 86, 100 96 Z" transform="translate(0 1.6)" fill="#e6d8b2"/>
+                  <path d="M100 60 C 84 49, 58 46, 34 51 L 36 88 C 58 83, 82 86, 100 96 Z" fill="url(#mPageL)"/><path d="M100 60 C 116 49, 142 46, 166 51 L 164 88 C 142 83, 118 86, 100 96 Z" fill="url(#mPageR)"/>
+                  <!-- illumination: a gold frame on each page, a headpiece, and the lines of text -->
+                  <path d="M100 60 C 84 49, 58 46, 34 51 L 36 88 C 58 83, 82 86, 100 96 Z" fill="none" stroke="url(#mGold)" stroke-width="1.6" transform="translate(67 71) scale(.82) translate(-67 -71)"/>
+                  <path d="M100 60 C 116 49, 142 46, 166 51 L 164 88 C 142 83, 118 86, 100 96 Z" fill="none" stroke="url(#mGold)" stroke-width="1.6" transform="translate(133 71) scale(.82) translate(-133 -71)"/>
+                  <path d="M100 60 C 84 49, 58 46, 34 51 L 36 88 C 58 83, 82 86, 100 96 Z" fill="none" stroke="#1d4b3c" stroke-width=".5" transform="translate(67 71) scale(.76) translate(-67 -71)"/>
+                  <path d="M100 60 C 116 49, 142 46, 166 51 L 164 88 C 142 83, 118 86, 100 96 Z" fill="none" stroke="#1d4b3c" stroke-width=".5" transform="translate(133 71) scale(.76) translate(-133 -71)"/>
+                  <g transform="rotate(-7 66 55)"><ellipse cx="66" cy="55" rx="13" ry="3.4" fill="url(#mGold)"/><ellipse cx="66" cy="55" rx="9" ry="1.8" fill="#1d4b3c"/></g>
+                  <g transform="rotate(7 134 55)"><ellipse cx="134" cy="55" rx="13" ry="3.4" fill="url(#mGold)"/><ellipse cx="134" cy="55" rx="9" ry="1.8" fill="#1d4b3c"/></g>
+                  <g stroke="#8a6a35" stroke-width=".55" stroke-dasharray="3 1.4 6 1.4 2 1.4" fill="none" opacity=".75" transform="translate(0 4)"><path d="M45 60.0 C 62 56.0, 80 58.0, 93 66.0"/><path d="M155 60.0 C 138 56.0, 120 58.0, 107 66.0"/><path d="M45 66.2 C 62 62.2, 80 64.2, 93 72.2"/><path d="M155 66.2 C 138 62.2, 120 64.2, 107 72.2"/><path d="M45 72.4 C 62 68.4, 80 70.4, 93 78.4"/><path d="M155 72.4 C 138 68.4, 120 70.4, 107 78.4"/><path d="M45 78.6 C 62 74.6, 80 76.6, 93 84.6"/><path d="M155 78.6 C 138 74.6, 120 76.6, 107 84.6"/><path d="M45 84.8 C 62 80.8, 80 82.8, 93 90.8"/><path d="M155 84.8 C 138 80.8, 120 82.8, 107 90.8"/></g>
+                  <path d="M100 60 L100 96" stroke="#bfa06a" stroke-width=".8"/>
+                </svg>
+              </div>
             </div>
           </div>
           <!-- Owner decision 46 -- the three ACTION buttons, one row under
@@ -4602,6 +4558,14 @@
                 <div class="wheel-unit-row">
                   <label for="wheelUnitTypeSelect">Study Unit</label>
                   <select id="wheelUnitTypeSelect"></select>
+                </div>
+                <div class="wheel-unit-row" id="wheelUnitSurahRow">
+                  <label for="wheelUnitSurahSelect">Surah</label>
+                  <select id="wheelUnitSurahSelect"></select>
+                </div>
+                <div class="wheel-unit-row" id="wheelUnitAyahRow" hidden>
+                  <label for="wheelUnitAyahSelect">Ayah</label>
+                  <select id="wheelUnitAyahSelect"></select>
                 </div>
                 <div class="wheel-unit-row" id="wheelUnitNumRow" hidden>
                   <label for="wheelUnitNumSelect" id="wheelUnitNumLabel">Number</label>
@@ -6471,18 +6435,16 @@
       mirror: document.getElementById(mirrorId),
       source: document.getElementById(sourceId),
     }));
-    // The wheel hub's own Surah/Ayah pickers -- same MIRROR shape as
-    // READ_PICKER_MIRRORS just above, just two controls and synced from
-    // renderWheel() (syncWheelHubPickers()) rather than from the reading
-    // screen's own render pass.
-    // 6 Sep 2026 -- the four unit controls in the "Choose a Unit" capsule's
-    // own palette join this same list, so they are synced and forwarded by
-    // exactly the same two loops the hub's Surah/Ayah pair already used.
+    // The "Choose a Unit" capsule's own palette -- same MIRROR shape as
+    // READ_PICKER_MIRRORS just above, synced from renderWheel()
+    // (syncWheelHubPickers()) rather than from the reading screen's own
+    // render pass. Decision 63 (4 Oct 2026): the Surah and Ayah mirrors
+    // moved here from the wheel's centre, which is now display only.
     // Nothing new decides anything: a change here sets the canonical
     // control's value and re-fires its own change event.
     const WHEEL_HUB_MIRRORS = [
-      ["wheelHubSurahSelect", "surahSelect"],
-      ["wheelHubAyahSelect", "ayahSelect"],
+      ["wheelUnitSurahSelect", "surahSelect"],
+      ["wheelUnitAyahSelect", "ayahSelect"],
       ["wheelUnitTypeSelect", "unitTypeSelect"],
       ["wheelUnitNumSelect", "unitNumSelect"],
       ["wheelUnitFromSelect", "rangeFromSelect"],
@@ -6494,6 +6456,7 @@
     const wheelUnitTypeSelect = document.getElementById("wheelUnitTypeSelect");
     const wheelUnitNumSelect = document.getElementById("wheelUnitNumSelect");
     const wheelUnitNumRow = document.getElementById("wheelUnitNumRow");
+    const wheelUnitAyahRow = document.getElementById("wheelUnitAyahRow");
     const wheelUnitNumLabel = document.getElementById("wheelUnitNumLabel");
     const wheelUnitRangeRow = document.getElementById("wheelUnitRangeRow");
     const wheelUnitNowLine = document.getElementById("wheelUnitNowLine");
@@ -6510,10 +6473,6 @@
     const wheelCtaBtn = document.getElementById("wheelCtaBtn");
     const wheelHubPickers = document.getElementById("wheelHubPickers");
     const wheelHubGraphic = document.getElementById("wheelHubGraphic");
-    const wheelHubBismillah = document.getElementById("wheelHubBismillah");
-    // Reused by layoutWheelHub() to measure Bismillah's own real one-line
-    // width -- one canvas, not a new one per layout pass.
-    const hubMeasureCtx = document.createElement("canvas").getContext("2d");
     const readUnitTypeSelect = document.getElementById("readUnitTypeSelect");
     const readAyahSelect = document.getElementById("readAyahSelect");
     const readSurahSelect = document.getElementById("readSurahSelect");
@@ -9161,39 +9120,46 @@
     // own name, and for a Juz/Hizb/Page -- which no single surah defines --
     // the Surah picker does too. Before "Study Quran" is tapped, the button's
     // own second line names the unit instead of "ONE Ayah a Day".
+    // Decision 63 (4 Oct 2026): the centre shows the chosen unit in two lines
+    // for EVERY unit, a single āyah included -- the Surah/Ayah pickers that
+    // used to name it are in Choose a Unit now. `cta` is the button's own
+    // second line before "Study Quran" is tapped (a single āyah keeps "ONE
+    // Ayah a Day").
     function wheelHubUnitText() {
-      if (!currentSurahData || currentUnitType === "ayah") return null;
+      if (!currentSurahData) return null;
       const meta = surahIndex?.find((x) => x.surahNumber === currentSurahNum);
       const name = surahName(currentSurahNum, meta?.nameEnglish);
+      const surahNo = t("Surah {n}", { n: num(currentSurahNum) });
+      const place = `${surahNo} · ${name}`;
       const info = currentUnitInfo();
-      if (currentUnitType === "surah") return { hub: t("Whole Surah"), cta: name };
+      if (currentUnitType === "ayah") return { line1: t("Ayah {n}", { n: ayahLabelFor(currentSurahNum, currentAyahNum) }), line2: place };
+      if (currentUnitType === "surah") return { line1: surahNo, line2: name, cta: name };
       if (currentUnitType === "range") {
         const from = Math.min(rangeFrom, rangeTo), to = Math.max(rangeFrom, rangeTo);
         const span = t("Āyāt {from}–{to}", { from: num(from), to: num(to) });
-        return { hub: span, cta: `${name} · ${span}` };
+        return { line1: span, line2: place, cta: `${name} · ${span}` };
       }
       if (currentUnitType === "ruku") {
         const ayah = currentSurahData.ayahs.find((a) => a.ayah === currentAyahNum);
         const ruku = t("Ruku' {n}", { n: num(rukuIndexInSurah(currentSurahData.ayahs, ayah.ruku)) });
-        return { hub: ruku, cta: `${name} · ${ruku}` };
+        return { line1: ruku, line2: place, cta: `${name} · ${ruku}` };
       }
-      // Juz / Hizb / Page: currentUnitInfo()'s own label is already the name.
-      return { hub: info.label, cta: info.label, wholeQuran: true };
+      // Juz / Hizb / Page: currentUnitInfo()'s own label is already the name,
+      // and the surah is only where the unit starts.
+      return { line1: info.label, line2: t("from {place}", { place }), cta: info.label };
     }
 
     function renderWheelHubUnit() {
       const text = wheelHubUnitText();
       const unitLabelEl = document.getElementById("wheelHubUnitLabel");
-      const ayahSel = document.getElementById("wheelHubAyahSelect");
-      const surahSel = document.getElementById("wheelHubSurahSelect");
       const ctaLine2 = document.getElementById("wheelCtaLine2");
       if (unitLabelEl) {
         unitLabelEl.hidden = !text;
-        unitLabelEl.textContent = text ? text.hub : "";
+        document.getElementById("wheelHubUnitLine1").textContent = text ? text.line1 : "";
+        document.getElementById("wheelHubUnitLine2").textContent = text ? text.line2 : "";
+        unitLabelEl.title = text ? `${text.line1} — ${text.line2}` : "";
       }
-      if (ayahSel) ayahSel.hidden = !!text;
-      if (surahSel) surahSel.hidden = !!text?.wholeQuran;
-      if (ctaLine2) ctaLine2.textContent = text ? text.cta : t("ONE Ayah a Day");
+      if (ctaLine2) ctaLine2.textContent = text?.cta ?? t("ONE Ayah a Day");
     }
 
     // Owner decision 51 -- landing drawers: one open at a time, all closed on
@@ -9363,43 +9329,18 @@
       const numbered = NUMBERED_UNITS.includes(currentUnitType);
       wheelUnitNumRow.hidden = !numbered;
       wheelUnitRangeRow.hidden = currentUnitType !== "range";
+      wheelUnitAyahRow.hidden = currentUnitType !== "ayah";
       wheelUnitNumLabel.textContent = numbered ? t(UNIT_NUM_LABELS[currentUnitType]) : t("Number");
       wheelUnitNowLine.textContent = t("Tracking: {unit}", { unit: currentUnitInfo().label });
     }
 
-    /** Sizes the hub's own content (Ta'awwudh, Bismillah, Surah, Ayah) so
-        none of it ever spills past the wheel's own hub circle onto a slice
-        -- the harder, non-negotiable constraint -- AND, wherever there is
-        real room left over, shifts the block up so roughly the bottom 40%
-        of the circle sits empty, reserved for the phase-2 illuminated
-        Qur'an graphic (not built this round; this only clears the room for
-        it). Measured, never guessed: reads the wheel SVG's OWN rendered
-        size (rOuter/size is a fixed ratio regardless of viewport -- 0.489
-        for the default size=360) to get the hub circle's real diameter in
-        pixels.
-
-        Two DECOUPLED steps, deliberately, not one combined solve -- an
-        earlier version chased both at once (narrow the width to buy more
-        "up") and that overreached on ordinary, short content: reserving
-        the fuller 40% forces a narrower width, but Bismillah's own wrap
-        count is discontinuous against width, so narrowing to buy reserve
-        can itself grow the content taller, which then demands narrowing
-        further still -- a feedback loop that, for the combined solve,
-        bottomed out at MIN_SAFE_WIDTH even for a two-word default Surah
-        name, which is not what "not overflowing takes priority over the
-        exact reserve target" was meant to cost. So width is decided FIRST,
-        for containment ALONE (centred, no reserve) -- narrowed only as far
-        as that genuinely demands, re-measured each pass since a narrower
-        trial width can wrap Bismillah onto another line. THEN, once width
-        is settled, "up" is spent as a pure bonus against whatever room is
-        left at that SAME width -- it can shift the block up (which does
-        narrow how much width is safe, the same Pythagorean tradeoff as
-        before) but the width step already chose is never re-opened to buy
-        more of it. On a hub with real headroom this still reaches close to
-        the full 40%; on content that already nearly fills the circle at
-        its own natural width (the common, short-content case) `up` ends
-        up small or zero, which is the honest answer -- legible width wins
-        over hitting the aspirational reserve number, exactly as asked. */
+    /** Lays the wheel's centre (the calligraphy, the chosen unit, the open
+        Qur'an) exactly on the wheel's own hub circle. Measured, never
+        guessed: reads the wheel SVG's OWN rendered size (rOuter/size is a
+        fixed ratio regardless of viewport -- 0.489 for the default size=360)
+        to get the hub circle's real diameter in pixels, sizes the overlay to
+        it, and sets the two label font sizes from it. Where each piece sits
+        inside the circle is a percentage in CSS (decision 63). */
     function layoutWheelHub() {
       const svg = wheelContainer.querySelector("svg.mastery-wheel");
       if (!svg) return;
@@ -9409,134 +9350,41 @@
       // next renderWheel() once the wheel is actually shown again does it for real.
       if (!svgWidth) return;
       const size = svg.viewBox?.baseVal?.width || 360;
-      const hubDiameter = svgWidth * ((size / 2 - 4) / size);
-      const r = hubDiameter / 2;
-
-      // Text has to shrink with the hub, not just the box it sits in -- a
-      // fixed font size on a ~80px hub just wraps to more lines and crowds
-      // the selects above/below it. Both scale off the same measured circle,
-      // set BEFORE the width trial below so that trial measures real,
-      // already-shrunk content rather than the unscaled default. Bigger
-      // than before throughout, per the owner's own ask -- Ta'awwudh no
-      // longer uses either of these at all; its curved SVG scales with the
-      // wrapper's own width instead, like a vector graphic would.
-      const arabicPx = Math.max(9, Math.min(hubDiameter * 0.095, 16));
-      const selectPx = Math.max(8, Math.min(hubDiameter * 0.07, 10.5));
-      wheelHubPickers.style.setProperty("--hub-arabic-size", arabicPx + "px");
-      wheelHubPickers.style.setProperty("--hub-select-size", selectPx + "px");
-
-      // Bismillah must never wrap -- unlike Surah/Ayah (which may
-      // legitimately ellipsis) it's fixed text, so its own one-line width
-      // is knowable in advance rather than discovered by trial. Measured
-      // with a canvas at the SAME font this element is about to render at
-      // (arabicPx, just set above), so the floor below is a fact about
-      // THIS hub's own text, never a guess -- and it moves the width
-      // trial's own floor up from the old flat 62px whenever Bismillah
-      // genuinely needs more than that to stay on one line.
-      let bismillahMinWidth = 0;
-      if (wheelHubBismillah) {
-        const bStyle = getComputedStyle(wheelHubBismillah);
-        hubMeasureCtx.font = `${bStyle.fontWeight} ${arabicPx}px ${bStyle.fontFamily}`;
-        bismillahMinWidth = hubMeasureCtx.measureText(wheelHubBismillah.textContent).width;
+      let hubDiameter = svgWidth * ((size / 2 - 4) / size);
+      // The Owner's circle is the GOLD RING itself, so measure that: the disc
+      // mastery-wheel.js draws in the middle. (The formula above is the
+      // fallback when a wheel has no disc.)
+      const ring = svg.querySelector('circle[fill="#13192a"]')?.getBoundingClientRect();
+      const host = wheelHubPickers.parentElement.getBoundingClientRect();
+      if (ring?.width) {
+        hubDiameter = ring.width;
+        wheelHubPickers.style.left = ring.left + ring.width / 2 - host.left + "px";
+        wheelHubPickers.style.top = ring.top + ring.height / 2 - host.top + "px";
       }
-      const MIN_SAFE_WIDTH = Math.max(62, bismillahMinWidth + 10); // the floor -- below this either legibility or Bismillah's own one line breaks
-      const RESERVE_TARGET = 0.4; // the owner's own "~40% of the centre below" ask, as a fraction of the hub's diameter
-      // A small, deliberate margin on the circle itself (measured, not
-      // guessed) -- the last bit of headroom for whatever sub-pixel gap
-      // survives the re-measurement loop below.
-      const rSafe = r * 0.98;
 
-      // Step 1 -- decide the WIDTH, for containment alone (centred, no
-      // reserve yet). Not overflowing the circle is the one non-negotiable
-      // constraint; the 40% reserve below is prep work for a later phase
-      // and must never cost legibility to chase. Iterated because
-      // Bismillah's own wrap count is genuinely discontinuous against
-      // width -- narrowing from a trial width to the real, narrower final
-      // width can suddenly cost it a whole extra line (a jump of a whole
-      // line-height, not a smooth sub-pixel drift) -- so this measures,
-      // narrows only as far as containment (at up=0) genuinely demands,
-      // and measures AGAIN against what that narrower width really
-      // rendered at, until height stops changing or a small bounded number
-      // of passes is spent trying. It can only ever narrow, never widen a
-      // pass back out, which is what keeps this loop from oscillating.
-      let width = Math.min(hubDiameter * 0.85, 200);
-      let h = 0;
-      for (let pass = 0; pass < 4; pass++) {
-        wheelHubPickers.style.width = width + "px";
-        h = wheelHubPickers.getBoundingClientRect().height;
-        const safeWidth = (h / 2) >= rSafe ? 0 : 2 * Math.sqrt(rSafe * rSafe - (h / 2) * (h / 2));
-        const nextWidth = Math.max(MIN_SAFE_WIDTH, Math.min(safeWidth, hubDiameter * 0.82, width));
-        if (window.__hubDebug) console.log("HUBPASS", JSON.stringify({ pass, width, h, safeWidth, nextWidth }));
-        if (Math.abs(nextWidth - width) < 0.5) { width = nextWidth; break; }
-        width = nextWidth;
-      }
-      // MIN_SAFE_WIDTH (Bismillah's own real one-line need) is allowed to
-      // win over `safeWidth` inside the loop above -- legibility matters
-      // enough to accept a LITTLE geometric risk chasing it. But not
-      // spilling onto a slice is the one truly non-negotiable constraint,
-      // so if that floor genuinely put the loop's own final width past
-      // what the circle allows at this height, clamp back down here,
-      // hard, even if that costs Bismillah its one line on a small enough
-      // hub. Re-measures `h` after clamping, since a narrower width can
-      // itself make Bismillah wrap and change the block's own height.
-      const hardSafeWidth = (h / 2) >= rSafe ? 0 : 2 * Math.sqrt(rSafe * rSafe - (h / 2) * (h / 2));
-      if (width > hardSafeWidth) {
-        width = hardSafeWidth;
-        wheelHubPickers.style.width = width + "px";
-        h = wheelHubPickers.getBoundingClientRect().height;
-      }
-      wheelHubPickers.style.width = width + "px";
+      // Every size in the centre follows the measured circle, so nothing is
+      // guessed per phone: the box takes the circle's own diameter, and the
+      // label's two lines scale off it (the demo's 0.068 and 0.05, the second
+      // never below 8.5px).
+      wheelHubPickers.style.width = hubDiameter + "px";
+      wheelHubPickers.style.height = hubDiameter + "px";
+      wheelHubPickers.style.setProperty("--hub-unit-size", (hubDiameter * 0.068).toFixed(2) + "px");
+      wheelHubPickers.style.setProperty("--hub-unit2-size", Math.max(8.5, hubDiameter * 0.05).toFixed(2) + "px");
 
-      // Step 2 -- spend any room LEFT OVER (once width is already settled
-      // for containment) pushing the block up, as a bonus toward the 40%
-      // reserve target -- never narrower than the width step 1 already
-      // decided. For short/default content this is often close to zero
-      // (the block already nearly fills the circle at its natural width),
-      // and that is the correct, honest answer rather than crushing width
-      // down to MIN_SAFE_WIDTH to manufacture reserve nobody asked to pay
-      // legibility for.
-      const desiredUp = Math.max(0, h / 2 - (0.5 - RESERVE_TARGET) * hubDiameter);
-      const maxUpAtWidth = Math.sqrt(Math.max(0, rSafe * rSafe - (width / 2) * (width / 2))) - h / 2;
-      const up = Math.max(0, Math.min(desiredUp, maxUpAtWidth));
-
-      // Shift the block's own centre up by `up` px from the hub's centre --
-      // this is what actually reserves the space below, whatever `up` the
-      // fit above allowed.
-      wheelHubPickers.style.transform = `translate(-50%, calc(-50% - ${up}px))`;
-      if (window.__hubDebug) console.log("HUBDEBUG", JSON.stringify({ r, rSafe, hubDiameter, h, width, desiredUp, maxUpAtWidth, up }));
-
-      // Step 3 -- the phase-2 graphic fills whatever room step 2 actually
-      // reserved below the pickers block, down to the circle's own safe
-      // edge -- never a guessed size, solved the same measured way as the
-      // pickers' own width above. Aspect-locked to its own viewBox (5:3)
-      // rather than let free containment produce something oddly tall or
-      // wide at extreme hub sizes; solved as a closed-form quadratic
-      // (not iterated) since, unlike the pickers block, its own content
-      // never re-wraps at a different width -- one pass is exact.
+      // The open Qur'an never overlaps the label: its inset is the demo's 27%
+      // each side, narrowed only when the label (whose second line never goes
+      // below 8.5px) runs lower than that leaves room for on a small hub.
       if (wheelHubGraphic) {
-        const GRAPHIC_ASPECT = 100 / 60; // matches the graphic's own viewBox
-        const GRAPHIC_MARGIN = 4; // gap between the pickers' bottom edge and the graphic's top
-        const GRAPHIC_MIN_H = 18; // below this it's a smudge, not a graphic -- hide rather than crush it
-        const base = (h / 2 - up) + GRAPHIC_MARGIN; // pickers' own bottom edge, below hub centre
-        // Solve a*gh^2 + b*gh + c = 0 for the largest gh whose farthest
-        // corner -- at width gh*ASPECT, centred at (base + gh/2) below
-        // hub centre -- still lands inside rSafe.
-        const a = (GRAPHIC_ASPECT * GRAPHIC_ASPECT) / 4 + 1;
-        const b = 2 * base;
-        const c = base * base - rSafe * rSafe;
-        const disc = b * b - 4 * a * c;
-        const gh = disc > 0 ? (-b + Math.sqrt(disc)) / (2 * a) : 0;
-        if (window.__hubDebug) console.log("HUBGRAPHIC", JSON.stringify({ base, gh }));
-        if (gh < GRAPHIC_MIN_H) {
-          wheelHubGraphic.style.display = "none";
-        } else {
-          wheelHubGraphic.style.display = "";
-          const gw = gh * GRAPHIC_ASPECT;
-          const oy = base + gh / 2;
-          wheelHubGraphic.style.width = gw + "px";
-          wheelHubGraphic.style.height = gh + "px";
-          wheelHubGraphic.style.transform = `translate(-50%, calc(-50% + ${oy}px))`;
+        const label = document.getElementById("wheelHubUnitLabel");
+        const bottomY = hubDiameter * (1 - 0.035);
+        let w = hubDiameter * 0.46;
+        if (label && !label.hidden) {
+          const room = bottomY - (label.offsetTop + label.offsetHeight) - 1;
+          w = Math.max(0, Math.min(w, room * (200 / 124)));
         }
+        const inset = (hubDiameter - w) / 2;
+        wheelHubGraphic.style.left = inset + "px";
+        wheelHubGraphic.style.right = inset + "px";
       }
     }
 

@@ -3133,6 +3133,7 @@ export const BN = {
   "Surah {surah} — Bismillah": "সূরা {surah} — বিসমিল্লাহ",
   "Approach: {name}": "পদ্ধতি: {name}", // ?
   "Surah {n}": "সূরা {n}",
+  "from {place}": "{place} থেকে", // the wheel centre's second line for a Page/Juz/Hizb: where the unit starts (decision 63)
 
   // 28 Sep 2026 -- the Owner's own new Approaches, from the Catalogue page.
   "Add an Approach": "একটি পদ্ধতি যোগ করুন", // ?
