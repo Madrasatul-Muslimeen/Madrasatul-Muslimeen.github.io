@@ -716,3 +716,4 @@ total). Allocated by the MMSA Architect.
 09.70: Mapping My Journey editor (S12, decision 66, #562). Allocated by the MMSA Architect.
 09.71: Mapping My Journey window tabs and version line (S13, decision 66, #564). Allocated by the MMSA Architect.
 09.72: Mapping My Journey flags and Note links, switched off until Rules publish (S14, decision 66, #566). Allocated by the MMSA Architect.
+09.73: Pin, Favourite, Archive, Finalise and Note links switched on (S14, #566); settings Play always starts. Allocated by the MMSA Architect.

@@ -8176,7 +8176,7 @@
     document.getElementById("wheelUnitPlayBtn")?.addEventListener("click", () => {
       closeAllBarPalettes(null);
       openReadingScreen();
-      playCurrentSelection();
+      playCurrentSelection({ fresh: true });
     });
 
     // The wheel's own one-time intro (session-only -- a fresh load shows the
@@ -20802,7 +20802,7 @@
       // unlockAudio() synchronously, and nothing here awaits before it.
       // Read is for a reader who is not listening -- no reciter needs to be
       // ticked, and audio already sounding is left alone.
-      drillPlayBtn.addEventListener("click", () => { openReadingScreen(); playCurrentSelection(); });
+      drillPlayBtn.addEventListener("click", () => { openReadingScreen(); playCurrentSelection({ fresh: true }); });
       drillReadBtn.addEventListener("click", () => { openReadingScreen(); });
     }
 
@@ -20831,7 +20831,19 @@
     // Mode and Loop; it pauses what is already sounding; and it resumes what is
     // sitting paused rather than restarting it.
     // -----------------------------------------------------------------------
-    async function playCurrentSelection() {
+    async function playCurrentSelection({ fresh = false } = {}) {
+      // The Owner, 4 Oct 2026: "The Read/play button at the settings should be
+      // enough to start the desired read/play act." A SETTINGS Play (Study
+      // options, Choose a Unit) passes `fresh`: whatever is sounding or paused
+      // is stopped -- counted as heard, exactly as the Stop button counts it --
+      // and the current settings start from the beginning. Before this, a
+      // recitation still sounding (a bookmark's, say) made that Play a PAUSE,
+      // and a paused one was resumed with its OLD settings. Only the reading
+      // screen's own ▶/⏸ button keeps the toggle below.
+      if (fresh && (isPlaying() || isPaused())) {
+        stopDrill(); stopAudio();
+        settleListeningSession("stopped");
+      }
       // Checked FIRST, and deliberately before unlockAudio(): that helper
       // touches the shared element to claim the gesture, which would undo the
       // pause we are here to perform.

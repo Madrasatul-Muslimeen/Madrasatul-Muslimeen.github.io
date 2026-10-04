@@ -14,6 +14,21 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v09.72 on `main`** (4 Oct 2026 — **Mapping My Journey: Pin, Favourite, Archive, Finalise and links between Notes — built, SWITCHED OFF until the Owner publishes the round 14 Rules (Siyagah round S14, decision 66, #566).**
+- **On a Note's ⋯ menu:** 📌 Pin, ⭐ Favourite, 📦 Archive, 🔒 Finalise, and **Link to a Note…** (a search picker). Pinned Notes lead the folder list with 📌; archived Notes leave it; ⭐ Favourites and 📦 Archived lists from the tree's ⋯ menu; a finalised Note refuses Edit and Trash in words; a Note shows its links and a **Linked from** list; a pop-up window shows the pinned Notes.
+- **Switched off:** `app/js/siyagah-flags-readiness.js` is `ready: false`. Until the Owner publishes `docs/governance/2026-10-04-siyagah-round14-DEPLOYMENT-candidate.rules`, every control explains itself in words and writes nothing.
+- **Rules candidate (PR #567, not published):** four optional booleans on a Note, a flag-only update path with no revision, the content path closed while finalised, a new `noteLinks` collection. ADR-010 Amendment 2. `firestore.rules` is unchanged.
+- **Built by:** the Architect (Rules, emulator suites) and the Builder (app, PR #568). Architect review: a real-function emulator suite for the new writers.
+- **Checks:**
+  - emulator: siyagah-round14 60/0 (16 mutations, each caught); siyagah-flags-links-real-function 30/0
+  - journey-flags-links-browser 306/0 (mutations a–e each fail); every journey suite green
+  - rules-authorisation-executable 63/0 (ROUND 14 block); note-foundation-data-layer, journey-map-boundary, stub-parity green
+  - phone-width-overflow 217/0, palette-contrast 20/0
+  - behaviour 1003/4 (sandbox: 22g×3, 31e)
+- **Next:** the Owner publishes the round 14 Rules; then the Architect syncs `firestore.rules` and switches the gate on.
+- **With the Owner:** publish the Rules (guide: `docs/governance/2026-10-04-siyagah-round14-owner-publish-guide.md`); a folder's own window (needs a demo); the Asmaul Husna poster (on hold, decision 50).
+)
+
 **Previous milestone: v09.71 on `main`** (4 Oct 2026 — **Mapping My Journey: pop-up windows finished — tabs and the version line (Siyagah round S13, decision 66, #564).**
 - **A tab strip (640px and up)** when several Notes are open in windows: one tab per window with its title and ✕; a tab brings its window to the front; the active tab is marked; a long title is shortened with the full title in its tooltip; the strip scrolls inside itself.
 - **On a phone** the bottom switcher gains a ✕ per item, and each title is shown in full on up to two lines (it was cut to "Note …" for every Note), with the strip scrolling sideways.

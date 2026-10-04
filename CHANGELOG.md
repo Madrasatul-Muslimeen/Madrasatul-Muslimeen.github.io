@@ -19570,3 +19570,17 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
   - rules-authorisation-executable 63/0; note-foundation-data-layer, journey-map-boundary, stub-parity green
   - phone-width-overflow 217/0, palette-contrast 20/0
   - behaviour 1003/4 (sandbox: 22g×3 archive.org, 31e TLS)
+
+## v09.73 — 4 Oct 2026 — Pin, Favourite, Archive, Finalise and Note links switched on (S14, decision 66)
+
+- **What:** the Owner published the round 14 Rules ("Round 14 rules are live Al Hamdulillah"). `firestore.rules` is synced to `docs/governance/2026-10-04-siyagah-round14-DEPLOYMENT-candidate.rules` (`[already-deployed-manually]`; 111 lines added, none removed). `app/js/siyagah-flags-readiness.js` is opened by governed decision (`docs/reports/2026-10-04-siyagah-round14-enabled.md`), so every S14 control from v09.72 now writes.
+- **Who:** the Owner, decision 66. Issue #566.
+- **Also, a settings Play always starts the settings** (the Owner's report: a listening bookmark played, then Play in the settings did nothing). Reproduced with a 30-second clip: while a recitation was still sounding, Study options' Play and Choose a Unit's Play paused it. They now stop whatever is sounding or paused (counted as heard) and start the current settings; the reading screen's own ▶/⏸ keeps its toggle. study-options-play-read-browser 73/0 (11 new checks; --mutate-no-fresh fails 4); wheel-unit-go-browser 254/0 (its no-play mutation updated for the new call, fails 24).
+- **Test change:** `journey-flags-links-browser`'s gate-off cases now route a closed copy of the readiness module (updated in place; the shipped file is open), so "shows, explains itself, writes nothing" stays tested.
+- **Finding recorded, nothing changed:** on the published file the emulator's first diagnostic pass names the 1,000-expression budget for the second `notes` update clause on refused writes; the deciding entry stays a clean `false` and no allowed write hit the budget (see the report).
+- **Checks:**
+  - emulator against the published file: siyagah-round14 60/0, siyagah-flags-links-real-function 30/0; journey-map, sections and tags real-function green
+  - journey-flags-links-browser 306/0, mutation e still fails; every journey suite green
+  - rules-authorisation-executable 63/0; note-foundation-data-layer, journey-map-boundary, stub-parity green
+  - phone-width-overflow, palette-contrast green
+  - behaviour 1003/4 (sandbox: 22g×3 archive.org, 31e TLS)

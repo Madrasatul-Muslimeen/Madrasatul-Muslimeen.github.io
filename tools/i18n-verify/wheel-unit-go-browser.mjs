@@ -31,7 +31,7 @@ let target = "/app/quranrevival.html", tmp = null;
 if (MUT_PLAY || MUT_CLOSE || MUT_READPLAY) {
   let src = readFileSync("app/quranrevival.html", "utf8");
   const before = src;
-  if (MUT_PLAY) src = src.replace(/(getElementById\("wheelUnitPlayBtn"\)[^]*?openReadingScreen\(\);\s*)playCurrentSelection\(\);/, "$1");
+  if (MUT_PLAY) src = src.replace(/(getElementById\("wheelUnitPlayBtn"\)[^]*?openReadingScreen\(\);\s*)playCurrentSelection\(\{ fresh: true \}\);/, "$1");
   if (MUT_CLOSE) src = src.replace(/(getElementById\("wheelUnitReadBtn"\)\?\.addEventListener\("click", \(\) => \{\s*)closeAllBarPalettes\(null\);/, "$1");
   if (MUT_READPLAY) src = src.replace(/(getElementById\("wheelUnitReadBtn"\)[^]*?openReadingScreen\(\);)/, "$1 playCurrentSelection();");
   if (src === before) { console.log("mutation did not apply"); process.exit(2); }

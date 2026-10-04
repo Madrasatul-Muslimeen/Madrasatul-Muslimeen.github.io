@@ -28,15 +28,23 @@ export const SIYAGAH_FLAGS_READINESS_AUTHORITIES = Object.freeze(["master-archit
 /**
  * THE DECLARATION. This is the single place the answer lives.
  *
- * NOT READY. The round 14 Rules candidate is unpublished.
+ * ENABLED 2026-10-04. The Owner published
+ * docs/governance/2026-10-04-siyagah-round14-DEPLOYMENT-candidate.rules to
+ * study-monitoring and confirmed it ("Round 14 rules are live"); firestore.rules
+ * was synced to that exact file in the same change. The record is the
+ * reference below.
  */
 export const SIYAGAH_FLAGS_DECLARATION = Object.freeze({
-  ready: false,
-  decision: null,
+  ready: true,
+  decision: Object.freeze({
+    by: "master-architect",
+    on: "2026-10-04",
+    reference: "docs/reports/2026-10-04-siyagah-round14-enabled.md",
+  }),
   gate: "E1",
   note:
     "Pin, Favourite, Archive, Finalise (flags on notes) and links between Notes " +
-    "(noteLinks) wait for the round 14 Rules to be published.",
+    "(noteLinks) are authorised by the published round 14 Rules.",
 });
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
