@@ -22,8 +22,13 @@ export const FOLDER_SEMANTIC_ROLES = Object.freeze(["journey-map", "reflection-a
 /** At most one of each per (tenant, person); never renameable into another role. */
 export const SYSTEM_FOLDER_ROLES = Object.freeze(["journey-map", "reflection-archive"]);
 
-/** ADR-010 §4 — including the root. Every consumer of a tree walks it; an unbounded depth turns one pathological chain into an unbounded read on a screen that must open fast. */
-export const MAX_FOLDER_DEPTH = 8;
+/**
+ * ADR-010 §4 — including the root. Every consumer of a tree walks it, so the walk stays BOUNDED.
+ * S9 (Owner decision 66, 4 Oct 2026): folders nest without a limit a person will ever reach.
+ * The old 8 was the app's own number, never a Rules one. What is kept is a technical guard
+ * against a corrupt chain only (the cycle refusal is separate and unchanged).
+ */
+export const MAX_FOLDER_DEPTH = 64;
 
 export function isSystemFolderRole(semanticRole) {
   return SYSTEM_FOLDER_ROLES.includes(semanticRole);

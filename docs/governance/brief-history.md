@@ -14,6 +14,20 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v09.66 on `main`** (4 Oct 2026 — **First screen B, and the light comes from the Qur'an (decisions 65 and 67, #549).**
+- **First screen:** the Owner's calligraphy and the open Qur'an show from the start. A smaller **Study Quran** pill sits where the unit's name goes and names the unit (e.g. "Page 257 · Ibrahim"). Tapping it gives the centre as in decision 63.
+- **The light (decision 67, "6, build it"):** beams rise from along both pages' top edges, the pages glow, at Bright, with the seven stars of decision 65. Demo v14 is the reference.
+- **The pill's name is never cut:** it wraps to a second line. On a hub under 140px (a 320px phone) the pill is 80% wide so "Study Quran" keeps one line, and when even two lines would crowd out the Qur'an the unit alone shows, with the full name in the button's title.
+- **Built by:** the Builder (PR #550). Architect review: the light from the pages, and the never-cut pill name.
+- **Checks:**
+  - wheel-centre-browser 633/0 (`--mutate-sunrise` fails 12, `--mutate-cut-pill` 6, `--mutate-six-stars` 12, `--mutate-big-button` 98)
+  - wheel-unit-go 254/0, tablet-wheel 74/0, approach-short-names 70/0, read-contents 248/0
+  - palette-contrast 20/0, phone-width-overflow 217/0, stub-parity 4/0
+  - behaviour 1003/4 (sandbox: 22g×3, 31e)
+- **Next:** S9 (#555) in review; Siyagah rounds S10–S14.
+- **With the Owner:** the Asmaul Husna poster (on hold, decision 50).
+)
+
 **Previous milestone: v09.65 on `main`** (4 Oct 2026 — **Mapping My Journey in three panels, the first Siyagah folder round S8 (decision 66, #551).**
 - **The panels:** the folder tree (folders only; Notes leave the tree, as in Siyagah); the chosen folder's Note list; the Note. Phone and tablet show one panel at a time with a back control; from 1200px the three sit side by side. The tray does the same in its own width. One function picks the tier.
 - **The Note list:** ✚ New note, Compact / Preview, ⬆ to the parent, subfolder chips with counts, ➕ New folder inside this one, a quick-title bar that creates a Note filed in this folder (`createPermanentNote` + `createNotePlacement`), and "in N folders" on a card filed more than once. A tap anywhere on a card opens its Note.

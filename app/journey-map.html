@@ -173,6 +173,7 @@
   }
   .bar-palette.open { display: flex; }
   .bar-palette button { width: 100%; text-align: left; }
+  .folder-row-menu button { min-height: 40px; } /* S9: every menu item is a 40px target */
   .note-order-btn { min-width: 2.4rem; }
   .folder-search-breadcrumb { display: block; font-size: 0.76rem; color: #888; }
   .folder-search-result { padding: 0.4rem 0.55rem; border: 1px solid #ddd; border-radius: 0.5rem; margin: 0.3rem 0; cursor: pointer; background: #fff; }
@@ -250,6 +251,21 @@
      list; at 1200px and up the two sit side by side. */
   .note-open-btn { background: none; border: none; color: #1F3A6E; text-align: left; padding: 0.3rem 0; min-height: 40px; cursor: pointer; font-family: inherit; overflow-wrap: anywhere; }
   .note-more-btn { min-width: 40px; min-height: 40px; }
+  /* S9: on a phone the ▾ stays on the TITLE's line (title, then ▾), and the date takes the line below. */
+  @media (max-width: 640px) {
+    .note-card-head .note-card-title { order: 0; flex: 1 1 0; min-width: 0; }
+    .note-card-head .note-more-btn { order: 1; flex: 0 0 auto; }
+    .note-card-head .note-card-meta { order: 3; flex: 1 0 100%; }
+    .note-card-head .note-in-folders { order: 2; }
+  }
+  /* S9: a touch press holds still (no text-selection / callout) and a dragged Note or folder is dimmed. */
+  .folder-row, .fn-card { -webkit-touch-callout: none; }
+  @media (pointer: coarse) { .folder-row, .fn-card { -webkit-user-select: none; user-select: none; } }
+  .fn-card.is-dragging, .folder-row.is-dragging { opacity: 0.55; }
+  .fn-card[draggable="true"] { cursor: grab; }
+  .folder-subfolder-form { display: flex; gap: 0.4rem; align-items: center; margin: 0.25rem 0 0.4rem; flex-wrap: wrap; }
+  .folder-subfolder-form input { flex: 1 1 8rem; min-width: 0; min-height: 40px; box-sizing: border-box; }
+  .folder-subfolder-form button { min-height: 40px; min-width: 40px; }
   #notePane[hidden] { display: none; }
   #notePane { min-width: 0; box-sizing: border-box; border: 1px solid #ddd; border-radius: 0.6rem; background: #fff; padding: 0.5rem 0.7rem 1rem; margin-top: 0.6rem; }
   #noteLayout.pane-open.tier-narrow #listPane { display: none; }
@@ -922,7 +938,7 @@
         : "";
       return `<div class="note-card-head">
           <button type="button" class="note-card-title note-open-btn" data-note-open>${titlePrefix}${escapeHtml(title)}</button>
-          <span class="note-card-meta">${when(displayTimestamp(note))}</span>
+          <span class="note-card-meta">${whenDate(displayTimestamp(note))}</span>
           ${extraHead}${more}
         </div>`;
     }
@@ -952,6 +968,14 @@
       const d = ts?.toDate ? ts.toDate() : null;
       return d ? d.toLocaleString(dateLocale()) : "";
     }
+    /** S9: a Note card's date is the DATE only ("1 Sep 2026"; in Bangla its own digits and month, never an "AM"). */
+    function whenDate(ts) {
+      const d = ts?.toDate ? ts.toDate() : null;
+      if (!d) return "";
+      if (getAppLang() === "bn") return d.toLocaleDateString("bn-BD", { day: "numeric", month: "short", year: "numeric" });
+      // Built from en-US's month names so the month is always three letters ("Sep", never en-GB's "Sept").
+      return `${d.getDate()} ${d.toLocaleDateString("en-US", { month: "short" })} ${d.getFullYear()}`;
+    }
     function wireNoteCards(container, notes) {
       container.querySelectorAll("[data-note-id]").forEach((card) => {
         const noteId = card.dataset.noteId;
@@ -973,14 +997,140 @@
           });
         }
         card.querySelector("[data-note-window]")?.addEventListener("click", (e) => openNoteWindow(noteId, { fromEl: e.currentTarget }));
-        card.querySelector("[data-note-toggle]")?.addEventListener("click", (e) => {
-          if (expandedNoteIds.has(noteId)) expandedNoteIds.delete(noteId); else expandedNoteIds.add(noteId);
-          const shown = expandedNoteIds.has(noteId);
-          card.querySelector("[data-note-actions]").style.display = shown ? "" : "none";
-          e.currentTarget.setAttribute("aria-expanded", String(shown));
-        });
+        const setActions = (shown) => {
+          if (shown) expandedNoteIds.add(noteId); else expandedNoteIds.delete(noteId);
+          const box = card.querySelector("[data-note-actions]");
+          if (box) box.style.display = shown ? "" : "none";
+          card.querySelector("[data-note-toggle]")?.setAttribute("aria-expanded", String(shown));
+        };
+        card.querySelector("[data-note-toggle]")?.addEventListener("click", () => setActions(!expandedNoteIds.has(noteId)));
+        // S9: right-click (PC) or a ~500ms long-press (touch) opens the same actions the ▾ opens. Never a plain tap.
+        if (card.querySelector("[data-note-toggle]")) {
+          wirePressMenu(card, {
+            open: () => setActions(true),
+            drag: card.matches(".fn-card") && card.hasAttribute("data-dragsrc") ?touchDragFor("note", noteId, card) : null,
+          });
+        }
         card.querySelector("[data-note-file]")?.addEventListener("click", () => openFileDialog(note));
       });
+    }
+
+    // =====================================================================
+    // S9 (Owner decision 66) -- menus by right-click / long-press, and touch drag.
+    // One helper serves folder rows and Note cards. A press must HOLD STILL for
+    // LONG_PRESS_MS; moving more than PRESS_SLOP_PX first means the finger is
+    // scrolling, so the press is cancelled. A plain tap never opens a menu. Once
+    // the menu has opened, moving on (finger still down) turns the press into a
+    // drag of that row or card ("long-press, then drag").
+    // =====================================================================
+    const LONG_PRESS_MS = 500;
+    const PRESS_SLOP_PX = 8;
+    /** Native (mouse) drag only where the main pointer is a mouse: on a touch screen a browser's own long-press drag would fight the press-then-drag below. */
+    const mouseDragOn = () => !(window.matchMedia && matchMedia("(pointer: coarse)").matches);
+    let dragNoteId = null; // a Note card being dragged (mouse or touch) onto a folder row
+    function wirePressMenu(el, { open, drag = null }) {
+      el.addEventListener("contextmenu", (e) => {
+        if (e.target.closest("input, textarea, select")) return;
+        e.preventDefault();
+        open();
+      });
+      let timer = null, start = null, fired = false, dragging = false;
+      const clear = () => { clearTimeout(timer); timer = null; };
+      el.addEventListener("touchstart", (e) => {
+        clear(); fired = false; dragging = false; start = null;
+        if (e.touches.length !== 1 || e.target.closest("input, textarea, select")) return;
+        start = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        timer = setTimeout(() => { timer = null; fired = true; open(); }, LONG_PRESS_MS);
+      }, { passive: true });
+      el.addEventListener("touchmove", (e) => {
+        if (!start) return;
+        const p = e.touches[0];
+        const moved = Math.hypot(p.clientX - start.x, p.clientY - start.y) > PRESS_SLOP_PX;
+        if (!fired) { if (moved) clear(); return; }
+        if (!drag) return;
+        if (!dragging && moved) { dragging = true; closeAllBarPalettes(null); drag.begin(); }
+        if (dragging) { if (e.cancelable) e.preventDefault(); drag.move(p.clientX, p.clientY); }
+      }, { passive: false });
+      el.addEventListener("touchend", (e) => {
+        clear();
+        const wasDragging = dragging, wasFired = fired;
+        dragging = false; fired = false; start = null;
+        if (wasDragging) { const p = e.changedTouches[0]; drag.end(p.clientX, p.clientY, true); }
+        if ((wasFired || wasDragging) && e.cancelable) e.preventDefault(); // the press is not also a tap
+      });
+      el.addEventListener("touchcancel", () => {
+        clear();
+        if (dragging) drag.end(0, 0, false);
+        dragging = false; fired = false; start = null;
+      });
+    }
+
+    /** The row or section header under a point, and which zone of a row it is. */
+    function dropTargetAt(x, y) {
+      const hit = document.elementFromPoint(x, y);
+      const row = hit?.closest?.(".folder-row[data-folder-id]") ?? null;
+      if (row) return { row, zone: dragZoneFor(row, y) };
+      const head = hit?.closest?.(".section-header") ?? null;
+      return head ? { head } : null;
+    }
+    /** What a touch drag does: dims the dragged thing, lights the target as the mouse does, and on release drops exactly as the mouse drop does. */
+    function touchDragFor(kind, id, el) {
+      return {
+        begin() {
+          el.classList.add("is-dragging");
+          if (kind === "folder") dragFolderKey = id; else dragNoteId = id;
+        },
+        move(x, y) {
+          const tree = document.querySelector("[data-folder-tree]");
+          if (tree) clearDragIndicators(tree);
+          const hit = dropTargetAt(x, y);
+          if (!hit) return;
+          if (hit.row) hit.row.classList.add(`drag-over-${kind === "note" ? "inside" : hit.zone}`);
+          else if (kind === "folder") hit.head.classList.add("drag-over-inside");
+        },
+        end(x, y, drop) {
+          el.classList.remove("is-dragging");
+          const tree = document.querySelector("[data-folder-tree]");
+          if (tree) clearDragIndicators(tree);
+          const hit = drop ? dropTargetAt(x, y) : null;
+          const folderKey = dragFolderKey, noteId = dragNoteId;
+          dragFolderKey = null; dragNoteId = null;
+          if (!hit) return;
+          if (hit.row) {
+            const target = findNodeByIdOrRole(mergedRoots(), hit.row.dataset.folderId || null, hit.row.dataset.folderRole);
+            if (!target) return;
+            if (noteId) dropNoteOnFolder(noteId, target);
+            else if (folderKey) { const dragged = findNodeByExpandKey(mergedRoots(), folderKey); if (dragged && dragged.folderId !== target.folderId) performFolderDrop(dragged, target, hit.zone); }
+          } else if (folderKey) {
+            const section = sections.find((s) => s.sectionId === hit.head.dataset.sectionId);
+            const dragged = findNodeByExpandKey(mergedRoots(), folderKey);
+            if (section && dragged) assignFolderToSection(dragged, section.sectionId);
+          }
+        },
+      };
+    }
+
+    /**
+     * Drop a Note card on a folder: file it THERE as well (copyNoteToFolder → a new placement); its
+     * other filings are untouched (it stays in its other folders). A folder that already holds it is refused in words.
+     */
+    async function dropNoteOnFolder(noteId, targetNode) {
+      if (!isSelfSelected()) return;
+      const note = allNotes.find((n) => n.noteId === noteId);
+      if (!note) return;
+      if (targetNode.folderId && activeFilingFolderIds(note).has(targetNode.folderId)) {
+        showPageStatus(t('"{title}" is already in {folder}.', { title: noteTitleOf(note), folder: folderDisplayName(targetNode) }));
+        return;
+      }
+      const toFolderId = await ensureRealFolder(targetNode);
+      if (!toFolderId) return;
+      const outcome = await runFolderWrite(
+        () => copyNoteToFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, noteId, toFolderId, actorUid: auth.currentUser.uid }),
+        { collection: TENANT.NOTE_PLACEMENTS, action: "copyNoteToFolder" }
+      );
+      if (!outcome.ok) return;
+      showPageStatus(t('"{title}" added to {folder}. It also stays in its other folders.', { title: noteTitleOf(note), folder: folderDisplayName(targetNode) }));
+      await refreshAll();
     }
 
     // =====================================================================
@@ -1260,6 +1410,7 @@
     let newFolderTargetNode = null; // null = top level
     let folderSearchQuery = "";
     let inlineRenameKey = null;
+    let inlineSubfolderKey = null; // S9: the folder whose ⋯ → Add subfolder name box is open
     let dragFolderKey = null;
 
     /** Stable across a virtual system folder becoming real (folderId: null -> a real id): the two system folders key on their own semanticRole, every other folder on its own folderId. Used for expand state, the 📍 pin and the drag preview, none of which may reset just because ensureRealFolder() ran. */
@@ -1268,9 +1419,43 @@
     }
     function toggleExpanded(node) {
       const key = expandKeyFor(node);
-      if (expandedFolderIds.has(key)) expandedFolderIds.delete(key); else expandedFolderIds.add(key);
+      if (expandedFolderIds.has(key)) {
+        // S9: closing a folder closes everything inside it, so opening it again shows only the next level.
+        expandedFolderIds.delete(key);
+        const closeBelow = (n) => { for (const child of n.children ?? []) { expandedFolderIds.delete(expandKeyFor(child)); closeBelow(child); } };
+        closeBelow(node);
+      } else expandedFolderIds.add(key);
       saveExpandedIds();
       renderFoldersView();
+    }
+    /** ⋯ → Move to top level: moveFolder() with no parent, previewed against the same refusal vocabulary as a drag. */
+    async function moveFolderToTopLevel(node) {
+      if ((node.parentFolderId ?? null) === null) return;
+      const outcome = await runFolderWrite(
+        () => moveFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, folderId: node.folderId, parentFolderId: null, actorUid: auth.currentUser.uid }),
+        { collection: TENANT.NOTE_FOLDERS, action: "moveFolder" }
+      );
+      if (!outcome.ok) return;
+      showPageStatus(t('"{name}" is now a top-level folder.', { name: folderDisplayName(node) }));
+      await refreshAll();
+    }
+    /** ⋯ → Turn into a section: a section named after this top-level folder, with the folder filed in it. Both writes go through the sections gate. */
+    async function turnFolderIntoSection(node) {
+      if (!node.folderId || (node.parentFolderId ?? null) !== null) { showPageStatus(t("Only a top-level folder can be turned into a section.")); return; }
+      const made = await gatedWrite(
+        () => createSection(db, {
+          tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid,
+          name: node.name, order: nextOrder(sections), actorUid: auth.currentUser.uid,
+        }),
+        { collection: TENANT.NOTE_SECTIONS, action: "createSection" });
+      if (!made.ok) return;
+      const filed = await gatedWrite(
+        () => setFolderSection(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, folderId: node.folderId, sectionId: made.result, actorUid: auth.currentUser.uid }),
+        { collection: TENANT.NOTE_FOLDERS, action: "setFolderSection" });
+      showPageStatus(filed.ok
+        ? t('Section "{name}" made, and the folder is in it.', { name: node.name })
+        : t('Section "{name}" was made, but the folder could not be put in it.', { name: node.name }));
+      await refreshAll();
     }
     function isPinnedTarget(f) {
       return newFolderTargetNode != null && expandKeyFor(f) === expandKeyFor(newFolderTargetNode);
@@ -1417,7 +1602,7 @@
           <button type="button" class="secondary tiny" data-note-copy>${t("Copy to…")}</button>
           <button type="button" class="secondary tiny" data-note-move>${t("Move to…")}</button>` : "");
       const preview = notesPreview ? `<p class="note-card-preview" data-note-preview>${escapeHtml(previewText(note))}</p>` : "";
-      return `<li class="fn-card" data-note-leaf data-note-id="${escapeHtml(note.noteId)}" data-in-folder="${escapeHtml(placement.folderId)}" data-placement-id="${escapeHtml(placement.placementId)}">
+      return `<li class="fn-card" data-note-leaf${isSelfSelected() ? ` data-dragsrc${mouseDragOn() ? ' draggable="true"' : ""}` : ""} data-note-id="${escapeHtml(note.noteId)}" data-in-folder="${escapeHtml(placement.folderId)}" data-placement-id="${escapeHtml(placement.placementId)}">
         <div class="note-card">
           ${noteHeadHtml(note, { hasActions: true, extraHead: inFolders })}
           ${preview}
@@ -1626,6 +1811,7 @@
             <button type="button" class="folder-menu-btn bar-palette-toggle" data-bar-palette-toggle="${menuId}" aria-haspopup="true" aria-expanded="false" title="${escapeHtml(t("More"))}" aria-label="${escapeHtml(t("More"))}">⋯</button>
             <div class="bar-palette folder-row-menu" data-bar-palette="${menuId}">
               <button type="button" class="secondary tiny" data-folder-addnote>✚ ${t("Add note here")}</button>
+              <button type="button" class="secondary tiny" data-folder-addsub>➕ ${t("Add subfolder")}</button>
               <button type="button" class="secondary tiny" data-folder-pin>📍 ${t("New folders go here")}</button>
               <button type="button" class="secondary tiny" data-folder-rename>✏️ ${t("Rename")}</button>
               <button type="button" class="secondary tiny" data-folder-up ${upDisabled ? "disabled" : ""} aria-label="${escapeHtml(t("Move up"))}">▲ ${t("Move up")}</button>
@@ -1633,17 +1819,24 @@
               <button type="button" class="secondary tiny" data-folder-copy>${t("Copy to…")}</button>
               <button type="button" class="secondary tiny" data-folder-move>${t("Move to…")}</button>
               <button type="button" class="secondary tiny" data-folder-look>🎨 ${t("Colour and bold")}</button>
+              ${(f.parentFolderId ?? null) !== null ? `<button type="button" class="secondary tiny" data-folder-top>⤒ ${t("Move to top level")}</button>` : ""}
               ${(f.parentFolderId ?? null) === null ? `<button type="button" class="secondary tiny" data-folder-section>${t("Move to section")} ▶</button>` : ""}
+              ${(f.parentFolderId ?? null) === null && sectionIdOfRoot(f) === null ? `<button type="button" class="secondary tiny" data-folder-makesection>🗂 ${t("Turn into a section")}</button>` : ""}
               <button type="button" class="danger tiny" data-folder-delete>🗑 ${t("Delete")}</button>
             </div>
           </span>`;
       }
-      const draggableAttr = editable ? ' draggable="true"' : "";
+      const draggableAttr = editable ? ` data-dragsrc${mouseDragOn() ? ' draggable="true"' : ""}` : "";
       return `<li class="folder-tree-item" data-depth="${depth}">
         <div class="folder-row${isSystemFolderRole(f.semanticRole) ? " system" : ""}${key === selectedFolderKey ? " selected" : ""}" ${key === selectedFolderKey ? 'aria-current="true" ' : ""}style="margin-left:${(depth * 1.1).toFixed(2)}rem"
              data-folder-role="${escapeHtml(f.semanticRole)}" data-folder-id="${escapeHtml(f.folderId ?? "")}"${draggableAttr}>
           ${toggle}${nameHtml}${badge}${pin}${menu}
         </div>
+        ${editable && inlineSubfolderKey === key ? `<form class="folder-subfolder-form" data-subfolder-form style="margin-left:${((depth + 1) * 1.1).toFixed(2)}rem">
+          <input type="text" data-subfolder-input placeholder="${escapeHtml(t("Folder name"))}" aria-label="${escapeHtml(t("Name for the new subfolder"))}" />
+          <button type="submit">${escapeHtml(t("Create"))}</button>
+          <button type="button" class="secondary" data-subfolder-cancel aria-label="${escapeHtml(t("Cancel"))}">✕</button>
+        </form>` : ""}
       </li>`;
     }
 
@@ -1704,6 +1897,43 @@
         row.querySelector("[data-folder-section]")?.addEventListener("click", (e) => {
           e.stopPropagation(); closeAllBarPalettes(null); openFolderSectionDialog(node);
         });
+        // S9 menu items.
+        row.querySelector("[data-folder-addsub]")?.addEventListener("click", (e) => {
+          e.stopPropagation(); closeAllBarPalettes(null);
+          inlineSubfolderKey = expandKeyFor(node);
+          renderFoldersView();
+          document.querySelector("[data-subfolder-input]")?.focus();
+        });
+        row.querySelector("[data-folder-top]")?.addEventListener("click", (e) => {
+          e.stopPropagation(); closeAllBarPalettes(null); moveFolderToTopLevel(node);
+        });
+        row.querySelector("[data-folder-makesection]")?.addEventListener("click", (e) => {
+          e.stopPropagation(); closeAllBarPalettes(null); turnFolderIntoSection(node);
+        });
+        const subForm = li.querySelector("[data-subfolder-form]");
+        subForm?.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const name = subForm.querySelector("[data-subfolder-input]").value.trim();
+          if (!name) { showPageStatus(t("Type a name for the folder first.")); return; }
+          inlineSubfolderKey = null;
+          await createFolderInside(node, name);
+        });
+        subForm?.querySelector("[data-subfolder-cancel]")?.addEventListener("click", () => { inlineSubfolderKey = null; renderFoldersView(); });
+        subForm?.querySelector("[data-subfolder-input]")?.addEventListener("keydown", (e) => {
+          if (e.key === "Escape") { e.preventDefault(); inlineSubfolderKey = null; renderFoldersView(); }
+        });
+        // S9: right-click / long-press opens this row's ⋯ menu; a long-press then a drag moves the folder (where the mouse can).
+        if (row.querySelector(".folder-menu-wrap")) {
+          wirePressMenu(row, {
+            open: () => {
+              const wrap = row.querySelector(".folder-menu-wrap");
+              closeAllBarPalettes(wrap.dataset.barPaletteWrap);
+              wrap.querySelector("[data-bar-palette]").classList.add("open");
+              wrap.querySelector("[data-bar-palette-toggle]").setAttribute("aria-expanded", "true");
+            },
+            drag: row.hasAttribute("data-dragsrc") ? touchDragFor("folder", expandKeyFor(node), row) : null,
+          });
+        }
 
         // Drag a row: top 28% = before, bottom 28% = after, middle 44% =
         // inside (Siyagah's own zones). Mouse/desktop only, per the issue's
@@ -1714,16 +1944,19 @@
           row.addEventListener("dragend", () => { dragFolderKey = null; clearDragIndicators(container); });
         }
         row.addEventListener("dragover", (e) => {
-          if (dragFolderKey == null) return;
+          if (dragFolderKey == null && dragNoteId == null) return;
           e.preventDefault();
           clearDragIndicators(container);
-          row.classList.add(`drag-over-${dragZoneFor(row, e.clientY)}`);
+          row.classList.add(`drag-over-${dragNoteId != null ? "inside" : dragZoneFor(row, e.clientY)}`); // a Note can only be dropped INTO a folder
         });
         row.addEventListener("dragleave", () => row.classList.remove("drag-over-before", "drag-over-after", "drag-over-inside"));
         row.addEventListener("drop", (e) => {
           e.preventDefault();
           const zone = dragZoneFor(row, e.clientY);
           clearDragIndicators(container);
+          const noteId = dragNoteId;
+          dragNoteId = null;
+          if (noteId) { dropNoteOnFolder(noteId, node); return; }
           const draggedNode = dragFolderKey ? findNodeByExpandKey(mergedRoots(), dragFolderKey) : null;
           dragFolderKey = null;
           if (draggedNode && draggedNode.folderId !== node.folderId) performFolderDrop(draggedNode, node, zone);
@@ -1833,6 +2066,16 @@
         if (!placement || !note || !folderNode) return;
         const rows = notesInFolder(folderNode);
         const idx = rows.findIndex((r) => r.placement.placementId === placementId);
+        // S9: drag the card onto a folder in the tree (mouse; touch is wirePressMenu's long-press-then-drag) to file it there too.
+        if (li.hasAttribute("draggable")) li.addEventListener("dragstart", (e) => {
+          dragNoteId = noteId; li.classList.add("is-dragging");
+          e.dataTransfer.effectAllowed = "copy";
+          try { e.dataTransfer.setData("text/plain", noteId); } catch { /* some browsers refuse */ }
+        });
+        li.addEventListener("dragend", () => {
+          dragNoteId = null; li.classList.remove("is-dragging");
+          document.querySelectorAll(".drag-over-inside").forEach((el) => el.classList.remove("drag-over-inside"));
+        });
         li.querySelector("[data-note-up]")?.addEventListener("click", () => reorderNoteInFolder(rows, idx, -1));
         li.querySelector("[data-note-down]")?.addEventListener("click", () => reorderNoteInFolder(rows, idx, 1));
         li.querySelector("[data-note-copy]")?.addEventListener("click", () => copyNoteTo(note, folderNode));
@@ -2703,7 +2946,9 @@
     function folderSearchResultsHtml(query) {
       const folderMatches = flattenFolders(mergedRoots()).map(({ folder }) => folder)
         .filter((f) => folderDisplayName(f).toLowerCase().includes(query));
-      const noteMatches = allNotes.filter((n) => (n.title || "").toLowerCase().includes(query));
+      // S9: a tag's name finds the Notes carrying that tag too (a Note is listed once, even if both its title and a tag match).
+      const tagNoteIds = new Set(tags.filter((g) => String(g.name ?? "").toLowerCase().includes(query)).flatMap((g) => notesWithTag(g.tagId).map((n) => n.noteId)));
+      const noteMatches = allNotes.filter((n) => (n.title || "").toLowerCase().includes(query) || tagNoteIds.has(n.noteId));
       if (folderMatches.length === 0 && noteMatches.length === 0) {
         return `<p id="emptyMsg">${escapeHtml(t('No folders or Notes match "{query}".', { query: folderSearchQuery.trim() }))}</p>`;
       }
