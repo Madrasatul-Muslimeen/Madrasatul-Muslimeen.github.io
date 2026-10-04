@@ -186,4 +186,12 @@ mark.note-find-hit.current { background: #ff9f1c; outline: 2px solid #1F3A6E; }
    onto two lines instead of being cut on one, and the strip scrolls sideways. */
 .nw-switch:not(.nw-tabs) { overflow-x: auto; overflow-y: hidden; justify-content: flex-start; }
 .nw-switch:not(.nw-tabs) .nw-tab { flex: 0 0 auto; min-width: 7.5rem; max-width: 60vw; }
+/* Round 14 (decision 66): the pinned Notes strip in a pop-up window; scrolls sideways inside itself, targets 40px. */
+.nw-pinned { flex: 0 0 auto; display: flex; flex-wrap: nowrap; align-items: center; gap: 0.3rem; margin: 0.2rem 0; overflow-x: auto; max-width: 100%; box-sizing: border-box; }
+.nw-pinned[hidden] { display: none; }
+.nw-pinned > * { flex: 0 0 auto; max-width: 14rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nw-pinned-label { font-size: 0.8rem; color: #1F3A6E; font-weight: 600; }
+[data-note-links] h3 { font-size: 0.95rem; margin: 0.8rem 0 0.3rem; color: #1F3A6E; }
+[data-note-links] li { display: flex; gap: 0.3rem; align-items: center; margin-bottom: 0.25rem; }
+[data-note-links] li > [data-link-open] { flex: 1 1 auto; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; }
 .nw-switch:not(.nw-tabs) .nw-switch-btn { white-space: normal; overflow-wrap: anywhere; line-height: 1.15; font-size: 0.85rem; padding: 2px 8px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; text-overflow: clip; }

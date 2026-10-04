@@ -34,6 +34,13 @@ import {
   setNoteTagStatus,
   tagNote as tagNoteRaw,
   untagNote as untagNoteRaw,
+  setNoteFlags as setNoteFlagsRaw,
+  createNoteLink,
+  retireNoteLink,
+  restoreNoteLink,
+  listNoteLinksForOwnerPage,
+  listNoteLinksFromNote,
+  listNoteLinksToNote,
   setNoteFolderLook,
   setNoteFolderSection,
   listNotesForOwnerPage,
@@ -856,4 +863,38 @@ export async function tagNote(db, { tenantId, ownerPersonId, ownerUid = null, no
 
 export async function untagNote(db, { tenantId, ownerPersonId, noteId, tagId, actorUid } = {}) {
   return untagNoteRaw(db, { tenantId, ownerPersonId, noteId, tagId, actorUid });
+}
+
+// ---------------------------------------------------------------------------
+// Siyagah round 14 (issue #566, decision 66) -- Note flags and links between
+// Notes. Thin wrappers over note-foundation.js; the pages gate every call
+// behind siyagah-flags-readiness.js. A flag write is never a revision.
+// ---------------------------------------------------------------------------
+
+export async function loadAllOwnerNoteLinks(db, { tenantId, ownerPersonId, status, pageSize = 100 } = {}) {
+  return loadAllPages((after) => listNoteLinksForOwnerPage(db, { tenantId, ownerPersonId, status, pageSize, after }));
+}
+
+export async function setNoteFlags(db, { tenantId, ownerPersonId, noteId, flags, actorUid } = {}) {
+  return setNoteFlagsRaw(db, { tenantId, ownerPersonId, noteId, flags, actorUid });
+}
+
+export async function linkNotes(db, { tenantId, ownerPersonId, ownerUid = null, fromNoteId, toNoteId, actorUid } = {}) {
+  return createNoteLink(db, { tenantId, ownerPersonId, ownerUid, fromNoteId, toNoteId, actorUid });
+}
+
+export async function unlinkNotes(db, { tenantId, ownerPersonId, linkId, actorUid } = {}) {
+  return retireNoteLink(db, { tenantId, ownerPersonId, linkId, actorUid });
+}
+
+export async function relinkNotes(db, { tenantId, ownerPersonId, linkId, actorUid } = {}) {
+  return restoreNoteLink(db, { tenantId, ownerPersonId, linkId, actorUid });
+}
+
+export async function linksFromNote(db, { tenantId, ownerPersonId, fromNoteId } = {}) {
+  return listNoteLinksFromNote(db, { tenantId, ownerPersonId, fromNoteId });
+}
+
+export async function linksToNote(db, { tenantId, ownerPersonId, toNoteId } = {}) {
+  return listNoteLinksToNote(db, { tenantId, ownerPersonId, toNoteId });
 }

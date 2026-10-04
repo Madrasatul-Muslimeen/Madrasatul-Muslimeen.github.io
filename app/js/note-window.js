@@ -123,6 +123,14 @@ const noteTitleOf = (note) => note.title?.trim() || t("(untitled)");
  *                        tag(note, tagId) / untag(note, tagId)  -> Promise; the page writes,
  *                        create(name) -> Promise<tagId>; throws Error(sentence) on a duplicate }
  *                      Tagging is not a revision: nothing here touches the Note or Journaling.
+ *   flags?             Siyagah round 14 (decision 66): Pin / Favourite / Archive / Finalise and links between Notes. Absent = none of it.
+ *                      { ready()  true once the round 14 Rules are published (until then the controls show, say so, and write nothing),
+ *                        on(note, key)  is `pinned|favourite|archived|finalised` true on this Note,
+ *                        set(note, key, value) -> Promise  (the page writes ONLY the flag; shut, it says so and resolves false),
+ *                        linksOut(note) / linksIn(note)  [{ linkId, noteId, title }] active links from / to the Note (a Note not in Trash),
+ *                        candidates(note, needle)  [{ noteId, title }] Notes that can be linked to,
+ *                        link(note, toNoteId) / unlink(note, linkId) -> Promise,
+ *                        open(noteId)  show that Note, pinned() [{ noteId, title }] the pinned Notes }
  *   menuMid(v, note)   extra ⋯ items for the Note's owner, HTML
  *   menuEnd(v, note)   extra ⋯ items at the end, HTML
  *   onMenu(v, note, on)  handle a click on one of those items; true when handled
@@ -762,6 +770,15 @@ export function createNoteViews(host) {
       menu = `<button type="button" class="secondary tiny pane-editfold-item" data-pane-edit-toggle>${escapeHtml(editLabel)}</button>` + menu;
       menu += host.menuMid?.(v, note) ?? "";
       if (host.tagging) menu += `<button type="button" class="secondary tiny" data-pane-tags>🏷 ${escapeHtml(t("Tags…"))}</button>`;
+      if (host.flags) {
+        const f = host.flags;
+        const item = (key, icon, onLabel, offLabel) => `<button type="button" class="secondary tiny" data-pane-flag="${key}" aria-pressed="${f.on(note, key)}">${icon} ${escapeHtml(f.on(note, key) ? offLabel : onLabel)}</button>`;
+        menu += item("pinned", "📌", t("Pin"), t("Unpin"));
+        menu += item("favourite", "⭐", t("Favourite"), t("Remove from Favourites"));
+        menu += item("archived", "📦", t("Archive"), t("Bring back from Archive"));
+        menu += item("finalised", "🔒", t("Finalise"), t("Un-finalise"));
+        menu += `<button type="button" class="secondary tiny" data-pane-link>🔗 ${escapeHtml(t("Link to a Note…"))}</button>`;
+      }
     }
     if (v.kind === "pane") menu += `<button type="button" class="secondary tiny" data-pane-popout>⧉ ${escapeHtml(t("Pop out"))}</button>`;
     menu += host.menuEnd?.(v, note) ?? "";
@@ -782,10 +799,86 @@ export function createNoteViews(host) {
   // the page, above every window: tick boxes, a search box, ＋ New tag. Ticking
   // calls the page's tag/untag hook and nothing else.
   // =====================================================================
+  function flagChipsHtml(note) {
+    if (!host.flags) return "";
+    return [["pinned", "📌", t("Pinned")], ["favourite", "⭐", t("Favourite")], ["archived", "📦", t("Archived")], ["finalised", "🔒", t("Finalised")]]
+      .filter(([key]) => host.flags.on(note, key))
+      .map(([key, icon, label]) => `<span class="tag-chip" data-flag-chip="${key}">${icon} ${escapeHtml(label)}</span>`).join("");
+  }
+  /** Round 14: the Note's own links and its "Linked from" list, at the end of the body (read view only). */
+  function paintLinks(v, note) {
+    v.bodyEl.querySelector("[data-note-links]")?.remove();
+    const f = host.flags;
+    if (!f || !f.ready() || (v.ed && v.ed.noteId === note.noteId)) return;
+    const out = f.linksOut(note), back = f.linksIn(note);
+    if (!out.length && !back.length) return;
+    const own = host.canEdit();
+    const row = (l, removable) => `<li><button type="button" class="secondary" data-link-open="${escapeHtml(l.noteId)}" style="min-height:44px">${escapeHtml(l.title || t("(untitled)"))}</button>${removable && own ? `<button type="button" class="secondary" data-link-remove="${escapeHtml(l.linkId)}" aria-label="${escapeHtml(t("Remove this link"))}" title="${escapeHtml(t("Remove this link"))}" style="min-height:44px;min-width:44px">✕</button>` : ""}</li>`;
+    const sec = document.createElement("section");
+    sec.dataset.noteLinks = "";
+    sec.innerHTML = (out.length ? `<h3 data-links-out-head>🔗 ${escapeHtml(t("Links"))}</h3><ul data-links-out style="list-style:none;padding:0;margin:0 0 0.6rem">${out.map((l) => row(l, true)).join("")}</ul>` : "")
+      + (back.length ? `<h3 data-links-in-head>↩ ${escapeHtml(t("Linked from"))}</h3><ul data-links-in style="list-style:none;padding:0;margin:0">${back.map((l) => row(l, false)).join("")}</ul>` : "");
+    v.bodyEl.appendChild(sec);
+  }
+  /** Round 14: the pinned Notes, as a strip under a pop-up window's Details line. */
+  function paintPinned(v, note) {
+    const strip = v.win?.querySelector("[data-win-pinned]");
+    if (!strip) return;
+    const pins = host.flags && host.flags.ready() ? host.flags.pinned().filter((p) => p.noteId !== note.noteId) : [];
+    strip.hidden = !pins.length;
+    strip.innerHTML = pins.length ? `<span class="nw-pinned-label">📌 ${escapeHtml(t("Pinned"))}</span>` + pins.map((p) => `<button type="button" class="secondary tiny" data-link-open="${escapeHtml(p.noteId)}" style="min-height:40px">${escapeHtml(p.title || t("(untitled)"))}</button>`).join("") : "";
+  }
+  let linkPicker = null;
+  function closeLinkPicker() { if (linkPicker) { linkPicker.remove(); linkPicker = null; } }
+  function openLinkPicker(note) {
+    closeLinkPicker();
+    const f = host.flags;
+    const el = document.createElement("div");
+    el.className = "tag-picker";
+    el.dataset.linkPicker = "";
+    el.setAttribute("role", "dialog");
+    el.setAttribute("aria-modal", "true");
+    el.setAttribute("aria-label", t("Link to a Note"));
+    el.innerHTML = `<div class="tag-picker-card">
+        <div class="tag-picker-head"><strong>🔗 ${escapeHtml(t("Link to a Note"))}</strong><button type="button" class="secondary tag-picker-close" data-link-close aria-label="${escapeHtml(t("Close"))}">✕</button></div>
+        <p class="note gate-note" data-link-gate role="status" hidden>${escapeHtml(t("Links switch on once the new Firebase Rules are published."))}</p>
+        <p class="tag-picker-msg" data-link-msg role="status" hidden></p>
+        <input type="search" class="tag-picker-search" data-link-search placeholder="${escapeHtml(t("Search your Notes"))}" aria-label="${escapeHtml(t("Search your Notes"))}">
+        <div class="tag-picker-list" data-link-list></div>
+      </div>`;
+    document.body.appendChild(el);
+    linkPicker = el;
+    const q = (sel) => el.querySelector(sel);
+    const paint = () => {
+      const on = f.ready();
+      q("[data-link-gate]").hidden = on;
+      const rows = f.candidates(note, q("[data-link-search]").value.trim()).slice(0, 50);
+      q("[data-link-list]").innerHTML = rows.length
+        ? rows.map((r) => `<button type="button" class="secondary" data-link-pick="${escapeHtml(r.noteId)}" ${on ? "" : "disabled"} style="min-height:44px;width:100%;text-align:left">${escapeHtml(r.title || t("(untitled)"))}</button>`).join("")
+        : `<p class="note">${escapeHtml(t("No Note matches that search."))}</p>`;
+    };
+    el.addEventListener("click", async (e) => {
+      if (e.target === el || e.target.closest("[data-link-close]")) { closeLinkPicker(); return; }
+      const pick = e.target.closest("[data-link-pick]");
+      if (!pick) return;
+      try {
+        await f.link(note, pick.dataset.linkPick);
+        closeLinkPicker();
+        rerenderNoteEverywhere(note.noteId);
+        rerenderNoteEverywhere(pick.dataset.linkPick);
+      } catch (err) {
+        const m = q("[data-link-msg]"); m.textContent = err?.message || t("That did not save."); m.hidden = false;
+      }
+    });
+    q("[data-link-search]").addEventListener("input", paint);
+    el.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.stopPropagation(); closeLinkPicker(); } });
+    paint();
+    q("[data-link-search]").focus();
+  }
   function tagChipsHtml(note) {
-    if (!host.tagging) return "";
+    if (!host.tagging) return flagChipsHtml(note);
     const ids = new Set(host.tagging.noteTagIds(note));
-    return host.tagging.tags().filter((g) => ids.has(g.id)).map((g) =>
+    return flagChipsHtml(note) + host.tagging.tags().filter((g) => ids.has(g.id)).map((g) =>
       `<span class="tag-chip" data-tag-chip="${escapeHtml(g.id)}"><span class="tag-dot" aria-hidden="true"${g.color ? ` style="background:${escapeHtml(g.color)}"` : ""}></span>🏷 ${escapeHtml(g.name)}</span>`).join("");
   }
   function rerenderNoteEverywhere(noteId) {
@@ -1137,8 +1230,8 @@ export function createNoteViews(host) {
     v.el.querySelector("[data-pane-chips]").innerHTML = (host.chips?.(note) ?? []).map((f) =>
       `<button type="button" class="folder-chip" data-pane-chip="${escapeHtml(f.id)}">📁 ${escapeHtml(f.label)}</button>`).join("") + tagChipsHtml(note);
     // While an edit is open the editor IS the body: a re-render must never wipe the reader's typing.
-    if (!(v.ed && v.ed.noteId === note.noteId)) { showReadChrome(v, note); buildBody(v, note); if (!findBarOf(v).hidden) runFind(v, { keep: true }); }
-    if (v.kind === "window") { v.win.querySelector(".nw-title").textContent = noteTitleOf(note); v.win.dataset.noteId = note.noteId; updateWindowSwitcher(); paintVersionLine(v, note); }
+    if (!(v.ed && v.ed.noteId === note.noteId)) { showReadChrome(v, note); buildBody(v, note); paintLinks(v, note); if (!findBarOf(v).hidden) runFind(v, { keep: true }); }
+    if (v.kind === "window") { paintPinned(v, note); v.win.querySelector(".nw-title").textContent = noteTitleOf(note); v.win.dataset.noteId = note.noteId; updateWindowSwitcher(); paintVersionLine(v, note); }
     renderPaneBar(v);
     fitPaneBarTwice(v);
     if (keepScroll) v.scrollEl.scrollTop = before;
@@ -1160,7 +1253,11 @@ export function createNoteViews(host) {
     if (!note) return;
     if (on("[data-pane-edit-toggle]")) {
       closeAllBarPalettes(null);
-      if (!v.ed) { if (host.canEdit()) { host.onEditStart?.(v, note); startEdit(v, note); } return; }
+      if (!v.ed) {
+        if (host.flags?.on(note, "finalised")) { host.status(t("This Note is finalised, so it can't be edited. Un-finalise it from the ⋯ menu first.")); return; }
+        if (host.canEdit()) { host.onEditStart?.(v, note); startEdit(v, note); }
+        return;
+      }
       const done = await endEdit(v);
       await host.onEditDone?.(v, note); // S10: ticks staged in the folder picker are written now, with the edit
       renderView(v, { keepScroll: true });
@@ -1195,6 +1292,24 @@ export function createNoteViews(host) {
     if (on("[data-pane-attach]")) { closeAllBarPalettes(null); host.attach?.(v, note); return; }
     if (on("[data-pane-versions]")) { closeAllBarPalettes(null); openVersions(v, note); return; }
     if (on("[data-pane-tags]")) { closeAllBarPalettes(null); openTagPicker(note); return; }
+    const flagBtn = on("[data-pane-flag]");
+    if (flagBtn && host.flags) {
+      closeAllBarPalettes(null);
+      const key = flagBtn.dataset.paneFlag;
+      if (key === "finalised" && !host.flags.on(note, key) && v.ed) await endEdit(v); // a pending edit becomes a revision BEFORE the Note closes
+      const done = await host.flags.set(note, key, !host.flags.on(note, key));
+      if (done) rerenderNoteEverywhere(note.noteId);
+      return;
+    }
+    if (on("[data-pane-link]") && host.flags) { closeAllBarPalettes(null); openLinkPicker(note); return; }
+    const linkOpen = on("[data-link-open]");
+    if (linkOpen && host.flags) { host.flags.open(linkOpen.dataset.linkOpen); return; }
+    const linkRemove = on("[data-link-remove]");
+    if (linkRemove && host.flags) {
+      const done = await host.flags.unlink(note, linkRemove.dataset.linkRemove);
+      if (done) for (const x of allViews()) if (x.noteId) renderView(x, { keepScroll: true });
+      return;
+    }
     const chip = on("[data-pane-chip]");
     if (chip) { host.onChip?.(v, chip.dataset.paneChip); return; }
     const toggle = on("[data-sec-toggle]");
@@ -1375,7 +1490,11 @@ export function createNoteViews(host) {
     scroll.className = "nw-scroll";
     scroll.dataset.winScroll = "";
     scroll.append(q("[data-pane-title]"), q("[data-edit-title]"), q("[data-draft-offer]"), q("[data-pane-body]"));
-    section.append(detailsRow, q("[data-edit-toolbar]"), q("[data-edit-status]"), scroll);
+    const pinnedStrip = document.createElement("div");
+    pinnedStrip.className = "nw-pinned";
+    pinnedStrip.dataset.winPinned = "";
+    pinnedStrip.hidden = true;
+    section.append(detailsRow, pinnedStrip, q("[data-edit-toolbar]"), q("[data-edit-status]"), scroll);
     win.appendChild(section);
     const v = makeView(section, "window");
     v.win = win;

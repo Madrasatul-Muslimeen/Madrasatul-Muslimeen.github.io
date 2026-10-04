@@ -19552,3 +19552,21 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
   - every journey suite green; note-sanitize-boundary, note-foundation-data-layer green
   - phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0
   - behaviour 1003/4 (sandbox: 22g×3 archive.org, 31e TLS)
+
+## v09.72 — 4 Oct 2026 — Mapping My Journey: Pin, Favourite, Archive, Finalise and Note links, switched off (S14, decision 66)
+
+- **What:**
+  - On a Note's ⋯ menu: Pin, Favourite, Archive, Finalise, and Link to a Note… (search picker).
+  - Pinned Notes lead the folder list (📌); archived Notes leave it; Favourites and Archived lists from the tree's ⋯ menu.
+  - A finalised Note (🔒) refuses Edit and Trash in words until un-finalised.
+  - A Note shows its links and a "Linked from" list; a pop-up window shows the pinned Notes.
+- **Switched off** behind `app/js/siyagah-flags-readiness.js` (`ready: false`) until the Owner publishes the round 14 Rules. While off, every control explains itself and writes nothing.
+- **Rules:** candidate only (PR #567), `docs/governance/2026-10-04-siyagah-round14-DEPLOYMENT-candidate.rules`; ADR-010 Amendment 2. `firestore.rules` unchanged.
+- **Who:** the Owner, decision 66 (the S8–S14 plan). Issue #566; Builder PR #568; Rules and emulator work by the Architect (the Builder sandbox could not run the emulator).
+- **Review:** added the real-function emulator suite for the new writers.
+- **Checks:**
+  - emulator: siyagah-round14 60/0 with 16 mutations; siyagah-flags-links-real-function 30/0
+  - journey-flags-links-browser 306/0, five mutations each failing; every journey suite green
+  - rules-authorisation-executable 63/0; note-foundation-data-layer, journey-map-boundary, stub-parity green
+  - phone-width-overflow 217/0, palette-contrast 20/0
+  - behaviour 1003/4 (sandbox: 22g×3 archive.org, 31e TLS)

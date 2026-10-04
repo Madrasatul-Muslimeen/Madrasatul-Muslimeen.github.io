@@ -23,6 +23,9 @@ import { commitEnvelopeBatch } from "./envelope.js";
 export const NOTE_STATUS = Object.freeze({ ACTIVE: "active", RETIRED: "retired" });
 export const NOTE_VISIBILITY = "private";
 
+/** Round 14: the sentence a finalised Note's refused edit / Trash carries; pages map it to words. */
+export const FINALISED_REFUSAL = "This Note is finalised.";
+
 export function newNoteEntityId() {
   return crypto.randomUUID().replaceAll("-", "");
 }
@@ -210,6 +213,7 @@ export async function updatePermanentNoteContent(db, {
     if (!noteSnapshot.exists()) throw new Error("Note does not exist.");
     const note = noteSnapshot.data();
     if (note.status !== NOTE_STATUS.ACTIVE) throw new Error("Retired Note cannot be edited.");
+    if (note.finalised === true) throw new Error(FINALISED_REFUSAL); // round 14: refused BEFORE any write
     if (note.currentRevisionId !== expectedRevisionId) throw new Error("Stale Note revision.");
 
     transaction.create(TENANT.NOTE_REVISIONS, noteFoundationDocId(tenantId, revisionId), {
@@ -252,6 +256,7 @@ export async function retirePermanentNote(db, { tenantId, noteId, expectedRevisi
     const snapshot = await transaction.get(TENANT.NOTES, noteDocId);
     if (!snapshot.exists()) throw new Error("Note does not exist.");
     const note = snapshot.data();
+    if (note.finalised === true) throw new Error(FINALISED_REFUSAL); // round 14: un-finalise before Trash
     if (note.currentRevisionId !== expectedRevisionId) throw new Error("Stale Note revision.");
 
     transaction.create(TENANT.NOTE_REVISIONS, noteFoundationDocId(tenantId, revisionId), {
@@ -931,6 +936,150 @@ export async function untagNote(db, { tenantId, ownerPersonId, noteId, tagId, ac
     });
   }
   return active.length;
+}
+
+// ---------------------------------------------------------------------------
+// Siyagah round 14 (issue #566, decision 66). Written against the round 14
+// Rules CANDIDATE (not published); pages gate every call behind
+// siyagah-flags-readiness.js.
+//
+// FLAGS. `pinned`, `favourite`, `archived`, `finalised`: optional booleans on
+// the Note. A flag write changes ONLY those keys and `updatedAt` -- no
+// revision, no title or body. A finalised Note is closed to content writes
+// (updatePermanentNoteContent / retirePermanentNote refuse it before any
+// write) and the candidate's Rules refuse it too.
+//
+// LINKS. `noteLinks`: a directional link from one Note to another of the same
+// owner; both ends frozen; unlinking RETIRES, linking again RESTORES. Nothing
+// is deleted (I4). Reads are equality-only, so no index.
+// ---------------------------------------------------------------------------
+
+export const NOTE_FLAG_KEYS = Object.freeze(["pinned", "favourite", "archived", "finalised"]);
+
+export async function setNoteFlags(db, { tenantId, ownerPersonId, noteId, flags, actorUid }) {
+  if (!flags || typeof flags !== "object") throw new Error("flags must be an object.");
+  const unknown = Object.keys(flags).filter((k) => !NOTE_FLAG_KEYS.includes(k));
+  if (unknown.length) throw new Error(`Not a Note flag: ${unknown.join(", ")}.`);
+  const fields = {};
+  for (const key of NOTE_FLAG_KEYS) {
+    if (!(key in flags)) continue;
+    if (typeof flags[key] !== "boolean") throw new Error(`${key} must be true or false.`);
+    fields[key] = flags[key];
+  }
+  if (!Object.keys(fields).length) throw new Error("Give at least one flag to change.");
+  const docId = noteFoundationDocId(tenantId, requireToken("noteId", noteId));
+  await runEnvelopeTransaction(db, actorUid, async (transaction) => {
+    const snapshot = await transaction.get(TENANT.NOTES, docId);
+    if (!snapshot.exists()) throw new Error("Note does not exist.");
+    const note = snapshot.data();
+    if (note.tenantId !== tenantId || note.ownerPersonId !== ownerPersonId) throw new Error("Cross-owner or cross-tenant Note refused.");
+    if (note.status !== NOTE_STATUS.ACTIVE) throw new Error("A Note in Trash cannot be changed.");
+    transaction.update(TENANT.NOTES, docId, fields);
+  });
+  return fields;
+}
+
+/** Every link (any status) leaving ONE Note. Equality-only, bounded. */
+export async function listNoteLinksFromNote(db, { tenantId, ownerPersonId, fromNoteId }) {
+  const q = query(collection(db, TENANT.NOTE_LINKS),
+    where("tenantId", "==", requireToken("tenantId", tenantId)),
+    where("ownerPersonId", "==", requireToken("ownerPersonId", ownerPersonId)),
+    where("fromNoteId", "==", requireToken("fromNoteId", fromNoteId)),
+    limit(100));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+}
+
+/** Every link (any status) arriving at ONE Note -- its backlinks. Equality-only, bounded. */
+export async function listNoteLinksToNote(db, { tenantId, ownerPersonId, toNoteId }) {
+  const q = query(collection(db, TENANT.NOTE_LINKS),
+    where("tenantId", "==", requireToken("tenantId", tenantId)),
+    where("ownerPersonId", "==", requireToken("ownerPersonId", ownerPersonId)),
+    where("toNoteId", "==", requireToken("toNoteId", toNoteId)),
+    limit(100));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+}
+
+/** One owner's links, one page, equality-only (tenantId, ownerPersonId, status) -- the page loads these once. */
+export async function listNoteLinksForOwnerPage(db, {
+  tenantId, ownerPersonId, status = NOTE_STATUS.ACTIVE, pageSize = 100, after = null,
+}) {
+  requirePageSize(pageSize);
+  const q = query(collection(db, TENANT.NOTE_LINKS),
+    where("tenantId", "==", requireToken("tenantId", tenantId)),
+    where("ownerPersonId", "==", requireToken("ownerPersonId", ownerPersonId)),
+    where("status", "==", status),
+    ...(after ? [startAfter(after)] : []),
+    limit(pageSize));
+  const snapshot = await getDocs(q);
+  const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  const next = snapshot.docs.length < pageSize ? null : snapshot.docs[snapshot.docs.length - 1];
+  return { rows, next };
+}
+
+/**
+ * Link `fromNoteId` to `toNoteId`. A Note never links to itself (refused
+ * before any read). If a link for this pair exists and is retired it is
+ * RESTORED (same linkId); if active nothing is written. Both ends must exist,
+ * belong to the owner and be active -- checked here and by the candidate.
+ * Returns the linkId.
+ */
+export async function createNoteLink(db, {
+  tenantId, ownerPersonId, ownerUid, fromNoteId, toNoteId, linkId = newNoteEntityId(), actorUid,
+}) {
+  const owner = ownership({ tenantId, ownerPersonId, ownerUid });
+  requireToken("fromNoteId", fromNoteId);
+  requireToken("toNoteId", toNoteId);
+  if (fromNoteId === toNoteId) throw new Error("A Note cannot link to itself.");
+  const existing = (await listNoteLinksFromNote(db, { tenantId, ownerPersonId, fromNoteId })).filter((l) => l.toNoteId === toNoteId);
+  const active = existing.find((l) => l.status === NOTE_STATUS.ACTIVE);
+  if (active) return active.linkId;
+  const retired = existing.find((l) => l.status === NOTE_STATUS.RETIRED);
+  if (retired) {
+    await restoreNoteLink(db, { tenantId, ownerPersonId, linkId: retired.linkId, actorUid });
+    return retired.linkId;
+  }
+  await runEnvelopeTransaction(db, actorUid, async (transaction) => {
+    for (const noteId of [fromNoteId, toNoteId]) {
+      const snapshot = await transaction.get(TENANT.NOTES, noteFoundationDocId(tenantId, noteId));
+      if (!snapshot.exists()) throw new Error("Both Notes must exist.");
+      const note = snapshot.data();
+      if (note.tenantId !== tenantId || note.ownerPersonId !== ownerPersonId) throw new Error("Cross-owner or cross-tenant link refused.");
+      if (note.status !== NOTE_STATUS.ACTIVE) throw new Error("A link needs both Notes to be active.");
+    }
+    transaction.create(TENANT.NOTE_LINKS, noteFoundationDocId(tenantId, linkId), {
+      linkId, ...owner, fromNoteId, toNoteId, status: NOTE_STATUS.ACTIVE,
+    });
+  });
+  return linkId;
+}
+
+async function setNoteLinkStatus(db, { tenantId, ownerPersonId, linkId, status, actorUid }) {
+  const docId = noteFoundationDocId(tenantId, requireToken("linkId", linkId));
+  await runEnvelopeTransaction(db, actorUid, async (transaction) => {
+    const snapshot = await transaction.get(TENANT.NOTE_LINKS, docId);
+    if (!snapshot.exists()) throw new Error("Link does not exist.");
+    const link = snapshot.data();
+    if (link.tenantId !== tenantId || link.ownerPersonId !== ownerPersonId) throw new Error("Cross-owner or cross-tenant link refused.");
+    if (status === NOTE_STATUS.ACTIVE) {
+      for (const noteId of [link.fromNoteId, link.toNoteId]) {
+        const end = await transaction.get(TENANT.NOTES, noteFoundationDocId(tenantId, noteId));
+        if (!end.exists() || end.data().status !== NOTE_STATUS.ACTIVE) throw new Error("A link needs both Notes to be active.");
+      }
+    }
+    transaction.update(TENANT.NOTE_LINKS, docId, { status });
+  });
+}
+
+/** Take a link away: RETIRE it (never delete). */
+export function retireNoteLink(db, { tenantId, ownerPersonId, linkId, actorUid }) {
+  return setNoteLinkStatus(db, { tenantId, ownerPersonId, linkId, status: NOTE_STATUS.RETIRED, actorUid });
+}
+
+/** Bring a retired link back. */
+export function restoreNoteLink(db, { tenantId, ownerPersonId, linkId, actorUid }) {
+  return setNoteLinkStatus(db, { tenantId, ownerPersonId, linkId, status: NOTE_STATUS.ACTIVE, actorUid });
 }
 
 export async function createNotePlacement(db, {

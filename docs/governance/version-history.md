@@ -715,3 +715,4 @@ total). Allocated by the MMSA Architect.
 09.69: Mapping My Journey reading tools (S11, decision 66, #559). Allocated by the MMSA Architect.
 09.70: Mapping My Journey editor (S12, decision 66, #562). Allocated by the MMSA Architect.
 09.71: Mapping My Journey window tabs and version line (S13, decision 66, #564). Allocated by the MMSA Architect.
+09.72: Mapping My Journey flags and Note links, switched off until Rules publish (S14, decision 66, #566). Allocated by the MMSA Architect.
