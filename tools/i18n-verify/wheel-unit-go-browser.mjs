@@ -114,6 +114,33 @@ for (const lang of ["en", "bn"]) for (const vp of WIDTHS) {
   check(`${tag} no page errors (Read)`, real(errors).length === 0, real(errors).slice(0, 3).join(" | "));
   await ctx.close();
 
+  // ---- Review of #547: the palette STAYS OPEN while choosing ---------------
+  // The suite above reopens the palette after every choice, which hid that the
+  // old "choosing is done" rule closed it on a Single Ayah / Whole Surah pick
+  // and on a number -- taking Read and Play away exactly when they are the
+  // next step. Here every choice is made with real selects and the palette is
+  // NEVER reopened, so a close on any choice fails.
+  ({ ctx, page, errors } = await open(lang, vp));
+  await openPalette(page);
+  const stillOpen = async () => { const st = await paletteState(page); const r = await page.evaluate(() => { const b = document.getElementById("wheelUnitPlayBtn").getBoundingClientRect(); return b.width > 0 && b.height > 0; }); return st.shown && st.expanded === "true" && r; };
+  const steps = [];
+  // A choice the reader cannot make (its select is gone with the palette) is a
+  // FAIL for that step, not a crash of the whole suite.
+  const pick = async (sel, val, ms, label) => {
+    try { await page.selectOption(sel, val, { timeout: 2000 }); await page.waitForTimeout(ms); steps.push([label, await stillOpen()]); }
+    catch { steps.push([label + " (could not be chosen: the palette had closed)", false]); }
+  };
+  await pick("#wheelUnitTypeSelect", "ayah", 250, "Single Ayah");
+  await pick("#wheelUnitSurahSelect", "36", 400, "Surah 36");
+  await pick("#wheelUnitAyahSelect", "5", 250, "Ayah 5");
+  await pick("#wheelUnitTypeSelect", "surah", 250, "Whole Surah");
+  await pick("#wheelUnitTypeSelect", "page", 250, "Page");
+  await pick("#wheelUnitNumSelect", "300", 400, "Page 300");
+  check(`${tag} the palette stays open, Play on screen, through every choice (no reopening)`, steps.every((x) => x[1]), JSON.stringify(steps.filter((x) => !x[1])));
+  const playsAfter = (await stillOpen()) ? await page.evaluate(() => { const before = window.__plays; document.getElementById("wheelUnitPlayBtn").click(); return window.__plays - before; }) : 0;
+  check(`${tag} ...and Play is then pressed straight from the same open palette`, playsAfter >= 1, String(playsAfter));
+  await ctx.close();
+
   // ---- Play: range 2:1-5 --------------------------------------------------
   ({ ctx, page, errors } = await open(lang, vp));
   await openPalette(page);

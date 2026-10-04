@@ -8142,16 +8142,11 @@
       });
     }
 
-    // Choosing is done -- put the list away, the same rule Explore's own
-    // Approach capsule follows. A unit that still needs a NUMBER (Ruku'/Juz/
-    // Hizb/Page) or a From and a To (Range) leaves it open, because the
-    // control that finishes the job is inside the palette itself. Registered
-    // after the mirror loop above, so currentUnitType is already the new one
-    // by the time this runs.
-    wheelUnitTypeSelect?.addEventListener("change", () => {
-      if (!NUMBERED_UNITS.includes(currentUnitType) && currentUnitType !== "range") closeAllBarPalettes(null);
-    });
-    wheelUnitNumSelect?.addEventListener("change", () => closeAllBarPalettes(null));
+    // Decision 64 (4 Oct 2026) replaced the old "choosing is done -- put the
+    // list away" rule: the palette now ENDS with Read and Play, the next step
+    // after choosing, so it stays open while the reader picks the unit type,
+    // the number, the surah and the ayah(s), and closes on Read, Play, or a
+    // tap outside it. Closing it on a choice hid the very buttons it offers.
     // Decision 64: the next step after choosing. Exactly Study options' own
     // drillReadBtn / drillPlayBtn; Play must start inside this click (the
     // audio gesture rule at playCurrentSelection()), so nothing is awaited.
