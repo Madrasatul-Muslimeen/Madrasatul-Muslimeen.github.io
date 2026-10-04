@@ -5,8 +5,9 @@
 // Every action is driven through the REAL controls; the stub's write log is the
 // proof.
 //
-// THE GATE. siyagah-flags-readiness.js is `ready: false` as shipped. The gate-OFF
-// cases use the shipped file untouched; the gate-ON cases route a REPLACEMENT
+// THE GATE. siyagah-flags-readiness.js was `ready: false` as first shipped
+// (v09.72) and is OPEN since 4 Oct 2026 (see READY_CLOSED below). The gate-OFF
+// cases route a CLOSED copy; the gate-ON cases route a REPLACEMENT
 // copy of that one module in through ctx.route() -- the seam journey-tags-browser
 // uses; production cannot reach it.
 //
@@ -48,6 +49,20 @@ export const SIYAGAH_FLAGS_READINESS_AUTHORITIES = Object.freeze(["master-archit
 export const SIYAGAH_FLAGS_DECLARATION = Object.freeze({ ready: true, decision: Object.freeze({ by: "master-architect", on: "2026-10-04", reference: "test-seam" }), gate: "E1", note: "test seam" });
 export function isSiyagahFlagsReady() { return true; }
 export function siyagahFlagsUnavailableReason() { return null; }
+`;
+
+// UPDATED IN PLACE 4 Oct 2026 (Owner: "Round 14 rules are live"): the shipped
+// readiness file now says ready, so the gate-off cases can no longer use it as
+// shipped. They route this CLOSED copy through the same ctx.route() seam the
+// gate-on cases use, so the "shows, explains itself, writes nothing" contract
+// stays tested for any future time the gate is shut.
+const READY_CLOSED = `
+export const SIYAGAH_FLAGS_READINESS_AUTHORITIES = Object.freeze(["master-architect"]);
+export const SIYAGAH_FLAGS_DECLARATION = Object.freeze({ ready: false, decision: null, gate: "E1", note: "test seam: closed" });
+export function isSiyagahFlagsReady() { return false; }
+export const REASON_SIYAGAH_FLAGS_NOT_DEPLOYED = "siyagah-flags-rules-not-deployed";
+export const REASON_SIYAGAH_FLAGS_DECISION_INCOMPLETE = "siyagah-flags-readiness-decision-incomplete";
+export function siyagahFlagsUnavailableReason() { return REASON_SIYAGAH_FLAGS_NOT_DEPLOYED; }
 `;
 
 async function routeText(ctx, glob, mutate) {
@@ -256,10 +271,11 @@ for (const lang of ["en", "bn"]) {
       await ctx.close();
     }
 
-    // =============================== GATE OFF (the shipped file: ready false) ===============================
+    // =============================== GATE OFF (a CLOSED copy routed in; the shipped file is open since 4 Oct 2026) ===============================
     {
       const tag = `OFF ${lang} ${width}px`;
       const ctx = await newContext(browser, { appLang: lang, viewport: { width, height: 900 }, extraSeedJs: SEED });
+      await ctx.route("**/js/siyagah-flags-readiness.js", (route) => route.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: READY_CLOSED }));
       await routeMutation(ctx);
       await ctx.addInitScript(() => { try { localStorage.setItem("qr.journeyMapExpanded", JSON.stringify(["fA"])); } catch {} });
       const { page, errors } = await openPage(ctx, "/app/journey-map.html#folders");

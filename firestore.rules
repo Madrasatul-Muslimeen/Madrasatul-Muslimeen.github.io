@@ -1832,11 +1832,43 @@ service cloud.firestore {
       }
       // --- end WORDPRESS IMPORT ------------------------------------------
 
+      // --- SIYAGAH ROUND 14 (decision 66, #566), NEW ---------------------
+      // Four OPTIONAL booleans. A Note that never carries them (every Note
+      // written before this round) reads as all-false and is unaffected.
+      function noteFlagsWellFormed() {
+        return d().get('pinned', false) is bool
+            && d().get('favourite', false) is bool
+            && d().get('archived', false) is bool
+            && d().get('finalised', false) is bool;
+      }
+      // The content/revision path never moves a flag; flags move only on the
+      // flag path below.
+      function noteFlagsUnchanged() {
+        return d().get('pinned', false) == resource.data.get('pinned', false)
+            && d().get('favourite', false) == resource.data.get('favourite', false)
+            && d().get('archived', false) == resource.data.get('archived', false)
+            && d().get('finalised', false) == resource.data.get('finalised', false);
+      }
+      // FINALISED: while a Note is finalised, the content/revision path is
+      // closed entirely -- no title, body, status or revision change. Only
+      // the flag path can open it again (un-finalise).
+      function notFinalised() {
+        return resource.data.get('finalised', false) == false;
+      }
+      // The FLAG path: an active Note's owner changes only flags and
+      // updatedAt -- no new revision, nothing else moves.
+      function onlyFlagsChange() {
+        return d().diff(resource.data).affectedKeys()
+                 .hasOnly(['pinned', 'favourite', 'archived', 'finalised', 'updatedAt']);
+      }
+      // --- end SIYAGAH ROUND 14 -------------------------------------------
+
       function noteShapeOk() {
         return d().keys().hasOnly([
                  'noteId', 'tenantId', 'ownerPersonId', 'ownerUid', 'visibility',
                  'title', 'bodyHtml', 'status', 'currentRevisionId',
                  'originalCreatedAt', 'originalModifiedAt', 'importSource',
+                 'pinned', 'favourite', 'archived', 'finalised',
                  'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
                ])
             && d().keys().hasAll([
@@ -1846,6 +1878,7 @@ service cloud.firestore {
                ])
             && ownershipWellFormed()
             && importFieldsWellFormed()
+            && noteFlagsWellFormed()
             && d().noteId is string && d().noteId.size() > 0
             && noteKey == d().tenantId + '__' + d().noteId
             && d().visibility == 'private'
@@ -1899,13 +1932,30 @@ service cloud.firestore {
       // An update may change the title, the body, the status and the revision
       // pointer — and nothing else. A stale pointer is refused because the new
       // revision must chain from the CURRENT one (matrix TXN-03).
+      // Siyagah round 14: the two cheap tests that tell this path from the
+      // flag path come FIRST, so a write meant for the other path stops here
+      // in a few expressions (both paths in full exceed Firestore's
+      // 1000-expression budget -- measured in the emulator).
       allow update: if resource != null
+                    && noteFlagsUnchanged()
+                    && notFinalised()
                     && noteShapeOk()
                     && createdByFrozen()
                     && importFieldsFrozen()
                     && isNoteOwner(resource.data.tenantId, resource.data.ownerPersonId)
                     && noteIdentityUnchanged()
                     && committedRevisionMatches(resource.data.currentRevisionId);
+
+      // Siyagah round 14: Pin / Favourite / Archive / Finalise. A flag-only
+      // write needs no revision, and is open only on an ACTIVE Note.
+      allow update: if resource != null
+                    && onlyFlagsChange()
+                    && resource.data.status == 'active'
+                    && noteShapeOk()
+                    && createdByFrozen()
+                    && importFieldsFrozen()
+                    && isNoteOwner(resource.data.tenantId, resource.data.ownerPersonId)
+                    && noteIdentityUnchanged();
 
       allow delete: if false; // I4/D6, matrix IMM-03. Retiring writes a status.
     }
@@ -2348,6 +2398,67 @@ service cloud.firestore {
                     && tagLinkIdentityUnchanged()
                     && isNoteOwner(d().tenantId, d().ownerPersonId)
                     && (d().status == 'retired' || tagLinkEndsOk());
+      allow delete: if false;   // I4/D6 — retire, never destroy
+    }
+
+    // Siyagah round 14 (decision 66, #566), NEW. One Note linking to another
+    // Note of the same owner. Directional (from -> to); the app shows the
+    // other direction as "Linked from". Like a tag link: both ends frozen, so
+    // a link is never repointed -- unlinking RETIRES it, linking again
+    // restores it. A Note may not link to itself. Both ends must be real, the
+    // owner's own and active when a link is created or restored.
+    match /noteLinks/{linkKey} {
+      function noteLinkNoteRef(noteId) {
+        return /databases/$(database)/documents/notes/$(d().tenantId + '__' + noteId);
+      }
+      function noteLinkShapeOk() {
+        return d().keys().hasOnly([
+                 'linkId', 'tenantId', 'ownerPersonId', 'ownerUid',
+                 'fromNoteId', 'toNoteId', 'status',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll([
+                 'linkId', 'tenantId', 'ownerPersonId', 'fromNoteId', 'toNoteId', 'status',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && ownershipWellFormed()
+            && d().linkId is string && d().linkId.size() > 0
+            && linkKey == d().tenantId + '__' + d().linkId
+            && d().fromNoteId is string && d().fromNoteId.size() > 0
+            && d().toNoteId is string && d().toNoteId.size() > 0
+            && d().fromNoteId != d().toNoteId
+            && (d().status == 'active' || d().status == 'retired');
+      }
+      function noteLinkEndOk(noteId) {
+        return exists(noteLinkNoteRef(noteId))
+            && get(noteLinkNoteRef(noteId)).data.tenantId == d().tenantId
+            && get(noteLinkNoteRef(noteId)).data.ownerPersonId == d().ownerPersonId
+            && get(noteLinkNoteRef(noteId)).data.status == 'active';
+      }
+      function noteLinkIdentityUnchanged() {
+        return resource != null
+            && d().tenantId      == resource.data.tenantId
+            && d().ownerPersonId == resource.data.ownerPersonId
+            && d().get('ownerUid', null) == resource.data.get('ownerUid', null)
+            && d().linkId        == resource.data.linkId
+            && d().fromNoteId    == resource.data.fromNoteId
+            && d().toNoteId      == resource.data.toNoteId
+            && d().createdBy     == resource.data.createdBy;
+      }
+
+      allow get: if canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+      allow list: if listIsBounded() && canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+      allow create: if noteLinkShapeOk()
+                    && d().createdBy == myUid()
+                    && d().status == 'active'
+                    && isNoteOwner(d().tenantId, d().ownerPersonId)
+                    && noteLinkEndOk(d().fromNoteId)
+                    && noteLinkEndOk(d().toNoteId);
+      allow update: if noteLinkShapeOk()
+                    && noteLinkIdentityUnchanged()
+                    && isNoteOwner(d().tenantId, d().ownerPersonId)
+                    && (d().status == 'retired'
+                        || (noteLinkEndOk(d().fromNoteId) && noteLinkEndOk(d().toNoteId)));
       allow delete: if false;   // I4/D6 — retire, never destroy
     }
 
