@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.72",
+    "version": "09.73",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2045,8 +2045,20 @@
     {
       "version": "09.72",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Pin, Favourite, Archive, Finalise, Note links and Linked from, gated off until the Owner publishes the round 14 Rules (Builder PR #568, Architect Rules candidate PR #567).",
+      "integration": {
+        "authorizedOn": "2026-10-04",
+        "integratedOn": "2026-10-04",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.73",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The Owner published the round 14 Rules; firestore.rules synced [already-deployed-manually]; the S14 readiness gate opened.",
       "integration": {
         "authorizedOn": "2026-10-04",
         "integratedOn": "2026-10-04",
@@ -2055,8 +2067,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.73",
+  "nextUnallocated": "09.74",
   "nextUnallocatedNote": [
+    "v09.73 was allocated to Pin, Favourite, Archive, Finalise and Note links switched on (S14, #566); settings Play always starts, 2026-10-04.",
     "v09.72 was allocated to Mapping My Journey flags and Note links, switched off until Rules publish (S14, decision 66, #566), 2026-10-04.",
     "v09.71 was allocated to Mapping My Journey window tabs and version line (S13, decision 66, #564), 2026-10-04.",
     "v09.70 was allocated to Mapping My Journey editor (S12, decision 66, #562), 2026-10-04.",
