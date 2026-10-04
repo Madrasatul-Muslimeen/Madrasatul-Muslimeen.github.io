@@ -264,7 +264,7 @@ export function createNoteViews(host) {
     else { writeEditDraft(e, latest); e.idleTimer = setTimeout(() => flushEdit(e), NOTE_IDLE_MS); }
     if (v.ed === e) {
       setEditStatus(v, "saved");
-      if (note) v.el.querySelector("[data-pane-meta]").textContent = paneMetaText(note);
+      if (note) { v.el.querySelector("[data-pane-meta]").textContent = paneMetaText(note); paintVersionLine(v, note); }
     }
     host.afterRevise(note);
     if (e.again) { e.again = false; flushEdit(e); }
@@ -1138,7 +1138,7 @@ export function createNoteViews(host) {
       `<button type="button" class="folder-chip" data-pane-chip="${escapeHtml(f.id)}">📁 ${escapeHtml(f.label)}</button>`).join("") + tagChipsHtml(note);
     // While an edit is open the editor IS the body: a re-render must never wipe the reader's typing.
     if (!(v.ed && v.ed.noteId === note.noteId)) { showReadChrome(v, note); buildBody(v, note); if (!findBarOf(v).hidden) runFind(v, { keep: true }); }
-    if (v.kind === "window") { v.win.querySelector(".nw-title").textContent = noteTitleOf(note); v.win.dataset.noteId = note.noteId; updateWindowSwitcher(); }
+    if (v.kind === "window") { v.win.querySelector(".nw-title").textContent = noteTitleOf(note); v.win.dataset.noteId = note.noteId; updateWindowSwitcher(); paintVersionLine(v, note); }
     renderPaneBar(v);
     fitPaneBarTwice(v);
     if (keepScroll) v.scrollEl.scrollTop = before;
@@ -1184,6 +1184,7 @@ export function createNoteViews(host) {
     if (on("[data-pane-new]")) { host.newNote?.(); return; }
     if (on("[data-pane-prev]")) { closeAllBarPalettes(null); step(v, -1); return; }
     if (on("[data-pane-next]")) { closeAllBarPalettes(null); step(v, 1); return; }
+    if (on("[data-win-ver]")) { if (note && host.versions) openVersions(v, note); return; }
     if (on("[data-win-details]")) { const d = v.win.querySelector(".nw-details"); const open = d.classList.toggle("open"); on("[data-win-details]").setAttribute("aria-expanded", String(open)); return; }
     if (on("[data-pane-popout]")) { closeAllBarPalettes(null); popOutPane(note); return; }
     if (on("[data-pane-find-toggle]")) { closeAllBarPalettes(null); if (findBarOf(v).hidden) openFind(v); else closeFind(v); return; }
@@ -1278,26 +1279,58 @@ export function createNoteViews(host) {
   /** The bottom switcher: only on a sheet, only with more than one window open. */
   function updateWindowSwitcher() {
     let nav = document.getElementById("noteWinSwitch");
-    const show = windowTier() === "sheet" && windowViews.length > 1;
-    document.documentElement.style.setProperty("--nw-switch", show ? `${WIN_SWITCH_H}px` : "0px");
+    const sheet = windowTier() === "sheet";
+    const show = windowViews.length > 1;
+    document.documentElement.style.setProperty("--nw-switch", show && sheet ? `${WIN_SWITCH_H}px` : "0px");
     if (!show) { nav?.remove(); return; }
     if (!nav) {
       nav = document.createElement("nav");
       nav.id = "noteWinSwitch";
-      nav.className = "nw-switch";
       nav.addEventListener("click", (e) => {
+        const x = e.target.closest("[data-win-tabclose]");
+        if (x) { const v = windowViews.find((w) => w.uid === x.dataset.winTabclose); if (v) closeNoteWindow(v); return; }
         const b = e.target.closest("[data-win-switch]");
-        const v = b && windowViews.find((x) => x.uid === b.dataset.winSwitch);
+        const v = b && windowViews.find((w) => w.uid === b.dataset.winSwitch);
         if (v) focusView(v);
       });
       document.body.appendChild(nav);
     }
+    // S13: below 640px the bottom switcher; 640px and up a strip of tabs. One element, one set of buttons, so the tap and ✕ behave the same.
+    nav.className = sheet ? "nw-switch" : "nw-switch nw-tabs";
     nav.setAttribute("aria-label", t("Open notes"));
     const top = winOrder[winOrder.length - 1];
     nav.innerHTML = windowViews.map((v) => {
       const note = getNote(v.noteId);
-      return `<button type="button" class="secondary nw-switch-btn${v === top ? " active" : ""}" data-win-switch="${escapeHtml(v.uid)}" aria-pressed="${v === top}">${escapeHtml(note ? noteTitleOf(note) : "")}</button>`;
+      const title = note ? noteTitleOf(note) : "";
+      const uid = escapeHtml(v.uid);
+      return `<div class="nw-tab${v === top ? " active" : ""}"><button type="button" class="secondary nw-switch-btn${v === top ? " active" : ""}" data-win-switch="${uid}" aria-pressed="${v === top}" title="${escapeHtml(title)}">${escapeHtml(title)}</button><button type="button" class="secondary nw-tab-x" data-win-tabclose="${uid}" aria-label="${escapeHtml(t("Close {title}", { title }))}" title="${escapeHtml(t("Close"))}">✕</button></div>`;
     }).join("");
+  }
+
+  // S13: "Version n of m" on the Details line. Read from noteRevisions (oldest = 1); cached per Note + current revision, so a save or a restore (a new current revision) re-reads and nothing else does.
+  const verCache = new Map();
+  const bnDigits = (n) => { const loc = host.dateLocale?.(); return loc && /^bn/i.test(loc) ? new Intl.NumberFormat("bn-BD-u-nu-beng").format(n) : String(n); };
+  async function paintVersionLine(v, note) {
+    const btn = v.win?.querySelector("[data-win-ver]");
+    if (!btn || !host.versions) return;
+    const key = `${note.noteId}|${note.currentRevisionId}`;
+    let info = verCache.get(key);
+    if (!info) {
+      try {
+        const rows = (await host.versions.list(note)).slice().sort((a, b) => tsMillis(a.createdAt) - tsMillis(b.createdAt));
+        const i = rows.findIndex((r) => (r.revisionId ?? r.id) === note.currentRevisionId);
+        info = i < 0 ? { none: true } : { n: i + 1, m: rows.length, at: rows[i].createdAt };
+        verCache.set(key, info);
+      } catch (err) {
+        console.error("[note version line]", err);
+        btn.hidden = false; btn.textContent = t("Could not load the versions. Try again in a moment.");
+        return;
+      }
+    }
+    if (!windowViews.includes(v) || v.noteId !== note.noteId || getNote(v.noteId)?.currentRevisionId !== note.currentRevisionId) return; // moved on while reading
+    if (info.none) { btn.hidden = true; return; }
+    btn.hidden = false;
+    btn.textContent = `🕘 ${t("Version {n} of {m}", { n: bnDigits(info.n), m: bnDigits(info.m) })} · ${t("saved {date}", { date: whenText(info.at) })}`;
   }
 
   /** Open `noteId` in its own window -- or, if that Note is already open anywhere, focus THAT one: a Note is never live in two editors (§4.6). */
@@ -1330,7 +1363,13 @@ export function createNoteViews(host) {
     detailsBtn.textContent = `${t("Details")} ▾`;
     const details = document.createElement("div");
     details.className = "nw-details";
-    details.append(q("[data-pane-meta]"), q("[data-pane-chips]"));
+    const verBtn = document.createElement("button");
+    verBtn.type = "button";
+    verBtn.className = "secondary tiny nw-ver-btn";
+    verBtn.dataset.winVer = "";
+    verBtn.hidden = true;
+    verBtn.title = t("Versions");
+    details.append(q("[data-pane-meta]"), verBtn, q("[data-pane-chips]"));
     detailsRow.append(detailsBtn, details);
     const scroll = document.createElement("div");
     scroll.className = "nw-scroll";
