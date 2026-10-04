@@ -1264,6 +1264,20 @@
     #explorePanel { flex: 1 0 auto; }
     #explorePanel .wheel-sidebar { height: auto; }
   }
+  /* The desktop and tablet half (the Owner, 4 Oct 2026: "fix the Explore
+     overhang on desktop too"). Side by side, the card was sized to the
+     window, so on a short window the wheel column (wheel, legend, ring key,
+     the Whole Quran card, the words-known line, the hint) ran 40-140px past
+     its bottom edge. Now the card is never shorter than the wheel column:
+     it grows, and #exploreScroll scrolls it. `contain: size` takes the surah
+     list OUT of that sum -- it adds nothing to the card's height, still
+     stretches to the card's full height, and still scrolls inside it, so a
+     114-row list never makes the card 5000px tall. Measured: the two never
+     wrap above 720px, which this rule relies on. */
+  @media (min-width: 721px) {
+    #explorePanel { flex: 1 0 auto; }
+    #explorePanel .wheel-sidebar { contain: size; }
+  }
 
   /* Owner's own follow-up: "in QCR and Asma, list is left, wheel right --
      do the same for Quran [Explore] and Approach?" Yes, and safely --

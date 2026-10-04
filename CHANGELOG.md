@@ -19596,3 +19596,13 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
   - layout.mjs: no geometry change (only the known `bmNotFound`)
   - phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0; word-card, known-word, mark-words, study-options, journey-note-pane suites green
   - behaviour 1006/1 (sandbox: 31e TLS)
+
+## v09.75 — 4 Oct 2026 — Explore: no overhang on desktop and tablet
+
+- **What:** the Owner: "fix the Explore overhang on desktop too". Above 720px the Explore card was sized to the window, so on a short window the wheel column ran 40–140px past its bottom edge (820×700: 140px; 1280×800: 58px). Now the card never shrinks below the wheel column (`#exploreScroll` scrolls it), and `contain: size` keeps the surah list out of that sum: the list still fills the card and scrolls inside it. The wheel and list never wrap above 720px (measured).
+- **Checks:**
+  - explore-phone-card-browser 146/0 at 13 sizes, en/bn; --mutate-desk fails 20, --mutate-shrink fails 40; it now measures what is visible
+  - every Explore suite green; card-look-browser 96/0 (one intermittent miss, then 3/3)
+  - layout.mjs: no geometry change (only the known `bmNotFound`); phone-width-overflow 217/0, palette-contrast 20/0, text-size-wbw 88/0, stub-parity 4/0
+  - behaviour 1006/1 (sandbox: 31e TLS)
+  - already red on `main`: quran-boundary 30/1 ("feature registry retains the locked 30 Approaches"), not touched here

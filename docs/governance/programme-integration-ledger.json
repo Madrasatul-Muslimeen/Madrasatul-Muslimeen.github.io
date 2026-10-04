@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.74",
+    "version": "09.75",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2069,8 +2069,20 @@
     {
       "version": "09.74",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "A Word by Word text-size slider for the WbW boxes in Read and Note view; Explore's dark card holds all its content at phone widths.",
+      "integration": {
+        "authorizedOn": "2026-10-04",
+        "integratedOn": "2026-10-04",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.75",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Above 720px the Explore card is never shorter than its wheel column; the surah list still scrolls inside it.",
       "integration": {
         "authorizedOn": "2026-10-04",
         "integratedOn": "2026-10-04",
@@ -2079,8 +2091,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.75",
+  "nextUnallocated": "09.76",
   "nextUnallocatedNote": [
+    "v09.75 was allocated to Explore: no overhang on desktop and tablet either, 2026-10-04.",
     "v09.74 was allocated to Word-by-Word boxes enlargeable in Read and Note view; Explore readable on a phone, 2026-10-04.",
     "v09.73 was allocated to Pin, Favourite, Archive, Finalise and Note links switched on (S14, #566); settings Play always starts, 2026-10-04.",
     "v09.72 was allocated to Mapping My Journey flags and Note links, switched off until Rules publish (S14, decision 66, #566), 2026-10-04.",

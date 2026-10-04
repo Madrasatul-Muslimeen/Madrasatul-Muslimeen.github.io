@@ -14,6 +14,19 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v09.74 on `main`** (4 Oct 2026 — **Word-by-Word boxes enlargeable in Read and Note view; Explore readable on a phone** (the Owner's two reports, 4 Oct 2026).
+- **Text size (A±) gains a "Word by Word" slider** (`--qr-wbw-scale`, 80–160%, remembered on the device). It scales every Word-by-Word box (Arabic, transliteration, meaning) in the Read view, the Note view and the pop-up pane; **All** and **Reset** include it. The ayah's own Arabic/English/Bangla keep their sliders. The Owner: "Can you enable these words enlargeable, both in Read and Note view?"
+- **Explore → Quran on a phone** (the Owner: "unreadable", "card overlapping"): `#explorePanel` shrank to the scroll box, its dark background ended under the ring key, and the Whole Quran card, the words-known line, the hint and every surah row ran on as pale text on the white page. At 720px and below the panel no longer shrinks below its content and the stacked list sizes to its rows. 820px and wider unchanged.
+- **Known, not fixed here:** on a short desktop window (1280×800) the Explore wheel column overhangs its card by 26–58px (pre-existing); `explore-phone-card-browser` prints it as a NOTE.
+- **Checks:**
+  - text-size-wbw-browser 88/0 (Read and Note view, en/bn, 390/1280; --mutate-no-css fails the size checks)
+  - explore-phone-card-browser 58/0 (7 widths, en/bn; --mutate-shrink fails 40)
+  - layout.mjs: no geometry change (only the known `bmNotFound` dangling-id report, on `main` too)
+  - phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0; word-card, known-word, mark-words, study-options, journey-note-pane suites green
+  - behaviour 1006/1 (sandbox: 31e TLS)
+- **With the Owner:** try the Word by Word slider and Explore on the phone; a folder's own window (needs a demo); the Asmaul Husna poster (on hold, decision 50).
+)
+
 **Previous milestone: v09.73 on `main`** (4 Oct 2026 — **Mapping My Journey: Pin, Favourite, Archive, Finalise and links between Notes SWITCHED ON (Siyagah round S14, decision 66, #566).**
 - **The Owner published the round 14 Rules** ("Round 14 rules are live Al Hamdulillah"). `firestore.rules` is synced to `docs/governance/2026-10-04-siyagah-round14-DEPLOYMENT-candidate.rules` (`[already-deployed-manually]`; 111 lines added, none removed).
 - **`app/js/siyagah-flags-readiness.js` is open** (`ready: true`, master-architect, 2026-10-04, reference `docs/reports/2026-10-04-siyagah-round14-enabled.md`). Every S14 control built in v09.72 now writes.
