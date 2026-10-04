@@ -173,6 +173,7 @@
   }
   .bar-palette.open { display: flex; }
   .bar-palette button { width: 100%; text-align: left; }
+  .folder-row-menu button { min-height: 40px; } /* S9: every menu item is a 40px target */
   .note-order-btn { min-width: 2.4rem; }
   .folder-search-breadcrumb { display: block; font-size: 0.76rem; color: #888; }
   .folder-search-result { padding: 0.4rem 0.55rem; border: 1px solid #ddd; border-radius: 0.5rem; margin: 0.3rem 0; cursor: pointer; background: #fff; }
@@ -970,7 +971,10 @@
     /** S9: a Note card's date is the DATE only ("1 Sep 2026"; in Bangla its own digits and month, never an "AM"). */
     function whenDate(ts) {
       const d = ts?.toDate ? ts.toDate() : null;
-      return d ? d.toLocaleDateString(getAppLang() === "bn" ? "bn-BD" : "en-GB", { day: "numeric", month: "short", year: "numeric" }) : "";
+      if (!d) return "";
+      if (getAppLang() === "bn") return d.toLocaleDateString("bn-BD", { day: "numeric", month: "short", year: "numeric" });
+      // Built from en-US's month names so the month is always three letters ("Sep", never en-GB's "Sept").
+      return `${d.getDate()} ${d.toLocaleDateString("en-US", { month: "short" })} ${d.getFullYear()}`;
     }
     function wireNoteCards(container, notes) {
       container.querySelectorAll("[data-note-id]").forEach((card) => {
