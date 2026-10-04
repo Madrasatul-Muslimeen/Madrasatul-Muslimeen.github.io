@@ -176,3 +176,58 @@ lists already use in production.
 deployment candidate (`docs/governance/2026-10-01-siyagah-round7-DEPLOYMENT-candidate.rules`)
 in the emulator: 75 cases, every denial paired with an allow differing in one
 fact, every denial a clean `false`; mutation-proven rule by rule.
+
+## Amendment 2 — Note flags and links between Notes (Siyagah round 14, 4 Oct 2026)
+
+**Authority.** Owner decision 66 (the S8–S14 plan) in
+`docs/governance/2026-09-27-owner-decisions.md`, issue #566, and the Siyagah
+reference's Note shape (`docs/reference/2026-09-30-siyagah-folder-and-note-pane-handover-v2.md`
+§1.3, §4). The Owner publishes the Rules; the Architect never deploys. The app
+side stays switched off (`ready: false`) until the Owner says they are live.
+
+**What it adds:**
+
+1. **Four optional booleans on a Note:** `pinned`, `favourite`, `archived`,
+   `finalised`. Absent reads as `false`, so every existing Note is unchanged.
+2. **A second, flag-only update path.** On an **active** Note, the owner may
+   change only these four flags (and `updatedAt`) **without a new revision**.
+   Nothing else may move on that path — not the title, body, status or
+   revision pointer.
+3. **The content/revision path never moves a flag**, and is **closed while a
+   Note is finalised**: no title, body, status or revision change at all until
+   the owner un-finalises it (a flag write). So a finalised Note can be neither
+   edited nor moved to Trash until it is un-finalised.
+4. **`archived`** hides a Note from folder lists by default (an app rule). It
+   is not `status: retired`: an archived Note is not in Trash and is never
+   deleted.
+5. **`noteLinks`** (new): `{tenantId}__{linkId}`, one Note linking to another
+   Note of the **same owner** (`fromNoteId` → `toNoteId`). The app shows the
+   reverse direction as "Linked from". A Note may not link to itself. Both
+   ends are frozen: unlinking retires the link, linking again restores it, and
+   a create or restore needs both Notes to exist, be the owner's own and be
+   active. Read by the same people who may read the owner's Notes.
+
+**Why flags may sit on the Note without a revision, when Amendment 1 rejected
+a `tags[]` array there.** A revision records what a Note *says*. A flag records
+how its owner *files* it — the same kind of fact as a placement or a tag link,
+which never stamp a revision either. Four fixed booleans have none of the
+array's problem: each is one value, set or cleared on its own, and the Rules
+can type-check every one. Putting them on the Note is what lets a folder list
+sort pinned Notes first and hide archived ones from the one read it already
+makes, with no second collection to join.
+
+**No composite index is needed.** Link lists are equality-only
+(`tenantId`, `ownerPersonId`, `fromNoteId` or `toNoteId`, `status`) with a
+`limit`.
+
+**Firestore's expression budget.** With two `allow update` clauses on `notes`,
+evaluating both in full exceeds Firestore's 1,000-expression limit (measured in
+the emulator). So each clause starts with the cheap test that tells it from the
+other — `noteFlagsUnchanged() && notFinalised()` on the content path,
+`onlyFlagsChange()` on the flag path — and a write meant for one path leaves
+the other in a few expressions.
+
+**Proof.** `tools/firestore-emulator/siyagah-round14.rules.test.mjs` runs the
+deployment candidate (`docs/governance/2026-10-04-siyagah-round14-DEPLOYMENT-candidate.rules`)
+in the emulator: 60 cases, every denial paired with an allow differing in one
+fact; mutation-proven rule by rule: 16 mutations, each caught by its own case. Removing the cheap first test from the content path makes a plain pin write fail on the budget, so the clause order is load-bearing and is itself under test.
