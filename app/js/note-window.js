@@ -727,7 +727,7 @@ export function createNoteViews(host) {
       msg("");
       const cur = live().currentRevisionId;
       q("[data-ver-body]").innerHTML = rows.length
-        ? `<ul class="note-ver-list">${rows.map((r, i) => `<li><button type="button" class="secondary note-ver-row" data-ver-open="${i}"><span class="note-ver-when">${escapeHtml(whenText(r.createdAt))}</span>${r.id === cur ? `<span class="note-ver-cur">${escapeHtml(t("Current"))}</span>` : ""}<span class="note-ver-title">${escapeHtml(r.title?.trim() || t("(untitled)"))}</span></button></li>`).join("")}</ul>`
+        ? `<ul class="note-ver-list">${rows.map((r, i) => `<li><button type="button" class="secondary note-ver-row" data-ver-open="${i}"><span class="note-ver-when">${escapeHtml(whenText(r.createdAt))}</span>${(r.revisionId ?? r.id) === cur ? `<span class="note-ver-cur">${escapeHtml(t("Current"))}</span>` : ""}<span class="note-ver-title">${escapeHtml(r.title?.trim() || t("(untitled)"))}</span></button></li>`).join("")}</ul>`
         : `<p class="note">${escapeHtml(t("This Note has no earlier versions to show."))}</p>`;
       q("[data-ver-body] button")?.focus();
     };
@@ -737,7 +737,7 @@ export function createNoteViews(host) {
       const openBtn = e.target.closest("[data-ver-open]");
       if (openBtn) {
         const r = rows[Number(openBtn.dataset.verOpen)];
-        const isCur = r.id === live().currentRevisionId;
+        const isCur = (r.revisionId ?? r.id) === live().currentRevisionId;
         const canBack = host.canEdit() && !v.ed && !isCur && !!host.versions.restore;
         q("[data-ver-body]").innerHTML = `<div class="note-ver-detail">
             <p class="note-pane-meta">${escapeHtml(whenText(r.createdAt))}${isCur ? ` · ${escapeHtml(t("Current"))}` : ""}</p>

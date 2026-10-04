@@ -30,6 +30,7 @@
 .note-pane-bar.tight [data-pane-contents-label] { display: none; }
 [data-pane-menu] .pane-fold-item { display: none; }
 .note-pane-bar.folded [data-pane-menu] .pane-fold-item { display: block; }
+.pane-contents-menu button { min-height: 40px; }
 .pane-contents-menu { left: 0; right: auto; width: 15rem; max-height: 60vh; overflow-y: auto; }
 .note-pane-title { margin: 0.7rem 0 0.2rem; font-size: 1.25rem; overflow-wrap: anywhere; }
 .note-pane-meta { margin: 0 0 0.4rem; font-size: 0.8rem; color: #777; }
