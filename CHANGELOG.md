@@ -19473,8 +19473,8 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
 
 - **What:**
   - **Right-click or long-press** opens a folder's menu or a Note card's actions; a short tap or a scroll does not.
-  - **Folder menu:** Add subfolder, Move to top level, Turn into a section, Open in its own window (beside Add note here).
-  - **Drag a Note onto a folder** to file it there too; it keeps its other folders; a duplicate is refused in words. Mouse and touch.
+  - **Folder menu:** Add subfolder, Move to top level, Turn into a section (beside Add note here). **Not built:** Open in its own window (a folder window is a new kind of window; it waits for a demo).
+  - **Drag a Note onto a folder** to file it there too; it keeps its other folders; a duplicate is refused in words. Desktop width only (the tree and list share the screen there); folders drag by touch everywhere.
   - **Closing a folder closes its subfolders. Search finds tags.**
   - **Nesting:** up to 64 deep (was 8). ADR-010 updated.
   - **S8 leftovers:** date only on cards ("1 Sep 2026"; Bangla month and digits); the ▾ stays on the title's line on a phone.

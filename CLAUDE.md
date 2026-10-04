@@ -226,8 +226,8 @@ Read this first, every session. It is the standing brief.
 
 **Current milestone: v09.67 on `main`** (4 Oct 2026 — **Mapping My Journey: menus everywhere, drag a Note onto a folder, deep nesting (Siyagah round S9, decision 66, #555).**
 - **Menus:** right-click (PC) or a long-press (phone, tablet) on a folder opens its ⋯ menu, and on a Note card its actions. A short tap or a scroll never does.
-- **The folder menu gains:** Add subfolder, Move to top level, Turn into a section, Open in its own window.
-- **Drag a Note onto a folder** to add it there; it stays in its other folders, and a folder that already holds it refuses it in words. Works by mouse and touch.
+- **The folder menu gains:** Add subfolder, Move to top level, Turn into a section (top-level folders). **Open in its own window was NOT built:** a window listing a folder's Notes is a new kind of window (note windows hold one Note), so it waits for its own demo.
+- **Drag a Note onto a folder** to add it there; it stays in its other folders, and a folder that already holds it refuses it in words. Only at the three-column width (1200px and up), where the tree and the list are on screen together; folders can be dragged by touch at every width.
 - **Closing a folder closes its subfolders.** **Search finds tags too.**
 - **Nesting:** the depth guard is 64 instead of 8 (decision 66's "without a limit"; ADR-010 updated, the cycle refusal unchanged).
 - **From S8:** card dates show the date only ("1 Sep 2026", Bangla month and digits), and the ▾ stays on the title's line on a phone.
