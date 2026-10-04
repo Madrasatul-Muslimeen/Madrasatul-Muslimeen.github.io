@@ -5392,7 +5392,11 @@ console.log("\n=== 43. The wheel's one-time intro + in-hub Surah/Ayah pickers, a
 
   const before = await page.evaluate(() => ({
     ctaVisible: getComputedStyle(document.getElementById("wheelCtaBtn")).display !== "none",
-    hubHidden: getComputedStyle(document.getElementById("wheelHubPickers")).display === "none",
+    // UPDATED IN PLACE, 4 Oct 2026 (decision 65): the hub (calligraphy and the
+    // Qur'an) now shows from the start with the button inside it; only the unit
+    // label stays hidden until the tap.
+    hubHidden: getComputedStyle(document.getElementById("wheelHubPickers")).display !== "none"
+               && document.getElementById("wheelHubUnitLabel").hidden,
     veiled: document.getElementById("wheelStageWrap").classList.contains("wheel-veiled"),
     // 4 Sep 2026: this line used to be hidden until the intro was tapped.
     // It is the owner's own gold capsule now ("Approach the Quran in 30
@@ -5409,14 +5413,14 @@ console.log("\n=== 43. The wheel's one-time intro + in-hub Surah/Ayah pickers, a
                   && document.getElementById("approachListCapsule")?.getBoundingClientRect().width > 0
                   && document.getElementById("approachListCapsule")?.textContent.trim() === "Quran Approaches - 40 Ways", // v08.112: the Owner renamed it ("40 ways should reflect Everywhere"); updated in place
   }));
-  check("43a the wheel starts covered by the intro button, hub pickers hidden, the capsule already showing above it",
+  check("43a the wheel starts veiled with the intro button in the hub, the centre showing but its label hidden, the capsule already showing above it",
         before.ctaVisible && before.hubHidden && before.veiled && before.capsuleShown, JSON.stringify(before));
 
   await page.click("#wheelCtaBtn");
   await page.waitForTimeout(150);
   const after = await page.evaluate(() => ({
     ctaHidden: getComputedStyle(document.getElementById("wheelCtaBtn")).display === "none",
-    hubVisible: getComputedStyle(document.getElementById("wheelHubPickers")).display !== "none",
+    hubVisible: getComputedStyle(document.getElementById("wheelHubPickers")).display !== "none" && !document.getElementById("wheelHubUnitLabel").hidden,
     veiled: document.getElementById("wheelStageWrap").classList.contains("wheel-veiled"),
     capsuleShown: !document.getElementById("wheelIntroSettled").hidden,
   }));

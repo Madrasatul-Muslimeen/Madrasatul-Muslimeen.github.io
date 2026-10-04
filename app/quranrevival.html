@@ -748,17 +748,21 @@
   .wheel-ring-actions button.primary { background: var(--card-button-bg); color: var(--card-button-text); }
   .wheel-seg-no { fill: var(--card-text-muted); }
 
+  /* Decision 65: the first-screen button is the demo's smaller pill (.cta2),
+     inside the hub, where the unit label goes: top 49%, width 60%, height
+     >= 15% of the measured diameter; font set by layoutWheelHub(). */
   .wheel-cta-btn {
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 4;
-    display: flex; flex-direction: column; align-items: center; gap: 0.15rem;
-    background: var(--card-button-bg); color: var(--card-button-text);
-    border: none; border-radius: 999px; padding: 0.85rem 1.3rem; max-width: 78%;
-    font-family: 'Inter', sans-serif; font-weight: 800; line-height: 1.25; text-align: center;
-    cursor: pointer; box-shadow: 0 10px 24px -8px rgba(0,0,0,0.6);
+    position: absolute; left: 50%; top: 49%; transform: translateX(-50%); z-index: 4;
+    width: 60%; min-height: 15%; box-sizing: border-box; padding: 2% 3%;
+    display: grid; place-content: center; text-align: center; gap: 0;
+    background: linear-gradient(#ecd08e, #c9a24b); color: #1a1406;
+    border: 1px solid #a8843c; border-radius: 999px; pointer-events: auto;
+    font: 700 var(--hub-cta-size, 12px)/1.1 'Inter', sans-serif;
+    cursor: pointer; box-shadow: 0 0 14px rgba(233,205,134,.35);
   }
   .wheel-cta-btn:hover { filter: brightness(1.06); }
-  .wheel-cta-line1 { font-size: 0.98rem; }
-  .wheel-cta-line2 { font-size: 0.8rem; }
+  .wheel-cta-line1 { display: block; }
+  .wheel-cta-line2 { display: block; font-size: .72em; font-weight: 600; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
   /* The wheel's centre (decision 63, 4 Oct 2026) is a DISPLAY: the Owner's
      calligraphy, the chosen unit in two lines, and an open Qur'an. Nothing in
      it is a control, so none of it takes a tap -- a slice near the hub is
@@ -769,7 +773,7 @@
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 3;
     pointer-events: none; border-radius: 50%;
   }
-  .wheel-hub-pickers[hidden], .wheel-cta-btn[hidden], .wheel-hub-graphic[hidden] { display: none; }
+  .wheel-hub-pickers[hidden], .wheel-cta-btn[hidden] { display: none; }
   /* The image's box is x 6.94%-94.86%, y 7.03%-46.13% of the ring's diameter. */
   .wheel-hub-calligraphy {
     position: absolute; left: 6.94%; top: 7.03%; width: 87.92%; height: 39.1%;
@@ -800,6 +804,8 @@
   .wheel-hub-graphic { position: absolute; left: 27%; right: 27%; bottom: 3.5%; pointer-events: none; }
   .wheel-hub-graphic svg { display: block; width: 100%; height: auto; overflow: visible; }
   .mu-rays, .mu-glow { animation: muShine 5s ease-in-out infinite; }
+  /* Decision 65: the light at "Bright" exposure, fixed (no switch in the app). */
+  .mu-light { opacity: 1; filter: brightness(1.5) saturate(1.15) drop-shadow(0 0 4px rgba(255,240,190,.8)); }
   .mu-spark path { animation: muTwinkle 3.2s ease-in-out infinite; }
   @keyframes muTwinkle { 0%, 100% { opacity: .15; } 50% { opacity: 1; } }
   @keyframes muShine { 0%, 100% { opacity: .75; } 50% { opacity: 1; } }
@@ -4460,10 +4466,6 @@
                  jumped to re-centre over it. Waiting for real content removes
                  the jump: the button and the wheel now appear together, already
                  in their final position. -->
-            <button type="button" id="wheelCtaBtn" class="wheel-cta-btn" hidden>
-              <span class="wheel-cta-line1">Study Quran</span>
-              <span class="wheel-cta-line2" id="wheelCtaLine2">ONE Ayah a Day</span>
-            </button>
             <!-- In-hub Surah/Ayah pickers -- a MIRROR of Study options' own
                  controls (same shape as #readPickers, shell round 22): each
                  copies its options/value from the canonical select and
@@ -4498,6 +4500,14 @@
               <!-- The chosen unit, in two lines, for EVERY unit including a
                    single āyah (the Surah/Ayah pickers that used to name it now
                    live in Choose a Unit); see renderWheelHubUnit(). -->
+              <!-- Decision 65 (4 Oct 2026): before the first tap the calligraphy and
+                   the Qur'an already show, and this smaller gold pill sits where the
+                   unit label goes (placed from the measured hub by layoutWheelHub()
+                   and CSS percentages); its second line names the unit. -->
+              <button type="button" id="wheelCtaBtn" class="wheel-cta-btn" hidden>
+                <span class="wheel-cta-line1">Study Quran</span>
+                <span class="wheel-cta-line2" id="wheelCtaLine2">ONE Ayah a Day</span>
+              </button>
               <p id="wheelHubUnitLabel" class="wheel-hub-unit" hidden>
                 <span id="wheelHubUnitLine1" class="wheel-hub-unit-1"></span>
                 <span id="wheelHubUnitLine2" class="wheel-hub-unit-2"></span>
@@ -4508,7 +4518,7 @@
                    under the label. pointer-events:none -- it must never
                    intercept a tap meant for a wheel slice; aria-hidden since
                    it adds nothing a screen reader needs. -->
-              <div id="wheelHubGraphic" class="wheel-hub-graphic" aria-hidden="true" hidden>
+              <div id="wheelHubGraphic" class="wheel-hub-graphic" aria-hidden="true">
                 <svg viewBox="0 -14 200 124" xmlns="http://www.w3.org/2000/svg">
                   <defs>
                     <radialGradient id="mGlow" cx="50%" cy="60%" r="50%"><stop offset="0" stop-color="#fff8e1" stop-opacity=".9"/><stop offset=".3" stop-color="#f6dd99" stop-opacity=".45"/><stop offset=".7" stop-color="#c9a24b" stop-opacity=".12"/><stop offset="1" stop-color="#c9a24b" stop-opacity="0"/></radialGradient>
@@ -4518,11 +4528,18 @@
                     <linearGradient id="mGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6e2a4"/><stop offset="1" stop-color="#b2873a"/></linearGradient>
                     <linearGradient id="mWood" x1="0" x2="1"><stop offset="0" stop-color="#5a3518"/><stop offset=".5" stop-color="#9a6332"/><stop offset="1" stop-color="#5a3518"/></linearGradient>
                   </defs>
+                  <g class="mu-light">
                   <ellipse class="mu-glow" cx="100" cy="58" rx="96" ry="56" fill="url(#mGlow)"/>
                   <g class="mu-rays" fill="url(#mRay)"><polygon points="99.2,60 100.8,60 35.1,28.9 33.4,32.6" opacity="0.40"/><polygon points="99.2,60 100.8,60 53.1,25.8 51.9,27.7" opacity="0.50"/><polygon points="99.2,60 100.8,60 51.5,6.8 48.6,9.6" opacity="0.60"/><polygon points="99.2,60 100.8,60 69.4,10.8 67.5,12.0" opacity="0.70"/><polygon points="99.2,60 100.8,60 74.9,-7.5 71.2,-6.0" opacity="0.80"/><polygon points="99.2,60 100.8,60 90.0,2.9 87.8,3.3" opacity="0.90"/><polygon points="99.2,60 100.8,60 102.0,-12.0 98.0,-12.0" opacity="1.00"/><polygon points="99.2,60 100.8,60 112.2,3.3 110.0,2.9" opacity="0.90"/><polygon points="99.2,60 100.8,60 128.8,-6.0 125.1,-7.5" opacity="0.80"/><polygon points="99.2,60 100.8,60 132.5,12.0 130.6,10.8" opacity="0.70"/><polygon points="99.2,60 100.8,60 151.4,9.6 148.5,6.8" opacity="0.60"/><polygon points="99.2,60 100.8,60 148.1,27.7 146.9,25.8" opacity="0.50"/><polygon points="99.2,60 100.8,60 166.6,32.6 164.9,28.9" opacity="0.40"/></g>
                   <g class="mu-spark" fill="#fff6d8">
                     <path d="M50 24 l1.2 3 3 1.2 -3 1.2 -1.2 3 -1.2 -3 -3 -1.2 3 -1.2z"/>
                     <path d="M150 22 l1 2.4 2.4 1 -2.4 1 -1 2.4 -1 -2.4 -2.4 -1 2.4 -1z" style="animation-delay:1.3s"/>
+                    <path d="M68 4 l1.1 2.7 2.7 1.1 -2.7 1.1 -1.1 2.7 -1.1 -2.7 -2.7 -1.1 2.7 -1.1z" style="animation-delay:.6s"/>
+                    <path d="M134 2 l1.2 3 3 1.2 -3 1.2 -1.2 3 -1.2 -3 -3 -1.2 3 -1.2z" style="animation-delay:2.1s"/>
+                    <path d="M88 30 l.8 2 2 .8 -2 .8 -.8 2 -.8 -2 -2 -.8 2 -.8z" style="animation-delay:1.7s"/>
+                    <path d="M113 24 l.9 2.2 2.2 .9 -2.2 .9 -.9 2.2 -.9 -2.2 -2.2 -.9 2.2 -.9z" style="animation-delay:.3s"/>
+                    <path d="M100 10 l1 2.4 2.4 1 -2.4 1 -1 2.4 -1 -2.4 -2.4 -1 2.4 -1z" style="animation-delay:2.6s"/>
+                  </g>
                   </g>
                   <!-- the stand (rehal): two carved leaves crossing under the spine -->
                   <path d="M70 108 L100 80 L106 86 L80 110 Z" fill="url(#mWood)" stroke="#3e2410" stroke-width=".6"/>
@@ -8140,9 +8157,8 @@
     wheelCtaBtn?.addEventListener("click", () => {
       wheelIntroDismissed = true;
       wheelCtaBtn.hidden = true;
-      wheelHubPickers.hidden = false;
-      wheelHubGraphic.hidden = false;
       wheelStageWrapEl.classList.remove("wheel-veiled");
+      renderWheelHubUnit(); // the label shows now, in the button's place
       layoutWheelHub(); // the hub was hidden (0-width) until now -- size its content for real
     });
 
@@ -8799,6 +8815,7 @@
       // real, final size -- safe to reveal the intro button (started hidden,
       // see its own markup comment) without the visible reflow that used to
       // happen when it appeared before the wheel did.
+      wheelHubPickers.hidden = false;
       if (!wheelIntroDismissed) wheelCtaBtn.hidden = false;
 
       // Matches the old app's own wheel-click behaviour: clicking a segment
@@ -9155,21 +9172,21 @@
       const surahNo = t("Surah {n}", { n: num(currentSurahNum) });
       const place = `${surahNo} · ${name}`;
       const info = currentUnitInfo();
-      if (currentUnitType === "ayah") return { line1: t("Ayah {n}", { n: ayahLabelFor(currentSurahNum, currentAyahNum) }), line2: place };
+      if (currentUnitType === "ayah") { const l1 = t("Ayah {n}", { n: ayahLabelFor(currentSurahNum, currentAyahNum) }); return { line1: l1, line2: place, cta: `${l1} · ${name}` }; }
       if (currentUnitType === "surah") return { line1: surahNo, line2: name, cta: name };
       if (currentUnitType === "range") {
         const from = Math.min(rangeFrom, rangeTo), to = Math.max(rangeFrom, rangeTo);
         const span = t("Āyāt {from}–{to}", { from: num(from), to: num(to) });
-        return { line1: span, line2: place, cta: `${name} · ${span}` };
+        return { line1: span, line2: place, cta: `${span} · ${name}` };
       }
       if (currentUnitType === "ruku") {
         const ayah = currentSurahData.ayahs.find((a) => a.ayah === currentAyahNum);
         const ruku = t("Ruku' {n}", { n: num(rukuIndexInSurah(currentSurahData.ayahs, ayah.ruku)) });
-        return { line1: ruku, line2: place, cta: `${name} · ${ruku}` };
+        return { line1: ruku, line2: place, cta: `${ruku} · ${name}` };
       }
       // Juz / Hizb / Page: currentUnitInfo()'s own label is already the name,
       // and the surah is only where the unit starts.
-      return { line1: info.label, line2: t("from {place}", { place }), cta: info.label };
+      return { line1: info.label, line2: t("from {place}", { place }), cta: `${info.label} · ${name}` };
     }
 
     function renderWheelHubUnit() {
@@ -9177,13 +9194,18 @@
       const unitLabelEl = document.getElementById("wheelHubUnitLabel");
       const ctaLine2 = document.getElementById("wheelCtaLine2");
       if (unitLabelEl) {
-        unitLabelEl.hidden = !text;
+        unitLabelEl.hidden = !text || !wheelIntroDismissed;
         document.getElementById("wheelHubUnitLine1").textContent = text ? text.line1 : "";
         document.getElementById("wheelHubUnitLine2").textContent = text ? text.line2 : "";
         unitLabelEl.title = text ? `${text.line1} — ${text.line2}` : "";
       }
       if (ctaLine2) ctaLine2.textContent = text?.cta ?? t("ONE Ayah a Day");
     }
+
+    // Decision 65: the centre now shows before the first tap, so it must follow
+    // the wheel's own size as that settles (a width change, the tablet corners)
+    // rather than waiting for a tap to re-measure it.
+    if ("ResizeObserver" in window) new ResizeObserver(() => layoutWheelHub()).observe(wheelStageWrapEl);
 
     // Owner decision 51 -- landing drawers: one open at a time, all closed on
     // every load (nothing is remembered, by choice).
@@ -9392,6 +9414,7 @@
       wheelHubPickers.style.width = hubDiameter + "px";
       wheelHubPickers.style.height = hubDiameter + "px";
       wheelHubPickers.style.setProperty("--hub-unit-size", (hubDiameter * 0.068).toFixed(2) + "px");
+      wheelHubPickers.style.setProperty("--hub-cta-size", Math.max(10.5, hubDiameter * 0.066).toFixed(2) + "px");
       wheelHubPickers.style.setProperty("--hub-unit2-size", Math.max(8.5, hubDiameter * 0.05).toFixed(2) + "px");
 
       // The open Qur'an never overlaps the label: its inset is the demo's 27%
@@ -9401,8 +9424,11 @@
         const label = document.getElementById("wheelHubUnitLabel");
         const bottomY = hubDiameter * (1 - 0.035);
         let w = hubDiameter * 0.46;
-        if (label && !label.hidden) {
-          const room = bottomY - (label.offsetTop + label.offsetHeight) - 1;
+        // Before the first tap the pill stands where the label will; its box,
+        // not the (hidden) label's, bounds the Qur'an.
+        const above = !wheelCtaBtn.hidden ? wheelCtaBtn : (label && !label.hidden ? label : null);
+        if (above) {
+          const room = bottomY - (above.offsetTop + above.offsetHeight) - 1;
           w = Math.max(0, Math.min(w, room * (200 / 124)));
         }
         const inset = (hubDiameter - w) / 2;
