@@ -322,7 +322,7 @@ check("J33 measuring a subtree's height cannot spin on an already-corrupt tree",
 });
 
 // UPDATED in S9 (decision 66, 4 Oct 2026): the bound was the literal 8 and is now MAX_FOLDER_DEPTH (a technical
-// guard of 1000, lifted from the app's own 8). Same inclusive-on-both-paths assertion, written against the
+// guard of 64, lifted from the app's own 8). Same inclusive-on-both-paths assertion, written against the
 // constant so it follows it; a literal 8 would now pass a 9-deep refusal that no longer exists.
 check("J34 the depth cap is inclusive on both paths -- exactly MAX_FOLDER_DEPTH is allowed, one more is not", () => {
   const top = MAX_FOLDER_DEPTH - 1;

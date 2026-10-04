@@ -89,7 +89,7 @@ async function run(lang, width, embedFrame = false) {
       if (isPage && MUTATE === "longpress-short") body = body.replace("const LONG_PRESS_MS = 500;", "const LONG_PRESS_MS = 0;");
       if (isPage && MUTATE === "no-recursive") body = body.replace("closeBelow(node);", "");
       if (isPage && MUTATE === "no-tagsearch") body = body.replace("|| tagNoteIds.has(n.noteId)", "");
-      if (isContract && MUTATE === "depth-back") body = body.replace("MAX_FOLDER_DEPTH = 1000", "MAX_FOLDER_DEPTH = 8");
+      if (isContract && MUTATE === "depth-back") body = body.replace("MAX_FOLDER_DEPTH = 64", "MAX_FOLDER_DEPTH = 8");
       await route.fulfill({ response: res, body });
     });
   }

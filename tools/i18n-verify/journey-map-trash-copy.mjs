@@ -12,6 +12,7 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
+import { MAX_FOLDER_DEPTH } from "../../app/js/journey-map-contract.js";
 
 const root = path.resolve(process.argv[2] || process.cwd());
 const contractUrl = pathToFileURL(path.join(root, "app/js/journey-map-contract.js")).href;
@@ -202,12 +203,14 @@ await check("R2 restoring a parent also restores its retired descendants", async
   assert.ok(["p", "c1", "c2", "g"].every((id) => store.folders.get(id).status === "active"));
   assert.deepEqual(batches, [1, 2, 1]);
 });
-await check("R3 an active folder is refused; so is a restore that would exceed depth 8", async () => {
+// UPDATED in S9 (decision 66): the literal 8 became MAX_FOLDER_DEPTH (lifted to a technical guard of 64); same
+// assertion, a restore that would exceed the bound is still refused, written against the constant.
+await check("R3 an active folder is refused; so is a restore that would exceed the depth bound", async () => {
   addFolder("live");
   await refusal(svc.restoreFolder(db, { ...act, folderId: "live" }), /Folder is not in Trash\./);
   let parent = null;
-  for (let i = 1; i <= 8; i += 1) { addFolder(`d${i}`, { parentFolderId: parent }); parent = `d${i}`; }
-  addFolder("r1", { parentFolderId: "d8", status: "retired" });
+  for (let i = 1; i <= MAX_FOLDER_DEPTH; i += 1) { addFolder(`d${i}`, { parentFolderId: parent }); parent = `d${i}`; }
+  addFolder("r1", { parentFolderId: `d${MAX_FOLDER_DEPTH}`, status: "retired" });
   const before = snapshot();
   await refusal(svc.restoreFolder(db, { ...act, folderId: "r1" }), /too-deep/);
   assert.equal(snapshot(), before);
@@ -335,15 +338,17 @@ await check("F3 a copy into its own subtree is refused, no write", async () => {
   await refusal(svc.copyFolder(db, { ...act, folderId: "A", toParentFolderId: "A" }), /self-parent|cycle/);
   assert.equal(snapshot(), before); assert.equal(batches.length, 0);
 });
-await check("F4 a copy that would go beyond depth 8 is refused, no write", async () => {
+// UPDATED in S9 (decision 66): the literals 8 / 6 / 5 were MAX_FOLDER_DEPTH and its neighbours; same assertions, against the constant.
+await check("F4 a copy that would go beyond the depth bound is refused, no write", async () => {
   addFolder("s1"); addFolder("s2", { parentFolderId: "s1" }); addFolder("s3", { parentFolderId: "s2" });
+  const D = MAX_FOLDER_DEPTH - 2;
   let parent = null;
-  for (let i = 1; i <= 6; i += 1) { addFolder(`d${i}`, { parentFolderId: parent }); parent = `d${i}`; }
+  for (let i = 1; i <= D; i += 1) { addFolder(`d${i}`, { parentFolderId: parent }); parent = `d${i}`; }
   const before = snapshot();
-  await refusal(svc.copyFolder(db, { ...act, folderId: "s1", toParentFolderId: "d6" }), /too-deep/);
+  await refusal(svc.copyFolder(db, { ...act, folderId: "s1", toParentFolderId: `d${D}` }), /too-deep/);
   assert.equal(snapshot(), before);
-  await svc.copyFolder(db, { ...act, folderId: "s1", toParentFolderId: "d5" }); // 5 + 3 = 8, allowed
-  assert.equal([...store.folders.values()].length, 9 + 3);
+  await svc.copyFolder(db, { ...act, folderId: "s1", toParentFolderId: `d${D - 1}` }); // (D-1) + 3 = the bound, allowed
+  assert.equal([...store.folders.values()].length, 3 + D + 3);
 });
 await check("F5 a system folder, or a retired target, is refused", async () => {
   addFolder("sys", { semanticRole: "reflection-archive" }); addFolder("rt", { status: "retired" }); addFolder("u");

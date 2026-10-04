@@ -28,7 +28,7 @@ export const SYSTEM_FOLDER_ROLES = Object.freeze(["journey-map", "reflection-arc
  * The old 8 was the app's own number, never a Rules one. What is kept is a technical guard
  * against a corrupt chain only (the cycle refusal is separate and unchanged).
  */
-export const MAX_FOLDER_DEPTH = 1000;
+export const MAX_FOLDER_DEPTH = 64;
 
 export function isSystemFolderRole(semanticRole) {
   return SYSTEM_FOLDER_ROLES.includes(semanticRole);

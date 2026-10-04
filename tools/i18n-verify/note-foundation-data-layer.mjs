@@ -365,12 +365,15 @@ assert.equal(writes.length, 0);
 // carries -- the defect P6-D found in folderTreeRefusal().
 writes.length = 0; documents.clear();
 queryRows = [];
-for (let i = 1; i <= 6; i++) queryRows.push(FOLDER({ folderId: `r${i}`, parentFolderId: i === 1 ? null : `r${i - 1}` }));
+// UPDATED in S9 (decision 66): the chain was a literal six (= the old bound 8, minus 2); it follows MAX_FOLDER_DEPTH now.
+const { MAX_FOLDER_DEPTH } = await import(pathToFileURL(path.resolve("app/js/journey-map-contract.js")).href);
+const R = MAX_FOLDER_DEPTH - 2;
+for (let i = 1; i <= R; i++) queryRows.push(FOLDER({ folderId: `r${i}`, parentFolderId: i === 1 ? null : `r${i - 1}` }));
 queryRows.push(FOLDER({ folderId: "p" }), FOLDER({ folderId: "pc", parentFolderId: "p" }),
                FOLDER({ folderId: "pcc", parentFolderId: "pc" }));
 for (const row of queryRows) putFolder(row);
 await assert.rejects(() => foundation.reparentNoteFolder({}, { tenantId: "tenant",
-  ownerPersonId: "person", folderId: "p", parentFolderId: "r6", actorUid: "owner-uid" }),
+  ownerPersonId: "person", folderId: "p", parentFolderId: `r${R}`, actorUid: "owner-uid" }),
   /Folder parent refused: too-deep/);
 assert.equal(writes.length, 0);
 
