@@ -20,6 +20,19 @@ Read the live state yourself, because it moves on after this was written:
 - `claude.yml` runs;
 - the "Active Architect session" line on #159.
 
+**Updated 4 Oct 2026, ~10:20 UTC, by session `session_012katd3VGiJEprbqxSEUTbf` (Active Architect on #159). Supersedes the ~05:30 paragraph below.**
+
+- **`main` is at v09.68.** Since v09.64:
+  - **v09.65:** S8, Mapping My Journey in three panels (PR #554).
+  - **v09.66:** first screen B and the light from the Qur'an (decisions 65, 67; PR #550). Review fixes: beams start on the pages (`--mutate-sunrise`); the pill's name wraps, the pill is 80% wide below a 140px hub, and the unit alone shows when the full name would crowd out the Qur'an.
+  - **v09.67:** S9, menus by right-click / long-press, drag a Note onto a folder (desktop width only), recursive collapse, tag search, depth guard 64 (ADR-010 updated) (PR #556). **Not built:** a folder's own window (a new kind of window; needs a demo).
+  - **v09.68:** S10, the folder picker with tick boxes (PR #558).
+- **In flight:** **#559, S11 (reading tools)**, Builder dispatched ~10:20 UTC. Then S12 (editor), S13 (pop-up windows), S14 (flags and Note links, needs Rules the Owner publishes).
+- **Lessons:**
+  - **Read the Builder's PR body before writing the release notes.** S9's said "Open in its own window — NOT built"; the first draft of v09.67's notes claimed it, and was corrected before the merge.
+  - **Never `pkill -f`**, even for `serve.js`: it was done once today (harmless, but against the rule). Stop servers by PID.
+  - The Builder often opens no PR (S10); open it from the branch.
+
 **Updated 4 Oct 2026, ~05:30 UTC, by session `session_012katd3VGiJEprbqxSEUTbf` (Active Architect on #159). Supersedes the ~02:45 paragraph below.**
 
 - **`main` is at v09.64** (PR #552): **Choose a Unit** ends with **Read** and **Play** and stays open while choosing (decision 64, #547). Suite `wheel-unit-go-browser` 254/0.
