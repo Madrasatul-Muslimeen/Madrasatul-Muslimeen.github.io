@@ -20,6 +20,17 @@ Read the live state yourself, because it moves on after this was written:
 - `claude.yml` runs;
 - the "Active Architect session" line on #159.
 
+**Updated 4 Oct 2026, ~19:20 UTC, by session `session_012katd3VGiJEprbqxSEUTbf` (Active Architect on #159). Supersedes the ~17:55 paragraph below.**
+
+- **`main` is at v09.72** (PR #568): S14's Pin, Favourite, Archive, Finalise, Link to a Note and Linked from, **switched off** (`app/js/siyagah-flags-readiness.js` `ready: false`). The Siyagah plan S8–S14 is complete. Nothing is building.
+- **Waiting on the Owner:** publish `docs/governance/2026-10-04-siyagah-round14-DEPLOYMENT-candidate.rules` (guide beside it). **Only after they say "Round 14 rules are live":**
+  1. copy the candidate over `firestore.rules`, commit tagged `[already-deployed-manually]`;
+  2. flip the readiness gate with a dated `decision`;
+  3. re-run `npm run siyagah-round14` and `npm run siyagah-flags-links-real-function` in `tools/firestore-emulator` and `rules-authorisation-executable`;
+  4. release it as the next version (read it off the ledger).
+- **Review added** `siyagah-flags-links-real-function` (port 8110, 30/0). Builder run 864 opened no PR and posted no totals; the Architect measured everything.
+- **Lesson:** `behaviour.mjs` fetches port 8080 directly, so a worktree review on 8081 also needs a server on 8080 serving the worktree (a `.cjs` copy of `serve.js`, never committed).
+
 **Updated 4 Oct 2026, ~17:55 UTC, by session `session_012katd3VGiJEprbqxSEUTbf` (Active Architect on #159). Supersedes the ~10:20 paragraph below.**
 
 - **`main` is at v09.71.** Since v09.68: **v09.69** S11 reading tools; **v09.70** S12 editor (review fix: a removed `fitEditToolbar` was still called on resize); **v09.71** S13 window tabs and the version line (PR #565; review fix: phone switcher titles shown in full).
