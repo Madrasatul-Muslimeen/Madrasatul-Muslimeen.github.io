@@ -58,14 +58,19 @@ const notesHtml = fs.readFileSync(path.join(root, "app/notes.html"), "utf8");
 // carry (src/alt/loading only, asserted below) and by a restricted
 // ALLOWED_URI_REGEXP on `src`, not by keeping the tag off the list
 // entirely. Every OTHER dangerous tag stays refused exactly as before.
-const DANGEROUS_TAGS = ["script", "iframe", "object", "embed", "style", "a", "svg", "form", "input", "link", "meta", "base"];
+const DANGEROUS_TAGS = ["script", "iframe", "object", "embed", "style", "svg", "form", "input", "link", "meta", "base"];
 // `src` is deliberately excluded from this pattern now that NOTE_ALLOWED_ATTR
 // legitimately carries it for `img` -- the dedicated checks below (the exact
 // allow-list is {src, alt, loading} and nothing else, plus the URI
 // restriction) are what prove it safe, a stronger and more specific claim
 // than a blanket "src is dangerous-shaped" pattern could make while still
 // wanting to allow it for one purpose.
-const DANGEROUS_ATTR_PATTERN = /^on|href|style|xlink/i;
+// UPDATED IN PLACE, S12 (#562): href and style are now ALLOWED by name -- the editor's link and colour/alignment buttons need them -- and
+// <a> left DANGEROUS_TAGS for the same reason. Safety moved from "they are absent" to "what they may carry": the browser suite
+// journey-editor-browser.mjs runs a hostile paste (javascript: href, on* handlers, style values beyond colour/background-colour/text-align).
+// Event handlers and xlink stay refused by name below.
+const DANGEROUS_ATTR_PATTERN = /^on|xlink/i;
+const S12_ATTRS = ["colspan", "data-check", "data-checked", "dir", "href", "rowspan", "style"];
 
 // UPDATED IN PLACE, 28 Sep 2026, reason recorded: DOMPurify used to load from
 // the jsdelivr CDN, so with no internet a Note's body was refused (sanitize
@@ -129,11 +134,11 @@ check("NOTE_ALLOWED_TAGS excludes every tag that could carry a script or load a 
 // claim is narrowed to "exactly these three, and none of them is a
 // dangerous-shaped attribute (on*/href/style/xlink)" -- still a closed-set
 // assertion, not a loosened one.
-check("NOTE_ALLOWED_ATTR carries exactly src/alt/loading -- no event handler, no href, no inline style is possible", () => {
+check("NOTE_ALLOWED_ATTR carries exactly the image trio plus the S12 editor set -- no event handler, no class", () => {
   const match = sanitizeSrc.match(/NOTE_ALLOWED_ATTR = Object\.freeze\(\[([\s\S]*?)\]\)/);
   assert.ok(match, "NOTE_ALLOWED_ATTR is not defined as expected");
   const attrs = [...match[1].matchAll(/"([a-zA-Z-]+)"/g)].map((m) => m[1]);
-  assert.deepEqual(attrs.sort(), ["alt", "loading", "src"], `NOTE_ALLOWED_ATTR changed unexpectedly: ${JSON.stringify(attrs)}`);
+  assert.deepEqual(attrs.sort(), ["alt", "loading", "src", ...S12_ATTRS].sort(), `NOTE_ALLOWED_ATTR changed unexpectedly: ${JSON.stringify(attrs)}`);
   for (const attr of attrs) {
     assert.ok(!DANGEROUS_ATTR_PATTERN.test(attr), `NOTE_ALLOWED_ATTR permits a dangerous-shaped attribute: ${attr}`);
   }
@@ -177,7 +182,7 @@ check("the exported allow-lists are exactly what the structural checks above jus
   // regex above extracted" -- the same tie-breaker this repository's own lessons
   // recommend (prefer the source/emulator over a grep when they could disagree).
   assert.ok(Array.isArray(NOTE_ALLOWED_TAGS) && NOTE_ALLOWED_TAGS.length > 0);
-  assert.deepEqual([...NOTE_ALLOWED_ATTR].sort(), ["alt", "loading", "src"]);
+  assert.deepEqual([...NOTE_ALLOWED_ATTR].sort(), ["alt", "loading", "src", ...S12_ATTRS].sort());
   for (const dangerous of DANGEROUS_TAGS) assert.ok(!NOTE_ALLOWED_TAGS.includes(dangerous));
   assert.ok(NOTE_ALLOWED_TAGS.includes("img"), "img should be allowed (issue #265)");
 });
