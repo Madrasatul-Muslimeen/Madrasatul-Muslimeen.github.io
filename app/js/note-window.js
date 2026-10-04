@@ -38,12 +38,22 @@ export const NOTE_VIEW_HTML = `
           <div class="bar-palette pane-contents-menu" data-bar-palette="paneContents" data-pane-contents-list></div>
         </span>
         <span class="pane-spacer"></span>
+        <button type="button" class="secondary pane-btn pane-tool" data-pane-find-toggle>🔍</button>
+        <button type="button" class="secondary pane-btn pane-tool" data-pane-foldall hidden>⇅</button>
+        <button type="button" class="secondary pane-btn pane-attach" data-pane-attach hidden>📎</button>
         <button type="button" class="secondary pane-btn" data-pane-new hidden>✚</button>
         <button type="button" class="secondary pane-btn" data-pane-edit-toggle hidden></button>
         <span class="bar-palette-wrap folder-menu-wrap" data-bar-palette-wrap="paneMenu" data-pane-menu-wrap>
           <button type="button" class="folder-menu-btn bar-palette-toggle" data-bar-palette-toggle="paneMenu" aria-haspopup="true" aria-expanded="false" data-pane-menu-btn>⋯</button>
           <div class="bar-palette" data-bar-palette="paneMenu" data-pane-menu></div>
         </span>
+      </div>
+      <div class="note-find-bar" data-find-bar role="search" hidden>
+        <input type="search" class="note-find-input" data-find-input>
+        <span class="note-find-count" data-find-count role="status" aria-live="polite"></span>
+        <button type="button" class="secondary pane-btn" data-find-prev>▲</button>
+        <button type="button" class="secondary pane-btn" data-find-next>▼</button>
+        <button type="button" class="secondary pane-btn" data-find-close>✕</button>
       </div>
       <h2 class="note-pane-title" data-pane-title></h2>
       <input type="text" class="pane-edit-title" data-edit-title hidden>
@@ -110,6 +120,9 @@ const noteTitleOf = (note) => note.title?.trim() || t("(untitled)");
  *   menuEnd(v, note)   extra ⋯ items at the end, HTML
  *   onMenu(v, note, on)  handle a click on one of those items; true when handled
  *   onEditStart?(v, note) / onEditDone?(v, note)  S10: an edit opens / Done was pressed (the page writes what it staged)
+ *   attach?(v, note)   S11: when given (the owner only), the bar shows a 📎 that opens the page's folders-and-tags sheet
+ *   versions?          S11 (never a new field): { list(note) -> Promise<[{ id, title, bodyHtml, createdAt, reason }]> newest first,
+ *                        restore(note, rev) -> Promise  (saves rev as a NEW revision through the page's own save path) }
  *   newNote?()         S8: when given, the pane bar shows a ✚ (the owner only) that calls it
  *   orderFrom(el), folderFrom(el)   the ‹ › order / folder of the row a Note was opened from
  *   paneTier(), paneApply(), scroller()   the inline pane's layout (pane only)
@@ -145,6 +158,12 @@ export function createNoteViews(host) {
     });
     el.addEventListener("mousedown", (ev) => { if (ev.target.closest("[data-edit-toolbar] button")) ev.preventDefault(); });
     el.addEventListener("click", (ev) => onViewClick(v, ev));
+    // S11: Find -- typing re-marks the body; Enter / Shift+Enter step; Esc closes the find bar (and only it).
+    v.find = { marks: [], idx: -1 };
+    const findInput = el.querySelector("[data-find-input]");
+    findInput.addEventListener("input", () => runFind(v));
+    findInput.addEventListener("keydown", (ev) => { if (ev.key === "Enter") { ev.preventDefault(); stepFind(v, v.find.idx + (ev.shiftKey ? -1 : 1)); } });
+    el.querySelector("[data-find-bar]").addEventListener("keydown", (ev) => { if (ev.key === "Escape") { ev.stopPropagation(); closeFind(v); } });
     return v;
   }
   const paneView = notePane ? makeView(notePane, "pane") : { kind: "pane", noteId: null, ed: null };
@@ -288,6 +307,7 @@ export function createNoteViews(host) {
     v.editTitleEl.hidden = false;
     v.el.querySelector("[data-pane-title]").hidden = true;
     v.draftOfferEl.hidden = true;
+    closeFind(v, { focus: false });
     v.bodyEl.replaceChildren();
     const body = document.createElement("div");
     body.className = "pane-edit-body";
@@ -367,11 +387,15 @@ export function createNoteViews(host) {
   /** The one-line header: measure, then fold -- never wrap, never cut (§4.2). ‹ › fold into the ⋯ menu first; if the Contents label is still too wide it shortens to ☰. Run twice by the caller (now, and in requestAnimationFrame). */
   function fitPaneBar(v) {
     if (v.noteId === null) return;
-    v.barEl.classList.remove("folded", "tight", "edit-folded");
-    if (v.barEl.scrollWidth > v.barEl.clientWidth + 1) v.barEl.classList.add("folded");
-    if (v.barEl.scrollWidth > v.barEl.clientWidth + 1) v.barEl.classList.add("tight");
+    v.barEl.classList.remove("folded", "tight", "tools-folded", "attach-folded", "edit-folded");
+    const over = () => v.barEl.scrollWidth > v.barEl.clientWidth + 1;
+    // S11: the new tools fold first (🔍 ⇅ into ⋯, the Contents word to ☰, then 📎), so the existing ‹ › and Edit keep their place as long as they can.
+    if (over()) v.barEl.classList.add("tools-folded");
+    if (over()) v.barEl.classList.add("tight");
+    if (over()) v.barEl.classList.add("attach-folded");
+    if (over()) v.barEl.classList.add("folded");
     // Round 5: ✏️ Edit / ✓ Done is the LAST thing to fold, into ⋯ with its word.
-    if (v.barEl.scrollWidth > v.barEl.clientWidth + 1) v.barEl.classList.add("edit-folded");
+    if (over()) v.barEl.classList.add("edit-folded");
   }
   function fitPaneBarTwice(v) { fitPaneBar(v); requestAnimationFrame(() => fitPaneBar(v)); }
   window.addEventListener("resize", () => {
@@ -410,8 +434,31 @@ export function createNoteViews(host) {
       newBtn.hidden = !(own && host.newNote && v.kind === "pane");
       newBtn.setAttribute("aria-label", t("New note")); newBtn.title = t("New note");
     }
+    const headings = [...v.el.querySelectorAll(".note-sec")];
+    const foldBtn = v.el.querySelector("[data-pane-foldall]");
+    foldBtn.hidden = !headings.length;
+    const allCollapsed = headings.length > 0 && headings.every((sec) => sec.classList.contains("collapsed"));
+    const foldLabel = allCollapsed ? t("Open all headings") : t("Close all headings");
+    foldBtn.setAttribute("aria-label", foldLabel); foldBtn.title = foldLabel;
+    const findBtn = v.el.querySelector("[data-pane-find-toggle]");
+    findBtn.setAttribute("aria-label", t("Find in this Note")); findBtn.title = t("Find in this Note");
+    findBtn.hidden = !!v.ed;
+    const attachBtn = v.el.querySelector("[data-pane-attach]");
+    const canAttach = !!(own && host.attach);
+    attachBtn.hidden = !canAttach;
+    attachBtn.setAttribute("aria-label", t("Folders and tags")); attachBtn.title = t("Folders and tags");
+    const findBar = v.el.querySelector("[data-find-bar]");
+    const fi = findBar.querySelector("[data-find-input]");
+    fi.placeholder = t("Find in this Note"); fi.setAttribute("aria-label", t("Find in this Note"));
+    for (const [sel, text] of [["[data-find-prev]", t("Previous match")], ["[data-find-next]", t("Next match")], ["[data-find-close]", t("Close")]]) {
+      const b = findBar.querySelector(sel); b.setAttribute("aria-label", text); b.title = text;
+    }
     let menu = `<button type="button" class="secondary tiny pane-fold-item" data-pane-prev ${prev ? "" : "disabled"}>‹ ${escapeHtml(t("Previous note"))}</button>
       <button type="button" class="secondary tiny pane-fold-item" data-pane-next ${next ? "" : "disabled"}>${escapeHtml(t("Next note"))} ›</button>`;
+    if (!v.ed) menu += `<button type="button" class="secondary tiny pane-toolfold-item" data-pane-find-toggle>🔍 ${escapeHtml(t("Find in this Note"))}</button>`;
+    if (headings.length) menu += `<button type="button" class="secondary tiny pane-toolfold-item" data-pane-foldall>⇅ ${escapeHtml(foldLabel)}</button>`;
+    if (canAttach) menu += `<button type="button" class="secondary tiny pane-attachfold-item" data-pane-attach>📎 ${escapeHtml(t("Folders and tags"))}</button>`;
+    if (host.versions) menu += `<button type="button" class="secondary tiny" data-pane-versions>🕘 ${escapeHtml(t("Versions…"))}</button>`;
     if (own) {
       menu = `<button type="button" class="secondary tiny pane-editfold-item" data-pane-edit-toggle>${escapeHtml(editLabel)}</button>` + menu;
       menu += host.menuMid?.(v, note) ?? "";
@@ -423,8 +470,7 @@ export function createNoteViews(host) {
     menuWrap.hidden = !menu.trim();
     v.el.querySelector("[data-pane-menu]").innerHTML = menu;
     v.el.querySelector("[data-pane-menu-btn]").setAttribute("aria-label", t("More"));
-    const headings = [...v.el.querySelectorAll(".note-sec")];
-    const showContents = headings.length >= 3 && (v.kind === "window" || host.paneTier() === "narrow");
+    const showContents = headings.length >= 1; // S11: on every width, in the tray and in a window
     v.el.querySelector("[data-pane-contents-wrap]").hidden = !showContents;
     v.el.querySelector("[data-pane-contents-list]").innerHTML = headings.map((sec) =>
       `<button type="button" class="secondary tiny" data-pane-jump="${sec.dataset.secIndex}" style="padding-left:${(0.6 + (Number(sec.dataset.level) - 1) * 0.8).toFixed(1)}rem">${escapeHtml(sec.dataset.headingText)}</button>`).join("");
@@ -559,6 +605,230 @@ export function createNoteViews(host) {
     }
   }
 
+  // =====================================================================
+  // READING TOOLS (S11): Find in this Note, open/close all headings, Versions,
+  // and the tags half of 📎. Find marks and the fold state are device-side
+  // display only; nothing here writes to the data layer except "Bring this
+  // version back", which goes through the page's own save path.
+  // =====================================================================
+  const findBarOf = (v) => v.el.querySelector("[data-find-bar]");
+  function clearFindMarks(v) {
+    for (const m of v.bodyEl.querySelectorAll("mark.note-find-hit")) { const p = m.parentNode; m.replaceWith(document.createTextNode(m.textContent)); p.normalize(); }
+    v.find = { marks: [], idx: -1 };
+  }
+  function paintFindCount(v) {
+    const input = findBarOf(v).querySelector("[data-find-input]");
+    const out = findBarOf(v).querySelector("[data-find-count]");
+    const n = v.find?.marks.length ?? 0;
+    out.textContent = !input.value.trim() ? "" : n ? t("{n} of {m}", { n: v.find.idx + 1, m: n }) : t("No matches");
+    for (const sel of ["[data-find-prev]", "[data-find-next]"]) findBarOf(v).querySelector(sel).disabled = n < 1;
+  }
+  function stepFind(v, to, scroll = true) {
+    const marks = v.find?.marks ?? [];
+    if (!marks.length) { paintFindCount(v); return; }
+    marks[v.find.idx]?.classList.remove("current");
+    v.find.idx = ((to % marks.length) + marks.length) % marks.length;
+    const m = marks[v.find.idx];
+    m.classList.add("current");
+    for (let sec = m.closest(".note-sec"); sec; sec = sec.parentElement?.closest(".note-sec")) { // show a hit that sits inside a folded heading, without saving the fold
+      if (sec.classList.contains("collapsed")) {
+        sec.classList.remove("collapsed");
+        const tg = sec.querySelector(":scope > .note-sec-h [data-sec-toggle]");
+        tg?.setAttribute("aria-expanded", "true");
+        const ar = tg?.querySelector(".note-sec-arrow"); if (ar) ar.textContent = "▾";
+      }
+    }
+    if (scroll) m.scrollIntoView({ block: "center" });
+    paintFindCount(v);
+  }
+  function runFind(v, { keep = false } = {}) {
+    const keepIdx = keep ? (v.find?.idx ?? 0) : 0;
+    clearFindMarks(v);
+    const q = findBarOf(v).querySelector("[data-find-input]").value.trim();
+    if (q) {
+      const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "giu");
+      const walker = document.createTreeWalker(v.bodyEl, NodeFilter.SHOW_TEXT);
+      const nodes = [];
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) if (n.data.trim()) nodes.push(n);
+      for (const node of nodes) {
+        const text = node.data;
+        const hits = [...text.matchAll(re)].filter((h) => h[0].length);
+        if (!hits.length) continue;
+        const frag = document.createDocumentFragment();
+        let at = 0;
+        for (const h of hits) {
+          if (h.index > at) frag.appendChild(document.createTextNode(text.slice(at, h.index)));
+          const mark = document.createElement("mark");
+          mark.className = "note-find-hit"; mark.textContent = h[0];
+          frag.appendChild(mark); v.find.marks.push(mark);
+          at = h.index + h[0].length;
+        }
+        if (at < text.length) frag.appendChild(document.createTextNode(text.slice(at)));
+        node.replaceWith(frag);
+      }
+    }
+    if (v.find.marks.length) stepFind(v, Math.min(keepIdx, v.find.marks.length - 1), !keep); else paintFindCount(v);
+  }
+  function openFind(v) {
+    if (v.ed) return;
+    const bar = findBarOf(v);
+    bar.hidden = false;
+    const input = bar.querySelector("[data-find-input]");
+    input.focus(); input.select();
+    runFind(v);
+  }
+  function closeFind(v, { focus = true } = {}) {
+    const bar = findBarOf(v);
+    if (bar.hidden) return;
+    clearFindMarks(v);
+    bar.hidden = true;
+    if (focus) v.el.querySelector("[data-pane-find-toggle]")?.focus();
+  }
+  /** One tap folds every heading section; when they are all folded already it opens them all. Stored the way a single fold is (per device). */
+  function foldAll(v, note) {
+    const secs = [...v.bodyEl.querySelectorAll(".note-sec")];
+    if (!secs.length) return;
+    const collapse = !secs.every((s) => s.classList.contains("collapsed"));
+    const set = new Set();
+    for (const sec of secs) {
+      sec.classList.toggle("collapsed", collapse);
+      const tg = sec.querySelector(":scope > .note-sec-h [data-sec-toggle]");
+      tg?.setAttribute("aria-expanded", String(!collapse));
+      const ar = tg?.querySelector(".note-sec-arrow"); if (ar) ar.textContent = collapse ? "▶" : "▾";
+      if (collapse) set.add(Number(sec.dataset.secIndex));
+    }
+    saveCollapsed(note.noteId, set);
+    renderPaneBar(v); fitPaneBarTwice(v);
+  }
+
+  const tsMillis = (ts) => (ts?.toMillis ? ts.toMillis() : ts?.toDate ? ts.toDate().getTime() : ts instanceof Date ? ts.getTime() : Number(ts) || 0);
+  const whenText = (ts) => { const ms = tsMillis(ts); return ms ? new Date(ms).toLocaleString(host.dateLocale?.() || undefined, { dateStyle: "medium", timeStyle: "short" }) : t("(unknown time)"); };
+  let versionsDlg = null;
+  function closeVersions() { if (versionsDlg) { versionsDlg.remove(); versionsDlg = null; } }
+  async function openVersions(v, note) {
+    closeVersions();
+    const el = document.createElement("div");
+    el.className = "tag-picker note-versions";
+    el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", t("Versions"));
+    el.innerHTML = `<div class="tag-picker-card">
+        <div class="tag-picker-head"><strong>🕘 ${escapeHtml(t("Versions"))}</strong><button type="button" class="secondary tag-picker-close" data-ver-close aria-label="${escapeHtml(t("Close"))}">✕</button></div>
+        <p class="tag-picker-msg" data-ver-msg role="alert" hidden></p>
+        <div class="note-ver-body" data-ver-body></div>
+      </div>`;
+    document.body.appendChild(el);
+    versionsDlg = el;
+    const q = (sel) => el.querySelector(sel);
+    const msg = (text) => { const m = q("[data-ver-msg]"); m.textContent = text || ""; m.hidden = !text; };
+    const close = () => { closeVersions(); };
+    el.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.stopPropagation(); close(); } });
+    let rows = [];
+    const live = () => getNote(note.noteId) ?? note;
+    const showList = () => {
+      msg("");
+      const cur = live().currentRevisionId;
+      q("[data-ver-body]").innerHTML = rows.length
+        ? `<ul class="note-ver-list">${rows.map((r, i) => `<li><button type="button" class="secondary note-ver-row" data-ver-open="${i}"><span class="note-ver-when">${escapeHtml(whenText(r.createdAt))}</span>${r.id === cur ? `<span class="note-ver-cur">${escapeHtml(t("Current"))}</span>` : ""}<span class="note-ver-title">${escapeHtml(r.title?.trim() || t("(untitled)"))}</span></button></li>`).join("")}</ul>`
+        : `<p class="note">${escapeHtml(t("This Note has no earlier versions to show."))}</p>`;
+      q("[data-ver-body] button")?.focus();
+    };
+    q("[data-ver-close]").addEventListener("click", close);
+    el.addEventListener("click", async (e) => {
+      if (e.target === el) { close(); return; }
+      const openBtn = e.target.closest("[data-ver-open]");
+      if (openBtn) {
+        const r = rows[Number(openBtn.dataset.verOpen)];
+        const isCur = r.id === live().currentRevisionId;
+        const canBack = host.canEdit() && !v.ed && !isCur && !!host.versions.restore;
+        q("[data-ver-body]").innerHTML = `<div class="note-ver-detail">
+            <p class="note-pane-meta">${escapeHtml(whenText(r.createdAt))}${isCur ? ` · ${escapeHtml(t("Current"))}` : ""}</p>
+            <h3 class="note-ver-h" data-ver-title>${escapeHtml(r.title?.trim() || t("(untitled)"))}</h3>
+            <div class="note-ver-text" data-ver-text></div>
+            <div class="note-ver-actions"><button type="button" class="secondary" data-ver-list>← ${escapeHtml(t("All versions"))}</button>${canBack ? `<button type="button" data-ver-restore="${Number(openBtn.dataset.verOpen)}">${escapeHtml(t("Bring this version back"))}</button>` : ""}</div>
+            ${host.canEdit() && v.ed && !isCur ? `<p class="note">${escapeHtml(t("Press Done on the Note first, then bring a version back."))}</p>` : ""}
+          </div>`;
+        q("[data-ver-text]").innerHTML = sanitizeNoteHtml(r.bodyHtml || "");
+        q("[data-ver-list]").focus();
+        return;
+      }
+      if (e.target.closest("[data-ver-list]")) { showList(); return; }
+      const back = e.target.closest("[data-ver-restore]");
+      if (back) {
+        const r = rows[Number(back.dataset.verRestore)];
+        const n = live();
+        back.disabled = true; msg("");
+        try {
+          const newId = await host.versions.restore(n, r);
+          Object.assign(n, { title: r.title, bodyHtml: r.bodyHtml, currentRevisionId: newId, updatedAt: { toDate: () => new Date(), toMillis: () => Date.now() } });
+          host.afterRevise(n);
+          rerenderNoteEverywhere(n.noteId);
+          close();
+          host.status(t("That version was brought back as a new version. The earlier ones are all still in the list."));
+        } catch (err) {
+          back.disabled = false;
+          msg(err?.message === "Stale Note revision." ? t("This Note changed on another device. Reload it, then try again.") : (err?.message || t("That did not save.")));
+        }
+      }
+    });
+    q("[data-ver-body]").innerHTML = `<p class="note" role="status">${escapeHtml(t("Loading versions…"))}</p>`;
+    try {
+      rows = (await host.versions.list(note)).slice().sort((a, b) => tsMillis(b.createdAt) - tsMillis(a.createdAt));
+    } catch (err) {
+      console.error("[note versions]", err);
+      q("[data-ver-body]").innerHTML = "";
+      msg(t("Could not load the versions. Try again in a moment."));
+      return;
+    }
+    if (versionsDlg === el) showList();
+  }
+
+  /** The tags half of 📎 (S11): tick/untick the owner's tags and add a new one, inside `container`. Same host.tagging calls as the 🏷 picker. */
+  function mountTags(container, noteId) {
+    const tg = host.tagging;
+    if (!tg) return null;
+    container.innerHTML = `<h3 class="at-head">🏷 ${escapeHtml(t("Tags"))}</h3>
+      <p class="note gate-note" data-at-gate role="status" hidden>${escapeHtml(t("Tags switch on once the new Firebase Rules are published."))}</p>
+      <p class="tag-picker-msg" data-at-msg role="alert" hidden></p>
+      <div class="at-list" data-at-list></div>
+      <div class="tag-picker-new"><input type="text" maxlength="100" data-at-new-name placeholder="${escapeHtml(t("New tag name"))}" aria-label="${escapeHtml(t("New tag name"))}"><button type="button" class="secondary" data-at-new>＋ ${escapeHtml(t("New tag"))}</button></div>`;
+    const q = (sel) => container.querySelector(sel);
+    const live = () => getNote(noteId);
+    const msg = (text) => { const m = q("[data-at-msg]"); m.textContent = text || ""; m.hidden = !text; };
+    const paint = () => {
+      const on = tg.ready();
+      q("[data-at-gate]").hidden = on;
+      const ids = new Set(tg.noteTagIds(live()));
+      const all = tg.tags();
+      q("[data-at-list]").innerHTML = all.length
+        ? all.map((g) => `<label class="tag-pick-row"><input type="checkbox" data-at-pick="${escapeHtml(g.id)}" ${ids.has(g.id) ? "checked" : ""} ${on ? "" : "disabled"}><span class="tag-dot" aria-hidden="true"${g.color ? ` style="background:${escapeHtml(g.color)}"` : ""}></span><span class="tag-pick-name">${escapeHtml(g.name)}</span></label>`).join("")
+        : `<p class="note">${escapeHtml(t("You have no tags yet. Type a name below to make one."))}</p>`;
+      q("[data-at-new-name]").disabled = !on; q("[data-at-new]").disabled = !on;
+    };
+    q("[data-at-list]").addEventListener("change", async (e) => {
+      const box = e.target.closest("[data-at-pick]");
+      if (!box || !tg.ready()) return;
+      msg(""); box.disabled = true;
+      try { if (box.checked) await tg.tag(live(), box.dataset.atPick); else await tg.untag(live(), box.dataset.atPick); }
+      catch (err) { msg(err?.message || t("That did not save.")); }
+      rerenderNoteEverywhere(noteId);
+      paint();
+    });
+    const create = async () => {
+      if (!tg.ready()) return;
+      const input = q("[data-at-new-name]");
+      const name = input.value.trim();
+      if (!name) { msg(t("Type a name for the tag first.")); return; }
+      msg("");
+      try { const id = await tg.create(name); input.value = ""; if (id) await tg.tag(live(), id); }
+      catch (err) { msg(err?.message || t("That did not save.")); }
+      rerenderNoteEverywhere(noteId);
+      paint();
+    };
+    q("[data-at-new]").addEventListener("click", create);
+    q("[data-at-new-name]").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); create(); } });
+    paint();
+    return { paint };
+  }
+
   function renderView(v, { keepScroll = false } = {}) {
     const note = getNote(v.noteId);
     if (!note) return;
@@ -568,7 +838,7 @@ export function createNoteViews(host) {
     v.el.querySelector("[data-pane-chips]").innerHTML = (host.chips?.(note) ?? []).map((f) =>
       `<button type="button" class="folder-chip" data-pane-chip="${escapeHtml(f.id)}">📁 ${escapeHtml(f.label)}</button>`).join("") + tagChipsHtml(note);
     // While an edit is open the editor IS the body: a re-render must never wipe the reader's typing.
-    if (!(v.ed && v.ed.noteId === note.noteId)) { showReadChrome(v, note); buildBody(v, note); }
+    if (!(v.ed && v.ed.noteId === note.noteId)) { showReadChrome(v, note); buildBody(v, note); if (!findBarOf(v).hidden) runFind(v, { keep: true }); }
     if (v.kind === "window") { v.win.querySelector(".nw-title").textContent = noteTitleOf(note); v.win.dataset.noteId = note.noteId; updateWindowSwitcher(); }
     renderPaneBar(v);
     fitPaneBarTwice(v);
@@ -608,6 +878,13 @@ export function createNoteViews(host) {
     if (on("[data-pane-next]")) { closeAllBarPalettes(null); step(v, 1); return; }
     if (on("[data-win-details]")) { const d = v.win.querySelector(".nw-details"); const open = d.classList.toggle("open"); on("[data-win-details]").setAttribute("aria-expanded", String(open)); return; }
     if (on("[data-pane-popout]")) { closeAllBarPalettes(null); popOutPane(note); return; }
+    if (on("[data-pane-find-toggle]")) { closeAllBarPalettes(null); if (findBarOf(v).hidden) openFind(v); else closeFind(v); return; }
+    if (on("[data-find-prev]")) { stepFind(v, v.find.idx - 1); return; }
+    if (on("[data-find-next]")) { stepFind(v, v.find.idx + 1); return; }
+    if (on("[data-find-close]")) { closeFind(v); return; }
+    if (on("[data-pane-foldall]")) { closeAllBarPalettes(null); foldAll(v, note); return; }
+    if (on("[data-pane-attach]")) { closeAllBarPalettes(null); host.attach?.(v, note); return; }
+    if (on("[data-pane-versions]")) { closeAllBarPalettes(null); openVersions(v, note); return; }
     if (on("[data-pane-tags]")) { closeAllBarPalettes(null); openTagPicker(note); return; }
     const chip = on("[data-pane-chip]");
     if (chip) { host.onChip?.(v, chip.dataset.paneChip); return; }
@@ -807,5 +1084,5 @@ export function createNoteViews(host) {
     openWindow(note.noteId, { order, folderId });
   }
 
-  return { paneView, windowViews, allViews, viewShowing, openPane, closePane, closeView, openWindow, endEdit, flushActiveEdit, sync, renderView, focusView, windowTier };
+  return { paneView, windowViews, allViews, viewShowing, openPane, closePane, closeView, openWindow, endEdit, flushActiveEdit, sync, renderView, focusView, windowTier, mountTags };
 }

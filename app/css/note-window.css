@@ -108,3 +108,32 @@ body.jt-dragging .note-win { user-select: none; -webkit-user-select: none; }
 .tag-pick-name { min-width: 0; overflow-wrap: anywhere; }
 .tag-picker-new { display: flex; gap: 0.4rem; align-items: center; }
 .tag-picker-new button { flex: 0 0 auto; min-height: 40px; white-space: nowrap; }
+
+/* S11 -- reading tools. The bar stays on one line: 🔍 and ⇅ fold into ⋯ first, then Edit, then 📎 (js fitPaneBar). */
+.note-pane-bar.tools-folded > .pane-tool { display: none; }
+.note-pane-bar.attach-folded > .pane-attach { display: none; }
+[data-pane-menu] .pane-toolfold-item, [data-pane-menu] .pane-attachfold-item { display: none; }
+.note-pane-bar.tools-folded [data-pane-menu] .pane-toolfold-item { display: block; }
+.note-pane-bar.attach-folded [data-pane-menu] .pane-attachfold-item { display: block; }
+.pane-tool[hidden], .pane-attach[hidden] { display: none; }
+.note-find-bar { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.3rem; margin: 0.4rem 0 0; }
+.note-find-bar[hidden] { display: none; }
+.note-find-bar > * { flex: 0 0 auto; }
+.note-find-bar > .note-find-input { flex: 1 1 0; min-width: 0; min-height: 40px; box-sizing: border-box; padding: 0.3rem 0.5rem; font: inherit; border: 1px solid #aab; border-radius: 0.4rem; color: #1F3A6E; background: #fff; }
+.note-find-count { font-size: 0.8rem; color: #444; min-width: 3.4rem; text-align: center; white-space: nowrap; }
+.note-find-bar .pane-btn { padding: 0; }
+mark.note-find-hit { background: #ffe58a; color: #222; border-radius: 2px; }
+mark.note-find-hit.current { background: #ff9f1c; outline: 2px solid #1F3A6E; }
+.note-ver-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; max-height: 55vh; overflow-y: auto; }
+.note-ver-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.5rem; width: 100%; min-height: 44px; text-align: left; box-sizing: border-box; }
+.note-ver-when { font-weight: 600; }
+.note-ver-cur { font-size: 0.75rem; border: 1px solid #1F3A6E; border-radius: 999px; padding: 0 0.4rem; }
+.note-ver-title { flex: 1 1 100%; min-width: 0; overflow-wrap: anywhere; font-size: 0.85rem; }
+.note-ver-h { margin: 0.2rem 0; overflow-wrap: anywhere; }
+.note-ver-text { max-height: 40vh; overflow: auto; overflow-wrap: anywhere; border: 1px solid #c9d3e6; border-radius: 0.4rem; padding: 0.4rem 0.6rem; background: #fafbff; }
+.note-ver-text img, .note-ver-text table { max-width: 100%; }
+.note-ver-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+.note-ver-actions button { min-height: 44px; }
+.note-versions .tag-picker-card { max-width: 32rem; }
+.at-head { margin: 0.6rem 0 0.2rem; font-size: 1rem; }
+.at-list { display: flex; flex-direction: column; max-height: 30vh; overflow-y: auto; }
