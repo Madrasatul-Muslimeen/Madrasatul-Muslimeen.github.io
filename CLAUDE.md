@@ -232,7 +232,7 @@ Read this first, every session. It is the standing brief.
   - every Explore suite green (Hizb, WbW tab, My Status, unit rings, Asma, Arabic coverage, word total); card-look-browser 96/0 (one intermittent miss, then 3/3)
   - layout.mjs: no geometry change (only the known `bmNotFound`); phone-width-overflow 217/0, palette-contrast 20/0, text-size-wbw 88/0, stub-parity 4/0
   - behaviour 1006/1 (sandbox: 31e TLS)
-  - **already red on `main`, not this round's:** quran-boundary 30/1, "feature registry retains the locked 30 Approaches"
+  - quran-boundary was red on `main` (30/1, "feature registry retains the locked 30 Approaches"): **fixed after this release, test only** (the Owner: "fix the quran-boundary test too"). The check grepped prose v08.113 had reworded on purpose once tenants could add Approaches; it now reads `APPROACH_TEMPLATES` (30, `approach_01`..`approach_30` in order, 7 sections). 33/0; an order mutation and a section mutation each fail it
 - **With the Owner:** check Explore on a computer with a short window; a folder's own window (needs a demo); the Asmaul Husna poster (on hold, decision 50).
 )
 
