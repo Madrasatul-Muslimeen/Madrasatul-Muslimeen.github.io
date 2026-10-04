@@ -214,6 +214,8 @@ async function run(lang, width, embedFrame = false) {
   await P.click(cardCopy);
   await P.waitForSelector("#folderPicker .folder-picker", { state: "visible" });
   check(`${tag}: the Note card's ▾ → Folders… opens the picker with ticks`, (await P.$$("#folderPicker [data-fp-tick]")).length >= 5);
+  const cardBox = await P.$eval("#folderPicker .folder-picker", (e) => { const r = e.getBoundingClientRect(); return r.top >= -1 && r.bottom <= innerHeight + 1 && r.left >= -1 && r.right <= innerWidth + 1; });
+  check(`${tag}: opened from a Note card, the picker is wholly on screen`, cardBox);
   await closePicker(P);
   await P.click(`#folderNotes [data-note-id="n1"] [data-note-move]`);
   await P.waitForSelector("#folderPicker .folder-picker", { state: "visible" });

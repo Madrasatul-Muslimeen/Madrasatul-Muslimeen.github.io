@@ -2373,12 +2373,13 @@
         </div>`;
         document.body.appendChild(overlay);
         const panel = overlay.querySelector(".folder-picker");
-        if (wide) {
-          const a = (anchor?.isConnected ? anchor : null) ?? (paneView.noteId !== null ? notePaneEl : folderNotesEl);
-          const r = a.getBoundingClientRect(), w = 26 * 16;
-          const left = r.left - w - 8 >= 8 ? r.left - w - 8 : Math.max(8, Math.min(r.right - w - 8, innerWidth - w - 8));
-          panel.style.left = `${left}px`;
-          panel.style.top = `${Math.max(8, Math.min(r.top, innerHeight - 200))}px`;
+        // Beside the Note (a popover, 1200px and up); level with it, but always wholly on screen: pulled up when the anchor sits low on the page. Re-run after every repaint, as the list's height changes.
+        const anchorRect = wide ? ((anchor?.isConnected ? anchor : null) ?? (paneView.noteId !== null ? notePaneEl : folderNotesEl)).getBoundingClientRect() : null;
+        function place() {
+          if (!anchorRect) return;
+          const r = anchorRect, w = 26 * 16;
+          panel.style.left = `${r.left - w - 8 >= 8 ? r.left - w - 8 : Math.max(8, Math.min(r.right - w - 8, innerWidth - w - 8))}px`;
+          panel.style.top = `${Math.max(8, Math.min(r.top, innerHeight - panel.getBoundingClientRect().height - 8))}px`;
         }
         const msgEl = overlay.querySelector("[data-picker-msg]");
         const listEl = overlay.querySelector("[data-picker-list]");
@@ -2412,6 +2413,7 @@
             html = mine.map((n) => `<li><label class="folder-picker-row fp-row" data-pick="${escapeHtml(n.noteId)}"><input type="checkbox" class="fp-tick" data-fp-tick="${escapeHtml(n.noteId)}" ${activeFilingFolderIds(n).has(targetNode.folderId) ? "checked" : ""} /><span class="folder-row-name">${escapeHtml(noteTitleOf(n))}<span class="fp-sub">${escapeHtml(t("In: {folders}", { folders: filedNames(n).join(", ") || "—" }))}</span></span></label></li>`).join("");
             if (!html) html = `<li class="note">${escapeHtml(q ? t('No folders or Notes match "{query}".', { query: searchEl.value.trim() }) : t("You have no Notes yet."))}</li>`;
             listEl.innerHTML = html;
+            place();
             return;
           }
           const rows = pickerRows().filter(({ folder }) => !q || folderDisplayName(folder).toLowerCase().includes(q));
@@ -2431,6 +2433,7 @@
           if (!html) html = `<li class="note">${escapeHtml(t('No folders or Notes match "{query}".', { query: searchEl.value.trim() }))}</li>`;
           listEl.innerHTML = html;
           updateTools();
+          place();
         }
         renderList();
         searchEl.addEventListener("input", () => { say(""); renderList(); });
