@@ -410,10 +410,14 @@ console.log("\n=== 8. PHASE 2: the Quran module in Bangla ===");
   // not the intro's been tapped yet, so its options are already Bangla.
   const centre = await page.evaluate(() => ({
     svgText: [...document.querySelectorAll("#wheelContainer svg text:not(.wheel-seg-num):not(.wheel-seg-name)")].map((t) => t.textContent.trim()).filter(Boolean),
-    hubSurah: document.getElementById("wheelHubSurahSelect")?.options[0]?.textContent,
+    // UPDATED IN PLACE, 4 Oct 2026 (decision 63): the hub's own Surah picker
+    // is gone (the centre is display only now); its mirror lives in the
+    // "Choose a Unit" palette as #wheelUnitSurahSelect, synced the same way,
+    // so the same Bangla-options fact is read from there.
+    hubSurah: document.getElementById("wheelUnitSurahSelect")?.options[0]?.textContent,
   }));
   check("8c the wheel centre draws no ayah text of its own any more", centre.svgText.length === 0, JSON.stringify(centre.svgText));
-  check("8c ...the hub's own Surah picker is Bangla with Bengali numerals instead",
+  check("8c ...the Choose a Unit Surah picker is Bangla with Bengali numerals instead",
         BANGLA.test(centre.hubSurah || "") && /[০-৯]/.test(centre.hubSurah || ""), centre.hubSurah);
 
   // The Study options panel and its three bars.
@@ -469,12 +473,12 @@ console.log("\n=== 9. PHASE 2: English is still exactly English ===");
     firstSurah: document.getElementById("surahSelect").options[0]?.textContent,
     position: document.getElementById("ayahPosition")?.textContent?.trim(),
     centreText: [...document.querySelectorAll("#wheelContainer svg text:not(.wheel-seg-num):not(.wheel-seg-name)")].map((t) => t.textContent.trim()).filter(Boolean),
-    hubSurah: document.getElementById("wheelHubSurahSelect")?.options[0]?.textContent,
+    hubSurah: document.getElementById("wheelUnitSurahSelect")?.options[0]?.textContent, // UPDATED IN PLACE, 4 Oct 2026 (decision 63): the hub picker moved into Choose a Unit
   }));
   check("9 surah picker still English with Western digits", r.firstSurah?.startsWith("1.") && !BANGLA.test(r.firstSurah), r.firstSurah);
   check("9 position readout still English", /Surah/.test(r.position || ""), r.position);
   check("9 wheel centre still draws no ayah text of its own", r.centreText.length === 0, JSON.stringify(r.centreText));
-  check("9 ...the hub's own Surah picker is still English too", r.hubSurah?.startsWith("1.") && !BANGLA.test(r.hubSurah || ""), r.hubSurah);
+  check("9 ...the Choose a Unit Surah picker is still English too", r.hubSurah?.startsWith("1.") && !BANGLA.test(r.hubSurah || ""), r.hubSurah);
   await page.close();
   await ctx.close();
 }
@@ -5423,17 +5427,24 @@ console.log("\n=== 43. The wheel's one-time intro + in-hub Surah/Ayah pickers, a
   // 22): changing one drives the canonical control, and the canonical
   // control changing keeps the hub in sync -- both directions, one source
   // of truth for what actually happens.
-  await page.selectOption("#wheelHubAyahSelect", "5");
+  // UPDATED IN PLACE, 4 Oct 2026 (decision 63): the hub's Surah/Ayah pickers
+  // moved into the "Choose a Unit" palette, which is where these mirrors are
+  // driven from now. The palette has to be opened to drive a select in it.
+  await page.click("#wheelUnitBtn");
+  await page.waitForTimeout(150);
+  await page.selectOption("#wheelUnitAyahSelect", "5");
   await page.waitForTimeout(200);
   const ayahAfter = await page.evaluate(() => document.getElementById("ayahSelect").value);
-  check("43c the hub Ayah picker really drives the canonical Ayah picker", ayahAfter === "5", ayahAfter);
+  check("43c the Choose a Unit Ayah picker really drives the canonical Ayah picker", ayahAfter === "5", ayahAfter);
+  await page.click("#wheelUnitBtn"); // close the palette again
+  await page.waitForTimeout(150);
 
   // #surahSelect lives inside the Study options panel, hidden until opened.
   await openStudyOptions(page);
   await page.selectOption("#surahSelect", "2");
   await page.waitForTimeout(300);
-  const hubSurahAfter = await page.evaluate(() => document.getElementById("wheelHubSurahSelect").value);
-  check("43d changing the canonical Surah picker keeps the hub mirror in sync", hubSurahAfter === "2", hubSurahAfter);
+  const hubSurahAfter = await page.evaluate(() => document.getElementById("wheelUnitSurahSelect").value);
+  check("43d changing the canonical Surah picker keeps the Choose a Unit mirror in sync", hubSurahAfter === "2", hubSurahAfter);
   await clickStudyOptions(page); // close the panel again -- same tap-to-close idiom every dock tab uses
   await page.waitForTimeout(150);
   // Changing surah can bring the Quran-entry splash back; openPage() only
@@ -5498,67 +5509,50 @@ console.log("\n=== 43i-o. The hub's own content: Ta'awwudh/Bismillah (both perma
   await page.click("#wheelCtaBtn");
   await page.waitForTimeout(200);
 
+  // UPDATED IN PLACE, 4 Oct 2026 (decision 63): this section described the
+  // typed Ta'awwudh/Bismillah and the Surah/Ayah pickers in the hub. The
+  // centre is a display now -- the Owner's calligraphy image, the chosen
+  // unit in two lines, the open Qur'an -- so the ORDER fact (what sits above
+  // what) is kept, read off the new elements, and the picker-width facts
+  // (43j) became "the pickers are gone from the hub; the Ayah 286 mirror in
+  // Choose a Unit still drives the canonical control". The full geometry
+  // lives in wheel-centre-browser.mjs.
   const order = await page.evaluate(() => {
     const rect = (id) => document.getElementById(id).getBoundingClientRect();
     return {
-      taawwudhTop: rect("wheelHubTaawwudh").top, bismillahTop: rect("wheelHubBismillah").top,
-      surahTop: rect("wheelHubSurahSelect").top, ayahTop: rect("wheelHubAyahSelect").top,
+      imgBottom: rect("wheelHubCalligraphy").bottom, labelTop: rect("wheelHubUnitLabel").top,
+      labelBottom: rect("wheelHubUnitLabel").bottom, graphicTop: rect("wheelHubGraphic").top,
     };
   });
-  check("43i Ta'awwudh sits above Bismillah", order.taawwudhTop < order.bismillahTop, JSON.stringify(order));
-  check("43i ...which sits above Surah", order.bismillahTop < order.surahTop, JSON.stringify(order));
-  check("43i ...which sits above Ayah, at the very bottom", order.surahTop < order.ayahTop, JSON.stringify(order));
+  check("43i the calligraphy sits above the chosen-unit label", order.imgBottom <= order.labelTop, JSON.stringify(order));
+  check("43i ...which sits above the open Qur'an, at the very bottom", order.labelBottom <= order.graphicTop, JSON.stringify(order));
+  const hubControls = await page.evaluate(() => document.querySelectorAll("#wheelHubPickers select").length);
+  check("43j the centre holds no pickers any more", hubControls === 0, String(hubControls));
 
-  // Round after v07.81 (the owner's own "the Ayah drop-down should be
-  // wider to show 3 texts clearly"): Ayah is still narrower than Surah,
-  // but the old strict "under 40% of Surah's own width" ratio was written
-  // for the earlier, deliberately three-digits-and-no-more-narrow design
-  // this round widened on purpose -- pinned to a plain "narrower than
-  // Surah" instead, which the new width still genuinely is.
-  const surahW = await page.evaluate(() => document.getElementById("wheelHubSurahSelect").getBoundingClientRect().width);
-  const ayahW = await page.evaluate(() => document.getElementById("wheelHubAyahSelect").getBoundingClientRect().width);
-  check("43j Ayah is still narrower than Surah", ayahW < surahW, `surah=${surahW} ayah=${ayahW}`);
-
-  // Picking the widest real ayah number (Surah 2 has 286) must not clip --
-  // the whole point of widening it was to show a 3-digit number clearly.
-  // `scrollWidth > clientWidth` is NOT a reliable truncation check on a
-  // native <select> with text-overflow:ellipsis -- ellipsis truncates
-  // WITHIN clientWidth by design, so scrollWidth stays equal to it even
-  // while the visible text is genuinely being cut down to "2…" (found by
-  // screenshotting the real page during this round, not by this check,
-  // which reported "not clipped" the whole time). Measuring the option
-  // text's own real rendered width against the box's real content width
-  // (via canvas, at the select's own computed font) is what actually
-  // proves it isn't truncated.
-  await page.selectOption("#wheelHubSurahSelect", "2");
+  // Picking the widest real ayah number (Surah 2 has 286) through Choose a
+  // Unit must reach the canonical control and show in the centre's label.
+  await page.click("#wheelUnitBtn");
+  await page.waitForTimeout(150);
+  await page.selectOption("#wheelUnitSurahSelect", "2");
   await page.waitForTimeout(250);
-  await page.selectOption("#wheelHubAyahSelect", "286");
+  await page.selectOption("#wheelUnitAyahSelect", "286");
   await page.waitForTimeout(250);
-  const wide = await page.evaluate(() => {
-    const el = document.getElementById("wheelHubAyahSelect");
-    const cs = getComputedStyle(el);
-    const c2d = document.createElement("canvas").getContext("2d");
-    c2d.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-    const textW = c2d.measureText(el.value).width;
-    const contentW = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-    // A fixed, conservative reserve for the native dropdown arrow, which
-    // CSS gives no way to measure directly.
-    return { value: el.value, clipped: textW > contentW - 14, textW, contentW, canonical: document.getElementById("ayahSelect").value };
-  });
-  check("43j ...286 (the widest real ayah number) fits without clipping", wide.value === "286" && !wide.clipped, JSON.stringify(wide));
-  check("43j ...and really drives the canonical Ayah picker too", wide.canonical === "286", wide.canonical);
+  const wide = await page.evaluate(() => ({
+    value: document.getElementById("wheelUnitAyahSelect").value,
+    canonical: document.getElementById("ayahSelect").value,
+    label: document.getElementById("wheelHubUnitLabel").textContent.replace(/\s+/g, " ").trim(),
+  }));
+  check("43j ...Ayah 286 through Choose a Unit really drives the canonical Ayah picker", wide.value === "286" && wide.canonical === "286", JSON.stringify(wide));
+  check("43j ...and the centre's label names it", /286/.test(wide.label) && /Surah 2/.test(wide.label), wide.label);
 
-  // Both Ta'awwudh and Bismillah are now PERMANENT -- "these two texts are to
-  // be permanently placed there" -- no more conditional on available room.
-  // Also: the wheel's own centre must no longer show the CHOSEN ayah's own
-  // Arabic text at all (a stray fragment of it used to show through behind/
-  // around the narrower hub overlay) -- picking 2:286, the longest ayah in
-  // the whole Qur'an, is exactly the case that used to spill past the ring.
+  // The calligraphy is the Owner's own image, permanently there -- the centre
+  // no longer carries any typed Arabic. Also: the wheel's own centre must not
+  // show the CHOSEN ayah's own Arabic text at all.
   const state = await page.evaluate(() => ({
-    taawwudhShown: !document.getElementById("wheelHubTaawwudh").hidden,
-    taawwudhText: document.getElementById("wheelHubTaawwudh").textContent,
-    bismillahShown: !document.getElementById("wheelHubBismillah").hidden,
-    bismillahText: document.getElementById("wheelHubBismillah").textContent,
+    taawwudhShown: getComputedStyle(document.getElementById("wheelHubCalligraphy")).display !== "none",
+    taawwudhText: document.getElementById("wheelHubCalligraphy").alt,
+    bismillahShown: getComputedStyle(document.getElementById("wheelHubCalligraphy")).display !== "none",
+    bismillahText: document.getElementById("wheelHubCalligraphy").alt,
     // .wheel-seg-num is the ring's own per-slice number labels (1, 2, 3…) --
     // real, unrelated text this check must not trip on; only the centre's
     // own text element(s) (centerArabic/centerRef) carry no class at all.
@@ -5568,8 +5562,8 @@ console.log("\n=== 43i-o. The hub's own content: Ta'awwudh/Bismillah (both perma
     // names as centre text).
     centerTexts: [...document.querySelectorAll("#wheelContainer svg text:not(.wheel-seg-num):not(.wheel-seg-name)")].map((t) => t.textContent.trim()).filter(Boolean),
   }));
-  check("43k Ta'awwudh is shown, even with the longest ayah in the Qur'an selected", state.taawwudhShown && state.taawwudhText.includes("أَعُوذُ"), JSON.stringify(state));
-  check("43k ...and so is Bismillah, permanently, not conditionally", state.bismillahShown && state.bismillahText.includes("بِسْمِ"), JSON.stringify(state));
+  check("43k the calligraphy (Ta'awwudh) is shown, even with the longest ayah in the Qur'an selected", state.taawwudhShown && state.taawwudhText.includes("أَعُوذُ"), JSON.stringify(state));
+  check("43k ...and it carries the Bismillah too, permanently, not conditionally", state.bismillahShown && state.bismillahText.includes("بِسْمِ"), JSON.stringify(state));
   check("43k the wheel's own centre draws no ayah text of its own any more", state.centerTexts.length === 0, JSON.stringify(state.centerTexts));
 
   // Nothing here -- select or Arabic line -- may spill past the wheel's own
@@ -5582,10 +5576,20 @@ console.log("\n=== 43i-o. The hub's own content: Ta'awwudh/Bismillah (both perma
     const size = svg.viewBox.baseVal.width;
     const hubRadius = svgRect.width * ((size / 2 - 4) / size) / 2;
     const cx = svgRect.left + svgRect.width / 2, cy = svgRect.top + svgRect.height / 2;
-    const hub = document.getElementById("wheelHubPickers").getBoundingClientRect();
-    const corners = [[hub.left, hub.top], [hub.right, hub.top], [hub.left, hub.bottom], [hub.right, hub.bottom]];
-    const maxDist = Math.max(...corners.map(([x, y]) => Math.hypot(x - cx, y - cy)));
-    return { maxDist, hubRadius, fits: maxDist <= hubRadius + 2 };
+    // UPDATED IN PLACE, 4 Oct 2026 (decision 63): #wheelHubPickers is now the
+    // SQUARE box laid exactly on the hub circle (its corners are outside the
+    // circle by construction), so "inside the circle" is asserted on what is
+    // drawn in it: the chosen-unit label's corners, the open Qur'an's bottom
+    // edge, and the box being centred on the wheel. The image's own geometry is
+    // in wheel-centre-browser.mjs.
+    const labelRect = document.getElementById("wheelHubUnitLabel").getBoundingClientRect();
+    const gr = document.getElementById("wheelHubGraphic").getBoundingClientRect();
+    const pts = [[labelRect.left, labelRect.top], [labelRect.right, labelRect.top], [labelRect.left, labelRect.bottom], [labelRect.right, labelRect.bottom],
+                 [gr.left + gr.width / 2, gr.bottom]];
+    const maxDist = Math.max(...pts.map(([x, y]) => Math.hypot(x - cx, y - cy)));
+    const box = document.getElementById("wheelHubPickers").getBoundingClientRect();
+    const off = Math.hypot(box.left + box.width / 2 - cx, box.top + box.height / 2 - cy);
+    return { maxDist, hubRadius, off, fits: maxDist <= hubRadius + 2 && off <= 3 };
   });
   check("43l the hub's own content stays inside the wheel's hub circle, off the slices", fit.fits, JSON.stringify(fit));
 
