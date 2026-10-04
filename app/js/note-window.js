@@ -109,6 +109,7 @@ const noteTitleOf = (note) => note.title?.trim() || t("(untitled)");
  *   menuMid(v, note)   extra ⋯ items for the Note's owner, HTML
  *   menuEnd(v, note)   extra ⋯ items at the end, HTML
  *   onMenu(v, note, on)  handle a click on one of those items; true when handled
+ *   onEditStart?(v, note) / onEditDone?(v, note)  S10: an edit opens / Done was pressed (the page writes what it staged)
  *   newNote?()         S8: when given, the pane bar shows a ✚ (the owner only) that calls it
  *   orderFrom(el), folderFrom(el)   the ‹ › order / folder of the row a Note was opened from
  *   paneTier(), paneApply(), scroller()   the inline pane's layout (pane only)
@@ -590,8 +591,9 @@ export function createNoteViews(host) {
     if (!note) return;
     if (on("[data-pane-edit-toggle]")) {
       closeAllBarPalettes(null);
-      if (!v.ed) { if (host.canEdit()) startEdit(v, note); return; }
+      if (!v.ed) { if (host.canEdit()) { host.onEditStart?.(v, note); startEdit(v, note); } return; }
       const done = await endEdit(v);
+      await host.onEditDone?.(v, note); // S10: ticks staged in the folder picker are written now, with the edit
       renderView(v, { keepScroll: true });
       if (done?.conflict) await host.refresh(); // show what the other device wrote; the draft is offered back
       return;
