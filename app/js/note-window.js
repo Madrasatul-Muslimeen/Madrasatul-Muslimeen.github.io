@@ -699,7 +699,7 @@ export function createNoteViews(host) {
   function fitPaneBarTwice(v) { fitPaneBar(v); requestAnimationFrame(() => fitPaneBar(v)); }
   window.addEventListener("resize", () => {
     if (notePane) host.paneApply();
-    for (const v of allViews()) if (v.noteId !== null) { if (v.kind === "window") applyWindowGeometry(v); renderPaneBar(v); fitPaneBarTwice(v); fitEditToolbar(v); }
+    for (const v of allViews()) if (v.noteId !== null) { if (v.kind === "window") applyWindowGeometry(v); renderPaneBar(v); fitPaneBarTwice(v); }
     updateWindowSwitcher();
   });
 
