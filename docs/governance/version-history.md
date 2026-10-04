@@ -712,3 +712,4 @@ total). Allocated by the MMSA Architect.
 09.66: first screen B and the light from the Qur'an (decisions 65, 67, #549). Allocated by the MMSA Architect.
 09.67: Mapping My Journey menus, drag onto a folder, deep nesting (S9, decision 66, #555). Allocated by the MMSA Architect.
 09.68: the folder picker with tick boxes (S10, decision 66, #557). Allocated by the MMSA Architect.
+09.69: Mapping My Journey reading tools (S11, decision 66, #559). Allocated by the MMSA Architect.

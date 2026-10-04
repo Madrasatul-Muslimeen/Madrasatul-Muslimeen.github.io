@@ -177,7 +177,8 @@ for (const lang of ["en", "bn"]) {
       const mm = await barMetrics(page);
       check(`${tag}: the header row is still one line after jumping`, mm.h <= mm.menuH + 2 && mm.sw <= mm.cw + 1, JSON.stringify(mm));
     } else {
-      check(`${tag}: ☰ Contents is NOT shown at the wide tier`, !(await vis(page, "[data-pane-contents-btn]")));
+      // S11 (decision 66): Contents is on every width, so this check, which asserted it was ABSENT here, now asserts it is present.
+      check(`${tag}: ☰ Contents is shown at the wide tier too (S11: every width)`, await vis(page, "[data-pane-contents-btn]"));
     }
 
     // ---- The ⋯ menu: topmost, inside the viewport -----------------------------------------
@@ -206,7 +207,8 @@ for (const lang of ["en", "bn"]) {
     await step(page, "next"); await step(page, "next");
     check(`${tag}: › walks on to the last Note`, (await paneTitle(page)) === "Note Three");
     check(`${tag}: › is disabled at the end of the folder`, await stepDisabled(page, "next"));
-    check(`${tag}: a 2-heading Note has no ☰ Contents`, !(await vis(page, "[data-pane-contents-btn]")));
+    // S11: one heading is enough for ☰ Contents (it used to need three), so the old "no Contents" assertion now asserts the opposite.
+    check(`${tag}: a 2-heading Note has ☰ Contents too (S11: one heading is enough)`, await vis(page, "[data-pane-contents-btn]"));
 
     // ---- Copy to… / Move to… from the pane ------------------------------------------------------
     await resetWrites(page);

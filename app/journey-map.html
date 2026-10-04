@@ -164,6 +164,7 @@
   .fp-note-hit { border: 1px dashed #bbb; border-radius: 0.4rem; padding: 0.4rem 0.6rem; margin: 0 0 0.25rem; overflow-wrap: anywhere; font-size: 0.9rem; }
   .fp-sub { display: block; font-size: 0.78rem; color: #555; font-weight: 400; overflow-wrap: anywhere; }
   .fp-head { margin: 0.2rem 0; font-size: 0.85rem; color: #555; }
+  .fp-tags { flex: 0 0 auto; max-height: 34vh; overflow-y: auto; border-top: 1px solid #ddd; padding-top: 0.3rem; }
   @media (max-width: 600px) {
     .folder-picker-overlay.fp-sheet .folder-picker { height: auto; max-height: 88vh; border-radius: 0.8rem 0.8rem 0 0; }
   }
@@ -432,7 +433,7 @@
     import { sanitizeNoteHtml } from "./js/note-sanitize.js";
     import { closeAllBarPalettes } from "./js/bar-palette.js";
     import { createNoteViews } from "./js/note-window.js";
-    import { NOTE_STATUS, createNoteFolder, createNotePlacement, createPermanentNote, restoreNote, retirePermanentNote, updatePermanentNoteContent } from "./js/note-foundation.js";
+    import { NOTE_STATUS, createNoteFolder, createNotePlacement, createPermanentNote, listNoteRevisions, restoreNote, retirePermanentNote, updatePermanentNoteContent } from "./js/note-foundation.js";
     import {
       ownerFolderTreePagedSharded, folderContents,
       renameFolder, reorderFolder, moveFolder, reorderFiling,
@@ -1249,6 +1250,15 @@
         .map((f) => ({ id: f.folderId, label: folderDisplayName(f) })),
       onChip: revealFolderFromChip,
       newNote: () => newNoteHere(),
+      attach: (v, note) => { copyNoteTo(note, null, { editing: !!v.ed, anchor: v.el, withTags: true }); },
+      versions: {
+        list: (note) => listNoteRevisions(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, noteId: note.noteId }),
+        // "Bring this version back" is a NEW revision through the same save as an edit (never an overwrite or a delete).
+        restore: (note, rev) => updatePermanentNoteContent(db, {
+          tenantId: activeTenantId, noteId: note.noteId, expectedRevisionId: note.currentRevisionId, title: rev.title, bodyHtml: rev.bodyHtml,
+          revisionReason: "version-restore", actorUid: auth.currentUser.uid,
+        }),
+      },
       menuMid: (v, note) => {
         const fromId = paneFromFolderId(v, note);
         return `<button type="button" class="secondary tiny" data-pane-copy>${escapeHtml(t("Folders…"))}</button>
@@ -2343,7 +2353,7 @@
      * Inside: search (folders and Notes), ＋ New folder (in the highlighted folder), Rename, Move to Trash.
      * A sheet from the bottom up to 1199px; a popover beside the Note from 1200px.
      */
-    function openFilingPicker({ mode, note = null, fromNode = null, targetNode = null, staged = null, anchor = null }) {
+    function openFilingPicker({ mode, note = null, fromNode = null, targetNode = null, staged = null, anchor = null, withTags = false }) {
       return new Promise((resolve) => {
         document.getElementById("folderPicker")?.remove();
         const wide = window.matchMedia("(min-width: 1200px)").matches;
@@ -2352,7 +2362,7 @@
         overlay.className = `folder-picker-overlay ${wide ? "fp-pop" : "fp-sheet"}`;
         const title = mode === "notes" ? t('Notes filed in "{name}"', { name: folderDisplayName(targetNode) })
           : mode === "move" ? t('Move "{title}" to…', { title: noteTitleOf(note) })
-            : t('Folders for "{title}"', { title: noteTitleOf(note) });
+            : withTags ? t('Folders and tags for "{title}"', { title: noteTitleOf(note) }) : t('Folders for "{title}"', { title: noteTitleOf(note) });
         const hint = mode === "notes" ? t("Tick a Note to file it in this folder; untick to take it out.")
           : mode === "move" ? "" : (staged ? t("Tick the folders this Note belongs in. They are saved when you press Done on the Note.") : t("Tick a folder to file this Note there; untick to take it out. Each change is saved at once."));
         const tree = mode !== "notes";
@@ -2369,6 +2379,7 @@
           <form class="fp-form" data-fp-form hidden><input type="text" data-fp-input aria-label="${escapeHtml(t("Folder name"))}" placeholder="${escapeHtml(t("Folder name"))}" /><button type="submit" data-fp-go>${escapeHtml(t("Create"))}</button><button type="button" class="secondary" data-fp-formcancel>${escapeHtml(t("Cancel"))}</button></form>` : ""}
           <p class="warn folder-picker-msg" data-picker-msg role="alert" style="display:none;"></p>
           <ul class="folder-picker-list" data-picker-list></ul>
+          ${withTags && mode === "ticks" ? '<div class="fp-tags" data-fp-tags></div>' : ""}
           <div class="folder-picker-actions">${staged ? `<button type="button" class="secondary" data-picker-cancel>${escapeHtml(t("Cancel"))}</button> <button type="button" data-picker-ok>${escapeHtml(t("Use these folders"))}</button>` : `<button type="button" class="secondary" data-picker-cancel>${escapeHtml(mode === "move" ? t("Cancel") : t("Done"))}</button>`}</div>
         </div>`;
         document.body.appendChild(overlay);
@@ -2436,6 +2447,8 @@
           place();
         }
         renderList();
+        const tagsHost = overlay.querySelector("[data-fp-tags]");
+        if (tagsHost && note) noteViews.mountTags(tagsHost, note.noteId); // S11: the Note's tags, in the same sheet
         searchEl.addEventListener("input", () => { say(""); renderList(); });
         listEl.addEventListener("click", (e) => {
           const row = e.target.closest("[data-pick]");
@@ -2537,16 +2550,16 @@
     }
 
     /** Folders… (was Copy to…): the tick picker. While the Note is being edited the ticks are staged and saved on Done. */
-    async function copyNoteTo(note, _fromNode, { editing = false, anchor = null } = {}) {
+    async function copyNoteTo(note, _fromNode, { editing = false, anchor = null, withTags = false } = {}) {
       if (editing) {
         const staged = stagedFilings.get(note.noteId) ?? noteFolderKeys(liveNote(note));
-        const result = await openFilingPicker({ mode: "ticks", note, staged: new Set(staged), anchor });
+        const result = await openFilingPicker({ mode: "ticks", note, staged: new Set(staged), anchor, withTags });
         if (!result) return;
         stagedFilings.set(note.noteId, result);
         showPageStatus(t("Folder changes will be saved when you press Done."));
         return;
       }
-      await openFilingPicker({ mode: "ticks", note, anchor });
+      await openFilingPicker({ mode: "ticks", note, anchor, withTags });
     }
 
     async function moveNoteTo(note, fromNode, { anchor = null } = {}) {
