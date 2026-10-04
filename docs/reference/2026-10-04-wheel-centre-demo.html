@@ -77,6 +77,26 @@ body { background: var(--page); color: var(--ink); font-family: var(--font-ui); 
 .hub .reserve { position: absolute; left: 27%; right: 27%; bottom: 5%; height: var(--res, 18%); border: 1px dashed rgba(201,162,75,.35); border-radius: 50% 50% 46% 46% / 30% 30% 70% 70%; display: grid; place-items: center; font: 600 9px var(--font-ui); color: rgba(233,205,134,.55); text-align: center; padding: 0 6px; }
 .hub .cta { position: absolute; inset: 0; margin: auto; width: 62%; height: 34%; border-radius: 999px; border: 1px solid #a8843c; background: linear-gradient(#ecd08e, #c9a24b); color: #1a1406; font: 700 var(--cta, 15px)/1.15 var(--font-ui); cursor: pointer; display: grid; place-content: center; }
 .hub .cta small { display: block; font-size: .78em; }
+/* Choice B's first screen: a smaller Study Quran under the calligraphy. */
+.hub .cta2 { position: absolute; left: 50%; top: 49%; transform: translateX(-50%); width: 60%; min-height: 15%; padding: 2% 3%; border-radius: 999px; border: 1px solid #a8843c; background: linear-gradient(#ecd08e, #c9a24b); color: #1a1406; font: 700 var(--cta2, 12px)/1.1 var(--font-ui); cursor: pointer; display: grid; place-content: center; text-align: center; box-shadow: 0 0 14px rgba(233,205,134,.35); }
+.hub .cta2 small { display: block; font-size: .72em; font-weight: 600; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+/* Exposure: how strong the light is. */
+.stage, .gallery { --light: .8; }
+[data-exposure="soft"] { --light: .4; }
+[data-exposure="bright"] { --light: 1.15; }
+.mu-light { opacity: min(1, var(--light)); }
+[data-exposure="bright"] .mu-light { filter: brightness(1.5) saturate(1.15) drop-shadow(0 0 4px rgba(255,240,190,.8)); }
+.mu-spin { transform-box: fill-box; transform-origin: center; animation: spin 40s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.mu-mote circle { animation: rise 4s ease-in infinite; opacity: 0; }
+@keyframes rise { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: .9; } 100% { transform: translateY(-62px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .mu-spin, .mu-mote circle { animation: none; } .mu-mote circle { opacity: .6; } }
+/* the comparison gallery */
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 10px; margin: 8px 0 4px; }
+.gallery button { background: #0c1320; border: 2px solid #2a3550; border-radius: 14px; padding: 8px 6px 6px; cursor: pointer; color: #f3e3b3; font: 600 .74rem var(--font-ui); display: grid; gap: 4px; justify-items: center; }
+.gallery button[aria-pressed="true"] { border-color: #e9cd86; box-shadow: 0 0 0 2px rgba(233,205,134,.35); }
+.gallery .disc { width: 128px; height: 128px; border-radius: 50%; background: #13192a; border: 2px solid #c9a24b; display: grid; place-items: center; overflow: hidden; }
+.gallery .disc svg { width: 86%; margin-top: 8%; overflow: visible; }
 
 /* Choose a Unit: opens upward from its corner, same controls as the centre */
 .pop { position: absolute; left: 8px; bottom: 48px; width: min(300px, calc(100% - 16px)); background: #f7f3e8; color: #1d2433; border-radius: 12px; padding: 10px 12px; box-shadow: 0 8px 30px rgba(0,0,0,.5); display: grid; gap: 8px; z-index: 5; }
@@ -85,6 +105,14 @@ body { background: var(--page); color: var(--ink); font-family: var(--font-ui); 
 .pop select { font: 500 .85rem var(--font-ui); padding: .3rem; border-radius: 8px; border: 1px solid #b9c0cf; background: #fff; color: #1d2433; min-width: 0; width: 100%; }
 .pop .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .pop .now { font-size: .75rem; color: #4b5568; margin: 0; }
+/* The next step after choosing: read it, or hear it. */
+.pop .go { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 2px; }
+.pop .go button { min-height: 42px; border-radius: 999px; font: 700 .9rem var(--font-ui); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.pop .go .read { background: #fff; color: #1d2433; border: 1.5px solid #a8843c; }
+.pop .go .play { background: linear-gradient(#ecd08e, #c9a24b); color: #1a1406; border: 1px solid #a8843c; }
+.pop .go svg { width: 16px; height: 16px; flex: 0 0 auto; }
+.toast { position: absolute; left: 50%; bottom: 60px; transform: translateX(-50%); background: #0c1320; color: #f3e3b3; border: 1px solid #a8843c; padding: 8px 12px; border-radius: 10px; font: 600 .8rem var(--font-ui); z-index: 9; white-space: nowrap; }
+.toast[hidden] { display: none; }
 .dock { margin: 6px 10px 0; text-align: center; font: 600 .78rem var(--font-ui); color: var(--muted); }
 </style>
 
@@ -102,6 +130,7 @@ body { background: var(--page); color: var(--ink); font-family: var(--font-ui); 
       <div class="hub" id="hub"></div>
       <button class="cap cap-unit" type="button" id="unitBtn" aria-expanded="false">Choose a Unit ▾</button>
       <button class="cap cap-kys" type="button" tabindex="-1">Know Your Status</button>
+      <div class="toast" id="toast" hidden></div>
       <div class="pop" id="pop" hidden>
         <h3>Choose a Unit</h3>
         <label>Study Unit <select id="pUnit"></select></label>
@@ -110,19 +139,22 @@ body { background: var(--page); color: var(--ink); font-family: var(--font-ui); 
         <div id="pAyahWrap"><label>Āyah <select id="pAyah"></select></label></div>
         <div class="pair" id="pRangeWrap"><label>From <select id="pFrom"></select></label><label>To <select id="pTo"></select></label></div>
         <p class="now" id="pNow"></p>
+        <div class="go">
+          <button type="button" class="read" id="pRead"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5h7a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H2z"/><path d="M22 5h-7a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h8z"/></svg>Read</button>
+          <button type="button" class="play" id="pPlay"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg>Play</button>
+        </div>
       </div>
     </div>
     <div class="dock" id="dock"></div>
   </div>
 
   <div class="notes">
-    <h1>The wheel's centre, version 2</h1>
-    <p>As you asked on the first demo:</p>
+    <h1>The wheel's centre: first screen and the Qur'an's light</h1>
     <ol>
-      <li><b>Your calligraphy</b>: the Audhubillah arc and the Bismillah are taken from the image you sent, placed in the same proportion to the gold ring as in your circle.</li>
-      <li>The centre <b>only shows what is chosen</b> (for example <b>Page 257</b>, and which surah it starts in), as the capsule did. There are no pickers in the centre.</li>
-      <li>At the bottom of the centre, an <b>open Qur'an on its stand</b>, with light rising from its pages.</li>
-      <li>The choosing is done with <b>Choose a Unit</b> (bottom left). It now has the full set, the same as Study options: Study Unit, Surah, then Āyah, From–To, or the Page/Juz/Hizb/Ruku' number. Today it has no Surah choice.</li>
+      <li><b>First screen (your choice B):</b> your calligraphy shows from the start. A smaller <b>Study Quran</b> sits where the unit's name goes, with the open Qur'an below it. Tap it to see the centre after Study Quran.</li>
+      <li><b>The Qur'an's light:</b> five designs on the same open muṣḥaf. Tap one in the gallery to see it in the wheel.</li>
+      <li><b>Exposure:</b> how strong the light is, from Soft to Bright.</li>
+      <li><b>Choose a Unit</b> keeps Read and Play at the bottom (being built now).</li>
     </ol>
     <div class="ctl" role="group" aria-label="Phone width">
       <span>Screen width:</span>
@@ -133,8 +165,16 @@ body { background: var(--page); color: var(--ink); font-family: var(--font-ui); 
     </div>
     <div class="ctl" role="group" aria-label="Centre state">
       <span>Centre:</span>
-      <button type="button" id="showBefore">Before the tap</button>
-      <button type="button" id="showAfter" aria-pressed="true">After the tap</button>
+      <button type="button" id="showBefore" aria-pressed="true">First screen (B)</button>
+      <button type="button" id="showAfter">After Study Quran</button>
+    </div>
+    <h2 class="gal-h" style="font:700 .95rem var(--font-ui);margin:14px 0 2px">The Qur'an's light: pick one</h2>
+    <div class="gallery" id="gallery"></div>
+    <div class="ctl" role="group" aria-label="Exposure">
+      <span>Exposure:</span>
+      <button type="button" data-exp="soft">Soft</button>
+      <button type="button" data-exp="medium">Medium</button>
+      <button type="button" data-exp="bright" aria-pressed="true">Bright</button>
     </div>
     <p>Try it: open <b>Choose a Unit</b>, pick <b>Range of Ayahs</b>, then <b>Page</b>, and watch the centre follow. Picking a page moves the surah to it, and picking a surah moves the page.</p>
     <p>The wheel's names and the Qur'an's surah, page, juz, hizb and ruku' counts are the app's own.</p>
@@ -147,7 +187,7 @@ const TAAWWUDH = "أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَ�
 const NAMES = ["Reading Tajweed","Reading Meaning","Word by Word","Hifz","Grammar","Arabic Writing","Listen Arabic","Listening Meaning","Ruqyah","Dua Memorising","Stories","Calligraphy","Numbers in the Q…","Journaling / Not…","Observation","Common Sense","Deriving Dua","Names of Allah","Miracles","Knowing Prophets","Tafakkur","Tadabbur","Tafaqquh","Dhikr","Fiqh to Ruling","Judgment","Authority","SAHABA","Tabe'i Tabe'in","Gen - 500 AH","Gen 1000 AH","Maliqi Madhab","Hanbali Madhab","Hanafi Madhab","Shafe'i Madhab","MISC. Groups","Discussion","Living by it","Da'wah","Teaching"];
 const UNITS = [["ayah","Single Ayah"],["range","Range of Ayahs"],["surah","Whole Surah"],["ruku","Ruku'"],["juz","Juz"],["hizb","Hizb"],["page","Page"]];
 const NUM_LABEL = { ruku: "Ruku' №", juz: "Juz №", hizb: "Hizb №", page: "Page №" };
-const S = { unit: "page", surah: 14, ayah: 11, from: 11, to: 15, num: 257, before: false }; // Page 257 starts at Ibrahim 14:11
+const S = { unit: "page", surah: 14, ayah: 11, from: 11, to: 15, num: 257, before: true, light: "rays", exposure: "bright" }; // Page 257 starts at Ibrahim 14:11
 
 // ---- the wheel, drawn to the app's proportions --------------------------
 const R1 = 182, R0 = 89, C = 200; // as the app: slices from half the outer radius (91) to the outer (182), numbers outside, the centre disc inside
@@ -240,19 +280,22 @@ function placeHub() {
   hub.style.setProperty("--gap2", (d * 0.06).toFixed(1) + "px");
   hub.style.setProperty("--chosen-top", (d * 0.51).toFixed(1) + "px");
   hub.style.setProperty("--cta", Math.max(12, d * 0.085).toFixed(1) + "px");
+  hub.style.setProperty("--cta2", Math.max(10.5, d * 0.066).toFixed(1) + "px");
   hub.dataset.d = d;
 }
 function renderHub() {
   const hub = document.getElementById("hub"), d = Number(hub.dataset.d || 170);
-  document.getElementById("taText").style.display = S.before ? "none" : "";
   if (S.before) {
-    hub.innerHTML = `<button type="button" class="cta" id="cta">Study Quran<small>${label()}</small></button>`;
+    // Choice B (4 Oct): the calligraphy shows from the start; a smaller
+    // Study Quran sits where the unit's name will go, and the Qur'an stays.
+    hub.innerHTML = `<button type="button" class="cta2" id="cta">Study Quran<small>${shown()[1] && S.unit !== "surah" ? shown()[0] + " · " + D.surahs[S.surah - 1][0] : D.surahs[S.surah - 1][0]}</small></button>
+      <div class="mushaf" aria-hidden="true">${mushafSvg(S.light)}</div>`;
     document.getElementById("cta").onclick = () => { S.before = false; syncToggles(); render(); };
     return;
   }
   const [line1, line2] = shown();
   hub.innerHTML = `<div class="chosen"><b>${line1}</b>${line2 ? `<span>${line2}</span>` : ""}</div>
-    <div class="mushaf" aria-hidden="true">${MUSHAF_SVG}</div>`;
+    <div class="mushaf" aria-hidden="true">${mushafSvg(S.light)}</div>`;
 }
 /** What the centre shows: the unit chosen, in two short lines. */
 function shown() {
@@ -264,23 +307,19 @@ function shown() {
   const word = S.unit === "page" ? "Page" : S.unit === "juz" ? "Juz" : "Hizb";
   return [`${word} ${S.num}`, `from Surah ${S.surah} · ${name}`];
 }
-// An open Qur'an on its stand (rehal), light rising from its pages.
-const MUSHAF_SVG = `<svg viewBox="0 -14 200 124" xmlns="http://www.w3.org/2000/svg">
-  <defs>
+// An open Qur'an on its stand (rehal). Five ways for its light to fall (the Owner chooses).
+const MUSHAF_DEFS = `<defs>
     <radialGradient id="mGlow" cx="50%" cy="60%" r="50%"><stop offset="0" stop-color="#fff8e1" stop-opacity=".9"/><stop offset=".3" stop-color="#f6dd99" stop-opacity=".45"/><stop offset=".7" stop-color="#c9a24b" stop-opacity=".12"/><stop offset="1" stop-color="#c9a24b" stop-opacity="0"/></radialGradient>
     <linearGradient id="mRay" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#fff4cc" stop-opacity=".85"/><stop offset=".6" stop-color="#f0d38b" stop-opacity=".25"/><stop offset="1" stop-color="#e9cd86" stop-opacity="0"/></linearGradient>
     <linearGradient id="mPageL" x1="0" x2="1"><stop offset="0" stop-color="#efe3c2"/><stop offset=".7" stop-color="#fdf8ea"/><stop offset="1" stop-color="#d8c69a"/></linearGradient>
     <linearGradient id="mPageR" x1="1" x2="0"><stop offset="0" stop-color="#efe3c2"/><stop offset=".7" stop-color="#fdf8ea"/><stop offset="1" stop-color="#d8c69a"/></linearGradient>
     <linearGradient id="mGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6e2a4"/><stop offset="1" stop-color="#b2873a"/></linearGradient>
     <linearGradient id="mWood" x1="0" x2="1"><stop offset="0" stop-color="#5a3518"/><stop offset=".5" stop-color="#9a6332"/><stop offset="1" stop-color="#5a3518"/></linearGradient>
-  </defs>
-  <ellipse class="mu-glow" cx="100" cy="58" rx="96" ry="56" fill="url(#mGlow)"/>
-  <g class="mu-rays" fill="url(#mRay)"><polygon points="99.2,60 100.8,60 35.1,28.9 33.4,32.6" opacity="0.40"/><polygon points="99.2,60 100.8,60 53.1,25.8 51.9,27.7" opacity="0.50"/><polygon points="99.2,60 100.8,60 51.5,6.8 48.6,9.6" opacity="0.60"/><polygon points="99.2,60 100.8,60 69.4,10.8 67.5,12.0" opacity="0.70"/><polygon points="99.2,60 100.8,60 74.9,-7.5 71.2,-6.0" opacity="0.80"/><polygon points="99.2,60 100.8,60 90.0,2.9 87.8,3.3" opacity="0.90"/><polygon points="99.2,60 100.8,60 102.0,-12.0 98.0,-12.0" opacity="1.00"/><polygon points="99.2,60 100.8,60 112.2,3.3 110.0,2.9" opacity="0.90"/><polygon points="99.2,60 100.8,60 128.8,-6.0 125.1,-7.5" opacity="0.80"/><polygon points="99.2,60 100.8,60 132.5,12.0 130.6,10.8" opacity="0.70"/><polygon points="99.2,60 100.8,60 151.4,9.6 148.5,6.8" opacity="0.60"/><polygon points="99.2,60 100.8,60 148.1,27.7 146.9,25.8" opacity="0.50"/><polygon points="99.2,60 100.8,60 166.6,32.6 164.9,28.9" opacity="0.40"/></g>
-  <g class="mu-spark" fill="#fff6d8">
-    <path d="M50 24 l1.2 3 3 1.2 -3 1.2 -1.2 3 -1.2 -3 -3 -1.2 3 -1.2z"/>
-    <path d="M150 22 l1 2.4 2.4 1 -2.4 1 -1 2.4 -1 -2.4 -2.4 -1 2.4 -1z" style="animation-delay:1.3s"/>
-  </g>
-  <!-- the stand (rehal): two carved leaves crossing under the spine -->
+  <linearGradient id="mBeam" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#fff6d6" stop-opacity=".95"/><stop offset=".45" stop-color="#f3d892" stop-opacity=".45"/><stop offset="1" stop-color="#e9cd86" stop-opacity="0"/></linearGradient>
+    <radialGradient id="mHalo" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff8e1" stop-opacity=".95"/><stop offset=".45" stop-color="#f3d892" stop-opacity=".5"/><stop offset=".8" stop-color="#c9a24b" stop-opacity=".15"/><stop offset="1" stop-color="#c9a24b" stop-opacity="0"/></radialGradient>
+    <radialGradient id="mPageGlow" cx="50%" cy="40%" r="55%"><stop offset="0" stop-color="#fffbe9" stop-opacity=".95"/><stop offset=".6" stop-color="#fff1c4" stop-opacity=".35"/><stop offset="1" stop-color="#fff1c4" stop-opacity="0"/></radialGradient>
+  </defs>`;
+const MUSHAF_BOOK = `  <!-- the stand (rehal): two carved leaves crossing under the spine -->
   <path d="M70 108 L100 80 L106 86 L80 110 Z" fill="url(#mWood)" stroke="#3e2410" stroke-width=".6"/>
   <path d="M130 108 L100 80 L94 86 L120 110 Z" fill="url(#mWood)" stroke="#3e2410" stroke-width=".6"/>
   <circle cx="100" cy="86" r="2.4" fill="#c9a24b"/>
@@ -298,7 +337,23 @@ const MUSHAF_SVG = `<svg viewBox="0 -14 200 124" xmlns="http://www.w3.org/2000/s
   <g transform="rotate(7 134 55)"><ellipse cx="134" cy="55" rx="13" ry="3.4" fill="url(#mGold)"/><ellipse cx="134" cy="55" rx="9" ry="1.8" fill="#1d4b3c"/></g>
   <g stroke="#8a6a35" stroke-width=".55" stroke-dasharray="3 1.4 6 1.4 2 1.4" fill="none" opacity=".75" transform="translate(0 4)"><path d="M45 60.0 C 62 56.0, 80 58.0, 93 66.0"/><path d="M155 60.0 C 138 56.0, 120 58.0, 107 66.0"/><path d="M45 66.2 C 62 62.2, 80 64.2, 93 72.2"/><path d="M155 66.2 C 138 62.2, 120 64.2, 107 72.2"/><path d="M45 72.4 C 62 68.4, 80 70.4, 93 78.4"/><path d="M155 72.4 C 138 68.4, 120 70.4, 107 78.4"/><path d="M45 78.6 C 62 74.6, 80 76.6, 93 84.6"/><path d="M155 78.6 C 138 74.6, 120 76.6, 107 84.6"/><path d="M45 84.8 C 62 80.8, 80 82.8, 93 90.8"/><path d="M155 84.8 C 138 80.8, 120 82.8, 107 90.8"/></g>
   <path d="M100 60 L100 96" stroke="#bfa06a" stroke-width=".8"/>
-</svg>`;
+`;
+const MUSHAF_LIGHT = {"rays": "  <ellipse class=\"mu-glow\" cx=\"100\" cy=\"58\" rx=\"96\" ry=\"56\" fill=\"url(#mGlow)\"/>\n  <g class=\"mu-rays\" fill=\"url(#mRay)\"><polygon points=\"99.2,60 100.8,60 35.1,28.9 33.4,32.6\" opacity=\"0.40\"/><polygon points=\"99.2,60 100.8,60 53.1,25.8 51.9,27.7\" opacity=\"0.50\"/><polygon points=\"99.2,60 100.8,60 51.5,6.8 48.6,9.6\" opacity=\"0.60\"/><polygon points=\"99.2,60 100.8,60 69.4,10.8 67.5,12.0\" opacity=\"0.70\"/><polygon points=\"99.2,60 100.8,60 74.9,-7.5 71.2,-6.0\" opacity=\"0.80\"/><polygon points=\"99.2,60 100.8,60 90.0,2.9 87.8,3.3\" opacity=\"0.90\"/><polygon points=\"99.2,60 100.8,60 102.0,-12.0 98.0,-12.0\" opacity=\"1.00\"/><polygon points=\"99.2,60 100.8,60 112.2,3.3 110.0,2.9\" opacity=\"0.90\"/><polygon points=\"99.2,60 100.8,60 128.8,-6.0 125.1,-7.5\" opacity=\"0.80\"/><polygon points=\"99.2,60 100.8,60 132.5,12.0 130.6,10.8\" opacity=\"0.70\"/><polygon points=\"99.2,60 100.8,60 151.4,9.6 148.5,6.8\" opacity=\"0.60\"/><polygon points=\"99.2,60 100.8,60 148.1,27.7 146.9,25.8\" opacity=\"0.50\"/><polygon points=\"99.2,60 100.8,60 166.6,32.6 164.9,28.9\" opacity=\"0.40\"/></g>\n  <g class=\"mu-spark\" fill=\"#fff6d8\"><path d=\"M50 24 l1.2 3 3 1.2 -3 1.2 -1.2 3 -1.2 -3 -3 -1.2 3 -1.2z\"/><path d=\"M150 22 l1 2.4 2.4 1 -2.4 1 -1 2.4 -1 -2.4 -2.4 -1 2.4 -1z\" style=\"animation-delay:1.3s\"/><path d=\"M68 4 l1.1 2.7 2.7 1.1 -2.7 1.1 -1.1 2.7 -1.1 -2.7 -2.7 -1.1 2.7 -1.1z\" style=\"animation-delay:.6s\"/><path d=\"M134 2 l1.2 3 3 1.2 -3 1.2 -1.2 3 -1.2 -3 -3 -1.2 3 -1.2z\" style=\"animation-delay:2.1s\"/></g>\n", "column": "  <ellipse class=\"mu-glow\" cx=\"100\" cy=\"60\" rx=\"70\" ry=\"34\" fill=\"url(#mGlow)\"/>\n  <path class=\"mu-rays\" d=\"M84 60 L116 60 L150 -14 L50 -14 Z\" fill=\"url(#mBeam)\"/>\n  <path class=\"mu-rays\" d=\"M94 60 L106 60 L114 -14 L86 -14 Z\" fill=\"url(#mBeam)\"/>\n  <g class=\"mu-mote\" fill=\"#fff6d8\"><circle cx=\"88\" cy=\"58\" r=\"1.1\" style=\"animation-delay:0s\"/><circle cx=\"97\" cy=\"58\" r=\"0.8\" style=\"animation-delay:1.2s\"/><circle cx=\"104\" cy=\"58\" r=\"1.2\" style=\"animation-delay:0.6s\"/><circle cx=\"112\" cy=\"58\" r=\"0.9\" style=\"animation-delay:2.0s\"/><circle cx=\"93\" cy=\"58\" r=\"0.7\" style=\"animation-delay:2.6s\"/><circle cx=\"108\" cy=\"58\" r=\"0.8\" style=\"animation-delay:3.2s\"/></g>\n", "halo": "  <circle class=\"mu-glow\" cx=\"100\" cy=\"34\" r=\"48\" fill=\"url(#mHalo)\"/>\n  <g class=\"mu-spin\" stroke=\"#f3d892\" stroke-width=\"1.2\" stroke-linecap=\"round\" opacity=\".85\"><line x1=\"100.0\" y1=\"-2.0\" x2=\"100.0\" y2=\"-13.0\"/><line x1=\"109.3\" y1=\"-0.8\" x2=\"110.9\" y2=\"-6.6\"/><line x1=\"118.0\" y1=\"2.8\" x2=\"123.5\" y2=\"-6.7\"/><line x1=\"125.5\" y1=\"8.5\" x2=\"129.7\" y2=\"4.3\"/><line x1=\"131.2\" y1=\"16.0\" x2=\"140.7\" y2=\"10.5\"/><line x1=\"134.8\" y1=\"24.7\" x2=\"140.6\" y2=\"23.1\"/><line x1=\"136.0\" y1=\"34.0\" x2=\"147.0\" y2=\"34.0\"/><line x1=\"134.8\" y1=\"43.3\" x2=\"140.6\" y2=\"44.9\"/><line x1=\"131.2\" y1=\"52.0\" x2=\"140.7\" y2=\"57.5\"/><line x1=\"125.5\" y1=\"59.5\" x2=\"129.7\" y2=\"63.7\"/><line x1=\"118.0\" y1=\"65.2\" x2=\"123.5\" y2=\"74.7\"/><line x1=\"109.3\" y1=\"68.8\" x2=\"110.9\" y2=\"74.6\"/><line x1=\"100.0\" y1=\"70.0\" x2=\"100.0\" y2=\"81.0\"/><line x1=\"90.7\" y1=\"68.8\" x2=\"89.1\" y2=\"74.6\"/><line x1=\"82.0\" y1=\"65.2\" x2=\"76.5\" y2=\"74.7\"/><line x1=\"74.5\" y1=\"59.5\" x2=\"70.3\" y2=\"63.7\"/><line x1=\"68.8\" y1=\"52.0\" x2=\"59.3\" y2=\"57.5\"/><line x1=\"65.2\" y1=\"43.3\" x2=\"59.4\" y2=\"44.9\"/><line x1=\"64.0\" y1=\"34.0\" x2=\"53.0\" y2=\"34.0\"/><line x1=\"65.2\" y1=\"24.7\" x2=\"59.4\" y2=\"23.1\"/><line x1=\"68.8\" y1=\"16.0\" x2=\"59.3\" y2=\"10.5\"/><line x1=\"74.5\" y1=\"8.5\" x2=\"70.3\" y2=\"4.3\"/><line x1=\"82.0\" y1=\"2.8\" x2=\"76.5\" y2=\"-6.7\"/><line x1=\"90.7\" y1=\"-0.8\" x2=\"89.1\" y2=\"-6.6\"/></g>\n  <circle cx=\"100\" cy=\"34\" r=\"34\" fill=\"none\" stroke=\"#e9cd86\" stroke-width=\"1\" opacity=\".85\"/><circle cx=\"100\" cy=\"34\" r=\"31\" fill=\"none\" stroke=\"#c9a24b\" stroke-width=\".5\" opacity=\".7\"/>\n", "soft": "  <ellipse class=\"mu-glow\" cx=\"100\" cy=\"62\" rx=\"98\" ry=\"60\" fill=\"url(#mGlow)\"/>\n  <ellipse class=\"mu-glow\" cx=\"100\" cy=\"50\" rx=\"56\" ry=\"30\" fill=\"url(#mPageGlow)\"/>\n", "star": "  <ellipse class=\"mu-glow\" cx=\"100\" cy=\"46\" rx=\"88\" ry=\"54\" fill=\"url(#mGlow)\"/>\n  <g class=\"mu-spin\"><polygon points=\"100.0,-13.0 111.9,5.4 133.2,0.8 128.6,22.1 147.0,34.0 128.6,45.9 133.2,67.2 111.9,62.6 100.0,81.0 88.1,62.6 66.8,67.2 71.4,45.9 53.0,34.0 71.4,22.1 66.8,0.8 88.1,5.4\" fill=\"url(#mHalo)\" stroke=\"#e9cd86\" stroke-width=\"1.2\"/><polygon points=\"112.6,3.5 116.3,17.7 130.5,21.4 123.0,34.0 130.5,46.6 116.3,50.3 112.6,64.5 100.0,57.0 87.4,64.5 83.7,50.3 69.5,46.6 77.0,34.0 69.5,21.4 83.7,17.7 87.4,3.5 100.0,11.0\" fill=\"none\" stroke=\"#f6e2a4\" stroke-width=\".8\" opacity=\".9\"/><circle cx=\"100\" cy=\"34\" r=\"11\" fill=\"#fff6d6\" opacity=\".55\"/></g>\n"};
+const MUSHAF_FRONT = {"soft": "  <ellipse class=\"mu-glow\" cx=\"100\" cy=\"66\" rx=\"60\" ry=\"22\" fill=\"url(#mPageGlow)\" style=\"mix-blend-mode:screen\"/>\n"};
+const LIGHT_NAMES = [["rays","1 · Rays"],["column","2 · Column of light"],["halo","3 · Halo"],["soft","4 · Soft glow"],["star","5 · Star of light"]];
+function mushafSvg(v) {
+  return `<svg viewBox="0 -14 200 124" xmlns="http://www.w3.org/2000/svg">${MUSHAF_DEFS}<g class="mu-light">${MUSHAF_LIGHT[v]}</g>${MUSHAF_BOOK}${MUSHAF_FRONT[v] || ""}</svg>`;
+}
+function go(kind) {
+  // In the app: Read opens the reading screen at the chosen unit; Play opens it
+  // and starts the recitation (what Study options' Play already does).
+  document.getElementById("pop").hidden = true;
+  document.getElementById("unitBtn").setAttribute("aria-expanded", "false");
+  const t = document.getElementById("toast");
+  t.textContent = (kind === "play" ? "▶ Playing " : "📖 Opening ") + label() + " …";
+  t.hidden = false; clearTimeout(go.t); go.t = setTimeout(() => { t.hidden = true; }, 2200);
+}
+document.addEventListener("click", (e) => { if (e.target.closest("#pRead")) go("read"); if (e.target.closest("#pPlay")) go("play"); });
 function renderPop() {
   const $ = (id) => document.getElementById(id);
   $("pUnit").innerHTML = UNITS.map(([v, l]) => `<option value="${v}">${l}</option>`).join(""); $("pUnit").value = S.unit;
@@ -321,9 +376,18 @@ document.querySelectorAll("[data-w]").forEach((b) => b.onclick = () => {
   document.getElementById("phone").style.setProperty("--w", b.dataset.w + "px");
   requestAnimationFrame(() => { placeHub(); render(); });
 });
+function renderGallery() {
+  const g = document.getElementById("gallery");
+  g.innerHTML = LIGHT_NAMES.map(([v, n]) => `<button type="button" data-light="${v}" aria-pressed="${S.light === v}"><span class="disc">${mushafSvg(v)}</span>${n}</button>`).join("");
+}
+document.addEventListener("click", (e) => {
+  const L = e.target.closest("[data-light]"); if (L) { S.light = L.dataset.light; renderGallery(); render(); }
+  const X = e.target.closest("[data-exp]"); if (X) { S.exposure = X.dataset.exp; document.querySelectorAll("[data-exp]").forEach((b) => b.setAttribute("aria-pressed", String(b === X))); applyExposure(); }
+});
+function applyExposure() { document.getElementById("stage").dataset.exposure = S.exposure; document.getElementById("gallery").dataset.exposure = S.exposure; }
 function syncToggles() { document.getElementById("showBefore").setAttribute("aria-pressed", String(S.before)); document.getElementById("showAfter").setAttribute("aria-pressed", String(!S.before)); }
 document.getElementById("showBefore").onclick = () => { S.before = true; syncToggles(); render(); };
 document.getElementById("showAfter").onclick = () => { S.before = false; syncToggles(); render(); };
-drawWheel(); placeHub(); render();
+drawWheel(); placeHub(); renderGallery(); applyExposure(); syncToggles(); render();
 addEventListener("resize", () => { placeHub(); render(); });
 </script>
