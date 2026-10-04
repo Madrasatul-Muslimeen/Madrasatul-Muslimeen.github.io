@@ -212,10 +212,13 @@ for (const lang of ["en", "bn"]) {
     await resetWrites(page);
     await openMenu(page); await page.click("[data-pane-menu] [data-pane-copy]");
     await page.waitForSelector("#folderPicker");
-    await page.click('#folderPicker [data-pick="fD"]'); await settle(page);
+    // S10: Copy to… is now the tick picker ("Folders…"): a tick files at once and the picker stays open until Done.
+    await page.click('#folderPicker [data-fp-tick="fD"]'); await settle(page);
     const w1 = await writes(page);
+    const copiedStatus = await status(page);
+    await page.click("#folderPicker [data-picker-cancel]");
     check(`${tag}: Copy to… from the pane — a placement is created and NO note is written`, w1.some((w) => w.col === "notePlacements" && w.op !== "update") && !w1.some((w) => w.col === "notes"), JSON.stringify(w1.map((w) => `${w.col}:${w.op}`)));
-    check(`${tag}: Copy to… — the confirmation line is shown${lang === "bn" ? " in Bangla" : ""}`, lang === "bn" ? hasBn(await status(page)) : /copied/i.test(await status(page)), await status(page));
+    check(`${tag}: Copy to… — the confirmation line is shown${lang === "bn" ? " in Bangla" : ""}`, lang === "bn" ? hasBn(copiedStatus) : /filed in/i.test(copiedStatus), copiedStatus);
     check(`${tag}: the chips now show the extra folder`, JSON.stringify(await page.$$eval("[data-pane-chip]", (c) => c.map((x) => x.dataset.paneChip).sort())) === '["fA","fD"]');
     await resetWrites(page);
     await openMenu(page); await page.click("[data-pane-menu] [data-pane-move]");

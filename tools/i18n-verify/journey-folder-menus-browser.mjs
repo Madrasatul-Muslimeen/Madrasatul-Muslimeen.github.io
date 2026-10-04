@@ -108,7 +108,8 @@ for (const lang of ["en", "bn"]) {
       return { inside: !!hit && !!hit.closest("#folderPicker"), full: r.width >= innerWidth - 1 && r.height >= innerHeight - 1, w: r.width, h: r.height };
     });
     check(`${tag}: the picker is the topmost element at its own centre`, topmost.inside, JSON.stringify(topmost));
-    check(`${tag}: the picker is ${width < 600 ? "full-screen on a phone" : "a centred window, not full-screen"}`, width < 600 ? topmost.full : !topmost.full, JSON.stringify(topmost));
+    // S10: the Note picker (Folders…) is a bottom sheet up to 1199px and a popover from 1200px, not full-screen (the FOLDER pickers below keep their old shape).
+    check(`${tag}: the Note picker is ${width < 1200 ? "a bottom sheet" : "a popover"}, not full-screen`, !topmost.full && (await page.$eval("#folderPicker", (e) => e.classList.contains(innerWidth < 1200 ? "fp-sheet" : "fp-pop"))), JSON.stringify(topmost));
     check(`${tag}: the picker has no sideways scroll`, await noSideways(page));
     // Added by the Architect in review (1 Oct 2026): the search box inherited the
     // toolbar's `flex: 1 1 12rem` and stood ~190-245px TALL in the picker column.
@@ -119,15 +120,17 @@ for (const lang of ["en", "bn"]) {
     await page.fill("#folderPicker [data-picker-search]", "gam");
     check(`${tag}: picker search narrows the list`, (await page.$$("#folderPicker [data-pick]")).length === 1);
     await page.fill("#folderPicker [data-picker-search]", "");
-    await page.click('#folderPicker [data-pick="fA"]', { force: true }); // aria-disabled, but a real finger can tap it
-    check(`${tag}: a folder that already holds the note is refused in words and the picker stays open`,
+    // S10: the old "already filed there" refusal became the last-folder refusal (n1 is filed only in Alpha; unticking it is refused in words).
+    await page.click('#folderPicker [data-fp-tick="fA"]');
+    check(`${tag}: unticking the Note's only folder is refused in words and the picker stays open`,
       (await page.isVisible("#folderPicker [data-picker-msg]")) && (await page.textContent("#folderPicker [data-picker-msg]")).length > 5 && (await page.$("#folderPicker")) !== null);
-    await pick(page, "fG");
+    await page.click('#folderPicker [data-fp-tick="fG"]'); await settle(page);
+    await page.click("#folderPicker [data-picker-cancel]"); await settle(page);
     const m1 = await leaves(page), w1 = await writes(page);
     check(`${tag}: copy note — it shows in BOTH folders`, JSON.stringify(m1.fA) === '["n1","n2"]' && JSON.stringify(m1.fG) === '["n1"]', JSON.stringify(m1));
     check(`${tag}: copy note — the write log shows a placement created and NO note written`,
       w1.some((w) => w.col === "notePlacements" && w.op !== "update") && !w1.some((w) => w.col === "notes"), JSON.stringify(w1.map((w) => `${w.col}:${w.op}`)));
-    check(`${tag}: copy note — a confirmation line is shown${lang === "bn" ? " in Bangla" : ""}`, lang === "bn" ? hasBn(await status(page)) : /copied/i.test(await status(page)), await status(page));
+    check(`${tag}: copy note — a confirmation line is shown${lang === "bn" ? " in Bangla" : ""}`, lang === "bn" ? hasBn(await status(page)) : /filed in/i.test(await status(page)), await status(page));
 
     // ---- Move a note -------------------------------------------------------------
     await resetWrites(page);

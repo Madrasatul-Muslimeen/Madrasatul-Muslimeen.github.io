@@ -142,6 +142,31 @@
     .folder-picker-overlay { align-items: stretch; }
     .folder-picker { width: 100%; height: 100%; max-height: none; border-radius: 0; }
   }
+  /* S10 -- the folder picker (tick boxes). A sheet from the bottom up to 1199px; a popover beside the Note from 1200px. */
+  .folder-picker-overlay.fp-sheet { align-items: flex-end; }
+  .folder-picker-overlay.fp-sheet .folder-picker { width: 100%; max-height: 88vh; border-radius: 0.8rem 0.8rem 0 0; }
+  .folder-picker-overlay.fp-pop { background: transparent; display: block; }
+  .folder-picker-overlay.fp-pop .folder-picker { position: fixed; width: 26rem; max-width: calc(100vw - 16px); max-height: min(34rem, calc(100vh - 16px)); box-shadow: 0 6px 28px rgba(0,0,0,0.3); border: 1px solid #bbb; }
+  .folder-picker-actions { gap: 0.4rem; }
+  .folder-picker-actions button { min-height: 44px; min-width: 44px; padding: 0 1rem; }
+  .fp-tools { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
+  .fp-tools button { min-height: 40px; }
+  .fp-hl { margin: 0; font-size: 0.85rem; color: #555; overflow-wrap: anywhere; }
+  .fp-form { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+  .fp-form[hidden] { display: none; }
+  .fp-form input { flex: 1 1 10rem; min-width: 0; min-height: 40px; }
+  .fp-form button { min-height: 40px; }
+  label.folder-picker-row.fp-row { cursor: pointer; }
+  .folder-picker-row.fp-hl-row { border-color: #1F3A6E; box-shadow: inset 0 0 0 1px #1F3A6E; background: #EEF3FC; }
+  .fp-tick { flex: 0 0 auto; width: 24px; height: 24px; margin: 0; }
+  .fp-tickwrap { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; width: 44px; min-height: 44px; margin: -0.4rem 0 -0.4rem -0.6rem; cursor: pointer; }
+  label.folder-picker-row > .fp-tick { margin: 0 0.3rem 0 0; }
+  .fp-note-hit { border: 1px dashed #bbb; border-radius: 0.4rem; padding: 0.4rem 0.6rem; margin: 0 0 0.25rem; overflow-wrap: anywhere; font-size: 0.9rem; }
+  .fp-sub { display: block; font-size: 0.78rem; color: #555; font-weight: 400; overflow-wrap: anywhere; }
+  .fp-head { margin: 0.2rem 0; font-size: 0.85rem; color: #555; }
+  @media (max-width: 600px) {
+    .folder-picker-overlay.fp-sheet .folder-picker { height: auto; max-height: 88vh; border-radius: 0.8rem 0.8rem 0 0; }
+  }
   .trash-head { display: flex; align-items: center; gap: 0.6rem; }
   .trash-title { margin: 0; font-size: 1.1rem; }
   .trash-list { list-style: none; margin: 0.5rem 0; padding: 0; }
@@ -411,7 +436,7 @@
     import {
       ownerFolderTreePagedSharded, folderContents,
       renameFolder, reorderFolder, moveFolder, reorderFiling,
-      trashFolder, restoreFolder, loadOwnerTrash, copyNoteToFolder, moveNote, copyFolder,
+      trashFolder, restoreFolder, loadOwnerTrash, copyNoteToFolder, moveNote, copyFolder, retireNoteFiling,
       loadAllOwnerNotesSharded, loadAllOwnerPlacementsSharded, folderNoteCounts, folderMoveRefusal,
       loadAllOwnerSections, createSection, renameSection, reorderSection, setSectionLook,
       trashSection, restoreSection, setFolderLook, setFolderSection,
@@ -1011,7 +1036,7 @@
             drag: card.matches(".fn-card") && card.hasAttribute("data-dragsrc") ?touchDragFor("note", noteId, card) : null,
           });
         }
-        card.querySelector("[data-note-file]")?.addEventListener("click", () => openFileDialog(note));
+        card.querySelector("[data-note-file]")?.addEventListener("click", (e) => copyNoteTo(note, null, { anchor: e.currentTarget }));
       });
     }
 
@@ -1226,16 +1251,18 @@
       newNote: () => newNoteHere(),
       menuMid: (v, note) => {
         const fromId = paneFromFolderId(v, note);
-        return `<button type="button" class="secondary tiny" data-pane-copy>${escapeHtml(t("Copy to…"))}</button>
+        return `<button type="button" class="secondary tiny" data-pane-copy>${escapeHtml(t("Folders…"))}</button>
           <button type="button" class="secondary tiny" data-pane-move ${fromId ? "" : "disabled"}>${escapeHtml(t("Move to…"))}</button>
           <button type="button" class="danger tiny" data-pane-delete>🗑 ${escapeHtml(t("Delete"))}</button>`;
       },
       menuEnd: () => (isEmbedded ? `<button type="button" class="secondary tiny" data-pane-fullpage>${escapeHtml(t("Open full page"))}</button>` : ""),
+      onEditStart: (v, note) => { stagedFilings.delete(note.noteId); },
+      onEditDone: (v, note) => applyStagedFilings(note),
       onMenu: (v, note, on) => {
-        if (on("[data-pane-copy]")) { copyNoteTo(note); return true; }
+        if (on("[data-pane-copy]")) { copyNoteTo(note, null, { editing: !!v.ed, anchor: v.el }); return true; }
         if (on("[data-pane-move]")) {
           const fromNode = findNodeByIdOrRole(mergedRoots(), paneFromFolderId(v, note), null);
-          if (fromNode) moveNoteTo(note, fromNode);
+          if (fromNode) moveNoteTo(note, fromNode, { anchor: v.el });
           return true;
         }
         if (on("[data-pane-delete]")) { deleteNoteFromPane(v, note); return true; }
@@ -1599,7 +1626,7 @@
       const controls = winBtn + (isSelfSelected() ? `
           <button type="button" class="secondary tiny note-order-btn" data-note-up ${idx <= 0 ? "disabled" : ""} aria-label="${escapeHtml(t("Move up"))}">▲</button>
           <button type="button" class="secondary tiny note-order-btn" data-note-down ${idx >= rows.length - 1 ? "disabled" : ""} aria-label="${escapeHtml(t("Move down"))}">▼</button>
-          <button type="button" class="secondary tiny" data-note-copy>${t("Copy to…")}</button>
+          <button type="button" class="secondary tiny" data-note-copy>${t("Folders…")}</button>
           <button type="button" class="secondary tiny" data-note-move>${t("Move to…")}</button>` : "");
       const preview = notesPreview ? `<p class="note-card-preview" data-note-preview>${escapeHtml(previewText(note))}</p>` : "";
       return `<li class="fn-card" data-note-leaf${isSelfSelected() ? ` data-dragsrc${mouseDragOn() ? ' draggable="true"' : ""}` : ""} data-note-id="${escapeHtml(note.noteId)}" data-in-folder="${escapeHtml(placement.folderId)}" data-placement-id="${escapeHtml(placement.placementId)}">
@@ -1701,8 +1728,7 @@
         if (again) { if (!noteId) { again.value = title; } again.disabled = false; again.focus(); }
       });
       el.querySelector("[data-folder-file-note]")?.addEventListener("click", () => {
-        const candidate = allNotes.find((n) => !rows.some((r) => r.note.noteId === n.noteId));
-        if (candidate) fileNoteInFolder(candidate, node);
+        openFilingPicker({ mode: "notes", targetNode: node, anchor: folderNotesEl });
       });
       wireNoteLeaves(el);
     }
@@ -2078,8 +2104,8 @@
         });
         li.querySelector("[data-note-up]")?.addEventListener("click", () => reorderNoteInFolder(rows, idx, -1));
         li.querySelector("[data-note-down]")?.addEventListener("click", () => reorderNoteInFolder(rows, idx, 1));
-        li.querySelector("[data-note-copy]")?.addEventListener("click", () => copyNoteTo(note, folderNode));
-        li.querySelector("[data-note-move]")?.addEventListener("click", () => moveNoteTo(note, folderNode));
+        li.querySelector("[data-note-copy]")?.addEventListener("click", (e) => copyNoteTo(note, folderNode, { anchor: e.currentTarget.closest("li") }));
+        li.querySelector("[data-note-move]")?.addEventListener("click", (e) => moveNoteTo(note, folderNode, { anchor: e.currentTarget.closest("li") }));
       });
     }
 
@@ -2255,30 +2281,276 @@
       return new Set(allPlacements.filter((p) => p.noteId === note.noteId && p.status === NOTE_STATUS.ACTIVE).map((p) => p.folderId));
     }
 
-    async function copyNoteTo(note) {
-      const filed = activeFilingFolderIds(note);
-      const picked = await openFolderPicker({
-        title: t('Copy "{title}" to…', { title: noteTitleOf(note) }),
-        refuse: (dest) => (dest?.folderId && filed.has(dest.folderId) ? t("This note is already filed in that folder.") : null),
-      });
-      if (!picked) return;
-      const toFolderId = await ensureRealFolder(picked);
-      if (!toFolderId) return;
-      const outcome = await runFolderWrite(
-        () => copyNoteToFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, noteId: note.noteId, toFolderId, actorUid: auth.currentUser.uid }),
-        { collection: TENANT.NOTE_PLACEMENTS, action: "copyNoteToFolder" }
-      );
-      if (!outcome.ok) return;
-      showPageStatus(t('"{title}" copied to {folder}. It now shows in both folders — still one Note, not a duplicate.', { title: noteTitleOf(note), folder: folderDisplayName(picked) }));
+    /** Pending ticks of a Note being EDITED (S10): noteId -> Set of folder keys, saved only when the edit's Done is pressed. */
+    const stagedFilings = new Map();
+    const noteFolderKeys = (note) => new Set([...activeFilingFolderIds(note)].map((id) => findNodeByIdOrRole(mergedRoots(), id, null)).filter(Boolean).map(expandKeyFor));
+    const liveNote = (note) => allNotes.find((n) => n.noteId === note.noteId) ?? note;
+    const LAST_FOLDER_SENTENCE = () => t("A Note must stay in at least one folder. Tick another folder first, then untick this one.");
+
+    /** ONE filing change, written at once: a new placement (copyNoteToFolder) or one retired placement (never a delete). The last folder is refused in words. */
+    async function setFiling(note, folderNode, on) {
+      if (!notesAndPlacementsLoaded) { showPageStatus(t("Still loading your Notes — try again in a moment.")); return false; }
+      note = liveNote(note);
+      if (on) {
+        const folderId = await ensureRealFolder(folderNode);
+        if (!folderId) return false;
+        const outcome = await runFolderWrite(
+          () => copyNoteToFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, noteId: note.noteId, toFolderId: folderId, actorUid: auth.currentUser.uid }),
+          { collection: TENANT.NOTE_PLACEMENTS, action: "copyNoteToFolder" }
+        );
+        if (!outcome.ok) return false;
+        showPageStatus(t('"{title}" filed in {folder}.', { title: noteTitleOf(note), folder: folderDisplayName(folderNode) }));
+      } else {
+        const mine = allPlacements.filter((p) => p.noteId === note.noteId && p.status === NOTE_STATUS.ACTIVE);
+        if (mine.length <= 1) { showPageStatus(LAST_FOLDER_SENTENCE()); return false; }
+        const placement = mine.find((p) => p.folderId === folderNode.folderId);
+        if (!placement) return false;
+        const outcome = await runFolderWrite(
+          () => retireNoteFiling(db, { tenantId: activeTenantId, placementId: placement.placementId, actorUid: auth.currentUser.uid }),
+          { collection: TENANT.NOTE_PLACEMENTS, action: "retireNoteFiling" }
+        );
+        if (!outcome.ok) return false;
+        showPageStatus(t('"{title}" taken out of {folder}.', { title: noteTitleOf(note), folder: folderDisplayName(folderNode) }));
+      }
       await refreshAll();
+      return true;
     }
 
-    async function moveNoteTo(note, fromNode) {
-      const filed = activeFilingFolderIds(note);
-      const picked = await openFolderPicker({
-        title: t('Move "{title}" to…', { title: noteTitleOf(note) }),
-        refuse: (dest) => (dest?.folderId && filed.has(dest.folderId) ? t("This note is already filed in that folder.") : null),
+    /** The ticks staged during an edit, written when Done is pressed: adds first, then retires, so the Note is never in no folder. */
+    async function applyStagedFilings(note) {
+      const staged = stagedFilings.get(note.noteId);
+      stagedFilings.delete(note.noteId);
+      if (!staged) return;
+      if (staged.size === 0) { showPageStatus(LAST_FOLDER_SENTENCE()); return; }
+      const have = noteFolderKeys(liveNote(note));
+      const add = [...staged].filter((k) => !have.has(k)), drop = [...have].filter((k) => !staged.has(k));
+      for (const key of add) {
+        const node = findNodeByExpandKey(mergedRoots(), key);
+        if (!node || !(await setFiling(note, node, true))) return;
+      }
+      for (const key of drop) {
+        const node = findNodeByExpandKey(mergedRoots(), key);
+        if (!node || !(await setFiling(note, node, false))) return;
+      }
+    }
+
+    /**
+     * S10 -- THE folder picker: tick the folders a Note belongs in. Modes:
+     *   "ticks" (a Note)         a tick files the Note there at once / an untick retires that one filing; while
+     *                            editing (`staged` given) the ticks are only staged and saved on the edit's Done.
+     *   "move"  (a Note)         pick ONE folder, the Note moves there (the old Move to…).
+     *   "notes" (a folder)       tick the Notes that are filed in this folder (the old + File a Note here…).
+     * Inside: search (folders and Notes), ＋ New folder (in the highlighted folder), Rename, Move to Trash.
+     * A sheet from the bottom up to 1199px; a popover beside the Note from 1200px.
+     */
+    function openFilingPicker({ mode, note = null, fromNode = null, targetNode = null, staged = null, anchor = null }) {
+      return new Promise((resolve) => {
+        document.getElementById("folderPicker")?.remove();
+        const wide = window.matchMedia("(min-width: 1200px)").matches;
+        const overlay = document.createElement("div");
+        overlay.id = "folderPicker";
+        overlay.className = `folder-picker-overlay ${wide ? "fp-pop" : "fp-sheet"}`;
+        const title = mode === "notes" ? t('Notes filed in "{name}"', { name: folderDisplayName(targetNode) })
+          : mode === "move" ? t('Move "{title}" to…', { title: noteTitleOf(note) })
+            : t('Folders for "{title}"', { title: noteTitleOf(note) });
+        const hint = mode === "notes" ? t("Tick a Note to file it in this folder; untick to take it out.")
+          : mode === "move" ? "" : (staged ? t("Tick the folders this Note belongs in. They are saved when you press Done on the Note.") : t("Tick a folder to file this Note there; untick to take it out. Each change is saved at once."));
+        const tree = mode !== "notes";
+        overlay.innerHTML = `<div class="folder-picker" role="dialog" aria-modal="true" aria-labelledby="folderPickerTitle" tabindex="-1">
+          <h2 id="folderPickerTitle" class="folder-picker-title">${escapeHtml(title)}</h2>
+          ${hint ? `<p class="fp-head">${escapeHtml(hint)}</p>` : ""}
+          <input type="text" class="folder-search-input" data-picker-search placeholder="${escapeHtml(t("Search folders and Notes…"))}" aria-label="${escapeHtml(t("Search folders and Notes…"))}" />
+          ${tree ? `<div class="fp-tools">
+            <button type="button" class="secondary" data-fp-newfolder>＋ ${escapeHtml(t("New folder"))}</button>
+            <button type="button" class="secondary" data-fp-rename>${escapeHtml(t("Rename"))}</button>
+            <button type="button" class="secondary" data-fp-trash>🗑 ${escapeHtml(t("Move to Trash"))}</button>
+          </div>
+          <p class="fp-hl" data-fp-hl></p>
+          <form class="fp-form" data-fp-form hidden><input type="text" data-fp-input aria-label="${escapeHtml(t("Folder name"))}" placeholder="${escapeHtml(t("Folder name"))}" /><button type="submit" data-fp-go>${escapeHtml(t("Create"))}</button><button type="button" class="secondary" data-fp-formcancel>${escapeHtml(t("Cancel"))}</button></form>` : ""}
+          <p class="warn folder-picker-msg" data-picker-msg role="alert" style="display:none;"></p>
+          <ul class="folder-picker-list" data-picker-list></ul>
+          <div class="folder-picker-actions">${staged ? `<button type="button" class="secondary" data-picker-cancel>${escapeHtml(t("Cancel"))}</button> <button type="button" data-picker-ok>${escapeHtml(t("Use these folders"))}</button>` : `<button type="button" class="secondary" data-picker-cancel>${escapeHtml(mode === "move" ? t("Cancel") : t("Done"))}</button>`}</div>
+        </div>`;
+        document.body.appendChild(overlay);
+        const panel = overlay.querySelector(".folder-picker");
+        // Beside the Note (a popover, 1200px and up); level with it, but always wholly on screen: pulled up when the anchor sits low on the page. Re-run after every repaint, as the list's height changes.
+        const anchorRect = wide ? ((anchor?.isConnected ? anchor : null) ?? (paneView.noteId !== null ? notePaneEl : folderNotesEl)).getBoundingClientRect() : null;
+        function place() {
+          if (!anchorRect) return;
+          const r = anchorRect, w = 26 * 16;
+          panel.style.left = `${r.left - w - 8 >= 8 ? r.left - w - 8 : Math.max(8, Math.min(r.right - w - 8, innerWidth - w - 8))}px`;
+          panel.style.top = `${Math.max(8, Math.min(r.top, innerHeight - panel.getBoundingClientRect().height - 8))}px`;
+        }
+        const msgEl = overlay.querySelector("[data-picker-msg]");
+        const listEl = overlay.querySelector("[data-picker-list]");
+        const searchEl = overlay.querySelector("[data-picker-search]");
+        const formEl = overlay.querySelector("[data-fp-form]");
+        const inputEl = overlay.querySelector("[data-fp-input]");
+        let hlKey = null, formKind = null, busy = false;
+        const say = (m) => { msgEl.textContent = m; msgEl.style.display = m ? "block" : "none"; };
+        const onKey = (e) => { if (e.key === "Escape") finish(null); };
+        function finish(value) {
+          document.removeEventListener("keydown", onKey);
+          overlay.remove();
+          resolve(value);
+        }
+        const hlNode = () => (hlKey ? findNodeByExpandKey(mergedRoots(), hlKey) : null);
+        const isTicked = (node) => (staged ? staged.has(expandKeyFor(node)) : (!!note && node.folderId ? activeFilingFolderIds(note).has(node.folderId) : false));
+        function updateTools() {
+          if (!tree) return;
+          const n = hlNode(), user = !!n && !isSystemFolderRole(n.semanticRole);
+          overlay.querySelector("[data-fp-hl]").textContent = n ? t("Highlighted folder: {name}", { name: folderDisplayName(n) }) : t("No folder highlighted — a new folder goes at the top level.");
+          overlay.querySelector("[data-fp-rename]").disabled = !user;
+          overlay.querySelector("[data-fp-trash]").disabled = !user;
+          listEl.querySelectorAll("[data-pick]").forEach((r) => r.classList.toggle("fp-hl-row", r.dataset.pick === hlKey));
+        }
+        const filedNames = (n) => [...activeFilingFolderIds(n)].map((id) => findNodeByIdOrRole(mergedRoots(), id, null)).filter(Boolean).map(folderDisplayName);
+        function renderList() {
+          const q = searchEl.value.trim().toLowerCase();
+          let html = "";
+          if (mode === "notes") {
+            const mine = allNotes.filter((n) => n.status !== NOTE_STATUS.RETIRED && (!q || noteTitleOf(n).toLowerCase().includes(q)));
+            html = mine.map((n) => `<li><label class="folder-picker-row fp-row" data-pick="${escapeHtml(n.noteId)}"><input type="checkbox" class="fp-tick" data-fp-tick="${escapeHtml(n.noteId)}" ${activeFilingFolderIds(n).has(targetNode.folderId) ? "checked" : ""} /><span class="folder-row-name">${escapeHtml(noteTitleOf(n))}<span class="fp-sub">${escapeHtml(t("In: {folders}", { folders: filedNames(n).join(", ") || "—" }))}</span></span></label></li>`).join("");
+            if (!html) html = `<li class="note">${escapeHtml(q ? t('No folders or Notes match "{query}".', { query: searchEl.value.trim() }) : t("You have no Notes yet."))}</li>`;
+            listEl.innerHTML = html;
+            place();
+            return;
+          }
+          const rows = pickerRows().filter(({ folder }) => !q || folderDisplayName(folder).toLowerCase().includes(q));
+          html = rows.map(({ folder, depth, numberPath }) => {
+            const key = expandKeyFor(folder), pad = `style="padding-left:${(0.6 + depth * 1.1).toFixed(2)}rem"`;
+            const count = folder.folderId ? (folderCounts[folder.folderId] ?? 0) : 0;
+            const body = `<span class="folder-row-name">${escapeHtml(numberedLabel(folder, numberPath))}</span>${count > 0 ? `<span class="folder-row-count">${count}</span>` : ""}`;
+            if (mode === "move") {
+              const refused = note && folder.folderId && activeFilingFolderIds(note).has(folder.folderId);
+              return `<li><button type="button" class="folder-picker-row${refused ? " refused" : ""}" data-pick="${escapeHtml(key)}" ${refused ? 'aria-disabled="true"' : ""} ${pad}>${body}</button></li>`;
+            }
+            // The tick box is its own 44px target; tapping the NAME only highlights the folder (for New folder, Rename, Move to Trash).
+            return `<li><div class="folder-picker-row fp-row" data-pick="${escapeHtml(key)}" ${pad}><label class="fp-tickwrap"><input type="checkbox" class="fp-tick" data-fp-tick="${escapeHtml(key)}" aria-label="${escapeHtml(folderDisplayName(folder))}" ${isTicked(folder) ? "checked" : ""} /></label>${body}</div></li>`;
+          }).join("");
+          const hits = q ? allNotes.filter((n) => n.status !== NOTE_STATUS.RETIRED && noteTitleOf(n).toLowerCase().includes(q)).slice(0, 20) : [];
+          if (hits.length) html += `<li class="fp-head">${escapeHtml(t("Notes"))}</li>` + hits.map((n) => `<li class="fp-note-hit" data-fp-notehit>${escapeHtml(noteTitleOf(n))}<span class="fp-sub">${escapeHtml(t("In: {folders}", { folders: filedNames(n).join(", ") || "—" }))}</span></li>`).join("");
+          if (!html) html = `<li class="note">${escapeHtml(t('No folders or Notes match "{query}".', { query: searchEl.value.trim() }))}</li>`;
+          listEl.innerHTML = html;
+          updateTools();
+          place();
+        }
+        renderList();
+        searchEl.addEventListener("input", () => { say(""); renderList(); });
+        listEl.addEventListener("click", (e) => {
+          const row = e.target.closest("[data-pick]");
+          if (!row) return;
+          if (mode === "notes") return;
+          hlKey = row.dataset.pick; updateTools();
+          if (mode !== "move") return;
+          const chosen = findNodeByExpandKey(mergedRoots(), hlKey);
+          if (!chosen) return;
+          if (chosen.folderId && activeFilingFolderIds(note).has(chosen.folderId)) { say(t("This note is already filed in that folder.")); return; }
+          finish(chosen);
+        });
+        listEl.addEventListener("change", async (e) => {
+          const box = e.target.closest("[data-fp-tick]");
+          if (!box || busy) return;
+          const on = box.checked;
+          say("");
+          if (staged) {
+            const key = box.dataset.fpTick;
+            if (!on && staged.size <= 1) { box.checked = true; say(LAST_FOLDER_SENTENCE()); return; }
+            if (on) staged.add(key); else staged.delete(key);
+            return;
+          }
+          busy = true;
+          const subjectNote = mode === "notes" ? allNotes.find((n) => n.noteId === box.dataset.fpTick) : note;
+          const folderNode = mode === "notes" ? targetNode : findNodeByExpandKey(mergedRoots(), box.dataset.fpTick);
+          let ok = false;
+          if (subjectNote && folderNode) {
+            const mine = allPlacements.filter((p) => p.noteId === subjectNote.noteId && p.status === NOTE_STATUS.ACTIVE);
+            if (!on && notesAndPlacementsLoaded && mine.length <= 1) say(LAST_FOLDER_SENTENCE());
+            else ok = await setFiling(subjectNote, folderNode, on);
+          }
+          busy = false;
+          if (!overlay.isConnected) return;
+          if (!ok) box.checked = !on;
+          renderList();
+        });
+        function openForm(kind) {
+          formKind = kind; say("");
+          formEl.hidden = false;
+          overlay.querySelector("[data-fp-go]").textContent = kind === "rename" ? t("Save") : t("Create");
+          inputEl.value = kind === "rename" ? (hlNode()?.name ?? "") : "";
+          inputEl.focus();
+        }
+        overlay.querySelector("[data-fp-newfolder]")?.addEventListener("click", () => {
+          const n = hlNode();
+          if (n && isSystemFolderRole(n.semanticRole)) { say(t("Personal Journey Map and Reflection Archive can't hold other folders inside them.")); return; }
+          openForm("new");
+        });
+        overlay.querySelector("[data-fp-rename]")?.addEventListener("click", () => { if (hlNode() && !isSystemFolderRole(hlNode().semanticRole)) openForm("rename"); else say(t("Highlight a folder first.")); });
+        overlay.querySelector("[data-fp-formcancel]")?.addEventListener("click", () => { formEl.hidden = true; formKind = null; });
+        formEl?.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const name = inputEl.value.trim();
+          if (!name) { say(t("Type a name for the folder first.")); return; }
+          if (busy) return;
+          busy = true;
+          const n = hlNode();
+          let outcome;
+          if (formKind === "rename") {
+            outcome = await runFolderWrite(
+              () => renameFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, folderId: n.folderId, name, actorUid: auth.currentUser.uid }),
+              { collection: TENANT.NOTE_FOLDERS, action: "renameFolder" });
+            if (outcome.ok) showPageStatus(t('Folder renamed to "{name}".', { name }));
+          } else {
+            const parentFolderId = n ? n.folderId : null;
+            const order = n ? nextOrder(n.children ?? []) : nextOrder(mergedRoots().filter((f) => !isSystemFolderRole(f.semanticRole)));
+            outcome = await runFolderWrite(
+              () => createNoteFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, name, semanticRole: "user", parentFolderId, order, actorUid: auth.currentUser.uid }),
+              { collection: TENANT.NOTE_FOLDERS, action: "createNoteFolder" });
+            if (outcome.ok) { showPageStatus(t('Folder "{name}" created.', { name })); if (n) { expandedFolderIds.add(expandKeyFor(n)); saveExpandedIds(); } }
+          }
+          if (outcome.ok) { formEl.hidden = true; formKind = null; await refreshAll(); }
+          busy = false;
+          if (overlay.isConnected) renderList();
+        });
+        overlay.querySelector("[data-fp-trash]")?.addEventListener("click", async () => {
+          const n = hlNode();
+          if (!n || isSystemFolderRole(n.semanticRole) || busy) { say(t("Highlight a folder first.")); return; }
+          busy = true;
+          const outcome = await runFolderWrite(
+            () => trashFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, folderId: n.folderId, actorUid: auth.currentUser.uid }),
+            { collection: TENANT.NOTE_FOLDERS, action: "trashFolder" });
+          if (outcome.ok) {
+            showPageStatus(t('Folder "{name}" moved to Trash. Open 🗑 Trash from the ⋯ menu to restore it.', { name: folderDisplayName(n) }));
+            hlKey = null;
+            if (staged) staged.delete(expandKeyFor(n));
+            await refreshAll();
+          }
+          busy = false;
+          if (overlay.isConnected) renderList();
+        });
+        overlay.querySelector("[data-picker-cancel]").addEventListener("click", () => finish(null));
+        overlay.querySelector("[data-picker-ok]")?.addEventListener("click", () => finish(staged));
+        overlay.addEventListener("click", (e) => { if (e.target === overlay) finish(null); });
+        document.addEventListener("keydown", onKey);
+        panel.focus();
       });
+    }
+
+    /** Folders… (was Copy to…): the tick picker. While the Note is being edited the ticks are staged and saved on Done. */
+    async function copyNoteTo(note, _fromNode, { editing = false, anchor = null } = {}) {
+      if (editing) {
+        const staged = stagedFilings.get(note.noteId) ?? noteFolderKeys(liveNote(note));
+        const result = await openFilingPicker({ mode: "ticks", note, staged: new Set(staged), anchor });
+        if (!result) return;
+        stagedFilings.set(note.noteId, result);
+        showPageStatus(t("Folder changes will be saved when you press Done."));
+        return;
+      }
+      await openFilingPicker({ mode: "ticks", note, anchor });
+    }
+
+    async function moveNoteTo(note, fromNode, { anchor = null } = {}) {
+      const picked = await openFilingPicker({ mode: "move", note, fromNode, anchor });
       if (!picked) return;
       const toFolderId = await ensureRealFolder(picked);
       if (!toFolderId) return;

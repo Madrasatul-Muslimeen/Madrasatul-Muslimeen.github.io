@@ -504,7 +504,8 @@ check("Trash has Restore only: no erase, no Empty Trash, and no Firestore delete
 // claim now names the functions that actually write.
 check("reordering, moving, renaming and removing a folder each refresh from the real data afterwards, never just patch the DOM by hand", () => {
   // UPDATED for Siyagah round 3 (#443): the writers are now these.
-  for (const fn of ["reorderFolderSwap", "moveFolderTo", "copyFolderTo", "deleteFolder", "copyNoteTo", "moveNoteTo", "reorderNoteInFolder", "commitInlineRename"]) {
+  // UPDATED for S10 (#557): copyNoteTo() now only opens the tick picker; the function that writes a filing is setFiling().
+  for (const fn of ["reorderFolderSwap", "moveFolderTo", "copyFolderTo", "deleteFolder", "setFiling", "moveNoteTo", "reorderNoteInFolder", "commitInlineRename"]) {
     const body = functionBody(page, fn);
     assert.ok(/await refreshAll\(\);/.test(body), `${fn}() does not call refreshAll() after a successful write`);
   }
