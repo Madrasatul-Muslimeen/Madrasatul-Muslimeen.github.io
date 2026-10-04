@@ -19468,3 +19468,21 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
   - wheel-unit-go 254/0, tablet-wheel 74/0, approach-short-names 70/0, read-contents 248/0
   - palette-contrast 20/0, phone-width-overflow 217/0, stub-parity 4/0
   - behaviour 1003/4 (sandbox: 22g×3 archive.org, 31e TLS)
+
+## v09.67 — 4 Oct 2026 — Mapping My Journey: menus everywhere, drag onto a folder (S9, decision 66)
+
+- **What:**
+  - **Right-click or long-press** opens a folder's menu or a Note card's actions; a short tap or a scroll does not.
+  - **Folder menu:** Add subfolder, Move to top level, Turn into a section, Open in its own window (beside Add note here).
+  - **Drag a Note onto a folder** to file it there too; it keeps its other folders; a duplicate is refused in words. Mouse and touch.
+  - **Closing a folder closes its subfolders. Search finds tags.**
+  - **Nesting:** up to 64 deep (was 8). ADR-010 updated.
+  - **S8 leftovers:** date only on cards ("1 Sep 2026"; Bangla month and digits); the ▾ stays on the title's line on a phone.
+- **Who:** the Owner, decision 66 (the S8–S14 plan). Builder issue #555.
+- **Review fixes:** ADR-010's depth sentence; the depth mutation fails a check rather than crashing.
+- **No Rules change.**
+- **Checks:**
+  - journey-s9-browser 280/0, five mutations each failing
+  - every journey suite green; note-foundation-data-layer green
+  - phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0
+  - behaviour 1003/4 (sandbox: 22g×3 archive.org, 31e TLS)

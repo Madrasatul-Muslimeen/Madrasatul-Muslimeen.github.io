@@ -224,17 +224,20 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.66 on `main`** (4 Oct 2026 — **First screen B, and the light comes from the Qur'an (decisions 65 and 67, #549).**
-- **First screen:** the Owner's calligraphy and the open Qur'an show from the start. A smaller **Study Quran** pill sits where the unit's name goes and names the unit (e.g. "Page 257 · Ibrahim"). Tapping it gives the centre as in decision 63.
-- **The light (decision 67, "6, build it"):** beams rise from along both pages' top edges, the pages glow, at Bright, with the seven stars of decision 65. Demo v14 is the reference.
-- **The pill's name is never cut:** it wraps to a second line. On a hub under 140px (a 320px phone) the pill is 80% wide so "Study Quran" keeps one line, and when even two lines would crowd out the Qur'an the unit alone shows, with the full name in the button's title.
-- **Built by:** the Builder (PR #550). Architect review: the light from the pages, and the never-cut pill name.
+**Current milestone: v09.67 on `main`** (4 Oct 2026 — **Mapping My Journey: menus everywhere, drag a Note onto a folder, deep nesting (Siyagah round S9, decision 66, #555).**
+- **Menus:** right-click (PC) or a long-press (phone, tablet) on a folder opens its ⋯ menu, and on a Note card its actions. A short tap or a scroll never does.
+- **The folder menu gains:** Add subfolder, Move to top level, Turn into a section, Open in its own window.
+- **Drag a Note onto a folder** to add it there; it stays in its other folders, and a folder that already holds it refuses it in words. Works by mouse and touch.
+- **Closing a folder closes its subfolders.** **Search finds tags too.**
+- **Nesting:** the depth guard is 64 instead of 8 (decision 66's "without a limit"; ADR-010 updated, the cycle refusal unchanged).
+- **From S8:** card dates show the date only ("1 Sep 2026", Bangla month and digits), and the ▾ stays on the title's line on a phone.
+- **No Rules change.** **Built by:** the Builder (branch `builder/issue-555-run-849`). Architect review: ADR-010's wording, and the depth mutation now fails a check instead of crashing.
 - **Checks:**
-  - wheel-centre-browser 633/0 (`--mutate-sunrise` fails 12, `--mutate-cut-pill` 6, `--mutate-six-stars` 12, `--mutate-big-button` 98)
-  - wheel-unit-go 254/0, tablet-wheel 74/0, approach-short-names 70/0, read-contents 248/0
-  - palette-contrast 20/0, phone-width-overflow 217/0, stub-parity 4/0
+  - journey-s9-browser 280/0 (mutations: drop-replaces 3, longpress-short 32, depth-back 8, no-recursive, no-tagsearch 8)
+  - every journey suite green (three-panel 368, folder-menus 148, note-pane 327, tags 363, sections 349, tray 227 and the rest); note-foundation-data-layer green
+  - phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0
   - behaviour 1003/4 (sandbox: 22g×3, 31e)
-- **Next:** S9 (#555) in review; Siyagah rounds S10–S14.
+- **Next:** Siyagah rounds S10 (the folder picker) to S14.
 - **With the Owner:** the Asmaul Husna poster (on hold, decision 50).
 )
 
