@@ -961,6 +961,17 @@
           if (e.ctrlKey || e.metaKey) { openNoteWindow(noteId, { fromEl: e.currentTarget }); return; } // Multi: its own window
           openNotePane(noteId, e.currentTarget);
         });
+        // S8 review: in the folder's Note list a tap ANYWHERE on the card opens the
+        // Note, as in Siyagah -- the date, the preview and the empty space too, not
+        // only the title. Its own buttons (▾, the actions) keep their own jobs.
+        if (card.matches(".fn-card")) {
+          card.querySelector(".note-card")?.addEventListener("click", (e) => {
+            if (e.target.closest("button, a, input, select, textarea, [data-note-actions]")) return;
+            const opener = card.querySelector("[data-note-open]");
+            if (e.ctrlKey || e.metaKey) { openNoteWindow(noteId, { fromEl: opener }); return; }
+            openNotePane(noteId, opener);
+          });
+        }
         card.querySelector("[data-note-window]")?.addEventListener("click", (e) => openNoteWindow(noteId, { fromEl: e.currentTarget }));
         card.querySelector("[data-note-toggle]")?.addEventListener("click", (e) => {
           if (expandedNoteIds.has(noteId)) expandedNoteIds.delete(noteId); else expandedNoteIds.add(noteId);

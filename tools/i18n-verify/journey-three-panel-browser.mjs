@@ -7,6 +7,7 @@
 //   --mutate-no-placement   the quick-title writes the Note but skips its placement
 //   --mutate-three-narrow   force the wide (three-column) tier at every width
 //   --mutate-no-infolders   drop the "in N folders" line from the cards
+//   --mutate-no-cardtap     only the title opens a Note again (Architect review, 4 Oct 2026)
 import { chromium, newContext, openPage } from "./harness.mjs";
 
 const MUTATE = process.argv.find((a) => a.startsWith("--mutate-"))?.slice(9) ?? null;
@@ -70,12 +71,13 @@ async function run(lang, width, embedFrame = false) {
   const tag = `${lang} ${width}px${embedFrame ? " tray" : ""}`;
   const wide = width >= 1200;
   const ctx = await newContext(browser, { appLang: lang, viewport: { width, height: 900 }, extraSeedJs: SEED });
-  if (MUTATE === "no-infolders" || MUTATE === "no-placement" || forceWide) {
+  if (MUTATE === "no-infolders" || MUTATE === "no-placement" || MUTATE === "no-cardtap" || forceWide) {
     await ctx.route("**/journey-map.html*", async (route) => {
       const res = await route.fetch();
       let body = await res.text();
       if (MUTATE === "no-placement") body = body.replace("await createNotePlacement(db, { ...ownerArgs, noteId: created.noteId, folderId, order });", "/* mutated: placement skipped */");
       if (MUTATE === "no-infolders") body = body.replace("const inFolders = filedIn > 1 ?", "const inFolders = false ?");
+      if (MUTATE === "no-cardtap") body = body.replace('if (card.matches(".fn-card")) {', "if (false) {");
       if (forceWide) body = body.replace('document.documentElement.clientWidth >= NOTE_PANE_WIDE_FROM ? "wide" : "narrow"', '"wide"');
       await route.fulfill({ response: res, body });
     });
@@ -185,6 +187,15 @@ async function run(lang, width, embedFrame = false) {
   const w0 = await fsWrites(P);
   await P.press("#quickTitle", "Enter");
   check(`${tag}: an empty title is refused in words and writes nothing`, (await fsWrites(P)) === w0 && (lang === "bn" ? hasBn(await status(P)) : /Type a title/.test(await status(P))), await status(P));
+
+  // ---- 7b. (Architect review) a tap anywhere on a card opens that Note, as in Siyagah -----------------------------
+  {
+    const box = await P.evaluate(() => { const c = document.querySelector('#folderNotes .fn-card[data-note-id="n2"] .note-card'); const r = c.getBoundingClientRect(); return { w: r.width, h: r.height }; });
+    await P.click('#folderNotes .fn-card[data-note-id="n2"] .note-card', { position: { x: 12, y: box.h - 6 } }); // the card's empty lower edge, not its title
+    const opened = await P.waitForFunction(() => { const p = document.getElementById("notePane"); return p && !p.hidden && /Note Two/.test(p.textContent); }, null, { timeout: 4000 }).then(() => true, () => false);
+    check(`${tag}: a tap on a card's empty space (not its title) opens that Note in the pane`, opened);
+    if (!tierWide && opened) { await P.click("[data-pane-back]"); await P.waitForSelector("#folderNotes", { state: "visible" }); }
+  }
 
   // ---- 8. ✚ New note (list header, pane bar) and the folder menu's Add note here ------------------------------
   const nBefore = (await dataOf(P, "notes")).length;
