@@ -14,6 +14,25 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v09.63 on `main`** (4 Oct 2026 — **The wheel's centre is the Owner's own calligraphy (decision 63, #542).**
+- **The centre:** it is now a display. The Owner's gold Audhubillah arc and Bismillah are one image, `app/img/wheel-hub-calligraphy.webp` (50 KB, cut from their own picture). It is placed as their circle places it: x 6.94–94.86%, y 7.03–46.13% of the measured gold ring.
+- **Under the calligraphy:** the chosen unit in two small lines, for every unit including a single āyah (e.g. "Page 257 / from Surah 14 · Ibrahim"). The second line wraps rather than being cut at 320px.
+- **At the bottom:** the demo's open Qur'an giving light.
+- **The pickers move:** the Surah and Āyah pickers leave the hub. **Choose a Unit** gets the full unit choice in the approved demo's order: Study Unit, the unit's number, Surah, then Āyah or From–To.
+- **The wheel's size and rings are unchanged,** measured against `main` at 5 widths.
+- **Built by:** the Builder (PR #543). Architect review put Choose a Unit in the demo's order and stopped the label being cut. Each fix comes with a new check, mutation-proven. A review bot's four findings on the demo (#541) were all real and are fixed in #544, which also corrected decision 63's example: Page 257 starts at Ibrahim, not Al-Hijr.
+- **Checks:**
+  - wheel-centre-browser 266/0 (`--mutate-image-shift` fails 20, `--mutate-select` 10, old row order 6)
+  - approach-short-names 70/0
+  - phone-width-overflow 217/0
+  - palette-contrast 20/0
+  - panel OK
+  - behaviour 1003/4 (sandbox: 22g×3, 31e)
+  - on `main` merged in: word-card-bangla-dictionary 200/0
+- **The image** is the one new landing-page load (no preload; I9 flagged to the Owner).
+- **With the Owner:** the Asmaul Husna poster (on hold, decision 50).
+)
+
 **Previous milestone: v09.62 on `main`** (4 Oct 2026 — **The Word card shows the Bangla dictionary meaning (decision 62, #539).** In Bangla, the Depth tab's Dictionary box leads with the meaning from the AQS *Quraniyo Obhidhan* (কুরআনীয় অভিধান, Abu Hena / Yahya, 2nd ed. 2015): the first meaning in large type, the English meaning smaller under it, and any further entries under the same unvowelled spelling in a closed "এই বানানের অন্য ভুক্তি (n)", each with its PDF page. The credit names the book and links its page (`archive.org/download/mujammufahras/qab.pdf#page=N`). A word with no matched entry says so and never guesses. The data (`lemma-dictionary-bn.json`, 2,761 of 4,832 lemmas, 57.4% of word occurrences; PR #538) is fetched only when a Bangla reader first opens Depth (I9); English readers never fetch it. Built by the Builder (PR #540); Architect review updated two stale load checks in place in word-card-dictionary-browser (English WbW loads the English file on purpose since #504; mutation-proven). Checks: word-card-bangla-dictionary-browser 200/0 (`--mutate-no-lang-gate` fails 56), word-card-dictionary-browser 277/0, bangla-dictionary-data 35/0, quran-word-card 37/0, behaviour 1006/2 (sandbox TLS: 22h, 31e). Next: the wheel centre with the Owner's calligraphy (decision 63, PR #543). With the Owner: the Asmaul Husna poster (on hold, decision 50).)
 
 **Previous milestone: v09.61 on `main`** (3 Oct 2026 — **The Word card's three "Needs a source" lines are filled (decision 61, #533).** Arabic in Depth: **Grammar in This Āyah** shows what the word does in its sentence from the Quranic Arabic Corpus treebank (GPL v3; surahs 1–8, part of 9, 59–114; elsewhere the line stays "needs a source"), each relation by the Corpus's own Arabic name with an English or Bangla gloss; **Word Choice** shows al-ʿAskarī's *al-Furūq al-Lughawiyya* entries for the Dictionary word (first three, then "Show N more"); **Classical Arabic Usage** shows al-Rāghib's *al-Mufradāt* entry for the root. Both books CC BY-NC-SA 4.0 via OpenITI, credited with page numbers; no translations (a generated quotation is ruled out). A fourth source tag, **From a book**. Each data file is fetched only when its section opens (I9). Built by the Builder (PR #537); Architect review fixed four things: piece Arabic from the data's `seg`, Arabic names isolated in Bangla text, general Bangla names for `subjx`/`predx`, and the 3-entry limit. Checks: word-card-needs-source-browser 93/0 (`--mutate-closed-fetch` fails 8+), needs-a-source-data 35/0, word-card-depth-rebuild 231/0, conjugation 213/0, search 252/0, pc-boxes 296/0, palette-contrast 20/0, phone-width-overflow 217/0, behaviour 1004/4 (sandbox: 22g×3, 31e). Next: the wheel centre (demo with the Owner) and the Bangla dictionary from the AQS *Quraniyo Obhidhan* PDF (the Owner, 3 Oct: build without waiting for permission). With the Owner: the Asmaul Husna poster (on hold, decision 50).)

@@ -224,23 +224,21 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.63 on `main`** (4 Oct 2026 — **The wheel's centre is the Owner's own calligraphy (decision 63, #542).**
-- **The centre:** it is now a display. The Owner's gold Audhubillah arc and Bismillah are one image, `app/img/wheel-hub-calligraphy.webp` (50 KB, cut from their own picture). It is placed as their circle places it: x 6.94–94.86%, y 7.03–46.13% of the measured gold ring.
-- **Under the calligraphy:** the chosen unit in two small lines, for every unit including a single āyah (e.g. "Page 257 / from Surah 14 · Ibrahim"). The second line wraps rather than being cut at 320px.
-- **At the bottom:** the demo's open Qur'an giving light.
-- **The pickers move:** the Surah and Āyah pickers leave the hub. **Choose a Unit** gets the full unit choice in the approved demo's order: Study Unit, the unit's number, Surah, then Āyah or From–To.
-- **The wheel's size and rings are unchanged,** measured against `main` at 5 widths.
-- **Built by:** the Builder (PR #543). Architect review put Choose a Unit in the demo's order and stopped the label being cut. Each fix comes with a new check, mutation-proven. A review bot's four findings on the demo (#541) were all real and are fixed in #544, which also corrected decision 63's example: Page 257 starts at Ibrahim, not Al-Hijr.
+**Current milestone: v09.64 on `main`** (4 Oct 2026 — **Choose a Unit ends with Read and Play (decision 64, #547).**
+- **The buttons:** after choosing a unit, **Read** opens the Read view at that unit. **Play** opens it and starts the recitation there. They are two solid gold buttons at least 40px tall at the foot of the Choose a Unit list.
+- **The list stays open while choosing:** the unit type, the number, the surah and the āyah(s). It closes on Read, on Play, or on a tap outside it. Before, it closed on each choice, which would hide the very buttons it offers.
+- **Built by:** the Builder (#547, branch `builder/issue-547-run-840`). The Architect's review removed the close-on-choice rule and added a check that the list stays open through every choice.
 - **Checks:**
-  - wheel-centre-browser 266/0 (`--mutate-image-shift` fails 20, `--mutate-select` 10, old row order 6)
-  - approach-short-names 70/0
-  - phone-width-overflow 217/0
+  - wheel-unit-go-browser 254/0 (`--mutate-no-play` fails 24, `--mutate-read-plays` 12; the old close-on-choice rule restored fails 24)
+  - wheel-centre-browser 266/0
+  - tablet-wheel 74/0
+  - read-contents 248/0
   - palette-contrast 20/0
-  - panel OK
-  - behaviour 1003/4 (sandbox: 22g×3, 31e)
-  - on `main` merged in: word-card-bangla-dictionary 200/0
-- **The image** is the one new landing-page load (no preload; I9 flagged to the Owner).
-- **With the Owner:** the Asmaul Husna poster (on hold, decision 50).
+  - phone-width-overflow 217/0
+  - stub-parity 4/0
+  - behaviour 1006/1 (sandbox: 31e TLS)
+- **Next:** first screen B with the Qur'an's light (decision 65, #549); S8, the three-panel Mapping My Journey (#551).
+- **With the Owner:** the light from the Qur'an (demo v14); the Asmaul Husna poster (on hold, decision 50).
 )
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
