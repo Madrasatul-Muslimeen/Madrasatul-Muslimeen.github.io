@@ -20,6 +20,15 @@ Read the live state yourself, because it moves on after this was written:
 - `claude.yml` runs;
 - the "Active Architect session" line on #159.
 
+**Updated 4 Oct 2026, ~05:30 UTC, by session `session_012katd3VGiJEprbqxSEUTbf` (Active Architect on #159). Supersedes the ~02:45 paragraph below.**
+
+- **`main` is at v09.64** (PR #552): **Choose a Unit** ends with **Read** and **Play** and stays open while choosing (decision 64, #547). Suite `wheel-unit-go-browser` 254/0.
+- **In flight:**
+  - **#549, first screen B and the Qur'an's light** (decision 65). Built on `builder/issue-549-run-844` (commit 5265ebdb); no PR yet. Review: merge `origin/main` in, check seven stars, Bright, first screen B, no overlap with the Study Quran button.
+  - **The light, waiting on the Owner:** they asked that the light come **from the Qur'an, not a sun**. Demo v14 (artifact WxBk4PJ2vRNawVmyBgmaN7; scratchpad source made by `genpage.mjs`) adds design **6 · Light from the Qur'an**: beams rising along both pages' top edges, the pages glowing, the seven stars kept. If chosen, apply it in #549's review and copy the demo to `docs/reference/`.
+  - **#551, S8** (decision 66): Mapping My Journey in three panels. Builder dispatched 4 Oct ~04:30 UTC. S9–S14 follow (the plan is in the folder demo, artifact JsJ4kHTXLUcmS4DVY9GbRw).
+- **Lesson:** a local `main` ref goes stale; `wheel-centre-browser` compares against `BASELINE_REF` (default `main`), so run it with `BASELINE_REF=origin/main` after a fetch, or it reports a false wheel-size change.
+
 **Updated 4 Oct 2026, ~02:45 UTC, by session `session_012katd3VGiJEprbqxSEUTbf` (Active Architect on #159). Supersedes the ~21:15 paragraph below.**
 
 - **`main` is at v09.63.** Nothing is in flight: no Builder round is running and no PR is open.
