@@ -71,7 +71,10 @@ async function touchRaw(type, x, y) { await cdp.send("Input.dispatchTouchEvent",
 let curP; // the document being driven (the page, or the tray's iframe) -- boundingBox() is in top-level viewport coordinates either way
 async function centre(_pg, sel) { const loc = curP.locator(sel).first(); await loc.scrollIntoViewIfNeeded(); const b = await loc.boundingBox(); return { x: b.x + Math.min(b.width / 2, 60), y: b.y + b.height / 2 }; }
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-async function tap(pg, sel) { const c = await centre(pg, sel); await touch("touchStart", c.x, c.y); await wait(80); await touch("touchEnd"); await wait(150); return c; }
+// `probe` runs WHILE the finger is still down: a tap's follow-up click re-renders the tree and would wipe a menu a
+// wrongly-early long-press had opened, so the state has to be read before the finger lifts.
+let midPress = null;
+async function tap(pg, sel, probe = null) { const c = await centre(pg, sel); await touch("touchStart", c.x, c.y); await wait(120); midPress = probe ? await probe() : null; await touch("touchEnd"); await wait(150); return c; }
 async function longPress(pg, sel, hold = 700) { const c = await centre(pg, sel); await touch("touchStart", c.x, c.y); await wait(hold); await touch("touchEnd"); await wait(150); return c; }
 async function swipe(pg, sel) { const c = await centre(pg, sel); await touch("touchStart", c.x, c.y); await wait(60); await touch("touchMove", c.x, c.y + 30); await wait(600); await touch("touchEnd"); await wait(150); }
 
@@ -116,8 +119,8 @@ async function run(lang, width, embedFrame = false) {
   check(`${tag}: right-click on a folder row opens ITS ⋯ menu`, await menuOpen(P, "fA"));
   await closeMenus(P);
   await toTree(P);
-  await tap(page, `${rowSel("fG")} [data-folder-name]`);
-  check(`${tag}: a short tap on a folder row does NOT open a menu`, !(await menuOpen(P, "fG")));
+  await tap(page, `${rowSel("fG")} [data-folder-name]`, () => menuOpen(P, "fG"));
+  check(`${tag}: a short tap on a folder row does NOT open a menu`, midPress === false && !(await menuOpen(P, "fG")), String(midPress));
   await toTree(P);
   await swipe(page, `${rowSel("fG")} [data-folder-name]`);
   check(`${tag}: a press that moves more than 8px (a scroll) does NOT open a menu`, !(await menuOpen(P, "fG")));
@@ -142,9 +145,9 @@ async function run(lang, width, embedFrame = false) {
   check(`${tag}: right-click on a Note card opens its actions (the ▾ menu)`, await actionsShown(P, "n2"));
   await P.click('#folderNotes [data-note-id="n2"] [data-note-toggle]');
   check(`${tag}: ▾ still works (closes it again)`, !(await actionsShown(P, "n2")));
-  await tap(page, '#folderNotes [data-note-id="n2"] .note-card-meta');
+  await tap(page, '#folderNotes [data-note-id="n2"] .note-card-meta', () => actionsShown(P, "n2"));
   await wait(700);
-  check(`${tag}: a short tap on a card does not open its menu (it opens the Note)`, !(await actionsShown(P, "n2")) || await P.isVisible("#notePane"));
+  check(`${tag}: a short tap on a card does not open its menu (it opens the Note)`, midPress === false && await P.isVisible("#notePane"), String(midPress));
   await tapFolder(P, "fA");
   await swipe(page, '#folderNotes [data-note-id="n2"] .note-card-meta');
   check(`${tag}: a scroll on a card does not open its menu`, !(await actionsShown(P, "n2")));
