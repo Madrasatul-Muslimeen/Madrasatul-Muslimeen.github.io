@@ -117,6 +117,11 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   fixedByUs: "fixed by us",
   noDictionaryMeaning: "No dictionary meaning yet for this word.",
   banglaDictionaryPending: "Bangla dictionary meaning: will be added once permission is given",
+  // Decision 62 (#539) -- the Bangla dictionary meaning, from the AQS Quraniyo Obhidhan.
+  dictionaryMeaningBn: "Dictionary meaning",
+  banglaMeaningNoMatch: "No Bangla meaning has been matched for this word yet",
+  otherEntriesUnderSpelling: "Other entries under this spelling ({n})",
+  creditBanglaBook: "Bangla meaning: Quraniyo Obhidhan (Quranic Dictionary), Muhammad Abu Hena, edited by Muhammad Yahya, Al Quran Academy London Bangladesh, 2nd edition 2015, p.",
   quranicCorpus: "Quranic Corpus ↗",
   laneHansWehr: "Lane · Hans Wehr ↗",
   creditMeaning: "Meaning:",
@@ -756,16 +761,37 @@ function tabButton(level, selected, label) {
  * The meaning is English on both pages (lang="en"); links appear only for a
  * word that has a root.
  */
-function dictionaryBox(word, context, text) {
+function dictionaryBox(word, context, text, formatNumber = String) {
   const dict = context.dictionary;
   const entry = dict?.entry ?? null;
+  const bn = text.formMeaningLang === "bn";
+  // Decision 62 (#539): in Bangla the Bangla meaning (AQS Quraniyo Obhidhan) leads.
+  const bnDict = bn ? context.dictionaryBn : null;
+  const bnEntry = bnDict?.entry ?? null;
+  const hasBnMeaning = !!(bnEntry && Array.isArray(bnEntry.m) && bnEntry.m.length);
+  const pdfLink = (p) => {
+    const label = escapeHtml(formatNumber(p));
+    return Number.isInteger(p) ? `<a href="https://archive.org/download/mujammufahras/qab.pdf#page=${p}" target="_blank" rel="noopener noreferrer" data-word-card-dict-bn-page>${label}</a>` : label;
+  };
   let meaningHtml = "";
   if (dict) {
     meaningHtml = entry
-      ? `<p class="word-card-dict-meaning"><span lang="en" data-word-card-dict-meaning>${escapeHtml(entry.m)}</span>${entry.c === "medium" ? `<span class="word-card-dict-pill" data-word-card-dict-pill="likely">${escapeHtml(text.likelyMatch)}</span>` : ""}${entry.c === "fixed" ? `<span class="word-card-dict-pill" data-word-card-dict-pill="fixed">${escapeHtml(text.fixedByUs)}</span>` : ""}</p>`
+      ? `<p class="word-card-dict-meaning${bnDict ? " word-card-dict-meaning-en" : ""}"><span lang="en" data-word-card-dict-meaning>${escapeHtml(entry.m)}</span>${entry.c === "medium" ? `<span class="word-card-dict-pill" data-word-card-dict-pill="likely">${escapeHtml(text.likelyMatch)}</span>` : ""}${entry.c === "fixed" ? `<span class="word-card-dict-pill" data-word-card-dict-pill="fixed">${escapeHtml(text.fixedByUs)}</span>` : ""}</p>`
       : `<p class="word-card-dict-none" data-word-card-dict-none>${escapeHtml(text.noDictionaryMeaning)}</p>`;
   }
-  const bn = text.formMeaningLang === "bn";
+  let bnHtml = "";
+  if (bnDict) {
+    if (hasBnMeaning) {
+      const rest = bnEntry.m.slice(1);
+      bnHtml = `<p class="word-card-dict-meaning word-card-dict-bn-lead" data-word-card-dict-bn><span lang="bn" data-word-card-dict-bn-meaning>${escapeHtml(bnEntry.m[0])}</span></p>`
+        + (rest.length
+          ? `<details class="word-card-dict-more" data-word-card-dict-bn-more><summary>${escapeHtml(String(text.otherEntriesUnderSpelling).replace("{n}", formatNumber(rest.length)))}</summary><ul>${rest.map((m, i) => `<li><span lang="bn">${escapeHtml(m)}</span> <span class="word-card-dict-pg">(${pdfLink(bnEntry.p?.[i + 1])})</span></li>`).join("")}</ul></details>`
+          : "");
+    } else {
+      bnHtml = `<p class="word-card-dict-none" data-word-card-dict-bn-none>${escapeHtml(text.banglaMeaningNoMatch)}</p>`;
+    }
+  }
+  const bnCredit = hasBnMeaning ? `${escapeHtml(text.creditBanglaBook)} ${pdfLink(bnEntry.p?.[0])}. ` : "";
   const wbw = (bn ? word.translation?.bn : word.translation?.en) || (bn ? text.meaningUnavailableBn : text.meaningUnavailableEn);
   const root = word.morphology?.root;
   const links = root
@@ -777,12 +803,11 @@ function dictionaryBox(word, context, text) {
     : escapeHtml(text.linksOpenOther);
   return `<div class="word-card-dictionary" data-word-card-dictionary>
     <h4>📖 ${escapeHtml(text.dictionaryHeading)}</h4>
-    <div class="word-card-dict-label">${escapeHtml(text.dictionaryMeaning)}</div>${meaningHtml}
+    <div class="word-card-dict-label">${escapeHtml(bn ? text.dictionaryMeaningBn : text.dictionaryMeaning)}</div>${bnHtml}${meaningHtml}
     <div class="word-card-dict-label">${escapeHtml(text.inThisAyah)}</div>
     <p class="word-card-dict-wbw" lang="${bn ? "bn" : "en"}">${escapeHtml(wbw)}</p>
-    ${bn ? `<p class="word-card-dict-pending" data-word-card-dict-pending>${escapeHtml(text.banglaDictionaryPending)}</p>` : ""}
     ${links}
-    <p class="word-card-dict-credit">${credit}</p>
+    <p class="word-card-dict-credit">${bnCredit}${credit}</p>
   </div>`;
 }
 
@@ -926,7 +951,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
         ayahNumber: context.ayahNumber, surahNumber: context.surahNumber,
         nahw: context.needsSource?.nahw, furuq: context.needsSource?.furuq, mufradat: context.needsSource?.mufradat,
         laneUrl: layers.root ? `https://ejtaal.net/aa/#q=${encodeURIComponent(layers.root)}` : null,
-        dictionaryHtml: dictionaryBox(word, context, text),
+        dictionaryHtml: dictionaryBox(word, context, text, formatNumber),
         formsHtml: formsSection(layers, context, text, formatNumber, { expandable: true }),
       },
     })}
