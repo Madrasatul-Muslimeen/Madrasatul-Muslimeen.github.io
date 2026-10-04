@@ -19397,3 +19397,26 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
   - phone-width-overflow: 217/0
   - stub-parity: 4/0
   - behaviour: 1006/2 (sandbox TLS: 22h, 31e)
+
+## v09.63 — 4 Oct 2026 — The wheel's centre: the Owner's calligraphy (decision 63)
+
+- **What:** the Mastery Wheel's centre is a display only.
+  - **The calligraphy:** the Owner's gold calligraphy (the Audhubillah on its arc, the Bismillah under it) is one image, `app/img/wheel-hub-calligraphy.webp`, cut from their own picture with its background made transparent. It sits in the same proportion to the hub's gold ring as in their circle.
+  - **The chosen unit:** under the calligraphy, in two small lines, for every unit, e.g. "Āyah 1 / Surah 15 · Al-Hijr" or "Page 257 / from Surah 14 · Ibrahim". The second line wraps on a small phone instead of being cut off.
+  - **The open Qur'an:** at the bottom, giving light. It never takes a tap.
+  - **Choose a Unit:** it now holds the full unit choice, the same as Study options and in the approved demo's order. The Surah and Āyah pickers left the centre.
+- **Unchanged:** the wheel's size and rings, measured identical to `main` at 320, 360, 390, 768 and 1280.
+- **Loading:** the 50 KB image is the one new landing-page load, with no preload.
+- **Who:** demo with the Owner, versions 1–8 (3–4 Oct). The Owner's words: "Ma Shaa Allah, looks good. build it." Decision 63, PR #541 (the image and the demo), PR #544 (corrections from review), Builder PR #543.
+- **Review fixes:**
+  - The number-before-Surah order, with an on-screen order check (the old order fails 6).
+  - A label that wraps, with a no-cut check across surahs 29, 2 and 114 (it failed at 320 en before the fix).
+- **Checks:**
+  - wheel-centre-browser 266/0
+  - approach-short-names 70/0
+  - phone-width-overflow 217/0
+  - palette-contrast 20/0
+  - panel OK
+  - stub-parity 4/0
+  - behaviour 1003/4 (sandbox: 22g×3 archive.org, 31e TLS)
+  - word-card-bangla-dictionary 200/0 on the merge with `main`
