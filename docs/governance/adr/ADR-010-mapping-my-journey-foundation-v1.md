@@ -105,7 +105,7 @@ that cannot fail a check is not locked.
   `createNoteFolder()` never did.
 - A folder may not be its own ancestor. Self-parenting and longer cycles are
   both refused.
-- Depth is bounded at **8** including the root. A bound is required because
+- Depth is bounded at **1000** including the root (S9, 4 Oct 2026, decision 66: lifted from 8, which was the app's own limit and never a Rules one; what remains is a technical guard, and the cycle refusal is unchanged). A bound is required because
   every consumer of a tree walks it, and an unbounded depth turns one
   pathological chain into an unbounded read on a screen that must open fast
   (Architecture Part 8). Eight is deep enough that no real filing scheme meets

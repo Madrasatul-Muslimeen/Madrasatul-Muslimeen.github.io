@@ -3358,4 +3358,15 @@ export const BN = {
   "Choose a folder first — then a new Note is made in it.": "আগে একটি ফোল্ডার বেছে নিন — নতুন নোট তাতেই তৈরি হবে।",
   "in {n} folders": "{n}টি ফোল্ডারে",
   "Notes in this folder": "এই ফোল্ডারের নোট",
+  // S9 (decision 66): menus by right-click / long-press, drag a Note onto a folder, new folder-menu items.
+  "Add subfolder": "সাবফোল্ডার যোগ করুন",
+  "Name for the new subfolder": "নতুন সাবফোল্ডারের নাম",
+  "Move to top level": "সর্বোচ্চ স্তরে সরান",
+  "Turn into a section": "সেকশনে রূপান্তর করুন",
+  '"{name}" is now a top-level folder.': '"{name}" এখন একটি সর্বোচ্চ স্তরের ফোল্ডার।',
+  "Only a top-level folder can be turned into a section.": "শুধু সর্বোচ্চ স্তরের ফোল্ডারকে সেকশনে রূপান্তর করা যায়।",
+  'Section "{name}" made, and the folder is in it.': '"{name}" সেকশন তৈরি হয়েছে এবং ফোল্ডারটি তাতে রাখা হয়েছে।',
+  'Section "{name}" was made, but the folder could not be put in it.': '"{name}" সেকশন তৈরি হয়েছে, কিন্তু ফোল্ডারটি তাতে রাখা যায়নি।',
+  '"{title}" is already in {folder}.': '"{title}" আগে থেকেই {folder}-এ আছে।',
+  '"{title}" added to {folder}. It also stays in its other folders.': '"{title}" {folder}-এ যোগ হয়েছে। এটি অন্য ফোল্ডারগুলোতেও থাকছে।',
 };

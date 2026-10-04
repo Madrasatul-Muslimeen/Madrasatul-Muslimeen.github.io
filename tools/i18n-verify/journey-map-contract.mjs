@@ -289,22 +289,24 @@ check("J31 NOTHING is silently dropped across all FOUR lists", () => {
 });
 
 check("J32 a RE-PARENT counts the height of the subtree it carries, a create does not", () => {
-  // A chain six deep, and a separate three-tall subtree to move under it.
+  // A chain (MAX_FOLDER_DEPTH - 2) deep, and a separate three-tall subtree to move under it.
+  // UPDATED in S9: the chain was a literal six (= 8 - 2); it follows the constant now that 8 is lifted.
+  const R = MAX_FOLDER_DEPTH - 2;
   const folders = {};
-  for (let i = 1; i <= 6; i++) folders[`r${i}`] = folder({ folderId: `r${i}`, parentFolderId: i === 1 ? null : `r${i - 1}` });
+  for (let i = 1; i <= R; i++) folders[`r${i}`] = folder({ folderId: `r${i}`, parentFolderId: i === 1 ? null : `r${i - 1}` });
   folders.p = folder({ folderId: "p" });
   folders.pc = folder({ folderId: "pc", parentFolderId: "p" });
   folders.pcc = folder({ folderId: "pcc", parentFolderId: "pc" });
   folders.leaf = folder({ folderId: "leaf" });
 
   // A LEAF under r6 lands at depth 7 -- fine, and the arithmetic a create uses.
-  assert.equal(folderTreeRefusal({ ...own, folders, folderId: "leaf", parentFolderId: "r6" }), null);
+  assert.equal(folderTreeRefusal({ ...own, folders, folderId: "leaf", parentFolderId: `r${R}` }), null);
   // `p` is three tall, so its deepest descendant would land at depth 9. This
   // returned null before P6-D, and buildFolderTree() then called the result
   // CYCLIC -- the wrong sentence for the wrong reason.
-  assert.equal(folderTreeRefusal({ ...own, folders, folderId: "p", parentFolderId: "r6" }), "too-deep");
+  assert.equal(folderTreeRefusal({ ...own, folders, folderId: "p", parentFolderId: `r${R}` }), "too-deep");
   // A folder not in the set at all is a create: height 1, unchanged behaviour.
-  assert.equal(folderTreeRefusal({ ...own, folders, folderId: "brandNew", parentFolderId: "r6" }), null);
+  assert.equal(folderTreeRefusal({ ...own, folders, folderId: "brandNew", parentFolderId: `r${R}` }), null);
 });
 
 check("J33 measuring a subtree's height cannot spin on an already-corrupt tree", () => {
@@ -319,13 +321,28 @@ check("J33 measuring a subtree's height cannot spin on an already-corrupt tree",
     "breaking a cycle by re-parenting out of it must stay possible");
 });
 
-check("J34 the depth cap is inclusive on both paths -- exactly 8 is allowed, 9 is not", () => {
+// UPDATED in S9 (decision 66, 4 Oct 2026): the bound was the literal 8 and is now MAX_FOLDER_DEPTH (a technical
+// guard of 1000, lifted from the app's own 8). Same inclusive-on-both-paths assertion, written against the
+// constant so it follows it; a literal 8 would now pass a 9-deep refusal that no longer exists.
+check("J34 the depth cap is inclusive on both paths -- exactly MAX_FOLDER_DEPTH is allowed, one more is not", () => {
+  const top = MAX_FOLDER_DEPTH - 1;
   const folders = {};
-  for (let i = 1; i <= 7; i++) folders[`c${i}`] = folder({ folderId: `c${i}`, parentFolderId: i === 1 ? null : `c${i - 1}` });
-  assert.equal(folderTreeRefusal({ ...own, folders, folderId: "new", parentFolderId: "c7" }), null,
+  for (let i = 1; i <= top; i++) folders[`c${i}`] = folder({ folderId: `c${i}`, parentFolderId: i === 1 ? null : `c${i - 1}` });
+  assert.equal(folderTreeRefusal({ ...own, folders, folderId: "new", parentFolderId: `c${top}` }), null,
     `a leaf at exactly depth ${MAX_FOLDER_DEPTH} is inside the bound`);
-  folders.c8 = folder({ folderId: "c8", parentFolderId: "c7" });
-  assert.equal(folderTreeRefusal({ ...own, folders, folderId: "new", parentFolderId: "c8" }), "too-deep");
+  folders[`c${top + 1}`] = folder({ folderId: `c${top + 1}`, parentFolderId: `c${top}` });
+  assert.equal(folderTreeRefusal({ ...own, folders, folderId: "new", parentFolderId: `c${top + 1}` }), "too-deep");
+});
+check("J35 (S9) a folder nested 12 deep -- past the old limit of 8 -- is allowed, and the tree shows it whole", () => {
+  assert.ok(MAX_FOLDER_DEPTH > 12, "the old limit of 8 must be gone");
+  const folders = {};
+  for (let i = 1; i <= 11; i++) folders[`d${i}`] = folder({ folderId: `d${i}`, parentFolderId: i === 1 ? null : `d${i - 1}` });
+  assert.equal(folderTreeRefusal({ ...own, folders, folderId: "new", parentFolderId: "d11" }), null, "the 12th level is allowed");
+  const { roots, tooDeep, cyclic } = buildFolderTree(Object.values(folders));
+  let cursor = roots[0], depth = 1;
+  while (cursor.children.length) { cursor = cursor.children[0]; depth++; }
+  assert.equal(depth, 11); assert.deepEqual(tooDeep, []); assert.deepEqual(cyclic, []);
+  assert.equal(folderTreeRefusal({ ...own, folders, folderId: "d1", parentFolderId: "d11" }), "cycle", "the cycle refusal is kept");
 });
 
 console.log(`\n${passed} passed`);
