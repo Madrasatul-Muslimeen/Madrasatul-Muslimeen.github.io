@@ -127,6 +127,21 @@ for (const lang of ["en", "bn"]) for (const vp of WIDTHS) {
     const [w1, w2] = u[lang];
     check(`${tag} the label reads the chosen ${u.unit}: "${l1}" / "${l2}"`, w1.test(l1) && w2.test(l2) && (lang === "en" || !/[0-9]/.test(l1 + l2.replace(/Al-[\w'-]+|[A-Za-z' -]+/g, ""))), `${l1} / ${l2}`);
   }
+  // Review of #543: both label lines are nowrap + ellipsis, which fails
+  // SILENTLY (a standing lesson). Measure every unit with the longest real
+  // surah names, in this language, at this width: no line may be cut.
+  const cutLines = [];
+  for (const surah of ["29", "2", "114"]) {
+    await page.evaluate((v) => { const s = document.getElementById("surahSelect"); s.value = v; s.dispatchEvent(new Event("change", { bubbles: true })); }, surah);
+    await page.waitForTimeout(200);
+    for (const u of UNITS) {
+      await page.evaluate((unit) => { const s = document.getElementById("wheelUnitTypeSelect"); s.value = unit; s.dispatchEvent(new Event("change")); }, u.unit);
+      await page.waitForTimeout(150);
+      const c = await page.evaluate(() => ["wheelHubUnitLine1", "wheelHubUnitLine2"].map((id) => { const e = document.getElementById(id); return { t: e.textContent.trim(), cut: e.scrollWidth > e.clientWidth + 0.5, w: e.clientWidth }; }));
+      for (const x of c) if (x.cut || (x.t && x.w === 0)) cutLines.push(`${surah}/${u.unit}: "${x.t}" (${x.w}px)`);
+    }
+  }
+  check(`${tag} no label line is cut off, for every unit in surahs 29, 2 and 114`, cutLines.length === 0, cutLines.slice(0, 4).join(" | "));
   check(`${tag} no page errors`, real(errors).length === 0, real(errors).slice(0, 3).join(" | "));
   await ctx.close();
 }
@@ -167,6 +182,10 @@ for (const lang of ["en", "bn"]) for (const vp of [[320, 640], [390, 844], [1280
   await page.waitForTimeout(250); await open_();
   r = await rows();
   check(`${tag} Number shows for page (no Āyah, no From–To)`, r.wheelUnitNumRow && !r.wheelUnitAyahRow && !r.wheelUnitRangeRow, JSON.stringify(r));
+  // Review of #543: decision 63 / the approved demo put a numbered unit's own
+  // number ABOVE the Surah it starts in. Measured on screen, not in the markup.
+  const order = await page.evaluate(() => { const y = (id) => document.getElementById(id).getBoundingClientRect().top; return { num: y("wheelUnitNumRow"), surah: y("wheelUnitSurahRow") }; });
+  check(`${tag} the Page № row sits above the Surah row (the demo's order)`, order.num < order.surah, JSON.stringify(order));
   await page.selectOption("#wheelUnitNumSelect", "257");
   await page.waitForTimeout(400);
   const sur = await page.evaluate(() => ({ surah: document.getElementById("surahSelect").value, label: document.getElementById("wheelHubUnitLine2").textContent }));

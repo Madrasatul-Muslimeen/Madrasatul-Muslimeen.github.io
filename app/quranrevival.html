@@ -790,7 +790,11 @@
   }
   .wheel-hub-unit-2 {
     font-size: var(--hub-unit2-size, 8.5px); font-weight: 500; color: #b4bfd4; line-height: 1.2;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    /* Review of #543: at 320px the centre is ~100px across and "from Surah 29 ·
+       Al-Ankaboot" does not fit one line even at the 8.5px floor. An ellipsis
+       there fails silently, so the second line WRAPS (balanced) instead; the
+       open Qur'an below already shrinks to the room the label leaves. */
+    white-space: normal; text-wrap: balance; overflow-wrap: anywhere;
   }
   /* The open Qur'an sits at the bottom, under the label. */
   .wheel-hub-graphic { position: absolute; left: 27%; right: 27%; bottom: 3.5%; pointer-events: none; }
@@ -4559,6 +4563,12 @@
                   <label for="wheelUnitTypeSelect">Study Unit</label>
                   <select id="wheelUnitTypeSelect"></select>
                 </div>
+                <!-- Decision 63 / the approved demo: a numbered unit's own number
+                     comes before the Surah it starts in (review of #543). -->
+                <div class="wheel-unit-row" id="wheelUnitNumRow" hidden>
+                  <label for="wheelUnitNumSelect" id="wheelUnitNumLabel">Number</label>
+                  <select id="wheelUnitNumSelect"></select>
+                </div>
                 <div class="wheel-unit-row" id="wheelUnitSurahRow">
                   <label for="wheelUnitSurahSelect">Surah</label>
                   <select id="wheelUnitSurahSelect"></select>
@@ -4566,10 +4576,6 @@
                 <div class="wheel-unit-row" id="wheelUnitAyahRow" hidden>
                   <label for="wheelUnitAyahSelect">Ayah</label>
                   <select id="wheelUnitAyahSelect"></select>
-                </div>
-                <div class="wheel-unit-row" id="wheelUnitNumRow" hidden>
-                  <label for="wheelUnitNumSelect" id="wheelUnitNumLabel">Number</label>
-                  <select id="wheelUnitNumSelect"></select>
                 </div>
                 <div class="wheel-unit-row" id="wheelUnitRangeRow" hidden>
                   <label for="wheelUnitFromSelect">From</label>
