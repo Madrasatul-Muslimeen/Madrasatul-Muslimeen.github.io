@@ -43,7 +43,14 @@ const waitRevs = (page, id, n) => until(page, ([i, c]) => window.__DATA.noteRevi
 const editStatus = (page) => page.evaluate(() => { const e = document.querySelector("[data-edit-status]"); return e && !e.hidden ? e.textContent : ""; });
 const pageStatus = (page) => page.evaluate(() => { const e = document.getElementById("pageStatusMsg"); return e && getComputedStyle(e).display !== "none" ? e.textContent : ""; });
 const noSideways = (page) => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
-const leafTitle = (noteId) => `[data-note-leaf][data-note-id="${noteId}"][data-in-folder="fA"] [data-note-open]`;
+// UPDATED IN PLACE (S8, 4 Oct 2026): Notes are listed in panel 2 for the CHOSEN folder, not as leaves of the tree,
+// so the suite really taps Alpha once, then opens Notes from that list (the pane's Back returns to it).
+async function chooseAlpha(page) {
+  await page.waitForFunction(() => document.querySelectorAll("[data-folder-tree] .folder-row[data-folder-id]").length >= 1 && !document.querySelector("[data-folder-count-loading]"), null, { timeout: 15000 });
+  await page.click('.folder-row[data-folder-id="fA"] [data-folder-name]');
+  await page.waitForFunction(() => document.querySelectorAll("#folderNotes [data-note-leaf]").length >= 4, null, { timeout: 15000 });
+}
+const leafTitle = (noteId) => `#folderNotes [data-note-leaf][data-note-id="${noteId}"][data-in-folder="fA"] [data-note-open]`;
 const vis = (page, sel) => page.evaluate((s) => { const e = document.querySelector(s); if (!e) return false; const r = e.getBoundingClientRect(); return getComputedStyle(e).display !== "none" && r.width > 0 && r.height > 0; }, sel);
 const barH = (page) => page.evaluate(() => ({ h: document.querySelector("[data-pane-bar]").getBoundingClientRect().height, menuH: document.querySelector("[data-pane-menu-btn]").getBoundingClientRect().height, sw: document.querySelector("[data-pane-bar]").scrollWidth, cw: document.querySelector("[data-pane-bar]").clientWidth }));
 
@@ -73,7 +80,7 @@ for (const lang of ["en", "bn"]) {
     const ctx = await newContext(browser, { appLang: lang, viewport: { width, height: 900 }, extraSeedJs: SEED });
     await ctx.addInitScript(() => { try { localStorage.setItem("qr.journeyMapExpanded", JSON.stringify(["fA"])); } catch {} });
     const { page, errors } = await openPage(ctx, "/app/journey-map.html#folders");
-    await page.waitForFunction(() => document.querySelectorAll("[data-note-leaf]").length >= 4 && !document.querySelector("[data-folder-count-loading]"), null, { timeout: 15000 });
+    await chooseAlpha(page);
     await page.clock.install();
 
     // ---- 1. Edit opens the editor -------------------------------------------------
@@ -263,7 +270,7 @@ for (const [lang, width] of [["bn", 390], ["en", 1280]]) {
   const ctx = await newContext(browser, { appLang: lang, viewport: { width, height: 760 }, extraSeedJs: LONG_SEED });
   await ctx.addInitScript(() => { try { localStorage.setItem("qr.journeyMapExpanded", JSON.stringify(["fA"])); } catch {} });
   const { page } = await openPage(ctx, "/app/journey-map.html#folders");
-  await page.waitForFunction(() => document.querySelectorAll("[data-note-leaf]").length >= 4 && !document.querySelector("[data-folder-count-loading]"), null, { timeout: 15000 });
+  await chooseAlpha(page);
   await startEditing(page, "n1");
   await typeAtEnd(page, " end");
   await page.waitForTimeout(300);

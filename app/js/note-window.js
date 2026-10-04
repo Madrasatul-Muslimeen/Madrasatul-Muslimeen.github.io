@@ -38,6 +38,7 @@ export const NOTE_VIEW_HTML = `
           <div class="bar-palette pane-contents-menu" data-bar-palette="paneContents" data-pane-contents-list></div>
         </span>
         <span class="pane-spacer"></span>
+        <button type="button" class="secondary pane-btn" data-pane-new hidden>✚</button>
         <button type="button" class="secondary pane-btn" data-pane-edit-toggle hidden></button>
         <span class="bar-palette-wrap folder-menu-wrap" data-bar-palette-wrap="paneMenu" data-pane-menu-wrap>
           <button type="button" class="folder-menu-btn bar-palette-toggle" data-bar-palette-toggle="paneMenu" aria-haspopup="true" aria-expanded="false" data-pane-menu-btn>⋯</button>
@@ -108,6 +109,7 @@ const noteTitleOf = (note) => note.title?.trim() || t("(untitled)");
  *   menuMid(v, note)   extra ⋯ items for the Note's owner, HTML
  *   menuEnd(v, note)   extra ⋯ items at the end, HTML
  *   onMenu(v, note, on)  handle a click on one of those items; true when handled
+ *   newNote?()         S8: when given, the pane bar shows a ✚ (the owner only) that calls it
  *   orderFrom(el), folderFrom(el)   the ‹ › order / folder of the row a Note was opened from
  *   paneTier(), paneApply(), scroller()   the inline pane's layout (pane only)
  * }
@@ -401,6 +403,12 @@ export function createNoteViews(host) {
     const editToggle = v.el.querySelector("[data-pane-edit-toggle]");
     editToggle.hidden = !own;
     editToggle.textContent = editLabel;
+    // S8: a page that supplies `newNote` gets a ✚ on the pane's own bar (icon only, so the one-line bar never grows).
+    const newBtn = v.el.querySelector("[data-pane-new]");
+    if (newBtn) {
+      newBtn.hidden = !(own && host.newNote && v.kind === "pane");
+      newBtn.setAttribute("aria-label", t("New note")); newBtn.title = t("New note");
+    }
     let menu = `<button type="button" class="secondary tiny pane-fold-item" data-pane-prev ${prev ? "" : "disabled"}>‹ ${escapeHtml(t("Previous note"))}</button>
       <button type="button" class="secondary tiny pane-fold-item" data-pane-next ${next ? "" : "disabled"}>${escapeHtml(t("Next note"))} ›</button>`;
     if (own) {
@@ -593,6 +601,7 @@ export function createNoteViews(host) {
     if (on("[data-draft-restore]")) { const d = loadDraft(note.noteId); if (d && host.canEdit()) startEdit(v, note, d); return; }
     if (on("[data-draft-discard]")) { clearDraft(note.noteId); v.draftOfferEl.hidden = true; return; }
     if (on("[data-pane-back]")) { closePane(); return; }
+    if (on("[data-pane-new]")) { host.newNote?.(); return; }
     if (on("[data-pane-prev]")) { closeAllBarPalettes(null); step(v, -1); return; }
     if (on("[data-pane-next]")) { closeAllBarPalettes(null); step(v, 1); return; }
     if (on("[data-win-details]")) { const d = v.win.querySelector(".nw-details"); const open = d.classList.toggle("open"); on("[data-win-details]").setAttribute("aria-expanded", String(open)); return; }

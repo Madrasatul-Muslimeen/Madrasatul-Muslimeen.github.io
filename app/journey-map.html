@@ -253,7 +253,38 @@
   #notePane[hidden] { display: none; }
   #notePane { min-width: 0; box-sizing: border-box; border: 1px solid #ddd; border-radius: 0.6rem; background: #fff; padding: 0.5rem 0.7rem 1rem; margin-top: 0.6rem; }
   #noteLayout.pane-open.tier-narrow #listPane { display: none; }
-  #noteLayout.pane-open.tier-wide { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 1rem; align-items: start; }
+  #noteLayout.pane-open.tier-wide:not(.three) { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 1rem; align-items: start; }
+  /* S8 -- Folders view is THREE panels (tree | note list | Note). The tier comes from noteLayoutTier() alone:
+     wide = three columns side by side; narrow = ONE panel at a time (tree, then list, then Note), slid in by
+     the .list-open / .pane-open classes applyNoteTier() sets. */
+  #folderNotes, #notePlaceholder { display: none; min-width: 0; box-sizing: border-box; }
+  #noteLayout.three #folderNotes:not([hidden]) { display: block; border: 1px solid #ddd; border-radius: 0.6rem; background: #fff; padding: 0.5rem 0.7rem 1rem; margin-top: 0.6rem; }
+  #noteLayout.three #notePlaceholder:not([hidden]) { display: block; padding: 1rem; border: 1px dashed #ccd5e8; border-radius: 0.6rem; margin-top: 0.6rem; color: #555; }
+  #noteLayout.three.tier-narrow:not(.list-open) #folderNotes, #noteLayout.three.tier-narrow #notePlaceholder { display: none !important; }
+  #noteLayout.three.tier-narrow.list-open #listPane { display: none; }
+  #noteLayout.three.tier-narrow.pane-open #folderNotes { display: none !important; }
+  #noteLayout.three.tier-wide { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 4fr) minmax(0, 5fr); gap: 1rem; align-items: start; }
+  #noteLayout.three.tier-wide #folderNotes, #noteLayout.three.tier-wide #notePlaceholder { margin-top: 1rem; }
+  #noteLayout.three.tier-wide [data-list-back] { display: none; }
+  .fn-head { display: flex; align-items: center; gap: 0.4rem; flex-wrap: nowrap; min-height: 40px; }
+  .fn-title { flex: 1 1 0; min-width: 0; margin: 0; font-size: 1.05rem; overflow-wrap: anywhere; color: #1F3A6E; }
+  .fn-btn { flex: 0 0 auto; min-height: 40px; min-width: 40px; white-space: nowrap; }
+  .fn-switch { display: inline-flex; flex: 0 0 auto; }
+  .fn-switch button { min-height: 40px; border-radius: 0; background: #fff; color: #1F3A6E; border: 1px solid #1F3A6E; }
+  .fn-switch button:first-child { border-radius: 0.4rem 0 0 0.4rem; }
+  .fn-switch button:last-child { border-radius: 0 0.4rem 0.4rem 0; border-left: 0; }
+  .fn-switch button[aria-pressed="true"] { background: #1F3A6E; color: #fff; }
+  .fn-path { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin: 0.5rem 0; }
+  .fn-chip { min-height: 40px; max-width: 100%; overflow-wrap: anywhere; text-align: left; background: #eef2ff; color: #1F3A6E; border: 1px solid #c9d3ea; border-radius: 999px; padding: 0.2rem 0.8rem; }
+  .fn-newfolder { display: flex; gap: 0.4rem; align-items: center; margin: 0.4rem 0; }
+  .fn-newfolder input, .fn-quick input { flex: 1 1 0; min-width: 0; min-height: 40px; box-sizing: border-box; }
+  .fn-newfolder button, .fn-quick button { flex: 0 0 auto; min-height: 40px; min-width: 40px; }
+  .fn-quick { display: flex; gap: 0.4rem; align-items: center; margin: 0.5rem 0; }
+  .fn-list { list-style: none; margin: 0.5rem 0; padding: 0; }
+  .fn-list .note-card { margin: 0.4rem 0; }
+  .note-card-preview { margin: 0.3rem 0 0; font-size: 0.85rem; line-height: 1.35; color: #444; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+  .note-in-folders { font-size: 0.76rem; color: #5a4a1e; background: #fdf6ea; border: 1px solid #e3d3a8; border-radius: 999px; padding: 0.05rem 0.5rem; white-space: nowrap; }
+  .folder-row.selected { border-color: #1F3A6E; box-shadow: 0 0 0 2px #1F3A6E inset; background: #eef2ff; }
   #noteLayout.pane-open.tier-wide #notePane { position: sticky; top: 0.5rem; max-height: calc(100vh - 1rem); overflow-y: auto; margin-top: 1rem; }
   body.note-pane-wide { max-width: 84rem; }
   /* The Note view's own rules (bar, title, edit mode, pop-up windows) are in css/note-window.css, shared with notes.html; only the rules bound to THIS page's ids stay here. */
@@ -273,6 +304,7 @@
      job; Folders | Timeline | Path stay as its tabs. */
   html.embed h1, html.embed .intro, html.embed #topNav, html.embed #backLink, html.embed #accountCardOverlay { display: none !important; }
   html.embed body { margin: 0; padding: 0.4rem 0.6rem; overflow-x: hidden; }
+  html.embed body.note-pane-wide { max-width: none; }
 </style>
 </head>
 <body>
@@ -332,6 +364,8 @@
     <div id="viewPath" style="display:none;"></div>
     <div id="viewTrash" style="display:none;"></div>
     </div>
+    <section id="folderNotes" aria-label="Notes in this folder" hidden></section><!-- S8: panel 2, drawn by renderFolderNotes() -->
+    <div id="notePlaceholder" class="note" hidden>Choose a Note to read it here.</div>
     <section id="notePane" aria-label="Note" hidden></section><!-- its content is js/note-window.js's NOTE_VIEW_HTML -->
 
     </div>
@@ -357,7 +391,7 @@
     import { sanitizeNoteHtml } from "./js/note-sanitize.js";
     import { closeAllBarPalettes } from "./js/bar-palette.js";
     import { createNoteViews } from "./js/note-window.js";
-    import { NOTE_STATUS, createNoteFolder, createNotePlacement, restoreNote, retirePermanentNote, updatePermanentNoteContent } from "./js/note-foundation.js";
+    import { NOTE_STATUS, createNoteFolder, createNotePlacement, createPermanentNote, restoreNote, retirePermanentNote, updatePermanentNoteContent } from "./js/note-foundation.js";
     import {
       ownerFolderTreePagedSharded, folderContents,
       renameFolder, reorderFolder, moveFolder, reorderFiling,
@@ -691,6 +725,15 @@
     let refreshToken = 0;
     let timelineFilter = "everything"; // "everything" | a semanticRole | a real folderId
     let expandedNoteIds = new Set();
+    // S8 -- the three-panel Folders view. The chosen folder (by expandKeyFor(), so a virtual system folder keeps
+    // its place when it becomes real), whether the list panel is the one showing at a narrow width, the
+    // Compact/Preview choice and the inline "New folder" row. All UI state: per device, never Firestore.
+    const SELECTED_FOLDER_KEY = "qr.journeyMapSelectedFolder";
+    const NOTES_PREVIEW_KEY = "qr.journeyMapNotesPreview";
+    let selectedFolderKey = (() => { try { return localStorage.getItem(SELECTED_FOLDER_KEY) || null; } catch { return null; } })();
+    let listOpen = false;
+    let notesPreview = (() => { try { return localStorage.getItem(NOTES_PREVIEW_KEY) === "1"; } catch { return false; } })();
+    let listNewFolderOpen = false;
 
     function myPersonIdInActiveTenant() {
       return myMemberships.find((m) => m.tenantId === activeTenantId)?.personId ?? null;
@@ -749,6 +792,7 @@
       viewTimeline.style.display = currentView === "timeline" ? "block" : "none";
       viewPath.style.display = currentView === "path" ? "block" : "none";
       viewTrash.style.display = currentView === "trash" ? "block" : "none";
+      applyNoteTier();
     }
     viewToggle.querySelectorAll(".view-toggle-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -917,6 +961,17 @@
           if (e.ctrlKey || e.metaKey) { openNoteWindow(noteId, { fromEl: e.currentTarget }); return; } // Multi: its own window
           openNotePane(noteId, e.currentTarget);
         });
+        // S8 review: in the folder's Note list a tap ANYWHERE on the card opens the
+        // Note, as in Siyagah -- the date, the preview and the empty space too, not
+        // only the title. Its own buttons (▾, the actions) keep their own jobs.
+        if (card.matches(".fn-card")) {
+          card.querySelector(".note-card")?.addEventListener("click", (e) => {
+            if (e.target.closest("button, a, input, select, textarea, [data-note-actions]")) return;
+            const opener = card.querySelector("[data-note-open]");
+            if (e.ctrlKey || e.metaKey) { openNoteWindow(noteId, { fromEl: opener }); return; }
+            openNotePane(noteId, opener);
+          });
+        }
         card.querySelector("[data-note-window]")?.addEventListener("click", (e) => openNoteWindow(noteId, { fromEl: e.currentTarget }));
         card.querySelector("[data-note-toggle]")?.addEventListener("click", (e) => {
           if (expandedNoteIds.has(noteId)) expandedNoteIds.delete(noteId); else expandedNoteIds.add(noteId);
@@ -952,14 +1007,23 @@
 
     const scroller = () => document.scrollingElement || document.documentElement;
 
+    const folderNotesEl = document.getElementById("folderNotes");
+    const notePlaceholderEl = document.getElementById("notePlaceholder");
     function applyNoteTier() {
       const open = paneView.noteId !== null;
       const tier = noteLayoutTier();
+      // S8: the Folders view is three panels (tree | list | Note); Timeline, Path and Trash keep the two-panel layout.
+      const three = currentView === "folders";
       noteLayoutEl.classList.toggle("pane-open", open);
+      noteLayoutEl.classList.toggle("three", three);
+      noteLayoutEl.classList.toggle("list-open", three && listOpen);
       noteLayoutEl.classList.toggle("tier-wide", tier === "wide");
       noteLayoutEl.classList.toggle("tier-narrow", tier === "narrow");
-      document.body.classList.toggle("note-pane-wide", open && tier === "wide" && !isEmbedded);
+      document.body.classList.toggle("note-pane-wide", (open || three) && tier === "wide" && !isEmbedded);
       notePaneEl.hidden = !open;
+      folderNotesEl.hidden = !three;
+      notePlaceholderEl.hidden = !(three && !open);
+      notePlaceholderEl.textContent = t("Choose a Note to read it here.");
     }
 
     /** The row's own place in the list it was opened from, read off the rendered list so ‹ › walk exactly what the reader sees (a folder's own order; Timeline's or one Path branch's). */
@@ -968,7 +1032,7 @@
       if (tagList) return [...new Set([...tagList.querySelectorAll("[data-tag-note]")].map((n) => n.dataset.tagNote))];
       const leaf = el.closest("[data-note-leaf]");
       let scope, sel;
-      if (leaf) { scope = viewFolders; sel = `[data-note-leaf][data-in-folder="${CSS.escape(leaf.dataset.inFolder)}"]`; }
+      if (leaf) { scope = el.closest("#folderNotes") || viewFolders; sel = `[data-note-leaf][data-in-folder="${CSS.escape(leaf.dataset.inFolder)}"]`; }
       else { scope = el.closest("[data-path-stops]") || el.closest("#viewTimeline, #viewPath") || document; sel = ".note-card[data-note-id]"; }
       return [...new Set([...scope.querySelectorAll(sel)].map((n) => n.dataset.noteId))];
     }
@@ -1009,6 +1073,7 @@
       chips: (note) => [...activeFilingFolderIds(note)].map((id) => findNodeByIdOrRole(mergedRoots(), id, null)).filter(Boolean)
         .map((f) => ({ id: f.folderId, label: folderDisplayName(f) })),
       onChip: revealFolderFromChip,
+      newNote: () => newNoteHere(),
       menuMid: (v, note) => {
         const fromId = paneFromFolderId(v, note);
         return `<button type="button" class="secondary tiny" data-pane-copy>${escapeHtml(t("Copy to…"))}</button>
@@ -1068,6 +1133,9 @@
       saveExpandedIds();
       folderSearchQuery = "";
       currentView = "folders";
+      // S8: the chip's folder becomes the chosen one, and at a narrow width its Note list is the panel shown.
+      const chipNode = findNodeByIdOrRole(mergedRoots(), folderId, null);
+      if (chipNode) { selectedFolderKey = expandKeyFor(chipNode); saveSelectedFolder(); listOpen = true; }
       closeView(v, { restoreScroll: false });
       renderToggle();
       renderFoldersView();
@@ -1293,32 +1361,222 @@
       if (query) wireFolderSearchResults(); else wireFolderTree();
       wireNewFolderForm();
       wireTagsBlock();
+      renderFolderNotes();
+      applyNoteTier();
     }
 
-    /** One folder row, then (if expanded) its own child folders and the Notes filed directly in it -- a single flat, indented list rather than nested <ul>s, which keeps drag-and-drop and event delegation simple. */
+    /**
+     * One folder row, then (if expanded) its own child folders -- a single flat, indented list rather than nested <ul>s, which keeps drag-and-drop and event delegation simple.
+     * S8: Notes are no longer leaves of the tree (as in Siyagah); they are listed in the second panel, renderFolderNotes().
+     */
     function renderFolderSubtree(f, depth, numberPath) {
       const childFolders = (f.children ?? []).slice().sort(byOrder);
-      const leafRows = notesInFolder(f);
-      const expandable = childFolders.length > 0 || leafRows.length > 0;
+      const expandable = childFolders.length > 0;
       const expanded = expandedFolderIds.has(expandKeyFor(f));
       let html = folderRowHtml(f, depth, numberPath, expandable, expanded);
       if (!expanded) return html;
-      if (childFolders.length === 0 && leafRows.length === 0) {
-        html += `<li class="folder-tree-item folder-tree-empty" style="margin-left:${((depth + 1) * 1.1).toFixed(2)}rem">${escapeHtml(emptyStateFor(f))}</li>`;
-      } else {
-        let childIndex = 0;
-        for (const child of childFolders) {
-          const childNumberPath = numberPath ? `${numberPath}.${String(++childIndex).padStart(2, "0")}` : String(++childIndex).padStart(2, "0");
-          html += renderFolderSubtree(child, depth + 1, childNumberPath);
-        }
-        html += leafRows.map((row, idx) => noteLeafHtml(row, depth + 1, leafRows, idx)).join("");
-      }
-      if (isSelfSelected() && f.folderId && allNotes.some((n) => !leafRows.some((r) => r.note.noteId === n.noteId))) {
-        html += `<li class="folder-tree-item folder-tree-file-btn" data-file-into-folder="${escapeHtml(f.folderId)}" style="margin-left:${((depth + 1) * 1.1).toFixed(2)}rem">
-          <button type="button" class="secondary tiny" data-folder-file-note>${t("+ File a Note here…")}</button>
-        </li>`;
+      let childIndex = 0;
+      for (const child of childFolders) {
+        const childNumberPath = numberPath ? `${numberPath}.${String(++childIndex).padStart(2, "0")}` : String(++childIndex).padStart(2, "0");
+        html += renderFolderSubtree(child, depth + 1, childNumberPath);
       }
       return html;
+    }
+
+    // =====================================================================
+    // S8 -- panel 2: the Notes of the chosen folder, with a path row, a quick-
+    // title bar and Compact / Preview. Every write goes through the same
+    // data-layer functions the rest of this page already uses.
+    // =====================================================================
+    function saveSelectedFolder() {
+      try { if (selectedFolderKey) localStorage.setItem(SELECTED_FOLDER_KEY, selectedFolderKey); else localStorage.removeItem(SELECTED_FOLDER_KEY); } catch { /* private browsing */ }
+    }
+    function selectedFolderNode() {
+      return selectedFolderKey ? findNodeByExpandKey(mergedRoots(), selectedFolderKey) : null;
+    }
+    /** Choose a folder: its Notes fill panel 2, and (narrow tiers) panel 2 slides in. */
+    function selectFolder(node, { open = true } = {}) {
+      selectedFolderKey = expandKeyFor(node);
+      saveSelectedFolder();
+      listNewFolderOpen = false;
+      if (open) listOpen = true;
+      renderFoldersView();
+    }
+    function previewText(note) {
+      try { return (new DOMParser().parseFromString(sanitizeNoteHtml(note.bodyHtml ?? ""), "text/html").body.textContent || "").replace(/\s+/g, " ").trim(); }
+      catch { return ""; }
+    }
+    function listCardHtml(row, idx, rows) {
+      const { note, placement } = row;
+      const filedIn = activeFilingFolderIds(note).size;
+      const inFolders = filedIn > 1 ? `<span class="note-in-folders" data-in-folders>${escapeHtml(t("in {n} folders", { n: filedIn }))}</span>` : "";
+      const winBtn = `<button type="button" class="secondary tiny" data-note-window>⧉ ${t("Open in window")}</button>`;
+      const controls = winBtn + (isSelfSelected() ? `
+          <button type="button" class="secondary tiny note-order-btn" data-note-up ${idx <= 0 ? "disabled" : ""} aria-label="${escapeHtml(t("Move up"))}">▲</button>
+          <button type="button" class="secondary tiny note-order-btn" data-note-down ${idx >= rows.length - 1 ? "disabled" : ""} aria-label="${escapeHtml(t("Move down"))}">▼</button>
+          <button type="button" class="secondary tiny" data-note-copy>${t("Copy to…")}</button>
+          <button type="button" class="secondary tiny" data-note-move>${t("Move to…")}</button>` : "");
+      const preview = notesPreview ? `<p class="note-card-preview" data-note-preview>${escapeHtml(previewText(note))}</p>` : "";
+      return `<li class="fn-card" data-note-leaf data-note-id="${escapeHtml(note.noteId)}" data-in-folder="${escapeHtml(placement.folderId)}" data-placement-id="${escapeHtml(placement.placementId)}">
+        <div class="note-card">
+          ${noteHeadHtml(note, { hasActions: true, extraHead: inFolders })}
+          ${preview}
+          <div class="note-actions" data-note-actions style="${expandedNoteIds.has(note.noteId) ? "" : "display:none"}">${controls}</div>
+        </div>
+      </li>`;
+    }
+    function renderFolderNotes() {
+      const node = selectedFolderNode();
+      if (!node) {
+        folderNotesEl.innerHTML = `<div class="fn-head"><button type="button" class="secondary fn-btn" data-list-back aria-label="${escapeHtml(t("Back to folders"))}" title="${escapeHtml(t("Back to folders"))}">←</button></div>
+          <p class="note" data-fn-empty>${escapeHtml(t("Choose a folder to see its Notes."))}</p>`;
+        folderNotesEl.querySelector("[data-list-back]").addEventListener("click", () => { listOpen = false; applyNoteTier(); });
+        return;
+      }
+      const own = isSelfSelected();
+      const rows = notesInFolder(node);
+      const kids = (node.children ?? []).slice().sort(byOrder);
+      const isSystem = isSystemFolderRole(node.semanticRole);
+      const parent = node.parentFolderId ? findNodeByIdOrRole(mergedRoots(), node.parentFolderId, null) : null;
+      const chips = kids.map((k) => `<button type="button" class="fn-chip" data-subfolder-chip="${escapeHtml(k.folderId ?? "")}">${escapeHtml(folderDisplayName(k))} (${notesAndPlacementsLoaded ? (folderCounts[k.folderId] ?? 0) : "…"})</button>`).join("");
+      let html = `<div class="fn-head">
+          <button type="button" class="secondary fn-btn" data-list-back aria-label="${escapeHtml(t("Back to folders"))}" title="${escapeHtml(t("Back to folders"))}">←</button>
+          <h2 class="fn-title" data-fn-title>${escapeHtml(folderDisplayName(node))}</h2>
+        </div>
+        <div class="fn-head" style="justify-content: space-between">
+          ${own ? `<button type="button" class="fn-btn" data-fn-newnote>✚ ${escapeHtml(t("New note"))}</button>` : "<span></span>"}
+          <span class="fn-switch" role="group" aria-label="${escapeHtml(t("Note list style"))}">
+            <button type="button" data-fn-mode="compact" aria-pressed="${!notesPreview}">${escapeHtml(t("Compact"))}</button>
+            <button type="button" data-fn-mode="preview" aria-pressed="${notesPreview}">${escapeHtml(t("Preview"))}</button>
+          </span>
+        </div>
+        <div class="fn-path" data-fn-path>
+          <button type="button" class="secondary fn-btn" data-fn-up ${parent ? "" : "disabled"} aria-label="${escapeHtml(t("Up to the parent folder"))}" title="${escapeHtml(t("Up to the parent folder"))}">⬆</button>
+          ${chips}
+          ${own && !isSystem ? `<button type="button" class="secondary fn-btn" data-fn-newfolder>➕ ${escapeHtml(t("New folder"))}</button>` : ""}
+        </div>`;
+      if (own && !isSystem && listNewFolderOpen) {
+        html += `<form class="fn-newfolder" id="fnNewFolderForm"><input type="text" id="fnNewFolderName" placeholder="${escapeHtml(t("Folder name"))}" aria-label="${escapeHtml(t("Folder name"))}" /><button type="submit">${escapeHtml(t("Create"))}</button></form>`;
+      }
+      if (own) {
+        html += `<form class="fn-quick" id="quickTitleForm"><input type="text" id="quickTitle" placeholder="${escapeHtml(t("Quick title — press Enter to add a Note"))}" aria-label="${escapeHtml(t("Quick title — press Enter to add a Note"))}" /><button type="submit" aria-label="${escapeHtml(t("Add note"))}" title="${escapeHtml(t("Add note"))}">✚</button></form>`;
+      }
+      if (rows.length) {
+        html += `<ul class="fn-list" data-fn-list>${rows.map((row, idx) => listCardHtml(row, idx, rows)).join("")}</ul>`;
+      } else if (!notesAndPlacementsLoaded) {
+        html += `<p class="note" data-fn-empty>${escapeHtml(t("Counting the Notes filed in each folder…"))}</p>`;
+      } else {
+        html += `<p class="note" data-fn-empty>${escapeHtml(emptyStateFor(node))}</p>`;
+      }
+      if (own && node.folderId && allNotes.some((n) => !rows.some((r) => r.note.noteId === n.noteId))) {
+        html += `<p><button type="button" class="secondary tiny" data-folder-file-note style="min-height:40px">${t("+ File a Note here…")}</button></p>`;
+      }
+      folderNotesEl.innerHTML = html;
+      wireFolderNotes(node, rows);
+    }
+    function wireFolderNotes(node, rows) {
+      const el = folderNotesEl;
+      el.querySelector("[data-list-back]")?.addEventListener("click", () => { listOpen = false; applyNoteTier(); });
+      el.querySelectorAll("[data-fn-mode]").forEach((b) => b.addEventListener("click", () => {
+        notesPreview = b.dataset.fnMode === "preview";
+        try { localStorage.setItem(NOTES_PREVIEW_KEY, notesPreview ? "1" : "0"); } catch { /* private browsing */ }
+        renderFolderNotes();
+      }));
+      el.querySelector("[data-fn-up]")?.addEventListener("click", () => {
+        const parent = node.parentFolderId ? findNodeByIdOrRole(mergedRoots(), node.parentFolderId, null) : null;
+        if (parent) selectFolder(parent);
+      });
+      el.querySelectorAll("[data-subfolder-chip]").forEach((b) => b.addEventListener("click", () => {
+        const kid = findNodeByIdOrRole(mergedRoots(), b.dataset.subfolderChip, null);
+        if (!kid) return;
+        expandedFolderIds.add(expandKeyFor(node)); saveExpandedIds();
+        selectFolder(kid);
+      }));
+      el.querySelector("[data-fn-newfolder]")?.addEventListener("click", () => {
+        listNewFolderOpen = !listNewFolderOpen;
+        renderFolderNotes();
+        document.getElementById("fnNewFolderName")?.focus();
+      });
+      el.querySelector("#fnNewFolderForm")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const name = document.getElementById("fnNewFolderName").value.trim();
+        if (!name) { showPageStatus(t("Type a name for the folder first.")); return; }
+        await createFolderInside(node, name);
+      });
+      el.querySelector("[data-fn-newnote]")?.addEventListener("click", () => { newNoteHere(); });
+      el.querySelector("#quickTitleForm")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const input = document.getElementById("quickTitle");
+        const title = input.value.trim();
+        if (!title) { showPageStatus(t("Type a title first.")); return; }
+        input.disabled = true;
+        const noteId = await createNoteInFolder(node, title);
+        if (noteId) showPageStatus(t('Note "{title}" created in {folder}.', { title, folder: folderDisplayName(node) }));
+        const again = document.getElementById("quickTitle");
+        if (again) { if (!noteId) { again.value = title; } again.disabled = false; again.focus(); }
+      });
+      el.querySelector("[data-folder-file-note]")?.addEventListener("click", () => {
+        const candidate = allNotes.find((n) => !rows.some((r) => r.note.noteId === n.noteId));
+        if (candidate) fileNoteInFolder(candidate, node);
+      });
+      wireNoteLeaves(el);
+    }
+
+    /** A new, empty folder INSIDE `node` (a real folder; the two system folders hold none, ADR-010 §3 -- the button is not drawn for them). */
+    async function createFolderInside(node, name) {
+      const parentFolderId = await ensureRealFolder(node);
+      if (!parentFolderId) return;
+      const order = nextOrder(findNodeByIdOrRole(mergedRoots(), parentFolderId, null)?.children ?? []);
+      const outcome = await safeWrite(
+        () => createNoteFolder(db, {
+          tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid,
+          name, semanticRole: "user", parentFolderId, order, actorUid: auth.currentUser.uid,
+        }),
+        { collection: TENANT.NOTE_FOLDERS, action: "createNoteFolder" }
+      );
+      if (!outcome.ok) return;
+      listNewFolderOpen = false;
+      expandedFolderIds.add(expandKeyFor(node)); saveExpandedIds();
+      showPageStatus(t('Folder "{name}" created.', { name }));
+      await refreshAll();
+    }
+
+    /**
+     * A new Note filed straight into `node`: createPermanentNote() then createNotePlacement()
+     * (note-foundation.js), for the folder's own owner and tenant. The Note is its own commit, so if the
+     * filing then fails the sentence says the Note WAS saved (I15: it reaches the reader in words).
+     */
+    async function createNoteInFolder(node, title) {
+      if (!isSelfSelected()) return null;
+      const folderId = await ensureRealFolder(node);
+      if (!folderId) return null;
+      const order = nextOrder(notesInFolder(node).map((r) => r.placement));
+      const ownerArgs = { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, actorUid: auth.currentUser.uid };
+      const outcome = await safeWrite(async () => {
+        const created = await createPermanentNote(db, { ...ownerArgs, title, bodyHtml: "" });
+        try {
+          await createNotePlacement(db, { ...ownerArgs, noteId: created.noteId, folderId, order });
+        } catch (error) {
+          const wrapped = new Error(`The Note was saved, but filing it in this folder failed: ${error?.message ?? error}`);
+          wrapped.cause = error; wrapped.code = error?.code;
+          throw wrapped;
+        }
+        return created.noteId;
+      }, { collection: TENANT.NOTE_PLACEMENTS, action: "createPermanentNote+createNotePlacement" });
+      if (!outcome.ok) return null;
+      await refreshAll();
+      return outcome.result;
+    }
+
+    /** ✚ New note (panel 2's header, the Note pane's bar, a folder's ⋯ menu): an untitled Note in the chosen folder, opened in the pane. */
+    async function newNoteHere() {
+      const paneNode = paneView.noteId !== null && paneView.folderId ? findNodeByIdOrRole(mergedRoots(), paneView.folderId, null) : null;
+      const node = paneNode ?? selectedFolderNode();
+      if (!node) { showPageStatus(t("Choose a folder first — then a new Note is made in it.")); return; }
+      const noteId = await createNoteInFolder(node, "");
+      if (!noteId) return;
+      showPageStatus(t('New note created in {folder}.', { folder: folderDisplayName(node) }));
+      openNotePane(noteId, folderNotesEl.querySelector(`[data-note-id="${CSS.escape(noteId)}"] [data-note-open]`));
     }
 
     /**
@@ -1367,6 +1625,7 @@
           <span class="bar-palette-wrap folder-menu-wrap" data-bar-palette-wrap="${menuId}">
             <button type="button" class="folder-menu-btn bar-palette-toggle" data-bar-palette-toggle="${menuId}" aria-haspopup="true" aria-expanded="false" title="${escapeHtml(t("More"))}" aria-label="${escapeHtml(t("More"))}">⋯</button>
             <div class="bar-palette folder-row-menu" data-bar-palette="${menuId}">
+              <button type="button" class="secondary tiny" data-folder-addnote>✚ ${t("Add note here")}</button>
               <button type="button" class="secondary tiny" data-folder-pin>📍 ${t("New folders go here")}</button>
               <button type="button" class="secondary tiny" data-folder-rename>✏️ ${t("Rename")}</button>
               <button type="button" class="secondary tiny" data-folder-up ${upDisabled ? "disabled" : ""} aria-label="${escapeHtml(t("Move up"))}">▲ ${t("Move up")}</button>
@@ -1381,27 +1640,9 @@
       }
       const draggableAttr = editable ? ' draggable="true"' : "";
       return `<li class="folder-tree-item" data-depth="${depth}">
-        <div class="folder-row${isSystemFolderRole(f.semanticRole) ? " system" : ""}" style="margin-left:${(depth * 1.1).toFixed(2)}rem"
+        <div class="folder-row${isSystemFolderRole(f.semanticRole) ? " system" : ""}${key === selectedFolderKey ? " selected" : ""}" ${key === selectedFolderKey ? 'aria-current="true" ' : ""}style="margin-left:${(depth * 1.1).toFixed(2)}rem"
              data-folder-role="${escapeHtml(f.semanticRole)}" data-folder-id="${escapeHtml(f.folderId ?? "")}"${draggableAttr}>
           ${toggle}${nameHtml}${badge}${pin}${menu}
-        </div>
-      </li>`;
-    }
-
-    /** A Note filed directly in an OPEN folder, as a leaf of the tree -- the same shared note-card/preview toggle every view uses (wireNoteCards() is reused for it), plus its own ▲▼/Move to… when the owner is looking at their own tree. A Note filed in two folders appears under both, independently (ADR-010 §5). */
-    function noteLeafHtml(row, depth, siblingRows, idx) {
-      const { note, placement } = row;
-      const title = note.title?.trim() || t("(untitled)");
-      const winBtn = `<button type="button" class="secondary tiny" data-note-window>⧉ ${t("Open in window")}</button>`;
-      const controls = winBtn + (isSelfSelected() ? `
-          <button type="button" class="secondary tiny note-order-btn" data-note-up ${idx <= 0 ? "disabled" : ""} aria-label="${escapeHtml(t("Move up"))}">▲</button>
-          <button type="button" class="secondary tiny note-order-btn" data-note-down ${idx >= siblingRows.length - 1 ? "disabled" : ""} aria-label="${escapeHtml(t("Move down"))}">▼</button>
-          <button type="button" class="secondary tiny" data-note-copy>${t("Copy to…")}</button>
-          <button type="button" class="secondary tiny" data-note-move>${t("Move to…")}</button>` : "");
-      return `<li class="folder-tree-item folder-tree-note" data-note-leaf data-note-id="${escapeHtml(note.noteId)}" data-in-folder="${escapeHtml(placement.folderId)}" data-placement-id="${escapeHtml(placement.placementId)}" style="margin-left:${(depth * 1.1).toFixed(2)}rem">
-        <div class="note-card">
-          ${noteHeadHtml(note, { hasActions: true, titlePrefix: "📄 " })}
-          <div class="note-actions" data-note-actions style="${expandedNoteIds.has(note.noteId) ? "" : "display:none"}">${controls}</div>
         </div>
       </li>`;
     }
@@ -1424,6 +1665,11 @@
           else if (e.key === "Escape") { e.preventDefault(); inlineRenameKey = null; renderFoldersView(); }
         });
         renameInput?.addEventListener("blur", (e) => commitInlineRename(node, e.target.value));
+        row.querySelector("[data-folder-addnote]")?.addEventListener("click", (e) => {
+          e.stopPropagation(); closeAllBarPalettes(null);
+          selectFolder(node);
+          document.getElementById("quickTitle")?.focus();
+        });
         row.querySelector("[data-folder-pin]")?.addEventListener("click", (e) => {
           e.stopPropagation(); closeAllBarPalettes(null);
           newFolderTargetNode = isPinnedTarget(node) ? null : node;
@@ -1485,29 +1731,18 @@
 
         // Clicking the row's own name toggles it open/closed too, so the
         // whole row is a target, not just the small ▶/▾ glyph.
+        // S8: tapping the row CHOOSES the folder (its Notes fill panel 2); a folder with sub-folders also opens.
         row.addEventListener("click", (e) => {
           if (e.target.closest(".folder-menu-wrap, .folder-rename-input")) return;
-          if (expandable(node)) toggleExpanded(node);
+          if (expandable(node) && !expandedFolderIds.has(expandKeyFor(node))) { expandedFolderIds.add(expandKeyFor(node)); saveExpandedIds(); }
+          selectFolder(node);
         });
       });
 
       wireSectionHeaders(container);
-
-      container.querySelectorAll("[data-file-into-folder]").forEach((fileLi) => {
-        const folderId = fileLi.dataset.fileIntoFolder;
-        const node = findNodeByIdOrRole(mergedRoots(), folderId, null);
-        fileLi.querySelector("[data-folder-file-note]")?.addEventListener("click", () => {
-          if (!node) return;
-          const already = notesInFolder(node);
-          const candidate = allNotes.find((n) => !already.some((r) => r.note.noteId === n.noteId));
-          if (candidate) fileNoteInFolder(candidate, node);
-        });
-      });
-
-      wireNoteLeaves(container);
     }
     function expandable(node) {
-      return (node.children ?? []).length > 0 || notesInFolder(node).length > 0;
+      return (node.children ?? []).length > 0;
     }
     function dragZoneFor(row, clientY) {
       const rect = row.getBoundingClientRect();
@@ -2500,7 +2735,7 @@
           for (const ancestor of folderAncestorPath(folderId)) expandedFolderIds.add(expandKeyFor(ancestor));
           saveExpandedIds();
           folderSearchQuery = "";
-          renderFoldersView();
+          selectFolder(node);
           requestAnimationFrame(() => {
             document.querySelector(`.folder-row[data-folder-id="${CSS.escape(folderId ?? "")}"][data-folder-role="${CSS.escape(role)}"]`)
               ?.scrollIntoView({ block: "center" });
@@ -2510,16 +2745,18 @@
       container.querySelectorAll("[data-search-note-id]").forEach((li) => {
         li.addEventListener("click", () => {
           const noteId = li.dataset.searchNoteId;
+          let firstTarget = null;
           for (const placement of allPlacements.filter((p) => p.noteId === noteId && p.status === NOTE_STATUS.ACTIVE)) {
             const target = findNodeByIdOrRole(mergedRoots(), placement.folderId, null);
             if (!target) continue;
             for (const ancestor of folderAncestorPath(placement.folderId)) expandedFolderIds.add(expandKeyFor(ancestor));
-            expandedFolderIds.add(expandKeyFor(target));
+            firstTarget = firstTarget ?? target;
           }
           expandedNoteIds.add(noteId);
           saveExpandedIds();
           folderSearchQuery = "";
-          renderFoldersView();
+          // S8: the Note is listed in panel 2, so the first folder it is filed in becomes the chosen one.
+          if (firstTarget) selectFolder(firstTarget); else renderFoldersView();
           requestAnimationFrame(() => {
             document.querySelector(`[data-note-leaf][data-note-id="${CSS.escape(noteId)}"]`)?.scrollIntoView({ block: "center" });
           });

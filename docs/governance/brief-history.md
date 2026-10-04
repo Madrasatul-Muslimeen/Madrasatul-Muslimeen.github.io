@@ -14,6 +14,23 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v09.64 on `main`** (4 Oct 2026 — **Choose a Unit ends with Read and Play (decision 64, #547).**
+- **The buttons:** after choosing a unit, **Read** opens the Read view at that unit. **Play** opens it and starts the recitation there. They are two solid gold buttons at least 40px tall at the foot of the Choose a Unit list.
+- **The list stays open while choosing:** the unit type, the number, the surah and the āyah(s). It closes on Read, on Play, or on a tap outside it. Before, it closed on each choice, which would hide the very buttons it offers.
+- **Built by:** the Builder (#547, branch `builder/issue-547-run-840`). The Architect's review removed the close-on-choice rule and added a check that the list stays open through every choice.
+- **Checks:**
+  - wheel-unit-go-browser 254/0 (`--mutate-no-play` fails 24, `--mutate-read-plays` 12; the old close-on-choice rule restored fails 24)
+  - wheel-centre-browser 266/0
+  - tablet-wheel 74/0
+  - read-contents 248/0
+  - palette-contrast 20/0
+  - phone-width-overflow 217/0
+  - stub-parity 4/0
+  - behaviour 1006/1 (sandbox: 31e TLS)
+- **Next:** first screen B with the Qur'an's light (decision 65, #549); S8, the three-panel Mapping My Journey (#551).
+- **With the Owner:** the light from the Qur'an (demo v14); the Asmaul Husna poster (on hold, decision 50).
+)
+
 **Previous milestone: v09.63 on `main`** (4 Oct 2026 — **The wheel's centre is the Owner's own calligraphy (decision 63, #542).**
 - **The centre:** it is now a display. The Owner's gold Audhubillah arc and Bismillah are one image, `app/img/wheel-hub-calligraphy.webp` (50 KB, cut from their own picture). It is placed as their circle places it: x 6.94–94.86%, y 7.03–46.13% of the measured gold ring.
 - **Under the calligraphy:** the chosen unit in two small lines, for every unit including a single āyah (e.g. "Page 257 / from Surah 14 · Ibrahim"). The second line wraps rather than being cut at 320px.

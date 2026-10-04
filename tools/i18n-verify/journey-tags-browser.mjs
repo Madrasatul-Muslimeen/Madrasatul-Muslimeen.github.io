@@ -147,9 +147,22 @@ async function contrast(page, selector) {
 }
 const smallTargets = (page, sel) => page.evaluate((s) => [...document.querySelectorAll(s)].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && (r.height < 39.5 || r.width < 39.5) && getComputedStyle(e).display !== "none"; }).map((e) => `${e.tagName}.${e.className}:${Math.round(e.getBoundingClientRect().width)}x${Math.round(e.getBoundingClientRect().height)}`), sel);
 
-const leafTitle = (id) => `[data-note-leaf][data-note-id="${id}"][data-in-folder="fA"] [data-note-open]`;
-const leafToggle = (id) => `[data-note-leaf][data-note-id="${id}"][data-in-folder="fA"] [data-note-toggle]`;
-const leafWindowBtn = (id) => `[data-note-leaf][data-note-id="${id}"][data-in-folder="fA"] [data-note-window]`;
+// UPDATED IN PLACE (S8, 4 Oct 2026): Notes are listed in panel 2 for the CHOSEN folder, not as leaves of the tree,
+// so a Note is opened by really tapping its folder (Alpha) and then its title. The Tags block lives in the
+// tree panel, so below 1200px the list's own back control is tapped to reach it.
+const leafTitle = (id) => `#folderNotes [data-note-leaf][data-note-id="${id}"][data-in-folder="fA"] [data-note-open]`;
+async function openLeaf(page, id) {
+  const showing = await page.evaluate(() => getComputedStyle(document.getElementById("folderNotes")).display !== "none" && !!document.querySelector("#folderNotes [data-note-leaf]"));
+  if (!showing) {
+    if (await page.isVisible("#folderNotes [data-list-back]")) await page.click("#folderNotes [data-list-back]");
+    await page.click('.folder-row[data-folder-id="fA"] [data-folder-name]');
+    await page.waitForSelector("#folderNotes [data-note-leaf]", { state: "visible" });
+  }
+  await page.click(leafTitle(id));
+}
+async function toTree(page) { if (await page.isVisible("#folderNotes [data-list-back]")) await page.click("#folderNotes [data-list-back]"); }
+const leafToggle = (id) => `#folderNotes [data-note-leaf][data-note-id="${id}"][data-in-folder="fA"] [data-note-toggle]`;
+const leafWindowBtn = (id) => `#folderNotes [data-note-leaf][data-note-id="${id}"][data-in-folder="fA"] [data-note-window]`;
 const chipsIn = (page, scope) => page.$$eval(`${scope} [data-tag-chip]`, (els) => els.map((e) => e.textContent.trim()));
 const pickerOpen = async (page, menuBtn, menu) => {
   await page.click(menuBtn);
@@ -173,7 +186,7 @@ for (const lang of ["en", "bn"]) {
       await resetWrites(page);
 
       // ---- create a tag and tag a Note from the PANE ----
-      await page.click(leafTitle("n1"));
+      await openLeaf(page, "n1");
       await page.waitForSelector("#notePane:not([hidden])");
       await pickerOpen(page, "[data-pane-menu-btn]", "[data-pane-menu]");
       check(`${tag}: the Tags picker shows no gate sentence once on`, !(await vis(page, "[data-tag-gate]")));
@@ -238,6 +251,7 @@ for (const lang of ["en", "bn"]) {
 
       // ---- the tray's Tags block ----
       await page.evaluate(() => { const b = document.querySelector("#notePane:not([hidden]) [data-pane-back]"); if (b) b.click(); });
+      await toTree(page);
       await page.waitForSelector("[data-tags-block] [data-tag-item]");
       check(`${tag}: the Tags block lists the tag with a count of 2 Notes`, (await page.textContent("[data-tag-item] [data-tag-count]")).trim() === "2");
       check(`${tag}: the Tags block sits below the folder tree`, await page.evaluate(() => { const a = document.querySelector("[data-folder-tree]"), b = document.querySelector("[data-tags-block]"); return !!(a && b && (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)); }));
@@ -249,6 +263,7 @@ for (const lang of ["en", "bn"]) {
       await page.waitForSelector("#notePane:not([hidden])");
       check(`${tag}: opening a tag's Note opens it in the Note view`, (await page.textContent("#notePane [data-pane-title]")).includes("Note Two"));
       await page.evaluate(() => document.querySelector("#notePane [data-pane-back]").click());
+      await toTree(page);
       await page.waitForSelector("[data-tags-block] [data-tag-item]");
 
       // rename
@@ -322,7 +337,7 @@ for (const lang of ["en", "bn"]) {
       await page.click("[data-tag-new-btn]");
       await settle(page, 300);
       check(`${tag}: ＋ New tag says the sentence and writes nothing`, (await status(page)).trim() === gate && tagWrites(await writes(page)).length === 0, await status(page));
-      await page.click(leafTitle("n1"));
+      await openLeaf(page, "n1");
       await page.waitForSelector("#notePane:not([hidden])");
       await pickerOpen(page, "[data-pane-menu-btn]", "[data-pane-menu]");
       check(`${tag}: the picker says the sentence`, (await page.textContent("[data-tag-gate]")).trim() === gate);
@@ -376,7 +391,7 @@ for (const look of ["night", "light"]) {
   await ctx.addInitScript((l) => { try { localStorage.setItem("mm_card_look", l); localStorage.setItem("qr.journeyMapExpanded", JSON.stringify(["fA"])); } catch {} }, look);
   const { page } = await openPage(ctx, "/app/journey-map.html#folders");
   await waitTree(page);
-  await page.click(leafTitle("n1"));
+  await openLeaf(page, "n1");
   await page.waitForSelector("#notePane [data-tag-chip]");
   check(`[${look}] a stored tag shows as a chip in the Note view (positive control)`, (await chipsIn(page, "#notePane")).length === 1);
   check(`[${look}] the chip reads at 4.5:1 or better`, (await contrast(page, "#notePane [data-tag-chip]")) >= 4.5, String(await contrast(page, "#notePane [data-tag-chip]")));

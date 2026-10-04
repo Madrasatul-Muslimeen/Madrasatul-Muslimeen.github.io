@@ -35,9 +35,16 @@ const hasBn = (s) => /[ঀ-৿]/.test(s || "");
 const HEIGHT = 900;
 
 const W = (id) => `.note-win[data-note-id="${id}"]`;
-const leafTitle = (id) => `[data-note-leaf][data-note-id="${id}"][data-in-folder="fA"] [data-note-open]`;
-const leafToggle = (id) => `[data-note-leaf][data-note-id="${id}"][data-in-folder="fA"] [data-note-toggle]`;
-const leafWindowBtn = (id) => `[data-note-leaf][data-note-id="${id}"][data-in-folder="fA"] [data-note-window]`;
+// UPDATED IN PLACE (S8, 4 Oct 2026): Notes are listed in panel 2 for the CHOSEN folder, not as leaves of the tree,
+// so the suite really taps Alpha once, then works from that list.
+async function chooseAlpha(page) {
+  await page.waitForFunction(() => document.querySelectorAll("[data-folder-tree] .folder-row[data-folder-id]").length >= 1 && !document.querySelector("[data-folder-count-loading]"), null, { timeout: 15000 });
+  await page.click('.folder-row[data-folder-id="fA"] [data-folder-name]');
+  await page.waitForFunction(() => document.querySelectorAll("#folderNotes [data-note-leaf]").length >= 4, null, { timeout: 15000 });
+}
+const leafTitle = (id) => `#folderNotes [data-note-leaf][data-note-id="${id}"][data-in-folder="fA"] [data-note-open]`;
+const leafToggle = (id) => `#folderNotes [data-note-leaf][data-note-id="${id}"][data-in-folder="fA"] [data-note-toggle]`;
+const leafWindowBtn = (id) => `#folderNotes [data-note-leaf][data-note-id="${id}"][data-in-folder="fA"] [data-note-window]`;
 const vis = (page, sel) => page.evaluate((s) => { const e = document.querySelector(s); if (!e) return false; const r = e.getBoundingClientRect(); return getComputedStyle(e).display !== "none" && r.width > 0 && r.height > 0; }, sel);
 const rectOf = (page, sel) => page.evaluate((s) => { const r = document.querySelector(s).getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; }, sel);
 const count = (page, sel) => page.evaluate((s) => document.querySelectorAll(s).length, sel);
@@ -92,7 +99,7 @@ for (const lang of ["en", "bn"]) {
     const ctx = await newContext(browser, { appLang: lang, viewport: { width, height: HEIGHT }, extraSeedJs: SEED });
     await ctx.addInitScript(() => { try { localStorage.setItem("qr.journeyMapExpanded", JSON.stringify(["fA"])); } catch {} });
     const { page, errors } = await openPage(ctx, "/app/journey-map.html#folders");
-    await page.waitForFunction(() => document.querySelectorAll("[data-note-leaf]").length >= 4 && !document.querySelector("[data-folder-count-loading]"), null, { timeout: 15000 });
+    await chooseAlpha(page);
     await page.clock.install();
 
     // ---- 1. Single: Pop out ---------------------------------------------------------
@@ -258,7 +265,7 @@ for (const lang of ["en", "bn"]) {
       check(`${tag}: geometry is kept per device in localStorage`, !!stored && Math.abs(stored.x - saved.x) <= 1 && Math.abs(stored.w - saved.w) <= 1);
       check(`${tag}: ...and nothing about it is sent to Firestore`, await page.evaluate(() => !(window.__fsLog || []).some((l) => JSON.stringify(l).includes("nw-") || JSON.stringify(l).includes("note-window"))));
       await page.reload();
-      await page.waitForFunction(() => document.querySelectorAll("[data-note-leaf]").length >= 4 && !document.querySelector("[data-folder-count-loading]"), null, { timeout: 15000 });
+      await chooseAlpha(page);
       await openPaneNote(page, "n1");
       await popOutFromPane(page);
       await page.waitForSelector(W("n1"));
