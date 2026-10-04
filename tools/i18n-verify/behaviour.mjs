@@ -5576,10 +5576,20 @@ console.log("\n=== 43i-o. The hub's own content: Ta'awwudh/Bismillah (both perma
     const size = svg.viewBox.baseVal.width;
     const hubRadius = svgRect.width * ((size / 2 - 4) / size) / 2;
     const cx = svgRect.left + svgRect.width / 2, cy = svgRect.top + svgRect.height / 2;
-    const hub = document.getElementById("wheelHubPickers").getBoundingClientRect();
-    const corners = [[hub.left, hub.top], [hub.right, hub.top], [hub.left, hub.bottom], [hub.right, hub.bottom]];
-    const maxDist = Math.max(...corners.map(([x, y]) => Math.hypot(x - cx, y - cy)));
-    return { maxDist, hubRadius, fits: maxDist <= hubRadius + 2 };
+    // UPDATED IN PLACE, 4 Oct 2026 (decision 63): #wheelHubPickers is now the
+    // SQUARE box laid exactly on the hub circle (its corners are outside the
+    // circle by construction), so "inside the circle" is asserted on what is
+    // drawn in it: the chosen-unit label's corners, the open Qur'an's bottom
+    // edge, and the box being centred on the wheel. The image's own geometry is
+    // in wheel-centre-browser.mjs.
+    const labelRect = document.getElementById("wheelHubUnitLabel").getBoundingClientRect();
+    const gr = document.getElementById("wheelHubGraphic").getBoundingClientRect();
+    const pts = [[labelRect.left, labelRect.top], [labelRect.right, labelRect.top], [labelRect.left, labelRect.bottom], [labelRect.right, labelRect.bottom],
+                 [gr.left + gr.width / 2, gr.bottom]];
+    const maxDist = Math.max(...pts.map(([x, y]) => Math.hypot(x - cx, y - cy)));
+    const box = document.getElementById("wheelHubPickers").getBoundingClientRect();
+    const off = Math.hypot(box.left + box.width / 2 - cx, box.top + box.height / 2 - cy);
+    return { maxDist, hubRadius, off, fits: maxDist <= hubRadius + 2 && off <= 3 };
   });
   check("43l the hub's own content stays inside the wheel's hub circle, off the slices", fit.fits, JSON.stringify(fit));
 

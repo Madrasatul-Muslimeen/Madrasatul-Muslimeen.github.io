@@ -2,6 +2,15 @@
 // previous commit's copy of the page and the new one side by side, at five
 // viewports, in both tenant-banner states.
 import { chromium, newContext, openPage } from "./harness.mjs";
+import { execFileSync } from "node:child_process";
+// Opt-in, so a run that cannot write app/_prev-quranrevival.html (a read-only
+// checkout) can still compare: PREV_FROM_GIT=<ref> serves that ref's own page at
+// the shim's URL without creating a file, so there is nothing to delete after.
+// PREV_FROM_GIT=<ref> or --prev-from-git=<ref>.
+const PREV_REF = process.env.PREV_FROM_GIT || process.argv.find((a) => a.startsWith("--prev-from-git="))?.split("=")[1];
+const PREV_FROM_GIT = PREV_REF
+  ? execFileSync("git", ["show", `${PREV_REF}:app/quranrevival.html`], { encoding: "utf8", maxBuffer: 64 << 20 })
+  : null;
 
 // Chromium: use whatever this machine has. CHROMIUM_PATH overrides;
 // otherwise Playwright finds its own download, which is the normal case.
@@ -108,6 +117,7 @@ for (const banner of [true, false]) {
   for (const [name, viewport] of VIEWPORTS) {
     const ctx = await newContext(browser, { banner, viewport });
     await ctx.route("**/gtaf_bangla_timestamps.json", (r) => r.fulfill({ status: 200, contentType: "application/json", body: "{}" }));
+    if (PREV_FROM_GIT) await ctx.route("**/app/_prev-quranrevival.html", (r) => r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: PREV_FROM_GIT }));
     const before = await measure(ctx, "/app/_prev-quranrevival.html");
     const after = await measure(ctx, "/app/quranrevival.html");
     await ctx.close();
