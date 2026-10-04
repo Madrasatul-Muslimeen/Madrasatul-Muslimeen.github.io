@@ -94,7 +94,7 @@ ul[data-check] > li[data-checked="true"] { color: #555; text-decoration: line-th
 .nw-view [data-pane-back], .nw-view .note-pane-title { display: none; }
 .nw-details-row { flex: 0 0 auto; display: flex; align-items: flex-start; gap: 0.4rem; margin: 0.2rem 0; }
 .nw-details-btn { flex: 0 0 auto; min-height: 40px; white-space: nowrap; }
-.nw-details { flex: 1 1 0; min-width: 0; max-height: 1.7rem; overflow: hidden; align-self: center; }
+.nw-details { flex: 1 1 0; min-width: 0; overflow: hidden; align-self: center; }
 .nw-details.open { max-height: none; overflow: visible; }
 .nw-details .note-pane-meta { margin: 0 0 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nw-details.open .note-pane-meta { white-space: normal; }
@@ -110,6 +110,14 @@ body.jt-dragging .note-win { user-select: none; -webkit-user-select: none; }
 .nw-switch { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5000; height: 56px; box-sizing: border-box; display: flex; gap: 0.4rem; align-items: center; padding: 0 0.4rem; background: #1f3a6e; }
 .nw-switch-btn { flex: 1 1 0; min-width: 0; min-height: 40px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nw-switch-btn.active { outline: 2px solid #fff; font-weight: 600; }
+/* S13 -- tab strip (640px and up) and the Version line. Tabs are 40px or taller; the strip scrolls INSIDE itself, never the page; a long title is shortened with the full title in its tooltip. */
+.nw-tab { flex: 1 1 0; min-width: 0; display: flex; align-items: stretch; gap: 0.2rem; }
+.nw-tab .nw-switch-btn { flex: 1 1 0; }
+.nw-tab-x { flex: 0 0 auto; min-width: 40px; min-height: 40px; padding: 0; font-size: 1.1rem; line-height: 1; }
+.nw-switch.nw-tabs { height: auto; min-height: 52px; max-width: 100vw; overflow-x: auto; overflow-y: hidden; padding: 6px 0.4rem; justify-content: flex-start; }
+.nw-tabs .nw-tab { flex: 0 0 auto; width: 220px; max-width: 70vw; }
+.nw-ver-btn { display: block; min-height: 40px; max-width: 100%; margin: 0 0 0.2rem; text-align: start; white-space: normal; }
+.nw-ver-btn[hidden] { display: none; }
 .pane-edit-body { min-height: 8rem; padding: 0.5rem; border: 1px solid #aab; border-radius: 0.4rem; outline: none; }
 .pane-edit-body:focus { border-color: #1F3A6E; box-shadow: 0 0 0 2px rgba(31,58,110,0.15); }
 .pane-edit-status { margin: 0.3rem 0; font-size: 0.8rem; color: #555; }
@@ -171,3 +179,11 @@ mark.note-find-hit.current { background: #ff9f1c; outline: 2px solid #1F3A6E; }
 .note-versions .tag-picker-card { max-width: 32rem; }
 .at-head { margin: 0.6rem 0 0.2rem; font-size: 1rem; }
 .at-list { display: flex; flex-direction: column; max-height: 30vh; overflow-y: auto; }
+/* Architect review of S13 (#564): on a phone the switcher items split the width
+   equally and cut every title to "Note …", so "Note Two" and "Note Three" read
+   the same and a phone has no tooltip to tell them apart. Here each item takes
+   its own width (at least 7.5rem, at most 60% of the screen), the title wraps
+   onto two lines instead of being cut on one, and the strip scrolls sideways. */
+.nw-switch:not(.nw-tabs) { overflow-x: auto; overflow-y: hidden; justify-content: flex-start; }
+.nw-switch:not(.nw-tabs) .nw-tab { flex: 0 0 auto; min-width: 7.5rem; max-width: 60vw; }
+.nw-switch:not(.nw-tabs) .nw-switch-btn { white-space: normal; overflow-wrap: anywhere; line-height: 1.15; font-size: 0.85rem; padding: 2px 8px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; text-overflow: clip; }

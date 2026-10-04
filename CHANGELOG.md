@@ -19536,3 +19536,19 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
   - note-sanitize-boundary 12/0; every journey suite green
   - note-foundation-data-layer, rules-authorisation-executable green; phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0
   - behaviour 1003/4 (sandbox: 22g×3 archive.org, 31e TLS)
+
+## v09.71 — 4 Oct 2026 — Mapping My Journey: window tabs and the version line (S13, decision 66)
+
+- **What:**
+  - A tab strip for several open Note windows (640px and up): tap to bring forward, ✕ to close, the active one marked, long titles with a tooltip.
+  - On a phone the switcher gets ✕ and shows each title in full on up to two lines.
+  - The Details line shows "Version n of m · saved <time>", and opens the Versions list.
+- **Who:** the Owner, decision 66 (the S8–S14 plan). Builder issue #564, PR #565.
+- **Review fix:** on a phone every title was cut to "Note …"; now shown in full (new check; its mutation fails at 390).
+- **Not built:** the pinned-Notes side panel (needs S14's Pin flag).
+- **No Rules change.**
+- **Checks:**
+  - journey-window-tabs-browser 166/0, five mutations each failing
+  - every journey suite green; note-sanitize-boundary, note-foundation-data-layer green
+  - phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0
+  - behaviour 1003/4 (sandbox: 22g×3 archive.org, 31e TLS)
