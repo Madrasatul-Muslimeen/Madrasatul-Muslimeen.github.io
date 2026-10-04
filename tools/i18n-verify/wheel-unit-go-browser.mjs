@@ -4,7 +4,10 @@
 //
 //   node tools/i18n-verify/wheel-unit-go-browser.mjs            (repo root, node serve.js running)
 //   --mutate-no-play   Play stops calling playCurrentSelection(): the Play checks must fail
-//   --mutate-no-close  Read leaves the palette open: the palette-closed checks must fail
+//   --mutate-read-plays  Read also calls playCurrentSelection(): "Read starts no audio" must fail
+//   --mutate-no-close  removes Read's own closeAllBarPalettes(): still PASSES, because
+//                      openReadingScreen() closes every palette itself (line ~9468) --
+//                      so the explicit close is belt-and-braces, and recorded as such.
 //
 // Audio cannot load in the sandbox, so "playback started" is a count of calls
 // to HTMLMediaElement.prototype.play, read in the SAME task as the click (the
@@ -16,6 +19,7 @@ let pass = 0, fail = 0;
 const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
 const MUT_PLAY = process.argv.includes("--mutate-no-play");
 const MUT_CLOSE = process.argv.includes("--mutate-no-close");
+const MUT_READPLAY = process.argv.includes("--mutate-read-plays");
 
 const WIDTHS = [[320, 640], [360, 740], [390, 844], [600, 960], [768, 1024], [1280, 800]];
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
@@ -24,11 +28,12 @@ const waitWheel = (page) => page.waitForFunction(() => document.querySelectorAll
 
 // Mutations edit a throwaway copy of the page, never the app file.
 let target = "/app/quranrevival.html", tmp = null;
-if (MUT_PLAY || MUT_CLOSE) {
+if (MUT_PLAY || MUT_CLOSE || MUT_READPLAY) {
   let src = readFileSync("app/quranrevival.html", "utf8");
   const before = src;
   if (MUT_PLAY) src = src.replace(/(getElementById\("wheelUnitPlayBtn"\)[^]*?openReadingScreen\(\);\s*)playCurrentSelection\(\);/, "$1");
   if (MUT_CLOSE) src = src.replace(/(getElementById\("wheelUnitReadBtn"\)\?\.addEventListener\("click", \(\) => \{\s*)closeAllBarPalettes\(null\);/, "$1");
+  if (MUT_READPLAY) src = src.replace(/(getElementById\("wheelUnitReadBtn"\)[^]*?openReadingScreen\(\);)/, "$1 playCurrentSelection();");
   if (src === before) { console.log("mutation did not apply"); process.exit(2); }
   tmp = "app/_mut-quranrevival.html"; writeFileSync(tmp, src); target = "/app/_mut-quranrevival.html";
 }
