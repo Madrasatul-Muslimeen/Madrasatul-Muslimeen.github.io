@@ -20,6 +20,25 @@ Read the live state yourself, because it moves on after this was written:
 - `claude.yml` runs;
 - the "Active Architect session" line on #159.
 
+**Updated 4 Oct 2026, ~02:45 UTC, by session `session_012katd3VGiJEprbqxSEUTbf` (Active Architect on #159). Supersedes the ~21:15 paragraph below.**
+
+- **`main` is at v09.63.** Nothing is in flight: no Builder round is running and no PR is open.
+  - **v09.61:** the Word card's three Needs-a-source lines (#533, PR #537).
+  - **v09.62:** the Word card's Dictionary box leads with the **Bangla meaning** in Bangla (decision 62, #539, PR #540, version PR #545). The unattended Architect merged #540 before its version commit landed; the version went through #545.
+  - **v09.63:** the **wheel's centre** is the Owner's own gold calligraphy, `app/img/wheel-hub-calligraphy.webp`, with the chosen unit under it and the open Qur'an at the bottom. **Choose a Unit** holds the full unit choice: Study Unit, then the number, then Surah, then Āyah or From–To (decision 63, #542, PR #543). The approved demo is `docs/reference/2026-10-04-wheel-centre-demo.html`, and decision 63 is in the decisions file.
+- **The Bangla dictionary data** is `tools/quran-data-pull/output/lemma-dictionary-bn.json`. Source: the AQS *Quraniyo Obhidhan*, the Owner's PDF (archive.org `mujammufahras/qab.pdf`). It is built by `tools/dictionary-pull/bangla/` in five deterministic steps (README there) and checked by `bangla-dictionary-data.mjs` (35 checks). Report: `docs/reports/2026-10-03-bangla-dictionary-data.md`. Coverage is 2,761 of 4,832 lemmas (57.4% of occurrences). The rest is mostly particles; ٱللَّه is deliberately empty.
+- **Open items:**
+  - The Owner checks v09.62 and v09.63 on their device.
+  - The Asmaul Husna poster stays on hold (decision 50).
+  - A courtesy permission letter to the dictionary's publisher, reminded later (no longer a blocker, decision 62).
+  - Possible later data rounds: more Bangla matches for the frequent words left out (ءَامَنَ, ءَايَة, جَنَّة, رَحْمَة: their entries are in the book but could not be matched safely).
+  - `layout.mjs` reports a "dangling id" `bmNotFound` that is set by `note.id = …`, a pattern its static scan misses. It is on `main` too. Teach the scan that pattern; do not baseline it.
+- **Lessons, again:**
+  - **Never switch branches in the folder a long suite is reading.** I did it once more today and had to throw away a behaviour run. Review a second PR in a `git worktree`.
+  - A worktree outside `/home/user` needs `node_modules` linked (`ln -s /home/user/node_modules <wt>/node_modules`). A second server can run from the worktree on another port: a copy of `serve.js` with `PORT` changed, plus `harness.mjs`'s `BASE` changed locally. Never commit either.
+  - The unattended Architect can merge a green Builder PR while you are still reviewing it. Put review fixes and the version on the branch quickly, or expect to send the version through its own PR.
+  - Review bots on the Architect's own PRs (Codex on #541) found four real faults in a demo. Answer each thread and resolve it.
+
 **Updated 3 Oct 2026, ~21:15 UTC, by session `session_012katd3VGiJEprbqxSEUTbf` (Active Architect on #159 since 20:08 UTC). Supersedes the ~18:00 paragraph below.**
 
 - **`main` is at v09.60** (PR #534): Know Your Status's All-units wheel prints the Approach names; the āyah picker fits "Bismillah" for Al-Fātiḥah (`#ayahSelectControl.opt-cell-word`); `quran-word-card.mjs` 37/0, `approach-short-names-browser` 70/0, `ayah-action-sheet-boundary` 54/0. **Queue items 2 and 3 are done.**
