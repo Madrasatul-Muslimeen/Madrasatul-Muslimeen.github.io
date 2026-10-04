@@ -630,6 +630,19 @@
      outright, the trap this page has hit at least six times. */
   .wheel-unit-row[hidden] { display: none; }
   #wheelUnitNowLine { margin: 0.15rem 0 0; }
+  /* Decision 64: the next step after choosing a unit -- Read or Play it. */
+  .wheel-unit-go { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0.5rem 0 0.4rem; }
+  .wheel-unit-go-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
+    min-width: 0; min-height: 40px; box-sizing: border-box; padding: 0.25rem 0.5rem; cursor: pointer;
+    border-radius: 999px; border: 1.5px solid var(--card-button-border);
+    font-family: 'Inter', sans-serif; font-weight: 800; font-size: 0.84rem; line-height: 1.3;
+  }
+  .wheel-unit-go-btn svg { flex: none; width: 1rem; height: 1rem; fill: currentColor; }
+  #wheelUnitReadBtn { background: #fff; color: #222; }
+  /* The solid colour sits UNDER the look's gradient: same gold, and a fill a
+     contrast check (and a browser without the gradient) can read. */
+  #wheelUnitPlayBtn { background: var(--card-button-bg); background-color: var(--card-button-pressed-bg); color: var(--card-button-text); }
   /* Measured, English, both pills on one line: the pair needs 364px and gets
      347px at 360px wide (Bangla needs 286px and fits everywhere). Rather than
      let the row wrap -- which costs a whole Approach row, 42px, to save 17 --
@@ -4608,6 +4621,13 @@
                   <select id="wheelUnitToSelect"></select>
                 </div>
                 <p class="bar-palette-note" id="wheelUnitNowLine"></p>
+                <!-- Decision 64: the next action after choosing. Both reuse
+                     Study options' own Read/Play handlers (drillReadBtn,
+                     drillPlayBtn); see the listeners beside the mirrors. -->
+                <div class="wheel-unit-go">
+                  <button type="button" id="wheelUnitReadBtn" class="wheel-unit-go-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.5C10.4 5.3 8.2 4.7 5 4.7v12.6c3.2 0 5.4.6 7 1.8 1.6-1.2 3.8-1.8 7-1.8V4.7c-3.2 0-5.4.6-7 1.8zm-.75 1.9v8.1c-1.3-.6-2.9-.9-4.75-1V6.4c1.85.1 3.45.5 4.75 1.3z"/></svg><span>Read</span></button>
+                  <button type="button" id="wheelUnitPlayBtn" class="wheel-unit-go-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg><span>Play</span></button>
+                </div>
               </div>
             </span>
             <!-- Issue #328 -- "My Status" (Owner decisions 6-8, 27 Sep 2026):
@@ -8139,16 +8159,23 @@
       });
     }
 
-    // Choosing is done -- put the list away, the same rule Explore's own
-    // Approach capsule follows. A unit that still needs a NUMBER (Ruku'/Juz/
-    // Hizb/Page) or a From and a To (Range) leaves it open, because the
-    // control that finishes the job is inside the palette itself. Registered
-    // after the mirror loop above, so currentUnitType is already the new one
-    // by the time this runs.
-    wheelUnitTypeSelect?.addEventListener("change", () => {
-      if (!NUMBERED_UNITS.includes(currentUnitType) && currentUnitType !== "range") closeAllBarPalettes(null);
+    // Decision 64 (4 Oct 2026) replaced the old "choosing is done -- put the
+    // list away" rule: the palette now ENDS with Read and Play, the next step
+    // after choosing, so it stays open while the reader picks the unit type,
+    // the number, the surah and the ayah(s), and closes on Read, Play, or a
+    // tap outside it. Closing it on a choice hid the very buttons it offers.
+    // Decision 64: the next step after choosing. Exactly Study options' own
+    // drillReadBtn / drillPlayBtn; Play must start inside this click (the
+    // audio gesture rule at playCurrentSelection()), so nothing is awaited.
+    document.getElementById("wheelUnitReadBtn")?.addEventListener("click", () => {
+      closeAllBarPalettes(null);
+      openReadingScreen();
     });
-    wheelUnitNumSelect?.addEventListener("change", () => closeAllBarPalettes(null));
+    document.getElementById("wheelUnitPlayBtn")?.addEventListener("click", () => {
+      closeAllBarPalettes(null);
+      openReadingScreen();
+      playCurrentSelection();
+    });
 
     // The wheel's own one-time intro (session-only -- a fresh load shows the
     // button again). Dismissing it just hides the button and lifts the veil;

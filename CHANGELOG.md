@@ -19420,3 +19420,38 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
   - stub-parity 4/0
   - behaviour 1003/4 (sandbox: 22g×3 archive.org, 31e TLS)
   - word-card-bangla-dictionary 200/0 on the merge with `main`
+
+## v09.64 — 4 Oct 2026 — Choose a Unit ends with Read and Play (decision 64)
+
+- **What:** the landing page's **Choose a Unit** list ends with two buttons, **Read** and **Play**. They are the next step after choosing.
+  - **Read** opens the Read view at the chosen unit.
+  - **Play** opens it and starts the recitation there.
+- **The list stays open while choosing** the unit type, the number, the surah and the āyah(s). It closes on Read, on Play, or on a tap outside it. The old rule closed it on each choice, which would hide the new buttons.
+- **Who:** the Owner's words: "when user chose a unit now, what's the next action? It straight away should give hua to read or play the choice." Decision 64, Builder issue #547.
+- **Review fix:** the list no longer closes on a choice, and a new check proves it stays open (the old rule restored fails 24).
+- **Checks:**
+  - wheel-unit-go-browser 254/0 (`--mutate-no-play` fails 24, `--mutate-read-plays` 12)
+  - wheel-centre-browser 266/0
+  - tablet-wheel 74/0
+  - read-contents 248/0
+  - palette-contrast 20/0
+  - phone-width-overflow 217/0
+  - stub-parity 4/0
+  - behaviour 1006/1 (sandbox: 31e TLS)
+
+## v09.65 — 4 Oct 2026 — Mapping My Journey in three panels (S8, decision 66)
+
+- **What:** Mapping My Journey becomes three panels, as in Siyagah.
+  - **Folder tree:** folders only; Notes leave the tree.
+  - **Note list** for the chosen folder: ✚ New note, Compact / Preview, ⬆ to the parent, subfolder chips with counts, ➕ New folder inside this one, a quick-title bar that creates a Note filed in this folder, and "in N folders" on cards filed more than once. A tap anywhere on a card opens it.
+  - **The Note:** ✚ New note in its bar; Add note here in a folder's ⋯ menu.
+  - **Widths:** phone and tablet show one panel at a time; 1200px and up show three columns. The tray follows its own width.
+- **Who:** the Owner, "go, start S8" (decision 66). Builder issue #551.
+- **Review fix:** a tap anywhere on a card opens its Note (before, only the title did); check added, its mutation fails 8.
+- **No Rules change.**
+- **Checks:**
+  - journey-three-panel-browser 368/0, with four mutations each failing
+  - every journey suite green
+  - phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0
+  - behaviour 1003/4 (sandbox: 22g×3 archive.org, 31e TLS)
+- **Left for S9:** the card date shows seconds ("9/1/2026, 10:00:00 AM", and "AM" in Bangla); on a phone the ▾ sits on its own line.

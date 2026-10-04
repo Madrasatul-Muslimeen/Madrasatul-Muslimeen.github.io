@@ -82,7 +82,7 @@ body.jt-dragging .note-win { user-select: none; -webkit-user-select: none; }
 .pane-edit-status.problem { color: #8a1c1c; font-weight: 600; }
 .pane-draft-offer { margin: 0.5rem 0; padding: 0.5rem 0.6rem; border: 1px solid #e0c37a; background: #fff8e1; border-radius: 0.5rem; font-size: 0.9rem; }
 .pane-draft-offer .note-actions { margin-top: 0.4rem; }
-.pane-draft-offer[hidden], .pane-edit-toolbar[hidden], .pane-edit-status[hidden], .pane-edit-title[hidden], .note-pane-title[hidden], [data-pane-edit-toggle][hidden] { display: none; }
+.pane-draft-offer[hidden], .pane-edit-toolbar[hidden], .pane-edit-status[hidden], .pane-edit-title[hidden], .note-pane-title[hidden], [data-pane-edit-toggle][hidden], [data-pane-new][hidden] { display: none; }
 .note-pane-body img, .note-pane-body table { max-width: 100%; }
 .note-sec-h { margin: 0.6rem 0 0.2rem; font-size: 1.05rem; }
 .note-sec-toggle { display: flex; align-items: flex-start; gap: 0.4rem; width: 100%; min-height: 40px; background: none; border: none; color: #1F3A6E; font: inherit; font-weight: 700; text-align: left; padding: 0.2rem 0; cursor: pointer; }

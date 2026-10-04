@@ -46,10 +46,22 @@ async function writes(page) {
 const status = (page) => page.evaluate(() => { const e = document.getElementById("pageStatusMsg"); return e && getComputedStyle(e).display !== "none" ? e.textContent : ""; });
 const noSideways = (page) => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
 async function settle(page, ms = 600) { await page.waitForTimeout(ms); }
+// UPDATED IN PLACE (S8, 4 Oct 2026): Notes are no longer leaves of the folder tree. They are listed in panel 2
+// (#folderNotes) for the CHOSEN folder, so a Note is opened by really choosing its folder and then tapping its
+// title; below 1200px the panels show one at a time (tree -> list -> Note).
 async function waitTree(page) {
-  await page.waitForFunction(() => document.querySelectorAll("[data-note-leaf]").length >= 18 && !document.querySelector("[data-folder-count-loading]"), null, { timeout: 15000 });
+  await page.waitForFunction(() => document.querySelectorAll("[data-folder-tree] .folder-row[data-folder-id]").length >= 5 && !document.querySelector("[data-folder-count-loading]"), null, { timeout: 15000 });
 }
-const leafTitle = (noteId, folderId) => `[data-note-leaf][data-note-id="${noteId}"][data-in-folder="${folderId}"] [data-note-open]`;
+const leafTitle = (noteId, folderId) => `#folderNotes [data-note-leaf][data-note-id="${noteId}"][data-in-folder="${folderId}"] [data-note-open]`;
+/** Choose a folder with a real tap unless its Notes are already the list on screen. */
+async function openFolder(pg, folderId) {
+  const showing = await pg.evaluate((f) => { const l = document.getElementById("folderNotes"); return getComputedStyle(l).display !== "none" && !!l.querySelector(`[data-note-leaf][data-in-folder="${f}"]`); }, folderId);
+  if (showing) return;
+  if (await pg.isVisible("#folderNotes [data-list-back]")) await pg.click("#folderNotes [data-list-back]");
+  await pg.click(`.folder-row[data-folder-id="${folderId}"] [data-folder-name]`);
+  await pg.waitForFunction((f) => { const l = document.getElementById("folderNotes"); return getComputedStyle(l).display !== "none" && !!l.querySelector(`[data-note-leaf][data-in-folder="${f}"]`); }, folderId);
+}
+async function openLeaf(pg, noteId, folderId) { await openFolder(pg, folderId); await pg.click(leafTitle(noteId, folderId)); }
 const vis = (page, sel) => page.evaluate((s) => { const e = document.querySelector(s); if (!e) return false; const r = e.getBoundingClientRect(); return getComputedStyle(e).display !== "none" && r.width > 0 && r.height > 0; }, sel);
 const paneTitle = (page) => page.textContent("[data-pane-title]");
 const barMetrics = (page) => page.evaluate(() => {
@@ -74,7 +86,7 @@ async function stepDisabled(page, which) {
   return page.$eval(`[data-pane-bar] > [data-pane-${which}]`, (b) => b.disabled);
 }
 const paneOpen = (page) => page.evaluate(() => { const p = document.getElementById("notePane"); return !p.hidden && getComputedStyle(p).display !== "none"; });
-const listShown = (page) => page.evaluate(() => { const l = document.getElementById("listPane"); return getComputedStyle(l).display !== "none" && l.getBoundingClientRect().width > 0; });
+const listShown = (page, id = "folderNotes") => page.evaluate((i) => { const l = document.getElementById(i); return getComputedStyle(l).display !== "none" && l.getBoundingClientRect().width > 0; }, id);
 async function closePane(page, wide) {
   if (!wide) { await page.click("[data-pane-back]"); await settle(page, 200); }
 }
@@ -87,9 +99,10 @@ for (const lang of ["en", "bn"]) {
     await ctx.addInitScript(() => { try { localStorage.setItem("qr.journeyMapExpanded", JSON.stringify(["fA", "fG", "fD"])); } catch {} });
     const { page, errors } = await openPage(ctx, "/app/journey-map.html#folders");
     await waitTree(page);
-    check(`${tag}: before anything opens, the pane is closed and the list is shown`, !(await paneOpen(page)) && (await listShown(page)));
+    check(`${tag}: before anything opens, the pane is closed and the folder tree is shown`, !(await paneOpen(page)) && (await listShown(page, "listPane")));
 
     // ---- Opening, and Back at the same scroll position ----------------------------
+    await openFolder(page, "fG");
     const target = page.locator(leafTitle("g12", "fG"));
     await target.scrollIntoViewIfNeeded();
     const before = await page.evaluate(() => document.scrollingElement.scrollTop);
@@ -112,7 +125,7 @@ for (const lang of ["en", "bn"]) {
     check(`${tag}: no sideways scroll with the pane open or closed`, await noSideways(page));
 
     // ---- The header row: one line, nothing cut ---------------------------------------
-    await page.click(leafTitle("n1", "fA"));
+    await openLeaf(page, "n1", "fA");
     await page.waitForSelector("#notePane:not([hidden])");
     check(`${tag}: a 60+ character title is shown in full in the pane`, (await paneTitle(page)) === LONG_TITLE);
     await settle(page, 200);
@@ -145,7 +158,7 @@ for (const lang of ["en", "bn"]) {
     check(`${tag}: collapsing a section hides its body (computed display)`, (await secDisplay()) === "none");
     check(`${tag}: collapsing wrote NOTHING to the write log`, (await writes(page)).length === 0, JSON.stringify(await writes(page)));
     check(`${tag}: the collapsed state is kept in localStorage per Note, not elsewhere`, await page.evaluate(() => JSON.parse(localStorage.getItem("qr.journeyNoteCollapsed.n1") || "[]").includes(0)));
-    if (wide) { await page.click(leafTitle("n2", "fA")); await page.click(leafTitle("n1", "fA")); } else { await closePane(page, false); await page.click(leafTitle("n1", "fA")); }
+    if (wide) { await openLeaf(page, "n2", "fA"); await openLeaf(page, "n1", "fA"); } else { await closePane(page, false); await openLeaf(page, "n1", "fA"); }
     await page.waitForSelector("#notePane:not([hidden])");
     check(`${tag}: the collapsed section is still collapsed after closing and reopening the Note`, (await secDisplay()) === "none");
     await page.click('[data-sec-toggle="0"]');
@@ -184,7 +197,7 @@ for (const lang of ["en", "bn"]) {
 
     // ---- ‹ › walk the folder's own order and stop at the ends ---------------------------------
     await closePane(page, wide); // at narrow the pane hides the list; at wide both are on screen
-    await page.click(leafTitle("n2", "fA"));
+    await openLeaf(page, "n2", "fA");
     await page.waitForSelector("#notePane:not([hidden])");
     check(`${tag}: (Alpha's order) the second Note is open`, (await paneTitle(page)) === "Note Two");
     await step(page, "prev");
@@ -222,7 +235,12 @@ for (const lang of ["en", "bn"]) {
     });
     check(`${tag}: a folder chip closes the pane and opens that folder in the tree, expanded and in view`, !(await paneOpen(page)) && chipResult.row && chipResult.inView && chipResult.betaOpen, JSON.stringify(chipResult));
 
+    // S8: the chip also CHOOSES that folder -- its Note list is panel 2 (the one showing below 1200px).
+    check(`${tag}: the chip's folder is the chosen one and its Note list is the panel showing`,
+      (await page.textContent("#folderNotes [data-fn-title]")) === "BetaKid" && (await listShown(page)) && (await page.$('.folder-row.selected[data-folder-id="fBk"]')) !== null);
+
     // ---- Timeline and Path open the same pane, with that view's own order ------------------------------
+    if (await page.isVisible("#folderNotes [data-list-back]")) await page.click("#folderNotes [data-list-back]"); // the view toggle lives in the tree panel
     await page.click('.view-toggle-btn[data-view="timeline"]');
     await page.waitForSelector('#viewTimeline .note-card[data-note-id="n4"]');
     await page.click('#viewTimeline .note-card[data-note-id="n4"] [data-note-open]');
@@ -243,7 +261,7 @@ for (const lang of ["en", "bn"]) {
     await waitTree(page);
 
     // ---- Delete -> Trash -> Restore -----------------------------------------------------------------------
-    await page.click(leafTitle("nD", "fD"));
+    await openLeaf(page, "nD", "fD");
     await page.waitForSelector("#notePane:not([hidden])");
     await resetWrites(page);
     await openMenu(page); await page.click("[data-pane-menu] [data-pane-delete]");
@@ -255,6 +273,7 @@ for (const lang of ["en", "bn"]) {
       w3.some((w) => w.col === "notes" && w.id === "t1__nD" && w.data?.includes?.("status")) && !w3.some((w) => w.op === "delete" || w.op === "deleteDoc"), JSON.stringify(w3));
     const msg = await status(page);
     check(`${tag}: Delete — a confirmation says it moved to Trash${lang === "bn" ? " (in Bangla)" : ""}`, lang === "bn" ? hasBn(msg) && msg.includes("Doomed Note") : /moved to Trash/.test(msg) && /Doomed Note/.test(msg), msg);
+    if (await page.isVisible("#folderNotes [data-list-back]")) await page.click("#folderNotes [data-list-back]"); // the ⋯ menu lives in the tree panel
     await page.click(".page-menu-wrap .folder-menu-btn");
     await page.click("#openTrashBtn");
     await page.waitForSelector('[data-trash-note-id="nD"]', { timeout: 8000 });
@@ -266,7 +285,8 @@ for (const lang of ["en", "bn"]) {
     check(`${tag}: Restore brings it back (a status change), with no erase`, w4.some((w) => w.col === "notes" && w.id === "t1__nD" && w.data?.includes?.("status")) && !w4.some((w) => w.op === "delete" || w.op === "deleteDoc"), JSON.stringify(w4.map((w) => `${w.col}:${w.op}`)));
     await page.click("#trashBackBtn");
     await settle(page, 500);
-    check(`${tag}: the restored Note is in the tree again`, (await page.$(leafTitle("nD", "fD"))) !== null);
+    await openFolder(page, "fD");
+    check(`${tag}: the restored Note is in its folder's list again`, (await page.$(leafTitle("nD", "fD"))) !== null);
 
     check(`${tag}: no sideways scroll at the end`, await noSideways(page));
     check(`${tag}: no page errors`, errors.filter((e) => !/ERR_CERT|net::|Failed to load resource|\[folder refusal\]/.test(e)).length === 0, errors.join(" | "));
@@ -279,8 +299,8 @@ for (const lang of ["en", "bn"]) {
     const ctx = await newContext(browser, { appLang: lang, viewport: { width: 320, height: 800 }, extraSeedJs: SEED });
     await ctx.addInitScript(() => { try { localStorage.setItem("qr.journeyMapExpanded", JSON.stringify(["fA"])); } catch {} });
     const { page } = await openPage(ctx, "/app/journey-map.html#folders");
-    await page.waitForFunction(() => document.querySelectorAll("[data-note-leaf]").length >= 3 && !document.querySelector("[data-folder-count-loading]"), null, { timeout: 15000 });
-    await page.click(leafTitle("n1", "fA")); // four headings, so ☰ Contents is on the row too
+    await waitTree(page);
+    await openLeaf(page, "n1", "fA"); // four headings, so ☰ Contents is on the row too
     await page.waitForSelector("#notePane:not([hidden])");
     await settle(page, 200);
     const m = await barMetrics(page);
@@ -304,10 +324,10 @@ for (const lang of ["en", "bn"]) {
     await page.click("#tabJourneyBtn");
     await page.waitForSelector("#journeyTray:not([hidden])", { timeout: 5000 });
     const frame = await (await page.$("#journeyTray iframe")).contentFrame();
-    await frame.waitForFunction(() => document.querySelectorAll("[data-note-leaf]").length >= 18 && !document.querySelector("[data-folder-count-loading]"), null, { timeout: 20000 });
+    await frame.waitForFunction(() => document.querySelectorAll("[data-folder-tree] .folder-row[data-folder-id]").length >= 5 && !document.querySelector("[data-folder-count-loading]"), null, { timeout: 20000 });
     const fw = await frame.evaluate(() => document.documentElement.clientWidth);
     check(`${tag}: (positive control) the tray's document is narrower than 1200px`, fw < 1200, `iframe width ${fw}`);
-    await frame.click(leafTitle("n2", "fA"));
+    await openLeaf(frame, "n2", "fA");
     await frame.waitForSelector("#notePane:not([hidden])");
     const tier = await frame.evaluate(() => ({ narrow: document.getElementById("noteLayout").classList.contains("tier-narrow"), listHidden: getComputedStyle(document.getElementById("listPane")).display === "none", screen: screen.width }));
     check(`${tag}: the narrow tier is used (the pane replaces the list) even though the screen is ${width}px wide`, tier.narrow && tier.listHidden, JSON.stringify(tier));
@@ -316,7 +336,8 @@ for (const lang of ["en", "bn"]) {
     check(`${tag}: "Open full page" is on the ⋯ menu inside the tray`, items.some((x) => /full page|পূর্ণ পৃষ্ঠা/.test(x)), JSON.stringify(items));
     await page.keyboard.press("Escape"); await frame.click("[data-pane-title]");
     await frame.click("[data-pane-back]");
-    check(`${tag}: ← Back returns to the list inside the tray`, await frame.evaluate(() => getComputedStyle(document.getElementById("listPane")).display !== "none" && document.getElementById("notePane").hidden));
+    // UPDATED IN PLACE (S8): Back returns to the Note LIST (panel 2) it was opened from, not the tree.
+    check(`${tag}: ← Back returns to the Note list inside the tray`, await frame.evaluate(() => getComputedStyle(document.getElementById("folderNotes")).display !== "none" && document.getElementById("notePane").hidden));
     check(`${tag}: the tray's document has no sideways scroll`, await frame.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
     await ctx.close();
   }
@@ -328,7 +349,7 @@ for (const lang of ["en", "bn"]) {
   await ctx.addInitScript(() => { try { localStorage.setItem("qr.journeyMapExpanded", JSON.stringify(["fA","fB","fBk","fG","fD"])); } catch {} });
   const { page } = await openPage(ctx, "/app/journey-map.html#folders");
   await waitTree(page);
-  await page.click(leafTitle("n1", "fA"));
+  await openLeaf(page, "n1", "fA");
   await settle(page);
   const meta = await page.textContent("[data-pane-meta]");
   check("bn 390px: the Note pane's dates use Bangla digits, with no Latin digit left", /[০-৯]/.test(meta) && !/[0-9]/.test(meta), meta);

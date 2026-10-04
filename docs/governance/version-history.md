@@ -707,3 +707,5 @@ total). Allocated by the MMSA Architect.
 09.61: the Word card's Needs-a-source lines filled from the Corpus treebank, al-Furūq and al-Mufradāt (decision 61). Allocated by the MMSA Architect.
 09.62: the Bangla dictionary meaning on the Word card (decision 62, #539). Allocated by the MMSA Architect.
 09.63: the wheel's centre with the Owner's calligraphy (decision 63, #542). Allocated by the MMSA Architect.
+09.64: Read and Play in Choose a Unit (decision 64, #547). Allocated by the MMSA Architect.
+09.65: Mapping My Journey in three panels (S8, decision 66, #551). Allocated by the MMSA Architect.
