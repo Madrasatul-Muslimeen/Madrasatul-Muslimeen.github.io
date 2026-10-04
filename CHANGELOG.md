@@ -19486,3 +19486,19 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
   - every journey suite green; note-foundation-data-layer green
   - phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0
   - behaviour 1003/4 (sandbox: 22g×3 archive.org, 31e TLS)
+
+## v09.68 — 4 Oct 2026 — Mapping My Journey: the folder picker (S10, decision 66)
+
+- **What:** one folder picker with tick boxes for filing a Note.
+  - Reading: a tick files the Note at once; an untick retires that filing (never a delete). The last folder is refused, in words.
+  - Editing: ticks are saved with the edit on Done; Cancel writes nothing.
+  - In the picker: search, New folder (inside the highlighted one), rename, Move to Trash.
+  - Opens from Copy to…, Move to…, "+ File a Note here…" and the editor.
+  - Phone and tablet: a sheet from the bottom; desktop: a popover. Long names wrap.
+- **Who:** the Owner, decision 66 (the S8–S14 plan). Builder issue #557.
+- **No Rules change.**
+- **Checks:**
+  - journey-folder-picker-browser 294/0, four mutations each failing
+  - every journey suite green; note-foundation-data-layer and rules-authorisation-executable green
+  - phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0
+  - behaviour 1003/4 (sandbox: 22g×3 archive.org, 31e TLS)

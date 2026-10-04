@@ -224,21 +224,20 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.67 on `main`** (4 Oct 2026 — **Mapping My Journey: menus everywhere, drag a Note onto a folder, deep nesting (Siyagah round S9, decision 66, #555).**
-- **Menus:** right-click (PC) or a long-press (phone, tablet) on a folder opens its ⋯ menu, and on a Note card its actions. A short tap or a scroll never does.
-- **The folder menu gains:** Add subfolder, Move to top level, Turn into a section (top-level folders). **Open in its own window was NOT built:** a window listing a folder's Notes is a new kind of window (note windows hold one Note), so it waits for its own demo.
-- **Drag a Note onto a folder** to add it there; it stays in its other folders, and a folder that already holds it refuses it in words. Only at the three-column width (1200px and up), where the tree and the list are on screen together; folders can be dragged by touch at every width.
-- **Closing a folder closes its subfolders.** **Search finds tags too.**
-- **Nesting:** the depth guard is 64 instead of 8 (decision 66's "without a limit"; ADR-010 updated, the cycle refusal unchanged).
-- **From S8:** card dates show the date only ("1 Sep 2026", Bangla month and digits), and the ▾ stays on the title's line on a phone.
-- **No Rules change.** **Built by:** the Builder (branch `builder/issue-555-run-849`). Architect review: ADR-010's wording, and the depth mutation now fails a check instead of crashing.
+**Current milestone: v09.68 on `main`** (4 Oct 2026 — **Mapping My Journey: one folder picker with tick boxes (Siyagah round S10, decision 66, #557).**
+- **Tick the folders a Note belongs in:** while reading, a tick files the Note there at once and an untick retires that one filing (a status change, never a delete). The last folder cannot be unticked; the picker says why in words. While editing, the ticks are saved with the edit on Done, and Cancel leaves the filings as they were.
+- **Inside the picker:** search folders and Notes, ＋ New folder (inside the highlighted folder, or at the top), rename, and **Move to Trash** (`trashFolder`; nothing is erased).
+- **Where it opens:** the Note's Copy to… (ticks), Move to… (move), "+ File a Note here…" (choose Notes for a folder), and the editor (staged ticks).
+- **Widths:** a sheet from the bottom on a phone and tablet, a popover beside the Note on a desktop. Long folder names wrap.
+- **No Rules change.** New service call `retireNoteFiling` wraps the existing `retireNotePlacement`.
+- **Built by:** the Builder (branch `builder/issue-557-run-852`); Architect review by measurement, no changes needed.
 - **Checks:**
-  - journey-s9-browser 280/0 (mutations: drop-replaces 3, longpress-short 32, depth-back 8, no-recursive, no-tagsearch 8)
-  - every journey suite green (three-panel 368, folder-menus 148, note-pane 327, tags 363, sections 349, tray 227 and the rest); note-foundation-data-layer green
+  - journey-folder-picker-browser 294/0 (mutations: untick-deletes 28, edit-writes-early 32, no-trash 8, no-last-guard fails)
+  - every journey suite green; note-foundation-data-layer and rules-authorisation-executable green
   - phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0
   - behaviour 1003/4 (sandbox: 22g×3, 31e)
-- **Next:** Siyagah rounds S10 (the folder picker) to S14.
-- **With the Owner:** the Asmaul Husna poster (on hold, decision 50).
+- **Next:** Siyagah rounds S11 (reading tools) to S14.
+- **With the Owner:** a folder's own window (needs a demo); the Asmaul Husna poster (on hold, decision 50).
 )
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
