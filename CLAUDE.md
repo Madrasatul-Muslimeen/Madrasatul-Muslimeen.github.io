@@ -224,18 +224,18 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.70 on `main`** (4 Oct 2026 — **Mapping My Journey: the editor (Siyagah round S12, decision 66, #562).**
-- **New toolbar buttons** (pane and pop-up windows alike): underline, strikethrough, checklist (tickable, saved), quote, link (http/https/mailto), a simple table, text colour and highlight from a fixed palette, alignment, redo, clear formatting. On a phone the toolbar scrolls inside itself; the page never scrolls sideways.
-- **Headings while editing:** a ▾ to fold a section (view only, nothing saved) and a ⠿ grip to move the whole section.
-- **The Note cleaner** (`note-sanitize.js`) now admits links, quotes, tables, checklists, `dir` and three style properties (colour, background colour, text-align) with checked values; `on*` handlers, `class`, `javascript:` links and any other style stay out. Images still load only from http(s).
-- **Bangla times** on Versions and the Note's Created / Last changed line use Bangla digits and no English AM/PM.
-- **No Rules change.** **Built by:** the Builder (branch `builder/issue-562-run-857`). **Architect review found a real defect:** the window resize handler still called the removed `fitEditToolbar`, so every resize threw and note windows stopped laying out (caught by journey-note-windows-browser); fixed.
+**Current milestone: v09.71 on `main`** (4 Oct 2026 — **Mapping My Journey: pop-up windows finished — tabs and the version line (Siyagah round S13, decision 66, #564).**
+- **A tab strip (640px and up)** when several Notes are open in windows: one tab per window with its title and ✕; a tab brings its window to the front; the active tab is marked; a long title is shortened with the full title in its tooltip; the strip scrolls inside itself.
+- **On a phone** the bottom switcher gains a ✕ per item, and each title is shown in full on up to two lines (it was cut to "Note …" for every Note), with the strip scrolling sideways.
+- **The Details line shows "Version n of m · saved <time>"** (oldest = 1); tapping it opens the Versions list. Bangla digits in Bangla.
+- **Not in this round:** the side panel of pinned Notes, which needs S14's Pin flag.
+- **No Rules change.** **Built by:** the Builder (PR #565). Architect review: phone titles shown in full, with a check and its mutation.
 - **Checks:**
-  - journey-editor-browser 577/0 (mutations: js-link-ok 22, style-through 44, move-leaves-body 11, redo-noop 11)
-  - note-sanitize-boundary 12/0; journey-note-windows-browser 254/0 after the fix; every other journey suite green
-  - note-foundation-data-layer, rules-authorisation-executable green; phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0
+  - journey-window-tabs-browser 166/0 (mutations: tab-tap-noop 22, version-off-by-one 12, no-title-tooltip 6, sheet-titles-cut 2, close-all fails)
+  - every journey suite green; note-sanitize-boundary, note-foundation-data-layer green
+  - phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0
   - behaviour 1003/4 (sandbox: 22g×3, 31e)
-- **Next:** S13 (pop-up windows: tabs, Details with version, pinned side panel), S14 (flags and Note links, needs Rules).
+- **Next:** S14 — pin, favourite, archive, finalise and links between Notes; needs new Rules the Owner publishes.
 - **With the Owner:** a folder's own window (needs a demo); the Asmaul Husna poster (on hold, decision 50).
 )
 

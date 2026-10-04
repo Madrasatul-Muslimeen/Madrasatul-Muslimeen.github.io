@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.70",
+    "version": "09.71",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2021,8 +2021,20 @@
     {
       "version": "09.70",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "More formatting buttons, heading grip and fold while editing, a widened but checked Note cleaner, Bangla times (Builder #562, Architect review fix).",
+      "integration": {
+        "authorizedOn": "2026-10-04",
+        "integratedOn": "2026-10-04",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.71",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Tab strip for Note windows, phone switcher with full titles, Details 'Version n of m' (Builder PR #565, Architect review).",
       "integration": {
         "authorizedOn": "2026-10-04",
         "integratedOn": "2026-10-04",
@@ -2031,8 +2043,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.71",
+  "nextUnallocated": "09.72",
   "nextUnallocatedNote": [
+    "v09.71 was allocated to Mapping My Journey window tabs and version line (S13, decision 66, #564), 2026-10-04.",
     "v09.70 was allocated to Mapping My Journey editor (S12, decision 66, #562), 2026-10-04.",
     "v09.69 was allocated to Mapping My Journey reading tools (S11, decision 66, #559), 2026-10-04.",
     "v09.68 was allocated to the folder picker with tick boxes (S10, decision 66, #557), 2026-10-04.",
