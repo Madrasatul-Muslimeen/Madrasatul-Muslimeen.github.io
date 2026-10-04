@@ -717,3 +717,4 @@ total). Allocated by the MMSA Architect.
 09.71: Mapping My Journey window tabs and version line (S13, decision 66, #564). Allocated by the MMSA Architect.
 09.72: Mapping My Journey flags and Note links, switched off until Rules publish (S14, decision 66, #566). Allocated by the MMSA Architect.
 09.73: Pin, Favourite, Archive, Finalise and Note links switched on (S14, #566); settings Play always starts. Allocated by the MMSA Architect.
+09.74: Word-by-Word boxes enlargeable in Read and Note view; Explore readable on a phone. Allocated by the MMSA Architect.

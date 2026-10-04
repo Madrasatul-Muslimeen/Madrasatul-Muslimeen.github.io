@@ -1229,6 +1229,20 @@
      always outranks the attribute selector [hidden] (0,0,1,0) regardless of
      source order). */
   #explorePanel[hidden], #qcrPanel[hidden], #asmaXPanel[hidden] { display: none; }
+  /* 4 Oct 2026 (the Owner's phone screenshot: "unreadable", "card
+     overlapping"). Below 900px the wheel and its list STACK, and the panel
+     is one long card inside #exploreScroll -- so it must never shrink below
+     its content (flex-shrink 0). With `flex: 1 1 auto; min-height: 0` it
+     shrank to the scroll box's height, its dark background ended just under
+     the ring key, and the Whole Quran card, the words-known line, the hint
+     and every surah row ran on past it in pale text on the white page.
+     From 900px the pop-out bounds the panel and the list scrolls inside it
+     (the 2 Sep 2026 rule below), so there it keeps shrinking; the phone
+     rule itself sits just after that one. Measured at
+     820px the old layout was already right (the list scrolls inside the
+     card), so this is the phone layout only (720px, this page's own phone
+     breakpoint), and the stacked list sizes to its rows rather than to the
+     whole card's height (height:100% there left ~800px of empty scroll). */
   #explorePanel { flex: 1 1 auto; min-height: 0; }
   /* 2 Sep 2026 (owner's own screenshot): the Quran-structure sidebar list
      was still capped by .ways-list's own generic 420px max-height (below)
@@ -1244,6 +1258,12 @@
   #explorePanel { align-items: stretch; }
   #explorePanel .wheel-sidebar { display: flex; flex-direction: column; min-height: 0; height: 100%; }
   #explorePanel .ways-list { flex: 1 1 auto; max-height: none; }
+  /* The phone half of the 4 Oct 2026 rule above (placed AFTER the 2 Sep
+     rule, which it must beat at equal specificity). */
+  @media (max-width: 720px) {
+    #explorePanel { flex: 1 0 auto; }
+    #explorePanel .wheel-sidebar { height: auto; }
+  }
 
   /* Owner's own follow-up: "in QCR and Asma, list is left, wheel right --
      do the same for Quran [Explore] and Approach?" Yes, and safely --
@@ -2438,12 +2458,17 @@
      and its gloss are left-to-right scripts. The Arabic lines carry their own
      dir="rtl" from the renderer, so they are unaffected. */
   .wbw-word, .root-row { border: 1px solid #eee; border-radius: 0.4rem; padding: 0.3rem 0.5rem; text-align: center; min-width: 4.5rem; direction: ltr; }
+  /* 4 Oct 2026 (Owner: "enable these words enlargeable, both in Read and Note
+     view") -- the A± popover's "Word by Word" slider (text-size.js,
+     --qr-wbw-scale, default 1 = exactly the sizes below). */
+  .wbw-word { min-width: calc(4.5rem * var(--qr-wbw-scale, 1)); padding: calc(0.3rem * var(--qr-wbw-scale, 1)) calc(0.5rem * var(--qr-wbw-scale, 1)); }
   button.wbw-word-clickable { background: #fff; color: inherit; font: inherit; cursor: pointer; }
   button.wbw-word-clickable > span { display: block; }
   button.wbw-word-clickable:hover, button.wbw-word-clickable:focus-visible { border-color: #1F3A6E; box-shadow: 0 0 0 2px rgba(31,58,110,0.15); outline: none; }
   .wbw-arabic, .root-word, .root-root, .root-lemma { font-family: var(--quran-font); font-size: 1.15rem; }
-  .wbw-translit { font-size: 0.72rem; color: #888; font-style: italic; }
-  .wbw-gloss { font-size: 0.8rem; }
+  .wbw-arabic { font-size: calc(1.15rem * var(--qr-wbw-scale, 1)); }
+  .wbw-translit { font-size: calc(0.72rem * var(--qr-wbw-scale, 1)); color: #888; font-style: italic; }
+  .wbw-gloss { font-size: calc(0.8rem * var(--qr-wbw-scale, 1)); }
   .wbw-gloss-bn { font-family: 'Noto Sans Bengali', sans-serif; color: #555; }
   .root-pos { font-size: 0.7rem; color: #888; }
   .root-root { color: #1F3A6E; }
@@ -3859,7 +3884,7 @@
   .quick-menu .text-size-wrap > [data-text-size-toggle]:hover { background: #f5f0e2; }
   .quick-menu .text-size-popover { position: static; box-shadow: none; border: none; padding: 0.2rem 0 0.3rem 1rem; width: auto; }
   .text-size-row { display: flex; align-items: center; gap: 0.4rem; padding: 0.2rem 0; }
-  .text-size-row-label { flex: 0 0 3.4rem; font-size: 0.72rem; color: #555; }
+  .text-size-row-label { flex: 0 0 4.2rem; font-size: 0.72rem; color: #555; }
   .text-size-row input[type="range"] { flex: 1 1 auto; min-width: 0; accent-color: #1F3A6E; }
   .text-size-row-pct { flex: 0 0 2.6rem; text-align: right; font-size: 0.7rem; color: #777; }
   .text-size-row[data-text-size-row="all"] .text-size-row-label { font-weight: 700; color: #1F3A6E; }

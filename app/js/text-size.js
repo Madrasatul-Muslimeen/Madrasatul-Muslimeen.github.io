@@ -32,6 +32,13 @@
 // i.e. exactly today's byte-for-byte sizes) until the reader actually
 // drags a slider.
 //
+// UPDATED 4 Oct 2026 -- the Owner: "Can you enable these words enlargeable,
+// both in Read and Note view?" (the Word-by-Word boxes under an ayah). A
+// fourth slider, "Word by Word" (`wbw`, --qr-wbw-scale), now sizes every
+// Word-by-Word box -- its Arabic, transliteration and meaning, in the Read
+// view, the Note view and the pop-up pane alike -- and "All" and "Reset"
+// include it. Root/Derivatives keep their own sizing, as above.
+//
 // I2-adjacent: this file touches only localStorage and CSS custom
 // properties, never Firebase -- the same contract prefs.js itself keeps,
 // so ayah-note-renderer.js (a pure renderer) can import it freely, same as
@@ -39,7 +46,7 @@
 
 import { t, num } from "./i18n.js";
 
-const LANGS = ["ar", "en", "bn"];
+const LANGS = ["ar", "en", "bn", "wbw"];
 const MIN = 0.8;
 const MAX = 1.6;
 const STEP = 0.05;
@@ -60,7 +67,7 @@ function readScale(lang) {
   }
 }
 
-const cached = { ar: readScale("ar"), en: readScale("en"), bn: readScale("bn") };
+const cached = { ar: readScale("ar"), en: readScale("en"), bn: readScale("bn"), wbw: readScale("wbw") };
 
 function cssVarName(lang) {
   return `--qr-${lang}-scale`;
@@ -142,11 +149,12 @@ function sliderRowHtml(idPrefix, kind, label, value) {
  * dropdown of otherwise fully-worded items (⋮) rather than alone on an
  * icon bar, where "A±" alone already reads fine via its own title.
  */
-export function renderTextSizeButtonHtml(idPrefix, { showAr = true, showEn = true, showBn = true, btnClass = "note-icon-btn", showLabel = false } = {}) {
+export function renderTextSizeButtonHtml(idPrefix, { showAr = true, showEn = true, showBn = true, showWbw = true, btnClass = "note-icon-btn", showLabel = false } = {}) {
   const rows = [
     showAr ? sliderRowHtml(idPrefix, "ar", t("Arabic"), getTextSizeScale("ar")) : "",
     showEn ? sliderRowHtml(idPrefix, "en", t("English"), getTextSizeScale("en")) : "",
     showBn ? sliderRowHtml(idPrefix, "bn", t("Bangla"), getTextSizeScale("bn")) : "",
+    showWbw ? sliderRowHtml(idPrefix, "wbw", t("Word by Word"), getTextSizeScale("wbw")) : "",
   ].join("");
   // "All" starts at a neutral 100% every time the popover opens -- it is a
   // GESTURE ("set every language to here"), not a fourth stored value, so

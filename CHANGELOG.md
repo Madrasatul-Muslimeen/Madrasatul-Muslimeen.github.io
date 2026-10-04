@@ -19584,3 +19584,15 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
   - rules-authorisation-executable 63/0; note-foundation-data-layer, journey-map-boundary, stub-parity green
   - phone-width-overflow, palette-contrast green
   - behaviour 1003/4 (sandbox: 22g×3 archive.org, 31e TLS)
+
+## v09.74 — 4 Oct 2026 — Word-by-Word boxes enlargeable; Explore readable on a phone
+
+- **Word by Word size:** the A± popover gains a "Word by Word" slider (`--qr-wbw-scale`) that scales every Word-by-Word box (Arabic, transliteration, meaning) in the Read view, the Note view and the pop-up pane; "All" and "Reset" include it. The Owner: "Can you enable these words enlargeable, both in Read and Note view?"
+- **Explore on a phone:** the Owner's screenshot ("unreadable", "card overlapping"). `#explorePanel` (`flex: 1 1 auto; min-height: 0`) shrank to the scroll box, so its dark background ended under the ring key and the rest ran on as pale text on the white page. At 720px and below it no longer shrinks below its content, and the stacked list sizes to its rows (a `height:100%` left ~800px of empty scroll; the rule sits after the 2 Sep rule it must beat). 820px and wider unchanged.
+- **Known, not fixed:** on a short desktop window the wheel column overhangs the card by 26–58px (pre-existing), printed as a NOTE.
+- **Checks:**
+  - text-size-wbw-browser 88/0, --mutate-no-css fails the size checks
+  - explore-phone-card-browser 58/0, --mutate-shrink fails 40
+  - layout.mjs: no geometry change (only the known `bmNotFound`)
+  - phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0; word-card, known-word, mark-words, study-options, journey-note-pane suites green
+  - behaviour 1006/1 (sandbox: 31e TLS)

@@ -14,6 +14,21 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v09.73 on `main`** (4 Oct 2026 — **Mapping My Journey: Pin, Favourite, Archive, Finalise and links between Notes SWITCHED ON (Siyagah round S14, decision 66, #566).**
+- **The Owner published the round 14 Rules** ("Round 14 rules are live Al Hamdulillah"). `firestore.rules` is synced to `docs/governance/2026-10-04-siyagah-round14-DEPLOYMENT-candidate.rules` (`[already-deployed-manually]`; 111 lines added, none removed).
+- **`app/js/siyagah-flags-readiness.js` is open** (`ready: true`, master-architect, 2026-10-04, reference `docs/reports/2026-10-04-siyagah-round14-enabled.md`). Every S14 control built in v09.72 now writes.
+- **What works now:** 📌 Pin (pinned Notes first), ⭐ Favourite, 📦 Archive (leaves the folder list), 🔒 Finalise (Edit and Trash refused until un-finalised), Link to a Note… and Linked from, and the pinned Notes in a pop-up window.
+- **Also: a settings Play always starts the settings** (the Owner: "The Read/play button at the settings should be enough to start the desired read/play act"). Study options' Play and Choose a Unit's Play stop whatever is sounding or paused (counted as heard, like Stop) and start the current settings; before, a recitation still sounding made that Play a pause. The reading screen's own ▶/⏸ keeps its toggle. study-options-play-read-browser 73/0 (--mutate-no-fresh fails 4); wheel-unit-go-browser 254/0.
+- **The Siyagah folder plan S8–S14 is complete.**
+- **Checks:**
+  - emulator against the published file: siyagah-round14 60/0, siyagah-flags-links-real-function 30/0; journey-map, sections and tags real-function green
+  - journey-flags-links-browser 306/0 (its gate-off cases now route a closed copy; mutation e still fails); every journey suite green
+  - rules-authorisation-executable 63/0; note-foundation-data-layer, journey-map-boundary, stub-parity green
+  - phone-width-overflow, palette-contrast green
+  - behaviour 1003/4 (sandbox: 22g×3, 31e)
+- **With the Owner:** try Pin, Finalise and a link; a folder's own window (needs a demo); the Asmaul Husna poster (on hold, decision 50).
+)
+
 **Previous milestone: v09.72 on `main`** (4 Oct 2026 — **Mapping My Journey: Pin, Favourite, Archive, Finalise and links between Notes — built, SWITCHED OFF until the Owner publishes the round 14 Rules (Siyagah round S14, decision 66, #566).**
 - **On a Note's ⋯ menu:** 📌 Pin, ⭐ Favourite, 📦 Archive, 🔒 Finalise, and **Link to a Note…** (a search picker). Pinned Notes lead the folder list with 📌; archived Notes leave it; ⭐ Favourites and 📦 Archived lists from the tree's ⋯ menu; a finalised Note refuses Edit and Trash in words; a Note shows its links and a **Linked from** list; a pop-up window shows the pinned Notes.
 - **Switched off:** `app/js/siyagah-flags-readiness.js` is `ready: false`. Until the Owner publishes `docs/governance/2026-10-04-siyagah-round14-DEPLOYMENT-candidate.rules`, every control explains itself in words and writes nothing.
