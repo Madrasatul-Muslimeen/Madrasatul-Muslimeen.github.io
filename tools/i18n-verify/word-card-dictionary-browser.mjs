@@ -125,10 +125,16 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) for (const loo
   check(`${tag} the dictionary file is not requested on the landing page`, requests.length === 0, JSON.stringify(requests));
   await openRead(page);
   await openWord(page, 2, 1); // ٱلْحَمْدُ
-  check(`${tag} ...nor when a Word card opens on WbW`, requests.length === 0, JSON.stringify(requests));
+  // Updated in place (#539 review): since Word card round 2 (#504, fd928521)
+  // the ENGLISH WbW stem box prints the dictionary meaning, so English WbW
+  // loads the file on purpose; the Bangla WbW box does not. Either way the file
+  // is fetched at most once and never again on Basic.
+  const wbwExpected = lang === "bn" ? 0 : 1;
+  await page.waitForTimeout(400);
+  check(`${tag} ...on WbW the file is requested ${wbwExpected ? "once (the English stem box prints the meaning)" : "not at all (Bangla)"}`, requests.length === wbwExpected, JSON.stringify(requests));
   await page.click('[data-word-card-level="basic"]');
   await page.waitForTimeout(400);
-  check(`${tag} ...nor on the Basic tab`, requests.length === 0, JSON.stringify(requests));
+  check(`${tag} ...and nothing more on the Basic tab`, requests.length === wbwExpected, JSON.stringify(requests));
   await depth(page);
   await page.waitForFunction(() => !!document.querySelector("[data-word-card-dict-meaning]"), null, { timeout: 8000 });
   check(`${tag} opening Depth requests the dictionary exactly once`, requests.length === 1, JSON.stringify(requests));
