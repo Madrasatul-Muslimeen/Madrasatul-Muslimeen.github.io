@@ -20,6 +20,15 @@ Read the live state yourself, because it moves on after this was written:
 - `claude.yml` runs;
 - the "Active Architect session" line on #159.
 
+**Updated 4 Oct 2026, ~17:55 UTC, by session `session_012katd3VGiJEprbqxSEUTbf` (Active Architect on #159). Supersedes the ~10:20 paragraph below.**
+
+- **`main` is at v09.71.** Since v09.68: **v09.69** S11 reading tools; **v09.70** S12 editor (review fix: a removed `fitEditToolbar` was still called on resize); **v09.71** S13 window tabs and the version line (PR #565; review fix: phone switcher titles shown in full).
+- **S14 (#566), the last Siyagah round, needs Rules.** The Rules half is DONE and on `main` (PR #567, no version): `docs/governance/2026-10-04-siyagah-round14-DEPLOYMENT-candidate.rules`, ADR-010 Amendment 2, the Owner guide `docs/governance/2026-10-04-siyagah-round14-owner-publish-guide.md`, and `npm run siyagah-round14` in `tools/firestore-emulator` (port 8109; 60/0; 16 mutations, each caught). The Architect wrote it because Builder run 863 could not run `npm ci` or write files.
+- **In flight:** the Builder's app side of #566 (dispatched ~17:50 UTC), behind `siyagah-flags-readiness.js` `ready: false`. Review it, merge with the gate OFF, allocate v09.72, then ASK the Owner to publish the candidate. Only after "Round 14 rules are live": sync `firestore.rules` to the candidate (`[already-deployed-manually]`), flip the gate with a dated note, re-run `rules-authorisation-executable` and the emulator suite.
+- **Lessons:**
+  - **Two `allow update` clauses on `notes` exceed Firestore's 1,000-expression budget when both run in full.** Put the cheap test that tells them apart first in each clause. The emulator's denial text shows a first-pass "evaluation error" even on the live Rules; judge a denial by each clause's LAST entry.
+  - **A real-function emulator suite for the S14 writers is still owed** once the Builder's writers exist (model: `siyagah-tags-real-function`).
+
 **Updated 4 Oct 2026, ~10:20 UTC, by session `session_012katd3VGiJEprbqxSEUTbf` (Active Architect on #159). Supersedes the ~05:30 paragraph below.**
 
 - **`main` is at v09.68.** Since v09.64:
