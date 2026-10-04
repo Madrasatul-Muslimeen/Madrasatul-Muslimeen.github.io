@@ -1,3 +1,8 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Wheel Centre Unit Choice</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
@@ -142,7 +147,7 @@ const TAAWWUDH = "أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَ�
 const NAMES = ["Reading Tajweed","Reading Meaning","Word by Word","Hifz","Grammar","Arabic Writing","Listen Arabic","Listening Meaning","Ruqyah","Dua Memorising","Stories","Calligraphy","Numbers in the Q…","Journaling / Not…","Observation","Common Sense","Deriving Dua","Names of Allah","Miracles","Knowing Prophets","Tafakkur","Tadabbur","Tafaqquh","Dhikr","Fiqh to Ruling","Judgment","Authority","SAHABA","Tabe'i Tabe'in","Gen - 500 AH","Gen 1000 AH","Maliqi Madhab","Hanbali Madhab","Hanafi Madhab","Shafe'i Madhab","MISC. Groups","Discussion","Living by it","Da'wah","Teaching"];
 const UNITS = [["ayah","Single Ayah"],["range","Range of Ayahs"],["surah","Whole Surah"],["ruku","Ruku'"],["juz","Juz"],["hizb","Hizb"],["page","Page"]];
 const NUM_LABEL = { ruku: "Ruku' №", juz: "Juz №", hizb: "Hizb №", page: "Page №" };
-const S = { unit: "page", surah: 15, ayah: 1, from: 1, to: 5, num: 257, before: false };
+const S = { unit: "page", surah: 14, ayah: 11, from: 11, to: 15, num: 257, before: false }; // Page 257 starts at Ibrahim 14:11
 
 // ---- the wheel, drawn to the app's proportions --------------------------
 const R1 = 182, R0 = 89, C = 200; // as the app: slices from half the outer radius (91) to the outer (182), numbers outside, the centre disc inside
@@ -196,7 +201,11 @@ function set(key, val) {
   val = Number.isNaN(Number(val)) ? val : Number(val);
   if (key === "unit") { S.unit = val; if (numList(val).length) S.num = numForSurah(val, S.surah); }
   if (key === "surah") { S.surah = val; S.ayah = 1; S.from = 1; S.to = Math.min(5, ayahCount(val)); if (numList(S.unit).length) S.num = numForSurah(S.unit, val); }
-  if (key === "num") { S.num = val; const [s] = startOf(S.unit, val); S.surah = s; }
+  if (key === "num") {
+    S.num = val; const [s] = startOf(S.unit, val);
+    // a new surah: every ayah choice is reset inside it, so Range never claims ayahs the surah lacks
+    if (s !== S.surah) { S.surah = s; S.ayah = 1; S.from = 1; S.to = Math.min(5, ayahCount(s)); }
+  }
   if (key === "ayah") S.ayah = val;
   if (key === "from") { S.from = val; if (S.to < val) S.to = val; }
   if (key === "to") { S.to = val; if (S.from > val) S.from = val; }
