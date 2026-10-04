@@ -501,7 +501,8 @@ check("no new Note collection has appeared", () => {
     // ROOT FOLDERS (ADR-010 Amendment 1), not a second kind of Note, and gated off until its Rules are published.
     // UPDATED 1 Oct 2026 (Siyagah round 7b, #461): `noteTags` and `noteTagLinks` -- Owner decision 42.5, Tags only, never Note
     // Types: a name the owner puts on Notes and the link doing it. Neither is a Note, neither touches one, same gate.
-    ["ayahNotes", "noteFolders", "notePlacements", "noteRevisions", "noteSections", "noteSources", "noteTagLinks", "noteTags", "notes", "teachingNotes"].sort(),
+    // UPDATED 4 Oct 2026 (Siyagah round 14, #566): `noteLinks` -- one Note linking to another of the same owner; gated off until its Rules are published.
+    ["ayahNotes", "noteFolders", "noteLinks", "notePlacements", "noteRevisions", "noteSections", "noteSources", "noteTagLinks", "noteTags", "notes", "teachingNotes"].sort(),
     "the Note collection set has changed -- MMJ must read the Note Foundation, never define its own");
 });
 check("the accepted contract still names folders and placements as FOUNDATION collections", () => {

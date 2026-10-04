@@ -891,4 +891,10 @@ export async function relinkNotes(db, { tenantId, ownerPersonId, linkId, actorUi
   return restoreNoteLink(db, { tenantId, ownerPersonId, linkId, actorUid });
 }
 
-export { listNoteLinksFromNote, listNoteLinksToNote };
+export async function linksFromNote(db, { tenantId, ownerPersonId, fromNoteId } = {}) {
+  return listNoteLinksFromNote(db, { tenantId, ownerPersonId, fromNoteId });
+}
+
+export async function linksToNote(db, { tenantId, ownerPersonId, toNoteId } = {}) {
+  return listNoteLinksToNote(db, { tenantId, ownerPersonId, toNoteId });
+}
