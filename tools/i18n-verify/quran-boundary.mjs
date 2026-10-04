@@ -41,7 +41,6 @@ const unitKeys = read("app/js/unit-keys.js");
 const records = read("app/js/records.js");
 const activity = read("app/js/activity.js");
 const collections = read("app/js/collections.js");
-const featureRegistry = read("app/js/feature-registry.js");
 const activeArchitecture = read("docs/governance/ACTIVE-ARCHITECTURE.md");
 
 console.log("\n=== QuranRevival four-pillar boundary ===");
@@ -117,7 +116,22 @@ check("all permanent key templates remain unchanged", containsAll(unitKeys, keyT
 check("record identity remains unit plus trackable", records.includes("${unitKey}::${trackableId}"));
 
 console.log("\n=== Approach and progress distinctions ===");
-check("feature registry retains the locked 30 Approaches", /30 Approaches/.test(featureRegistry));
+// UPDATED IN PLACE 4 Oct 2026 (the Owner: "fix the quran-boundary test
+// too"). This used to grep the feature registry for the words "30
+// Approaches". v08.113 reworded that line on purpose ("the Quran Approaches
+// in their sections") once a tenant could add its own Approaches (the
+// Owner's tenant has 40; decision 26), so the check had been red on `main`
+// ever since while asserting nothing about the catalogue itself. What stays
+// locked is the PLATFORM's own catalogue -- QuranRevival_Subject_Catalogue_v3
+// (D11): 30 Approaches, approach_01..approach_30 in order, in 7 sections.
+// Bound to the source of truth (APPROACH_TEMPLATES), never to prose.
+const { APPROACH_TEMPLATES } = await import(new URL("../../app/js/catalogue-data.js", import.meta.url));
+check("the platform catalogue retains the locked 30 Approaches (approach_01..approach_30, in order)",
+  APPROACH_TEMPLATES.length === 30 && APPROACH_TEMPLATES.every((t, i) => t.id === `approach_${String(i + 1).padStart(2, "0")}` && t.order === i + 1),
+  `${APPROACH_TEMPLATES.length} templates`);
+check("...in their 7 sections",
+  [...new Set(APPROACH_TEMPLATES.map((t) => t.section))].sort((x, y) => x - y).join(",") === "1,2,3,4,5,6,7");
+check("the catalogue document still names the 30 Approaches", /the 30 Approaches/.test(read("QuranRevival_Subject_Catalogue_v3.md")));
 check("records retain claimed status", records.includes("claimedStatus"));
 check("records retain frozen confirmed status", records.includes("confirmedStatus"));
 check("activity does not define claimStatus", !/export\s+(async\s+)?function\s+claimStatus\b/.test(activity));
