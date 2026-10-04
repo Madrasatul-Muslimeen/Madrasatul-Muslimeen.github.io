@@ -76,7 +76,7 @@ async function run(lang, width, embedFrame = false) {
       const res = await route.fetch();
       let body = await res.text();
       let before = body;
-      if (MUTATE === "untick-deletes") body = body.replace("() => retireNotePlacement(db, { tenantId: activeTenantId, placementId: placement.placementId, actorUid: auth.currentUser.uid }),", "() => deleteDoc(doc(db, TENANT.NOTE_PLACEMENTS, activeTenantId + \"__\" + placement.placementId)),");
+      if (MUTATE === "untick-deletes") body = body.replace("() => retireNoteFiling(db, { tenantId: activeTenantId, placementId: placement.placementId, actorUid: auth.currentUser.uid }),", "() => deleteDoc(doc(db, TENANT.NOTE_PLACEMENTS, activeTenantId + \"__\" + placement.placementId)),");
       if (MUTATE === "edit-writes-early") body = body.replace("if (staged) {\n            const key = box.dataset.fpTick;", "if (false) {\n            const key = box.dataset.fpTick;");
       if (MUTATE === "no-last-guard") body = body.split("if (mine.length <= 1) { showPageStatus(LAST_FOLDER_SENTENCE()); return false; }").join("").split("if (!on && notesAndPlacementsLoaded && mine.length <= 1) say(LAST_FOLDER_SENTENCE());\n            else ok").join("if (false) say(LAST_FOLDER_SENTENCE());\n            else ok").split("if (!on && staged.size <= 1) { box.checked = true; say(LAST_FOLDER_SENTENCE()); return; }").join("");
       if (MUTATE === "no-trash") body = body.replace("() => trashFolder(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, folderId: n.folderId, actorUid: auth.currentUser.uid }),", "async () => {},");

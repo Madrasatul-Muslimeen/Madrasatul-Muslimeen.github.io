@@ -45,6 +45,7 @@ import {
   reorderNoteFolder,
   reparentNoteFolder,
   retireNoteFolder,
+  retireNotePlacement,
 } from "./note-foundation.js";
 import { MAX_FOLDER_DEPTH, buildFolderTree, folderTreeRefusal, notePlacement } from "./journey-map-contract.js";
 import { entityIdShardRanges, docIdRangeFor } from "./journey-map-shard.js";
@@ -402,6 +403,11 @@ export async function reorderFolder(db, { tenantId, ownerPersonId, folderId, ord
 
 export async function moveFolder(db, { tenantId, ownerPersonId, folderId, parentFolderId, actorUid } = {}) {
   return reparentNoteFolder(db, { tenantId, ownerPersonId, folderId, parentFolderId, actorUid });
+}
+
+/** S10 -- a Note's ONE filing in ONE folder, retired (status change; never a delete, I4). The picker's untick. */
+export async function retireNoteFiling(db, { tenantId, placementId, actorUid } = {}) {
+  return retireNotePlacement(db, { tenantId, placementId, actorUid });
 }
 
 export async function retireFolder(db, { tenantId, ownerPersonId, folderId, actorUid } = {}) {

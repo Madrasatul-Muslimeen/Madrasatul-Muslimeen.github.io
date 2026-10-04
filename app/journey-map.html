@@ -432,11 +432,11 @@
     import { sanitizeNoteHtml } from "./js/note-sanitize.js";
     import { closeAllBarPalettes } from "./js/bar-palette.js";
     import { createNoteViews } from "./js/note-window.js";
-    import { NOTE_STATUS, createNoteFolder, createNotePlacement, createPermanentNote, restoreNote, retireNotePlacement, retirePermanentNote, updatePermanentNoteContent } from "./js/note-foundation.js";
+    import { NOTE_STATUS, createNoteFolder, createNotePlacement, createPermanentNote, restoreNote, retirePermanentNote, updatePermanentNoteContent } from "./js/note-foundation.js";
     import {
       ownerFolderTreePagedSharded, folderContents,
       renameFolder, reorderFolder, moveFolder, reorderFiling,
-      trashFolder, restoreFolder, loadOwnerTrash, copyNoteToFolder, moveNote, copyFolder,
+      trashFolder, restoreFolder, loadOwnerTrash, copyNoteToFolder, moveNote, copyFolder, retireNoteFiling,
       loadAllOwnerNotesSharded, loadAllOwnerPlacementsSharded, folderNoteCounts, folderMoveRefusal,
       loadAllOwnerSections, createSection, renameSection, reorderSection, setSectionLook,
       trashSection, restoreSection, setFolderLook, setFolderSection,
@@ -2306,8 +2306,8 @@
         const placement = mine.find((p) => p.folderId === folderNode.folderId);
         if (!placement) return false;
         const outcome = await runFolderWrite(
-          () => retireNotePlacement(db, { tenantId: activeTenantId, placementId: placement.placementId, actorUid: auth.currentUser.uid }),
-          { collection: TENANT.NOTE_PLACEMENTS, action: "retireNotePlacement" }
+          () => retireNoteFiling(db, { tenantId: activeTenantId, placementId: placement.placementId, actorUid: auth.currentUser.uid }),
+          { collection: TENANT.NOTE_PLACEMENTS, action: "retireNoteFiling" }
         );
         if (!outcome.ok) return false;
         showPageStatus(t('"{title}" taken out of {folder}.', { title: noteTitleOf(note), folder: folderDisplayName(folderNode) }));
