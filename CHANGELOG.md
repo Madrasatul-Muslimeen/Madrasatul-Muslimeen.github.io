@@ -19379,3 +19379,21 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
 - A fourth source tag, **From a book**, joins From the data / Grammar rule / Needs a source.
 - Nothing loads until its section is opened.
 - **Checks**: word-card-needs-source-browser 93/0 (new), and ten other suites green; behaviour 1004/4 (sandbox-only).
+
+## v09.62 — 4 Oct 2026 — The Bangla dictionary meaning on the Word card (decision 62)
+
+- **What:** in Bangla, the Word card's Depth tab Dictionary box leads with the Bangla meaning from the AQS *Quraniyo Obhidhan* (কুরআনীয় অভিধান), Muhammad Abu Hena, ed. Muhammad Yahya, Al Quran Academy London Bangladesh, 2nd ed. 2015. The English meaning sits under it, smaller. Further entries under the same unvowelled spelling sit in a closed "এই বানানের অন্য ভুক্তি (n)" with their pages. The credit line names the book and links its PDF page. A lemma with no matched entry shows "এই শব্দের বাংলা অর্থ এখনও মেলানো যায়নি". The old "will be added once permission is given" line is gone. English pages are unchanged.
+- **Data:** `tools/quran-data-pull/output/lemma-dictionary-bn.json` (PR #538). It covers 2,761 of the Qur'an's 4,832 lemmas, which is 57.4% of word occurrences. It was built from the PDF by `tools/dictionary-pull/bangla` (five deterministic steps). An entry is matched by its bare letters and refused unless kind, root, shadda and hamza agree. The Bijoy text was repaired at the source. Report: `docs/reports/2026-10-03-bangla-dictionary-data.md`.
+- **Loading:** the file is fetched once, when a Bangla reader first opens Depth (I9). It is never loaded at startup or in English.
+- **Who:** built by the Builder (#539, PR #540). In Architect review, two stale checks in `word-card-dictionary-browser.mjs` were updated in place: since #504, English WbW loads the English file on purpose. A deliberate break that stops that load fails 8.
+- **Checks:**
+  - word-card-bangla-dictionary-browser: 200/0 (the `--mutate-no-lang-gate` break fails 56)
+  - word-card-dictionary-browser: 277/0
+  - bangla-dictionary-data: 35/0
+  - quran-word-card: 37/0
+  - word-card-needs-source-browser: 93/0
+  - word-card-depth-rebuild: 231/0
+  - palette-contrast: 20/0
+  - phone-width-overflow: 217/0
+  - stub-parity: 4/0
+  - behaviour: 1006/2 (sandbox TLS: 22h, 31e)

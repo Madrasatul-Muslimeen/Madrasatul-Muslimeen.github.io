@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.61",
+    "version": "09.62",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1913,7 +1913,7 @@
     {
       "version": "09.61",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Depth tab: Naḥw shows the Quranic Arabic Corpus treebank's relations for the word; Word Choice shows al-ʿAskarī's al-Furūq entries; Classical shows al-Rāghib's al-Mufradāt entry; each credited, loaded only when its section opens (#533).",
       "integration": {
         "authorizedOn": "2026-10-03",
@@ -1921,10 +1921,23 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "09.62",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The Word card's Dictionary box shows the Bangla meaning from the AQS Quraniyo Obhidhan in Bangla (PR #540).",
+      "integration": {
+        "authorizedOn": "2026-10-04",
+        "integratedOn": "2026-10-04",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "09.62",
+  "nextUnallocated": "09.63",
   "nextUnallocatedNote": [
+    "v09.62 was allocated to the Bangla dictionary meaning on the Word card (decision 62, #539), 2026-10-04.",
     "v09.61 was allocated to the Word card's Needs-a-source lines filled from the Corpus treebank, al-Furūq and al-Mufradāt (decision 61), 2026-10-03.",
     "v09.60 was allocated to Approach names on Know Your Status's All-units wheel, the āyah picker's Bismillah, three red suites repaired, 2026-10-03.",
     "v09.59 was allocated to Tablet wheel: buttons on the screen's edges, 2026-10-03.",
