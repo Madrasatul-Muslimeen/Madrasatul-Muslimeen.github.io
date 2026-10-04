@@ -214,6 +214,11 @@ async function run(lang, width, embedFrame = false) {
 
   // ---- 7. Nesting: 12 deep can be made and shown ----------------------------------------------------------------
   await resetWrites(P);
+  // Architect review: the 11-deep seeded chain must be ON SCREEN before anything is
+  // asked of it -- under the old limit of 8 it is not, and that is a FAIL, not a crash.
+  const deepShown = await P.waitForSelector(`${rowSel("fd11")} .folder-menu-btn`, { state: "visible", timeout: 5000 }).then(() => true, () => false);
+  check(`${tag}: the seeded 11-deep folder is shown in the tree`, deepShown);
+  if (!deepShown) return;
   await P.click(`${rowSel("fd11")} .folder-menu-btn`);
   await P.click(`${rowSel("fd11")} [data-folder-addsub]`);
   await P.fill("[data-subfolder-input]", "Twelve");

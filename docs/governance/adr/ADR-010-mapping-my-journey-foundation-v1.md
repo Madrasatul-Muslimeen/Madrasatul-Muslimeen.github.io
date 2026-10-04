@@ -108,8 +108,9 @@ that cannot fail a check is not locked.
 - Depth is bounded at **64** including the root (S9, 4 Oct 2026, decision 66: lifted from 8, which was the app's own limit and never a Rules one; what remains is a technical guard, and the cycle refusal is unchanged). A bound is required because
   every consumer of a tree walks it, and an unbounded depth turns one
   pathological chain into an unbounded read on a screen that must open fast
-  (Architecture Part 8). Eight is deep enough that no real filing scheme meets
-  it and shallow enough that a full walk is cheap.
+  (Architecture Part 8). Sixty-four is deeper than any real filing scheme goes
+  (the Owner's "without a limit") and still small enough that a full walk is
+  cheap. (It was eight until S9.)
 
 ### 5. Placement is many-to-many, and a move is two facts, never a rewrite
 
