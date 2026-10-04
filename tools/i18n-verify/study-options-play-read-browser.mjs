@@ -164,6 +164,110 @@ for (const lang of ["en", "bn"]) {
   }
 }
 
+// The Owner, 4 Oct 2026: "I had a listening bookmark. I opened it. It played.
+// I Reset the settings. Clicked play but it didn't. ... The Read/play button at
+// the settings should be enough to start the desired read/play act."
+// Reproduced: while a recitation is still SOUNDING, Study options' Play (and
+// Choose a Unit's) was the reading screen's play/pause toggle, so it PAUSED;
+// a paused one was resumed with its old settings. A settings Play now always
+// starts the current settings from the beginning. A real recitation is long,
+// so these cases serve a 30-second clip (the 2-second one above ends before
+// the reader can get back to the settings, which is how this hid).
+// Mutation: --mutate-no-fresh serves the page with the settings Play's
+// `{ fresh: true }` removed; the "still sounding" cases must fail.
+{
+  const MUT_NO_FRESH = process.argv.includes("--mutate-no-fresh");
+  const LONG = silentWav(30);
+  const { readFileSync } = await import("node:fs");
+  async function startLong() {
+    const ctx = await newContext(browser, { appLang: "en", banner: false, viewport: { width: 390, height: 844 } });
+    const urls = [];
+    await ctx.route("**/gtaf_bangla_timestamps.json", (r) => r.fulfill({ status: 200, contentType: "application/json", body: "{}" }));
+    await ctx.route("**/archive.org/**", (r) => { urls.push(r.request().url()); return r.fulfill({ status: 200, contentType: "audio/wav", body: LONG }); });
+    if (MUT_NO_FRESH) {
+      let src = readFileSync("app/quranrevival.html", "utf8");
+      const n = (src.match(/playCurrentSelection\(\{ fresh: true \}\)/g) || []).length;
+      if (n !== 2) { console.log(`mutation did not apply (${n} sites)`); process.exit(2); }
+      src = src.replaceAll("playCurrentSelection({ fresh: true })", "playCurrentSelection()");
+      await ctx.route("**/app/quranrevival.html*", (r) => r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: src }));
+    }
+    const { page } = await openPage(ctx, "/app/quranrevival.html");
+    page.on("dialog", (d) => d.dismiss().catch(() => {}));
+    return { ctx, page, urls };
+  }
+  const backToOptions = async (page) => {
+    await page.evaluate(() => { const b = document.getElementById("readBackBtn") || document.querySelector("[data-read-back]"); if (b) b.click(); });
+    await page.waitForTimeout(300);
+    await openOptions(page);
+  };
+  const sounding = (page) => page.evaluate(PLAYING);
+  const first = async () => {
+    const r = await startLong();
+    await openOptions(r.page);
+    await r.page.selectOption("#unitTypeSelect", "ayah");
+    await r.page.selectOption("#ayahSelect", "4").catch(() => {});
+    await r.page.waitForTimeout(300);
+    await r.page.click("#drillPlayBtn");
+    r.started = await waitFor(r.page, PLAYING);
+    return r;
+  };
+  console.log("\n=== A settings Play always starts the settings (Owner, 4 Oct 2026) ===");
+  {
+    const { ctx, page, urls, started } = await first();
+    check("setup: the first Play is sounding", started);
+    await backToOptions(page);
+    check("setup: still sounding when the settings are open again (a real, long recitation)", await sounding(page));
+    const n = urls.length;
+    await page.click("#drillPlayBtn");
+    await page.waitForTimeout(800);
+    check("Study options Play while a recitation is sounding STARTS it again (it used to pause)", await sounding(page), `new requests ${urls.length - n}`);
+    check("...from the current settings: the āyah is requested again", urls.slice(n).some((u) => /001004\.mp3$/.test(u)), JSON.stringify(urls.slice(n)));
+    await ctx.close();
+  }
+  {
+    const { ctx, page, urls } = await first();
+    await backToOptions(page);
+    await page.selectOption("#drillRepeatSelect", "2");
+    const n = urls.length;
+    await page.click("#drillPlayBtn");
+    await page.waitForTimeout(800);
+    check("a changed setting (Repeat 2×) and Play while sounding: it plays", await sounding(page), `new requests ${urls.length - n}`);
+    await ctx.close();
+  }
+  {
+    const { ctx, page, urls } = await first();
+    await page.click("#readPlayBtn");
+    await page.waitForTimeout(300);
+    check("the reading screen's own ▶/⏸ still PAUSES (its toggle is kept)", !(await sounding(page)));
+    await backToOptions(page);
+    await page.selectOption("#ayahSelect", "6").catch(() => {});
+    await page.waitForTimeout(300);
+    const n = urls.length;
+    await page.click("#drillPlayBtn");
+    await page.waitForTimeout(800);
+    check("paused, then Play in the settings: the CURRENT āyah (6) starts, not the old one resumed", await sounding(page) && urls.slice(n).some((u) => /001006\.mp3$/.test(u)), JSON.stringify(urls.slice(n)));
+    await page.click("#readPlayBtn");
+    await page.waitForTimeout(300);
+    check("...and ▶/⏸ pauses that one too", !(await sounding(page)));
+    await page.click("#readPlayBtn");
+    await page.waitForTimeout(500);
+    check("...and ▶/⏸ resumes it", await sounding(page));
+    await ctx.close();
+  }
+  {
+    const { ctx, page, urls, started } = await first();
+    check("setup (Choose a Unit): the first Play is sounding", started);
+    await page.evaluate(() => { const b = document.getElementById("readBackBtn") || document.querySelector("[data-read-back]"); if (b) b.click(); });
+    await page.waitForTimeout(300);
+    await page.evaluate(() => { document.querySelectorAll(".qr-panel").forEach((p) => { p.hidden = true; }); });
+    const n = urls.length;
+    await page.evaluate(() => document.getElementById("wheelUnitPlayBtn").click());
+    await page.waitForTimeout(800);
+    check("Choose a Unit's Play while a recitation is sounding STARTS it again", await sounding(page), `new requests ${urls.length - n}`);
+    await ctx.close();
+  }
+}
+
 await browser.close();
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
