@@ -98,7 +98,8 @@ function authorisedUpdate(source, collectionPath, identityFn) {
   if (/allow update[^:]*:\s*if false/.test(block) || !/allow update/.test(block)) {
     return { updateAllowed: false, mutable: new Set() };
   }
-  const affected = block.match(/affectedKeys\(\)\.hasOnly\(\[([^\]]*)\]\)/);
+  // `\s*`: the round 14 candidate wraps the call (`affectedKeys()` newline `.hasOnly([...])`).
+  const affected = block.match(/affectedKeys\(\)\s*\.hasOnly\(\[([^\]]*)\]\)/);
   if (affected) {
     return {
       updateAllowed: true,
@@ -258,6 +259,8 @@ function dataLayerOtherUpdates(source, tenantKey) {
   return { fields, hits };
 }
 
+const ROUND14_FLAGS = new Set(["pinned", "favourite", "archived", "finalised"]);
+
 const COLLECTIONS = [
   { name: "notes",           rules: p5, matchPath: "notes/",           identity: "noteIdentityUnchanged",      tenantKey: "NOTES" },
   { name: "noteRevisions",   rules: p5, matchPath: "noteRevisions/",   identity: null,                          tenantKey: "NOTE_REVISIONS" },
@@ -288,7 +291,8 @@ for (const { name, rules, matchPath, identity, tenantKey } of COLLECTIONS) {
   const { updateAllowed, mutable } = authorisedUpdate(rules, matchPath, identity);
   const { fields: writtenAll } = dataLayerUpdates(dataLayer, tenantKey);
   // The round 7 fields are judged against the round 7 candidate, in the ROUND 7 block below.
-  const written = new Set([...writtenAll].filter((f) => name !== "noteFolders" || !r7AddedFolderFields.has(f)));
+  // The four round 14 flags are judged against the round 14 candidate, in the ROUND 14 block below.
+  const written = new Set([...writtenAll].filter((f) => (name !== "noteFolders" || !r7AddedFolderFields.has(f)) && (name !== "notes" || !ROUND14_FLAGS.has(f))));
 
   if (!updateAllowed) {
     check(`${name} is create-only in the Rules, so the data layer must not update it`, () => {
@@ -486,6 +490,63 @@ for (const { name, rules, matchPath, identity, tenantKey } of COLLECTIONS) {
     const withEnvelope = new Set([...payloads[0], ...ENVELOPE]);
     assert.deepEqual([...required].filter((f) => !withEnvelope.has(f)), [], "the section create omits a required field");
     assert.deepEqual([...payloads[0]].filter((f) => !permitted.has(f)), [], "the section create sends a forbidden field");
+  });
+}
+
+// --- ROUND 14 (Siyagah, issue #566, decision 66): note flags and noteLinks ----
+// The Phase 5 notes loop above judges the content path (title/body/status/
+// revision pointer). The four flags are authorised by the round 14 candidate's
+// SECOND notes update rule, judged here, both directions. The flag writer builds
+// its payload from NOTE_FLAG_KEYS (a loop, not a literal), so this block reads
+// that list and the loop rather than a `{ ... }` payload.
+{
+  const r14 = read("docs/governance/2026-10-04-siyagah-round14-DEPLOYMENT-candidate.rules");
+  const FLAGS = ["favourite", "finalised", "archived", "pinned"].sort();
+  const notesR14 = authorisedUpdate(r14, "notes/", "noteIdentityUnchanged");
+  const flagKeysDecl = dataLayer.match(/export const NOTE_FLAG_KEYS = Object\.freeze\(\[([^\]]*)\]\)/);
+  const writerKeys = new Set(flagKeysDecl ? idsIn(flagKeysDecl[1].replace(/"/g, "'")) : []);
+  const writerFn = dataLayer.slice(dataLayer.indexOf("export async function setNoteFlags"));
+  const writerBody = writerFn.slice(0, writerFn.indexOf("\n}\n"));
+  const linkWrites = dataLayerUpdates(dataLayer, "NOTE_LINKS");
+
+  check("POSITIVE CONTROL (round 14): the parser reads the four flags out of the candidate and out of the flag writer", () => {
+    assert.deepEqual([...notesR14.mutable].sort(), FLAGS, `candidate notes mutable set parsed as ${[...notesR14.mutable]}`);
+    assert.deepEqual([...writerKeys].sort(), FLAGS, `NOTE_FLAG_KEYS parsed as ${[...writerKeys]}`);
+    assert.ok(/for \(const key of NOTE_FLAG_KEYS\)/.test(writerBody) && /fields\[key\] = flags\[key\]/.test(writerBody)
+      && /transaction\.update\(TENANT\.NOTES, docId, fields\)/.test(writerBody),
+      "setNoteFlags no longer builds its update from NOTE_FLAG_KEYS -- this check can no longer see what it writes");
+    assert.deepEqual([...authorisedUpdate(r14, "noteLinks/", "noteLinkIdentityUnchanged").mutable], ["status"]);
+    assert.ok(linkWrites.hits >= 1 && linkWrites.fields.has("status"), `noteLinks writes parsed as ${[...linkWrites.fields]}`);
+  });
+  check("ROUND 14 FORWARD notes: every flag the candidate lets a Note update is written by the flag writer", () => {
+    const unexecutable = [...notesR14.mutable].filter((f) => !writerKeys.has(f));
+    assert.deepEqual(unexecutable, [], `the round 14 candidate authorises changing ${unexecutable.join(", ")} on notes and no writer writes it`);
+  });
+  check("ROUND 14 BACKWARD notes: every key the flag writer can send is one the candidate allows", () => {
+    const unauthorised = [...writerKeys].filter((f) => !notesR14.mutable.has(f));
+    assert.deepEqual(unauthorised, [], `the flag writer sends ${unauthorised.join(", ")} to notes, which the round 14 candidate refuses`);
+    assert.ok(!/fields\.\w+\s*=/.test(writerBody), "the flag writer assigns a key other than through NOTE_FLAG_KEYS");
+  });
+  check("ROUND 14: the content writers never send a flag (flags move only on the flag path)", () => {
+    const { fields } = dataLayerUpdates(dataLayer, "NOTES");
+    assert.deepEqual(FLAGS.filter((f) => fields.has(f)), [], "a content write sends a flag -- the candidate's content path requires the flags unchanged");
+  });
+  const linksMutable = authorisedUpdate(r14, "noteLinks/", "noteLinkIdentityUnchanged").mutable;
+  check("ROUND 14 FORWARD noteLinks: every field the candidate lets a link update is written by some writer", () => {
+    assert.deepEqual([...linksMutable].filter((f) => !linkWrites.fields.has(f)), [], "a noteLinks field is authorised and nothing writes it");
+  });
+  check("ROUND 14 BACKWARD noteLinks: every field a writer updates on a link is one the candidate allows", () => {
+    assert.deepEqual([...linkWrites.fields].filter((f) => !linksMutable.has(f)), [], "a writer updates a frozen noteLinks field -- denied in production once published");
+  });
+  check("ROUND 14 CREATE noteLinks: carries every required field and nothing forbidden", () => {
+    const helpers = spreadHelpers(dataLayer);
+    const { permitted, required } = authorisedCreate(r14, "noteLinks/");
+    const payloads = dataLayerCreates(dataLayer, "NOTE_LINKS", helpers);
+    assert.equal(payloads.length, 1, `expected one noteLinks create, found ${payloads.length}`);
+    const withEnvelope = new Set([...payloads[0], ...ENVELOPE]);
+    assert.deepEqual([...required].filter((f) => !withEnvelope.has(f)), [], "the noteLinks create omits a required field");
+    assert.deepEqual([...payloads[0]].filter((f) => !permitted.has(f)), [], "the noteLinks create sends a forbidden field");
+    assert.ok(payloads[0].has("fromNoteId") && payloads[0].has("toNoteId") && payloads[0].has("ownerPersonId"), `payload parsed as ${[...payloads[0]]}`);
   });
 }
 
