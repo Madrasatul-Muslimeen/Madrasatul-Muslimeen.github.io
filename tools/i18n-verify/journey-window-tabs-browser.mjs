@@ -1,7 +1,7 @@
 // Siyagah round S13 (decision 66, #564): the tab strip for Note pop-up windows (640px and up),
 // the ✕ on the phone switcher, and "Version n of m" on the window's Details line.
 // Real clicks, en + bn, at 390 / 820 / 1440. The stub's DATA shows what a restore wrote.
-// MUTATE=tab-tap-noop | close-all | version-off-by-one | tabs-on-sheet-only | no-title-tooltip  runs a deliberately broken build.
+// MUTATE=tab-tap-noop | close-all | version-off-by-one | tabs-on-sheet-only | no-title-tooltip | sheet-titles-cut  runs a deliberately broken build.
 // Run from the repository root with `node serve.js` running.
 import { chromium, newContext, openPage } from "./harness.mjs";
 
@@ -60,6 +60,14 @@ for (const lang of ["en", "bn"]) {
     if (MUTATE) {
       await ctx.route("**/*", async (route) => {
         const url = route.request().url();
+        // sheet-titles-cut (Architect review of S13): drop the phone switcher's wrap rules from the stylesheet,
+        // putting back the one-line cut that showed "Note …" for both "Note Two" and "Note Three".
+        if (MUTATE === "sheet-titles-cut" && /note-window\.css/.test(url)) {
+          const res = await route.fetch(); const css = await res.text();
+          const cut = css.replace(/\.nw-switch:not\(\.nw-tabs\)[^}]*\}/g, "");
+          if (cut === css) console.log("  (mutation sheet-titles-cut did not apply)");
+          return route.fulfill({ response: res, body: cut });
+        }
         if (!/note-window\.js/.test(url)) return route.fallback();
         const res = await route.fetch();
         let body = await res.text();
@@ -96,7 +104,12 @@ for (const lang of ["en", "bn"]) {
     check(`${tag}: ${sheet ? "the phone keeps its bottom switcher" : "the desktop gets the tab strip"}`, sheet ? !navClass.includes("nw-tabs") : navClass.includes("nw-tabs"), navClass);
     check(`${tag}: every tab and its ✕ is 40px or taller`, tb.every((t) => t.h >= 40 && t.xh >= 40 && t.xw >= 40), JSON.stringify(tb.map((t) => [t.h, t.xh, t.xw])));
     const longTab = tb.find((t) => t.text.startsWith("A deliberately"));
-    const cutNow = await page.evaluate(() => [...document.querySelectorAll("#noteWinSwitch [data-win-switch]")].filter((b) => b.scrollWidth > b.clientWidth + 1).map((b) => b.textContent));
+    // Updated in place (Architect review of S13): on a phone a title now WRAPS onto two lines, so a long one is
+    // cut vertically (scrollHeight), not sideways -- count both directions as "shortened".
+    const cutNow = await page.evaluate(() => [...document.querySelectorAll("#noteWinSwitch [data-win-switch]")].filter((b) => b.scrollWidth > b.clientWidth + 1 || b.scrollHeight > b.clientHeight + 1).map((b) => b.textContent));
+    // Architect review of S13: two short titles that differ only after "Note " must both be readable in full,
+    // at every width -- a phone has no tooltip, and "Note …" twice tells the reader nothing.
+    check(`${tag}: "Note Two" and "Note Three" are each shown in full (not cut to "Note …")`, ["Note Two", "Note Three"].every((s) => !cutNow.includes(s)), JSON.stringify(cutNow));
     check(`${tag}: a long title is really shortened here (positive control for the tooltip check)`, cutNow.some((s) => s === LONG_TITLE), JSON.stringify(cutNow));
     check(`${tag}: a shortened title is never cut silently (full title in its tooltip)`, !!longTab && longTab.title === LONG_TITLE, JSON.stringify(longTab));
     check(`${tag}: the ✕ names its Note (${lang === "bn" ? "in Bangla" : "in English"})`, tb.every((t) => t.label && (lang === "bn" ? hasBn(t.label) : /^Close /.test(t.label))), JSON.stringify(tb.map((t) => t.label)));

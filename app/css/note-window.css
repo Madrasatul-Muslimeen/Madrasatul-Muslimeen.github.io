@@ -179,3 +179,11 @@ mark.note-find-hit.current { background: #ff9f1c; outline: 2px solid #1F3A6E; }
 .note-versions .tag-picker-card { max-width: 32rem; }
 .at-head { margin: 0.6rem 0 0.2rem; font-size: 1rem; }
 .at-list { display: flex; flex-direction: column; max-height: 30vh; overflow-y: auto; }
+/* Architect review of S13 (#564): on a phone the switcher items split the width
+   equally and cut every title to "Note …", so "Note Two" and "Note Three" read
+   the same and a phone has no tooltip to tell them apart. Here each item takes
+   its own width (at least 7.5rem, at most 60% of the screen), the title wraps
+   onto two lines instead of being cut on one, and the strip scrolls sideways. */
+.nw-switch:not(.nw-tabs) { overflow-x: auto; overflow-y: hidden; justify-content: flex-start; }
+.nw-switch:not(.nw-tabs) .nw-tab { flex: 0 0 auto; min-width: 7.5rem; max-width: 60vw; }
+.nw-switch:not(.nw-tabs) .nw-switch-btn { white-space: normal; overflow-wrap: anywhere; line-height: 1.15; font-size: 0.85rem; padding: 2px 8px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; text-overflow: clip; }
