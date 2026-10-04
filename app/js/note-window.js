@@ -319,7 +319,10 @@ export function createNoteViews(host) {
   const closestIn = (v, selector) => {
     const body = editBodyEl(v), sel = window.getSelection();
     let n = sel?.rangeCount ? sel.anchorNode : null;
+    // a click in an empty table cell can anchor the caret on the row / body itself: step to the cell it points at
+    if (n && n.nodeType === 1 && /^(TR|TBODY|THEAD|TABLE)$/.test(n.tagName)) { const k = n.childNodes[Math.min(sel.anchorOffset, n.childNodes.length - 1)]; if (k) n = k; }
     if (n && n.nodeType === 3) n = n.parentElement;
+    if (n && n.tagName === "TR") n = n.firstElementChild ?? n;
     const el = n?.closest?.(selector);
     return el && body.contains(el) ? el : null;
   };
