@@ -42,12 +42,45 @@
 [data-pane-menu] .pane-editfold-item { display: none; }
 .note-pane-bar.edit-folded [data-pane-menu] .pane-editfold-item { display: block; }
 .pane-edit-title { width: 100%; box-sizing: border-box; font: inherit; font-size: 1.15rem; font-weight: 600; min-height: 40px; margin: 0.7rem 0 0.2rem; padding: 0.3rem 0.5rem; border: 1px solid #aab; border-radius: 0.4rem; }
-.pane-edit-toolbar { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.3rem; margin: 0.4rem 0; }
+/* S12 -- the toolbar scrolls sideways INSIDE itself (never the page); every button is at least 40px. */
+.pane-edit-toolbar { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.3rem; margin: 0.4rem 0; overflow-x: auto; overflow-y: hidden; max-width: 100%; box-sizing: border-box; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
 .pane-edit-toolbar > * { flex: 0 0 auto; }
-.pane-edit-toolbar .tb-btn { min-width: 40px; min-height: 40px; padding: 0 0.4rem; }
-.pane-edit-toolbar.folded .tb-fold { display: none; }
-.pane-edit-toolbar:not(.folded) [data-tb-menu-wrap] { display: none; }
-.pane-edit-toolbar .bar-palette { right: auto; left: 0; width: 12rem; }
+.pane-edit-toolbar .tb-btn, .pane-edit-panel .tb-btn { min-width: 40px; min-height: 40px; padding: 0 0.4rem; }
+.tb-swatch-a { border-bottom: 3px solid #B3261E; line-height: 1; font-weight: 700; }
+.tb-swatch-hl { background: #FFF59D; color: #222; padding: 0 0.2rem; font-weight: 700; }
+.pane-edit-panel { margin: 0 0 0.4rem; padding: 0.4rem; border: 1px solid #c9d3e6; border-radius: 0.5rem; background: #f6f8ff; max-width: 100%; box-sizing: border-box; }
+.pane-edit-panel[hidden] { display: none; }
+.pane-panel-row { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: flex-end; margin-bottom: 0.3rem; }
+.pane-panel-field { display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.8rem; color: #1F3A6E; flex: 1 1 10rem; min-width: 0; }
+.pane-panel-field.narrow { flex: 0 0 6rem; }
+.pane-panel-field input { min-height: 40px; box-sizing: border-box; width: 100%; min-width: 0; padding: 0.3rem 0.5rem; font: inherit; border: 1px solid #aab; border-radius: 0.4rem; color: #1F3A6E; background: #fff; }
+.pane-edit-panel .tb-text { padding: 0 0.7rem; white-space: nowrap; }
+.pane-edit-panel .tb-chip { width: 44px; height: 44px; border: 1px solid #889; font-weight: 700; }
+.pane-panel-msg { margin: 0; color: #8a1c1c; font-size: 0.85rem; font-weight: 600; }
+.pane-panel-msg[hidden] { display: none; }
+.ed-wrap { position: relative; }
+.ed-gutter { position: absolute; inset: 0; pointer-events: none; }
+.ed-heading-ctl { position: absolute; inset-inline-end: 0.25rem; display: flex; align-items: center; gap: 0.2rem; pointer-events: none; }
+.ed-ctl-btn { pointer-events: auto; width: 40px; height: 40px; padding: 0; line-height: 1; touch-action: none; }
+.ed-grip { cursor: grab; }
+.ed-grip.dragging { cursor: grabbing; background: #dbe4fb; }
+.ed-drop-line { position: absolute; left: 0; right: 0; height: 3px; margin-top: -2px; background: #1F3A6E; pointer-events: none; }
+.ed-drop-line[hidden] { display: none; }
+.pane-edit-body h1, .pane-edit-body h2, .pane-edit-body h3, .pane-edit-body h4 { min-height: 40px; padding-inline-end: 5.4rem; box-sizing: border-box; }
+.pane-edit-body .ed-folded { display: none; }
+/* what the new buttons produce, in the editor and in the read view */
+.pane-edit-body p, .pane-edit-body h1, .pane-edit-body h2, .pane-edit-body h3, .pane-edit-body li, .pane-edit-body blockquote, .pane-edit-body td, .pane-edit-body th, .pane-edit-body div,
+.note-pane-body p, .note-pane-body h1, .note-pane-body h2, .note-pane-body h3, .note-pane-body li, .note-pane-body blockquote, .note-pane-body td, .note-pane-body th, .note-pane-body div { unicode-bidi: plaintext; }
+.pane-edit-body blockquote, .note-pane-body blockquote, .note-ver-text blockquote { margin: 0.5rem 0; padding: 0.2rem 0.8rem; border-inline-start: 3px solid #8892a8; color: #333; background: #f4f6fb; }
+.pane-edit-body table, .note-pane-body table, .note-ver-text table { border-collapse: collapse; max-width: 100%; margin: 0.4rem 0; }
+.pane-edit-body td, .pane-edit-body th, .note-pane-body td, .note-pane-body th, .note-ver-text td, .note-ver-text th { border: 1px solid #99a; padding: 0.3rem 0.5rem; min-width: 2.5rem; vertical-align: top; }
+.pane-edit-body a, .note-pane-body a, .note-ver-text a { color: #0b4fa8; text-decoration: underline; overflow-wrap: anywhere; }
+.pane-edit-body ul[data-check], .note-pane-body ul[data-check], .note-ver-text ul[data-check] { list-style: none; padding-inline-start: 0; margin: 0.4rem 0; }
+ul[data-check] > li { position: relative; padding-inline-start: 2.2rem; min-height: 1.6rem; }
+ul[data-check] > li::before { content: ""; position: absolute; inset-inline-start: 0.2rem; top: 0.15rem; width: 1.2rem; height: 1.2rem; box-sizing: border-box; border: 2px solid #1F3A6E; border-radius: 0.25rem; background: #fff; }
+ul[data-check] > li[data-checked="true"]::before { background: #1F3A6E; content: "✓"; color: #fff; font-size: 0.95rem; line-height: 1rem; text-align: center; }
+ul[data-check] > li[data-checked="true"] { color: #555; text-decoration: line-through; }
+.pane-edit-body ul[data-check] > li { cursor: text; }
 /* Siyagah round 6a -- Note pop-up windows. Menus inside a window must be above it (§5.3), so the window never clips: only its own scroll area does. */
 .note-win { position: fixed; z-index: 1000; display: flex; flex-direction: column; box-sizing: border-box; background: #fff; color: #222; border: 1px solid #999; border-radius: 8px; box-shadow: 0 8px 30px rgba(0,0,0,0.35); outline: none; }
 .note-win.sheet { inset: 0 0 var(--nw-switch, 0px) 0; width: auto; height: auto; border: 0; border-radius: 0; }

@@ -21,7 +21,7 @@
 // it can never write around the page's own write path (I2: pure UI).
 
 import { t } from "./i18n.js";
-import { sanitizeNoteHtml } from "./note-sanitize.js";
+import { sanitizeNoteHtml, isSafeNoteHref } from "./note-sanitize.js";
 import { closeAllBarPalettes } from "./bar-palette.js";
 import { HANDLES, handleCss, clampRect, startDrag } from "./float-window.js";
 
@@ -61,6 +61,7 @@ export const NOTE_VIEW_HTML = `
       <div class="note-pane-chips" data-pane-chips></div>
       <div class="pane-draft-offer" data-draft-offer hidden></div>
       <div class="pane-edit-toolbar" data-edit-toolbar hidden></div>
+      <div class="pane-edit-panel" data-edit-panel hidden></div>
       <p class="pane-edit-status" data-edit-status role="status" aria-live="polite" hidden></p>
       <div class="note-pane-body" data-pane-body></div>
     `;
@@ -90,6 +91,12 @@ function normBody(html) {
   const d = document.createElement("div");
   d.innerHTML = sanitizeNoteHtml(html || "");
   return sanitizeNoteHtml(d.innerHTML);
+}
+/** S12: in Bangla the time is Bangla digits and a 24-hour clock -- the locale's own "AM"/"PM" was printed in English. Other languages keep the browser's own format. */
+export function formatNoteTime(ms, locale) {
+  const d = new Date(ms);
+  if (locale && /^bn/i.test(locale)) return new Intl.DateTimeFormat("bn-BD-u-nu-beng", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(d);
+  return d.toLocaleString(locale || undefined, { dateStyle: "medium", timeStyle: "short" });
 }
 const noteTitleOf = (note) => note.title?.trim() || t("(untitled)");
 
@@ -156,7 +163,16 @@ export function createNoteViews(host) {
       if (v.win && ev.target.matches("[data-edit-title]")) v.win.querySelector(".nw-title").textContent = ev.target.value.trim() || t("(untitled)");
       onEditInput(v);
     });
-    el.addEventListener("mousedown", (ev) => { if (ev.target.closest("[data-edit-toolbar] button")) ev.preventDefault(); });
+    el.addEventListener("mousedown", (ev) => { if (ev.target.closest("[data-edit-toolbar] button, [data-edit-panel] button")) ev.preventDefault(); });
+    v.editPanelEl = el.querySelector("[data-edit-panel]");
+    // S12: a checklist box is ticked by pressing its box (the left edge of the item, the right edge in right-to-left text); pressing the grip / fold arrow is handled separately.
+    el.addEventListener("click", (ev) => tickCheckbox(v, ev));
+    el.addEventListener("keydown", (ev) => {
+      if (ev.target.closest("[data-sec-grip]")) gripKey(v, ev);
+      else if (ev.target.matches?.("[data-panel-url]") && ev.key === "Enter") { ev.preventDefault(); applyLink(v); }
+      else if (ev.target.closest?.("[data-edit-panel]") && ev.key === "Escape") { ev.stopPropagation(); closePanel(v); editBodyEl(v)?.focus(); }
+    });
+    el.addEventListener("pointerdown", (ev) => { const g = ev.target.closest("[data-sec-grip]"); if (g && v.ed) startGripDrag(v, g, ev); });
     el.addEventListener("click", (ev) => onViewClick(v, ev));
     // S11: Find -- typing re-marks the body; Enter / Shift+Enter step; Esc closes the find bar (and only it).
     v.find = { marks: [], idx: -1 };
@@ -197,6 +213,7 @@ export function createNoteViews(host) {
   function onEditInput(v) {
     const e = v.ed;
     if (!e) return;
+    scheduleGutter(v);
     if (!e.draftTimer) e.draftTimer = setTimeout(() => { e.draftTimer = null; if (v.ed === e) writeEditDraft(e, readEditor(v)); }, NOTE_DRAFT_MS);
     clearTimeout(e.idleTimer);
     e.idleTimer = setTimeout(() => flushEdit(e), NOTE_IDLE_MS);
@@ -258,6 +275,8 @@ export function createNoteViews(host) {
     if (!e) return null;
     const cur = readEditor(v);
     v.ed = null;
+    e.ro?.disconnect();
+    closePanel(v);
     clearTimeout(e.draftTimer); e.draftTimer = null;
     await flushEdit(e, cur);
     return e;
@@ -269,35 +288,303 @@ export function createNoteViews(host) {
   // The tray (journey-tray.js) hides this document without unloading it.
   window.addEventListener("message", (ev) => { if (ev.origin === location.origin && ev.data?.type === "mmsa-journey-flush") flushActiveEdit(); });
 
+  // =====================================================================
+  // THE EDITOR'S TOOLBAR, PANEL AND HEADING CONTROLS (S12, #562).
+  // Everything here changes only the editor's own DOM and goes out through the
+  // existing autosave (onEditInput -> flushEdit -> host.revise). The grip and the
+  // fold arrow live in a layer BESIDE the editable body, never inside it, so they
+  // can never be saved; a fold is a CSS class the sanitiser strips, so it writes
+  // nothing. Failures are said in words in the panel (I15).
+  // =====================================================================
+  const TOOLS = [
+    ["bold", "Bold", "<b>B</b>"], ["italic", "Italic", "<i>I</i>"], ["underline", "Underline", "<u>U</u>"], ["strike", "Strikethrough", "<s>S</s>"],
+    ["h1", "Heading 1", "H1"], ["h2", "Heading 2", "H2"], ["h3", "Heading 3", "H3"],
+    ["ul", "Bullet list", "•"], ["ol", "Numbered list", "1."], ["check", "Checklist", "☑"], ["quote", "Quote", "❝"],
+    ["link", "Link", "🔗"], ["table", "Table", "▦"],
+    ["color", "Text colour", "<span class=\"tb-swatch-a\">A</span>"], ["highlight", "Highlight", "<span class=\"tb-swatch-hl\">A</span>"],
+    ["left", "Align left", "⇤"], ["center", "Align centre", "↔"], ["right", "Align right", "⇥"],
+    ["undo", "Undo", "↶"], ["redo", "Redo", "↷"], ["clear", "Clear formatting", "⌫"],
+  ];
+  // Fixed palettes: dark text colours and pale highlights, all readable on the white Note page (palette-contrast checks them).
+  const TEXT_COLOURS = [["#B3261E", "Red"], ["#1F3A6E", "Navy"], ["#1B6E3C", "Green"], ["#6A3FA0", "Purple"], ["#7A4B00", "Brown"], ["#006A6A", "Teal"]];
+  const HIGHLIGHTS = [["#FFF59D", "Yellow"], ["#C8E6C9", "Light green"], ["#BBDEFB", "Light blue"], ["#F8BBD0", "Pink"], ["#E1BEE7", "Lavender"], ["#FFE0B2", "Orange"]];
+  const isHeadingEl = (n) => n?.nodeType === 1 && /^H[1-4]$/.test(n.tagName);
+
   function renderEditToolbar(v) {
     const label = (k) => escapeHtml(t(k));
-    const cmds = [["h1", "Heading 1", "H1"], ["h2", "Heading 2", "H2"], ["h3", "Heading 3", "H3"], ["ul", "Bullet list", "•"], ["ol", "Numbered list", "1."], ["undo", "Undo", "↶"]];
-    v.editToolbarEl.innerHTML = `
-      <button type="button" class="secondary tb-btn" data-cmd="bold" aria-label="${label("Bold")}" title="${label("Bold")}"><b>B</b></button>
-      <button type="button" class="secondary tb-btn" data-cmd="italic" aria-label="${label("Italic")}" title="${label("Italic")}"><i>I</i></button>
-      ${cmds.map(([c, name, glyph]) => `<button type="button" class="secondary tb-btn tb-fold" data-cmd="${c}" aria-label="${label(name)}" title="${label(name)}">${glyph}</button>`).join("")}
-      <span class="bar-palette-wrap folder-menu-wrap" data-bar-palette-wrap="editTools${v.uid}" data-tb-menu-wrap>
-        <button type="button" class="folder-menu-btn bar-palette-toggle" data-bar-palette-toggle="editTools${v.uid}" aria-haspopup="true" aria-expanded="false" aria-label="${label("More")}">⋯</button>
-        <div class="bar-palette" data-bar-palette="editTools${v.uid}">${cmds.map(([c, name]) => `<button type="button" class="secondary tiny" data-cmd="${c}">${label(name)}</button>`).join("")}</div>
-      </span>`;
+    v.editToolbarEl.innerHTML = TOOLS.map(([c, name, glyph]) => `<button type="button" class="secondary tb-btn" data-cmd="${c}" aria-label="${label(name)}" title="${label(name)}">${glyph}</button>`).join("");
+    v.editToolbarEl.setAttribute("role", "toolbar");
+    v.editToolbarEl.setAttribute("aria-label", t("Formatting"));
   }
-  function fitEditToolbar(v) {
-    if (v.editToolbarEl.hidden) return;
-    v.editToolbarEl.classList.remove("folded");
-    if (v.editToolbarEl.scrollWidth > v.editToolbarEl.clientWidth + 1) v.editToolbarEl.classList.add("folded");
+  const closestIn = (v, selector) => {
+    const body = editBodyEl(v), sel = window.getSelection();
+    let n = sel?.rangeCount ? sel.anchorNode : null;
+    // a click in an empty table cell can anchor the caret on the row / body itself: step to the cell it points at
+    if (n && n.nodeType === 1 && /^(TR|TBODY|THEAD|TABLE)$/.test(n.tagName)) { const k = n.childNodes[Math.min(sel.anchorOffset, n.childNodes.length - 1)]; if (k) n = k; }
+    if (n && n.nodeType === 3) n = n.parentElement;
+    if (n && n.tagName === "TR") n = n.firstElementChild ?? n;
+    const el = n?.closest?.(selector);
+    return el && body.contains(el) ? el : null;
+  };
+  function saveRange(v) {
+    const body = editBodyEl(v), sel = window.getSelection();
+    if (v.ed && body && sel?.rangeCount && body.contains(sel.anchorNode)) v.ed.range = sel.getRangeAt(0).cloneRange();
+  }
+  function restoreRange(v) {
+    const body = editBodyEl(v);
+    body.focus();
+    if (v.ed?.range) { const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(v.ed.range); }
+  }
+  const panelMsg = (v, text) => { const m = v.editPanelEl.querySelector("[data-panel-msg]"); if (m) { m.textContent = text || ""; m.hidden = !text; } };
+  function closePanel(v) { v.editPanelEl.hidden = true; v.editPanelEl.replaceChildren(); v.editPanelEl.dataset.mode = ""; }
+  function openPanel(v, mode) {
+    saveRange(v);
+    const P = v.editPanelEl, label = (k) => escapeHtml(t(k));
+    const close = `<button type="button" class="secondary tb-btn tb-text" data-panel-close>${label("Close")}</button>`;
+    const msg = `<p class="pane-panel-msg" data-panel-msg role="alert" hidden></p>`;
+    if (mode === "link") {
+      const cur = closestIn(v, "a");
+      P.innerHTML = `<div class="pane-panel-row"><label class="pane-panel-field">${label("Web address")}<input type="text" inputmode="url" autocomplete="off" data-panel-url value="${escapeHtml(cur?.getAttribute("href") || "")}" placeholder="https://"></label>
+        <button type="button" class="tb-btn tb-text" data-panel-apply>${label("Apply")}</button>
+        <button type="button" class="secondary tb-btn tb-text" data-panel-unlink>${label("Remove link")}</button>${close}</div>${msg}`;
+    } else if (mode === "table") {
+      P.innerHTML = `<div class="pane-panel-row">
+        <label class="pane-panel-field narrow">${label("Rows")}<input type="number" min="1" max="20" value="3" data-table-rows></label>
+        <label class="pane-panel-field narrow">${label("Columns")}<input type="number" min="1" max="8" value="3" data-table-cols></label>
+        <button type="button" class="tb-btn tb-text" data-table-insert>${label("Insert table")}</button></div>
+        <div class="pane-panel-row">
+        <button type="button" class="secondary tb-btn tb-text" data-table-op="addRow">${label("Add row")}</button>
+        <button type="button" class="secondary tb-btn tb-text" data-table-op="delRow">${label("Remove row")}</button>
+        <button type="button" class="secondary tb-btn tb-text" data-table-op="addCol">${label("Add column")}</button>
+        <button type="button" class="secondary tb-btn tb-text" data-table-op="delCol">${label("Remove column")}</button>${close}</div>${msg}`;
+    } else {
+      const list = mode === "color" ? TEXT_COLOURS : HIGHLIGHTS;
+      P.innerHTML = `<div class="pane-panel-row" role="group" aria-label="${label(mode === "color" ? "Text colour" : "Highlight")}">${list.map(([hex, name]) =>
+        `<button type="button" class="tb-btn tb-chip" data-swatch="${hex}" data-swatch-mode="${mode}" aria-label="${label(name)}" title="${label(name)}" style="background:${hex}"><span aria-hidden="true" style="color:${mode === "color" ? hex : "#222"}">${mode === "color" ? "■" : "A"}</span></button>`).join("")}${close}</div>${msg}`;
+    }
+    P.dataset.mode = mode;
+    P.hidden = false;
+    P.querySelector("input")?.focus();
+  }
+  function applyLink(v) {
+    const url = (v.editPanelEl.querySelector("[data-panel-url]").value || "").trim();
+    if (!isSafeNoteHref(url)) { panelMsg(v, t("Use a web address that starts with http://, https:// or mailto:")); return; }
+    restoreRange(v);
+    const cur = closestIn(v, "a"), sel = window.getSelection();
+    if (cur) cur.setAttribute("href", url);
+    else if (!sel.rangeCount || sel.isCollapsed) document.execCommand("insertHTML", false, `<a href="${escapeHtml(url)}">${escapeHtml(url)}</a>`);
+    else document.execCommand("createLink", false, url);
+    closePanel(v); onEditInput(v);
+  }
+  function removeLink(v) {
+    restoreRange(v);
+    const cur = closestIn(v, "a");
+    if (!cur) { panelMsg(v, t("Put the cursor inside a link first.")); return; }
+    cur.replaceWith(...cur.childNodes);
+    closePanel(v); onEditInput(v);
+  }
+  function insertTable(v) {
+    const rows = Number(v.editPanelEl.querySelector("[data-table-rows]").value), cols = Number(v.editPanelEl.querySelector("[data-table-cols]").value);
+    if (!Number.isInteger(rows) || !Number.isInteger(cols) || rows < 1 || rows > 20 || cols < 1 || cols > 8) { panelMsg(v, t("Choose 1 to 20 rows and 1 to 8 columns.")); return; }
+    restoreRange(v);
+    const body = editBodyEl(v), before = new Set(body.querySelectorAll("table"));
+    const row = `<tr>${"<td><br></td>".repeat(cols)}</tr>`;
+    document.execCommand("insertHTML", false, `<table><tbody>${row.repeat(rows)}</tbody></table><p><br></p>`);
+    const made = [...body.querySelectorAll("table")].find((x) => !before.has(x));
+    if (made) { const r = document.createRange(); r.setStart(made.querySelector("td"), 0); r.collapse(true); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); }
+    closePanel(v); onEditInput(v);
+  }
+  function tableOp(v, op) {
+    restoreRange(v);
+    const cell = closestIn(v, "td, th");
+    if (!cell) { panelMsg(v, t("Click inside a table cell first.")); return; }
+    const tr = cell.parentElement, table = cell.closest("table"), idx = [...tr.children].indexOf(cell);
+    const mk = () => { const td = document.createElement("td"); td.appendChild(document.createElement("br")); return td; };
+    if (op === "addRow") { const n = document.createElement("tr"); for (let i = 0; i < tr.children.length; i++) n.appendChild(mk()); tr.after(n); }
+    else if (op === "delRow") { tr.remove(); if (!table.querySelector("tr")) table.remove(); }
+    else if (op === "addCol") { for (const r of table.querySelectorAll("tr")) r.children[Math.min(idx, r.children.length - 1)]?.after(mk()); }
+    else if (op === "delCol") { for (const r of table.querySelectorAll("tr")) r.children[idx]?.remove(); if (![...table.querySelectorAll("tr")].some((r) => r.children.length)) table.remove(); }
+    panelMsg(v, ""); onEditInput(v);
+  }
+  function applySwatch(v, hex, mode) {
+    restoreRange(v);
+    document.execCommand("styleWithCSS", false, true);
+    document.execCommand(mode === "color" ? "foreColor" : "hiliteColor", false, hex);
+    document.execCommand("styleWithCSS", false, false);
+    onEditInput(v);
+  }
+  function clearFormatting(v) {
+    const body = editBodyEl(v), sel = window.getSelection();
+    document.execCommand("removeFormat", false, null);
+    document.execCommand("unlink", false, null);
+    if (sel.rangeCount) for (const el of body.querySelectorAll("[style]")) if (sel.containsNode(el, true)) el.removeAttribute("style");
+    const blk = closestIn(v, "h1, h2, h3, blockquote");
+    if (blk) document.execCommand("formatBlock", false, "p");
   }
   function runEditCommand(v, cmd) {
     const body = editBodyEl(v);
     if (!body) return;
+    if (["link", "table", "color", "highlight"].includes(cmd)) {
+      if (!v.editPanelEl.hidden && v.editPanelEl.dataset.mode === cmd) closePanel(v); else openPanel(v, cmd);
+      return;
+    }
+    closePanel(v);
     body.focus();
+    document.execCommand("styleWithCSS", false, false);
     if (/^h[123]$/.test(cmd)) {
       const now = String(document.queryCommandValue("formatBlock") || "").toLowerCase().replace(/[<>]/g, "");
       document.execCommand("formatBlock", false, now === cmd ? "p" : cmd);
+    } else if (cmd === "quote") {
+      document.execCommand("formatBlock", false, closestIn(v, "blockquote") ? "p" : "blockquote");
+    } else if (cmd === "check") {
+      const ul = closestIn(v, "ul");
+      if (ul?.hasAttribute("data-check")) { ul.removeAttribute("data-check"); for (const li of ul.children) { li.removeAttribute("data-checked"); li.removeAttribute("dir"); } }
+      else {
+        if (!ul) document.execCommand("insertUnorderedList", false, null);
+        const made = closestIn(v, "ul");
+        if (made) { made.setAttribute("data-check", "1"); for (const li of made.children) li.setAttribute("dir", "auto"); }
+      }
+    } else if (["left", "center", "right"].includes(cmd)) {
+      document.execCommand("styleWithCSS", false, true);
+      document.execCommand({ left: "justifyLeft", center: "justifyCenter", right: "justifyRight" }[cmd], false, null);
+      document.execCommand("styleWithCSS", false, false);
+    } else if (cmd === "clear") {
+      clearFormatting(v);
     } else {
-      document.execCommand({ bold: "bold", italic: "italic", ul: "insertUnorderedList", ol: "insertOrderedList", undo: "undo" }[cmd], false, null);
+      document.execCommand({ bold: "bold", italic: "italic", underline: "underline", strike: "strikeThrough", ul: "insertUnorderedList", ol: "insertOrderedList", undo: "undo", redo: "redo" }[cmd], false, null);
     }
     onEditInput(v);
   }
+
+  /** Ticking a checklist item while editing: press its box (left edge; right edge in right-to-left text). */
+  function tickCheckbox(v, ev) {
+    if (!v.ed) return;
+    const li = ev.target.closest?.("ul[data-check] > li");
+    if (!li || !editBodyEl(v)?.contains(li)) return;
+    const r = li.getBoundingClientRect(), rtl = getComputedStyle(li).direction === "rtl";
+    const inBox = rtl ? ev.clientX >= r.right - 36 : ev.clientX <= r.left + 36;
+    if (!inBox) return;
+    if (li.getAttribute("data-checked") === "true") li.removeAttribute("data-checked"); else li.setAttribute("data-checked", "true");
+    onEditInput(v);
+  }
+
+  // ---- Heading controls while editing: a fold arrow and a drag grip per heading ----
+  const sectionNodes = (h) => {
+    const level = Number(h.tagName[1]), out = [h];
+    for (let n = h.nextSibling; n; n = n.nextSibling) {
+      if (isHeadingEl(n) && Number(n.tagName[1]) <= level) break;
+      out.push(n);
+    }
+    return out;
+  };
+  let gutterRaf = 0;
+  function scheduleGutter(v) { cancelAnimationFrame(gutterRaf); gutterRaf = requestAnimationFrame(() => layoutGutter(v)); }
+  function layoutGutter(v) {
+    const e = v.ed, body = editBodyEl(v);
+    if (!e || !body || !e.gutterEl) return;
+    for (const el of body.querySelectorAll(".ed-folded")) el.classList.remove("ed-folded");
+    const heads = [...body.children].filter(isHeadingEl);
+    for (const h of [...e.folded]) if (!h.isConnected) e.folded.delete(h);
+    for (const h of heads) {
+      if (!e.folded.has(h)) continue;
+      for (const n of sectionNodes(h).slice(1)) if (n.nodeType === 1) n.classList.add("ed-folded");
+    }
+    e.gutterEl.replaceChildren();
+    const wr = e.wrapEl.getBoundingClientRect();
+    for (const h of heads) {
+      if (h.classList.contains("ed-folded")) continue;
+      const hr = h.getBoundingClientRect(), folded = e.folded.has(h);
+      const ctl = document.createElement("div");
+      ctl.className = "ed-heading-ctl";
+      ctl.style.top = `${hr.top - wr.top}px`;
+      ctl.style.height = `${Math.max(hr.height, 40)}px`;
+      const fold = document.createElement("button");
+      fold.type = "button"; fold.className = "secondary ed-ctl-btn"; fold.dataset.secFold = "";
+      fold.setAttribute("aria-expanded", String(!folded));
+      fold.setAttribute("aria-label", t(folded ? "Open this section" : "Fold this section"));
+      fold.title = t(folded ? "Open this section" : "Fold this section");
+      fold.textContent = folded ? "▶" : "▾";
+      fold.__h = h;
+      const grip = document.createElement("button");
+      grip.type = "button"; grip.className = "secondary ed-ctl-btn ed-grip"; grip.dataset.secGrip = "";
+      grip.setAttribute("aria-label", t("Move this section (drag, or use the up and down arrow keys)"));
+      grip.title = t("Move this section (drag, or use the up and down arrow keys)");
+      grip.textContent = "⠿";
+      grip.__h = h;
+      ctl.append(fold, grip);
+      e.gutterEl.appendChild(ctl);
+    }
+  }
+  function toggleFold(v, h) {
+    const e = v.ed;
+    if (!e || !h?.isConnected) return;
+    if (e.folded.has(h)) e.folded.delete(h); else e.folded.add(h);
+    layoutGutter(v); // a view-only change: no onEditInput, so nothing is drafted or saved
+  }
+  /** Move the whole section of heading `h` (it and everything up to the next heading of the same or higher level) before `ref` (null = the end). */
+  function moveSection(v, h, ref) {
+    const body = editBodyEl(v), nodes = sectionNodes(h);
+    if (!body || nodes.includes(ref)) return false;
+    if ((ref ?? null) === (nodes[nodes.length - 1].nextSibling ?? null)) return false; // already there
+    for (const n of nodes) body.insertBefore(n, ref);
+    onEditInput(v); layoutGutter(v);
+    return true;
+  }
+  function gripKey(v, ev) {
+    if (!v.ed || (ev.key !== "ArrowUp" && ev.key !== "ArrowDown")) return;
+    const h = ev.target.closest("[data-sec-grip]").__h, body = editBodyEl(v);
+    if (!h?.isConnected) return;
+    ev.preventDefault();
+    const heads = [...body.children].filter(isHeadingEl);
+    let moved = false;
+    if (ev.key === "ArrowUp") { const prev = heads[heads.indexOf(h) - 1]; if (prev) moved = moveSection(v, h, prev); }
+    else { const own = sectionNodes(h), nxt = heads.slice(heads.indexOf(h) + 1).find((x) => !own.includes(x));
+      if (nxt) { const after = sectionNodes(nxt); moved = moveSection(v, h, after[after.length - 1].nextSibling); } }
+    if (moved) v.el.querySelectorAll("[data-sec-grip]").forEach((g) => { if (g.__h === h) g.focus(); });
+  }
+  function startGripDrag(v, grip, ev) {
+    const e = v.ed, h = grip.__h, body = editBodyEl(v);
+    if (!e || !h?.isConnected || ev.button > 0) return;
+    ev.preventDefault();
+    const line = document.createElement("div");
+    line.className = "ed-drop-line"; line.hidden = true;
+    e.gutterEl.appendChild(line);
+    grip.classList.add("dragging");
+    let ref = undefined;
+    const refAt = (y) => {
+      const own = sectionNodes(h);
+      for (const x of [...body.children].filter(isHeadingEl)) {
+        if (x.classList.contains("ed-folded")) continue;
+        const r = x.getBoundingClientRect();
+        if (y < r.top + r.height / 2) return own.includes(x) ? undefined : x;
+      }
+      return null;
+    };
+    const move = (m) => {
+      ref = refAt(m.clientY);
+      const wr = e.wrapEl.getBoundingClientRect();
+      if (ref === undefined) { line.hidden = true; return; }
+      line.hidden = false;
+      line.style.top = `${(ref ? ref.getBoundingClientRect().top : body.getBoundingClientRect().bottom) - wr.top}px`;
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up);
+      grip.classList.remove("dragging"); line.remove();
+      if (ref !== undefined && v.ed === e) moveSection(v, h, ref);
+    };
+    window.addEventListener("pointermove", move); window.addEventListener("pointerup", up); window.addEventListener("pointercancel", up);
+  }
+  /** Paste goes through the Note's own cleaner BEFORE it touches the editor, so a hostile paste never lives in the DOM. */
+  function onEditPaste(v, ev) {
+    if (!v.ed || !ev.target.closest?.("[data-edit-body]")) return;
+    ev.preventDefault();
+    const html = ev.clipboardData?.getData("text/html"), text = ev.clipboardData?.getData("text/plain") || "";
+    if (html) document.execCommand("insertHTML", false, sanitizeNoteHtml(html));
+    else if (text) document.execCommand("insertText", false, text);
+    onEditInput(v);
+  }
+
+
 
   /** Begin editing `note`; `draft` (a restored local draft) replaces the stored text in the editor but never the baseline it is compared with. */
   function startEdit(v, note, draft = null) {
@@ -309,6 +596,10 @@ export function createNoteViews(host) {
     v.draftOfferEl.hidden = true;
     closeFind(v, { focus: false });
     v.bodyEl.replaceChildren();
+    const wrap = document.createElement("div");
+    wrap.className = "ed-wrap";
+    const gutter = document.createElement("div");
+    gutter.className = "ed-gutter";
     const body = document.createElement("div");
     body.className = "pane-edit-body";
     body.contentEditable = "true";
@@ -317,7 +608,15 @@ export function createNoteViews(host) {
     body.setAttribute("aria-multiline", "true");
     body.setAttribute("aria-label", t("Note text"));
     body.innerHTML = sanitizeNoteHtml(draft ? draft.bodyHtml : note.bodyHtml);
-    v.bodyEl.appendChild(body);
+    wrap.append(body, gutter);
+    v.bodyEl.appendChild(wrap);
+    Object.assign(v.ed, { wrapEl: wrap, gutterEl: gutter, folded: new Set(), range: null });
+    body.addEventListener("paste", (ev) => onEditPaste(v, ev));
+    body.addEventListener("keyup", () => saveRange(v));
+    body.addEventListener("mouseup", () => saveRange(v));
+    v.ed.ro = typeof ResizeObserver === "function" ? new ResizeObserver(() => scheduleGutter(v)) : null;
+    v.ed.ro?.observe(wrap);
+    scheduleGutter(v);
     v.editTitleEl.setAttribute("aria-label", t("Note title"));
     renderEditToolbar(v);
     v.editToolbarEl.hidden = false;
@@ -325,7 +624,6 @@ export function createNoteViews(host) {
     setEditStatus(v, "");
     renderPaneBar(v);
     fitPaneBarTwice(v);
-    fitEditToolbar(v); requestAnimationFrame(() => fitEditToolbar(v));
     if (draft) { writeEditDraft(v.ed, readEditor(v)); onEditInput(v); }
     body.focus();
   }
@@ -345,8 +643,9 @@ export function createNoteViews(host) {
       <button type="button" class="secondary tiny" data-draft-discard>${escapeHtml(t("Discard it"))}</button></div>`;
     v.draftOfferEl.hidden = false;
   }
+  const timeLine = (ts) => { const loc = host.dateLocale?.(); const ms = tsMillis(ts); return loc && /^bn/i.test(loc) ? (ms ? formatNoteTime(ms, loc) : "") : host.when(ts); };
   function paneMetaText(note) {
-    const created = host.when(note.originalCreatedAt ?? note.createdAt), changed = host.when(note.updatedAt);
+    const created = timeLine(note.originalCreatedAt ?? note.createdAt), changed = timeLine(note.updatedAt);
     return [
       created ? t("Created {date}", { date: created }) : "",
       changed ? t("Last changed {date}", { date: changed }) : "",
@@ -400,7 +699,7 @@ export function createNoteViews(host) {
   function fitPaneBarTwice(v) { fitPaneBar(v); requestAnimationFrame(() => fitPaneBar(v)); }
   window.addEventListener("resize", () => {
     if (notePane) host.paneApply();
-    for (const v of allViews()) if (v.noteId !== null) { if (v.kind === "window") applyWindowGeometry(v); renderPaneBar(v); fitPaneBarTwice(v); fitEditToolbar(v); }
+    for (const v of allViews()) if (v.noteId !== null) { if (v.kind === "window") applyWindowGeometry(v); renderPaneBar(v); fitPaneBarTwice(v); }
     updateWindowSwitcher();
   });
 
@@ -702,7 +1001,7 @@ export function createNoteViews(host) {
   }
 
   const tsMillis = (ts) => (ts?.toMillis ? ts.toMillis() : ts?.toDate ? ts.toDate().getTime() : ts instanceof Date ? ts.getTime() : Number(ts) || 0);
-  const whenText = (ts) => { const ms = tsMillis(ts); return ms ? new Date(ms).toLocaleString(host.dateLocale?.() || undefined, { dateStyle: "medium", timeStyle: "short" }) : t("(unknown time)"); };
+  const whenText = (ts) => { const ms = tsMillis(ts); return ms ? formatNoteTime(ms, host.dateLocale?.()) : t("(unknown time)"); };
   let versionsDlg = null;
   function closeVersions() { if (versionsDlg) { versionsDlg.remove(); versionsDlg = null; } }
   async function openVersions(v, note) {
@@ -870,6 +1169,15 @@ export function createNoteViews(host) {
     }
     const cmdBtn = on("[data-edit-toolbar] [data-cmd]");
     if (cmdBtn) { closeAllBarPalettes(null); runEditCommand(v, cmdBtn.dataset.cmd); return; }
+    if (v.ed) { // S12: the editor's panel and heading controls
+      if (on("[data-panel-close]")) { closePanel(v); editBodyEl(v)?.focus(); return; }
+      if (on("[data-panel-apply]")) { applyLink(v); return; }
+      if (on("[data-panel-unlink]")) { removeLink(v); return; }
+      if (on("[data-table-insert]")) { insertTable(v); return; }
+      const top = on("[data-table-op]"); if (top) { tableOp(v, top.dataset.tableOp); return; }
+      const sw = on("[data-swatch]"); if (sw) { applySwatch(v, sw.dataset.swatch, sw.dataset.swatchMode); return; }
+      const fb = on("[data-sec-fold]"); if (fb) { toggleFold(v, fb.__h); return; }
+    }
     if (on("[data-draft-restore]")) { const d = loadDraft(note.noteId); if (d && host.canEdit()) startEdit(v, note, d); return; }
     if (on("[data-draft-discard]")) { clearDraft(note.noteId); v.draftOfferEl.hidden = true; return; }
     if (on("[data-pane-back]")) { closePane(); return; }

@@ -14,6 +14,24 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v09.69 on `main`** (4 Oct 2026 — **Mapping My Journey: reading tools (Siyagah round S11, decision 66, #559).**
+- **🔍 Find in this Note:** every match highlighted, "n of m", ▲ ▼ and Enter / Shift+Enter to step, Esc to close; Bangla words too; a hit inside a folded heading opens it on screen. Writes nothing.
+- **⇅ Open / close all headings** with the pane's existing folding (per device, no Firestore write).
+- **☰ Contents on every width** and for any Note with a heading (it was hidden at the wide tier and needed 3+ headings).
+- **🕘 Versions** (⋯ menu): earlier revisions newest first, read-only; **Bring this version back** saves it as a NEW revision through `updatePermanentNoteContent` (reason `version-restore`); old revisions untouched.
+- **📎 Folders and tags** in one sheet/popover (the S10 tick list plus tags). It replaced nothing: the ⋯ menu's Folders… and Tags… stay.
+- **The bar stays one line:** at narrow widths 🔍, ⇅ and then 📎 fold into ⋯.
+- **No Rules change.** **Built by:** the Builder (PR #561); Architect review by measurement, no changes needed.
+- **Checks:**
+  - journey-reading-tools-browser 488/0 (mutations: restore-overwrites 8, find-first-only 48, contents-hidden-phone 4, foldall-noop 8, no-tags fails)
+  - every journey suite green; note-foundation-data-layer and rules-authorisation-executable green
+  - phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0
+  - behaviour 1003/4 (sandbox: 22g×3, 31e)
+- **Leftover:** the version times in Bangla still print "AM" (goes with S12).
+- **Next:** S12 (the editor), S13 (pop-up windows), S14 (flags and Note links, needs Rules).
+- **With the Owner:** a folder's own window (needs a demo); the Asmaul Husna poster (on hold, decision 50).
+)
+
 **Previous milestone: v09.68 on `main`** (4 Oct 2026 — **Mapping My Journey: one folder picker with tick boxes (Siyagah round S10, decision 66, #557).**
 - **Tick the folders a Note belongs in:** while reading, a tick files the Note there at once and an untick retires that one filing (a status change, never a delete). The last folder cannot be unticked; the picker says why in words. While editing, the ticks are saved with the edit on Done, and Cancel leaves the filings as they were.
 - **Inside the picker:** search folders and Notes, ＋ New folder (inside the highlighted folder, or at the top), rename, and **Move to Trash** (`trashFolder`; nothing is erased).

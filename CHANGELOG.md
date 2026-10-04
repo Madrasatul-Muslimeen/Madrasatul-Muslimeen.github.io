@@ -19520,3 +19520,19 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
   - phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0
   - behaviour 1003/4 (sandbox: 22g×3 archive.org, 31e TLS)
 - **Leftover:** Bangla version times still show "AM".
+
+## v09.70 — 4 Oct 2026 — Mapping My Journey: the editor (S12, decision 66)
+
+- **What:**
+  - New editing buttons: underline, strikethrough, checklist, quote, link, table, text colour, highlight, alignment, redo, clear formatting; the same in pop-up windows.
+  - While editing, each heading has a fold arrow and a grip to move its whole section.
+  - The Note cleaner admits what the buttons make and nothing else (no handlers, no `javascript:` links, only colour/background/alignment styles).
+  - Bangla times use Bangla digits, no AM/PM.
+- **Who:** the Owner, decision 66 (the S8–S14 plan). Builder issue #562.
+- **Review fix:** the resize handler called a removed function, breaking note windows on every resize; fixed (journey-note-windows-browser back to 254/0).
+- **No Rules change.**
+- **Checks:**
+  - journey-editor-browser 577/0, four mutations each failing
+  - note-sanitize-boundary 12/0; every journey suite green
+  - note-foundation-data-layer, rules-authorisation-executable green; phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0
+  - behaviour 1003/4 (sandbox: 22g×3 archive.org, 31e TLS)

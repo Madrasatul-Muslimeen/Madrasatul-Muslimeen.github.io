@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.69",
+    "version": "09.70",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2009,8 +2009,20 @@
     {
       "version": "09.69",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Find, open/close all headings, contents everywhere, versions with restore, folders and tags in one place (Builder PR #561, Architect review).",
+      "integration": {
+        "authorizedOn": "2026-10-04",
+        "integratedOn": "2026-10-04",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.70",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "More formatting buttons, heading grip and fold while editing, a widened but checked Note cleaner, Bangla times (Builder #562, Architect review fix).",
       "integration": {
         "authorizedOn": "2026-10-04",
         "integratedOn": "2026-10-04",
@@ -2019,8 +2031,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.70",
+  "nextUnallocated": "09.71",
   "nextUnallocatedNote": [
+    "v09.70 was allocated to Mapping My Journey editor (S12, decision 66, #562), 2026-10-04.",
     "v09.69 was allocated to Mapping My Journey reading tools (S11, decision 66, #559), 2026-10-04.",
     "v09.68 was allocated to the folder picker with tick boxes (S10, decision 66, #557), 2026-10-04.",
     "v09.67 was allocated to Mapping My Journey menus, drag onto a folder, deep nesting (S9, decision 66, #555), 2026-10-04.",
