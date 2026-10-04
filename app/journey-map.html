@@ -395,6 +395,8 @@
       <span class="bar-palette-wrap page-menu-wrap" data-bar-palette-wrap="pageMenu">
         <button type="button" class="folder-menu-btn bar-palette-toggle" data-bar-palette-toggle="pageMenu" aria-haspopup="true" aria-expanded="false" title="More" aria-label="More">⋯</button>
         <div class="bar-palette" data-bar-palette="pageMenu">
+          <button type="button" class="secondary tiny" id="openFavouritesBtn" style="display:block; width:100%; text-align:left; padding:0.32rem 0.7rem; min-height:40px;">⭐ Favourites</button>
+          <button type="button" class="secondary tiny" id="openArchivedBtn" style="display:block; width:100%; text-align:left; padding:0.32rem 0.7rem; min-height:40px;">📦 Archived</button>
           <button type="button" class="secondary tiny" id="openTrashBtn" style="display:block; width:100%; text-align:left; padding:0.32rem 0.7rem;">🗑 Trash</button>
           <a class="secondary tiny" href="import-notes.html" style="display:block; text-align:left; text-decoration:none; padding:0.32rem 0.7rem;">Import Notes…</a>
         </div>
@@ -433,7 +435,7 @@
     import { sanitizeNoteHtml } from "./js/note-sanitize.js";
     import { closeAllBarPalettes } from "./js/bar-palette.js";
     import { createNoteViews } from "./js/note-window.js";
-    import { NOTE_STATUS, createNoteFolder, createNotePlacement, createPermanentNote, listNoteRevisions, restoreNote, retirePermanentNote, updatePermanentNoteContent } from "./js/note-foundation.js";
+    import { NOTE_STATUS, FINALISED_REFUSAL, createNoteFolder, createNotePlacement, createPermanentNote, listNoteRevisions, restoreNote, retirePermanentNote, updatePermanentNoteContent } from "./js/note-foundation.js";
     import {
       ownerFolderTreePagedSharded, folderContents,
       renameFolder, reorderFolder, moveFolder, reorderFiling,
@@ -442,8 +444,10 @@
       loadAllOwnerSections, createSection, renameSection, reorderSection, setSectionLook,
       trashSection, restoreSection, setFolderLook, setFolderSection,
       loadAllOwnerTags, loadAllOwnerTagLinks, createTag, renameTag, setTagLook, trashTag, restoreTag, tagNote, untagNote,
+      loadAllOwnerNoteLinks, setNoteFlags, linkNotes, unlinkNotes,
     } from "./js/journey-map-service.js";
     import { isSiyagahSectionsReady } from "./js/siyagah-sections-readiness.js";
+    import { isSiyagahFlagsReady } from "./js/siyagah-flags-readiness.js";
 
     translateStatic();
     registerServiceWorker();
@@ -605,6 +609,7 @@
       if (/^Folder still holds active folders:/.test(msg)) {
         return t("This folder still has other folders inside it — remove those first, then this one.");
       }
+      if (msg === FINALISED_REFUSAL) return t("This Note is finalised. Un-finalise it from the ⋯ menu first.");
       if (msg === "A retired folder cannot be renamed.") return t("That folder has already been removed, so it can't be renamed.");
       if (msg === "A retired folder cannot be reordered.") return t("That folder has already been removed, so it can't be reordered.");
       if (msg === "Folder does not exist.") return t("That folder could not be found — please refresh and try again.");
@@ -730,6 +735,7 @@
     let sections = [];
     let tags = [];          // Siyagah round 7b: the owner's ACTIVE tags (never read while the gate is shut)
     let tagLinks = [];      // ...and their ACTIVE links to Notes
+    let noteLinks = [];     // Siyagah round 14: the owner's ACTIVE links between Notes (never read while the flags gate is shut)
     let expandedTagId = null;
     let tagRenameId = null;
     let allNotes = [];
@@ -907,13 +913,19 @@
           loadAllOwnerTagLinks(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, status: NOTE_STATUS.ACTIVE }),
         ]).then(([a, b]) => ({ tags: a.rows, links: b.rows }), (err) => { console.error("[tags load]", err); return { tags: [], links: [] }; })
         : Promise.resolve({ tags: [], links: [] });
+      const linksPromise = flagsReady()
+        ? loadAllOwnerNoteLinks(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, status: NOTE_STATUS.ACTIVE })
+          .then((r) => r.rows, (err) => { console.error("[note links load]", err); return []; })
+        : Promise.resolve([]);
       const tree = await ownerFolderTreePagedSharded(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId });
       const loadedSections = await sectionsPromise;
+      const loadedLinks = await linksPromise;
       const loadedTags = await tagsPromise;
       if (myRefresh !== refreshToken) return; // superseded by a later refresh already
       folderTree = tree;
       sections = loadedSections.slice().sort(byOrder);
       tags = loadedTags.tags; tagLinks = loadedTags.links;
+      noteLinks = loadedLinks;
       foldersTruncated = tree.truncated;
       // The tree is drawn HERE, before a single Note or placement has
       // arrived -- every folder count badge and the Timeline/Path views
@@ -1295,10 +1307,94 @@
         }, { collection: TENANT.NOTE_TAG_LINKS, action: "untagNote" }),
         create: (name) => createTagChecked(name),
       },
+      flags: {
+        ready: () => flagsReady(),
+        on: (note, key) => note[key] === true,
+        set: (note, key, value) => setFlag(note, key, value),
+        linksOut: (note) => noteLinks.filter((l) => l.fromNoteId === note.noteId).map((l) => linkRow(l, l.toNoteId)).filter(Boolean),
+        linksIn: (note) => noteLinks.filter((l) => l.toNoteId === note.noteId).map((l) => linkRow(l, l.fromNoteId)).filter(Boolean),
+        candidates: (note, needle) => {
+          const n = needle.toLocaleLowerCase();
+          const taken = new Set(noteLinks.filter((l) => l.fromNoteId === note.noteId).map((l) => l.toNoteId));
+          return allNotes.filter((x) => x.noteId !== note.noteId && x.status === NOTE_STATUS.ACTIVE && !taken.has(x.noteId) && (!n || String(x.title ?? "").toLocaleLowerCase().includes(n)))
+            .sort((a, b) => String(a.title ?? "").localeCompare(String(b.title ?? ""))).map((x) => ({ noteId: x.noteId, title: x.title }));
+        },
+        link: (note, toNoteId) => linkWrite(note, toNoteId),
+        unlink: (note, linkId) => unlinkWrite(linkId),
+        open: (noteId) => { if (allNotes.some((n) => n.noteId === noteId && n.status === NOTE_STATUS.ACTIVE)) openNoteWindow(noteId, {}); },
+        pinned: () => allNotes.filter((n) => n.pinned === true && n.status === NOTE_STATUS.ACTIVE && n.archived !== true).map((n) => ({ noteId: n.noteId, title: n.title })),
+      },
       orderFrom: paneOrderFrom, folderFrom: paneFolderFrom,
       paneTier: noteLayoutTier, paneApply: () => applyNoteTier(), scroller,
     });
     const { paneView, windowViews, allViews, openPane: openNotePane, closePane: closeNotePane, openWindow: openNoteWindow, closeView, endEdit } = noteViews;
+
+    // =====================================================================
+    // Siyagah round 14 (decision 66, #566) -- Pin / Favourite / Archive /
+    // Finalise and links between Notes. Gate: siyagah-flags-readiness.js. Shut,
+    // every control shows, says so in words and writes NOTHING. A flag write
+    // changes only the flag (no revision); a link is its own small document.
+    // =====================================================================
+    function flagsReady() { return isSiyagahFlagsReady(); }
+    const flagsGateSentence = () => t("Pin, Favourite, Archive, Finalise and links switch on once the new Firebase Rules are published.");
+    function linkRow(l, otherId) {
+      const n = allNotes.find((x) => x.noteId === otherId && x.status === NOTE_STATUS.ACTIVE);
+      return n ? { linkId: l.linkId, noteId: n.noteId, title: n.title } : null;
+    }
+    async function setFlag(note, key, value) {
+      if (!flagsReady()) { showPageStatus(flagsGateSentence()); return false; }
+      const outcome = await runFolderWrite(
+        () => setNoteFlags(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, noteId: note.noteId, flags: { [key]: value }, actorUid: auth.currentUser.uid }),
+        { collection: TENANT.NOTES, action: "setNoteFlags" });
+      if (!outcome.ok) return false;
+      const live = allNotes.find((n) => n.noteId === note.noteId);
+      if (live) live[key] = value; // the page patches its own copy; the next full load reads the same from Firestore
+      renderCurrentView();
+      return true;
+    }
+    async function linkWrite(note, toNoteId) {
+      if (!flagsReady()) { showPageStatus(flagsGateSentence()); throw new Error(flagsGateSentence()); }
+      if (note.noteId === toNoteId) throw new Error(t("A Note can't link to itself."));
+      const outcome = await runFolderWrite(
+        () => linkNotes(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, fromNoteId: note.noteId, toNoteId, actorUid: auth.currentUser.uid }),
+        { collection: TENANT.NOTE_LINKS, action: "linkNotes" });
+      if (!outcome.ok) throw new Error(t("That did not save."));
+      if (!noteLinks.some((l) => l.fromNoteId === note.noteId && l.toNoteId === toNoteId)) noteLinks.push({ linkId: outcome.result, fromNoteId: note.noteId, toNoteId, status: NOTE_STATUS.ACTIVE });
+    }
+    async function unlinkWrite(linkId) {
+      if (!flagsReady()) { showPageStatus(flagsGateSentence()); return false; }
+      const outcome = await runFolderWrite(
+        () => unlinkNotes(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, linkId, actorUid: auth.currentUser.uid }),
+        { collection: TENANT.NOTE_LINKS, action: "unlinkNotes" });
+      if (!outcome.ok) return false;
+      noteLinks = noteLinks.filter((l) => l.linkId !== linkId);
+      return true;
+    }
+    /** ⭐ Favourites / 📦 Archived: one small dialog each, reached from the page ⋯ menu. */
+    function openFlagList(key) {
+      const archived = key === "archived";
+      const rows = flagsReady() ? allNotes.filter((n) => n[key] === true && n.status === NOTE_STATUS.ACTIVE).sort((a, b) => String(a.title ?? "").localeCompare(String(b.title ?? ""))) : [];
+      const rowHtml = (n) => `<li style="display:flex;gap:0.3rem;margin-bottom:0.3rem"><button type="button" class="secondary" data-flag-list-open="${escapeHtml(n.noteId)}" style="flex:1 1 auto;min-width:0;min-height:44px;text-align:left;overflow:hidden;text-overflow:ellipsis">${escapeHtml(n.title?.trim() || t("(untitled)"))}</button>${archived && isSelfSelected() ? `<button type="button" class="secondary" data-flag-list-unarchive="${escapeHtml(n.noteId)}" style="min-height:44px">${escapeHtml(t("Bring back"))}</button>` : ""}</li>`;
+      openSiyagahDialog({
+        title: `${archived ? "📦" : "⭐"} ${archived ? t("Archived") : t("Favourites")}`,
+        gate: flagsGateSentence(),
+        bodyHtml: `${flagsReady() ? "" : `<p class="note gate-note" data-flags-gate-note role="status">${escapeHtml(flagsGateSentence())}</p>`}
+          <ul data-flag-list="${key}" style="list-style:none;padding:0;margin:0">${rows.length ? rows.map(rowHtml).join("") : `<li><p class="note" data-flag-list-empty>${escapeHtml(archived ? t("No archived Notes.") : t("No favourite Notes yet."))}</p></li>`}</ul>`,
+        wire: (overlay, close) => {
+          overlay.querySelectorAll("[data-flag-list-open]").forEach((b) => b.addEventListener("click", () => {
+            const id = b.dataset.flagListOpen; close(); openNoteWindow(id, {});
+          }));
+          overlay.querySelectorAll("[data-flag-list-unarchive]").forEach((b) => b.addEventListener("click", async () => {
+            const n = allNotes.find((x) => x.noteId === b.dataset.flagListUnarchive);
+            if (n && await setFlag(n, "archived", false)) { close(); showPageStatus(t('"{title}" is back in its folders.', { title: noteTitleOf(n) })); }
+          }));
+        },
+      });
+    }
+    document.getElementById("openFavouritesBtn").textContent = `⭐ ${t("Favourites")}`;
+    document.getElementById("openArchivedBtn").textContent = `📦 ${t("Archived")}`;
+    document.getElementById("openFavouritesBtn").addEventListener("click", () => { closeAllBarPalettes(null); openFlagList("favourite"); });
+    document.getElementById("openArchivedBtn").addEventListener("click", () => { closeAllBarPalettes(null); openFlagList("archived"); });
 
     /** Delete = Trash (decision 42.1: never an erase). The Note's current revision is the guard: a stale one is refused in words by the existing mapping. */
     async function deleteNoteFromPane(v, staleNote) {
@@ -1541,8 +1637,8 @@
       return allPlacements
         .filter((p) => p.folderId === node.folderId && p.status === NOTE_STATUS.ACTIVE)
         .map((placement) => ({ placement, note: notesById.get(placement.noteId) ?? null }))
-        .filter((row) => row.note !== null && row.note.status === NOTE_STATUS.ACTIVE)
-        .sort((a, b) => (a.placement.order ?? 0) - (b.placement.order ?? 0));
+        .filter((row) => row.note !== null && row.note.status === NOTE_STATUS.ACTIVE && row.note.archived !== true)
+        .sort((a, b) => ((b.note.pinned === true) - (a.note.pinned === true)) || ((a.placement.order ?? 0) - (b.placement.order ?? 0)));
     }
 
     function renderFoldersView() {
@@ -1628,6 +1724,10 @@
       try { return (new DOMParser().parseFromString(sanitizeNoteHtml(note.bodyHtml ?? ""), "text/html").body.textContent || "").replace(/\s+/g, " ").trim(); }
       catch { return ""; }
     }
+    /** Round 14: 📌 / ⭐ / 🔒 before a title (read straight off the Note, so a Note written before the flags shows none). */
+    function flagMarks(note) {
+      return `${note.pinned === true ? "📌 " : ""}${note.favourite === true ? "⭐ " : ""}${note.finalised === true ? "🔒 " : ""}`;
+    }
     function listCardHtml(row, idx, rows) {
       const { note, placement } = row;
       const filedIn = activeFilingFolderIds(note).size;
@@ -1641,7 +1741,7 @@
       const preview = notesPreview ? `<p class="note-card-preview" data-note-preview>${escapeHtml(previewText(note))}</p>` : "";
       return `<li class="fn-card" data-note-leaf${isSelfSelected() ? ` data-dragsrc${mouseDragOn() ? ' draggable="true"' : ""}` : ""} data-note-id="${escapeHtml(note.noteId)}" data-in-folder="${escapeHtml(placement.folderId)}" data-placement-id="${escapeHtml(placement.placementId)}">
         <div class="note-card">
-          ${noteHeadHtml(note, { hasActions: true, extraHead: inFolders })}
+          ${noteHeadHtml(note, { hasActions: true, extraHead: inFolders, titlePrefix: flagMarks(note) })}
           ${preview}
           <div class="note-actions" data-note-actions style="${expandedNoteIds.has(note.noteId) ? "" : "display:none"}">${controls}</div>
         </div>
