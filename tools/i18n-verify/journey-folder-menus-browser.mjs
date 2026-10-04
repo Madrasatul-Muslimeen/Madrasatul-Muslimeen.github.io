@@ -45,20 +45,41 @@ async function settle(page, ms = 700) { await page.waitForTimeout(ms); }
 async function waitTree(page) {
   await page.waitForFunction(() => document.querySelectorAll("[data-folder-tree] .folder-row[data-folder-id]").length >= 5 && !document.querySelector("[data-folder-count-loading]"), null, { timeout: 15000 });
 }
+// UPDATED IN PLACE (S8, 4 Oct 2026): Notes are no longer leaves of the tree -- they are listed in panel 2
+// (#folderNotes) for the CHOSEN folder, and below 1200px the panels show one at a time. So these helpers
+// choose a folder with a real tap and step back to the tree with the list's own back control.
+async function backToTree(page) {
+  if (await page.isVisible("#folderNotes [data-list-back]")) { await page.click("#folderNotes [data-list-back]"); await page.waitForSelector("#listPane", { state: "visible" }); }
+}
+async function openFolder(page, folderId) {
+  await backToTree(page);
+  await page.click(`.folder-row[data-folder-id="${folderId}"] [data-folder-name]`);
+  await page.waitForSelector(`#folderNotes [data-fn-title]`, { state: "visible" });
+}
 async function folderMenuClick(page, folderId, item) {
+  await backToTree(page);
   await page.click(`.folder-row[data-folder-id="${folderId}"] .folder-menu-btn`);
   await page.click(`.folder-row[data-folder-id="${folderId}"] [data-folder-${item}]`);
 }
 async function noteMenuClick(page, noteId, folderId, item) {
-  const sel = `[data-note-leaf][data-note-id="${noteId}"][data-in-folder="${folderId}"]`;
+  await openFolder(page, folderId);
+  const sel = `#folderNotes [data-note-leaf][data-note-id="${noteId}"][data-in-folder="${folderId}"]`;
   await page.click(`${sel} [data-note-toggle]`);
   await page.click(`${sel} [data-note-${item}]`);
 }
 async function pick(page, key) { await page.click(`#folderPicker [data-pick="${key}"]`); await settle(page); }
+/** Every folder's Notes, read by really choosing each folder in turn. */
 async function leaves(page) {
-  return page.evaluate(() => Object.fromEntries([...document.querySelectorAll("[data-note-leaf]")].reduce((m, li) => {
-    const k = li.dataset.inFolder; m.set(k, [...(m.get(k) ?? []), li.dataset.noteId].sort()); return m;
-  }, new Map())));
+  await backToTree(page);
+  const ids = await page.$$eval("[data-folder-tree] .folder-row[data-folder-id]", (rs) => rs.map((r) => r.dataset.folderId).filter(Boolean));
+  const out = {};
+  for (const id of ids) {
+    await openFolder(page, id);
+    const notes = await page.$$eval("#folderNotes [data-note-leaf]", (ls) => ls.map((l) => l.dataset.noteId).sort());
+    if (notes.length) out[id] = notes;
+  }
+  await backToTree(page);
+  return out;
 }
 const rowNames = (page) => page.$$eval("[data-folder-tree] .folder-row[data-folder-id]", (rs) => rs.map((r) => ({ id: r.dataset.folderId, name: r.querySelector("[data-folder-name]")?.textContent.replace(/^\(\d[\d.]*\)\s*/, "") })));
 const noSideways = (page) => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
@@ -70,7 +91,10 @@ for (const lang of ["en", "bn"]) {
     await ctx.addInitScript(() => { try { if (!localStorage.getItem("qr.journeyMapExpanded")) localStorage.setItem("qr.journeyMapExpanded", JSON.stringify(["fA", "fB", "fBk", "fG", "fD", "fE"])); } catch {} });
     const { page, errors } = await openPage(ctx, "/app/journey-map.html#folders");
     await waitTree(page);
-    check(`${tag}: the tree shows its folders and notes`, (await rowNames(page)).filter((r) => r.id).length === 6 && (await page.$$("[data-note-leaf]")).length === 4);
+    // UPDATED IN PLACE (S8): the tree holds folders only; the Notes are in panel 2 once a folder is chosen.
+    check(`${tag}: the tree shows its folders, and no Notes`, (await rowNames(page)).filter((r) => r.id).length === 6 && (await page.$$("[data-folder-tree] [data-note-leaf]")).length === 0);
+    await openFolder(page, "fA");
+    check(`${tag}: choosing a folder lists its Notes in panel 2`, (await page.$$("#folderNotes [data-note-leaf]")).length === 2);
     check(`${tag}: the old Remove item is gone and Delete is in every folder menu`,
       (await page.$$("[data-folder-remove]")).length === 0 && (await page.$$("[data-folder-delete]")).length === 6 && (await page.$$("[data-folder-copy]")).length === 6);
 
@@ -131,7 +155,7 @@ for (const lang of ["en", "bn"]) {
       w3.some((w) => w.col === "noteFolders" && w.op !== "update") && w3.some((w) => w.col === "notePlacements" && w.data?.noteId === "n1") && !w3.some((w) => w.col === "notes"),
       JSON.stringify(w3.map((w) => `${w.col}:${w.op}`)));
     check(`${tag}: copy folder — the confirmation says the notes are linked`, lang === "bn" ? hasBn(await status(page)) : /linked, not duplicated/.test(await status(page)), await status(page));
-    await page.click(`.folder-row[data-folder-id="${copyId}"] [data-folder-toggle]`);
+    // (S8: the copy holds no sub-folder, so it has no ▶ -- its Note is read from panel 2 by leaves().)
     const m3 = await leaves(page);
     check(`${tag}: copy folder — the new folder shows the SAME note (n1), not a copy of it`, JSON.stringify(m3[copyId]) === '["n1"]' && JSON.stringify(m3.fA) === '["n1"]', JSON.stringify(m3));
 
@@ -151,6 +175,7 @@ for (const lang of ["en", "bn"]) {
     check(`${tag}: delete an empty folder — it leaves the tree`, !(await rowNames(page)).some((r) => r.id === "fE"));
     check(`${tag}: delete an empty folder — the write is a retire (status), never an erase`,
       (await writes(page)).some((w) => w.col === "noteFolders" && w.id === "t1__fE" && w.data?.status === "retired") && !(await writes(page)).some((w) => w.op === "delete"));
+    await backToTree(page);
     await page.click(".page-menu-wrap .folder-menu-btn");
     await page.click("#openTrashBtn");
     await page.waitForSelector("[data-trash-folder-id]", { timeout: 8000 });
