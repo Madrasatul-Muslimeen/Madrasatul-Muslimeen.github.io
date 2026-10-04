@@ -18,18 +18,26 @@ const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (f
 const MUT_IMG = process.argv.includes("--mutate-image-shift");
 const MUT_SELECT = process.argv.includes("--mutate-select");
 
-const WIDTHS = [[320, 640], [360, 740], [390, 844], [768, 1024], [1280, 800]];
+const MUT_BIGBTN = process.argv.includes("--mutate-big-button");
+const MUT_STARS = process.argv.includes("--mutate-six-stars");
+// Decision 67: the light comes FROM the Qur'an. --mutate-sunrise puts back the
+// old rays, every one fanning from the one point at the spine (a sunrise).
+const MUT_SUNRISE = process.argv.includes("--mutate-sunrise");
+// Architect review of #549: --mutate-cut-pill puts back the one-line ellipsis.
+const MUT_CUTPILL = process.argv.includes("--mutate-cut-pill");
+const WIDTHS = [[320, 640], [360, 740], [390, 844], [600, 900], [768, 1024], [1280, 800]];
 const BASE_HTML = execFileSync("git", ["show", `${process.env.BASELINE_REF || "main"}:app/quranrevival.html`], { encoding: "utf8", maxBuffer: 64 << 20 });
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
 const real = (errors) => errors.filter((e) => !/Failed to load resource: net::ERR_|ERR_CERT/.test(e));
 const waitWheel = (page) => page.waitForFunction(() => document.querySelectorAll("#wheelContainer .wheel-seg").length > 0, null, { timeout: 20000 });
 
-async function open(lang, [w, h], { baseline = false, look = null } = {}) {
+async function open(lang, [w, h], { baseline = false, look = null, tap = true } = {}) {
   const ctx = await newContext(browser, { appLang: lang === "bn" ? "bn" : null, viewport: { width: w, height: h } });
   if (baseline) await ctx.route("**/app/_baseline-quranrevival.html", (r) => r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: BASE_HTML }));
   if (look) await ctx.addInitScript((l) => { try { localStorage.setItem("mm_wheel_look", l); } catch {} }, look);
   const { page, errors } = await openPage(ctx, baseline ? "/app/_baseline-quranrevival.html" : "/app/quranrevival.html");
   await waitWheel(page);
+  if (!tap) { await page.waitForTimeout(250); return { ctx, page, errors }; }
   await page.click("#wheelCtaBtn");
   await page.waitForFunction(() => getComputedStyle(document.getElementById("wheelHubPickers") || document.body).display !== "none", null, { timeout: 5000 }).catch(() => {});
   await page.waitForTimeout(250);
@@ -143,6 +151,112 @@ for (const lang of ["en", "bn"]) for (const vp of WIDTHS) {
   }
   check(`${tag} no label line is cut off, for every unit in surahs 29, 2 and 114`, cutLines.length === 0, cutLines.slice(0, 4).join(" | "));
   check(`${tag} no page errors`, real(errors).length === 0, real(errors).slice(0, 3).join(" | "));
+  await ctx.close();
+}
+
+// ---- 2b. decision 65: the first screen (before the tap) and the light ------
+const FIRST = {
+  ayah: { en: /^(Ayah (1|Bismillah)) · Al-Faatiha$|^Ayah (1|Bismillah) · .+$/, bn: /^আয়াত (১|বিসমিল্লাহ) · \S/ },
+  range: { en: /^Āyāt 1–\d+ · \S/, bn: /^আয়াত ১–[০-৯]+ · \S/ },
+  surah: { en: /^[A-Za-z'-]+(?: [A-Za-z'-]+)*$/, bn: /^\S/ },
+  ruku: { en: /^Ruku' 1 · \S/, bn: /^রুকু' ১ · \S/ },
+  juz: { en: /^Juz 1 · \S/, bn: /^জুয.* · \S/ },
+  page: { en: /^Page 1 · \S/, bn: /^পৃষ্ঠা ১ · \S/ },
+};
+for (const lang of ["en", "bn"]) for (const vp of WIDTHS) {
+  const tag = `[first screen ${vp[0]} ${lang}]`;
+  console.log(`\n=== ${tag} ===`);
+  const { ctx, page, errors } = await open(lang, vp, { tap: false });
+  if (MUT_BIGBTN) await page.evaluate(() => { const b = document.getElementById("wheelCtaBtn"); b.style.top = "50%"; b.style.width = "78%"; b.style.minHeight = "40%"; });
+  if (MUT_STARS) await page.evaluate(() => document.querySelector(".mu-spark path:last-child").remove());
+  if (MUT_SUNRISE) await page.evaluate(() => { document.querySelector(".mu-rays").innerHTML = [[35, 30], [52, 27], [50, 8], [68, 11], [73, -7], [89, 3], [100, -12], [111, 3], [127, -7], [132, 11], [150, 8], [148, 27], [165, 30]].map(([x, y]) => `<polygon points="99.2,60 100.8,60 ${x + 1},${y} ${x - 1},${y}"/>`).join(""); });
+  const beams = await page.evaluate(() => [...document.querySelectorAll(".mu-rays polygon")].map((p) => p.getAttribute("points").trim().split(/\s+/).slice(0, 2).map((xy) => xy.split(",").map(Number))));
+  const pageGlow = await page.evaluate(() => [...document.querySelectorAll("#wheelHubGraphic svg > g.mu-glow")].length);
+  const g = await page.evaluate(() => {
+    const R = (id) => document.getElementById(id).getBoundingClientRect();
+    const ring = document.querySelector('#wheelContainer svg circle[fill="#13192a"]').getBoundingClientRect();
+    const d = ring.width, cx = ring.left + d / 2, cy = ring.top + d / 2;
+    const img = R("wheelHubCalligraphy"), btn = R("wheelCtaBtn"), gr = R("wheelHubGraphic");
+    const imgEl = document.getElementById("wheelHubCalligraphy");
+    const sparks = document.querySelectorAll(".mu-spark path").length;
+    const lightEl = document.querySelector(".mu-light");
+    let lightTop = 1e9;
+    for (const e of lightEl.querySelectorAll("*")) { const q = e.getBoundingClientRect(); if (q.width && q.height) lightTop = Math.min(lightTop, q.top); }
+    const b = document.getElementById("wheelCtaBtn"), cs = getComputedStyle(b);
+    return {
+      d, imgVisible: img.width > 0 && img.height > 0 && getComputedStyle(imgEl).visibility !== "hidden" && imgEl.complete && imgEl.naturalWidth > 0,
+      imgPlaced: Math.abs(img.left - (ring.left + 0.0694 * d)) <= 1 && Math.abs(img.top - (ring.top + 0.0703 * d)) <= 1 && Math.abs(img.bottom - (ring.top + 0.4613 * d)) <= 1,
+      grVisible: gr.width > 0 && gr.height > 0 && getComputedStyle(document.getElementById("wheelHubGraphic")).display !== "none",
+      btnInside: Math.hypot(btn.left - cx, btn.top - cy) <= d / 2 + 1 && Math.hypot(btn.right - cx, btn.bottom - cy) <= d / 2 + 1 && Math.hypot(btn.left - cx, btn.bottom - cy) <= d / 2 + 1 && Math.hypot(btn.right - cx, btn.top - cy) <= d / 2 + 1,
+      btnTop: btn.top, btnBottom: btn.bottom, imgBottom: img.bottom, grTop: gr.top,
+      topPct: (btn.top - ring.top) / d, wPct: btn.width / d, hPct: btn.height / d,
+      line1H: document.querySelector("#wheelCtaBtn .wheel-cta-line1").getBoundingClientRect().height,
+      font: parseFloat(cs.fontSize), line1: document.querySelector("#wheelCtaBtn .wheel-cta-line1").textContent.trim(), line2: document.getElementById("wheelCtaLine2").textContent.trim(),
+      labelHidden: document.getElementById("wheelHubUnitLabel").getBoundingClientRect().width === 0,
+      sparks, filter: getComputedStyle(lightEl).filter, lightTop, btnBottomForLight: btn.bottom,
+      veiled: document.getElementById("wheelStageWrap").classList.contains("wheel-veiled"),
+      color: cs.color, bg: cs.backgroundImage,
+      vw: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    };
+  });
+  check(`${tag} the calligraphy is visible before the tap, placed as in v09.63`, g.imgVisible && g.imgPlaced, JSON.stringify(g));
+  check(`${tag} the open Qur'an is visible before the tap`, g.grVisible);
+  check(`${tag} the button is inside the hub circle`, g.btnInside, JSON.stringify(g));
+  check(`${tag} the button's top is below the calligraphy's bottom and its bottom above the Qur'an's top`, g.btnTop >= g.imgBottom - 0.5 && g.btnBottom <= g.grTop + 0.5, `${g.imgBottom} ${g.btnTop} ${g.btnBottom} ${g.grTop}`);
+  // Updated in place (Architect review of #549): below a 140px hub the pill is 80% wide, so
+  // "Study Quran" stays on one line at the 10.5px floor; 60% everywhere else, as in the demo.
+  const wantW = g.d < 140 ? 0.8 : 0.6;
+  check(`${tag} the button is at 49% / ${wantW * 100}% wide / >= 15% tall of the diameter`, Math.abs(g.topPct - 0.49) < 0.01 && Math.abs(g.wPct - wantW) < 0.01 && g.hPct >= 0.15 - 0.005, `${g.topPct} ${g.wPct} ${g.hPct}`);
+  check(`${tag} "Study Quran" is on one line`, g.line1H <= g.font * 1.1 * 1.5, `${g.line1H} at ${g.font}px`);
+  check(`${tag} its font is 0.066 x diameter, never below 10.5px`, Math.abs(g.font - Math.max(10.5, g.d * 0.066)) < 0.3, `${g.font} ${g.d}`);
+  check(`${tag} the label is hidden and the veil is still on`, g.labelHidden && g.veiled);
+  check(`${tag} there are exactly 7 stars in the light`, g.sparks === 7, String(g.sparks));
+  {
+    // Each beam's base (its first two points, in the drawing's own units) must sit on a
+    // page's top edge (y 45-62), the bases must be spread across BOTH pages, and no two
+    // beams may start at the same point -- one shared point is a sun, not a book.
+    const bases = beams.map(([a, b]) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]);
+    const onPages = bases.every(([x, y]) => y >= 45 && y <= 62 && x >= 30 && x <= 170);
+    const xs = bases.map(([x]) => x);
+    const spread = Math.min(...xs) < 50 && Math.max(...xs) > 150;
+    const distinct = new Set(bases.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`)).size === bases.length;
+    check(`${tag} the light rises from the pages: ${bases.length} beams, each starting on a page's top edge, spread across both pages, no two from one point`, bases.length >= 12 && onPages && spread && distinct, JSON.stringify(bases.slice(0, 4)));
+    check(`${tag} the pages themselves glow (a glow layer in front of the book)`, pageGlow >= 1, String(pageGlow));
+  }
+  check(`${tag} the light carries brightness(1.5)`, /brightness\(1\.5\)/.test(g.filter), g.filter);
+  check(`${tag} the topmost light element is below the button's bottom`, g.lightTop >= g.btnBottomForLight - 0.5, `${g.lightTop} ${g.btnBottomForLight}`);
+  check(`${tag} no sideways scroll`, g.vw <= 0, String(g.vw));
+  for (const u of Object.keys(FIRST)) {
+    await page.evaluate((unit) => { const s = document.getElementById("wheelUnitTypeSelect"); s.value = unit; s.dispatchEvent(new Event("change")); }, u);
+    await page.waitForTimeout(250);
+    const l2 = await page.evaluate(() => document.getElementById("wheelCtaLine2").textContent.trim());
+    // Updated in place (Architect review of #549): on a hub too small for the full name over
+    // two lines (320px) line 2 carries the unit alone, and the button's title the full name.
+    const full = await page.evaluate(() => document.getElementById("wheelCtaBtn").title.trim());
+    const shown = vp[0] <= 320 ? full : l2;
+    check(`${tag} the button names the ${u}${vp[0] <= 320 ? " (in full in its title; line 2 \"" + l2 + "\")" : ""}: "${shown}"`, FIRST[u][lang].test(shown) && full.includes(l2.split(" · ")[0]) && (lang === "en" || !/[0-9]/.test(shown)), `${l2} | ${full}`);
+    // A name the reader cannot read is not a name: line 2 is never cut, stays inside
+    // the button, and the button still ends above the open Qur'an.
+    const fit = await page.evaluate((cut) => {
+      const l = document.getElementById("wheelCtaLine2");
+      if (cut) Object.assign(l.style, { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" });
+      const r = l.getBoundingClientRect(), b = document.getElementById("wheelCtaBtn").getBoundingClientRect(), gr = document.getElementById("wheelHubGraphic").getBoundingClientRect();
+      return { cut: l.scrollWidth > l.clientWidth + 1, inside: r.left >= b.left - 0.5 && r.right <= b.right + 0.5 && r.bottom <= b.bottom + 0.5, above: b.bottom <= gr.top + 0.5, sw: l.scrollWidth, cw: l.clientWidth };
+    }, MUT_CUTPILL);
+    check(`${tag} line 2 for the ${u} is whole (not cut), inside the button, and the button ends above the Qur'an`, !fit.cut && fit.inside && fit.above, JSON.stringify(fit));
+  }
+  check(`${tag} no page errors`, real(errors).length === 0, real(errors).slice(0, 3).join(" | "));
+  if (lang === "en" && vp[0] === 390) {
+    // elementFromPoint at slice centres still lands on slices (before the tap)
+    const hit = await page.evaluate(() => [...document.querySelectorAll("#wheelContainer .wheel-seg")].slice(0, 12).map((s) => { const bb = s.getBBox(); const p = new DOMPoint(bb.x + bb.width / 2, bb.y + bb.height / 2).matrixTransform(s.getScreenCTM()); const el = document.elementFromPoint(p.x, p.y); return !!el?.closest?.(".wheel-seg") && !/wheelHub|wheelCta/.test(el.id || ""); }));
+    check(`${tag} elementFromPoint at slice centres lands on slices`, hit.length > 0 && hit.every(Boolean), JSON.stringify(hit));
+    await page.screenshot({ path: "/tmp/first-390.png" });
+    // contrast of the button text on its gold (the darker end of the gradient)
+    const lumc = (c) => { const [r, g2, b] = c.map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g2 + 0.0722 * b; };
+    const fg = g.color.match(/[\d.]+/g).slice(0, 3).map(Number);
+    const worst = Math.min(...[[0xec, 0xd0, 0x8e], [0xc9, 0xa2, 0x4b]].map((bg) => (Math.max(lumc(fg), lumc(bg)) + 0.05) / (Math.min(lumc(fg), lumc(bg)) + 0.05)));
+    check(`${tag} the button text is >= 4.5:1 on both ends of its gold (${worst.toFixed(2)})`, worst >= 4.5, String(worst));
+  }
   await ctx.close();
 }
 

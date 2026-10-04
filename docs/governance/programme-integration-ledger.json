@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.65",
+    "version": "09.66",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -1961,8 +1961,20 @@
     {
       "version": "09.65",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Mapping My Journey becomes three panels with Note creation in a folder (Builder #551, Architect review).",
+      "integration": {
+        "authorizedOn": "2026-10-04",
+        "integratedOn": "2026-10-04",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.66",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The first screen shows the calligraphy with a smaller Study Quran pill; the Qur'an's light rises from its pages (Builder PR #550, Architect review).",
       "integration": {
         "authorizedOn": "2026-10-04",
         "integratedOn": "2026-10-04",
@@ -1971,8 +1983,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.66",
+  "nextUnallocated": "09.67",
   "nextUnallocatedNote": [
+    "v09.66 was allocated to first screen B and the light from the Qur'an (decisions 65, 67, #549), 2026-10-04.",
     "v09.65 was allocated to Mapping My Journey in three panels (S8, decision 66, #551), 2026-10-04.",
     "v09.64 was allocated to Read and Play in Choose a Unit (decision 64, #547), 2026-10-04.",
     "v09.63 was allocated to the wheel's centre with the Owner's calligraphy (decision 63, #542), 2026-10-04.",

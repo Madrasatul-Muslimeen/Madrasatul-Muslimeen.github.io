@@ -19455,3 +19455,16 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
   - phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0
   - behaviour 1003/4 (sandbox: 22g×3 archive.org, 31e TLS)
 - **Left for S9:** the card date shows seconds ("9/1/2026, 10:00:00 AM", and "AM" in Bangla); on a phone the ▾ sits on its own line.
+
+## v09.66 — 4 Oct 2026 — First screen B; the light comes from the Qur'an (decisions 65, 67)
+
+- **What:**
+  - **First screen B:** the calligraphy and the open Qur'an show before the first tap, and a smaller **Study Quran** pill names the unit.
+  - **The light from the Qur'an:** the Owner asked that the light come from the Qur'an, "not a light from the sun". Beams now rise from along both pages' top edges, the pages glow, and the seven stars stay, at Bright.
+  - **The pill's name is never cut:** it wraps; on a 320px phone the pill is wider, and the unit alone shows when the full name would crowd out the Qur'an (the full name is in the button's title).
+- **Who:** decision 65 ("B, demo it", "1, Bright", the stars), decision 67 ("6, build it"). Builder PR #550, Architect review.
+- **Checks:**
+  - wheel-centre-browser 633/0, with four mutations each failing (sunrise 12, cut pill 6, six stars 12, big button 98)
+  - wheel-unit-go 254/0, tablet-wheel 74/0, approach-short-names 70/0, read-contents 248/0
+  - palette-contrast 20/0, phone-width-overflow 217/0, stub-parity 4/0
+  - behaviour 1003/4 (sandbox: 22g×3 archive.org, 31e TLS)
