@@ -19502,3 +19502,21 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
   - every journey suite green; note-foundation-data-layer and rules-authorisation-executable green
   - phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0
   - behaviour 1003/4 (sandbox: 22g×3 archive.org, 31e TLS)
+
+## v09.69 — 4 Oct 2026 — Mapping My Journey: reading tools (S11, decision 66)
+
+- **What:** tools in the Note pane while reading.
+  - 🔍 Find in this Note (all matches, stepping, Bangla; writes nothing).
+  - ⇅ Open / close all headings.
+  - ☰ Contents at every width, for any Note with a heading.
+  - 🕘 Versions: earlier revisions, read-only; "Bring this version back" saves a new revision, old ones untouched.
+  - 📎 Folders and tags in one place.
+  - The bar stays one line; less-used tools fold into ⋯ when narrow.
+- **Who:** the Owner, decision 66 (the S8–S14 plan). Builder issue #559, PR #561.
+- **No Rules change.**
+- **Checks:**
+  - journey-reading-tools-browser 488/0, five mutations each failing
+  - every journey suite green; note-foundation-data-layer and rules-authorisation-executable green
+  - phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0
+  - behaviour 1003/4 (sandbox: 22g×3 archive.org, 31e TLS)
+- **Leftover:** Bangla version times still show "AM".
