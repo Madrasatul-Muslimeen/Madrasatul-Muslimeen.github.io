@@ -224,17 +224,16 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.74 on `main`** (4 Oct 2026 — **Word-by-Word boxes enlargeable in Read and Note view; Explore readable on a phone** (the Owner's two reports, 4 Oct 2026).
-- **Text size (A±) gains a "Word by Word" slider** (`--qr-wbw-scale`, 80–160%, remembered on the device). It scales every Word-by-Word box (Arabic, transliteration, meaning) in the Read view, the Note view and the pop-up pane; **All** and **Reset** include it. The ayah's own Arabic/English/Bangla keep their sliders. The Owner: "Can you enable these words enlargeable, both in Read and Note view?"
-- **Explore → Quran on a phone** (the Owner: "unreadable", "card overlapping"): `#explorePanel` shrank to the scroll box, its dark background ended under the ring key, and the Whole Quran card, the words-known line, the hint and every surah row ran on as pale text on the white page. At 720px and below the panel no longer shrinks below its content and the stacked list sizes to its rows. 820px and wider unchanged.
-- **Known, not fixed here:** on a short desktop window (1280×800) the Explore wheel column overhangs its card by 26–58px (pre-existing); `explore-phone-card-browser` prints it as a NOTE.
+**Current milestone: v09.75 on `main`** (4 Oct 2026 — **Explore: no overhang on desktop and tablet either** (the Owner: "fix the Explore overhang on desktop too")).
+- **What was wrong:** above 720px the Explore card was sized to the window, so on a short window the wheel column (wheel, legend, ring key, words-known line, hint) ran 40–140px past the card's bottom edge (820×700: 140px; 1280×800: 58px). v09.74 had fixed the phone half and recorded this one.
+- **The fix:** above 720px the card never shrinks below the wheel column (`#exploreScroll` scrolls it), and `contain: size` keeps the surah list out of that sum, so the list still fills the card and scrolls inside it. Measured: the wheel and list never wrap above 720px, which this relies on.
 - **Checks:**
-  - text-size-wbw-browser 88/0 (Read and Note view, en/bn, 390/1280; --mutate-no-css fails the size checks)
-  - explore-phone-card-browser 58/0 (7 widths, en/bn; --mutate-shrink fails 40)
-  - layout.mjs: no geometry change (only the known `bmNotFound` dangling-id report, on `main` too)
-  - phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0; word-card, known-word, mark-words, study-options, journey-note-pane suites green
+  - explore-phone-card-browser 146/0 at 13 sizes, en/bn (--mutate-desk fails 20, --mutate-shrink fails 40); it now measures what is VISIBLE (a half-shown list row counts only to the list's edge)
+  - every Explore suite green (Hizb, WbW tab, My Status, unit rings, Asma, Arabic coverage, word total); card-look-browser 96/0 (one intermittent miss, then 3/3)
+  - layout.mjs: no geometry change (only the known `bmNotFound`); phone-width-overflow 217/0, palette-contrast 20/0, text-size-wbw 88/0, stub-parity 4/0
   - behaviour 1006/1 (sandbox: 31e TLS)
-- **With the Owner:** try the Word by Word slider and Explore on the phone; a folder's own window (needs a demo); the Asmaul Husna poster (on hold, decision 50).
+  - **already red on `main`, not this round's:** quran-boundary 30/1, "feature registry retains the locked 30 Approaches"
+- **With the Owner:** check Explore on a computer with a short window; a folder's own window (needs a demo); the Asmaul Husna poster (on hold, decision 50).
 )
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
