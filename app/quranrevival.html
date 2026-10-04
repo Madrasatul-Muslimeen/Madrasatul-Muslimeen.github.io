@@ -775,7 +775,10 @@
   }
   .wheel-cta-btn:hover { filter: brightness(1.06); }
   .wheel-cta-line1 { display: block; }
-  .wheel-cta-line2 { display: block; font-size: .72em; font-weight: 600; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  /* Architect review of #549: the unit's name WRAPS to a second line rather than
+     being cut ("Ayah Bismillah · Al-F…" at every width). Same rule as the hub
+     label (v09.63): a name the reader cannot read is worse than a taller pill. */
+  .wheel-cta-line2 { display: block; font-size: .72em; font-weight: 600; opacity: .85; white-space: normal; text-wrap: balance; overflow-wrap: anywhere; max-width: 100%; line-height: 1.15; }
   /* The wheel's centre (decision 63, 4 Oct 2026) is a DISPLAY: the Owner's
      calligraphy, the chosen unit in two lines, and an open Qur'an. Nothing in
      it is a control, so none of it takes a tap -- a slice near the hub is
@@ -4540,19 +4543,15 @@
                     <linearGradient id="mPageR" x1="1" x2="0"><stop offset="0" stop-color="#efe3c2"/><stop offset=".7" stop-color="#fdf8ea"/><stop offset="1" stop-color="#d8c69a"/></linearGradient>
                     <linearGradient id="mGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6e2a4"/><stop offset="1" stop-color="#b2873a"/></linearGradient>
                     <linearGradient id="mWood" x1="0" x2="1"><stop offset="0" stop-color="#5a3518"/><stop offset=".5" stop-color="#9a6332"/><stop offset="1" stop-color="#5a3518"/></linearGradient>
+                    <radialGradient id="mPageGlow" cx="50%" cy="40%" r="55%"><stop offset="0" stop-color="#fffbe9" stop-opacity=".95"/><stop offset=".6" stop-color="#fff1c4" stop-opacity=".35"/><stop offset="1" stop-color="#fff1c4" stop-opacity="0"/></radialGradient>
                   </defs>
+                  <!-- Decision 67 (4 Oct 2026): the light comes FROM the Qur'an, not from a
+                       sun behind it -- beams rise from along both pages' top edges, the
+                       pages glow, and the seven stars of decision 65 stay. Demo v14. -->
                   <g class="mu-light">
-                  <ellipse class="mu-glow" cx="100" cy="58" rx="96" ry="56" fill="url(#mGlow)"/>
-                  <g class="mu-rays" fill="url(#mRay)"><polygon points="99.2,60 100.8,60 35.1,28.9 33.4,32.6" opacity="0.40"/><polygon points="99.2,60 100.8,60 53.1,25.8 51.9,27.7" opacity="0.50"/><polygon points="99.2,60 100.8,60 51.5,6.8 48.6,9.6" opacity="0.60"/><polygon points="99.2,60 100.8,60 69.4,10.8 67.5,12.0" opacity="0.70"/><polygon points="99.2,60 100.8,60 74.9,-7.5 71.2,-6.0" opacity="0.80"/><polygon points="99.2,60 100.8,60 90.0,2.9 87.8,3.3" opacity="0.90"/><polygon points="99.2,60 100.8,60 102.0,-12.0 98.0,-12.0" opacity="1.00"/><polygon points="99.2,60 100.8,60 112.2,3.3 110.0,2.9" opacity="0.90"/><polygon points="99.2,60 100.8,60 128.8,-6.0 125.1,-7.5" opacity="0.80"/><polygon points="99.2,60 100.8,60 132.5,12.0 130.6,10.8" opacity="0.70"/><polygon points="99.2,60 100.8,60 151.4,9.6 148.5,6.8" opacity="0.60"/><polygon points="99.2,60 100.8,60 148.1,27.7 146.9,25.8" opacity="0.50"/><polygon points="99.2,60 100.8,60 166.6,32.6 164.9,28.9" opacity="0.40"/></g>
-                  <g class="mu-spark" fill="#fff6d8">
-                    <path d="M50 24 l1.2 3 3 1.2 -3 1.2 -1.2 3 -1.2 -3 -3 -1.2 3 -1.2z"/>
-                    <path d="M150 22 l1 2.4 2.4 1 -2.4 1 -1 2.4 -1 -2.4 -2.4 -1 2.4 -1z" style="animation-delay:1.3s"/>
-                    <path d="M68 4 l1.1 2.7 2.7 1.1 -2.7 1.1 -1.1 2.7 -1.1 -2.7 -2.7 -1.1 2.7 -1.1z" style="animation-delay:.6s"/>
-                    <path d="M134 2 l1.2 3 3 1.2 -3 1.2 -1.2 3 -1.2 -3 -3 -1.2 3 -1.2z" style="animation-delay:2.1s"/>
-                    <path d="M88 30 l.8 2 2 .8 -2 .8 -.8 2 -.8 -2 -2 -.8 2 -.8z" style="animation-delay:1.7s"/>
-                    <path d="M113 24 l.9 2.2 2.2 .9 -2.2 .9 -.9 2.2 -.9 -2.2 -2.2 -.9 2.2 -.9z" style="animation-delay:.3s"/>
-                    <path d="M100 10 l1 2.4 2.4 1 -2.4 1 -1 2.4 -1 -2.4 -2.4 -1 2.4 -1z" style="animation-delay:2.6s"/>
-                  </g>
+                  <ellipse class="mu-glow" cx="100" cy="60" rx="92" ry="40" fill="url(#mGlow)"/>
+                  <g class="mu-rays" fill="url(#mRay)"><polygon points="94.9,57.5 92.2,56.2 91.3,5.3 95.3,5.3" opacity="0.71"/><polygon points="88.1,54.5 85.1,53.4 82.0,-4.5 86.6,-4.5" opacity="0.79"/><polygon points="80.7,52.2 77.4,51.4 71.9,-3.0 77.1,-3.0" opacity="0.87"/><polygon points="72.7,50.5 69.3,50.0 61.1,-11.7 66.9,-11.7" opacity="0.95"/><polygon points="64.4,49.5 60.9,49.3 49.8,-3.6 56.2,-3.6" opacity="0.87"/><polygon points="55.8,49.3 52.2,49.4 38.2,1.6 45.2,1.6" opacity="0.79"/><polygon points="47.1,49.7 43.4,50.1 26.4,9.1 34.0,9.1" opacity="0.71"/><polygon points="39.1,50.7 35.4,51.3 15.5,17.1 23.7,17.1" opacity="0.63"/><polygon points="105.1,57.5 107.8,56.2 108.7,5.3 104.7,5.3" opacity="0.71"/><polygon points="111.9,54.5 114.9,53.4 118.0,-4.5 113.4,-4.5" opacity="0.79"/><polygon points="119.3,52.2 122.6,51.4 128.1,-3.0 122.9,-3.0" opacity="0.87"/><polygon points="127.3,50.5 130.7,50.0 138.9,-11.7 133.1,-11.7" opacity="0.95"/><polygon points="135.6,49.5 139.1,49.3 150.2,-3.6 143.8,-3.6" opacity="0.87"/><polygon points="144.2,49.3 147.8,49.4 161.8,1.6 154.8,1.6" opacity="0.79"/><polygon points="152.9,49.7 156.6,50.1 173.6,9.1 166.0,9.1" opacity="0.71"/><polygon points="160.9,50.7 164.6,51.3 184.5,17.1 176.3,17.1" opacity="0.63"/></g>
+                  <g class="mu-spark" fill="#fff6d8"><path d="M50 24 l1.2 3 3 1.2 -3 1.2 -1.2 3 -1.2 -3 -3 -1.2 3 -1.2z"/><path d="M150 22 l1 2.4 2.4 1 -2.4 1 -1 2.4 -1 -2.4 -2.4 -1 2.4 -1z" style="animation-delay:1.3s"/><path d="M30 8 l1.1 2.7 2.7 1.1 -2.7 1.1 -1.1 2.7 -1.1 -2.7 -2.7 -1.1 2.7 -1.1z" style="animation-delay:.6s"/><path d="M170 6 l1.2 3 3 1.2 -3 1.2 -1.2 3 -1.2 -3 -3 -1.2 3 -1.2z" style="animation-delay:2.1s"/><path d="M70 22 l.8 2 2 .8 -2 .8 -.8 2 -.8 -2 -2 -.8 2 -.8z" style="animation-delay:1.7s"/><path d="M131 20 l.9 2.2 2.2 .9 -2.2 .9 -.9 2.2 -.9 -2.2 -2.2 -.9 2.2 -.9z" style="animation-delay:.3s"/><path d="M100 30 l1 2.4 2.4 1 -2.4 1 -1 2.4 -1 -2.4 -2.4 -1 2.4 -1z" style="animation-delay:2.6s"/></g>
                   </g>
                   <!-- the stand (rehal): two carved leaves crossing under the spine -->
                   <path d="M70 108 L100 80 L106 86 L80 110 Z" fill="url(#mWood)" stroke="#3e2410" stroke-width=".6"/>
@@ -4572,6 +4571,9 @@
                   <g transform="rotate(7 134 55)"><ellipse cx="134" cy="55" rx="13" ry="3.4" fill="url(#mGold)"/><ellipse cx="134" cy="55" rx="9" ry="1.8" fill="#1d4b3c"/></g>
                   <g stroke="#8a6a35" stroke-width=".55" stroke-dasharray="3 1.4 6 1.4 2 1.4" fill="none" opacity=".75" transform="translate(0 4)"><path d="M45 60.0 C 62 56.0, 80 58.0, 93 66.0"/><path d="M155 60.0 C 138 56.0, 120 58.0, 107 66.0"/><path d="M45 66.2 C 62 62.2, 80 64.2, 93 72.2"/><path d="M155 66.2 C 138 62.2, 120 64.2, 107 72.2"/><path d="M45 72.4 C 62 68.4, 80 70.4, 93 78.4"/><path d="M155 72.4 C 138 68.4, 120 70.4, 107 78.4"/><path d="M45 78.6 C 62 74.6, 80 76.6, 93 84.6"/><path d="M155 78.6 C 138 74.6, 120 76.6, 107 84.6"/><path d="M45 84.8 C 62 80.8, 80 82.8, 93 90.8"/><path d="M155 84.8 C 138 80.8, 120 82.8, 107 90.8"/></g>
                   <path d="M100 60 L100 96" stroke="#bfa06a" stroke-width=".8"/>
+                  <!-- in front of the book: the pages themselves shine (decision 67) -->
+                  <g class="mu-glow" style="mix-blend-mode:screen"><ellipse cx="66" cy="70" rx="30" ry="18" fill="url(#mPageGlow)"/><ellipse cx="134" cy="70" rx="30" ry="18" fill="url(#mPageGlow)"/></g>
+                  <g class="mu-glow" fill="none" stroke="#fff8dc" stroke-linecap="round"><path d="M100 60 C 84 49, 58 46, 34 51" stroke-width="2.4" opacity=".55"/><path d="M100 60 C 116 49, 142 46, 166 51" stroke-width="2.4" opacity=".55"/><path d="M100 60 C 84 49, 58 46, 34 51" stroke-width=".9"/><path d="M100 60 C 116 49, 142 46, 166 51" stroke-width=".9"/></g>
                 </svg>
               </div>
             </div>
@@ -9226,7 +9228,18 @@
         document.getElementById("wheelHubUnitLine2").textContent = text ? text.line2 : "";
         unitLabelEl.title = text ? `${text.line1} — ${text.line2}` : "";
       }
-      if (ctaLine2) ctaLine2.textContent = text?.cta ?? t("ONE Ayah a Day");
+      if (ctaLine2) {
+        // Architect review of #549: the full name ("Ayah Bismillah · Al-Faatiha")
+        // and a short one (the unit alone, "Ayah Bismillah") for a hub too small
+        // to hold the full name over two lines -- layoutWheelHub() picks. The
+        // button's title always carries the full name.
+        const full = text?.cta ?? t("ONE Ayah a Day");
+        ctaLine2.dataset.full = full;
+        ctaLine2.dataset.short = text ? (currentUnitType === "surah" ? text.cta : text.line1) : full;
+        ctaLine2.textContent = full;
+        if (wheelCtaBtn) wheelCtaBtn.title = full;
+        layoutWheelHub(); // the name's length changes the pill's height, and so the Qur'an's room
+      }
     }
 
     // Decision 65: the centre now shows before the first tap, so it must follow
@@ -9442,6 +9455,11 @@
       wheelHubPickers.style.height = hubDiameter + "px";
       wheelHubPickers.style.setProperty("--hub-unit-size", (hubDiameter * 0.068).toFixed(2) + "px");
       wheelHubPickers.style.setProperty("--hub-cta-size", Math.max(10.5, hubDiameter * 0.066).toFixed(2) + "px");
+      // Architect review of #549: on a small hub (a 320px phone, ~103px across)
+      // the 10.5px floor makes "Study Quran" wider than 60% of the circle, so it
+      // broke onto two lines. There the pill takes 80% -- the circle is still
+      // 95% wide at the pill's height, so its corners stay inside the ring.
+      if (wheelCtaBtn) wheelCtaBtn.style.width = hubDiameter < 140 ? "80%" : "";
       wheelHubPickers.style.setProperty("--hub-unit2-size", Math.max(8.5, hubDiameter * 0.05).toFixed(2) + "px");
 
       // The open Qur'an never overlaps the label: its inset is the demo's 27%
@@ -9454,6 +9472,15 @@
         // Before the first tap the pill stands where the label will; its box,
         // not the (hidden) label's, bounds the Qur'an.
         const above = !wheelCtaBtn.hidden ? wheelCtaBtn : (label && !label.hidden ? label : null);
+        // The pill's unit name wraps rather than being cut; on a hub too small
+        // for that to leave the Qur'an at least 30% of the circle's width (a
+        // 320px phone), the short name (the unit alone) is used instead.
+        const ctaLine2 = document.getElementById("wheelCtaLine2");
+        if (above === wheelCtaBtn && ctaLine2?.dataset.full) {
+          const roomFor = () => bottomY - (wheelCtaBtn.offsetTop + wheelCtaBtn.offsetHeight) - 1;
+          ctaLine2.textContent = ctaLine2.dataset.full;
+          if (roomFor() * (200 / 124) < hubDiameter * 0.30 && ctaLine2.dataset.short) ctaLine2.textContent = ctaLine2.dataset.short;
+        }
         if (above) {
           const room = bottomY - (above.offsetTop + above.offsetHeight) - 1;
           w = Math.max(0, Math.min(w, room * (200 / 124)));
