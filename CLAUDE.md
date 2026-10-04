@@ -224,20 +224,18 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.64 on `main`** (4 Oct 2026 — **Choose a Unit ends with Read and Play (decision 64, #547).**
-- **The buttons:** after choosing a unit, **Read** opens the Read view at that unit. **Play** opens it and starts the recitation there. They are two solid gold buttons at least 40px tall at the foot of the Choose a Unit list.
-- **The list stays open while choosing:** the unit type, the number, the surah and the āyah(s). It closes on Read, on Play, or on a tap outside it. Before, it closed on each choice, which would hide the very buttons it offers.
-- **Built by:** the Builder (#547, branch `builder/issue-547-run-840`). The Architect's review removed the close-on-choice rule and added a check that the list stays open through every choice.
+**Current milestone: v09.65 on `main`** (4 Oct 2026 — **Mapping My Journey in three panels, the first Siyagah folder round S8 (decision 66, #551).**
+- **The panels:** the folder tree (folders only; Notes leave the tree, as in Siyagah); the chosen folder's Note list; the Note. Phone and tablet show one panel at a time with a back control; from 1200px the three sit side by side. The tray does the same in its own width. One function picks the tier.
+- **The Note list:** ✚ New note, Compact / Preview, ⬆ to the parent, subfolder chips with counts, ➕ New folder inside this one, a quick-title bar that creates a Note filed in this folder (`createPermanentNote` + `createNotePlacement`), and "in N folders" on a card filed more than once. A tap anywhere on a card opens its Note.
+- **The Note:** ✚ New note in its bar; a folder's ⋯ menu gains Add note here.
+- **No Rules change.** Every new text in Bangla.
+- **Built by:** the Builder (branch `builder/issue-551-run-846`). Architect review: a tap anywhere on a card opens the Note, with a check.
 - **Checks:**
-  - wheel-unit-go-browser 254/0 (`--mutate-no-play` fails 24, `--mutate-read-plays` 12; the old close-on-choice rule restored fails 24)
-  - wheel-centre-browser 266/0
-  - tablet-wheel 74/0
-  - read-contents 248/0
-  - palette-contrast 20/0
-  - phone-width-overflow 217/0
-  - stub-parity 4/0
-  - behaviour 1006/1 (sandbox: 31e TLS)
-- **Next:** first screen B with the Qur'an's light (decision 65, #549); S8, the three-panel Mapping My Journey (#551).
+  - journey-three-panel-browser 368/0 (mutations: `no-placement`, `three-narrow`, `no-infolders` fails 8, `no-cardtap` fails 8)
+  - journey suites all green (folder-menus 148, note-pane 327, note-windows 254, sections 349, tags 363, tray 227 and the rest)
+  - phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0
+  - behaviour 1003/4 (sandbox: 22g×3, 31e)
+- **Next:** first screen B with the Qur'an's light (#549, waiting on the Owner's light choice); Siyagah rounds S9–S14.
 - **With the Owner:** the light from the Qur'an (demo v14); the Asmaul Husna poster (on hold, decision 50).
 )
 
