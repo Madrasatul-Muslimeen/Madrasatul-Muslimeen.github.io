@@ -19666,3 +19666,15 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
   - rules-authorisation-executable 63/0, stub-parity 4/0, phone-width-overflow 217/0, palette-contrast 20/0
   - layout.mjs: no geometry change
   - behaviour 1006/1 (sandbox: 31e TLS)
+
+## v09.81 — 5 Oct 2026 — Stem marked on the Word card; folder window; pinned panel; Ayah window
+
+- **What:** decision 69, from three demos.
+  - Word card: `data-stem-mark` on the card and `word-card-part-stem` on the stem's box (`quran-word-card.js`); CSS in `quranrevival.html`. Glow only on the top word; glow + highlighter elsewhere. Backgrounds and shadows only, so the Arabic still joins.
+  - Folder window: `openFolderWindow()` in `note-window.js` (shares the Note windows' z-order, geometry and switcher), `host.folders` in `journey-map.html`, ⋯ → 🗔 Open in its own window.
+  - Pinned panel: `[data-win-pins-toggle]` and `[data-win-pinned]` side panel in Note windows, open state remembered per device; `showPinnedIn()` opens a pinned Note in the same window.
+  - Ayah window: `app/js/read-window.js`, 🗗 `#readWindowBtn` (≥900px), title bar `#readWinBar`, eight handles, always inside the screen; light reading surface in both looks.
+- **Checks:**
+  - word-card-stem-mark-browser 144/0, journey-folder-window-browser 144/0, read-window-browser 65/0 (10 mutations in all, each caught)
+  - 16 journey/notes suites and 16 Read-view suites green; layout.mjs no geometry change
+  - behaviour 1003/4 (sandbox only); 30j/30l/33a/37a updated in place

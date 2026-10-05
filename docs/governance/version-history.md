@@ -724,3 +724,4 @@ total). Allocated by the MMSA Architect.
 09.78: N/A at Basic and Depth; folder move and rename; Ayah window demo. Allocated by the MMSA Architect.
 09.79: Siyagah plan finished; folder window and pinned panel demo. Allocated by the MMSA Architect.
 09.80: Last read and Last played in the Bookmark menu. Allocated by the MMSA Architect.
+09.81: Stem mark, folder window, pinned panel, Ayah window. Allocated by the MMSA Architect.

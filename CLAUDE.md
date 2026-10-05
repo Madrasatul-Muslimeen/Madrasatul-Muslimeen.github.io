@@ -224,23 +224,20 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.80 on `main`** (5 Oct 2026 — **📖 Last read and ▶ Last played in the Bookmark menu**).
-- **What** (the Owner: "Add a last read and last play button in bookmark"):
-  - Two buttons at the top of the Bookmark menu, each naming its place ("Yaseen 36:7", in Bangla with Bangla digits).
-  - **Last read** is noted while reading in the Read view (in the flowing view, the āyah scrolled to). **Last played** is the āyah sounding during recitation. The two are kept apart.
-  - Both live on the person's bookmarks document (`lastPlaces.read` / `.play`, `setLastPlace()` in `bookmarks.js`; no Rules change), so they follow the reader across devices. They are written at most every 10 s and on leaving the page.
-  - On the Qur'an page a tap acts in place, and Last played plays on FROM its āyah (`playCurrentSelection({ startAyah })`). On other pages they are links (`?last=read` / `?last=play`).
-  - With nothing saved, each is shown disabled, with words.
+**Current milestone: v09.81 on `main`** (5 Oct 2026 — **the stem marked on the Word card, a folder in its own window, the pinned Notes panel, and the Ayah window**; decision 69).
+- **What** (the Owner, on three demos):
+  - **Word card stem** ("mix highlight n glow together but on the top word only glow"): while *Colour word parts* is on, the stem glows in the big word at the top; the meaning, legend, Stem box and Dictionary word box get glow + highlighter. Both card looks.
+  - **Folder window** ("For Folder, build it"): folder ⋯ → 🗔 Open in its own window (subfolders, path and ⬆, its Notes, ✚ New note, quick title, ➕ New folder), the Note windows' frame and switcher (`openFolderWindow`, `host.folders`).
+  - **Pinned panel**: 📌 Pinned in a Note window opens the pinned Notes beside the Note (over it when narrow); a pinned Note opens in the same window. Replaces round 14's strip.
+  - **Ayah window** ("So go it"): 🗗 in the read bar floats the Read view as a window on a PC (`js/read-window.js`): move, resize, ⛶, ⧉, ⊡ back in the page, ✕. **Opt-in per device; never below 900px.** The Owner's "what I really wanted" for the Ayah is still to come.
 - **Checks:**
-  - bookmark-last-place-browser 68/0, en/bn, 390/1280 (--mutate-no-record fails 32, --mutate-no-start fails 4)
-  - bookmark-sheet 176/0, bookmark-folder-edit 68/0, bookmark-open 77/0 (its 4 mutations caught), study-presets 84/0
-  - study-options-play-read 73/0, study-options-go-track 104/0, wheel-unit-go 254/0
-  - rules-authorisation-executable 63/0, stub-parity 4/0, phone-width-overflow 217/0, palette-contrast 20/0, navcheck green
+  - word-card-stem-mark-browser 144/0 (2 mutations caught); word-card-segments 40/0, wbw-rebuild 136/0, pc-boxes 296/0, quran-word-card 37/0
+  - journey-folder-window-browser 144/0 (4 mutations caught); 16 journey/notes suites green (flags-links 306/0 updated in place for the panel)
+  - read-window-browser 65/0 (4 mutations caught, incl. Night contrast); 16 Read-view suites green
   - layout.mjs: no geometry change (only the known `bmNotFound`)
-  - behaviour 1006/1 (sandbox: 31e TLS)
+  - behaviour 1003/4 (sandbox: 22g×3 archive.org, 31e TLS); 30j/30l/33a/37a updated in place for 🗗
 - **With the Owner:**
-  - read a little and play a little, then open Bookmark and tap each;
-  - two demos waiting (the Ayah window; the folder window and pinned panel).
+  - open a word with Colour word parts on; on a PC, a folder's ⋯ → Open in its own window; a Note window's 📌 Pinned; in Read, 🗗.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration
