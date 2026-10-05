@@ -3489,4 +3489,13 @@ export const BN = {
   "This Note is finalised, so it can't be edited. Un-finalise it from the ⋯ menu first.": "এই নোট চূড়ান্ত করা হয়েছে, তাই সম্পাদনা করা যাবে না। আগে ⋯ মেনু থেকে চূড়ান্ত অবস্থা তুলুন।",
   "This Note is finalised. Un-finalise it from the ⋯ menu first.": "এই নোট চূড়ান্ত করা হয়েছে। আগে ⋯ মেনু থেকে চূড়ান্ত অবস্থা তুলুন।",
   '"{title}" is back in its folders.': "\"{title}\" আবার তার ফোল্ডারে ফিরেছে।",
+  "Open in its own window": "নিজস্ব জানালায় খুলুন",
+  "Pinned Notes": "পিন করা নোট",
+  "Close the pinned Notes": "পিন করা নোট বন্ধ করুন",
+  "Nothing pinned yet. Pin a Note from its ⋯ menu.": "এখনো কিছু পিন করা হয়নি। নোটের ⋯ মেনু থেকে পিন করুন।",
+  "No Notes here yet.": "এখানে এখনো কোনো নোট নেই।",
+  "Open as a window": "জানালা হিসেবে খুলুন",
+  "Smaller": "ছোট করুন",
+  "Fill the screen": "পুরো পর্দা জুড়ে",
+  "Put back in the page": "পাতায় ফিরিয়ে দিন",
 };

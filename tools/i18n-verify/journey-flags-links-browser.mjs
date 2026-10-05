@@ -254,8 +254,10 @@ for (const lang of ["en", "bn"]) {
       check(`${tag}: Note Two shows "Linked from" Note One`, (await page.textContent('.note-win[data-note-id="n2"] [data-links-in]')).includes("Note One"));
       if (lang === "bn") check(`${tag}: the Linked from heading is in Bangla`, hasBn(await page.textContent('.note-win[data-note-id="n2"] [data-links-in-head]')));
       check(`${tag}: a backlink cannot be removed from the far side (no ✕ there)`, (await page.$('.note-win[data-note-id="n2"] [data-links-in] [data-link-remove]')) === null);
-      // pinned strip in the window: n3 is pinned
-      check(`${tag}: the pop-up window shows the pinned Notes strip with Note Three`, await vis(page, '.note-win[data-note-id="n2"] [data-win-pinned]') && (await page.textContent('.note-win[data-note-id="n2"] [data-win-pinned]')).includes("Note Three"));
+      // UPDATED IN PLACE 5 Oct 2026 (Owner approved the pinned side-panel demo): the strip is now a
+      // side panel the window's 📌 Pinned button opens. n3 is pinned.
+      await page.click('.note-win[data-note-id="n2"] [data-win-pins-toggle]');
+      check(`${tag}: the pop-up window's 📌 Pinned panel shows Note Three`, await vis(page, '.note-win[data-note-id="n2"] [data-win-pinned]') && (await page.textContent('.note-win[data-note-id="n2"] [data-win-pinned]')).includes("Note Three"));
       // retire from n1 (the window is closed first: on a phone it covers the pane)
       await page.evaluate(() => document.querySelector(".note-win [data-win-close]").click());
       await page.waitForFunction(() => !document.querySelector(".note-win"));

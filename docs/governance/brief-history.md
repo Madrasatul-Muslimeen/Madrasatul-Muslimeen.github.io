@@ -14,6 +14,24 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v09.80 on `main`** (5 Oct 2026 — **📖 Last read and ▶ Last played in the Bookmark menu**).
+- **What** (the Owner: "Add a last read and last play button in bookmark"):
+  - Two buttons at the top of the Bookmark menu, each naming its place ("Yaseen 36:7", in Bangla with Bangla digits).
+  - **Last read** is noted while reading in the Read view (in the flowing view, the āyah scrolled to). **Last played** is the āyah sounding during recitation. The two are kept apart.
+  - Both live on the person's bookmarks document (`lastPlaces.read` / `.play`, `setLastPlace()` in `bookmarks.js`; no Rules change), so they follow the reader across devices. They are written at most every 10 s and on leaving the page.
+  - On the Qur'an page a tap acts in place, and Last played plays on FROM its āyah (`playCurrentSelection({ startAyah })`). On other pages they are links (`?last=read` / `?last=play`).
+  - With nothing saved, each is shown disabled, with words.
+- **Checks:**
+  - bookmark-last-place-browser 68/0, en/bn, 390/1280 (--mutate-no-record fails 32, --mutate-no-start fails 4)
+  - bookmark-sheet 176/0, bookmark-folder-edit 68/0, bookmark-open 77/0 (its 4 mutations caught), study-presets 84/0
+  - study-options-play-read 73/0, study-options-go-track 104/0, wheel-unit-go 254/0
+  - rules-authorisation-executable 63/0, stub-parity 4/0, phone-width-overflow 217/0, palette-contrast 20/0, navcheck green
+  - layout.mjs: no geometry change (only the known `bmNotFound`)
+  - behaviour 1006/1 (sandbox: 31e TLS)
+- **With the Owner:**
+  - read a little and play a little, then open Bookmark and tap each;
+  - two demos waiting (the Ayah window; the folder window and pinned panel).
+
 **Previous milestone: v09.79 on `main`** (5 Oct 2026 — **the Siyagah plan's partly-built items finished; the folder window and pinned panel demo**).
 - **Asked:** the Owner asked "Did you finish all the folder and note building as we planned from Siyagah file?" An audit of all 24 S8–S14 plan items against the code found one item NOT built (a folder opened in its own window) and three PARTLY built. Their answer: "Yes, fix the small ones and demo the others."
 - **Fixed:**

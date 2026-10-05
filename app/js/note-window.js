@@ -72,6 +72,7 @@ const DRAFT_KEY = (noteId) => `qr.journeyNoteDraft.${noteId}`;
 const COLLAPSE_KEY = (noteId) => `qr.journeyNoteCollapsed.${noteId}`;
 const WIN_LIMITS = { minW: 320, minH: 360, bar: 44 };
 const WIN_SHEET_BELOW = 640, WIN_OFFSET = 28, WIN_Z = 1000, WIN_SWITCH_H = 56;
+const WIN_PANEL_SIDE_MIN = 560; // narrower than this, the pinned panel slides over the Note instead of sitting beside it
 
 function loadCollapsed(noteId) {
   try { const v = JSON.parse(localStorage.getItem(COLLAPSE_KEY(noteId)) || "[]"); return new Set(Array.isArray(v) ? v : []); } catch { return new Set(); }
@@ -194,6 +195,8 @@ export function createNoteViews(host) {
   const paneView = notePane ? makeView(notePane, "pane") : { kind: "pane", noteId: null, ed: null };
   if (notePane) notePane.tabIndex = -1; // focusView() lands here when a Note already open in the pane is asked for again
   const windowViews = []; // pop-up windows
+  const folderWins = []; // the Owner, 5 Oct 2026: a folder in its own window (host.folders)
+  const allWins = () => [...windowViews, ...folderWins];
   const allViews = () => (notePane ? [paneView, ...windowViews] : [...windowViews]);
   const viewShowing = (noteId) => allViews().find((x) => x.noteId === noteId);
 
@@ -822,13 +825,50 @@ export function createNoteViews(host) {
       + (back.length ? `<h3 data-links-in-head>↩ ${escapeHtml(t("Linked from"))}</h3><ul data-links-in style="list-style:none;padding:0;margin:0">${back.map((l) => row(l, false)).join("")}</ul>` : "");
     v.bodyEl.appendChild(sec);
   }
-  /** Round 14: the pinned Notes, as a strip under a pop-up window's Details line. */
+  /** Round 14, made a side panel (the Owner, 5 Oct 2026; demo
+   *  docs/reference/2026-10-05-folder-window-and-pinned-demo.html): a window's
+   *  📌 Pinned button opens the pinned Notes beside the Note (over it in a
+   *  narrow window or on a phone). Tapping one shows it in the SAME window. */
+  const PINS_KEY = () => `${host.winKey}.pins`;
+  function pinsOpenPref() { try { return localStorage.getItem(PINS_KEY()) === "1"; } catch { return false; } }
+  function savePinsOpen(open) { try { localStorage.setItem(PINS_KEY(), open ? "1" : "0"); } catch { /* private mode */ } }
   function paintPinned(v, note) {
-    const strip = v.win?.querySelector("[data-win-pinned]");
-    if (!strip) return;
-    const pins = host.flags && host.flags.ready() ? host.flags.pinned().filter((p) => p.noteId !== note.noteId) : [];
-    strip.hidden = !pins.length;
-    strip.innerHTML = pins.length ? `<span class="nw-pinned-label">📌 ${escapeHtml(t("Pinned"))}</span>` + pins.map((p) => `<button type="button" class="secondary tiny" data-link-open="${escapeHtml(p.noteId)}" style="min-height:40px">${escapeHtml(p.title || t("(untitled)"))}</button>`).join("") : "";
+    const panel = v.win?.querySelector("[data-win-pinned]");
+    const tog = v.win?.querySelector("[data-win-pins-toggle]");
+    if (!panel || !tog) return;
+    if (!host.flags) { tog.hidden = true; panel.hidden = true; return; }
+    const pins = host.flags.ready() ? host.flags.pinned() : [];
+    tog.hidden = false;
+    tog.textContent = `📌 ${t("Pinned")}${pins.length ? ` (${bnDigits(pins.length)})` : ""}`;
+    tog.setAttribute("aria-pressed", String(!!v.pinsOpen));
+    panel.hidden = !v.pinsOpen;
+    v.win.classList.toggle("pins-open", !!v.pinsOpen);
+    panel.innerHTML = `<div class="nw-pin-head"><span>📌 ${escapeHtml(t("Pinned"))}</span><button type="button" class="secondary nw-pin-close" data-win-pins-close aria-label="${escapeHtml(t("Close the pinned Notes"))}" title="${escapeHtml(t("Close"))}">✕</button></div>
+      <div class="nw-pin-list">${pins.length
+        ? pins.map((p) => `<button type="button" class="nw-pin-item" data-win-pin-open="${escapeHtml(p.noteId)}" aria-current="${p.noteId === note.noteId}">${escapeHtml(p.title || t("(untitled)"))}</button>`).join("")
+        : `<p class="note" data-win-pins-empty>${escapeHtml(t("Nothing pinned yet. Pin a Note from its ⋯ menu."))}</p>`}</div>`;
+  }
+  function setPinsOpen(v, open) {
+    v.pinsOpen = open;
+    savePinsOpen(open);
+    const note = getNote(v.noteId);
+    if (note) paintPinned(v, note);
+  }
+  /** A pinned Note shown in the window the reader tapped it in -- unless it is already open somewhere, which is then focused (§4.6). */
+  async function showPinnedIn(v, noteId) {
+    const narrow = v.win.classList.contains("nw-narrow");
+    if (noteId === v.noteId) { if (narrow) setPinsOpen(v, false); return; }
+    const other = viewShowing(noteId);
+    if (other) { focusView(other); return; }
+    const target = getNote(noteId);
+    if (!target || host.isRetired(target)) return;
+    if (v.ed) await endEdit(v);
+    v.noteId = noteId;
+    v.order = [noteId];
+    v.folderId = null;
+    if (narrow) { v.pinsOpen = false; savePinsOpen(false); }
+    renderView(v);
+    v.scrollEl.scrollTop = 0;
   }
   let linkPicker = null;
   function closeLinkPicker() { if (linkPicker) { linkPicker.remove(); linkPicker = null; } }
@@ -1329,6 +1369,7 @@ export function createNoteViews(host) {
     if (on("[data-pane-prev]")) { closeAllBarPalettes(null); step(v, -1); return; }
     if (on("[data-pane-next]")) { closeAllBarPalettes(null); step(v, 1); return; }
     if (on("[data-win-ver]")) { if (note && host.versions) openVersions(v, note); return; }
+    if (on("[data-win-pins-toggle]")) { setPinsOpen(v, !v.pinsOpen); return; }
     if (on("[data-win-details]")) { const d = v.win.querySelector(".nw-details"); const open = d.classList.toggle("open"); on("[data-win-details]").setAttribute("aria-expanded", String(open)); return; }
     if (on("[data-pane-popout]")) { closeAllBarPalettes(null); popOutPane(note); return; }
     if (on("[data-pane-find-toggle]")) { closeAllBarPalettes(null); if (findBarOf(v).hidden) openFind(v); else closeFind(v); return; }
@@ -1387,6 +1428,7 @@ export function createNoteViews(host) {
 
   /** After every full load: close any view whose Note left (Trash, or gone) and keep the rest honest (chips, ⋯ items). */
   function sync() {
+    for (const fw of [...folderWins]) { if (host.folders?.node(fw.folderId)) paintFolderWindow(fw); else closeFolderWindow(fw); }
     if (tagPicker && (!getNote(tagPicker.noteId) || host.isRetired(getNote(tagPicker.noteId)))) closeTagPicker();
     else tagPicker?.paint?.();
     for (const v of allViews()) {
@@ -1423,26 +1465,27 @@ export function createNoteViews(host) {
     v.win.classList.toggle("sheet", sheet);
     v.win.classList.toggle("sheet-hidden", sheet && !top);
     v.win.style.zIndex = String(WIN_Z + winOrder.indexOf(v));
-    if (sheet) { for (const p of ["left", "top", "width", "height"]) v.win.style.removeProperty(p); return; }
+    if (sheet) { for (const p of ["left", "top", "width", "height"]) v.win.style.removeProperty(p); v.win.classList.add("nw-narrow"); return; }
     v.rect = clampRect(v.rect, WIN_LIMITS);
     Object.assign(v.win.style, { left: `${v.rect.x}px`, top: `${v.rect.y}px`, width: `${v.rect.w}px`, height: `${v.rect.h}px` });
+    v.win.classList.toggle("nw-narrow", v.rect.w < WIN_PANEL_SIDE_MIN);
   }
   function layoutWindows() {
-    for (const v of windowViews) applyWindowGeometry(v);
+    for (const v of allWins()) applyWindowGeometry(v);
     updateWindowSwitcher();
   }
   function bringToFront(v) {
     if (winOrder[winOrder.length - 1] !== v) { winOrder = winOrder.filter((x) => x !== v); winOrder.push(v); layoutWindows(); }
   }
   function focusView(v) {
-    if (v.kind === "window") { bringToFront(v); v.win.focus({ preventScroll: true }); }
+    if (v.win) { bringToFront(v); v.win.focus({ preventScroll: true }); }
     else { v.el.scrollIntoView?.({ block: "nearest" }); v.el.focus?.({ preventScroll: true }); }
   }
   /** The bottom switcher: only on a sheet, only with more than one window open. */
   function updateWindowSwitcher() {
     let nav = document.getElementById("noteWinSwitch");
     const sheet = windowTier() === "sheet";
-    const show = windowViews.length > 1;
+    const show = allWins().length > 1;
     document.documentElement.style.setProperty("--nw-switch", show && sheet ? `${WIN_SWITCH_H}px` : "0px");
     if (!show) { nav?.remove(); return; }
     if (!nav) {
@@ -1450,9 +1493,9 @@ export function createNoteViews(host) {
       nav.id = "noteWinSwitch";
       nav.addEventListener("click", (e) => {
         const x = e.target.closest("[data-win-tabclose]");
-        if (x) { const v = windowViews.find((w) => w.uid === x.dataset.winTabclose); if (v) closeNoteWindow(v); return; }
+        if (x) { const v = allWins().find((w) => w.uid === x.dataset.winTabclose); if (v) (v.kind === "folder" ? closeFolderWindow(v) : closeNoteWindow(v)); return; }
         const b = e.target.closest("[data-win-switch]");
-        const v = b && windowViews.find((w) => w.uid === b.dataset.winSwitch);
+        const v = b && allWins().find((w) => w.uid === b.dataset.winSwitch);
         if (v) focusView(v);
       });
       document.body.appendChild(nav);
@@ -1461,9 +1504,9 @@ export function createNoteViews(host) {
     nav.className = sheet ? "nw-switch" : "nw-switch nw-tabs";
     nav.setAttribute("aria-label", t("Open notes"));
     const top = winOrder[winOrder.length - 1];
-    nav.innerHTML = windowViews.map((v) => {
-      const note = getNote(v.noteId);
-      const title = note ? noteTitleOf(note) : "";
+    nav.innerHTML = allWins().map((v) => {
+      const note = v.kind === "folder" ? null : getNote(v.noteId);
+      const title = v.kind === "folder" ? `📁 ${host.folders?.node(v.folderId)?.name ?? ""}` : (note ? noteTitleOf(note) : "");
       const uid = escapeHtml(v.uid);
       return `<div class="nw-tab${v === top ? " active" : ""}"><button type="button" class="secondary nw-switch-btn${v === top ? " active" : ""}" data-win-switch="${uid}" aria-pressed="${v === top}" title="${escapeHtml(title)}">${escapeHtml(title)}</button><button type="button" class="secondary nw-tab-x" data-win-tabclose="${uid}" aria-label="${escapeHtml(t("Close {title}", { title }))}" title="${escapeHtml(t("Close"))}">✕</button></div>`;
     }).join("");
@@ -1532,24 +1575,39 @@ export function createNoteViews(host) {
     const verBtn = q("[data-win-ver]");
     verBtn.title = t("Versions");
     details.append(q("[data-pane-meta]"), verBtn, q("[data-pane-chips]"));
-    detailsRow.append(detailsBtn, details);
+    const pinsBtn = document.createElement("button");
+    pinsBtn.type = "button";
+    pinsBtn.className = "secondary nw-pins-btn";
+    pinsBtn.dataset.winPinsToggle = "";
+    pinsBtn.hidden = true;
+    detailsRow.append(detailsBtn, details, pinsBtn);
     const scroll = document.createElement("div");
     scroll.className = "nw-scroll";
     scroll.dataset.winScroll = "";
     scroll.append(q("[data-pane-title]"), q("[data-edit-title]"), q("[data-draft-offer]"), q("[data-pane-body]"));
-    const pinnedStrip = document.createElement("div");
-    pinnedStrip.className = "nw-pinned";
-    pinnedStrip.dataset.winPinned = "";
-    pinnedStrip.hidden = true;
-    section.append(detailsRow, pinnedStrip, q("[data-edit-toolbar]"), q("[data-edit-status]"), scroll);
-    win.appendChild(section);
+    const pinPanel = document.createElement("aside");
+    pinPanel.className = "nw-pin-panel";
+    pinPanel.dataset.winPinned = "";
+    pinPanel.setAttribute("aria-label", t("Pinned Notes"));
+    pinPanel.hidden = true;
+    section.append(detailsRow, q("[data-edit-toolbar]"), q("[data-edit-status]"), scroll);
+    const main = document.createElement("div");
+    main.className = "nw-main";
+    main.append(pinPanel, section);
+    win.appendChild(main);
     const v = makeView(section, "window");
     v.win = win;
     v.noteId = noteId;
+    v.pinsOpen = pinsOpenPref();
+    pinPanel.addEventListener("click", (e) => {
+      if (e.target.closest("[data-win-pins-close]")) { setPinsOpen(v, false); return; }
+      const b = e.target.closest("[data-win-pin-open]");
+      if (b) showPinnedIn(v, b.dataset.winPinOpen);
+    });
     v.order = from.order ?? (from.fromEl ? host.orderFrom(from.fromEl) : [noteId]);
     v.folderId = from.folderId ?? (from.fromEl ? host.folderFrom(from.fromEl) : null);
     const base = loadWinRect() ?? defaultWinRect();
-    const n = windowViews.length;
+    const n = allWins().length;
     v.rect = clampRect({ ...base, x: base.x + WIN_OFFSET * n, y: base.y + WIN_OFFSET * n }, WIN_LIMITS);
     const ctx = {
       getRect: () => v.rect, setRect: (r) => { v.rect = r; applyWindowGeometry(v); }, locked: () => windowTier() === "sheet",
@@ -1578,6 +1636,143 @@ export function createNoteViews(host) {
     win.focus({ preventScroll: true });
     return v;
   }
+  // =====================================================================
+  // A FOLDER IN ITS OWN WINDOW (the Owner, 5 Oct 2026; demo
+  // docs/reference/2026-10-05-folder-window-and-pinned-demo.html). Same frame
+  // as a Note window: drag the bar, eight resize handles, a sheet on a phone,
+  // in the switcher. Inside: the folder's path with ⬆, its subfolders (tap to
+  // go in), its Notes (tap to open a Note window), ✚ New note, a quick title
+  // and ➕ Folder. Every write goes through the page (host.folders), which
+  // uses the same functions as the folder list -- nothing new is written.
+  // =====================================================================
+  function folderWindowFor(folderId) { return folderWins.find((f) => f.folderId === folderId); }
+  function openFolderWindow(folderId) {
+    const F = host.folders;
+    if (!F || !F.node(folderId)) return null;
+    const existing = folderWindowFor(folderId);
+    if (existing) { focusView(existing); return existing; }
+    const win = document.createElement("div");
+    win.className = "note-win folder-win";
+    win.tabIndex = -1;
+    win.setAttribute("role", "dialog");
+    win.innerHTML = `<div class="nw-bar"><span class="nw-title"></span><button type="button" class="nw-close" data-win-close></button></div><div class="fw-body" data-folder-win-body></div>`;
+    const closeBtn = win.querySelector("[data-win-close]");
+    closeBtn.textContent = "✕";
+    closeBtn.setAttribute("aria-label", t("Close"));
+    closeBtn.title = t("Close");
+    const fw = { kind: "folder", uid: `f${++viewSeq}`, win, folderId, newFolderOpen: false };
+    const base = loadWinRect() ?? defaultWinRect();
+    const n = allWins().length;
+    fw.rect = clampRect({ ...base, x: base.x + WIN_OFFSET * n, y: base.y + WIN_OFFSET * n }, WIN_LIMITS);
+    const ctx = {
+      getRect: () => fw.rect, setRect: (r) => { fw.rect = r; applyWindowGeometry(fw); }, locked: () => windowTier() === "sheet",
+      limits: WIN_LIMITS, onEnd: () => saveWinRect(fw.rect), dragClass: "jt-dragging",
+    };
+    win.querySelector(".nw-bar").addEventListener("pointerdown", (e) => { if (!e.target.closest("[data-win-close]")) startDrag(e, "move", ctx); });
+    for (const h of HANDLES) {
+      const d = document.createElement("div");
+      d.className = "nw-h";
+      d.dataset.h = h;
+      d.addEventListener("pointerdown", (e) => startDrag(e, h, ctx));
+      win.appendChild(d);
+    }
+    win.addEventListener("pointerdown", () => bringToFront(fw), true);
+    closeBtn.addEventListener("click", () => closeFolderWindow(fw));
+    win.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !e.target.closest("input")) closeFolderWindow(fw);
+    });
+    const body = win.querySelector("[data-folder-win-body]");
+    body.addEventListener("click", async (e) => {
+      const on = (sel) => e.target.closest(sel);
+      const go = on("[data-fw-go]");
+      if (go) { fw.folderId = go.dataset.fwGo; fw.newFolderOpen = false; paintFolderWindow(fw); return; }
+      if (on("[data-fw-up]")) { const up = F.node(fw.folderId)?.parentId; if (up) { fw.folderId = up; paintFolderWindow(fw); } return; }
+      const open = on("[data-fw-note]");
+      if (open) { openWindow(open.dataset.fwNote, { folderId: fw.folderId }); return; }
+      if (on("[data-fw-new]")) {
+        const id = await F.newNote(fw.folderId, "");
+        if (id) openWindow(id, { folderId: fw.folderId });
+        return;
+      }
+      if (on("[data-fw-newfolder]")) { fw.newFolderOpen = !fw.newFolderOpen; paintFolderWindow(fw); body.querySelector("[data-fw-newfolder-name]")?.focus(); return; }
+    });
+    body.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const quick = e.target.closest("[data-fw-quick]");
+      if (quick) {
+        const input = quick.querySelector("input");
+        const title = input.value.trim();
+        if (!title) { host.status(t("Type a title first.")); return; }
+        input.disabled = true;
+        const id = await F.newNote(fw.folderId, title);
+        const again = body.querySelector("[data-fw-quick] input"); // the folder repainted underneath
+        if (again) { again.value = id ? "" : title; again.disabled = false; again.focus(); }
+        return;
+      }
+      const nf = e.target.closest("[data-fw-newfolder-form]");
+      if (nf) {
+        const name = nf.querySelector("input").value.trim();
+        if (!name) { host.status(t("Type a name for the folder first.")); return; }
+        fw.newFolderOpen = false;
+        await F.newFolder(fw.folderId, name);
+        paintFolderWindow(fw);
+      }
+    });
+    body.addEventListener("keydown", (e) => {
+      if ((e.key === "Enter" || e.key === " ") && e.target.matches("[data-fw-go], [data-fw-note]") && e.target.tagName !== "BUTTON") { e.preventDefault(); e.target.click(); }
+    });
+    document.body.appendChild(win);
+    folderWins.push(fw);
+    winOrder.push(fw);
+    layoutWindows();
+    paintFolderWindow(fw);
+    win.focus({ preventScroll: true });
+    return fw;
+  }
+  function paintFolderWindow(fw) {
+    const F = host.folders;
+    const node = F.node(fw.folderId);
+    if (!node) return;
+    const body = fw.win.querySelector("[data-folder-win-body]");
+    const quickValue = body.querySelector("[data-fw-quick] input")?.value ?? "";
+    const scrollTop = body.querySelector("[data-fw-list]")?.scrollTop ?? 0;
+    fw.win.querySelector(".nw-title").textContent = `📁 ${node.name}`;
+    fw.win.setAttribute("aria-label", node.name);
+    fw.win.dataset.folderId = fw.folderId;
+    const path = F.path(fw.folderId);
+    const crumbs = path.map((p, i) => i < path.length - 1
+      ? `<button type="button" class="fw-crumb" data-fw-go="${escapeHtml(p.id)}">${escapeHtml(p.name)}</button><span aria-hidden="true">›</span>`
+      : `<b class="fw-crumb-here">${escapeHtml(p.name)}</b>`).join(" ");
+    const own = F.canEdit(fw.folderId);
+    const kids = F.children(fw.folderId);
+    const notes = F.notes(fw.folderId);
+    const count = (n) => bnDigits(n);
+    body.innerHTML = `<div class="fw-path">
+        <button type="button" class="secondary fw-btn" data-fw-up ${node.parentId ? "" : "disabled"} aria-label="${escapeHtml(t("Up to the parent folder"))}" title="${escapeHtml(t("Up to the parent folder"))}">⬆</button>
+        <span class="fw-crumbs" data-fw-crumbs>${crumbs}</span>
+        ${own ? `<button type="button" class="fw-btn" data-fw-new>✚ ${escapeHtml(t("New note"))}</button>` : ""}
+      </div>
+      ${own ? `<div class="fw-quick-row"><form class="fw-quick" data-fw-quick><input type="text" placeholder="${escapeHtml(t("Quick title — press Enter to add a Note"))}" aria-label="${escapeHtml(t("Quick title — press Enter to add a Note"))}"><button type="submit" aria-label="${escapeHtml(t("Add note"))}" title="${escapeHtml(t("Add note"))}">✚</button></form><button type="button" class="secondary fw-btn" data-fw-newfolder aria-expanded="${fw.newFolderOpen}">➕ ${escapeHtml(t("New folder"))}</button></div>` : ""}
+      ${own && fw.newFolderOpen ? `<form class="fw-quick" data-fw-newfolder-form><input type="text" data-fw-newfolder-name placeholder="${escapeHtml(t("Folder name"))}" aria-label="${escapeHtml(t("Folder name"))}"><button type="submit">${escapeHtml(t("Create"))}</button></form>` : ""}
+      <div class="fw-list" data-fw-list>
+        ${kids.map((k) => `<button type="button" class="fw-sub" data-fw-go="${escapeHtml(k.id)}">📁 <span class="fw-sub-name">${escapeHtml(k.name)}</span><span class="fw-count">${k.count === null ? "…" : count(k.count)}</span></button>`).join("")}
+        ${notes.map((n) => `<button type="button" class="fw-note" data-fw-note="${escapeHtml(n.noteId)}"><b>${n.pinned ? "📌 " : ""}${escapeHtml(n.title?.trim() || t("(untitled)"))}</b><small>${escapeHtml(n.when ?? "")}</small></button>`).join("")}
+        ${!kids.length && !notes.length ? `<p class="note" data-fw-empty>${escapeHtml(F.loaded() ? t("No Notes here yet.") : t("Counting the Notes filed in each folder…"))}</p>` : ""}
+      </div>`;
+    const q = body.querySelector("[data-fw-quick] input");
+    if (q && quickValue) q.value = quickValue;
+    const list = body.querySelector("[data-fw-list]");
+    if (list) list.scrollTop = scrollTop;
+    updateWindowSwitcher();
+  }
+  function closeFolderWindow(fw) {
+    if (!folderWins.includes(fw)) return;
+    fw.win.remove();
+    folderWins.splice(folderWins.indexOf(fw), 1);
+    winOrder = winOrder.filter((x) => x !== fw);
+    layoutWindows();
+  }
+
   /** Closing a window flushes its edit like every other way out. */
   function closeNoteWindow(v) {
     if (!windowViews.includes(v)) return;
@@ -1597,5 +1792,5 @@ export function createNoteViews(host) {
     openWindow(note.noteId, { order, folderId });
   }
 
-  return { paneView, windowViews, allViews, viewShowing, openPane, closePane, closeView, openWindow, endEdit, flushActiveEdit, sync, renderView, focusView, windowTier, mountTags };
+  return { paneView, windowViews, allViews, viewShowing, openPane, closePane, closeView, openWindow, openFolderWindow, endEdit, flushActiveEdit, sync, renderView, focusView, windowTier, mountTags };
 }
