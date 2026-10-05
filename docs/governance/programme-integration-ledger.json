@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.76",
+    "version": "09.77",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2093,8 +2093,20 @@
     {
       "version": "09.76",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Transliteration search, an instant locked word-progress press, and a full-screen Bookmark sheet.",
+      "integration": {
+        "authorizedOn": "2026-10-05",
+        "integratedOn": "2026-10-05",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.77",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "A Go button beside From/To; Track closes Study options and its card sits above the dock and the wheel window.",
       "integration": {
         "authorizedOn": "2026-10-05",
         "integratedOn": "2026-10-05",
@@ -2103,8 +2115,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.77",
+  "nextUnallocated": "09.78",
   "nextUnallocatedNote": [
+    "v09.77 was allocated to Study options: a Go button, and Track's card on top, 2026-10-05.",
     "v09.76 was allocated to Search by sound; word press shows at once; full-screen Bookmark menu, 2026-10-05.",
     "v09.75 was allocated to Explore: no overhang on desktop and tablet either, 2026-10-04.",
     "v09.74 was allocated to Word-by-Word boxes enlargeable in Read and Note view; Explore readable on a phone, 2026-10-04.",

@@ -19618,3 +19618,12 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
   - bookmark-sheet-browser 176/0; --mutate-off fails 76; study-presets 84/0; navcheck green
   - phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0; layout.mjs no geometry change (known `bmNotFound`)
   - behaviour 1006/1 (sandbox: 31e TLS); 49/50 updated to close with Close
+
+## v09.77 — 5 Oct 2026 — Study options: a Go button, and Track's card on top
+
+- **Go:** the Owner: "How about adding a 'go' button here, to straight away go to the page selected?" `#unitGoBtn` ends the Study Unit row (`.opt-cell-go`, sized to its word) and calls `openReadingScreen()`: Study options closes and the reading view opens at the unit's first ayah. Same line count at every width.
+- **Track:** the Owner: "I pressed track, the screen appeared but the option screen didn't move, still stayed over the read screen." `#wayModalOverlay` was z-index 50, under the dock (60) and, on a computer, under the Mastery Wheel window. Track now calls `closeAllPanels()` first, and the overlay is z-index 900.
+- **Checks:**
+  - study-options-go-track-browser 104/0; --mutate-go fails 24, --mutate-track fails 16, --mutate-layer fails 2
+  - panel.mjs OK; study-options-play-read 73/0; wheel-unit-go 254/0; select-layout-options green; phone-width-overflow 217/0; palette-contrast 20/0; stub-parity 4/0; layout.mjs no geometry change (known `bmNotFound`)
+  - behaviour 1006/1 (sandbox: 31e TLS); 27b/27i updated in place for the Go cell

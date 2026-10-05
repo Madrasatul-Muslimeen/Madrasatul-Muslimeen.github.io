@@ -380,6 +380,9 @@
      nothing truncates at 320px any more, so the page is back to ONE screen-
      size rule, which is where it started. */
   .opt-cell-num { flex: 0 0 3.1rem !important; }
+  /* The Go button (5 Oct 2026) takes only its own word, like Track. */
+  .opt-cell-go { flex: 0 0 auto !important; }
+  .opt-cell-go > button { min-width: 2.6rem; }
   .opt-cell-num > label { font-size: 0.66rem; }
   /* Buttons-only bars stretch; bars holding a label over a control align on
      the control's own bottom edge. Round 11 had these two facts tangled
@@ -3225,7 +3228,11 @@
   #drillReciterChecks label { display: block; font-weight: 400; font-size: 0.85rem; }
 
   /* ---------- Way modal ---------- */
-  #wayModalOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); align-items: center; justify-content: center; z-index: 50; }
+  /* 5 Oct 2026: z-index 50 -> 900. At 50 the Track card opened UNDER the
+     dock (60, which holds Study options) and, on a computer, under the
+     Mastery Wheel window too -- Track looked like it did nothing. 900 is the
+     tier the app's other full-screen cards use (My Status, Contents). */
+  #wayModalOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); align-items: center; justify-content: center; z-index: 900; }
   /* v08.31 -- see the element's own comment for why it is out of flow. Sits
      above the dock (z-index 60) so it is never hidden behind it, and reads as
      information rather than as an error: nothing went wrong. */
@@ -5589,6 +5596,11 @@
           <div class="opt-cell opt-cell-num" id="rangeToControls" style="display:none;">
             <label for="rangeToSelect">To</label><select id="rangeToSelect"></select>
           </div>
+          <!-- Owner, 5 Oct 2026: "How about adding a 'go' button here, to
+               straight away go to the page selected?" Opens the reading view
+               at the chosen unit, the same as Read under Listening, and closes
+               Study options. Sized to its word, like Track. -->
+          <div class="opt-cell opt-cell-go"><button type="button" class="opt-btn opt-btn-primary opt-btn-inline" id="unitGoBtn">Go</button></div>
         </div>
         <!-- What the chosen Page/Juz/Hizb/Ruku' actually covers, in words.
              The owner's own rule for a unit spanning several surahs: name the
@@ -21516,7 +21528,12 @@
       });
     }
 
-    trackUnitBtn.addEventListener("click", () => openUnitWayModal());
+    // Owner, 5 Oct 2026: "I pressed Track, the screen appeared but the
+    // option screen didn't move." Study options sits in the dock, a layer
+    // above the Track card, so the card opened UNDER it. Close the panel
+    // first, as Read and Play already do.
+    trackUnitBtn.addEventListener("click", () => { closeAllPanels(); openUnitWayModal(); });
+    document.getElementById("unitGoBtn").addEventListener("click", () => { openReadingScreen(); });
 
     // ---------------------------------------------------------------------
     // Sign-in / context bootstrap (same pattern as records.html)

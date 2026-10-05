@@ -1221,8 +1221,11 @@ console.log("\n=== 27. Shell round 14: the Study options bars, and Search ===");
   check("27b bar 2 is Student alone (User Role moved into the My account card)", JSON.stringify(bars[1]) === '["personSelect"]', JSON.stringify(bars[1]));
   check("27b User Role (#tenantSelect) lives in the My account card, not in Study options",
         await page.evaluate(() => !!document.querySelector("#accountCardOverlay #tenantSelect") && !document.querySelector(".study-options-body #tenantSelect")));
-  check("27b bar 3 is Study Unit + unit number + Surah + Ayah",
-        JSON.stringify(bars[2]) === '["unitTypeSelect","unitNumSelect","surahSelect","ayahSelect","rangeFromSelect","rangeToSelect"]', JSON.stringify(bars[2]));
+  // UPDATED in place 2026-10-05: the Owner asked for a Go button beside
+  // From/To ("to straight away go to the page selected"), so the bar ends
+  // with #unitGoBtn now.
+  check("27b bar 3 is Study Unit + unit number + Surah + Ayah + Go",
+        JSON.stringify(bars[2]) === '["unitTypeSelect","unitNumSelect","surahSelect","ayahSelect","rangeFromSelect","rangeToSelect","unitGoBtn"]', JSON.stringify(bars[2]));
   check("27b bar 4 is Approach + Track", JSON.stringify(bars[3]) === '["trackableSelect","trackUnitBtn"]', JSON.stringify(bars[3]));
   // Shell round 19: there is no fifth bar. Reading view (round 18) and
   // Listening (round 19) are both always-visible sections now, so neither
@@ -1387,7 +1390,7 @@ console.log("\n=== 27. Shell round 14: the Study options bars, and Search ===");
       else rows.push({ top: r.top, bottom: r.bottom });
     }
     return {
-      ids: cells.map((c) => c.querySelector("select")?.id),
+      ids: cells.map((c) => c.querySelector("select, button")?.id),
       lines: rows.length,
       cutLabels: [...bar.querySelectorAll("label")]
         .filter((l) => l.scrollWidth > l.clientWidth + 1)
@@ -1396,8 +1399,10 @@ console.log("\n=== 27. Shell round 14: the Study options bars, and Search ===");
     };
   });
   const range = await measureRange();
-  check("27i with Range on, all four cells are Unit/Surah/From/To",
-        JSON.stringify(range.ids) === '["unitTypeSelect","surahSelect","rangeFromSelect","rangeToSelect"]', JSON.stringify(range.ids));
+  // UPDATED in place 2026-10-05: the Owner's Go button is the fifth cell
+  // (it read as `null` here, a cell with no select in it).
+  check("27i with Range on, the cells are Unit/Surah/From/To/Go",
+        JSON.stringify(range.ids) === '["unitTypeSelect","surahSelect","rangeFromSelect","rangeToSelect","unitGoBtn"]', JSON.stringify(range.ids));
   // UPDATED in place (was "...on ONE line, not two" at the 390px context
   // this section runs in, and failed every run since v08.33 / ed6b760f,
   // 22 Sep 2026). That round DELIBERATELY made this bar wrap below 481px:
