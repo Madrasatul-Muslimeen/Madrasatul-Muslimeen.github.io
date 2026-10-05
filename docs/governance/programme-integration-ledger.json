@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.84",
+    "version": "09.85",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2189,8 +2189,20 @@
     {
       "version": "09.84",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Bookmark marks, last-act times, show/hide and Back; the Bismillah never named as an ayah; family-member picker on every Record Your Progress card (Owner, 5 Oct 2026).",
+      "integration": {
+        "authorizedOn": "2026-10-05",
+        "integratedOn": "2026-10-05",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.85",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Siyagah note-pane port round 3 (items 21-27): fold all while editing, folded previews, Multi button, back to the pane, Close all, Details remembered, side Contents (decision 70).",
       "integration": {
         "authorizedOn": "2026-10-05",
         "integratedOn": "2026-10-05",
@@ -2199,8 +2211,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.85",
+  "nextUnallocated": "09.86",
   "nextUnallocatedNote": [
+    "v09.85 was allocated to the Siyagah note-pane port round 3, 2026-10-05.",
     "v09.84 was allocated to bookmark marks and Back, Bismillah labels, family members on every Record card, 2026-10-05.",
     "v09.83 was allocated to the Siyagah note-pane port round 2, 2026-10-05.",
     "v09.82 was allocated to Resizable panels; Siyagah note-pane port round 1, 2026-10-05.",

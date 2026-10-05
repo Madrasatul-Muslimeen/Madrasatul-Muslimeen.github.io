@@ -3544,4 +3544,11 @@ export const BN = {
   "Surah {surah} — Bismillah": "সূরা {surah} — বিসমিল্লাহ",
   "Record for: {names}": "যার জন্য লিপিবদ্ধ: {names}",
   "Recorded for {names}.": "{names}-এর জন্য লিপিবদ্ধ হয়েছে।",
+  // Note-pane round 3 (items 21-27).
+  "This Note has no headings yet.": "এই নোটে এখনো কোনো শিরোনাম নেই।",
+  "Open in its own window": "আলাদা উইন্ডোতে খুলুন",
+  "Open in its own window (Ctrl+Shift+P)": "আলাদা উইন্ডোতে খুলুন (Ctrl+Shift+P)",
+  "Put back in the pane": "প্যানে ফিরিয়ে আনুন",
+  "Close all windows (Ctrl+Shift+X)": "সব উইন্ডো বন্ধ করুন (Ctrl+Shift+X)",
+  "Close all ({n})": "সব বন্ধ করুন ({n})",
 };
