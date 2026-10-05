@@ -58,6 +58,7 @@ export const NOTE_VIEW_HTML = `
       <h2 class="note-pane-title" data-pane-title></h2>
       <input type="text" class="pane-edit-title" data-edit-title hidden>
       <p class="note-pane-meta" data-pane-meta></p>
+      <button type="button" class="secondary tiny nw-ver-btn" data-win-ver hidden></button>
       <div class="note-pane-chips" data-pane-chips></div>
       <div class="pane-draft-offer" data-draft-offer hidden></div>
       <div class="pane-edit-toolbar" data-edit-toolbar hidden></div>
@@ -138,7 +139,7 @@ const noteTitleOf = (note) => note.title?.trim() || t("(untitled)");
  *   attach?(v, note)   S11: when given (the owner only), the bar shows a 📎 that opens the page's folders-and-tags sheet
  *   versions?          S11 (never a new field): { list(note) -> Promise<[{ id, title, bodyHtml, createdAt, reason }]> newest first,
  *                        restore(note, rev) -> Promise  (saves rev as a NEW revision through the page's own save path) }
- *   newNote?()         S8: when given, the pane bar shows a ✚ (the owner only) that calls it
+ *   newNote?(v)        S8: when given, the bar shows a ✚ (the owner only; pane and windows) that calls it with its view
  *   orderFrom(el), folderFrom(el)   the ‹ › order / folder of the row a Note was opened from
  *   paneTier(), paneApply(), scroller()   the inline pane's layout (pane only)
  * }
@@ -738,7 +739,8 @@ export function createNoteViews(host) {
     // S8: a page that supplies `newNote` gets a ✚ on the pane's own bar (icon only, so the one-line bar never grows).
     const newBtn = v.el.querySelector("[data-pane-new]");
     if (newBtn) {
-      newBtn.hidden = !(own && host.newNote && v.kind === "pane");
+      // The Owner, 5 Oct 2026: in pop-up windows too (was the pane only).
+      newBtn.hidden = !(own && host.newNote);
       newBtn.setAttribute("aria-label", t("New note")); newBtn.title = t("New note");
     }
     const headings = [...v.el.querySelectorAll(".note-sec")];
@@ -898,6 +900,7 @@ export function createNoteViews(host) {
         <div class="tag-picker-head"><strong>🏷 ${escapeHtml(t("Tags"))}</strong><button type="button" class="secondary tag-picker-close" data-tag-close aria-label="${escapeHtml(t("Close"))}">✕</button></div>
         <p class="note gate-note" data-tag-gate role="status" hidden>${escapeHtml(t("Tags switch on once the new Firebase Rules are published."))}</p>
         <p class="tag-picker-msg" data-tag-msg role="status" hidden></p>
+        <p class="note" data-tag-staged hidden>${escapeHtml(t("You are editing this Note: tag changes are saved when you press Done."))}</p>
         <input type="search" class="tag-picker-search" data-tag-search placeholder="${escapeHtml(t("Search tags"))}" aria-label="${escapeHtml(t("Search tags"))}">
         <div class="tag-picker-list" data-tag-list></div>
         <div class="tag-picker-new"><input type="text" maxlength="100" data-tag-new-name placeholder="${escapeHtml(t("New tag name"))}" aria-label="${escapeHtml(t("New tag name"))}"><button type="button" class="secondary" data-tag-new>＋ ${escapeHtml(t("New tag"))}</button></div>
@@ -911,7 +914,8 @@ export function createNoteViews(host) {
       const on = tg.ready();
       q("[data-tag-gate]").hidden = on;
       const needle = q("[data-tag-search]").value.trim().toLocaleLowerCase();
-      const ids = new Set(tg.noteTagIds(live()));
+      q("[data-tag-staged]").hidden = !isEditingNote(live().noteId);
+      const ids = shownTagIds(live().noteId);
       const rows = tg.tags().filter((g) => !needle || g.name.toLocaleLowerCase().includes(needle));
       q("[data-tag-list]").innerHTML = rows.length
         ? rows.map((g) => `<label class="tag-pick-row"><input type="checkbox" data-tag-pick="${escapeHtml(g.id)}" ${ids.has(g.id) ? "checked" : ""} ${on ? "" : "disabled"}><span class="tag-dot" aria-hidden="true"${g.color ? ` style="background:${escapeHtml(g.color)}"` : ""}></span><span class="tag-pick-name">${escapeHtml(g.name)}</span></label>`).join("")
@@ -928,6 +932,7 @@ export function createNoteViews(host) {
       const box = e.target.closest("[data-tag-pick]");
       if (!box || !tg.ready()) return;
       msg("");
+      if (holdTagTick(live().noteId, box.dataset.tagPick, box.checked)) { paint(); return; } // held until Done
       box.disabled = true;
       try {
         if (box.checked) await tg.tag(live(), box.dataset.tagPick); else await tg.untag(live(), box.dataset.tagPick);
@@ -944,7 +949,7 @@ export function createNoteViews(host) {
       try {
         const id = await tg.create(name);
         input.value = "";
-        if (id) await tg.tag(live(), id);
+        if (id && !holdTagTick(live().noteId, id, true)) await tg.tag(live(), id);
       } catch (err) { msg(err?.message || t("That did not save.")); }
       rerenderNoteEverywhere(tagPicker?.noteId ?? note.noteId);
       if (tagPicker) paint();
@@ -1173,13 +1178,46 @@ export function createNoteViews(host) {
     if (versionsDlg === el) showList();
   }
 
-  /** The tags half of 📎 (S11): tick/untick the owner's tags and add a new one, inside `container`. Same host.tagging calls as the 🏷 picker. */
+  // Tag ticks made while the Note is being EDITED: noteId -> the wanted Set of
+  // tag ids, written when the edit's Done is pressed -- the same rule S10 gave
+  // folder ticks (the Owner, 5 Oct 2026: finish what the Siyagah plan left
+  // partly built; tags used to save at once even mid-edit).
+  const stagedTags = new Map();
+  const isEditingNote = (noteId) => allViews().some((x) => x.ed && x.ed.noteId === noteId);
+  async function applyStagedTags(noteId) {
+    const staged = stagedTags.get(noteId);
+    stagedTags.delete(noteId);
+    const tg = host.tagging;
+    if (!staged || !tg?.ready()) return;
+    const have = new Set(tg.noteTagIds(getNote(noteId)));
+    try {
+      for (const id of staged) if (!have.has(id)) await tg.tag(getNote(noteId), id);
+      for (const id of have) if (!staged.has(id)) await tg.untag(getNote(noteId), id);
+    } catch (err) { host.status(err?.message || t("That did not save.")); } // I15
+    rerenderNoteEverywhere(noteId);
+  }
+  /** The tag ids a picker should show ticked: the held set while editing, else what is stored. */
+  function shownTagIds(noteId) {
+    const tg = host.tagging;
+    return isEditingNote(noteId) && stagedTags.has(noteId) ? stagedTags.get(noteId) : new Set(tg.noteTagIds(getNote(noteId)));
+  }
+  /** While editing, a tick is only held (returns true); otherwise the caller writes it at once (returns false). */
+  function holdTagTick(noteId, tagId, on) {
+    if (!isEditingNote(noteId)) return false;
+    const want = new Set(shownTagIds(noteId));
+    if (on) want.add(tagId); else want.delete(tagId);
+    stagedTags.set(noteId, want);
+    return true;
+  }
+
+  /** The tags half of 📎 (S11): tick/untick the owner's tags and add a new one, inside `container`. Same host.tagging calls as the 🏷 picker. While the Note is being edited, ticks are held and saved with the edit's Done. */
   function mountTags(container, noteId) {
     const tg = host.tagging;
     if (!tg) return null;
     container.innerHTML = `<h3 class="at-head">🏷 ${escapeHtml(t("Tags"))}</h3>
       <p class="note gate-note" data-at-gate role="status" hidden>${escapeHtml(t("Tags switch on once the new Firebase Rules are published."))}</p>
       <p class="tag-picker-msg" data-at-msg role="alert" hidden></p>
+      <p class="note" data-at-staged hidden>${escapeHtml(t("You are editing this Note: tag changes are saved when you press Done."))}</p>
       <div class="at-list" data-at-list></div>
       <div class="tag-picker-new"><input type="text" maxlength="100" data-at-new-name placeholder="${escapeHtml(t("New tag name"))}" aria-label="${escapeHtml(t("New tag name"))}"><button type="button" class="secondary" data-at-new>＋ ${escapeHtml(t("New tag"))}</button></div>`;
     const q = (sel) => container.querySelector(sel);
@@ -1188,7 +1226,9 @@ export function createNoteViews(host) {
     const paint = () => {
       const on = tg.ready();
       q("[data-at-gate]").hidden = on;
-      const ids = new Set(tg.noteTagIds(live()));
+      const editing = isEditingNote(noteId);
+      q("[data-at-staged]").hidden = !editing;
+      const ids = shownTagIds(noteId);
       const all = tg.tags();
       q("[data-at-list]").innerHTML = all.length
         ? all.map((g) => `<label class="tag-pick-row"><input type="checkbox" data-at-pick="${escapeHtml(g.id)}" ${ids.has(g.id) ? "checked" : ""} ${on ? "" : "disabled"}><span class="tag-dot" aria-hidden="true"${g.color ? ` style="background:${escapeHtml(g.color)}"` : ""}></span><span class="tag-pick-name">${escapeHtml(g.name)}</span></label>`).join("")
@@ -1198,7 +1238,9 @@ export function createNoteViews(host) {
     q("[data-at-list]").addEventListener("change", async (e) => {
       const box = e.target.closest("[data-at-pick]");
       if (!box || !tg.ready()) return;
-      msg(""); box.disabled = true;
+      msg("");
+      if (holdTagTick(noteId, box.dataset.atPick, box.checked)) { paint(); return; } // held until Done
+      box.disabled = true;
       try { if (box.checked) await tg.tag(live(), box.dataset.atPick); else await tg.untag(live(), box.dataset.atPick); }
       catch (err) { msg(err?.message || t("That did not save.")); }
       rerenderNoteEverywhere(noteId);
@@ -1210,7 +1252,10 @@ export function createNoteViews(host) {
       const name = input.value.trim();
       if (!name) { msg(t("Type a name for the tag first.")); return; }
       msg("");
-      try { const id = await tg.create(name); input.value = ""; if (id) await tg.tag(live(), id); }
+      try {
+        const id = await tg.create(name); input.value = "";
+        if (id && !holdTagTick(noteId, id, true)) await tg.tag(live(), id);
+      }
       catch (err) { msg(err?.message || t("That did not save.")); }
       rerenderNoteEverywhere(noteId);
       paint();
@@ -1231,7 +1276,8 @@ export function createNoteViews(host) {
       `<button type="button" class="folder-chip" data-pane-chip="${escapeHtml(f.id)}">📁 ${escapeHtml(f.label)}</button>`).join("") + tagChipsHtml(note);
     // While an edit is open the editor IS the body: a re-render must never wipe the reader's typing.
     if (!(v.ed && v.ed.noteId === note.noteId)) { showReadChrome(v, note); buildBody(v, note); paintLinks(v, note); if (!findBarOf(v).hidden) runFind(v, { keep: true }); }
-    if (v.kind === "window") { paintPinned(v, note); v.win.querySelector(".nw-title").textContent = noteTitleOf(note); v.win.dataset.noteId = note.noteId; updateWindowSwitcher(); paintVersionLine(v, note); }
+    if (v.kind === "window") { paintPinned(v, note); v.win.querySelector(".nw-title").textContent = noteTitleOf(note); v.win.dataset.noteId = note.noteId; updateWindowSwitcher(); }
+    paintVersionLine(v, note);
     renderPaneBar(v);
     fitPaneBarTwice(v);
     if (keepScroll) v.scrollEl.scrollTop = before;
@@ -1255,11 +1301,12 @@ export function createNoteViews(host) {
       closeAllBarPalettes(null);
       if (!v.ed) {
         if (host.flags?.on(note, "finalised")) { host.status(t("This Note is finalised, so it can't be edited. Un-finalise it from the ⋯ menu first.")); return; }
-        if (host.canEdit()) { host.onEditStart?.(v, note); startEdit(v, note); }
+        if (host.canEdit()) { stagedTags.delete(note.noteId); host.onEditStart?.(v, note); startEdit(v, note); }
         return;
       }
       const done = await endEdit(v);
       await host.onEditDone?.(v, note); // S10: ticks staged in the folder picker are written now, with the edit
+      await applyStagedTags(note.noteId); // ...and so are the tag ticks
       renderView(v, { keepScroll: true });
       if (done?.conflict) await host.refresh(); // show what the other device wrote; the draft is offered back
       return;
@@ -1278,7 +1325,7 @@ export function createNoteViews(host) {
     if (on("[data-draft-restore]")) { const d = loadDraft(note.noteId); if (d && host.canEdit()) startEdit(v, note, d); return; }
     if (on("[data-draft-discard]")) { clearDraft(note.noteId); v.draftOfferEl.hidden = true; return; }
     if (on("[data-pane-back]")) { closePane(); return; }
-    if (on("[data-pane-new]")) { host.newNote?.(); return; }
+    if (on("[data-pane-new]")) { host.newNote?.(v); return; }
     if (on("[data-pane-prev]")) { closeAllBarPalettes(null); step(v, -1); return; }
     if (on("[data-pane-next]")) { closeAllBarPalettes(null); step(v, 1); return; }
     if (on("[data-win-ver]")) { if (note && host.versions) openVersions(v, note); return; }
@@ -1426,7 +1473,9 @@ export function createNoteViews(host) {
   const verCache = new Map();
   const bnDigits = (n) => { const loc = host.dateLocale?.(); return loc && /^bn/i.test(loc) ? new Intl.NumberFormat("bn-BD-u-nu-beng").format(n) : String(n); };
   async function paintVersionLine(v, note) {
-    const btn = v.win?.querySelector("[data-win-ver]");
+    // The Owner, 5 Oct 2026: the line was in pop-up windows only; the inline
+    // pane shows it too now (the Siyagah plan's S13 "Details line with the version").
+    const btn = (v.win ?? v.el)?.querySelector("[data-win-ver]");
     if (!btn || !host.versions) return;
     const key = `${note.noteId}|${note.currentRevisionId}`;
     let info = verCache.get(key);
@@ -1442,7 +1491,7 @@ export function createNoteViews(host) {
         return;
       }
     }
-    if (!windowViews.includes(v) || v.noteId !== note.noteId || getNote(v.noteId)?.currentRevisionId !== note.currentRevisionId) return; // moved on while reading
+    if (!allViews().includes(v) || v.noteId !== note.noteId || getNote(v.noteId)?.currentRevisionId !== note.currentRevisionId) return; // moved on while reading
     if (info.none) { btn.hidden = true; return; }
     btn.hidden = false;
     btn.textContent = `🕘 ${t("Version {n} of {m}", { n: bnDigits(info.n), m: bnDigits(info.m) })} · ${t("saved {date}", { date: whenText(info.at) })}`;
@@ -1478,11 +1527,9 @@ export function createNoteViews(host) {
     detailsBtn.textContent = `${t("Details")} ▾`;
     const details = document.createElement("div");
     details.className = "nw-details";
-    const verBtn = document.createElement("button");
-    verBtn.type = "button";
-    verBtn.className = "secondary tiny nw-ver-btn";
-    verBtn.dataset.winVer = "";
-    verBtn.hidden = true;
+    // The version line lives in the shared template now (the inline pane shows
+    // it too); a window moves it into its Details row.
+    const verBtn = q("[data-win-ver]");
     verBtn.title = t("Versions");
     details.append(q("[data-pane-meta]"), verBtn, q("[data-pane-chips]"));
     detailsRow.append(detailsBtn, details);
