@@ -40,6 +40,7 @@ export const NOTE_VIEW_HTML = `
         <span class="pane-spacer"></span>
         <button type="button" class="secondary pane-btn pane-tool" data-pane-find-toggle>🔍</button>
         <button type="button" class="secondary pane-btn pane-tool" data-pane-foldall hidden>⇅</button>
+        <button type="button" class="secondary pane-btn pane-multi" data-pane-popout data-pane-multi hidden>⧉</button>
         <button type="button" class="secondary pane-btn pane-attach" data-pane-attach hidden>📎</button>
         <button type="button" class="secondary pane-btn" data-pane-new hidden>✚</button>
         <button type="button" class="secondary pane-btn" data-pane-edit-toggle hidden></button>
@@ -666,6 +667,18 @@ export function createNoteViews(host) {
       e.gutterEl.appendChild(ctl);
     }
   }
+  /** Item 21: ⇅ while editing -- every heading folded, or (when they all are) every one opened. A view-only change. */
+  function foldAllEditing(v) {
+    const body = editBodyEl(v);
+    if (!v.ed || !body) return;
+    const heads = [...body.children].filter(isHeadingEl);
+    if (!heads.length) { flashStatus(v, t("This Note has no headings yet.")); return; }
+    const all = heads.every((h) => v.ed.folded.has(h));
+    v.ed.folded.clear();
+    if (!all) for (const h of heads) v.ed.folded.add(h);
+    layoutGutter(v);
+    renderPaneBar(v); fitPaneBarTwice(v);
+  }
   function toggleFold(v, h) {
     const e = v.ed;
     if (!e || !h?.isConnected) return;
@@ -838,8 +851,10 @@ export function createNoteViews(host) {
   /** The one-line header: measure, then fold -- never wrap, never cut (§4.2). ‹ › fold into the ⋯ menu first; if the Contents label is still too wide it shortens to ☰. Run twice by the caller (now, and in requestAnimationFrame). */
   function fitPaneBar(v) {
     if (v.noteId === null) return;
-    v.barEl.classList.remove("folded", "tight", "tools-folded", "attach-folded", "edit-folded");
+    v.barEl.classList.remove("multi-folded", "folded", "tight", "tools-folded", "attach-folded", "edit-folded");
     const over = () => v.barEl.scrollWidth > v.barEl.clientWidth + 1;
+    // Note-pane round 3: ⧉ is the first to go (⋯ always has ⧉ Pop out), so it never costs 🔍 or ⇅ their place.
+    if (over()) v.barEl.classList.add("multi-folded");
     // S11: the new tools fold first (🔍 ⇅ into ⋯, the Contents word to ☰, then 📎), so the existing ‹ › and Edit keep their place as long as they can.
     if (over()) v.barEl.classList.add("tools-folded");
     if (over()) v.barEl.classList.add("tight");
@@ -888,8 +903,13 @@ export function createNoteViews(host) {
     }
     const headings = [...v.el.querySelectorAll(".note-sec")];
     const foldBtn = v.el.querySelector("[data-pane-foldall]");
-    foldBtn.hidden = !headings.length;
-    const allCollapsed = headings.length > 0 && headings.every((sec) => sec.classList.contains("collapsed"));
+    // Note-pane round 3 (item 21): ⇅ folds or opens every section while editing too (the editor's own folds, never saved).
+    const edHeads = v.ed ? [...(editBodyEl(v)?.children ?? [])].filter(isHeadingEl) : [];
+    foldBtn.hidden = v.ed ? false : !headings.length;
+    const allCollapsed = v.ed ? edHeads.length > 0 && edHeads.every((h) => v.ed.folded.has(h)) : headings.length > 0 && headings.every((sec) => sec.classList.contains("collapsed"));
+    // Item 23: ⧉ on the pane's own bar -- this Note in its own window in one tap (it folds into ⋯ with 🔍 and ⇅).
+    const multiBtn = v.el.querySelector("[data-pane-multi]");
+    if (multiBtn) { multiBtn.hidden = v.kind !== "pane"; multiBtn.setAttribute("aria-label", t("Open in its own window")); multiBtn.title = t("Open in its own window (Ctrl+Shift+P)"); }
     const foldLabel = allCollapsed ? t("Open all headings") : t("Close all headings");
     foldBtn.setAttribute("aria-label", foldLabel); foldBtn.title = foldLabel;
     const findBtn = v.el.querySelector("[data-pane-find-toggle]");
@@ -908,7 +928,7 @@ export function createNoteViews(host) {
     let menu = `<button type="button" class="secondary tiny pane-fold-item" data-pane-prev ${prev ? "" : "disabled"}>‹ ${escapeHtml(t("Previous note"))}</button>
       <button type="button" class="secondary tiny pane-fold-item" data-pane-next ${next ? "" : "disabled"}>${escapeHtml(t("Next note"))} ›</button>`;
     if (!v.ed) menu += `<button type="button" class="secondary tiny pane-toolfold-item" data-pane-find-toggle>🔍 ${escapeHtml(t("Find in this Note"))}</button>`;
-    if (headings.length) menu += `<button type="button" class="secondary tiny pane-toolfold-item" data-pane-foldall>⇅ ${escapeHtml(foldLabel)}</button>`;
+    if (headings.length || v.ed) menu += `<button type="button" class="secondary tiny pane-toolfold-item" data-pane-foldall>⇅ ${escapeHtml(foldLabel)}</button>`;
     if (canAttach) menu += `<button type="button" class="secondary tiny pane-attachfold-item" data-pane-attach>📎 ${escapeHtml(t("Folders and tags"))}</button>`;
     if (host.versions) menu += `<button type="button" class="secondary tiny" data-pane-versions>🕘 ${escapeHtml(t("Versions…"))}</button>`;
     if (own) {
@@ -1201,6 +1221,16 @@ export function createNoteViews(host) {
         stack[stack.length - 1].el.appendChild(node);
       }
     }
+    // Note-pane round 3 (item 22): a folded heading shows the start of what it hides, greyed, on one line.
+    for (const sec of host_.querySelectorAll(".note-sec")) {
+      const text = (sec.querySelector(":scope > .note-sec-body")?.textContent ?? "").replace(/\s+/g, " ").trim();
+      if (!text) continue;
+      const peek = document.createElement("p");
+      peek.className = "note-sec-peek";
+      peek.dataset.secPeek = "";
+      peek.textContent = text.length > 120 ? `${text.slice(0, 119)}…` : text;
+      sec.querySelector(":scope > .note-sec-h").after(peek);
+    }
   }
 
   // =====================================================================
@@ -1477,7 +1507,7 @@ export function createNoteViews(host) {
       `<button type="button" class="folder-chip" data-pane-chip="${escapeHtml(f.id)}">📁 ${escapeHtml(f.label)}</button>`).join("") + tagChipsHtml(note);
     // While an edit is open the editor IS the body: a re-render must never wipe the reader's typing.
     if (!(v.ed && v.ed.noteId === note.noteId)) { showReadChrome(v, note); buildBody(v, note); paintLinks(v, note); if (!findBarOf(v).hidden) runFind(v, { keep: true }); }
-    if (v.kind === "window") { paintPinned(v, note); v.win.querySelector(".nw-title").textContent = noteTitleOf(note); v.win.dataset.noteId = note.noteId; updateWindowSwitcher(); }
+    if (v.kind === "window") { paintPinned(v, note); paintToc(v); v.win.querySelector(".nw-title").textContent = noteTitleOf(note); v.win.dataset.noteId = note.noteId; updateWindowSwitcher(); }
     paintVersionLine(v, note);
     renderPaneBar(v);
     fitPaneBarTwice(v);
@@ -1727,13 +1757,13 @@ export function createNoteViews(host) {
     if (on("[data-pane-next]")) { closeAllBarPalettes(null); step(v, 1); return; }
     if (on("[data-win-ver]")) { if (note && host.versions) openVersions(v, note); return; }
     if (on("[data-win-pins-toggle]")) { setPinsOpen(v, !v.pinsOpen); return; }
-    if (on("[data-win-details]")) { const d = v.win.querySelector(".nw-details"); const open = d.classList.toggle("open"); on("[data-win-details]").setAttribute("aria-expanded", String(open)); return; }
+    if (on("[data-win-details]")) { const d = v.win.querySelector(".nw-details"); const open = d.classList.toggle("open"); on("[data-win-details]").setAttribute("aria-expanded", String(open)); saveDetailsOpen(open); return; }
     if (on("[data-pane-popout]")) { closeAllBarPalettes(null); popOutPane(note); return; }
     if (on("[data-pane-find-toggle]")) { closeAllBarPalettes(null); if (findBarOf(v).hidden) openFind(v); else closeFind(v); return; }
     if (on("[data-find-prev]")) { stepFind(v, v.find.idx - 1); return; }
     if (on("[data-find-next]")) { stepFind(v, v.find.idx + 1); return; }
     if (on("[data-find-close]")) { closeFind(v); return; }
-    if (on("[data-pane-foldall]")) { closeAllBarPalettes(null); foldAll(v, note); return; }
+    if (on("[data-pane-foldall]")) { closeAllBarPalettes(null); if (v.ed) foldAllEditing(v); else foldAll(v, note); return; }
     if (on("[data-pane-attach]")) { closeAllBarPalettes(null); host.attach?.(v, note); return; }
     if (on("[data-pane-versions]")) { closeAllBarPalettes(null); openVersions(v, note); return; }
     if (on("[data-pane-tags]")) { closeAllBarPalettes(null); openTagPicker(note); return; }
@@ -1770,18 +1800,56 @@ export function createNoteViews(host) {
       return;
     }
     const jump = on("[data-pane-jump]");
-    if (jump) {
-      closeAllBarPalettes(null);
-      const sec = v.el.querySelector(`.note-sec[data-sec-index="${CSS.escape(jump.dataset.paneJump)}"]`);
-      for (let up = sec?.parentElement?.closest(".note-sec"); up; up = up.parentElement?.closest(".note-sec")) {
-        if (up.classList.contains("collapsed")) up.querySelector(":scope > .note-sec-h [data-sec-toggle]")?.click();
-      }
-      if (sec?.classList.contains("collapsed")) sec.querySelector(":scope > .note-sec-h [data-sec-toggle]")?.click();
-      sec?.scrollIntoView({ block: "start" });
-      return;
-    }
+    if (jump) { closeAllBarPalettes(null); jumpToSection(v, jump.dataset.paneJump); return; }
     if (host.onMenu?.(v, note, on)) closeAllBarPalettes(null);
   }
+
+  /** Contents (the bar's ☰ and the window's side panel): open the section and every folded one around it, then go there. */
+  function jumpToSection(v, idx) {
+    const sec = v.el.querySelector(`.note-sec[data-sec-index="${CSS.escape(String(idx))}"]`);
+    for (let up = sec?.parentElement?.closest(".note-sec"); up; up = up.parentElement?.closest(".note-sec")) {
+      if (up.classList.contains("collapsed")) up.querySelector(":scope > .note-sec-h [data-sec-toggle]")?.click();
+    }
+    if (sec?.classList.contains("collapsed")) sec.querySelector(":scope > .note-sec-h [data-sec-toggle]")?.click();
+    sec?.scrollIntoView({ block: "start" });
+  }
+  const TOC_MIN_W = 760, TOC_MIN_HEADINGS = 3;
+  /** Item 27: the side Contents of a window, shown only when the window is wide, not a sheet, and the Note has 3+ headings (read view). */
+  function paintToc(v) {
+    const toc = v.win?.querySelector("[data-win-toc]");
+    if (!toc) return;
+    const secs = v.ed ? [] : [...v.el.querySelectorAll(".note-sec")];
+    const wide = windowTier() !== "sheet" && (v.rect?.w ?? 0) >= TOC_MIN_W;
+    const show = wide && secs.length >= TOC_MIN_HEADINGS;
+    toc.hidden = !show;
+    v.win.classList.toggle("toc-open", show);
+    if (!show) { toc.replaceChildren(); return; }
+    toc.innerHTML = `<p class="nw-toc-head">☰ ${escapeHtml(t("Contents"))}</p>` + secs.map((sec) =>
+      `<button type="button" class="nw-toc-item" data-toc-jump="${sec.dataset.secIndex}" style="padding-inline-start:${(0.5 + (Number(sec.dataset.level) - 1) * 0.7).toFixed(1)}rem">${escapeHtml(sec.dataset.headingText)}</button>`).join("");
+  }
+  const DETAILS_KEY = () => `${host.winKey}.details`;
+  function detailsOpenPref() { try { return localStorage.getItem(DETAILS_KEY()) === "1"; } catch { return false; } }
+  function saveDetailsOpen(open) { try { localStorage.setItem(DETAILS_KEY(), open ? "1" : "0"); } catch { /* private mode */ } }
+  /** Item 24: a window's Note back into the pane (the pane's own Note, if any, is flushed and replaced). */
+  async function dockWindow(v) {
+    if (!notePane || !windowViews.includes(v)) return;
+    const { noteId, order, folderId } = v;
+    if (v.ed) await endEdit(v);
+    closeNoteWindow(v);
+    openPane(noteId);
+    if (paneView.noteId === noteId) { paneView.order = order?.length ? order : [noteId]; paneView.folderId = folderId; renderPaneBar(paneView); fitPaneBarTwice(paneView); }
+    notePane.focus?.({ preventScroll: true });
+  }
+  /** Item 25: ✕ Close all windows (every edit flushed, as closing one does). */
+  function closeAllWindows() {
+    for (const v of [...windowViews]) closeNoteWindow(v);
+    for (const fw of [...folderWins]) closeFolderWindow(fw);
+  }
+  document.addEventListener("keydown", (ev) => {
+    if (!(ev.ctrlKey || ev.metaKey) || !ev.shiftKey) return;
+    if (ev.code === "KeyX" && allWins().length) { ev.preventDefault(); closeAllWindows(); }
+    else if (ev.code === "KeyP" && notePane && paneView.noteId !== null) { ev.preventDefault(); const n = getNote(paneView.noteId); if (n) popOutPane(n); }
+  });
 
   /** After every full load: close any view whose Note left (Trash, or gone) and keep the rest honest (chips, ⋯ items). */
   function sync() {
@@ -1822,10 +1890,11 @@ export function createNoteViews(host) {
     v.win.classList.toggle("sheet", sheet);
     v.win.classList.toggle("sheet-hidden", sheet && !top);
     v.win.style.zIndex = String(WIN_Z + winOrder.indexOf(v));
-    if (sheet) { for (const p of ["left", "top", "width", "height"]) v.win.style.removeProperty(p); v.win.classList.add("nw-narrow"); return; }
+    if (sheet) { for (const p of ["left", "top", "width", "height"]) v.win.style.removeProperty(p); v.win.classList.add("nw-narrow"); if (v.kind === "window" && v.noteId) paintToc(v); return; }
     v.rect = clampRect(v.rect, WIN_LIMITS);
     Object.assign(v.win.style, { left: `${v.rect.x}px`, top: `${v.rect.y}px`, width: `${v.rect.w}px`, height: `${v.rect.h}px` });
     v.win.classList.toggle("nw-narrow", v.rect.w < WIN_PANEL_SIDE_MIN);
+    if (v.kind === "window" && v.noteId) paintToc(v);
   }
   function layoutWindows() {
     for (const v of allWins()) applyWindowGeometry(v);
@@ -1849,6 +1918,7 @@ export function createNoteViews(host) {
       nav = document.createElement("nav");
       nav.id = "noteWinSwitch";
       nav.addEventListener("click", (e) => {
+        if (e.target.closest("[data-win-closeall]")) { closeAllWindows(); return; }
         const x = e.target.closest("[data-win-tabclose]");
         if (x) { const v = allWins().find((w) => w.uid === x.dataset.winTabclose); if (v) (v.kind === "folder" ? closeFolderWindow(v) : closeNoteWindow(v)); return; }
         const b = e.target.closest("[data-win-switch]");
@@ -1861,7 +1931,8 @@ export function createNoteViews(host) {
     nav.className = sheet ? "nw-switch" : "nw-switch nw-tabs";
     nav.setAttribute("aria-label", t("Open notes"));
     const top = winOrder[winOrder.length - 1];
-    nav.innerHTML = allWins().map((v) => {
+    // Item 25: two or more open -> one ✕ to close them all (Ctrl+Shift+X), FIRST so a phone's scrolling strip never hides it.
+    nav.innerHTML = `<button type="button" class="secondary nw-closeall" data-win-closeall title="${escapeHtml(t("Close all windows (Ctrl+Shift+X)"))}">✕ ${escapeHtml(t("Close all ({n})", { n: bnDigits(allWins().length) }))}</button>` + allWins().map((v) => {
       const note = v.kind === "folder" ? null : getNote(v.noteId);
       const title = v.kind === "folder" ? `📁 ${host.folders?.node(v.folderId)?.name ?? ""}` : (note ? noteTitleOf(note) : "");
       const uid = escapeHtml(v.uid);
@@ -1907,8 +1978,11 @@ export function createNoteViews(host) {
     win.className = "note-win";
     win.tabIndex = -1;
     win.setAttribute("role", "dialog");
-    win.innerHTML = `<div class="nw-bar"><span class="nw-title"></span><button type="button" class="nw-close" data-win-close></button></div>`;
+    win.innerHTML = `<div class="nw-bar"><span class="nw-title"></span>${notePane ? `<button type="button" class="nw-close nw-dock" data-win-dock></button>` : ""}<button type="button" class="nw-close" data-win-close></button></div>`;
     const closeBtn = win.querySelector("[data-win-close]");
+    // Note-pane round 3 (item 24): Single ⇄ Multi -- ⇲ puts this window's Note back into the page's pane.
+    const dockBtn = win.querySelector("[data-win-dock]");
+    if (dockBtn) { dockBtn.textContent = "⇲"; dockBtn.setAttribute("aria-label", t("Put back in the pane")); dockBtn.title = t("Put back in the pane"); }
     closeBtn.textContent = "✕";
     closeBtn.setAttribute("aria-label", t("Close"));
     closeBtn.title = t("Close");
@@ -1923,10 +1997,12 @@ export function createNoteViews(host) {
     detailsBtn.type = "button";
     detailsBtn.className = "secondary nw-details-btn";
     detailsBtn.dataset.winDetails = "";
-    detailsBtn.setAttribute("aria-expanded", "false");
+    // Item 26: open or closed as it was last left, on this device.
+    const detailsOpen = detailsOpenPref();
+    detailsBtn.setAttribute("aria-expanded", String(detailsOpen));
     detailsBtn.textContent = `${t("Details")} ▾`;
     const details = document.createElement("div");
-    details.className = "nw-details";
+    details.className = detailsOpen ? "nw-details open" : "nw-details";
     // The version line lives in the shared template now (the inline pane shows
     // it too); a window moves it into its Details row.
     const verBtn = q("[data-win-ver]");
@@ -1960,7 +2036,13 @@ export function createNoteViews(host) {
     pinSplit.title = t("Drag to resize the panels");
     const main = document.createElement("div");
     main.className = "nw-main";
-    main.append(pinPanel, pinSplit, section);
+    // Item 27: in a wide window, a Note with three or more headings lists them beside the text.
+    const toc = document.createElement("nav");
+    toc.className = "nw-toc";
+    toc.dataset.winToc = "";
+    toc.setAttribute("aria-label", t("Contents"));
+    toc.hidden = true;
+    main.append(pinPanel, pinSplit, toc, section);
     const applyPinW = () => { const w = pinPanelWidth(); pinPanel.style.flexBasis = `${w}px`; pinSplit.setAttribute("aria-valuenow", String(w)); };
     applyPinW();
     const setPinW = (w, save) => {
@@ -1988,6 +2070,8 @@ export function createNoteViews(host) {
     wirePress(v, win);
     v.noteId = noteId;
     v.pinsOpen = pinsOpenPref();
+    toc.addEventListener("click", (e) => { const b = e.target.closest("[data-toc-jump]"); if (b) jumpToSection(v, b.dataset.tocJump); });
+    dockBtn?.addEventListener("click", () => dockWindow(v));
     pinPanel.addEventListener("click", (e) => {
       if (e.target.closest("[data-win-pins-close]")) { setPinsOpen(v, false); return; }
       const b = e.target.closest("[data-win-pin-open]");
@@ -2003,7 +2087,7 @@ export function createNoteViews(host) {
       limits: WIN_LIMITS, onEnd: () => saveWinRect(v.rect), dragClass: "jt-dragging",
     };
     const bar = win.querySelector(".nw-bar");
-    bar.addEventListener("pointerdown", (e) => { if (!e.target.closest("[data-win-close]")) startDrag(e, "move", ctx); });
+    bar.addEventListener("pointerdown", (e) => { if (!e.target.closest("[data-win-close], [data-win-dock]")) startDrag(e, "move", ctx); });
     for (const h of HANDLES) {
       const d = document.createElement("div");
       d.className = "nw-h";

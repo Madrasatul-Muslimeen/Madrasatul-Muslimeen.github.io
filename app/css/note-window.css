@@ -248,3 +248,16 @@ form.fw-quick[data-fw-newfolder-form] { padding: 0.4rem 0.6rem; }
 .pane-edit-body [data-box], .note-pane-body [data-box], .note-ver-text [data-box] { border: 1.5px solid #C9A24B; border-radius: 0.5rem; padding: 0.4rem 0.7rem; margin: 0.5rem 0; background: #fffdf6; }
 .pane-edit-body hr, .note-pane-body hr, .note-ver-text hr { border: 0; border-top: 1.5px solid #c9cfdd; margin: 0.9rem 0; }
 .pane-edit-body h4, .note-pane-body h4, .note-ver-text h4 { font-size: 1rem; margin: 0.6rem 0 0.3rem; }
+
+/* Note-pane round 3 (5 Oct 2026, items 22-27). */
+.note-sec-peek { display: none; margin: -0.1rem 0 0.3rem 1.6rem; color: #5f6b7d; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.note-sec.collapsed > .note-sec-peek { display: block; }
+.nw-dock { font-size: 1.05rem; margin-inline-start: auto; }
+.nw-dock + .nw-close { margin-inline-start: 0; }
+.nw-closeall { flex: 0 0 auto; min-height: 40px; white-space: nowrap; font-weight: 600; }
+.nw-toc { flex: 0 0 13rem; min-width: 0; overflow-y: auto; border-inline-end: 1px solid #dde3ee; padding: 0.4rem 0.3rem; box-sizing: border-box; display: flex; flex-direction: column; gap: 0.15rem; }
+.nw-toc[hidden] { display: none; }
+.nw-toc-head { margin: 0 0 0.3rem; font-weight: 700; font-size: 0.85rem; color: #1F3A6E; }
+.nw-toc-item { text-align: start; min-height: 36px; background: none; border: 0; border-radius: 0.35rem; color: #1F3A6E; font: inherit; font-size: 0.86rem; cursor: pointer; overflow-wrap: anywhere; }
+.nw-toc-item:hover, .nw-toc-item:focus-visible { background: #eef2ff; }
+.pane-btn[data-pane-multi][hidden], .note-pane-bar.multi-folded > [data-pane-multi], .note-pane-bar.tools-folded > [data-pane-multi] { display: none; }
