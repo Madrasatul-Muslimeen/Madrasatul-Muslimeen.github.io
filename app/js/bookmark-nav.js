@@ -64,7 +64,7 @@
 
 import {
   getBookmarks, rootFolders, childFolders, bookmarksInFolder, unfiledBookmarks, groupBookmarksByPerson,
-  groupBookmarksByModule, livePresets, renameFolder, saveFolderOrder,
+  groupBookmarksByModule, livePresets, renameFolder, saveFolderOrder, lastPlaceOf,
 } from "./bookmarks.js";
 import { MODULE_PAGES, MODULE_LABELS } from "./continue-strip.js";
 import {
@@ -72,7 +72,7 @@ import {
   getBookmarkMenuGroupBy, setBookmarkMenuGroupBy, BOOKMARK_GROUP_BYS, getAppLang,
 } from "./prefs.js";
 import { langText } from "./lang.js";
-import { t } from "./i18n.js";
+import { t, surahName, num } from "./i18n.js";
 
 function escapeHtml(s) {
   return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -201,7 +201,27 @@ function controlsHtml() {
  * (about.html, taglines.html) leave it out and this file falls back to
  * fetching it, once, and only if someone actually selects person grouping.
  */
-export function mountBookmarkMenu(navBarEl, { db, getTenantId, getPersonId, getBookmarksDoc = null, getRoster = null, onApplyPreset = null }) {
+// The Owner, 5 Oct 2026: "Add a last read and last play button in bookmark."
+// Two buttons at the top of the menu: 📖 Last read and ▶ Last played, each
+// naming the place. On the Qur'an page (which passes onLastPlace) they act in
+// place -- Play starts inside this same tap, as a browser requires; on every
+// other page they are links into it (?last=read / ?last=play). With nothing
+// saved yet, the button is still there and says so (a control that explains
+// itself beats a missing one).
+function lastPlacesHtml(bookmarksDoc, onLastPlace) {
+  const one = (kind, icon, label, none) => {
+    const p = lastPlaceOf(bookmarksDoc, kind);
+    const where = p ? `${surahName(p.surahNum, p.surahNameEn ?? "")} ${num(p.surahNum)}:${num(p.ayahNum)}` : t(none);
+    const inner = `<span class="nav-bm-last-icon" aria-hidden="true">${icon}</span><span class="nav-bm-last-text"><b>${escapeHtml(t(label))}</b><small>${escapeHtml(where)}</small></span>`;
+    if (!p) return `<button type="button" class="nav-bm-last" data-bm-last="${kind}" disabled>${inner}</button>`;
+    return onLastPlace
+      ? `<button type="button" class="nav-bm-last" data-bm-last="${kind}">${inner}</button>`
+      : `<a class="nav-bm-last" data-bm-last="${kind}" href="${MODULE_PAGES.quranrevival}?last=${kind}">${inner}</a>`;
+  };
+  return `<div class="nav-bm-lasts">${one("read", "📖", "Last read", "Nothing read yet")}${one("play", "▶", "Last played", "Nothing played yet")}</div>`;
+}
+
+export function mountBookmarkMenu(navBarEl, { db, getTenantId, getPersonId, getBookmarksDoc = null, getRoster = null, onApplyPreset = null, onLastPlace = null }) {
   const details = navBarEl.querySelector(".nav-cat-bookmark");
   const listEl = navBarEl.querySelector("#navBookmarkList");
   if (!details || !listEl) return;
@@ -238,6 +258,7 @@ export function mountBookmarkMenu(navBarEl, { db, getTenantId, getPersonId, getB
 
   function render(bookmarksDoc, roster) {
     listEl.innerHTML =
+      lastPlacesHtml(bookmarksDoc, onLastPlace) +
       controlsHtml() +
       `<p class="nav-bm-error" data-bm-nav-error role="alert" hidden></p>` +
       presetsHtml(bookmarksDoc, getBookmarkMenuExpanded()) +
@@ -269,6 +290,13 @@ export function mountBookmarkMenu(navBarEl, { db, getTenantId, getPersonId, getB
         e.stopPropagation();
         details.open = false;
         onApplyPreset?.(btn.dataset.bmNavPreset);
+      });
+    });
+    listEl.querySelectorAll("button[data-bm-last]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        details.open = false;
+        onLastPlace?.(btn.dataset.bmLast);
       });
     });
     listEl.querySelector("[data-bm-nav-expand-toggle]")?.addEventListener("click", (e) => {
