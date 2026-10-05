@@ -215,6 +215,34 @@ button.nav-account-btn { background: none; border: none; text-align: left; curso
    .nav-cat-links already carries (max-width: 100% of this list's own
    parent, which is itself already clamped to calc(100vw - 2rem)). */
 .nav-bm-list { display: flex; flex-direction: column; gap: 0.2rem; width: max-content; max-width: 100%; max-height: 60vh; overflow-y: auto; }
+/* Owner, 5 Oct 2026: "Enlarge bookmark to take the entire screen so other
+   screen below won't distract eyes." Open, the Bookmark menu is a full-screen
+   sheet at every width: an opaque fixed layer over the whole page, its list
+   in one readable column (at most 40rem, centred on a wide screen), scrolling
+   inside itself while the page behind stays still. It closes with its own
+   Close button or Escape (nav.js); it covers its own tab. The other three
+   categories keep the ordinary dropdown. */
+.nav-bm-sheet-head { display: none; }
+.nav-cat-bookmark[open] > .nav-cat-links {
+  position: fixed; inset: 0; z-index: 3000;
+  max-width: none; min-width: 0; width: auto; height: auto;
+  border: none; border-radius: 0; box-shadow: none;
+  padding: 0.6rem max(1rem, calc((100vw - 40rem) / 2)) 1.5rem;
+  overflow-y: auto; overscroll-behavior: contain; gap: 0.4rem;
+}
+.nav-cat-bookmark[open] .nav-bm-sheet-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.6rem;
+  position: sticky; top: -0.6rem; z-index: 1; background: white;
+  padding: 0.4rem 0; margin-bottom: 0.2rem; border-bottom: 1px solid #e5e5e5;
+}
+.nav-bm-sheet-title { font-size: 1.05rem; font-weight: 700; color: #1F3A6E; }
+.nav-bm-close {
+  min-height: 40px; padding: 0.3rem 0.8rem; font-size: 0.9rem; font-weight: 600;
+  border: 1px solid #ccc; border-radius: 0.4rem; background: white; color: #1F3A6E;
+  cursor: pointer; flex-shrink: 0;
+}
+.nav-cat-bookmark[open] .nav-bm-list { width: auto; max-height: none; overflow: visible; }
+body:has(.nav-cat-bookmark[open]) { overflow: hidden; }
 /* Fixes round 2 -- the two options above the list ("Open as" expanded/
    collapsed, "Group by" folder/person). Two cells sharing one line, each
    minmax(0,1fr) so a long translated label shrinks its own cell rather than

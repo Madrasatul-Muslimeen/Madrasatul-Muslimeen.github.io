@@ -6009,7 +6009,10 @@ console.log("\n=== 49. Fixes round items 2/3 -- the nav bar's own live Bookmark 
 
   // Close the dropdown again -- it's an absolutely-positioned overlay and
   // would otherwise intercept the read-screen clicks below.
-  await page.click(".nav-cat-bookmark summary");
+  // RECONCILED 2026-10-05: open, the Bookmark menu is a full-screen sheet
+  // covering its own tab (the Owner: "take the entire screen"), so it closes
+  // with its Close button, as a reader now does.
+  await page.click("[data-nav-bm-close]");
   await page.waitForTimeout(150);
 
   // Create a second bookmark, filed into a brand-new folder, via the popover
@@ -6034,7 +6037,10 @@ console.log("\n=== 49. Fixes round items 2/3 -- the nav bar's own live Bookmark 
   // once the genuinely fresh render lands.
   const stillOpen = await page.evaluate(() => document.querySelector(".nav-cat-bookmark")?.open);
   if (stillOpen) {
-    await page.click(".nav-cat-bookmark summary");
+    // RECONCILED 2026-10-05: open, the Bookmark menu is a full-screen sheet
+    // covering its own tab (the Owner: "take the entire screen"), so it closes
+    // with its Close button, as a reader now does.
+    await page.click("[data-nav-bm-close]");
     await page.waitForTimeout(150);
   }
   await page.evaluate(() => { document.getElementById("navBookmarkList").textContent = "Loading…"; });
@@ -6078,7 +6084,10 @@ console.log("\n=== 50. Fixes round 2 -- the expanded/collapsed OPTION, and the p
   const openMenu = async () => {
     const isOpen = await page.evaluate(() => document.querySelector(".nav-cat-bookmark")?.open);
     if (isOpen) {
-      await page.click(".nav-cat-bookmark summary");
+      // RECONCILED 2026-10-05: open, the Bookmark menu is a full-screen sheet
+      // covering its own tab (the Owner: "take the entire screen"), so it closes
+      // with its Close button, as a reader now does.
+      await page.click("[data-nav-bm-close]");
       await page.waitForTimeout(150);
     }
     // Reset to the sentinel first -- the list keeps its last render while
@@ -6330,7 +6339,10 @@ console.log("\n=== 50h-k. The person tag on the Manager page, and both in Bangla
   // phase 4 for About|person).
   // Close the dropdown first -- it is an absolutely-positioned overlay and
   // would otherwise intercept the read-screen clicks below (same trap as 49).
-  await pageBn.click(".nav-cat-bookmark summary");
+  // RECONCILED 2026-10-05: open, the Bookmark menu is a full-screen sheet
+  // covering its own tab (the Owner: "take the entire screen"), so it closes
+  // with its Close button, as a reader now does.
+  await pageBn.click("[data-nav-bm-close]");
   await pageBn.waitForTimeout(150);
   // Read lives inside #studyPillarMenu, so a bare click on it resolves and
   // then times out on a 0x0 box -- this file's own recorded trap. Every

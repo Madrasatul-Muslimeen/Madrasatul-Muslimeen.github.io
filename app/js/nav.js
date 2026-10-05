@@ -183,6 +183,7 @@ function renderCategory(name, linksHtml, extraClass = "") {
 // left behind, once real content renders.
 function renderBookmarkCategory(currentFile, canAdmin) {
   return `<details class="nav-cat nav-cat-end nav-cat-bookmark"><summary>${t("Bookmark")}</summary><div class="nav-cat-links">
+    <div class="nav-bm-sheet-head"><span class="nav-bm-sheet-title">${t("Bookmarks")}</span><button type="button" class="nav-bm-close" data-nav-bm-close>✕ ${t("Close")}</button></div>
     <div id="navBookmarkList" class="nav-bm-list">${t("Loading…")}</div>
     ${renderLinks(BOOKMARK_LINKS, currentFile, canAdmin)}
   </div></details>`;
@@ -366,7 +367,15 @@ document.addEventListener(
 // still contained by that category's own element and is correctly left
 // alone here; only a click genuinely outside every open category reaches
 // this far and closes them.
+// Owner, 5 Oct 2026: the Bookmark menu opens as a full-screen sheet (see
+// shell.css), so there is no "elsewhere" left to tap -- its own Close button
+// and Escape close it instead.
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") document.querySelectorAll(".nav-cat[open]").forEach((cat) => { cat.open = false; });
+});
 document.addEventListener("click", (e) => {
+  const close = e.target instanceof Element ? e.target.closest("[data-nav-bm-close]") : null;
+  if (close) { const cat = close.closest(".nav-cat"); if (cat) cat.open = false; return; }
   document.querySelectorAll(".nav-cat[open]").forEach((cat) => {
     if (!cat.contains(e.target)) cat.open = false;
   });
