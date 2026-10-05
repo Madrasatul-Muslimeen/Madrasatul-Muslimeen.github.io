@@ -160,3 +160,124 @@ export async function searchQuran(query, { limit = 50 } = {}) {
   }
   return { lang, total, results, truncated: total > results.length, query: raw };
 }
+
+// ---------------------------------------------------------------------------
+// SEARCH BY SOUND -- transliteration (the Owner, 5 Oct 2026: "Enable searching
+// with Transliteration", with the example "Inni fi khalqi samawate").
+//
+// People write Arabic in Latin letters by ear, and no two write it alike:
+// "Inni" for inna, "samawate" for l-samāwāti, "kul" for qul, "zalika" for
+// dhālika, with or without "al-". So the match is made on the CONSONANT
+// SKELETON of the words, not their spelling:
+//   - accents go (ā -> a, ḥ -> h, ṣ -> s ...), as do ʿ ' and hyphens;
+//   - a few sounds that are written several ways are folded together
+//     (dh -> z, th -> s, q -> k, v -> w, ph -> f), before the apostrophe that
+//     separates two letters is dropped, so "t'h" stays two letters;
+//   - vowels go, and a doubled consonant counts once;
+//   - and the words run together, so spacing and "al-" do not matter much.
+// The query is then looked for anywhere in an ayah's skeleton, forgiving a
+// small number of slips (an extra or missing letter, like the "l" of "al-"):
+// none for a very short query, up to three for a long one. Results come
+// closest-first.
+// ---------------------------------------------------------------------------
+
+const TR_FOLDS = [[/dh/g, "z"], [/th/g, "s"], [/ph/g, "f"], [/q/g, "k"], [/v/g, "w"]];
+
+/** One word's consonant skeleton (see above). Exported for the checks. */
+export function soundSkeleton(word) {
+  let s = String(word ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  for (const [re, to] of TR_FOLDS) s = s.replace(re, to);
+  s = s.replace(/[^a-z]/g, "").replace(/[aeiou]/g, "");
+  return s.replace(/(.)\1+/g, "$1");
+}
+
+/** The slips a query of this skeleton length may carry and still match. */
+export function soundTolerance(length) {
+  if (length < 5) return 0;
+  if (length < 9) return 1;
+  if (length < 14) return 2;
+  return 3;
+}
+
+// Per ayah: the whole skeleton, and for every skeleton character the word it
+// came from (so a match can be shown on the right words). Built once.
+let soundCache = null;
+
+function buildSoundCache(index) {
+  return index.texts.map((line) => {
+    const words = line.split(" ");
+    let skel = "";
+    const wordOf = [];
+    words.forEach((w, wi) => {
+      // Collapse a doubled consonant across the word boundary too.
+      for (const ch of soundSkeleton(w)) {
+        if (skel.endsWith(ch)) continue;
+        skel += ch;
+        wordOf.push(wi);
+      }
+    });
+    return { words, skel, wordOf };
+  });
+}
+
+/** Best approximate occurrence of `pat` in `text` (fewest edits, then
+    earliest), within `k` edits: { dist, from, to } or null. Sellers'
+    algorithm, carrying each cell's start position. */
+export function approxFind(pat, text, k) {
+  const m = pat.length;
+  if (!m) return null;
+  let prev = new Array(m + 1), prevStart = new Array(m + 1);
+  let cur = new Array(m + 1), curStart = new Array(m + 1);
+  for (let i = 0; i <= m; i++) { prev[i] = i; prevStart[i] = 0; }
+  let best = null;
+  for (let j = 1; j <= text.length; j++) {
+    cur[0] = 0; curStart[0] = j;
+    const c = text[j - 1];
+    for (let i = 1; i <= m; i++) {
+      const sub = prev[i - 1] + (pat[i - 1] === c ? 0 : 1);
+      const del = cur[i - 1] + 1; // pattern letter missing from the text
+      const ins = prev[i] + 1;    // extra letter in the text
+      if (sub <= del && sub <= ins) { cur[i] = sub; curStart[i] = prevStart[i - 1]; }
+      else if (ins <= del) { cur[i] = ins; curStart[i] = prevStart[i]; }
+      else { cur[i] = del; curStart[i] = curStart[i - 1]; }
+    }
+    if (cur[m] <= k && (!best || cur[m] < best.dist)) best = { dist: cur[m], from: curStart[m], to: j };
+    [prev, cur] = [cur, prev];
+    [prevStart, curStart] = [curStart, prevStart];
+  }
+  return best;
+}
+
+/**
+ * Search the transliteration by sound. Same result shape as searchQuran(),
+ * plus `distance` (0 = every consonant matched). Only for Latin queries.
+ */
+export async function searchTransliteration(query, { limit = 50 } = {}) {
+  const raw = String(query ?? "").trim().replace(/\s+/g, " ");
+  const empty = { lang: "tr", total: 0, results: [], truncated: false, query: raw };
+  if (!raw || searchLangFor(raw) !== "en") return empty;
+  const needle = raw.split(" ").map(soundSkeleton).join("").replace(/(.)\1+/g, "$1");
+  if (needle.length < 2) return empty;
+  const k = soundTolerance(needle.length);
+  const index = await getSearchIndex("tr");
+  if (!soundCache) soundCache = buildSoundCache(index);
+  const hits = [];
+  soundCache.forEach((a, i) => {
+    const f = approxFind(needle, a.skel, k);
+    if (f) hits.push({ i, f, a });
+  });
+  hits.sort((x, y) => x.f.dist - y.f.dist || x.i - y.i);
+  const results = hits.slice(0, limit).map(({ i, f, a }) => {
+    const w0 = a.wordOf[f.from], w1 = a.wordOf[f.to - 1];
+    return {
+      surah: unpackSurah(index.refs[i]),
+      ayah: unpackAyah(index.refs[i]),
+      text: index.texts[i],
+      before: a.words.slice(0, w0).join(" ") + (w0 > 0 ? " " : ""),
+      match: a.words.slice(w0, w1 + 1).join(" "),
+      after: (w1 + 1 < a.words.length ? " " : "") + a.words.slice(w1 + 1).join(" "),
+      distance: f.dist,
+    };
+  });
+  return { lang: "tr", total: hits.length, results, truncated: hits.length > results.length, query: raw };
+}

@@ -460,6 +460,11 @@ export const BN = {
   "Nothing found for \"{query}\".": "\"{query}\"-এর কিছু পাওয়া যায়নি।",
   "1 ayah found.": "১টি আয়াত পাওয়া গেছে।",
   "{total} ayahs found.": "{total}টি আয়াত পাওয়া গেছে।",
+  // 5 Oct 2026 -- search by sound (transliteration).
+  "In the English translation": "ইংরেজি অনুবাদে",
+  "By sound (transliteration)": "উচ্চারণ অনুযায়ী (প্রতিবর্ণীকরণ)",
+  "Found in the English translation and by sound.": "ইংরেজি অনুবাদে ও উচ্চারণ অনুযায়ী পাওয়া গেছে।",
+  "Found by sound (transliteration).": "উচ্চারণ অনুযায়ী (প্রতিবর্ণীকরণ) পাওয়া গেছে।",
   "{total} ayahs found — showing the first {shown}.":
     "{total}টি আয়াত পাওয়া গেছে — প্রথম {shown}টি দেখানো হচ্ছে।",
   "Couldn't load the search index. Check your connection and try again.":

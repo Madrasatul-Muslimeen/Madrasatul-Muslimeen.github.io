@@ -1192,7 +1192,7 @@ console.log("\n=== 27. Shell round 14: the Study options bars, and Search ===");
   const ctx = await ctxFor({ banner: true });
   const page = await ctx.newPage();
   const searchRequests = [];
-  page.on("request", (r) => { if (/\/search-(en|bn|ar)\.json/.test(r.url())) searchRequests.push(r.url()); });
+  page.on("request", (r) => { if (/\/search-(en|bn|ar|tr)\.json/.test(r.url())) searchRequests.push(r.url()); });
   await page.goto("http://localhost:8080/app/quranrevival.html", { waitUntil: "networkidle" });
   await page.waitForTimeout(700);
 
@@ -1269,8 +1269,13 @@ console.log("\n=== 27. Shell round 14: the Study options bars, and Search ===");
   check("27d ...says how many", /\d/.test(en.status), en.status);
   check("27d ...highlights the word that matched", (en.firstMark || "").toLowerCase() === "patience", en.firstMark);
   check("27d ...and names the surah, not just a number", /[A-Za-z]/.test(en.firstRef || ""), en.firstRef);
-  check("27d exactly one index was fetched, the English one",
-        searchRequests.length === 1 && searchRequests[0].includes("search-en.json"), JSON.stringify(searchRequests));
+  // UPDATED IN PLACE 5 Oct 2026 (the Owner: "Enable searching with
+  // Transliteration"): a Latin-letter query is now also looked for BY SOUND,
+  // so it fetches the transliteration index beside the English one -- still
+  // nothing else (not Bangla, not Arabic), still only on first use.
+  check("27d exactly the English and transliteration indexes were fetched, nothing else",
+        searchRequests.length === 2 && searchRequests.some((u) => u.includes("search-en.json")) && searchRequests.some((u) => u.includes("search-tr.json")),
+        JSON.stringify(searchRequests));
 
   // Clicking a result navigates -- and must NOT overwrite what was searched
   // for, or the remaining results become unreadable in context.

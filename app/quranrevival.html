@@ -494,6 +494,8 @@
   .search-hit mark { background: #fbeec2; color: inherit; border-radius: 2px; padding: 0 1px; }
   /* An Arabic hit is read right to left and deserves the same face the ayah
      panels use, not the interface's own sans at interface size. */
+  .search-group-head { margin: 0.35rem 0 0.05rem; font-size: 0.72rem; font-weight: 700; color: #6b5a2a; }
+  .search-hit .snip-tr { font-style: italic; }
   .search-hit .snip[dir="rtl"] { font-family: 'Amiri', serif; font-size: 1.05rem; line-height: 1.9; }
 
   /* ---------- Mastery Wheel (Phase 5 round 12) ----------
@@ -6074,7 +6076,7 @@
     import { getSurah, getSurahIndex, getJuzIndex, getPageIndex, getHizbIndex, getRukuIndex, getJuzWordTotalsIndex, getSurahWordTotalsIndex } from "./js/quran-data.js";
     // Shell round 14 -- word/phrase search. Importing the module costs
     // nothing at load: it fetches its index only when a search actually runs.
-    import { searchQuran } from "./js/quran-search.js";
+    import { searchQuran, searchTransliteration } from "./js/quran-search.js";
     import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootPanel, renderDerivativesPanel, renderTranslationPanel, tajweedRawToSafeHtml, digitsForLang, stripLeadingBismillah, splitPlainArabicWords, arabicWordButtonHtml, tajweedWordButtonsHtml } from "./js/ayah-renderer.js";
     import { parseQuranWordOccurrenceId } from "./js/quran-word-identity.js";
     import { loadLemmaDictionary, loadBanglaLemmaDictionary, lemmaDictionaryEntry } from "./js/lemma-dictionary.js";
@@ -8440,6 +8442,7 @@
       // Arabic reads right to left, and its own line-height and face; the
       // translations take the interface's.
       if (/[؀-ۿ]/.test(hit.match || hit.text)) snip.dir = "rtl";
+      if (hit.distance !== undefined) snip.classList.add("snip-tr");
       const mark = document.createElement("mark");
       mark.textContent = hit.match;
       snip.append(document.createTextNode(hit.before), mark, document.createTextNode(hit.after));
@@ -8463,25 +8466,46 @@
       // Search again while it is still in the air.
       const runId = ++searchRunId;
       setSearchStatus(t("Searching for \"{query}\"…", { query }));
-      let found;
+      // The Owner, 5 Oct 2026: "Enable searching with Transliteration" (e.g.
+      // "Inni fi khalqi samawate"). A query in Latin letters is now looked
+      // for in BOTH the English translation and, by sound, in the
+      // transliteration (quran-search.js searchTransliteration) -- the two
+      // files are fetched together on the first such search, never at
+      // startup. Each list gets its own heading: the English one first when
+      // both found something, as English-only searches always looked.
+      let found, bySound = null;
       try {
-        found = await searchQuran(query, { limit: 50 });
+        [found, bySound] = await Promise.all([
+          searchQuran(query, { limit: 50 }),
+          searchTransliteration(query, { limit: 50 }),
+        ]);
       } catch (err) {
         // I15: a failed fetch has to reach the person who asked for it.
         if (runId === searchRunId) setSearchStatus(t("Couldn't load the search index. Check your connection and try again."));
         return;
       }
       if (runId !== searchRunId) return;
-      if (found.total === 0) {
+      const soundTotal = bySound?.total ?? 0;
+      if (found.total === 0 && soundTotal === 0) {
         setSearchStatus(t("Nothing found for \"{query}\".", { query }));
         return;
       }
-      setSearchStatus(
-        found.truncated
-          ? t("{total} ayahs found — showing the first {shown}.", { total: num(found.total), shown: num(found.results.length) })
-          : t(found.total === 1 ? "1 ayah found." : "{total} ayahs found.", { total: num(found.total) })
-      );
-      searchResults.replaceChildren(...found.results.map(searchHitButton));
+      const countLine = (f) => f.truncated
+        ? t("{total} ayahs found — showing the first {shown}.", { total: num(f.total), shown: num(f.results.length) })
+        : t(f.total === 1 ? "1 ayah found." : "{total} ayahs found.", { total: num(f.total) });
+      if (!soundTotal) {
+        setSearchStatus(countLine(found));
+        searchResults.replaceChildren(...found.results.map(searchHitButton));
+        return;
+      }
+      const head = (text) => { const h = document.createElement("p"); h.className = "search-group-head"; h.textContent = text; return h; };
+      const groups = [];
+      if (found.total) groups.push(head(`${t("In the English translation")} — ${countLine(found)}`), ...found.results.map(searchHitButton));
+      groups.push(head(`${t("By sound (transliteration)")} — ${countLine(bySound)}`), ...bySound.results.map(searchHitButton));
+      setSearchStatus(found.total
+        ? t("Found in the English translation and by sound.")
+        : t("Found by sound (transliteration)."));
+      searchResults.replaceChildren(...groups);
     }
 
     async function loadContextData(hydratedMembershipsPromise) {

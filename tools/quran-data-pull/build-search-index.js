@@ -10,6 +10,12 @@
 //   search-en.json   904KB raw   ~276KB over the wire (GitHub Pages gzips)
 //   search-bn.json  2084KB raw   ~346KB
 //   search-ar.json  1340KB raw   ~262KB
+//   search-tr.json   transliteration (the Owner, 5 Oct 2026: "Enable
+//                    searching with Transliteration", e.g. "Inni fi khalqi
+//                    samawate"). One line per ayah: the word-by-word
+//                    transliterations already in the surah files, joined by
+//                    spaces. Fetched alongside search-en.json, because a
+//                    transliteration is typed in the same Latin letters.
 //
 // None of these is ever on the startup path. They are fetched the first time
 // someone presses Search, which is exactly what the load-speed contract's
@@ -37,7 +43,7 @@ const SURAHS = path.join(OUT, "surahs");
 // bytes than a nested array 6,236 times over.
 const packRef = (surah, ayah) => surah * 1000 + ayah;
 
-const langs = { en: [], bn: [], ar: [] };
+const langs = { en: [], bn: [], ar: [], tr: [] };
 const refs = [];
 
 for (let n = 1; n <= 114; n++) {
@@ -50,6 +56,7 @@ for (let n = 1; n <= 114; n++) {
     // ﻿ really is present at the head of some uthmani strings in the
     // packaged data; it would otherwise ride along into every search hit.
     langs.ar.push((a.uthmaniText ?? "").replace(/﻿/g, ""));
+    langs.tr.push((a.words ?? []).map((w) => w.transliteration ?? "").join(" "));
   }
 }
 
