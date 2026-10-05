@@ -19707,3 +19707,10 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
   - bookmark-marks-back-browser 84/0, bismillah-label-browser 34/0, claim-for-family-browser 56/0; mutations no-mark, no-times, no-stamp, no-back, old-names, old-picker, self-only, no-picker each caught
   - wheel-centre-browser and behaviour.mjs updated in place; behaviour 1006/1 (31e, the sandbox certificate baseline)
   - the Qur'an-page and bookmark suites listed in the milestone, all green
+
+## v09.85 — 5 Oct 2026 — Siyagah note-pane port, round 3
+
+- **What:** decision 70, items 21–27. `note-window.js`: `foldAllEditing`, the `.note-sec-peek` preview in `buildBody`, `[data-pane-multi]` (folds first: `multi-folded`), `[data-win-dock]` / `dockWindow` (the bar's drag no longer starts on it), `closeAllWindows` + a document Ctrl+Shift+X / Ctrl+Shift+P listener, `[data-win-closeall]` first in the switcher, `<winKey>.details`, `jumpToSection` (shared by ☰ and the side panel), `paintToc` (760px+, 3+ headings).
+- **Checks:**
+  - journey-note-folds-windows-browser 82/0; mutations fold-edit, no-peek, no-closeall, no-toc, no-details each caught
+  - updated in place: journey-window-tabs-browser 166/0 ("✕ Close all" leads the strip; tabs counted among tabs). Green: journey-note-actions 184/0, journey-editor-siyagah 98/0, journey-editor 577/0, journey-note-edit 208/0, journey-note-pane 327/0, notes-note-windows 218/0, journey-note-windows 254/0, journey-reading-tools 488/0 (Find skips the preview lines), journey-finish 64/0, journey-flags-links 306/0, journey-folder-window 144/0, journey-pane-resize 40/0, journey-three-panel 368/0, journey-s9 280/0, journey-tray 227/0, journey-tags 363/0, palette-contrast 20/0, phone-width-overflow 217/0, note-sanitize-boundary 12/0, stub-parity 4/0

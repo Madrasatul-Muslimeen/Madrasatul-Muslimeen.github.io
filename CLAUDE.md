@@ -238,20 +238,18 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.84 on `main`** (5 Oct 2026 — **bookmark marks and ← Back; the Bismillah never named as an āyah; 👥 family members on every Record card**).
-- **What** (the Owner, 5 Oct 2026, four messages):
-  - **Bookmarks** ("a distinctive mark … the date and time of the last act … an option to show/hide timing"; "a back button to go where bookmark is clicked from"): 🔖 on every bookmark in the menu and on Manage bookmarks; after the name the latest of opened / changed / made (`lastActOf`; opening stamps `usedAt.<id>` with one field write, `markBookmarkUsed`, no Rules change); 🕘 Show / Hide times per device; "← Back to <page>" floats bottom-left above every window and the tab bar, once, on the page a bookmark opened (sessionStorage).
-  - **Bismillah** ("still showing as Ayah"): `ayahNameFor` / `ayahShortRefFor` in `quranrevival.html` — the wheel centre, the Note window's title and list, explore labels and both āyah pickers say "Bismillah", never "Ayah Bismillah" or "1:Bismillah" (decision 55's display count; stored 1:1 unchanged).
-  - **👥 family members** ("wherever progress is recorded, should include the claim for family members"): the Ayah, This page and Unit cards and the end-of-unit prompt carry the Track card's 👥 beside "✅ Record Your Progress"; ticks are shared while the page is open and reset with the Student; `claimApproachStatus` writes for every ticked person; the cards keep showing the Student's own progress.
-  - Demo for the next ask (family members with year of birth at sign-up): `docs/reference/2026-10-05-family-members-signup-demo.html`.
+**Current milestone: v09.85 on `main`** (5 Oct 2026 — **round 3 of the Siyagah note-pane port**; decision 70).
+- **What** (list items 21–27, `docs/reference/2026-10-05-siyagah-note-pane-port-list.md`; all in `app/js/note-window.js`):
+  - ⇅ folds or opens every section **while editing** too (`foldAllEditing`, view only); a folded heading shows a grey **preview line** of what it hides (`.note-sec-peek`).
+  - **⧉ on the pane's bar** (the first thing to fold into ⋯, so it never costs 🔍 its place); **⇲** on a window's bar puts its Note back into the pane (`dockWindow`).
+  - **✕ Close all (n)** first in the window strip when two or more are open; **Ctrl+Shift+X** closes them, **Ctrl+Shift+P** pops the pane's Note out.
+  - A window's **Details** stays open or closed as last left, per device; a **wide window** (760px+) lists a Note's headings beside the text when it has three or more (`paintToc`).
 - **Checks:**
-  - new: bookmark-marks-back-browser 84/0, bismillah-label-browser 34/0, claim-for-family-browser 56/0 (8 mutations, each caught)
-  - updated in place: wheel-centre-browser 633/0 ("Ayah Bismillah" was the old wording), behaviour.mjs 44a/44d/44e/49b/49c/49f/50f/50g (a bookmark row now carries 🔖 and a time) — behaviour 1006/1 (31e, the sandbox certificate baseline)
-  - global-approach-card 109/0, quran-ayah-action-sheet 144/0, unit-card 116/0, approach-record-status-bar 431/0, bookmark-last-place 68/0, bookmark-sheet 176/0, bookmark-open 77/0, bookmark-folder-edit 68/0, fatiha-count 136/0, read-window 65/0, palette-contrast 20/0, phone-width-overflow 217/0, stub-parity 4/0, rules-authorisation-executable 63/0
+  - journey-note-folds-windows-browser 82/0 (5 mutations, each caught)
+  - updated in place: journey-window-tabs-browser 166/0 ("✕ Close all" leads the strip; tabs counted among tabs). Green: journey-note-actions 184/0, journey-editor-siyagah 98/0, journey-editor 577/0, journey-note-edit 208/0, journey-note-pane 327/0, notes-note-windows 218/0, journey-note-windows 254/0, journey-reading-tools 488/0 (Find skips the preview lines), journey-finish 64/0, journey-flags-links 306/0, journey-folder-window 144/0, journey-pane-resize 40/0, journey-three-panel 368/0, journey-s9 280/0, journey-tray 227/0, journey-tags 363/0, palette-contrast 20/0, phone-width-overflow 217/0, note-sanitize-boundary 12/0, stub-parity 4/0
 - **With the Owner:**
-  - open the Bookmark menu: 🔖, the times, 🕘; open a bookmark, then ← Back;
-  - choose Al-Fātiḥah's first āyah: it reads "Bismillah";
-  - on the Ayah / Page / Unit card, tap 👥 and tick a family member before a stage.
+  - in Mapping My Journey: Edit a Note with headings and press ⇅; fold a heading and see its first line; ⧉, then ⇲ in the window; open two windows and ✕ Close all;
+  - strike out note-pane items by number.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration
