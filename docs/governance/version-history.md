@@ -726,3 +726,4 @@ total). Allocated by the MMSA Architect.
 09.80: Last read and Last played in the Bookmark menu. Allocated by the MMSA Architect.
 09.81: Stem mark, folder window, pinned panel, Ayah window. Allocated by the MMSA Architect.
 09.82: Resizable panels; Siyagah note-pane port round 1. Allocated by the MMSA Architect.
+09.83: the Siyagah note-pane port round 2. Allocated by the MMSA Architect.

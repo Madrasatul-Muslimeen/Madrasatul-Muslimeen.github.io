@@ -14,6 +14,18 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v09.82 on `main`** (5 Oct 2026 — **resizable panels, and round 1 of the Siyagah note-pane port**; decision 70).
+- **What** (the Owner: "Make all the panes resizeable and add all functions of the notepane of Siyagah in the notepane"):
+  - **Resizable panels** in Mapping My Journey at 1200px and up (`layoutPaneSplits` in `journey-map.html`): tree | list | Note and list | Note; drag, arrow keys, double-click resets; minimums 240/260/300px; fractions per device. The pinned panel in a Note window resizes too.
+  - **Editor tools** (list items 3–13): H4, ¶, ▲H ▼H and Ctrl+[ / ], A+ / A−, ✓ Mark done (`data-done`), ▢ Box (`data-box`), ─ Divider, Justify, ↕ Spacing, Enter above the first heading, 🔍 Find while editing. The cleaner keeps exactly these (h4, hr, the two marks as 1, font-size / line-height / margin-bottom values).
+  - **The numbered list** `docs/reference/2026-10-05-siyagah-note-pane-port-list.md`: Part B (14–33) is built next without asking; Part C (34–45) waits for the Owner.
+- **Checks:**
+  - journey-pane-resize-browser 40/0 (4 mutations caught), journey-editor-siyagah-browser 98/0 (4 mutations caught), note-sanitize-boundary 12/0 (updated in place)
+  - journey-editor 577/0, journey-note-edit 208/0, journey-note-pane 327/0, notes-note-windows 218/0, journey-note-windows 254/0, journey-reading-tools 488/0, journey-flags-links 306/0, journey-folder-window 144/0, journey-three-panel 368/0, journey-s9 280/0, journey-tray 227/0, journey-window-tabs 166/0, journey-finish 64/0, palette-contrast 20/0, phone-width-overflow 217/0
+- **With the Owner:**
+  - on a PC, drag the lines between the Mapping My Journey panels; in a Note, Edit and try A+, ✓, ▢, ─, ↕;
+  - strike out note-pane items by number.
+
 **Previous milestone: v09.81 on `main`** (5 Oct 2026 — **the stem marked on the Word card, a folder in its own window, the pinned Notes panel, and the Ayah window**; decision 69).
 - **What** (the Owner, on three demos):
   - **Word card stem** ("mix highlight n glow together but on the top word only glow"): while *Colour word parts* is on, the stem glows in the big word at the top; the meaning, legend, Stem box and Dictionary word box get glow + highlighter. Both card looks.
