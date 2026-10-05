@@ -463,7 +463,7 @@ import { mountBookmarkMenu, noteBookmarkOpened, getBookmarkTimesShown, bookmarkT
     // after its name (shown or hidden by the Bookmark menu's own 🕘 button).
     function bookmarkNameHtml(b, doc) {
       const at = getBookmarkTimesShown() ? lastActOf(doc, b) : null;
-      return `<span class="bm-row-name"><span class="nav-bm-mark" aria-hidden="true">🔖</span> ${escapeHtml(b.name)}${at ? ` <small class="nav-bm-when" data-bm-when>${escapeHtml(bookmarkTimeText(at))}</small>` : ""}</span>`;
+      return `<span class="bm-row-name"><span class="nav-bm-mark" aria-hidden="true">🔖</span> <span data-bm-name>${escapeHtml(b.name)}</span>${at ? ` <small class="nav-bm-when" data-bm-when>${escapeHtml(bookmarkTimeText(at))}</small>` : ""}</span>`;
     }
     function bookmarkRowHtml(b) {
       const href = bookmarkHref(b);

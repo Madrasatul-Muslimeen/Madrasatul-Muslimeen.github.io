@@ -3542,4 +3542,6 @@ export const BN = {
   "Surah {surah}, Bismillah": "সূরা {surah}, বিসমিল্লাহ",
   "Bismillah — Surah {name}": "বিসমিল্লাহ — সূরা {name}",
   "Surah {surah} — Bismillah": "সূরা {surah} — বিসমিল্লাহ",
+  "Record for: {names}": "যার জন্য লিপিবদ্ধ: {names}",
+  "Recorded for {names}.": "{names}-এর জন্য লিপিবদ্ধ হয়েছে।",
 };

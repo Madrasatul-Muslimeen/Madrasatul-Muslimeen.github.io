@@ -66,8 +66,9 @@ for (const vp of WIDTHS) {
 
 // ---- 2. geometry, stacking, content, removal, taps, overflow -------------
 const UNITS = [
-  // (Surah 1 with the Bismillah option on names its first āyah "Bismillah", decision 55.)
-  { unit: "ayah", en: [/^Ayah (1|Bismillah)$/, /^Surah 1 · /], bn: [/^আয়াত (১|বিসমিল্লাহ)$/, /^সূরা ১ · /] },
+  // (Surah 1 with the Bismillah option on names its first āyah "Bismillah", decision 55.) Updated in place 5 Oct 2026:
+  // the Owner, "Bismillah is still showing as Ayah" -- the Bismillah is named on its own, never "Ayah Bismillah".
+  { unit: "ayah", en: [/^(Ayah 1|Bismillah)$/, /^Surah 1 · /], bn: [/^(আয়াত ১|বিসমিল্লাহ)$/, /^সূরা ১ · /] },
   { unit: "range", en: [/^Āyāt 1–/, /^Surah 1 · /], bn: [/^আয়াত ১–/, /^সূরা ১ · /] },
   { unit: "surah", en: [/^Surah 1$/, /./], bn: [/^সূরা ১$/, /./] },
   { unit: "ruku", en: [/^Ruku' 1$/, /^Surah 1 · /], bn: [/^রুকু' ১$/, /^সূরা ১ · /] },
@@ -156,7 +157,7 @@ for (const lang of ["en", "bn"]) for (const vp of WIDTHS) {
 
 // ---- 2b. decision 65: the first screen (before the tap) and the light ------
 const FIRST = {
-  ayah: { en: /^(Ayah (1|Bismillah)) · Al-Faatiha$|^Ayah (1|Bismillah) · .+$/, bn: /^আয়াত (১|বিসমিল্লাহ) · \S/ },
+  ayah: { en: /^(Ayah 1|Bismillah) · .+$/, bn: /^(আয়াত ১|বিসমিল্লাহ) · \S/ }, // updated in place 5 Oct 2026: never "Ayah Bismillah"
   range: { en: /^Āyāt 1–\d+ · \S/, bn: /^আয়াত ১–[০-৯]+ · \S/ },
   surah: { en: /^[A-Za-z'-]+(?: [A-Za-z'-]+)*$/, bn: /^\S/ },
   ruku: { en: /^Ruku' 1 · \S/, bn: /^রুকু' ১ · \S/ },
