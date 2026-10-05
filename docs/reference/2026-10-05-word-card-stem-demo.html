@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en" data-look="night" data-opt="a">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Word card: the main part stands out (demo)</title>
+<!-- DEMO ONLY, 5 Oct 2026. Nothing in the app changes until the Owner picks an
+     option. The Owner asked: "make the background of main verb elegantly
+     noticeable all over the word card". The main part of a word is its STEM
+     (the verb or noun itself, without the little prefixes and endings). Three
+     ways of marking it, shown on two real words, in both card looks. -->
+<style>
+@font-face{font-family:'QR Scheherazade';src:url('../../app/fonts/scheherazade.woff2') format('woff2');font-display:swap}
+:root{--page:#eef1f6;--page-ink:#1b2a41;--gold:#C9A24B}
+[data-look="night"]{--card-bg:radial-gradient(ellipse at top,#2a3a57 0%,#1B2A41 55%,#121b2c 100%);--inset:#13192a;--text:#F2E8D5;--muted:#b9c2d4;--line:rgba(201,162,75,.35);--head-stem:#86d9ab;--head-particle:#9fc3f5;--head-person:#f2a29c;--head-det:#c8a8ef}
+[data-look="light"]{--card-bg:#fff;--inset:#f6f2e4;--text:#1b2a41;--muted:#5b6476;--line:rgba(27,42,65,.18);--head-stem:#1E6B3C;--head-particle:#1F3A6E;--head-person:#B3261E;--head-det:#6A3FA0}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--page-ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:16px}
+h1{font-size:1.25rem;margin:.2rem 0 .4rem}
+.explain{font-size:.95rem;line-height:1.45;margin:0 0 .8rem}
+.controls{display:grid;gap:.5rem;margin-bottom:.9rem}
+.row{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}
+.row > b{min-width:5.2rem;font-size:.85rem}
+.row button{min-height:40px;padding:.4rem .8rem;border-radius:.6rem;border:1px solid #b9c2d4;background:#fff;color:#1b2a41;font:inherit;font-size:.9rem;cursor:pointer}
+.row button[aria-pressed="true"]{background:#1b2a41;color:#fff;border-color:#1b2a41}
+.optnote{font-size:.9rem;margin:.1rem 0 0;min-height:2.6em}
+
+/* ---- the card, copied from the app's own Word card rules ---- */
+.card{background:var(--card-bg);color:var(--text);border-radius:14px;padding:14px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.head{text-align:center}
+.word{font-family:'QR Scheherazade',serif;font-size:2.6rem;line-height:1.5;direction:rtl}
+.ref{font-size:.9rem}
+.legend{display:flex;flex-wrap:wrap;gap:.7rem;align-items:center;font-size:.8rem;margin:.4rem 0 .6rem}
+.legend span{display:inline-flex;align-items:center;gap:.25rem}
+.tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px}
+.tabs button{min-height:40px;border-radius:6px;border:1px solid var(--line);background:var(--inset);color:var(--gold);font:inherit;font-size:.9rem;cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--gold);color:#221904}
+.boxes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.box{background:#f3f5f4;color:#13241f;border-radius:.6rem;padding:.5rem .7rem;min-width:0}
+.box small{display:block;font-size:.78rem;font-weight:700;color:#4f6159}
+.box b{font-size:1.05rem}
+.box .ar{font-family:'QR Scheherazade',serif;font-size:1.6rem;direction:rtl;display:block;text-align:right;line-height:1.5}
+.gloss{background:var(--inset);border:1px solid var(--line);border-radius:.5rem;padding:.45rem .8rem;display:flex;flex-wrap:wrap;gap:.9rem;align-items:baseline;margin-bottom:8px;font-weight:700}
+.gloss i{font-weight:700}
+.parts{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:.5rem;direction:rtl}
+@media (max-width:520px){.parts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.part{direction:ltr;background:#f3f5f4;color:#13241f;border-radius:.6rem;padding:.6rem .5rem .7rem;display:grid;gap:.2rem;align-content:start;text-align:center;min-width:0;overflow-wrap:anywhere;position:relative}
+.part small{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:#4f6159}
+.piece{font-family:'QR Scheherazade',serif;font-size:2rem;line-height:1.35;direction:rtl}
+.arname{font-family:'QR Scheherazade',serif;font-size:1.05rem;font-weight:700;direction:rtl}
+.pname{font-size:1rem;font-weight:800;line-height:1.25}
+.pmean{font-size:.92rem;color:#2f4a41}
+.basic-only{font-size:.92rem;margin:.6rem 0 0}
+[data-tab="wbw"] .basic-only{display:none}
+[data-tab="basic"] .gloss,[data-tab="basic"] .parts{display:none}
+
+/* segment colours, as the app has them today */
+.s-particle{color:var(--head-particle)} .s-person{color:var(--head-person)} .s-det{color:var(--head-det)} .s-stem{color:var(--head-stem)}
+.part .piece.s-particle{color:#2a64b8} .part .piece.s-person{color:#c0443f} .part .piece.s-stem{color:#1d8a4e} .part .piece.s-det{color:#6A3FA0}
+.gloss .s-particle{color:var(--head-particle)} .gloss .s-det{color:var(--head-det)} .gloss .s-person{color:var(--head-person)}
+
+/* ===== The three ways of marking the main part ======================
+   Nothing below changes the size of anything: the glow on the letters is
+   a box-shadow, which takes no room, so the Arabic still joins exactly as
+   it does today (checked: the word measures the same width either way). */
+
+/* A -- Soft green glow: the stem's letters sit on a soft rounded green
+   light, and its box is gently tinted with a green edge. */
+[data-opt="a"] .word .s-stem{background:radial-gradient(ellipse 60% 34% at 50% 58%,rgba(134,217,171,.34),rgba(134,217,171,0) 100%)}
+[data-look="light"][data-opt="a"] .word .s-stem{background:radial-gradient(ellipse 60% 34% at 50% 58%,rgba(46,160,90,.22),rgba(46,160,90,0) 100%)}
+[data-opt="a"] .gloss .s-stem{background:rgba(134,217,171,.16);box-shadow:0 0 0 .22em rgba(134,217,171,.16);border-radius:.4em}
+[data-look="light"][data-opt="a"] .gloss .s-stem{background:rgba(30,107,60,.1);box-shadow:0 0 0 .22em rgba(30,107,60,.1)}
+[data-opt="a"] .part.is-stem,[data-opt="a"] .box.is-stem{background:linear-gradient(180deg,#e3f4ea 0%,#f3f9f5 100%);box-shadow:inset 0 0 0 1.5px #8fcfaa,0 2px 10px rgba(29,138,78,.18)}
+[data-opt="a"] .part.is-stem small{color:#1d8a4e}
+[data-opt="a"] .legend .lg-stem{background:rgba(134,217,171,.16);border-radius:1em;padding:.05em .55em}
+[data-look="light"][data-opt="a"] .legend .lg-stem{background:rgba(30,107,60,.1)}
+
+/* B -- Gold frame: the card's own gold. The stem's letters carry a thin gold
+   line beneath, and its box a gold frame with a warm glow. */
+[data-opt="b"] .word .s-stem{background:linear-gradient(transparent 77%,rgba(201,162,75,.9) 77%,rgba(201,162,75,.9) 81%,transparent 81%)}
+[data-opt="b"] .gloss .s-stem{box-shadow:inset 0 -2px 0 var(--gold)}
+[data-opt="b"] .part.is-stem,[data-opt="b"] .box.is-stem{background:linear-gradient(180deg,#fbf3df 0%,#f7f3ea 100%);box-shadow:inset 0 0 0 2px #C9A24B,0 3px 12px rgba(201,162,75,.35)}
+[data-opt="b"] .part.is-stem small{background:#C9A24B;color:#221904;border-radius:1em;padding:.1em .6em;justify-self:center}
+[data-opt="b"] .legend .lg-stem{box-shadow:inset 0 0 0 1.5px var(--gold);border-radius:1em;padding:.05em .55em}
+
+/* C -- Highlighter: a soft green band behind the lower half of the stem's
+   letters, like a highlighter pen, and a green band across the top of its box. */
+[data-opt="c"] .word .s-stem{background:linear-gradient(transparent 50%,rgba(134,217,171,.3) 50%,rgba(134,217,171,.3) 74%,transparent 74%)}
+[data-look="light"][data-opt="c"] .word .s-stem{background:linear-gradient(transparent 50%,rgba(46,160,90,.2) 50%,rgba(46,160,90,.2) 74%,transparent 74%)}
+[data-opt="c"] .gloss .s-stem{background:linear-gradient(transparent 50%,rgba(134,217,171,.32) 50%)}
+[data-look="light"][data-opt="c"] .gloss .s-stem{background:linear-gradient(transparent 50%,rgba(46,160,90,.2) 50%)}
+[data-opt="c"] .part.is-stem,[data-opt="c"] .box.is-stem{background:#eaf6ef;box-shadow:inset 0 5px 0 #4fb07c}
+[data-opt="c"] .part.is-stem small{color:#1d8a4e}
+[data-opt="c"] .legend .lg-stem{background:linear-gradient(transparent 50%,rgba(134,217,171,.32) 50%)}
+[data-look="light"][data-opt="c"] .legend .lg-stem{background:linear-gradient(transparent 50%,rgba(46,160,90,.2) 50%)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Make the main part of a word stand out</h1>
+  <p class="explain">The main part of a word is its <b>stem</b>: the verb or noun itself, without the little pieces in front (like <span lang="ar">بِ</span> "by" and <span lang="ar">ال</span> "the") or at the end. Each option marks it the same way <b>everywhere on the card</b>: in the big word at the top, in the English meaning, in the <b>Stem</b> box and in the <b>Dictionary word</b> box (on WbW and Basic). Try each one in both looks and on both words, then tell me A, B or C, or "keep today's".</p>
+
+  <div class="controls">
+    <div class="row" data-group="opt"><b>Option</b>
+      <button data-v="none">Today</button>
+      <button data-v="a">A · Soft green glow</button>
+      <button data-v="b">B · Gold frame</button>
+      <button data-v="c">C · Highlighter</button>
+    </div>
+    <div class="row" data-group="look"><b>Card look</b>
+      <button data-v="night">Night</button>
+      <button data-v="light">Light</button>
+    </div>
+    <div class="row" data-group="word"><b>Word</b>
+      <button data-v="noun">بِٱلشَّفَقِ (a noun, 84:16)</button>
+      <button data-v="verb">يُؤْمِنُونَ (a verb, 2:3)</button>
+    </div>
+    <p class="optnote" id="optNote"></p>
+  </div>
+
+  <div class="card" id="card" data-tab="wbw"></div>
+</div>
+
+<script>
+const WORDS = {
+  noun: {
+    ref: "84:16:3", segs: [["بِ", "particle"], ["ٱل", "det"], ["شَّفَقِ", "stem"]],
+    form: "Noun", lemma: "شَفَق",
+    gloss: [["by", "particle"], ["the", "det"], ["twilight glow", "stem"]], bn: "পশ্চিম দিগন্তের সান্ধ্য লালিমার", tr: "bil-shafaqi",
+    parts: [
+      { kind: "Prefix", piece: "بِ", role: "particle", ar: "حَرْفُ جَرّ", name: "Preposition", mean: "with, by, in" },
+      { kind: "Prefix", piece: "ٱل", role: "det", ar: "أَدَاةُ التَّعْرِيف", name: "Definite article", mean: "the" },
+      { kind: "Stem", piece: "شَّفَقِ", role: "stem", ar: "اسْم", name: "Noun", mean: "twilight glow" },
+    ],
+    root: "Root ش ف ق · 11 times in the Qur'an",
+  },
+  verb: {
+    ref: "2:3:2", segs: [["يُ", "person"], ["ؤْمِنُ", "stem"], ["ونَ", "person"]],
+    form: "Verb (Form IV) · present", lemma: "ءَامَنَ",
+    gloss: [["(they)", "person"], ["believe", "stem"]], bn: "বিশ্বাস করে", tr: "yu'minūna",
+    parts: [
+      { kind: "Prefix", piece: "يُ", role: "person", ar: "حَرْفُ الْمُضَارَعَة", name: "Present-tense prefix", mean: "" },
+      { kind: "Stem", piece: "ؤْمِنُ", role: "stem", ar: "فِعْل", name: "Verb", mean: "believe" },
+      { kind: "Ending", piece: "ونَ", role: "person", ar: "وَاوُ الْجَمَاعَة", name: "Plural doer ending", mean: "they" },
+    ],
+    root: "Root ء م ن · 879 times in the Qur'an",
+  },
+};
+const NOTES = {
+  none: "Today: the stem is only a different colour of letter. Nothing else marks it.",
+  a: "A · Soft green glow: a soft round green light behind the stem's letters, and its boxes gently tinted with a green edge. Quiet, matches the stem's green.",
+  b: "B · Gold frame: the card's own gold. A thin gold line under the stem's letters, and its boxes framed in gold with a warm glow. The most noticeable.",
+  c: "C · Highlighter: a soft green band behind the lower half of the stem's letters, like a highlighter pen, and a green band along the top of its boxes.",
+};
+const state = { opt: "a", look: "night", word: "noun", tab: "wbw" };
+const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+function render() {
+  document.documentElement.dataset.opt = state.opt;
+  document.documentElement.dataset.look = state.look;
+  const w = WORDS[state.word];
+  const card = document.getElementById("card");
+  card.dataset.tab = state.tab;
+  const roles = [...new Set(w.segs.map((s) => s[1]))];
+  const lgName = { particle: "particle", person: "person", det: "determiner", stem: "stem" };
+  card.innerHTML = `
+    <div class="head">
+      <div class="word" lang="ar" data-word>${w.segs.map(([t, r]) => `<span class="s-${r}">${t}</span>`).join("")}</div>
+      <div class="ref">${w.ref}</div>
+    </div>
+    <div class="legend">Colour word parts ${roles.map((r) => `<span class="${r === "stem" ? "lg-stem" : ""}"><span class="s-${r}">●</span>${lgName[r]}</span>`).join("")}</div>
+    <div class="tabs">
+      <button data-tab-btn="wbw" aria-pressed="${state.tab === "wbw"}">WbW</button>
+      <button data-tab-btn="basic" aria-pressed="${state.tab === "basic"}">Basic Arabic</button>
+      <button disabled title="Arabic in Depth: the big word at the top carries the same mark">Arabic in Depth</button>
+    </div>
+    <div class="boxes">
+      <div class="box"><small>Form</small><b>${w.form}</b></div>
+      <div class="box is-stem" data-dict><small>Dictionary word</small><span class="ar" lang="ar">${w.lemma}</span></div>
+    </div>
+    <div class="gloss">
+      <span>${w.gloss.map(([t, r]) => `<span class="s-${r}">${esc(t)}</span>`).join(" ")}</span>
+      <span lang="bn">${w.bn}</span><i>${w.tr}</i>
+    </div>
+    <div class="parts" style="--n:${w.parts.length}">
+      ${w.parts.map((p) => `<div class="part${p.role === "stem" ? " is-stem" : ""}" data-part="${p.role}"><small>${p.kind}</small><span class="piece s-${p.role}" lang="ar">${p.piece}</span><span class="arname" lang="ar">${p.ar}</span><b class="pname">${p.name}</b>${p.mean ? `<span class="pmean">${p.mean}</span>` : ""}</div>`).join("")}
+    </div>
+    <p class="basic-only">${w.root}</p>`;
+  card.querySelectorAll("[data-tab-btn]").forEach((b) => b.addEventListener("click", () => { state.tab = b.dataset.tabBtn; render(); }));
+  document.querySelectorAll(".row[data-group]").forEach((row) => row.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(state[row.dataset.group] === b.dataset.v))));
+  document.getElementById("optNote").textContent = NOTES[state.opt];
+}
+document.querySelectorAll(".row[data-group]").forEach((row) => row.addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  state[row.dataset.group] = b.dataset.v; render();
+}));
+render();
+</script>
+</body>
+</html>
