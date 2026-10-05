@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.81",
+    "version": "09.82",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2153,8 +2153,20 @@
     {
       "version": "09.81",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The Word card's stem glows; a folder opens in its own window; pinned Notes sit in a side panel; the Read view can float as a window on a PC.",
+      "integration": {
+        "authorizedOn": "2026-10-05",
+        "integratedOn": "2026-10-05",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.82",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Mapping My Journey's panels resize by dragging, and the Note editor gains Siyagah's tools: H4, heading up/down, text size, done, box, divider, justify, spacing, Find while editing.",
       "integration": {
         "authorizedOn": "2026-10-05",
         "integratedOn": "2026-10-05",
@@ -2163,8 +2175,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.82",
+  "nextUnallocated": "09.83",
   "nextUnallocatedNote": [
+    "v09.82 was allocated to Resizable panels; Siyagah note-pane port round 1, 2026-10-05.",
     "v09.81 was allocated to Stem mark, folder window, pinned panel, Ayah window, 2026-10-05.",
     "v09.80 was allocated to Last read and Last played in the Bookmark menu, 2026-10-05.",
     "v09.79 was allocated to Siyagah plan finished; folder window and pinned panel demo, 2026-10-05.",

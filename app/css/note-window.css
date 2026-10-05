@@ -194,6 +194,10 @@ mark.note-find-hit.current { background: #ff9f1c; outline: 2px solid #1F3A6E; }
 .nw-pins-btn[aria-pressed="true"] { background: #C9A24B; color: #221904; border-color: #C9A24B; }
 .nw-pin-panel { flex: 0 0 220px; display: flex; flex-direction: column; min-height: 0; border-right: 1px solid #dcdcdc; background: #fbfaf6; }
 .nw-pin-panel[hidden] { display: none; }
+.nw-pin-split { flex: 0 0 8px; margin: 0 -4px; position: relative; z-index: 2; cursor: col-resize; touch-action: none; }
+.nw-pin-split::after { content: ""; position: absolute; left: 3px; top: 0; bottom: 0; width: 2px; background: transparent; }
+.nw-pin-split:hover::after, .nw-pin-split:focus-visible::after { background: #C9A24B; }
+.nw-pin-panel[hidden] + .nw-pin-split, .note-win.nw-narrow .nw-pin-split { display: none; }
 .note-win.nw-narrow .nw-pin-panel { position: absolute; z-index: 3; left: 0; top: 0; bottom: 0; width: min(260px, 85%); box-shadow: 8px 0 24px rgba(0, 0, 0, 0.2); }
 .nw-pin-head { display: flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.4rem 0.3rem 0.7rem; border-bottom: 1px solid #dcdcdc; font-weight: 700; color: #7a5a12; }
 .nw-pin-head span { flex: 1 1 auto; }
@@ -229,3 +233,11 @@ form.fw-quick[data-fw-newfolder-form] { padding: 0.4rem 0.6rem; }
 [data-note-links] li { display: flex; gap: 0.3rem; align-items: center; margin-bottom: 0.25rem; }
 [data-note-links] li > [data-link-open] { flex: 1 1 auto; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; }
 .nw-switch:not(.nw-tabs) .nw-switch-btn { white-space: normal; overflow-wrap: anywhere; line-height: 1.15; font-size: 0.85rem; padding: 2px 8px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; text-overflow: clip; }
+/* The Owner, 5 Oct 2026 ("add all functions of the notepane of Siyagah"): the editor's new marks, the same in
+   read mode, the editor and the Versions viewer. */
+.pane-edit-toolbar .tb-sep { flex: 0 0 1px; align-self: stretch; margin: 4px 2px; background: #c9cfdd; }
+.pane-panel-label { font-size: 0.85rem; color: #444; margin-inline-end: 0.2rem; }
+.pane-edit-body [data-done], .note-pane-body [data-done], .note-ver-text [data-done] { color: #6b7280; text-decoration: line-through; text-decoration-color: #9aa1ad; }
+.pane-edit-body [data-box], .note-pane-body [data-box], .note-ver-text [data-box] { border: 1.5px solid #C9A24B; border-radius: 0.5rem; padding: 0.4rem 0.7rem; margin: 0.5rem 0; background: #fffdf6; }
+.pane-edit-body hr, .note-pane-body hr, .note-ver-text hr { border: 0; border-top: 1.5px solid #c9cfdd; margin: 0.9rem 0; }
+.pane-edit-body h4, .note-pane-body h4, .note-ver-text h4 { font-size: 1rem; margin: 0.6rem 0 0.3rem; }

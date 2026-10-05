@@ -28,7 +28,9 @@
 export const NOTE_ALLOWED_TAGS = Object.freeze([
   "b", "strong", "i", "em", "u", "s", "strike",
   "p", "br", "div", "span",
-  "h1", "h2", "h3",
+  "h1", "h2", "h3", "h4",
+  // 5 Oct 2026 (Siyagah's note pane): the editor's Divider line.
+  "hr",
   "ul", "ol", "li",
   "img",
   // S12 (#562): what the editor's new buttons produce -- links, quotes and a simple table.
@@ -49,6 +51,8 @@ export const NOTE_ALLOWED_ATTR = Object.freeze([
   // S12 (#562): `href` (http/https/mailto only), `style` (narrowed to three properties by narrowOutput()
   // after DOMPurify), `dir`, and the checklist's two marks. Never `on*`, never `class`.
   "href", "style", "dir", "data-check", "data-checked", "colspan", "rowspan",
+  // 5 Oct 2026 (Siyagah note pane): Mark done and the Box, each normalised to 1 by narrowOutput().
+  "data-done", "data-box",
 ]);
 
 /** The only style properties a Note may carry, each with the only values it may take. */
@@ -57,6 +61,10 @@ const STYLE_VALUE = {
   "color": COLOUR_VALUE,
   "background-color": COLOUR_VALUE,
   "text-align": /^(?:left|right|center|justify)$/i,
+  // 5 Oct 2026 (Siyagah's note pane): A+ / A− and Spacing -- exactly the values the editor writes.
+  "font-size": /^(?:0\.8|0\.9|1\.15|1\.3|1\.5|1\.8)em$/i,
+  "line-height": /^(?:1\.2|1\.5|2)$/,
+  "margin-bottom": /^(?:0|0\.5em|1em|1\.5em)$/i,
 };
 export const NOTE_ALLOWED_STYLE_PROPS = Object.freeze(Object.keys(STYLE_VALUE));
 export const isSafeNoteHref = (h) => /^(?:https?:\/\/|mailto:)[^\s<>"']+$/i.test(String(h ?? "").trim());
@@ -72,7 +80,7 @@ export const isSafeNoteHref = (h) => /^(?:https?:\/\/|mailto:)[^\s<>"']+$/i.test
  */
 const NOTE_ALLOWED_URI_REGEXP = /^(?:https?:\/\/|mailto:)/i;
 
-/** Runs on DOMPurify's OUTPUT (markup that already passed the tag/attribute lists): keeps three style properties with safe values, `dir` of ltr/rtl/auto, links of http/https/mailto only, an image `src` of http(s) only, and gives every link rel/target. */
+/** Runs on DOMPurify's OUTPUT (markup that already passed the tag/attribute lists): keeps six style properties with safe values, `dir` of ltr/rtl/auto, links of http/https/mailto only, an image `src` of http(s) only, and gives every link rel/target. */
 function narrowOutput(html) {
   const tpl = document.createElement("template");
   tpl.innerHTML = html;
@@ -91,6 +99,8 @@ function narrowOutput(html) {
     if (el.hasAttribute("data-check")) el.setAttribute("data-check", "1");
     if (el.hasAttribute("data-checked") && el.getAttribute("data-checked") !== "true") el.removeAttribute("data-checked");
   }
+  for (const el of tpl.content.querySelectorAll("[data-done]")) el.setAttribute("data-done", "1");
+  for (const el of tpl.content.querySelectorAll("[data-box]")) el.setAttribute("data-box", "1");
   for (const a of tpl.content.querySelectorAll("a")) {
     if (!isSafeNoteHref(a.getAttribute("href"))) a.removeAttribute("href");
     else { a.setAttribute("target", "_blank"); a.setAttribute("rel", "noopener noreferrer"); }
