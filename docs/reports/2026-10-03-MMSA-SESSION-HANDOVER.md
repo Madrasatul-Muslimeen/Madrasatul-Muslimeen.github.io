@@ -20,6 +20,22 @@ Read the live state yourself, because it moves on after this was written:
 - `claude.yml` runs;
 - the "Active Architect session" line on #159.
 
+**Updated 5 Oct 2026, ~11:00 UTC, by session `session_012katd3VGiJEprbqxSEUTbf` (Active Architect on #159). Supersedes the ~08:30 paragraph below.**
+
+- **`main` is at v09.79** (PR #580).
+  - An audit of the 24 Siyagah S8–S14 plan items against the code found 1 not built and 3 partly built. The 3 are now finished:
+    - tags held until Done while editing;
+    - "Version n of m" in the inline pane;
+    - ✚ in Note windows.
+  - The remaining two new screens (a folder's own window; a pinned Notes side panel) are a demo: `docs/reference/2026-10-05-folder-window-and-pinned-demo.html`.
+- **Waiting on the Owner:** two demos (the Ayah window; the folder window and pinned panel), each build / change / drop.
+- **Known limits, recorded, not gaps:**
+  - dropping a Note onto a folder needs desktop width (the tree and list share the screen only there);
+  - folders nest to 64 levels.
+- **Lessons:**
+  - **Audit a finished plan against the code, item by item, not against the release notes.** Release notes recorded "Not built: a folder's own window", but the three "partly" items appeared nowhere as gaps.
+  - **A resize test that grabs a covered handle passes vacuously.** The folder demo's first test dragged the corner of the window *behind*, selected page text, and still passed "stays inside the screen". Grab the front window's handle, check `elementFromPoint` first, and assert the size changed.
+
 **Updated 5 Oct 2026, ~08:30 UTC, by session `session_012katd3VGiJEprbqxSEUTbf` (Active Architect on #159). Supersedes the ~06:00 paragraph below.**
 
 - **`main` is at v09.78** (PR #578).
