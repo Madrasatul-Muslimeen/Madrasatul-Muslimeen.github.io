@@ -1,0 +1,106 @@
+<title>Family Members Sign-up</title>
+<style>
+/* Layout: one narrow column like the real sign-up page; step 2 of 2 under a small step marker, then the People page row it fills. */
+:root {
+  --bg: #f6f7fb; --card: #ffffff; --ink: #1d2433; --muted: #5f6b7d; --line: #d7deea;
+  --navy: #1F3A6E; --navy-ink: #ffffff; --gold: #b8892f; --soft: #eef2fb; --warn: #8a5a00;
+  --f-display: "Source Serif 4", Georgia, serif; --f-body: "Noto Sans", "Noto Sans Bengali", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121722; --card: #1b2231; --ink: #e8ecf4; --muted: #a3adbf; --line: #313b50; --navy: #8fb0ee; --navy-ink: #0f1522; --gold: #e0b866; --soft: #232c3f; --warn: #f0c46a; color-scheme: dark } }
+:root[data-theme="dark"] { --bg: #121722; --card: #1b2231; --ink: #e8ecf4; --muted: #a3adbf; --line: #313b50; --navy: #8fb0ee; --navy-ink: #0f1522; --gold: #e0b866; --soft: #232c3f; --warn: #f0c46a; color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 36rem; margin: 0 auto; padding-inline: 16px; padding-block: 24px 48px; display: flex; flex-direction: column; gap: 20px; }
+.demo-note { font-size: 13px; color: var(--warn); border: 1px dashed var(--warn); border-radius: 8px; padding: 8px 12px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.step { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--gold); font-weight: 700; }
+h1 { font-family: var(--f-display); font-size: 1.6rem; margin: 0; text-wrap: balance; color: var(--navy); }
+h2 { font-family: var(--f-display); font-size: 1.2rem; margin: 0; color: var(--navy); }
+p { margin: 0; }
+.muted { color: var(--muted); font-size: 14px; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) 6.5rem 2.75rem; gap: 8px; align-items: end; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--soft); }
+.row label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); min-width: 0; }
+.row input[type=text], .row input[type=number] { min-height: 40px; box-sizing: border-box; width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 0 10px; font: inherit; color: var(--ink); background: var(--card); }
+.row .x { width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); cursor: pointer; }
+.row .info { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 13px; }
+.age { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--navy); }
+.chk { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; }
+.chk input { width: 20px; height: 20px; accent-color: var(--navy); }
+.btns { display: flex; flex-wrap: wrap; gap: 10px; }
+button.main, button.alt { min-height: 44px; padding: 0 18px; border-radius: 10px; font: inherit; font-weight: 700; cursor: pointer; }
+button.main { background: var(--navy); color: var(--navy-ink); border: 0; }
+button.alt { background: var(--card); color: var(--navy); border: 1px solid var(--navy); }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.out { font-size: 14px; color: var(--navy); min-height: 1.5em; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: start; padding: 8px 6px; border-bottom: 1px solid var(--line); }
+th { font-size: 12px; color: var(--muted); font-weight: 600; }
+.scroll { overflow-x: auto; }
+@media (max-width: 420px) { .row { grid-template-columns: minmax(0, 1fr) 5.5rem 2.75rem; } }
+</style>
+
+<div class="wrap">
+  <p class="demo-note">Demo only. Nothing here is saved. It shows the step a new account would get when it chooses "My family".</p>
+
+  <section class="card" aria-labelledby="h1">
+    <span class="step">Create your account · step 2 of 2</span>
+    <h1 id="h1">Who is in your family?</h1>
+    <p class="muted">Add the people you will record progress for. You can add or change them later on the People page.</p>
+    <div id="rows" style="display:flex;flex-direction:column;gap:10px"></div>
+    <div class="btns">
+      <button type="button" class="alt" id="add">+ Add another</button>
+    </div>
+    <div class="btns">
+      <button type="button" class="main" id="save">Save and continue</button>
+      <button type="button" class="alt" id="skip">Skip for now</button>
+    </div>
+    <p class="out" id="out" role="status" aria-live="polite"></p>
+  </section>
+
+  <section class="card" aria-labelledby="h2">
+    <h2 id="h2">On the People page afterwards</h2>
+    <p class="muted">The age is worked out from the year of birth, so it stays right every year.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Name</th><th>Age</th><th>Role</th><th>Managed by</th></tr></thead>
+      <tbody id="people"></tbody>
+    </table></div>
+  </section>
+</div>
+
+<script>
+const YEAR = 2026;
+let rows = [
+  { name: "Maryam", year: 2015, child: true },
+  { name: "Ahsan", year: 2018, child: true },
+];
+const el = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function ageOf(y) { const n = Number(y); return n >= 1900 && n <= YEAR ? YEAR - n : null; }
+function paint() {
+  el("rows").innerHTML = rows.map((r, i) => {
+    const age = ageOf(r.year);
+    return `<div class="row">
+      <label for="n${i}">Name<input type="text" id="n${i}" data-i="${i}" data-k="name" value="${esc(r.name)}" placeholder="Name"></label>
+      <label for="y${i}">Year of birth<input type="number" id="y${i}" data-i="${i}" data-k="year" min="1900" max="${YEAR}" value="${esc(r.year ?? "")}" placeholder="2015"></label>
+      <button type="button" class="x" data-del="${i}" aria-label="Remove ${esc(r.name || "this person")}">✕</button>
+      <div class="info"><span>Age: <span class="age">${age === null ? "—" : age}</span></span>
+        <label class="chk"><input type="checkbox" id="c${i}" data-i="${i}" data-k="child" ${r.child ? "checked" : ""}> A child I look after</label></div>
+    </div>`;
+  }).join("");
+  el("people").innerHTML = [{ name: "You", year: null, role: "Owner", by: "—" }, ...rows.filter((r) => r.name.trim()).map((r) => ({ name: r.name, year: r.year, role: r.child ? "Student" : "Family member", by: r.child ? "You" : "—" }))]
+    .map((p) => `<tr><td>${esc(p.name)}</td><td>${ageOf(p.year) ?? "—"}</td><td>${p.role}</td><td>${p.by}</td></tr>`).join("");
+}
+el("rows").addEventListener("input", (e) => {
+  const i = Number(e.target.dataset.i), k = e.target.dataset.k;
+  if (Number.isNaN(i)) return;
+  if (k === "child") rows[i].child = e.target.checked;
+  else if (k === "year") { rows[i].year = e.target.value; const a = ageOf(e.target.value); if (a !== null) rows[i].child = a < 18; }
+  else rows[i].name = e.target.value;
+  const keep = document.activeElement?.id; paint(); if (keep) { const f = el(keep); f?.focus(); if (f && f.type === "text") f.setSelectionRange(f.value.length, f.value.length); }
+});
+el("rows").addEventListener("click", (e) => { const d = e.target.closest("[data-del]"); if (d) { rows.splice(Number(d.dataset.del), 1); paint(); } });
+el("add").addEventListener("click", () => { rows.push({ name: "", year: "", child: true }); paint(); el(`n${rows.length - 1}`).focus(); });
+el("save").addEventListener("click", () => { const n = rows.filter((r) => r.name.trim()).length; el("out").textContent = n ? `In the real app, ${n} ${n === 1 ? "person" : "people"} would be added to your family now.` : "Type a name first, or choose Skip for now."; });
+el("skip").addEventListener("click", () => { el("out").textContent = "In the real app, you would go straight to the app. You can add family later on the People page."; });
+paint();
+</script>

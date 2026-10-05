@@ -238,19 +238,20 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.83 on `main`** (5 Oct 2026 — **round 2 of the Siyagah note-pane port**; decision 70).
-- **What** (list items 14–20, `docs/reference/2026-10-05-siyagah-note-pane-port-list.md`), all in `app/js/note-window.js` unless named:
-  - **⋯ ✏️ Rename** (a revision through the page's own `host.revise`, text unchanged) and **⋯ 🗐 Make a copy** (`host.copyNote`; Mapping My Journey's `copyWholeNote`: a new Note "(copy)", filed in every folder the original is in, its tags carried; flags and links not copied).
-  - **Right-click or long-press the title** to edit (a window's title is on its bar); **right-click or long-press a heading** for 📋 Copy section, with or without its heading (HTML and plain text to the clipboard).
-  - **Tag chips are buttons**: a list of every Note with that tag, opened in the same view with ‹ › walking that list.
-  - **Delete asks first** in Mapping My Journey (`deleteNoteFromPane` → `retireNoteFromPane`); **Esc ends editing** like ✓ Done (in a window a second Esc closes it, as before).
+**Current milestone: v09.84 on `main`** (5 Oct 2026 — **bookmark marks and ← Back; the Bismillah never named as an āyah; 👥 family members on every Record card**).
+- **What** (the Owner, 5 Oct 2026, four messages):
+  - **Bookmarks** ("a distinctive mark … the date and time of the last act … an option to show/hide timing"; "a back button to go where bookmark is clicked from"): 🔖 on every bookmark in the menu and on Manage bookmarks; after the name the latest of opened / changed / made (`lastActOf`; opening stamps `usedAt.<id>` with one field write, `markBookmarkUsed`, no Rules change); 🕘 Show / Hide times per device; "← Back to <page>" floats bottom-left above every window and the tab bar, once, on the page a bookmark opened (sessionStorage).
+  - **Bismillah** ("still showing as Ayah"): `ayahNameFor` / `ayahShortRefFor` in `quranrevival.html` — the wheel centre, the Note window's title and list, explore labels and both āyah pickers say "Bismillah", never "Ayah Bismillah" or "1:Bismillah" (decision 55's display count; stored 1:1 unchanged).
+  - **👥 family members** ("wherever progress is recorded, should include the claim for family members"): the Ayah, This page and Unit cards and the end-of-unit prompt carry the Track card's 👥 beside "✅ Record Your Progress"; ticks are shared while the page is open and reset with the Student; `claimApproachStatus` writes for every ticked person; the cards keep showing the Student's own progress.
+  - Demo for the next ask (family members with year of birth at sign-up): `docs/reference/2026-10-05-family-members-signup-demo.html`.
 - **Checks:**
-  - journey-note-actions-browser 184/0 (6 mutations, each caught)
-  - journey-note-pane-browser and journey-flags-links-browser updated in place (Delete confirms; ⋯ carries ✏️ Rename)
-  - journey-note-pane 327/0, journey-flags-links 306/0, journey-editor-siyagah 98/0, journey-editor 577/0, journey-note-edit 208/0, notes-note-windows 218/0, journey-note-windows 254/0, journey-reading-tools 488/0, journey-finish 64/0, journey-folder-window 144/0, journey-pane-resize 40/0, journey-three-panel 368/0, journey-window-tabs 166/0, journey-s9 280/0, journey-tray 227/0, journey-tags 363/0, palette-contrast 20/0, phone-width-overflow 217/0, note-sanitize-boundary 12/0, stub-parity 4/0, rules-authorisation-executable 63/0
+  - new: bookmark-marks-back-browser 84/0, bismillah-label-browser 34/0, claim-for-family-browser 56/0 (8 mutations, each caught)
+  - updated in place: wheel-centre-browser 633/0 ("Ayah Bismillah" was the old wording), behaviour.mjs 44a/44d/44e/49b/49c/49f/50f/50g (a bookmark row now carries 🔖 and a time) — behaviour 1006/1 (31e, the sandbox certificate baseline)
+  - global-approach-card 109/0, quran-ayah-action-sheet 144/0, unit-card 116/0, approach-record-status-bar 431/0, bookmark-last-place 68/0, bookmark-sheet 176/0, bookmark-open 77/0, bookmark-folder-edit 68/0, fatiha-count 136/0, read-window 65/0, palette-contrast 20/0, phone-width-overflow 217/0, stub-parity 4/0, rules-authorisation-executable 63/0
 - **With the Owner:**
-  - in Mapping My Journey: ⋯ → Rename, ⋯ → Make a copy, right-click a Note's title, right-click a heading → Copy section, tap a tag chip, Delete (it asks), Esc while editing;
-  - strike out note-pane items by number.
+  - open the Bookmark menu: 🔖, the times, 🕘; open a bookmark, then ← Back;
+  - choose Al-Fātiḥah's first āyah: it reads "Bismillah";
+  - on the Ayah / Page / Unit card, tap 👥 and tick a family member before a stage.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration
