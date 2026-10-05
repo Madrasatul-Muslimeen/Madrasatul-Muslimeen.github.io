@@ -20,6 +20,17 @@ Read the live state yourself, because it moves on after this was written:
 - `claude.yml` runs;
 - the "Active Architect session" line on #159.
 
+**Updated 5 Oct 2026, ~08:30 UTC, by session `session_012katd3VGiJEprbqxSEUTbf` (Active Architect on #159). Supersedes the ~06:00 paragraph below.**
+
+- **`main` is at v09.78** (PR #578).
+  - **Decision 68:** a word with no lemma (3,307 words) is Not applicable at Basic and Depth, automatically. Their totals are 74,122 (`levelWordTotal()`); the stored document keeps 77,429 because the Rules fix it.
+  - **Bookmark menu folders** have a ⠿ handle (reorder among siblings) and a ✎ pencil (rename in place).
+  - The **Ayah window demo** is at `docs/reference/2026-10-05-ayah-window-demo.html`.
+- **Waiting on the Owner:** the Ayah window demo (build / change / drop). If "build": the real Read view goes into a window like the Note pop-up (`#noteView` at ≥900px). It would be new on a phone, so measure every Read-view suite inside it.
+- **Lessons:**
+  - **Moving an element in the DOM drops its pointer capture**, so a drag followed by `setPointerCapture` stops after its first step. Follow the drag on `document`.
+  - **A demo's own helper overlay can cover the controls it explains.** The demo's explainer hid the title-bar buttons at phone width, and only a reachability check (`elementFromPoint`) found it.
+
 **Updated 5 Oct 2026, ~06:00 UTC, by session `session_012katd3VGiJEprbqxSEUTbf` (Active Architect on #159). Supersedes the ~03:50 paragraph below.**
 
 - **`main` is at v09.77** (PR #576):
