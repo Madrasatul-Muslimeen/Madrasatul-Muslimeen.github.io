@@ -101,6 +101,25 @@ export async function setLastPlace(db, { tenantId, personId, kind, place, uid })
     await createDocument(db, TENANT.BOOKMARKS, docId, { tenantId, personId, resume: {}, saved: [], lastPlaces: { [kind]: place } }, uid);
   }
 }
+/**
+ * The Owner, 5 Oct 2026: "put the date and time of the last act after each
+ * bookmark". Opening a bookmark stamps `usedAt.<bookmarkId>` (an ISO time) on
+ * the person's bookmarks document -- a map kept beside saved[] so the stamp is
+ * ONE field write with no read first: nothing in saved[] is rewritten, so a
+ * stamp can never put back a stale copy of the list. Same owner update the
+ * bookmarks Rules already allow (no shape check there), so no Rules change.
+ * Bookmark ids are UUIDs (no dots), so the dotted path is safe.
+ */
+export async function markBookmarkUsed(db, tenantId, personId, bookmarkId, at = new Date().toISOString()) {
+  if (!/^[A-Za-z0-9_-]+$/.test(String(bookmarkId ?? ""))) throw new TypeError("Unusable bookmark id.");
+  await updateDocument(db, TENANT.BOOKMARKS, bookmarksDocId(tenantId, personId), { [`usedAt.${bookmarkId}`]: at });
+  return at;
+}
+/** The bookmark's last act: the latest of when it was opened, changed or made (ISO string, or null). */
+export function lastActOf(bookmarksDoc, b) {
+  const times = [bookmarksDoc?.usedAt?.[b?.id], b?.updatedAt, b?.createdAt].filter((x) => typeof x === "string" && !Number.isNaN(Date.parse(x)));
+  return times.length ? times.sort().at(-1) : null;
+}
 export function lastPlaceOf(bookmarksDoc, kind) {
   const p = bookmarksDoc?.lastPlaces?.[kind];
   return p && typeof p.surahNum === "number" && typeof p.ayahNum === "number" ? p : null;

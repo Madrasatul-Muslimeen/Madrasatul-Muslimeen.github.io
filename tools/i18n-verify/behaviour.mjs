@@ -5625,7 +5625,7 @@ console.log("\n=== 44. The Bookmark Manager (bookmarks.html) -- items 2/3/5 ==="
 
   const initial = await page.evaluate(() => ({
     appVisible: getComputedStyle(document.getElementById("app")).display !== "none",
-    rowNames: [...document.querySelectorAll(".bm-row-name")].map((r) => r.textContent.trim()),
+    rowNames: [...document.querySelectorAll(".bm-row-name [data-bm-name]")].map((r) => r.textContent.trim()), // updated in place 5 Oct 2026: the row also carries 🔖 and a time
     hasOpenLink: !!document.querySelector('.bm-row[data-bm-id="bm1"] a[href*="bookmark=bm1"]'),
   }));
   check("44a the seeded bookmark renders on load, with a real Open link", initial.appVisible && initial.rowNames.includes("Ayat al-Kursi") && initial.hasOpenLink, JSON.stringify(initial));
@@ -5652,7 +5652,7 @@ console.log("\n=== 44. The Bookmark Manager (bookmarks.html) -- items 2/3/5 ==="
   // Rename it (item 2: "enable editing it").
   await page.click('.bm-row[data-bm-id="bm1"] [data-bm-rename]');
   await page.waitForTimeout(200);
-  const afterRename = await page.evaluate(() => document.querySelector('.bm-row[data-bm-id="bm1"] .bm-row-name')?.textContent.trim());
+  const afterRename = await page.evaluate(() => document.querySelector('.bm-row[data-bm-id="bm1"] .bm-row-name [data-bm-name]')?.textContent.trim()); // updated in place 5 Oct 2026 (🔖 + time on the row)
   check("44d renaming a bookmark really changes its name", afterRename === "Tafsir notes", afterRename);
 
   // Retire, then restore (I4 -- nothing destroyed).
@@ -5686,7 +5686,7 @@ console.log("\n=== 44. The Bookmark Manager (bookmarks.html) -- items 2/3/5 ==="
       present: !!row,
       dimmed: row?.classList.contains("retired"),
       buttonText: row?.querySelector("[data-bm-toggle]")?.textContent.trim(),
-      name: row?.querySelector(".bm-row-name")?.textContent.trim(),
+      name: row?.querySelector(".bm-row-name [data-bm-name]")?.textContent.trim(), // updated in place 5 Oct 2026
     };
   });
   check("44e ...and Show retired finds it again, greyed, still named, offering Restore -- I4, hidden not destroyed",
@@ -6007,9 +6007,10 @@ console.log("\n=== 49. Fixes round items 2/3 -- the nav bar's own live Bookmark 
   const unfiledState = await page.evaluate(() => {
     const list = document.getElementById("navBookmarkList");
     return {
-      hasDirectLink: [...list.querySelectorAll(".nav-bm-link")].some((a) => a.textContent.trim() === "Ayat al-Kursi"),
+      // updated in place 5 Oct 2026: a link now carries 🔖 and its last-act time, so the name is read from .nav-bm-name
+      hasDirectLink: [...list.querySelectorAll(".nav-bm-link")].some((a) => (a.querySelector(".nav-bm-name") ?? a).textContent.trim() === "Ayat al-Kursi"),
       insideAFold: !!list.querySelector(".nav-bm-folder a"),
-      href: [...list.querySelectorAll(".nav-bm-link")].find((a) => a.textContent.trim() === "Ayat al-Kursi")?.getAttribute("href"),
+      href: [...list.querySelectorAll(".nav-bm-link")].find((a) => (a.querySelector(".nav-bm-name") ?? a).textContent.trim() === "Ayat al-Kursi")?.getAttribute("href"),
     };
   });
   check("49b the seeded (unfiled) bookmark is a direct, clickable link -- one click away, no fold to open first",
@@ -6075,7 +6076,7 @@ console.log("\n=== 49. Fixes round items 2/3 -- the nav bar's own live Bookmark 
     const folder = [...list.querySelectorAll(".nav-bm-folder")].find((f) => f.querySelector("summary")?.textContent.includes("Favourites"));
     return {
       open: folder?.open,
-      linkText: folder?.querySelector(".nav-bm-link")?.textContent.trim(),
+      linkText: (folder?.querySelector(".nav-bm-link .nav-bm-name") ?? folder?.querySelector(".nav-bm-link"))?.textContent.trim(), // updated in place 5 Oct 2026
     };
   });
   check("49f ...one click away from opening it (item 3)", afterExpand.open === true && afterExpand.linkText === "Fatiha in a folder", JSON.stringify(afterExpand));
@@ -6226,9 +6227,9 @@ console.log("\n=== 50. Fixes round 2 -- the expanded/collapsed OPTION, and the p
     const list = document.getElementById("navBookmarkList");
     const groups = [...list.querySelectorAll(".nav-bm-folder")].map((d) => ({
       heading: d.querySelector("summary")?.textContent.trim(),
-      links: [...d.querySelectorAll(".nav-bm-link")].map((a) => a.textContent.trim()),
+      links: [...d.querySelectorAll(".nav-bm-link")].map((a) => (a.querySelector(".nav-bm-name") ?? a).textContent.trim()), // updated in place 5 Oct 2026
     }));
-    const direct = [...list.querySelectorAll(":scope > .nav-bm-link")].map((a) => a.textContent.trim());
+    const direct = [...list.querySelectorAll(":scope > .nav-bm-link")].map((a) => (a.querySelector(".nav-bm-name") ?? a).textContent.trim());
     return { groups, direct };
   });
   check("50f grouping by person heads the group with the person's real NAME, not an id",

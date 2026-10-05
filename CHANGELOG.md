@@ -19697,3 +19697,13 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
 - **Checks:**
   - journey-note-actions-browser 184/0; mutations esc-noop, no-confirm, copy-nofile, chip-dead, no-swallow, rename-body each caught
   - journey-note-pane 327/0, journey-flags-links 306/0, journey-editor-siyagah 98/0, journey-editor 577/0, journey-note-edit 208/0, notes-note-windows 218/0, journey-note-windows 254/0, journey-reading-tools 488/0, journey-finish 64/0, journey-folder-window 144/0, journey-pane-resize 40/0, journey-three-panel 368/0, journey-window-tabs 166/0, journey-s9 280/0, journey-tray 227/0, journey-tags 363/0, palette-contrast 20/0, phone-width-overflow 217/0, note-sanitize-boundary 12/0, stub-parity 4/0, rules-authorisation-executable 63/0
+
+## v09.84 — 5 Oct 2026 — Bookmark marks, times and ← Back; Bismillah labels; 👥 on every Record card
+
+- **What:** four Owner messages of 5 Oct 2026.
+  - `bookmarks.js`: `markBookmarkUsed` (one `usedAt.<id>` field), `lastActOf`. `bookmark-nav.js`: 🔖 rows, `[data-bm-when]` times, `[data-bm-nav-times]` toggle (`mmsa.bookmarkMenu.showTimes`), `noteBookmarkOpened` (sessionStorage `mmsa.bookmarkReturn` + the stamp, ≤700 ms wait, a refusal said in words), `mountBookmarkBack` (fixed, lifted above any bottom bar). `bookmarks.html`: rows and Open. `shell.css`.
+  - `quranrevival.html`: `isUnnumberedBismillah`, `ayahNameFor`, `ayahShortRefFor`; the Note picker's labels. `claimForIds`, `claimTargetIds`, `mountClaimForPicker`, `claimApproachStatusFor`; `assign-picker.js` takes a list of ticked ids.
+- **Checks:**
+  - bookmark-marks-back-browser 84/0, bismillah-label-browser 34/0, claim-for-family-browser 56/0; mutations no-mark, no-times, no-stamp, no-back, old-names, old-picker, self-only, no-picker each caught
+  - wheel-centre-browser and behaviour.mjs updated in place; behaviour 1006/1 (31e, the sandbox certificate baseline)
+  - the Qur'an-page and bookmark suites listed in the milestone, all green

@@ -186,7 +186,7 @@
     import { safeWrite } from "./js/errors.js";
     import { getMyMembershipRoles, hydrateMemberships, pickContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
-import { mountBookmarkMenu } from "./js/bookmark-nav.js";
+import { mountBookmarkMenu, noteBookmarkOpened, getBookmarkTimesShown, bookmarkTimeText } from "./js/bookmark-nav.js";
     import { translateStatic, t, num, surahName } from "./js/i18n.js";
     import { registerServiceWorker } from "./js/sw-register.js";
     import { MODULE_PAGES, MODULE_LABELS } from "./js/continue-strip.js";
@@ -197,7 +197,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       createFolder, renameFolder, setFolderRemoved, moveFolder, isFolderOrDescendant,
       setBookmarkPersonTag, setFolderPersonTag, groupBookmarksByPerson, groupBookmarksByModule,
       folderById as sharedFolderById, liveFolderIdFor as sharedLiveFolderIdFor,
-      rootFolders, childFolders, bookmarksInFolder, unfiledBookmarks,
+      rootFolders, childFolders, bookmarksInFolder, unfiledBookmarks, lastActOf,
     } from "./js/bookmarks.js";
 
     translateStatic();
@@ -222,6 +222,15 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     const showRetiredCk = document.getElementById("showRetiredCk");
     const groupBySelect = document.getElementById("groupBySelect");
     const foldersContainer = document.getElementById("foldersContainer");
+    // Open: remember this page for the ← Back button and stamp the bookmark's last-used time (bookmark-nav.js).
+    document.getElementById("app").addEventListener("click", async (e) => {
+      const a = e.target.closest(".bm-row a[data-bm-open-id]");
+      if (!a || e.ctrlKey || e.metaKey || e.shiftKey || e.button > 0) return;
+      e.preventDefault();
+      const problem = await noteBookmarkOpened(db, { tenantId: activeTenantId, personId: a.dataset.bmOpenOwner || selectedPersonId, bookmarkId: a.dataset.bmOpenId, href: a.href });
+      if (problem) { a.closest(".bm-row")?.insertAdjacentHTML("beforeend", `<p class="note" role="alert" style="color:#8a1c1c;flex-basis:100%">${escapeHtml(problem)}</p>`); await new Promise((r) => setTimeout(r, 1500)); }
+      location.href = a.href;
+    });
     const unfiledContainer = document.getElementById("unfiledContainer");
     const taggedForContainer = document.getElementById("taggedForContainer");
     const emptyMsg = document.getElementById("emptyMsg");
@@ -279,6 +288,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     // whenever the selected person IS the signed-in login (nothing extra
     // to show) or has no tag from that doc.
     let taggedForSelected = [];
+    let myBookmarksDocForTagged = null; // the owner's own document, for those rows' last-act times
 
     function currentPreview() {
       const context = getActiveContext();
@@ -358,6 +368,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
           : Promise.resolve(null),
       ]);
       bookmarksDoc = mainDoc;
+      myBookmarksDocForTagged = myDoc;
       taggedForSelected = myDoc ? (myDoc.saved ?? []).filter((b) => !b.removed && b.personTagId === selectedPersonId) : [];
       renderAll();
     }
@@ -448,13 +459,19 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
+    // The Owner, 5 Oct 2026: 🔖 on every bookmark, and the time of its last act
+    // after its name (shown or hidden by the Bookmark menu's own 🕘 button).
+    function bookmarkNameHtml(b, doc) {
+      const at = getBookmarkTimesShown() ? lastActOf(doc, b) : null;
+      return `<span class="bm-row-name"><span class="nav-bm-mark" aria-hidden="true">🔖</span> <span data-bm-name>${escapeHtml(b.name)}</span>${at ? ` <small class="nav-bm-when" data-bm-when>${escapeHtml(bookmarkTimeText(at))}</small>` : ""}</span>`;
+    }
     function bookmarkRowHtml(b) {
       const href = bookmarkHref(b);
       const moduleLabel = MODULE_LABELS[b.moduleId] ? t(MODULE_LABELS[b.moduleId]) : b.moduleId;
       return `<div class="bm-row${b.removed ? " retired" : ""}" data-bm-id="${b.id}">
-        <span class="bm-row-name">${escapeHtml(b.name)}</span>
+        ${bookmarkNameHtml(b, bookmarksDoc)}
         <span class="bm-row-module">${escapeHtml(moduleLabel)}</span>
-        ${href ? `<a href="${href}"><button type="button" class="tiny" ${b.removed ? "disabled" : ""}>${t("Open")}</button></a>` : ""}
+        ${href ? `<a href="${href}" data-bm-open-id="${escapeHtml(b.id)}"><button type="button" class="tiny" ${b.removed ? "disabled" : ""}>${t("Open")}</button></a>` : ""}
         <button type="button" class="secondary tiny" data-bm-rename ${b.removed ? "disabled" : ""}>${t("Rename")}</button>
         <select data-bm-person title="${t("For")}" ${b.removed ? "disabled" : ""}>${personTagOptionsHtml(b.personTagId ?? null)}</select>
         <select data-bm-move ${b.removed ? "disabled" : ""}>${moveBookmarkOptionsHtml(liveFolderIdFor(b))}</select>
@@ -498,9 +515,9 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       const href = bookmarkHref(b, myPersonId);
       const moduleLabel = MODULE_LABELS[b.moduleId] ? t(MODULE_LABELS[b.moduleId]) : b.moduleId;
       return `<div class="bm-row">
-        <span class="bm-row-name">${escapeHtml(b.name)}</span>
+        ${bookmarkNameHtml(b, myBookmarksDocForTagged)}
         <span class="bm-row-module">${escapeHtml(moduleLabel)}</span>
-        ${href ? `<a href="${href}"><button type="button" class="tiny">${t("Open")}</button></a>` : ""}
+        ${href ? `<a href="${href}" data-bm-open-id="${escapeHtml(b.id)}" data-bm-open-owner="${escapeHtml(myPersonId ?? "")}"><button type="button" class="tiny">${t("Open")}</button></a>` : ""}
       </div>`;
     }
 

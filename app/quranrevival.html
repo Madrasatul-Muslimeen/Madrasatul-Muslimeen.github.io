@@ -3372,6 +3372,14 @@
   .assign-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; user-select: none; padding: 0.1rem 0; }
   .assign-row input[type="checkbox"] { width: 1.05rem; height: 1.05rem; accent-color: #1F3A6E; cursor: pointer; flex-shrink: 0; }
   .assign-row .who-name { flex: 1; }
+  /* The Owner, 5 Oct 2026: the same 👥 picker under "✅ Record Your Progress" on the Ayah, Page and Unit cards and in the end-of-unit prompt. */
+  .claim-for-row { display: flex; align-items: center; margin: 0.15rem 0 0.45rem; position: relative; }
+  .claim-for-line { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; column-gap: 0.6rem; }
+  .claim-for-line > [data-gac-record-title] { flex: 1 1 auto; min-width: 0; }
+  .claim-for-line > .claim-for-row { margin: 0; }
+  .claim-for-line .claim-for-row .assign-popover { left: auto; right: 0; }
+  .claim-for-row .assign-trigger { min-height: 40px; }
+  .claim-for-row .assign-popover { left: 0; right: auto; z-index: 40; max-width: calc(100vw - 32px); }
   .assign-row .who-tag { font-size: 0.66rem; color: #777; background: #f6f7fb; border: 1px solid #eee; border-radius: 0.6rem; padding: 0.02rem 0.4rem; }
 
   .pill { display: inline-block; padding: 0.05rem 0.4rem; border-radius: 0.7rem; font-size: 0.72rem; }
@@ -3531,6 +3539,7 @@
      a little less below so the title stays with its buttons. */
   .ayah-sheet .gac-record-title { display: block; margin: 1.15rem 0 0; font-weight: 600; line-height: 1.3; }
   .ayah-sheet .gac-record-title + .approach-stage-row { margin-top: 0.1rem; }
+  .ayah-sheet .claim-for-line + .approach-stage-row { margin-top: 0.1rem; } /* the same when 👥 shares the title's line */
   .ayah-sheet-ref { font-size: 0.9rem; color: var(--card-heading); font-weight: 600; }
   .ayah-sheet-close { background: none; border: none; color: var(--card-text-muted); font-size: 1.5rem; line-height: 1; min-width: 40px; min-height: 40px; padding: 0.2rem 0.5rem; cursor: pointer; }
   .ayah-sheet-hint { font-size: 0.74rem; color: var(--card-text-muted); margin: -0.1rem 0.5rem 0.35rem; }
@@ -7887,7 +7896,7 @@
       if (currentUnitType === "page") {
         return { unitType: "page", unitKey: buildUnitKey.page(PAGE_EDITION, ayah.page), chunkKey: "subject_quran", label: t("Page {page}", { page: num(ayah.page) }) };
       }
-      return { unitType: "ayah", unitKey: buildUnitKey.ayah(currentSurahNum, currentAyahNum), chunkKey: surahChunkKey, label: t("Surah {surah}, Ayah {ayah}", { surah: num(currentSurahNum), ayah: ayahLabelFor(currentSurahNum, currentAyahNum) }) };
+      return { unitType: "ayah", unitKey: buildUnitKey.ayah(currentSurahNum, currentAyahNum), chunkKey: surahChunkKey, label: isUnnumberedBismillah(currentSurahNum, currentAyahNum) ? t("Surah {surah}, Bismillah", { surah: num(currentSurahNum) }) : t("Surah {surah}, Ayah {ayah}", { surah: num(currentSurahNum), ayah: ayahLabelFor(currentSurahNum, currentAyahNum) }) };
     }
 
     function renderUnitLabel() {
@@ -7988,7 +7997,7 @@
         const from = Math.min(rangeFrom, rangeTo), to = Math.max(rangeFrom, rangeTo);
         return t("Ayahs {from}–{to}", { from: num(from), to: num(to) });
       }
-      if (info.unitType === "ayah") return t("Ayah {n}", { n: ayahLabelFor(currentSurahNum, currentAyahNum) });
+      if (info.unitType === "ayah") return ayahNameFor(currentSurahNum, currentAyahNum);
       const n = currentUnitNumber();
       if (info.unitType === "ruku") return t("Ruku' {n}", { n: num(n) });
       if (info.unitType === "juz") return t("Juz {n}", { n: num(n) });
@@ -8736,6 +8745,14 @@
       const d = displayForInternalAyah(surah, ayah, true);
       return d.kind === "bismillah" ? t("Bismillah") : `${surah}:${d.kind === "span" ? "6–7" : d.number}`;
     }
+    // The Owner, 5 Oct 2026: "Bismillah is still showing as Ayah". Decision 55 leaves the
+    // Bismillah unnumbered, so it is never printed as "Ayah Bismillah" or "1:Bismillah":
+    // these give its own word where an āyah's number would go with "Ayah"/"1:" around it.
+    function isUnnumberedBismillah(surah, ayah) { return ayah === 1 && fatihaCountApplies(surah, fatihaOn()); }
+    /** "Ayah 3", "Ayah 6–7", or just "Bismillah". */
+    function ayahNameFor(surah, ayah) { return isUnnumberedBismillah(surah, ayah) ? t("Bismillah") : t("Ayah {n}", { n: ayahLabelFor(surah, ayah) }); }
+    /** "1:3", "1:6–7", or just "Bismillah" (with reader digits). */
+    function ayahShortRefFor(surah, ayah) { return isUnnumberedBismillah(surah, ayah) ? t("Bismillah") : `${num(surah)}:${ayahLabelFor(surah, ayah)}`; }
     /** The number a wheel/sidebar badge prints: nothing for the Bismillah, "6–7" for internal 1:7. */
     function ayahBadgeFor(surah, ayah) {
       return fatihaCountApplies(surah, fatihaOn()) && ayah === 1 ? "" : ayahLabelFor(surah, ayah);
@@ -9355,7 +9372,7 @@
       const surahNo = t("Surah {n}", { n: num(currentSurahNum) });
       const place = `${surahNo} · ${name}`;
       const info = currentUnitInfo();
-      if (currentUnitType === "ayah") { const l1 = t("Ayah {n}", { n: ayahLabelFor(currentSurahNum, currentAyahNum) }); return { line1: l1, line2: place, cta: `${l1} · ${name}` }; }
+      if (currentUnitType === "ayah") { const l1 = ayahNameFor(currentSurahNum, currentAyahNum); return { line1: l1, line2: place, cta: `${l1} · ${name}` }; }
       if (currentUnitType === "surah") return { line1: surahNo, line2: name, cta: name };
       if (currentUnitType === "range") {
         const from = Math.min(rangeFrom, rangeTo), to = Math.max(rangeFrom, rangeTo);
@@ -11824,7 +11841,7 @@
       });
       const ayat = surahData.ayahs.map((a) => ({
         key: a.ayah, a: idx.gi(sn, a.ayah), b: idx.gi(sn, a.ayah),
-        label: t("Ayah {ayah}", { ayah: ayahLabelFor(sn, a.ayah) }),
+        label: ayahNameFor(sn, a.ayah),
         coverage: [{ surah: sn, from: a.ayah, to: a.ayah }],
         statusId: effectiveAyahStatus(sn, a.ayah, trackable.id),
         open: () => goToAyahFromExplore(sn, a.ayah),
@@ -12162,7 +12179,7 @@
       if (surahData.ayahCount <= SURAH_WHEEL_THRESHOLD) {
         const items = surahData.ayahs.map((a) => {
           const statusId = effectiveAyahStatus(exploreSurahNum, a.ayah, trackable.id);
-          const label = t("Ayah {ayah}", { ayah: ayahLabelFor(exploreSurahNum, a.ayah) });
+          const label = ayahNameFor(exploreSurahNum, a.ayah);
           return { key: a.ayah, number: ayahBadgeFor(exploreSurahNum, a.ayah), statusId, label, title: segTitle(label, statusId, labelsById) };
         });
         const jumpToStudy = (key) => goToAyahFromExplore(exploreSurahNum, Number(key));
@@ -12212,7 +12229,7 @@
       const entries = exploreChunksBySurah.get(exploreSurahNum)?.entries ?? {};
       const items = ayahsInRuku.map((a) => {
         const statusId = effectiveAyahStatus(exploreSurahNum, a.ayah, trackable.id);
-        return { key: a.ayah, number: ayahBadgeFor(exploreSurahNum, a.ayah), statusId, label: t("Ayah {ayah}", { ayah: ayahLabelFor(exploreSurahNum, a.ayah) }) };
+        return { key: a.ayah, number: ayahBadgeFor(exploreSurahNum, a.ayah), statusId, label: ayahNameFor(exploreSurahNum, a.ayah) };
       });
       const exploreSurah = surahIndex.find((s) => s.surahNumber === exploreSurahNum);
       const currentSurahName = exploreSurah ? surahName(exploreSurah.surahNumber, exploreSurah.nameEnglish) : t("Surah {surah}", { surah: num(exploreSurahNum) });
@@ -14353,7 +14370,7 @@
         refLabel = `${num(surahNum)}:${num(from)}–${num(to)}`;
       } else {
         ayahNum = Number(parts[1]);
-        refLabel = `${num(surahNum)}:${ayahLabelFor(surahNum, ayahNum)}`;
+        refLabel = ayahShortRefFor(surahNum, ayahNum);
       }
       const surahData = qcrSurahDataByNum.get(surahNum);
       const ayah = surahData?.ayahs?.find((a) => a.ayah === ayahNum);
@@ -17130,6 +17147,7 @@
       const meta = surahIndex.find((s) => s.surahNumber === surahNum);
       // Issue #482 -- the label is what a reader SEES, so it follows their count
       // (1:7 reads "1:6–7"); `internal` is for a caller that parses it back.
+      if (!internal && isUnnumberedBismillah(surahNum, ayahNum)) return t("Bismillah — Surah {name}", { name: surahName(surahNum, meta?.nameEnglish) });
       return t("Quran {surah}:{ayah} — Surah {name}", { surah: num(surahNum), ayah: internal ? num(ayahNum) : ayahLabelFor(surahNum, ayahNum), name: surahName(surahNum, meta?.nameEnglish) });
     }
 
@@ -17351,12 +17369,71 @@
         (an āyah claim chunks to surah_N, a page claim to subject_quran --
         see chunkKeyFor()/D3 in the Owner decisions doc: "keep Ayah has it's
         separate approach"). */
+    // The Owner, 5 Oct 2026: "As progress claim for Family members can be set
+    // here [the Track card's 👥], it is not set in other places of 'Record Your
+    // Progress' ... should include the claim for family members." The Ayah
+    // Card, the "This page" card, the Unit Card and the end-of-unit prompt now
+    // carry the same 👥 picker (renderAssignDropdown, the same roster rule as
+    // the Student picker: assignableRoster()). Who is ticked is remembered while
+    // the page is open and shared by the four (claimForIds; null = just the
+    // Student), and forgotten when the Student changes. What the cards SHOW is
+    // still the Student's own progress.
+    let claimForIds = null;
+    function claimTargetIds() {
+      const allowed = new Set(assignableRoster().map((p) => p.id));
+      const ids = (claimForIds ?? []).filter((id) => allowed.has(id));
+      return ids.length ? ids : (selectedPersonId ? [selectedPersonId] : []);
+    }
+    /** The 👥 picker beside a card's "✅ Record Your Progress" (or in the end-of-unit prompt). Nothing for a lone person. */
+    function mountClaimForPicker(rootEl, anchorSel) {
+      const anchor = rootEl?.querySelector(anchorSel);
+      const html = renderAssignDropdown(assignableRoster(), claimTargetIds());
+      if (!anchor || !html) return;
+      anchor.insertAdjacentHTML("afterend", `<div class="claim-for-row" data-claim-for>${html}</div>`);
+      const row = anchor.nextElementSibling;
+      // Beside the "✅ Record Your Progress" title, on its line, so the title stays close to its own buttons (decision 39).
+      if (anchor.matches("[data-gac-record-title]")) {
+        const line = document.createElement("div");
+        line.className = "claim-for-line";
+        anchor.before(line);
+        line.append(anchor, row);
+      }
+      const list = row.querySelector("[data-assign-list]");
+      const label = row.querySelector("[data-assign-trigger-label]");
+      const paint = () => {
+        const checked = [...list.querySelectorAll("input:checked")];
+        label.textContent = checked.length === 1 ? (checked[0].dataset.name ?? "1") : num(checked.length);
+        row.querySelector("[data-assign-trigger]").setAttribute("aria-label", t("Record for: {names}", { names: checked.map((c) => c.dataset.name).join(", ") || "—" }));
+      };
+      list.addEventListener("change", () => {
+        const ids = [...list.querySelectorAll("input:checked")].map((c) => c.value);
+        claimForIds = ids.length ? ids : null;
+        if (!ids.length) list.querySelector(`input[value="${CSS.escape(selectedPersonId ?? "")}"]`)?.click(); // never nobody: back to the Student
+        paint();
+      });
+      paint();
+    }
     async function claimApproachStatus(unitKey, approachId, statusId) {
       if (!auth.currentUser || !selectedPersonId) return { ok: false };
+      const targets = claimTargetIds();
+      const others = targets.filter((id) => id !== selectedPersonId);
+      for (const personId of others) {
+        const o = await claimApproachStatusFor(personId, unitKey, approachId, statusId);
+        if (!o.ok) return o;
+      }
+      if (!targets.includes(selectedPersonId)) {
+        // Recorded only for others: the Student's own card is unchanged, so say who it went to (I15's other half: the reader sees what happened).
+        const names = assignableRoster().filter((p) => others.includes(p.id)).map((p) => p.name).join(", ");
+        showStudyNotice(t("Recorded for {names}.", { names }));
+        return { ok: true, shownUnchanged: true };
+      }
+      return claimApproachStatusFor(selectedPersonId, unitKey, approachId, statusId);
+    }
+    async function claimApproachStatusFor(personId, unitKey, approachId, statusId) {
       const outcome = await safeWrite(
         () => claimStatus(db, {
           tenantId: activeTenantId,
-          personId: selectedPersonId,
+          personId,
           subjectId: "quran",
           unitKey,
           trackableId: approachId,
@@ -17370,7 +17447,7 @@
       );
       if (!outcome.ok) return outcome;
       await logActivity(db, {
-        tenantId: activeTenantId, personId: selectedPersonId, date: new Date(),
+        tenantId: activeTenantId, personId, date: new Date(),
         weekStartsOn: tenantWeekStartsOn, subjectId: "quran", unitKey,
         trackableId: approachId, action: "claimed", uid: auth.currentUser.uid,
         viaProgramId: programBySubjectId.get("quran") ?? null,
@@ -17394,6 +17471,7 @@
     async function takeApproachForAyah(unitKey, approachId, statusId) {
       const outcome = await claimApproachStatus(unitKey, approachId, statusId);
       if (!outcome.ok) return;
+      if (outcome.shownUnchanged) { ayahSheetSelectedApproachId = approachId; if (ayahSheetUnitKey === unitKey) renderAyahActionSheetNow(); return; }
       ayahSheetSelectedApproachId = approachId;
       mushafRingApproachId = approachId;
       await refreshChunkAndWheel(); // ayah/range/surah/ruku all chunk to surah_N -- always true for an Ayah Card's own unit key
@@ -17421,6 +17499,7 @@
     async function takeApproachForPage(unitKey, approachId, statusId) {
       const outcome = await claimApproachStatus(unitKey, approachId, statusId);
       if (!outcome.ok) return;
+      if (outcome.shownUnchanged) { pageApproachCardSelectedApproachId = approachId; renderPageApproachCardNow(); return; }
       pageApproachCardSelectedApproachId = approachId;
       mushafRingApproachId = approachId;
       await ensureQuranSubjectChunk({ force: true });
@@ -17465,6 +17544,8 @@
     /** The end-of-unit prompt's handlers, for whichever container drew it
         (the flow, or the one-āyah view). */
     function wireEndOfUnitPrompt(container) {
+      const prompt = container.querySelector("[data-end-of-unit-prompt]");
+      if (prompt && !prompt.querySelector("[data-claim-for]")) mountClaimForPicker(prompt, prompt.querySelector(".end-of-unit-approach") ? ".end-of-unit-approach" : ".end-of-unit-text");
       attachEndOfUnitPromptHandlers(container, {
         onClose: () => { container.querySelector("[data-end-of-unit-prompt]")?.remove(); },
         onStageChoice: async (statusId) => {
@@ -17505,6 +17586,7 @@
       const info = currentUnitInfo();
       const outcome = await claimApproachStatus(info.unitKey, approachId, statusId);
       if (!outcome.ok) return false;
+      if (outcome.shownUnchanged) return true;
       mushafRingApproachId = approachId;
       if (info.chunkKey === "subject_quran") {
         await ensureQuranSubjectChunk({ force: true });
@@ -17545,6 +17627,7 @@
         selectedApproachId: pageApproachCardSelectedApproachId,
         selectedApproachStatusId,
       });
+      mountClaimForPicker(ayahActionSheetMountEl, "[data-gac-record-title]"); // 👥 who this records for
       attachPageApproachCardHandlers(ayahActionSheetMountEl, {
         onClose: closePageApproachCard,
         onApproachPicked: (approachId) => {
@@ -17857,6 +17940,7 @@
       if (!info || info.unitKey !== unitKey) return;
       const outcome = await claimApproachStatus(unitKey, approachId, statusId);
       if (!outcome.ok) return;
+      if (outcome.shownUnchanged) { unitCardSelectedApproachId = approachId; renderUnitCardNow(); return; }
       unitCardSelectedApproachId = approachId;
       mushafRingApproachId = approachId;
       if (info.chunkKey === "subject_quran") {
@@ -17913,6 +17997,7 @@
         achievedLine: "", wbwLine: "",
         insideTitle: "", insideItems: [],
       });
+      mountClaimForPicker(ayahActionSheetMountEl, "[data-gac-record-title]"); // 👥 who this records for
       attachUnitCardHandlers(ayahActionSheetMountEl, {
         onClose: closeUnitCard,
         onRung: (rungUnitKey) => {
@@ -18068,6 +18153,7 @@
       // Keep the reader's place: the card re-renders as its data arrives
       // (Status, then Related), and each re-render used to jump to the top.
       if (keepScroll) { const el = ayahActionSheetMountEl.querySelector("[data-ayah-sheet]"); if (el) el.scrollTop = keepScroll; }
+      mountClaimForPicker(ayahActionSheetMountEl, "[data-gac-record-title]"); // 👥 who this records for
       attachAyahActionSheetHandlers(ayahActionSheetMountEl, {
         onRelatedJump: (s, a) => navigateToAyah(s, a, stageView === "note" ? "note" : "read"),
         onClose: closeAyahActionSheet,
@@ -19167,7 +19253,8 @@
         .map((s) => `<option value="${s.surahNumber}" ${s.surahNumber === currentSurahNum ? "selected" : ""}>${num(s.surahNumber)}. ${surahName(s.surahNumber, s.nameEnglish)}</option>`)
         .join("");
       const ayahOptionsHtml = (selected) => Array.from({ length: currentSurahData.ayahCount }, (_, i) => i + 1)
-        .map((n) => `<option value="${n}" ${n === selected ? "selected" : ""}>${num(n)}</option>`).join("");
+        // The Owner, 5 Oct 2026: the reader's own count here too (Bismillah, 1..5, 6–7), the same as #ayahSelect.
+        .map((n) => `<option value="${n}" ${n === selected ? "selected" : ""}>${ayahLabelFor(currentSurahNum, n)}</option>`).join("");
       const numbers = numbered ? noteScopeNumbersInSurah(unitType) : [];
       const numOptionsHtml = numbers.map((n) => `<option value="${n}" ${n === noteScope.unitNumber ? "selected" : ""}>${num(n)}</option>`).join("");
       const ayahCellHidden = isRange || unitType === "surah";
@@ -20050,7 +20137,7 @@
         const ayahNum = Number(parts[1]);
         const meta = surahIndex.find((s) => s.surahNumber === surahNum);
         sName = meta ? surahName(surahNum, meta.nameEnglish) : "";
-        refLabel = `${num(surahNum)}:${ayahLabelFor(surahNum, ayahNum)}`;
+        refLabel = ayahShortRefFor(surahNum, ayahNum);
         const ayah = currentSurahData?.ayahs?.find((a) => a.ayah === ayahNum);
         const full = ayah?.translations?.en ?? "";
         snippet = full.length > 90 ? `${full.slice(0, 90).trim()}…` : full;
@@ -20906,6 +20993,7 @@
         if (!ayah) return;
         ayahPosition.textContent = fatihaCountApplies(currentSurahNum, fatihaOn()) && currentAyahNum === 1
           ? t("Surah {surah} — Bismillah", { surah: num(currentSurahNum) })
+          : isUnnumberedBismillah(currentSurahNum, currentAyahNum) ? t("Surah {surah} — Bismillah", { surah: num(currentSurahNum) })
           : t("Surah {surah} — Ayah {ayah} of {total}", { surah: num(currentSurahNum), ayah: ayahLabelFor(currentSurahNum, currentAyahNum), total: num(displayAyahCount(currentSurahNum, currentSurahData.ayahCount)) });
         ayahSelect.value = String(currentAyahNum);
         prevAyahBtn.disabled = currentAyahNum <= 1;
@@ -21599,6 +21687,7 @@
     personSelect.addEventListener("change", async () => {
       selectedPersonId = personSelect.value;
       setSelectedPersonId(selectedPersonId);
+      claimForIds = null; // the 👥 choice on the Record cards starts again from the new Student
       openedBookmarkId = null; // bookmarks are per-person documents -- a different person has no "currently open" bookmark of their own yet
       // MAP Phase 3, and D10 is exactly why this matters: teaching several
       // children in one sitting and logging each in turn from this dropdown

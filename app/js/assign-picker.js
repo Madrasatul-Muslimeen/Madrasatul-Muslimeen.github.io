@@ -32,9 +32,12 @@ function escapeHtml(s) {
  */
 export function renderAssignDropdown(roster, selectedPersonId) {
   if (!roster || roster.length < 2) return "";
+  // `selectedPersonId` may also be a list of ids (the Owner, 5 Oct 2026: the
+  // Qur'an page's cards remember everyone ticked while the page is open).
+  const ticked = new Set(Array.isArray(selectedPersonId) ? selectedPersonId : [selectedPersonId]);
   const rows = roster
     .map((p) => {
-      const checked = p.id === selectedPersonId ? "checked" : "";
+      const checked = ticked.has(p.id) ? "checked" : "";
       const tag = p.isSelf ? `<span class="who-tag">${t("you")}</span>` : "";
       return `<label class="assign-row"><input type="checkbox" value="${p.id}" data-name="${escapeHtml(p.name)}" ${checked}><span class="who-name">${escapeHtml(p.name)}</span>${tag}</label>`;
     })

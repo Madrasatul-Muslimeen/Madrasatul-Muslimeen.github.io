@@ -248,7 +248,7 @@ body:has(.nav-cat-bookmark[open]) { overflow: hidden; }
    minmax(0,1fr) so a long translated label shrinks its own cell rather than
    pushing the row wider than the dropdown. */
 .nav-bm-controls {
-  display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 0.4rem;
+  display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); gap: 0.4rem;
   padding-bottom: 0.4rem; margin-bottom: 0.3rem; border-bottom: 1px dashed #e5e5e5;
 }
 .nav-bm-control { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
@@ -268,6 +268,20 @@ body:has(.nav-cat-bookmark[open]) { overflow: hidden; }
 .nav-bm-expand-toggle:hover { background: #f5f5f5; }
 .nav-bm-link { color: #1F3A6E; text-decoration: none; font-size: 0.86rem; padding: 0.1rem 0; }
 .nav-bm-link:hover { text-decoration: underline; }
+/* The Owner, 5 Oct 2026: 🔖 on every bookmark (folders keep 📁), and the time of
+   its last act after the name, smaller and grey; 🕘 shows or hides the times. */
+.nav-bm-item { display: flex; align-items: baseline; flex-wrap: wrap; column-gap: 0.4rem; min-height: 36px; box-sizing: border-box; padding: 0.35rem 0; }
+.nav-bm-mark { flex: 0 0 auto; }
+.nav-bm-name { min-width: 0; overflow-wrap: anywhere; }
+.nav-bm-when { color: #5f6b7d; font-size: 0.74rem; font-weight: 400; white-space: nowrap; }
+.nav-bm-folder .nav-bm-link.nav-bm-item { display: flex; }
+/* "← Back to <page>": under the menu bar on the page a bookmark opened. */
+/* Fixed, above every window: on the Qur'an page a bookmark opens a floating window that would cover a row under the bar. */
+.bm-back-row { position: fixed; left: max(12px, env(safe-area-inset-left)); bottom: max(12px, env(safe-area-inset-bottom)); z-index: 12000; display: flex; align-items: center; gap: 0.4rem; max-width: calc(100vw - 24px); padding: 0.3rem; border-radius: 999px; background: rgba(255,255,255,0.96); box-shadow: 0 4px 16px rgba(20,30,60,0.25); box-sizing: border-box; }
+.bm-back-row .bm-back-x { border-radius: 999px; }
+.bm-back { display: inline-flex; align-items: center; min-height: 40px; padding: 0.3rem 0.8rem; border: 1px solid #c9d3e6; border-radius: 999px; background: #f4f7fc; color: #1F3A6E; font-weight: 600; font-size: 0.9rem; text-decoration: none; min-width: 0; overflow-wrap: anywhere; box-sizing: border-box; }
+.bm-back:hover { background: #e8eef9; }
+.bm-back-x { flex: 0 0 auto; width: 40px; height: 40px; padding: 0; border: 1px solid #ddd; border-radius: 0.4rem; background: white; color: #1F3A6E; cursor: pointer; }
 /* Issue #410 -- a saved-settings row is a button that looks like the links around it, but is a real 40px tap target. */
 button.nav-bm-preset { background: none; border: 0; font: inherit; font-size: 0.86rem; text-align: left; cursor: pointer; min-height: 40px; padding: 0.1rem 0; max-width: 100%; overflow-wrap: anywhere; }
 .nav-bm-folder summary { color: #1F3A6E; font-size: 0.86rem; font-weight: 600; cursor: pointer; padding: 0.1rem 0; }

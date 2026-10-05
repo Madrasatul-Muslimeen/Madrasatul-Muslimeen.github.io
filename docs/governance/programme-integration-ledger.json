@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.83",
+    "version": "09.84",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2177,8 +2177,20 @@
     {
       "version": "09.83",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Siyagah note-pane port round 2 (items 14-20): Rename, Make a copy, title and heading right-click / long-press, tag chips, Delete confirm, Esc ends editing (decision 70).",
+      "integration": {
+        "authorizedOn": "2026-10-05",
+        "integratedOn": "2026-10-05",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.84",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Bookmark marks, last-act times, show/hide and Back; the Bismillah never named as an ayah; family-member picker on every Record Your Progress card (Owner, 5 Oct 2026).",
       "integration": {
         "authorizedOn": "2026-10-05",
         "integratedOn": "2026-10-05",
@@ -2187,8 +2199,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.84",
+  "nextUnallocated": "09.85",
   "nextUnallocatedNote": [
+    "v09.84 was allocated to bookmark marks and Back, Bismillah labels, family members on every Record card, 2026-10-05.",
     "v09.83 was allocated to the Siyagah note-pane port round 2, 2026-10-05.",
     "v09.82 was allocated to Resizable panels; Siyagah note-pane port round 1, 2026-10-05.",
     "v09.81 was allocated to Stem mark, folder window, pinned panel, Ayah window, 2026-10-05.",

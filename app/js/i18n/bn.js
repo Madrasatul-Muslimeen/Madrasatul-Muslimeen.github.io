@@ -3531,4 +3531,17 @@ export const BN = {
   "A copy was made: \"{title}\".": "একটি কপি তৈরি হয়েছে: \"{title}\"।",
   "Delete \"{title}\"?": "\"{title}\" মুছবেন?",
   "Are you sure? \"{title}\" goes to 🗑 Trash, and you can restore it from there.": "আপনি কি নিশ্চিত? \"{title}\" 🗑 ট্র্যাশে যাবে, আর সেখান থেকে ফিরিয়ে আনতে পারবেন।",
+  // 5 Oct 2026: bookmark marks, last-act times, ← Back; the Bismillah never named "Ayah".
+  "Hide times": "সময় লুকান",
+  "Show times": "সময় দেখান",
+  "Hide the times": "বুকমার্কের সময় লুকান",
+  "Show the times": "বুকমার্কের সময় দেখান",
+  "Back to {page}": "ফিরে যান: {page}",
+  "the previous page": "আগের পৃষ্ঠা",
+  "The time this bookmark was opened was not saved: {error}": "এই বুকমার্ক খোলার সময় সংরক্ষণ হয়নি: {error}",
+  "Surah {surah}, Bismillah": "সূরা {surah}, বিসমিল্লাহ",
+  "Bismillah — Surah {name}": "বিসমিল্লাহ — সূরা {name}",
+  "Surah {surah} — Bismillah": "সূরা {surah} — বিসমিল্লাহ",
+  "Record for: {names}": "যার জন্য লিপিবদ্ধ: {names}",
+  "Recorded for {names}.": "{names}-এর জন্য লিপিবদ্ধ হয়েছে।",
 };
