@@ -19,8 +19,7 @@ Read the live state yourself, because it moves on after this was written:
 - `claude.yml` runs;
 - the "Active Architect session" line on #159.
 
-**`main` is at v09.82** (if the release below landed; otherwise v09.81 with branch
-`claude/magical-fermat-zwmg7h` carrying it).
+**`main` is at v09.82** (PR #587).
 - **v09.82**: two things.
   - **Resizable panels** in Mapping My Journey (the Owner: "Make all the panes resizeable"), and a resizable pinned panel in Note windows.
   - **Round 1 of the Siyagah note-pane port**: the editor tools, items 3–13 of the list below.
