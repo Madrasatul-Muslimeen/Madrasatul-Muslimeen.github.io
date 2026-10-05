@@ -19627,3 +19627,14 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
   - study-options-go-track-browser 104/0; --mutate-go fails 24, --mutate-track fails 16, --mutate-layer fails 2
   - panel.mjs OK; study-options-play-read 73/0; wheel-unit-go 254/0; select-layout-options green; phone-width-overflow 217/0; palette-contrast 20/0; stub-parity 4/0; layout.mjs no geometry change (known `bmNotFound`)
   - behaviour 1006/1 (sandbox: 31e TLS); 27b/27i updated in place for the Go cell
+
+## v09.78 — 5 Oct 2026 — N/A at Basic and Depth; move and rename folders in the Bookmark menu; the Ayah window demo
+
+- **N/A (decision 68):** the Owner, on 36:8:9 in Basic: "Since this conjugation is not applicable in Basic, should have a n/a button there. All words of these types should have n/a button." Asked; answered "Automatic", "Basic and Depth". 3,307 of 77,429 words have no lemma. At Basic/Depth they show "Not applicable" in place of the buttons; `runWordProgressActionNow()` refuses a claim on them; Basic/Depth totals are 74,122 (`QURAN_LEMMA_WORD_COUNT`, `levelWordTotal()`). The stored document's `total` stays 77,429 (Rules). "Clear the earlier mark" for a mark made before. WbW unchanged. `knownShareForMarks()` divides each level by its own total.
+- **Folders:** the Owner: "Enable a quick folder edit n handler to move folders here." A ⠿ handle (drag, ArrowUp/Down) and a ✎ pencil on every folder row of the Bookmark menu; `reorderSiblingFolders()`/`saveFolderOrder()` in `bookmarks.js`; the drag is followed on the document (a pointer capture is lost when the row moves); a refused save is shown and the move snaps back. `.gitignore` gains `.builder-round/` (suite screenshots).
+- **Demo:** the Owner: "enable the entire Ayah popout and enabling it to be resizeable, fitting within the screen and enabling all the existing functions of the Ayah? Demo me first." `docs/reference/2026-10-05-ayah-window-demo.html`; nothing in the app changed for it.
+- **Checks:**
+  - word-na-browser 48/0; --mutate-na fails 24, --mutate-total fails 8; quran-word-total-boundary 33/0; lemma-levels 240/0 and word-card-pc-boxes 296/0 updated in place
+  - bookmark-folder-edit-browser 68/0; --mutate-nosave fails 20, --mutate-rename fails 4; bookmark-sheet 176/0; study-presets 84/0; navcheck green
+  - demo scratch test 29/0; phone-width-overflow 217/0; palette-contrast 20/0; stub-parity 4/0; layout.mjs no geometry change (known `bmNotFound`)
+  - behaviour 1006/1 (sandbox: 31e TLS)

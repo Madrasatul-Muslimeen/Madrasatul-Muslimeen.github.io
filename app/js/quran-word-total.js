@@ -17,6 +17,28 @@
 // own "totalWords" field agrees.
 export const QURAN_TOTAL_WORD_COUNT = 77429;
 
+// Decision 68 (5 Oct 2026) -- a word with no dictionary word (lemma) is Not
+// applicable at Basic Arabic and Arabic in Depth, and I7 leaves it out of
+// those totals rather than counting it as zero. 3,307 of the 77,429 words
+// have no lemma, so the Basic and Depth whole-Qur'an total is 74,122: the
+// "occurrences" figure tools/quran-data-pull/output/lemmas-index.json already
+// carries, and QURAN_TOTAL_WORD_COUNT minus word-identity-index-manifest.json's
+// "missingLemma" (quran-word-total-boundary.mjs binds both).
+//
+// The STORED totals document keeps total: 77429 -- the deployed Rules fix it
+// at create and forbid changing it -- so the denominator a reader sees is
+// this constant, applied where the figure is shown (levelWordTotal below).
+// Nothing lemma-less can be claimed at these levels any more, so the stored
+// `known` only ever counts words that have a lemma, plus any mark made before
+// this decision (the card offers to clear those).
+export const QURAN_LEMMA_WORD_COUNT = 74122;
+
+/** The whole-Qur'an denominator for one level: WbW counts every word; Basic
+ *  and Depth count only words that have a dictionary word (decision 68). */
+export function levelWordTotal(level) {
+  return level === "basic" || level === "depth" ? QURAN_LEMMA_WORD_COUNT : QURAN_TOTAL_WORD_COUNT;
+}
+
 export const QURAN_WORD_TOTAL_CONTRACT = "quran-word-total:v1";
 
 function isNonEmptyString(value) {

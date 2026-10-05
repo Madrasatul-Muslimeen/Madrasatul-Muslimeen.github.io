@@ -64,7 +64,7 @@
 
 import {
   getBookmarks, rootFolders, childFolders, bookmarksInFolder, unfiledBookmarks, groupBookmarksByPerson,
-  groupBookmarksByModule, livePresets,
+  groupBookmarksByModule, livePresets, renameFolder, saveFolderOrder,
 } from "./bookmarks.js";
 import { MODULE_PAGES, MODULE_LABELS } from "./continue-strip.js";
 import {
@@ -103,13 +103,25 @@ function groupHtml(icon, label, innerHtml, expanded, depth = 0) {
   </details>`;
 }
 
+// The Owner, 5 Oct 2026: "Enable a quick folder edit n handler to move
+// folders here." Every folder row carries a drag handle (⠿, also moved by the
+// arrow keys) and a rename pencil (✎), always on: being able to edit IS the
+// condition, with no Edit mode to switch on first (this codebase's own "a mode
+// toggle in front of a menu is one tap too many"). The handle reorders a
+// folder among the folders sharing its parent; nesting a folder inside
+// another stays on the Manage bookmarks page. Unlike groupHtml(), an EMPTY
+// folder still gets a row here, so it can be renamed or moved too.
 function folderNodeHtml(bookmarksDoc, folder, depth, expanded) {
   const items = bookmarksInFolder(bookmarksDoc, folder.id, { includeRemoved: false });
   const children = childFolders(bookmarksDoc, folder.id, { includeRemoved: false });
   const inner =
     items.map(bookmarkLinkHtml).join("") +
     children.map((f) => folderNodeHtml(bookmarksDoc, f, depth + 1, expanded)).join("");
-  return groupHtml("\u{1F4C1}", folder.name, inner, expanded, depth);
+  const name = escapeHtml(folder.name);
+  return `<details class="nav-bm-folder" data-bm-folder-id="${escapeHtml(folder.id)}" data-bm-parent-id="${escapeHtml(folder.parentId ?? "")}"${expanded ? " open" : ""} style="margin-left:${depth * 0.6}rem;">
+    <summary><span class="nav-bm-folder-head"><button type="button" class="nav-bm-handle" data-bm-folder-handle aria-label="${escapeHtml(t("Move folder"))}: ${name}" title="${escapeHtml(t("Move folder"))}">⠿</button><span class="nav-bm-folder-name">\u{1F4C1} <span data-bm-folder-label>${name}</span></span><button type="button" class="nav-bm-rename" data-bm-folder-rename aria-label="${escapeHtml(t("Rename folder"))}: ${name}" title="${escapeHtml(t("Rename folder"))}">✎</button></span></summary>
+    ${inner}
+  </details>`;
 }
 
 function personName(roster, personTagId) {
@@ -227,6 +239,7 @@ export function mountBookmarkMenu(navBarEl, { db, getTenantId, getPersonId, getB
   function render(bookmarksDoc, roster) {
     listEl.innerHTML =
       controlsHtml() +
+      `<p class="nav-bm-error" data-bm-nav-error role="alert" hidden></p>` +
       presetsHtml(bookmarksDoc, getBookmarkMenuExpanded()) +
       renderBookmarkList(bookmarksDoc, {
         expanded: getBookmarkMenuExpanded(),
@@ -263,12 +276,129 @@ export function mountBookmarkMenu(navBarEl, { db, getTenantId, getPersonId, getB
       setBookmarkMenuExpanded(!getBookmarkMenuExpanded());
       render(bookmarksDoc, roster);
     });
+    wireFolderEdits(bookmarksDoc);
     listEl.querySelector("[data-bm-nav-groupby]")?.addEventListener("change", async (e) => {
       e.stopPropagation();
       setBookmarkMenuGroupBy(e.target.value);
       // Person mode may need names this page never loaded -- resolve them
       // before re-rendering, or the first switch would show bare ids once.
       render(bookmarksDoc, await rosterNow(getTenantId()));
+    });
+  }
+
+  // I15 -- a failed write must reach the reader, in words, where they are.
+  function showError(err) {
+    const el = listEl.querySelector("[data-bm-nav-error]");
+    if (!el) return;
+    el.textContent = t("Couldn't save the folder change: {error}", { error: err?.code || err?.message || String(err) });
+    el.hidden = false;
+  }
+
+  // The folder handle (drag, or ArrowUp/ArrowDown) and the rename pencil.
+  // Both act on the DOM in place rather than re-rendering, so the control
+  // under the finger is never detached mid-gesture (see the stopPropagation
+  // note above).
+  function wireFolderEdits(bookmarksDoc) {
+    const siblingsOf = (row) => [...row.parentElement.children].filter((x) => x.matches?.("details[data-bm-folder-id]"));
+    const save = async (row, before) => {
+      const parentId = row.dataset.bmParentId || null;
+      const order = siblingsOf(row).map((x) => x.dataset.bmFolderId);
+      try {
+        const folders = await saveFolderOrder(db, getTenantId(), getPersonId(), parentId, order);
+        // The page's own copy (and the stub, which never mutates its data)
+        // must show the new order the next time this menu opens.
+        if (folders && bookmarksDoc) bookmarksDoc.folders = folders;
+      } catch (err) {
+        // Not saved: put the rows back, so the screen never shows an order
+        // that is not the stored one, and say why.
+        const parent = row.parentElement;
+        const anchor = siblingsOf(row).at(-1)?.nextSibling ?? null;
+        for (const el of before) parent.insertBefore(el, anchor);
+        showError(err);
+      }
+    };
+    listEl.querySelectorAll("[data-bm-folder-handle]").forEach((handle) => {
+      const row = handle.closest("details[data-bm-folder-id]");
+      // A handle inside a <summary> must not open/shut its folder.
+      handle.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); });
+      handle.addEventListener("keydown", (e) => {
+        if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+        e.preventDefault(); e.stopPropagation();
+        const sibs = siblingsOf(row); const i = sibs.indexOf(row);
+        const j = e.key === "ArrowUp" ? i - 1 : i + 1;
+        if (j < 0 || j >= sibs.length) return;
+        const before = [...sibs];
+        if (e.key === "ArrowUp") row.parentElement.insertBefore(row, sibs[j]); else sibs[j].after(row);
+        handle.focus();
+        save(row, before);
+      });
+      handle.addEventListener("pointerdown", (e) => {
+        if (e.button !== 0) return;
+        e.preventDefault(); e.stopPropagation();
+        // Followed on the DOCUMENT, not by pointer capture on the handle:
+        // moving the row in the DOM (which is the whole point) drops a
+        // capture, and the drag would stop after its first step.
+        row.classList.add("nav-bm-dragging");
+        const before = siblingsOf(row);
+        let moved = false;
+        const onMove = (ev) => {
+          const sibs = siblingsOf(row).filter((x) => x !== row);
+          const before = sibs.find((x) => { const r = x.querySelector("summary").getBoundingClientRect(); return ev.clientY < r.top + r.height / 2; });
+          const target = before ?? null;
+          if (target ? row.nextElementSibling !== target : sibs.at(-1)?.nextElementSibling !== row) {
+            if (target) row.parentElement.insertBefore(row, target); else sibs.at(-1)?.after(row);
+            moved = true;
+          }
+        };
+        const onUp = (ev) => {
+          ev?.preventDefault?.(); ev?.stopPropagation?.();
+          document.removeEventListener("pointermove", onMove);
+          document.removeEventListener("pointerup", onUp, true);
+          document.removeEventListener("pointercancel", onUp, true);
+          row.classList.remove("nav-bm-dragging");
+          if (moved) save(row, before);
+        };
+        document.addEventListener("pointermove", onMove);
+        document.addEventListener("pointerup", onUp, true);
+        document.addEventListener("pointercancel", onUp, true);
+      });
+    });
+    listEl.querySelectorAll("[data-bm-folder-rename]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const row = btn.closest("details[data-bm-folder-id]");
+        const label = row.querySelector("[data-bm-folder-label]");
+        if (row.querySelector("[data-bm-folder-input]")) return;
+        const old = label.textContent;
+        const input = document.createElement("input");
+        input.type = "text"; input.value = old; input.className = "nav-bm-rename-input";
+        input.setAttribute("data-bm-folder-input", ""); input.setAttribute("aria-label", t("Folder name"));
+        label.hidden = true; label.after(input); input.focus(); input.select();
+        let done = false;
+        const finish = async (keep) => {
+          if (done) return; done = true;
+          const name = input.value.trim();
+          input.remove(); label.hidden = false;
+          if (!keep || !name || name === old) return;
+          label.textContent = name;
+          try {
+            await renameFolder(db, getTenantId(), getPersonId(), row.dataset.bmFolderId, name);
+            const f = bookmarksDoc?.folders?.find((x) => x.id === row.dataset.bmFolderId);
+            if (f) f.name = name;
+          } catch (err) { label.textContent = old; showError(err); }
+        };
+        // Typing in a <summary> must not toggle the folder, and Escape here
+        // cancels the rename rather than closing the whole sheet (nav.js).
+        input.addEventListener("click", (ev) => { ev.preventDefault(); ev.stopPropagation(); });
+        input.addEventListener("keydown", (ev) => {
+          ev.stopPropagation();
+          if (ev.key === " ") return; // a space is a character here, not a summary toggle
+          if (ev.key === "Enter") { ev.preventDefault(); finish(true); }
+          if (ev.key === "Escape") { ev.preventDefault(); finish(false); }
+        });
+        input.addEventListener("keyup", (ev) => { if (ev.key === " ") ev.preventDefault(); });
+        input.addEventListener("blur", () => finish(true));
+      });
     });
   }
 

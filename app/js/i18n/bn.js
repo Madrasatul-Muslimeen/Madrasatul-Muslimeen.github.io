@@ -2497,6 +2497,13 @@ export const BN = {
   "Visiting from {ref}": "{ref} থেকে এসেছেন",
   "Root unavailable in the approved dataset": "অনুমোদিত তথ্যভাণ্ডারে ধাতু পাওয়া যায়নি",
   "Dictionary Word unavailable in the approved dataset": "অনুমোদিত তথ্যভাণ্ডারে অভিধানের শব্দ পাওয়া যায়নি",
+  // Decision 68 (5 Oct 2026) -- a word with no dictionary word is N/A at Basic and Depth.
+  "Not applicable: this word has no dictionary word, so Basic Arabic and Arabic in Depth leave it out of their totals.": "প্রযোজ্য নয়: এই শব্দের কোনো অভিধানের শব্দ নেই, তাই প্রাথমিক আরবি ও গভীরে আরবি এটিকে তাদের মোট হিসাবের বাইরে রাখে।",
+  "Clear the earlier mark": "আগের চিহ্নটি মুছুন",
+  // The Owner, 5 Oct 2026 -- quick folder edits in the Bookmark menu.
+  "Move folder": "ফোল্ডার সরান",
+  "Rename folder": "ফোল্ডারের নাম বদলান",
+  "Couldn't save the folder change: {error}": "ফোল্ডারের পরিবর্তন সংরক্ষণ করা যায়নি: {error}",
   "Loading occurrences…": "ব্যবহারসমূহ লোড হচ্ছে…",
   "Occurrence list unavailable: {error}": "ব্যবহারের তালিকা পাওয়া যায়নি: {error}",
   "Dictionary": "অভিধান",

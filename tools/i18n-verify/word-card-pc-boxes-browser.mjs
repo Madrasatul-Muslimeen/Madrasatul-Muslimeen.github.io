@@ -21,8 +21,11 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PAT
 
 const BN_DIGITS = "০১২৩৪৫৬৭৮৯";
 const bnDigits = (s) => String(s).replace(/\d/g, (d) => BN_DIGITS[d]);
-// Hand-computed: round(known * 10000 / 77429) / 100, two decimals.
-const RING = { wbw: "28.16", basic: "12.92", depth: "6.46" };
+// Hand-computed: round(known * 10000 / total) / 100, two decimals. UPDATED IN
+// PLACE 5 Oct 2026 (decision 68): Basic and Depth are over 74,122 (the words
+// that have a dictionary word), so 10000 -> 13.49 and 5000 -> 6.75 (were 12.92
+// and 6.46 over 77,429). WbW is still over 77,429.
+const RING = { wbw: "28.16", basic: "13.49", depth: "6.75" };
 const CIRC = 2 * Math.PI * 50;
 const LABELS = { en: ["Not started", "Learning", "Practising", "Achieved"], bn: ["শুরু হয়নি", "শিখছি", "অনুশীলন করছি", "অর্জিত হয়েছে"] };
 const HEADINGS = { en: ["Record your Progress", "Know Your Status"], bn: ["আপনার অগ্রগতি লিখুন", "আপনার অবস্থা জানুন"] };

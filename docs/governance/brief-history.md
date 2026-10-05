@@ -14,6 +14,16 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v09.77 on `main`** (5 Oct 2026 — **Study options: a Go button, and Track's card on top**).
+- **Go** (the Owner, phone screenshot of Range 1–9 of Surah 36: "How about adding a 'go' button here, to straight away go to the page selected?"): a Go button ends the Study Unit row, beside From/To or the Ayah / number picker. It opens the reading view at the chosen unit's first ayah and closes Study options (`openReadingScreen()`, the same as Read under Listening). The row keeps its line count at every width (panel.mjs: 2 lines ≤480px, 1 above; nothing cut).
+- **Track** (the Owner: "I pressed track, the screen appeared but the option screen didn't move"): the Track card was on z-index 50, under the dock (60, which holds Study options) and, on a computer, under the Mastery Wheel window, where it was completely hidden. Track now closes Study options first, and the card sits on the 900 tier the other full-screen cards use (only Track opens it).
+- **Checks:**
+  - study-options-go-track-browser 104/0, en/bn, 360/390/768/1280 (--mutate-go fails 24, --mutate-track fails 16, --mutate-layer fails 2)
+  - panel.mjs OK (no truncation, same line counts); study-options-play-read 73/0; wheel-unit-go 254/0; select-layout-options green
+  - phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0; layout.mjs: no geometry change (only the known `bmNotFound`)
+  - behaviour 1006/1 (sandbox: 31e TLS); 27b/27i updated in place for the Go cell
+- **With the Owner:** press Go in Study options; press Track and see the card alone. A folder's own window (needs a demo); the Asmaul Husna poster (on hold, decision 50).
+
 **Previous milestone: v09.76 on `main`** (5 Oct 2026 — **Search by sound, a word press that shows at once, and a full-screen Bookmark menu**).
 - **Search by sound** (the Owner: "Enable searching with Transliteration like the example", "Inni fi khalqi samawate"): a Latin search also matches each ayah's word-by-word transliteration by its consonant skeleton, with a small tolerance (new `search-tr.json`, 215KB gzipped, fetched only for a Latin search). Results come under "By sound (transliteration)", after the English matches.
 - **Word progress** (the Owner: "It takes hours to marked achieved from not started", then a `permission-denied` toast on the lemma total): one press is ~14 round trips and showed nothing until the last, so it was pressed again; two concurrent creates of the same counter/total document made the second an overwrite, which the Rules refuse (reproduced in the emulator). Now the press shows at once with "Saving…", the buttons lock, and a press during a save starts nothing; the evidence write runs alongside the counters.
