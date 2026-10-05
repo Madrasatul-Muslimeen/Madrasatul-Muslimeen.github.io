@@ -148,6 +148,7 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   confirm: "Confirm",
   sendBack: "Send back",
   progressLoading: "Loading progress…",
+  saving: "Saving…",
   progressUnknown: "Progress not loaded yet",
   progressNotAllowed: "You are not able to record Arabic progress for this person.",
   coverage: "{known} of {total} words known in this ayah",
@@ -398,11 +399,14 @@ function progressBlock(progress, authority, coverage, text, formatNumber, wbw = 
       : progress.review === "returned"
         ? (progress.returnNote ? String(text.reviewReturned).replace("{note}", progress.returnNote) : text.reviewReturnedNoNote)
         : null;
-  const stateButton = (state) => `<button type="button" data-word-progress-state="${state}" aria-pressed="${progress.state === state}" style="${stageColourStyle(state)}"${authority?.mayClaim ? "" : " disabled"}>${escapeHtml(stateLabel[state])}</button>`;
+  // 5 Oct 2026 -- while a press is saving, every button is locked (one save
+  // at a time) and the pressed state already shows.
+  const locked = progress.saving ? " disabled" : "";
+  const stateButton = (state) => `<button type="button" data-word-progress-state="${state}" aria-pressed="${progress.state === state}" style="${stageColourStyle(state)}"${authority?.mayClaim && !progress.saving ? "" : " disabled"}>${escapeHtml(stateLabel[state])}</button>`;
   const decisions = authority?.mayDecide && progress.state === "achieved"
     ? `<div class="word-progress-decide">
-        <button type="button" data-word-progress-decide="confirmed">${escapeHtml(text.confirm)}</button>
-        <button type="button" data-word-progress-decide="returned">${escapeHtml(text.sendBack)}</button>
+        <button type="button" data-word-progress-decide="confirmed"${locked}>${escapeHtml(text.confirm)}</button>
+        <button type="button" data-word-progress-decide="returned"${locked}>${escapeHtml(text.sendBack)}</button>
       </div>`
     : "";
   const coverageLine = coverage
@@ -425,6 +429,7 @@ function progressBlock(progress, authority, coverage, text, formatNumber, wbw = 
     <h3 class="word-progress-heading word-progress-heading-pc">${escapeHtml(text.recordHeading)}</h3>
     ${wbw.where ? `<p class="word-progress-where">${escapeHtml(wbw.where)}</p>` : ""}
     <div class="word-progress-states" role="group" aria-label="${escapeHtml(text.progressHeading)}">${stateButton("not_started")}${stateButton("learning")}${stateButton("practising")}${stateButton("achieved")}</div>
+    ${progress.saving ? `<p class="word-progress-state" data-word-progress-saving role="status">${escapeHtml(text.saving ?? "Saving…")}</p>` : ""}
     ${reviewLine ? `<p class="word-progress-state" data-word-progress-review>${escapeHtml(reviewLine)}</p>` : ""}
     ${authority && !authority.mayClaim ? `<p class="word-progress-state" data-word-progress-blocked>${escapeHtml(text.progressNotAllowed)}</p>` : ""}
     ${decisions}

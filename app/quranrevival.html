@@ -14971,6 +14971,7 @@
     function wordProgressLabels() {
       return {
         progressHeading: t("Word progress"),
+        saving: t("Saving…"),
         recordHeading: t("Record your Progress"),
         statusHeading: t("Know Your Status"),
         wordNumberLabel: t("word {n}"),
@@ -15171,7 +15172,11 @@
           coverage = computeArabicCoverage({ scopeOccurrenceIds: scope, views, label: `ayah:${ref.surah}:${ref.ayah}` });
         } catch { coverage = null; }
       }
-      return { progress: { ...progress, loading: wordProgressBusy && !progress.loaded }, authority, coverage };
+      // The Owner, 5 Oct 2026: "It takes hours to marked achieved from not
+      // started." A press shows AT ONCE: the pressed state, locked buttons
+      // and "Saving…" (see wordProgressSaving at runWordProgressAction()).
+      const saving = wordProgressSaving && wordProgressSaving.occurrenceId === quranWordCardState.occurrenceId && wordProgressSaving.level === level;
+      return { progress: { ...progress, loading: wordProgressBusy && !progress.loaded, ...(saving ? { saving: true, state: wordProgressSaving.state ?? progress.state } : {}) }, authority, coverage };
     }
 
     /**
@@ -15490,10 +15495,35 @@
       await applyLemmaOccurrenceCounterDelta({ tenantId, personId, occurrenceId, confirmationRequired, beforeKnown: true, afterKnown, level });
     }
 
+    // ONE SAVE AT A TIME (the Owner, 5 Oct 2026: "It takes hours to marked
+    // achieved from not started", then "That save was blocked by a
+    // permissions rule ... update the whole-Qur'an word total for this
+    // lemma"). One press is ~14 database round trips in a row, with nothing
+    // on screen until the last -- so the button looked dead and was pressed
+    // again. Two presses at once both found the lemma counter / the totals
+    // document missing and both CREATED it; the second create landed on the
+    // first and the Rules refused it as an overwrite (reproduced in the
+    // emulator: fulfilled | permission-denied), and a repeated press could
+    // also count one word twice. Now the press shows at once, and a second
+    // press while one is saving is ignored.
+    let wordProgressSaving = null;
+
     async function runWordProgressAction(action) {
+      if (wordProgressSaving) return;
       const { tenantId, subjectPersonId, actorPersonId, isSupervisor } = wordProgressActor();
       if (!tenantId || !subjectPersonId || !actorPersonId || !quranWordCardState.occurrenceId) return;
       const level = quranWordCardState.level;
+      wordProgressSaving = { occurrenceId: quranWordCardState.occurrenceId, level, state: action.kind === "state" ? action.state : null };
+      renderPersistentWordCard();
+      try {
+        await runWordProgressActionNow(action, { tenantId, subjectPersonId, actorPersonId, isSupervisor, level });
+      } finally {
+        wordProgressSaving = null;
+        renderPersistentWordCard();
+      }
+    }
+
+    async function runWordProgressActionNow(action, { tenantId, subjectPersonId, actorPersonId, isSupervisor, level }) {
       // Issue #320 -- the Basic/Depth tabs offer no controls while their gate
       // is closed, so this only ever fires for real; this is defence in depth,
       // the same discipline setWordState()/decideWordApproval() already apply
@@ -15534,6 +15564,9 @@
       // I15 throughout: safeWrite() is this app's own "a failed write must
       // reach the user" wrapper, and it is what every other write on this
       // page already goes through.
+      // 5 Oct 2026 -- the Activity evidence below touches nothing the
+      // counters read or write, so it runs alongside them, not in the queue.
+      let evidenceWrite = null;
       if (action.kind === "state") {
         await safeWrite(() => setWordState(db, { ...common, state: action.state }),
           { what: "record Arabic word progress", occurrenceId: common.occurrenceId });
@@ -15565,7 +15598,7 @@
         if (level === "wbw") {
           if (studyEvidencePersistenceReady()) {
             const wbwRef = parseQuranWordOccurrenceId(common.occurrenceId);
-            await safeWrite(
+            evidenceWrite = safeWrite(
               () => recordStudyEvidence(db, wbwEngagementArgs({
                 tenantId, personId: subjectPersonId,
                 surah: wbwRef.surah, ayah: wbwRef.ayah,
@@ -15609,6 +15642,7 @@
           await applyLemmaOccurrenceCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown: beforeKnownForLemma, level });
         }
       }
+      await evidenceWrite;
       // Issue #303 -- the "if you learn this word" delta and the whole-Qur'an
       // figure can both have moved (this occurrence's own known-ness is part
       // of what they read); refresh them alongside the card's own re-render.
