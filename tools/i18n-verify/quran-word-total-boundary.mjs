@@ -255,6 +255,28 @@ check("QURAN_TOTAL_WORD_COUNT matches the real packaged manifest", () => {
   assert.equal(total.QURAN_TOTAL_WORD_COUNT, manifest.totalWords);
 });
 
+// Decision 68 -- the Basic/Depth total is the words that HAVE a lemma. Bound
+// three ways: the two packaged indexes that already state it, and an
+// independent count walking every surah file.
+check("QURAN_LEMMA_WORD_COUNT (decision 68) is the words with a lemma: lemmas-index, the identity manifest, and a fresh count of the surah files all agree", () => {
+  const out = path.join(toolsDir, "output");
+  const lemmas = JSON.parse(fs.readFileSync(path.join(out, "lemmas-index.json"), "utf8"));
+  const ident = JSON.parse(fs.readFileSync(path.join(out, "word-identity-index-manifest.json"), "utf8"));
+  assert.equal(total.QURAN_LEMMA_WORD_COUNT, lemmas.occurrences, "lemmas-index occurrences");
+  assert.equal(total.QURAN_LEMMA_WORD_COUNT, total.QURAN_TOTAL_WORD_COUNT - ident.missingLemma, "total minus missingLemma");
+  let withLemma = 0;
+  for (const f of fs.readdirSync(path.join(out, "surahs")).filter((x) => /^surah_\d{3}\.json$/.test(x))) {
+    for (const a of JSON.parse(fs.readFileSync(path.join(out, "surahs", f), "utf8")).ayahs) for (const w of a.words) if (w.morphology?.lemma) withLemma++;
+  }
+  assert.equal(total.QURAN_LEMMA_WORD_COUNT, withLemma, "fresh count of words with a lemma");
+});
+
+check("levelWordTotal (decision 68): WbW counts every word, Basic and Depth only words with a lemma", () => {
+  assert.equal(total.levelWordTotal("wbw"), total.QURAN_TOTAL_WORD_COUNT);
+  assert.equal(total.levelWordTotal("basic"), total.QURAN_LEMMA_WORD_COUNT);
+  assert.equal(total.levelWordTotal("depth"), total.QURAN_LEMMA_WORD_COUNT);
+});
+
 check("the packaged juz-word-totals.json sums to exactly QURAN_TOTAL_WORD_COUNT across all 30 juz, and matches an INDEPENDENT re-derivation from the real surah files", () => {
   const packaged = JSON.parse(fs.readFileSync(path.join(toolsDir, "output", "juz-word-totals.json"), "utf8"));
   assert.equal(packaged.byJuz.length, 30);

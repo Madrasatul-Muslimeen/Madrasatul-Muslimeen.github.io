@@ -105,6 +105,8 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   visitingFrom: "Visiting from {ref}",
   rootUnavailable: "Root unavailable in the approved dataset",
   lemmaUnavailable: "Dictionary Word unavailable in the approved dataset",
+  notApplicable: "Not applicable: this word has no dictionary word, so Basic Arabic and Arabic in Depth leave it out of their totals.",
+  clearEarlierMark: "Clear the earlier mark",
   loadingOccurrences: "Loading occurrences…",
   occurrencesUnavailable: "Occurrence list unavailable: {error}",
   // 2 Oct 2026 (#476) -- the Depth tab's Dictionary box. semanticRangeMissing /
@@ -386,6 +388,19 @@ function learnDeltaLine(learnDelta, text, formatNumber) {
   return `<p class="word-progress-learn-delta">${escapeHtml(line)}</p>`;
 }
 
+// Decision 68 (5 Oct 2026) -- at Basic and Depth a word with no dictionary
+// word is Not applicable, automatically: a plain line in place of the four
+// buttons. A mark made before the decision is not silently changed; the
+// reader gets one button to clear it (it writes not_started, through the same
+// handler as the Not started button).
+function notApplicableHtml(progress, authority, text) {
+  const marked = progress.state && progress.state !== "not_started";
+  const clear = marked && authority?.mayClaim
+    ? `<button type="button" class="word-progress-na-clear" data-word-progress-state="not_started"${progress.saving ? " disabled" : ""}>${escapeHtml(text.clearEarlierMark ?? "Clear the earlier mark")}</button>`
+    : "";
+  return `<p class="word-progress-state word-progress-na" data-word-progress-na>${escapeHtml(text.notApplicable ?? "Not applicable")}</p>${clear}`;
+}
+
 function progressBlock(progress, authority, coverage, text, formatNumber, wbw = {}) {
   if (!progress) return "";
   if (progress.loaded === false) {
@@ -428,7 +443,7 @@ function progressBlock(progress, authority, coverage, text, formatNumber, wbw = 
     <h3 class="word-progress-heading word-progress-heading-phone">${escapeHtml(text.progressHeading)}</h3>
     <h3 class="word-progress-heading word-progress-heading-pc">${escapeHtml(text.recordHeading)}</h3>
     ${wbw.where ? `<p class="word-progress-where">${escapeHtml(wbw.where)}</p>` : ""}
-    <div class="word-progress-states" role="group" aria-label="${escapeHtml(text.progressHeading)}">${stateButton("not_started")}${stateButton("learning")}${stateButton("practising")}${stateButton("achieved")}</div>
+    ${wbw.notApplicable ? notApplicableHtml(progress, authority, text) : `<div class="word-progress-states" role="group" aria-label="${escapeHtml(text.progressHeading)}">${stateButton("not_started")}${stateButton("learning")}${stateButton("practising")}${stateButton("achieved")}</div>`}
     ${progress.saving ? `<p class="word-progress-state" data-word-progress-saving role="status">${escapeHtml(text.saving ?? "Saving…")}</p>` : ""}
     ${reviewLine ? `<p class="word-progress-state" data-word-progress-review>${escapeHtml(reviewLine)}</p>` : ""}
     ${authority && !authority.mayClaim ? `<p class="word-progress-state" data-word-progress-blocked>${escapeHtml(text.progressNotAllowed)}</p>` : ""}
@@ -938,7 +953,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
       ${context.occurrencesLoading ? `<p>${escapeHtml(text.loadingOccurrences)}</p>` : ""}
       ${context.occurrencesError ? `<p role="status">${escapeHtml(String(text.occurrencesUnavailable).replace("{error}", context.occurrencesError))}</p>` : ""}
       </div><div class="word-card-side">
-      ${progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals, level, where })}
+      ${progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals, level, where, notApplicable: !layers.lemma })}
     </div></div>`;
   }
   // v08.21 -- the occurrence section comes FIRST, then the dictionary and the
@@ -961,7 +976,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
       },
     })}
     </div><div class="word-card-side">
-    ${progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals, level, where })}
+    ${progressBlock(context.progress, context.authority, null, text, formatNumber, { levelTotals: context.levelTotals, level, where, notApplicable: !layers.lemma })}
   </div></div>`;
 }
 

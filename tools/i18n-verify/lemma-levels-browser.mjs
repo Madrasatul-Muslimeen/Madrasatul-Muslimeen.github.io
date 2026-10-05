@@ -22,7 +22,10 @@ let pass = 0, fail = 0;
 const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
 
 const WANT = { wbw: 57, basic: 327, depth: 339 };
-const WANT_PERCENT = { wbw: "0.07", basic: "0.42", depth: "0.44" };
+// UPDATED IN PLACE 5 Oct 2026 (decision 68): Basic and Depth count only the
+// 74,122 words that have a dictionary word, so 327/74122 = 0.44% and
+// 339/74122 = 0.46% (were 0.42/0.44 over 77,429). WbW is unchanged.
+const WANT_PERCENT = { wbw: "0.07", basic: "0.44", depth: "0.46" };
 const RAHMAN = "رَّحْمَٰن";
 const GROUP_ID = "رحم:2";
 const ROOT = "رحم";
@@ -118,7 +121,7 @@ const totalsOf = (page) => page.evaluate(() => {
       known: document.querySelector(`#quranWordCardMount [data-whole-quran-level="${level}"]`)?.textContent ?? null,
       percent: document.querySelector(`#quranWordCardMount [data-whole-quran-level-percent="${level}"]`)?.textContent ?? null,
       // The two <strong> numbers are the total and the known count, in the language's own order.
-      knownNum: [...document.querySelectorAll(`#quranWordCardMount [data-whole-quran-level="${level}"] strong`)].map((e) => e.textContent).find((x) => !/^(77,429|৭৭,৪২৯)$/.test(x)) ?? null,
+      knownNum: [...document.querySelectorAll(`#quranWordCardMount [data-whole-quran-level="${level}"] strong`)].map((e) => e.textContent).find((x) => !/^(77,429|৭৭,৪২৯|74,122|৭৪,১২২)$/.test(x)) ?? null, // decision 68: Basic/Depth say 74,122
     };
   }
   return out;

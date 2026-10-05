@@ -6109,7 +6109,7 @@
     import { isWordLevelsPersistenceReady } from "./js/study-word-levels-readiness.js";
     import { computeArabicCoverage, occurrenceIdsForAyah, occurrenceIdsForAyahRange, occurrenceIdsForSurah, occurrenceIdsForUnit } from "./js/quran-word-coverage.js";
     // Issue #206 -- the whole-Qur'an/Juz running word counter.
-    import { QURAN_TOTAL_WORD_COUNT, knownDelta, juzForSurahAyah, wordTotalRatio, percentRounded } from "./js/quran-word-total.js";
+    import { QURAN_TOTAL_WORD_COUNT, levelWordTotal, knownDelta, juzForSurahAyah, wordTotalRatio, percentRounded } from "./js/quran-word-total.js";
     import { getWordTotals, recordWordTotalDelta, recordWordTotalDeltaAcrossJuz } from "./js/quran-word-total-data.js";
     import { isWbwTotalPersistenceReady } from "./js/study-wbw-total-readiness.js";
     // Issue #328 -- the per-Approach "counts for each ayah inside" setting
@@ -14774,6 +14774,8 @@
         visitingFrom: t("Visiting from {ref}"),
         rootUnavailable: t("Root unavailable in the approved dataset"),
         lemmaUnavailable: t("Dictionary Word unavailable in the approved dataset"),
+        notApplicable: t("Not applicable: this word has no dictionary word, so Basic Arabic and Arabic in Depth leave it out of their totals."),
+        clearEarlierMark: t("Clear the earlier mark"),
         loadingOccurrences: t("Loading occurrences…"),
         occurrencesUnavailable: t("Occurrence list unavailable: {error}"),
         dictionaryHeading: t("Dictionary"),
@@ -14853,8 +14855,8 @@
       try {
         const levels = meaningGroupsLive() ? ["wbw", "basic", "depth"] : ["wbw"];
         const totals = await Promise.all(levels.map((level) => getWordTotals(db, { tenantId, personId, level }).catch(() => null)));
-        const best = Math.max(0, ...totals.map((x) => Number(x?.known) || 0));
-        return best / QURAN_TOTAL_WORD_COUNT;
+        // Decision 68 -- each level over its own total (Basic/Depth: 74,122).
+        return Math.max(0, ...totals.map((x, i) => (Number(x?.known) || 0) / levelWordTotal(levels[i])));
       } catch { return null; }
     }
     function markWordsNoteText(mode, shows, share) {
@@ -15260,10 +15262,14 @@
             getWordTotals(db, { tenantId, personId: subjectPersonId, level: "depth" }),
           ]);
           const zero = { known: 0, total: QURAN_TOTAL_WORD_COUNT };
+          // Decision 68 -- Basic and Depth count only words that have a
+          // dictionary word (74,122). The stored document's own `total` stays
+          // 77,429 (the Rules fix it), so the reader's denominator is set here.
+          const ofLevel = (level, t) => ({ ...(t ?? zero), total: levelWordTotal(level) });
           levelTotals = [
             { level: "wbw", total: wholeQuranTotal ?? zero },
-            { level: "basic", total: basicT ?? zero },
-            { level: "depth", total: depthT ?? zero },
+            { level: "basic", total: ofLevel("basic", basicT) },
+            { level: "depth", total: ofLevel("depth", depthT) },
           ];
         } catch { levelTotals = undefined; }
       }
@@ -15541,6 +15547,11 @@
       // the same discipline setWordState()/decideWordApproval() already apply
       // at the data layer.
       if (level !== "wbw" && !isWordLevelsPersistenceReady()) return;
+      // Decision 68 -- a word with no dictionary word is Not applicable at
+      // Basic and Depth: the card offers no claim there, and this refuses one
+      // anyway. Clearing an earlier mark (not_started) is still allowed.
+      if (level !== "wbw" && action.kind === "state" && action.state !== "not_started"
+          && !wordOfOccurrence(quranWordCardState.occurrenceId)?.morphology?.lemma) return;
       const confirmationRequired = !!wordProgressConfirmRequired;
       const common = {
         tenantId, personId: subjectPersonId, level, occurrenceId: quranWordCardState.occurrenceId,
