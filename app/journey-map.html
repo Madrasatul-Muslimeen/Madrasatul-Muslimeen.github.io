@@ -1324,10 +1324,34 @@
         open: (noteId) => { if (allNotes.some((n) => n.noteId === noteId && n.status === NOTE_STATUS.ACTIVE)) openNoteWindow(noteId, {}); },
         pinned: () => allNotes.filter((n) => n.pinned === true && n.status === NOTE_STATUS.ACTIVE && n.archived !== true).map((n) => ({ noteId: n.noteId, title: n.title })),
       },
+      // The Owner, 5 Oct 2026 -- a folder in its own window (⋯ → 🗔 Open in its own window).
+      folders: {
+        loaded: () => notesAndPlacementsLoaded,
+        node: (id) => {
+          const n = id ? findNodeByIdOrRole(mergedRoots(), id, null) : null;
+          return n ? { id: n.folderId, name: folderDisplayName(n), parentId: n.parentFolderId ?? null } : null;
+        },
+        path: (id) => folderAncestorPath(id).map((n) => ({ id: n.folderId, name: folderDisplayName(n) })),
+        children: (id) => (findNodeByIdOrRole(mergedRoots(), id, null)?.children ?? []).slice().sort(byOrder)
+          .filter((k) => k.folderId).map((k) => ({ id: k.folderId, name: folderDisplayName(k), count: notesAndPlacementsLoaded ? (folderCounts[k.folderId] ?? 0) : null })),
+        notes: (id) => {
+          const n = findNodeByIdOrRole(mergedRoots(), id, null);
+          return n ? notesInFolder(n).map((r) => ({ noteId: r.note.noteId, title: r.note.title, pinned: r.note.pinned === true, when: whenDate(displayTimestamp(r.note)) })) : [];
+        },
+        canEdit: (id) => { const n = findNodeByIdOrRole(mergedRoots(), id, null); return !!n && isSelfSelected() && !isSystemFolderRole(n.semanticRole); },
+        newNote: async (id, title) => {
+          const n = findNodeByIdOrRole(mergedRoots(), id, null);
+          if (!n) return null;
+          const noteId = await createNoteInFolder(n, title);
+          if (noteId) showPageStatus(title ? t('Note "{title}" created in {folder}.', { title, folder: folderDisplayName(n) }) : t('New note created in {folder}.', { folder: folderDisplayName(n) }));
+          return noteId;
+        },
+        newFolder: async (id, name) => { const n = findNodeByIdOrRole(mergedRoots(), id, null); if (n) await createFolderInside(n, name); },
+      },
       orderFrom: paneOrderFrom, folderFrom: paneFolderFrom,
       paneTier: noteLayoutTier, paneApply: () => applyNoteTier(), scroller,
     });
-    const { paneView, windowViews, allViews, openPane: openNotePane, closePane: closeNotePane, openWindow: openNoteWindow, closeView, endEdit } = noteViews;
+    const { paneView, windowViews, allViews, openPane: openNotePane, closePane: closeNotePane, openWindow: openNoteWindow, openFolderWindow, closeView, endEdit } = noteViews;
 
     // =====================================================================
     // Siyagah round 14 (decision 66, #566) -- Pin / Favourite / Archive /
@@ -1957,6 +1981,7 @@
             <div class="bar-palette folder-row-menu" data-bar-palette="${menuId}">
               <button type="button" class="secondary tiny" data-folder-addnote>✚ ${t("Add note here")}</button>
               <button type="button" class="secondary tiny" data-folder-addsub>➕ ${t("Add subfolder")}</button>
+              <button type="button" class="secondary tiny" data-folder-window>🗔 ${t("Open in its own window")}</button>
               <button type="button" class="secondary tiny" data-folder-pin>📍 ${t("New folders go here")}</button>
               <button type="button" class="secondary tiny" data-folder-rename>✏️ ${t("Rename")}</button>
               <button type="button" class="secondary tiny" data-folder-up ${upDisabled ? "disabled" : ""} aria-label="${escapeHtml(t("Move up"))}">▲ ${t("Move up")}</button>
@@ -2003,6 +2028,10 @@
           else if (e.key === "Escape") { e.preventDefault(); inlineRenameKey = null; renderFoldersView(); }
         });
         renameInput?.addEventListener("blur", (e) => commitInlineRename(node, e.target.value));
+        row.querySelector("[data-folder-window]")?.addEventListener("click", (e) => {
+          e.stopPropagation(); closeAllBarPalettes(null);
+          openFolderWindow(node.folderId);
+        });
         row.querySelector("[data-folder-addnote]")?.addEventListener("click", (e) => {
           e.stopPropagation(); closeAllBarPalettes(null);
           selectFolder(node);
