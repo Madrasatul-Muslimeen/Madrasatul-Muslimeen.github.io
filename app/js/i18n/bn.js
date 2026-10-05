@@ -2502,6 +2502,7 @@ export const BN = {
   "Clear the earlier mark": "আগের চিহ্নটি মুছুন",
   // The Owner, 5 Oct 2026 -- quick folder edits in the Bookmark menu.
   "Move folder": "ফোল্ডার সরান",
+  "You are editing this Note: tag changes are saved when you press Done.": "আপনি এই নোটটি সম্পাদনা করছেন: ট্যাগের পরিবর্তন সম্পন্ন চাপলে সংরক্ষিত হবে।",
   "Rename folder": "ফোল্ডারের নাম বদলান",
   "Couldn't save the folder change: {error}": "ফোল্ডারের পরিবর্তন সংরক্ষণ করা যায়নি: {error}",
   "Loading occurrences…": "ব্যবহারসমূহ লোড হচ্ছে…",

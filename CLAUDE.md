@@ -224,17 +224,22 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.78 on `main`** (5 Oct 2026 — **Not applicable at Basic and Depth; move and rename folders in the Bookmark menu; the Ayah window demo**).
-- **N/A** (the Owner, on 36:8:9 فَهُم in Basic: "Since this conjugation is not applicable in Basic, should have a n/a button there. All words of these types should have n/a button." Asked; answered "Automatic", "Basic and Depth": decision 68). 3,307 of 77,429 words have no dictionary word (lemma). At Basic and Depth such a word shows "Not applicable" in place of the four buttons, the save path refuses a claim on it, and the Basic/Depth totals are **74,122** (`QURAN_LEMMA_WORD_COUNT`, `levelWordTotal()`; I7: excluded, never zero). The stored totals document keeps 77,429 (the Rules fix it), so the reader's denominator is applied where the figure is shown. An earlier mark is not silently changed: the card offers "Clear the earlier mark". WbW is unchanged.
-- **Folders** (the Owner: "Enable a quick folder edit n handler to move folders here"): every folder row in the Bookmark menu has a ⠿ handle (drag, or ArrowUp/Down) and a ✎ pencil, always on. The handle reorders a folder among those sharing its parent (`reorderSiblingFolders`/`saveFolderOrder` in `bookmarks.js`); the pencil renames in place. A refused save is said in words (I15) and the move snaps back. Nesting stays on Manage bookmarks.
-- **Demo, not in the app** (the Owner: "enable the entire Ayah popout … resizeable, fitting within the screen … Demo me first"): `docs/reference/2026-10-05-ayah-window-demo.html`. The Read view in a window you can drag, resize from any edge or the gold corner, make smaller (⧉), fill the screen (⛶ or double-tap the title) and close; it is clamped inside the screen on every move, resize and rotation; a phone opens it full screen.
+**Current milestone: v09.79 on `main`** (5 Oct 2026 — **the Siyagah plan's partly-built items finished; the folder window and pinned panel demo**).
+- **Asked:** the Owner asked "Did you finish all the folder and note building as we planned from Siyagah file?" An audit of all 24 S8–S14 plan items against the code found one item NOT built (a folder opened in its own window) and three PARTLY built. Their answer: "Yes, fix the small ones and demo the others."
+- **Fixed:**
+  - **Tags while editing** are held until Done, like folder ticks, in both the 📎 sheet and ⋯ → 🏷 Tags…, which say so in words (`stagedTags`, `holdTagTick`, `applyStagedTags` in `note-window.js`).
+  - **"Version n of m"** shows in the inline pane too, not only pop-up windows (the button moved into the shared template).
+  - **✚ New note** is in pop-up windows too; a window's new Note goes in its folder and opens in a window of its own.
+- **Demo, not in the app:** `docs/reference/2026-10-05-folder-window-and-pinned-demo.html`.
+  - (1) A folder's ⋯ → Open in its own window: browse its subfolders and Notes.
+  - (2) A 📌 Pinned side panel in a Note window, beside the Note on a computer, over it on a phone.
 - **Checks:**
-  - word-na-browser 48/0 (--mutate-na fails 24, --mutate-total fails 8); quran-word-total-boundary 33/0 binds 74,122 to lemmas-index, the identity manifest and a fresh count; lemma-levels 240/0 and word-card-pc-boxes 296/0 updated in place for the new percentages; every other word-card suite green (word-progress-rendered 80/3, sandbox TLS)
-  - bookmark-folder-edit-browser 68/0, real-length names (--mutate-nosave fails 20, --mutate-rename fails 4); bookmark-sheet 176/0, study-presets 84/0, navcheck green
-  - demo: a scratch browser test, 29/0 at 390 and 1280 (inside the screen after drag, corner resize, edge resize and rotation; every function inside works)
-  - phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0; layout.mjs: no geometry change (only the known `bmNotFound`)
-  - behaviour 1006/1 (sandbox: 31e TLS)
-- **With the Owner:** look at the Ayah window demo and say build, change or drop; open a pronoun word (e.g. 36:8:9) at Basic; drag a folder in the Bookmark menu. A folder's own window (needs a demo); the Asmaul Husna poster (on hold, decision 50).
+  - journey-finish-browser 64/0, en/bn, 390/1280 (MUTATE tags-at-once fails 8, no-pane-version 12, no-window-new 4)
+  - every Mapping My Journey suite green: tags 363, note-windows 254, window-tabs 166, reading-tools 488, three-panel 368, folder-picker 294, editor 577, note-edit 208, note-pane 327, flags-links 306, s9 280, notes-note-windows 218, folder-menus 148
+  - demo: a scratch browser test, 37/0 (windows stay inside the screen, the corner resizes without selecting text, every part reachable)
+  - phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0
+  - behaviour 1003/4 (sandbox: 22g×3 archive.org intermittent, 31e TLS)
+- **With the Owner:** two demos waiting (the Ayah window; the folder window and pinned panel); try "Version n of m" in a Note, ✚ in a Note window, and a tag ticked while editing.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration

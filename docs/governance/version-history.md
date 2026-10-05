@@ -722,3 +722,4 @@ total). Allocated by the MMSA Architect.
 09.76: Search by sound; word press shows at once; full-screen Bookmark menu. Allocated by the MMSA Architect.
 09.77: Study options: a Go button, and Track's card on top. Allocated by the MMSA Architect.
 09.78: N/A at Basic and Depth; folder move and rename; Ayah window demo. Allocated by the MMSA Architect.
+09.79: Siyagah plan finished; folder window and pinned panel demo. Allocated by the MMSA Architect.

@@ -1261,7 +1261,7 @@
       chips: (note) => [...activeFilingFolderIds(note)].map((id) => findNodeByIdOrRole(mergedRoots(), id, null)).filter(Boolean)
         .map((f) => ({ id: f.folderId, label: folderDisplayName(f) })),
       onChip: revealFolderFromChip,
-      newNote: () => newNoteHere(),
+      newNote: (v) => newNoteHere(v),
       attach: (v, note) => { copyNoteTo(note, null, { editing: !!v.ed, anchor: v.el, withTags: true }); },
       versions: {
         list: (note) => listNoteRevisions(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, noteId: note.noteId }),
@@ -1890,13 +1890,22 @@
     }
 
     /** ✚ New note (panel 2's header, the Note pane's bar, a folder's ⋯ menu): an untitled Note in the chosen folder, opened in the pane. */
-    async function newNoteHere() {
-      const paneNode = paneView.noteId !== null && paneView.folderId ? findNodeByIdOrRole(mergedRoots(), paneView.folderId, null) : null;
-      const node = paneNode ?? selectedFolderNode();
+    // `v` is the view whose ✚ was pressed: the pane, or (the Owner, 5 Oct 2026)
+    // a pop-up window. A window's new Note goes in the folder that window came
+    // from, else the first folder its own Note is in, and opens in a window of
+    // its own beside it.
+    async function newNoteHere(v = paneView) {
+      const fromView = v && v.noteId !== null && v.folderId ? findNodeByIdOrRole(mergedRoots(), v.folderId, null) : null;
+      const firstOwn = () => {
+        const id = v && v.noteId !== null ? [...activeFilingFolderIds({ noteId: v.noteId })][0] : null;
+        return id ? findNodeByIdOrRole(mergedRoots(), id, null) : null;
+      };
+      const node = fromView ?? (v && v.kind === "window" ? firstOwn() : null) ?? selectedFolderNode();
       if (!node) { showPageStatus(t("Choose a folder first — then a new Note is made in it.")); return; }
       const noteId = await createNoteInFolder(node, "");
       if (!noteId) return;
       showPageStatus(t('New note created in {folder}.', { folder: folderDisplayName(node) }));
+      if (v && v.kind === "window") { openNoteWindow(noteId, { folderId: node.folderId ?? null }); return; }
       openNotePane(noteId, folderNotesEl.querySelector(`[data-note-id="${CSS.escape(noteId)}"] [data-note-open]`));
     }
 

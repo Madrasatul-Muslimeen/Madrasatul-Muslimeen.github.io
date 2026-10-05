@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Folder Window Demo</title>
+<style>
+:root{--navy:#1F3A6E;--gold:#C9A24B;--ink:#222;--muted:#666;--line:#dcdcdc;--sel:#eef3fb;--sec:#fdf6e8;--secl:#e6c98a;--bg:#fff}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
+button{font:inherit}
+/* the demo switcher */
+.demo-tabs{position:fixed;z-index:50;left:50%;transform:translateX(-50%);bottom:10px;display:flex;gap:6px;background:#fffbea;border:1px solid #e3cf8f;border-radius:999px;padding:4px;box-shadow:0 6px 18px rgba(0,0,0,.18);max-width:calc(100vw - 16px)}
+.demo-tabs button{border:none;border-radius:999px;padding:8px 12px;background:none;font-weight:700;color:#7a5a12;cursor:pointer;font-size:.82rem;white-space:nowrap;min-height:38px}
+.demo-tabs button[aria-pressed=true]{background:var(--navy);color:#fff}
+.explain{position:static;margin:0 0 12px;max-width:620px;background:#fffbea;border:1px solid #e3cf8f;border-radius:10px;padding:8px 12px;font-size:.84rem;line-height:1.4;box-shadow:0 6px 18px rgba(0,0,0,.15)}
+.explain b{color:#7a5a12}.explain button{border:1px solid #d6c07c;background:#fff;border-radius:6px;font-size:.75rem;padding:2px 8px;cursor:pointer;margin-left:6px}
+.explain.min p{display:none}.explain.min{display:inline-block;padding:4px 8px}
+/* ---------- the page behind: Mapping My Journey ---------- */
+.page{position:absolute;inset:0;overflow:auto;padding:14px 16px 90px}
+.page h1{margin:0 0 4px;font-size:1.5rem}
+.page .sub{margin:0 0 10px;color:#444;font-size:.92rem}
+.views{display:flex;gap:8px;margin:10px 0}
+.views span{border:1px solid var(--navy);border-radius:999px;padding:7px 16px;font-size:.88rem;color:var(--navy)}
+.views span.on{background:var(--navy);color:#fff}
+.tree{display:grid;gap:6px;max-width:420px}
+.frow{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:8px;padding:6px 6px 6px 14px;min-height:50px;background:#fff;font-size:.9rem;color:#1F3A6E}
+.frow.sec{background:var(--sec);border-color:var(--secl);color:#333}
+.frow .nm{flex:1;min-width:0}
+.frow .ct{color:#888;font-size:.78rem}
+.dots{width:40px;height:38px;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer;color:var(--navy);font-size:1.1rem}
+.menu{position:fixed;z-index:30;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.25);padding:6px;display:grid;gap:2px;min-width:230px}
+.menu button{border:none;background:none;text-align:left;padding:9px 10px;border-radius:7px;cursor:pointer;font-size:.9rem;min-height:40px}
+.menu button:hover{background:var(--sel)}
+.menu .new{background:#fff8e6;font-weight:700}
+.menu .new::after{content:"new";margin-left:8px;font-size:.66rem;background:var(--gold);color:#2a1d05;border-radius:999px;padding:1px 6px;vertical-align:middle}
+/* ---------- windows (same chrome as the app's Note windows) ---------- */
+.win{position:fixed;z-index:10;display:flex;flex-direction:column;background:#fff;border:1px solid #c9ccd4;border-radius:10px;box-shadow:0 18px 50px rgba(10,16,30,.35);overflow:hidden;min-width:260px;min-height:260px}
+.win.full{border-radius:0}
+.wbar{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:6px 8px 6px 14px;background:var(--navy);color:#fff;cursor:grab;touch-action:none;user-select:none;min-height:44px}
+.wbar .t{flex:1;min-width:0;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wb{width:38px;height:36px;border-radius:8px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;cursor:pointer;font-size:1rem;flex:0 0 auto}
+.wb[aria-pressed=true]{background:var(--gold);color:#2a1d05;border-color:var(--gold)}
+.wbody{flex:1;min-height:0;display:flex}
+.grip{position:absolute;right:0;bottom:0;width:26px;height:26px;cursor:nwse-resize;touch-action:none;background:linear-gradient(135deg,transparent 0 50%,var(--gold) 50% 58%,transparent 58% 66%,var(--gold) 66% 74%,transparent 74% 82%,var(--gold) 82% 90%,transparent 90%)}
+.win.full .grip{display:none}
+/* folder window body */
+.fw{flex:1;min-width:0;display:flex;flex-direction:column}
+.fw-path{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.ib{min-height:38px;padding:0 12px;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer;color:var(--navy);font-weight:600}
+.ib.go{background:var(--navy);color:#fff;border-color:var(--navy)}
+.ib[disabled]{opacity:.4;cursor:default}
+.crumbs{flex:1;min-width:0;font-size:.85rem;color:#555}
+.crumbs button{border:none;background:none;color:var(--navy);cursor:pointer;padding:2px 3px;font-size:.85rem;text-decoration:underline}
+.fw-quick{display:flex;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line)}
+.fw-quick input{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:0 10px;min-height:38px;font:inherit}
+.fw-list{flex:1;overflow:auto;padding:10px;display:grid;gap:8px;align-content:start}
+.sub-card{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fafbfd;cursor:pointer;min-height:48px;color:var(--navy);font-weight:600}
+.sub-card .ct{margin-left:auto;color:#888;font-size:.8rem;font-weight:400}
+.note-card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;display:grid;gap:2px;min-height:48px}
+.note-card b{color:var(--navy)}
+.note-card small{color:#777}
+.note-card:hover,.sub-card:hover{outline:2px solid #b6c6e6}
+.empty{color:#888;font-size:.88rem;padding:6px 2px}
+/* note window body + the pinned side panel */
+.pin-panel{flex:0 0 220px;border-right:1px solid var(--line);background:#fbfaf6;display:flex;flex-direction:column;min-height:0}
+.pin-panel[hidden]{display:none}
+.pin-head{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line);font-weight:700;color:#7a5a12}
+.pin-head span{flex:1}
+.pin-list{overflow:auto;padding:6px;display:grid;gap:4px;align-content:start}
+.pin-item{border:none;background:none;text-align:left;padding:8px 9px;border-radius:8px;cursor:pointer;display:grid;gap:1px;min-height:44px}
+.pin-item small{color:#888}
+.pin-item[aria-current=true]{background:var(--sel);outline:1px solid #b6c6e6}
+.nbody{flex:1;min-width:0;display:flex;flex-direction:column}
+.ntools{display:flex;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.ntools .ib{min-width:40px;padding:0 10px}
+.ntext{flex:1;overflow:auto;padding:12px 16px;line-height:1.55}
+.ntext h3{margin:0 0 6px;color:var(--navy)}
+.ntext .meta{color:#777;font-size:.82rem;margin-bottom:10px}
+/* narrow window: the panel slides over the Note instead of beside it */
+.win.narrow .pin-panel{position:absolute;z-index:3;left:0;top:44px;bottom:0;width:min(260px,85%);box-shadow:8px 0 24px rgba(0,0,0,.2)}
+.toast{position:fixed;left:50%;bottom:64px;transform:translateX(-50%);background:#1d2433;color:#fff;padding:8px 12px;border-radius:8px;font-size:.82rem;opacity:0;pointer-events:none;transition:opacity .2s;z-index:60;max-width:90vw;text-align:center}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="page" id="page">
+  <div class="explain" id="explain"><b id="exTitle"></b> <button type="button" id="exToggle">hide</button><p id="exText"></p></div>
+  <h1>Mapping My Journey</h1>
+  <p class="sub">Every permanent Note you've written, organised your way.</p>
+  <div class="views"><span class="on">Folders</span><span>Timeline</span><span>Path</span></div>
+  <div class="tree" id="tree"></div>
+</div>
+
+<div class="demo-tabs" role="group" aria-label="Which demo">
+  <button type="button" data-demo="folder" aria-pressed="true">1 · Folder window</button>
+  <button type="button" data-demo="pinned" aria-pressed="false">2 · Pinned panel</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ---------------- data ----------------
+const FOLDERS = {
+  root: { name: "Top", parent: null },
+  pjm: { name: "Personal Journey Map", parent: "root", section: true },
+  ra: { name: "Reflection Archive", parent: "root", section: true },
+  hifz: { name: "Quran Hifz", parent: "root" },
+  alpha: { name: "Ulul Albaab - The believer", parent: "root" },
+  duas: { name: "Duas from the Qur'an", parent: "alpha" },
+  tafsir: { name: "Tafsir notes", parent: "alpha" },
+  yasin: { name: "Yaseen", parent: "tafsir" },
+};
+const NOTES = [
+  { id: "n1", title: "Who are the people of understanding?", folders: ["alpha"], date: "1 Oct 2026", pinned: true, body: "Āli ʿImrān 190–191: they remember Allah standing, sitting and lying down, and reflect on the creation of the heavens and the earth." },
+  { id: "n2", title: "Signs in the night and the day", folders: ["alpha", "tafsir"], date: "2 Oct 2026", pinned: false, body: "The alternation of night and day is named among the signs for those with understanding." },
+  { id: "n3", title: "Rabbana atina", folders: ["duas"], date: "28 Sep 2026", pinned: true, body: "Our Lord, give us in this world good and in the Hereafter good, and protect us from the punishment of the Fire." },
+  { id: "n4", title: "Yaseen 1–12: a first reading", folders: ["yasin"], date: "5 Oct 2026", pinned: true, body: "Notes on the opening of Sūrat Yā-Sīn: the Qur'an full of wisdom, the straight path, the warning." },
+  { id: "n5", title: "One minute after each Salah", folders: ["hifz"], date: "30 Sep 2026", pinned: false, body: "A plan: one minute of revision after every prayer." },
+];
+const kids = (id) => Object.entries(FOLDERS).filter(([, f]) => f.parent === id && !f.section).map(([k]) => k);
+const notesIn = (id) => NOTES.filter((n) => n.folders.includes(id));
+const countIn = (id) => notesIn(id).length + kids(id).reduce((s, k) => s + countIn(k), 0);
+const pathOf = (id) => { const p = []; let c = id; while (c && c !== "root") { p.unshift(c); c = FOLDERS[c].parent; } return p; };
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+// ---------------- the tree behind ----------------
+function paintTree() {
+  const rows = [];
+  for (const [k, f] of Object.entries(FOLDERS)) if (f.section) rows.push(`<div class="frow sec"><span class="nm">${esc(f.name)}</span></div>`);
+  let i = 1;
+  for (const k of kids("root")) rows.push(`<div class="frow"><span class="nm">(${String(i++).padStart(2, "0")}) ${esc(FOLDERS[k].name)}</span><span class="ct">${countIn(k)}</span><button class="dots" type="button" data-menu="${k}" aria-label="Folder menu">⋯</button></div>`);
+  document.getElementById("tree").innerHTML = rows.join("");
+}
+paintTree();
+const toast = (m) => { const t = document.getElementById("toast"); t.textContent = m; t.classList.add("show"); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("show"), 1700); };
+
+// ---------------- windows: drag, resize, always inside the screen ----------------
+const M = 6; let zTop = 10; const wins = [];
+const vw = () => innerWidth, vh = () => innerHeight, phone = () => vw() < 640;
+function clamp(w) {
+  if (w.full || phone()) { Object.assign(w.el.style, { left: 0, top: 0, width: vw() + "px", height: vh() + "px" }); w.el.classList.add("full"); }
+  else {
+    w.el.classList.remove("full");
+    const b = w.box; b.w = Math.min(Math.max(b.w, 280), vw() - 2 * M); b.h = Math.min(Math.max(b.h, 280), vh() - 2 * M);
+    b.x = Math.min(Math.max(b.x, M), vw() - M - b.w); b.y = Math.min(Math.max(b.y, M), vh() - M - b.h);
+    Object.assign(w.el.style, { left: b.x + "px", top: b.y + "px", width: b.w + "px", height: b.h + "px" });
+  }
+  const width = w.el.getBoundingClientRect().width;
+  w.el.classList.toggle("narrow", width < 560);
+}
+addEventListener("resize", () => wins.forEach(clamp));
+function makeWin(title, { w = 620, h = 520 } = {}) {
+  const el = document.createElement("section"); el.className = "win"; el.setAttribute("role", "dialog");
+  el.innerHTML = `<div class="wbar"><span class="t"></span><span class="extra"></span><button class="wb" type="button" data-full title="Fill the screen" aria-label="Fill the screen">⛶</button><button class="wb" type="button" data-close title="Close" aria-label="Close">✕</button></div><div class="wbody"></div><div class="grip" title="Drag to resize"></div>`;
+  document.body.appendChild(el);
+  const off = wins.length * 28;
+  const win = { el, full: false, box: { x: Math.max(M, (vw() - w) / 2 + off), y: Math.max(M, 70 + off), w, h } };
+  el.querySelector(".t").textContent = title; el.setAttribute("aria-label", title);
+  const front = () => { el.style.zIndex = ++zTop; }; front();
+  el.addEventListener("pointerdown", front);
+  el.querySelector("[data-close]").onclick = () => { el.remove(); wins.splice(wins.indexOf(win), 1); };
+  el.querySelector("[data-full]").onclick = () => { win.full = !win.full; el.querySelector("[data-full]").setAttribute("aria-pressed", String(win.full)); clamp(win); };
+  el.querySelector(".wbar").addEventListener("pointerdown", (e) => {
+    if (e.target.closest("button") || win.full || phone()) return;
+    e.preventDefault(); const sx = e.clientX, sy = e.clientY, b0 = { ...win.box };
+    const mv = (ev) => { win.box.x = b0.x + ev.clientX - sx; win.box.y = b0.y + ev.clientY - sy; clamp(win); };
+    document.body.style.userSelect = "none"; // no text selected while dragging
+    const up = () => { document.body.style.userSelect = ""; removeEventListener("pointermove", mv); removeEventListener("pointerup", up); };
+    addEventListener("pointermove", mv); addEventListener("pointerup", up);
+  });
+  el.querySelector(".grip").addEventListener("pointerdown", (e) => {
+    e.preventDefault(); e.stopPropagation(); const sx = e.clientX, sy = e.clientY, b0 = { ...win.box };
+    const mv = (ev) => { win.box.w = b0.w + ev.clientX - sx; win.box.h = b0.h + ev.clientY - sy; clamp(win); };
+    document.body.style.userSelect = "none"; // no text selected while dragging
+    const up = () => { document.body.style.userSelect = ""; removeEventListener("pointermove", mv); removeEventListener("pointerup", up); };
+    addEventListener("pointermove", mv); addEventListener("pointerup", up);
+  });
+  wins.push(win); clamp(win);
+  return win;
+}
+
+// ---------------- DEMO 1: a folder in its own window ----------------
+function openFolderWindow(id) {
+  const win = makeWin("📁 " + FOLDERS[id].name, { w: 560, h: 560 });
+  win.kind = "folder"; win.folder = id;
+  const body = win.el.querySelector(".wbody");
+  const paint = () => {
+    const f = win.folder;
+    win.el.querySelector(".t").textContent = "📁 " + FOLDERS[f].name;
+    const crumbs = pathOf(f).map((k, i, a) => i < a.length - 1 ? `<button type="button" data-go="${k}">${esc(FOLDERS[k].name)}</button> ›` : `<b>${esc(FOLDERS[k].name)}</b>`).join(" ");
+    const subs = kids(f).map((k) => `<div class="sub-card" data-go="${k}" role="button" tabindex="0">📁 ${esc(FOLDERS[k].name)}<span class="ct">${countIn(k)}</span></div>`).join("");
+    const notes = notesIn(f).map((n) => `<div class="note-card" data-note="${n.id}" role="button" tabindex="0"><b>${n.pinned ? "📌 " : ""}${esc(n.title)}</b><small>${n.date}${n.folders.length > 1 ? ` · in ${n.folders.length} folders` : ""}</small></div>`).join("");
+    body.innerHTML = `<div class="fw">
+      <div class="fw-path"><button class="ib" type="button" data-up ${FOLDERS[f].parent && FOLDERS[f].parent !== "root" ? "" : "disabled"} aria-label="Up to the parent folder">⬆</button><span class="crumbs">${crumbs}</span><button class="ib go" type="button" data-new>✚ New note</button></div>
+      <div class="fw-quick"><input type="text" placeholder="Quick title — press Enter to add a Note here" aria-label="Quick title"><button class="ib" type="button" data-newfolder>➕ Folder</button></div>
+      <div class="fw-list">${subs}${notes || (subs ? "" : `<p class="empty">No Notes here yet.</p>`)}</div></div>`;
+  };
+  body.addEventListener("click", (e) => {
+    const go = e.target.closest("[data-go]"); if (go) { win.folder = go.dataset.go; paint(); return; }
+    if (e.target.closest("[data-up]")) { win.folder = FOLDERS[win.folder].parent; paint(); return; }
+    const n = e.target.closest("[data-note]"); if (n) { openNoteWindow(n.dataset.note); return; }
+    if (e.target.closest("[data-new]")) { addNote("Untitled Note"); return; }
+    if (e.target.closest("[data-newfolder]")) { const k = "f" + Date.now(); FOLDERS[k] = { name: "New folder", parent: win.folder }; paint(); paintTree(); toast("A new folder, inside " + FOLDERS[win.folder].name); }
+  });
+  body.addEventListener("keydown", (e) => {
+    if (e.target.matches("input") && e.key === "Enter" && e.target.value.trim()) { addNote(e.target.value.trim()); return; }
+    if (e.key === "Enter" && e.target.closest("[data-go],[data-note]")) e.target.click();
+  });
+  function addNote(title) { NOTES.unshift({ id: "x" + Date.now(), title, folders: [win.folder], date: "Today", pinned: false, body: "" }); paint(); paintTree(); toast(`"${title}" made in ${FOLDERS[win.folder].name}`); }
+  win.paint = paint; paint();
+  return win;
+}
+
+// ---------------- DEMO 2: a Note window with the pinned side panel ----------------
+function openNoteWindow(id, { panel = false } = {}) {
+  const win = makeWin("", { w: 720, h: 540 });
+  win.kind = "note"; win.note = id; win.panel = panel;
+  const body = win.el.querySelector(".wbody");
+  const paint = () => {
+    const n = NOTES.find((x) => x.id === win.note);
+    win.el.querySelector(".t").textContent = n.title;
+    const pins = NOTES.filter((x) => x.pinned);
+    body.innerHTML = `<aside class="pin-panel" ${win.panel ? "" : "hidden"} aria-label="Pinned Notes"><div class="pin-head"><span>📌 Pinned</span><button class="ib" type="button" data-pclose aria-label="Close the panel">✕</button></div>
+        <div class="pin-list">${pins.map((p) => `<button class="pin-item" type="button" data-pin="${p.id}" aria-current="${p.id === win.note}"><span>${esc(p.title)}</span><small>${esc(FOLDERS[p.folders[0]].name)}</small></button>`).join("") || `<p class="empty">Nothing pinned yet.</p>`}</div></aside>
+      <div class="nbody"><div class="ntools"><button class="ib" type="button" data-panel aria-pressed="${win.panel}" title="Pinned Notes">📌 <span>Pinned</span></button><button class="ib" type="button" data-say="Find in this Note">🔍</button><button class="ib" type="button" data-say="Folders and tags">📎</button><button class="ib" type="button" data-say="New note">✚</button><button class="ib" type="button" data-pintoggle>${n.pinned ? "Unpin" : "📌 Pin"}</button><button class="ib" type="button" data-say="Edit">✏️ Edit</button></div>
+        <div class="ntext"><h3>${esc(n.title)}</h3><div class="meta">${n.date} · 📁 ${n.folders.map((f) => esc(FOLDERS[f].name)).join(", ")}</div><p>${esc(n.body || "…")}</p></div></div>`;
+  };
+  body.addEventListener("click", (e) => {
+    if (e.target.closest("[data-panel]")) { win.panel = !win.panel; paint(); return; }
+    if (e.target.closest("[data-pclose]")) { win.panel = false; paint(); return; }
+    const p = e.target.closest("[data-pin]"); if (p) { win.note = p.dataset.pin; if (win.el.classList.contains("narrow")) win.panel = false; paint(); return; }
+    if (e.target.closest("[data-pintoggle]")) { const n = NOTES.find((x) => x.id === win.note); n.pinned = !n.pinned; toast(n.pinned ? "Pinned" : "Unpinned"); wins.filter((w) => w.kind === "note").forEach((w) => w.paint()); return; }
+    const s = e.target.closest("[data-say]"); if (s) toast(s.dataset.say + " (as in the app today)");
+  });
+  win.paint = paint; paint();
+  return win;
+}
+
+// ---------------- the folder ⋯ menu (demo 1) ----------------
+let menuEl = null;
+document.getElementById("tree").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-menu]"); if (!b) return;
+  menuEl?.remove();
+  const id = b.dataset.menu; const r = b.getBoundingClientRect();
+  menuEl = document.createElement("div"); menuEl.className = "menu"; menuEl.setAttribute("role", "menu");
+  menuEl.innerHTML = ["Add note here", "Add subfolder", "Rename", "Colour and bold", "Move to…", "Copy to…"].map((x) => `<button type="button" data-plain>${x}</button>`).join("") + `<button type="button" class="new" data-open-win>🗔 Open in its own window</button><button type="button" data-plain>🗑 Delete</button>`;
+  document.body.appendChild(menuEl);
+  const mw = menuEl.offsetWidth, mh = menuEl.offsetHeight;
+  menuEl.style.left = Math.max(8, Math.min(r.right - mw, innerWidth - mw - 8)) + "px";
+  menuEl.style.top = Math.max(8, Math.min(r.bottom + 4, innerHeight - mh - 8)) + "px";
+  menuEl.addEventListener("click", (ev) => {
+    if (ev.target.closest("[data-open-win]")) { menuEl.remove(); menuEl = null; openFolderWindow(id); return; }
+    if (ev.target.closest("[data-plain]")) { toast(ev.target.textContent.trim() + " (as in the app today)"); menuEl.remove(); menuEl = null; }
+  });
+  e.stopPropagation();
+});
+document.addEventListener("click", (e) => { if (menuEl && !menuEl.contains(e.target)) { menuEl.remove(); menuEl = null; } });
+
+// ---------------- the two demos ----------------
+const EX = {
+  folder: ["Demo 1: a folder in its own window.", "Tap ⋯ on a folder, then 🗔 Open in its own window (the one marked new). The window shows that folder's subfolders and Notes: tap a subfolder to go in, ⬆ or the path to come back out, ✚ or the quick title to make a Note there, a Note to open it in a Note window. Drag the blue bar, resize from the gold corner, ⛶ fills the screen. Several can be open. On a phone it fills the screen."],
+  pinned: ["Demo 2: the pinned Notes side panel.", "A Note window with 📌 Pinned in its toolbar. Tap it: your pinned Notes appear in a panel beside the Note (on a phone, and in a narrow window, it slides over the Note instead). Tap one to read it in the same window. 📌 Pin / Unpin updates the panel at once."],
+};
+function showDemo(which) {
+  document.querySelectorAll("[data-demo]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.demo === which)));
+  [...wins].forEach((w) => w.el.remove()); wins.length = 0;
+  document.getElementById("toast").classList.remove("show");
+  document.getElementById("exTitle").textContent = EX[which][0]; document.getElementById("exText").textContent = EX[which][1];
+  document.getElementById("explain").classList.remove("min"); document.getElementById("exToggle").textContent = "hide";
+  if (which === "pinned") openNoteWindow("n4", { panel: !phone() });
+}
+document.querySelector(".demo-tabs").addEventListener("click", (e) => { const b = e.target.closest("[data-demo]"); if (b) showDemo(b.dataset.demo); });
+document.getElementById("exToggle").onclick = (e) => { const x = document.getElementById("explain"); x.classList.toggle("min"); e.target.textContent = x.classList.contains("min") ? "show" : "hide"; };
+document.addEventListener("pointerdown", (e) => { if (e.target.closest(".win,.menu")) { const x = document.getElementById("explain"); if (!x.classList.contains("min")) { x.classList.add("min"); document.getElementById("exToggle").textContent = "show"; } } });
+showDemo(new URLSearchParams(location.search).get("demo") === "pinned" ? "pinned" : "folder");
+</script>
+</body>
+</html>
