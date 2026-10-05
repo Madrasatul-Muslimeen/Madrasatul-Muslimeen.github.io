@@ -308,15 +308,24 @@ export function createNoteViews(host) {
   // can never be saved; a fold is a CSS class the sanitiser strips, so it writes
   // nothing. Failures are said in words in the panel (I15).
   // =====================================================================
+  // The Owner, 5 Oct 2026 ("add all functions of the notepane of Siyagah"): H4, ¶ Normal, raise / lower a
+  // heading, text size, spacing, mark done, a box, a divider and Justify joined the row. "|" draws a thin
+  // line between groups (text · headings · paragraph · insert · undo), as Siyagah's palettes group them.
   const TOOLS = [
     ["bold", "Bold", "<b>B</b>"], ["italic", "Italic", "<i>I</i>"], ["underline", "Underline", "<u>U</u>"], ["strike", "Strikethrough", "<s>S</s>"],
-    ["h1", "Heading 1", "H1"], ["h2", "Heading 2", "H2"], ["h3", "Heading 3", "H3"],
-    ["ul", "Bullet list", "•"], ["ol", "Numbered list", "1."], ["check", "Checklist", "☑"], ["quote", "Quote", "❝"],
-    ["link", "Link", "🔗"], ["table", "Table", "▦"],
     ["color", "Text colour", "<span class=\"tb-swatch-a\">A</span>"], ["highlight", "Highlight", "<span class=\"tb-swatch-hl\">A</span>"],
-    ["left", "Align left", "⇤"], ["center", "Align centre", "↔"], ["right", "Align right", "⇥"],
-    ["undo", "Undo", "↶"], ["redo", "Redo", "↷"], ["clear", "Clear formatting", "⌫"],
+    ["bigger", "Bigger text", "A+"], ["smaller", "Smaller text", "A−"], ["done", "Mark done", "✓"], ["clear", "Clear formatting", "⌫"], "|",
+    ["h1", "Heading 1", "H1"], ["h2", "Heading 2", "H2"], ["h3", "Heading 3", "H3"], ["h4", "Heading 4", "H4"], ["para", "Normal text", "¶"],
+    ["hup", "Raise the heading (Ctrl+[)", "▲H"], ["hdown", "Lower the heading (Ctrl+])", "▼H"], "|",
+    ["ul", "Bullet list", "•"], ["ol", "Numbered list", "1."], ["check", "Checklist", "☑"], ["quote", "Quote", "❝"],
+    ["left", "Align left", "⇤"], ["center", "Align centre", "↔"], ["right", "Align right", "⇥"], ["justify", "Justify", "☰"], ["spacing", "Spacing", "↕"], "|",
+    ["link", "Link", "🔗"], ["table", "Table", "▦"], ["divider", "Divider line", "─"], ["box", "Box around the paragraph", "▢"], "|",
+    ["undo", "Undo", "↶"], ["redo", "Redo", "↷"],
   ];
+  /** Text sizes the A+ / A− steps walk through (em); 1 is normal. The sanitiser allows exactly these. */
+  const TEXT_SIZES = [0.8, 0.9, 1, 1.15, 1.3, 1.5, 1.8];
+  const LINE_HEIGHTS = [["", "Normal"], ["1.2", "Tight"], ["1.5", "Roomy"], ["2", "Double"]];
+  const PARA_SPACES = [["", "Normal"], ["0", "None"], ["0.5em", "Small"], ["1em", "Medium"], ["1.5em", "Large"]];
   // Fixed palettes: dark text colours and pale highlights, all readable on the white Note page (palette-contrast checks them).
   const TEXT_COLOURS = [["#B3261E", "Red"], ["#1F3A6E", "Navy"], ["#1B6E3C", "Green"], ["#6A3FA0", "Purple"], ["#7A4B00", "Brown"], ["#006A6A", "Teal"]];
   const HIGHLIGHTS = [["#FFF59D", "Yellow"], ["#C8E6C9", "Light green"], ["#BBDEFB", "Light blue"], ["#F8BBD0", "Pink"], ["#E1BEE7", "Lavender"], ["#FFE0B2", "Orange"]];
@@ -324,7 +333,8 @@ export function createNoteViews(host) {
 
   function renderEditToolbar(v) {
     const label = (k) => escapeHtml(t(k));
-    v.editToolbarEl.innerHTML = TOOLS.map(([c, name, glyph]) => `<button type="button" class="secondary tb-btn" data-cmd="${c}" aria-label="${label(name)}" title="${label(name)}">${glyph}</button>`).join("");
+    v.editToolbarEl.innerHTML = TOOLS.map((x) => x === "|" ? `<span class="tb-sep" aria-hidden="true"></span>`
+      : `<button type="button" class="secondary tb-btn" data-cmd="${x[0]}" aria-label="${label(x[1])}" title="${label(x[1])}">${x[2]}</button>`).join("");
     v.editToolbarEl.setAttribute("role", "toolbar");
     v.editToolbarEl.setAttribute("aria-label", t("Formatting"));
   }
@@ -369,6 +379,11 @@ export function createNoteViews(host) {
         <button type="button" class="secondary tb-btn tb-text" data-table-op="delRow">${label("Remove row")}</button>
         <button type="button" class="secondary tb-btn tb-text" data-table-op="addCol">${label("Add column")}</button>
         <button type="button" class="secondary tb-btn tb-text" data-table-op="delCol">${label("Remove column")}</button>${close}</div>${msg}`;
+    } else if (mode === "spacing") {
+      P.innerHTML = `<div class="pane-panel-row" role="group" aria-label="${label("Line spacing")}"><span class="pane-panel-label">${label("Line spacing")}</span>${LINE_HEIGHTS.map(([val, name]) =>
+        `<button type="button" class="secondary tb-btn tb-text" data-spacing-line="${val}">${label(name)}</button>`).join("")}</div>
+        <div class="pane-panel-row" role="group" aria-label="${label("Space after a paragraph")}"><span class="pane-panel-label">${label("Space after a paragraph")}</span>${PARA_SPACES.map(([val, name]) =>
+        `<button type="button" class="secondary tb-btn tb-text" data-spacing-after="${val}">${label(name)}</button>`).join("")}${close}</div>${msg}`;
     } else {
       const list = mode === "color" ? TEXT_COLOURS : HIGHLIGHTS;
       P.innerHTML = `<div class="pane-panel-row" role="group" aria-label="${label(mode === "color" ? "Text colour" : "Highlight")}">${list.map(([hex, name]) =>
@@ -430,22 +445,125 @@ export function createNoteViews(host) {
     document.execCommand("removeFormat", false, null);
     document.execCommand("unlink", false, null);
     if (sel.rangeCount) for (const el of body.querySelectorAll("[style]")) if (sel.containsNode(el, true)) el.removeAttribute("style");
-    const blk = closestIn(v, "h1, h2, h3, blockquote");
+    for (const b of selectedBlocks(v)) { b.removeAttribute("data-done"); b.removeAttribute("data-box"); }
+    const blk = closestIn(v, "h1, h2, h3, h4, blockquote");
     if (blk) document.execCommand("formatBlock", false, "p");
+  }
+  /** A short message in the edit status line, gone after a few seconds (I15: a refused button says why). */
+  function flashStatus(v, text) {
+    const el = v.editStatusEl;
+    el.textContent = text; el.hidden = false; el.classList.add("problem");
+    clearTimeout(el.__t); el.__t = setTimeout(() => { if (el.textContent === text) { el.hidden = true; el.classList.remove("problem"); } }, 3500);
+  }
+  /** The top-level blocks (paragraphs, headings, quotes, lists…) the selection touches, inside the editor. */
+  function selectedBlocks(v) {
+    const body = editBodyEl(v), sel = window.getSelection();
+    if (!body || !sel?.rangeCount || !body.contains(sel.anchorNode)) return [];
+    const top = (n) => { while (n && n.parentNode !== body) n = n.parentNode; return n?.nodeType === 1 ? n : null; };
+    const range = sel.getRangeAt(0);
+    const out = [...body.children].filter((c) => range.intersectsNode(c));
+    if (!out.length) { const one = top(sel.anchorNode); if (one) out.push(one); }
+    return out;
+  }
+  /** ▲H / ▼H and Ctrl+[ / Ctrl+]: the heading the caret is in moves one level up (H2 -> H1) or down (H2 -> H3; H4 -> normal text). */
+  function shiftHeading(v, dir) {
+    const h = closestIn(v, "h1, h2, h3, h4");
+    if (!h) return false;
+    const n = Number(h.tagName[1]) + dir;
+    if (n < 1) return true; // already the top level
+    document.execCommand("formatBlock", false, n > 4 ? "p" : `h${n}`);
+    return true;
+  }
+  /** A+ / A−: the selected text one step bigger or smaller, as a span with a font-size the sanitiser allows. */
+  function stepTextSize(v, dir) {
+    const body = editBodyEl(v), sel = window.getSelection();
+    if (!body || !sel?.rangeCount || sel.isCollapsed || !body.contains(sel.anchorNode)) return false;
+    const startEl = sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentElement : sel.anchorNode;
+    const cur = parseFloat(getComputedStyle(startEl).fontSize) / parseFloat(getComputedStyle(body).fontSize) || 1;
+    let i = TEXT_SIZES.reduce((best, x, k) => (Math.abs(x - cur) < Math.abs(TEXT_SIZES[best] - cur) ? k : best), 2);
+    i = Math.min(Math.max(i + dir, 0), TEXT_SIZES.length - 1);
+    // execCommand fontSize marks the selection with <font size="7">; each mark becomes a span with the chosen size.
+    document.execCommand("styleWithCSS", false, false);
+    document.execCommand("fontSize", false, "7");
+    for (const f of body.querySelectorAll('font[size="7"]')) {
+      const span = document.createElement("span");
+      if (TEXT_SIZES[i] !== 1) span.style.fontSize = `${TEXT_SIZES[i]}em`;
+      // a size set inside the new span would fight it: drop inner sizes
+      for (const inner of f.querySelectorAll("[style]")) inner.style.removeProperty("font-size");
+      span.append(...f.childNodes);
+      f.replaceWith(span);
+      if (!span.getAttribute("style")) span.replaceWith(...span.childNodes);
+    }
+    return true;
+  }
+  function applySpacing(v, kind, val) {
+    restoreRange(v);
+    const blocks = selectedBlocks(v);
+    if (!blocks.length) { panelMsg(v, t("Put the cursor in a paragraph first.")); return; }
+    for (const b of blocks) {
+      if (kind === "line") { if (val) b.style.lineHeight = val; else b.style.removeProperty("line-height"); }
+      else { if (val) b.style.marginBottom = val; else b.style.removeProperty("margin-bottom"); }
+      if (!b.getAttribute("style")) b.removeAttribute("style");
+    }
+    panelMsg(v, ""); onEditInput(v);
+  }
+  /** Enter at the very start of the Note's first heading or first list adds an empty line ABOVE it (there is no other way to get above it). */
+  function onEditKeydown(v, ev) {
+    if (!v.ed) return;
+    if ((ev.ctrlKey || ev.metaKey) && (ev.key === "[" || ev.key === "]")) {
+      ev.preventDefault();
+      if (shiftHeading(v, ev.key === "[" ? -1 : 1)) onEditInput(v);
+      return;
+    }
+    if (ev.key !== "Enter" || ev.shiftKey) return;
+    const body = editBodyEl(v), sel = window.getSelection();
+    if (!body || !sel?.isCollapsed || !sel.rangeCount) return;
+    const first = body.firstElementChild;
+    if (!first || !(/^(H[1-4]|UL|OL|BLOCKQUOTE|TABLE)$/.test(first.tagName))) return;
+    const startBlock = first.tagName === "UL" || first.tagName === "OL" ? first.firstElementChild : first;
+    if (!startBlock || !startBlock.contains(sel.anchorNode)) return;
+    const r = document.createRange();
+    r.setStart(startBlock, 0); r.setEnd(sel.anchorNode, sel.anchorOffset);
+    if (r.toString().length) return; // not at the very start
+    ev.preventDefault();
+    const p = document.createElement("p");
+    p.appendChild(document.createElement("br"));
+    body.insertBefore(p, first);
+    const c = document.createRange(); c.setStart(p, 0); c.collapse(true);
+    sel.removeAllRanges(); sel.addRange(c);
+    onEditInput(v);
   }
   function runEditCommand(v, cmd) {
     const body = editBodyEl(v);
     if (!body) return;
-    if (["link", "table", "color", "highlight"].includes(cmd)) {
+    if (["link", "table", "color", "highlight", "spacing"].includes(cmd)) {
       if (!v.editPanelEl.hidden && v.editPanelEl.dataset.mode === cmd) closePanel(v); else openPanel(v, cmd);
       return;
     }
     closePanel(v);
     body.focus();
     document.execCommand("styleWithCSS", false, false);
-    if (/^h[123]$/.test(cmd)) {
+    if (/^h[1-4]$/.test(cmd)) {
       const now = String(document.queryCommandValue("formatBlock") || "").toLowerCase().replace(/[<>]/g, "");
       document.execCommand("formatBlock", false, now === cmd ? "p" : cmd);
+    } else if (cmd === "para") {
+      document.execCommand("formatBlock", false, "p");
+    } else if (cmd === "hup" || cmd === "hdown") {
+      if (!shiftHeading(v, cmd === "hup" ? -1 : 1)) { flashStatus(v, t("Put the cursor in a heading first.")); return; }
+    } else if (cmd === "bigger" || cmd === "smaller") {
+      if (!stepTextSize(v, cmd === "bigger" ? 1 : -1)) { flashStatus(v, t("Select some text first.")); return; }
+    } else if (cmd === "done" || cmd === "box") {
+      const attr = cmd === "done" ? "data-done" : "data-box";
+      const blocks = selectedBlocks(v);
+      if (!blocks.length) { flashStatus(v, t("Put the cursor in a paragraph first.")); return; }
+      const on = !blocks.every((b) => b.hasAttribute(attr));
+      for (const b of blocks) if (on) b.setAttribute(attr, "1"); else b.removeAttribute(attr);
+    } else if (cmd === "divider") {
+      document.execCommand("insertHorizontalRule", false, null);
+    } else if (cmd === "justify") {
+      document.execCommand("styleWithCSS", false, true);
+      document.execCommand("justifyFull", false, null);
+      document.execCommand("styleWithCSS", false, false);
     } else if (cmd === "quote") {
       document.execCommand("formatBlock", false, closestIn(v, "blockquote") ? "p" : "blockquote");
     } else if (cmd === "check") {
@@ -624,6 +742,7 @@ export function createNoteViews(host) {
     v.bodyEl.appendChild(wrap);
     Object.assign(v.ed, { wrapEl: wrap, gutterEl: gutter, folded: new Set(), range: null });
     body.addEventListener("paste", (ev) => onEditPaste(v, ev));
+    body.addEventListener("keydown", (ev) => onEditKeydown(v, ev));
     body.addEventListener("keyup", () => saveRange(v));
     body.addEventListener("mouseup", () => saveRange(v));
     v.ed.ro = typeof ResizeObserver === "function" ? new ResizeObserver(() => scheduleGutter(v)) : null;
@@ -754,7 +873,7 @@ export function createNoteViews(host) {
     foldBtn.setAttribute("aria-label", foldLabel); foldBtn.title = foldLabel;
     const findBtn = v.el.querySelector("[data-pane-find-toggle]");
     findBtn.setAttribute("aria-label", t("Find in this Note")); findBtn.title = t("Find in this Note");
-    findBtn.hidden = !!v.ed;
+    findBtn.hidden = false; // the Owner, 5 Oct 2026 (Siyagah's note pane): Find works while editing too
     const attachBtn = v.el.querySelector("[data-pane-attach]");
     const canAttach = !!(own && host.attach);
     attachBtn.hidden = !canAttach;
@@ -1097,7 +1216,8 @@ export function createNoteViews(host) {
     const q = findBarOf(v).querySelector("[data-find-input]").value.trim();
     if (q) {
       const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "giu");
-      const walker = document.createTreeWalker(v.bodyEl, NodeFilter.SHOW_TEXT);
+      // while editing, only the text itself (never the heading controls beside it)
+      const walker = document.createTreeWalker(v.ed ? (editBodyEl(v) ?? v.bodyEl) : v.bodyEl, NodeFilter.SHOW_TEXT);
       const nodes = [];
       for (let n = walker.nextNode(); n; n = walker.nextNode()) if (n.data.trim()) nodes.push(n);
       for (const node of nodes) {
@@ -1120,7 +1240,6 @@ export function createNoteViews(host) {
     if (v.find.marks.length) stepFind(v, Math.min(keepIdx, v.find.marks.length - 1), !keep); else paintFindCount(v);
   }
   function openFind(v) {
-    if (v.ed) return;
     const bar = findBarOf(v);
     bar.hidden = false;
     const input = bar.querySelector("[data-find-input]");
@@ -1373,6 +1492,8 @@ export function createNoteViews(host) {
       if (on("[data-table-insert]")) { insertTable(v); return; }
       const top = on("[data-table-op]"); if (top) { tableOp(v, top.dataset.tableOp); return; }
       const sw = on("[data-swatch]"); if (sw) { applySwatch(v, sw.dataset.swatch, sw.dataset.swatchMode); return; }
+      const sl = on("[data-spacing-line]"); if (sl) { applySpacing(v, "line", sl.dataset.spacingLine); return; }
+      const sa = on("[data-spacing-after]"); if (sa) { applySpacing(v, "after", sa.dataset.spacingAfter); return; }
       const fb = on("[data-sec-fold]"); if (fb) { toggleFold(v, fb.__h); return; }
     }
     if (on("[data-draft-restore]")) { const d = loadDraft(note.noteId); if (d && host.canEdit()) startEdit(v, note, d); return; }

@@ -70,7 +70,9 @@ const DANGEROUS_TAGS = ["script", "iframe", "object", "embed", "style", "svg", "
 // journey-editor-browser.mjs runs a hostile paste (javascript: href, on* handlers, style values beyond colour/background-colour/text-align).
 // Event handlers and xlink stay refused by name below.
 const DANGEROUS_ATTR_PATTERN = /^on|xlink/i;
-const S12_ATTRS = ["colspan", "data-check", "data-checked", "dir", "href", "rowspan", "style"];
+// UPDATED IN PLACE, 5 Oct 2026 (the Owner: "add all functions of the notepane of Siyagah"): data-done (Mark done) and
+// data-box (a box around a paragraph) joined; narrowOutput() rewrites each to the value 1, so neither can carry text.
+const S12_ATTRS = ["colspan", "data-box", "data-check", "data-checked", "data-done", "dir", "href", "rowspan", "style"];
 
 // UPDATED IN PLACE, 28 Sep 2026, reason recorded: DOMPurify used to load from
 // the jsdelivr CDN, so with no internet a Note's body was refused (sanitize

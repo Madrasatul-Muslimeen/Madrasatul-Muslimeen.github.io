@@ -233,3 +233,11 @@ form.fw-quick[data-fw-newfolder-form] { padding: 0.4rem 0.6rem; }
 [data-note-links] li { display: flex; gap: 0.3rem; align-items: center; margin-bottom: 0.25rem; }
 [data-note-links] li > [data-link-open] { flex: 1 1 auto; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; }
 .nw-switch:not(.nw-tabs) .nw-switch-btn { white-space: normal; overflow-wrap: anywhere; line-height: 1.15; font-size: 0.85rem; padding: 2px 8px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; text-overflow: clip; }
+/* The Owner, 5 Oct 2026 ("add all functions of the notepane of Siyagah"): the editor's new marks, the same in
+   read mode, the editor and the Versions viewer. */
+.pane-edit-toolbar .tb-sep { flex: 0 0 1px; align-self: stretch; margin: 4px 2px; background: #c9cfdd; }
+.pane-panel-label { font-size: 0.85rem; color: #444; margin-inline-end: 0.2rem; }
+.pane-edit-body [data-done], .note-pane-body [data-done], .note-ver-text [data-done] { color: #6b7280; text-decoration: line-through; text-decoration-color: #9aa1ad; }
+.pane-edit-body [data-box], .note-pane-body [data-box], .note-ver-text [data-box] { border: 1.5px solid #C9A24B; border-radius: 0.5rem; padding: 0.4rem 0.7rem; margin: 0.5rem 0; background: #fffdf6; }
+.pane-edit-body hr, .note-pane-body hr, .note-ver-text hr { border: 0; border-top: 1.5px solid #c9cfdd; margin: 0.9rem 0; }
+.pane-edit-body h4, .note-pane-body h4, .note-ver-text h4 { font-size: 1rem; margin: 0.6rem 0 0.3rem; }
