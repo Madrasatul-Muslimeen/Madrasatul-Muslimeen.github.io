@@ -288,6 +288,20 @@ button.nav-bm-preset { background: none; border: 0; font: inherit; font-size: 0.
 .nav-bm-rename-input { flex: 1 1 auto; min-width: 0; font: inherit; padding: 0.3rem 0.4rem; border: 1px solid #1F3A6E; border-radius: 0.3rem; }
 .nav-bm-dragging > summary { background: #eef3fb; border-radius: 0.4rem; box-shadow: 0 2px 10px rgba(20,30,55,0.18); }
 .nav-bm-dragging .nav-bm-handle { cursor: grabbing; }
+/* The Owner, 5 Oct 2026: 📖 Last read and ▶ Last played, side by side at the
+   top of the Bookmark menu; each a full 48px tap target naming the place. */
+.nav-bm-lasts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.5rem; margin: 0 0 0.6rem; }
+.nav-bm-last {
+  display: flex; align-items: center; gap: 0.5rem; min-height: 48px; padding: 0.4rem 0.6rem;
+  border: 1px solid #c9d3e6; border-radius: 0.6rem; background: #f4f7fc; color: #1F3A6E;
+  text-decoration: none; text-align: left; cursor: pointer; font: inherit; min-width: 0; box-sizing: border-box;
+}
+.nav-bm-last:hover { background: #e8eef9; }
+.nav-bm-last[disabled] { cursor: default; opacity: 0.6; }
+.nav-bm-last-icon { font-size: 1.15rem; flex: 0 0 auto; }
+.nav-bm-last-text { display: flex; flex-direction: column; min-width: 0; }
+.nav-bm-last-text b { font-size: 0.86rem; }
+.nav-bm-last-text small { font-size: 0.78rem; color: #4a5568; overflow-wrap: anywhere; }
 .nav-bm-error { margin: 0 0 0.4rem; padding: 0.4rem 0.6rem; border-radius: 0.4rem; background: #fbe9e7; color: #8a1c0f; font-size: 0.85rem; }
 .nav-bm-error[hidden] { display: none; }
 .nav-bm-empty { color: #888; font-size: 0.84rem; margin: 0; }

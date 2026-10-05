@@ -79,6 +79,33 @@ export async function touchResume(db, {
   return key;
 }
 
+/**
+ * The Owner, 5 Oct 2026: "Add a last read and last play button in bookmark."
+ * Two places on the person's bookmarks document, kept apart from `resume`
+ * (the Continue strip's own map) so they never show up there:
+ *   lastPlaces.read  where the Qur'an was last READ (the Read view, not playing)
+ *   lastPlaces.play  where recitation last PLAYED (the ayah last sounding)
+ * Each is { surahNum, ayahNum, surahNameEn, settings, at } -- `settings` is the
+ * same snapshot a bookmark carries, so opening one restores the same screen.
+ * Same create-or-update shape as touchResume(); the bookmarks Rules allow any
+ * owner update, so no Rules change.
+ */
+export const LAST_PLACE_KINDS = Object.freeze(["read", "play"]);
+export async function setLastPlace(db, { tenantId, personId, kind, place, uid }) {
+  if (!LAST_PLACE_KINDS.includes(kind)) throw new TypeError(`Unknown last place: ${kind}`);
+  const docId = bookmarksDocId(tenantId, personId);
+  const existingSnap = await getDoc(doc(db, TENANT.BOOKMARKS, docId));
+  if (existingSnap.exists()) {
+    await updateDocument(db, TENANT.BOOKMARKS, docId, { [`lastPlaces.${kind}`]: place, tenantId, personId });
+  } else {
+    await createDocument(db, TENANT.BOOKMARKS, docId, { tenantId, personId, resume: {}, saved: [], lastPlaces: { [kind]: place } }, uid);
+  }
+}
+export function lastPlaceOf(bookmarksDoc, kind) {
+  const p = bookmarksDoc?.lastPlaces?.[kind];
+  return p && typeof p.surahNum === "number" && typeof p.ayahNum === "number" ? p : null;
+}
+
 /** Most-recently-touched resume entries, newest first, capped at `limit` -- what the Continue strip actually shows. */
 export function recentResumeEntries(bookmarksDoc, limit = 5) {
   return Object.entries(bookmarksDoc?.resume ?? {})

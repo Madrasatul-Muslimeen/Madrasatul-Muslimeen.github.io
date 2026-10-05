@@ -4376,7 +4376,7 @@
     // Issue #468 -- classic (non-module) script: runs before first paint.
     (function () {
       var q = new URLSearchParams(location.search);
-      if (!(q.get("bookmark") || q.get("goto") || q.get("resume"))) return;
+      if (!(q.get("bookmark") || q.get("goto") || q.get("resume") || q.get("last"))) return;
       var root = document.documentElement;
       root.classList.add("bm-opening");
       var cover = document.getElementById("bmCover");
@@ -6042,7 +6042,7 @@
       unitTypeRecordsEvidence, unitTypeNeedsReadingUnitsGate,
       readingUnitsPersistenceReady, readingUnitsPersistenceReason,
     } from "./js/study-event-wiring.js";
-    import { getBookmarks, saveBookmark, removeSavedBookmark, updateSavedBookmarkFields, findSavedBookmark, createFolder, flattenFolderTree, livePresets, saveSettingsPreset, renameSettingsPreset, removeSettingsPreset } from "./js/bookmarks.js";
+    import { getBookmarks, saveBookmark, removeSavedBookmark, updateSavedBookmarkFields, findSavedBookmark, createFolder, flattenFolderTree, livePresets, saveSettingsPreset, renameSettingsPreset, removeSettingsPreset, setLastPlace, lastPlaceOf } from "./js/bookmarks.js";
     import { openBookmarkNamePopover } from "./js/bookmark-popover.js";
     import { getAyahNotes, ayahNoteHtml, ayahHasNote, saveAyahNote, ensureAyahNotesWritable } from "./js/ayah-notes.js";
     import { renderQuickMenu, attachQuickMenuHandlers, renderNoteView, attachNoteViewHandlers, notesToPlainText, copyToClipboard, shareText } from "./js/ayah-note-renderer.js";
@@ -6241,6 +6241,7 @@
     setAyahChangeHandler((surahNum, ayahNum) => {
       if (surahNum !== currentSurahNum || !currentSurahData) return;
       currentAyahNum = ayahNum;
+      noteLastPlace("play"); // the Owner, 5 Oct 2026: ▶ Last played
       // P4-D2 -- coverage of the listened unit. Counts only forward motion, so
       // a loop or a backward seek adds nothing (see createListeningSession()).
       if (listeningSession) listeningSession.ayahStarted(ayahNum);
@@ -6352,6 +6353,8 @@
         getRoster: () => roster,
         // Issue #410 -- "Saved settings" group; applying restores settings only.
         onApplyPreset: (presetId) => applyPresetFromMenu(presetId),
+        // The Owner, 5 Oct 2026 -- 📖 Last read / ▶ Last played act in place here.
+        onLastPlace: (kind) => openLastPlace(kind),
       });
     }
 
@@ -8608,7 +8611,7 @@
       currentSurahNum = surahIndex[0]?.surahNumber ?? 1;
       if (!lastSessionReady) {
         const params = new URLSearchParams(location.search);
-        const deepLinked = params.get("bookmark") || params.get("goto") || params.get("resume");
+        const deepLinked = params.get("bookmark") || params.get("goto") || params.get("resume") || params.get("last");
         const rememberedSurah = deepLinked ? null : getQuranLastSession()?.settings?.surahNum;
         if (typeof rememberedSurah === "number" && surahIndex.some((sx) => sx.surahNumber === rememberedSurah)) {
           currentSurahNum = rememberedSurah;
@@ -9754,12 +9757,84 @@
         // screen's own position (see noteScope's own comment), so it is the
         // one view whose state is not captureQuranBookmarkSettings()'s.
         const noting = stageView === "note" && noteScope;
+        // The Owner, 5 Oct 2026: 📖 Last read. In the scrolling flow view the
+        // row the reader has scrolled to is noted by updateFlowInView(); this
+        // covers the one-ayah view, and must not overwrite that row.
+        if (stageView === "read" && !isPlaying() && !pageViewContainer.querySelector(".page-flow-ayah.in-view")) noteLastPlace("read");
         setQuranLastSession({
           stageView,
           settings: noting ? captureNoteBookmarkSettings() : captureQuranBookmarkSettings(),
           position: noting ? noteScopeCurrentUnitKey() : null,
         });
       }, 250);
+    }
+
+    // -----------------------------------------------------------------------
+    // The Owner, 5 Oct 2026: "Add a last read and last play button in
+    // bookmark." Two places on the person's bookmarks document (bookmarks.js
+    // setLastPlace): where they last READ (the Read view, not playing) and
+    // where recitation last PLAYED (the ayah last sounding). Kept in memory at
+    // once, so the Bookmark menu shows them straight away, and written at most
+    // every 10 seconds, plus on leaving the page -- never once per ayah.
+    // -----------------------------------------------------------------------
+    const pendingLastPlaces = {};
+    let lastPlaceTimer = null;
+    function noteLastPlace(kind, ayah = currentAyahNum) {
+      if (!selectedPersonId || !activeTenantId || !currentSurahData || !lastSessionReady) return;
+      const prev = bookmarksDoc.lastPlaces?.[kind];
+      const meta = surahIndex.find((x) => x.surahNumber === currentSurahNum);
+      const place = {
+        surahNum: currentSurahNum, ayahNum: ayah, surahNameEn: meta?.nameEnglish ?? currentSurahData.surahNameEnglish ?? "",
+        settings: { ...captureQuranBookmarkSettings(), ayahNum: ayah, view: "read" }, at: new Date().toISOString(),
+      };
+      if (prev && prev.surahNum === place.surahNum && prev.ayahNum === place.ayahNum && JSON.stringify(prev.settings) === JSON.stringify(place.settings)) return; // nothing moved
+      pendingLastPlaces[kind] = place;
+      bookmarksDoc.lastPlaces = { ...(bookmarksDoc.lastPlaces ?? {}), [kind]: place };
+      if (!lastPlaceTimer) lastPlaceTimer = setTimeout(flushLastPlaces, 10000);
+    }
+    async function flushLastPlaces() {
+      clearTimeout(lastPlaceTimer); lastPlaceTimer = null;
+      const kinds = Object.keys(pendingLastPlaces);
+      if (!kinds.length || !selectedPersonId) return;
+      for (const kind of kinds) {
+        const place = pendingLastPlaces[kind];
+        delete pendingLastPlaces[kind];
+        try { await setLastPlace(db, { tenantId: activeTenantId, personId: selectedPersonId, kind, place, uid: auth.currentUser?.uid }); }
+        catch (err) { console.error("[last place]", err); pendingLastPlaces[kind] ??= place; } // kept for the next flush; not worth a toast mid-reading
+      }
+    }
+    addEventListener("pagehide", () => { flushLastPlaces(); });
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flushLastPlaces(); });
+
+    /** Open the Last read (the Read view at that ayah) or the Last played
+        (play on from that ayah). From the Bookmark menu, Play starts inside
+        the tap itself, which is what lets a browser sound it. */
+    async function openLastPlace(kind) {
+      await ensureAyahNoteDataLoaded();
+      const place = lastPlaceOf(bookmarksDoc, kind);
+      if (!place) { bookmarkNotFound(); return; }
+      if (isPlaying() || isPaused()) { stopDrill(); stopAudio(); }
+      await applyQuranBookmarkSettings(place.settings, null);
+      if (place.surahNum !== currentSurahNum) return;
+      openReadingScreen();
+      const [from, to] = currentUnitAyahBounds();
+      const ayah = Math.min(Math.max(place.ayahNum, from), to);
+      if (kind === "play") { await playCurrentSelection({ fresh: true, startAyah: ayah }); return; }
+      currentAyahNum = ayah;
+      if (ayahSelect.querySelector(`option[value="${ayah}"]`)) ayahSelect.value = String(ayah);
+      renderStudyScreen();
+      // Scroll the reader to it (no "now playing" mark: nothing is playing).
+      requestAnimationFrame(() => {
+        const row = document.querySelector(`#readView .page-flow-ayah[data-ayah="${ayah}"]`) ?? document.querySelector(`#readView [data-ayah="${ayah}"]`);
+        row?.scrollIntoView({ block: "center", inline: "nearest" });
+      });
+    }
+
+    /** ?last=read / ?last=play -- the Bookmark menu's two buttons on every other page link here. */
+    async function openLastFromQueryString() {
+      const kind = new URLSearchParams(location.search).get("last");
+      if (kind !== "read" && kind !== "play") return;
+      await openLastPlace(kind);
     }
 
     /** Boot step, after the two query-string deep links. An explicit link is
@@ -9771,7 +9846,7 @@
         exactly where it opened before this existed. */
     async function restoreLastSession() {
       const params = new URLSearchParams(location.search);
-      if (params.get("bookmark") || params.get("goto") || params.get("resume")) return;
+      if (params.get("bookmark") || params.get("goto") || params.get("resume") || params.get("last")) return;
       const saved = getQuranLastSession();
       if (!saved) return;
       // The app ALWAYS opens on the wheel -- the owner's own call, once the
@@ -16636,6 +16711,8 @@
         if (overlap > bestOverlap) { bestOverlap = overlap; best = row; }
       }
       if (best) rows.forEach((r) => r.classList.toggle("in-view", r === best));
+      // 📖 Last read is where the reader has scrolled to, not the unit's start.
+      if (best && stageView === "read" && !isPlaying()) noteLastPlace("read", Number(best.dataset.ayah));
     }
 
     function wireFlowInViewHighlight() {
@@ -16971,6 +17048,9 @@
           getAyahNotes(db, activeTenantId, selectedPersonId),
           getBookmarks(db, activeTenantId, selectedPersonId),
         ]);
+        // A Last read / Last played noted before this load landed is newer
+        // than what was just read back; keep it (its write is still pending).
+        if (Object.keys(pendingLastPlaces).length) bookmarksDoc.lastPlaces = { ...(bookmarksDoc.lastPlaces ?? {}), ...pendingLastPlaces };
       } catch {
         ayahNotesDoc = { notes: {} };
         bookmarksDoc = { resume: {}, saved: [] };
@@ -20951,7 +21031,7 @@
     // Mode and Loop; it pauses what is already sounding; and it resumes what is
     // sitting paused rather than restarting it.
     // -----------------------------------------------------------------------
-    async function playCurrentSelection({ fresh = false } = {}) {
+    async function playCurrentSelection({ fresh = false, startAyah = null } = {}) {
       // The Owner, 4 Oct 2026: "The Read/play button at the settings should be
       // enough to start the desired read/play act." A SETTINGS Play (Study
       // options, Choose a Unit) passes `fresh`: whatever is sounding or paused
@@ -20984,7 +21064,9 @@
       // resuming continues the listen already in progress rather than starting
       // a second one that would have to re-earn its 80%.
       beginListeningSession();
-      const [fromAyah, toAyah] = currentUnitAyahBounds();
+      let [fromAyah, toAyah] = currentUnitAyahBounds();
+      // ▶ Last played (5 Oct 2026) plays on from the ayah it stopped at.
+      if (typeof startAyah === "number" && startAyah > fromAyah && startAyah <= toAyah) fromAyah = startAyah;
       const reciterIds = playbackReciterIds();
       try {
         if (!reciterIds.length) {
@@ -21641,6 +21723,7 @@
         renderTenantSelect(myMemberships);
         await step("open bookmark", openBookmarkFromQueryString);
         await step("open goto link", openGotoFromQueryString);
+        await step("open last place", openLastFromQueryString);
         window.__bmCoverDone?.(false); // issue #468 -- target is open; remove the cover in one step
         // Last: "the app opens in the last settings/options in all view."
         // After the deep links on purpose -- an explicit ?bookmark=/?goto=
