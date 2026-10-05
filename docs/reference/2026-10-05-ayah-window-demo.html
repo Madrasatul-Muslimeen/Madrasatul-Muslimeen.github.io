@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ayah Window Demo</title>
+<style>
+@font-face{font-family:'QR Scheherazade';src:url('../../app/fonts/scheherazade.woff2') format('woff2');font-display:swap}
+@font-face{font-family:'QR Amiri Quran';src:url('../../app/fonts/amiriquran.woff2') format('woff2');font-display:swap}
+:root{--navy:#1F3A6E;--gold:#C9A24B;--cream:#FBF6EC;--line:#E4DCC8;--ink:#1d2433;--muted:#6b7487;--bg:#f4f1ea}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
+/* ---------- the app behind the window ---------- */
+.app{position:absolute;inset:0;display:flex;flex-direction:column}
+.app-head{padding:10px 16px 6px;background:#fff;border-bottom:1px solid #e5e5e5}
+.app-head h1{margin:0;font-size:1.35rem;color:#1d2433}.app-head h1 small{font-size:.8rem;color:#888;font-weight:400;margin-left:6px}
+.app-head p{margin:2px 0 8px;font-style:italic;color:#555;font-size:.9rem}
+.navrow{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.navrow span{border:1px solid #ddd;border-radius:8px;text-align:center;font-size:.72rem;font-weight:700;color:var(--navy);padding:6px 0;background:#fff}
+.stage{flex:1;background:radial-gradient(ellipse at 50% 35%,#2b3c5d 0%,#16213a 70%);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;color:#e9dcc0}
+.wheel{width:min(62vw,300px);aspect-ratio:1;border-radius:50%;background:conic-gradient(#3b2f1c 0 8%,#202a40 8% 100%);border:6px solid #2a3654;box-shadow:inset 0 0 0 40px #1a2338;display:flex;align-items:center;justify-content:center;text-align:center;font-family:"Amiri","Scheherazade New",serif;font-size:1.3rem;color:var(--gold)}
+.reopen{border:none;border-radius:999px;background:var(--gold);color:#2a1d05;font-weight:700;padding:12px 22px;font-size:1rem;cursor:pointer}
+.dock{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px 16px;background:#fff;border-top:1px solid #e5e5e5}
+.dock span{border:1px solid #ddd;border-radius:8px;text-align:center;font-size:.74rem;font-weight:700;color:var(--navy);padding:9px 0}
+.dock span.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+/* ---------- the demo explainer ---------- */
+.explain{position:fixed;left:50%;transform:translateX(-50%);bottom:8px;z-index:20;max-width:min(560px,calc(100vw - 16px));background:#fffbea;border:1px solid #e3cf8f;border-radius:10px;padding:8px 12px;font-size:.82rem;line-height:1.35;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+.explain b{color:#7a5a12}.explain button{margin-left:6px;border:1px solid #d6c07c;background:#fff;border-radius:6px;font-size:.75rem;padding:2px 8px;cursor:pointer}
+.explain.min p{display:none}
+.explain.min{left:8px;transform:none;max-width:200px;padding:4px 8px}
+/* ---------- THE AYAH WINDOW ---------- */
+.win{position:fixed;z-index:10;display:flex;flex-direction:column;background:#fff;border:1px solid #cfc6b2;border-radius:12px;box-shadow:0 18px 50px rgba(10,16,30,.45);overflow:hidden;min-width:280px;min-height:300px;container-type:inline-size}
+.win.full{border-radius:0}
+.win[hidden]{display:none}
+.title{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--navy);color:#fff;cursor:grab;touch-action:none;user-select:none}
+.title:active{cursor:grabbing}
+.title .grip{opacity:.7;font-size:1.1rem}
+.title .t{flex:1;min-width:0;font-weight:700;font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tbtn{flex:0 0 auto;width:38px;height:36px;border-radius:8px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.tbtn:hover{background:rgba(255,255,255,.2)}
+.tbtn[aria-pressed=true]{background:var(--gold);color:#2a1d05;border-color:var(--gold)}
+.body{flex:1;min-height:0;display:flex;flex-direction:column;background:#fff}
+.bars{flex:0 0 auto;padding:8px 10px 6px;border-bottom:1px solid #eee}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:6px}
+.row select{height:38px;border:1px solid #ccc;border-radius:8px;background:#f3f3f3;font-size:.9rem;padding:0 6px;min-width:0}
+.row .sUnit{flex:2 1 130px}.row .sSurah{flex:2 1 120px}.row .sNum{flex:0 0 58px}
+.go{height:38px;padding:0 14px;border-radius:8px;border:none;background:var(--navy);color:#fff;font-weight:700;cursor:pointer}
+.ref{flex:1 1 auto;min-width:120px;color:#555;font-size:.88rem}
+.ic{flex:0 0 auto;width:40px;height:38px;border-radius:8px;border:1px solid #cdd3df;background:#fff;color:var(--navy);font-size:1rem;cursor:pointer}
+.ic[aria-pressed=true]{background:var(--gold);border-color:var(--gold);color:#2a1d05}
+.tools{justify-content:flex-end}
+.pills{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid #e3cf8f;border-radius:999px;overflow:hidden;background:#fdf5df}
+.pills button{border:none;background:none;padding:8px 4px;font-weight:700;color:#5a4212;font-size:.82rem;cursor:pointer;border-left:1px solid #e3cf8f}
+.pills button:first-child{border-left:none}
+.pills button:hover{background:#f7e9c2}
+.read{flex:1;min-height:0;overflow:auto;background:var(--cream);padding:14px 16px 20px;overscroll-behavior:contain}
+.basm{text-align:center;font-family:"QR Scheherazade","QR Amiri Quran",serif;font-size:calc(1.25rem * var(--sz,1));color:#333;margin:0 0 10px}
+.ayahs{direction:rtl;text-align:justify;font-family:"QR Scheherazade","QR Amiri Quran",serif;font-size:calc(1.65rem * var(--sz,1));line-height:2.1}
+.ay{border-radius:6px;padding:0 2px;transition:background .2s}
+.ay.on{background:#e6efd6}
+.ay.dim{opacity:.45}
+.mark{display:inline-flex;align-items:center;justify-content:center;width:1.5em;height:1.5em;border-radius:50%;border:1.5px solid #b28a3d;color:#7a5a12;font-size:.55em;margin:0 .2em;vertical-align:middle;font-family:system-ui}
+.tr{direction:ltr;font-family:system-ui;font-size:calc(.92rem * var(--sz,1));color:#444;margin:4px 0 12px;line-height:1.45}
+.tr b{color:var(--navy)}
+/* Narrow window: the three pills become two lines of smaller text; the
+   tools row keeps 40px buttons and wraps as a tidy group. */
+@container (max-width:420px){.pills button{font-size:.74rem;padding:7px 2px}.ref{flex-basis:100%}}
+/* Resize handles: 8, with a large visible corner grip for a finger. */
+.h{position:absolute;z-index:3;touch-action:none}
+.h.n,.h.s{left:14px;right:14px;height:10px;cursor:ns-resize}.h.n{top:-4px}.h.s{bottom:-4px}
+.h.e,.h.w{top:14px;bottom:14px;width:10px;cursor:ew-resize}.h.e{right:-4px}.h.w{left:-4px}
+.h.ne,.h.nw,.h.se,.h.sw{width:22px;height:22px}
+.h.ne{top:-4px;right:-4px;cursor:nesw-resize}.h.nw{top:-4px;left:-4px;cursor:nwse-resize}.h.sw{bottom:-4px;left:-4px;cursor:nesw-resize}
+.h.se{right:0;bottom:0;width:30px;height:30px;cursor:nwse-resize;background:linear-gradient(135deg,transparent 0 50%,var(--gold) 50% 58%,transparent 58% 66%,var(--gold) 66% 74%,transparent 74% 82%,var(--gold) 82% 90%,transparent 90%)}
+.win.full .h{display:none}
+.toast{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:#1d2433;color:#fff;padding:8px 12px;border-radius:8px;font-size:.82rem;max-width:90%;text-align:center;opacity:0;pointer-events:none;transition:opacity .2s;z-index:4}
+.toast.show{opacity:1}
+.sheet{position:absolute;left:10px;right:10px;bottom:10px;z-index:4;background:#fff;border:1px solid #ddd;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);padding:12px;max-height:60%;overflow:auto}
+.sheet h3{margin:0 0 6px;font-size:1rem;color:var(--navy)}.sheet p{margin:0 0 8px;font-size:.88rem}
+.sheet .close{float:right}
+.sz{display:flex;align-items:center;gap:8px;font-size:.85rem}
+.sz input{flex:1}
+.size-chip{position:absolute;right:36px;bottom:6px;z-index:4;font-size:.7rem;color:#7a5a12;background:#fff7e0;border:1px solid #e3cf8f;border-radius:6px;padding:1px 6px;pointer-events:none;opacity:0;transition:opacity .2s}
+.size-chip.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="app" aria-hidden="true">
+  <div class="app-head"><h1>QuranRevival <small>v09.77 · demo</small></h1><p>Know Your Creator - Know Your Rabb</p>
+    <div class="navrow"><span>Home ▾</span><span>Modules ▾</span><span>Operation ▾</span><span>Bookmark ▾</span></div></div>
+  <div class="stage"><div class="wheel">Mastery Wheel</div><button class="reopen" id="reopen" type="button" aria-hidden="false">📖 Open the Ayah window</button></div>
+  <div class="dock"><span>Approach</span><span class="on">Study ▴</span><span>Explore</span><span>Mapping My Journey</span></div>
+</div>
+
+<div class="explain" id="explain"><b>Demo: the Ayah window.</b> <button type="button" id="explainToggle">hide</button>
+  <p>The whole Ayah view, as a window you can <b>move</b> (drag the blue title bar), <b>resize</b> (drag any edge or the gold corner) and <b>maximise</b> (⛶, or double-tap the title). It always stays inside the screen, even when you turn the phone. Every button inside still works. Try ▶ Play, A±, ★, ✓, Go and the three pills. On a phone it opens full screen. Make it smaller with ⧉ or the corner.</p></div>
+
+<section class="win" id="win" role="dialog" aria-label="Ayah window">
+  <div class="title" id="title">
+    <span class="grip">⠿</span><span class="t" id="wtitle">Yaseen 1–9 · Range of Ayahs</span>
+    <button class="tbtn" type="button" id="bHalf" title="Smaller (half)" aria-label="Smaller">⧉</button>
+    <button class="tbtn" type="button" id="bFull" title="Fill the screen" aria-label="Fill the screen" aria-pressed="false">⛶</button>
+    <button class="tbtn" type="button" id="bClose" title="Close" aria-label="Close">✕</button>
+  </div>
+  <div class="body">
+    <div class="bars">
+      <div class="row">
+        <select class="sUnit" aria-label="Study Unit"><option>Single Ayah</option><option selected>Range of Ayahs</option><option>Whole Surah</option><option>Page</option></select>
+        <select class="sSurah" aria-label="Surah"><option>35. Faatir</option><option selected>36. Yaseen</option><option>37. As-Saaffaat</option></select>
+        <select class="sNum" id="from" aria-label="From"></select>
+        <select class="sNum" id="to" aria-label="To"></select>
+        <button class="go" type="button" id="go">Go</button>
+      </div>
+      <div class="row">
+        <span class="ref" id="ref">Faatir 45 · Yaseen 1–12 ▾</span>
+        <button class="ic" type="button" data-say="Previous unit">⏮</button>
+        <button class="ic" type="button" data-say="Next unit">⏭</button>
+        <button class="ic" type="button" id="play" aria-label="Play">▶</button>
+        <button class="ic" type="button" id="stop" aria-label="Stop">■</button>
+      </div>
+      <div class="row tools">
+        <button class="ic" type="button" id="aa" aria-label="Text size">A±</button>
+        <button class="ic" type="button" data-toggle="Bookmarked" aria-pressed="false" aria-label="Bookmark">★</button>
+        <button class="ic" type="button" data-toggle="Marked complete" aria-pressed="false" aria-label="Mark complete">✓</button>
+        <button class="ic" type="button" data-say="Writing sheet opens">✍</button>
+        <button class="ic" type="button" data-say="Attach to Asma ul Husna">🔗</button>
+        <button class="ic" type="button" data-say="More: Note, Contents, Copy…">⋮</button>
+      </div>
+      <div class="pills"><button type="button" data-sheet="Take an Approach">Take an Approach</button><button type="button" data-sheet="Record Your Progress">Record Your Progress</button><button type="button" data-sheet="Know Your Status">Know Your Status</button></div>
+    </div>
+    <div class="read" id="read"><p class="basm">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</p><div class="ayahs" id="ayahs"></div><div id="trs"></div></div>
+  </div>
+  <div class="h n" data-h="n"></div><div class="h s" data-h="s"></div><div class="h e" data-h="e"></div><div class="h w" data-h="w"></div>
+  <div class="h ne" data-h="ne"></div><div class="h nw" data-h="nw"></div><div class="h sw" data-h="sw"></div><div class="h se" data-h="se" title="Drag to resize"></div>
+  <div class="size-chip" id="chip"></div>
+  <div class="toast" id="toast"></div>
+</section>
+
+<script>
+const AY = [{"n": 1, "ar": "يسٓ", "en": "Ya, Seen."}, {"n": 2, "ar": "وَٱلْقُرْءَانِ ٱلْحَكِيمِ", "en": "By the wise Qur'an."}, {"n": 3, "ar": "إِنَّكَ لَمِنَ ٱلْمُرْسَلِينَ", "en": "Indeed you, [O Muhammad], are from among the messengers,"}, {"n": 4, "ar": "عَلَىٰ صِرَٰطٍۢ مُّسْتَقِيمٍۢ", "en": "On a straight path."}, {"n": 5, "ar": "تَنزِيلَ ٱلْعَزِيزِ ٱلرَّحِيمِ", "en": "[This is] a revelation of the Exalted in Might, the Merciful,"}, {"n": 6, "ar": "لِتُنذِرَ قَوْمًۭا مَّآ أُنذِرَ ءَابَآؤُهُمْ فَهُمْ غَٰفِلُونَ", "en": "That you may warn a people whose forefathers were not warned, so they are unaware."}, {"n": 7, "ar": "لَقَدْ حَقَّ ٱلْقَوْلُ عَلَىٰٓ أَكْثَرِهِمْ فَهُمْ لَا يُؤْمِنُونَ", "en": "Already the word has come into effect upon most of them, so they do not believe."}, {"n": 8, "ar": "إِنَّا جَعَلْنَا فِىٓ أَعْنَٰقِهِمْ أَغْلَٰلًۭا فَهِىَ إِلَى ٱلْأَذْقَانِ فَهُم مُّقْمَحُونَ", "en": "Indeed, We have put shackles on their necks, and they are to their chins, so they are with heads [kept] aloft."}, {"n": 9, "ar": "وَجَعَلْنَا مِنۢ بَيْنِ أَيْدِيهِمْ سَدًّۭا وَمِنْ خَلْفِهِمْ سَدًّۭا فَأَغْشَيْنَٰهُمْ فَهُمْ لَا يُبْصِرُونَ", "en": "And We have put before them a barrier and behind them a barrier and covered them, so they do not see."}, {"n": 10, "ar": "وَسَوَآءٌ عَلَيْهِمْ ءَأَنذَرْتَهُمْ أَمْ لَمْ تُنذِرْهُمْ لَا يُؤْمِنُونَ", "en": "And it is all the same for them whether you warn them or do not warn them - they will not believe."}, {"n": 11, "ar": "إِنَّمَا تُنذِرُ مَنِ ٱتَّبَعَ ٱلذِّكْرَ وَخَشِىَ ٱلرَّحْمَٰنَ بِٱلْغَيْبِ ۖ فَبَشِّرْهُ بِمَغْفِرَةٍۢ وَأَجْرٍۢ كَرِيمٍ", "en": "You can only warn one who follows the message and fears the Most Merciful unseen. So give him good tidings of forgiveness and noble reward."}, {"n": 12, "ar": "إِنَّا نَحْنُ نُحْىِ ٱلْمَوْتَىٰ وَنَكْتُبُ مَا قَدَّمُوا۟ وَءَاثَٰرَهُمْ ۚ وَكُلَّ شَىْءٍ أَحْصَيْنَٰهُ فِىٓ إِمَامٍۢ مُّبِينٍۢ", "en": "Indeed, it is We who bring the dead to life and record what they have put forth and what they left behind, and all things We have enumerated in a clear register."}];
+const win = document.getElementById("win"), title = document.getElementById("title");
+const M = 6, MINW = 280, MINH = 300; // margin to the screen edge; smallest window
+let box = null, full = false, restore = null;
+
+// --- content -------------------------------------------------------------
+const ayEl = document.getElementById("ayahs"), trEl = document.getElementById("trs");
+const ar = (n) => String(n).replace(/\d/g, (d) => "٠١٢٣٤٥٦٧٨٩"[d]);
+ayEl.innerHTML = AY.map((a) => `<span class="ay" data-n="${a.n}">${a.ar}</span><span class="mark">${ar(a.n)}</span> `).join("");
+trEl.innerHTML = AY.map((a) => `<p class="tr" data-n="${a.n}"><b>${a.n}.</b> ${a.en}</p>`).join("");
+for (const id of ["from", "to"]) document.getElementById(id).innerHTML = AY.map((a) => `<option>${a.n}</option>`).join("");
+document.getElementById("to").value = "9";
+function range() { return [Number(from.value), Number(to.value)]; }
+function paintRange() {
+  const [a, b] = range();
+  document.querySelectorAll(".ay").forEach((e) => e.classList.toggle("dim", e.dataset.n < a || e.dataset.n > b));
+  document.getElementById("wtitle").textContent = `Yaseen ${a}–${b} · Range of Ayahs`;
+}
+paintRange();
+
+// --- geometry: always inside the screen -----------------------------------
+const vw = () => window.innerWidth, vh = () => window.innerHeight;
+function clamp(b) {
+  const w = Math.min(Math.max(b.w, Math.min(MINW, vw() - 2 * M)), vw() - 2 * M);
+  const h = Math.min(Math.max(b.h, Math.min(MINH, vh() - 2 * M)), vh() - 2 * M);
+  const x = Math.min(Math.max(b.x, M), vw() - M - w);
+  const y = Math.min(Math.max(b.y, M), vh() - M - h);
+  return { x, y, w, h };
+}
+function apply() {
+  const b = full ? { x: 0, y: 0, w: vw(), h: vh() } : (box = clamp(box));
+  Object.assign(win.style, { left: b.x + "px", top: b.y + "px", width: b.w + "px", height: b.h + "px" });
+  win.classList.toggle("full", full);
+  document.getElementById("bFull").setAttribute("aria-pressed", String(full));
+}
+function half() {
+  const w = vw() < 700 ? vw() - 2 * M : Math.min(760, vw() * 0.6);
+  const h = vw() < 700 ? Math.round(vh() * 0.55) : Math.min(vh() - 2 * M, 640);
+  return { x: (vw() - w) / 2, y: vw() < 700 ? vh() - h - M : (vh() - h) / 2, w, h };
+}
+box = half(); full = vw() < 700; // a phone opens full screen
+apply();
+addEventListener("resize", apply); // turning the phone, resizing the browser
+
+let chipT;
+function chip() { const c = document.getElementById("chip"); c.textContent = `${Math.round(box.w)} × ${Math.round(box.h)}`; c.classList.add("show"); clearTimeout(chipT); chipT = setTimeout(() => c.classList.remove("show"), 700); }
+
+// move: drag the title bar
+title.addEventListener("pointerdown", (e) => {
+  if (e.target.closest(".tbtn")) return;
+  if (full) return; // a full window does not move; ⧉ or double-tap first
+  e.preventDefault();
+  const sx = e.clientX, sy = e.clientY, b0 = { ...box };
+  const mv = (ev) => { box = { ...b0, x: b0.x + ev.clientX - sx, y: b0.y + ev.clientY - sy }; apply(); };
+  const up = () => { removeEventListener("pointermove", mv); removeEventListener("pointerup", up); };
+  addEventListener("pointermove", mv); addEventListener("pointerup", up);
+});
+let lastTap = 0;
+title.addEventListener("pointerup", (e) => {
+  if (e.target.closest(".tbtn")) return;
+  const now = Date.now(); if (now - lastTap < 320) toggleFull(); lastTap = now;
+});
+// resize: any edge or corner
+document.querySelectorAll(".h").forEach((h) => h.addEventListener("pointerdown", (e) => {
+  e.preventDefault(); e.stopPropagation();
+  const d = h.dataset.h, sx = e.clientX, sy = e.clientY, b0 = { ...box };
+  const mv = (ev) => {
+    const dx = ev.clientX - sx, dy = ev.clientY - sy; const b = { ...b0 };
+    if (d.includes("e")) b.w = b0.w + dx;
+    if (d.includes("s")) b.h = b0.h + dy;
+    if (d.includes("w")) { b.w = b0.w - dx; b.x = b0.x + dx; }
+    if (d.includes("n")) { b.h = b0.h - dy; b.y = b0.y + dy; }
+    // keep the opposite edge still when a minimum is hit
+    if (b.w < MINW) { if (d.includes("w")) b.x -= MINW - b.w; b.w = MINW; }
+    if (b.h < MINH) { if (d.includes("n")) b.y -= MINH - b.h; b.h = MINH; }
+    box = b; apply(); chip();
+  };
+  const up = () => { removeEventListener("pointermove", mv); removeEventListener("pointerup", up); };
+  addEventListener("pointermove", mv); addEventListener("pointerup", up);
+}));
+function toggleFull() { full = !full; if (!full && (!box || box.w >= vw() - 2 * M - 1)) box = half(); apply(); }
+document.getElementById("bFull").onclick = toggleFull;
+document.getElementById("bHalf").onclick = () => { full = false; box = half(); apply(); chip(); };
+document.getElementById("bClose").onclick = () => { stopPlay(); win.hidden = true; };
+document.getElementById("reopen").onclick = () => { win.hidden = false; apply(); };
+
+// --- the Ayah view's own functions, still working inside the window ------
+const toast = (msg) => { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("show"), 1600); };
+document.querySelectorAll("[data-say]").forEach((b) => b.onclick = () => toast(`${b.dataset.say} (in the app)`));
+document.querySelectorAll("[data-toggle]").forEach((b) => b.onclick = () => { const on = b.getAttribute("aria-pressed") !== "true"; b.setAttribute("aria-pressed", String(on)); toast(on ? b.dataset.toggle : "Undone"); });
+from.onchange = to.onchange = paintRange;
+document.getElementById("go").onclick = () => { paintRange(); const [a] = range(); document.querySelector(`.ay[data-n="${a}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }); toast(`Opened Yaseen ${range().join("–")}`); };
+let playT = null;
+function stopPlay() { clearInterval(playT); playT = null; document.querySelectorAll(".ay.on").forEach((e) => e.classList.remove("on")); document.getElementById("play").textContent = "▶"; }
+document.getElementById("play").onclick = () => {
+  if (playT) { stopPlay(); return; }
+  let [n, end] = range(); document.getElementById("play").textContent = "⏸";
+  const step = () => { document.querySelectorAll(".ay.on").forEach((e) => e.classList.remove("on")); if (n > end) { stopPlay(); return; }
+    const el = document.querySelector(`.ay[data-n="${n}"]`); el.classList.add("on"); el.scrollIntoView({ block: "nearest", behavior: "smooth" }); n++; };
+  step(); playT = setInterval(step, 1400);
+};
+document.getElementById("stop").onclick = stopPlay;
+let sz = 1;
+document.getElementById("aa").onclick = () => sheet("Text size", `<div class="sz">A <input type="range" min="0.7" max="1.8" step="0.05" value="${sz}" id="szr"> A</div>`, () => { document.getElementById("szr").oninput = (e) => { sz = e.target.value; document.getElementById("read").style.setProperty("--sz", sz); }; });
+document.querySelectorAll("[data-sheet]").forEach((b) => b.onclick = () => sheet(b.dataset.sheet, `<p>This card opens <b>inside</b> the Ayah window, exactly as it does on the Read screen today.</p>`));
+function sheet(head, inner, after) {
+  win.querySelector(".sheet")?.remove();
+  const s = document.createElement("div"); s.className = "sheet";
+  s.innerHTML = `<button class="ic close" type="button" aria-label="Close">✕</button><h3>${head}</h3>${inner}`;
+  win.appendChild(s); s.querySelector(".close").onclick = () => s.remove(); after?.();
+}
+// the explainer tucks itself away the first time the window is used
+win.addEventListener("pointerdown", () => { const x = document.getElementById("explain"); if (!x.classList.contains("min")) { x.classList.add("min"); document.getElementById("explainToggle").textContent = "show"; } }, { once: true });
+// the explainer
+document.getElementById("explainToggle").onclick = (e) => { const x = document.getElementById("explain"); x.classList.toggle("min"); e.target.textContent = x.classList.contains("min") ? "show" : "hide"; };
+</script>
+</body>
+</html>
