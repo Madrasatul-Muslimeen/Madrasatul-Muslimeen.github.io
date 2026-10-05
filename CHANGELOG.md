@@ -19638,3 +19638,15 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
   - bookmark-folder-edit-browser 68/0; --mutate-nosave fails 20, --mutate-rename fails 4; bookmark-sheet 176/0; study-presets 84/0; navcheck green
   - demo scratch test 29/0; phone-width-overflow 217/0; palette-contrast 20/0; stub-parity 4/0; layout.mjs no geometry change (known `bmNotFound`)
   - behaviour 1006/1 (sandbox: 31e TLS)
+
+## v09.79 — 5 Oct 2026 — the Siyagah plan's partly-built items finished; the folder window and pinned panel demo
+
+- **Asked:** the Owner asked "Did you finish all the folder and note building as we planned from Siyagah file?" An audit of the 24 S8–S14 items found one not built (a folder window) and three partly built: tags saved at once mid-edit, the version line in windows only, and ✚ in the pane only. Then: "Yes, fix the small ones and demo the others."
+- **Tags while editing:** held until Done in both pickers, saying so in words; written by `applyStagedTags()` after the folders on Done.
+- **Version line:** `[data-win-ver]` is in the shared view template; `paintVersionLine()` runs for the pane and windows.
+- **✚ in windows:** `host.newNote(v)`; `newNoteHere(v)` uses the window's folder (or its Note's first folder) and opens the new Note in its own window.
+- **Demo:** `docs/reference/2026-10-05-folder-window-and-pinned-demo.html`. (1) A folder window; (2) the pinned Notes side panel. Nothing in the app changed for it.
+- **Checks:**
+  - journey-finish-browser 64/0 (3 mutations, each caught); all 13 Mapping My Journey suites green
+  - demo scratch test 37/0; phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0
+  - behaviour 1003/4 (sandbox: 22g×3 archive.org intermittent, 31e TLS)
