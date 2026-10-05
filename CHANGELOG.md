@@ -19650,3 +19650,19 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
   - journey-finish-browser 64/0 (3 mutations, each caught); all 13 Mapping My Journey suites green
   - demo scratch test 37/0; phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0
   - behaviour 1003/4 (sandbox: 22g×3 archive.org intermittent, 31e TLS)
+
+## v09.80 — 5 Oct 2026 — 📖 Last read and ▶ Last played in the Bookmark menu
+
+- **What:** the Owner: "Add a last read and last play button in bookmark."
+  - Two buttons at the top of the Bookmark menu, each naming its place.
+  - Last read comes from the Read view (`rememberLastSession()` for the one-āyah view; `updateFlowInView()` for the āyah scrolled to). Last played comes from `setAyahChangeHandler()`.
+  - Stored on the bookmarks document (`lastPlaces`, `setLastPlace()`/`lastPlaceOf()`), written at most every 10 s and on `pagehide`/hidden.
+  - The page opens them with `openLastPlace()`; links use `?last=`, handled at boot like `?bookmark=`.
+  - Last played plays on from its āyah (`playCurrentSelection({ startAyah })`).
+- **Checks:**
+  - bookmark-last-place-browser 68/0 (2 mutations caught)
+  - bookmark-sheet 176/0, bookmark-folder-edit 68/0, bookmark-open 77/0, study-presets 84/0
+  - study-options-play-read 73/0, study-options-go-track 104/0, wheel-unit-go 254/0
+  - rules-authorisation-executable 63/0, stub-parity 4/0, phone-width-overflow 217/0, palette-contrast 20/0
+  - layout.mjs: no geometry change
+  - behaviour 1006/1 (sandbox: 31e TLS)

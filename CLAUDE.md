@@ -224,22 +224,23 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.79 on `main`** (5 Oct 2026 — **the Siyagah plan's partly-built items finished; the folder window and pinned panel demo**).
-- **Asked:** the Owner asked "Did you finish all the folder and note building as we planned from Siyagah file?" An audit of all 24 S8–S14 plan items against the code found one item NOT built (a folder opened in its own window) and three PARTLY built. Their answer: "Yes, fix the small ones and demo the others."
-- **Fixed:**
-  - **Tags while editing** are held until Done, like folder ticks, in both the 📎 sheet and ⋯ → 🏷 Tags…, which say so in words (`stagedTags`, `holdTagTick`, `applyStagedTags` in `note-window.js`).
-  - **"Version n of m"** shows in the inline pane too, not only pop-up windows (the button moved into the shared template).
-  - **✚ New note** is in pop-up windows too; a window's new Note goes in its folder and opens in a window of its own.
-- **Demo, not in the app:** `docs/reference/2026-10-05-folder-window-and-pinned-demo.html`.
-  - (1) A folder's ⋯ → Open in its own window: browse its subfolders and Notes.
-  - (2) A 📌 Pinned side panel in a Note window, beside the Note on a computer, over it on a phone.
+**Current milestone: v09.80 on `main`** (5 Oct 2026 — **📖 Last read and ▶ Last played in the Bookmark menu**).
+- **What** (the Owner: "Add a last read and last play button in bookmark"):
+  - Two buttons at the top of the Bookmark menu, each naming its place ("Yaseen 36:7", in Bangla with Bangla digits).
+  - **Last read** is noted while reading in the Read view (in the flowing view, the āyah scrolled to). **Last played** is the āyah sounding during recitation. The two are kept apart.
+  - Both live on the person's bookmarks document (`lastPlaces.read` / `.play`, `setLastPlace()` in `bookmarks.js`; no Rules change), so they follow the reader across devices. They are written at most every 10 s and on leaving the page.
+  - On the Qur'an page a tap acts in place, and Last played plays on FROM its āyah (`playCurrentSelection({ startAyah })`). On other pages they are links (`?last=read` / `?last=play`).
+  - With nothing saved, each is shown disabled, with words.
 - **Checks:**
-  - journey-finish-browser 64/0, en/bn, 390/1280 (MUTATE tags-at-once fails 8, no-pane-version 12, no-window-new 4)
-  - every Mapping My Journey suite green: tags 363, note-windows 254, window-tabs 166, reading-tools 488, three-panel 368, folder-picker 294, editor 577, note-edit 208, note-pane 327, flags-links 306, s9 280, notes-note-windows 218, folder-menus 148
-  - demo: a scratch browser test, 37/0 (windows stay inside the screen, the corner resizes without selecting text, every part reachable)
-  - phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0
-  - behaviour 1003/4 (sandbox: 22g×3 archive.org intermittent, 31e TLS)
-- **With the Owner:** two demos waiting (the Ayah window; the folder window and pinned panel); try "Version n of m" in a Note, ✚ in a Note window, and a tag ticked while editing.
+  - bookmark-last-place-browser 68/0, en/bn, 390/1280 (--mutate-no-record fails 32, --mutate-no-start fails 4)
+  - bookmark-sheet 176/0, bookmark-folder-edit 68/0, bookmark-open 77/0 (its 4 mutations caught), study-presets 84/0
+  - study-options-play-read 73/0, study-options-go-track 104/0, wheel-unit-go 254/0
+  - rules-authorisation-executable 63/0, stub-parity 4/0, phone-width-overflow 217/0, palette-contrast 20/0, navcheck green
+  - layout.mjs: no geometry change (only the known `bmNotFound`)
+  - behaviour 1006/1 (sandbox: 31e TLS)
+- **With the Owner:**
+  - read a little and play a little, then open Bookmark and tap each;
+  - two demos waiting (the Ayah window; the folder window and pinned panel).
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration
