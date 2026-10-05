@@ -194,6 +194,10 @@ mark.note-find-hit.current { background: #ff9f1c; outline: 2px solid #1F3A6E; }
 .nw-pins-btn[aria-pressed="true"] { background: #C9A24B; color: #221904; border-color: #C9A24B; }
 .nw-pin-panel { flex: 0 0 220px; display: flex; flex-direction: column; min-height: 0; border-right: 1px solid #dcdcdc; background: #fbfaf6; }
 .nw-pin-panel[hidden] { display: none; }
+.nw-pin-split { flex: 0 0 8px; margin: 0 -4px; position: relative; z-index: 2; cursor: col-resize; touch-action: none; }
+.nw-pin-split::after { content: ""; position: absolute; left: 3px; top: 0; bottom: 0; width: 2px; background: transparent; }
+.nw-pin-split:hover::after, .nw-pin-split:focus-visible::after { background: #C9A24B; }
+.nw-pin-panel[hidden] + .nw-pin-split, .note-win.nw-narrow .nw-pin-split { display: none; }
 .note-win.nw-narrow .nw-pin-panel { position: absolute; z-index: 3; left: 0; top: 0; bottom: 0; width: min(260px, 85%); box-shadow: 8px 0 24px rgba(0, 0, 0, 0.2); }
 .nw-pin-head { display: flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.4rem 0.3rem 0.7rem; border-bottom: 1px solid #dcdcdc; font-weight: 700; color: #7a5a12; }
 .nw-pin-head span { flex: 1 1 auto; }

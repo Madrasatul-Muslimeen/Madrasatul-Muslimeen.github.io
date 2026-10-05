@@ -308,9 +308,27 @@
   #noteLayout.three.tier-wide { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 4fr) minmax(0, 5fr); gap: 1rem; align-items: start; }
   #noteLayout.three.tier-wide #folderNotes, #noteLayout.three.tier-wide #notePlaceholder { margin-top: 1rem; }
   #noteLayout.three.tier-wide [data-list-back] { display: none; }
+  /* The Owner, 5 Oct 2026 ("Make all the panes resizeable"): at the wide tier a
+     handle sits in the gap between two panels; drag it (or focus it and use the
+     arrow keys; double-click puts the panels back). The widths are remembered
+     per device as fractions, so they scale with the window. */
+  #noteLayout { position: relative; }
+  .jm-split { display: none; }
+  #noteLayout.tier-wide > .jm-split {
+    display: block; position: absolute; z-index: 5; width: 14px; cursor: col-resize; touch-action: none;
+    background: transparent; border-radius: 7px;
+  }
+  #noteLayout.tier-wide > .jm-split::after {
+    content: ""; position: absolute; left: 6px; top: 0; bottom: 0; width: 2px; border-radius: 1px; background: #d5dbe8;
+  }
+  #noteLayout.tier-wide > .jm-split:hover::after, #noteLayout.tier-wide > .jm-split:focus-visible::after, #noteLayout.tier-wide > .jm-split.dragging::after { background: #C9A24B; width: 4px; left: 5px; }
+  #noteLayout.tier-wide > .jm-split[hidden] { display: none; }
+  body.jm-splitting, body.jm-splitting * { cursor: col-resize !important; user-select: none !important; }
   .fn-head { display: flex; align-items: center; gap: 0.4rem; flex-wrap: nowrap; min-height: 40px; }
   .fn-title { flex: 1 1 0; min-width: 0; margin: 0; font-size: 1.05rem; overflow-wrap: anywhere; color: #1F3A6E; }
   .fn-btn { flex: 0 0 auto; min-height: 40px; min-width: 40px; white-space: nowrap; }
+  /* a panel narrowed by its handle: the New note / Compact-Preview row wraps rather than spilling out */
+  #folderNotes .fn-head + .fn-head { flex-wrap: wrap; row-gap: 0.4rem; }
   .fn-switch { display: inline-flex; flex: 0 0 auto; }
   .fn-switch button { min-height: 40px; border-radius: 0; background: #fff; color: #1F3A6E; border: 1px solid #1F3A6E; }
   .fn-switch button:first-child { border-radius: 0.4rem 0 0 0.4rem; }
@@ -1212,7 +1230,141 @@
       folderNotesEl.hidden = !three;
       notePlaceholderEl.hidden = !(three && !open);
       notePlaceholderEl.textContent = t("Choose a Note to read it here.");
+      layoutPaneSplits();
     }
+
+    // =====================================================================
+    // Resizable panels (the Owner, 5 Oct 2026: "Make all the panes
+    // resizeable"). Wide tier only: below 1200px one panel shows at a time.
+    // Folders view: tree | list | Note (two handles); Timeline / Path / Trash
+    // with a Note open: list | Note (one handle). Widths are fractions of the
+    // row, stored per device; every panel keeps a minimum.
+    // =====================================================================
+    const SPLIT_KEY = "mmsa-journey-pane-widths";
+    const SPLIT_MIN = [240, 260, 300]; // px: tree (or list), list, Note
+    const SPLIT_DEFAULT = { three: [4 / 13, 4 / 13], two: [5 / 12] };
+    let paneSplits = (() => {
+      try {
+        const r = JSON.parse(localStorage.getItem(SPLIT_KEY) || "null");
+        const ok = (a, n) => Array.isArray(a) && a.length === n && a.every((x) => Number.isFinite(x) && x > 0 && x < 1);
+        return { three: ok(r?.three, 2) ? r.three : SPLIT_DEFAULT.three.slice(), two: ok(r?.two, 1) ? r.two : SPLIT_DEFAULT.two.slice() };
+      } catch { return { three: SPLIT_DEFAULT.three.slice(), two: SPLIT_DEFAULT.two.slice() }; }
+    })();
+    const saveSplits = () => { try { localStorage.setItem(SPLIT_KEY, JSON.stringify(paneSplits)); } catch { /* private mode */ } };
+    /** Which layout is showing: "three", "two", or null (narrow, or a single panel). */
+    function splitMode() {
+      if (noteLayoutTier() !== "wide") return null;
+      if (noteLayoutEl.classList.contains("three")) return "three";
+      return noteLayoutEl.classList.contains("pane-open") ? "two" : null;
+    }
+    /** The visible grid panels, left to right. */
+    const splitCols = () => [...noteLayoutEl.children].filter((c) => !c.classList.contains("jm-split") && c.offsetParent !== null && getComputedStyle(c).display !== "none");
+    function splitHandles() {
+      let hs = [...noteLayoutEl.querySelectorAll(":scope > .jm-split")];
+      while (hs.length < 2) {
+        const h = document.createElement("div");
+        h.className = "jm-split";
+        h.dataset.split = String(hs.length);
+        h.tabIndex = 0;
+        h.setAttribute("role", "separator");
+        h.setAttribute("aria-orientation", "vertical");
+        h.setAttribute("aria-label", t("Drag to resize the panels"));
+        h.title = t("Drag to resize the panels");
+        h.addEventListener("pointerdown", (e) => startSplitDrag(e, Number(h.dataset.split)));
+        h.addEventListener("keydown", (e) => {
+          const step = e.key === "ArrowLeft" ? -24 : e.key === "ArrowRight" ? 24 : 0;
+          if (!step) return;
+          e.preventDefault();
+          nudgeSplit(Number(h.dataset.split), step);
+        });
+        h.addEventListener("dblclick", () => { const m = splitMode(); if (m) { paneSplits[m] = SPLIT_DEFAULT[m].slice(); saveSplits(); layoutPaneSplits(); } });
+        noteLayoutEl.appendChild(h);
+        hs = [...noteLayoutEl.querySelectorAll(":scope > .jm-split")];
+      }
+      return hs;
+    }
+    /** Fractions -> widths that respect every minimum, in px, for `total` px of columns. */
+    function splitWidths(mode, total) {
+      const f = paneSplits[mode];
+      const n = mode === "three" ? 3 : 2;
+      const mins = mode === "three" ? SPLIT_MIN : [SPLIT_MIN[0], SPLIT_MIN[2]];
+      const fr = mode === "three" ? [f[0], f[1], 1 - f[0] - f[1]] : [f[0], 1 - f[0]];
+      let w = fr.map((x, i) => Math.max(mins[i], x * total));
+      const over = w.reduce((a, b) => a + b, 0) - total;
+      if (over > 0) { // take the excess from whichever columns are above their minimum, widest first
+        let left = over;
+        for (const i of [...w.keys()].sort((a, b) => (w[b] - mins[b]) - (w[a] - mins[a]))) {
+          const give = Math.min(left, w[i] - mins[i]);
+          w[i] -= give; left -= give;
+        }
+      }
+      return w.slice(0, n);
+    }
+    function layoutPaneSplits() {
+      const hs = splitHandles();
+      const mode = splitMode();
+      if (!mode) { noteLayoutEl.style.removeProperty("grid-template-columns"); hs.forEach((h) => { h.hidden = true; }); return; }
+      const gap = parseFloat(getComputedStyle(noteLayoutEl).columnGap) || 16;
+      const n = mode === "three" ? 3 : 2;
+      const total = noteLayoutEl.clientWidth - gap * (n - 1);
+      const w = splitWidths(mode, total);
+      noteLayoutEl.style.gridTemplateColumns = w.map((x) => `minmax(0, ${x.toFixed(1)}fr)`).join(" ");
+      const cols = splitCols();
+      const box = noteLayoutEl.getBoundingClientRect();
+      hs.forEach((h, i) => {
+        if (i >= n - 1 || !cols[i] || !cols[i + 1]) { h.hidden = true; return; }
+        h.hidden = false;
+        const a = cols[i].getBoundingClientRect(), b = cols[i + 1].getBoundingClientRect();
+        const mid = (a.right + b.left) / 2 - box.left;
+        Object.assign(h.style, { left: `${(mid - 7).toFixed(1)}px`, top: "0px", height: `${noteLayoutEl.scrollHeight}px` });
+        h.setAttribute("aria-valuenow", String(Math.round((mode === "three" ? paneSplits.three.slice(0, i + 1).reduce((x, y) => x + y, 0) : paneSplits.two[0]) * 100)));
+      });
+    }
+    /** Move boundary `i` to `x` px from the row's left edge (columns only, gaps excluded). */
+    function setSplitAt(i, x) {
+      const mode = splitMode();
+      if (!mode) return;
+      const gap = parseFloat(getComputedStyle(noteLayoutEl).columnGap) || 16;
+      const n = mode === "three" ? 3 : 2;
+      const total = noteLayoutEl.clientWidth - gap * (n - 1);
+      const w = splitWidths(mode, total);
+      const mins = mode === "three" ? SPLIT_MIN : [SPLIT_MIN[0], SPLIT_MIN[2]];
+      const before = w.slice(0, i).reduce((a, b) => a + b, 0) + gap * i; // where column i starts
+      const pair = w[i] + w[i + 1];
+      const wi = Math.min(Math.max(x - before, mins[i]), pair - mins[i + 1]);
+      w[i] = wi; w[i + 1] = pair - wi;
+      const fr = w.map((v) => v / total);
+      paneSplits[mode] = mode === "three" ? [fr[0], fr[1]] : [fr[0]];
+      layoutPaneSplits();
+    }
+    function nudgeSplit(i, dx) {
+      const mode = splitMode();
+      if (!mode) return;
+      const cols = splitCols();
+      if (!cols[i]) return;
+      const box = noteLayoutEl.getBoundingClientRect();
+      setSplitAt(i, cols[i].getBoundingClientRect().right - box.left + dx);
+      saveSplits();
+    }
+    function startSplitDrag(e, i) {
+      if (e.button > 0 || !splitMode()) return;
+      e.preventDefault();
+      const h = e.currentTarget;
+      try { h.setPointerCapture(e.pointerId); } catch { /* synthetic pointer */ }
+      h.classList.add("dragging");
+      document.body.classList.add("jm-splitting");
+      const gap = parseFloat(getComputedStyle(noteLayoutEl).columnGap) || 16;
+      const move = (ev) => setSplitAt(i, ev.clientX - noteLayoutEl.getBoundingClientRect().left - gap / 2);
+      const up = () => {
+        h.classList.remove("dragging");
+        document.body.classList.remove("jm-splitting");
+        h.removeEventListener("pointermove", move); h.removeEventListener("pointerup", up); h.removeEventListener("pointercancel", up);
+        saveSplits();
+      };
+      h.addEventListener("pointermove", move); h.addEventListener("pointerup", up); h.addEventListener("pointercancel", up);
+    }
+    window.addEventListener("resize", () => layoutPaneSplits());
+    if (typeof ResizeObserver === "function") new ResizeObserver(() => requestAnimationFrame(layoutPaneSplits)).observe(noteLayoutEl);
 
     /** The row's own place in the list it was opened from, read off the rendered list so ‹ › walk exactly what the reader sees (a folder's own order; Timeline's or one Path branch's). */
     function paneOrderFrom(el) {

@@ -830,6 +830,19 @@ export function createNoteViews(host) {
    *  📌 Pinned button opens the pinned Notes beside the Note (over it in a
    *  narrow window or on a phone). Tapping one shows it in the SAME window. */
   const PINS_KEY = () => `${host.winKey}.pins`;
+  const PIN_W_MIN = 160, PIN_W_MAX = 480, PIN_W_DEFAULT = 220;
+  let pinW = null;
+  /** The pinned panel's width on this device; with `w`, sets it (and stores it when `save`). */
+  function pinPanelWidth(w, save) {
+    if (w === undefined) {
+      if (pinW === null) { try { const v = Number(localStorage.getItem(`${host.winKey}.pinsW`)); pinW = Number.isFinite(v) && v >= PIN_W_MIN && v <= PIN_W_MAX ? v : PIN_W_DEFAULT; } catch { pinW = PIN_W_DEFAULT; } }
+      return pinW;
+    }
+    pinW = w;
+    if (save) { try { localStorage.setItem(`${host.winKey}.pinsW`, String(w)); } catch { /* private mode */ } }
+    for (const x of windowViews) { const pp = x.win?.querySelector("[data-win-pinned]"); if (pp) pp.style.flexBasis = `${w}px`; }
+    return w;
+  }
   function pinsOpenPref() { try { return localStorage.getItem(PINS_KEY()) === "1"; } catch { return false; } }
   function savePinsOpen(open) { try { localStorage.setItem(PINS_KEY(), open ? "1" : "0"); } catch { /* private mode */ } }
   function paintPinned(v, note) {
@@ -1591,9 +1604,40 @@ export function createNoteViews(host) {
     pinPanel.setAttribute("aria-label", t("Pinned Notes"));
     pinPanel.hidden = true;
     section.append(detailsRow, q("[data-edit-toolbar]"), q("[data-edit-status]"), scroll);
+    // The Owner, 5 Oct 2026 ("Make all the panes resizeable"): the pinned panel's
+    // width is dragged from the line between it and the Note (beside only).
+    const pinSplit = document.createElement("div");
+    pinSplit.className = "nw-pin-split";
+    pinSplit.dataset.winPinSplit = "";
+    pinSplit.tabIndex = 0;
+    pinSplit.setAttribute("role", "separator");
+    pinSplit.setAttribute("aria-orientation", "vertical");
+    pinSplit.setAttribute("aria-label", t("Drag to resize the panels"));
+    pinSplit.title = t("Drag to resize the panels");
     const main = document.createElement("div");
     main.className = "nw-main";
-    main.append(pinPanel, section);
+    main.append(pinPanel, pinSplit, section);
+    const applyPinW = () => { const w = pinPanelWidth(); pinPanel.style.flexBasis = `${w}px`; pinSplit.setAttribute("aria-valuenow", String(w)); };
+    applyPinW();
+    const setPinW = (w, save) => {
+      const max = Math.max(PIN_W_MIN, Math.min(PIN_W_MAX, main.clientWidth - 260));
+      pinPanelWidth(Math.round(Math.min(Math.max(w, PIN_W_MIN), max)), save);
+      applyPinW();
+    };
+    pinSplit.addEventListener("pointerdown", (e) => {
+      if (e.button > 0) return;
+      e.preventDefault(); e.stopPropagation();
+      try { pinSplit.setPointerCapture(e.pointerId); } catch { /* synthetic pointer */ }
+      const left = pinPanel.getBoundingClientRect().left;
+      const move = (ev) => setPinW(ev.clientX - left, false);
+      const up = () => { pinSplit.removeEventListener("pointermove", move); pinSplit.removeEventListener("pointerup", up); pinSplit.removeEventListener("pointercancel", up); pinPanelWidth(pinPanelWidth(), true); };
+      pinSplit.addEventListener("pointermove", move); pinSplit.addEventListener("pointerup", up); pinSplit.addEventListener("pointercancel", up);
+    });
+    pinSplit.addEventListener("keydown", (e) => {
+      const d = e.key === "ArrowLeft" ? -20 : e.key === "ArrowRight" ? 20 : 0;
+      if (d) { e.preventDefault(); setPinW(pinPanelWidth() + d, true); }
+    });
+    pinSplit.addEventListener("dblclick", () => setPinW(PIN_W_DEFAULT, true));
     win.appendChild(main);
     const v = makeView(section, "window");
     v.win = win;

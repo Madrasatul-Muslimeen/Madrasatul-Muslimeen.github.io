@@ -3498,4 +3498,5 @@ export const BN = {
   "Smaller": "ছোট করুন",
   "Fill the screen": "পুরো পর্দা জুড়ে",
   "Put back in the page": "পাতায় ফিরিয়ে দিন",
+  "Drag to resize the panels": "প্যানেলের মাপ বদলাতে টানুন",
 };
