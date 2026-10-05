@@ -720,3 +720,4 @@ total). Allocated by the MMSA Architect.
 09.74: Word-by-Word boxes enlargeable in Read and Note view; Explore readable on a phone. Allocated by the MMSA Architect.
 09.75: Explore: no overhang on desktop and tablet either. Allocated by the MMSA Architect.
 09.76: Search by sound; word press shows at once; full-screen Bookmark menu. Allocated by the MMSA Architect.
+09.77: Study options: a Go button, and Track's card on top. Allocated by the MMSA Architect.
