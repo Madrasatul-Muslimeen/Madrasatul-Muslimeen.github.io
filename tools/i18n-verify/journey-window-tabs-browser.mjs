@@ -119,7 +119,8 @@ for (const lang of ["en", "bn"]) {
     // ---- active mark follows the front window -------------------------------------------
     let front = await frontId(page);
     check(`${tag}: the newest window (n3) is in front and its tab is the active one`, front === "n3" && (await tabs(page)).findIndex((t) => t.active) === 2, `${front}`);
-    const tabBtn = (i) => `#noteWinSwitch .nw-tab:nth-child(${i + 1}) [data-win-switch]`;
+    // Updated in place 5 Oct 2026 (note-pane round 3): "✕ Close all" now leads the strip, so tabs are counted among tabs only.
+    const tabBtn = (i) => `#noteWinSwitch .nw-tab:nth-of-type(${i + 1}) [data-win-switch]`;
     await page.click(tabBtn(0));
     await page.waitForTimeout(100);
     front = await frontId(page);
@@ -143,10 +144,10 @@ for (const lang of ["en", "bn"]) {
     check(`${tag}: ...and no sideways overflow after`, await noSideways(page));
 
     // ---- ✕ closes only that window -----------------------------------------------------
-    await page.click(`#noteWinSwitch .nw-tab:nth-child(3) [data-win-tabclose]`);
+    await page.click(`#noteWinSwitch .nw-tab:nth-of-type(3) [data-win-tabclose]`);
     await until(page, () => document.querySelectorAll(".note-win").length === 2);
     check(`${tag}: ✕ on the third tab closes n3 only`, (await count(page, W("n3"))) === 0 && (await count(page, W("n1"))) === 1 && (await count(page, W("n2"))) === 1 && (await tabs(page)).length === 2);
-    await page.click(`#noteWinSwitch .nw-tab:nth-child(2) [data-win-tabclose]`);
+    await page.click(`#noteWinSwitch .nw-tab:nth-of-type(2) [data-win-tabclose]`);
     await until(page, () => document.querySelectorAll(".note-win").length === 1);
     check(`${tag}: ✕ again leaves n1 open, and the strip goes away with one window`, (await count(page, W("n1"))) === 1 && (await count(page, "#noteWinSwitch")) === 0);
 

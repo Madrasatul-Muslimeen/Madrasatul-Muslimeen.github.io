@@ -1276,7 +1276,8 @@ export function createNoteViews(host) {
     if (q) {
       const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "giu");
       // while editing, only the text itself (never the heading controls beside it)
-      const walker = document.createTreeWalker(v.ed ? (editBodyEl(v) ?? v.bodyEl) : v.bodyEl, NodeFilter.SHOW_TEXT);
+      // (a folded heading's grey preview line repeats its section's text: never a hit of its own)
+      const walker = document.createTreeWalker(v.ed ? (editBodyEl(v) ?? v.bodyEl) : v.bodyEl, NodeFilter.SHOW_TEXT, { acceptNode: (n) => (n.parentElement?.closest(".note-sec-peek") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT) });
       const nodes = [];
       for (let n = walker.nextNode(); n; n = walker.nextNode()) if (n.data.trim()) nodes.push(n);
       for (const node of nodes) {
