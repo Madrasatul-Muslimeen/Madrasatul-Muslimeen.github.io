@@ -20,6 +20,21 @@ Read the live state yourself, because it moves on after this was written:
 - `claude.yml` runs;
 - the "Active Architect session" line on #159.
 
+**Updated 5 Oct 2026, ~03:50 UTC, by session `session_012katd3VGiJEprbqxSEUTbf` (Active Architect on #159). Supersedes the ~19:20 paragraph below.**
+
+- **`main` is at v09.76** (PR #574). Since v09.72:
+  - **v09.73** S14 switched on (the Owner published the Rules; `firestore.rules` synced with `[already-deployed-manually]`); settings Play always starts (PR #570).
+  - **v09.74** WbW boxes enlargeable; Explore readable on a phone (PR #571).
+  - **v09.75** Explore fits its card above 720px (PR #572).
+  - Then, test only: `quran-boundary` reads `APPROACH_TEMPLATES` (PR #573).
+  - **v09.76** search by sound (transliteration, `search-tr.json`); word-progress press shows at once and locks while saving (the `permission-denied` toast was two concurrent creates); the Bookmark menu is a full-screen sheet (PR #574).
+- Nothing is building. Nothing waits on the Architect.
+- **Lessons:**
+  - **`verify` is red on a version PR before its merge, by design.** `programme-ledger` and `brief-integrity` compare the PR's version with `origin/main`. Merge the version PR, then run the 8 governance suites on `main` (all green at v09.76).
+  - **A lock behind a disabled button cannot be mutation-tested by clicking.** Lift `disabled` in the probe first, so the lock alone refuses the press (`word-progress-saving-browser`).
+  - **A full-screen sheet covers its own tab.** Tests that closed a menu by tapping its tab must use its Close button (`behaviour` 49/50).
+  - **A long background batch needs `timeout` set explicitly.** The default background limit killed one mid-run.
+
 **Updated 4 Oct 2026, ~19:20 UTC, by session `session_012katd3VGiJEprbqxSEUTbf` (Active Architect on #159). Supersedes the ~17:55 paragraph below.**
 
 - **`main` is at v09.72** (PR #568): S14's Pin, Favourite, Archive, Finalise, Link to a Note and Linked from, **switched off** (`app/js/siyagah-flags-readiness.js` `ready: false`). The Siyagah plan S8–S14 is complete. Nothing is building.
