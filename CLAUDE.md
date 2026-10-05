@@ -121,7 +121,21 @@ Read this first, every session. It is the standing brief.
 > "do not translate" and is a different contract. **That contract is NOT
 > invented here**; the Stage B exclusion stands for this candidate.
 
-> ## ⇢ SESSION HANDOVER, 3 Oct 2026 — READ THIS SECOND
+> ## ⇢ SESSION HANDOVER, 5 Oct 2026 — READ THIS SECOND
+>
+> **`docs/reports/2026-10-05-MMSA-SESSION-HANDOVER.md`** is the current
+> continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-10-05.md`**
+> is the prompt that starts a new session. **The job is the Siyagah note-pane
+> port** (the Owner: "add all functions of the notepane of Siyagah in the
+> notepane"; decision 70): the numbered list is
+> `docs/reference/2026-10-05-siyagah-note-pane-port-list.md`. Part A is done,
+> **Part B is built in order without asking** (minus any number the Owner
+> strikes out), and Part C waits for the Owner's answers. **No prompt from the
+> Owner is needed to continue.**
+>
+> **The 3 Oct block below is kept as history**, superseded by it.
+>
+> ## ⇢ SESSION HANDOVER, 3 Oct 2026 (superseded 5 Oct 2026)
 >
 > **`docs/reports/2026-10-03-MMSA-SESSION-HANDOVER.md`** is the current
 > continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-10-03.md`**
