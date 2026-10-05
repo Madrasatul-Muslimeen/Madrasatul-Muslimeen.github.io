@@ -719,3 +719,4 @@ total). Allocated by the MMSA Architect.
 09.73: Pin, Favourite, Archive, Finalise and Note links switched on (S14, #566); settings Play always starts. Allocated by the MMSA Architect.
 09.74: Word-by-Word boxes enlargeable in Read and Note view; Explore readable on a phone. Allocated by the MMSA Architect.
 09.75: Explore: no overhang on desktop and tablet either. Allocated by the MMSA Architect.
+09.76: Search by sound; word press shows at once; full-screen Bookmark menu. Allocated by the MMSA Architect.

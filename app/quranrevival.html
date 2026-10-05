@@ -494,6 +494,8 @@
   .search-hit mark { background: #fbeec2; color: inherit; border-radius: 2px; padding: 0 1px; }
   /* An Arabic hit is read right to left and deserves the same face the ayah
      panels use, not the interface's own sans at interface size. */
+  .search-group-head { margin: 0.35rem 0 0.05rem; font-size: 0.72rem; font-weight: 700; color: #6b5a2a; }
+  .search-hit .snip-tr { font-style: italic; }
   .search-hit .snip[dir="rtl"] { font-family: 'Amiri', serif; font-size: 1.05rem; line-height: 1.9; }
 
   /* ---------- Mastery Wheel (Phase 5 round 12) ----------
@@ -6074,7 +6076,7 @@
     import { getSurah, getSurahIndex, getJuzIndex, getPageIndex, getHizbIndex, getRukuIndex, getJuzWordTotalsIndex, getSurahWordTotalsIndex } from "./js/quran-data.js";
     // Shell round 14 -- word/phrase search. Importing the module costs
     // nothing at load: it fetches its index only when a search actually runs.
-    import { searchQuran } from "./js/quran-search.js";
+    import { searchQuran, searchTransliteration } from "./js/quran-search.js";
     import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootPanel, renderDerivativesPanel, renderTranslationPanel, tajweedRawToSafeHtml, digitsForLang, stripLeadingBismillah, splitPlainArabicWords, arabicWordButtonHtml, tajweedWordButtonsHtml } from "./js/ayah-renderer.js";
     import { parseQuranWordOccurrenceId } from "./js/quran-word-identity.js";
     import { loadLemmaDictionary, loadBanglaLemmaDictionary, lemmaDictionaryEntry } from "./js/lemma-dictionary.js";
@@ -8440,6 +8442,7 @@
       // Arabic reads right to left, and its own line-height and face; the
       // translations take the interface's.
       if (/[؀-ۿ]/.test(hit.match || hit.text)) snip.dir = "rtl";
+      if (hit.distance !== undefined) snip.classList.add("snip-tr");
       const mark = document.createElement("mark");
       mark.textContent = hit.match;
       snip.append(document.createTextNode(hit.before), mark, document.createTextNode(hit.after));
@@ -8463,25 +8466,46 @@
       // Search again while it is still in the air.
       const runId = ++searchRunId;
       setSearchStatus(t("Searching for \"{query}\"…", { query }));
-      let found;
+      // The Owner, 5 Oct 2026: "Enable searching with Transliteration" (e.g.
+      // "Inni fi khalqi samawate"). A query in Latin letters is now looked
+      // for in BOTH the English translation and, by sound, in the
+      // transliteration (quran-search.js searchTransliteration) -- the two
+      // files are fetched together on the first such search, never at
+      // startup. Each list gets its own heading: the English one first when
+      // both found something, as English-only searches always looked.
+      let found, bySound = null;
       try {
-        found = await searchQuran(query, { limit: 50 });
+        [found, bySound] = await Promise.all([
+          searchQuran(query, { limit: 50 }),
+          searchTransliteration(query, { limit: 50 }),
+        ]);
       } catch (err) {
         // I15: a failed fetch has to reach the person who asked for it.
         if (runId === searchRunId) setSearchStatus(t("Couldn't load the search index. Check your connection and try again."));
         return;
       }
       if (runId !== searchRunId) return;
-      if (found.total === 0) {
+      const soundTotal = bySound?.total ?? 0;
+      if (found.total === 0 && soundTotal === 0) {
         setSearchStatus(t("Nothing found for \"{query}\".", { query }));
         return;
       }
-      setSearchStatus(
-        found.truncated
-          ? t("{total} ayahs found — showing the first {shown}.", { total: num(found.total), shown: num(found.results.length) })
-          : t(found.total === 1 ? "1 ayah found." : "{total} ayahs found.", { total: num(found.total) })
-      );
-      searchResults.replaceChildren(...found.results.map(searchHitButton));
+      const countLine = (f) => f.truncated
+        ? t("{total} ayahs found — showing the first {shown}.", { total: num(f.total), shown: num(f.results.length) })
+        : t(f.total === 1 ? "1 ayah found." : "{total} ayahs found.", { total: num(f.total) });
+      if (!soundTotal) {
+        setSearchStatus(countLine(found));
+        searchResults.replaceChildren(...found.results.map(searchHitButton));
+        return;
+      }
+      const head = (text) => { const h = document.createElement("p"); h.className = "search-group-head"; h.textContent = text; return h; };
+      const groups = [];
+      if (found.total) groups.push(head(`${t("In the English translation")} — ${countLine(found)}`), ...found.results.map(searchHitButton));
+      groups.push(head(`${t("By sound (transliteration)")} — ${countLine(bySound)}`), ...bySound.results.map(searchHitButton));
+      setSearchStatus(found.total
+        ? t("Found in the English translation and by sound.")
+        : t("Found by sound (transliteration)."));
+      searchResults.replaceChildren(...groups);
     }
 
     async function loadContextData(hydratedMembershipsPromise) {
@@ -14947,6 +14971,7 @@
     function wordProgressLabels() {
       return {
         progressHeading: t("Word progress"),
+        saving: t("Saving…"),
         recordHeading: t("Record your Progress"),
         statusHeading: t("Know Your Status"),
         wordNumberLabel: t("word {n}"),
@@ -15147,7 +15172,11 @@
           coverage = computeArabicCoverage({ scopeOccurrenceIds: scope, views, label: `ayah:${ref.surah}:${ref.ayah}` });
         } catch { coverage = null; }
       }
-      return { progress: { ...progress, loading: wordProgressBusy && !progress.loaded }, authority, coverage };
+      // The Owner, 5 Oct 2026: "It takes hours to marked achieved from not
+      // started." A press shows AT ONCE: the pressed state, locked buttons
+      // and "Saving…" (see wordProgressSaving at runWordProgressAction()).
+      const saving = wordProgressSaving && wordProgressSaving.occurrenceId === quranWordCardState.occurrenceId && wordProgressSaving.level === level;
+      return { progress: { ...progress, loading: wordProgressBusy && !progress.loaded, ...(saving ? { saving: true, state: wordProgressSaving.state ?? progress.state } : {}) }, authority, coverage };
     }
 
     /**
@@ -15466,10 +15495,35 @@
       await applyLemmaOccurrenceCounterDelta({ tenantId, personId, occurrenceId, confirmationRequired, beforeKnown: true, afterKnown, level });
     }
 
+    // ONE SAVE AT A TIME (the Owner, 5 Oct 2026: "It takes hours to marked
+    // achieved from not started", then "That save was blocked by a
+    // permissions rule ... update the whole-Qur'an word total for this
+    // lemma"). One press is ~14 database round trips in a row, with nothing
+    // on screen until the last -- so the button looked dead and was pressed
+    // again. Two presses at once both found the lemma counter / the totals
+    // document missing and both CREATED it; the second create landed on the
+    // first and the Rules refused it as an overwrite (reproduced in the
+    // emulator: fulfilled | permission-denied), and a repeated press could
+    // also count one word twice. Now the press shows at once, and a second
+    // press while one is saving is ignored.
+    let wordProgressSaving = null;
+
     async function runWordProgressAction(action) {
+      if (wordProgressSaving) return;
       const { tenantId, subjectPersonId, actorPersonId, isSupervisor } = wordProgressActor();
       if (!tenantId || !subjectPersonId || !actorPersonId || !quranWordCardState.occurrenceId) return;
       const level = quranWordCardState.level;
+      wordProgressSaving = { occurrenceId: quranWordCardState.occurrenceId, level, state: action.kind === "state" ? action.state : null };
+      renderPersistentWordCard();
+      try {
+        await runWordProgressActionNow(action, { tenantId, subjectPersonId, actorPersonId, isSupervisor, level });
+      } finally {
+        wordProgressSaving = null;
+        renderPersistentWordCard();
+      }
+    }
+
+    async function runWordProgressActionNow(action, { tenantId, subjectPersonId, actorPersonId, isSupervisor, level }) {
       // Issue #320 -- the Basic/Depth tabs offer no controls while their gate
       // is closed, so this only ever fires for real; this is defence in depth,
       // the same discipline setWordState()/decideWordApproval() already apply
@@ -15510,6 +15564,9 @@
       // I15 throughout: safeWrite() is this app's own "a failed write must
       // reach the user" wrapper, and it is what every other write on this
       // page already goes through.
+      // 5 Oct 2026 -- the Activity evidence below touches nothing the
+      // counters read or write, so it runs alongside them, not in the queue.
+      let evidenceWrite = null;
       if (action.kind === "state") {
         await safeWrite(() => setWordState(db, { ...common, state: action.state }),
           { what: "record Arabic word progress", occurrenceId: common.occurrenceId });
@@ -15541,7 +15598,7 @@
         if (level === "wbw") {
           if (studyEvidencePersistenceReady()) {
             const wbwRef = parseQuranWordOccurrenceId(common.occurrenceId);
-            await safeWrite(
+            evidenceWrite = safeWrite(
               () => recordStudyEvidence(db, wbwEngagementArgs({
                 tenantId, personId: subjectPersonId,
                 surah: wbwRef.surah, ayah: wbwRef.ayah,
@@ -15585,6 +15642,7 @@
           await applyLemmaOccurrenceCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown: beforeKnownForLemma, level });
         }
       }
+      await evidenceWrite;
       // Issue #303 -- the "if you learn this word" delta and the whole-Qur'an
       // figure can both have moved (this occurrence's own known-ness is part
       // of what they read); refresh them alongside the card's own re-render.

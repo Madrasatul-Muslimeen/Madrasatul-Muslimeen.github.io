@@ -19606,3 +19606,15 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
   - layout.mjs: no geometry change (only the known `bmNotFound`); phone-width-overflow 217/0, palette-contrast 20/0, text-size-wbw 88/0, stub-parity 4/0
   - behaviour 1006/1 (sandbox: 31e TLS)
   - already red on `main`: quran-boundary 30/1 ("feature registry retains the locked 30 Approaches"), not touched here
+
+## v09.76 — 5 Oct 2026 — Search by sound; word press shows at once; full-screen Bookmark menu
+
+- **Search by sound:** the Owner: "Enable searching with Transliteration like the example" ("Inni fi khalqi samawate" found nothing). A Latin search also matches the word-by-word transliteration by consonant skeleton (dh→z, th→s, ph→f, q→k, v→w; vowels and doubles dropped) with an approximate substring match (tolerance 0–3 by length). New `tools/quran-data-pull/output/search-tr.json`, fetched only for a Latin search. Results under "By sound (transliteration)".
+- **Word progress:** the Owner: "It takes hours to marked achieved from not started. Fix." and a `permission-denied` toast on "the whole-Qur'an word total for this lemma". Cause: ~14 round trips with no feedback, so a second press; two concurrent creates make the second an overwrite, refused by the Rules (emulator). Now: pressed state and "Saving…" at once, buttons locked, a press during a save starts nothing; the evidence write runs in parallel.
+- **Bookmark menu:** the Owner: "Enlarge bookmark to take the entire screen so other screen below won't distract eyes." Open, it is a full-screen opaque sheet (`shell.css`), with ✕ Close and Escape (`nav.js`).
+- **Checks:**
+  - quran-search-transliteration 48/0; --mutate-strict fails 2, --mutate-no-sound fails 20
+  - word-progress-saving-browser 32/0; --mutate-no-lock fails 8, --mutate-no-instant fails 20; word-card suites green
+  - bookmark-sheet-browser 176/0; --mutate-off fails 76; study-presets 84/0; navcheck green
+  - phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0; layout.mjs no geometry change (known `bmNotFound`)
+  - behaviour 1006/1 (sandbox: 31e TLS); 49/50 updated to close with Close

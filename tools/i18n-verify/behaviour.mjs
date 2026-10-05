@@ -1192,7 +1192,7 @@ console.log("\n=== 27. Shell round 14: the Study options bars, and Search ===");
   const ctx = await ctxFor({ banner: true });
   const page = await ctx.newPage();
   const searchRequests = [];
-  page.on("request", (r) => { if (/\/search-(en|bn|ar)\.json/.test(r.url())) searchRequests.push(r.url()); });
+  page.on("request", (r) => { if (/\/search-(en|bn|ar|tr)\.json/.test(r.url())) searchRequests.push(r.url()); });
   await page.goto("http://localhost:8080/app/quranrevival.html", { waitUntil: "networkidle" });
   await page.waitForTimeout(700);
 
@@ -1269,8 +1269,13 @@ console.log("\n=== 27. Shell round 14: the Study options bars, and Search ===");
   check("27d ...says how many", /\d/.test(en.status), en.status);
   check("27d ...highlights the word that matched", (en.firstMark || "").toLowerCase() === "patience", en.firstMark);
   check("27d ...and names the surah, not just a number", /[A-Za-z]/.test(en.firstRef || ""), en.firstRef);
-  check("27d exactly one index was fetched, the English one",
-        searchRequests.length === 1 && searchRequests[0].includes("search-en.json"), JSON.stringify(searchRequests));
+  // UPDATED IN PLACE 5 Oct 2026 (the Owner: "Enable searching with
+  // Transliteration"): a Latin-letter query is now also looked for BY SOUND,
+  // so it fetches the transliteration index beside the English one -- still
+  // nothing else (not Bangla, not Arabic), still only on first use.
+  check("27d exactly the English and transliteration indexes were fetched, nothing else",
+        searchRequests.length === 2 && searchRequests.some((u) => u.includes("search-en.json")) && searchRequests.some((u) => u.includes("search-tr.json")),
+        JSON.stringify(searchRequests));
 
   // Clicking a result navigates -- and must NOT overwrite what was searched
   // for, or the remaining results become unreadable in context.
@@ -6004,7 +6009,10 @@ console.log("\n=== 49. Fixes round items 2/3 -- the nav bar's own live Bookmark 
 
   // Close the dropdown again -- it's an absolutely-positioned overlay and
   // would otherwise intercept the read-screen clicks below.
-  await page.click(".nav-cat-bookmark summary");
+  // RECONCILED 2026-10-05: open, the Bookmark menu is a full-screen sheet
+  // covering its own tab (the Owner: "take the entire screen"), so it closes
+  // with its Close button, as a reader now does.
+  await page.click("[data-nav-bm-close]");
   await page.waitForTimeout(150);
 
   // Create a second bookmark, filed into a brand-new folder, via the popover
@@ -6029,7 +6037,10 @@ console.log("\n=== 49. Fixes round items 2/3 -- the nav bar's own live Bookmark 
   // once the genuinely fresh render lands.
   const stillOpen = await page.evaluate(() => document.querySelector(".nav-cat-bookmark")?.open);
   if (stillOpen) {
-    await page.click(".nav-cat-bookmark summary");
+    // RECONCILED 2026-10-05: open, the Bookmark menu is a full-screen sheet
+    // covering its own tab (the Owner: "take the entire screen"), so it closes
+    // with its Close button, as a reader now does.
+    await page.click("[data-nav-bm-close]");
     await page.waitForTimeout(150);
   }
   await page.evaluate(() => { document.getElementById("navBookmarkList").textContent = "Loading…"; });
@@ -6073,7 +6084,10 @@ console.log("\n=== 50. Fixes round 2 -- the expanded/collapsed OPTION, and the p
   const openMenu = async () => {
     const isOpen = await page.evaluate(() => document.querySelector(".nav-cat-bookmark")?.open);
     if (isOpen) {
-      await page.click(".nav-cat-bookmark summary");
+      // RECONCILED 2026-10-05: open, the Bookmark menu is a full-screen sheet
+      // covering its own tab (the Owner: "take the entire screen"), so it closes
+      // with its Close button, as a reader now does.
+      await page.click("[data-nav-bm-close]");
       await page.waitForTimeout(150);
     }
     // Reset to the sentinel first -- the list keeps its last render while
@@ -6325,7 +6339,10 @@ console.log("\n=== 50h-k. The person tag on the Manager page, and both in Bangla
   // phase 4 for About|person).
   // Close the dropdown first -- it is an absolutely-positioned overlay and
   // would otherwise intercept the read-screen clicks below (same trap as 49).
-  await pageBn.click(".nav-cat-bookmark summary");
+  // RECONCILED 2026-10-05: open, the Bookmark menu is a full-screen sheet
+  // covering its own tab (the Owner: "take the entire screen"), so it closes
+  // with its Close button, as a reader now does.
+  await pageBn.click("[data-nav-bm-close]");
   await pageBn.waitForTimeout(150);
   // Read lives inside #studyPillarMenu, so a bare click on it resolves and
   // then times out on a 0x0 box -- this file's own recorded trap. Every
