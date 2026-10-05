@@ -64,7 +64,7 @@
 
 import {
   getBookmarks, rootFolders, childFolders, bookmarksInFolder, unfiledBookmarks, groupBookmarksByPerson,
-  groupBookmarksByModule, livePresets, renameFolder, saveFolderOrder, lastPlaceOf,
+  groupBookmarksByModule, livePresets, renameFolder, saveFolderOrder, lastPlaceOf, lastActOf, markBookmarkUsed,
 } from "./bookmarks.js";
 import { MODULE_PAGES, MODULE_LABELS } from "./continue-strip.js";
 import {
@@ -89,9 +89,100 @@ function bookmarkHref(b) {
     : `${page}?resume=${encodeURIComponent(b.position ?? "")}`;
 }
 
+// The Owner, 5 Oct 2026: "Put a distinctive mark on each bookmark. Also put
+// the date and time of the last act after each bookmark. Keep an option to
+// show/hide timing." Every bookmark row carries 🔖 (folders keep 📁), and after
+// its name the time it was last opened, changed or made (lastActOf()). The
+// 🕘 Times button above the list shows or hides the times, per device.
+const TIMES_KEY = "mmsa.bookmarkMenu.showTimes";
+export function getBookmarkTimesShown() { try { return localStorage.getItem(TIMES_KEY) !== "0"; } catch { return true; } }
+function setBookmarkTimesShown(on) { try { localStorage.setItem(TIMES_KEY, on ? "1" : "0"); } catch { /* private mode: it just doesn't stick */ } }
+/** "5 Oct 2026, 20:40" -- in Bangla with Bangla digits and a 24-hour clock (the Note pane's own rule). */
+export function bookmarkTimeText(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return getAppLang() === "bn"
+    ? new Intl.DateTimeFormat("bn-BD-u-nu-beng", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(d)
+    : d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+}
+let linkCtx = { doc: null, times: true }; // set by renderBookmarkList() for the rows it renders
 function bookmarkLinkHtml(b) {
   const href = bookmarkHref(b);
-  return href ? `<a class="nav-bm-link" href="${href}">${escapeHtml(b.name)}</a>` : "";
+  if (!href) return "";
+  const at = linkCtx.times ? lastActOf(linkCtx.doc, b) : null;
+  const when = at ? `<small class="nav-bm-when" data-bm-when>${escapeHtml(bookmarkTimeText(at))}</small>` : "";
+  return `<a class="nav-bm-link nav-bm-item" data-bm-open-id="${escapeHtml(b.id)}" href="${href}"><span class="nav-bm-mark" aria-hidden="true">🔖</span><span class="nav-bm-name">${escapeHtml(b.name)}</span>${when}</a>`;
+}
+
+// The Owner, 5 Oct 2026: "Place a back button to go where bookmark is clicked
+// from." Opening a bookmark (here, or Open on the Manage bookmarks page) keeps
+// the page it was opened FROM in this tab's sessionStorage; the page it opens
+// shows "← Back to <that page>" once, floating at the bottom-left above every window. Nothing is stored
+// anywhere else.
+const RETURN_KEY = "mmsa.bookmarkReturn";
+const RETURN_MAX_MS = 6 * 60 * 60 * 1000;
+function pageLabel() {
+  const own = document.querySelector("h1")?.textContent?.trim();
+  const title = (own || document.title.replace(/^QuranRevival\s*[—-]\s*/, "") || document.title).trim();
+  return title.length > 40 ? `${title.slice(0, 39)}…` : title;
+}
+/**
+ * Everything that happens when a bookmark is opened, before the browser goes
+ * there: remember where it was opened from, and stamp its last-used time.
+ * The stamp is not waited for beyond a moment -- with the app's offline cache
+ * a write that has not reached the server yet is kept and sent on the next
+ * page -- but a refusal that comes back in that moment is said in words (I15).
+ * Resolves with the error sentence, or null.
+ */
+export async function noteBookmarkOpened(db, { tenantId, personId, bookmarkId, href }) {
+  try {
+    const to = new URL(href, location.href);
+    sessionStorage.setItem(RETURN_KEY, JSON.stringify({ from: location.href, label: pageLabel(), toPath: to.pathname, at: Date.now() }));
+  } catch { /* private mode: no Back button, the bookmark still opens */ }
+  if (!tenantId || !personId || !bookmarkId) return null;
+  let refused = null;
+  const write = markBookmarkUsed(db, tenantId, personId, bookmarkId).catch((err) => { refused = err; });
+  await Promise.race([write, new Promise((r) => setTimeout(r, 700))]);
+  return refused ? t("The time this bookmark was opened was not saved: {error}", { error: refused?.code || refused?.message || String(refused) }) : null;
+}
+/** On the page a bookmark opened: "← Back to <page>", once, floating bottom-left. */
+export function mountBookmarkBack(navBarEl) {
+  let r = null;
+  try { r = JSON.parse(sessionStorage.getItem(RETURN_KEY) || "null"); } catch { r = null; }
+  if (!r || typeof r.from !== "string" || r.shown || Date.now() - (r.at || 0) > RETURN_MAX_MS) return null;
+  if (r.toPath !== location.pathname || r.from === location.href) return null;
+  try { sessionStorage.setItem(RETURN_KEY, JSON.stringify({ ...r, shown: true })); } catch { /* once is best-effort */ }
+  const row = document.createElement("div");
+  row.className = "bm-back-row";
+  row.dataset.bmBack = "";
+  const back = document.createElement("a");
+  back.className = "bm-back";
+  back.href = r.from;
+  back.dataset.bmBackLink = "";
+  back.textContent = `← ${t("Back to {page}", { page: r.label || t("the previous page") })}`;
+  const x = document.createElement("button");
+  x.type = "button"; x.className = "bm-back-x"; x.dataset.bmBackClose = "";
+  x.textContent = "✕"; x.setAttribute("aria-label", t("Close")); x.title = t("Close");
+  x.addEventListener("click", () => row.remove());
+  row.append(back, x);
+  document.body.appendChild(row);
+  // Sit just above a bar fixed to the bottom of the screen (the Qur'an page's Study / Explore tabs), never on it.
+  const lift = () => {
+    row.style.visibility = "hidden";
+    let top = window.innerHeight;
+    for (const x of [16, window.innerWidth / 2]) {
+      for (let el = document.elementFromPoint(x, window.innerHeight - 6); el && el !== document.body; el = el.parentElement) {
+        const pos = getComputedStyle(el).position;
+        if (pos === "fixed" || pos === "sticky") { top = Math.min(top, el.getBoundingClientRect().top); break; }
+      }
+    }
+    row.style.bottom = top < window.innerHeight ? `${Math.round(window.innerHeight - top + 8)}px` : "";
+    row.style.visibility = "";
+  };
+  lift();
+  window.addEventListener("resize", lift);
+  setTimeout(lift, 600); // after the page has laid itself out
+  return row;
 }
 
 /** One collapsible group. `expanded` is the option's own value -- it decides the STARTING state only; tapping the summary still opens/shuts this one group afterwards. */
@@ -133,6 +224,7 @@ function personName(roster, personTagId) {
 }
 
 function renderBookmarkList(bookmarksDoc, { expanded, groupBy, roster }) {
+  linkCtx = { doc: bookmarksDoc, times: getBookmarkTimesShown() };
   if ((bookmarksDoc?.saved ?? []).filter((b) => !b.removed).length === 0) {
     return `<p class="nav-bm-empty">${t("No bookmarks yet.")}</p>`;
   }
@@ -176,10 +268,12 @@ function renderBookmarkList(bookmarksDoc, { expanded, groupBy, roster }) {
 function controlsHtml() {
   const expanded = getBookmarkMenuExpanded();
   const groupBy = getBookmarkMenuGroupBy();
+  const times = getBookmarkTimesShown();
   return `<div class="nav-bm-controls">
     <button type="button" class="nav-bm-expand-toggle" data-bm-nav-expand-toggle aria-pressed="${expanded ? "true" : "false"}">
       ${expanded ? "▾ " + t("Collapse all") : "▸ " + t("Expand all")}
     </button>
+    <button type="button" class="nav-bm-expand-toggle nav-bm-times-toggle" data-bm-nav-times aria-pressed="${times ? "true" : "false"}" title="${escapeHtml(times ? t("Hide the times") : t("Show the times"))}">🕘 ${escapeHtml(times ? t("Hide times") : t("Show times"))}</button>
     <label class="nav-bm-control"><span>${t("Group by")}</span>
       <select data-bm-nav-groupby>
         ${BOOKMARK_GROUP_BYS.map((g) => `<option value="${g.id}" ${g.id === groupBy ? "selected" : ""}>${t(g.label)}</option>`).join("")}
@@ -225,6 +319,7 @@ export function mountBookmarkMenu(navBarEl, { db, getTenantId, getPersonId, getB
   const details = navBarEl.querySelector(".nav-cat-bookmark");
   const listEl = navBarEl.querySelector("#navBookmarkList");
   if (!details || !listEl) return;
+  mountBookmarkBack(navBarEl);
 
   let loading = false;
   let fetchedRoster = null; // only ever populated on the fallback path below
@@ -297,6 +392,27 @@ export function mountBookmarkMenu(navBarEl, { db, getTenantId, getPersonId, getB
         e.stopPropagation();
         details.open = false;
         onLastPlace?.(btn.dataset.bmLast);
+      });
+    });
+    listEl.querySelector("[data-bm-nav-times]")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setBookmarkTimesShown(!getBookmarkTimesShown());
+      render(bookmarksDoc, roster);
+    });
+    listEl.querySelectorAll("a[data-bm-open-id]").forEach((a) => {
+      a.addEventListener("click", async (e) => {
+        if (e.ctrlKey || e.metaKey || e.shiftKey || e.button > 0) return; // a new tab: the browser's own way
+        e.preventDefault();
+        const id = a.dataset.bmOpenId;
+        const problem = await noteBookmarkOpened(db, { tenantId: getTenantId(), personId: getPersonId(), bookmarkId: id, href: a.href });
+        const at = new Date().toISOString();
+        if (!problem && bookmarksDoc) bookmarksDoc.usedAt = { ...(bookmarksDoc.usedAt ?? {}), [id]: at };
+        if (problem) {
+          const el = listEl.querySelector("[data-bm-nav-error]");
+          if (el) { el.textContent = problem; el.hidden = false; }
+          await new Promise((r) => setTimeout(r, 1500));
+        }
+        location.href = a.href;
       });
     });
     listEl.querySelector("[data-bm-nav-expand-toggle]")?.addEventListener("click", (e) => {

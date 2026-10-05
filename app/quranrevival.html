@@ -7887,7 +7887,7 @@
       if (currentUnitType === "page") {
         return { unitType: "page", unitKey: buildUnitKey.page(PAGE_EDITION, ayah.page), chunkKey: "subject_quran", label: t("Page {page}", { page: num(ayah.page) }) };
       }
-      return { unitType: "ayah", unitKey: buildUnitKey.ayah(currentSurahNum, currentAyahNum), chunkKey: surahChunkKey, label: t("Surah {surah}, Ayah {ayah}", { surah: num(currentSurahNum), ayah: ayahLabelFor(currentSurahNum, currentAyahNum) }) };
+      return { unitType: "ayah", unitKey: buildUnitKey.ayah(currentSurahNum, currentAyahNum), chunkKey: surahChunkKey, label: isUnnumberedBismillah(currentSurahNum, currentAyahNum) ? t("Surah {surah}, Bismillah", { surah: num(currentSurahNum) }) : t("Surah {surah}, Ayah {ayah}", { surah: num(currentSurahNum), ayah: ayahLabelFor(currentSurahNum, currentAyahNum) }) };
     }
 
     function renderUnitLabel() {
@@ -7988,7 +7988,7 @@
         const from = Math.min(rangeFrom, rangeTo), to = Math.max(rangeFrom, rangeTo);
         return t("Ayahs {from}–{to}", { from: num(from), to: num(to) });
       }
-      if (info.unitType === "ayah") return t("Ayah {n}", { n: ayahLabelFor(currentSurahNum, currentAyahNum) });
+      if (info.unitType === "ayah") return ayahNameFor(currentSurahNum, currentAyahNum);
       const n = currentUnitNumber();
       if (info.unitType === "ruku") return t("Ruku' {n}", { n: num(n) });
       if (info.unitType === "juz") return t("Juz {n}", { n: num(n) });
@@ -8736,6 +8736,14 @@
       const d = displayForInternalAyah(surah, ayah, true);
       return d.kind === "bismillah" ? t("Bismillah") : `${surah}:${d.kind === "span" ? "6–7" : d.number}`;
     }
+    // The Owner, 5 Oct 2026: "Bismillah is still showing as Ayah". Decision 55 leaves the
+    // Bismillah unnumbered, so it is never printed as "Ayah Bismillah" or "1:Bismillah":
+    // these give its own word where an āyah's number would go with "Ayah"/"1:" around it.
+    function isUnnumberedBismillah(surah, ayah) { return ayah === 1 && fatihaCountApplies(surah, fatihaOn()); }
+    /** "Ayah 3", "Ayah 6–7", or just "Bismillah". */
+    function ayahNameFor(surah, ayah) { return isUnnumberedBismillah(surah, ayah) ? t("Bismillah") : t("Ayah {n}", { n: ayahLabelFor(surah, ayah) }); }
+    /** "1:3", "1:6–7", or just "Bismillah" (with reader digits). */
+    function ayahShortRefFor(surah, ayah) { return isUnnumberedBismillah(surah, ayah) ? t("Bismillah") : `${num(surah)}:${ayahLabelFor(surah, ayah)}`; }
     /** The number a wheel/sidebar badge prints: nothing for the Bismillah, "6–7" for internal 1:7. */
     function ayahBadgeFor(surah, ayah) {
       return fatihaCountApplies(surah, fatihaOn()) && ayah === 1 ? "" : ayahLabelFor(surah, ayah);
@@ -9355,7 +9363,7 @@
       const surahNo = t("Surah {n}", { n: num(currentSurahNum) });
       const place = `${surahNo} · ${name}`;
       const info = currentUnitInfo();
-      if (currentUnitType === "ayah") { const l1 = t("Ayah {n}", { n: ayahLabelFor(currentSurahNum, currentAyahNum) }); return { line1: l1, line2: place, cta: `${l1} · ${name}` }; }
+      if (currentUnitType === "ayah") { const l1 = ayahNameFor(currentSurahNum, currentAyahNum); return { line1: l1, line2: place, cta: `${l1} · ${name}` }; }
       if (currentUnitType === "surah") return { line1: surahNo, line2: name, cta: name };
       if (currentUnitType === "range") {
         const from = Math.min(rangeFrom, rangeTo), to = Math.max(rangeFrom, rangeTo);
@@ -11824,7 +11832,7 @@
       });
       const ayat = surahData.ayahs.map((a) => ({
         key: a.ayah, a: idx.gi(sn, a.ayah), b: idx.gi(sn, a.ayah),
-        label: t("Ayah {ayah}", { ayah: ayahLabelFor(sn, a.ayah) }),
+        label: ayahNameFor(sn, a.ayah),
         coverage: [{ surah: sn, from: a.ayah, to: a.ayah }],
         statusId: effectiveAyahStatus(sn, a.ayah, trackable.id),
         open: () => goToAyahFromExplore(sn, a.ayah),
@@ -12162,7 +12170,7 @@
       if (surahData.ayahCount <= SURAH_WHEEL_THRESHOLD) {
         const items = surahData.ayahs.map((a) => {
           const statusId = effectiveAyahStatus(exploreSurahNum, a.ayah, trackable.id);
-          const label = t("Ayah {ayah}", { ayah: ayahLabelFor(exploreSurahNum, a.ayah) });
+          const label = ayahNameFor(exploreSurahNum, a.ayah);
           return { key: a.ayah, number: ayahBadgeFor(exploreSurahNum, a.ayah), statusId, label, title: segTitle(label, statusId, labelsById) };
         });
         const jumpToStudy = (key) => goToAyahFromExplore(exploreSurahNum, Number(key));
@@ -12212,7 +12220,7 @@
       const entries = exploreChunksBySurah.get(exploreSurahNum)?.entries ?? {};
       const items = ayahsInRuku.map((a) => {
         const statusId = effectiveAyahStatus(exploreSurahNum, a.ayah, trackable.id);
-        return { key: a.ayah, number: ayahBadgeFor(exploreSurahNum, a.ayah), statusId, label: t("Ayah {ayah}", { ayah: ayahLabelFor(exploreSurahNum, a.ayah) }) };
+        return { key: a.ayah, number: ayahBadgeFor(exploreSurahNum, a.ayah), statusId, label: ayahNameFor(exploreSurahNum, a.ayah) };
       });
       const exploreSurah = surahIndex.find((s) => s.surahNumber === exploreSurahNum);
       const currentSurahName = exploreSurah ? surahName(exploreSurah.surahNumber, exploreSurah.nameEnglish) : t("Surah {surah}", { surah: num(exploreSurahNum) });
@@ -14353,7 +14361,7 @@
         refLabel = `${num(surahNum)}:${num(from)}–${num(to)}`;
       } else {
         ayahNum = Number(parts[1]);
-        refLabel = `${num(surahNum)}:${ayahLabelFor(surahNum, ayahNum)}`;
+        refLabel = ayahShortRefFor(surahNum, ayahNum);
       }
       const surahData = qcrSurahDataByNum.get(surahNum);
       const ayah = surahData?.ayahs?.find((a) => a.ayah === ayahNum);
@@ -17130,6 +17138,7 @@
       const meta = surahIndex.find((s) => s.surahNumber === surahNum);
       // Issue #482 -- the label is what a reader SEES, so it follows their count
       // (1:7 reads "1:6–7"); `internal` is for a caller that parses it back.
+      if (!internal && isUnnumberedBismillah(surahNum, ayahNum)) return t("Bismillah — Surah {name}", { name: surahName(surahNum, meta?.nameEnglish) });
       return t("Quran {surah}:{ayah} — Surah {name}", { surah: num(surahNum), ayah: internal ? num(ayahNum) : ayahLabelFor(surahNum, ayahNum), name: surahName(surahNum, meta?.nameEnglish) });
     }
 
@@ -19167,7 +19176,8 @@
         .map((s) => `<option value="${s.surahNumber}" ${s.surahNumber === currentSurahNum ? "selected" : ""}>${num(s.surahNumber)}. ${surahName(s.surahNumber, s.nameEnglish)}</option>`)
         .join("");
       const ayahOptionsHtml = (selected) => Array.from({ length: currentSurahData.ayahCount }, (_, i) => i + 1)
-        .map((n) => `<option value="${n}" ${n === selected ? "selected" : ""}>${num(n)}</option>`).join("");
+        // The Owner, 5 Oct 2026: the reader's own count here too (Bismillah, 1..5, 6–7), the same as #ayahSelect.
+        .map((n) => `<option value="${n}" ${n === selected ? "selected" : ""}>${ayahLabelFor(currentSurahNum, n)}</option>`).join("");
       const numbers = numbered ? noteScopeNumbersInSurah(unitType) : [];
       const numOptionsHtml = numbers.map((n) => `<option value="${n}" ${n === noteScope.unitNumber ? "selected" : ""}>${num(n)}</option>`).join("");
       const ayahCellHidden = isRange || unitType === "surah";
@@ -20050,7 +20060,7 @@
         const ayahNum = Number(parts[1]);
         const meta = surahIndex.find((s) => s.surahNumber === surahNum);
         sName = meta ? surahName(surahNum, meta.nameEnglish) : "";
-        refLabel = `${num(surahNum)}:${ayahLabelFor(surahNum, ayahNum)}`;
+        refLabel = ayahShortRefFor(surahNum, ayahNum);
         const ayah = currentSurahData?.ayahs?.find((a) => a.ayah === ayahNum);
         const full = ayah?.translations?.en ?? "";
         snippet = full.length > 90 ? `${full.slice(0, 90).trim()}…` : full;
@@ -20906,6 +20916,7 @@
         if (!ayah) return;
         ayahPosition.textContent = fatihaCountApplies(currentSurahNum, fatihaOn()) && currentAyahNum === 1
           ? t("Surah {surah} — Bismillah", { surah: num(currentSurahNum) })
+          : isUnnumberedBismillah(currentSurahNum, currentAyahNum) ? t("Surah {surah} — Bismillah", { surah: num(currentSurahNum) })
           : t("Surah {surah} — Ayah {ayah} of {total}", { surah: num(currentSurahNum), ayah: ayahLabelFor(currentSurahNum, currentAyahNum), total: num(displayAyahCount(currentSurahNum, currentSurahData.ayahCount)) });
         ayahSelect.value = String(currentAyahNum);
         prevAyahBtn.disabled = currentAyahNum <= 1;
