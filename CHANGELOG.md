@@ -19678,3 +19678,13 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
   - word-card-stem-mark-browser 144/0, journey-folder-window-browser 144/0, read-window-browser 65/0 (10 mutations in all, each caught)
   - 16 journey/notes suites and 16 Read-view suites green; layout.mjs no geometry change
   - behaviour 1003/4 (sandbox only); 30j/30l/33a/37a updated in place
+
+## v09.82 — 5 Oct 2026 — Resizable panels; Siyagah note-pane port, round 1
+
+- **What:** decision 70.
+  - Resizable panels: `.jm-split` handles placed in the grid gaps by `layoutPaneSplits()`; widths as fractions in `mmsa-journey-pane-widths`; `splitWidths()` keeps the minimums. Pinned panel: `.nw-pin-split`, width in `<winKey>.pinsW`. The note list's second header row wraps when narrowed.
+  - Editor: new `TOOLS` (grouped by thin separators), `shiftHeading`, `stepTextSize` (font size via a font-size span), `selectedBlocks`, `applySpacing`, `onEditKeydown` (Ctrl+[ / ], Enter above the first heading or list), Find no longer hidden while editing (searches only the editable text). `note-sanitize.js`: h4, hr, data-done / data-box normalised to 1, font-size / line-height / margin-bottom with fixed values.
+  - Handover `docs/reports/2026-10-05-MMSA-SESSION-HANDOVER.md`, prompt `docs/governance/NEW-SESSION-PROMPT-2026-10-05.md`, list `docs/reference/2026-10-05-siyagah-note-pane-port-list.md`.
+- **Checks:**
+  - journey-pane-resize-browser 40/0 and journey-editor-siyagah-browser 98/0 (8 mutations, each caught; DOMPurify keeps data-* by default, so the mutation targets the normalising step)
+  - 15 neighbouring suites green; note-sanitize-boundary 12/0 updated in place

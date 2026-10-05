@@ -238,20 +238,17 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.81 on `main`** (5 Oct 2026 — **the stem marked on the Word card, a folder in its own window, the pinned Notes panel, and the Ayah window**; decision 69).
-- **What** (the Owner, on three demos):
-  - **Word card stem** ("mix highlight n glow together but on the top word only glow"): while *Colour word parts* is on, the stem glows in the big word at the top; the meaning, legend, Stem box and Dictionary word box get glow + highlighter. Both card looks.
-  - **Folder window** ("For Folder, build it"): folder ⋯ → 🗔 Open in its own window (subfolders, path and ⬆, its Notes, ✚ New note, quick title, ➕ New folder), the Note windows' frame and switcher (`openFolderWindow`, `host.folders`).
-  - **Pinned panel**: 📌 Pinned in a Note window opens the pinned Notes beside the Note (over it when narrow); a pinned Note opens in the same window. Replaces round 14's strip.
-  - **Ayah window** ("So go it"): 🗗 in the read bar floats the Read view as a window on a PC (`js/read-window.js`): move, resize, ⛶, ⧉, ⊡ back in the page, ✕. **Opt-in per device; never below 900px.** The Owner's "what I really wanted" for the Ayah is still to come.
+**Current milestone: v09.82 on `main`** (5 Oct 2026 — **resizable panels, and round 1 of the Siyagah note-pane port**; decision 70).
+- **What** (the Owner: "Make all the panes resizeable and add all functions of the notepane of Siyagah in the notepane"):
+  - **Resizable panels** in Mapping My Journey at 1200px and up (`layoutPaneSplits` in `journey-map.html`): tree | list | Note and list | Note; drag, arrow keys, double-click resets; minimums 240/260/300px; fractions per device. The pinned panel in a Note window resizes too.
+  - **Editor tools** (list items 3–13): H4, ¶, ▲H ▼H and Ctrl+[ / ], A+ / A−, ✓ Mark done (`data-done`), ▢ Box (`data-box`), ─ Divider, Justify, ↕ Spacing, Enter above the first heading, 🔍 Find while editing. The cleaner keeps exactly these (h4, hr, the two marks as 1, font-size / line-height / margin-bottom values).
+  - **The numbered list** `docs/reference/2026-10-05-siyagah-note-pane-port-list.md`: Part B (14–33) is built next without asking; Part C (34–45) waits for the Owner.
 - **Checks:**
-  - word-card-stem-mark-browser 144/0 (2 mutations caught); word-card-segments 40/0, wbw-rebuild 136/0, pc-boxes 296/0, quran-word-card 37/0
-  - journey-folder-window-browser 144/0 (4 mutations caught); 16 journey/notes suites green (flags-links 306/0 updated in place for the panel)
-  - read-window-browser 65/0 (4 mutations caught, incl. Night contrast); 16 Read-view suites green
-  - layout.mjs: no geometry change (only the known `bmNotFound`)
-  - behaviour 1003/4 (sandbox: 22g×3 archive.org, 31e TLS); 30j/30l/33a/37a updated in place for 🗗
+  - journey-pane-resize-browser 40/0 (4 mutations caught), journey-editor-siyagah-browser 98/0 (4 mutations caught), note-sanitize-boundary 12/0 (updated in place)
+  - journey-editor 577/0, journey-note-edit 208/0, journey-note-pane 327/0, notes-note-windows 218/0, journey-note-windows 254/0, journey-reading-tools 488/0, journey-flags-links 306/0, journey-folder-window 144/0, journey-three-panel 368/0, journey-s9 280/0, journey-tray 227/0, journey-window-tabs 166/0, journey-finish 64/0, palette-contrast 20/0, phone-width-overflow 217/0
 - **With the Owner:**
-  - open a word with Colour word parts on; on a PC, a folder's ⋯ → Open in its own window; a Note window's 📌 Pinned; in Read, 🗗.
+  - on a PC, drag the lines between the Mapping My Journey panels; in a Note, Edit and try A+, ✓, ▢, ─, ↕;
+  - strike out note-pane items by number.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration

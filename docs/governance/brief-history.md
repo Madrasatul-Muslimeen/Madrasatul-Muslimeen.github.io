@@ -14,6 +14,21 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v09.81 on `main`** (5 Oct 2026 — **the stem marked on the Word card, a folder in its own window, the pinned Notes panel, and the Ayah window**; decision 69).
+- **What** (the Owner, on three demos):
+  - **Word card stem** ("mix highlight n glow together but on the top word only glow"): while *Colour word parts* is on, the stem glows in the big word at the top; the meaning, legend, Stem box and Dictionary word box get glow + highlighter. Both card looks.
+  - **Folder window** ("For Folder, build it"): folder ⋯ → 🗔 Open in its own window (subfolders, path and ⬆, its Notes, ✚ New note, quick title, ➕ New folder), the Note windows' frame and switcher (`openFolderWindow`, `host.folders`).
+  - **Pinned panel**: 📌 Pinned in a Note window opens the pinned Notes beside the Note (over it when narrow); a pinned Note opens in the same window. Replaces round 14's strip.
+  - **Ayah window** ("So go it"): 🗗 in the read bar floats the Read view as a window on a PC (`js/read-window.js`): move, resize, ⛶, ⧉, ⊡ back in the page, ✕. **Opt-in per device; never below 900px.** The Owner's "what I really wanted" for the Ayah is still to come.
+- **Checks:**
+  - word-card-stem-mark-browser 144/0 (2 mutations caught); word-card-segments 40/0, wbw-rebuild 136/0, pc-boxes 296/0, quran-word-card 37/0
+  - journey-folder-window-browser 144/0 (4 mutations caught); 16 journey/notes suites green (flags-links 306/0 updated in place for the panel)
+  - read-window-browser 65/0 (4 mutations caught, incl. Night contrast); 16 Read-view suites green
+  - layout.mjs: no geometry change (only the known `bmNotFound`)
+  - behaviour 1003/4 (sandbox: 22g×3 archive.org, 31e TLS); 30j/30l/33a/37a updated in place for 🗗
+- **With the Owner:**
+  - open a word with Colour word parts on; on a PC, a folder's ⋯ → Open in its own window; a Note window's 📌 Pinned; in Read, 🗗.
+
 **Previous milestone: v09.80 on `main`** (5 Oct 2026 — **📖 Last read and ▶ Last played in the Bookmark menu**).
 - **What** (the Owner: "Add a last read and last play button in bookmark"):
   - Two buttons at the top of the Bookmark menu, each naming its place ("Yaseen 36:7", in Bangla with Bangla digits).
