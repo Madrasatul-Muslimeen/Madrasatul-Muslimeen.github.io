@@ -20,6 +20,17 @@ Read the live state yourself, because it moves on after this was written:
 - `claude.yml` runs;
 - the "Active Architect session" line on #159.
 
+**Updated 5 Oct 2026, ~06:00 UTC, by session `session_012katd3VGiJEprbqxSEUTbf` (Active Architect on #159). Supersedes the ~03:50 paragraph below.**
+
+- **`main` is at v09.77** (PR #576):
+  - a **Go** button ends the Study Unit row in Study options (`#unitGoBtn` → `openReadingScreen()`);
+  - **Track** closes Study options first;
+  - the Track card (`#wayModalOverlay`) moved from z-index 50 to 900. It had been hidden under the dock and, on a computer, under the Mastery Wheel window.
+- Nothing is building. Nothing waits on the Architect.
+- **Lessons:**
+  - **A floating window can hide a card that looks fine at phone width.** The Track card was only ever checked on a phone. A test with the Go action switched off happened to press Track on the landing page at 1280px, and found the wheel window covering every point of the card. Test an overlay at desktop width with the page's own floating windows showing.
+  - **`select-layout-options.mjs` rewrites `docs/reports/2026-09-18-select-layout-measurements.json` on every run.** Restore that dated record (`git checkout --`) rather than committing new numbers over it.
+
 **Updated 5 Oct 2026, ~03:50 UTC, by session `session_012katd3VGiJEprbqxSEUTbf` (Active Architect on #159). Supersedes the ~19:20 paragraph below.**
 
 - **`main` is at v09.76** (PR #574). Since v09.72:
