@@ -892,7 +892,11 @@ export function wordPartsHtml(word, layers, features, segments, context, text) {
       meaning = partMeaning(id, features.pp?.[i] ?? null, lang);
     }
     const kind = PART_KINDS[name.kind]?.[lang] ?? "";
-    return `<div class="word-card-part" data-word-card-part="${escapeHtml(id)}"><small class="word-card-part-kind">${escapeHtml(kind)}</small><span class="word-card-part-piece${colour ? ` word-card-segment-${seg.role}` : ""}" dir="rtl" lang="ar">${piece}</span><span class="word-card-part-arname" dir="rtl" lang="ar">${escapeHtml(arName)}</span><b class="word-card-part-name">${escapeHtml(name[lang])}</b>${meaning ? `<span class="word-card-part-meaning" lang="${lang}">${escapeHtml(meaning)}</span>` : ""}</div>`;
+    // 5 Oct 2026, Owner: the stem (the word's main part) is marked "all over
+    // the word card" -- its box carries word-card-part-stem while the parts
+    // are coloured.
+    const stemBox = colour && seg.role === "stem" ? " word-card-part-stem" : "";
+    return `<div class="word-card-part${stemBox}" data-word-card-part="${escapeHtml(id)}"><small class="word-card-part-kind">${escapeHtml(kind)}</small><span class="word-card-part-piece${colour ? ` word-card-segment-${seg.role}` : ""}" dir="rtl" lang="ar">${piece}</span><span class="word-card-part-arname" dir="rtl" lang="ar">${escapeHtml(arName)}</span><b class="word-card-part-name">${escapeHtml(name[lang])}</b>${meaning ? `<span class="word-card-part-meaning" lang="${lang}">${escapeHtml(meaning)}</span>` : ""}</div>`;
   });
   if (boxes.some((b) => !b)) return "";
   return `<div class="word-card-parts" style="--n:${boxes.length}" data-word-card-parts>${boxes.join("")}</div>`;
@@ -1079,7 +1083,7 @@ export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, 
   const arabicHtml = showSegmentColour ? segmentedArabicHtml(layers.surfaceToken, context.wordSegments) : escapeHtml(layers.surfaceToken);
   const refText = (s, a, w) => (typeof context.displayRef === "function" ? String(context.displayRef(s, a, w)) : `${s}:${a}:${w}`);
   const searchOpen = !!context.search?.open;
-  return `<section class="quran-word-card" role="region" aria-label="${escapeHtml(text.cardRegion)}" data-occurrence-id="${escapeHtml(occurrenceId)}">
+  return `<section class="quran-word-card" role="region" aria-label="${escapeHtml(text.cardRegion)}" data-occurrence-id="${escapeHtml(occurrenceId)}"${showSegmentColour ? " data-stem-mark" : ""}>
     <header><button type="button" data-word-card-move="previous" aria-label="${escapeHtml(text.previous)}"${context.hasPrevious ? "" : " disabled"}>‹</button>
       <button type="button" class="word-card-search-btn" data-word-card-search-toggle aria-pressed="${searchOpen}" aria-label="${escapeHtml(text.searchButton)}">🔍</button>
       <div class="word-card-head-word"><div class="word-card-arabic" dir="rtl" lang="ar">${arabicHtml}</div><div class="word-card-reference">${escapeHtml(refText(chapter.surahNumber, ayah.ayah, word.position))}</div></div>
