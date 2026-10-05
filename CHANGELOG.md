@@ -19688,3 +19688,12 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
 - **Checks:**
   - journey-pane-resize-browser 40/0 and journey-editor-siyagah-browser 98/0 (8 mutations, each caught; DOMPurify keeps data-* by default, so the mutation targets the normalising step)
   - 15 neighbouring suites green; note-sanitize-boundary 12/0 updated in place
+
+## v09.83 — 5 Oct 2026 — Siyagah note-pane port, round 2
+
+- **What:** decision 70, items 14–20.
+  - `note-window.js`: `beginEdit` / `finishEdit` (the ✏️ Edit / ✓ Done code, now also reached by Esc and by a right-click or long press on the title), `wirePress` (contextmenu + a 550 ms touch long press, the next tap swallowed), `renameNote`, `duplicateNote` (`host.copyNote`), `sectionContent` / `copySection` / `openSectionMenu`, `openTagNotes`, `showNoteIn` (the pinned panel uses it too), `smallDialog`. Tag chips are buttons.
+  - `journey-map.html`: `copyWholeNote` (createPermanentNote + createNotePlacement per folder + tagNote), the Delete confirm (`openSiyagahDialog` takes `gate: false`).
+- **Checks:**
+  - journey-note-actions-browser 184/0; mutations esc-noop, no-confirm, copy-nofile, chip-dead, no-swallow, rename-body each caught
+  - journey-note-pane 327/0, journey-flags-links 306/0, journey-editor-siyagah 98/0, journey-editor 577/0, journey-note-edit 208/0, notes-note-windows 218/0, journey-note-windows 254/0, journey-reading-tools 488/0, journey-finish 64/0, journey-folder-window 144/0, journey-pane-resize 40/0, journey-three-panel 368/0, journey-window-tabs 166/0, journey-s9 280/0, journey-tray 227/0, journey-tags 363/0, palette-contrast 20/0, phone-width-overflow 217/0, note-sanitize-boundary 12/0, stub-parity 4/0, rules-authorisation-executable 63/0

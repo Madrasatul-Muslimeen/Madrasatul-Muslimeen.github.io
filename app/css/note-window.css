@@ -135,6 +135,13 @@ body.jt-dragging .note-win { user-select: none; -webkit-user-select: none; }
 
 /* Siyagah round 7b -- Tags (Owner decision 42.5). A tag chip is the folder chip's colours (fixed, 4.5:1 in Night and Light); its colour is a dot. */
 .tag-chip { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; padding: 0.2rem 0.7rem; min-height: 32px; box-sizing: border-box; border-radius: 999px; background: #eef2ff; color: #1F3A6E; border: 1px solid #c9d3e6; margin: 0.1rem 0.2rem 0 0; max-width: 100%; overflow-wrap: anywhere; }
+/* Note-pane round 2 (item 18): a tag chip is a button -- tap it to see every Note with that tag. */
+button.tag-chip-btn { font: inherit; font-size: 0.8rem; min-height: 36px; cursor: pointer; text-align: start; }
+button.tag-chip-btn:hover, button.tag-chip-btn:focus-visible { background: #dde6fb; }
+/* Item 17: the small menu a long press / right-click on a heading opens. */
+.note-sec-menu { position: fixed; z-index: 6100; display: flex; flex-direction: column; gap: 0.25rem; padding: 0.35rem; background: #fff; color: #1F3A6E; border: 1px solid #c9d3e6; border-radius: 0.5rem; box-shadow: 0 8px 24px rgba(20,30,60,0.3); max-width: calc(100vw - 16px); box-sizing: border-box; }
+.note-sec-menu button { min-height: 44px; text-align: start; white-space: normal; }
+.note-pane-title, .note-sec-h { -webkit-touch-callout: none; }
 .tag-dot { flex: 0 0 auto; width: 0.7rem; height: 0.7rem; border-radius: 50%; background: transparent; border: 1px solid #8892a8; box-sizing: border-box; }
 .tag-picker { position: fixed; inset: 0; z-index: 6000; background: rgba(20,30,60,0.45); display: flex; align-items: center; justify-content: center; padding: 0.6rem; box-sizing: border-box; }
 .tag-picker-card { background: #fff; color: #1F3A6E; width: 100%; max-width: 24rem; max-height: calc(100vh - 1.2rem); overflow-y: auto; border-radius: 0.6rem; padding: 0.7rem; box-sizing: border-box; box-shadow: 0 12px 32px rgba(20,30,60,0.4); display: flex; flex-direction: column; gap: 0.5rem; }

@@ -238,16 +238,18 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.82 on `main`** (5 Oct 2026 — **resizable panels, and round 1 of the Siyagah note-pane port**; decision 70).
-- **What** (the Owner: "Make all the panes resizeable and add all functions of the notepane of Siyagah in the notepane"):
-  - **Resizable panels** in Mapping My Journey at 1200px and up (`layoutPaneSplits` in `journey-map.html`): tree | list | Note and list | Note; drag, arrow keys, double-click resets; minimums 240/260/300px; fractions per device. The pinned panel in a Note window resizes too.
-  - **Editor tools** (list items 3–13): H4, ¶, ▲H ▼H and Ctrl+[ / ], A+ / A−, ✓ Mark done (`data-done`), ▢ Box (`data-box`), ─ Divider, Justify, ↕ Spacing, Enter above the first heading, 🔍 Find while editing. The cleaner keeps exactly these (h4, hr, the two marks as 1, font-size / line-height / margin-bottom values).
-  - **The numbered list** `docs/reference/2026-10-05-siyagah-note-pane-port-list.md`: Part B (14–33) is built next without asking; Part C (34–45) waits for the Owner.
+**Current milestone: v09.83 on `main`** (5 Oct 2026 — **round 2 of the Siyagah note-pane port**; decision 70).
+- **What** (list items 14–20, `docs/reference/2026-10-05-siyagah-note-pane-port-list.md`), all in `app/js/note-window.js` unless named:
+  - **⋯ ✏️ Rename** (a revision through the page's own `host.revise`, text unchanged) and **⋯ 🗐 Make a copy** (`host.copyNote`; Mapping My Journey's `copyWholeNote`: a new Note "(copy)", filed in every folder the original is in, its tags carried; flags and links not copied).
+  - **Right-click or long-press the title** to edit (a window's title is on its bar); **right-click or long-press a heading** for 📋 Copy section, with or without its heading (HTML and plain text to the clipboard).
+  - **Tag chips are buttons**: a list of every Note with that tag, opened in the same view with ‹ › walking that list.
+  - **Delete asks first** in Mapping My Journey (`deleteNoteFromPane` → `retireNoteFromPane`); **Esc ends editing** like ✓ Done (in a window a second Esc closes it, as before).
 - **Checks:**
-  - journey-pane-resize-browser 40/0 (4 mutations caught), journey-editor-siyagah-browser 98/0 (4 mutations caught), note-sanitize-boundary 12/0 (updated in place)
-  - journey-editor 577/0, journey-note-edit 208/0, journey-note-pane 327/0, notes-note-windows 218/0, journey-note-windows 254/0, journey-reading-tools 488/0, journey-flags-links 306/0, journey-folder-window 144/0, journey-three-panel 368/0, journey-s9 280/0, journey-tray 227/0, journey-window-tabs 166/0, journey-finish 64/0, palette-contrast 20/0, phone-width-overflow 217/0
+  - journey-note-actions-browser 184/0 (6 mutations, each caught)
+  - journey-note-pane-browser and journey-flags-links-browser updated in place (Delete confirms; ⋯ carries ✏️ Rename)
+  - journey-note-pane 327/0, journey-flags-links 306/0, journey-editor-siyagah 98/0, journey-editor 577/0, journey-note-edit 208/0, notes-note-windows 218/0, journey-note-windows 254/0, journey-reading-tools 488/0, journey-finish 64/0, journey-folder-window 144/0, journey-pane-resize 40/0, journey-three-panel 368/0, journey-window-tabs 166/0, journey-s9 280/0, journey-tray 227/0, journey-tags 363/0, palette-contrast 20/0, phone-width-overflow 217/0, note-sanitize-boundary 12/0, stub-parity 4/0, rules-authorisation-executable 63/0
 - **With the Owner:**
-  - on a PC, drag the lines between the Mapping My Journey panels; in a Note, Edit and try A+, ✓, ▢, ─, ↕;
+  - in Mapping My Journey: ⋯ → Rename, ⋯ → Make a copy, right-click a Note's title, right-click a heading → Copy section, tap a tag chip, Delete (it asks), Esc while editing;
   - strike out note-pane items by number.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**

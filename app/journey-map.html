@@ -1414,6 +1414,7 @@
         .map((f) => ({ id: f.folderId, label: folderDisplayName(f) })),
       onChip: revealFolderFromChip,
       newNote: (v) => newNoteHere(v),
+      copyNote: (note) => copyWholeNote(note),
       attach: (v, note) => { copyNoteTo(note, null, { editing: !!v.ed, anchor: v.el, withTags: true }); },
       versions: {
         list: (note) => listNoteRevisions(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, noteId: note.noteId }),
@@ -1572,8 +1573,20 @@
     document.getElementById("openFavouritesBtn").addEventListener("click", () => { closeAllBarPalettes(null); openFlagList("favourite"); });
     document.getElementById("openArchivedBtn").addEventListener("click", () => { closeAllBarPalettes(null); openFlagList("archived"); });
 
-    /** Delete = Trash (decision 42.1: never an erase). The Note's current revision is the guard: a stale one is refused in words by the existing mapping. */
-    async function deleteNoteFromPane(v, staleNote) {
+    /** Delete = Trash (decision 42.1: never an erase). The Note's current revision is the guard: a stale one is refused in words by the existing mapping.
+     *  Note-pane round 2 (item 19): it asks first, as Siyagah does, even though Trash keeps everything. */
+    function deleteNoteFromPane(v, staleNote) {
+      const title = noteTitleOf(allNotes.find((n) => n.noteId === staleNote.noteId) ?? staleNote);
+      openSiyagahDialog({
+        title: t('Delete "{title}"?', { title }), gate: false,
+        bodyHtml: `<p data-note-delete-confirm>${escapeHtml(t('Are you sure? "{title}" goes to 🗑 Trash, and you can restore it from there.', { title }))}</p>
+          <div class="folder-picker-actions"><button type="button" class="danger" data-note-delete-yes>🗑 ${escapeHtml(t("Delete"))}</button></div>`,
+        wire: (overlay, close) => {
+          overlay.querySelector("[data-note-delete-yes]").addEventListener("click", () => { close(); retireNoteFromPane(v, staleNote); });
+        },
+      });
+    }
+    async function retireNoteFromPane(v, staleNote) {
       await endEdit(v); // a pending edit becomes a revision first, so the retire chains from it
       const note = allNotes.find((n) => n.noteId === staleNote.noteId) ?? staleNote;
       const outcome = await runFolderWrite(
@@ -2061,6 +2074,40 @@
         return created.noteId;
       }, { collection: TENANT.NOTE_PLACEMENTS, action: "createPermanentNote+createNotePlacement" });
       if (!outcome.ok) return null;
+      await refreshAll();
+      return outcome.result;
+    }
+
+    /**
+     * Note-pane round 2 (item 15) -- ⋯ Make a copy: a NEW Note with the same title (marked "copy") and text,
+     * filed in every folder the original is filed in, carrying its tags when tags are switched on. The same
+     * three writes a new Note, a filing and a tag already use (createPermanentNote, createNotePlacement,
+     * tagNote); Pin / Favourite / Archive / Finalise and links are NOT copied (Siyagah's own rule: a copy
+     * starts fresh). The copy is its own commit, so a later failure says the copy WAS made (I15).
+     */
+    async function copyWholeNote(note) {
+      if (!isSelfSelected()) return null;
+      const folderIds = [...activeFilingFolderIds(note)];
+      const tagIds = tagsReady() ? tagLinks.filter((l) => l.noteId === note.noteId).map((l) => l.tagId) : [];
+      const title = t("{title} (copy)", { title: noteTitleOf(note) });
+      const ownerArgs = { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, actorUid: auth.currentUser.uid };
+      const outcome = await safeWrite(async () => {
+        const created = await createPermanentNote(db, { ...ownerArgs, title, bodyHtml: note.bodyHtml ?? "" });
+        try {
+          for (const folderId of folderIds) {
+            const node = findNodeByIdOrRole(mergedRoots(), folderId, null);
+            await createNotePlacement(db, { ...ownerArgs, noteId: created.noteId, folderId, order: node ? nextOrder(notesInFolder(node).map((r) => r.placement)) : 0 });
+          }
+          for (const tagId of tagIds) await tagNote(db, { ...ownerArgs, noteId: created.noteId, tagId });
+        } catch (error) {
+          const wrapped = new Error(`The copy was saved, but filing or tagging it failed: ${error?.message ?? error}`);
+          wrapped.cause = error; wrapped.code = error?.code;
+          throw wrapped;
+        }
+        return created.noteId;
+      }, { collection: TENANT.NOTE_PLACEMENTS, action: "createPermanentNote+createNotePlacement" });
+      if (!outcome.ok) return null;
+      showPageStatus(t('A copy was made: "{title}".', { title }));
       await refreshAll();
       return outcome.result;
     }
@@ -3080,7 +3127,7 @@
       overlay.className = "folder-picker-overlay";
       overlay.innerHTML = `<div class="folder-picker" role="dialog" aria-modal="true" aria-labelledby="siyagahDialogTitle" tabindex="-1">
         <h2 id="siyagahDialogTitle" class="folder-picker-title">${escapeHtml(title)}</h2>
-        ${sectionsReady() ? "" : `<p class="note gate-note" data-sections-gate-note role="status">${escapeHtml(gate ?? gateSentence())}</p>`}
+        ${sectionsReady() || gate === false ? "" : `<p class="note gate-note" data-sections-gate-note role="status">${escapeHtml(gate ?? gateSentence())}</p>`}
         ${bodyHtml}
         <div class="folder-picker-actions"><button type="button" class="secondary" data-dialog-cancel>${escapeHtml(t("Cancel"))}</button></div>
       </div>`;
