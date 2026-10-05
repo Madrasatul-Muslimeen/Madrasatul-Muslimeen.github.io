@@ -2062,6 +2062,55 @@
     background: #B8862F; color: #fff; border-color: #B8862F;
   }
   #readBar button[disabled] { opacity: 0.45; }
+  /* The Ayah window (the Owner, 5 Oct 2026). 🗗 and the window's own title bar
+     and handles exist only on a PC (900px and up); below that the Read view is
+     already the whole screen. Opt-in: nothing here applies until 🗗 is pressed
+     (body.read-windowed, set by js/read-window.js). */
+  #readBar #readWindowBtn, .read-win-bar, .read-win-h { display: none; }
+  @media (min-width: 900px) {
+    #readBar #readWindowBtn {
+      box-sizing: border-box; width: 36px; height: 36px; min-width: 36px; padding: 0; margin: 0; flex: 0 0 auto;
+      display: inline-flex; align-items: center; justify-content: center; font-size: 1.15rem; line-height: 1;
+      border-radius: 0.5rem; background: #fff; color: #1F3A6E; border: 2px solid #B8862F; box-shadow: 0 1px 4px rgba(19, 25, 42, 0.28); cursor: pointer;
+    }
+    #readBar #readWindowBtn[aria-pressed="true"] { background: #B8862F; color: #fff; }
+    body.read-windowed #readView {
+      position: fixed; z-index: 66; box-sizing: border-box; flex: none;
+      /* the page's own light surface, in BOTH card looks: docked, the Read view
+         sits on the white page, and its reading colours are picked for that. */
+      background: #fff; border: 1px solid #cfc6b2; border-radius: 0.75rem;
+      box-shadow: 0 18px 50px rgba(10, 16, 30, 0.45); padding: 0 0.5rem 0.5rem;
+    }
+    body.read-window-full #readView { border-radius: 0; }
+    body.read-windowed .read-win-bar {
+      display: flex; align-items: center; gap: 6px; flex: 0 0 auto; min-height: 48px; box-sizing: border-box;
+      margin: 0 -0.5rem 0.4rem; padding: 4px 8px 4px 12px; background: #1F3A6E; color: #fff;
+      border-radius: 0.75rem 0.75rem 0 0; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
+    }
+    body.read-window-full .read-win-bar { border-radius: 0; cursor: default; }
+    .read-win-grip { opacity: 0.7; font-size: 1.1rem; }
+    .read-win-title { flex: 1 1 auto; min-width: 0; font-weight: 700; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .read-win-btn {
+      flex: 0 0 auto; width: 40px; height: 40px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.35);
+      background: rgba(255, 255, 255, 0.08); color: #fff; font-size: 1.05rem; cursor: pointer; padding: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .read-win-btn:hover { background: rgba(255, 255, 255, 0.2); }
+    .read-win-btn[aria-pressed="true"] { background: #C9A24B; color: #221904; border-color: #C9A24B; }
+    body.read-windowed .read-win-h { display: block; position: absolute; z-index: 4; touch-action: none; }
+    body.read-window-full .read-win-h { display: none; }
+    .read-win-h[data-h="n"] { top: -4px; left: 14px; right: 14px; height: 10px; cursor: ns-resize; }
+    .read-win-h[data-h="s"] { bottom: -4px; left: 14px; right: 30px; height: 10px; cursor: ns-resize; }
+    .read-win-h[data-h="e"] { right: -4px; top: 14px; bottom: 30px; width: 10px; cursor: ew-resize; }
+    .read-win-h[data-h="w"] { left: -4px; top: 14px; bottom: 14px; width: 10px; cursor: ew-resize; }
+    .read-win-h[data-h="ne"] { top: -4px; right: -4px; width: 22px; height: 22px; cursor: nesw-resize; }
+    .read-win-h[data-h="nw"] { top: -4px; left: -4px; width: 22px; height: 22px; cursor: nwse-resize; }
+    .read-win-h[data-h="sw"] { bottom: -4px; left: -4px; width: 22px; height: 22px; cursor: nesw-resize; }
+    .read-win-h[data-h="se"] {
+      right: 0; bottom: 0; width: 30px; height: 30px; cursor: nwse-resize; border-radius: 0 0 0.75rem 0;
+      background: linear-gradient(135deg, transparent 0 50%, #C9A24B 50% 58%, transparent 58% 66%, #C9A24B 66% 74%, transparent 74% 82%, #C9A24B 82% 90%, transparent 90%);
+    }
+  }
   /* Issue #322 -- Mushaf's own "Surah · āyāt" reference. flex:1 1 auto with
      min-width:0 is what lets it shrink and ellipsis-truncate rather than
      wrap or force #readBar's own icon buttons (all flex:0 0 auto) off the
@@ -4796,6 +4845,16 @@
            its own, Study options is still ONE tap away while reading, which
            matters when the settings change per child. -->
       <div id="readView" hidden>
+        <!-- The Ayah window (the Owner, 5 Oct 2026; demo
+             docs/reference/2026-10-05-ayah-window-demo.html): shown only while
+             the Read view floats as a window on a PC (js/read-window.js). -->
+        <div id="readWinBar" class="read-win-bar">
+          <span class="read-win-grip" aria-hidden="true">⠿</span><span id="readWinTitle" class="read-win-title"></span>
+          <button type="button" class="read-win-btn" id="readWinSmallerBtn" aria-label="Smaller" title="Smaller">⧉</button>
+          <button type="button" class="read-win-btn" id="readWinFullBtn" aria-label="Fill the screen" title="Fill the screen" aria-pressed="false">⛶</button>
+          <button type="button" class="read-win-btn" id="readWinDockBtn" aria-label="Put back in the page" title="Put back in the page">⊡</button>
+          <button type="button" class="read-win-btn" id="readWinCloseBtn" aria-label="Close" title="Close">✕</button>
+        </div>
         <!-- Shell round 21 -- the read bar is Prev · what is being read · Next.
              The owner's own reasoning for what left: "we don't need the
              'Mastery Wheel' [button] (because clicking on the 'Read' button
@@ -4907,6 +4966,7 @@
             <button type="button" class="rq-btn" id="readQuickApproachBtn">Approach</button>
           </div>
           <button type="button" class="secondary qr-ico" id="hideChromeBtn" aria-label="Full screen" title="Full screen">⤢</button>
+          <button type="button" class="secondary qr-ico" id="readWindowBtn" aria-label="Open as a window" title="Open as a window" aria-pressed="false">🗗</button>
           <!-- Note-view enhancement round 3 -- "same resizing at the READ
                view too". Filled in by JS (renderTextSizeButtonHtml()) once
                at init, same as every other static-markup slot on this
@@ -6061,6 +6121,7 @@
     import { openBookmarkNamePopover } from "./js/bookmark-popover.js";
     import { getAyahNotes, ayahNoteHtml, ayahHasNote, saveAyahNote, ensureAyahNotesWritable } from "./js/ayah-notes.js";
     import { renderQuickMenu, attachQuickMenuHandlers, renderNoteView, attachNoteViewHandlers, notesToPlainText, copyToClipboard, shareText } from "./js/ayah-note-renderer.js";
+    import { initReadWindow } from "./js/read-window.js";
     import { initPopupWindow, initSideSplitter, initListCollapse, loadSideViewMode, saveSideViewMode } from "./js/note-popup.js";
     import {
       collectionsFrom, activeCollections,
@@ -9681,6 +9742,8 @@
     // applies exactly as before.
     // -----------------------------------------------------------------------
     let stageView = "wheel";
+    // `var`, not `let`: renderStudyScreen() and setStageView() can run before this line during boot.
+    var readWindowCtl = null; // the Ayah window (js/read-window.js), set up once the page has booted
     // Issue #348 -- the four boundary tables, cached (see unitCardBoundaryTables()).
     // Declared here, before setStageView(), which reads it.
     let unitCardTablesCache = null;
@@ -9730,6 +9793,7 @@
       if (reading && !unitCardTablesCache) {
         unitCardBoundaryTables().then(() => { if (stageView === "read") renderStudyScreen(); }).catch(() => {});
       }
+      readWindowCtl?.sync();
       if (!noting && noteFullscreenOn) { noteFullscreenOn = false; document.body.classList.remove("note-immersive"); }
       if (!exploring && exploreFullscreenOn) {
         exploreFullscreenOn = false;
@@ -12578,6 +12642,22 @@
     // own drag handle -- its buttons stay clickable, since
     // initPopupWindow()'s drag logic already ignores clicks on
     // button/select/input/a.
+    // The Ayah window (the Owner, 5 Oct 2026) -- see js/read-window.js.
+    readWindowCtl = initReadWindow({
+      viewEl: readView,
+      titleBarEl: document.getElementById("readWinBar"),
+      titleEl: document.getElementById("readWinTitle"),
+      buttons: {
+        pop: document.getElementById("readWindowBtn"),
+        smaller: document.getElementById("readWinSmallerBtn"),
+        full: document.getElementById("readWinFullBtn"),
+        dock: document.getElementById("readWinDockBtn"),
+        close: document.getElementById("readWinCloseBtn"),
+      },
+      isOpen: () => stageView === "read",
+      getTitle: () => { try { return currentUnitInfo().label; } catch { return ""; } },
+      onClose: () => { setStageView("wheel"); renderWheel(); },
+    });
     initPopupWindow(wheelPopupViewEl, {
       id: "wheel",
       dragHandleEl: wheelPopupTitleBarEl,
@@ -20663,6 +20743,7 @@
     }
 
     function renderStudyScreen() {
+      readWindowCtl?.sync(); // the Ayah window's title follows the reading
       // Every surah/ayah/unit/tick change lands here -- the one call that covers
       // them all for "reopen where I was". Debounced inside, so the several
       // renders one gesture triggers still cost a single write.
