@@ -20,6 +20,17 @@ Read the live state yourself, because it moves on after this was written:
 - `claude.yml` runs;
 - the "Active Architect session" line on #159.
 
+**Updated 5 Oct 2026, ~13:00 UTC, by session `session_012katd3VGiJEprbqxSEUTbf` (Active Architect on #159). Supersedes the ~11:00 paragraph below.**
+
+- **`main` is at v09.80** (PR #582): 📖 Last read and ▶ Last played at the top of the Bookmark menu.
+  - They are stored on the bookmarks document as `lastPlaces.read` / `.play` (`setLastPlace()`), written at most every 10 s and on `pagehide`.
+  - On the Qur'an page they act in place. Elsewhere they are links: `?last=read` / `?last=play`, handled at boot like `?bookmark=`.
+  - Last played plays on from its āyah (`playCurrentSelection({ startAyah })`).
+- **Waiting on the Owner:** two demos, each build / change / drop:
+  - the Ayah window;
+  - the folder window and pinned panel.
+- **Lesson:** **in the Read view, moving to an āyah and staying there IS reading it.** The first test of Last read chose an āyah, waited, then pressed Play, and expected Last read to be unchanged. It changed, correctly. A test step that is itself the behaviour under test must be done in one gesture, or it proves the opposite of what it claims.
+
 **Updated 5 Oct 2026, ~11:00 UTC, by session `session_012katd3VGiJEprbqxSEUTbf` (Active Architect on #159). Supersedes the ~08:30 paragraph below.**
 
 - **`main` is at v09.79** (PR #580).
