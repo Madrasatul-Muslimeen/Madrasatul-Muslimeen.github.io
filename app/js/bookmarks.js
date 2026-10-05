@@ -383,6 +383,38 @@ export async function setFolderPersonTag(db, tenantId, personId, folderId, perso
   return true;
 }
 
+/**
+ * The Owner, 5 Oct 2026: "Enable a quick folder edit n handler to move folders
+ * here" (the Bookmark menu). Folders show in the order they are stored, so
+ * moving one is a new ORDER of the folders that share its parent. Pure: the
+ * siblings' own slots in the array are refilled in `orderedIds` order and
+ * every other folder keeps its exact position. Returns null (nothing to save)
+ * when `orderedIds` is not exactly that sibling set, or nothing moved.
+ */
+export function reorderSiblingFolders(folders, parentId, orderedIds) {
+  const all = folders ?? [];
+  const slots = [];
+  all.forEach((f, i) => { if ((f.parentId ?? null) === (parentId ?? null) && !f.removed) slots.push(i); });
+  const current = slots.map((i) => all[i].id);
+  if (orderedIds.length !== current.length || new Set(orderedIds).size !== current.length || !orderedIds.every((id) => current.includes(id))) return null;
+  if (orderedIds.every((id, i) => id === current[i])) return null;
+  const byId = new Map(all.map((f) => [f.id, f]));
+  const out = [...all];
+  slots.forEach((slot, k) => { out[slot] = byId.get(orderedIds[k]); });
+  return out;
+}
+
+/** Saves reorderSiblingFolders(); same read-then-update shape as renameFolder(). Returns the new folders array, or null when nothing changed. */
+export async function saveFolderOrder(db, tenantId, personId, parentId, orderedIds) {
+  const docId = bookmarksDocId(tenantId, personId);
+  const snap = await getDoc(doc(db, TENANT.BOOKMARKS, docId));
+  if (!snap.exists()) return null;
+  const folders = reorderSiblingFolders(snap.data().folders ?? [], parentId, orderedIds);
+  if (!folders) return null;
+  await updateDocument(db, TENANT.BOOKMARKS, docId, { folders });
+  return folders;
+}
+
 /** True when `candidateId` is `ancestorId` itself, or sits anywhere under it in the parentId chain -- the cycle a re-parent must never be allowed to create (a folder cannot become its own descendant's child). */
 export function isFolderOrDescendant(folders, candidateId, ancestorId) {
   let current = folders.find((f) => f.id === candidateId);
