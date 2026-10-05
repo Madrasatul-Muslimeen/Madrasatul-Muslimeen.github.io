@@ -199,6 +199,9 @@ for (const lang of ["en", "bn"]) {
       check(`${tag}: the refusal is in words (${lang})`, refused.length > 10 && (lang === "bn" ? hasBn(refused) : refused.includes("finalised")), refused);
       await page.click("#notePane [data-pane-menu-btn]");
       await page.click("#notePane [data-pane-menu] [data-pane-delete]");
+      // note-pane round 2 (item 19, 5 Oct 2026): Delete asks first; the refusal is checked after "Delete" is confirmed.
+      await page.waitForSelector("[data-note-delete-yes]", { state: "visible", timeout: 3000 });
+      await page.click("[data-note-delete-yes]");
       await page.waitForTimeout(400);
       check(`${tag}: Trash on a finalised Note is refused in words`, (await status(page)).length > 10 && (lang === "bn" ? hasBn(await status(page)) : (await status(page)).includes("finalised")), await status(page));
       check(`${tag}: neither the refused edit nor the refused Trash wrote anything`, (await writes(page)).length === 0, JSON.stringify((await writes(page)).map((x) => [x.col, x.op])));

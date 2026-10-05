@@ -73,6 +73,7 @@ const COLLAPSE_KEY = (noteId) => `qr.journeyNoteCollapsed.${noteId}`;
 const WIN_LIMITS = { minW: 320, minH: 360, bar: 44 };
 const WIN_SHEET_BELOW = 640, WIN_OFFSET = 28, WIN_Z = 1000, WIN_SWITCH_H = 56;
 const WIN_PANEL_SIDE_MIN = 560; // narrower than this, the pinned panel slides over the Note instead of sitting beside it
+const LONG_PRESS_MS = 550;
 
 function loadCollapsed(noteId) {
   try { const v = JSON.parse(localStorage.getItem(COLLAPSE_KEY(noteId)) || "[]"); return new Set(Array.isArray(v) ? v : []); } catch { return new Set(); }
@@ -141,6 +142,8 @@ const noteTitleOf = (note) => note.title?.trim() || t("(untitled)");
  *   versions?          S11 (never a new field): { list(note) -> Promise<[{ id, title, bodyHtml, createdAt, reason }]> newest first,
  *                        restore(note, rev) -> Promise  (saves rev as a NEW revision through the page's own save path) }
  *   newNote?(v)        S8: when given, the bar shows a ✚ (the owner only; pane and windows) that calls it with its view
+ *   copyNote?(note)    note-pane round 2 (item 15): when given, ⋯ shows Make a copy. The page writes a NEW Note with the
+ *                      same text, filed where the original is filed, and resolves with its noteId (null when refused).
  *   orderFrom(el), folderFrom(el)   the ‹ › order / folder of the row a Note was opened from
  *   paneTier(), paneApply(), scroller()   the inline pane's layout (pane only)
  * }
@@ -154,6 +157,21 @@ export function createNoteViews(host) {
   let viewSeq = 0;
   let paneListScroll = 0;
 
+  /** Note-pane round 2 (items 16, 17): right-click, or a long press on a touch screen, on the title starts editing;
+   *  on a heading in the read view it offers 📋 Copy section. `el` is the pane, or a window's whole frame. */
+  function wirePress(v, el) {
+    el.addEventListener("contextmenu", (ev) => { if (pressAction(v, ev.target, ev.clientX, ev.clientY)) ev.preventDefault(); });
+    el.addEventListener("pointerdown", (ev) => {
+      if (ev.pointerType !== "touch" || !pressTarget(v, ev.target)) return;
+      clearTimeout(v.press?.timer);
+      const press = { x: ev.clientX, y: ev.clientY, target: ev.target };
+      press.timer = setTimeout(() => { if (pressAction(v, press.target, press.x, press.y)) v.swallowClickUntil = Date.now() + 800; }, LONG_PRESS_MS);
+      v.press = press;
+    });
+    const cancelPress = (ev) => { if (v.press && (ev.type !== "pointermove" || Math.hypot(ev.clientX - v.press.x, ev.clientY - v.press.y) > 10)) { clearTimeout(v.press.timer); v.press = null; } };
+    for (const type of ["pointerup", "pointercancel", "pointermove"]) el.addEventListener(type, cancelPress);
+    el.addEventListener("click", (ev) => { if (v.swallowClickUntil && Date.now() < v.swallowClickUntil) { v.swallowClickUntil = 0; ev.preventDefault(); ev.stopImmediatePropagation(); } }, true);
+  }
   function makeView(el, kind) {
     const v = { el, kind, win: null, uid: kind === "pane" ? "" : `w${++viewSeq}`, noteId: null, order: [], folderId: null, ed: null };
     v.barEl = el.querySelector("[data-pane-bar]");
@@ -181,7 +199,10 @@ export function createNoteViews(host) {
       if (ev.target.closest("[data-sec-grip]")) gripKey(v, ev);
       else if (ev.target.matches?.("[data-panel-url]") && ev.key === "Enter") { ev.preventDefault(); applyLink(v); }
       else if (ev.target.closest?.("[data-edit-panel]") && ev.key === "Escape") { ev.stopPropagation(); closePanel(v); editBodyEl(v)?.focus(); }
+      // Note-pane round 2 (item 20): Esc in the text, the title or the toolbar ends editing, the same as ✓ Done.
+      else if (ev.key === "Escape" && v.ed && ev.target.closest?.("[data-edit-body], [data-edit-title], [data-edit-toolbar]")) { ev.preventDefault(); ev.stopPropagation(); finishEdit(v); }
     });
+    if (kind === "pane") wirePress(v, el); // a window wires its whole frame instead (its title is on the bar)
     el.addEventListener("pointerdown", (ev) => { const g = ev.target.closest("[data-sec-grip]"); if (g && v.ed) startGripDrag(v, g, ev); });
     el.addEventListener("click", (ev) => onViewClick(v, ev));
     // S11: Find -- typing re-marks the body; Enter / Shift+Enter step; Esc closes the find bar (and only it).
@@ -892,6 +913,9 @@ export function createNoteViews(host) {
     if (host.versions) menu += `<button type="button" class="secondary tiny" data-pane-versions>🕘 ${escapeHtml(t("Versions…"))}</button>`;
     if (own) {
       menu = `<button type="button" class="secondary tiny pane-editfold-item" data-pane-edit-toggle>${escapeHtml(editLabel)}</button>` + menu;
+      // Note-pane round 2 (items 14, 15).
+      menu += `<button type="button" class="secondary tiny" data-pane-rename>✏️ ${escapeHtml(t("Rename"))}</button>`;
+      if (host.copyNote) menu += `<button type="button" class="secondary tiny" data-pane-duplicate>🗐 ${escapeHtml(t("Make a copy"))}</button>`;
       menu += host.menuMid?.(v, note) ?? "";
       if (host.tagging) menu += `<button type="button" class="secondary tiny" data-pane-tags>🏷 ${escapeHtml(t("Tags…"))}</button>`;
       if (host.flags) {
@@ -990,17 +1014,22 @@ export function createNoteViews(host) {
   async function showPinnedIn(v, noteId) {
     const narrow = v.win.classList.contains("nw-narrow");
     if (noteId === v.noteId) { if (narrow) setPinsOpen(v, false); return; }
+    if (narrow && !viewShowing(noteId)) { v.pinsOpen = false; savePinsOpen(false); }
+    await showNoteIn(v, noteId, [noteId]);
+  }
+  /** Show `noteId` in view `v` (the pane or a window), with ‹ › walking `order` -- or focus the view it is already open in (§4.6). */
+  async function showNoteIn(v, noteId, order) {
+    if (noteId === v.noteId) return;
     const other = viewShowing(noteId);
     if (other) { focusView(other); return; }
     const target = getNote(noteId);
     if (!target || host.isRetired(target)) return;
     if (v.ed) await endEdit(v);
     v.noteId = noteId;
-    v.order = [noteId];
+    v.order = order;
     v.folderId = null;
-    if (narrow) { v.pinsOpen = false; savePinsOpen(false); }
     renderView(v);
-    v.scrollEl.scrollTop = 0;
+    if (v.kind === "pane" && host.paneTier() === "narrow") host.scroller().scrollTop = 0; else v.scrollEl.scrollTop = 0;
   }
   let linkPicker = null;
   function closeLinkPicker() { if (linkPicker) { linkPicker.remove(); linkPicker = null; } }
@@ -1053,7 +1082,7 @@ export function createNoteViews(host) {
     if (!host.tagging) return flagChipsHtml(note);
     const ids = new Set(host.tagging.noteTagIds(note));
     return flagChipsHtml(note) + host.tagging.tags().filter((g) => ids.has(g.id)).map((g) =>
-      `<span class="tag-chip" data-tag-chip="${escapeHtml(g.id)}"><span class="tag-dot" aria-hidden="true"${g.color ? ` style="background:${escapeHtml(g.color)}"` : ""}></span>🏷 ${escapeHtml(g.name)}</span>`).join("");
+      `<button type="button" class="tag-chip tag-chip-btn" data-tag-chip="${escapeHtml(g.id)}" title="${escapeHtml(t("Show every Note with this tag"))}"><span class="tag-dot" aria-hidden="true"${g.color ? ` style="background:${escapeHtml(g.color)}"` : ""}></span>🏷 ${escapeHtml(g.name)}</button>`).join("");
   }
   function rerenderNoteEverywhere(noteId) {
     for (const x of allViews()) if (x.noteId === noteId) renderView(x, { keepScroll: true });
@@ -1465,24 +1494,218 @@ export function createNoteViews(host) {
     if (v.kind === "pane" && host.paneTier() === "narrow") host.scroller().scrollTop = 0; else v.scrollEl.scrollTop = 0;
   }
 
+  /** ✏️ Edit, a long press / right-click on the title: begin editing (the owner only; never a finalised Note). */
+  function beginEdit(v, note) {
+    if (v.ed) return false;
+    if (host.flags?.on(note, "finalised")) { host.status(t("This Note is finalised, so it can't be edited. Un-finalise it from the ⋯ menu first.")); return false; }
+    if (!host.canEdit()) return false;
+    stagedTags.delete(note.noteId); host.onEditStart?.(v, note); startEdit(v, note);
+    return !!v.ed;
+  }
+  /** ✓ Done, and Esc while editing (item 20): the edit is written, then what was staged with it. */
+  async function finishEdit(v) {
+    const note = getNote(v.noteId);
+    if (!v.ed || !note) return;
+    const done = await endEdit(v);
+    await host.onEditDone?.(v, note); // S10: ticks staged in the folder picker are written now, with the edit
+    await applyStagedTags(note.noteId); // ...and so are the tag ticks
+    renderView(v, { keepScroll: true });
+    if (done?.conflict) await host.refresh(); // show what the other device wrote; the draft is offered back
+    v.el.querySelector("[data-pane-bar] > [data-pane-edit-toggle]:not([hidden])")?.focus({ preventScroll: true });
+  }
+
+  // =====================================================================
+  // NOTE-PANE ROUND 2 (the Owner, 5 Oct 2026: "add all functions of the
+  // notepane of Siyagah"; items 14-18 of
+  // docs/reference/2026-10-05-siyagah-note-pane-port-list.md). Rename is a
+  // revision through the page's own save (host.revise), the same as typing a
+  // new title; Make a copy is the page's (host.copyNote); Copy section and the
+  // tag list read only what is on screen and write nothing.
+  // =====================================================================
+  /** What a long press / right-click at `target` would do: "title", "section", or null. */
+  function pressTarget(v, target) {
+    const note = getNote(v.noteId);
+    if (!note || v.ed) return null;
+    if ((target.closest?.("[data-pane-title]") || (v.win && target.closest?.(".nw-bar .nw-title"))) && host.canEdit()) return "title";
+    if (target.closest?.(".note-sec-h") && v.bodyEl.contains(target)) return "section";
+    return null;
+  }
+  function pressAction(v, target, x, y) {
+    const kind = pressTarget(v, target);
+    if (kind === "title") { if (beginEdit(v, getNote(v.noteId))) { v.editTitleEl.focus(); v.editTitleEl.setSelectionRange(v.editTitleEl.value.length, v.editTitleEl.value.length); } return true; }
+    if (kind === "section") { openSectionMenu(v, target.closest(".note-sec"), x, y); return true; }
+    return false;
+  }
+
+  /** A small dialog on the page (above every window), shaped like the tag picker. Returns { el, q, msg, close }. */
+  function smallDialog(kind, title, inner) {
+    document.querySelector(`[data-note-dialog="${kind}"]`)?.remove();
+    const el = document.createElement("div");
+    el.className = "tag-picker";
+    el.dataset.noteDialog = kind;
+    el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", title);
+    el.innerHTML = `<div class="tag-picker-card">
+        <div class="tag-picker-head"><strong>${escapeHtml(title)}</strong><button type="button" class="secondary tag-picker-close" data-dlg-close aria-label="${escapeHtml(t("Close"))}">✕</button></div>
+        <p class="tag-picker-msg" data-dlg-msg role="alert" hidden></p>${inner}</div>`;
+    document.body.appendChild(el);
+    const back = document.activeElement;
+    const close = () => { el.remove(); if (back?.isConnected) back.focus?.({ preventScroll: true }); };
+    el.addEventListener("click", (e) => { if (e.target === el || e.target.closest("[data-dlg-close]")) close(); });
+    el.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.stopPropagation(); close(); } });
+    const q = (sel) => el.querySelector(sel);
+    const msg = (text) => { const m = q("[data-dlg-msg]"); m.textContent = text || ""; m.hidden = !text; };
+    return { el, q, msg, close };
+  }
+
+  /** Item 14 -- ⋯ Rename: a new title without opening the editor. While editing, the title box is the place. */
+  function renameNote(v, note) {
+    if (v.ed) { v.editTitleEl.focus(); v.editTitleEl.select(); return; }
+    if (host.flags?.on(note, "finalised")) { host.status(t("This Note is finalised, so it can't be edited. Un-finalise it from the ⋯ menu first.")); return; }
+    if (!host.ready()) return;
+    const d = smallDialog("rename", `✏️ ${t("Rename")}`, `
+        <form data-rename-form class="tag-picker-new">
+          <input type="text" maxlength="300" data-rename-input value="${escapeHtml(note.title ?? "")}" aria-label="${escapeHtml(t("Note title"))}">
+          <button type="submit" data-rename-save>${escapeHtml(t("Save"))}</button>
+        </form>`);
+    const input = d.q("[data-rename-input]");
+    d.q("[data-rename-form]").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const live = getNote(note.noteId) ?? note;
+      const title = input.value.trim();
+      if (title === (live.title ?? "").trim()) { d.close(); return; }
+      const save = d.q("[data-rename-save]");
+      save.disabled = true; d.msg("");
+      const bodyHtml = live.bodyHtml ?? "";
+      try {
+        const newId = await host.revise({ note: live, expectedRevisionId: live.currentRevisionId, title, bodyHtml });
+        Object.assign(live, { title, currentRevisionId: newId, updatedAt: { toDate: () => new Date(), toMillis: () => Date.now() } });
+        host.afterRevise(live);
+        rerenderNoteEverywhere(live.noteId);
+        d.close();
+        host.status(t('Renamed to "{title}".', { title: title || t("(untitled)") }));
+      } catch (err) {
+        save.disabled = false;
+        console.error("[note rename]", err);
+        d.msg(err?.message === "Stale Note revision." ? t("This Note changed on another device. Reload it, then try again.") : (err?.message || t("That did not save.")));
+      }
+    });
+    input.focus(); input.select();
+  }
+
+  /** Item 15 -- ⋯ Make a copy: what is typed is saved first, then the page makes the copy; it opens where the original was. */
+  async function duplicateNote(v, note) {
+    if (!host.copyNote || !host.ready()) return;
+    if (v.ed) await flushEdit(v.ed);
+    const live = getNote(note.noteId) ?? note;
+    const newId = await host.copyNote(live);
+    if (!newId || !getNote(newId)) return;
+    if (v.kind === "pane") openPane(newId); else openWindow(newId, { folderId: v.folderId });
+  }
+
+  /** Item 17 -- the section under a read-view heading, as clean HTML (with or without the heading) and as plain text. */
+  function sectionContent(sec, withHeading) {
+    const out = document.createElement("div");
+    const walk = (s, withH) => {
+      if (withH) {
+        const h = document.createElement(`h${s.dataset.level}`);
+        h.innerHTML = s.querySelector(":scope > .note-sec-h .note-sec-text")?.innerHTML ?? "";
+        out.appendChild(h);
+      }
+      for (const n of s.querySelector(":scope > .note-sec-body")?.childNodes ?? []) {
+        if (n.nodeType === 1 && n.classList.contains("note-sec")) walk(n, true); else out.appendChild(n.cloneNode(true));
+      }
+    };
+    walk(sec, withHeading);
+    for (const m of out.querySelectorAll("mark.note-find-hit")) m.replaceWith(...m.childNodes);
+    const html = sanitizeNoteHtml(out.innerHTML);
+    const probe = document.createElement("div");
+    probe.style.cssText = "position:fixed;left:-9999px;top:0;width:600px;opacity:0;white-space:normal";
+    probe.innerHTML = html;
+    document.body.appendChild(probe);
+    const text = (probe.innerText || "").replace(/\n{3,}/g, "\n\n").trim();
+    probe.remove();
+    return { html, text };
+  }
+  async function copySection(v, sec, withHeading) {
+    const { html, text } = sectionContent(sec, withHeading);
+    let ok = false;
+    try {
+      if (navigator.clipboard && window.ClipboardItem) {
+        await navigator.clipboard.write([new ClipboardItem({ "text/html": new Blob([html], { type: "text/html" }), "text/plain": new Blob([text], { type: "text/plain" }) })]);
+        ok = true;
+      }
+    } catch { /* not allowed here: try the older way */ }
+    if (!ok) {
+      const ta = document.createElement("textarea");
+      ta.value = text; ta.style.cssText = "position:fixed;left:-9999px;top:0";
+      document.body.appendChild(ta); ta.select();
+      try { ok = document.execCommand("copy"); } catch { ok = false; }
+      ta.remove();
+    }
+    host.status(ok ? t("Section copied.") : t("Could not copy. Select the text and copy it yourself.")); // I15
+    return ok;
+  }
+  let secMenu = null;
+  function closeSectionMenu() { if (secMenu) { document.removeEventListener("pointerdown", secMenu.__away, true); secMenu.remove(); secMenu = null; } }
+  function openSectionMenu(v, sec, x, y) {
+    closeSectionMenu();
+    if (!sec) return;
+    const el = document.createElement("div");
+    el.className = "note-sec-menu";
+    el.dataset.secMenu = "";
+    el.setAttribute("role", "menu");
+    el.setAttribute("aria-label", t("Copy section"));
+    el.innerHTML = `<button type="button" role="menuitem" class="secondary" data-sec-copy="with">📋 ${escapeHtml(t("Copy section with heading"))}</button>
+      <button type="button" role="menuitem" class="secondary" data-sec-copy="without">📋 ${escapeHtml(t("Copy section"))}</button>`;
+    document.body.appendChild(el);
+    secMenu = el;
+    const r = el.getBoundingClientRect(), vw = document.documentElement.clientWidth, vh = window.innerHeight;
+    el.style.left = `${Math.max(8, Math.min(x, vw - r.width - 8))}px`;
+    el.style.top = `${Math.max(8, Math.min(y, vh - r.height - 8))}px`;
+    el.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-sec-copy]");
+      if (!b) return;
+      closeSectionMenu();
+      copySection(v, sec, b.dataset.secCopy === "with");
+    });
+    el.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.stopPropagation(); closeSectionMenu(); } });
+    el.__away = (e) => { if (!el.contains(e.target)) closeSectionMenu(); };
+    document.addEventListener("pointerdown", el.__away, true);
+    el.querySelector("button").focus();
+  }
+
+  /** Item 18 -- a tag chip: every Note with that tag (in Trash excepted); tapping one shows it in this view. */
+  function openTagNotes(v, tagId) {
+    const tg = host.tagging;
+    const tag = tg.tags().find((g) => g.id === tagId);
+    if (!tag) return;
+    const rows = host.notes().filter((n) => !host.isRetired(n) && tg.noteTagIds(n).includes(tagId))
+      .sort((a, b) => noteTitleOf(a).localeCompare(noteTitleOf(b)));
+    const order = rows.map((n) => n.noteId);
+    const d = smallDialog("tag-notes", `🏷 ${tag.name}`, `
+        <div class="tag-picker-list" data-tag-notes-list>${rows.map((n) => `<button type="button" class="secondary" data-tag-notes-open="${escapeHtml(n.noteId)}" aria-current="${n.noteId === v.noteId}" style="min-height:44px;width:100%;text-align:start">${escapeHtml(noteTitleOf(n))}</button>`).join("")}</div>`);
+    d.el.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-tag-notes-open]");
+      if (!b) return;
+      d.close();
+      showNoteIn(v, b.dataset.tagNotesOpen, order);
+    });
+    d.q("[data-tag-notes-open]")?.focus();
+  }
+
   async function onViewClick(v, e) {
     const on = (sel) => e.target.closest(sel);
     const note = getNote(v.noteId);
     if (!note) return;
     if (on("[data-pane-edit-toggle]")) {
       closeAllBarPalettes(null);
-      if (!v.ed) {
-        if (host.flags?.on(note, "finalised")) { host.status(t("This Note is finalised, so it can't be edited. Un-finalise it from the ⋯ menu first.")); return; }
-        if (host.canEdit()) { stagedTags.delete(note.noteId); host.onEditStart?.(v, note); startEdit(v, note); }
-        return;
-      }
-      const done = await endEdit(v);
-      await host.onEditDone?.(v, note); // S10: ticks staged in the folder picker are written now, with the edit
-      await applyStagedTags(note.noteId); // ...and so are the tag ticks
-      renderView(v, { keepScroll: true });
-      if (done?.conflict) await host.refresh(); // show what the other device wrote; the draft is offered back
+      if (!v.ed) beginEdit(v, note); else await finishEdit(v);
       return;
     }
+    if (on("[data-pane-rename]")) { closeAllBarPalettes(null); renameNote(v, note); return; }
+    if (on("[data-pane-duplicate]")) { closeAllBarPalettes(null); duplicateNote(v, note); return; }
+    const tagChip = on("[data-tag-chip]");
+    if (tagChip && host.tagging) { openTagNotes(v, tagChip.dataset.tagChip); return; }
     const cmdBtn = on("[data-edit-toolbar] [data-cmd]");
     if (cmdBtn) { closeAllBarPalettes(null); runEditCommand(v, cmdBtn.dataset.cmd); return; }
     if (v.ed) { // S12: the editor's panel and heading controls
@@ -1762,6 +1985,7 @@ export function createNoteViews(host) {
     win.appendChild(main);
     const v = makeView(section, "window");
     v.win = win;
+    wirePress(v, win);
     v.noteId = noteId;
     v.pinsOpen = pinsOpenPref();
     pinPanel.addEventListener("click", (e) => {

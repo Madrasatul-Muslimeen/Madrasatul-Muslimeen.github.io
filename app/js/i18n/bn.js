@@ -3519,4 +3519,16 @@ export const BN = {
   "Put the cursor in a heading first.": "আগে কার্সর একটি শিরোনামে রাখুন।",
   "Select some text first.": "আগে কিছু লেখা বেছে নিন।",
   "Put the cursor in a paragraph first.": "আগে কার্সর একটি অনুচ্ছেদে রাখুন।",
+  // Note-pane round 2 (5 Oct 2026, items 14-20): Rename, Make a copy, Copy section, tag chips, Delete asks first.
+  "Make a copy": "একটি কপি বানান",
+  "Show every Note with this tag": "এই ট্যাগের সব নোট দেখুন",
+  "Renamed to \"{title}\".": "নতুন নাম \"{title}\"।",
+  "Section copied.": "অংশটি কপি হয়েছে।",
+  "Could not copy. Select the text and copy it yourself.": "কপি করা গেল না। লেখাটি বেছে নিয়ে নিজে কপি করুন।",
+  "Copy section": "অংশটি কপি করুন",
+  "Copy section with heading": "শিরোনামসহ অংশটি কপি করুন",
+  "{title} (copy)": "{title} (কপি)",
+  "A copy was made: \"{title}\".": "একটি কপি তৈরি হয়েছে: \"{title}\"।",
+  "Delete \"{title}\"?": "\"{title}\" মুছবেন?",
+  "Are you sure? \"{title}\" goes to 🗑 Trash, and you can restore it from there.": "আপনি কি নিশ্চিত? \"{title}\" 🗑 ট্র্যাশে যাবে, আর সেখান থেকে ফিরিয়ে আনতে পারবেন।",
 };

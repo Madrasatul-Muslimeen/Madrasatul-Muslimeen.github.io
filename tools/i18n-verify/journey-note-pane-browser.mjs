@@ -193,7 +193,10 @@ for (const lang of ["en", "bn"]) {
     const menuWords = await page.$$eval("[data-pane-menu] button", (b) => b.filter((x) => getComputedStyle(x).display !== "none").map((x) => x.textContent.trim()));
     check(`${tag}: every ⋯ item has a word (Copy to…, Move to…, Delete)`, menuWords.length >= 3 && menuWords.every((w) => /[\p{L}\p{M}]{3,}/u.test(w)), JSON.stringify(menuWords));
     check(`${tag}: no "Open full page" item on the full page (tray only)`, !menuWords.some((w) => /full page|পূর্ণ পৃষ্ঠা/.test(w)));
-    check(`${tag}: no ✏️ Edit yet (round 5)`, !/✏|Edit|সম্পাদনা/.test(menuWords.join("|")));
+    // Updated in place 5 Oct 2026 (note-pane round 2): ⋯ now carries "✏️ Rename" (item 14), which is not the Edit
+    // toggle this check guards; the toggle itself still must not show in ⋯ while the bar has room for it.
+    const editWords = await page.$$eval("[data-pane-menu] button:not([data-pane-rename])", (b) => b.filter((x) => getComputedStyle(x).display !== "none").map((x) => x.textContent.trim()));
+    check(`${tag}: no ✏️ Edit yet (round 5)`, !/✏|Edit|সম্পাদনা/.test(editWords.join("|")));
     await page.keyboard.press("Escape"); await page.click("[data-pane-title]");
 
     // ---- ‹ › walk the folder's own order and stop at the ends ---------------------------------
@@ -270,6 +273,9 @@ for (const lang of ["en", "bn"]) {
     await page.waitForSelector("#notePane:not([hidden])");
     await resetWrites(page);
     await openMenu(page); await page.click("[data-pane-menu] [data-pane-delete]");
+    // note-pane round 2 (item 19, 5 Oct 2026): Delete asks first -- confirm it, then the same checks as before.
+    await page.waitForSelector("[data-note-delete-yes]", { state: "visible", timeout: 3000 });
+    await page.click("[data-note-delete-yes]");
     await settle(page, 900);
     const w3 = await writes(page);
     check(`${tag}: Delete closes the pane`, !(await paneOpen(page)));
