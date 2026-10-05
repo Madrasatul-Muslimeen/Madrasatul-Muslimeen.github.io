@@ -224,17 +224,17 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.75 on `main`** (4 Oct 2026 — **Explore: no overhang on desktop and tablet either** (the Owner: "fix the Explore overhang on desktop too")).
-- **What was wrong:** above 720px the Explore card was sized to the window, so on a short window the wheel column (wheel, legend, ring key, words-known line, hint) ran 40–140px past the card's bottom edge (820×700: 140px; 1280×800: 58px). v09.74 had fixed the phone half and recorded this one.
-- **The fix:** above 720px the card never shrinks below the wheel column (`#exploreScroll` scrolls it), and `contain: size` keeps the surah list out of that sum, so the list still fills the card and scrolls inside it. Measured: the wheel and list never wrap above 720px, which this relies on.
+**Current milestone: v09.76 on `main`** (5 Oct 2026 — **Search by sound, a word press that shows at once, and a full-screen Bookmark menu**).
+- **Search by sound** (the Owner: "Enable searching with Transliteration like the example", "Inni fi khalqi samawate"): a Latin search also matches each ayah's word-by-word transliteration by its consonant skeleton, with a small tolerance (new `search-tr.json`, 215KB gzipped, fetched only for a Latin search). Results come under "By sound (transliteration)", after the English matches.
+- **Word progress** (the Owner: "It takes hours to marked achieved from not started", then a `permission-denied` toast on the lemma total): one press is ~14 round trips and showed nothing until the last, so it was pressed again; two concurrent creates of the same counter/total document made the second an overwrite, which the Rules refuse (reproduced in the emulator). Now the press shows at once with "Saving…", the buttons lock, and a press during a save starts nothing; the evidence write runs alongside the counters.
+- **Bookmark menu** (the Owner: "Enlarge bookmark to take the entire screen"): open, it is a full-screen opaque sheet at every width (list in one column, at most 40rem), the page behind still; ✕ Close (40px) or Escape closes it. Other categories keep the dropdown.
 - **Checks:**
-  - explore-phone-card-browser 146/0 at 13 sizes, en/bn (--mutate-desk fails 20, --mutate-shrink fails 40); it now measures what is VISIBLE (a half-shown list row counts only to the list's edge)
-  - every Explore suite green (Hizb, WbW tab, My Status, unit rings, Asma, Arabic coverage, word total); card-look-browser 96/0 (one intermittent miss, then 3/3)
-  - layout.mjs: no geometry change (only the known `bmNotFound`); phone-width-overflow 217/0, palette-contrast 20/0, text-size-wbw 88/0, stub-parity 4/0
-  - behaviour 1006/1 (sandbox: 31e TLS)
-  - quran-boundary was red on `main` (30/1, "feature registry retains the locked 30 Approaches"): **fixed after this release, test only** (the Owner: "fix the quran-boundary test too"). The check grepped prose v08.113 had reworded on purpose once tenants could add Approaches; it now reads `APPROACH_TEMPLATES` (30, `approach_01`..`approach_30` in order, 7 sections). 33/0; an order mutation and a section mutation each fail it
-- **With the Owner:** check Explore on a computer with a short window; a folder's own window (needs a demo); the Asmaul Husna poster (on hold, decision 50).
-)
+  - quran-search-transliteration 48/0 (--mutate-strict fails 2, --mutate-no-sound fails 20)
+  - word-progress-saving-browser 32/0 (--mutate-no-lock fails 8, --mutate-no-instant fails 20); every word-card suite green (achieved-mirror 73, lemma-progress 76, practising 458, known-word-marks 122, lemma-levels 240, pc-boxes 296, word-levels 41, meaning-groups 66; word-progress-rendered 80/3, sandbox TLS)
+  - bookmark-sheet-browser 176/0, 2 pages, en/bn, 320–1280 (--mutate-off fails 76); study-presets 84/0; navcheck green
+  - phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0; layout.mjs: no geometry change (only the known `bmNotFound`)
+  - behaviour 1006/1 (sandbox: 31e TLS); 49/50 now close the menu with Close, since the sheet covers its tab
+- **With the Owner:** try "Inni fi khalqi samawate"; press Achieved once on a word; open Bookmark on the phone. A folder's own window (needs a demo); the Asmaul Husna poster (on hold, decision 50).
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration
