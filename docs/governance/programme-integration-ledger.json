@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.77",
+    "version": "09.78",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2105,8 +2105,20 @@
     {
       "version": "09.77",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "A Go button beside From/To; Track closes Study options and its card sits above the dock and the wheel window.",
+      "integration": {
+        "authorizedOn": "2026-10-05",
+        "integratedOn": "2026-10-05",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.78",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Words with no dictionary word are N/A at Basic/Depth (74,122 total); a handle and pencil on Bookmark-menu folders; the Ayah window demo.",
       "integration": {
         "authorizedOn": "2026-10-05",
         "integratedOn": "2026-10-05",
@@ -2115,8 +2127,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.78",
+  "nextUnallocated": "09.79",
   "nextUnallocatedNote": [
+    "v09.78 was allocated to N/A at Basic and Depth; folder move and rename; Ayah window demo, 2026-10-05.",
     "v09.77 was allocated to Study options: a Go button, and Track's card on top, 2026-10-05.",
     "v09.76 was allocated to Search by sound; word press shows at once; full-screen Bookmark menu, 2026-10-05.",
     "v09.75 was allocated to Explore: no overhang on desktop and tablet either, 2026-10-04.",
