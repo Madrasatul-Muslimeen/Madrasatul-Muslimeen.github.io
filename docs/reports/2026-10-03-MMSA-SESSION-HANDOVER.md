@@ -20,6 +20,15 @@ Read the live state yourself, because it moves on after this was written:
 - `claude.yml` runs;
 - the "Active Architect session" line on #159.
 
+**Updated 5 Oct 2026, ~14:00 UTC, by session `session_012katd3VGiJEprbqxSEUTbf` (Active Architect on #159). Supersedes the ~13:00 paragraph below.**
+
+- **`main` is at v09.81** (PR #585, decision 69): three demos built.
+  - **Word card stem**: glow on the top word only; glow + highlighter on the meaning, legend, Stem box and Dictionary word box (`data-stem-mark`), while Colour word parts is on.
+  - **Folder window** (`openFolderWindow()` in `note-window.js`, `host.folders` in `journey-map.html`) and the **pinned Notes side panel** (replaces round 14's strip).
+  - **Ayah window** (`app/js/read-window.js`): 🗗 in the read bar, PC only, **opt-in per device**. Making it the default on a PC is one line (`let on = stored.on === true`).
+- **Waiting on the Owner:** they will say "what I really wanted" for the Ayah; the demo they approved was taken as something else ("But i liked it. So go it").
+- **Lesson:** **a surface keeps its palette when it moves.** The Ayah window first took the dark card surface in the Night look, and the Read view's text (picked for the white page) went unreadable. Measured contrast in both looks is now in `read-window-browser`, and a mutation proves it can fail.
+
 **Updated 5 Oct 2026, ~13:00 UTC, by session `session_012katd3VGiJEprbqxSEUTbf` (Active Architect on #159). Supersedes the ~11:00 paragraph below.**
 
 - **`main` is at v09.80** (PR #582): 📖 Last read and ▶ Last played at the top of the Bookmark menu.
