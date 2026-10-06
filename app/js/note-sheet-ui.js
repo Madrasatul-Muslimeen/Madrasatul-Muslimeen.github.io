@@ -128,7 +128,7 @@ export function mountSheet(root, o) {
         if (covered.has(`${r},${c}`)) continue;
         const g = grid[r][c], sp = spans.get(`${r},${c}`);
         const cls = ["sheet-cell"]; if (g.err) cls.push("sheet-err"); else if (typeof g.v === "number") cls.push("sheet-num");
-        h += `<td class="${cls.join(" ")}" data-r="${r}" data-c="${c}"${sp && sp[0] > 1 ? ` rowspan="${sp[0]}"` : ""}${sp && sp[1] > 1 ? ` colspan="${sp[1]}"` : ""}${g.err ? ` title="${esc(words[g.err] || g.err)}" aria-label="${esc(`${g.err} ${words[g.err] || ""}`)}"` : ""} role="gridcell"><span class="sheet-val">${esc(num(g.text))}</span></td>`;
+        h += `<td class="${cls.join(" ")}" data-r="${r}" data-c="${c}"${sp && sp[0] > 1 ? ` rowspan="${sp[0]}"` : ""}${sp && sp[1] > 1 ? ` colspan="${sp[1]}"` : ""}${g.err ? ` title="${esc(words[g.err] || g.err)}" aria-label="${esc(`${g.err} ${words[g.err] || ""}`)}"` : ""} role="gridcell"><span class="sheet-val">${esc(g.err ? g.text : num(g.text))}</span></td>`; // an error code is a code: its "0" stays a 0
       }
       h += "</tr>";
     }

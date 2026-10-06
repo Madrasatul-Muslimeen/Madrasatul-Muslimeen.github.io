@@ -9,7 +9,8 @@ import fs from "node:fs";
 import { pathToFileURL } from "node:url";
 
 const root = path.resolve(process.argv[2] || process.cwd());
-const E = await import(pathToFileURL(path.join(root, "app/js/note-sheet-engine.js")).href);
+// SHEET_ENGINE lets note-sheet-engine-mutations.mjs point this suite at a deliberately broken copy.
+const E = await import(pathToFileURL(process.env.SHEET_ENGINE || path.join(root, "app/js/note-sheet-engine.js")).href);
 let passed = 0, failed = 0;
 function check(name, body) {
   try {
