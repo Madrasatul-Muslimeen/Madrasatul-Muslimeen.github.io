@@ -19759,3 +19759,10 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
 - **Checks:**
   - writing-sheet-unit-toolbar-browser 54/0 (52/2 with the hidden-field fix removed), writing-sheet-browser 206/0, wheel-writing-slice 25/0, wheel-unit-go 254/0, wheel-centre 645/0
   - phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
+
+## v09.92 — 6 Oct 2026 — Writing sheet: pop out a word or an Ayah, enlargeable, writing over it
+
+- **What:** the Owner, 6 Oct 2026. Builder round #602 (PR #604): `writing-popout.js` (new), `writing-sheet.js` (🔍 Pop out, pick mode, `wordAt`, `ayahWordsOf`, `popOut`), `bn.js` (8 texts). Architect review: the pop-out opens a word wider than the window at its start (the right-hand end of the Arabic).
+- **Checks:**
+  - writing-sheet-popout-browser 222/0 (216/6 with the review fix removed), writing-sheet-browser 206/0, writing-sheet-unit-toolbar 54/0, wheel-writing-slice 25/0, wheel-unit-go 254/0
+  - phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)

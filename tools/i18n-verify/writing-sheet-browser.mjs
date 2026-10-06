@@ -494,7 +494,8 @@ for (const lang of ["en", "bn"]) {
       minH: Math.min(...btns.map((b) => b.getBoundingClientRect().height * vv.scale)), scale: vv.scale };
   });
   const a = await tb();
-  check(`[${lang}] toolbar shown by default: 10 controls, toggle reads ${lang === "bn" ? "▴ লুকান" : "▴ Hide"}`, a.shown === 10 && a.toggle === (lang === "bn" ? "▴ লুকান" : "▴ Hide") && a.expanded === "true", JSON.stringify(a));
+  // Updated in place (W2): 🔍 Pop out joined row 2, so the toolbar holds 11 controls, not 10.
+  check(`[${lang}] toolbar shown by default: 11 controls, toggle reads ${lang === "bn" ? "▴ লুকান" : "▴ Hide"}`, a.shown === 11 && a.toggle === (lang === "bn" ? "▴ লুকান" : "▴ Hide") && a.expanded === "true", JSON.stringify(a));
   await page.click('#writingSheet [data-ws="tools"]'); await page.waitForTimeout(150);
   const b = await tb();
   check(`[${lang}] Hide leaves only the Tools button, on screen`, b.shown === 1 && b.toggle === (lang === "bn" ? "▾ সরঞ্জাম" : "▾ Tools") && b.expanded === "false" && b.inView, JSON.stringify(b));
@@ -502,7 +503,7 @@ for (const lang of ["en", "bn"]) {
   const c = await tb();
   check(`[${lang}] the hidden choice is remembered when the sheet opens again`, c.shown === 1, JSON.stringify(c));
   await page.click('#writingSheet [data-ws="tools"]'); await page.waitForTimeout(150);
-  check(`[${lang}] Tools brings all 10 controls back`, (await tb()).shown === 10);
+  check(`[${lang}] Tools brings all 11 controls back`, (await tb()).shown === 11);
   // Zoom the page 2.5x the way a pinch does, then move the view down the page.
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("Emulation.setPageScaleFactor", { pageScaleFactor: 2.5 });

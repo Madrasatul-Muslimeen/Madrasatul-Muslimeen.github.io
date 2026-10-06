@@ -3588,4 +3588,12 @@ export const BN = {
   "Sort by this column": "এই কলাম অনুযায়ী সাজান",
   "This column has no numbers to add up.": "এই কলামে যোগ করার মতো কোনো সংখ্যা নেই।",
   "Linked to \"{title}\".": "\"{title}\"-এর সাথে লিংক হয়েছে।",
+  // 6 Oct 2026 (W2) -- pop out a word or an Ayah on the Writing sheet.
+  "Tap a word to pop it out": "আলাদা করে দেখতে একটি শব্দে ট্যাপ করুন",
+  "Word": "শব্দ",
+  "Smaller letters": "অক্ষর ছোট করুন",
+  "Bigger letters": "অক্ষর বড় করুন",
+  "Bigger window": "উইন্ডো বড় করুন",
+  "Smaller window": "উইন্ডো ছোট করুন",
+  "Word or Ayah": "শব্দ বা আয়াত",
 };
