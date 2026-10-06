@@ -230,6 +230,7 @@ const CSS = `
 #writingSheet .ws-unitpanel{position:relative;z-index:4;display:flex;flex-wrap:wrap;gap:8px 10px;align-items:flex-end;padding:10px 12px;background:#fff8e6;color:#2b2410;border-bottom:2px solid #B8862F}
 #writingSheet .ws-unitpanel[hidden]{display:none}
 #writingSheet .ws-unitpanel label{display:flex;flex-direction:column;gap:2px;font-size:0.8rem;min-width:0}
+#writingSheet .ws-unitpanel label[hidden]{display:none}
 #writingSheet .ws-unitpanel select{min-height:40px;font:inherit;font-size:0.9rem;max-width:100%;min-width:0}
 #writingSheet .ws-unitpanel button{min-height:40px;min-width:40px;padding:0.3rem 0.9rem;border-radius:8px;border:1px solid #B8862F;background:#fff;color:#4a3a10;font:inherit;cursor:pointer}
 #writingSheet .ws-unitpanel [data-ws="unit-show"]{background:#B8862F;color:#fff}

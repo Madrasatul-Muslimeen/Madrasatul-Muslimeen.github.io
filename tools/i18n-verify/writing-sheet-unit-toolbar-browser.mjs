@@ -102,11 +102,14 @@ for (const lang of ["en", "bn"]) {
 
   // ---- the label and the panel
   const l0 = await label(page);
-  check(`${tag} the 📖 control shows what the sheet holds now (Whole Surah 1, in the reader's language)`, l0.includes(digits(1, lang)) && l0.includes("📖") && (lang === "bn" ? /সূরা/.test(l0) : /Whole Surah/.test(l0)), l0);
+  // Updated in place, Architect review (#603): the label names the Surah ("Al-Faatiha"), not "Whole Surah 1".
+  check(`${tag} the 📖 control shows what the sheet holds now (the Surah's name, in the reader's language)`, l0.includes("📖") && (lang === "bn" ? /আল-ফাতিহা/.test(l0) : /Al-Faatiha/.test(l0)) && !/Whole Surah|সম্পূর্ণ সূরা/.test(l0), l0);
   await page.click('#writingSheet [data-ws="unit"]');
   const panel = await page.evaluate(() => {
     const p = document.querySelector("#writingSheet [data-ws-unitpanel]");
-    const vis = (e) => !!e && !e.closest("[hidden]") && e.getBoundingClientRect().width > 0;
+    // Updated in place, Architect review (#603): the RENDERED box, not the [hidden] attribute -- the label's
+    // display:flex rule beat [hidden], so every field showed while this check (reading the attribute) passed.
+    const vis = (e) => !!e && (e.closest("label") ?? e).getBoundingClientRect().width > 0 && e.getBoundingClientRect().width > 0;
     const types = [...p.querySelectorAll('[data-ws-u="type"] option')].map((o) => o.value);
     return {
       open: !p.hidden, types, surahs: p.querySelectorAll('[data-ws-u="surah"] option').length,
