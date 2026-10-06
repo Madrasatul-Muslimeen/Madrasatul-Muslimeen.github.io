@@ -121,7 +121,20 @@ Read this first, every session. It is the standing brief.
 > "do not translate" and is a different contract. **That contract is NOT
 > invented here**; the Stage B exclusion stands for this candidate.
 
-> ## ⇢ SESSION HANDOVER, 5 Oct 2026 — READ THIS SECOND
+> ## ⇢ SESSION HANDOVER, 6 Oct 2026 — READ THIS SECOND
+>
+> **`docs/reports/2026-10-06-MMSA-SESSION-HANDOVER.md`** is the current
+> continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-10-06.md`**
+> is the prompt that starts a new session. The Siyagah note-pane port's Part B is
+> finished (v09.86); **Part C (34–45) waits for the Owner's answers**, asked on
+> 6 Oct. Next without asking: **👥 family members on the Word Card levels and on
+> Hadith "Studied"** (handover section 0). Decision 71 records the Owner's five
+> requests of 5 Oct (bookmarks, Back, Bismillah, 👥 on every Record card, family
+> members with a year of birth at sign-up).
+>
+> **The 5 Oct block below is kept as history**, superseded by it.
+>
+> ## ⇢ SESSION HANDOVER, 5 Oct 2026 (superseded 6 Oct 2026)
 >
 > **`docs/reports/2026-10-05-MMSA-SESSION-HANDOVER.md`** is the current
 > continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-10-05.md`**

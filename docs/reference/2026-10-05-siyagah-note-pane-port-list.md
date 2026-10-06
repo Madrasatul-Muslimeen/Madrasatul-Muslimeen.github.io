@@ -5,7 +5,7 @@ Written 5 Oct 2026 by the MMSA Architect. The Owner asked:
 then "Give me a full list with numbers, so i can tell which one not to do."
 
 **How to use it.** The Owner strikes out by number ("don't do 23, 31"). Everything not struck out is built
-in the order below. **Part A is done.** **Part B is built without asking.** **Part C waits for the Owner's
+in the order below. **Part A is done.** **Part B is built (v09.83–v09.86).** **Part C waits for the Owner's
 answer**, because each item needs new stored data, a Firebase change or an outside service. Each Part C
 line names that need.
 
@@ -29,7 +29,7 @@ Source: Siyagah `index.html` v04.86 (`Siyagah/siyagah.github.io`, readable from 
 12. **Enter above the first heading or list** (an empty line appears above it).
 13. **🔍 Find while editing**.
 
-## Part B. To build next, in this order (no new data; no Firebase change)
+## Part B. Done (5–6 Oct 2026; v09.83 items 14–20, v09.85 items 21–27, v09.86 items 28–33)
 
 14. **⋯ Rename**: change a Note's title without opening the editor.
 15. **⋯ Make a copy**: a duplicate Note, filed in the same folders.

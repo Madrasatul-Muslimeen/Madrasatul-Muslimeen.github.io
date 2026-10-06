@@ -62,7 +62,23 @@ export async function getRosterRoles(db, tenantId, personIds) {
  *
  * Returns { personId }.
  */
-export async function addPersonToTenant(db, { tenantId, uid, name, isMinor, managedByPersonId, roles, timezone }) {
+/**
+ * The Owner, 5 Oct 2026 ("When a user new sign in, he is asked to put family members with age, to attach with
+ * his account ... If not, we have to make that rule and feature"). A person may carry a YEAR OF BIRTH (never an
+ * age: an age would be wrong a year later). `birthYear` is an optional number on tenantPeople; the owner's and a
+ * guardian's create/update Rules carry no field list for tenantPeople, so this needs no Rules change.
+ */
+export function validBirthYear(y, now = new Date()) {
+  const n = Number(y);
+  return Number.isInteger(n) && n >= 1900 && n <= now.getFullYear() ? n : null;
+}
+/** The age a year of birth gives this year (the birthday itself is not stored), or null. */
+export function ageFromBirthYear(y, now = new Date()) {
+  const n = validBirthYear(y, now);
+  return n === null ? null : now.getFullYear() - n;
+}
+
+export async function addPersonToTenant(db, { tenantId, uid, name, isMinor, managedByPersonId, roles, timezone, birthYear = null }) {
   let lastError;
   for (let attempt = 0; attempt < PERSON_ID_ATTEMPTS; attempt++) {
     const personId = generatePersonId();
@@ -80,6 +96,7 @@ export async function addPersonToTenant(db, { tenantId, uid, name, isMinor, mana
             isMinor,
             managedByPersonId: managedByPersonId ?? null,
             timezone: timezone ?? null,
+            birthYear: validBirthYear(birthYear),
             status: "active",
             legacy: { teacherId: null, ownerUid: null },
           },
@@ -118,7 +135,7 @@ export async function addPersonToTenant(db, { tenantId, uid, name, isMinor, mana
  * where(personId==) list query. See that function's own comment for why a
  * list query against memberships is deliberately avoided.
  */
-export async function updatePersonInTenant(db, { tenantId, uid, personId, name, isMinor, managedByPersonId, roles }) {
+export async function updatePersonInTenant(db, { tenantId, uid, personId, name, isMinor, managedByPersonId, roles, birthYear }) {
   const existing = await Promise.all(
     EDITABLE_ROLES.map((role) => getDoc(doc(db, TENANT.MEMBERSHIPS, `${tenantId}__${personId}__${role}`)))
   );
@@ -132,6 +149,7 @@ export async function updatePersonInTenant(db, { tenantId, uid, personId, name, 
         name: toLangObject(name, "en"),
         isMinor,
         managedByPersonId: isMinor ? (managedByPersonId ?? null) : null,
+        ...(birthYear === undefined ? {} : { birthYear: validBirthYear(birthYear) }),
       },
     },
   ];
