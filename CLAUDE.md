@@ -252,14 +252,13 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.98 on `main`** (6 Oct 2026 — **Notes: annotations and heading status badges**).
-- **What** (the Owner, 6 Oct 2026: "38. yes, 39. yes"; decision 72; Builder round #595, PR #613):
-  - 38 Annotations: select text in a Note, 💬, type a comment: the text is marked with a numbered [N] and an Annotations list sits at the end of the Note; tap a mark or its comment to jump between them; ✏ edit, ✕ remove (asks first; the text stays).
-  - 39 Heading status: every heading shows a badge in view mode (Done / Ongoing / Under process / Next / Custom, or Set status); the side Contents shows the same dot. Drawn at view time, never saved.
-  - Both live inside the Note's own text (`bodyHtml`): no Rules change, no new field; kept in 🕘 Versions; a finalised Note refuses both in words. `note-sanitize.js` allows `mark`/`sup` and six attributes, each normalised (numbers, the closed status set on H1–H4 only, plain capped text, the palette only).
+**Current milestone: v09.99 on `main`** (6 Oct 2026 — **Notes: a full spreadsheet inside a Note**).
+- **What** (the Owner, 6 Oct 2026: "44. yes"; decision 72; Builder round #612, PR opened by the Architect after the Builder's credentials failed):
+  - ⊞ Insert a spreadsheet in a Note: formulas (SUM, AVERAGE, MIN, MAX, COUNT, COUNTA, IF, IFERROR, ROUND, ABS, AND, OR, NOT, CONCAT, LEN, UPPER, LOWER, TODAY, DATE), number formats, add/remove rows and columns, merge, filter, sort, fill, Σ totals, column resize, header row, copy/paste and undo; errors explained in words; read-only in view mode; a finalised Note refuses in words.
+  - Stored inside the Note's own text as a cleaned state plus a snapshot table; no Rules change. `note-sanitize.js` rebuilds every sheet from its cleaned state (the snapshot is re-derived, never trusted). The engine (`note-sheet-engine.js`) never uses eval.
 - **Checks:**
-  - journey-annotations-status-browser 536/0 (new; the Builder's four mutations each fail it; the Architect's own, a sanitiser letting any status through, fails it 4 times per language), note-sanitize-boundary 12/0, note-foundation-data-layer (all), journey-editor 577/0, journey-reading-tools 488/0, journey-note-pane 327/0, journey-sections 349/0, palette-contrast 20/0, rules-authorisation-executable 63/0, stub-parity 4/0, phone-width-overflow 217/0, behaviour 1006/1 (sandbox baseline; 22g passed this run)
-- **With the Owner:** open a Note, select a few words, tap 💬, type a comment, Save: the Annotations list appears at the end. Tap a heading's badge and choose Ongoing.
+  - note-sheet-engine 89/0, note-sheet-engine-mutations 10/10, journey-sheet-browser 962/0 (five Builder mutations each fail it; Architect review: read the sanitiser and every HTML write (all escaped); removing the snapshot's escaping fails the engine suite), note-sanitize-boundary 13/0, journey-annotations-status 536/0, journey-editor 577/0, journey-note-pane 327/0, journey-reading-tools 488/0, rules-authorisation-executable 63/0, stub-parity 4/0, phone-width-overflow 217/0, behaviour 1006/1 (sandbox baseline)
+- **With the Owner:** open a Note, Edit, ＋ Insert → ⊞ Spreadsheet; type 2 and 3 in A1 and A2, and =A1+A2 in A3: it shows 5.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration

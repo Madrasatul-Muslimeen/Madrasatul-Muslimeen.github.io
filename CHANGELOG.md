@@ -19809,3 +19809,10 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
 - **Checks:**
   - journey-annotations-status-browser 536/0 (new; Builder mutations: sanitiser lets any status through, badge saved into the body, remove leaves [N], finalised not refused, each fails it; Architect review: read the sanitiser and every place the stored text is drawn (all escaped), and re-ran the sanitiser mutation, which fails 4 checks per language)
   - after merging `main` (v09.97): note-sanitize-boundary 12/0, note-foundation-data-layer (all), journey-editor 577/0, journey-reading-tools 488/0, journey-note-pane 327/0, journey-sections 349/0, palette-contrast 20/0, rules-authorisation-executable 63/0, stub-parity 4/0, phone-width-overflow 217/0, behaviour 1006/1 (sandbox baseline)
+
+## v09.99 — 6 Oct 2026 — Notes: a full spreadsheet inside a Note
+
+- **What:** the Owner, 6 Oct 2026 (decision 72, item 44), Builder round #612. New `note-sheet-engine.js` (pure tokenizer and recursive-descent evaluator, formats, fill/shift, sort, merge, totals, filter, the strict state schema) and `note-sheet-ui.js` (the live grid). `note-sanitize.js` lets `class`/`contenteditable`/`data-sheet` past DOMPurify only so `narrowOutput()` can strip them everywhere and rebuild each `div[data-sheet]` whole from its cleaned state. `note-window.js` (insert, mount in editor and read view), `note-window.css`, `bn.js` (about 60 texts). The Builder could not open its PR (401 Bad credentials); the Architect opened it.
+- **Checks:**
+  - note-sheet-engine 89/0, note-sheet-engine-mutations 10/10 fail the suite, journey-sheet-browser 962/0 (Builder mutations: sanitiser trusts the snapshot 9 fail, live grid saved 7, keys not stopped 3, read-only accepts edits 3, fill not relative 4); Architect: the snapshot without escaping fails the engine suite (88/1)
+  - note-sanitize-boundary 13/0, journey-annotations-status 536/0, journey-editor 577/0, journey-note-pane 327/0, journey-reading-tools 488/0, rules-authorisation-executable 63/0, stub-parity 4/0, phone-width-overflow 217/0, behaviour 1006/1 (sandbox baseline)

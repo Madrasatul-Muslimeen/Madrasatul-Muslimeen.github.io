@@ -14,6 +14,15 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v09.98 on `main`** (6 Oct 2026 — **Notes: annotations and heading status badges**).
+- **What** (the Owner, 6 Oct 2026: "38. yes, 39. yes"; decision 72; Builder round #595, PR #613):
+  - 38 Annotations: select text in a Note, 💬, type a comment: the text is marked with a numbered [N] and an Annotations list sits at the end of the Note; tap a mark or its comment to jump between them; ✏ edit, ✕ remove (asks first; the text stays).
+  - 39 Heading status: every heading shows a badge in view mode (Done / Ongoing / Under process / Next / Custom, or Set status); the side Contents shows the same dot. Drawn at view time, never saved.
+  - Both live inside the Note's own text (`bodyHtml`): no Rules change, no new field; kept in 🕘 Versions; a finalised Note refuses both in words. `note-sanitize.js` allows `mark`/`sup` and six attributes, each normalised (numbers, the closed status set on H1–H4 only, plain capped text, the palette only).
+- **Checks:**
+  - journey-annotations-status-browser 536/0 (new; the Builder's four mutations each fail it; the Architect's own, a sanitiser letting any status through, fails it 4 times per language), note-sanitize-boundary 12/0, note-foundation-data-layer (all), journey-editor 577/0, journey-reading-tools 488/0, journey-note-pane 327/0, journey-sections 349/0, palette-contrast 20/0, rules-authorisation-executable 63/0, stub-parity 4/0, phone-width-overflow 217/0, behaviour 1006/1 (sandbox baseline; 22g passed this run)
+- **With the Owner:** open a Note, select a few words, tap 💬, type a comment, Save: the Annotations list appears at the end. Tap a heading's badge and choose Ongoing.
+
 **Previous milestone: v09.97 on `main`** (6 Oct 2026 — **Al-Fatiha: Ayat 6 and 7 are two separate records**).
 - **What** (the Owner, 6 Oct 2026: "Two truly separate records"; decisions 76–77; Builder round #606):
   - With the reader's count on, displayed 6 keeps the record `ayah:1:7` and displayed 7 has its own, `ayah:1:8` (a spare storage key, never shown; it fits the activity evidence Rules as published, so no Rules change). Content stays stored 1:7.
