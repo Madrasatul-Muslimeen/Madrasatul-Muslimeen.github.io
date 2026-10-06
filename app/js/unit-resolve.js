@@ -132,7 +132,10 @@ export function resolveUnitInfo(unitKey, tables = {}) {
 export function ladderRungsForAyah(surahNum, ayahNum, tables = {}, activeUnitType = "ayah") {
   const { juzRows = [], hizbRows = [], pageRows = [], rukuRows = [], surahIndex = [], pageEdition = "madani" } = tables;
   const rungs = [
-    { unitType: "ayah", unitKey: buildUnitKey.ayah(surahNum, ayahNum), label: t("Ayah {n}", { n: num(ayahNum) }) },
+    // Issue #606 -- `tables.ayahRecordAyah` (8 = Al-Fātiḥah's displayed Ayah 7) and
+    // `tables.ayahLabel` let the caller hand in the half-aware record key and the
+    // reader's own number; the CONTENT ayah (ruku', page, juz...) is still ayahNum.
+    { unitType: "ayah", unitKey: buildUnitKey.ayah(surahNum, tables.ayahRecordAyah ?? ayahNum), label: t("Ayah {n}", { n: tables.ayahLabel ?? num(ayahNum) }) },
   ];
 
   const rukuRow = rukuRows.find((r) => r.surah === surahNum && ayahNum >= r.fromAyah && ayahNum <= r.toAyah);

@@ -68,6 +68,35 @@ export async function getRecordsChunk(db, tenantId, personId, chunkKey) {
   return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 }
 
+/**
+ * Issue #606 (Owner decisions 76-77) -- Al-Fātiḥah's displayed Ayah 7 has its
+ * own record key, `ayah:1:8`. A person who only has the OLD shared `ayah:1:7`
+ * marks keeps them on BOTH displayed 6 and 7: on the first claim on either
+ * half, if no `ayah:1:8::*` entry exists yet, every `ayah:1:7::*` entry is
+ * COPIED to `ayah:1:8::*` with `copiedFrom: "ayah:1:7"`. Additive only (I4):
+ * nothing is moved or deleted, and nothing is ever written on load. Returns
+ * the keys written ([] when no copy was needed).
+ */
+export async function copyFatihaSeventhRecords(db, { tenantId, personId }) {
+  const docId = recordsDocId(tenantId, personId, "surah_1");
+  const snap = await getDoc(doc(db, TENANT.RECORDS, docId));
+  if (!snap.exists()) return [];
+  const entries = snap.data().entries ?? {};
+  const keys = Object.keys(entries);
+  if (keys.some((k) => k.startsWith("ayah:1:8::"))) return [];
+  const old = keys.filter((k) => k.startsWith("ayah:1:7::"));
+  if (!old.length) return [];
+  const patch = { tenantId, personId };
+  const written = [];
+  for (const k of old) {
+    const newKey = `ayah:1:8::${k.slice("ayah:1:7::".length)}`;
+    patch[`entries.${newKey}`] = { ...entries[k], copiedFrom: "ayah:1:7" };
+    written.push(newKey);
+  }
+  await updateDocument(db, TENANT.RECORDS, docId, patch);
+  return written;
+}
+
 // ---------------------------------------------------------------------------
 // Who confirms -- computed, never configured (Architecture s6).
 //   "Does this person have a teacher, guardian or prime? YES -> wait for

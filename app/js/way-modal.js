@@ -124,7 +124,7 @@ export function renderBreakdownTab(statusIds) {
 export function renderCoverageTab(ayahStatuses) {
   const chips = ayahStatuses
     .map(
-      (e) => `<span class="coverage-chip" style="background:${STATUS_COLORS[e.statusId] ?? STATUS_COLORS.not_started}" title="Ayah ${e.ayah} — ${e.statusId.replace(/_/g, " ")}">${e.ayah}</span>`
+      (e) => `<span class="coverage-chip" style="background:${STATUS_COLORS[e.statusId] ?? STATUS_COLORS.not_started}" title="Ayah ${e.label ?? e.ayah} — ${e.statusId.replace(/_/g, " ")}">${e.label ?? e.ayah}</span>`
     )
     .join("");
   const touched = ayahStatuses.filter((e) => e.statusId && e.statusId !== "not_started").length;

@@ -66,7 +66,9 @@ export function textWeigher(pageRows, idx) {
  * gap. The ring always closes the full circle, whatever the units' total.
  */
 export function layoutRing(units, weigher, { gapDeg = 0.35 } = {}) {
-  const weights = units.map((u) => Math.max(0, weigher.weight(u.a, u.b)));
+  // `share` (issue #606): two units drawn over ONE content span (Al-Fātiḥah's
+  // displayed Ayat 6 and 7 are halves of internal 1:7) each take that share of it.
+  const weights = units.map((u) => Math.max(0, weigher.weight(u.a, u.b)) * (u.share ?? 1));
   const total = weights.reduce((x, y) => x + y, 0) || 1;
   let acc = 0;
   return units.map((u, i) => {

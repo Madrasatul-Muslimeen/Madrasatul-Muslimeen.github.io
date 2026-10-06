@@ -419,6 +419,7 @@ function renderWord(w, highlightSet) {
     span.classList.add("hifz-ayah-marker");
     span.dataset.ayahMarker = "1:7";
     span.dataset.ayahSplitPoint = "1";
+    span.dataset.ayahSplitHalf = "a"; // issue #606 -- the end of DISPLAYED Ayah 6 (the real 1:7 end marker is 7)
     if (highlightSet && !highlightSet.has("1:7")) span.classList.add("dim");
     if (!wordRegistry.has("1:7")) wordRegistry.set("1:7", []);
     wordRegistry.get("1:7").push(span);
