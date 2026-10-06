@@ -17674,7 +17674,7 @@
     async function claimStatusF(dbArg, args) {
       if (args.subjectId !== "quran" || !/^ayah:1:[78]$/.test(args.unitKey)) return claimStatus(dbArg, args);
       const copied = await copyFatihaSeventhRecords(dbArg, { tenantId: args.tenantId, personId: args.personId });
-      const keys = args.unitKey === "ayah:1:7" && !fatihaOn() ? ["ayah:1:7", "ayah:1:8"] : [args.unitKey];
+      const keys = args.unitKey === "ayah:1:7" ? recordAyahsToWrite(1, 7, "a", fatihaOn()).map((a) => `ayah:1:${a}`) : [args.unitKey];
       let out = null;
       for (const key of keys) out = await claimStatus(dbArg, { ...args, unitKey: key });
       void copied;
