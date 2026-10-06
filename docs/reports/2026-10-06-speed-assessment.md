@@ -23,7 +23,6 @@ sizes below.
 | 6 | The Hadith page still loads HadeethEnc's `categories.json` for ar and en (423 KB) to draw the category list. | 423 KB | **Not yet.** It is the same summary-file fix as item 2. |
 
 ## Proposed next rounds (in this order)
-1. **Startup paint from the device's last copy** (item 4). This touches the startup path, so it is an I9 item
-   and is said here first.
+1. ~~**Startup paint from the device's last copy** (item 4).~~ Done in v09.102 (decision 81 item 1).
 2. **Load the Word Card, Note and Journey modules only when first opened** (item 5).
 3. **A small HadeethEnc category summary** (item 6).
