@@ -41,6 +41,14 @@ Read the live state yourself, because it moves on after this was written:
   - table Σ and sort.
 - **v09.87**: sign-up step 2 for "My family" (members with a year of birth), and an Age column on People. It was built to the demo `docs/reference/2026-10-05-family-members-signup-demo.html`, which the Owner had not answered. Decision 71's standing rule is "demo first, then my recommendation unless the Owner says otherwise".
 
+**UPDATE, 6 Oct 2026 01:15 UTC (session `session_01B7mgifM4gSoYg8nz6qA6fY`, which now holds #159):**
+- Queue item 1 is **DONE**: `docs/reports/2026-10-06-dua-module-resources.md`, with a short page for the Owner
+  (https://claude.ai/artifact/G2mYw1tP2xzrYNauoyh2Es). **Build nothing for Dua until the Owner adds more.**
+- Queue item 2 was dispatched to the Builder as issue #594 (run 37396961904).
+- Part C was split into rounds: **C1 = issue #595** (38 annotations, 39 heading badges, both stored inside the
+  Note's `bodyHtml`, so no Rules change), C2 = 44 (spreadsheet tables, also in-body), C3 = one Rules candidate
+  for 34/36/37/40/45 (proposed: `noteTemplates` and a per-person `noteSettings` document) built behind a gate.
+
 **THE QUEUE NOW, in order** (decision 72 answered Part C and added the Dua job, 6 Oct):
 1. **Dua module: resources first, build nothing.**
    - The Owner: "We want to build another module for DUA. Eventually it will be a separate app but will work integrated with MMSA always too. So, find what resources are avialable first and then I will give you more to add later."
