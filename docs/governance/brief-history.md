@@ -14,6 +14,19 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v09.85 on `main`** (5 Oct 2026 — **round 3 of the Siyagah note-pane port**; decision 70).
+- **What** (list items 21–27, `docs/reference/2026-10-05-siyagah-note-pane-port-list.md`; all in `app/js/note-window.js`):
+  - ⇅ folds or opens every section **while editing** too (`foldAllEditing`, view only); a folded heading shows a grey **preview line** of what it hides (`.note-sec-peek`).
+  - **⧉ on the pane's bar** (the first thing to fold into ⋯, so it never costs 🔍 its place); **⇲** on a window's bar puts its Note back into the pane (`dockWindow`).
+  - **✕ Close all (n)** first in the window strip when two or more are open; **Ctrl+Shift+X** closes them, **Ctrl+Shift+P** pops the pane's Note out.
+  - A window's **Details** stays open or closed as last left, per device; a **wide window** (760px+) lists a Note's headings beside the text when it has three or more (`paintToc`).
+- **Checks:**
+  - journey-note-folds-windows-browser 82/0 (5 mutations, each caught)
+  - updated in place: journey-window-tabs-browser 166/0 ("✕ Close all" leads the strip; tabs counted among tabs). Green: journey-note-actions 184/0, journey-editor-siyagah 98/0, journey-editor 577/0, journey-note-edit 208/0, journey-note-pane 327/0, notes-note-windows 218/0, journey-note-windows 254/0, journey-reading-tools 488/0 (Find skips the preview lines), journey-finish 64/0, journey-flags-links 306/0, journey-folder-window 144/0, journey-pane-resize 40/0, journey-three-panel 368/0, journey-s9 280/0, journey-tray 227/0, journey-tags 363/0, palette-contrast 20/0, phone-width-overflow 217/0, note-sanitize-boundary 12/0, stub-parity 4/0
+- **With the Owner:**
+  - in Mapping My Journey: Edit a Note with headings and press ⇅; fold a heading and see its first line; ⧉, then ⇲ in the window; open two windows and ✕ Close all;
+  - strike out note-pane items by number.
+
 **Previous milestone: v09.84 on `main`** (5 Oct 2026 — **bookmark marks and ← Back; the Bismillah never named as an āyah; 👥 family members on every Record card**).
 - **What** (the Owner, 5 Oct 2026, four messages):
   - **Bookmarks** ("a distinctive mark … the date and time of the last act … an option to show/hide timing"; "a back button to go where bookmark is clicked from"): 🔖 on every bookmark in the menu and on Manage bookmarks; after the name the latest of opened / changed / made (`lastActOf`; opening stamps `usedAt.<id>` with one field write, `markBookmarkUsed`, no Rules change); 🕘 Show / Hide times per device; "← Back to <page>" floats bottom-left above every window and the tab bar, once, on the page a bookmark opened (sessionStorage).

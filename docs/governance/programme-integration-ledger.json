@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.85",
+    "version": "09.86",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2201,7 +2201,7 @@
     {
       "version": "09.85",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Siyagah note-pane port round 3 (items 21-27): fold all while editing, folded previews, Multi button, back to the pane, Close all, Details remembered, side Contents (decision 70).",
       "integration": {
         "authorizedOn": "2026-10-05",
@@ -2209,10 +2209,23 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "09.86",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Siyagah note-pane port round 4 (items 28-33, Part B finished): toolbar groups on a narrow Note, no-colour swatch, paste choices, @ to link a Note, table total and sort (decision 70).",
+      "integration": {
+        "authorizedOn": "2026-10-06",
+        "integratedOn": "2026-10-06",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "09.86",
+  "nextUnallocated": "09.87",
   "nextUnallocatedNote": [
+    "v09.86 was allocated to the Siyagah note-pane port round 4, 2026-10-06.",
     "v09.85 was allocated to the Siyagah note-pane port round 3, 2026-10-05.",
     "v09.84 was allocated to bookmark marks and Back, Bismillah labels, family members on every Record card, 2026-10-05.",
     "v09.83 was allocated to the Siyagah note-pane port round 2, 2026-10-05.",

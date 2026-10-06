@@ -65,7 +65,11 @@ async function openNote(page, id) {
 }
 async function startEditing(page, id) { await openNote(page, id); await toggleEdit(page); await page.waitForSelector("[data-edit-body]"); }
 async function typeAtEnd(page, text) { await page.click("[data-edit-body]"); await page.keyboard.press("Control+End"); await page.keyboard.type(text); }
+// Updated in place 5 Oct 2026 (note-pane round 4, item 28): a narrow Note groups the toolbar (Aa · H · ≡ · + · ↺); a tool shows once its group is open.
 async function tool(page, cmd) {
+  if (!(await vis(page, `[data-edit-toolbar] > [data-cmd="${cmd}"]`)) && await page.$(`[data-edit-toolbar] > [data-cmd="${cmd}"][data-tb-g]`)) {
+    await page.click(`[data-edit-toolbar] [data-tb-tab="${await page.getAttribute(`[data-edit-toolbar] > [data-cmd="${cmd}"]`, "data-tb-g")}"]`);
+  }
   if (await vis(page, `[data-edit-toolbar] > [data-cmd="${cmd}"]`)) await page.click(`[data-edit-toolbar] > [data-cmd="${cmd}"]`);
   else { await page.click('[data-bar-palette-toggle="editTools"]'); await page.click(`[data-bar-palette="editTools"] [data-cmd="${cmd}"]`); }
 }
@@ -94,8 +98,9 @@ for (const lang of ["en", "bn"]) {
     check(`${tag}: the body shows the stored headings as plain H1-H4`, await page.evaluate(() => ["h1", "h2", "h3"].every((h) => document.querySelector(`[data-edit-body] ${h}`))));
     const hb = await barH(page);
     check(`${tag}: the header row stays ONE line while editing`, hb.h <= hb.menuH + 2 && hb.sw <= hb.cw + 1, JSON.stringify(hb));
-    const tbh = await page.evaluate(() => { const t = document.querySelector("[data-edit-toolbar]"); return { h: t.getBoundingClientRect().height, sw: t.scrollWidth, cw: t.clientWidth, btn: Math.min(...[...t.querySelectorAll(".tb-btn")].filter((b) => b.offsetParent).map((b) => b.getBoundingClientRect().height)) }; });
-    check(`${tag}: the toolbar is ONE row of 40px buttons`, tbh.h <= 48 && tbh.btn >= 40, JSON.stringify(tbh));
+    // Updated in place 5 Oct 2026 (note-pane round 4, item 28): a narrow Note groups the toolbar -- the groups and one group's tools, never sideways.
+    const tbh = await page.evaluate(() => { const t = document.querySelector("[data-edit-toolbar]"); return { h: t.getBoundingClientRect().height, sw: t.scrollWidth, cw: t.clientWidth, grouped: t.classList.contains("tb-grouped"), btn: Math.min(...[...t.querySelectorAll(".tb-btn, .tb-tab")].filter((b) => b.offsetParent).map((b) => b.getBoundingClientRect().height)) }; });
+    check(`${tag}: the toolbar is ONE row of 40px buttons (or, grouped, the groups and one group's tools)`, (tbh.grouped ? tbh.h <= 150 && tbh.sw <= tbh.cw + 1 : tbh.h <= 48) && tbh.btn >= 40, JSON.stringify(tbh));
     // UPDATED IN PLACE (S12, #562): the toolbar now has ~21 buttons and scrolls sideways INSIDE itself instead of folding into a ⋯ menu, so its
     // own scrollWidth may exceed its clientWidth; what must stay true is that the PAGE never scrolls sideways (checked next).
     check(`${tag}: no sideways scroll in edit mode`, await noSideways(page));
@@ -185,7 +190,7 @@ for (const lang of ["en", "bn"]) {
     check(`${tag}: Bulleted list makes a list`, await page.evaluate(() => !!document.querySelector("[data-edit-body] ul")));
     await tool(page, "undo");
     check(`${tag}: Undo takes the last step back`, await page.evaluate(() => !document.querySelector("[data-edit-body] ul")));
-    check(`${tag}: the toolbar stays one row after use`, await page.evaluate(() => { const t = document.querySelector("[data-edit-toolbar]"); return t.getBoundingClientRect().height <= 48 && document.documentElement.scrollWidth <= window.innerWidth + 1; })); // UPDATED IN PLACE (S12): the toolbar scrolls inside itself; the page must not
+    check(`${tag}: the toolbar stays one row after use`, await page.evaluate(() => { const t = document.querySelector("[data-edit-toolbar]"); return (t.classList.contains("tb-grouped") ? t.getBoundingClientRect().height <= 150 : t.getBoundingClientRect().height <= 48) && document.documentElement.scrollWidth <= window.innerWidth + 1; })); // updated again 5 Oct 2026 (item 28: grouped on a narrow Note) // UPDATED IN PLACE (S12): the toolbar scrolls inside itself; the page must not
 
     // ---- 7. The saved HTML is sanitised and carries no editor chrome --------------
     await page.evaluate(() => {

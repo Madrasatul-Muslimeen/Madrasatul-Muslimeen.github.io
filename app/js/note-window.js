@@ -307,6 +307,7 @@ export function createNoteViews(host) {
   async function endEdit(v) {
     const e = v.ed;
     if (!e) return null;
+    closeMention(v);
     const cur = readEditor(v);
     v.ed = null;
     e.ro?.disconnect();
@@ -353,12 +354,30 @@ export function createNoteViews(host) {
   const HIGHLIGHTS = [["#FFF59D", "Yellow"], ["#C8E6C9", "Light green"], ["#BBDEFB", "Light blue"], ["#F8BBD0", "Pink"], ["#E1BEE7", "Lavender"], ["#FFE0B2", "Orange"]];
   const isHeadingEl = (n) => n?.nodeType === 1 && /^H[1-4]$/.test(n.tagName);
 
+  // Note-pane round 4 (item 28): on a narrow Note the toolbar shows five labelled groups (Siyagah's palettes); the
+  // chosen group's tools sit under them, so nothing scrolls sideways. A wide Note keeps the one row.
+  const TOOL_GROUPS = [["Aa", "Text"], ["H", "Headings"], ["≡", "Paragraph"], ["+", "Insert"], ["↺", "Undo"]];
+  const TOOLBAR_GROUPED_BELOW = 600;
   function renderEditToolbar(v) {
     const label = (k) => escapeHtml(t(k));
-    v.editToolbarEl.innerHTML = TOOLS.map((x) => x === "|" ? `<span class="tb-sep" aria-hidden="true"></span>`
-      : `<button type="button" class="secondary tb-btn" data-cmd="${x[0]}" aria-label="${label(x[1])}" title="${label(x[1])}">${x[2]}</button>`).join("");
+    let g = 0;
+    v.tbOpen = v.tbOpen ?? 0;
+    v.editToolbarEl.innerHTML = `<div class="tb-tabs" data-tb-tabs role="tablist" aria-label="${label("Formatting")}">${TOOL_GROUPS.map(([icon, name], k) =>
+      `<button type="button" class="secondary tb-tab" role="tab" data-tb-tab="${k}" aria-selected="${k === v.tbOpen}">${icon} ${label(name)}</button>`).join("")}</div>`
+      + TOOLS.map((x) => x === "|" ? (g++, `<span class="tb-sep" aria-hidden="true"></span>`)
+      : `<button type="button" class="secondary tb-btn" data-cmd="${x[0]}" data-tb-g="${g}" aria-label="${label(x[1])}" title="${label(x[1])}">${x[2]}</button>`).join("");
     v.editToolbarEl.setAttribute("role", "toolbar");
     v.editToolbarEl.setAttribute("aria-label", t("Formatting"));
+    fitToolbar(v);
+  }
+  function fitToolbar(v) {
+    const tb = v.editToolbarEl;
+    if (!tb || tb.hidden || !v.ed) return;
+    const width = (v.bodyEl.clientWidth || v.el.clientWidth);
+    const grouped = width > 0 && width < TOOLBAR_GROUPED_BELOW;
+    tb.classList.toggle("tb-grouped", grouped);
+    for (const b of tb.querySelectorAll("[data-tb-g]")) b.classList.toggle("tb-on", Number(b.dataset.tbG) === v.tbOpen);
+    for (const b of tb.querySelectorAll("[data-tb-tab]")) b.setAttribute("aria-selected", String(Number(b.dataset.tbTab) === v.tbOpen));
   }
   const closestIn = (v, selector) => {
     const body = editBodyEl(v), sel = window.getSelection();
@@ -380,7 +399,7 @@ export function createNoteViews(host) {
     if (v.ed?.range) { const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(v.ed.range); }
   }
   const panelMsg = (v, text) => { const m = v.editPanelEl.querySelector("[data-panel-msg]"); if (m) { m.textContent = text || ""; m.hidden = !text; } };
-  function closePanel(v) { v.editPanelEl.hidden = true; v.editPanelEl.replaceChildren(); v.editPanelEl.dataset.mode = ""; }
+  function closePanel(v) { v.editPanelEl.hidden = true; v.editPanelEl.replaceChildren(); v.editPanelEl.dataset.mode = ""; if (v.ed) v.ed.pendingPaste = null; }
   function openPanel(v, mode) {
     saveRange(v);
     const P = v.editPanelEl, label = (k) => escapeHtml(t(k));
@@ -400,7 +419,16 @@ export function createNoteViews(host) {
         <button type="button" class="secondary tb-btn tb-text" data-table-op="addRow">${label("Add row")}</button>
         <button type="button" class="secondary tb-btn tb-text" data-table-op="delRow">${label("Remove row")}</button>
         <button type="button" class="secondary tb-btn tb-text" data-table-op="addCol">${label("Add column")}</button>
-        <button type="button" class="secondary tb-btn tb-text" data-table-op="delCol">${label("Remove column")}</button>${close}</div>${msg}`;
+        <button type="button" class="secondary tb-btn tb-text" data-table-op="delCol">${label("Remove column")}</button></div>
+        <div class="pane-panel-row">
+        <button type="button" class="secondary tb-btn tb-text" data-table-op="sum">Σ ${label("Total of this column")}</button>
+        <button type="button" class="secondary tb-btn tb-text" data-table-op="sortAsc">${label("Sort by this column")} ↑</button>
+        <button type="button" class="secondary tb-btn tb-text" data-table-op="sortDesc">${label("Sort by this column")} ↓</button>${close}</div>${msg}`;
+    } else if (mode === "paste") {
+      const p = v.ed?.pendingPaste;
+      P.innerHTML = `<div class="pane-panel-row" role="group" aria-label="${label("Paste as")}"><span class="pane-panel-label">${label(p?.kind === "url" ? "Paste the web address as" : "The pasted text has formatting")}</span>
+        ${p?.kind === "url" ? `<button type="button" class="tb-btn tb-text" data-paste-choice="link">🔗 ${label("A link")}</button>` : `<button type="button" class="tb-btn tb-text" data-paste-choice="rich">${label("Keep the formatting")}</button>`}
+        <button type="button" class="secondary tb-btn tb-text" data-paste-choice="plain">${label("Plain text")}</button>${close}</div>${msg}`;
     } else if (mode === "spacing") {
       P.innerHTML = `<div class="pane-panel-row" role="group" aria-label="${label("Line spacing")}"><span class="pane-panel-label">${label("Line spacing")}</span>${LINE_HEIGHTS.map(([val, name]) =>
         `<button type="button" class="secondary tb-btn tb-text" data-spacing-line="${val}">${label(name)}</button>`).join("")}</div>
@@ -408,8 +436,10 @@ export function createNoteViews(host) {
         `<button type="button" class="secondary tb-btn tb-text" data-spacing-after="${val}">${label(name)}</button>`).join("")}${close}</div>${msg}`;
     } else {
       const list = mode === "color" ? TEXT_COLOURS : HIGHLIGHTS;
+      // Item 29: ⊘ takes the colour or the highlight off again.
+      const none = mode === "color" ? "No colour" : "No highlight";
       P.innerHTML = `<div class="pane-panel-row" role="group" aria-label="${label(mode === "color" ? "Text colour" : "Highlight")}">${list.map(([hex, name]) =>
-        `<button type="button" class="tb-btn tb-chip" data-swatch="${hex}" data-swatch-mode="${mode}" aria-label="${label(name)}" title="${label(name)}" style="background:${hex}"><span aria-hidden="true" style="color:${mode === "color" ? hex : "#222"}">${mode === "color" ? "■" : "A"}</span></button>`).join("")}${close}</div>${msg}`;
+        `<button type="button" class="tb-btn tb-chip" data-swatch="${hex}" data-swatch-mode="${mode}" aria-label="${label(name)}" title="${label(name)}" style="background:${hex}"><span aria-hidden="true" style="color:${mode === "color" ? hex : "#222"}">${mode === "color" ? "■" : "A"}</span></button>`).join("")}<button type="button" class="tb-btn tb-chip tb-none" data-swatch="" data-swatch-mode="${mode}" aria-label="${label(none)}" title="${label(none)}">⊘</button>${close}</div>${msg}`;
     }
     P.dataset.mode = mode;
     P.hidden = false;
@@ -453,13 +483,71 @@ export function createNoteViews(host) {
     else if (op === "delRow") { tr.remove(); if (!table.querySelector("tr")) table.remove(); }
     else if (op === "addCol") { for (const r of table.querySelectorAll("tr")) r.children[Math.min(idx, r.children.length - 1)]?.after(mk()); }
     else if (op === "delCol") { for (const r of table.querySelectorAll("tr")) r.children[idx]?.remove(); if (![...table.querySelectorAll("tr")].some((r) => r.children.length)) table.remove(); }
+    else if (op === "sum" || op === "sortAsc" || op === "sortDesc") { tableMath(v, table, idx, op); return; }
+    panelMsg(v, ""); onEditInput(v);
+  }
+  // Note-pane round 4 (item 33): Σ adds (or updates) a last row "Σ" with the column's total; ↑ / ↓ sort the rows by the
+  // column (numbers by value, words alphabetically). A first row of <th> headings and the Σ row stay where they are.
+  const bnToAscii = (s) => String(s).replace(/[০-৯]/g, (d) => String("০১২৩৪৫৬৭৮৯".indexOf(d)));
+  const cellNumber = (td) => { const m = bnToAscii(td?.textContent ?? "").replace(/,/g, "").match(/-?\d+(\.\d+)?/); return m ? Number(m[0]) : null; };
+  const isSumRow = (tr) => /^Σ/.test((tr.children[0]?.textContent ?? "").trim());
+  function tableMath(v, table, idx, op) {
+    const rows = [...table.querySelectorAll("tr")];
+    const head = rows[0] && rows[0].querySelector("th") && !rows[0].querySelector("td") ? rows[0] : null;
+    const body = rows.filter((r) => r !== head && !isSumRow(r));
+    if (op === "sum") {
+      const nums = body.map((r) => cellNumber(r.children[idx])).filter((n) => n !== null);
+      if (!nums.length) { panelMsg(v, t("This column has no numbers to add up.")); return; }
+      const total = Math.round(nums.reduce((a, b) => a + b, 0) * 1000) / 1000;
+      let sumRow = rows.find(isSumRow);
+      if (!sumRow) {
+        sumRow = document.createElement("tr");
+        const n = Math.max(...rows.map((r) => r.children.length));
+        for (let i = 0; i < n; i++) { const td = document.createElement("td"); td.appendChild(document.createElement("br")); sumRow.appendChild(td); }
+        (body[body.length - 1] ?? head)?.after(sumRow);
+        sumRow.children[0].textContent = "Σ";
+      }
+      const cell = sumRow.children[idx];
+      if (cell) cell.textContent = idx === 0 ? `Σ ${total}` : String(total);
+    } else {
+      const dir = op === "sortAsc" ? 1 : -1;
+      const key = (r) => { const n = cellNumber(r.children[idx]); return n; };
+      const allNumbers = body.every((r) => key(r) !== null);
+      body.sort((a, b) => dir * (allNumbers ? key(a) - key(b) : (a.children[idx]?.textContent ?? "").trim().localeCompare((b.children[idx]?.textContent ?? "").trim(), undefined, { numeric: true, sensitivity: "base" })));
+      const parent = body[0]?.parentElement;
+      const sumRows = rows.filter(isSumRow);
+      for (const r of body) parent.appendChild(r);
+      for (const r of sumRows) r.parentElement.appendChild(r);
+    }
     panelMsg(v, ""); onEditInput(v);
   }
   function applySwatch(v, hex, mode) {
+    if (!hex) { // ⊘ acts on what is selected NOW when the selection is in the text (the saved one can be stale after a colour)
+      const sel = window.getSelection(), body = editBodyEl(v);
+      if (!(sel?.rangeCount && body?.contains(sel.anchorNode))) restoreRange(v);
+      removeSwatch(v, mode);
+      return;
+    }
     restoreRange(v);
     document.execCommand("styleWithCSS", false, true);
     document.execCommand(mode === "color" ? "foreColor" : "hiliteColor", false, hex);
     document.execCommand("styleWithCSS", false, false);
+    onEditInput(v);
+  }
+  /** ⊘: the text colour (or highlight) off every piece of the selection, and off the styled element the caret sits in. */
+  function removeSwatch(v, mode) {
+    const body = editBodyEl(v), sel = window.getSelection();
+    if (!body || !sel?.rangeCount) return;
+    const range = sel.getRangeAt(0), prop = mode === "color" ? "color" : "background-color";
+    const touched = (el) => range.intersectsNode(el) || el.contains(range.startContainer);
+    for (const el of body.querySelectorAll("[style]")) {
+      if (!touched(el)) continue;
+      el.style.removeProperty(prop);
+      if (prop === "background-color") el.style.removeProperty("background");
+      if (!el.getAttribute("style")) el.removeAttribute("style");
+      if (el.tagName === "SPAN" && !el.attributes.length) el.replaceWith(...el.childNodes);
+    }
+    if (mode === "color") for (const f of body.querySelectorAll("font[color]")) if (touched(f)) f.removeAttribute("color");
     onEditInput(v);
   }
   function clearFormatting(v) {
@@ -532,6 +620,7 @@ export function createNoteViews(host) {
   /** Enter at the very start of the Note's first heading or first list adds an empty line ABOVE it (there is no other way to get above it). */
   function onEditKeydown(v, ev) {
     if (!v.ed) return;
+    if (v.ed.mention && mentionKey(v, ev)) return;
     if ((ev.ctrlKey || ev.metaKey) && (ev.key === "[" || ev.key === "]")) {
       ev.preventDefault();
       if (shiftHeading(v, ev.key === "[" ? -1 : 1)) onEditInput(v);
@@ -554,6 +643,82 @@ export function createNoteViews(host) {
     const c = document.createRange(); c.setStart(p, 0); c.collapse(true);
     sel.removeAllRanges(); sel.addRange(c);
     onEditInput(v);
+  }
+  // Note-pane round 4 (item 32): typing @ opens a list of your Notes; typing more narrows it; Enter (or a tap) puts
+  // "@Title" in the text and adds a Link from this Note to that one (the same Links as ⋯ → 🔗 Link to a Note).
+  // Esc, a space, or moving away closes the list and leaves the @ as typed.
+  function onMentionInput(v, ev) {
+    const e = v.ed;
+    if (!e || !host.flags) return;
+    const sel = window.getSelection();
+    if (ev.inputType === "insertText" && ev.data === "@" && sel?.rangeCount) {
+      const r = sel.getRangeAt(0);
+      if (r.startContainer.nodeType !== 3 || r.startOffset < 1) return;
+      const start = document.createRange(); start.setStart(r.startContainer, r.startOffset - 1); start.collapse(true);
+      e.mention = { start, idx: 0 };
+      paintMention(v);
+      return;
+    }
+    if (e.mention) paintMention(v);
+  }
+  function mentionQuery(v) {
+    const m = v.ed?.mention, sel = window.getSelection();
+    if (!m || !sel?.rangeCount) return null;
+    const r = document.createRange();
+    try { r.setStart(m.start.startContainer, m.start.startOffset); r.setEnd(sel.anchorNode, sel.anchorOffset); } catch { return null; }
+    const text = r.toString();
+    if (!text.startsWith("@") || /\s/.test(text) || text.length > 60) return null;
+    return text.slice(1);
+  }
+  function closeMention(v) { if (v.ed) v.ed.mention = null; v.mentionEl?.remove(); v.mentionEl = null; }
+  function paintMention(v) {
+    const q = mentionQuery(v);
+    if (q === null) { closeMention(v); return; }
+    const note = getNote(v.noteId);
+    const rows = host.flags.candidates(note, q).slice(0, 8);
+    v.ed.mention.rows = rows;
+    v.ed.mention.idx = Math.min(v.ed.mention.idx, Math.max(rows.length - 1, 0));
+    if (!v.mentionEl) {
+      v.mentionEl = document.createElement("div");
+      v.mentionEl.className = "note-mention";
+      v.mentionEl.dataset.mention = "";
+      v.mentionEl.setAttribute("role", "listbox");
+      v.mentionEl.setAttribute("aria-label", t("Link to a Note"));
+      v.mentionEl.addEventListener("mousedown", (e) => e.preventDefault()); // keep the caret in the text
+      v.mentionEl.addEventListener("click", (e) => { const b = e.target.closest("[data-mention-pick]"); if (b) pickMention(v, Number(b.dataset.mentionPick)); });
+      document.body.appendChild(v.mentionEl);
+    }
+    v.mentionEl.innerHTML = rows.length
+      ? rows.map((r, i) => `<button type="button" role="option" class="note-mention-row" data-mention-pick="${i}" aria-selected="${i === v.ed.mention.idx}">📄 ${escapeHtml(r.title?.trim() || t("(untitled)"))}</button>`).join("")
+      : `<p class="note-mention-empty">${escapeHtml(t("No Note matches that search."))}</p>`;
+    const sel = window.getSelection();
+    const rect = sel?.rangeCount ? sel.getRangeAt(0).getBoundingClientRect() : null;
+    const box = v.mentionEl.getBoundingClientRect(), vw = document.documentElement.clientWidth, vh = window.innerHeight;
+    const x = rect && rect.width + rect.height > 0 ? rect.left : editBodyEl(v).getBoundingClientRect().left;
+    const y = rect && rect.width + rect.height > 0 ? rect.bottom + 4 : editBodyEl(v).getBoundingClientRect().top;
+    v.mentionEl.style.left = `${Math.max(8, Math.min(x, vw - box.width - 8))}px`;
+    v.mentionEl.style.top = `${y + box.height > vh - 8 ? Math.max(8, (rect?.top ?? y) - box.height - 4) : y}px`;
+  }
+  function mentionKey(v, ev) {
+    const m = v.ed.mention;
+    if (ev.key === "Escape") { ev.preventDefault(); ev.stopPropagation(); closeMention(v); return true; }
+    if (!m.rows?.length) return false;
+    if (ev.key === "ArrowDown" || ev.key === "ArrowUp") { ev.preventDefault(); m.idx = (m.idx + (ev.key === "ArrowDown" ? 1 : -1) + m.rows.length) % m.rows.length; paintMention(v); return true; }
+    if (ev.key === "Enter" || ev.key === "Tab") { ev.preventDefault(); pickMention(v, m.idx); return true; }
+    return false;
+  }
+  async function pickMention(v, i) {
+    const m = v.ed?.mention, row = m?.rows?.[i], sel = window.getSelection();
+    if (!row || !sel?.rangeCount) { closeMention(v); return; }
+    const r = document.createRange();
+    r.setStart(m.start.startContainer, m.start.startOffset); r.setEnd(sel.anchorNode, sel.anchorOffset);
+    sel.removeAllRanges(); sel.addRange(r);
+    document.execCommand("insertText", false, `@${row.title?.trim() || t("(untitled)")} `);
+    closeMention(v);
+    onEditInput(v);
+    const note = getNote(v.noteId);
+    try { await host.flags.link(note, row.noteId); flashStatus(v, t('Linked to "{title}".', { title: row.title?.trim() || t("(untitled)") })); }
+    catch (err) { flashStatus(v, err?.message || t("That did not save.")); } // I15: the text stays; the link says why it did not save
   }
   function runEditCommand(v, cmd) {
     const body = editBodyEl(v);
@@ -630,7 +795,7 @@ export function createNoteViews(host) {
     return out;
   };
   let gutterRaf = 0;
-  function scheduleGutter(v) { cancelAnimationFrame(gutterRaf); gutterRaf = requestAnimationFrame(() => layoutGutter(v)); }
+  function scheduleGutter(v) { cancelAnimationFrame(gutterRaf); gutterRaf = requestAnimationFrame(() => { layoutGutter(v); fitToolbar(v); }); }
   function layoutGutter(v) {
     const e = v.ed, body = editBodyEl(v);
     if (!e || !body || !e.gutterEl) return;
@@ -739,13 +904,39 @@ export function createNoteViews(host) {
     window.addEventListener("pointermove", move); window.addEventListener("pointerup", up); window.addEventListener("pointercancel", up);
   }
   /** Paste goes through the Note's own cleaner BEFORE it touches the editor, so a hostile paste never lives in the DOM. */
+  // Note-pane round 4 (items 30, 31): a pasted web address asks "a link, or plain text?"; pasted text that carries
+  // formatting asks "keep the formatting, or plain text?". The choice is a small row in the editor's panel; until it
+  // is made, nothing is pasted (Esc or Close: nothing).
+  const FORMATTED_PASTE = /<(b|strong|i|em|u|s|strike|h[1-6]|ul|ol|li|table|a|blockquote|font|mark|hr)\b|<\w+[^>]*\sstyle="[^"]*\S/i;
   function onEditPaste(v, ev) {
     if (!v.ed || !ev.target.closest?.("[data-edit-body]")) return;
     ev.preventDefault();
-    const html = ev.clipboardData?.getData("text/html"), text = ev.clipboardData?.getData("text/plain") || "";
-    if (html) document.execCommand("insertHTML", false, sanitizeNoteHtml(html));
+    const html = ev.clipboardData?.getData("text/html") || "", text = ev.clipboardData?.getData("text/plain") || "";
+    const one = text.trim();
+    const clean = html ? sanitizeNoteHtml(html) : "";
+    if (one && !/\s/.test(one) && /^(https?:\/\/|mailto:)/i.test(one) && isSafeNoteHref(one)) {
+      v.ed.pendingPaste = { kind: "url", url: one, text };
+      openPanel(v, "paste");
+      return;
+    }
+    if (clean && FORMATTED_PASTE.test(clean)) {
+      v.ed.pendingPaste = { kind: "rich", html: clean, text };
+      openPanel(v, "paste");
+      return;
+    }
+    if (clean && !text) document.execCommand("insertHTML", false, clean);
     else if (text) document.execCommand("insertText", false, text);
     onEditInput(v);
+  }
+  function finishPaste(v, how) {
+    const p = v.ed?.pendingPaste;
+    if (!p) { closePanel(v); return; }
+    v.ed.pendingPaste = null;
+    restoreRange(v);
+    if (how === "link") document.execCommand("insertHTML", false, `<a href="${escapeHtml(p.url)}">${escapeHtml(p.url)}</a>`);
+    else if (how === "rich") document.execCommand("insertHTML", false, p.html);
+    else document.execCommand("insertText", false, p.text);
+    closePanel(v); onEditInput(v);
   }
 
 
@@ -777,6 +968,7 @@ export function createNoteViews(host) {
     Object.assign(v.ed, { wrapEl: wrap, gutterEl: gutter, folded: new Set(), range: null });
     body.addEventListener("paste", (ev) => onEditPaste(v, ev));
     body.addEventListener("keydown", (ev) => onEditKeydown(v, ev));
+    body.addEventListener("input", (ev) => onMentionInput(v, ev));
     body.addEventListener("keyup", () => saveRange(v));
     body.addEventListener("mouseup", () => saveRange(v));
     v.ed.ro = typeof ResizeObserver === "function" ? new ResizeObserver(() => scheduleGutter(v)) : null;
@@ -1737,6 +1929,8 @@ export function createNoteViews(host) {
     if (on("[data-pane-duplicate]")) { closeAllBarPalettes(null); duplicateNote(v, note); return; }
     const tagChip = on("[data-tag-chip]");
     if (tagChip && host.tagging) { openTagNotes(v, tagChip.dataset.tagChip); return; }
+    const tbTab = on("[data-edit-toolbar] [data-tb-tab]");
+    if (tbTab && v.ed) { v.tbOpen = Number(tbTab.dataset.tbTab); fitToolbar(v); return; }
     const cmdBtn = on("[data-edit-toolbar] [data-cmd]");
     if (cmdBtn) { closeAllBarPalettes(null); runEditCommand(v, cmdBtn.dataset.cmd); return; }
     if (v.ed) { // S12: the editor's panel and heading controls
@@ -1748,6 +1942,7 @@ export function createNoteViews(host) {
       const sw = on("[data-swatch]"); if (sw) { applySwatch(v, sw.dataset.swatch, sw.dataset.swatchMode); return; }
       const sl = on("[data-spacing-line]"); if (sl) { applySpacing(v, "line", sl.dataset.spacingLine); return; }
       const sa = on("[data-spacing-after]"); if (sa) { applySpacing(v, "after", sa.dataset.spacingAfter); return; }
+      const pc = on("[data-paste-choice]"); if (pc) { finishPaste(v, pc.dataset.pasteChoice); return; }
       const fb = on("[data-sec-fold]"); if (fb) { toggleFold(v, fb.__h); return; }
     }
     if (on("[data-draft-restore]")) { const d = loadDraft(note.noteId); if (d && host.canEdit()) startEdit(v, note, d); return; }
