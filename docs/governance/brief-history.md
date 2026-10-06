@@ -14,6 +14,15 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v09.87 on `main`** (5 Oct 2026 — **family members with year of birth at sign-up, and an Age column on People**).
+- **What** (the Owner: "When a user new sign in, he is asked to put family members with age, to attach with his account ... If not, we have to make that rule and feature"; demo `docs/reference/2026-10-05-family-members-signup-demo.html`):
+  - "Create your account" for **My family** opens **step 2, "Who is in your family?"**: a name and a **year of birth** per person (the age is worked out, never stored), "A child I look after" ticked by itself under 18, + Add another, Save and continue, Skip for now. Each is added with `addPersonToTenant()` as a Student, a child managed by the new owner.
+  - **People**: an **Age** column; Add a person and Edit take a year of birth (`birthYear` on tenantPeople, `validBirthYear` / `ageFromBirthYear` in `people.js`). The owner's and a guardian's tenantPeople Rules carry no field list, so **no Rules change**.
+- **Checks:**
+  - family-signup-browser 68/0 (3 mutations, each caught)
+  - rules-authorisation-executable 63/0 (birthYear on tenantPeople: the owner's and a guardian's Rules carry no field list), stub-parity 4/0, phone-width-overflow 217/0, behaviour 1003/4 (22g×3 archive.org, 31e certificate: the sandbox baseline)
+- **With the Owner:** the next new family account sees step 2; on People, Edit a person and give a year of birth.
+
 **Previous milestone: v09.86 on `main`** (5 Oct 2026 — **round 4 of the Siyagah note-pane port: Part B finished**; decision 70).
 - **What** (list items 28–33, `docs/reference/2026-10-05-siyagah-note-pane-port-list.md`; `app/js/note-window.js`):
   - On a Note narrower than 600px the toolbar shows **five labelled groups** (Aa Text · H Headings · ≡ Paragraph · + Insert · ↺ Undo) and the chosen group's tools: nothing scrolls sideways (`TOOL_GROUPS`, `fitToolbar`). A wide Note keeps one row.

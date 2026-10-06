@@ -15,6 +15,7 @@
 import { t, num } from "./i18n.js";
 import { getAppLang } from "./prefs.js";
 import { STATUSES, statusLabel } from "./unit-keys.js";
+import { renderAssignDropdown } from "./assign-picker.js";
 import {
   listCollections, booksOf, chaptersOf, occurrencesIn, editionHasChapterLevel,
   occurrenceById, chapterById, collectionOf, sourcePathOf, externalReferencesFor, resolveText,
@@ -596,12 +597,60 @@ async function renderHadeethEncStudyActions(container, id, title) {
     refreshBookmarkBtn();
   });
 
+  // 👥 Record for family members too (decision 71): the same picker as the
+  // Qur'an page's Record cards. Read on first use only (I9); nothing for a lone person.
+  let pickerRoster = [];
+  try { pickerRoster = await actions.getHadeethEncRoster(session); } catch { pickerRoster = []; }
+  const pickerHtml = renderAssignDropdown(pickerRoster, session.personId);
+  let pickerList = null;
+  if (pickerHtml) {
+    const pickerRow = el("div", "claim-for-row");
+    pickerRow.dataset.claimFor = "";
+    pickerRow.innerHTML = pickerHtml;
+    studiedItem.appendChild(pickerRow);
+    pickerList = pickerRow.querySelector("[data-assign-list]");
+    const label = pickerRow.querySelector("[data-assign-trigger-label]");
+    const trigger = pickerRow.querySelector("[data-assign-trigger]");
+    const popover = pickerRow.querySelector("[data-assign-popover]");
+    const paint = () => {
+      const checked = [...pickerList.querySelectorAll("input:checked")];
+      label.textContent = checked.length === 1 ? (checked[0].dataset.name ?? "1") : num(checked.length);
+      trigger.setAttribute("aria-label", t("Record for: {names}", { names: checked.map((c) => c.dataset.name).join(", ") || "—" }));
+    };
+    trigger.addEventListener("click", () => {
+      const open = !popover.classList.contains("open");
+      popover.classList.toggle("open", open);
+      trigger.setAttribute("aria-expanded", String(open));
+    });
+    pickerList.addEventListener("change", () => {
+      if (!pickerList.querySelector("input:checked")) pickerList.querySelector(`input[value="${CSS.escape(session.personId)}"]`)?.click(); // never nobody: back to the page's person
+      paint();
+    });
+    paint();
+  }
+  const ticked = () => (pickerList ? [...pickerList.querySelectorAll("input:checked")].map((c) => c.value) : [session.personId]);
+
   studiedSelect.value = studiedStatusId ?? "";
   studiedSelect.addEventListener("change", async () => {
     if (!studiedSelect.value) return;
     studiedSelect.disabled = true;
     try {
-      await actions.claimHadeethEncStudied(session, id, studiedSelect.value);
+      const ids = ticked();
+      // Others first, the page's person last (the Qur'an cards' order).
+      const ordered = [...ids.filter((x) => x !== session.personId), ...ids.filter((x) => x === session.personId)];
+      await actions.claimHadeethEncStudied(session, id, studiedSelect.value, ordered);
+      if (!ids.includes(session.personId)) {
+        const names = pickerRoster.filter((p) => ids.includes(p.id)).map((p) => p.name).join(", ");
+        studiedItem.querySelector("[data-hadeethenc-recorded]")?.remove();
+        const note = el("p", "hadeethenc-study-reason", t("Recorded for {names}.", { names }));
+        note.dataset.hadeethencRecorded = "";
+        note.setAttribute("role", "status");
+        studiedItem.appendChild(note);
+        studiedSelect.value = studiedStatusId ?? ""; // the shown status stays the page person's own
+      } else {
+        studiedStatusId = studiedSelect.value;
+        studiedItem.querySelector("[data-hadeethenc-recorded]")?.remove();
+      }
     } catch (err) {
       row.appendChild(el("p", "hadeethenc-study-reason", String(err?.message ?? err)));
     }

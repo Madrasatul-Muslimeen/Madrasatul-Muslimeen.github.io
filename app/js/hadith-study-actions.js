@@ -30,7 +30,9 @@
 import { auth, db } from "./firebase-init.js";
 import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
-import { getActiveContext, getSelectedPersonId, effectiveRoles } from "./session-context.js";
+import { getActiveContext, getSelectedPersonId, effectiveRoles, scopedRoster } from "./session-context.js";
+import { langText } from "./lang.js";
+import { getAppLang } from "./prefs.js";
 import { buildUnitKey } from "./unit-keys.js";
 import { chunkKeyFor, getRecordsChunk, claimStatus } from "./records.js";
 import { getBookmarks, saveBookmark, removeSavedBookmark, findSavedBookmark } from "./bookmarks.js";
@@ -196,16 +198,42 @@ export async function hadeethEncStudiedStatus(session, id) {
   return entry?.claimedStatus ?? null;
 }
 
-export async function claimHadeethEncStudied(session, id, statusId) {
+/**
+ * 👥 Who the signed-in person may record for -- the same rule the Qur'an
+ * page's assignableRoster() uses (scopedRoster over the tenant's people,
+ * non-archived). Read on FIRST USE only, when a card with Studied opens;
+ * never on the startup path (I9).
+ */
+export async function getHadeethEncRoster(session) {
+  const ctx = getActiveContext();
+  const snap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", session.tenantId)));
+  const everyone = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const effRoles = effectiveRoles(ctx?.roles ?? [], ctx?.viewAsRole ?? null);
+  return scopedRoster(everyone, effRoles, session.myPersonId)
+    .filter((p) => p.status !== "archived")
+    .map((p) => ({ id: p.id, name: langText(p.name, getAppLang(), p.id), isSelf: p.id === session.myPersonId }));
+}
+
+/**
+ * Claims "Studied" for the page's person, or -- when `personIds` is given --
+ * for each person in it (the 👥 picker), in the order given. The claimant is
+ * always the person acting. Each person's memo is keyed by that person, so a
+ * status shown later is never another person's.
+ */
+export async function claimHadeethEncStudied(session, id, statusId, personIds = null) {
   const unitKey = hadeethEncUnitKey(id);
-  const result = await claimStatus(db, {
-    tenantId: session.tenantId, personId: session.personId, subjectId: HADITH_ROOT_SUBJECT_ID,
-    unitKey, trackableId: STUDIED_TRACKABLE_ID, statusId, notes: "", domainIds: [],
-    // Architect review: the CLAIMANT is the person acting, not the person
-    // being recorded for -- topic-study.js uses currentActingPersonId() the
-    // same way. A teacher's claim must not read as the student's own.
-    claimedByPersonId: session.myPersonId ?? session.personId, claimedByUid: session.uid,
-  });
-  savedStudied.set(memoKey(session, unitKey), statusId);
+  const targets = personIds?.length ? personIds : [session.personId];
+  let result = null;
+  for (const personId of targets) {
+    result = await claimStatus(db, {
+      tenantId: session.tenantId, personId, subjectId: HADITH_ROOT_SUBJECT_ID,
+      unitKey, trackableId: STUDIED_TRACKABLE_ID, statusId, notes: "", domainIds: [],
+      // Architect review: the CLAIMANT is the person acting, not the person
+      // being recorded for -- topic-study.js uses currentActingPersonId() the
+      // same way. A teacher's claim must not read as the student's own.
+      claimedByPersonId: session.myPersonId ?? session.personId, claimedByUid: session.uid,
+    });
+    savedStudied.set(memoKey({ ...session, personId }, unitKey), statusId);
+  }
   return result;
 }
