@@ -18,6 +18,8 @@
 // tag/attribute without ever running a browser (see
 // tools/i18n-verify/note-sanitize-boundary.mjs).
 
+import { cleanSheetState, serializeSheetState, sheetStaticHtml } from "./note-sheet-engine.js";
+
 /** Formatting a Note editor can actually produce (bold/italic/underline/
     strike, headings, paragraphs, lists), PLUS `img` (issue #265 -- a
     WordPress-imported Note's own inline pictures, the one tag this app's own
@@ -57,6 +59,10 @@ export const NOTE_ALLOWED_ATTR = Object.freeze([
   "data-done", "data-box",
   // 6 Oct 2026 (Part C1): annotations (38) and heading status badges (39), each normalised by narrowOutput().
   "data-ann", "data-ann-text", "data-ann-ref", "data-status", "data-status-label", "data-status-colour",
+  // 6 Oct 2026 (Part C2, item 44): a spreadsheet inside a Note. `class` and `contenteditable` are let past
+  // DOMPurify ONLY so narrowOutput() can see them: it strips both from every element, then REBUILDS each
+  // `div[data-sheet]` from its strictly cleaned state -- so the only `class` that can ever come out is the one it writes.
+  "class", "contenteditable", "data-sheet",
 ]);
 
 /** Heading status (item 39): the closed set, and the only colours a custom status may take (the editor's text-colour palette). */
@@ -95,6 +101,16 @@ const NOTE_ALLOWED_URI_REGEXP = /^(?:https?:\/\/|mailto:)/i;
 function narrowOutput(html) {
   const tpl = document.createElement("template");
   tpl.innerHTML = html;
+  // Item 44. `class` / `contenteditable` never survive anywhere; a spreadsheet is then rebuilt WHOLE from its cleaned state:
+  // its attributes, its snapshot table and nothing else (so a live grid, or any markup somebody put inside it, is gone).
+  for (const el of tpl.content.querySelectorAll("[class],[contenteditable]")) { el.removeAttribute("class"); el.removeAttribute("contenteditable"); }
+  for (const el of [...tpl.content.querySelectorAll("[data-sheet]")]) {
+    const state = el.tagName === "DIV" ? cleanSheetState(el.getAttribute("data-sheet")) : null;
+    if (!state) { el.remove(); continue; }
+    for (const a of [...el.attributes]) el.removeAttribute(a.name);
+    el.setAttribute("class", "mm-sheet"); el.setAttribute("contenteditable", "false"); el.setAttribute("data-sheet", serializeSheetState(state));
+    el.innerHTML = sheetStaticHtml(state);
+  }
   for (const el of tpl.content.querySelectorAll("[style]")) {
     const kept = [];
     for (const decl of el.getAttribute("style").split(";")) {

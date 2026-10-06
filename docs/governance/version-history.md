@@ -742,3 +742,4 @@ total). Allocated by the MMSA Architect.
 09.96: Know Your Status as a window. Allocated by the MMSA Architect.
 09.97: Al-Fatiha Ayat 6 and 7 as two records. Allocated by the MMSA Architect.
 09.98: note annotations and heading status badges. Allocated by the MMSA Architect.
+09.99: a spreadsheet inside a Note. Allocated by the MMSA Architect.

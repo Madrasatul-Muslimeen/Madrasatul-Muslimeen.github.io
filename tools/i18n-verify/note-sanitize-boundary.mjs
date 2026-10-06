@@ -75,7 +75,13 @@ const DANGEROUS_ATTR_PATTERN = /^on|xlink/i;
 // UPDATED IN PLACE, 6 Oct 2026 (note-pane Part C1, items 38-39): the six annotation / heading-status attributes joined; each is
 // normalised by narrowOutput() (numbers only; the closed status set; plain capped text; the fixed palette) and proven by
 // journey-annotations-status-browser.mjs with a hostile paste.
-const S12_ATTRS = ["colspan", "data-ann", "data-ann-ref", "data-ann-text", "data-box", "data-check", "data-checked", "data-done", "data-status", "data-status-colour", "data-status-label", "dir", "href", "rowspan", "style"];
+// UPDATED IN PLACE, 6 Oct 2026 (Part C2, item 44), reason recorded: a spreadsheet inside a Note is a
+// `div.mm-sheet[contenteditable=false][data-sheet]`, so DOMPurify must let `class`, `contenteditable` and `data-sheet`
+// reach narrowOutput(). That function strips `class`/`contenteditable` from EVERY element and then rebuilds each
+// `div[data-sheet]` from its strictly cleaned state -- the check "narrowOutput strips class everywhere and rebuilds the
+// sheet" below reads exactly that, and journey-sheet-browser.mjs proves it with hostile pastes. So "no class" still
+// holds for everything a reader sees; the closed list is widened by those three names and no others.
+const S12_ATTRS = ["class", "contenteditable", "data-sheet", "colspan", "data-ann", "data-ann-ref", "data-ann-text", "data-box", "data-check", "data-checked", "data-done", "data-status", "data-status-colour", "data-status-label", "dir", "href", "rowspan", "style"];
 
 // UPDATED IN PLACE, 28 Sep 2026, reason recorded: DOMPurify used to load from
 // the jsdelivr CDN, so with no internet a Note's body was refused (sanitize
@@ -147,6 +153,13 @@ check("NOTE_ALLOWED_ATTR carries exactly the image trio plus the S12 editor set 
   for (const attr of attrs) {
     assert.ok(!DANGEROUS_ATTR_PATTERN.test(attr), `NOTE_ALLOWED_ATTR permits a dangerous-shaped attribute: ${attr}`);
   }
+});
+
+check("narrowOutput strips class and contenteditable everywhere, then rebuilds each spreadsheet from its cleaned state", () => {
+  const body = sanitizeSrc.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  assert.ok(/querySelectorAll\("\[class\],\[contenteditable\]"\)[\s\S]{0,60}removeAttribute\("class"\)[\s\S]{0,20}removeAttribute\("contenteditable"\)/.test(body), "class / contenteditable are not stripped from every element");
+  assert.ok(/cleanSheetState\(el\.getAttribute\("data-sheet"\)\)/.test(body) && /el\.innerHTML\s*=\s*sheetStaticHtml\(state\)/.test(body), "a spreadsheet's inside is not re-derived from its cleaned state");
+  assert.ok(/if \(!state\) \{ el\.remove\(\)/.test(body), "an invalid spreadsheet is not dropped");
 });
 
 check("img is allowed, but ONLY with src restricted to http(s) -- no javascript: or data: URI", () => {
