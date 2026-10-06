@@ -346,22 +346,34 @@ export async function getDoc(ref) {
 // would move numbers in suites this round has no business touching. A module
 // that patches its own cache after a successful write, which is the better
 // production behaviour anyway, renders correctly against this.
-function __recordWriteData(kind, ref, data) {
+function __recordWriteData(kind, ref, data, opts) {
   try {
     window.__stubWriteData = window.__stubWriteData || [];
-    window.__stubWriteData.push({ kind, col: ref && ref.__col, id: ref && ref.__id, data: JSON.parse(JSON.stringify(data ?? {})) });
+    window.__stubWriteData.push({ kind, col: ref && ref.__col, id: ref && ref.__id, data: JSON.parse(JSON.stringify(data ?? {})), merge: !!(opts && opts.merge) });
   } catch (e) {}
 }
 
-export async function setDoc(ref, data) {
+export async function setDoc(ref, data, opts) {
   return __trip("setDoc", ref && ref.__col, ref && ref.__id, function () {
-    __recordWriteData("set", ref, data);
+    __recordWriteData("set", ref, data, opts);
     // OPT-IN, same flag as the batch path below (journey-sections-browser.mjs): a
     // create is applied to DATA so a read after it sees the new document.
     if (typeof window !== "undefined" && window.__stubApplyBatches && ref && ref.__col) {
       DATA[ref.__col] = DATA[ref.__col] || [];
-      var row = Object.assign({ _id: ref.__id }, data);
       var at = DATA[ref.__col].findIndex(function (d) { return d._id === ref.__id; });
+      var row = Object.assign({ _id: ref.__id }, data);
+      if (opts && opts.merge) { // a merge write deep-merges maps and leaves every other field alone; deleteField() removes a key
+        var deep = function (into, from) {
+          Object.keys(from).forEach(function (k) {
+            var v = from[k];
+            if (v && v.__deleteField) delete into[k];
+            else if (v && typeof v === "object" && !Array.isArray(v) && !(v instanceof Date) && typeof v.toDate !== "function") { into[k] = into[k] && typeof into[k] === "object" && !Array.isArray(into[k]) ? into[k] : {}; deep(into[k], v); }
+            else into[k] = v;
+          });
+          return into;
+        };
+        row = deep(at >= 0 ? DATA[ref.__col][at] : { _id: ref.__id }, JSON.parse(JSON.stringify(data)));
+      }
       if (at >= 0) DATA[ref.__col][at] = row; else DATA[ref.__col].push(row);
     }
   });
@@ -386,6 +398,8 @@ export async function getCountFromServer(q) {
   return __trip("getCount", q && q.__col, null, function () { return { data: () => ({ count: 0 }) }; });
 }
 export async function waitForPendingWrites() {}
+// Part C3: a real marker, recorded as { __deleteField: true }, so a suite can prove a fold entry was cleared.
+export function deleteField() { return { __deleteField: true }; }
 export function serverTimestamp() { return new Date(); }
 export function arrayUnion(...v) { return v; }
 // Issue #206 -- app/js/quran-word-total-data.js is the first module to
