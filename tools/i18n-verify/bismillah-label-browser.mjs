@@ -2,9 +2,12 @@
 // Decision 55 leaves Al-Fātiḥah's Bismillah unnumbered (display only; stored 1:1 never changes). It must never be
 // printed as "Ayah Bismillah", "1:Bismillah" or as the number 1: the wheel's centre, the Note window's title, its
 // list and its own āyah picker all name it "Bismillah". Another surah's first āyah still reads "Ayah 1".
+// Updated in place 6 Oct 2026 (decision 76, the Owner: the title for the unnumbered Bismillah is "Bismillah"
+// alone): the Note window's title was "Bismillah — Surah Al-Faatiha"; it is now exactly "Bismillah".
 // Expected words are written by hand. en/bn at 390 and 1280. Run from the repository root with serve.js.
 //   --mutate=old-names   ayahNameFor() prints "Ayah {n}" again     -> the centre checks fail
 //   --mutate=old-picker  the Note picker prints the number again  -> the picker check fails
+//   --mutate=old-title   the title names the Surah again          -> the title check fails
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
 
@@ -14,7 +17,7 @@ function check(name, ok, detail = "") {
   if (ok) { pass++; console.log(`  PASS  ${name}`); } else { fail++; console.log(`  FAIL  ${name}${detail ? `\n        ${detail}` : ""}`); }
 }
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
-const W = { en: { b: "Bismillah", title: "Bismillah — Surah Al-Faatiha", ayah1: "Ayah 1" }, bn: { b: "বিসমিল্লাহ", title: "বিসমিল্লাহ — সূরা", ayah1: "আয়াত ১" } };
+const W = { en: { b: "Bismillah", title: "Bismillah", ayah1: "Ayah 1" }, bn: { b: "বিসমিল্লাহ", title: "বিসমিল্লাহ", ayah1: "আয়াত ১" } };
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
 for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
   const tag = `${lang}/${width}`;
@@ -26,6 +29,7 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
     const swap = (a, b) => { if (!body.includes(a)) throw new Error(`mutation anchor missing: ${a.slice(0, 60)}`); body = body.split(a).join(b); };
     if (MUTATE === "old-names") swap('function ayahNameFor(surah, ayah) { return isUnnumberedBismillah(surah, ayah) ? t("Bismillah") : ', "function ayahNameFor(surah, ayah) { return ");
     else if (MUTATE === "old-picker") swap('${n === selected ? "selected" : ""}>${ayahLabelFor(currentSurahNum, n)}</option>', '${n === selected ? "selected" : ""}>${num(n)}</option>');
+    else if (MUTATE === "old-title") swap('isUnnumberedBismillah(surahNum, ayahNum)) return t("Bismillah");', 'isUnnumberedBismillah(surahNum, ayahNum)) return t("Bismillah") + " — Surah";');
     else throw new Error(`unknown mutation ${MUTATE}`);
     await ctx.route("**/app/quranrevival.html*", (r) => r.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body }));
   }
@@ -49,7 +53,7 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
   await P.waitForTimeout(1200);
   const nv = await P.evaluate(() => { const v = document.getElementById("noteView"); const pick = v.querySelector('[data-note-picker="ayah"]'); return { text: v.innerText, title: [document.getElementById("notePopupTitle")?.textContent.trim() ?? ""], pick: pick ? pick.options[pick.selectedIndex]?.textContent : null }; });
   // A phone shows the Note full-screen with no title bar, so the title is checked where there is one (a PC).
-  if (width >= 1024) check(`${tag}: the Note window's title is "${W[lang].title}…"`, nv.title.some((x) => x.startsWith(W[lang].title)), JSON.stringify(nv.title));
+  if (width >= 1024) check(`${tag}: the Note window's title is exactly "${W[lang].title}"`, nv.title.some((x) => x === W[lang].title), JSON.stringify(nv.title));
   check(`${tag}: nothing in the Note window says "1:Bismillah" or "Ayah Bismillah"`, !/1:Bismillah|Ayah Bismillah|১:বিসমিল্লাহ|আয়াত বিসমিল্লাহ|Quran 1:Bismillah/.test(nv.text + nv.title.join(" ")));
   check(`${tag}: the Note window's own āyah picker reads Bismillah`, nv.pick === W[lang].b, String(nv.pick));
   check(`${tag}: no sideways scroll`, await P.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));

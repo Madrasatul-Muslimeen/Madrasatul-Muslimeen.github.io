@@ -511,7 +511,7 @@ function buildPageHeader(pageNum, tajweedOn, onToggleTajweed) {
  *   internal 1:7 end     -> unchanged (⑦)
  * Returns the line list to draw (a copy; the loaded page data is untouched).
  */
-function fatihaPageLines(lines) {
+export function fatihaPageLines(lines) {
   const maxPos = (a) => ayahMaxWordPosition && ayahMaxWordPosition["1:" + a];
   const markerGlyph = {};
   for (const line of lines) {
