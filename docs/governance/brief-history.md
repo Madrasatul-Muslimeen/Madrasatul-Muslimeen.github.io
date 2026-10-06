@@ -14,6 +14,14 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v09.95 on `main`** (6 Oct 2026 — **Asma ul Husna: "File under" every classification in one Save**).
+- **What** (the Owner, 6 Oct 2026: "'File under' should have option to file a single/ dual name under which Group, by Act, by Essence. Build it."; decision 78):
+  - `quranrevival.html` `asmaXFileIntoRowHtml`: Add a new Name has a "File under" box with one row per active classification (Group, Dual Names, and the Owner's own, e.g. By Act, By Essence), each "Not filed" unless chosen, with "+ New list…" per row. One Save files under every row set. Shown on every Add a new Name; from inside a list, that list is chosen; from the Note view's "+ New Dual Name", the Dual Names row.
+  - The speed assessment (v09.94) is delivered; its startup-paint step waits for the Owner's OK (I9).
+- **Checks:**
+  - asma-file-under-browser 52/0 (new; --mutate=no-filing 12 fail, --mutate=one-row fails the row and filing checks), asma-classifications-boundary 36/0 (3 checks updated in place), asma-classification-rename 20/0, asma-explore-name-poster 36/0, card-look 96/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
+- **With the Owner:** Explore → Asma ul Husna → ⋯ → +N. Type a name, choose a list under Dual Names and one under By Act, Save: the Name is in both.
+
 **Previous milestone: v09.94 on `main`** (6 Oct 2026 — **Speed: a release no longer empties the phone's cache; the Hadith book list loads 2.6 KB instead of 1.8 MB**).
 - **What** (the Owner, 6 Oct 2026: "Assess and fix issues with speed, loading. opening of all files, modules takes ages"; the assessment is `docs/reports/2026-10-06-speed-assessment.md`):
   - `sw.js`: every release made a new, empty cache and deleted the old one, so the first opens after each update downloaded everything again (main page 2.9 MB, first Word Card 2.1 MB, Hadith 2.5 MB, uncompressed). Now the waiting new version refreshes everything the old cache held (revalidating fetches) before the reader taps "Updated".
