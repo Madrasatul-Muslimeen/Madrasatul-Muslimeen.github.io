@@ -156,8 +156,12 @@ for (const lang of ["en", "bn"]) {
     await page.click('[data-sec-toggle="0"]');
     const secDisplay = () => page.evaluate(() => getComputedStyle(document.querySelector('.note-sec[data-sec-index="0"] > .note-sec-body')).display);
     check(`${tag}: collapsing a section hides its body (computed display)`, (await secDisplay()) === "none");
-    check(`${tag}: collapsing wrote NOTHING to the write log`, (await writes(page)).length === 0, JSON.stringify(await writes(page)));
-    check(`${tag}: the collapsed state is kept in localStorage per Note, not elsewhere`, await page.evaluate(() => JSON.parse(localStorage.getItem("qr.journeyNoteCollapsed.n1") || "[]").includes(0)));
+    // Updated in place, v09.101 (Owner decisions 45 and 80, round #616): folds follow the PERSON across devices, so a
+    // fold is now ONE write -- to the person's own userPrefs/{uid}.mmsaNotes.folds, with merge -- and still nothing
+    // to the Note (no notes / noteRevisions write, so no new version per tap). It was "writes nothing, localStorage only".
+    const foldWrites = await writes(page);
+    check(`${tag}: collapsing writes only the person's own fold setting, never the Note`, foldWrites.length === 1 && foldWrites[0].col === "userPrefs" && foldWrites[0].id === "test-uid" && JSON.stringify(foldWrites[0].data) === JSON.stringify({ mmsaNotes: { folds: { n1: [0] } } }), JSON.stringify(foldWrites));
+    check(`${tag}: the collapsed state is kept for this person (with a copy on the device), not in the Note`, await page.evaluate(() => (JSON.parse(localStorage.getItem("mmsa.noteSettings.test-uid") || "null")?.folds?.n1 || []).includes(0)));
     if (wide) { await openLeaf(page, "n2", "fA"); await openLeaf(page, "n1", "fA"); } else { await closePane(page, false); await openLeaf(page, "n1", "fA"); }
     await page.waitForSelector("#notePane:not([hidden])");
     check(`${tag}: the collapsed section is still collapsed after closing and reopening the Note`, (await secDisplay()) === "none");
