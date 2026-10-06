@@ -21,9 +21,10 @@
 
 import { t, num } from "./i18n.js";
 import {
-  ensureMushafData, getMushafPageLines, getAyahEndMarkerPosition,
+  ensureMushafData, getMushafPageLines, getAyahEndMarkerPosition, getMushafPagesForKeys,
   loadMushafPageFont, loadSurahHeaderFont, surahHeaderGlyph,
 } from "./hifz-renderer.js";
+import { openWordPopout } from "./writing-popout.js";
 
 const SHADE_KEY = "writingSheetShade";
 const TOOLS_KEY = "writingSheetTools";
@@ -87,7 +88,7 @@ export function layoutWritingPage(lines, family, W, measure, inUnit) {
         const key = `${s}:${a}`;
         const width = measure(w.g, family, fs);
         const marker = getAyahEndMarkerPosition(key) === Number(p);
-        item.words.push({ g: w.g, width, marker, dim: !inUnit(Number(s), Number(a)), offset: natural });
+        item.words.push({ g: w.g, loc: w.loc, width, marker, dim: !inUnit(Number(s), Number(a)), offset: natural });
         natural += width + (k < line.words.length - 1 ? gap : 0);
       });
       item.scale = Math.max(0.8, Math.min(1.5, natural ? cw / natural : 1));
@@ -252,6 +253,9 @@ const CSS = `
 #writingSheet .ws-ink{touch-action:pan-x pan-y pinch-zoom}
 #writingSheet.ws-writing .ws-ink{touch-action:none;cursor:crosshair}
 #writingSheet .ws-msg{position:absolute;inset:auto 0 50% 0;text-align:center;font-size:13px;color:#a33;padding:0 12px}
+#writingSheet .ws-pick{position:relative;z-index:4;padding:8px 12px;background:#fff3cf;color:#4a3a10;border-bottom:2px solid #B8862F;font-size:0.9rem}
+#writingSheet .ws-pick[hidden]{display:none}
+#writingSheet.ws-picking .ws-ink{cursor:zoom-in}
 #writingSheet .ws-confirm{position:relative;z-index:4;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:10px 12px;background:#fff3cf;color:#4a3a10;border-bottom:2px solid #B8862F}
 #writingSheet .ws-confirm[hidden]{display:none}
 #writingSheet .ws-confirm button{min-height:40px;padding:0.3rem 0.9rem;border-radius:8px;border:1px solid #B8862F;background:#fff;color:#4a3a10;font:inherit;cursor:pointer}
@@ -312,6 +316,7 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
       </div>
       <div class="ws-row ws-row2">
         <button type="button" class="ws-unit" data-ws="unit" aria-expanded="false"${onChooseUnit ? "" : " disabled"}></button>
+        <button type="button" data-ws="popout" aria-pressed="false" aria-label="${t("Pop out")}" title="${t("Pop out")}">🔍<span class="ws-tx"> ${t("Pop out")}</span></button>
         <select class="ws-shade" data-ws-shade-select aria-label="${t("Letter style")}" title="${t("Letter style")}">
           <option value="light">${t("Light")}</option>
           <option value="lighter">${t("Lighter")}</option>
@@ -324,6 +329,7 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
         <button type="button" data-ws="print">${t("Print A4")}</button>
       </div>
     </div>
+    <div class="ws-pick" data-ws-pick role="status" hidden>${t("Tap a word to pop it out")}</div>
     <div class="ws-unitpanel" data-ws-unitpanel hidden></div>
     <div class="ws-confirm" data-ws-confirm-unit hidden>
       <span>${t("Change what you practise? Your writing on this sheet will be cleared.")}</span>
@@ -349,11 +355,14 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
 
   const chromeEl = $("[data-ws-chrome]");
   let toolsHidden = readToolsHidden();
-  const st = { write: false, tool: "pen", pages: [], current: null, dirty: new Set(), drawing: null, destroyed: false };
+  const st = { pick: false, popout: null, write: false, tool: "pen", pages: [], current: null, dirty: new Set(), drawing: null, destroyed: false };
   const measure = measurer();
 
   const paintToolbar = () => {
     root.classList.toggle("ws-writing", st.write);
+    root.classList.toggle("ws-picking", st.pick);
+    $('[data-ws="popout"]').setAttribute("aria-pressed", String(st.pick));
+    $("[data-ws-pick]").hidden = !st.pick;
     $('[data-ws="write"]').setAttribute("aria-pressed", String(st.write));
     root.querySelectorAll("[data-ws-tool]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.wsTool === st.tool)));
     $("[data-ws-shade-select]").value = shade;
@@ -395,6 +404,7 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
 
   function destroy() {
     st.destroyed = true;
+    st.popout?.destroy();
     io?.disconnect();
     window.removeEventListener("resize", onResize);
     window.visualViewport?.removeEventListener("resize", onViewport);
@@ -557,6 +567,13 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
       return [(e.clientX - r.left) / r.width, ((e.clientY - r.top) / r.width)];
     };
     ink.addEventListener("pointerdown", (e) => {
+      if (st.pick) {
+        // W2: a tap in pick mode chooses a word and never draws.
+        e.preventDefault();
+        const hit = wordAt(info, e.clientX, e.clientY);
+        if (hit) { st.pick = false; paintToolbar(); popOut(hit); }
+        return;
+      }
       if (!st.write) return;
       e.preventDefault();
       try { ink.setPointerCapture(e.pointerId); } catch { /* not all engines */ }
@@ -581,6 +598,58 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
     };
     ink.addEventListener("pointerup", end);
     ink.addEventListener("pointercancel", end);
+  }
+
+  // ---- W2: pop out a word or an Ayah. Which word was tapped comes from the page's own layout, never from pixels.
+  function wordAt(info, clientX, clientY) {
+    const lay = info.layout;
+    if (!lay) return null;
+    const r = info.ink.getBoundingClientRect();
+    const k = lay.W / r.width;
+    const x = (clientX - r.left) * k, y = (clientY - r.top) * k;
+    const right = lay.W - lay.W * MARGIN_X;
+    const gap = WORD_GAP * lay.fs;
+    for (const ln of lay.lines) {
+      if (ln.type !== "ayah" || !ln.words.length) continue;
+      if (y < ln.y - lay.pitch * 0.05 || y > ln.y + lay.pitch) continue;
+      const u = (right - x) / ln.scale;
+      const w = ln.words.find((q) => u >= q.offset - gap / 2 && u <= q.offset + q.width + gap / 2);
+      return w ? { g: w.g, loc: w.loc, marker: w.marker, page: info.n, family: info.family } : null;
+    }
+    return null;
+  }
+  function ayahWordsOf(loc) {
+    const [s, a] = loc.split(":");
+    const key = `${s}:${a}`;
+    const out = [];
+    getMushafPagesForKeys([key]).forEach((pg) => {
+      (getMushafPageLines(pg) || []).forEach((line) => {
+        if (line.type !== "ayah" || !line.words) return;
+        line.words.forEach((w) => {
+          const [ws, wa, wp] = w.loc.split(":");
+          if (`${ws}:${wa}` !== key) return;
+          out.push({ g: w.g, loc: w.loc, page: pg, family: `hifz-p${pg}`, marker: getAyahEndMarkerPosition(key) === Number(wp) });
+        });
+      });
+    });
+    return out;
+  }
+  function popOut(hit) {
+    st.popout?.destroy();
+    st.popout = openWordPopout({
+      host: root,
+      word: hit,
+      mode: hit.marker ? "ayah" : "word",
+      ayahWords: () => ayahWordsOf(hit.loc),
+      ensureFont: (pg) => loadMushafPageFont(pg),
+      paintGlyph: (ctx, g, x, y, marker, shadeName) => {
+        if (marker) { ctx.fillStyle = MARKER; ctx.fillText(g, x, y); }
+        else drawGlyphs(ctx, g, x, y, SHADES[shadeName] || SHADES.light);
+      },
+      shade,
+      onShade: (v) => { shade = v; saveShade(shade); paintToolbar(); st.pages.forEach((p) => { if (p.drawn) paintPage(p); }); },
+      onClose: () => { st.popout = null; },
+    });
   }
 
   // ---- saving
@@ -729,6 +798,7 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
       if (!b || !root.contains(b)) return;
       if (b.dataset.wsTool) { st.tool = b.dataset.wsTool; paintToolbar(); return; }
       switch (b.dataset.ws) {
+        case "popout": st.pick = !st.pick; paintToolbar(); break;
         case "write": st.write = !st.write; paintToolbar(); break;
         case "tools": toolsHidden = !toolsHidden; saveToolsHidden(toolsHidden); paintToolbar(); break;
         case "undo": {
