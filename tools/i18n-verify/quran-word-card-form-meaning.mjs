@@ -89,7 +89,14 @@ const M = { en: "be grateful", bn: "কৃতজ্ঞতা প্রকাশ 
 for (const level of ["basic", "depth"]) {
   check(`${level}: order is category -> Arabic -> meaning -> count`, () => {
     const h = render(level, forms(M), "en");
-    const at = ["word-card-form-pos\"", "word-card-form-arabic", "word-card-form-meaning", "word-card-form-count"].map((s) => h.indexOf(s));
+    // Updated in place 6 Oct 2026: since the Word card rebuild (decision 59, the demo's derived-form cards) Basic
+    // draws each form as a card (word-card-dcard-pos / -ar / -count); Depth keeps its list. The ORDER this check
+    // guards is unchanged -- category, Arabic, meaning, count -- so each level is read in its own markup. It was
+    // red on main from that rebuild, and the uncaught throw stopped every check after it.
+    const parts = level === "basic"
+      ? ["word-card-dcard-pos\"", "word-card-dcard-ar\"", "word-card-form-meaning", "word-card-dcard-count\""]
+      : ["word-card-form-pos\"", "word-card-form-arabic", "word-card-form-meaning", "word-card-form-count"];
+    const at = parts.map((s) => h.indexOf(s));
     assert.ok(at.every((i) => i > -1), JSON.stringify(at));
     assert.deepEqual([...at].sort((a, b) => a - b), at);
   });
@@ -111,7 +118,8 @@ for (const level of ["basic", "depth"]) {
     for (const m of [{ en: "", bn: "" }, undefined]) {
       const h = render(level, forms(m), "en");
       assert.doesNotMatch(h, /word-card-form-meaning/);
-      assert.match(h, /word-card-form-count/);
+      // Updated in place 6 Oct 2026: Basic's form card counts in word-card-dcard-count (see the order check).
+      assert.match(h, level === "basic" ? /word-card-dcard-count/ : /word-card-form-count/);
     }
   });
 }
