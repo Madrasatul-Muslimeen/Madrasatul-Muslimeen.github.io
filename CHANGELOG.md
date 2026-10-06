@@ -19781,3 +19781,10 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
   - service-worker 18/0: "the new version's cache already holds every file the old one had" and "the first open after the update finds every app file it asks for already on the phone"; both fail with the carry-over removed (16/2). A first form of the second check, using `fromServiceWorker()`, passed under that mutation and was replaced.
   - openiti-browser 68/0 (two checks updated in place: the list fetches the summary and no index; opening a book fetches only its own index; 62/6 with the old loading), openiti-books-summary 4/0 (new drift guard; --mutate=count 2/2)
   - hadith-source-navigation 50/0, hadith-search-announcement 16/0, claim-for-family-word-hadith 158/0, hadith-corpus 60/0, app-offline-boot 15/0, mushaf-font-offline-cache 29/0, openiti-split 70/0, openiti-corpus-integrity 6/0, stub-parity 4/0, phone-width-overflow 217/0
+
+## v09.95 — 6 Oct 2026 — Asma ul Husna: "File under" every classification in one Save
+
+- **What:** the Owner, 6 Oct 2026 (decision 78). `asmaXFileIntoRowHtml(preselect)` draws one `select[data-asma-file-kind]` per active classification with "Not filed", the lists and "+ New list…" (its own title field); `asmaXFilePreselect()` picks the opening context's row; the save files under every row set (a new list takes the typed title or the transliteration). The row now shows on every Add a new Name. `asmaXFileSelectOptionsHtml` (the old cascade) is gone; bn "Not filed".
+- **Checks:**
+  - asma-file-under-browser 52/0 (new, en/bn at 390 and 1280: four rows in order, all "Not filed", the box fits, + New list shows its title, the saved document has the Name in the Dual, the new By Act and the By Essence lists and no Group; --mutate=no-filing 40/12, --mutate=one-row fails), asma-classifications-boundary 36/0 (three source checks updated in place, reasons recorded)
+  - asma-classification-rename 20/0, asma-explore-name-poster 36/0, card-look 96/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
