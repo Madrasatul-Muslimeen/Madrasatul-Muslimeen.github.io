@@ -14,6 +14,15 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v09.93 on `main`** (6 Oct 2026 — **Al-Fatiha on the Writing sheet follows your counting; the Bismillah's title is "Bismillah"**).
+- **What** (the Owner, 6 Oct 2026: "Bismillah is here as well as the first Ayah. pls fix in other places too"; decision 76):
+  - `writing-sheet.js`: with the reader's count on (decision 55), page 1 is drawn through `fatihaPageLines`, the Read view's own function: the Bismillah unnumbered, the numbers one lower, ⑥ before غَيْرِ. The pop-out's Ayah view of a word in stored 1:7 shows only its half (Ayah 6 or 7). Count off: the stored text, as before.
+  - `quranrevival.html`: the unnumbered Bismillah's title is "Bismillah" alone (was "Bismillah — Surah Al-Faatiha").
+  - Not yet: displayed Ayat 6 and 7 as two separate records (decision 76, part 3) is its own round, because it changes a permanent unit key.
+- **Checks:**
+  - writing-sheet-fatiha-count-browser 30/0 (new; mutations no-count 16 fail, no-half 8 fail), bismillah-label-browser 34/0 (title updated in place; mutation old-title 2 fail), writing-sheet-popout-browser 222/0 (runs with the count off, recorded), writing-sheet-browser 206/0, writing-sheet-unit-toolbar 54/0, fatiha-count-browser 136/0, fatiha-count 35/0, wheel-writing-slice 25/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
+- **With the Owner:** open Al-Fatiha, tap Writing: the Bismillah has no number and Alhamdulillah is ①. Tap 🔍 Pop out, tap a word of غَيْرِ... and choose Ayah: only Ayah 7 shows.
+
 **Previous milestone: v09.92 on `main`** (6 Oct 2026 — **Writing sheet: pop out a word or an Ayah, enlargeable, with every writing tool over it**).
 - **What** (the Owner, 6 Oct 2026: "enable word and an Ayah pop out and making it enlargeable while remaining all writing functions enabled for practise writing over it"):
   - `writing-sheet.js`: 🔍 Pop out on row 2; pick mode ("Tap a word to pop it out") finds the tapped word from the page's own layout (`wordAt`), never from pixels, and draws nothing; `ayahWordsOf` gathers the Ayah across pages, each word with its own page font.

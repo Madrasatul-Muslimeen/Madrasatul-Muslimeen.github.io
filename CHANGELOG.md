@@ -19773,3 +19773,11 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
 - **Checks:**
   - writing-sheet-fatiha-count-browser 30/0 (new; --mutate=no-count and --mutate=no-half each fail it), bismillah-label-browser 34/0 (the title check updated in place, now exact; --mutate=old-title fails it)
   - writing-sheet-popout-browser 222/0 (now runs with the count off: it proves the pop-out's mechanics on the stored text), writing-sheet-browser 206/0, writing-sheet-unit-toolbar 54/0, fatiha-count-browser 136/0, fatiha-count 35/0, wheel-writing-slice 25/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
+
+## v09.94 — 6 Oct 2026 — Speed: the on-device cache survives releases; Hadith book list from a summary
+
+- **What:** the Owner, 6 Oct 2026 ("opening of all files, modules takes ages"). Assessment: `docs/reports/2026-10-06-speed-assessment.md`. `sw.js` `carryOverPreviousCache()` at install: the waiting new version refreshes (cache: "no-cache") every URL the previous `mm-app-*` cache held into its own cache, six at a time, best effort, so a release no longer leaves the reader with an empty cache. `openiti-corpus.js` `loadOpenitiBookSummaries()` and `hadith-browser.js`: the OpenITI book list reads `split/books-summary.json` (new, 2.6 KB, from `tools/hadith-data-pull/openiti-books-summary.mjs`); a book's `index.json` loads on opening it.
+- **Checks:**
+  - service-worker 18/0: "the new version's cache already holds every file the old one had" and "the first open after the update finds every app file it asks for already on the phone"; both fail with the carry-over removed (16/2). A first form of the second check, using `fromServiceWorker()`, passed under that mutation and was replaced.
+  - openiti-browser 68/0 (two checks updated in place: the list fetches the summary and no index; opening a book fetches only its own index; 62/6 with the old loading), openiti-books-summary 4/0 (new drift guard; --mutate=count 2/2)
+  - hadith-source-navigation 50/0, hadith-search-announcement 16/0, claim-for-family-word-hadith 158/0, hadith-corpus 60/0, app-offline-boot 15/0, mushaf-font-offline-cache 29/0, openiti-split 70/0, openiti-corpus-integrity 6/0, stub-parity 4/0, phone-width-overflow 217/0
