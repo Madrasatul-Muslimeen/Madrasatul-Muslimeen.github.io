@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.93",
+    "version": "09.94",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2297,8 +2297,20 @@
     {
       "version": "09.93",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The Writing sheet and its pop-out follow the reader's Al-Fatiha count, and the unnumbered Bismillah's title is Bismillah alone (decision 76).",
+      "integration": {
+        "authorizedOn": "2026-10-06",
+        "integratedOn": "2026-10-06",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.94",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Speed: a release no longer empties the phone's cache, and the Hadith book list loads a 2.6 KB summary instead of 1.8 MB of indexes.",
       "integration": {
         "authorizedOn": "2026-10-06",
         "integratedOn": "2026-10-06",
@@ -2307,8 +2319,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.94",
+  "nextUnallocated": "09.95",
   "nextUnallocatedNote": [
+    "v09.94 was allocated to keeping the on-device cache across releases, 2026-10-06.",
     "v09.93 was allocated to the Writing sheet following the Al-Fatiha count, 2026-10-06.",
     "v09.92 was allocated to Writing sheet pop-out, 2026-10-06.",
     "v09.91 was allocated to Writing sheet unit picker and two-row toolbar, 2026-10-06.",

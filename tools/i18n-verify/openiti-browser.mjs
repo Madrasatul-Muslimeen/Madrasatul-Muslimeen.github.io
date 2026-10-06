@@ -81,13 +81,17 @@ async function runAtWidth(width) {
   await page.click('[data-hadith-tab="collections"]');
   await settle();
 
-  // --- I9: opening Collections loads every book's own index.json (the book
-  // list's own titles/counts -- see openiti-corpus.js's header comment for
-  // why there is no smaller summary file), but NO chapter shard yet. --------
+  // --- I9: opening Collections loads the book list's own small summary and
+  // NO book's index.json and no chapter shard. Updated in place 6 Oct 2026 (the
+  // Owner: "opening of all files, modules takes ages"): this used to assert all
+  // 11 index.json files (1.8 MB) were fetched to draw the list; the list now
+  // reads split/books-summary.json (2.6 KB), and a book's index loads when it
+  // is opened. --------------------------------------------------------------
   const afterOpen = [...openitiRequests];
   const indexUrls = afterOpen.filter((u) => /\/split\/[^/]+\/index\.json$/.test(u));
   const shardUrlsSoFar = afterOpen.filter((u) => /\/split\/[^/]+\/ch-[^/]+\.json$/.test(u));
-  check("opening Collections fetched all 11 books' own index.json", indexUrls.length === 11);
+  check("opening Collections fetched the small book-list summary", afterOpen.some((u) => u.endsWith("/split/books-summary.json")));
+  check("opening Collections fetched NO book's index.json", indexUrls.length === 0, indexUrls.join(", "));
   check("opening Collections fetched NO chapter shard file yet", shardUrlsSoFar.length === 0);
 
   // --- The book list: both real titles and the count wording. --------------
@@ -109,8 +113,10 @@ async function runAtWidth(width) {
   await page.click(`[data-openiti-book="${BUKHARI_URI}"]`);
   await settle();
   const afterBukhariOpen = [...openitiRequests];
-  check("opening a book fetched NO new network request (its chapters were already in the loaded index.json)",
-    afterBukhariOpen.length === afterOpen.length);
+  // Updated in place 6 Oct 2026: opening a book now fetches exactly that book's own index.json, and nothing else.
+  const newOnOpen = afterBukhariOpen.slice(afterOpen.length);
+  check("opening a book fetched exactly its own index.json and nothing else",
+    newOnOpen.length === 1 && newOnOpen[0].endsWith(`/split/${BUKHARI_URI}/index.json`), newOnOpen.join(", "));
   const chapterRowCount = await page.evaluate(() => document.querySelectorAll("[data-openiti-chapter]").length);
   check("the chapter list shows only the first 100 chapters (Bukhari has 101)", chapterRowCount === 100);
   check('a "Show more" control is offered', !!(await page.$("[data-openiti-show-more]")));

@@ -249,7 +249,44 @@ function handleMushafAsset(event) {
   return cacheFirstWithBackgroundRefresh(event, MUSHAF_CACHE_NAME, MUSHAF_MAX_AGE_MS);
 }
 
-self.addEventListener("install", () => {
+// The Owner, 6 Oct 2026: "opening of all files, modules takes ages". The
+// cause, measured: every release made a new, EMPTY CACHE_NAME and deleted the
+// old one on activate, so the first opens after each update (several a day at
+// times) downloaded every app file, the Qur'an text, the word indexes (about
+// 2 MB for the first Word Card) and the Hadith data again, at the moment the
+// reader was waiting for them. Now the new version, while it waits, refreshes
+// into its own cache every file the OLD cache held -- only those, never a
+// fixed list. Each is a revalidating fetch (cache: "no-cache"), so an
+// unchanged file costs a "not modified" answer, and a changed one its new
+// copy: the new cache is all of the new version (no mixing), and it is full
+// before the reader taps "Updated". Best effort: a file that fails is simply
+// fetched when it is next asked for, as before.
+const CARRY_CONCURRENCY = 6;
+async function carryOverPreviousCache() {
+  const names = (await caches.keys()).filter((n) => n.startsWith("mm-app-") && n !== CACHE_NAME);
+  if (!names.length) return 0;
+  const urls = new Set();
+  for (const n of names) for (const req of await (await caches.open(n)).keys()) urls.add(req.url);
+  const cache = await caches.open(CACHE_NAME);
+  const queue = [...urls];
+  let kept = 0;
+  async function worker() {
+    while (queue.length) {
+      const u = queue.shift();
+      try {
+        const request = new Request(u);
+        if (!isCacheable(request) || await cache.match(request)) continue;
+        const response = await fetch(request, { cache: "no-cache" });
+        if (response && response.ok) { await cache.put(request, response); kept++; }
+      } catch { /* best effort */ }
+    }
+  }
+  await Promise.all(Array.from({ length: CARRY_CONCURRENCY }, worker));
+  return kept;
+}
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(carryOverPreviousCache().catch(() => 0));
   // Architect review, 25 Sep 2026: NO skipWaiting() here. A new version waits
   // until the reader taps "Updated -- tap to reload" (sw-register.js sends
   // "skipWaiting") or closes every tab of the app. Taking over at once let an
@@ -263,6 +300,8 @@ self.addEventListener("install", () => {
   // files via the page's "warm" message below, the QF fonts/SDK/Mushaf
   // assets straight from the fetch handler that first sees them -- never a
   // fixed list fetched up front on a schedule the reader had no part in.
+  // (6 Oct 2026: the one thing install does is carryOverPreviousCache()
+  // above -- a refresh of what the reader ALREADY had, not a fixed list.)
 });
 
 self.addEventListener("message", (event) => {

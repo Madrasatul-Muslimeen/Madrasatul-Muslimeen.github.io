@@ -5,6 +5,8 @@
 //
 // I9. Nothing here is fetched at import time. Opening the OpenITI source
 // (renderOpenitiSource() in hadith-browser.js) is what triggers
+// (6 Oct 2026: the book LIST now reads split/books-summary.json instead -- see
+// loadOpenitiBookSummaries(); what follows is the original design, kept as history.)
 // loadAllOpenitiBookIndexes() -- every book's OWN index.json, in parallel,
 // once, cached from then on. There is no smaller summary file that already
 // carries titleAr/titleEn/passageCount/hadithCount for all 11 books (the
@@ -55,6 +57,22 @@ export async function loadOpenitiBookIndex(versionUri, { fetchImpl = fetch, base
     const data = await res.json();
     if (!Array.isArray(data.chapters)) throw new Error(`Invalid OpenITI index.json shape for "${versionUri}".`);
     return data;
+  });
+}
+
+const summaryCache = new Map();
+/** The book list's own rows -- `[[versionUri, {titleAr, titleEn, numbering, passageCount, hadithCount}], ...]`
+ *  in the manifest's order, from split/books-summary.json (2.6 KB, written by
+ *  tools/hadith-data-pull/openiti-books-summary.mjs). The Owner, 6 Oct 2026 ("opening ... takes ages"): the list
+ *  used to load all eleven whole index.json files (1.8 MB) to draw eleven rows; a book's index now loads only
+ *  when that book is opened (loadOpenitiBookIndex). */
+export async function loadOpenitiBookSummaries({ fetchImpl = fetch, baseUrl = DEFAULT_BASE_URL } = {}) {
+  return cached(summaryCache, `${baseUrl}split/books-summary.json`, async () => {
+    const res = await fetchImpl(`${baseUrl}split/books-summary.json`);
+    if (!res.ok) throw new Error(`Could not load the OpenITI book list (${res.status}).`);
+    const data = await res.json();
+    if (!Array.isArray(data.books)) throw new Error("Invalid OpenITI books-summary.json shape.");
+    return data.books.map((b) => [b.versionUri, b]);
   });
 }
 
