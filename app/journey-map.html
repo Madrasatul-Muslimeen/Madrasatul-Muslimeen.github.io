@@ -453,6 +453,7 @@
     import { sanitizeNoteHtml } from "./js/note-sanitize.js";
     import { closeAllBarPalettes } from "./js/bar-palette.js";
     import { createNoteViews } from "./js/note-window.js";
+    import { createFirestoreSettingsStore } from "./js/note-user-settings-fs.js";
     import { NOTE_STATUS, FINALISED_REFUSAL, createNoteFolder, createNotePlacement, createPermanentNote, listNoteRevisions, restoreNote, retirePermanentNote, updatePermanentNoteContent } from "./js/note-foundation.js";
     import {
       ownerFolderTreePagedSharded, folderContents,
@@ -1396,6 +1397,7 @@
       const filed = [...activeFilingFolderIds(note)];
       return filed.length === 1 ? filed[0] : null;
     }
+    let noteSettingsStore = null;
     const noteViews = createNoteViews({
       paneEl: notePaneEl,
       winKey: "mmsa-journey-note-window",
@@ -1413,7 +1415,9 @@
       chips: (note) => [...activeFilingFolderIds(note)].map((id) => findNodeByIdOrRole(mergedRoots(), id, null)).filter(Boolean)
         .map((f) => ({ id: f.folderId, label: folderDisplayName(f) })),
       onChip: revealFolderFromChip,
-      newNote: (v) => newNoteHere(v),
+      newNote: (v, tpl) => newNoteHere(v, tpl),
+      // Part C3: the person's own note settings (userPrefs/{uid}.mmsaNotes). Built on first use; read only when a Note first shows (I9).
+      settings: () => (auth.currentUser ? (noteSettingsStore ??= createFirestoreSettingsStore({ db, uid: auth.currentUser.uid })) : null),
       copyNote: (note) => copyWholeNote(note),
       attach: (v, note) => { copyNoteTo(note, null, { editing: !!v.ed, anchor: v.el, withTags: true }); },
       versions: {
@@ -2056,14 +2060,14 @@
      * (note-foundation.js), for the folder's own owner and tenant. The Note is its own commit, so if the
      * filing then fails the sentence says the Note WAS saved (I15: it reaches the reader in words).
      */
-    async function createNoteInFolder(node, title) {
+    async function createNoteInFolder(node, title, bodyHtml = "") {
       if (!isSelfSelected()) return null;
       const folderId = await ensureRealFolder(node);
       if (!folderId) return null;
       const order = nextOrder(notesInFolder(node).map((r) => r.placement));
       const ownerArgs = { tenantId: activeTenantId, ownerPersonId: selectedPersonId, ownerUid: auth.currentUser.uid, actorUid: auth.currentUser.uid };
       const outcome = await safeWrite(async () => {
-        const created = await createPermanentNote(db, { ...ownerArgs, title, bodyHtml: "" });
+        const created = await createPermanentNote(db, { ...ownerArgs, title, bodyHtml });
         try {
           await createNotePlacement(db, { ...ownerArgs, noteId: created.noteId, folderId, order });
         } catch (error) {
@@ -2117,7 +2121,7 @@
     // a pop-up window. A window's new Note goes in the folder that window came
     // from, else the first folder its own Note is in, and opens in a window of
     // its own beside it.
-    async function newNoteHere(v = paneView) {
+    async function newNoteHere(v = paneView, tpl = null) {
       const fromView = v && v.noteId !== null && v.folderId ? findNodeByIdOrRole(mergedRoots(), v.folderId, null) : null;
       const firstOwn = () => {
         const id = v && v.noteId !== null ? [...activeFilingFolderIds({ noteId: v.noteId })][0] : null;
@@ -2125,7 +2129,8 @@
       };
       const node = fromView ?? (v && v.kind === "window" ? firstOwn() : null) ?? selectedFolderNode();
       if (!node) { showPageStatus(t("Choose a folder first — then a new Note is made in it.")); return; }
-      const noteId = await createNoteInFolder(node, "");
+      // Part C3: "New from template" -- the template's body was cleaned by the Note sanitiser when it was saved; the title is plain text.
+      const noteId = await createNoteInFolder(node, tpl ? tpl.title : "", tpl ? sanitizeNoteHtml(tpl.bodyHtml) : "");
       if (!noteId) return;
       showPageStatus(t('New note created in {folder}.', { folder: folderDisplayName(node) }));
       if (v && v.kind === "window") { openNoteWindow(noteId, { folderId: node.folderId ?? null }); return; }
