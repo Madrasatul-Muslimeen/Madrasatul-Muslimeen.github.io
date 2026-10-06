@@ -85,7 +85,7 @@ async function routeMutations(ctx) {
 }
 const HOSTILE_TITLE = '<script>window.__pwned=1</script><img src=x onerror="window.__pwned=2">';
 async function routeMicrolink(ctx, log) {
-  await ctx.route("https://img.example/**", (r) => r.fulfill({ status: 200, contentType: "image/png", body: PNG }));
+  await ctx.route(/^https?:\/\/img\.example\//, (r) => r.fulfill({ status: 200, contentType: "image/png", body: PNG })); // http too, so a kept http: picture would really show
   await ctx.route("**/api.microlink.io/**", (route) => {
     const target = decodeURIComponent(new URL(route.request().url()).searchParams.get("url") || "");
     log.push(target);
