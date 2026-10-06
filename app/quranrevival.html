@@ -10311,6 +10311,7 @@
         rangeToSelect.value = String(c.to);
         rangeToSelect.dispatchEvent(new Event("change"));
       } else if (c.type === "page") {
+        await ensureUnitIndex("page"); // the page table loads on first use; goToUnitNumber() reads it synchronously
         await goToUnitNumber(c.page);
       }
       await openWritingSheetForCurrentUnit();

@@ -366,6 +366,7 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
     tg.textContent = toolsHidden ? `▾ ${t("Tools")}` : `▴ ${t("Hide")}`;
     tg.setAttribute("aria-expanded", String(!toolsHidden));
     tg.setAttribute("aria-label", toolsHidden ? t("Show the tools") : t("Hide the tools"));
+    tg.title = tg.getAttribute("aria-label");
     placeChrome();
   };
 
@@ -509,6 +510,10 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
     w.dataset.wordsPerLine = layout.lines.map((l) => (l.type === "ayah" && l.words ? l.words.length : 0)).join(",");
     w.dataset.geom = JSON.stringify({ top: layout.top / layout.W, pitch: layout.pitch / layout.W, fs: layout.fs / layout.W });
     w.dataset.painted = shade;
+    // Read back off the DRAWN layout, so a check can see which words the sheet dimmed.
+    const drawnWords = layout.lines.flatMap((l) => l.words || []);
+    w.dataset.dimmed = String(drawnWords.filter((x) => x.dim).length);
+    w.dataset.undimmed = String(drawnWords.filter((x) => !x.dim).length);
     paintInk(info);
   }
 
