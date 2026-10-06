@@ -95,20 +95,110 @@ export function displayAyahCount(surah, internalCount) {
 }
 
 /**
- * "Āyāt achieved of 7"-style totals. `statusOf(internalAyah)` returns whatever
- * the caller counts with (a truthy "counts" flag). Returns { count, total }.
- * Internal 1:1 is excluded; internal 1:7 counts for BOTH 6 and 7.
- * With the setting off (or another surah) every internal ayah counts once.
+ * "Āyāt achieved of 7"-style totals. `counts(internalAyah, recordAyah)`
+ * returns whatever the caller counts with (a truthy "counts" flag). Returns
+ * { count, total }. Internal 1:1 is excluded; internal 1:7 is TWO records
+ * (decisions 76-77): displayed 6 is record 7 and displayed 7 is record 8
+ * (FATIHA_SEVEN_RECORD_AYAH), each counted on its own.
+ * With the setting off (or another surah) every internal ayah counts once
+ * (the caller reads internal 1:7 as the weaker of its two records).
  */
 export function displayCount(surah, internalCount, on, counts) {
   let count = 0;
   if (!fatihaCountApplies(surah, on)) {
-    for (let a = 1; a <= internalCount; a++) if (counts(a)) count++;
+    for (let a = 1; a <= internalCount; a++) if (counts(a, a)) count++;
     return { count, total: internalCount };
   }
-  for (let a = 2; a <= 6; a++) if (counts(a)) count++;
-  if (counts(FATIHA_SPLIT_AYAH)) count += 2;
+  for (let a = 2; a <= 6; a++) if (counts(a, a)) count++;
+  if (counts(FATIHA_SPLIT_AYAH, FATIHA_SPLIT_AYAH)) count++;
+  if (counts(FATIHA_SPLIT_AYAH, FATIHA_SEVEN_RECORD_AYAH)) count++;
   return { count, total: FATIHA_DISPLAY_TOTAL };
+}
+
+// -- progress RECORD keys (decisions 76-77) ----------------------------------
+// Content (text, words, audio, Mushaf) stays internal 1:7. Only the RECORD key
+// of displayed Ayah 7 differs: `ayah:1:8`, a spare storage key that is never
+// shown (it fits the activity-evidence Rules regex ayah:[0-9]{1,3}:[0-9]{1,3}).
+// `ayah:1:7` stays the record of displayed 6.
+
+export const FATIHA_SEVEN_RECORD_AYAH = 8;
+
+/** Status ids worst to best, as a plain list so this module still imports
+    nothing (a check binds it to approach-coverage's RAMP_ORDER). */
+export const FATIHA_RAMP = Object.freeze(["not_started", "learning", "practising", "achieved", "mastered"]);
+
+/** The ayah NUMBER of the progress record for an internal ayah. With the count
+    on, displayed 7 (internal 1:7, half "b") is record 8. Otherwise identity. */
+export function recordAyahFor(surah, internalAyah, half, on) {
+  const a = Number(internalAyah);
+  if (fatihaCountApplies(surah, on) && a === FATIHA_SPLIT_AYAH && half === "b") return FATIHA_SEVEN_RECORD_AYAH;
+  return a;
+}
+
+/** The record ayah numbers a CLAIM on an internal ayah writes. One, except
+    with the count OFF where stored 1:7 is one Ayah and a claim writes both. */
+export function recordAyahsToWrite(surah, internalAyah, half, on) {
+  const a = Number(internalAyah);
+  if (Number(surah) === FATIHA_SURAH && a === FATIHA_SPLIT_AYAH && !on) return [FATIHA_SPLIT_AYAH, FATIHA_SEVEN_RECORD_AYAH];
+  return [recordAyahFor(surah, a, half, on)];
+}
+
+/** Record ayah -> the INTERNAL (content) ayah it belongs to: 8 -> 7 in surah 1. */
+export function internalAyahOfRecord(surah, recordAyah) {
+  const a = Number(recordAyah);
+  return Number(surah) === FATIHA_SURAH && a === FATIHA_SEVEN_RECORD_AYAH ? FATIHA_SPLIT_AYAH : a;
+}
+
+/** The records a roll-up walks for surah 1, as { record, internal }.
+    On: Bismillah excluded, 2..6, then 7 (displayed 6) and 8 (displayed 7).
+    Off: 1..internalCount, one each (record 7 reads as the weaker of its two keys). */
+export function fatihaRollupRecords(on, internalCount = 7) {
+  const out = [];
+  if (on) {
+    for (let a = 2; a <= 6; a++) out.push({ record: a, internal: a });
+    out.push({ record: FATIHA_SPLIT_AYAH, internal: FATIHA_SPLIT_AYAH });
+    out.push({ record: FATIHA_SEVEN_RECORD_AYAH, internal: FATIHA_SPLIT_AYAH });
+  } else {
+    for (let a = 1; a <= internalCount; a++) out.push({ record: a, internal: a });
+  }
+  return out;
+}
+
+function weakerStatus(a, b) {
+  if (a === undefined) return b;
+  if (b === undefined) return a;
+  if (a === "not_applicable") return b;
+  if (b === "not_applicable") return a;
+  return FATIHA_RAMP.indexOf(a) <= FATIHA_RAMP.indexOf(b) ? a : b;
+}
+
+/**
+ * The status of one RECORD ayah of surah 1 for one trackable.
+ * `raw(ayah)` returns the stored claimedStatus of record `ayah:1:<ayah>` or
+ * undefined when that entry does not exist. Returns undefined when nothing is
+ * stored (the caller's default applies).
+ *   record 8      -> its own entry, else the old shared ayah:1:7 mark (decision 77)
+ *   record 7, on  -> its own entry only
+ *   record 7, off -> the weaker of the two (stored 1:7 is one Ayah)
+ * Any other surah / ayah: its own entry.
+ */
+export function recordStatusOf(surah, recordAyah, on, raw) {
+  const a = Number(recordAyah);
+  if (Number(surah) !== FATIHA_SURAH) return raw(a);
+  if (a === FATIHA_SEVEN_RECORD_AYAH) return raw(FATIHA_SEVEN_RECORD_AYAH) ?? raw(FATIHA_SPLIT_AYAH);
+  if (a === FATIHA_SPLIT_AYAH && !on) return weakerStatus(raw(FATIHA_SPLIT_AYAH), raw(FATIHA_SEVEN_RECORD_AYAH) ?? raw(FATIHA_SPLIT_AYAH));
+  return raw(a);
+}
+
+/** Whether a first claim must first copy the old ayah:1:7 entries to ayah:1:8
+    (decision 77): the chunk holds ayah:1:7:: entries and no ayah:1:8:: entry.
+    `keys` = the keys of the loaded chunk's entries. */
+export function needsFatihaCopy(surah, recordAyah, keys) {
+  if (Number(surah) !== FATIHA_SURAH) return false;
+  const a = Number(recordAyah);
+  if (a !== FATIHA_SPLIT_AYAH && a !== FATIHA_SEVEN_RECORD_AYAH) return false;
+  const list = [...keys];
+  return list.some((k) => k.startsWith("ayah:1:7::")) && !list.some((k) => k.startsWith("ayah:1:8::"));
 }
 
 // -- reading-view expansion -------------------------------------------------

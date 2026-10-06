@@ -13,7 +13,7 @@
 // re-deriving the rule a second time.
 
 import { STATUSES } from "./unit-keys.js";
-import { displayCount, FATIHA_SURAH } from "./fatiha-count.js";
+import { displayCount, recordStatusOf, FATIHA_SURAH, FATIHA_SPLIT_AYAH, FATIHA_SEVEN_RECORD_AYAH } from "./fatiha-count.js";
 
 export const QURAN_TOTAL_AYAH_COUNT = 6236;
 export const WBW_TRACKABLE_ID = "approach_04";
@@ -167,18 +167,24 @@ export function spanForUnitKey(unitKey, lookups = {}) {
  * (Explore's per-surah chunks, or My Status's own whole-person map), so the
  * pooling rule itself never has to know or care.
  */
-export function poolStatus(coverage, { ownStatus, spans, trackable } = {}) {
+export function poolStatus(coverage, { ownStatus, spans, trackable, fatihaOn = false } = {}) {
   if (!countsForEachAyah(trackable)) return null;
   let worstIdx = null;
   let anyCounted = false;
   for (const { surah, from, to } of coverage ?? []) {
     for (let ayah = from; ayah <= to; ayah++) {
-      const own = ownStatus ? ownStatus(surah, ayah) : "not_started";
-      const statusId = effectiveStatus({ own, spans, surah, ayah, trackable });
-      if (statusId === "not_applicable") continue;
-      anyCounted = true;
-      const idx = RAMP_ORDER.indexOf(statusId);
-      if (worstIdx === null || idx < worstIdx) worstIdx = idx;
+      // Issue #606 -- with the Al-Fātiḥah count on, internal 1:7 is two records
+      // (displayed 6 = ayah:1:7, displayed 7 = ayah:1:8); `ownStatus` is handed
+      // the RECORD ayah, `ayah` stays the content ayah the spans floor.
+      const records = fatihaOn && surah === FATIHA_SURAH && ayah === FATIHA_SPLIT_AYAH ? [ayah, FATIHA_SEVEN_RECORD_AYAH] : [ayah];
+      for (const record of records) {
+        const own = ownStatus ? ownStatus(surah, record) : "not_started";
+        const statusId = effectiveStatus({ own, spans, surah, ayah, trackable });
+        if (statusId === "not_applicable") continue;
+        anyCounted = true;
+        const idx = RAMP_ORDER.indexOf(statusId);
+        if (worstIdx === null || idx < worstIdx) worstIdx = idx;
+      }
     }
   }
   return anyCounted ? RAMP_ORDER[worstIdx] : null;
@@ -238,15 +244,18 @@ export function summarizeApproachAyahCoverage({
   const counts = { not_started: 0, learning: 0, practising: 0, achieved: 0, mastered: 0 };
   let excludedNotApplicable = 0;
   for (const { surahNumber, ayahCount } of surahAyahCounts ?? []) {
-    const statusOf = (ayah) => {
-      const own = ownAyahStatusesBySurahAyah?.get(`${surahNumber}:${ayah}`) ?? "not_started";
+    const statusOf = (ayah, record = ayah) => {
+      const raw = (a) => ownAyahStatusesBySurahAyah?.get(`${surahNumber}:${a}`);
+      const own = (surahNumber === FATIHA_SURAH ? recordStatusOf(surahNumber, record, fatihaOn, raw) : raw(record)) ?? "not_started";
       return effectiveStatus({ own, spans: wideSpans, surah: surahNumber, ayah, trackable });
     };
-    if (fatihaOn && surahNumber === FATIHA_SURAH) {
-      // Issue #488 -- Al-Fātiḥah's display count: internal 1:1 is not counted
-      // and internal 1:7 counts for both 6 and 7 (displayCount() owns that).
+    if (surahNumber === FATIHA_SURAH) {
+      // Issues #488 / #606 -- Al-Fātiḥah: displayed 6 and 7 are two records
+      // (ayah:1:7 and ayah:1:8) counted separately; internal 1:1 is not counted
+      // when the count is on. With it off, stored 1:7 is ONE ayah at the weaker
+      // of its two records. displayCount() owns the walk.
       for (const id of [...Object.keys(counts), "not_applicable"]) {
-        const n = displayCount(surahNumber, ayahCount, true, (a) => statusOf(a) === id).count;
+        const n = displayCount(surahNumber, ayahCount, !!fatihaOn, (a, r) => statusOf(a, r) === id).count;
         if (id === "not_applicable") excludedNotApplicable += n;
         else counts[id] += n;
       }
@@ -289,11 +298,11 @@ export function summarizeApproachAyahCoverage({
  * `directWideStatus`: Map(unitKey -> claimedStatus), the caller's own direct
  * wide claims (myStatusCache's directWideStatusByTrackable, per trackable).
  */
-export function summarizeUnitCoverage(units, { ownStatus, spans, trackable, directWideStatus } = {}) {
+export function summarizeUnitCoverage(units, { ownStatus, spans, trackable, directWideStatus, fatihaOn = false } = {}) {
   let achievedOrMastered = 0;
   let started = 0;
   for (const { key, coverage } of units ?? []) {
-    const pooled = poolStatus(coverage, { ownStatus, spans, trackable });
+    const pooled = poolStatus(coverage, { ownStatus, spans, trackable, fatihaOn });
     const statusId = pooled ?? (directWideStatus?.get(key) ?? "not_started");
     if (statusId === "achieved" || statusId === "mastered") achievedOrMastered++;
     else if (statusId === "learning" || statusId === "practising") started++;

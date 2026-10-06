@@ -3,6 +3,7 @@
 
 import { studyEventApproachId, studyEventDedupeKey, studyEventPolicy, qualifiesListeningCompletion } from "./study-approach-contract.js";
 import { parseQuranWordOccurrenceId } from "./quran-word-identity.js";
+import { FATIHA_SURAH, FATIHA_SPLIT_AYAH, FATIHA_SPLIT_AFTER_WORD, FATIHA_SEVEN_RECORD_AYAH } from "./fatiha-count.js";
 
 const AUTOMATIC_ACTIVITY_EVENTS = new Set([
   "reading.completed", "listening.completed", "journal.note-created", "journal.note-revised", "wbw.engaged",
@@ -29,7 +30,13 @@ export function projectStudyActivityEvidence({ eventType, tenantId, personId, un
   }
   if (eventType === "wbw.engaged") {
     const ref = parseQuranWordOccurrenceId(occurrenceId);
-    if (ref.surah !== scope.surah || (scope.kind !== "surah" && (ref.ayah < scope.from || ref.ayah > scope.to))) {
+    // Issue #606 -- Al-Fātiḥah's displayed Ayah 7 is the record key ayah:1:8: it
+    // owns the words of content ayah 1:7 from position 5 (غَيْرِ) on, and no others.
+    if (scope.kind === "ayah" && scope.surah === FATIHA_SURAH && scope.from === FATIHA_SEVEN_RECORD_AYAH) {
+      if (ref.surah !== FATIHA_SURAH || ref.ayah !== FATIHA_SPLIT_AYAH || ref.position <= FATIHA_SPLIT_AFTER_WORD) {
+        throw new TypeError("WbW occurrence must belong to the selected Study Unit.");
+      }
+    } else if (ref.surah !== scope.surah || (scope.kind !== "surah" && (ref.ayah < scope.from || ref.ayah > scope.to))) {
       throw new TypeError("WbW occurrence must belong to the selected Study Unit.");
     }
   }
