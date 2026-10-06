@@ -393,7 +393,9 @@ check("the \"file a new Name\" row (asmaXFileIntoRowHtml) builds its Classificat
   const fn = qrHtml.slice(qrHtml.indexOf("function asmaXFileIntoRowHtml"), qrHtml.indexOf("function openAsmaXEditOverlay"));
   assert.ok(fn && fn.length > 0, "asmaXFileIntoRowHtml is missing");
   assert.ok(fn.includes("asmaActiveClassifications(asmaXClassifications"), "the file-into row does not read the live classifications registry");
-  assert.ok(fn.includes('id="asmaXEditClassSelect"'), "the Classification <select> is missing from the file-into row");
+  // Updated in place 6 Oct 2026 (the Owner: "file a single/ dual name under which Group, by Act, by Essence"): the
+  // row is now one <select> PER active classification, not one Classification select plus one list select.
+  assert.ok(fn.includes("activeClasses.map((c) =>") && fn.includes('data-asma-file-kind="${escapeHtml(c.key)}"'), "the file-into row does not draw one select per active classification");
   assert.ok(!/kind === "dual" \? t\(/.test(fn), "the row still branches on a hardcoded dual/group kind for its own wording rather than the live registry");
 });
 
@@ -415,15 +417,19 @@ check("POSITIVE CONTROL: a freshly-added THIRD classification is among the activ
   assert.ok(reached[0].items.includes(buildUnitKey.name(1)));
 });
 
-check("the Classification select cascades into the file-under select on change (asmaXFileSelectOptionsHtml), so a Name is filable under any active classification's own lists from this one popover", () => {
-  assert.ok(qrHtml.includes('fileSel.innerHTML = asmaXFileSelectOptionsHtml(classSel.value)'), "the Classification select's change handler does not re-fill the file-under select for the newly chosen classification");
+// Updated in place 6 Oct 2026: there is no cascade any more -- every active classification has its own row, so a
+// Name is filable under any (and several) of them from this one popover. What must hold now: "+ New list…" in a
+// row reveals THAT row's own title field.
+check("each File-under row's \"+ New list…\" reveals that row's own title field", () => {
+  assert.ok(qrHtml.includes('[data-asma-file-new-for="${CSS.escape(sel.dataset.asmaFileKind)}"]') && qrHtml.includes('lbl.hidden = sel.value !== "__new__"'), "a row's + New list does not reveal its own title field");
 });
 
-check("the save handler files the new Name under whichever classification was chosen in the row, not a hardcoded fileInto.kind", () => {
+check("the save handler files the new Name under every classification row the reader set, not a hardcoded fileInto.kind", () => {
   const saveFn = qrHtml.slice(qrHtml.indexOf('asmaXEditSaveBtn.addEventListener("click"'), qrHtml.indexOf("let asmaXAttachChecked"));
   assert.ok(saveFn.length > 0, "asmaXEditSaveBtn's own click handler is missing");
-  assert.ok(saveFn.includes('document.getElementById("asmaXEditClassSelect")'), "the save handler never reads the Classification field's own chosen value");
-  assert.ok(saveFn.includes("const kind = classSelectValue || fileInto.kind"), "the save handler does not prefer the row's own chosen classification over the opening button's default");
+  // Updated in place 6 Oct 2026: it reads EVERY row the reader set, and files under each one's own classification.
+  assert.ok(saveFn.includes('querySelectorAll("select[data-asma-file-kind]")'), "the save handler never reads the File-under rows");
+  assert.ok(saveFn.includes("kind: f.kind") && saveFn.includes("for (const f of filings)"), "the save handler does not file under each chosen row's own classification");
 });
 
 console.log(`\n==== Asma classifications boundary (issues #202/#205): ${passed} passed, ${failed} failed ====`);
