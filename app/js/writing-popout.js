@@ -165,7 +165,10 @@ export function openWordPopout({ host, word, ayahWords, ensureFont, paintGlyph, 
     const rightEdge = st.mode === "word" ? Wc / 2 + L.maxW / 2 : Wc - pad;
     L.lines.forEach((line, li) => {
       const y = top + li * lh + lh * 0.72;
-      line.forEach((w) => paintGlyph(ctx, w.g, rightEdge - w.offset, y, w.marker, st.shade));
+      line.forEach((w) => {
+        ctx.font = `${fs}px '${w.family}'`;
+        paintGlyph(ctx, w.g, rightEdge - w.offset, y, w.marker, st.shade);
+      });
     });
     st.geom = { Wc, Hc, fs, ax, ay, dpr };
     stage.dataset.mode = st.mode;
