@@ -5,6 +5,7 @@
 import { parseQuranWordOccurrenceId, quranWordOccurrenceId } from "./quran-word-identity.js";
 import { WORD_PROGRESS_CONTRACT } from "./quran-word-progress.js";
 import { rukuIndexInSurah } from "./unit-keys.js";
+import { FATIHA_SPLIT_AFTER_WORD } from "./fatiha-count.js";
 
 /** Bounded selection from one already-loaded Surah; no corpus/index fetch. */
 export function occurrenceIdsForAyahRange(chapter, fromAyah, toAyah) {
@@ -143,10 +144,22 @@ export function occurrenceIdsForSurah(chapter) {
  * granularity" rather than a figure computed from part of the unit. Silently
  * covering only the loaded part would understate every juz.
  */
-export function occurrenceIdsForUnit(chapter, unitKey) {
+export function occurrenceIdsForUnit(chapter, unitKey, { fatihaOn = false } = {}) {
   if (typeof unitKey !== "string") throw new TypeError("A Study Unit key is required.");
   let match = /^ayah:(\d+):(\d+)$/.exec(unitKey);
-  if (match) return Number(match[1]) === chapter.surahNumber ? occurrenceIdsForAyahRange(chapter, Number(match[2]), Number(match[2])) : null;
+  if (match) {
+    if (Number(match[1]) !== chapter.surahNumber) return null;
+    // Issue #606 -- Al-Fātiḥah's displayed Ayah 7 is the spare RECORD key
+    // ayah:1:8 (a storage key, never a content ayah): it covers words 5..9 of
+    // content ayah 1:7. With the count on, ayah:1:7 is displayed 6, words 1..4.
+    if (chapter.surahNumber === 1 && Number(match[2]) === 8) {
+      return occurrenceIdsForAyahRange(chapter, 7, 7).filter((id) => parseQuranWordOccurrenceId(id).position > FATIHA_SPLIT_AFTER_WORD);
+    }
+    if (chapter.surahNumber === 1 && Number(match[2]) === 7 && fatihaOn) {
+      return occurrenceIdsForAyahRange(chapter, 7, 7).filter((id) => parseQuranWordOccurrenceId(id).position <= FATIHA_SPLIT_AFTER_WORD);
+    }
+    return occurrenceIdsForAyahRange(chapter, Number(match[2]), Number(match[2]));
+  }
   match = /^range:(\d+):(\d+)-(\d+)$/.exec(unitKey);
   if (match) return Number(match[1]) === chapter.surahNumber ? occurrenceIdsForAyahRange(chapter, Number(match[2]), Number(match[3])) : null;
   match = /^surah:(\d+)$/.exec(unitKey);

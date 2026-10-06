@@ -14,6 +14,24 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v09.96 on `main`** (6 Oct 2026 — **Know Your Status: a movable, resizable window; numbers never cut; Back on its pop-ups**).
+- **What** (the Owner, 6 Oct 2026; decision 79):
+  - `float-card.js` (new, on `float-window.js`): `makeFloatingCard` (title bar moves, eight edges resize, remembered per device) and `makeResizableBox` (a ⤡ corner grip). From 900px Know Your Status and its Approach card float; on a phone they stay full-screen.
+  - `mastery-wheel.js`: `roomForNumbers` (opt-in) widens the wheel's box to hold its numbers; with 40 Approaches the bottom one ran into the unit buttons. The landing wheel is unchanged.
+  - Back: "← Back" on the Approach card; `bookmark-nav.js` `mountBackRow` (shared with the bookmarks' Back) gives Explore "← Back to Know Your Status", which closes Explore and reopens the card on the same Approach.
+- **Checks:**
+  - kys-window-browser 50/0 (new, 40 Approaches; --mutate=no-room, no-float and no-back each fail it; the "on top, Explore closed" check fails without its fix, found by looking at the suite's own screenshot)
+  - quran-my-status 248/0, bookmark-marks-back 84/0, bookmark-open 77/0, wheel-centre 645/0, tablet-wheel 74/0, wheel-slice-opens-track 96/0, wheel-unit-go 254/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
+- **With the Owner:** on a PC, open Know Your Status, drag its title bar and a corner; drag the ⤡ on the wheel. Tap a slice: the Approach card has ← Back.
+
+**Previous milestone: v09.95 on `main`** (6 Oct 2026 — **Asma ul Husna: "File under" every classification in one Save**).
+- **What** (the Owner, 6 Oct 2026: "'File under' should have option to file a single/ dual name under which Group, by Act, by Essence. Build it."; decision 78):
+  - `quranrevival.html` `asmaXFileIntoRowHtml`: Add a new Name has a "File under" box with one row per active classification (Group, Dual Names, and the Owner's own, e.g. By Act, By Essence), each "Not filed" unless chosen, with "+ New list…" per row. One Save files under every row set. Shown on every Add a new Name; from inside a list, that list is chosen; from the Note view's "+ New Dual Name", the Dual Names row.
+  - The speed assessment (v09.94) is delivered; its startup-paint step waits for the Owner's OK (I9).
+- **Checks:**
+  - asma-file-under-browser 52/0 (new; --mutate=no-filing 12 fail, --mutate=one-row fails the row and filing checks), asma-classifications-boundary 36/0 (3 checks updated in place), asma-classification-rename 20/0, asma-explore-name-poster 36/0, card-look 96/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
+- **With the Owner:** Explore → Asma ul Husna → ⋯ → +N. Type a name, choose a list under Dual Names and one under By Act, Save: the Name is in both.
+
 **Previous milestone: v09.94 on `main`** (6 Oct 2026 — **Speed: a release no longer empties the phone's cache; the Hadith book list loads 2.6 KB instead of 1.8 MB**).
 - **What** (the Owner, 6 Oct 2026: "Assess and fix issues with speed, loading. opening of all files, modules takes ages"; the assessment is `docs/reports/2026-10-06-speed-assessment.md`):
   - `sw.js`: every release made a new, empty cache and deleted the old one, so the first opens after each update downloaded everything again (main page 2.9 MB, first Word Card 2.1 MB, Hadith 2.5 MB, uncompressed). Now the waiting new version refreshes everything the old cache held (revalidating fetches) before the reader taps "Updated".

@@ -13,6 +13,7 @@
 // nowhere else. A structural suite asserts all of that by reading this source.
 
 import { weekKeyFor } from "./activity.js";
+import { recordAyahFor, FATIHA_SPLIT_AFTER_WORD } from "./fatiha-count.js";
 import { writeStudyActivityEvidence } from "./study-activity-evidence-store.js";
 import { evidenceUnitType } from "./study-activity-evidence-id.js";
 import { isStudyEvidencePersistenceReady, studyEvidenceUnavailableReason } from "./study-evidence-readiness.js";
@@ -203,17 +204,20 @@ export function listeningCompletionArgs({
  * and nothing about mastery. The two never meet.
  */
 export function wbwEngagementArgs({
-  tenantId, personId, surah, ayah, at = new Date(), weekStartsOn = 0,
+  tenantId, personId, surah, ayah, position = null, fatihaOn = false, at = new Date(), weekStartsOn = 0,
 } = {}) {
   if (!Number.isInteger(surah) || surah < 1 || surah > 114) return null;
   if (!Number.isInteger(ayah) || ayah < 1) return null;
+  // Issue #606 -- with the Al-Fātiḥah count on, a word of content ayah 1:7 from
+  // position 5 on belongs to displayed Ayah 7, whose record key is ayah:1:8.
+  const recordAyah = recordAyahFor(surah, ayah, fatihaOn && Number.isInteger(position) && position > FATIHA_SPLIT_AFTER_WORD ? "b" : "a", fatihaOn);
   return {
     eventType: "wbw.engaged",
     tenantId,
     personId,
     weekKey: weekKeyFor(at, weekStartsOn),
     dateIso: utcDay(at),
-    unitKey: `ayah:${surah}:${ayah}`,
+    unitKey: `ayah:${surah}:${recordAyah}`,
     trackableId: "approach_04",
   };
 }

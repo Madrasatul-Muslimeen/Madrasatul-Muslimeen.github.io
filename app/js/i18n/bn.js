@@ -3559,6 +3559,8 @@ export const BN = {
   "Hide the times": "বুকমার্কের সময় লুকান",
   "Show the times": "বুকমার্কের সময় দেখান",
   "Back to {page}": "ফিরে যান: {page}",
+  "← Back": "← ফিরে যান",
+  "Make the wheel bigger or smaller": "চাকাটি বড় বা ছোট করুন",
   "the previous page": "আগের পৃষ্ঠা",
   "The time this bookmark was opened was not saved: {error}": "এই বুকমার্ক খোলার সময় সংরক্ষণ হয়নি: {error}",
   "Surah {surah}, Bismillah": "সূরা {surah}, বিসমিল্লাহ",

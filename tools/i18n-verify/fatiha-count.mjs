@@ -103,5 +103,62 @@ check("totals: internal 1:7 counts for both 6 and 7, 1:1 is excluded, total stay
   eq(F.displayCount(2, 286, on, (a) => a < 11), { count: 10, total: 286 });
 });
 
+// record keys (decisions 76-77) -- expected values written by hand
+check("record key: displayed 6 is ayah 7, displayed 7 is ayah 8, others identity", () => {
+  eq(F.FATIHA_SEVEN_RECORD_AYAH, 8);
+  eq(F.recordAyahFor(1, 7, "a", on), 7);
+  eq(F.recordAyahFor(1, 7, "b", on), 8);
+  eq(F.recordAyahFor(1, 3, null, on), 3);
+  eq(F.recordAyahFor(1, 7, "b", off), 7);
+  eq(F.recordAyahFor(2, 7, "b", on), 7);
+});
+check("a claim writes one record with the count on, BOTH with it off", () => {
+  eq(F.recordAyahsToWrite(1, 7, "a", on), [7]);
+  eq(F.recordAyahsToWrite(1, 7, "b", on), [8]);
+  eq(F.recordAyahsToWrite(1, 7, null, off), [7, 8]);
+  eq(F.recordAyahsToWrite(1, 6, null, off), [6]);
+  eq(F.recordAyahsToWrite(2, 7, null, off), [7]);
+});
+check("record 8 belongs to internal 7 of surah 1 only", () => {
+  eq(F.internalAyahOfRecord(1, 8), 7);
+  eq(F.internalAyahOfRecord(1, 7), 7);
+  eq(F.internalAyahOfRecord(2, 8), 8);
+});
+check("status read: displayed 7 is its own entry, else the old 1:7 mark", () => {
+  const mk = (m) => (a) => m[a];
+  eq(F.recordStatusOf(1, 8, on, mk({ 7: "achieved" })), "achieved");
+  eq(F.recordStatusOf(1, 8, on, mk({ 7: "achieved", 8: "learning" })), "learning");
+  eq(F.recordStatusOf(1, 7, on, mk({ 7: "achieved", 8: "learning" })), "achieved");
+  eq(F.recordStatusOf(1, 8, on, mk({})), undefined);
+  eq(F.recordStatusOf(1, 3, on, mk({ 3: "practising" })), "practising");
+});
+check("status read with the count OFF: the weaker of the two records", () => {
+  const mk = (m) => (a) => m[a];
+  eq(F.recordStatusOf(1, 7, off, mk({ 7: "mastered", 8: "learning" })), "learning");
+  eq(F.recordStatusOf(1, 7, off, mk({ 7: "learning", 8: "mastered" })), "learning");
+  eq(F.recordStatusOf(1, 7, off, mk({ 7: "achieved" })), "achieved");
+  eq(F.recordStatusOf(1, 7, off, mk({ 8: "achieved" })), "achieved");
+  eq(F.recordStatusOf(1, 7, off, mk({})), undefined);
+});
+check("roll-up records: on = 2..6 + 7 + 8, off = 1..7", () => {
+  eq(F.fatihaRollupRecords(on).map((r) => r.record), [2, 3, 4, 5, 6, 7, 8]);
+  eq(F.fatihaRollupRecords(on).map((r) => r.internal), [2, 3, 4, 5, 6, 7, 7]);
+  eq(F.fatihaRollupRecords(off).map((r) => r.record), [1, 2, 3, 4, 5, 6, 7]);
+});
+check("totals: 6 Achieved and 7 not counts 1 of 7, not 2 and not 0", () => {
+  eq(F.displayCount(1, 7, on, (a, r) => r === 7), { count: 1, total: 7 });
+  eq(F.displayCount(1, 7, on, (a, r) => r === 8), { count: 1, total: 7 });
+  eq(F.displayCount(1, 7, on, (a, r) => a === 7), { count: 2, total: 7 });
+});
+check("copy rule: only when old 1:7 entries exist and no 1:8 entry does", () => {
+  eq(F.needsFatihaCopy(1, 7, ["ayah:1:7::approach_02"]), true);
+  eq(F.needsFatihaCopy(1, 8, ["ayah:1:7::approach_02"]), true);
+  eq(F.needsFatihaCopy(1, 7, ["ayah:1:7::approach_02", "ayah:1:8::approach_01"]), false);
+  eq(F.needsFatihaCopy(1, 7, ["ayah:1:3::approach_02"]), false);
+  eq(F.needsFatihaCopy(1, 3, ["ayah:1:7::approach_02"]), false);
+  eq(F.needsFatihaCopy(2, 7, ["ayah:2:7::approach_02"]), false);
+});
+const AC = await import("../../app/js/approach-coverage.js");
+check("FATIHA_RAMP equals approach-coverage's RAMP_ORDER", () => eq([...F.FATIHA_RAMP], [...AC.RAMP_ORDER]));
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -152,14 +152,26 @@ export function mountBookmarkBack(navBarEl) {
   if (!r || typeof r.from !== "string" || r.shown || Date.now() - (r.at || 0) > RETURN_MAX_MS) return null;
   if (r.toPath !== location.pathname || r.from === location.href) return null;
   try { sessionStorage.setItem(RETURN_KEY, JSON.stringify({ ...r, shown: true })); } catch { /* once is best-effort */ }
+  return mountBackRow(`← ${t("Back to {page}", { page: r.label || t("the previous page") })}`, { href: r.from });
+}
+
+/**
+ * The floating "← Back …" chip, shared (6 Oct 2026): a bookmark's return to the page it was opened from (above),
+ * and, inside one page, a return to the window something was opened from (e.g. Explore opened from Know Your
+ * Status). `href` makes it a link; `onBack` a button that removes the chip and calls back. ✕ only removes it.
+ */
+export function mountBackRow(text, { href = null, onBack = null, id = null } = {}) {
+  if (id) document.getElementById(id)?.remove();
   const row = document.createElement("div");
   row.className = "bm-back-row";
   row.dataset.bmBack = "";
-  const back = document.createElement("a");
+  if (id) row.id = id;
+  const back = document.createElement(href ? "a" : "button");
   back.className = "bm-back";
-  back.href = r.from;
   back.dataset.bmBackLink = "";
-  back.textContent = `← ${t("Back to {page}", { page: r.label || t("the previous page") })}`;
+  if (href) back.href = href;
+  else { back.type = "button"; back.addEventListener("click", () => { row.remove(); onBack?.(); }); }
+  back.textContent = text;
   const x = document.createElement("button");
   x.type = "button"; x.className = "bm-back-x"; x.dataset.bmBackClose = "";
   x.textContent = "✕"; x.setAttribute("aria-label", t("Close")); x.title = t("Close");
@@ -181,9 +193,12 @@ export function mountBookmarkBack(navBarEl) {
   };
   lift();
   window.addEventListener("resize", lift);
+  const gone = new MutationObserver(() => { if (!row.isConnected) { window.removeEventListener("resize", lift); gone.disconnect(); } });
+  gone.observe(document.body, { childList: true });
   setTimeout(lift, 600); // after the page has laid itself out
   return row;
 }
+
 
 /** One collapsible group. `expanded` is the option's own value -- it decides the STARTING state only; tapping the summary still opens/shuts this one group afterwards. */
 function groupHtml(icon, label, innerHtml, expanded, depth = 0) {

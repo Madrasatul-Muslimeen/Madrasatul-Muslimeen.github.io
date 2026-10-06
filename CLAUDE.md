@@ -252,13 +252,14 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.95 on `main`** (6 Oct 2026 — **Asma ul Husna: "File under" every classification in one Save**).
-- **What** (the Owner, 6 Oct 2026: "'File under' should have option to file a single/ dual name under which Group, by Act, by Essence. Build it."; decision 78):
-  - `quranrevival.html` `asmaXFileIntoRowHtml`: Add a new Name has a "File under" box with one row per active classification (Group, Dual Names, and the Owner's own, e.g. By Act, By Essence), each "Not filed" unless chosen, with "+ New list…" per row. One Save files under every row set. Shown on every Add a new Name; from inside a list, that list is chosen; from the Note view's "+ New Dual Name", the Dual Names row.
-  - The speed assessment (v09.94) is delivered; its startup-paint step waits for the Owner's OK (I9).
+**Current milestone: v09.97 on `main`** (6 Oct 2026 — **Al-Fatiha: Ayat 6 and 7 are two separate records**).
+- **What** (the Owner, 6 Oct 2026: "Two truly separate records"; decisions 76–77; Builder round #606):
+  - With the reader's count on, displayed 6 keeps the record `ayah:1:7` and displayed 7 has its own, `ayah:1:8` (a spare storage key, never shown; it fits the activity evidence Rules as published, so no Rules change). Content stays stored 1:7.
+  - Old "6–7" marks show on both; the first claim on either copies them to `ayah:1:8` (`copiedFrom`), nothing on load, nothing deleted. With the count off, stored 1:7 is one Ayah: a claim writes both, and it shows the weaker.
+  - The pickers offer 6 and 7; roll-ups, the Unit card, Explore, the Mushaf rings, word coverage and evidence count them separately. Architect review: the wheel's centre named the choice "Ayah 6–7"; it names Ayah 6 or 7 now.
 - **Checks:**
-  - asma-file-under-browser 52/0 (new; --mutate=no-filing 12 fail, --mutate=one-row fails the row and filing checks), asma-classifications-boundary 36/0 (3 checks updated in place), asma-classification-rename 20/0, asma-explore-name-poster 36/0, card-look 96/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
-- **With the Owner:** Explore → Asma ul Husna → ⋯ → +N. Type a name, choose a list under Dual Names and one under By Act, Save: the Name is in both.
+  - fatiha-six-seven-records-browser 84/0 (new; six Builder mutations each fail it; the review's two centre checks fail without its fix), fatiha-count 44/0, fatiha-count-browser 136/0, bismillah-label 34/0, writing-sheet-fatiha-count 30/0, writing-sheet 206/0, kys-window 50/0, quran-my-status 248/0, wheel-centre 645/0, wheel-unit-go 254/0, study-event-wiring 47/0, rules-authorisation-executable 63/0, stub-parity 4/0, phone-width-overflow 217/0, behaviour 1003/4 (sandbox baseline)
+- **With the Owner:** in Al-Fatiha, choose Ayah 7 and mark it Achieved: Ayah 6 stays as it was.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration
