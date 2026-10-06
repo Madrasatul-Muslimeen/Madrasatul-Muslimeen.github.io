@@ -23,6 +23,7 @@
 import { t, num } from "./i18n.js";
 import { sanitizeNoteHtml, isSafeNoteHref, NOTE_STATUS_COLOURS, NOTE_ANN_TEXT_MAX, NOTE_STATUS_LABEL_MAX } from "./note-sanitize.js";
 import { closeAllBarPalettes } from "./bar-palette.js";
+import { sheetInsertHtml, mountSheets } from "./note-sheet-ui.js";
 import { HANDLES, handleCss, clampRect, startDrag } from "./float-window.js";
 
 const escapeHtml = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -313,6 +314,7 @@ export function createNoteViews(host) {
     const cur = readEditor(v);
     v.ed = null;
     e.ro?.disconnect();
+    e.sheetObs?.disconnect();
     closePanel(v);
     clearTimeout(e.draftTimer); e.draftTimer = null;
     await flushEdit(e, cur);
@@ -344,7 +346,7 @@ export function createNoteViews(host) {
     ["hup", "Raise the heading (Ctrl+[)", "▲H"], ["hdown", "Lower the heading (Ctrl+])", "▼H"], "|",
     ["ul", "Bullet list", "•"], ["ol", "Numbered list", "1."], ["check", "Checklist", "☑"], ["quote", "Quote", "❝"],
     ["left", "Align left", "⇤"], ["center", "Align centre", "↔"], ["right", "Align right", "⇥"], ["justify", "Justify", "☰"], ["spacing", "Spacing", "↕"], "|",
-    ["link", "Link", "🔗"], ["table", "Table", "▦"], ["divider", "Divider line", "─"], ["box", "Box around the paragraph", "▢"], ["annotate", "Comment on the selected text", "💬"], "|",
+    ["link", "Link", "🔗"], ["table", "Table", "▦"], ["sheet", "Insert a spreadsheet", "⊞"], ["divider", "Divider line", "─"], ["box", "Box around the paragraph", "▢"], ["annotate", "Comment on the selected text", "💬"], "|",
     ["undo", "Undo", "↶"], ["redo", "Redo", "↷"],
   ];
   /** Text sizes the A+ / A− steps walk through (em); 1 is normal. The sanitiser allows exactly these. */
@@ -728,6 +730,7 @@ export function createNoteViews(host) {
   function runEditCommand(v, cmd) {
     const body = editBodyEl(v);
     if (!body) return;
+    if (cmd === "sheet") { insertSheet(v); return; }
     if (["link", "table", "color", "highlight", "spacing", "annotate"].includes(cmd)) {
       if (!v.editPanelEl.hidden && v.editPanelEl.dataset.mode === cmd) closePanel(v); else openPanel(v, cmd);
       return;
@@ -969,6 +972,10 @@ export function createNoteViews(host) {
     body.setAttribute("aria-label", t("Note text"));
     body.innerHTML = sanitizeNoteHtml(draft ? draft.bodyHtml : note.bodyHtml);
     wrap.append(body, gutter);
+    // Item 44: a spreadsheet in the text gets its live grid; one that appears later (undo, paste) is mounted by the observer.
+    mountEditSheets(v, body);
+    v.ed.sheetObs = typeof MutationObserver === "function" ? new MutationObserver(() => { if (v.ed) mountEditSheets(v); }) : null;
+    v.ed.sheetObs?.observe(body, { childList: true, subtree: true });
     v.bodyEl.appendChild(wrap);
     Object.assign(v.ed, { wrapEl: wrap, gutterEl: gutter, folded: new Set(), range: null });
     body.addEventListener("paste", (ev) => onEditPaste(v, ev));
@@ -1564,6 +1571,63 @@ export function createNoteViews(host) {
     });
   }
 
+  // =====================================================================
+  // A SPREADSHEET INSIDE A NOTE (item 44; Part C2). Stored in the Note's own bodyHtml as
+  // div.mm-sheet[data-sheet] + a static snapshot table (note-sheet-engine.js / note-sheet-ui.js), so it needs no
+  // new field and no Rules change, travels with the Note and is kept in Versions. In the editor the grid is live and
+  // every change goes out through the ordinary autosave; the sanitiser rebuilds the sheet from its state on the
+  // one save path, so the live grid itself is never saved. In the read view it is read-only.
+  // =====================================================================
+  function askConfirm(title, text, okLabel) {
+    return new Promise((resolve) => {
+      const d = smallDialog("sheet-ask", title, `<p>${escapeHtml(text)}</p>
+        <div class="note-actions"><button type="button" data-ask-ok>${escapeHtml(okLabel)}</button><button type="button" class="secondary" data-dlg-close>${escapeHtml(t("Cancel"))}</button></div>`);
+      d.q("[data-ask-ok]").addEventListener("click", () => { resolve(true); d.close(); });
+      const watch = new MutationObserver(() => { if (!d.el.isConnected) { watch.disconnect(); resolve(false); } });
+      watch.observe(document.body, { childList: true });
+    });
+  }
+  const readSheetOpts = (note) => ({
+    editable: false,
+    refuse: () => (host.flags?.on(getNote(note.noteId) ?? note, "finalised") ? FINALISED_SAY() : t("Open the Note for editing to change the spreadsheet.")),
+    status: (s) => host.status(s),
+  });
+  function mountEditSheets(v, body = editBodyEl(v)) {
+    if (!body) return;
+    mountSheets(body, {
+      editable: true,
+      onChange: () => { if (v.ed) onEditInput(v); },
+      ask: askConfirm,
+      refuse: () => (host.flags?.on(getNote(v.noteId), "finalised") ? FINALISED_SAY() : ""),
+      status: (s) => host.status(s),
+    });
+  }
+  /** ＋ Insert -> ⊞ Spreadsheet: a 5 by 4 grid at the caret (never inside another spreadsheet), with an empty line after it to type in. */
+  function insertSheet(v) {
+    const body = editBodyEl(v);
+    if (!body) return;
+    if (host.flags?.on(getNote(v.noteId), "finalised")) { host.status(FINALISED_SAY()); return; }
+    closePanel(v);
+    restoreRange(v);
+    const sel = window.getSelection();
+    const tpl = document.createElement("template");
+    tpl.innerHTML = `${sheetInsertHtml()}<p><br></p>`;
+    const nodes = [...tpl.content.childNodes];
+    let range = sel.rangeCount && body.contains(sel.anchorNode) ? sel.getRangeAt(0) : null;
+    const inside = range && (range.startContainer.nodeType === 1 ? range.startContainer : range.startContainer.parentElement)?.closest(".mm-sheet");
+    if (!range || inside) { range = document.createRange(); if (inside) range.setStartAfter(inside); else { range.selectNodeContents(body); range.collapse(false); } }
+    range.collapse(true);
+    // a caret in the middle of a paragraph: the sheet goes after that paragraph, never inside it
+    const block = (range.startContainer.nodeType === 1 ? range.startContainer : range.startContainer.parentElement)?.closest("p,h1,h2,h3,h4,li,blockquote");
+    if (block && body.contains(block) && block.parentElement === body) range.setStartAfter(block);
+    range.collapse(true);
+    for (const n of nodes.reverse()) range.insertNode(n);
+    mountEditSheets(v, body);
+    const p = nodes[nodes.length - 1];
+    const r = document.createRange(); r.setStart(p, 0); r.collapse(true); sel.removeAllRanges(); sel.addRange(r);
+    onEditInput(v);
+  }
+
   /** 39: the status menu a heading's badge opens. */
   function openStatusMenu(v, note, idx) {
     const live = getNote(note.noteId) ?? note;
@@ -1671,6 +1735,7 @@ export function createNoteViews(host) {
       peek.textContent = text.length > 120 ? `${text.slice(0, 119)}…` : text;
       sec.querySelector(":scope > .note-sec-h").after(peek);
     }
+    mountSheets(host_, readSheetOpts(note)); // item 44: read-only grids
   }
 
   // =====================================================================
@@ -1717,7 +1782,7 @@ export function createNoteViews(host) {
       const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "giu");
       // while editing, only the text itself (never the heading controls beside it)
       // (a folded heading's grey preview line repeats its section's text: never a hit of its own)
-      const walker = document.createTreeWalker(v.ed ? (editBodyEl(v) ?? v.bodyEl) : v.bodyEl, NodeFilter.SHOW_TEXT, { acceptNode: (n) => (n.parentElement?.closest(".note-sec-peek") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT) });
+      const walker = document.createTreeWalker(v.ed ? (editBodyEl(v) ?? v.bodyEl) : v.bodyEl, NodeFilter.SHOW_TEXT, { acceptNode: (n) => (n.parentElement?.closest(".note-sec-peek, .mm-sheet") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT) });
       const nodes = [];
       for (let n = walker.nextNode(); n; n = walker.nextNode()) if (n.data.trim()) nodes.push(n);
       for (const node of nodes) {
