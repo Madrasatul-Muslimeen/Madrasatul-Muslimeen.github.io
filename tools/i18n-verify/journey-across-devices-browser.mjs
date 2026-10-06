@@ -79,7 +79,7 @@ async function routeMutations(ctx) {
   await ctx.route("**/*", async (route) => {
     const url = route.request().url();
     const edits = [];
-    if (/note-user-settings-fs\.js/.test(url) && MUTATE === "merge-off") edits.push(["{ merge: true }", "{}"]);
+    if (/note-user-settings-fs\.js/.test(url) && MUTATE === "merge-off") edits.push(["patch }, { merge: true })", "patch }, {})"]);
     if (/note-user-settings\.js/.test(url)) {
       if (MUTATE === "palette-open") edits.push(["return PALETTE_HEX.has(c) ? c : \"\";", "return /^#[0-9a-f]{3,6}$/.test(c) || /^[a-z;:#()0-9 ,.-]+$/.test(c) ? c : \"\";"]);
       if (MUTATE === "phrases-uncapped") edits.push(["if (out.length >= LIMITS.phrases) break;", ""]);
