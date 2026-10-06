@@ -15691,12 +15691,13 @@
      * that has not really changed anyone's known-ness, which is exactly the
      * needless second write this whole design exists to avoid.
      */
-    async function mirrorLemmaProgress(action, { tenantId, personId, occurrenceId, confirmationRequired, beforeKnownForLemma, level = "wbw" }) {
+    async function mirrorLemmaProgress(action, { tenantId, personId, occurrenceId, confirmationRequired, beforeKnownForLemma, level = "wbw", isSupervisor }) {
       if (beforeKnownForLemma === null) return;
       const afterKnown = wordProgressFor({ tenantId, personId, level, occurrenceId, confirmationRequired }).countsAsKnown;
-      if (afterKnown === beforeKnownForLemma) { await runLemmaProgressAction(action, level); return; }
+      const who = { personId, confirmationRequired, isSupervisor };
+      if (afterKnown === beforeKnownForLemma) { await runLemmaProgressAction(action, level, who); return; }
       await applyLemmaOccurrenceCounterDelta({ tenantId, personId, occurrenceId, confirmationRequired, beforeKnown: beforeKnownForLemma, afterKnown: true, level });
-      await runLemmaProgressAction(action, level);
+      await runLemmaProgressAction(action, level, who);
       await applyLemmaOccurrenceCounterDelta({ tenantId, personId, occurrenceId, confirmationRequired, beforeKnown: true, afterKnown, level });
     }
 
@@ -15715,20 +15716,62 @@
 
     async function runWordProgressAction(action) {
       if (wordProgressSaving) return;
-      const { tenantId, subjectPersonId, actorPersonId, isSupervisor } = wordProgressActor();
+      const { tenantId, subjectPersonId, actorPersonId } = wordProgressActor();
       if (!tenantId || !subjectPersonId || !actorPersonId || !quranWordCardState.occurrenceId) return;
       const level = quranWordCardState.level;
-      wordProgressSaving = { occurrenceId: quranWordCardState.occurrenceId, level, state: action.kind === "state" ? action.state : null };
+      const occurrenceId = quranWordCardState.occurrenceId;
+      // 👥 Family recording (decision 71): one write set PER ticked person,
+      // others first and the Student last (the order claimApproachStatus uses).
+      const targets = claimTargetIds();
+      const others = targets.filter((id) => id !== subjectPersonId);
+      const order = targets.includes(subjectPersonId) ? [...others, subjectPersonId] : others;
+      wordProgressSaving = { occurrenceId, level, state: action.kind === "state" ? action.state : null };
       renderPersistentWordCard();
       try {
-        await runWordProgressActionNow(action, { tenantId, subjectPersonId, actorPersonId, isSupervisor, level });
+        const { effRoles } = currentPreview();
+        const mayAct = effRoles.some((r) => r === "owner" || r === "prime" || r === "teacher" || r === "guardian");
+        let ref = null;
+        try { ref = parseQuranWordOccurrenceId(occurrenceId); } catch { /* the Now step refuses */ }
+        // Each person's own cache and confirmation rule are loaded BEFORE their
+        // "before" snapshot: a person whose progress is not cached yet must not
+        // read as "not known before" (that would count the word twice).
+        const people = [];
+        for (const personId of order) {
+          let confirmationRequired = false;
+          try {
+            confirmationRequired = !!(await wordProgressConfirmationRequired(tenantId, personId));
+            if (ref && (level === "wbw" || isWordLevelsPersistenceReady())) await primeAyahProgress(db, { tenantId, personId, level, surah: ref.surah, ayah: ref.ayah });
+            await primeLemmaProgressForOccurrenceScope(currentSurahData, [occurrenceId], tenantId, personId);
+          } catch (error) {
+            reportWriteFailure(error, { what: "read Arabic word progress", occurrenceId });
+            return;
+          }
+          people.push({ personId, confirmationRequired, isSupervisor: actorPersonId !== personId && mayAct });
+        }
+        let note = null;
+        let who = people;
+        if (action.kind === "decide") {
+          // Only those whose OWN claim on this word is waiting for approval.
+          who = people.filter((p) => wordProgressFor({ tenantId, personId: p.personId, level, occurrenceId, confirmationRequired: p.confirmationRequired }).awaitingReview);
+          if (action.review === "returned" && who.length) note = window.prompt(t("What should they look at again?")) ?? null; // asked once, used for all
+        }
+        for (const p of who) {
+          const outcome = await runWordProgressActionNow(action, { tenantId, subjectPersonId: p.personId, actorPersonId, isSupervisor: p.isSupervisor, level, confirmationRequired: p.confirmationRequired, note });
+          if (outcome && outcome.ok === false) return; // already shown in words by safeWrite (I15)
+        }
+        if (action.kind === "state" && who.length && !targets.includes(subjectPersonId)) {
+          const names = assignableRoster().filter((p) => others.includes(p.id)).map((p) => p.name).join(", ");
+          showStudyNotice(t("Recorded for {names}.", { names }));
+        }
       } finally {
         wordProgressSaving = null;
+        await hydrateWordCardLemmaExtras();
         renderPersistentWordCard();
+        refreshKnownWordMarks(); // issue #472 -- marks follow the just-written state, no reload
       }
     }
 
-    async function runWordProgressActionNow(action, { tenantId, subjectPersonId, actorPersonId, isSupervisor, level }) {
+    async function runWordProgressActionNow(action, { tenantId, subjectPersonId, actorPersonId, isSupervisor, level, confirmationRequired, note = null }) {
       // Issue #320 -- the Basic/Depth tabs offer no controls while their gate
       // is closed, so this only ever fires for real; this is defence in depth,
       // the same discipline setWordState()/decideWordApproval() already apply
@@ -15739,7 +15782,6 @@
       // anyway. Clearing an earlier mark (not_started) is still allowed.
       if (level !== "wbw" && action.kind === "state" && action.state !== "not_started"
           && !wordOfOccurrence(quranWordCardState.occurrenceId)?.morphology?.lemma) return;
-      const confirmationRequired = !!wordProgressConfirmRequired;
       const common = {
         tenantId, personId: subjectPersonId, level, occurrenceId: quranWordCardState.occurrenceId,
         actorPersonId, actorUid: auth.currentUser?.uid, isSupervisor, confirmationRequired,
@@ -15778,8 +15820,9 @@
       // counters read or write, so it runs alongside them, not in the queue.
       let evidenceWrite = null;
       if (action.kind === "state") {
-        await safeWrite(() => setWordState(db, { ...common, state: action.state }),
+        const stateOutcome = await safeWrite(() => setWordState(db, { ...common, state: action.state }),
           { what: "record Arabic word progress", occurrenceId: common.occurrenceId });
+        if (stateOutcome && stateOutcome.ok === false) return stateOutcome;
         // MAP Phase 4 (P4-D4) -- wbw.engaged.
         //
         // ACTIVITY ONLY, and deliberately at ĀYAH + DAY grain: the word state
@@ -15833,32 +15876,29 @@
         await applyWordTotalCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown, level });
         if (mirrorsLemma) {
           await mirrorLemmaProgress({ kind: "state", state: action.state },
-            { tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnownForLemma, level });
+            { tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnownForLemma, level, isSupervisor });
         } else {
           await applyLemmaOccurrenceCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown: beforeKnownForLemma, level });
         }
       } else {
-        const note = action.review === "returned" ? (window.prompt(t("What should they look at again?")) ?? null) : null;
-        await safeWrite(() => decideWordApproval(db, { ...common, review: action.review, note }),
+        const decideOutcome = await safeWrite(() => decideWordApproval(db, { ...common, review: action.review, note }),
           { what: "decide Arabic word progress", occurrenceId: common.occurrenceId });
+        if (decideOutcome && decideOutcome.ok === false) return decideOutcome;
         await applyWordTotalCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown, level });
         // Issue #322 -- a supervisor's confirm/return mirrors onto the
         // lemma too, reusing the SAME note already gathered above rather
         // than prompting a second time. (Decision 58: at its own level.)
         if (mirrorsLemma) {
           await mirrorLemmaProgress({ kind: "decide", review: action.review, note },
-            { tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnownForLemma, level });
+            { tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnownForLemma, level, isSupervisor });
         } else {
           await applyLemmaOccurrenceCounterDelta({ tenantId, personId: subjectPersonId, occurrenceId: common.occurrenceId, confirmationRequired, beforeKnown: beforeKnownForLemma, level });
         }
       }
       await evidenceWrite;
-      // Issue #303 -- the "if you learn this word" delta and the whole-Qur'an
-      // figure can both have moved (this occurrence's own known-ness is part
-      // of what they read); refresh them alongside the card's own re-render.
-      await hydrateWordCardLemmaExtras();
-      renderPersistentWordCard();
-      refreshKnownWordMarks(); // issue #472 -- marks follow the just-written state, no reload
+      // The caller (runWordProgressAction) refreshes the card's extras, the
+      // card itself and the known-word marks once, after the whole set.
+      return { ok: true };
     }
 
     /**
@@ -15874,8 +15914,13 @@
      * calls this now; the early returns below (no gate, no lemma) stay
      * exactly as strict as when a direct UI control could reach them.
      */
-    async function runLemmaProgressAction(action, level = "wbw") {
-      const { tenantId, subjectPersonId, actorPersonId, isSupervisor } = wordProgressActor();
+    async function runLemmaProgressAction(action, level = "wbw", who = null) {
+      const actor = wordProgressActor();
+      const { tenantId, actorPersonId } = actor;
+      // Family recording: `who` names the person this write is for (their own
+      // confirmation rule and supervisor flag); omitted = the page's Student.
+      const subjectPersonId = who?.personId ?? actor.subjectPersonId;
+      const isSupervisor = who ? !!who.isSupervisor : actor.isSupervisor;
       if (!tenantId || !subjectPersonId || !actorPersonId || !quranWordCardState.occurrenceId) return;
       if (!levelWideLive(level)) return;
       let ref;
@@ -15889,7 +15934,7 @@
       if (level === "basic") await ensureMeaningGroups();
       const lemmaId = claimKeyOfWord(level, word);
       if (!lemmaId) return;
-      const confirmationRequired = !!wordProgressConfirmRequired;
+      const confirmationRequired = who ? !!who.confirmationRequired : !!wordProgressConfirmRequired;
       const common = { tenantId, personId: subjectPersonId, level, lemmaId, actorPersonId, actorUid: auth.currentUser?.uid, isSupervisor, confirmationRequired };
 
       // Snapshotted BEFORE either write below changes it -- the running
@@ -16017,6 +16062,8 @@
           if (d.open) needsSrcEnsureSection(d.dataset.wordCardSec, word, currentSurahData.surahNumber);
         });
       });
+      // 👥 the same picker as the other Record cards (shared claimForIds); nothing for a lone person.
+      mountClaimForPicker(content, "[data-word-progress-rec] .word-progress-states, [data-word-progress-rec] [data-word-progress-na]");
       if (focusSelector) (mount.querySelector(focusSelector)?.disabled ? mount.querySelector("[data-word-card-close]") : mount.querySelector(focusSelector))?.focus({ preventScroll: true });
     }
 
