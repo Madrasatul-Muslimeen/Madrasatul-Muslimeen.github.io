@@ -22,6 +22,7 @@
 
 import { t, num } from "./i18n.js";
 import { sanitizeNoteHtml, isSafeNoteHref, NOTE_STATUS_COLOURS, NOTE_ANN_TEXT_MAX, NOTE_STATUS_LABEL_MAX } from "./note-sanitize.js";
+import { isOn as previewsOn, setOn as setPreviewsOn, pickLinks, loadPreview, hostOf } from "./note-link-preview.js";
 import { closeAllBarPalettes } from "./bar-palette.js";
 import { sheetInsertHtml, mountSheets } from "./note-sheet-ui.js";
 import { headingStyleCss, PALETTE, LIMITS as SETTING_LIMITS, cleanText as cleanSettingText } from "./note-user-settings.js";
@@ -1185,6 +1186,7 @@ export function createNoteViews(host) {
         menu += `<button type="button" class="secondary tiny" data-pane-link>🔗 ${escapeHtml(t("Link to a Note…"))}</button>`;
       }
     }
+    menu += `<button type="button" class="secondary tiny" data-pane-previews aria-pressed="${previewsOn(localStorage)}">🖼 ${escapeHtml(t("Show link previews"))}: ${escapeHtml(previewsOn(localStorage) ? t("On") : t("Off"))}</button>`;
     if (S()) menu += `<button type="button" class="secondary tiny" data-pane-mytools>🧰 ${escapeHtml(t("My Note tools…"))}</button>`;
     if (v.kind === "pane") menu += `<button type="button" class="secondary tiny" data-pane-popout>⧉ ${escapeHtml(t("Pop out"))}</button>`;
     menu += host.menuEnd?.(v, note) ?? "";
@@ -1225,6 +1227,68 @@ export function createNoteViews(host) {
     sec.innerHTML = (out.length ? `<h3 data-links-out-head>🔗 ${escapeHtml(t("Links"))}</h3><ul data-links-out style="list-style:none;padding:0;margin:0 0 0.6rem">${out.map((l) => row(l, true)).join("")}</ul>` : "")
       + (back.length ? `<h3 data-links-in-head>↩ ${escapeHtml(t("Linked from"))}</h3><ul data-links-in style="list-style:none;padding:0;margin:0">${back.map((l) => row(l, false)).join("")}</ul>` : "");
     v.bodyEl.appendChild(sec);
+  }
+  // ---------------------------------------------------------------------------------------------------------------
+  // LINK PREVIEW CARDS (Part C, item 43; decisions 72, 81). Read view only, per device, OFF by default, shown and never
+  // stored: no write of any kind. Each https link's address goes to Microlink only after the reader says yes in words.
+  // The answer is cleaned in note-link-preview.js and set here with textContent; the picture is an https <img> that is
+  // dropped if it fails; the site name is the link's own host.
+  // ---------------------------------------------------------------------------------------------------------------
+  function paintPreviews(v) {
+    v.bodyEl.querySelectorAll("[data-link-preview]").forEach((c) => c.remove());
+    if (!previewsOn(localStorage) || (v.ed && v.ed.noteId === v.noteId)) return;
+    const anchors = [...v.bodyEl.querySelectorAll("a[href]")].filter((a) => !a.closest("[data-note-links]"));
+    for (const url of pickLinks(anchors.map((a) => a.getAttribute("href")))) {
+      const a = anchors.find((x) => x.getAttribute("href").trim() === url);
+      let blk = a;
+      while (blk.parentElement && blk.parentElement !== v.bodyEl && !blk.parentElement.matches(".note-sec, [data-pane-body]")) blk = blk.parentElement;
+      const card = document.createElement("a");
+      card.dataset.linkPreview = url;
+      card.href = url; card.target = "_blank"; card.rel = "noopener noreferrer";
+      card.style.cssText = "display:flex;gap:0.6rem;align-items:center;box-sizing:border-box;max-width:100%;min-height:44px;margin:0.4rem 0 0.8rem;padding:0.5rem;border:1px solid rgba(128,128,128,0.5);border-radius:10px;text-decoration:none;color:inherit;overflow:hidden";
+      const text = document.createElement("span");
+      text.style.cssText = "display:block;min-width:0;flex:1 1 auto;overflow-wrap:anywhere";
+      const hostEl = document.createElement("small");
+      hostEl.dataset.previewHost = ""; hostEl.style.display = "block"; hostEl.textContent = hostOf(url);
+      const status = document.createElement("span");
+      status.dataset.previewStatus = ""; status.style.display = "block"; status.textContent = t("Loading the preview…");
+      text.append(status, hostEl);
+      card.append(text);
+      blk.after(card);
+      loadPreview(url, { storage: localStorage }).then((r) => {
+        if (!card.isConnected) return;
+        if (r.error || r.empty) {
+          status.textContent = r.empty ? t("This link has no preview.") : r.error === "refused" ? t("The preview could not be fetched: the preview service said no (it allows only a few a day).") : t("The preview could not be fetched: no connection.");
+          card.dataset.previewFailed = r.error ?? "empty";
+          return;
+        }
+        const p = r.preview;
+        text.replaceChildren();
+        if (p.title) { const el = document.createElement("strong"); el.dataset.previewTitle = ""; el.style.display = "block"; el.textContent = p.title; text.append(el); }
+        if (p.description) { const el = document.createElement("span"); el.dataset.previewDesc = ""; el.style.display = "block"; el.textContent = p.description; text.append(el); }
+        text.append(hostEl);
+        if (p.image) {
+          const img = document.createElement("img");
+          img.referrerPolicy = "no-referrer"; img.loading = "lazy"; img.alt = "";
+          img.style.cssText = "width:72px;height:72px;object-fit:cover;border-radius:6px;flex:0 0 auto";
+          img.addEventListener("error", () => img.remove());
+          img.src = p.image;
+          card.prepend(img);
+        }
+        card.dataset.previewReady = "";
+      });
+    }
+  }
+  /** ⋯ → Show link previews. Turning it ON asks first, in words; turning it off is immediate. */
+  function togglePreviews(v) {
+    const rerender = () => { for (const x of allViews()) if (x.noteId && getNote(x.noteId)) renderView(x, { keepScroll: true }); };
+    if (previewsOn(localStorage)) { setPreviewsOn(localStorage, false); rerender(); return; }
+    const d = smallDialog("previews", `🖼 ${t("Show link previews")}`, `<p>${escapeHtml(t("Each link's address is sent to Microlink (microlink.io) to fetch its title, description and picture. Nothing else from your Note is sent."))}</p>
+      <p><small>${escapeHtml(t("This is only on this device. Nothing is saved into your Note."))}</small></p>
+      <div><button type="button" class="secondary" data-preview-yes style="min-height:44px">${escapeHtml(t("Turn on"))}</button> <button type="button" class="secondary" data-preview-no style="min-height:44px">${escapeHtml(t("Cancel"))}</button></div>`);
+    d.q("[data-preview-yes]").addEventListener("click", () => { setPreviewsOn(localStorage, true); d.close(); rerender(); });
+    d.q("[data-preview-no]").addEventListener("click", () => d.close());
+    d.q("[data-preview-no]").focus();
   }
   /** Round 14, made a side panel (the Owner, 5 Oct 2026; demo
    *  docs/reference/2026-10-05-folder-window-and-pinned-demo.html): a window's
@@ -2046,7 +2110,7 @@ export function createNoteViews(host) {
     v.el.querySelector("[data-pane-chips]").innerHTML = (host.chips?.(note) ?? []).map((f) =>
       `<button type="button" class="folder-chip" data-pane-chip="${escapeHtml(f.id)}">📁 ${escapeHtml(f.label)}</button>`).join("") + tagChipsHtml(note);
     // While an edit is open the editor IS the body: a re-render must never wipe the reader's typing.
-    if (!(v.ed && v.ed.noteId === note.noteId)) { showReadChrome(v, note); buildBody(v, note); paintAnnotations(v); paintLinks(v, note); if (!findBarOf(v).hidden) runFind(v, { keep: true }); }
+    if (!(v.ed && v.ed.noteId === note.noteId)) { showReadChrome(v, note); buildBody(v, note); paintAnnotations(v); paintLinks(v, note); paintPreviews(v); if (!findBarOf(v).hidden) runFind(v, { keep: true }); }
     if (v.kind === "window") { paintPinned(v, note); paintToc(v); v.win.querySelector(".nw-title").textContent = noteTitleOf(note); v.win.dataset.noteId = note.noteId; updateWindowSwitcher(); }
     paintVersionLine(v, note);
     renderPaneBar(v);
@@ -2440,6 +2504,7 @@ export function createNoteViews(host) {
     if (on("[data-draft-restore]")) { const d = loadDraft(note.noteId); if (d && host.canEdit()) startEdit(v, note, d); return; }
     if (on("[data-draft-discard]")) { clearDraft(note.noteId); v.draftOfferEl.hidden = true; return; }
     if (on("[data-pane-back]")) { closePane(); return; }
+    if (on("[data-pane-previews]")) { closeAllBarPalettes(null); togglePreviews(v); return; }
     if (on("[data-pane-mytools]")) { closeAllBarPalettes(null); openTools(v, note); return; }
     if (on("[data-pane-new]")) { if (S() && S().get().templates.length) openNewMenu(v); else host.newNote?.(v); return; }
     if (on("[data-pane-prev]")) { closeAllBarPalettes(null); step(v, -1); return; }
