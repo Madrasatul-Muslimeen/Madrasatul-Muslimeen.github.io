@@ -8,6 +8,8 @@
 //   --mutate=no-times   the 🕘 button does nothing          -> the hide checks fail
 //   --mutate=no-stamp   opening does not stamp usedAt        -> the stamp checks fail
 //   --mutate=no-back    the Back row is never mounted        -> the Back checks fail
+//   --mutate=no-aside   the chip no longer steps aside       -> the Word Card check fails
+//   --mutate=raw-label  the page name is the heading's whole text -> the name check fails
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
 
@@ -28,6 +30,8 @@ async function routeMutation(ctx) {
   else if (MUTATE === "no-times") body = swap(body, "      setBookmarkTimesShown(!getBookmarkTimesShown());\n", "");
   else if (MUTATE === "no-stamp") body = swap(body, "const write = markBookmarkUsed(db, tenantId, personId, bookmarkId)", "const write = Promise.resolve()");
   else if (MUTATE === "no-back") body = swap(body, "  mountBookmarkBack(navBarEl);\n", "");
+  else if (MUTATE === "no-aside") body = swap(body, "    row.style.display = covered ? \"none\" : \"\";\n", "");
+  else if (MUTATE === "raw-label") body = swap(body, "  return (copy.textContent || \"\")", "  return (h1.textContent || \"\")");
   else throw new Error(`unknown mutation ${MUTATE}`);
   await ctx.route("**/js/bookmark-nav.js", (r) => r.fulfill({ status: 200, contentType: js, body }));
 }
@@ -78,6 +82,35 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
   check(`${tag}: ...on top of everything (nothing covers it)`, !!back?.top, JSON.stringify(back));
   check(`${tag}: ...and it does not cover the Study / Explore tab bar`, await P.evaluate(() => { const r = document.querySelector("[data-bm-back]")?.getBoundingClientRect(), tb = document.getElementById("tabStudyBtn")?.getBoundingClientRect(); return !!r && (!tb || tb.height === 0 || r.bottom <= tb.top + 1); }));
   check(`${tag}: ...pointing at the page it was opened from`, !!back && /about\.html$/.test(back.href), JSON.stringify(back));
+  // The Owner, 6 Oct 2026 (a screenshot: the bubble over the Word Card, reading "← Back to QuranRevival v09.98Search
+  // Previewing as:…"): (1) a page's name is its heading's own words, never its version, buttons or preview note; (2) a
+  // sheet that fills the screen (the Word Card) is not a bottom bar -- the chip steps aside and comes back when it closes.
+  const label = await P.evaluate(async () => (await import("/app/js/bookmark-nav.js")).pageLabelOf(document));
+  check(`${tag}: the Qur'an page's name is just its heading's words ("QuranRevival")`, label === "QuranRevival", JSON.stringify(label));
+  const readReach = await P.evaluate(() => (document.getElementById("tabReadBtn")?.getBoundingClientRect().width ?? 0) > 0);
+  if (!readReach) { await P.click("#tabStudyBtn"); await P.waitForTimeout(150); }
+  await P.click("#tabReadBtn"); await P.waitForTimeout(500);
+  await P.evaluate(() => { const t = document.getElementById("wbwShowToggle"); if (t && !t.checked) { t.checked = true; t.dispatchEvent(new Event("change", { bubbles: true })); } });
+  await P.waitForSelector("[data-word-occurrence]", { timeout: 10000 }).catch(() => {});
+  await P.locator("[data-word-occurrence]").first().click().catch(() => {});
+  await P.waitForSelector(".quran-word-card", { timeout: 8000 }).catch(() => {});
+  await P.waitForTimeout(300);
+  const overCard = await P.evaluate(() => {
+    const card = document.querySelector(".quran-word-card"), row = document.querySelector("[data-bm-back]");
+    if (!card || !row) return { card: !!card, row: !!row };
+    const r = row.getBoundingClientRect(), shown = getComputedStyle(row).display !== "none" && r.width > 0;
+    // The whole card, not just its header: where the card does not fill the screen (a PC), the chip may stay at the
+    // bottom, as long as it covers no part of the card.
+    const c = card.getBoundingClientRect();
+    const overlaps = shown && !(r.bottom <= c.top || r.top >= c.bottom || r.right <= c.left || r.left >= c.right);
+    return { card: true, row: true, shown, overlaps, rowTop: Math.round(r.top) };
+  });
+  check(`${tag}: with the Word Card open, the Back bubble does not sit over the card`, overCard.card && overCard.row && !overCard.overlaps, JSON.stringify(overCard));
+  if (SHOTS) await P.screenshot({ path: `${SHOTS}/bm-${tag.replace("/", "-")}-wordcard.png` });
+  await P.click(".quran-word-card [data-word-card-close]").catch(() => {});
+  await P.waitForTimeout(400);
+  const after = await P.evaluate(() => { const row = document.querySelector("[data-bm-back]"), r = row?.getBoundingClientRect(); return { shown: !!row && getComputedStyle(row).display !== "none" && r.width > 0, low: !!r && r.top > innerHeight * 0.5 }; });
+  check(`${tag}: ...and it comes back, at the bottom, when the card closes`, after.shown && after.low, JSON.stringify(after));
   if (SHOTS) await P.screenshot({ path: `${SHOTS}/bm-${tag.replace("/", "-")}-back.png` });
   if (back) { await Promise.all([P.waitForURL(/about\.html$/, { timeout: 15000 }).catch(() => {}), P.click("[data-bm-back-link]")]); }
   check(`${tag}: Back goes there`, /about\.html$/.test(P.url()), P.url());
