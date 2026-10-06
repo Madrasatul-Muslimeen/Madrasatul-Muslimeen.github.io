@@ -6,6 +6,7 @@ import { createHash } from "node:crypto";
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { formKey } from "../../app/js/quran-word-form-key.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const outDir = join(here, "output");
@@ -14,6 +15,9 @@ const files = readdirSync(surahsDir).filter((f) => /^surah_\d{3}\.json$/.test(f)
 const pack = (surah, ayah, position) => surah * 1_000_000 + ayah * 1_000 + position;
 const roots = new Map();
 const lemmas = new Map();
+// The stand-in WbW word for a word with NO dictionary word -- kept in its own
+// index so no lemma list ever shows it (see app/js/quran-word-form-key.js).
+const forms = new Map();
 // v08.22 -- lemma -> grammatical category counts, read from `morphology.pos`.
 //
 // `pos` describes a WRITTEN TOKEN, not a dictionary form: it is a " + "-joined
@@ -65,7 +69,7 @@ for (const file of files) {
     const ref = pack(chapter.surahNumber, ayah.ayah, word.position);
     occurrences++;
     if (word.morphology?.root) append(roots, word.morphology.root, ref); else missingRoot++;
-    if (word.morphology?.lemma) append(lemmas, word.morphology.lemma, ref); else missingLemma++;
+    if (word.morphology?.lemma) append(lemmas, word.morphology.lemma, ref); else { missingLemma++; append(forms, formKey(word), ref); }
     if (word.morphology?.lemma) {
       const per = lemmaGloss.get(word.morphology.lemma) ?? { en: new Map(), bn: new Map() };
       for (const lang of ["en", "bn"]) {
@@ -89,6 +93,7 @@ const orderedObject = (map) => Object.fromEntries([...map.entries()].sort(([a], 
 const artifacts = {
   "roots-index.json": JSON.stringify({ identityContract: "quran-word-occurrence:v1", encoding: "surah*1000000+ayah*1000+position", entryCount: roots.size, occurrences: occurrences - missingRoot, values: orderedObject(roots) }),
   "lemmas-index.json": JSON.stringify({ identityContract: "quran-word-occurrence:v1", encoding: "surah*1000000+ayah*1000+position", entryCount: lemmas.size, occurrences: occurrences - missingLemma, values: orderedObject(lemmas) }),
+  "form-index.json": JSON.stringify({ identityContract: "quran-word-occurrence:v1", encoding: "surah*1000000+ayah*1000+position", source: "word.arabic with marks removed, for words whose morphology.lemma is empty", entryCount: forms.size, occurrences: missingLemma, values: orderedObject(forms) }),
   "lemma-pos-index.json": JSON.stringify({
     identityContract: "quran-word-occurrence:v1",
     source: "morphology.pos",

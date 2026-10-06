@@ -1,8 +1,9 @@
 // ADR-007 — on-demand Quran word root/lemma occurrence indexes.
 // Nothing is fetched until a caller explicitly asks for one identity layer.
 import { quranWordOccurrenceId } from "./quran-word-identity.js";
+import { isFormKey } from "./quran-word-form-key.js";
 
-const INDEX_FILES = Object.freeze({ root: "roots-index.json", lemma: "lemmas-index.json" });
+const INDEX_FILES = Object.freeze({ root: "roots-index.json", lemma: "lemmas-index.json", form: "form-index.json" });
 const LEMMA_POS_FILE = "lemma-pos-index.json";
 const LEMMA_MEANING_FILE = "lemma-meaning-index.json";
 const cache = new Map();
@@ -35,6 +36,15 @@ export async function occurrenceRefsFor(layer, value, options) {
   if (!value) return [];
   const index = await loadWordIdentityIndex(layer, options);
   return (index.values?.[value] ?? []).map(unpackWordIndexRef);
+}
+
+/**
+ * Every occurrence a WbW claim key covers: a dictionary word's occurrences from
+ * the lemma index, or a stand-in ("form:...") word's from the form index (loaded
+ * on first use only, I9).
+ */
+export async function occurrenceRefsForClaimKey(key, options) {
+  return occurrenceRefsFor(isFormKey(key) ? "form" : "lemma", key, options);
 }
 
 /**

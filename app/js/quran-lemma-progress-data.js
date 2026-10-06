@@ -87,7 +87,7 @@ import {
   resolveWordProgress as resolveOccurrenceProgress,
   requireImplementedLevel,
 } from "./quran-word-progress.js";
-import { loadWordIdentityIndex, unpackWordIndexRef } from "./quran-word-index.js";
+import { occurrenceRefsForClaimKey } from "./quran-word-index.js";
 import {
   LEMMA_PROGRESS_LANES,
   lemmaProgressDocId,
@@ -348,8 +348,8 @@ export async function countIndividuallyKnownOccurrences(db, {
   let refs;
   if (unpackedRefs) refs = unpackedRefs;
   else {
-    const index = await loadWordIdentityIndex("lemma", fetchImpl ? { fetchImpl } : undefined);
-    refs = (index.values?.[lemmaId] ?? []).map(unpackWordIndexRef);
+    // A WbW claim key is a dictionary word or, for a word with none, its stand-in.
+    refs = await occurrenceRefsForClaimKey(lemmaId, fetchImpl ? { fetchImpl } : undefined);
   }
 
   const byAyah = new Map();
