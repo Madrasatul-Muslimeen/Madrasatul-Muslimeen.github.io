@@ -121,8 +121,18 @@ function bookmarkLinkHtml(b) {
 // anywhere else.
 const RETURN_KEY = "mmsa.bookmarkReturn";
 const RETURN_MAX_MS = 6 * 60 * 60 * 1000;
+/** The page's own name: its heading's words only. The Owner, 6 Oct 2026 (a screenshot reading "← Back to QuranRevival
+ *  v09.98SearchPreviewing as:…"): the heading also holds the version, the Search button and the "Previewing as" note,
+ *  and textContent ran them all together. Buttons, the version and anything marked as chrome are left out. */
+export function pageLabelOf(doc = document) {
+  const h1 = doc.querySelector("h1");
+  if (!h1) return "";
+  const copy = h1.cloneNode(true);
+  copy.querySelectorAll("button, select, input, nav, .app-version, [id$='Version'], .nav-preview-notice, [data-preview-badge], script, style").forEach((x) => x.remove());
+  return (copy.textContent || "").replace(/\s+/g, " ").trim();
+}
 function pageLabel() {
-  const own = document.querySelector("h1")?.textContent?.trim();
+  const own = pageLabelOf(document);
   const title = (own || document.title.replace(/^QuranRevival\s*[—-]\s*/, "") || document.title).trim();
   return title.length > 40 ? `${title.slice(0, 39)}…` : title;
 }
@@ -179,6 +189,7 @@ export function mountBackRow(text, { href = null, onBack = null, id = null } = {
   row.append(back, x);
   document.body.appendChild(row);
   // Sit just above a bar fixed to the bottom of the screen (the Qur'an page's Study / Explore tabs), never on it.
+  const pageFixed = new Set(), settleUntil = Date.now() + 1500;
   const lift = () => {
     row.style.visibility = "hidden";
     let top = window.innerHeight;
@@ -188,14 +199,46 @@ export function mountBackRow(text, { href = null, onBack = null, id = null } = {
         if (pos === "fixed" || pos === "sticky") { top = Math.min(top, el.getBoundingClientRect().top); break; }
       }
     }
+    // The Owner, 6 Oct 2026 (a screenshot): with the Word Card open, the "bar" found at the bottom was the card itself,
+    // which fills the screen, so the chip jumped to the TOP and covered the card's header. Something fixed that reaches
+    // past the middle of the screen is a sheet over the page, not a bar: the chip steps aside until it closes.
+    // On a PC the card is a large window instead, and the chip sat over its corner. A page may itself be built of
+    // fixed areas (the Qur'an page's wheel area is one, at the same z-index as the Word Card), so "fixed" alone cannot
+    // tell a page from a window: the fixed areas under the chip's spot while the page settles are THE PAGE; one that
+    // appears there later is a window opened over it, and the chip steps aside until it goes.
+    row.style.display = "";
     row.style.bottom = top < window.innerHeight ? `${Math.round(window.innerHeight - top + 8)}px` : "";
+    let covered = top < window.innerHeight * 0.5;
+    const r = row.getBoundingClientRect();
+    const spots = [[r.left + 4, r.top + 4], [r.right - 4, r.top + 4], [r.left + 4, r.bottom - 4], [r.right - 4, r.bottom - 4], [(r.left + r.right) / 2, (r.top + r.bottom) / 2]];
+    const fixedHere = new Set();
+    for (const [x, y] of spots) {
+      for (let el = document.elementFromPoint(x, y); el && el !== document.body; el = el.parentElement) {
+        if (getComputedStyle(el).position === "fixed") fixedHere.add(el);
+      }
+    }
+    if (Date.now() < settleUntil) fixedHere.forEach((el) => pageFixed.add(el));
+    else if (!covered) covered = [...fixedHere].some((el) => !pageFixed.has(el));
+    row.style.display = covered ? "none" : "";
+    row.dataset.bmBackAside = covered ? "1" : "";
     row.style.visibility = "";
   };
   lift();
   window.addEventListener("resize", lift);
+  // A sheet opening or closing changes nothing the window reports, so watch the page for it (one check per frame at most;
+  // the chip's own changes are ignored, or it would watch itself forever).
+  let queued = false;
+  const watch = new MutationObserver((list) => {
+    if (!row.isConnected) { watch.disconnect(); return; }
+    if (queued || list.every((m) => row.contains(m.target))) return;
+    queued = true;
+    requestAnimationFrame(() => { queued = false; if (row.isConnected) lift(); });
+  });
+  watch.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["hidden", "class", "open", "style"] });
   const gone = new MutationObserver(() => { if (!row.isConnected) { window.removeEventListener("resize", lift); gone.disconnect(); } });
   gone.observe(document.body, { childList: true });
   setTimeout(lift, 600); // after the page has laid itself out
+  setTimeout(lift, 1600); // and once more, just after the page's own fixed areas are learnt
   return row;
 }
 

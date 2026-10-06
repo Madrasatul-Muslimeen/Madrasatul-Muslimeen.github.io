@@ -252,13 +252,14 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.99 on `main`** (6 Oct 2026 — **Notes: a full spreadsheet inside a Note**).
-- **What** (the Owner, 6 Oct 2026: "44. yes"; decision 72; Builder round #612, PR opened by the Architect after the Builder's credentials failed):
-  - ⊞ Insert a spreadsheet in a Note: formulas (SUM, AVERAGE, MIN, MAX, COUNT, COUNTA, IF, IFERROR, ROUND, ABS, AND, OR, NOT, CONCAT, LEN, UPPER, LOWER, TODAY, DATE), number formats, add/remove rows and columns, merge, filter, sort, fill, Σ totals, column resize, header row, copy/paste and undo; errors explained in words; read-only in view mode; a finalised Note refuses in words.
-  - Stored inside the Note's own text as a cleaned state plus a snapshot table; no Rules change. `note-sanitize.js` rebuilds every sheet from its cleaned state (the snapshot is re-derived, never trusted). The engine (`note-sheet-engine.js`) never uses eval.
+**Current milestone: v09.100 on `main`** (6 Oct 2026 — **The Back bubble never covers the Word Card**).
+- **What** (the Owner, 6 Oct 2026, a phone screenshot: "The back bubble from the previous screen carried to word card. Fix it."):
+  - `bookmark-nav.js` `mountBackRow`: the fixed areas under the bubble while the page settles are the page; a window opened over it later (the Word Card, any sheet) makes the bubble step aside, and it comes back when the window closes (a MutationObserver, one check per frame). It also steps aside under anything filling the screen.
+  - `pageLabelOf()`: the page name is the heading's own words, without its version, buttons or "Previewing as" note (it read "QuranRevival v09.98SearchPreviewing as:…").
+  - Decision 81 recorded: startup paint yes; pictures yes (prices first; the Owner switches to Blaze and publishes Storage Rules); link previews via an outside service; Dua: talk first; letters later.
 - **Checks:**
-  - note-sheet-engine 89/0, note-sheet-engine-mutations 10/10, journey-sheet-browser 962/0 (five Builder mutations each fail it; Architect review: read the sanitiser and every HTML write (all escaped); removing the snapshot's escaping fails the engine suite), note-sanitize-boundary 13/0, journey-annotations-status 536/0, journey-editor 577/0, journey-note-pane 327/0, journey-reading-tools 488/0, rules-authorisation-executable 63/0, stub-parity 4/0, phone-width-overflow 217/0, behaviour 1006/1 (sandbox baseline)
-- **With the Owner:** open a Note, Edit, ＋ Insert → ⊞ Spreadsheet; type 2 and 3 in A1 and A2, and =A1+A2 in A3: it shows 5.
+  - bookmark-marks-back-browser 96/0 (four new checks: the Word Card at 390 and 1280, back at the bottom when it closes, the page name; --mutate=no-aside and raw-label each fail it), kys-window 50/0, bookmark-open 77/0, bookmark-last-place 68/0, bookmark-sheet 176/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1006/1 (sandbox baseline)
+- **With the Owner:** open a bookmark, then tap a word: the bubble is not over the card; close the card: it is back at the bottom.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration
