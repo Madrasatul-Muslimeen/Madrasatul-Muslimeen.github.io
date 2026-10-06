@@ -20,8 +20,8 @@
 // for the inline pane. This module imports NO Firebase and no data layer, so
 // it can never write around the page's own write path (I2: pure UI).
 
-import { t } from "./i18n.js";
-import { sanitizeNoteHtml, isSafeNoteHref } from "./note-sanitize.js";
+import { t, num } from "./i18n.js";
+import { sanitizeNoteHtml, isSafeNoteHref, NOTE_STATUS_COLOURS, NOTE_ANN_TEXT_MAX, NOTE_STATUS_LABEL_MAX } from "./note-sanitize.js";
 import { closeAllBarPalettes } from "./bar-palette.js";
 import { HANDLES, handleCss, clampRect, startDrag } from "./float-window.js";
 
@@ -199,6 +199,7 @@ export function createNoteViews(host) {
     el.addEventListener("keydown", (ev) => {
       if (ev.target.closest("[data-sec-grip]")) gripKey(v, ev);
       else if (ev.target.matches?.("[data-panel-url]") && ev.key === "Enter") { ev.preventDefault(); applyLink(v); }
+      else if (ev.target.matches?.("[data-panel-ann-text]") && ev.key === "Enter") { ev.preventDefault(); applyAnnotation(v); }
       else if (ev.target.closest?.("[data-edit-panel]") && ev.key === "Escape") { ev.stopPropagation(); closePanel(v); editBodyEl(v)?.focus(); }
       // Note-pane round 2 (item 20): Esc in the text, the title or the toolbar ends editing, the same as ✓ Done.
       else if (ev.key === "Escape" && v.ed && ev.target.closest?.("[data-edit-body], [data-edit-title], [data-edit-toolbar]")) { ev.preventDefault(); ev.stopPropagation(); finishEdit(v); }
@@ -308,6 +309,7 @@ export function createNoteViews(host) {
     const e = v.ed;
     if (!e) return null;
     closeMention(v);
+    hideAnnBubble(v);
     const cur = readEditor(v);
     v.ed = null;
     e.ro?.disconnect();
@@ -342,7 +344,7 @@ export function createNoteViews(host) {
     ["hup", "Raise the heading (Ctrl+[)", "▲H"], ["hdown", "Lower the heading (Ctrl+])", "▼H"], "|",
     ["ul", "Bullet list", "•"], ["ol", "Numbered list", "1."], ["check", "Checklist", "☑"], ["quote", "Quote", "❝"],
     ["left", "Align left", "⇤"], ["center", "Align centre", "↔"], ["right", "Align right", "⇥"], ["justify", "Justify", "☰"], ["spacing", "Spacing", "↕"], "|",
-    ["link", "Link", "🔗"], ["table", "Table", "▦"], ["divider", "Divider line", "─"], ["box", "Box around the paragraph", "▢"], "|",
+    ["link", "Link", "🔗"], ["table", "Table", "▦"], ["divider", "Divider line", "─"], ["box", "Box around the paragraph", "▢"], ["annotate", "Comment on the selected text", "💬"], "|",
     ["undo", "Undo", "↶"], ["redo", "Redo", "↷"],
   ];
   /** Text sizes the A+ / A− steps walk through (em); 1 is normal. The sanitiser allows exactly these. */
@@ -429,6 +431,9 @@ export function createNoteViews(host) {
       P.innerHTML = `<div class="pane-panel-row" role="group" aria-label="${label("Paste as")}"><span class="pane-panel-label">${label(p?.kind === "url" ? "Paste the web address as" : "The pasted text has formatting")}</span>
         ${p?.kind === "url" ? `<button type="button" class="tb-btn tb-text" data-paste-choice="link">🔗 ${label("A link")}</button>` : `<button type="button" class="tb-btn tb-text" data-paste-choice="rich">${label("Keep the formatting")}</button>`}
         <button type="button" class="secondary tb-btn tb-text" data-paste-choice="plain">${label("Plain text")}</button>${close}</div>${msg}`;
+    } else if (mode === "annotate") {
+      P.innerHTML = `<div class="pane-panel-row"><label class="pane-panel-field">${label("Comment on the selected text")}<input type="text" autocomplete="off" maxlength="${NOTE_ANN_TEXT_MAX}" data-panel-ann-text></label>
+        <button type="button" class="tb-btn tb-text" data-panel-ann-apply>${label("Add comment")}</button>${close}</div>${msg}`;
     } else if (mode === "spacing") {
       P.innerHTML = `<div class="pane-panel-row" role="group" aria-label="${label("Line spacing")}"><span class="pane-panel-label">${label("Line spacing")}</span>${LINE_HEIGHTS.map(([val, name]) =>
         `<button type="button" class="secondary tb-btn tb-text" data-spacing-line="${val}">${label(name)}</button>`).join("")}</div>
@@ -723,7 +728,7 @@ export function createNoteViews(host) {
   function runEditCommand(v, cmd) {
     const body = editBodyEl(v);
     if (!body) return;
-    if (["link", "table", "color", "highlight", "spacing"].includes(cmd)) {
+    if (["link", "table", "color", "highlight", "spacing", "annotate"].includes(cmd)) {
       if (!v.editPanelEl.hidden && v.editPanelEl.dataset.mode === cmd) closePanel(v); else openPanel(v, cmd);
       return;
     }
@@ -969,8 +974,9 @@ export function createNoteViews(host) {
     body.addEventListener("paste", (ev) => onEditPaste(v, ev));
     body.addEventListener("keydown", (ev) => onEditKeydown(v, ev));
     body.addEventListener("input", (ev) => onMentionInput(v, ev));
-    body.addEventListener("keyup", () => saveRange(v));
-    body.addEventListener("mouseup", () => saveRange(v));
+    body.addEventListener("keyup", () => { saveRange(v); paintAnnBubble(v); });
+    body.addEventListener("mouseup", () => { saveRange(v); setTimeout(() => paintAnnBubble(v), 0); });
+    body.addEventListener("blur", () => setTimeout(() => { if (!document.activeElement?.closest?.("[data-ann-bubble]")) hideAnnBubble(v); }, 150));
     v.ed.ro = typeof ResizeObserver === "function" ? new ResizeObserver(() => scheduleGutter(v)) : null;
     v.ed.ro?.observe(wrap);
     scheduleGutter(v);
@@ -1374,6 +1380,235 @@ export function createNoteViews(host) {
   }
 
   /** The sanitised body, with every H1-H4 turned into a collapsible section nested by level. Collapsed indexes come from (and go back to) localStorage, per Note. */
+  // =====================================================================
+  // NOTE-PANE PART C1 (the Owner, 6 Oct 2026, decision 72: "38. yes, 39. yes"):
+  // ANNOTATIONS (item 38) and HEADING STATUS BADGES (item 39). Both live INSIDE
+  // the Note's own bodyHtml -- <mark data-ann data-ann-text> + <sup data-ann-ref>,
+  // and data-status on the heading -- so they travel with the Note, are kept in
+  // Versions, and need no new field and no Rules change. Adding one while editing
+  // goes out through the ordinary autosave; changing one in the read view is a
+  // revision through host.revise, exactly like Rename. A finalised Note refuses
+  // both in words. The status BADGE is drawn at view time and never saved.
+  // =====================================================================
+  const STATUS_META = { done: ["Done", "#1b6e3c"], ongoing: ["Ongoing", "#1f3a6e"], process: ["Under process", "#7a4b00"], next: ["Next", "#6a3fa0"] };
+  const STATUS_CUSTOM_DEFAULT = "#374151";
+  const ANN_BLOCKS = "p,li,h1,h2,h3,h4,blockquote,td,th";
+  const FINALISED_SAY = () => t("This Note is finalised, so it can't be changed. Un-finalise it from the ⋯ menu first.");
+  const annNumbers = (root) => [...root.querySelectorAll("[data-ann],[data-ann-ref]")].map((el) => Number(el.getAttribute("data-ann") || el.getAttribute("data-ann-ref"))).filter((n) => n > 0);
+  const annHigh = new Map(); // noteId -> the highest number used in this session, so a removed number is not handed out again
+  /** What the status of a heading looks like: [label, colour] (null when it has none). */
+  function statusLook(st, label, colour) {
+    if (st === "custom") return [label || t("Custom"), NOTE_STATUS_COLOURS.includes(colour) ? colour : STATUS_CUSTOM_DEFAULT];
+    return STATUS_META[st] ? [t(STATUS_META[st][0]), STATUS_META[st][1]] : null;
+  }
+  function hideAnnBubble(v) { v.annBubble?.remove(); v.annBubble = null; }
+  /** A small 💬 near the selection on a wide screen (the toolbar's 💬 does the same on any screen). */
+  function paintAnnBubble(v) {
+    const body = editBodyEl(v), sel = window.getSelection();
+    const wide = (v.bodyEl.clientWidth || v.el.clientWidth) >= 600;
+    if (!v.ed || !body || !wide || !sel?.rangeCount || sel.isCollapsed || !body.contains(sel.anchorNode) || !body.contains(sel.focusNode)) { hideAnnBubble(v); return; }
+    const r = sel.getRangeAt(0).getBoundingClientRect();
+    if (!r.width && !r.height) { hideAnnBubble(v); return; }
+    if (!v.annBubble) {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "ann-bubble"; b.dataset.annBubble = ""; b.textContent = "💬";
+      b.setAttribute("aria-label", t("Comment on the selected text")); b.title = t("Comment on the selected text");
+      b.addEventListener("mousedown", (ev) => ev.preventDefault());
+      b.addEventListener("click", () => { hideAnnBubble(v); runEditCommand(v, "annotate"); });
+      document.body.appendChild(b);
+      v.annBubble = b;
+    }
+    v.annBubble.style.left = `${Math.max(4, Math.min(window.innerWidth - 48, r.right + 4))}px`;
+    v.annBubble.style.top = `${Math.max(4, r.top - 46)}px`;
+  }
+  /** The text nodes a range really covers, with the part of each that is selected. */
+  function rangeTextNodes(range) {
+    const root = range.commonAncestorContainer.nodeType === 3 ? range.commonAncestorContainer.parentNode : range.commonAncestorContainer;
+    const out = [], w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    for (let n = w.nextNode(); n; n = w.nextNode()) {
+      if (!range.intersectsNode(n)) continue;
+      const from = n === range.startContainer ? range.startOffset : 0, to = n === range.endContainer ? range.endOffset : n.data.length;
+      if (to > from && n.data.slice(from, to).trim()) out.push({ n, from, to });
+    }
+    return out;
+  }
+  function blockOfNode(body, n) {
+    const el = n.nodeType === 1 ? n : n.parentElement;
+    const own = el?.closest(ANN_BLOCKS);
+    if (own && body.contains(own)) return own;
+    let top = el;
+    while (top && top.parentElement && top.parentElement !== body) top = top.parentElement;
+    return top ?? body;
+  }
+  /** 38: wrap the selected text in <mark data-ann> and put its [N] after it. One paragraph only; a refusal is said in the panel (I15). */
+  function applyAnnotation(v) {
+    const e = v.ed, body = editBodyEl(v);
+    if (!e || !body) return;
+    const text = (v.editPanelEl.querySelector("[data-panel-ann-text]")?.value || "").replace(/\s+/g, " ").trim().slice(0, NOTE_ANN_TEXT_MAX);
+    const range = e.range;
+    if (!range || range.collapsed || !body.contains(range.commonAncestorContainer)) { panelMsg(v, t("Select some text first.")); return; }
+    const parts = rangeTextNodes(range);
+    if (!parts.length) { panelMsg(v, t("Select some text first.")); return; }
+    if (new Set(parts.map((p) => blockOfNode(body, p.n))).size > 1) { panelMsg(v, t("Select text within one paragraph.")); return; }
+    if (parts.some((p) => p.n.parentElement?.closest("mark[data-ann]"))) { panelMsg(v, t("That text already has a comment.")); return; }
+    if (!text) { panelMsg(v, t("Type the comment first.")); return; }
+    const first = parts[0], last = parts[parts.length - 1];
+    const r = document.createRange();
+    r.setStart(first.n, first.from); r.setEnd(last.n, last.to);
+    const high = Math.max(annHigh.get(e.noteId) ?? 0, ...annNumbers(body));
+    const N = high + 1;
+    annHigh.set(e.noteId, N);
+    const mark = document.createElement("mark");
+    mark.setAttribute("data-ann", String(N)); mark.setAttribute("data-ann-text", text);
+    mark.appendChild(r.extractContents());
+    r.insertNode(mark);
+    const sup = document.createElement("sup");
+    sup.setAttribute("data-ann-ref", String(N)); sup.textContent = `[${N}]`;
+    mark.after(sup);
+    body.normalize();
+    closePanel(v);
+    body.focus();
+    const sel = window.getSelection(); sel.removeAllRanges();
+    const caret = document.createRange(); caret.setStartAfter(sup); caret.collapse(true); sel.addRange(caret);
+    flashStatus(v, t("Comment [{n}] added.", { n: num(N) }));
+    onEditInput(v);
+  }
+
+  /** The way a change made in the READ view is saved: a revision through the page's own save (like Rename). `change(div)` edits a parsed copy of the body and returns false when there is nothing to do. */
+  async function reviseReadBody(v, note, change) {
+    const live = getNote(note.noteId) ?? note;
+    if (host.flags?.on(live, "finalised")) { host.status(FINALISED_SAY()); return false; }
+    if (!host.canEdit() || !host.ready()) return false;
+    if (allViews().some((x) => x.ed && x.noteId === live.noteId)) { host.status(t("Finish editing this Note first.")); return false; }
+    const div = document.createElement("div");
+    div.innerHTML = sanitizeNoteHtml(live.bodyHtml || "");
+    if (change(div) === false) return false;
+    const bodyHtml = normBody(div.innerHTML);
+    try {
+      const newId = await host.revise({ note: live, expectedRevisionId: live.currentRevisionId, title: live.title ?? "", bodyHtml });
+      Object.assign(live, { bodyHtml, currentRevisionId: newId, updatedAt: { toDate: () => new Date(), toMillis: () => Date.now() } });
+      host.afterRevise(live);
+      rerenderNoteEverywhere(live.noteId);
+      return true;
+    } catch (err) {
+      console.error("[note change]", err);
+      host.status(err?.message === "Stale Note revision." ? t("This Note changed on another device. Reload it, then try again.") : t("That did not save."));
+      return false;
+    }
+  }
+  /** Scroll to an element in the read view, opening any folded heading around it. */
+  function revealIn(v, el) {
+    if (!el) return;
+    for (let up = el.closest(".note-sec.collapsed"); up; up = up.parentElement?.closest(".note-sec.collapsed")) up.querySelector(":scope > .note-sec-h [data-sec-toggle]")?.click();
+    el.scrollIntoView({ block: "center" });
+    el.classList.add("ann-flash");
+    setTimeout(() => el.classList.remove("ann-flash"), 1600);
+  }
+  /** The Annotations list at the end of the read view (before the links). */
+  function paintAnnotations(v) {
+    v.bodyEl.querySelector("[data-annotations]")?.remove();
+    const marks = new Map();
+    for (const m of v.bodyEl.querySelectorAll("mark[data-ann]")) if (!marks.has(m.dataset.ann)) marks.set(m.dataset.ann, m);
+    for (const s of v.bodyEl.querySelectorAll("sup[data-ann-ref]")) { s.textContent = `[${num(s.dataset.annRef)}]`; s.tabIndex = 0; s.setAttribute("role", "button"); }
+    for (const m of marks.values()) { m.tabIndex = 0; m.setAttribute("role", "button"); }
+    if (!marks.size) return;
+    const own = host.canEdit();
+    const list = [...marks.entries()].sort((a, b) => Number(a[0]) - Number(b[0]));
+    const sec = document.createElement("section");
+    sec.className = "note-annotations"; sec.dataset.annotations = "";
+    sec.innerHTML = `<h3>💬 ${escapeHtml(t("Annotations"))}</h3>` + list.map(([n, m]) =>
+      `<div class="ann-item" data-ann-item="${n}" tabindex="0"><span class="ann-num">[${escapeHtml(num(n))}]</span>
+        <div class="ann-main"><q class="ann-quote">${escapeHtml((m.textContent || "").trim())}</q><p class="ann-comment">${escapeHtml(m.getAttribute("data-ann-text") || "")}</p></div>
+        ${own ? `<div class="ann-btns"><button type="button" class="secondary" data-ann-edit="${n}" aria-label="${escapeHtml(t("Edit this comment"))}" title="${escapeHtml(t("Edit this comment"))}">✏</button><button type="button" class="secondary" data-ann-del="${n}" aria-label="${escapeHtml(t("Remove this comment"))}" title="${escapeHtml(t("Remove this comment"))}">✕</button></div>` : ""}</div>`).join("");
+    v.bodyEl.appendChild(sec);
+  }
+  function editAnnotation(v, note, n) {
+    const m = [...(getNote(note.noteId) ? v.bodyEl.querySelectorAll("mark[data-ann]") : [])].find((x) => x.dataset.ann === String(n));
+    if (host.flags?.on(getNote(note.noteId) ?? note, "finalised")) { host.status(FINALISED_SAY()); return; }
+    if (!host.canEdit() || !host.ready()) return;
+    const d = smallDialog("ann-edit", `✏ ${t("Edit this comment")} [${num(n)}]`, `
+        <form data-ann-form class="tag-picker-new">
+          <input type="text" maxlength="${NOTE_ANN_TEXT_MAX}" data-ann-input value="${escapeHtml(m?.getAttribute("data-ann-text") || "")}" aria-label="${escapeHtml(t("Comment"))}">
+          <button type="submit" data-ann-save>${escapeHtml(t("Save"))}</button>
+        </form>`);
+    const input = d.q("[data-ann-input]");
+    d.q("[data-ann-form]").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const text = input.value.replace(/\s+/g, " ").trim().slice(0, NOTE_ANN_TEXT_MAX);
+      if (!text) { d.msg(t("Type the comment first.")); return; }
+      const save = d.q("[data-ann-save]"); save.disabled = true;
+      const ok = await reviseReadBody(v, note, (div) => {
+        const mk = div.querySelector(`mark[data-ann="${n}"]`);
+        if (!mk) return false;
+        mk.setAttribute("data-ann-text", text);
+      });
+      if (ok) d.close(); else { save.disabled = false; d.msg(t("That did not save.")); }
+    });
+    input.focus(); input.select();
+  }
+  function removeAnnotation(v, note, n) {
+    if (host.flags?.on(getNote(note.noteId) ?? note, "finalised")) { host.status(FINALISED_SAY()); return; }
+    if (!host.canEdit() || !host.ready()) return;
+    const d = smallDialog("ann-del", `✕ ${t("Remove this comment")} [${num(n)}]`, `
+        <p>${escapeHtml(t("Remove this comment? The text stays."))}</p>
+        <div class="note-actions"><button type="button" data-ann-confirm>${escapeHtml(t("Remove"))}</button><button type="button" class="secondary" data-dlg-close>${escapeHtml(t("Cancel"))}</button></div>`);
+    d.q("[data-ann-confirm]").addEventListener("click", async () => {
+      const ok = await reviseReadBody(v, note, (div) => {
+        const mk = div.querySelector(`mark[data-ann="${n}"]`);
+        if (!mk) return false;
+        mk.replaceWith(...mk.childNodes);
+        for (const s of div.querySelectorAll(`sup[data-ann-ref="${n}"]`)) s.remove();
+        div.normalize();
+      });
+      if (ok) d.close(); else d.msg(t("That did not save."));
+    });
+  }
+
+  /** 39: the status menu a heading's badge opens. */
+  function openStatusMenu(v, note, idx) {
+    const live = getNote(note.noteId) ?? note;
+    if (host.flags?.on(live, "finalised")) { host.status(FINALISED_SAY()); return; }
+    if (!host.canEdit() || !host.ready()) return;
+    const sec = v.bodyEl.querySelector(`.note-sec[data-sec-index="${CSS.escape(String(idx))}"]`);
+    const d = smallDialog("status", `${t("Status of this heading")}: ${sec?.dataset.headingText ?? ""}`, `
+        <div class="status-presets">${Object.entries(STATUS_META).map(([k, [name, col]]) => `<button type="button" class="secondary status-opt" data-status-set="${k}"><span class="status-dot" style="background:${col}"></span>${escapeHtml(t(name))}</button>`).join("")}
+          <button type="button" class="secondary status-opt" data-status-custom>${escapeHtml(t("Custom…"))}</button>
+          <button type="button" class="secondary status-opt" data-status-clear>${escapeHtml(t("Clear"))}</button></div>
+        <form data-status-form class="status-custom" hidden>
+          <input type="text" maxlength="${NOTE_STATUS_LABEL_MAX}" data-status-label-input aria-label="${escapeHtml(t("Status label"))}" placeholder="${escapeHtml(t("Status label"))}">
+          <div class="status-swatches" role="group" aria-label="${escapeHtml(t("Badge colour"))}">${NOTE_STATUS_COLOURS.map((c, i) => `<button type="button" class="status-swatch" data-status-colour-pick="${c}" aria-pressed="${i === 0}" aria-label="${c}" style="background:${c}"></button>`).join("")}</div>
+          <button type="submit" data-status-save>${escapeHtml(t("Save"))}</button>
+        </form>`);
+    const apply = async (st, label, colour) => {
+      const ok = await reviseReadBody(v, note, (div) => {
+        const h = [...div.childNodes].filter((n) => n.nodeType === 1 && /^H[1-4]$/.test(n.tagName))[Number(idx)];
+        if (!h) return false;
+        for (const k of ["data-status", "data-status-label", "data-status-colour"]) h.removeAttribute(k);
+        if (st) h.setAttribute("data-status", st);
+        if (st === "custom") { h.setAttribute("data-status-label", label); h.setAttribute("data-status-colour", colour); }
+      });
+      if (ok) d.close(); else d.msg(t("That did not save."));
+    };
+    let colour = NOTE_STATUS_COLOURS[0];
+    d.el.addEventListener("click", (ev) => {
+      const b = ev.target.closest("button");
+      if (!b) return;
+      if (b.dataset.statusSet) apply(b.dataset.statusSet);
+      else if ("statusClear" in b.dataset) apply(null);
+      else if ("statusCustom" in b.dataset) { d.q("[data-status-form]").hidden = false; d.q("[data-status-label-input]").focus(); }
+      else if (b.dataset.statusColourPick) {
+        colour = b.dataset.statusColourPick;
+        for (const s of d.el.querySelectorAll("[data-status-colour-pick]")) s.setAttribute("aria-pressed", String(s === b));
+      }
+    });
+    d.q("[data-status-form]").addEventListener("submit", (ev) => {
+      ev.preventDefault();
+      const label = d.q("[data-status-label-input]").value.replace(/[<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, NOTE_STATUS_LABEL_MAX);
+      if (!label) { d.msg(t("Type a short label first.")); return; }
+      apply("custom", label, colour);
+    });
+  }
+
   function buildBody(v, note) {
     const host_ = v.el.querySelector("[data-pane-body]");
     const tmp = document.createElement("div");
@@ -1404,6 +1639,19 @@ export function createNoteViews(host) {
         if (!text.textContent.trim()) text.textContent = sec.dataset.headingText;
         btn.append(arrow, text);
         h.appendChild(btn);
+        // Item 39: the status badge is drawn here, at view time, from the heading's own attributes -- it is never part of the saved body.
+        const st = node.getAttribute("data-status");
+        const look = st ? statusLook(st, node.getAttribute("data-status-label"), node.getAttribute("data-status-colour")) : null;
+        if (look) { sec.dataset.status = st; sec.dataset.statusLabel = look[0]; sec.dataset.statusColour = look[1]; }
+        if (look || host.canEdit()) {
+          const badge = document.createElement(host.canEdit() ? "button" : "span");
+          badge.className = look ? "note-status" : "note-status note-status-none";
+          badge.dataset.statusBadge = String(index);
+          badge.textContent = look ? look[0] : t("Set status");
+          if (look) { badge.dataset.statusIs = st; badge.style.background = look[1]; }
+          if (host.canEdit()) { badge.type = "button"; badge.setAttribute("aria-label", `${t("Status of this heading")}: ${badge.textContent}`); }
+          h.appendChild(badge);
+        }
         const body = document.createElement("div"); body.className = "note-sec-body";
         sec.append(h, body);
         stack[stack.length - 1].el.appendChild(sec);
@@ -1699,7 +1947,7 @@ export function createNoteViews(host) {
     v.el.querySelector("[data-pane-chips]").innerHTML = (host.chips?.(note) ?? []).map((f) =>
       `<button type="button" class="folder-chip" data-pane-chip="${escapeHtml(f.id)}">📁 ${escapeHtml(f.label)}</button>`).join("") + tagChipsHtml(note);
     // While an edit is open the editor IS the body: a re-render must never wipe the reader's typing.
-    if (!(v.ed && v.ed.noteId === note.noteId)) { showReadChrome(v, note); buildBody(v, note); paintLinks(v, note); if (!findBarOf(v).hidden) runFind(v, { keep: true }); }
+    if (!(v.ed && v.ed.noteId === note.noteId)) { showReadChrome(v, note); buildBody(v, note); paintAnnotations(v); paintLinks(v, note); if (!findBarOf(v).hidden) runFind(v, { keep: true }); }
     if (v.kind === "window") { paintPinned(v, note); paintToc(v); v.win.querySelector(".nw-title").textContent = noteTitleOf(note); v.win.dataset.noteId = note.noteId; updateWindowSwitcher(); }
     paintVersionLine(v, note);
     renderPaneBar(v);
@@ -1936,6 +2184,7 @@ export function createNoteViews(host) {
     if (v.ed) { // S12: the editor's panel and heading controls
       if (on("[data-panel-close]")) { closePanel(v); editBodyEl(v)?.focus(); return; }
       if (on("[data-panel-apply]")) { applyLink(v); return; }
+      if (on("[data-panel-ann-apply]")) { applyAnnotation(v); return; }
       if (on("[data-panel-unlink]")) { removeLink(v); return; }
       if (on("[data-table-insert]")) { insertTable(v); return; }
       const top = on("[data-table-op]"); if (top) { tableOp(v, top.dataset.tableOp); return; }
@@ -1983,6 +2232,15 @@ export function createNoteViews(host) {
     }
     const chip = on("[data-pane-chip]");
     if (chip) { host.onChip?.(v, chip.dataset.paneChip); return; }
+    if (!v.ed) { // Part C1: annotations (38) and heading status (39), read view only
+      const ref = on("mark[data-ann], sup[data-ann-ref]");
+      if (ref && v.bodyEl.contains(ref)) { revealIn(v, v.bodyEl.querySelector(`[data-ann-item="${CSS.escape(ref.dataset.ann || ref.dataset.annRef)}"]`)); return; }
+      const annEdit = on("[data-ann-edit]"); if (annEdit) { editAnnotation(v, note, annEdit.dataset.annEdit); return; }
+      const annDel = on("[data-ann-del]"); if (annDel) { removeAnnotation(v, note, annDel.dataset.annDel); return; }
+      const annItem = on("[data-ann-item]");
+      if (annItem && v.bodyEl.contains(annItem)) { revealIn(v, v.bodyEl.querySelector(`mark[data-ann="${CSS.escape(annItem.dataset.annItem)}"]`)); return; }
+      const badge = on("button[data-status-badge]"); if (badge) { openStatusMenu(v, note, badge.dataset.statusBadge); return; }
+    }
     const toggle = on("[data-sec-toggle]");
     if (toggle) {
       const sec = toggle.closest(".note-sec");
@@ -2021,7 +2279,7 @@ export function createNoteViews(host) {
     v.win.classList.toggle("toc-open", show);
     if (!show) { toc.replaceChildren(); return; }
     toc.innerHTML = `<p class="nw-toc-head">☰ ${escapeHtml(t("Contents"))}</p>` + secs.map((sec) =>
-      `<button type="button" class="nw-toc-item" data-toc-jump="${sec.dataset.secIndex}" style="padding-inline-start:${(0.5 + (Number(sec.dataset.level) - 1) * 0.7).toFixed(1)}rem">${escapeHtml(sec.dataset.headingText)}</button>`).join("");
+      `<button type="button" class="nw-toc-item" data-toc-jump="${sec.dataset.secIndex}" style="padding-inline-start:${(0.5 + (Number(sec.dataset.level) - 1) * 0.7).toFixed(1)}rem">${sec.dataset.status ? `<span class="status-dot" data-toc-dot="${escapeHtml(sec.dataset.status)}" title="${escapeHtml(sec.dataset.statusLabel)}" style="background:${escapeHtml(sec.dataset.statusColour)}"></span>` : ""}${escapeHtml(sec.dataset.headingText)}</button>`).join("");
   }
   const DETAILS_KEY = () => `${host.winKey}.details`;
   function detailsOpenPref() { try { return localStorage.getItem(DETAILS_KEY()) === "1"; } catch { return false; } }
