@@ -2323,6 +2323,7 @@ export const BN = {
   "File under": "যেখানে রাখবেন", // ?
   "+ New list…": "+ নতুন তালিকা…", // ?
   "New list title": "নতুন তালিকার শিরোনাম", // ?
+  "Not filed": "কোথাও রাখা হয়নি",
 
   // 2 Sep 2026 -- the list-pane splitter/collapse toggle shared by
   // Approach, Explore, QCR and Asma ul Husna.
@@ -3558,6 +3559,8 @@ export const BN = {
   "Hide the times": "বুকমার্কের সময় লুকান",
   "Show the times": "বুকমার্কের সময় দেখান",
   "Back to {page}": "ফিরে যান: {page}",
+  "← Back": "← ফিরে যান",
+  "Make the wheel bigger or smaller": "চাকাটি বড় বা ছোট করুন",
   "the previous page": "আগের পৃষ্ঠা",
   "The time this bookmark was opened was not saved: {error}": "এই বুকমার্ক খোলার সময় সংরক্ষণ হয়নি: {error}",
   "Surah {surah}, Bismillah": "সূরা {surah}, বিসমিল্লাহ",

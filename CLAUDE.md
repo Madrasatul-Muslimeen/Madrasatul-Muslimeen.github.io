@@ -252,14 +252,15 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.93 on `main`** (6 Oct 2026 — **Al-Fatiha on the Writing sheet follows your counting; the Bismillah's title is "Bismillah"**).
-- **What** (the Owner, 6 Oct 2026: "Bismillah is here as well as the first Ayah. pls fix in other places too"; decision 76):
-  - `writing-sheet.js`: with the reader's count on (decision 55), page 1 is drawn through `fatihaPageLines`, the Read view's own function: the Bismillah unnumbered, the numbers one lower, ⑥ before غَيْرِ. The pop-out's Ayah view of a word in stored 1:7 shows only its half (Ayah 6 or 7). Count off: the stored text, as before.
-  - `quranrevival.html`: the unnumbered Bismillah's title is "Bismillah" alone (was "Bismillah — Surah Al-Faatiha").
-  - Not yet: displayed Ayat 6 and 7 as two separate records (decision 76, part 3) is its own round, because it changes a permanent unit key.
+**Current milestone: v09.96 on `main`** (6 Oct 2026 — **Know Your Status: a movable, resizable window; numbers never cut; Back on its pop-ups**).
+- **What** (the Owner, 6 Oct 2026; decision 79):
+  - `float-card.js` (new, on `float-window.js`): `makeFloatingCard` (title bar moves, eight edges resize, remembered per device) and `makeResizableBox` (a ⤡ corner grip). From 900px Know Your Status and its Approach card float; on a phone they stay full-screen.
+  - `mastery-wheel.js`: `roomForNumbers` (opt-in) widens the wheel's box to hold its numbers; with 40 Approaches the bottom one ran into the unit buttons. The landing wheel is unchanged.
+  - Back: "← Back" on the Approach card; `bookmark-nav.js` `mountBackRow` (shared with the bookmarks' Back) gives Explore "← Back to Know Your Status", which closes Explore and reopens the card on the same Approach.
 - **Checks:**
-  - writing-sheet-fatiha-count-browser 30/0 (new; mutations no-count 16 fail, no-half 8 fail), bismillah-label-browser 34/0 (title updated in place; mutation old-title 2 fail), writing-sheet-popout-browser 222/0 (runs with the count off, recorded), writing-sheet-browser 206/0, writing-sheet-unit-toolbar 54/0, fatiha-count-browser 136/0, fatiha-count 35/0, wheel-writing-slice 25/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
-- **With the Owner:** open Al-Fatiha, tap Writing: the Bismillah has no number and Alhamdulillah is ①. Tap 🔍 Pop out, tap a word of غَيْرِ... and choose Ayah: only Ayah 7 shows.
+  - kys-window-browser 50/0 (new, 40 Approaches; --mutate=no-room, no-float and no-back each fail it; the "on top, Explore closed" check fails without its fix, found by looking at the suite's own screenshot)
+  - quran-my-status 248/0, bookmark-marks-back 84/0, bookmark-open 77/0, wheel-centre 645/0, tablet-wheel 74/0, wheel-slice-opens-track 96/0, wheel-unit-go 254/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
+- **With the Owner:** on a PC, open Know Your Status, drag its title bar and a corner; drag the ⤡ on the wheel. Tap a slice: the Approach card has ← Back.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration

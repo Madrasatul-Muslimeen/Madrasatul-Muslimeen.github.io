@@ -32,7 +32,7 @@ import {
 } from "./hadeethenc-corpus.js";
 import {
   OPENITI_CREDIT_URL,
-  loadAllOpenitiBookIndexes, loadOpenitiChapter, chapterForHadithNumber,
+  loadOpenitiBookSummaries, loadOpenitiBookIndex, loadOpenitiChapter, chapterForHadithNumber,
 } from "./openiti-corpus.js";
 
 const CONTENT_LANG_LABELS = { ar: "العربية", en: "English", bn: "বাংলা" };
@@ -774,19 +774,21 @@ function renderOpenitiSource(state) {
 }
 
 async function renderOpenitiBody(body, oi, localRefresh) {
-  if (!oi.books) oi.books = await loadAllOpenitiBookIndexes();
+  // The list draws from the small summary; a book's own index loads only when that book is opened.
+  if (!oi.books) oi.books = await loadOpenitiBookSummaries();
+  const found = oi.bookUri ? oi.books.find(([uri]) => uri === oi.bookUri) : null;
+  const index = found ? await loadOpenitiBookIndex(oi.bookUri) : null;
 
   body.textContent = "";
-  body.appendChild(openitiCrumbs(oi, localRefresh));
+  body.appendChild(openitiCrumbs(oi, index, localRefresh));
 
   if (!oi.bookUri) {
     renderOpenitiBookList(body, oi, localRefresh);
     return;
   }
 
-  const found = oi.books.find(([uri]) => uri === oi.bookUri);
   if (!found) { body.appendChild(el("p", "hadith-note", t("Nothing here yet."))); return; }
-  const [versionUri, index] = found;
+  const versionUri = oi.bookUri;
 
   if (!oi.chapterId) {
     renderOpenitiChapterList(body, oi, index, localRefresh);
@@ -822,7 +824,7 @@ function openitiPageRef(ref) {
   return m ? t("Vol. {v}, p. {p}", { v: num(Number(m[1])), p: num(Number(m[2])) }) : ref;
 }
 
-function openitiCrumbs(oi, localRefresh) {
+function openitiCrumbs(oi, index, localRefresh) {
   const bar = el("nav", "hadith-crumbs");
   bar.dataset.openitiCrumbs = "true";
   const add = (label, onClick) => {
@@ -837,9 +839,7 @@ function openitiCrumbs(oi, localRefresh) {
     }
   };
   add(t("OpenITI"), () => { oi.bookUri = null; oi.chapterId = null; oi.showAllChapters = false; localRefresh(); });
-  const found = oi.bookUri ? oi.books.find(([uri]) => uri === oi.bookUri) : null;
-  if (found) {
-    const [, index] = found;
+  if (index) {
     add(index.titleEn, oi.chapterId ? () => { oi.chapterId = null; localRefresh(); } : null);
     if (oi.chapterId) {
       const chapter = index.chapters.find((c) => c.id === oi.chapterId);

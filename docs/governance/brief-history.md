@@ -14,6 +14,33 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v09.95 on `main`** (6 Oct 2026 — **Asma ul Husna: "File under" every classification in one Save**).
+- **What** (the Owner, 6 Oct 2026: "'File under' should have option to file a single/ dual name under which Group, by Act, by Essence. Build it."; decision 78):
+  - `quranrevival.html` `asmaXFileIntoRowHtml`: Add a new Name has a "File under" box with one row per active classification (Group, Dual Names, and the Owner's own, e.g. By Act, By Essence), each "Not filed" unless chosen, with "+ New list…" per row. One Save files under every row set. Shown on every Add a new Name; from inside a list, that list is chosen; from the Note view's "+ New Dual Name", the Dual Names row.
+  - The speed assessment (v09.94) is delivered; its startup-paint step waits for the Owner's OK (I9).
+- **Checks:**
+  - asma-file-under-browser 52/0 (new; --mutate=no-filing 12 fail, --mutate=one-row fails the row and filing checks), asma-classifications-boundary 36/0 (3 checks updated in place), asma-classification-rename 20/0, asma-explore-name-poster 36/0, card-look 96/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
+- **With the Owner:** Explore → Asma ul Husna → ⋯ → +N. Type a name, choose a list under Dual Names and one under By Act, Save: the Name is in both.
+
+**Previous milestone: v09.94 on `main`** (6 Oct 2026 — **Speed: a release no longer empties the phone's cache; the Hadith book list loads 2.6 KB instead of 1.8 MB**).
+- **What** (the Owner, 6 Oct 2026: "Assess and fix issues with speed, loading. opening of all files, modules takes ages"; the assessment is `docs/reports/2026-10-06-speed-assessment.md`):
+  - `sw.js`: every release made a new, empty cache and deleted the old one, so the first opens after each update downloaded everything again (main page 2.9 MB, first Word Card 2.1 MB, Hadith 2.5 MB, uncompressed). Now the waiting new version refreshes everything the old cache held (revalidating fetches) before the reader taps "Updated".
+  - Hadith: the OpenITI book list reads `split/books-summary.json` (2.6 KB, `tools/hadith-data-pull/openiti-books-summary.mjs`); a book's index loads when it is opened. Hadith page 2,493 → 1,085 KB.
+  - Not yet (proposed in the report): paint the landing from the device's last copy (about 3 Firestore trips in sequence today), load the Word Card/Note/Journey modules on first use (106 modules at startup), and a HadeethEnc category summary (423 KB).
+- **Checks:**
+  - service-worker 18/0 (2 new; both fail with the carry-over removed), openiti-browser 68/0 (2 checks updated in place; 6 fail with the old loading), openiti-books-summary 4/0 (new; --mutate=count fails it)
+  - hadith-source-navigation 50/0, hadith-search-announcement 16/0, claim-for-family-word-hadith 158/0, hadith-corpus 60/0, app-offline-boot 15/0, mushaf-font-offline-cache 29/0, openiti-split 70/0, openiti-corpus-integrity 6/0, stub-parity 4/0, phone-width-overflow 217/0
+- **With the Owner:** after this update, tap "Updated — tap to reload" once; later updates should open as fast as a normal open. Open Hadith → Collections: the book list should appear at once.
+
+**Previous milestone: v09.93 on `main`** (6 Oct 2026 — **Al-Fatiha on the Writing sheet follows your counting; the Bismillah's title is "Bismillah"**).
+- **What** (the Owner, 6 Oct 2026: "Bismillah is here as well as the first Ayah. pls fix in other places too"; decision 76):
+  - `writing-sheet.js`: with the reader's count on (decision 55), page 1 is drawn through `fatihaPageLines`, the Read view's own function: the Bismillah unnumbered, the numbers one lower, ⑥ before غَيْرِ. The pop-out's Ayah view of a word in stored 1:7 shows only its half (Ayah 6 or 7). Count off: the stored text, as before.
+  - `quranrevival.html`: the unnumbered Bismillah's title is "Bismillah" alone (was "Bismillah — Surah Al-Faatiha").
+  - Not yet: displayed Ayat 6 and 7 as two separate records (decision 76, part 3) is its own round, because it changes a permanent unit key.
+- **Checks:**
+  - writing-sheet-fatiha-count-browser 30/0 (new; mutations no-count 16 fail, no-half 8 fail), bismillah-label-browser 34/0 (title updated in place; mutation old-title 2 fail), writing-sheet-popout-browser 222/0 (runs with the count off, recorded), writing-sheet-browser 206/0, writing-sheet-unit-toolbar 54/0, fatiha-count-browser 136/0, fatiha-count 35/0, wheel-writing-slice 25/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
+- **With the Owner:** open Al-Fatiha, tap Writing: the Bismillah has no number and Alhamdulillah is ①. Tap 🔍 Pop out, tap a word of غَيْرِ... and choose Ayah: only Ayah 7 shows.
+
 **Previous milestone: v09.92 on `main`** (6 Oct 2026 — **Writing sheet: pop out a word or an Ayah, enlargeable, with every writing tool over it**).
 - **What** (the Owner, 6 Oct 2026: "enable word and an Ayah pop out and making it enlargeable while remaining all writing functions enabled for practise writing over it"):
   - `writing-sheet.js`: 🔍 Pop out on row 2; pick mode ("Tap a word to pop it out") finds the tapped word from the page's own layout (`wordAt`), never from pixels, and draws nothing; `ayahWordsOf` gathers the Ayah across pages, each word with its own page font.

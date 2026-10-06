@@ -19773,3 +19773,25 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
 - **Checks:**
   - writing-sheet-fatiha-count-browser 30/0 (new; --mutate=no-count and --mutate=no-half each fail it), bismillah-label-browser 34/0 (the title check updated in place, now exact; --mutate=old-title fails it)
   - writing-sheet-popout-browser 222/0 (now runs with the count off: it proves the pop-out's mechanics on the stored text), writing-sheet-browser 206/0, writing-sheet-unit-toolbar 54/0, fatiha-count-browser 136/0, fatiha-count 35/0, wheel-writing-slice 25/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
+
+## v09.94 — 6 Oct 2026 — Speed: the on-device cache survives releases; Hadith book list from a summary
+
+- **What:** the Owner, 6 Oct 2026 ("opening of all files, modules takes ages"). Assessment: `docs/reports/2026-10-06-speed-assessment.md`. `sw.js` `carryOverPreviousCache()` at install: the waiting new version refreshes (cache: "no-cache") every URL the previous `mm-app-*` cache held into its own cache, six at a time, best effort, so a release no longer leaves the reader with an empty cache. `openiti-corpus.js` `loadOpenitiBookSummaries()` and `hadith-browser.js`: the OpenITI book list reads `split/books-summary.json` (new, 2.6 KB, from `tools/hadith-data-pull/openiti-books-summary.mjs`); a book's `index.json` loads on opening it.
+- **Checks:**
+  - service-worker 18/0: "the new version's cache already holds every file the old one had" and "the first open after the update finds every app file it asks for already on the phone"; both fail with the carry-over removed (16/2). A first form of the second check, using `fromServiceWorker()`, passed under that mutation and was replaced.
+  - openiti-browser 68/0 (two checks updated in place: the list fetches the summary and no index; opening a book fetches only its own index; 62/6 with the old loading), openiti-books-summary 4/0 (new drift guard; --mutate=count 2/2)
+  - hadith-source-navigation 50/0, hadith-search-announcement 16/0, claim-for-family-word-hadith 158/0, hadith-corpus 60/0, app-offline-boot 15/0, mushaf-font-offline-cache 29/0, openiti-split 70/0, openiti-corpus-integrity 6/0, stub-parity 4/0, phone-width-overflow 217/0
+
+## v09.95 — 6 Oct 2026 — Asma ul Husna: "File under" every classification in one Save
+
+- **What:** the Owner, 6 Oct 2026 (decision 78). `asmaXFileIntoRowHtml(preselect)` draws one `select[data-asma-file-kind]` per active classification with "Not filed", the lists and "+ New list…" (its own title field); `asmaXFilePreselect()` picks the opening context's row; the save files under every row set (a new list takes the typed title or the transliteration). The row now shows on every Add a new Name. `asmaXFileSelectOptionsHtml` (the old cascade) is gone; bn "Not filed".
+- **Checks:**
+  - asma-file-under-browser 52/0 (new, en/bn at 390 and 1280: four rows in order, all "Not filed", the box fits, + New list shows its title, the saved document has the Name in the Dual, the new By Act and the By Essence lists and no Group; --mutate=no-filing 40/12, --mutate=one-row fails), asma-classifications-boundary 36/0 (three source checks updated in place, reasons recorded)
+  - asma-classification-rename 20/0, asma-explore-name-poster 36/0, card-look 96/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
+
+## v09.96 — 6 Oct 2026 — Know Your Status: a movable, resizable window; numbers never cut; Back on its pop-ups
+
+- **What:** the Owner, 6 Oct 2026 (decision 79). New `app/js/float-card.js` (`makeFloatingCard`, `makeResizableBox`, on `float-window.js`; localStorage `mm_kys_rect`, `mm_kys_detail_rect`, `mm_kys_wheel`, `mm_kys_juz_wheel`). `mastery-wheel.js` `renderRingWheel`/`renderScopedWheel` take `roomForNumbers` (Know Your Status only). `bookmark-nav.js` `mountBackRow` (the bookmarks' Back, made shared); `quranrevival.html`: the floating cards, a ⠿ handle on the Approach card, "← Back", `offerBackToMyStatus` on the three jumps to Explore, and `setStageView` dropping that chip outside Explore. bn: "← Back", "Make the wheel bigger or smaller".
+- **Checks:**
+  - kys-window-browser 50/0 (new; 40 Approaches seeded, as the live tenant; en/bn at 1280 and 390; --mutate=no-room fails the number checks, no-float the move/resize checks, no-back the Back chip checks). Three first-run failures were read: one a wrong Bangla expectation, two real (the wheel's box was wider than the wheel, so its grip started from the wrong size; the Approach card's header had nowhere to hold). A fourth, the card reopening BEHIND Explore, was found by looking at the screenshot; its check fails without the fix.
+  - quran-my-status 248/0, bookmark-marks-back 84/0, bookmark-open 77/0, wheel-centre 645/0, tablet-wheel 74/0, wheel-slice-opens-track 96/0, wheel-unit-go 254/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
