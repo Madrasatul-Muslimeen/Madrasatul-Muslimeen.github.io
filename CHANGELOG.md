@@ -19816,3 +19816,10 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
 - **Checks:**
   - note-sheet-engine 89/0, note-sheet-engine-mutations 10/10 fail the suite, journey-sheet-browser 962/0 (Builder mutations: sanitiser trusts the snapshot 9 fail, live grid saved 7, keys not stopped 3, read-only accepts edits 3, fill not relative 4); Architect: the snapshot without escaping fails the engine suite (88/1)
   - note-sanitize-boundary 13/0, journey-annotations-status 536/0, journey-editor 577/0, journey-note-pane 327/0, journey-reading-tools 488/0, rules-authorisation-executable 63/0, stub-parity 4/0, phone-width-overflow 217/0, behaviour 1006/1 (sandbox baseline)
+
+## v09.100 — 6 Oct 2026 — The Back bubble never covers the Word Card
+
+- **What:** the Owner, 6 Oct 2026 (a screenshot of the bubble over the Word Card, labelled "← Back to QuranRevival v09.98SearchPreviewing as:…"). `bookmark-nav.js`: `mountBackRow` learns the page's own fixed areas under its spot while the page settles (1.5 s) and steps aside (display none) when a fixed area appears there later or when something fills the screen, coming back when it goes; a MutationObserver on the page re-checks once per frame and ignores the chip's own changes. New `pageLabelOf()` names the page by its heading's words, leaving out buttons, the version and the preview note. The first fix (step aside when a bar is over half the screen) passed at 390 and failed at 1280, where the card is a window over the corner; "any fixed area" then hid it on the PC landing, whose wheel area is fixed at the same z-index as the Word Card, which is why the page's own fixed areas are learnt. Decision 81 recorded.
+- **Checks:**
+  - bookmark-marks-back-browser 96/0 (new checks: the bubble covers no part of the Word Card at 390 and 1280, comes back at the bottom when it closes, and the Qur'an page's name is "QuranRevival"; --mutate=no-aside fails at 1280, --mutate=raw-label fails all four)
+  - kys-window 50/0, bookmark-open 77/0, bookmark-last-place 68/0, bookmark-sheet 176/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1006/1 (sandbox baseline)
