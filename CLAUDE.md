@@ -252,14 +252,16 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.101 on `main`** (6 Oct 2026 — **Note settings follow you to every device: tabs, templates, quick phrases, heading styles, folds**).
-- **What** (Owner decisions 72 and 80; Builder round #616):
-  - `note-user-settings.js` (new, pure): cleans every part to a closed shape — safe Note ids, plain text with caps, palette colours only, template bodies through the Note sanitiser (50 × 20 KB), 100 phrases, 300 fold entries.
-  - `note-user-settings-fs.js` (new): `userPrefs/{uid}.mmsaNotes`, always `setDoc(…, { merge: true })`, read once when a Note first shows (I9); the old one-device folds are copied up once and never deleted. No Rules change; `themeColors` is never written.
-  - `note-window.js`: ⋯ → 🧰 My Note tools (Tabs, Templates, Phrases, Headings); ✚ offers "A blank Note" or a template; 📝 Quick phrases in the editing toolbar; folds saved to the account, never into the Note.
+**Current milestone: v09.102 on `main`** (6 Oct 2026 — **The landing shows the wheel at once (startup paint)**).
+- **What** (Owner decision 81 item 1; speed assessment item 4):
+  - The wheel as last drawn on this device is kept in localStorage (`mmsa.wheelPaint.v1`: account, language, the SVG) after every draw.
+  - On the next open a plain inline script beside `#wheelContainer` shows it while the page is still being read; the module then shows the landing early, translated and `inert`, without the "Loading your study…" box, so nothing moves at the real reveal. The real wheel replaces the copy in the same place.
+  - Forgotten on sign-out; another account's copy is dropped as soon as sign-in answers; a copy in the other language, or carrying anything but the wheel's own drawing, is refused; any boot that cannot finish takes it away.
+  - Measured at 400 ms per Firestore trip: the wheel shows at ~0.3 s, the real one at ~1.5 s (was "Loading…" until then).
+  - Decision 81 recorded in the decisions file (it was missing).
 - **Checks:**
-  - journey-across-devices-browser 252/0 (six mutations each fail it), note-user-settings 43/0, every journey-* suite green (journey-note-pane 327/0 and journey-reading-tools 488/0 after their fold checks were updated in place), rules-authorisation-executable 63/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
-- **With the Owner:** open a Note → ⋯ → 🧰 My Note tools → Headings, pick a colour for H1; open the same Note on another device: the heading has it.
+  - startup-paint-browser 60/0 (mutations no-drop, no-keep, any-uid, no-guard, any-lang each fail it), boot-status 24/0, landing-drawers 274/0, wheel-centre 645/0, unit-rings 106/0 (its Al-Faatiha count updated in place: 8 arcs since v09.97), quranrevival-startup-reads 2/0, service-worker 18/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
+- **With the Owner:** open the app once, then close it and open it again: the wheel is there straight away, dimmed, and becomes the live one a moment later.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration

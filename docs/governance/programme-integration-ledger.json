@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.101",
+    "version": "09.102",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2393,8 +2393,20 @@
     {
       "version": "09.101",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Part C3: tabs, templates, phrases, heading styles and folds in userPrefs/{uid}.mmsaNotes; Builder #616.",
+      "integration": {
+        "authorizedOn": "2026-10-06",
+        "integratedOn": "2026-10-06",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.102",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The landing shows the last-drawn wheel at once, inert, until the real one is drawn (decision 81 item 1).",
       "integration": {
         "authorizedOn": "2026-10-06",
         "integratedOn": "2026-10-06",
@@ -2403,8 +2415,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.102",
+  "nextUnallocated": "09.103",
   "nextUnallocatedNote": [
+    "v09.102 was allocated to Startup paint, 2026-10-06.",
     "v09.101 was allocated to Note settings across devices, 2026-10-06.",
     "v09.100 was allocated to the Back bubble stepping aside for windows, 2026-10-06.",
     "v09.99 was allocated to a spreadsheet inside a Note, 2026-10-06.",
