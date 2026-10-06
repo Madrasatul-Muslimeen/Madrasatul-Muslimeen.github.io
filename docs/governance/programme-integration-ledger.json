@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.96",
+    "version": "09.97",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2333,8 +2333,20 @@
     {
       "version": "09.96",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Know Your Status: movable and resizable from 900px, a wheel resize grip, numbers never cut, Back on its pop-ups (decision 79).",
+      "integration": {
+        "authorizedOn": "2026-10-06",
+        "integratedOn": "2026-10-06",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.97",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Al-Fatiha displayed Ayat 6 and 7 are two separate progress records (ayah:1:7 and ayah:1:8); old 6-7 marks are copied to both (decisions 76-77).",
       "integration": {
         "authorizedOn": "2026-10-06",
         "integratedOn": "2026-10-06",
@@ -2343,8 +2355,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.97",
+  "nextUnallocated": "09.98",
   "nextUnallocatedNote": [
+    "v09.97 was allocated to Al-Fatiha Ayat 6 and 7 as two records, 2026-10-06.",
     "v09.96 was allocated to Know Your Status as a window, 2026-10-06.",
     "v09.95 was allocated to Asma File under by every classification, 2026-10-06.",
     "v09.94 was allocated to keeping the on-device cache across releases, 2026-10-06.",
