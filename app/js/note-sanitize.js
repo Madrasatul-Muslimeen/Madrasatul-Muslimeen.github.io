@@ -18,6 +18,7 @@
 // tag/attribute without ever running a browser (see
 // tools/i18n-verify/note-sanitize-boundary.mjs).
 
+import { NOTE_IMAGE_WIDTHS, NOTE_IMAGE_ALT_MAX, isNoteImagePath } from "./note-image-path.js";
 import { cleanSheetState, serializeSheetState, sheetStaticHtml } from "./note-sheet-engine.js";
 
 /** Formatting a Note editor can actually produce (bold/italic/underline/
@@ -63,6 +64,9 @@ export const NOTE_ALLOWED_ATTR = Object.freeze([
   // DOMPurify ONLY so narrowOutput() can see them: it strips both from every element, then REBUILDS each
   // `div[data-sheet]` from its strictly cleaned state -- so the only `class` that can ever come out is the one it writes.
   "class", "contenteditable", "data-sheet",
+  // 6 Oct 2026 (Part C, item 35): a picture in a Note. `data-mmsa-image` is a Storage path, checked EXACTLY by
+  // narrowOutput(); `width` is let past DOMPurify only so narrowOutput() can cut it to 25/50/75/100 on that <img>.
+  "data-mmsa-image", "width",
 ]);
 
 /** Heading status (item 39): the closed set, and the only colours a custom status may take (the editor's text-colour palette). */
@@ -148,6 +152,22 @@ function narrowOutput(html) {
     if (!isSafeNoteHref(a.getAttribute("href"))) a.removeAttribute("href");
     else { a.setAttribute("target", "_blank"); a.setAttribute("rel", "noopener noreferrer"); }
   }
+  // Item 35. A Note's own picture is `<img data-mmsa-image alt width>` and nothing else: a path that is not exactly
+  // noteImages/{uid}/{id}.webp drops the attribute, and an image with no valid path and no http(s) src goes entirely;
+  // a `src` (or anything else) on a Note picture is removed, so the only way it loads is the owner's own fetch.
+  for (const img of [...tpl.content.querySelectorAll("img")]) {
+    const path = img.getAttribute("data-mmsa-image");
+    if (path !== null && isNoteImagePath(path)) {
+      const alt = plainText(img.getAttribute("alt"), NOTE_IMAGE_ALT_MAX), w = img.getAttribute("width");
+      for (const a of [...img.attributes]) img.removeAttribute(a.name);
+      img.setAttribute("data-mmsa-image", path); img.setAttribute("alt", alt);
+      if (NOTE_IMAGE_WIDTHS.includes(w)) img.setAttribute("width", w);
+    } else {
+      img.removeAttribute("data-mmsa-image");
+      if (!/^https?:\/\//i.test(img.getAttribute("src") || "")) img.remove();
+    }
+  }
+  for (const el of tpl.content.querySelectorAll("[width]")) if (!(el.tagName === "IMG" && el.hasAttribute("data-mmsa-image"))) el.removeAttribute("width");
   for (const img of tpl.content.querySelectorAll("img[src]")) if (!/^https?:\/\//i.test(img.getAttribute("src"))) img.removeAttribute("src");
   return tpl.innerHTML;
 }
@@ -168,5 +188,8 @@ export function sanitizeNoteHtml(bodyHtml) {
     ALLOWED_TAGS: NOTE_ALLOWED_TAGS,
     ALLOWED_ATTR: NOTE_ALLOWED_ATTR,
     ALLOWED_URI_REGEXP: NOTE_ALLOWED_URI_REGEXP,
+    // DOMPurify tests every attribute outside its own URI-safe set against the regexp above, so "50" would be dropped;
+    // `width` carries no URL, and narrowOutput() cuts it to 25/50/75/100 on a Note picture and removes it elsewhere.
+    ADD_URI_SAFE_ATTR: ["width"],
   }));
 }

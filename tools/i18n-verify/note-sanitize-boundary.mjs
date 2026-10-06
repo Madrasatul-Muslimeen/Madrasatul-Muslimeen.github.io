@@ -81,7 +81,11 @@ const DANGEROUS_ATTR_PATTERN = /^on|xlink/i;
 // `div[data-sheet]` from its strictly cleaned state -- the check "narrowOutput strips class everywhere and rebuilds the
 // sheet" below reads exactly that, and journey-sheet-browser.mjs proves it with hostile pastes. So "no class" still
 // holds for everything a reader sees; the closed list is widened by those three names and no others.
-const S12_ATTRS = ["class", "contenteditable", "data-sheet", "colspan", "data-ann", "data-ann-ref", "data-ann-text", "data-box", "data-check", "data-checked", "data-done", "data-status", "data-status-colour", "data-status-label", "dir", "href", "rowspan", "style"];
+// UPDATED IN PLACE, 6 Oct 2026 (Part C, item 35, pictures in Notes), reason recorded: `data-mmsa-image` and `width` joined the list.
+// narrowOutput() keeps `data-mmsa-image` only when it is EXACTLY noteImages/{uid}/{id}.webp, strips everything but it,
+// `alt` and a 25/50/75/100 `width` from such an <img>, and removes `width` from every other element -- proven by
+// note-image-sanitize.mjs (real DOMPurify, hostile inputs) and journey-note-images-browser.mjs.
+const S12_ATTRS = ["data-mmsa-image", "width","class", "contenteditable", "data-sheet", "colspan", "data-ann", "data-ann-ref", "data-ann-text", "data-box", "data-check", "data-checked", "data-done", "data-status", "data-status-colour", "data-status-label", "dir", "href", "rowspan", "style"];
 
 // UPDATED IN PLACE, 28 Sep 2026, reason recorded: DOMPurify used to load from
 // the jsdelivr CDN, so with no internet a Note's body was refused (sanitize
