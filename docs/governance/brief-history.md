@@ -14,6 +14,14 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v09.91 on `main`** (6 Oct 2026 — **Writing sheet: choose the Ayah / Range / Surah / Page on the sheet (it changes the Study Unit everywhere), and the toolbar in two rows with Save + Print under ⋯**).
+- **What** (the Owner, 6 Oct 2026, a phone photo of the sheet opened from the Arabic Writing slice: "I should have buttons handy here for that", "Fit in 2 rows. Save, print … can hide under one button"; decision 75: "one change of selection should change everywhere"):
+  - `writing-sheet.js`: a 📖 unit control and panel (Type / Surah / Ayah / From / To / Page, Show, Cancel); Show asks first when there is writing; `onChooseUnit` hands the choice to the caller. The toolbar is two rows at every width (row 1 the tools, then Close and Hide; row 2 📖, letter style, ⋯ with Save picture and Print A4), icons with names in both languages below 600px.
+  - `quranrevival.html`: `applyWritingSheetChoice()` sets the Study Unit through the unit pickers' own handlers, then re-opens the sheet for it. Architect review: the 📖 label names the Surah ("Al-Faatiha", "Yaseen 1–12", "Page 50"), and the panel's hidden fields really hide (`label[hidden]`; the check now reads the rendered box).
+- **Checks:**
+  - writing-sheet-unit-toolbar-browser 54/0 (the tightened panel check fails without the fix: 52/2), writing-sheet-browser 206/0 (toolbar checks updated in place), wheel-writing-slice 25/0, wheel-unit-go 254/0, wheel-centre 645/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
+- **With the Owner:** open the Writing sheet, tap 📖, choose Surah 36 or a Range, Show; the sheet and the rest of the app move there.
+
 **Previous milestone: v09.90 on `main`** (6 Oct 2026 — **Achieved marks every place of a word with no dictionary word (فَهُمْ, لَهُمْ, هُمْ…), and the Word Card shows a place known through its word as Achieved**).
 - **What** (the Owner, 6 Oct 2026, with a screenshot of Yaseen 36:6 and 36:8: "Fahum is in two Ayat. Achieved in one place should mark both places"):
   - **3,307 of the 77,429 words have an empty lemma** in the Quranic Arabic Corpus data (particle + pronoun words, and the opening letters), so the WbW mirror had nothing to share. Each now has a **stand-in** at WbW only: `"form:"` + its letters with marks and tatweel removed (`app/js/quran-word-form-key.js`, one rule used by the app and the build tool), in its own `form-index.json` (88 groups; never in `lemmas-index.json`). `wbwClaimKey()` feeds the claim key, the occurrence refs, the known-word overlay and the counters. Basic and Depth stay Not applicable (decision 68). **No Rules change**: `lemmaId` takes any string of 1–400 characters (emulator, real data-layer functions, `form:فهم`: 1/0).
