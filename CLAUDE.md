@@ -252,16 +252,14 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.102 on `main`** (6 Oct 2026 — **The landing shows the wheel at once (startup paint)**).
-- **What** (Owner decision 81 item 1; speed assessment item 4):
-  - The wheel as last drawn on this device is kept in localStorage (`mmsa.wheelPaint.v1`: account, language, the SVG) after every draw.
-  - On the next open a plain inline script beside `#wheelContainer` shows it while the page is still being read; the module then shows the landing early, translated and `inert`, without the "Loading your study…" box, so nothing moves at the real reveal. The real wheel replaces the copy in the same place.
-  - Forgotten on sign-out; another account's copy is dropped as soon as sign-in answers; a copy in the other language, or carrying anything but the wheel's own drawing, is refused; any boot that cannot finish takes it away.
-  - Measured at 400 ms per Firestore trip: the wheel shows at ~0.3 s, the real one at ~1.5 s (was "Loading…" until then).
-  - Decision 81 recorded in the decisions file (it was missing).
+**Current milestone: v09.103 on `main`** (6 Oct 2026 — **Link preview cards in Notes, through Microlink, opt-in**).
+- **What** (Owner decisions 72 and 81; Builder round #619):
+  - `note-link-preview.js` (new): cleans Microlink's answer to plain text (title 120, description 240) and an `https` picture only; picks at most 5 `https` links per Note; caches answers on the device for 7 days (200 links); a failure is never cached.
+  - `note-window.js`: ⋯ → 🖼 Show link previews (Off by default, per device). Turning it on first says in words that each link's address is sent to microlink.io and nothing else from the Note. Cards are built with `textContent`; pictures are `no-referrer` and lazy; the site name is the link's own host. Nothing is stored in the Note and nothing is written to Firestore.
+  - Architect review: in a Note with headings a card went after the whole section (still showing when folded); it now sits under its paragraph and folds with the section.
 - **Checks:**
-  - startup-paint-browser 60/0 (mutations no-drop, no-keep, any-uid, no-guard, any-lang each fail it), boot-status 24/0, landing-drawers 274/0, wheel-centre 645/0, unit-rings 106/0 (its Al-Faatiha count updated in place: 8 arcs since v09.97), quranrevival-startup-reads 2/0, service-worker 18/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
-- **With the Owner:** open the app once, then close it and open it again: the wheel is there straight away, dimmed, and becomes the live one a moment later.
+  - journey-link-preview-browser 192/0 (mutations on-by-default, no-confirm, title-innerhtml, http-picture, cache-ignored, no-limit and the review's card-after-section each fail it), note-link-preview 43/0, every journey-* suite green, note-sanitize-boundary 13/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
+- **With the Owner:** open a Note with a web link → ⋯ → 🖼 Show link previews → Turn on: a card with the page's title and picture appears under the link.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration
