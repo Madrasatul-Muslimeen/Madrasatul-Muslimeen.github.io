@@ -10279,7 +10279,7 @@
         const [uFrom, uTo] = info.unitType === "juz" || info.unitType === "hizb" ? [1, currentSurahData.ayahCount] : currentUnitAyahBounds();
         const sheetType = ["ayah", "range", "surah", "page"].includes(info.unitType) ? info.unitType : "surah";
         await openWritingSheet({
-          pages, range,
+          pages, range, fatihaCount: fatihaOn(),
           surahArabicName: (n) => surahIndex.find((s) => s.surahNumber === n)?.nameArabic ?? null,
           // W1 (Owner, 6 Oct 2026, decision 75): the sheet asks, this applies the choice to the app's own Study Unit.
           onChooseUnit: applyWritingSheetChoice,
@@ -17280,7 +17280,8 @@
       const meta = surahIndex.find((s) => s.surahNumber === surahNum);
       // Issue #482 -- the label is what a reader SEES, so it follows their count
       // (1:7 reads "1:6–7"); `internal` is for a caller that parses it back.
-      if (!internal && isUnnumberedBismillah(surahNum, ayahNum)) return t("Bismillah — Surah {name}", { name: surahName(surahNum, meta?.nameEnglish) });
+      // The Owner, 6 Oct 2026 (decision 76): the unnumbered Bismillah is titled "Bismillah" alone.
+      if (!internal && isUnnumberedBismillah(surahNum, ayahNum)) return t("Bismillah");
       return t("Quran {surah}:{ayah} — Surah {name}", { surah: num(surahNum), ayah: internal ? num(ayahNum) : ayahLabelFor(surahNum, ayahNum), name: surahName(surahNum, meta?.nameEnglish) });
     }
 

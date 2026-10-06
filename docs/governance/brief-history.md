@@ -14,6 +14,15 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v09.92 on `main`** (6 Oct 2026 — **Writing sheet: pop out a word or an Ayah, enlargeable, with every writing tool over it**).
+- **What** (the Owner, 6 Oct 2026: "enable word and an Ayah pop out and making it enlargeable while remaining all writing functions enabled for practise writing over it"):
+  - `writing-sheet.js`: 🔍 Pop out on row 2; pick mode ("Tap a word to pop it out") finds the tapped word from the page's own layout (`wordAt`), never from pixels, and draws nothing; `ayahWordsOf` gathers the Ayah across pages, each word with its own page font.
+  - `writing-popout.js` (new): Word | Ayah, A−/A+ (six sizes, letters re-drawn, never stretched), ⤢ bigger window and a resizable corner, Pen / Eraser / Undo / Clear / ✋ Move and the letter style; strokes kept in the letters' own units so they grow with A+; each view keeps its own writing; ✕ asks first; nothing stored.
+  - Architect review: a word wider than the window opens showing its START (the right-hand end of the Arabic), centred vertically.
+- **Checks:**
+  - writing-sheet-popout-browser 222/0 (the review's start-in-view check fails without the fix: 216/6), writing-sheet-browser 206/0, writing-sheet-unit-toolbar 54/0, wheel-writing-slice 25/0, wheel-unit-go 254/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
+- **With the Owner:** on the Writing sheet tap 🔍 Pop out, tap a word; A+ a few times; write over it; tap Ayah.
+
 **Previous milestone: v09.91 on `main`** (6 Oct 2026 — **Writing sheet: choose the Ayah / Range / Surah / Page on the sheet (it changes the Study Unit everywhere), and the toolbar in two rows with Save + Print under ⋯**).
 - **What** (the Owner, 6 Oct 2026, a phone photo of the sheet opened from the Arabic Writing slice: "I should have buttons handy here for that", "Fit in 2 rows. Save, print … can hide under one button"; decision 75: "one change of selection should change everywhere"):
   - `writing-sheet.js`: a 📖 unit control and panel (Type / Surah / Ayah / From / To / Page, Show, Cancel); Show asks first when there is writing; `onChooseUnit` hands the choice to the caller. The toolbar is two rows at every width (row 1 the tools, then Close and Hide; row 2 📖, letter style, ⋯ with Save picture and Print A4), icons with names in both languages below 600px.

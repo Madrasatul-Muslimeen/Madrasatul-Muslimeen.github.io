@@ -22,9 +22,10 @@
 import { t, num } from "./i18n.js";
 import {
   ensureMushafData, getMushafPageLines, getAyahEndMarkerPosition, getMushafPagesForKeys,
-  loadMushafPageFont, loadSurahHeaderFont, surahHeaderGlyph,
+  loadMushafPageFont, loadSurahHeaderFont, surahHeaderGlyph, fatihaPageLines,
 } from "./hifz-renderer.js";
 import { openWordPopout } from "./writing-popout.js";
+import { FATIHA_SPLIT_AFTER_WORD } from "./fatiha-count.js";
 
 const SHADE_KEY = "writingSheetShade";
 const TOOLS_KEY = "writingSheetTools";
@@ -87,7 +88,8 @@ export function layoutWritingPage(lines, family, W, measure, inUnit) {
         const [s, a, p] = w.loc.split(":");
         const key = `${s}:${a}`;
         const width = measure(w.g, family, fs);
-        const marker = getAyahEndMarkerPosition(key) === Number(p);
+        // w.fatihaSplitMarker: the ⑥ the reader's Al-Fatiha count adds before غَيْرِ (fatihaPageLines).
+        const marker = !!w.fatihaSplitMarker || getAyahEndMarkerPosition(key) === Number(p);
         item.words.push({ g: w.g, loc: w.loc, width, marker, dim: !inUnit(Number(s), Number(a)), offset: natural });
         natural += width + (k < line.words.length - 1 ? gap : 0);
       });
@@ -287,7 +289,7 @@ const CSS = `
  *   initial       { type, surah, from, to, page } of the current unit
  *   unitLabel     what the sheet holds now, in words
  */
-export async function openWritingSheet({ pages, range = null, surahArabicName = null, onClose = null, onChooseUnit = null, surahs = [], initial = null, unitLabel = "" } = {}) {
+export async function openWritingSheet({ fatihaCount = false, pages, range = null, surahArabicName = null, onClose = null, onChooseUnit = null, surahs = [], initial = null, unitLabel = "" } = {}) {
   if (openSheet) openSheet.destroy();
   const inUnit = (s, a) => {
     if (!range) return true;
@@ -346,6 +348,10 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
     <div class="ws-print" data-ws-print aria-hidden="true"></div>`;
   document.body.appendChild(root);
   const $ = (s) => root.querySelector(s);
+  // The Owner, 6 Oct 2026 ("follow my counting", decision 76): with the reader's Al-Fatiha count on,
+  // page 1 is drawn exactly as the Read view's Mushaf draws it -- the Bismillah unnumbered, the
+  // numbers one lower, and ⑥ before غَيْرِ -- through the SAME function, so the two cannot drift.
+  const pageLines = (n) => { const ls = getMushafPageLines(n); return fatihaCount && Number(n) === 1 && ls ? fatihaPageLines(ls) : ls; };
   const scrollEl = $("[data-ws-scroll]");
   const printEl = $("[data-ws-print]");
   const confirmEl = $("[data-ws-confirm]");
@@ -435,14 +441,14 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
   }
   if (st.destroyed) return null;
   scrollEl.innerHTML = "";
-  const headerNeeded = pages.some((n) => (getMushafPageLines(n) || []).some((l) => l.type === "surah_name"));
+  const headerNeeded = pages.some((n) => (pageLines(n) || []).some((l) => l.type === "surah_name"));
   const headerOk = headerNeeded ? await loadSurahHeaderFont() : false;
 
   const headerGlyph = (surah) => surahHeaderGlyph(surah);
   const headerName = (surah) => (typeof surahArabicName === "function" ? surahArabicName(Number(surah)) : null) || `سورة ${surah}`;
 
   pages.forEach((n) => {
-    const lines = getMushafPageLines(n);
+    const lines = pageLines(n);
     const wrap = document.createElement("div");
     wrap.className = "ws-page";
     wrap.dataset.page = String(n);
@@ -619,16 +625,21 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
     return null;
   }
   function ayahWordsOf(loc) {
-    const [s, a] = loc.split(":");
+    const [s, a, p0] = loc.split(":");
     const key = `${s}:${a}`;
+    // Decision 76: with the reader's Al-Fatiha count on, the stored 1:7 is TWO Ayat (6 = words 1-4 and ⑥,
+    // 7 = from غَيْرِ to ⑦); the pop-out's Ayah view shows only the half the tapped word is in.
+    const split = fatihaCount && key === "1:7";
+    const half = (p) => (Number(p) <= FATIHA_SPLIT_AFTER_WORD ? 1 : 2);
     const out = [];
     getMushafPagesForKeys([key]).forEach((pg) => {
-      (getMushafPageLines(pg) || []).forEach((line) => {
+      (pageLines(pg) || []).forEach((line) => {
         if (line.type !== "ayah" || !line.words) return;
         line.words.forEach((w) => {
           const [ws, wa, wp] = w.loc.split(":");
           if (`${ws}:${wa}` !== key) return;
-          out.push({ g: w.g, loc: w.loc, page: pg, family: `hifz-p${pg}`, marker: getAyahEndMarkerPosition(key) === Number(wp) });
+          if (split && half(wp) !== half(p0)) return;
+          out.push({ g: w.g, loc: w.loc, page: pg, family: `hifz-p${pg}`, marker: !!w.fatihaSplitMarker || getAyahEndMarkerPosition(key) === Number(wp) });
         });
       });
     });

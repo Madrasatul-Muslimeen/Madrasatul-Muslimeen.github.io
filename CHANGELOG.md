@@ -19766,3 +19766,10 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
 - **Checks:**
   - writing-sheet-popout-browser 222/0 (216/6 with the review fix removed), writing-sheet-browser 206/0, writing-sheet-unit-toolbar 54/0, wheel-writing-slice 25/0, wheel-unit-go 254/0
   - phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
+
+## v09.93 — 6 Oct 2026 — Al-Fatiha on the Writing sheet follows your counting; "Bismillah" as the title
+
+- **What:** the Owner, 6 Oct 2026 (decision 76). `writing-sheet.js` draws page 1 through `fatihaPageLines` when the reader's Al-Fatiha count is on, recognises the inserted ⑥ as a marker, and gives the pop-out's Ayah view only the half of stored 1:7 the tapped word is in (split from `FATIHA_SPLIT_AFTER_WORD`); `hifz-renderer.js` exports `fatihaPageLines`; `quranrevival.html` passes `fatihaCount: fatihaOn()` and titles the unnumbered Bismillah "Bismillah". Not built: separate records for displayed Ayat 6 and 7 (its own round; a permanent unit key).
+- **Checks:**
+  - writing-sheet-fatiha-count-browser 30/0 (new; --mutate=no-count and --mutate=no-half each fail it), bismillah-label-browser 34/0 (the title check updated in place, now exact; --mutate=old-title fails it)
+  - writing-sheet-popout-browser 222/0 (now runs with the count off: it proves the pop-out's mechanics on the stored text), writing-sheet-browser 206/0, writing-sheet-unit-toolbar 54/0, fatiha-count-browser 136/0, fatiha-count 35/0, wheel-writing-slice 25/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)

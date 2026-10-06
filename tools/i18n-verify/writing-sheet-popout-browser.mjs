@@ -6,6 +6,9 @@
 // (layoutWritingPage), exactly as the sheet itself resolves a tap; every tap is a REAL mouse event.
 // No ayah crosses a page in this (QCF v2) data, so the cross-page case serves a copy of the JSON in which
 // 1:7's last two words have been moved onto page 2.
+// Updated in place 6 Oct 2026 (decision 76): the sheet now follows the reader's Al-Fatiha count, which is ON by
+// default and renumbers page 1's markers. This suite proves the pop-out's MECHANICS against the stored text, so it
+// runs with the count switched OFF; writing-sheet-fatiha-count-browser.mjs proves the count itself.
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "fs";
 const REAL = fs.readFileSync("mushaf/mushaf-madani-v2.json");
@@ -30,7 +33,7 @@ const firstWord = (loc) => DATA["1"].flatMap((l) => l.words || []).find((w) => w
 
 async function start({ lang, width, height, body = REAL }) {
   const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width, height } });
-  await ctx.addInitScript(() => { try { localStorage.setItem("mm_card_look", "night"); } catch (e) {} });
+  await ctx.addInitScript(() => { try { localStorage.setItem("mm_card_look", "night"); localStorage.setItem("mm_fatiha_bismillah_unnumbered", "0"); } catch (e) {} });
   await ctx.route("**/gtaf_bangla_timestamps.json", (r) => r.fulfill({ status: 200, contentType: "application/json", body: "{}" }));
   await ctx.route("**/archive.org/**", (r) => r.abort());
   await ctx.route("https://raw.githubusercontent.com/**/mushaf/**", (r) => {
