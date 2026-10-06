@@ -133,9 +133,10 @@ for (const [width, height] of [[390, 800], [820, 1000], [1280, 800]]) for (const
   check(`${tag} the 🔍 button is in row 2, >= 40px, and the toolbar is still two rows`, tb.rows === 2 && tb.inRow2 && tb.w >= 39.5 && tb.h >= 39.5, JSON.stringify(tb));
   const pt = await wordPoint(page, 1, "1:2:1");
   await page.mouse.click(pt.x, pt.y);
-  await page.waitForSelector("#writingSheet .wp [data-wp-stage][data-fs]");
+  await page.waitForSelector("#writingSheet .wp [data-wp-stage][data-fs]", { timeout: 3000 }).catch(() => {});
   await page.waitForTimeout(400);
   let p = await pop(page);
+  if (!p) { check(`${tag} tapping 1:2:1 opens the pop-out`, false, "no pop-out opened"); await ctx.close(); continue; }
   check(`${tag} tapping 1:2:1 opens the pop-out for THAT word (glyph code from the layout, not position)`, p && p.glyph === expect.g && p.loc === "1:2:1" && p.mode === "word" && p.glyphs.length === 1 && p.glyphs[0] === expect.g, JSON.stringify(p));
   check(`${tag} the tap drew nothing on the sheet`, (await sheetInk(page)) === noInk0);
   const pk = await page.evaluate(() => document.querySelector("#writingSheet [data-ws-pick]").hidden);
