@@ -3241,6 +3241,10 @@ export const BN = {
   "Show the tools": "সরঞ্জাম দেখান",
   "Hide the tools": "সরঞ্জাম লুকান",
   "Keep writing": "লিখতে থাকুন",
+  // 6 Oct 2026 (W1) -- choose what to practise on the sheet.
+  "Choose what to practise": "কী অনুশীলন করবেন বেছে নিন",
+  "Change what you practise? Your writing on this sheet will be cleared.": "অনুশীলনের অংশ বদলাবেন? এই পাতায় আপনার লেখা মুছে যাবে।",
+  "Change": "বদলান",
   "This folder still holds {n} notes. Move or delete them first.": "এই ফোল্ডারে এখনও {n}টি নোট আছে। আগে সেগুলো সরান বা মুছুন।",
   "System folders cannot be moved to Trash.": "সিস্টেম ফোল্ডার ট্র্যাশে পাঠানো যায় না।",
   "System folders cannot be copied.": "সিস্টেম ফোল্ডার কপি করা যায় না।",

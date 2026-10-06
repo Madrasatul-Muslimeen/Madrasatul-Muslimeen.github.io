@@ -10276,14 +10276,54 @@
           pages = getMushafPagesForKeys(keys);
         }
         const { openWritingSheet } = await import("./js/writing-sheet.js");
+        const [uFrom, uTo] = info.unitType === "juz" || info.unitType === "hizb" ? [1, currentSurahData.ayahCount] : currentUnitAyahBounds();
+        const sheetType = ["ayah", "range", "surah", "page"].includes(info.unitType) ? info.unitType : "surah";
         await openWritingSheet({
           pages, range,
           surahArabicName: (n) => surahIndex.find((s) => s.surahNumber === n)?.nameArabic ?? null,
+          // W1 (Owner, 6 Oct 2026, decision 75): the sheet asks, this applies the choice to the app's own Study Unit.
+          onChooseUnit: applyWritingSheetChoice,
+          surahs: surahIndex.map((s) => ({ n: s.surahNumber, name: surahName(s.surahNumber, s.nameEnglish), ayahCount: s.ayahCount })),
+          initial: { type: sheetType, surah: currentSurahNum, from: uFrom, to: uTo, page: info.unitType === "page" ? currentUnitNumber() : (pages[0] ?? 1) },
+          // Architect review (#603): name the Surah, not "Whole Surah 1" -- "Al-Faatiha", "Yaseen 1–12", "Page 50".
+          unitLabel: (() => {
+            const sm = surahIndex.find((s) => s.surahNumber === currentSurahNum);
+            const nm = sm ? surahName(currentSurahNum, sm.nameEnglish) : String(currentSurahNum);
+            if (info.unitType === "ayah") return `${nm} ${num(uFrom)}`;
+            if (info.unitType === "range") return `${nm} ${num(uFrom)}–${num(uTo)}`;
+            if (info.unitType === "surah") return nm;
+            if (info.unitType === "page") return t("Page {page}", { page: num(currentUnitNumber()) });
+            return info.label;
+          })(),
         });
       } catch (err) {
         console.warn("Writing sheet failed to open:", err);
         alert(t("Couldn't open the writing sheet."));
       }
+    }
+    /** W1 -- the Writing sheet's "Show": set the Study Unit through the same handlers the unit pickers fire (one change of selection changes everywhere), then re-open the sheet for it. */
+    async function applyWritingSheetChoice(c) {
+      stopDrill();
+      if (c.surah !== currentSurahNum && surahIndex.some((s) => s.surahNumber === c.surah)) {
+        currentSurahNum = c.surah;
+        surahSelect.value = String(c.surah);
+        await loadSurah(); // resets the ayah to 1 and refills the ayah and range pickers
+      }
+      unitTypeSelect.value = c.type;
+      unitTypeSelect.dispatchEvent(new Event("change"));
+      if (c.type === "ayah") {
+        ayahSelect.value = String(c.from);
+        ayahSelect.dispatchEvent(new Event("change"));
+      } else if (c.type === "range") {
+        rangeFromSelect.value = String(c.from);
+        rangeFromSelect.dispatchEvent(new Event("change"));
+        rangeToSelect.value = String(c.to);
+        rangeToSelect.dispatchEvent(new Event("change"));
+      } else if (c.type === "page") {
+        await ensureUnitIndex("page"); // the page table loads on first use; goToUnitNumber() reads it synchronously
+        await goToUnitNumber(c.page);
+      }
+      await openWritingSheetForCurrentUnit();
     }
     document.getElementById("readWritingBtn").addEventListener("click", openWritingSheetForCurrentUnit);
     document.getElementById("tabWritingBtn").addEventListener("click", () => { openWritingSheetForCurrentUnit(); });

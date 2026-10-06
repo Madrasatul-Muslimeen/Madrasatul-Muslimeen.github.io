@@ -124,7 +124,12 @@ const stroke = async (page, pts) => {
   await page.mouse.up();
   await page.waitForTimeout(80);
 };
-const clickWs = (page, sel) => page.evaluate((s) => document.querySelector(`#writingSheet ${s}`).click(), sel);
+// Updated in place, W1 (6 Oct 2026): Save picture and Print A4 moved under the ⋯ menu, so a press on either
+// opens ⋯ first -- the way the reader reaches them.
+const clickWs = (page, sel) => page.evaluate((s) => {
+  if (/data-ws="(save|print)"/.test(s)) document.querySelector('#writingSheet [data-ws="more"]').click();
+  document.querySelector(`#writingSheet ${s}`).click();
+}, sel);
 // Updated in place, Architect, 1 Oct 2026: the three letter-style buttons became one
 // pick-list so the phone toolbar takes two rows ("Button needs to organise, make it 2 rows").
 // A real choice through the real control, as the reader makes it.
@@ -444,7 +449,8 @@ for (const [lang, width] of [["bn", 320], ["en", 390], ["en", 1280]]) {
   await stroke(page, [[0.2, 0.6], [0.8, 0.62]]);
   const tb = await page.evaluate(() => {
     const t = document.querySelector("#writingSheet .ws-toolbar"), r = t.getBoundingClientRect();
-    const btns = [...t.querySelectorAll("button")].map((b) => b.getBoundingClientRect());
+    // Updated in place, W1 (6 Oct 2026): the closed ⋯ menu's Save/Print are display:none (0x0); measure the buttons that are on screen.
+    const btns = [...t.querySelectorAll("button")].map((b) => b.getBoundingClientRect()).filter((b) => b.width > 0);
     return { h: r.height, cut: [...t.querySelectorAll("button")].some((b) => b.scrollWidth > b.clientWidth + 1), inside: btns.every((b) => b.left >= -0.5 && b.right <= innerWidth + 0.5), minH: Math.min(...btns.map((b) => b.height)), lines: new Set(btns.map((b) => Math.round(b.top))).size, text: t.textContent.replace(/\s+/g, " ").trim() };
   });
   check(`[${lang} ${width}] toolbar: no button cut, all on screen, each >= 40px tall`, !tb.cut && tb.inside && tb.minH >= 39.5, JSON.stringify(tb));
@@ -508,65 +514,47 @@ for (const lang of ["en", "bn"]) {
   await ctx.close();
 }
 
-// ================= the phone toolbar: the title line, then TWO rows of buttons
-// Owner, 1 Oct 2026 (a phone photo of the zoomed sheet, buttons on three rows
-// under the title): "Button needs to organise, make it 2 rows." Expected by hand:
-// line 1 = Writing sheet, Close, Hide; line 2 = Write Pen Eraser Undo Clear;
-// line 3 = letter style, Save picture, Print A4. Nothing cut, all >= 40px tall.
+// ================= the toolbar: exactly TWO rows at every width
+// Updated in place, W1 (6 Oct 2026). The Owner (a phone photo): "Organise the existing buttons. Fit in 2 rows.
+// Save, print not an urgent task, can hide under one button." This replaces the 1 Oct three-line phone check
+// (title line + two rows) and the 30 Sep "Hide on the title's line" check: Close and Hide now have a fixed place
+// at the right-hand end of row 1, and Save + Print sit under ⋯. Expected by hand: row 1 = Write Pen Eraser Undo
+// Clear ... Close Hide; row 2 = unit control, letter style, ⋯.
 for (const lang of ["en", "bn"]) {
-  for (const width of [320, 360, 390, 412]) {
+  for (const width of [320, 360, 390, 412, 600, 768, 1280]) {
     const { ctx, page } = await start({ lang, width, height: 800 });
     await pick(page, "surah", 67);
     await unbare(page);
     await openSheet(page);
     const m = await page.evaluate(() => {
       const bar = document.querySelector("#writingSheet .ws-toolbar");
-      const els = [...bar.querySelectorAll(".ws-title, button, select")].filter((e) => e.getBoundingClientRect().width > 0);
-      const mid = (e) => { const r = e.getBoundingClientRect(); return Math.round((r.top + r.bottom) / 2 / 8); };
+      const els = [...bar.querySelectorAll("button, select")].filter((e) => e.getBoundingClientRect().width > 0);
+      const mid = (e) => { const r = e.getBoundingClientRect(); return Math.round((r.top + r.bottom) / 2); };
+      const rows = [...new Set(els.map((e) => Math.round(mid(e) / 20)))];
       const lineOf = (sel) => mid(bar.querySelector(sel));
+      const tg = bar.querySelector('[data-ws="tools"]').getBoundingClientRect();
       return {
-        lines: new Set(els.map(mid)).size,
-        title: lineOf(".ws-title"), close: lineOf('[data-ws="close"]'), hide: lineOf('[data-ws="tools"]'),
-        write: lineOf('[data-ws="write"]'), clear: lineOf('[data-ws="clear"]'),
-        shade: lineOf("[data-ws-shade-select]"), save: lineOf('[data-ws="save"]'), print: lineOf('[data-ws="print"]'),
-        cut: els.some((e) => e.tagName === "BUTTON" && e.scrollWidth > e.clientWidth + 1),
+        rows: rows.length,
+        sameRow1: ['[data-ws="write"]', '[data-ws="clear"]', '[data-ws="close"]', '[data-ws="tools"]'].every((q) => Math.abs(lineOf(q) - lineOf('[data-ws="write"]')) < 8),
+        sameRow2: ['[data-ws="unit"]', "[data-ws-shade-select]", '[data-ws="more"]'].every((q) => Math.abs(lineOf(q) - lineOf('[data-ws="unit"]')) < 8),
+        rowsDiffer: Math.abs(lineOf('[data-ws="write"]') - lineOf('[data-ws="unit"]')) > 20,
+        hideAtEnd: Math.round(bar.getBoundingClientRect().right - tg.right) <= 10,
+        saveHidden: bar.querySelector('[data-ws="save"]').getBoundingClientRect().width === 0,
         inside: els.every((e) => { const r = e.getBoundingClientRect(); return r.left >= -0.5 && r.right <= innerWidth + 0.5; }),
-        minH: Math.round(Math.min(...els.filter((e) => e.tagName !== "SPAN").map((e) => e.getBoundingClientRect().height))),
+        noSideways: document.documentElement.scrollWidth <= innerWidth && document.querySelector("#writingSheet").scrollWidth <= innerWidth,
+        minH: Math.round(Math.min(...els.map((e) => e.getBoundingClientRect().height))),
+        minW: Math.round(Math.min(...els.filter((e) => e.tagName === "BUTTON").map((e) => e.getBoundingClientRect().width))),
+        unlabelled: els.filter((e) => e.tagName === "BUTTON" && !(e.getAttribute("aria-label") || e.textContent.trim())).length,
+        untitled: els.filter((e) => e.tagName === "BUTTON" && !e.title).map((e) => e.dataset.ws || e.dataset.wsTool),
       };
     });
     const tag = `[${lang} ${width}]`;
-    check(`${tag} phone toolbar: the title line, then two rows of buttons (3 lines in all)`, m.lines === 3, JSON.stringify(m));
-    check(`${tag} ...Close and Hide on the title's line`, m.close === m.title && m.hide === m.title, JSON.stringify(m));
-    check(`${tag} ...Write to Clear on one row, letter style + Save + Print on the next`, m.write === m.clear && m.write !== m.title && m.shade === m.save && m.save === m.print && m.shade !== m.write, JSON.stringify(m));
-    check(`${tag} ...nothing cut, all on screen, each >= 40px tall`, !m.cut && m.inside && m.minH >= 40, JSON.stringify(m));
+    check(`${tag} the toolbar is exactly two rows`, m.rows === 2 && m.rowsDiffer, JSON.stringify(m));
+    check(`${tag} ...Write to Close and Hide on row 1; unit, letter style and ⋯ on row 2`, m.sameRow1 && m.sameRow2, JSON.stringify(m));
+    check(`${tag} ...Hide at the right-hand end; Save and Print not on the bar`, m.hideAtEnd && m.saveHidden, JSON.stringify(m));
+    check(`${tag} ...all on screen, no sideways scroll, each >= 40px`, m.inside && m.noSideways && m.minH >= 40 && m.minW >= 40, JSON.stringify(m));
+    check(`${tag} ...every button has an accessible name and a title`, m.unlabelled === 0 && m.untitled.length === 0, JSON.stringify(m));
     if (width === 390) await shot(page, `toolbar-two-rows-${lang}-${width}`);
-    await ctx.close();
-  }
-}
-
-// ================= Hide sits on the TOP line, at its right-hand end
-// Architect, 30 Sep 2026. The Owner (a phone photo, "▴ Hide" alone on a third
-// line, an arrow up to the empty end of the first): "Move the hide button to
-// the upper line. You should apply Common sense."
-for (const lang of ["en", "bn"]) {
-  for (const width of [320, 360, 400, 600, 900, 1280]) {
-    const { ctx, page } = await start({ lang, width, height: 800 });
-    await pick(page, "surah", 67);
-    await unbare(page);
-    await openSheet(page);
-    const m = await page.evaluate(() => {
-      const r = (s) => document.querySelector(s).getBoundingClientRect();
-      const t = r("#writingSheet .ws-title"), g = r('#writingSheet [data-ws="tools"]'), bar = r("#writingSheet .ws-toolbar");
-      const others = [...document.querySelectorAll('#writingSheet .ws-toolbar button:not([data-ws="tools"])')].map((b) => b.getBoundingClientRect());
-      const mid = (x) => (x.top + x.bottom) / 2;
-      return { onTitleLine: Math.abs(mid(t) - mid(g)) < 8, fromRight: Math.round(bar.right - g.right),
-        ownLine: !others.some((o) => Math.abs(mid(o) - mid(g)) < 8) && Math.abs(mid(t) - mid(g)) >= 8,
-        overlap: others.some((o) => o.left < g.right && o.right > g.left && o.top < g.bottom && o.bottom > g.top),
-        lines: new Set([...others, g, t].map((x) => Math.round(mid(x) / 10))).size };
-    });
-    const tag = `[${lang} ${width}]`;
-    check(`${tag} Hide is on the title's line, at the right-hand end, overlapping nothing`, m.onTitleLine && m.fromRight <= 10 && !m.overlap && !m.ownLine, JSON.stringify(m));
-    if (width === 400) await shot(page, `toolbar-hide-top-${lang}-${width}`);
     await ctx.close();
   }
 }
