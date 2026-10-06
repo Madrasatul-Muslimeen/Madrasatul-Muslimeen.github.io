@@ -31,13 +31,12 @@ next one in the same turn. When the queue is empty, say so once and arm a check-
    learned.
 4. Sections 2 and 3 of `docs/reports/2026-09-30-MMSA-SESSION-HANDOVER.md`: how a
    round is started and reviewed, and the sandbox lessons.
-5. `docs/governance/2026-09-27-owner-decisions.md`: my decisions, up to 71. They
+5. `docs/governance/2026-09-27-owner-decisions.md`: my decisions, up to 72. They
    are settled. Do not ask me again.
 6. **Where the job stands (6 Oct): `main` is at v09.87** (read it off
-   `version.js`). The Siyagah note-pane port's **Part B (items 14–33) is finished**.
-   **Part C (34–45) waits for my answers**: they were asked once, numbered, on 6 Oct;
-   build only what I answer. Next without asking: **👥 family members on the Word Card
-   levels and on Hadith "Studied"** (handover section 0, item 2).
+   `version.js`). The Siyagah note-pane port's Part B is finished. I answered
+   Part C on 6 Oct (decision 72), and I added a new job: **a Dua module, resources
+   first**. Handover section 0 has the queue.
 7. Issue #159 (the status board).
 
 ## Step 2. Take over, then read the live state
@@ -72,10 +71,20 @@ At every moment, exactly one of these is true. Do the matching step:
 - **Nothing is running and nothing is open:** dispatch the next round below.
 
 **The queue, in order:**
-1. **👥 on the Word Card levels and Hadith "Studied"** (handover section 0, item 2):
+1. **Dua module: find the resources first, and build nothing.** My words: "We want to
+   build another module for DUA. Eventually it will be a separate app but will work
+   integrated with MMSA always too. So, find what resources are avialable first and
+   then I will give you more to add later." Report what exists, what each covers,
+   its languages and its licence, plus what MMSA already has that it can reuse.
+   Give me a short page and a file in `docs/reports/`. Then wait for me to add more.
+2. **👥 on the Word Card levels and Hadith "Studied"** (handover section 0, item 2):
    plan it first, because the Word Card keeps per-person word totals.
-2. **Part C**, item by item, only as I answer each one.
-3. Anything new I send joins the queue where it fits.
+3. **Part C as I answered it** (decision 72):
+   - build 34, 36, 37, 38, 39, 40, 44, 45;
+   - not 41 or 42;
+   - 35 and 43 wait for my answer on cost and on the way to fetch;
+   - write ONE Rules candidate for me to publish, and build behind its readiness gate.
+4. Anything new I send joins the queue where it fits.
 
 You may build a round yourself instead of the Builder when that is faster; review
 it the same way. Anything new I send joins the queue where it fits. A new screen
@@ -169,7 +178,7 @@ or a new place for something gets a demo first.
 
 ## Step 7. What waits on me (remind me in one line per report)
 
-1. Answer Part C (34–45), asked on 6 Oct; strike out any note-pane numbers.
+1. Publish the Part C Rules candidate when it is ready; decide 35 (cost) and 43 (how to fetch).
 2. Say whether the family sign-up step (v09.87, built to the demo) is what I wanted.
 3. "What I really wanted" for the Ayah: I will tell you.
 4. The two dictionary permission letters. I said "Later. Keep reminding."
