@@ -35,6 +35,8 @@ export const NOTE_ALLOWED_TAGS = Object.freeze([
   "img",
   // S12 (#562): what the editor's new buttons produce -- links, quotes and a simple table.
   "a", "blockquote", "table", "thead", "tbody", "tr", "td", "th",
+  // 6 Oct 2026 (note-pane Part C1, items 38-39): an annotation is a <mark> and its [N] a <sup>.
+  "mark", "sup",
 ]);
 
 /**
@@ -53,7 +55,16 @@ export const NOTE_ALLOWED_ATTR = Object.freeze([
   "href", "style", "dir", "data-check", "data-checked", "colspan", "rowspan",
   // 5 Oct 2026 (Siyagah note pane): Mark done and the Box, each normalised to 1 by narrowOutput().
   "data-done", "data-box",
+  // 6 Oct 2026 (Part C1): annotations (38) and heading status badges (39), each normalised by narrowOutput().
+  "data-ann", "data-ann-text", "data-ann-ref", "data-status", "data-status-label", "data-status-colour",
 ]);
+
+/** Heading status (item 39): the closed set, and the only colours a custom status may take (the editor's text-colour palette). */
+export const NOTE_STATUS_VALUES = Object.freeze(["done", "ongoing", "process", "next", "custom"]);
+export const NOTE_STATUS_COLOURS = Object.freeze(["#b3261e", "#1f3a6e", "#1b6e3c", "#6a3fa0", "#7a4b00", "#006a6a"]);
+export const NOTE_ANN_TEXT_MAX = 500, NOTE_STATUS_LABEL_MAX = 24;
+/** Plain text only: no markup or control characters, no script-ish scheme, length-capped. */
+const plainText = (s, max) => String(s ?? "").replace(/[<>\u0000-\u001f\u007f]/g, " ").replace(/(?:javascript|vbscript|data)\s*:/gi, "").replace(/\s+/g, " ").trim().slice(0, max);
 
 /** The only style properties a Note may carry, each with the only values it may take. */
 const COLOUR_VALUE = /^(?:#[0-9a-f]{3}|#[0-9a-f]{6}|rgb\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\)|[a-z]{3,20})$/i;
@@ -101,6 +112,22 @@ function narrowOutput(html) {
   }
   for (const el of tpl.content.querySelectorAll("[data-done]")) el.setAttribute("data-done", "1");
   for (const el of tpl.content.querySelectorAll("[data-box]")) el.setAttribute("data-box", "1");
+  for (const el of tpl.content.querySelectorAll("[data-ann],[data-ann-ref]")) {
+    for (const k of ["data-ann", "data-ann-ref"]) if (el.hasAttribute(k) && !/^[1-9]\d{0,3}$/.test(el.getAttribute(k))) el.removeAttribute(k);
+  }
+  for (const el of tpl.content.querySelectorAll("[data-ann-text]")) {
+    const text = plainText(el.getAttribute("data-ann-text"), NOTE_ANN_TEXT_MAX);
+    if (text && el.hasAttribute("data-ann")) el.setAttribute("data-ann-text", text); else el.removeAttribute("data-ann-text");
+  }
+  for (const el of tpl.content.querySelectorAll("[data-status],[data-status-label],[data-status-colour]")) {
+    const st = (el.getAttribute("data-status") || "").toLowerCase();
+    if (!/^H[1-4]$/.test(el.tagName) || !NOTE_STATUS_VALUES.includes(st)) { el.removeAttribute("data-status"); el.removeAttribute("data-status-label"); el.removeAttribute("data-status-colour"); continue; }
+    el.setAttribute("data-status", st);
+    const label = plainText(el.getAttribute("data-status-label"), NOTE_STATUS_LABEL_MAX);
+    if (st === "custom" && label) el.setAttribute("data-status-label", label); else el.removeAttribute("data-status-label");
+    const colour = (el.getAttribute("data-status-colour") || "").toLowerCase();
+    if (st === "custom" && NOTE_STATUS_COLOURS.includes(colour)) el.setAttribute("data-status-colour", colour); else el.removeAttribute("data-status-colour");
+  }
   for (const a of tpl.content.querySelectorAll("a")) {
     if (!isSafeNoteHref(a.getAttribute("href"))) a.removeAttribute("href");
     else { a.setAttribute("target", "_blank"); a.setAttribute("rel", "noopener noreferrer"); }

@@ -72,7 +72,10 @@ const DANGEROUS_TAGS = ["script", "iframe", "object", "embed", "style", "svg", "
 const DANGEROUS_ATTR_PATTERN = /^on|xlink/i;
 // UPDATED IN PLACE, 5 Oct 2026 (the Owner: "add all functions of the notepane of Siyagah"): data-done (Mark done) and
 // data-box (a box around a paragraph) joined; narrowOutput() rewrites each to the value 1, so neither can carry text.
-const S12_ATTRS = ["colspan", "data-box", "data-check", "data-checked", "data-done", "dir", "href", "rowspan", "style"];
+// UPDATED IN PLACE, 6 Oct 2026 (note-pane Part C1, items 38-39): the six annotation / heading-status attributes joined; each is
+// normalised by narrowOutput() (numbers only; the closed status set; plain capped text; the fixed palette) and proven by
+// journey-annotations-status-browser.mjs with a hostile paste.
+const S12_ATTRS = ["colspan", "data-ann", "data-ann-ref", "data-ann-text", "data-box", "data-check", "data-checked", "data-done", "data-status", "data-status-colour", "data-status-label", "dir", "href", "rowspan", "style"];
 
 // UPDATED IN PLACE, 28 Sep 2026, reason recorded: DOMPurify used to load from
 // the jsdelivr CDN, so with no internet a Note's body was refused (sanitize

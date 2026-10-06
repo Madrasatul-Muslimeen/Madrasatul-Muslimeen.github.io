@@ -19802,3 +19802,10 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
 - **Checks:**
   - fatiha-six-seven-records-browser 84/0 (new; --mutate=record-key 52/24, no-copy, no-fallback, off-single, rollup-double each 72/4, picker-one 44/32; the review's two centre checks fail without its fix), fatiha-count 44/0, rules-authorisation-executable 63/0, study-event-wiring 47/0, study-activity-evidence 11/0, quran-word-coverage 10/0, approach-coverage 55/0
   - after merging `main` (v09.96): fatiha-count-browser 136/0, bismillah-label 34/0, writing-sheet-fatiha-count 30/0, writing-sheet 206/0, kys-window 50/0, quran-my-status 248/0, wheel-centre 645/0, wheel-unit-go 254/0, stub-parity 4/0, phone-width-overflow 217/0, behaviour 1003/4 (sandbox baseline)
+
+## v09.98 — 6 Oct 2026 — Notes: annotations and heading status badges
+
+- **What:** the Owner, 6 Oct 2026 (decision 72, items 38 and 39), Builder round #595 (PR #613). `note-window.js` (annotation insert/list/edit/remove, heading status badges and menu, the Contents dot), `note-sanitize.js` (`mark`, `sup`, `data-ann`, `data-ann-text`, `data-ann-ref`, `data-status`, `data-status-label`, `data-status-colour`, each normalised in `narrowOutput()`), `note-window.css`, `bn.js`. Stored inside `bodyHtml`; no Rules change.
+- **Checks:**
+  - journey-annotations-status-browser 536/0 (new; Builder mutations: sanitiser lets any status through, badge saved into the body, remove leaves [N], finalised not refused, each fails it; Architect review: read the sanitiser and every place the stored text is drawn (all escaped), and re-ran the sanitiser mutation, which fails 4 checks per language)
+  - after merging `main` (v09.97): note-sanitize-boundary 12/0, note-foundation-data-layer (all), journey-editor 577/0, journey-reading-tools 488/0, journey-note-pane 327/0, journey-sections 349/0, palette-contrast 20/0, rules-authorisation-executable 63/0, stub-parity 4/0, phone-width-overflow 217/0, behaviour 1006/1 (sandbox baseline)

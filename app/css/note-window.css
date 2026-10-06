@@ -275,3 +275,34 @@ form.fw-quick[data-fw-newfolder-form] { padding: 0.4rem 0.6rem; }
 .note-mention-row { min-height: 40px; text-align: start; background: none; border: 0; border-radius: 0.35rem; color: inherit; font: inherit; cursor: pointer; padding: 0 0.5rem; overflow-wrap: anywhere; }
 .note-mention-row[aria-selected="true"], .note-mention-row:hover { background: #eef2ff; }
 .note-mention-empty { margin: 0.4rem; color: #5f6b7d; font-size: 0.9rem; }
+
+/* Note-pane Part C1 (6 Oct 2026, items 38-39) -- annotations and heading status badges.
+   Colours are FIXED, never inherited, so each reads on the light Note page and on a dark one:
+   the mark is dark text on a pale yellow (about 16:1); a badge is white text on a dark fill (6:1 or better). */
+mark[data-ann] { background: #ffe066; color: #111; border-radius: 0.2rem; padding: 0 0.1rem; cursor: pointer; }
+sup[data-ann-ref] { background: #ffe066; color: #111; border-radius: 0.2rem; font-weight: 700; cursor: pointer; padding: 0 0.15rem; }
+.pane-edit-body sup[data-ann-ref] { cursor: text; }
+.ann-flash { outline: 3px solid #1F3A6E; outline-offset: 2px; }
+.note-annotations { margin-top: 1.2rem; padding-top: 0.5rem; border-top: 1px solid #c9d3e6; }
+.note-annotations h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+.ann-item { display: flex; gap: 0.5rem; align-items: flex-start; padding: 0.35rem 0; border-bottom: 1px solid #e6eaf3; cursor: pointer; }
+.ann-num { flex: 0 0 auto; font-weight: 700; min-width: 2.2rem; }
+.ann-main { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.ann-quote { display: block; font-style: italic; opacity: 0.9; }
+.ann-comment { margin: 0.2rem 0 0; }
+.ann-btns { flex: 0 0 auto; display: flex; gap: 0.25rem; }
+.ann-btns button { min-width: 44px; min-height: 44px; padding: 0; }
+.ann-bubble { position: fixed; z-index: 6200; width: 44px; height: 44px; padding: 0; border-radius: 50%; background: #fff; color: #1F3A6E; border: 1px solid #1F3A6E; box-shadow: 0 4px 14px rgba(20,30,60,0.35); cursor: pointer; }
+.note-sec-h { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.note-sec-h .note-sec-toggle { flex: 1 1 8rem; width: auto; min-width: 0; }
+.note-status { flex: 0 0 auto; font: inherit; font-size: 0.75rem; font-weight: 600; line-height: 1.2; min-height: 40px; min-width: 40px; padding: 0.2rem 0.7rem; border: 1px solid transparent; border-radius: 999px; background: #374151; color: #fff; cursor: pointer; max-width: 100%; overflow-wrap: anywhere; }
+span.note-status { min-height: 0; min-width: 0; padding: 0.15rem 0.6rem; cursor: default; }
+.note-status.note-status-none { background: #e8eaed; color: #1f2937; border-color: #9aa3b2; font-weight: 500; }
+.status-dot { display: inline-block; flex: 0 0 auto; width: 0.7rem; height: 0.7rem; border-radius: 50%; margin-inline-end: 0.4rem; vertical-align: baseline; }
+.status-presets { display: flex; flex-direction: column; gap: 0.3rem; }
+.status-opt { min-height: 44px; text-align: start; display: flex; align-items: center; }
+.status-custom { display: flex; flex-direction: column; gap: 0.4rem; }
+.status-custom[hidden] { display: none; }
+.status-swatches { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.status-swatch { width: 44px; height: 44px; padding: 0; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #8892a8; }
+.status-swatch[aria-pressed="true"] { box-shadow: 0 0 0 3px #1F3A6E; }
