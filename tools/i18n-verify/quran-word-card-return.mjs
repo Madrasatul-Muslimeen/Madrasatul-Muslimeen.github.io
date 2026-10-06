@@ -174,7 +174,10 @@ for (const lang of ["en", "bn"]) {
   check(`${lang} occurrence links remain live for a second trip`, stillGoto, stillGoto);
 
   const writes = await page.evaluate(() => (window.__fsLog || [])
-    .filter((r) => /setDoc|updateDoc|batchCommit|txCommit/.test(r.kind)).length);
+    .filter((r) => /setDoc|updateDoc|batchCommit|txCommit/.test(r.kind)).length
+    // Updated in place, Architect, 6 Oct 2026: v09.80's 📖 Last read / ▶ Last played is a DELIBERATE save
+    // (bookmarks lastPlaces.*, the Owner's ask), so that one write is not counted; every other write still is.
+    - (window.__stubWriteData || []).filter((w) => w.col === "bookmarks" && Object.keys(w.data).every((k) => k === "tenantId" || k === "personId" || k === "updatedAt" || k.startsWith("lastPlaces"))).length);
   check(`${lang} the whole round trip writes nothing`, writes === 0, `writes=${writes}`);
 
   const real = errors.filter((e) => !/ERR_TUNNEL_CONNECTION_FAILED|ERR_CERT_AUTHORITY_INVALID|archive\.org|api\.quran\.com/.test(e));

@@ -303,10 +303,21 @@ console.log(`\n=== gate FORCED OPEN: pressing Achieved mirrors onto the lemma, a
 
   // --- THE CROSS-OCCURRENCE PROOF: word 3, never itself touched, now
   // reads as known -- because it shares word 1's lemma. ---
+  const ownWritesBefore = await page.evaluate(() => (window.__stubWriteData || []).filter((w) => w.col === "quranWordProgress").length);
   await openWordAt(page, 3);
   const afterOnWord3 = await readLemmaCard(page);
-  check("[forced-open] CROSS-OCCURRENCE: word 3's OWN claim is still not_started -- it was never individually touched",
-    afterOnWord3?.occurrenceStatePressed === "not_started", JSON.stringify(afterOnWord3));
+  // Updated in place, Architect, 6 Oct 2026: this check read the PRESSED button as
+  // a proxy for word 3's own claim. The Owner's report that day ("Achieved in one
+  // place should mark both places") made the card show Achieved for a place known
+  // through its word, so the proxy changed meaning. The two facts are now checked
+  // separately: no claim was written for word 3, and the card says why it is known.
+  const ownWritesAfter = await page.evaluate(() => (window.__stubWriteData || []).filter((w) => w.col === "quranWordProgress").length);
+  check("[forced-open] CROSS-OCCURRENCE: word 3's OWN claim was never written -- it was never individually touched",
+    ownWritesAfter === ownWritesBefore, JSON.stringify({ ownWritesBefore, ownWritesAfter }));
+  check("[forced-open] CROSS-OCCURRENCE: word 3's card shows Achieved, with the line saying it is known through another place",
+    afterOnWord3?.occurrenceStatePressed === "achieved"
+      && await page.evaluate(() => !!document.querySelector("#quranWordCardMount [data-word-progress-known-elsewhere]")),
+    JSON.stringify(afterOnWord3));
   const coverageAfter = readCoverageNumbers(afterOnWord3?.coverage);
   check("[forced-open] CROSS-OCCURRENCE: the ayah's own coverage now counts BOTH word 1 and word 3 as known (2 of 4), via the shared lemma",
     coverageAfter[0] === 2 && coverageAfter[1] === 4, JSON.stringify(coverageAfter));

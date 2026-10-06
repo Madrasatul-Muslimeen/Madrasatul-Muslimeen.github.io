@@ -15221,6 +15221,7 @@
         statePractising: statusLabel("practising"),
         stateAchieved: statusLabel("achieved"),
         awaitingReview: t("Waiting to be checked"),
+        knownElsewhere: t("Known: marked Achieved at another place of this word"),
         reviewConfirmed: t("Checked and confirmed"),
         reviewReturned: t("Sent back: {note}"),
         reviewReturnedNoNote: t("Sent back to look at again"),
@@ -15405,19 +15406,23 @@
       const progress = wordProgressFor({ tenantId, personId: subjectPersonId, level, occurrenceId: quranWordCardState.occurrenceId, confirmationRequired });
       const authority = wordProgressAuthority({ actorPersonId, subjectPersonId, isSupervisor, confirmationRequired });
       let coverage = null;
+      let knownElsewhere = false;
       if (level === "wbw") {
         try {
           const scope = occurrenceIdsForAyah(currentSurahData, ref.ayah);
           const rawViews = new Map(scope.map((occ) => [occ, wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: occ, confirmationRequired })]));
           const views = effectiveViewsForScope(currentSurahData, scope, rawViews, tenantId, subjectPersonId, confirmationRequired);
           coverage = computeArabicCoverage({ scopeOccurrenceIds: scope, views, label: `ayah:${ref.surah}:${ref.ayah}` });
+          // The Owner, 6 Oct 2026: a place known only through its word's other
+          // place shows as Achieved (see quran-word-card.js), not "Not started".
+          if (progress.loaded !== false && !progress.countsAsKnown && views.get?.(quranWordCardState.occurrenceId)?.countsAsKnown) knownElsewhere = true;
         } catch { coverage = null; }
       }
       // The Owner, 5 Oct 2026: "It takes hours to marked achieved from not
       // started." A press shows AT ONCE: the pressed state, locked buttons
       // and "Saving…" (see wordProgressSaving at runWordProgressAction()).
       const saving = wordProgressSaving && wordProgressSaving.occurrenceId === quranWordCardState.occurrenceId && wordProgressSaving.level === level;
-      return { progress: { ...progress, loading: wordProgressBusy && !progress.loaded, ...(saving ? { saving: true, state: wordProgressSaving.state ?? progress.state } : {}) }, authority, coverage };
+      return { progress: { ...progress, knownElsewhere: knownElsewhere && !saving, loading: wordProgressBusy && !progress.loaded, ...(saving ? { saving: true, state: wordProgressSaving.state ?? progress.state } : {}) }, authority, coverage };
     }
 
     /**

@@ -100,6 +100,13 @@ for (const [width, height] of [[390, 844], [1440, 900]]) {
     check(`${tag} 36:8:9's mark shows as known without a reload`, await isKnownMark(page, 8, 9));
     check(`${tag} 36:8:9 has nothing left to learn (no learn-delta line)`, !other?.learnDelta, other?.learnDelta);
     check(`${tag} 36:8:9's total reads the same raised number`, numbers(other?.total).includes(SEEDED_KNOWN + GROUP), other?.total);
+    // Architect review (#598): the card itself must say so -- it used to show "Not started" pressed here.
+    const otherCard = await page.evaluate(() => ({
+      pressed: document.querySelector('#quranWordCardMount [data-word-progress-state][aria-pressed="true"]')?.dataset.wordProgressState ?? null,
+      line: document.querySelector("#quranWordCardMount [data-word-progress-known-elsewhere]")?.textContent.trim() ?? null,
+    }));
+    check(`${tag} 36:8:9's card shows Achieved, not Not started`, otherCard.pressed === "achieved", JSON.stringify(otherCard));
+    check(`${tag} ...and says it is known through another place of the word`, otherCard.line === (lang === "bn" ? "জানা: এই শব্দের অন্য স্থানে অর্জিত হিসেবে চিহ্নিত" : "Known: marked Achieved at another place of this word"), JSON.stringify(otherCard));
 
     // #322's rule: Not started on the place that WAS Achieved un-knows the group.
     // (Not started on a place never itself Achieved leaves the shared word alone.)
@@ -115,6 +122,12 @@ for (const [width, height] of [[390, 844], [1440, 900]]) {
     check(`${tag} ...and the total fell by exactly the group size (${GROUP})`, numbers((await card(page))?.total).includes(SEEDED_KNOWN - GROUP) || toWestern((await card(page))?.total).includes(`-${GROUP - SEEDED_KNOWN}`), (await card(page))?.total);
     await goAyah(page, 8);
     check(`${tag} 36:8:9 is no longer known either`, !(await isKnownMark(page, 8, 9)));
+    await openWord(page, 8, 9);
+    const backCard = await page.evaluate(() => ({
+      pressed: document.querySelector('#quranWordCardMount [data-word-progress-state][aria-pressed="true"]')?.dataset.wordProgressState ?? null,
+      line: !!document.querySelector("#quranWordCardMount [data-word-progress-known-elsewhere]"),
+    }));
+    check(`${tag} ...and its card is back to Not started, with no "known" line`, backCard.pressed === "not_started" && !backCard.line, JSON.stringify(backCard));
     await goAyah(page, 6);
 
     // Basic / Depth stay Not applicable for a word with no dictionary word.
