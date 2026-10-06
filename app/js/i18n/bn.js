@@ -2323,6 +2323,7 @@ export const BN = {
   "File under": "যেখানে রাখবেন", // ?
   "+ New list…": "+ নতুন তালিকা…", // ?
   "New list title": "নতুন তালিকার শিরোনাম", // ?
+  "Not filed": "কোথাও রাখা হয়নি",
 
   // 2 Sep 2026 -- the list-pane splitter/collapse toggle shared by
   // Approach, Explore, QCR and Asma ul Husna.

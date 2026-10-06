@@ -1934,6 +1934,9 @@
   #asmaXEditBody label[hidden] { display: none !important; }
   #asmaXEditBody textarea { min-height: 3.4rem; resize: vertical; }
   #asmaXEditBody .asmaX-edit-check { flex-direction: row; align-items: center; gap: 0.4rem; }
+  /* 6 Oct 2026: File under -- one row per classification, as one group. */
+  #asmaXEditBody .asmaX-file-under { border: 1px solid var(--card-border, rgba(0,0,0,0.15)); border-radius: 8px; padding: 0.5rem 0.7rem 0.7rem; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
+  #asmaXEditBody .asmaX-file-under legend { font-size: 0.8rem; font-weight: 600; color: var(--card-text, inherit); padding: 0 0.3rem; }
   .asmaX-edit-actions { display: flex; gap: 0.6rem; margin-top: 1rem; }
   #asmaXAttachRefLabel { display: block; font-size: 0.78rem; color: var(--card-text-muted); margin-bottom: 0.25rem; }
   #asmaXAttachRefInput, #asmaXAttachFilterInput {
@@ -13848,22 +13851,6 @@
     // -----------------------------------------------------------------
     let asmaXEditContext = null; // { mode: "create" | "edit", number, fileInto }
 
-    /** The list-picker half of the "file it under" row -- every non-
-        archived collection of ONE classification, plus "+ New list…",
-        exactly asmaXFileIntoRowHtml()'s own pre-generalization body (the
-        same set asmaXAddCollectionPrompt()'s own kind-scoped view uses).
-        Split out so the classification select below can re-fill it on
-        change without re-drawing the whole row (and losing focus/the
-        reader's own typed "+ New list" title). */
-    function asmaXFileSelectOptionsHtml(kind) {
-      const options = (asmaXCollections ?? [])
-        .filter((c) => c.kind === kind && c.status !== "archived")
-        .sort((a, b) => a.order - b.order)
-        .map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(langText(c.title, getAppLang()))}</option>`)
-        .join("");
-      return `${options}<option value="__new__"${options ? "" : " selected"}>${escapeHtml(t("+ New list…"))}</option>`;
-    }
-
     /** The "file it under" row, only ever drawn for a brand-new Name that
         was asked for from somewhere with a destination in mind (5 Sep 2026
         -- the Note view's own "+ New Name"/"+ New Dual Name"). `defaultKind`
@@ -13881,21 +13868,51 @@
         other, that lives in a Dual Names collection. That is what makes
         "attach the Ayah as ref to that new name" work for a dual name at
         all: a collection has no `ref` field and never has, a Name does. */
-    function asmaXFileIntoRowHtml(defaultKind) {
+    function asmaXFileIntoRowHtml(preselect) {
+      // The Owner, 6 Oct 2026: "'File under' should have option to file a single/ dual name under which Group, by
+      // Act, by Essence." One row PER ACTIVE CLASSIFICATION (Group, Dual Names, and whatever the Owner has added,
+      // e.g. By Act and By Essence), each "Not filed" unless chosen, so one new Name -- single or dual -- can be
+      // filed under several classifications in one Save. `preselect` is { [kind]: listId | "__new__" } from the
+      // place the form was opened (the Note view's "+ New Dual Name", or the Group being browsed).
+      // asmaActiveClassifications() is the same live registry the level bar's switcher reads.
       const activeClasses = asmaActiveClassifications(asmaXClassifications ?? []);
-      const clsOptions = activeClasses
-        .map((c) => `<option value="${escapeHtml(c.key)}"${c.key === defaultKind ? " selected" : ""}>${escapeHtml(langText(c.title, getAppLang()))}</option>`)
-        .join("");
-      const effectiveDefault = activeClasses.some((c) => c.key === defaultKind) ? defaultKind : (activeClasses[0]?.key ?? defaultKind);
-      const hasExisting = (asmaXCollections ?? []).some((c) => c.kind === effectiveDefault && c.status !== "archived");
+      const rows = activeClasses.map((c) => {
+        const want = preselect?.[c.key] ?? "";
+        const lists = (asmaXCollections ?? [])
+          .filter((col) => col.kind === c.key && col.status !== "archived")
+          .sort((x, y) => x.order - y.order);
+        const pick = want === "__new__" && lists.length ? lists[0].id : want;
+        const opts = [`<option value=""${pick === "" ? " selected" : ""}>${escapeHtml(t("Not filed"))}</option>`]
+          .concat(lists.map((col) => `<option value="${escapeHtml(col.id)}"${col.id === pick ? " selected" : ""}>${escapeHtml(langText(col.title, getAppLang()))}</option>`))
+          .concat([`<option value="__new__"${pick === "__new__" ? " selected" : ""}>${escapeHtml(t("+ New list…"))}</option>`])
+          .join("");
+        return `
+          <label class="asmaX-file-row">${escapeHtml(langText(c.title, getAppLang()))}
+            <select data-asma-file-kind="${escapeHtml(c.key)}">${opts}</select>
+          </label>
+          <label class="asmaX-file-newtitle" data-asma-file-new-for="${escapeHtml(c.key)}"${pick === "__new__" ? "" : " hidden"}>${escapeHtml(t("New list title"))}<input type="text" data-asma-file-new-title="${escapeHtml(c.key)}"></label>`;
+      }).join("");
       return `
-        <label>${escapeHtml(t("Classification"))}
-          <select id="asmaXEditClassSelect">${clsOptions}</select>
-        </label>
-        <label>${escapeHtml(t("File under"))}
-          <select id="asmaXEditFileSelect">${asmaXFileSelectOptionsHtml(effectiveDefault)}</select>
-        </label>
-        <label id="asmaXEditNewCollLabel"${hasExisting ? " hidden" : ""}>${escapeHtml(t("New list title"))}<input type="text" id="asmaXEditNewColl"></label>`;
+        <fieldset class="asmaX-file-under" id="asmaXEditFileUnder">
+          <legend>${escapeHtml(t("File under"))}</legend>
+          ${rows}
+        </fieldset>`;
+    }
+
+    /** Which list each File-under row starts on: the opening button's own classification (the Note view's
+        "+ New Name"/"+ New Dual Name") on its first list, or a new one if it has none; and, from the Names
+        level of a list, that list. Every other row starts "Not filed". */
+    function asmaXFilePreselect(fileInto) {
+      const pre = {};
+      if (fileInto?.kind) {
+        const first = (asmaXCollections ?? []).filter((c) => c.kind === fileInto.kind && c.status !== "archived").sort((x, y) => x.order - y.order)[0];
+        pre[fileInto.kind] = first ? first.id : "__new__";
+      }
+      if (asmaXLevel === "names" && asmaXGroupId) {
+        const g = (asmaXCollections ?? []).find((c) => c.id === asmaXGroupId);
+        if (g) pre[g.kind] = g.id;
+      }
+      return pre;
     }
 
     function openAsmaXEditOverlay({ mode, number = null, prefillRef = "", fileInto = null }) {
@@ -13925,27 +13942,13 @@
           <label>${escapeHtml(t("Reference"))}<textarea id="asmaXEditRef">${escapeHtml(refValue)}</textarea></label>
           <label class="asmaX-edit-check"><input type="checkbox" id="asmaXEditWeak" ${entry?.weak ? "checked" : ""}> ${escapeHtml(t("weak"))}</label>
           <label class="asmaX-edit-check"><input type="checkbox" id="asmaXEditIsPhrase" ${entry?.isPhrase ? "checked" : ""}> ${escapeHtml(t("phrase"))}</label>
-          ${mode === "create" && fileInto ? asmaXFileIntoRowHtml(fileInto.kind) : ""}`;
-        // "+ New …" reveals its own title field rather than opening a
-        // second overlay -- one form, one Save, one write.
-        const fileSel = document.getElementById("asmaXEditFileSelect");
-        fileSel?.addEventListener("change", () => {
-          const lbl = document.getElementById("asmaXEditNewCollLabel");
-          if (lbl) lbl.hidden = fileSel.value !== "__new__";
-        });
-        // Classification round -- 23 Sep 2026: switching the Classification
-        // field re-fills the File-under select for THAT classification's own
-        // lists (asmaXFileSelectOptionsHtml), the same cascading shape the
-        // level bar's own per-classification selects already use -- so a
-        // brand-new Name can be filed under any active classification, not
-        // only the one the opening button defaulted to.
-        const classSel = document.getElementById("asmaXEditClassSelect");
-        classSel?.addEventListener("change", () => {
-          if (!fileSel) return;
-          fileSel.innerHTML = asmaXFileSelectOptionsHtml(classSel.value);
-          const lbl = document.getElementById("asmaXEditNewCollLabel");
-          const hasExisting = (asmaXCollections ?? []).some((c) => c.kind === classSel.value && c.status !== "archived");
-          if (lbl) lbl.hidden = hasExisting;
+          ${mode === "create" ? asmaXFileIntoRowHtml(asmaXFilePreselect(fileInto)) : ""}`;
+        // "+ New list…" in a row reveals that row's own title field -- one form, one Save, one write.
+        asmaXEditBodyEl.querySelectorAll("select[data-asma-file-kind]").forEach((sel) => {
+          sel.addEventListener("change", () => {
+            const lbl = asmaXEditBodyEl.querySelector(`[data-asma-file-new-for="${CSS.escape(sel.dataset.asmaFileKind)}"]`);
+            if (lbl) lbl.hidden = sel.value !== "__new__";
+          });
         });
       } else {
         asmaXEditTitleEl.textContent = t("Edit Name");
@@ -13986,36 +13989,25 @@
           weak: !!document.getElementById("asmaXEditWeak")?.checked,
           isPhrase: !!document.getElementById("asmaXEditIsPhrase")?.checked,
         };
-        const fileInto = asmaXEditContext.fileInto;
-        // Classification round -- 23 Sep 2026: which classification to file
-        // under now comes from the row's own Classification field (any
-        // active classification the reader picked), falling back to
-        // fileInto.kind only if that field never rendered (defensive; the
-        // row is always drawn together with it whenever fileInto is set).
-        const classSelectValue = document.getElementById("asmaXEditClassSelect")?.value ?? "";
-        const fileSelectValue = document.getElementById("asmaXEditFileSelect")?.value ?? "";
-        const newCollTitle = document.getElementById("asmaXEditNewColl")?.value.trim() ?? "";
+        // The Owner, 6 Oct 2026: every File-under row the reader set is filed, one list per classification. A
+        // "+ New list…" with nothing typed takes the Name's own transliteration as its title (almost always
+        // what a dual Name's own list is called; it beats an error for a field effectively filled).
+        const filings = [...asmaXEditBodyEl.querySelectorAll("select[data-asma-file-kind]")]
+          .filter((sel) => sel.value)
+          .map((sel) => ({ kind: sel.dataset.asmaFileKind, value: sel.value,
+            title: asmaXEditBodyEl.querySelector(`[data-asma-file-new-title="${CSS.escape(sel.dataset.asmaFileKind)}"]`)?.value.trim() ?? "" }));
         const prevExtra = asmaXExtraNames;
         const prevCollections = asmaXCollections;
         asmaXExtraNames = asmaAddExtraNameLocal(asmaXExtraNames ?? [], partial);
         const newNumber = asmaXExtraNames[asmaXExtraNames.length - 1].number;
-        if (fileInto) {
-          // Asked for from the Note view, which has a destination in mind.
-          // A brand-new list takes the Name's own transliteration as its
-          // title when nothing was typed -- that is almost always what a
-          // dual Name's own list is called, and it beats a second error
-          // message for a field the reader has already effectively filled.
-          const kind = classSelectValue || fileInto.kind;
-          let targetId = fileSelectValue;
-          if (!targetId || targetId === "__new__") {
-            const title = newCollTitle || translit;
-            const next = asmaAddCollectionLocal(asmaXCollections ?? [], { title: { en: title }, kind });
+        for (const f of filings) {
+          let targetId = f.value;
+          if (targetId === "__new__") {
+            const next = asmaAddCollectionLocal(asmaXCollections ?? [], { title: { en: f.title || translit }, kind: f.kind });
             targetId = next[next.length - 1].id;
             asmaXCollections = next;
           }
           asmaXCollections = asmaAddItemLocal(asmaXCollections, targetId, buildUnitKey.name(newNumber));
-        } else if (asmaXLevel === "names" && asmaXGroupId) {
-          asmaXCollections = asmaAddItemLocal(asmaXCollections, asmaXGroupId, buildUnitKey.name(newNumber));
         }
         closeAsmaXEditOverlay();
         // The Explore panel is hidden when this was asked for from the Note
