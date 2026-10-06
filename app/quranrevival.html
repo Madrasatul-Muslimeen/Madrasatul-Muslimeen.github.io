@@ -9467,7 +9467,7 @@
       const surahNo = t("Surah {n}", { n: num(currentSurahNum) });
       const place = `${surahNo} · ${name}`;
       const info = currentUnitInfo();
-      if (currentUnitType === "ayah") { const l1 = ayahNameFor(currentSurahNum, currentAyahNum); return { line1: l1, line2: place, cta: `${l1} · ${name}` }; }
+      if (currentUnitType === "ayah") { const l1 = ayahNameFor(currentSurahNum, currentAyahNum, currentHalf()); return { line1: l1, line2: place, cta: `${l1} · ${name}` }; }
       if (currentUnitType === "surah") return { line1: surahNo, line2: name, cta: name };
       if (currentUnitType === "range") {
         const from = Math.min(rangeFrom, rangeTo), to = Math.max(rangeFrom, rangeTo);

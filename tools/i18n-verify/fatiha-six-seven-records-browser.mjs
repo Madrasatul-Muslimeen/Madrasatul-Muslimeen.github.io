@@ -105,6 +105,7 @@ const surahCardLine = async (page) => {
 const isOneOfSeven = (line) => { const n = (line.match(/\d+/g) ?? []).slice(0, 2).sort(); return n.length === 2 && n[0] === "1" && n[1] === "7"; };
 const halfOfBadge =(page) => page.evaluate(() => [...document.querySelectorAll("#ayahPanels [data-ayah-split-half]")].map((b) => b.dataset.ayahSplitHalf));
 
+const hubText = (page) => page.evaluate(() => [...document.querySelectorAll("[class*=hub]")].map((e) => e.innerText).join(" | ").replace(/\s+/g, " "));
 for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
   const tag = `[${lang} ${width}]`;
 
@@ -117,6 +118,10 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
     check(`${tag} #ayahSelect offers 6 and 7 as two options (values 7 and 8), no "6–7"`, picker.length === 8 && picker[6][0] === "7" && picker[7][0] === "8" && westernise(picker[6][1]) === "6" && westernise(picker[7][1]) === "7" && !picker.some((p) => /[–-]/.test(p[1])), JSON.stringify(picker));
     await setSelect(page, "ayahSelect", 8); await page.waitForTimeout(500);
     check(`${tag} picking 7 shows ONLY displayed Ayah 7 (half b), content stays stored 1:7`, JSON.stringify(await halfOfBadge(page)) === '["b"]', JSON.stringify(await halfOfBadge(page)));
+    // Architect review: the wheel's centre named the choice "Ayah 6–7" (its label call passed no half).
+    const ayahWord = lang === "bn" ? "আয়াত" : "Ayah", seven = lang === "bn" ? "৭" : "7", six = lang === "bn" ? "৬" : "6";
+    const hub7 = await hubText(page);
+    check(`${tag} the wheel's centre names it "${ayahWord} ${seven}", not "6–7"`, hub7.includes(`${ayahWord} ${seven}`) && !/[৬6]\s*[–-]\s*[৭7]/.test(hub7), hub7.slice(0, 160));
     await resetWrites(page);
     await openCard(page);
     await press(page, "achieved");
@@ -130,6 +135,8 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
     await closeCard(page);
     await setSelect(page, "ayahSelect", 7); await page.waitForTimeout(500);
     check(`${tag} picking 6 shows ONLY displayed Ayah 6 (half a)`, JSON.stringify(await halfOfBadge(page)) === '["a"]', JSON.stringify(await halfOfBadge(page)));
+    const hub6 = await hubText(page);
+    check(`${tag} ...and for 6, "${ayahWord} ${six}"`, hub6.includes(`${ayahWord} ${six}`) && !/[৬6]\s*[–-]\s*[৭7]/.test(hub6), hub6.slice(0, 160));
     await openCard(page);
     check(`${tag} displayed 6 is still Not started`, (await pressedStage(page)) === "not_started" || (await pressedStage(page)) === null, String(await pressedStage(page)));
     await closeCard(page);
