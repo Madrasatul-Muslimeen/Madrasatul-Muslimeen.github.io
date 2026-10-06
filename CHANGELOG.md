@@ -19744,3 +19744,11 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
 - **Checks:**
   - wheel-writing-slice-browser 25/0, mutations no-route and all-slices caught; wheel-centre-browser 645/0; the four updated Word Card suites 19/0, 50/0, 51/0, 59/0
   - wheel-slice-opens-track 96/0, wheel-unit-go 254/0, landing-drawers 274/0, landing-sections-collapse 152/0, writing-sheet-browser 180/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
+
+## v09.90 — 6 Oct 2026 — Achieved marks every place of a word with no dictionary word; the Word Card shows "known elsewhere" as Achieved
+
+- **What:** the Owner, 6 Oct 2026 (فَهُمْ in Yaseen 36:6 and 36:8). Builder round #598 (branch builder/issue-598-run-921; the Builder opened no PR): `quran-word-form-key.js` (`formKey`, `wbwClaimKey`, `isFormKey`), `form-index.json` from `build-word-identity-indexes.mjs`, `occurrenceRefsForClaimKey` in `quran-word-index.js` and `quran-lemma-progress-data.js`, and `wbwClaimKey` at every WbW lemma read in `quranrevival.html`. Architect review: the card's `knownElsewhere` (`quran-word-card.js`, `quranrevival.html`, `bn.js`); the fifth stale "writes nothing" check (quran-word-card-return); the cross-occurrence check in quran-lemma-progress-rendered updated in place. Decision 74.
+- **Checks:**
+  - quran-word-form-key 25/0, quran-word-form-mirror-browser 91/0 (two mutations caught), lemma emulator suite with a stand-in id 1/0
+  - quran-lemma-progress-rendered 77/0, quran-word-card-achieved-mirror 73/0, quran-word-card-return 55/0, claim-for-family-word-hadith 158/0, phone-width-overflow 217/0, stub-parity 4/0, rules-authorisation-executable 63/0, behaviour 1003/4 (sandbox baseline)
+  - red on main too, not this round: quran-lemma-progress-model (1), quran-word-card-form-meaning
