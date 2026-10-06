@@ -557,6 +557,11 @@
      max-width block above), untouched. */
   .wheel-stage-wrap { position: relative; display: flex; justify-content: center; align-self: stretch; }
   .wheel-veiled #wheelContainer svg { filter: blur(1.5px) brightness(0.4) saturate(0.55); transition: filter 0.25s ease; }
+  /* Decision 81 item 1: the startup copy of the wheel, dimmed like the real one and never tappable. */
+  #wheelPaintCopy { pointer-events: none; }
+  #wheelSection #wheelPaintCopy[hidden] { display: none; }
+  #wheelPaintCopy svg { filter: blur(1.5px) brightness(0.4) saturate(0.55); }
+  #wheelSection #wheelResizeWrap.has-paint-copy > #wheelContainer { display: none; }
   /* 4 Sep 2026, owner: "in the marked-up space, above the wheel, let appear
      a capsule like text 'Approach the Quran in 30 ways' (as it is in the
      middle of the circle, 'Study ...'), push the wheel below."
@@ -894,7 +899,7 @@
        rendered wheel width (it silently fell back to the SVG's bare
        intrinsic 360px, ignoring the calc() entirely) rather than assumed. */
     #wheelSection #wheelResizeWrap { width: 100%; }
-    #wheelSection #wheelContainer { width: 100%; display: flex; justify-content: center; }
+    #wheelSection #wheelContainer, #wheelSection #wheelPaintCopy { width: 100%; display: flex; justify-content: center; }
     /* Owner decision 51 (Architect review, measured): the slice numbers sit
        OUTSIDE the wheel's own SVG box, about 3.2% of the wheel's width above
        it, and on a phone that pushed the top numbers (39, 40, 1, 2) 2-6px
@@ -905,7 +910,7 @@
        and no more ("only that much that numbers are not cut"). The wheel's
        width here is min(100vw, 100dvh - 420px), the same expression as
        .mastery-wheel below. Measured at 320/360/390/412 in landing-drawers. */
-    #wheelSection #wheelContainer { padding-top: calc(min(100vw, 100dvh - 420px) * 0.032 + 7px); }
+    #wheelSection #wheelContainer, #wheelSection #wheelPaintCopy { padding-top: calc(min(100vw, 100dvh - 420px) * 0.032 + 7px); }
     /* Owner, 1 Oct 2026 (a phone photo, the capsule bar over 19-23): "The
        capsule cut the numbers at the bottom. Fix. Keep a elegantly looking
        distance. We got space Below." The bottom numbers overhang the SVG by
@@ -917,7 +922,7 @@
        group centred in it, so the Approach list begins just below the fold
        and is reached by scrolling, as before. */
     body.landing-view #wheelSection .wheel-col { min-height: var(--landing-col-min, 0px); justify-content: center; }
-    #wheelSection #wheelContainer { padding-bottom: calc(min(100vw, 100dvh - 420px) * 0.032 + 19px); }
+    #wheelSection #wheelContainer, #wheelSection #wheelPaintCopy { padding-bottom: calc(min(100vw, 100dvh - 420px) * 0.032 + 19px); }
     #wheelSection .mastery-wheel { width: min(100%, calc(100dvh - 420px), var(--landing-wheel-max, 100%)); max-width: none; }
     #wheelSection .wheel-legend { font-size: 0.68rem; gap: 4px 9px; }
     #wheelSection .legend-swatch { width: 9px; height: 9px; }
@@ -1583,7 +1588,7 @@
      wrap, which is exactly the wheel's width, so the gap below the lowest
      number stays ~14px at any size. Phones keep their own rule (<=720px). */
   @media (min-width: 721px) {
-    #wheelSection #wheelContainer { padding-bottom: max(0px, calc(3.2% - 2px)); }
+    #wheelSection #wheelContainer, #wheelSection #wheelPaintCopy { padding-bottom: max(0px, calc(3.2% - 2px)); }
   }
   .wheel-resize-wrap.wheel-resized { max-width: 100% !important; margin: 0 auto !important; }
   /* The wheel's own container div, not only the SVG inside it, needs the
@@ -4602,6 +4607,10 @@
                  whatever size the wheel ends up at). Untouched by default,
                  same as every other wheel's own wrap -- see the CSS. -->
             <div id="wheelResizeWrap" class="wheel-resize-wrap">
+              <!-- Decision 81 item 1 (6 Oct 2026, the startup paint): the wheel as it was last drawn on THIS
+                   device, shown the moment the page is parsed and taken away the moment renderWheel() draws
+                   the real one. Never tappable (inert, pointer-events none), dimmed like the real wheel. -->
+              <div id="wheelPaintCopy" class="wheel-resize-target" hidden inert aria-hidden="true"></div>
               <div id="wheelContainer" class="wheel-resize-target">Loading&hellip;</div>
               <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="se" title="Drag to resize the wheel" aria-label="Drag to resize the wheel">⤡</div>
               <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="sw" title="Drag to resize the wheel" aria-label="Drag to resize the wheel">⤢</div>
@@ -4612,6 +4621,23 @@
               <div class="wheel-resize-handle" data-wheel-resize="e" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
               <div class="wheel-resize-handle" data-wheel-resize="w" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
             </div>
+            <script>
+              // The startup paint (decision 81 item 1; load-speed contract: "local cache only -- paint
+              // immediately"). Plain script, not a module, so it runs while the page is still being read,
+              // long before Firebase answers. Only a copy this app saved, in the language now chosen.
+              (function () {
+                try {
+                  var c = JSON.parse(localStorage.getItem("mmsa.wheelPaint.v1") || "null");
+                  var lang = localStorage.getItem("mm_app_lang") || "en";
+                  if (!c || typeof c.html !== "string" || c.lang !== lang || c.html.length > 400000) return;
+                  if (c.html.indexOf('<svg class="mastery-wheel') !== 0 || /<script|<foreignObject|\son[a-z]+\s*=|javascript:/i.test(c.html)) return;
+                  var el = document.getElementById("wheelPaintCopy");
+                  el.innerHTML = c.html;
+                  el.hidden = false;
+                  document.getElementById("wheelResizeWrap").classList.add("has-paint-copy");
+                } catch (e) { /* no copy: the page shows "Loading…" as before */ }
+              })();
+            </script>
             <!-- Starts hidden -- shown for the first time only once renderWheel()
                  has real content in #wheelContainer (see that function). Before
                  this fix the button was visible from first paint, absolutely
@@ -6387,10 +6413,31 @@
     // step) until the app itself appears, then hides for good.
     const bootStatusEl = document.getElementById("bootStatus");
     let bootSettled = false;
+    // Decision 81 item 1 -- the startup paint. When this device kept a copy of the wheel (the inline script beside
+    // #wheelContainer has put it up), the landing is shown NOW, already translated, instead of after the first
+    // sign-in round trip -- but inert (nothing on it can be tapped) until the real reveal below. The box that says
+    // "Loading your study…" is not shown in its place, so nothing moves when the app is revealed for real.
+    let appPaintedEarly = false;
+    if (document.getElementById("wheelPaintCopy")?.hidden === false) {
+      appPaintedEarly = true;
+      appEl.style.display = "flex";
+      appEl.inert = true;
+      appEl.setAttribute("aria-busy", "true");
+      if (bootStatusEl) bootStatusEl.hidden = true;
+    }
+    /** The early landing ends: as the real app (`show`), or taken away because no app is coming. */
+    function endEarlyPaint(show) {
+      if (!appPaintedEarly) return;
+      appPaintedEarly = false;
+      appEl.inert = false;
+      appEl.removeAttribute("aria-busy");
+      if (!show) appEl.style.display = "none";
+    }
     function setBootStatus(kind, detail = "") {
       if (!bootStatusEl) return;
       if (kind === "done") { bootSettled = true; bootStatusEl.hidden = true; return; }
       if (kind !== "slow") bootSettled = true;
+      if (kind !== "slow") { dropWheelPaintCopy(); endEarlyPaint(false); } // signed out, no account, or failed: no wheel is coming
       const text = {
         slow: t("Still loading… The internet connection is slow, or the database is not answering yet."),
         signedOut: t("You are signed out."),
@@ -6530,6 +6577,30 @@
     const wbwLangControl = document.getElementById("wbwLangControl");
     const wbwLangSelect = document.getElementById("wbwLangSelect");
     const wheelContainer = document.getElementById("wheelContainer");
+    // Decision 81 item 1 -- the startup paint. The inline script beside #wheelContainer shows the copy kept
+    // here; the first real draw (or any boot that cannot finish) takes it away. The copy is the person's own
+    // last-drawn wheel on this device, so it is forgotten on sign-out and never shown to a different account.
+    const WHEEL_PAINT_KEY = "mmsa.wheelPaint.v1";
+    function dropWheelPaintCopy() {
+      const el = document.getElementById("wheelPaintCopy");
+      if (!el || el.hidden) return;
+      el.hidden = true;
+      el.innerHTML = "";
+      document.getElementById("wheelResizeWrap")?.classList.remove("has-paint-copy");
+    }
+    function forgetWheelPaintCopy() {
+      dropWheelPaintCopy();
+      try { localStorage.removeItem(WHEEL_PAINT_KEY); } catch { /* private mode: nothing was kept */ }
+    }
+    function keepWheelPaintCopy() {
+      const html = wheelContainer.innerHTML;
+      const uid = auth.currentUser?.uid;
+      if (!uid || !html.startsWith('<svg class="mastery-wheel') || html.length > 400000) return;
+      try { localStorage.setItem(WHEEL_PAINT_KEY, JSON.stringify({ uid, lang: getAppLang(), html })); } catch { /* full or private: the next load shows "Loading…" */ }
+    }
+    function wheelPaintCopyUid() {
+      try { return JSON.parse(localStorage.getItem(WHEEL_PAINT_KEY) || "null")?.uid ?? null; } catch { return null; }
+    }
     // The wheel's own drag-resize clamps its max width against this, not
     // #wheelStageWrap -- that wrap shrink-wraps to the wheel itself
     // (display:flex; justify-content:center with one child), so it can
@@ -6882,7 +6953,7 @@
         whoEl.textContent = t("Sign-in failed: {message}", { message: err.message });
       });
     });
-    signOutBtn.addEventListener("click", () => signOut(auth));
+    signOutBtn.addEventListener("click", () => { forgetWheelPaintCopy(); signOut(auth); });
 
     let activeTenantId = null;
     let myMemberships = [];
@@ -9046,6 +9117,7 @@
     }
 
     function renderWheel() {
+      dropWheelPaintCopy();
       if (!quranTrackables.length || !currentSurahData) {
         wheelContainer.innerHTML = `<p style="color:#8fa0c2;">${t("No Approaches yet.")}</p>`;
         wheelSidebarContainer.innerHTML = "";
@@ -9101,6 +9173,7 @@
       // happen when it appeared before the wheel did.
       wheelHubPickers.hidden = false;
       if (!wheelIntroDismissed) wheelCtaBtn.hidden = false;
+      keepWheelPaintCopy();
 
       // Matches the old app's own wheel-click behaviour: clicking a segment
       // is about that Approach for the ayah on screen -- it does not
@@ -22187,7 +22260,9 @@
     // ---------------------------------------------------------------------
 
     onAuthStateChanged(auth, async (user) => {
+      if (!user || wheelPaintCopyUid() !== user.uid) dropWheelPaintCopy(); // another account's copy is never shown
       if (!user) {
+        forgetWheelPaintCopy();
         window.__bmCoverDone?.(false);
         whoEl.textContent = t("Not signed in.");
         signInBtn.style.display = "inline-block";
@@ -22268,6 +22343,7 @@
         renderNav(membershipRoles.find((m) => m.tenantId === activeTenantId)?.roles ?? [], getActiveContext()?.viewAsRole ?? null);
 
         appEl.style.display = "flex"; // flex, not block: #app is the shell column (stage + dock) since shell round 7
+        endEarlyPaint(true);
         setBootStatus("done");
         // loadContextData() itself sets `myMemberships` from this same
         // promise, part-way through, as soon as it resolves -- several
@@ -22292,7 +22368,7 @@
         // I15: the failure used to be written only inside the Home menu,
         // where a blank page gave no hint of it. Say it on the page too --
         // unless the app is already on screen (a late step failing).
-        if (appEl.style.display === "none") setBootStatus("failed", `${err.stepName ?? "unknown step"} — ${err.code ?? ""} ${err.message}`.trim());
+        if (appEl.style.display === "none" || appPaintedEarly) setBootStatus("failed", `${err.stepName ?? "unknown step"} — ${err.code ?? ""} ${err.message}`.trim());
         console.error(err);
         window.__bmCoverDone?.(true);
       }

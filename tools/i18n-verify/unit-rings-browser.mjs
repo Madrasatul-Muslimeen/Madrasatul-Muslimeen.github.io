@@ -224,7 +224,7 @@ for (const lang of ["en", "bn"]) {
     const rows = new Map([...document.querySelectorAll("#exploreSidebarContainer .way-row")].map((r) => [r.dataset.key, (r.querySelector(".status-chip").className.match(/chip-(\w+)/) || [])[1]]));
     const arcs = [...document.querySelectorAll(`#exploreWheelContainer .wheel-ring-seg[data-ring-kind="${kind}"]`)];
     const mism = arcs.filter((a) => rows.has(a.dataset.key) && rows.get(a.dataset.key) !== a.dataset.status).map((a) => a.dataset.key);
-    return { arcs: arcs.length, compared: arcs.filter((a) => rows.has(a.dataset.key)).length, mism, statuses: [...new Set(arcs.map((a) => a.dataset.status))] };
+    return { arcs: arcs.length, compared: arcs.filter((a) => rows.has(a.dataset.key)).length, mism, statuses: [...new Set(arcs.map((a) => a.dataset.status))], keys: arcs.map((a) => a.dataset.key) };
   }, ringKind);
   const quranSurahs = await listVsRing("surah");
   check(`[${lang}] Whole Qur'an: 114 Surah arcs, each the colour its list row shows`, quranSurahs.arcs === 114 && quranSurahs.compared === 114 && quranSurahs.mism.length === 0, JSON.stringify(quranSurahs));
@@ -281,7 +281,10 @@ for (const lang of ["en", "bn"]) {
   await page.waitForSelector('#exploreWheelContainer .wheel-ring-seg[data-ring-kind="ayah"]', { timeout: 20000 });
   await page.waitForTimeout(400);
   const s1 = await listVsRing("ayah");
-  check(`[${lang}] Al-Faatiha: 7 āyah arcs, each the colour its list row shows`, s1.compared === 7 && s1.mism.length === 0, JSON.stringify(s1));
+  // Updated in place, v09.102 (Owner decisions 76-77, built v09.97 by #606): displayed Ayat 6 and 7 are two records
+  // now (stored ayah:1:7 and the spare ayah:1:8), so Al-Faatiha has EIGHT arcs, one per stored record, each still the
+  // colour of its own list row. It was 7 while 6 and 7 shared ayah:1:7.
+  check(`[${lang}] Al-Faatiha: 8 āyah arcs (6 and 7 are two records), each the colour its list row shows`, s1.compared === 8 && s1.mism.length === 0 && JSON.stringify(s1.keys) === JSON.stringify(["1", "2", "3", "4", "5", "6", "7", "8"]), JSON.stringify(s1));
   const expOverflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
   check(`[${lang}] Explore: no sideways scroll`, expOverflow <= 1, String(expOverflow));
 

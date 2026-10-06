@@ -19830,3 +19830,10 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
 - **Checks:**
   - journey-across-devices-browser 252/0 (mutations merge-off, palette-open, folds-in-note, startup-read, phrases-uncapped, template-unsanitised each fail it), note-user-settings 43/0
   - every journey-* suite green, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
+
+## v09.102 — 6 Oct 2026 — The landing shows the wheel at once (startup paint)
+
+- **What:** Owner decision 81 item 1. `quranrevival.html`: `#wheelPaintCopy` and its inline script, `keepWheelPaintCopy`/`dropWheelPaintCopy`/`forgetWheelPaintCopy`, the early inert landing (`appPaintedEarly`, `endEarlyPaint`). `unit-rings-browser`: the Al-Faatiha arc count updated in place (8 since v09.97). Decision 81 recorded.
+- **Checks:**
+  - startup-paint-browser 60/0 (five mutations each fail it), boot-status 24/0, account-card 1235/0, landing-drawers 274/0, wheel-centre 645/0, unit-rings 106/0, quran-my-status 248/0, bookmark-marks-back 96/0, kys-window 50/0
+  - quranrevival-startup-reads 2/0, module-startup-reads 28/0, service-worker 18/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
