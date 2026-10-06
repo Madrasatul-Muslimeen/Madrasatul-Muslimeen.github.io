@@ -52,7 +52,7 @@ Source: Siyagah `index.html` v04.86 (`Siyagah/siyagah.github.io`, readable from 
 32. **@ to link another Note** while typing (uses the existing Links).
 33. **Table sums and sorting**: Σ total of a column; sort by a column.
 
-## Part C. Waits for the Owner (each needs something new)
+## Part C. Answered 6 Oct 2026 (decision 72): build 34, 36, 37, 38, 39, 40, 43, 44, 45; not 41, 42; 35 only if free, else the cost first
 
 34. **Tabs in windows**: group Notes as tabs, ＋ Add Tab, a short name and colour per tab, drag a tab out to sit beside. *Needs: where tab groups are kept, on this device only (no Firebase change) or across devices (a Rules change).*
 35. **Pictures in Notes**: insert an image. *Needs: Firebase Storage (a storage plan and new Rules).*

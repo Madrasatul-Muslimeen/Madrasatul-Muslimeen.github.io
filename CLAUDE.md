@@ -126,9 +126,10 @@ Read this first, every session. It is the standing brief.
 > **`docs/reports/2026-10-06-MMSA-SESSION-HANDOVER.md`** is the current
 > continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-10-06.md`**
 > is the prompt that starts a new session. The Siyagah note-pane port's Part B is
-> finished (v09.86); **Part C (34–45) waits for the Owner's answers**, asked on
-> 6 Oct. Next without asking: **👥 family members on the Word Card levels and on
-> Hadith "Studied"** (handover section 0). Decision 71 records the Owner's five
+> finished (v09.86); **Part C was answered on 6 Oct (decision 72)**. The queue
+> (handover section 0): **a Dua module, resources first, build nothing**; then
+> **👥 on the Word Card levels and Hadith "Studied"**; then Part C as answered,
+> with one Rules candidate for the Owner to publish. Decision 71 records the Owner's five
 > requests of 5 Oct (bookmarks, Back, Bismillah, 👥 on every Record card, family
 > members with a year of birth at sign-up).
 >
