@@ -92,7 +92,7 @@
       <label><input type="checkbox" id="showArchivedPeople" /> Show archived people</label>
     </div>
     <table id="rosterTable">
-      <thead><tr><th>Name</th><th>Roles</th><th>Managed by</th><th id="peopleActionsHead" style="display:none;">Actions</th></tr></thead>
+      <thead><tr><th>Name</th><th>Age</th><th>Roles</th><th>Managed by</th><th id="peopleActionsHead" style="display:none;">Actions</th></tr></thead>
       <tbody id="rosterBody"></tbody>
     </table>
 
@@ -100,6 +100,9 @@
       <legend>Add a person</legend>
       <label for="name">Name</label>
       <input id="name" type="text" maxlength="80" />
+
+      <label for="birthYear">Year of birth (optional)</label>
+      <input id="birthYear" type="number" inputmode="numeric" min="1900" max="2100" placeholder="2015" style="max-width:9rem;" />
 
       <div class="check-row" style="margin-top:0.8rem;">
         <label><input id="isMinor" type="checkbox" /> This is a child (no login of their own)</label>
@@ -178,7 +181,7 @@
       getDocs,
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
-    import { addPersonToTenant, updatePersonInTenant, setPersonStatus, getRosterRoles } from "./js/people.js";
+    import { addPersonToTenant, updatePersonInTenant, setPersonStatus, getRosterRoles, ageFromBirthYear } from "./js/people.js";
     import { createInvite, listInvitesForTenant, getTokenForPendingInvite } from "./js/invites.js";
     import { langText } from "./js/lang.js";
     import { roleListLabel, roleLabel, entityStatusLabel } from "./js/labels.js";
@@ -198,7 +201,7 @@
     import { getStudyLock, acquireStudyLock, releaseStudyLock, canSwitchTo } from "./js/study-lock.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
 import { mountBookmarkMenu } from "./js/bookmark-nav.js";
-    import { translateStatic, t } from "./js/i18n.js";
+    import { translateStatic, t, num } from "./js/i18n.js";
     import { registerServiceWorker } from "./js/sw-register.js";
 
     // Phase 1 of the full translation: turn this page's own static markup
@@ -361,6 +364,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
           .join("");
         return `<tr data-person-id="${person.id}">
           <td><input type="text" class="editNameInput" maxlength="80" value="${escapedName}" /></td>
+          <td><input type="number" class="editBirthYear" inputmode="numeric" min="1900" max="2100" value="${person.birthYear ?? ""}" aria-label="${t("Year of birth")}" placeholder="${t("Year of birth")}" style="max-width:6.5rem;" /></td>
           <td><div class="roster-role-edit">${roleChecks}</div></td>
           <td>
             <label style="display:flex; align-items:center; gap:0.3rem; font-weight:400; margin-bottom:0.3rem;"><input type="checkbox" class="editIsMinor" ${person.isMinor ? "checked" : ""} /> ${t("Child")}</label>
@@ -385,6 +389,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         : "";
       return `<tr data-person-id="${person.id}">
         <td>${displayName}</td>
+        <td data-person-age>${ageFromBirthYear(person.birthYear) === null ? "—" : num(ageFromBirthYear(person.birthYear))}</td>
         <td>${roleText}</td>
         <td>${managerName}</td>
         ${actionCell}
@@ -419,11 +424,12 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
           const isMinor = tr.querySelector(".editIsMinor").checked;
           const managedByPersonId = isMinor ? (tr.querySelector(".editManagedBy").value || null) : null;
           const roles = Array.from(tr.querySelectorAll(".editRoleCheck:checked")).map((el) => el.value);
+          const birthYear = tr.querySelector(".editBirthYear")?.value.trim() || null;
 
           btn.disabled = true;
           const outcome = await safeWrite(
             () => updatePersonInTenant(db, {
-              tenantId: activeTenantId, uid: auth.currentUser.uid, personId, name, isMinor, managedByPersonId, roles,
+              tenantId: activeTenantId, uid: auth.currentUser.uid, personId, name, isMinor, managedByPersonId, roles, birthYear,
             }),
             { collection: "tenantPeople", action: "updatePerson", id: personId }
           );
@@ -614,6 +620,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       const isMinor = isMinorEl.checked;
       const managedByPersonId = isMinor ? managedBySelect.value || null : null;
       const roles = Array.from(document.querySelectorAll('input[name="role"]:checked')).map((el) => el.value);
+      const birthYear = document.getElementById("birthYear").value.trim() || null;
 
       const outcome = await safeWrite(
         () => addPersonToTenant(db, {
@@ -623,6 +630,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
           isMinor,
           managedByPersonId,
           roles,
+          birthYear,
         }),
         { collection: "tenantPeople", action: "addPerson" }
       );
@@ -634,6 +642,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         // still valid), so it is printed exactly as stored, never through num().
         resultEl.textContent = t("Added. Person ID: {personId}", { personId: outcome.result.personId });
         document.getElementById("name").value = "";
+        document.getElementById("birthYear").value = "";
         isMinorEl.checked = false;
         managedByWrap.style.display = "none";
         document.querySelectorAll('input[name="role"]').forEach((el) => (el.checked = false));

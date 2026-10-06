@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.86",
+    "version": "09.87",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2213,8 +2213,20 @@
     {
       "version": "09.86",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Siyagah note-pane port round 4 (items 28-33, Part B finished): toolbar groups on a narrow Note, no-colour swatch, paste choices, @ to link a Note, table total and sort (decision 70).",
+      "integration": {
+        "authorizedOn": "2026-10-06",
+        "integratedOn": "2026-10-06",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.87",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Family members with year of birth at sign-up, and an Age column on the People page (Owner, 5 Oct 2026).",
       "integration": {
         "authorizedOn": "2026-10-06",
         "integratedOn": "2026-10-06",
@@ -2223,8 +2235,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.87",
+  "nextUnallocated": "09.88",
   "nextUnallocatedNote": [
+    "v09.87 was allocated to family members with year of birth at sign-up, 2026-10-06.",
     "v09.86 was allocated to the Siyagah note-pane port round 4, 2026-10-06.",
     "v09.85 was allocated to the Siyagah note-pane port round 3, 2026-10-05.",
     "v09.84 was allocated to bookmark marks and Back, Bismillah labels, family members on every Record card, 2026-10-05.",

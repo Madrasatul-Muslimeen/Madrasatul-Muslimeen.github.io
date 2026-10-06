@@ -28,6 +28,22 @@
   #result { margin-top: 1.5rem; padding: 1rem; border-radius: 0.5rem; font-size: 0.95rem; display: none; }
   #result.ok { background: #d7f4d7; }
   #result.fail { background: #f8d7da; }
+  /* The Owner, 5 Oct 2026: a family account adds its members (with year of birth) straight after it is made.
+     Demo: docs/reference/2026-10-05-family-members-signup-demo.html */
+  .family-step { margin-top: 1.4rem; border: 1px solid #d7deea; border-radius: 0.8rem; padding: 1rem; display: flex; flex-direction: column; gap: 0.8rem; }
+  .family-step[hidden] { display: none; }
+  .family-step h2 { margin: 0; color: #1F3A6E; font-size: 1.25rem; }
+  .family-step .step-label { margin: 0; font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: #8a6220; font-weight: 700; }
+  .fam-row { display: grid; grid-template-columns: minmax(0, 1fr) 6.5rem 2.75rem; gap: 0.5rem; align-items: end; padding: 0.6rem; border: 1px solid #d7deea; border-radius: 0.6rem; background: #f4f7fc; }
+  .fam-row label { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.8rem; color: #5f6b7d; min-width: 0; margin: 0; }
+  .fam-row input[type=text], .fam-row input[type=number] { min-height: 40px; box-sizing: border-box; width: 100%; margin: 0; }
+  .fam-row .fam-del { width: 40px; height: 40px; padding: 0; background: white; color: #1F3A6E; border: 1px solid #ccc; }
+  .fam-row .fam-info { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; align-items: center; font-size: 0.85rem; }
+  .fam-row .fam-child { flex-direction: row; align-items: center; gap: 0.4rem; min-height: 40px; color: #222; }
+  .fam-row .fam-child input { width: 20px; height: 20px; }
+  .family-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+  .family-actions button, #familyAdd { min-height: 44px; }
+  #familyResult { margin: 0; }
 </style>
 </head>
 <body>
@@ -65,6 +81,19 @@
 
   <div id="result"></div>
 
+  <section id="familyStep" class="family-step" aria-labelledby="familyHeading" hidden>
+    <p class="step-label">Step 2 of 2</p>
+    <h2 id="familyHeading">Who is in your family?</h2>
+    <p>Add the people you will record progress for. You can add or change them later on the People page.</p>
+    <div id="familyRows" style="display:flex;flex-direction:column;gap:0.6rem;"></div>
+    <div><button type="button" class="secondary" id="familyAdd">+ Add another</button></div>
+    <div class="family-actions">
+      <button type="button" id="familySave">Save and continue</button>
+      <button type="button" class="secondary" id="familySkip">Skip for now</button>
+    </div>
+    <p id="familyResult" role="status" aria-live="polite"></p>
+  </section>
+
   <script type="module">
     import { auth, db } from "./js/firebase-init.js";
     import {
@@ -74,8 +103,9 @@
       onAuthStateChanged,
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { createTenantWithOwner, upsertUserIndex } from "./js/identity.js";
+    import { addPersonToTenant, ageFromBirthYear } from "./js/people.js";
     import { safeWrite } from "./js/errors.js";
-    import { translateStatic, t } from "./js/i18n.js";
+    import { translateStatic, t, num } from "./js/i18n.js";
     import { registerServiceWorker } from "./js/sw-register.js";
 
     // Phase 1 of the full translation: turn this page's own static markup
@@ -137,6 +167,7 @@
         await upsertUserIndex(db, uid, { addTenantId: tenantId, makeDefault: true }).catch(() => {});
         resultEl.className = "ok";
         resultEl.innerHTML = `${t("Account created.")}<br>${t("Account ID:")} <code>${tenantId}</code><br>${t("Your person ID:")} <code>${personId}</code><br>${t("Write these down.")}`;
+        if (tenantType === "family") openFamilyStep({ tenantId, personId, uid });
       } else {
         resultEl.className = "fail";
         resultEl.textContent = outcome.entry.message;
@@ -144,6 +175,96 @@
 
       createBtn.disabled = false;
       createBtn.textContent = "Create";
+    });
+
+    // ---------------------------------------------------------------------
+    // The Owner, 5 Oct 2026: "When a user new sign in, he is asked to put
+    // family members with age, to attach with his account." Step 2 of a
+    // "My family" account: each member's name and YEAR OF BIRTH (the age is
+    // worked out from it, so it stays right every year), and whether they are
+    // a child this account looks after (ticked by itself under 18). Each one
+    // is added with the People page's own addPersonToTenant() as a Student,
+    // managed by the new owner when a child. Skipping is fine: the People
+    // page adds people any time.
+    // ---------------------------------------------------------------------
+    const familyStep = document.getElementById("familyStep");
+    const familyRowsEl = document.getElementById("familyRows");
+    const familyResult = document.getElementById("familyResult");
+    let familyCtx = null;
+    let familyRows = [];
+    const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    function paintFamily() {
+      familyRowsEl.innerHTML = familyRows.map((r, i) => {
+        const age = ageFromBirthYear(r.year);
+        return `<div class="fam-row" data-fam-row="${i}">
+          <label for="famName${i}">${esc(t("Name"))}<input type="text" id="famName${i}" maxlength="80" data-fam-i="${i}" data-fam-k="name" value="${esc(r.name)}"></label>
+          <label for="famYear${i}">${esc(t("Year of birth"))}<input type="number" id="famYear${i}" inputmode="numeric" min="1900" max="2100" placeholder="2015" data-fam-i="${i}" data-fam-k="year" value="${esc(r.year)}"></label>
+          <button type="button" class="fam-del" data-fam-del="${i}" aria-label="${esc(t("Remove"))}" title="${esc(t("Remove"))}">✕</button>
+          <div class="fam-info"><span>${esc(t("Age"))}: <b data-fam-age>${age === null ? "—" : num(age)}</b></span>
+            <label class="fam-child"><input type="checkbox" data-fam-i="${i}" data-fam-k="child" ${r.child ? "checked" : ""}> ${esc(t("A child I look after"))}</label></div>
+        </div>`;
+      }).join("");
+    }
+    function openFamilyStep(ctx) {
+      familyCtx = ctx;
+      familyRows = [{ name: "", year: "", child: true }];
+      familyStep.hidden = false;
+      familyResult.textContent = "";
+      paintFamily();
+      document.getElementById("famName0")?.focus();
+    }
+    familyRowsEl.addEventListener("input", (e) => {
+      const i = Number(e.target.dataset.famI), k = e.target.dataset.famK;
+      if (Number.isNaN(i) || !familyRows[i]) return;
+      if (k === "child") { familyRows[i].child = e.target.checked; return; }
+      familyRows[i][k] = e.target.value;
+      if (k === "year") {
+        const age = ageFromBirthYear(e.target.value);
+        if (age !== null) { familyRows[i].child = age < 18; e.target.closest(".fam-row").querySelector('[data-fam-k="child"]').checked = familyRows[i].child; }
+        e.target.closest(".fam-row").querySelector("[data-fam-age]").textContent = age === null ? "—" : num(age);
+      }
+    });
+    familyRowsEl.addEventListener("click", (e) => {
+      const d = e.target.closest("[data-fam-del]");
+      if (!d) return;
+      familyRows.splice(Number(d.dataset.famDel), 1);
+      if (!familyRows.length) familyRows.push({ name: "", year: "", child: true });
+      paintFamily();
+    });
+    document.getElementById("familyAdd").addEventListener("click", () => {
+      familyRows.push({ name: "", year: "", child: true });
+      paintFamily();
+      document.getElementById(`famName${familyRows.length - 1}`)?.focus();
+    });
+    const appLink = () => `<a href="index.html">${esc(t("Open the app"))}</a>`;
+    document.getElementById("familySkip").addEventListener("click", () => {
+      familyResult.innerHTML = `${esc(t("You can add family members any time on the People page."))} ${appLink()}`;
+    });
+    document.getElementById("familySave").addEventListener("click", async () => {
+      if (!familyCtx) return;
+      const wanted = familyRows.filter((r) => r.name.trim());
+      if (!wanted.length) { familyResult.textContent = t("Type a name first, or choose Skip for now."); return; }
+      const saveBtn = document.getElementById("familySave");
+      saveBtn.disabled = true;
+      let added = 0;
+      const failed = [];
+      for (const r of wanted) {
+        const outcome = await safeWrite(
+          () => addPersonToTenant(db, {
+            tenantId: familyCtx.tenantId, uid: familyCtx.uid, name: r.name.trim(), isMinor: !!r.child,
+            managedByPersonId: r.child ? familyCtx.personId : null, roles: ["student"], birthYear: r.year || null,
+          }),
+          { collection: "tenantPeople", action: "addFamilyMember" }
+        );
+        if (outcome.ok) added++; else failed.push(r.name.trim()); // I15: each failure is reported by safeWrite and named here
+      }
+      saveBtn.disabled = false;
+      familyRows = familyRows.filter((r) => failed.includes(r.name.trim()));
+      if (!familyRows.length) familyRows.push({ name: "", year: "", child: true });
+      paintFamily();
+      familyResult.innerHTML = failed.length
+        ? esc(t("Added {n}. Not saved: {names}. Try those again.", { n: num(added), names: failed.join(", ") }))
+        : `${esc(t("Added {n} to your family.", { n: num(added) }))} ${appLink()}`;
     });
   </script>
 </body>
