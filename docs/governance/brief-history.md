@@ -14,6 +14,14 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v09.99 on `main`** (6 Oct 2026 — **Notes: a full spreadsheet inside a Note**).
+- **What** (the Owner, 6 Oct 2026: "44. yes"; decision 72; Builder round #612, PR opened by the Architect after the Builder's credentials failed):
+  - ⊞ Insert a spreadsheet in a Note: formulas (SUM, AVERAGE, MIN, MAX, COUNT, COUNTA, IF, IFERROR, ROUND, ABS, AND, OR, NOT, CONCAT, LEN, UPPER, LOWER, TODAY, DATE), number formats, add/remove rows and columns, merge, filter, sort, fill, Σ totals, column resize, header row, copy/paste and undo; errors explained in words; read-only in view mode; a finalised Note refuses in words.
+  - Stored inside the Note's own text as a cleaned state plus a snapshot table; no Rules change. `note-sanitize.js` rebuilds every sheet from its cleaned state (the snapshot is re-derived, never trusted). The engine (`note-sheet-engine.js`) never uses eval.
+- **Checks:**
+  - note-sheet-engine 89/0, note-sheet-engine-mutations 10/10, journey-sheet-browser 962/0 (five Builder mutations each fail it; Architect review: read the sanitiser and every HTML write (all escaped); removing the snapshot's escaping fails the engine suite), note-sanitize-boundary 13/0, journey-annotations-status 536/0, journey-editor 577/0, journey-note-pane 327/0, journey-reading-tools 488/0, rules-authorisation-executable 63/0, stub-parity 4/0, phone-width-overflow 217/0, behaviour 1006/1 (sandbox baseline)
+- **With the Owner:** open a Note, Edit, ＋ Insert → ⊞ Spreadsheet; type 2 and 3 in A1 and A2, and =A1+A2 in A3: it shows 5.
+
 **Previous milestone: v09.98 on `main`** (6 Oct 2026 — **Notes: annotations and heading status badges**).
 - **What** (the Owner, 6 Oct 2026: "38. yes, 39. yes"; decision 72; Builder round #595, PR #613):
   - 38 Annotations: select text in a Note, 💬, type a comment: the text is marked with a numbered [N] and an Annotations list sits at the end of the Note; tap a mark or its comment to jump between them; ✏ edit, ✕ remove (asks first; the text stays).

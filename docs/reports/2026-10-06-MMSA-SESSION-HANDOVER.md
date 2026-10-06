@@ -14,6 +14,55 @@ Read the live state yourself, because it moves on after this was written:
 - open pull requests;
 - the "Active Architect session" line on #159.
 
+**UPDATE, 6 Oct 2026 19:05 UTC (session `session_01B7mgifM4gSoYg8nz6qA6fY`, still holding #159). Read this first; the older text below is history.**
+
+**Released since then, v09.88 to v09.99** (PRs #597–#614; each one's account is in `CHANGELOG.md`):
+- **v09.88–v09.92:** 👥 on the Word Card levels and Hadith "Studied"; "Take an Approach" and the Arabic Writing slice; a word known elsewhere is known everywhere; the Writing sheet's unit picker and two-row toolbar; the pop-out of a word or an Ayah.
+- **v09.93:** the Writing sheet follows the Al-Fatiha count (decision 76).
+- **v09.94:** speed. The on-device cache survives releases; the Hadith book list loads from a 2.6 KB summary. See `docs/reports/2026-10-06-speed-assessment.md`.
+- **v09.95:** Asma ul Husna "File under" every classification (decision 78).
+- **v09.96:** Know Your Status as a movable, resizable window; the numbers are never cut; Back on its pop-ups (decision 79).
+- **v09.97:** Al-Fatiha Ayat 6 and 7 as two records, `ayah:1:7` and `ayah:1:8` (decisions 76–77).
+- **v09.98:** note annotations and heading status badges (Part C1).
+- **v09.99:** a full spreadsheet inside a Note (Part C2).
+- **Test-only PR #611:** the two pure suites that were red on `main` are green.
+
+**Owner decisions 73–80** are in `docs/governance/2026-09-27-owner-decisions.md`:
+- **73 / 74:** finish the running job first. A new message is acknowledged in one line and queued UNREAD, unless the Owner says it is urgent.
+- **75:** one change of selection changes everywhere.
+- **76, 77:** Al-Fatiha.
+- **78:** Asma ul Husna "File under".
+- **79:** Know Your Status.
+- **80:** the across-devices note settings live in `userPrefs/{uid}.mmsaNotes`, so there is no Rules change.
+
+**RUNNING:** Builder round **#616** (Part C3: 34, 36, 37, 40, 45, in `userPrefs`).
+- A `send_later` check-in fires about 20:16 UTC to review it.
+- It will be **v09.100**.
+- Review it as #612 was reviewed:
+  - read every `userPrefs` write: `merge` only, `mmsaNotes` only, never `themeColors`;
+  - read the cleaners;
+  - run its suites and their mutations, every `journey-*` suite and behaviour.
+
+**WAITING ON THE OWNER (asked, unanswered):** the remaining speed step.
+- It would paint the landing page from the device's last copy before the network answers. Today the page waits on about 3 Firestore round trips in sequence.
+- It changes the startup path (I9), so **do not build it without the Owner's yes.**
+
+**THE QUEUE AFTER #616:** nothing else is queued.
+- Part C is then finished.
+- 35 (pictures) and 43 (link previews) wait on cost answers from the Owner.
+- Dua waits for the Owner to add more.
+
+**Lessons from this stretch (keep):**
+- **The Builder sometimes cannot open its PR** (401 Bad credentials). It now comments on the issue; the Architect opens the PR from its branch.
+- **To review a Builder branch while your own tests run,** use a worktree in the scratchpad.
+  - `behaviour.mjs` reaches port **8080 directly** in places, so serve the worktree on 8080 for that run.
+  - Stop servers by PID: walk `/proc/*/cmdline` for `node serve.js`. Never `pkill -f`.
+- **Check every review screenshot.**
+  - The Know Your Status "Back" first reopened the card BEHIND Explore; only the screenshot showed it.
+  - The Fatiha 6/7 round left the wheel centre saying "Ayah 6–7"; a quick probe found it.
+- **A mutation proving "served from the worker" passed with the fix removed.** Measure what the page asks for against what was stored before it asked.
+- **The sandbox cannot open the live site in a browser** (TLS interception), and bypassing certificate checks is refused. Measure the local copy with CPU throttling and the stub's `latencyMs`.
+
 **This session released v09.83 to v09.87** (PRs #588–#592):
 - **v09.83**: note-pane port, round 2 (items 14–20):
   - Rename and Make a copy;
