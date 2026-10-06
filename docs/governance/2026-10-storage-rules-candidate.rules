@@ -1,0 +1,26 @@
+// CANDIDATE -- NOT DEPLOYED, and not referenced by firebase.json. The Owner publishes this themselves (Firebase console ->
+// Storage -> Rules), guided click by click, after switching the project to the Blaze plan (decision 81).
+// Pictures in Notes (Part C, item 35; issue #620). Bucket: study-monitoring.firebasestorage.app
+//
+//  * PRIVATE: only the signed-in person can read or write their own folder, noteImages/{their uid}/.
+//    Sharing a picture with family or teachers is a later decision and is NOT in this file.
+//  * CREATE only: no update and no delete (D6, I4). A picture, once saved, is never changed or removed by the app.
+//  * What may be created: a file named {8-40 letters, digits, _ or -}.webp, of type image/webp, under 400 KB
+//    (the app makes every picture about 200 KB first, on the device).
+//  * Everything else in the bucket is denied.
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /noteImages/{uid}/{file} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null && request.auth.uid == uid
+                    && request.resource.size < 400 * 1024
+                    && request.resource.contentType == 'image/webp'
+                    && file.matches('[A-Za-z0-9_-]{8,40}[.]webp');
+      // no update, no delete
+    }
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

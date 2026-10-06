@@ -16,7 +16,7 @@
 import { getStorage, ref, uploadBytes, getBlob } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import { firebaseApp } from "./firebase-init.js";
 import { t } from "./i18n.js";
-import { NOTE_IMAGE_MAX_SIDE, NOTE_IMAGE_MAX_BYTES, isNoteImagePath, noteImagePathFor, shrinkToTarget } from "./note-image-path.js";
+import { NOTE_IMAGE_MAX_SIDE, NOTE_IMAGE_MAX_BYTES, isNoteImagePath, noteImageOwner, noteImagePathFor, shrinkToTarget } from "./note-image-path.js";
 
 let storage = null;
 const storageOf = () => (storage ??= getStorage(firebaseApp));
@@ -82,8 +82,10 @@ export async function uploadNoteImage(uid, file, { onStage } = {}) {
 
 const urlCache = new Map();
 /** The picture as an object URL (cached for this page), fetched as the signed-in person. Rejects when it cannot be fetched. */
-export function noteImageUrl(path) {
+export function noteImageUrl(path, uid) {
   if (!isNoteImagePath(path)) return Promise.reject(new Error("not a Note picture path"));
+  // Pictures are private to their owner: another person's path is never even asked for (the Rules would refuse it anyway).
+  if (!uid || noteImageOwner(path) !== uid) return Promise.reject(new Error("not your picture"));
   if (!urlCache.has(path)) {
     const p = getBlob(ref(storageOf(), path)).then((b) => URL.createObjectURL(b));
     p.catch(() => urlCache.delete(path)); // a failure is retried next time, not remembered
