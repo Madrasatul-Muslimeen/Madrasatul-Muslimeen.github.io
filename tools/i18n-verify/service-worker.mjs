@@ -219,9 +219,32 @@ async function waitForActivation(page) {
     check("while it waits, the open page keeps its own version's files (no mixing)", still.includes(beforeName), JSON.stringify(still));
     const notice = await page.waitForSelector("#swUpdateNotice", { timeout: 5000 }).then(() => true).catch(() => false);
     check("the reader is told: \"Updated — tap to reload\"", notice);
+    // The Owner, 6 Oct 2026 ("opening of all files, modules takes ages"): the new version's cache must ALREADY
+    // hold every file the old one held when the reader is told -- not start empty and download them all again
+    // on the next opens. Read both caches; expected = the old cache's own URL list, nothing hand-picked.
+    const carried = await page.evaluate(async (oldName) => {
+      const urls = async (n) => (await (await caches.open(n)).keys()).map((r) => r.url);
+      const names = await caches.keys();
+      return { old: await urls(oldName), now: names.includes("mm-app-99.99") ? await urls("mm-app-99.99") : [] };
+    }, beforeName);
+    const missing = carried.old.filter((u) => !carried.now.includes(u));
+    check("while it waits, the new version's cache already holds every file the old one had (none to download again)",
+      carried.old.length > 3 && missing.length === 0, `old ${carried.old.length}, new ${carried.now.length}, missing ${missing.slice(0, 3).join(", ")}`);
+    // The tap reloads the page: that reload is the first open of the new version. Every app file it asks for
+    // must be one the new cache already held BEFORE the tap (carried.now) -- a file outside it is one the
+    // reader waits for. (Asking whether a response "came from the worker" cannot show this: the worker answers
+    // a miss by fetching it, which also counts -- a mutation removing the carry-over passed that form.)
+    const asked = new Set();
+    const onReq = (r) => { const u = r.url().split("#")[0]; if (u.startsWith(`${BASE}/app/`) && /\.(html|js|css|json|png|webp|svg|woff2?)$/.test(new URL(u).pathname) && !u.endsWith("/sw.js")) asked.add(u); };
+    page.on("request", onReq);
     if (notice) {
       await Promise.all([page.waitForNavigation({ timeout: 10000 }).catch(() => {}), page.click("#swUpdateNotice")]);
     }
+    await page.waitForLoadState("networkidle").catch(() => {});
+    page.off("request", onReq);
+    const notThere = [...asked].filter((u) => !carried.now.includes(u));
+    check("the first open after the update finds every app file it asks for already on the phone",
+      asked.size > 3 && notThere.length === 0, `asked ${asked.size}, not stored ${notThere.length}: ${notThere.slice(0, 3).join(", ")}`);
     await waitForActivation(page);
     await page.waitForTimeout(500);
     const afterCaches = await page.evaluate(() => caches.keys());
