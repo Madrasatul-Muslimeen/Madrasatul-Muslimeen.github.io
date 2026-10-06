@@ -14,6 +14,21 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v09.86 on `main`** (5 Oct 2026 — **round 4 of the Siyagah note-pane port: Part B finished**; decision 70).
+- **What** (list items 28–33, `docs/reference/2026-10-05-siyagah-note-pane-port-list.md`; `app/js/note-window.js`):
+  - On a Note narrower than 600px the toolbar shows **five labelled groups** (Aa Text · H Headings · ≡ Paragraph · + Insert · ↺ Undo) and the chosen group's tools: nothing scrolls sideways (`TOOL_GROUPS`, `fitToolbar`). A wide Note keeps one row.
+  - **⊘** after the colour and highlight swatches takes them off (`removeSwatch`).
+  - **Paste**: a web address asks "a link, or plain text?"; text with formatting asks "keep it, or plain text?"; nothing is pasted until the choice (`onEditPaste`, `finishPaste`).
+  - **@** while typing lists your Notes; Enter puts "@Title" in the text and adds a Link (the same Links as ⋯ → 🔗).
+  - A table's **Σ** adds or updates a total row for the caret's column; **↑ / ↓** sort by it (numbers by value), headings first and Σ last (`tableMath`).
+  - **Part B (14–33) is done.** Part C (34–45) waits for the Owner, one question each.
+- **Checks:**
+  - journey-editor-input-browser 112/0 (5 mutations, each caught)
+  - updated in place: journey-editor 577/0, journey-editor-siyagah 98/0, journey-note-edit 208/0 (a grouped toolbar shows a tool once its group is open; ⊘ follows the six swatches; a formatted paste asks first). Green: journey-note-folds-windows 82/0, journey-window-tabs 166/0, journey-note-actions 184/0, journey-note-pane 327/0, notes-note-windows 218/0, journey-note-windows 254/0, journey-reading-tools 488/0, journey-finish 64/0, journey-flags-links 306/0, journey-folder-window 144/0, journey-pane-resize 40/0, journey-three-panel 368/0, journey-s9 280/0, journey-tray 227/0, journey-tags 363/0, palette-contrast 20/0, phone-width-overflow 217/0, note-sanitize-boundary 12/0, stub-parity 4/0
+- **With the Owner:**
+  - edit a Note on a phone: the five groups; select coloured words and press ⊘; paste a web address; type @ and a Note's name; in a table, Σ and ↑ ↓;
+  - answer the Part C questions (34–45).
+
 **Previous milestone: v09.85 on `main`** (5 Oct 2026 — **round 3 of the Siyagah note-pane port**; decision 70).
 - **What** (list items 21–27, `docs/reference/2026-10-05-siyagah-note-pane-port-list.md`; all in `app/js/note-window.js`):
   - ⇅ folds or opens every section **while editing** too (`foldAllEditing`, view only); a folded heading shows a grey **preview line** of what it hides (`.note-sec-peek`).

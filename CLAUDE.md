@@ -251,20 +251,14 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.86 on `main`** (5 Oct 2026 — **round 4 of the Siyagah note-pane port: Part B finished**; decision 70).
-- **What** (list items 28–33, `docs/reference/2026-10-05-siyagah-note-pane-port-list.md`; `app/js/note-window.js`):
-  - On a Note narrower than 600px the toolbar shows **five labelled groups** (Aa Text · H Headings · ≡ Paragraph · + Insert · ↺ Undo) and the chosen group's tools: nothing scrolls sideways (`TOOL_GROUPS`, `fitToolbar`). A wide Note keeps one row.
-  - **⊘** after the colour and highlight swatches takes them off (`removeSwatch`).
-  - **Paste**: a web address asks "a link, or plain text?"; text with formatting asks "keep it, or plain text?"; nothing is pasted until the choice (`onEditPaste`, `finishPaste`).
-  - **@** while typing lists your Notes; Enter puts "@Title" in the text and adds a Link (the same Links as ⋯ → 🔗).
-  - A table's **Σ** adds or updates a total row for the caret's column; **↑ / ↓** sort by it (numbers by value), headings first and Σ last (`tableMath`).
-  - **Part B (14–33) is done.** Part C (34–45) waits for the Owner, one question each.
+**Current milestone: v09.87 on `main`** (5 Oct 2026 — **family members with year of birth at sign-up, and an Age column on People**).
+- **What** (the Owner: "When a user new sign in, he is asked to put family members with age, to attach with his account ... If not, we have to make that rule and feature"; demo `docs/reference/2026-10-05-family-members-signup-demo.html`):
+  - "Create your account" for **My family** opens **step 2, "Who is in your family?"**: a name and a **year of birth** per person (the age is worked out, never stored), "A child I look after" ticked by itself under 18, + Add another, Save and continue, Skip for now. Each is added with `addPersonToTenant()` as a Student, a child managed by the new owner.
+  - **People**: an **Age** column; Add a person and Edit take a year of birth (`birthYear` on tenantPeople, `validBirthYear` / `ageFromBirthYear` in `people.js`). The owner's and a guardian's tenantPeople Rules carry no field list, so **no Rules change**.
 - **Checks:**
-  - journey-editor-input-browser 112/0 (5 mutations, each caught)
-  - updated in place: journey-editor 577/0, journey-editor-siyagah 98/0, journey-note-edit 208/0 (a grouped toolbar shows a tool once its group is open; ⊘ follows the six swatches; a formatted paste asks first). Green: journey-note-folds-windows 82/0, journey-window-tabs 166/0, journey-note-actions 184/0, journey-note-pane 327/0, notes-note-windows 218/0, journey-note-windows 254/0, journey-reading-tools 488/0, journey-finish 64/0, journey-flags-links 306/0, journey-folder-window 144/0, journey-pane-resize 40/0, journey-three-panel 368/0, journey-s9 280/0, journey-tray 227/0, journey-tags 363/0, palette-contrast 20/0, phone-width-overflow 217/0, note-sanitize-boundary 12/0, stub-parity 4/0
-- **With the Owner:**
-  - edit a Note on a phone: the five groups; select coloured words and press ⊘; paste a web address; type @ and a Note's name; in a table, Σ and ↑ ↓;
-  - answer the Part C questions (34–45).
+  - family-signup-browser 68/0 (3 mutations, each caught)
+  - rules-authorisation-executable 63/0 (birthYear on tenantPeople: the owner's and a guardian's Rules carry no field list), stub-parity 4/0, phone-width-overflow 217/0, behaviour 1003/4 (22g×3 archive.org, 31e certificate: the sandbox baseline)
+- **With the Owner:** the next new family account sees step 2; on People, Edit a person and give a year of birth.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration

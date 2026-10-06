@@ -19721,3 +19721,10 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
 - **Checks:**
   - journey-editor-input-browser 112/0; mutations no-groups, no-none, paste-raw, no-link, no-sort each caught
   - updated in place: journey-editor 577/0, journey-editor-siyagah 98/0, journey-note-edit 208/0 (a grouped toolbar shows a tool once its group is open; ⊘ follows the six swatches; a formatted paste asks first). Green: journey-note-folds-windows 82/0, journey-window-tabs 166/0, journey-note-actions 184/0, journey-note-pane 327/0, notes-note-windows 218/0, journey-note-windows 254/0, journey-reading-tools 488/0, journey-finish 64/0, journey-flags-links 306/0, journey-folder-window 144/0, journey-pane-resize 40/0, journey-three-panel 368/0, journey-s9 280/0, journey-tray 227/0, journey-tags 363/0, palette-contrast 20/0, phone-width-overflow 217/0, note-sanitize-boundary 12/0, stub-parity 4/0
+
+## v09.87 — 5 Oct 2026 — Family members with year of birth at sign-up; Age on People
+
+- **What:** the Owner, 5 Oct 2026. `onboarding.html`: `#familyStep` for tenantType "family" (`openFamilyStep`, rows of name / year / child, `addPersonToTenant` per person through `safeWrite`, failures named). `people.js`: `birthYear` on add and update, `validBirthYear`, `ageFromBirthYear`. `people.html`: Age column, year of birth on Add and Edit.
+- **Checks:**
+  - family-signup-browser 68/0; mutations no-step, no-year, no-manager each caught
+  - rules-authorisation-executable 63/0 (birthYear on tenantPeople: the owner's and a guardian's Rules carry no field list), stub-parity 4/0, phone-width-overflow 217/0, behaviour 1003/4 (22g×3 archive.org, 31e certificate: the sandbox baseline)
