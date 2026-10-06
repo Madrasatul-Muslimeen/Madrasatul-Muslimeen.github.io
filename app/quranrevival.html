@@ -6133,7 +6133,7 @@
     import { getTrackables, syncUnneditedTrackableNames, tenantOwnsSections, sectionsFromTenantDoc, approachListTitleFromTenantDoc } from "./js/catalogue.js";
     import { groupApproachesBySection } from "./js/approach-sections.js";
     import { buildUnitKey, parseUnitKey, STATUSES, rukuIndexInSurah, localRukuIndexFromTable, statusLabelsById, statusLabel } from "./js/unit-keys.js";
-    import { chunkKeyFor, getRecordsChunk, claimStatus, getSubjectConfirmationOverride, computeConfirmationRequired, listAllRecordsForPerson } from "./js/records.js";
+    import { chunkKeyFor, getRecordsChunk, claimStatus, copyFatihaSeventhRecords,getSubjectConfirmationOverride, computeConfirmationRequired, listAllRecordsForPerson } from "./js/records.js";
     import { weekKeyFor, logActivity } from "./js/activity.js";
     // MAP Phase 4 (P4-D) -- Study interactions to ADR-008 Activity evidence.
     // Evidence goes to its own subcollection; nothing here touches the legacy
@@ -6274,7 +6274,7 @@
       getFatihaBismillahUnnumbered, setFatihaBismillahUnnumbered,
       mountCardLookControl,
     } from "./js/prefs.js";
-    import { fatihaCountApplies, displayAyahLabel, displayAyahRef, displayWordRef, internalForDisplayedAyah, displayAyahCount, displayForInternalAyah, expandAyahsForDisplay, badgeNumber } from "./js/fatiha-count.js";
+    import { fatihaCountApplies, displayAyahLabel, displayAyahRef, displayWordRef, internalForDisplayedAyah, displayAyahCount, displayForInternalAyah, expandAyahsForDisplay, badgeNumber, recordAyahFor, recordAyahsToWrite, recordStatusOf, needsFatihaCopy, internalAyahOfRecord, fatihaRollupRecords, FATIHA_SEVEN_RECORD_AYAH, FATIHA_SPLIT_AFTER_WORD as FATIHA_SPLIT_AFTER_WORD_PAGE } from "./js/fatiha-count.js";
     import { wireWheelResize } from "./js/wheel-resize.js";
     import { renderTextSizeButtonHtml } from "./js/text-size.js";
     import { renderAsmaWheelTextRowsHtml, onAsmaWheelTextScaleChange, getAsmaWheelLabelScale } from "./js/asma-wheel-text.js";
@@ -6347,7 +6347,7 @@
     // panels in sync with whatever's actually playing, for every reciter.
     setAyahChangeHandler((surahNum, ayahNum) => {
       if (surahNum !== currentSurahNum || !currentSurahData) return;
-      currentAyahNum = ayahNum;
+      if (ayahNum !== currentAyahNum) setAyahNum(ayahNum);
       noteLastPlace("play"); // the Owner, 5 Oct 2026: ▶ Last played
       // P4-D2 -- coverage of the listened unit. Counts only forward motion, so
       // a loop or a backward seek adds nothing (see createListeningSession()).
@@ -7071,6 +7071,7 @@
     let currentSurahData = null;
     let currentTrackableId = null;
     let currentAyahNum = 1;
+    let currentAyahHalf = null; // issue #606 -- "b" = Al-Fātiḥah's displayed Ayah 7 (see setAyahNum())
     let currentChunk = null;
     // Which surah currentChunk was loaded FOR: getRecordsChunk() returns null
     // both for "not loaded" and "loaded, no claims yet" (Architect review, #318).
@@ -7258,6 +7259,7 @@
     // live DOM in, then clears itself so a later, unrelated Note-view render
     // doesn't reopen it.
     let ayahSheetUnitKey = null;
+    let ayahSheetHalf = null; // issue #606 -- "a"/"b" for Al-Fātiḥah's displayed 6/7 (the sheet's key is ayah:1:7 / ayah:1:8)
     let ayahSheetPendingQcrOpen = false;
     // Issue #325 -- which Approach's four-stage row is currently showing on
     // the open Ayah Card. Null means the select still reads its own
@@ -7918,7 +7920,7 @@
       if (currentUnitType === "page") {
         return { unitType: "page", unitKey: buildUnitKey.page(PAGE_EDITION, ayah.page), chunkKey: "subject_quran", label: t("Page {page}", { page: num(ayah.page) }) };
       }
-      return { unitType: "ayah", unitKey: buildUnitKey.ayah(currentSurahNum, currentAyahNum), chunkKey: surahChunkKey, label: isUnnumberedBismillah(currentSurahNum, currentAyahNum) ? t("Surah {surah}, Bismillah", { surah: num(currentSurahNum) }) : t("Surah {surah}, Ayah {ayah}", { surah: num(currentSurahNum), ayah: ayahLabelFor(currentSurahNum, currentAyahNum) }) };
+      return { unitType: "ayah", unitKey: ayahRecordKey(currentSurahNum, currentAyahNum, currentHalf()), half: currentHalf(), chunkKey: surahChunkKey, label: isUnnumberedBismillah(currentSurahNum, currentAyahNum) ? t("Surah {surah}, Bismillah", { surah: num(currentSurahNum) }) : t("Surah {surah}, Ayah {ayah}", { surah: num(currentSurahNum), ayah: ayahLabelFor(currentSurahNum, currentAyahNum, currentHalf()) }) };
     }
 
     function renderUnitLabel() {
@@ -8019,7 +8021,7 @@
         const from = Math.min(rangeFrom, rangeTo), to = Math.max(rangeFrom, rangeTo);
         return t("Ayahs {from}–{to}", { from: num(from), to: num(to) });
       }
-      if (info.unitType === "ayah") return ayahNameFor(currentSurahNum, currentAyahNum);
+      if (info.unitType === "ayah") return ayahNameFor(currentSurahNum, currentAyahNum, currentHalf());
       const n = currentUnitNumber();
       if (info.unitType === "ruku") return t("Ruku' {n}", { n: num(n) });
       if (info.unitType === "juz") return t("Juz {n}", { n: num(n) });
@@ -8115,7 +8117,7 @@
         }
         currentAyahNum = row.startAyah;
       }
-      if (ayahSelect.querySelector(`option[value="${currentAyahNum}"]`)) ayahSelect.value = String(currentAyahNum);
+      syncAyahSelect();
       updateUnitControlsVisibility();
       renderStudyScreen();
       renderWheel();
@@ -8162,7 +8164,9 @@
       surahSelect.value = String(surahNum);
       await loadSurah();
       const count = currentSurahData.ayahCount;
-      currentAyahNum = ayahTarget === "last" ? count : Math.min(Math.max(1, ayahTarget), count);
+      const landed = ayahTarget === "last" ? count : Math.min(Math.max(1, ayahTarget), count);
+      // Issue #606 -- arriving backwards at Al-Fātiḥah's last internal ayah lands on displayed 7.
+      setAyahNum(landed, landed === 7 && fatihaCountApplies(currentSurahNum, fatihaOn()) ? (ayahTarget === "last" ? "b" : "a") : null);
     }
 
     /** This surah's ruku' numbers, ascending. Per-surah numbering (I5, and
@@ -8183,8 +8187,7 @@
       const count = currentSurahData.ayahCount;
 
       if (currentUnitType === "ayah") {
-        const target = currentAyahNum + dir;
-        if (target >= 1 && target <= count) currentAyahNum = target;
+        if (stepAyahBy(dir)) { /* moved within the surah (6 -> 7 included, issue #606) */ }
         else if (dir > 0 && currentSurahNum < LAST_SURAH) await openSurahAt(currentSurahNum + 1, 1);
         else if (dir < 0 && currentSurahNum > 1) await openSurahAt(currentSurahNum - 1, "last");
         else return;
@@ -8245,7 +8248,7 @@
         return;
       }
 
-      if (ayahSelect.querySelector(`option[value="${currentAyahNum}"]`)) ayahSelect.value = String(currentAyahNum);
+      syncAyahSelect();
       updateUnitControlsVisibility();
       renderStudyScreen();
       renderWheel();
@@ -8462,6 +8465,7 @@
       let lastAyah = surahMeta.ayahCount;
       let from = parsed.from;
       let to = parsed.to;
+      let fromHalf = null; // issue #606 -- which displayed Ayat a typed 1:6 / 1:7 means
       if (fatihaCountApplies(parsed.surah, fatihaOn())) {
         lastAyah = displayAyahCount(parsed.surah, lastAyah);
         const f = internalForDisplayedAyah(parsed.surah, from, true);
@@ -8471,6 +8475,7 @@
           return;
         }
         from = f.ayah;
+        fromHalf = f.half;
         to = e ? e.ayah : null;
       }
       if (from < 1 || from > lastAyah || (to !== null && (to < 1 || to > lastAyah))) {
@@ -8478,14 +8483,14 @@
         return;
       }
       showJumpMessage(null);
-      await goToReference(parsed.surah, from, to);
+      await goToReference(parsed.surah, from, to, fromHalf);
     }
 
     /** Move the screen to a surah and ayah (or a range). Split out of
         applyJump in shell round 14 so a search result can use exactly the
         same path without going back through the typing box -- clicking a
         result must not overwrite the words the person searched for. */
-    async function goToReference(surah, from, to) {
+    async function goToReference(surah, from, to, half = null) {
       if (surah !== currentSurahNum) {
         currentSurahNum = surah;
         surahSelect.value = String(surah);
@@ -8497,13 +8502,13 @@
         rangeFrom = Math.min(from, to);
         rangeTo = Math.max(from, to);
         rememberRangeSpan();
-        currentAyahNum = rangeFrom;
+        setAyahNum(rangeFrom);
       } else {
         currentUnitType = "ayah";
         unitTypeSelect.value = "ayah";
-        currentAyahNum = from;
+        setAyahNum(from, half);
       }
-      ayahSelect.value = String(currentAyahNum);
+      syncAyahSelect();
       updateUnitControlsVisibility();
       renderStudyScreen();
       renderWheel();
@@ -8755,29 +8760,74 @@
     // labels change ("Bismillah", 1..5, "6–7"). Everything below that prints a
     // number for a reader goes through these four helpers.
     function fatihaOn() { return getFatihaBismillahUnnumbered(); }
-    function ayahLabelFor(surah, ayah) {
+    // Issue #606 (decisions 76-77) -- with the count on, internal 1:7 is TWO
+    // Ayat: displayed 6 (record ayah:1:7) and displayed 7 (record ayah:1:8).
+    // CONTENT stays internal 1:7 (currentAyahNum = 7); the half says which one.
+    function setAyahNum(n, half = null) { currentAyahNum = n; currentAyahHalf = half; }
+    function fatihaSplitNow() { return currentAyahNum === 7 && fatihaCountApplies(currentSurahNum, fatihaOn()); }
+    /** "a" / "b" for the displayed half of internal 1:7 while the count is on, else null. */
+    function currentHalf() { return fatihaSplitNow() ? (currentAyahHalf === "b" ? "b" : "a") : null; }
+    /** The record ayah NUMBER the current ayah's progress lives under (8 for displayed 7). */
+    function currentRecordAyah() { return recordAyahFor(currentSurahNum, currentAyahNum, currentHalf(), fatihaOn()); }
+    /** The unit key of an ayah's progress record, half-aware (decision 76). */
+    function ayahRecordKey(surah, ayah, half = null) { return buildUnitKey.ayah(surah, recordAyahFor(surah, ayah, half, fatihaOn())); }
+    /** #ayahSelect's option values are RECORD ayahs (8 = displayed 7). */
+    function syncAyahSelect() {
+      const v = String(currentRecordAyah());
+      if (ayahSelect.querySelector(`option[value="${v}"]`)) ayahSelect.value = v;
+    }
+    /** The select's value -> currentAyahNum + half. */
+    function applyAyahSelectValue(v) {
+      v = Number(v);
+      if (fatihaCountApplies(currentSurahNum, fatihaOn()) && v === FATIHA_SEVEN_RECORD_AYAH) setAyahNum(7, "b");
+      else setAyahNum(v, v === 7 && fatihaCountApplies(currentSurahNum, fatihaOn()) ? "a" : null);
+    }
+    /** A STORED record entry's claimedStatus read through the Al-Fātiḥah record rule
+        (displayed 7 falls back to the old shared 1:7 mark; count off = weaker of the two). */
+    function recordClaimedStatus(entries, surah, record, trackableId) {
+      return recordStatusOf(surah, record, fatihaOn(), (a) => entries?.[`${buildUnitKey.ayah(surah, a)}::${trackableId}`]?.claimedStatus);
+    }
+    /** claimedStatus for any unit key, through the Al-Fātiḥah record rule for ayah:1:7 / ayah:1:8. */
+    function claimedStatusForKey(entries, unitKey, trackableId) {
+      const m = /^ayah:1:([78])$/.exec(unitKey);
+      if (m) return recordClaimedStatus(entries, 1, Number(m[1]), trackableId);
+      return entries?.[`${unitKey}::${trackableId}`]?.claimedStatus;
+    }
+    /** The whole stored ENTRY for a unit key, through the same Al-Fātiḥah record rule
+        as claimedStatusForKey() (displayed 7 falls back to the old 1:7 entry; count off
+        shows the weaker of the two). */
+    function entryForKey(entries, unitKey, trackableId) {
+      const m = /^ayah:1:([78])$/.exec(unitKey);
+      if (!m) return entries?.[`${unitKey}::${trackableId}`];
+      const get = (a) => entries?.[`ayah:1:${a}::${trackableId}`];
+      if (m[1] === "8") return get(8) ?? get(7);
+      if (fatihaOn()) return get(7);
+      const shown = recordClaimedStatus(entries, 1, 7, trackableId);
+      return get(7)?.claimedStatus === shown ? get(7) : (get(8) ?? get(7));
+    }
+    function ayahLabelFor(surah, ayah, half = null) {
       if (!fatihaCountApplies(surah, fatihaOn())) return num(ayah);
       const d = displayForInternalAyah(surah, ayah, true);
       if (d.kind === "bismillah") return t("Bismillah");
-      if (d.kind === "span") return `${num(d.from)}–${num(d.to)}`;
+      if (d.kind === "span") return half === "a" ? num(d.from) : half === "b" ? num(d.to) : `${num(d.from)}–${num(d.to)}`;
       return num(d.number);
     }
-    function ayahRefFor(surah, ayah) {
+    function ayahRefFor(surah, ayah, half = null) {
       if (!fatihaCountApplies(surah, fatihaOn())) return `${surah}:${ayah}`;
       const d = displayForInternalAyah(surah, ayah, true);
-      return d.kind === "bismillah" ? t("Bismillah") : `${surah}:${d.kind === "span" ? "6–7" : d.number}`;
+      return d.kind === "bismillah" ? t("Bismillah") : `${surah}:${d.kind === "span" ? (half === "a" ? "6" : half === "b" ? "7" : "6–7") : d.number}`;
     }
     // The Owner, 5 Oct 2026: "Bismillah is still showing as Ayah". Decision 55 leaves the
     // Bismillah unnumbered, so it is never printed as "Ayah Bismillah" or "1:Bismillah":
     // these give its own word where an āyah's number would go with "Ayah"/"1:" around it.
     function isUnnumberedBismillah(surah, ayah) { return ayah === 1 && fatihaCountApplies(surah, fatihaOn()); }
     /** "Ayah 3", "Ayah 6–7", or just "Bismillah". */
-    function ayahNameFor(surah, ayah) { return isUnnumberedBismillah(surah, ayah) ? t("Bismillah") : t("Ayah {n}", { n: ayahLabelFor(surah, ayah) }); }
-    /** "1:3", "1:6–7", or just "Bismillah" (with reader digits). */
-    function ayahShortRefFor(surah, ayah) { return isUnnumberedBismillah(surah, ayah) ? t("Bismillah") : `${num(surah)}:${ayahLabelFor(surah, ayah)}`; }
+    function ayahNameFor(surah, ayah, half = null) { return isUnnumberedBismillah(surah, ayah) ? t("Bismillah") : t("Ayah {n}", { n: ayahLabelFor(surah, ayah, half) }); }
+    /** "1:3", "1:6", or just "Bismillah" (with reader digits). */
+    function ayahShortRefFor(surah, ayah, half = null) { return isUnnumberedBismillah(surah, ayah) ? t("Bismillah") : `${num(surah)}:${ayahLabelFor(surah, ayah, half)}`; }
     /** The number a wheel/sidebar badge prints: nothing for the Bismillah, "6–7" for internal 1:7. */
-    function ayahBadgeFor(surah, ayah) {
-      return fatihaCountApplies(surah, fatihaOn()) && ayah === 1 ? "" : ayahLabelFor(surah, ayah);
+    function ayahBadgeFor(surah, ayah, half = null) {
+      return fatihaCountApplies(surah, fatihaOn()) && ayah === 1 ? "" : ayahLabelFor(surah, ayah, half);
     }
     /** A search chip's reference: "1:6–7", or the word Bismillah for internal 1:1. */
     function searchRefFor(surah, ayah) {
@@ -8789,8 +8839,13 @@
     }
     function fillAyahSelect() {
       if (!currentSurahData) return;
+      // Issue #606 -- with the Al-Fātiḥah count on, internal 1:7 is two options: 6 (value 7)
+      // and 7 (value 8 = its record ayah).
+      const split = fatihaCountApplies(currentSurahNum, fatihaOn());
       ayahSelect.innerHTML = Array.from({ length: currentSurahData.ayahCount }, (_, i) => i + 1)
-        .map((n) => `<option value="${n}">${ayahLabelFor(currentSurahNum, n)}</option>`)
+        .flatMap((n) => (split && n === 7
+          ? [`<option value="7">${ayahLabelFor(currentSurahNum, 7, "a")}</option>`, `<option value="${FATIHA_SEVEN_RECORD_AYAH}">${ayahLabelFor(currentSurahNum, 7, "b")}</option>`]
+          : [`<option value="${n}">${ayahLabelFor(currentSurahNum, n)}</option>`]))
         .join("");
       // A word option (Al-Fātiḥah's "Bismillah") needs a wider cell than a number.
       document.getElementById("ayahSelectControl")?.classList.toggle("opt-cell-word", fatihaCountApplies(currentSurahNum, fatihaOn()));
@@ -8800,8 +8855,9 @@
     function displayParts(ayah) {
       return expandAyahsForDisplay(currentSurahNum, [ayah], fatihaOn());
     }
-    function layoutAParts(ayah, panels, opts) {
-      return displayParts(ayah).map((a) => renderLayoutA(a, panels, opts)).join("");
+    function layoutAParts(ayah, panels, opts, half = null) {
+      // `half` (issue #606): the single-Ayah view of displayed 6 or 7 draws only its half.
+      return displayParts(ayah).filter((a) => !half || a.half === half).map((a) => renderLayoutA(a, panels, opts)).join("");
     }
 
     async function loadSurah() {
@@ -8809,7 +8865,7 @@
       quranWordCardState = closeWordCard(quranWordCardState);
       clearWordCardMounts();
       currentSurahData = await getSurah(currentSurahNum);
-      currentAyahNum = 1;
+      setAyahNum(1);
       // Owner ask (10 Aug 2026): Prev/Next alone made jumping to, say, ayah
       // 200 of a 286-ayah surah impractical -- a direct Ayah picker next to
       // Surah, same shape as the range unit's own From/To ayah selects.
@@ -8863,10 +8919,16 @@
 
     function ayahStatusesForCurrentTrackable() {
       const entries = currentChunk?.entries ?? {};
-      return currentSurahData.ayahs.map((a) => {
-        const unitKey = buildUnitKey.ayah(currentSurahNum, a.ayah);
-        const entry = entries[`${unitKey}::${currentTrackableId}`];
-        return { ayah: a.ayah, statusId: entry?.claimedStatus ?? "not_started" };
+      // Issue #606 -- with the Al-Fātiḥah count on, internal 1:7 is two rows (6 and 7),
+      // each from its own record; every row then carries the reader's own label.
+      const split = fatihaCountApplies(currentSurahNum, fatihaOn());
+      return currentSurahData.ayahs.flatMap((a) => {
+        const records = split && a.ayah === 7 ? [{ record: 7, half: "a" }, { record: FATIHA_SEVEN_RECORD_AYAH, half: "b" }] : [{ record: a.ayah, half: null }];
+        return records.map(({ record, half }) => {
+          const row = { ayah: a.ayah, statusId: recordClaimedStatus(entries, currentSurahNum, record, currentTrackableId) ?? "not_started" };
+          if (split) row.label = ayahLabelFor(currentSurahNum, a.ayah, half);
+          return row;
+        });
       });
     }
 
@@ -8952,7 +9014,7 @@
       const entries = chunkForUnitInfo(info)?.entries ?? {};
       return quranTrackables.map((trackable) => ({
         trackable,
-        statusId: entries[`${info.unitKey}::${trackable.id}`]?.claimedStatus ?? "not_started",
+        statusId: claimedStatusForKey(entries, info.unitKey, trackable.id) ?? "not_started",
       }));
     }
 
@@ -9188,7 +9250,7 @@
     function wheelShowUnitKey(type) {
       const a = currentSurahData?.ayahs?.find((x) => x.ayah === currentAyahNum);
       if (!a) return null;
-      if (type === "ayah") return buildUnitKey.ayah(currentSurahNum, currentAyahNum);
+      if (type === "ayah") return ayahRecordKey(currentSurahNum, currentAyahNum, currentHalf());
       if (type === "surah") return buildUnitKey.surah(currentSurahNum);
       if (type === "ruku") return buildUnitKey.ruku(currentSurahNum, rukuIndexInSurah(currentSurahData.ayahs, a.ruku));
       if (type === "page") return buildUnitKey.page(PAGE_EDITION, a.page);
@@ -9237,11 +9299,12 @@
         boundary tables, every surah chunk the widest unit touches, and
         subject_quran (Juz/Hizb/Page claims). Only ever called while "All
         units" is showing -- never on the default wheel (I9). */
+    function landingRingKey() { return `${selectedPersonId}|${currentSurahNum}:${currentAyahNum}:${currentRecordAyah()}:${fatihaOn() ? 1 : 0}`; }
     async function ensureLandingRingData() {
-      const key = `${selectedPersonId}|${currentSurahNum}:${currentAyahNum}`;
+      const key = landingRingKey();
       if (landingRingData?.key === key) return landingRingData;
       const tables = await unitCardBoundaryTables();
-      const rungs = ladderRungsForAyah(currentSurahNum, currentAyahNum, tables);
+      const rungs = ladderRungsForAyah(currentSurahNum, currentAyahNum, { ...tables, ayahRecordAyah: currentRecordAyah(), ayahLabel: ayahLabelFor(currentSurahNum, currentAyahNum, currentHalf()) });
       const byType = new Map(rungs.map((r) => [r.unitType, r]));
       const units = [];
       for (const type of LANDING_RING_ORDER) {
@@ -9292,14 +9355,14 @@
         Approach, and for a No Approach (or a unit with nothing countable)
         the direct claim on that unit itself. */
     function landingRingStatus(trackable, unit, spans) {
-      const pooled = poolStatus(unit.coverage, { ownStatus: unitCardOwnAyahStatus(trackable.id), spans, trackable });
+      const pooled = poolStatus(unit.coverage, { ownStatus: unitCardOwnAyahStatus(trackable.id), spans, trackable, fatihaOn: fatihaOn() });
       if (pooled) return pooled;
       const chunk = unit.info.chunkKey === "subject_quran" ? (quranSubjectChunkReady() ? quranSubjectChunk : null) : unitCardChunkForSurah(unit.info.fromSurah);
-      return chunk?.entries?.[`${unit.unitKey}::${trackable.id}`]?.claimedStatus ?? "not_started";
+      return claimedStatusForKey(chunk?.entries, unit.unitKey, trackable.id) ?? "not_started";
     }
 
     function renderWheelRings() {
-      const data = landingRingData?.key === `${selectedPersonId}|${currentSurahNum}:${currentAyahNum}` ? landingRingData : null;
+      const data = landingRingData?.key === landingRingKey() ? landingRingData : null;
       if (!data) {
         if (!landingRingLoading) {
           landingRingLoading = ensureLandingRingData()
@@ -9404,7 +9467,7 @@
       const surahNo = t("Surah {n}", { n: num(currentSurahNum) });
       const place = `${surahNo} · ${name}`;
       const info = currentUnitInfo();
-      if (currentUnitType === "ayah") { const l1 = ayahNameFor(currentSurahNum, currentAyahNum); return { line1: l1, line2: place, cta: `${l1} · ${name}` }; }
+      if (currentUnitType === "ayah") { const l1 = ayahNameFor(currentSurahNum, currentAyahNum, currentHalf()); return { line1: l1, line2: place, cta: `${l1} · ${name}` }; }
       if (currentUnitType === "surah") return { line1: surahNo, line2: name, cta: name };
       if (currentUnitType === "range") {
         const from = Math.min(rangeFrom, rangeTo), to = Math.max(rangeFrom, rangeTo);
@@ -9964,8 +10027,8 @@
       const [from, to] = currentUnitAyahBounds();
       const ayah = Math.min(Math.max(place.ayahNum, from), to);
       if (kind === "play") { await playCurrentSelection({ fresh: true, startAyah: ayah }); return; }
-      currentAyahNum = ayah;
-      if (ayahSelect.querySelector(`option[value="${ayah}"]`)) ayahSelect.value = String(ayah);
+      setAyahNum(ayah);
+      syncAyahSelect();
       renderStudyScreen();
       // Scroll the reader to it (no "now playing" mark: nothing is playing).
       requestAnimationFrame(() => {
@@ -10191,7 +10254,7 @@
     // every other route into this same screen.
     function openNoteForCurrentAyah() {
       closeAllPanels();
-      openNoteView(buildUnitKey.ayah(currentSurahNum, currentAyahNum));
+      openNoteView(ayahRecordKey(currentSurahNum, currentAyahNum, currentHalf()));
     }
     tabNoteBtn.addEventListener("click", () => {
       if (stageView === "note") { setStageView("wheel"); renderWheel(); return; } // same close idiom as Read/Approach
@@ -10433,9 +10496,8 @@
      * cannot silently disagree (Owner decision 7). */
     function poolCoverageStatus(coverage, trackableId) {
       const trackable = quranTrackables.find((t) => t.id === trackableId);
-      const ownStatus = (surah, ayah) =>
-        exploreChunksBySurah.get(surah)?.entries?.[`${buildUnitKey.ayah(surah, ayah)}::${trackableId}`]?.claimedStatus ?? "not_started";
-      return poolStatus(coverage, { ownStatus, spans: exploreWiderSpans.get(trackableId), trackable });
+      const ownStatus = (surah, ayah) => recordClaimedStatus(exploreChunksBySurah.get(surah)?.entries, surah, ayah, trackableId) ?? "not_started";
+      return poolStatus(coverage, { ownStatus, spans: exploreWiderSpans.get(trackableId), trackable, fatihaOn: fatihaOn() });
     }
 
     /**
@@ -10470,9 +10532,9 @@
      * whole-Qur'an "My Status" wheel calls, so the two screens cannot
      * silently disagree about what a claim means (Owner decision 7).
      */
-    function effectiveAyahStatus(surah, ayah, trackableId) {
+    function effectiveAyahStatus(surah, ayah, trackableId, record = ayah) {
       const entries = exploreChunksBySurah.get(surah)?.entries ?? {};
-      const own = entries[`${buildUnitKey.ayah(surah, ayah)}::${trackableId}`]?.claimedStatus ?? "not_started";
+      const own = recordClaimedStatus(entries, surah, record, trackableId) ?? "not_started";
       const trackable = quranTrackables.find((t) => t.id === trackableId);
       return effectiveStatus({ own, spans: exploreWiderSpans.get(trackableId), surah, ayah, trackable });
     }
@@ -10612,7 +10674,21 @@
     }
 
     /** Closes Explore and jumps the Study screen to one specific ayah -- the drill-down's final step, from either a short Surah-wheel or a Ruku'-wheel. */
-    async function goToAyahFromExplore(surahNum, ayahNum) {
+    /** The progress units an internal ayah is drawn as in Explore: one, or two for
+        Al-Fātiḥah's internal 1:7 with the count on (issue #606: displayed 6 =
+        record 7, displayed 7 = record 8). `key` is the RECORD ayah. */
+    function ayahRecordUnits(surah, ayahNum) {
+      if (fatihaCountApplies(surah, fatihaOn()) && ayahNum === 7) {
+        return [{ key: 7, record: 7, half: "a", share: 0.5 }, { key: FATIHA_SEVEN_RECORD_AYAH, record: FATIHA_SEVEN_RECORD_AYAH, half: "b", share: 0.5 }];
+      }
+      return [{ key: ayahNum, record: ayahNum, half: null }];
+    }
+    /** A click on an Explore ayah item whose key is a RECORD ayah. */
+    function goToRecordFromExplore(surahNum, key) {
+      const internal = internalAyahOfRecord(surahNum, Number(key));
+      return goToAyahFromExplore(surahNum, internal, surahNum === 1 && Number(key) === FATIHA_SEVEN_RECORD_AYAH ? "b" : null);
+    }
+    async function goToAyahFromExplore(surahNum, ayahNum, half = null) {
       closeAllPanels(); // the drill-down lands on an ayah -- close the dock and show it (shell round 17: that is the reading screen now, not the wheel)
       setStageView("read");
       currentUnitType = "ayah";
@@ -10623,7 +10699,7 @@
         surahSelect.value = String(surahNum);
         await loadSurah();
       }
-      currentAyahNum = ayahNum;
+      setAyahNum(ayahNum, half);
       renderStudyScreen();
       renderWheel();
       updateUnitControlsVisibility();
@@ -10897,6 +10973,12 @@
      *  Status's own whole-person maps rather than Explore's per-surah
      *  chunks, so for the same person and Approach the two can never
      *  disagree (Owner decision 7). */
+    /** (surah, record ayah) -> status from My Status's own "surah:ayah" map, through the Al-Fātiḥah record rule (#606). */
+    function myStatusOwnReader(map) {
+      return (surah, record) => (surah === 1
+        ? recordStatusOf(1, record, fatihaOn(), (a) => map?.get(`1:${a}`))
+        : map?.get(`${surah}:${record}`)) ?? "not_started";
+    }
     function myStatusJuzItems(trackableId, cache) {
       const trackable = quranTrackables.find((t) => t.id === trackableId);
       const ownAyahStatuses = cache.ownAyahByTrackable.get(trackableId);
@@ -10905,8 +10987,8 @@
       const labelsById = statusLabelsById();
       return (juzIndexData ?? []).map((j) => {
         const coverage = ayahCoverage(j.startSurah, j.startAyah, j.endSurah, j.endAyah);
-        const ownStatus = (surah, ayah) => ownAyahStatuses?.get(`${surah}:${ayah}`) ?? "not_started";
-        const pooled = poolStatus(coverage, { ownStatus, spans: wideSpans, trackable });
+        const ownStatus = myStatusOwnReader(ownAyahStatuses);
+        const pooled = poolStatus(coverage, { ownStatus, spans: wideSpans, trackable, fatihaOn: fatihaOn() });
         const statusId = pooled ?? (directWideStatus?.get(buildUnitKey.juz(j.juz)) ?? "not_started");
         const label = t("Juz {juz}", { juz: num(j.juz) });
         return { key: j.juz, number: num(j.juz), statusId, label, title: segTitle(label, statusId, labelsById) };
@@ -10993,12 +11075,12 @@
       if (cache.tilesByTrackable.has(trackableId)) return cache.tilesByTrackable.get(trackableId);
       const trackable = quranTrackables.find((t) => t.id === trackableId);
       const ownAyahStatuses = cache.ownAyahByTrackable.get(trackableId);
-      const ownStatus = (surah, ayah) => ownAyahStatuses?.get(`${surah}:${ayah}`) ?? "not_started";
+      const ownStatus = myStatusOwnReader(ownAyahStatuses);
       const lists = myStatusUnitLists(cache);
       const out = {};
       for (const type of ["juz", "surah", "hizb", "ruku", "page"]) {
         out[type] = summarizeUnitCoverage(lists[type], {
-          ownStatus, spans: cache.wideSpansByTrackable.get(trackableId), trackable, directWideStatus: cache.directWideStatusByTrackable.get(trackableId),
+          ownStatus, spans: cache.wideSpansByTrackable.get(trackableId), trackable, directWideStatus: cache.directWideStatusByTrackable.get(trackableId), fatihaOn: fatihaOn(),
         });
       }
       const ay = cache.summaries.get(trackableId);
@@ -11770,15 +11852,18 @@
       for (const { surah, from, to } of coverage) {
         for (let ayah = from; ayah <= to; ayah++) {
           // Issue #482 -- Al-Fātiḥah's display count: internal 1:1 (the
-          // Bismillah) is not counted; internal 1:7 is two displayed āyāt
-          // sharing one record, so it counts twice. The total stays 7.
-          let weight = 1;
-          if (fatihaCountApplies(surah, fatihaOn())) { if (ayah === 1) continue; if (ayah === 7) weight = 2; }
-          const st = effectiveAyahStatus(surah, ayah, trackableId);
-          if (st === "not_applicable") continue;
-          total += weight;
-          if (st === "achieved" || st === "mastered") done += weight;
-          else if (st === "learning" || st === "practising") started += weight;
+          // Bismillah) is not counted; internal 1:7 is two displayed āyāt with
+          // a record each (ayah:1:7 = 6, ayah:1:8 = 7, issue #606), counted
+          // separately. The total stays 7.
+          const fatihaSplit = fatihaCountApplies(surah, fatihaOn());
+          if (fatihaSplit && ayah === 1) continue;
+          for (const record of (fatihaSplit && ayah === 7 ? [7, FATIHA_SEVEN_RECORD_AYAH] : [ayah])) {
+            const st = effectiveAyahStatus(surah, ayah, trackableId, record);
+            if (st === "not_applicable") continue;
+            total += 1;
+            if (st === "achieved" || st === "mastered") done += 1;
+            else if (st === "learning" || st === "practising") started += 1;
+          }
         }
       }
       return { done, started, total };
@@ -11970,14 +12055,14 @@
           openLabel: t("Open {unit}", { unit: label }),
         };
       });
-      const ayat = surahData.ayahs.map((a) => ({
-        key: a.ayah, a: idx.gi(sn, a.ayah), b: idx.gi(sn, a.ayah),
-        label: ayahNameFor(sn, a.ayah),
+      const ayat = surahData.ayahs.flatMap((a) => ayahRecordUnits(sn, a.ayah).map((u) => ({
+        key: u.key, a: idx.gi(sn, a.ayah), b: idx.gi(sn, a.ayah), share: u.share,
+        label: ayahNameFor(sn, a.ayah, u.half),
         coverage: [{ surah: sn, from: a.ayah, to: a.ayah }],
-        statusId: effectiveAyahStatus(sn, a.ayah, trackable.id),
-        open: () => goToAyahFromExplore(sn, a.ayah),
+        statusId: effectiveAyahStatus(sn, a.ayah, trackable.id, u.record),
+        open: () => goToAyahFromExplore(sn, a.ayah, u.half),
         openLabel: t("Study this āyah"),
-      }));
+      })));
       const coverage = [{ surah: sn, from: 1, to: surahData.ayahs.length }];
       drawExploreRings({
         rings: [
@@ -12308,12 +12393,12 @@
       const labelsById = statusLabelsById();
 
       if (surahData.ayahCount <= SURAH_WHEEL_THRESHOLD) {
-        const items = surahData.ayahs.map((a) => {
-          const statusId = effectiveAyahStatus(exploreSurahNum, a.ayah, trackable.id);
-          const label = ayahNameFor(exploreSurahNum, a.ayah);
-          return { key: a.ayah, number: ayahBadgeFor(exploreSurahNum, a.ayah), statusId, label, title: segTitle(label, statusId, labelsById) };
-        });
-        const jumpToStudy = (key) => goToAyahFromExplore(exploreSurahNum, Number(key));
+        const items = surahData.ayahs.flatMap((a) => ayahRecordUnits(exploreSurahNum, a.ayah).map((u) => {
+          const statusId = effectiveAyahStatus(exploreSurahNum, a.ayah, trackable.id, u.record);
+          const label = ayahNameFor(exploreSurahNum, a.ayah, u.half);
+          return { key: u.key, number: ayahBadgeFor(exploreSurahNum, a.ayah, u.half), statusId, label, title: segTitle(label, statusId, labelsById) };
+        }));
+        const jumpToStudy = (key) => goToRecordFromExplore(exploreSurahNum, key);
         exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
         exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
         attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToStudy);
@@ -12358,14 +12443,14 @@
       const surahData = await getSurah(exploreSurahNum); // already cached from the Surah level's own fetch
       const ayahsInRuku = surahData.ayahs.filter((a) => rukuIndexInSurah(surahData.ayahs, a.ruku) === exploreRukuIndex);
       const entries = exploreChunksBySurah.get(exploreSurahNum)?.entries ?? {};
-      const items = ayahsInRuku.map((a) => {
-        const statusId = effectiveAyahStatus(exploreSurahNum, a.ayah, trackable.id);
-        return { key: a.ayah, number: ayahBadgeFor(exploreSurahNum, a.ayah), statusId, label: ayahNameFor(exploreSurahNum, a.ayah) };
-      });
+      const items = ayahsInRuku.flatMap((a) => ayahRecordUnits(exploreSurahNum, a.ayah).map((u) => {
+        const statusId = effectiveAyahStatus(exploreSurahNum, a.ayah, trackable.id, u.record);
+        return { key: u.key, number: ayahBadgeFor(exploreSurahNum, a.ayah, u.half), statusId, label: ayahNameFor(exploreSurahNum, a.ayah, u.half) };
+      }));
       const exploreSurah = surahIndex.find((s) => s.surahNumber === exploreSurahNum);
       const currentSurahName = exploreSurah ? surahName(exploreSurah.surahNumber, exploreSurah.nameEnglish) : t("Surah {surah}", { surah: num(exploreSurahNum) });
       const approachName = langText(trackable.name, getAppLang(), trackable.id);
-      const jumpToStudy = (key) => goToAyahFromExplore(exploreSurahNum, Number(key));
+      const jumpToStudy = (key) => goToRecordFromExplore(exploreSurahNum, key);
 
       const labelsById = statusLabelsById();
       for (const it of items) it.title = segTitle(it.label, it.statusId, labelsById);
@@ -14519,7 +14604,7 @@
         return poolCoverageStatus([{ surah: surahNum, from, to }], trackable.id)
           ?? (rangeEntries[`${unitKey}::${trackable.id}`]?.claimedStatus ?? "not_started");
       }
-      return rangeEntries[`${unitKey}::${trackable.id}`]?.claimedStatus ?? "not_started";
+      return claimedStatusForKey(rangeEntries, unitKey, trackable.id) ?? "not_started";
     }
 
     /** Every ACTIVE collection that already lists this unit key -- the Note
@@ -15986,7 +16071,7 @@
             evidenceWrite = safeWrite(
               () => recordStudyEvidence(db, wbwEngagementArgs({
                 tenantId, personId: subjectPersonId,
-                surah: wbwRef.surah, ayah: wbwRef.ayah,
+                surah: wbwRef.surah, ayah: wbwRef.ayah, position: wbwRef.position, fatihaOn: fatihaOn(),
                 at: new Date(), weekStartsOn: tenantWeekStartsOn,
               }), { uid: auth.currentUser?.uid }),
               { collection: "activity", action: "wbwEngaged" }
@@ -16502,15 +16587,15 @@
     }
 
     /** The navigation half on its own: go to a place, show it, touch no card. */
-    async function navigateToAyah(surah, ayah, view) {
+    async function navigateToAyah(surah, ayah, view, half = null) {
       setStageView(view);
       if (surah !== currentSurahNum) {
         currentSurahNum = surah;
         surahSelect.value = String(surah);
         await loadSurah();
       }
-      currentAyahNum = ayah;
-      if (ayahSelect.querySelector(`option[value="${ayah}"]`)) ayahSelect.value = String(ayah);
+      setAyahNum(ayah, half);
+      syncAyahSelect();
       renderStudyScreen();
       await scrollFlowToCurrentAyah();
     }
@@ -16625,12 +16710,12 @@
       if (occurrence) { openWordCardForOccurrenceId(occurrence.dataset.wordOccurrence, occurrence); return; }
       // Issue #286 -- (a) the Mushaf page's own round ayah-end marker.
       const ayahMarker = event.target.closest("[data-ayah-marker]");
-      if (ayahMarker) { openAyahActionSheet(ayahMarker.dataset.ayahMarker); return; }
+      if (ayahMarker) { openAyahActionSheet(ayahMarker.dataset.ayahMarker, mushafMarkerHalf(ayahMarker)); return; }
       // Issue #295 -- (c) the number badge before the Arabic, in both the
       // normal flowing Read view (ayah-renderer.js's renderArabicPanel) and
       // the Note view's own locally-built Arabic block.
       const ayahNumBadge = event.target.closest("[data-ayah-num-badge]");
-      if (ayahNumBadge) { openAyahActionSheet(ayahNumBadge.dataset.ayahNumBadge); return; }
+      if (ayahNumBadge) { openAyahActionSheet(ayahNumBadge.dataset.ayahNumBadge, ayahNumBadge.dataset.ayahSplitHalf || null); return; }
       // Issue #286 -- (b) the Word Card's own "This āyah ⋯" button.
       const wordCardAyahAction = event.target.closest("[data-word-card-ayah-action]");
       if (wordCardAyahAction) { openAyahActionSheet(wordCardAyahAction.dataset.wordCardAyahAction); return; }
@@ -17173,6 +17258,12 @@
         left unrung rather than triggering a second read it wasn't asked
         for). Safe to call whenever the marker set might be stale: it always
         starts by clearing every marker's own ring state. */
+    /** Which displayed Ayat a Mushaf marker ends (issue #606): the inserted ⑥ is 6 ("a"),
+        the real end of 1:7 is 7 ("b") while the count is on; null everywhere else. */
+    function mushafMarkerHalf(marker) {
+      if (marker.dataset.ayahMarker !== "1:7" || !fatihaCountApplies(1, fatihaOn())) return null;
+      return marker.dataset.ayahSplitHalf || "b";
+    }
     function applyMushafMarkerRings() {
       if (!pageViewContainer) return;
       const markers = pageViewContainer.querySelectorAll("[data-ayah-marker]");
@@ -17183,7 +17274,7 @@
         const [surahStr, ayahStr] = marker.dataset.ayahMarker.split(":");
         const surahNum = Number(surahStr), ayahNum = Number(ayahStr);
         if (surahNum !== currentSurahNum) return;
-        const statusId = currentChunk?.entries?.[`${buildUnitKey.ayah(surahNum, ayahNum)}::${mushafRingApproachId}`]?.claimedStatus ?? "not_started";
+        const statusId = recordClaimedStatus(currentChunk?.entries, surahNum, recordAyahFor(surahNum, ayahNum, mushafMarkerHalf(marker), fatihaOn()), mushafRingApproachId) ?? "not_started";
         const color = MUSHAF_RING_COLORS[statusId];
         if (!color) return; // not_started (and not_applicable/mastered, which claimApproachStatus() never writes here) -- no ring
         marker.classList.add("hifz-ayah-marker-ring");
@@ -17313,7 +17404,12 @@
 
     function parseAyahUnitKey(unitKey) {
       const [, surah, ayah] = unitKey.split(":");
-      return { surah: Number(surah), ayah: Number(ayah) };
+      // Issue #606 -- ayah:1:8 is the RECORD key of Al-Fātiḥah's displayed Ayah 7;
+      // `ayah` stays the CONTENT ayah (7), `record` the number in the key, and
+      // `half` says which displayed Ayat it is ("a" = 6, "b" = 7; null elsewhere).
+      const s = Number(surah), a = Number(ayah);
+      const half = s === 1 && a === FATIHA_SEVEN_RECORD_AYAH ? "b" : (s === 1 && a === 7 && fatihaOn() ? "a" : null);
+      return { surah: s, ayah: internalAyahOfRecord(s, a), record: a, half };
     }
 
     // surahName() needs the English name handed to it -- it only knows the
@@ -17322,13 +17418,13 @@
     // one place in the file that skipped it, which is why the reference
     // read "Quran 1:1 — Surah " with nothing after it: an English-mode
     // surahName() with no englishName argument returns "".
-    function ayahRefLabel(surahNum, ayahNum, { internal = false } = {}) {
+    function ayahRefLabel(surahNum, ayahNum, { internal = false, half = null } = {}) {
       const meta = surahIndex.find((s) => s.surahNumber === surahNum);
       // Issue #482 -- the label is what a reader SEES, so it follows their count
       // (1:7 reads "1:6–7"); `internal` is for a caller that parses it back.
       // The Owner, 6 Oct 2026 (decision 76): the unnumbered Bismillah is titled "Bismillah" alone.
       if (!internal && isUnnumberedBismillah(surahNum, ayahNum)) return t("Bismillah");
-      return t("Quran {surah}:{ayah} — Surah {name}", { surah: num(surahNum), ayah: internal ? num(ayahNum) : ayahLabelFor(surahNum, ayahNum), name: surahName(surahNum, meta?.nameEnglish) });
+      return t("Quran {surah}:{ayah} — Surah {name}", { surah: num(surahNum), ayah: internal ? num(ayahNum) : ayahLabelFor(surahNum, ayahNum, half), name: surahName(surahNum, meta?.nameEnglish) });
     }
 
     /** Both docs are one small document each -- loaded once per acting person, not per ayah. Re-renders the reading screen when the fetch lands so quick-menu badges/checkboxes pick up real hasNote/isBookmarked state instead of staying at their empty defaults. */
@@ -17354,10 +17450,10 @@
 
     /** Ref line + whichever of Arabic/English/Bangla/Notes were checked -- the same shape for the quick menu's Copy/Share and the Note view's own row, so ticking the same boxes in either place produces the same text (spec: "these options also have to be there where they are now for those using the note"). */
     function buildAyahText(unitKey, langs) {
-      const { surah, ayah: ayahNum } = parseAyahUnitKey(unitKey);
+      const { surah, ayah: ayahNum, half } = parseAyahUnitKey(unitKey);
       const ayah = surah === currentSurahNum ? currentSurahData?.ayahs.find((a) => a.ayah === ayahNum) : null;
       if (!ayah) return "";
-      const parts = [ayahRefLabel(surah, ayahNum)];
+      const parts = [ayahRefLabel(surah, ayahNum, { half })];
       if (langs.includes("ar")) parts.push(ayah.uthmaniText);
       if (langs.includes("en") && ayah.translations?.en) parts.push(ayah.translations.en);
       if (langs.includes("bn") && ayah.translations?.bn) parts.push(ayah.translations.bn);
@@ -17435,12 +17531,12 @@
         unit is currently selected. Reads currentChunk only -- an Ayah Card
         can only ever open on an āyah inside the surah already loaded, so its
         claims are already in memory (no new read). */
-    function approachStatusesForAyah(surahNum, ayahNum) {
+    function approachStatusesForAyah(surahNum, ayahNum, half = null) {
       if (surahNum !== currentSurahNum) return [];
-      const unitKey = buildUnitKey.ayah(surahNum, ayahNum);
+      const unitKey = ayahRecordKey(surahNum, ayahNum, half);
       const entries = currentChunk?.entries ?? {};
       return quranTrackables.map((trackable) => {
-        const statusId = entries[`${unitKey}::${trackable.id}`]?.claimedStatus ?? "not_started";
+        const statusId = claimedStatusForKey(entries, unitKey, trackable.id) ?? "not_started";
         return {
           id: trackable.id,
           name: langText(trackable.name, getAppLang(), trackable.id),
@@ -17455,11 +17551,11 @@
         "Hifz / Memorising" (HIFZ_TRACKABLE_ID). null when the tenant has no
         such Approach any more (e.g. archived) -- said in words rather than
         guessed. Same no-new-read reasoning as approachStatusesForAyah(). */
-    function hifzStatusForAyah(surahNum, ayahNum) {
+    function hifzStatusForAyah(surahNum, ayahNum, half = null) {
       if (surahNum !== currentSurahNum) return null;
       if (!quranTrackables.some((tr) => tr.id === HIFZ_TRACKABLE_ID)) return null;
-      const unitKey = buildUnitKey.ayah(surahNum, ayahNum);
-      const statusId = currentChunk?.entries?.[`${unitKey}::${HIFZ_TRACKABLE_ID}`]?.claimedStatus ?? "not_started";
+      const unitKey = ayahRecordKey(surahNum, ayahNum, half);
+      const statusId = claimedStatusForKey(currentChunk?.entries, unitKey, HIFZ_TRACKABLE_ID) ?? "not_started";
       return { statusId, label: statusLabel(statusId), color: STATUS_COLORS[statusId] ?? STATUS_COLORS.not_started };
     }
 
@@ -17486,7 +17582,10 @@
       const ayahObj = currentSurahData?.ayahs?.find((a) => a.ayah === ayahNum);
       if (!ayahObj?.words?.length) { ayahSheetWordStatus = { known: 0, total: 0, words: [] }; renderAyahActionSheetNow(); return; }
       const confirmationRequired = !!wordProgressConfirmRequired;
-      const words = ayahObj.words.map((w) => {
+      // Issue #606 -- displayed Ayah 6 / 7 of Al-Fātiḥah cover words 1-4 / 5-9 of content ayah 1:7.
+      const sheetHalfNow = ayahSheetHalf;
+      const inSheetHalf = (p) => !sheetHalfNow || (sheetHalfNow === "b" ? p > FATIHA_SPLIT_AFTER_WORD_PAGE : p <= FATIHA_SPLIT_AFTER_WORD_PAGE);
+      const words = ayahObj.words.filter((w) => inSheetHalf(w.position)).map((w) => {
         const occurrenceId = `quran-word-occurrence:v1:${surahNum}:${ayahNum}:${w.position}`;
         const occView = wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId, confirmationRequired });
         const lemmaId = wbwClaimKey(w);
@@ -17498,10 +17597,10 @@
       });
       let coverage = null;
       try {
-        const scope = occurrenceIdsForAyah(currentSurahData, ayahNum);
+        const scope = occurrenceIdsForAyah(currentSurahData, ayahNum).filter((occ) => inSheetHalf(Number(occ.split(":").pop())));
         const rawViews = new Map(scope.map((occ) => [occ, wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: occ, confirmationRequired })]));
         const views = effectiveViewsForScope(currentSurahData, scope, rawViews, tenantId, subjectPersonId, confirmationRequired);
-        coverage = computeArabicCoverage({ scopeOccurrenceIds: scope, views, label: `ayah:${surahNum}:${ayahNum}` });
+        coverage = computeArabicCoverage({ scopeOccurrenceIds: scope, views, label: `ayah:${surahNum}:${sheetHalfNow === "b" ? FATIHA_SEVEN_RECORD_AYAH : ayahNum}` });
       } catch { coverage = null; }
       ayahSheetWordStatus = { known: coverage?.known ?? words.filter((w) => w.known).length, total: coverage?.total ?? words.length, words };
       renderAyahActionSheetNow();
@@ -17609,9 +17708,28 @@
       }
       return claimApproachStatusFor(selectedPersonId, unitKey, approachId, statusId);
     }
+    /**
+     * Issue #606 (decisions 76-77) -- the ONE write chokepoint for a Quran claim.
+     * For Al-Fātiḥah's ayah:1:7 / ayah:1:8 it (1) COPIES the person's old shared
+     * ayah:1:7 entries to ayah:1:8 first, once, if no ayah:1:8 entry exists yet
+     * (so the other half keeps the old mark; nothing is moved or deleted, I4),
+     * then (2) applies the claim: one key with the count on, BOTH keys with it
+     * off (stored 1:7 is one Ayah then). Nothing is ever written on load.
+     * Every other key goes straight to records.js's claimStatus().
+     */
+    async function claimStatusF(dbArg, args) {
+      if (args.subjectId !== "quran" || !/^ayah:1:[78]$/.test(args.unitKey)) return claimStatus(dbArg, args);
+      const copied = await copyFatihaSeventhRecords(dbArg, { tenantId: args.tenantId, personId: args.personId });
+      const keys = args.unitKey === "ayah:1:7" ? recordAyahsToWrite(1, 7, "a", fatihaOn()).map((a) => `ayah:1:${a}`) : [args.unitKey];
+      let out = null;
+      for (const key of keys) out = await claimStatus(dbArg, { ...args, unitKey: key });
+      void copied;
+      if (args.personId === selectedPersonId && currentSurahNum === 1 && currentChunk) patchClaimedEntry(currentChunk, args.unitKey, args.trackableId, args.statusId);
+      return out;
+    }
     async function claimApproachStatusFor(personId, unitKey, approachId, statusId) {
       const outcome = await safeWrite(
-        () => claimStatus(db, {
+        () => claimStatusF(db, {
           tenantId: activeTenantId,
           personId,
           subjectId: "quran",
@@ -17644,8 +17762,22 @@
     /** Carries a just-saved claim into an in-memory records chunk. */
     function patchClaimedEntry(chunk, unitKey, approachId, statusId) {
       chunk.entries = chunk.entries ?? {};
-      const key = `${unitKey}::${approachId}`;
-      chunk.entries[key] = { ...(chunk.entries[key] ?? {}), trackableId: approachId, claimedStatus: statusId };
+      // Issue #606 -- mirrors claimStatusF() in memory: the first claim on either half
+      // of Al-Fātiḥah's 1:7 first copies the old shared marks to ayah:1:8, and with the
+      // count off a claim on ayah:1:7 lands on both keys.
+      const keys = [unitKey];
+      if (/^ayah:1:[78]$/.test(unitKey)) {
+        if (needsFatihaCopy(1, 7, Object.keys(chunk.entries))) {
+          for (const k of Object.keys(chunk.entries)) {
+            if (k.startsWith("ayah:1:7::")) chunk.entries[`ayah:1:8::${k.slice("ayah:1:7::".length)}`] = { ...chunk.entries[k], copiedFrom: "ayah:1:7" };
+          }
+        }
+        if (unitKey === "ayah:1:7" && !fatihaOn()) keys.push("ayah:1:8");
+      }
+      for (const uk of keys) {
+        const key = `${uk}::${approachId}`;
+        chunk.entries[key] = { ...(chunk.entries[key] ?? {}), trackableId: approachId, claimedStatus: statusId };
+      }
     }
 
     async function takeApproachForAyah(unitKey, approachId, statusId) {
@@ -17896,7 +18028,8 @@
         surah chunk holds it (already loaded by the time this is called --
         callers await ensureSurahChunkForUnitCard() for every surah first). */
     function unitCardOwnAyahStatus(approachId) {
-      return (surah, ayah) => unitCardChunkForSurah(surah)?.entries?.[`${buildUnitKey.ayah(surah, ayah)}::${approachId}`]?.claimedStatus ?? "not_started";
+      // `ayah` is a RECORD ayah (issue #606: 8 = Al-Fātiḥah's displayed Ayah 7).
+      return (surah, ayah) => recordClaimedStatus(unitCardChunkForSurah(surah)?.entries, surah, ayah, approachId) ?? "not_started";
     }
 
     /** Review fix -- every WIDER claim for this Approach that can touch the
@@ -17949,13 +18082,18 @@
       let countedTotal = 0;
       for (const { surah, from, to } of coverage) {
         for (let ayah = from; ayah <= to; ayah++) {
-          const statusId = effectiveStatus({ own: ownStatus(surah, ayah), spans, surah, ayah, trackable });
-          if (statusId === "not_applicable") continue;
-          // Issue #482 -- same display weighting as exploreUnitCounts().
-          let weight = 1;
-          if (fatihaCountApplies(surah, fatihaOn())) { if (ayah === 1) continue; if (ayah === 7) weight = 2; }
-          countedTotal += weight;
-          if (statusId === "achieved" || statusId === "mastered") achievedOrMastered += weight;
+          // Issue #482 / #606 -- same display counting as exploreUnitCounts(): the
+          // Bismillah is not counted and internal 1:7 is two records (6 and 7),
+          // each counted once -- or just the one half this unit is (info.half).
+          const split = fatihaCountApplies(surah, fatihaOn());
+          if (split && ayah === 1) continue;
+          const records = split && ayah === 7 ? (info.half === "b" ? [FATIHA_SEVEN_RECORD_AYAH] : info.half === "a" ? [7] : [7, FATIHA_SEVEN_RECORD_AYAH]) : [ayah];
+          for (const record of records) {
+            const statusId = effectiveStatus({ own: ownStatus(surah, record), spans, surah, ayah, trackable });
+            if (statusId === "not_applicable") continue;
+            countedTotal += 1;
+            if (statusId === "achieved" || statusId === "mastered") achievedOrMastered += 1;
+          }
         }
       }
       return t("Āyāt Achieved or Mastered: {n} of {total}", { n: num(achievedOrMastered), total: num(countedTotal) });
@@ -17969,7 +18107,7 @@
         re-deriving the same boundary. */
     async function unitCardWordByWordLine(info) {
       if (!currentSurahData || info.fromSurah !== currentSurahNum) return t("See Explore's Word by Word tab for this unit.");
-      const scope = occurrenceIdsForUnit(currentSurahData, info.unitKey);
+      const scope = occurrenceIdsForUnit(currentSurahData, info.unitKey, { fatihaOn: fatihaOn() });
       if (!scope) return t("See Explore's Word by Word tab for this unit.");
       if (!scope.length) return t("No word-by-word data for this unit.");
       const { tenantId, subjectPersonId } = wordProgressActor();
@@ -17999,8 +18137,8 @@
       const parentSpans = await unitCardWideSpans(approachId, surahsNeeded);
       const ownStatus = unitCardOwnAyahStatus(approachId);
       const colorFor = (coverage, unitKey) => {
-        const pooled = poolStatus(coverage, { ownStatus, spans: parentSpans, trackable });
-        const statusId = pooled ?? (unitKey ? (unitCardChunkForSurah(coverage[0]?.surah)?.entries?.[`${unitKey}::${approachId}`]?.claimedStatus ?? "not_started") : "not_started");
+        const pooled = poolStatus(coverage, { ownStatus, spans: parentSpans, trackable, fatihaOn: fatihaOn() });
+        const statusId = pooled ?? (unitKey ? (claimedStatusForKey(unitCardChunkForSurah(coverage[0]?.surah)?.entries, unitKey, approachId) ?? "not_started") : "not_started");
         return STATUS_COLORS[statusId] ?? STATUS_COLORS.not_started;
       };
 
@@ -18020,7 +18158,12 @@
         for (const { surah, from, to } of wholeCoverage) {
           for (let ayah = from; ayah <= to; ayah += 1) {
             const coverage = [{ surah, from: ayah, to: ayah }];
-            items.push({ label: ayahLabelFor(surah, ayah), color: colorFor(coverage, buildUnitKey.ayah(surah, ayah)), unitKey: buildUnitKey.ayah(surah, ayah), jump: `${surah}:${ayah}` });
+            for (const u of ayahRecordUnits(surah, ayah)) {
+              const key = buildUnitKey.ayah(surah, u.record);
+              // One record only (issue #606): displayed 6 and 7 are coloured separately.
+              const halfStatus = u.half ? effectiveStatus({ own: ownStatus(surah, u.record), spans: parentSpans, surah, ayah, trackable }) : null;
+              items.push({ label: ayahLabelFor(surah, ayah, u.half), color: u.half ? (STATUS_COLORS[halfStatus] ?? STATUS_COLORS.not_started) : colorFor(coverage, key), unitKey: key, jump: `${surah}:${ayah}` });
+            }
           }
         }
         return { title: t("Ayahs"), items };
@@ -18150,12 +18293,12 @@
       const chunk = chunkForUnitInfo(info);
       const trackable = quranTrackables.find((tr) => tr.id === unitCardSelectedApproachId) ?? null;
       const selectedApproachStatusId = unitCardSelectedApproachId
-        ? (chunk?.entries?.[`${info.unitKey}::${unitCardSelectedApproachId}`]?.claimedStatus ?? "not_started")
+        ? (claimedStatusForKey(chunk?.entries, info.unitKey, unitCardSelectedApproachId) ?? "not_started")
         : "not_started";
       // Review: every Approach, "not started" where there is no claim yet --
       // a person with no records for this surah yet is not "No Approaches".
       const approachStatuses = quranTrackables.map((tr) => {
-        const statusId = chunk?.entries?.[`${info.unitKey}::${tr.id}`]?.claimedStatus ?? "not_started";
+        const statusId = claimedStatusForKey(chunk?.entries, info.unitKey, tr.id) ?? "not_started";
         return { id: tr.id, name: langText(tr.name, getAppLang(), tr.id), statusId, color: STATUS_COLORS[statusId] ?? STATUS_COLORS.not_started, label: statusLabel(statusId) };
       });
       const ladderRungs = unitCardOpenedFromAyah
@@ -18165,7 +18308,7 @@
       ayahActionSheetMountEl.innerHTML = renderUnitCardHtml({
         unitType: info.unitType, unitKey: info.unitKey, unitLabel: info.label,
         ladderHtml: renderUnitLadderHtml(ladderRungs),
-        approachOptionsHtml: buildCardApproachOptionsHtml((id) => (chunk ? (chunk.entries?.[`${info.unitKey}::${id}`]?.claimedStatus ?? "not_started") : null)),
+        approachOptionsHtml: buildCardApproachOptionsHtml((id) => (chunk ? (claimedStatusForKey(chunk.entries, info.unitKey, id) ?? "not_started") : null)),
         approachSummary: cardApproachSummary(unitCardSelectedApproachId),
         canConfirm: viewerCanConfirmProgress(),
         selectedApproachId: unitCardSelectedApproachId,
@@ -18273,8 +18416,8 @@
         back to null) rather than read off that module variable here. */
     function openAyahPoster(unitKey, hasPosterNote) {
       if (hasPosterNote === false) { openNoteView(unitKey); return; }
-      const { surah, ayah: ayahNum } = parseAyahUnitKey(unitKey);
-      const ref = ayahRefLabel(surah, ayahNum);
+      const { surah, ayah: ayahNum, half } = parseAyahUnitKey(unitKey);
+      const ref = ayahRefLabel(surah, ayahNum, { half });
       location.href = `notes.html?unit=${encodeURIComponent(unitKey)}&label=${encodeURIComponent(ref)}&dawah=1`;
     }
 
@@ -18291,8 +18434,9 @@
       // approachStatusesForAyah() already uses: currentChunk only holds
       // currentSurahNum's own claims (no new read).
       const selectedApproachStatusId = ayahSheetSelectedApproachId && surah === currentSurahNum
-        ? (currentChunk?.entries?.[`${ayahSheetUnitKey}::${ayahSheetSelectedApproachId}`]?.claimedStatus ?? "not_started")
+        ? (claimedStatusForKey(currentChunk?.entries, ayahSheetUnitKey, ayahSheetSelectedApproachId) ?? "not_started")
         : "not_started";
+      const sheetHalf = ayahSheetHalf;
       const keepScroll = ayahActionSheetMountEl.querySelector("[data-ayah-sheet]")?.scrollTop ?? 0;
       // Issue #348 -- the ladder at the card's own top. unitCardTablesCache
       // is filled the first time ANYTHING in the app awaits
@@ -18310,12 +18454,12 @@
       }
       ayahActionSheetMountEl.innerHTML = renderAyahActionSheetHtml({
         unitKey: ayahSheetUnitKey,
-        ref: ayahRefLabel(surah, ayahNum),
+        ref: ayahRefLabel(surah, ayahNum, { half: sheetHalf }),
         hasNote: ayahHasNote(ayahNotesDoc, ayahSheetUnitKey),
         isBookmarked,
         isSelf: isSelfSelectedForAyahActions(),
         approachOptionsHtml: (() => {
-          const known = new Map(approachStatusesForAyah(surah, ayahNum).map((a) => [a.id, a.statusId]));
+          const known = new Map(approachStatusesForAyah(surah, ayahNum, sheetHalf).map((a) => [a.id, a.statusId]));
           return buildCardApproachOptionsHtml((id) => known.get(id) ?? null);
         })(),
         approachSummary: cardApproachSummary(ayahSheetSelectedApproachId),
@@ -18323,9 +18467,9 @@
         selectedApproachId: ayahSheetSelectedApproachId,
         selectedApproachStatusId,
         hasPosterNote: hasPosterNoteAtRenderTime,
-        approachStatuses: approachStatusesForAyah(surah, ayahNum),
+        approachStatuses: approachStatusesForAyah(surah, ayahNum, sheetHalf),
         wordStatus: ayahSheetWordStatus,
-        hifzStatus: hifzStatusForAyah(surah, ayahNum),
+        hifzStatus: hifzStatusForAyah(surah, ayahNum, sheetHalf),
         related: ayahSheetRelated,
         connected: ayahSheetConnected,
         ladderHtml,
@@ -18593,12 +18737,17 @@
       renderAyahActionSheetNow();
     }
 
-    function openAyahActionSheet(ayahKey) {
+    function openAyahActionSheet(ayahKey, half = null) {
       closePageApproachCard(); // issue #325 -- mutually exclusive: same shared mount
       const [surahStr, ayahStr] = ayahKey.split(":");
       const surahNum = Number(surahStr);
       const ayahNum = Number(ayahStr);
-      const unitKey = buildUnitKey.ayah(surahNum, ayahNum);
+      // Issue #606 -- Al-Fātiḥah's internal 1:7 is two Ayat with the count on: the
+      // caller says which (the Mushaf ⑥/⑦ marker, the number badge); a caller that
+      // cannot (the Word Card's own button) gets the half the reader is on, else 6.
+      if (fatihaCountApplies(surahNum, fatihaOn()) && ayahNum === 7 && !half) half = (currentSurahNum === 1 && currentAyahNum === 7 ? currentHalf() : null) ?? "a";
+      const unitKey = ayahRecordKey(surahNum, ayahNum, half);
+      ayahSheetHalf = half;
       ayahSheetUnitKey = unitKey;
       ayahSheetWordStatus = null;
       ayahSheetHasPosterNote = null;
@@ -18654,8 +18803,8 @@
         lesson). */
     async function openAyahFolderFiling(unitKey) {
       if (!auth.currentUser || !selectedPersonId) return;
-      const { surah, ayah: ayahNum } = parseAyahUnitKey(unitKey);
-      const ref = ayahRefLabel(surah, ayahNum);
+      const { surah, ayah: ayahNum, half } = parseAyahUnitKey(unitKey);
+      const ref = ayahRefLabel(surah, ayahNum, { half });
       ayahFolderFilingTitleEl.textContent = t("File {ref} in folder(s)", { ref });
       ayahFolderFilingState = {
         unitKey, ref, notes: [], noteId: null, tree: { roots: [] },
@@ -18907,7 +19056,7 @@
         }
         if (typeof settings.ayahNum === "number") {
           currentAyahNum = settings.ayahNum;
-          if (ayahSelect.querySelector(`option[value="${currentAyahNum}"]`)) ayahSelect.value = String(currentAyahNum);
+          syncAyahSelect();
         }
         if (settings.unitType) {
           currentUnitType = settings.unitType;
@@ -19225,8 +19374,8 @@
       // hands its own noteScopeUnitInfo().label straight in rather than
       // this function guessing at it.
       const defaultName = defaultNameOverride ?? (() => {
-        const { surah, ayah: ayahNum } = parseAyahUnitKey(unitKey);
-        return ayahRefLabel(surah, ayahNum);
+        const { surah, ayah: ayahNum, half } = parseAyahUnitKey(unitKey);
+        return ayahRefLabel(surah, ayahNum, { half });
       })();
       const choice = await openBookmarkNamePopover({
         defaultName,
@@ -19347,7 +19496,14 @@
         const inPage = currentSurahData.ayahs.filter((a) => a.page === ayah.page).map((a) => a.ayah);
         return { unitType: "page", unitKey: buildUnitKey.page(PAGE_EDITION, ayah.page), chunkKey: "subject_quran", label: t("Page {page}", { page: num(ayah.page) }), fromAyah: Math.min(...inPage), toAyah: Math.max(...inPage) };
       }
-      return { unitType: "ayah", unitKey: buildUnitKey.ayah(currentSurahNum, noteScope.ayahNum), chunkKey: surahChunkKey, label: ayahRefLabel(currentSurahNum, noteScope.ayahNum), fromAyah: noteScope.ayahNum, toAyah: noteScope.ayahNum };
+      const half = noteHalfNow();
+      return { unitType: "ayah", unitKey: ayahRecordKey(currentSurahNum, noteScope.ayahNum, half), half, chunkKey: surahChunkKey, label: ayahRefLabel(currentSurahNum, noteScope.ayahNum, { half }), fromAyah: noteScope.ayahNum, toAyah: noteScope.ayahNum };
+    }
+    /** Issue #606 -- which displayed Ayat the Note view's single-Ayah scope is on, while the
+        count is on and it sits on internal 1:7: "a" (6) or "b" (7); null otherwise. */
+    function noteHalfNow() {
+      if (!noteScope || noteScope.unitType !== "ayah" || noteScope.ayahNum !== 7 || !fatihaCountApplies(currentSurahNum, fatihaOn())) return null;
+      return noteScope.half === "b" ? "b" : "a";
     }
 
     /** The unit key the Note view is showing right now -- the one thing every caller that needs to compare "is this the note that's open" should call rather than re-deriving it. */
@@ -19432,9 +19588,13 @@
       const surahOptionsHtml = surahIndex
         .map((s) => `<option value="${s.surahNumber}" ${s.surahNumber === currentSurahNum ? "selected" : ""}>${num(s.surahNumber)}. ${surahName(s.surahNumber, s.nameEnglish)}</option>`)
         .join("");
-      const ayahOptionsHtml = (selected) => Array.from({ length: currentSurahData.ayahCount }, (_, i) => i + 1)
+      // `split` (issue #606): the single-Ayah picker offers Al-Fātiḥah's 6 and 7 as two options
+      // (values are RECORD ayahs: 7 and 8); the range pickers keep one "6–7".
+      const ayahOptionsHtml = (selected, split = false) => Array.from({ length: currentSurahData.ayahCount }, (_, i) => i + 1)
         // The Owner, 5 Oct 2026: the reader's own count here too (Bismillah, 1..5, 6–7), the same as #ayahSelect.
-        .map((n) => `<option value="${n}" ${n === selected ? "selected" : ""}>${ayahLabelFor(currentSurahNum, n)}</option>`).join("");
+        .flatMap((n) => (split && n === 7 && fatihaCountApplies(currentSurahNum, fatihaOn())
+          ? [{ v: 7, h: "a" }, { v: FATIHA_SEVEN_RECORD_AYAH, h: "b" }]
+          : [{ v: n, h: null }]).map(({ v, h }) => `<option value="${v}" ${v === (split ? selected : n === selected ? n : -1) ? "selected" : ""}>${ayahLabelFor(currentSurahNum, n, h)}</option>`)).join("");
       const numbers = numbered ? noteScopeNumbersInSurah(unitType) : [];
       const numOptionsHtml = numbers.map((n) => `<option value="${n}" ${n === noteScope.unitNumber ? "selected" : ""}>${num(n)}</option>`).join("");
       const ayahCellHidden = isRange || unitType === "surah";
@@ -19448,7 +19608,7 @@
       return `
         <select data-note-picker="unitType" aria-label="${t("Study Unit")}">${unitOptionsHtml}</select>
         <select data-note-picker="surah" aria-label="${t("Surah")}">${surahOptionsHtml}</select>
-        <select data-note-picker="ayah" aria-label="${t("Ayah")}" ${ayahCellHidden ? "hidden" : ""}>${ayahOptionsHtml(noteScope.ayahNum)}</select>
+        <select data-note-picker="ayah" aria-label="${t("Ayah")}" ${ayahCellHidden ? "hidden" : ""}>${ayahOptionsHtml(recordAyahFor(currentSurahNum, noteScope.ayahNum, noteHalfNow(), fatihaOn()), true)}</select>
         <select data-note-picker="num" aria-label="${t(UNIT_NUM_LABELS[unitType] ?? "Number")}" ${numbered ? "" : "hidden"}>${numOptionsHtml}</select>
         <select data-note-picker="from" aria-label="${t("From")}" ${isRange ? "" : "hidden"}>${ayahOptionsHtml(noteScope.rangeFrom)}</select>
         <select data-note-picker="to" aria-label="${t("To")}" ${isRange ? "" : "hidden"}>${ayahOptionsHtml(noteScope.rangeTo)}</select>`;
@@ -19499,7 +19659,13 @@
         }
         renderNoteViewNow();
       });
-      ayahSel?.addEventListener("change", () => { noteScope.ayahNum = Number(ayahSel.value); renderNoteViewNow(); });
+      ayahSel?.addEventListener("change", () => {
+        const v = Number(ayahSel.value);
+        // Issue #606 -- option value 8 = Al-Fātiḥah's displayed Ayah 7 (content: internal 1:7, half "b").
+        noteScope.ayahNum = internalAyahOfRecord(currentSurahNum, v);
+        noteScope.half = currentSurahNum === 1 && v === FATIHA_SEVEN_RECORD_AYAH ? "b" : "a";
+        renderNoteViewNow();
+      });
       numSel?.addEventListener("change", () => {
         noteScope.unitNumber = Number(numSel.value);
         const match = currentSurahData.ayahs.find((a) => noteScopeNumberOfAyah(noteScope.unitType, a) === noteScope.unitNumber);
@@ -19570,9 +19736,14 @@
 
     /** The nav cluster's INNER pair -- moves exactly one āyah, bounded by the currently loaded surah (same simple rule the Read screen's own prevAyahBtn/nextAyahBtn already use). */
     function stepNoteAyah(dir) {
+      // Issue #606 -- with the Al-Fātiḥah count on, internal 1:7 is two stops (6 then 7).
+      const half = noteHalfNow();
+      if (half === "a" && dir > 0) { noteScope.half = "b"; renderNoteViewNow(); return; }
+      if (half === "b" && dir < 0) { noteScope.half = "a"; renderNoteViewNow(); return; }
       const target = noteScope.ayahNum + dir;
       if (target < 1 || target > currentSurahData.ayahCount) return;
       noteScope.ayahNum = target;
+      noteScope.half = target === 7 && dir < 0 ? "b" : "a";
       renderNoteViewNow();
     }
 
@@ -19876,7 +20047,9 @@
       let derivativesHtml = "";
       const ayahDisplayMode = getAyahDisplayMode();
       if (showAyatText) {
-        const inScope = expandAyahsForDisplay(currentSurahNum, currentSurahData.ayahs.filter((a) => a.ayah >= info.fromAyah && a.ayah <= info.toAyah), fatihaOn());
+        // Issue #606 -- a single displayed Ayah 6 or 7 of Al-Fātiḥah shows only its own half.
+        const inScope = expandAyahsForDisplay(currentSurahNum, currentSurahData.ayahs.filter((a) => a.ayah >= info.fromAyah && a.ayah <= info.toAyah), fatihaOn())
+          .filter((a) => !info.half || a.half === info.half);
         textBlocks = {
           arabicText: inScope.map((a) => a.uthmaniText).join("  "),
           englishText: inScope.map((a) => a.translations?.en).filter(Boolean).join(" "),
@@ -20281,7 +20454,8 @@
         if (col) return col.items.slice();
       }
       if (!currentSurahData) return [];
-      return currentSurahData.ayahs.map((a) => buildUnitKey.ayah(currentSurahNum, a.ayah));
+      // Issue #606 -- displayed Ayat 6 and 7 of Al-Fātiḥah are two rows (ayah:1:7 and ayah:1:8).
+      return currentSurahData.ayahs.flatMap((a) => ayahRecordUnits(currentSurahNum, a.ayah).map((u) => buildUnitKey.ayah(currentSurahNum, u.record)));
     }
 
     /** Fetches whichever surahs a collection's own items touch that aren't
@@ -20314,10 +20488,10 @@
         const ayah = qcrSurahDataByNum.get(surahNum)?.ayahs?.find((a) => a.ayah === disp.ayahNum);
         arabicSnippet = ayah?.uthmaniText ?? "";
       } else {
-        const ayahNum = Number(parts[1]);
+        const { ayah: ayahNum, half: rowHalf } = parseAyahUnitKey(unitKey);
         const meta = surahIndex.find((s) => s.surahNumber === surahNum);
         sName = meta ? surahName(surahNum, meta.nameEnglish) : "";
-        refLabel = ayahShortRefFor(surahNum, ayahNum);
+        refLabel = ayahShortRefFor(surahNum, ayahNum, rowHalf);
         const ayah = currentSurahData?.ayahs?.find((a) => a.ayah === ayahNum);
         const full = ayah?.translations?.en ?? "";
         snippet = full.length > 90 ? `${full.slice(0, 90).trim()}…` : full;
@@ -20552,7 +20726,7 @@
       const unitKey = info.unitKey;
       const entryKey = `${unitKey}::${trackable.id}`;
       const chunk = chunkForUnitInfo(info);
-      const entry = chunk?.entries?.[entryKey] ?? null;
+      const entry = entryForKey(chunk?.entries, unitKey, trackable.id) ?? null;
       const statusIdsForTrackable = Object.values(chunk?.entries ?? {})
         .filter((e) => e.trackableId === trackable.id)
         .map((e) => e.claimedStatus);
@@ -20609,7 +20783,7 @@
         const assignees = checkedAssignees(embedEl, selectedPersonId);
         const outcomes = await Promise.all(assignees.map(async (a) => {
           const r = await safeWrite(
-            () => claimStatus(db, {
+            () => claimStatusF(db, {
               tenantId: activeTenantId,
               personId: a.id,
               subjectId: "quran",
@@ -20848,7 +21022,9 @@
       }
       const { unitType, parts } = parseUnitKey(unitKey);
       if (unitType === "ayah") {
-        noteScope = { unitType: "ayah", ayahNum: Number(parts[1]), rangeFrom: Number(parts[1]), rangeTo: Number(parts[1]), unitNumber: null };
+        // Issue #606 -- ayah:1:8 is Al-Fātiḥah's displayed Ayah 7 (content: internal 1:7, words 5-9).
+        const opened = parseAyahUnitKey(unitKey);
+        noteScope = { unitType: "ayah", ayahNum: opened.ayah, rangeFrom: opened.ayah, rangeTo: opened.ayah, unitNumber: null, half: opened.half };
       } else if (unitType === "book") {
         // "book" was the whole-Qur'an note's own unit key, removed from this
         // build -- a bookmark saved while that feature existed still points
@@ -21010,6 +21186,7 @@
     }
 
     function renderStudyScreen() {
+      if (currentAyahNum !== 7) currentAyahHalf = null; // issue #606 -- a half is only ever meaningful on internal 1:7
       readWindowCtl?.sync(); // the Ayah window's title follows the reading
       // Every surah/ayah/unit/tick change lands here -- the one call that covers
       // them all for "reopen where I was". Debounced inside, so the several
@@ -21174,17 +21351,17 @@
         ayahPosition.textContent = fatihaCountApplies(currentSurahNum, fatihaOn()) && currentAyahNum === 1
           ? t("Surah {surah} — Bismillah", { surah: num(currentSurahNum) })
           : isUnnumberedBismillah(currentSurahNum, currentAyahNum) ? t("Surah {surah} — Bismillah", { surah: num(currentSurahNum) })
-          : t("Surah {surah} — Ayah {ayah} of {total}", { surah: num(currentSurahNum), ayah: ayahLabelFor(currentSurahNum, currentAyahNum), total: num(displayAyahCount(currentSurahNum, currentSurahData.ayahCount)) });
-        ayahSelect.value = String(currentAyahNum);
-        prevAyahBtn.disabled = currentAyahNum <= 1;
-        nextAyahBtn.disabled = currentAyahNum >= currentSurahData.ayahCount;
+          : t("Surah {surah} — Ayah {ayah} of {total}", { surah: num(currentSurahNum), ayah: ayahLabelFor(currentSurahNum, currentAyahNum, currentHalf()), total: num(displayAyahCount(currentSurahNum, currentSurahData.ayahCount)) });
+        syncAyahSelect();
+        prevAyahBtn.disabled = currentAyahNum <= 1 && currentHalf() !== "b";
+        nextAyahBtn.disabled = currentAyahNum >= currentSurahData.ayahCount && currentHalf() !== "a";
         ayahPanels.innerHTML = bismillahHtmlFor(currentSurahNum, currentAyahNum) + layoutAParts(ayah, panels, {
           tajweedOn: tajweedToggle.checked,
           langs: translationLangs(),
           wbwLangs: wbwLangs(),
           wordCardInteractive: true,
           surahNumber: currentSurahNum,
-        });
+        }, currentHalf());
         // Text-tools round -- what the ⋮ menu's Collapse item folds away.
         // #ayahPanels itself survives every re-render (only its innerHTML is
         // replaced), so the class has to be cleared here or a collapse left
@@ -21206,7 +21383,7 @@
         // unit-level Bookmark button above -- a Juz's own Bookmark and one
         // of its ayah's own Note are two different things, same as the Note
         // view's "Also noted at:" pills already treat them.
-        const singleUnitKey = buildUnitKey.ayah(currentSurahNum, currentAyahNum);
+        const singleUnitKey = ayahRecordKey(currentSurahNum, currentAyahNum, currentHalf());
         const singleIsBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: singleUnitKey });
         // Multi-student round -- a direct, always-visible Bookmark button
         // now lives on the bar itself, so the ⋮ menu's OWN Bookmark item is
@@ -21741,8 +21918,18 @@
       openAsmaXAttachPopover({ prefillRef: asmaRefTextFor(currentSurahNum, currentAyahNum) });
     });
 
-    prevAyahBtn.addEventListener("click", () => { if (currentAyahNum > 1) { stopDrill(); currentAyahNum--; renderStudyScreen(); renderWheel(); } });
-    nextAyahBtn.addEventListener("click", () => { if (currentAyahNum < currentSurahData.ayahCount) { stopDrill(); currentAyahNum++; renderStudyScreen(); renderWheel(); } });
+    // Issue #606 -- with the Al-Fātiḥah count on, internal 1:7 is two stops: 6 then 7.
+    function stepAyahBy(dir) {
+      const split = fatihaCountApplies(currentSurahNum, fatihaOn());
+      if (split && dir > 0 && currentAyahNum === 7 && currentHalf() === "a") { setAyahNum(7, "b"); return true; }
+      if (split && dir < 0 && currentAyahNum === 7 && currentHalf() === "b") { setAyahNum(7, "a"); return true; }
+      const target = currentAyahNum + dir;
+      if (target < 1 || target > currentSurahData.ayahCount) return false;
+      setAyahNum(target, split && target === 7 ? (dir < 0 ? "b" : "a") : null);
+      return true;
+    }
+    prevAyahBtn.addEventListener("click", () => { if (currentAyahNum > 1 || currentHalf() === "b") { stopDrill(); stepAyahBy(-1); renderStudyScreen(); renderWheel(); } });
+    nextAyahBtn.addEventListener("click", () => { if (currentAyahNum < currentSurahData.ayahCount || currentHalf() === "a") { stopDrill(); stepAyahBy(1); renderStudyScreen(); renderWheel(); } });
     // Issue #325 point 2 -- tapping the top-bar reference opens the "This
     // page" card, claiming the printed page as one unit (Owner decision 3).
     // dataset.page is stamped by updateMushafPageRef() only while a real
@@ -21760,7 +21947,7 @@
       const pageNum = Number(mushafPageRef.dataset.page);
       if (Number.isFinite(pageNum)) openPageApproachCard(pageNum);
     });
-    ayahSelect.addEventListener("change", () => { stopDrill(); currentAyahNum = Number(ayahSelect.value); renderStudyScreen(); renderWheel(); });
+    ayahSelect.addEventListener("change", () => { stopDrill(); applyAyahSelectValue(ayahSelect.value); renderStudyScreen(); renderWheel(); });
     // Fix round -- "a choice of setting anywhere should work everywhere":
     // Study options' own Tajweed/Word by Word/Root/Derivatives ticks are
     // read live by BOTH the Read screen and the Note view (Note view no
@@ -21827,9 +22014,11 @@
       // Mushaf views and the position line are all rebuilt from the stored
       // (unchanged) keys.
       setFatihaBismillahUnnumbered(fatihaCountToggle.checked);
-      const keep = currentAyahNum;
+      // Issue #606 -- on internal 1:7, switching the count lands on displayed 6 (record 7)
+      // and back to the one stored Ayah.
+      setAyahNum(currentAyahNum, currentAyahNum === 7 && fatihaCountApplies(currentSurahNum, fatihaOn()) ? "a" : null);
       fillAyahSelect();
-      ayahSelect.value = String(keep);
+      syncAyahSelect();
       renderStudyScreen();
       renderWheel();
     });
@@ -21925,7 +22114,7 @@
       // read each time this opens -- one document, one copy, so this card and
       // the wheel can never disagree about what has been claimed.
       const chunk = info.chunkKey === surahChunkKey ? currentChunk : await ensureQuranSubjectChunk();
-      const entry = chunk?.entries?.[entryKey] ?? null;
+      const entry = entryForKey(chunk?.entries, info.unitKey, trackable.id) ?? null;
 
       const statusIdsForTrackable = Object.values(chunk?.entries ?? {})
         .filter((e) => e.trackableId === trackable.id)
@@ -21956,7 +22145,7 @@
         const assignees = checkedAssignees(wayModalMount, selectedPersonId);
         const outcomes = await Promise.all(assignees.map(async (a) => {
           const r = await safeWrite(
-            () => claimStatus(db, {
+            () => claimStatusF(db, {
               tenantId: activeTenantId, personId: a.id, subjectId: "quran",
               unitKey: info.unitKey, trackableId: trackable.id, statusId: statusSelectEl.value,
               notes: "", domainIds: [], claimedByPersonId: currentActingPersonId(), claimedByUid: auth.currentUser.uid,

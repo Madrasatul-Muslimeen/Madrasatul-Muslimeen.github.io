@@ -8,6 +8,7 @@
 
 import { t, num, surahName } from "./i18n.js";
 import { parseUnitKey, buildUnitKey, localRukuIndexFromTable } from "./unit-keys.js";
+import { FATIHA_SURAH, FATIHA_SPLIT_AYAH, FATIHA_SEVEN_RECORD_AYAH } from "./fatiha-count.js";
 
 /** True when (surah, ayah) falls inside a boundary row's own
     [startSurah:startAyah, endSurah:endAyah] span -- correct whether the
@@ -33,6 +34,23 @@ export function resolveUnitInfo(unitKey, tables = {}) {
 
   if (unitType === "ayah") {
     const surah = Number(parts[0]), ayah = Number(parts[1]);
+    // Issue #606 -- Al-Fātiḥah's displayed Ayah 7 is the spare record key
+    // ayah:1:8: its CONTENT is internal 1:7 (words 5-9) and it reads "Ayah 7",
+    // never "Ayah 8". With the reader's count on, ayah:1:7 is displayed Ayah 6.
+    if (surah === FATIHA_SURAH && ayah === FATIHA_SEVEN_RECORD_AYAH) {
+      return {
+        unitType, unitKey, chunkKey: `surah_${surah}`,
+        fromSurah: surah, fromAyah: FATIHA_SPLIT_AYAH, toSurah: surah, toAyah: FATIHA_SPLIT_AYAH, half: "b",
+        label: t("Surah {surah}, Ayah {ayah}", { surah: num(surah), ayah: num(7) }),
+      };
+    }
+    if (surah === FATIHA_SURAH && ayah === FATIHA_SPLIT_AYAH && tables.fatihaOn) {
+      return {
+        unitType, unitKey, chunkKey: `surah_${surah}`,
+        fromSurah: surah, fromAyah: ayah, toSurah: surah, toAyah: ayah, half: "a",
+        label: t("Surah {surah}, Ayah {ayah}", { surah: num(surah), ayah: num(6) }),
+      };
+    }
     return {
       unitType, unitKey, chunkKey: `surah_${surah}`,
       fromSurah: surah, fromAyah: ayah, toSurah: surah, toAyah: ayah,
@@ -114,7 +132,10 @@ export function resolveUnitInfo(unitKey, tables = {}) {
 export function ladderRungsForAyah(surahNum, ayahNum, tables = {}, activeUnitType = "ayah") {
   const { juzRows = [], hizbRows = [], pageRows = [], rukuRows = [], surahIndex = [], pageEdition = "madani" } = tables;
   const rungs = [
-    { unitType: "ayah", unitKey: buildUnitKey.ayah(surahNum, ayahNum), label: t("Ayah {n}", { n: num(ayahNum) }) },
+    // Issue #606 -- `tables.ayahRecordAyah` (8 = Al-Fātiḥah's displayed Ayah 7) and
+    // `tables.ayahLabel` let the caller hand in the half-aware record key and the
+    // reader's own number; the CONTENT ayah (ruku', page, juz...) is still ayahNum.
+    { unitType: "ayah", unitKey: buildUnitKey.ayah(surahNum, tables.ayahRecordAyah ?? ayahNum), label: t("Ayah {n}", { n: tables.ayahLabel ?? num(ayahNum) }) },
   ];
 
   const rukuRow = rukuRows.find((r) => r.surah === surahNum && ayahNum >= r.fromAyah && ayahNum <= r.toAyah);

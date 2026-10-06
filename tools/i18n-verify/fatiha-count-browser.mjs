@@ -54,9 +54,9 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
   await enterRead(page);
   await openSurahOne(page, "ayah");
   const picker = await page.evaluate(() => [...document.querySelectorAll("#ayahSelect option")].map((o) => [o.value, o.textContent.trim()]));
-  const wantLabels = lang === "en" ? ["Bismillah", "1", "2", "3", "4", "5", "6–7"] : ["বিসমিল্লাহ", "১", "২", "৩", "৪", "৫", "৬–৭"];
+  const wantLabels = lang === "en" ? ["Bismillah", "1", "2", "3", "4", "5", "6", "7"] : ["বিসমিল্লাহ", "১", "২", "৩", "৪", "৫", "৬", "৭"]; // #606: 6 and 7 are two options
   check(`${tag} picker labels read ${wantLabels.join(", ")}`, JSON.stringify(picker.map((p) => p[1])) === JSON.stringify(wantLabels), JSON.stringify(picker));
-  check(`${tag} picker values stay internal 1..7`, JSON.stringify(picker.map((p) => p[0])) === JSON.stringify(["1", "2", "3", "4", "5", "6", "7"]), JSON.stringify(picker));
+  check(`${tag} picker values are the RECORD ayahs 1..8 (#606: displayed 7 is record 8)`, JSON.stringify(picker.map((p) => p[0])) === JSON.stringify(["1", "2", "3", "4", "5", "6", "7", "8"]), JSON.stringify(picker));
 
   // ---- Go to
   const jump = async (text) => {
@@ -67,7 +67,7 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
   check(`${tag} Go to "1:1" opens internal 1:2 (ٱلْحَمْدُ)`, (await jump("1:1")) === "2");
   check(`${tag} Go to "1:5" opens internal 1:6`, (await jump("1:5")) === "6");
   check(`${tag} Go to "1:6" opens internal 1:7`, (await jump("1:6")) === "7");
-  check(`${tag} Go to "1:7" opens internal 1:7`, (await jump("1:7")) === "7");
+  check(`${tag} Go to "1:7" opens displayed 7 (record 8; #606 keeps the half)`, (await jump("1:7")) === "8");
 
   // ---- Read view, whole surah flow
   await openSurahOne(page, "surah");
@@ -118,13 +118,13 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
   await page.evaluate(() => document.querySelector('[data-approach-stage-btn="achieved"]')?.click());
   await page.waitForTimeout(500);
   const claim = await page.evaluate(() => (window.__stubWriteData || []).filter((w) => w.col === "records").at(-1));
-  check(`${tag} Achieved on displayed 7 writes entries["ayah:1:7::recite"]`, !!claim && Object.keys(claim.data ?? {}).includes("entries.ayah:1:7::recite") && claim.data["entries.ayah:1:7::recite"].claimedStatus === "achieved", JSON.stringify(claim && Object.keys(claim.data ?? {})));
+  check(`${tag} Achieved on displayed 7 writes entries["ayah:1:8::recite"] (#606)`, !!claim && Object.keys(claim.data ?? {}).includes("entries.ayah:1:8::recite") && claim.data["entries.ayah:1:8::recite"].claimedStatus === "achieved", JSON.stringify(claim && Object.keys(claim.data ?? {})));
   await page.keyboard.press("Escape"); await page.waitForTimeout(300);
   await openHalf("a");
   await page.evaluate(() => { const sel = document.querySelector("[data-approach-stage-select]"); sel.value = "recite"; sel.dispatchEvent(new Event("change", { bubbles: true })); });
   await page.waitForTimeout(300);
   const pressed6 = await page.evaluate(() => document.querySelector('[data-approach-stage-btn="achieved"]')?.getAttribute("aria-pressed"));
-  check(`${tag} displayed 6 shows Achieved too (one shared record)`, pressed6 === "true", String(pressed6));
+  check(`${tag} displayed 6 does NOT show it (#606: two separate records)`, pressed6 !== "true", String(pressed6));
   await page.keyboard.press("Escape"); await page.waitForTimeout(300);
 
   // ---- Mushaf page 1
@@ -159,7 +159,7 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
     const s = document.querySelector("#ayahActionSheet, .ayah-action-sheet, [data-ayah-action-sheet], [role=dialog]");
     return s ? (s.textContent || "").replace(/\s+/g, " ").slice(0, 200) : null;
   });
-  check(`${tag} tapping ⑥ opens the 1:7 Āyah card`, !!sheet && /[1১]:[6৬]–[7৭]/.test(sheet), String(sheet));
+  check(`${tag} tapping ⑥ opens the displayed Ayah 6 card (#606)`, !!sheet && /[1১]:[6৬](?![–\d৭])/.test(sheet), String(sheet));
   await page.keyboard.press("Escape");
   await setMushaf(page, false);
 
@@ -169,8 +169,8 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
   // and the only one this run ever claimed is 1:7 -- a remapped write would
   // name 1:6 (displayed-7's neighbour) or 1:0/1:8.
   const keysWritten = [...new Set(JSON.stringify(all).match(/ayah:1:\d+/g) ?? [])];
-  const bad = keysWritten.filter((k) => k !== "ayah:1:7");
-  check(`${tag} every written key naming Al-Fātiḥah is the internal ayah:1:7 and nothing else`, bad.length === 0 && keysWritten.length >= 1, JSON.stringify({ keysWritten, n: all.length }));
+  const bad = keysWritten.filter((k) => k !== "ayah:1:8"); // #606: displayed 7 is the record ayah:1:8
+  check(`${tag} every written key naming Al-Fātiḥah is the displayed-7 record ayah:1:8 and nothing else`, bad.length === 0 && keysWritten.length >= 1, JSON.stringify({ keysWritten, n: all.length }));
 
   // ---- Setting OFF: today's behaviour exactly
   await page.evaluate(() => { const c = document.getElementById("fatihaCountToggle"); c.checked = false; c.dispatchEvent(new Event("change", { bubbles: true })); });
@@ -232,10 +232,10 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
     await page.waitForSelector('#exploreWheelContainer .wheel-ring-seg[data-ring-kind="ayah"]', { timeout: 20000 });
     await page.waitForTimeout(500);
     const badges = () => page.evaluate(() => [...document.querySelectorAll("#exploreSidebarContainer .way-row")].map((r) => [r.dataset.key, r.querySelector(".badge").textContent.trim()]));
-    const wantOn = lang === "en" ? ["", "1", "2", "3", "4", "5", "6–7"] : ["", "১", "২", "৩", "৪", "৫", "৬–৭"];
+    const wantOn = lang === "en" ? ["", "1", "2", "3", "4", "5", "6", "7"] : ["", "১", "২", "৩", "৪", "৫", "৬", "৭"];
     const b = await badges();
-    check(`${tag} Explore Al-Fātiḥah badges read (none), 1–5, 6–7`, JSON.stringify(b.map((x) => x[1])) === JSON.stringify(wantOn), JSON.stringify(b));
-    check(`${tag} Explore: the Bismillah row shows no "1" and keys stay internal 1..7`, b[0][1] === "" && JSON.stringify(b.map((x) => x[0])) === JSON.stringify(["1", "2", "3", "4", "5", "6", "7"]), JSON.stringify(b));
+    check(`${tag} Explore Al-Fātiḥah badges read (none), 1–5, 6, 7 (#606)`, JSON.stringify(b.map((x) => x[1])) === JSON.stringify(wantOn), JSON.stringify(b));
+    check(`${tag} Explore: the Bismillah row shows no "1" and keys are the record ayahs 1..8 (#606)`, b[0][1] === "" && JSON.stringify(b.map((x) => x[0])) === JSON.stringify(["1", "2", "3", "4", "5", "6", "7", "8"]), JSON.stringify(b));
     // ---- Search chip (the card is opened by the Search button)
     await page.click("#tabStudyBtn"); await page.waitForTimeout(400);
     await runSearch(page);

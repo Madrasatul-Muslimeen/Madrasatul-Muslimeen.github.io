@@ -40,7 +40,11 @@ source = source
   .replace(/import \{[^}]*\} from "\.\/study-evidence-readiness\.js";/,
            "const { isStudyEvidencePersistenceReady, studyEvidenceUnavailableReason } = globalThis.__sewReadiness;")
   .replace(/import \{[^}]*\} from "\.\/study-reading-units-readiness\.js";/,
-           "const { isReadingUnitsPersistenceReady, readingUnitsUnavailableReason } = globalThis.__sewReadingUnits;");
+           "const { isReadingUnitsPersistenceReady, readingUnitsUnavailableReason } = globalThis.__sewReadingUnits;")
+  // Issue #606 -- the real pure Al-Fātiḥah record-key mapping, not a copy.
+  .replace(/import \{ recordAyahFor, FATIHA_SPLIT_AFTER_WORD \} from "\.\/fatiha-count\.js";/,
+           "const { recordAyahFor, FATIHA_SPLIT_AFTER_WORD } = globalThis.__sewFatiha;");
+globalThis.__sewFatiha = await import("../../app/js/fatiha-count.js");
 
 // AN UNREWRITTEN IMPORT IS A DEAD SUITE, NOT A FAILING ONE. A relative
 // specifier inside a `data:` module throws ERR_INVALID_URL at load, so every
