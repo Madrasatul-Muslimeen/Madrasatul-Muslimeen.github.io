@@ -149,7 +149,10 @@ for (const lang of ["en", "bn"]) {
   // view at all, not to the word-card round trip this suite is testing, so
   // the "writes nothing" check below counts writes AFTER this baseline only.
   const writesBaseline = await page.evaluate(() => (window.__fsLog || [])
-    .filter((r) => /setDoc|updateDoc|batchCommit|txCommit/.test(r.kind)).length);
+    .filter((r) => /setDoc|updateDoc|batchCommit|txCommit/.test(r.kind)).length
+    // Updated in place, Architect, 6 Oct 2026: v09.80's 📖 Last read / ▶ Last played is a DELIBERATE save
+    // (bookmarks lastPlaces.*, the Owner's ask), so that one write is not counted; every other write still is.
+    - (window.__stubWriteData || []).filter((w) => w.col === "bookmarks" && Object.keys(w.data).every((k) => k === "tenantId" || k === "personId" || k === "updatedAt" || k.startsWith("lastPlaces"))).length);
 
   await page.click('#quranWordCardMountNote [data-word-card-level="basic"]');
   await page.waitForTimeout(2800);
@@ -271,7 +274,10 @@ for (const lang of ["en", "bn"]) {
   }
 
   const writesAfter = await page.evaluate(() => (window.__fsLog || [])
-    .filter((r) => /setDoc|updateDoc|batchCommit|txCommit/.test(r.kind)).length);
+    .filter((r) => /setDoc|updateDoc|batchCommit|txCommit/.test(r.kind)).length
+    // Updated in place, Architect, 6 Oct 2026: v09.80's 📖 Last read / ▶ Last played is a DELIBERATE save
+    // (bookmarks lastPlaces.*, the Owner's ask), so that one write is not counted; every other write still is.
+    - (window.__stubWriteData || []).filter((w) => w.col === "bookmarks" && Object.keys(w.data).every((k) => k === "tenantId" || k === "personId" || k === "updatedAt" || k.startsWith("lastPlaces"))).length);
   check(`${lang} the round trip itself writes nothing (beyond the Note view's own one-time open touch)`,
         writesAfter === writesBaseline, `baseline=${writesBaseline} after=${writesAfter}`);
 

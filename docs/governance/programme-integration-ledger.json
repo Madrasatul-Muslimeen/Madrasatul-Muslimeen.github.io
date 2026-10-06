@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.87",
+    "version": "09.89",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2225,8 +2225,32 @@
     {
       "version": "09.87",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Family members with year of birth at sign-up, and an Age column on the People page (Owner, 5 Oct 2026).",
+      "integration": {
+        "authorizedOn": "2026-10-06",
+        "integratedOn": "2026-10-06",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.88",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Family members on the Word Card levels and Hadith Studied (decision 71); Builder #594, PR #597.",
+      "integration": {
+        "authorizedOn": "2026-10-06",
+        "integratedOn": "2026-10-06",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.89",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Wheel centre pill reads Take an Approach; the Arabic Writing slice opens the Writing sheet (Owner, 6 Oct 2026); Architect-built.",
       "integration": {
         "authorizedOn": "2026-10-06",
         "integratedOn": "2026-10-06",
@@ -2235,8 +2259,10 @@
       }
     }
   ],
-  "nextUnallocated": "09.88",
+  "nextUnallocated": "09.90",
   "nextUnallocatedNote": [
+    "v09.89 was allocated to \"Take an Approach\" and the Arabic Writing slice, 2026-10-06.",
+    "v09.88 was allocated to 👥 on the Word Card and Hadith Studied, 2026-10-06.",
     "v09.87 was allocated to family members with year of birth at sign-up, 2026-10-06.",
     "v09.86 was allocated to the Siyagah note-pane port round 4, 2026-10-06.",
     "v09.85 was allocated to the Siyagah note-pane port round 3, 2026-10-05.",

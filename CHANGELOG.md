@@ -19728,3 +19728,19 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
 - **Checks:**
   - family-signup-browser 68/0; mutations no-step, no-year, no-manager each caught
   - rules-authorisation-executable 63/0 (birthYear on tenantPeople: the owner's and a guardian's Rules carry no field list), stub-parity 4/0, phone-width-overflow 217/0, behaviour 1003/4 (22g×3 archive.org, 31e certificate: the sandbox baseline)
+
+## v09.88 — 6 Oct 2026 — 👥 record for family members on the Word Card and Hadith "Studied"
+
+- **What:** decision 71. `quranrevival.html`: `runWordProgressAction` loops over `claimTargetIds()` (primeAyahProgress / primeLemmaProgressForOccurrenceScope / wordProgressConfirmationRequired per person before the snapshot; decide only for those awaiting review; note asked once); `runLemmaProgressAction` and `mirrorLemmaProgress` take the person; `mountClaimForPicker` on the Word Card; `.assign-popover` gets its own ink. `hadith-study-actions.js`: `getHadeethEncRoster`, `claimHadeethEncStudied(..., personIds)`. `hadith-browser.js`: the picker beside Studied. `hadith.css`: the picker styles for the Hadith pages. Builder round #594 (PR #597), Architect review fixes.
+- **Checks:**
+  - claim-for-family-word-hadith-browser 158/0; mutations no-load, decide-all, and the two review checks (ink, Hadith styles) each caught
+  - claim-for-family-browser 56/0, phone-width-overflow 217/0, stub-parity 4/0, rules-authorisation-executable 63/0, behaviour 1006/1 (31e certificate: the sandbox baseline)
+  - known on main, not this round: the "writes nothing" checks in quran-word-card-flow-nav, -lemma-occurrences, -mushaf-scroll, -note-origin-return; quran-word-card-form-meaning
+
+## v09.89 — 6 Oct 2026 — "Take an Approach" in the wheel; the Arabic Writing slice opens the Writing sheet
+
+- **What:** the Owner, 6 Oct 2026. `quranrevival.html`: `.wheel-cta-line1` reads "Take an Approach" (Bangla already in `bn.js`) and is `nowrap`; `layoutWheelHub()` sets the pill to 80% (85% below a 140px hub) and shrinks the first line to fit (floor 8px); `isWritingApproach()` and `WRITING_APPROACH_ID` ("approach_05"); `jumpToApproach()` opens `openWritingSheetForCurrentUnit()` for it. Built by the Architect.
+- **Tests:** `wheel-writing-slice-browser.mjs` (new); `wheel-centre-browser.mjs` width and one-line checks updated in place with the reason; `quran-word-card-flow-nav`, `-lemma-occurrences`, `-mushaf-scroll`, `-note-origin-return` no longer count the deliberate `lastPlaces.*` bookmark save (v09.80).
+- **Checks:**
+  - wheel-writing-slice-browser 25/0, mutations no-route and all-slices caught; wheel-centre-browser 645/0; the four updated Word Card suites 19/0, 50/0, 51/0, 59/0
+  - wheel-slice-opens-track 96/0, wheel-unit-go 254/0, landing-drawers 274/0, landing-sections-collapse 152/0, writing-sheet-browser 180/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)

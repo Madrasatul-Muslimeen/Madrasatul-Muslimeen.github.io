@@ -192,6 +192,7 @@ for (const lang of ["en", "bn"]) for (const vp of WIDTHS) {
       btnTop: btn.top, btnBottom: btn.bottom, imgBottom: img.bottom, grTop: gr.top,
       topPct: (btn.top - ring.top) / d, wPct: btn.width / d, hPct: btn.height / d,
       line1H: document.querySelector("#wheelCtaBtn .wheel-cta-line1").getBoundingClientRect().height,
+      line1Fits: (() => { const l = document.querySelector("#wheelCtaBtn .wheel-cta-line1"); return l.scrollWidth <= l.clientWidth + 0.5; })(), line1Font: parseFloat(getComputedStyle(document.querySelector("#wheelCtaBtn .wheel-cta-line1")).fontSize),
       font: parseFloat(cs.fontSize), line1: document.querySelector("#wheelCtaBtn .wheel-cta-line1").textContent.trim(), line2: document.getElementById("wheelCtaLine2").textContent.trim(),
       labelHidden: document.getElementById("wheelHubUnitLabel").getBoundingClientRect().width === 0,
       sparks, filter: getComputedStyle(lightEl).filter, lightTop, btnBottomForLight: btn.bottom,
@@ -206,9 +207,12 @@ for (const lang of ["en", "bn"]) for (const vp of WIDTHS) {
   check(`${tag} the button's top is below the calligraphy's bottom and its bottom above the Qur'an's top`, g.btnTop >= g.imgBottom - 0.5 && g.btnBottom <= g.grTop + 0.5, `${g.imgBottom} ${g.btnTop} ${g.btnBottom} ${g.grTop}`);
   // Updated in place (Architect review of #549): below a 140px hub the pill is 80% wide, so
   // "Study Quran" stays on one line at the 10.5px floor; 60% everywhere else, as in the demo.
-  const wantW = g.d < 140 ? 0.8 : 0.6;
+  // Updated in place again, 6 Oct 2026: the Owner renamed it "Take an Approach", which is longer
+  // (Bangla more so), so the pill is 80% wide, 85% below a 140px hub (its corners stay inside the ring).
+  const wantW = g.d < 140 ? 0.85 : 0.8;
   check(`${tag} the button is at 49% / ${wantW * 100}% wide / >= 15% tall of the diameter`, Math.abs(g.topPct - 0.49) < 0.01 && Math.abs(g.wPct - wantW) < 0.01 && g.hPct >= 0.15 - 0.005, `${g.topPct} ${g.wPct} ${g.hPct}`);
-  check(`${tag} "Study Quran" is on one line`, g.line1H <= g.font * 1.1 * 1.5, `${g.line1H} at ${g.font}px`);
+  check(`${tag} the first line reads "Take an Approach" (the Owner, 6 Oct 2026)`, g.line1 === (lang === "bn" ? "একটি পদ্ধতি গ্রহণ করুন" : "Take an Approach"), g.line1);
+  check(`${tag} "Take an Approach" is on one line, whole (not cut), its font never below 8px`, g.line1H <= g.line1Font * 1.1 * 1.5 && g.line1Fits && g.line1Font >= 8, `${g.line1H} at ${g.line1Font}px fits=${g.line1Fits}`);
   check(`${tag} its font is 0.066 x diameter, never below 10.5px`, Math.abs(g.font - Math.max(10.5, g.d * 0.066)) < 0.3, `${g.font} ${g.d}`);
   check(`${tag} the label is hidden and the veil is still on`, g.labelHidden && g.veiled);
   check(`${tag} there are exactly 7 stars in the light`, g.sparks === 7, String(g.sparks));

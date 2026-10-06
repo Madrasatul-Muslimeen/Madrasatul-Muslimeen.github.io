@@ -252,14 +252,15 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.87 on `main`** (5 Oct 2026 — **family members with year of birth at sign-up, and an Age column on People**).
-- **What** (the Owner: "When a user new sign in, he is asked to put family members with age, to attach with his account ... If not, we have to make that rule and feature"; demo `docs/reference/2026-10-05-family-members-signup-demo.html`):
-  - "Create your account" for **My family** opens **step 2, "Who is in your family?"**: a name and a **year of birth** per person (the age is worked out, never stored), "A child I look after" ticked by itself under 18, + Add another, Save and continue, Skip for now. Each is added with `addPersonToTenant()` as a Student, a child managed by the new owner.
-  - **People**: an **Age** column; Add a person and Edit take a year of birth (`birthYear` on tenantPeople, `validBirthYear` / `ageFromBirthYear` in `people.js`). The owner's and a guardian's tenantPeople Rules carry no field list, so **no Rules change**.
+**Current milestone: v09.89 on `main`** (6 Oct 2026 — **the wheel's centre reads "Take an Approach"; the Arabic Writing slice opens the Writing sheet**).
+- **What** (the Owner, 6 Oct 2026, with a screenshot of the landing wheel):
+  - "Write in the circle, 'Take an Approach' (showing the unit is okay. Keep it as it as the last act)": `#wheelCtaBtn`'s first line; its second line (the unit) is unchanged. The pill is 80% of the circle (85% below a 140px hub), and `layoutWheelHub()` shrinks only the first line, never below 8px, when the words still do not fit on one line.
+  - "If that is clicked, the writing page must open for writing practice": `jumpToApproach()` sends the Arabic Writing slice (or list row) to `openWritingSheetForCurrentUnit()`, matched by `approach_05` or a copy's `sourceTemplateId` (`isWritingApproach`); every other slice opens its Track card as before.
+  - Tests: the four Word Card "writes nothing" checks leave out v09.80's deliberate Last read save (they were red on `main`). Decision 73 recorded.
 - **Checks:**
-  - family-signup-browser 68/0 (3 mutations, each caught)
-  - rules-authorisation-executable 63/0 (birthYear on tenantPeople: the owner's and a guardian's Rules carry no field list), stub-parity 4/0, phone-width-overflow 217/0, behaviour 1003/4 (22g×3 archive.org, 31e certificate: the sandbox baseline)
-- **With the Owner:** the next new family account sees step 2; on People, Edit a person and give a year of birth.
+  - wheel-writing-slice-browser 25/0 (mutations no-route, all-slices each caught; approach_05 bound to "Arabic Writing")
+  - wheel-centre-browser 645/0 (checks updated in place: 80%/85% wide, the new words on one line, whole), wheel-slice-opens-track 96/0, wheel-unit-go 254/0, landing-drawers 274/0, landing-sections-collapse 152/0, writing-sheet-browser 180/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (22g×3 archive.org, 31e certificate: the sandbox baseline)
+- **With the Owner:** the landing wheel's centre says "Take an Approach"; tap the Arabic Writing slice and the Writing sheet opens.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration
