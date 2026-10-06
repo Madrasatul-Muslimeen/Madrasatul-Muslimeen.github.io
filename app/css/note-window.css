@@ -280,13 +280,13 @@ form.fw-quick[data-fw-newfolder-form] { padding: 0.4rem 0.6rem; }
    Colours are FIXED, never inherited, so each reads on the light Note page and on a dark one:
    the mark is dark text on a pale yellow (about 16:1); a badge is white text on a dark fill (6:1 or better). */
 mark[data-ann] { background: #ffe066; color: #111; border-radius: 0.2rem; padding: 0 0.1rem; cursor: pointer; }
-sup[data-ann-ref] { color: #7a3b00; font-weight: 700; cursor: pointer; padding: 0 0.1rem; }
+sup[data-ann-ref] { background: #ffe066; color: #111; border-radius: 0.2rem; font-weight: 700; cursor: pointer; padding: 0 0.15rem; }
 .pane-edit-body sup[data-ann-ref] { cursor: text; }
 .ann-flash { outline: 3px solid #1F3A6E; outline-offset: 2px; }
 .note-annotations { margin-top: 1.2rem; padding-top: 0.5rem; border-top: 1px solid #c9d3e6; }
 .note-annotations h3 { margin: 0 0 0.4rem; font-size: 1rem; }
 .ann-item { display: flex; gap: 0.5rem; align-items: flex-start; padding: 0.35rem 0; border-bottom: 1px solid #e6eaf3; cursor: pointer; }
-.ann-num { flex: 0 0 auto; font-weight: 700; color: #7a3b00; min-width: 2.2rem; }
+.ann-num { flex: 0 0 auto; font-weight: 700; min-width: 2.2rem; }
 .ann-main { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 .ann-quote { display: block; font-style: italic; opacity: 0.9; }
 .ann-comment { margin: 0.2rem 0 0; }
