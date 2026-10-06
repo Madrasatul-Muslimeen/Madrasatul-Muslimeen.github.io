@@ -14,6 +14,17 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v09.102 on `main`** (6 Oct 2026 — **The landing shows the wheel at once (startup paint)**).
+- **What** (Owner decision 81 item 1; speed assessment item 4):
+  - The wheel as last drawn on this device is kept in localStorage (`mmsa.wheelPaint.v1`: account, language, the SVG) after every draw.
+  - On the next open a plain inline script beside `#wheelContainer` shows it while the page is still being read; the module then shows the landing early, translated and `inert`, without the "Loading your study…" box, so nothing moves at the real reveal. The real wheel replaces the copy in the same place.
+  - Forgotten on sign-out; another account's copy is dropped as soon as sign-in answers; a copy in the other language, or carrying anything but the wheel's own drawing, is refused; any boot that cannot finish takes it away.
+  - Measured at 400 ms per Firestore trip: the wheel shows at ~0.3 s, the real one at ~1.5 s (was "Loading…" until then).
+  - Decision 81 recorded in the decisions file (it was missing).
+- **Checks:**
+  - startup-paint-browser 60/0 (mutations no-drop, no-keep, any-uid, no-guard, any-lang each fail it), boot-status 24/0, landing-drawers 274/0, wheel-centre 645/0, unit-rings 106/0 (its Al-Faatiha count updated in place: 8 arcs since v09.97), quranrevival-startup-reads 2/0, service-worker 18/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
+- **With the Owner:** open the app once, then close it and open it again: the wheel is there straight away, dimmed, and becomes the live one a moment later.
+
 **Previous milestone: v09.101 on `main`** (6 Oct 2026 — **Note settings follow you to every device: tabs, templates, quick phrases, heading styles, folds**).
 - **What** (Owner decisions 72 and 80; Builder round #616):
   - `note-user-settings.js` (new, pure): cleans every part to a closed shape — safe Note ids, plain text with caps, palette colours only, template bodies through the Note sanitiser (50 × 20 KB), 100 phrases, 300 fold entries.

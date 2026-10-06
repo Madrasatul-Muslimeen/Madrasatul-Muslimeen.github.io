@@ -19837,3 +19837,10 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
 - **Checks:**
   - startup-paint-browser 60/0 (five mutations each fail it), boot-status 24/0, account-card 1235/0, landing-drawers 274/0, wheel-centre 645/0, unit-rings 106/0, quran-my-status 248/0, bookmark-marks-back 96/0, kys-window 50/0
   - quranrevival-startup-reads 2/0, module-startup-reads 28/0, service-worker 18/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
+
+## v09.103 — 6 Oct 2026 — Link preview cards in Notes (Microlink, opt-in)
+
+- **What:** Owner decisions 72 and 81. Builder round #619 (PR PRNUM): `note-link-preview.js` (new), `note-window.js` (⋯ → 🖼 Show link previews, the notice, the cards), `bn.js`. Architect review: the card sits under its paragraph inside its section and folds with it.
+- **Checks:**
+  - journey-link-preview-browser 192/0 (seven mutations each fail it), note-link-preview 43/0, every journey-* suite green
+  - note-sanitize-boundary 13/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
