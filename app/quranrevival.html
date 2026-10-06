@@ -779,7 +779,8 @@
     cursor: pointer; box-shadow: 0 0 14px rgba(233,205,134,.35);
   }
   .wheel-cta-btn:hover { filter: brightness(1.06); }
-  .wheel-cta-line1 { display: block; }
+  /* 6 Oct 2026: "Take an Approach" stays on ONE line; layoutWheelHub() shrinks only this line if it must. */
+  .wheel-cta-line1 { display: block; white-space: nowrap; }
   /* Architect review of #549: the unit's name WRAPS to a second line rather than
      being cut ("Ayah Bismillah · Al-F…" at every width). Same rule as the hub
      label (v09.63): a name the reader cannot read is worse than a taller pill. */
@@ -4644,7 +4645,7 @@
                    unit label goes (placed from the measured hub by layoutWheelHub()
                    and CSS percentages); its second line names the unit. -->
               <button type="button" id="wheelCtaBtn" class="wheel-cta-btn" hidden>
-                <span class="wheel-cta-line1">Study Quran</span>
+                <span class="wheel-cta-line1">Take an Approach</span>
                 <span class="wheel-cta-line2" id="wheelCtaLine2">ONE Ayah a Day</span>
               </button>
               <p id="wheelHubUnitLabel" class="wheel-hub-unit" hidden>
@@ -9034,6 +9035,16 @@
       // understands every unit key shape, and the Track card inside it now
       // claims whatever scope it is opened on.
       const jumpToApproach = (key) => {
+        // The Owner, 6 Oct 2026: "If that is clicked, the writing page must
+        // open for writing practice." The Arabic Writing slice (or list row)
+        // opens the Writing sheet for the unit on screen, the same sheet as the
+        // ✍ button, with that Approach chosen; it does not open the Track card.
+        if (isWritingApproach(key)) {
+          currentTrackableId = key;
+          trackableSelect.value = key;
+          openWritingSheetForCurrentUnit();
+          return;
+        }
         // Issue #400 -- the list's sections start collapsed: open this
         // Approach's own section first so its row is really there to show.
         openLandingSectionFor(key);
@@ -9632,7 +9643,22 @@
       // the 10.5px floor makes "Study Quran" wider than 60% of the circle, so it
       // broke onto two lines. There the pill takes 80% -- the circle is still
       // 95% wide at the pill's height, so its corners stay inside the ring.
-      if (wheelCtaBtn) wheelCtaBtn.style.width = hubDiameter < 140 ? "80%" : "";
+      // The Owner, 6 Oct 2026: the pill reads "Take an Approach", longer than
+      // "Study Quran" was, so it takes 80% of the circle (85% below a 140px hub;
+      // the circle is still ~97% wide at the pill's height, so its ends stay
+      // inside the ring), and its first line shrinks -- never below 8px -- only
+      // when the words still do not fit on one line (Bangla is the longer).
+      if (wheelCtaBtn) {
+        wheelCtaBtn.style.width = hubDiameter < 140 ? "85%" : "80%";
+        const line1 = wheelCtaBtn.querySelector(".wheel-cta-line1");
+        if (line1 && !wheelCtaBtn.hidden) {
+          line1.style.fontSize = "";
+          const pad = parseFloat(getComputedStyle(wheelCtaBtn).paddingLeft) + parseFloat(getComputedStyle(wheelCtaBtn).paddingRight);
+          const room = wheelCtaBtn.clientWidth - pad;
+          let size = parseFloat(getComputedStyle(line1).fontSize);
+          while (line1.scrollWidth > room && size > 8) { size -= 0.25; line1.style.fontSize = size + "px"; }
+        }
+      }
       wheelHubPickers.style.setProperty("--hub-unit2-size", Math.max(8.5, hubDiameter * 0.05).toFixed(2) + "px");
 
       // The open Qur'an never overlaps the label: its inset is the demo's 27%
@@ -10221,6 +10247,11 @@
         layout data, nor a page font) loads before then (I9). Juz and Hizb are
         Quran-wide, so their pages and range come from the boundary tables
         rather than from this surah alone. */
+    /** The Arabic Writing Approach: catalogue approach_05, by its own id or by the template a tenant's copy came from (the check binds the id to its name). */
+    const WRITING_APPROACH_ID = "approach_05";
+    function isWritingApproach(key) {
+      return key === WRITING_APPROACH_ID || quranTrackables.find((t) => t.id === key)?.sourceTemplateId === WRITING_APPROACH_ID;
+    }
     async function openWritingSheetForCurrentUnit() {
       if (!currentSurahData) return;
       try {

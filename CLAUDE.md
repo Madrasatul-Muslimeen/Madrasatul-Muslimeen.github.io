@@ -252,15 +252,15 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.88 on `main`** (6 Oct 2026 — **👥 record for family members on the Word Card levels and on Hadith "Studied"**).
-- **What** (the Owner, 5 Oct 2026, decision 71: progress for family members "wherever progress is recorded"):
-  - **Word Card** (WbW, Basic, Depth): the same 👥 picker as the other Record cards (shared `claimForIds`). A state press writes for each ticked person, others first and the Student last; each person's progress and confirmation rule are loaded before their "before" snapshot, so their own whole-Qur'an total moves correctly. Approve / Return applies only to ticked people whose own claim waits; the note is asked once.
-  - **Hadith "Studied"**: the 👥 picker beside it (`getHadeethEncRoster`, first use only); `claimHadeethEncStudied` claims for each ticked person, claimant = the actor.
-  - Architect review fixes: the picker's white list carried no ink of its own, so on the dark Word Card the names read cream on white; and `hadith-collections.html` had no picker styles at all (an always-open, unstyled list). Both fixed, each with a rendered-contrast check proven by mutation.
+**Current milestone: v09.89 on `main`** (6 Oct 2026 — **the wheel's centre reads "Take an Approach"; the Arabic Writing slice opens the Writing sheet**).
+- **What** (the Owner, 6 Oct 2026, with a screenshot of the landing wheel):
+  - "Write in the circle, 'Take an Approach' (showing the unit is okay. Keep it as it as the last act)": `#wheelCtaBtn`'s first line; its second line (the unit) is unchanged. The pill is 80% of the circle (85% below a 140px hub), and `layoutWheelHub()` shrinks only the first line, never below 8px, when the words still do not fit on one line.
+  - "If that is clicked, the writing page must open for writing practice": `jumpToApproach()` sends the Arabic Writing slice (or list row) to `openWritingSheetForCurrentUnit()`, matched by `approach_05` or a copy's `sourceTemplateId` (`isWritingApproach`); every other slice opens its Track card as before.
+  - Tests: the four Word Card "writes nothing" checks leave out v09.80's deliberate Last read save (they were red on `main`). Decision 73 recorded.
 - **Checks:**
-  - claim-for-family-word-hadith-browser 158/0 (mutations no-load, decide-all, no-ink, hadith-css each caught)
-  - claim-for-family-browser 56/0, hadeethenc/hadith suites all green, quran-word-* green except the known "writes nothing" and certificate baselines (identical on main), phone-width-overflow 217/0, stub-parity 4/0, rules-authorisation-executable 63/0, behaviour 1006/1 (31e certificate)
-- **With the Owner:** with two family members, open a word, tick 👥, press Achieved; open a Hadith, tick 👥, set Studied.
+  - wheel-writing-slice-browser 25/0 (mutations no-route, all-slices each caught; approach_05 bound to "Arabic Writing")
+  - wheel-centre-browser 645/0 (checks updated in place: 80%/85% wide, the new words on one line, whole), wheel-slice-opens-track 96/0, wheel-unit-go 254/0, landing-drawers 274/0, landing-sections-collapse 152/0, writing-sheet-browser 180/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (22g×3 archive.org, 31e certificate: the sandbox baseline)
+- **With the Owner:** the landing wheel's centre says "Take an Approach"; tap the Arabic Writing slice and the Writing sheet opens.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration
