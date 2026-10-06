@@ -144,6 +144,7 @@
     import { unitKeyLabel } from "./js/unit-keys.js";
     import { sanitizeNoteHtml } from "./js/note-sanitize.js";
     import { createNoteViews } from "./js/note-window.js";
+    import { createFirestoreSettingsStore } from "./js/note-user-settings-fs.js";
     import {
       createStudyNote, reviseStudyNote, retireStudyNote, notesForStudyUnit, recordJournalEvidence,
     } from "./js/study-note-service.js";
@@ -671,8 +672,11 @@
     // exactly as the inline form's Save records it.
     // -----------------------------------------------------------------------
     const dateLocale = () => (getAppLang() === "bn" ? "bn-BD" : undefined);
+    let noteSettingsStore = null;
     const noteViews = createNoteViews({
       winKey: "mmsa-notes-note-window",
+      // Part C3: the person's own note settings (userPrefs/{uid}.mmsaNotes). Built on first use; read only when a Note first shows (I9).
+      settings: () => (auth.currentUser ? (noteSettingsStore ??= createFirestoreSettingsStore({ db, uid: auth.currentUser.uid })) : null),
       notes: () => currentRows.map((r) => r.note),
       ready: () => true,
       canEdit: () => isSelfSelected(),

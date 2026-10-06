@@ -186,7 +186,9 @@ async function run(lang, width, embedFrame = false) {
   await wait(200);
   st = await secState(P);
   check(`${tag}: ⇅ again opens them all`, st.length === 4 && st.every((c) => !c), JSON.stringify(st));
-  check(`${tag}: folding wrote nothing to the data`, (await writes(P)).length === 0, JSON.stringify(await writes(P)));
+  // Updated in place, v09.101 (Owner decisions 45 and 80, round #616): folds follow the person, so folding writes the
+  // person's own userPrefs fold setting -- and still NOTHING to the Note (no notes / noteRevisions, no new version).
+  check(`${tag}: folding wrote nothing to the Note (only the person's own fold setting)`, (await writes(P)).every((w) => w.col === "userPrefs" && w.id === "test-uid"), JSON.stringify(await writes(P)));
   await useTool(P, "data-pane-foldall"); await wait(150);
   await useTool(P, "data-pane-find-toggle");
   await page.keyboard.type("Apple again");

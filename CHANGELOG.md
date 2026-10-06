@@ -19823,3 +19823,10 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
 - **Checks:**
   - bookmark-marks-back-browser 96/0 (new checks: the bubble covers no part of the Word Card at 390 and 1280, comes back at the bottom when it closes, and the Qur'an page's name is "QuranRevival"; --mutate=no-aside fails at 1280, --mutate=raw-label fails all four)
   - kys-window 50/0, bookmark-open 77/0, bookmark-last-place 68/0, bookmark-sheet 176/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1006/1 (sandbox baseline)
+
+## v09.101 — 6 Oct 2026 — Note settings follow you to every device
+
+- **What:** Owner decisions 72 and 80. Builder round #616 (PR PRNUM): `note-user-settings.js` and `note-user-settings-fs.js` (new), `note-window.js` (🧰 My Note tools, ✚ templates, 📝 phrases, folds to the account), `journey-map.html` and `notes.html` (the store, New from template), `bn.js`, the stub (`setDoc` merge, `deleteField`). Kept in `userPrefs/{uid}.mmsaNotes` with merge; no Rules change.
+- **Checks:**
+  - journey-across-devices-browser 252/0 (mutations merge-off, palette-open, folds-in-note, startup-read, phrases-uncapped, template-unsanitised each fail it), note-user-settings 43/0
+  - every journey-* suite green, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)

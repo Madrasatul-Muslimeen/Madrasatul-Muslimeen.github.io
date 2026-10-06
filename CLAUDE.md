@@ -252,14 +252,14 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.100 on `main`** (6 Oct 2026 — **The Back bubble never covers the Word Card**).
-- **What** (the Owner, 6 Oct 2026, a phone screenshot: "The back bubble from the previous screen carried to word card. Fix it."):
-  - `bookmark-nav.js` `mountBackRow`: the fixed areas under the bubble while the page settles are the page; a window opened over it later (the Word Card, any sheet) makes the bubble step aside, and it comes back when the window closes (a MutationObserver, one check per frame). It also steps aside under anything filling the screen.
-  - `pageLabelOf()`: the page name is the heading's own words, without its version, buttons or "Previewing as" note (it read "QuranRevival v09.98SearchPreviewing as:…").
-  - Decision 81 recorded: startup paint yes; pictures yes (prices first; the Owner switches to Blaze and publishes Storage Rules); link previews via an outside service; Dua: talk first; letters later.
+**Current milestone: v09.101 on `main`** (6 Oct 2026 — **Note settings follow you to every device: tabs, templates, quick phrases, heading styles, folds**).
+- **What** (Owner decisions 72 and 80; Builder round #616):
+  - `note-user-settings.js` (new, pure): cleans every part to a closed shape — safe Note ids, plain text with caps, palette colours only, template bodies through the Note sanitiser (50 × 20 KB), 100 phrases, 300 fold entries.
+  - `note-user-settings-fs.js` (new): `userPrefs/{uid}.mmsaNotes`, always `setDoc(…, { merge: true })`, read once when a Note first shows (I9); the old one-device folds are copied up once and never deleted. No Rules change; `themeColors` is never written.
+  - `note-window.js`: ⋯ → 🧰 My Note tools (Tabs, Templates, Phrases, Headings); ✚ offers "A blank Note" or a template; 📝 Quick phrases in the editing toolbar; folds saved to the account, never into the Note.
 - **Checks:**
-  - bookmark-marks-back-browser 96/0 (four new checks: the Word Card at 390 and 1280, back at the bottom when it closes, the page name; --mutate=no-aside and raw-label each fail it), kys-window 50/0, bookmark-open 77/0, bookmark-last-place 68/0, bookmark-sheet 176/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1006/1 (sandbox baseline)
-- **With the Owner:** open a bookmark, then tap a word: the bubble is not over the card; close the card: it is back at the bottom.
+  - journey-across-devices-browser 252/0 (six mutations each fail it), note-user-settings 43/0, every journey-* suite green (journey-note-pane 327/0 and journey-reading-tools 488/0 after their fold checks were updated in place), rules-authorisation-executable 63/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
+- **With the Owner:** open a Note → ⋯ → 🧰 My Note tools → Headings, pick a colour for H1; open the same Note on another device: the heading has it.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration

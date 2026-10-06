@@ -24,6 +24,7 @@ import { t, num } from "./i18n.js";
 import { sanitizeNoteHtml, isSafeNoteHref, NOTE_STATUS_COLOURS, NOTE_ANN_TEXT_MAX, NOTE_STATUS_LABEL_MAX } from "./note-sanitize.js";
 import { closeAllBarPalettes } from "./bar-palette.js";
 import { sheetInsertHtml, mountSheets } from "./note-sheet-ui.js";
+import { headingStyleCss, PALETTE, LIMITS as SETTING_LIMITS, cleanText as cleanSettingText } from "./note-user-settings.js";
 import { HANDLES, handleCss, clampRect, startDrag } from "./float-window.js";
 
 const escapeHtml = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -77,10 +78,10 @@ const WIN_SHEET_BELOW = 640, WIN_OFFSET = 28, WIN_Z = 1000, WIN_SWITCH_H = 56;
 const WIN_PANEL_SIDE_MIN = 560; // narrower than this, the pinned panel slides over the Note instead of sitting beside it
 const LONG_PRESS_MS = 550;
 
-function loadCollapsed(noteId) {
+function loadCollapsedLocal(noteId) {
   try { const v = JSON.parse(localStorage.getItem(COLLAPSE_KEY(noteId)) || "[]"); return new Set(Array.isArray(v) ? v : []); } catch { return new Set(); }
 }
-function saveCollapsed(noteId, set) {
+function saveCollapsedLocal(noteId, set) {
   try { localStorage.setItem(COLLAPSE_KEY(noteId), JSON.stringify([...set])); } catch { /* private browsing -- the choice just doesn't stick */ }
 }
 function loadDraft(noteId) {
@@ -152,6 +153,33 @@ const noteTitleOf = (note) => note.title?.trim() || t("(untitled)");
  */
 export function createNoteViews(host) {
   const getNote = (id) => host.notes().find((n) => n.noteId === id);
+  // Part C3 (decisions 72, 80): the folds, heading styles, phrases, templates and tab groups follow the person across devices.
+  // `host.settings()` is the page's store (userPrefs/{uid}.mmsaNotes) or null; it is read ONCE, when a Note first shows -- never at startup (I9).
+  const S = () => host.settings?.() ?? null;
+  const loadCollapsed = (noteId) => (S() ? S().foldsFor(noteId) : loadCollapsedLocal(noteId));
+  const saveCollapsed = (noteId, set) => {
+    const store = S();
+    if (!store) { saveCollapsedLocal(noteId, set); return; }
+    store.setFold(noteId, [...set]).catch((err) => host.status(t("Your folded sections could not be saved to your account: {why}", { why: err?.message || String(err) })));
+  };
+  let settingsOpened = false, headingStyleEl = null;
+  function paintHeadingStyles() {
+    const store = S();
+    if (!store) return;
+    if (!headingStyleEl) { headingStyleEl = document.createElement("style"); headingStyleEl.dataset.mmsaHeadingStyles = ""; document.head.appendChild(headingStyleEl); }
+    headingStyleEl.textContent = headingStyleCss(store.get().headingStyles);
+  }
+  function ensureSettings() {
+    const store = S();
+    if (!store) return;
+    paintHeadingStyles();
+    if (settingsOpened) return;
+    settingsOpened = true;
+    store.open().then(() => {
+      paintHeadingStyles();
+      for (const x of allViews()) if (x.noteId !== null && !x.ed && getNote(x.noteId)) renderView(x, { keepScroll: true });
+    }).catch(() => {});
+  }
   const notePane = host.paneEl ?? null;
   const proto = document.createElement("section");
   proto.innerHTML = NOTE_VIEW_HTML;
@@ -346,7 +374,7 @@ export function createNoteViews(host) {
     ["hup", "Raise the heading (Ctrl+[)", "▲H"], ["hdown", "Lower the heading (Ctrl+])", "▼H"], "|",
     ["ul", "Bullet list", "•"], ["ol", "Numbered list", "1."], ["check", "Checklist", "☑"], ["quote", "Quote", "❝"],
     ["left", "Align left", "⇤"], ["center", "Align centre", "↔"], ["right", "Align right", "⇥"], ["justify", "Justify", "☰"], ["spacing", "Spacing", "↕"], "|",
-    ["link", "Link", "🔗"], ["table", "Table", "▦"], ["sheet", "Insert a spreadsheet", "⊞"], ["divider", "Divider line", "─"], ["box", "Box around the paragraph", "▢"], ["annotate", "Comment on the selected text", "💬"], "|",
+    ["link", "Link", "🔗"], ["table", "Table", "▦"], ["sheet", "Insert a spreadsheet", "⊞"], ["divider", "Divider line", "─"], ["box", "Box around the paragraph", "▢"], ["annotate", "Comment on the selected text", "💬"], ["phrases", "Quick phrases", "📝"], "|",
     ["undo", "Undo", "↶"], ["redo", "Redo", "↷"],
   ];
   /** Text sizes the A+ / A− steps walk through (em); 1 is normal. The sanitiser allows exactly these. */
@@ -368,7 +396,7 @@ export function createNoteViews(host) {
     v.tbOpen = v.tbOpen ?? 0;
     v.editToolbarEl.innerHTML = `<div class="tb-tabs" data-tb-tabs role="tablist" aria-label="${label("Formatting")}">${TOOL_GROUPS.map(([icon, name], k) =>
       `<button type="button" class="secondary tb-tab" role="tab" data-tb-tab="${k}" aria-selected="${k === v.tbOpen}">${icon} ${label(name)}</button>`).join("")}</div>`
-      + TOOLS.map((x) => x === "|" ? (g++, `<span class="tb-sep" aria-hidden="true"></span>`)
+      + TOOLS.filter((x) => x[0] !== "phrases" || S()).map((x) => x === "|" ? (g++, `<span class="tb-sep" aria-hidden="true"></span>`)
       : `<button type="button" class="secondary tb-btn" data-cmd="${x[0]}" data-tb-g="${g}" aria-label="${label(x[1])}" title="${label(x[1])}">${x[2]}</button>`).join("");
     v.editToolbarEl.setAttribute("role", "toolbar");
     v.editToolbarEl.setAttribute("aria-label", t("Formatting"));
@@ -436,6 +464,10 @@ export function createNoteViews(host) {
     } else if (mode === "annotate") {
       P.innerHTML = `<div class="pane-panel-row"><label class="pane-panel-field">${label("Comment on the selected text")}<input type="text" autocomplete="off" maxlength="${NOTE_ANN_TEXT_MAX}" data-panel-ann-text></label>
         <button type="button" class="tb-btn tb-text" data-panel-ann-apply>${label("Add comment")}</button>${close}</div>${msg}`;
+    } else if (mode === "phrases") {
+      const list = S()?.get().phrases ?? [];
+      P.innerHTML = `<div class="pane-panel-row" role="group" aria-label="${label("Quick phrases")}">${list.length ? list.map((p, i) => `<button type="button" class="secondary tb-btn tb-text mt-phrase" data-phrase-insert="${i}">${escapeHtml(p)}</button>`).join("") : `<span class="pane-panel-label">${label("No phrases yet.")}</span>`}
+        <button type="button" class="secondary tb-btn tb-text" data-phrase-manage>✎ ${label("Edit phrases")}</button>${close}</div>${msg}`;
     } else if (mode === "spacing") {
       P.innerHTML = `<div class="pane-panel-row" role="group" aria-label="${label("Line spacing")}"><span class="pane-panel-label">${label("Line spacing")}</span>${LINE_HEIGHTS.map(([val, name]) =>
         `<button type="button" class="secondary tb-btn tb-text" data-spacing-line="${val}">${label(name)}</button>`).join("")}</div>
@@ -731,7 +763,7 @@ export function createNoteViews(host) {
     const body = editBodyEl(v);
     if (!body) return;
     if (cmd === "sheet") { insertSheet(v); return; }
-    if (["link", "table", "color", "highlight", "spacing", "annotate"].includes(cmd)) {
+    if (["link", "table", "color", "highlight", "spacing", "annotate", "phrases"].includes(cmd)) {
       if (!v.editPanelEl.hidden && v.editPanelEl.dataset.mode === cmd) closePanel(v); else openPanel(v, cmd);
       return;
     }
@@ -1153,6 +1185,7 @@ export function createNoteViews(host) {
         menu += `<button type="button" class="secondary tiny" data-pane-link>🔗 ${escapeHtml(t("Link to a Note…"))}</button>`;
       }
     }
+    if (S()) menu += `<button type="button" class="secondary tiny" data-pane-mytools>🧰 ${escapeHtml(t("My Note tools…"))}</button>`;
     if (v.kind === "pane") menu += `<button type="button" class="secondary tiny" data-pane-popout>⧉ ${escapeHtml(t("Pop out"))}</button>`;
     menu += host.menuEnd?.(v, note) ?? "";
     const menuWrap = v.el.querySelector("[data-pane-menu-wrap]");
@@ -2006,6 +2039,7 @@ export function createNoteViews(host) {
   function renderView(v, { keepScroll = false } = {}) {
     const note = getNote(v.noteId);
     if (!note) return;
+    ensureSettings();
     const before = v.scrollEl.scrollTop;
     v.el.querySelector("[data-pane-title]").textContent = noteTitleOf(note);
     v.el.querySelector("[data-pane-meta]").textContent = paneMetaText(note);
@@ -2091,6 +2125,148 @@ export function createNoteViews(host) {
     const q = (sel) => el.querySelector(sel);
     const msg = (text) => { const m = q("[data-dlg-msg]"); m.textContent = text || ""; m.hidden = !text; };
     return { el, q, msg, close };
+  }
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Part C3 (decisions 72, 80) -- 🧰 My Note tools: tab groups (34), templates (36), quick phrases (37), heading styles (40).
+  // Everything here is the PERSON's own, kept in userPrefs/{uid}.mmsaNotes (js/note-user-settings.js) and so the same on
+  // every device. None of it is saved into a Note, and nothing here ever deletes a Note.
+  // ---------------------------------------------------------------------------------------------------------------
+  const TOOL_SECTIONS = [["tabs", "Tabs"], ["templates", "Templates"], ["phrases", "Phrases"], ["headings", "Headings"]];
+  const colourName = (hex) => PALETTE.find((p) => p[0] === hex)?.[1] ?? "";
+  const newTemplateId = () => `tpl${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
+  /** One save of one part, with its failure said in words (I15). Resolves true when it saved. */
+  async function saveSetting(d, part, value) {
+    try { await S().set(part, value); d.msg(""); return true; }
+    catch (err) { d.msg(t("That could not be saved to your account: {why}", { why: err?.message || String(err) })); return false; }
+  }
+  function swatchRow(attr, level, current) {
+    const chips = PALETTE.map(([hex, name]) => `<button type="button" class="secondary mt-chip" ${attr}="${level}" data-mt-hex="${hex}" aria-pressed="${current === hex}" aria-label="${escapeHtml(t(name))}" title="${escapeHtml(t(name))}" style="background:${hex}"></button>`).join("");
+    return `${chips}<button type="button" class="secondary mt-chip mt-none" ${attr}="${level}" data-mt-hex="" aria-pressed="${!current}" aria-label="${escapeHtml(t("No colour"))}" title="${escapeHtml(t("No colour"))}">⊘</button>`;
+  }
+  function toolsSectionHtml(v, sec, state, confirmId) {
+    const e = (s) => escapeHtml(s);
+    if (sec === "tabs") {
+      const rows = state.tabs.map((tab, i) => {
+        const n = getNote(tab.noteId);
+        const gone = !n || host.isRetired(n);
+        return `<div class="mt-row" data-mt-tab="${i}"><button type="button" class="secondary mt-open" data-mt-open="${e(tab.noteId)}" ${gone ? "disabled" : ""} style="border-inline-start:8px solid ${tab.colour || "transparent"}">${e(tab.name || (n ? noteTitleOf(n) : t("(untitled)")))}</button>
+          <input type="text" maxlength="${SETTING_LIMITS.tabName}" data-mt-tabname="${i}" value="${e(tab.name)}" aria-label="${e(t("Tab name"))}" placeholder="${e(t("Tab name"))}">
+          <select data-mt-tabcolour="${i}" aria-label="${e(t("Tab colour"))}"><option value="">${e(t("No colour"))}</option>${PALETTE.map(([hex, name]) => `<option value="${hex}" ${tab.colour === hex ? "selected" : ""}>${e(t(name))}</option>`).join("")}</select>
+          <button type="button" class="secondary mt-del" data-mt-tabdel="${i}" aria-label="${e(t("Remove this tab"))}" title="${e(t("Remove this tab"))}">✕</button></div>`;
+      }).join("");
+      const here = getNote(v.noteId);
+      const already = here && state.tabs.some((x) => x.noteId === here.noteId);
+      return `<p class="note">${e(t("Your tabs are the same on every device you sign in on. Removing a tab never removes the Note."))}</p>${rows || `<p class="note">${e(t("No tabs yet."))}</p>`}
+        <button type="button" data-mt-tabadd ${here && !already && state.tabs.length < SETTING_LIMITS.tabs ? "" : "disabled"}>＋ ${e(t("Add Tab"))}</button>`;
+    }
+    if (sec === "templates") {
+      const rows = state.templates.map((tpl, i) => `<div class="mt-row" data-mt-tpl="${i}">
+          <input type="text" maxlength="${SETTING_LIMITS.templateTitle}" data-mt-tplname="${i}" value="${e(tpl.title)}" aria-label="${e(t("Template name"))}">
+          ${host.newNote && host.canEdit() ? `<button type="button" class="secondary" data-mt-tplnew="${i}">${e(t("New note from this"))}</button>` : ""}
+          ${confirmId === tpl.id
+            ? `<button type="button" data-mt-tpldel="${i}" data-mt-yes>${e(t("Yes, remove this template"))}</button><button type="button" class="secondary" data-mt-tplcancel>${e(t("Keep it"))}</button>`
+            : `<button type="button" class="secondary mt-del" data-mt-tplask="${i}" aria-label="${e(t("Remove this template"))}" title="${e(t("Remove this template"))}">✕</button>`}</div>`).join("");
+      const here = getNote(v.noteId);
+      return `<p class="note">${e(t("A template is a copy of a Note's text to start new Notes from. Removing one never removes a Note."))}</p>${rows || `<p class="note">${e(t("No templates yet."))}</p>`}
+        <button type="button" data-mt-tplsave ${here && state.templates.length < SETTING_LIMITS.templates ? "" : "disabled"}>💾 ${e(t("Save this Note as a template"))}</button>`;
+    }
+    if (sec === "phrases") {
+      const rows = state.phrases.map((p, i) => `<div class="mt-row" data-mt-phrase="${i}"><input type="text" maxlength="${SETTING_LIMITS.phrase}" data-mt-phrasetext="${i}" value="${e(p)}" aria-label="${e(t("Phrase"))}">
+          <button type="button" class="secondary mt-del" data-mt-phrasedel="${i}" aria-label="${e(t("Remove this phrase"))}" title="${e(t("Remove this phrase"))}">✕</button></div>`).join("");
+      return `<p class="note">${e(t("Tap 📝 in the editing toolbar to put one of these into a Note."))}</p>${rows || `<p class="note">${e(t("No phrases yet."))}</p>`}
+        <form class="mt-row" data-mt-phraseform><input type="text" maxlength="${SETTING_LIMITS.phrase}" data-mt-phrasenew aria-label="${e(t("New phrase"))}" placeholder="${e(t("New phrase"))}" ${state.phrases.length >= SETTING_LIMITS.phrases ? "disabled" : ""}><button type="submit" ${state.phrases.length >= SETTING_LIMITS.phrases ? "disabled" : ""}>${e(t("Add phrase"))}</button></form>`;
+    }
+    const lv = [1, 2, 3, 4].map((n) => {
+      const s = state.headingStyles[`h${n}`] ?? { border: "", bg: "" };
+      return `<div class="mt-head" data-mt-level="${n}"><strong>H${n}</strong>
+        <div class="mt-swatches" role="group" aria-label="${e(t("Border colour"))} H${n}"><span class="mt-lab">${e(t("Border"))}</span>${swatchRow("data-mt-border", n, s.border)}</div>
+        <div class="mt-swatches" role="group" aria-label="${e(t("Background colour"))} H${n}"><span class="mt-lab">${e(t("Background"))}</span>${swatchRow("data-mt-bg", n, s.bg)}</div></div>`;
+    }).join("");
+    return `<p class="note">${e(t("These show on every Note you read, on every device. They are not saved into any Note."))}</p>${lv}`;
+  }
+  function openTools(v, note, section = "tabs") {
+    if (!S()) return;
+    const d = smallDialog("mytools", `🧰 ${t("My Note tools")}`, `<div class="mt-nav" role="tablist" aria-label="${escapeHtml(t("My Note tools"))}">${TOOL_SECTIONS.map(([k, name]) => `<button type="button" class="secondary mt-sec" role="tab" data-mt-sec="${k}" aria-selected="false">${escapeHtml(t(name))}</button>`).join("")}</div><div class="mt-body" data-mt-body></div>`);
+    let sec = section, confirmId = null;
+    const draw = () => {
+      for (const b of d.el.querySelectorAll("[data-mt-sec]")) b.setAttribute("aria-selected", String(b.dataset.mtSec === sec));
+      d.q("[data-mt-body]").innerHTML = toolsSectionHtml(v, sec, S().get(), confirmId);
+    };
+    draw();
+    d.el.classList.add("mt-dialog");
+    const st = () => S().get();
+    d.el.addEventListener("click", async (ev) => {
+      const on = (sel) => ev.target.closest(sel);
+      const s = on("[data-mt-sec]"); if (s) { sec = s.dataset.mtSec; confirmId = null; d.msg(""); draw(); return; }
+      const open = on("[data-mt-open]");
+      if (open) { const n = getNote(open.dataset.mtOpen); if (n && !host.isRetired(n)) { d.close(); openWindow(n.noteId); } else d.msg(t("That Note is not available.")); return; }
+      if (on("[data-mt-tabadd]")) {
+        const here = getNote(v.noteId); if (!here) return;
+        if (await saveSetting(d, "tabs", [...st().tabs, { noteId: here.noteId, name: cleanSettingText(noteTitleOf(here), SETTING_LIMITS.tabName), colour: "" }])) draw();
+        return;
+      }
+      const tdel = on("[data-mt-tabdel]"); if (tdel) { const i = Number(tdel.dataset.mtTabdel); if (await saveSetting(d, "tabs", st().tabs.filter((_, k) => k !== i))) draw(); return; }
+      if (on("[data-mt-tplsave]")) {
+        const here = getNote(v.noteId); if (!here) return;
+        const title = cleanSettingText(here.title?.trim() || t("(untitled)"), SETTING_LIMITS.templateTitle);
+        const list = [...st().templates, { id: newTemplateId(), title, bodyHtml: here.bodyHtml ?? "" }];
+        const before = st().templates.length;
+        const ok = await saveSetting(d, "templates", list);
+        if (ok && st().templates.length === before) d.msg(t("That Note is too long to keep as a template (20 KB at most)."));
+        else if (ok) { d.msg(""); host.status(t('Saved "{title}" as a template.', { title })); }
+        draw(); return;
+      }
+      const ask = on("[data-mt-tplask]"); if (ask) { confirmId = st().templates[Number(ask.dataset.mtTplask)]?.id ?? null; draw(); d.q("[data-mt-yes]")?.focus(); return; }
+      if (on("[data-mt-tplcancel]")) { confirmId = null; draw(); return; }
+      const tdl = on("[data-mt-tpldel]"); if (tdl) { const i = Number(tdl.dataset.mtTpldel); confirmId = null; if (await saveSetting(d, "templates", st().templates.filter((_, k) => k !== i))) draw(); return; }
+      const tn = on("[data-mt-tplnew]"); if (tn) { const tpl = st().templates[Number(tn.dataset.mtTplnew)]; if (tpl) { d.close(); host.newNote(v, tpl); } return; }
+      const pdel = on("[data-mt-phrasedel]"); if (pdel) { const i = Number(pdel.dataset.mtPhrasedel); if (await saveSetting(d, "phrases", st().phrases.filter((_, k) => k !== i))) draw(); return; }
+      const hex = on("[data-mt-hex]");
+      if (hex) {
+        const isBorder = hex.hasAttribute("data-mt-border"), level = Number(hex.getAttribute(isBorder ? "data-mt-border" : "data-mt-bg"));
+        const cur = st().headingStyles[`h${level}`] ?? { border: "", bg: "" };
+        const next = { ...st().headingStyles, [`h${level}`]: { ...cur, [isBorder ? "border" : "bg"]: hex.dataset.mtHex } };
+        if (await saveSetting(d, "headingStyles", next)) { paintHeadingStyles(); draw(); }
+      }
+    });
+    d.el.addEventListener("change", async (ev) => {
+      const el = ev.target;
+      if (el.matches("[data-mt-tabname]")) { const i = Number(el.dataset.mtTabname); if (await saveSetting(d, "tabs", st().tabs.map((x, k) => (k === i ? { ...x, name: el.value } : x)))) draw(); }
+      else if (el.matches("[data-mt-tabcolour]")) { const i = Number(el.dataset.mtTabcolour); if (await saveSetting(d, "tabs", st().tabs.map((x, k) => (k === i ? { ...x, colour: el.value } : x)))) draw(); }
+      else if (el.matches("[data-mt-tplname]")) { const i = Number(el.dataset.mtTplname); if (await saveSetting(d, "templates", st().templates.map((x, k) => (k === i ? { ...x, title: el.value } : x)))) draw(); }
+      else if (el.matches("[data-mt-phrasetext]")) { const i = Number(el.dataset.mtPhrasetext); if (await saveSetting(d, "phrases", st().phrases.map((x, k) => (k === i ? el.value : x)))) draw(); }
+    });
+    d.el.addEventListener("submit", async (ev) => {
+      if (!ev.target.matches("[data-mt-phraseform]")) return;
+      ev.preventDefault();
+      const input = ev.target.querySelector("[data-mt-phrasenew]");
+      if (!cleanSettingText(input.value, SETTING_LIMITS.phrase)) { d.msg(t("Type a phrase first.")); return; }
+      if (await saveSetting(d, "phrases", [...st().phrases, input.value])) { draw(); d.q("[data-mt-phrasenew]")?.focus(); }
+    });
+    d.q("[data-mt-sec][aria-selected=true]")?.focus();
+  }
+  /** ✚ with templates: a blank Note, or one started from a template. Without templates ✚ makes a blank Note at once, as before. */
+  function openNewMenu(v) {
+    const list = S().get().templates;
+    const d = smallDialog("newtpl", `✚ ${t("New note")}`, `<div class="mt-body">
+        <button type="button" data-nt-blank>${escapeHtml(t("A blank Note"))}</button>
+        ${list.map((tpl, i) => `<button type="button" class="secondary" data-nt-tpl="${i}">📄 ${escapeHtml(tpl.title || t("(untitled)"))}</button>`).join("")}
+        <button type="button" class="secondary" data-nt-manage>🧰 ${escapeHtml(t("Manage templates…"))}</button></div>`);
+    d.el.classList.add("mt-dialog");
+    d.el.addEventListener("click", (ev) => {
+      if (ev.target.closest("[data-nt-blank]")) { d.close(); host.newNote?.(v); return; }
+      const b = ev.target.closest("[data-nt-tpl]"); if (b) { const tpl = S().get().templates[Number(b.dataset.ntTpl)]; d.close(); host.newNote?.(v, tpl); return; }
+      if (ev.target.closest("[data-nt-manage]")) { d.close(); openTools(v, getNote(v.noteId), "templates"); }
+    });
+    d.q("[data-nt-blank]")?.focus();
+  }
+  function insertPhrase(v, i) {
+    const p = S()?.get().phrases[i];
+    if (p === undefined) return;
+    restoreRange(v);
+    document.execCommand("insertText", false, p);
+    closePanel(v); onEditInput(v);
   }
 
   /** Item 14 -- ⋯ Rename: a new title without opening the editor. While editing, the title box is the place. */
@@ -2253,6 +2429,8 @@ export function createNoteViews(host) {
       if (on("[data-panel-unlink]")) { removeLink(v); return; }
       if (on("[data-table-insert]")) { insertTable(v); return; }
       const top = on("[data-table-op]"); if (top) { tableOp(v, top.dataset.tableOp); return; }
+      const pin = on("[data-phrase-insert]"); if (pin) { insertPhrase(v, Number(pin.dataset.phraseInsert)); return; }
+      if (on("[data-phrase-manage]")) { openTools(v, note, "phrases"); return; }
       const sw = on("[data-swatch]"); if (sw) { applySwatch(v, sw.dataset.swatch, sw.dataset.swatchMode); return; }
       const sl = on("[data-spacing-line]"); if (sl) { applySpacing(v, "line", sl.dataset.spacingLine); return; }
       const sa = on("[data-spacing-after]"); if (sa) { applySpacing(v, "after", sa.dataset.spacingAfter); return; }
@@ -2262,7 +2440,8 @@ export function createNoteViews(host) {
     if (on("[data-draft-restore]")) { const d = loadDraft(note.noteId); if (d && host.canEdit()) startEdit(v, note, d); return; }
     if (on("[data-draft-discard]")) { clearDraft(note.noteId); v.draftOfferEl.hidden = true; return; }
     if (on("[data-pane-back]")) { closePane(); return; }
-    if (on("[data-pane-new]")) { host.newNote?.(v); return; }
+    if (on("[data-pane-mytools]")) { closeAllBarPalettes(null); openTools(v, note); return; }
+    if (on("[data-pane-new]")) { if (S() && S().get().templates.length) openNewMenu(v); else host.newNote?.(v); return; }
     if (on("[data-pane-prev]")) { closeAllBarPalettes(null); step(v, -1); return; }
     if (on("[data-pane-next]")) { closeAllBarPalettes(null); step(v, 1); return; }
     if (on("[data-win-ver]")) { if (note && host.versions) openVersions(v, note); return; }

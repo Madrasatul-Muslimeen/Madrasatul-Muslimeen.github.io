@@ -14,6 +14,15 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v09.100 on `main`** (6 Oct 2026 — **The Back bubble never covers the Word Card**).
+- **What** (the Owner, 6 Oct 2026, a phone screenshot: "The back bubble from the previous screen carried to word card. Fix it."):
+  - `bookmark-nav.js` `mountBackRow`: the fixed areas under the bubble while the page settles are the page; a window opened over it later (the Word Card, any sheet) makes the bubble step aside, and it comes back when the window closes (a MutationObserver, one check per frame). It also steps aside under anything filling the screen.
+  - `pageLabelOf()`: the page name is the heading's own words, without its version, buttons or "Previewing as" note (it read "QuranRevival v09.98SearchPreviewing as:…").
+  - Decision 81 recorded: startup paint yes; pictures yes (prices first; the Owner switches to Blaze and publishes Storage Rules); link previews via an outside service; Dua: talk first; letters later.
+- **Checks:**
+  - bookmark-marks-back-browser 96/0 (four new checks: the Word Card at 390 and 1280, back at the bottom when it closes, the page name; --mutate=no-aside and raw-label each fail it), kys-window 50/0, bookmark-open 77/0, bookmark-last-place 68/0, bookmark-sheet 176/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1006/1 (sandbox baseline)
+- **With the Owner:** open a bookmark, then tap a word: the bubble is not over the card; close the card: it is back at the bottom.
+
 **Previous milestone: v09.99 on `main`** (6 Oct 2026 — **Notes: a full spreadsheet inside a Note**).
 - **What** (the Owner, 6 Oct 2026: "44. yes"; decision 72; Builder round #612, PR opened by the Architect after the Builder's credentials failed):
   - ⊞ Insert a spreadsheet in a Note: formulas (SUM, AVERAGE, MIN, MAX, COUNT, COUNTA, IF, IFERROR, ROUND, ABS, AND, OR, NOT, CONCAT, LEN, UPPER, LOWER, TODAY, DATE), number formats, add/remove rows and columns, merge, filter, sort, fill, Σ totals, column resize, header row, copy/paste and undo; errors explained in words; read-only in view mode; a finalised Note refuses in words.

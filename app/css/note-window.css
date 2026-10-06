@@ -349,3 +349,22 @@ span.note-status { min-height: 0; min-width: 0; padding: 0.15rem 0.6rem; cursor:
 .sheet-filter-list { max-height: 10rem; overflow: auto; display: flex; flex-wrap: wrap; gap: 0.2rem 0.9rem; }
 .sheet-filter-opt { min-height: 40px; display: inline-flex; align-items: center; gap: 0.3rem; }
 .sheet-filter-opt input { width: 24px; height: 24px; }
+
+/* Note-pane Part C3 (6 Oct 2026) -- 🧰 My Note tools and the ✚ template menu. Targets are 40px or more; nothing is wider than its card. */
+.mt-dialog .tag-picker-card { max-width: 30rem; }
+.mt-nav { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.mt-nav .mt-sec { flex: 1 1 5rem; min-height: 44px; }
+.mt-nav .mt-sec[aria-selected="true"] { background: #1F3A6E; color: #fff; }
+.mt-body { display: flex; flex-direction: column; gap: 0.45rem; min-width: 0; }
+.mt-body button, .mt-body select, .mt-body input[type="text"] { min-height: 44px; box-sizing: border-box; }
+.mt-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; min-width: 0; }
+.mt-row input[type="text"] { flex: 1 1 8rem; min-width: 0; }
+.mt-row .mt-open { flex: 1 1 100%; text-align: start; white-space: normal; overflow-wrap: anywhere; }
+.mt-row select { flex: 1 1 7rem; min-width: 0; }
+.mt-del { width: 44px; flex: 0 0 44px; padding: 0; }
+.mt-head { display: flex; flex-direction: column; gap: 0.25rem; border-top: 1px solid #ccd; padding-top: 0.4rem; }
+.mt-swatches { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem; }
+.mt-lab { flex: 0 0 100%; font-size: 0.85rem; }
+.mt-chip { width: 40px; height: 40px; min-height: 40px; padding: 0; border: 2px solid #889; border-radius: 0.4rem; }
+.mt-chip[aria-pressed="true"] { outline: 3px solid #1F3A6E; outline-offset: 1px; }
+.pane-edit-panel .mt-phrase { white-space: normal; text-align: start; max-width: 100%; overflow-wrap: anywhere; min-height: 44px; }
