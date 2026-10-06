@@ -390,7 +390,7 @@ function renderWheelRing(cx, cy, rInner, rOuter, ratio) {
  * had (byte-for-byte: `rOuter` is computed identically to before when this
  * option is absent).
  */
-export function renderScopedWheel(items, { size = 360, centerArabic, centerRef, centerLabel, centerSub, ring = null } = {}) {
+export function renderScopedWheel(items, { size = 360, centerArabic, centerRef, centerLabel, centerSub, ring = null, roomForNumbers = false } = {}) {
   const cx = size / 2, cy = size / 2;
   const ringMargin = ring ? 14 : 0;
   const rOuter = size / 2 - 4 - ringMargin;
@@ -449,7 +449,10 @@ export function renderScopedWheel(items, { size = 360, centerArabic, centerRef, 
 
   const ringMarkup = ring ? renderWheelRing(cx, cy, rOuter + 4, rOuter + ringMargin - 2, ring.ratio) : "";
 
-  return `<svg class="mastery-wheel" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
+  // Same opt-in as renderRingWheel's roomForNumbers (Know Your Status, 6 Oct 2026).
+  const pad = roomForNumbers && items.some((e) => e.number != null) ? Math.ceil(Math.max(0, rOuter + labelOffset + 7 - size / 2)) : 0;
+  const vb = pad ? `${-pad} ${-pad} ${size + 2 * pad} ${size + 2 * pad}` : `0 0 ${size} ${size}`;
+  return `<svg class="mastery-wheel" viewBox="${vb}" width="${size}" height="${size}" data-number-room="${pad}">
     <defs>${naHatchDefs()}</defs>
     ${ringMarkup}
     ${segments}
@@ -468,7 +471,7 @@ export function renderScopedWheel(items, { size = 360, centerArabic, centerRef, 
  * ring was tapped. `numbers` ([{ angle, text }]) prints outside the outer
  * ring the way renderScopedWheel prints its slice numbers.
  */
-export function renderRingWheel(rings, { size = 360, centerArabic, centerRef, centerLabel, centerSub, ring = null, numbers = null, names = null } = {}) {
+export function renderRingWheel(rings, { size = 360, centerArabic, centerRef, centerLabel, centerSub, ring = null, numbers = null, names = null, roomForNumbers = false } = {}) {
   const cx = size / 2, cy = size / 2;
   const ringMargin = ring ? 14 : 0;
   const rOuter = size / 2 - 4 - ringMargin;
@@ -509,7 +512,13 @@ export function renderRingWheel(rings, { size = 360, centerArabic, centerRef, ce
 
   const ringMarkup = ring ? renderWheelRing(cx, cy, rOuter + 4, rOuter + ringMargin - 2, ring.ratio) : "";
 
-  return `<svg class="mastery-wheel mastery-wheel-rings" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
+  // The Owner, 6 Oct 2026 (Know Your Status: "the numbers are cut below the wheel"): the Approach numbers sit at
+  // rOuter + labelOffset, past the 0..size box, so the row under the wheel covered the bottom ones (with 40
+  // Approaches one sits at 180°). `roomForNumbers` widens the viewBox to hold them, so the layout box includes
+  // them. Opt-in: the landing wheel's measured layout is unchanged.
+  const pad = roomForNumbers && numbers?.length ? Math.ceil(Math.max(0, rOuter + labelOffset + 7 - size / 2)) : 0;
+  const vb = pad ? `${-pad} ${-pad} ${size + 2 * pad} ${size + 2 * pad}` : `0 0 ${size} ${size}`;
+  return `<svg class="mastery-wheel mastery-wheel-rings" viewBox="${vb}" width="${size}" height="${size}" data-number-room="${pad}">
     <defs>${naHatchDefs()}</defs>
     ${ringMarkup}
     ${arcs}
