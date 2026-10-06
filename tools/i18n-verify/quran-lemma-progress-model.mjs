@@ -26,6 +26,7 @@ import {
   claimLemmaState, decideLemmaApproval, resolveLemmaProgress, lemmaProgressAuthority,
   effectiveOccurrenceState, lemmaKnownDelta,
 } from "../../app/js/quran-lemma-progress.js";
+import { WBW_WORD_STATES as OCC_WBW_WORD_STATES, WBW_REVIEW_STATES as OCC_WBW_REVIEW_STATES } from "../../app/js/quran-word-progress.js";
 
 const root = path.resolve(process.argv[2] || process.cwd());
 
@@ -55,8 +56,14 @@ check("the lemma contract is named and versioned, distinctly from the occurrence
 check("the two lanes are named exactly as occurrence progress names them", () => {
   assert.deepEqual(LEMMA_PROGRESS_LANES, ["learner", "supervisor"]);
 });
+// Updated in place 6 Oct 2026: this check's name promises "reused, not re-typed", yet it compared against a
+// retyped list, which went stale when round #520 (1d7878a1) deliberately added "practising" as a fourth word
+// stage -- red on main since. It now asserts what it names: the SAME array objects occurrence progress exports
+// (strict identity, so a re-typed copy fails), plus the current list written by hand.
 check("WbW word states and review states are the SAME arrays occurrence progress exports -- reused, not re-typed", () => {
-  assert.deepEqual(WBW_WORD_STATES, ["not_started", "learning", "achieved"]);
+  assert.equal(WBW_WORD_STATES, OCC_WBW_WORD_STATES, "the lemma module re-typed the word states instead of reusing them");
+  assert.equal(WBW_REVIEW_STATES, OCC_WBW_REVIEW_STATES, "the lemma module re-typed the review states instead of reusing them");
+  assert.deepEqual(WBW_WORD_STATES, ["not_started", "learning", "practising", "achieved"]);
   assert.deepEqual(WBW_REVIEW_STATES, ["pending", "confirmed", "returned"]);
 });
 check("Arabic levels stay independent: only wbw is implemented", () => {
