@@ -252,14 +252,14 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.97 on `main`** (6 Oct 2026 — **Al-Fatiha: Ayat 6 and 7 are two separate records**).
-- **What** (the Owner, 6 Oct 2026: "Two truly separate records"; decisions 76–77; Builder round #606):
-  - With the reader's count on, displayed 6 keeps the record `ayah:1:7` and displayed 7 has its own, `ayah:1:8` (a spare storage key, never shown; it fits the activity evidence Rules as published, so no Rules change). Content stays stored 1:7.
-  - Old "6–7" marks show on both; the first claim on either copies them to `ayah:1:8` (`copiedFrom`), nothing on load, nothing deleted. With the count off, stored 1:7 is one Ayah: a claim writes both, and it shows the weaker.
-  - The pickers offer 6 and 7; roll-ups, the Unit card, Explore, the Mushaf rings, word coverage and evidence count them separately. Architect review: the wheel's centre named the choice "Ayah 6–7"; it names Ayah 6 or 7 now.
+**Current milestone: v09.98 on `main`** (6 Oct 2026 — **Notes: annotations and heading status badges**).
+- **What** (the Owner, 6 Oct 2026: "38. yes, 39. yes"; decision 72; Builder round #595, PR #613):
+  - 38 Annotations: select text in a Note, 💬, type a comment: the text is marked with a numbered [N] and an Annotations list sits at the end of the Note; tap a mark or its comment to jump between them; ✏ edit, ✕ remove (asks first; the text stays).
+  - 39 Heading status: every heading shows a badge in view mode (Done / Ongoing / Under process / Next / Custom, or Set status); the side Contents shows the same dot. Drawn at view time, never saved.
+  - Both live inside the Note's own text (`bodyHtml`): no Rules change, no new field; kept in 🕘 Versions; a finalised Note refuses both in words. `note-sanitize.js` allows `mark`/`sup` and six attributes, each normalised (numbers, the closed status set on H1–H4 only, plain capped text, the palette only).
 - **Checks:**
-  - fatiha-six-seven-records-browser 84/0 (new; six Builder mutations each fail it; the review's two centre checks fail without its fix), fatiha-count 44/0, fatiha-count-browser 136/0, bismillah-label 34/0, writing-sheet-fatiha-count 30/0, writing-sheet 206/0, kys-window 50/0, quran-my-status 248/0, wheel-centre 645/0, wheel-unit-go 254/0, study-event-wiring 47/0, rules-authorisation-executable 63/0, stub-parity 4/0, phone-width-overflow 217/0, behaviour 1003/4 (sandbox baseline)
-- **With the Owner:** in Al-Fatiha, choose Ayah 7 and mark it Achieved: Ayah 6 stays as it was.
+  - journey-annotations-status-browser 536/0 (new; the Builder's four mutations each fail it; the Architect's own, a sanitiser letting any status through, fails it 4 times per language), note-sanitize-boundary 12/0, note-foundation-data-layer (all), journey-editor 577/0, journey-reading-tools 488/0, journey-note-pane 327/0, journey-sections 349/0, palette-contrast 20/0, rules-authorisation-executable 63/0, stub-parity 4/0, phone-width-overflow 217/0, behaviour 1006/1 (sandbox baseline; 22g passed this run)
+- **With the Owner:** open a Note, select a few words, tap 💬, type a comment, Save: the Annotations list appears at the end. Tap a heading's badge and choose Ongoing.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration
