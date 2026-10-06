@@ -19714,3 +19714,10 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
 - **Checks:**
   - journey-note-folds-windows-browser 82/0; mutations fold-edit, no-peek, no-closeall, no-toc, no-details each caught
   - updated in place: journey-window-tabs-browser 166/0 ("✕ Close all" leads the strip; tabs counted among tabs). Green: journey-note-actions 184/0, journey-editor-siyagah 98/0, journey-editor 577/0, journey-note-edit 208/0, journey-note-pane 327/0, notes-note-windows 218/0, journey-note-windows 254/0, journey-reading-tools 488/0 (Find skips the preview lines), journey-finish 64/0, journey-flags-links 306/0, journey-folder-window 144/0, journey-pane-resize 40/0, journey-three-panel 368/0, journey-s9 280/0, journey-tray 227/0, journey-tags 363/0, palette-contrast 20/0, phone-width-overflow 217/0, note-sanitize-boundary 12/0, stub-parity 4/0
+
+## v09.86 — 5 Oct 2026 — Siyagah note-pane port, round 4 (Part B finished)
+
+- **What:** decision 70, items 28–33. `note-window.js`: `TOOL_GROUPS` / `fitToolbar` (tb-grouped below 600px, `[data-tb-tab]`, `[data-tb-g]`), `removeSwatch` (⊘, the live selection first), `onEditPaste` / `finishPaste` (panel mode "paste"), the @ list (`onMentionInput`, `paintMention`, `mentionKey`, `pickMention`; `host.flags.link`), `tableMath` (Σ row "Σ…", numeric-or-alphabetical sort).
+- **Checks:**
+  - journey-editor-input-browser 112/0; mutations no-groups, no-none, paste-raw, no-link, no-sort each caught
+  - updated in place: journey-editor 577/0, journey-editor-siyagah 98/0, journey-note-edit 208/0 (a grouped toolbar shows a tool once its group is open; ⊘ follows the six swatches; a formatted paste asks first). Green: journey-note-folds-windows 82/0, journey-window-tabs 166/0, journey-note-actions 184/0, journey-note-pane 327/0, notes-note-windows 218/0, journey-note-windows 254/0, journey-reading-tools 488/0, journey-finish 64/0, journey-flags-links 306/0, journey-folder-window 144/0, journey-pane-resize 40/0, journey-three-panel 368/0, journey-s9 280/0, journey-tray 227/0, journey-tags 363/0, palette-contrast 20/0, phone-width-overflow 217/0, note-sanitize-boundary 12/0, stub-parity 4/0
