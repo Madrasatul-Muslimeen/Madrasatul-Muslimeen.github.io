@@ -10276,14 +10276,44 @@
           pages = getMushafPagesForKeys(keys);
         }
         const { openWritingSheet } = await import("./js/writing-sheet.js");
+        const [uFrom, uTo] = info.unitType === "juz" || info.unitType === "hizb" ? [1, currentSurahData.ayahCount] : currentUnitAyahBounds();
+        const sheetType = ["ayah", "range", "surah", "page"].includes(info.unitType) ? info.unitType : "surah";
         await openWritingSheet({
           pages, range,
           surahArabicName: (n) => surahIndex.find((s) => s.surahNumber === n)?.nameArabic ?? null,
+          // W1 (Owner, 6 Oct 2026, decision 75): the sheet asks, this applies the choice to the app's own Study Unit.
+          onChooseUnit: applyWritingSheetChoice,
+          surahs: surahIndex.map((s) => ({ n: s.surahNumber, name: surahName(s.surahNumber, s.nameEnglish), ayahCount: s.ayahCount })),
+          initial: { type: sheetType, surah: currentSurahNum, from: uFrom, to: uTo, page: info.unitType === "page" ? currentUnitNumber() : (pages[0] ?? 1) },
+          unitLabel: info.label,
         });
       } catch (err) {
         console.warn("Writing sheet failed to open:", err);
         alert(t("Couldn't open the writing sheet."));
       }
+    }
+    /** W1 -- the Writing sheet's "Show": set the Study Unit through the same handlers the unit pickers fire (one change of selection changes everywhere), then re-open the sheet for it. */
+    async function applyWritingSheetChoice(c) {
+      stopDrill();
+      if (c.surah !== currentSurahNum && surahIndex.some((s) => s.surahNumber === c.surah)) {
+        currentSurahNum = c.surah;
+        surahSelect.value = String(c.surah);
+        await loadSurah(); // resets the ayah to 1 and refills the ayah and range pickers
+      }
+      unitTypeSelect.value = c.type;
+      unitTypeSelect.dispatchEvent(new Event("change"));
+      if (c.type === "ayah") {
+        ayahSelect.value = String(c.from);
+        ayahSelect.dispatchEvent(new Event("change"));
+      } else if (c.type === "range") {
+        rangeFromSelect.value = String(c.from);
+        rangeFromSelect.dispatchEvent(new Event("change"));
+        rangeToSelect.value = String(c.to);
+        rangeToSelect.dispatchEvent(new Event("change"));
+      } else if (c.type === "page") {
+        await goToUnitNumber(c.page);
+      }
+      await openWritingSheetForCurrentUnit();
     }
     document.getElementById("readWritingBtn").addEventListener("click", openWritingSheetForCurrentUnit);
     document.getElementById("tabWritingBtn").addEventListener("click", () => { openWritingSheetForCurrentUnit(); });

@@ -19,7 +19,7 @@
 //
 // The data and the fonts are hifz-renderer.js's own; nothing is copied.
 
-import { t } from "./i18n.js";
+import { t, num } from "./i18n.js";
 import {
   ensureMushafData, getMushafPageLines, getAyahEndMarkerPosition,
   loadMushafPageFont, loadSurahHeaderFont, surahHeaderGlyph,
@@ -212,19 +212,36 @@ const CSS = `
 #writingSheet.ws-zoomed .ws-chrome{position:fixed;top:0;left:0;transform-origin:0 0}
 #writingSheet .ws-end{margin-left:auto;display:flex;gap:6px;align-items:center;flex:0 0 auto}
 #writingSheet.ws-tools-hidden .ws-toolbar{background:transparent;pointer-events:none;padding:6px 8px}
-#writingSheet.ws-tools-hidden .ws-toolbar > :not(.ws-end),#writingSheet.ws-tools-hidden .ws-end > :not(.ws-toggle){display:none}
+#writingSheet.ws-tools-hidden .ws-row2,#writingSheet.ws-tools-hidden .ws-menu,#writingSheet.ws-tools-hidden .ws-row1 > :not(.ws-end),#writingSheet.ws-tools-hidden .ws-end > :not(.ws-toggle){display:none}
 #writingSheet.ws-tools-hidden .ws-toggle{pointer-events:auto;background:#1F3A6E !important;border-color:#1F3A6E !important;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
 #writingSheet.ws-tools-hidden .ws-chrome{position:fixed;top:0;right:0;left:auto}
 #writingSheet.ws-tools-hidden.ws-zoomed .ws-chrome{right:auto}
-#writingSheet .ws-toolbar{position:relative;z-index:3;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:8px 8px;background:#1F3A6E;color:#fff;flex:0 0 auto}
-#writingSheet .ws-group{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+/* The toolbar is exactly two rows at every width (Owner, 6 Oct 2026): row 1 the drawing tools and Close/Hide, row 2 the unit, the letter style and the ⋯ menu. */
+#writingSheet .ws-toolbar{position:relative;z-index:3;display:flex;flex-direction:column;gap:6px;padding:8px 8px;background:#1F3A6E;color:#fff;flex:0 0 auto}
+#writingSheet .ws-row{display:flex;gap:6px;align-items:center;min-width:0;flex-wrap:nowrap}
+#writingSheet .ws-group{display:flex;gap:6px;align-items:center;min-width:0}
 #writingSheet .ws-toolbar button{min-height:40px;min-width:40px;padding:0.3rem 0.7rem;border:1px solid rgba(255,255,255,0.35);border-radius:8px;background:rgba(255,255,255,0.12);color:#fff;font:inherit;font-size:0.9rem;line-height:1.1;white-space:nowrap;flex:0 0 auto;cursor:pointer}
-#writingSheet .ws-toolbar .ws-shade{min-height:40px;padding:0.3rem 1.6rem 0.3rem 0.7rem;border:1px solid rgba(255,255,255,0.35);border-radius:8px;background:rgba(255,255,255,0.12) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23fff'/%3E%3C/svg%3E") no-repeat right 0.55rem center;color:#fff;font:inherit;font-size:0.9rem;-webkit-appearance:none;appearance:none;cursor:pointer;flex:0 0 auto;max-width:100%}
+#writingSheet .ws-toolbar .ws-unit{flex:1 1 0;min-width:0;white-space:normal;text-align:start;overflow-wrap:anywhere;font-size:0.85rem}
+#writingSheet .ws-toolbar .ws-shade{min-height:40px;padding:0.3rem 1.6rem 0.3rem 0.7rem;border:1px solid rgba(255,255,255,0.35);border-radius:8px;background:rgba(255,255,255,0.12) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23fff'/%3E%3C/svg%3E") no-repeat right 0.55rem center;color:#fff;font:inherit;font-size:0.9rem;-webkit-appearance:none;appearance:none;cursor:pointer;flex:0 0 auto;max-width:42%}
 #writingSheet .ws-toolbar .ws-shade option{color:#1b1b16;background:#fff}
-/* Owner, 1 Oct 2026 (phone photo): "Button needs to organise, make it 2 rows." On a phone:
-   title line (Writing sheet, Close, Hide), then the drawing tools, then letter style + Save + Print. */
-@media (max-width:599.98px){#writingSheet .ws-toolbar{gap:6px 8px}#writingSheet .ws-group{gap:5px}#writingSheet .ws-toolbar button{padding:0.3rem 0.55rem;font-size:0.86rem}#writingSheet .ws-toolbar .ws-shade{font-size:0.86rem;padding-left:0.55rem}}
-@media (max-width:359.98px){#writingSheet .ws-toolbar{padding:8px 6px;gap:6px}#writingSheet .ws-toolbar button{padding:0.3rem 0.4rem;font-size:0.82rem}#writingSheet .ws-toolbar .ws-shade{font-size:0.82rem;padding:0.3rem 1.3rem 0.3rem 0.4rem;background-position:right 0.4rem center}#writingSheet .ws-group{gap:4px}}
+#writingSheet .ws-ic-narrow{display:none}
+#writingSheet .ws-menu{position:absolute;right:8px;top:100%;margin-top:2px;z-index:6;display:flex;flex-direction:column;gap:4px;padding:6px;background:#1F3A6E;border:1px solid rgba(255,255,255,0.35);border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,0.35)}
+#writingSheet .ws-menu[hidden]{display:none}
+#writingSheet .ws-unitpanel{position:relative;z-index:4;display:flex;flex-wrap:wrap;gap:8px 10px;align-items:flex-end;padding:10px 12px;background:#fff8e6;color:#2b2410;border-bottom:2px solid #B8862F}
+#writingSheet .ws-unitpanel[hidden]{display:none}
+#writingSheet .ws-unitpanel label{display:flex;flex-direction:column;gap:2px;font-size:0.8rem;min-width:0}
+#writingSheet .ws-unitpanel select{min-height:40px;font:inherit;font-size:0.9rem;max-width:100%;min-width:0}
+#writingSheet .ws-unitpanel button{min-height:40px;min-width:40px;padding:0.3rem 0.9rem;border-radius:8px;border:1px solid #B8862F;background:#fff;color:#4a3a10;font:inherit;cursor:pointer}
+#writingSheet .ws-unitpanel [data-ws="unit-show"]{background:#B8862F;color:#fff}
+@media (max-width:599.98px){
+  #writingSheet .ws-title,#writingSheet .ws-tx{display:none}
+  #writingSheet .ws-ic-narrow{display:inline}
+  #writingSheet .ws-toolbar{padding:6px 4px;gap:4px}
+  #writingSheet .ws-row,#writingSheet .ws-group,#writingSheet .ws-end{gap:3px}
+  #writingSheet .ws-toolbar button{padding:0.3rem 0.2rem;font-size:1rem}
+  #writingSheet .ws-toolbar .ws-unit{font-size:0.8rem;padding:0.2rem 0.4rem}
+  #writingSheet .ws-toolbar .ws-shade{font-size:0.8rem;padding:0.3rem 1.2rem 0.3rem 0.4rem;background-position:right 0.4rem center}
+}
 #writingSheet .ws-toolbar button:disabled{opacity:0.4;cursor:default}
 #writingSheet .ws-toolbar button[aria-pressed="true"],#writingSheet .ws-toolbar button[aria-checked="true"]{background:#B8862F;border-color:#B8862F}
 #writingSheet .ws-title{font-weight:600;font-size:0.95rem;margin-right:4px}
@@ -258,8 +275,14 @@ const CSS = `
  *                 (words outside it are dimmed), or null to dim nothing
  *   surahArabicName(n)  optional label lookup for the surah-banner fallback
  *   onClose()     optional
+ *   onChooseUnit({ type, surah, from, to, page })  optional; the caller applies the
+ *                 choice to the app's Study Unit and re-opens the sheet (W1). The
+ *                 sheet never sets the unit itself (I2).
+ *   surahs        [{ n, name, ayahCount }], names in the reader's language
+ *   initial       { type, surah, from, to, page } of the current unit
+ *   unitLabel     what the sheet holds now, in words
  */
-export async function openWritingSheet({ pages, range = null, surahArabicName = null, onClose = null } = {}) {
+export async function openWritingSheet({ pages, range = null, surahArabicName = null, onClose = null, onChooseUnit = null, surahs = [], initial = null, unitLabel = "" } = {}) {
   if (openSheet) openSheet.destroy();
   const inUnit = (s, a) => {
     if (!range) return true;
@@ -275,24 +298,36 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
   root.innerHTML = `<style>${CSS}</style>
     <div class="ws-chrome" data-ws-chrome>
     <div class="ws-toolbar">
-      <span class="ws-title">${t("Writing sheet")}</span>
-      <div class="ws-group">
-        <button type="button" data-ws="write" aria-pressed="false">✏ ${t("Write")}</button>
-        <button type="button" data-ws-tool="pen" aria-pressed="true">${t("Pen")}</button>
-        <button type="button" data-ws-tool="eraser" aria-pressed="false">${t("Eraser")}</button>
-        <button type="button" data-ws="undo">${t("Undo")}</button>
-        <button type="button" data-ws="clear">${t("Clear")}</button>
+      <div class="ws-row ws-row1">
+        <span class="ws-title">${t("Writing sheet")}</span>
+        <div class="ws-group">
+          <button type="button" data-ws="write" aria-pressed="false" aria-label="${t("Write")}" title="${t("Write")}">✏<span class="ws-tx"> ${t("Write")}</span></button>
+          <button type="button" data-ws-tool="pen" aria-pressed="true" aria-label="${t("Pen")}" title="${t("Pen")}"><span class="ws-ic-narrow">🖊</span><span class="ws-tx">${t("Pen")}</span></button>
+          <button type="button" data-ws-tool="eraser" aria-pressed="false" aria-label="${t("Eraser")}" title="${t("Eraser")}"><span class="ws-ic-narrow">🧽</span><span class="ws-tx">${t("Eraser")}</span></button>
+          <button type="button" data-ws="undo" aria-label="${t("Undo")}" title="${t("Undo")}"><span class="ws-ic-narrow">↶</span><span class="ws-tx">${t("Undo")}</span></button>
+          <button type="button" data-ws="clear" aria-label="${t("Clear")}" title="${t("Clear")}"><span class="ws-ic-narrow">🗑</span><span class="ws-tx">${t("Clear")}</span></button>
+        </div>
+        <span class="ws-end" data-ws-end><button type="button" data-ws="close" aria-label="${t("Close")}" title="${t("Close")}">✕<span class="ws-tx"> ${t("Close")}</span></button><button type="button" class="ws-toggle" data-ws="tools" aria-expanded="true"></button></span>
       </div>
-      <div class="ws-group">
+      <div class="ws-row ws-row2">
+        <button type="button" class="ws-unit" data-ws="unit" aria-expanded="false"${onChooseUnit ? "" : " disabled"}></button>
         <select class="ws-shade" data-ws-shade-select aria-label="${t("Letter style")}" title="${t("Letter style")}">
           <option value="light">${t("Light")}</option>
           <option value="lighter">${t("Lighter")}</option>
           <option value="book">${t("Like the book")}</option>
         </select>
+        <button type="button" data-ws="more" aria-haspopup="true" aria-expanded="false" aria-label="${t("More")}" title="${t("More")}">⋯</button>
+      </div>
+      <div class="ws-menu" data-ws-menu hidden>
         <button type="button" data-ws="save">${t("Save picture")}</button>
         <button type="button" data-ws="print">${t("Print A4")}</button>
       </div>
-      <span class="ws-end" data-ws-end><button type="button" data-ws="close" aria-label="${t("Close")}">✕ ${t("Close")}</button><button type="button" class="ws-toggle" data-ws="tools" aria-expanded="true"></button></span>
+    </div>
+    <div class="ws-unitpanel" data-ws-unitpanel hidden></div>
+    <div class="ws-confirm" data-ws-confirm-unit hidden>
+      <span>${t("Change what you practise? Your writing on this sheet will be cleared.")}</span>
+      <button type="button" data-ws="unit-change">${t("Change")}</button>
+      <button type="button" data-ws="unit-keep">${t("Keep writing")}</button>
     </div>
     <div class="ws-confirm" data-ws-confirm hidden>
       <span>${t("Close without saving your writing?")}</span>
@@ -307,6 +342,9 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
   const scrollEl = $("[data-ws-scroll]");
   const printEl = $("[data-ws-print]");
   const confirmEl = $("[data-ws-confirm]");
+  const unitConfirmEl = $("[data-ws-confirm-unit]");
+  const panelEl = $("[data-ws-unitpanel]");
+  const menuEl = $("[data-ws-menu]");
 
   const chromeEl = $("[data-ws-chrome]");
   let toolsHidden = readToolsHidden();
@@ -318,6 +356,10 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
     $('[data-ws="write"]').setAttribute("aria-pressed", String(st.write));
     root.querySelectorAll("[data-ws-tool]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.wsTool === st.tool)));
     $("[data-ws-shade-select]").value = shade;
+    const ub = $('[data-ws="unit"]');
+    ub.textContent = `📖 ${unitLabel}`;
+    ub.title = unitLabel;
+    ub.setAttribute("aria-label", `${t("Choose what to practise")}: ${unitLabel}`);
     root.dataset.shade = shade;
     root.classList.toggle("ws-tools-hidden", toolsHidden);
     const tg = $('[data-ws="tools"]');
@@ -336,41 +378,14 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
     const vv = window.visualViewport;
     const zoomed = !!vv && vv.scale > 1.01;
     root.classList.toggle("ws-zoomed", zoomed);
-    if (!zoomed) { chromeEl.style.transform = ""; chromeEl.style.width = ""; placeToggle(); return; }
+    if (!zoomed) { chromeEl.style.transform = ""; chromeEl.style.width = ""; return; }
     const w = toolsHidden ? "" : `${vv.width * vv.scale}px`;
     const x = toolsHidden ? vv.offsetLeft + vv.width - (chromeEl.offsetWidth / vv.scale) : vv.offsetLeft;
     chromeEl.style.width = w;
     chromeEl.style.transform = `translate(${x}px, ${vv.offsetTop}px) scale(${1 / vv.scale})`;
-    placeToggle();
   }
 
-  // The Owner, 30 Sep 2026 (a phone photo, an arrow from "▴ Hide" on its own
-  // third line up to the empty end of the first): "Move the hide button to the
-  // upper line." Hide always goes on the TOP line, at its right-hand end. It
-  // tries, in order: last (everything fits one line, as on a PC), after
-  // Write…Clear, then straight after the title (a narrow phone, where
-  // Write…Clear itself wraps below the title), and keeps the first that
-  // lands on the title's own line. Measured, because what fits depends on
-  // the width and the language.
-  function placeToggle() {
-    if (toolsHidden) return;
-    const bar = $(".ws-toolbar");
-    const title = $(".ws-title");
-    const tg = $("[data-ws-end]"); // Close + Hide travel together (Owner, 1 Oct 2026: two rows of buttons)
-    const items = [...bar.children].filter((el) => el !== tg);
-    items.forEach((el, i) => { el.style.order = String(i * 10); });
-    const mid = (el) => el.offsetTop + el.offsetHeight / 2;
-    // Last first, then after each group in turn, back to straight after the
-    // title; keep the first where Hide is on the title's line AND nothing
-    // else follows it there (so it really is that line's right-hand end).
-    const orders = [1000, ...items.map((_, i) => i * 10 + 5).reverse()];
-    for (const order of orders) {
-      tg.style.order = String(order);
-      const line = mid(title);
-      if (Math.abs(mid(tg) - line) < 8 && !items.some((el) => Math.abs(mid(el) - line) < 8 && el.offsetLeft > tg.offsetLeft)) return;
-    }
-    tg.style.order = "1000";
-  }
+  // Close and Hide have a fixed place now (row 1, right-hand end), so nothing needs measuring.
   let chromeFrame = 0;
   const onViewport = () => { cancelAnimationFrame(chromeFrame); chromeFrame = requestAnimationFrame(placeChrome); };
   window.visualViewport?.addEventListener("resize", onViewport);
@@ -388,7 +403,7 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
     if (openSheet && openSheet.root === root) openSheet = null;
   }
   function requestClose() {
-    if (st.dirty.size) { confirmEl.hidden = false; return; }
+    if (st.dirty.size) { unitConfirmEl.hidden = true; confirmEl.hidden = false; return; }
     destroy();
     onClose?.();
   }
@@ -638,6 +653,62 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
     window.print();
   }
 
+  // ---- choosing what to practise (W1). The sheet only asks; the caller changes the Study Unit and re-opens it.
+  const TYPES = [["ayah", "Ayah"], ["range", "Range"], ["surah", "Surah"], ["page", "Page"]];
+  const closeMenu = () => { menuEl.hidden = true; $('[data-ws="more"]').setAttribute("aria-expanded", "false"); };
+  const closePanel = () => { panelEl.hidden = true; unitConfirmEl.hidden = true; $('[data-ws="unit"]').setAttribute("aria-expanded", "false"); };
+  const seq = (n) => Array.from({ length: n }, (_, i) => i + 1);
+  const opts = (list, sel) => list.map((o) => `<option value="${o.v}"${String(o.v) === String(sel) ? " selected" : ""}>${o.text}</option>`).join("");
+  function openPanel() {
+    const ini = initial || {};
+    const type = TYPES.some((x) => x[0] === ini.type) ? ini.type : "surah";
+    const surah = surahs.some((s) => s.n === ini.surah) ? ini.surah : (surahs[0]?.n || 1);
+    panelEl.innerHTML = `
+      <label>${t("Type")}<select data-ws-u="type">${opts(TYPES.map(([v, k]) => ({ v, text: t(k) })), type)}</select></label>
+      <label data-ws-u-for="surah,ayah,range">${t("Surah")}<select data-ws-u="surah">${opts(surahs.map((s) => ({ v: s.n, text: `${num(s.n)}. ${s.name}` })), surah)}</select></label>
+      <label data-ws-u-for="ayah">${t("Ayah")}<select data-ws-u="ayah"></select></label>
+      <label data-ws-u-for="range">${t("From")}<select data-ws-u="from"></select></label>
+      <label data-ws-u-for="range">${t("To")}<select data-ws-u="to"></select></label>
+      <label data-ws-u-for="page">${t("Page")}<select data-ws-u="page">${opts(seq(604).map((n) => ({ v: n, text: num(n) })), ini.page || pages[0] || 1)}</select></label>
+      <button type="button" data-ws="unit-show">${t("Show")}</button>
+      <button type="button" data-ws="unit-cancel">${t("Cancel")}</button>`;
+    const f = (k) => panelEl.querySelector(`[data-ws-u="${k}"]`);
+    const fillAyahs = (keep) => {
+      const count = surahs.find((s) => s.n === Number(f("surah").value))?.ayahCount || 1;
+      const list = seq(count).map((n) => ({ v: n, text: num(n) }));
+      const pick = (v, d) => (Number(v) >= 1 && Number(v) <= count ? Number(v) : d);
+      f("ayah").innerHTML = opts(list, pick(keep ? ini.from : 1, 1));
+      f("from").innerHTML = opts(list, pick(keep ? ini.from : 1, 1));
+      f("to").innerHTML = opts(list, pick(keep ? ini.to : count, count));
+    };
+    const showFor = () => {
+      const ty = f("type").value;
+      panelEl.querySelectorAll("[data-ws-u-for]").forEach((l) => { l.hidden = !l.dataset.wsUFor.split(",").includes(ty); });
+    };
+    fillAyahs(true);
+    showFor();
+    f("type").addEventListener("change", showFor);
+    f("surah").addEventListener("change", () => fillAyahs(false));
+    panelEl.hidden = false;
+    $('[data-ws="unit"]').setAttribute("aria-expanded", "true");
+  }
+  function readChoice() {
+    const f = (k) => panelEl.querySelector(`[data-ws-u="${k}"]`);
+    const type = f("type").value;
+    const surah = Number(f("surah").value);
+    let from = Number(f("from").value), to = Number(f("to").value);
+    if (from > to) [from, to] = [to, from];
+    if (type === "ayah") from = to = Number(f("ayah").value);
+    if (type === "surah") { from = 1; to = surahs.find((s) => s.n === surah)?.ayahCount || 1; }
+    return { type, surah, from, to, page: Number(f("page").value) };
+  }
+  async function applyChoice() {
+    const choice = readChoice();
+    st.dirty.clear();
+    closePanel();
+    try { await onChooseUnit(choice); } catch (err) { console.warn("Writing sheet: choosing a unit failed:", err); }
+  }
+
   // ---- toolbar
   function wireToolbar() {
     $("[data-ws-shade-select]").addEventListener("change", (e) => {
@@ -647,6 +718,7 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
       st.pages.forEach((p) => { if (p.drawn) paintPage(p); });
     });
     root.addEventListener("click", (e) => {
+      if (!menuEl.hidden && !e.target.closest("[data-ws-menu],[data-ws=more]")) closeMenu();
       const b = e.target.closest("button");
       if (!b || !root.contains(b)) return;
       if (b.dataset.wsTool) { st.tool = b.dataset.wsTool; paintToolbar(); return; }
@@ -663,8 +735,14 @@ export async function openWritingSheet({ pages, range = null, surahArabicName = 
           if (p) { p.strokes.length = 0; paintInk(p); st.dirty.delete(p.n); }
           break;
         }
-        case "save": savePicture(); break;
-        case "print": printA4(); break;
+        case "save": closeMenu(); savePicture(); break;
+        case "print": closeMenu(); printA4(); break;
+        case "more": { const open = menuEl.hidden; menuEl.hidden = !open; b.setAttribute("aria-expanded", String(open)); break; }
+        case "unit": if (panelEl.hidden) { closeMenu(); confirmEl.hidden = true; openPanel(); } else closePanel(); break;
+        case "unit-cancel": closePanel(); break;
+        case "unit-show": if (st.dirty.size) { confirmEl.hidden = true; unitConfirmEl.hidden = false; } else applyChoice(); break;
+        case "unit-change": applyChoice(); break;
+        case "unit-keep": unitConfirmEl.hidden = true; break;
         case "close": requestClose(); break;
         case "close-anyway": destroy(); onClose?.(); break;
         case "keep": confirmEl.hidden = true; break;
