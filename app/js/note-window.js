@@ -1186,9 +1186,9 @@ export function createNoteViews(host) {
         menu += `<button type="button" class="secondary tiny" data-pane-link>🔗 ${escapeHtml(t("Link to a Note…"))}</button>`;
       }
     }
-    menu += `<button type="button" class="secondary tiny" data-pane-previews aria-pressed="${previewsOn(localStorage)}">🖼 ${escapeHtml(t("Show link previews"))}: ${escapeHtml(previewsOn(localStorage) ? t("On") : t("Off"))}</button>`;
     if (S()) menu += `<button type="button" class="secondary tiny" data-pane-mytools>🧰 ${escapeHtml(t("My Note tools…"))}</button>`;
     if (v.kind === "pane") menu += `<button type="button" class="secondary tiny" data-pane-popout>⧉ ${escapeHtml(t("Pop out"))}</button>`;
+    menu += `<button type="button" class="secondary tiny" data-pane-previews aria-pressed="${previewsOn(localStorage)}">🖼 ${escapeHtml(t("Show link previews"))}: ${escapeHtml(previewsOn(localStorage) ? t("On") : t("Off"))}</button>`;
     menu += host.menuEnd?.(v, note) ?? "";
     const menuWrap = v.el.querySelector("[data-pane-menu-wrap]");
     menuWrap.hidden = !menu.trim();
