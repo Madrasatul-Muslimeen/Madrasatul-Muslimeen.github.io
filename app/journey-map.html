@@ -1418,6 +1418,8 @@
       newNote: (v, tpl) => newNoteHere(v, tpl),
       // Part C3: the person's own note settings (userPrefs/{uid}.mmsaNotes). Built on first use; read only when a Note first shows (I9).
       settings: () => (auth.currentUser ? (noteSettingsStore ??= createFirestoreSettingsStore({ db, uid: auth.currentUser.uid })) : null),
+      // Item 35: pictures in Notes. Firebase Storage is loaded only when a picture is first used or shown (I9).
+      images: { uid: () => auth.currentUser?.uid, upload: (uid, file, o) => import("./js/note-image.js").then((m) => m.uploadNoteImage(uid, file, o)), url: (p) => import("./js/note-image.js").then((m) => m.noteImageUrl(p)) },
       copyNote: (note) => copyWholeNote(note),
       attach: (v, note) => { copyNoteTo(note, null, { editing: !!v.ed, anchor: v.el, withTags: true }); },
       versions: {

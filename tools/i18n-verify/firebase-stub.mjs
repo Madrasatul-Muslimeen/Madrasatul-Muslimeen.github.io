@@ -259,6 +259,32 @@ export function initializeFirestore() { return { _stub: true }; }
 export function persistentLocalCache() { return {}; }
 export function persistentMultipleTabManager() { return {}; }
 
+// Note pictures (Part C, item 35): a Storage stub. Every call is recorded in sessionStorage.__stubStorageLog (which
+// survives the language reload, like __stubWrites); the bytes are kept as base64 in sessionStorage.__stubStorageFiles so
+// getBlob returns what uploadBytes was given. sessionStorage.__stubStorageFail = "storage/unauthorized" (or any code)
+// makes uploadBytes refuse, as the real service does until the Owner publishes the Storage Rules.
+function __stLog(entry) { try { var l = JSON.parse(sessionStorage.getItem("__stubStorageLog") || "[]"); l.push(entry); sessionStorage.setItem("__stubStorageLog", JSON.stringify(l)); } catch (e) {} }
+function __stFiles() { try { return JSON.parse(sessionStorage.getItem("__stubStorageFiles") || "{}"); } catch (e) { return {}; } }
+export function getStorage() { return { _stubStorage: true }; }
+export function ref(storage, path) { return { _stubRef: true, fullPath: path }; }
+export async function uploadBytes(r, data, metadata) {
+  var fail = sessionStorage.getItem("__stubStorageFail");
+  __stLog({ op: "uploadBytes", path: r.fullPath, size: data.size, type: (metadata && metadata.contentType) || data.type, refused: fail || null });
+  if (fail) { var e = new Error("Firebase Storage: User does not have permission to access '" + r.fullPath + "'. (" + fail + ")"); e.code = fail; throw e; }
+  var buf = new Uint8Array(await data.arrayBuffer()), s = "";
+  for (var i = 0; i < buf.length; i += 8192) s += String.fromCharCode.apply(null, buf.subarray(i, i + 8192));
+  var files = __stFiles(); files[r.fullPath] = { b64: btoa(s), type: data.type }; sessionStorage.setItem("__stubStorageFiles", JSON.stringify(files));
+  return { ref: r, metadata: { fullPath: r.fullPath, size: data.size, contentType: data.type } };
+}
+export async function getBlob(r) {
+  __stLog({ op: "getBlob", path: r.fullPath });
+  var f = __stFiles()[r.fullPath];
+  if (!f) { var e = new Error("Firebase Storage: Object '" + r.fullPath + "' does not exist. (storage/object-not-found)"); e.code = "storage/object-not-found"; throw e; }
+  var bin = atob(f.b64), u = new Uint8Array(bin.length);
+  for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  return new Blob([u], { type: f.type });
+}
+
 export function collection(db, name) { return { __col: name }; }
 export function doc(db, name, id) {
   if (typeof db === "object" && db && db.__col) return { __col: db.__col, __id: name };

@@ -24,6 +24,7 @@ import { t, num } from "./i18n.js";
 import { sanitizeNoteHtml, isSafeNoteHref, NOTE_STATUS_COLOURS, NOTE_ANN_TEXT_MAX, NOTE_STATUS_LABEL_MAX } from "./note-sanitize.js";
 import { isOn as previewsOn, setOn as setPreviewsOn, pickLinks, loadPreview, hostOf } from "./note-link-preview.js";
 import { closeAllBarPalettes } from "./bar-palette.js";
+import { NOTE_IMAGE_WIDTHS, NOTE_IMAGE_ALT_MAX } from "./note-image-path.js";
 import { sheetInsertHtml, mountSheets } from "./note-sheet-ui.js";
 import { headingStyleCss, PALETTE, LIMITS as SETTING_LIMITS, cleanText as cleanSettingText } from "./note-user-settings.js";
 import { HANDLES, handleCss, clampRect, startDrag } from "./float-window.js";
@@ -226,6 +227,7 @@ export function createNoteViews(host) {
     v.editPanelEl = el.querySelector("[data-edit-panel]");
     // S12: a checklist box is ticked by pressing its box (the left edge of the item, the right edge in right-to-left text); pressing the grip / fold arrow is handled separately.
     el.addEventListener("click", (ev) => tickCheckbox(v, ev));
+    el.addEventListener("change", (ev) => { if (ev.target.matches?.("[data-image-file]")) insertImage(v, ev.target); });
     el.addEventListener("keydown", (ev) => {
       if (ev.target.closest("[data-sec-grip]")) gripKey(v, ev);
       else if (ev.target.matches?.("[data-panel-url]") && ev.key === "Enter") { ev.preventDefault(); applyLink(v); }
@@ -375,7 +377,7 @@ export function createNoteViews(host) {
     ["hup", "Raise the heading (Ctrl+[)", "▲H"], ["hdown", "Lower the heading (Ctrl+])", "▼H"], "|",
     ["ul", "Bullet list", "•"], ["ol", "Numbered list", "1."], ["check", "Checklist", "☑"], ["quote", "Quote", "❝"],
     ["left", "Align left", "⇤"], ["center", "Align centre", "↔"], ["right", "Align right", "⇥"], ["justify", "Justify", "☰"], ["spacing", "Spacing", "↕"], "|",
-    ["link", "Link", "🔗"], ["table", "Table", "▦"], ["sheet", "Insert a spreadsheet", "⊞"], ["divider", "Divider line", "─"], ["box", "Box around the paragraph", "▢"], ["annotate", "Comment on the selected text", "💬"], ["phrases", "Quick phrases", "📝"], "|",
+    ["link", "Link", "🔗"], ["table", "Table", "▦"], ["sheet", "Insert a spreadsheet", "⊞"], ["image", "Insert a picture", "🖼"],["divider", "Divider line", "─"], ["box", "Box around the paragraph", "▢"], ["annotate", "Comment on the selected text", "💬"], ["phrases", "Quick phrases", "📝"], "|",
     ["undo", "Undo", "↶"], ["redo", "Redo", "↷"],
   ];
   /** Text sizes the A+ / A− steps walk through (em); 1 is normal. The sanitiser allows exactly these. */
@@ -397,7 +399,7 @@ export function createNoteViews(host) {
     v.tbOpen = v.tbOpen ?? 0;
     v.editToolbarEl.innerHTML = `<div class="tb-tabs" data-tb-tabs role="tablist" aria-label="${label("Formatting")}">${TOOL_GROUPS.map(([icon, name], k) =>
       `<button type="button" class="secondary tb-tab" role="tab" data-tb-tab="${k}" aria-selected="${k === v.tbOpen}">${icon} ${label(name)}</button>`).join("")}</div>`
-      + TOOLS.filter((x) => x[0] !== "phrases" || S()).map((x) => x === "|" ? (g++, `<span class="tb-sep" aria-hidden="true"></span>`)
+      + TOOLS.filter((x) => (x[0] !== "phrases" || S()) && (x[0] !== "image" || host.images)).map((x) => x === "|" ? (g++, `<span class="tb-sep" aria-hidden="true"></span>`)
       : `<button type="button" class="secondary tb-btn" data-cmd="${x[0]}" data-tb-g="${g}" aria-label="${label(x[1])}" title="${label(x[1])}">${x[2]}</button>`).join("");
     v.editToolbarEl.setAttribute("role", "toolbar");
     v.editToolbarEl.setAttribute("aria-label", t("Formatting"));
@@ -469,6 +471,11 @@ export function createNoteViews(host) {
       const list = S()?.get().phrases ?? [];
       P.innerHTML = `<div class="pane-panel-row" role="group" aria-label="${label("Quick phrases")}">${list.length ? list.map((p, i) => `<button type="button" class="secondary tb-btn tb-text mt-phrase" data-phrase-insert="${i}">${escapeHtml(p)}</button>`).join("") : `<span class="pane-panel-label">${label("No phrases yet.")}</span>`}
         <button type="button" class="secondary tb-btn tb-text" data-phrase-manage>✎ ${label("Edit phrases")}</button>${close}</div>${msg}`;
+    } else if (mode === "image") {
+      P.innerHTML = `<div class="pane-panel-row"><label class="pane-panel-field">${label("Describe the picture (optional)")}<input type="text" autocomplete="off" maxlength="${NOTE_IMAGE_ALT_MAX}" data-image-alt></label>
+        <label class="pane-panel-field narrow">${label("Width")}<select data-image-width style="min-height:40px">${NOTE_IMAGE_WIDTHS.map((w) => `<option value="${w}"${w === "100" ? " selected" : ""}>${w}%</option>`).join("")}</select></label>
+        <label class="tb-btn tb-text" data-image-pick style="position:relative;display:inline-flex;align-items:center;justify-content:center;min-height:40px;min-width:40px;overflow:hidden;cursor:pointer">🖼 ${label("Choose a picture or take a photo")}<input type="file" accept="image/*" data-image-file style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:0"></label>${close}</div>
+        <p class="pane-panel-label" data-image-note><small>${label("The picture is made small on this device first, and kept private to you. Its location and camera details are not kept.")}</small></p>${msg}`;
     } else if (mode === "spacing") {
       P.innerHTML = `<div class="pane-panel-row" role="group" aria-label="${label("Line spacing")}"><span class="pane-panel-label">${label("Line spacing")}</span>${LINE_HEIGHTS.map(([val, name]) =>
         `<button type="button" class="secondary tb-btn tb-text" data-spacing-line="${val}">${label(name)}</button>`).join("")}</div>
@@ -764,7 +771,7 @@ export function createNoteViews(host) {
     const body = editBodyEl(v);
     if (!body) return;
     if (cmd === "sheet") { insertSheet(v); return; }
-    if (["link", "table", "color", "highlight", "spacing", "annotate", "phrases"].includes(cmd)) {
+    if (["link", "table", "color", "highlight", "spacing", "annotate", "phrases", "image"].includes(cmd)) {
       if (!v.editPanelEl.hidden && v.editPanelEl.dataset.mode === cmd) closePanel(v); else openPanel(v, cmd);
       return;
     }
@@ -1010,6 +1017,7 @@ export function createNoteViews(host) {
     v.ed.sheetObs = typeof MutationObserver === "function" ? new MutationObserver(() => { if (v.ed) mountEditSheets(v); }) : null;
     v.ed.sheetObs?.observe(body, { childList: true, subtree: true });
     v.bodyEl.appendChild(wrap);
+    hydrateImages(v, body);
     Object.assign(v.ed, { wrapEl: wrap, gutterEl: gutter, folded: new Set(), range: null });
     body.addEventListener("paste", (ev) => onEditPaste(v, ev));
     body.addEventListener("keydown", (ev) => onEditKeydown(v, ev));
@@ -1702,6 +1710,47 @@ export function createNoteViews(host) {
     });
   }
   /** ＋ Insert -> ⊞ Spreadsheet: a 5 by 4 grid at the caret (never inside another spreadsheet), with an empty line after it to type in. */
+  // ---------------------------------------------------------------------------------------------------------------
+  // PICTURES IN NOTES (Part C, item 35). The Note keeps `<img data-mmsa-image="noteImages/{uid}/{id}.webp" alt width>` with
+  // no src; the picture is fetched as the signed-in person and shown from an object URL (hydrateImages), never a public
+  // link. The page supplies host.images = { uid(), upload(uid, file, { onStage }) -> path, url(path) -> Promise<url> }.
+  // The `src` set here lives only in the live page: the sanitiser removes it from anything that is saved. A failed upload
+  // says why in the panel (I15) and the Note is left exactly as it was. Removing a picture from a Note leaves its file
+  // in Storage (I4, D6): nothing here deletes.
+  // ---------------------------------------------------------------------------------------------------------------
+  function hydrateImages(v, root) {
+    if (!host.images) return;
+    for (const img of (root ?? v.bodyEl).querySelectorAll("img[data-mmsa-image]")) {
+      if (img.dataset.imageState) continue;
+      img.dataset.imageState = "loading";
+      img.style.maxWidth = "100%"; img.style.height = "auto";
+      const w = img.getAttribute("width");
+      img.style.width = NOTE_IMAGE_WIDTHS.includes(w) ? `${w}%` : "auto"; // an HTML width of 50 would mean 50 pixels
+      host.images.url(img.getAttribute("data-mmsa-image")).then((url) => { img.src = url; img.dataset.imageState = "ready"; })
+        .catch(() => { img.dataset.imageState = "failed"; img.title = t("This picture could not be loaded."); });
+    }
+  }
+  async function insertImage(v, input) {
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file || !host.images || !v.ed) return;
+    const alt = v.editPanelEl.querySelector("[data-image-alt]")?.value ?? "", width = v.editPanelEl.querySelector("[data-image-width]")?.value ?? "100";
+    const say = (m) => panelMsg(v, m);
+    say(t("Making the picture small…"));
+    let path;
+    try {
+      path = await host.images.upload(host.images.uid(), file, { onStage: (st) => say(st === "uploading" ? t("Uploading the picture…") : t("Making the picture small…")) });
+    } catch (err) { say(err?.message || t("The picture was not saved. Your Note is unchanged.")); return; } // I15: said in words, nothing inserted
+    if (!v.ed || !editBodyEl(v)) return;
+    restoreRange(v);
+    const img = document.createElement("img");
+    img.setAttribute("data-mmsa-image", path);
+    img.setAttribute("alt", alt.replace(/[<>\u0000-\u001f]/g, " ").trim().slice(0, NOTE_IMAGE_ALT_MAX));
+    if (NOTE_IMAGE_WIDTHS.includes(width)) img.setAttribute("width", width);
+    document.execCommand("insertHTML", false, img.outerHTML);
+    hydrateImages(v, editBodyEl(v));
+    closePanel(v); onEditInput(v);
+  }
   function insertSheet(v) {
     const body = editBodyEl(v);
     if (!body) return;
@@ -2112,7 +2161,7 @@ export function createNoteViews(host) {
     v.el.querySelector("[data-pane-chips]").innerHTML = (host.chips?.(note) ?? []).map((f) =>
       `<button type="button" class="folder-chip" data-pane-chip="${escapeHtml(f.id)}">📁 ${escapeHtml(f.label)}</button>`).join("") + tagChipsHtml(note);
     // While an edit is open the editor IS the body: a re-render must never wipe the reader's typing.
-    if (!(v.ed && v.ed.noteId === note.noteId)) { showReadChrome(v, note); buildBody(v, note); paintAnnotations(v); paintLinks(v, note); paintPreviews(v); if (!findBarOf(v).hidden) runFind(v, { keep: true }); }
+    if (!(v.ed && v.ed.noteId === note.noteId)) { showReadChrome(v, note); buildBody(v, note); hydrateImages(v); paintAnnotations(v); paintLinks(v, note); paintPreviews(v); if (!findBarOf(v).hidden) runFind(v, { keep: true }); }
     if (v.kind === "window") { paintPinned(v, note); paintToc(v); v.win.querySelector(".nw-title").textContent = noteTitleOf(note); v.win.dataset.noteId = note.noteId; updateWindowSwitcher(); }
     paintVersionLine(v, note);
     renderPaneBar(v);
