@@ -171,6 +171,15 @@ export function openWordPopout({ host, word, ayahWords, ensureFont, paintGlyph, 
       });
     });
     st.geom = { Wc, Hc, fs, ax, ay, dpr };
+    // Architect review (#604): when the letters are wider than the window, show the START of the Arabic
+    // (its right-hand end), not its left; a centred word that fits stays centred. Only on a new size or
+    // view, so a reader's own scrolling (✋ Move) is not undone by a window resize.
+    const viewKey = `${st.mode}|${fs}`;
+    if (viewKey !== st.lastView) {
+      st.lastView = viewKey;
+      scrollEl.scrollLeft = Math.max(0, Math.ceil(rightEdge + pad - vw));
+      if (st.mode === "word") scrollEl.scrollTop = Math.max(0, Math.round((Hc - vh) / 2));
+    }
     stage.dataset.mode = st.mode;
     stage.dataset.fs = String(fs);
     stage.dataset.size = String(st.idx);

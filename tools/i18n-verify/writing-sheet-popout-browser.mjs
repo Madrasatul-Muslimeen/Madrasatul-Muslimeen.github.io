@@ -190,6 +190,16 @@ for (const [width, height] of [[390, 800], [820, 1000], [1280, 800]]) for (const
   const w2 = (await bbox(page, "ink"));
   const p2 = await pop(page);
   check(`${tag} after A+ the stroke is still there and has grown with the letters`, w2.n > 0 && w2.w > w1.w * 1.1 && Math.abs(w2.w / w1.w - p2.fs / p.fs) < 0.25 * (p2.fs / p.fs), `w ${w1.w}->${w2.w}, fs ratio ${p2.fs / p.fs}`);
+  // Architect review (#604): a word wider than the window shows its START (the right-hand end of the Arabic).
+  const startSeen = await page.evaluate(() => {
+    const sc = document.querySelector("#writingSheet .wp [data-wp-scroll]");
+    const c = document.querySelector("#writingSheet .wp [data-wp-paper]");
+    const g = c.getContext("2d"), d = g.getImageData(0, 0, c.width, c.height).data, dpr = c.width / parseFloat(c.style.width);
+    let maxX = -1;
+    for (let y = 0; y < c.height; y += 2) for (let x = c.width - 1; x > maxX; x--) { const i = (y * c.width + x) * 4; if (d[i] < 235 || d[i + 1] < 235) { maxX = x; break; } }
+    return { right: maxX / dpr, viewRight: sc.scrollLeft + sc.clientWidth };
+  });
+  check(`${tag} after A+ the word's start (its right-hand end) is in view`, startSeen.right >= 0 && startSeen.right <= startSeen.viewRight + 1, JSON.stringify(startSeen));
   await wp(page, '[data-wp="clear"]');
   check(`${tag} Clear removes everything`, (await bbox(page, "ink")).n === 0);
 
