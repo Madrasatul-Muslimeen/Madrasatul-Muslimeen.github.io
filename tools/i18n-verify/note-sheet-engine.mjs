@@ -279,6 +279,12 @@ check("extra fields are dropped, and the output is idempotent", () => {
   assert.deepEqual(Object.keys(s).sort(), ["cols", "d", "filt", "fmt", "hdr", "merges", "rows", "sym", "td", "v", "w"]);
   assert.equal(JSON.stringify(E.cleanSheetState(s)), JSON.stringify(s)); assert.equal(E.serializeSheetState(JSON.stringify(s)), JSON.stringify(s));
 });
+check("the stored text never holds a raw < or > (a cell with </script> cannot make a sanitiser drop the sheet), and reads back the same", () => {
+  const s = S([["</script><b>", "a -->", "x]>"]], { hdr: false });
+  const text = E.serializeSheetState(s);
+  assert.ok(!/[<>]/.test(text)); assert.ok(text.includes("\\u003c/script\\u003e"));
+  assert.deepEqual(E.cleanSheetState(text).d, s.d);
+});
 check("oversized JSON is refused outright", () => assert.equal(E.cleanSheetState("[" + "0,".repeat(E.SHEET_JSON_MAX) + "0]"), null));
 
 console.log("the stored snapshot (sheetStaticHtml)");

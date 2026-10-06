@@ -22,6 +22,7 @@ function check(name, ok, detail = "") {
   if (ok) { pass++; console.log(`  PASS  ${name}`); } else { fail++; console.log(`  FAIL  ${name}${detail ? `\n        ${detail}` : ""}`); }
 }
 const MUTATE = process.env.MUTATE || (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
+const ONLY = process.env.ONLY || (process.argv.find((a) => a.startsWith("--only=")) || "").slice(7);
 
 const READY_OPEN = `
 export const SIYAGAH_FLAGS_READINESS_AUTHORITIES = Object.freeze(["master-architect"]);
@@ -144,7 +145,7 @@ for (const lang of ["en", "bn"]) {
   for (const width of [390, 820, 1440]) {
     for (const surface of ["pane", "window"]) {
       const tag = `${surface} ${lang} ${width}px`;
-      if (process.env.ONLY && !tag.includes(process.env.ONLY)) continue; // a quick local run: ONLY="pane en 1440"
+      if (ONLY && !tag.includes(ONLY)) continue; // a quick local run: --only="pane en 1440"
       const S = surface === "pane" ? "#notePane" : ".note-win";
       const ctx = await newContext(browser, { appLang: lang, viewport: { width, height: 900 }, extraSeedJs: SEED });
       await ctx.route("**/js/siyagah-flags-readiness.js", (route) => route.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: READY_OPEN }));
@@ -164,7 +165,7 @@ for (const lang of ["en", "bn"]) {
       await resetWrites(page);
       await pressTool(page, S, "sheet");
       await page.waitForSelector(`${SH(S)} .sheet-live td.sheet-cell`);
-      check(`${tag}: it starts as a 5 x 4 grid`, await page.evaluate((q) => document.querySelectorAll(`${q} td.sheet-cell`).length === 20 && document.querySelectorAll(`${q} tbody tr`).length === 5, SH(S)));
+      check(`${tag}: it starts as a 5 x 4 grid`, await page.evaluate((q) => document.querySelectorAll(`${q} td.sheet-cell`).length === 20 && document.querySelectorAll(`${q} .sheet-grid tbody tr`).length === 5, SH(S)));
       const hint = await msg(page, S);
       check(`${tag}: the "Insert a spreadsheet" hint is shown, in ${lang}`, hint.length > 10 && (lang === "bn" ? hasBn(hint) : /Insert a spreadsheet/.test(hint)), hint);
       check(`${tag}: a paragraph follows the sheet, so the Note can be typed on`, await page.evaluate((q) => { const s = document.querySelector(q); return s.nextElementSibling?.tagName === "P"; }, SH(S)));
@@ -191,7 +192,8 @@ for (const lang of ["en", "bn"]) {
       await page.keyboard.press("Delete");
       check(`${tag}: Delete clears the selected block`, (await readState(page, S)).d[4].every((x) => x === ""));
       // Bangla digits typed on a Bangla keyboard are read as numbers
-      await typeCell(page, S, 4, 0, "৭"); await typeCell(page, S, 4, 1, "=A5+1");
+      await page.click(cell(S, 4, 0)); await page.keyboard.press("Enter"); await page.keyboard.insertText("৭"); await page.keyboard.press("Enter"); // a Bangla keyboard sends the character itself
+      await typeCell(page, S, 4, 1, "=A5+1");
       check(`${tag}: Bangla digits typed in a cell are stored as numbers (7, and 7+1 = 8)`, (await readState(page, S)).d[4][0] === "7" && toAscii(await cellText(page, S, 4, 1)) === "8");
       await page.click(cell(S, 4, 0)); await page.click(cell(S, 4, 1), { modifiers: ["Shift"] }); await page.keyboard.press("Delete");
 
@@ -250,10 +252,13 @@ for (const lang of ["en", "bn"]) {
       check(`${tag}: − Column removes the selected one after OK (5 x 5)`, (await dims()) === "5x5");
       await act(page, S, "addCol");
       // column resize by dragging its edge
+      await page.locator(`${SH(S)} th.sheet-ch`).first().scrollIntoViewIfNeeded();
       const grip = await page.locator(`${SH(S)} [data-sheet-resize="0"]`).boundingBox();
+      const hit0 = await page.evaluate(([x, y]) => { const e = document.elementFromPoint(x, y); return e ? `${e.tagName}.${e.className}` : "null"; }, [grip.x + grip.width / 2, grip.y + grip.height / 2]);
       await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2); await page.mouse.down(); await page.mouse.move(grip.x + grip.width / 2 + 60, grip.y + grip.height / 2, { steps: 4 }); await page.mouse.up();
       const wState = (await readState(page, S)).w;
-      check(`${tag}: dragging a column's edge widens it (saved width ${wState[0]} for column A)`, wState[0] >= 150 && wState[0] <= 162, JSON.stringify(wState));
+      const hit = hit0;
+      check(`${tag}: dragging a column's edge widens it (saved width ${wState[0]} for column A)`, wState[0] >= 150 && wState[0] <= 162, `${JSON.stringify(wState)} grip=${JSON.stringify(grip)} hit=${hit}`);
       check(`${tag}: ...and the grid really drew it that wide`, await page.evaluate((q) => Math.abs(document.querySelector(`${q} col[data-sheet-col="0"]`).getBoundingClientRect().width - 156) < 8, SH(S)));
       // merge / unmerge
       await page.click(cell(S, 0, 0)); await page.click(cell(S, 0, 1), { modifiers: ["Shift"] });
@@ -321,18 +326,19 @@ for (const lang of ["en", "bn"]) {
       // freeze the header row
       check(`${tag}: the header row is frozen by default (sticky)`, await page.evaluate((q) => getComputedStyle(document.querySelector(`${q} tr.sheet-hrow td`)).position === "sticky", SH(S)));
       await act(page, S, "freeze");
-      check(`${tag}: toggling the freeze is saved (hdr false) and the header is no longer sticky`, (await readState(page, S)).hdr === false && await page.evaluate((q) => getComputedStyle(document.querySelector(`${q} tbody tr:first-child td`)).position !== "sticky", SH(S)));
+      check(`${tag}: toggling the freeze is saved (hdr false) and the header is no longer sticky`, (await readState(page, S)).hdr === false && await page.evaluate((q) => getComputedStyle(document.querySelector(`${q} .sheet-grid tbody tr:first-child td`)).position !== "sticky", SH(S)));
       await act(page, S, "freeze");
 
       // ---------------- 6. the keyboard stays in the sheet ----------------
       await page.click(cell(S, 1, 0));
-      const before = await page.evaluate((s) => document.querySelector(`${s} [data-edit-body]`).innerHTML.replace(/<div class="mm-sheet"[\s\S]*?<\/div>\s*(?=<p>)/, ""), S);
+      const outside = (s) => { const b = document.querySelector(`${s} [data-edit-body]`).cloneNode(true); b.querySelectorAll(".mm-sheet").forEach((x) => x.remove()); return b.innerHTML; };
+      const before = await page.evaluate(outside, S);
       await page.keyboard.press("ArrowDown"); await page.keyboard.press("ArrowDown"); await page.keyboard.press("ArrowRight");
       check(`${tag}: the arrow keys move the selected cell (A2 -> B4)`, JSON.stringify(await activeCell(page, S)) === "[3,1]", JSON.stringify(await activeCell(page, S)));
       await page.keyboard.press("Shift+ArrowRight"); await page.keyboard.press("Shift+ArrowUp");
       check(`${tag}: Shift+arrows extend the selection (2 x 2 = 4 cells)`, (await selCount(page, S)) === 4);
       await page.keyboard.press("Tab");
-      check(`${tag}: Tab moves one cell right`, JSON.stringify(await activeCell(page, S)) === "[3,3]", JSON.stringify(await activeCell(page, S)));
+      check(`${tag}: Tab moves one cell right of the ACTIVE cell (B4 -> C4)`, JSON.stringify(await activeCell(page, S)) === "[3,2]", JSON.stringify(await activeCell(page, S)));
       await page.keyboard.press("Control+b");
       check(`${tag}: Ctrl+B in the sheet does NOT bold the Note (no <b> appears)`, !(await page.evaluate((s) => !!document.querySelector(`${s} [data-edit-body] b, ${s} [data-edit-body] strong`), S)));
       await page.keyboard.press("Escape");
@@ -342,7 +348,7 @@ for (const lang of ["en", "bn"]) {
       await page.keyboard.press("Escape");
       check(`${tag}: Esc inside the cell cancels the edit and keeps the sheet`, (await page.$$(`${SH(S)} input.sheet-input`)).length === 0 && (await page.$$(`${S} [data-edit-body]`)).length === 1);
       await page.keyboard.type("zz"); await page.keyboard.press("Escape");
-      const afterKeys = await page.evaluate((s) => document.querySelector(`${s} [data-edit-body]`).innerHTML.replace(/<div class="mm-sheet"[\s\S]*?<\/div>\s*(?=<p>)/, ""), S);
+      const afterKeys = await page.evaluate(outside, S);
       check(`${tag}: none of those keys changed the Note's own text outside the sheet`, before === afterKeys);
       // copy / paste a block; a tab-separated paste from another app
       await page.click(cell(S, 1, 0)); await page.click(cell(S, 1, 1), { modifiers: ["Shift"] }); await page.keyboard.press("Control+c");
@@ -431,10 +437,10 @@ for (const lang of ["en", "bn"]) {
     const res = {};
     const parse = (h) => { const t = document.createElement("template"); t.innerHTML = h; return t.content; };
     // 1. a sheet whose cells and static table are full of markup
-    const h1 = sanitizeNoteHtml(wrap({ ...base, d: [["<img src=x onerror=alert(1)>", "javascript:alert(1)"], ["=1", "<script>alert(2)</script>"]], evil: "<b>" },
+    const h1 = sanitizeNoteHtml(wrap({ ...base, d: [["<img src=x onerror=alert(1)>", "javascript:alert(1)"], ["=1", "<svg onload=alert(2)>"]], evil: "<b>" },
       '<table class="mm-sheet-static"><tbody><tr><td><img src=x onerror=alert(3)></td><td>FORGED 999</td></tr></tbody></table><script>alert(4)</script><button onclick=alert(5)>x</button><input value=y>'));
     const f1 = parse(h1);
-    res.h1 = { html: h1, imgs: f1.querySelectorAll("img").length, scripts: f1.querySelectorAll("script, button, input").length, onattrs: [...f1.querySelectorAll("*")].filter((e) => [...e.attributes].some((a) => /^on/i.test(a.name))).length, forged: h1.includes("FORGED"), sheets: f1.querySelectorAll("div.mm-sheet").length, kids: [...f1.querySelector("div.mm-sheet").children].map((k) => k.tagName).join(), attrs: [...f1.querySelector("div.mm-sheet").attributes].map((a) => a.name).sort().join(), cellText: f1.querySelector("td").textContent, idem: sanitizeNoteHtml(h1) === h1 };
+    res.h1 = { html: h1, imgs: f1.querySelectorAll("img").length, scripts: f1.querySelectorAll("script, button, input").length, onattrs: [...f1.querySelectorAll("*")].filter((e) => [...e.attributes].some((a) => /^on/i.test(a.name))).length, forged: h1.includes("FORGED"), sheets: f1.querySelectorAll("div.mm-sheet").length, kids: [...f1.querySelector("div.mm-sheet").children].map((k) => k.tagName).join(), attrs: [...f1.querySelector("div.mm-sheet").attributes].map((a) => a.name).sort().join(), cellText: f1.querySelector("th").textContent, idem: sanitizeNoteHtml(h1) === h1 };
     // 2. garbage state: the sheet is dropped, not trusted
     res.garbage = ["not json", "{", "[]", '{"d":5}', "null"].map((s) => sanitizeNoteHtml(`<p>keep</p><div class="mm-sheet" data-sheet='${s}'><table><tr><td>hi</td></tr></table></div>`)).map((h) => !h.includes("mm-sheet") && !h.includes("<td>hi</td>") && h.includes("keep"));
     // 3. a non-div carrying data-sheet is dropped
@@ -452,6 +458,11 @@ for (const lang of ["en", "bn"]) {
     // 7. javascript: in a currency symbol
     const sym = JSON.parse(parse(sanitizeNoteHtml(wrap({ ...base, sym: "javascript:alert(1)" }))).querySelector("div.mm-sheet").getAttribute("data-sheet")).sym;
     res.sym = sym;
+    // 7b. what the APP writes (< and > as JSON escapes) survives even a cell holding </script>
+    const engine = await import("/app/js/note-sheet-engine.js");
+    const typed = { ...engine.newSheetState(1, 1), d: [["</script><b>x</b>"]], hdr: false };
+    const kept = sanitizeNoteHtml(`<div class="mm-sheet" data-sheet="${engine.serializeSheetState(typed).replace(/"/g, "&quot;")}"></div>`);
+    res.esc = [kept.includes("mm-sheet"), parse(kept).querySelector("td")?.textContent, parse(kept).querySelectorAll("b, script").length];
     // 8. a sheet nested in a sheet's snapshot is gone
     res.nested = parse(sanitizeNoteHtml(wrap(base, wrap(base)))).querySelectorAll("div.mm-sheet").length;
     return res;
@@ -467,6 +478,7 @@ for (const lang of ["en", "bn"]) {
   check(`${tag}: class and contenteditable are stripped from every ordinary element`, out.strip === 0);
   check(`${tag}: a "javascript:" currency symbol is cleaned (${JSON.stringify(out.sym)})`, !/javascript/i.test(out.sym));
   check(`${tag}: a sheet nested inside a sheet is dropped (1 sheet left)`, out.nested === 1);
+  check(`${tag}: a cell holding "</script><b>x</b>" is kept as plain text -- the sheet is not lost, and nothing runs`, out.esc[0] && out.esc[1] === "</script><b>x</b>" && out.esc[2] === 0, JSON.stringify(out.esc));
 
   // hostile paste INTO the editor: the sheet that lands is the rebuilt one
   await openLeaf(page, "n1");

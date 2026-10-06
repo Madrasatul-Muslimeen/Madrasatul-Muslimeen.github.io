@@ -139,7 +139,7 @@ export function mountSheet(root, o) {
   }
   function paintSel() {
     const { r1, c1, r2, c2 } = rect();
-    const [ar, ac] = origin(focus[0], focus[1]);
+    const [ar, ac] = origin(anchor[0], anchor[1]); // the ACTIVE cell is where the block began
     for (const td of scroll.querySelectorAll("td.sheet-cell")) {
       const r = Number(td.dataset.r), c = Number(td.dataset.c), m = mergeAt(state, r, c);
       const inside = m ? !(m[0] + m[2] - 1 < r1 || m[0] > r2 || m[1] + m[3] - 1 < c1 || m[1] > c2) : r >= r1 && r <= r2 && c >= c1 && c <= c2;
@@ -227,7 +227,7 @@ export function mountSheet(root, o) {
 
   async function act(name) {
     const { r1, c1, r2, c2 } = rect();
-    const [ar, ac] = origin(focus[0], focus[1]);
+    const [ar, ac] = origin(anchor[0], anchor[1]);
     if (name === "extend") { extend = !extend; paintSel(); return; }
     if (name === "filter") { filterOpen = !filterOpen; paintFilter(); return; }
     if (name === "undo") { doUndo(); return; }
@@ -290,7 +290,7 @@ export function mountSheet(root, o) {
     box.hidden = !filterOpen;
     live.querySelector('[data-sheet-act="filter"]')?.setAttribute("aria-pressed", String(filterOpen));
     if (!filterOpen) { box.replaceChildren(); return; }
-    const c = origin(focus[0], focus[1])[1], hidden = new Set(state.filt[c] ?? []);
+    const c = origin(anchor[0], anchor[1])[1], hidden = new Set(state.filt[c] ?? []);
     const vals = [...new Set([...filterValues(state, c), ...hidden])];
     box.innerHTML = `<p class="sheet-filter-head"><strong>${esc(t("Filter column {col}", { col: colName(c) }))}</strong> <span>${esc(t("Untick a value to hide its rows."))}</span>
       <button type="button" class="secondary sheet-btn" data-sheet-filter-all>${esc(t("Show all"))}</button><button type="button" class="secondary sheet-btn" data-sheet-filter-close>${esc(t("Close"))}</button></p>
@@ -333,7 +333,7 @@ export function mountSheet(root, o) {
     if (td && !ev.target.closest("input")) {
       const r = Number(td.dataset.r), c = Number(td.dataset.c);
       if (editing) endEdit(true);
-      const wasActive = !ev.shiftKey && !extend && origin(focus[0], focus[1]).join() === `${r},${c}` && rect().r1 === rect().r2 && rect().c1 === rect().c2;
+      const wasActive = !ev.shiftKey && !extend && origin(anchor[0], anchor[1]).join() === `${r},${c}` && rect().r1 === rect().r2 && rect().c1 === rect().c2;
       if (wasActive && editable && ev.pointerType !== "mouse") { startEdit(r, c); ev.preventDefault(); return; }
       select(r, c, ev.shiftKey || extend);
       if (extend) { extend = false; paintSel(); }
@@ -389,7 +389,7 @@ export function mountSheet(root, o) {
     const mod = ev.ctrlKey || ev.metaKey, k = ev.key;
     const go = (dr, dc) => {
       ev.preventDefault();
-      let [r, c] = focus;
+      let [r, c] = ev.shiftKey ? focus : anchor; // a plain move starts from the ACTIVE cell (where the block began), as Excel does
       if (!ev.shiftKey) { const m = mergeAt(state, r, c); if (m) { r = dr > 0 ? m[0] + m[2] - 1 : m[0]; c = dc > 0 ? m[1] + m[3] - 1 : m[1]; } }
       r = clamp(r + dr, state.rows - 1); c = clamp(c + dc, state.cols - 1);
       if (!ev.shiftKey) { const [or, oc] = origin(r, c); r = or; c = oc; }
@@ -397,7 +397,7 @@ export function mountSheet(root, o) {
     };
     if (k === "ArrowDown") go(1, 0); else if (k === "ArrowUp") go(-1, 0); else if (k === "ArrowRight") go(0, 1); else if (k === "ArrowLeft") go(0, -1);
     else if (k === "Tab") go(0, ev.shiftKey ? -1 : 1);
-    else if (k === "Enter" || k === "F2") { ev.preventDefault(); startEdit(...origin(focus[0], focus[1])); }
+    else if (k === "Enter" || k === "F2") { ev.preventDefault(); startEdit(...origin(anchor[0], anchor[1])); }
     else if (k === "Delete" || k === "Backspace") { ev.preventDefault(); clearSel(); }
     else if (k === "Escape") { extend = false; paintSel(); }
     else if (k === "Home") { ev.preventDefault(); select(focus[0], 0, ev.shiftKey); }
@@ -412,7 +412,7 @@ export function mountSheet(root, o) {
       pasteSeen = false;
       setTimeout(() => { if (!pasteSeen && clip) pasteText(clip); }, 60);
     }
-    else if (!mod && !ev.altKey && k.length === 1) { ev.preventDefault(); startEdit(...origin(focus[0], focus[1]), k); }
+    else if (!mod && !ev.altKey && k.length === 1) { ev.preventDefault(); startEdit(...origin(anchor[0], anchor[1]), k); }
   });
   for (const type of ["keyup", "keypress", "beforeinput", "input", "mouseup", "compositionstart", "compositionend"]) live.addEventListener(type, (ev) => ev.stopPropagation());
   const toClipboard = (ev) => {

@@ -86,7 +86,8 @@ export function cleanSheetState(raw) {
   if (typeof o.td === "number" && Number.isInteger(o.td) && o.td > 0 && o.td < 3000000) out.td = o.td;
   return out;
 }
-export const serializeSheetState = (state) => JSON.stringify(cleanSheetState(state));
+/** The text stored in `data-sheet`. `<` and `>` are written as JSON escapes, so a cell holding "</script>" can never trip an HTML sanitiser into dropping the whole attribute (and with it the sheet). */
+export const serializeSheetState = (state) => JSON.stringify(cleanSheetState(state)).replace(/</g, "\\u003c").replace(/>/g, "\\u003e");
 
 // ---------------------------------------------------------------- references
 
