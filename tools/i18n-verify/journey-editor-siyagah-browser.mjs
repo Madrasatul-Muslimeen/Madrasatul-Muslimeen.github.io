@@ -66,7 +66,12 @@ for (const lang of ["en", "bn"].filter((l) => !ONLY || l === ONLY)) for (const w
   await toggleEdit();
   await P.waitForSelector(q("[data-edit-body]"), { state: "visible" });
   await P.waitForTimeout(150);
-  const tool = async (cmd) => { await P.locator(q(`[data-edit-toolbar] [data-cmd="${cmd}"]`)).scrollIntoViewIfNeeded(); await P.click(q(`[data-edit-toolbar] [data-cmd="${cmd}"]`)); await P.waitForTimeout(60); };
+// Updated in place 5 Oct 2026 (note-pane round 4, item 28): a narrow Note groups the toolbar (Aa · H · ≡ · + · ↺); a tool shows once its group is open.
+  const tool = async (cmd) => {
+    const sel = q(`[data-edit-toolbar] [data-cmd="${cmd}"]`);
+    if (!(await vis(sel))) await P.click(q(`[data-edit-toolbar] [data-tb-tab="${await P.getAttribute(sel, "data-tb-g")}"]`));
+    await P.locator(sel).scrollIntoViewIfNeeded(); await P.click(sel); await P.waitForTimeout(60);
+  };
   const caretIn = (text, atStart = false) => P.evaluate(([s, text, atStart]) => {
     const b = document.querySelector(s + " [data-edit-body]"); b.focus();
     const w = document.createTreeWalker(b, NodeFilter.SHOW_TEXT); let n;
@@ -83,9 +88,10 @@ for (const lang of ["en", "bn"].filter((l) => !ONLY || l === ONLY)) for (const w
   const tagOf = (text) => P.evaluate(([s, text]) => { const b = document.querySelector(s + " [data-edit-body]"); return [...b.children].find((c) => c.textContent.includes(text))?.tagName ?? null; }, [S, text]);
 
   // the toolbar
-  const tb = await P.evaluate((s) => { const t = document.querySelector(s + " [data-edit-toolbar]"); const bs = [...t.querySelectorAll("[data-cmd]")]; const r = t.getBoundingClientRect(); return { cmds: bs.map((b) => b.dataset.cmd), names: bs.map((b) => b.getAttribute("aria-label")), small: bs.filter((b) => { const x = b.getBoundingClientRect(); return x.width < 39.5 || x.height < 39.5; }).length, h: r.height }; }, S);
+  // Updated in place 5 Oct 2026 (note-pane round 4, item 28): a narrow Note groups the toolbar (Aa · H · ≡ · + · ↺); a tool shows once its group is open.
+  const tb = await P.evaluate((s) => { const t = document.querySelector(s + " [data-edit-toolbar]"); const bs = [...t.querySelectorAll("[data-cmd]")]; const r = t.getBoundingClientRect(); const shown = bs.filter((b) => getComputedStyle(b).display !== "none"); return { cmds: bs.map((b) => b.dataset.cmd), names: bs.map((b) => b.getAttribute("aria-label")), small: shown.filter((b) => { const x = b.getBoundingClientRect(); return x.width < 39.5 || x.height < 39.5; }).length, h: r.height, grouped: t.classList.contains("tb-grouped"), sideways: t.scrollWidth > t.clientWidth + 1 }; }, S);
   check(`${tag}: the toolbar has every new tool`, NEW_CMDS.every((c) => tb.cmds.includes(c)), NEW_CMDS.filter((c) => !tb.cmds.includes(c)).join());
-  check(`${tag}: every tool is 40px and the toolbar stays one row`, tb.small === 0 && tb.h <= 48, JSON.stringify({ small: tb.small, h: tb.h }));
+  check(`${tag}: every tool is 40px; one row, or (grouped) the groups and the open group's tools`, tb.small === 0 && (tb.grouped ? tb.h <= 150 && !tb.sideways : tb.h <= 48), JSON.stringify({ small: tb.small, h: tb.h, grouped: tb.grouped }));
   if (lang === "bn") check(`${tag}: the new tools are named in Bangla`, NEW_CMDS.every((c) => /[ঀ-৿]/.test(tb.names[tb.cmds.indexOf(c)] || "")), JSON.stringify(NEW_CMDS.map((c) => tb.names[tb.cmds.indexOf(c)])));
 
   // headings

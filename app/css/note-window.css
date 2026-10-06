@@ -261,3 +261,17 @@ form.fw-quick[data-fw-newfolder-form] { padding: 0.4rem 0.6rem; }
 .nw-toc-item { text-align: start; min-height: 36px; background: none; border: 0; border-radius: 0.35rem; color: #1F3A6E; font: inherit; font-size: 0.86rem; cursor: pointer; overflow-wrap: anywhere; }
 .nw-toc-item:hover, .nw-toc-item:focus-visible { background: #eef2ff; }
 .pane-btn[data-pane-multi][hidden], .note-pane-bar.multi-folded > [data-pane-multi], .note-pane-bar.tools-folded > [data-pane-multi] { display: none; }
+
+/* Note-pane round 4 (5 Oct 2026, items 28-33). */
+.pane-edit-toolbar .tb-tabs { display: none; }
+.pane-edit-toolbar.tb-grouped { flex-wrap: wrap; overflow-x: visible; row-gap: 0.35rem; }
+.pane-edit-toolbar.tb-grouped .tb-tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.25rem; flex: 0 0 100%; }
+.pane-edit-toolbar .tb-tab { min-width: 0; min-height: 40px; padding: 2px 4px; white-space: normal; overflow-wrap: anywhere; line-height: 1.1; font-size: 0.8rem; }
+.pane-edit-toolbar .tb-tab[aria-selected="true"] { background: #1F3A6E; color: #fff; border-color: #1F3A6E; }
+.pane-edit-toolbar.tb-grouped .tb-sep { display: none; }
+.pane-edit-toolbar.tb-grouped [data-tb-g]:not(.tb-on) { display: none; }
+.pane-edit-panel .tb-none { background: #fff; color: #8a1c1c; font-size: 1.2rem; }
+.note-mention { position: fixed; z-index: 6200; min-width: 14rem; max-width: min(22rem, calc(100vw - 16px)); max-height: 16rem; overflow-y: auto; background: #fff; color: #1F3A6E; border: 1px solid #c9d3e6; border-radius: 0.5rem; box-shadow: 0 8px 24px rgba(20,30,60,0.3); padding: 0.25rem; display: flex; flex-direction: column; }
+.note-mention-row { min-height: 40px; text-align: start; background: none; border: 0; border-radius: 0.35rem; color: inherit; font: inherit; cursor: pointer; padding: 0 0.5rem; overflow-wrap: anywhere; }
+.note-mention-row[aria-selected="true"], .note-mention-row:hover { background: #eef2ff; }
+.note-mention-empty { margin: 0.4rem; color: #5f6b7d; font-size: 0.9rem; }

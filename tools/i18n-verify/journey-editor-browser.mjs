@@ -103,7 +103,13 @@ async function run(lang, width, mode) { // mode: page | tray | window
   const done = async () => { await toggleEdit(); await P.waitForFunction((s) => !document.querySelector(s + " [data-edit-body]"), S); };
   const saved = () => P.evaluate(() => { const r = window.__DATA.noteRevisions.filter((x) => x.noteId === "n1"); return r[r.length - 1].bodyHtml; });
   const editorHtml = () => P.evaluate((s) => document.querySelector(s + " [data-edit-body]").innerHTML, S);
-  const tool = (cmd) => P.click(q(`[data-edit-toolbar] [data-cmd="${cmd}"]`));
+  // Updated in place 5 Oct 2026 (note-pane round 4, item 28): a narrow Note groups the toolbar (Aa · H · ≡ · + · ↺); a tool shows once its group is open.
+  const tool = async (cmd) => {
+    const sel = q(`[data-edit-toolbar] [data-cmd="${cmd}"]`);
+    const shown = await P.evaluate((x) => { const e = document.querySelector(x); return !!e && getComputedStyle(e).display !== "none"; }, sel);
+    if (!shown) await P.click(q(`[data-edit-toolbar] [data-tb-tab="${await P.getAttribute(sel, "data-tb-g")}"]`));
+    await P.click(sel);
+  };
   const selectText = (text) => P.evaluate(([s, text]) => {
     const b = document.querySelector(s + " [data-edit-body]"); b.focus();
     const w = document.createTreeWalker(b, NodeFilter.SHOW_TEXT); let n;
@@ -116,13 +122,14 @@ async function run(lang, width, mode) { // mode: page | tray | window
   await startEdit();
   const tb = await P.evaluate((s) => {
     const t = document.querySelector(s + " [data-edit-toolbar]"), r = t.getBoundingClientRect();
-    const btns = [...t.querySelectorAll("button")];
-    return { cmds: btns.map((b) => b.dataset.cmd), minW: Math.min(...btns.map((b) => b.getBoundingClientRect().width)), minH: Math.min(...btns.map((b) => b.getBoundingClientRect().height)), labels: btns.map((b) => b.getAttribute("aria-label")), h: r.height, right: r.right, vw: innerWidth };
+    const btns = [...t.querySelectorAll("button[data-cmd]")]; // updated in place 5 Oct 2026: the group tabs are not tools
+    const shown = btns.filter((b) => getComputedStyle(b).display !== "none");
+    return { cmds: btns.map((b) => b.dataset.cmd), minW: Math.min(...shown.map((b) => b.getBoundingClientRect().width)), minH: Math.min(...shown.map((b) => b.getBoundingClientRect().height)), labels: btns.map((b) => b.getAttribute("aria-label")), h: r.height, right: r.right, vw: innerWidth, grouped: t.classList.contains("tb-grouped") };
   }, S);
   const WANT = ["bold", "italic", "underline", "strike", "ul", "ol", "check", "quote", "link", "table", "color", "highlight", "left", "center", "right", "undo", "redo", "clear"];
   check(`${tag}: the toolbar has every button the round asks for`, WANT.every((c) => tb.cmds.includes(c)), tb.cmds.join());
   check(`${tag}: every toolbar button is at least 40px`, tb.minW >= 39.5 && tb.minH >= 39.5, `${tb.minW}x${tb.minH}`);
-  check(`${tag}: the toolbar is one row inside the screen`, tb.h <= 48 && tb.right <= tb.vw + 1, JSON.stringify({ h: tb.h, right: tb.right, vw: tb.vw }));
+  check(`${tag}: the toolbar is one row (or, grouped, the groups and one group's tools) inside the screen`, (tb.grouped ? tb.h <= 150 : tb.h <= 48) && tb.right <= tb.vw + 1, JSON.stringify({ h: tb.h, right: tb.right, vw: tb.vw, grouped: tb.grouped })); // updated in place 5 Oct 2026 (item 28)
   check(`${tag}: the buttons are named in ${en ? "English" : "Bangla"}`, en ? tb.labels.every((x) => /[A-Za-z]/.test(x)) : tb.labels.every((x) => hasBn(x)), tb.labels.join("|"));
   check(`${tag}: the toolbar never makes the page scroll sideways`, await sideways());
   const bnRaw = await P.evaluate((s) => [...document.querySelectorAll(s + " [data-edit-toolbar] [data-cmd]")].some((b) => /^(Bold|Italic)$/.test(b.getAttribute("aria-label"))), S);
@@ -143,7 +150,8 @@ async function run(lang, width, mode) { // mode: page | tray | window
   await selectText("alpha"); await tool("strike");
   await selectText("Alpha body one."); await tool("quote");
   await selectText("Beta body."); await tool("color");
-  check(`${tag}: Text colour opens a palette of fixed swatches`, (await P.locator(q('[data-swatch-mode="color"]')).count()) === 6);
+  // Updated in place 5 Oct 2026 (note-pane round 4, item 29): the six fixed swatches, then ⊘ (no colour).
+  check(`${tag}: Text colour opens a palette of fixed swatches`, (await P.locator(q('[data-swatch-mode="color"]:not(.tb-none)')).count()) === 6 && (await P.locator(q('[data-swatch-mode="color"].tb-none')).count()) === 1);
   await P.click(q('[data-swatch="#B3261E"]'));
   await selectText("Gamma body."); await tool("highlight");
   await P.click(q('[data-swatch="#FFF59D"]'));
@@ -235,6 +243,9 @@ async function run(lang, width, mode) { // mode: page | tray | window
     b.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }));
   }, [S, HOSTILE]);
   await wait(300);
+  // Updated in place 5 Oct 2026 (note-pane round 4, item 31): formatted text now asks first; "Keep the formatting"
+  // is the harder case for the cleaner, so the checks below run on it.
+  if (await P.$(q('[data-edit-panel] [data-paste-choice="rich"]'))) { await P.click(q('[data-edit-panel] [data-paste-choice="rich"]')); await wait(200); }
   const live = await editorHtml();
   check(`${tag}: a hostile paste never reaches the editor's DOM`, !/<script|onerror|onclick|javascript:|<iframe|<form|<input|position/i.test(live) && live.includes("okpaste"), live.slice(-300));
   check(`${tag}: ...and nothing in it ran`, await P.evaluate(() => window.__pwn === undefined));
