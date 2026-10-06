@@ -87,7 +87,7 @@ const reopened = async (page, before) => {
   await page.waitForFunction((b) => {
     const u = document.querySelector('#writingSheet [data-ws="unit"]');
     return u && u.textContent.trim() !== b && !!document.querySelector("#writingSheet .ws-page[data-painted]");
-  }, before, { timeout: 20000 });
+  }, before, { timeout: 8000 }).catch(() => check("the sheet re-opened on the chosen unit (its label changed)", false, `still "${before}"`));
   await page.waitForTimeout(300);
 };
 const closeSheet = async (page) => { await page.evaluate(() => document.querySelector('#writingSheet [data-ws="close"]')?.click()); await page.waitForTimeout(150); };

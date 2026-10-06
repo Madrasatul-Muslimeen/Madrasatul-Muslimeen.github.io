@@ -449,7 +449,8 @@ for (const [lang, width] of [["bn", 320], ["en", 390], ["en", 1280]]) {
   await stroke(page, [[0.2, 0.6], [0.8, 0.62]]);
   const tb = await page.evaluate(() => {
     const t = document.querySelector("#writingSheet .ws-toolbar"), r = t.getBoundingClientRect();
-    const btns = [...t.querySelectorAll("button")].map((b) => b.getBoundingClientRect());
+    // Updated in place, W1 (6 Oct 2026): the closed ⋯ menu's Save/Print are display:none (0x0); measure the buttons that are on screen.
+    const btns = [...t.querySelectorAll("button")].map((b) => b.getBoundingClientRect()).filter((b) => b.width > 0);
     return { h: r.height, cut: [...t.querySelectorAll("button")].some((b) => b.scrollWidth > b.clientWidth + 1), inside: btns.every((b) => b.left >= -0.5 && b.right <= innerWidth + 0.5), minH: Math.min(...btns.map((b) => b.height)), lines: new Set(btns.map((b) => Math.round(b.top))).size, text: t.textContent.replace(/\s+/g, " ").trim() };
   });
   check(`[${lang} ${width}] toolbar: no button cut, all on screen, each >= 40px tall`, !tb.cut && tb.inside && tb.minH >= 39.5, JSON.stringify(tb));

@@ -10294,8 +10294,7 @@
     }
     /** W1 -- the Writing sheet's "Show": set the Study Unit through the same handlers the unit pickers fire (one change of selection changes everywhere), then re-open the sheet for it. */
     async function applyWritingSheetChoice(c) {
-      stopDrill();
-      if (c.surah !== currentSurahNum && surahIndex.some((s) => s.surahNumber === c.surah)) {
+      stopDrill();      if (c.surah !== currentSurahNum && surahIndex.some((s) => s.surahNumber === c.surah)) {
         currentSurahNum = c.surah;
         surahSelect.value = String(c.surah);
         await loadSurah(); // resets the ayah to 1 and refills the ayah and range pickers
