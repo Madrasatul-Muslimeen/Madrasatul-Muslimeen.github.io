@@ -252,15 +252,13 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.90 on `main`** (6 Oct 2026 — **Achieved marks every place of a word with no dictionary word (فَهُمْ, لَهُمْ, هُمْ…), and the Word Card shows a place known through its word as Achieved**).
-- **What** (the Owner, 6 Oct 2026, with a screenshot of Yaseen 36:6 and 36:8: "Fahum is in two Ayat. Achieved in one place should mark both places"):
-  - **3,307 of the 77,429 words have an empty lemma** in the Quranic Arabic Corpus data (particle + pronoun words, and the opening letters), so the WbW mirror had nothing to share. Each now has a **stand-in** at WbW only: `"form:"` + its letters with marks and tatweel removed (`app/js/quran-word-form-key.js`, one rule used by the app and the build tool), in its own `form-index.json` (88 groups; never in `lemmas-index.json`). `wbwClaimKey()` feeds the claim key, the occurrence refs, the known-word overlay and the counters. Basic and Depth stay Not applicable (decision 68). **No Rules change**: `lemmaId` takes any string of 1–400 characters (emulator, real data-layer functions, `form:فهم`: 1/0).
-  - **Architect review**: the Word Card showed a place's OWN record, so an untouched place of an already-known word read "Not started" while the totals counted it known — for every word, not only stand-ins. It now shows **Achieved** with "Known: marked Achieved at another place of this word" (Bangla in `bn.js`).
-  - Existing claims made before this mirror on the next press; no data migration. Decision 74 recorded.
+**Current milestone: v09.91 on `main`** (6 Oct 2026 — **Writing sheet: choose the Ayah / Range / Surah / Page on the sheet (it changes the Study Unit everywhere), and the toolbar in two rows with Save + Print under ⋯**).
+- **What** (the Owner, 6 Oct 2026, a phone photo of the sheet opened from the Arabic Writing slice: "I should have buttons handy here for that", "Fit in 2 rows. Save, print … can hide under one button"; decision 75: "one change of selection should change everywhere"):
+  - `writing-sheet.js`: a 📖 unit control and panel (Type / Surah / Ayah / From / To / Page, Show, Cancel); Show asks first when there is writing; `onChooseUnit` hands the choice to the caller. The toolbar is two rows at every width (row 1 the tools, then Close and Hide; row 2 📖, letter style, ⋯ with Save picture and Print A4), icons with names in both languages below 600px.
+  - `quranrevival.html`: `applyWritingSheetChoice()` sets the Study Unit through the unit pickers' own handlers, then re-opens the sheet for it. Architect review: the 📖 label names the Surah ("Al-Faatiha", "Yaseen 1–12", "Page 50"), and the panel's hidden fields really hide (`label[hidden]`; the check now reads the rendered box).
 - **Checks:**
-  - quran-word-form-key 25/0; quran-word-form-mirror-browser 91/0 (mutations: WbW key back to lemma-only, 30 failed; card ignoring knownElsewhere, caught)
-  - quran-lemma-progress-rendered 77/0 (cross-occurrence check updated in place: no own write, card shows Achieved), quran-word-card-achieved-mirror 73/0, quran-word-card-return 55/0 (Last read save excluded), every other quran-word-*/quran-lemma-* green except the sandbox certificate checks and two pure checks red on main too (quran-lemma-progress-model 33/1, quran-word-card-form-meaning), claim-for-family-word-hadith 158/0, phone-width-overflow 217/0, stub-parity 4/0, rules-authorisation-executable 63/0, behaviour 1003/4 (sandbox baseline)
-- **With the Owner:** Yaseen: tap فَهُمْ in ayah 6, press Achieved; tap فَهُمْ in ayah 8 — it shows Achieved too.
+  - writing-sheet-unit-toolbar-browser 54/0 (the tightened panel check fails without the fix: 52/2), writing-sheet-browser 206/0 (toolbar checks updated in place), wheel-writing-slice 25/0, wheel-unit-go 254/0, wheel-centre 645/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
+- **With the Owner:** open the Writing sheet, tap 📖, choose Surah 36 or a Range, Show; the sheet and the rest of the app move there.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration

@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.90",
+    "version": "09.91",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2261,8 +2261,20 @@
     {
       "version": "09.90",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Stand-in WbW key for the 3,307 lemma-less words; the Word Card shows a place known through its word as Achieved (Owner, 6 Oct 2026); Builder #598 + Architect review.",
+      "integration": {
+        "authorizedOn": "2026-10-06",
+        "integratedOn": "2026-10-06",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.91",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Writing sheet: choose the unit on the sheet (changes it everywhere, decision 75); two-row toolbar; Builder #601 + Architect review.",
       "integration": {
         "authorizedOn": "2026-10-06",
         "integratedOn": "2026-10-06",
@@ -2271,8 +2283,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.91",
+  "nextUnallocated": "09.92",
   "nextUnallocatedNote": [
+    "v09.91 was allocated to Writing sheet unit picker and two-row toolbar, 2026-10-06.",
     "v09.90 was allocated to Achieved marks every place of a lemma-less word, 2026-10-06.",
     "v09.89 was allocated to \"Take an Approach\" and the Arabic Writing slice, 2026-10-06.",
     "v09.88 was allocated to 👥 on the Word Card and Hadith Studied, 2026-10-06.",

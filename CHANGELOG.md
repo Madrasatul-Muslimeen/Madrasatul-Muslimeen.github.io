@@ -19752,3 +19752,10 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
   - quran-word-form-key 25/0, quran-word-form-mirror-browser 91/0 (two mutations caught), lemma emulator suite with a stand-in id 1/0
   - quran-lemma-progress-rendered 77/0, quran-word-card-achieved-mirror 73/0, quran-word-card-return 55/0, claim-for-family-word-hadith 158/0, phone-width-overflow 217/0, stub-parity 4/0, rules-authorisation-executable 63/0, behaviour 1003/4 (sandbox baseline)
   - red on main too, not this round: quran-lemma-progress-model (1), quran-word-card-form-meaning
+
+## v09.91 — 6 Oct 2026 — Writing sheet: choose what to practise on the sheet; the toolbar in two rows
+
+- **What:** the Owner, 6 Oct 2026, and decision 75. Builder round #601 (PR #603): `writing-sheet.js` (📖 unit control and panel, `onChooseUnit`, two-row toolbar, ⋯ menu with Save picture and Print A4), `quranrevival.html` (`applyWritingSheetChoice`, `surahs`/`initial`/`unitLabel` passed in), `bn.js` (4 texts). Architect review: the label names the Surah; `label[hidden]` so the unused fields hide; the panel check reads the rendered box.
+- **Checks:**
+  - writing-sheet-unit-toolbar-browser 54/0 (52/2 with the hidden-field fix removed), writing-sheet-browser 206/0, wheel-writing-slice 25/0, wheel-unit-go 254/0, wheel-centre 645/0
+  - phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
