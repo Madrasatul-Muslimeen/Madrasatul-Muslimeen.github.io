@@ -252,15 +252,15 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.89 on `main`** (6 Oct 2026 — **the wheel's centre reads "Take an Approach"; the Arabic Writing slice opens the Writing sheet**).
-- **What** (the Owner, 6 Oct 2026, with a screenshot of the landing wheel):
-  - "Write in the circle, 'Take an Approach' (showing the unit is okay. Keep it as it as the last act)": `#wheelCtaBtn`'s first line; its second line (the unit) is unchanged. The pill is 80% of the circle (85% below a 140px hub), and `layoutWheelHub()` shrinks only the first line, never below 8px, when the words still do not fit on one line.
-  - "If that is clicked, the writing page must open for writing practice": `jumpToApproach()` sends the Arabic Writing slice (or list row) to `openWritingSheetForCurrentUnit()`, matched by `approach_05` or a copy's `sourceTemplateId` (`isWritingApproach`); every other slice opens its Track card as before.
-  - Tests: the four Word Card "writes nothing" checks leave out v09.80's deliberate Last read save (they were red on `main`). Decision 73 recorded.
+**Current milestone: v09.90 on `main`** (6 Oct 2026 — **Achieved marks every place of a word with no dictionary word (فَهُمْ, لَهُمْ, هُمْ…), and the Word Card shows a place known through its word as Achieved**).
+- **What** (the Owner, 6 Oct 2026, with a screenshot of Yaseen 36:6 and 36:8: "Fahum is in two Ayat. Achieved in one place should mark both places"):
+  - **3,307 of the 77,429 words have an empty lemma** in the Quranic Arabic Corpus data (particle + pronoun words, and the opening letters), so the WbW mirror had nothing to share. Each now has a **stand-in** at WbW only: `"form:"` + its letters with marks and tatweel removed (`app/js/quran-word-form-key.js`, one rule used by the app and the build tool), in its own `form-index.json` (88 groups; never in `lemmas-index.json`). `wbwClaimKey()` feeds the claim key, the occurrence refs, the known-word overlay and the counters. Basic and Depth stay Not applicable (decision 68). **No Rules change**: `lemmaId` takes any string of 1–400 characters (emulator, real data-layer functions, `form:فهم`: 1/0).
+  - **Architect review**: the Word Card showed a place's OWN record, so an untouched place of an already-known word read "Not started" while the totals counted it known — for every word, not only stand-ins. It now shows **Achieved** with "Known: marked Achieved at another place of this word" (Bangla in `bn.js`).
+  - Existing claims made before this mirror on the next press; no data migration. Decision 74 recorded.
 - **Checks:**
-  - wheel-writing-slice-browser 25/0 (mutations no-route, all-slices each caught; approach_05 bound to "Arabic Writing")
-  - wheel-centre-browser 645/0 (checks updated in place: 80%/85% wide, the new words on one line, whole), wheel-slice-opens-track 96/0, wheel-unit-go 254/0, landing-drawers 274/0, landing-sections-collapse 152/0, writing-sheet-browser 180/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (22g×3 archive.org, 31e certificate: the sandbox baseline)
-- **With the Owner:** the landing wheel's centre says "Take an Approach"; tap the Arabic Writing slice and the Writing sheet opens.
+  - quran-word-form-key 25/0; quran-word-form-mirror-browser 91/0 (mutations: WbW key back to lemma-only, 30 failed; card ignoring knownElsewhere, caught)
+  - quran-lemma-progress-rendered 77/0 (cross-occurrence check updated in place: no own write, card shows Achieved), quran-word-card-achieved-mirror 73/0, quran-word-card-return 55/0 (Last read save excluded), every other quran-word-*/quran-lemma-* green except the sandbox certificate checks and two pure checks red on main too (quran-lemma-progress-model 33/1, quran-word-card-form-meaning), claim-for-family-word-hadith 158/0, phone-width-overflow 217/0, stub-parity 4/0, rules-authorisation-executable 63/0, behaviour 1003/4 (sandbox baseline)
+- **With the Owner:** Yaseen: tap فَهُمْ in ayah 6, press Achieved; tap فَهُمْ in ayah 8 — it shows Achieved too.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration

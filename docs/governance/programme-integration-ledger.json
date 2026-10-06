@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.89",
+    "version": "09.90",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2249,8 +2249,20 @@
     {
       "version": "09.89",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Wheel centre pill reads Take an Approach; the Arabic Writing slice opens the Writing sheet (Owner, 6 Oct 2026); Architect-built.",
+      "integration": {
+        "authorizedOn": "2026-10-06",
+        "integratedOn": "2026-10-06",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.90",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Stand-in WbW key for the 3,307 lemma-less words; the Word Card shows a place known through its word as Achieved (Owner, 6 Oct 2026); Builder #598 + Architect review.",
       "integration": {
         "authorizedOn": "2026-10-06",
         "integratedOn": "2026-10-06",
@@ -2259,8 +2271,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.90",
+  "nextUnallocated": "09.91",
   "nextUnallocatedNote": [
+    "v09.90 was allocated to Achieved marks every place of a lemma-less word, 2026-10-06.",
     "v09.89 was allocated to \"Take an Approach\" and the Arabic Writing slice, 2026-10-06.",
     "v09.88 was allocated to 👥 on the Word Card and Hadith Studied, 2026-10-06.",
     "v09.87 was allocated to family members with year of birth at sign-up, 2026-10-06.",

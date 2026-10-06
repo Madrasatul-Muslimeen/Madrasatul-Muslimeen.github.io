@@ -6185,7 +6185,8 @@
     import { isLemmaLevelsPersistenceReady } from "./js/study-lemma-levels-readiness.js";
     import { claimKeyFor, LEMMA_WIDE_LEVELS } from "./js/quran-lemma-levels.js";
     import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard, renderQuranWordCard, WORD_CARD_POS_SEGMENTS } from "./js/quran-word-card.js";
-    import { occurrenceRefsFor, rootFormsFor, unpackWordIndexRef, loadWordIdentityIndex } from "./js/quran-word-index.js";
+    import { occurrenceRefsFor, occurrenceRefsForClaimKey, rootFormsFor, unpackWordIndexRef, loadWordIdentityIndex } from "./js/quran-word-index.js";
+    import { wbwClaimKey, isFormKey } from "./js/quran-word-form-key.js";
     import { relatedBySharedWords, relatedThroughLists, connectedThroughNotes } from "./js/ayah-related.js";
     import { wordSegmentsFor } from "./js/quran-word-segments.js";
     import { wordFeaturesFor, loadLemmaForms, loadVerbForms, loadWordFeaturesForSurah, loadWordFormsIndex, loadWordSyntaxForSurah, loadFuruqIndex, loadMufradatForRoot } from "./js/quran-word-features.js";
@@ -15220,6 +15221,7 @@
         statePractising: statusLabel("practising"),
         stateAchieved: statusLabel("achieved"),
         awaitingReview: t("Waiting to be checked"),
+        knownElsewhere: t("Known: marked Achieved at another place of this word"),
         reviewConfirmed: t("Checked and confirmed"),
         reviewReturned: t("Sent back: {note}"),
         reviewReturnedNoNote: t("Sent back to look at again"),
@@ -15296,13 +15298,18 @@
     async function primeLemmaProgressForOccurrenceScope(chapter, occurrenceIds, tenantId, personId) {
       if (!isLemmaProgressPersistenceReady() || !chapter?.ayahs) return;
       const lemmaIds = new Set();
+      const realLemmaIds = new Set(); // Basic's meaning-group claims need a REAL dictionary word, never a stand-in
       const rootIds = new Set();
       for (const occ of occurrenceIds) {
         let ref;
         try { ref = parseQuranWordOccurrenceId(occ); } catch { continue; }
         const ayah = chapter.ayahs.find((a) => a.ayah === ref.ayah);
         const word = ayah?.words?.find((w) => w.position === ref.position);
-        if (word?.morphology?.lemma) lemmaIds.add(word.morphology.lemma);
+        // The Owner, 6 Oct 2026: a word with no dictionary word (فَهُمْ) is shared
+        // at WbW through its stand-in key (quran-word-form-key.js).
+        const wbwKey = wbwClaimKey(word);
+        if (wbwKey) lemmaIds.add(wbwKey);
+        if (word?.morphology?.lemma) realLemmaIds.add(word.morphology.lemma);
         if (word?.morphology?.root) rootIds.add(word.morphology.root);
       }
       if (!lemmaIds.size) return;
@@ -15319,7 +15326,7 @@
       if (!meaningGroupsLive()) return;
       try { await loadLemmaMeaningGroups(); } catch (error) { console.warn("meaning groups unavailable", error); }
       const basicKeys = new Set();
-      for (const lemmaId of lemmaIds) basicKeys.add(claimKeyFor(MEANING_GROUP_LEVEL, { lemma: lemmaId }, meaningGroupOf));
+      for (const lemmaId of realLemmaIds) basicKeys.add(claimKeyFor(MEANING_GROUP_LEVEL, { lemma: lemmaId }, meaningGroupOf));
       await Promise.all([
         ...[...basicKeys].map((lemmaId) => primeLemmaProgress(db, { tenantId, personId, level: MEANING_GROUP_LEVEL, lemmaId })),
         ...[...rootIds].map((lemmaId) => primeLemmaProgress(db, { tenantId, personId, level: ROOT_LEVEL, lemmaId })),
@@ -15343,7 +15350,8 @@
      */
     function lemmaViewWithGroup({ tenantId, personId, lemmaId, root, confirmationRequired }) {
       const own = lemmaProgressFor({ tenantId, personId, lemmaId, confirmationRequired });
-      if (own.countsAsKnown || !meaningGroupsLive()) return own;
+      // A stand-in (no dictionary word) has no meaning group; Basic/Depth stay Not applicable for it.
+      if (own.countsAsKnown || !meaningGroupsLive() || isFormKey(lemmaId)) return own;
       // Decision 58: a word is known if ANY level makes it known. WbW is the
       // word's own claim (above); a BASIC claim on its meaning group, or a
       // DEPTH claim on its root, spreads to it. A claim still awaiting a
@@ -15367,7 +15375,7 @@
         try { ref = parseQuranWordOccurrenceId(occ); } catch { continue; }
         const ayah = chapter.ayahs.find((a) => a.ayah === ref.ayah);
         const word = ayah?.words?.find((w) => w.position === ref.position);
-        const lemmaId = word?.morphology?.lemma;
+        const lemmaId = wbwClaimKey(word);
         if (!lemmaId) continue;
         lemmaViewByOccurrenceId.set(occ, lemmaViewWithGroup({ tenantId, personId, lemmaId, root: word?.morphology?.root, confirmationRequired }));
       }
@@ -15398,19 +15406,23 @@
       const progress = wordProgressFor({ tenantId, personId: subjectPersonId, level, occurrenceId: quranWordCardState.occurrenceId, confirmationRequired });
       const authority = wordProgressAuthority({ actorPersonId, subjectPersonId, isSupervisor, confirmationRequired });
       let coverage = null;
+      let knownElsewhere = false;
       if (level === "wbw") {
         try {
           const scope = occurrenceIdsForAyah(currentSurahData, ref.ayah);
           const rawViews = new Map(scope.map((occ) => [occ, wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: occ, confirmationRequired })]));
           const views = effectiveViewsForScope(currentSurahData, scope, rawViews, tenantId, subjectPersonId, confirmationRequired);
           coverage = computeArabicCoverage({ scopeOccurrenceIds: scope, views, label: `ayah:${ref.surah}:${ref.ayah}` });
+          // The Owner, 6 Oct 2026: a place known only through its word's other
+          // place shows as Achieved (see quran-word-card.js), not "Not started".
+          if (progress.loaded !== false && !progress.countsAsKnown && views.get?.(quranWordCardState.occurrenceId)?.countsAsKnown) knownElsewhere = true;
         } catch { coverage = null; }
       }
       // The Owner, 5 Oct 2026: "It takes hours to marked achieved from not
       // started." A press shows AT ONCE: the pressed state, locked buttons
       // and "Saving…" (see wordProgressSaving at runWordProgressAction()).
       const saving = wordProgressSaving && wordProgressSaving.occurrenceId === quranWordCardState.occurrenceId && wordProgressSaving.level === level;
-      return { progress: { ...progress, loading: wordProgressBusy && !progress.loaded, ...(saving ? { saving: true, state: wordProgressSaving.state ?? progress.state } : {}) }, authority, coverage };
+      return { progress: { ...progress, knownElsewhere: knownElsewhere && !saving, loading: wordProgressBusy && !progress.loaded, ...(saving ? { saving: true, state: wordProgressSaving.state ?? progress.state } : {}) }, authority, coverage };
     }
 
     /**
@@ -15463,7 +15475,7 @@
       const requestedId = quranWordCardState.occurrenceId;
       const ayah = currentSurahData?.ayahs.find((a) => a.ayah === ref.ayah);
       const word = ayah?.words?.find((w) => w.position === ref.position);
-      const lemmaId = word?.morphology?.lemma || null;
+      const lemmaId = wbwClaimKey(word) || null;
       const confirmationRequired = !!wordProgressConfirmRequired;
 
       let wholeQuranTotal = null;
@@ -15529,9 +15541,9 @@
       // filled by hydrateWordCardOccurrences(), a separate async load that
       // was usually still in flight here -- so the count read 0 and the
       // "if you learn this word" line never appeared.
-      let lemmaRefs = quranWordCardContext.lemmaOccurrences ?? null;
+      let lemmaRefs = isFormKey(lemmaId) ? null : (quranWordCardContext.lemmaOccurrences ?? null);
       if (!lemmaRefs) {
-        try { lemmaRefs = await occurrenceRefsFor("lemma", lemmaId); } catch { lemmaRefs = []; }
+        try { lemmaRefs = await occurrenceRefsForClaimKey(lemmaId); } catch { lemmaRefs = []; }
         if (requestId !== quranWordCardLemmaRequestId) return;
       }
       const occurrenceCount = lemmaRefs.length;
@@ -15601,7 +15613,8 @@
      * needs the groups file, so callers await ensureMeaningGroups() first.
      */
     function claimKeyOfWord(level, word) {
-      return claimKeyFor(level, { lemma: word?.morphology?.lemma, root: word?.morphology?.root }, meaningGroupOf);
+      // WbW only: a word with no dictionary word is claimed under its stand-in key.
+      return claimKeyFor(level, { lemma: level === "wbw" ? wbwClaimKey(word) : word?.morphology?.lemma, root: word?.morphology?.root }, meaningGroupOf);
     }
     async function ensureMeaningGroups() {
       try { await loadLemmaMeaningGroups(); } catch (error) { console.warn("meaning groups unavailable", error); }
@@ -15616,7 +15629,7 @@
         const lists = await Promise.all(sameMeaningLemmas(lemmaId).map((lemma) => occurrenceRefsFor("lemma", lemma)));
         return lists.flat();
       }
-      return occurrenceRefsFor("lemma", lemmaId);
+      return occurrenceRefsForClaimKey(wbwClaimKey(word));
     }
 
     /**
@@ -15998,7 +16011,7 @@
           // moved. Read the lemma's occurrences from the cached index.
           // Decision 58: at Basic/Depth the spread is the meaning group / the root.
           const refs = level === "wbw"
-            ? (quranWordCardContext.lemmaOccurrences ?? await occurrenceRefsFor("lemma", lemmaId))
+            ? ((!isFormKey(lemmaId) && quranWordCardContext.lemmaOccurrences) || await occurrenceRefsForClaimKey(lemmaId))
             : await spreadRefsFor(level, word);
           if (!juzIndexData) juzIndexData = await getJuzIndex();
           const counts = await getLemmaOccurrenceCounts(db, {
@@ -17389,7 +17402,7 @@
       const words = ayahObj.words.map((w) => {
         const occurrenceId = `quran-word-occurrence:v1:${surahNum}:${ayahNum}:${w.position}`;
         const occView = wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId, confirmationRequired });
-        const lemmaId = w.morphology?.lemma;
+        const lemmaId = wbwClaimKey(w);
         const lemmaView = lemmaId && isLemmaProgressPersistenceReady()
           ? lemmaViewWithGroup({ tenantId, personId: subjectPersonId, lemmaId, root: w.morphology?.root, confirmationRequired })
           : null;

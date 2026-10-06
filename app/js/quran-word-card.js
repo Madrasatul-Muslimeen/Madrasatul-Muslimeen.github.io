@@ -144,6 +144,7 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   statePractising: "Practising",
   stateAchieved: "Achieved",
   awaitingReview: "Waiting to be checked",
+  knownElsewhere: "Known: marked Achieved at another place of this word",
   reviewConfirmed: "Checked and confirmed",
   reviewReturned: "Sent back: {note}",
   reviewReturnedNoNote: "Sent back to look at again",
@@ -417,7 +418,11 @@ function progressBlock(progress, authority, coverage, text, formatNumber, wbw = 
   // 5 Oct 2026 -- while a press is saving, every button is locked (one save
   // at a time) and the pressed state already shows.
   const locked = progress.saving ? " disabled" : "";
-  const stateButton = (state) => `<button type="button" data-word-progress-state="${state}" aria-pressed="${progress.state === state}" style="${stageColourStyle(state)}"${authority?.mayClaim && !progress.saving ? "" : " disabled"}>${escapeHtml(stateLabel[state])}</button>`;
+  // The Owner, 6 Oct 2026 ("Achieved in one place should mark both places"): a
+  // place not marked by itself, whose word is known through another place,
+  // shows Achieved -- the same answer the totals and the coloured marks give.
+  const shownState = progress.knownElsewhere ? "achieved" : progress.state;
+  const stateButton = (state) => `<button type="button" data-word-progress-state="${state}" aria-pressed="${shownState === state}" style="${stageColourStyle(state)}"${authority?.mayClaim && !progress.saving ? "" : " disabled"}>${escapeHtml(stateLabel[state])}</button>`;
   const decisions = authority?.mayDecide && progress.state === "achieved"
     ? `<div class="word-progress-decide">
         <button type="button" data-word-progress-decide="confirmed"${locked}>${escapeHtml(text.confirm)}</button>
@@ -446,6 +451,7 @@ function progressBlock(progress, authority, coverage, text, formatNumber, wbw = 
     ${wbw.notApplicable ? notApplicableHtml(progress, authority, text) : `<div class="word-progress-states" role="group" aria-label="${escapeHtml(text.progressHeading)}">${stateButton("not_started")}${stateButton("learning")}${stateButton("practising")}${stateButton("achieved")}</div>`}
     ${progress.saving ? `<p class="word-progress-state" data-word-progress-saving role="status">${escapeHtml(text.saving ?? "Saving…")}</p>` : ""}
     ${reviewLine ? `<p class="word-progress-state" data-word-progress-review>${escapeHtml(reviewLine)}</p>` : ""}
+    ${progress.knownElsewhere ? `<p class="word-progress-state" data-word-progress-known-elsewhere>${escapeHtml(text.knownElsewhere ?? "Known: marked Achieved at another place of this word")}</p>` : ""}
     ${authority && !authority.mayClaim ? `<p class="word-progress-state" data-word-progress-blocked>${escapeHtml(text.progressNotAllowed)}</p>` : ""}
     ${decisions}
     </div>

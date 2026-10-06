@@ -1243,6 +1243,7 @@ export const BN = {
   "Share of the words of the Qur'an known: not loaded yet": "কুরআনের কত শতাংশ শব্দ জানা: এখনও লোড হয়নি",
   "of the Qur'an": "কুরআনের",
   "Waiting to be checked": "যাচাইয়ের অপেক্ষায়",
+  "Known: marked Achieved at another place of this word": "জানা: এই শব্দের অন্য স্থানে অর্জিত হিসেবে চিহ্নিত",
   "Checked and confirmed": "যাচাই করে নিশ্চিত করা হয়েছে",
   "Sent back: {note}": "ফেরত পাঠানো হয়েছে: {note}",
   "Sent back to look at again": "আবার দেখার জন্য ফেরত পাঠানো হয়েছে",
