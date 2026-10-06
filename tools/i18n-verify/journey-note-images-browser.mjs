@@ -158,7 +158,9 @@ export function siyagahFlagsUnavailableReason() { return null; }` }));
       await resetWrites(page);
       await page.evaluate(() => sessionStorage.setItem("__stubStorageLog", "[]"));
       await page.setInputFiles(`${S} [data-edit-panel] [data-image-file]`, { name: "big.jpg", mimeType: "image/jpeg", buffer: jpeg });
-      await page.waitForSelector(`${S} [data-edit-body] img[data-mmsa-image]`, { timeout: 15000 });
+      const appeared = await page.waitForSelector(`${S} [data-edit-body] img[data-mmsa-image]`, { timeout: 15000 }).catch(() => null);
+      check(`${tag}: the picture was inserted into the Note`, !!appeared, await panelMsg(page, S));
+      if (!appeared) { await page.close(); await ctx.close(); continue; }
       const log = await storageLog(page), up = log.filter((e) => e.op === "uploadBytes");
       check(`${tag}: exactly one upload, WebP, at noteImages/test-uid/{id}.webp`, up.length === 1 && up[0].type === "image/webp" && /^noteImages\/test-uid\/[A-Za-z0-9_-]{8,40}\.webp$/.test(up[0].path), JSON.stringify(up));
       check(`${tag}: it is MADE SMALL: at most 400 KB, about 200 KB (${Math.round((up[0]?.size ?? 0) / 1024)} KB), far under the ${Math.round(jpeg.length / 1024)} KB original`, up[0] && up[0].size <= 400 * 1024 && up[0].size <= 260 * 1024 && up[0].size > 10 * 1024, JSON.stringify(up));
