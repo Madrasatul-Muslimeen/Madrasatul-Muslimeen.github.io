@@ -252,14 +252,15 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.87 on `main`** (5 Oct 2026 — **family members with year of birth at sign-up, and an Age column on People**).
-- **What** (the Owner: "When a user new sign in, he is asked to put family members with age, to attach with his account ... If not, we have to make that rule and feature"; demo `docs/reference/2026-10-05-family-members-signup-demo.html`):
-  - "Create your account" for **My family** opens **step 2, "Who is in your family?"**: a name and a **year of birth** per person (the age is worked out, never stored), "A child I look after" ticked by itself under 18, + Add another, Save and continue, Skip for now. Each is added with `addPersonToTenant()` as a Student, a child managed by the new owner.
-  - **People**: an **Age** column; Add a person and Edit take a year of birth (`birthYear` on tenantPeople, `validBirthYear` / `ageFromBirthYear` in `people.js`). The owner's and a guardian's tenantPeople Rules carry no field list, so **no Rules change**.
+**Current milestone: v09.88 on `main`** (6 Oct 2026 — **👥 record for family members on the Word Card levels and on Hadith "Studied"**).
+- **What** (the Owner, 5 Oct 2026, decision 71: progress for family members "wherever progress is recorded"):
+  - **Word Card** (WbW, Basic, Depth): the same 👥 picker as the other Record cards (shared `claimForIds`). A state press writes for each ticked person, others first and the Student last; each person's progress and confirmation rule are loaded before their "before" snapshot, so their own whole-Qur'an total moves correctly. Approve / Return applies only to ticked people whose own claim waits; the note is asked once.
+  - **Hadith "Studied"**: the 👥 picker beside it (`getHadeethEncRoster`, first use only); `claimHadeethEncStudied` claims for each ticked person, claimant = the actor.
+  - Architect review fixes: the picker's white list carried no ink of its own, so on the dark Word Card the names read cream on white; and `hadith-collections.html` had no picker styles at all (an always-open, unstyled list). Both fixed, each with a rendered-contrast check proven by mutation.
 - **Checks:**
-  - family-signup-browser 68/0 (3 mutations, each caught)
-  - rules-authorisation-executable 63/0 (birthYear on tenantPeople: the owner's and a guardian's Rules carry no field list), stub-parity 4/0, phone-width-overflow 217/0, behaviour 1003/4 (22g×3 archive.org, 31e certificate: the sandbox baseline)
-- **With the Owner:** the next new family account sees step 2; on People, Edit a person and give a year of birth.
+  - claim-for-family-word-hadith-browser 158/0 (mutations no-load, decide-all, no-ink, hadith-css each caught)
+  - claim-for-family-browser 56/0, hadeethenc/hadith suites all green, quran-word-* green except the known "writes nothing" and certificate baselines (identical on main), phone-width-overflow 217/0, stub-parity 4/0, rules-authorisation-executable 63/0, behaviour 1006/1 (31e certificate)
+- **With the Owner:** with two family members, open a word, tick 👥, press Achieved; open a Hadith, tick 👥, set Studied.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration

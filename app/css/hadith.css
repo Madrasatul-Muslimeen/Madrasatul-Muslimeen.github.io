@@ -209,7 +209,28 @@ a.hadeethenc-study-btn[aria-disabled="true"], button.hadeethenc-study-btn[aria-d
 }
 .hadeethenc-study-label { font-size: 0.82rem; font-weight: 600; color: var(--hadith-ink); }
 .hadeethenc-study-select { min-height: 40px; min-width: 0; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); }
+/* 👥 the record-for picker beside "Studied" (decision 71). Architect review (#597): hadith-collections.html carries
+   no copy of the picker's styles (each study page inlines its own), so the list rendered unstyled and always open.
+   The same look as the Qur'an page's, scoped here, with its own dark ink on its white box. */
 .hadeethenc-study-item .claim-for-row { display: flex; align-items: center; position: relative; max-width: 100%; }
-.hadeethenc-study-item .claim-for-row .assign-trigger { min-height: 40px; max-width: 100%; }
-.hadeethenc-study-item .claim-for-row .assign-popover { left: 0; right: auto; z-index: 40; max-width: calc(100vw - 32px); }
+.hadeethenc-study-item .assign-trigger-wrap { position: relative; flex-shrink: 0; }
+.hadeethenc-study-item .assign-trigger {
+  display: flex; align-items: center; gap: 0.3rem; min-height: 40px; max-width: 100%;
+  background: #fff; border: 1.5px solid rgba(31,58,110,0.35); color: #1F3A6E; font-weight: 700; font-size: 0.85rem;
+  padding: 0.28rem 0.7rem; border-radius: 1.2rem; cursor: pointer; white-space: nowrap; font-family: inherit;
+}
+.hadeethenc-study-item .assign-trigger .caret { font-size: 0.65rem; opacity: 0.7; }
+.hadeethenc-study-item .assign-popover {
+  position: absolute; top: calc(100% + 0.35rem); left: 0; right: auto; width: 12.5rem; max-width: calc(100vw - 32px);
+  background: #fff; color: #1F2937; border: 1px solid rgba(31,58,110,0.22); border-radius: 10px;
+  padding: 0.6rem 0.65rem 0.65rem; box-shadow: 0 10px 26px rgba(20,40,80,0.18); z-index: 40; display: none;
+}
+.hadeethenc-study-item .assign-popover.open { display: block; }
+.hadeethenc-study-item .assign-popover-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #555; margin: 0 0 0.4rem; }
+.hadeethenc-study-item .assign-hint { font-size: 0.76rem; color: #555; margin: 0 0 0.55rem; }
+.hadeethenc-study-item .assign-list { display: flex; flex-direction: column; gap: 0.3rem; }
+.hadeethenc-study-item .assign-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; user-select: none; padding: 0.1rem 0; min-height: 32px; }
+.hadeethenc-study-item .assign-row input[type="checkbox"] { width: 1.05rem; height: 1.05rem; accent-color: #1F3A6E; cursor: pointer; flex-shrink: 0; }
+.hadeethenc-study-item .assign-row .who-name { flex: 1; }
+.hadeethenc-study-item .assign-row .who-tag { font-size: 0.66rem; color: #555; background: #f6f7fb; border: 1px solid #eee; border-radius: 0.6rem; padding: 0.02rem 0.4rem; }
 .hadeethenc-study-reason { flex-basis: 100%; font-size: 0.8rem; color: #7d1f1e; margin: 0.1rem 0 0; font-weight: 600; }

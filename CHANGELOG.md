@@ -19728,3 +19728,11 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
 - **Checks:**
   - family-signup-browser 68/0; mutations no-step, no-year, no-manager each caught
   - rules-authorisation-executable 63/0 (birthYear on tenantPeople: the owner's and a guardian's Rules carry no field list), stub-parity 4/0, phone-width-overflow 217/0, behaviour 1003/4 (22g×3 archive.org, 31e certificate: the sandbox baseline)
+
+## v09.88 — 6 Oct 2026 — 👥 record for family members on the Word Card and Hadith "Studied"
+
+- **What:** decision 71. `quranrevival.html`: `runWordProgressAction` loops over `claimTargetIds()` (primeAyahProgress / primeLemmaProgressForOccurrenceScope / wordProgressConfirmationRequired per person before the snapshot; decide only for those awaiting review; note asked once); `runLemmaProgressAction` and `mirrorLemmaProgress` take the person; `mountClaimForPicker` on the Word Card; `.assign-popover` gets its own ink. `hadith-study-actions.js`: `getHadeethEncRoster`, `claimHadeethEncStudied(..., personIds)`. `hadith-browser.js`: the picker beside Studied. `hadith.css`: the picker styles for the Hadith pages. Builder round #594 (PR #597), Architect review fixes.
+- **Checks:**
+  - claim-for-family-word-hadith-browser 158/0; mutations no-load, decide-all, and the two review checks (ink, Hadith styles) each caught
+  - claim-for-family-browser 56/0, phone-width-overflow 217/0, stub-parity 4/0, rules-authorisation-executable 63/0, behaviour 1006/1 (31e certificate: the sandbox baseline)
+  - known on main, not this round: the "writes nothing" checks in quran-word-card-flow-nav, -lemma-occurrences, -mushaf-scroll, -note-origin-return; quran-word-card-form-meaning

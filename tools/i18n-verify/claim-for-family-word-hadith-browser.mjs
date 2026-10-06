@@ -136,6 +136,17 @@ for (const lang of (ARG("lang") ? [ARG("lang")] : ["en", "bn"])) for (const widt
     check(`${tag}: ...a 40px target inside the screen`, (pk?.h ?? 0) >= 40 && !!pk?.inside, JSON.stringify(pk));
     const rowShape = await ev(P, () => { const r = document.querySelector("#quranWordCardMount [data-claim-for]"); const g = document.querySelector("#quranWordCardMount .word-progress-states"); return { after: g?.nextElementSibling === r || r?.previousElementSibling === g }; });
     check(`${tag}: ...sitting right under the state buttons`, !!rowShape.after, JSON.stringify(rowShape));
+    // Architect review (#597): the popover is a white box on the dark Word Card; its names must carry their own dark ink.
+    await P.click("#quranWordCardMount [data-claim-for] [data-assign-trigger]"); await P.waitForTimeout(120);
+    const ink = await ev(P, () => {
+      const lum = (c) => { const m = c.match(/[\d.]+/g).map(Number); const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(m[0]) + 0.7152 * f(m[1]) + 0.0722 * f(m[2]); };
+      const pop = document.querySelector("#quranWordCardMount [data-claim-for] [data-assign-popover]");
+      const name = pop?.querySelector(".who-name"); if (!name) return null;
+      const a = lum(getComputedStyle(name).color), b = lum(getComputedStyle(pop).backgroundColor);
+      return { ratio: Math.round(((Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)) * 100) / 100, fg: getComputedStyle(name).color, bg: getComputedStyle(pop).backgroundColor };
+    });
+    check(`${tag}: ...the names in the open list read against its background (contrast >= 4.5)`, (ink?.ratio ?? 0) >= 4.5, JSON.stringify(ink));
+    await P.click("#quranWordCardMount [data-claim-for] [data-assign-trigger]"); await P.waitForTimeout(80);
     // Basic and Depth carry it too (when their buttons are live)
     for (const level of ["basic", "depth"]) {
       await P.evaluate((l) => document.querySelector(`#quranWordCardMount [data-word-card-level="${l}"]`)?.click(), level);
@@ -230,8 +241,18 @@ for (const lang of (ARG("lang") ? [ARG("lang")] : ["en", "bn"])) for (const widt
     await P.waitForSelector('[data-hadeethenc-card="4563"] [data-hadeethenc-studied]:not([disabled]) ~ *, [data-hadeethenc-card="4563"] [data-claim-for]', { timeout: 8000 }).catch(() => {});
     const hp = await ev(P, () => { const r = document.querySelector('[data-hadeethenc-card="4563"] [data-claim-for]'); if (!r) return null; const b = r.querySelector("[data-assign-trigger]").getBoundingClientRect(); const lab = document.querySelector('[data-hadeethenc-card="4563"] .hadeethenc-study-label')?.getBoundingClientRect(); return { h: b.height, inside: b.left >= 0 && b.right <= innerWidth, rows: [...r.querySelectorAll("[data-assign-list] input")].map((i) => [i.value, i.checked]), label: r.querySelector("[data-assign-trigger-label]")?.textContent }; });
     check(`${tag}: Hadith Studied: the 👥 picker is there, Ahsan ticked, 40px, on screen`, !!hp && hp.label === N[0] && hp.h >= 40 && hp.inside && JSON.stringify(hp.rows) === JSON.stringify([["p1", true], ["p2", false], ["p3", false]]), JSON.stringify(hp));
+    check(`${tag}: Hadith: the 👥 list starts closed`, await ev(P, () => getComputedStyle(document.querySelector('[data-hadeethenc-card="4563"] [data-assign-popover]')).display === "none"));
     await P.click('[data-hadeethenc-card="4563"] [data-claim-for] [data-assign-trigger]'); await P.waitForTimeout(100);
     await P.click('[data-hadeethenc-card="4563"] [data-claim-for] [data-assign-list] input[value="p3"]');
+    // Architect review (#597): the open list is a styled box (not an always-open inline list) whose names read against it.
+    const hInk = await ev(P, () => {
+      const lum = (c) => { const m = c.match(/[\d.]+/g).map(Number); const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(m[0]) + 0.7152 * f(m[1]) + 0.0722 * f(m[2]); };
+      const pop = document.querySelector('[data-hadeethenc-card="4563"] [data-assign-popover]');
+      const name = pop?.querySelector(".who-name"); if (!name) return null;
+      const cs = getComputedStyle(pop), a = lum(getComputedStyle(name).color), b = lum(cs.backgroundColor);
+      return { pos: cs.position, bg: cs.backgroundColor, ratio: Math.round(((Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)) * 100) / 100 };
+    });
+    check(`${tag}: Hadith: the open 👥 list is a floating box whose names read against it (contrast >= 4.5)`, hInk?.pos === "absolute" && hInk?.bg !== "rgba(0, 0, 0, 0)" && (hInk?.ratio ?? 0) >= 4.5, JSON.stringify(hInk));
     await P.click('[data-hadeethenc-card="4563"] [data-claim-for] [data-assign-trigger]'); await P.waitForTimeout(100);
     const n = await nWrites(P);
     await P.selectOption('[data-hadeethenc-studied="4563"]', "achieved"); await P.waitForTimeout(900);

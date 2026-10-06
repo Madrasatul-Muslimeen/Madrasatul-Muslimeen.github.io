@@ -731,3 +731,4 @@ total). Allocated by the MMSA Architect.
 09.85: the Siyagah note-pane port round 3. Allocated by the MMSA Architect.
 09.86: the Siyagah note-pane port round 4. Allocated by the MMSA Architect.
 09.87: family members with year of birth at sign-up. Allocated by the MMSA Architect.
+09.88: 👥 on the Word Card and Hadith Studied. Allocated by the MMSA Architect.
