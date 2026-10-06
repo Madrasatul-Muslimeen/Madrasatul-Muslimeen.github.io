@@ -1,6 +1,6 @@
 // Note pane Part C, item 43 (decisions 72, 81; issue #619) -- link preview cards through Microlink: opt-in, per device, shown and never stored.
 // Real clicks, en + bn, 390 / 820 / 1440. The sandbox cannot reach Microlink, so api.microlink.io is answered with page.route fixtures.
-// MUTATE=on-by-default | no-confirm | title-innerhtml | http-picture | cache-ignored | no-limit  runs a deliberately broken build.
+// MUTATE=on-by-default | no-confirm | title-innerhtml | http-picture | cache-ignored | no-limit | card-after-section  runs a deliberately broken build.
 // Run from the repository root with `node serve.js` running.
 import { chromium, newContext, openPage } from "./harness.mjs";
 
@@ -17,6 +17,8 @@ const BODIES = {
   n2: `<p>Evil: <a href="https://hostile1.example.com/">one</a></p><p>Pic: <a href="https://hostile2.example.com/">two</a></p>`,
   n3: `<p>Refused: <a href="https://refuse.example.com/">r</a></p>`,
   n4: `<p>Offline: <a href="https://offline.example.com/">o</a></p>`,
+  // Architect review: a Note WITH headings, so the link sits inside a section body (the other fixtures have none).
+  n5: `<h1>First</h1><p>Sec: <a href="https://secsite.example.com/">s</a></p><p>Second paragraph.</p><h1>Next</h1><p>Other.</p>`,
 };
 const seedJs = `
 (function () {
@@ -75,6 +77,7 @@ async function routeMutations(ctx) {
     if (/note-window\.js/.test(url)) {
       if (MUTATE === "no-confirm") edits.push(["if (previewsOn(localStorage)) { setPreviewsOn(localStorage, false);", "if (true) { setPreviewsOn(localStorage, !previewsOn(localStorage));"]);
       if (MUTATE === "title-innerhtml") edits.push(["el.textContent = p.title;", "el.innerHTML = p.title;"]);
+      if (MUTATE === "card-after-section") edits.push(['.matches(".note-sec, .note-sec-body, [data-pane-body]")', '.matches(".note-sec, [data-pane-body]")']);
     }
     if (!edits.length) return route.fallback();
     const res = await route.fetch();
@@ -139,11 +142,11 @@ for (const lang of (process.argv[3] || "en,bn").split(",")) { // argv: [mutation
     const c0 = await page.$eval(`${W("n1")} [data-link-preview]`, (c) => ({
       href: c.getAttribute("href"), target: c.target, rel: c.rel, h: c.getBoundingClientRect().height, title: c.querySelector("[data-preview-title]")?.textContent, host: c.querySelector("[data-preview-host]")?.textContent,
       desc: c.querySelector("[data-preview-desc]")?.textContent, img: c.querySelector("img") ? { rp: c.querySelector("img").referrerPolicy, lazy: c.querySelector("img").loading, src: c.querySelector("img").src } : null,
-      after: c.previousElementSibling?.textContent,
+      after: c.previousElementSibling?.textContent, afterTag: c.previousElementSibling?.tagName,
     }));
     check(`${tag}: the card has the picture, title, description and the link's own host (not the answer's)`, c0.title === "Title of site1.example.com" && c0.desc === "About site1.example.com" && c0.host === "site1.example.com" && c0.img?.src === "https://img.example/a.png", JSON.stringify(c0));
     check(`${tag}: the picture is no-referrer and lazy`, c0.img?.rp === "no-referrer" && c0.img?.lazy === "lazy");
-    check(`${tag}: the card opens the link in a new tab, safely, and sits under the link's paragraph`, c0.href === "https://site1.example.com/page?x=1" && c0.target === "_blank" && /noopener/.test(c0.rel) && /noreferrer/.test(c0.rel) && /Link 1/.test(c0.after || ""), JSON.stringify(c0));
+    check(`${tag}: the card opens the link in a new tab, safely, and sits under the link's paragraph`, c0.href === "https://site1.example.com/page?x=1" && c0.target === "_blank" && /noopener/.test(c0.rel) && /noreferrer/.test(c0.rel) && c0.afterTag === "P" && /^Link 1/.test(c0.after || ""), JSON.stringify(c0));
     check(`${tag}: the card is 40px or taller`, c0.h >= 40, `${c0.h}`);
     check(`${tag}: no sideways overflow with the cards on`, await noSideways(page));
     check(`${tag}: no text of the Note was changed (the link itself still there, unchanged)`, await page.evaluate((s) => document.querySelector(`${s} .note-sec, ${s} [data-pane-body]`).querySelectorAll('a[href="https://site1.example.com/page?x=1"]:not([data-link-preview])').length === 1, W("n1")));
@@ -182,6 +185,17 @@ for (const lang of (process.argv[3] || "en,bn").split(",")) { // argv: [mutation
       await page.evaluate((s) => document.querySelector(`${s} [data-win-close]`)?.click(), W(id));
     }
     check(`${tag}: a failure is not cached`, await page.evaluate(() => { const c = JSON.parse(localStorage.getItem("mmsa.linkPreviewCache.v1") || "{}"); return !Object.keys(c).some((k) => /refuse|offline/.test(k)); }));
+
+    // ---- Architect review: in a Note with headings, the card is under its paragraph, inside the section, and folds with it ----
+    await openWindowFor(page, "n5", sheet, width);
+    await until(page, (sel) => document.querySelector(`${sel} [data-link-preview][data-preview-ready]`), W("n5"));
+    const sec = await page.$eval(`${W("n5")} [data-link-preview]`, (c) => ({ prevTag: c.previousElementSibling?.tagName, prev: c.previousElementSibling?.textContent, next: c.nextElementSibling?.textContent, inBody: !!c.parentElement?.matches(".note-sec-body") }));
+    check(`${tag}: with headings, the card sits right under the link's paragraph, inside its section`, sec.prevTag === "P" && /^Sec:/.test(sec.prev || "") && sec.next === "Second paragraph." && sec.inBody, JSON.stringify(sec));
+    await page.click(`${W("n5")} [data-sec-toggle="0"]`);
+    await page.waitForTimeout(200);
+    check(`${tag}: folding the section hides its card`, await page.$eval(`${W("n5")} [data-link-preview]`, (c) => c.getBoundingClientRect().height === 0));
+    await page.click(`${W("n5")} [data-sec-toggle="0"]`);
+    await page.evaluate((s) => document.querySelector(`${s} [data-win-close]`)?.click(), W("n5"));
 
     // ---- the cache: a second open (after a reload) makes no new request ----
     const before = reqs.length;

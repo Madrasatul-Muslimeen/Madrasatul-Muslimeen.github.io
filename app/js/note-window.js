@@ -1240,8 +1240,10 @@ export function createNoteViews(host) {
     const anchors = [...v.bodyEl.querySelectorAll("a[href]")].filter((a) => !a.closest("[data-note-links]"));
     for (const url of pickLinks(anchors.map((a) => a.getAttribute("href")))) {
       const a = anchors.find((x) => x.getAttribute("href").trim() === url);
+      // The card goes straight under the link's own block, inside its section's body, so it folds with the section.
+      // (Architect review: stopping only at .note-sec put it after the WHOLE section body, still showing when folded.)
       let blk = a;
-      while (blk.parentElement && blk.parentElement !== v.bodyEl && !blk.parentElement.matches(".note-sec, [data-pane-body]")) blk = blk.parentElement;
+      while (blk.parentElement && blk.parentElement !== v.bodyEl && !blk.parentElement.matches(".note-sec, .note-sec-body, [data-pane-body]")) blk = blk.parentElement;
       const card = document.createElement("a");
       card.dataset.linkPreview = url;
       card.href = url; card.target = "_blank"; card.rel = "noopener noreferrer";
