@@ -209,4 +209,7 @@ a.hadeethenc-study-btn[aria-disabled="true"], button.hadeethenc-study-btn[aria-d
 }
 .hadeethenc-study-label { font-size: 0.82rem; font-weight: 600; color: var(--hadith-ink); }
 .hadeethenc-study-select { min-height: 40px; min-width: 0; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); }
+.hadeethenc-study-item .claim-for-row { display: flex; align-items: center; position: relative; max-width: 100%; }
+.hadeethenc-study-item .claim-for-row .assign-trigger { min-height: 40px; max-width: 100%; }
+.hadeethenc-study-item .claim-for-row .assign-popover { left: 0; right: auto; z-index: 40; max-width: calc(100vw - 32px); }
 .hadeethenc-study-reason { flex-basis: 100%; font-size: 0.8rem; color: #7d1f1e; margin: 0.1rem 0 0; font-weight: 600; }
