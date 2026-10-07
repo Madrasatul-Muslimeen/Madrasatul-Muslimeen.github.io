@@ -3795,6 +3795,13 @@
      30cqw: 3.3em x 30cqw = 99% of the page's text width (measured below). */
   .hifz-surah-header.glyph-loaded { background: none; border: none; padding: 0.05em 0; font-size: 100px; font-size: 30cqw; line-height: 1.1; }
   .hifz-basmallah { justify-content: center; font-size: 16px; font-size: 4.5cqw; }
+  /* 7 Oct 2026, Owner (a screenshot of At-Takwir's page; then "Page gap: go ahead", demo
+     docs/reference/2026-10-07-page-gaps-demo.html): the banner's line was 2.5 text lines tall (the glyph's em box
+     is far taller than its drawing), with a wide empty band above and below. Now every line of the page is ONE
+     text line tall, as in the printed 15-line Mushaf: 6.07cqw x 2.05 line-height + 0.3em padding = 14.26cqw.
+     The banner (still 30cqw wide, edge to edge, 28 Sep) and the Bismillah are centred in theirs. */
+  .hifz-surah-header.glyph-loaded { height: 14.26cqw; padding: 0; line-height: 1; align-items: center; overflow: visible; }
+  .hifz-basmallah { height: 14.26cqw; padding: 0; line-height: 1; align-items: center; font-size: 5.6cqw; }
   .hifz-line-error { font-size: 13px; color: #a33; text-align: center; }
   .page-flow-ayah { border-bottom: 1px solid #eee; padding-bottom: 0.6rem; margin-bottom: 0.6rem; }
   /* Round 27 -- the ayah that is sounding. A tinted band and a coloured edge
