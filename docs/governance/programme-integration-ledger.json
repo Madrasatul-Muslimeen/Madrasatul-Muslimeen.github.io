@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.112",
+    "version": "09.113",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2525,8 +2525,20 @@
     {
       "version": "09.112",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The Asmaul Husna poster redrawn as a true copy of the Owner's template, its references opening the Ayah or Hadith inside the app (decision 85).",
+      "integration": {
+        "authorizedOn": "2026-10-07",
+        "integratedOn": "2026-10-07",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.113",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The Word card's clean Arabic, readable places and derived-form pop-ups, the Āyah card's ‹ › / 📖 / action row and ways back, the way-back law (decision 86), poster and writing-paper fixes.",
       "integration": {
         "authorizedOn": "2026-10-07",
         "integratedOn": "2026-10-07",
@@ -2535,8 +2547,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.113",
+  "nextUnallocated": "09.114",
   "nextUnallocatedNote": [
+    "v09.113 was allocated to Word card and Ayah card ways back; the way-back law, 2026-10-07.",
     "v09.112 was allocated to Asmaul Husna poster: a true copy of the template, 2026-10-07.",
     "v09.111 was allocated to 🗑 on every bookmark and folder in the Bookmark menu, with Undo; nothing is erased (Owner, 7 Oct), 2026-10-07.",
     "v09.110 was allocated to Explore's Ayah numbers round the Surah wheel upright, 12 px and never colliding (decision 84), 2026-10-07.",

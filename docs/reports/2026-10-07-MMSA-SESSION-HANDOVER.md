@@ -90,3 +90,4 @@ ARCHITECT.md's Handover rules are prose that a session must remember at exactly 
 - **v09.110** (2026-10-07): Explore's Ayah numbers round the Surah wheel upright, 12 px and never colliding (decision 84).
 - **v09.111** (2026-10-07): 🗑 on every bookmark and folder in the Bookmark menu, with Undo; nothing is erased (Owner, 7 Oct).
 - **v09.112** (2026-10-07): Asmaul Husna poster: a true copy of the template.
+- **v09.113** (2026-10-07): Word card and Ayah card ways back; the way-back law.
