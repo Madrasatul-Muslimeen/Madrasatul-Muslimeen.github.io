@@ -630,7 +630,9 @@ function rootSection(word, layers, features, ctx) {
   if (layers.root && data?.forms?.length) {
     let forms = data.forms.map((f) => ({ lemma: f.lemma, group: table?.[f.lemma]?.[0] ?? "other", form: table?.[f.lemma]?.[1] ?? 0, count: f.count }));
     if (table) forms = orderDerivedForms(forms);
-    out.push(line("rule", lang, `<p class="word-card-fam" dir="rtl" data-word-card-fam><b>${esc(rootLetters(layers.root).join(" "))}</b> ← ${forms.map((f) => esc(f.lemma)).join(" · ")}</p>`));
+    // Owner, 7 Oct 2026: "make the root n family words bigger, noticeable with elegant look": the root in a gold tile,
+    // its family large on a panel of its own. The text reads as before ("ن ف س ← a · b"), for the checks and screen readers.
+    out.push(line("rule", lang, `<p class="word-card-fam" dir="rtl" lang="ar" data-word-card-fam><b class="word-card-fam-root">${esc(rootLetters(layers.root).join(" "))}</b> <span class="word-card-fam-arrow" aria-hidden="true">←</span> ${forms.map((f) => `<span class="word-card-fam-w">${esc(f.lemma)}</span>`).join('<span class="word-card-fam-dot"> · </span>')}</p>`));
     // The root's meaning is the Wiktionary meaning of its most frequent Form I verb.
     let meaning = null;
     if (table && ctx.dictionaryLookup) {

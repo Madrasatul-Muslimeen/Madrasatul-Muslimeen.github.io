@@ -7,7 +7,11 @@
 import { chromium, newContext, openPage } from "./harness.mjs";
 
 let pass = 0, fail = 0;
-const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
+// Architect (7 Oct 2026): refuse a promise, which would otherwise count as a PASS (CLAUDE.md, standing lessons).
+const check = (n, ok, d = "") => {
+  if (ok && typeof ok.then === "function") throw new Error(`check "${n}" was handed a promise; await it first`);
+  return ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
+};
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
 const nfc = (s) => String(s).normalize("NFC");
 const SECTIONS = ["root", "sarf", "conj", "nahw", "choice", "classical"];
@@ -89,6 +93,10 @@ for (const lang of ["en", "bn"]) {
       return {
         fam: s.querySelector("[data-word-card-fam]")?.textContent || "",
         famTag: s.querySelector("[data-word-card-fam]")?.closest("[data-word-card-dline]")?.dataset.wordCardDline,
+        famPx: parseFloat(getComputedStyle(s.querySelector("[data-word-card-fam] .word-card-fam-w") || s).fontSize),
+        famDisplay: getComputedStyle(s.querySelector("[data-word-card-fam]") || s).display,
+        panelBg: getComputedStyle(s.querySelector("[data-word-card-fam]") || s).backgroundImage !== "none" ? "gradient" : getComputedStyle(s.querySelector("[data-word-card-fam]") || s).backgroundColor,
+        tileBorder: parseFloat(getComputedStyle(s.querySelector(".word-card-fam-root") || s).borderTopWidth),
         meaning: s.querySelector("[data-word-card-root-meaning]")?.textContent || "",
         chips: [...s.querySelectorAll("[data-word-card-goto]")].map((c) => ({ n: c.dataset.wordCardGoto.split(":").pop(), bg: getComputedStyle(c).backgroundColor, cur: c.hasAttribute("data-word-card-chip-current") })),
         links: [...s.querySelectorAll("[data-word-card-dict-link]")].map((a) => a.dataset.wordCardDictLink),
@@ -101,7 +109,9 @@ for (const lang of ["en", "bn"]) {
     check(`${L}: the root's meaning comes from the Form I verb (Wiktionary)`, root.meaning.length > 2 && /know/i.test(root.meaning), root.meaning);
     check(`${L}: "In this āyah" has 6 chips, word numbers 14 25 35 52 58 74`, JSON.stringify(root.chips.map((c) => c.n)) === '["14","25","35","52","58","74"]', JSON.stringify(root.chips.map((c) => c.n)));
     check(`${L}: only the chip for 35 is gold`, JSON.stringify(root.chips.filter((c) => c.bg === "rgb(255, 244, 214)").map((c) => c.n)) === '["35"]' && root.chips.filter((c) => c.cur).length === 1);
-    check(`${L}: both dictionary links are kept`, JSON.stringify(root.links) === '["corpus","ejtaal"]' || JSON.stringify(root.links.slice(0, 2)) === '["corpus","ejtaal"]', JSON.stringify(root.links));
+    // Updated in place 7 Oct 2026 (Owner: "Place wiktionary above other two dictionaries"): Wiktionary first, then both.
+    check(`${L}: Wiktionary first, then both dictionary links are kept`, JSON.stringify(root.links.slice(0, 3)) === '["wiktionary","corpus","ejtaal"]', JSON.stringify(root.links));
+    check(`${L}: the root and its family are big (>= 28px), the root in a bordered tile, the family on its own panel`, root.famPx >= 28 && root.tileBorder >= 1 && root.panelBg !== "rgba(0, 0, 0, 0)" && root.famDisplay === "flex", JSON.stringify({ famPx: root.famPx, tileBorder: root.tileBorder, panelBg: root.panelBg, famDisplay: root.famDisplay }));
     check(`${L}: the old dictionary box and the expandable forms list are kept inside`, root.dictionary && root.forms && root.expandable === 14, `${root.dictionary} ${root.forms} ${root.expandable}`);
 
     // Section 2
