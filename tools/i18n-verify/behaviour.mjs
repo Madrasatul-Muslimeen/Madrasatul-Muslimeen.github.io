@@ -6229,7 +6229,7 @@ console.log("\n=== 50. Fixes round 2 -- the expanded/collapsed OPTION, and the p
       heading: d.querySelector("summary")?.textContent.trim(),
       links: [...d.querySelectorAll(".nav-bm-link")].map((a) => (a.querySelector(".nav-bm-name") ?? a).textContent.trim()), // updated in place 5 Oct 2026
     }));
-    const direct = [...list.querySelectorAll(":scope > .nav-bm-link")].map((a) => (a.querySelector(".nav-bm-name") ?? a).textContent.trim());
+    const direct = [...list.querySelectorAll(":scope > .nav-bm-link, :scope > .nav-bm-row > .nav-bm-link")] /* updated in place 7 Oct 2026: a bookmark row is now its link plus 🗑 (the Owner: "Enable bookmark n folder delete here") */.map((a) => (a.querySelector(".nav-bm-name") ?? a).textContent.trim());
     return { groups, direct };
   });
   check("50f grouping by person heads the group with the person's real NAME, not an id",

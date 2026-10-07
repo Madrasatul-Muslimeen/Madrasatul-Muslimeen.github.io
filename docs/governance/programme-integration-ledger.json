@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.110",
+    "version": "09.111",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2501,8 +2501,20 @@
     {
       "version": "09.110",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Builder round #634 (PR #635), reviewed by the session Architect: size target raised from 11 to 12 px as the issue asked.",
+      "integration": {
+        "authorizedOn": "2026-10-07",
+        "integratedOn": "2026-10-07",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.111",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Owner's screenshot of the Bookmark menu, 7 Oct 2026: 'Enable bookmark n folder delete here (handy)'. Built and reviewed by the session Architect.",
       "integration": {
         "authorizedOn": "2026-10-07",
         "integratedOn": "2026-10-07",
@@ -2511,8 +2523,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.111",
+  "nextUnallocated": "09.112",
   "nextUnallocatedNote": [
+    "v09.111 was allocated to 🗑 on every bookmark and folder in the Bookmark menu, with Undo; nothing is erased (Owner, 7 Oct), 2026-10-07.",
     "v09.110 was allocated to Explore's Ayah numbers round the Surah wheel upright, 12 px and never colliding (decision 84), 2026-10-07.",
     "v09.109 was allocated to the Word card's root and family bigger on a panel, Wiktionary above the other dictionaries, and the Lane / Hans Wehr link opening at the root (Owner, 7 Oct), 2026-10-07.",
     "v09.108 was allocated to the writing paper goes full screen, with More paper, lines to trace over or blank, and ‹ › to the next word (decision 83), 2026-10-07.",
