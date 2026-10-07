@@ -199,7 +199,7 @@ async function run(lang, width) {
 }
 
 // AA_ONLY="en:390" runs one configuration (used for the mutation runs); the default is all six.
-const only = process.env.AA_ONLY;
+const only = process.argv[2];
 for (const lang of ["en", "bn"]) for (const width of [390, 820, 1280]) if (!only || only === `${lang}:${width}`) await run(lang, width);
 await browser.close();
 console.log(`\n==== Explore all Approaches (decision 82): ${pass} passed, ${fail} failed ====`);
