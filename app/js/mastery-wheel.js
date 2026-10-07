@@ -90,6 +90,73 @@ function ringNumberRotation(angleDeg) {
   return rot;
 }
 
+/** Owner decision 84 (7 Oct 2026) -- Explore's Ayah numbers: upright, at least `minPx` on screen, never overlapping.
+ *  Strictly OPT-IN (`uprightNumbers: { minPx }` on a renderer); every caller that omits it renders byte-for-byte as
+ *  before. This only PLACES the labels; fitUprightNumbers(svg) must run once the svg is in the document, because
+ *  the real box of a label (getBBox) and the real screen scale are only known there. */
+export function uprightNumbersMarkup(nums, { cx, cy, r0, minPx }) {
+  const texts = nums
+    .map(({ angle, text }) => {
+      const p = polarToCartesian(cx, cy, r0 + 8, angle);
+      return `<text class="wheel-seg-num wheel-seg-num-up" data-angle="${angle}" x="${p.x}" y="${p.y}" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">${text}</text>`;
+    })
+    .join("");
+  return `<g class="wheel-upright-nums" data-cx="${cx}" data-cy="${cy}" data-r0="${r0}" data-min-px="${minPx}">${texts}</g>`;
+}
+
+/** Sizes, places and thins the upright numbers of every wheel under `root` (an svg or a container). Run once per render. */
+export function fitUprightNumbers(root) {
+  const svgs = root.matches?.("svg") ? [root] : [...root.querySelectorAll("svg")];
+  for (const svg of svgs) {
+    const g = svg.querySelector(".wheel-upright-nums");
+    if (!g) continue;
+    const cx = Number(g.dataset.cx), cy = Number(g.dataset.cy), r0 = Number(g.dataset.r0), minPx = Number(g.dataset.minPx);
+    const all = [...g.querySelectorAll("text")];
+    if (!all.length) continue;
+    const vb0 = svg.viewBox.baseVal;
+    const half0 = Math.max(cx - vb0.x, vb0.x + vb0.width - cx, cy - vb0.y, vb0.y + vb0.height - cy);
+    let half = half0, fs = minPx, boxes = [];
+    for (let pass = 0; pass < 4; pass++) {
+      const px = svg.getBoundingClientRect().width;
+      if (!(px > 0)) return; // not laid out (hidden); a later call will fit it
+      const scale = px / (2 * half); // screen px per svg unit
+      const next = minPx / scale;
+      if (pass > 0 && Math.abs(next - fs) < 0.05) break;
+      fs = next;
+      for (const el of all) el.style.fontSize = `${fs.toFixed(2)}px`;
+      boxes = all.map((el) => {
+        const b = el.getBBox();
+        const ang = Number(el.dataset.angle) * Math.PI / 180;
+        const w = b.width + 3, h = b.height; // 3 units of air either side
+        const s = Math.abs(Math.sin(ang)), c = Math.abs(Math.cos(ang));
+        const r = r0 + 3 + (s * w) / 2 + (c * h) / 2; // the box's nearest edge clears the rings by 3 units
+        const x = cx + r * Math.sin(ang), y = cy - r * Math.cos(ang);
+        return { el, x, y, w, h };
+      });
+      let need = half0;
+      for (const b of boxes) need = Math.max(need, Math.abs(b.x - cx) + b.w / 2 + 2, Math.abs(b.y - cy) + b.h / 2 + 2);
+      half = Math.ceil(need);
+    }
+    for (const b of boxes) { b.el.setAttribute("x", b.x.toFixed(2)); b.el.setAttribute("y", b.y.toFixed(2)); }
+    svg.setAttribute("viewBox", `${cx - half} ${cy - half} ${2 * half} ${2 * half}`);
+    const hit = (a, b) => Math.abs(a.x - b.x) < (a.w + b.w) / 2 && Math.abs(a.y - b.y) < (a.h + b.h) / 2;
+    const last = boxes.length - 1;
+    let shown = boxes.map((_, i) => i);
+    for (const k of [1, 2, 5, 10, 20, 50, 100]) {
+      shown = boxes.map((_, i) => i).filter((i) => i % k === 0 || i === last);
+      // The last Ayah always shows; if it lands too near the final multiple of k, that multiple gives way.
+      const prev = shown[shown.length - 2];
+      if (shown.length > 1 && prev !== undefined && hit(boxes[prev], boxes[last])) shown.splice(shown.length - 2, 1);
+      let clear = true;
+      for (let a = 0; a < shown.length && clear; a++) for (let b = a + 1; b < shown.length; b++) if (hit(boxes[shown[a]], boxes[shown[b]])) { clear = false; break; }
+      if (clear) break;
+    }
+    const keep = new Set(shown);
+    boxes.forEach((b, i) => { if (!keep.has(i)) b.el.remove(); });
+    svg.dataset.numbersEvery = String(shown.length > 1 ? shown[1] - shown[0] : 1);
+  }
+}
+
 let sliceNameClipSeq = 0;
 
 /** Issue #385 -- an Approach's short name written ALONG a slice (radially),
@@ -390,12 +457,13 @@ function renderWheelRing(cx, cy, rInner, rOuter, ratio) {
  * had (byte-for-byte: `rOuter` is computed identically to before when this
  * option is absent).
  */
-export function renderScopedWheel(items, { size = 360, centerArabic, centerRef, centerLabel, centerSub, ring = null, roomForNumbers = false } = {}) {
+export function renderScopedWheel(items, { size = 360, centerArabic, centerRef, centerLabel, centerSub, ring = null, roomForNumbers = false, uprightNumbers = null } = {}) {
   const cx = size / 2, cy = size / 2;
   const ringMargin = ring ? 14 : 0;
   const rOuter = size / 2 - 4 - ringMargin;
   const rInner = rOuter * 0.5;
   const labelOffset = Math.max(10, rOuter * 0.065);
+  const upright = [];
   const n = items.length || 1;
   const anglePer = 360 / n;
   const sliceLineHeightEm = 1.2;
@@ -408,7 +476,8 @@ export function renderScopedWheel(items, { size = 360, centerArabic, centerRef, 
       const fill = entry.fill ?? STATUS_COLORS[entry.statusId] ?? STATUS_COLORS.not_started;
       const rot = ringNumberRotation(mid);
       const lp = polarToCartesian(cx, cy, rOuter + labelOffset, mid);
-      const numText = `<text class="wheel-seg-num" x="${lp.x}" y="${lp.y}" text-anchor="middle" transform="rotate(${rot} ${lp.x} ${lp.y})" style="pointer-events:none">${entry.number ?? entry.key}</text>`;
+      if (uprightNumbers) upright.push({ angle: mid, text: entry.number ?? entry.key });
+      const numText = uprightNumbers ? "" : `<text class="wheel-seg-num" x="${lp.x}" y="${lp.y}" text-anchor="middle" transform="rotate(${rot} ${lp.x} ${lp.y})" style="pointer-events:none">${entry.number ?? entry.key}</text>`;
       const lines = Array.isArray(entry.sliceLines) ? entry.sliceLines.filter(Boolean) : [];
       const arabicLineCount = Math.max(0, Number(entry.sliceArabicLines) || 0);
       let bodyText = "";
@@ -455,7 +524,7 @@ export function renderScopedWheel(items, { size = 360, centerArabic, centerRef, 
   return `<svg class="mastery-wheel" viewBox="${vb}" width="${size}" height="${size}" data-number-room="${pad}">
     <defs>${naHatchDefs()}</defs>
     ${ringMarkup}
-    ${segments}
+    ${segments}${uprightNumbers ? uprightNumbersMarkup(upright, { cx, cy, r0: rOuter + ringMargin, minPx: uprightNumbers.minPx ?? 11 }) : ""}
     ${centerLabelMarkup(cx, cy, rInner, { centerArabic, centerRef, centerLabel, centerSub })}
   </svg>`;
 }
@@ -471,7 +540,7 @@ export function renderScopedWheel(items, { size = 360, centerArabic, centerRef, 
  * ring was tapped. `numbers` ([{ angle, text }]) prints outside the outer
  * ring the way renderScopedWheel prints its slice numbers.
  */
-export function renderRingWheel(rings, { size = 360, centerArabic, centerRef, centerLabel, centerSub, ring = null, numbers = null, names = null, roomForNumbers = false } = {}) {
+export function renderRingWheel(rings, { size = 360, centerArabic, centerRef, centerLabel, centerSub, ring = null, numbers = null, names = null, roomForNumbers = false, uprightNumbers = null } = {}) {
   const cx = size / 2, cy = size / 2;
   const ringMargin = ring ? 14 : 0;
   const rOuter = size / 2 - 4 - ringMargin;
@@ -497,7 +566,7 @@ export function renderRingWheel(rings, { size = 360, centerArabic, centerRef, ce
     })
     .join("");
 
-  const nums = (numbers ?? [])
+  const nums = uprightNumbers ? "" : (numbers ?? [])
     .map(({ angle, text }) => {
       const lp = polarToCartesian(cx, cy, rOuter + labelOffset, angle);
       return `<text class="wheel-seg-num" x="${lp.x}" y="${lp.y}" text-anchor="middle" transform="rotate(${ringNumberRotation(angle)} ${lp.x} ${lp.y})" style="pointer-events:none">${text}</text>`;
@@ -523,7 +592,7 @@ export function renderRingWheel(rings, { size = 360, centerArabic, centerRef, ce
     ${ringMarkup}
     ${arcs}
     ${nameMarkup}
-    ${nums}
+    ${nums}${uprightNumbers && numbers?.length ? uprightNumbersMarkup(numbers, { cx, cy, r0: rOuter + ringMargin, minPx: uprightNumbers.minPx ?? 11 }) : ""}
     ${centerLabelMarkup(cx, cy, rInner, { centerArabic, centerRef, centerLabel, centerSub })}
   </svg>`;
 }
