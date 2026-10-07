@@ -2721,6 +2721,7 @@
   .word-card-dict-credit a { color: var(--card-link); }
   .word-card-dict-pill { display: inline-block; margin-left: 0.5rem; padding: 0.05rem 0.5rem; font-size: 0.7rem; font-weight: 600; color: var(--card-text); border: 1px solid var(--card-heading); border-radius: 999px; vertical-align: middle; }
   .word-card-dict-links { display: flex; gap: 0.5rem; margin-top: 0.6rem; }
+  .word-card-dict-links-wiki + .word-card-dict-links { margin-top: 0.5rem; }
   .word-card-dict-link { flex: 1 1 0; min-width: 0; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-height: 40px; padding: 0 0.5rem; text-align: center; font-size: 0.82rem; font-weight: 600; color: var(--card-heading); border: 1px solid var(--card-heading); border-radius: 999px; text-decoration: none; }
   @media (max-width: 380px) {
     .word-card-form-arabic { font-size: 1.3rem; }
@@ -3119,9 +3120,15 @@
   .word-card-acc .word-card-src-needs { border-color: #6b7c76; color: #3f504a; background: #fff; }
   .word-card-ar { font-family: var(--quran-font); font-size: 1.12rem; font-weight: 700; direction: rtl; unicode-bidi: isolate; }
   .word-card-dline { margin: 0; }
-  .word-card-dline p, .word-card-fam { margin: 0; display: inline; }
-  .word-card-fam { font-family: var(--quran-font); font-size: 1.45rem; line-height: 1.8; margin-top: 0.15rem; }
-  .word-card-fam b { font-weight: 700; }
+  .word-card-dline p { margin: 0; display: inline; }
+  /* Owner, 7 Oct 2026: the root and its family, bigger and elegant -- a gold root tile, the family large on a soft panel. */
+  .word-card-dline p.word-card-fam { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 8px 0 2px; padding: 10px 14px; border-radius: 12px;
+    background: linear-gradient(180deg, #fffaf0, #f8efda); border: 1px solid #e2cf9b; box-shadow: 0 1px 2px rgba(120, 90, 20, 0.08);
+    font-family: var(--quran-font); font-size: 1.85rem; line-height: 1.9; color: #1f2a26; }
+  .word-card-fam-root { font-weight: 700; color: #7a5a12; background: #fff; border: 1.5px solid #c9a24b; border-radius: 10px; padding: 0 12px; letter-spacing: 0.08em; white-space: nowrap; }
+  .word-card-fam-arrow { color: #b8862f; font-size: 1.2rem; }
+  .word-card-fam-w { white-space: nowrap; }
+  .word-card-fam-dot { color: #c9a24b; }
   .word-card-m { color: #5b6d66; }
   .word-card-m2, .word-card-m3 { margin: 0; color: #5b6d66; }
   .word-card-m3 { font-size: 0.78rem; }

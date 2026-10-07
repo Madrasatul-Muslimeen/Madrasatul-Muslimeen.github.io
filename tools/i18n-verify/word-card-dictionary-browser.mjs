@@ -9,9 +9,14 @@
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
 import { arabicToBuckwalter, buckwalterToArabic } from "../../app/js/buckwalter.js";
+import { ejtaalUrl } from "../../app/js/quran-word-card.js";
 
 let pass = 0, fail = 0;
-const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
+// Architect (7 Oct 2026): refuse a promise, which would otherwise count as a PASS (CLAUDE.md, standing lessons).
+const check = (n, ok, d = "") => {
+  if (ok && typeof ok.then === "function") throw new Error(`check "${n}" was handed a promise; await it first`);
+  return ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
+};
 // `--shots <dir>` also saves a screenshot of each Depth tab for a person to LOOK at.
 const SHOTS = process.argv.includes("--shots") ? process.argv[process.argv.indexOf("--shots") + 1] : "";
 if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
@@ -23,6 +28,13 @@ check("buckwalter: a hamza root as the data writes it, امن -> Amn", arabicToB
 check("buckwalter: the inverse of BW2AR's hamza, ء -> '", arabicToBuckwalter("ء") === "'");
 check("buckwalter: اله -> Alh and ربب -> rbb", arabicToBuckwalter("اله") === "Alh" && arabicToBuckwalter("ربب") === "rbb");
 check("buckwalter: qwl round-trips to قول and back", buckwalterToArabic("qwl") === "قول" && arabicToBuckwalter("قول") === "qwl");
+// ---- ejtaal (Lane, Hans Wehr) links: the site's own #bwq= letter code, written by hand (Owner, 7 Oct 2026: the old
+// #q= + encoded Arabic link opened the dictionary at page one; #bwq=nfs was proven to open Hans Wehr p. 1168 at نفس).
+check("ejtaal: نفس -> #bwq=nfs", ejtaalUrl("نفس") === "https://ejtaal.net/aa/#bwq=nfs");
+check("ejtaal: the root as shown with spaces, ن ف س -> nfs", ejtaalUrl("ن ف س") === "https://ejtaal.net/aa/#bwq=nfs");
+check("ejtaal: ع is e, ش is $, ذ is *, غ is g, خ is x, ث is v", ejtaalUrl("علم").endsWith("=elm") && ejtaalUrl("شكر").endsWith("=$kr") && ejtaalUrl("ذكر").endsWith("=*kr") && ejtaalUrl("غفر").endsWith("=gfr") && ejtaalUrl("خلق").endsWith("=xlq") && ejtaalUrl("ثوب").endsWith("=vwb"));
+check("ejtaal: every alif and hamza is A (امن, أمن, ءمن -> Amn)", ["امن", "أمن", "ءمن"].every((r) => ejtaalUrl(r) === "https://ejtaal.net/aa/#bwq=Amn"));
+check("ejtaal: no percent-encoding in the link (the bug)", !/%/.test(ejtaalUrl("حمد")) && ejtaalUrl("") === null);
 check("buckwalter: empty and missing give an empty string", arabicToBuckwalter("") === "" && arabicToBuckwalter(undefined) === "");
 
 // ---- the data file: no God / Lord anywhere ----------------------------------
@@ -83,6 +95,7 @@ const box = (page) => page.evaluate(() => {
     pending: b.querySelector("[data-word-card-dict-pending]")?.textContent ?? null,
     corpus: corpus && { href: corpus.getAttribute("href"), target: corpus.getAttribute("target"), rel: corpus.getAttribute("rel"), rect: r(corpus) },
     ejtaal: ejtaal && { href: ejtaal.getAttribute("href"), target: ejtaal.getAttribute("target"), rel: ejtaal.getAttribute("rel"), rect: r(ejtaal) },
+    wikiBtn: (() => { const w = b.querySelector('[data-word-card-dict-link="wiktionary"]'); return w && { href: w.getAttribute("href"), target: w.getAttribute("target"), rel: w.getAttribute("rel"), rect: r(w) }; })(),
     credit: b.querySelector(".word-card-dict-credit")?.textContent ?? "",
     wiktionary: b.querySelector(".word-card-dict-credit a:not([data-word-card-dict-bn-page])")?.getAttribute("href") ?? null,
     labels: [...b.querySelectorAll(".word-card-dict-label")].map((e) => e.textContent),
@@ -146,7 +159,9 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) for (const loo
   check(`${tag} 1:2:1 the meaning is marked lang="en" on this page too`, h?.meaningLang === "en", h?.meaningLang);
   check(`${tag} 1:2:1 word-by-word line is present, in the reader's language`, lang === "bn" ? (h?.wbw === "সকল প্রশংসা" && h?.wbwLang === "bn") : (h?.wbw === "All praises and thanks" && h?.wbwLang === "en"), `${h?.wbw}|${h?.wbwLang}`);
   check(`${tag} 1:2:1 Corpus link is ...qurandictionary.jsp?q=Hmd`, h?.corpus?.href === "https://corpus.quran.com/qurandictionary.jsp?q=Hmd", h?.corpus?.href);
-  check(`${tag} 1:2:1 ejtaal link is #q= + the encoded root`, h?.ejtaal?.href === "https://ejtaal.net/aa/#q=" + encodeURIComponent("حمد"), h?.ejtaal?.href);
+  // Updated in place 7 Oct 2026 (Owner: the link did not open the word's page): the site's own letter code, not #q=%D8...
+  check(`${tag} 1:2:1 ejtaal link is #bwq=Hmd (opens the dictionary at حمد)`, h?.ejtaal?.href === "https://ejtaal.net/aa/#bwq=Hmd", h?.ejtaal?.href);
+  check(`${tag} 1:2:1 a Wiktionary button sits ABOVE the other two (Owner, 7 Oct 2026), >= 40px, to the meaning's own page`, !!h?.wikiBtn && h.wikiBtn.rect.h >= 40 && h.wikiBtn.rect.top + h.wikiBtn.rect.h <= h?.corpus?.rect.top + 1 && h.wikiBtn.href === h?.wiktionary && h.wikiBtn.target === "_blank" && h.wikiBtn.rel === "noopener noreferrer", JSON.stringify(h?.wikiBtn));
   check(`${tag} 1:2:1 both links open a new tab safely`, [h?.corpus, h?.ejtaal].every((l) => l?.target === "_blank" && l?.rel === "noopener noreferrer"), JSON.stringify([h?.corpus?.rel, h?.ejtaal?.rel]));
   check(`${tag} 1:2:1 both links are >= 40px tall`, h?.corpus?.rect.h >= 40 && h?.ejtaal?.rect.h >= 40, JSON.stringify([h?.corpus?.rect, h?.ejtaal?.rect]));
   check(`${tag} 1:2:1 the two links sit on ONE row`, Math.abs(h?.corpus?.rect.top - h?.ejtaal?.rect.top) <= 1 && h?.corpus?.rect.right <= h?.ejtaal?.rect.left + 1, JSON.stringify([h?.corpus?.rect, h?.ejtaal?.rect]));
@@ -172,7 +187,8 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) for (const loo
   const f = await box(page);
   check(`${tag} 1:2:2 meaning is exactly "Allah"`, f?.meaning === "Allah", f?.meaning);
   check(`${tag} 1:2:2 carries the "fixed by us" pill`, f?.pill === "fixed" && f?.pillText === (lang === "bn" ? "নির্ধারিত" : "fixed by us"), `${f?.pill}|${f?.pillText}`);
-  check(`${tag} 1:2:2 links are for root اله (Alh)`, f?.corpus?.href === "https://corpus.quran.com/qurandictionary.jsp?q=Alh" && f?.ejtaal?.href === "https://ejtaal.net/aa/#q=" + encodeURIComponent("اله"), `${f?.corpus?.href} ${f?.ejtaal?.href}`);
+  // Updated in place 7 Oct 2026: the ejtaal link uses the site's own letter code (#bwq=), see the 1:2:1 check.
+  check(`${tag} 1:2:2 links are for root اله (Alh)`, f?.corpus?.href === "https://corpus.quran.com/qurandictionary.jsp?q=Alh" && f?.ejtaal?.href === "https://ejtaal.net/aa/#bwq=Alh", `${f?.corpus?.href} ${f?.ejtaal?.href}`);
   check(`${tag} 1:2:2 credit is only "links open other websites" (no Wiktionary)`, !/Wiktionary|উইকশনারি/.test(f?.credit) && f?.wiktionary === null, f?.credit);
   const cf = await contrast(page);
   check(`${tag} pill text >= 4.5 and pill border >= 3`, cf.pillText >= 4.5 && cf.pillBorder >= 3, JSON.stringify(cf));
