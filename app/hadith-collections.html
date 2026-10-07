@@ -167,7 +167,10 @@
     // Firebase-touching) session bootstrap script above can ask the corpus
     // to re-render its own study actions after a tenant/person change,
     // without either script importing the other.
-    window.__hadithCorpus = mountHadithBrowser(document.getElementById("hadithRoot"), { mount });
+    // Decision 85: ?openiti=<versionUri>&passage=<n> opens one narration (an Asmaul Husna poster's Hadith reference).
+    const openitiUri = params.get("openiti"), openitiN = Number(params.get("passage"));
+    const initialOpenitiPassage = openitiUri && /^[0-9A-Za-z.\-]+$/.test(openitiUri) && Number.isInteger(openitiN) && openitiN > 0 ? { versionUri: openitiUri, n: openitiN } : null;
+    window.__hadithCorpus = mountHadithBrowser(document.getElementById("hadithRoot"), { mount, initialOpenitiPassage });
   </script>
   <script type="module">
     import { auth } from "./js/firebase-init.js";

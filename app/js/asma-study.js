@@ -37,6 +37,7 @@ import { mountBookmarkMenu } from "./bookmark-nav.js";
 import { ASMA_NAMES } from "./asma-data.js";
 import { ASMA_POSTERS } from "./asma-posters.js";
 import { renderAsmaGrid, renderAsmaDetail, renderAsmaScreensaverSlide, renderAsmaCollectionListHtml, renderAsmaPosterHtml, asmaEntryDisplayName } from "./asma-renderer.js";
+import { fitAsmaPosters, wireAsmaPosterRefs } from "./asma-poster.js";
 import { renderScopedWheel, renderWheelLegend, attachScopedWheelClickHandler } from "./mastery-wheel.js";
 import {
   collectionsFrom, extraNamesFrom, overridesFrom, activeCollections, activeExtraNames,
@@ -856,6 +857,7 @@ export function initAsmaStudyPage() {
     screensaverMount.innerHTML = slide.kind === "photo"
       ? renderAsmaScreensaverSlide(slide.poster, null)
       : renderAsmaPosterHtml(slide.entry, "screensaver");
+    fitAsmaPosters(screensaverMount);
     screensaverIndex += 1;
   }
 
@@ -889,8 +891,11 @@ export function initAsmaStudyPage() {
   // ---------------------------------------------------------------------
   function openPosterView(entry) {
     if (!posterOverlay || !posterMount) return;
-    posterMount.innerHTML = renderAsmaPosterHtml(entry, "standalone");
+    posterMount.innerHTML = renderAsmaPosterHtml(entry, "standalone", { interactive: true });
     posterOverlay.classList.add("open");
+    fitAsmaPosters(posterMount);
+    // Decision 85: an Ayah opens in QuranRevival (its own ?goto= deep link); a Hadith opens in the Hadith library.
+    wireAsmaPosterRefs(posterMount, { onQuran: (surah, ayah) => { location.href = `./quranrevival.html?goto=${surah}:${ayah}`; } });
   }
 
   function closePosterView() {

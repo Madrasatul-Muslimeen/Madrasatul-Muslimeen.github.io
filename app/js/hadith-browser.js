@@ -52,7 +52,7 @@ function langText(map, lang) {
   return map[lang] ?? map.en ?? map.ar ?? "";
 }
 
-export function mountHadithBrowser(root, { mount = "standalone", initialHadeethEncId = null } = {}) {
+export function mountHadithBrowser(root, { mount = "standalone", initialHadeethEncId = null, initialOpenitiPassage = null } = {}) {
   const state = {
     view: "collections",
     contentLang: getAppLang() === "bn" ? "bn" : "en",
@@ -70,6 +70,11 @@ export function mountHadithBrowser(root, { mount = "standalone", initialHadeethE
   // unset, so this survives that lazy init untouched.
   if (initialHadeethEncId) {
     state.hc = { path: [], hadithId: String(initialHadeethEncId), catsByLang: {} };
+  }
+  // Decision 85 (7 Oct 2026): an Asmaul Husna poster's Hadith reference opens that narration here --
+  // { versionUri, n } = the OpenITI book and the passage's permanent position (asma-poster.js's POSTER_HADITH).
+  if (initialOpenitiPassage?.versionUri && Number.isFinite(Number(initialOpenitiPassage.n))) {
+    state.oi = { bookUri: initialOpenitiPassage.versionUri, chapterId: null, books: null, showAllChapters: false, focusPassage: Number(initialOpenitiPassage.n) };
   }
 
   function render() {
@@ -790,6 +795,13 @@ async function renderOpenitiBody(body, oi, localRefresh) {
   if (!found) { body.appendChild(el("p", "hadith-note", t("Nothing here yet."))); return; }
   const versionUri = oi.bookUri;
 
+  // A link to one passage (decision 85): open the chapter that holds it, then scroll to it once it is drawn.
+  if (oi.focusPassage != null && !oi.chapterId) {
+    const holder = index.chapters.find((c) => (c.hadithPositions ?? []).includes(oi.focusPassage));
+    if (holder) oi.chapterId = holder.id;
+    else { body.appendChild(el("p", "hadith-note", t("That passage is not in this book."))); oi.focusPassage = null; }
+  }
+
   if (!oi.chapterId) {
     renderOpenitiChapterList(body, oi, index, localRefresh);
     return;
@@ -801,6 +813,15 @@ async function renderOpenitiBody(body, oi, localRefresh) {
   const { hadiths } = await loadOpenitiChapter(versionUri, chapter);
   body.lastChild.remove();
   renderOpenitiPassages(body, hadiths);
+  if (oi.focusPassage != null) {
+    const target = body.querySelector(`[data-openiti-passage="${oi.focusPassage}"]`);
+    oi.focusPassage = null;
+    if (target) {
+      target.classList.add("hadith-card-focused");
+      target.dataset.openitiFocused = "true";
+      target.scrollIntoView({ block: "center" });
+    }
+  }
 }
 
 /**

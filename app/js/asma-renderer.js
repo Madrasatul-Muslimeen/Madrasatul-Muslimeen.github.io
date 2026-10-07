@@ -14,6 +14,7 @@
 // because a Latin transliteration is unreadable to a Bangla-only reader and
 // was simply dead space on a card that only has three lines.
 
+import { renderAsmaPoster } from "./asma-poster.js";
 import { STATUS_COLORS } from "./mastery-wheel.js";
 import { statusLabel } from "./unit-keys.js";
 import { t, num, asmaName } from "./i18n.js";
@@ -325,28 +326,11 @@ export function renderAsmaScreensaverSlide(poster, fallbackName) {
   </div>`;
 }
 
-/** Round 3 -- the A4 poster, live-rendered from the same data every other
-    screen already reads (never a stored image file, per the owner's own
-    choice: "whatever is easy" turned out to mean this needs no generation
-    step, no storage and can never drift from a later correction). One
-    function, two call sites: `openPosterView()` wraps this once, full
-    size, with a Print button (window.print() against @media print rules
-    that hide everything else -- see asma-study.html's own copy of that
-    rule); the screensaver wraps it again, smaller, as one slide among the
-    93 existing photo-posters (variant "screensaver" vs "standalone" only
-    changes sizing, never the content). extraNames/overrides are already
-    resolved into `entry` by the caller (resolveAsmaEntry) -- this stays a
-    pure renderer either way (I2). */
-export function renderAsmaPosterHtml(entry, variant = "standalone") {
-  const refLine = entry.ref ? `<div class="poster-ref">${escapeHtml(entry.ref)}</div>` : "";
-  return `<div class="asma-poster asma-poster-${variant}">
-    <div class="poster-eyebrow">${escapeHtml(t("Asma ul Husna"))}</div>
-    <div class="poster-main">
-      <div class="poster-ar">${escapeHtml(entry.arabic)}</div>
-      <div class="poster-translit">${escapeHtml(asmaEntryDisplayName(entry))}</div>
-    </div>
-    <div class="poster-bn">${escapeHtml(asmaEntryMeaningText(entry))}</div>
-    ${refLine}
-    <div class="poster-footer">${escapeHtml(t("QuranRevival · Asma ul Husna"))}</div>
-  </div>`;
+/** Round 3 -- the A4 poster, live-rendered from the same data every other screen already reads (never a stored image
+    of a Name). Owner decision 85 (7 Oct 2026): it is now a TRUE COPY of the Owner's own template -- see
+    asma-poster.js, which draws it. Same function and call sites as before; `variant` ("explore", "standalone",
+    "screensaver") changes only the size, and `interactive` makes each reference a button or a link into the Hadith
+    library (off where the whole poster is itself one button). Call fitAsmaPosters() once it is on screen. */
+export function renderAsmaPosterHtml(entry, variant = "standalone", opts = {}) {
+  return renderAsmaPoster(entry, variant, opts);
 }
