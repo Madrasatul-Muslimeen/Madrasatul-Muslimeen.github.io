@@ -255,44 +255,33 @@ export function openApproachList(select) {
   return wrap;
 }
 
-/**
- * "Make a poster" (issue #295) -- opens notes.html's own existing "Make a
- * printable page" (Dawah) flow for this āyah's Note (the caller decides how
- * -- this file never navigates or writes). `hasPosterNote` is `null` for a
- * moment after the sheet first opens (the caller reads it, on first use,
- * the same shape as the Word-by-Word status below) -- shown as enabled and
- * silent while unresolved rather than guessed either way: guessing "no
- * Note" would flash a wrong hint, and guessing "has a Note" could send the
- * reader to a page with nothing on it.
- */
-function makePosterItemHtml(hasPosterNote) {
-  const noNoteYet = hasPosterNote === false;
-  return `
-        <button type="button" class="qm-item ayah-sheet-item" data-ayah-sheet-poster>🖨 ${escapeHtml(t("Make a poster"))}</button>
-        ${noNoteYet ? `<p class="ayah-sheet-hint">${escapeHtml(t("You don't have a Note on this āyah yet."))} <button type="button" class="ayah-sheet-hint-btn" data-ayah-sheet-note>${escapeHtml(t("Take Note"))}</button></p>` : ""}`;
+/** Owner, 7 Oct 2026 (a photo of the Āyah card, the actions circled): "all these choices/ actions could be placed
+    below the Ayah name/ number in a row." So every one-tap action is a small icon button in ONE row straight under
+    the header -- the short word under the icon, the full name as its tooltip and its spoken name. ONE array, so a
+    future action is one more entry (issue #295's own instruction). A dimmed item still explains itself: its reason
+    is printed under the row (spec item 4: "shown ... with an explanation ... not hidden"). */
+function actionRowDefs({ isBookmarked, isSelf, noteWhy }) {
+  return [
+    { attr: "data-ayah-sheet-bookmark", icon: isBookmarked ? "★" : "🔖", short: isBookmarked ? t("Bookmarked") : t("Bookmark"), label: isBookmarked ? t("Remove bookmark") : t("Bookmark this āyah") },
+    { attr: "data-ayah-sheet-note", icon: "📝", short: t("Note"), label: t("Note & more…"), disabled: !isSelf, hint: isSelf ? "" : noteWhy },
+    { attr: "data-ayah-sheet-poster", icon: "🖨", short: t("Poster"), label: t("Make a poster") },
+    { attr: "data-ayah-sheet-asma", icon: "✦", short: t("Asma"), label: t("Asma ul Husna Name(s)…") },
+    { attr: "data-ayah-sheet-qcr", icon: "📚", short: t("QCR"), label: t("QCR collection(s)…") },
+    { attr: "data-ayah-sheet-file-folder", icon: "🗂", short: t("Folder"), label: t("File in folder(s)…"), disabled: !isSelf, hint: isSelf ? "" : noteWhy, title: t("Files your Note on this āyah (creates one if you have none).") },
+    { attr: "data-ayah-sheet-play", icon: "▶", short: t("Play"), label: t("Play this āyah") },
+    { attr: "data-ayah-sheet-copy", icon: "📋", short: t("Copy"), label: t("Copy") },
+    { attr: "data-ayah-sheet-share", icon: "📤", short: t("Share"), label: t("Share") },
+  ];
 }
 
-/** Every action in part A, in the sheet's own display order -- ONE array,
-    so a future action is one more entry here rather than a new template
-    block (issue #295's own instruction). A plain item renders through
-    actionItemHtml(); "Take an Approach"/"Make a poster" carry their own
-    shape (a pull-down; a conditional hint) and render through their own
-    small functions above, but still take exactly one slot in this list. */
-function actionDefs({ isBookmarked, isSelf, noteWhy, approachOptionsHtml, selectedApproachId, selectedApproachStatusId, hasPosterNote, approachSummary, canConfirm }) {
-  return [
-    { render: () => actionItemHtml({ attr: "data-ayah-sheet-bookmark", icon: isBookmarked ? "★" : "🔖", label: isBookmarked ? t("Remove bookmark") : t("Bookmark this āyah") }) },
-    { render: () => actionItemHtml({ attr: "data-ayah-sheet-note", icon: "📝", label: t("Note & more…"), disabled: !isSelf, hint: isSelf ? "" : noteWhy }) },
-    { render: () => renderApproachStagePickerHtml({ approachOptionsHtml, selectedApproachId, selectedApproachStatusId, approachSummary, canConfirm }) },
-    { render: () => makePosterItemHtml(hasPosterNote) },
-    { divider: true },
-    { render: () => actionItemHtml({ attr: "data-ayah-sheet-asma", icon: "✦", label: t("Asma ul Husna Name(s)…") }) },
-    { render: () => actionItemHtml({ attr: "data-ayah-sheet-qcr", icon: "📚", label: t("QCR collection(s)…") }) },
-    { render: () => actionItemHtml({ attr: "data-ayah-sheet-file-folder", icon: "🗂", label: t("File in folder(s)…"), disabled: !isSelf, hint: isSelf ? t("Files your Note on this āyah (creates one if you have none).") : noteWhy }) },
-    { divider: true },
-    { render: () => actionItemHtml({ attr: "data-ayah-sheet-play", icon: "▶", label: t("Play this āyah") }) },
-    { render: () => actionItemHtml({ attr: "data-ayah-sheet-copy", icon: "📋", label: t("Copy") }) },
-    { render: () => actionItemHtml({ attr: "data-ayah-sheet-share", icon: "📤", label: t("Share") }) },
-  ];
+function actionRowHtml({ isBookmarked, isSelf, noteWhy, hasPosterNote }) {
+  const defs = actionRowDefs({ isBookmarked, isSelf, noteWhy });
+  const buttons = defs.map((d) => `<button type="button" class="ayah-sheet-act${d.disabled ? " is-disabled" : ""}" aria-disabled="${d.disabled ? "true" : "false"}" ${d.attr} aria-label="${escapeHtml(d.label)}" title="${escapeHtml(d.title ? `${d.label} ${d.title}` : d.label)}"><span class="ayah-sheet-act-icon" aria-hidden="true">${d.icon}</span><span class="ayah-sheet-act-label" aria-hidden="true">${escapeHtml(d.short)}</span></button>`).join("");
+  // The reasons a dimmed item gives (each printed once), and the poster's own "no Note yet" offer.
+  const hints = [...new Set(defs.filter((d) => d.disabled && d.hint).map((d) => d.hint))].map((h) => `<p class="ayah-sheet-hint">${escapeHtml(h)}</p>`).join("");
+  const posterHint = hasPosterNote === false
+    ? `<p class="ayah-sheet-hint">${escapeHtml(t("You don't have a Note on this āyah yet."))} <button type="button" class="ayah-sheet-hint-btn" data-ayah-sheet-note>${escapeHtml(t("Take Note"))}</button></p>` : "";
+  return `<div class="ayah-sheet-actrow" data-ayah-sheet-actions>${buttons}</div>${hints}${posterHint}`;
 }
 
 /**
@@ -433,21 +422,28 @@ export function renderAyahActionSheetHtml({
   unitKey, ref = "", hasNote = false, isBookmarked = false, isSelf = true,
   approachOptionsHtml = "", selectedApproachId = null, selectedApproachStatusId = "not_started", hasPosterNote = null, approachSummary = null, canConfirm = false,
   approachStatuses = [], wordStatus = null, hifzStatus = null, related = null,
-  connected = null, ladderHtml = "",
+  connected = null, ladderHtml = "", canPrev = true, canNext = true,
 } = {}) {
   void hasNote; // kept for callers that already pass it (icon/wording decisions belong to isBookmarked/isSelf above, not this flag)
   const noteWhy = t("Only your own record can create or file a Note.");
-  const actionsHtml = actionDefs({ isBookmarked, isSelf, noteWhy, approachOptionsHtml, selectedApproachId, selectedApproachStatusId, hasPosterNote, approachSummary, canConfirm })
-    .map((def) => (def.divider ? `<div class="qm-divider"></div>` : def.render()))
-    .join("");
+  const actionRow = actionRowHtml({ isBookmarked, isSelf, noteWhy, hasPosterNote });
+  const pickerHtml = renderApproachStagePickerHtml({ approachOptionsHtml, selectedApproachId, selectedApproachStatusId, approachSummary, canConfirm });
   return `
     <div class="ayah-sheet" data-ayah-sheet data-unit-key="${escapeHtml(unitKey)}" role="dialog" aria-modal="true" aria-label="${escapeHtml(ref || t("This āyah"))}">
       <div class="ayah-sheet-handle" aria-hidden="true"></div>
       ${ladderHtml}
       <div class="ayah-sheet-header">
         <span class="ayah-sheet-ref">${escapeHtml(ref)}</span>
+        <span class="ayah-sheet-head-tools">
+          <span class="ayah-sheet-nav-pair">
+            <button type="button" class="ayah-sheet-nav" data-ayah-sheet-step="-1" aria-label="${escapeHtml(t("Previous āyah"))}" title="${escapeHtml(t("Previous āyah"))}"${canPrev ? "" : " disabled"}>‹</button>
+            <button type="button" class="ayah-sheet-nav" data-ayah-sheet-step="1" aria-label="${escapeHtml(t("Next āyah"))}" title="${escapeHtml(t("Next āyah"))}"${canNext ? "" : " disabled"}>›</button>
+          </span>
+          <button type="button" class="ayah-sheet-noteview" data-ayah-sheet-noteview aria-label="${escapeHtml(t("See this āyah as in Note view"))}" title="${escapeHtml(t("See this āyah as in Note view"))}"><span aria-hidden="true">📖</span> ${escapeHtml(t("Note view"))}</button>
+        </span>
         <button type="button" class="ayah-sheet-close" data-ayah-sheet-close aria-label="${escapeHtml(t("Close"))}">×</button>
       </div>
+      ${actionRow}
       <div class="ayah-sheet-status" data-ayah-sheet-status>
         <h3 class="ayah-sheet-section-title">${escapeHtml(t("Status of this āyah"))}</h3>
         <div class="ayah-status-block">
@@ -464,7 +460,7 @@ export function renderAyahActionSheetHtml({
           ${hifzStatusHtml(hifzStatus)}
         </div>
       </div>
-      <div class="ayah-sheet-body">${actionsHtml}</div>
+      <div class="ayah-sheet-body">${pickerHtml}</div>
       <div class="ayah-sheet-status ayah-sheet-info" data-ayah-sheet-info>
         <h3 class="ayah-sheet-section-title">${escapeHtml(t("Info"))}</h3>
         <div class="ayah-status-block" data-ayah-sheet-related>
@@ -511,6 +507,13 @@ export function attachAyahActionSheetHandlers(container, callbacks = {}) {
     });
   };
   sheet.querySelector("[data-ayah-sheet-close]")?.addEventListener("click", () => callbacks.onClose?.());
+  // Owner, 7 Oct 2026: ‹ › step the card itself to the previous / next āyah, and 📖 shows this āyah
+  // as the Note view does, in a pop-up over the card. Neither closes the card (the caller re-renders
+  // it for the new āyah, or lays the pop-up over it, so its Back lands on this same card).
+  sheet.querySelectorAll("[data-ayah-sheet-step]").forEach((btn) => {
+    btn.addEventListener("click", () => { if (!btn.disabled) callbacks.onStep?.(unitKey, Number(btn.dataset.ayahSheetStep)); });
+  });
+  sheet.querySelector("[data-ayah-sheet-noteview]")?.addEventListener("click", () => callbacks.onNoteView?.(unitKey));
   // Issue #348 -- the ladder at the card's own top (present only when the
   // caller passed a ladderHtml; wireUnitLadder() itself is a no-op when
   // there is no ".unit-ladder" in the markup). Does not close the sheet --

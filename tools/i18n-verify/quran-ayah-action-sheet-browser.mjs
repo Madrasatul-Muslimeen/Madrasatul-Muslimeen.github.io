@@ -186,7 +186,10 @@ for (const viewport of [
       const order = await page.evaluate(() => {
         const sheet = document.querySelector("[data-ayah-sheet]");
         const box = (el) => el?.getBoundingClientRect();
-        const header = box(sheet?.querySelector(".ayah-sheet-header"));
+        // Updated in place 7 Oct 2026: the Owner then asked for the actions "below the Ayah name/ number in a row",
+        // so the one-tap action row (and its hints) now sits between the header and Status; Status follows it directly.
+        const statusEl = sheet?.querySelector("[data-ayah-sheet-status]");
+        const header = box(statusEl?.previousElementSibling);
         const status = box(sheet?.querySelector("[data-ayah-sheet-status]"));
         const play = box(sheet?.querySelector("[data-ayah-sheet-play]"));
         const title = sheet?.querySelector("[data-ayah-sheet-status] .ayah-sheet-section-title");
@@ -194,12 +197,12 @@ for (const viewport of [
         const scroller = sheet;
         const sb = box(scroller);
         return header && status && play && tb ? {
-          gapUnderHeader: Math.round(status.top - header.bottom), statusAbovePlay: status.bottom <= play.top + 1,
+          gapUnderHeader: Math.round(status.top - header.bottom), statusAbovePlay: play.bottom <= status.top + 1,
           titleVisible: tb.top >= sb.top && tb.bottom <= Math.min(sb.bottom, innerHeight), titleText: title.textContent.trim(),
         } : null;
       });
-      check(`${lang} ${viewport.label} "Status of this āyah" sits straight under the header (gap ${order?.gapUnderHeader}px)`, !!order && order.gapUnderHeader >= 0 && order.gapUnderHeader <= 12, JSON.stringify(order));
-      check(`${lang} ${viewport.label} ...above Play this āyah`, !!order && order.statusAbovePlay, JSON.stringify(order));
+      check(`${lang} ${viewport.label} "Status of this āyah" sits straight under the action row (gap ${order?.gapUnderHeader}px)`, !!order && order.gapUnderHeader >= 0 && order.gapUnderHeader <= 12, JSON.stringify(order));
+      check(`${lang} ${viewport.label} ...with Play this āyah in the row above it`, !!order && order.statusAbovePlay, JSON.stringify(order));
       check(`${lang} ${viewport.label} ...and its heading is in view the moment the card opens ("${{ en: "Status of this āyah", bn: order?.titleText }[lang]}")`,
         !!order && order.titleVisible && (lang !== "en" || order.titleText === "Status of this āyah"), JSON.stringify(order));
 

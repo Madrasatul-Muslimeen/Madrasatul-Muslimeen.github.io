@@ -7,6 +7,7 @@ import { arabicToBuckwalter } from "./buckwalter.js";
 import { partName, partMeaning, PART_KINDS, FORM_NAMES, STEM_NAMES, DERIV_NAMES, DERIVED_GROUP_LABELS, orderDerivedForms } from "./word-grammar-tables.js";
 import { depthSectionsHtml } from "./word-card-depth.js";
 import { stageColourStyle } from "./ayah-action-sheet.js";
+import { lemmaText } from "./lemma-text.js";
 
 export const WORD_CARD_LEVELS = Object.freeze(["wbw", "basic", "depth"]);
 
@@ -78,6 +79,7 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   // Round 3 -- Basic's derived-form cards.
   derivedCardsSummary: "{n} forms · {total} times in all",
   derivedCardCount: "{n}×",
+  dpopHint: "Tap one to open that āyah",
   // v08.22 -- "Form {n}" and the note explaining that number are GONE. The
   // number was a list position and read on screen as the traditional Arabic
   // verb form (I, II, III...), which it never was. Each row now names the
@@ -375,7 +377,7 @@ function wholeQuranKnownLines(wholeQuranTotal, text, formatNumber, levelTotals) 
  */
 function knownThroughLine(lemma, text) {
   if (!lemma) return "";
-  const arabic = `<span dir="rtl" lang="ar">${escapeHtml(lemma)}</span>`;
+  const arabic = `<span dir="rtl" lang="ar">${escapeHtml(lemmaText(lemma))}</span>`;
   const line = escapeHtml(String(text.knownThroughSameMeaning)).replace("{word}", () => arabic);
   return `<p class="word-progress-known-through" data-word-known-through>${line}</p>`;
 }
@@ -643,14 +645,14 @@ function formsSection(layers, context, text, formatNumber, { expandable }) {
   const rows = data.forms.map((form) => {
     const occurrences = escapeHtml(String(text.formOccurrences).replace("{count}", formatNumber(form.count)));
     const head = posCell(form.pos, form, text, formatNumber) +
-      `<span class="word-card-form-arabic" dir="rtl" lang="ar">${escapeHtml(form.lemma)}</span>` +
+      `<span class="word-card-form-arabic" dir="rtl" lang="ar">${escapeHtml(lemmaText(form.lemma))}</span>` +
       formMeaning(form, text) +
       `<span class="word-card-form-count">${occurrences}</span>`;
     if (!expandable) return `<li class="word-card-form">${head}</li>`;
     const open = context.expandedForm === form.lemma;
     const toggleLabel = open ? text.hideOccurrences : text.showOccurrences;
     return `<li class="word-card-form">` +
-      `<button type="button" class="word-card-form-toggle" data-word-form-toggle="${escapeHtml(form.lemma)}" aria-expanded="${open ? "true" : "false"}" aria-label="${escapeHtml(`${toggleLabel} — ${form.lemma}`)}">${head}<span class="word-card-form-caret" aria-hidden="true">${open ? "▾" : "▸"}</span></button>` +
+      `<button type="button" class="word-card-form-toggle" data-word-form-toggle="${escapeHtml(form.lemma)}" aria-expanded="${open ? "true" : "false"}" aria-label="${escapeHtml(`${toggleLabel} — ${lemmaText(form.lemma)}`)}">${head}<span class="word-card-form-caret" aria-hidden="true">${open ? "▾" : "▸"}</span></button>` +
       (open ? formOccurrenceList(form, context, text, formatNumber) : "") +
       `</li>`;
   }).join("");
@@ -693,19 +695,42 @@ function derivedCardsSection(layers, context, text, formatNumber) {
       ? ` · ${bn ? formatNumber(f.formNo) : FORM_NAMES[f.formNo].roman}` : "";
     const pos = `${name}${formNo}${f.posAmbiguous ? " +1" : ""}`;
     const current = f.lemma === layers.lemma;
-    return `<div class="word-card-dcard${f.group ? ` word-card-dgroup-${f.group}` : ""}${current ? " word-card-dcard-current" : ""}"${current ? ' data-word-card-form-current aria-current="true"' : ""} data-word-card-dcard>` +
+    // Owner, 7 Oct 2026: "Enable the word cards here to popup the occurrences, links. on click on the card."
+    // Each card is the same toggle Depth's form rows already are (data-word-form-toggle), so the page's
+    // expandWordForm() loads its places, and "Back to Word Card" restores the open pop-up with no new state.
+    const open = context.expandedForm === f.lemma;
+    return `<button type="button" class="word-card-dcard${f.group ? ` word-card-dgroup-${f.group}` : ""}${current ? " word-card-dcard-current" : ""}${open ? " word-card-dcard-open" : ""}"${current ? ' data-word-card-form-current aria-current="true"' : ""} data-word-card-dcard data-word-form-toggle="${escapeHtml(f.lemma)}" aria-expanded="${open ? "true" : "false"}" aria-haspopup="dialog">` +
       (f.group ? `<span class="word-card-dcard-group">${escapeHtml(DERIVED_GROUP_LABELS[f.group]?.[lang] ?? "")}</span>` : "") +
       `<span class="word-card-dcard-pos">${escapeHtml(pos)}</span>` +
-      `<span class="word-card-dcard-ar" dir="rtl" lang="ar">${escapeHtml(f.lemma)}</span>` +
+      `<span class="word-card-dcard-ar" dir="rtl" lang="ar">${escapeHtml(lemmaText(f.lemma))}</span>` +
       formMeaning(f, text) +
       `<span class="word-card-dcard-count">${escapeHtml(String(text.derivedCardCount).replace("{n}", formatNumber(f.count)))}</span>` +
-      `</div>`;
+      `</button>`;
   }).join("");
+  const openForm = forms.find((f) => f.lemma === context.expandedForm);
+  const pop = openForm ? derivedFormPopup(openForm, context, text, formatNumber) : "";
   return `<section class="word-card-forms" data-word-card-dcards>
     <h4>${escapeHtml(text.derivedForms)}</h4>
     <p class="word-card-forms-summary">${escapeHtml(summary)}</p>
     <div class="word-card-dcards">${cards}</div>
+    ${pop}
   </section>`;
+}
+
+/** The pop-up over Basic's derived-form cards: that form's own places, each one a
+ *  data-word-occurrence-goto link (the same list and the same way to an āyah as Depth). */
+function derivedFormPopup(form, context, text, formatNumber) {
+  const title = escapeHtml(String(text.formOccurrences).replace("{count}", formatNumber(form.count)));
+  const ar = escapeHtml(lemmaText(form.lemma));
+  return `<div class="word-card-dpop" data-word-card-dpop>` +
+    `<button type="button" class="word-card-dpop-backdrop" data-word-form-toggle="${escapeHtml(form.lemma)}" tabindex="-1" aria-hidden="true"></button>` +
+    `<div class="word-card-dpop-box" role="dialog" aria-label="${ar} — ${title}">` +
+    `<div class="word-card-dpop-head"><span class="word-card-dpop-ar" dir="rtl" lang="ar">${ar}</span>` +
+    `<span class="word-card-dpop-title">${title}</span>` +
+    `<button type="button" class="word-card-dpop-close" data-word-form-toggle="${escapeHtml(form.lemma)}" data-word-card-dpop-close aria-label="${escapeHtml(text.hideOccurrences)}">✕</button></div>` +
+    `<p class="word-card-dpop-hint">${escapeHtml(text.dpopHint)}</p>` +
+    formOccurrenceList(form, context, text, formatNumber) +
+    `</div></div>`;
 }
 
 /**
@@ -874,7 +899,7 @@ export function wordFactsHtml(word, layers, features, text, formatNumber = Strin
   const formLabel = (n) => String(text.formNumber).replace("{n}", bn ? formatNumber(n) : (FORM_NAMES[n]?.roman ?? String(n)));
   const boxes = [];
   if (layers.root) boxes.push({ key: "root", label: text.root, value: spacedRoot(layers.root), ar: true });
-  if (layers.lemma) boxes.push({ key: "dict", label: text.factDictWord, value: layers.lemma, ar: true });
+  if (layers.lemma) boxes.push({ key: "dict", label: text.factDictWord, value: lemmaText(layers.lemma), ar: true });
   if (features) {
     const n = features.form > 0 && FORM_NAMES[features.form] ? features.form : 1;
     if (features.deriv && DERIV_NAMES[features.deriv]) {

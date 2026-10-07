@@ -20,6 +20,8 @@
   #contextBar { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin: 0.6rem 0 1rem; font-size: 0.9rem; }
   #contextBar label { margin: 0; }
   #contextBar select { min-height: 40px; padding: 0.3rem 0.4rem; border: 1px solid var(--hadith-rule); border-radius: 0.35rem; }
+  .hadith-back-btn { min-height: 40px; padding: 0 0.9rem; margin: 0.6rem 0 0; border: 1px solid #c9a24b; border-radius: 0.6rem; background: #1F3A6E; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+  .hadith-back-btn[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -32,6 +34,8 @@
     <p class="qr-mount-note" id="qrMountNote"></p>
   </div>
 
+  <!-- The way-back law (decision 86): opened from somewhere else in the app with back=1, this page offers ← Back. -->
+  <button type="button" id="hadithBackBtn" class="hadith-back-btn" hidden></button>
   <h1 id="hadithPageTitle"></h1>
   <p class="hadith-note" id="hadithPilotNote"></p>
 
@@ -161,6 +165,14 @@
     document.getElementById("qrMountNote").textContent =
       t("Mounted inside QuranRevival — the same component as the standalone page.");
 
+    const backBtn = document.getElementById("hadithBackBtn");
+    if (params.get("back") === "1") {
+      backBtn.textContent = `← ${t("Back")}`;
+      backBtn.hidden = false;
+      // Back to exactly where the reader was (the page they came from keeps its own state); with no history (a link
+      // opened in a new tab), the app's landing page.
+      backBtn.addEventListener("click", () => { if (history.length > 1) history.back(); else location.href = "./quranrevival.html"; });
+    }
     translateStatic();
     registerServiceWorker();
     // Issue #311 -- exposed on `window` so the (deliberately separate,

@@ -9,6 +9,7 @@
 import { t, num } from "./i18n.js";
 import { posLabel } from "./labels.js";
 import { badgeNumber } from "./fatiha-count.js";
+import { lemmaText } from "./lemma-text.js";
 
 /** Escapes then re-expands only the exact tajweed tags quran.com emits — never trusts raw HTML beyond that whitelist. */
 export function tajweedRawToSafeHtml(raw) {
@@ -427,7 +428,7 @@ export function renderDerivativesPanel(ayah) {
       (w) => `<div class="root-row" data-position="${w.position}">
         <div class="root-word" dir="rtl" lang="ar">${escapeHtml(w.arabic)}</div>
         <div class="root-pos">${escapeHtml(posLabel(w.morphology.pos))}</div>
-        ${w.morphology.lemma ? `<div class="root-lemma" dir="rtl" lang="ar">${escapeHtml(w.morphology.lemma)}</div>` : ""}
+        ${w.morphology.lemma ? `<div class="root-lemma" dir="rtl" lang="ar">${escapeHtml(lemmaText(w.morphology.lemma))}</div>` : ""}
       </div>`
     )
     .join("");

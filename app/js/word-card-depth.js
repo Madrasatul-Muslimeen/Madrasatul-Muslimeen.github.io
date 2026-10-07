@@ -10,6 +10,7 @@ import { partName, FORM_NAMES, PERSONS, PGN_ALIASES, personFor, TENSE_NAMES, MOO
 
 import { quranWordOccurrenceId } from "./quran-word-identity.js";
 import { conjugate, toArabic } from "./verb-conjugation.js";
+import { lemmaText } from "./lemma-text.js";
 
 function esc(value) {
   return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -632,7 +633,7 @@ function rootSection(word, layers, features, ctx) {
     if (table) forms = orderDerivedForms(forms);
     // Owner, 7 Oct 2026: "make the root n family words bigger, noticeable with elegant look": the root in a gold tile,
     // its family large on a panel of its own. The text reads as before ("ن ف س ← a · b"), for the checks and screen readers.
-    out.push(line("rule", lang, `<p class="word-card-fam" dir="rtl" lang="ar" data-word-card-fam><b class="word-card-fam-root">${esc(rootLetters(layers.root).join(" "))}</b> <span class="word-card-fam-arrow" aria-hidden="true">←</span> ${forms.map((f) => `<span class="word-card-fam-w">${esc(f.lemma)}</span>`).join('<span class="word-card-fam-dot"> · </span>')}</p>`));
+    out.push(line("rule", lang, `<p class="word-card-fam" dir="rtl" lang="ar" data-word-card-fam><b class="word-card-fam-root">${esc(rootLetters(layers.root).join(" "))}</b> <span class="word-card-fam-arrow" aria-hidden="true">←</span> ${forms.map((f) => `<span class="word-card-fam-w">${esc(lemmaText(f.lemma))}</span>`).join('<span class="word-card-fam-dot"> · </span>')}</p>`));
     // The root's meaning is the Wiktionary meaning of its most frequent Form I verb.
     let meaning = null;
     if (table && ctx.dictionaryLookup) {

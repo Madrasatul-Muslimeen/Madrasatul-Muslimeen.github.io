@@ -441,6 +441,11 @@ merges.
 - **Report every time:** what was done, what is pending, what the owner should
   check. Keep checks short — long click-throughs will not happen.
 - **Must work on desktop, tablet and phone.**
+- **THE WAY-BACK LAW (Owner, decision 86, 7 Oct 2026): "always enable coming back to a view where it came
+  from."** Anything that takes the reader to another view or place — a reference, a word, an occurrence, a link
+  to another page — leaves a visible way back to exactly where they were (the view, the place in it, and the card
+  or pop-up that was open). Reuse "Back to Word Card" or the floating "Back to …" pill (`setAppReturn()`); a link
+  to another page carries `back=1` and that page shows ← Back. A round without it is not accepted.
 - **Do not build** Finance, Operations, medical records, or distribution unless
   explicitly asked.
 

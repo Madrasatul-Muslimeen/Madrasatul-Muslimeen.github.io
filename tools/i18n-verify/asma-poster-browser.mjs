@@ -145,7 +145,7 @@ for (const [lang, width, height] of [["en", 390, 844], ["bn", 390, 844], ["en", 
   await page.click("#asmaXPosterPanel");
   await page.waitForTimeout(300);
   const href = await page.evaluate(() => document.querySelector('#asmaXPosterOverlay.open [data-poster-hadith="bukhari:6410"]')?.getAttribute("href") ?? null);
-  check(`${tag} Al-Witr's "Sahih al-Bukhari - 6410" links to the library at that narration`, href === "./hadith-collections.html?openiti=0256Bukhari.Sahih.JK000110-ara1&passage=6682", href);
+  check(`${tag} Al-Witr's "Sahih al-Bukhari - 6410" links to the library at that narration`, href === "./hadith-collections.html?openiti=0256Bukhari.Sahih.JK000110-ara1&passage=6682&back=1", href); // back=1 added 7 Oct 2026: the way-back law (decision 86)
   check(`${tag} no page errors`, errors.filter((e) => !/ERR_CERT|net::|archive\.org|api\.quran|fonts\.g/i.test(e)).length === 0, errors.slice(0, 2).join(" | "));
   await ctx.close();
 }

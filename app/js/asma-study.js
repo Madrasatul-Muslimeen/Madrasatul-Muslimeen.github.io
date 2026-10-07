@@ -895,7 +895,7 @@ export function initAsmaStudyPage() {
     posterOverlay.classList.add("open");
     fitAsmaPosters(posterMount);
     // Decision 85: an Ayah opens in QuranRevival (its own ?goto= deep link); a Hadith opens in the Hadith library.
-    wireAsmaPosterRefs(posterMount, { onQuran: (surah, ayah) => { location.href = `./quranrevival.html?goto=${surah}:${ayah}`; } });
+    wireAsmaPosterRefs(posterMount, { onQuran: (surah, ayah) => { location.href = `./quranrevival.html?goto=${surah}:${ayah}&back=1`; } });
   }
 
   function closePosterView() {

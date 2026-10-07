@@ -373,7 +373,9 @@ if (ONLY || !MUTATE) {
         overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
       };
     });
-    check(`${tag} bar: three rows, every control >= 40px and inside the window, no sideways scroll`, lay.rows === 3 && lay.all && lay.overflow <= 0, JSON.stringify(lay));
+    // Updated in place 7 Oct 2026: the Owner, "Organise the buttons, make it in 2 row." -- two rows, and only the
+    // narrowest phone (320px) wraps into a third.
+    check(`${tag} bar: two rows (three at 320px), every control >= 40px and inside the window, no sideways scroll`, lay.rows === (width <= 320 ? 3 : 2) && lay.all && lay.overflow <= 0, JSON.stringify(lay));
     check(`${tag} Word AND Ayah both show, with ‹ › ⬆ More paper ✋ Move and ⛶ (phone included)`, lay.word && lay.ayah && lay.prev && lay.next && lay.more && lay.move && lay.full, JSON.stringify(lay));
     if (width === 320 || width === 1280) await page.screenshot({ path: `/tmp/d83-${width}-${lang}.png` });
     // the Ayah button really switches the pop-out to the Ayah
