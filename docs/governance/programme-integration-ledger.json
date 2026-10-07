@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.108",
+    "version": "09.109",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2477,8 +2477,20 @@
     {
       "version": "09.108",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Builder round #627 (PR #630, merged unversioned by the unattended Architect), reviewed after the merge by the session Architect: model ink and phone-width label fixes.",
+      "integration": {
+        "authorizedOn": "2026-10-07",
+        "integratedOn": "2026-10-07",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.109",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Owner's screenshot of the Word card, Arabic in Depth, 7 Oct 2026: three fixes built and reviewed by the session Architect; plus Explore's Ayah-level Previous/Next padding.",
       "integration": {
         "authorizedOn": "2026-10-07",
         "integratedOn": "2026-10-07",
@@ -2487,8 +2499,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.109",
+  "nextUnallocated": "09.110",
   "nextUnallocatedNote": [
+    "v09.109 was allocated to the Word card's root and family bigger on a panel, Wiktionary above the other dictionaries, and the Lane / Hans Wehr link opening at the root (Owner, 7 Oct), 2026-10-07.",
     "v09.108 was allocated to the writing paper goes full screen, with More paper, lines to trace over or blank, and ‹ › to the next word (decision 83), 2026-10-07.",
     "v09.107 was allocated to Explore: every Approach at once, 2026-10-07.",
     "v09.106 was allocated to the Mushaf page's even lines, 2026-10-07.",
