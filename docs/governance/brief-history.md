@@ -14,6 +14,18 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v09.104 on `main`** (7 Oct 2026 — **Pictures in Notes: made small on the device, private in Firebase Storage (switched on when the Owner publishes the Rules)**).
+- **What** (Owner decisions 72 and 81; Builder round #620):
+  - `note-image-path.js` (new, pure): the one path a Note picture may have, `noteImages/{uid}/{id}.webp`, the widths, and the size step-down (WebP, about 200 KB, at most 400 KB).
+  - `note-image.js` (new): re-draws the picture on a canvas (longest side 1600, which also drops location and camera data), uploads it to the person's own folder, fetches it back with `getBlob` (never a download URL or token); loaded only when a picture is first used (I9). Failures in words; nothing is ever deleted.
+  - `note-sanitize.js`: a Note keeps `<img data-mmsa-image alt width>` and nothing else on it — no `src`.
+  - `note-window.js`: 🖼 in the editing toolbar (describe, width, choose a picture or take a photo).
+  - Storage Rules **candidate** `docs/governance/2026-10-storage-rules-candidate.rules` (not deployed): own folder only, create only (no update, no delete), WebP, at most 400 KB.
+  - Architect review: the Rules now require a NEW file (`resource == null`; the Storage emulator showed an overwrite passing as a create) and `<= 400 KB` (the app's own ceiling); proven in the real Storage emulator (15 cases, 7 mutations each caught); a picture is a block on its own line; the Owner's four steps written (`docs/reports/2026-10-07-pictures-owner-steps.md`), including the bucket CORS the original plan lacked.
+- **Checks:**
+  - journey-note-images-browser 288/0 (mutations src-survives, not-smaller, silent-failure, other-uid, inline-picture each fail it), note-images-storage emulator 15/0 + 7/7 mutations, note-image-sanitize, note-image-storage-rules 7/0, note-sanitize-boundary, every journey-* suite green (journey-sheet 962/0 twice; one earlier 960/2 run on a column-drag did not reproduce), rules-authorisation-executable, phone-width-overflow 217/0, stub-parity, behaviour 1003/4 (sandbox baseline)
+- **With the Owner:** the four steps in `docs/reports/2026-10-07-pictures-owner-steps.md` (Blaze with a $1 alert, Storage on, publish the Rules, CORS); then 🖼 in a Note's editor.
+
 **Previous milestone: v09.103 on `main`** (6 Oct 2026 — **Link preview cards in Notes, through Microlink, opt-in**).
 - **What** (Owner decisions 72 and 81; Builder round #619):
   - `note-link-preview.js` (new): cleans Microlink's answer to plain text (title 120, description 240) and an `https` picture only; picks at most 5 `https` links per Note; caches answers on the device for 7 days (200 links); a failure is never cached.

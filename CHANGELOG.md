@@ -19851,3 +19851,10 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
 - **Checks:**
   - journey-note-images-browser 288/0 (five mutations each fail it), Storage emulator 15/0 with 7 Rules mutations caught, note-image-sanitize, note-image-storage-rules 7/0
   - every journey-* suite green, note-sanitize-boundary, rules-authorisation-executable, phone-width-overflow 217/0, stub-parity, behaviour 1003/4 (sandbox baseline)
+
+## v09.105 — 7 Oct 2026 — Explore's "words known" line shows at once; 6 reads instead of hundreds
+
+- **What:** the Owner, 7 Oct 2026, and decision 82 ("Loading progress: 1"). `quranrevival.html` (early paint, `stillHere`, `paintCoverage`; `primeLemmaProgressForOccurrenceScope` uses the person-wide read), `quran-lemma-progress-data.js` (`primeAllLemmaProgress`, `lemmaProgressFor` knows a never-claimed lemma after the list read), `bn.js`, the stub (`__stubHold`/`__stubRelease`), the lemma emulator suite (list allowed/refused). Decision 82; demos in `docs/reference/2026-10-07-*`. `lemma-levels-browser` updated in place (stale since v09.90).
+- **Checks:**
+  - explore-coverage-browser 36/0 (three mutations each fail it), lemma-progress-real-function emulator 1/0 (deployment candidate and firestore.rules), lemma-levels-browser 240/0
+  - quran-lemma-progress-boundary/model/numbers/rendered, word-card basic/depth/wbw rebuild, explore-* suites, unit-rings 106/0, quran-my-status 248/0, phone-width-overflow 217/0, rules-authorisation-executable 63/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
