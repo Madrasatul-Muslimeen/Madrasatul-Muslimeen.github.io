@@ -7,7 +7,7 @@
 // holds (no new read, no new collection), and a claim goes through the page's
 // own existing write path.
 
-import { polarToCartesian, segmentPath, STATUS_COLORS } from "./mastery-wheel.js";
+import { polarToCartesian, segmentPath, STATUS_COLORS, uprightNumbersMarkup } from "./mastery-wheel.js";
 
 /** Inside of the ring -> outside. Mastered sits at the hub and Not started at the rim. */
 export const BAND_ORDER = Object.freeze(["mastered", "achieved", "practising", "learning", "not_started", "not_applicable"]);
@@ -48,7 +48,7 @@ const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
  * its bands, so attachScopedWheelClickHandler() works unchanged, plus tabindex
  * and an aria-label that says the counts in words.
  */
-export function renderAllApproachesWheel(slices, { size = 360, centerLabel = "", centerSub = "" } = {}) {
+export function renderAllApproachesWheel(slices, { size = 360, centerLabel = "", centerSub = "", uprightNumbers = null } = {}) {
   const c = size / 2, rOut = size / 2 - 6, rIn = rOut * 0.5;
   const n = slices.length || 1;
   const per = 360 / n;
@@ -56,13 +56,15 @@ export function renderAllApproachesWheel(slices, { size = 360, centerLabel = "",
   const every = n <= 40 ? 1 : Math.ceil(n / 20);
   const pad = 16;
   let body = "";
+  const upright = [];
   slices.forEach((s, i) => {
     const a0 = i * per, a1 = a0 + per - gap;
     const bands = bandRadii(s.counts, rIn, rOut)
       .map((b) => `<path class="aa-band" data-band="${b.status}" data-radius-in="${b.r0.toFixed(2)}" data-radius-out="${b.r1.toFixed(2)}" d="${segmentPath(c, c, b.r0, b.r1, a0, a1)}" fill="${b.status === "not_applicable" ? "url(#aaNaHatch)" : STATUS_COLORS[b.status]}" style="pointer-events:none"></path>`)
       .join("");
     body += `<g class="aa-slice" data-slice="${i}">${bands}<path class="wheel-seg aa-hit" data-key="${esc(s.key)}" tabindex="0" role="button" aria-label="${esc(s.title)}" d="${segmentPath(c, c, rIn, rOut, a0, a1)}" fill="transparent" stroke="#0c1320" stroke-width="0.6"><title>${esc(s.title)}</title></path></g>`;
-    if (i % every === 0) {
+    if (uprightNumbers) upright.push({ angle: (a0 + a1) / 2, text: esc(s.number) });
+    else if (i % every === 0) {
       const p = polarToCartesian(c, c, rOut + 9, (a0 + a1) / 2);
       body += `<text class="wheel-seg-num" x="${p.x}" y="${p.y + 3}" text-anchor="middle" style="pointer-events:none">${esc(s.number)}</text>`;
     }
@@ -71,5 +73,5 @@ export function renderAllApproachesWheel(slices, { size = 360, centerLabel = "",
   const hub = `<circle cx="${c}" cy="${c}" r="${rIn - 4}" fill="#13192a" stroke="#C9A24B" stroke-width="1.5"/>
     <text x="${c}" y="${c - 2}" text-anchor="middle" font-family="'Cormorant Garamond', serif" font-weight="600" font-size="${String(centerLabel).length > 12 ? 16 : 20}" fill="#C9A24B">${esc(centerLabel)}</text>
     <text x="${c}" y="${c + 18}" text-anchor="middle" font-family="Inter" font-size="10" fill="#8fa0c2">${esc(centerSub)}</text>`;
-  return `<svg class="mastery-wheel aa-wheel" viewBox="${-pad} ${-pad} ${size + 2 * pad} ${size + 2 * pad}" width="${size}" height="${size}" data-slices="${slices.length}"><defs>${hatch}</defs>${body}${hub}</svg>`;
+  return `<svg class="mastery-wheel aa-wheel" viewBox="${-pad} ${-pad} ${size + 2 * pad} ${size + 2 * pad}" width="${size}" height="${size}" data-slices="${slices.length}"><defs>${hatch}</defs>${body}${uprightNumbers ? uprightNumbersMarkup(upright, { cx: c, cy: c, r0: rOut, minPx: uprightNumbers.minPx ?? 11 }) : ""}${hub}</svg>`;
 }

@@ -6393,7 +6393,7 @@
     // -- each respects its own Every time/Once a day/Once a week preference
     // independently, same as when they were two separate page loads.
     showBootSplash(() => showQuranSplash());
-    import { renderWheelLegend, renderScopedWheel, attachScopedWheelClickHandler, renderWheelSidebar, attachWheelSidebarClickHandler, attachWheelSectionToggles, setWheelSectionOpen, wrapWheelLabel, wordTotalRampColor, STATUS_COLORS, renderRingWheel, attachRingWheelClickHandler } from "./js/mastery-wheel.js";
+    import { renderWheelLegend, renderScopedWheel, attachScopedWheelClickHandler, renderWheelSidebar, attachWheelSidebarClickHandler, attachWheelSectionToggles, setWheelSectionOpen, wrapWheelLabel, wordTotalRampColor, STATUS_COLORS, renderRingWheel, attachRingWheelClickHandler, fitUprightNumbers } from "./js/mastery-wheel.js";
     import { countStatuses, describeCounts, renderAllApproachesWheel } from "./js/explore-all-approaches.js";
     // Issue #352 -- "Every unit on the wheel" (Owner decisions 21-24).
     import { ayahIndexer, rowSpan, spanToCoverage, textWeigher, layoutRing, clipSpan, LANDING_RING_ORDER } from "./js/unit-rings.js";
@@ -12047,7 +12047,7 @@
      * is what the box shows before anything is tapped. `navigateRings` names
      * the rings whose tap navigates straight away (the whole-Qur'an level).
      */
-    function drawExploreRings({ rings, centerLabel, centerSub, ring, levelUnit, navigateRings = [] }) {
+    function drawExploreRings({ rings, centerLabel, centerSub, ring, levelUnit, navigateRings = [], numberRing = null }) {
       const trackable = currentTrackable();
       const { weigher } = exploreRingTools();
       const labels = statusLabelsById();
@@ -12059,14 +12059,19 @@
         selected: pick && pick.ring === r.type && String(pick.key) === String(u.key),
         title: escapeHtml(segTitle(u.part ? `${u.label} ${t("(part)")}` : u.label, u.statusId, labels)),
       })));
-      exploreWheelContainer.innerHTML = renderRingWheel(svgRings, { centerLabel, centerSub, ring });
+      // Owner decision 84: where a ring's units are Ayat (the Surah level), print their numbers round the wheel,
+      // upright and 12 px (the issue: "about 12 px at a 390 px phone"; Architect review, 7 Oct), thinned to what fits (fitUprightNumbers).
+      const numberUnits = numberRing ? laid.find((r) => r.type === numberRing)?.units.filter((u) => u.number != null) : null;
+      const ringNumbers = numberUnits?.length ? numberUnits.map((u) => ({ angle: (u.a0 + u.a1) / 2, text: escapeHtml(String(u.number)) })) : null;
+      exploreWheelContainer.innerHTML = renderRingWheel(svgRings, { centerLabel, centerSub, ring, ...(ringNumbers ? { numbers: ringNumbers, uprightNumbers: { minPx: 12 } } : {}) });
+      fitUprightNumbers(exploreWheelContainer);
       attachRingWheelClickHandler(exploreWheelContainer, (key, k) => {
         const r = laid[k];
         const u = r?.units.find((x) => String(x.key) === String(key));
         if (!u) return;
         if (navigateRings.includes(r.type) && u.open) { exploreRingPick = null; u.open(); return; }
         exploreRingPick = { scope, ring: r.type, key: u.key };
-        drawExploreRings({ rings, centerLabel, centerSub, ring, levelUnit, navigateRings });
+        drawExploreRings({ rings, centerLabel, centerSub, ring, levelUnit, navigateRings, numberRing });
       });
 
       const picked = pick ? laid.find((r) => r.type === pick.ring)?.units.find((u) => String(u.key) === String(pick.key)) : null;
@@ -12225,7 +12230,7 @@
       const ayat = surahData.ayahs.flatMap((a) => ayahRecordUnits(sn, a.ayah).map((u) => {
         const at = unitIdx++;
         return {
-          key: u.key, a: idx.gi(sn, a.ayah), b: idx.gi(sn, a.ayah), share: u.share,
+          key: u.key, a: idx.gi(sn, a.ayah), b: idx.gi(sn, a.ayah), share: u.share, number: ayahBadgeFor(sn, a.ayah, u.half),
           label: ayahNameFor(sn, a.ayah, u.half),
           coverage: [{ surah: sn, from: a.ayah, to: a.ayah }],
           statusId: effectiveAyahStatus(sn, a.ayah, trackable.id, u.record),
@@ -12240,7 +12245,7 @@
           { type: "ayah", units: ayat, keyText: t("Āyah: {n}, around them", { n: num(ayat.length) }) },
         ],
         centerLabel: surahLabel, centerSub: langText(trackable.name, getAppLang(), trackable.id),
-        navigateRings: ["ayah"],
+        navigateRings: ["ayah"], numberRing: "ayah",
         levelUnit: { key: `surah:${sn}`, label: surahLabel, coverage, statusId: exploreUnitStatus(coverage, buildUnitKey.surah(sn), chunk, trackable.id) },
       });
     }
@@ -12722,7 +12727,8 @@
         const counts = countStatuses(grid.map((g) => g[i]));
         return { key: String(i), number: u.number, counts, title: `${u.name}: ${describeCounts(counts, labelsById, num)}` };
       });
-      exploreWheelContainer.innerHTML = renderAllApproachesWheel(slices, { centerLabel: surahLabel, centerSub: t("All {n} Approaches", { n: num(quranTrackables.length) }) });
+      exploreWheelContainer.innerHTML = renderAllApproachesWheel(slices, { centerLabel: surahLabel, centerSub: t("All {n} Approaches", { n: num(quranTrackables.length) }), uprightNumbers: { minPx: 12 } });
+      fitUprightNumbers(exploreWheelContainer);
       attachScopedWheelClickHandler(exploreWheelContainer, (key) => openExploreAyah(Number(key)));
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById)
         + `<p class="aa-hint">${escapeHtml(t("Each slice is one Ayah. Its colours show how many Approaches are at each stage: Mastered on the inside, Not started on the outside. Tap a slice to open that Ayah."))}</p>`;
@@ -12973,7 +12979,8 @@
       for (const it of items) it.title = segTitle(it.label, it.statusId, labelsById);
       // " · " is a separator, not grammar, so composing the two translated
       // halves around it is safe in either language.
-      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: `${currentSurahName} · ${t("Ruku' {ruku}", { ruku: num(exploreRukuIndex) })}`, centerSub: approachName });
+      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: `${currentSurahName} · ${t("Ruku' {ruku}", { ruku: num(exploreRukuIndex) })}`, centerSub: approachName, uprightNumbers: { minPx: 12 } });
+      fitUprightNumbers(exploreWheelContainer);
       attachScopedWheelClickHandler(exploreWheelContainer, jumpToStudy);
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
       exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
