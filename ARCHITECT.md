@@ -334,7 +334,13 @@ replaced, and everything held only in it is gone. The record lives in this file,
 
 2. **At the end of every finished job, check your own state.** If the session
    has run long, has been summarised, or you have caught yourself forgetting
-   something, end the report with exactly:
+   something, end the report with exactly the line below. **Being summarised is
+   a FACT you can see (the summary is in your context), not a feeling: once it
+   has happened, the very next report carries this line, unasked.** On 7 Oct
+   2026 a summarised session did not, and the Owner had to ask. Two checks now
+   back this up: `allocate-version.py` appends every release to the handover
+   CLAUDE.md names, and `brief-integrity.mjs` fails when that handover does not
+   name the version on `main`. The line:
 
    > Recommend a fresh Architect session. Paste: *You are the MMSA Architect.
    > Read ARCHITECT.md, CLAUDE.md and the pinned status issue, then continue.*

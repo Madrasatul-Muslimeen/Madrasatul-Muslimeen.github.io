@@ -238,5 +238,20 @@ check("the brief still tells a session where the authoritative status lives", ()
   assert.ok(fs.existsSync(path.join(root, "PHASE-5-STATUS.md")), "PHASE-5-STATUS.md is missing");
 });
 
+check("the session handover the brief names as current is on disk and names the version on main", () => {
+  // 7 Oct 2026: ARCHITECT.md's handover rules were prose a session had to
+  // remember, and a summarised session forgot them until the Owner asked.
+  // allocate-version.py now appends every release to this handover, so it can
+  // only fall behind if the brief points at an old one or a release skipped the tool.
+  const m = /READ THIS SECOND\n(?:>.*\n)*?>.*?\*\*`(docs\/reports\/[^`]+-SESSION-HANDOVER\.md)`\*\*/.exec(brief);
+  assert.ok(m, 'the brief has no "READ THIS SECOND" handover block naming a docs/reports/...-SESSION-HANDOVER.md');
+  const file = path.join(root, m[1]);
+  assert.ok(fs.existsSync(file), `the current handover ${m[1]} does not exist`);
+  const ver = /APP_VERSION = "([\d.]+)"/.exec(read("app/js/version.js"))?.[1];
+  assert.ok(ver, "could not read APP_VERSION (positive control)");
+  const re = new RegExp(`\\bv${ver.replace(".", "\\.")}(?!\\.?\\d)`);
+  assert.ok(re.test(fs.readFileSync(file, "utf8")), `${m[1]} never names v${ver}: the handover a new session starts from is behind main -- write a new one, or record the release in it`);
+});
+
 console.log(`\n==== Standing brief integrity: ${passed} passed, ${failed} failed ====`);
 process.exit(failed === 0 ? 0 : 1);

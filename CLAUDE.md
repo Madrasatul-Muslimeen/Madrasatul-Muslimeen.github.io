@@ -121,7 +121,23 @@ Read this first, every session. It is the standing brief.
 > "do not translate" and is a different contract. **That contract is NOT
 > invented here**; the Stage B exclusion stands for this candidate.
 
-> ## ⇢ SESSION HANDOVER, 6 Oct 2026 — READ THIS SECOND
+> ## ⇢ SESSION HANDOVER, 7 Oct 2026 — READ THIS SECOND
+>
+> **`docs/reports/2026-10-07-MMSA-SESSION-HANDOVER.md`** is the current
+> continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-10-07.md`**
+> is the prompt that starts a new session. `main` reached v09.107 (Explore: every
+> Approach at once); **Builder round #627, the full-screen writing paper (decision
+> 83), is the one job in flight**; everything else waits on the Owner (handover
+> section 1: the pictures Firebase steps, the Dua talk). **Handover section 3 is the
+> new guard**: `allocate-version.py` appends every release to the handover this
+> block names, and `brief-integrity.mjs` fails when that handover does not name the
+> version in `app/js/version.js` — so this block must always name the NEWEST
+> handover, and a session that has been summarised recommends a fresh one in its
+> next report without being asked.
+>
+> **The 6 Oct block below is kept as history**, superseded by it.
+>
+> ## ⇢ SESSION HANDOVER, 6 Oct 2026 (superseded 7 Oct 2026)
 >
 > **`docs/reports/2026-10-06-MMSA-SESSION-HANDOVER.md`** is the current
 > continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-10-06.md`**
