@@ -3,7 +3,7 @@
 // large JPEG made in the page), the inline pane AND a pop-up window, en + bn, 390 / 820 / 1440. The Storage stub's call log
 // (sessionStorage.__stubStorageLog) is the proof of what was sent; the write log is the proof of what was saved.
 //
-// MUTATE=src-survives | not-smaller | silent-failure | other-uid   serves one deliberately broken copy of a file.
+// MUTATE=src-survives | not-smaller | silent-failure | other-uid | inline-picture   serves one deliberately broken copy of a file.
 // Run from the repository root with `node serve.js` running.
 import fs from "node:fs";
 import { chromium, newContext, openPage } from "./harness.mjs";
@@ -25,6 +25,7 @@ async function routeMutation(ctx) {
   if (MUTATE === "src-survives") await routeText(ctx, "**/js/note-sanitize.js", "app/js/note-sanitize.js", "for (const a of [...img.attributes]) img.removeAttribute(a.name);", "");
   else if (MUTATE === "not-smaller") await routeText(ctx, "**/js/note-image.js", "app/js/note-image.js", "return { blob: r.blob };", "return { blob: file };");
   else if (MUTATE === "silent-failure") await routeText(ctx, "**/js/note-window.js", "app/js/note-window.js", "say(err?.message || t(\"The picture was not saved. Your Note is unchanged.\")); return;", "return;");
+  else if (MUTATE === "inline-picture") await routeText(ctx, "**/js/note-window.js", "app/js/note-window.js", 'img.style.display = "block"; ', "");
   else if (MUTATE === "other-uid") await routeText(ctx, "**/js/note-image.js", "app/js/note-image.js", "if (!uid || noteImageOwner(path) !== uid)", "if (false)");
   else if (MUTATE) throw new Error(`unknown mutation ${MUTATE}`);
 }
@@ -170,6 +171,13 @@ export function siyagahFlagsUnavailableReason() { return null; }` }));
       const dims = await page.$eval(`${S} [data-edit-body] img[data-mmsa-image]`, (i) => ({ nw: i.naturalWidth, nh: i.naturalHeight, w: i.getBoundingClientRect().width, body: i.closest("[data-edit-body]").getBoundingClientRect().width }));
       check(`${tag}: it was fetched back and shows (longest side ≤ 1600, width within the Note: ${Math.round(dims.w)} of ${Math.round(dims.body)}px)`, dims.nw <= 1600 && dims.nw > 100 && dims.w <= dims.body + 1, JSON.stringify(dims));
       check(`${tag}: no sideways overflow with the picture in the editor`, await noSideways(page));
+      // Architect review: the picture is on a line of its own -- no text of the Note sits beside it.
+      check(`${tag}: the picture sits on its own line, not inline beside the text`, await page.$eval(`${S} [data-edit-body] img[data-mmsa-image]`, (i) => {
+        if (getComputedStyle(i).display !== "block") return false;
+        const r = i.getBoundingClientRect(), w = document.createTreeWalker(i.closest("[data-edit-body]"), NodeFilter.SHOW_TEXT);
+        for (let n = w.nextNode(); n; n = w.nextNode()) { if (!n.textContent.trim()) continue; const rg = document.createRange(); rg.selectNodeContents(n); for (const b of rg.getClientRects()) if (b.top < r.bottom - 1 && b.bottom > r.top + 1) return false; }
+        return true;
+      }));
       await finishEdit(page, S);
       const saved = await lastBody(page);
       check(`${tag}: the saved body has data-mmsa-image and NO src, no blob:, no token, no http`, /data-mmsa-image="noteImages\/test-uid\//.test(saved) && !/\ssrc=/i.test(saved) && !/blob:|token=|firebasestorage|https?:/i.test(saved), saved);

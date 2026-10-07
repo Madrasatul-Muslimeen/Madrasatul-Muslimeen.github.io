@@ -1724,6 +1724,8 @@ export function createNoteViews(host) {
       if (img.dataset.imageState) continue;
       img.dataset.imageState = "loading";
       img.style.maxWidth = "100%"; img.style.height = "auto";
+      // Architect review: a picture is a block of its own, never inline beside the text of the line it was put into.
+      img.style.display = "block"; img.style.margin = "0.5rem 0";
       const w = img.getAttribute("width");
       img.style.width = NOTE_IMAGE_WIDTHS.includes(w) ? `${w}%` : "auto"; // an HTML width of 50 would mean 50 pixels
       host.images.url(img.getAttribute("data-mmsa-image")).then((url) => { img.src = url; img.dataset.imageState = "ready"; })
