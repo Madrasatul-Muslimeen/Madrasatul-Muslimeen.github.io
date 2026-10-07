@@ -3623,6 +3623,13 @@ export const BN = {
   "Smaller letters": "অক্ষর ছোট করুন",
   "Bigger letters": "অক্ষর বড় করুন",
   "Bigger window": "উইন্ডো বড় করুন",
+  "Exit full screen": "পূর্ণ স্ক্রিন থেকে বেরিয়ে আসুন",
+  "More paper": "আরও কাগজ",
+  "Lines": "লাইন",
+  "Lines: to trace over": "লাইন: উপর দিয়ে লিখতে",
+  "Lines: blank": "লাইন: খালি",
+  "Previous Ayah": "আগের আয়াত",
+  "Next Ayah": "পরের আয়াত",
   "Smaller window": "উইন্ডো ছোট করুন",
   "Word or Ayah": "শব্দ বা আয়াত",
   // Note-pane Part C1 (6 Oct 2026): annotations and heading status badges.

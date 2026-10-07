@@ -645,13 +645,29 @@ export async function openWritingSheet({ fatihaCount = false, pages, range = nul
     });
     return out;
   }
+  /** Every word of the unit, in reading order (words outside it left out), for the pop-out's ‹ ›. */
+  function unitWords() {
+    const out = [];
+    st.pages.forEach((info) => {
+      (pageLines(info.n) || []).forEach((line) => {
+        if (line.type !== "ayah" || !line.words) return;
+        line.words.forEach((w) => {
+          const [s, a, p] = w.loc.split(":");
+          if (!inUnit(Number(s), Number(a))) return;
+          out.push({ g: w.g, loc: w.loc, page: info.n, family: `hifz-p${info.n}`, marker: !!w.fatihaSplitMarker || getAyahEndMarkerPosition(`${s}:${a}`) === Number(p) });
+        });
+      });
+    });
+    return out;
+  }
   function popOut(hit) {
     st.popout?.destroy();
     st.popout = openWordPopout({
       host: root,
       word: hit,
       mode: hit.marker ? "ayah" : "word",
-      ayahWords: () => ayahWordsOf(hit.loc),
+      ayahWords: (loc) => ayahWordsOf(loc || hit.loc),
+      unitWords,
       ensureFont: (pg) => loadMushafPageFont(pg),
       paintGlyph: (ctx, g, x, y, marker, shadeName) => {
         if (marker) { ctx.fillStyle = MARKER; ctx.fillText(g, x, y); }
