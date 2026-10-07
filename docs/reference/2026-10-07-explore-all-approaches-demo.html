@@ -1,0 +1,203 @@
+<title>Explore: All Approaches</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Serif:wght@600;700&family=Roboto:wght@400;500;700&display=swap">
+<style>
+/* Layout: the app's own look — a white page, one navy Explore card, gold actions — so the demo reads as MMSA. Deliberately single-theme. */
+:root {
+  color-scheme: light;
+  --page: #f3f5f9; --card: #1b2a45; --card2: #223456; --line: #34466b;
+  --gold: #C9A24B; --gold-soft: #e7cf8f; --ink: #e8edf6; --muted: #9fb0cc; --navy-ink: #1F3A6E;
+  --ns: #333f5c; --le: #8a6a35; --pr: #C9A24B; --ac: #5b84c4; --ma: #3fae74;
+  --f-ar: "Amiri", "Noto Naskh Arabic", serif; --f-disp: "Noto Serif", Georgia, serif; --f-ui: "Roboto", system-ui, sans-serif;
+}
+body { background: var(--page); color: #1c2433; font-family: var(--f-ui); }
+.wrap { max-width: 640px; margin: 0 auto; padding-inline: 16px; padding-block: 14px 40px; }
+.intro { font-size: 14px; line-height: 1.5; color: #3a4660; margin: 0 0 12px; }
+.intro b { color: var(--navy-ink); }
+.card { background: radial-gradient(ellipse at top, #263a63 0%, var(--card) 60%); border-radius: 18px; padding: 14px 14px 18px; color: var(--ink); box-shadow: 0 6px 24px rgba(20,30,60,.18); }
+.nav { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; }
+.nav button, .seg button, .take, .sheet button { font: 500 14px var(--f-ui); min-height: 44px; border-radius: 12px; cursor: pointer; }
+.btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); padding: 0 12px; }
+.btn-ghost:disabled { opacity: .35; cursor: default; }
+.btn-ghost:focus-visible, .seg button:focus-visible, .take:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.pn { display: flex; gap: 8px; justify-content: flex-end; min-width: 0; }
+.pn button { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 46vw; }
+.crumb { text-align: center; color: var(--muted); font-size: 14px; margin: 12px 0 10px; }
+.crumb b { color: var(--gold); font-weight: 500; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: #14203a; padding: 4px; border-radius: 14px; }
+.seg button { background: transparent; color: var(--muted); border: 0; }
+.seg button[aria-pressed="true"] { background: linear-gradient(#e8cf8c, #c9a24b); color: #1d2a44; font-weight: 700; }
+.one-pick { margin-top: 8px; width: 100%; min-height: 44px; border-radius: 12px; background: #14203a; color: var(--ink); border: 1px solid var(--line); font: 15px var(--f-ui); padding: 0 10px; }
+.wheel { display: block; width: 100%; max-width: 440px; margin: 10px auto 0; height: auto; touch-action: manipulation; }
+.wheel .seg-path { cursor: pointer; }
+.wheel .seg-path:hover, .wheel .seg-path:focus { stroke: #fff; stroke-width: 2; outline: none; }
+.legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; font-size: 13px; color: var(--ink); margin: 8px 0 4px; }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.hint { text-align: center; font-size: 13px; color: var(--muted); margin: 4px 0 12px; }
+h3 { font: 600 15px var(--f-ui); color: var(--gold-soft); margin: 14px 0 8px; }
+.list { display: flex; flex-direction: column; gap: 8px; }
+.row { display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; align-items: center; background: var(--card2); border: 1px solid var(--line); border-radius: 12px; padding: 10px; min-width: 0; }
+.row .nm { font-size: 14px; line-height: 1.3; min-width: 0; }
+.row .nm small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+.strip { grid-column: 1 / -1; display: grid; gap: 2px; }
+.strip i { height: 8px; border-radius: 2px; }
+.chip { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 4px 8px; border-radius: 999px; color: #fff; white-space: nowrap; }
+.take { background: linear-gradient(#ecd497, #c9a24b); color: #1d2a44; border: 0; padding: 0 14px; font-weight: 700; }
+.rowtop { display: flex; gap: 8px; align-items: center; justify-content: flex-end; }
+.ayah-ar { font-family: var(--f-ar); font-size: 30px; line-height: 1.8; direction: rtl; text-align: center; margin: 4px 0 0; color: #fff; }
+.ayah-en { text-align: center; color: var(--muted); font-size: 14px; margin: 0 0 6px; }
+.badge-new { display: inline-block; background: var(--gold); color: #1d2a44; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 6px; margin-left: 6px; vertical-align: 1px; }
+/* the bottom sheet that "takes an Approach" */
+.veil { position: fixed; inset: 0; background: rgba(10,16,30,.55); display: flex; align-items: flex-end; justify-content: center; z-index: 10; }
+.sheet { background: #fbf8f0; color: #1c2433; width: 100%; max-width: 640px; border-radius: 18px 18px 0 0; padding: 16px 16px calc(18px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -8px 30px rgba(0,0,0,.25); }
+.sheet h4 { font: 700 18px var(--f-disp); color: var(--navy-ink); margin: 0 0 2px; }
+.sheet .sub { color: #5a6680; font-size: 13px; margin: 0 0 12px; }
+.sheet .acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+.sheet .acts button { background: var(--navy-ink); color: #fff; border: 0; }
+.sheet .lab { font-size: 13px; font-weight: 700; color: #3a4660; margin: 14px 0 6px; }
+.sheet .stat { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 6px; }
+.sheet .stat button { border: 2px solid transparent; color: #fff; font-weight: 700; }
+.sheet .stat button[aria-pressed="true"] { border-color: #1c2433; box-shadow: 0 0 0 2px #fff inset; }
+.sheet .close { margin-top: 12px; width: 100%; background: transparent; border: 1px solid #c9cfdc; color: #1c2433; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 24px; background: #1c2433; color: #fff; padding: 10px 14px; border-radius: 10px; font-size: 14px; z-index: 20; max-width: calc(100% - 32px); }
+.note { font-size: 12px; color: #6a7590; margin-top: 14px; text-align: center; }
+@media (prefers-reduced-motion: no-preference) { .sheet { animation: up .2s ease-out; } @keyframes up { from { transform: translateY(30px); opacity: .6; } } }
+</style>
+<div class="wrap">
+  <p class="intro"><b>Demo, 7 Oct 2026.</b> Explore → Quran → At-Takwir. Try it with your finger: switch <b>All Approaches</b> and <b>One Approach</b>, tap an Ayah slice, use <b>← Back</b> and <b>‹ ›</b>, and tap <b>Take</b> on any Approach. The statuses are examples. Nothing is saved.</p>
+  <section class="card" id="card" aria-live="polite"></section>
+  <p class="note">New in this demo: All Approaches at once · tap a slice to open that Ayah · Back and Previous/Next on both views · Take an Approach straight from its status.</p>
+</div>
+<div id="sheetHost"></div>
+<script>
+const AYAT=[["بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ إِذَا ٱلشَّمْسُ كُوِّرَتْ","When the sun is wrapped up [in darkness]"],["وَإِذَا ٱلنُّجُومُ ٱنكَدَرَتْ","And when the stars fall, dispersing,"],["وَإِذَا ٱلْجِبَالُ سُيِّرَتْ","And when the mountains are removed"],["وَإِذَا ٱلْعِشَارُ عُطِّلَتْ","And when full-term she-camels are neglected"],["وَإِذَا ٱلْوُحُوشُ حُشِرَتْ","And when the wild beasts are gathered"],["وَإِذَا ٱلْبِحَارُ سُجِّرَتْ","And when the seas are filled with flame"],["وَإِذَا ٱلنُّفُوسُ زُوِّجَتْ","And when the souls are paired"],["وَإِذَا ٱلْمَوْءُۥدَةُ سُئِلَتْ","And when the girl [who was] buried alive is asked"],["بِأَىِّ ذَنۢبٍۢ قُتِلَتْ","For what sin she was killed"],["وَإِذَا ٱلصُّحُفُ نُشِرَتْ","And when the pages are made public"],["وَإِذَا ٱلسَّمَآءُ كُشِطَتْ","And when the sky is stripped away"],["وَإِذَا ٱلْجَحِيمُ سُعِّرَتْ","And when Hellfire is set ablaze"],["وَإِذَا ٱلْجَنَّةُ أُزْلِفَتْ","And when Paradise is brought near,"],["عَلِمَتْ نَفْسٌۭ مَّآ أَحْضَرَتْ","A soul will [then] know what it has brought [with it]."],["فَلَآ أُقْسِمُ بِٱلْخُنَّسِ","So I swear by the retreating stars -"],["ٱلْجَوَارِ ٱلْكُنَّسِ","Those that run [their courses] and disappear -"],["وَٱلَّيْلِ إِذَا عَسْعَسَ","And by the night as it closes in"],["وَٱلصُّبْحِ إِذَا تَنَفَّسَ","And by the dawn when it breathes"],["إِنَّهُۥ لَقَوْلُ رَسُولٍۢ كَرِيمٍۢ","[That] indeed, the Qur'an is a word [conveyed by] a noble messenger"],["ذِى قُوَّةٍ عِندَ ذِى ٱلْعَرْشِ مَكِينٍۢ","[Who is] possessed of power and with the Owner of the Throne, secure [in position],"],["مُّطَاعٍۢ ثَمَّ أَمِينٍۢ","Obeyed there [in the heavens] and trustworthy."],["وَمَا صَاحِبُكُم بِمَجْنُونٍۢ","And your companion is not [at all] mad."],["وَلَقَدْ رَءَاهُ بِٱلْأُفُقِ ٱلْمُبِينِ","And he has already seen Gabriel in the clear horizon."],["وَمَا هُوَ عَلَى ٱلْغَيْبِ بِضَنِينٍۢ","And Muhammad is not a withholder of [knowledge of] the unseen."],["وَمَا هُوَ بِقَوْلِ شَيْطَٰنٍۢ رَّجِيمٍۢ","And the Qur'an is not the word of a devil, expelled [from the heavens]."],["فَأَيْنَ تَذْهَبُونَ","So where are you going?"],["إِنْ هُوَ إِلَّا ذِكْرٌۭ لِّلْعَٰلَمِينَ","It is not except a reminder to the worlds"],["لِمَن شَآءَ مِنكُمْ أَن يَسْتَقِيمَ","For whoever wills among you to take a right course."],["وَمَا تَشَآءُونَ إِلَّآ أَن يَشَآءَ ٱللَّهُ رَبُّ ٱلْعَٰلَمِينَ","And you do not will except that Allah wills - Lord of the worlds."]];
+const APPROACHES = ["Reading (with Tajweed)","Hifz / Memorising","Reading (with Meaning)","Reading — Word-by-Word Meaning","Arabic Writing","Language Learning (Basic Grammar)","Listening Attentively (Arabic only)","Listening Attentively (Arabic with meaning)","Dua Memorising","Journaling","Ruqyah Listening","Calligraphy","Story Learning","Beginner's Level — Observation (Nazar)","Primary Level — Common Sense ('Aql / Ta'aqqul)","Deriving Dua","Deriving Names & Attributes of Allah","Deriving Understanding of the Prophets","Reflecting on the Miracles","Intermediate Level — Reflecting / Pondering (Tafakkur)","Advanced Level — Deep Contemplation (Tadabbur)","Higher Level — Understanding / Fiqh (Tafaqquh)","Upper Higher Level — Dhikr / Tadhakkur","Mastery Level — Where Fiqh turns to Ruling (9:122 pivot)","Judgment (Fahm)","Authority — Hukm / Tahakum","Group / Class Discussion","Living by it (Self-Assessment)","Da'wah — Sharing Knowledge / Calling Others","Teaching Others"];
+const ST = [["not_started","Not started","#333f5c"],["learning","Learning","#8a6a35"],["practising","Practising","#C9A24B"],["achieved","Achieved","#5b84c4"],["mastered","Mastered","#3fae74"]];
+const COL = Object.fromEntries(ST.map(s => [s[0], s[2]])), LBL = Object.fromEntries(ST.map(s => [s[0], s[1]]));
+const N = AYAT.length;
+// Example statuses: the first Approaches further along, the opening Ayat more studied. Deterministic, so every visit looks the same.
+const status = APPROACHES.map((_, a) => AYAT.map((_, y) => {
+  const r = Math.abs(Math.sin((a + 1) * 12.9898 + (y + 1) * 78.233) * 43758.5453) % 1;
+  const lead = Math.max(0, 1 - a / 14) * (1 - y / (N * 1.4));
+  const v = r * 0.55 + lead * 0.9;
+  return v > 1.05 ? "mastered" : v > 0.8 ? "achieved" : v > 0.6 ? "practising" : v > 0.45 ? "learning" : "not_started";
+}));
+const SURAHS = { prev: "Abasa", next: "Al-Infitar" };
+let view = { level: "surah", mode: "all", one: 0, ayah: 0 };
+const card = document.getElementById("card"), sheetHost = document.getElementById("sheetHost");
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const rank = (s) => ST.findIndex((x) => x[0] === s);
+
+function arc(cx, cy, r0, r1, a0, a1) {
+  const p = (r, a) => [cx + r * Math.sin(a), cy - r * Math.cos(a)];
+  const [x0, y0] = p(r1, a0), [x1, y1] = p(r1, a1), [x2, y2] = p(r0, a1), [x3, y3] = p(r0, a0), big = a1 - a0 > Math.PI ? 1 : 0;
+  return `M${x0},${y0} A${r1},${r1} 0 ${big} 1 ${x1},${y1} L${x2},${y2} A${r0},${r0} 0 ${big} 0 ${x3},${y3} Z`;
+}
+// One ring of slices. In "all" mode each slice is a small stacked bar: Mastered at the inside, Not started at the outside.
+function wheel({ count, label, centreTop, centreSub, sliceStack, sliceColour, sliceTitle, onPick, numberEvery = 1 }) {
+  const S = 440, c = S / 2, rIn = 112, rOut = 196, gap = 0.012, step = (2 * Math.PI) / count;
+  let g = "";
+  for (let i = 0; i < count; i++) {
+    const a0 = i * step + gap, a1 = (i + 1) * step - gap;
+    if (sliceStack) {
+      const parts = sliceStack(i); let r = rIn; const tot = parts.reduce((s, p) => s + p[1], 0);
+      for (const [st, n] of [...parts].reverse()) { if (!n) continue; const r2 = r + (rOut - rIn) * n / tot; g += `<path d="${arc(c, c, r, r2, a0, a1)}" fill="${COL[st]}"/>`; r = r2; }
+      g += `<path class="seg-path" data-i="${i}" tabindex="0" role="button" aria-label="${esc(sliceTitle(i))}" d="${arc(c, c, rIn, rOut, a0, a1)}" fill="transparent" stroke="#0c1320" stroke-width="1"><title>${esc(sliceTitle(i))}</title></path>`;
+    } else {
+      g += `<path class="seg-path" data-i="${i}" tabindex="0" role="button" aria-label="${esc(sliceTitle(i))}" d="${arc(c, c, rIn, rOut, a0, a1)}" fill="${sliceColour(i)}" stroke="#0c1320" stroke-width="1"><title>${esc(sliceTitle(i))}</title></path>`;
+    }
+    if (i % numberEvery === 0) { const am = (a0 + a1) / 2, rr = rOut + 13; g += `<text x="${c + rr * Math.sin(am)}" y="${c - rr * Math.cos(am) + 4}" text-anchor="middle" font-size="11" fill="#9fb0cc" font-family="Roboto, sans-serif">${i + 1}</text>`; }
+  }
+  return `<svg class="wheel" viewBox="-8 -8 ${S + 16} ${S + 16}" role="group" aria-label="${esc(label)}">${g}
+    <circle cx="${c}" cy="${c}" r="${rIn - 8}" fill="#141c30" stroke="#C9A24B" stroke-width="2.5"/>
+    <text x="${c}" y="${c - 6}" text-anchor="middle" font-family="Noto Serif, Georgia, serif" font-weight="700" font-size="${centreTop.length > 11 ? 24 : 30}" fill="#d9b25c">${esc(centreTop)}</text>
+    <text x="${c}" y="${c + 22}" text-anchor="middle" font-family="Roboto, sans-serif" font-size="13" fill="#9fb0cc">${esc(centreSub)}</text></svg>`;
+}
+function legend() { return `<div class="legend">${ST.map((s) => `<span><i style="background:${s[2]}"></i>${s[1]}</span>`).join("")}</div>`; }
+function counts(list) { const c = Object.fromEntries(ST.map((s) => [s[0], 0])); list.forEach((s) => c[s]++); return ST.map((s) => [s[0], c[s[0]]]); }
+function chip(st) { return `<span class="chip" style="background:${COL[st]}">${LBL[st]}</span>`; }
+function strip(list) { return `<div class="strip" style="grid-template-columns:repeat(${list.length},1fr)" aria-hidden="true">${list.map((s) => `<i style="background:${COL[s]}"></i>`).join("")}</div>`; }
+
+function renderSurah() {
+  const all = view.mode === "all";
+  const done = (a) => status[a].filter((s) => rank(s) >= 3).length;
+  card.innerHTML = `
+    <div class="nav"><button class="btn-ghost" data-act="back">← Back</button><span></span>
+      <div class="pn"><button class="btn-ghost" data-act="toast" data-msg="Previous Surah: ${SURAHS.prev}">‹ ${SURAHS.prev}</button><button class="btn-ghost" data-act="toast" data-msg="Next Surah: ${SURAHS.next}">${SURAHS.next} ›</button></div></div>
+    <div class="crumb">Whole Quran › <b>At-Takwir</b></div>
+    <div class="seg" role="group" aria-label="Show"><button data-act="mode" data-v="all" aria-pressed="${all}">All Approaches<span class="badge-new">new</span></button><button data-act="mode" data-v="one" aria-pressed="${!all}">One Approach</button></div>
+    ${all ? "" : `<select class="one-pick" id="onePick" aria-label="Approach">${APPROACHES.map((n, i) => `<option value="${i}" ${i === view.one ? "selected" : ""}>${i + 1}. ${esc(n)}</option>`).join("")}</select>`}
+    ${wheel({ count: N, label: "At-Takwir, one slice per Ayah", centreTop: "At-Takwir",
+      centreSub: all ? `All ${APPROACHES.length} Approaches` : APPROACHES[view.one],
+      sliceStack: all ? (y) => counts(APPROACHES.map((_, a) => status[a][y])) : null,
+      sliceColour: (y) => COL[status[view.one][y]],
+      sliceTitle: (y) => all ? `Ayah ${y + 1}: ${counts(APPROACHES.map((_, a) => status[a][y])).filter((c) => c[1]).map((c) => `${c[1]} ${LBL[c[0]]}`).join(", ")}` : `Ayah ${y + 1}: ${LBL[status[view.one][y]]}` })}
+    ${legend()}
+    <p class="hint">${all ? "Each slice is one Ayah. Its colours show how many Approaches are at each stage: Mastered on the inside, Not started on the outside." : "Each slice is one Ayah, coloured by this Approach."} Tap a slice to open that Ayah.</p>
+    <h3>${all ? `Every Approach in At-Takwir` : `This Approach in At-Takwir`}</h3>
+    <div class="list">${(all ? APPROACHES.map((_, i) => i) : [view.one]).map((a) => `
+      <div class="row"><div class="nm">${a + 1}. ${esc(APPROACHES[a])}<small>${done(a)} of ${N} Ayat Achieved or Mastered</small></div>
+        <div class="rowtop"><button class="take" data-act="take" data-a="${a}" data-unit="surah">Take ▸</button></div>${strip(status[a])}</div>`).join("")}</div>`;
+}
+function renderAyah() {
+  const y = view.ayah, list = APPROACHES.map((_, a) => status[a][y]);
+  card.innerHTML = `
+    <div class="nav"><button class="btn-ghost" data-act="up">← At-Takwir</button><span></span>
+      <div class="pn"><button class="btn-ghost" data-act="ayah" data-d="-1" ${y === 0 ? "disabled" : ""}>‹ Ayah ${y}</button><button class="btn-ghost" data-act="ayah" data-d="1" ${y === N - 1 ? "disabled" : ""}>Ayah ${y + 2} ›</button></div></div>
+    <div class="crumb">Whole Quran › At-Takwir › <b>Ayah ${y + 1}</b></div>
+    <p class="ayah-ar" lang="ar">${esc(AYAT[y][0])}</p><p class="ayah-en">${esc(AYAT[y][1])}</p>
+    ${wheel({ count: APPROACHES.length, label: `Ayah ${y + 1}, one slice per Approach`, centreTop: `Ayah ${y + 1}`, centreSub: `${list.filter((s) => rank(s) >= 3).length} of ${APPROACHES.length} Achieved+`,
+      sliceColour: (a) => COL[list[a]], sliceTitle: (a) => `${a + 1}. ${APPROACHES[a]}: ${LBL[list[a]]}` })}
+    ${legend()}
+    <p class="hint">Each slice is one Approach for this Ayah. Tap a slice, or Take below, to start it.</p>
+    <h3>Every Approach for Ayah ${y + 1}</h3>
+    <div class="list">${APPROACHES.map((n, a) => `<div class="row"><div class="nm">${a + 1}. ${esc(n)}</div><div class="rowtop">${chip(list[a])}<button class="take" data-act="take" data-a="${a}" data-unit="ayah">Take ▸</button></div></div>`).join("")}</div>`;
+}
+function render() { view.level === "surah" ? renderSurah() : renderAyah(); }
+
+function openTake(a, unit) {
+  const ay = view.ayah, onAyah = unit === "ayah";
+  const where = onAyah ? `At-Takwir · Ayah ${ay + 1}` : "At-Takwir · Whole Surah";
+  const cur = onAyah ? status[a][ay] : null;
+  const writing = /Writing|Calligraphy/.test(APPROACHES[a]), listening = /Listening/.test(APPROACHES[a]);
+  sheetHost.innerHTML = `<div class="veil" data-act="close"><div class="sheet" role="dialog" aria-modal="true" aria-label="Take an Approach">
+    <h4>${esc(APPROACHES[a])}</h4><p class="sub">${where}${cur ? ` · now ${LBL[cur]}` : ""}</p>
+    <div class="acts">
+      <button data-act="toast" data-msg="Opens the Read view at ${where}">📖 Read it</button>
+      <button data-act="toast" data-msg="Starts the recitation of ${where}">▶ Listen</button>
+      ${writing ? `<button data-act="toast" data-msg="Opens the Writing sheet at ${where}">✍ Write it</button>` : ""}
+      <button data-act="toast" data-msg="Opens this Approach's guide and tools for ${where}">🧭 Guide</button>
+    </div>
+    <div class="lab">${onAyah ? "Record your progress for this Ayah" : "Record your progress for the whole Surah"}</div>
+    <div class="stat">${ST.slice(1).map((s) => `<button data-act="rec" data-a="${a}" data-unit="${unit}" data-s="${s[0]}" style="background:${s[2]}" aria-pressed="${cur === s[0]}">${s[1]}</button>`).join("")}</div>
+    <button class="close" data-act="close">Close</button></div></div>`;
+  sheetHost.querySelector(".sheet button")?.focus();
+}
+let toastT;
+function toast(msg) { document.querySelector(".toast")?.remove(); const t = document.createElement("div"); t.className = "toast"; t.setAttribute("role", "status"); t.textContent = `Demo: ${msg}`; document.body.appendChild(t); clearTimeout(toastT); toastT = setTimeout(() => t.remove(), 2400); }
+
+document.addEventListener("click", (e) => {
+  const seg = e.target.closest(".wheel .seg-path");
+  if (seg) { const i = Number(seg.dataset.i); if (view.level === "surah") { view = { ...view, level: "ayah", ayah: i }; render(); card.scrollIntoView({ block: "start" }); } else openTake(i, "ayah"); return; }
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const act = b.dataset.act;
+  if (act === "close") { if (e.target === b || b.tagName === "BUTTON") sheetHost.innerHTML = ""; return; }
+  if (act === "mode") { view.mode = b.dataset.v; render(); }
+  else if (act === "back") toast("Back to Whole Quran");
+  else if (act === "up") { view.level = "surah"; render(); }
+  else if (act === "ayah") { view.ayah = Math.max(0, Math.min(N - 1, view.ayah + Number(b.dataset.d))); render(); }
+  else if (act === "take") openTake(Number(b.dataset.a), b.dataset.unit);
+  else if (act === "toast") toast(b.dataset.msg);
+  else if (act === "rec") {
+    const a = Number(b.dataset.a), s = b.dataset.s;
+    if (b.dataset.unit === "ayah") status[a][view.ayah] = s; else status[a] = status[a].map(() => s);
+    sheetHost.innerHTML = ""; render(); toast(`${APPROACHES[a]} recorded as ${LBL[s]}`);
+  }
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") sheetHost.innerHTML = "";
+  if ((e.key === "Enter" || e.key === " ") && e.target.classList?.contains("seg-path")) { e.preventDefault(); e.target.dispatchEvent(new MouseEvent("click", { bubbles: true })); }
+});
+document.addEventListener("change", (e) => { if (e.target.id === "onePick") { view.one = Number(e.target.value); render(); } });
+render();
+</script>
