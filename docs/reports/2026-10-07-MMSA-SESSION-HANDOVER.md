@@ -31,23 +31,14 @@ Read the live state yourself, because it moves on after this was written:
 | v09.106 | Every line of a Mushaf page is one even height, the banner's and the Bismillah's included. | "Page gap: go ahead" |
 | v09.107 | Explore shows every Approach at once. A tapped Ayah slice opens that Ayah. There are Back and ‹ ›, and a Take ▸ sheet. | 82 (2) |
 
-**RUNNING: Builder round #627**, the full-screen writing paper (decision 83). It was dispatched about 11:00 UTC on 7 Oct.
-- **The build target is the demo** `docs/reference/2026-10-07-writing-full-screen-demo.html`:
-  - ⛶ full screen;
-  - ⬆ More paper, and ✋ to slide the paper;
-  - "Lines: to trace over / blank", with the model pinned above blank paper;
-  - ‹ › for the next word, or Ayah in Ayah mode, with each word keeping its own ink;
-  - Ayah and move shown on the phone too.
-- **The file is** `app/js/writing-popout.js`. Nothing written is ever stored (I2).
-- **A one-shot check-in** `trig_01Hhvyb4w1PNEnXBHEpLPbei` fires at **12:20 UTC 7 Oct** to review it. It reads #159 first.
-- **It takes the ledger's `nextUnallocated`**: v09.108 when this was written.
-- **Review it the way #628 was reviewed:**
-  1. Merge `origin/main` into the Builder branch on a local branch.
-  2. Run its suite and its mutations, `writing-sheet-browser`, `writing-sheet-popout-browser`, `phone-width-overflow`, `stub-parity` and `behaviour`.
-  3. Take your own screenshots at 320/390 px in Bangla and 1280 px in English, and LOOK at them.
-  4. Read every line of the diff that records, stores or reads.
+**Update, 7 Oct 2026 (session `session_018hss8x9uWFDvF1EebJWT2i`): #627 is RELEASED as v09.108.**
+- Its PR #630 was merged at 12:07 UTC by the **unattended** Architect, with no version and no browser suite. The session reviewed it after the merge (suites, mutations, screenshots) and fixed two visible defects:
+  - the model word above blank paper was nearly invisible (about 1.2:1); it is now dark ink;
+  - the "Lines" box was cut at phone widths; it now reads "Trace over" / "Blank lines".
+- **`architect.yml` gate 7** now stops the unattended Architect merging anything under `app/`. Every Builder round waits for a session Architect, who allocates the version and runs the browser suites.
+- A fresh container has no `playwright` for the browser suites. Run `mkdir -p node_modules && ln -sfn /opt/node22/lib/node_modules/playwright node_modules/playwright` from the repository root (it is gitignored).
 
-**THE QUEUE AFTER #627:** no Builder round is queued. Everything else waits on the Owner (section 1).
+**THE QUEUE:** empty. No Builder round is queued. Everything else waits on the Owner (section 1). A check-in is armed.
 
 ## 1. What waits on the Owner (remind them in one line per report)
 
