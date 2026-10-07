@@ -10,7 +10,10 @@
 import { chromium, newContext, openPage } from "./harness.mjs";
 
 let pass = 0, fail = 0;
-const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
+const check = (n, ok, d = "") => {
+  if (ok && typeof ok.then === "function") throw new Error(`check "${n}" was handed a promise`);
+  return ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
+};
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
 
 const claim = (tid, st) => `{ unitType: "ayah", subjectId: "quran", trackableId: "${tid}", claimedStatus: "${st}", confirmedStatus: null, confirmState: "pending" }`;
@@ -163,9 +166,14 @@ async function run(lang, width) {
   await tap(page, '.aa-hit[data-key="2"]');
   await page.click('[data-aa-row="act"] .aa-take');
   await page.waitForSelector(".aa-sheet", { timeout: 8000 });
-  const sheet = await page.evaluate(() => { const s = document.querySelector(".aa-sheet").getBoundingClientRect(); return { h4: document.querySelector(".aa-sheet h4").textContent, sub: document.querySelector(".aa-sub").textContent, acts: [...document.querySelectorAll("[data-aa-act]")].map((b) => b.dataset.aaAct), recs: [...document.querySelectorAll("[data-aa-rec]")].map((b) => ({ s: b.dataset.aaRec, h: b.getBoundingClientRect().height })), left: s.left, right: s.right, bottom: s.bottom, scrollW: document.querySelector(".aa-sheet").scrollWidth, clientW: document.querySelector(".aa-sheet").clientWidth }; });
+  const sheet = await page.evaluate(() => { const s = document.querySelector(".aa-sheet").getBoundingClientRect(); return { h4: document.querySelector(".aa-sheet h4").textContent, sub: document.querySelector(".aa-sub").textContent, acts: [...document.querySelectorAll("[data-aa-act]")].map((b) => b.dataset.aaAct), recs: [...document.querySelectorAll("[data-aa-rec]")].map((b) => ({ s: b.dataset.aaRec, h: b.getBoundingClientRect().height, fg: getComputedStyle(b).color, bg: getComputedStyle(b).backgroundColor })), note: !!document.querySelector("[data-aa-mastered-note]"), left: s.left, right: s.right, bottom: s.bottom, scrollW: document.querySelector(".aa-sheet").scrollWidth, clientW: document.querySelector(".aa-sheet").clientWidth }; });
   check(`${tag} the sheet names the Approach and the unit, with Read / Listen / Guide (no Write for a non-writing Approach)`, /9:122|৯:১২২/.test(sheet.h4) && /3|৩/.test(sheet.sub) && JSON.stringify(sheet.acts) === '["read","listen","guide"]', JSON.stringify(sheet));
-  check(`${tag} the sheet offers Learning, Practising, Achieved, Mastered, each 40px+`, JSON.stringify(sheet.recs.map((r) => r.s)) === '["learning","practising","achieved","mastered"]' && sheet.recs.every((r) => r.h >= 40), JSON.stringify(sheet.recs));
+  // Updated in place by the Architect's review: the sheet offers the Track card's own stages (Owner, 1 Oct 2026):
+  // Not started and N/A always, Mastered only to someone whose claim is not waiting on a teacher (the owner here),
+  // each in its wheel-legend colour with the text colour measured to read on it (dark on Achieved, not white).
+  check(`${tag} the sheet offers the Track card's stages for an owner: Not started to Mastered and N/A, each 40px+, no teacher note`, JSON.stringify(sheet.recs.map((r) => r.s)) === '["not_started","learning","practising","achieved","mastered","not_applicable"]' && sheet.recs.every((r) => r.h >= 40) && !sheet.note, JSON.stringify(sheet.recs));
+  const achievedBtn = sheet.recs.find((r) => r.s === "achieved");
+  check(`${tag} Achieved wears the legend's colour with dark text (white on it read 3:1)`, achievedBtn?.bg === "rgb(91, 132, 196)" && achievedBtn?.fg === "rgb(17, 24, 39)", JSON.stringify(achievedBtn));
   check(`${tag} the sheet fits the screen with no sideways overflow`, sheet.left >= 0 && sheet.right <= width + 0.5 && sheet.scrollW <= sheet.clientW + 1, JSON.stringify(sheet));
   const picker = await page.evaluate(() => !!document.querySelector(".aa-sheet [data-claim-for]"));
   console.log(`  INFO  ${tag} 👥 family picker in the sheet: ${picker} (shown only when the person has family members to record for)`);
@@ -195,6 +203,23 @@ async function run(lang, width) {
   check(`${tag} Take on a Surah row records the WHOLE Surah (surah:81::recite)`, !!wr2 && wr2.id === "t1__p1__surah_81" && wr2.data?.["entries.surah:81::recite"]?.claimedStatus === "practising", JSON.stringify(wr2 && { id: wr2.id, keys: Object.keys(wr2.data ?? {}), sub2 }));
   check(`${tag} no page errors`, errors.length === 0, errors.join(" | "));
   await page.screenshot({ path: `/tmp/aa-${lang}-${width}.png` });
+  // A student (View as Student): four stages and N/A, no Mastered, and the teacher note -- the Track card's rule.
+  if (width === 390) {
+    await page.evaluate(() => { const c = JSON.parse(localStorage.getItem("qr.sessionContext") || "null"); if (c) { c.viewAsRole = "student"; localStorage.setItem("qr.sessionContext", JSON.stringify(c)); } });
+    await page.reload();
+    await page.waitForSelector("#tabExploreBtn", { timeout: 20000 });
+    await page.evaluate(() => document.querySelectorAll('[id*="splash"], .mm-splash-overlay').forEach((el) => el.remove()));
+    await page.click("#tabExploreBtn");
+    await page.waitForFunction(() => !!document.querySelector("#exploreWheelContainer svg"), null, { timeout: 15000 });
+    const isStudent = await page.evaluate(() => JSON.parse(localStorage.getItem("qr.sessionContext") || "null")?.viewAsRole);
+    check(`${tag} (setup) the student preview is really on`, isStudent === "student", String(isStudent));
+    await goSurah(page, 81);
+    await tap(page, '.aa-hit[data-key="2"]');
+    await page.click('[data-aa-row="act"] .aa-take');
+    await page.waitForSelector(".aa-sheet", { timeout: 8000 });
+    const st = await page.evaluate(() => ({ recs: [...document.querySelectorAll("[data-aa-rec]")].map((b) => b.dataset.aaRec), note: document.querySelector("[data-aa-mastered-note]")?.textContent.trim() ?? null }));
+    check(`${tag} a student is offered four stages and N/A, no Mastered, with the teacher note in ${lang}`, JSON.stringify(st.recs) === '["not_started","learning","practising","achieved","not_applicable"]' && st.note === (lang === "bn" ? "আয়ত্ত হয়েছে কিনা তা একজন শিক্ষক নিশ্চিত করেন।" : "Mastered is confirmed by a teacher."), JSON.stringify(st));
+  }
   await ctx.close();
 }
 

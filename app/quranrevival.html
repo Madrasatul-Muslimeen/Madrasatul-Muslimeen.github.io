@@ -1154,7 +1154,8 @@
   .aa-lab { font-size: 0.8rem; font-weight: 700; color: #3a4660; margin: 14px 0 6px; }
   .aa-stat { display: grid; grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)); gap: 6px; }
   .aa-stat button { padding: 0 4px; }
-  .aa-stat button { border: 2px solid transparent; color: #fff; font-weight: 700; }
+  .aa-stat button { border: 2px solid var(--stage-edge, transparent); background: var(--stage-bg); color: var(--stage-fg, #fff); font-weight: 700; }
+  .aa-sheet .aa-note { color: #5a6680; font-size: 0.8rem; margin: 6px 0 0; }
   .aa-stat button[aria-pressed="true"] { border-color: #1c2433; box-shadow: 0 0 0 2px #fff inset; }
   .aa-stat button:disabled { opacity: .6; cursor: default; }
   .aa-sheet .aa-close { margin-top: 12px; width: 100%; background: transparent; border: 1px solid #c9cfdc; color: #1c2433; }
@@ -6319,7 +6320,7 @@
     // Issue #286 -- the "This āyah" action sheet (Mushaf marker tap, Word
     // Card "This āyah ⋯") and its one new action, filing this reader's own
     // Note on the āyah into Mapping My Journey folder(s).
-    import { renderAyahActionSheetHtml, attachAyahActionSheetHandlers } from "./js/ayah-action-sheet.js";
+    import { renderAyahActionSheetHtml, attachAyahActionSheetHandlers, approachStageIdsFor, stageColourStyle } from "./js/ayah-action-sheet.js";
     import { renderPageApproachCardHtml, attachPageApproachCardHandlers } from "./js/page-approach-card.js";
     // Issue #348 -- the Unit Card (Ruku'/Page/Hizb/Juz/Surah/Range) and the
     // ladder shared with the Ayah Card, both pure renderers reusing the same
@@ -12806,7 +12807,10 @@
       const cur = exploreTakeStatus(take);
       const u = take.unit === "ayah" ? exploreUnitsCache.units[take.idx] : null;
       const where = `${exploreSurahLabel(take.sn)} · ${u ? u.name : t("Whole Surah")}`;
-      const stages = ["learning", "practising", "achieved", "mastered"];
+      // The Track card's own stage list (Owner, 1 Oct 2026): N/A always; Mastered only for someone whose claim is not
+      // waiting on a teacher, and the note instead for a student. Colours from the same table as the wheel legend.
+      const canConfirm = viewerCanConfirmProgress();
+      const stages = approachStageIdsFor(canConfirm);
       exploreTakeHost.innerHTML = `<div class="aa-veil" data-aa-veil><div class="aa-sheet" role="dialog" aria-modal="true" aria-label="${escapeHtml(t("Take an Approach"))}" data-aa-sheet>
         <h4>${escapeHtml(exploreApproachName(tr))}</h4>
         <p class="aa-sub" data-aa-now="${cur}">${escapeHtml(where)} · ${escapeHtml(t("now {status}", { status: labels[cur] ?? cur }))}</p>
@@ -12817,7 +12821,8 @@
           <button type="button" data-aa-act="guide">🧭 ${escapeHtml(t("Guide"))}</button>
         </div>
         <div class="aa-lab" data-gac-record-title>${escapeHtml(u ? t("Record your progress for this Ayah") : t("Record your progress for the whole Surah"))}</div>
-        <div class="aa-stat">${stages.map((s) => `<button type="button" data-aa-rec="${s}" style="background:${STATUS_COLORS[s]}" aria-pressed="${cur === s}">${escapeHtml(labels[s] ?? s)}</button>`).join("")}</div>
+        <div class="aa-stat">${stages.map((s) => `<button type="button" data-aa-rec="${s}" style="${stageColourStyle(s)}" aria-pressed="${cur === s}">${escapeHtml(labels[s] ?? s)}</button>`).join("")}</div>
+        ${canConfirm ? "" : `<p class="aa-note" data-aa-mastered-note>${escapeHtml(t("Mastered is confirmed by a teacher."))}</p>`}
         <p class="aa-result" role="alert" data-aa-result>${escapeHtml(resultText)}</p>
         <button type="button" class="aa-close" data-aa-close>${escapeHtml(t("Close"))}</button>
       </div></div>`;
