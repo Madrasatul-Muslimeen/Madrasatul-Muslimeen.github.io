@@ -11813,6 +11813,7 @@
       el.hidden = false;
       el.innerHTML = `<span class="eac-unavailable">${escapeHtml(t("Loading progress…"))}</span>`;
       const requestedLevel = exploreLevel, requestedSurah = exploreSurahNum, requestedRuku = exploreRukuIndex;
+      const stillHere = () => exploreLevel === requestedLevel && exploreSurahNum === requestedSurah && exploreRukuIndex === requestedRuku;
       let figure = null, truncated = false;
       try {
         const surahData = await getSurah(requestedSurah);
@@ -11823,23 +11824,36 @@
           : occurrenceIdsForSurah(surahData);
         if (!scope) throw new Error(t("Arabic word coverage isn't available at this granularity — open a Surah or a Ruku' to see it."));
         const confirmationRequired = !!wordProgressConfirmRequired;
+        const compute = () => {
+          const rawViews = new Map(scope.map((occ) => [occ, wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: occ, confirmationRequired })]));
+          const views = effectiveViewsForScope(surahData, scope, rawViews, tenantId, subjectPersonId, confirmationRequired);
+          return computeArabicCoverage({ scopeOccurrenceIds: scope, views, label: `${requestedLevel}:${requestedSurah}` });
+        };
+        // The Owner, 7 Oct 2026 (a screenshot: "something is keep loading for sometime now"). The words known
+        // through a dictionary word are read one word at a time (hundreds of reads for one Surah, thousands for
+        // Al-Baqarah), and the line said "Loading progress…" until the very last one answered. Now the figure
+        // from the Surah's own two reads shows at once, says it is still counting, and fills in behind.
+        if (stillHere()) paintCoverage(el, compute(), truncated, true);
         await primeLemmaProgressForOccurrenceScope(surahData, scope, tenantId, subjectPersonId);
-        const rawViews = new Map(scope.map((occ) => [occ, wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: occ, confirmationRequired })]));
-        const views = effectiveViewsForScope(surahData, scope, rawViews, tenantId, subjectPersonId, confirmationRequired);
-        figure = computeArabicCoverage({ scopeOccurrenceIds: scope, views, label: `${requestedLevel}:${requestedSurah}` });
+        figure = compute();
       } catch (error) {
         reportWriteFailure(error, { what: "read Arabic word coverage", surah: requestedSurah }); // I15
         el.innerHTML = `<span class="eac-unavailable">${escapeHtml(t("Progress not loaded yet"))}</span>`;
         return;
       }
       // A slow read must not paint over a scope the reader has since left.
-      if (exploreLevel !== requestedLevel || exploreSurahNum !== requestedSurah || exploreRukuIndex !== requestedRuku) return;
+      if (!stillHere()) return;
+      paintCoverage(el, figure, truncated, false);
+    }
+    function paintCoverage(el, figure, truncated, counting) {
       const line = t("{known} of {total} Arabic words known", { known: num(figure.known), total: num(figure.total) });
       // A partial read is NEVER printed as a finished percentage: the caveat
       // rides with the figure, in the reader's own language and digits.
-      const caveat = figure.complete && !truncated
-        ? ""
-        : ` <span class="eac-incomplete">${escapeHtml(t("{unknown} not loaded yet", { unknown: num(figure.unknown) }))}</span>`;
+      const caveat = counting
+        ? ` <span class="eac-incomplete" data-eac-counting>${escapeHtml(t("still counting the words known elsewhere in the Qur'an…"))}</span>`
+        : figure.complete && !truncated
+          ? ""
+          : ` <span class="eac-incomplete">${escapeHtml(t("{unknown} not loaded yet", { unknown: num(figure.unknown) }))}</span>`;
       el.innerHTML = `<span class="eac-figure">${escapeHtml(line)}</span>${caveat}`;
     }
 

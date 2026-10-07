@@ -26,9 +26,18 @@ async function __trip(kind, col, id, produce) {
   const rec = { n: ++__seq, kind: kind, col: col, id: id || null, t0: performance.now(), t1: null };
   try { window.__fsLog.push(rec); } catch (e) {}
   if (LATENCY > 0) await new Promise(function (r) { setTimeout(r, LATENCY); });
+  // OPT-IN (explore-coverage-browser.mjs): reads of a collection named in window.__stubHold wait until
+  // window.__stubRelease() is called, so a suite can prove what a page shows while one kind of read is slow.
+  try {
+    if (window.__stubHold && window.__stubHold.indexOf(col) >= 0) {
+      await new Promise(function (r) { (window.__stubHeld = window.__stubHeld || []).push(r); });
+    }
+  } catch (e) {}
   rec.t1 = performance.now();
   return produce();
 }
+
+try { window.__stubRelease = function () { var held = window.__stubHeld || []; window.__stubHeld = []; window.__stubHold = []; held.forEach(function (r) { r(); }); }; } catch (e) {}
 
 function lang(en, bn) { return bn ? { en, bn } : { en }; }
 
