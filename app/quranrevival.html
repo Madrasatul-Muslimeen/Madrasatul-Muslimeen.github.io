@@ -1126,7 +1126,8 @@
   .aa-btn:disabled { opacity: .35; cursor: default; }
   .aa-btn:focus-visible, .aa-seg button:focus-visible, .aa-take:focus-visible, .aa-hit:focus-visible { outline: 2px solid #C9A24B; outline-offset: 2px; }
   .aa-pn { display: flex; gap: 8px; justify-content: flex-end; min-width: 0; }
-  .aa-pn button { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 42vw; }
+  /* Architect, 7 Oct 2026: 8px sides, not 12 -- at 390px the Ayah level's "‹ Ayah 28" / "Next Ayah ›" were 3-5px short with a wider fallback font (the page never loads Inter), so they were cut. */
+  .aa-pn button { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 42vw; padding: 0 8px; }
   .aa-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: rgba(0,0,0,.25); padding: 4px; border-radius: 14px; margin: 6px 0 2px; }
   .aa-seg button { background: transparent; color: var(--card-text-muted); border: 0; min-width: 0; }
   .aa-seg button[aria-pressed="true"] { background: linear-gradient(#e8cf8c, #c9a24b); color: #1d2a44; font-weight: 700; }
