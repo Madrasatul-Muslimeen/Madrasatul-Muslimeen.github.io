@@ -252,14 +252,17 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.103 on `main`** (6 Oct 2026 — **Link preview cards in Notes, through Microlink, opt-in**).
-- **What** (Owner decisions 72 and 81; Builder round #619):
-  - `note-link-preview.js` (new): cleans Microlink's answer to plain text (title 120, description 240) and an `https` picture only; picks at most 5 `https` links per Note; caches answers on the device for 7 days (200 links); a failure is never cached.
-  - `note-window.js`: ⋯ → 🖼 Show link previews (Off by default, per device). Turning it on first says in words that each link's address is sent to microlink.io and nothing else from the Note. Cards are built with `textContent`; pictures are `no-referrer` and lazy; the site name is the link's own host. Nothing is stored in the Note and nothing is written to Firestore.
-  - Architect review: in a Note with headings a card went after the whole section (still showing when folded); it now sits under its paragraph and folds with the section.
+**Current milestone: v09.104 on `main`** (7 Oct 2026 — **Pictures in Notes: made small on the device, private in Firebase Storage (switched on when the Owner publishes the Rules)**).
+- **What** (Owner decisions 72 and 81; Builder round #620):
+  - `note-image-path.js` (new, pure): the one path a Note picture may have, `noteImages/{uid}/{id}.webp`, the widths, and the size step-down (WebP, about 200 KB, at most 400 KB).
+  - `note-image.js` (new): re-draws the picture on a canvas (longest side 1600, which also drops location and camera data), uploads it to the person's own folder, fetches it back with `getBlob` (never a download URL or token); loaded only when a picture is first used (I9). Failures in words; nothing is ever deleted.
+  - `note-sanitize.js`: a Note keeps `<img data-mmsa-image alt width>` and nothing else on it — no `src`.
+  - `note-window.js`: 🖼 in the editing toolbar (describe, width, choose a picture or take a photo).
+  - Storage Rules **candidate** `docs/governance/2026-10-storage-rules-candidate.rules` (not deployed): own folder only, create only (no update, no delete), WebP, at most 400 KB.
+  - Architect review: the Rules now require a NEW file (`resource == null`; the Storage emulator showed an overwrite passing as a create) and `<= 400 KB` (the app's own ceiling); proven in the real Storage emulator (15 cases, 7 mutations each caught); a picture is a block on its own line; the Owner's four steps written (`docs/reports/2026-10-07-pictures-owner-steps.md`), including the bucket CORS the original plan lacked.
 - **Checks:**
-  - journey-link-preview-browser 192/0 (mutations on-by-default, no-confirm, title-innerhtml, http-picture, cache-ignored, no-limit and the review's card-after-section each fail it), note-link-preview 43/0, every journey-* suite green, note-sanitize-boundary 13/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
-- **With the Owner:** open a Note with a web link → ⋯ → 🖼 Show link previews → Turn on: a card with the page's title and picture appears under the link.
+  - journey-note-images-browser 288/0 (mutations src-survives, not-smaller, silent-failure, other-uid, inline-picture each fail it), note-images-storage emulator 15/0 + 7/7 mutations, note-image-sanitize, note-image-storage-rules 7/0, note-sanitize-boundary, every journey-* suite green (journey-sheet 962/0 twice; one earlier 960/2 run on a column-drag did not reproduce), rules-authorisation-executable, phone-width-overflow 217/0, stub-parity, behaviour 1003/4 (sandbox baseline)
+- **With the Owner:** the four steps in `docs/reports/2026-10-07-pictures-owner-steps.md` (Blaze with a $1 alert, Storage on, publish the Rules, CORS); then 🖼 in a Note's editor.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration
