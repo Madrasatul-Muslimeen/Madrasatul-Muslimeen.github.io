@@ -1,0 +1,110 @@
+<title>Writing Paper Full Screen</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Roboto:wght@400;500;700&display=swap">
+<style>
+/* Layout: the app's navy writing toolbar over a cream copybook page; full screen means the page is the whole viewport. Single-theme by design. */
+:root { color-scheme: light; --bar: #1F3A6E; --bar2: #2b4a82; --gold: #C9A24B; --paper: #fffdf6; --rule: #e9e1cb; --ghost: rgba(120,100,60,.22); --ink: #1d2a44; --page: #8f939c;
+  --f-ar: "Amiri", "Noto Naskh Arabic", serif; --f-ui: "Roboto", system-ui, sans-serif; }
+html, body { height: 100%; }
+body { background: var(--page); font-family: var(--f-ui); overflow: hidden; }
+.intro { position: absolute; top: 0; left: 0; right: 0; padding: 10px 16px; color: #fff; font-size: 14px; line-height: 1.45; background: #3d4250; }
+.intro b { color: #f1d58e; }
+.card { position: absolute; left: 12px; right: 12px; top: 110px; bottom: 90px; display: flex; flex-direction: column; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,.35); background: var(--paper); transition: all .25s ease; }
+.card.full { left: 0; right: 0; top: 0; bottom: 0; border-radius: 0; z-index: 5; }
+@media (prefers-reduced-motion: reduce) { .card { transition: none; } }
+.bar { background: var(--bar); padding: 6px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding-top: calc(6px + env(safe-area-inset-top, 0px)); }
+.bar button, .bar select { min-height: 44px; min-width: 44px; border-radius: 10px; border: 1px solid rgba(255,255,255,.22); background: var(--bar2); color: #fff; font: 500 15px var(--f-ui); cursor: pointer; padding: 0 8px; }
+.bar button[aria-pressed="true"] { background: var(--gold); color: #1d2a44; border-color: var(--gold); font-weight: 700; }
+.bar button:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+.bar .sp { flex: 1 1 0; }
+.paperwrap { position: relative; flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; }
+.paperwrap.pen { touch-action: none; }
+.paperwrap.move { touch-action: pan-y; cursor: grab; }
+canvas { display: block; }
+.model { background: #f4eedd; border-bottom: 1px solid #e3d9bd; text-align: center; font-family: var(--f-ar); color: #3b3020; direction: rtl; padding: 4px 12px; line-height: 1.5; }
+#cv { position: absolute; left: 0; top: 0; }
+.newspace { position: absolute; right: 14px; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 6; min-height: 48px; padding: 0 16px; border-radius: 24px; border: 0; background: var(--gold); color: #1d2a44; font: 700 15px var(--f-ui); box-shadow: 0 4px 14px rgba(0,0,0,.3); cursor: pointer; }
+.card:not(.full) .newspace { display: none; }
+.pos { position: absolute; left: 14px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 6; background: rgba(29,42,68,.75); color: #fff; font-size: 12px; padding: 5px 9px; border-radius: 8px; }
+.card:not(.full) .pos { display: none; }
+</style>
+
+<div class="intro"><b>Demo, 7 Oct 2026.</b> Tap <b>⛶ Full screen</b>. Choose <b>Lines: to trace over</b> or <b>Lines: blank</b>. Write with your finger. When the space is used, tap <b>⬆ More paper</b> (or ✋ and slide the paper up) and keep writing. Nothing is saved.</div>
+
+<section class="card" id="card" aria-label="Writing practice">
+  <div class="bar" role="toolbar" aria-label="Writing tools">
+    <button id="bWord" aria-pressed="true">Word</button>
+    <button id="bAyah" aria-pressed="false">Ayah</button>
+    <button id="bPen" aria-pressed="true" title="Pen" aria-label="Pen">✒</button>
+    <button id="bErase" aria-pressed="false" title="Eraser" aria-label="Eraser">🧽</button>
+    <button id="bMove" aria-pressed="false" title="Move the paper" aria-label="Move the paper">✋</button>
+    <button id="bUndo" title="Undo" aria-label="Undo">↶</button>
+    <select id="selLines" aria-label="The lines below the first"><option value="trace">Lines: to trace over</option><option value="blank">Lines: blank</option></select>
+    <span class="sp"></span>
+    <button id="bFull" aria-pressed="false">⛶ Full screen</button>
+  </div>
+  <div class="model" id="model" lang="ar" hidden></div>
+  <div class="paperwrap pen" id="wrap"><canvas id="bg" aria-hidden="true"></canvas><canvas id="cv" aria-label="Writing paper"></canvas></div>
+  <span class="pos" id="pos">Line 1</span>
+  <button class="newspace" id="bMore">⬆ More paper</button>
+</section>
+
+<script>
+const WORD = "وَٱلْقُرْءَانِ", AYAH = "يسٓ ﴿١﴾ وَٱلْقُرْءَانِ ٱلْحَكِيمِ ﴿٢﴾";
+const card = document.getElementById("card"), wrap = document.getElementById("wrap"), cv = document.getElementById("cv"), ctx = cv.getContext("2d"), bg = document.getElementById("bg"), bctx = bg.getContext("2d");
+let guide = WORD, linesMode = "trace", tool = "pen", strokes = [], cur = null, lineH = 220, lines = 30;
+const $ = (id) => document.getElementById(id);
+
+function size() {
+  const dpr = window.devicePixelRatio || 1, w = wrap.clientWidth;
+  lineH = Math.max(180, Math.round(wrap.clientHeight / 2.6));
+  for (const [c, x] of [[cv, ctx], [bg, bctx]]) {
+    c.style.width = w + "px"; c.style.height = lineH * lines + "px";
+    c.width = Math.round(w * dpr); c.height = Math.round(lineH * lines * dpr); x.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  drawPaper(); drawInk();
+}
+// The copybook: every line has the faint word to trace, so moving the paper up always brings a fresh word to write over.
+// Two layers: the paper and its guide words underneath, the ink on top -- so the eraser only ever takes ink away.
+function drawPaper() {
+  const ctx = bctx, w = bg.clientWidth;
+  ctx.fillStyle = "#fffdf6"; ctx.fillRect(0, 0, w, lineH * lines);
+  const fs = guide === WORD ? Math.min(w * 0.22, lineH * 0.42) : Math.min(w * 0.085, lineH * 0.2);
+  ctx.textAlign = "center"; ctx.direction = "rtl";
+  for (let i = 0; i < lines; i++) {
+    const base = i * lineH + lineH * 0.62;
+    ctx.strokeStyle = "#e9e1cb"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(16, base + 14); ctx.lineTo(w - 16, base + 14); ctx.stroke();
+    // The lines: the faint word (or Ayah) to trace over, or blank lines for free practice without going over
+    // anything (the Owner, 7 Oct 2026).
+    // Blank lines: the word stays pinned above the paper (#model), so moving the paper up never loses it.
+    if (linesMode === "blank") continue;
+    ctx.fillStyle = "rgba(120,100,60,.22)";
+    ctx.font = `${fs}px Amiri, serif`; ctx.fillText(guide, w / 2, base);
+  }
+}
+function drawInk() { ctx.clearRect(0, 0, cv.clientWidth, lineH * lines); for (const s of strokes) paint(s); }
+function paint(s) {
+  if (s.pts.length < 2) return;
+  ctx.save(); ctx.globalCompositeOperation = s.erase ? "destination-out" : "source-over";
+  ctx.strokeStyle = "#1F3A6E"; ctx.lineWidth = s.erase ? 26 : 4; ctx.lineCap = ctx.lineJoin = "round";
+  ctx.beginPath(); ctx.moveTo(...s.pts[0]); for (const p of s.pts.slice(1)) ctx.lineTo(...p); ctx.stroke(); ctx.restore();
+}
+const at = (e) => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+cv.addEventListener("pointerdown", (e) => { if (tool === "move") return; e.preventDefault(); cv.setPointerCapture(e.pointerId); cur = { erase: tool === "erase", pts: [at(e)] }; strokes.push(cur); });
+cv.addEventListener("pointermove", (e) => { if (!cur) return; cur.pts.push(at(e)); paint({ ...cur, pts: cur.pts.slice(-2) }); });
+const end = () => { cur = null; };
+cv.addEventListener("pointerup", end); cv.addEventListener("pointercancel", end);
+
+function setTool(t) { tool = t; for (const [id, v] of [["bPen", "pen"], ["bErase", "erase"], ["bMove", "move"]]) $(id).setAttribute("aria-pressed", String(t === v)); wrap.className = "paperwrap " + (t === "move" ? "move" : "pen"); }
+$("bPen").onclick = () => setTool("pen"); $("bErase").onclick = () => setTool("erase"); $("bMove").onclick = () => setTool(tool === "move" ? "pen" : "move");
+$("bUndo").onclick = () => { strokes.pop(); drawInk(); };
+$("bWord").onclick = () => { guide = WORD; $("bWord").setAttribute("aria-pressed", "true"); $("bAyah").setAttribute("aria-pressed", "false"); syncModel(); drawPaper(); };
+$("bAyah").onclick = () => { guide = AYAH; $("bAyah").setAttribute("aria-pressed", "true"); $("bWord").setAttribute("aria-pressed", "false"); syncModel(); drawPaper(); };
+$("bFull").onclick = () => { const on = !card.classList.contains("full"); card.classList.toggle("full", on); $("bFull").setAttribute("aria-pressed", String(on)); $("bFull").textContent = on ? "✕" : "⛶ Full screen"; $("bFull").setAttribute("aria-label", on ? "Exit full screen" : "Full screen"); $("bFull").title = on ? "Exit full screen" : ""; requestAnimationFrame(size); };
+// ⬆ More paper: slides the paper up by one line, so the next fresh line is in front of you. The pen stays the pen.
+$("bMore").onclick = () => wrap.scrollBy({ top: lineH, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+wrap.addEventListener("scroll", () => { $("pos").textContent = `Line ${Math.round(wrap.scrollTop / lineH) + 1} of ${lines}`; });
+function syncModel() { const m = $("model"); m.hidden = linesMode !== "blank"; m.textContent = guide; m.style.fontSize = guide === WORD ? "40px" : "24px"; }
+$("selLines").onchange = (e) => { linesMode = e.target.value; syncModel(); size(); };
+addEventListener("resize", size);
+document.fonts?.ready.then(size); size();
+</script>

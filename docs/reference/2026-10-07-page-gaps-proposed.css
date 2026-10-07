@@ -1,0 +1,4 @@
+/* Proposed: every line of the page is one text-line tall (6.07cqw x 2.05 + 0.3em padding = 14.26cqw), like the
+   printed 15-line Mushaf; the banner and the Bismillah are centred in theirs. */
+.hifz-surah-header.glyph-loaded { height: 14.26cqw; padding: 0; line-height: 1; align-items: center; overflow: visible; }
+.hifz-basmallah { height: 14.26cqw; padding: 0; line-height: 1; align-items: center; font-size: 5.6cqw; }

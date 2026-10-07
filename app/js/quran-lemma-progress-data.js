@@ -163,13 +163,48 @@ export async function primeLemmaProgress(db, { tenantId, personId, level = "wbw"
   requireImplementedLevel(level);
   const docId = lemmaProgressDocId({ tenantId, personId, level, lemmaId, wide: true });
   const store = cacheFor({ tenantId, personId, level });
-  if (store.has(lemmaId)) return { fetched: 0, cached: true };
+  if (store.has(lemmaId) || store.allLoaded) return { fetched: 0, cached: true };
   const [learner, supervisor] = await Promise.all([
     fetchLemmaLane(db, "learner", docId),
     fetchLemmaLane(db, "supervisor", docId),
   ]);
   store.set(lemmaId, { learner, supervisor });
   return { fetched: 2, cached: false };
+}
+
+/**
+ * Owner decision 82 (7 Oct 2026): ONE person's lemma progress at one level, in TWO queries (one per lane, filtered by
+ * tenant, person and level -- the same fields canRecordFor() checks, so the list is provable from its own filters, and
+ * equality-only, so it needs no composite index). Explore's "words known" line used to prime every dictionary word on
+ * screen one by one: 436 reads for An-Naazi'aat, thousands for Al-Baqarah. After this, every lemma the person has never
+ * claimed is KNOWN to be not started (loaded: true), not "not read yet". This is the Owner-approved exception to the
+ * load-speed row "never all records for a person", for lemma-level progress only: the list holds only words the person
+ * has marked, and is read once per visit (cached; a write through this module updates the same cache).
+ */
+export async function primeAllLemmaProgress(db, { tenantId, personId, level = "wbw" } = {}) {
+  if (!lemmaLevelReady(level)) return { fetched: 0, cached: false };
+  requireImplementedLevel(level, { wide: true });
+  const store = cacheFor({ tenantId, personId, level });
+  if (store.allLoaded) return { fetched: 0, cached: true };
+  const laneQuery = (lane) => query(collection(db, LANE_COLLECTION[lane]),
+    where("tenantId", "==", tenantId), where("personId", "==", personId), where("level", "==", level));
+  const [learnerSnap, supervisorSnap] = await Promise.all([getDocs(laneQuery("learner")), getDocs(laneQuery("supervisor"))]);
+  const found = new Map();
+  for (const [lane, snap] of [["learner", learnerSnap], ["supervisor", supervisorSnap]]) {
+    for (const d of snap.docs) {
+      const lemmaId = d.data()?.lemmaId;
+      if (typeof lemmaId !== "string" || !lemmaId) continue;
+      const entry = found.get(lemmaId) ?? {};
+      entry[lane] = decodeLemmaLaneEntry(lane, d.data());
+      found.set(lemmaId, entry);
+    }
+  }
+  for (const [lemmaId, e] of found) {
+    if (store.has(lemmaId)) continue; // a value this visit already read or wrote is never replaced by an older list
+    store.set(lemmaId, { learner: e.learner ?? decodeLemmaLaneEntry("learner", null), supervisor: e.supervisor ?? decodeLemmaLaneEntry("supervisor", null) });
+  }
+  store.allLoaded = true;
+  return { fetched: learnerSnap.docs.length + supervisorSnap.docs.length, cached: false };
 }
 
 /**
@@ -181,8 +216,11 @@ export async function primeLemmaProgress(db, { tenantId, personId, level = "wbw"
  */
 export function lemmaProgressFor({ tenantId, personId, level = "wbw", lemmaId, confirmationRequired = false } = {}) {
   const store = cacheFor({ tenantId, personId, level });
-  const loaded = store.has(lemmaId);
-  const { learner, supervisor } = loaded ? store.get(lemmaId) : {};
+  // After primeAllLemmaProgress(), a lemma missing from the person's list is known: never claimed, so not started.
+  const loaded = store.has(lemmaId) || store.allLoaded === true;
+  const { learner, supervisor } = store.get(lemmaId) ?? (loaded
+    ? { learner: decodeLemmaLaneEntry("learner", null), supervisor: decodeLemmaLaneEntry("supervisor", null) }
+    : {});
   return Object.freeze({ ...resolveLemmaProgress({ learner, supervisor, confirmationRequired }), loaded, lemmaId });
 }
 

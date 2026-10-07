@@ -252,17 +252,14 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v09.104 on `main`** (7 Oct 2026 — **Pictures in Notes: made small on the device, private in Firebase Storage (switched on when the Owner publishes the Rules)**).
-- **What** (Owner decisions 72 and 81; Builder round #620):
-  - `note-image-path.js` (new, pure): the one path a Note picture may have, `noteImages/{uid}/{id}.webp`, the widths, and the size step-down (WebP, about 200 KB, at most 400 KB).
-  - `note-image.js` (new): re-draws the picture on a canvas (longest side 1600, which also drops location and camera data), uploads it to the person's own folder, fetches it back with `getBlob` (never a download URL or token); loaded only when a picture is first used (I9). Failures in words; nothing is ever deleted.
-  - `note-sanitize.js`: a Note keeps `<img data-mmsa-image alt width>` and nothing else on it — no `src`.
-  - `note-window.js`: 🖼 in the editing toolbar (describe, width, choose a picture or take a photo).
-  - Storage Rules **candidate** `docs/governance/2026-10-storage-rules-candidate.rules` (not deployed): own folder only, create only (no update, no delete), WebP, at most 400 KB.
-  - Architect review: the Rules now require a NEW file (`resource == null`; the Storage emulator showed an overwrite passing as a create) and `<= 400 KB` (the app's own ceiling); proven in the real Storage emulator (15 cases, 7 mutations each caught); a picture is a block on its own line; the Owner's four steps written (`docs/reports/2026-10-07-pictures-owner-steps.md`), including the bucket CORS the original plan lacked.
+**Current milestone: v09.105 on `main`** (7 Oct 2026 — **Explore's "words known" line: shows at once, and reads word progress in 6 requests instead of hundreds**).
+- **What** (the Owner, 7 Oct 2026: "something is keep loading for sometime now. Fix."; Owner decision 82: "Loading progress: 1"):
+  - `quranrevival.html` `renderExploreArabicCoverage`: the Surah's figure paints as soon as its own two lane queries answer, marked "still counting the words known elsewhere in the Qur'an…", and completes behind; a late answer never paints over a Surah the reader has left.
+  - `quran-lemma-progress-data.js` `primeAllLemmaProgress()`: one person's lemma progress per level in two equality queries (tenant, person, level; no index), cached for the visit — An-Naazi'aat went from 436–711 reads to 6. Decision 82 is the Owner's exception to the load-speed row "never all records for a person", for lemma progress only. Proven in the Firestore emulator against `firestore.rules`: allowed for the learner and guardian, refused for an unrelated person and another tenant.
+  - Decision 82 recorded; the Explore, writing-paper and page-gaps demos saved in `docs/reference/2026-10-07-*`.
 - **Checks:**
-  - journey-note-images-browser 288/0 (mutations src-survives, not-smaller, silent-failure, other-uid, inline-picture each fail it), note-images-storage emulator 15/0 + 7/7 mutations, note-image-sanitize, note-image-storage-rules 7/0, note-sanitize-boundary, every journey-* suite green (journey-sheet 962/0 twice; one earlier 960/2 run on a column-drag did not reproduce), rules-authorisation-executable, phone-width-overflow 217/0, stub-parity, behaviour 1003/4 (sandbox baseline)
-- **With the Owner:** the four steps in `docs/reports/2026-10-07-pictures-owner-steps.md` (Blaze with a $1 alert, Storage on, publish the Rules, CORS); then 🖼 in a Note's editor.
+  - explore-coverage-browser 36/0 (mutations no-early, paint-stale, per-word each fail it), lemma-progress-real-function emulator 1/0 on both Rules files, lemma-levels-browser 240/0 (its Basic group-mate check updated in place: Achieved since v09.90, red on main before), quran-lemma-progress-* 8/34/24/77, word-card rebuild suites, explore-* suites, quran-my-status 248/0, rules-authorisation-executable 63/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
+- **With the Owner:** Explore → Quran → any Surah: the "words known" line shows straight away.
 
 **Earlier milestones, v08.111 back to v07.139, and the long notes around them**
 (the held Phase 4 wiring, the four deployment states, the Programme Integration

@@ -748,3 +748,4 @@ total). Allocated by the MMSA Architect.
 09.102: Startup paint. Allocated by the MMSA Architect.
 09.103: Link previews. Allocated by the MMSA Architect.
 09.104: Pictures in Notes. Allocated by the MMSA Architect.
+09.105: Explore words-known line. Allocated by the MMSA Architect.

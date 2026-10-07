@@ -200,7 +200,10 @@ for (const [width, height] of [[390, 844], [1280, 900]]) {
         const through = await page.evaluate(() => document.querySelector("#quranWordCardMount [data-word-known-through]")?.textContent ?? null);
         check(`${tag} ٱلرَّحِيم's card says it is known through Basic`, /Basic: same meaning/.test(through ?? ""), String(through));
         const pressed = await page.evaluate(() => [...document.querySelectorAll("#quranWordCardMount [data-word-progress-state]")].find((e) => e.getAttribute("aria-pressed") === "true")?.dataset.wordProgressState);
-        check(`${tag} ... while its own buttons still read not started`, pressed === "not_started", String(pressed));
+        // Updated in place, 7 Oct 2026: since v09.90 (the Owner, 6 Oct: the Word Card shows "known elsewhere" as
+        // Achieved) a word known through its group shows its buttons at Achieved. This check still read "not started";
+        // that round did not run this suite, so it was found by the next one. Red on main before this update.
+        check(`${tag} ... and its buttons show it as Achieved (known through its group, v09.90)`, pressed === "achieved", String(pressed));
       }
       check(`${tag} the groups file was fetched on first use (Read page / Word card), exactly once`, fetched.length === 1, JSON.stringify(fetched));
       check(`${tag} no page errors`, errs(errors).length === 0, JSON.stringify(errs(errors).slice(0, 3)));

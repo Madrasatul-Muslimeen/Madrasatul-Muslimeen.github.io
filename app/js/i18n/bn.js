@@ -1253,6 +1253,7 @@ export const BN = {
   "You are not able to record Arabic progress for this person.": "এই ব্যক্তির আরবি অগ্রগতি রেকর্ড করার অনুমতি আপনার নেই।",
   "{known} of {total} words known in this ayah": "এই আয়াতের {total}টি শব্দের মধ্যে {known}টি জানা",
   "{unknown} not loaded yet": "{unknown}টি এখনও লোড হয়নি",
+  "still counting the words known elsewhere in the Qur'an…": "কুরআনের অন্য জায়গায় জানা শব্দগুলো এখনও গোনা হচ্ছে…",
   // Issue #303 -- the whole-Qur'an running total and "mark this word known
   // everywhere" on the Word Card.
   "Known {known} of {total} words": "মোট {total}টি শব্দের মধ্যে {known}টি জানা",
