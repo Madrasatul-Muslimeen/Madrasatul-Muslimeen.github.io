@@ -22,7 +22,8 @@
     "siyagah-tags-real-function": "firebase emulators:exec --only firestore --project demo-quranrevival-siyagah-tags-real-function --config siyagah-tags-real-function.firebase.json \"node --test siyagah-tags-real-function.rules.test.mjs\"",
     "lemma-levels": "firebase emulators:exec --only firestore --project demo-quranrevival-lemma-levels --config lemma-levels.firebase.json \"node --test lemma-levels.rules.test.mjs\"",
     "siyagah-round14": "firebase emulators:exec --only firestore --project demo-quranrevival-siyagah-round14 --config siyagah-round14.firebase.json \"node --test siyagah-round14.rules.test.mjs\"",
-    "siyagah-flags-links-real-function": "firebase emulators:exec --only firestore --project demo-quranrevival-siyagah-flags-links-real-function --config siyagah-flags-links-real-function.firebase.json \"node --test siyagah-flags-links-real-function.rules.test.mjs\""
+    "siyagah-flags-links-real-function": "firebase emulators:exec --only firestore --project demo-quranrevival-siyagah-flags-links-real-function --config siyagah-flags-links-real-function.firebase.json \"node --test siyagah-flags-links-real-function.rules.test.mjs\"",
+    "note-images-storage": "firebase emulators:exec --only storage --project demo-mmsa-note-images --config note-images-storage.firebase.json \"node --test note-images-storage.rules.test.mjs\""
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "5.0.2",

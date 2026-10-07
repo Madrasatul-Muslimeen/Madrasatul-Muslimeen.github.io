@@ -14,10 +14,13 @@ const block = (src.match(/match \/noteImages\/\{uid\}\/\{file\} \{([\s\S]*?)\n  
 
 check("the noteImages/{uid}/{file} match is there", () => assert.ok(block.length > 50, "no match block"));
 check("read: only the signed-in uid", () => assert.match(block, /allow read: if request\.auth != null && request\.auth\.uid == uid;/));
-check("create: the same uid, under 400 KB, image/webp, file-name pattern", () => {
+check("create: the same uid, at most 400 KB, image/webp, file-name pattern", () => {
   const create = block.match(/allow create:[^;]*;/s)?.[0] ?? "";
   assert.match(create, /request\.auth\.uid == uid/);
-  assert.match(create, /request\.resource\.size < 400 \* 1024/);
+  // Architect review: only a NEW file (the Storage emulator allowed an overwrite as a create without this).
+  assert.match(create, /resource == null/);
+  // Updated in place (Architect review): "<=" so the Rules' ceiling is exactly the app's (NOTE_IMAGE_MAX_BYTES, inclusive).
+  assert.match(create, /request\.resource\.size <= 400 \* 1024/);
   assert.match(create, /request\.resource\.contentType == 'image\/webp'/);
   assert.match(create, /file\.matches\('\[A-Za-z0-9_-\]\{8,40\}\[\.\]webp'\)/);
 });
