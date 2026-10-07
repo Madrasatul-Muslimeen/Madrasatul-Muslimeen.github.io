@@ -269,6 +269,11 @@ for (const lang of ["en", "bn"]) {
   await page.evaluate(() => document.querySelector('#exploreBreadcrumb [data-level="quran"]').click());
   await page.waitForSelector('#exploreWheelContainer .wheel-ring-seg[data-ring-kind="surah"]', { timeout: 20000 });
   await page.click('#exploreWheelContainer .wheel-ring-seg[data-ring-kind="surah"][data-key="2"]', { force: true });
+  // Decision 82 (v09.106): the Surah level now opens on "All Approaches" (one stacked bar per Ayah, no rings). This suite
+  // checks the rings, which are the "One Approach" view and unchanged, so choose that view first (it stays chosen for the
+  // rest of the visit).
+  await page.waitForSelector('#exploreModeRow [data-v="one"]', { timeout: 20000 });
+  await page.click('#exploreModeRow [data-v="one"]');
   await page.waitForSelector('#exploreWheelContainer .wheel-ring-seg[data-ring-kind="ayah"]', { timeout: 20000 });
   await page.waitForTimeout(400);
   const s2 = await listVsRing("ruku");

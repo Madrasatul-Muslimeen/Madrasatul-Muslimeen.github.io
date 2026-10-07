@@ -19867,3 +19867,13 @@ The Owner, 7 Oct 2026 (a screenshot of At-Takwir's page, the gaps around the Sur
 - New `tools/i18n-verify/mushaf-even-lines-browser.mjs`: 48/0 at 390, 820 and 1280px on pages 586 and 2; the mutations `old-banner` and `old-bism` each fail it.
 - Decision 83 recorded ("Go ahead with writing"), Builder issue #627, and the demo `docs/reference/2026-10-07-writing-full-screen-demo.html` updated with ‹ ›.
 - Regression: bismillah-label 34/0, mushaf-approach-cards 114/0, mushaf-no-sideways-overflow 648/0, mushaf-page-ref 129/0, mushaf-tajweed-font 96/0, quran-mushaf-audio-follow-scroll 25/0, quran-word-card-mushaf-scroll 59/0, read-window 65/0, writing-sheet 206/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline: 22g × 3 archive.org, 31e ERR_CERT).
+
+## v09.107 — 2026-10-07 — Explore: every Approach at once, tap a slice for that Ayah, Back and Previous/Next, Take
+
+Owner decision 82 ("Explore: go ahead"), issue #625, built by the Builder in PR #628 to `docs/reference/2026-10-07-explore-all-approaches-demo.html`.
+
+- Surah level: **All Approaches | One Approach** (All by default). All: every Ayah slice is a stacked bar of every Approach's status (`app/js/explore-all-approaches.js`), with a row per Approach and Take ▸. One: today's wheel; an Ayah arc now opens the Ayah level. **← Back** and **‹ / › Surah** named, disabled at 1 and 114.
+- New **Ayah level**: the Ayah's text and translation, a wheel of every Approach, a row each, ← Surah and ‹ / › Ayah.
+- **Take ▸** sheet: Read, Listen, Write (Arabic Writing and Calligraphy only), Guide, and Record through `claimApproachStatus()` (the Track card's path, 👥 picker included); rows and slices repaint in place; a failed write says so in words.
+- Architect review: the sheet offered Learning to Mastered to everyone, with white text on Achieved. It now offers the Track card's own stages (`approachStageIdsFor(viewerCanConfirmProgress())`, Owner 1 Oct 2026): N/A always, Mastered only for someone whose claim is not waiting on a teacher, the teacher note for a student, in `stageColourStyle()` colours. The suite's check was updated in place, a student case added, and its `check()` now refuses a promise. Mutations: old list → 2 fail, old colours → 1 fail.
+- Checks: explore-all-approaches 280/0, unit-rings 106/0 (updated in place: clicks One Approach, since the Surah level opens on All), explore-hizb-view 80/0, explore-phone-card 146/0, explore-wbw-tab 91/0, explore-coverage 36/0, quran-my-status 248/0, global-approach-card 109/0, phone-width-overflow 217/0, stub-parity 4/0, mushaf-even-lines 48/0, behaviour 1003/4 (sandbox baseline).

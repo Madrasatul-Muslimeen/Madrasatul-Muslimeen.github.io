@@ -1117,6 +1117,50 @@
      own screenshot. The pill carries fixed wording now, and these rules make
      it structurally unable to recur whatever it holds. */
   .explore-approach-row { display: flex; justify-content: center; min-width: 0; margin: 4px 0 2px; }
+  .explore-approach-row[hidden] { display: none; }
+  /* Owner decision 82 -- Explore: every Approach at once, tap a slice, Back and Previous/Next, Take. */
+  .aa-nav { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; min-width: 0; margin: 0 0 6px; }
+  .aa-nav[hidden], .aa-seg[hidden] { display: none; }
+  .aa-nav button, .aa-seg button, .aa-take, .aa-sheet button { font-family: 'Inter', sans-serif; font-size: 0.85rem; min-height: 44px; border-radius: 12px; cursor: pointer; }
+  .aa-btn { background: transparent; color: var(--card-text); border: 1px solid var(--card-line); padding: 0 12px; min-width: 44px; }
+  .aa-btn:disabled { opacity: .35; cursor: default; }
+  .aa-btn:focus-visible, .aa-seg button:focus-visible, .aa-take:focus-visible, .aa-hit:focus-visible { outline: 2px solid #C9A24B; outline-offset: 2px; }
+  .aa-pn { display: flex; gap: 8px; justify-content: flex-end; min-width: 0; }
+  .aa-pn button { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 42vw; }
+  .aa-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: rgba(0,0,0,.25); padding: 4px; border-radius: 14px; margin: 6px 0 2px; }
+  .aa-seg button { background: transparent; color: var(--card-text-muted); border: 0; min-width: 0; }
+  .aa-seg button[aria-pressed="true"] { background: linear-gradient(#e8cf8c, #c9a24b); color: #1d2a44; font-weight: 700; }
+  .aa-wheel .aa-hit { cursor: pointer; }
+  .aa-wheel .aa-hit:hover, .aa-wheel .aa-hit:focus { stroke: #fff; stroke-width: 1.6; outline: none; }
+  .aa-hint { text-align: center; font-size: 0.78rem; color: var(--card-text-muted); margin: 4px 0 8px; }
+  .aa-ayah { text-align: center; margin: 4px 0 8px; min-width: 0; }
+  .aa-ayah-ar { font-family: var(--quran-font, serif); font-size: 1.6rem; line-height: 1.9; direction: rtl; color: var(--card-text); margin: 0; overflow-wrap: anywhere; }
+  .aa-ayah-tr { font-size: 0.85rem; color: var(--card-text-muted); margin: 2px 0 0; overflow-wrap: anywhere; }
+  .aa-rows-head { font-size: 0.9rem; font-weight: 600; color: var(--card-link); margin: 10px 0 8px; }
+  .aa-rows { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .aa-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; align-items: center; background: rgba(255,255,255,0.05); border: 1px solid var(--card-line); border-radius: 12px; padding: 10px; min-width: 0; }
+  .aa-row .aa-nm { font-size: 0.85rem; line-height: 1.3; min-width: 0; color: var(--card-text); overflow-wrap: anywhere; }
+  .aa-row .aa-nm small { display: block; color: var(--card-text-muted); font-size: 0.74rem; margin-top: 2px; }
+  .aa-row-top { display: flex; gap: 8px; align-items: center; justify-content: flex-end; }
+  .aa-strip { grid-column: 1 / -1; display: grid; gap: 1px; min-width: 0; }
+  .aa-strip i { height: 8px; border-radius: 2px; min-width: 0; }
+  .aa-take { background: linear-gradient(#ecd497, #c9a24b); color: #1d2a44; border: 0; padding: 0 14px; font-weight: 700; white-space: nowrap; }
+  .aa-veil { position: fixed; inset: 0; background: rgba(10,16,30,.55); display: flex; align-items: flex-end; justify-content: center; z-index: 1000; }
+  .aa-sheet { background: #fbf8f0; color: #1c2433; width: 100%; max-width: 640px; max-height: 92dvh; overflow-y: auto; border-radius: 18px 18px 0 0; padding: 16px 16px calc(18px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -8px 30px rgba(0,0,0,.25); box-sizing: border-box; }
+  .aa-sheet h4 { font-size: 1.1rem; font-weight: 700; color: #1F3A6E; margin: 0 0 2px; overflow-wrap: anywhere; }
+  .aa-sheet .aa-sub { color: #5a6680; font-size: 0.8rem; margin: 0 0 12px; }
+  .aa-acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+  .aa-acts button { background: #1F3A6E; color: #fff; border: 0; }
+  .aa-lab { font-size: 0.8rem; font-weight: 700; color: #3a4660; margin: 14px 0 6px; }
+  .aa-stat { display: grid; grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)); gap: 6px; }
+  .aa-stat button { padding: 0 4px; }
+  .aa-stat button { border: 2px solid var(--stage-edge, transparent); background: var(--stage-bg); color: var(--stage-fg, #fff); font-weight: 700; }
+  .aa-sheet .aa-note { color: #5a6680; font-size: 0.8rem; margin: 6px 0 0; }
+  .aa-stat button[aria-pressed="true"] { border-color: #1c2433; box-shadow: 0 0 0 2px #fff inset; }
+  .aa-stat button:disabled { opacity: .6; cursor: default; }
+  .aa-sheet .aa-close { margin-top: 12px; width: 100%; background: transparent; border: 1px solid #c9cfdc; color: #1c2433; }
+  .aa-result { font-size: 0.8rem; color: #8a1c1c; min-height: 1em; margin-top: 8px; }
+  .aa-toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 24px; background: #1c2433; color: #fff; padding: 10px 14px; border-radius: 10px; font-size: 0.85rem; z-index: 1100; max-width: calc(100% - 32px); }
   .explore-approach-wrap { max-width: 100%; min-width: 0; }
   .explore-approach-capsule {
     display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
@@ -5243,6 +5287,10 @@
                    wheel's. The trail shrinks (min-width:0) and the switch
                    never does, the same fixed-`auto`-column shape v07.130
                    used for the Note drawer's own tiles. -->
+              <!-- Owner decision 82 (7 Oct 2026): Back and Previous/Next, shown only
+                   at the Surah and Ayah levels (renderExploreSurahLevel() and
+                   renderExploreAyahLevel() fill it). -->
+              <div id="exploreNavBar" class="aa-nav" hidden></div>
               <div class="explore-head-row">
                 <div id="exploreBreadcrumb"></div>
                 <!-- ONE switch, relabelled per level, rather than a second
@@ -5279,7 +5327,8 @@
                    outside-click, Escape and "only one drops down at a time"
                    all come free and there is no second mechanism to keep in
                    step (I2). -->
-              <div class="explore-approach-row">
+              <div id="exploreModeRow" class="aa-seg" role="group" aria-label="Show" hidden></div>
+              <div class="explore-approach-row" id="exploreApproachRow">
                 <div class="bar-palette-wrap explore-approach-wrap" data-bar-palette-wrap="exploreApproach">
                   <button type="button" class="explore-approach-capsule bar-palette-toggle"
                           id="exploreApproachBtn" data-bar-palette-toggle="exploreApproach"
@@ -6271,7 +6320,7 @@
     // Issue #286 -- the "This āyah" action sheet (Mushaf marker tap, Word
     // Card "This āyah ⋯") and its one new action, filing this reader's own
     // Note on the āyah into Mapping My Journey folder(s).
-    import { renderAyahActionSheetHtml, attachAyahActionSheetHandlers } from "./js/ayah-action-sheet.js";
+    import { renderAyahActionSheetHtml, attachAyahActionSheetHandlers, approachStageIdsFor, stageColourStyle } from "./js/ayah-action-sheet.js";
     import { renderPageApproachCardHtml, attachPageApproachCardHandlers } from "./js/page-approach-card.js";
     // Issue #348 -- the Unit Card (Ruku'/Page/Hizb/Juz/Surah/Range) and the
     // ladder shared with the Ayah Card, both pure renderers reusing the same
@@ -6337,6 +6386,7 @@
     // independently, same as when they were two separate page loads.
     showBootSplash(() => showQuranSplash());
     import { renderWheelLegend, renderScopedWheel, attachScopedWheelClickHandler, renderWheelSidebar, attachWheelSidebarClickHandler, attachWheelSectionToggles, setWheelSectionOpen, wrapWheelLabel, wordTotalRampColor, STATUS_COLORS, renderRingWheel, attachRingWheelClickHandler } from "./js/mastery-wheel.js";
+    import { countStatuses, describeCounts, renderAllApproachesWheel } from "./js/explore-all-approaches.js";
     // Issue #352 -- "Every unit on the wheel" (Owner decisions 21-24).
     import { ayahIndexer, rowSpan, spanToCoverage, textWeigher, layoutRing, clipSpan, LANDING_RING_ORDER } from "./js/unit-rings.js";
     import {
@@ -7451,7 +7501,7 @@
     // and why this exists. Rebuilt with the chunks on every Explore open.
     let exploreWiderSpans = new Map();
     let exploreSubjectChunk = null; // subject_quran chunk -- Juz/Page direct-claim fallback, used when no ayah-level data exists yet to pool from
-    let exploreLevel = "quran"; // "quran" | "juz" | "hizb" | "surah" | "ruku"
+    let exploreLevel = "quran"; // "quran" | "juz" | "hizb" | "surah" | "ayah" | "ruku"
     // Which reading of a Juz its own level shows: "page" (what Explore has
     // always shown) or "surah". Remembered per browser, so unlike
     // exploreJuzNum/exploreSurahNum below it deliberately SURVIVES
@@ -7464,6 +7514,11 @@
     let exploreHizbNum = null; // issue #342 -- Hizb's own drill-down position, mutually exclusive with exploreJuzNum (never both set)
     let exploreSurahNum = null;
     let exploreRukuIndex = null;
+    // Owner decision 82 -- the Surah level reads "all" (every Approach on each Ayah slice) or "one"
+    // (today's view); exploreAyahIdx is the Ayah level's position among the Surah's drawn units.
+    let exploreSurahMode = "all"; // "all" | "one"
+    let exploreAyahIdx = null;
+    let exploreUnitsCache = null; // { sn, units } for the Surah on screen -- see exploreSurahUnits()
 
     // Issue #206 -- the whole-Qur'an/Juz running word counter. `juzWordTotalsData`
     // ({quranTotalWords, byJuz:[{juz,totalWords}]}) and `personWordTotals` (this
@@ -9918,6 +9973,7 @@
       exploreHizbNum = null;
       exploreSurahNum = null;
       exploreRukuIndex = null;
+      exploreAyahIdx = null;
       setExplorePalette("quran"); // Ayah Collections round: every fresh open lands on the Quran wheel, same "opening it resets the drill-down" rule this function already had -- QCR is an opt-in via the palette each time, not a remembered mode
       exploreWheelContainer.innerHTML = "Loading whole-Quran progress — this reads every surah's saved progress once, so it can take a few seconds…";
       await ensureExploreChunksLoaded();
@@ -10735,6 +10791,10 @@
         crumbs.push({ label: name, level: "surah" });
       }
       if (exploreRukuIndex != null) crumbs.push({ label: t("Ruku' {ruku}", { ruku: num(exploreRukuIndex) }), level: "ruku" });
+      if (exploreLevel === "ayah" && exploreAyahIdx != null) {
+        const u = exploreUnitsCache?.sn === exploreSurahNum ? exploreUnitsCache.units[exploreAyahIdx] : null;
+        crumbs.push({ label: u ? u.name : t("Ayah {n}", { n: num(exploreAyahIdx + 1) }), level: "ayah" });
+      }
 
       exploreBreadcrumb.innerHTML = crumbs
         .map((c) => `<button type="button" class="explore-crumb${c.level === exploreLevel ? " active" : ""}" data-level="${c.level}">${c.label}</button>`)
@@ -10746,7 +10806,7 @@
           if (level === "quran") { exploreJuzNum = null; exploreHizbNum = null; exploreSurahNum = null; exploreRukuIndex = null; }
           else if (level === "juz") { exploreSurahNum = null; exploreRukuIndex = null; }
           else if (level === "hizb") { exploreSurahNum = null; exploreRukuIndex = null; }
-          else if (level === "surah") { exploreRukuIndex = null; }
+          else if (level === "surah") { exploreRukuIndex = null; exploreAyahIdx = null; }
           exploreLevel = level;
           renderExplore();
         });
@@ -11884,6 +11944,8 @@
       if (exploreLevel === "quran" || exploreLevel === "juz" || exploreLevel === "hizb") await ensureWordTotalsForExplore();
       renderExploreArabicCoverage();
       hideExploreRingPanel();
+      syncExploreAaChrome();
+      if (exploreLevel === "ayah") return renderExploreAyahLevel();
       if (exploreLevel === "quran") return renderExploreQuranLevel();
       if (exploreLevel === "juz") return renderExploreJuzLevel();
       if (exploreLevel === "hizb") return renderExploreHizbLevel();
@@ -12149,14 +12211,20 @@
           openLabel: t("Open {unit}", { unit: label }),
         };
       });
-      const ayat = surahData.ayahs.flatMap((a) => ayahRecordUnits(sn, a.ayah).map((u) => ({
-        key: u.key, a: idx.gi(sn, a.ayah), b: idx.gi(sn, a.ayah), share: u.share,
-        label: ayahNameFor(sn, a.ayah, u.half),
-        coverage: [{ surah: sn, from: a.ayah, to: a.ayah }],
-        statusId: effectiveAyahStatus(sn, a.ayah, trackable.id, u.record),
-        open: () => goToAyahFromExplore(sn, a.ayah, u.half),
-        openLabel: t("Study this āyah"),
-      })));
+      // Owner decision 82: a tap on an Āyah slice opens that Āyah's own level (every
+      // Approach on it, Back, Previous/Next, Take). Studying it stays one tap on from there.
+      let unitIdx = 0;
+      const ayat = surahData.ayahs.flatMap((a) => ayahRecordUnits(sn, a.ayah).map((u) => {
+        const at = unitIdx++;
+        return {
+          key: u.key, a: idx.gi(sn, a.ayah), b: idx.gi(sn, a.ayah), share: u.share,
+          label: ayahNameFor(sn, a.ayah, u.half),
+          coverage: [{ surah: sn, from: a.ayah, to: a.ayah }],
+          statusId: effectiveAyahStatus(sn, a.ayah, trackable.id, u.record),
+          open: () => openExploreAyah(at),
+          openLabel: t("Study this āyah"),
+        };
+      }));
       const coverage = [{ surah: sn, from: 1, to: surahData.ayahs.length }];
       drawExploreRings({
         rings: [
@@ -12164,6 +12232,7 @@
           { type: "ayah", units: ayat, keyText: t("Āyah: {n}, around them", { n: num(ayat.length) }) },
         ],
         centerLabel: surahLabel, centerSub: langText(trackable.name, getAppLang(), trackable.id),
+        navigateRings: ["ayah"],
         levelUnit: { key: `surah:${sn}`, label: surahLabel, coverage, statusId: exploreUnitStatus(coverage, buildUnitKey.surah(sn), chunk, trackable.id) },
       });
     }
@@ -12477,14 +12546,19 @@
     /** Level 3, dual-mode by SURAH_WHEEL_THRESHOLD, matching the old app's own navigation depth: <=30 ayahs shows every ayah directly (click -> Study, via goToAyahFromExplore); >30 shows Ruku' groups instead (click -> Ruku' level), since a 286-segment wheel for Al-Baqarah wouldn't read as anything at a glance. Needs this surah's full text (Ruku' groupings, ayah count) -- one static, cached-after-first-load fetch, same one Study would trigger opening it directly. */
     async function renderExploreSurahLevel() {
       const trackable = currentTrackable();
-      if (!trackable || exploreSurahNum == null) return;
+      if (exploreSurahNum == null || !quranTrackables.length) return;
+      if (exploreSurahMode === "one" && !trackable) return;
       exploreWheelContainer.innerHTML = t("Loading this surah…");
-      const surahData = await getSurah(exploreSurahNum);
+      const sn = exploreSurahNum;
+      const surahData = await getSurah(sn);
+      if (exploreLevel !== "surah" || exploreSurahNum !== sn) return; // the reader moved on while the text loaded
       const exploreSurah = surahIndex.find((s) => s.surahNumber === exploreSurahNum);
       const currentSurahName = exploreSurah ? surahName(exploreSurah.surahNumber, exploreSurah.nameEnglish) : t("Surah {surah}", { surah: num(exploreSurahNum) });
-      const approachName = langText(trackable.name, getAppLang(), trackable.id);
       const entries = exploreChunksBySurah.get(exploreSurahNum)?.entries ?? {};
       const labelsById = statusLabelsById();
+      const units = exploreSurahUnits(sn, surahData);
+      renderExploreSurahChrome(sn, currentSurahName);
+      if (exploreSurahMode === "all") return renderExploreSurahAll(sn, units, currentSurahName, labelsById);
 
       if (surahData.ayahCount <= SURAH_WHEEL_THRESHOLD) {
         const items = surahData.ayahs.flatMap((a) => ayahRecordUnits(exploreSurahNum, a.ayah).map((u) => {
@@ -12497,6 +12571,7 @@
         exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
         attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToStudy);
         exploreSurahRings(trackable, surahData, currentSurahName); // issue #352: Ruku', Āyah
+        exploreSidebarContainer.insertAdjacentHTML("afterbegin", exploreSurahRowsHtml(sn, units, [trackable], t("This Approach in {surah}", { surah: currentSurahName })));
         return;
       }
 
@@ -12523,12 +12598,352 @@
         exploreLevel = "ruku";
         renderExplore();
       };
-      void approachName;
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
       exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
       attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToRuku);
       exploreSurahRings(trackable, surahData, currentSurahName); // issue #352: Ruku', Āyah
+      exploreSidebarContainer.insertAdjacentHTML("afterbegin", exploreSurahRowsHtml(sn, units, [trackable], t("This Approach in {surah}", { surah: currentSurahName })));
     }
+
+    // -----------------------------------------------------------------------
+    // Owner decision 82 (7 Oct 2026) -- Explore → Quran → Surah / Ayah: every
+    // Approach at once, a tap on an Ayah slice opens that Ayah, Back and
+    // Previous/Next, and "Take ▸" straight from a status. Approved demo:
+    // docs/reference/2026-10-07-explore-all-approaches-demo.html.
+    //
+    // No new read and no new write: every status below comes from the chunks
+    // exploreChunksBySurah already holds (effectiveAyahStatus(), the same
+    // function the One-Approach wheel colours by), and a recording goes
+    // through claimApproachStatus() -- the Track card's own path, 👥 picker
+    // included.
+    // -----------------------------------------------------------------------
+    const exploreNavBar = document.getElementById("exploreNavBar");
+    const exploreModeRow = document.getElementById("exploreModeRow");
+    const exploreApproachRow = document.getElementById("exploreApproachRow");
+    const exploreTakeHost = document.createElement("div");
+    exploreTakeHost.id = "exploreTakeHost";
+    document.body.appendChild(exploreTakeHost);
+    let exploreTake = null; // { approachId, unit: "ayah" | "surah", sn, idx }
+
+    function exploreSurahLabel(n) {
+      const found = surahIndex.find((s) => s.surahNumber === n);
+      return found ? surahName(found.surahNumber, found.nameEnglish) : t("Surah {surah}", { surah: num(n) });
+    }
+    function exploreApproachName(tr) {
+      const no = approachNo(tr);
+      return `${no === "" ? "" : `${num(no)}. `}${langText(tr.name, getAppLang(), tr.id)}`;
+    }
+    /** HTML background for one status cell (Not Applicable's hatch cannot be an SVG url() outside the wheel). */
+    function exploreSwatch(statusId) {
+      return statusId === "not_applicable" ? "repeating-linear-gradient(45deg,#1b2338 0 3px,rgba(201,162,75,.55) 3px 5px)" : (STATUS_COLORS[statusId] ?? STATUS_COLORS.not_started);
+    }
+
+    /** The Surah's drawn units, one per Ayah slice (two for Al-Fātiḥah's internal 1:7 with the count on). Cached for the breadcrumb and the Take sheet. */
+    function exploreSurahUnits(sn, surahData) {
+      const units = surahData.ayahs.flatMap((a) => ayahRecordUnits(sn, a.ayah).map((u) => ({
+        ayah: a.ayah, record: u.record, half: u.half, data: a,
+        number: ayahBadgeFor(sn, a.ayah, u.half), name: ayahNameFor(sn, a.ayah, u.half),
+        unitKey: buildUnitKey.ayah(sn, u.record),
+      })));
+      exploreUnitsCache = { sn, units };
+      return units;
+    }
+    function exploreUnitStatuses(sn, units, trackableId) {
+      return units.map((u) => effectiveAyahStatus(sn, u.ayah, trackableId, u.record));
+    }
+
+    /** One row per Approach at the Surah level: number and name, "x of N Ayat Achieved or Mastered", a strip of one cell per Ayah, and Take ▸. */
+    function exploreSurahRowsHtml(sn, units, trackables, heading) {
+      const rows = trackables.map((tr) => {
+        const sts = exploreUnitStatuses(sn, units, tr.id);
+        const done = sts.filter((s) => s === "achieved" || s === "mastered").length;
+        const name = exploreApproachName(tr);
+        return `<div class="aa-row" data-aa-row="${escapeHtml(tr.id)}" data-done="${done}" data-total="${sts.length}">
+          <div class="aa-nm">${escapeHtml(name)}<small>${escapeHtml(t("{done} of {total} Ayat Achieved or Mastered", { done: num(done), total: num(sts.length) }))}</small></div>
+          <div class="aa-row-top"><button type="button" class="aa-take" data-aa="take" data-approach="${escapeHtml(tr.id)}" data-unit="surah" aria-label="${escapeHtml(t("Take {approach}", { approach: name }))}">${escapeHtml(t("Take ▸"))}</button></div>
+          <div class="aa-strip" style="grid-template-columns:repeat(${sts.length},minmax(0,1fr));gap:${sts.length > 80 ? 0 : 1}px" aria-hidden="true">${sts.map((s) => `<i data-status="${s}" style="background:${exploreSwatch(s)}"></i>`).join("")}</div>
+        </div>`;
+      }).join("");
+      return `<p class="aa-rows-head">${escapeHtml(heading)}</p><div class="aa-rows" data-aa-rows="surah">${rows}</div>`;
+    }
+    /** One row per Approach at the Ayah level: its status chip and Take ▸. */
+    function exploreAyahRowsHtml(statuses, heading) {
+      const labels = statusLabelsById();
+      const rows = quranTrackables.map((tr, i) => {
+        const name = exploreApproachName(tr);
+        const st = statuses[i];
+        return `<div class="aa-row" data-aa-row="${escapeHtml(tr.id)}" data-status="${st}">
+          <div class="aa-nm">${escapeHtml(name)}</div>
+          <div class="aa-row-top"><span class="status-chip chip-${st}">${escapeHtml(labels[st] ?? st)}</span><button type="button" class="aa-take" data-aa="take" data-approach="${escapeHtml(tr.id)}" data-unit="ayah" aria-label="${escapeHtml(t("Take {approach}", { approach: name }))}">${escapeHtml(t("Take ▸"))}</button></div>
+        </div>`;
+      }).join("");
+      return `<p class="aa-rows-head">${escapeHtml(heading)}</p><div class="aa-rows" data-aa-rows="ayah">${rows}</div>`;
+    }
+
+    /** Shows Back / Previous / Next only at the Surah and Ayah levels, and the Approach capsule only where one Approach is the subject. */
+    function syncExploreAaChrome() {
+      const aa = exploreLevel === "surah" || exploreLevel === "ayah";
+      exploreNavBar.hidden = !aa;
+      if (!aa) exploreNavBar.innerHTML = "";
+      exploreModeRow.hidden = exploreLevel !== "surah";
+      exploreApproachRow.hidden = exploreLevel === "ayah" || (exploreLevel === "surah" && exploreSurahMode === "all");
+    }
+    function exploreNavHtml({ backText, backAria, backAct, prevText, prevAria, prevAct, prevOff, nextText, nextAria, nextAct, nextOff }) {
+      return `<button type="button" class="aa-btn" data-aa="${backAct}" aria-label="${escapeHtml(backAria)}">${escapeHtml(backText)}</button><span></span>
+        <div class="aa-pn"><button type="button" class="aa-btn" data-aa="${prevAct}" aria-label="${escapeHtml(prevAria)}"${prevOff ? " disabled" : ""}>${escapeHtml(prevText)}</button><button type="button" class="aa-btn" data-aa="${nextAct}" aria-label="${escapeHtml(nextAria)}"${nextOff ? " disabled" : ""}>${escapeHtml(nextText)}</button></div>`;
+    }
+    function renderExploreSurahChrome(sn) {
+      const hasPrev = sn > 1 && surahIndex.some((s) => s.surahNumber === sn - 1);
+      const hasNext = surahIndex.some((s) => s.surahNumber === sn + 1);
+      const prevName = hasPrev ? exploreSurahLabel(sn - 1) : t("Previous Surah");
+      const nextName = hasNext ? exploreSurahLabel(sn + 1) : t("Next Surah");
+      exploreNavBar.innerHTML = exploreNavHtml({
+        backText: t("← Back"), backAria: t("Back to the Whole Quran"), backAct: "back",
+        prevText: `‹ ${prevName}`, prevAria: t("Previous Surah: {name}", { name: prevName }), prevAct: "prev-surah", prevOff: !hasPrev,
+        nextText: `${nextName} ›`, nextAria: t("Next Surah: {name}", { name: nextName }), nextAct: "next-surah", nextOff: !hasNext,
+      });
+      exploreModeRow.setAttribute("aria-label", t("Show"));
+      exploreModeRow.innerHTML = [["all", t("All Approaches")], ["one", t("One Approach")]]
+        .map(([v, label]) => `<button type="button" data-aa="mode" data-v="${v}" aria-pressed="${exploreSurahMode === v}">${escapeHtml(label)}</button>`).join("");
+    }
+
+    /** The Surah wheel with every Approach on each slice: Mastered at the inside, Not started at the outside. */
+    function renderExploreSurahAll(sn, units, surahLabel, labelsById) {
+      const grid = quranTrackables.map((tr) => exploreUnitStatuses(sn, units, tr.id));
+      const slices = units.map((u, i) => {
+        const counts = countStatuses(grid.map((g) => g[i]));
+        return { key: String(i), number: u.number, counts, title: `${u.name}: ${describeCounts(counts, labelsById, num)}` };
+      });
+      exploreWheelContainer.innerHTML = renderAllApproachesWheel(slices, { centerLabel: surahLabel, centerSub: t("All {n} Approaches", { n: num(quranTrackables.length) }) });
+      attachScopedWheelClickHandler(exploreWheelContainer, (key) => openExploreAyah(Number(key)));
+      exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById)
+        + `<p class="aa-hint">${escapeHtml(t("Each slice is one Ayah. Its colours show how many Approaches are at each stage: Mastered on the inside, Not started on the outside. Tap a slice to open that Ayah."))}</p>`;
+      exploreSidebarContainer.innerHTML = exploreSurahRowsHtml(sn, units, quranTrackables, t("Every Approach in {surah}", { surah: surahLabel }));
+    }
+
+    function openExploreAyah(idx) {
+      exploreAyahIdx = idx;
+      exploreLevel = "ayah";
+      renderExplore();
+      exploreScrollEl?.scrollTo?.(0, 0);
+    }
+    const exploreScrollEl = document.getElementById("exploreScroll");
+
+    /** Explore → Quran → Surah → Ayah: the Ayah's text, one wheel slice per Approach, and a row each. */
+    async function renderExploreAyahLevel() {
+      const sn = exploreSurahNum;
+      if (sn == null || exploreAyahIdx == null || !quranTrackables.length) return;
+      exploreWheelContainer.innerHTML = t("Loading this surah…");
+      const surahData = await getSurah(sn);
+      if (exploreLevel !== "ayah" || exploreSurahNum !== sn) return;
+      const units = exploreSurahUnits(sn, surahData);
+      const idx = Math.max(0, Math.min(units.length - 1, exploreAyahIdx));
+      exploreAyahIdx = idx;
+      const u = units[idx];
+      renderExploreBreadcrumb();
+      const surahLabel = exploreSurahLabel(sn);
+      exploreNavBar.innerHTML = exploreNavHtml({
+        backText: `← ${surahLabel}`, backAria: t("Back to the Surah"), backAct: "up",
+        prevText: idx > 0 ? `‹ ${units[idx - 1].name}` : `‹ ${t("Previous Ayah")}`, prevAria: idx > 0 ? t("Previous Ayah: {name}", { name: units[idx - 1].name }) : t("Previous Ayah"), prevAct: "ayah-prev", prevOff: idx === 0,
+        nextText: idx < units.length - 1 ? `${units[idx + 1].name} ›` : `${t("Next Ayah")} ›`, nextAria: idx < units.length - 1 ? t("Next Ayah: {name}", { name: units[idx + 1].name }) : t("Next Ayah"), nextAct: "ayah-next", nextOff: idx === units.length - 1,
+      });
+      const labels = statusLabelsById();
+      const statuses = quranTrackables.map((tr) => effectiveAyahStatus(sn, u.ayah, tr.id, u.record));
+      const items = quranTrackables.map((tr, i) => ({
+        key: tr.id, number: num(approachNo(tr)), statusId: statuses[i],
+        title: segTitle(exploreApproachName(tr), statuses[i], labels),
+      }));
+      const achieved = statuses.filter((s) => s === "achieved" || s === "mastered").length;
+      const langs = getQuranTranslationLangs();
+      const tr = [langs.includes("en") ? u.data.translations?.en : null, langs.includes("bn") ? u.data.translations?.bn : null].filter(Boolean);
+      const text = `<div class="aa-ayah" data-aa-ayah><p class="aa-ayah-ar" lang="ar">${escapeHtml(u.data.uthmaniText ?? "")}</p>${tr.map((x) => `<p class="aa-ayah-tr">${escapeHtml(x)}</p>`).join("")}</div>`;
+      exploreWheelContainer.innerHTML = text + renderScopedWheel(items, {
+        centerLabel: u.name, centerSub: t("{k} of {n} Achieved+", { k: num(achieved), n: num(quranTrackables.length) }), roomForNumbers: true,
+      });
+      attachScopedWheelClickHandler(exploreWheelContainer, (key) => openExploreTake(key, "ayah"));
+      exploreWheelLegendContainer.innerHTML = renderWheelLegend(labels)
+        + `<p class="aa-hint">${escapeHtml(t("Each slice is one Approach for this Ayah. Tap a slice, or Take below, to start it."))}</p>`;
+      exploreSidebarContainer.innerHTML = exploreAyahRowsHtml(statuses, t("Every Approach for {ayah}", { ayah: u.name }));
+    }
+
+    function exploreGoSurah(n) {
+      if (!surahIndex.some((s) => s.surahNumber === n)) return;
+      exploreSurahNum = n;
+      exploreJuzNum = null; exploreHizbNum = null; exploreRukuIndex = null; exploreAyahIdx = null;
+      exploreLevel = "surah";
+      renderExplore();
+      exploreScrollEl?.scrollTo?.(0, 0);
+    }
+
+    // --- Take ▸: the bottom sheet ---------------------------------------
+    function exploreIsWritingApproach(id) {
+      return isWritingApproach(id) || quranTrackables.find((x) => x.id === id)?.sourceTemplateId === "approach_12";
+    }
+    function exploreTakeStatus(take) {
+      if (take.unit === "ayah") {
+        const u = exploreUnitsCache?.units[take.idx];
+        return u ? effectiveAyahStatus(take.sn, u.ayah, take.approachId, u.record) : "not_started";
+      }
+      const sx = surahIndex.find((s) => s.surahNumber === take.sn);
+      const coverage = [{ surah: take.sn, from: 1, to: sx?.ayahCount ?? 1 }];
+      return exploreUnitStatus(coverage, buildUnitKey.surah(take.sn), exploreChunksBySurah.get(take.sn), take.approachId);
+    }
+    function openExploreTake(approachId, unit) {
+      const tr = quranTrackables.find((x) => x.id === approachId);
+      if (!tr || exploreSurahNum == null) return;
+      if (unit === "ayah" && !exploreUnitsCache?.units[exploreAyahIdx]) return;
+      exploreTake = { approachId, unit, sn: exploreSurahNum, idx: unit === "ayah" ? exploreAyahIdx : null };
+      paintExploreTake("");
+    }
+    function closeExploreTake() {
+      exploreTake = null;
+      exploreTakeHost.innerHTML = "";
+    }
+    function paintExploreTake(resultText) {
+      const take = exploreTake;
+      if (!take) return;
+      const tr = quranTrackables.find((x) => x.id === take.approachId);
+      const labels = statusLabelsById();
+      const cur = exploreTakeStatus(take);
+      const u = take.unit === "ayah" ? exploreUnitsCache.units[take.idx] : null;
+      const where = `${exploreSurahLabel(take.sn)} · ${u ? u.name : t("Whole Surah")}`;
+      // The Track card's own stage list (Owner, 1 Oct 2026): N/A always; Mastered only for someone whose claim is not
+      // waiting on a teacher, and the note instead for a student. Colours from the same table as the wheel legend.
+      const canConfirm = viewerCanConfirmProgress();
+      const stages = approachStageIdsFor(canConfirm);
+      exploreTakeHost.innerHTML = `<div class="aa-veil" data-aa-veil><div class="aa-sheet" role="dialog" aria-modal="true" aria-label="${escapeHtml(t("Take an Approach"))}" data-aa-sheet>
+        <h4>${escapeHtml(exploreApproachName(tr))}</h4>
+        <p class="aa-sub" data-aa-now="${cur}">${escapeHtml(where)} · ${escapeHtml(t("now {status}", { status: labels[cur] ?? cur }))}</p>
+        <div class="aa-acts">
+          <button type="button" data-aa-act="read">📖 ${escapeHtml(t("Read it"))}</button>
+          <button type="button" data-aa-act="listen">▶ ${escapeHtml(t("Listen"))}</button>
+          ${exploreIsWritingApproach(take.approachId) ? `<button type="button" data-aa-act="write">✍ ${escapeHtml(t("Write it"))}</button>` : ""}
+          <button type="button" data-aa-act="guide">🧭 ${escapeHtml(t("Guide"))}</button>
+        </div>
+        <div class="aa-lab" data-gac-record-title>${escapeHtml(u ? t("Record your progress for this Ayah") : t("Record your progress for the whole Surah"))}</div>
+        <div class="aa-stat">${stages.map((s) => `<button type="button" data-aa-rec="${s}" style="${stageColourStyle(s)}" aria-pressed="${cur === s}">${escapeHtml(labels[s] ?? s)}</button>`).join("")}</div>
+        ${canConfirm ? "" : `<p class="aa-note" data-aa-mastered-note>${escapeHtml(t("Mastered is confirmed by a teacher."))}</p>`}
+        <p class="aa-result" role="alert" data-aa-result>${escapeHtml(resultText)}</p>
+        <button type="button" class="aa-close" data-aa-close>${escapeHtml(t("Close"))}</button>
+      </div></div>`;
+      mountClaimForPicker(exploreTakeHost, "[data-gac-record-title]"); // 👥 who this records for -- the Track card's own picker
+      exploreTakeHost.querySelector(".aa-acts button")?.focus();
+    }
+
+    function exploreToast(message) {
+      document.querySelector(".aa-toast")?.remove();
+      const el = document.createElement("div");
+      el.className = "aa-toast";
+      el.setAttribute("role", "status");
+      el.textContent = message;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 2600);
+    }
+
+    /** Records through the one existing path (claimApproachStatus(), the Track card's own: same document, same fields, 👥 included), then repaints in place. */
+    async function exploreTakeRecord(statusId) {
+      const take = exploreTake;
+      if (!take) return;
+      const u = take.unit === "ayah" ? exploreUnitsCache.units[take.idx] : null;
+      const unitKey = u ? u.unitKey : buildUnitKey.surah(take.sn);
+      exploreTakeHost.querySelectorAll("[data-aa-rec]").forEach((b) => { b.disabled = true; });
+      const outcome = await claimApproachStatus(unitKey, take.approachId, statusId);
+      if (!outcome.ok) {
+        paintExploreTake(t("Could not record this, so nothing was saved. Please try again."));
+        return;
+      }
+      if (!outcome.shownUnchanged) {
+        if (!exploreChunksBySurah.has(take.sn)) exploreChunksBySurah.set(take.sn, { entries: {} });
+        const chunk = exploreChunksBySurah.get(take.sn);
+        patchClaimedEntry(chunk, unitKey, take.approachId, statusId);
+        if (take.sn === currentSurahNum && currentChunk && currentChunk !== chunk) patchClaimedEntry(currentChunk, unitKey, take.approachId, statusId);
+        await buildExploreWiderSpans(); // a Whole-Surah claim rolls up onto every Ayah
+        if (take.sn === currentSurahNum) renderWheel();
+      }
+      const tr = quranTrackables.find((x) => x.id === take.approachId);
+      const labels = statusLabelsById();
+      closeExploreTake();
+      exploreToast(t("{approach} recorded as {status}", { approach: exploreApproachName(tr), status: labels[statusId] ?? statusId }));
+      await renderExplore();
+    }
+
+    /** Sets the app's Study Unit to what was chosen here (decision 75: one unit, everywhere) without leaving Explore. */
+    async function exploreApplyUnit(sn, type, ayah = null, half = null) {
+      if (sn !== currentSurahNum) {
+        currentSurahNum = sn;
+        surahSelect.value = String(sn);
+        await loadSurah();
+      }
+      if (type === "ayah") {
+        currentUnitType = "ayah";
+        unitTypeSelect.value = "ayah";
+        updateUnitControlsVisibility();
+        setAyahNum(ayah, half);
+      } else {
+        unitTypeSelect.value = "surah";
+        unitTypeSelect.dispatchEvent(new Event("change"));
+      }
+      renderWheel();
+      updateUnitControlsVisibility();
+    }
+    async function exploreTakeAct(act) {
+      const take = exploreTake;
+      if (!take) return;
+      const u = take.unit === "ayah" ? exploreUnitsCache.units[take.idx] : null;
+      closeExploreTake();
+      currentTrackableId = take.approachId; // the app's Approach becomes this one, as a wheel slice does
+      trackableSelect.value = take.approachId;
+      if (act === "read") {
+        if (u) { await goToAyahFromExplore(take.sn, u.ayah, u.half); return; }
+        closeAllPanels();
+        setStageView("read");
+        await exploreApplyUnit(take.sn, "surah");
+        renderStudyScreen();
+        return;
+      }
+      await exploreApplyUnit(take.sn, take.unit, u?.ayah, u?.half);
+      if (act === "listen") playUnitCard(currentUnitInfo());
+      else if (act === "write") await openWritingSheetForCurrentUnit();
+      else if (act === "guide") {
+        closeAllPanels();
+        noteApproachCardOpen = true; // the Track/Guide card opens unfolded, as the landing wheel's slice opens it
+        await openNoteView(currentUnitInfo().unitKey);
+        noteView.querySelector('[data-note-field="approach"]')?.scrollIntoView({ block: "nearest" });
+      }
+    }
+
+    exploreView.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-aa]");
+      if (!b || b.disabled) return;
+      const act = b.dataset.aa;
+      if (act === "back") {
+        exploreJuzNum = null; exploreHizbNum = null; exploreSurahNum = null; exploreRukuIndex = null; exploreAyahIdx = null;
+        exploreLevel = "quran";
+        renderExplore();
+      } else if (act === "prev-surah") exploreGoSurah(exploreSurahNum - 1);
+      else if (act === "next-surah") exploreGoSurah(exploreSurahNum + 1);
+      else if (act === "mode") { exploreSurahMode = b.dataset.v === "one" ? "one" : "all"; renderExplore(); }
+      else if (act === "up") { exploreAyahIdx = null; exploreLevel = "surah"; renderExplore(); }
+      else if (act === "ayah-prev") openExploreAyah(Math.max(0, exploreAyahIdx - 1));
+      else if (act === "ayah-next") openExploreAyah(Math.min((exploreUnitsCache?.units.length ?? 1) - 1, exploreAyahIdx + 1));
+      else if (act === "take") openExploreTake(b.dataset.approach, b.dataset.unit);
+    });
+    exploreTakeHost.addEventListener("click", (e) => {
+      if (e.target.matches("[data-aa-veil], [data-aa-close]")) { closeExploreTake(); return; }
+      const act = e.target.closest("[data-aa-act]");
+      if (act) { exploreTakeAct(act.dataset.aaAct); return; }
+      const rec = e.target.closest("[data-aa-rec]");
+      if (rec) exploreTakeRecord(rec.dataset.aaRec);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && exploreTake) closeExploreTake();
+    });
+    exploreWheelContainer.addEventListener("keydown", (e) => {
+      if ((e.key === "Enter" || e.key === " ") && e.target.classList?.contains("aa-hit")) {
+        e.preventDefault();
+        e.target.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      }
+    });
 
     /** Level 4 (long surahs only): every ayah in one Ruku', direct per-ayah status, same shape as the Surah level's own short-surah branch. Click -> Study, via goToAyahFromExplore. */
     async function renderExploreRukuLevel() {
