@@ -6,6 +6,7 @@
 // Run from the repository root with serve.js on :8080. Expected texts are written by hand.
 //   --mutate=no-early    the early paint is removed   -> the "while still counting" checks fail
 //   --mutate=paint-stale a late answer paints anyway  -> the "left the Surah" check fails
+//   --mutate=per-word    word progress read one word at a time again (decision 82) -> the read-count check fails
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
 
@@ -20,6 +21,7 @@ if (MUTATE) {
   body = fs.readFileSync("app/quranrevival.html", "utf8");
   const swap = (a, b) => { const n = body.split(a).length - 1; if (!n) throw new Error(`mutation anchor missing: ${a.slice(0, 70)}`); console.log(`(mutation ${MUTATE}: ${n} replaced)`); body = body.split(a).join(b); };
   if (MUTATE === "no-early") swap("if (stillHere()) paintCoverage(el, compute(), truncated, true);", "");
+  else if (MUTATE === "per-word") swap('await primeAllLemmaProgress(db, { tenantId, personId, level: "wbw" });', "await Promise.all([...lemmaIds].map((lemmaId) => primeLemmaProgress(db, { tenantId, personId, lemmaId })));");
   else if (MUTATE === "paint-stale") swap("      if (!stillHere()) return;\n      paintCoverage(el, figure, truncated, false);", "      paintCoverage(el, figure, truncated, false);");
   else throw new Error(`unknown mutation ${MUTATE}`);
 }
@@ -48,22 +50,32 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
   await page.waitForTimeout(800);
   const held = await page.evaluate(() => (window.__stubHeld || []).length);
   const early = await line();
-  check(`${tag}: the per-word reads really are still waiting (${held} held)`, held > 50, String(held));
+  // Updated in place (decision 82, same day): the per-word reads became TWO person-wide queries per level, so a
+  // handful are held now, not hundreds; the check proves they are really waiting, which is what it is for.
+  check(`${tag}: the word-progress reads really are still waiting (${held} held)`, held >= 2, String(held));
   check(`${tag}: while they wait, the line shows the Surah's figure, not "${W[lang].loading}"`, !early.hidden && W[lang].known.test(early.text) && !early.text.includes(W[lang].loading), JSON.stringify(early));
   check(`${tag}: ...and says it is still counting, in ${lang}`, early.counting && early.text.includes(W[lang].counting), JSON.stringify(early));
 
   // 2. Release them: the figure completes and the "still counting" note goes.
+  await page.evaluate(() => { window.__lemmaReadsBefore = (window.__fsLog || []).length; });
   await page.evaluate(() => window.__stubRelease());
   await page.waitForFunction(() => !document.querySelector("#exploreArabicCoverage [data-eac-counting]"), null, { timeout: 15000 }).catch(() => {});
   const done = await line();
   check(`${tag}: when they answer, the figure is complete and the note is gone`, W[lang].known.test(done.text) && !done.counting && !done.text.includes(W[lang].loading), JSON.stringify(done));
+  // Decision 82: one Surah costs a handful of word-progress reads (two queries per level), never one per word.
+  const lemmaOps = await page.evaluate(() => (window.__fsLog || []).filter((r) => /^quranLemma(Progress|Approvals)$/.test(r.col)).map((r) => r.kind));
+  check(`${tag}: opening the Surah read word progress in ${lemmaOps.length} requests, all lists (it was 436+ single reads)`, lemmaOps.length > 0 && lemmaOps.length <= 6 && lemmaOps.every((k) => k === "getDocs"), JSON.stringify(lemmaOps.slice(0, 8)));
 
   // 3. Hold again, open the Surah, then leave for the Whole Qur'an before the reads answer: the late answer must not paint.
   await page.evaluate(() => document.querySelector('#exploreBreadcrumb [data-level="quran"]').click());
   await page.waitForSelector('#exploreWheelContainer .wheel-ring-seg[data-ring-kind="surah"]', { timeout: 20000 });
-  await page.evaluate((h) => { window.__stubHold = h; window.__stubHeld = []; }, HOLD);
+  // The person's word list is cached after step 1 (decision 82), so hold the reads every NEW Surah still needs --
+  // its own two word-progress lanes -- or nothing would be late and this check could not fail (found by the
+  // paint-stale mutation passing). The wait is no longer forgiving: if nothing is held, the case is not being tested.
+  await page.evaluate(() => { window.__stubHold = ["quranWordProgress", "quranWordApprovals"]; window.__stubHeld = []; });
   await page.click('#exploreWheelContainer .wheel-ring-seg[data-ring-kind="surah"][data-key="80"]', { force: true });
-  await page.waitForFunction(() => (window.__stubHeld || []).length > 0, null, { timeout: 10000 }).catch(() => {});
+  const heldLate = await page.waitForFunction(() => (window.__stubHeld || []).length > 0, null, { timeout: 10000 }).then(() => true, () => false);
+  check(`${tag}: (setup) Abasa's own reads are being held, so a late answer can be tested`, heldLate);
   await page.evaluate(() => document.querySelector('#exploreBreadcrumb [data-level="quran"]').click());
   await page.waitForTimeout(500);
   const before = await line();

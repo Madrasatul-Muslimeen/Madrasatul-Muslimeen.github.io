@@ -112,6 +112,8 @@ const {
   claimLemmaWordState: realClaimLemmaWordState,
   decideLemmaWordApproval: realDecideLemmaWordApproval,
   getLemmaProgress: realGetLemmaProgress,
+  primeAllLemmaProgress,
+  lemmaProgressFor,
   getLemmaOccurrenceCounts: realGetLemmaOccurrenceCounts,
   bumpLemmaOccurrenceCounter: realBumpLemmaOccurrenceCounter,
   clearLemmaProgressCache,
@@ -242,6 +244,27 @@ test("real quran-lemma-progress-data.js functions against the real assembled DEP
     assert.equal(progressAfterConfirm.review, "confirmed");
     assert.equal(progressAfterConfirm.countsAsKnown, true, "a real confirmation through the real Rules must count");
     step("confirm: the confirmation persists and countsAsKnown flips true");
+
+    // --- 1b. Owner decision 82: the person's whole lemma list in two queries, through the REAL Rules. ------------
+    // Allowed for the person themself and their guardian (canRecordFor), refused for an unrelated person and for
+    // another tenant -- so the list query is provable from its own filters, as the data layer's comment claims.
+    for (const [who, db] of [["the learner", p2], ["the guardian", p1]]) {
+      clearLemmaProgressCache();
+      const r = await primeAllLemmaProgress(db, { tenantId: T, personId: "p2", level: "wbw" });
+      assert.ok(r.fetched >= 2, `${who}: the list returned ${r.fetched} documents; expected the learner and supervisor lanes of LEMMA_A`);
+      const a = lemmaProgressFor({ tenantId: T, personId: "p2", lemmaId: LEMMA_A, confirmationRequired: true });
+      assert.equal(a.loaded, true); assert.equal(a.state, "achieved"); assert.equal(a.countsAsKnown, true, `${who}: the list must carry the confirmation too`);
+      const never = lemmaProgressFor({ tenantId: T, personId: "p2", lemmaId: "لَمْ-يُدَّعَ", confirmationRequired: true });
+      assert.equal(never.loaded, true, "a lemma the person never claimed is KNOWN to be not started after the list read");
+      assert.equal(never.state, "not_started");
+    }
+    step("list (decision 82): primeAllLemmaProgress() is allowed for the learner and the guardian, and matches the single reads");
+    for (const [who, db] of [["an unrelated person", p3], ["another tenant's person", pX]]) {
+      clearLemmaProgressCache();
+      await assert.rejects(primeAllLemmaProgress(db, { tenantId: T, personId: "p2", level: "wbw" }), /permission|PERMISSION_DENIED|insufficient/i, `${who} must be refused the list`);
+    }
+    step("list (decision 82): the same query is refused for an unrelated person and for another tenant");
+    clearLemmaProgressCache();
 
     // --- 2. The claim instant is pinned (I6), proven through a REAL round
     // trip -- not merely the pure resolveLemmaProgress() logic this also

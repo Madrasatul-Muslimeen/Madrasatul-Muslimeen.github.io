@@ -6256,7 +6256,7 @@
     // everywhere"), gated separately (see study-lemma-progress-readiness.js).
     import { lemmaProgressAuthority, effectiveOccurrenceState, lemmaKnownDeltaByJuz, groupOccurrenceRefsByJuz, overlayLemmaKnownness } from "./js/quran-lemma-progress.js";
     import {
-      primeLemmaProgress, lemmaProgressFor, claimLemmaWordState, decideLemmaWordApproval,
+      primeLemmaProgress, primeAllLemmaProgress, lemmaProgressFor, claimLemmaWordState, decideLemmaWordApproval,
       clearLemmaProgressCache, getLemmaOccurrenceCounts, bumpLemmaOccurrenceCounter,
     } from "./js/quran-lemma-progress-data.js";
     import { isLemmaProgressPersistenceReady } from "./js/study-lemma-progress-readiness.js";
@@ -15571,7 +15571,9 @@
         if (word?.morphology?.root) rootIds.add(word.morphology.root);
       }
       if (!lemmaIds.size) return;
-      await Promise.all([...lemmaIds].map((lemmaId) => primeLemmaProgress(db, { tenantId, personId, lemmaId })));
+      // Owner decision 82: the person's whole lemma list in two queries per level, not two reads per word on
+      // screen (436 for An-Naazi'aat, thousands for Al-Baqarah). Cached for the visit.
+      await primeAllLemmaProgress(db, { tenantId, personId, level: "wbw" });
       // Decision 58 (2 Oct 2026, correcting 56): WbW Achieved counts the SAME
       // word only. "Same root AND same meaning" belongs to BASIC Achieved
       // (claim keyed by the meaning group) and "the whole root" to DEPTH
@@ -15585,9 +15587,10 @@
       try { await loadLemmaMeaningGroups(); } catch (error) { console.warn("meaning groups unavailable", error); }
       const basicKeys = new Set();
       for (const lemmaId of realLemmaIds) basicKeys.add(claimKeyFor(MEANING_GROUP_LEVEL, { lemma: lemmaId }, meaningGroupOf));
+      if (!basicKeys.size && !rootIds.size) return;
       await Promise.all([
-        ...[...basicKeys].map((lemmaId) => primeLemmaProgress(db, { tenantId, personId, level: MEANING_GROUP_LEVEL, lemmaId })),
-        ...[...rootIds].map((lemmaId) => primeLemmaProgress(db, { tenantId, personId, level: ROOT_LEVEL, lemmaId })),
+        basicKeys.size ? primeAllLemmaProgress(db, { tenantId, personId, level: MEANING_GROUP_LEVEL }) : null,
+        rootIds.size ? primeAllLemmaProgress(db, { tenantId, personId, level: ROOT_LEVEL }) : null,
       ]);
     }
 
