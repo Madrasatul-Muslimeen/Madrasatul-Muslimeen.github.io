@@ -31,6 +31,13 @@
 #      A version allocation, a Rules change, a workflow change or a governance
 #      edit is a decision, and a decision is not something a cron job makes.
 #   6. It carries no `needs-owner` label.
+#   7. It changes NOTHING under `app/`. A change to the app is a release: it
+#      needs a version, which this workflow never allocates, and browser
+#      suites, which it cannot run. Added 7 Oct 2026 after PR #630 (the
+#      writing paper) was merged here unversioned and unmeasured, carrying two
+#      visible defects a session review then found (a model word at ~1.2:1
+#      contrast, a label cut at phone width). Such a pull request waits for a
+#      session Architect, who reviews, allocates and merges it.
 #
 #   A pull request failing ANY of these is never merged by this workflow. It is
 #   labelled, explained once on the pull request, and -- where it needs the
@@ -285,6 +292,11 @@ jobs:
               files=$(gh pr view "$n" --repo "$REPO" --json files --jq '.files[].path' 2>/dev/null || true)
               hit=$(printf '%s\n' "$files" | grep -E "$PROTECTED_RE" | head -3 | tr '\n' ' ' || true)
               [ -n "$hit" ] && reason="touches protected path(s): $hit"
+              # Gate 7: an app change is a release (a version + browser suites), so a session Architect's.
+              if [ -z "$reason" ]; then
+                apphit=$(printf '%s\n' "$files" | grep -E '^app/' | head -3 | tr '\n' ' ' || true)
+                [ -n "$apphit" ] && reason="changes the app ($apphit): a release, which waits for a session Architect (version + browser suites)"
+              fi
             fi
 
             # `verify` must be green on THIS head SHA, not merely not-failing.
@@ -381,7 +393,7 @@ jobs:
 
             - `/tmp/eligible.txt` — pull requests that have ALREADY passed every
               hard gate: base is `main`, `verify` green on the current head, no
-              conflict, not a draft, no protected path, no `needs-owner` label.
+              conflict, not a draft, no protected path, no `needs-owner` label, and no change under `app/` (an app change is a release: a session Architect versions and merges it).
             - `/tmp/blocked.txt` — the rest, each with its reason.
 
             **You may refuse anything on the eligible list. You may NEVER

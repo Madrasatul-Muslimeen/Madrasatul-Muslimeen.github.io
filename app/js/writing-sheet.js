@@ -34,6 +34,9 @@ const SHADES = {
   lighter: { mode: "stroke", color: "#d6cfbf" },
   book: { mode: "fill", color: "#dcd8cd" },
 };
+// Architect review of decision 83 (7 Oct 2026): the word pinned above blank paper is the model to copy, so it
+// is read, not traced over -- dark ink as in the demo, never a tracing shade (book's #dcd8cd was ~1.2:1).
+const MODEL = { mode: "fill", color: "#3b3020" };
 const PAPER = "#fffdf8";
 const RULE = "#cfc8b6";
 const MARKER = "#1b2440";
@@ -671,7 +674,7 @@ export async function openWritingSheet({ fatihaCount = false, pages, range = nul
       ensureFont: (pg) => loadMushafPageFont(pg),
       paintGlyph: (ctx, g, x, y, marker, shadeName) => {
         if (marker) { ctx.fillStyle = MARKER; ctx.fillText(g, x, y); }
-        else drawGlyphs(ctx, g, x, y, SHADES[shadeName] || SHADES.light);
+        else drawGlyphs(ctx, g, x, y, shadeName === "model" ? MODEL : SHADES[shadeName] || SHADES.light);
       },
       shade,
       onShade: (v) => { shade = v; saveShade(shade); paintToolbar(); st.pages.forEach((p) => { if (p.drawn) paintPage(p); }); },

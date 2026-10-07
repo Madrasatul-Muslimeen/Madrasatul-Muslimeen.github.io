@@ -36,6 +36,7 @@ const CSS = `
 .wp-bar .wp-sp{flex:1 1 0;min-width:0}
 .wp-bar .wp-shade{min-height:40px;min-width:56px;flex:1 1 0;max-width:190px;padding:0.3rem 0.4rem;border:1px solid rgba(255,255,255,0.35);border-radius:8px;background:rgba(255,255,255,0.12);color:#fff;font:inherit;font-size:0.85rem}
 .wp-bar .wp-shade option{color:#1b1b16;background:#fff}
+.wp-bar .wp-shade[data-wp-lines]{flex:0 1 auto;max-width:none}
 .wp-confirm{flex:0 0 auto;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:8px 10px;background:#fff3cf;color:#4a3a10;border-bottom:2px solid #B8862F}
 .wp-confirm[hidden]{display:none}
 .wp-confirm button{min-height:40px;padding:0.3rem 0.9rem;border-radius:8px;border:1px solid #B8862F;background:#fff;color:#4a3a10;font:inherit;cursor:pointer}
@@ -79,8 +80,8 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
           <button type="button" data-wp="smaller" aria-label="${t("Smaller letters")}" title="${t("Smaller letters")}">A−</button>
           <button type="button" data-wp="bigger" aria-label="${t("Bigger letters")}" title="${t("Bigger letters")}">A+</button>
           <select class="wp-shade" data-wp-lines aria-label="${t("Lines")}" title="${t("Lines")}">
-            <option value="trace">${t("Lines: to trace over")}</option>
-            <option value="blank">${t("Lines: blank")}</option>
+            <option value="trace">${t("Trace over")}</option>
+            <option value="blank">${t("Blank lines")}</option>
           </select>
           <select class="wp-shade" data-wp-shade aria-label="${t("Letter style")}" title="${t("Letter style")}">
             <option value="light">${t("Light")}</option>
@@ -189,7 +190,7 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
       const y = pad + li * lh + lh * 0.72;
       line.forEach((w) => {
         ctx.font = `${fs}px '${w.family}'`;
-        paintGlyph(ctx, w.g, rightEdge - w.offset, y, w.marker, "book");
+        paintGlyph(ctx, w.g, rightEdge - w.offset, y, w.marker, "model");   // dark: read, not traced
       });
     });
     modelEl.dataset.glyphs = L.items.map((i) => i.g).join("|");

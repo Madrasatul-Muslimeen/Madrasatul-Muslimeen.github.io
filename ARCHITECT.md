@@ -188,7 +188,12 @@ reaches the eligible list only if its base is `main`, `verify` is green on its
 **current head SHA**, GitHub reports it cleanly mergeable, it is not a draft, it
 carries no `needs-owner` label, and it touches **no protected path**
 (`app/js/version.js`, `firestore.rules`, `firebase.json`,
-`.github/workflows/**`, `CLAUDE.md`, `CHANGELOG.md`, the programme ledger).
+`.github/workflows/**`, `CLAUDE.md`, `CHANGELOG.md`, the programme ledger),
+and **it changes nothing under `app/`** (gate 7, added 7 Oct 2026: an app
+change is a release, which needs a version it never allocates and browser
+suites it cannot run; PR #630 was merged by it unversioned, with two visible
+defects a session review then found). So it merges tooling, tests and documents;
+every Builder round waits for a session Architect.
 
 **It may refuse anything on the eligible list; it may never promote anything
 off the blocked list.** The gate is deterministic shell, not a paragraph in a

@@ -94,3 +94,4 @@ ARCHITECT.md's Handover rules are prose that a session must remember at exactly 
 ## Releases recorded since this handover was written
 
 <!-- allocate-version.py appends one line per release below this marker. -->
+- **v09.108** (2026-10-07): the writing paper goes full screen, with More paper, lines to trace over or blank, and ‹ › to the next word (decision 83).

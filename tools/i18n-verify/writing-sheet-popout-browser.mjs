@@ -25,7 +25,11 @@ const SPLIT = JSON.parse(REAL);
 const SPLIT_BODY = JSON.stringify(SPLIT);
 
 let pass = 0, fail = 0;
-const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
+// Architect review (7 Oct 2026): refuse a promise, which would otherwise count as a PASS (CLAUDE.md, standing lessons).
+const check = (n, ok, d = "") => {
+  if (ok && typeof ok.then === "function") throw new Error(`check "${n}" was handed a promise; await it first`);
+  return ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
+};
 // Decision 83 checks run with --d83-only (and, to prove each can fail, --mutate=<name> which edits the SERVED
 // pop-out source so exactly the named behaviour is broken).
 const MUTATE = (process.argv.find((a) => a.startsWith("--mutate=")) || "").slice(9);
@@ -41,6 +45,7 @@ const MUTATIONS = {
   "ayah-step-word": ["mine.has(all[k + dir].loc)", "false"],
   "phone-no-ayah": ["@media (max-width:599.98px){.wp-tx{display:none}}", "@media (max-width:599.98px){.wp-tx{display:none}[data-wp-mode=ayah]{display:none}}"],
   "no-end-disable": ["nx.disabled = !neighbour(1);", "nx.disabled = false;"],
+  "faint-model": ['w.marker, "model");', 'w.marker, "book");'],
 };
 if (MUTATE && !MUTATIONS[MUTATE]) throw new Error("unknown mutation " + MUTATE);
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
@@ -431,6 +436,19 @@ if (ONLY || !MUTATE) {
     const modelGlyphs = await page.evaluate(() => document.querySelector("#writingSheet .wp [data-wp-model]").dataset.glyphs);
     check(`${tag} Lines: blank: ruled lines only, no traced letters on the paper`, bl.glyph === 0 && bl.rule > 100, JSON.stringify(bl));
     check(`${tag} ...the word is pinned in a strip above the paper (the right word)`, mBlank.shown && mBlank.h > 20 && mBlank.y + mBlank.h <= scrollR.y + 1 && modelGlyphs === firstWord("1:2:3").g, JSON.stringify({ mBlank, scrollR, modelGlyphs }));
+    // Architect review (7 Oct 2026): the model is read, not traced -- its darkest letter pixel must reach 4.5:1
+    // against the strip's own background (the first build painted it in the "book" tracing shade, ~1.2:1).
+    const modelContrast = await page.evaluate(() => {
+      const c = document.querySelector("#writingSheet .wp [data-wp-modelcv]");
+      const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data;
+      const lum = (r, g, b) => [r, g, b].map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }).reduce((a, v, k) => a + v * [0.2126, 0.7152, 0.0722][k], 0);
+      const bg = lum(d[0], d[1], d[2]);
+      let min = bg;
+      // the end-of-Ayah marker is painted in MARKER navy, so ignore the strongly blue pixels and measure the letters
+      for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 200 && !(d[i + 2] > d[i] + 25)) min = Math.min(min, lum(d[i], d[i + 1], d[i + 2]));
+      return Math.round(((bg + 0.05) / (min + 0.05)) * 100) / 100;
+    });
+    check(`${tag} ...and the pinned word is dark enough to read (>= 4.5:1 against its strip)`, modelContrast >= 4.5, String(modelContrast));
     await wp(page, '[data-wp="more"]'); await settle(page);
     check(`${tag} ...More paper in blank mode still works and the model stays pinned`, (await rectOf(page, ".wp-model")).shown && (await letters(page)).glyph === 0);
     // every tool in the blank state
@@ -463,7 +481,11 @@ if (ONLY || !MUTATE) {
     check(`${tag} ‹ › start on 1:2:3`, (await locNow(page)) === "1:2:3");
     await wp(page, '[data-wp="next"]'); await settle(page);
     check(`${tag} › goes to the next word (1:2:4)`, (await locNow(page)) === "1:2:4" && (await pop(page)).glyph === firstWord("1:2:4").g, JSON.stringify(await pop(page)));
-    await wp(page, '[data-wp="next"]'); await settle(page);
+    // Architect review (7 Oct 2026): assert › is still on at an Ayah's last word BEFORE clicking it, so a pop-out
+    // that stops at the Ayah fails here by name instead of timing out on a disabled button (--mutate=stop-at-ayah).
+    const nextOnAtEnd = await page.evaluate(() => !document.querySelector('#writingSheet .wp [data-wp="next"]').disabled);
+    check(`${tag} › is still on at the last word of an Ayah`, nextOnAtEnd);
+    if (nextOnAtEnd) { await wp(page, '[data-wp="next"]'); await settle(page); }
     const across = await pop(page);
     check(`${tag} › at the end of an Ayah goes on to the next Ayah's first word (1:3:1; the end marker is skipped)`, across.loc === plain(3)[0].loc && across.glyph === plain(3)[0].g, JSON.stringify(across));
     await wp(page, '[data-wp="prev"]'); await settle(page);

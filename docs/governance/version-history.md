@@ -751,3 +751,4 @@ total). Allocated by the MMSA Architect.
 09.105: Explore words-known line. Allocated by the MMSA Architect.
 09.106: the Mushaf page's even lines. Allocated by the MMSA Architect.
 09.107: Explore: every Approach at once. Allocated by the MMSA Architect.
+09.108: the writing paper goes full screen, with More paper, lines to trace over or blank, and ‹ › to the next word (decision 83). Allocated by the MMSA Architect.
