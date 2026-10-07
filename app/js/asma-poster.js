@@ -57,7 +57,8 @@ export const POSTER_HADITH = Object.freeze({
 
 /** The Hadith library's own address for one narration (hadith-collections.html reads it). */
 export function posterHadithHref(link, base = "./hadith-collections.html") {
-  return `${base}?openiti=${encodeURIComponent(link.openiti.versionUri)}&passage=${link.openiti.n}`;
+  // back=1: the way-back law (decision 86) -- the library shows "← Back" to return to the poster.
+  return `${base}?openiti=${encodeURIComponent(link.openiti.versionUri)}&passage=${link.openiti.n}&back=1`;
 }
 
 const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -67,7 +68,9 @@ export function asmaPosterModel(entry) {
   const cites = parseAsmaRef(entry?.ref ?? "");
   // The template's form for the first ("Quran 112:1, Surah Al-Ikhlaas"); any more follow it on the same line as just
   // "· 55:1", each its own button, so the box keeps one readable line.
-  const quran = cites.filter((c) => c.kind === "quran").map((c, i) => ({
+  // The same Ayah cited twice in a Name's reference text is printed once (Al-Munshi' showed "56:72 · 56:72 · 56:72").
+  const seen = new Set();
+  const quran = cites.filter((c) => c.kind === "quran" && !seen.has(`${c.surah}:${c.ayah}`) && seen.add(`${c.surah}:${c.ayah}`)).map((c, i) => ({
     surah: c.surah, ayah: c.ayah,
     text: i === 0 ? `Quran ${c.surah}:${c.ayah}, Surah ${POSTER_SURAH_NAMES[c.surah - 1] ?? c.surah}` : `· ${c.surah}:${c.ayah}`,
     full: `Quran ${c.surah}:${c.ayah}, Surah ${POSTER_SURAH_NAMES[c.surah - 1] ?? c.surah}`,
@@ -81,8 +84,9 @@ export function asmaPosterModel(entry) {
     number: entry?.number,
     title: entry?.transliteration ?? "",
     // Decision 49, in the template's form: "Lord" is RABB on the poster.
-    meaning: String(POSTER_MEANINGS[entry?.number] ?? entry?.meaning?.en ?? "").replace(/\bLord\b/g, "RABB"),
-    arabic: POSTER_ARABIC[entry?.number] ?? entry?.arabic ?? "",
+    // The Owner's own English correction (enOverride) wins over the archive poster's wording.
+    meaning: String(entry?.enOverride || POSTER_MEANINGS[entry?.number] || entry?.meaning?.en || "").replace(/\bLord\b/g, "RABB"),
+    arabic: String(POSTER_ARABIC[entry?.number] ?? entry?.arabic ?? "").trim(),
     description: POSTER_DESCRIPTIONS[entry?.number] ?? "",
     quran, hadith,
   };
@@ -109,6 +113,7 @@ const CSS = `
 .ahp-ref button:focus-visible,.ahp-ref a:focus-visible{outline:2px solid #f4501a;outline-offset:1px;border-radius:3px}
 .ahp-ref .ahp-unlinked{white-space:nowrap}
 .ahp-ref .ahp-none{color:#8a8473;font-style:italic}
+.ahp-ar.ahp-ar-none{font-family:'Tinos','Times New Roman',serif;font-weight:400;font-size:3.4cqw;font-style:italic;color:#8a8473;-webkit-text-stroke:0;direction:ltr}
 `;
 let cssDone = false;
 /** The poster's own stylesheet and fonts, added once to the page. */
@@ -149,7 +154,9 @@ export function renderAsmaPoster(entry, variant = "standalone", { interactive = 
   return `<div class="ahp ahp-${esc(variant)}" data-asma-poster="${esc(m.number)}" lang="en">
     <div class="ahp-title"><span data-poster-title>${esc(m.title)}</span></div>
     <div class="ahp-mean"><span data-poster-meaning>${esc(m.meaning)}</span></div>
-    <div class="ahp-ar" lang="ar"><span data-poster-arabic>${esc(m.arabic)}</span></div>
+    ${m.arabic ? `<div class="ahp-ar" lang="ar"><span data-poster-arabic>${esc(m.arabic)}</span></div>`
+      // A Name added without its Arabic says so, rather than leaving the cartouche blank.
+      : `<div class="ahp-ar ahp-ar-none" data-poster-arabic-missing lang="en"><span>Arabic not entered yet</span></div>`}
     ${desc}
     <div class="ahp-ref ahp-ref-q" data-poster-ref="quran">${q}</div>
     <div class="ahp-ref ahp-ref-h" data-poster-ref="hadith">${h}</div>

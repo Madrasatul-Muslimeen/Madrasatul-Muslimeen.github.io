@@ -2648,6 +2648,22 @@
   .word-card-dcard .word-card-form-meaning { font-size: 0.86rem; color: #33463f; line-height: 1.25; }
   .word-card-dcard-count { font-size: 0.78rem; font-weight: 800; color: #8a6a1f; font-variant-numeric: tabular-nums; }
   @media (max-width: 1000px) { .word-card-dcards { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  /* Owner, 7 Oct 2026: a derived-form card opens its places in a pop-up. The card is a button now, so it
+     takes the card look back from the page's global button rule and shows it can be pressed. */
+  button.word-card-dcard { font: inherit; cursor: pointer; width: 100%; }
+  button.word-card-dcard:hover { border-color: #1d6b4a; }
+  .word-card-dcard-open { border-color: #1d6b4a; box-shadow: 0 0 0 2px rgba(29, 107, 74, 0.45); }
+  .word-card-dpop { position: fixed; inset: 0; z-index: 1200; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .word-card-dpop-backdrop { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; border-radius: 0; padding: 0; background: rgba(8, 14, 26, 0.55); cursor: default; }
+  .word-card-dpop-box { position: relative; width: min(28rem, 100%); max-height: min(80vh, 36rem); overflow-y: auto; background: #fff; color: #13241f; border: 1px solid #d6ddd9; border-radius: 0.9rem; padding: 0.7rem 0.8rem 0.8rem; box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+    --card-bg: #fff; --card-bg-inset: #fff; --card-text: #13241f; --card-text-muted: #5b6d66; --card-heading: #1d6b4a; --card-line: #d6ddd9; }
+  .word-card-dpop-head { display: flex; align-items: center; gap: 0.6rem; position: sticky; top: -0.7rem; background: #fff; padding: 0.2rem 0; z-index: 1; }
+  .word-card-dpop-ar { font-family: var(--quran-font); font-size: 1.7rem; line-height: 1.6; color: #1d6b4a; }
+  .word-card-dpop-title { flex: 1 1 auto; font-weight: 800; font-size: 0.9rem; color: #8a6a1f; }
+  .word-card-dpop-close { flex: 0 0 auto; width: 40px; height: 40px; padding: 0; border-radius: 0.5rem; background: #f1f4f2; color: #13241f; border: 1px solid #d6ddd9; font-size: 1rem; }
+  .word-card-dpop-hint { margin: 0 0 0.4rem; font-size: 0.8rem; color: #5b6d66; }
+  .word-card-dpop .word-card-occurrences { flex-direction: column; }
+  .word-card-dpop .word-card-occurrence-link:hover { background: #e8f1ec; }
   @media (max-width: 520px) { .word-card-dcards { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.4rem; } .word-card-dcard-ar { font-size: 1.35rem; } }
   .word-card-forms-note { margin: 0.35rem 0 0; font-size: 0.74rem; line-height: 1.35; color: var(--card-text-muted); }
   .word-card-form-list { list-style: none; margin: 0; padding: 0; }
@@ -3111,7 +3127,11 @@
   .word-card-more-cb:checked + .word-card-book-t + .word-card-more .word-card-more-off { display: inline; }
   .word-card-gram-take { padding-left: 0.8rem; }
   .word-card-acc { background: #f6f8f7; color: #13241f; border-radius: 10px; border: 1px solid #d6ddd9; min-width: 0;
-    --card-text: #13241f; --card-text-muted: #5b6d66; --card-heading: #1d6b4a; --card-link: #1d6b4a; --card-bg-inset: #fff; --card-line: #d6ddd9; }
+    --card-text: #13241f; --card-text-muted: #5b6d66; --card-heading: #1d6b4a; --card-link: #1d6b4a; --card-bg-inset: #fff; --card-line: #d6ddd9;
+    /* Owner, 7 Oct 2026 ("the occurances, the color setting, not readable"): the section set light-surface TEXT
+       tokens but inherited the Night card's dark --card-bg, so an occurrence row was green on navy. Its surface too. */
+    --card-bg: #fff; }
+  .word-card-acc .word-card-occurrence-link:hover { background: #e8f1ec; }
   .word-card-acc > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 32px minmax(0, 1fr) 20px; gap: 10px; align-items: center; padding: 10px 12px; font-weight: 800; min-height: 44px; }
   .word-card-acc > summary::-webkit-details-marker { display: none; }
   .word-card-acc > summary::after { content: "⌄"; color: #5b6d66; font-size: 1.1rem; text-align: center; }
@@ -3617,6 +3637,43 @@
   .ayah-sheet .claim-for-line + .approach-stage-row { margin-top: 0.1rem; } /* the same when 👥 shares the title's line */
   .ayah-sheet-ref { font-size: 0.9rem; color: var(--card-heading); font-weight: 600; }
   .ayah-sheet-close { background: none; border: none; color: var(--card-text-muted); font-size: 1.5rem; line-height: 1; min-width: 40px; min-height: 40px; padding: 0.2rem 0.5rem; cursor: pointer; }
+  /* Owner, 7 Oct 2026 (a photo of the Āyah card, two boxes drawn after the reference): ‹ › step the card
+     to the previous / next āyah, then 📖 Note view. One tidy cluster beside the reference, 40px targets. */
+  .ayah-sheet-header { gap: 0.4rem; }
+  .ayah-sheet-ref { flex: 1 1 auto; min-width: 0; }
+  .ayah-sheet-head-tools { display: flex; align-items: center; gap: 0.4rem; flex: 0 0 auto; }
+  .ayah-sheet-nav-pair { display: inline-flex; border: 1px solid var(--card-line); border-radius: 0.6rem; overflow: hidden; }
+  .ayah-sheet-nav { width: 40px; height: 40px; padding: 0; margin: 0; border: 0; border-radius: 0; background: var(--card-bg-inset); color: var(--card-heading); font-size: 1.45rem; line-height: 1; cursor: pointer; }
+  .ayah-sheet-nav + .ayah-sheet-nav { border-left: 1px solid var(--card-line); }
+  .ayah-sheet-nav:disabled { opacity: 0.35; cursor: default; }
+  .ayah-sheet-noteview { height: 40px; padding: 0 0.7rem; margin: 0; border: 1px solid var(--card-line); border-radius: 0.6rem; background: var(--card-bg-inset); color: var(--card-heading); font-size: 0.85rem; font-weight: 600; white-space: nowrap; cursor: pointer; }
+  @media (max-width: 380px) { .ayah-sheet-noteview { padding: 0 0.5rem; font-size: 0.8rem; } }
+  /* Owner, 7 Oct 2026: "all these choices/ actions could be placed below the Ayah name/ number in a row" -- one
+     row of small icon buttons under the header; it wraps to a second row only where nine cannot fit. */
+  .ayah-sheet-actrow { display: grid; grid-template-columns: repeat(auto-fit, minmax(58px, 1fr)); gap: 0.3rem; padding: 0.35rem 0 0.45rem; border-bottom: 1px solid var(--card-line); }
+  .ayah-sheet-act { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; min-height: 52px; min-width: 0; margin: 0; padding: 0.3rem 0.1rem; border: 1px solid var(--card-line); border-radius: 0.6rem; background: var(--card-bg-inset); color: var(--card-text); font: inherit; cursor: pointer; }
+  .ayah-sheet-act:hover { border-color: var(--card-heading); }
+  .ayah-sheet-act.is-disabled { opacity: 0.5; cursor: default; }
+  .ayah-sheet-act-icon { font-size: 1.15rem; line-height: 1; }
+  .ayah-sheet-act-label { font-size: 0.68rem; line-height: 1.1; max-width: 100%; text-align: center; white-space: normal; overflow-wrap: normal; }
+  .ayah-sheet-actrow + .ayah-sheet-hint, .ayah-sheet-actrow ~ .ayah-sheet-hint { margin: 0.3rem 0.2rem 0; }
+  /* "Back to Āyah card" -- stays until used or dismissed, above the bottom bar. */
+  .ayah-card-back-pill { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(5.2rem + env(safe-area-inset-bottom, 0px)); z-index: 955; display: flex; align-items: center; gap: 0.2rem; padding: 0.2rem; border-radius: 999px; background: #1b2a41; border: 1px solid #c9a24b; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); max-width: calc(100vw - 32px); }
+  .ayah-card-back-pill[hidden] { display: none; }
+  .ayah-card-back-btn { min-height: 40px; padding: 0 0.9rem; border: 0; border-radius: 999px; background: transparent; color: #f2e8d5; font-size: 0.88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+  .ayah-card-back-ref { color: #c9a24b; margin-left: 0.3rem; }
+  .ayah-card-back-x { width: 40px; height: 40px; flex: 0 0 auto; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.08); color: #f2e8d5; font-size: 1.2rem; cursor: pointer; }
+  /* 📖 Note view pop-up: the āyah as the Note view shows it, over the card. */
+  .ayah-nv-pop { position: fixed; inset: 0; z-index: 1300; background: rgba(8, 14, 26, 0.6); display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .ayah-nv-pop[hidden] { display: none; }
+  .ayah-nv-box { width: min(46rem, 100%); max-height: calc(100vh - 32px); overflow-y: auto; background: #fffdf6; color: #1b1b16; border-radius: 1rem; box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45); padding: 0 1rem 1rem; }
+  .ayah-nv-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0; background: #fffdf6; border-bottom: 1px solid #eadfc3; }
+  .ayah-nv-back { flex: 0 0 auto; white-space: nowrap; min-height: 40px; padding: 0 0.8rem; border: 1px solid #c9a24b; border-radius: 0.6rem; background: #1F3A6E; color: #fff; font-size: 0.88rem; font-weight: 600; cursor: pointer; }
+  .ayah-nv-ref { font-weight: 700; color: #1F3A6E; min-width: 0; overflow-wrap: anywhere; }
+  .ayah-nv-sec { margin-top: 0.6rem; }
+  .ayah-nv-sec > summary { cursor: pointer; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #6b6b60; padding: 0.3rem 0; }
+  .ayah-nv-body .ayah-arabic { font-size: 1.9rem; line-height: 2.1; }
+  .ayah-nv-body .ayah-translation { font-size: 1.05rem; line-height: 1.6; }
   .ayah-sheet-hint { font-size: 0.74rem; color: var(--card-text-muted); margin: -0.1rem 0.5rem 0.35rem; }
   /* Issue #295 -- the two new actions. "Take an Approach" is a real
      <select>, sized and reset exactly like every other control in this
@@ -7359,6 +7416,9 @@
      *  distinct from the destination the card is currently showing -- the
      *  same separation MAP locks for Note Origin / Note Destination. */
     let quranWordCardOrigin = null;
+    // Owner, 7 Oct 2026: the place a Word card occurrence link opened ("s:a:p"), shown highlighted while
+    // the "Back to Word Card" bar is up. Painted by a style rule, not a class, so every re-render keeps it.
+    let quranWordCardTarget = null;
     /** v08.21 -- which derived form (a lemma) is expanded in Arabic in Depth,
      *  and that form's own resolved occurrences. Kept OUTSIDE
      *  quranWordCardContext because the context is replaced wholesale on every
@@ -14273,10 +14333,27 @@
         IN PAGE -- goToAyahFromQcr()'s own shape, with the Asma origin
         carried through so the Note view's own Topic field can default to
         Asma ul Husna with this Group/Name already selected. */
-    async function goToAyahFromAsmaX(surah, ayah, groupId, number) {
+    async function goToAyahFromAsmaX(surah, ayah, groupId, number, { fromPoster = false } = {}) {
       closeAllPanels();
       await goToReference(surah, ayah, null);
       await openNoteView(buildUnitKey.ayah(surah, ayah), { fromAsma: { groupId, number } });
+      // The way-back law (decision 86; the Owner's own example): a Name's reference leaves a way back to that Name.
+      const entry = number != null ? asmaXResolve(number) : null;
+      if (entry) setAppReturn(t("Back to {name}", { name: asmaEntryDisplayName(entry) }), "", () => returnToAsmaName(number, groupId, fromPoster));
+    }
+    /** Explore → Asma ul Husna, at that Name again (and its full-size poster, when the reference was tapped there). */
+    async function returnToAsmaName(number, groupId, poster) {
+      closeAllPanels();
+      setStageView("explore");
+      await openExplore();
+      await openAsmaXPalette();
+      const col = groupId ? (asmaXCollections ?? []).find((c) => c.id === groupId) : null;
+      asmaXKind = col?.kind ?? "group";
+      asmaXGroupId = col ? groupId : null;
+      asmaXNumber = number;
+      asmaXLevel = "refs";
+      renderAsmaXPanel();
+      if (poster) { const e = asmaXResolve(number); if (e) openAsmaXPoster(e); }
     }
 
     function openAsmaXPoster(entry) {
@@ -14285,7 +14362,7 @@
       asmaXPosterOverlayEl.classList.add("open");
       fitAsmaPosters(asmaXPosterMountEl);
       wireAsmaPosterRefs(asmaXPosterMountEl, {
-        onQuran: (surah, ayah) => { closeAsmaXPoster(); goToAyahFromAsmaX(surah, ayah, asmaXGroupId, asmaXNumber); },
+        onQuran: (surah, ayah) => { closeAsmaXPoster(); goToAyahFromAsmaX(surah, ayah, asmaXGroupId, entry.number ?? asmaXNumber, { fromPoster: true }); },
       });
     }
     function closeAsmaXPoster() {
@@ -15670,6 +15747,7 @@
         formOccurrences: t("{count} occurrences"),
         derivedCardsSummary: t("{n} forms · {total} times in all"),
         derivedCardCount: t("{n}×"),
+        dpopHint: t("Tap one to open that āyah"),
         // The reader's app language, for the derived-form meaning ("en" | "bn").
         formMeaningLang: getAppLang() === "bn" ? "bn" : "en",
         // v08.22 -- the grammatical categories the packaged data itself uses,
@@ -17116,8 +17194,12 @@
       quranWordCardFormRequest++;
       quranWordCardState = closeWordCard(quranWordCardState);
       clearWordCardMounts();
+      quranWordCardTarget = `${surah}:${ayah}:${position}`;
       await navigateToAyah(surah, ayah, "read");
       renderWordCardReturnBar();
+      // Bring the very word into view (Mushaf, page or single āyah, whichever is showing).
+      const hit = [...document.querySelectorAll(`#readView [data-word-occurrence="quran-word-occurrence:v1:${surah}:${ayah}:${position}"]`)].find((el) => el.getClientRects().length);
+      hit?.scrollIntoView({ block: "center", behavior: "instant" });
     }
 
     /** The navigation half on its own: go to a place, show it, touch no card. */
@@ -17168,6 +17250,7 @@
       const bar = document.getElementById("wordCardReturnBar");
       if (!bar) return;
       const origin = quranWordCardOrigin;
+      paintWordCardTarget(origin ? quranWordCardTarget : null);
       if (!origin) { bar.hidden = true; bar.innerHTML = ""; return; }
       const text = wordCardLabels();
       bar.innerHTML = `<button type="button" class="word-card-return-btn" data-word-card-origin-back ` +
@@ -17176,6 +17259,18 @@
         `<span aria-hidden="true">←</span> ${escapeHtml(text.backToWordCard)}` +
         `<span class="word-card-return-ref">${escapeHtml(origin.ref)}</span></button>`;
       bar.hidden = false;
+    }
+
+    /** The āyah an occurrence link opened, tinted, and its word ringed in gold. */
+    function paintWordCardTarget(ref) {
+      let style = document.getElementById("wordCardTargetStyle");
+      const m = /^(\d+):(\d+):(\d+)$/.exec(ref ?? "");
+      if (!m) { style?.remove(); return; }
+      if (!style) { style = document.createElement("style"); style.id = "wordCardTargetStyle"; document.head.appendChild(style); }
+      const ayahIds = `[data-word-occurrence^="quran-word-occurrence:v1:${m[1]}:${m[2]}:"]`;
+      const wordId = `[data-word-occurrence="quran-word-occurrence:v1:${m[1]}:${m[2]}:${m[3]}"]`;
+      style.textContent = `#readView ${ayahIds} { background-color: rgba(255, 214, 102, 0.28); border-radius: 4px; }\n` +
+        `#readView ${wordId} { background-color: rgba(255, 196, 61, 0.55); outline: 2px solid #c9a24a; outline-offset: 1px; border-radius: 4px; }`;
     }
 
     /** The way back: the original word AND the study context it was read in. */
@@ -19007,13 +19102,20 @@
         related: ayahSheetRelated,
         connected: ayahSheetConnected,
         ladderHtml,
+        canPrev: !!ayahCardNeighbour(ayahSheetUnitKey, -1),
+        canNext: !!ayahCardNeighbour(ayahSheetUnitKey, 1),
       });
       // Keep the reader's place: the card re-renders as its data arrives
       // (Status, then Related), and each re-render used to jump to the top.
       if (keepScroll) { const el = ayahActionSheetMountEl.querySelector("[data-ayah-sheet]"); if (el) el.scrollTop = keepScroll; }
       mountClaimForPicker(ayahActionSheetMountEl, "[data-gac-record-title]"); // 👥 who this records for
+      // Owner, 7 Oct 2026: "Enable back button always to come back to the view/ location where it came
+      // from" -- an action that takes the reader away from this card leaves a way back to it.
+      const sheetKeyAtRender = ayahSheetUnitKey;
       attachAyahActionSheetHandlers(ayahActionSheetMountEl, {
-        onRelatedJump: (s, a) => navigateToAyah(s, a, stageView === "note" ? "note" : "read"),
+        onStep: (unitKey, dir) => { const n = ayahCardNeighbour(unitKey, dir); if (n) openAyahActionSheet(n.key, n.half); },
+        onNoteView: (unitKey) => openAyahNoteViewPopup(unitKey),
+        onRelatedJump: (s, a) => { rememberAyahCardReturn(sheetKeyAtRender); navigateToAyah(s, a, stageView === "note" ? "note" : "read"); },
         onClose: closeAyahActionSheet,
         onRung: (rungUnitKey) => {
           const { unitType: rungType } = parseUnitKey(rungUnitKey);
@@ -19021,7 +19123,7 @@
           openUnitCard(rungUnitKey, { surah, ayah: ayahNum });
         },
         onBookmark: (unitKey) => toggleAyahBookmark(unitKey),
-        onNote: (unitKey) => openNoteView(unitKey),
+        onNote: (unitKey) => { rememberAyahCardReturn(unitKey); openNoteView(unitKey); },
         onAsma: (unitKey) => {
           const { surah: s, ayah: a } = parseAyahUnitKey(unitKey);
           openAsmaXAttachPopover({ prefillRef: ayahRefLabel(s, a, { internal: true }) });
@@ -19034,6 +19136,7 @@
           // declaration comment) -- exactly the state a real tap on 🗂 then
           // Attach would have left, without adding a second drawer.
           ayahSheetPendingQcrOpen = true;
+          rememberAyahCardReturn(unitKey);
           openNoteView(unitKey);
         },
         onFileInFolder: (unitKey) => openAyahFolderFiling(unitKey),
@@ -19055,7 +19158,7 @@
         onStageChoice: (unitKey, approachId, statusId) => takeApproachForAyah(unitKey, approachId, statusId),
         onPoster: (unitKey) => openAyahPoster(unitKey, hasPosterNoteAtRenderTime),
         onSeeOnWheel: () => focusWheelOnAyah(ayahNum),
-        onWordTap: (occurrenceId) => openWordCardForOccurrenceId(occurrenceId),
+        onWordTap: (occurrenceId) => { rememberAyahCardReturn(sheetKeyAtRender); openWordCardForOccurrenceId(occurrenceId); },
       });
     }
 
@@ -19290,6 +19393,7 @@
       // Architect review of #325: open on the Approach last chosen on either
       // card, so moving from one āyah to the next needs no re-picking.
       ayahSheetSelectedApproachId = mushafRingApproachId;
+      clearAyahCardReturn(); // the card is open again: no "back to it" needed
       renderAyahActionSheetNow();
       ayahActionSheetOverlayEl.classList.add("open");
       ensureAyahSheetRelatedLoaded(unitKey, surahNum, ayahNum);
@@ -19297,6 +19401,115 @@
       ensureAyahNoteDataLoaded().then(() => { if (ayahSheetUnitKey === unitKey) renderAyahActionSheetNow(); });
       ensureAyahSheetWordStatusLoaded(unitKey, surahNum, ayahNum);
       ensureAyahSheetPosterNoteLoaded(unitKey);
+    }
+
+    /** Owner, 7 Oct 2026 -- the Āyah card's ‹ ›: the āyah before or after this one, across a
+        surah's edge, Al-Fātiḥah's two displayed halves of 1:7 included. null at either end. */
+    function ayahCardNeighbour(unitKey, dir) {
+      if (!unitKey) return null;
+      const { surah, ayah, half } = parseAyahUnitKey(unitKey);
+      const split = fatihaCountApplies(1, fatihaOn());
+      if (split && surah === 1 && ayah === 7) {
+        if (dir > 0 && half !== "b") return { key: "1:7", half: "b" };
+        if (dir < 0 && half === "b") return { key: "1:7", half: "a" };
+      }
+      const count = (n) => surahIndex.find((x) => x.surahNumber === n)?.ayahCount ?? 0;
+      let s = surah, a = ayah + dir;
+      if (a < 1) { s -= 1; if (s < 1) return null; a = count(s); }
+      else if (a > count(s)) { s += 1; if (s > 114 || !count(s)) return null; a = 1; }
+      if (a < 1) return null;
+      return { key: `${s}:${a}`, half: split && s === 1 && a === 7 ? (dir < 0 ? "b" : "a") : null };
+    }
+
+    /** Owner, 7 Oct 2026 -- "Back to Āyah card": a small pill that stays until used or dismissed,
+        after an action took the reader away from the card (Note & more, QCR, a word, a related āyah). */
+    // The way-back law (decision 86): ONE pill for every "you came from there" -- `title` says where, `label` a
+    // short reference, `back()` restores it. Set by the Āyah card's actions and by an Asma Name's references.
+    let ayahCardReturn = null;
+    function setAppReturn(title, label, back) { ayahCardReturn = { title, label, back }; renderAyahCardBackPill(); }
+    function rememberAyahCardReturn(unitKey) {
+      if (!unitKey) return;
+      const { surah, ayah, half } = parseAyahUnitKey(unitKey);
+      const r = { surah, ayah, half, view: stageView === "note" ? "note" : "read", scrollY: readViewScrollTop() };
+      setAppReturn(t("Back to Āyah card"), ayahRefLabel(surah, ayah, { half }).replace(/^.*?(\S+:\S+).*$/, "$1"), () => returnToAyahCard(r));
+    }
+    function clearAyahCardReturn() { ayahCardReturn = null; renderAyahCardBackPill(); }
+    function renderAyahCardBackPill() {
+      let pill = document.getElementById("ayahCardBackPill");
+      if (!ayahCardReturn) { if (pill) { pill.hidden = true; pill.innerHTML = ""; } return; }
+      if (!pill) {
+        pill = document.createElement("div");
+        pill.id = "ayahCardBackPill";
+        pill.className = "ayah-card-back-pill";
+        document.body.appendChild(pill);
+        pill.addEventListener("click", (e) => {
+          if (e.target.closest("[data-ayah-card-back-dismiss]")) { clearAyahCardReturn(); return; }
+          if (e.target.closest("[data-ayah-card-back]")) { const r = ayahCardReturn; clearAyahCardReturn(); r?.back?.(); }
+        });
+      }
+      pill.innerHTML = `<button type="button" class="ayah-card-back-btn" data-ayah-card-back><span aria-hidden="true">←</span> ${escapeHtml(ayahCardReturn.title)}${ayahCardReturn.label ? ` <span class="ayah-card-back-ref">${escapeHtml(ayahCardReturn.label)}</span>` : ""}</button>` +
+        `<button type="button" class="ayah-card-back-x" data-ayah-card-back-dismiss aria-label="${escapeHtml(t("Close"))}">×</button>`;
+      pill.hidden = false;
+    }
+    async function returnToAyahCard(r) {
+      if (!r) return;
+      // A Word card opened from the Āyah card's own word chips is closed first.
+      quranWordCardRequest++;
+      quranWordCardOrigin = null;
+      renderWordCardReturnBar();
+      quranWordCardState = closeWordCard(quranWordCardState);
+      renderPersistentWordCard();
+      const here = currentSurahNum === r.surah && currentAyahNum === r.ayah && (stageView === "note" ? "note" : "read") === r.view;
+      if (!here) {
+        await navigateToAyah(r.surah, r.ayah, r.view, r.half);
+        if (r.view === "read" && Number.isFinite(r.scrollY)) setReadViewScrollTop(r.scrollY);
+      }
+      openAyahActionSheet(`${r.surah}:${r.ayah}`, r.half);
+    }
+
+    /** Owner, 7 Oct 2026 -- the Āyah card's 📖: this āyah as the Note view shows it (Arabic, English,
+        Bangla, Word by Word), in a pop-up over the card, built from the same shared renderers the Read
+        and Note views use (I2). Its ← goes back to the card exactly where it was. */
+    async function openAyahNoteViewPopup(unitKey) {
+      const { surah, ayah, half } = parseAyahUnitKey(unitKey);
+      let pop = document.getElementById("ayahNoteViewPopup");
+      if (!pop) {
+        pop = document.createElement("div");
+        pop.id = "ayahNoteViewPopup";
+        pop.className = "ayah-nv-pop";
+        document.body.appendChild(pop);
+        pop.addEventListener("click", (e) => {
+          if (e.target === pop || e.target.closest("[data-ayah-nv-back]")) closeAyahNoteViewPopup();
+        });
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && !pop.hidden) { e.stopImmediatePropagation(); closeAyahNoteViewPopup(); }
+        }, true);
+      }
+      const ref = ayahRefLabel(surah, ayah, { half });
+      const head = `<div class="ayah-nv-head"><button type="button" class="ayah-nv-back" data-ayah-nv-back><span aria-hidden="true">←</span> ${escapeHtml(t("Āyah card"))}</button><span class="ayah-nv-ref">${escapeHtml(ref)}</span></div>`;
+      pop.innerHTML = `<div class="ayah-nv-box" role="dialog" aria-modal="true" aria-label="${escapeHtml(ref)}">${head}<p class="ayah-nv-loading">${escapeHtml(t("Loading…"))}</p></div>`;
+      pop.hidden = false;
+      pop.dataset.unitKey = unitKey;
+      pop.querySelector("[data-ayah-nv-back]")?.focus({ preventScroll: true });
+      let a;
+      try { a = (await getSurah(surah))?.ayahs?.find((x) => x.ayah === ayah); } catch { a = null; }
+      if (pop.hidden || pop.dataset.unitKey !== unitKey) return;
+      const box = pop.querySelector(".ayah-nv-box");
+      if (!a) { box.innerHTML = `${head}<p role="status">${escapeHtml(t("Could not load this āyah."))}</p>`; return; }
+      const section = (title, body, lang = "") => body ? `<details class="ayah-nv-sec" open><summary>${escapeHtml(title)}</summary><div class="ayah-nv-body"${lang ? ` lang="${lang}"` : ""}>${body}</div></details>` : "";
+      box.innerHTML = head +
+        section(t("Arabic"), renderArabicPanel(a, { tajweedOn: false, wordCardInteractive: false, surahNumber: surah, langs: ["en", "bn"] })) +
+        section(t("English"), renderTranslationPanel(a, ["en"])) +
+        section(t("Bangla"), renderTranslationPanel(a, ["bn"])) +
+        section(t("Word by Word"), renderWordByWordPanel(a, { langs: ["en", "bn"] }));
+      box.querySelector("[data-ayah-nv-back]")?.focus({ preventScroll: true });
+    }
+    function closeAyahNoteViewPopup() {
+      const pop = document.getElementById("ayahNoteViewPopup");
+      if (!pop) return;
+      pop.hidden = true;
+      pop.innerHTML = "";
+      ayahActionSheetMountEl.querySelector("[data-ayah-sheet-noteview]")?.focus({ preventScroll: true });
     }
 
     /** Issue #325/#348 -- the Ayah Card, "This page" card and Unit Card
@@ -21660,6 +21873,8 @@
       if (from < 1 || from > surahMeta.ayahCount || (to !== null && (to < 1 || to > surahMeta.ayahCount))) { bookmarkNotFound(); return; }
       await goToReference(parsed.surah, from, to);
       await openNoteView(buildUnitKey.ayah(parsed.surah, from));
+      // The way-back law (decision 86): a link from another page (the Asma study page's poster) carries back=1.
+      if (new URLSearchParams(location.search).get("back") === "1" && history.length > 1) setAppReturn(t("Back"), "", () => history.back());
     }
 
     /** The Note view's own full screen -- two states, a separate mechanism

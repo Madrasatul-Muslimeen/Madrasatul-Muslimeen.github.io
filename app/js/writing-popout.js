@@ -29,12 +29,14 @@ const CSS = `
 .wp-win{display:flex;flex-direction:column;background:#fffdf8;color:#1b1b16;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,0.45);overflow:hidden;resize:both;width:min(96vw,760px);height:min(78vh,560px);min-width:min(300px,98vw);min-height:min(260px,96vh);max-width:98vw;max-height:98vh}
 .wp-full .wp-win{width:100%;height:100%;max-width:none;max-height:none;border-radius:0;resize:none}
 .wp-bar{flex:0 0 auto;display:flex;flex-direction:column;gap:4px;padding:6px 4px;background:#1F3A6E;color:#fff}
-.wp-row{display:flex;gap:4px;align-items:center;min-width:0;flex-wrap:nowrap}
-.wp-bar button{min-height:40px;min-width:40px;padding:0.3rem 0.4rem;border:1px solid rgba(255,255,255,0.35);border-radius:8px;background:rgba(255,255,255,0.12);color:#fff;font:inherit;font-size:0.95rem;line-height:1.1;white-space:nowrap;flex:0 0 auto;cursor:pointer}
+.wp-row{display:flex;gap:3px;align-items:center;min-width:0;flex-wrap:nowrap}
+@media (max-width:480px){.wp-bar .wp-tx{display:none}.wp-bar button[data-wp-mode]{padding-left:0.25rem;padding-right:0.25rem}}
+@media (max-width:380px){.wp-bar{flex-direction:row;flex-wrap:wrap;gap:3px}.wp-row{display:contents}.wp-bar .wp-sp{display:none}}
+.wp-bar button{min-height:40px;min-width:40px;padding:0.3rem 0.35rem;border:1px solid rgba(255,255,255,0.35);border-radius:8px;background:rgba(255,255,255,0.12);color:#fff;font:inherit;font-size:0.95rem;line-height:1.1;white-space:nowrap;flex:0 0 auto;cursor:pointer}
 .wp-bar button:disabled{opacity:0.4;cursor:default}
 .wp-bar button[aria-pressed="true"]{background:#B8862F;border-color:#B8862F}
 .wp-bar .wp-sp{flex:1 1 0;min-width:0}
-.wp-bar .wp-shade{min-height:40px;min-width:56px;flex:1 1 0;max-width:190px;padding:0.3rem 0.4rem;border:1px solid rgba(255,255,255,0.35);border-radius:8px;background:rgba(255,255,255,0.12);color:#fff;font:inherit;font-size:0.85rem}
+.wp-bar .wp-shade{min-height:40px;min-width:48px;flex:1 1 0;max-width:190px;padding:0.3rem 0.4rem;border:1px solid rgba(255,255,255,0.35);border-radius:8px;background:rgba(255,255,255,0.12);color:#fff;font:inherit;font-size:0.85rem}
 .wp-bar .wp-shade option{color:#1b1b16;background:#fff}
 .wp-bar .wp-shade[data-wp-lines]{flex:0 1 auto;max-width:none}
 .wp-confirm{flex:0 0 auto;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:8px 10px;background:#fff3cf;color:#4a3a10;border-bottom:2px solid #B8862F}
@@ -59,13 +61,21 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
   root.innerHTML = `<style>${CSS}</style>
     <div class="wp-win" data-wp-win>
       <div class="wp-bar">
+        <!-- Owner, 7 Oct 2026 (a photo, the empty ends of rows 1 and 2 marked): "Organise the buttons, make it in 2 row."
+             Row 1: what is written (Word / Ayah, ‹ ›, its size and its lines), then ✕. Row 2: the pen's tools, the letter style, then ⛶.
+             On a phone the tools show their icons only (names on long-press); at 320px the bar wraps into a third row. -->
         <div class="wp-row">
           <button type="button" data-wp-mode="word" aria-pressed="false">${t("Word")}</button>
           <button type="button" data-wp-mode="ayah" aria-pressed="false">${t("Ayah")}</button>
           <button type="button" data-wp="prev" aria-label="${t("Previous word")}" title="${t("Previous word")}">‹</button>
           <button type="button" data-wp="next" aria-label="${t("Next word")}" title="${t("Next word")}">›</button>
+          <button type="button" data-wp="smaller" aria-label="${t("Smaller letters")}" title="${t("Smaller letters")}">A−</button>
+          <button type="button" data-wp="bigger" aria-label="${t("Bigger letters")}" title="${t("Bigger letters")}">A+</button>
+          <select class="wp-shade" data-wp-lines aria-label="${t("Lines")}" title="${t("Lines")}">
+            <option value="trace">${t("Trace over")}</option>
+            <option value="blank">${t("Blank lines")}</option>
+          </select>
           <span class="wp-sp"></span>
-          <button type="button" data-wp="win" aria-pressed="false" aria-label="${t("Full screen")}" title="${t("Full screen")}">⛶</button>
           <button type="button" data-wp="close" aria-label="${t("Close")}" title="${t("Close")}">✕</button>
         </div>
         <div class="wp-row">
@@ -75,19 +85,13 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
           <button type="button" data-wp="clear" aria-label="${t("Clear")}" title="${t("Clear")}">🗑</button>
           <button type="button" data-wp="move" aria-pressed="false" aria-label="${t("Move")}" title="${t("Move")}">✋<span class="wp-tx"> ${t("Move")}</span></button>
           <button type="button" data-wp="more" aria-label="${t("More paper")}" title="${t("More paper")}">⬆<span class="wp-tx"> ${t("More paper")}</span></button>
-        </div>
-        <div class="wp-row">
-          <button type="button" data-wp="smaller" aria-label="${t("Smaller letters")}" title="${t("Smaller letters")}">A−</button>
-          <button type="button" data-wp="bigger" aria-label="${t("Bigger letters")}" title="${t("Bigger letters")}">A+</button>
-          <select class="wp-shade" data-wp-lines aria-label="${t("Lines")}" title="${t("Lines")}">
-            <option value="trace">${t("Trace over")}</option>
-            <option value="blank">${t("Blank lines")}</option>
-          </select>
           <select class="wp-shade" data-wp-shade aria-label="${t("Letter style")}" title="${t("Letter style")}">
             <option value="light">${t("Light")}</option>
             <option value="lighter">${t("Lighter")}</option>
             <option value="book">${t("Like the book")}</option>
           </select>
+          <span class="wp-sp"></span>
+          <button type="button" data-wp="win" aria-pressed="false" aria-label="${t("Full screen")}" title="${t("Full screen")}">⛶</button>
         </div>
       </div>
       <div class="wp-confirm" data-wp-confirm hidden>
@@ -184,7 +188,9 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
     ctx.textBaseline = "alphabetic";
     ctx.direction = "ltr";
     ctx.textAlign = "right";
-    ctx.lineWidth = Math.max(0.35, fs / 90);
+    // Owner, 7 Oct 2026: "Why the word is not in tracing/ writing font?" -- the model is drawn in the same hollow
+    // letters as the lines to trace over, in dark ink so it is still read at a glance (a thicker outline than the paper's).
+    ctx.lineWidth = Math.max(1, fs / 40);
     const rightEdge = st.mode === "word" ? Wc / 2 + L.maxW / 2 : Wc - pad;
     L.lines.forEach((line, li) => {
       const y = pad + li * lh + lh * 0.72;

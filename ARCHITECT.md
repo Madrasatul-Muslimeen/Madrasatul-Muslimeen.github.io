@@ -247,6 +247,16 @@ don't interrupt your work to acknowledge even unless I ask you. I will instruct 
 Then the queued messages are taken in order. **Only a message marked urgent, or a direct question asking for an
 answer, interrupts.** A Builder round already running continues regardless.
 
+## The way-back law (decision 86, 7 Oct 2026)
+
+The Owner: **"Make it a law for your building work to always enable coming back to a view where it came from."**
+Every control that takes the reader to another view or place (a reference, a word, an occurrence, a link to another
+page) must leave a visible way back to exactly where they were: the same view, the same place in it, and the card or
+pop-up that was open. **In review, a round that moves the reader without a way back is not accepted.** The shared
+pieces already exist: "Back to Word Card" (`renderWordCardReturnBar`) and the floating "Back to …" pill
+(`#ayahCardBackPill`, `setAppReturn()` in `quranrevival.html`); a link to another page carries `back=1` and that page
+shows a ← Back button.
+
 ## When to stop and ask the Owner
 
 Only for a real decision: an ambiguous request, a genuine "which approach",

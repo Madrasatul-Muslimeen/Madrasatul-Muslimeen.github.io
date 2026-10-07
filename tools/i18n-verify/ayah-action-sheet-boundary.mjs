@@ -627,8 +627,10 @@ check("the Mushaf renderer marks the ayah-end glyph, and ONLY that glyph, with d
 });
 
 check("quranrevival.html's shared readView/noteView click handler opens the sheet from both the Mushaf marker and the Word Card's own button", () => {
+  // Updated in place 7 Oct 2026: issue #606 passes Al-Fātiḥah's half as a second argument
+  // (openAyahActionSheet(key, half)), which the old "\)" right after the key could never match -- red on main since.
   const text = read("app/quranrevival.html");
-  assert.ok(/data-ayah-marker[\s\S]{0,120}openAyahActionSheet\(ayahMarker\.dataset\.ayahMarker\)/.test(text),
+  assert.ok(/data-ayah-marker[\s\S]{0,120}openAyahActionSheet\(ayahMarker\.dataset\.ayahMarker[,)]/.test(text),
     "the Mushaf marker tap is not wired to openAyahActionSheet");
   assert.ok(/data-word-card-ayah-action[\s\S]{0,160}openAyahActionSheet\(wordCardAyahAction\.dataset\.wordCardAyahAction\)/.test(text),
     "the Word Card's \"This āyah ⋯\" button is not wired to openAyahActionSheet");
@@ -659,7 +661,7 @@ check("quranrevival.html's Note view stamps the same number-badge button locally
   const text = read("app/quranrevival.html");
   assert.ok(/data-ayah-num-badge="\$\{currentSurahNum\}:\$\{a\.ayah\}"/.test(text),
     "the Note view's own locally-built Arabic block does not stamp a matching number badge");
-  assert.ok(/data-ayah-num-badge[\s\S]{0,120}openAyahActionSheet\(ayahNumBadge\.dataset\.ayahNumBadge\)/.test(text),
+  assert.ok(/data-ayah-num-badge[\s\S]{0,120}openAyahActionSheet\(ayahNumBadge\.dataset\.ayahNumBadge[,)]/.test(text),
     "the number badge tap is not wired to openAyahActionSheet");
 });
 

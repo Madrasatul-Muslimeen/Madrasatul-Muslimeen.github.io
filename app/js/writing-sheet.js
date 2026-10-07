@@ -36,7 +36,8 @@ const SHADES = {
 };
 // Architect review of decision 83 (7 Oct 2026): the word pinned above blank paper is the model to copy, so it
 // is read, not traced over -- dark ink as in the demo, never a tracing shade (book's #dcd8cd was ~1.2:1).
-const MODEL = { mode: "fill", color: "#3b3020" };
+// Owner, 7 Oct 2026: the pinned word in the tracing letters (hollow, as on the lines to trace over), still dark ink.
+const MODEL = { mode: "stroke", color: "#3b3020" };
 const PAPER = "#fffdf8";
 const RULE = "#cfc8b6";
 const MARKER = "#1b2440";
