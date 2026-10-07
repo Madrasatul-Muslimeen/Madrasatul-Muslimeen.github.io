@@ -58,3 +58,13 @@ h=h[:k]+'**Previous milestone: v'+outgoing[len('**Current milestone: v'):]+'\n\n
 open(H,'w').write(h)
 cl=open('CHANGELOG.md').read().rstrip('\n')+'\n\n'+changelog.strip()+'\n'
 open('CHANGELOG.md','w').write(cl)
+# 7 Oct 2026: every release is also appended to the session handover that
+# CLAUDE.md's "READ THIS SECOND" block names, so a session that forgets to write
+# a new handover still leaves an accurate list of what shipped; brief-integrity.mjs
+# fails if that handover does not name the current version. Handover rules that a
+# session must REMEMBER failed exactly when memory was short (after a summary).
+cm=open('CLAUDE.md').read()
+m=re.search(r'READ THIS SECOND\n(?:>.*\n)*?>.*?\*\*`(docs/reports/[^`]+-SESSION-HANDOVER\.md)`\*\*',cm)
+if not m: sys.exit('allocate-version: CLAUDE.md names no current handover ("READ THIS SECOND" block) -- write one first')
+open(m.group(1),'a').write(f'- **v{ver}** ({TODAY}): {short}.\n')
+print(f'recorded v{ver} in {m.group(1)}')
