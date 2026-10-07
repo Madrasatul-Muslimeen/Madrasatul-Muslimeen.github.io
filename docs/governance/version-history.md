@@ -754,3 +754,4 @@ total). Allocated by the MMSA Architect.
 09.108: the writing paper goes full screen, with More paper, lines to trace over or blank, and ‹ › to the next word (decision 83). Allocated by the MMSA Architect.
 09.109: the Word card's root and family bigger on a panel, Wiktionary above the other dictionaries, and the Lane / Hans Wehr link opening at the root (Owner, 7 Oct). Allocated by the MMSA Architect.
 09.110: Explore's Ayah numbers round the Surah wheel upright, 12 px and never colliding (decision 84). Allocated by the MMSA Architect.
+09.111: 🗑 on every bookmark and folder in the Bookmark menu, with Undo; nothing is erased (Owner, 7 Oct). Allocated by the MMSA Architect.
