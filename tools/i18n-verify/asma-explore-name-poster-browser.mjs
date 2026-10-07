@@ -44,16 +44,20 @@ for (const lang of ["en", "bn"]) {
       if (!panel) return null;
       const r = panel.getBoundingClientRect(), w = wheel.getBoundingClientRect();
       return { inWheelSpace: wheel.contains(panel), w: Math.round(r.width), h: Math.round(r.height), shown: r.width > 0 && r.height > 0,
-        ar: panel.querySelector(".poster-ar")?.textContent.trim(), inside: r.left >= w.left - 1 && r.right <= w.right + 1,
+        // Updated in place 7 Oct 2026: the true-copy poster (decision 85) marks its Arabic [data-poster-arabic].
+        ar: (panel.querySelector("[data-poster-arabic]") ?? panel.querySelector(".poster-ar"))?.textContent.trim(),
+        inside: r.left >= w.left - 1 && r.right <= w.right + 1,
         over: document.documentElement.scrollWidth - document.documentElement.clientWidth, hint: document.getElementById("asmaXHint")?.textContent.trim() };
     });
-    check(`${tag} choosing Ar-Rahman shows its poster in the wheel's space, Arabic "الرَّحْمَٰن"`, !!p && p.inWheelSpace && p.shown && /الرَّحْم/.test(p.ar ?? ""), JSON.stringify(p));
+    // Updated in place 7 Oct 2026 (decision 85): the poster writes the archive poster's Arabic, الرَّحْمٰنُ.
+    check(`${tag} choosing Ar-Rahman shows its poster in the wheel's space, Arabic "الرَّحْمٰنُ"`, !!p && p.inWheelSpace && p.shown && /الرَّحْم/.test(p.ar ?? ""), JSON.stringify(p));
     check(`${tag} the poster fits its space (no wider than it), no sideways scroll`, !!p && p.inside && p.w <= 320 && p.over <= 0, JSON.stringify(p));
     check(`${tag} the hint says to tap the poster`, p?.hint === (lang === "bn" ? "পোস্টারটি বড় করে দেখতে ট্যাপ করুন।" : "Tap the poster to see it full size."), p?.hint);
     if (width === 1300 && lang === "en" || width === 390 && lang === "bn") await page.screenshot({ path: `${SHOT_DIR}/asma-explore-poster-${lang}-${width}.png` });
     await page.click("#asmaXPosterPanel").catch(() => {});
     await page.waitForTimeout(300);
-    const open = await page.evaluate(() => { const o = document.getElementById("asmaXPosterOverlay") || document.querySelector(".open .asma-poster-standalone")?.closest("[id]"); return !!document.querySelector(".open .asma-poster-standalone"); });
+    // Updated in place 7 Oct 2026 (decision 85): the full-size poster is .ahp-standalone.
+    const open = await page.evaluate(() => !!document.querySelector("#asmaXPosterOverlay.open .ahp-standalone"));
     check(`${tag} tapping the poster opens it full size`, open);
     await ctx.close();
   }

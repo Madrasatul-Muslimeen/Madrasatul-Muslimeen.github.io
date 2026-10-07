@@ -2054,7 +2054,7 @@
   }
   /* Decision 43 -- the poster in Explore's wheel space at the Name level:
      sized to the space (never wider than the wheel's own area), centred. */
-  .asmax-poster-panel { display: block; margin: 0.5rem auto; padding: 0; border: 0; background: none; cursor: zoom-in; width: min(320px, 86%); }
+  .asmax-poster-panel { display: block; margin: 0.5rem auto; padding: 0; border: 0; background: none; cursor: zoom-in; width: min(320px, 86vw); } /* vw, not %: the wheel's space sizes to its content, and the true-copy poster (decision 85) has none in flow */
   .asmax-poster-panel .asma-poster-explore { width: 100%; box-sizing: border-box; }
   .poster-eyebrow { font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: #c9a24b; }
   .poster-main { margin: 0.6rem 0; }
@@ -6277,6 +6277,7 @@
       resolveAsmaEntry, getAsmaCollectionsDoc, saveAsmaCollections,
     } from "./js/asma-collections.js";
     import { asmaEntryDisplayName, asmaEntryMeaningText, renderAsmaCollectionListHtml, renderAsmaXrefBlock, renderAsmaPosterHtml, renderAsmaBelongsToHtml } from "./js/asma-renderer.js";
+    import { fitAsmaPosters, wireAsmaPosterRefs } from "./js/asma-poster.js";
     import { wireDragReorder } from "./js/drag-reorder.js";
     import { parseAsmaRef } from "./js/asma-ref-parser.js";
     import { listEnrollmentsForPerson, programSubjectMapFromEnrollments } from "./js/course-offers.js";
@@ -14263,6 +14264,7 @@
       // size (the same overlay as the card's own 🖼 Poster button).
       asmaXWheelContainerEl.innerHTML = `<button type="button" class="asmax-poster-panel" id="asmaXPosterPanel" aria-label="${escapeHtml(t("Poster"))}: ${escapeHtml(asmaEntryDisplayName(entry))}">${renderAsmaPosterHtml(entry, "explore")}</button>`;
       document.getElementById("asmaXPosterPanel").addEventListener("click", () => openAsmaXPoster(entry));
+      fitAsmaPosters(asmaXWheelContainerEl);
       asmaXLegendContainerEl.innerHTML = "";
       asmaXHintEl.textContent = t("Tap the poster to see it full size.");
     }
@@ -14278,8 +14280,13 @@
     }
 
     function openAsmaXPoster(entry) {
-      asmaXPosterMountEl.innerHTML = renderAsmaPosterHtml(entry, "standalone");
+      // Decision 85: full size, each reference opens its Ayah here or its Hadith in the Hadith library.
+      asmaXPosterMountEl.innerHTML = renderAsmaPosterHtml(entry, "standalone", { interactive: true });
       asmaXPosterOverlayEl.classList.add("open");
+      fitAsmaPosters(asmaXPosterMountEl);
+      wireAsmaPosterRefs(asmaXPosterMountEl, {
+        onQuran: (surah, ayah) => { closeAsmaXPoster(); goToAyahFromAsmaX(surah, ayah, asmaXGroupId, asmaXNumber); },
+      });
     }
     function closeAsmaXPoster() {
       asmaXPosterOverlayEl.classList.remove("open");

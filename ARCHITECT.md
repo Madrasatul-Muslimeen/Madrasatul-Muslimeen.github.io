@@ -239,6 +239,14 @@ Owner comment starting `/mmsa-task` fires a Claude Routine, which acts under the
 
 ---
 
+## The Owner's working rule on new messages (decisions 73, 74, 85)
+
+**While a task is running, a new message from the Owner is not read, not acted on and not even acknowledged until
+the running task is finished** (decision 85, 7 Oct 2026: "don't look at them until you finish your running task,
+don't interrupt your work to acknowledge even unless I ask you. I will instruct you if something is urgent").
+Then the queued messages are taken in order. **Only a message marked urgent, or a direct question asking for an
+answer, interrupts.** A Builder round already running continues regardless.
+
 ## When to stop and ask the Owner
 
 Only for a real decision: an ambiguous request, a genuine "which approach",

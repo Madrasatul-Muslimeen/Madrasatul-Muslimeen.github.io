@@ -2530,6 +2530,7 @@ export const BN = {
   "Rename folder": "ফোল্ডারের নাম বদলান",
   // The Owner, 7 Oct 2026: 🗑 on folders and bookmarks in the Bookmark menu (nothing is erased; Undo).
   "Remove folder": "ফোল্ডার সরান",
+  "That passage is not in this book.": "এই অংশটি এই বইয়ে নেই।",
   "Removed “{name}”": "“{name}” সরানো হয়েছে",
   "Removed the folder “{name}”. Its bookmarks are now at the top.": "“{name}” ফোল্ডারটি সরানো হয়েছে। এর বুকমার্কগুলো এখন উপরে আছে।",
   "Couldn't save the change: {error}": "পরিবর্তনটি সংরক্ষণ করা যায়নি: {error}",
