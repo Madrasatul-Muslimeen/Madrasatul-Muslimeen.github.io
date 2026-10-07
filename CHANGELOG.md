@@ -19858,3 +19858,12 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
 - **Checks:**
   - explore-coverage-browser 36/0 (three mutations each fail it), lemma-progress-real-function emulator 1/0 (deployment candidate and firestore.rules), lemma-levels-browser 240/0
   - quran-lemma-progress-boundary/model/numbers/rendered, word-card basic/depth/wbw rebuild, explore-* suites, unit-rings 106/0, quran-my-status 248/0, phone-width-overflow 217/0, rules-authorisation-executable 63/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
+
+## v09.106 — 2026-10-07 — Mushaf page: every line one even height
+
+The Owner, 7 Oct 2026 (a screenshot of At-Takwir's page, the gaps around the Surah banner circled; then "Page gap: go ahead" on `docs/reference/2026-10-07-page-gaps-demo.html`).
+
+- `app/quranrevival.html`: `.hifz-surah-header.glyph-loaded` and `.hifz-basmallah` are one text line tall (`height: 14.26cqw`, no padding), with the banner glyph and the Bismillah centred in their lines. The banner stays edge to edge (28 Sep). At 390px the banner's line was 123px against a 49px text line.
+- New `tools/i18n-verify/mushaf-even-lines-browser.mjs`: 48/0 at 390, 820 and 1280px on pages 586 and 2; the mutations `old-banner` and `old-bism` each fail it.
+- Decision 83 recorded ("Go ahead with writing"), Builder issue #627, and the demo `docs/reference/2026-10-07-writing-full-screen-demo.html` updated with ‹ ›.
+- Regression: bismillah-label 34/0, mushaf-approach-cards 114/0, mushaf-no-sideways-overflow 648/0, mushaf-page-ref 129/0, mushaf-tajweed-font 96/0, quran-mushaf-audio-follow-scroll 25/0, quran-word-card-mushaf-scroll 59/0, read-window 65/0, writing-sheet 206/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline: 22g × 3 archive.org, 31e ERR_CERT).

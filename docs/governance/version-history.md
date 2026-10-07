@@ -749,3 +749,4 @@ total). Allocated by the MMSA Architect.
 09.103: Link previews. Allocated by the MMSA Architect.
 09.104: Pictures in Notes. Allocated by the MMSA Architect.
 09.105: Explore words-known line. Allocated by the MMSA Architect.
+09.106: the Mushaf page's even lines. Allocated by the MMSA Architect.
