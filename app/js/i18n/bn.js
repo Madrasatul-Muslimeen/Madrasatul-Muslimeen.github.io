@@ -3626,8 +3626,9 @@ export const BN = {
   "Exit full screen": "পূর্ণ স্ক্রিন থেকে বেরিয়ে আসুন",
   "More paper": "আরও কাগজ",
   "Lines": "লাইন",
-  "Lines: to trace over": "লাইন: উপর দিয়ে লিখতে",
-  "Lines: blank": "লাইন: খালি",
+  // Architect review (7 Oct 2026): the short forms fit a 320px phone; "Lines" stays the box's spoken name.
+  "Trace over": "উপর দিয়ে লিখতে",
+  "Blank lines": "খালি লাইন",
   "Previous Ayah": "আগের আয়াত",
   "Next Ayah": "পরের আয়াত",
   "Smaller window": "উইন্ডো ছোট করুন",
