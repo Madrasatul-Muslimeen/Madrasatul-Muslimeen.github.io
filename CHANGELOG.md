@@ -19844,3 +19844,10 @@ The Owner, decision 61: "No issue with permission, you can build." Issue #533; d
 - **Checks:**
   - journey-link-preview-browser 192/0 (seven mutations each fail it), note-link-preview 43/0, every journey-* suite green
   - note-sanitize-boundary 13/0, phone-width-overflow 217/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
+
+## v09.104 — 7 Oct 2026 — Pictures in Notes (private, made small on the device)
+
+- **What:** Owner decisions 72 and 81. Builder round #620 (PR #624): `note-image-path.js`, `note-image.js` (new), `note-sanitize.js` (Note pictures by path only), `note-window.js` (🖼), `journey-map.html`/`notes.html` (the image host, loaded on first use), the Storage stub, `bn.js`, the Storage Rules candidate. Architect review: `resource == null` and `<= 400 KB` in the Rules, proven in the Storage emulator (`tools/firestore-emulator/note-images-storage*`); pictures are blocks; the Owner's four steps (with CORS). Nothing is deployed: pictures work once the Owner publishes the Rules.
+- **Checks:**
+  - journey-note-images-browser 288/0 (five mutations each fail it), Storage emulator 15/0 with 7 Rules mutations caught, note-image-sanitize, note-image-storage-rules 7/0
+  - every journey-* suite green, note-sanitize-boundary, rules-authorisation-executable, phone-width-overflow 217/0, stub-parity, behaviour 1003/4 (sandbox baseline)

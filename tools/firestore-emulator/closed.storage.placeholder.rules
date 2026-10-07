@@ -1,0 +1,4 @@
+// Placeholder for the Storage emulator: everything closed. Each test loads the Rules it is proving
+// (initializeTestEnvironment), so this file is never what a test runs against.
+rules_version = '2';
+service firebase.storage { match /b/{bucket}/o { match /{allPaths=**} { allow read, write: if false; } } }
