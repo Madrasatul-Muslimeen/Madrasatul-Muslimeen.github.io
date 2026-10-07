@@ -28,12 +28,14 @@ canvas { display: block; }
 .card:not(.full) .pos { display: none; }
 </style>
 
-<div class="intro"><b>Demo, 7 Oct 2026.</b> Tap <b>⛶ Full screen</b>. Choose <b>Lines: to trace over</b> or <b>Lines: blank</b>. Write with your finger. When the space is used, tap <b>⬆ More paper</b> (or ✋ and slide the paper up) and keep writing. Nothing is saved.</div>
+<div class="intro"><b>Demo, 7 Oct 2026.</b> Tap <b>⛶ Full screen</b>. Use <b>‹ ›</b> for the previous or next word (or Ayah). Choose <b>Lines: to trace over</b> or <b>Lines: blank</b>. Write with your finger. When the space is used, tap <b>⬆ More paper</b> (or ✋ and slide the paper up) and keep writing. Nothing is saved.</div>
 
 <section class="card" id="card" aria-label="Writing practice">
   <div class="bar" role="toolbar" aria-label="Writing tools">
     <button id="bWord" aria-pressed="true">Word</button>
     <button id="bAyah" aria-pressed="false">Ayah</button>
+    <button id="bPrev" aria-label="Previous word" title="Previous word">‹</button>
+    <button id="bNext" aria-label="Next word" title="Next word">›</button>
     <button id="bPen" aria-pressed="true" title="Pen" aria-label="Pen">✒</button>
     <button id="bErase" aria-pressed="false" title="Eraser" aria-label="Eraser">🧽</button>
     <button id="bMove" aria-pressed="false" title="Move the paper" aria-label="Move the paper">✋</button>
@@ -49,9 +51,15 @@ canvas { display: block; }
 </section>
 
 <script>
-const WORD = "وَٱلْقُرْءَانِ", AYAH = "يسٓ ﴿١﴾ وَٱلْقُرْءَانِ ٱلْحَكِيمِ ﴿٢﴾";
+const YASEEN=[{"n":1,"ar":"بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ يسٓ","w":["يسٓ"]},{"n":2,"ar":"وَٱلْقُرْءَانِ ٱلْحَكِيمِ","w":["وَٱلْقُرْءَانِ","ٱلْحَكِيمِ"]},{"n":3,"ar":"إِنَّكَ لَمِنَ ٱلْمُرْسَلِينَ","w":["إِنَّكَ","لَمِنَ","ٱلْمُرْسَلِينَ"]},{"n":4,"ar":"عَلَىٰ صِرَٰطٍۢ مُّسْتَقِيمٍۢ","w":["عَلَىٰ","صِرَٰطٍۢ","مُّسْتَقِيمٍۢ"]},{"n":5,"ar":"تَنزِيلَ ٱلْعَزِيزِ ٱلرَّحِيمِ","w":["تَنزِيلَ","ٱلْعَزِيزِ","ٱلرَّحِيمِ"]},{"n":6,"ar":"لِتُنذِرَ قَوْمًۭا مَّآ أُنذِرَ ءَابَآؤُهُمْ فَهُمْ غَٰفِلُونَ","w":["لِتُنذِرَ","قَوْمًۭا","مَّآ","أُنذِرَ","ءَابَآؤُهُمْ","فَهُمْ","غَـٰفِلُونَ"]},{"n":7,"ar":"لَقَدْ حَقَّ ٱلْقَوْلُ عَلَىٰٓ أَكْثَرِهِمْ فَهُمْ لَا يُؤْمِنُونَ","w":["لَقَدْ","حَقَّ","ٱلْقَوْلُ","عَلَىٰٓ","أَكْثَرِهِمْ","فَهُمْ","لَا","يُؤْمِنُونَ"]},{"n":8,"ar":"إِنَّا جَعَلْنَا فِىٓ أَعْنَٰقِهِمْ أَغْلَٰلًۭا فَهِىَ إِلَى ٱلْأَذْقَانِ فَهُم مُّقْمَحُونَ","w":["إِنَّا","جَعَلْنَا","فِىٓ","أَعْنَـٰقِهِمْ","أَغْلَـٰلًۭا","فَهِىَ","إِلَى","ٱلْأَذْقَانِ","فَهُم","مُّقْمَحُونَ"]}];
+// The Owner, 7 Oct 2026: "need to practice next word, enable the next word to appear." ‹ › step word by word (or Ayah by
+// Ayah in Ayah mode) through Yaseen; each word keeps its own writing, so stepping back shows what was written there.
+const units = { word: YASEEN.flatMap((a) => a.w.map((w, i) => ({ text: w, ref: `Yaseen ${a.n} · word ${i + 1}` }))), ayah: YASEEN.map((a) => ({ text: a.ar, ref: `Yaseen ${a.n}` })) };
+let mode = "word", pos = { word: 1, ayah: 1 };
+const inkOf = new Map();
+const WORD = units.word[1].text;
 const card = document.getElementById("card"), wrap = document.getElementById("wrap"), cv = document.getElementById("cv"), ctx = cv.getContext("2d"), bg = document.getElementById("bg"), bctx = bg.getContext("2d");
-let guide = WORD, linesMode = "trace", tool = "pen", strokes = [], cur = null, lineH = 220, lines = 30;
+let guide = units.word[1].text, linesMode = "trace", tool = "pen", strokes = [], cur = null, lineH = 220, lines = 30;
 const $ = (id) => document.getElementById(id);
 
 function size() {
@@ -68,7 +76,7 @@ function size() {
 function drawPaper() {
   const ctx = bctx, w = bg.clientWidth;
   ctx.fillStyle = "#fffdf6"; ctx.fillRect(0, 0, w, lineH * lines);
-  const fs = guide === WORD ? Math.min(w * 0.22, lineH * 0.42) : Math.min(w * 0.085, lineH * 0.2);
+  const fs = mode === "word" ? Math.min(w * 0.22, lineH * 0.42) : Math.min(w * 0.085, lineH * 0.2);
   ctx.textAlign = "center"; ctx.direction = "rtl";
   for (let i = 0; i < lines; i++) {
     const base = i * lineH + lineH * 0.62;
@@ -97,14 +105,25 @@ cv.addEventListener("pointerup", end); cv.addEventListener("pointercancel", end)
 function setTool(t) { tool = t; for (const [id, v] of [["bPen", "pen"], ["bErase", "erase"], ["bMove", "move"]]) $(id).setAttribute("aria-pressed", String(t === v)); wrap.className = "paperwrap " + (t === "move" ? "move" : "pen"); }
 $("bPen").onclick = () => setTool("pen"); $("bErase").onclick = () => setTool("erase"); $("bMove").onclick = () => setTool(tool === "move" ? "pen" : "move");
 $("bUndo").onclick = () => { strokes.pop(); drawInk(); };
-$("bWord").onclick = () => { guide = WORD; $("bWord").setAttribute("aria-pressed", "true"); $("bAyah").setAttribute("aria-pressed", "false"); syncModel(); drawPaper(); };
-$("bAyah").onclick = () => { guide = AYAH; $("bAyah").setAttribute("aria-pressed", "true"); $("bWord").setAttribute("aria-pressed", "false"); syncModel(); drawPaper(); };
+function show() {
+  const list = units[mode], u = list[pos[mode]];
+  guide = u.text; strokes = inkOf.get(`${mode}:${pos[mode]}`) ?? []; inkOf.set(`${mode}:${pos[mode]}`, strokes);
+  $("bWord").setAttribute("aria-pressed", String(mode === "word")); $("bAyah").setAttribute("aria-pressed", String(mode === "ayah"));
+  $("bPrev").disabled = pos[mode] === 0; $("bNext").disabled = pos[mode] === list.length - 1;
+  const what = mode === "word" ? "word" : "Ayah";
+  $("bPrev").setAttribute("aria-label", `Previous ${what}`); $("bNext").setAttribute("aria-label", `Next ${what}`);
+  $("pos").textContent = u.ref; wrap.scrollTop = 0; syncModel(); drawPaper(); drawInk();
+}
+$("bWord").onclick = () => { mode = "word"; show(); };
+$("bAyah").onclick = () => { mode = "ayah"; show(); };
+$("bPrev").onclick = () => { if (pos[mode] > 0) { pos[mode]--; show(); } };
+$("bNext").onclick = () => { if (pos[mode] < units[mode].length - 1) { pos[mode]++; show(); } };
 $("bFull").onclick = () => { const on = !card.classList.contains("full"); card.classList.toggle("full", on); $("bFull").setAttribute("aria-pressed", String(on)); $("bFull").textContent = on ? "✕" : "⛶ Full screen"; $("bFull").setAttribute("aria-label", on ? "Exit full screen" : "Full screen"); $("bFull").title = on ? "Exit full screen" : ""; requestAnimationFrame(size); };
 // ⬆ More paper: slides the paper up by one line, so the next fresh line is in front of you. The pen stays the pen.
 $("bMore").onclick = () => wrap.scrollBy({ top: lineH, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
-wrap.addEventListener("scroll", () => { $("pos").textContent = `Line ${Math.round(wrap.scrollTop / lineH) + 1} of ${lines}`; });
-function syncModel() { const m = $("model"); m.hidden = linesMode !== "blank"; m.textContent = guide; m.style.fontSize = guide === WORD ? "40px" : "24px"; }
+wrap.addEventListener("scroll", () => { $("pos").textContent = `${units[mode][pos[mode]].ref} · line ${Math.round(wrap.scrollTop / lineH) + 1}`; });
+function syncModel() { const m = $("model"); m.hidden = linesMode !== "blank"; m.textContent = guide; m.style.fontSize = mode === "word" ? "40px" : "24px"; }
 $("selLines").onchange = (e) => { linesMode = e.target.value; syncModel(); size(); };
 addEventListener("resize", size);
-document.fonts?.ready.then(size); size();
+document.fonts?.ready.then(size); size(); show();
 </script>
