@@ -14,6 +14,15 @@ decision. The standing rules that still bind are kept in `CLAUDE.md` itself
 
 ---
 
+**Previous milestone: v09.105 on `main`** (7 Oct 2026 — **Explore's "words known" line: shows at once, and reads word progress in 6 requests instead of hundreds**).
+- **What** (the Owner, 7 Oct 2026: "something is keep loading for sometime now. Fix."; Owner decision 82: "Loading progress: 1"):
+  - `quranrevival.html` `renderExploreArabicCoverage`: the Surah's figure paints as soon as its own two lane queries answer, marked "still counting the words known elsewhere in the Qur'an…", and completes behind; a late answer never paints over a Surah the reader has left.
+  - `quran-lemma-progress-data.js` `primeAllLemmaProgress()`: one person's lemma progress per level in two equality queries (tenant, person, level; no index), cached for the visit — An-Naazi'aat went from 436–711 reads to 6. Decision 82 is the Owner's exception to the load-speed row "never all records for a person", for lemma progress only. Proven in the Firestore emulator against `firestore.rules`: allowed for the learner and guardian, refused for an unrelated person and another tenant.
+  - Decision 82 recorded; the Explore, writing-paper and page-gaps demos saved in `docs/reference/2026-10-07-*`.
+- **Checks:**
+  - explore-coverage-browser 36/0 (mutations no-early, paint-stale, per-word each fail it), lemma-progress-real-function emulator 1/0 on both Rules files, lemma-levels-browser 240/0 (its Basic group-mate check updated in place: Achieved since v09.90, red on main before), quran-lemma-progress-* 8/34/24/77, word-card rebuild suites, explore-* suites, quran-my-status 248/0, rules-authorisation-executable 63/0, stub-parity 4/0, behaviour 1003/4 (sandbox baseline)
+- **With the Owner:** Explore → Quran → any Surah: the "words known" line shows straight away.
+
 **Previous milestone: v09.104 on `main`** (7 Oct 2026 — **Pictures in Notes: made small on the device, private in Firebase Storage (switched on when the Owner publishes the Rules)**).
 - **What** (Owner decisions 72 and 81; Builder round #620):
   - `note-image-path.js` (new, pure): the one path a Note picture may have, `noteImages/{uid}/{id}.webp`, the widths, and the size step-down (WebP, about 200 KB, at most 400 KB).
