@@ -212,6 +212,22 @@ function escapeHtml(value) {
   return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+/** The Arabic Almanac (ejtaal.net: Lane, Hans Wehr and others) opened AT the root's page. Owner, 7 Oct 2026: the
+ *  link "doesn't take user to the page where the word is located". It sent `#q=` + the percent-encoded Arabic, and
+ *  the site reads `location.hash` still encoded, so it searched for "%ض9%86…" and opened at page one. Its `#bwq=`
+ *  search takes plain ASCII letters in its own code (e for ع, v for ث, x for خ, g for غ, $ for ش, * for ذ; every
+ *  alif and hamza is A), which needs no encoding: `#bwq=nfs` opens Hans Wehr p. 1168 and Lane p. 2924 at نفس. */
+const EJTAAL_CODE = {
+  "ا": "A", "أ": "A", "إ": "A", "آ": "A", "ٱ": "A", "ء": "A", "ؤ": "A", "ئ": "A",
+  "ب": "b", "ت": "t", "ث": "v", "ج": "j", "ح": "H", "خ": "x", "د": "d", "ذ": "*", "ر": "r", "ز": "z",
+  "س": "s", "ش": "$", "ص": "S", "ض": "D", "ط": "T", "ظ": "Z", "ع": "e", "غ": "g", "ف": "f", "ق": "q",
+  "ك": "k", "ل": "l", "م": "m", "ن": "n", "ه": "h", "ة": "h", "و": "w", "ي": "y", "ى": "y",
+};
+export function ejtaalUrl(root) {
+  const code = [...String(root ?? "")].map((c) => EJTAAL_CODE[c] ?? "").join("");
+  return code ? `https://ejtaal.net/aa/#bwq=${code}` : null;
+}
+
 function safeHttpsUrl(value) {
   if (typeof value !== "string") return null;
   try {
@@ -821,9 +837,13 @@ function dictionaryBox(word, context, text, formatNumber = String) {
   const wbw = (bn ? word.translation?.bn : word.translation?.en) || (bn ? text.meaningUnavailableBn : text.meaningUnavailableEn);
   const root = word.morphology?.root;
   const links = root
-    ? `<div class="word-card-dict-links"><a class="word-card-dict-link" data-word-card-dict-link="corpus" href="https://corpus.quran.com/qurandictionary.jsp?q=${encodeURIComponent(arabicToBuckwalter(root))}" target="_blank" rel="noopener noreferrer">${escapeHtml(text.quranicCorpus)}</a><a class="word-card-dict-link" data-word-card-dict-link="ejtaal" href="https://ejtaal.net/aa/#q=${encodeURIComponent(root)}" target="_blank" rel="noopener noreferrer">${escapeHtml(text.laneHansWehr)}</a></div>`
+    ? `<div class="word-card-dict-links"><a class="word-card-dict-link" data-word-card-dict-link="corpus" href="https://corpus.quran.com/qurandictionary.jsp?q=${encodeURIComponent(arabicToBuckwalter(root))}" target="_blank" rel="noopener noreferrer">${escapeHtml(text.quranicCorpus)}</a><a class="word-card-dict-link" data-word-card-dict-link="ejtaal" href="${escapeHtml(ejtaalUrl(root) ?? "https://ejtaal.net/aa/")}" target="_blank" rel="noopener noreferrer">${escapeHtml(text.laneHansWehr)}</a></div>`
     : "";
   const wiktionaryUrl = entry && entry.c !== "fixed" ? safeHttpsUrl(entry.u) : null;
+  // Owner, 7 Oct 2026: Wiktionary (where the meaning above comes from) sits ABOVE the other two dictionaries.
+  const wikiLink = wiktionaryUrl
+    ? `<div class="word-card-dict-links word-card-dict-links-wiki"><a class="word-card-dict-link" data-word-card-dict-link="wiktionary" href="${escapeHtml(wiktionaryUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(text.creditWiktionary)} ↗</a></div>`
+    : "";
   const credit = entry && entry.c !== "fixed"
     ? `${escapeHtml(text.creditMeaning)} ${wiktionaryUrl ? `<a href="${escapeHtml(wiktionaryUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(text.creditWiktionary)}</a>` : escapeHtml(text.creditWiktionary)} ${escapeHtml(text.creditWiktionaryLicence)} ${escapeHtml(text.linksOpenOther)}`
     : escapeHtml(text.linksOpenOther);
@@ -832,7 +852,7 @@ function dictionaryBox(word, context, text, formatNumber = String) {
     <div class="word-card-dict-label">${escapeHtml(bn ? text.dictionaryMeaningBn : text.dictionaryMeaning)}</div>${bnHtml}${meaningHtml}
     <div class="word-card-dict-label">${escapeHtml(text.inThisAyah)}</div>
     <p class="word-card-dict-wbw" lang="${bn ? "bn" : "en"}">${escapeHtml(wbw)}</p>
-    ${links}
+    ${wikiLink}${links}
     <p class="word-card-dict-credit">${bnCredit}${credit}</p>
   </div>`;
 }
@@ -980,7 +1000,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
         lemmaForms: context.lemmaForms, verbForms: context.verbForms, verbFormsFailed: context.verbFormsFailed, dictionaryLookup: context.dictionaryLookup, ayahWords: context.ayahWords, ayahFeatures: context.ayahFeatures,
         ayahNumber: context.ayahNumber, surahNumber: context.surahNumber,
         nahw: context.needsSource?.nahw, furuq: context.needsSource?.furuq, mufradat: context.needsSource?.mufradat,
-        laneUrl: layers.root ? `https://ejtaal.net/aa/#q=${encodeURIComponent(layers.root)}` : null,
+        laneUrl: layers.root ? ejtaalUrl(layers.root) : null,
         dictionaryHtml: dictionaryBox(word, context, text, formatNumber),
         formsHtml: formsSection(layers, context, text, formatNumber, { expandable: true }),
       },
