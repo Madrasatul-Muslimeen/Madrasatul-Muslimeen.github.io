@@ -21,7 +21,7 @@ const check = (n, ok, d = "") => {
 const mutate = (process.argv.find((a) => a.startsWith("--mutate=")) ?? "").slice(9);
 const MUTATIONS = {
   rotation: ['b.el.setAttribute("x", b.x.toFixed(2));', 'b.el.setAttribute("x", b.x.toFixed(2)); b.el.setAttribute("transform", `rotate(${Number(b.el.dataset.angle) - 90} ${b.x.toFixed(2)} ${b.y.toFixed(2)})`);'],
-  eightpx: ["const next = minPx / scale;", "const next = 8 / scale;"],
+  eightpx: ["const next = (minPx * 1.02) / scale;", "const next = 8 / scale;"],
   every: ["for (const k of [1, 2, 5, 10, 20, 50, 100]) {", "for (const k of [1]) {"],
 };
 if (mutate && !MUTATIONS[mutate]) throw new Error(`unknown --mutate=${mutate}`);
@@ -47,6 +47,11 @@ async function openExplore(lang, width) {
   return { ctx, page };
 }
 async function goSurah(page, n) {
+  if (await page.evaluate(() => !!document.querySelector('[data-aa="back"]'))) { // inside a Surah already: back to the Whole Qur'an first
+    await page.click('[data-aa="back"]', { timeout: 8000 });
+    await page.waitForFunction(() => !document.querySelector(".wheel-seg-num-up") && !!document.querySelector('#exploreWheelContainer .wheel-seg[data-ring-kind="surah"], #exploreWheelContainer .wheel-seg'), null, { timeout: 15000 });
+    await page.waitForTimeout(300);
+  }
   await page.evaluate((k) => {
     const segs = [...document.querySelectorAll("#exploreWheelContainer .wheel-seg")].filter((s) => s.dataset.key === String(k) && (!s.dataset.ringKind || s.dataset.ringKind === "surah"));
     segs[0]?.dispatchEvent(new MouseEvent("click", { bubbles: true }));

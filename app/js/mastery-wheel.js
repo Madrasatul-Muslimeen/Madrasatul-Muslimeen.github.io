@@ -96,6 +96,7 @@ function ringNumberRotation(angleDeg) {
  *  the real box of a label (getBBox) and the real screen scale are only known there. */
 export function uprightNumbersMarkup(nums, { cx, cy, r0, minPx }) {
   const texts = nums
+    .filter(({ text }) => String(text ?? "").trim() !== "") // a unit with no number (the Bismillah slice) prints none
     .map(({ angle, text }) => {
       const p = polarToCartesian(cx, cy, r0 + 8, angle);
       return `<text class="wheel-seg-num wheel-seg-num-up" data-angle="${angle}" x="${p.x}" y="${p.y}" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">${text}</text>`;
@@ -120,7 +121,7 @@ export function fitUprightNumbers(root) {
       const px = svg.getBoundingClientRect().width;
       if (!(px > 0)) return; // not laid out (hidden); a later call will fit it
       const scale = px / (2 * half); // screen px per svg unit
-      const next = minPx / scale;
+      const next = (minPx * 1.02) / scale; // 2% over, so the last viewBox widening can never leave it under minPx
       if (pass > 0 && Math.abs(next - fs) < 0.05) break;
       fs = next;
       for (const el of all) el.style.fontSize = `${fs.toFixed(2)}px`;
@@ -133,6 +134,14 @@ export function fitUprightNumbers(root) {
         const x = cx + r * Math.sin(ang), y = cy - r * Math.cos(ang);
         return { el, x, y, w, h };
       });
+      // The wheel is a circle: the first and the last Ayah sit side by side across 12 o'clock and, on a long Surah,
+      // are closer than their own widths. Both must show, so each steps sideways off the axis (its y is unchanged,
+      // so neither moves onto a slice) until they touch no more.
+      const first = boxes[0], lastBox = boxes[boxes.length - 1];
+      if (boxes.length > 1 && Math.abs(first.x - lastBox.x) < (first.w + lastBox.w) / 2 && Math.abs(first.y - lastBox.y) < (first.h + lastBox.h) / 2) {
+        first.x = Math.max(first.x, cx + first.w / 2 + 1);
+        lastBox.x = Math.min(lastBox.x, cx - lastBox.w / 2 - 1);
+      }
       let need = half0;
       for (const b of boxes) need = Math.max(need, Math.abs(b.x - cx) + b.w / 2 + 2, Math.abs(b.y - cy) + b.h / 2 + 2);
       half = Math.ceil(need);
