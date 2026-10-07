@@ -65,6 +65,7 @@
 import {
   getBookmarks, rootFolders, childFolders, bookmarksInFolder, unfiledBookmarks, groupBookmarksByPerson,
   groupBookmarksByModule, livePresets, renameFolder, saveFolderOrder, lastPlaceOf, lastActOf, markBookmarkUsed,
+  setSavedBookmarkRemoved, setFolderRemoved,
 } from "./bookmarks.js";
 import { MODULE_PAGES, MODULE_LABELS } from "./continue-strip.js";
 import {
@@ -111,7 +112,11 @@ function bookmarkLinkHtml(b) {
   if (!href) return "";
   const at = linkCtx.times ? lastActOf(linkCtx.doc, b) : null;
   const when = at ? `<small class="nav-bm-when" data-bm-when>${escapeHtml(bookmarkTimeText(at))}</small>` : "";
-  return `<a class="nav-bm-link nav-bm-item" data-bm-open-id="${escapeHtml(b.id)}" href="${href}"><span class="nav-bm-mark" aria-hidden="true">🔖</span><span class="nav-bm-name">${escapeHtml(b.name)}</span>${when}</a>`;
+  // The Owner, 7 Oct 2026 (a screenshot of this list): "Enable bookmark n folder delete here (handy)". A 🗑 on every
+  // bookmark: it is only marked removed (I4, D6), Undo is offered at once, and Manage bookmarks can restore it later.
+  const name = escapeHtml(b.name);
+  return `<div class="nav-bm-row" data-bm-row-id="${escapeHtml(b.id)}"><a class="nav-bm-link nav-bm-item" data-bm-open-id="${escapeHtml(b.id)}" href="${href}"><span class="nav-bm-mark" aria-hidden="true">🔖</span><span class="nav-bm-name">${name}</span>${when}</a>` +
+    `<button type="button" class="nav-bm-del" data-bm-remove-bookmark="${escapeHtml(b.id)}" aria-label="${escapeHtml(t("Remove bookmark"))}: ${name}" title="${escapeHtml(t("Remove bookmark"))}">🗑</button></div>`;
 }
 
 // The Owner, 5 Oct 2026: "Place a back button to go where bookmark is clicked
@@ -268,9 +273,18 @@ function folderNodeHtml(bookmarksDoc, folder, depth, expanded) {
     children.map((f) => folderNodeHtml(bookmarksDoc, f, depth + 1, expanded)).join("");
   const name = escapeHtml(folder.name);
   return `<details class="nav-bm-folder" data-bm-folder-id="${escapeHtml(folder.id)}" data-bm-parent-id="${escapeHtml(folder.parentId ?? "")}"${expanded ? " open" : ""} style="margin-left:${depth * 0.6}rem;">
-    <summary><span class="nav-bm-folder-head"><button type="button" class="nav-bm-handle" data-bm-folder-handle aria-label="${escapeHtml(t("Move folder"))}: ${name}" title="${escapeHtml(t("Move folder"))}">⠿</button><span class="nav-bm-folder-name">\u{1F4C1} <span data-bm-folder-label>${name}</span></span><button type="button" class="nav-bm-rename" data-bm-folder-rename aria-label="${escapeHtml(t("Rename folder"))}: ${name}" title="${escapeHtml(t("Rename folder"))}">✎</button></span></summary>
+    <summary><span class="nav-bm-folder-head"><button type="button" class="nav-bm-handle" data-bm-folder-handle aria-label="${escapeHtml(t("Move folder"))}: ${name}" title="${escapeHtml(t("Move folder"))}">⠿</button><span class="nav-bm-folder-name">\u{1F4C1} <span data-bm-folder-label>${name}</span></span><button type="button" class="nav-bm-rename" data-bm-folder-rename aria-label="${escapeHtml(t("Rename folder"))}: ${name}" title="${escapeHtml(t("Rename folder"))}">✎</button><button type="button" class="nav-bm-del" data-bm-remove-folder="${escapeHtml(folder.id)}" aria-label="${escapeHtml(t("Remove folder"))}: ${name}" title="${escapeHtml(t("Remove folder"))}">🗑</button></span></summary>
     ${inner}
   </details>`;
+}
+
+/** The live folders this menu shows at the top level: no parent, a parent that does not exist, or a parent that is
+ *  removed. Removing a folder here (7 Oct 2026) must never hide the live folders inside it; like its bookmarks
+ *  (unfiled once their folder is removed, bookmarks.js), they come up a level. */
+function menuRootFolders(bookmarksDoc) {
+  const all = bookmarksDoc?.folders ?? [];
+  const live = (id) => all.some((p) => p.id === id && !p.removed);
+  return all.filter((f) => !f.removed && (!f.parentId || !live(f.parentId)));
 }
 
 function personName(roster, personTagId) {
@@ -306,7 +320,7 @@ function renderBookmarkList(bookmarksDoc, { expanded, groupBy, roster }) {
   }
   return (
     unfiledBookmarks(bookmarksDoc, { includeRemoved: false }).map(bookmarkLinkHtml).join("") +
-    rootFolders(bookmarksDoc, { includeRemoved: false })
+    menuRootFolders(bookmarksDoc)
       .map((f) => folderNodeHtml(bookmarksDoc, f, 0, expanded))
       .join("")
   );
@@ -409,17 +423,36 @@ export function mountBookmarkMenu(navBarEl, { db, getTenantId, getPersonId, getB
     return groupHtml("☆", t("Saved settings"), rows, expanded);
   }
 
-  function render(bookmarksDoc, roster) {
+  // 7 Oct 2026: the last removal, offered back for a few seconds ("Removed … · Undo"). Kept here, not in the DOM,
+  // because every render replaces the list.
+  let undo = null;
+  let undoTimer = 0;
+  function offerUndo(text, act, bookmarksDoc, roster) {
+    clearTimeout(undoTimer);
+    undo = { text, act };
+    undoTimer = setTimeout(() => {
+      undo = null;
+      listEl.querySelector("[data-bm-undo]")?.remove();
+    }, 8000);
+    render(bookmarksDoc, roster, { keepOpen: true });
+  }
+
+  function render(bookmarksDoc, roster, { keepOpen = false } = {}) {
+    // A removal or its Undo (7 Oct 2026) must not shut the folder the reader opened: read which are open off the
+    // DOM one line before it is replaced, and open them again (CLAUDE.md: "Re-render wipes UI state").
+    const openIds = keepOpen ? new Set([...listEl.querySelectorAll("details[data-bm-folder-id][open]")].map((d) => d.dataset.bmFolderId)) : null;
     listEl.innerHTML =
       lastPlacesHtml(bookmarksDoc, onLastPlace) +
       controlsHtml() +
       `<p class="nav-bm-error" data-bm-nav-error role="alert" hidden></p>` +
+      (undo ? `<div class="nav-bm-undo" data-bm-undo role="status"><span>${escapeHtml(undo.text)}</span><button type="button" data-bm-undo-btn>${escapeHtml(t("Undo"))}</button></div>` : "") +
       presetsHtml(bookmarksDoc, getBookmarkMenuExpanded()) +
       renderBookmarkList(bookmarksDoc, {
         expanded: getBookmarkMenuExpanded(),
         groupBy: getBookmarkMenuGroupBy(),
         roster,
       });
+    if (openIds?.size) listEl.querySelectorAll("details[data-bm-folder-id]").forEach((d) => { if (openIds.has(d.dataset.bmFolderId)) d.open = true; });
     wireControls(bookmarksDoc, roster);
   }
 
@@ -479,6 +512,7 @@ export function mountBookmarkMenu(navBarEl, { db, getTenantId, getPersonId, getB
       render(bookmarksDoc, roster);
     });
     wireFolderEdits(bookmarksDoc);
+    wireRemovals(bookmarksDoc, roster);
     listEl.querySelector("[data-bm-nav-groupby]")?.addEventListener("change", async (e) => {
       e.stopPropagation();
       setBookmarkMenuGroupBy(e.target.value);
@@ -488,11 +522,44 @@ export function mountBookmarkMenu(navBarEl, { db, getTenantId, getPersonId, getB
     });
   }
 
+  // The Owner, 7 Oct 2026: 🗑 on a bookmark or a folder. Nothing is erased (I4, D6): `removed` is set, the page's own
+  // copy is patched (the stub never mutates its data), the list re-renders, and Undo puts it back. Every handler
+  // stops the click, because the re-render detaches the button and nav.js would read the tap as outside the menu.
+  function wireRemovals(bookmarksDoc, roster) {
+    const patch = (list, id, removed) => { const x = (bookmarksDoc?.[list] ?? []).find((v) => v.id === id); if (x) x.removed = removed; return x; };
+    const act = async (list, id, removed) => {
+      const write = list === "saved" ? setSavedBookmarkRemoved : setFolderRemoved;
+      await write(db, getTenantId(), getPersonId(), id, removed);
+      return patch(list, id, removed);
+    };
+    const remove = async (e, list, id, words) => {
+      e.preventDefault(); e.stopPropagation();
+      try {
+        const x = await act(list, id, true);
+        const label = x?.name ?? "";
+        offerUndo(t(words, { name: label }), async () => {
+          try { await act(list, id, false); undo = null; render(bookmarksDoc, roster, { keepOpen: true }); } catch (err) { showError(err, true); }
+        }, bookmarksDoc, roster);
+      } catch (err) { showError(err, true); }
+    };
+    listEl.querySelectorAll("[data-bm-remove-bookmark]").forEach((btn) => {
+      btn.addEventListener("click", (e) => remove(e, "saved", btn.dataset.bmRemoveBookmark, "Removed “{name}”"));
+    });
+    listEl.querySelectorAll("[data-bm-remove-folder]").forEach((btn) => {
+      btn.addEventListener("click", (e) => remove(e, "folders", btn.dataset.bmRemoveFolder, "Removed the folder “{name}”. Its bookmarks are now at the top."));
+    });
+    listEl.querySelector("[data-bm-undo-btn]")?.addEventListener("click", (e) => {
+      e.preventDefault(); e.stopPropagation();
+      clearTimeout(undoTimer);
+      undo?.act();
+    });
+  }
+
   // I15 -- a failed write must reach the reader, in words, where they are.
-  function showError(err) {
+  function showError(err, general = false) {
     const el = listEl.querySelector("[data-bm-nav-error]");
     if (!el) return;
-    el.textContent = t("Couldn't save the folder change: {error}", { error: err?.code || err?.message || String(err) });
+    el.textContent = t(general ? "Couldn't save the change: {error}" : "Couldn't save the folder change: {error}", { error: err?.code || err?.message || String(err) });
     el.hidden = false;
   }
 

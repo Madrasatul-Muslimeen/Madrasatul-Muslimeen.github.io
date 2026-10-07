@@ -2528,6 +2528,11 @@ export const BN = {
   "Nothing played yet": "এখনো কিছু শোনা হয়নি",
   "You are editing this Note: tag changes are saved when you press Done.": "আপনি এই নোটটি সম্পাদনা করছেন: ট্যাগের পরিবর্তন সম্পন্ন চাপলে সংরক্ষিত হবে।",
   "Rename folder": "ফোল্ডারের নাম বদলান",
+  // The Owner, 7 Oct 2026: 🗑 on folders and bookmarks in the Bookmark menu (nothing is erased; Undo).
+  "Remove folder": "ফোল্ডার সরান",
+  "Removed “{name}”": "“{name}” সরানো হয়েছে",
+  "Removed the folder “{name}”. Its bookmarks are now at the top.": "“{name}” ফোল্ডারটি সরানো হয়েছে। এর বুকমার্কগুলো এখন উপরে আছে।",
+  "Couldn't save the change: {error}": "পরিবর্তনটি সংরক্ষণ করা যায়নি: {error}",
   "Couldn't save the folder change: {error}": "ফোল্ডারের পরিবর্তন সংরক্ষণ করা যায়নি: {error}",
   "Loading occurrences…": "ব্যবহারসমূহ লোড হচ্ছে…",
   "Occurrence list unavailable: {error}": "ব্যবহারের তালিকা পাওয়া যায়নি: {error}",

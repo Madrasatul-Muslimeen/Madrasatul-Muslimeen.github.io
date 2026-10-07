@@ -299,6 +299,19 @@ button.nav-bm-preset { background: none; border: 0; font: inherit; font-size: 0.
 }
 .nav-bm-handle { border: none; cursor: grab; touch-action: none; }
 .nav-bm-rename { border: 1px solid #ddd; background: white; color: #1F3A6E; }
+/* The Owner, 7 Oct 2026: "Enable bookmark n folder delete here". 🗑 on every folder (after ✎) and every bookmark; the
+   bookmark row keeps its link filling the line and the 🗑 a fixed square at its end. Nothing is erased: Undo, and
+   Manage bookmarks restores. */
+.nav-bm-del {
+  flex: 0 0 auto; width: 2.5rem; height: 2.5rem; padding: 0; border-radius: 0.4rem; font-size: 1rem; line-height: 1;
+  border: 1px solid #e5c9c9; background: white; color: #9b2c2c; cursor: pointer;
+}
+.nav-bm-folder-head .nav-bm-del { width: 2.2rem; height: 2.25rem; }
+.nav-bm-row { display: flex; align-items: center; gap: 0.4rem; min-width: 0; }
+.nav-bm-folder .nav-bm-row { margin-left: 1.1rem; }
+.nav-bm-row > .nav-bm-link.nav-bm-item { flex: 1 1 auto; min-width: 0; margin-left: 0; }
+.nav-bm-undo { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin: 0 0 0.5rem; padding: 0.4rem 0.6rem; border-radius: 0.6rem; background: #1F3A6E; color: #fff; font-size: 0.86rem; }
+.nav-bm-undo button { flex: 0 0 auto; min-height: 40px; padding: 0 0.9rem; border: 1px solid rgba(255,255,255,0.6); border-radius: 0.5rem; background: transparent; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
 .nav-bm-rename-input { flex: 1 1 auto; min-width: 0; font: inherit; padding: 0.3rem 0.4rem; border: 1px solid #1F3A6E; border-radius: 0.3rem; }
 .nav-bm-dragging > summary { background: #eef3fb; border-radius: 0.4rem; box-shadow: 0 2px 10px rgba(20,30,55,0.18); }
 .nav-bm-dragging .nav-bm-handle { cursor: grabbing; }
