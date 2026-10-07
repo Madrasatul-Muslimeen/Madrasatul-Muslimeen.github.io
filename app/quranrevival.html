@@ -12060,10 +12060,10 @@
         title: escapeHtml(segTitle(u.part ? `${u.label} ${t("(part)")}` : u.label, u.statusId, labels)),
       })));
       // Owner decision 84: where a ring's units are Ayat (the Surah level), print their numbers round the wheel,
-      // upright and at least 11 px, thinned to what fits (fitUprightNumbers).
+      // upright and 12 px (the issue: "about 12 px at a 390 px phone"; Architect review, 7 Oct), thinned to what fits (fitUprightNumbers).
       const numberUnits = numberRing ? laid.find((r) => r.type === numberRing)?.units.filter((u) => u.number != null) : null;
       const ringNumbers = numberUnits?.length ? numberUnits.map((u) => ({ angle: (u.a0 + u.a1) / 2, text: escapeHtml(String(u.number)) })) : null;
-      exploreWheelContainer.innerHTML = renderRingWheel(svgRings, { centerLabel, centerSub, ring, ...(ringNumbers ? { numbers: ringNumbers, uprightNumbers: { minPx: 11 } } : {}) });
+      exploreWheelContainer.innerHTML = renderRingWheel(svgRings, { centerLabel, centerSub, ring, ...(ringNumbers ? { numbers: ringNumbers, uprightNumbers: { minPx: 12 } } : {}) });
       fitUprightNumbers(exploreWheelContainer);
       attachRingWheelClickHandler(exploreWheelContainer, (key, k) => {
         const r = laid[k];
@@ -12727,7 +12727,7 @@
         const counts = countStatuses(grid.map((g) => g[i]));
         return { key: String(i), number: u.number, counts, title: `${u.name}: ${describeCounts(counts, labelsById, num)}` };
       });
-      exploreWheelContainer.innerHTML = renderAllApproachesWheel(slices, { centerLabel: surahLabel, centerSub: t("All {n} Approaches", { n: num(quranTrackables.length) }), uprightNumbers: { minPx: 11 } });
+      exploreWheelContainer.innerHTML = renderAllApproachesWheel(slices, { centerLabel: surahLabel, centerSub: t("All {n} Approaches", { n: num(quranTrackables.length) }), uprightNumbers: { minPx: 12 } });
       fitUprightNumbers(exploreWheelContainer);
       attachScopedWheelClickHandler(exploreWheelContainer, (key) => openExploreAyah(Number(key)));
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById)
@@ -12979,7 +12979,7 @@
       for (const it of items) it.title = segTitle(it.label, it.statusId, labelsById);
       // " · " is a separator, not grammar, so composing the two translated
       // halves around it is safe in either language.
-      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: `${currentSurahName} · ${t("Ruku' {ruku}", { ruku: num(exploreRukuIndex) })}`, centerSub: approachName, uprightNumbers: { minPx: 11 } });
+      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: `${currentSurahName} · ${t("Ruku' {ruku}", { ruku: num(exploreRukuIndex) })}`, centerSub: approachName, uprightNumbers: { minPx: 12 } });
       fitUprightNumbers(exploreWheelContainer);
       attachScopedWheelClickHandler(exploreWheelContainer, jumpToStudy);
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);

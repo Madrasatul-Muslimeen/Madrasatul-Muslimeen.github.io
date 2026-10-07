@@ -87,3 +87,4 @@ ARCHITECT.md's Handover rules are prose that a session must remember at exactly 
 <!-- allocate-version.py appends one line per release below this marker. -->
 - **v09.108** (2026-10-07): the writing paper goes full screen, with More paper, lines to trace over or blank, and ‹ › to the next word (decision 83).
 - **v09.109** (2026-10-07): the Word card's root and family bigger on a panel, Wiktionary above the other dictionaries, and the Lane / Hans Wehr link opening at the root (Owner, 7 Oct).
+- **v09.110** (2026-10-07): Explore's Ayah numbers round the Surah wheel upright, 12 px and never colliding (decision 84).
