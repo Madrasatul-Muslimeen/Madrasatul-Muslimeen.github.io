@@ -6332,7 +6332,9 @@
       reorderCollections as asmaReorderCollectionsLocal, reorderItems as asmaReorderItemsLocal, asmaPositionLabels,
       membershipsOfName as asmaMembershipsOfNameLocal,
       resolveAsmaEntry, getAsmaCollectionsDoc, saveAsmaCollections,
+      asmaDescriptionsFrom, saveAsmaDescription,
     } from "./js/asma-collections.js";
+    import { mountPosterWithDescriptions } from "./js/asma-descriptions.js";
     import { asmaEntryDisplayName, asmaEntryMeaningText, renderAsmaCollectionListHtml, renderAsmaXrefBlock, renderAsmaPosterHtml, renderAsmaBelongsToHtml } from "./js/asma-renderer.js";
     import { fitAsmaPosters, wireAsmaPosterRefs } from "./js/asma-poster.js";
     import { wireDragReorder } from "./js/drag-reorder.js";
@@ -7626,6 +7628,7 @@
     let asmaXCollections = null; // null until ensureAsmaXDataLoaded() runs once
     let asmaXExtraNames = null;
     let asmaXOverrides = {};
+    let asmaXDescriptions = {}; // 8 Oct 2026 (decision 87): the madrasah's own description per Name, nameDescriptions on the same document
     let asmaXOverridesEn = {}; // 30 Aug 2026: the owner's own English correction to a canonical Name's meaning
     let asmaXRefOverrides = {}; // 30 Aug 2026: the owner's own replacement/appended reference for a canonical Name
     // Classifications round -- 23 Sep 2026: the open, owner-extensible set
@@ -13766,6 +13769,7 @@
         asmaXExtraNames = asmaExtraNamesFrom(docData);
         asmaXOverrides = asmaOverridesFrom(docData);
         asmaXOverridesEn = asmaOverridesEnFrom(docData);
+        asmaXDescriptions = asmaDescriptionsFrom(docData);
         asmaXRefOverrides = asmaRefOverridesFrom(docData);
         asmaXClassifications = asmaClassificationsFrom(docData);
       } catch (err) {
@@ -13775,6 +13779,7 @@
         asmaXExtraNames = asmaExtraNamesFrom(null);
         asmaXOverrides = {};
         asmaXOverridesEn = {};
+        asmaXDescriptions = {};
         asmaXRefOverrides = {};
         asmaXClassifications = asmaClassificationsFrom(null);
       }
@@ -14358,11 +14363,27 @@
 
     function openAsmaXPoster(entry) {
       // Decision 85: full size, each reference opens its Ayah here or its Hadith in the Hadith library.
-      asmaXPosterMountEl.innerHTML = renderAsmaPosterHtml(entry, "standalone", { interactive: true });
+      // Decision 87 (8 Oct 2026): a strip above it picks whose description it shows; owner/prime edit the madrasah's.
       asmaXPosterOverlayEl.classList.add("open");
-      fitAsmaPosters(asmaXPosterMountEl);
-      wireAsmaPosterRefs(asmaXPosterMountEl, {
-        onQuran: (surah, ayah) => { closeAsmaXPoster(); goToAyahFromAsmaX(surah, ayah, asmaXGroupId, entry.number ?? asmaXNumber, { fromPoster: true }); },
+      mountPosterWithDescriptions(asmaXPosterMountEl, {
+        entry,
+        madrasahDescriptions: asmaXDescriptions,
+        canEdit: asmaXCanManage(),
+        renderPoster: (description) => renderAsmaPosterHtml(entry, "standalone", { interactive: true, description }),
+        afterRender: () => {
+          fitAsmaPosters(asmaXPosterMountEl);
+          wireAsmaPosterRefs(asmaXPosterMountEl, {
+            onQuran: (surah, ayah) => { closeAsmaXPoster(); goToAyahFromAsmaX(surah, ayah, asmaXGroupId, entry.number ?? asmaXNumber, { fromPoster: true }); },
+          });
+        },
+        onSave: async (text) => {
+          const res = await safeWrite(
+            () => saveAsmaDescription(db, { tenantId: activeTenantId, number: entry.number, text, docExists: asmaXDocExists, uid: auth.currentUser.uid }),
+            { collection: TENANT.ASMA_COLLECTIONS, docId: activeTenantId, action: "save a Name's description" }
+          );
+          if (res.ok) { asmaXDocExists = true; asmaXDescriptions = { ...asmaXDescriptions, [entry.number]: text }; }
+          return res.ok;
+        },
       });
     }
     function closeAsmaXPoster() {

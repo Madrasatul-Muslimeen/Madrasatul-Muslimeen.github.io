@@ -104,6 +104,7 @@ const CSS = `
 .ahp-mean{position:absolute;left:36%;right:36%;top:26.4%;display:flex;justify-content:center;white-space:nowrap;font-size:3.13cqw;color:#f4501a}
 .ahp-ar{position:absolute;left:31.5%;right:31.5%;top:31.6%;height:13.4%;display:flex;align-items:center;justify-content:center;direction:rtl;font-family:'Noto Naskh Arabic','Amiri',serif;font-weight:700;color:#0d3b29;font-size:14.3cqw;line-height:1;white-space:nowrap;-webkit-text-stroke:.3cqw #0d3b29;paint-order:stroke fill;text-shadow:0 .25cqw .5cqw rgba(13,59,41,.25)}
 .ahp-desc{position:absolute;left:21.2%;width:57.9%;top:46.95%;height:27%;text-align:justify;text-align-last:left;hyphens:manual;word-spacing:0;font-size:3.28cqw;line-height:1.15;color:#111;overflow:hidden}
+.ahp-tag{display:block;font-size:2.3cqw;font-style:italic;color:#8a6116;text-align:center;text-align-last:center;margin-bottom:.6cqw}
 .ahp-desc.ahp-none{color:#8a8473;font-style:italic;text-align:center;text-align-last:center}
 .ahp-ref{position:absolute;top:77.1%;height:4%;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:0 .3cqw;font-size:3cqw;line-height:1.1;color:#1a1a1a}
 .ahp-ref>*{display:inline-block;transform-origin:center}
@@ -135,9 +136,12 @@ export function ensureAsmaPosterStyles(doc = document) {
  * Hadith library; leave it off where the whole poster is itself one button (Explore's panel), since a button cannot
  * hold another.
  */
-export function renderAsmaPoster(entry, variant = "standalone", { interactive = false } = {}) {
+export function renderAsmaPoster(entry, variant = "standalone", { interactive = false, description = null } = {}) {
   ensureAsmaPosterStyles();
   const m = asmaPosterModel(entry);
+  // 8 Oct 2026 (decision 87): asma-descriptions.js may hand in whose description to show; a suggestion says so.
+  if (description) m.description = description.text ?? "";
+  const tag = description?.source === "suggested" && m.description ? `<span class="ahp-tag" data-poster-desc-tag>Suggested description</span>` : "";
   const q = m.quran.length
     ? m.quran.map((c) => (interactive
       ? `<button type="button" data-poster-quran="${c.surah}:${c.ayah}" aria-label="Open ${esc(c.full)}">${esc(c.text)}</button>`
@@ -149,7 +153,7 @@ export function renderAsmaPoster(entry, variant = "standalone", { interactive = 
       : `<span class="ahp-unlinked"${c.link ? "" : ` data-poster-hadith-unlinked="${esc(c.key ?? "")}" title="Not in the app's Hadith library yet"`}>${esc(c.text)}</span>`)).join("")
     : `<span class="ahp-none">None given</span>`;
   const desc = m.description
-    ? `<div class="ahp-desc" data-poster-desc lang="en">${esc(m.description)}</div>`
+    ? `<div class="ahp-desc" data-poster-desc data-poster-desc-source="${esc(description?.source ?? "poster")}" lang="en">${tag}${esc(m.description)}</div>`
     : `<div class="ahp-desc ahp-none" data-poster-desc lang="en">Description to come.</div>`;
   return `<div class="ahp ahp-${esc(variant)}" data-asma-poster="${esc(m.number)}" lang="en">
     <div class="ahp-title"><span data-poster-title>${esc(m.title)}</span></div>
