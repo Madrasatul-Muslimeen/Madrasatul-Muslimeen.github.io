@@ -9,6 +9,46 @@ Start from `docs/governance/NEW-SESSION-PROMPT-2026-10-08.md`.
 Read the live state yourself (`app/js/version.js` on `origin/main`, open pull requests, the "Active Architect
 session" line on #159).
 
+**LATEST UPDATE, 8 Oct 2026 (late), session `session_0116koLYBSQ7JHAmhYUWAkBX` (took over at v09.121): `main` is at
+v09.135.** This block supersedes everything below it in section 0; the older text is kept as history.
+
+**Released by this session** (each fully in `CHANGELOG.md`):
+
+| Version | What changed | Decision |
+|---|---|---|
+| v09.122 | Mapping My Journey pop-up: three panels fill the window and resize; gold grips on every pop-out. | Owner |
+| v09.123 | Asma ul Husna in Explore: ‹ › on a Name; the poster fills its panel. | Owner |
+| v09.124 | The way back sits beside ✓ on the Read bar (`back-dock.js`). | 86 |
+| v09.125 | Word card: "of the Qur'an" only on the "You know" box's bottom line. | Owner |
+| v09.126 | File in folder(s): full screen, ← Back, the keyboard stays, faster (prefetch), folders fold. | Owner |
+| v09.127 | Āyah card: ✍ Take Note opens the Note view ready to write; 👥 family recording proven on the card. | Owner |
+| v09.128 | File in folder(s): Siyagah's header (📚, ◀ ▶, section picker, 🎨). | Owner |
+| v09.129 | Dua cards: the dua's own words (`dua-words.js`), large, in the Quranic font; the narration in a fold. | 89 |
+| v09.130 | Hadith in English and Bangla (hadith-api, eight books, by standard number). | 89 |
+| v09.131 | Dua words rounds 0–1: narrators' words out; each word opens its Qur'an word and the Word card. | 90 |
+| v09.132 | Dua words rounds 2–4: Qur'an spellings and «و»; the Dua word card; Word-by-Word progress via the Word card. | 90 |
+| v09.133 | Dua words round 5a: vowels, word for word from Hisn al-Muslim and HadeethEnc; **decision 91 written into CLAUDE.md**. | 90, 91 |
+| v09.134 | Dua words round 5b (Builder #663): grammar suggestions (CAMeL Tools) for words the Qur'an lacks. | 90 |
+| v09.135 | Dua words round 6: progress on every word, key `duaword:<dua>:<position>`, one records chunk per dua, no Rules change. | 92 |
+
+**In flight when written:** Builder round **#665** (repair the two Word card suites red on `main`:
+`word-card-pc-boxes-browser`, `word-progress-practising-browser`). Review it per the prompt's Step 5 when it lands
+(its branch is `builder/issue-665*`); this session's review check-in will do nothing once #159 names the new session,
+so **arm your own review check-in on takeover**.
+
+**The research report** "Dua words that work like Qur'an words": https://claude.ai/code/artifact/de27ba8c-24df-4661-a366-f1ed31a44db7
+(all six rounds now built; the Owner's answers are in it and in decision 90).
+
+**THE QUEUE now (decision 91: keep working, keep the Builder busy, ask only for a real choice):**
+1. Review and merge Builder #665; then dispatch the next Builder round.
+2. **Possible next, offered to the Owner but not asked for** (start one when the queue is empty, demo first if it is a
+   new screen): a review screen where a person confirms or splits dua groups and checks a dua's picked words, vowels
+   and grammar suggestions (everything Dua is still "to be checked"); Notes and bookmarks on a dua; Hadith "Studied",
+   Notes and bookmarks on OpenITI passages (needs the Owner's yes to the key `hadith:openiti:<versionUri>:<n>`).
+3. Tidy-ups recorded, not done: 31 phrases written twice in `bn.js` (only the later shows; removing the earlier,
+   shadowed copies changes nothing on screen, a safe Builder round).
+
+
 **`main` is at v09.113** when this was written. Released in this session, each fully recorded in `CHANGELOG.md`:
 
 | Version | What changed | Decision |
@@ -64,6 +104,8 @@ No Builder round is running and no pull request is open.
 
 ## 1. What waits on the Owner (remind them in one line per report)
 
+0. **HadeethEnc permission (decision 90, the Owner asked to be reminded):** settle with HadeethEnc that their vowels
+   (and translations) may be used on the same dua in other books. Shown at the top of "Waiting on you" on #159.
 1. **Pictures** (`docs/reports/2026-10-07-pictures-owner-steps.md`): **steps 1 (Blaze), 2 (Storage on) and 4 (CORS: Cloud Shell printed "Updating gs://study-monitoring.firebasestorage.app/... Completed 1") are done** (8 Oct). **Step 3 is done too: the Owner tested a picture in a Note on 8 Oct, "all good". PICTURES ARE LIVE; nothing waits on the Owner here except the Upgrade before the free trial ends (item 2).** The older text below is kept as it was written:
    Still to do: confirm a **$1 budget alert** (Firebase showed "Go to budgets"), **step 2** turn Storage on, **step 3**
    publish the Storage Rules, **step 4** the CORS line in Cloud Shell (their Cloud Shell had disconnected:
@@ -91,6 +133,19 @@ No Builder round is running and no pull request is open.
   reports a Name the code does not know, it is theirs: read the model's fallbacks, not the defaults.
 - **An unattended or Builder round that changes a layout row must be measured at 390 px inside the pop-out window**
   (374 px wide, not the screen), as `writing-sheet-popout-browser.mjs` does.
+- **Arabic vowel marks can be stored in two orders** (shadda+fatha or fatha+shadda) that look the same: compare
+  vowelled Arabic in NFC (`.normalize("NFC")`), as `dua-vowels.mjs` does.
+- **The Builder's runner cannot `pip install`**, so a round needing a Python tool's output (CAMeL Tools) gets its
+  data generated by the Architect: a venv in the scratchpad installs it here (`camel_data -i morphology-db-msa-r13`,
+  `disambig-mle-calima-msa-r13`, with `CAMELTOOLS_DATA` set to a folder that exists). **Read a tool's output before
+  trusting a 100% coverage:** CAMeL's `backoff` is NO_ANALYSIS and `spvar`/NTWS gave nonsense for duas.
+- **On a phone the Word card covers the Read bar where the "Back to …" pill docks.** A way back for a Word card
+  opened from another page goes INSIDE the card: `setAppReturn(title, label, back, { inWordCard: true })`.
+- **A deep link that records progress must not record from the address alone**: round 4 uses a one-use
+  sessionStorage token set by the Dua card (`mmsa-dua-word-progress`).
+- **Name suites exactly** (most browser suites end `-browser`); a wrong name exits 1 with no summary line.
+- **A new unit type joins `UNIT_TYPES`, which `records.html`'s hand-entry picker lists**: leave out types recorded
+  only from their own page (`dua`, `duaword`), or behaviour 14a fails.
 - Sections 2 of the 7 Oct handover and 2–3 of the 30 Sep handover still hold (sandbox, review, release).
 
 ## 3. The handover guard (unchanged)

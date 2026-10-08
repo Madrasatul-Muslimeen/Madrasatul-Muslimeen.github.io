@@ -142,7 +142,8 @@ Read this first, every session. It is the standing brief.
 >
 > **`docs/reports/2026-10-08-MMSA-SESSION-HANDOVER.md`** is the current
 > continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-10-08.md`**
-> is the prompt that starts a new session (refreshed at v09.121). `main` reached **v09.121** on 8 Oct:
+> is the prompt that starts a new session (refreshed at v09.135, late on 8 Oct: this session's releases v09.122–v09.135,
+> all six Dua-words rounds, decisions 89–92, and Builder round #665 in flight are in handover section 0's LATEST UPDATE). Earlier, `main` reached **v09.121** on 8 Oct:
 > the Hadith database rounds H-DB1–H-DB5 (four more Arabic books, standard hadith numbers, HadeethEnc
 > translations, the **Dua tab** and **one card per dua** with progress under the permanent key `dua:<n>`,
 > decision 88) and the Asma ul Husna descriptions (v09.120). **Decisions 87 and 88 are done; the queue is
