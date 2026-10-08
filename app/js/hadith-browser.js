@@ -33,7 +33,7 @@ import {
 import {
   OPENITI_CREDIT_URL,
   loadOpenitiBookSummaries, loadOpenitiBookIndex, loadOpenitiChapter, chapterForHadithNumber,
-  loadOpenitiConcordance, loadOpenitiHadeethEncLinks, loadDuaIndex,
+  loadOpenitiConcordance, loadOpenitiHadeethEncLinks, loadDuaIndex, loadDuaCardsSummary, loadDuaCardsPage,
 } from "./openiti-corpus.js";
 
 const CONTENT_LANG_LABELS = { ar: "العربية", en: "English", bn: "বাংলা" };
@@ -1134,6 +1134,22 @@ function duaAlsoNarrated(h, group, { dua, oi, localRefresh, chapterId, versionUr
  * opening in the library with "← Back to Dua". The narrations of one dua are linked across books on each card.
  */
 function renderDua(body, state, render) {
+  if (!state.dua) state.dua = { bookUri: null, mode: "duas", page: 1 };
+  // Round H-DB5 (decision 88): two views of the same data -- one card per dua (the demo the Owner approved), and the
+  // books' own Dua chapters (v09.119).
+  const modes = el("div", "dua-modes");
+  modes.setAttribute("role", "group");
+  modes.setAttribute("aria-label", t("Dua"));
+  for (const [mode, label] of [["duas", t("Duas")], ["chapters", t("Dua chapters")]]) {
+    const b = el("button", "dua-mode", label);
+    b.type = "button";
+    b.dataset.duaMode = mode;
+    b.setAttribute("aria-pressed", String(state.dua.mode === mode));
+    b.addEventListener("click", () => { state.dua.mode = mode; render(); });
+    modes.appendChild(b);
+  }
+  body.appendChild(modes);
+  if (state.dua.mode !== "chapters") { renderDuaCards(body, state, render); return; }
   const section = el("section", "dua-section");
   section.id = "duaSection";
   section.appendChild(el("h2", null, t("Dua — the Dua chapters of the Hadith books")));
@@ -1142,7 +1158,6 @@ function renderDua(body, state, render) {
   section.appendChild(list);
   body.appendChild(section);
   list.appendChild(el("p", "hadith-note", t("Loading…")));
-  if (!state.dua) state.dua = { bookUri: null };
   loadDuaIndex().then(async (dua) => {
     list.textContent = "";
     if (!state.dua.bookUri) {
@@ -1185,6 +1200,151 @@ function renderDua(body, state, render) {
       list.appendChild(row);
     }
   }).catch((err) => { list.textContent = ""; list.appendChild(el("p", "hadith-note", String(err?.message ?? err))); });
+}
+
+/**
+ * Round H-DB5 (decision 88), the Duas view: one card per dua, most-narrated first, 40 to a page. Each card: its
+ * number and the bab heading of its first standard-numbered narration, that narration's Arabic, HadeethEnc's
+ * translation where it has the hadith, every place it is narrated (each opening in the library with a way back to
+ * this page), and the reader's progress, saved ONCE per dua (dua:<n>).
+ */
+function renderDuaCards(body, state, render) {
+  const section = el("section", "dua-section dua-cards");
+  section.id = "duaCards";
+  body.appendChild(section);
+  section.appendChild(el("p", "hadith-note", t("Loading…")));
+  Promise.all([loadDuaCardsSummary(), loadDuaCardsPage(state.dua.page || 1)]).then(([summary, cards]) => {
+    section.textContent = "";
+    const page = state.dua.page || 1;
+    const first = (page - 1) * summary.cardsPerFile + 1;
+    section.appendChild(el("p", "hadith-note dua-cards-count", t("Duas {from}–{to} of {total}, most narrated first. Each dua's narrations were found by matching words and are still to be checked.",
+      { from: num(first), to: num(first + cards.length - 1), total: num(summary.cards) })));
+    const pager = () => {
+      const nav = el("div", "dua-pager");
+      const prev = el("button", "dua-ref", `‹ ${t("Previous")}`);
+      prev.type = "button"; prev.disabled = page <= 1; prev.dataset.duaPrev = "true";
+      prev.addEventListener("click", () => { state.dua.page = page - 1; render(); document.getElementById("duaCards")?.scrollIntoView({ block: "start" }); });
+      const next = el("button", "dua-ref", `${t("Next")} ›`);
+      next.type = "button"; next.disabled = page >= summary.files; next.dataset.duaNext = "true";
+      next.addEventListener("click", () => { state.dua.page = page + 1; render(); document.getElementById("duaCards")?.scrollIntoView({ block: "start" }); });
+      nav.append(prev, el("span", "hadith-note", t("Page {n} of {total}", { n: num(page), total: num(summary.files) })), next);
+      return nav;
+    };
+    section.appendChild(pager());
+    const list = el("div", "hadith-occurrences");
+    section.appendChild(list);
+    const progressRows = [];
+    for (const c of cards) list.appendChild(duaCard(c, summary, state, render, progressRows));
+    section.appendChild(pager());
+    fillDuaProgress(progressRows);
+    if (state.dua.focusDua != null) {
+      const target = list.querySelector(`[data-dua-card="${state.dua.focusDua}"]`);
+      state.dua.focusDua = null;
+      if (target) { target.classList.add("hadith-card-focused"); target.scrollIntoView({ block: "center" }); }
+    }
+  }).catch((err) => { section.textContent = ""; section.appendChild(el("p", "hadith-note", String(err?.message ?? err))); });
+}
+
+function duaCard(c, summary, state, render, progressRows) {
+  const card = el("article", "hadith-card dua-card");
+  card.dataset.duaCard = String(c.dua);
+  const head = el("p", "hadith-card-head", t("Dua {n}", { n: num(c.dua) }));
+  card.appendChild(head);
+  if (c.heading) {
+    const h = el("h3", "dua-card-heading", c.heading);
+    h.lang = "ar"; h.dir = "rtl";
+    card.appendChild(h);
+  }
+  const dua = { books: summary.books };
+  const [ab, an, astd, anum] = c.anchor;
+  card.appendChild(el("p", "openiti-standard-number", duaRefLabel(dua, summary.books[ab].versionUri, astd, an, anum)));
+  const text = el("p", "hadith-arabic", c.text);
+  text.lang = "ar"; text.dir = "rtl";
+  card.appendChild(text);
+  if (c.hadeethenc?.length) card.appendChild(openitiTranslationFold(c.hadeethenc.map(String)));
+
+  const box = el("div", "dua-also");
+  const headP = el("p", "dua-also-head", t("Narrated in {n} places", { n: num(c.members.length) }));
+  headP.appendChild(el("span", "dua-proposed", t("found by matching words, to be checked")));
+  box.appendChild(headP);
+  const mainRow = el("div", "dua-also-refs");
+  const restRow = el("div", "dua-also-refs");
+  const btn = ([b, n, std, number]) => {
+    const versionUri = summary.books[b].versionUri;
+    const r = el("button", "dua-ref", duaRefLabel(dua, versionUri, std, n, number));
+    r.type = "button";
+    r.dataset.duaRef = `${versionUri}:${n}`;
+    r.addEventListener("click", () => {
+      state.view = "collections";
+      state.editionId = null;
+      const page = state.dua.page;
+      state.oi = { bookUri: versionUri, chapterId: null, books: null, showAllChapters: false, focusPassage: n,
+        trail: [{ label: t("← Back to Dua {n}", { n: num(c.dua) }), toDua: () => { state.view = "dua"; state.dua.mode = "duas"; state.dua.page = page; state.dua.focusDua = c.dua; render(); } }] };
+      render();
+    });
+    return r;
+  };
+  const withStd = c.members.filter((m) => m[2] != null && m[2] !== "");
+  const rest = c.members.filter((m) => !(m[2] != null && m[2] !== ""));
+  for (const m of withStd) mainRow.appendChild(btn(m));
+  if (withStd.length) box.appendChild(mainRow);
+  if (rest.length && !withStd.length) { for (const m of rest) mainRow.appendChild(btn(m)); box.appendChild(mainRow); }
+  else if (rest.length) {
+    const more = document.createElement("details");
+    more.className = "dua-also-more";
+    const sum = document.createElement("summary");
+    sum.textContent = t("+{n} more in other books", { n: num(rest.length) });
+    more.appendChild(sum);
+    for (const m of rest) restRow.appendChild(btn(m));
+    more.appendChild(restRow);
+    box.appendChild(more);
+  }
+  card.appendChild(box);
+
+  const prog = el("div", "dua-progress");
+  prog.dataset.duaProgress = String(c.dua);
+  prog.appendChild(el("p", "dua-also-head", t("My progress on this dua")));
+  prog.appendChild(el("p", "hadith-note", t("Loading…")));
+  card.appendChild(prog);
+  progressRows.push({ dua: c.dua, el: prog });
+  return card;
+}
+
+/** The progress rows of one page: one session, one read of the person's statuses, then a row of status buttons each. */
+async function fillDuaProgress(rows) {
+  const say = (msg) => rows.forEach(({ el: p }) => { p.lastChild.remove(); p.appendChild(el("p", "hadeethenc-study-reason", msg)); });
+  let actions, session = null;
+  try { actions = await loadHadithStudyActions(); session = await actions.getHadeethEncSession(); }
+  catch { say(t("Progress could not be loaded right now.")); return; }
+  if (!session) { say(t("Sign in and choose who you're studying as to record progress.")); return; }
+  if (!session.canRecordFor) { say(t("You can view this, but only the person's own record can record progress.")); return; }
+  let statuses = new Map();
+  try { statuses = await actions.duaStatuses(session); } catch (err) { say(String(err?.message ?? err)); return; }
+  const onRamp = STATUSES.filter((s) => s.onRamp);
+  for (const { dua, el: p } of rows) {
+    p.lastChild.remove();
+    const row = el("div", "dua-progress-row");
+    row.setAttribute("role", "group");
+    row.setAttribute("aria-label", t("My progress on this dua"));
+    const msg = el("p", "hadeethenc-study-reason");
+    msg.setAttribute("role", "status");
+    let current = statuses.get(dua) ?? null;
+    const paint = () => row.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.duaStatus === (current ?? "not_started"))));
+    for (const s of onRamp) {
+      const b = el("button", "dua-status", statusLabel(s.id));
+      b.type = "button";
+      b.dataset.duaStatus = s.id;
+      b.addEventListener("click", async () => {
+        const before = current;
+        current = s.id; paint(); msg.textContent = "";
+        try { await actions.claimDua(session, dua, s.id); }
+        catch (err) { current = before; paint(); msg.textContent = t("Not saved: {why}", { why: String(err?.message ?? err) }); }
+      });
+      row.appendChild(b);
+    }
+    paint();
+    p.append(row, msg);
+  }
 }
 
 /**

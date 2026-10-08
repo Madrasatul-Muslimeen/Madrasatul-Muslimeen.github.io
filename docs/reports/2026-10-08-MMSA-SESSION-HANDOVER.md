@@ -22,7 +22,7 @@ session" line on #159).
 
 No Builder round is running and no pull request is open.
 
-**Update, 8 Oct 2026, session `session_01QFqAPBJsmgyJ3QXw12JM22` (took over at v09.113):** `main` is at **v09.120** (v09.120: the Asma descriptions; decision 88 approves the Dua cards and `dua:<n>`).
+**Update, 8 Oct 2026, session `session_01QFqAPBJsmgyJ3QXw12JM22` (took over at v09.113):** `main` is at **v09.121** (v09.121: one card per dua, progress once under `dua:<n>`, decision 88 done).
 **The Hadith database is being built in rounds:**
 - **H-DB1 (v09.114, done):** al-Adab al-Mufrad, al-Nasa'i's and Ibn al-Sunni's 'Amal al-Yawm wa'l-Layla, al-Nawawi's
   al-Adhkar pulled and split (15 books).
@@ -35,9 +35,11 @@ No Builder round is running and no pull request is open.
   https://claude.ai/artifact/LxHMM7PhPAKQ1pKbYz5kxT) needs a person to confirm the groups and the Owner's yes to a
   new permanent key `dua:<n>`.
 - **Asma descriptions (v09.120, done).**
-- **Decision 88 ("Go ahead with the DUA ad the POSTER"):** build the Dua cards as demoed, progress once per dua
-  under `dua:<n>`; Rules needs go to the Owner as a candidate.
-- **Owner decision needed before Studied / Notes / bookmarks on OpenITI passages:** the permanent key
+- **H-DB5 (v09.121, done; decision 88):** the Duas view, one card per dua, progress under `dua:<n>`; permanent
+  numbers in `output/dua/registry.json` (never edit by hand; a re-run keeps every number).
+- **Possible next (not asked yet, offer to the Owner):** a person to confirm/split dua groups (a review screen);
+  clean dua words on a card (the supplication alone, not the chain); Notes and bookmarks on a dua.
+- **Still open, Owner decision before Studied / Notes / bookmarks on OpenITI passages:** the permanent key
   (recommended `hadith:openiti:<versionUri>:<n>`, showing the standard number).
 - **The Owner's Take Note message (8 Oct): built as v09.116;** "add the bookmark button there too" asked back
   (the card already has 🔖 Bookmark: move it beside Take Note, or a second button opening the bookmarks list?).
@@ -107,3 +109,4 @@ that handover does not name the version in `app/js/version.js`.
 - **v09.118** (2026-10-08): the writing paper's list boxes whole on a phone.
 - **v09.119** (2026-10-08): the Dua tab: the Dua chapters of eleven Hadith books (round H-DB4).
 - **v09.120** (2026-10-08): a Name's description: the poster's, a suggestion, or the madrasah's own.
+- **v09.121** (2026-10-08): one card per dua, progress counted once (round H-DB5).

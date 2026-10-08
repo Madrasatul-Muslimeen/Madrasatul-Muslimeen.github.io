@@ -74,8 +74,10 @@ async function openWordCard(P) {
   await P.evaluate(() => {
     const t = document.getElementById("wbwShowToggle");
     if (t && !t.checked) { t.checked = true; t.dispatchEvent(new Event("change", { bubbles: true })); }
+    // Updated in place 8 Oct 2026: with Al-Fatiha counted from the Bismillah (decisions 55, 76, 77) the picker's
+    // value "7" is the first half of 1:7 (words 1-4); word 1:7:6 sits under value "8". Found red on main since then.
     const a = document.getElementById("ayahSelect");
-    if (a && a.value !== "7") { a.value = "7"; a.dispatchEvent(new Event("change", { bubbles: true })); }
+    if (a && a.value !== "8") { a.value = "8"; a.dispatchEvent(new Event("change", { bubbles: true })); }
   });
   await P.waitForTimeout(800);
   await P.evaluate(() => document.querySelector('[data-word-occurrence$=":1:7:6"]')?.click());

@@ -189,6 +189,17 @@
 .dua-ref:hover { border-color: var(--hadith-gold); }
 .openiti-trail-back { margin-bottom: 0.4rem; }
 .dua-also-more summary { min-height: 40px; display: flex; align-items: center; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--hadith-ink); }
+/* Round H-DB5: the Duas / Dua chapters switch, a dua card's bab heading, the pager and the progress buttons. */
+.dua-modes { display: inline-flex; gap: 4px; padding: 4px; margin: 0.4rem 0 0.6rem; border-radius: 0.6rem; background: #f1ede1; }
+.dua-mode { min-height: 40px; padding: 0 1rem; border: 0; border-radius: 0.45rem; background: transparent; color: var(--hadith-ink); font: inherit; cursor: pointer; }
+.dua-mode[aria-pressed="true"] { background: var(--hadith-ink); color: #fff; font-weight: 600; }
+.dua-card-heading { margin: 0.1rem 0 0.2rem; font-family: 'Amiri', 'Noto Naskh Arabic', serif; font-size: 1.15rem; color: var(--hadith-ink); }
+.dua-pager { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; margin: 0.5rem 0; }
+.dua-pager .dua-ref:disabled { opacity: 0.45; cursor: default; }
+.dua-progress { display: grid; gap: 0.35rem; margin-top: 0.5rem; padding-top: 0.45rem; border-top: 1px dashed var(--hadith-rule); }
+.dua-progress-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(5.6rem, 1fr)); gap: 0.35rem; }
+.dua-status { min-height: 40px; min-width: 0; padding: 0.3rem 0.4rem; border-radius: 0.4rem; border: 1px solid var(--hadith-rule); background: #fff; color: var(--hadith-ink); font: inherit; font-size: 0.85rem; cursor: pointer; }
+.dua-status[aria-pressed="true"] { background: #dcefe3; border-color: #2f7d4f; color: #1f5c38; font-weight: 600; }
 .openiti-show-more { min-height: 40px; padding: 0.4rem 0.9rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); background: #fff; cursor: pointer; font-weight: 600; margin: 0.5rem 0; }
 .openiti-editorial-label { color: #7d5a00; font-weight: 700; }
 .openiti-page-refs { font-size: 0.75rem; }

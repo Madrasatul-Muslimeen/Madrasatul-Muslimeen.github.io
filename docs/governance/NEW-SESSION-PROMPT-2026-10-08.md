@@ -32,10 +32,12 @@ next one in the same turn. When the queue is empty, say so once and arm a check-
    it was written (appended automatically).
 4. Sections 2 and 3 of `docs/reports/2026-09-30-MMSA-SESSION-HANDOVER.md`: how a
    round is started and reviewed, and the sandbox lessons.
-5. `docs/governance/2026-09-27-owner-decisions.md`: my decisions, up to 87. They
+5. `docs/governance/2026-09-27-owner-decisions.md`: my decisions, up to 88. They
    are settled. Do not ask me again.
-6. **Where the job stands (8 Oct): `main` is at v09.113** (read it off `version.js`). No Builder round is
-   running. Your first job is the Hadith database (handover section 0).
+6. **Where the job stands (updated 8 Oct, evening): `main` is at v09.121** (read it off `version.js`). No
+   Builder round is running. Handover section 0 has the state: the Hadith database rounds H-DB1–H-DB5 are done
+   (four more books, standard numbers, HadeethEnc translations, the Dua tab, one card per dua with progress
+   under `dua:<n>`), and the Asma descriptions (v09.120). The queue is in handover section 0.
 7. Issue #159 (the status board).
 
 ## Step 2. Take over, then read the live state
@@ -69,13 +71,9 @@ At every moment, exactly one of these is true. Do the matching step:
   comment, then finish the round yourself or dispatch it again with a note.
 - **Nothing is running and nothing is open:** dispatch the next round below.
 
-**The queue, in order (decision 87; handover section 0 has the detail):**
-1. **The Hadith database, then the Dua database** (my words: "Start Hadith n Dua Database work (NS's job)"), in
-   the order of `docs/reports/2026-10-07-hadith-dua-sources-research.md` §4.3. Plan it in rounds.
-2. **Asma ul Husna descriptions**, Names only: a toggle between the poster creator's, yours (marked as your
-   suggestion) and mine, my edits saved for the whole madrasah. Demo first.
-3. The writing paper's list boxes cut on a phone (small).
-4. Anything new I send joins the queue where it fits.
+**The queue (handover section 0 has the detail; decisions 87 and 88 are done as of v09.121):**
+1. Whatever is open in handover section 0 (e.g. the Owner's answer on the Āyah card's bookmark button).
+2. Anything new I send joins the queue where it fits.
 
 You may build a round yourself instead of the Builder when that is faster; review
 it the same way. Anything new I send joins the queue where it fits. A new screen
@@ -177,7 +175,7 @@ or a new place for something gets a demo first.
 
 ## Step 7. What waits on me (remind me in one line per report)
 
-1. Pictures: step 1 (Blaze) is done. Still: the $1 budget alert, Storage on, the Storage Rules, the CORS line.
+1. Pictures are live (all four steps done, 8 Oct).
 2. Before about 6 Jan 2027: click Upgrade on Google Cloud (the free trial ends). Remind me in late December.
 3. Al-Munshi' needs its Arabic (I add it).
 4. Letters (dictionaries, Hadith publishers): later, keep reminding.

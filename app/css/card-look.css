@@ -220,6 +220,9 @@
 [data-card-look="night"] .dua-also-head { color: var(--card-heading); }
 [data-card-look="night"] .dua-proposed { color: var(--card-text-muted); }
 [data-card-look="night"] .dua-also-more summary { color: var(--card-heading); }
+[data-card-look="night"] .dua-card-heading { color: var(--card-heading); }
+[data-card-look="night"] .dua-status { background: var(--card-bg-inset); color: var(--card-text); border-color: var(--card-line); }
+[data-card-look="night"] .dua-status[aria-pressed="true"] { background: #173426; border-color: #7fd3a0; color: #9fe6bb; }
 [data-card-look="night"] .dua-ref { background: var(--card-bg-inset); color: var(--card-text); border-color: var(--card-line); }
 /* .hadith-crumb/-current and its hadeethenc/openiti siblings are
    DELIBERATELY NOT re-picked, found by this round's own measurement: the

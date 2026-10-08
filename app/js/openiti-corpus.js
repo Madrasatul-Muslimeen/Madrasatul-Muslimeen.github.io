@@ -231,3 +231,23 @@ export function buildDuaIndex(data) {
   }
   return { books: data.books, groupOf };
 }
+
+/** Round H-DB5 (decision 88): the Duas view's pages, one small file each (dua-index.mjs). */
+export async function loadDuaCardsSummary({ fetchImpl = fetch, baseUrl = DUA_BASE_URL } = {}) {
+  return cached(duaCache, `${baseUrl}cards.json`, async () => {
+    const res = await fetchImpl(`${baseUrl}cards.json`);
+    if (!res.ok) throw new Error(`Could not load the Duas (${res.status}).`);
+    const data = await res.json();
+    if (!Array.isArray(data.books) || !Number.isFinite(data.files)) throw new Error("Invalid Duas summary shape.");
+    return data;
+  });
+}
+export async function loadDuaCardsPage(page, { fetchImpl = fetch, baseUrl = DUA_BASE_URL } = {}) {
+  return cached(duaCache, `${baseUrl}cards-${page}.json`, async () => {
+    const res = await fetchImpl(`${baseUrl}cards-${page}.json`);
+    if (!res.ok) throw new Error(`Could not load page ${page} of the Duas (${res.status}).`);
+    const data = await res.json();
+    if (!Array.isArray(data.cards)) throw new Error("Invalid Duas page shape.");
+    return data.cards;
+  });
+}
