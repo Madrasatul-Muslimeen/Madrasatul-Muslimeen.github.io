@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.121",
+    "version": "09.122",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2633,8 +2633,20 @@
     {
       "version": "09.121",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Decision 88 (Go ahead with the DUA): the Dua tab's Duas view, one card per dua with every place it is narrated and progress saved once per dua under the new permanent unit key dua:<n>; built and reviewed by the session Architect.",
+      "integration": {
+        "authorizedOn": "2026-10-08",
+        "integratedOn": "2026-10-08",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.122",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Mapping My Journey pop-up: the reading cap lifted, three panels from 900px, gold grips on every floating window, a duplicate bn.js Back removed.",
       "integration": {
         "authorizedOn": "2026-10-08",
         "integratedOn": "2026-10-08",
@@ -2643,8 +2655,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.122",
+  "nextUnallocated": "09.123",
   "nextUnallocatedNote": [
+    "v09.122 was allocated to Mapping My Journey pop-up: three panels fill the window and resize, 2026-10-08.",
     "v09.121 was allocated to one card per dua, progress counted once (round H-DB5), 2026-10-08.",
     "v09.120 was allocated to a Name's description: the poster's, a suggestion, or the madrasah's own, 2026-10-08.",
     "v09.119 was allocated to the Dua tab: the Dua chapters of eleven Hadith books (round H-DB4), 2026-10-08.",
