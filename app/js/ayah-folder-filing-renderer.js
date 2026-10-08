@@ -17,6 +17,7 @@
 // to explain, and explaining them is that view's job, not a quick sheet's).
 
 import { t } from "./i18n.js";
+import { isSystemFolderRole } from "./journey-map-contract.js";
 
 function escapeHtml(s) {
   return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -73,19 +74,91 @@ function folderRowHtml(folder, checkedIds, term, depth, expanded) {
  */
 /** The folder list alone. The Owner, 8 Oct 2026: "On every letter typing, the keyboard goes down." Typing in the
  *  search box now redraws only this list, never the box itself, so the box keeps its focus and the keyboard stays. */
-export function renderAyahFolderTreeHtml({ tree, checkedFolderIds = [], searchTerm = "", expandedFolderIds = [] } = {}) {
+export function renderAyahFolderTreeHtml({ tree, checkedFolderIds = [], searchTerm = "", expandedFolderIds = [], scope = "all" } = {}) {
   const checked = new Set(checkedFolderIds);
   const term = searchTerm.trim().toLowerCase();
   const roots = tree?.roots ?? [];
   const expanded = new Set(expandedFolderIds);
-  const rowsHtml = roots.map((folder) => folderRowHtml(folder, checked, term, 0, expanded)).join("");
-  return roots.length
-    ? (rowsHtml || `<p class="ayah-folder-empty">${escapeHtml(t("No folders match your search."))}</p>`)
-    : `<p class="ayah-folder-empty">${escapeHtml(t("No folders yet."))}</p>`;
+  if (!roots.length) return `<p class="ayah-folder-empty">${escapeHtml(t("No folders yet."))}</p>`;
+  const groups = folderSectionGroups(tree);
+  let rowsHtml;
+  if (!groups) {
+    rowsHtml = roots.map((folder) => folderRowHtml(folder, checked, term, 0, expanded)).join("");
+  } else {
+    // A search looks through every section (a match is never hidden in another one); otherwise the chosen scope.
+    const shown = term || scope === "all" ? groups : groups.filter((g) => g.id === scope);
+    const headed = term || scope === "all";
+    rowsHtml = shown.map((g) => {
+      const rows = g.roots.map((folder) => folderRowHtml(folder, checked, term, 0, expanded)).join("");
+      return rows ? `${headed ? `<div class="ayah-folder-sechead" data-ayah-folder-sechead="${escapeHtml(g.id)}">${escapeHtml(g.id === "none" ? t("Not in a section") : g.name)}</div>` : ""}${rows}` : "";
+    }).join("");
+  }
+  return rowsHtml || `<p class="ayah-folder-empty">${escapeHtml(t("No folders match your search."))}</p>`;
+}
+
+/**
+ * The Owner, 8 Oct 2026 ("Here is Siyagah's MidPane Folder's few functions, add the marked ones"; "Go ahead with the
+ * Siyagah header"). The top-level folders grouped by their section (`tree.sections`, active, by `order`; a root's own
+ * `sectionId`), plus "Not in a section" for the rest (the system folders among them). null when there are no
+ * sections at all, so the chooser stays as it was.
+ */
+export function folderSectionGroups(tree) {
+  const sections = [...(tree?.sections ?? [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  if (!sections.length) return null;
+  const ids = new Set(sections.map((sec) => sec.sectionId));
+  const groups = sections.map((sec) => ({ id: sec.sectionId, name: sec.name ?? "", roots: [] }));
+  const none = { id: "none", name: "", roots: [] };
+  for (const root of tree?.roots ?? []) {
+    const sid = (root.parentFolderId ?? null) === null && ids.has(root.sectionId) && !isSystemFolderRole(root.semanticRole) ? root.sectionId : null;
+    (sid ? groups.find((g) => g.id === sid) : none).roots.push(root);
+  }
+  return none.roots.length ? [none, ...groups] : groups;
+}
+
+/** The scopes ◀ ▶ step through, in order: each group's id. */
+export function folderScopeOrder(tree) { return (folderSectionGroups(tree) ?? []).map((g) => g.id); }
+
+const FONT_SWATCHES = [["Default", ""], ["Gold", "#e2c06b"], ["Sky", "#8ec5ff"], ["Mint", "#7fd1a7"], ["Rose", "#f4a3b5"], ["White", "#ffffff"]];
+
+/** Siyagah's header: the scope's name, then 📚 (every section), ◀ ▶ (previous / next section), the section picker and
+ *  🎨 (folder text size, colour, bold -- kept on this device). Nothing when there are no sections. */
+export function renderAyahFolderNavHtml({ tree, scope = "all", fontOpen = false, font = { size: 15, color: "", bold: false } } = {}) {
+  const groups = folderSectionGroups(tree);
+  if (!groups) return "";
+  const cur = groups.find((g) => g.id === scope);
+  const title = scope === "all" || !cur ? `📚 ${escapeHtml(t("All sections"))}` : `📂 ${escapeHtml(cur.id === "none" ? t("Not in a section") : cur.name)}`;
+  const opts = groups.map((g) => `<option value="${escapeHtml(g.id)}"${g.id === scope ? " selected" : ""}>${escapeHtml(g.id === "none" ? t("Not in a section") : g.name)}</option>`).join("")
+    + `<option value="all"${scope === "all" || !cur ? " selected" : ""}>📚 ${escapeHtml(t("All sections"))}</option>`;
+  const pop = !fontOpen ? "" : `
+      <div class="ayah-folder-font-pop" data-ayah-folder-font-pop role="dialog" aria-label="${escapeHtml(t("Folder text"))}">
+        <div class="ayah-folder-font-hd"><span>🎨 ${escapeHtml(t("Folder text"))}</span><button type="button" class="ayah-folder-font-btn" data-ayah-folder-font-close aria-label="${escapeHtml(t("Close"))}">✕</button></div>
+        <div class="ayah-folder-font-lbl">${escapeHtml(t("Size"))}: <b data-ayah-folder-font-size-now>${font.size}px</b></div>
+        <div class="ayah-folder-font-row">
+          <button type="button" class="ayah-folder-font-btn" data-ayah-folder-font-step="-1">A−</button>
+          <button type="button" class="ayah-folder-font-btn" data-ayah-folder-font-step="1">A+</button>
+          ${[13, 15, 18, 22].map((n) => `<button type="button" class="ayah-folder-font-btn${n === font.size ? " on" : ""}" data-ayah-folder-font-size="${n}">${n}</button>`).join("")}
+        </div>
+        <div class="ayah-folder-font-lbl">${escapeHtml(t("Colour"))}</div>
+        <div class="ayah-folder-font-row">${FONT_SWATCHES.map(([n, c]) => `<button type="button" class="ayah-folder-font-sw${c === (font.color || "") ? " on" : ""}" data-ayah-folder-font-colour="${c}" aria-label="${escapeHtml(t(n))}" title="${escapeHtml(t(n))}" style="background:${c || "linear-gradient(135deg,#eef1f7 50%,#131a2e 50%)"}"></button>`).join("")}</div>
+        <div class="ayah-folder-font-row">
+          <button type="button" class="ayah-folder-font-btn${font.bold ? " on" : ""}" data-ayah-folder-font-bold aria-pressed="${font.bold ? "true" : "false"}"><b>B</b> ${escapeHtml(t("Bold"))}</button>
+          <button type="button" class="ayah-folder-font-btn" data-ayah-folder-font-reset>↺ ${escapeHtml(t("Reset"))}</button>
+        </div>
+        <p class="ayah-folder-font-note">${escapeHtml(t("Kept on this device only."))}</p>
+      </div>`;
+  return `
+      <div class="ayah-folder-sec-title" data-ayah-folder-sec-title>${title}</div>
+      <div class="ayah-folder-sec-nav">
+        <button type="button" class="ayah-folder-nb${scope === "all" || !cur ? " on" : ""}" data-ayah-folder-scope="all" aria-label="${escapeHtml(t("Every section at once"))}" title="${escapeHtml(t("Every section at once"))}">📚</button>
+        <button type="button" class="ayah-folder-nb" data-ayah-folder-step="-1" aria-label="${escapeHtml(t("Previous section"))}" title="${escapeHtml(t("Previous section"))}">◀</button>
+        <button type="button" class="ayah-folder-nb" data-ayah-folder-step="1" aria-label="${escapeHtml(t("Next section"))}" title="${escapeHtml(t("Next section"))}">▶</button>
+        <select class="ayah-folder-sec-sel" data-ayah-folder-scope-select aria-label="${escapeHtml(t("Jump to a section"))}">${opts}</select>
+        <button type="button" class="ayah-folder-nb${fontOpen ? " on" : ""}" data-ayah-folder-font aria-expanded="${fontOpen ? "true" : "false"}" aria-label="${escapeHtml(t("Folder text: size, colour, bold"))}" title="${escapeHtml(t("Folder text: size, colour, bold"))}">🎨</button>
+      </div>${pop}`;
 }
 
 export function renderAyahFolderPickerHtml({
-  tree, checkedFolderIds = [], searchTerm = "", newFolderUnder = null, expandedFolderIds = [],
+  tree, checkedFolderIds = [], searchTerm = "", newFolderUnder = null, expandedFolderIds = [], scope = "all", fontOpen = false, font,
 } = {}) {
   const newFolderRow = newFolderUnder === null ? "" : `
         <div class="ayah-folder-new-form">
@@ -95,8 +168,9 @@ export function renderAyahFolderPickerHtml({
         </div>`;
   return `
     <div class="ayah-folder-picker" data-ayah-folder-picker>
+      <div class="ayah-folder-nav" data-ayah-folder-nav>${renderAyahFolderNavHtml({ tree, scope, fontOpen, font })}</div>
       <input type="search" class="ayah-folder-search" data-ayah-folder-search placeholder="${escapeHtml(t("Search folders…"))}" value="${escapeHtml(searchTerm)}" aria-label="${escapeHtml(t("Search folders…"))}">
-      <div class="ayah-folder-tree" data-ayah-folder-tree>${renderAyahFolderTreeHtml({ tree, checkedFolderIds, searchTerm, expandedFolderIds })}</div>
+      <div class="ayah-folder-tree" data-ayah-folder-tree>${renderAyahFolderTreeHtml({ tree, checkedFolderIds, searchTerm, expandedFolderIds, scope })}</div>
       <button type="button" class="ayah-folder-new-root" data-ayah-folder-new-under="">${escapeHtml(t("+ New folder"))}</button>
       ${newFolderRow}
       <div class="ayah-folder-actions">
@@ -125,7 +199,20 @@ export function attachAyahFolderPickerHandlers(container, callbacks = {}) {
     const cb = e.target.closest?.("[data-ayah-folder-toggle]");
     if (cb) callbacks.onToggle?.(cb.dataset.ayahFolderToggle, cb.checked);
   });
+  picker.addEventListener("change", (e) => {
+    const sel = e.target.closest?.("[data-ayah-folder-scope-select]");
+    if (sel) callbacks.onScope?.(sel.value);
+  });
   picker.addEventListener("click", (e) => {
+    const q = (sel) => e.target.closest?.(sel);
+    const scope = q("[data-ayah-folder-scope]"); if (scope) { callbacks.onScope?.(scope.dataset.ayahFolderScope); return; }
+    const step = q("[data-ayah-folder-step]"); if (step) { callbacks.onStep?.(Number(step.dataset.ayahFolderStep)); return; }
+    if (q("[data-ayah-folder-font]") || q("[data-ayah-folder-font-close]")) { callbacks.onFontToggle?.(); return; }
+    const fs = q("[data-ayah-folder-font-step]"); if (fs) { callbacks.onFont?.({ step: Number(fs.dataset.ayahFolderFontStep) }); return; }
+    const fz = q("[data-ayah-folder-font-size]"); if (fz) { callbacks.onFont?.({ size: Number(fz.dataset.ayahFolderFontSize) }); return; }
+    const fc = q("[data-ayah-folder-font-colour]"); if (fc) { callbacks.onFont?.({ color: fc.dataset.ayahFolderFontColour }); return; }
+    if (q("[data-ayah-folder-font-bold]")) { callbacks.onFont?.({ toggleBold: true }); return; }
+    if (q("[data-ayah-folder-font-reset]")) { callbacks.onFont?.({ reset: true }); return; }
     const fold = e.target.closest?.("[data-ayah-folder-fold]");
     if (fold) { callbacks.onFold?.(fold.dataset.ayahFolderFold); return; }
     const btn = e.target.closest?.("[data-ayah-folder-new-under]");

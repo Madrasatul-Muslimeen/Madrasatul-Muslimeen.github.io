@@ -2283,6 +2283,23 @@ export const BN = {
   "Collapse {name}": "{name} বন্ধ করুন",
   "Expand {name}": "{name} খুলুন",
   "({count} ticked inside)": "(ভেতরে {count}টি টিক দেওয়া)",
+  // Siyagah's header in "File in folder(s)" (the Owner, 8 Oct 2026).
+  "All sections": "সব সেকশন",
+  "Not in a section": "কোনো সেকশনে নেই",
+  "Every section at once": "একসাথে সব সেকশন",
+  "Previous section": "আগের সেকশন",
+  "Next section": "পরের সেকশন",
+  "Jump to a section": "একটি সেকশনে যান",
+  "Folder text: size, colour, bold": "ফোল্ডারের লেখা: আকার, রং, মোটা",
+  "Folder text": "ফোল্ডারের লেখা",
+  "Kept on this device only.": "শুধু এই ডিভাইসে রাখা হয়।",
+  "Size": "আকার",
+  "Default": "স্বাভাবিক",
+  "Gold": "সোনালি",
+  "Sky": "আকাশি",
+  "Mint": "পুদিনা সবুজ",
+  "Rose": "গোলাপি",
+  "White": "সাদা",
   "Next Name": "পরের নাম",
   "Groups for {name}": "{name}-এর গ্রুপসমূহ", // ?
   "Tick every group this Name belongs to. Untick one and tick another to move it.": "এই নামটি যেসব গ্রুপে রাখতে চান সবগুলোতে টিক দিন। সরাতে চাইলে একটি থেকে টিক তুলে অন্যটিতে টিক দিন।", // ?
