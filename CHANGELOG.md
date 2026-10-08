@@ -20090,3 +20090,17 @@ The Owner, decision 88, on the Dua demo (https://claude.ai/artifact/LxHMM7PhPAKQ
   - green: quran-ayah-action-sheet 144/0, word-card-ayah-card-ways-back 71/0, ayah-connected 49/0, journey-folder-picker 294/0, bookmark-marks-back 112/0, phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0, rules-authorisation-executable 63/0
   - behaviour 1004/3 (22g×3, the archive.org baseline)
 - **Demo waiting on the Owner:** Siyagah's section header for this chooser, https://claude.ai/artifact/QiApC5toRdcQxhFgJmMPvC
+
+## v09.127 — 2026-10-08 — The Āyah card: ✍ Take Note opens the Note view ready to write
+
+- **Asked:** the Owner, a screenshot of the Āyah card with Note and Take Note circled: "Ayah Card: Note n Take Note both takes to the same view, Isn't it? Fix. Also Ayah card doesn't have family members progress recording. Enable."
+- **Found:** both buttons carried `data-ayah-sheet-note` and reached the one `onNote` (`openNoteView`), so they opened the same Note view with its Notes box as it last was.
+- **What:**
+  - `app/js/ayah-action-sheet.js`: Take Note is `data-ayah-sheet-takenote`, wired to `onTakeNote` (falls back to `onNote`).
+  - `app/quranrevival.html`: `onTakeNote` opens the Note view with the Notes box open, scrolled into sight, the cursor at the end of the box.
+  - **Family recording:** already on the card (👥 beside "✅ Record Your Progress", decision 71); now proven there by a check. The Hifz and Word-by-Word lines record nothing themselves.
+- **Checks:**
+  - new ayah-card-takenote-family-browser 40/0 (en/bn at 390 and 1280; mutations samedoor 12, self-only 4)
+  - updated in place: ayah-action-sheet-boundary 55/0 (Take Note reaches onTakeNote, Note reaches onNote; Take Note only while no Note exists), word-card-ayah-card-ways-back 71/0
+  - green: quran-ayah-action-sheet 144/0, claim-for-family 56/0, ayah-folder-filing-fullscreen 74/0, journey-note-pane 327/0, phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0
+  - behaviour 1007/0
