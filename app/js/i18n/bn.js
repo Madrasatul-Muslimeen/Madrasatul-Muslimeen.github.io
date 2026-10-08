@@ -3121,6 +3121,11 @@ export const BN = {
   "Narrated in {n} places": "{n}টি স্থানে বর্ণিত", // ?
   "Words picked out by the computer · a person checks them": "কম্পিউটার দোয়ার শব্দগুলো বেছে নিয়েছে · একজন মানুষ তা যাচাই করবেন",
   "The whole narration": "পুরো বর্ণনা",
+  "{lang} translation": "{lang} অনুবাদ",
+  "No {lang} translation was found for this narration.": "এই বর্ণনার কোনো {lang} অনুবাদ পাওয়া যায়নি।",
+  "Translation: {who} · from hadith-api (fawazahmed0), matched by the standard number": "অনুবাদ: {who} · hadith-api (fawazahmed0) থেকে, প্রচলিত নম্বর মিলিয়ে",
+  "Translation from hadith-api (fawazahmed0), matched by the standard number": "অনুবাদ hadith-api (fawazahmed0) থেকে, প্রচলিত নম্বর মিলিয়ে",
+  "The translation could not be loaded right now.": "অনুবাদটি এখন লোড করা যায়নি।",
   "The dua's own words are not picked out of this narration yet.": "এই বর্ণনা থেকে দোয়ার শব্দগুলো এখনো আলাদা করা হয়নি।",
   "← Back to Dua {n}": "← দুআ {n}-এ ফিরে যান", // ?
   "My progress on this dua": "এই দুআয় আমার অগ্রগতি", // ?

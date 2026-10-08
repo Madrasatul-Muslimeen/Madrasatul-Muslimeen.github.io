@@ -165,7 +165,12 @@ export function buildConcordance(data) {
   if (col < 0) throw new Error("Invalid concordance shape: no cite column.");
   const byN = new Map();
   const firstNByCite = new Map();
+  // Decision 89: the standard (hadith-api) number of each passage, which is what the translations are keyed by. For
+  // Muslim it differs from the cited (Abdul-Baqi) one.
+  const stdCol = data.columns.indexOf("standardNumber");
+  const stdByN = new Map();
   for (const row of data.entries) {
+    if (stdCol >= 0 && Number(row[stdCol]) > 0) stdByN.set(row[0], Math.trunc(Number(row[stdCol])));
     let cite = String(row[col] ?? "").trim();
     if (!cite) continue;
     if (data.citeColumn === "abdulBaqiNumber") cite = cite.replace(/\.\d+$/, "");
@@ -173,7 +178,7 @@ export function buildConcordance(data) {
     const whole = Math.trunc(Number(cite));
     if (Number.isFinite(whole) && whole > 0 && !firstNByCite.has(whole)) firstNByCite.set(whole, row[0]);
   }
-  return { versionUri: data.versionUri, label: data.label ?? {}, byN, firstNByCite };
+  return { versionUri: data.versionUri, label: data.label ?? {}, byN, firstNByCite, stdByN };
 }
 
 // ---------------------------------------------------------------------------
