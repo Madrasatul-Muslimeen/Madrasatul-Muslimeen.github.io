@@ -16103,9 +16103,11 @@
         ...(wordProgressActor().isSupervisor ? {
           wholeQuranKnown: t("Knows {known} of {total} words of the Qur'an"),
           wholeQuranPercent: t("Knows {percent}% of the words of the Qur'an"),
+          wholeQuranKnownShort: t("Knows {known} of {total} words"),
         } : {
           wholeQuranKnown: t("You know {known} of {total} words of the Qur'an"),
           wholeQuranPercent: t("You know {percent}% of the words of the Qur'an"),
+          wholeQuranKnownShort: t("You know {known} of {total} words"),
         }),
         learnWordDelta: t("If you learn this word: +{words} words (+{percent}%)"),
         learnWordDeltaThisOccurrenceOnly: t("If you learn this word here: +{words} word (+{percent}%) — this occurrence only"),
@@ -16114,9 +16116,14 @@
         ...(wordProgressActor().isSupervisor ? {
           wholeQuranKnownLevel: t("Knows ({level}) {known} of {total} words of the Qur'an"),
           wholeQuranPercentLevel: t("Knows ({level}) {percent}% of the words of the Qur'an"),
+          // The Owner, 8 Oct 2026: "Erase 'of the Quran' from all except the bottom one."
+          wholeQuranKnownLevelShort: t("Knows ({level}) {known} of {total} words"),
+          wholeQuranPercentLevelShort: t("Knows ({level}) {percent}% of the words"),
         } : {
           wholeQuranKnownLevel: t("You know ({level}) {known} of {total} words of the Qur'an"),
           wholeQuranPercentLevel: t("You know ({level}) {percent}% of the words of the Qur'an"),
+          wholeQuranKnownLevelShort: t("You know ({level}) {known} of {total} words"),
+          wholeQuranPercentLevelShort: t("You know ({level}) {percent}% of the words"),
         }),
         levelNameWbw: t("WbW"),
         levelNameBasic: t("Basic"),
