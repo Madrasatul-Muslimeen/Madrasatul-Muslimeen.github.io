@@ -56,6 +56,18 @@
       "sha256": "69e95684acfde24171d29dd7ba43ff2c8f9b54ade5e3ab0a73899c06671082b7"
     },
     {
+      "version_uri": "0256Bukhari.AdabMufrad.JK000011-ara1",
+      "local_path": "data/0256Bukhari/0256Bukhari.AdabMufrad/0256Bukhari.AdabMufrad.JK000011-ara1",
+      "title_ar": "الأدب المفرد",
+      "title_en": "al-Adab al-Mufrad",
+      "author_ar": "البخاري",
+      "file": "0256Bukhari.AdabMufrad.JK000011-ara1.txt",
+      "url": "https://raw.githubusercontent.com/OpenITI/0275AH/master/data/0256Bukhari/0256Bukhari.AdabMufrad/0256Bukhari.AdabMufrad.JK000011-ara1",
+      "bytes": 704485,
+      "sha256": "114f122aa941b307413036ea9e05387fc08fd658e6b7f2744715cd58443cbd83",
+      "pulledAt": "2026-10-08T00:43:45.005Z"
+    },
+    {
       "version_uri": "0261Muslim.Sahih.Shamela0001727-ara1",
       "local_path": "data/0261Muslim/0261Muslim.Sahih/0261Muslim.Sahih.Shamela0001727-ara1.mARkdown",
       "title_ar": "صحيح مسلم",
@@ -111,6 +123,42 @@
       "sha256": "5afdd931303a85babd351afd72063cad455327b13263f16c5de2f6df5f30a4d1"
     },
     {
+      "version_uri": "0303Nasai.CamalYawmWaLayla.JK000735-ara1",
+      "local_path": "data/0303Nasai/0303Nasai.CamalYawmWaLayla/0303Nasai.CamalYawmWaLayla.JK000735-ara1",
+      "title_ar": "عمل اليوم والليلة للنسائي",
+      "title_en": "al-Nasa'i's 'Amal al-Yawm wa'l-Layla",
+      "author_ar": "النسائي",
+      "file": "0303Nasai.CamalYawmWaLayla.JK000735-ara1.txt",
+      "url": "https://raw.githubusercontent.com/OpenITI/0325AH/master/data/0303Nasai/0303Nasai.CamalYawmWaLayla/0303Nasai.CamalYawmWaLayla.JK000735-ara1",
+      "bytes": 677979,
+      "sha256": "3f00cacafd7a6d42e334a5de8dd17a35e081af8158dcb24467fdf7ce373d97a1",
+      "pulledAt": "2026-10-08T00:43:45.201Z"
+    },
+    {
+      "version_uri": "0364IbnSunniDinawari.CamalYawmWaLayl.JK000943-ara1",
+      "local_path": "data/0364IbnSunniDinawari/0364IbnSunniDinawari.CamalYawmWaLayl/0364IbnSunniDinawari.CamalYawmWaLayl.JK000943-ara1",
+      "title_ar": "عمل اليوم والليلة لابن السني",
+      "title_en": "Ibn al-Sunni's 'Amal al-Yawm wa'l-Layla",
+      "author_ar": "ابن السني",
+      "file": "0364IbnSunniDinawari.CamalYawmWaLayl.JK000943-ara1.txt",
+      "url": "https://raw.githubusercontent.com/OpenITI/0375AH/master/data/0364IbnSunniDinawari/0364IbnSunniDinawari.CamalYawmWaLayl/0364IbnSunniDinawari.CamalYawmWaLayl.JK000943-ara1",
+      "bytes": 531171,
+      "sha256": "210beda9474616b4873d55bc7e07054d3286ef90827bb707e2008599af1faf0d",
+      "pulledAt": "2026-10-08T00:43:45.350Z"
+    },
+    {
+      "version_uri": "0676Nawawi.Adhkar.JK001249-ara1",
+      "local_path": "data/0676Nawawi/0676Nawawi.Adhkar/0676Nawawi.Adhkar.JK001249-ara1",
+      "title_ar": "الأذكار",
+      "title_en": "al-Nawawi's al-Adhkar",
+      "author_ar": "النووي",
+      "file": "0676Nawawi.Adhkar.JK001249-ara1.txt",
+      "url": "https://raw.githubusercontent.com/OpenITI/0700AH/master/data/0676Nawawi/0676Nawawi.Adhkar/0676Nawawi.Adhkar.JK001249-ara1",
+      "bytes": 1055144,
+      "sha256": "a31e22da8504278529cebd8107f086044620ff2abf0f982461b412b0c578fc4f",
+      "pulledAt": "2026-10-08T00:43:45.676Z"
+    },
+    {
       "version_uri": "0676Nawawi.ArbacunaNawawiyya.Shamela0012836-ara1",
       "local_path": "data/0676Nawawi/0676Nawawi.ArbacunaNawawiyya/0676Nawawi.ArbacunaNawawiyya.Shamela0012836-ara1.mARkdown",
       "title_ar": "الأربعون النووية",
@@ -134,7 +182,7 @@
     }
   ],
   "totals": {
-    "files": 11,
-    "bytes": 43504891
+    "files": 15,
+    "bytes": 46473670
   }
 }

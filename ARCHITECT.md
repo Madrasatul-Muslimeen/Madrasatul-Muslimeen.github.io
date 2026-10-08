@@ -247,6 +247,21 @@ don't interrupt your work to acknowledge even unless I ask you. I will instruct 
 Then the queued messages are taken in order. **Only a message marked urgent, or a direct question asking for an
 answer, interrupts.** A Builder round already running continues regardless.
 
+Restated by the Owner on 8 Oct 2026 (session prompt, item 4): *"I keep sending new job every now and then. When
+you're running a job, doing a job yourself, do not pause, do not interrupt your job, do not look at what I send.
+Finish your running job first and then look, read what I send you new while you have been working and do the
+needful. If something urgent I will tell you 'urgent', to look at straight away."* A new job joins the queue where
+it fits.
+
+## Who builds a round, and demos first (the Owner, 8 Oct 2026)
+
+*"You may build a round yourself instead of the Builder when that is faster; review it the same way. A new screen
+or a new place for something gets a demo first."* A round the Architect builds is reviewed exactly like a Builder
+round (its suites, the neighbouring suites, `phone-width-overflow`, `behaviour.mjs`, the governance suites,
+screenshots looked at, one check mutation-proven) before it is released. A new screen or a new placement is shown to
+the Owner as a demo first; the work then continues with the Architect's recommendation unless the Owner says
+otherwise.
+
 ## The way-back law (decision 86, 7 Oct 2026)
 
 The Owner: **"Make it a law for your building work to always enable coming back to a view where it came from."**

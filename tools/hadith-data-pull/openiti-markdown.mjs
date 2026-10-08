@@ -78,7 +78,10 @@ function unwrapParens(s) {
 }
 
 const HEADING_RE = /^### (\|{1,3})\s?(.*)$/;
-const FLAT_HEADING_RE = /^# \| (\d+)\s?(.*)$/;
+// 8 Oct 2026: the number is optional. al-Nasa'i's and Ibn al-Sunni's 'Amal al-Yawm wa'l-Layla and al-Nawawi's
+// al-Adhkar write their headings "# | <title>" with no number; without this they parsed as ONE chapter each.
+// Re-running the split left all 11 earlier books byte-identical (git diff empty), so no earlier book has this shape.
+const FLAT_HEADING_RE = /^# \| (?:(\d+)\s?)?(.*)$/;
 // Architect review: Musnad Ahmad also opens 173 narrations as "# * 14 - ..."
 // -- the star marks the additions ('zawa'id) of Ahmad's son 'Abdullah, each
 // numbered in the book's own sequence. They were being folded into the
@@ -286,7 +289,11 @@ export function parseOpenitiBook(rawText, numberingStyle) {
     if (flatHeadingMatch) {
       closeOpenHeading();
       flush();
-      openHeading = { depth: 1, parts: [flatHeadingMatch[2] ?? ""] };
+      // 8 Oct 2026: Ibn al-Sunni's 'Amal al-Yawm wa'l-Layla writes 251 of its headings as "نوع آخر" ("another
+      // wording") under the bab before it. As depth-1 headings, adjacent ones carried the same title and merged into
+      // one chapter cut off from its bab; they are depth 2, so each rides in its passages' chapterPath under the bab.
+      const flatDepth = /^نوع آخر/.test(stripMarkers(flatHeadingMatch[2] ?? "").trim()) ? 2 : 1;
+      openHeading = { depth: flatDepth, parts: [flatHeadingMatch[2] ?? ""] };
       continue;
     }
 
