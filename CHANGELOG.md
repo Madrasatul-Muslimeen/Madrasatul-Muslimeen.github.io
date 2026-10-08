@@ -20064,3 +20064,13 @@ The Owner, decision 88, on the Dua demo (https://claude.ai/artifact/LxHMM7PhPAKQ
   - updated in place: bookmark-marks-back-browser 112/0 (the floating-at-the-bottom expectations replaced by: the Word Card on top of the docked chip; in the Read bar right before ✓ on the same line, 40px, uncovered; every Study menu item clear; floating off the Read view on a phone, the PC Approach window keeping its 6 Oct step-aside rule; beside ✓ again on return). New mutation no-dock: 10 failures.
   - green: word-card-ayah-card-ways-back 71/0, quran-ayah-action-sheet 144/0, read-quick-buttons 204/0, read-window 65/0, kys-window 50/0, journey-map-back 38/0, asma-name-nav-poster 140/0, bookmark-open 77/0, bookmark-last-place 68/0, writing-sheet 206/0, phone-width-overflow 217/0, palette-contrast 20/0
   - behaviour 1004/3 (22g×3, the archive.org baseline; 33a/37a updated in place for the new slot)
+
+## v09.125 — 2026-10-08 — The Word card's "You know" box says "of the Qur'an" once, on its bottom line
+
+- **Asked:** the Owner, a screenshot of the Word card's "You know" box: "Erase 'of the Quran' from all except the bottom one."
+- **What:** `app/js/quran-word-card.js` (`wholeQuranKnownLines()`: short texts for every line but the last; fallback to the long text), `app/quranrevival.html` (the short texts, "You know …" and "Knows …"), `app/js/i18n/bn.js` (six texts without কুরআনের).
+- **Checks:**
+  - updated in place: quran-lemma-progress-rendered 81/0 (the first pair without "of the Qur'an"; new: only the bottom line says it; a manual mutation restoring the long text fails 8)
+  - green: quran-word-card 37/0, lemma-levels 240/0, quran-word-form-mirror 91/0, quran-word-levels-rendered 41/0, word-na 48/0, phone-width-overflow 217/0, stub-parity 4/0
+  - behaviour 1004/3 (22g×3, the archive.org baseline)
+  - already red on `main` before this round (same failure with the change stashed), not fixed here: word-card-pc-boxes-browser, word-progress-practising-browser

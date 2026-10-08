@@ -188,6 +188,11 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   // Decision 58 (#490) -- one "You know" line per level, and the level that makes a word known.
   wholeQuranKnownLevel: "You know ({level}) {known} of {total} words of the Qur'an",
   wholeQuranPercentLevel: "You know ({level}) {percent}% of the words of the Qur'an",
+  // The Owner, 8 Oct 2026 (a screenshot of this box): "Erase 'of the Quran' from all except the bottom one." Every
+  // line but the last uses these; the last keeps the words above. A caller that passes no short form keeps the long.
+  wholeQuranKnownShort: "You know {known} of {total} words",
+  wholeQuranKnownLevelShort: "You know ({level}) {known} of {total} words",
+  wholeQuranPercentLevelShort: "You know ({level}) {percent}% of the words",
   levelNameWbw: "WbW",
   levelNameBasic: "Basic",
   levelNameDepth: "Depth",
@@ -337,12 +342,14 @@ function wholeQuranKnownLines(wholeQuranTotal, text, formatNumber, levelTotals) 
     const grouped = (n) => Number(n ?? 0).toLocaleString("en-US");
     const big = (v) => `<strong class="word-progress-whole-quran-num">${escapeHtml(v)}</strong>`;
     const names = { wbw: text.levelNameWbw, basic: text.levelNameBasic, depth: text.levelNameDepth };
-    const rows = levelTotals.map(({ level, total }) => {
+    const rows = levelTotals.map(({ level, total }, i) => {
       const name = String(names[level] ?? level);
-      const known = escapeHtml(String(text.wholeQuranKnownLevel)).replace("{level}", () => escapeHtml(name))
+      // Only the box's bottom line (the last level's percent) says "of the Qur'an" (the Owner, 8 Oct 2026).
+      const last = i === levelTotals.length - 1;
+      const known = escapeHtml(String(text.wholeQuranKnownLevelShort ?? text.wholeQuranKnownLevel)).replace("{level}", () => escapeHtml(name))
         .replace("{known}", big(formatNumber(grouped(total.known))))
         .replace("{total}", big(formatNumber(grouped(total.total))));
-      const percent = escapeHtml(String(text.wholeQuranPercentLevel)).replace("{level}", () => escapeHtml(name))
+      const percent = escapeHtml(String(last ? text.wholeQuranPercentLevel : (text.wholeQuranPercentLevelShort ?? text.wholeQuranPercentLevel))).replace("{level}", () => escapeHtml(name))
         .replace("{percent}", big(formatNumber(percentRounded(total.known, total.total))));
       return `<p class="word-progress-whole-quran" data-whole-quran-level="${escapeHtml(level)}">${known}</p>` +
         `<p class="word-progress-whole-quran-percent" data-whole-quran-level-percent="${escapeHtml(level)}">${percent}</p>`;
@@ -358,7 +365,7 @@ function wholeQuranKnownLines(wholeQuranTotal, text, formatNumber, levelTotals) 
   // .... words of the Quran'". The numbers are wrapped AFTER escaping the
   // sentence, so a translation can place them anywhere in its own order.
   const big = (v) => `<strong class="word-progress-whole-quran-num">${escapeHtml(v)}</strong>`;
-  const known = escapeHtml(String(text.wholeQuranKnown))
+  const known = escapeHtml(String(text.wholeQuranKnownShort ?? text.wholeQuranKnown))
     .replace("{known}", big(formatNumber(grouped(wholeQuranTotal.known))))
     .replace("{total}", big(formatNumber(grouped(wholeQuranTotal.total))));
   const percent = percentRounded(wholeQuranTotal.known, wholeQuranTotal.total);

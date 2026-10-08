@@ -221,10 +221,15 @@ for (const [width, height] of [[390, 844], [1100, 900]]) {
     check(`[${lang} ${width}] Number 2 -- whole-Qur'an percent line renders`, !!card?.wholeQuranPercentLine, JSON.stringify(card));
     // Owner, 2 Oct 2026: "Make these eye-catching, bold, make the wordings,
     // 'You know ... of .... words of the Quran'". Expected words hand-written.
-    const YOU = { en: ["You know ", " of ", " words of the Qur'an"], bn: ["আপনি কুরআনের ", "টি শব্দের মধ্যে ", "টি জানেন"] }[lang];
-    const YOU_PCT = { en: ["You know ", "% of the words of the Qur'an"], bn: ["আপনি কুরআনের ", "% শব্দ জানেন"] }[lang];
-    check(`[${lang} ${width}] the total reads "${YOU.join("…")}"`, YOU.every((w) => (card?.wholeQuranLine ?? "").includes(w)), card?.wholeQuranLine);
-    check(`[${lang} ${width}] the percent reads "${YOU_PCT.join("…")}"`, YOU_PCT.every((w) => (card?.wholeQuranPercentLine ?? "").includes(w)), card?.wholeQuranPercentLine);
+    // Updated in place 8 Oct 2026 -- the Owner: "Erase 'of the Quran' from all except the bottom one." The first pair
+    // (these two lines) no longer says it; the box's bottom line still does.
+    const YOU = { en: ["You know ", " of ", " words"], bn: ["আপনি ", "টি শব্দের মধ্যে ", "টি জানেন"] }[lang];
+    const YOU_PCT = { en: ["You know ", "% of the words"], bn: ["আপনি ", "% শব্দ জানেন"] }[lang];
+    const QURAN = lang === "en" ? "of the Qur'an" : "কুরআনের";
+    check(`[${lang} ${width}] the total reads "${YOU.join("…")}", without "${QURAN}"`, YOU.every((w) => (card?.wholeQuranLine ?? "").includes(w)) && !(card?.wholeQuranLine ?? QURAN).includes(QURAN), card?.wholeQuranLine);
+    check(`[${lang} ${width}] the percent reads "${YOU_PCT.join("…")}", without "${QURAN}"`, YOU_PCT.every((w) => (card?.wholeQuranPercentLine ?? "").includes(w)) && !(card?.wholeQuranPercentLine ?? QURAN).includes(QURAN), card?.wholeQuranPercentLine);
+    const boxLines = await page.evaluate(() => [...document.querySelectorAll("#quranWordCardMount .word-progress-whole-quran-box p")].map((p) => p.textContent.trim()));
+    check(`[${lang} ${width}] only the box's bottom line says "${QURAN}" (${boxLines.length} lines)`, boxLines.length >= 2 && boxLines.at(-1).includes(QURAN) && boxLines.slice(0, -1).every((l) => !l.includes(QURAN)), JSON.stringify(boxLines));
     const st = card?.wholeQuranStyle;
     // UPDATED IN PLACE, 2 Oct 2026 -- the Owner published the Basic/Depth Rules
     // and that gate is open, so the box carries ONE pair of lines PER LEVEL

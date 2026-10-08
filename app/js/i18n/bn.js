@@ -1269,6 +1269,13 @@ export const BN = {
   "You know ({level}) {percent}% of the words of the Qur'an": "আপনি কুরআনের {percent}% শব্দ জানেন ({level})",
   "Knows ({level}) {known} of {total} words of the Qur'an": "কুরআনের {total}টি শব্দের মধ্যে {known}টি জানা ({level})",
   "Knows ({level}) {percent}% of the words of the Qur'an": "কুরআনের {percent}% শব্দ জানা ({level})",
+  // The Owner, 8 Oct 2026: "Erase 'of the Quran' from all except the bottom one." (কুরআনের dropped.)
+  "You know {known} of {total} words": "আপনি {total}টি শব্দের মধ্যে {known}টি জানেন",
+  "Knows {known} of {total} words": "{total}টি শব্দের মধ্যে {known}টি জানা",
+  "You know ({level}) {known} of {total} words": "আপনি {total}টি শব্দের মধ্যে {known}টি জানেন ({level})",
+  "You know ({level}) {percent}% of the words": "আপনি {percent}% শব্দ জানেন ({level})",
+  "Knows ({level}) {known} of {total} words": "{total}টি শব্দের মধ্যে {known}টি জানা ({level})",
+  "Knows ({level}) {percent}% of the words": "{percent}% শব্দ জানা ({level})",
   "Basic": "প্রাথমিক",
   "Depth": "গভীরতা",
   "Known through its meaning group (Basic: same meaning)": "একই অর্থের শব্দগুচ্ছের মাধ্যমে জানা (প্রাথমিক: একই অর্থ)",
