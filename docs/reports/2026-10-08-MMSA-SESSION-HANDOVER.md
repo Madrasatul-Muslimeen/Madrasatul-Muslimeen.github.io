@@ -111,3 +111,4 @@ that handover does not name the version in `app/js/version.js`.
 - **v09.120** (2026-10-08): a Name's description: the poster's, a suggestion, or the madrasah's own.
 - **v09.121** (2026-10-08): one card per dua, progress counted once (round H-DB5).
 - **v09.122** (2026-10-08): Mapping My Journey pop-up: three panels fill the window and resize.
+- **v09.123** (2026-10-08): Asma ul Husna in Explore: ‹ › on a Name, the poster fills its panel.

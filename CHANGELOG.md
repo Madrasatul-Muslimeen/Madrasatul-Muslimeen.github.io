@@ -20039,3 +20039,16 @@ The Owner, decision 88, on the Dua demo (https://claude.ai/artifact/LxHMM7PhPAKQ
   - updated in place: journey-three-panel-browser 464/0 (the 1440px tray, a 1008px document, now shows three panels; a 1180px tray keeps one panel at a time; the forced-wide mutation re-anchored)
   - green: journey-tray 227/0, journey-pane-resize 40/0, journey-note-windows 254/0, notes-note-windows 218/0, journey-folder-window 144/0, journey-window-tabs 166/0, kys-window 50/0, explore-all-approaches 280/0, journey-map-back 38/0, read-window 65/0, palette-contrast 20/0, phone-width-overflow 217/0, stub-parity 4/0, rules-authorisation-executable 63/0
   - behaviour 1007/0
+
+## v09.123 — 2026-10-08 — Asma ul Husna in Explore: ‹ › on a Name, the poster fills its panel
+
+- **Asked:** the Owner, a screenshot of Explore → Asma ul Husna at a Name, the space after 📂 marked: "Enable a NAV buttons. And I want the poster to be taken entire space."
+- **What (`app/quranrevival.html`):**
+  - ‹ › after 📂 on the Name's bar, one pair that never splits across lines; the previous / next Name in the open group's order, or in the Names picker's order when no group is open (`asmaXNameOrder()`); off at either end. `bn.js`: "Previous Name", "Next Name".
+  - `#asmaXWheelPane.asmax-poster-mode` at the Name level: the wheel's resize handles and legend hidden, its stored width ignored; `sizeAsmaXPoster()` fits the poster to the panel's width and height, keeping 1055 : 1491, re-run by a `ResizeObserver`.
+- **Measured:** at 1239 x 818, 320 x 452 before, 347 x 490 after (height-limited: the full panel). On a phone the width limits it, as before.
+- **Checks:**
+  - new asma-name-nav-poster-browser 140/0 (en/bn at 390, 768, 1239 and 1440; mutations nav, size, mode and pair each caught)
+  - updated in place: asma-explore-name-poster-browser 36/0 (the 320px cap is gone; the poster still fits inside its space)
+  - green: asma-descriptions 26/0, asma-classification-rename 20/0, asma-file-under 52/0, asma-poster 96/0, asma-classifications-boundary 36/0, card-look 96/0 (its QCR header wait made a state, not 200ms), word-card-ayah-card-ways-back 71/0, phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0
+  - behaviour 1007/0
