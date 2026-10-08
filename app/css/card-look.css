@@ -211,7 +211,9 @@
 [data-card-look="night"] .hadith-search-input,
 [data-card-look="night"] .hadith-track-select,
 [data-card-look="night"] .hadeethenc-study-select,
-[data-card-look="night"] .openiti-goto-input { color: var(--card-link); background: var(--card-bg-inset); border-color: var(--card-line); }
+[data-card-look="night"] .openiti-goto-input,
+[data-card-look="night"] .openiti-goto-mode { color: var(--card-link); background: var(--card-bg-inset); border-color: var(--card-line); }
+[data-card-look="night"] .openiti-standard-number { color: var(--card-heading); }
 /* .hadith-crumb/-current and its hadeethenc/openiti siblings are
    DELIBERATELY NOT re-picked, found by this round's own measurement: the
    breadcrumb `<nav>` (hadith-browser.js) carries no background of its own

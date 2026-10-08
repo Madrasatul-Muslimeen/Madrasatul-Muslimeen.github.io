@@ -134,3 +134,44 @@ export function chapterForHadithNumber(bookIndex, number) {
 export function openitiPassageId(versionUri, n) {
   return `openiti:${versionUri}:${n}`;
 }
+
+// ---------------------------------------------------------------------------
+// The numbering concordance (decision 87, round H-DB2): each OpenITI passage's number in the STANDARD numbering
+// (sunnah.com's, as fawazahmed0/hadith-api carries it; Muslim by Abdul-Baqi's number), found by matching words,
+// written by tools/hadith-data-pull/hadith-concordance.mjs. Numbers only. Loaded when a book is opened, never at
+// startup (I9): concordance/summary.json names the books that have one, so a book without one costs no 404.
+// ---------------------------------------------------------------------------
+
+const CONCORDANCE_BASE_URL = "../tools/hadith-data-pull/output/concordance/";
+const concordanceCache = new Map();
+
+/** The concordance of one book, or null if it has none: { label: {en, bn}, byN: Map(n -> cite string), firstNByCite: Map(cite integer -> n) }. */
+export async function loadOpenitiConcordance(versionUri, { fetchImpl = fetch, baseUrl = CONCORDANCE_BASE_URL } = {}) {
+  return cached(concordanceCache, `${baseUrl}${versionUri}`, async () => {
+    const sres = await fetchImpl(`${baseUrl}summary.json`);
+    if (!sres.ok) return null;
+    const summary = await sres.json();
+    if (!(summary.books ?? []).some((b) => b.versionUri === versionUri)) return null;
+    const res = await fetchImpl(`${baseUrl}${versionUri}.json`);
+    if (!res.ok) throw new Error(`Could not load the standard numbers of "${versionUri}" (${res.status}).`);
+    return buildConcordance(await res.json());
+  });
+}
+
+/** Pure: the file's rows -> lookups. A cited number is shown as the source writes it ("815.2", Muslim "91.01" -> "91"). */
+export function buildConcordance(data) {
+  if (!Array.isArray(data?.entries) || !Array.isArray(data?.columns)) throw new Error("Invalid concordance shape.");
+  const col = data.columns.indexOf(data.citeColumn ?? "standardNumber");
+  if (col < 0) throw new Error("Invalid concordance shape: no cite column.");
+  const byN = new Map();
+  const firstNByCite = new Map();
+  for (const row of data.entries) {
+    let cite = String(row[col] ?? "").trim();
+    if (!cite) continue;
+    if (data.citeColumn === "abdulBaqiNumber") cite = cite.replace(/\.\d+$/, "");
+    byN.set(row[0], cite);
+    const whole = Math.trunc(Number(cite));
+    if (Number.isFinite(whole) && whole > 0 && !firstNByCite.has(whole)) firstNByCite.set(whole, row[0]);
+  }
+  return { versionUri: data.versionUri, label: data.label ?? {}, byN, firstNByCite };
+}

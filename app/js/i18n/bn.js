@@ -3061,6 +3061,12 @@ export const BN = {
   // not repeated here (a duplicate object key would just be an unreachable
   // no-op, since it carries the identical value).
   "No chapter found for hadith number {n}.": "{n} নম্বর হাদীসের জন্য কোনো অধ্যায় পাওয়া যায়নি।", // ?
+  // Round H-DB2 (8 Oct 2026): the standard hadith numbers in the OpenITI library.
+  "Which numbering": "কোন নম্বর", // ?
+  "Standard number": "প্রচলিত নম্বর", // ?
+  "This edition's number": "এই সংস্করণের নম্বর", // ?
+  "No hadith found with standard number {n}.": "প্রচলিত নম্বর {n}-এর কোনো হাদীস পাওয়া যায়নি।", // ?
+  "Standard number: {ref}": "প্রচলিত নম্বর: {ref}", // ?
   "Show more ({remaining} more)": "আরও দেখুন (আরও {remaining}টি)", // ?
   "Hadith {n}": "হাদীস {n}", // ?
   "Passage {n} (position in this edition, not the book's own number)": "অংশ {n} (এই সংস্করণে অবস্থান, বইয়ের নিজস্ব নম্বর নয়)", // ?
