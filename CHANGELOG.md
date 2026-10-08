@@ -20025,3 +20025,17 @@ The Owner, decision 88, on the Dua demo (https://claude.ai/artifact/LxHMM7PhPAKQ
 - **Repaired**: `claim-for-family-word-hadith-browser.mjs` had been red on `main` since the Al-Fatiha count (decisions 55, 76, 77): the picker's value "7" is now the first half of 1:7, and word 1:7:6 sits under "8". Updated in place with the reason; 158/0.
 - `docs/governance/NEW-SESSION-PROMPT-2026-10-08.md`: refreshed (decisions to 88, where the job stands, the queue, pictures live).
 - Checks: dua-tab-browser 57/0 (new: assignDuaNumbers re-run, merge, split and new; the committed registry; Duas page 1 of 3,126; progress written as `dua:<n>::studied_hadith`; a card's book and back; Next; updated in place: the chapter checks choose "Dua chapters" first; mutation: a `dua-<n>` key fails 3), hadith-gate-contracts 12/0, hadeethenc-openiti-links 34/0, hadith-concordance 89/0, openiti-browser 76/0, hadith-source-navigation-browser 50/0, hadith-corpus 60/0, claim-for-family-word-hadith-browser 158/0 (repaired), study-event-wiring 47/0, stub-parity 4/0, rules-authorisation-executable 63/0, phone-width-overflow 217/0, behaviour 1007/0 (14a caught the Records-page leak first). Screenshots looked at: Dua 1 at bn 390 light and en 1280 night.
+
+## v09.122 — 2026-10-08 — Mapping My Journey pop-up: three panels fill the window and resize; gold grips on every pop-out edge
+
+- **Asked:** the Owner, with a screenshot of the pop-up: "Enable all three columns resizeable on the deck and also pop-out, resizeable from every corner, everyside."
+- **Measured before:** at 1486 x 924 with a 1342px pop-up, the page inside was 1340px wide but its body 755px (the 46rem reading cap); the panels were 211, 229 and 264px, each below its minimum, so the handles could not move. After: 396, 397 and 495px across the whole window.
+- **What:**
+  - `app/journey-map.html`: `html.embed body { max-width: none; }`; `noteLayoutTier()` uses 900px in the pop-up (`NOTE_PANE_WIDE_FROM_EMBED`), 1200px on the full page.
+  - `app/js/float-window.js`: `handleCss()` draws a gold bracket at each corner (always) and a gold line on a side under the pointer, inside the edge, for every window that uses it (the pop-up, Note windows, floating cards). The handles and their behaviour are unchanged.
+  - `app/js/i18n/bn.js`: the second "← Back" entry (v09.107, "← পেছনে") overrode the first ("← ফিরে যান") everywhere; removed. 31 other keys are written twice with different wording; recorded in CLAUDE.md, not changed.
+- **Checks:**
+  - new journey-tray-panes-browser 56/0 (mutations cap, tier, marks: 6, 6 and 6 failures)
+  - updated in place: journey-three-panel-browser 464/0 (the 1440px tray, a 1008px document, now shows three panels; a 1180px tray keeps one panel at a time; the forced-wide mutation re-anchored)
+  - green: journey-tray 227/0, journey-pane-resize 40/0, journey-note-windows 254/0, notes-note-windows 218/0, journey-folder-window 144/0, journey-window-tabs 166/0, kys-window 50/0, explore-all-approaches 280/0, journey-map-back 38/0, read-window 65/0, palette-contrast 20/0, phone-width-overflow 217/0, stub-parity 4/0, rules-authorisation-executable 63/0
+  - behaviour 1007/0

@@ -110,3 +110,4 @@ that handover does not name the version in `app/js/version.js`.
 - **v09.119** (2026-10-08): the Dua tab: the Dua chapters of eleven Hadith books (round H-DB4).
 - **v09.120** (2026-10-08): a Name's description: the poster's, a suggestion, or the madrasah's own.
 - **v09.121** (2026-10-08): one card per dua, progress counted once (round H-DB5).
+- **v09.122** (2026-10-08): Mapping My Journey pop-up: three panels fill the window and resize.

@@ -1,7 +1,11 @@
 // S8 (Siyagah folder plan, 4 Oct 2026): Mapping My Journey is THREE panels --
 // folder tree | the chosen folder's Note list | the Note. Below 1200px (the
 // DOCUMENT's width, so the tray counts) one panel shows at a time; at 1200px and
-// up the three sit side by side. Every action is a REAL tap/keypress; writes are
+// up the three sit side by side. In the tray the line is 900px (the Owner, 8 Oct
+// 2026: "Enable all three columns resizeable on the deck"; the tray's page has no
+// reading cap, so the minimums fit from 900px). Updated in place: the 1440px tray
+// (a 1008px document) now shows three columns, and a 1180px tray (826px) keeps
+// one panel at a time. Every action is a REAL tap/keypress; writes are
 // proved through the stub's own logs (handover §5.4).
 // Run from the repository root with `node serve.js` running.
 //   --mutate-no-placement   the quick-title writes the Note but skips its placement
@@ -78,7 +82,7 @@ async function run(lang, width, embedFrame = false) {
       if (MUTATE === "no-placement") body = body.replace("await createNotePlacement(db, { ...ownerArgs, noteId: created.noteId, folderId, order });", "/* mutated: placement skipped */");
       if (MUTATE === "no-infolders") body = body.replace("const inFolders = filedIn > 1 ?", "const inFolders = false ?");
       if (MUTATE === "no-cardtap") body = body.replace('if (card.matches(".fn-card")) {', "if (false) {");
-      if (forceWide) body = body.replace('document.documentElement.clientWidth >= NOTE_PANE_WIDE_FROM ? "wide" : "narrow"', '"wide"');
+      if (forceWide) body = body.replace('document.documentElement.clientWidth >= from ? "wide" : "narrow"', '"wide"');
       await route.fulfill({ response: res, body });
     });
   }
@@ -96,8 +100,9 @@ async function run(lang, width, embedFrame = false) {
   const P = frame; // every check below drives the page itself, or the tray's iframe
   await waitTree(P);
   const docW = await P.evaluate(() => document.documentElement.clientWidth);
-  const tierWide = docW >= 1200;
+  const tierWide = docW >= (embedFrame ? 900 : 1200);
   if (embedFrame) check(`${tag}: (positive control) the tray's own document is narrower than 1200px`, docW < 1200, `iframe width ${docW}`);
+  if (embedFrame) check(`${tag}: (positive control) the tray's tier is the one its width calls for (${width === 1440 ? "three columns" : "one panel"})`, tierWide === (width === 1440), `iframe width ${docW}`);
 
   // ---- 1. The panels per tier -------------------------------------------------------
   const boxes = await P.evaluate(() => {
@@ -250,7 +255,8 @@ async function run(lang, width, embedFrame = false) {
 
 for (const lang of ["en", "bn"]) {
   for (const width of [390, 820, 1440]) await run(lang, width);
-  await run(lang, 1440, true); // the tray, on a wide screen: its own document is narrower than 1200px
+  await run(lang, 1440, true); // the tray, on a wide screen: a 1008px document, three columns from 900px
+  await run(lang, 1180, true); // a smaller screen: an 826px tray document, one panel at a time
 }
 
 await browser.close();

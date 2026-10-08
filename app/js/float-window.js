@@ -18,6 +18,23 @@ export function handleCss(cls) {
 .${cls}[data-h="nw"] { top: -2px; left: -2px; width: 14px; height: 14px; cursor: nwse-resize; }
 .${cls}[data-h="se"] { bottom: -2px; right: -2px; width: 14px; height: 14px; cursor: nwse-resize; }
 .${cls}[data-h="sw"] { bottom: -2px; left: -2px; width: 14px; height: 14px; cursor: nesw-resize; }
+/* The Owner, 8 Oct 2026 ("resizeable from every corner, everyside"): the handles
+   were there but invisible. Each corner carries a small gold bracket, always shown;
+   each side lights a gold line while the pointer is on it. Drawn inside the
+   window's edge, so a window that clips its overflow still shows them. */
+.${cls}::after { content: ""; position: absolute; pointer-events: none; border-color: #C9A24B; border-style: solid; border-width: 0; }
+.${cls}[data-h="ne"]::after, .${cls}[data-h="nw"]::after, .${cls}[data-h="se"]::after, .${cls}[data-h="sw"]::after { width: 7px; height: 7px; opacity: 0.85; }
+.${cls}[data-h="ne"]::after { top: 4px; right: 4px; border-top-width: 2px; border-right-width: 2px; }
+.${cls}[data-h="nw"]::after { top: 4px; left: 4px; border-top-width: 2px; border-left-width: 2px; }
+.${cls}[data-h="se"]::after { bottom: 4px; right: 4px; border-bottom-width: 2px; border-right-width: 2px; }
+.${cls}[data-h="sw"]::after { bottom: 4px; left: 4px; border-bottom-width: 2px; border-left-width: 2px; }
+.${cls}[data-h="n"]::after, .${cls}[data-h="s"]::after { left: 0; right: 0; height: 0; opacity: 0; }
+.${cls}[data-h="e"]::after, .${cls}[data-h="w"]::after { top: 0; bottom: 0; width: 0; opacity: 0; }
+.${cls}[data-h="n"]::after { top: 3px; border-top-width: 3px; }
+.${cls}[data-h="s"]::after { bottom: 3px; border-bottom-width: 3px; }
+.${cls}[data-h="e"]::after { right: 3px; border-right-width: 3px; }
+.${cls}[data-h="w"]::after { left: 3px; border-left-width: 3px; }
+.${cls}:hover::after { opacity: 1; }
 `;
 }
 
