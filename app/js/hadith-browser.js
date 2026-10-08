@@ -1304,7 +1304,7 @@ function duaCard(c, summary, state, render, progressRows, wordLinks = null, page
         span.tabIndex = 0;
         span.setAttribute("aria-pressed", "false");
         if (idx >= 0) span.classList.add("dua-word-linked");
-        const open = () => showDuaWord(panel, words, span, span.textContent, idx >= 0 ? wordLinks.entries[idx] : null, c.dua, page, links.x?.[i] ?? "", idx < 0 && gram?.f === links.f ? gram.g?.[i] ?? null : null);
+        const open = () => showDuaWord(panel, words, span, span.textContent, idx >= 0 ? wordLinks.entries[idx] : null, c.dua, page, links.x?.[i] ?? "", idx < 0 && gram?.f === links.f ? gram.g?.[i] ?? null : null, i);
         span.addEventListener("click", open);
         span.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
       }
@@ -1467,7 +1467,7 @@ function duaGrammarBlock([lemma, root, pos]) {
  * 2). Round 3: the card on this page -- meanings, root, dictionary word, dictionary links, its places in the Qur'an.
  * Round 4 (Q1 answered yes): "Achieved" here counts for the same Qur'an word. Tapping the same word again closes it.
  */
-function showDuaWord(panel, words, span, tok, entry, dua, page, how = "", grammar = null) {
+function showDuaWord(panel, words, span, tok, entry, dua, page, how = "", grammar = null, pos = null) {
   const wasOpen = span.getAttribute("aria-pressed") === "true";
   words.querySelectorAll(".dua-word[aria-pressed]").forEach((s) => s.setAttribute("aria-pressed", "false"));
   panel.textContent = "";
@@ -1486,6 +1486,7 @@ function showDuaWord(panel, words, span, tok, entry, dua, page, how = "", gramma
   if (!entry) {
     panel.appendChild(el("p", "hadith-note", t("No word of the Qur'an is spelled this way, so it is not linked yet.")));
     if (grammar) panel.appendChild(duaGrammarBlock(grammar));
+    if (pos != null) panel.appendChild(duaWordProgressBlock({ dua, pos, page }));
     return;
   }
   const [place, count, qar, tr, en, bn, root, lemma, lemmaCount, wbwKey, places = []] = entry;
@@ -1547,39 +1548,70 @@ function showDuaWord(panel, words, span, tok, entry, dua, page, how = "", gramma
   go.href = wordCardHref(place, dua);
   go.addEventListener("click", () => rememberDuaPlace(page, dua));
   panel.appendChild(go);
-  // Round 4 (decision 90, Q1 = yes): the word's Word-by-Word progress, the same record as the Qur'an word's. A press
-  // opens the Word card at this word and records it there, through the Word card's own saving (the place, the
-  // dictionary word everywhere, and the "You know" totals), then "Back to Dua n" returns here.
-  if (wbwKey) {
-    const prog = el("div", "dua-word-progress");
-    prog.dataset.duaWordProgress = wbwKey;
-    prog.appendChild(el("p", "dua-also-head", t("My progress on this word (Word-by-Word)")));
-    const status = el("p", "hadith-note dua-word-progress-now", t("Loading…"));
-    prog.appendChild(status);
-    const row = el("div", "dua-progress-row");
-    for (const id of WBW_STATES) {
-      const b = el("a", "dua-status", statusLabel(id));
-      b.dataset.duaWordState = id;
-      b.href = `${wordCardHref(place, dua)}&progress=${id}`;
-      b.addEventListener("click", () => {
+  if (pos != null) panel.appendChild(duaWordProgressBlock({ dua, pos, page, place, wbwKey }));
+  panel.appendChild(el("p", "dua-words-note", t("Linked by the computer by spelling · to be checked")));
+}
+
+/**
+ * Decision 92, round 6 ("Go ahead with round 6"): progress on this word IN THIS DUA, its own record
+ * (duaword:<dua>:<position>, position counted from 1), saved here at once. For a word linked to the Qur'an (round 4,
+ * decision 90 Q1 = yes) the same press then opens the Word card to count it for the same Qur'an word, through the Word
+ * card's own saving, with a one-use token. A failed save says so and opens nothing (I15).
+ */
+function duaWordProgressBlock({ dua, pos, page, place = null, wbwKey = "" }) {
+  const position = pos + 1;
+  const prog = el("div", "dua-word-progress");
+  prog.dataset.duaWordProgress = wbwKey;
+  prog.dataset.duaWordPosition = String(position);
+  prog.appendChild(el("p", "dua-also-head", t("My progress on this word")));
+  const here = el("p", "hadith-note dua-word-progress-dua", t("Loading…"));
+  prog.appendChild(here);
+  const quran = wbwKey ? el("p", "hadith-note dua-word-progress-now", "") : null;
+  if (quran) prog.appendChild(quran);
+  const row = el("div", "dua-progress-row");
+  const msg = el("p", "hadeethenc-study-reason");
+  msg.setAttribute("role", "status");
+  let session = null, actions = null, current = null;
+  const paint = () => row.querySelectorAll("[data-dua-word-state]").forEach((b) => b.setAttribute("aria-current", String(b.dataset.duaWordState === (current ?? "not_started"))));
+  for (const id of WBW_STATES) {
+    const b = el("button", "dua-status", statusLabel(id));
+    b.type = "button";
+    b.dataset.duaWordState = id;
+    b.addEventListener("click", async () => {
+      msg.textContent = "";
+      if (!session) { msg.textContent = t("Sign in and choose who you're studying as to record progress."); return; }
+      if (!session.canRecordFor) { msg.textContent = t("You can view this, but only the person's own record can record progress."); return; }
+      const before = current;
+      current = id; paint();
+      here.textContent = t("In this dua: {state}", { state: statusLabel(id) });
+      try { await actions.claimDuaWord(session, dua, position, id); }
+      catch (err) { current = before; paint(); here.textContent = t("In this dua: {state}", { state: statusLabel(before ?? "not_started") }); msg.textContent = t("Not saved: {why}", { why: String(err?.message ?? err) }); return; }
+      here.dataset.duaWordDuaStateNow = id;
+      if (wbwKey) {
         rememberDuaPlace(page, dua);
         try { sessionStorage.setItem(DUA_WORD_PROGRESS_TOKEN, `${place}|${id}`); } catch { /* the Word card opens without recording */ }
-      });
-      row.appendChild(b);
-    }
-    prog.appendChild(row);
-    prog.appendChild(el("p", "dua-words-note", t("Counts for this word everywhere in the Qur'an too. The Word card opens to record it.")));
-    panel.appendChild(prog);
-    loadHadithStudyActions().then(async (actions) => {
-      const session = await actions.getHadeethEncSession();
-      if (!session) { status.textContent = t("Sign in and choose who you're studying as to record progress."); return; }
-      const state = await actions.duaWordProgress(session, wbwKey);
-      status.textContent = t("Now: {state}", { state: statusLabel(state) });
-      status.dataset.duaWordStateNow = state;
-      row.querySelectorAll("[data-dua-word-state]").forEach((b) => b.setAttribute("aria-current", String(b.dataset.duaWordState === state)));
-    }).catch(() => { status.textContent = t("Progress could not be loaded right now."); });
+        location.href = `${wordCardHref(place, dua)}&progress=${id}`;
+      }
+    });
+    row.appendChild(b);
   }
-  panel.appendChild(el("p", "dua-words-note", t("Linked by the computer by spelling · to be checked")));
+  prog.appendChild(row);
+  prog.appendChild(msg);
+  prog.appendChild(el("p", "dua-words-note", wbwKey
+    ? t("Saved for this word in this dua; the Word card then opens to count it for the same word in the Qur'an too.")
+    : t("Saved for this word in this dua.")));
+  loadHadithStudyActions().then(async (a) => {
+    actions = a;
+    session = await a.getHadeethEncSession();
+    if (!session) { here.textContent = t("Sign in and choose who you're studying as to record progress."); return; }
+    const [mine, q] = await Promise.all([a.duaWordStatuses(session, dua), wbwKey ? a.duaWordProgress(session, wbwKey) : null]);
+    current = mine.get(position) ?? null;
+    here.textContent = t("In this dua: {state}", { state: statusLabel(current ?? "not_started") });
+    here.dataset.duaWordDuaStateNow = current ?? "not_started";
+    if (quran) { quran.textContent = t("The same word in the Qur'an (Word-by-Word): {state}", { state: statusLabel(q) }); quran.dataset.duaWordStateNow = q; }
+    paint();
+  }).catch(() => { here.textContent = t("Progress could not be loaded right now."); });
+  return prog;
 }
 
 /** The progress rows of one page: one session, one read of the person's statuses, then a row of status buttons each. */

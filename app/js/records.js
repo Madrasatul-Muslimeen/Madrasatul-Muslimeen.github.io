@@ -56,6 +56,12 @@ export function chunkKeyFor(unitKey, subjectId) {
     const surahNum = Number(parts[0]);
     if (Number.isFinite(surahNum)) return `surah_${surahNum}`;
   }
+  // Decision 92: a dua's words get one chunk per dua (a few hundred entries at most), never the whole subject's chunk,
+  // which 18,040 words would outgrow.
+  if (unitType === "duaword") {
+    const duaNum = Number(parts[0]);
+    if (Number.isInteger(duaNum) && duaNum > 0) return `duawords_${duaNum}`;
+  }
   return `subject_${subjectId}`;
 }
 

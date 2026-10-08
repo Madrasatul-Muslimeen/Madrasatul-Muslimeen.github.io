@@ -293,3 +293,39 @@ export async function duaWordProgress(session, wbwKey) {
   const p = await getLemmaProgress(db, { tenantId: session.tenantId, personId: session.personId, level: "wbw", lemmaId: wbwKey });
   return p?.state ?? "not_started";
 }
+
+// ---------------------------------------------------------------------------
+// Decision 92, round 6 of "Dua words" (the Owner: "Go ahead with round 6"): progress on EVERY word of every dua, each
+// its own record, duaword:<dua>:<position>. Saved exactly as the dua's own progress is (claimStatus, the module's
+// studied_hadith trackable, the hadith subject), in one records chunk per dua (duawords_<dua>). No new collection,
+// field or Rule: records already accepts any chunk of the person's own.
+// ---------------------------------------------------------------------------
+export function duaWordUnitKey(number, position) {
+  return buildUnitKey.duaWord(String(number), String(position));
+}
+
+/** Every word status the page's person has in one dua: Map(position -> statusId). One read. */
+export async function duaWordStatuses(session, number) {
+  const chunk = await getRecordsChunk(db, session.tenantId, session.personId, chunkKeyFor(duaWordUnitKey(number, 1), HADITH_ROOT_SUBJECT_ID));
+  const out = new Map();
+  for (const [key, entry] of Object.entries(chunk?.entries ?? {})) {
+    const m = new RegExp(`^duaword:${number}:(\\d+)::${STUDIED_TRACKABLE_ID}$`).exec(key);
+    if (m) out.set(Number(m[1]), entry?.claimedStatus ?? null);
+  }
+  for (const [k, v] of savedStudied) {
+    const m = new RegExp(`^${session.tenantId}__${session.personId}__duaword:${number}:(\\d+)$`).exec(k);
+    if (m) out.set(Number(m[1]), v);
+  }
+  return out;
+}
+
+export async function claimDuaWord(session, number, position, statusId) {
+  const unitKey = duaWordUnitKey(number, position);
+  const result = await claimStatus(db, {
+    tenantId: session.tenantId, personId: session.personId, subjectId: HADITH_ROOT_SUBJECT_ID,
+    unitKey, trackableId: STUDIED_TRACKABLE_ID, statusId, notes: "", domainIds: [],
+    claimedByPersonId: session.myPersonId ?? session.personId, claimedByUid: session.uid,
+  });
+  savedStudied.set(memoKey(session, unitKey), statusId);
+  return result;
+}
