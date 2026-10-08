@@ -260,8 +260,8 @@ export function openApproachList(select) {
     the header -- the short word under the icon, the full name as its tooltip and its spoken name. ONE array, so a
     future action is one more entry (issue #295's own instruction). A dimmed item still explains itself: its reason
     is printed under the row (spec item 4: "shown ... with an explanation ... not hidden"). */
-function actionRowDefs({ isBookmarked, isSelf, noteWhy }) {
-  return [
+function actionRowDefs({ isBookmarked, isSelf, noteWhy, hasPosterNote = null }) {
+  const defs = [
     { attr: "data-ayah-sheet-bookmark", icon: isBookmarked ? "★" : "🔖", short: isBookmarked ? t("Bookmarked") : t("Bookmark"), label: isBookmarked ? t("Remove bookmark") : t("Bookmark this āyah") },
     { attr: "data-ayah-sheet-note", icon: "📝", short: t("Note"), label: t("Note & more…"), disabled: !isSelf, hint: isSelf ? "" : noteWhy },
     { attr: "data-ayah-sheet-poster", icon: "🖨", short: t("Poster"), label: t("Make a poster") },
@@ -272,16 +272,19 @@ function actionRowDefs({ isBookmarked, isSelf, noteWhy }) {
     { attr: "data-ayah-sheet-copy", icon: "📋", short: t("Copy"), label: t("Copy") },
     { attr: "data-ayah-sheet-share", icon: "📤", short: t("Share"), label: t("Share") },
   ];
+  // The Owner, 8 Oct 2026 (a photo of this card, "Take Note" circled and arrowed into the row's empty places): "Take
+  // note button can be place on the above space (free current space)". With no Note on this āyah yet, Take Note is
+  // a button in the row, after Share, instead of a line of its own under it. Same door as Note (data-ayah-sheet-note).
+  if (hasPosterNote === false) defs.push({ attr: "data-ayah-sheet-note", icon: "✍", short: t("Take Note"), label: t("Take Note"), title: t("You don't have a Note on this āyah yet.") });
+  return defs;
 }
 
 function actionRowHtml({ isBookmarked, isSelf, noteWhy, hasPosterNote }) {
-  const defs = actionRowDefs({ isBookmarked, isSelf, noteWhy });
+  const defs = actionRowDefs({ isBookmarked, isSelf, noteWhy, hasPosterNote });
   const buttons = defs.map((d) => `<button type="button" class="ayah-sheet-act${d.disabled ? " is-disabled" : ""}" aria-disabled="${d.disabled ? "true" : "false"}" ${d.attr} aria-label="${escapeHtml(d.label)}" title="${escapeHtml(d.title ? `${d.label} ${d.title}` : d.label)}"><span class="ayah-sheet-act-icon" aria-hidden="true">${d.icon}</span><span class="ayah-sheet-act-label" aria-hidden="true">${escapeHtml(d.short)}</span></button>`).join("");
   // The reasons a dimmed item gives (each printed once), and the poster's own "no Note yet" offer.
   const hints = [...new Set(defs.filter((d) => d.disabled && d.hint).map((d) => d.hint))].map((h) => `<p class="ayah-sheet-hint">${escapeHtml(h)}</p>`).join("");
-  const posterHint = hasPosterNote === false
-    ? `<p class="ayah-sheet-hint">${escapeHtml(t("You don't have a Note on this āyah yet."))} <button type="button" class="ayah-sheet-hint-btn" data-ayah-sheet-note>${escapeHtml(t("Take Note"))}</button></p>` : "";
-  return `<div class="ayah-sheet-actrow" data-ayah-sheet-actions>${buttons}</div>${hints}${posterHint}`;
+  return `<div class="ayah-sheet-actrow" data-ayah-sheet-actions>${buttons}</div>${hints}`;
 }
 
 /**
@@ -545,7 +548,7 @@ export function attachAyahActionSheetHandlers(container, callbacks = {}) {
     onStageChoice: (approachId, statusId) => callbacks.onStageChoice?.(unitKey, approachId, statusId),
   });
   sheet.querySelector("[data-ayah-sheet-poster]")?.addEventListener("click", () => fire(callbacks.onPoster));
-  // The poster hint's own "Take Note" button shares data-ayah-sheet-note
+  // The row's own "Take Note" button (8 Oct 2026; it was the poster hint's button until then) shares data-ayah-sheet-note
   // with the main "Note & more…" item on purpose (I2 -- one callback, two
   // doors in). fireUnlessDisabled() above already wired the FIRST element
   // that attribute matches; querySelectorAll here reaches every remaining

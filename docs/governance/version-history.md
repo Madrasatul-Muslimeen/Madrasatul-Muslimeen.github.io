@@ -759,3 +759,4 @@ total). Allocated by the MMSA Architect.
 09.113: Word card and Ayah card ways back; the way-back law. Allocated by the MMSA Architect.
 09.114: four more Arabic Hadith books in the library (round H-DB1). Allocated by the MMSA Architect.
 09.115: standard Hadith numbers in the library (round H-DB2). Allocated by the MMSA Architect.
+09.116: Take Note in the Ayah card's button row. Allocated by the MMSA Architect.

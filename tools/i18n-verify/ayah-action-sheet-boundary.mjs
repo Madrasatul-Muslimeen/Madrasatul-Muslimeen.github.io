@@ -184,6 +184,11 @@ check("Make a poster: hasPosterNote=false shows the sheet's own hint and a Take 
   assert.ok(noNote.includes("data-ayah-sheet-poster"), "the Make a poster button is missing");
   assert.ok(noNote.includes("You don't have a Note on this āyah yet."));
   assert.ok(noNote.includes("Take Note"));
+  // Updated in place 8 Oct 2026 (the Owner: "Take note button can be place on the above space"): Take Note is now a
+  // button INSIDE the action row, after Share, and there is no separate hint line under the row any more.
+  const row = noNote.slice(noNote.indexOf("data-ayah-sheet-actions"), noNote.indexOf("</div>", noNote.indexOf("data-ayah-sheet-actions")));
+  assert.ok(/data-ayah-sheet-share[\s\S]*Take Note/.test(row), "Take Note is not in the row after Share");
+  assert.ok(!noNote.includes("ayah-sheet-hint-btn"), "the old separate Take Note line is still drawn");
   for (const val of [true, null, undefined]) {
     const html = renderAyahActionSheetHtml({ unitKey: "ayah:1:1", hasPosterNote: val });
     assert.ok(!html.includes("You don't have a Note on this āyah yet."), `hasPosterNote=${val} should show no hint`);

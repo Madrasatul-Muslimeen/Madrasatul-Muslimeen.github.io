@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.115",
+    "version": "09.116",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2561,8 +2561,20 @@
     {
       "version": "09.115",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Hadith database round H-DB2 (decision 87): the numbering concordance, matched by words, for eight OpenITI books; the library shows each narration's standard number and jumps by it; built and reviewed by the session Architect.",
+      "integration": {
+        "authorizedOn": "2026-10-08",
+        "integratedOn": "2026-10-08",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.116",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "The Owner's message of 8 Oct 2026 (a photo of the Ayah card): Take Note moves into the action row's free space; built and reviewed by the session Architect.",
       "integration": {
         "authorizedOn": "2026-10-08",
         "integratedOn": "2026-10-08",
@@ -2571,8 +2583,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.116",
+  "nextUnallocated": "09.117",
   "nextUnallocatedNote": [
+    "v09.116 was allocated to Take Note in the Ayah card's button row, 2026-10-08.",
     "v09.115 was allocated to standard Hadith numbers in the library (round H-DB2), 2026-10-08.",
     "v09.114 was allocated to four more Arabic Hadith books in the library (round H-DB1), 2026-10-08.",
     "v09.113 was allocated to Word card and Ayah card ways back; the way-back law, 2026-10-07.",
