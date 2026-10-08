@@ -20052,3 +20052,15 @@ The Owner, decision 88, on the Dua demo (https://claude.ai/artifact/LxHMM7PhPAKQ
   - updated in place: asma-explore-name-poster-browser 36/0 (the 320px cap is gone; the poster still fits inside its space)
   - green: asma-descriptions 26/0, asma-classification-rename 20/0, asma-file-under 52/0, asma-poster 96/0, asma-classifications-boundary 36/0, card-look 96/0 (its QCR header wait made a state, not 200ms), word-card-ayah-card-ways-back 71/0, phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0
   - behaviour 1007/0
+
+## v09.124 — 2026-10-08 — The way back sits beside ✓ on the Read bar
+
+- **Asked:** the Owner, a phone screenshot of the Read view with the floating "← Back to QuranRevival" chip over the Study menu (Read / Note / Writing sheet): "Not a proper place for back button, right? May be beside the tick button."
+- **What:**
+  - new `app/js/back-dock.js` (`backDock()`, `placeInDock()`): a page marks a place with `[data-back-dock]`; a Back chip sits there while that row is on screen, and floats otherwise.
+  - `app/quranrevival.html`: `#readBackSlot` just before ✓ in `#readBar` (hidden while empty); the Āyah card / Name pill docks there (`.back-docked`, 40px) and is re-placed on every view change.
+  - `app/js/bookmark-nav.js`: `mountBackRow()` docks first (`.bm-back-docked`, 40px, in `shell.css`); leaving the dock it re-measures at 300 and 900ms.
+- **Checks:**
+  - updated in place: bookmark-marks-back-browser 112/0 (the floating-at-the-bottom expectations replaced by: the Word Card on top of the docked chip; in the Read bar right before ✓ on the same line, 40px, uncovered; every Study menu item clear; floating off the Read view on a phone, the PC Approach window keeping its 6 Oct step-aside rule; beside ✓ again on return). New mutation no-dock: 10 failures.
+  - green: word-card-ayah-card-ways-back 71/0, quran-ayah-action-sheet 144/0, read-quick-buttons 204/0, read-window 65/0, kys-window 50/0, journey-map-back 38/0, asma-name-nav-poster 140/0, bookmark-open 77/0, bookmark-last-place 68/0, writing-sheet 206/0, phone-width-overflow 217/0, palette-contrast 20/0
+  - behaviour 1004/3 (22g×3, the archive.org baseline; 33a/37a updated in place for the new slot)
