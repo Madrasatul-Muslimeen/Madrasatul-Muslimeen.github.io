@@ -51,7 +51,9 @@ for (const lang of ["en", "bn"]) {
     });
     // Updated in place 7 Oct 2026 (decision 85): the poster writes the archive poster's Arabic, الرَّحْمٰنُ.
     check(`${tag} choosing Ar-Rahman shows its poster in the wheel's space, Arabic "الرَّحْمٰنُ"`, !!p && p.inWheelSpace && p.shown && /الرَّحْم/.test(p.ar ?? ""), JSON.stringify(p));
-    check(`${tag} the poster fits its space (no wider than it), no sideways scroll`, !!p && p.inside && p.w <= 320 && p.over <= 0, JSON.stringify(p));
+    // Updated in place 8 Oct 2026: the Owner, "I want the poster to be taken entire space" -- the 320px cap is gone;
+    // the poster now fills the panel (asma-name-nav-poster-browser.mjs measures that). It must still fit inside it.
+    check(`${tag} the poster fits its space (no wider than it), no sideways scroll`, !!p && p.inside && p.over <= 0, JSON.stringify(p));
     check(`${tag} the hint says to tap the poster`, p?.hint === (lang === "bn" ? "পোস্টারটি বড় করে দেখতে ট্যাপ করুন।" : "Tap the poster to see it full size."), p?.hint);
     if (width === 1300 && lang === "en" || width === 390 && lang === "bn") await page.screenshot({ path: `${SHOT_DIR}/asma-explore-poster-${lang}-${width}.png` });
     await page.click("#asmaXPosterPanel").catch(() => {});

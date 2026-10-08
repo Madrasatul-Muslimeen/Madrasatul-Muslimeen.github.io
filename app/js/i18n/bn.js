@@ -2270,6 +2270,9 @@ export const BN = {
   "Only the owner or prime can manage this.": "শুধু মালিক বা প্রাইম এটি পরিচালনা করতে পারেন।", // ?
   "You're previewing as {role}, so managing is switched off. Turn the preview off on the People page to manage again.": "আপনি {role} হিসেবে দেখছেন, তাই পরিচালনা বন্ধ আছে। আবার পরিচালনা করতে People পাতায় গিয়ে প্রিভিউ বন্ধ করুন।", // ?
   "Groups this Name is in": "এই নামটি যেসব গ্রুপে আছে", // ?
+  // The Owner, 8 Oct 2026: ‹ › on a Name's bar in Explore.
+  "Previous Name": "আগের নাম",
+  "Next Name": "পরের নাম",
   "Groups for {name}": "{name}-এর গ্রুপসমূহ", // ?
   "Tick every group this Name belongs to. Untick one and tick another to move it.": "এই নামটি যেসব গ্রুপে রাখতে চান সবগুলোতে টিক দিন। সরাতে চাইলে একটি থেকে টিক তুলে অন্যটিতে টিক দিন।", // ?
   "Add Name": "নাম যোগ করুন", // ?
