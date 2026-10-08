@@ -22,7 +22,7 @@ session" line on #159).
 
 No Builder round is running and no pull request is open.
 
-**Update, 8 Oct 2026, session `session_01QFqAPBJsmgyJ3QXw12JM22` (took over at v09.113):** `main` is at **v09.117**.
+**Update, 8 Oct 2026, session `session_01QFqAPBJsmgyJ3QXw12JM22` (took over at v09.113):** `main` is at **v09.118** (v09.118: the writing paper's list boxes whole on a phone, queue item 3, done).
 **The Hadith database is being built in rounds:**
 - **H-DB1 (v09.114, done):** al-Adab al-Mufrad, al-Nasa'i's and Ibn al-Sunni's 'Amal al-Yawm wa'l-Layla, al-Nawawi's
   al-Adhkar pulled and split (15 books).
@@ -102,3 +102,4 @@ that handover does not name the version in `app/js/version.js`.
 - **v09.115** (2026-10-08): standard Hadith numbers in the library (round H-DB2).
 - **v09.116** (2026-10-08): Take Note in the Ayah card's button row.
 - **v09.117** (2026-10-08): HadeethEnc's Bangla and English under the library's Arabic hadith (round H-DB3).
+- **v09.118** (2026-10-08): the writing paper's list boxes whole on a phone.
