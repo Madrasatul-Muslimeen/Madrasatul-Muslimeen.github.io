@@ -19263,6 +19263,21 @@
         },
         onBookmark: (unitKey) => toggleAyahBookmark(unitKey),
         onNote: (unitKey) => { rememberAyahCardReturn(unitKey); openNoteView(unitKey); },
+        // ✍ Take Note: the same view, ready to write -- its Notes box open, in sight, the cursor in it (a phone's
+        // keyboard comes up). The Owner, 8 Oct 2026: "Note n Take Note both takes to the same view ... Fix."
+        onTakeNote: async (unitKey) => {
+          rememberAyahCardReturn(unitKey);
+          noteNotesOpen = true;
+          await openNoteView(unitKey);
+          const ed = noteView.querySelector("[data-note-editor]");
+          if (!ed) return;
+          const body = ed.closest(".note-field-body");
+          if (body && body.style.display === "none") { body.style.display = ""; noteNotesOpen = true; }
+          ed.scrollIntoView({ block: "center" });
+          ed.focus();
+          const sel = window.getSelection(), range = document.createRange();
+          range.selectNodeContents(ed); range.collapse(false); sel.removeAllRanges(); sel.addRange(range);
+        },
         onAsma: (unitKey) => {
           const { surah: s, ayah: a } = parseAyahUnitKey(unitKey);
           openAsmaXAttachPopover({ prefillRef: ayahRefLabel(s, a, { internal: true }) });

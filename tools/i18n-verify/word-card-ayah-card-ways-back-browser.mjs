@@ -163,7 +163,7 @@ for (const [lang, width, height] of [["en", 390, 844], ["bn", 390, 844], ["en", 
     const status = document.querySelector("[data-ayah-sheet] [data-ayah-sheet-status]").getBoundingClientRect();
     const btns = [...row.querySelectorAll("button")]; const rs = btns.map((b) => b.getBoundingClientRect());
     const sheet = document.querySelector("[data-ayah-sheet]").getBoundingClientRect();
-    return { n: btns.length, lastIsTakeNote: btns.at(-1)?.matches("[data-ayah-sheet-note]") && btns.at(-1)?.textContent.includes("✍"), rows: new Set(rs.map((r) => Math.round(r.top))).size, underHead: rs.every((r) => r.top >= head.bottom - 1 && r.bottom <= status.top + 1),
+    return { n: btns.length, lastIsTakeNote: btns.at(-1)?.matches("[data-ayah-sheet-takenote]") /* its own door since 8 Oct 2026 */ && btns.at(-1)?.textContent.includes("✍"), rows: new Set(rs.map((r) => Math.round(r.top))).size, underHead: rs.every((r) => r.top >= head.bottom - 1 && r.bottom <= status.top + 1),
       inside: rs.every((r) => r.left >= sheet.left - 1 && r.right <= sheet.right + 1), tap: rs.every((r) => r.height >= 44 && r.width >= 40),
       named: btns.every((b) => (b.getAttribute("aria-label") || "").length > 2), labelsFit: btns.every((b) => { const l = b.querySelector(".ayah-sheet-act-label"); return l && l.scrollWidth <= l.clientWidth + 1; }) };
   });

@@ -770,3 +770,4 @@ total). Allocated by the MMSA Architect.
 09.124: the way back sits beside ✓ on the Read bar. Allocated by the MMSA Architect.
 09.125: the Word card's You know box says of the Qur'an once. Allocated by the MMSA Architect.
 09.126: File in folder(s): full screen, Back, keyboard stays, faster, folders fold. Allocated by the MMSA Architect.
+09.127: the Āyah card's Take Note opens the Note view ready to write. Allocated by the MMSA Architect.

@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.126",
+    "version": "09.127",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2693,8 +2693,20 @@
     {
       "version": "09.126",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The Āyah card's File in folder(s) chooser: full screen, ← Back, search keeps focus, faster loading, folding; Save keeps hidden ticks.",
+      "integration": {
+        "authorizedOn": "2026-10-08",
+        "integratedOn": "2026-10-08",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.127",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Āyah card: Take Note gets its own door (Notes box open, cursor in it); 👥 recording proven on the card.",
       "integration": {
         "authorizedOn": "2026-10-08",
         "integratedOn": "2026-10-08",
@@ -2703,8 +2715,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.127",
+  "nextUnallocated": "09.128",
   "nextUnallocatedNote": [
+    "v09.127 was allocated to the Āyah card's Take Note opens the Note view ready to write, 2026-10-08.",
     "v09.126 was allocated to File in folder(s): full screen, Back, keyboard stays, faster, folders fold, 2026-10-08.",
     "v09.125 was allocated to the Word card's You know box says of the Qur'an once, 2026-10-08.",
     "v09.124 was allocated to the way back sits beside ✓ on the Read bar, 2026-10-08.",
