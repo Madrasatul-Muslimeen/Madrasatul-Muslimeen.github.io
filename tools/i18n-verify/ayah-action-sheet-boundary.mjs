@@ -525,8 +525,10 @@ const TREE = {
   ],
 };
 
+// Updated in place 8 Oct 2026 (the Owner: "Enable all folder Collapse/ expandable ... Default open collapsed"): these
+// two render with Reflections opened; the default -- closed -- is the new check below them.
 check("every folder in the tree renders, indented by depth, with a checkbox and a New-folder-here button", () => {
-  const html = renderAyahFolderPickerHtml({ tree: TREE });
+  const html = renderAyahFolderPickerHtml({ tree: TREE, expandedFolderIds: ["f1"] });
   for (const id of ["f1", "f1a", "f2"]) {
     assert.ok(html.includes(`data-ayah-folder-toggle="${id}"`), `folder ${id} did not render`);
     assert.ok(html.includes(`data-ayah-folder-new-under="${id}"`), `folder ${id} has no "new folder here" control`);
@@ -535,10 +537,21 @@ check("every folder in the tree renders, indented by depth, with a checkbox and 
 });
 
 check("checkedFolderIds ticks exactly the folders already holding this Note's placement", () => {
-  const html = renderAyahFolderPickerHtml({ tree: TREE, checkedFolderIds: ["f1a"] });
+  const html = renderAyahFolderPickerHtml({ tree: TREE, checkedFolderIds: ["f1a"], expandedFolderIds: ["f1"] });
   assert.ok(new RegExp(`data-ayah-folder-toggle="f1a"[^>]*checked`).test(html), "f1a should be ticked");
   assert.ok(!new RegExp(`data-ayah-folder-toggle="f1"[^>]*checked`).test(html), "f1 should not be ticked");
   assert.ok(!new RegExp(`data-ayah-folder-toggle="f2"[^>]*checked`).test(html), "f2 should not be ticked");
+});
+
+check("by default every folder is closed: only the top folders show, a parent has one ▸ button, and it says a tick is inside", () => {
+  const html = renderAyahFolderPickerHtml({ tree: TREE, checkedFolderIds: ["f1a"] });
+  assert.ok(html.includes('data-ayah-folder-toggle="f1"') && html.includes('data-ayah-folder-toggle="f2"'), "the top folders show");
+  assert.ok(!html.includes('data-ayah-folder-toggle="f1a"'), "a folder inside a closed folder is not drawn");
+  assert.equal((html.match(/data-ayah-folder-fold="/g) || []).length, 1, "only Reflections (which has a folder inside) has a fold button");
+  assert.ok(/data-ayah-folder-fold="f1"[^>]*aria-expanded="false"[^>]*>▸</.test(html), "closed: ▸, aria-expanded false");
+  assert.ok(html.includes("ayah-folder-inside"), "the closed folder says a ticked folder is inside it");
+  const open = renderAyahFolderPickerHtml({ tree: TREE, expandedFolderIds: ["f1"] });
+  assert.ok(/data-ayah-folder-fold="f1"[^>]*aria-expanded="true"[^>]*>▾</.test(open), "open: the same button reads ▾");
 });
 
 check("a search term keeps a folder whose own name matches, OR whose descendant's does -- never orphans the indentation", () => {
