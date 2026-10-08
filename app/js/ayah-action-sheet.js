@@ -275,7 +275,9 @@ function actionRowDefs({ isBookmarked, isSelf, noteWhy, hasPosterNote = null }) 
   // The Owner, 8 Oct 2026 (a photo of this card, "Take Note" circled and arrowed into the row's empty places): "Take
   // note button can be place on the above space (free current space)". With no Note on this āyah yet, Take Note is
   // a button in the row, after Share, instead of a line of its own under it. Same door as Note (data-ayah-sheet-note).
-  if (hasPosterNote === false) defs.push({ attr: "data-ayah-sheet-note", icon: "✍", short: t("Take Note"), label: t("Take Note"), title: t("You don't have a Note on this āyah yet.") });
+  // The Owner, 8 Oct 2026: "Note n Take Note both takes to the same view, Isn't it? Fix." Take Note now has its own
+  // door: the Note view opens with its Notes box open and the cursor in it, ready to write; 📝 Note opens the view as is.
+  if (hasPosterNote === false) defs.push({ attr: "data-ayah-sheet-takenote", icon: "✍", short: t("Take Note"), label: t("Take Note"), title: t("You don't have a Note on this āyah yet.") });
   return defs;
 }
 
@@ -532,6 +534,7 @@ export function attachAyahActionSheetHandlers(container, callbacks = {}) {
   });
   sheet.querySelector("[data-ayah-sheet-bookmark]")?.addEventListener("click", () => fire(callbacks.onBookmark));
   fireUnlessDisabled(sheet.querySelector("[data-ayah-sheet-note]"), callbacks.onNote);
+  fireUnlessDisabled(sheet.querySelector("[data-ayah-sheet-takenote]"), callbacks.onTakeNote ?? callbacks.onNote);
   sheet.querySelector("[data-ayah-sheet-asma]")?.addEventListener("click", () => fire(callbacks.onAsma));
   sheet.querySelector("[data-ayah-sheet-qcr]")?.addEventListener("click", () => fire(callbacks.onQcr));
   fireUnlessDisabled(sheet.querySelector("[data-ayah-sheet-file-folder]"), callbacks.onFileInFolder);

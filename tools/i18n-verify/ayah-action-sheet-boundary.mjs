@@ -474,16 +474,22 @@ check("Make a poster and See on the wheel both fire with onClose first", () => {
   assert.deepEqual(order, ["close", "poster:ayah:1:1", "close", "wheel:ayah:1:1"]);
 });
 
-check("the poster hint's own Take Note button reaches onNote, distinctly from the main Note & more item", () => {
+// Updated in place 8 Oct 2026 -- the Owner: "Note n Take Note both takes to the same view, Isn't it? Fix." Take Note
+// has its own door now (data-ayah-sheet-takenote -> onTakeNote: the Note view ready to write); Note keeps onNote.
+check("Take Note has its own door (onTakeNote), distinct from the main Note & more item (onNote)", () => {
   const html = renderAyahActionSheetHtml({ unitKey: "ayah:1:1", isSelf: true, hasPosterNote: false });
   const container = fakeContainer(html);
-  let calls = 0;
-  attachAyahActionSheetHandlers(container, { onNote: () => { calls++; } });
+  const calls = [];
+  attachAyahActionSheetHandlers(container, { onNote: (k) => calls.push(`note:${k}`), onTakeNote: (k) => calls.push(`take:${k}`) });
   const sheet = container.querySelector("[data-ayah-sheet]");
-  const noteButtons = sheet.querySelectorAll("[data-ayah-sheet-note]");
-  assert.equal(noteButtons.length, 2, "expected the main Note & more button plus the poster hint's own Take Note button");
-  noteButtons[1]._fire();
-  assert.equal(calls, 1, "the poster hint's Take Note button did not reach onNote");
+  assert.equal(sheet.querySelectorAll("[data-ayah-sheet-note]").length, 1, "only the main Note & more button carries data-ayah-sheet-note");
+  const take = sheet.querySelector("[data-ayah-sheet-takenote]");
+  assert.ok(take, "Take Note is drawn when there is no Note on this āyah yet");
+  take._fire();
+  sheet.querySelector("[data-ayah-sheet-note]")._fire();
+  assert.deepEqual(calls, ["take:ayah:1:1", "note:ayah:1:1"]);
+  const withNote = renderAyahActionSheetHtml({ unitKey: "ayah:1:1", isSelf: true, hasPosterNote: true });
+  assert.ok(!withNote.includes("data-ayah-sheet-takenote"), "with a Note already there, Take Note is not offered");
 });
 
 check("tapping a Word by Word chip closes the sheet and opens that word's occurrence, without touching any other button", () => {
