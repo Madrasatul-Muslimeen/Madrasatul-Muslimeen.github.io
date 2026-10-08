@@ -55,6 +55,23 @@ Read this first, every session. It is the standing brief.
 > If you are the Architect, read `ARCHITECT.md` and the pinned status issue
 > `📋 MMSA — what's happening now` next. See **The Architect loop** below.
 
+> ## ⇢ THE OWNER'S STANDING RULE ON WORKING (decision 91, 8 Oct 2026) — BINDING ON EVERY SESSION
+>
+> The Owner, in their own words: **"Do not wait for my permission except something needs my choice or
+> answer. You must continue working yourself and keep builder pushing in work continuously. RULE, write in
+> the memory file."**
+>
+> - **Keep working.** When a job is done, take the next one (the queue, the offered next rounds, the
+>   handover's "possible next") without asking. Report what was done; do not end a report by waiting for a
+>   go-ahead.
+> - **Ask only for a real choice or answer**: an Owner Control Gate (Rules, permanent keys, deletion,
+>   authentication/tenancy), a choice between materially different behaviours, or something only the Owner
+>   knows. Ask it, and carry on with everything else meanwhile.
+> - **Keep the Builder busy.** While there is work, a Builder round should be running (`workflow_dispatch`,
+>   NEW-SESSION-PROMPT Step 5): review it when it lands, merge, and dispatch the next straight away, while
+>   the Architect builds its own round in parallel.
+> - Everything else in this brief still holds: measure, mutation-prove, the way-back law, Owner Control Gates.
+
 > ## ⇢ HADITH STUDY is being built on `feature/hadith-study` — READ IF YOU TOUCH HADITH
 >
 > **This branch's final application version is `v08.29`, and it is now MERGED TO `main`.** The
