@@ -2279,6 +2279,10 @@ export const BN = {
   "Groups this Name is in": "এই নামটি যেসব গ্রুপে আছে", // ?
   // The Owner, 8 Oct 2026: ‹ › on a Name's bar in Explore.
   "Previous Name": "আগের নাম",
+  // The Owner, 8 Oct 2026: one button per folder in "File in folder(s)".
+  "Collapse {name}": "{name} বন্ধ করুন",
+  "Expand {name}": "{name} খুলুন",
+  "({count} ticked inside)": "(ভেতরে {count}টি টিক দেওয়া)",
   "Next Name": "পরের নাম",
   "Groups for {name}": "{name}-এর গ্রুপসমূহ", // ?
   "Tick every group this Name belongs to. Untick one and tick another to move it.": "এই নামটি যেসব গ্রুপে রাখতে চান সবগুলোতে টিক দিন। সরাতে চাইলে একটি থেকে টিক তুলে অন্যটিতে টিক দিন।", // ?

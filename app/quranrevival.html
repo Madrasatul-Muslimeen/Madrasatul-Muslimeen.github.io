@@ -3890,7 +3890,7 @@
   .ayah-folder-tree { max-height: 38vh; overflow-y: auto; }
   .ayah-folder-row { display: flex; align-items: center; justify-content: space-between; min-height: 40px; }
   .ayah-folder-row-label { display: flex; align-items: center; gap: 0.5rem; flex: 1 1 auto; min-width: 0; cursor: pointer; }
-  .ayah-folder-row-label span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ayah-folder-row-label span { min-width: 0; overflow-wrap: anywhere; } /* names whole, wrapped -- never cut with "…" (the Owner, 8 Oct 2026) */
   .ayah-folder-new-here { flex: 0 0 auto; width: 32px; height: 32px; background: none; border: none; color: var(--card-link); font-size: 1.15rem; cursor: pointer; }
   .ayah-folder-empty { color: var(--card-text-muted); font-size: 0.84rem; }
   .ayah-folder-new-root { align-self: flex-start; background: none; border: none; color: var(--card-link); padding: 0.4rem 0.1rem; cursor: pointer; font-family: inherit; }
@@ -3900,6 +3900,32 @@
   .ayah-folder-save { background: var(--card-button-bg); color: var(--card-button-text); border: none; border-radius: 8px; padding: 0.5rem 1.1rem; font-weight: 600; cursor: pointer; font-family: inherit; }
   .ayah-folder-note-picker { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.7rem; }
   .ayah-folder-note-picker label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
+  /* The Owner, 8 Oct 2026 (a phone screenshot of this chooser): "Make it full screen to have more Visibility n add a
+     back button where it came from." The card fills the screen; the folder list takes all the height left, Cancel /
+     Save stay at the bottom, every folder name is shown whole (wrapped, never cut with "…"), and "← Back to Āyah
+     card" at the top returns to the card it was opened from (decision 86). On a wide screen the content keeps a
+     readable column in the middle. */
+  #ayahFolderFilingOverlay { padding: 0; align-items: stretch; justify-content: stretch; }
+  #ayahFolderFilingCard {
+    width: 100%; max-width: none; height: 100%; max-height: none; border: 0; border-radius: 0; box-sizing: border-box;
+    display: flex; flex-direction: column; overflow: hidden;
+    padding: calc(0.8rem + env(safe-area-inset-top, 0px)) max(1rem, calc((100vw - 46rem) / 2)) calc(0.8rem + env(safe-area-inset-bottom, 0px));
+  }
+  .ayah-folder-filing-head { display: flex; align-items: center; gap: 0.6rem; flex: 0 0 auto; margin-bottom: 0.5rem; flex-wrap: wrap; }
+  .ayah-folder-filing-back { min-height: 40px; padding: 0 0.9rem; border-radius: 999px; border: 1px solid var(--card-line); background: rgba(255,255,255,0.06); color: var(--card-link); font: inherit; font-weight: 600; cursor: pointer; flex: 0 0 auto; }
+  #ayahFolderFilingCard h3 { flex: 0 0 auto; }
+  #ayahFolderFilingNotePickerMount, #ayahFolderFilingMsg { flex: 0 0 auto; }
+  #ayahFolderFilingPickerMount { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  #ayahFolderFilingPickerMount .ayah-folder-picker { flex: 1 1 auto; min-height: 0; }
+  #ayahFolderFilingPickerMount .ayah-folder-tree { flex: 1 1 auto; max-height: none; min-height: 0; }
+  #ayahFolderFilingPickerMount .ayah-folder-row-label span { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+  #ayahFolderFilingPickerMount .ayah-folder-new-here { width: 40px; height: 40px; }
+  .ayah-folder-fold, .ayah-folder-fold-space { flex: 0 0 auto; width: 40px; height: 40px; }
+  .ayah-folder-fold { background: none; border: none; color: var(--card-link); font-size: 1.1rem; cursor: pointer; border-radius: 8px; }
+  .ayah-folder-fold:hover { background: rgba(255,255,255,0.08); }
+  .ayah-folder-inside { color: var(--card-text-muted); font-size: 0.78rem; font-weight: 400; white-space: nowrap; }
+  .ayah-folder-row { gap: 0.1rem; }
+  #ayahFolderFilingPickerMount .ayah-folder-actions button { min-height: 44px; }
 
   /* Word Card "This āyah ⋯" (issue #286) -- its own row below the header,
      never inside it, so the header's own Prev/Arabic/Next/Close row (what
@@ -6254,7 +6280,10 @@
        Files this reader's own Note on the āyah (creating one if none
        exists yet) into whichever Mapping My Journey folder(s) are ticked. -->
   <div id="ayahFolderFilingOverlay" data-keep-note-popovers>
-    <div id="ayahFolderFilingCard">
+    <div id="ayahFolderFilingCard" role="dialog" aria-labelledby="ayahFolderFilingTitle">
+      <div class="ayah-folder-filing-head">
+        <button type="button" class="ayah-folder-filing-back" id="ayahFolderFilingBackBtn"></button>
+      </div>
       <h3 id="ayahFolderFilingTitle"></h3>
       <div id="ayahFolderFilingNotePickerMount"></div>
       <div id="ayahFolderFilingPickerMount"></div>
@@ -6419,11 +6448,11 @@
     import { resolveUnitInfo, ladderRungsForAyah } from "./js/unit-resolve.js";
     import { unitBoundaryMarkersInWindow } from "./js/unit-markers.js";
     import { renderEndOfUnitPromptHtml, attachEndOfUnitPromptHandlers } from "./js/end-of-unit-prompt.js";
-    import { renderAyahFolderPickerHtml, attachAyahFolderPickerHandlers } from "./js/ayah-folder-filing-renderer.js";
+    import { renderAyahFolderPickerHtml, renderAyahFolderTreeHtml, attachAyahFolderPickerHandlers } from "./js/ayah-folder-filing-renderer.js";
     import { planFolderFilings } from "./js/ayah-folder-filing-plan.js";
     import { createStudyNote, notesForStudyUnit } from "./js/study-note-service.js";
     import { createNoteFolder, createNotePlacement, retireNotePlacement, NOTE_STATUS, listNoteSourcesForOwnerPage } from "./js/note-foundation.js";
-    import { ownerFolderTreePaged, noteFilings, folderContents } from "./js/journey-map-service.js";
+    import { ownerFolderTreePaged, ownerFolderTreePagedSharded, noteFilings, folderContents } from "./js/journey-map-service.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { mountBookmarkMenu, mountBackRow } from "./js/bookmark-nav.js";
     import { placeInDock } from "./js/back-dock.js";
@@ -18332,10 +18361,29 @@
         performs on ITS OWN open (spec item 3), reused rather than
         re-invented, just triggered when the whole card opens instead of
         only when that one action's own sub-dialog does. */
+    /** This āyah's Notes, read ONCE when its card opens and shared with "File in folder(s)" (the Owner, 8 Oct 2026:
+        "Takes long time loading" -- the chooser used to read them again, then the folders, one after another). When
+        exactly one Note exists, the folders it is already in are read straight after, while the card is still being
+        looked at. `fresh` (each card opening) always reads again; a Save drops the kept answer. */
+    let ayahNoteLookup = null;
+    function lookupAyahNotes(unitKey, { fresh = false } = {}) {
+      const key = `${activeTenantId}|${selectedPersonId}|${unitKey}`;
+      if (!fresh && ayahNoteLookup?.key === key) return ayahNoteLookup;
+      const promise = notesForStudyUnit(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, unitKey });
+      const filings = promise.then(({ rows }) => {
+        if (rows.length !== 1) return null;
+        const noteId = rows[0].note.noteId;
+        return noteFilings(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, noteId }).then(({ rows: f }) => ({ noteId, rows: f }));
+      });
+      promise.catch(() => {}); filings.catch(() => {}); // each caller reports its own failure
+      ayahNoteLookup = { key, promise, filings };
+      return ayahNoteLookup;
+    }
+
     async function ensureAyahSheetPosterNoteLoaded(unitKey) {
       if (!selectedPersonId) { ayahSheetHasPosterNote = false; if (ayahSheetUnitKey === unitKey) renderAyahActionSheetNow(); return; }
       try {
-        const { rows } = await notesForStudyUnit(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, unitKey });
+        const { rows } = await lookupAyahNotes(unitKey, { fresh: true }).promise;
         ayahSheetHasPosterNote = rows.some((row) => row.note.status !== NOTE_STATUS.RETIRED);
       } catch {
         ayahSheetHasPosterNote = false;
@@ -19467,6 +19515,7 @@
 
     function openAyahActionSheet(ayahKey, half = null) {
       closePageApproachCard(); // issue #325 -- mutually exclusive: same shared mount
+      prefetchAyahFolderTree(); // "File in folder(s)" then usually opens with the folders already there
       const [surahStr, ayahStr] = ayahKey.split(":");
       const surahNum = Number(surahStr);
       const ayahNum = Number(ayahStr);
@@ -19651,29 +19700,71 @@
         same list-based reads the rest of Mapping My Journey already uses --
         never a per-id get() of something that may not exist (the v08.56
         lesson). */
+    // The folder tree for "File in folder(s)", kept for this page's life per tenant and person (the Owner, 8 Oct
+    // 2026: "Takes long time loading"). Loaded with the parallel reader Mapping My Journey uses, started when the
+    // Āyah card opens (after a tap, never at startup: I9), shown at once on every later open and refreshed behind it.
+    let ayahFolderTreeCache = null, ayahFolderTreeLoading = null;
+    const ayahFolderTreeKey = () => `${activeTenantId}|${selectedPersonId}`;
+    function loadAyahFolderTree() {
+      const key = ayahFolderTreeKey();
+      if (ayahFolderTreeLoading?.key === key) return ayahFolderTreeLoading.promise;
+      const promise = ownerFolderTreePagedSharded(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId })
+        .then((tree) => { ayahFolderTreeCache = { key, tree }; return tree; })
+        .finally(() => { if (ayahFolderTreeLoading?.promise === promise) ayahFolderTreeLoading = null; });
+      ayahFolderTreeLoading = { key, promise };
+      return promise;
+    }
+    function prefetchAyahFolderTree() {
+      if (!auth.currentUser || !selectedPersonId || !activeTenantId) return;
+      if (ayahFolderTreeCache?.key === ayahFolderTreeKey() || ayahFolderTreeLoading) return;
+      loadAyahFolderTree().catch(() => { /* the chooser loads it again when opened, and says so if it fails */ });
+    }
+    /** Redraw the folder list only -- never the search box (the Owner: "On every letter typing, the keyboard goes down"). */
+    function redrawAyahFolderTree() {
+      const st = ayahFolderFilingState;
+      const treeEl = ayahFolderFilingPickerMountEl.querySelector("[data-ayah-folder-tree]");
+      if (!st || !treeEl) { renderAyahFolderFilingNow(); return; }
+      treeEl.innerHTML = renderAyahFolderTreeHtml({ tree: st.tree, checkedFolderIds: st.checkedFolderIds, searchTerm: st.searchTerm, expandedFolderIds: st.expandedFolderIds });
+    }
+
     async function openAyahFolderFiling(unitKey) {
       if (!auth.currentUser || !selectedPersonId) return;
       const { surah, ayah: ayahNum, half } = parseAyahUnitKey(unitKey);
       const ref = ayahRefLabel(surah, ayahNum, { half });
       ayahFolderFilingTitleEl.textContent = t("File {ref} in folder(s)", { ref });
+      document.getElementById("ayahFolderFilingBackBtn").textContent = `← ${t("Back to Āyah card")}`;
       ayahFolderFilingState = {
         unitKey, ref, notes: [], noteId: null, tree: { roots: [] },
         checkedFolderIds: [], searchTerm: "", newFolderUnder: null, busy: true,
+        expandedFolderIds: [], // the Owner, 8 Oct 2026: every folder starts collapsed
       };
       ayahFolderFilingOverlayEl.classList.add("open");
       renderAyahFolderFilingNow();
       try {
+        // The Owner, 8 Oct 2026: "Takes long time loading." The tree kept from the last load is shown at once and
+        // refreshed behind it; a first load (usually already started when the Āyah card opened) reads in parallel.
+        const cached = ayahFolderTreeCache?.key === ayahFolderTreeKey() ? ayahFolderTreeCache.tree : null;
+        const lookup = lookupAyahNotes(unitKey);
         const [notesResult, tree] = await Promise.all([
-          notesForStudyUnit(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, unitKey }),
-          ownerFolderTreePaged(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId }),
+          lookup.promise,
+          cached ? Promise.resolve(cached) : loadAyahFolderTree(),
         ]);
+        if (cached) {
+          loadAyahFolderTree().then((fresh) => {
+            const st = ayahFolderFilingState;
+            if (!st || st.unitKey !== unitKey || st.busy || fresh === st.tree) return;
+            st.tree = fresh;
+            redrawAyahFolderTree();
+          }).catch(() => { /* the kept tree stays; Save still works on it */ });
+        }
         if (!ayahFolderFilingState || ayahFolderFilingState.unitKey !== unitKey) return; // closed/reopened while awaiting
         const notes = notesResult.rows.map((row) => row.note);
         ayahFolderFilingState.notes = notes;
         ayahFolderFilingState.tree = tree;
         ayahFolderFilingState.busy = false;
         if (notes.length === 1) {
-          await selectAyahFolderFilingNote(notes[0].noteId);
+          const pre = await lookup.filings.catch(() => null);
+          await selectAyahFolderFilingNote(notes[0].noteId, pre?.noteId === notes[0].noteId ? pre.rows : null);
         } else {
           renderAyahFolderFilingNow();
         }
@@ -19685,13 +19776,13 @@
     /** Loads which folders `noteId` is already filed in (noteFilings() --
         resolves folder objects too, the same read journey-map.html itself
         uses), so the picker's checkboxes start correct. */
-    async function selectAyahFolderFilingNote(noteId) {
+    async function selectAyahFolderFilingNote(noteId, prefetchedRows = null) {
       if (!ayahFolderFilingState) return;
       ayahFolderFilingState.noteId = noteId;
       ayahFolderFilingState.busy = true;
       renderAyahFolderFilingNow();
       try {
-        const { rows } = await noteFilings(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, noteId });
+        const rows = prefetchedRows ?? (await noteFilings(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, noteId })).rows;
         if (!ayahFolderFilingState || ayahFolderFilingState.noteId !== noteId) return;
         ayahFolderFilingState.checkedFolderIds = rows.map((row) => row.placement.folderId);
         ayahFolderFilingState.busy = false;
@@ -19725,17 +19816,32 @@
       }
       ayahFolderFilingPickerMountEl.innerHTML = renderAyahFolderPickerHtml({
         tree: st.tree, checkedFolderIds: st.checkedFolderIds, searchTerm: st.searchTerm, newFolderUnder: st.newFolderUnder,
+        expandedFolderIds: st.expandedFolderIds,
       });
       attachAyahFolderPickerHandlers(ayahFolderFilingPickerMountEl, {
-        onSearch: (term) => { st.searchTerm = term; renderAyahFolderFilingNow(); },
+        // The Owner, 8 Oct 2026: "On every letter typing, the keyboard goes down." Redraw the list only; the search
+        // box is never replaced, so it keeps its focus (and a phone keeps its keyboard up).
+        onSearch: (term) => { st.searchTerm = term; redrawAyahFolderTree(); },
+        // One button per folder: ▸ opens it, the same button (now ▾) closes it again.
+        onFold: (folderId) => {
+          st.expandedFolderIds = st.expandedFolderIds.includes(folderId) ? st.expandedFolderIds.filter((id) => id !== folderId) : [...st.expandedFolderIds, folderId];
+          redrawAyahFolderTree();
+        },
         onToggle: (folderId, checked) => {
           st.checkedFolderIds = checked ? [...st.checkedFolderIds, folderId] : st.checkedFolderIds.filter((id) => id !== folderId);
+          if (!st.searchTerm) redrawAyahFolderTree(); // a closed parent's "(n ticked inside)" stays true
         },
-        onNewFolderRequest: (parentFolderId) => { st.newFolderUnder = parentFolderId; renderAyahFolderFilingNow(); },
+        onNewFolderRequest: (parentFolderId) => {
+          st.newFolderUnder = parentFolderId;
+          if (parentFolderId && !st.expandedFolderIds.includes(parentFolderId)) st.expandedFolderIds = [...st.expandedFolderIds, parentFolderId]; // show where it will go
+          renderAyahFolderFilingNow();
+        },
         onNewFolderCancel: () => { st.newFolderUnder = null; renderAyahFolderFilingNow(); },
         onNewFolderConfirm: (name) => createAyahFolderFilingFolder(name),
         onCancel: closeAyahFolderFiling,
-        onSave: (checkedFolderIds) => saveAyahFolderFiling(checkedFolderIds),
+        // Every tick, not only the folders the search leaves on screen: reading the ticks off the screen would have
+        // taken the Note out of a ticked folder that a search had hidden (found 8 Oct 2026).
+        onSave: () => saveAyahFolderFiling([...new Set(st.checkedFolderIds)]),
       });
     }
 
@@ -19756,7 +19862,7 @@
       // would now return -- re-fetch rather than hand-splice it into the
       // tree, the same "read it back" shape createFolder()'s own bookmark
       // caller uses when a new folder must show up ticked-ready immediately.
-      st.tree = await ownerFolderTreePaged(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId });
+      st.tree = await loadAyahFolderTree();
       st.checkedFolderIds = [...st.checkedFolderIds, outcome.result];
       renderAyahFolderFilingNow();
     }
@@ -19771,6 +19877,7 @@
     async function saveAyahFolderFiling(checkedFolderIds) {
       const st = ayahFolderFilingState;
       if (!st || st.busy) return;
+      ayahNoteLookup = null; // the Notes and their folders change now: the next opening reads them fresh
       st.busy = true;
       ayahFolderFilingMsg("");
       renderAyahFolderFilingNow();
@@ -19815,6 +19922,14 @@
     }
 
     ayahFolderFilingOverlayEl.addEventListener("click", (e) => { if (e.target === ayahFolderFilingOverlayEl) closeAyahFolderFiling(); });
+    // The way back (the Owner, 8 Oct 2026): close the chooser and reopen the Āyah card it was opened from.
+    document.getElementById("ayahFolderFilingBackBtn").addEventListener("click", () => {
+      const key = ayahFolderFilingState?.unitKey;
+      closeAyahFolderFiling();
+      if (!key) return;
+      const { surah, ayah, half } = parseAyahUnitKey(key);
+      openAyahActionSheet(`${surah}:${ayah}`, half);
+    });
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && ayahFolderFilingOverlayEl.classList.contains("open")) closeAyahFolderFiling();
     });
