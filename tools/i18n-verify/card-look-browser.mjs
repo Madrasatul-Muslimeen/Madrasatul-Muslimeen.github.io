@@ -357,6 +357,9 @@ async function checkContrast(page, label, selector, { minRatio = 4.5, gradientHo
   // ---- QCR ----
   await clickSafely(page, "#explorePaletteQcrBtn");
   await page.waitForFunction(() => !document.getElementById("qcrPanel")?.hidden, null, { timeout: 10000 });
+  // 8 Oct 2026: wait for the header's title itself, not a guessed 200ms -- once in three runs the title was not yet
+  // drawn and the contrast check found no element (green twice on the same code; a state, not a delay).
+  await page.waitForFunction(() => !!document.querySelector("#qcrListHeader .qcr-list-title"), null, { timeout: 10000 });
   await page.waitForTimeout(200);
   for (const look of ["night", "light"]) {
     await setLook(page, look);

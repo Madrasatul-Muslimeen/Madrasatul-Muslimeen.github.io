@@ -766,3 +766,4 @@ total). Allocated by the MMSA Architect.
 09.120: a Name's description: the poster's, a suggestion, or the madrasah's own. Allocated by the MMSA Architect.
 09.121: one card per dua, progress counted once (round H-DB5). Allocated by the MMSA Architect.
 09.122: Mapping My Journey pop-up: three panels fill the window and resize. Allocated by the MMSA Architect.
+09.123: Asma ul Husna in Explore: ‹ › on a Name, the poster fills its panel. Allocated by the MMSA Architect.
