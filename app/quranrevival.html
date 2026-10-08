@@ -2759,6 +2759,7 @@
   /* v08.22 -- the standalone way back, on the study screen above the āyah. */
   #wordCardReturnBar { margin: 0 0 0.4rem; }
   #wordCardReturnBar[hidden] { display: none !important; }
+  .word-card-app-back { display: inline-flex; align-items: center; gap: 0.3rem; min-height: 40px; margin: 0 0 0.4rem; }
   .word-card-return-btn {
     display: inline-flex; align-items: center; gap: 0.4rem;
     min-height: 40px; padding: 0.3rem 0.75rem;
@@ -4650,7 +4651,7 @@
     // Issue #468 -- classic (non-module) script: runs before first paint.
     (function () {
       var q = new URLSearchParams(location.search);
-      if (!(q.get("bookmark") || q.get("goto") || q.get("resume") || q.get("last"))) return;
+      if (!(q.get("bookmark") || q.get("goto") || q.get("word") || q.get("resume") || q.get("last"))) return;
       var root = document.documentElement;
       root.classList.add("bm-opening");
       var cover = document.getElementById("bmCover");
@@ -8998,7 +8999,7 @@
       currentSurahNum = surahIndex[0]?.surahNumber ?? 1;
       if (!lastSessionReady) {
         const params = new URLSearchParams(location.search);
-        const deepLinked = params.get("bookmark") || params.get("goto") || params.get("resume") || params.get("last");
+        const deepLinked = params.get("bookmark") || params.get("goto") || params.get("word") || params.get("resume") || params.get("last");
         const rememberedSurah = deepLinked ? null : getQuranLastSession()?.settings?.surahNum;
         if (typeof rememberedSurah === "number" && surahIndex.some((sx) => sx.surahNumber === rememberedSurah)) {
           currentSurahNum = rememberedSurah;
@@ -10331,7 +10332,7 @@
         exactly where it opened before this existed. */
     async function restoreLastSession() {
       const params = new URLSearchParams(location.search);
-      if (params.get("bookmark") || params.get("goto") || params.get("resume") || params.get("last")) return;
+      if (params.get("bookmark") || params.get("goto") || params.get("word") || params.get("resume") || params.get("last")) return;
       const saved = getQuranLastSession();
       if (!saved) return;
       // The app ALWAYS opens on the wheel -- the owner's own call, once the
@@ -17030,6 +17031,17 @@
           if (d.open) needsSrcEnsureSection(d.dataset.wordCardSec, word, currentSurahData.surahNumber);
         });
       });
+      // Decision 90 (the way-back law, decision 86): a Word card opened from another page (a Dua word) carries its way
+      // back INSIDE the card -- on a phone the card covers the Read bar, where the "Back to …" pill otherwise docks.
+      if (ayahCardReturn?.inWordCard) {
+        const back = document.createElement("button");
+        back.type = "button";
+        back.className = "word-card-return-btn word-card-app-back";
+        back.dataset.wordCardAppBack = "";
+        back.innerHTML = `<span aria-hidden="true">←</span> ${escapeHtml(ayahCardReturn.title)}`;
+        back.addEventListener("click", () => { const r = ayahCardReturn; clearAyahCardReturn(); r?.back?.(); });
+        content.prepend(back);
+      }
       // 👥 the same picker as the other Record cards (shared claimForIds); nothing for a lone person.
       mountClaimForPicker(content, "[data-word-progress-rec] .word-progress-states, [data-word-progress-rec] [data-word-progress-na]");
       if (focusSelector) (mount.querySelector(focusSelector)?.disabled ? mount.querySelector("[data-word-card-close]") : mount.querySelector(focusSelector))?.focus({ preventScroll: true });
@@ -19600,7 +19612,7 @@
     // The way-back law (decision 86): ONE pill for every "you came from there" -- `title` says where, `label` a
     // short reference, `back()` restores it. Set by the Āyah card's actions and by an Asma Name's references.
     let ayahCardReturn = null;
-    function setAppReturn(title, label, back) { ayahCardReturn = { title, label, back }; renderAyahCardBackPill(); }
+    function setAppReturn(title, label, back, opts = {}) { ayahCardReturn = { title, label, back, inWordCard: !!opts.inWordCard }; renderAyahCardBackPill(); if (opts.inWordCard) renderPersistentWordCard(); }
     function rememberAyahCardReturn(unitKey) {
       if (!unitKey) return;
       const { surah, ayah, half } = parseAyahUnitKey(unitKey);
@@ -22191,6 +22203,23 @@
       if (new URLSearchParams(location.search).get("back") === "1" && history.length > 1) setAppReturn(t("Back"), "", () => history.back());
     }
 
+    /** Decision 90, round 1: "?word=S:A:W" opens the Word card at that Qur'an word in the Read view (a Dua card's
+        "Open in the Word card"). With back=1 the way back is a "Back to …" pill (decision 86); "from=dua-<n>" names
+        the Dua card it returns to. A malformed or unknown place does nothing but say the link was not found. */
+    async function openWordFromQueryString() {
+      const params = new URLSearchParams(location.search);
+      const raw = params.get("word");
+      if (!raw) return;
+      const m = /^(\d{1,3}):(\d{1,3}):(\d{1,3})$/.exec(raw);
+      const surahMeta = m && surahIndex.find((s) => s.surahNumber === Number(m[1]));
+      if (!m || !surahMeta || Number(m[2]) < 1 || Number(m[2]) > surahMeta.ayahCount || Number(m[3]) < 1) { bookmarkNotFound(); return; }
+      await openWordOccurrenceAt(Number(m[1]), Number(m[2]), Number(m[3]), "read");
+      if (params.get("back") === "1" && history.length > 1) {
+        const dua = /^dua-(\d+)$/.exec(params.get("from") ?? "");
+        setAppReturn(dua ? t("Back to Dua {n}", { n: num(Number(dua[1])) }) : t("Back"), "", () => history.back(), { inWordCard: true });
+      }
+    }
+
     /** The Note view's own full screen -- two states, a separate mechanism
         from the reading screen's own (immersive-read) so the two can never
         leak into each other. Toggled from the view's own ⤢ button, and (on
@@ -23343,6 +23372,7 @@
         renderTenantSelect(myMemberships);
         await step("open bookmark", openBookmarkFromQueryString);
         await step("open goto link", openGotoFromQueryString);
+        await step("open word link", openWordFromQueryString);
         await step("open last place", openLastFromQueryString);
         window.__bmCoverDone?.(false); // issue #468 -- target is open; remove the cover in one step
         // Last: "the app opens in the last settings/options in all view."

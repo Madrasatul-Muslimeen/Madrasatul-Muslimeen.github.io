@@ -70,3 +70,24 @@ export function duaWords(text) {
   // start/end mark the narration's own text (raw); `words` is what the reader sees (editors' marks out).
   return { words, start, end: start + raw.length };
 }
+
+// Round 1 (decision 90): each dua word linked to the Qur'an word spelled the same way. The key is the spelling
+// with vowels and Qur'anic marks taken off and alef, ya and ta marbuta shapes unified, the same on both sides
+// (tools/hadith-data-pull/dua-word-links.mjs builds the links with it).
+const MARKS = /[ؐ-ًؚ-ٟۖ-ۭ]/gu;
+/** One word's matching key. `dagger` is what the Qur'an's small alef (U+0670) becomes: "" or "ا" (both are tried). */
+export function duaWordKey(word, dagger = "") {
+  return String(word ?? "").normalize("NFC").replace(/ٰ/gu, dagger).replace(MARKS, "")
+    .replace(/[ٱأإآ]/gu, "ا").replace(/ى/gu, "ي").replace(/ة/gu, "ه")
+    .replace(/ـ/gu, "").replace(/[^ء-ي]/gu, "");
+}
+/** The picked words split the way the links file counts them. */
+export function duaWordTokens(words) {
+  return String(words ?? "").split(/\s+/u).filter(Boolean);
+}
+/** A short fingerprint of the picked words, so a links file built from other words is never used against these. */
+export function duaWordsFingerprint(words) {
+  let h = 0x811c9dc5;
+  for (const ch of String(words ?? "")) { h ^= ch.codePointAt(0); h = Math.imul(h, 0x01000193) >>> 0; }
+  return h.toString(36);
+}
