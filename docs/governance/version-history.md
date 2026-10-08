@@ -760,3 +760,4 @@ total). Allocated by the MMSA Architect.
 09.114: four more Arabic Hadith books in the library (round H-DB1). Allocated by the MMSA Architect.
 09.115: standard Hadith numbers in the library (round H-DB2). Allocated by the MMSA Architect.
 09.116: Take Note in the Ayah card's button row. Allocated by the MMSA Architect.
+09.117: HadeethEnc's Bangla and English under the library's Arabic hadith (round H-DB3). Allocated by the MMSA Architect.

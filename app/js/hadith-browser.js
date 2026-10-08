@@ -33,7 +33,7 @@ import {
 import {
   OPENITI_CREDIT_URL,
   loadOpenitiBookSummaries, loadOpenitiBookIndex, loadOpenitiChapter, chapterForHadithNumber,
-  loadOpenitiConcordance,
+  loadOpenitiConcordance, loadOpenitiHadeethEncLinks,
 } from "./openiti-corpus.js";
 
 const CONTENT_LANG_LABELS = { ar: "العربية", en: "English", bn: "বাংলা" };
@@ -786,6 +786,8 @@ async function renderOpenitiBody(body, oi, localRefresh) {
   const index = found ? await loadOpenitiBookIndex(oi.bookUri) : null;
   // Round H-DB2: the book's standard numbers, if it has them (null otherwise; a failed load only hides them).
   const conc = found ? await loadOpenitiConcordance(oi.bookUri).catch(() => null) : null;
+  // Round H-DB3: which HadeethEnc hadith translate a passage of this book (ids only; null if none).
+  const heLinks = found ? await loadOpenitiHadeethEncLinks(oi.bookUri).catch(() => null) : null;
 
   body.textContent = "";
   // A link to one passage (decision 85) or a jump by standard number (H-DB2): find the chapter that holds it
@@ -817,7 +819,7 @@ async function renderOpenitiBody(body, oi, localRefresh) {
   body.appendChild(el("p", "hadith-note", t("Loading…")));
   const { hadiths } = await loadOpenitiChapter(versionUri, chapter);
   body.lastChild.remove();
-  renderOpenitiPassages(body, hadiths, conc);
+  renderOpenitiPassages(body, hadiths, conc, heLinks);
   if (oi.focusPassage != null) {
     const target = body.querySelector(`[data-openiti-passage="${oi.focusPassage}"]`);
     oi.focusPassage = null;
@@ -993,14 +995,14 @@ function openitiArabicRowName(text) {
   return span;
 }
 
-function renderOpenitiPassages(body, hadiths, conc = null) {
+function renderOpenitiPassages(body, hadiths, conc = null, heLinks = null) {
   if (!hadiths.length) { body.appendChild(el("p", "hadith-note", t("Nothing here yet."))); return; }
   const list = el("div", "hadith-occurrences");
-  for (const h of hadiths) list.appendChild(openitiPassageCard(h, conc));
+  for (const h of hadiths) list.appendChild(openitiPassageCard(h, conc, heLinks));
   body.appendChild(list);
 }
 
-function openitiPassageCard(h, conc = null) {
+function openitiPassageCard(h, conc = null, heLinks = null) {
   const card = el("article", "hadith-card openiti-passage");
   card.dataset.openitiPassage = String(h.n);
   card.dataset.openitiKind = h.kind;
@@ -1032,6 +1034,9 @@ function openitiPassageCard(h, conc = null) {
     card.appendChild(el("p", "hadith-availability openiti-page-refs", h.pageRefs.map(openitiPageRef).join(" · ")));
   }
 
+  const heIds = heLinks?.get(h.n);
+  if (heIds?.length) card.appendChild(openitiTranslationFold(heIds));
+
   const credit = document.createElement("a");
   credit.className = "hadith-view-source openiti-credit";
   credit.dataset.openitiCredit = String(h.n);
@@ -1042,6 +1047,57 @@ function openitiPassageCard(h, conc = null) {
   card.appendChild(credit);
 
   return card;
+}
+
+/**
+ * Round H-DB3 (decision 87): HadeethEnc's translation of this narration, in the reader's language (Bangla or
+ * English), closed until opened and loaded only then. HadeethEnc's conditions (decision 7): its words unchanged,
+ * named, linked. Its wording can follow another narration of the same hadith, and the fold says so.
+ */
+function openitiTranslationFold(ids) {
+  const want = getAppLang() === "bn" ? "bn" : "en";
+  const details = document.createElement("details");
+  details.className = "hadeethenc-explanation openiti-translation";
+  details.dataset.openitiTranslation = ids.join(",");
+  const summary = document.createElement("summary");
+  summary.textContent = t("{lang} translation (HadeethEnc)", { lang: HADEETHENC_LANG_LABELS[want] ?? want });
+  details.appendChild(summary);
+  let loaded = false;
+  details.addEventListener("toggle", () => {
+    if (!details.open || loaded) return;
+    loaded = true;
+    const wait = el("p", "hadith-note", t("Loading…"));
+    details.appendChild(wait);
+    loadHadithRecords(ids, want).then((records) => {
+      wait.remove();
+      details.appendChild(el("p", "hadith-note openiti-translation-note", t("HadeethEnc's wording may follow another narration of this hadith.")));
+      for (const id of ids) {
+        const r = records.get(String(id));
+        if (!r) continue;
+        const box = el("div", "hadith-translation");
+        if (r.lang === "ar") {
+          box.appendChild(el("p", "hadith-fallback", t("No {lang} translation for this hadith. Showing the Arabic source only.", { lang: HADEETHENC_LANG_LABELS[want] ?? want })));
+        } else {
+          if (r.isFallback) box.appendChild(el("p", "hadith-fallback", t("No {lang} translation for this hadith. Showing {shown}.", { lang: HADEETHENC_LANG_LABELS[want] ?? want, shown: HADEETHENC_LANG_LABELS[r.lang] ?? r.lang })));
+          const text = el("p", "hadith-translation-text", r.record.hadeeth ?? "");
+          text.lang = r.lang;
+          text.dataset.openitiTranslationText = id;
+          box.appendChild(text);
+        }
+        if (r.record.grade) box.appendChild(el("p", "hadith-attribution", t("Grade: {grade}", { grade: r.record.grade })));
+        if (r.record.attribution) box.appendChild(el("p", "hadith-attribution", r.record.attribution));
+        const src = document.createElement("a");
+        src.className = "hadith-view-source";
+        src.href = hadeethEncSourceUrl(r.lang, id);
+        src.target = "_blank";
+        src.rel = "noopener noreferrer";
+        src.textContent = t("Source: HadeethEnc.com");
+        box.appendChild(src);
+        details.appendChild(box);
+      }
+    }).catch((err) => { wait.textContent = String(err?.message ?? err); loaded = false; });
+  });
+  return details;
 }
 
 function renderCollections(body, state, render) {
