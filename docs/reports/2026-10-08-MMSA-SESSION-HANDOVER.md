@@ -122,3 +122,4 @@ that handover does not name the version in `app/js/version.js`.
 - **v09.131** (2026-10-08): Dua words, rounds 0 and 1.
 - **v09.132** (2026-10-08): Dua words, rounds 2–4.
 - **v09.133** (2026-10-08): Dua words, round 5a: vowels.
+- **v09.134** (2026-10-08): Dua words, round 5b: grammar suggestions.

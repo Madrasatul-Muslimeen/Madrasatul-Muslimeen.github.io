@@ -260,6 +260,20 @@ export async function loadDuaWordLinks(page, { fetchImpl = fetch, baseUrl = DUA_
   });
 }
 
+/**
+ * Round 5b of decision 90 (dua-word-grammar.py): one page's grammar suggestions for the dua words that are not linked
+ * to a Qur'an word, read with that page of cards, or null when the file is missing. { duas: { "<dua>": { f, g } } },
+ * g = { "<word index>": [lemma, root, pos, vowelled] }. Never read at startup (I9).
+ */
+export async function loadDuaWordGrammar(page, { fetchImpl = fetch, baseUrl = DUA_BASE_URL } = {}) {
+  return cached(duaCache, `${baseUrl}grammar-${page}.json`, async () => {
+    const res = await fetchImpl(`${baseUrl}grammar-${page}.json`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.duas && typeof data.duas === "object" ? data : null;
+  });
+}
+
 /** Round 5a of decision 90: one page's dua vowels (dua-vowels.mjs), read with that page of cards, or null. */
 export async function loadDuaVowels(page, { fetchImpl = fetch, baseUrl = DUA_BASE_URL } = {}) {
   return cached(duaCache, `${baseUrl}vowels-${page}.json`, async () => {

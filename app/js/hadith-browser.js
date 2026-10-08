@@ -14,7 +14,7 @@
 
 import { t, num } from "./i18n.js";
 import { getAppLang, quranFontStack } from "./prefs.js";
-import { duaWords, duaNarration, duaWordTokens, duaWordsFingerprint } from "./dua-words.js";
+import { duaWords, duaNarration, duaWordTokens, duaWordsFingerprint, duaGrammarPosLabel } from "./dua-words.js";
 import { loadHadithTranslation, TRANSLATED_BOOKS } from "./hadith-translations.js";
 import { STATUSES, statusLabel } from "./unit-keys.js";
 import { renderAssignDropdown } from "./assign-picker.js";
@@ -35,7 +35,7 @@ import {
 import {
   OPENITI_CREDIT_URL,
   loadOpenitiBookSummaries, loadOpenitiBookIndex, loadOpenitiChapter, chapterForHadithNumber,
-  loadOpenitiConcordance, loadOpenitiHadeethEncLinks, loadDuaIndex, loadDuaCardsSummary, loadDuaCardsPage, loadDuaWordLinks, loadDuaVowels,
+  loadOpenitiConcordance, loadOpenitiHadeethEncLinks, loadDuaIndex, loadDuaCardsSummary, loadDuaCardsPage, loadDuaWordLinks, loadDuaVowels, loadDuaWordGrammar,
 } from "./openiti-corpus.js";
 
 const CONTENT_LANG_LABELS = { ar: "العربية", en: "English", bn: "বাংলা" };
@@ -1225,7 +1225,7 @@ function renderDuaCards(body, state, render) {
   body.appendChild(section);
   section.appendChild(el("p", "hadith-note", t("Loading…")));
   Promise.all([loadDuaCardsSummary(), loadDuaCardsPage(state.dua.page || 1), loadDuaWordLinks(state.dua.page || 1).catch(() => null),
-    loadDuaVowels(state.dua.page || 1).catch(() => null)]).then(([summary, cards, wordLinks, vowels]) => {
+    loadDuaVowels(state.dua.page || 1).catch(() => null), loadDuaWordGrammar(state.dua.page || 1).catch(() => null)]).then(([summary, cards, wordLinks, vowels, wordGrammar]) => {
     section.textContent = "";
     const page = state.dua.page || 1;
     const first = (page - 1) * summary.cardsPerFile + 1;
@@ -1246,7 +1246,7 @@ function renderDuaCards(body, state, render) {
     const list = el("div", "hadith-occurrences");
     section.appendChild(list);
     const progressRows = [];
-    for (const c of cards) list.appendChild(duaCard(c, summary, state, render, progressRows, wordLinks, page, vowels));
+    for (const c of cards) list.appendChild(duaCard(c, summary, state, render, progressRows, wordLinks, page, vowels, wordGrammar));
     section.appendChild(pager());
     fillDuaProgress(progressRows);
     if (state.dua.focusDua != null) {
@@ -1257,7 +1257,7 @@ function renderDuaCards(body, state, render) {
   }).catch((err) => { section.textContent = ""; section.appendChild(el("p", "hadith-note", String(err?.message ?? err))); });
 }
 
-function duaCard(c, summary, state, render, progressRows, wordLinks = null, page = 1, vowels = null) {
+function duaCard(c, summary, state, render, progressRows, wordLinks = null, page = 1, vowels = null, wordGrammar = null) {
   const card = el("article", "hadith-card dua-card");
   card.dataset.duaCard = String(c.dua);
   const head = el("p", "hadith-card-head", t("Dua {n}", { n: num(c.dua) }));
@@ -1285,6 +1285,7 @@ function duaCard(c, summary, state, render, progressRows, wordLinks = null, page
     // is only used when it was built from these very words (its fingerprint), so a changed picker never mislinks.
     const links = wordLinks?.duas?.[c.dua];
     const linked = !!links && links.f === duaWordsFingerprint(picked.words);
+    const gram = wordGrammar?.duas?.[c.dua];
     // Round 5a (decision 90): the same words with vowels, where a vowelled text holds this whole dua word for word.
     const vow = vowels?.duas?.[c.dua];
     const vowelled = !!vow && vow.f === duaWordsFingerprint(picked.words) && vow.v.length === duaWordTokens(picked.words).length ? vow : null;
@@ -1303,7 +1304,7 @@ function duaCard(c, summary, state, render, progressRows, wordLinks = null, page
         span.tabIndex = 0;
         span.setAttribute("aria-pressed", "false");
         if (idx >= 0) span.classList.add("dua-word-linked");
-        const open = () => showDuaWord(panel, words, span, span.textContent, idx >= 0 ? wordLinks.entries[idx] : null, c.dua, page, links.x?.[i] ?? "");
+        const open = () => showDuaWord(panel, words, span, span.textContent, idx >= 0 ? wordLinks.entries[idx] : null, c.dua, page, links.x?.[i] ?? "", idx < 0 && gram?.f === links.f ? gram.g?.[i] ?? null : null);
         span.addEventListener("click", open);
         span.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
       }
@@ -1423,13 +1424,50 @@ export const DUA_WORD_PROGRESS_TOKEN = "mmsa-dua-word-progress";
 const WBW_STATES = ["not_started", "learning", "practising", "achieved"];
 
 /**
+ * Round 5b (decision 91): the computer's grammar suggestion for a word no Qur'an word is spelled like -- dictionary
+ * word, root, part of speech, and the two dictionaries opened at the root. g = [lemma, root, pos, vowelled].
+ */
+function duaGrammarBlock([lemma, root, pos]) {
+  const box = el("div", "dua-word-grammar");
+  box.dataset.duaWordGrammar = "";
+  box.appendChild(el("p", "dua-also-head", t("Grammar suggestion (computer, to be checked)")));
+  const line = (label, value, cls, ar) => {
+    const p = el("p", `dua-word-line ${cls}`);
+    p.appendChild(el("span", "dua-word-label", label));
+    const v = el("span", "dua-word-value", value);
+    if (ar) { v.lang = "ar"; v.dir = "rtl"; v.style.fontFamily = quranFontStack(); }
+    p.appendChild(v);
+    return p;
+  };
+  if (lemma) box.appendChild(line(t("Dictionary word"), lemma, "dua-word-lemma", true));
+  if (root) box.appendChild(line(t("Root"), root, "dua-word-root", true));
+  if (pos) box.appendChild(line(t("Part of speech"), t(duaGrammarPosLabel(pos)), "dua-word-pos", false));
+  if (root) {
+    const dict = el("div", "dua-word-dicts");
+    dict.dataset.duaWordDicts = "";
+    box.appendChild(dict);
+    Promise.all([import("./quran-word-card.js"), import("./buckwalter.js")]).then(([wc, bw]) => {
+      const links = [[t("Quranic Arabic Corpus"), `https://corpus.quran.com/qurandictionary.jsp?q=${encodeURIComponent(bw.arabicToBuckwalter(root))}`, "corpus"],
+        [t("Lane · Hans Wehr"), wc.ejtaalUrl(root), "ejtaal"]];
+      for (const [label, href, kind] of links) {
+        if (!href) continue;
+        const a = el("a", "dua-ref dua-word-dict", `${label} ↗`);
+        a.href = href; a.target = "_blank"; a.rel = "noopener noreferrer"; a.dataset.duaWordDict = kind;
+        dict.appendChild(a);
+      }
+    }).catch(() => dict.remove());
+  }
+  return box;
+}
+
+/**
  * Decision 90, rounds 1-4: the Dua word card under a dua's words, for the word tapped. `entry` is the links file's
  * row [place, count, arabic, translit, en, bn, root, lemma, lemmaCount, wbwKey, places], or null when no Qur'an word
  * is spelled this way; `how` says a leading «و»/«ف» was set aside and/or the Qur'an's own spelling was used (round
  * 2). Round 3: the card on this page -- meanings, root, dictionary word, dictionary links, its places in the Qur'an.
  * Round 4 (Q1 answered yes): "Achieved" here counts for the same Qur'an word. Tapping the same word again closes it.
  */
-function showDuaWord(panel, words, span, tok, entry, dua, page, how = "") {
+function showDuaWord(panel, words, span, tok, entry, dua, page, how = "", grammar = null) {
   const wasOpen = span.getAttribute("aria-pressed") === "true";
   words.querySelectorAll(".dua-word[aria-pressed]").forEach((s) => s.setAttribute("aria-pressed", "false"));
   panel.textContent = "";
@@ -1447,6 +1485,7 @@ function showDuaWord(panel, words, span, tok, entry, dua, page, how = "") {
   panel.appendChild(head);
   if (!entry) {
     panel.appendChild(el("p", "hadith-note", t("No word of the Qur'an is spelled this way, so it is not linked yet.")));
+    if (grammar) panel.appendChild(duaGrammarBlock(grammar));
     return;
   }
   const [place, count, qar, tr, en, bn, root, lemma, lemmaCount, wbwKey, places = []] = entry;

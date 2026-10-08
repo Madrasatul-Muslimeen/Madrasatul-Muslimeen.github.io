@@ -86,6 +86,15 @@ export function duaWordTokens(words) {
   return String(words ?? "").split(/\s+/u).filter(Boolean);
 }
 /** A short fingerprint of the picked words, so a links file built from other words is never used against these. */
+/**
+ * Round 5b (decision 91): the grammar tool's part-of-speech tag -> the plain-English label the card translates
+ * ("noun_prop" -> "Noun"). Matched by the first part of the tag; an unknown tag is "Word", never the raw tag.
+ */
+export function duaGrammarPosLabel(pos) {
+  const head = String(pos ?? "").split("_")[0];
+  return { noun: "Noun", adj: "Adjective", adv: "Adverb", pron: "Pronoun", verb: "Verb", part: "Particle", prep: "Preposition", conj: "Conjunction", interj: "Interjection" }[head] ?? "Word";
+}
+
 export function duaWordsFingerprint(words) {
   let h = 0x811c9dc5;
   for (const ch of String(words ?? "")) { h ^= ch.codePointAt(0); h = Math.imul(h, 0x01000193) >>> 0; }
