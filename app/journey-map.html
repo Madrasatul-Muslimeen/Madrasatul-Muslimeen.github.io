@@ -364,6 +364,10 @@
      job; Folders | Timeline | Path stay as its tabs. */
   html.embed h1, html.embed .intro, html.embed #topNav, html.embed #backLink, html.embed #accountCardOverlay { display: none !important; }
   html.embed body { margin: 0; padding: 0.4rem 0.6rem; overflow-x: hidden; }
+  /* The Owner, 8 Oct 2026: in the pop-up, the panels use the window's whole width. The page's
+     46rem reading cap had squeezed tree | list | Note into the left 755px of a 1340px window,
+     each below its own minimum, so the drag handles had no room to move. */
+  html.embed body { max-width: none; }
   html.embed body.note-pane-wide { max-width: none; }
 </style>
 </head>
@@ -1204,8 +1208,13 @@
      * DOCUMENT's own width, never the screen's -- the tray is an iframe
      * usually narrower than 1200px on a screen far wider than that.
      */
+    // In the pop-up the page is the window's body and fills it (no 84rem cap), so the three
+    // panels' minimums (240 + 260 + 300px, with the gaps) fit from 900px: a laptop-sized
+    // pop-up shows all three, each resizable (the Owner, 8 Oct 2026). The full page keeps 1200.
+    const NOTE_PANE_WIDE_FROM_EMBED = 900;
     function noteLayoutTier() {
-      return document.documentElement.clientWidth >= NOTE_PANE_WIDE_FROM ? "wide" : "narrow";
+      const from = document.documentElement.classList.contains("embed") ? NOTE_PANE_WIDE_FROM_EMBED : NOTE_PANE_WIDE_FROM;
+      return document.documentElement.clientWidth >= from ? "wide" : "narrow";
     }
     const isEmbedded = document.documentElement.classList.contains("embed");
     const noteLayoutEl = document.getElementById("noteLayout");

@@ -3813,7 +3813,7 @@ export const BN = {
   // Owner decision 82 (7 Oct 2026) -- Explore: every Approach at once, tap a slice, Back and Previous/Next, Take.
   "All Approaches": "সব পদ্ধতি",
   "One Approach": "একটি পদ্ধতি",
-  "← Back": "← পেছনে",
+  // "← Back" is defined once, above ("← ফিরে যান"); a second entry here overrode it everywhere from v09.107 (found 8 Oct 2026).
   "Back to the Whole Quran": "সম্পূর্ণ কুরআনে ফিরুন",
   "Back to the Surah": "সূরায় ফিরুন",
   "Previous Surah": "আগের সূরা",
