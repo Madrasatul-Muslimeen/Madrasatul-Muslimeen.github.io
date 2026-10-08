@@ -125,11 +125,11 @@ Read this first, every session. It is the standing brief.
 >
 > **`docs/reports/2026-10-08-MMSA-SESSION-HANDOVER.md`** is the current
 > continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-10-08.md`**
-> is the prompt that starts a new session. `main` reached v09.113 (the Word card and
-> Āyah card ways back, and **the way-back law**, decision 86). **The queue (decision 87):
-> the Hadith database, then the Dua database** (the research report's §4.3 order), then
-> the Asma ul Husna descriptions (Names only, three versions behind a toggle, the Owner's
-> edits saved for the madrasah; demo first). The Owner has done pictures step 1 (Blaze).
+> is the prompt that starts a new session (refreshed at v09.121). `main` reached **v09.121** on 8 Oct:
+> the Hadith database rounds H-DB1–H-DB5 (four more Arabic books, standard hadith numbers, HadeethEnc
+> translations, the **Dua tab** and **one card per dua** with progress under the permanent key `dua:<n>`,
+> decision 88) and the Asma ul Husna descriptions (v09.120). **Decisions 87 and 88 are done; the queue is
+> empty** — take whatever the Owner sends next, and offer the "possible next" items in handover section 0.
 >
 > **The 7 Oct block below is kept as history**, superseded by it.
 >

@@ -41,8 +41,8 @@ No Builder round is running and no pull request is open.
   clean dua words on a card (the supplication alone, not the chain); Notes and bookmarks on a dua.
 - **Still open, Owner decision before Studied / Notes / bookmarks on OpenITI passages:** the permanent key
   (recommended `hadith:openiti:<versionUri>:<n>`, showing the standard number).
-- **The Owner's Take Note message (8 Oct): built as v09.116;** "add the bookmark button there too" asked back
-  (the card already has 🔖 Bookmark: move it beside Take Note, or a second button opening the bookmarks list?).
+- **The Owner's Take Note message (8 Oct): built as v09.116.** The bookmark half is closed: the Owner, "I didn't
+  notice the button already exist." Nothing to build.
 
 **THE QUEUE, in order (decision 87):**
 1. **The Hadith database, then the Dua database** ("Start Hadith n Dua Database work (NS's job)"). Follow
