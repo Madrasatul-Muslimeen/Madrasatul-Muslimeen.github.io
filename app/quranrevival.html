@@ -3671,6 +3671,12 @@
   /* "Back to Āyah card" -- stays until used or dismissed, above the bottom bar. */
   .ayah-card-back-pill { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(5.2rem + env(safe-area-inset-bottom, 0px)); z-index: 955; display: flex; align-items: center; gap: 0.2rem; padding: 0.2rem; border-radius: 999px; background: #1b2a41; border: 1px solid #c9a24b; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); max-width: calc(100vw - 32px); }
   .ayah-card-back-pill[hidden] { display: none; }
+  /* Docked beside ✓ on the Read bar (js/back-dock.js): part of the row, not floating. */
+  #readBackSlot { display: inline-flex; align-items: center; gap: 0.4rem; min-width: 0; flex: 0 1 auto; max-width: 100%; }
+  #readBackSlot:empty { display: none; }
+  .ayah-card-back-pill.back-docked { position: static; transform: none; left: auto; bottom: auto; z-index: auto; box-shadow: none; max-width: 100%; min-width: 0; flex: 0 1 auto; }
+  .ayah-card-back-pill.back-docked .ayah-card-back-btn { min-height: 40px; font-size: 0.82rem; min-width: 0; }
+  .ayah-card-back-pill.back-docked .ayah-card-back-x { width: 40px; height: 40px; }
   .ayah-card-back-btn { min-height: 40px; padding: 0 0.9rem; border: 0; border-radius: 999px; background: transparent; color: #f2e8d5; font-size: 0.88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
   .ayah-card-back-ref { color: #c9a24b; margin-left: 0.3rem; }
   .ayah-card-back-x { width: 40px; height: 40px; flex: 0 0 auto; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.08); color: #f2e8d5; font-size: 1.2rem; cursor: pointer; }
@@ -5176,6 +5182,10 @@
                Direct on the bar rather than inside the ⋮ menu, matching the
                bookmark button's own precedent, because it applies to every
                unit type and to flow views as well as a single āyah. -->
+          <!-- The Owner, 8 Oct 2026: "May be beside the tick button." The way back (a bookmark's "← Back to …", or
+               "Back to Āyah card" / a Name) sits here while this bar is on screen, instead of floating over the
+               Study menu; js/back-dock.js. -->
+          <span id="readBackSlot" class="read-back-slot" data-back-dock></span>
           <button type="button" class="secondary qr-ico" id="readCompleteBtn" aria-label="Mark this reading complete" title="Mark this reading complete">✓</button>
           <!-- Issue #421 -- the Writing sheet: this unit's Mushaf pages as an A4
                tracing sheet. Every reader, every unit type. Nothing is loaded
@@ -6416,6 +6426,7 @@
     import { ownerFolderTreePaged, noteFilings, folderContents } from "./js/journey-map-service.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { mountBookmarkMenu, mountBackRow } from "./js/bookmark-nav.js";
+    import { placeInDock } from "./js/back-dock.js";
     import { makeFloatingCard, makeResizableBox } from "./js/float-card.js";
     import {
       getAppLang, getQuranTranslationLangs, setQuranTranslationLangs,
@@ -19523,6 +19534,18 @@
       pill.innerHTML = `<button type="button" class="ayah-card-back-btn" data-ayah-card-back><span aria-hidden="true">←</span> ${escapeHtml(ayahCardReturn.title)}${ayahCardReturn.label ? ` <span class="ayah-card-back-ref">${escapeHtml(ayahCardReturn.label)}</span>` : ""}</button>` +
         `<button type="button" class="ayah-card-back-x" data-ayah-card-back-dismiss aria-label="${escapeHtml(t("Close"))}">×</button>`;
       pill.hidden = false;
+      placeInDock(pill, "back-docked");
+      // Re-placed whenever the page changes view (the Read bar shown or hidden); idempotent, so it never loops.
+      if (!pill.__dockWatch) {
+        let queued = false;
+        pill.__dockWatch = new MutationObserver((list) => {
+          if (queued || pill.hidden || list.every((m) => pill.contains(m.target))) return;
+          queued = true;
+          requestAnimationFrame(() => { queued = false; if (!pill.hidden) placeInDock(pill, "back-docked"); });
+        });
+        pill.__dockWatch.observe(document.body, { subtree: true, attributes: true, attributeFilter: ["hidden", "class", "style"] });
+        window.addEventListener("resize", () => { if (!pill.hidden) placeInDock(pill, "back-docked"); });
+      }
     }
     async function returnToAyahCard(r) {
       if (!r) return;

@@ -281,6 +281,9 @@ body:has(.nav-cat-bookmark[open]) { overflow: hidden; }
 .bm-back-row .bm-back-x { border-radius: 999px; }
 .bm-back { display: inline-flex; align-items: center; min-height: 40px; padding: 0.3rem 0.8rem; border: 1px solid #c9d3e6; border-radius: 999px; background: #f4f7fc; color: #1F3A6E; font-weight: 600; font-size: 0.9rem; text-decoration: none; min-width: 0; overflow-wrap: anywhere; box-sizing: border-box; }
 .bm-back:hover { background: #e8eef9; }
+.bm-back-row.bm-back-docked { position: static; z-index: auto; max-width: 100%; min-width: 0; flex: 0 1 auto; padding: 0; gap: 0.3rem; background: transparent; box-shadow: none; }
+.bm-back-row.bm-back-docked .bm-back { min-height: 40px; padding: 0 0.7rem; font-size: 0.82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; line-height: 38px; }
+.bm-back-row.bm-back-docked .bm-back-x { width: 40px; height: 40px; }
 .bm-back-x { flex: 0 0 auto; width: 40px; height: 40px; padding: 0; border: 1px solid #ddd; border-radius: 0.4rem; background: white; color: #1F3A6E; cursor: pointer; }
 /* Issue #410 -- a saved-settings row is a button that looks like the links around it, but is a real 40px tap target. */
 button.nav-bm-preset { background: none; border: 0; font: inherit; font-size: 0.86rem; text-align: left; cursor: pointer; min-height: 40px; padding: 0.1rem 0; max-width: 100%; overflow-wrap: anywhere; }
