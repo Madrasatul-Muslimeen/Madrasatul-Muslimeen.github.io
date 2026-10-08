@@ -23,7 +23,7 @@ const MUT = {
 };
 if (MUTATE && !MUT[MUTATE]) throw new Error(`unknown mutation ${MUTATE}`);
 const fp = JSON.parse(fs.readFileSync("tools/hadith-data-pull/output/dua/words-1.json", "utf8")).duas;
-const GOOD = { schemaVersion: 1, page: 1, tool: "fixture", duas: { 1: { f: fp[1].f, g: { 4: ["فَوَّضَ", "فوض", "verb", "فَوَّضْتُ"] } }, 2: { f: "stale-fingerprint", g: { 0: ["x", "ابت", "noun", "x"] } } } };
+const GOOD = { schemaVersion: 1, page: 1, tool: "fixture", duas: { 1: { f: fp[1].f, g: { 4: ["فَوَّضَ", "فوض", "verb", "فَوَّضْتُ"] } }, 2: { f: "stale-fingerprint", g: { 9: ["x", "ابت", "noun", "x"] } } } };
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 async function context(lang, width, look) {
   const ctx = await newContext(browser, { appLang: lang, banner: false, viewport: { width, height: 860 } });
@@ -76,7 +76,7 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
   check(`${tag} contrast of the labels is at least 4.5:1 (${cr.toFixed(2)})`, cr >= 4.5, JSON.stringify([r.fg, r.bgc]));
   check(`${tag} nothing is wider than the card`, r.has && !r.wide && !r.past);
   // A stale fingerprint (Dua 2's file entry) must not be used for another dua's words.
-  await tap(P, 2, 0);
+  await tap(P, 2, 9);
   check(`${tag} a grammar entry whose fingerprint does not match is ignored`, !(await P.evaluate(() => !!document.querySelector('[data-dua-word-panel="2"] [data-dua-word-grammar]'))));
   // A LINKED word shows no suggestion.
   await tap(P, 1, 1);

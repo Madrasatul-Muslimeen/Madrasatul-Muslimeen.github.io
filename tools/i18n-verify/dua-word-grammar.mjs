@@ -17,6 +17,8 @@ const files = fs.readdirSync(DUA).filter((f) => /^grammar-\d+\.json$/.test(f));
 const wordFiles = fs.readdirSync(DUA).filter((f) => /^words-\d+\.json$/.test(f));
 check("grammar files were generated (python3 tools/hadith-data-pull/dua-word-grammar.py)", files.length > 0 && files.length === wordFiles.length, `${files.length} grammar files, ${wordFiles.length} words files`);
 
+check("the files are real analyses, not the empty placeholders (tool is not \"not generated\")", files.length > 0 && files.every((f) => !/^not generated/.test(JSON.parse(fs.readFileSync(path.join(DUA, f), "utf8")).tool)), "placeholders present");
+
 // The pure part-of-speech labels (plain words, never raw tags).
 check("duaGrammarPosLabel: noun -> Noun, noun_prop -> Noun, verb -> Verb, part_neg -> Particle, prep -> Preposition",
   duaGrammarPosLabel("noun") === "Noun" && duaGrammarPosLabel("noun_prop") === "Noun" && duaGrammarPosLabel("verb") === "Verb" && duaGrammarPosLabel("part_neg") === "Particle" && duaGrammarPosLabel("prep") === "Preposition");
