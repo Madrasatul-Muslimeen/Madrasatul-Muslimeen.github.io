@@ -301,3 +301,7 @@ a.hadeethenc-study-btn[aria-disabled="true"], button.hadeethenc-study-btn[aria-d
 .dua-word-progress .dua-status { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; text-decoration: none; }
 .dua-word-progress .dua-status[aria-current="true"] { outline: 2px solid var(--hadith-gold, #b8860b); outline-offset: 1px; font-weight: 600; }
 .dua-word-line .dua-word-value[lang="ar"] { justify-self: start; }
+
+/* Decision 90, round 5a: where the vowels come from, and the switch. */
+.dua-vowels-note { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+.dua-vowels-toggle { display: inline-flex; align-items: center; min-height: 40px; }

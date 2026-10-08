@@ -20165,3 +20165,15 @@ The Owner, decision 88, on the Dua demo (https://claude.ai/artifact/LxHMM7PhPAKQ
 - **Checks:**
   - dua-word-links 17/0, new dua-word-card-browser 45/0 (mutations nohow, noplaces, notoken, norecord)
   - green: dua-words 16/0, dua-word-links-browser 48/0, dua-words-browser 37/0, dua-tab-browser 57/0, hadith-translations-browser 33/0, openiti-browser 76/0, hadeethenc-browser 82/0, hadith-source-navigation-browser 50/0, card-look-browser 96/0, word-card-ayah-card-ways-back-browser 71/0, bookmark-marks-back-browser 112/0, quran-ayah-action-sheet-browser 144/0, ayah-card-takenote-family-browser 40/0, quran-lemma-progress-rendered 81/0, phone-width-overflow 217/0, palette-contrast-browser 20/0, stub-parity 4/0, rules-authorisation-executable 63/0, behaviour 1007/0
+
+## v09.133 — 2026-10-08 — Dua words, round 5a: vowels from Hisn al-Muslim and HadeethEnc
+
+- **Asked:** the Owner: "Go ahead with round 5. Do not wait for my permission except something needs my choice or answer … keep builder pushing in work continuously. RULE, write in the memory file" (decision 91; decision 90 Q3)
+- **What:**
+  - `CLAUDE.md`: the Owner's standing rule on working (decision 91), at the top of the brief
+  - new `tools/hadith-data-pull/dua-vowels.mjs`, `tools/hadith-data-pull/sources/hisn-asellam.json` (MIT), `output/dua/vowels-<page>.json` (239 duas)
+  - `app/js/openiti-corpus.js`: `loadDuaVowels()`; `app/js/hadith-browser.js`: vowelled words, the source line and the switch; `app/css/hadith.css`, `app/js/i18n/bn.js`
+  - round 5b (grammar suggestions) dispatched to the Builder as issue #662
+- **Checks:**
+  - new dua-vowels 11/0, new dua-vowels-browser 33/0 (mutations novowels, notoggle)
+  - green: dua-words 16/0, dua-word-links 17/0, dua-word-links-browser 48/0, dua-word-card-browser 45/0, dua-words-browser 37/0 (its picked-words check compares each word's unvowelled form now, updated in place), dua-tab-browser 57/0, hadith-translations-browser 33/0, openiti-browser 76/0, hadeethenc-browser 82/0, card-look-browser 96/0, phone-width-overflow 217/0, palette-contrast-browser 20/0, stub-parity 4/0, behaviour 1007/0

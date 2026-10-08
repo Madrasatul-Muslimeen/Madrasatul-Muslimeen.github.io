@@ -35,7 +35,7 @@ import {
 import {
   OPENITI_CREDIT_URL,
   loadOpenitiBookSummaries, loadOpenitiBookIndex, loadOpenitiChapter, chapterForHadithNumber,
-  loadOpenitiConcordance, loadOpenitiHadeethEncLinks, loadDuaIndex, loadDuaCardsSummary, loadDuaCardsPage, loadDuaWordLinks, loadDuaWordGrammar,
+  loadOpenitiConcordance, loadOpenitiHadeethEncLinks, loadDuaIndex, loadDuaCardsSummary, loadDuaCardsPage, loadDuaWordLinks, loadDuaVowels, loadDuaWordGrammar,
 } from "./openiti-corpus.js";
 
 const CONTENT_LANG_LABELS = { ar: "العربية", en: "English", bn: "বাংলা" };
@@ -1224,7 +1224,8 @@ function renderDuaCards(body, state, render) {
   section.id = "duaCards";
   body.appendChild(section);
   section.appendChild(el("p", "hadith-note", t("Loading…")));
-  Promise.all([loadDuaCardsSummary(), loadDuaCardsPage(state.dua.page || 1), loadDuaWordLinks(state.dua.page || 1).catch(() => null), loadDuaWordGrammar(state.dua.page || 1).catch(() => null)]).then(([summary, cards, wordLinks, wordGrammar]) => {
+  Promise.all([loadDuaCardsSummary(), loadDuaCardsPage(state.dua.page || 1), loadDuaWordLinks(state.dua.page || 1).catch(() => null),
+    loadDuaVowels(state.dua.page || 1).catch(() => null), loadDuaWordGrammar(state.dua.page || 1).catch(() => null)]).then(([summary, cards, wordLinks, vowels, wordGrammar]) => {
     section.textContent = "";
     const page = state.dua.page || 1;
     const first = (page - 1) * summary.cardsPerFile + 1;
@@ -1245,7 +1246,7 @@ function renderDuaCards(body, state, render) {
     const list = el("div", "hadith-occurrences");
     section.appendChild(list);
     const progressRows = [];
-    for (const c of cards) list.appendChild(duaCard(c, summary, state, render, progressRows, wordLinks, page, wordGrammar));
+    for (const c of cards) list.appendChild(duaCard(c, summary, state, render, progressRows, wordLinks, page, vowels, wordGrammar));
     section.appendChild(pager());
     fillDuaProgress(progressRows);
     if (state.dua.focusDua != null) {
@@ -1256,7 +1257,7 @@ function renderDuaCards(body, state, render) {
   }).catch((err) => { section.textContent = ""; section.appendChild(el("p", "hadith-note", String(err?.message ?? err))); });
 }
 
-function duaCard(c, summary, state, render, progressRows, wordLinks = null, page = 1, wordGrammar = null) {
+function duaCard(c, summary, state, render, progressRows, wordLinks = null, page = 1, vowels = null, wordGrammar = null) {
   const card = el("article", "hadith-card dua-card");
   card.dataset.duaCard = String(c.dua);
   const head = el("p", "hadith-card-head", t("Dua {n}", { n: num(c.dua) }));
@@ -1285,25 +1286,49 @@ function duaCard(c, summary, state, render, progressRows, wordLinks = null, page
     const links = wordLinks?.duas?.[c.dua];
     const linked = !!links && links.f === duaWordsFingerprint(picked.words);
     const gram = wordGrammar?.duas?.[c.dua];
+    // Round 5a (decision 90): the same words with vowels, where a vowelled text holds this whole dua word for word.
+    const vow = vowels?.duas?.[c.dua];
+    const vowelled = !!vow && vow.f === duaWordsFingerprint(picked.words) && vow.v.length === duaWordTokens(picked.words).length ? vow : null;
     const panel = el("div", "dua-word-panel");
     panel.hidden = true;
     panel.dataset.duaWordPanel = String(c.dua);
     duaWordTokens(picked.words).forEach((tok, i) => {
       if (i) words.appendChild(document.createTextNode(" "));
-      const span = el("span", "dua-word", tok);
+      const span = el("span", "dua-word", vowelled ? vowelled.v[i] : tok);
       span.dataset.duaWord = String(i);
+      span.dataset.plain = tok;
+      if (vowelled) span.dataset.vowelled = vowelled.v[i];
       if (linked) {
         const idx = links.w[i] ?? -1;
         span.setAttribute("role", "button");
         span.tabIndex = 0;
         span.setAttribute("aria-pressed", "false");
         if (idx >= 0) span.classList.add("dua-word-linked");
-        const open = () => showDuaWord(panel, words, span, tok, idx >= 0 ? wordLinks.entries[idx] : null, c.dua, page, links.x?.[i] ?? "", idx < 0 && gram?.f === links.f ? gram.g?.[i] ?? null : null);
+        const open = () => showDuaWord(panel, words, span, span.textContent, idx >= 0 ? wordLinks.entries[idx] : null, c.dua, page, links.x?.[i] ?? "", idx < 0 && gram?.f === links.f ? gram.g?.[i] ?? null : null);
         span.addEventListener("click", open);
         span.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
       }
       words.appendChild(span);
     });
+    if (vowelled) {
+      // Where the vowels come from, and a switch to see the words without them (one tap, both ways).
+      const src = vowelled.s.startsWith("hisn:") ? t("Hisn al-Muslim") : t("HadeethEnc");
+      const row = el("p", "dua-words-note dua-vowels-note");
+      row.dataset.duaVowels = vowelled.s;
+      row.appendChild(document.createTextNode(t("Vowels from {source}, matched word for word by the computer · a person checks them", { source: src })));
+      const sw = el("button", "dua-ref dua-vowels-toggle", t("Without vowels"));
+      sw.type = "button";
+      sw.dataset.duaVowelsToggle = "";
+      sw.setAttribute("aria-pressed", "false");
+      sw.addEventListener("click", () => {
+        const plain = sw.getAttribute("aria-pressed") !== "true";
+        sw.setAttribute("aria-pressed", String(plain));
+        sw.textContent = plain ? t("With vowels") : t("Without vowels");
+        words.querySelectorAll("[data-dua-word]").forEach((w) => { w.textContent = plain ? w.dataset.plain : w.dataset.vowelled; });
+      });
+      row.appendChild(sw);
+      card.appendChild(row);
+    }
     if (linked) card.appendChild(el("p", "dua-words-note dua-words-tap", t("Tap a word to see it in the Qur'an's words.")));
     card.appendChild(panel);
     const fold = document.createElement("details");

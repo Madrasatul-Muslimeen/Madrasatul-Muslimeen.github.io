@@ -38,9 +38,28 @@ def read_tokens():
     return json.loads(r.stdout)
 
 
-def clean_root(root):
-    r = re.sub(r"[.\s]", "", root or "")
-    return "" if (not r or "#" in r or "NTWS" in r or re.search(r"[A-Za-z]", r)) else r
+# The weak letters a "#" may be filled with. Not alif: in a hollow verb (قال, عاذ) the alif stands for و or ي, so a
+# root read from it would be wrong (قال is ق.و.ل); such a root is left out.
+WEAK = set("ويىأإءئؤ")
+MARKS = re.compile(r"[\u064B-\u0652\u0670]")
+
+
+def clean_root(root, lemma=""):
+    """CAMeL writes a root as "ف.#.ض": "#" stands for a weak letter (و, ي or a hamza seat). It is filled back from the
+    dictionary form when that form holds exactly one weak letter between the root's other letters (فَوَّض -> فوض);
+    otherwise the root is left out rather than guessed. NTWS (a foreign stem) and Latin tags give no root."""
+    parts = [p for p in (root or "").split(".") if p]
+    if len(parts) < 3 or any(re.search(r"[A-Za-z]", p) for p in parts):
+        return ""
+    if "#" not in parts:
+        return "".join(parts)
+    letters = MARKS.sub("", lemma or "")
+    pattern = "".join("([" + "".join(sorted(WEAK)) + "])" if p == "#" else re.escape(p) for p in parts)
+    found = [m for m in re.finditer(pattern, letters)]
+    if len(found) != 1:
+        return ""
+    groups = iter(found[0].groups())
+    return "".join(next(groups).replace("ى", "ي").replace("أ", "ء").replace("إ", "ء").replace("آ", "ء").replace("ئ", "ء").replace("ؤ", "ء") if p == "#" else p for p in parts)
 
 
 def main():
@@ -68,10 +87,15 @@ def main():
                 if not analyses:
                     continue
                 a = analyses[0].analysis
+                # Only an analysis from CAMeL's own lexicon. "backoff" is NO_ANALYSIS (the word echoed back); "spvar"
+                # (a spelling variant) and NTWS (a foreign stem) gave nonsense for duas (وألجأت -> "the GATT",
+                # لبيك -> "Bey"): measured on the 3,980 words, 8 Oct 2026. Such a word gets no suggestion.
+                if a.get("source") != "lex" or "NTWS" in (a.get("root") or ""):
+                    continue
                 lemma = re.sub(r"_\d+$", "", a.get("lex", ""))
                 if not lemma:
                     continue
-                g[str(i)] = [lemma, clean_root(a.get("root")), a.get("pos", ""), a.get("diac", "")]
+                g[str(i)] = [lemma, clean_root(a.get("root"), lemma), a.get("pos", ""), a.get("diac", "")]
                 got += 1
             if g:
                 out[dua] = {"f": links["f"], "g": g}

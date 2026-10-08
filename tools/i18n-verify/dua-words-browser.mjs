@@ -48,7 +48,10 @@ for (const [lang, width, look, font] of [["en", 390, "light", null], ["bn", 390,
   await P.waitForTimeout(600);
 
   const shown = await P.evaluate(() => [...document.querySelectorAll("[data-dua-card]")].map((c) => ({
-    n: c.dataset.duaCard, words: c.querySelector("[data-dua-words]")?.textContent ?? null,
+    n: c.dataset.duaCard,
+    // Round 5a (decision 90) shows some cards WITH vowels; each word keeps its picked form in data-plain, which is
+    // what is compared here (updated in place; the vowels have their own suite, dua-vowels-browser).
+    words: c.querySelector("[data-dua-words]") ? [...c.querySelectorAll("[data-dua-word]")].map((w) => w.dataset.plain).join(" ") : null,
     arabicOutside: !!c.querySelector(":scope > .hadith-arabic"), note: c.querySelector(".dua-words-note")?.textContent ?? "",
     fold: c.querySelector("[data-dua-narration]") ? { open: c.querySelector("[data-dua-narration]").open } : null })));
   const want = shown.map((s) => ({ n: s.n, r: duaWords(byN.get(s.n)?.text ?? "") }));

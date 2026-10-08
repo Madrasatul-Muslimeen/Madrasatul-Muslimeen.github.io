@@ -50,14 +50,23 @@ check("every grammar entry's fingerprint matches its words file and the words as
 check("only UNLINKED words appear (w[i] === -1)", analysed > 0 && linkedLeak === 0, `${linkedLeak} linked words appear`);
 check("every entry is [lemma, root, pos, vowelled], all strings, with a lemma", analysed > 0 && badShape === 0, `${badShape} malformed`);
 console.log(`  coverage: ${analysed} of ${unlinked} unlinked dua words have a grammar suggestion (${unlinked ? (100 * analysed / unlinked).toFixed(1) : 0}%)`);
-check("coverage: at least half of the unlinked words are analysed", unlinked > 0 && analysed / unlinked >= 0.5, `${analysed}/${unlinked}`);
+check("coverage: at least half of the unlinked words are analysed (3,280 of 3,980, 82.4%, on 8 Oct 2026)", unlinked > 0 && analysed / unlinked >= 0.5, `${analysed}/${unlinked}`);
 
 // Written by hand, from the Arabic itself (not from the script): the root of each word, the letters under the affixes.
-const HAND = [["لبيك", "لبي"], ["وفوضت", "فوض"], ["وألجأت", "لجأ"], ["ورغبة", "رغب"], ["منجا", "نجو"]];
+// Updated in place by the Architect (8 Oct 2026), after running the script: CAMeL's calima-msa-r13 has no analysis for
+// لبيك, وألجأت or منجا -- it answers "backoff" (NO_ANALYSIS) or a nonsense spelling variant ("the GATT", "Bey") -- and the
+// script now gives such a word NO suggestion rather than a wrong one. So those three are checked for that, and two
+// more roots the script must find are added (one of them through the weak-letter fill, ف.#.ض -> فوض).
+const HAND = [["وفوضت", "فوض"], ["ورغبة", "رغب"], ["القبر", "قبر"], ["السفر", "سفر"]];
+// A hollow verb's root is not read off its alif (قال is ق.و.ل, not قال): it is left out instead.
+check("no root is read off a hollow verb's alif (no «قال»/«عاذ» roots)", ![...byWord].some(([, v]) => v.some((r) => ["قال", "عاذ", "فات", "جار"].includes(r[1]))));
+const rowsOf = (word) => [...byWord].filter(([k]) => k.replace(/[ً-ْٰ]/g, "") === word).flatMap(([, v]) => v);
 for (const [word, root] of HAND) {
-  const rows = [...byWord].filter(([k]) => k.replace(/[ً-ْٰ]/g, "") === word).flatMap(([, v]) => v);
+  const rows = rowsOf(word);
   const roots = new Set(rows.map((r) => r[1].replace(/[ً-ْ]/g, "")));
-  check(`by hand: ${word} has root ${root}`, rows.length === 0 ? false : roots.has(root) || (word === "منجا" && roots.has("نجي")), rows.length ? JSON.stringify([...roots]) : "word not analysed (or not unlinked)");
+  check(`by hand: ${word} has root ${root}`, rows.length > 0 && roots.has(root), rows.length ? JSON.stringify([...roots]) : "word not analysed (or not unlinked)");
 }
+for (const word of ["لبيك", "وألجأت", "منجا"]) check(`by hand: ${word} gets NO suggestion (the tool has no real analysis for it; nothing is guessed)`, rowsOf(word).length === 0, JSON.stringify(rowsOf(word)));
+check("a root, where given, is three or four Arabic letters (the weak letter filled, never \"#\")", [...byWord].every(([, v]) => v.every((r) => r[1] === "" || /^[\u0621-\u064A]{3,4}$/u.test(r[1]))));
 console.log(`\n==== Dua word grammar data: ${pass} passed, ${fail} failed ====`);
 process.exit(fail ? 1 : 0);
