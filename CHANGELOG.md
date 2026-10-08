@@ -20127,3 +20127,15 @@ The Owner, decision 88, on the Dua demo (https://claude.ai/artifact/LxHMM7PhPAKQ
 - **Checks:**
   - new dua-words 11/0, dua-words-browser 37/0 (mutations nowire, nofont, nomark)
   - green: dua-tab-browser 57/0, openiti-browser 76/0, hadeethenc-browser 82/0, hadith-source-navigation-browser 50/0, card-look-browser 96/0, phone-width-overflow 217/0, palette-contrast-browser 20/0
+
+## v09.130 — 2026-10-08 — Hadith in English and Bangla
+
+- **Asked:** the Owner: "include the Hadith Eng n Bangla languages from the sources you have indentified (permissions will not be a problem, it will be okay, En Shaa Allah)" (decision 89)
+- **What:**
+  - new `tools/hadith-data-pull/hadith-translations-pull.mjs` and `output/translations/` (hadith-api eng/ben, eight books, keyed by standard number, 500 a file)
+  - new `app/js/hadith-translations.js`; `app/js/openiti-corpus.js` `buildConcordance()` adds `stdByN`
+  - `app/js/hadith-browser.js`: `standardTranslationFolds()` on library narrations and Dua cards; `app/js/i18n/bn.js`: five strings
+  - `docs/governance/2026-09-27-owner-decisions.md`: decision 89
+- **Checks:**
+  - new hadith-translations 17/0, hadith-translations-browser 33/0 (mutations nofold, bypos)
+  - green: dua-tab-browser 57/0, openiti-browser 76/0, hadeethenc-browser 82/0, hadith-source-navigation-browser 50/0, hadith-concordance 89/0, openiti-books-summary 4/0, card-look-browser 96/0, phone-width-overflow 217/0, palette-contrast-browser 20/0, stub-parity 4/0
