@@ -259,3 +259,13 @@ a.hadeethenc-study-btn[aria-disabled="true"], button.hadeethenc-study-btn[aria-d
 .hadeethenc-study-item .assign-row .who-name { flex: 1; }
 .hadeethenc-study-item .assign-row .who-tag { font-size: 0.66rem; color: #555; background: #f6f7fb; border: 1px solid #eee; border-radius: 0.6rem; padding: 0.02rem 0.4rem; }
 .hadeethenc-study-reason { flex-basis: 100%; font-size: 0.8rem; color: #7d1f1e; margin: 0.1rem 0 0; font-weight: 600; }
+
+/* The Owner, 8 Oct 2026: a dua's own words, large, in the Quranic font chosen in Options (quranFontStack()). */
+@font-face { font-family: 'QR Scheherazade'; src: url('../fonts/scheherazade.woff2') format('woff2'); font-display: swap; }
+@font-face { font-family: 'QR Noto Naskh';   src: url('../fonts/notonaskh.woff2')   format('woff2'); font-display: swap; }
+@font-face { font-family: 'QR Amiri Quran';  src: url('../fonts/amiriquran.woff2')  format('woff2'); font-display: swap; }
+.dua-words { font-size: 2.1em; line-height: 2; direction: rtl; text-align: right; margin: 0.4rem 0 0.1rem; color: var(--hadith-ink); overflow-wrap: anywhere; }
+.dua-words-note { margin: 0 0 0.3rem; font-size: 0.8rem; color: var(--hadith-muted); }
+.dua-narration summary { min-height: 40px; display: flex; align-items: center; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--hadith-ink); }
+.dua-narration .hadith-arabic { font-size: 1.5em; }
+.dua-words-mark { background: #f6e7b8; color: #2b2208; border-radius: 0.2em; padding: 0 0.1em; }

@@ -3119,6 +3119,9 @@ export const BN = {
   "Duas {from}–{to} of {total}, most narrated first. Each dua's narrations were found by matching words and are still to be checked.": "দুআ {from}–{to}, মোট {total}টির মধ্যে, সবচেয়ে বেশি বর্ণিতগুলো আগে। প্রতিটি দুআর বর্ণনাগুলো শব্দ মিলিয়ে পাওয়া, যাচাই এখনও বাকি।", // ?
   "Dua {n}": "দুআ {n}", // ?
   "Narrated in {n} places": "{n}টি স্থানে বর্ণিত", // ?
+  "Words picked out by the computer · a person checks them": "কম্পিউটার দোয়ার শব্দগুলো বেছে নিয়েছে · একজন মানুষ তা যাচাই করবেন",
+  "The whole narration": "পুরো বর্ণনা",
+  "The dua's own words are not picked out of this narration yet.": "এই বর্ণনা থেকে দোয়ার শব্দগুলো এখনো আলাদা করা হয়নি।",
   "← Back to Dua {n}": "← দুআ {n}-এ ফিরে যান", // ?
   "My progress on this dua": "এই দুআয় আমার অগ্রগতি", // ?
   "Progress could not be loaded right now.": "অগ্রগতি এখন আনা যায়নি।", // ?

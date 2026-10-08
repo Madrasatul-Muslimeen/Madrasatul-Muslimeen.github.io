@@ -13,7 +13,8 @@
 // every time.
 
 import { t, num } from "./i18n.js";
-import { getAppLang } from "./prefs.js";
+import { getAppLang, quranFontStack } from "./prefs.js";
+import { duaWords, duaNarration } from "./dua-words.js";
 import { STATUSES, statusLabel } from "./unit-keys.js";
 import { renderAssignDropdown } from "./assign-picker.js";
 import {
@@ -1258,9 +1259,38 @@ function duaCard(c, summary, state, render, progressRows) {
   const dua = { books: summary.books };
   const [ab, an, astd, anum] = c.anchor;
   card.appendChild(el("p", "openiti-standard-number", duaRefLabel(dua, summary.books[ab].versionUri, astd, an, anum)));
-  const text = el("p", "hadith-arabic", c.text);
-  text.lang = "ar"; text.dir = "rtl";
-  card.appendChild(text);
+  // The Owner, 8 Oct 2026: "clean dua words on each card" and "For Dua, I want same Quranic font". The words are
+  // picked out of the narration by dua-words.js (a suggestion until checked); the narration stays one tap away with
+  // the words marked in it. Where none are picked out, the narration shows as before.
+  const picked = duaWords(c.text);
+  if (picked) {
+    const words = el("p", "dua-words", picked.words);
+    words.lang = "ar"; words.dir = "rtl";
+    words.dataset.duaWords = String(c.dua);
+    words.style.fontFamily = quranFontStack();
+    card.appendChild(words);
+    card.appendChild(el("p", "dua-words-note", t("Words picked out by the computer · a person checks them")));
+    const fold = document.createElement("details");
+    fold.className = "dua-narration";
+    fold.dataset.duaNarration = String(c.dua);
+    const sum = document.createElement("summary");
+    sum.textContent = t("The whole narration");
+    fold.appendChild(sum);
+    const full = duaNarration(c.text);
+    const text = el("p", "hadith-arabic");
+    text.lang = "ar"; text.dir = "rtl";
+    const mark = document.createElement("mark");
+    mark.className = "dua-words-mark";
+    mark.textContent = full.slice(picked.start, picked.end);
+    text.append(full.slice(0, picked.start), mark, full.slice(picked.end));
+    fold.appendChild(text);
+    card.appendChild(fold);
+  } else {
+    const text = el("p", "hadith-arabic", c.text);
+    text.lang = "ar"; text.dir = "rtl";
+    card.appendChild(text);
+    card.appendChild(el("p", "dua-words-note", t("The dua's own words are not picked out of this narration yet.")));
+  }
   if (c.hadeethenc?.length) card.appendChild(openitiTranslationFold(c.hadeethenc.map(String)));
 
   const box = el("div", "dua-also");
