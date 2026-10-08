@@ -20074,3 +20074,19 @@ The Owner, decision 88, on the Dua demo (https://claude.ai/artifact/LxHMM7PhPAKQ
   - green: quran-word-card 37/0, lemma-levels 240/0, quran-word-form-mirror 91/0, quran-word-levels-rendered 41/0, word-na 48/0, phone-width-overflow 217/0, stub-parity 4/0
   - behaviour 1004/3 (22g×3, the archive.org baseline)
   - already red on `main` before this round (same failure with the change stashed), not fixed here: word-card-pc-boxes-browser, word-progress-practising-browser
+
+## v09.126 — 2026-10-08 — "File in folder(s)" from the Āyah card: full screen, ← Back, the keyboard stays, faster, folders fold
+
+- **Asked (four messages, phone screenshots):** "Make it full screen to have more Visibility n add a back button where it came from." / "On every letter typing, the keyboard goes down. Fix" / "Takes long time loading." / "Enable all folder Collapse/ expandable (use one button, not two. Same button collapse, next click expands). Default open collapsed."
+- **What:**
+  - `app/quranrevival.html`: the chooser fills the screen (a 46rem column on a wide screen; list takes the height; Cancel/Save at the bottom; names wrap whole); "← Back to Āyah card" reopens the card; search redraws only the list; the folder tree is loaded with `ownerFolderTreePagedSharded()`, started when the Āyah card opens and kept (refreshed behind each open); the card's read of the āyah's Notes is shared with the chooser and the one Note's folders are read while the card is open; one ▸/▾ per folder, closed at first.
+  - `app/js/ayah-folder-filing-renderer.js`: `renderAyahFolderTreeHtml()`, folding with "(n ticked inside)", delegated handlers.
+  - `app/js/i18n/bn.js`: Collapse/Expand {name}, "({count} ticked inside)".
+  - **Fixed:** Save read the ticks off the screen, so a ticked folder hidden by a search would have been taken out of the Note's folders; it now sends every tick.
+- **Measured:** with 250 folders and every read taking 300ms, the folders show 55ms after tapping File in folder(s) (the test measured 1.8s before).
+- **Checks:**
+  - new ayah-folder-filing-fullscreen-browser 74/0 (mutations nofull 6, retype 12, domsave 4, noback 4, nofold and slow each caught)
+  - updated in place: ayah-action-sheet-boundary 55/0 (two render opened; new: closed by default)
+  - green: quran-ayah-action-sheet 144/0, word-card-ayah-card-ways-back 71/0, ayah-connected 49/0, journey-folder-picker 294/0, bookmark-marks-back 112/0, phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0, rules-authorisation-executable 63/0
+  - behaviour 1004/3 (22g×3, the archive.org baseline)
+- **Demo waiting on the Owner:** Siyagah's section header for this chooser, https://claude.ai/artifact/QiApC5toRdcQxhFgJmMPvC

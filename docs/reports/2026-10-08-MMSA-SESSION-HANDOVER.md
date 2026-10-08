@@ -114,3 +114,4 @@ that handover does not name the version in `app/js/version.js`.
 - **v09.123** (2026-10-08): Asma ul Husna in Explore: ‹ › on a Name, the poster fills its panel.
 - **v09.124** (2026-10-08): the way back sits beside ✓ on the Read bar.
 - **v09.125** (2026-10-08): the Word card's You know box says of the Qur'an once.
+- **v09.126** (2026-10-08): File in folder(s): full screen, Back, keyboard stays, faster, folders fold.
