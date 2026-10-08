@@ -50,7 +50,9 @@ async function openWord(page, position) {
   await page.evaluate(() => { const t = document.getElementById("wbwShowToggle"); if (t && !t.checked) { t.checked = true; t.dispatchEvent(new Event("change", { bubbles: true })); } });
   await page.waitForTimeout(600);
   // 1:7:6 -- its lemma occurs once in the whole Qur'an, so a press moves the "You know" total by exactly one.
-  await page.evaluate(() => { const s = document.getElementById("ayahSelect"); if (s && s.value !== "7") { s.value = "7"; s.dispatchEvent(new Event("change", { bubbles: true })); } });
+  // UPDATED IN PLACE (#665): since issue #606 (decisions 76-77) the Fatiha count is on, and internal 1:7 shows as TWO
+  // displayed Ayat -- option "7" is half a (words 1-4), option "8" is half b (words 5-9). Word 6 lives in "8".
+  await page.evaluate(() => { const s = document.getElementById("ayahSelect"); if (s && s.value !== "8") { s.value = "8"; s.dispatchEvent(new Event("change", { bubbles: true })); } });
   await page.waitForFunction((p) => !!document.querySelector(`[data-word-occurrence$=":1:7:${p}"]`), position, { timeout: 8000 }).catch(() => {});
   await page.evaluate((p) => { document.querySelector(`[data-word-occurrence$=":1:7:${p}"]`)?.click(); }, position);
   await page.waitForFunction(() => { const b = document.querySelector("#quranWordCardMount [data-word-progress]"); return !!b && !!b.querySelector("[data-word-progress-state]"); }, null, { timeout: 8000 }).catch(() => {});
