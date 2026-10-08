@@ -778,3 +778,4 @@ total). Allocated by the MMSA Architect.
 09.132: Dua words, rounds 2–4. Allocated by the MMSA Architect.
 09.133: Dua words, round 5a: vowels. Allocated by the MMSA Architect.
 09.134: Dua words, round 5b: grammar suggestions. Allocated by the MMSA Architect.
+09.135: Dua words, round 6: progress on every word. Allocated by the MMSA Architect.

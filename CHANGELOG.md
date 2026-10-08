@@ -20188,3 +20188,15 @@ The Owner, decision 88, on the Dua demo (https://claude.ai/artifact/LxHMM7PhPAKQ
 - **Checks:**
   - new dua-word-grammar 17/0, new dua-word-grammar-browser 33/0 (mutations nogram, nofp, rawpos)
   - green: dua-vowels 11/0, dua-vowels-browser 33/0, dua-words 16/0, dua-word-links 17/0, dua-word-links-browser 48/0, dua-word-card-browser 45/0, dua-words-browser 37/0, dua-tab-browser 57/0, hadith-translations-browser 33/0, openiti-browser 76/0, hadeethenc-browser 82/0, card-look-browser 96/0, phone-width-overflow 217/0, palette-contrast-browser 20/0, stub-parity 4/0, behaviour 1007/0
+
+## v09.135 — 2026-10-08 — Dua words, round 6: progress on every word
+
+- **Asked:** the Owner: "Go ahead with round 6" (decision 92)
+- **What:**
+  - `app/js/unit-keys.js`: the permanent key `duaword:<dua>:<position>` (`buildUnitKey.duaWord`); `app/js/records.js`: one chunk per dua (`duawords_<n>`)
+  - `app/js/hadith-study-actions.js`: `duaWordUnitKey()`, `duaWordStatuses()`, `claimDuaWord()`
+  - `app/js/hadith-browser.js`: `duaWordProgressBlock()` on every word of the Dua word card; `app/js/i18n/bn.js`
+  - `docs/governance/2026-09-27-owner-decisions.md`: decision 92 (no Rules change needed)
+- **Checks:**
+  - new dua-word-progress-browser 31/0 (mutations wrongpos, nosave, nofollow; an I15 case)
+  - green: dua-word-grammar-browser 33/0, dua-vowels-browser 33/0, dua-word-links-browser 48/0, dua-words-browser 37/0, dua-tab-browser 57/0, claim-for-family-word-hadith-browser 158/0, hadeethenc-browser 82/0, monitor-study-activity 12/0, phone-width-overflow 217/0, palette-contrast-browser 20/0, stub-parity 4/0, rules-authorisation-executable 63/0, behaviour 1007/0
