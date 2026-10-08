@@ -3067,6 +3067,9 @@ export const BN = {
   "This edition's number": "এই সংস্করণের নম্বর", // ?
   "No hadith found with standard number {n}.": "প্রচলিত নম্বর {n}-এর কোনো হাদীস পাওয়া যায়নি।", // ?
   "Standard number: {ref}": "প্রচলিত নম্বর: {ref}", // ?
+  // Round H-DB3 (8 Oct 2026): HadeethEnc's translation under an OpenITI narration.
+  "{lang} translation (HadeethEnc)": "{lang} অনুবাদ (HadeethEnc)", // ?
+  "HadeethEnc's wording may follow another narration of this hadith.": "HadeethEnc-এর শব্দাবলি এই হাদীসের অন্য কোনো বর্ণনা অনুযায়ী হতে পারে।", // ?
   "Show more ({remaining} more)": "আরও দেখুন (আরও {remaining}টি)", // ?
   "Hadith {n}": "হাদীস {n}", // ?
   "Passage {n} (position in this edition, not the book's own number)": "অংশ {n} (এই সংস্করণে অবস্থান, বইয়ের নিজস্ব নম্বর নয়)", // ?

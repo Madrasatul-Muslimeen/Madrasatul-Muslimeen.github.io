@@ -175,3 +175,29 @@ export function buildConcordance(data) {
   }
   return { versionUri: data.versionUri, label: data.label ?? {}, byN, firstNByCite };
 }
+
+// ---------------------------------------------------------------------------
+// HadeethEnc's translations attached to OpenITI passages (decision 87, round H-DB3): which HadeethEnc hadith
+// translate this passage, matched by words (tools/hadith-data-pull/hadeethenc-openiti-links.mjs). Ids only; the
+// translations themselves load from HadeethEnc's own package (hadeethenc-corpus.js), when the reader opens them.
+// ---------------------------------------------------------------------------
+
+const LINKS_BASE_URL = "../tools/hadith-data-pull/output/hadeethenc-links/";
+const linksCache = new Map();
+
+/** Map(n -> [hadeethencId, ...]) for one book, or null if no HadeethEnc hadith is linked to it. */
+export async function loadOpenitiHadeethEncLinks(versionUri, { fetchImpl = fetch, baseUrl = LINKS_BASE_URL } = {}) {
+  return cached(linksCache, `${baseUrl}${versionUri}`, async () => {
+    const sres = await fetchImpl(`${baseUrl}summary.json`);
+    if (!sres.ok) return null;
+    const summary = await sres.json();
+    if (!(summary.books ?? []).some((b) => b.versionUri === versionUri)) return null;
+    const res = await fetchImpl(`${baseUrl}${versionUri}.json`);
+    if (!res.ok) throw new Error(`Could not load the HadeethEnc links of "${versionUri}" (${res.status}).`);
+    const data = await res.json();
+    if (!Array.isArray(data.entries)) throw new Error("Invalid HadeethEnc links shape.");
+    const byN = new Map();
+    for (const [n, id] of data.entries) { if (!byN.has(n)) byN.set(n, []); byN.get(n).push(String(id)); }
+    return byN;
+  });
+}

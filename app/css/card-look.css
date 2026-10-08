@@ -214,6 +214,9 @@
 [data-card-look="night"] .openiti-goto-input,
 [data-card-look="night"] .openiti-goto-mode { color: var(--card-link); background: var(--card-bg-inset); border-color: var(--card-line); }
 [data-card-look="night"] .openiti-standard-number { color: var(--card-heading); }
+/* 8 Oct 2026 (round H-DB3, found by looking): a fold's heading kept the page's --hadith-ink navy on the Night
+   card's inset (HadeethEnc's "Show explanation" since it was built, and the new translation fold). */
+[data-card-look="night"] .hadeethenc-explanation summary { color: var(--card-heading); }
 /* .hadith-crumb/-current and its hadeethenc/openiti siblings are
    DELIBERATELY NOT re-picked, found by this round's own measurement: the
    breadcrumb `<nav>` (hadith-browser.js) carries no background of its own

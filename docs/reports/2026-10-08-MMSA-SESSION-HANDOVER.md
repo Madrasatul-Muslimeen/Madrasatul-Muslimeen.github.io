@@ -22,17 +22,19 @@ session" line on #159).
 
 No Builder round is running and no pull request is open.
 
-**Update, 8 Oct 2026, session `session_01QFqAPBJsmgyJ3QXw12JM22` (took over at v09.113):** `main` is at **v09.116**.
+**Update, 8 Oct 2026, session `session_01QFqAPBJsmgyJ3QXw12JM22` (took over at v09.113):** `main` is at **v09.117**.
 **The Hadith database is being built in rounds:**
 - **H-DB1 (v09.114, done):** al-Adab al-Mufrad, al-Nasa'i's and Ibn al-Sunni's 'Amal al-Yawm wa'l-Layla, al-Nawawi's
   al-Adhkar pulled and split (15 books).
 - **H-DB2 (v09.115, done):** the standard numbers, matched by words (`hadith-concordance.mjs`, numbers only), shown on
   each narration and used by "Go to hadith number"; Muslim can be jumped by Abdul-Baqi's number.
-- **H-DB3 (next):** HadeethEnc's Bangla and English attached to the passages they translate. Prototype: 2,163 of
-  3,574 HadeethEnc hadith match a passage; the draft tool `hadeethenc-openiti-links.mjs` is in the session
-  scratchpad (rewrite it if lost: word 3-grams, >= 0.6 of HadeethEnc's 3-grams in the passage). HadeethEnc's own
-  attribution ("رواه مسلم", "متفق عليه") is the independent check.
-- **H-DB4:** the Dua chapters index, then the Dua database first cut, with a demo of the Dua screen first.
+- **H-DB3 (v09.117, done):** HadeethEnc's Bangla/English linked by words to the narrations they translate
+  (`hadeethenc-openiti-links.mjs`, 2,163 of 3,574 linked) and shown in a fold under the Arabic.
+- **H-DB4 (next):** the Dua screen. **Demo published for the Owner:** https://claude.ai/artifact/LxHMM7PhPAKQ1pKbYz5kxT
+  (one card per dua: Arabic, Bangla meaning, every place it is narrated, progress counted once per dua).
+  Data ready: `dua-index.mjs` → `output/dua/index.json` (4,271 narrations in 11 books' Dua chapters, 3,126 proposed
+  duas by shared words; a proposal for a person to confirm). Progress on a dua needs a new unit-key kind `dua:<n>`:
+  an Owner decision (permanent key), asked with the demo.
 - **Owner decision needed before Studied / Notes / bookmarks on OpenITI passages:** the permanent key
   (recommended `hadith:openiti:<versionUri>:<n>`, showing the standard number).
 - **The Owner's Take Note message (8 Oct): built as v09.116;** "add the bookmark button there too" asked back
@@ -99,3 +101,4 @@ that handover does not name the version in `app/js/version.js`.
 - **v09.114** (2026-10-08): four more Arabic Hadith books in the library (round H-DB1).
 - **v09.115** (2026-10-08): standard Hadith numbers in the library (round H-DB2).
 - **v09.116** (2026-10-08): Take Note in the Ayah card's button row.
+- **v09.117** (2026-10-08): HadeethEnc's Bangla and English under the library's Arabic hadith (round H-DB3).
