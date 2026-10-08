@@ -42,7 +42,7 @@ No Builder round is running and no pull request is open.
 
 ## 1. What waits on the Owner (remind them in one line per report)
 
-1. **Pictures** (`docs/reports/2026-10-07-pictures-owner-steps.md`): **steps 1 (Blaze), 2 (Storage on) and 4 (CORS: Cloud Shell printed "Updating gs://study-monitoring.firebasestorage.app/... Completed 1") are done** (8 Oct). **Step 3, the Storage Rules, is not confirmed**; ask once, then have them test a picture in a Note. The older text below is kept as it was written:
+1. **Pictures** (`docs/reports/2026-10-07-pictures-owner-steps.md`): **steps 1 (Blaze), 2 (Storage on) and 4 (CORS: Cloud Shell printed "Updating gs://study-monitoring.firebasestorage.app/... Completed 1") are done** (8 Oct). **Step 3 is done too: the Owner tested a picture in a Note on 8 Oct, "all good". PICTURES ARE LIVE; nothing waits on the Owner here except the Upgrade before the free trial ends (item 2).** The older text below is kept as it was written:
    Still to do: confirm a **$1 budget alert** (Firebase showed "Go to budgets"), **step 2** turn Storage on, **step 3**
    publish the Storage Rules, **step 4** the CORS line in Cloud Shell (their Cloud Shell had disconnected:
    "Reconnect", then paste). Step 4 needs Storage switched on first.
