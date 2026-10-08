@@ -215,6 +215,22 @@ check("sequential-by-paragraph books are labelled as such and never claim the bo
   }
 });
 
+// 8 Oct 2026 (round H-DB1): three of the four added books write their headings "# | <title>" with NO number. Read
+// straight off the raw file, independently of the parser: a book with N such heading lines must split into at
+// least 80% of N chapters (adjacent headings with nothing between them can merge). With the old numbered-only
+// pattern each of the three came out as ONE chapter.
+for (const uri of ["0256Bukhari.AdabMufrad.JK000011-ara1", "0303Nasai.CamalYawmWaLayla.JK000735-ara1",
+  "0364IbnSunniDinawari.CamalYawmWaLayl.JK000943-ara1", "0676Nawawi.Adhkar.JK001249-ara1"]) {
+  check(`${uri}: its "# |" headings become chapters`, () => {
+    const raw = fs.readFileSync(path.join(RELEASE_DIR, `${uri}.txt`), "utf8");
+    // "نوع آخر" ("another wording", Ibn al-Sunni) is a sub-heading under the chapter before it, not a chapter.
+    const headings = raw.split(/\r?\n/).filter((l) => /^# \| /.test(l) && !/^# \| نوع آخر/.test(l)).length;
+    const index = JSON.parse(fs.readFileSync(path.join(SPLIT_DIR, uri, "index.json"), "utf8"));
+    if (headings < 20) throw new Error(`only ${headings} heading lines read -- the raw-file read is broken`);
+    if (index.chapters.length < 0.8 * headings) throw new Error(`${index.chapters.length} chapters for ${headings} heading lines`);
+  });
+}
+
 check("every book's own index.json carries the licence, DOI and joining rule", () => {
   for (const f of manifest.files) {
     const { index } = loadBook(f.version_uri);

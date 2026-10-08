@@ -96,8 +96,14 @@ async function runAtWidth(width) {
 
   // --- The book list: both real titles and the count wording. --------------
   const bookRows = await page.evaluate(() => [...document.querySelectorAll("[data-openiti-book]")].map((r) => r.dataset.openitiBook));
-  check("all 11 real OpenITI books are offered, and only those 11", bookRows.length === 11);
+  // Updated in place 8 Oct 2026 (decision 87, round H-DB1): the pull added al-Adab al-Mufrad, al-Nasa'i's and Ibn
+  // al-Sunni's 'Amal al-Yawm wa'l-Layla and al-Nawawi's al-Adhkar, so 11 became 15. Each new book is named below.
+  check("all 15 real OpenITI books are offered, and only those 15", bookRows.length === 15, `${bookRows.length}`);
   check("Bukhari is among them", bookRows.includes(BUKHARI_URI));
+  for (const uri of ["0256Bukhari.AdabMufrad.JK000011-ara1", "0303Nasai.CamalYawmWaLayla.JK000735-ara1",
+    "0364IbnSunniDinawari.CamalYawmWaLayl.JK000943-ara1", "0676Nawawi.Adhkar.JK001249-ara1"]) {
+    check(`the new book ${uri} is offered`, bookRows.includes(uri));
+  }
 
   const muslimRowMeta = await page.evaluate(() =>
     document.querySelector('[data-openiti-book*="Muslim"] .hadith-row-meta')?.textContent ?? "");

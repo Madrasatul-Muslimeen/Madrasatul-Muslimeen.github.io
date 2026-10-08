@@ -53,6 +53,11 @@ export const NUMBERING_STYLE = Object.freeze({
   "0179MalikIbnAnas.Muwatta.Shamela0028107-ara1": "inline-number",
   "0241IbnHanbal.Musnad.Shamela0025794-ara1": "inline-number",
   "0255CabdAllahDarimi.Sunan.JK000842-ara1": "inline-number",
+  // 8 Oct 2026: four more JK editions, each measured as "# <n> " numbered paragraphs like the JK books above.
+  "0256Bukhari.AdabMufrad.JK000011-ara1": "inline-number",
+  "0303Nasai.CamalYawmWaLayla.JK000735-ara1": "inline-number",
+  "0364IbnSunniDinawari.CamalYawmWaLayl.JK000943-ara1": "inline-number",
+  "0676Nawawi.Adhkar.JK001249-ara1": "inline-number",
   "0279Tirmidhi.Sunan.JK000140-ara1": "triple-pipe-number",
   "0676Nawawi.RiyadSalihin.Shamela0012014-ara1": "triple-pipe-number",
   "0261Muslim.Sahih.Shamela0001727-ara1": "sequential",
@@ -219,7 +224,7 @@ function main() {
   }
 
   const sizeMB = dirSizeBytes(SPLIT_DIR) / 1048576;
-  console.log(`\nDone: ${totalHadiths} hadith across 11 books, split output ${sizeMB.toFixed(1)} MB`);
+  console.log(`\nDone: ${totalHadiths} hadith across ${manifest.files.length} books, split output ${sizeMB.toFixed(1)} MB`);
   if (sizeMB > 60) {
     console.error(`STOP: split output is ${sizeMB.toFixed(1)} MB, over the ~60 MB budget.`);
     process.exitCode = 1;

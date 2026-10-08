@@ -36,6 +36,14 @@
    "hadithCount": 7129
   },
   {
+   "versionUri": "0256Bukhari.AdabMufrad.JK000011-ara1",
+   "titleAr": "الأدب المفرد",
+   "titleEn": "al-Adab al-Mufrad",
+   "numbering": "book-number",
+   "passageCount": 1364,
+   "hadithCount": 1359
+  },
+  {
    "versionUri": "0261Muslim.Sahih.Shamela0001727-ara1",
    "titleAr": "صحيح مسلم",
    "titleEn": "Sahih Muslim",
@@ -74,6 +82,30 @@
    "numbering": "book-number",
    "passageCount": 5780,
    "hadithCount": 5769
+  },
+  {
+   "versionUri": "0303Nasai.CamalYawmWaLayla.JK000735-ara1",
+   "titleAr": "عمل اليوم والليلة للنسائي",
+   "titleEn": "al-Nasa'i's 'Amal al-Yawm wa'l-Layla",
+   "numbering": "book-number",
+   "passageCount": 1181,
+   "hadithCount": 1148
+  },
+  {
+   "versionUri": "0364IbnSunniDinawari.CamalYawmWaLayl.JK000943-ara1",
+   "titleAr": "عمل اليوم والليلة لابن السني",
+   "titleEn": "Ibn al-Sunni's 'Amal al-Yawm wa'l-Layla",
+   "numbering": "book-number",
+   "passageCount": 1207,
+   "hadithCount": 770
+  },
+  {
+   "versionUri": "0676Nawawi.Adhkar.JK001249-ara1",
+   "titleAr": "الأذكار",
+   "titleEn": "al-Nawawi's al-Adhkar",
+   "numbering": "book-number",
+   "passageCount": 1287,
+   "hadithCount": 1263
   },
   {
    "versionUri": "0676Nawawi.ArbacunaNawawiyya.Shamela0012836-ara1",

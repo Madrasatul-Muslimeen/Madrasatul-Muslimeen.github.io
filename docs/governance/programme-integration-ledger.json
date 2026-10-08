@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.113",
+    "version": "09.114",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2537,7 +2537,7 @@
     {
       "version": "09.113",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The Word card's clean Arabic, readable places and derived-form pop-ups, the Āyah card's ‹ › / 📖 / action row and ways back, the way-back law (decision 86), poster and writing-paper fixes.",
       "integration": {
         "authorizedOn": "2026-10-07",
@@ -2545,10 +2545,23 @@
         "method": "MERGE_PR",
         "reference": "CHANGELOG.md"
       }
+    },
+    {
+      "version": "09.114",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Hadith database round H-DB1 (decision 87): al-Adab al-Mufrad, al-Nasa'i's and Ibn al-Sunni's 'Amal al-Yawm wa'l-Layla and al-Nawawi's al-Adhkar pulled from OpenITI and split into the Hadith library; built and reviewed by the session Architect.",
+      "integration": {
+        "authorizedOn": "2026-10-08",
+        "integratedOn": "2026-10-08",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
     }
   ],
-  "nextUnallocated": "09.114",
+  "nextUnallocated": "09.115",
   "nextUnallocatedNote": [
+    "v09.114 was allocated to four more Arabic Hadith books in the library (round H-DB1), 2026-10-08.",
     "v09.113 was allocated to Word card and Ayah card ways back; the way-back law, 2026-10-07.",
     "v09.112 was allocated to Asmaul Husna poster: a true copy of the template, 2026-10-07.",
     "v09.111 was allocated to 🗑 on every bookmark and folder in the Bookmark menu, with Undo; nothing is erased (Owner, 7 Oct), 2026-10-07.",
