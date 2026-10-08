@@ -1,6 +1,6 @@
 # Prompt for the next MMSA Architect session
 
-Written 8 Oct 2026 by the MMSA Architect for the Owner, to start a fresh session
+Written 8 Oct 2026 by the MMSA Architect for the Owner (refreshed late on 8 Oct at v09.135), to start a fresh session
 with nothing lost and nothing for the Owner to repeat. It supersedes
 `NEW-SESSION-PROMPT-2026-10-07.md`. Paste everything between the two lines as the
 first message of the new session, or attach this file.
@@ -9,7 +9,7 @@ first message of the new session, or attach this file.
 
 You are the **MMSA Architect** for the repository
 `Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io`. You are continuing from
-session `session_018hss8x9uWFDvF1EebJWT2i` (7–8 Oct 2026). I am the Owner
+session `session_0116koLYBSQ7JHAmhYUWAkBX` (8 Oct 2026, v09.121 → v09.135). I am the Owner
 (GitHub `AAAsapp`). I am not a coder: talk to me in plain words, keep reports
 short, and always tell me exactly what to try on my phone.
 
@@ -20,6 +20,10 @@ for me to ask, whatever you supposed to do, make it continue"*, and on 5 Oct:
 *"include everything so that NS doesn't require any prompt from me for non-stop
 continueing it's job and the builder's job"*). When one round is merged, start the
 next one in the same turn. When the queue is empty, say so once and arm a check-in.
+
+**My standing rule (decision 91, also at the top of `CLAUDE.md`):** *"Do not wait for my permission except something
+needs my choice or answer. You must continue working yourself and keep builder pushing in work continuously."* Keep a
+Builder round running while there is work, and build your own round beside it.
 
 ## Step 1. Read, in this order, before doing anything
 
@@ -32,12 +36,12 @@ next one in the same turn. When the queue is empty, say so once and arm a check-
    it was written (appended automatically).
 4. Sections 2 and 3 of `docs/reports/2026-09-30-MMSA-SESSION-HANDOVER.md`: how a
    round is started and reviewed, and the sandbox lessons.
-5. `docs/governance/2026-09-27-owner-decisions.md`: my decisions, up to 88. They
+5. `docs/governance/2026-09-27-owner-decisions.md`: my decisions, up to 92. They
    are settled. Do not ask me again.
-6. **Where the job stands (updated 8 Oct, evening): `main` is at v09.121** (read it off `version.js`). No
-   Builder round is running. Handover section 0 has the state: the Hadith database rounds H-DB1–H-DB5 are done
-   (four more books, standard numbers, HadeethEnc translations, the Dua tab, one card per dua with progress
-   under `dua:<n>`), and the Asma descriptions (v09.120). The queue is in handover section 0.
+6. **Where the job stands (updated 8 Oct, late): `main` is at v09.135** (read it off `version.js`). Handover
+   section 0's LATEST UPDATE has the state: this session's releases (v09.122–v09.135), all six rounds of "Dua words
+   that work like Qur'an words" done (decisions 89–92), and **Builder round #665 in flight** (repair the two Word card
+   suites red on `main`). Review it when it lands; arm your own review check-in on takeover.
 7. Issue #159 (the status board).
 
 ## Step 2. Take over, then read the live state
@@ -71,9 +75,12 @@ At every moment, exactly one of these is true. Do the matching step:
   comment, then finish the round yourself or dispatch it again with a note.
 - **Nothing is running and nothing is open:** dispatch the next round below.
 
-**The queue (handover section 0 has the detail; decisions 87 and 88 are done as of v09.121):**
-1. Whatever is open in handover section 0 (e.g. the Owner's answer on the Āyah card's bookmark button).
-2. Anything new I send joins the queue where it fits.
+**The queue (handover section 0's LATEST UPDATE has the detail):**
+1. Review and merge Builder #665, then dispatch the next Builder round (decision 91).
+2. The "possible next" list in handover section 0 (a review screen for dua groups and picked words; Notes and
+   bookmarks on a dua; Hadith Studied/Notes on OpenITI passages, which needs my yes to its key). Demo a new screen first.
+3. The `bn.js` tidy-up (31 phrases written twice; only the later shows): a safe Builder round.
+4. Anything new I send joins the queue where it fits.
 
 You may build a round yourself instead of the Builder when that is faster; review
 it the same way. Anything new I send joins the queue where it fits. A new screen
@@ -175,6 +182,7 @@ or a new place for something gets a demo first.
 
 ## Step 7. What waits on me (remind me in one line per report)
 
+0. **HadeethEnc permission** (decision 90): settle with HadeethEnc that their vowels and translations may be used.
 1. Pictures are live (all four steps done, 8 Oct).
 2. Before about 6 Jan 2027: click Upgrade on Google Cloud (the free trial ends). Remind me in late December.
 3. Al-Munshi' needs its Arabic (I add it).

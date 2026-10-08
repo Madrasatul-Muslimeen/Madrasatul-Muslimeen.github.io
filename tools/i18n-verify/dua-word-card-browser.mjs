@@ -81,7 +81,9 @@ for (const [lang, width, look] of [["en", 390, "light"], ["bn", 390, "night"], [
   // Round 4: the status, then a press.
   await P.waitForSelector('[data-dua-word-panel="1"] [data-dua-word-state-now]', { timeout: 10000 }).catch(() => {});
   const now = await P.evaluate(() => { const s = document.querySelector('[data-dua-word-panel="1"] [data-dua-word-state-now]'); return { state: s?.dataset.duaWordStateNow, text: s?.textContent, current: document.querySelector('[data-dua-word-panel="1"] [data-dua-word-state][aria-current="true"]')?.dataset.duaWordState }; });
-  check(`${tag} ROUND 4: the word's Word-by-Word progress is read and shown: ${lang === "bn" ? "এখন" : "Now"}: ${lang === "bn" ? "শুরু হয়নি" : "Not started"}`, now.state === "not_started" && now.current === "not_started" && now.text.startsWith(lang === "bn" ? "এখন:" : "Now:"), JSON.stringify(now));
+  // Updated in place for round 6 (decision 92): the line now reads "The same word in the Qur'an (Word-by-Word): …",
+  // beside the new "In this dua: …" line (dua-word-progress-browser checks that one).
+  check(`${tag} ROUND 4: the word's Word-by-Word progress is read and shown: ${lang === "bn" ? "কুরআনে একই শব্দ" : "The same word in the Qur'an"} … ${lang === "bn" ? "শুরু হয়নি" : "Not started"}`, now.state === "not_started" && now.current === "not_started" && now.text.startsWith(lang === "bn" ? "কুরআনে একই শব্দ (শব্দে শব্দে):" : "The same word in the Qur'an (Word-by-Word):"), JSON.stringify(now));
   const rows = [...new Set(card.states.map((s) => s[1]))].length;
   check(`${tag} ROUND 4: the four states in an even grid (${width < 520 ? "2 × 2" : "one row"}), 40px tall`, card.states.length === 4 && rows === (width < 520 ? 2 : 1) && card.states.every((s) => s[3] >= 40 && Math.abs(s[2] - card.states[0][2]) <= 1), JSON.stringify(card.states));
   await Promise.all([P.waitForURL(/quranrevival\.html\?word=/, { timeout: 15000 }), P.click('[data-dua-word-panel="1"] [data-dua-word-state="achieved"]')]).catch(() => {});
