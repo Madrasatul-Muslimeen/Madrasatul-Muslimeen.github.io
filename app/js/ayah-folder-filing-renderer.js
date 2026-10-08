@@ -35,19 +35,32 @@ function subtreeMatches(folder, term) {
   return (folder.children ?? []).some((child) => subtreeMatches(child, term));
 }
 
-function folderRowHtml(folder, checkedIds, term, depth) {
+function tickedInside(folder, checkedIds) {
+  return (folder.children ?? []).reduce((n, c) => n + (checkedIds.has(c.folderId) ? 1 : 0) + tickedInside(c, checkedIds), 0);
+}
+
+// The Owner, 8 Oct 2026: "Enable all folder Collapse/ expandable (use one button, not two. Same button collapse, next
+// click expands). Default open collapsed." `expanded` holds the open folders; none is open at first. While a search is
+// typed, every folder on a matching path is shown open, so a match is never hidden inside a closed folder.
+function folderRowHtml(folder, checkedIds, term, depth, expanded) {
   if (!subtreeMatches(folder, term)) return "";
   const checked = checkedIds.has(folder.folderId);
   const children = folder.children ?? [];
+  const open = !!term || expanded.has(folder.folderId);
+  const inside = children.length && !open ? tickedInside(folder, checkedIds) : 0;
+  const fold = children.length
+    ? `<button type="button" class="ayah-folder-fold" data-ayah-folder-fold="${escapeHtml(folder.folderId)}" aria-expanded="${open ? "true" : "false"}" aria-label="${escapeHtml(open ? t("Collapse {name}", { name: folder.name ?? "" }) : t("Expand {name}", { name: folder.name ?? "" }))}" title="${escapeHtml(open ? t("Collapse") : t("Expand"))}">${open ? "▾" : "▸"}</button>`
+    : `<span class="ayah-folder-fold-space" aria-hidden="true"></span>`;
   return `
     <div class="ayah-folder-row" style="padding-inline-start:${depth * 18}px">
+      ${fold}
       <label class="ayah-folder-row-label">
         <input type="checkbox" data-ayah-folder-toggle="${escapeHtml(folder.folderId)}" ${checked ? "checked" : ""}>
-        <span>${escapeHtml(folder.name ?? "")}</span>
+        <span>${escapeHtml(folder.name ?? "")}${inside ? ` <small class="ayah-folder-inside">${escapeHtml(t("({count} ticked inside)", { count: inside }))}</small>` : ""}</span>
       </label>
       <button type="button" class="ayah-folder-new-here" data-ayah-folder-new-under="${escapeHtml(folder.folderId)}" title="${escapeHtml(t("New folder here"))}" aria-label="${escapeHtml(t("New folder under {name}", { name: folder.name ?? "" }))}">+</button>
     </div>
-    ${children.map((child) => folderRowHtml(child, checkedIds, term, depth + 1)).join("")}`;
+    ${open ? children.map((child) => folderRowHtml(child, checkedIds, term, depth + 1, expanded)).join("") : ""}`;
 }
 
 /**
@@ -58,13 +71,22 @@ function folderRowHtml(folder, checkedIds, term, depth) {
  * `newFolderUnder`: a folder id (or "" for a new root folder) when the "+
  * New folder" row is open and asking for a name, else null/omitted.
  */
-export function renderAyahFolderPickerHtml({
-  tree, checkedFolderIds = [], searchTerm = "", newFolderUnder = null,
-} = {}) {
+/** The folder list alone. The Owner, 8 Oct 2026: "On every letter typing, the keyboard goes down." Typing in the
+ *  search box now redraws only this list, never the box itself, so the box keeps its focus and the keyboard stays. */
+export function renderAyahFolderTreeHtml({ tree, checkedFolderIds = [], searchTerm = "", expandedFolderIds = [] } = {}) {
   const checked = new Set(checkedFolderIds);
   const term = searchTerm.trim().toLowerCase();
   const roots = tree?.roots ?? [];
-  const rowsHtml = roots.map((folder) => folderRowHtml(folder, checked, term, 0)).join("");
+  const expanded = new Set(expandedFolderIds);
+  const rowsHtml = roots.map((folder) => folderRowHtml(folder, checked, term, 0, expanded)).join("");
+  return roots.length
+    ? (rowsHtml || `<p class="ayah-folder-empty">${escapeHtml(t("No folders match your search."))}</p>`)
+    : `<p class="ayah-folder-empty">${escapeHtml(t("No folders yet."))}</p>`;
+}
+
+export function renderAyahFolderPickerHtml({
+  tree, checkedFolderIds = [], searchTerm = "", newFolderUnder = null, expandedFolderIds = [],
+} = {}) {
   const newFolderRow = newFolderUnder === null ? "" : `
         <div class="ayah-folder-new-form">
           <input type="text" class="ayah-folder-new-name" data-ayah-folder-new-name placeholder="${escapeHtml(t("Folder name"))}" autofocus>
@@ -74,9 +96,7 @@ export function renderAyahFolderPickerHtml({
   return `
     <div class="ayah-folder-picker" data-ayah-folder-picker>
       <input type="search" class="ayah-folder-search" data-ayah-folder-search placeholder="${escapeHtml(t("Search folders…"))}" value="${escapeHtml(searchTerm)}" aria-label="${escapeHtml(t("Search folders…"))}">
-      <div class="ayah-folder-tree">${roots.length
-        ? (rowsHtml || `<p class="ayah-folder-empty">${escapeHtml(t("No folders match your search."))}</p>`)
-        : `<p class="ayah-folder-empty">${escapeHtml(t("No folders yet."))}</p>`}</div>
+      <div class="ayah-folder-tree" data-ayah-folder-tree>${renderAyahFolderTreeHtml({ tree, checkedFolderIds, searchTerm, expandedFolderIds })}</div>
       <button type="button" class="ayah-folder-new-root" data-ayah-folder-new-under="">${escapeHtml(t("+ New folder"))}</button>
       ${newFolderRow}
       <div class="ayah-folder-actions">
@@ -100,11 +120,16 @@ export function attachAyahFolderPickerHandlers(container, callbacks = {}) {
   picker.querySelector("[data-ayah-folder-search]")?.addEventListener("input", (e) => {
     callbacks.onSearch?.(e.target.value);
   });
-  picker.querySelectorAll("[data-ayah-folder-toggle]").forEach((cb) => {
-    cb.addEventListener("change", () => callbacks.onToggle?.(cb.dataset.ayahFolderToggle, cb.checked));
+  // Delegated, so the folder list can be redrawn on its own (search) without losing its handlers.
+  picker.addEventListener("change", (e) => {
+    const cb = e.target.closest?.("[data-ayah-folder-toggle]");
+    if (cb) callbacks.onToggle?.(cb.dataset.ayahFolderToggle, cb.checked);
   });
-  picker.querySelectorAll("[data-ayah-folder-new-under]").forEach((btn) => {
-    btn.addEventListener("click", () => callbacks.onNewFolderRequest?.(btn.dataset.ayahFolderNewUnder));
+  picker.addEventListener("click", (e) => {
+    const fold = e.target.closest?.("[data-ayah-folder-fold]");
+    if (fold) { callbacks.onFold?.(fold.dataset.ayahFolderFold); return; }
+    const btn = e.target.closest?.("[data-ayah-folder-new-under]");
+    if (btn) callbacks.onNewFolderRequest?.(btn.dataset.ayahFolderNewUnder);
   });
   picker.querySelector("[data-ayah-folder-new-confirm]")?.addEventListener("click", () => {
     const input = picker.querySelector("[data-ayah-folder-new-name]");
