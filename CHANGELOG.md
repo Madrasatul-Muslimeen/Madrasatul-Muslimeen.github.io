@@ -20139,3 +20139,16 @@ The Owner, decision 88, on the Dua demo (https://claude.ai/artifact/LxHMM7PhPAKQ
 - **Checks:**
   - new hadith-translations 17/0, hadith-translations-browser 33/0 (mutations nofold, bypos)
   - green: dua-tab-browser 57/0, openiti-browser 76/0, hadeethenc-browser 82/0, hadith-source-navigation-browser 50/0, hadith-concordance 89/0, openiti-books-summary 4/0, card-look-browser 96/0, phone-width-overflow 217/0, palette-contrast-browser 20/0, stub-parity 4/0
+
+## v09.131 — 2026-10-08 — Dua words, rounds 0 and 1: clean words, each linked to its Qur'an word
+
+- **Asked:** the Owner, on the research report: "Go ahead with Dua words rounds 0 and 1. Q1: Yes. … Q2: Don't worry, nobody is going to use it until all round finished. Q3:Use it, remind me about permission." (decision 90)
+- **What:**
+  - `app/js/dua-words.js`: `HARD_ENDS`, `cleanDuaWords()` (round 0); `duaWordKey()`, `duaWordTokens()`, `duaWordsFingerprint()` (round 1)
+  - new `tools/hadith-data-pull/dua-word-links.mjs` and `output/dua/words-<page>.json` (79 files)
+  - `app/js/openiti-corpus.js`: `loadDuaWordLinks()`; `app/js/hadith-browser.js`: tappable dua words, `showDuaWord()` panel, `initialDua`; `app/hadith-collections.html`, `app/hadith-study.html`: `?view=dua&duaPage=&dua=`
+  - `app/quranrevival.html`: `?word=S:A:W` (`openWordFromQueryString()`), the way back inside the Word card (`inWordCard`)
+  - `app/css/hadith.css`, `app/css/card-look.css`, `app/js/i18n/bn.js`; `docs/governance/2026-09-27-owner-decisions.md`: decision 90
+- **Checks:**
+  - dua-words 16/0, new dua-word-links 12/0, new dua-word-links-browser 48/0 (mutations nolinks, noincard, noreturn)
+  - green: dua-words-browser 37/0, dua-tab-browser 57/0, hadith-translations-browser 33/0, openiti-browser 76/0, hadeethenc-browser 82/0, hadith-source-navigation-browser 50/0, card-look-browser 96/0, word-card-ayah-card-ways-back-browser 71/0, ayah-card-takenote-family-browser 40/0, bookmark-marks-back-browser 112/0, quran-ayah-action-sheet-browser 144/0, phone-width-overflow 217/0, palette-contrast-browser 20/0, stub-parity 4/0, behaviour 1004/3 (22g×3, the archive.org baseline)

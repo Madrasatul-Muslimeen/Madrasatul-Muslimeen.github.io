@@ -774,3 +774,4 @@ total). Allocated by the MMSA Architect.
 09.128: File in folder(s): Siyagah's header. Allocated by the MMSA Architect.
 09.129: Dua cards: the dua's own words, in the Quranic font. Allocated by the MMSA Architect.
 09.130: Hadith in English and Bangla. Allocated by the MMSA Architect.
+09.131: Dua words, rounds 0 and 1. Allocated by the MMSA Architect.
