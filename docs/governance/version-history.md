@@ -764,3 +764,4 @@ total). Allocated by the MMSA Architect.
 09.118: the writing paper's list boxes whole on a phone. Allocated by the MMSA Architect.
 09.119: the Dua tab: the Dua chapters of eleven Hadith books (round H-DB4). Allocated by the MMSA Architect.
 09.120: a Name's description: the poster's, a suggestion, or the madrasah's own. Allocated by the MMSA Architect.
+09.121: one card per dua, progress counted once (round H-DB5). Allocated by the MMSA Architect.

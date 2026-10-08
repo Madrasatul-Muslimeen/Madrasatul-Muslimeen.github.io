@@ -237,3 +237,48 @@ export async function claimHadeethEncStudied(session, id, statusId, personIds = 
   }
   return result;
 }
+
+// ---------------------------------------------------------------------------
+// Dua progress (decision 88, 8 Oct 2026): "Go ahead with the DUA". One dua, keyed dua:<n> (its permanent number from
+// output/dua/registry.json), counted ONCE however many books narrate it. Saved exactly as "Studied" above is: the
+// module's existing studied_hadith trackable, claimStatus() against the hadith root subject, so it lands in the same
+// subject_hadith records chunk. No new collection, field or Rule.
+// ---------------------------------------------------------------------------
+
+export function duaUnitKey(number) {
+  return buildUnitKey.dua(String(number));
+}
+
+export async function duaStatus(session, number) {
+  const unitKey = duaUnitKey(number);
+  if (savedStudied.has(memoKey(session, unitKey))) return savedStudied.get(memoKey(session, unitKey));
+  const chunk = await getRecordsChunk(db, session.tenantId, session.personId, chunkKeyFor(unitKey, HADITH_ROOT_SUBJECT_ID));
+  return chunk?.entries?.[`${unitKey}::${STUDIED_TRACKABLE_ID}`]?.claimedStatus ?? null;
+}
+
+/** Every dua status the page's person has, read from the one chunk: Map(number -> statusId). */
+export async function duaStatuses(session) {
+  const chunk = await getRecordsChunk(db, session.tenantId, session.personId, chunkKeyFor(duaUnitKey(1), HADITH_ROOT_SUBJECT_ID));
+  const out = new Map();
+  for (const [key, entry] of Object.entries(chunk?.entries ?? {})) {
+    const m = /^dua:(\d+)::/.exec(key);
+    if (m && key.endsWith(`::${STUDIED_TRACKABLE_ID}`)) out.set(Number(m[1]), entry?.claimedStatus ?? null);
+  }
+  for (const [k, v] of savedStudied) {
+    const m = new RegExp(`^${session.tenantId}__${session.personId}__dua:(\\d+)$`).exec(k);
+    if (m) out.set(Number(m[1]), v);
+  }
+  return out;
+}
+
+export async function claimDua(session, number, statusId) {
+  const unitKey = duaUnitKey(number);
+  const result = await claimStatus(db, {
+    tenantId: session.tenantId, personId: session.personId, subjectId: HADITH_ROOT_SUBJECT_ID,
+    unitKey, trackableId: STUDIED_TRACKABLE_ID, statusId, notes: "", domainIds: [],
+    claimedByPersonId: session.myPersonId ?? session.personId, claimedByUid: session.uid,
+  });
+  savedStudied.set(memoKey(session, unitKey), statusId);
+  return result;
+}
+

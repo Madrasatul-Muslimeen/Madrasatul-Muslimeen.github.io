@@ -13,7 +13,7 @@ import { t, num } from "./i18n.js";
 
 export const UNIT_TYPES = Object.freeze([
   "ayah", "range", "surah", "page", "ruku", "juz", "hizb", "rub", "manzil",
-  "hadith", "topic", "name",
+  "hadith", "topic", "name", "dua",
 ]);
 
 export const buildUnitKey = Object.freeze({
@@ -29,6 +29,9 @@ export const buildUnitKey = Object.freeze({
   hadith: (collectionName, number) => `hadith:${collectionName}:${number}`,
   topic: (topicId) => `topic:${topicId}`,
   name: (number) => `name:${number}`, // Asma ul Husna
+  // Decision 88 (8 Oct 2026): one dua, however many books narrate it. The number is permanent, given once by
+  // tools/hadith-data-pull/dua-index.mjs's registry (output/dua/registry.json) and never reused.
+  dua: (number) => `dua:${number}`,
 });
 
 /** Splits a unit key into { unitType, parts } — parts is everything after the first namespace segment, still colon-joined for types that carry more than one field (e.g. "2:255-257"). */
@@ -93,7 +96,7 @@ export function localRukuIndexFromTable(rukuIndexRows) {
 const UNIT_TYPE_LABELS = Object.freeze({
   ayah: "Ayah", range: "Range", surah: "Surah", page: "Page", ruku: "Ruku",
   juz: "Juz", hizb: "Hizb", rub: "Rub", manzil: "Manzil", hadith: "Hadith",
-  topic: "Topic", name: "Name", book: "Qur'an",
+  topic: "Topic", name: "Name", book: "Qur'an", dua: "Dua",
 });
 
 /** A unit type's display name, in the reader's own language. Falls back to the raw id, so an unrecognised type can never render blank. */

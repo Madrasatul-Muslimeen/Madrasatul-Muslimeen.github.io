@@ -8,7 +8,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { chromium, newContext, openPage } from "./harness.mjs";
-import { groupNarrations } from "../hadith-data-pull/dua-index.mjs";
+import { groupNarrations, assignDuaNumbers } from "../hadith-data-pull/dua-index.mjs";
 
 const EXE = process.env.CHROMIUM_PATH || undefined;
 const root = process.cwd();
@@ -51,6 +51,27 @@ check("groupNarrations: the same supplication joins across books; a different on
   if (!g.some((x) => x.length === 2 && x.includes(0) && x.includes(1)) || !g.some((x) => x.length === 1 && x[0] === 2)) throw new Error(JSON.stringify(g));
 });
 
+// Round H-DB5 (decision 88): the permanent dua numbers.
+check("assignDuaNumbers: a re-run with the same groups keeps every number", () => {
+  const g = [["a:1", "b:2"], ["c:3"], ["d:4", "e:5", "f:6"]];
+  const one = assignDuaNumbers(g);
+  const two = assignDuaNumbers([g[2], g[0], g[1]], one.registry);
+  if (JSON.stringify(one.numbers) !== "[1,2,3]" || JSON.stringify(two.numbers) !== "[3,1,2]") throw new Error(JSON.stringify([one.numbers, two.numbers]));
+});
+check("assignDuaNumbers: a new dua gets a NEW number; a merge keeps the smaller and retires the other; a split keeps the old number for one half", () => {
+  const one = assignDuaNumbers([["a:1"], ["b:2"]]);
+  const merged = assignDuaNumbers([["a:1", "b:2"], ["z:9"]], one.registry);
+  if (JSON.stringify(merged.numbers) !== "[1,3]" || JSON.stringify(merged.registry.retired) !== "[2]") throw new Error(JSON.stringify(merged));
+  const split = assignDuaNumbers([["a:1"], ["b:2"], ["z:9"]], merged.registry);
+  if (split.numbers[0] !== 1 || split.numbers[2] !== 3 || [1, 3].includes(split.numbers[1])) throw new Error(JSON.stringify(split.numbers));
+});
+const REG = JSON.parse(fs.readFileSync(path.join(root, "tools/hadith-data-pull/output/dua/registry.json"), "utf8"));
+check("the committed registry numbers every narration in the Dua chapters, and every group has its own number", () => {
+  if (Object.keys(REG.byNarration).length !== 4271) throw new Error(`${Object.keys(REG.byNarration).length}`);
+  if (new Set(IDX.duaNumbers).size !== IDX.groups.length) throw new Error("a number is shared");
+  IDX.groups.forEach((g, i) => { for (const [b, n] of g) if (REG.byNarration[`${IDX.books[b].versionUri}:${n}`] !== IDX.duaNumbers[i]) throw new Error(`group ${i}`); });
+});
+
 const lum = (rgb) => { const c = rgb.match(/\d+(\.\d+)?/g).slice(0, 3).map((v) => { v = Number(v) / 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
 const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
 
@@ -61,13 +82,54 @@ for (const [lang, width, look] of [["bn", 390, "light"], ["en", 1280, "night"], 
   const { page, errors } = await openPage(ctx, "/app/hadith-collections.html");
   await page.evaluate((l) => document.documentElement.setAttribute("data-card-look", l), look);
   const digits = (s) => lang === "bn" ? String(s).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[d]) : String(s);
-  await acheck("the Hadith page has a Dua tab, and it lists the eleven books", async () => {
+  await acheck("the Hadith page has a Dua tab; its Dua chapters list the eleven books", async () => {
     await page.click('[data-hadith-tab="dua"]');
+    await page.click('[data-dua-mode="chapters"]');
     await page.waitForSelector("[data-dua-book]");
     const n = await page.$$eval("[data-dua-book]", (r) => r.length);
     if (n !== 11) throw new Error(`${n}`);
   });
+  // Round H-DB5: the tab now opens on one card per dua; the chapter checks below choose "Dua chapters" first
+  // (updated in place 8 Oct 2026, decision 88).
+  await acheck("the Dua tab opens on the Duas: 40 cards a page, of 3,126, most narrated first", async () => {
+    await page.click('[data-dua-mode="duas"]');
+    await page.waitForSelector("[data-dua-card]");
+    const r = await page.evaluate(() => ({ n: document.querySelectorAll("[data-dua-card]").length, count: document.querySelector(".dua-cards-count")?.textContent ?? "", first: document.querySelector("[data-dua-card]")?.dataset.duaCard }));
+    if (r.n !== 40 || !r.count.includes(digits("3,126").replace(",", lang === "bn" ? "," : ",")) && !r.count.includes(digits("3126"))) throw new Error(JSON.stringify(r));
+  });
+  await acheck("progress on a dua is saved ONCE, as dua:<n> in the person's Hadith records", async () => {
+    const card = await page.$("[data-dua-card]");
+    const n = await card.getAttribute("data-dua-card");
+    await page.waitForSelector(`[data-dua-card="${n}"] [data-dua-status="learning"]`, { timeout: 8000 });
+    await page.evaluate(() => { window.__stubWriteData = []; });
+    await page.click(`[data-dua-card="${n}"] [data-dua-status="learning"]`);
+    await page.waitForFunction(() => (window.__stubWriteData || []).some((w) => w.col === "records"), null, { timeout: 8000 });
+    const r = await page.evaluate((n) => ({ keys: (window.__stubWriteData || []).filter((w) => w.col === "records").flatMap((w) => Object.keys(w.data).concat(Object.keys(w.data.entries ?? {}))),
+      pressed: document.querySelector(`[data-dua-card="${n}"] [data-dua-status][aria-pressed="true"]`)?.dataset.duaStatus }), n);
+    if (!r.keys.some((k) => k.includes(`dua:${n}::studied_hadith`)) || r.pressed !== "learning") throw new Error(JSON.stringify(r).slice(0, 300));
+  });
+  await acheck("a card's book opens that narration in the library with ← Back to Dua n, which returns to the card", async () => {
+    const card = await page.$("[data-dua-card]");
+    const n = await card.getAttribute("data-dua-card");
+    const ref = await page.$(`[data-dua-card="${n}"] .dua-also > .dua-also-refs [data-dua-ref]`);
+    const [uri, pn] = (await ref.getAttribute("data-dua-ref")).split(":");
+    await ref.click();
+    await page.waitForSelector(`[data-openiti-passage="${pn}"][data-openiti-focused]`);
+    const back = await page.$eval("[data-openiti-trail-back]", (b) => b.textContent);
+    if (!back.includes(digits(n))) throw new Error(back);
+    await page.click("[data-openiti-trail-back]");
+    await page.waitForSelector(`[data-dua-card="${n}"].hadith-card-focused`);
+    void uri;
+  });
+  await acheck("Next shows page 2", async () => {
+    await page.click("[data-dua-next]");
+    await page.waitForFunction((d41) => (document.querySelector(".dua-cards-count")?.textContent ?? "").includes(d41) && document.querySelectorAll("[data-dua-card]").length > 0, digits(41));
+    const first = await page.$eval("[data-dua-card]", (c) => c.dataset.duaCard);
+    if (!first) throw new Error("no card");
+  });
   await acheck("Bukhari opens its Kitab ad-Da'awat; tapping it opens the chapter in view, with ← Back to Dua", async () => {
+    await page.click('[data-dua-mode="chapters"]');
+    await page.waitForSelector("[data-dua-book]");
     await page.click('[data-dua-book="0256Bukhari.Sahih.JK000110-ara1"]');
     await page.waitForSelector("[data-dua-chapter]");
     await page.click("[data-dua-chapter]");

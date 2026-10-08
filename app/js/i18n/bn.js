@@ -3082,6 +3082,19 @@ export const BN = {
   "found by matching words, to be checked": "শব্দ মিলিয়ে পাওয়া, যাচাই বাকি", // ?
   "{book}, passage {n}": "{book}, অনুচ্ছেদ {n}", // ?
   "+{n} more in other books": "+ আরও {n}টি, অন্যান্য গ্রন্থে", // ?
+  // Round H-DB5 (8 Oct 2026, decision 88): one card per dua.
+  "Duas": "দুআসমূহ", // ?
+  "Dua chapters": "দুআর অধ্যায়", // ?
+  "Duas {from}–{to} of {total}, most narrated first. Each dua's narrations were found by matching words and are still to be checked.": "দুআ {from}–{to}, মোট {total}টির মধ্যে, সবচেয়ে বেশি বর্ণিতগুলো আগে। প্রতিটি দুআর বর্ণনাগুলো শব্দ মিলিয়ে পাওয়া, যাচাই এখনও বাকি।", // ?
+  "Dua {n}": "দুআ {n}", // ?
+  "Narrated in {n} places": "{n}টি স্থানে বর্ণিত", // ?
+  "← Back to Dua {n}": "← দুআ {n}-এ ফিরে যান", // ?
+  "My progress on this dua": "এই দুআয় আমার অগ্রগতি", // ?
+  "Progress could not be loaded right now.": "অগ্রগতি এখন আনা যায়নি।", // ?
+  "Sign in and choose who you're studying as to record progress.": "অগ্রগতি লিখতে সাইন ইন করুন এবং কার হয়ে পড়ছেন তা বেছে নিন।", // ?
+  "You can view this, but only the person's own record can record progress.": "আপনি এটি দেখতে পারেন, কিন্তু অগ্রগতি শুধু সেই ব্যক্তির নিজের রেকর্ডে লেখা যায়।", // ?
+  "Not saved: {why}": "সংরক্ষিত হয়নি: {why}", // ?
+  "Page {n} of {total}": "পৃষ্ঠা {n} / {total}", // ?
   "Show more ({remaining} more)": "আরও দেখুন (আরও {remaining}টি)", // ?
   "Hadith {n}": "হাদীস {n}", // ?
   "Passage {n} (position in this edition, not the book's own number)": "অংশ {n} (এই সংস্করণে অবস্থান, বইয়ের নিজস্ব নম্বর নয়)", // ?

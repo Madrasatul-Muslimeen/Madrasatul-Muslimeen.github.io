@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.120",
+    "version": "09.121",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2621,8 +2621,20 @@
     {
       "version": "09.120",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Decision 87 (Asma ul Husna descriptions, Names only): a strip above each Name's poster picks the poster creator's description, a labelled suggestion, or the madrasah's own (owner/prime, saved for everyone); plus a fix to asma-study.js's save wiping fields it did not pass. Built and reviewed by the session Architect after the demo.",
+      "integration": {
+        "authorizedOn": "2026-10-08",
+        "integratedOn": "2026-10-08",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.121",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Decision 88 (Go ahead with the DUA): the Dua tab's Duas view, one card per dua with every place it is narrated and progress saved once per dua under the new permanent unit key dua:<n>; built and reviewed by the session Architect.",
       "integration": {
         "authorizedOn": "2026-10-08",
         "integratedOn": "2026-10-08",
@@ -2631,8 +2643,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.121",
+  "nextUnallocated": "09.122",
   "nextUnallocatedNote": [
+    "v09.121 was allocated to one card per dua, progress counted once (round H-DB5), 2026-10-08.",
     "v09.120 was allocated to a Name's description: the poster's, a suggestion, or the madrasah's own, 2026-10-08.",
     "v09.119 was allocated to the Dua tab: the Dua chapters of eleven Hadith books (round H-DB4), 2026-10-08.",
     "v09.118 was allocated to the writing paper's list boxes whole on a phone, 2026-10-08.",
