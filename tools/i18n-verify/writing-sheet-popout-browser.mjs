@@ -375,9 +375,23 @@ if (ONLY || !MUTATE) {
     });
     // Updated in place 7 Oct 2026: the Owner, "Organise the buttons, make it in 2 row." -- two rows, and only the
     // narrowest phone (320px) wraps into a third.
-    check(`${tag} bar: two rows (three at 320px), every control >= 40px and inside the window, no sideways scroll`, lay.rows === (width <= 320 ? 3 : 2) && lay.all && lay.overflow <= 0, JSON.stringify(lay));
+    // Updated in place again 8 Oct 2026: the Owner, the list boxes cut on a phone ("Blank lines", "Light" showed their
+    // first letters) -- in a window narrower than 500px they take a third row of their own, so a phone has three rows
+    // (at 320px too, measured); the tablet and PC windows keep two.
+    check(`${tag} bar: two rows (three on a phone), every control >= 40px and inside the window, no sideways scroll`, lay.rows === (width < 600 ? 3 : 2) && lay.all && lay.overflow <= 0, JSON.stringify(lay));
     check(`${tag} Word AND Ayah both show, with ‹ › ⬆ More paper ✋ Move and ⛶ (phone included)`, lay.word && lay.ayah && lay.prev && lay.next && lay.more && lay.move && lay.full, JSON.stringify(lay));
-    if (width === 320 || width === 1280) await page.screenshot({ path: `/tmp/d83-${width}-${lang}.png` });
+    // The Owner, 7-8 Oct 2026: on a phone the two list boxes ("Blank lines", "Light") showed only their first letters.
+    // Each box's longest option, measured in the box's OWN font, plus its own padding and the arrow, must fit it.
+    const boxes = await page.evaluate(() => [...document.querySelectorAll("#writingSheet .wp-bar select")].map((sel) => {
+      const cs = getComputedStyle(sel);
+      const c = document.createElement("canvas").getContext("2d"); c.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+      const longest = Math.max(...[...sel.options].map((o) => c.measureText(o.textContent).width));
+      const pad = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
+      const arrow = cs.appearance === "none" ? 0 : 18;
+      return { name: sel.dataset.wpLines !== undefined ? "lines" : "shade", need: Math.ceil(longest + pad + arrow), have: Math.round(sel.getBoundingClientRect().width) };
+    }));
+    check(`${tag} each list box shows its whole word (its longest option fits)`, boxes.length === 2 && boxes.every((b) => b.have >= b.need), JSON.stringify(boxes));
+    if (width === 320 || width === 390 || width === 1280) await page.screenshot({ path: `/tmp/d83-${width}-${lang}.png` });
     // the Ayah button really switches the pop-out to the Ayah
     await wp(page, '[data-wp-mode="ayah"]'); await settle(page);
     check(`${tag} the Ayah button switches to the whole Ayah (1:2)`, (await pop(page)).mode === "ayah" && (await pop(page)).locs.every((l) => l.startsWith("1:2:")));

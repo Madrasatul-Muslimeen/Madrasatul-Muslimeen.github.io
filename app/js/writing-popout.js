@@ -39,6 +39,9 @@ const CSS = `
 .wp-bar .wp-shade{min-height:40px;min-width:48px;flex:1 1 0;max-width:190px;padding:0.3rem 0.4rem;border:1px solid rgba(255,255,255,0.35);border-radius:8px;background:rgba(255,255,255,0.12);color:#fff;font:inherit;font-size:0.85rem}
 .wp-bar .wp-shade option{color:#1b1b16;background:#fff}
 .wp-bar .wp-shade[data-wp-lines]{flex:0 1 auto;max-width:none}
+.wp-bar .wp-row3:empty{display:none}
+.wp-bar .wp-row3 .wp-shade{flex:1 1 0;max-width:none;font-size:0.9rem}
+@media (max-width:380px){.wp-bar .wp-row3 .wp-shade{flex:1 1 40%}}
 .wp-confirm{flex:0 0 auto;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:8px 10px;background:#fff3cf;color:#4a3a10;border-bottom:2px solid #B8862F}
 .wp-confirm[hidden]{display:none}
 .wp-confirm button{min-height:40px;padding:0.3rem 0.9rem;border-radius:8px;border:1px solid #B8862F;background:#fff;color:#4a3a10;font:inherit;cursor:pointer}
@@ -93,6 +96,9 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
           <span class="wp-sp"></span>
           <button type="button" data-wp="win" aria-pressed="false" aria-label="${t("Full screen")}" title="${t("Full screen")}">⛶</button>
         </div>
+        <!-- Owner, 8 Oct 2026: on a phone the two list boxes showed only their first letters ("Blank lines", "Light").
+             In a window narrower than 500px they move here, side by side, half the width each (placeListBoxes()). -->
+        <div class="wp-row wp-row3" data-wp-row3></div>
       </div>
       <div class="wp-confirm" data-wp-confirm hidden>
         <span>${t("Close without saving your writing?")}</span>
@@ -496,14 +502,28 @@ export function openWordPopout({ host, word, ayahWords, unitWords, ensureFont, p
     render();
   });
 
+  // The two list boxes: in their rows when the window is wide, in a row of their own when it is narrower than
+  // NARROW_WIN, where the rows' 40px buttons leave them under 65px (they showed "B…" and "L…").
+  const NARROW_WIN = 500;
+  const row3 = $("[data-wp-row3]");
+  const linesSel = $("[data-wp-lines]"), shadeSel = $("[data-wp-shade]");
+  const homes = [[linesSel, linesSel.nextElementSibling], [shadeSel, shadeSel.nextElementSibling]];
+  function placeListBoxes() {
+    const narrow = win.getBoundingClientRect().width < NARROW_WIN;
+    if (narrow && linesSel.parentElement !== row3) row3.append(linesSel, shadeSel);
+    else if (!narrow && linesSel.parentElement === row3) for (const [sel, before] of homes) before.before(sel);
+  }
+  placeListBoxes();
+
   let ro = null;
   if (typeof ResizeObserver === "function") {
     let frame = 0;
     ro = new ResizeObserver(() => {
       cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => { if (`${scrollEl.clientWidth}x${scrollEl.clientHeight}` !== lastBox) render(); });
+      frame = requestAnimationFrame(() => { placeListBoxes(); if (`${scrollEl.clientWidth}x${scrollEl.clientHeight}` !== lastBox) render(); });
     });
     ro.observe(scrollEl);
+    ro.observe(win);
   }
   start();
   return { root, destroy, requestClose, isDirty: dirty };
