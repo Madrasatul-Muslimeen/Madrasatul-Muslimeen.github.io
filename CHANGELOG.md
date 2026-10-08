@@ -20152,3 +20152,16 @@ The Owner, decision 88, on the Dua demo (https://claude.ai/artifact/LxHMM7PhPAKQ
 - **Checks:**
   - dua-words 16/0, new dua-word-links 12/0, new dua-word-links-browser 48/0 (mutations nolinks, noincard, noreturn)
   - green: dua-words-browser 37/0, dua-tab-browser 57/0, hadith-translations-browser 33/0, openiti-browser 76/0, hadeethenc-browser 82/0, hadith-source-navigation-browser 50/0, card-look-browser 96/0, word-card-ayah-card-ways-back-browser 71/0, ayah-card-takenote-family-browser 40/0, bookmark-marks-back-browser 112/0, quran-ayah-action-sheet-browser 144/0, phone-width-overflow 217/0, palette-contrast-browser 20/0, stub-parity 4/0, behaviour 1004/3 (22g×3, the archive.org baseline)
+
+## v09.132 — 2026-10-08 — Dua words, rounds 2–4
+
+- **Asked:** the Owner: "Go ahead with rounds 2, 3 and 4." (decision 90; Q1 yes)
+- **What:**
+  - `app/js/dua-words.js`: `QURAN_SPELLINGS`, `duaWordCandidates()` (round 2)
+  - `tools/hadith-data-pull/dua-word-links.mjs`: the match recorded per word (`x`), each link's Word-by-Word key and first 8 places; `output/dua/words-<page>.json` rebuilt
+  - `app/js/hadith-browser.js`: the Dua word card (`showDuaWord()`: how it matched, dictionaries, places, progress); `app/js/hadith-study-actions.js`: `duaWordProgress()`
+  - `app/quranrevival.html`: `?word=…&progress=<state>` records through the Word card's own saving, with the one-use token only
+  - `app/css/hadith.css`, `app/css/card-look.css`, `app/js/i18n/bn.js`
+- **Checks:**
+  - dua-word-links 17/0, new dua-word-card-browser 45/0 (mutations nohow, noplaces, notoken, norecord)
+  - green: dua-words 16/0, dua-word-links-browser 48/0, dua-words-browser 37/0, dua-tab-browser 57/0, hadith-translations-browser 33/0, openiti-browser 76/0, hadeethenc-browser 82/0, hadith-source-navigation-browser 50/0, card-look-browser 96/0, word-card-ayah-card-ways-back-browser 71/0, bookmark-marks-back-browser 112/0, quran-ayah-action-sheet-browser 144/0, ayah-card-takenote-family-browser 40/0, quran-lemma-progress-rendered 81/0, phone-width-overflow 217/0, palette-contrast-browser 20/0, stub-parity 4/0, rules-authorisation-executable 63/0, behaviour 1007/0

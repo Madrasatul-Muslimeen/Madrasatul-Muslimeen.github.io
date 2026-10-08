@@ -91,3 +91,28 @@ export function duaWordsFingerprint(words) {
   for (const ch of String(words ?? "")) { h ^= ch.codePointAt(0); h = Math.imul(h, 0x01000193) >>> 0; }
   return h.toString(36);
 }
+
+// Round 2 (decision 90): the Qur'an's own spellings, and a leading «و» / «ف» ("and", "so").
+// The Qur'an writes these with «و» where the dua's text has «ا» (صلاة -> صلوة); kept to this list because the same
+// ending elsewhere is a different word (فجأة "suddenly" is not فجوة "a gap").
+export const QURAN_SPELLINGS = Object.freeze({ "صلاه": "صلوه", "الصلاه": "الصلوه", "زكاه": "زكوه", "الزكاه": "الزكوه",
+  "حياه": "حيوه", "الحياه": "الحيوه", "نجاه": "نجوه", "النجاه": "النجوه", "مشكاه": "مشكوه", "غداه": "غدوه", "الغداه": "الغدوه" });
+// Words that begin with «ف» as part of the word itself, not "so" + a word (measured on the 1,091 duas).
+const FA_WORDS = new Set(["فلان", "فلانه", "فاجر", "فاجرا", "فقره", "فقر", "فتق"]);
+
+/**
+ * The ways a dua word's key may meet a Qur'an word's key, in order: the word itself, then its Qur'anic spelling,
+ * then without a leading «و»/«ف» (and that one's Qur'anic spelling). Each is { key, prefix, spelling }.
+ */
+export function duaWordCandidates(key) {
+  const out = [{ key, prefix: "", spelling: false }];
+  if (QURAN_SPELLINGS[key]) out.push({ key: QURAN_SPELLINGS[key], prefix: "", spelling: true });
+  const p = key[0];
+  const rest = key.slice(1);
+  const strip = (p === "\u0648" && rest.length >= 2) || (p === "\u0641" && rest.length >= 3 && !key.startsWith("\u0641\u064A") && !FA_WORDS.has(key));
+  if (strip) {
+    out.push({ key: rest, prefix: p, spelling: false });
+    if (QURAN_SPELLINGS[rest]) out.push({ key: QURAN_SPELLINGS[rest], prefix: p, spelling: true });
+  }
+  return out;
+}

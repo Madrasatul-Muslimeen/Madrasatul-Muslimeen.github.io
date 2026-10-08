@@ -9,21 +9,29 @@
 // Everything here is a computer's suggestion; the card says so.
 //
 // Writes tools/hadith-data-pull/output/dua/words-<page>.json beside cards-<page>.json:
-//   { schemaVersion, page, entries: [[place, count, arabic, translit, en, bn, root, lemma, lemmaCount]],
-//     duas: { "<dua>": { f: <fingerprint of the words>, w: [entry index | -1, ...] } } }
-// place = "S:A:W". The Dua page reads one file with its page of cards (nothing at startup, I9).
+//   { schemaVersion, page, entries: [[place, count, arabic, translit, en, bn, root, lemma, lemmaCount, wbwKey, places]],
+//     duas: { "<dua>": { f: <fingerprint of the words>, w: [entry index | -1, ...], x?: { "<word index>": how } } } }
+// how (round 2) = "و" or "ف" when the word was matched without that leading letter, "~" when through the Qur'an's
+// own spelling (صلاة -> صلوة), or both ("و~"). A word matched as it stands has no x entry.
+// place = "S:A:W". wbwKey (round 4) is the key the Word card's Word-by-Word progress is saved under for that word
+// (its dictionary word, or the stand-in key of a word without one: quran-word-form-key.js wbwClaimKey). places
+// (round 3) = the spelling's first PLACES_KEPT places in the Qur'an, each surah*1000000 + ayah*1000 + word. The Dua page reads one file with its page of cards (nothing at startup, I9).
 // Usage (repository root): node tools/hadith-data-pull/dua-word-links.mjs
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { duaWords, duaWordKey, duaWordTokens, duaWordsFingerprint } from "../../app/js/dua-words.js";
+import { duaWords, duaWordKey, duaWordTokens, duaWordsFingerprint, duaWordCandidates } from "../../app/js/dua-words.js";
+import { wbwClaimKey } from "../../app/js/quran-word-form-key.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "../..");
 const SURAHS = path.join(ROOT, "tools/quran-data-pull/output/surahs");
 const DUA = path.join(__dirname, "output", "dua");
 
-/** Pure: every Qur'an word -> Map(key -> { count, byLemma: Map(lemma -> first word) }). */
+/** Round 3: how many of a spelling's places in the Qur'an the Dua word card lists (the Word card has them all). */
+export const PLACES_KEPT = 8;
+
+/** Pure: every Qur'an word -> Map(key -> { count, byLemma: Map(lemma -> first word), places: first PLACES_KEPT }). */
 export function buildQuranForms(surahs) {
   const forms = new Map();
   for (const s of surahs) for (const a of s.ayahs) for (const w of a.words) {
@@ -31,8 +39,9 @@ export function buildQuranForms(surahs) {
     for (const key of new Set([duaWordKey(w.arabic), duaWordKey(w.arabic, "ا")])) {
       if (!key) continue;
       let f = forms.get(key);
-      if (!f) forms.set(key, f = { count: 0, byLemma: new Map() });
+      if (!f) forms.set(key, f = { count: 0, byLemma: new Map(), places: [] });
       f.count++;
+      if (f.places.length < PLACES_KEPT) f.places.push(s.surahNumber * 1000000 + a.ayah * 1000 + w.position);
       const lemma = w.morphology?.lemma ?? "";
       const l = f.byLemma.get(lemma);
       if (l) l.n++;
@@ -50,7 +59,7 @@ export function linkRow(form) {
   // The word-by-word source opens some meanings with stray quote marks ("''হে আল্লাহ"); they are not part of the meaning.
   const clean = (x) => String(x ?? "").replace(/^['\u2018\u2019"]+/u, "").trim();
   return [best.place, form.count, w.arabic, w.transliteration ?? "", clean(w.translation?.en), clean(w.translation?.bn),
-    w.morphology?.root ?? "", lemma, lemmas];
+    w.morphology?.root ?? "", lemma, lemmas, wbwClaimKey(w) ?? "", form.places];
 }
 
 async function main() {
@@ -65,16 +74,19 @@ async function main() {
     for (const c of cards) {
       const r = duaWords(c.text);
       if (!r) continue;
-      const w = duaWordTokens(r.words).map((tok) => {
+      const how = {};
+      const w = duaWordTokens(r.words).map((tok, i) => {
         words++;
         const key = duaWordKey(tok);
-        const form = key && forms.get(key);
-        if (!form) return -1;
+        // Round 2: the Qur'an's own spelling, then without a leading «و»/«ف».
+        const hit = key ? duaWordCandidates(key).find((c) => forms.has(c.key)) : null;
+        if (!hit) return -1;
         linked++;
-        if (!index.has(key)) { index.set(key, entries.length); entries.push(linkRow(form)); }
-        return index.get(key);
+        if (hit.prefix || hit.spelling) how[i] = `${hit.prefix}${hit.spelling ? "~" : ""}`;
+        if (!index.has(hit.key)) { index.set(hit.key, entries.length); entries.push(linkRow(forms.get(hit.key))); }
+        return index.get(hit.key);
       });
-      duas[c.dua] = { f: duaWordsFingerprint(r.words), w };
+      duas[c.dua] = { f: duaWordsFingerprint(r.words), w, ...(Object.keys(how).length ? { x: how } : {}) };
     }
     const out = JSON.stringify({ schemaVersion: 1, page, entries, duas });
     bytes += out.length;

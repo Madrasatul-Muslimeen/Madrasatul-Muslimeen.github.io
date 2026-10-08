@@ -22213,11 +22213,24 @@
       const m = /^(\d{1,3}):(\d{1,3}):(\d{1,3})$/.exec(raw);
       const surahMeta = m && surahIndex.find((s) => s.surahNumber === Number(m[1]));
       if (!m || !surahMeta || Number(m[2]) < 1 || Number(m[2]) > surahMeta.ayahCount || Number(m[3]) < 1) { bookmarkNotFound(); return; }
-      await openWordOccurrenceAt(Number(m[1]), Number(m[2]), Number(m[3]), "read");
+      // Round 4 (decision 90, Q1 = yes): "&progress=<state>" from a Dua word card records that Word-by-Word state for
+      // this word, through the Word card's own saving (the place, the dictionary word everywhere, the totals). Only
+      // with the one-use token the Dua card put in this tab's sessionStorage, so a link alone records nothing.
+      const want = params.get("progress");
+      let record = null;
+      if (want) {
+        try {
+          if (["not_started", "learning", "practising", "achieved"].includes(want) && sessionStorage.getItem("mmsa-dua-word-progress") === `${raw}|${want}`) record = want;
+          sessionStorage.removeItem("mmsa-dua-word-progress");
+        } catch { /* no token, nothing recorded */ }
+        try { const u = new URL(location.href); u.searchParams.delete("progress"); history.replaceState(history.state, "", u); } catch { /* a reload finds no token anyway */ }
+      }
+      await openWordOccurrenceAt(Number(m[1]), Number(m[2]), Number(m[3]), "read", record ? { level: "wbw" } : null);
       if (params.get("back") === "1" && history.length > 1) {
         const dua = /^dua-(\d+)$/.exec(params.get("from") ?? "");
         setAppReturn(dua ? t("Back to Dua {n}", { n: num(Number(dua[1])) }) : t("Back"), "", () => history.back(), { inWordCard: true });
       }
+      if (record) await runWordProgressAction({ kind: "state", state: record });
     }
 
     /** The Note view's own full screen -- two states, a separate mechanism
