@@ -3913,4 +3913,8 @@ export const BN = {
   "Start from the text shown, change it, then save. Everyone in the madrasah will see it.": "দেখানো লেখা থেকে শুরু করুন, বদলান, তারপর সংরক্ষণ করুন। মাদরাসার সবাই এটি দেখবে।", // ?
   "Save for the madrasah": "মাদরাসার জন্য সংরক্ষণ করুন", // ?
   "Not saved. Check the connection and try again.": "সংরক্ষিত হয়নি। সংযোগ দেখে আবার চেষ্টা করুন।", // ?
+  "Grammar suggestion (computer, to be checked)": "ব্যাকরণের প্রস্তাব (কম্পিউটারের, যাচাই করা হবে)", // ?
+  "Adverb": "ক্রিয়াবিশেষণ", // ?
+  "Particle": "অব্যয়", // ?
+  "Interjection": "আবেগসূচক অব্যয়", // ?
 };
