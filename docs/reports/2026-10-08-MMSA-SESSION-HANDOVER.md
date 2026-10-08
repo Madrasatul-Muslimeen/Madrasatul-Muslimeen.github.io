@@ -22,20 +22,21 @@ session" line on #159).
 
 No Builder round is running and no pull request is open.
 
-**Update, 8 Oct 2026, session `session_01QFqAPBJsmgyJ3QXw12JM22` (took over at v09.113):** `main` is at **v09.114**
-(round H-DB1: four more Arabic books in the Hadith library). **The Hadith database is being built in rounds:**
+**Update, 8 Oct 2026, session `session_01QFqAPBJsmgyJ3QXw12JM22` (took over at v09.113):** `main` is at **v09.115**.
+**The Hadith database is being built in rounds:**
 - **H-DB1 (v09.114, done):** al-Adab al-Mufrad, al-Nasa'i's and Ibn al-Sunni's 'Amal al-Yawm wa'l-Layla, al-Nawawi's
   al-Adhkar pulled and split (15 books).
-- **H-DB2 (next, Architect):** the numbering concordance, numbers only, by matching words against
-  fawazahmed0/hadith-api's Arabic (the sunnah.com numbering): `tools/hadith-data-pull/hadith-concordance.mjs`
-  writes `output/concordance/<versionUri>.json`. First pass: 83–90% of passages per book; Bukhari's Kitab ad-Da'awat
-  5946 → 6305 … 6048 → 6411, as the research report predicted. Then the library shows the standard number on each
-  passage and "Go to number" accepts it.
-- **H-DB3:** HadeethEnc's Bangla and English attached to the OpenITI passage they translate (matched by words).
-- **H-DB4:** the Dua chapters index, then the Dua database first cut (one dua, many narrations), with a demo of
-  the Dua screen first.
+- **H-DB2 (v09.115, done):** the standard numbers, matched by words (`hadith-concordance.mjs`, numbers only), shown on
+  each narration and used by "Go to hadith number"; Muslim can be jumped by Abdul-Baqi's number.
+- **H-DB3 (next):** HadeethEnc's Bangla and English attached to the passages they translate. Prototype: 2,163 of
+  3,574 HadeethEnc hadith match a passage; the draft tool `hadeethenc-openiti-links.mjs` is in the session
+  scratchpad (rewrite it if lost: word 3-grams, >= 0.6 of HadeethEnc's 3-grams in the passage). HadeethEnc's own
+  attribution ("رواه مسلم", "متفق عليه") is the independent check.
+- **H-DB4:** the Dua chapters index, then the Dua database first cut, with a demo of the Dua screen first.
 - **Owner decision needed before Studied / Notes / bookmarks on OpenITI passages:** the permanent key
   (recommended `hadith:openiti:<versionUri>:<n>`, showing the standard number).
+- **Queued, unread until H-DB2 was released:** the Owner's message about the Āyah card's "Take Note" button
+  (screenshot, 8 Oct).
 
 **THE QUEUE, in order (decision 87):**
 1. **The Hadith database, then the Dua database** ("Start Hadith n Dua Database work (NS's job)"). Follow
@@ -96,3 +97,4 @@ that handover does not name the version in `app/js/version.js`.
 <!-- allocate-version.py appends one line per release below this marker. -->
 - **v09.113** (2026-10-07): Word card and Ayah card ways back; the way-back law (the version on `main` when this was written).
 - **v09.114** (2026-10-08): four more Arabic Hadith books in the library (round H-DB1).
+- **v09.115** (2026-10-08): standard Hadith numbers in the library (round H-DB2).

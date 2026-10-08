@@ -132,6 +132,10 @@ async function runAtWidth(width) {
   check("clicking Show more reveals every remaining chapter (101 total)", chapterRowCountAfterMore === 101);
 
   // --- "Go to hadith number" 5000 opens the chapter that actually holds it. -
+  // Updated in place 8 Oct 2026 (round H-DB2): the box now reads the STANDARD number by default; this check is
+  // about the edition's own number, so it chooses "This edition's number" first (hadith-concordance.mjs checks the
+  // standard path).
+  await page.selectOption("[data-openiti-goto-mode]", "edition");
   await page.fill("[data-openiti-goto-input]", "5000");
   await page.click("[data-openiti-goto-btn]");
   await settle();
@@ -223,10 +227,13 @@ async function runAtWidth(width) {
   await settle();
   await page.click('[data-openiti-book*="Muslim"]');
   await settle();
-  check("Sahih Muslim's chapter list offers no 'Go to hadith number' control (it has no hadith numbers)",
-    !(await page.$("[data-openiti-goto-input]")));
-  const muslimGotoMsg = await page.evaluate(() => document.querySelector(".openiti-goto")?.textContent ?? "");
-  check("Sahih Muslim's chapter list explains why there is no 'Go to hadith number' box, in words",
+  // Updated in place 8 Oct 2026 (round H-DB2): Muslim has no numbers of its own, but now has standard numbers
+  // (Abdul-Baqi's, matched by words), so it offers the box -- by the standard number only, said in words, with no
+  // choice of numbering to make.
+  check("Sahih Muslim's chapter list offers 'Go to hadith number' by the standard number (its edition has none)",
+    !!(await page.$("[data-openiti-goto-input]")) && !(await page.$("[data-openiti-goto-mode]")));
+  const muslimGotoMsg = await page.evaluate(() => document.querySelector(".openiti-goto-hint")?.textContent ?? "");
+  check("Sahih Muslim's box says, in words, that it takes the standard number",
     muslimGotoMsg.length > 0);
   await page.click("[data-openiti-chapter]");
   await settle();

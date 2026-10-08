@@ -33,6 +33,7 @@ import {
 import {
   OPENITI_CREDIT_URL,
   loadOpenitiBookSummaries, loadOpenitiBookIndex, loadOpenitiChapter, chapterForHadithNumber,
+  loadOpenitiConcordance,
 } from "./openiti-corpus.js";
 
 const CONTENT_LANG_LABELS = { ar: "العربية", en: "English", bn: "বাংলা" };
@@ -783,8 +784,18 @@ async function renderOpenitiBody(body, oi, localRefresh) {
   if (!oi.books) oi.books = await loadOpenitiBookSummaries();
   const found = oi.bookUri ? oi.books.find(([uri]) => uri === oi.bookUri) : null;
   const index = found ? await loadOpenitiBookIndex(oi.bookUri) : null;
+  // Round H-DB2: the book's standard numbers, if it has them (null otherwise; a failed load only hides them).
+  const conc = found ? await loadOpenitiConcordance(oi.bookUri).catch(() => null) : null;
 
   body.textContent = "";
+  // A link to one passage (decision 85) or a jump by standard number (H-DB2): find the chapter that holds it
+  // BEFORE the breadcrumbs are drawn, so they carry the way back to the book's chapter list (decision 86).
+  let missingPassage = false;
+  if (index && oi.focusPassage != null && !oi.chapterId) {
+    const holder = index.chapters.find((c) => (c.hadithPositions ?? []).includes(oi.focusPassage));
+    if (holder) oi.chapterId = holder.id;
+    else { missingPassage = true; oi.focusPassage = null; }
+  }
   body.appendChild(openitiCrumbs(oi, index, localRefresh));
 
   if (!oi.bookUri) {
@@ -794,16 +805,10 @@ async function renderOpenitiBody(body, oi, localRefresh) {
 
   if (!found) { body.appendChild(el("p", "hadith-note", t("Nothing here yet."))); return; }
   const versionUri = oi.bookUri;
-
-  // A link to one passage (decision 85): open the chapter that holds it, then scroll to it once it is drawn.
-  if (oi.focusPassage != null && !oi.chapterId) {
-    const holder = index.chapters.find((c) => (c.hadithPositions ?? []).includes(oi.focusPassage));
-    if (holder) oi.chapterId = holder.id;
-    else { body.appendChild(el("p", "hadith-note", t("That passage is not in this book."))); oi.focusPassage = null; }
-  }
+  if (missingPassage) body.appendChild(el("p", "hadith-note", t("That passage is not in this book.")));
 
   if (!oi.chapterId) {
-    renderOpenitiChapterList(body, oi, index, localRefresh);
+    renderOpenitiChapterList(body, oi, index, localRefresh, conc);
     return;
   }
 
@@ -812,7 +817,7 @@ async function renderOpenitiBody(body, oi, localRefresh) {
   body.appendChild(el("p", "hadith-note", t("Loading…")));
   const { hadiths } = await loadOpenitiChapter(versionUri, chapter);
   body.lastChild.remove();
-  renderOpenitiPassages(body, hadiths);
+  renderOpenitiPassages(body, hadiths, conc);
   if (oi.focusPassage != null) {
     const target = body.querySelector(`[data-openiti-passage="${oi.focusPassage}"]`);
     oi.focusPassage = null;
@@ -891,9 +896,10 @@ function renderOpenitiBookList(body, oi, localRefresh) {
   body.appendChild(list);
 }
 
-function renderOpenitiChapterList(body, oi, index, localRefresh) {
+function renderOpenitiChapterList(body, oi, index, localRefresh, conc = null) {
   const goBox = el("div", "openiti-goto");
-  if (index.numbering === "sequential-by-paragraph") {
+  const editionNumbers = index.numbering !== "sequential-by-paragraph";
+  if (!editionNumbers && !conc) {
     // A control that can never work is worse than none -- say so instead
     // (this repository's own standing rule: a control that opens and
     // explains itself beats a control that is silently absent or broken).
@@ -909,6 +915,21 @@ function renderOpenitiChapterList(body, oi, index, localRefresh) {
     input.setAttribute("aria-label", t("Go to hadith number"));
     inputLabel.appendChild(input);
     goBox.appendChild(inputLabel);
+    // Round H-DB2: with a concordance the number typed is the STANDARD one by default (the number people cite);
+    // where the edition has numbers of its own, a choice offers those too.
+    let mode = conc ? "standard" : "edition";
+    if (conc && editionNumbers) {
+      const pick = el("select", "openiti-goto-mode");
+      pick.dataset.openitiGotoMode = "true";
+      pick.setAttribute("aria-label", t("Which numbering"));
+      for (const [value, text] of [["standard", t("Standard number")], ["edition", t("This edition's number")]]) {
+        const o = el("option", null, text); o.value = value; pick.appendChild(o);
+      }
+      pick.addEventListener("change", () => { mode = pick.value; });
+      goBox.appendChild(pick);
+    } else if (conc) {
+      goBox.appendChild(el("span", "openiti-goto-hint", t("Standard number")));
+    }
     const goBtn = el("button", "openiti-goto-btn", t("Go"));
     goBtn.type = "button";
     goBtn.dataset.openitiGotoBtn = "true";
@@ -917,6 +938,17 @@ function renderOpenitiChapterList(body, oi, index, localRefresh) {
     goMsg.dataset.openitiGotoMsg = "true";
     goMsg.setAttribute("role", "status");
     const doGo = () => {
+      if (mode === "standard") {
+        const n = conc.firstNByCite.get(Math.trunc(Number(input.value)));
+        if (n == null) {
+          goMsg.textContent = t("No hadith found with standard number {n}.", { n: num(input.value) });
+          return;
+        }
+        oi.chapterId = null;
+        oi.focusPassage = n;
+        localRefresh();
+        return;
+      }
       const chapter = chapterForHadithNumber(index, input.value);
       if (!chapter) {
         goMsg.textContent = t("No chapter found for hadith number {n}.", { n: num(input.value) });
@@ -961,14 +993,14 @@ function openitiArabicRowName(text) {
   return span;
 }
 
-function renderOpenitiPassages(body, hadiths) {
+function renderOpenitiPassages(body, hadiths, conc = null) {
   if (!hadiths.length) { body.appendChild(el("p", "hadith-note", t("Nothing here yet."))); return; }
   const list = el("div", "hadith-occurrences");
-  for (const h of hadiths) list.appendChild(openitiPassageCard(h));
+  for (const h of hadiths) list.appendChild(openitiPassageCard(h, conc));
   body.appendChild(list);
 }
 
-function openitiPassageCard(h) {
+function openitiPassageCard(h, conc = null) {
   const card = el("article", "hadith-card openiti-passage");
   card.dataset.openitiPassage = String(h.n);
   card.dataset.openitiKind = h.kind;
@@ -981,6 +1013,15 @@ function openitiPassageCard(h) {
     card.appendChild(el("p", "hadith-card-head openiti-editorial-label", t("Editor's note")));
   } else if (h.kind === "chapter-text") {
     card.classList.add("openiti-chapter-text");
+  }
+
+  // Round H-DB2: the number this narration has in the standard numbering, matched by its words.
+  const cite = conc?.byN.get(h.n);
+  if (cite) {
+    const book = getAppLang() === "bn" ? (conc.label.bn ?? conc.label.en) : conc.label.en;
+    const line = el("p", "openiti-standard-number", t("Standard number: {ref}", { ref: `${book} ${num(cite)}` }));
+    line.dataset.openitiStandard = cite;
+    card.appendChild(line);
   }
 
   const text = el("p", "hadith-arabic", h.text);
