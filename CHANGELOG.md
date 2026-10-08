@@ -20104,3 +20104,15 @@ The Owner, decision 88, on the Dua demo (https://claude.ai/artifact/LxHMM7PhPAKQ
   - updated in place: ayah-action-sheet-boundary 55/0 (Take Note reaches onTakeNote, Note reaches onNote; Take Note only while no Note exists), word-card-ayah-card-ways-back 71/0
   - green: quran-ayah-action-sheet 144/0, claim-for-family 56/0, ayah-folder-filing-fullscreen 74/0, journey-note-pane 327/0, phone-width-overflow 217/0, palette-contrast 20/0, stub-parity 4/0
   - behaviour 1007/0
+
+## v09.128 — 2026-10-08 — "File in folder(s)": Siyagah's header
+
+- **Asked:** the Owner, a screenshot of Siyagah's folder pop-up header (the section's name, 📚, ◀ ▶, a section picker, 🎨) marked: "add the marked ones"; after the demo: "Go ahead with the Siyagah header."
+- **What:**
+  - `app/js/ayah-folder-filing-renderer.js`: folders grouped by section (`folderSectionGroups()`, "Not in a section" for the rest), the header (`renderAyahFolderNavHtml()`: title, 📚, ◀ ▶, picker, 🎨 panel), delegated handlers.
+  - `app/quranrevival.html`: sections read with the tree (`loadAllOwnerSections()`, kept with it); the scope and the folder text kept on the device; ◀ ▶ step through the sections in order; a search looks through every section; header and list redraw without touching the search box.
+  - `app/js/i18n/bn.js`: the header's words.
+- **Checks:**
+  - new ayah-folder-siyagah-header-browser 64/0 (en/bn at 390 and 1280; mutations nostep 12, nofont 12, noremember 4; nosections fails loudly)
+  - green: ayah-folder-filing-fullscreen-browser 74/0, ayah-action-sheet-boundary 55/0, ayah-card-takenote-family-browser 40/0, quran-ayah-action-sheet-browser 144/0, journey-sections-browser 349/0, phone-width-overflow 217/0, palette-contrast-browser 20/0, stub-parity 4/0
+  - behaviour behaviour 1007/0
