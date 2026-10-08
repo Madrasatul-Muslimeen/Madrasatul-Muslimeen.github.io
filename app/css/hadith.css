@@ -269,3 +269,21 @@ a.hadeethenc-study-btn[aria-disabled="true"], button.hadeethenc-study-btn[aria-d
 .dua-narration summary { min-height: 40px; display: flex; align-items: center; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--hadith-ink); }
 .dua-narration .hadith-arabic { font-size: 1.5em; }
 .dua-words-mark { background: #f6e7b8; color: #2b2208; border-radius: 0.2em; padding: 0 0.1em; }
+
+/* Decision 90, round 1: a dua's words, each tappable; a linked word underlined; the word's panel. */
+.dua-word { border-radius: 0.25em; }
+.dua-word[role="button"] { cursor: pointer; }
+.dua-word-linked { text-decoration: underline dotted 0.06em; text-underline-offset: 0.35em; text-decoration-skip-ink: none; text-decoration-color: var(--hadith-gold, #b8860b); }
+.dua-word[aria-pressed="true"] { background: #f6e7b8; color: #2b2208; }
+.dua-word:focus-visible { outline: 2px solid var(--hadith-gold, #b8860b); outline-offset: 2px; }
+.dua-word-panel { margin: 0.2rem 0 0.5rem; padding: 0.5rem 0.7rem; border: 1px solid var(--hadith-rule); border-radius: 0.6rem; background: #fbf7ea; color: var(--hadith-ink); }
+.dua-word-panel[hidden] { display: none; }
+.dua-word-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.dua-word-panel-ar { font-size: 1.9em; line-height: 1.6; }
+.dua-word-panel-close { min-width: 40px; min-height: 40px; border: 1px solid var(--hadith-rule); border-radius: 0.5rem; background: transparent; color: inherit; font-size: 1.2rem; cursor: pointer; }
+.dua-word-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem; margin: 0.15rem 0; }
+.dua-word-label { font-size: 0.8rem; color: var(--hadith-muted); min-width: 7.5rem; }
+.dua-word-value { overflow-wrap: anywhere; }
+.dua-word-quran .dua-word-value, .dua-word-lemma .dua-word-value, .dua-word-root .dua-word-value { font-size: 1.4em; }
+.dua-word-count { margin: 0.3rem 0; font-size: 0.85rem; }
+.dua-word-open { display: inline-flex; align-items: center; min-height: 40px; text-decoration: none; }

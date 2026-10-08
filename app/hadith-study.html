@@ -197,7 +197,10 @@
       const initialHadeethEncId = resumeParam?.startsWith(HADEETHENC_RESUME_PREFIX)
         ? resumeParam.slice(HADEETHENC_RESUME_PREFIX.length) || null
         : null;
-      const corpus = mountHadithBrowser(document.getElementById("hadithCorpusRoot"), { mount: "hadith-module", initialHadeethEncId });
+      // Decision 90: ?view=dua&duaPage=<p>&dua=<n> reopens a page of Duas on one card (the way back from a dua word's Word card).
+      const duaQs = new URLSearchParams(location.search), duaPageParam = Number(duaQs.get("duaPage")), duaParam = Number(duaQs.get("dua"));
+      const initialDua = duaQs.get("view") === "dua" && Number.isInteger(duaPageParam) && duaPageParam > 0 ? { page: duaPageParam, dua: Number.isInteger(duaParam) ? duaParam : null } : null;
+      const corpus = mountHadithBrowser(document.getElementById("hadithCorpusRoot"), { mount: "hadith-module", initialHadeethEncId, initialDua });
       // The corpus's own study actions (Note/bookmark/Studied, issue #311)
       // read the signed-in session fresh on every render, but nothing tells
       // them to RE-render when the page's Tenant/Person pickers change --

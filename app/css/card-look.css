@@ -224,6 +224,8 @@
 [data-card-look="night"] .dua-words { color: var(--card-text); }
 [data-card-look="night"] .dua-words-note { color: var(--card-text-muted); }
 [data-card-look="night"] .dua-narration summary { color: var(--card-heading); }
+[data-card-look="night"] .dua-word-panel { background: var(--card-bg-inset); border-color: var(--card-line); color: var(--card-text); }
+[data-card-look="night"] .dua-word-label { color: var(--card-text-muted); }
 [data-card-look="night"] .dua-status { background: var(--card-bg-inset); color: var(--card-text); border-color: var(--card-line); }
 [data-card-look="night"] .dua-status[aria-pressed="true"] { background: #173426; border-color: #7fd3a0; color: #9fe6bb; }
 [data-card-look="night"] .dua-ref { background: var(--card-bg-inset); color: var(--card-text); border-color: var(--card-line); }

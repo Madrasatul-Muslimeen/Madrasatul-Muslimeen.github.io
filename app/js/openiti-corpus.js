@@ -247,6 +247,19 @@ export async function loadDuaCardsSummary({ fetchImpl = fetch, baseUrl = DUA_BAS
     return data;
   });
 }
+/**
+ * Round 1 of decision 90: one page's dua-word links (dua-word-links.mjs), read with that page of cards, or null when
+ * the file is missing. { entries, duas: { "<dua>": { f, w } } }.
+ */
+export async function loadDuaWordLinks(page, { fetchImpl = fetch, baseUrl = DUA_BASE_URL } = {}) {
+  return cached(duaCache, `${baseUrl}words-${page}.json`, async () => {
+    const res = await fetchImpl(`${baseUrl}words-${page}.json`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return Array.isArray(data.entries) && data.duas ? data : null;
+  });
+}
+
 export async function loadDuaCardsPage(page, { fetchImpl = fetch, baseUrl = DUA_BASE_URL } = {}) {
   return cached(duaCache, `${baseUrl}cards-${page}.json`, async () => {
     const res = await fetchImpl(`${baseUrl}cards-${page}.json`);

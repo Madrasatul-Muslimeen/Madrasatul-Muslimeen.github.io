@@ -119,3 +119,4 @@ that handover does not name the version in `app/js/version.js`.
 - **v09.128** (2026-10-08): File in folder(s): Siyagah's header.
 - **v09.129** (2026-10-08): Dua cards: the dua's own words, in the Quranic font.
 - **v09.130** (2026-10-08): Hadith in English and Bangla.
+- **v09.131** (2026-10-08): Dua words, rounds 0 and 1.

@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.130",
+    "version": "09.131",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2741,8 +2741,20 @@
     {
       "version": "09.130",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "English and Bangla translations of eight hadith books on every numbered narration and Dua card.",
+      "integration": {
+        "authorizedOn": "2026-10-08",
+        "integratedOn": "2026-10-08",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.131",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Dua words: narrators' words kept out; each word opens its Qur'an word and the Word card, with the way back.",
       "integration": {
         "authorizedOn": "2026-10-08",
         "integratedOn": "2026-10-08",
@@ -2751,8 +2763,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.131",
+  "nextUnallocated": "09.132",
   "nextUnallocatedNote": [
+    "v09.131 was allocated to Dua words, rounds 0 and 1, 2026-10-08.",
     "v09.130 was allocated to Hadith in English and Bangla, 2026-10-08.",
     "v09.129 was allocated to Dua cards: the dua's own words, in the Quranic font, 2026-10-08.",
     "v09.128 was allocated to File in folder(s): Siyagah's header, 2026-10-08.",

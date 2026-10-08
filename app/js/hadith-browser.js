@@ -14,7 +14,7 @@
 
 import { t, num } from "./i18n.js";
 import { getAppLang, quranFontStack } from "./prefs.js";
-import { duaWords, duaNarration } from "./dua-words.js";
+import { duaWords, duaNarration, duaWordTokens, duaWordsFingerprint } from "./dua-words.js";
 import { loadHadithTranslation, TRANSLATED_BOOKS } from "./hadith-translations.js";
 import { STATUSES, statusLabel } from "./unit-keys.js";
 import { renderAssignDropdown } from "./assign-picker.js";
@@ -35,7 +35,7 @@ import {
 import {
   OPENITI_CREDIT_URL,
   loadOpenitiBookSummaries, loadOpenitiBookIndex, loadOpenitiChapter, chapterForHadithNumber,
-  loadOpenitiConcordance, loadOpenitiHadeethEncLinks, loadDuaIndex, loadDuaCardsSummary, loadDuaCardsPage,
+  loadOpenitiConcordance, loadOpenitiHadeethEncLinks, loadDuaIndex, loadDuaCardsSummary, loadDuaCardsPage, loadDuaWordLinks,
 } from "./openiti-corpus.js";
 
 const CONTENT_LANG_LABELS = { ar: "العربية", en: "English", bn: "বাংলা" };
@@ -55,7 +55,7 @@ function langText(map, lang) {
   return map[lang] ?? map.en ?? map.ar ?? "";
 }
 
-export function mountHadithBrowser(root, { mount = "standalone", initialHadeethEncId = null, initialOpenitiPassage = null } = {}) {
+export function mountHadithBrowser(root, { mount = "standalone", initialHadeethEncId = null, initialOpenitiPassage = null, initialDua = null } = {}) {
   const state = {
     view: "collections",
     contentLang: getAppLang() === "bn" ? "bn" : "en",
@@ -78,6 +78,13 @@ export function mountHadithBrowser(root, { mount = "standalone", initialHadeethE
   // { versionUri, n } = the OpenITI book and the passage's permanent position (asma-poster.js's POSTER_HADITH).
   if (initialOpenitiPassage?.versionUri && Number.isFinite(Number(initialOpenitiPassage.n))) {
     state.oi = { bookUri: initialOpenitiPassage.versionUri, chapterId: null, books: null, showAllChapters: false, focusPassage: Number(initialOpenitiPassage.n) };
+  }
+
+  // Decision 90, round 1: coming back from a dua word's Word card (?view=dua&duaPage=<p>&dua=<n>) reopens that page of
+  // Duas on that card (the way-back law, decision 86).
+  if (initialDua && Number.isInteger(initialDua.page) && initialDua.page > 0) {
+    state.view = "dua";
+    state.dua = { bookUri: null, mode: "duas", page: initialDua.page, focusDua: Number.isInteger(initialDua.dua) ? initialDua.dua : null };
   }
 
   function render() {
@@ -1217,7 +1224,7 @@ function renderDuaCards(body, state, render) {
   section.id = "duaCards";
   body.appendChild(section);
   section.appendChild(el("p", "hadith-note", t("Loading…")));
-  Promise.all([loadDuaCardsSummary(), loadDuaCardsPage(state.dua.page || 1)]).then(([summary, cards]) => {
+  Promise.all([loadDuaCardsSummary(), loadDuaCardsPage(state.dua.page || 1), loadDuaWordLinks(state.dua.page || 1).catch(() => null)]).then(([summary, cards, wordLinks]) => {
     section.textContent = "";
     const page = state.dua.page || 1;
     const first = (page - 1) * summary.cardsPerFile + 1;
@@ -1238,7 +1245,7 @@ function renderDuaCards(body, state, render) {
     const list = el("div", "hadith-occurrences");
     section.appendChild(list);
     const progressRows = [];
-    for (const c of cards) list.appendChild(duaCard(c, summary, state, render, progressRows));
+    for (const c of cards) list.appendChild(duaCard(c, summary, state, render, progressRows, wordLinks, page));
     section.appendChild(pager());
     fillDuaProgress(progressRows);
     if (state.dua.focusDua != null) {
@@ -1249,7 +1256,7 @@ function renderDuaCards(body, state, render) {
   }).catch((err) => { section.textContent = ""; section.appendChild(el("p", "hadith-note", String(err?.message ?? err))); });
 }
 
-function duaCard(c, summary, state, render, progressRows) {
+function duaCard(c, summary, state, render, progressRows, wordLinks = null, page = 1) {
   const card = el("article", "hadith-card dua-card");
   card.dataset.duaCard = String(c.dua);
   const head = el("p", "hadith-card-head", t("Dua {n}", { n: num(c.dua) }));
@@ -1267,12 +1274,37 @@ function duaCard(c, summary, state, render, progressRows) {
   // the words marked in it. Where none are picked out, the narration shows as before.
   const picked = duaWords(c.text);
   if (picked) {
-    const words = el("p", "dua-words", picked.words);
+    const words = el("p", "dua-words");
     words.lang = "ar"; words.dir = "rtl";
     words.dataset.duaWords = String(c.dua);
     words.style.fontFamily = quranFontStack();
     card.appendChild(words);
     card.appendChild(el("p", "dua-words-note", t("Words picked out by the computer · a person checks them")));
+    // Decision 90, round 1: each word opens what the Qur'an's own data knows about the same spelling. The links file
+    // is only used when it was built from these very words (its fingerprint), so a changed picker never mislinks.
+    const links = wordLinks?.duas?.[c.dua];
+    const linked = !!links && links.f === duaWordsFingerprint(picked.words);
+    const panel = el("div", "dua-word-panel");
+    panel.hidden = true;
+    panel.dataset.duaWordPanel = String(c.dua);
+    duaWordTokens(picked.words).forEach((tok, i) => {
+      if (i) words.appendChild(document.createTextNode(" "));
+      const span = el("span", "dua-word", tok);
+      span.dataset.duaWord = String(i);
+      if (linked) {
+        const idx = links.w[i] ?? -1;
+        span.setAttribute("role", "button");
+        span.tabIndex = 0;
+        span.setAttribute("aria-pressed", "false");
+        if (idx >= 0) span.classList.add("dua-word-linked");
+        const open = () => showDuaWord(panel, words, span, tok, idx >= 0 ? wordLinks.entries[idx] : null, c.dua, page);
+        span.addEventListener("click", open);
+        span.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
+      }
+      words.appendChild(span);
+    });
+    if (linked) card.appendChild(el("p", "dua-words-note dua-words-tap", t("Tap a word to see it in the Qur'an's words.")));
+    card.appendChild(panel);
     const fold = document.createElement("details");
     fold.className = "dua-narration";
     fold.dataset.duaNarration = String(c.dua);
@@ -1343,6 +1375,67 @@ function duaCard(c, summary, state, render, progressRows) {
   card.appendChild(prog);
   progressRows.push({ dua: c.dua, el: prog });
   return card;
+}
+
+/**
+ * Decision 90, round 1: the panel under a dua's words for the word tapped. `entry` is the links file's row
+ * [place, count, arabic, translit, en, bn, root, lemma, lemmaCount], or null when no Qur'an word is spelled this way.
+ * Tapping the same word again closes it.
+ */
+function showDuaWord(panel, words, span, tok, entry, dua, page) {
+  const wasOpen = span.getAttribute("aria-pressed") === "true";
+  words.querySelectorAll(".dua-word[aria-pressed]").forEach((s) => s.setAttribute("aria-pressed", "false"));
+  panel.textContent = "";
+  if (wasOpen) { panel.hidden = true; return; }
+  span.setAttribute("aria-pressed", "true");
+  panel.hidden = false;
+  const head = el("div", "dua-word-panel-head");
+  const ar = el("span", "dua-word-panel-ar", tok);
+  ar.lang = "ar"; ar.dir = "rtl"; ar.style.fontFamily = quranFontStack();
+  const close = el("button", "dua-word-panel-close", "×");
+  close.type = "button";
+  close.setAttribute("aria-label", t("Close"));
+  close.addEventListener("click", () => { span.setAttribute("aria-pressed", "false"); panel.hidden = true; span.focus({ preventScroll: true }); });
+  head.append(ar, close);
+  panel.appendChild(head);
+  if (!entry) {
+    panel.appendChild(el("p", "hadith-note", t("No word of the Qur'an is spelled this way, so it is not linked yet.")));
+    return;
+  }
+  const [place, count, qar, tr, en, bn, root, lemma, lemmaCount] = entry;
+  const line = (label, value, cls = "", lang = "") => {
+    const p = el("p", `dua-word-line ${cls}`.trim());
+    p.appendChild(el("span", "dua-word-label", label));
+    const v = el("span", "dua-word-value", value);
+    if (lang) { v.lang = lang; if (lang === "ar") { v.dir = "rtl"; v.style.fontFamily = quranFontStack(); } }
+    p.appendChild(v);
+    return p;
+  };
+  panel.appendChild(line(t("In the Qur'an"), qar, "dua-word-quran", "ar"));
+  if (tr) panel.appendChild(line(t("Sounds like"), tr, "dua-word-translit"));
+  const means = getAppLang() === "bn" ? [[bn, "bn"], [en, "en"]] : [[en, "en"], [bn, "bn"]];
+  for (const [m, l] of means) if (m) panel.appendChild(line(l === "bn" ? t("Meaning (Bangla)") : t("Meaning (English)"), m, `dua-word-meaning-${l}`, l));
+  if (root) panel.appendChild(line(t("Root"), root, "dua-word-root", "ar"));
+  if (lemma) {
+    const p = line(t("Dictionary word"), lemma, "dua-word-lemma", "ar");
+    if (lemmaCount > 1) p.appendChild(el("span", "dua-proposed", t("one of {n} possible, to be checked", { n: num(lemmaCount) })));
+    panel.appendChild(p);
+  }
+  panel.appendChild(el("p", "dua-word-count", t("{n} times in the Qur'an, spelled this way", { n: num(count) })));
+  const go = el("a", "dua-ref dua-word-open", `${t("Open in the Word card")} ›`);
+  go.dataset.duaWordOpen = place;
+  go.href = `./quranrevival.html?word=${place}&back=1&from=dua-${dua}`;
+  // The way back (decision 86): this page's address is first set to reopen this page of Duas on this card, so the
+  // Word card's "Back to Dua n" (history.back) lands here.
+  go.addEventListener("click", () => {
+    try {
+      const u = new URL(location.href);
+      u.searchParams.set("view", "dua"); u.searchParams.set("duaPage", String(page)); u.searchParams.set("dua", String(dua));
+      history.replaceState(history.state, "", u);
+    } catch { /* the link still opens the Word card */ }
+  });
+  panel.appendChild(go);
+  panel.appendChild(el("p", "dua-words-note", t("Linked by the computer by spelling · to be checked")));
 }
 
 /** The progress rows of one page: one session, one read of the person's statuses, then a row of status buttons each. */

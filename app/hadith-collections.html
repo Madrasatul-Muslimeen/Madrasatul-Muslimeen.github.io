@@ -182,7 +182,10 @@
     // Decision 85: ?openiti=<versionUri>&passage=<n> opens one narration (an Asmaul Husna poster's Hadith reference).
     const openitiUri = params.get("openiti"), openitiN = Number(params.get("passage"));
     const initialOpenitiPassage = openitiUri && /^[0-9A-Za-z.\-]+$/.test(openitiUri) && Number.isInteger(openitiN) && openitiN > 0 ? { versionUri: openitiUri, n: openitiN } : null;
-    window.__hadithCorpus = mountHadithBrowser(document.getElementById("hadithRoot"), { mount, initialOpenitiPassage });
+    // Decision 90: ?view=dua&duaPage=<p>&dua=<n> reopens a page of Duas on one card (the way back from a dua word's Word card).
+    const duaPageParam = Number(params.get("duaPage")), duaParam = Number(params.get("dua"));
+    const initialDua = params.get("view") === "dua" && Number.isInteger(duaPageParam) && duaPageParam > 0 ? { page: duaPageParam, dua: Number.isInteger(duaParam) ? duaParam : null } : null;
+    window.__hadithCorpus = mountHadithBrowser(document.getElementById("hadithRoot"), { mount, initialOpenitiPassage, initialDua });
   </script>
   <script type="module">
     import { auth } from "./js/firebase-init.js";
