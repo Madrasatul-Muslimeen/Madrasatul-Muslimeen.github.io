@@ -22,7 +22,7 @@ session" line on #159).
 
 No Builder round is running and no pull request is open.
 
-**Update, 8 Oct 2026, session `session_01QFqAPBJsmgyJ3QXw12JM22` (took over at v09.113):** `main` is at **v09.118** (v09.118: the writing paper's list boxes whole on a phone, queue item 3, done).
+**Update, 8 Oct 2026, session `session_01QFqAPBJsmgyJ3QXw12JM22` (took over at v09.113):** `main` is at **v09.119** (v09.118 writing paper boxes; v09.119 the Dua tab).
 **The Hadith database is being built in rounds:**
 - **H-DB1 (v09.114, done):** al-Adab al-Mufrad, al-Nasa'i's and Ibn al-Sunni's 'Amal al-Yawm wa'l-Layla, al-Nawawi's
   al-Adhkar pulled and split (15 books).
@@ -30,11 +30,12 @@ No Builder round is running and no pull request is open.
   each narration and used by "Go to hadith number"; Muslim can be jumped by Abdul-Baqi's number.
 - **H-DB3 (v09.117, done):** HadeethEnc's Bangla/English linked by words to the narrations they translate
   (`hadeethenc-openiti-links.mjs`, 2,163 of 3,574 linked) and shown in a fold under the Arabic.
-- **H-DB4 (next):** the Dua screen. **Demo published for the Owner:** https://claude.ai/artifact/LxHMM7PhPAKQ1pKbYz5kxT
-  (one card per dua: Arabic, Bangla meaning, every place it is narrated, progress counted once per dua).
-  Data ready: `dua-index.mjs` → `output/dua/index.json` (4,271 narrations in 11 books' Dua chapters, 3,126 proposed
-  duas by shared words; a proposal for a person to confirm). Progress on a dua needs a new unit-key kind `dua:<n>`:
-  an Owner decision (permanent key), asked with the demo.
+- **H-DB4 (v09.119, done):** the Dua tab: the Dua chapters of 11 books, "Also narrated in" across books, ways back.
+  **Next for Dua (waits on the Owner):** one card per confirmed dua with progress counted once (the demo,
+  https://claude.ai/artifact/LxHMM7PhPAKQ1pKbYz5kxT) needs a person to confirm the groups and the Owner's yes to a
+  new permanent key `dua:<n>`.
+- **Asma descriptions (queue 2):** built in the worktree `/home/user/mmsa-asma` (branch `asma-desc`, its serve.js and
+  harness.mjs point at port 8081 there and must NOT be committed); suite `asma-descriptions-browser.mjs` 26/0.
 - **Owner decision needed before Studied / Notes / bookmarks on OpenITI passages:** the permanent key
   (recommended `hadith:openiti:<versionUri>:<n>`, showing the standard number).
 - **The Owner's Take Note message (8 Oct): built as v09.116;** "add the bookmark button there too" asked back
@@ -103,3 +104,4 @@ that handover does not name the version in `app/js/version.js`.
 - **v09.116** (2026-10-08): Take Note in the Ayah card's button row.
 - **v09.117** (2026-10-08): HadeethEnc's Bangla and English under the library's Arabic hadith (round H-DB3).
 - **v09.118** (2026-10-08): the writing paper's list boxes whole on a phone.
+- **v09.119** (2026-10-08): the Dua tab: the Dua chapters of eleven Hadith books (round H-DB4).

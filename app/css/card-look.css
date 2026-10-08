@@ -217,6 +217,10 @@
 /* 8 Oct 2026 (round H-DB3, found by looking): a fold's heading kept the page's --hadith-ink navy on the Night
    card's inset (HadeethEnc's "Show explanation" since it was built, and the new translation fold). */
 [data-card-look="night"] .hadeethenc-explanation summary { color: var(--card-heading); }
+[data-card-look="night"] .dua-also-head { color: var(--card-heading); }
+[data-card-look="night"] .dua-proposed { color: var(--card-text-muted); }
+[data-card-look="night"] .dua-also-more summary { color: var(--card-heading); }
+[data-card-look="night"] .dua-ref { background: var(--card-bg-inset); color: var(--card-text); border-color: var(--card-line); }
 /* .hadith-crumb/-current and its hadeethenc/openiti siblings are
    DELIBERATELY NOT re-picked, found by this round's own measurement: the
    breadcrumb `<nav>` (hadith-browser.js) carries no background of its own

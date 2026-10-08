@@ -33,7 +33,7 @@ import {
 import {
   OPENITI_CREDIT_URL,
   loadOpenitiBookSummaries, loadOpenitiBookIndex, loadOpenitiChapter, chapterForHadithNumber,
-  loadOpenitiConcordance, loadOpenitiHadeethEncLinks,
+  loadOpenitiConcordance, loadOpenitiHadeethEncLinks, loadDuaIndex,
 } from "./openiti-corpus.js";
 
 const CONTENT_LANG_LABELS = { ar: "العربية", en: "English", bn: "বাংলা" };
@@ -96,6 +96,7 @@ export function mountHadithBrowser(root, { mount = "standalone", initialHadeethE
       search: () => renderSearch(body, state, render),
       explore: () => renderExplore(body),
       commentary: () => renderCommentary(body, state),
+      dua: () => renderDua(body, state, render),
     })[state.view]();
     focusPendingOccurrence(body, state);
   }
@@ -227,6 +228,7 @@ function controls(state, render) {
     ["search", t("Search")],
     ["explore", t("Explore")],
     ["commentary", PANEL_TITLE[getAppLang()] ?? PANEL_TITLE.en],
+    ["dua", t("Dua")],
   ]) {
     const b = el("button", `hadith-tab${state.view === view ? " active" : ""}`, label);
     b.dataset.hadithTab = view;
@@ -788,6 +790,9 @@ async function renderOpenitiBody(body, oi, localRefresh) {
   const conc = found ? await loadOpenitiConcordance(oi.bookUri).catch(() => null) : null;
   // Round H-DB3: which HadeethEnc hadith translate a passage of this book (ids only; null if none).
   const heLinks = found ? await loadOpenitiHadeethEncLinks(oi.bookUri).catch(() => null) : null;
+  // Round H-DB4: for a book with Dua chapters, the other places the same dua is narrated.
+  const duaIdx = found ? await loadDuaIndex().catch(() => null) : null;
+  const dua = duaIdx?.books.some((b) => b.versionUri === oi.bookUri) ? duaIdx : null;
 
   body.textContent = "";
   // A link to one passage (decision 85) or a jump by standard number (H-DB2): find the chapter that holds it
@@ -799,6 +804,21 @@ async function renderOpenitiBody(body, oi, localRefresh) {
     else { missingPassage = true; oi.focusPassage = null; }
   }
   body.appendChild(openitiCrumbs(oi, index, localRefresh));
+
+  // The way back (decision 86): to the Dua tab it came from, and back along "Also narrated in" jumps.
+  if (oi.trail?.length) {
+    const prev = oi.trail[oi.trail.length - 1];
+    const b = el("button", "hadeethenc-crumb openiti-trail-back", prev.label);
+    b.type = "button";
+    b.dataset.openitiTrailBack = "true";
+    b.addEventListener("click", () => {
+      oi.trail.pop();
+      if (prev.toDua) { oi.trail = []; prev.toDua(); return; }
+      oi.bookUri = prev.bookUri; oi.chapterId = prev.chapterId; oi.focusPassage = prev.focusPassage ?? null;
+      localRefresh();
+    });
+    body.appendChild(b);
+  }
 
   if (!oi.bookUri) {
     renderOpenitiBookList(body, oi, localRefresh);
@@ -819,7 +839,9 @@ async function renderOpenitiBody(body, oi, localRefresh) {
   body.appendChild(el("p", "hadith-note", t("Loading…")));
   const { hadiths } = await loadOpenitiChapter(versionUri, chapter);
   body.lastChild.remove();
-  renderOpenitiPassages(body, hadiths, conc, heLinks);
+  renderOpenitiPassages(body, hadiths, conc, heLinks, dua ? { dua, oi, localRefresh, chapterId: chapter.id, versionUri } : null);
+  // Opened from the Dua tab: the library's book shelf sits below HadeethEnc on this page, so bring it into view.
+  if (oi.scrollTo && oi.focusPassage == null) { oi.scrollTo = false; body.scrollIntoView({ block: "start" }); }
   if (oi.focusPassage != null) {
     const target = body.querySelector(`[data-openiti-passage="${oi.focusPassage}"]`);
     oi.focusPassage = null;
@@ -995,14 +1017,14 @@ function openitiArabicRowName(text) {
   return span;
 }
 
-function renderOpenitiPassages(body, hadiths, conc = null, heLinks = null) {
+function renderOpenitiPassages(body, hadiths, conc = null, heLinks = null, duaCtx = null) {
   if (!hadiths.length) { body.appendChild(el("p", "hadith-note", t("Nothing here yet."))); return; }
   const list = el("div", "hadith-occurrences");
-  for (const h of hadiths) list.appendChild(openitiPassageCard(h, conc, heLinks));
+  for (const h of hadiths) list.appendChild(openitiPassageCard(h, conc, heLinks, duaCtx));
   body.appendChild(list);
 }
 
-function openitiPassageCard(h, conc = null, heLinks = null) {
+function openitiPassageCard(h, conc = null, heLinks = null, duaCtx = null) {
   const card = el("article", "hadith-card openiti-passage");
   card.dataset.openitiPassage = String(h.n);
   card.dataset.openitiKind = h.kind;
@@ -1036,6 +1058,8 @@ function openitiPassageCard(h, conc = null, heLinks = null) {
 
   const heIds = heLinks?.get(h.n);
   if (heIds?.length) card.appendChild(openitiTranslationFold(heIds));
+  const group = duaCtx?.dua.groupOf.get(`${duaCtx.versionUri}:${h.n}`);
+  if (group) card.appendChild(duaAlsoNarrated(h, group, duaCtx, conc));
 
   const credit = document.createElement("a");
   credit.className = "hadith-view-source openiti-credit";
@@ -1047,6 +1071,120 @@ function openitiPassageCard(h, conc = null, heLinks = null) {
   card.appendChild(credit);
 
   return card;
+}
+
+/** The cited name of a Dua-index book in the reader's language, with its standard number when it has one. */
+function duaRefLabel(dua, versionUri, std, n, number = null) {
+  const book = dua.books.find((b) => b.versionUri === versionUri);
+  const name = (getAppLang() === "bn" ? book?.short?.bn : book?.short?.en) ?? book?.titleEn ?? versionUri;
+  if (std != null && std !== "") return `${name} ${num(String(std))}`;
+  if (number != null) return `${name} ${num(number)}`;
+  return t("{book}, passage {n}", { book: name, n: num(n) });
+}
+
+/**
+ * Round H-DB4 (decision 87): the other places this dua is narrated, found by shared words, each a button that opens
+ * that narration in its book, highlighted, with a way back to here (decision 86). Said to be a proposal.
+ */
+function duaAlsoNarrated(h, group, { dua, oi, localRefresh, chapterId, versionUri }, conc) {
+  const box = el("div", "dua-also");
+  box.dataset.duaAlso = String(group.length - 1);
+  const head = el("p", "dua-also-head", t("Also narrated in ({n} more)", { n: num(group.length - 1) }));
+  head.appendChild(el("span", "dua-proposed", t("found by matching words, to be checked")));
+  box.appendChild(head);
+  const row = el("div", "dua-also-refs");
+  const self = group.find((m) => m.versionUri === versionUri && m.n === h.n);
+  const here = duaRefLabel(dua, versionUri, conc?.byN.get(h.n) ?? self?.std, h.n, self?.number ?? (h.kind === "hadith" ? h.number : null));
+  // The books cited by a standard number first; the rest (the Day-and-Night books, al-Adhkar, Riyad) behind one
+  // "+N more" fold, so a much-narrated dua does not bury the card under twenty buttons.
+  const others = group.filter((m) => m !== self);
+  const main = others.filter((m) => m.std != null && m.std !== "");
+  const rest = others.filter((m) => !(m.std != null && m.std !== ""));
+  const restBox = el("div", "dua-also-refs");
+  const makeBtn = (m) => {
+    const b = el("button", "dua-ref", duaRefLabel(dua, m.versionUri, m.std, m.n, m.number));
+    b.type = "button";
+    b.dataset.duaRef = `${m.versionUri}:${m.n}`;
+    b.addEventListener("click", () => {
+      oi.trail = [...(oi.trail ?? []), { bookUri: versionUri, chapterId, focusPassage: h.n, label: t("← Back to {ref}", { ref: here }) }];
+      oi.bookUri = m.versionUri; oi.chapterId = null; oi.focusPassage = m.n; oi.showAllChapters = false;
+      localRefresh();
+    });
+    return b;
+  };
+  for (const m of main) row.appendChild(makeBtn(m));
+  if (main.length) box.appendChild(row);
+  if (rest.length) {
+    if (!main.length) { for (const m of rest) row.appendChild(makeBtn(m)); box.appendChild(row); return box; }
+    const more = document.createElement("details");
+    more.className = "dua-also-more";
+    const sum = document.createElement("summary");
+    sum.textContent = t("+{n} more in other books", { n: num(rest.length) });
+    sum.dataset.duaMore = String(rest.length);
+    more.appendChild(sum);
+    for (const m of rest) restBox.appendChild(makeBtn(m));
+    more.appendChild(restBox);
+    box.appendChild(more);
+  }
+  return box;
+}
+
+/**
+ * Round H-DB4 (decision 87), the Dua tab, first cut: the Dua chapters of eleven books (research report §2), each
+ * opening in the library with "← Back to Dua". The narrations of one dua are linked across books on each card.
+ */
+function renderDua(body, state, render) {
+  const section = el("section", "dua-section");
+  section.id = "duaSection";
+  section.appendChild(el("h2", null, t("Dua — the Dua chapters of the Hadith books")));
+  section.appendChild(el("p", "hadith-note", t("Each narration shows its standard number, a Bangla or English translation where HadeethEnc has one, and the other books that narrate the same dua.")));
+  const list = el("div", "hadith-list");
+  section.appendChild(list);
+  body.appendChild(section);
+  list.appendChild(el("p", "hadith-note", t("Loading…")));
+  if (!state.dua) state.dua = { bookUri: null };
+  loadDuaIndex().then(async (dua) => {
+    list.textContent = "";
+    if (!state.dua.bookUri) {
+      for (const b of dua.books) {
+        const row = el("button", "hadith-row");
+        row.dataset.duaBook = b.versionUri;
+        const name = el("span", "hadith-row-name");
+        const ar = el("span", "openiti-title-ar", b.titleAr); ar.lang = "ar"; ar.dir = "rtl";
+        name.appendChild(ar);
+        name.appendChild(document.createTextNode(` — ${b.titleEn}`));
+        row.appendChild(name);
+        row.appendChild(el("span", "hadith-row-meta", t("{n} narrations", { n: num(b.narrations) })));
+        row.addEventListener("click", () => { state.dua.bookUri = b.versionUri; render(); });
+        list.appendChild(row);
+      }
+      return;
+    }
+    const book = dua.books.find((b) => b.versionUri === state.dua.bookUri);
+    const back = el("button", "hadeethenc-crumb", t("← All Dua books"));
+    back.type = "button";
+    back.dataset.duaBack = "true";
+    back.addEventListener("click", () => { state.dua.bookUri = null; render(); });
+    list.appendChild(back);
+    list.appendChild(el("h3", "hadith-row-name", book.titleEn));
+    const index = await loadOpenitiBookIndex(book.versionUri);
+    for (const id of book.chapterIds) {
+      const c = index.chapters.find((x) => x.id === id);
+      if (!c) continue;
+      const row = el("button", "hadith-row");
+      row.dataset.duaChapter = id;
+      row.appendChild(openitiArabicRowName(openitiDisplayTitle(c.title)));
+      row.appendChild(el("span", "hadith-row-meta", t("{n} narrations", { n: num(c.hadithCount || c.passageCount) })));
+      row.addEventListener("click", () => {
+        state.view = "collections";
+        state.editionId = null;
+        state.oi = { bookUri: book.versionUri, chapterId: id, books: null, showAllChapters: false,
+          scrollTo: true, trail: [{ label: t("← Back to Dua"), toDua: () => { state.view = "dua"; render(); } }] };
+        render();
+      });
+      list.appendChild(row);
+    }
+  }).catch((err) => { list.textContent = ""; list.appendChild(el("p", "hadith-note", String(err?.message ?? err))); });
 }
 
 /**

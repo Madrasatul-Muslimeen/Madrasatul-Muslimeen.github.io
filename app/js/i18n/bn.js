@@ -3070,6 +3070,18 @@ export const BN = {
   // Round H-DB3 (8 Oct 2026): HadeethEnc's translation under an OpenITI narration.
   "{lang} translation (HadeethEnc)": "{lang} অনুবাদ (HadeethEnc)", // ?
   "HadeethEnc's wording may follow another narration of this hadith.": "HadeethEnc-এর শব্দাবলি এই হাদীসের অন্য কোনো বর্ণনা অনুযায়ী হতে পারে।", // ?
+  // Round H-DB4 (8 Oct 2026): the Dua tab of the Hadith page.
+  "Dua": "দুআ", // ?
+  "Dua — the Dua chapters of the Hadith books": "দুআ — হাদীস গ্রন্থসমূহের দুআ অধ্যায়", // ?
+  "Each narration shows its standard number, a Bangla or English translation where HadeethEnc has one, and the other books that narrate the same dua.": "প্রতিটি বর্ণনায় এর প্রচলিত নম্বর, HadeethEnc-এ থাকলে বাংলা বা ইংরেজি অনুবাদ, এবং একই দুআ বর্ণনা করা অন্যান্য গ্রন্থ দেখানো হয়।", // ?
+  "{n} narrations": "{n}টি বর্ণনা", // ?
+  "← All Dua books": "← সব দুআর গ্রন্থ", // ?
+  "← Back to Dua": "← দুআয় ফিরে যান", // ?
+  "← Back to {ref}": "← {ref}-এ ফিরে যান", // ?
+  "Also narrated in ({n} more)": "আরও যেখানে বর্ণিত ({n}টি)", // ?
+  "found by matching words, to be checked": "শব্দ মিলিয়ে পাওয়া, যাচাই বাকি", // ?
+  "{book}, passage {n}": "{book}, অনুচ্ছেদ {n}", // ?
+  "+{n} more in other books": "+ আরও {n}টি, অন্যান্য গ্রন্থে", // ?
   "Show more ({remaining} more)": "আরও দেখুন (আরও {remaining}টি)", // ?
   "Hadith {n}": "হাদীস {n}", // ?
   "Passage {n} (position in this edition, not the book's own number)": "অংশ {n} (এই সংস্করণে অবস্থান, বইয়ের নিজস্ব নম্বর নয়)", // ?

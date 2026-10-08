@@ -762,3 +762,4 @@ total). Allocated by the MMSA Architect.
 09.116: Take Note in the Ayah card's button row. Allocated by the MMSA Architect.
 09.117: HadeethEnc's Bangla and English under the library's Arabic hadith (round H-DB3). Allocated by the MMSA Architect.
 09.118: the writing paper's list boxes whole on a phone. Allocated by the MMSA Architect.
+09.119: the Dua tab: the Dua chapters of eleven Hadith books (round H-DB4). Allocated by the MMSA Architect.

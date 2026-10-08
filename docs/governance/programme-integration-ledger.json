@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.118",
+    "version": "09.119",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2597,8 +2597,20 @@
     {
       "version": "09.118",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The Owner's report (7-8 Oct 2026): on a phone the pop-out writing paper's two list boxes showed only their first letters; in a window under 500px they take a row of their own. Built and reviewed by the session Architect.",
+      "integration": {
+        "authorizedOn": "2026-10-08",
+        "integratedOn": "2026-10-08",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.119",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Hadith/Dua database round H-DB4 (decision 87): a Dua tab on the Hadith page browsing the Dua chapters of eleven books, each narration linked to the other books that narrate the same dua; built and reviewed by the session Architect after the Dua screen demo.",
       "integration": {
         "authorizedOn": "2026-10-08",
         "integratedOn": "2026-10-08",
@@ -2607,8 +2619,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.119",
+  "nextUnallocated": "09.120",
   "nextUnallocatedNote": [
+    "v09.119 was allocated to the Dua tab: the Dua chapters of eleven Hadith books (round H-DB4), 2026-10-08.",
     "v09.118 was allocated to the writing paper's list boxes whole on a phone, 2026-10-08.",
     "v09.117 was allocated to HadeethEnc's Bangla and English under the library's Arabic hadith (round H-DB3), 2026-10-08.",
     "v09.116 was allocated to Take Note in the Ayah card's button row, 2026-10-08.",

@@ -201,3 +201,33 @@ export async function loadOpenitiHadeethEncLinks(versionUri, { fetchImpl = fetch
     return byN;
   });
 }
+
+// ---------------------------------------------------------------------------
+// The Dua index, first cut (decision 87, round H-DB4): the books' Dua chapters and the narrations of one dua grouped
+// across books by shared words (tools/hadith-data-pull/dua-index.mjs). Loaded when the Dua tab or a Dua book is
+// opened, never at startup (I9). The groups are a PROPOSAL for a person to confirm; the screen says so.
+// ---------------------------------------------------------------------------
+
+const DUA_BASE_URL = "../tools/hadith-data-pull/output/dua/";
+const duaCache = new Map();
+
+/** { books: [...], groupOf: Map("<versionUri>:<n>" -> [{ versionUri, n, std }...]) } */
+export async function loadDuaIndex({ fetchImpl = fetch, baseUrl = DUA_BASE_URL } = {}) {
+  return cached(duaCache, `${baseUrl}index.json`, async () => {
+    const res = await fetchImpl(`${baseUrl}index.json`);
+    if (!res.ok) throw new Error(`Could not load the Dua index (${res.status}).`);
+    return buildDuaIndex(await res.json());
+  });
+}
+
+/** Pure: the file -> lookups. Only groups of two or more narrations are kept for "Also narrated in". */
+export function buildDuaIndex(data) {
+  if (!Array.isArray(data?.books) || !Array.isArray(data?.groups)) throw new Error("Invalid Dua index shape.");
+  const groupOf = new Map();
+  for (const g of data.groups) {
+    if (g.length < 2) continue;
+    const members = g.map(([b, n, std, number]) => ({ versionUri: data.books[b].versionUri, n, std, number: number ?? null }));
+    for (const m of members) groupOf.set(`${m.versionUri}:${m.n}`, members);
+  }
+  return { books: data.books, groupOf };
+}
