@@ -20116,3 +20116,14 @@ The Owner, decision 88, on the Dua demo (https://claude.ai/artifact/LxHMM7PhPAKQ
   - new ayah-folder-siyagah-header-browser 64/0 (en/bn at 390 and 1280; mutations nostep 12, nofont 12, noremember 4; nosections fails loudly)
   - green: ayah-folder-filing-fullscreen-browser 74/0, ayah-action-sheet-boundary 55/0, ayah-card-takenote-family-browser 40/0, quran-ayah-action-sheet-browser 144/0, journey-sections-browser 349/0, phone-width-overflow 217/0, palette-contrast-browser 20/0, stub-parity 4/0
   - behaviour behaviour 1007/0
+
+## v09.129 — 2026-10-08 — Dua cards: the dua's own words, in the Quranic font
+
+- **Asked:** the Owner: "Go ahead with clean dua words on each card, demo."; after the demo: "For Dua, I want same Quranic font." (decision 89)
+- **What:**
+  - new `app/js/dua-words.js`: `duaNarration()`, `duaWords()` (pure; 1,112 of 3,126 cards picked out)
+  - `app/js/hadith-browser.js` `duaCard()`: the words large in `quranFontStack()`, the computer-pick note, the whole narration in a fold with the words marked; no pick = the narration as before, with a note
+  - `app/css/hadith.css`: the QR font faces, `.dua-words`, `.dua-narration`, `.dua-words-mark`; `app/css/card-look.css`: night colours; `app/js/i18n/bn.js`: three strings
+- **Checks:**
+  - new dua-words 11/0, dua-words-browser 37/0 (mutations nowire, nofont, nomark)
+  - green: dua-tab-browser 57/0, openiti-browser 76/0, hadeethenc-browser 82/0, hadith-source-navigation-browser 50/0, card-look-browser 96/0, phone-width-overflow 217/0, palette-contrast-browser 20/0

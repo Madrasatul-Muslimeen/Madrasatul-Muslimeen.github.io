@@ -117,3 +117,4 @@ that handover does not name the version in `app/js/version.js`.
 - **v09.126** (2026-10-08): File in folder(s): full screen, Back, keyboard stays, faster, folders fold.
 - **v09.127** (2026-10-08): the Āyah card's Take Note opens the Note view ready to write.
 - **v09.128** (2026-10-08): File in folder(s): Siyagah's header.
+- **v09.129** (2026-10-08): Dua cards: the dua's own words, in the Quranic font.

@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.128",
+    "version": "09.129",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2717,8 +2717,20 @@
     {
       "version": "09.128",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "The Āyah card's File in folder(s): section name, 📚 all sections, ◀ ▶, section picker, 🎨 folder text.",
+      "integration": {
+        "authorizedOn": "2026-10-08",
+        "integratedOn": "2026-10-08",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.129",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Each Dua card shows the dua's own words large in the Quranic font; the whole narration one tap away, words marked.",
       "integration": {
         "authorizedOn": "2026-10-08",
         "integratedOn": "2026-10-08",
@@ -2727,8 +2739,9 @@
       }
     }
   ],
-  "nextUnallocated": "09.129",
+  "nextUnallocated": "09.130",
   "nextUnallocatedNote": [
+    "v09.129 was allocated to Dua cards: the dua's own words, in the Quranic font, 2026-10-08.",
     "v09.128 was allocated to File in folder(s): Siyagah's header, 2026-10-08.",
     "v09.127 was allocated to the Āyah card's Take Note opens the Note view ready to write, 2026-10-08.",
     "v09.126 was allocated to File in folder(s): full screen, Back, keyboard stays, faster, folders fold, 2026-10-08.",
