@@ -20177,3 +20177,14 @@ The Owner, decision 88, on the Dua demo (https://claude.ai/artifact/LxHMM7PhPAKQ
 - **Checks:**
   - new dua-vowels 11/0, new dua-vowels-browser 33/0 (mutations novowels, notoggle)
   - green: dua-words 16/0, dua-word-links 17/0, dua-word-links-browser 48/0, dua-word-card-browser 45/0, dua-words-browser 37/0 (its picked-words check compares each word's unvowelled form now, updated in place), dua-tab-browser 57/0, hadith-translations-browser 33/0, openiti-browser 76/0, hadeethenc-browser 82/0, card-look-browser 96/0, phone-width-overflow 217/0, palette-contrast-browser 20/0, stub-parity 4/0, behaviour 1007/0
+
+## v09.134 — 2026-10-08 — Dua words, round 5b: grammar suggestions
+
+- **Asked:** round 5 (decisions 90–91); 5b built by the Builder (issue #662, PR #663)
+- **What:**
+  - new `tools/hadith-data-pull/dua-word-grammar.py` (CAMeL Tools, build time), `output/dua/grammar-<page>.json` (3,280 suggestions)
+  - `app/js/openiti-corpus.js`: `loadDuaWordGrammar()`; `app/js/hadith-browser.js`: the "Grammar suggestion" block, `duaGrammarPosLabel()`; `app/js/i18n/bn.js`: four strings
+  - Architect on review: generated the data (the Builder could not install the tool), kept lexicon analyses only, filled weak roots only from و/ي/hamza, updated the by-hand checks in place
+- **Checks:**
+  - new dua-word-grammar 17/0, new dua-word-grammar-browser 33/0 (mutations nogram, nofp, rawpos)
+  - green: dua-vowels 11/0, dua-vowels-browser 33/0, dua-words 16/0, dua-word-links 17/0, dua-word-links-browser 48/0, dua-word-card-browser 45/0, dua-words-browser 37/0, dua-tab-browser 57/0, hadith-translations-browser 33/0, openiti-browser 76/0, hadeethenc-browser 82/0, card-look-browser 96/0, phone-width-overflow 217/0, palette-contrast-browser 20/0, stub-parity 4/0, behaviour 1007/0
