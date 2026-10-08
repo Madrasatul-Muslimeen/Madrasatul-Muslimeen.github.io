@@ -121,7 +121,19 @@ Read this first, every session. It is the standing brief.
 > "do not translate" and is a different contract. **That contract is NOT
 > invented here**; the Stage B exclusion stands for this candidate.
 
-> ## ⇢ SESSION HANDOVER, 7 Oct 2026 — READ THIS SECOND
+> ## ⇢ SESSION HANDOVER, 8 Oct 2026 — READ THIS SECOND
+>
+> **`docs/reports/2026-10-08-MMSA-SESSION-HANDOVER.md`** is the current
+> continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-10-08.md`**
+> is the prompt that starts a new session. `main` reached v09.113 (the Word card and
+> Āyah card ways back, and **the way-back law**, decision 86). **The queue (decision 87):
+> the Hadith database, then the Dua database** (the research report's §4.3 order), then
+> the Asma ul Husna descriptions (Names only, three versions behind a toggle, the Owner's
+> edits saved for the madrasah; demo first). The Owner has done pictures step 1 (Blaze).
+>
+> **The 7 Oct block below is kept as history**, superseded by it.
+>
+> ## ⇢ SESSION HANDOVER, 7 Oct 2026 (superseded 8 Oct 2026)
 >
 > **`docs/reports/2026-10-07-MMSA-SESSION-HANDOVER.md`** is the current
 > continuation point, and **`docs/governance/NEW-SESSION-PROMPT-2026-10-07.md`**
