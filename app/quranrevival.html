@@ -3890,7 +3890,7 @@
   .ayah-folder-tree { max-height: 38vh; overflow-y: auto; }
   .ayah-folder-row { display: flex; align-items: center; justify-content: space-between; min-height: 40px; }
   .ayah-folder-row-label { display: flex; align-items: center; gap: 0.5rem; flex: 1 1 auto; min-width: 0; cursor: pointer; }
-  .ayah-folder-row-label span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ayah-folder-row-label span { min-width: 0; overflow-wrap: anywhere; } /* names whole, wrapped -- never cut with "…" (the Owner, 8 Oct 2026) */
   .ayah-folder-new-here { flex: 0 0 auto; width: 32px; height: 32px; background: none; border: none; color: var(--card-link); font-size: 1.15rem; cursor: pointer; }
   .ayah-folder-empty { color: var(--card-text-muted); font-size: 0.84rem; }
   .ayah-folder-new-root { align-self: flex-start; background: none; border: none; color: var(--card-link); padding: 0.4rem 0.1rem; cursor: pointer; font-family: inherit; }
