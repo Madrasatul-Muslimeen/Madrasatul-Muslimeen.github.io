@@ -2528,6 +2528,8 @@ const readRef = readingRef; // round 22: #readRef is retired, see readingRef abo
   await openRead(page);
 
   // --- 33a the bar itself -------------------------------------------------
+  // Updated in place 8 Oct 2026 (the Owner: "May be beside the tick button"): #readBackSlot, the place a way back
+  // docks (js/back-dock.js), sits right before #readCompleteBtn; empty, it takes no room.
   // Round 22 rebuilt this row again: the pickers took the name line's place
   // (they say what is being read AND change it), and Play/Stop/Full screen
   // came up from the retired transport row. All five are icons now.
@@ -2565,7 +2567,7 @@ const readRef = readingRef; // round 22: #readRef is retired, see readingRef abo
   // v09.36 (Owner, 2 Oct 2026, "the ☰ Surah list button at the top left. go") -- #readListBtn leads the row (shown only on the Read -> list route, body.read-from-contents). Updated in place, reason recorded.
   // v09.81 (Owner, 5 Oct 2026, the Ayah window: "So go it") -- #readWindowBtn (🗗, PC only) joined the row after #hideChromeBtn. Updated in place, reason recorded.
   check("33a the read bar is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · Reading complete · ⋮ slot",
-        bar.ids.join() === "readListBtn,mushafPageRef,readApproachBar,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,hideChromeBtn,readWindowBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readWritingBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot",
+        bar.ids.join() === "readListBtn,mushafPageRef,readApproachBar,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,hideChromeBtn,readWindowBtn,readTextSizeSlot,readBookmarkBtn,readBackSlot,readCompleteBtn,readWritingBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot",
         JSON.stringify(bar.ids));
   check("33a the '◂ Mastery Wheel' button is gone (the Read tab does it)", bar.noBack);
   check("33a the separate Pause button is gone", bar.noSeparatePause);
@@ -3300,6 +3302,7 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
   // Next unit, Play, Stop, Full screen, ⋮ slot, whether or not the inner
   // pair happens to be visible for the current unit type. The multi-student
   // round added Bookmark right before the ⋮ slot.
+  // 8 Oct 2026 -- see the 33a note: #readBackSlot (the docked way back) sits right before ✓.
   // v08.30 -- see the 33a note: Reading complete and its announcer joined.
   // v08.89 -- see the 33a note: #mushafPageRef leads the row (hidden outside Mushaf).
   // v08.103 (issue #348, Owner decision 18) -- #readUnitChip, the gold chip
@@ -3310,7 +3313,7 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
   // v09.36 (Owner, 2 Oct 2026, "the ☰ Surah list button at the top left. go") -- #readListBtn leads the row (shown only on the Read -> list route, body.read-from-contents). Updated in place, reason recorded.
   // v09.81 (Owner, 5 Oct 2026, the Ayah window: "So go it") -- #readWindowBtn (🗗, PC only) joined the row after #hideChromeBtn. Updated in place, reason recorded.
   check("37a the row is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · Reading complete · ⋮ slot",
-        m.barKids.join() === "readListBtn,mushafPageRef,readApproachBar,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,hideChromeBtn,readWindowBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readWritingBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot", JSON.stringify(m.barKids));
+        m.barKids.join() === "readListBtn,mushafPageRef,readApproachBar,readUnitChip,prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,readQuickRow,hideChromeBtn,readWindowBtn,readTextSizeSlot,readBookmarkBtn,readBackSlot,readCompleteBtn,readWritingBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot", JSON.stringify(m.barKids));
   // `space-between` would leave large, uneven gaps between controls, which
   // is exactly how a stale `space-between` survived this round's first
   // attempt -- checking the gaps directly catches that regardless of how

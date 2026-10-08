@@ -62,6 +62,7 @@
 // stays one click away exactly as the owner asked for "when there are only
 // a few bookmarks (before placing them [in] organised folders)".
 
+import { placeInDock } from "./back-dock.js";
 import {
   getBookmarks, rootFolders, childFolders, bookmarksInFolder, unfiledBookmarks, groupBookmarksByPerson,
   groupBookmarksByModule, livePresets, renameFolder, saveFolderOrder, lastPlaceOf, lastActOf, markBookmarkUsed,
@@ -196,6 +197,14 @@ export function mountBackRow(text, { href = null, onBack = null, id = null } = {
   // Sit just above a bar fixed to the bottom of the screen (the Qur'an page's Study / Explore tabs), never on it.
   const pageFixed = new Set(), settleUntil = Date.now() + 1500;
   const lift = () => {
+    // The Owner, 8 Oct 2026: beside ✓ on the Read bar whenever the page offers a place for it (back-dock.js).
+    const wasDocked = row.classList.contains("bm-back-docked");
+    if (placeInDock(row, "bm-back-docked")) {
+      row.style.bottom = ""; row.style.display = ""; row.style.visibility = ""; row.dataset.bmBackAside = "";
+      return;
+    }
+    // Just left the dock: the view is still switching, so what covers the spot now may be the view going away.
+    if (wasDocked) { setTimeout(lift, 300); setTimeout(lift, 900); }
     row.style.visibility = "hidden";
     let top = window.innerHeight;
     for (const x of [16, window.innerWidth / 2]) {

@@ -8,7 +8,8 @@
 //   --mutate=no-times   the 🕘 button does nothing          -> the hide checks fail
 //   --mutate=no-stamp   opening does not stamp usedAt        -> the stamp checks fail
 //   --mutate=no-back    the Back row is never mounted        -> the Back checks fail
-//   --mutate=no-aside   the chip no longer steps aside       -> the Word Card check fails
+//   --mutate=no-aside   the chip no longer steps aside       -> (floating path only; this suite now meets the chip docked)
+//   --mutate=no-dock    the chip never docks beside ✓        -> the dock checks fail (8 Oct 2026)
 //   --mutate=raw-label  the page name is the heading's whole text -> the name check fails
 import { chromium, newContext, openPage } from "./harness.mjs";
 import fs from "node:fs";
@@ -31,6 +32,7 @@ async function routeMutation(ctx) {
   else if (MUTATE === "no-stamp") body = swap(body, "const write = markBookmarkUsed(db, tenantId, personId, bookmarkId)", "const write = Promise.resolve()");
   else if (MUTATE === "no-back") body = swap(body, "  mountBookmarkBack(navBarEl);\n", "");
   else if (MUTATE === "no-aside") body = swap(body, "    row.style.display = covered ? \"none\" : \"\";\n", "");
+  else if (MUTATE === "no-dock") body = swap(body, 'if (placeInDock(row, "bm-back-docked")) {', "if (false) {");
   else if (MUTATE === "raw-label") body = swap(body, "  return (copy.textContent || \"\")", "  return (h1.textContent || \"\")");
   else throw new Error(`unknown mutation ${MUTATE}`);
   await ctx.route("**/js/bookmark-nav.js", (r) => r.fulfill({ status: 200, contentType: js, body }));
@@ -105,12 +107,54 @@ for (const lang of ["en", "bn"]) for (const width of [390, 1280]) {
     const overlaps = shown && !(r.bottom <= c.top || r.top >= c.bottom || r.right <= c.left || r.left >= c.right);
     return { card: true, row: true, shown, overlaps, rowTop: Math.round(r.top) };
   });
-  check(`${tag}: with the Word Card open, the Back bubble does not sit over the card`, overCard.card && overCard.row && !overCard.overlaps, JSON.stringify(overCard));
+  // Updated in place 8 Oct 2026 (the Owner: "Not a proper place for back button ... May be beside the tick button"):
+  // in the Read view the chip is part of the Read bar, beside ✓, so the Word Card opening over that bar covers it;
+  // what must hold is that the chip never draws OVER the card -- the card is what is on top at the chip's spot.
+  const overCard2 = await P.evaluate(() => {
+    const card = document.querySelector(".quran-word-card"), row = document.querySelector("[data-bm-back]");
+    if (!card || !row) return { card: !!card, row: !!row };
+    const r = row.getBoundingClientRect(), c = card.getBoundingClientRect();
+    const overlaps = r.width > 0 && !(r.bottom <= c.top || r.top >= c.bottom || r.right <= c.left || r.left >= c.right);
+    const x = Math.min(Math.max(r.left + r.width / 2, c.left + 1), c.right - 1), y = Math.min(Math.max(r.top + r.height / 2, c.top + 1), c.bottom - 1);
+    const atSpot = document.elementFromPoint(x, y);
+    return { overlaps, cardOnTop: !overlaps || (!!atSpot && card.contains(atSpot)), docked: row.classList.contains("bm-back-docked") };
+  });
+  check(`${tag}: with the Word Card open, the Back chip never sits over the card (the card is on top)`, overCard.card && overCard.row && overCard2.cardOnTop, JSON.stringify({ overCard, overCard2 }));
   if (SHOTS) await P.screenshot({ path: `${SHOTS}/bm-${tag.replace("/", "-")}-wordcard.png` });
   await P.click(".quran-word-card [data-word-card-close]").catch(() => {});
   await P.waitForTimeout(400);
-  const after = await P.evaluate(() => { const row = document.querySelector("[data-bm-back]"), r = row?.getBoundingClientRect(); return { shown: !!row && getComputedStyle(row).display !== "none" && r.width > 0, low: !!r && r.top > innerHeight * 0.5 }; });
-  check(`${tag}: ...and it comes back, at the bottom, when the card closes`, after.shown && after.low, JSON.stringify(after));
+  // Updated in place 8 Oct 2026: when the card closes the chip is where the Owner asked for it -- in the Read bar,
+  // right before ✓, on the same line, at least 40px tall, nothing covering it.
+  const after = await P.evaluate(() => {
+    const row = document.querySelector("[data-bm-back]"), r = row?.getBoundingClientRect(), tick = document.getElementById("readCompleteBtn").getBoundingClientRect();
+    const a = row?.querySelector("[data-bm-back-link]"), b = a?.getBoundingClientRect();
+    return { shown: !!row && getComputedStyle(row).display !== "none" && r.width > 0, inBar: !!row && row.parentElement?.id === "readBackSlot" && !!row.closest("#readBar"),
+      beforeTick: !!row && row.parentElement?.nextElementSibling?.id === "readCompleteBtn", sameLine: !!r && Math.abs((r.top + r.bottom) / 2 - (tick.top + tick.bottom) / 2) < 6,
+      h: b ? Math.round(b.height) : 0, top: !!b && document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2)?.closest("[data-bm-back-link]") === a,
+      inside: !!r && r.left >= 0 && r.right <= innerWidth + 1 };
+  });
+  check(`${tag}: ...and when the card closes it is in the Read bar, right before ✓, on the same line`, after.shown && after.inBar && after.beforeTick && after.sameLine && after.inside, JSON.stringify(after));
+  check(`${tag}: ...at least 40px tall, with nothing covering it`, after.h >= 40 && after.top, JSON.stringify(after));
+  // The Study menu (Read / Note / Writing sheet) opens without the chip lying over it (the Owner's screenshot).
+  await P.click("#tabStudyBtn"); await P.waitForTimeout(250);
+  const menu = await P.evaluate(() => {
+    const items = [...document.querySelectorAll("#studyPillarMenu button")].filter((b) => b.getBoundingClientRect().width > 0);
+    return { n: items.length, clear: items.every((b) => { const q = b.getBoundingClientRect(); const at = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return !!at && b.contains(at); }) };
+  });
+  check(`${tag}: with the Study menu open, every one of its items is clear (no Back chip over it)`, menu.n >= 2 && menu.clear, JSON.stringify(menu));
+  await P.click("#tabStudyBtn"); await P.waitForTimeout(200);
+  // Off the Read view (the Approach view has no Read bar) the chip floats again, so the way back is never lost.
+  await P.click("#tabApproachBtn").catch(() => {}); await P.waitForTimeout(400);
+  const off = await P.evaluate(() => { const row = document.querySelector("[data-bm-back]"), r = row?.getBoundingClientRect(); return { docked: row?.classList.contains("bm-back-docked"), parent: row?.parentElement?.tagName, shown: !!row && getComputedStyle(row).display !== "none" && r.width > 0 }; });
+  // On a phone the Approach view is the page itself, so the chip floats there. On a PC that view is a window laid over
+  // the page, and the floating chip's own rule (6 Oct 2026) steps aside under a window until it goes -- so there the
+  // check is that it has left the dock, and that it comes back beside ✓ on the Read view (below).
+  if (width < 900) check(`${tag}: off the Read view the chip floats again and is still there`, off.docked === false && off.parent === "BODY" && off.shown, JSON.stringify(off));
+  else check(`${tag}: off the Read view the chip leaves the Read bar`, off.docked === false && off.parent === "BODY", JSON.stringify(off));
+  await P.click("#tabStudyBtn").catch(() => {}); await P.waitForTimeout(150);
+  await P.click("#tabReadBtn").catch(() => {}); await P.waitForTimeout(400);
+  const again = await P.evaluate(() => { const row = document.querySelector("[data-bm-back]"), r = row?.getBoundingClientRect(); return { docked: row?.classList.contains("bm-back-docked"), slot: row?.parentElement?.id, shown: !!row && r.width > 0 && getComputedStyle(row).display !== "none" }; });
+  check(`${tag}: back on the Read view it is beside ✓ again`, again.docked && again.slot === "readBackSlot" && again.shown, JSON.stringify(again));
   if (SHOTS) await P.screenshot({ path: `${SHOTS}/bm-${tag.replace("/", "-")}-back.png` });
   if (back) { await Promise.all([P.waitForURL(/about\.html$/, { timeout: 15000 }).catch(() => {}), P.click("[data-bm-back-link]")]); }
   check(`${tag}: Back goes there`, /about\.html$/.test(P.url()), P.url());
