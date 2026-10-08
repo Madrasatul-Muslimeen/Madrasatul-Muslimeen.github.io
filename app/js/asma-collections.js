@@ -520,12 +520,16 @@ export async function getAsmaCollectionsDoc(db, tenantId) {
  *  through safeWrite(); the caller rolls the optimistic in-memory change
  *  back on failure. */
 export async function saveAsmaCollections(db, { tenantId, collections, extraNames, overrides, overridesEn, refOverrides, classifications, docExists, uid }) {
+  // 8 Oct 2026, a data-loss fix: asma-study.js saves WITHOUT overridesEn, refOverrides and classifications, and this
+  // used to write them as {} / the seeded two, so a collection change made there wiped the Owner's English meaning
+  // corrections, reference corrections and own classifications. On an UPDATE a field the caller did not pass is now
+  // left out (Firestore keeps it); on a CREATE the defaults are written as before.
   const payload = {
     collections,
     extraNames,
     nameOverrides: overrides,
-    nameOverridesEn: overridesEn ?? {},
-    nameRefOverrides: refOverrides ?? {},
+    ...(overridesEn !== undefined || !docExists ? { nameOverridesEn: overridesEn ?? {} } : {}),
+    ...(refOverrides !== undefined || !docExists ? { nameRefOverrides: refOverrides ?? {} } : {}),
     // Classifications round -- 23 Sep 2026, additive on this SAME document
     // (no new collection, no new read, no Rules change -- firestore.rules'
     // own `allow update: if canAdminCatalogue(tenantId)` for this document
@@ -534,12 +538,34 @@ export async function saveAsmaCollections(db, { tenantId, collections, extraName
     // tenant that has never touched classifications still writes a real,
     // resolvable value rather than an empty array that would out-race the
     // seed on the next read.
-    classifications: classifications ?? DEFAULT_ASMA_CLASSIFICATIONS.map(normalizeClassification),
+    ...(classifications !== undefined || !docExists ? { classifications: classifications ?? DEFAULT_ASMA_CLASSIFICATIONS.map(normalizeClassification) } : {}),
     tenantId,
   };
   if (docExists) {
     await updateDocument(db, TENANT.ASMA_COLLECTIONS, tenantId, payload);
   } else {
     await createDocument(db, TENANT.ASMA_COLLECTIONS, tenantId, payload, uid);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// The madrasah's own description of a Name (decision 87, 8 Oct 2026; asma-descriptions.js). One field of the same
+// document, nameDescriptions.<number>, written alone so nothing else on the document is touched. An empty text
+// removes the madrasah's description from view by storing "" (nothing is deleted, I4); the poster then falls back.
+// ---------------------------------------------------------------------------
+
+/** { [number]: text } from the document (an empty object when it has none). */
+export function asmaDescriptionsFrom(docData) {
+  const d = docData?.nameDescriptions;
+  return d && typeof d === "object" ? { ...d } : {};
+}
+
+export async function saveAsmaDescription(db, { tenantId, number, text, docExists, uid }) {
+  const n = String(number);
+  if (!/^\d{1,4}$/.test(n)) throw new Error(`Invalid Name number "${number}".`);
+  if (docExists) {
+    await updateDocument(db, TENANT.ASMA_COLLECTIONS, tenantId, { [`nameDescriptions.${n}`]: String(text ?? "") });
+  } else {
+    await createDocument(db, TENANT.ASMA_COLLECTIONS, tenantId, { tenantId, nameDescriptions: { [n]: String(text ?? "") } }, uid);
   }
 }

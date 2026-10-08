@@ -3829,4 +3829,16 @@ export const BN = {
   "Record your progress for the whole Surah": "পুরো সূরার জন্য আপনার অগ্রগতি লিখে রাখুন",
   "Could not record this, so nothing was saved. Please try again.": "এটি লেখা যায়নি, তাই কিছু সংরক্ষিত হয়নি। আবার চেষ্টা করুন।",
   "{approach} recorded as {status}": "{approach} লেখা হলো: {status}",
+  // 8 Oct 2026 (decision 87): whose description a Name's poster shows (asma-descriptions.js).
+  "Poster's": "পোস্টারের", // ?
+  "Suggested": "প্রস্তাবিত", // ?
+  "Madrasah's": "মাদরাসার", // ?
+  "Whose description": "কার বর্ণনা", // ?
+  "From the poster's creator.": "পোস্টার নির্মাতার লেখা।", // ?
+  "A suggestion, written from this Name's Qur'an and Hadith references.": "একটি প্রস্তাব, এই নামের কুরআন ও হাদীসের সূত্র থেকে লেখা।", // ?
+  "The madrasah's own description, saved for everyone.": "মাদরাসার নিজস্ব বর্ণনা, সবার জন্য সংরক্ষিত।", // ?
+  "Edit the madrasah's description": "মাদরাসার বর্ণনা সম্পাদনা করুন", // ?
+  "Start from the text shown, change it, then save. Everyone in the madrasah will see it.": "দেখানো লেখা থেকে শুরু করুন, বদলান, তারপর সংরক্ষণ করুন। মাদরাসার সবাই এটি দেখবে।", // ?
+  "Save for the madrasah": "মাদরাসার জন্য সংরক্ষণ করুন", // ?
+  "Not saved. Check the connection and try again.": "সংরক্ষিত হয়নি। সংযোগ দেখে আবার চেষ্টা করুন।", // ?
 };

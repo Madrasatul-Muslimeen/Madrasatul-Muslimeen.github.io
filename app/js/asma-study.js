@@ -38,13 +38,14 @@ import { ASMA_NAMES } from "./asma-data.js";
 import { ASMA_POSTERS } from "./asma-posters.js";
 import { renderAsmaGrid, renderAsmaDetail, renderAsmaScreensaverSlide, renderAsmaCollectionListHtml, renderAsmaPosterHtml, asmaEntryDisplayName } from "./asma-renderer.js";
 import { fitAsmaPosters, wireAsmaPosterRefs } from "./asma-poster.js";
+import { mountPosterWithDescriptions } from "./asma-descriptions.js";
 import { renderScopedWheel, renderWheelLegend, attachScopedWheelClickHandler } from "./mastery-wheel.js";
 import {
   collectionsFrom, extraNamesFrom, overridesFrom, activeCollections, activeExtraNames,
   addCollection, renameCollection, setCollectionStatus,
   addItem as asmaAddItemLocal, removeItem as asmaRemoveItemLocal, moveItem as asmaMoveItemLocal,
   updateExtraName, setExtraNameStatus, setNameOverrideBn,
-  getAsmaCollectionsDoc, saveAsmaCollections, resolveAsmaEntry,
+  getAsmaCollectionsDoc, saveAsmaCollections, resolveAsmaEntry, asmaDescriptionsFrom, saveAsmaDescription,
 } from "./asma-collections.js";
 import {
   renderGuideTab, renderTrackTab, renderBreakdownTab, renderWayModalShell, attachWayModalHandlers,
@@ -153,6 +154,7 @@ export function initAsmaStudyPage() {
   let asmaCollections = null;
   let asmaExtraNames = null;
   let asmaOverrides = {};
+  let asmaDescriptions = {}; // 8 Oct 2026 (decision 87): the madrasah's own description per Name (nameDescriptions)
   let asmaCollectionsDocExists = false;
   let asmaCollectionsTenantId = null; // which tenant the above was loaded for
   let asmaCatCurrentId = null;
@@ -214,12 +216,14 @@ export function initAsmaStudyPage() {
       asmaCollections = collectionsFrom(docData);
       asmaExtraNames = extraNamesFrom(docData);
       asmaOverrides = overridesFrom(docData);
+      asmaDescriptions = asmaDescriptionsFrom(docData);
     } catch (err) {
       console.warn("Couldn't read this tenant's saved Asma collections yet (showing the built-in defaults instead):", err.message);
       asmaCollectionsDocExists = false;
       asmaCollections = collectionsFrom(null);
       asmaExtraNames = extraNamesFrom(null);
       asmaOverrides = {};
+      asmaDescriptions = {};
     }
     asmaCollectionsTenantId = activeTenantId;
   }
@@ -891,11 +895,28 @@ export function initAsmaStudyPage() {
   // ---------------------------------------------------------------------
   function openPosterView(entry) {
     if (!posterOverlay || !posterMount) return;
-    posterMount.innerHTML = renderAsmaPosterHtml(entry, "standalone", { interactive: true });
     posterOverlay.classList.add("open");
-    fitAsmaPosters(posterMount);
-    // Decision 85: an Ayah opens in QuranRevival (its own ?goto= deep link); a Hadith opens in the Hadith library.
-    wireAsmaPosterRefs(posterMount, { onQuran: (surah, ayah) => { location.href = `./quranrevival.html?goto=${surah}:${ayah}&back=1`; } });
+    // Decision 87 (8 Oct 2026): a strip above the poster picks whose description it shows; owner/prime edit the
+    // madrasah's own, saved for everyone (asma-descriptions.js).
+    mountPosterWithDescriptions(posterMount, {
+      entry,
+      madrasahDescriptions: asmaDescriptions,
+      canEdit: canManageAsmaCollections(),
+      renderPoster: (description) => renderAsmaPosterHtml(entry, "standalone", { interactive: true, description }),
+      afterRender: () => {
+        fitAsmaPosters(posterMount);
+        // Decision 85: an Ayah opens in QuranRevival (its own ?goto= deep link); a Hadith opens in the Hadith library.
+        wireAsmaPosterRefs(posterMount, { onQuran: (surah, ayah) => { location.href = `./quranrevival.html?goto=${surah}:${ayah}&back=1`; } });
+      },
+      onSave: async (text) => {
+        const res = await safeWrite(
+          () => saveAsmaDescription(db, { tenantId: activeTenantId, number: entry.number, text, docExists: asmaCollectionsDocExists, uid: auth.currentUser.uid }),
+          { collection: TENANT.ASMA_COLLECTIONS, docId: activeTenantId, action: "save a Name's description" }
+        );
+        if (res.ok) { asmaCollectionsDocExists = true; asmaDescriptions = { ...asmaDescriptions, [entry.number]: text }; }
+        return res.ok;
+      },
+    });
   }
 
   function closePosterView() {
