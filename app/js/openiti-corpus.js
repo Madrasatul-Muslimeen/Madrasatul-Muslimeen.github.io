@@ -260,6 +260,16 @@ export async function loadDuaWordLinks(page, { fetchImpl = fetch, baseUrl = DUA_
   });
 }
 
+/** Round 5a of decision 90: one page's dua vowels (dua-vowels.mjs), read with that page of cards, or null. */
+export async function loadDuaVowels(page, { fetchImpl = fetch, baseUrl = DUA_BASE_URL } = {}) {
+  return cached(duaCache, `${baseUrl}vowels-${page}.json`, async () => {
+    const res = await fetchImpl(`${baseUrl}vowels-${page}.json`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.duas ? data : null;
+  });
+}
+
 export async function loadDuaCardsPage(page, { fetchImpl = fetch, baseUrl = DUA_BASE_URL } = {}) {
   return cached(duaCache, `${baseUrl}cards-${page}.json`, async () => {
     const res = await fetchImpl(`${baseUrl}cards-${page}.json`);
