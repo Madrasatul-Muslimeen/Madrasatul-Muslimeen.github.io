@@ -13,7 +13,9 @@
 // every time.
 
 import { t, num } from "./i18n.js";
-import { getAppLang } from "./prefs.js";
+import { getAppLang, quranFontStack } from "./prefs.js";
+import { duaWords, duaNarration } from "./dua-words.js";
+import { loadHadithTranslation, TRANSLATED_BOOKS } from "./hadith-translations.js";
 import { STATUSES, statusLabel } from "./unit-keys.js";
 import { renderAssignDropdown } from "./assign-picker.js";
 import {
@@ -1058,6 +1060,8 @@ function openitiPassageCard(h, conc = null, heLinks = null, duaCtx = null) {
 
   const heIds = heLinks?.get(h.n);
   if (heIds?.length) card.appendChild(openitiTranslationFold(heIds));
+  const std = conc?.stdByN?.get(h.n);
+  if (std) card.appendChild(standardTranslationFolds(conc.versionUri, async () => std));
   const group = duaCtx?.dua.groupOf.get(`${duaCtx.versionUri}:${h.n}`);
   if (group) card.appendChild(duaAlsoNarrated(h, group, duaCtx, conc));
 
@@ -1258,10 +1262,41 @@ function duaCard(c, summary, state, render, progressRows) {
   const dua = { books: summary.books };
   const [ab, an, astd, anum] = c.anchor;
   card.appendChild(el("p", "openiti-standard-number", duaRefLabel(dua, summary.books[ab].versionUri, astd, an, anum)));
-  const text = el("p", "hadith-arabic", c.text);
-  text.lang = "ar"; text.dir = "rtl";
-  card.appendChild(text);
+  // The Owner, 8 Oct 2026: "clean dua words on each card" and "For Dua, I want same Quranic font". The words are
+  // picked out of the narration by dua-words.js (a suggestion until checked); the narration stays one tap away with
+  // the words marked in it. Where none are picked out, the narration shows as before.
+  const picked = duaWords(c.text);
+  if (picked) {
+    const words = el("p", "dua-words", picked.words);
+    words.lang = "ar"; words.dir = "rtl";
+    words.dataset.duaWords = String(c.dua);
+    words.style.fontFamily = quranFontStack();
+    card.appendChild(words);
+    card.appendChild(el("p", "dua-words-note", t("Words picked out by the computer · a person checks them")));
+    const fold = document.createElement("details");
+    fold.className = "dua-narration";
+    fold.dataset.duaNarration = String(c.dua);
+    const sum = document.createElement("summary");
+    sum.textContent = t("The whole narration");
+    fold.appendChild(sum);
+    const full = duaNarration(c.text);
+    const text = el("p", "hadith-arabic");
+    text.lang = "ar"; text.dir = "rtl";
+    const mark = document.createElement("mark");
+    mark.className = "dua-words-mark";
+    mark.textContent = full.slice(picked.start, picked.end);
+    text.append(full.slice(0, picked.start), mark, full.slice(picked.end));
+    fold.appendChild(text);
+    card.appendChild(fold);
+  } else {
+    const text = el("p", "hadith-arabic", c.text);
+    text.lang = "ar"; text.dir = "rtl";
+    card.appendChild(text);
+    card.appendChild(el("p", "dua-words-note", t("The dua's own words are not picked out of this narration yet.")));
+  }
   if (c.hadeethenc?.length) card.appendChild(openitiTranslationFold(c.hadeethenc.map(String)));
+  const anchorUri = summary.books[ab].versionUri;
+  if (TRANSLATED_BOOKS.has(anchorUri)) card.appendChild(standardTranslationFolds(anchorUri, () => loadOpenitiConcordance(anchorUri).then((cc) => cc?.stdByN?.get(an) ?? null).catch(() => null)));
 
   const box = el("div", "dua-also");
   const headP = el("p", "dua-also-head", t("Narrated in {n} places", { n: num(c.members.length) }));
@@ -1345,6 +1380,51 @@ async function fillDuaProgress(rows) {
     paint();
     p.append(row, msg);
   }
+}
+
+/**
+ * Decision 89 (the Owner, 8 Oct 2026: "include the Hadith Eng n Bangla languages"): the English and Bangla
+ * translations from hadith-api, found by the narration's standard number. Two folds, the reader's language first,
+ * each closed and loaded only when opened. `resolveStd` gives the standard number (or null) when first needed.
+ */
+const STANDARD_TRANSLATION_LABELS = { en: "English", bn: "বাংলা" };
+function standardTranslationFolds(versionUri, resolveStd) {
+  const frag = document.createDocumentFragment();
+  const langs = getAppLang() === "bn" ? ["bn", "en"] : ["en", "bn"];
+  for (const lang of langs) {
+    const details = document.createElement("details");
+    details.className = "hadeethenc-explanation standard-translation";
+    details.dataset.standardTranslation = lang;
+    const summary = document.createElement("summary");
+    summary.textContent = t("{lang} translation", { lang: STANDARD_TRANSLATION_LABELS[lang] });
+    details.appendChild(summary);
+    let loaded = false;
+    details.addEventListener("toggle", () => {
+      if (!details.open || loaded) return;
+      loaded = true;
+      const wait = el("p", "hadith-note", t("Loading…"));
+      details.appendChild(wait);
+      Promise.resolve(resolveStd()).then((std) => (std ? loadHadithTranslation(versionUri, std, lang) : null)).then((tr) => {
+        wait.remove();
+        if (!tr) { details.appendChild(el("p", "hadith-note", t("No {lang} translation was found for this narration.", { lang: STANDARD_TRANSLATION_LABELS[lang] }))); return; }
+        const text = el("p", "hadith-translation-text standard-translation-text", tr.text);
+        text.lang = lang;
+        text.dataset.standardTranslationText = lang;
+        details.appendChild(text);
+        const credit = document.createElement("a");
+        credit.className = "hadith-view-source standard-translation-credit";
+        credit.href = tr.sourceUrl;
+        credit.target = "_blank";
+        credit.rel = "noopener noreferrer";
+        credit.textContent = tr.translator
+          ? t("Translation: {who} · from hadith-api (fawazahmed0), matched by the standard number", { who: tr.translator })
+          : t("Translation from hadith-api (fawazahmed0), matched by the standard number");
+        details.appendChild(credit);
+      }).catch(() => { wait.remove(); details.appendChild(el("p", "hadith-note", t("The translation could not be loaded right now."))); loaded = false; });
+    });
+    frag.appendChild(details);
+  }
+  return frag;
 }
 
 /**

@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "6d3c1d47b3b467a4bc25e44442497bde6c81402c",
     "baselineRecordedOn": "2026-09-23",
-    "version": "09.127",
+    "version": "09.130",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -2705,8 +2705,44 @@
     {
       "version": "09.127",
       "owner": "quran",
-      "status": "LIVE",
+      "status": "RELEASED",
       "note": "Āyah card: Take Note gets its own door (Notes box open, cursor in it); 👥 recording proven on the card.",
+      "integration": {
+        "authorizedOn": "2026-10-08",
+        "integratedOn": "2026-10-08",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.128",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "The Āyah card's File in folder(s): section name, 📚 all sections, ◀ ▶, section picker, 🎨 folder text.",
+      "integration": {
+        "authorizedOn": "2026-10-08",
+        "integratedOn": "2026-10-08",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.129",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "Each Dua card shows the dua's own words large in the Quranic font; the whole narration one tap away, words marked.",
+      "integration": {
+        "authorizedOn": "2026-10-08",
+        "integratedOn": "2026-10-08",
+        "method": "MERGE_PR",
+        "reference": "CHANGELOG.md"
+      }
+    },
+    {
+      "version": "09.130",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "English and Bangla translations of eight hadith books on every numbered narration and Dua card.",
       "integration": {
         "authorizedOn": "2026-10-08",
         "integratedOn": "2026-10-08",
@@ -2715,8 +2751,11 @@
       }
     }
   ],
-  "nextUnallocated": "09.128",
+  "nextUnallocated": "09.131",
   "nextUnallocatedNote": [
+    "v09.130 was allocated to Hadith in English and Bangla, 2026-10-08.",
+    "v09.129 was allocated to Dua cards: the dua's own words, in the Quranic font, 2026-10-08.",
+    "v09.128 was allocated to File in folder(s): Siyagah's header, 2026-10-08.",
     "v09.127 was allocated to the Āyah card's Take Note opens the Note view ready to write, 2026-10-08.",
     "v09.126 was allocated to File in folder(s): full screen, Back, keyboard stays, faster, folders fold, 2026-10-08.",
     "v09.125 was allocated to the Word card's You know box says of the Qur'an once, 2026-10-08.",

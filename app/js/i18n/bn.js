@@ -2283,6 +2283,23 @@ export const BN = {
   "Collapse {name}": "{name} বন্ধ করুন",
   "Expand {name}": "{name} খুলুন",
   "({count} ticked inside)": "(ভেতরে {count}টি টিক দেওয়া)",
+  // Siyagah's header in "File in folder(s)" (the Owner, 8 Oct 2026).
+  "All sections": "সব সেকশন",
+  "Not in a section": "কোনো সেকশনে নেই",
+  "Every section at once": "একসাথে সব সেকশন",
+  "Previous section": "আগের সেকশন",
+  "Next section": "পরের সেকশন",
+  "Jump to a section": "একটি সেকশনে যান",
+  "Folder text: size, colour, bold": "ফোল্ডারের লেখা: আকার, রং, মোটা",
+  "Folder text": "ফোল্ডারের লেখা",
+  "Kept on this device only.": "শুধু এই ডিভাইসে রাখা হয়।",
+  "Size": "আকার",
+  "Default": "স্বাভাবিক",
+  "Gold": "সোনালি",
+  "Sky": "আকাশি",
+  "Mint": "পুদিনা সবুজ",
+  "Rose": "গোলাপি",
+  "White": "সাদা",
   "Next Name": "পরের নাম",
   "Groups for {name}": "{name}-এর গ্রুপসমূহ", // ?
   "Tick every group this Name belongs to. Untick one and tick another to move it.": "এই নামটি যেসব গ্রুপে রাখতে চান সবগুলোতে টিক দিন। সরাতে চাইলে একটি থেকে টিক তুলে অন্যটিতে টিক দিন।", // ?
@@ -3102,6 +3119,14 @@ export const BN = {
   "Duas {from}–{to} of {total}, most narrated first. Each dua's narrations were found by matching words and are still to be checked.": "দুআ {from}–{to}, মোট {total}টির মধ্যে, সবচেয়ে বেশি বর্ণিতগুলো আগে। প্রতিটি দুআর বর্ণনাগুলো শব্দ মিলিয়ে পাওয়া, যাচাই এখনও বাকি।", // ?
   "Dua {n}": "দুআ {n}", // ?
   "Narrated in {n} places": "{n}টি স্থানে বর্ণিত", // ?
+  "Words picked out by the computer · a person checks them": "কম্পিউটার দোয়ার শব্দগুলো বেছে নিয়েছে · একজন মানুষ তা যাচাই করবেন",
+  "The whole narration": "পুরো বর্ণনা",
+  "{lang} translation": "{lang} অনুবাদ",
+  "No {lang} translation was found for this narration.": "এই বর্ণনার কোনো {lang} অনুবাদ পাওয়া যায়নি।",
+  "Translation: {who} · from hadith-api (fawazahmed0), matched by the standard number": "অনুবাদ: {who} · hadith-api (fawazahmed0) থেকে, প্রচলিত নম্বর মিলিয়ে",
+  "Translation from hadith-api (fawazahmed0), matched by the standard number": "অনুবাদ hadith-api (fawazahmed0) থেকে, প্রচলিত নম্বর মিলিয়ে",
+  "The translation could not be loaded right now.": "অনুবাদটি এখন লোড করা যায়নি।",
+  "The dua's own words are not picked out of this narration yet.": "এই বর্ণনা থেকে দোয়ার শব্দগুলো এখনো আলাদা করা হয়নি।",
   "← Back to Dua {n}": "← দুআ {n}-এ ফিরে যান", // ?
   "My progress on this dua": "এই দুআয় আমার অগ্রগতি", // ?
   "Progress could not be loaded right now.": "অগ্রগতি এখন আনা যায়নি।", // ?

@@ -3923,7 +3923,26 @@
   .ayah-folder-fold, .ayah-folder-fold-space { flex: 0 0 auto; width: 40px; height: 40px; }
   .ayah-folder-fold { background: none; border: none; color: var(--card-link); font-size: 1.1rem; cursor: pointer; border-radius: 8px; }
   .ayah-folder-fold:hover { background: rgba(255,255,255,0.08); }
-  .ayah-folder-inside { color: var(--card-text-muted); font-size: 0.78rem; font-weight: 400; white-space: nowrap; }
+  .ayah-folder-inside { color: var(--card-text-muted); font-size: 0.78em; font-weight: 400; white-space: nowrap; }
+  /* Siyagah's header (the Owner, 8 Oct 2026). */
+  .ayah-folder-nav { position: relative; display: flex; flex-direction: column; gap: 0.4rem; }
+  .ayah-folder-nav:empty { display: none; }
+  .ayah-folder-sec-title { font-weight: 600; font-size: 0.95rem; color: var(--card-text); overflow-wrap: anywhere; }
+  .ayah-folder-sec-nav { display: flex; gap: 0.35rem; align-items: center; }
+  .ayah-folder-nb { flex: 0 0 auto; width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--card-line); background: rgba(255,255,255,0.06); color: var(--card-text); font-size: 1rem; cursor: pointer; display: grid; place-items: center; padding: 0; }
+  .ayah-folder-nb.on { border-color: var(--card-link); box-shadow: 0 0 0 1px var(--card-link) inset; }
+  .ayah-folder-sec-sel { flex: 1 1 auto; min-width: 0; height: 42px; border-radius: 999px; border: 1px solid var(--card-line); background: rgba(255,255,255,0.06); color: var(--card-text); font: 600 0.82rem 'Inter', sans-serif; padding: 0 0.7rem; }
+  .ayah-folder-sec-sel option { color: #111; }
+  .ayah-folder-sechead { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--card-text-muted); padding: 0.6rem 0.2rem 0.1rem; overflow-wrap: anywhere; }
+  .ayah-folder-font-pop { position: absolute; right: 0; top: 100%; z-index: 5; width: min(17rem, 100%); margin-top: 0.3rem; background: var(--card-bg-inset); border: 1px solid var(--card-line); border-radius: 12px; padding: 0.7rem; box-shadow: 0 10px 30px rgba(0,0,0,0.45); display: grid; gap: 0.45rem; }
+  .ayah-folder-font-hd { display: flex; justify-content: space-between; align-items: center; font-weight: 700; }
+  .ayah-folder-font-lbl { font-size: 0.85rem; }
+  .ayah-folder-font-row { display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center; }
+  .ayah-folder-font-btn { min-height: 38px; min-width: 38px; padding: 0 0.6rem; border-radius: 8px; border: 1px solid var(--card-line); background: rgba(255,255,255,0.06); color: var(--card-text); cursor: pointer; font: 600 0.85rem 'Inter', sans-serif; }
+  .ayah-folder-font-btn.on { border-color: var(--card-link); color: var(--card-link); }
+  .ayah-folder-font-sw { width: 34px; height: 34px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
+  .ayah-folder-font-sw.on { border-color: var(--card-text); }
+  .ayah-folder-font-note { margin: 0; color: var(--card-text-muted); font-size: 0.75rem; }
   .ayah-folder-row { gap: 0.1rem; }
   #ayahFolderFilingPickerMount .ayah-folder-actions button { min-height: 44px; }
 
@@ -6448,11 +6467,11 @@
     import { resolveUnitInfo, ladderRungsForAyah } from "./js/unit-resolve.js";
     import { unitBoundaryMarkersInWindow } from "./js/unit-markers.js";
     import { renderEndOfUnitPromptHtml, attachEndOfUnitPromptHandlers } from "./js/end-of-unit-prompt.js";
-    import { renderAyahFolderPickerHtml, renderAyahFolderTreeHtml, attachAyahFolderPickerHandlers } from "./js/ayah-folder-filing-renderer.js";
+    import { renderAyahFolderPickerHtml, renderAyahFolderTreeHtml, renderAyahFolderNavHtml, folderScopeOrder, attachAyahFolderPickerHandlers } from "./js/ayah-folder-filing-renderer.js";
     import { planFolderFilings } from "./js/ayah-folder-filing-plan.js";
     import { createStudyNote, notesForStudyUnit } from "./js/study-note-service.js";
     import { createNoteFolder, createNotePlacement, retireNotePlacement, NOTE_STATUS, listNoteSourcesForOwnerPage } from "./js/note-foundation.js";
-    import { ownerFolderTreePaged, ownerFolderTreePagedSharded, noteFilings, folderContents } from "./js/journey-map-service.js";
+    import { ownerFolderTreePaged, ownerFolderTreePagedSharded, loadAllOwnerSections, noteFilings, folderContents } from "./js/journey-map-service.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { mountBookmarkMenu, mountBackRow } from "./js/bookmark-nav.js";
     import { placeInDock } from "./js/back-dock.js";
@@ -19723,8 +19742,13 @@
     function loadAyahFolderTree() {
       const key = ayahFolderTreeKey();
       if (ayahFolderTreeLoading?.key === key) return ayahFolderTreeLoading.promise;
-      const promise = ownerFolderTreePagedSharded(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId })
-        .then((tree) => { ayahFolderTreeCache = { key, tree }; return tree; })
+      // The sections come with the tree (Siyagah's header groups the folders by them); if they cannot be read, the
+      // chooser simply shows no header.
+      const promise = Promise.all([
+        ownerFolderTreePagedSharded(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId }),
+        loadAllOwnerSections(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, status: NOTE_STATUS.ACTIVE }).then((r) => r.rows).catch(() => []),
+      ])
+        .then(([folders, sections]) => { const tree = { ...folders, sections }; ayahFolderTreeCache = { key, tree }; return tree; })
         .finally(() => { if (ayahFolderTreeLoading?.promise === promise) ayahFolderTreeLoading = null; });
       ayahFolderTreeLoading = { key, promise };
       return promise;
@@ -19734,12 +19758,47 @@
       if (ayahFolderTreeCache?.key === ayahFolderTreeKey() || ayahFolderTreeLoading) return;
       loadAyahFolderTree().catch(() => { /* the chooser loads it again when opened, and says so if it fails */ });
     }
-    /** Redraw the folder list only -- never the search box (the Owner: "On every letter typing, the keyboard goes down"). */
+    /** Redraw the header and the folder list only -- never the search box (the Owner: "On every letter typing, the
+        keyboard goes down"). */
     function redrawAyahFolderTree() {
       const st = ayahFolderFilingState;
       const treeEl = ayahFolderFilingPickerMountEl.querySelector("[data-ayah-folder-tree]");
+      const navEl = ayahFolderFilingPickerMountEl.querySelector("[data-ayah-folder-nav]");
       if (!st || !treeEl) { renderAyahFolderFilingNow(); return; }
-      treeEl.innerHTML = renderAyahFolderTreeHtml({ tree: st.tree, checkedFolderIds: st.checkedFolderIds, searchTerm: st.searchTerm, expandedFolderIds: st.expandedFolderIds });
+      st.scope = validAyahFolderScope(st.tree, st.scope);
+      if (navEl) navEl.innerHTML = renderAyahFolderNavHtml({ tree: st.tree, scope: st.scope, fontOpen: st.fontOpen, font: ayahFolderFont });
+      treeEl.innerHTML = renderAyahFolderTreeHtml({ tree: st.tree, checkedFolderIds: st.checkedFolderIds, searchTerm: st.searchTerm, expandedFolderIds: st.expandedFolderIds, scope: st.scope });
+    }
+
+    // Siyagah's header (the Owner, 8 Oct 2026: "Go ahead with the Siyagah header"). Which section is shown and how
+    // the folder names look are kept on this device, like Siyagah's own: how big names need to be belongs to the
+    // screen they are read on.
+    const AYAH_FOLDER_SCOPE_KEY = "mmsa-ayah-folder-scope", AYAH_FOLDER_FONT_KEY = "mmsa-ayah-folder-font";
+    const AYAH_FOLDER_FONT_DEFAULT = { size: 15, color: "", bold: false };
+    let ayahFolderFont = (() => {
+      try {
+        const v = JSON.parse(localStorage.getItem(AYAH_FOLDER_FONT_KEY) || "null");
+        if (v && typeof v === "object") return { size: Math.min(26, Math.max(11, Number(v.size) || 15)), color: /^#[0-9a-f]{6}$/i.test(v.color || "") ? v.color : "", bold: !!v.bold };
+      } catch { /* unreadable: the default */ }
+      return { ...AYAH_FOLDER_FONT_DEFAULT };
+    })();
+    function applyAyahFolderFont() {
+      let el = document.getElementById("ayahFolderFontCss");
+      if (!el) { el = document.createElement("style"); el.id = "ayahFolderFontCss"; document.head.appendChild(el); }
+      const f = ayahFolderFont;
+      el.textContent = `#ayahFolderFilingPickerMount .ayah-folder-row-label span{font-size:${f.size}px;${f.color ? `color:${f.color};` : ""}${f.bold ? "font-weight:700;" : ""}}`;
+    }
+    applyAyahFolderFont();
+    function validAyahFolderScope(tree, scope) {
+      const order = folderScopeOrder(tree);
+      return scope === "all" || order.includes(scope) ? scope : "all";
+    }
+    function setAyahFolderScope(scope) {
+      const st = ayahFolderFilingState;
+      if (!st) return;
+      st.scope = validAyahFolderScope(st.tree, scope);
+      try { localStorage.setItem(AYAH_FOLDER_SCOPE_KEY, st.scope); } catch { /* private mode: not remembered */ }
+      redrawAyahFolderTree();
     }
 
     async function openAyahFolderFiling(unitKey) {
@@ -19752,6 +19811,8 @@
         unitKey, ref, notes: [], noteId: null, tree: { roots: [] },
         checkedFolderIds: [], searchTerm: "", newFolderUnder: null, busy: true,
         expandedFolderIds: [], // the Owner, 8 Oct 2026: every folder starts collapsed
+        scope: (() => { try { return localStorage.getItem(AYAH_FOLDER_SCOPE_KEY) || "all"; } catch { return "all"; } })(),
+        fontOpen: false,
       };
       ayahFolderFilingOverlayEl.classList.add("open");
       renderAyahFolderFilingNow();
@@ -19831,12 +19892,32 @@
       }
       ayahFolderFilingPickerMountEl.innerHTML = renderAyahFolderPickerHtml({
         tree: st.tree, checkedFolderIds: st.checkedFolderIds, searchTerm: st.searchTerm, newFolderUnder: st.newFolderUnder,
-        expandedFolderIds: st.expandedFolderIds,
+        expandedFolderIds: st.expandedFolderIds, scope: (st.scope = validAyahFolderScope(st.tree, st.scope)), fontOpen: st.fontOpen, font: ayahFolderFont,
       });
       attachAyahFolderPickerHandlers(ayahFolderFilingPickerMountEl, {
         // The Owner, 8 Oct 2026: "On every letter typing, the keyboard goes down." Redraw the list only; the search
         // box is never replaced, so it keeps its focus (and a phone keeps its keyboard up).
         onSearch: (term) => { st.searchTerm = term; redrawAyahFolderTree(); },
+        onScope: (scope) => setAyahFolderScope(scope),
+        onStep: (d) => {
+          const order = folderScopeOrder(st.tree);
+          if (!order.length) return;
+          const i = order.indexOf(st.scope);
+          setAyahFolderScope(i < 0 ? order[d > 0 ? 0 : order.length - 1] : order[(i + d + order.length) % order.length]);
+        },
+        onFontToggle: () => { st.fontOpen = !st.fontOpen; redrawAyahFolderTree(); },
+        onFont: (change) => {
+          const f = { ...ayahFolderFont };
+          if (change.reset) Object.assign(f, AYAH_FOLDER_FONT_DEFAULT);
+          if (change.step) f.size = Math.min(26, Math.max(11, f.size + change.step));
+          if (change.size) f.size = change.size;
+          if ("color" in change) f.color = change.color;
+          if (change.toggleBold) f.bold = !f.bold;
+          ayahFolderFont = f;
+          try { localStorage.setItem(AYAH_FOLDER_FONT_KEY, JSON.stringify(f)); } catch { /* private mode */ }
+          applyAyahFolderFont();
+          redrawAyahFolderTree();
+        },
         // One button per folder: ▸ opens it, the same button (now ▾) closes it again.
         onFold: (folderId) => {
           st.expandedFolderIds = st.expandedFolderIds.includes(folderId) ? st.expandedFolderIds.filter((id) => id !== folderId) : [...st.expandedFolderIds, folderId];
