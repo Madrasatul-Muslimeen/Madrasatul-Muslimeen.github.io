@@ -776,3 +776,4 @@ total). Allocated by the MMSA Architect.
 09.130: Hadith in English and Bangla. Allocated by the MMSA Architect.
 09.131: Dua words, rounds 0 and 1. Allocated by the MMSA Architect.
 09.132: Dua words, rounds 2–4. Allocated by the MMSA Architect.
+09.133: Dua words, round 5a: vowels. Allocated by the MMSA Architect.
