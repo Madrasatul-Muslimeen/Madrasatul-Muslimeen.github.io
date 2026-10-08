@@ -1297,7 +1297,7 @@ function duaCard(c, summary, state, render, progressRows, wordLinks = null, page
         span.tabIndex = 0;
         span.setAttribute("aria-pressed", "false");
         if (idx >= 0) span.classList.add("dua-word-linked");
-        const open = () => showDuaWord(panel, words, span, tok, idx >= 0 ? wordLinks.entries[idx] : null, c.dua, page);
+        const open = () => showDuaWord(panel, words, span, tok, idx >= 0 ? wordLinks.entries[idx] : null, c.dua, page, links.x?.[i] ?? "");
         span.addEventListener("click", open);
         span.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
       }
@@ -1377,12 +1377,34 @@ function duaCard(c, summary, state, render, progressRows, wordLinks = null, page
   return card;
 }
 
+/** Decision 90, rounds 3-4: "S:A:W" from a packed place (surah*1000000 + ayah*1000 + word). */
+function placeOf(n) { return `${Math.floor(n / 1000000)}:${Math.floor(n / 1000) % 1000}:${n % 1000}`; }
+
 /**
- * Decision 90, round 1: the panel under a dua's words for the word tapped. `entry` is the links file's row
- * [place, count, arabic, translit, en, bn, root, lemma, lemmaCount], or null when no Qur'an word is spelled this way.
- * Tapping the same word again closes it.
+ * The way to a Qur'an word's Word card from a Dua card (decision 86): this page's address is first set to reopen this
+ * page of Duas on this card, so the Word card's "Back to Dua n" (history.back) lands here. `progress` (round 4) asks
+ * the Word card to record that Word-by-Word state for the word on arrival -- with a one-use token in this tab's
+ * sessionStorage, so the address alone can never record anything.
  */
-function showDuaWord(panel, words, span, tok, entry, dua, page) {
+function wordCardHref(place, dua) { return `./quranrevival.html?word=${place}&back=1&from=dua-${dua}`; }
+function rememberDuaPlace(page, dua) {
+  try {
+    const u = new URL(location.href);
+    u.searchParams.set("view", "dua"); u.searchParams.set("duaPage", String(page)); u.searchParams.set("dua", String(dua));
+    history.replaceState(history.state, "", u);
+  } catch { /* the link still opens the Word card */ }
+}
+export const DUA_WORD_PROGRESS_TOKEN = "mmsa-dua-word-progress";
+const WBW_STATES = ["not_started", "learning", "practising", "achieved"];
+
+/**
+ * Decision 90, rounds 1-4: the Dua word card under a dua's words, for the word tapped. `entry` is the links file's
+ * row [place, count, arabic, translit, en, bn, root, lemma, lemmaCount, wbwKey, places], or null when no Qur'an word
+ * is spelled this way; `how` says a leading «و»/«ف» was set aside and/or the Qur'an's own spelling was used (round
+ * 2). Round 3: the card on this page -- meanings, root, dictionary word, dictionary links, its places in the Qur'an.
+ * Round 4 (Q1 answered yes): "Achieved" here counts for the same Qur'an word. Tapping the same word again closes it.
+ */
+function showDuaWord(panel, words, span, tok, entry, dua, page, how = "") {
   const wasOpen = span.getAttribute("aria-pressed") === "true";
   words.querySelectorAll(".dua-word[aria-pressed]").forEach((s) => s.setAttribute("aria-pressed", "false"));
   panel.textContent = "";
@@ -1402,7 +1424,7 @@ function showDuaWord(panel, words, span, tok, entry, dua, page) {
     panel.appendChild(el("p", "hadith-note", t("No word of the Qur'an is spelled this way, so it is not linked yet.")));
     return;
   }
-  const [place, count, qar, tr, en, bn, root, lemma, lemmaCount] = entry;
+  const [place, count, qar, tr, en, bn, root, lemma, lemmaCount, wbwKey, places = []] = entry;
   const line = (label, value, cls = "", lang = "") => {
     const p = el("p", `dua-word-line ${cls}`.trim());
     p.appendChild(el("span", "dua-word-label", label));
@@ -1412,6 +1434,10 @@ function showDuaWord(panel, words, span, tok, entry, dua, page) {
     return p;
   };
   panel.appendChild(line(t("In the Qur'an"), qar, "dua-word-quran", "ar"));
+  // Round 2: how the dua's word met the Qur'an's.
+  const prefix = how.replace("~", "");
+  if (prefix) panel.appendChild(el("p", "dua-word-how", prefix === "\u0648" ? t("Read as «و» (and) + this word") : t("Read as «ف» (so) + this word")));
+  if (how.includes("~")) panel.appendChild(el("p", "dua-word-how", t("The Qur'an spells this word its own way")));
   if (tr) panel.appendChild(line(t("Sounds like"), tr, "dua-word-translit"));
   const means = getAppLang() === "bn" ? [[bn, "bn"], [en, "en"]] : [[en, "en"], [bn, "bn"]];
   for (const [m, l] of means) if (m) panel.appendChild(line(l === "bn" ? t("Meaning (Bangla)") : t("Meaning (English)"), m, `dua-word-meaning-${l}`, l));
@@ -1421,20 +1447,74 @@ function showDuaWord(panel, words, span, tok, entry, dua, page) {
     if (lemmaCount > 1) p.appendChild(el("span", "dua-proposed", t("one of {n} possible, to be checked", { n: num(lemmaCount) })));
     panel.appendChild(p);
   }
+  // Round 3: the dictionaries, opened at the root (the Word card's own links, loaded on first use).
+  if (root) {
+    const dict = el("div", "dua-word-dicts");
+    dict.dataset.duaWordDicts = "";
+    panel.appendChild(dict);
+    Promise.all([import("./quran-word-card.js"), import("./buckwalter.js")]).then(([wc, bw]) => {
+      const links = [[t("Quranic Arabic Corpus"), `https://corpus.quran.com/qurandictionary.jsp?q=${encodeURIComponent(bw.arabicToBuckwalter(root))}`, "corpus"],
+        [t("Lane · Hans Wehr"), wc.ejtaalUrl(root), "ejtaal"]];
+      for (const [label, href, kind] of links) {
+        if (!href) continue;
+        const a = el("a", "dua-ref dua-word-dict", `${label} ↗`);
+        a.href = href; a.target = "_blank"; a.rel = "noopener noreferrer"; a.dataset.duaWordDict = kind;
+        dict.appendChild(a);
+      }
+    }).catch(() => dict.remove());
+  }
+  // Round 3: where the word is in the Qur'an -- each place opens its Word card, with the way back.
   panel.appendChild(el("p", "dua-word-count", t("{n} times in the Qur'an, spelled this way", { n: num(count) })));
+  if (places.length) {
+    const row = el("div", "dua-word-places");
+    for (const n of places) {
+      const ref = placeOf(n);
+      const a = el("a", "dua-ref dua-word-place", num(ref));
+      a.href = wordCardHref(ref, dua);
+      a.dataset.duaWordPlace = ref;
+      a.addEventListener("click", () => rememberDuaPlace(page, dua));
+      row.appendChild(a);
+    }
+    if (count > places.length) row.appendChild(el("span", "hadith-note", t("+{n} more in the Word card", { n: num(count - places.length) })));
+    panel.appendChild(row);
+  }
   const go = el("a", "dua-ref dua-word-open", `${t("Open in the Word card")} ›`);
   go.dataset.duaWordOpen = place;
-  go.href = `./quranrevival.html?word=${place}&back=1&from=dua-${dua}`;
-  // The way back (decision 86): this page's address is first set to reopen this page of Duas on this card, so the
-  // Word card's "Back to Dua n" (history.back) lands here.
-  go.addEventListener("click", () => {
-    try {
-      const u = new URL(location.href);
-      u.searchParams.set("view", "dua"); u.searchParams.set("duaPage", String(page)); u.searchParams.set("dua", String(dua));
-      history.replaceState(history.state, "", u);
-    } catch { /* the link still opens the Word card */ }
-  });
+  go.href = wordCardHref(place, dua);
+  go.addEventListener("click", () => rememberDuaPlace(page, dua));
   panel.appendChild(go);
+  // Round 4 (decision 90, Q1 = yes): the word's Word-by-Word progress, the same record as the Qur'an word's. A press
+  // opens the Word card at this word and records it there, through the Word card's own saving (the place, the
+  // dictionary word everywhere, and the "You know" totals), then "Back to Dua n" returns here.
+  if (wbwKey) {
+    const prog = el("div", "dua-word-progress");
+    prog.dataset.duaWordProgress = wbwKey;
+    prog.appendChild(el("p", "dua-also-head", t("My progress on this word (Word-by-Word)")));
+    const status = el("p", "hadith-note dua-word-progress-now", t("Loading…"));
+    prog.appendChild(status);
+    const row = el("div", "dua-progress-row");
+    for (const id of WBW_STATES) {
+      const b = el("a", "dua-status", statusLabel(id));
+      b.dataset.duaWordState = id;
+      b.href = `${wordCardHref(place, dua)}&progress=${id}`;
+      b.addEventListener("click", () => {
+        rememberDuaPlace(page, dua);
+        try { sessionStorage.setItem(DUA_WORD_PROGRESS_TOKEN, `${place}|${id}`); } catch { /* the Word card opens without recording */ }
+      });
+      row.appendChild(b);
+    }
+    prog.appendChild(row);
+    prog.appendChild(el("p", "dua-words-note", t("Counts for this word everywhere in the Qur'an too. The Word card opens to record it.")));
+    panel.appendChild(prog);
+    loadHadithStudyActions().then(async (actions) => {
+      const session = await actions.getHadeethEncSession();
+      if (!session) { status.textContent = t("Sign in and choose who you're studying as to record progress."); return; }
+      const state = await actions.duaWordProgress(session, wbwKey);
+      status.textContent = t("Now: {state}", { state: statusLabel(state) });
+      status.dataset.duaWordStateNow = state;
+      row.querySelectorAll("[data-dua-word-state]").forEach((b) => b.setAttribute("aria-current", String(b.dataset.duaWordState === state)));
+    }).catch(() => { status.textContent = t("Progress could not be loaded right now."); });
+  }
   panel.appendChild(el("p", "dua-words-note", t("Linked by the computer by spelling · to be checked")));
 }
 

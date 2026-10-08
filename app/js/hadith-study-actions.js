@@ -282,3 +282,14 @@ export async function claimDua(session, number, statusId) {
   return result;
 }
 
+
+// ---------------------------------------------------------------------------
+// Decision 90, round 4: a dua word's Word-by-Word progress is the SAME record as the Qur'an word's (Q1 answered yes:
+// "since its about knowing and understanding the word"), keyed as the Word card keys it (the dictionary word, or a
+// stand-in key). Read here; recorded through the Word card's own saving. Loaded on first use only (I9).
+// ---------------------------------------------------------------------------
+export async function duaWordProgress(session, wbwKey) {
+  const { getLemmaProgress } = await import("./quran-lemma-progress-data.js");
+  const p = await getLemmaProgress(db, { tenantId: session.tenantId, personId: session.personId, level: "wbw", lemmaId: wbwKey });
+  return p?.state ?? "not_started";
+}

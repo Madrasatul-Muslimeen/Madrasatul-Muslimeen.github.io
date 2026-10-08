@@ -281,9 +281,23 @@ a.hadeethenc-study-btn[aria-disabled="true"], button.hadeethenc-study-btn[aria-d
 .dua-word-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
 .dua-word-panel-ar { font-size: 1.9em; line-height: 1.6; }
 .dua-word-panel-close { min-width: 40px; min-height: 40px; border: 1px solid var(--hadith-rule); border-radius: 0.5rem; background: transparent; color: inherit; font-size: 1.2rem; cursor: pointer; }
-.dua-word-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem; margin: 0.15rem 0; }
-.dua-word-label { font-size: 0.8rem; color: var(--hadith-muted); min-width: 7.5rem; }
+.dua-word-line { display: grid; grid-template-columns: minmax(6.5rem, 8rem) minmax(0, 1fr); align-items: baseline; gap: 0.2rem 0.5rem; margin: 0.15rem 0; }
+.dua-word-line .dua-proposed { grid-column: 2; }
+.dua-word-label { font-size: 0.8rem; color: var(--hadith-muted); }
 .dua-word-value { overflow-wrap: anywhere; }
 .dua-word-quran .dua-word-value, .dua-word-lemma .dua-word-value, .dua-word-root .dua-word-value { font-size: 1.4em; }
 .dua-word-count { margin: 0.3rem 0; font-size: 0.85rem; }
 .dua-word-open { display: inline-flex; align-items: center; min-height: 40px; text-decoration: none; }
+
+/* Decision 90, rounds 2-4: how a word was matched, the dictionaries, its places, its progress. */
+.dua-word-how { margin: 0.1rem 0; font-size: 0.82rem; color: var(--hadith-muted); }
+.dua-word-places { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.35rem 0; align-items: center; }
+.dua-word-dicts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.35rem; margin: 0.35rem 0; }
+.dua-word-dict { justify-content: center; text-align: center; }
+.dua-word-progress .dua-progress-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 520px) { .dua-word-progress .dua-progress-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.dua-word-dict, .dua-word-place { display: inline-flex; align-items: center; min-height: 40px; text-decoration: none; }
+.dua-word-progress { display: grid; gap: 0.3rem; margin-top: 0.5rem; padding-top: 0.45rem; border-top: 1px dashed var(--hadith-rule); }
+.dua-word-progress .dua-status { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; text-decoration: none; }
+.dua-word-progress .dua-status[aria-current="true"] { outline: 2px solid var(--hadith-gold, #b8860b); outline-offset: 1px; font-weight: 600; }
+.dua-word-line .dua-word-value[lang="ar"] { justify-self: start; }
