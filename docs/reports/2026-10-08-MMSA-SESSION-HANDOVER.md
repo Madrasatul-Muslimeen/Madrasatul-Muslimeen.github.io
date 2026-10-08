@@ -22,7 +22,7 @@ session" line on #159).
 
 No Builder round is running and no pull request is open.
 
-**Update, 8 Oct 2026, session `session_01QFqAPBJsmgyJ3QXw12JM22` (took over at v09.113):** `main` is at **v09.115**.
+**Update, 8 Oct 2026, session `session_01QFqAPBJsmgyJ3QXw12JM22` (took over at v09.113):** `main` is at **v09.116**.
 **The Hadith database is being built in rounds:**
 - **H-DB1 (v09.114, done):** al-Adab al-Mufrad, al-Nasa'i's and Ibn al-Sunni's 'Amal al-Yawm wa'l-Layla, al-Nawawi's
   al-Adhkar pulled and split (15 books).
@@ -35,8 +35,8 @@ No Builder round is running and no pull request is open.
 - **H-DB4:** the Dua chapters index, then the Dua database first cut, with a demo of the Dua screen first.
 - **Owner decision needed before Studied / Notes / bookmarks on OpenITI passages:** the permanent key
   (recommended `hadith:openiti:<versionUri>:<n>`, showing the standard number).
-- **Queued, unread until H-DB2 was released:** the Owner's message about the Āyah card's "Take Note" button
-  (screenshot, 8 Oct).
+- **The Owner's Take Note message (8 Oct): built as v09.116;** "add the bookmark button there too" asked back
+  (the card already has 🔖 Bookmark: move it beside Take Note, or a second button opening the bookmarks list?).
 
 **THE QUEUE, in order (decision 87):**
 1. **The Hadith database, then the Dua database** ("Start Hadith n Dua Database work (NS's job)"). Follow
@@ -98,3 +98,4 @@ that handover does not name the version in `app/js/version.js`.
 - **v09.113** (2026-10-07): Word card and Ayah card ways back; the way-back law (the version on `main` when this was written).
 - **v09.114** (2026-10-08): four more Arabic Hadith books in the library (round H-DB1).
 - **v09.115** (2026-10-08): standard Hadith numbers in the library (round H-DB2).
+- **v09.116** (2026-10-08): Take Note in the Ayah card's button row.
