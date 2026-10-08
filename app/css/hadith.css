@@ -180,6 +180,15 @@
 .openiti-goto-mode { min-height: 40px; min-width: 0; max-width: 100%; padding: 0.3rem 0.4rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); background: #fff; font: inherit; font-size: 0.88rem; }
 .openiti-goto-hint { font-size: 0.8rem; color: var(--hadith-muted); }
 .openiti-standard-number { margin: 0.1rem 0 0.3rem; font-size: 0.85rem; font-weight: 600; color: var(--hadith-ink); }
+/* Round H-DB4: "Also narrated in" on a Dua narration, each book a 40px button; the way back above a jump. */
+.dua-also { display: grid; gap: 0.35rem; margin: 0.5rem 0; padding-top: 0.45rem; border-top: 1px dashed var(--hadith-rule); }
+.dua-also-head { margin: 0; font-size: 0.85rem; font-weight: 600; color: var(--hadith-ink); display: flex; flex-wrap: wrap; gap: 0.3rem 0.6rem; align-items: baseline; }
+.dua-proposed { font-size: 0.75rem; font-weight: 400; font-style: italic; color: var(--hadith-muted); }
+.dua-also-refs { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.dua-ref { min-height: 40px; padding: 0.3rem 0.7rem; border-radius: 0.4rem; border: 1px solid var(--hadith-rule); background: #fff; color: var(--hadith-ink); font: inherit; font-size: 0.85rem; cursor: pointer; font-variant-numeric: tabular-nums; }
+.dua-ref:hover { border-color: var(--hadith-gold); }
+.openiti-trail-back { margin-bottom: 0.4rem; }
+.dua-also-more summary { min-height: 40px; display: flex; align-items: center; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--hadith-ink); }
 .openiti-show-more { min-height: 40px; padding: 0.4rem 0.9rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); background: #fff; cursor: pointer; font-weight: 600; margin: 0.5rem 0; }
 .openiti-editorial-label { color: #7d5a00; font-weight: 700; }
 .openiti-page-refs { font-size: 0.75rem; }
