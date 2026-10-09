@@ -9,6 +9,21 @@ Start from `docs/governance/NEW-SESSION-PROMPT-2026-10-08.md`.
 Read the live state yourself (`app/js/version.js` on `origin/main`, open pull requests, the "Active Architect
 session" line on #159).
 
+**UPDATE, 9 Oct 2026, session `session_01J6tdKAiaMqQEPd6xFJoZ2J` (took over at v09.135; #159 names it):**
+- Builder #665 had already been merged (PR #666, test-only, no version) before takeover.
+- **v09.136 (this session): Notes and bookmarks on a dua** (ADR-009 §9: `dua:<n>` → `dua-unit`; `notes.html` ← Back;
+  a reopened Dua card now stays on screen). Queue item "Notes and bookmarks on a dua" is DONE.
+- **Builder #668 in flight:** remove the 65 shadowed duplicate keys from `bn.js` (34 identical, 31 different; the last
+  copy wins and stays). Review per the prompt's Step 5; check that the `BN` object is deep-equal before/after.
+- **Found red on `main`, not yet fixed** (good small rounds): `study-note-boundary.mjs` 17/1 (its P5-C "no Rules
+  change" diff), `study-note-service.mjs` (throws: "a wiring import was not rewritten"). The HadeethEnc card's
+  📝 My Notes link does not pass `back=1` yet, so `notes.html` shows no ← Back from it (way-back law).
+- **Sandbox:** `ln -s "$(npm root -g)/playwright" node_modules/playwright` (and `playwright-core`) before any browser
+  suite; `git fetch --unshallow origin main`, `origin claude/pensive-knuth-2pu3jj` and `origin claude/phase4-wiring`
+  before `brief-integrity`/`programme-ledger`, or they fail on missing history.
+- **Still possible next:** the dua review screen (demo first); Hadith Studied/Notes on OpenITI passages (needs the
+  Owner's yes to the key).
+
 **LATEST UPDATE, 8 Oct 2026 (late), session `session_0116koLYBSQ7JHAmhYUWAkBX` (took over at v09.121): `main` is at
 v09.135.** This block supersedes everything below it in section 0; the older text is kept as history.
 
@@ -179,3 +194,4 @@ that handover does not name the version in `app/js/version.js`.
 - **v09.133** (2026-10-08): Dua words, round 5a: vowels.
 - **v09.134** (2026-10-08): Dua words, round 5b: grammar suggestions.
 - **v09.135** (2026-10-08): Dua words, round 6: progress on every word.
+- **v09.136** (2026-10-09): Notes and bookmarks on a dua.

@@ -367,7 +367,7 @@ check("every vocabulary word in the code appears in ADR-009, and vice versa", ()
   for (const word of [...RELATIONSHIP_KINDS, ...PROVENANCE_KINDS]) {
     assert.ok(adr.includes("`" + word + "`"), `ADR-009 does not record the vocabulary word ${word}`);
   }
-  for (const kind of ["quran-unit", "hadith-unit", "topic-unit", "name-unit"]) {
+  for (const kind of ["quran-unit", "hadith-unit", "topic-unit", "name-unit", "dua-unit"]) {
     assert.ok(adr.includes("`" + kind + "`"), `ADR-009 does not record the sourceKind ${kind}`);
     assert.ok(codeOf("study-note-binding.js").includes(`"${kind}"`), `the binding does not derive ${kind}`);
   }
@@ -411,7 +411,7 @@ check("every source-binding word written by a FIXTURE is in the accepted vocabul
   // them spelling the same two facts four ways. Correcting them once is not the
   // fix; binding them to the vocabulary is, because the next fixture would
   // otherwise invent a fifth spelling with nothing to catch it.
-  const SOURCE_KINDS = ["quran-unit", "hadith-unit", "topic-unit", "name-unit"];
+  const SOURCE_KINDS = ["quran-unit", "hadith-unit", "topic-unit", "name-unit", "dua-unit"];
   const files = [];
   (function walk(dir) {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
