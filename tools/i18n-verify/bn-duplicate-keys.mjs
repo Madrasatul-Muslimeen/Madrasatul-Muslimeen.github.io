@@ -1,4 +1,4 @@
-// bn.js must hold each English key once, and tidying must not change what shows.
+// bn.js must hold each English key once, and a round must not change an EXISTING value (new keys are fine).
 //
 // In an object literal the LAST duplicate wins, so earlier copies are dead text
 // that only misleads an editor. Run from the repository root. BASE=<rev> names
@@ -55,14 +55,28 @@ const cur = duplicates(now);
 check("parser read a plausible number of entries (positive control)", () => assert.ok(cur.entries > 2000, String(cur.entries)));
 check("bn.js has 0 duplicate keys", () => assert.deepEqual(cur.dups, []));
 
-const baseDup = duplicates(baseText);
-// Only meaningful while the comparison commit still has the duplicates.
-const EXPECT_BASE = Number(process.env.EXPECT_BASE_DUPS ?? 65);
-check(`parser finds ${EXPECT_BASE} duplicates in the base file (it can fail)`, () => assert.equal(baseDup.dups.length, EXPECT_BASE));
+// Positive control for the parser: a FIXED historical file that really had
+// duplicates (the parent of 3dc70e82, which removed them for v09.137). The count
+// is written by hand; if the parser cannot find it, "0 duplicate keys" above is
+// not believable.
+const HISTORIC = "3dc70e82^";
+const HISTORIC_DUPS = 65;
+const historicText = git("show", `${HISTORIC}:${REL}`);
+check(`parser finds ${HISTORIC_DUPS} duplicates in the historic file ${HISTORIC} (it can fail)`, () => assert.equal(duplicates(historicText).dups.length, HISTORIC_DUPS));
 
 const BN_NOW = await load(now, "now");
 const BN_BASE = await load(baseText, "base");
-check("BN is deep-equal to the base BN (nothing on screen changed)", () => assert.deepEqual(BN_NOW, BN_BASE));
+
+// Every key the base has keeps exactly its value; new keys are allowed and named.
+function changedKeys(base, cur) {
+  return Object.keys(base).filter((k) => !(k in cur) || cur[k] !== base[k]);
+}
+const added = Object.keys(BN_NOW).filter((k) => !(k in BN_BASE));
+console.log(`INFO ${added.length} key(s) added since ${baseRev().slice(0, 8)}:`, added.length ? added.join(" | ") : "(none)");
+check("no EXISTING value changed (new keys allowed)", () => {
+  const bad = changedKeys(BN_BASE, BN_NOW);
+  assert.deepEqual(bad, [], `changed or removed keys: ${bad.join(" | ")}`);
+});
 
 // Mutations, run in memory against the current text.
 const lines = now.split("\n");
@@ -73,7 +87,10 @@ check("mutation: re-inserting an earlier copy with a different value fails check
 });
 const mutatedKept = lines.map((l, i) => (i === at ? l.replace(/:\s*".*?"/, ': "পরিবর্তিত"') : l)).join("\n");
 const BN_MUT = await load(mutatedKept, "mut");
-check("mutation: changing one kept value fails check 2", () => assert.notDeepEqual(BN_MUT, BN_BASE));
+check("mutation: changing one kept value fails the existing-value check and names the key", () => {
+  const bad = changedKeys(BN_BASE, BN_MUT);
+  assert.ok(bad.includes("Home"), bad.join(" | "));
+});
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
