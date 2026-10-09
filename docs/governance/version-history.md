@@ -780,3 +780,4 @@ total). Allocated by the MMSA Architect.
 09.134: Dua words, round 5b: grammar suggestions. Allocated by the MMSA Architect.
 09.135: Dua words, round 6: progress on every word. Allocated by the MMSA Architect.
 09.136: Notes and bookmarks on a dua. Allocated by the MMSA Architect.
+09.137: the Bangla file's shadowed duplicates removed. Allocated by the MMSA Architect.

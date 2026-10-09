@@ -195,3 +195,4 @@ that handover does not name the version in `app/js/version.js`.
 - **v09.134** (2026-10-08): Dua words, round 5b: grammar suggestions.
 - **v09.135** (2026-10-08): Dua words, round 6: progress on every word.
 - **v09.136** (2026-10-09): Notes and bookmarks on a dua.
+- **v09.137** (2026-10-09): the Bangla file's shadowed duplicates removed.
