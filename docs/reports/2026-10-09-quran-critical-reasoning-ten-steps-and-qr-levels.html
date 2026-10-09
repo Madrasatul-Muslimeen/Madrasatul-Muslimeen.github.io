@@ -1,0 +1,248 @@
+<title>Ten Steps and the QR Levels</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=IBM+Plex+Sans:wght@400;500;600&family=Amiri:wght@400;700&display=swap">
+<style>
+/* Layout: one reading column; the mapping table and level cards are the spine; questions for the Owner at the end. */
+:root {
+  --bg: #f7f6f2; --surface: #ffffff; --fg: #1f2430; --muted: #5a6070; --rule: #d9d5ca;
+  --accent: #1f3a6e; --gold: #8a6416; --tint: #eef1f7; --warn: #8a3b12; --warn-bg: #fbefe6;
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --ar: "Amiri", "Traditional Arabic", serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #14171f; --surface: #1c2030; --fg: #e8e6df; --muted: #a6abb8; --rule: #353a4b;
+  --accent: #a9c1f0; --gold: #e0b766; --tint: #222a3d; --warn: #f2a27a; --warn-bg: #3a2418; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #14171f; --surface: #1c2030; --fg: #e8e6df; --muted: #a6abb8; --rule: #353a4b;
+  --accent: #a9c1f0; --gold: #e0b766; --tint: #222a3d; --warn: #f2a27a; --warn-bg: #3a2418; color-scheme: dark; }
+body { background: var(--bg); color: var(--fg); font: 17px/1.6 var(--serif); }
+.wrap { max-width: 860px; margin: 0 auto; padding-inline: 18px; padding-block: 28px 64px; }
+h1, h2, h3 { text-wrap: balance; line-height: 1.25; }
+h1 { font-size: 2rem; margin: 0.2rem 0 0.6rem; }
+h2 { font-size: 1.4rem; margin: 2.6rem 0 0.8rem; padding-top: 1rem; border-top: 1px solid var(--rule); }
+h3 { font-size: 1.1rem; margin: 1.6rem 0 0.4rem; }
+p, li { max-width: 68ch; }
+.eyebrow, .label, th, .pill, .meta { font-family: var(--sans); }
+.eyebrow { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); font-weight: 600; }
+.meta { color: var(--muted); font-size: 0.85rem; }
+.lead { font-size: 1.12rem; }
+.ar { font-family: var(--ar); direction: rtl; unicode-bidi: isolate; font-size: 1.15em; }
+a { color: var(--accent); }
+.box { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 1rem 1.2rem; }
+.answer { background: var(--tint); border-left: 4px solid var(--accent); padding: 1rem 1.2rem; border-radius: 0 6px 6px 0; }
+.answer p { margin: 0.4rem 0; }
+.scroll { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 720px; font-size: 0.93rem; }
+th, td { text-align: left; vertical-align: top; padding: 0.6rem 0.7rem; border-bottom: 1px solid var(--rule); }
+th { font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: var(--tint); }
+tr:last-child td { border-bottom: 0; }
+td.lvl { font-weight: 700; white-space: nowrap; }
+.pill { display: inline-block; font-size: 0.74rem; font-weight: 600; padding: 0.08rem 0.45rem; border-radius: 999px; border: 1px solid var(--rule); color: var(--muted); white-space: nowrap; margin: 0.1rem 0.15rem 0.1rem 0; }
+.pill.ap { color: var(--accent); border-color: var(--accent); }
+.pill.y { color: var(--gold); border-color: var(--gold); }
+.levels { display: grid; gap: 1rem; }
+.level { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 1rem 1.2rem; min-width: 0; }
+.level h3 { margin-top: 0; }
+.level .steps { margin: 0.3rem 0 0.6rem; padding-left: 1.2rem; }
+.level dl { display: grid; grid-template-columns: 9.5rem 1fr; gap: 0.35rem 0.8rem; margin: 0.6rem 0 0; }
+.level dt { font-family: var(--sans); font-size: 0.8rem; font-weight: 600; color: var(--muted); padding-top: 0.15rem; }
+.level dd { margin: 0; min-width: 0; }
+@media (max-width: 560px) { .level dl { grid-template-columns: 1fr; } .level dt { padding-top: 0.5rem; } }
+.flag { background: var(--warn-bg); border: 1px solid var(--rule); border-left: 4px solid var(--warn); border-radius: 0 6px 6px 0; padding: 0.8rem 1.1rem; margin: 0.9rem 0; }
+.flag strong:first-child { color: var(--warn); }
+.nums { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: 0.6rem; margin: 0.8rem 0; }
+.num { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 0.6rem 0.8rem; font-family: var(--sans); }
+.num b { display: block; font-size: 1.35rem; font-variant-numeric: tabular-nums; color: var(--accent); }
+.num span { font-size: 0.82rem; color: var(--muted); }
+ol.q > li { margin-bottom: 0.8rem; }
+.src { font-size: 0.85rem; color: var(--muted); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<div class="wrap">
+<p class="eyebrow">MMSA · Quran (QuranRevival) · research for the Owner · 9 Oct 2026</p>
+<h1>Ten Steps and the QR Levels</h1>
+<p class="lead">How the ten steps of <a href="https://learndeenonthego.wordpress.com/2024/09/21/quran-for-critical-reasoning-the-process-of-contemplating-on-the-quran/">“Quran for Critical Reasoning: the process of contemplating on the Quran”</a> line up with the Approaches, with the QCR collections and with the year levels in QR.</p>
+<p class="meta">Sources read: the article (full text); the 30 Approaches in the app's code with their glosses from the original app; QCR (18 collections, 379 āyāt, from your file <em>QCR — Qur'an (calls for) Critical Reasoning</em> v01.13); the Qur'an grammar data QR already carries. Not read: the 10 Approaches you added yourself. They live only in your own data, which this workspace cannot open (see question 1).</p>
+
+<div class="answer">
+<p><strong>The short answer.</strong> The article and QR describe the same ladder, and QR already uses the article's own level names for two of the steps.</p>
+<p>• The article's <strong>Primary level</strong> (steps 1–4) is QR's section 3, <strong>Approaches 14 Naẓar and 15 ʿAql</strong>, plus the four “Applied Threads” (16–19). In QCR it is the <strong>Y3–Y4</strong> collections.</p>
+<p>• Its <strong>Intermediate level</strong> (steps 5–6) is <strong>Approach 20 Tafakkur</strong>, which QR also calls “Intermediate Level”. Step 6 also needs the language foundation of Approaches 04 and 06.</p>
+<p>• Its <strong>Advanced level</strong> (steps 7–8) is <strong>Approach 21 Tadabbur</strong>, which QR also calls “Advanced Level”. QCR's pattern collections (Āyah-Formula, Hal min…, Afaman…, Iʿtibār) are made for exactly these two steps.</p>
+<p>• Its <strong>Final level</strong> (steps 9–10) is <strong>Approach 27 Discussion</strong> and your section <strong>“Understanding of the Scholars”</strong>.</p>
+<p>• QR goes further than the article: 22 Tafaqquh, 23 Tadhakkur and section 6 (24 Fiqh to ruling, 25 Fahm, 26 Ḥukm) have no step in the article. The article stops before rulings.</p>
+<p>Three places disagree. They are under <a href="#disagree">Where they disagree</a>, and the four questions for you are at the end.</p>
+</div>
+
+<h2 id="article">1. The article, step by step</h2>
+<p>The author's point: contemplating the Qur'an is ordinary common sense that people “keep locked” for the Qur'an. They call it Critical Reasoning so a common person is not afraid of it. Tafsir comes last, “to reconcile your understanding”. The first eight steps are done on your own. The method is meant for the family, with children over 7: “print it and stick it on the wall of their study table”.</p>
+<div class="scroll"><table>
+<thead><tr><th>Level</th><th>Step</th><th>The question the reader asks</th></tr></thead>
+<tbody>
+<tr><td class="lvl">Intention</td><td>before 1</td><td>(1) Take it personally: the Qur'an was revealed to me, or for me (al-Ḥasan al-Baṣrī: “personal letters from their Rabb”). (2) Imagine being present in the time of the Messenger ﷺ, or that a messenger was sent for this time. (3) Find the instruction for me and implement it. (4) Ask Allah to guide me to what saves me from the grave, Qiyāmah and Jahannam, and makes my way to Jannah easy.</td></tr>
+<tr><td class="lvl" rowspan="4">Primary</td><td>1</td><td><strong>What type of āyah is it?</strong> A command, a prohibition, a warning, a recommended thing, a not-recommended thing, or a description? If it is a dua: a request, or praise and thanks?</td></tr>
+<tr><td>2</td><td><strong>What is the subject?</strong> Allah, the Messenger ﷺ, the Qur'an, the Prophets, the angels, Qiyāmah, Jannah, Jahannam, the human being, shaiṭān, creations (bees, ants), the kuffār, the believers… What is said about it, and to whom?</td></tr>
+<tr><td>3</td><td><strong>What is in it for me?</strong> Direct: what I must obey, must not do, a limit I keep within, a warning to be careful of, what I try my best to do or not to do. Indirect: the qualities of the people of Jannah I must achieve (mufliḥūn, mukhlaṣūn, ṣāliḥūn, ṣādiqūn, muḥsinūn), and of the people of Jahannam I must avoid (ẓālimūn, khāsirūn).</td></tr>
+<tr><td>4</td><td><strong>What is the certain knowledge here?</strong> If there is nothing to do, what certain knowledge does it give me: the Muslim's mindset and philosophy of life?</td></tr>
+<tr><td class="lvl" rowspan="2">Intermediate</td><td>5</td><td>Look for the <strong>inner meaning</strong>.</td></tr>
+<tr><td>6</td><td>Look for the <strong>rhetorical meaning</strong>, which comes from understanding the language.</td></tr>
+<tr><td class="lvl" rowspan="2">Advanced</td><td>7</td><td><strong>Extract an unknown pattern</strong> from observing a known pattern.</td></tr>
+<tr><td>8</td><td><strong>Extract symmetry or dis-symmetry</strong> (mathematical, analytical ability).</td></tr>
+<tr><td class="lvl" rowspan="2">Final (connecting)</td><td>9</td><td><strong>Discuss</strong>, accommodating others' opinions and beware of arrogance.</td></tr>
+<tr><td>10</td><td><strong>Reconcile</strong> your understanding with the classical and contemporary scholars, by reading tafsir.</td></tr>
+</tbody></table></div>
+
+<h2 id="approaches">2. The Approaches that are Critical Reasoning</h2>
+<p>Four of QR's sections carry “Critical Reasoning” in their name: <strong>sections 3 to 6, Approaches 14 to 26</strong>. The quoted line under each name is your own one-line gloss from the original app.</p>
+<div class="scroll"><table>
+<thead><tr><th>Section</th><th>Approach</th><th>Your gloss</th><th>QCR collection (year band)</th></tr></thead>
+<tbody>
+<tr><td rowspan="2">3 · Naẓar / ʿAql</td><td>14 Beginner's Level: Observation (Naẓar)</td><td>“See it as it is”</td><td>14 · Naẓar <span class="pill y">Y3</span></td></tr>
+<tr><td>15 Primary Level: Common Sense (ʿAql / Taʿaqqul)</td><td>“Make it make sense”</td><td>15 · Taʿaqqul <span class="pill y">Y4</span></td></tr>
+<tr><td rowspan="4">4 · Applied Threads</td><td>16 Deriving Dua</td><td>“Turn the ayah into a prayer”</td><td>none</td></tr>
+<tr><td>17 Deriving Names &amp; Attributes of Allah</td><td>“Know Him through His word”</td><td>none in QCR (Asma ul Husna does this)</td></tr>
+<tr><td>18 Deriving Understanding of the Prophets</td><td>“Learn the Sunnah before the Sunnah”</td><td>none</td></tr>
+<tr><td>19 Reflecting on the Miracles</td><td>“Marvel at what convinces”</td><td>none</td></tr>
+<tr><td rowspan="4">5 · Tafakkur / Tadabbur</td><td>20 Intermediate Level: Tafakkur</td><td>“Turn it over”</td><td>20 · Tafakkur <span class="pill y">Y6–12</span></td></tr>
+<tr><td>21 Advanced Level: Tadabbur</td><td>“Follow it to its depths”</td><td>21 · Tadabbur <span class="pill y">Y5</span></td></tr>
+<tr><td>22 Higher Level: Tafaqquh</td><td>“Know it, and know its edges — deep, but for the common person; no classical Islamic training required”</td><td>22 · Tafaqquh <span class="pill y">Y5</span></td></tr>
+<tr><td>23 Upper Higher Level: Dhikr / Tadhakkur</td><td>“Let it move you”</td><td>23 · Tadhakkur <span class="pill y">Y6</span></td></tr>
+<tr><td rowspan="3">6 · Judgement / Authority</td><td>24 Mastery Level: where Fiqh turns to Ruling (9:122)</td><td>“…the same word, fiqh, shifts from deep understanding to the ruling of Deen itself”</td><td>none (9:122 is in 22 · Tafaqquh)</td></tr>
+<tr><td>25 Judgment (Fahm)</td><td>“Make it precise, for here and now”</td><td>25 · Fahm <span class="pill y">Y8–12</span></td></tr>
+<tr><td>26 Authority: Ḥukm / Taḥākum</td><td>“Let it govern you”</td><td>26 · Ḥukm <span class="pill y">Y8–12</span></td></tr>
+</tbody></table></div>
+<p>Six more Approaches serve Critical Reasoning without carrying its name, and the article needs every one of them:</p>
+<ul>
+<li><strong>03 Reading with Meaning</strong>: a reader cannot do step 1 without knowing what the āyah says.</li>
+<li><strong>04 Word-by-Word</strong> and <strong>06 Basic Grammar</strong>: the foundation for step 6 (rhetoric “comes upon understanding the linguistic aspect”).</li>
+<li><strong>10 Journaling</strong>: where the answers to each step are written.</li>
+<li><strong>27 Group / Class Discussion</strong>: step 9 itself, and the family circle the article asks for.</li>
+<li><strong>28 Living by it</strong>: the third intention (“implement it”) and step 3's “what I must obey”.</li>
+</ul>
+<p>Your own data has more. It has <strong>8 sections and 40 Approaches</strong>: a third Approach in section 3, and a new section <strong>“Understanding of the Scholars”</strong> with 9 Approaches. From the app's test records (they copy your sections and counts, not the names), the counts per section are 6, 7, 3, 4, 4, 3, 9 and 4. That new section is the article's step 10.</p>
+
+<h3>The other QCR collections</h3>
+<p>Ten of the 18 collections are not named after an Approach. Each one matches a step of the article:</p>
+<div class="scroll"><table>
+<thead><tr><th>QCR collection</th><th>Band</th><th>What it gathers</th><th>Article step</th></tr></thead>
+<tbody>
+<tr><td>§5 · Preconditions</td><td><span class="pill y">Y1–2</span></td><td>what blocks or opens understanding (e.g. 2:12, 6:109, 7:95)</td><td>The intention, and the “wrap of shaiṭān” the article opens with</td></tr>
+<tr><td>§4 · Raʾā family</td><td><span class="pill y">Y3</span></td><td>“have you not seen…”: 44 āyāt</td><td>1–2 (observe: Naẓar)</td></tr>
+<tr><td>Āyah-Formula “Inna fī dhālika la-āyāt…”</td><td><span class="pill y">Y3</span></td><td>“in that are signs for a people who…”: 62 āyāt</td><td>4 (certain knowledge) at Y3; 7 (a known pattern) later</td></tr>
+<tr><td>§4 · Sayr fil-Arḍ</td><td><span class="pill y">Y4</span></td><td>“travel the land and see”: 14 āyāt</td><td>2–3 (subject, and what is in it for me)</td></tr>
+<tr><td>Hal min… (challenge for a rival)</td><td><span class="pill y">Y4</span></td><td>“is there any of your partners who…”: 4 āyāt</td><td>4 (certain knowledge by elimination); 7 (a pattern of argument)</td></tr>
+<tr><td>§9 · Adjacent / Safeguards</td><td><span class="pill y">Y6</span></td><td>āyāt that guard reasoning (verify news 49:6; ask the people of knowledge 16:43, 21:7)</td><td>9–10: the Qur'an's own instruction to check with scholars</td></tr>
+<tr><td>Afaman… (comparative inference)</td><td><span class="pill y">Y7</span></td><td>“is one who… like one who…?”: 16 āyāt</td><td><strong>8 itself</strong>: two parties set side by side, alike or unlike</td></tr>
+<tr><td>§4 · Iʿtibār</td><td><span class="pill y">Y7–12</span></td><td>“in that is a lesson for…”: 7 āyāt</td><td>7: from a known case to an unknown one</td></tr>
+<tr><td>§6 · Audience Epithets</td><td><span class="pill">All years</span></td><td>the people the signs are for (ulu'l-albāb, people who reason, who reflect…): 22 āyāt</td><td>3 indirect: the qualities “I have to achieve”</td></tr>
+<tr><td>Proposed New Families</td><td><span class="pill">pending split</span></td><td>89 āyāt waiting to be sorted</td><td>(not yet placed)</td></tr>
+</tbody></table></div>
+
+<h2 id="levels">3. Which article level fits which QR level</h2>
+<p>“Level” means two things in QR, and the article meets both. Five of the Critical Reasoning Approaches carry a level in their name: Beginner's, Primary, Intermediate, Advanced and Higher. QCR collections also carry a <strong>year level</strong> (Yr 1 to Yr 12, and adult). Each card below gives both.</p>
+
+<div class="levels">
+<section class="level">
+<h3>Intention (before the steps)</h3>
+<ol class="steps"><li>It is for me</li><li>I am there</li><li>Find the instruction and do it</li><li>Ask Allah for guidance</li></ol>
+<dl>
+<dt>QR Approaches</dt><dd>Section 2 Engagement / Attachment is the “attachment” the article asks for. <span class="pill ap">16 Deriving Dua</span> is the fourth intention (a dua). <span class="pill ap">28 Living by it</span> is the third.</dd>
+<dt>QCR</dt><dd>§5 Preconditions <span class="pill y">Y1–2</span>: the Qur'an's own words on what seals or opens a heart.</dd>
+<dt>Year level</dt><dd><strong>Yr 1–2 and every age after</strong>. It is a habit, not a level: the article asks it of every reader before every āyah.</dd>
+<dt>Why</dt><dd>The article calls it “the pre-requisite”, not a step. QR has no place that asks it. Today it would sit as a short reminder at the top of the Critical Reasoning Approaches' guide.</dd>
+</dl>
+</section>
+
+<section class="level">
+<h3>Primary level: steps 1–4</h3>
+<ol class="steps"><li>Type of āyah</li><li>Subject</li><li>What is in it for me</li><li>Certain knowledge</li></ol>
+<dl>
+<dt>QR Approaches</dt><dd><span class="pill ap">14 Naẓar: Beginner's</span> for steps 1–2 (“see it as it is”: what kind of statement it is, about whom). <span class="pill ap">15 ʿAql: Primary</span> for steps 3–4 (“make it make sense”: what it means for me, what it makes certain).<br>
+The <strong>Applied Threads</strong> are step 2's subject list made into Approaches: <span class="pill ap">17 Names of Allah</span> (subject: Allah), <span class="pill ap">18 Prophets</span>, <span class="pill ap">19 Miracles</span> (creations, signs). <span class="pill ap">16 Deriving Dua</span> is step 1's “what type of dua is it: a request or praise?”</dd>
+<dt>QCR</dt><dd>14 Naẓar, Raʾā family, Āyah-Formula <span class="pill y">Y3</span>; 15 Taʿaqqul, Sayr fil-Arḍ, Hal min… <span class="pill y">Y4</span>; Audience Epithets <span class="pill">All years</span> for step 3's “qualities of the people of Jannah”.</dd>
+<dt>Year level</dt><dd><strong>Yr 3–4</strong> as a level to master, started from <strong>Yr 2 (age 7)</strong>, which is the article's own “children over 7”. This agrees with QCR's own bands.</dd>
+<dt>Naming note</dt><dd>The article's single “Primary level” is QR's two lowest levels. QR's “Beginner's” (14) is steps 1–2 and QR's “Primary” (15) is steps 3–4. No renaming is needed; the article simply groups them.</dd>
+</dl>
+</section>
+
+<section class="level">
+<h3>Intermediate level: steps 5–6</h3>
+<ol class="steps" start="5"><li>Inner meaning</li><li>Rhetorical meaning (through the language)</li></ol>
+<dl>
+<dt>QR Approaches</dt><dd><span class="pill ap">20 Tafakkur: Intermediate Level</span>, the same word as the article. Step 6 rests on <span class="pill ap">04 Word-by-Word</span> and <span class="pill ap">06 Basic Grammar</span>: rhetoric needs the language first.</dd>
+<dt>QCR</dt><dd>20 Tafakkur <span class="pill y">Y6–12</span>.</dd>
+<dt>Year level</dt><dd><strong>Yr 5–6 onward</strong>. Step 5 can start at Yr 5; step 6 waits until the reader has some grammar.</dd>
+<dt>Tools QR already has</dt><dd>The Word card (root, dictionary word, grammar, verb forms, related words), the Quranic Arabic Corpus grammar for every word, word-by-word meaning, and the differences between near-synonyms (Furūq). These are the tools for step 6.</dd>
+</dl>
+</section>
+
+<section class="level">
+<h3>Advanced level: steps 7–8</h3>
+<ol class="steps" start="7"><li>Unknown pattern from a known pattern</li><li>Symmetry or dis-symmetry</li></ol>
+<dl>
+<dt>QR Approaches</dt><dd><span class="pill ap">21 Tadabbur: Advanced Level</span>, again the same word. Its guide already says “consider how the āyah connects to other āyahs”, which is step 7.</dd>
+<dt>QCR</dt><dd>Āyah-Formula, Hal min… and Iʿtibār are <strong>known patterns</strong> for step 7. <strong>Afaman… <span class="pill y">Y7</span> is step 8 itself</strong>: “is one who… like one who…?” sets two parties side by side to be judged alike or unlike. 21 Tadabbur <span class="pill y">Y5</span> holds 4:82, “had it been from other than Allah they would have found much contradiction in it”, which is the Qur'an's own call to look for symmetry.</dd>
+<dt>Year level</dt><dd><strong>Yr 7 onward</strong> (Afaman Y7, Iʿtibār Y7–12).</dd>
+<dt>Tools QR already has</dt><dd>Related āyāt on the Āyah card (rarer shared words, same QCR collection, same Name of Allah); Explore's wheel, where a collection's āyāt are laid out together; Ruku', Juz and Page units.</dd>
+</dl>
+</section>
+
+<section class="level">
+<h3>Final level: steps 9–10</h3>
+<ol class="steps" start="9"><li>Discuss, without arrogance</li><li>Reconcile with the scholars (tafsir)</li></ol>
+<dl>
+<dt>QR Approaches</dt><dd><span class="pill ap">27 Group / Class Discussion</span> is step 9. Your section <span class="pill ap">Understanding of the Scholars</span> (9 Approaches) is step 10.</dd>
+<dt>QCR</dt><dd>§9 Adjacent / Safeguards <span class="pill y">Y6</span>: 16:43 and 21:7, “ask the people of knowledge if you do not know”, and 49:6, verify news.</dd>
+<dt>Year level</dt><dd>Step 9 at <strong>every year</strong>: the family circle includes the youngest. Step 10 as a level from <strong>Yr 8–12</strong>, with tafsir read <em>to</em> a younger child before that.</dd>
+<dt>Gap</dt><dd><strong>QR has no tafsir in it today.</strong> The app holds the Arabic, two translations, word grammar and HadeethEnc's hadith explanations, but no tafsir text. Step 10 sends the reader outside the app.</dd>
+</dl>
+</section>
+
+<section class="level">
+<h3>Beyond the article: QR's higher levels</h3>
+<dl>
+<dt>QR Approaches</dt><dd><span class="pill ap">22 Tafaqquh: Higher</span>, <span class="pill ap">23 Tadhakkur: Upper Higher</span>, and section 6: <span class="pill ap">24 Fiqh to ruling</span>, <span class="pill ap">25 Fahm</span>, <span class="pill ap">26 Ḥukm</span>.</dd>
+<dt>How they relate</dt><dd>22 is structured understanding “for the common person”: the result of steps 1–8, held together. 23 Tadhakkur (“let it move you”) is what the intention aims at, so it is the fruit of every level rather than one more step. Section 6 is where understanding becomes a ruling. The article never goes there: it ends with reconciling one's understanding with the scholars. Approach 24's own guide already says “under guidance”.</dd>
+<dt>Year level</dt><dd>QCR: Tafaqquh <span class="pill y">Y5</span>, Tadhakkur <span class="pill y">Y6</span>, Fahm and Ḥukm <span class="pill y">Y8–12</span>.</dd>
+</dl>
+</section>
+</div>
+
+<h2 id="disagree">4. Where they disagree</h2>
+<div class="flag"><strong>1. The order of discussion, scholars and rulings.</strong> The article puts discussion (9) and the scholars (10) last, after one's own reasoning, and does not go on to rulings. QR puts <em>Judgement / Authority</em> (24–26, rulings) <em>before</em> Discussion (27), and in your data “Understanding of the Scholars” comes after Judgement / Authority too. By the article's logic, the scholars come before any ruling, and rulings rest on them. This is your choice (question 2).</div>
+<div class="flag"><strong>2. Year bands against the level names.</strong> In QCR, <em>21 Tadabbur, “Advanced”</em> is <strong>Y5</strong>, while <em>20 Tafakkur, “Intermediate”</em> is <strong>Y6–12</strong>. In the article, Intermediate comes before Advanced. Either Tadabbur's band is low because its four āyāt are short and clear (4:82, 23:68, 38:29, 47:24 all say “do they not ponder?”), or one of the bands is a slip. Only you know which (question 3).</div>
+<div class="flag"><strong>3. The article's first step has no home in QR.</strong> “What type of āyah is it?” is the first question the article asks of every āyah, and QR has no field for the answer: there is nowhere to mark an āyah as a command, a prohibition, a warning or a description. The grammar data could suggest it (below). Today a reader can only write the answer in a Note.</div>
+
+<h3>What the grammar data can already suggest for step 1</h3>
+<p>QR already carries the Quranic Arabic Corpus grammar for every word. Counted across all 6,236 āyāt:</p>
+<div class="nums">
+<div class="num"><b>1,309</b><span>āyāt with a command (imperative verb, or the lām of command)</span></div>
+<div class="num"><b>289</b><span>with a prohibition (lā of forbidding)</span></div>
+<div class="num"><b>830</b><span>with a question</span></div>
+<div class="num"><b>866</b><span>with a condition (“if…”)</span></div>
+<div class="num"><b>356</b><span>with a call (“O you who…”)</span></div>
+<div class="num"><b>4,795</b><span>with neither command nor prohibition</span></div>
+</div>
+<p>These are <strong>suggestions, never answers</strong>. A command spoken by Firʿawn or by the disbelievers, quoted in an āyah, is not a command to the reader. Telling them apart is exactly the reasoning step 1 trains, so the computer can only point and a person decides. Warning, recommended and not-recommended have no grammar mark at all.</p>
+
+<h2 id="could">5. What QR could do with this</h2>
+<p>None of these is built. They are listed so you can choose; each one gets a demo first.</p>
+<ol>
+<li><strong>Write the article's questions into the Approaches' guides.</strong> 14, 15, 20, 21 and 27 each have a “what / how / measure” guide that is general today (e.g. 14: “list what it literally describes”). The article's questions are sharper and already proven with families. This is text only; you can edit it yourself in Catalogue, or I can write a draft for you to correct.</li>
+<li><strong>A “Ten Steps” question card on the Āyah card's Note.</strong> When the Note is on a Critical Reasoning Approach, show that level's questions as headings to answer under, e.g. for 14: “Type of āyah? · Subject? · To whom?”. The answers stay in the reader's own Note.</li>
+<li><strong>Step 1 marks</strong> from the grammar (command, prohibition, question, call, condition) shown on the āyah as “the grammar suggests”, for a person to confirm.</li>
+<li><strong>Year levels on the Critical Reasoning Approaches themselves</strong>, from the table above, so a student is offered the right level. This is the first piece of the Y1–Y12 system you asked for on 26 Aug and parked.</li>
+<li><strong>A tafsir source for step 10</strong>, read with rights checked the way the hadith sources were (Ibn Kathīr in English and Bangla are the obvious candidates). Research first, then you choose.</li>
+</ol>
+
+<h2 id="questions">6. Questions for you</h2>
+<ol class="q">
+<li><strong>The 10 Approaches you added.</strong> I can see their sections and counts but not their names. Please send a screenshot of Catalogue → Approaches, or name them. I most need the third Approach in section 3 and the nine in “Understanding of the Scholars”, to place them against steps 1–4 and step 10.</li>
+<li><strong>The order.</strong> Should Discussion and Understanding of the Scholars come <em>before</em> Judgement / Authority, as the article's logic says, or stay where they are? My recommendation is before, with Judgement / Authority last.</li>
+<li><strong>Tadabbur's year band.</strong> Is Y5 for 21 Tadabbur (Advanced) right while 20 Tafakkur (Intermediate) is Y6–12?</li>
+<li><strong>Which of the five in section 5 first?</strong> My recommendation is 1 (the guides, text only, no new screen), then 2 (the question card, demo first).</li>
+</ol>
+<p class="src">Prepared by the MMSA Architect. Counts: QCR from <code>app/js/qcr-data.js</code>; grammar from <code>tools/quran-data-pull/output/word-features</code> (Quranic Arabic Corpus), counted per āyah; section counts from the app's test records of your data.</p>
+</div>
