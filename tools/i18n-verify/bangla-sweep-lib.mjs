@@ -3,8 +3,12 @@
 // Data, not interface: proper names, credits, book titles and ids that appear INSIDE otherwise-Bangla text, stripped
 // before the Latin check. Each token is a name or a licence, never a word a Bangla reader should be given in Bangla.
 export const NAME_TOKENS = [
+  /(?:app\/)?\b[\w-]+\.(?:html|js|md)\b/gi, // file names first, so "quranrevival.html" is not half-eaten by the QuranRevival token
   /HadeethEnc(\.com)?/gi, /OpenITI/gi, /hadith-api/gi, /fawazahmed0/gi, /Muhsin Khan/gi, /QuranRevival/gi,
   /\bQCR\b/g, // the Ayah-collections feature name, deliberately kept in Latin script in bn.js ("QCR": "QCR")
+  // About page feature registry: product names, file names and code identifiers inside otherwise-Bangla lines.
+  /\bFirebase\b/g, /\b(?:CRUD|CSV|LDOG)\b/g,
+  /\b(?:records|domains|appSettings|people|invites|studyProgress|[a-z]+[A-Z]\w*)(?:[./]\w+)*(?:\[\])?/g,
   /CC BY-NC-SA 4\.0/gi, /[\w.+-]+@[\w.-]+\.\w+/g, /synthetic-[\w-]+/gi,
 ];
 // Whole strings that are data: book titles (in the "Also narrated in" lists), the demo-only synthetic note, a HadeethEnc
@@ -38,10 +42,6 @@ export const SCAN = () => {
       if (lang && lang !== "bn") return "lang=" + lang;
       if (e.getAttribute?.("dir") === "rtl") return "rtl";
       if (e.hasAttribute?.("data-i18n-skip")) return "skip";
-      // NOT data: the About page's feature registry (names and "delivers" lines from feature-registry.js, ~100 English
-      // interface sentences) is a KNOWN GAP, skipped by name so the sweep can pass while it waits (Architect review of
-      // #684, v09.144). Translating it is its own round; when it is done, delete this line.
-      if (e.matches?.(".registry-text")) return "known-gap";
       if (e.matches?.("[data-standard-translation-text], .hadith-arabic, .dua-word-arabic, .ayah-translation, .note-english, .qcr-list-title, .qcr-way-snippet, #qcrLevelSelect, .wbw-translit, .wbw-gloss, .word-card-transliteration, .dua-word-translit .dua-word-value")) return "data";
     }
     return null;

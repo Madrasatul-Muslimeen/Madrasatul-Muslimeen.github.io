@@ -3886,4 +3886,69 @@ export const BN = {
   "The hadith text could not be loaded right now.": "হাদিসের পাঠ এখন লোড করা যায়নি।",
   "No translation of this hadith is in the app yet.": "এই হাদিসের কোনো অনুবাদ এখনও অ্যাপে নেই।",
   "Couldn't load this āyah. Check the connection and open the Name again.": "এই আয়াতটি লোড করা যায়নি। সংযোগ দেখে নামটি আবার খুলুন।",
+  // --- 9 Oct 2026: the About page's feature registry (feature-registry.js), names and 'delivers' lines
+  "Firebase bootstrap": "Firebase বুটস্ট্র্যাপ", // ?
+  "Collection map": "সংগ্রহ মানচিত্র", // ?
+  "Merged security rules (both generations)": "একত্রিত নিরাপত্তা বিধি (উভয় প্রজন্মের)", // ?
+  "Document envelope": "ডকুমেন্ট খাম", // ?
+  "Language-key helpers": "ভাষা-কী সহায়ক ফাংশন", // ?
+  "Feature registry": "ফিচার রেজিস্ট্রি", // ?
+  "Write-failure surface": "লেখা ব্যর্থ হওয়ার প্রদর্শন", // ?
+  "Admin self-check screen": "অ্যাডমিন স্ব-পরীক্ষা পর্দা", // ?
+  "Batched envelope writes": "ব্যাচে খাম লেখা", // ?
+  "Identity module (tenant + owner bootstrap)": "পরিচয় মডিউল (টেন্যান্ট + মালিক বুটস্ট্র্যাপ)", // ?
+  "Onboarding screen + Layer-0 security rules": "অনবোর্ডিং পর্দা + স্তর-০ নিরাপত্তা বিধি", // ?
+  "Owner adds people (incl. managed/child accounts)": "মালিক মানুষ যোগ করেন (পরিচালিত/শিশু অ্যাকাউন্টসহ)", // ?
+  "Invites with quota": "কোটাসহ আমন্ত্রণ", // ?
+  "Invite acceptance": "আমন্ত্রণ গ্রহণ", // ?
+  "Tenant/role switcher + View as": "টেন্যান্ট/ভূমিকা পরিবর্তক + এভাবে দেখুন", // ?
+  "Study Mode handover lock": "অধ্যয়ন মোড হস্তান্তর তালা", // ?
+  "Self-check extended for Layer 0": "স্তর ০-এর জন্য সম্প্রসারিত স্ব-পরীক্ষা", // ?
+  "Module registry (platform-wide, 7 modules)": "মডিউল রেজিস্ট্রি (প্ল্যাটফর্মজুড়ে, ৭টি মডিউল)", // ?
+  "Subject tree + ancestorIds + subjectTemplates (platform master list)": "বিষয় বৃক্ষ + ancestorIds + subjectTemplates (প্ল্যাটফর্মের মূল তালিকা)", // ?
+  "Subject copy-on-write (tenant seeding from templates, edited flag)": "বিষয় কপি-অন-রাইট (টেমপ্লেট থেকে টেন্যান্ট সিডিং, সম্পাদিত চিহ্ন)", // ?
+  "Trackables — the Quran Approaches in their sections, incl. Guide tab + panels": "ট্র্যাকেবল — কুরআনের পদ্ধতিগুলো তাদের অংশসহ, গাইড ট্যাব + প্যানেলসহ", // ?
+  "Ladders + levels (schema + tenant-authored CRUD)": "সিঁড়ি + স্তর (স্কিমা + টেন্যান্ট-রচিত CRUD)", // ?
+  "Catalogue admin screen (catalogue.html) + Layer 1 security rules": "ক্যাটালগ অ্যাডমিন পর্দা (catalogue.html) + স্তর ১ নিরাপত্তা বিধি", // ?
+  "Self-check extended for Layer 1": "স্তর ১-এর জন্য সম্প্রসারিত স্ব-পরীক্ষা", // ?
+  "Subject re-parenting (move a node's level, cascades ancestorIds)": "বিষয়ের পুনঃঅভিভাবক নির্ধারণ (নোডের স্তর সরানো, ancestorIds ধাপে ধাপে বদলায়)", // ?
+  "Archive/Restore for subjects, trackables, ladders, levels (I4/D6 stand-in for delete)": "বিষয়, ট্র্যাকেবল, সিঁড়ি, স্তরের আর্কাইভ/পুনরুদ্ধার (মুছে ফেলার বদলে — I4/D6)", // ?
+  "Unit keys (all 12 namespaces) + the 6 progress statuses + I7 Not-Applicable exclusion helper": "ইউনিট কী (১২টি নেমস্পেস) + ৬টি অগ্রগতির অবস্থা + I7 প্রযোজ্য নয় বাদ দেওয়ার সহায়ক", // ?
+  "Domain tags (domains collection, D12 — supports records.entries.domainIds[])": "ডোমেইন ট্যাগ (domains সংগ্রহ, D12 — records.entries.domainIds[] সমর্থন করে)", // ?
+  "Records: chunked storage (one doc per surah/subject) + claim a status": "রেকর্ড: খণ্ডিত সংরক্ষণ (প্রতি সূরা/বিষয়ে একটি ডকুমেন্ট) + অবস্থা দাবি করা", // ?
+  "Confirmation rule — computed per person, per-subject override": "নিশ্চিতকরণ নিয়ম — প্রতি ব্যক্তির জন্য গণনা, প্রতি বিষয়ে পরিবর্তনযোগ্য", // ?
+  "Confirm / return an entry (I6 — confirmation state frozen when marked)": "এন্ট্রি নিশ্চিত / ফেরত (I6 — নিশ্চিতকরণের অবস্থা চিহ্নিত করার সময় স্থির হয়ে যায়)", // ?
+  "Bulk confirm — a surah/subject chunk, or a week": "একসঙ্গে নিশ্চিত করা — একটি সূরা/বিষয়ের খণ্ড, বা একটি সপ্তাহ", // ?
+  "Activity — one document per week, append-only, viaProgramId/viaSessionId (I3)": "কার্যক্রম — প্রতি সপ্তাহে একটি ডকুমেন্ট, শুধু যোগ করা যায়, viaProgramId/viaSessionId (I3)", // ?
+  "Records/activity/domains screen (records.html) + Layer 2 security rules": "রেকর্ড/কার্যক্রম/ডোমেইন পর্দা (records.html) + স্তর ২ নিরাপত্তা বিধি", // ?
+  "QuranRevival core -- Quran static data layer (all 114 surahs pulled), ayah renderer, Mastery Wheel, Way modal, quranrevival.html wiring": "QuranRevival মূল অংশ -- কুরআনের স্থির তথ্যস্তর (সব ১১৪ সূরা আনা হয়েছে), আয়াত রেন্ডারার, দক্ষতা চক্র, পদ্ধতি মোডাল, quranrevival.html সংযোগ", // ?
+  "Tajweed colour toggle on the Arabic text panel": "আরবি পাঠ প্যানেলে তাজবিদের রঙ চালু/বন্ধ", // ?
+  "Word-by-word panel + root/derivative panel (two panels, per Architecture)": "শব্দে শব্দে প্যানেল + মূল/উৎপন্ন শব্দ প্যানেল (স্থাপত্য অনুযায়ী দুটি প্যানেল)", // ?
+  "Audio playback + loop -- 3 reciters (Basfar Arabic per-ayah, Ibraheem Walk English per-ayah, Kevan Brighting English whole-surah, Shareef Bayezid Mahmud Bangla segmented)": "অডিও চালানো + পুনরাবৃত্তি -- ৩ জন তিলাওয়াতকারী (বাসফার আরবি প্রতি আয়াত, ইব্রাহীম ওয়াক ইংরেজি প্রতি আয়াত, কেভান ব্রাইটিং ইংরেজি পুরো সূরা, শরিফ বায়েজিদ মাহমুদ বাংলা খণ্ডিত)", // ?
+  "Bangla Quran translation, alongside English, across text + word-by-word panels": "ইংরেজির পাশে বাংলা কুরআন অনুবাদ, পাঠ + শব্দে শব্দে প্যানেলজুড়ে", // ?
+  "Study Unit picker -- Range/Whole Surah/Ruku'/Juz/Page tracking (previously ayah-only), correct per-type chunking and claim/confirm via the existing Way modal shell": "অধ্যয়ন ইউনিট বাছাইকারী -- পরিসর/পুরো সূরা/রুকু/পারা/পৃষ্ঠা ট্র্যাকিং (আগে শুধু আয়াত ছিল), সঠিক খণ্ডায়ন এবং বিদ্যমান পদ্ধতি মোডাল কাঠামোর মাধ্যমে দাবি/নিশ্চিতকরণ", // ?
+  "Explore navigator -- whole-Quran Quran-wheel (30 Juz segments) built on direct Juz-level claims, click-to-jump": "এক্সপ্লোর নেভিগেটর -- সমগ্র কুরআনের চক্র (৩০টি পারা অংশ), সরাসরি পারা-স্তরের দাবির ওপর তৈরি, চাপ দিয়ে যাওয়া যায়", // ?
+  "Multi-reciter drill/repeat playback -- select several reciters, Repeat count (1/2/3/5/10x), Repeat mode (Each Ayah / Whole Unit)": "একাধিক তিলাওয়াতকারীর অনুশীলন/পুনরাবৃত্তি চালানো -- কয়েকজন তিলাওয়াতকারী বাছাই, পুনরাবৃত্তির সংখ্যা (১/২/৩/৫/১০ বার), পুনরাবৃত্তির ধরন (প্রতি আয়াত / পুরো ইউনিট)", // ?
+  "Tenant-scoped global banner (legacy appSettings/global parity), owner/prime-editable": "টেন্যান্ট-নির্দিষ্ট সর্বজনীন ব্যানার (পুরনো appSettings/global সমতা), মালিক/প্রাইম সম্পাদনযোগ্য", // ?
+  "Additive migration tool (app/migrate.html) -- old people/invites/studyProgress -> new schema, preview-before-commit, idempotent re-run, old collections never written to": "সংযোজনমূলক মাইগ্রেশন টুল (app/migrate.html) -- পুরনো people/invites/studyProgress -> নতুন স্কিমা, সংরক্ষণের আগে পূর্বদর্শন, পুনরায় চালালে একই ফল, পুরনো সংগ্রহে কখনো লেখা হয় না", // ?
+  "Migration & parity": "মাইগ্রেশন ও সমতা", // ?
+  "B1 traced (found already resolved, Phase 0); backfill of stranded summaries (B2 -- closed, owner confirmed no real data at risk); parity checklist -- delivered, see PHASE-5-STATUS.md. Remaining: owner click-through verification of F-048/F-052/F-053/F-061/F-062": "B1 খুঁজে দেখা হয়েছে (ইতিমধ্যে সমাধান হয়ে ছিল, ধাপ ০); আটকে থাকা সারাংশের ব্যাকফিল (B2 -- বন্ধ, মালিক নিশ্চিত করেছেন ঝুঁকিতে কোনো আসল তথ্য নেই); সমতা চেকলিস্ট -- সম্পন্ন, PHASE-5-STATUS.md দেখুন। বাকি: F-048/F-052/F-053/F-061/F-062 মালিকের ক্লিক-যাচাই", // ?
+  "Deen Study & topic renderer": "দ্বীন অধ্যয়ন ও বিষয় রেন্ডারার", // ?
+  "Topic renderer, Deen subjects, Monitor data migrated onto Layer 2, old sync bridge deleted": "বিষয় রেন্ডারার, দ্বীনি বিষয়সমূহ, স্তর ২-এ আনা মনিটর তথ্য, পুরনো সিঙ্ক ব্রিজ মুছে ফেলা", // ?
+  "Bookmarks, programs, routines": "বুকমার্ক, প্রোগ্রাম, রুটিন", // ?
+  "Bookmarks (auto-resume + named, grouped by program), Continue strip, course offers with routines, LDOG module, routine renderer, in-app reminders": "বুকমার্ক (স্বয়ংক্রিয় পুনরারম্ভ + নামযুক্ত, প্রোগ্রাম অনুযায়ী সাজানো), চালিয়ে যান স্ট্রিপ, রুটিনসহ কোর্স অফার, LDOG মডিউল, রুটিন রেন্ডারার, অ্যাপের ভেতরে রিমাইন্ডার", // ?
+  "Monitor & reports": "মনিটর ও রিপোর্ট", // ?
+  "Two report shapes -- levels for subjects, streaks for programs. Adaptive tabs, filters computed from data, CSV, print, editable labels, export-everything": "দুই ধরনের রিপোর্ট -- বিষয়ের জন্য স্তর, প্রোগ্রামের জন্য ধারাবাহিকতা। অভিযোজিত ট্যাব, তথ্য থেকে গণনা করা ফিল্টার, CSV, প্রিন্ট, সম্পাদনযোগ্য লেবেল, সবকিছু এক্সপোর্ট", // ?
+  "Homework & feedback": "হোমওয়ার্ক ও মতামত", // ?
+  "Assignments to person or class, numeric scores, confirm-with-comment, parent copy, Admin copy, teaching notes": "ব্যক্তি বা ক্লাসকে কাজ দেওয়া, সংখ্যাসূচক নম্বর, মন্তব্যসহ নিশ্চিতকরণ, অভিভাবকের কপি, অ্যাডমিনের কপি, শিক্ষাদান নোট", // ?
+  "Classes & provider": "ক্লাস ও প্রদানকারী", // ?
+  "Classes, enrolments, prime role (already wired since Phase 1/7/9, audited not rebuilt), real per-student teacher scoping via classes + teacherStudentLinks (replacing blanket tenant-wide teacher access), class-wide bulk confirm. See PHASE-10-STATUS.md -- homework/assignments is a flagged, deliberate exception still tenant-wide for teachers, not full 'safeguarding at scale' yet.": "ক্লাস, ভর্তি, প্রাইম ভূমিকা (ধাপ ১/৭/৯ থেকে ইতিমধ্যে সংযুক্ত, যাচাই করা হয়েছে, নতুন করে বানানো হয়নি), ক্লাস + teacherStudentLinks-এর মাধ্যমে প্রকৃত প্রতি-শিক্ষার্থী শিক্ষক সীমাবদ্ধতা (টেন্যান্ট-জুড়ে শিক্ষকের সাধারণ প্রবেশাধিকারের বদলে), ক্লাসজুড়ে একসঙ্গে নিশ্চিতকরণ। PHASE-10-STATUS.md দেখুন -- হোমওয়ার্ক/কাজ বণ্টন একটি চিহ্নিত, ইচ্ছাকৃত ব্যতিক্রম, শিক্ষকদের জন্য এখনও টেন্যান্ট-জুড়ে, এখনো পূর্ণ 'বড় পরিসরে সুরক্ষা' নয়।", // ?
+  "Curriculum, grades & resources": "পাঠ্যক্রম, গ্রেড ও সম্পদ", // ?
+  "Curriculum units (cross-subject, curriculum.js) + curriculum plan (4 terms x 10 weeks, class or person context, I8 content/schedule separation), grades as dated personLevels history per ladder (never overwritten -- a correction is a new dated row, grades.js), resources browse/create screen wired to curriculum units (resources.js listResources/setResourceStatus, new). New page curriculum.html, owner/prime only. See PHASE-11-STATUS.md.": "পাঠ্যক্রম ইউনিট (বিষয়জুড়ে, curriculum.js) + পাঠ্যক্রম পরিকল্পনা (৪ টার্ম x ১০ সপ্তাহ, ক্লাস বা ব্যক্তির প্রসঙ্গ, I8 বিষয়বস্তু/সময়সূচি পৃথকীকরণ), প্রতি সিঁড়িতে তারিখযুক্ত personLevels ইতিহাস হিসেবে গ্রেড (কখনো ওপরে লেখা হয় না -- সংশোধন মানে নতুন তারিখযুক্ত সারি, grades.js), পাঠ্যক্রম ইউনিটের সাথে যুক্ত সম্পদ ব্রাউজ/তৈরি পর্দা (resources.js listResources/setResourceStatus, নতুন)। নতুন পাতা curriculum.html, শুধু মালিক/প্রাইম। PHASE-11-STATUS.md দেখুন।", // ?
+  "Remaining modules": "অবশিষ্ট মডিউল", // ?
+  "Arabic, General Study, Health, Nature-Life, Hadith -- all as data on existing renderers. Delivered ahead of its own numbering: the topic renderer reached Arabic/Hadith/General Study/Nature-Life in Phase 6 round 2, and Health got its own module + routine renderer in Phase 7 round 1 -- see PHASE-6-STATUS.md and PHASE-7-STATUS.md. This flag was stale (same kind of drift Phase 10's build log already flagged for Phases 6-9's own entries), corrected here, no new code needed.": "আরবি, সাধারণ অধ্যয়ন, স্বাস্থ্য, প্রকৃতি-জীবন, হাদিস -- সবই বিদ্যমান রেন্ডারারের তথ্য হিসেবে। নিজস্ব ক্রমের আগেই সম্পন্ন: ধাপ ৬-এর দ্বিতীয় পর্বে বিষয় রেন্ডারার আরবি/হাদিস/সাধারণ অধ্যয়ন/প্রকৃতি-জীবনে পৌঁছেছে, আর ধাপ ৭-এর প্রথম পর্বে স্বাস্থ্য পেয়েছে নিজস্ব মডিউল + রুটিন রেন্ডারার -- PHASE-6-STATUS.md ও PHASE-7-STATUS.md দেখুন। এই চিহ্নটি পুরনো হয়ে গিয়েছিল (ধাপ ৬-৯-এর নিজস্ব এন্ট্রি নিয়ে ধাপ ১০-এর বিল্ড লগে যেমন চিহ্নিত হয়েছিল, একই ধরনের অমিল), এখানে সংশোধন করা হয়েছে, নতুন কোড লাগেনি।", // ?
+  "Full messaging & extras": "পূর্ণ বার্তা আদান-প্রদান ও অতিরিক্ত", // ?
+  "Threads, per-person inbox, unread counts, resolved/open, Asma ul Husna screensaver + study units, About screen reading the feature registry": "থ্রেড, প্রতি-ব্যক্তি ইনবক্স, অপঠিত সংখ্যা, সমাধান/খোলা, আসমাউল হুসনা স্ক্রিনসেভার + অধ্যয়ন ইউনিট, ফিচার রেজিস্ট্রি পড়া পরিচিতি পর্দা", // ?
+  "Operations": "কার্যক্রম পরিচালনা", // ?
+  "4A calendar, 4B timetable, 4C sessions (classId optional), 4D attendance (students and teachers), 4E availability and cover, 4F notices, 4G admissions, 4H staff records": "৪A ক্যালেন্ডার, ৪B সময়সূচি, ৪C সেশন (classId ঐচ্ছিক), ৪D উপস্থিতি (শিক্ষার্থী ও শিক্ষক), ৪E প্রাপ্যতা ও বদলি, ৪F নোটিশ, ৪G ভর্তি, ৪H কর্মী রেকর্ড", // ?
 };

@@ -135,10 +135,10 @@
       const { features, phaseReservations } = getFullRegistry();
       document.getElementById("versionLine").textContent = `QuranRevival v${APP_VERSION}`;
       document.getElementById("featureRows").innerHTML = features
-        .map((f) => `<tr><td>${f.id}</td><td class="registry-text">${f.name}</td><td><span class="tag tag-${f.status}">${t(f.status)}</span></td></tr>`)
+        .map((f) => `<tr><td>${f.id}</td><td>${t(f.name)}</td><td><span class="tag tag-${f.status}">${t(f.status)}</span></td></tr>`)
         .join("");
       document.getElementById("phaseRows").innerHTML = phaseReservations
-        .map((p) => `<tr><td>${p.phase}</td><td class="registry-text">${p.name}</td><td><span class="tag tag-${p.status}">${t(p.status)}</span></td><td class="delivers registry-text">${p.delivers}</td></tr>`)
+        .map((p) => `<tr><td>${p.phase}</td><td>${t(p.name)}</td><td><span class="tag tag-${p.status}">${t(p.status)}</span></td><td class="delivers">${t(p.delivers)}</td></tr>`)
         .join("");
     }
 
