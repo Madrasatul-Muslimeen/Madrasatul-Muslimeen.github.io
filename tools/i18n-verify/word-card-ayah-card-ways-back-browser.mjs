@@ -15,6 +15,7 @@
 //   nohighlight  the opened āyah is not marked                              -> the highlight checks fail
 //   nostep       the Āyah card's ‹ › do nothing                             -> the step checks fail
 //   nopill       nothing remembers the way back to the Āyah card            -> the "back to the card" checks fail
+//   nvcentre     the Note view pop-up centred at 100vh again                -> the "browser bar showing" check fails
 import { chromium, newContext, openPage } from "./harness.mjs";
 
 let pass = 0, fail = 0;
@@ -28,6 +29,8 @@ const MUTATIONS = {
   darkbg: ["quranrevival.html", "    --card-bg: #fff; }\n  .word-card-acc .word-card-occurrence-link:hover", "    }\n  .word-card-acc .word-card-occurrence-link:hover"],
   nopop: ["js/quran-word-card.js", "    ${pop}\n  </section>", "\n  </section>"],
   nohighlight: ["quranrevival.html", "      paintWordCardTarget(origin ? quranWordCardTarget : null);", "      paintWordCardTarget(null);"],
+  // The pop-up centred and sized to 100vh again, as before 9 Oct 2026 -> the "browser bar showing" check fails.
+  nvcentre: ["quranrevival.html", "display: flex; align-items: flex-start; justify-content: center; padding: 16px; }\n  .ayah-nv-pop[hidden] { display: none; }\n  .ayah-nv-box { width: min(46rem, 100%); max-height: 100%;", "display: flex; align-items: center; justify-content: center; padding: 16px; }\n  .ayah-nv-pop[hidden] { display: none; }\n  .ayah-nv-box { width: min(46rem, 100%); max-height: calc(100vh - 32px);"],
   nostep: ["js/ayah-action-sheet.js", "callbacks.onStep?.(unitKey, Number(btn.dataset.ayahSheetStep))", "void 0"],
   nopill: ["quranrevival.html", "    function setAppReturn(title, label, back) { ayahCardReturn = { title, label, back }; renderAyahCardBackPill(); }", "    function setAppReturn() {}"],
 };
@@ -186,6 +189,19 @@ for (const [lang, width, height] of [["en", 390, 844], ["bn", 390, 844], ["en", 
     return { secs: box.querySelectorAll(".ayah-nv-sec").length, arabic: !!box.querySelector(".ayah-arabic")?.textContent.trim(), en: !!box.querySelector(".ayah-translation:not(.ayah-translation-bn)")?.textContent.trim(), bn: !!box.querySelector(".ayah-translation-bn")?.textContent.trim(), wbw: box.querySelectorAll(".wbw-word").length, inView: r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight };
   });
   check(`${tag} 📖 shows the āyah as the Note view does: Arabic, English, Bangla, Word by Word, on screen`, !!nv && nv.secs === 4 && nv.arabic && nv.en && nv.bn && nv.wbw === 10 && nv.inView, JSON.stringify(nv));
+  // The Owner, 9 Oct 2026, on a tablet: "no way back or it is covered". While a phone or tablet browser shows its
+  // address bar, the visible area is SHORTER than 100vh. Simulated by shortening the pop-up (fixed to the visible
+  // area) by a third: "← Āyah card" must still be on screen and the topmost thing where it is pressed.
+  const barShowing = await page.evaluate(() => {
+    const pop = document.getElementById("ayahNoteViewPopup");
+    pop.style.bottom = `${Math.round(innerHeight / 3)}px`;
+    const b = pop.querySelector("[data-ayah-nv-back]"), r = b.getBoundingClientRect(), box = pop.querySelector(".ayah-nv-box").getBoundingClientRect();
+    const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    const out = { btnTop: Math.round(r.top), boxTop: Math.round(box.top), boxBottom: Math.round(box.bottom), visibleBottom: Math.round(pop.getBoundingClientRect().bottom), pressable: !!top && b.contains(top) };
+    pop.style.bottom = "";
+    return out;
+  });
+  check(`${tag} with the browser's address bar showing, "← Āyah card" stays on screen and pressable, the box inside the visible area`, barShowing.btnTop >= 0 && barShowing.pressable && barShowing.boxBottom <= barShowing.visibleBottom + 1, JSON.stringify(barShowing));
   await page.click("[data-ayah-nv-back]");
   const afterNv = await page.evaluate(() => ({ pop: !!document.querySelector("#ayahNoteViewPopup:not([hidden])"), card: document.getElementById("ayahActionSheetOverlay")?.classList.contains("open"), ref: document.querySelector("[data-ayah-sheet] .ayah-sheet-ref")?.textContent }));
   check(`${tag} the pop-up's ← goes back to the same Āyah card`, !afterNv.pop && afterNv.card && afterNv.ref === ref0, JSON.stringify(afterNv));
